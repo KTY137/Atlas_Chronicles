@@ -1,0 +1,2677 @@
+<title>Haus Vharon — Der Aldenfall-Auftakt · Chronicle</title>
+
+<style>
+/* ============================================================================
+   Chronicle · Spike B1 — „Rechne es nach."
+   Skin: Archive (Slice-1-Haut). Alle Farben, Maße, Radien, Schatten und
+   Zeiten sind Tokens. Kein externes Asset, keine Webfont, kein CDN.
+   ========================================================================= */
+
+:root {
+  /* --- Typografie -------------------------------------------------------- */
+  --f-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "Hoefler Text", Georgia, serif;
+  --f-mono: "Cascadia Mono", "SF Mono", "Consolas", ui-monospace, "Liberation Mono", monospace;
+
+  --fs-micro: 0.6875rem;
+  --fs-small: 0.78125rem;
+  --fs-base: 0.875rem;
+  --fs-read: 1.0625rem;
+  --fs-lead: 1.1875rem;
+  --fs-h3: 1.0625rem;
+  --fs-h2: 1.375rem;
+  --fs-h1: 2.125rem;
+
+  --lh-tight: 1.25;
+  --lh-ui: 1.45;
+  --lh-read: 1.66;
+
+  --ls-caps: 0.14em;
+  --ls-tight: -0.01em;
+
+  /* --- Maße -------------------------------------------------------------- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+
+  --rail-module: 12.25rem;
+  --rail-collection: 15rem;
+  --lens-w: 22.5rem;
+  --gutter: 10.5rem;      /* Apparatspalte — immer reserviert (Tor „Der Streifen") */
+  --measure: 38rem;
+
+  --r-xs: 2px;
+  --r-sm: 3px;
+  --r-md: 5px;
+  --r-lg: 8px;
+
+  /* --- Farben: Archive, hell ("Papier") ---------------------------------- */
+  --c-backdrop: #e9e2d5;
+  --c-stage: #fbf8f2;
+  --c-panel: #f3ecdf;
+  --c-panel-2: #ece3d3;
+  --c-sunken: #e3dac8;
+
+  --c-ink: #241f1c;
+  --c-ink-soft: #4a423b;
+  --c-ink-mute: #736858;
+  --c-ink-faint: #9c907d;
+
+  --c-rule: #d5cab4;
+  --c-rule-strong: #bdae92;
+  --c-hairline: #c9bda4;
+
+  --c-accent: #7a1f27;          /* Oxblut */
+  --c-accent-soft: #a4444c;
+  --c-accent-wash: #f0e2df;
+  --c-brass: #8a6a2f;
+  --c-brass-soft: #b8933f;
+  --c-brass-wash: #f2e9d2;
+
+  --c-seal: #2c5c42;            /* geprüft */
+  --c-seal-wash: #e2ecdf;
+  --c-alarm: #8c3210;           /* Abweichung */
+  --c-alarm-wash: #f6e5da;
+
+  --c-link: #1f4f6b;
+  --c-link-red: #9a2b22;
+  --c-focus: #1f4f6b;
+
+  --c-token-a: #6f2f34;
+  --c-token-b: #2f4a63;
+  --c-token-c: #5c4a1e;
+  --c-fog: #1b1713;
+  --c-fog-a: 0.72;
+
+  /* --- Erhebung ---------------------------------------------------------- */
+  --e-flat: 0 1px 0 rgba(36, 31, 28, 0.06);
+  --e-panel: 0 1px 2px rgba(36, 31, 28, 0.09), 0 8px 22px -14px rgba(36, 31, 28, 0.42);
+  --e-raised: 0 2px 4px rgba(36, 31, 28, 0.12), 0 18px 40px -22px rgba(36, 31, 28, 0.55);
+  --e-inset: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(36, 31, 28, 0.06);
+  --e-focus: 0 0 0 2px var(--c-stage), 0 0 0 4px var(--c-focus);
+
+  /* --- Bewegung ---------------------------------------------------------- */
+  --t-response: 140ms;
+  --t-state: 280ms;
+  --t-transition: 780ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
+  --stagger: 16ms;
+
+  /* --- Materialität ------------------------------------------------------ */
+  --grain: rgba(60, 46, 28, 0.035);
+  --sheen: rgba(255, 253, 246, 0.72);
+  --deco-line: var(--c-brass);
+}
+
+/* --- Farben: Archive, dunkel („Nachtarchiv") ----------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-backdrop: #100e0c;
+    --c-stage: #1a1613;
+    --c-panel: #201b17;
+    --c-panel-2: #262019;
+    --c-sunken: #14110e;
+
+    --c-ink: #ece2d2;
+    --c-ink-soft: #cbbfae;
+    --c-ink-mute: #9d9182;
+    --c-ink-faint: #776d60;
+
+    --c-rule: #362e26;
+    --c-rule-strong: #4a3f33;
+    --c-hairline: #40372c;
+
+    --c-accent: #c9585f;
+    --c-accent-soft: #e08a8f;
+    --c-accent-wash: #2c1b1b;
+    --c-brass: #c9a35e;
+    --c-brass-soft: #e0c288;
+    --c-brass-wash: #2a2317;
+
+    --c-seal: #74b592;
+    --c-seal-wash: #17251d;
+    --c-alarm: #e08a5c;
+    --c-alarm-wash: #2a1a12;
+
+    --c-link: #7db4d1;
+    --c-link-red: #dd7a6c;
+    --c-focus: #9fcfe8;
+
+    --c-token-a: #b8656b;
+    --c-token-b: #7ba0c4;
+    --c-token-c: #c2a45e;
+    --c-fog: #050403;
+    --c-fog-a: 0.82;
+
+    --e-flat: 0 1px 0 rgba(0, 0, 0, 0.4);
+    --e-panel: 0 1px 2px rgba(0, 0, 0, 0.6), 0 10px 26px -16px rgba(0, 0, 0, 0.9);
+    --e-raised: 0 2px 6px rgba(0, 0, 0, 0.65), 0 22px 48px -24px rgba(0, 0, 0, 1);
+    --e-inset: inset 0 1px 0 rgba(255, 244, 220, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+
+    --grain: rgba(255, 232, 190, 0.028);
+    --sheen: rgba(255, 240, 214, 0.06);
+  }
+}
+
+:root[data-theme="dark"] {
+  --c-backdrop: #100e0c;
+  --c-stage: #1a1613;
+  --c-panel: #201b17;
+  --c-panel-2: #262019;
+  --c-sunken: #14110e;
+
+  --c-ink: #ece2d2;
+  --c-ink-soft: #cbbfae;
+  --c-ink-mute: #9d9182;
+  --c-ink-faint: #776d60;
+
+  --c-rule: #362e26;
+  --c-rule-strong: #4a3f33;
+  --c-hairline: #40372c;
+
+  --c-accent: #c9585f;
+  --c-accent-soft: #e08a8f;
+  --c-accent-wash: #2c1b1b;
+  --c-brass: #c9a35e;
+  --c-brass-soft: #e0c288;
+  --c-brass-wash: #2a2317;
+
+  --c-seal: #74b592;
+  --c-seal-wash: #17251d;
+  --c-alarm: #e08a5c;
+  --c-alarm-wash: #2a1a12;
+
+  --c-link: #7db4d1;
+  --c-link-red: #dd7a6c;
+  --c-focus: #9fcfe8;
+
+  --c-token-a: #b8656b;
+  --c-token-b: #7ba0c4;
+  --c-token-c: #c2a45e;
+  --c-fog: #050403;
+  --c-fog-a: 0.82;
+
+  --e-flat: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --e-panel: 0 1px 2px rgba(0, 0, 0, 0.6), 0 10px 26px -16px rgba(0, 0, 0, 0.9);
+  --e-raised: 0 2px 6px rgba(0, 0, 0, 0.65), 0 22px 48px -24px rgba(0, 0, 0, 1);
+  --e-inset: inset 0 1px 0 rgba(255, 244, 220, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+
+  --grain: rgba(255, 232, 190, 0.028);
+  --sheen: rgba(255, 240, 214, 0.06);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* --- Bewegung aus ---------------------------------------------------------
+   Systempräferenz gewinnt, solange der Nutzer nicht ausdrücklich „voll" wählt;
+   die ausdrückliche Wahl „reduziert" gewinnt immer.                          */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) {
+    --t-response: 1ms;
+    --t-state: 1ms;
+    --t-transition: 1ms;
+    --stagger: 0ms;
+  }
+}
+:root[data-motion="reduced"] {
+  --t-response: 1ms;
+  --t-state: 1ms;
+  --t-transition: 1ms;
+  --stagger: 0ms;
+}
+
+/* ========================================================================== */
+
+* { box-sizing: border-box; }
+
+.app {
+  font-family: var(--f-ui);
+  font-size: var(--fs-base);
+  line-height: var(--lh-ui);
+  color: var(--c-ink);
+  background: var(--c-backdrop);
+  background-image:
+    repeating-linear-gradient(0deg, var(--grain) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, var(--grain) 0 1px, transparent 1px 4px);
+  /* feste Höhe, damit die Rasterzeile definit ist und die Panels selbst
+     scrollen — der Körper scrollt nie, weder senkrecht noch waagerecht */
+  height: 100svh;
+  min-height: 32rem;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+h1, h2, h3, h4, p, ul, ol, figure, blockquote, dl, dd { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+
+:where(button, a, input, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--e-focus);
+  border-radius: var(--r-sm);
+}
+
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.mt-2 { margin-top: var(--sp-2); }
+.mt-3 { margin-top: var(--sp-3); }
+.mt-4 { margin-top: var(--sp-4); }
+.mb-2 { margin-bottom: var(--sp-2); }
+.faint { color: var(--c-ink-faint); }
+.warn { color: var(--c-alarm); }
+.bare { border: 0; background: none; padding-left: 0; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.caps {
+  font-size: var(--fs-micro);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--c-ink-mute);
+  font-weight: 600;
+}
+
+.sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+/* --- Grundknöpfe ---------------------------------------------------------- */
+.btn {
+  font: inherit;
+  font-size: var(--fs-small);
+  color: var(--c-ink);
+  background: linear-gradient(180deg, var(--sheen), transparent 60%), var(--c-panel);
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-sm);
+  padding: 0.4rem 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  box-shadow: var(--e-inset);
+  transition:
+    background-color var(--t-response) var(--ease),
+    border-color var(--t-response) var(--ease),
+    transform var(--t-response) var(--ease),
+    color var(--t-response) var(--ease);
+}
+.btn:hover { border-color: var(--c-brass); color: var(--c-ink); }
+.btn:active { transform: translateY(1px); }
+.btn[aria-pressed="true"] {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #fbf6ee;
+  box-shadow: none;
+}
+:root[data-theme="dark"] .btn[aria-pressed="true"],
+.btn[aria-pressed="true"] { color: #fbf6ee; }
+.btn[disabled] { opacity: 0.42; cursor: not-allowed; }
+.btn--primary {
+  background: linear-gradient(180deg, var(--c-accent-soft), var(--c-accent));
+  border-color: var(--c-accent);
+  color: #fdf7ef;
+  font-weight: 600;
+  box-shadow: var(--e-flat);
+}
+.btn--primary:hover { border-color: var(--c-brass-soft); }
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--c-ink-mute);
+  box-shadow: none;
+}
+.btn--ghost:hover { color: var(--c-ink); border-color: var(--c-rule); }
+.btn--tiny { font-size: var(--fs-micro); padding: 0.25rem 0.45rem; }
+
+/* --- Deko: Art-déco-Kante ------------------------------------------------- */
+.deco-rule {
+  height: 3px;
+  background:
+    linear-gradient(90deg, var(--deco-line), var(--deco-line)) 0 0 / 100% 1px no-repeat,
+    linear-gradient(90deg, var(--deco-line), var(--deco-line)) 0 100% / 100% 1px no-repeat;
+  opacity: 0.55;
+}
+
+/* ==========================================================================
+   Kampagnenkontext (Zone 1)
+   ========================================================================= */
+.context {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-2) var(--sp-4);
+  background: linear-gradient(180deg, var(--c-panel-2), var(--c-panel));
+  border-bottom: 1px solid var(--c-hairline);
+  box-shadow: var(--e-flat);
+  position: relative;
+  z-index: 6;
+  flex-wrap: wrap;
+}
+.context::after {
+  content: "";
+  position: absolute; inset: auto 0 -3px 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--c-brass) 12%, var(--c-brass) 88%, transparent);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.sigil {
+  width: 2.1rem; height: 2.1rem;
+  flex: none;
+  display: grid; place-items: center;
+  color: var(--c-accent);
+  background: var(--c-stage);
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-xs);
+  clip-path: polygon(0 6px, 6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.context__title { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.context__title b { font-size: var(--fs-base); font-weight: 600; letter-spacing: var(--ls-tight); }
+.context__title span { font-size: var(--fs-micro); color: var(--c-ink-mute); }
+.context__spacer { flex: 1 1 2rem; }
+
+.search {
+  display: flex; align-items: center; gap: var(--sp-2);
+  background: var(--c-stage);
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-sm);
+  padding: 0.25rem 0.5rem;
+  min-width: 12rem;
+  flex: 0 1 20rem;
+  box-shadow: var(--e-inset);
+}
+.search input {
+  font: inherit; font-size: var(--fs-small);
+  border: 0; background: transparent; color: var(--c-ink);
+  width: 100%; padding: 0.2rem 0;
+}
+.search input:focus { outline: none; }
+.search:focus-within { border-color: var(--c-focus); box-shadow: var(--e-focus); }
+.search svg { color: var(--c-ink-faint); flex: none; }
+.search__count { font-size: var(--fs-micro); color: var(--c-ink-faint); white-space: nowrap; }
+
+.controls { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.streifen {
+  font-family: var(--f-mono);
+  font-size: var(--fs-micro);
+  color: var(--c-ink-mute);
+  background: var(--c-sunken);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r-sm);
+  padding: 0.3rem 0.5rem;
+  white-space: nowrap;
+}
+.streifen b { color: var(--c-seal); font-weight: 700; }
+.streifen[data-state="over"] b { color: var(--c-alarm); }
+
+/* ==========================================================================
+   Arbeitsfläche
+   ========================================================================= */
+.workspace {
+  display: grid;
+  grid-template-columns: var(--rail-module) var(--rail-collection) minmax(0, 1fr) var(--lens-w);
+  min-height: 0;
+}
+.workspace > * { min-height: 0; min-width: 0; }
+
+/* Modulschiene (Zone 2) */
+.rail-module {
+  background: var(--c-panel);
+  border-right: 1px solid var(--c-hairline);
+  padding: var(--sp-4) var(--sp-3);
+  display: flex; flex-direction: column; gap: var(--sp-1);
+  overflow-y: auto;
+}
+.rail-module .caps { padding: 0 var(--sp-2) var(--sp-2); }
+.mod {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: 0.45rem var(--sp-2);
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--c-ink-soft);
+  font: inherit; font-size: var(--fs-small);
+  cursor: pointer; text-align: left; width: 100%;
+  transition: background-color var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+.mod:hover { background: var(--c-panel-2); color: var(--c-ink); }
+.mod[aria-current="page"] {
+  background: var(--c-stage);
+  border-color: var(--c-rule-strong);
+  color: var(--c-ink);
+  font-weight: 600;
+  box-shadow: var(--e-flat);
+}
+.mod[aria-current="page"] .mod__mark { background: var(--c-accent); }
+.mod__mark { width: 3px; height: 1.1rem; border-radius: 2px; background: transparent; flex: none; }
+.mod svg { flex: none; color: var(--c-ink-mute); }
+.mod[aria-current="page"] svg { color: var(--c-accent); }
+
+.rail-module__foot {
+  margin-top: auto;
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--c-rule);
+  font-size: var(--fs-micro);
+  color: var(--c-ink-faint);
+  line-height: 1.5;
+}
+
+/* Sammlungsschiene (Zone 3) */
+.rail-collection {
+  background: var(--c-panel-2);
+  border-right: 1px solid var(--c-hairline);
+  overflow-y: auto;
+  padding: var(--sp-4) var(--sp-3);
+  display: flex; flex-direction: column; gap: var(--sp-4);
+}
+.anlass-card {
+  background: var(--c-stage);
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  box-shadow: var(--e-panel);
+  position: relative;
+  overflow: hidden;
+}
+.anlass-card::before {
+  content: "";
+  position: absolute; inset: 0 auto 0 0; width: 3px;
+  background: linear-gradient(180deg, var(--c-accent), var(--c-brass));
+}
+.anlass-card h3 {
+  font-family: var(--f-serif);
+  font-size: var(--fs-h3);
+  letter-spacing: var(--ls-tight);
+  padding-left: var(--sp-2);
+}
+.anlass-card .sub { font-size: var(--fs-micro); color: var(--c-ink-mute); padding-left: var(--sp-2); }
+.anlass-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-1) var(--sp-2);
+  margin-top: var(--sp-3); padding-left: var(--sp-2);
+}
+.anlass-stats div { font-size: var(--fs-micro); color: var(--c-ink-mute); }
+.anlass-stats b { display: block; font-size: var(--fs-base); color: var(--c-ink); font-weight: 600; }
+.pruef {
+  margin-top: var(--sp-3);
+  margin-left: var(--sp-2);
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-size: var(--fs-micro);
+  color: var(--c-seal);
+  background: var(--c-seal-wash);
+  border: 1px solid color-mix(in srgb, var(--c-seal) 35%, transparent);
+  border-radius: var(--r-sm);
+  padding: 0.3rem 0.45rem;
+}
+
+.entries { display: flex; flex-direction: column; gap: 1px; }
+.entry {
+  display: flex; align-items: baseline; gap: var(--sp-2);
+  width: 100%; text-align: left;
+  font: inherit; font-size: var(--fs-small);
+  color: var(--c-ink-soft);
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 0.32rem var(--sp-2);
+  cursor: pointer;
+  transition: background-color var(--t-response) var(--ease);
+}
+.entry:hover { background: var(--c-panel); color: var(--c-ink); }
+.entry[aria-current="true"] {
+  background: var(--c-stage); border-color: var(--c-rule-strong);
+  color: var(--c-ink); font-weight: 600;
+}
+.entry .k { font-size: var(--fs-micro); color: var(--c-ink-faint); margin-left: auto; white-space: nowrap; }
+.entry[data-void="1"] { color: var(--c-link-red); font-style: italic; }
+.entry[hidden] { display: none; }
+</style>
+<style>
+/* ==========================================================================
+   Hauptbühne (Zone 4) — der Artikel
+   ========================================================================= */
+.stage {
+  background: var(--c-stage);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+.stage::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 70% at 50% -10%, var(--sheen), transparent 60%);
+  opacity: 0.5;
+  z-index: 0;
+}
+.article {
+  position: relative;
+  z-index: 1;
+  padding: var(--sp-6) var(--sp-6) var(--sp-7);
+  max-width: 66rem;
+}
+
+/* Titelkopf */
+.title-block { margin-bottom: var(--sp-5); }
+.kicker {
+  display: flex; align-items: center; gap: var(--sp-2);
+  color: var(--c-ink-mute);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.kicker .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--c-brass); }
+.article h1 {
+  font-family: var(--f-serif);
+  font-size: var(--fs-h1);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: var(--sp-2) 0 var(--sp-3);
+}
+.article h1 .h1-rule {
+  display: block; height: 2px; width: 5.5rem; margin-top: var(--sp-3);
+  background: linear-gradient(90deg, var(--c-accent), var(--c-brass));
+}
+
+/* Die Saatbilanz — berechnet, nicht getippt */
+.bilanz {
+  font-size: var(--fs-small);
+  color: var(--c-ink-mute);
+  line-height: 1.6;
+  border-left: 2px solid var(--c-rule-strong);
+  padding-left: var(--sp-3);
+  margin-top: var(--sp-4);
+  max-width: 44rem;
+}
+.bilanz b { color: var(--c-ink); font-weight: 600; }
+.bilanz .amtisch { color: var(--c-brass); font-weight: 700; }
+.bilanz .amtisch[data-n="0"] { color: var(--c-ink-mute); }
+.bilanz .src { font-style: italic; }
+
+/* --- Atome + Apparatspalte ------------------------------------------------
+   Die Spalte ist IMMER reserviert. Das Einblenden der Herkunftsschicht ändert
+   deshalb die Dokumenthöhe nicht (Tor „Der Streifen", ≤ 4 % scrollHeight).   */
+.atom {
+  display: grid;
+  grid-template-columns: var(--gutter) minmax(0, 1fr);
+  gap: 0 var(--sp-5);
+  align-items: start;
+  margin-bottom: var(--sp-4);
+}
+.atom__body { max-width: var(--measure); }
+.atom__gutter { position: relative; min-height: 1px; }
+
+.section-head {
+  display: grid;
+  grid-template-columns: var(--gutter) minmax(0, 1fr);
+  gap: 0 var(--sp-5);
+  margin: var(--sp-6) 0 var(--sp-3);
+}
+.section-head h2 {
+  font-family: var(--f-serif);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  letter-spacing: var(--ls-tight);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--c-rule);
+  max-width: var(--measure);
+}
+.section-head .caps { align-self: end; padding-bottom: 0.55rem; text-align: right; padding-right: var(--sp-1); }
+
+.article p {
+  font-family: var(--f-serif);
+  font-size: var(--fs-read);
+  line-height: var(--lh-read);
+  color: var(--c-ink);
+  hyphens: auto;
+}
+.atom:first-of-type .atom__body > p { font-size: var(--fs-lead); }
+
+.article a { color: var(--c-link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.article a:hover { text-decoration-style: dotted; }
+.article a.red { color: var(--c-link-red); }
+
+/* Fußnoten */
+.fn {
+  font-family: var(--f-ui);
+  font-size: 0.7em;
+  font-weight: 700;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--c-accent);
+  background: var(--c-accent-wash);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 30%, transparent);
+  border-radius: var(--r-xs);
+  padding: 0.25em 0.35em;
+  margin-left: 0.15em;
+  cursor: pointer;
+  transition: background-color var(--t-response) var(--ease), transform var(--t-response) var(--ease);
+}
+.fn:hover { background: var(--c-accent); color: #fdf7ef; }
+.fn[aria-expanded="true"] {
+  background: var(--c-accent); color: #fdf7ef;
+  box-shadow: 0 0 0 3px var(--c-accent-wash);
+}
+
+/* Zitat-Atom */
+blockquote.said {
+  font-family: var(--f-serif);
+  font-size: var(--fs-read);
+  line-height: var(--lh-read);
+  color: var(--c-ink-soft);
+  border-left: 3px solid var(--c-brass);
+  padding: var(--sp-1) 0 var(--sp-1) var(--sp-4);
+  background: linear-gradient(90deg, var(--c-brass-wash), transparent 70%);
+}
+blockquote.said cite {
+  display: block;
+  font-family: var(--f-ui);
+  font-size: var(--fs-micro);
+  font-style: normal;
+  color: var(--c-ink-mute);
+  margin-top: var(--sp-2);
+}
+
+/* Regelkarten-Atom */
+.regelkarte {
+  border: 1px solid var(--c-rule-strong);
+  border-left: 3px solid var(--c-brass);
+  border-radius: var(--r-sm);
+  background: var(--c-panel);
+  padding: var(--sp-3);
+  box-shadow: var(--e-inset);
+}
+.regelkarte .caps { color: var(--c-brass); }
+.regelkarte p { font-family: var(--f-ui); font-size: var(--fs-base); line-height: 1.55; margin-top: var(--sp-1); }
+.regelkarte .meta { font-size: var(--fs-micro); color: var(--c-ink-mute); margin-top: var(--sp-2); font-family: var(--f-mono); }
+
+/* Tafeln (Augenblicke, aus dem Brett gerendert) */
+figure.plate {
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-sunken);
+  padding: var(--sp-2);
+  box-shadow: var(--e-panel);
+  max-width: var(--measure);
+}
+figure.plate .frame {
+  border: 1px solid var(--c-hairline);
+  background: #0f0d0b;
+  border-radius: var(--r-xs);
+  overflow: hidden;
+  display: block;
+}
+figure.plate svg { display: block; width: 100%; height: auto; }
+figure.plate figcaption {
+  font-size: var(--fs-micro);
+  color: var(--c-ink-mute);
+  margin-top: var(--sp-2);
+  display: flex; gap: var(--sp-2); align-items: baseline; flex-wrap: wrap;
+}
+figure.plate figcaption b { color: var(--c-ink-soft); font-weight: 600; }
+
+/* Infobox */
+.infobox {
+  float: right;
+  width: 15.5rem;
+  margin: 0 0 var(--sp-4) var(--sp-4);
+  background: var(--c-panel);
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--e-panel);
+  overflow: hidden;
+}
+.infobox__crest {
+  background: linear-gradient(160deg, var(--c-sunken), var(--c-panel-2));
+  border-bottom: 1px solid var(--c-hairline);
+  padding: var(--sp-3);
+  display: grid; place-items: center; gap: var(--sp-2);
+  text-align: center;
+}
+.infobox__crest .name {
+  font-family: var(--f-serif);
+  font-size: var(--fs-h3);
+  font-weight: 600;
+}
+.infobox dl { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); }
+.infobox dt, .infobox dd {
+  padding: 0.32rem var(--sp-3);
+  font-size: var(--fs-small);
+  border-top: 1px solid var(--c-rule);
+}
+.infobox dt { color: var(--c-ink-mute); font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 0.06em; padding-top: 0.42rem; }
+.infobox dd { color: var(--c-ink); }
+.infobox dd .ring {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  border: 1.5px solid var(--c-ink-faint);
+  margin-right: 0.35rem;
+  vertical-align: 1px;
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--t-state) var(--ease), visibility var(--t-state) var(--ease);
+}
+.strip-on .infobox dd .ring { opacity: 1; visibility: visible; }
+.strip-on .infobox dd .ring[data-herkunft="am-tisch"] { background: var(--c-brass); border-color: var(--c-brass); }
+
+/* ==========================================================================
+   Die Herkunftsschicht — vier unabhängige Kanäle
+   Form = Art · Füllung = Herkunftsklasse · Strich = Erfahrungsgrad · Sättigung
+   ========================================================================= */
+.chip {
+  display: grid;
+  grid-template-columns: 1.15rem minmax(0, 1fr);
+  gap: 0 var(--sp-2);
+  align-items: start;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 0.2rem 0.35rem;
+  cursor: pointer;
+  font: inherit;
+  color: var(--c-ink-mute);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition:
+    opacity var(--t-state) var(--ease),
+    transform var(--t-state) var(--ease),
+    visibility var(--t-state) var(--ease),
+    background-color var(--t-response) var(--ease),
+    border-color var(--t-response) var(--ease);
+  transition-delay: calc(var(--i, 0) * var(--stagger));
+}
+.strip-on .chip { opacity: 1; visibility: visible; transform: none; }
+.chip:hover { background: var(--c-panel); border-color: var(--c-rule); color: var(--c-ink-soft); }
+.chip[aria-pressed="true"] {
+  background: var(--c-accent-wash);
+  border-color: color-mix(in srgb, var(--c-accent) 45%, transparent);
+  color: var(--c-ink);
+}
+.chip__glyph { color: var(--c-ink-faint); margin-top: 1px; }
+.chip__klasse {
+  grid-column: 2;
+  display: block;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.chip__meta {
+  grid-column: 2;
+  display: block;
+  font-size: var(--fs-micro);
+  line-height: 1.35;
+  color: var(--c-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.chip[data-herkunft="mitgebracht"] .chip__klasse { color: var(--c-ink-mute); }
+.chip[data-herkunft="am-tisch"] {
+  background: var(--c-brass-wash);
+  border-color: var(--c-brass);
+}
+.chip[data-herkunft="am-tisch"] .chip__glyph { color: var(--c-brass); }
+.chip[data-herkunft="am-tisch"] .chip__klasse { color: var(--c-brass); }
+.chip[data-herkunft="am-tisch"] .chip__meta { color: var(--c-ink-mute); }
+
+/* Atom-Zustände */
+.atom.is-cited .atom__body { position: relative; }
+.atom.is-cited .atom__body::before {
+  content: "";
+  position: absolute; left: calc(-1 * var(--sp-3)); top: 0.15em; bottom: 0.15em;
+  width: 2px; background: var(--c-accent);
+  border-radius: 2px;
+}
+.atom.is-spot .atom__body {
+  background: var(--c-brass-wash);
+  box-shadow: 0 0 0 var(--sp-2) var(--c-brass-wash);
+  border-radius: var(--r-xs);
+  transition: background-color var(--t-state) var(--ease), box-shadow var(--t-state) var(--ease);
+}
+.atom.is-new .atom__body p { animation: inkIn var(--t-transition) var(--ease) both; }
+@keyframes inkIn {
+  from { opacity: 0; filter: blur(2px); }
+  to { opacity: 1; filter: none; }
+}
+:root[data-motion="reduced"] .atom.is-new .atom__body p { animation: none; }
+
+/* Siehe auch */
+.seealso {
+  margin-top: var(--sp-6);
+  border-top: 1px solid var(--c-rule);
+  padding-top: var(--sp-3);
+  display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-small);
+}
+.seealso .caps { width: 100%; }
+</style>
+<style>
+/* ==========================================================================
+   Kontextlinse (Zone 5)
+   ========================================================================= */
+.lens {
+  background: var(--c-panel);
+  border-left: 1px solid var(--c-hairline);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.lens__tabs {
+  display: flex; gap: 2px;
+  padding: var(--sp-2) var(--sp-3) 0;
+  border-bottom: 1px solid var(--c-hairline);
+  background: var(--c-panel-2);
+}
+.tab {
+  font: inherit; font-size: var(--fs-small);
+  background: transparent; border: 1px solid transparent; border-bottom: 0;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  padding: 0.4rem 0.7rem;
+  color: var(--c-ink-mute); cursor: pointer;
+  transition: background-color var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+.tab:hover { color: var(--c-ink); }
+.tab[aria-selected="true"] {
+  background: var(--c-panel);
+  border-color: var(--c-hairline);
+  color: var(--c-ink);
+  font-weight: 600;
+  margin-bottom: -1px;
+  padding-bottom: calc(0.4rem + 1px);
+}
+.lens__body { overflow-y: auto; padding: var(--sp-4); flex: 1; }
+.panel[hidden] { display: none; }
+
+.lens h3 {
+  font-family: var(--f-serif);
+  font-size: var(--fs-h3);
+  letter-spacing: var(--ls-tight);
+  margin-bottom: var(--sp-1);
+}
+.lens .lede { font-size: var(--fs-small); color: var(--c-ink-mute); line-height: 1.5; }
+
+.empty {
+  color: var(--c-ink-faint);
+  font-size: var(--fs-small);
+  border: 1px dashed var(--c-rule-strong);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* --- Belegkarte ----------------------------------------------------------- */
+.beleg {
+  background: var(--c-stage);
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--e-raised);
+  overflow: hidden;
+  animation: lensIn var(--t-state) var(--ease) both;
+}
+@keyframes lensIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: none; }
+}
+:root[data-motion="reduced"] .beleg { animation: none; }
+.beleg__head {
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--c-rule);
+  background: linear-gradient(180deg, var(--c-panel-2), transparent);
+}
+.beleg__head .who { font-family: var(--f-serif); font-size: var(--fs-h3); font-weight: 600; }
+.beleg__head .when {
+  font-family: var(--f-mono); font-size: var(--fs-micro);
+  color: var(--c-ink-mute); margin-top: 2px;
+}
+.beleg__derivation {
+  padding: var(--sp-3);
+  overflow-x: auto;
+}
+table.deriv {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 17rem;
+  font-family: var(--f-mono);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+}
+table.deriv th { text-align: left; font-weight: 400; }
+table.deriv td, table.deriv th { padding: 0.18rem 0; vertical-align: baseline; }
+table.deriv .val { text-align: right; width: 3.2rem; white-space: nowrap; padding-right: var(--sp-3); color: var(--c-ink); }
+table.deriv .lbl { color: var(--c-ink-mute); font-family: var(--f-ui); font-size: var(--fs-small); line-height: 1.35; }
+table.deriv .lbl small { display: block; color: var(--c-ink-faint); font-size: var(--fs-micro); font-family: var(--f-mono); }
+table.deriv tr.die .val { color: var(--c-accent); font-weight: 700; font-size: var(--fs-base); }
+table.deriv tr.sum { border-top: 1px solid var(--c-ink-faint); }
+table.deriv tr.sum td { padding-top: 0.32rem; }
+table.deriv tr.sum .val { font-weight: 700; font-size: var(--fs-lead); }
+table.deriv tr.sum .lbl { color: var(--c-ink); font-weight: 600; }
+.verdict-ok { color: var(--c-seal); font-weight: 700; }
+.verdict-no { color: var(--c-alarm); font-weight: 700; }
+
+.beleg__pin {
+  font-family: var(--f-mono);
+  font-size: var(--fs-micro);
+  color: var(--c-ink-mute);
+  background: var(--c-sunken);
+  border-top: 1px solid var(--c-rule);
+  padding: var(--sp-2) var(--sp-3);
+  line-height: 1.6;
+  word-break: break-word;
+}
+.beleg__pin .tag {
+  display: inline-block;
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-xs);
+  padding: 0 0.25rem;
+  margin-right: 0.2rem;
+}
+.beleg__actions {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-top: 1px solid var(--c-rule);
+  background: var(--c-panel-2);
+}
+
+/* --- Das Siegel ----------------------------------------------------------- */
+.replay { margin-top: var(--sp-3); }
+.replay ol { display: flex; flex-direction: column; gap: 1px; }
+.replay li {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: var(--sp-2);
+  align-items: baseline;
+  font-family: var(--f-mono);
+  font-size: var(--fs-micro);
+  color: var(--c-ink-mute);
+  padding: 0.22rem 0;
+  opacity: 0;
+  transform: translateY(-2px);
+  animation: stepIn var(--t-response) var(--ease) both;
+}
+@keyframes stepIn { to { opacity: 1; transform: none; } }
+.replay li .mark { color: var(--c-seal); }
+.replay li[data-bad="1"] .mark, .replay li[data-bad="1"] { color: var(--c-alarm); }
+.replay li b { color: var(--c-ink); font-weight: 600; }
+
+.seal {
+  margin-top: var(--sp-3);
+  border: 1px solid var(--c-seal);
+  background: var(--c-seal-wash);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: var(--sp-3);
+  animation: sealIn var(--t-state) var(--ease) both;
+}
+@keyframes sealIn {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+:root[data-motion="reduced"] .seal { animation: none; }
+.seal[data-kind="bad"] { border-color: var(--c-alarm); background: var(--c-alarm-wash); }
+.seal__mark { color: var(--c-seal); }
+.seal[data-kind="bad"] .seal__mark { color: var(--c-alarm); }
+.seal__title { font-weight: 700; font-size: var(--fs-base); color: var(--c-seal); }
+.seal[data-kind="bad"] .seal__title { color: var(--c-alarm); }
+.seal p { font-size: var(--fs-small); line-height: 1.55; color: var(--c-ink-soft); margin-top: 0.2rem; }
+.seal .mono { font-size: var(--fs-micro); }
+.seal .whose {
+  display: block;
+  margin-top: var(--sp-2);
+  font-family: var(--f-serif);
+  font-size: var(--fs-base);
+  color: var(--c-ink);
+}
+.seal .whose b { color: var(--c-accent); }
+
+details.claim { margin-top: var(--sp-3); }
+details.claim > summary {
+  font-size: var(--fs-small);
+  color: var(--c-link);
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex; align-items: center; gap: var(--sp-1);
+  padding: 0.2rem 0;
+}
+details.claim > summary::-webkit-details-marker { display: none; }
+details.claim > summary::before { content: "▸"; font-size: 0.8em; transition: transform var(--t-response) var(--ease); }
+details.claim[open] > summary::before { transform: rotate(90deg); }
+details.claim .claim__body {
+  margin-top: var(--sp-2);
+  border-left: 2px solid var(--c-rule-strong);
+  padding-left: var(--sp-3);
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--c-ink-soft);
+  display: flex; flex-direction: column; gap: var(--sp-2);
+}
+details.claim .claim__body b { color: var(--c-ink); }
+details.claim .claim__body .no { color: var(--c-alarm); font-weight: 600; }
+details.claim .claim__body .yes { color: var(--c-seal); font-weight: 600; }
+
+/* --- Der Augenblick ------------------------------------------------------- */
+.board-wrap {
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-md);
+  background: #0f0d0b;
+  overflow: hidden;
+  box-shadow: var(--e-raised);
+  position: relative;
+}
+.board-wrap svg { display: block; width: 100%; height: auto; }
+.board-stamp {
+  position: absolute; left: var(--sp-2); top: var(--sp-2);
+  font-family: var(--f-mono); font-size: var(--fs-micro);
+  color: #e8dcc4;
+  background: rgba(12, 10, 8, 0.72);
+  border: 1px solid rgba(201, 163, 94, 0.45);
+  border-radius: var(--r-xs);
+  padding: 0.15rem 0.35rem;
+  letter-spacing: 0.02em;
+}
+.initiative {
+  display: flex; gap: var(--sp-1); margin-top: var(--sp-2);
+  overflow-x: auto; padding-bottom: 2px;
+}
+.init-cell {
+  flex: none;
+  min-width: 4.4rem;
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-stage);
+  padding: 0.3rem 0.4rem;
+  font-size: var(--fs-micro);
+  line-height: 1.3;
+}
+.init-cell b { display: block; font-size: var(--fs-small); }
+.init-cell .n { font-family: var(--f-mono); color: var(--c-ink-mute); font-variant-numeric: tabular-nums; }
+.init-cell[data-active="1"] {
+  border-color: var(--c-accent);
+  box-shadow: inset 0 0 0 1px var(--c-accent);
+}
+.outline-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.outline-list li {
+  display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: var(--sp-2);
+  font-size: var(--fs-small);
+  border-bottom: 1px solid var(--c-rule);
+  padding-bottom: var(--sp-2);
+}
+.outline-list .pos { font-family: var(--f-mono); color: var(--c-ink-mute); font-variant-numeric: tabular-nums; }
+
+/* --- Anlass-Panel --------------------------------------------------------- */
+.kv { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: 0; margin-top: var(--sp-3); }
+.kv dt, .kv dd {
+  font-size: var(--fs-small);
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--c-rule);
+}
+.kv dt { color: var(--c-ink-mute); font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 0.06em; padding-top: 0.42rem; }
+.kv dd .mono { font-size: var(--fs-micro); }
+.roster { display: flex; flex-direction: column; gap: var(--sp-1); margin-top: var(--sp-2); }
+.roster li {
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-size: var(--fs-small);
+  background: var(--c-sunken);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r-sm);
+  padding: 0.28rem var(--sp-2);
+}
+.roster .scope { margin-left: auto; font-size: var(--fs-micro); color: var(--c-ink-mute); }
+
+/* ==========================================================================
+   Sitzungsleiste (Zone 6)
+   ========================================================================= */
+.shelf {
+  background: linear-gradient(0deg, var(--c-panel-2), var(--c-panel));
+  border-top: 1px solid var(--c-hairline);
+  box-shadow: 0 -8px 22px -18px rgba(0, 0, 0, 0.6);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex; align-items: center; gap: var(--sp-4);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 5;
+}
+.shelf::before {
+  content: "";
+  position: absolute; inset: -3px 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--c-brass) 12%, var(--c-brass) 88%, transparent);
+  opacity: 0.3;
+}
+.glance {
+  display: flex; align-items: center; gap: var(--sp-3);
+  border-right: 1px solid var(--c-rule);
+  padding-right: var(--sp-4);
+}
+.avatar {
+  width: 2.4rem; height: 2.4rem; flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--c-accent-soft), var(--c-accent));
+  color: #fbf3e6;
+  display: grid; place-items: center;
+  font-family: var(--f-serif); font-weight: 700; font-size: var(--fs-base);
+  box-shadow: 0 0 0 1px var(--c-brass), var(--e-flat);
+}
+.glance__meta { line-height: 1.3; }
+.glance__meta b { font-size: var(--fs-small); }
+.glance__meta span { display: block; font-size: var(--fs-micro); color: var(--c-ink-mute); }
+.hp {
+  width: 6rem; height: 5px; border-radius: 3px;
+  background: var(--c-sunken);
+  border: 1px solid var(--c-rule);
+  overflow: hidden; margin-top: 3px;
+}
+.hp i { display: block; height: 100%; background: var(--c-accent); }
+
+.rollcard {
+  display: flex; align-items: center; gap: var(--sp-3);
+  border: 1px solid var(--c-rule-strong);
+  border-radius: var(--r-md);
+  background: var(--c-stage);
+  padding: var(--sp-2) var(--sp-3);
+  box-shadow: var(--e-panel);
+  min-width: 0;
+}
+.rollcard[hidden] { display: none; }
+.rollcard .total {
+  font-family: var(--f-mono);
+  font-size: 1.5rem; font-weight: 700;
+  color: var(--c-accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.rollcard .expr { font-family: var(--f-mono); font-size: var(--fs-micro); color: var(--c-ink-mute); line-height: 1.4; }
+.rollcard .expr b { color: var(--c-brass); }
+.rollcard .outcome { font-size: var(--fs-small); font-weight: 700; }
+.rollcard .outcome[data-ok="1"] { color: var(--c-seal); }
+.rollcard .outcome[data-ok="0"] { color: var(--c-alarm); }
+
+.kbd {
+  font-family: var(--f-mono);
+  font-size: var(--fs-micro);
+  border: 1px solid var(--c-rule-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--r-xs);
+  padding: 0.05rem 0.3rem;
+  background: var(--c-stage);
+  color: var(--c-ink-mute);
+}
+.shelf__spacer { flex: 1 1 1rem; }
+
+/* Flugkarte beim Prägen */
+.flyer {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  border: 1px solid var(--c-brass);
+  border-radius: var(--r-md);
+  background: var(--c-stage);
+  box-shadow: var(--e-raised);
+  padding: var(--sp-2) var(--sp-3);
+  font-family: var(--f-mono);
+  font-size: var(--fs-small);
+  color: var(--c-ink);
+}
+
+/* Meldung */
+.toast {
+  position: fixed;
+  left: 50%; bottom: 6.5rem;
+  transform: translateX(-50%);
+  z-index: 70;
+  background: var(--c-ink);
+  color: var(--c-stage);
+  border: 1px solid var(--c-brass);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-small);
+  box-shadow: var(--e-raised);
+  animation: toastIn var(--t-state) var(--ease) both;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.toast b { color: var(--c-brass-soft); }
+
+/* ==========================================================================
+   Schmale Layouts
+   ========================================================================= */
+.drawer-btn { display: none; }
+
+@media (max-width: 1400px) {
+  :root { --lens-w: 21rem; --rail-collection: 14rem; --gutter: 9rem; }
+}
+
+@media (max-width: 1200px) {
+  :root { --rail-module: 3.5rem; }
+  .rail-module .caps, .mod span, .rail-module__foot { display: none; }
+  .mod { justify-content: center; padding: 0.5rem 0; }
+  .mod__mark { display: none; }
+}
+
+@media (max-width: 1040px) {
+  .drawer-btn { display: inline-flex; }
+  .workspace { grid-template-columns: var(--rail-module) minmax(0, 1fr) var(--lens-w); }
+  .rail-collection {
+    position: fixed;
+    inset: auto 0 0 0;
+    top: 3.5rem;
+    width: min(20rem, 84vw);
+    z-index: 40;
+    box-shadow: var(--e-raised);
+    transform: translateX(-102%);
+    transition: transform var(--t-state) var(--ease);
+  }
+  .rail-collection[data-open="1"] { transform: none; }
+}
+
+@media (max-width: 860px) {
+  :root { --gutter: 0px; }
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow-y: auto;
+  }
+  .rail-module {
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--c-hairline);
+    overflow-x: auto;
+    padding: var(--sp-2);
+  }
+  .mod { width: auto; padding: 0.45rem 0.7rem; }
+  .stage, .lens { overflow: visible; }
+  .lens { border-left: 0; border-top: 1px solid var(--c-hairline); }
+  .article { padding: var(--sp-4); }
+  .atom, .section-head { grid-template-columns: minmax(0, 1fr); }
+  /* Die Rinne wandert unter das Atom — und bleibt reserviert. */
+  .atom__gutter { min-height: 1.5rem; order: 2; margin-top: var(--sp-1); }
+  .atom__body { order: 1; }
+  .section-head .caps { display: none; }
+  .chip { grid-template-columns: 1.15rem auto minmax(0, 1fr); align-items: baseline; gap: 0 var(--sp-2); width: auto; }
+  .chip__klasse, .chip__meta { grid-column: auto; }
+  .chip__meta { display: inline; }
+  .infobox { float: none; width: 100%; margin: 0 0 var(--sp-4); }
+}
+
+@media (max-width: 520px) {
+  :root { --fs-read: 1rem; --fs-h1: 1.65rem; --fs-h2: 1.2rem; }
+  .context { gap: var(--sp-2); padding: var(--sp-2); }
+  .search { flex: 1 1 100%; order: 9; }
+  .shelf { gap: var(--sp-2); padding: var(--sp-2); }
+  .glance { border-right: 0; padding-right: 0; }
+  .article { padding: var(--sp-3); }
+  .chip__meta { display: block; }
+}
+</style>
+<div class="app" id="app">
+
+  <!-- ===== Zone 1 · Kampagnenkontext ===================================== -->
+  <header class="context">
+    <div class="sigil" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M9 1.5 15.5 5v8L9 16.5 2.5 13V5z"/>
+        <path d="M9 5.5 12.5 7.5v3L9 12.5 5.5 10.5v-3z" stroke-width="0.9"/>
+      </svg>
+    </div>
+    <div class="context__title">
+      <b>Der Aldenfall-Auftakt</b>
+      <span>Kampagne „Kayas Tisch“ · Sitzung 5 · Rolle: Leitung</span>
+    </div>
+
+    <button type="button" class="btn btn--ghost drawer-btn" id="drawerBtn" aria-expanded="false" aria-controls="railCollection">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3h11M1.5 7h11M1.5 11h11"/></svg>
+      Sammlung
+    </button>
+
+    <div class="search" role="search">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4"/><path d="M8.5 8.5 12 12"/></svg>
+      <label class="sr" for="q">Einträge und Absätze durchsuchen</label>
+      <input id="q" type="search" placeholder="Suchen — Einträge, Absätze, Belege" autocomplete="off" spellcheck="false">
+      <span class="search__count num" id="qCount" aria-live="polite">13 Einträge</span>
+    </div>
+
+    <div class="context__spacer"></div>
+
+    <div class="controls">
+      <span class="streifen" id="streifen" title="Höhenänderung des Dokuments durch die Herkunftsschicht. Tor „Der Streifen“: höchstens 4 %.">
+        Streifen <b id="streifenVal">—</b>
+      </span>
+      <button type="button" class="btn" id="stripBtn" aria-pressed="false">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+          <circle cx="3.5" cy="3.5" r="2.4"/><circle cx="3.5" cy="9.5" r="2.4"/><path d="M7.5 3.5h4M7.5 9.5h4"/>
+        </svg>
+        Herkunftsschicht
+      </button>
+      <button type="button" class="btn btn--ghost" id="themeBtn" aria-label="Farbmodus wechseln — derzeit hell">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="7" cy="7" r="3"/><path d="M7 .8v1.6M7 11.6v1.6M13.2 7h-1.6M2.4 7H.8M11.4 2.6l-1.1 1.1M3.7 10.3l-1.1 1.1M11.4 11.4l-1.1-1.1M3.7 3.7 2.6 2.6"/></svg>
+        <span id="themeLabel">Hell</span>
+      </button>
+      <button type="button" class="btn btn--ghost" id="motionBtn" aria-pressed="false">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M1.5 7h3l2-4 2 8 1.5-4h2.5"/></svg>
+        <span id="motionLabel">Bewegung: voll</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Arbeitsfläche ================================================= -->
+  <div class="workspace">
+
+    <!-- Zone 2 · Modulschiene -->
+    <nav class="rail-module" aria-label="Bereiche">
+      <p class="caps">Bereiche</p>
+      <button class="mod" type="button"><span class="mod__mark"></span><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="7.5" cy="7.5" r="5.6"/><path d="M7.5 4v3.8l2.4 1.4"/></svg><span>Sitzung</span></button>
+      <button class="mod" type="button" aria-current="page"><span class="mod__mark"></span><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 2.6h4.2c.7 0 1.3.6 1.3 1.3v8.5c0-.7-.6-1.3-1.3-1.3H2zM13 2.6H8.8c-.7 0-1.3.6-1.3 1.3v8.5c0-.7.6-1.3 1.3-1.3H13z"/></svg><span>Geschichte</span></button>
+      <button class="mod" type="button"><span class="mod__mark"></span><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="7.5" cy="5" r="2.6"/><path d="M2.4 13c.4-2.6 2.5-4.1 5.1-4.1s4.7 1.5 5.1 4.1"/></svg><span>Ensemble</span></button>
+      <button class="mod" type="button"><span class="mod__mark"></span><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2.2 2.4h2.4v10.2H2.2zM6.2 2.4h2.4v10.2H6.2zM10.2 3.2l2.3.6-2.6 9.9"/></svg><span>Regal</span></button>
+      <button class="mod" type="button"><span class="mod__mark"></span><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1.8 4.2h11.4v6.6H1.8zM5.6 4.2v6.6M9.4 4.2v6.6M1.8 7.5h11.4"/></svg><span>Tisch</span></button>
+      <button class="mod" type="button"><span class="mod__mark"></span><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 12.4 9.8 5.6M2.2 9.2l3.6 3.6M8.6 2.6l3.8 3.8-1.6 1.6-3.8-3.8z"/></svg><span>Schmiede</span></button>
+      <p class="rail-module__foot">
+        Haut: <b>Archive</b><br>
+        Dichte: Komfortabel<br>
+        Atmosphäre: Gestaltet
+      </p>
+    </nav>
+
+    <!-- Zone 3 · Sammlungsschiene -->
+    <aside class="rail-collection" id="railCollection" aria-label="Geschichte — Einträge">
+      <section class="anlass-card">
+        <h3>Der Aldenfall-Auftakt</h3>
+        <p class="sub">Anlass v1.2.0 · <span title="Autorschaft: Fremd">Marek Sanz</span> · angeheftet</p>
+        <div class="anlass-stats">
+          <div><b class="num">4</b>Abende</div>
+          <div><b class="num">118</b>Absätze</div>
+          <div><b class="num">3</b>Bücher</div>
+          <div><b class="num">6</b>versiegelte Zeilen</div>
+        </div>
+        <p class="pruef">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 6.4 4.8 9.2 10 3.4"/></svg>
+          118 Belege nachgerechnet · 0 Abweichungen
+        </p>
+      </section>
+
+      <section>
+        <p class="caps mb-2">Einträge <span class="num" id="entryCount">13</span></p>
+        <div class="entries" id="entries">
+          <button type="button" class="entry" aria-current="true" data-name="Haus Vharon">Haus Vharon <span class="k num">25</span></button>
+          <button type="button" class="entry" data-name="Isabeau Vharon">Isabeau Vharon <span class="k num">9</span></button>
+          <button type="button" class="entry" data-void="1" data-name="Kanzlei Ossa">Kanzlei Ossa <span class="k">kein Eintrag</span></button>
+          <button type="button" class="entry" data-name="Bruder Alder">Bruder Alder <span class="k num">14</span></button>
+          <button type="button" class="entry" data-name="Der zweite Keller">Der zweite Keller <span class="k num">11</span></button>
+          <button type="button" class="entry" data-name="Zunft der Waagemeister">Zunft der Waagemeister <span class="k num">7</span></button>
+          <button type="button" class="entry" data-name="Obere Waage">Obere Waage <span class="k num">12</span></button>
+          <button type="button" class="entry" data-name="Kanzlist Weller">Kanzlist Weller <span class="k num">5</span></button>
+          <button type="button" class="entry" data-name="Frachtbrief aus Ossa">Frachtbrief aus Ossa <span class="k num">3</span></button>
+          <button type="button" class="entry" data-name="Salzrechte von Serth">Salzrechte von Serth <span class="k num">6</span></button>
+          <button type="button" class="entry" data-name="Sera Valdris">Sera Valdris <span class="k num">34</span></button>
+          <button type="button" class="entry" data-name="Brannt">Brannt <span class="k num">21</span></button>
+          <button type="button" class="entry" data-name="Vesper">Vesper <span class="k num">9</span></button>
+        </div>
+      </section>
+    </aside>
+    <!-- Zone 4 · Hauptbühne -->
+    <main class="stage" id="stage">
+      <article class="article" id="article" aria-labelledby="artTitle">
+
+        <div class="title-block">
+          <p class="kicker">Geschichte <span class="dot"></span> Ort &amp; Haus <span class="dot"></span> Kanon dieser Kampagne</p>
+          <h1 id="artTitle">Haus Vharon<span class="h1-rule"></span></h1>
+          <p class="bilanz" id="bilanz" aria-live="polite">
+            <b><span class="num" id="cAll">25</span> Absätze im Kanon</b> ·
+            <span class="amtisch num" id="cTisch" data-n="0">0 an diesem Tisch</span> ·
+            <span class="num" id="cMit">25</span> mitgebracht aus
+            <span class="src">»Der Aldenfall-Auftakt«</span> von Marek Sanz ·
+            Siegel geprüft, <span class="num">118</span> Belege nachgerechnet.
+          </p>
+        </div>
+
+        <!-- Infobox: zehn feld-Passagen -->
+        <aside class="infobox" aria-label="Kurzübersicht Haus Vharon">
+          <div class="infobox__crest">
+            <svg width="62" height="66" viewBox="0 0 62 66" fill="none" aria-hidden="true">
+              <path d="M31 2 59 12v26c0 14-12 22-28 26C15 60 3 52 3 38V12z" fill="var(--c-sunken)" stroke="var(--c-brass)" stroke-width="1.4"/>
+              <path d="M31 9 52 16v21c0 10-9 16-21 19-12-3-21-9-21-19V16z" stroke="var(--c-rule-strong)" stroke-width="1"/>
+              <path d="M20 30h22M20 36h22" stroke="var(--c-accent)" stroke-width="2"/>
+              <circle cx="31" cy="23" r="4.5" stroke="var(--c-accent)" stroke-width="1.6"/>
+              <path d="M26 45h10l-5 6z" fill="var(--c-brass)"/>
+            </svg>
+            <span class="name">Haus Vharon</span>
+            <span class="caps">Dreifachwachs · Kerbe links</span>
+          </div>
+          <dl id="infobox">
+            <dt>Art</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span>Handelshaus mit Notariatsrecht</dd>
+            <dt>Sitz</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span><a href="#obere-waage">Obere Waage 3</a>, Aldenfall</dd>
+            <dt>Gegründet</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht" class="num"><span class="ring" data-herkunft="mitgebracht"></span>1387 n. d. F.</dd>
+            <dt>Oberhaupt</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span><a href="#isabeau">Isabeau Vharon</a></dd>
+            <dt>Kanzlei</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span><a class="red" href="#ossa">Ossa</a> <span class="faint">(kein Eintrag)</span></dd>
+            <dt>Siegel</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span>Drei Wachsschichten, Randkerbe links</dd>
+            <dt>Vermögen</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span>Wechselbriefe, <a href="#salz">Salzrechte</a></dd>
+            <dt>Verbündete</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span><a href="#alder">Bruder Alder</a>, <a href="#zunft">Zunft der Waagemeister</a></dd>
+            <dt>Erste Erwähnung</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span>Sitzung 1, 3. März</dd>
+            <dt>Zuletzt</dt>
+            <dd data-atom="feld" data-herkunft="mitgebracht"><span class="ring" data-herkunft="mitgebracht"></span>Sitzung 4, <a href="#keller">Der zweite Keller</a></dd>
+          </dl>
+        </aside>
+
+        <!-- ---------------- Übersicht ---------------- -->
+        <div class="section-head"><p class="caps">Abschnitt 1</p><h2 id="uebersicht">Übersicht</h2></div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="p" data-grad="erlebt"
+             data-meta="3. März · Sitzung 1 · getippt · Marek Sanz"
+             data-etikett="haus-vharon" data-haelt="sera brannt vesper">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p>Haus Vharon ist ein Handelshaus mit Notariatsrecht in <a href="#aldenfall">Aldenfall</a>, ansässig an der <a href="#obere-waage">Oberen Waage</a>. Es beglaubigt Wechselbriefe, verwahrt Salzrechte und führt seit vier Generationen das einzige Siegel, das die <a href="#zunft">Zunft der Waagemeister</a> ohne Gegenzeichnung anerkennt.</p>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="p" data-grad="erlebt"
+             data-meta="3. März · Sitzung 1 · getippt · Marek Sanz">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p>Wer in Aldenfall einen Vertrag schließt, den ein Gericht später nicht mehr anfechten soll, lässt ihn bei Vharon dreifach wachsen. Das Haus verlangt dafür keinen Anteil, sondern eine Abschrift — und diese Abschriften sind der eigentliche Besitz des Hauses.</p>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="p" data-grad="erlebt"
+             data-meta="11. April · Sitzung 2 · getippt · Marek Sanz">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p id="isabeau"><a href="#isabeau">Isabeau Vharon</a> führt das Haus seit dem Frühjahr, nachdem ihr Onkel Corran auf dem Weg nach <a class="red" href="#ossa">Ossa</a> verschwand. Sie hat in vier Monaten dreimal die Kanzlei gewechselt und keinen der Wechsel erklärt.</p>
+          </div>
+        </div>
+
+        <!-- ---------------- Das Siegel ---------------- -->
+        <div class="section-head"><p class="caps">Abschnitt 2</p><h2 id="siegel">Das Siegel</h2></div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="wurf" data-grad="erlebt"
+             data-meta="21:14 · Sitzung 3 · Menschenkenntnis · Sera · 21 gegen 15 · geprüft"
+             data-beleg="w_003" data-etikett="haus-vharon" data-haelt="sera">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p>Das Vharon-Siegel besteht aus drei Wachsschichten und einer Randkerbe, die immer links vom Wappen sitzt. <a href="#sera">Sera Valdris</a> erkannte in Sitzung 3, dass der Notar an der Oberen Waage die Kerbe rechts geführt hatte — eine Abweichung, die kein Lehrling macht und kein Meister zweimal.<button class="fn" type="button" data-beleg="w_003" aria-expanded="false" aria-controls="panelBeleg"><span class="sr">Beleg </span>1<span class="sr"> öffnen</span></button></p>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="p" data-grad="erlebt"
+             data-meta="21:16 · Sitzung 3 · getippt · Marek Sanz"
+             data-etikett="haus-vharon" data-haelt="sera">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p>Die Kerbe ist kein Ornament. Sie zeigt an, welcher Kanzlist das Wachs geführt hat; die Zunft liest sie wie eine Unterschrift. Ein Siegel mit rechter Kerbe ist entweder von einem Auswärtigen gesetzt — oder es ist keins.</p>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="zitat" data-herkunft="mitgebracht" data-kind="zitat" data-grad="gehoert"
+             data-meta="21:22 · Sitzung 3 · vorgelesen · Kanzlist Weller">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <blockquote class="said">
+              „Drei Schichten, Herrschaften. Die erste für den Wortlaut, die zweite für das Datum, die dritte für mich. Wer die dritte nachmacht, macht mich nach.“
+              <cite>Kanzlist Weller, vorgelesen am Tisch von Marek Sanz · Sitzung 3, 21:22</cite>
+            </blockquote>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="regel" data-herkunft="mitgebracht" data-kind="regel" data-grad="erlebt"
+             data-meta="21:47 · Sitzung 3 · Regelkarte · zweimal ausgelöst">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <div class="regelkarte">
+              <p class="caps">Regelkarte · am Tisch entschieden</p>
+              <p>Ein Siegel zu prüfen kostet <b>eine Handlung</b>. Wer mindestens drei Passagen über Haus Vharon hält, würfelt <b>Menschenkenntnis</b> statt Siegelkunde und erhält <b>+2</b>.</p>
+              <p class="meta">hausregeln-aldenfall 2.3 · k_vharon_kenntnis@r7 · fire_count 2</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="bild" data-herkunft="mitgebracht" data-kind="bild" data-grad="erlebt"
+             data-meta="21:14:38 · Sitzung 3 · Augenblick · Archivwinkel">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <figure class="plate">
+              <div class="frame" data-board="archivwinkel" data-mini="1"></div>
+              <figcaption><b>Tafel 1.</b> Der Archivwinkel im Augenblick des Wurfs — 14. Juni 2026, 21:14:38. Gerendert aus dem Brett, nicht gemalt.</figcaption>
+            </figure>
+          </div>
+        </div>
+
+        <!-- ---------------- Die Kanzleien ---------------- -->
+        <div class="section-head"><p class="caps">Abschnitt 3</p><h2 id="kanzleien">Die Kanzleien</h2></div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="wurf" data-grad="erlebt"
+             data-meta="21:31 · Sitzung 3 · Spurenlesen · Brannt · 17 gegen 14 · geprüft"
+             data-beleg="w_011">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p>Vharon unterhält drei Kanzleien: die Obere Waage in Aldenfall, das Kontor in Serth und die <a class="red" href="#ossa">Kanzlei Ossa</a>, über die im Kanon dieses Tisches bislang nichts steht. <a href="#brannt">Brannt</a> fand einen Frachtbrief, der Ossa als Absender nennt und als Empfänger niemanden.<button class="fn" type="button" data-beleg="w_011" aria-expanded="false" aria-controls="panelBeleg"><span class="sr">Beleg </span>2<span class="sr"> öffnen</span></button></p>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="p" data-grad="erlebt"
+             data-meta="11. April · Sitzung 2 · getippt · Marek Sanz">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p id="salz">Das Kontor in Serth wurde im Winter geschlossen. Die Salzrechte, die es verwaltete, tauchen in keiner Abschrift wieder auf — was bedeutet, dass sie entweder verkauft wurden oder dass die Abschrift fehlt. Beides wäre neu für dieses Haus.</p>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="bild" data-herkunft="mitgebracht" data-kind="bild" data-grad="erlebt"
+             data-meta="20:41:05 · Sitzung 2 · Augenblick · Obere Waage">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <figure class="plate">
+              <div class="frame" data-board="waage" data-mini="1"></div>
+              <figcaption><b>Tafel 2.</b> Die Halle der Oberen Waage, Aufstellung um 20:41 — Sitzung 2. Vier Marken, Nebel wie <a href="#brannt">Brannt</a> ihn sah.</figcaption>
+            </figure>
+          </div>
+        </div>
+
+        <!-- ---------------- Der zweite Keller ---------------- -->
+        <div class="section-head"><p class="caps">Abschnitt 4</p><h2 id="keller">Der zweite Keller</h2></div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="p" data-grad="erlebt"
+             data-meta="22:03 · Sitzung 4 · erkundet · Marek Sanz"
+             data-etikett="haus-vharon" data-haelt="sera">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p>Unter dem Kontor an der Oberen Waage liegt ein zweiter Keller, der auf keinem Bauplan der Waagemeister verzeichnet ist. Die Gruppe betrat ihn am Ende von Sitzung 4 durch die Treppe hinter dem Archivwinkel.</p>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="wurf" data-grad="erlebt"
+             data-meta="22:19 · Sitzung 4 · Siegelkunde · Vesper · 13 gegen 16 · geprüft"
+             data-beleg="w_027">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p>Der Keller enthält Regale mit Abschriften, die älter sind als das Haus selbst. <a href="#vesper">Vesper</a> las eine einzige Zeile ab, bevor die Lampe ausging; die übrigen Regale sind in diesem Kanon nicht beschrieben.<button class="fn" type="button" data-beleg="w_027" aria-expanded="false" aria-controls="panelBeleg"><span class="sr">Beleg </span>3<span class="sr"> öffnen</span></button></p>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="bild" data-herkunft="mitgebracht" data-kind="bild" data-grad="erlebt"
+             data-meta="22:03:11 · Sitzung 4 · Augenblick · Treppe">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <figure class="plate">
+              <div class="frame" data-board="treppe" data-mini="1"></div>
+              <figcaption><b>Tafel 3.</b> Die Treppe hinter dem Archivwinkel, 22:03:11 — Sitzung 4. Zwei Marken, der Rest im Nebel.</figcaption>
+            </figure>
+          </div>
+        </div>
+
+        <div class="atom" data-atom="passage" data-herkunft="mitgebracht" data-kind="p" data-grad="gehoert"
+             data-meta="19:52 · Sitzung 2 · gehört · von Bruder Alder">
+          <div class="atom__gutter"></div>
+          <div class="atom__body">
+            <p id="alder"><a href="#alder">Bruder Alder</a> hatte in Sitzung 2 vor genau dieser Treppe gewarnt, ohne sie zu nennen. Sein Hinweis zählt seither als Quelle für jede Probe, die das Haus betrifft — auch für die, die an diesem Tisch noch nicht geworfen wurde.</p>
+          </div>
+        </div>
+
+        <div class="seealso">
+          <p class="caps">Siehe auch</p>
+          <a href="#obere-waage">Obere Waage</a>
+          <a href="#zunft">Zunft der Waagemeister</a>
+          <a href="#weller">Kanzlist Weller</a>
+          <a class="red" href="#ossa">Kanzlei Ossa (kein Eintrag)</a>
+          <a href="#salz">Salzrechte von Serth</a>
+        </div>
+      </article>
+    </main>
+    <!-- Zone 5 · Kontextlinse -->
+    <aside class="lens" aria-label="Kontextlinse">
+      <div class="lens__tabs" role="tablist" aria-label="Linsenansicht">
+        <button class="tab" type="button" role="tab" id="tabBeleg" aria-selected="true" aria-controls="panelBeleg">Beleg</button>
+        <button class="tab" type="button" role="tab" id="tabAugenblick" aria-selected="false" aria-controls="panelAugenblick" tabindex="-1">Augenblick</button>
+        <button class="tab" type="button" role="tab" id="tabAnlass" aria-selected="false" aria-controls="panelAnlass" tabindex="-1">Anlass</button>
+      </div>
+
+      <div class="lens__body" id="lensPanels">
+
+        <!-- Beleg -->
+        <section class="panel" id="panelBeleg" role="tabpanel" aria-labelledby="tabBeleg" tabindex="0">
+          <div id="belegHost">
+            <p class="empty">Kein Beleg geöffnet.<br>Öffne eine Fußnote im Artikel — jede führt auf einen echten Wurf, den du hier <b>nachrechnen</b> kannst.</p>
+          </div>
+        </section>
+
+        <!-- Augenblick -->
+        <section class="panel" id="panelAugenblick" role="tabpanel" aria-labelledby="tabAugenblick" tabindex="0" hidden>
+          <div id="augenblickHost">
+            <p class="empty">Kein Augenblick geöffnet.<br>Eine Belegkarte öffnet das Brett so, wie es in der Sekunde des Wurfs stand.</p>
+          </div>
+        </section>
+
+        <!-- Anlass -->
+        <section class="panel" id="panelAnlass" role="tabpanel" aria-labelledby="tabAnlass" tabindex="0" hidden>
+          <h3>Der Aldenfall-Auftakt</h3>
+          <p class="lede">Ein <b>gespielter Abend</b>, kein Abenteuer. Vier Abende von Marek Sanz, in diese Kampagne kopiert und inhaltsadressiert eingefroren.</p>
+          <dl class="kv">
+            <dt>Version</dt><dd class="mono">1.2.0</dd>
+            <dt>Inhalt</dt><dd class="mono">sha256 9f31…a4c7</dd>
+            <dt>Regelpaket</dt><dd class="mono">hausregeln-aldenfall 2.3 <span class="tag">angeheftet</span></dd>
+            <dt>Abende</dt><dd class="num">4 gespielt · 6 versiegelte Zeilen offen</dd>
+            <dt>Bücher</dt><dd>Sera 34 · Brannt 21 · Vesper 9 Passagen</dd>
+            <dt>Prüfung</dt><dd><span class="verdict-ok">118 Belege nachgerechnet, 0 Abweichungen</span> · 27.07.</dd>
+            <dt>Lizenzen</dt><dd>CC0-1.0 (Karte, Marken) · CC-BY-4.0 (2 Klänge, Nennung im Regal)</dd>
+          </dl>
+          <p class="caps mt-4">Mitspielerfreigabe</p>
+          <ul class="roster">
+            <li>nordwind <span class="scope">Text · Würfe</span></li>
+            <li>hallenwart <span class="scope">Text · Würfe</span></li>
+            <li>linnea-k <span class="scope">nur Text</span></li>
+          </ul>
+          <p class="lede mt-3">Drei von drei erteilt, keine widerrufen. Namen sind beim Packen einwegig durch Pseudonyme ersetzt worden.</p>
+          <p class="lede mt-3 warn">Ehrlich angemerkt: Ein Widerruf kann die Registrierung zurückziehen — er erreicht keine Kopie, die schon auf einer fremden Festplatte liegt.</p>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===== Zone 6 · Sitzungsleiste ======================================= -->
+  <footer class="shelf">
+    <div class="glance">
+      <div class="avatar" aria-hidden="true">S</div>
+      <div class="glance__meta">
+        <b>Sera Valdris</b>
+        <span>Weisheit +4 · Buch: <span class="num">34</span> Passagen, alle mitgebracht</span>
+        <div class="hp" role="img" aria-label="Trefferpunkte 11 von 14"><i id="hpBar" data-pct="78.6"></i></div>
+      </div>
+    </div>
+
+    <button class="btn" type="button" id="rollBtn">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M7 1 12.6 4.3v6.4L7 13.9 1.4 10.7V4.3z"/><circle cx="7" cy="7.1" r="1.1" fill="currentColor" stroke="none"/></svg>
+      Probe: Menschenkenntnis
+    </button>
+
+    <div class="rollcard" id="rollcard" hidden aria-live="polite">
+      <span class="total num" id="rcTotal">—</span>
+      <span class="expr" id="rcExpr"></span>
+      <span class="outcome" id="rcOutcome"></span>
+      <button class="btn btn--tiny" type="button" id="whichFour">Welche vier?</button>
+    </div>
+
+    <div class="shelf__spacer"></div>
+
+    <button class="btn btn--primary" type="button" id="mintBtn" disabled>
+      Absatz prägen <span class="kbd">Strg</span><span class="kbd">↵</span>
+    </button>
+    <button class="btn btn--ghost" type="button" id="undoBtn" disabled>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M4 3 1.5 5.5 4 8"/><path d="M1.5 5.5h6.9A3.6 3.6 0 0 1 12 9.1 3.6 3.6 0 0 1 8.4 12.7H5"/></svg>
+      Rückgängig
+    </button>
+  </footer>
+</div>
+<script>
+"use strict";
+/* ============================================================================
+   1 · Der Würfelkern — ganzzahlig, seed-gebunden, gebietsschema-frei.
+   Genau dieselbe Funktion rechnet den mitgebrachten Wurf nach und wirft den
+   neuen. Es gibt keinen zweiten Pfad. Das ist der ganze Punkt von „Nachrechnen".
+   ========================================================================= */
+
+function fnv1a(str) {
+  let h = 0x811c9dc5 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seedInt) {
+  let s = seedInt >>> 0;
+  return function () {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return (t ^ (t >>> 14)) >>> 0;
+  };
+}
+
+const PAKETE = {
+  "2.3": {
+    id: "hausregeln-aldenfall", version: "2.3", sha: "7c1e…9b02",
+    klauseln: {
+      k_vharon_kenntnis: { rev: "r7", etikett: "haus-vharon", mindestens: 3, bonus: 2 }
+    }
+  },
+  "2.4": {
+    id: "hausregeln-aldenfall", version: "2.4", sha: "d4a0…1f77",
+    klauseln: {
+      k_vharon_kenntnis: { rev: "r8", etikett: "haus-vharon", mindestens: 4, bonus: 1 }
+    }
+  }
+};
+
+/* Prädikat aus dem Wiki, gelesen aus dem gerenderten Kanon — nicht aus einer
+   Tabelle im Skript. Genau das ist die Richtung Wiki → Tisch.               */
+function haeltEtikett(actor, etikett) {
+  return document.querySelectorAll(
+    '.atom[data-etikett~="' + etikett + '"][data-haelt~="' + actor + '"]'
+  ).length;
+}
+
+/* Ausdruck (AST) auswerten. Liefert Summe und jede Zeile der Herleitung. */
+function auswerten(ast, seedStr, paket, eingefroren) {
+  const rng = mulberry32(fnv1a(seedStr));
+  const zeilen = [];
+  let summe = 0;
+  for (const knoten of ast) {
+    if (knoten.t === "dice") {
+      let wert = 0;
+      for (let i = 0; i < knoten.n; i++) wert += (rng() % knoten.faces) + 1;
+      zeilen.push({ art: "die", wert, label: knoten.n + "d" + knoten.faces, sub: "" });
+      summe += wert;
+    } else if (knoten.t === "const") {
+      zeilen.push({ art: "const", wert: knoten.v, label: knoten.label, sub: "" });
+      summe += knoten.v;
+    } else if (knoten.t === "clause") {
+      const k = paket.klauseln[knoten.id];
+      const heute = haeltEtikett(knoten.actor, k.etikett);
+      const n = (eingefroren && typeof eingefroren[knoten.id] === "number") ? eingefroren[knoten.id] : heute;
+      const wert = n >= k.mindestens ? k.bonus : 0;
+      zeilen.push({
+        art: "clause", wert,
+        label: "du hältst " + n + " Passagen über Haus Vharon",
+        sub: "haelt_etikett „" + k.etikett + "“ = " + n + " (mindestens: " + k.mindestens + ") · " + knoten.id + "@" + k.rev,
+        heute, eingefroren: n, klausel: knoten.id, rev: k.rev
+      });
+      summe += wert;
+    }
+  }
+  return { summe, zeilen };
+}
+
+/* ============================================================================
+   2 · Die Belege — eingefrorene Aufzeichnungen aus Mareks vier Abenden.
+   ========================================================================= */
+
+const BELEGE = {
+  w_003: {
+    nr: 1, probe: "Menschenkenntnis", actor: "sera", wer: "Sera Valdris",
+    sitzung: 3, datum: "14. Juni 2026", zeit: "21:14:38", sg: 15,
+    seed: "4f2a71f97b4cc9c1", seedKurz: "4f2a…c1", imprint: 21,
+    herkunft: "mitgebracht", tisch: "an Mareks Tisch, nicht an deinem",
+    board: "archivwinkel", paket: "2.3",
+    eingefroren: { k_vharon_kenntnis: 4 },
+    ast: [
+      { t: "dice", n: 1, faces: 20 },
+      { t: "const", v: 4, label: "Weisheit" },
+      { t: "clause", id: "k_vharon_kenntnis", actor: "sera" },
+      { t: "const", v: 2, label: "Bruder Alders Hinweis (Sitzung 2)" }
+    ]
+  },
+  w_011: {
+    nr: 2, probe: "Spurenlesen", actor: "brannt", wer: "Brannt",
+    sitzung: 3, datum: "14. Juni 2026", zeit: "21:31:02", sg: 14,
+    seed: "9c7d63e99243c5e4", seedKurz: "9c7d…e4", imprint: 17,
+    herkunft: "mitgebracht", tisch: "an Mareks Tisch, nicht an deinem",
+    board: "waage", paket: "2.3",
+    ast: [
+      { t: "dice", n: 1, faces: 20 },
+      { t: "const", v: 3, label: "Wahrnehmung" },
+      { t: "const", v: 2, label: "Frachtbriefe im Kontor durchgesehen (Sitzung 3)" }
+    ]
+  },
+  w_027: {
+    nr: 3, probe: "Siegelkunde", actor: "vesper", wer: "Vesper",
+    sitzung: 4, datum: "21. Juni 2026", zeit: "22:19:47", sg: 16,
+    seed: "b310642aa04d1b7f", seedKurz: "b310…7f", imprint: 13,
+    herkunft: "mitgebracht", tisch: "an Mareks Tisch, nicht an deinem",
+    board: "treppe", paket: "2.3",
+    ast: [
+      { t: "dice", n: 1, faces: 20 },
+      { t: "const", v: 5, label: "Siegelkunde" }
+    ]
+  }
+};
+
+/* ============================================================================
+   3 · Der Augenblick — das Brett wird aus Zahlen gezeichnet, nicht gemalt.
+   Dieselbe Beschreibung speist Tafel, Linse und die Gliederungsansicht (K3).
+   ========================================================================= */
+
+const BRETTER = {
+  archivwinkel: {
+    titel: "Archivwinkel", w: 22, h: 13,
+    datum: "14. Juni 2026", zeit: "21:14:38",
+    props: [
+      { x: 2, y: 1, w: 9, h: 1, art: "regal" },
+      { x: 2, y: 3, w: 1, h: 6, art: "regal" },
+      { x: 9, y: 4, w: 3, h: 1, art: "tisch" },
+      { x: 17, y: 1, w: 4, h: 1, art: "regal" },
+      { x: 18, y: 9, w: 3, h: 3, art: "treppe" }
+    ],
+    walls: [
+      [1, 1, 21, 1], [21, 1, 21, 12], [21, 12, 1, 12], [1, 12, 1, 1],
+      [13, 1, 13, 5], [13, 8, 13, 12]
+    ],
+    doors: [[13, 5, 13, 8]],
+    licht: { x: 6.5, y: 6.5, r: 6 },
+    sicht: [[1,1],[12.9,1],[12.9,5],[17.4,4.4],[17.4,8.8],[12.9,8],[12.9,12],[1,12]],
+    tokens: [
+      { x: 5, y: 7, i: "S", name: "Sera Valdris", ton: "a", aktiv: true },
+      { x: 7, y: 9, i: "B", name: "Brannt", ton: "b" },
+      { x: 15, y: 6, i: "V", name: "Vaugn", ton: "c" }
+    ],
+    initiative: [
+      { name: "Sera", n: 18, aktiv: true }, { name: "Vaugn", n: 14 },
+      { name: "Brannt", n: 11 }, { name: "Vesper", n: 7 }
+    ]
+  },
+  waage: {
+    titel: "Halle der Oberen Waage", w: 20, h: 12,
+    datum: "7. Juni 2026", zeit: "20:41:05",
+    props: [
+      { x: 3, y: 5, w: 13, h: 1, art: "tisch" },
+      { x: 2, y: 1, w: 2, h: 2, art: "regal" },
+      { x: 16, y: 1, w: 2, h: 2, art: "regal" },
+      { x: 8, y: 9, w: 4, h: 1, art: "tisch" }
+    ],
+    walls: [[1,1,19,1],[19,1,19,11],[19,11,1,11],[1,11,1,1],[9,1,9,3]],
+    doors: [[9,10,12,10]],
+    licht: { x: 10, y: 8, r: 7 },
+    sicht: [[1,4.4],[19,4.4],[19,11],[1,11]],
+    tokens: [
+      { x: 6, y: 8, i: "S", name: "Sera", ton: "a" },
+      { x: 8, y: 7, i: "B", name: "Brannt", ton: "b", aktiv: true },
+      { x: 12, y: 8, i: "V", name: "Vesper", ton: "c" },
+      { x: 14, y: 6, i: "W", name: "Weller", ton: "n" }
+    ],
+    initiative: []
+  },
+  treppe: {
+    titel: "Treppe hinter dem Archivwinkel", w: 14, h: 12,
+    datum: "21. Juni 2026", zeit: "22:03:11",
+    props: [
+      { x: 8, y: 2, w: 4, h: 5, art: "treppe" },
+      { x: 2, y: 9, w: 3, h: 1, art: "regal" }
+    ],
+    walls: [[1,1,13,1],[13,1,13,11],[13,11,1,11],[1,11,1,1],[7,1,7,7],[7,9,7,11]],
+    doors: [[7,7,7,9]],
+    licht: { x: 4, y: 8, r: 4.5 },
+    sicht: [[1,5],[6.9,5],[6.9,7],[9.6,7.4],[9.6,9.6],[6.9,9],[6.9,11],[1,11]],
+    tokens: [
+      { x: 4, y: 8, i: "S", name: "Sera", ton: "a", aktiv: true },
+      { x: 3, y: 6, i: "V", name: "Vesper", ton: "c" }
+    ],
+    initiative: []
+  }
+};
+
+let brettZaehler = 0;
+
+function zeichneBrett(key, opts) {
+  const b = BRETTER[key];
+  if (!b) return "";
+  const o = opts || {};
+  const c = 20;                       /* Kantenlänge einer Zelle in Nutzerkoordinaten */
+  const W = b.w * c, H = b.h * c;
+  const uid = "b" + (++brettZaehler);
+  const p = (pts) => pts.map(q => (q[0] * c) + "," + (q[1] * c)).join(" ");
+  const tonFarbe = { a: "var(--c-token-a)", b: "var(--c-token-b)", c: "var(--c-token-c)", n: "#6d6156" };
+
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' +
+    b.titel + ', Brettstand um ' + b.zeit + '. ' + b.tokens.length + ' Marken.">';
+
+  s += '<defs>';
+  s += '<radialGradient id="' + uid + 'l"><stop offset="0%" stop-color="#e8cf9a" stop-opacity="0.30"/>' +
+       '<stop offset="70%" stop-color="#c99b4a" stop-opacity="0.10"/>' +
+       '<stop offset="100%" stop-color="#000" stop-opacity="0"/></radialGradient>';
+  s += '<mask id="' + uid + 'm"><rect width="' + W + '" height="' + H + '" fill="#fff"/>' +
+       '<polygon points="' + p(b.sicht) + '" fill="#000"/></mask>';
+  s += '<pattern id="' + uid + 'g" width="' + c + '" height="' + c + '" patternUnits="userSpaceOnUse">' +
+       '<path d="M' + c + ' 0V' + c + 'H0" fill="none" stroke="#3b3229" stroke-width="0.6"/></pattern>';
+  s += '</defs>';
+
+  /* Boden + Raster */
+  s += '<rect width="' + W + '" height="' + H + '" fill="#191512"/>';
+  s += '<rect width="' + W + '" height="' + H + '" fill="url(#' + uid + 'g)"/>';
+
+  /* Licht */
+  if (b.licht) {
+    s += '<circle cx="' + (b.licht.x * c) + '" cy="' + (b.licht.y * c) + '" r="' + (b.licht.r * c) +
+         '" fill="url(#' + uid + 'l)"/>';
+  }
+
+  /* Einbauten */
+  const propFill = { regal: "#2e2820", tisch: "#3a3025", treppe: "#262019" };
+  for (const pr of b.props) {
+    s += '<rect x="' + (pr.x * c) + '" y="' + (pr.y * c) + '" width="' + (pr.w * c) + '" height="' + (pr.h * c) +
+         '" fill="' + (propFill[pr.art] || "#2b251e") + '" stroke="#4a3f33" stroke-width="1"/>';
+    if (pr.art === "treppe") {
+      for (let i = 1; i < pr.h; i++) {
+        s += '<path d="M' + (pr.x * c) + ' ' + ((pr.y + i) * c) + 'h' + (pr.w * c) +
+             '" stroke="#4a3f33" stroke-width="1"/>';
+      }
+    }
+  }
+
+  /* Wände und Türen */
+  for (const w of b.walls) {
+    s += '<path d="M' + (w[0] * c) + ' ' + (w[1] * c) + 'L' + (w[2] * c) + ' ' + (w[3] * c) +
+         '" stroke="#7d6d59" stroke-width="4" stroke-linecap="square"/>';
+  }
+  for (const d of b.doors) {
+    s += '<path d="M' + (d[0] * c) + ' ' + (d[1] * c) + 'L' + (d[2] * c) + ' ' + (d[3] * c) +
+         '" stroke="#c9a35e" stroke-width="4" stroke-linecap="butt" stroke-dasharray="6 5"/>';
+  }
+
+  /* Nebel — alles außerhalb der Sicht dieser Figur */
+  s += '<rect width="' + W + '" height="' + H + '" fill="#0a0806" fill-opacity="0.86" mask="url(#' + uid + 'm)"/>';
+  s += '<polygon points="' + p(b.sicht) + '" fill="none" stroke="#c9a35e" stroke-opacity="0.22" stroke-width="1.5"/>';
+
+  /* Marken */
+  for (const t of b.tokens) {
+    const cx = t.x * c + c / 2, cy = t.y * c + c / 2;
+    s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (c * 0.42) + '" fill="' + (tonFarbe[t.ton] || "#555") +
+         '" stroke="' + (t.aktiv ? "#e8cf9a" : "#1b1713") + '" stroke-width="' + (t.aktiv ? 2.5 : 1.5) + '"/>';
+    s += '<text x="' + cx + '" y="' + (cy + 4.5) + '" text-anchor="middle" font-size="' + (c * 0.6) +
+         '" font-family="Georgia, serif" fill="#f5ecdc">' + t.i + '</text>';
+  }
+
+  s += "</svg>";
+  return s;
+}
+
+function brettGliederung(key) {
+  const b = BRETTER[key];
+  let s = '<ol class="outline-list">';
+  for (const t of b.tokens) {
+    s += '<li><span class="pos">Feld ' + String.fromCharCode(65 + t.x) + (t.y + 1) + '</span>' +
+         '<span><b>' + t.name + '</b>' + (t.aktiv ? " · am Zug" : "") + '</span></li>';
+  }
+  s += '<li><span class="pos">Sicht</span><span>' + b.tokens.length +
+       ' Marken im offenen Bereich; der östliche Teil liegt im Nebel dieser Figur.</span></li>';
+  s += '<li><span class="pos">Stand</span><span>' + b.datum + ", " + b.zeit + "</span></li>";
+  s += "</ol>";
+  return s;
+}
+</script>
+<script>
+"use strict";
+/* ============================================================================
+   4 · Die Herkunftsschicht — vier Kanäle, davon drei ohne Farbe
+      Form  = Art der Passage      (Absatz · Wurf · Zitat · Regel · Bild)
+      Füllung = Herkunftsklasse    (hohl = mitgebracht · voll = am Tisch)
+      Strich = Erfahrungsgrad      (durchgezogen = erlebt · gestrichelt = gehört)
+      Sättigung = Farbe            (der einzige Kanal, der in Graustufen fällt)
+   ========================================================================= */
+
+const $ = (sel, root) => (root || document).querySelector(sel);
+const $$ = (sel, root) => Array.prototype.slice.call((root || document).querySelectorAll(sel));
+
+const FORMEN = {
+  passage: '<rect x="1.6" y="1.6" width="8.8" height="8.8" rx="1"/><path d="M3.6 4.4h4.8M3.6 6.4h4.8M3.6 8.4h2.8" stroke-width="0.9" fill="none"/>',
+  wurf: '<path d="M6 1.4 10.2 3.8v4.6L6 10.8 1.8 8.4V3.8z"/><circle cx="6" cy="6.1" r="1.05" fill="currentColor" stroke="none"/>',
+  zitat: '<path d="M2 3.2h3.2v3.4c0 1.6-1 2.6-2.4 3M6.8 3.2H10v3.4c0 1.6-1 2.6-2.4 3"/>',
+  regel: '<path d="M6 1.4 10.3 3v3.4c0 2.4-1.9 4-4.3 4.8C3.6 10.4 1.7 8.8 1.7 6.4V3z"/>',
+  bild: '<rect x="1.6" y="2.2" width="8.8" height="7.6" rx="1"/><circle cx="4.2" cy="4.8" r="0.9" fill="currentColor" stroke="none"/><path d="M2 8.6 4.9 6l2 1.6L8.3 6l1.8 1.9" stroke-width="0.9" fill="none"/>'
+};
+
+function glyphSvg(kind, solid, grad) {
+  const d = FORMEN[kind] || FORMEN.passage;
+  return '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" ' +
+    'fill="' + (solid ? "currentColor" : "none") + '" stroke="currentColor" ' +
+    'stroke-width="' + (grad === "gehoert" ? 1 : 1.4) + '" ' +
+    (grad === "gehoert" ? 'stroke-dasharray="2.2 1.6" ' : "") +
+    'fill-opacity="' + (solid ? 0.85 : 0) + '">' + d + "</svg>";
+}
+
+function baueChip(atom, index) {
+  const kind = atom.dataset.kind || "passage";
+  const herkunft = atom.dataset.herkunft;
+  const grad = atom.dataset.grad || "erlebt";
+  const solid = herkunft === "am-tisch";
+  const klasse = solid ? "am Tisch" : "mitgebracht";
+  const meta = atom.dataset.meta || "";
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "chip";
+  b.dataset.herkunft = herkunft;
+  b.style.setProperty("--i", index);
+  b.setAttribute("aria-pressed", "false");
+  /* Erstes Token des barrierefreien Namens ist immer die Herkunftsklasse. */
+  b.setAttribute("aria-label", klasse + " · " + meta + (atom.dataset.beleg ? " · Beleg öffnen" : " · Herkunft zeigen"));
+  b.innerHTML =
+    '<span class="chip__glyph">' + glyphSvg(kind, solid, grad) + "</span>" +
+    '<span class="chip__klasse">' + klasse + "</span>" +
+    '<span class="chip__meta">' + meta + "</span>";
+  b.addEventListener("click", () => chipGeklickt(atom, b));
+  return b;
+}
+
+function chipsAufbauen() {
+  $$(".atom").forEach((atom, i) => {
+    const g = $(".atom__gutter", atom);
+    if (!g) return;
+    g.innerHTML = "";
+    g.appendChild(baueChip(atom, i));
+  });
+}
+
+/* ---- Saatbilanz: gezählt, nicht getippt --------------------------------- */
+function bilanzRechnen() {
+  const alle = $$("[data-atom]");
+  const amTisch = alle.filter(a => a.dataset.herkunft === "am-tisch").length;
+  const mit = alle.length - amTisch;
+  $("#cAll").textContent = alle.length;
+  $("#cMit").textContent = mit;
+  const t = $("#cTisch");
+  t.dataset.n = String(amTisch);
+  t.textContent = amTisch + (amTisch === 1 ? " an diesem Tisch" : " an diesem Tisch");
+  $("#entryCount").textContent = $$("#entries .entry").length;
+}
+
+/* ---- Tor „Der Streifen": die Rinne ist immer reserviert ------------------ */
+const stripBtn = $("#stripBtn");
+const streifenVal = $("#streifenVal");
+const article = $("#article");
+
+stripBtn.addEventListener("click", () => {
+  const an = stripBtn.getAttribute("aria-pressed") === "true";
+  const vorher = article.scrollHeight;
+  document.documentElement.classList.toggle("strip-on", !an);
+  stripBtn.setAttribute("aria-pressed", String(!an));
+  /* Erzwungener Reflow, dann messen — echte Messung, keine Behauptung. */
+  const nachher = article.scrollHeight;
+  const delta = vorher === 0 ? 0 : ((nachher - vorher) / vorher) * 100;
+  streifenVal.textContent = (delta >= 0 ? "+" : "−") +
+    Math.abs(delta).toFixed(1).replace(".", ",") + " %";
+  $("#streifen").dataset.state = Math.abs(delta) > 4 ? "over" : "ok";
+  if (!an) meldung("Herkunftsschicht an. <b>" + $$("[data-atom]").length +
+    "</b> Atome, jedes mit Herkunft. Die Dokumenthöhe hat sich um " +
+    streifenVal.textContent + " geändert.");
+});
+
+/* ============================================================================
+   5 · Linse: Reiter
+   ========================================================================= */
+const tabs = [$("#tabBeleg"), $("#tabAugenblick"), $("#tabAnlass")];
+const panels = [$("#panelBeleg"), $("#panelAugenblick"), $("#panelAnlass")];
+
+function zeigeReiter(i, fokus) {
+  tabs.forEach((t, k) => {
+    t.setAttribute("aria-selected", String(k === i));
+    t.tabIndex = k === i ? 0 : -1;
+    panels[k].hidden = k !== i;
+  });
+  if (fokus) tabs[i].focus();
+}
+tabs.forEach((t, i) => {
+  t.addEventListener("click", () => zeigeReiter(i));
+  t.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") { e.preventDefault(); zeigeReiter((i + 1) % 3, true); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); zeigeReiter((i + 2) % 3, true); }
+  });
+});
+
+/* ============================================================================
+   6 · Die Belegkarte und „Nachrechnen"
+   ========================================================================= */
+let offenerBeleg = null;
+let driftPaket = "2.3";
+
+function markiereZitiert(atom) {
+  $$(".atom.is-cited").forEach(a => a.classList.remove("is-cited"));
+  if (atom) atom.classList.add("is-cited");
+}
+
+function chipGeklickt(atom, chip) {
+  $$(".chip[aria-pressed='true']").forEach(c => c.setAttribute("aria-pressed", "false"));
+  chip.setAttribute("aria-pressed", "true");
+  if (atom.dataset.beleg) {
+    belegOeffnen(atom.dataset.beleg, atom);
+  } else {
+    herkunftOeffnen(atom);
+    markiereZitiert(atom);
+    zeigeReiter(0);
+  }
+}
+
+function herkunftOeffnen(atom) {
+  offenerBeleg = null;
+  const solid = atom.dataset.herkunft === "am-tisch";
+  $("#belegHost").innerHTML =
+    '<div class="beleg"><div class="beleg__head">' +
+    '<div class="who">' + (solid ? "Am Tisch geprägt" : "Mitgebracht") + "</div>" +
+    '<div class="when">' + atom.dataset.meta + "</div></div>" +
+    '<div class="beleg__pin">' +
+    (solid
+      ? '<span class="tag">herkunft_anlass_id</span> NULL — dieser Satz ist an diesem Tisch entstanden. Kein Importpfad kann NULL schreiben.'
+      : '<span class="tag">herkunft_anlass_id</span> anl_aldenfall_1.2.0 — mitgebracht. Kein Wurf hängt an diesem Atom, deshalb gibt es hier nichts nachzurechnen.') +
+    "</div></div>";
+}
+
+function nummer(n) { return String(n); }
+
+function belegOeffnen(id, atomOpt) {
+  const B = BELEGE[id];
+  if (!B) return;
+  offenerBeleg = id;
+  driftPaket = B.paket;
+  const atom = atomOpt || $('.atom[data-beleg="' + id + '"]');
+  markiereZitiert(atom);
+  $$(".fn").forEach(f => f.setAttribute("aria-expanded", String(f.dataset.beleg === id)));
+  zeigeReiter(0);
+  belegZeichnen(B);
+  $("#augenblickHost").innerHTML =
+    '<p class="empty">Beleg <b>' + id + "</b> geöffnet.<br>„Der Augenblick“ auf der Belegkarte öffnet das Brett dieser Sekunde.</p>";
+}
+
+function belegZeichnen(B) {
+  const paket = PAKETE[B.paket];
+  const gefroren = auswerten(B.ast, B.seed, paket, B.eingefroren);
+  const erfolg = B.imprint >= B.sg;
+  let rows = "";
+  gefroren.zeilen.forEach((z) => {
+    rows += '<tr class="' + (z.art === "die" ? "die" : "") + '">' +
+      '<td class="val">' + (z.art === "die" ? "" : (z.wert >= 0 ? "+ " : "− ")) +
+      (z.art === "die" ? z.wert : Math.abs(z.wert)) + "</td>" +
+      '<td class="lbl">' + (z.art === "die" ? "<b>" + z.label + "</b>" : z.label) +
+      (z.sub ? "<small>" + z.sub + "</small>" : "") + "</td></tr>";
+  });
+  rows += '<tr class="sum"><td class="val">' + B.imprint + '</td>' +
+    '<td class="lbl">gegen SG <span class="num">' + B.sg + "</span> · " +
+    (erfolg ? '<span class="verdict-ok">Erfolg</span>' : '<span class="verdict-no">Misserfolg</span>') +
+    "</td></tr>";
+
+  $("#belegHost").innerHTML =
+    '<div class="beleg">' +
+      '<div class="beleg__head">' +
+        '<div class="who">' + B.probe + " · " + B.wer + "</div>" +
+        '<div class="when">Sitzung ' + B.sitzung + " · " + B.datum + " · " + B.zeit + "</div>" +
+      "</div>" +
+      '<div class="beleg__derivation"><table class="deriv"><caption class="sr">Herleitung des Wurfs ' +
+        B.probe + "</caption><tbody>" + rows + "</tbody></table></div>" +
+      '<div class="beleg__pin">' +
+        '<span class="tag">Paket</span>' + paket.id + " " + paket.version +
+        ' · <span class="tag">Klausel</span>k_vharon_kenntnis@' +
+        (paket.klauseln.k_vharon_kenntnis.rev) +
+        ' · <span class="tag">Wurf</span>' + (B.id || "") +
+        ' · <span class="tag">Seed</span>' + B.seedKurz +
+        ' · <span class="tag">' + (B.herkunft === "am-tisch" ? "am Tisch" : "mitgebracht") + "</span>" +
+      "</div>" +
+      '<div class="beleg__actions">' +
+        '<button class="btn btn--primary" type="button" id="nachrechnenBtn">Nachrechnen</button>' +
+        '<button class="btn" type="button" id="augenblickBtn">Der Augenblick</button>' +
+      "</div>" +
+      '<div class="beleg__derivation" id="replayHost" aria-live="polite"></div>' +
+    "</div>";
+
+  $("#nachrechnenBtn").addEventListener("click", () => nachrechnen(B, B.paket));
+  $("#augenblickBtn").addEventListener("click", () => augenblickOeffnen(B));
+}
+
+function reduziert() {
+  return getComputedStyle(document.documentElement).getPropertyValue("--t-state").trim() === "1ms";
+}
+
+function nachrechnen(B, paketKey) {
+  const paket = PAKETE[paketKey];
+  const erg = auswerten(B.ast, B.seed, paket, B.eingefroren);
+  const wuerfel = erg.zeilen.find(z => z.art === "die");
+  const klausel = erg.zeilen.find(z => z.art === "clause");
+  const zahlPasst = erg.summe === B.imprint;
+  const paketPasst = paketKey === B.paket;
+  /* drei ehrliche Ausgänge: geprüft · Paket gewandert, Zahl hält · Abweichung */
+  const stand = zahlPasst ? (paketPasst ? "ok" : "unberuehrt") : "bad";
+  const host = $("#replayHost");
+
+  const schritte = [
+    ["Seed gelesen", "<b>" + B.seed + "</b>", false],
+    ["Ausdruck geladen", "AST, " + B.ast.length + " Knoten, unverändert", false],
+    ["Paket geprüft", paket.id + " <b>" + paket.version + "</b> · sha256 " + paket.sha,
+      !paketPasst],
+    klausel
+      ? ["Klausel aufgelöst", "k_vharon_kenntnis@<b>" + klausel.rev + "</b> · " +
+         "Prädikateingabe eingefroren auf " + klausel.eingefroren +
+         (klausel.heute !== klausel.eingefroren ? " (heute: " + klausel.heute + ")" : "") +
+         " → +" + klausel.wert, !paketPasst]
+      : ["Klausel geprüft", "dieser Ausdruck ruft keine Klausel auf", false],
+    ["Neu gewürfelt", "1d20 = <b>" + wuerfel.wert + "</b>", false],
+    ["Verglichen", erg.summe + (zahlPasst ? " = " : " ≠ ") + B.imprint +
+      (zahlPasst ? " · byteidentisch" : " · Abweichung"), !zahlPasst]
+  ];
+
+  host.innerHTML = '<div class="replay"><ol id="replayList"></ol></div>';
+  const ol = $("#replayList");
+  const takt = reduziert() ? 0 : 120;
+
+  schritte.forEach((s, i) => {
+    window.setTimeout(() => {
+      const li = document.createElement("li");
+      if (s[2]) li.dataset.bad = "1";
+      li.style.animationDelay = "0ms";
+      li.innerHTML = '<span class="mark">' + (s[2] ? "✕" : "✓") + "</span><span>" +
+        s[0] + " · " + s[1] + "</span>";
+      ol.appendChild(li);
+      if (i === schritte.length - 1) siegelSetzen(B, paketKey, erg, stand);
+    }, takt * i);
+  });
+}
+
+function siegelSetzen(B, paketKey, erg, stand) {
+  const host = $("#replayHost");
+  const paket = PAKETE[paketKey];
+  const wuerfel = erg.zeilen.find(z => z.art === "die");
+  const siegel = document.createElement("div");
+  siegel.className = "seal";
+  siegel.dataset.kind = stand === "bad" ? "bad" : "ok";
+  siegel.setAttribute("role", "status");
+
+  if (stand === "unberuehrt") {
+    siegel.innerHTML =
+      '<div class="seal__mark"><svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">' +
+      '<circle cx="15" cy="15" r="12"/><circle cx="15" cy="15" r="9" stroke-dasharray="2 2.6"/>' +
+      '<path d="M10 15.4 13.6 19 20.4 11.6" stroke-width="2.2"/></svg></div>' +
+      '<div><div class="seal__title">Unverändert unter ' + paket.version + "</div>" +
+      "<p>Dieser Ausdruck ruft keine der Klauseln auf, die sich zwischen 2.3 und " +
+      paket.version + " geändert haben. Ergebnis weiterhin <b>" + erg.summe +
+      "</b> — die Paketdrift berührt diesen Beleg nicht.</p>" +
+      '<span class="whose">Geworfen am ' + B.datum + " um " + B.zeit +
+      " — <b>" + B.tisch + ".</b></span></div>";
+  } else if (stand === "ok") {
+    siegel.innerHTML =
+      '<div class="seal__mark"><svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">' +
+      '<circle cx="15" cy="15" r="12"/><circle cx="15" cy="15" r="9" stroke-dasharray="2 2.6"/>' +
+      '<path d="M10 15.4 13.6 19 20.4 11.6" stroke-width="2.2"/></svg></div>' +
+      '<div><div class="seal__title">Nachgerechnet</div>' +
+      "<p>Seed <span class=\"mono\">" + B.seedKurz + "</span>, Ausdruck unverändert, Paket " +
+      paket.id + " " + paket.version + " installiert und gehasht, Klausel k_vharon_kenntnis@" +
+      paket.klauseln.k_vharon_kenntnis.rev + ". 1d20 = " + wuerfel.wert + ". Ergebnis " + erg.summe +
+      ". Übereinstimmung: <b>byteidentisch</b>.</p>" +
+      '<span class="whose">Dieser Wurf wurde am ' + B.datum + " um " + B.zeit +
+      " geworfen — <b>" + B.tisch + ".</b></span></div>";
+  } else {
+    siegel.innerHTML =
+      '<div class="seal__mark"><svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">' +
+      '<circle cx="15" cy="15" r="12"/><path d="M11 11l8 8M19 11l-8 8" stroke-width="2.2"/></svg></div>' +
+      '<div><div class="seal__title">Abweichung</div>' +
+      "<p>Unter Paket " + paket.version + " ergäbe derselbe eingefrorene Wurf <b>" + erg.summe +
+      "</b> statt " + B.imprint + ": die Klausel ist von r7 auf " +
+      paket.klauseln.k_vharon_kenntnis.rev + " gewandert.</p>" +
+      "<p><b>Genau deshalb heftet ein Anlass seine Paketversionen an.</b> Der Beleg zeigt weiterhin " +
+      B.imprint + ", weil er gegen 2.3 geprüft wird — nicht gegen das, was heute installiert ist.</p></div>";
+  }
+
+  const claim = document.createElement("details");
+  claim.className = "claim";
+  claim.innerHTML =
+    "<summary>Was prüft „Nachrechnen“ — und was nicht?</summary>" +
+    '<div class="claim__body">' +
+    '<p><span class="yes">Es prüft:</span> dass die gedruckte Zahl aus dem eingefrorenen Seed, dem eingefrorenen Ausdruck, der angehefteten Paketversion und der genannten Klauselrevision folgt — und dass seit der Prägung nichts davon gewandert ist.</p>' +
+    '<p><span class="no">Es prüft nicht:</span> dass ein Mensch dabei war. Nicht, dass der Seed nicht so lange gemahlen wurde, bis eine 13 fiel — <b>5 % aller Seeds geben auf 1d20 eine 13</b>. Und nicht, dass der Zeitstempel stimmt.</p>' +
+    "<p>Der Zweck ist <b>Haltbarkeit</b>, nicht Fälschungssicherheit: Ein Paket-Update im Jahr 2029 darf nicht ändern, was ein Wurf im Jahr 2026 bedeutet hat. Teuer zu fälschen ist nicht der Wurf, sondern die Verflechtung — vier Abende, drei Bücher, ein widerspruchsfreier Wissensstand.</p>" +
+    "</div>";
+
+  const zeile = document.createElement("div");
+  zeile.className = "beleg__actions";
+  const driftBtn = document.createElement("button");
+  driftBtn.type = "button";
+  driftBtn.className = "btn";
+  driftBtn.textContent = paketKey === B.paket ? "Paketdrift auf 2.4 simulieren" : "Zurück auf Paket 2.3";
+  driftBtn.addEventListener("click", () => nachrechnen(B, paketKey === B.paket ? "2.4" : B.paket));
+  zeile.appendChild(driftBtn);
+
+  host.appendChild(siegel);
+  host.appendChild(claim);
+  host.appendChild(zeile);
+}
+
+/* ---- Der Augenblick ------------------------------------------------------ */
+let gliederungAn = false;
+
+function augenblickOeffnen(B) {
+  const b = BRETTER[B.board];
+  gliederungAn = false;
+  augenblickZeichnen(B, b);
+  zeigeReiter(1);
+}
+
+function augenblickZeichnen(B, b) {
+  const host = $("#augenblickHost");
+  let init = "";
+  if (b.initiative.length) {
+    init = '<div class="initiative" role="list" aria-label="Initiative">';
+    b.initiative.forEach(z => {
+      init += '<div class="init-cell" role="listitem" data-active="' + (z.aktiv ? 1 : 0) + '">' +
+        "<b>" + z.name + '</b><span class="n">' + z.n + "</span></div>";
+    });
+    init += "</div>";
+  }
+  host.innerHTML =
+    "<h3>" + b.titel + "</h3>" +
+    '<p class="lede">Das Brett, wie es in der Sekunde des Wurfs stand — Nebel wie ' + B.wer +
+    " ihn sah, Marken auf ihren Feldern. Aus Zahlen gezeichnet, nicht fotografiert.</p>" +
+    '<div class="board-wrap mt-3"><div class="board-stamp">' +
+    b.datum + " · " + b.zeit + '</div><div id="boardHost">' + zeichneBrett(B.board) + "</div></div>" +
+    init +
+    '<div class="beleg__actions bare">' +
+    '<button class="btn" type="button" id="outlineBtn" aria-pressed="false">Als Gliederung lesen</button>' +
+    '<button class="btn btn--ghost" type="button" id="backBelegBtn">Zurück zum Beleg</button></div>';
+
+  $("#outlineBtn").addEventListener("click", () => {
+    gliederungAn = !gliederungAn;
+    $("#outlineBtn").setAttribute("aria-pressed", String(gliederungAn));
+    $("#boardHost").innerHTML = gliederungAn ? brettGliederung(B.board) : zeichneBrett(B.board);
+    $("#boardHost").parentElement.style.background = gliederungAn ? "var(--c-stage)" : "#0f0d0b";
+    $("#boardHost").style.padding = gliederungAn ? "var(--sp-3)" : "0";
+  });
+  $("#backBelegBtn").addEventListener("click", () => zeigeReiter(0));
+}
+</script>
+<script>
+"use strict";
+/* ============================================================================
+   7 · Der eigene Wurf und die Prägung — dieselbe Maschine, andere Herkunft
+   ========================================================================= */
+
+const rollBtn = $("#rollBtn");
+const mintBtn = $("#mintBtn");
+const undoBtn = $("#undoBtn");
+const rollcard = $("#rollcard");
+
+const EIGEN_AST = [
+  { t: "dice", n: 1, faces: 20 },
+  { t: "const", v: 4, label: "Weisheit" },
+  { t: "clause", id: "k_vharon_kenntnis", actor: "sera" },
+  { t: "const", v: 2, label: "Bruder Alders Hinweis (Sitzung 2)" }
+];
+const EIGEN_SG = 15;
+
+let letzterWurf = null;
+let gepraegtesAtom = null;
+
+const MONATE = ["Januar", "Februar", "März", "April", "Mai", "Juni",
+  "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+function zeitStempel(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+function datumStempel(d) {
+  return d.getDate() + ". " + MONATE[d.getMonth()] + " " + d.getFullYear();
+}
+
+function neuerSeed() {
+  const teil = (n) => n.toString(16).padStart(8, "0").slice(-8);
+  return teil(Date.now() >>> 0) + teil((Math.floor(performance.now() * 1000) ^ 0x5bf03635) >>> 0);
+}
+
+rollBtn.addEventListener("click", () => {
+  const seed = neuerSeed();
+  const erg = auswerten(EIGEN_AST, seed, PAKETE["2.3"], null);
+  const wuerfel = erg.zeilen.find(z => z.art === "die");
+  const klausel = erg.zeilen.find(z => z.art === "clause");
+  const jetzt = new Date();
+  const erfolg = erg.summe >= EIGEN_SG;
+
+  letzterWurf = {
+    id: "w_051", nr: 4, probe: "Menschenkenntnis", actor: "sera", wer: "Sera Valdris",
+    sitzung: 5, datum: datumStempel(jetzt), zeit: zeitStempel(jetzt), sg: EIGEN_SG,
+    seed: seed, seedKurz: seed.slice(0, 4) + "…" + seed.slice(-2), imprint: erg.summe,
+    herkunft: "am-tisch", tisch: "an diesem Tisch, von dir",
+    board: "archivwinkel", paket: "2.3",
+    eingefroren: { k_vharon_kenntnis: klausel.eingefroren },
+    ast: EIGEN_AST, erfolg: erfolg
+  };
+
+  rollcard.hidden = false;
+  $("#rcTotal").textContent = erg.summe;
+  $("#rcExpr").innerHTML =
+    "1d20 = " + wuerfel.wert + " &nbsp;+4 Weisheit<br>" +
+    "<b>+" + klausel.wert + " · du hältst " + klausel.eingefroren + " Passagen über Haus Vharon</b>" +
+    " &nbsp;+2 Alder";
+  const out = $("#rcOutcome");
+  out.textContent = erfolg ? "Erfolg gegen 15" : "Misserfolg gegen 15";
+  out.dataset.ok = erfolg ? "1" : "0";
+
+  mintBtn.disabled = false;
+  meldung("Gewürfelt. Der <b>+" + klausel.wert + "</b> kommt aus " + klausel.eingefroren +
+    " Passagen, die ein Fremder an seinem Tisch geschrieben hat.");
+});
+
+/* „Welche vier?" — das Prädikat zeigt auf die Sätze, aus denen es rechnet. */
+$("#whichFour").addEventListener("click", () => {
+  const treffer = $$('.atom[data-etikett~="haus-vharon"][data-haelt~="sera"]');
+  treffer.forEach(a => a.classList.add("is-spot"));
+  treffer[0].scrollIntoView({ behavior: reduziert() ? "auto" : "smooth", block: "center" });
+  meldung("<b>" + treffer.length + " Passagen</b> mit Etikett „haus-vharon“ in Seras Buch — " +
+    "die Eingabe der Klausel k_vharon_kenntnis.");
+  window.setTimeout(() => treffer.forEach(a => a.classList.remove("is-spot")), 2600);
+});
+
+/* ---- Prägen: der einzige Weg zu „am Tisch" ------------------------------- */
+function praegen() {
+  if (mintBtn.disabled || !letzterWurf) return;
+  const w = letzterWurf;
+  BELEGE.w_051 = w;
+
+  const text = w.erfolg
+    ? 'Sera sieht es sofort: die dritte Wachsschicht ist zu sauber gegossen. Das Siegel an der Kammertür ist eine Fälschung — wer sie gesetzt hat, kannte die Kerbe, aber nicht <a href="#weller">Wellers</a> Hand.'
+    : 'Sera dreht das Wachs ins Licht und bleibt unsicher. Die Kerbe sitzt links, die drei Schichten liegen sauber — und genau diese Sauberkeit ist es, die sie nicht einordnen kann.';
+
+  const atom = document.createElement("div");
+  atom.className = "atom is-new";
+  atom.dataset.atom = "passage";
+  atom.dataset.herkunft = "am-tisch";
+  atom.dataset.kind = "wurf";
+  atom.dataset.grad = "erlebt";
+  atom.dataset.meta = w.zeit + " · Sitzung 5 · Menschenkenntnis · Sera · " + w.imprint +
+    " gegen " + w.sg + " · an diesem Tisch";
+  atom.dataset.beleg = "w_051";
+  atom.dataset.etikett = "haus-vharon";
+  atom.dataset.haelt = "sera";
+  atom.innerHTML = '<div class="atom__gutter"></div><div class="atom__body"><p>' + text +
+    '<button class="fn" type="button" data-beleg="w_051" aria-expanded="false" aria-controls="panelBeleg">' +
+    '<span class="sr">Beleg </span>4<span class="sr"> öffnen</span></button></p></div>';
+
+  const anker = $('.atom[data-beleg="w_003"]');
+  anker.parentNode.insertBefore(atom, anker.nextSibling);
+  $(".atom__gutter", atom).appendChild(baueChip(atom, 0));
+  fnVerdrahten($(".fn", atom));
+
+  gepraegtesAtom = atom;
+  bilanzRechnen();
+  mintBtn.disabled = true;
+  undoBtn.disabled = false;
+
+  const chip = $(".chip", atom);
+  fliegen(rollcard, chip);
+  atom.scrollIntoView({ behavior: reduziert() ? "auto" : "smooth", block: "center" });
+  meldung("Geprägt. <b>1 Absatz an diesem Tisch</b> — " +
+    "<code>herkunft_anlass_id = NULL</code>. Kein Importpfad kann diesen Wert schreiben.");
+}
+
+mintBtn.addEventListener("click", praegen);
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); praegen(); }
+});
+
+undoBtn.addEventListener("click", () => {
+  if (!gepraegtesAtom) return;
+  gepraegtesAtom.remove();
+  gepraegtesAtom = null;
+  delete BELEGE.w_051;
+  bilanzRechnen();
+  undoBtn.disabled = true;
+  mintBtn.disabled = !letzterWurf;
+  if (offenerBeleg === "w_051") {
+    offenerBeleg = null;
+    $("#belegHost").innerHTML = '<p class="empty">Der Beleg wurde mit dem Absatz zurückgenommen.</p>';
+  }
+  meldung("Zurückgenommen. Der Kanon steht wieder bei <b>0 an diesem Tisch</b>.");
+});
+
+/* ---- Die Wurfkarte reist (Champion §13, Regel 4) ------------------------- */
+function fliegen(vonEl, nachEl) {
+  if (reduziert() || !vonEl || !nachEl) return;
+  const a = vonEl.getBoundingClientRect();
+  const b = nachEl.getBoundingClientRect();
+  const g = document.createElement("div");
+  g.className = "flyer";
+  g.textContent = (letzterWurf ? letzterWurf.imprint : "") + " gegen " + EIGEN_SG;
+  g.style.left = a.left + "px";
+  g.style.top = a.top + "px";
+  document.body.appendChild(g);
+  const anim = g.animate(
+    [
+      { transform: "translate(0,0) scale(1)", opacity: 1 },
+      { transform: "translate(" + (b.left - a.left) * 0.6 + "px," + (b.top - a.top) * 0.5 + "px) scale(0.8)", opacity: 1, offset: 0.6 },
+      { transform: "translate(" + (b.left - a.left) + "px," + (b.top - a.top) + "px) scale(0.45)", opacity: 0 }
+    ],
+    { duration: 760, easing: "cubic-bezier(0.22,0.61,0.36,1)" }
+  );
+  anim.onfinish = () => g.remove();
+}
+
+/* ============================================================================
+   8 · Fußnoten, Suche, Haut, Bewegung, Meldungen
+   ========================================================================= */
+function fnVerdrahten(el) {
+  el.addEventListener("click", () => {
+    const id = el.dataset.beleg;
+    if (offenerBeleg === id) {
+      offenerBeleg = null;
+      el.setAttribute("aria-expanded", "false");
+      markiereZitiert(null);
+      $("#belegHost").innerHTML = '<p class="empty">Kein Beleg geöffnet.</p>';
+      return;
+    }
+    belegOeffnen(id);
+  });
+}
+$$(".fn").forEach(fnVerdrahten);
+
+const q = $("#q");
+q.addEventListener("input", () => {
+  const s = q.value.trim().toLowerCase();
+  let eintraege = 0;
+  $$("#entries .entry").forEach(e => {
+    const treffer = !s || e.dataset.name.toLowerCase().indexOf(s) >= 0;
+    e.hidden = !treffer;
+    if (treffer) eintraege++;
+  });
+  let absaetze = 0;
+  if (s) {
+    $$(".atom").forEach(a => {
+      if (a.textContent.toLowerCase().indexOf(s) >= 0) absaetze++;
+    });
+  }
+  $("#qCount").textContent = s
+    ? eintraege + " Einträge · " + absaetze + " Absätze"
+    : eintraege + " Einträge";
+});
+
+$$("#entries .entry").forEach(e => {
+  e.addEventListener("click", () => {
+    $$("#entries .entry").forEach(x => x.removeAttribute("aria-current"));
+    e.setAttribute("aria-current", "true");
+    if (e.dataset.void === "1") {
+      meldung("<b>Kanzlei Ossa</b> hat keinen Eintrag. Der rote Link bleibt rot, " +
+        "bis jemand an einem Tisch etwas darüber prägt.");
+    } else if (e.dataset.name !== "Haus Vharon") {
+      meldung("Dieser Prototyp zeigt nur <b>Haus Vharon</b> vollständig — " +
+        "die Schiene steht für die Struktur, nicht für ein zweites geschriebenes Kapitel.");
+    }
+  });
+});
+
+const drawerBtn = $("#drawerBtn");
+drawerBtn.addEventListener("click", () => {
+  const rail = $("#railCollection");
+  const auf = rail.dataset.open === "1";
+  rail.dataset.open = auf ? "0" : "1";
+  drawerBtn.setAttribute("aria-expanded", String(!auf));
+});
+
+const themeBtn = $("#themeBtn");
+function effektivDunkel() {
+  const attr = document.documentElement.getAttribute("data-theme");
+  if (attr) return attr === "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function themeBeschriften() {
+  const dunkel = effektivDunkel();
+  $("#themeLabel").textContent = dunkel ? "Dunkel" : "Hell";
+  themeBtn.setAttribute("aria-label", "Farbmodus wechseln — derzeit " + (dunkel ? "dunkel" : "hell"));
+}
+themeBtn.addEventListener("click", () => {
+  document.documentElement.setAttribute("data-theme", effektivDunkel() ? "light" : "dark");
+  themeBeschriften();
+});
+
+const motionBtn = $("#motionBtn");
+motionBtn.addEventListener("click", () => {
+  const red = motionBtn.getAttribute("aria-pressed") === "true";
+  document.documentElement.setAttribute("data-motion", red ? "full" : "reduced");
+  motionBtn.setAttribute("aria-pressed", String(!red));
+  $("#motionLabel").textContent = red ? "Bewegung: voll" : "Bewegung: reduziert";
+});
+
+let meldungTimer = null;
+function meldung(html) {
+  const alt = $(".toast");
+  if (alt) alt.remove();
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.setAttribute("role", "status");
+  t.innerHTML = html;
+  document.body.appendChild(t);
+  window.clearTimeout(meldungTimer);
+  meldungTimer = window.setTimeout(() => t.remove(), 5200);
+}
+
+/* ============================================================================
+   9 · Start
+   ========================================================================= */
+Object.keys(BELEGE).forEach(k => { BELEGE[k].id = k; });
+
+$$("[data-board]").forEach(el => { el.innerHTML = zeichneBrett(el.dataset.board); });
+
+const hp=document.getElementById("hpBar");
+if (hp) hp.style.width = hp.dataset.pct + "%";
+
+chipsAufbauen();
+bilanzRechnen();
+themeBeschriften();
+
+/* Die Herkunftsschicht ist an; die Rinne ist immer reserviert. Wir messen das
+   einmal beim Start — echte Messung, kein behaupteter Wert.                  */
+document.documentElement.classList.add("strip-on");
+stripBtn.setAttribute("aria-pressed", "true");
+window.requestAnimationFrame(() => {
+  const mitSchicht = article.scrollHeight;
+  document.documentElement.classList.remove("strip-on");
+  const ohneSchicht = article.scrollHeight;
+  document.documentElement.classList.add("strip-on");
+  const delta = ohneSchicht === 0 ? 0 : ((mitSchicht - ohneSchicht) / ohneSchicht) * 100;
+  streifenVal.textContent = (delta >= 0 ? "+" : "−") +
+    Math.abs(delta).toFixed(1).replace(".", ",") + " %";
+  $("#streifen").dataset.state = Math.abs(delta) > 4 ? "over" : "ok";
+});
+</script>
+

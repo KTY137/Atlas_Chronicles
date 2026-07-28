@@ -1,0 +1,2228 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chronicle · Der Rückspuler — Sitzung 12, 21:47 Uhr</title>
+
+<!--
+  SPIKE B1 — "Der Rückspuler"
+  Kandidat B (The Table Engine), Runde 1, Sitz 1: der Flex-Moment.
+
+  Kern der Datei: es gibt EIN Protokoll (BEATS). Der Tisch ist die Faltung
+  dieses Protokolls vorwärts, die Chronikseite ist dieselbe Faltung rückwärts
+  gelesen. Rückgängig, Rückspulen und Wiedergabe sind kein Sonderfall und kein
+  Skript, sondern dreimal derselbe Aufruf: project(seq).
+
+  Kein externes Asset, keine Webfont, kein CDN. Jede Farbe, jeder Radius, jede
+  Schrift, jede Dauer ist ein Token. Die Kartenpalette wird per color-mix aus
+  den Hauttokens abgeleitet — kein Kartenwert ist von Hand gesetzt.
+-->
+
+<style>
+/* ============================================================ 1. TOKENS  */
+/* Pro Haut werden beide Paletten EINMAL definiert (--l-* / --d-*).
+   Die vier Modusblöcke weiter unten bilden nur noch ab.              */
+
+:root[data-skin="relic"]{
+  --l-bg:#e8ddc8;   --d-bg:#100d09;
+  --l-sunk:#dccfb4; --d-sunk:#0a0806;
+  --l-sur:#f4ecdb;  --d-sur:#1b1610;
+  --l-sur2:#eee3cd; --d-sur2:#241d15;
+  --l-ink:#241a10;  --d-ink:#efe3cc;
+  --l-ink2:#5c4a34; --d-ink2:#b3a184;
+  --l-ink3:#8a7355; --d-ink3:#8b7a5f;
+  --l-line:#c8b795; --d-line:#3a2f22;
+  --l-line2:#9c8560; --d-line2:#5d4c36;
+  --l-acc:#8f3316;  --d-acc:#e3873f;
+  --l-acc2:#a97a2e; --d-acc2:#d0a765;
+  --l-onacc:#fdf6e7;--d-onacc:#1a1108;
+  --l-good:#3d6b3a; --d-good:#7db06f;
+  --l-warn:#8a5f10; --d-warn:#e0a63a;
+  --l-bad:#8c2116;  --d-bad:#e8695a;
+  --l-cold:#2f5a6b; --d-cold:#79b6cd;
+  --r-s:2px; --r-m:4px; --r-l:6px;
+  --bw:1px; --bw2:2px;
+  --f-dis:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --f-ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-num:ui-monospace,"Cascadia Mono","SF Mono","Segoe UI Mono",Menlo,Consolas,monospace;
+  --lbl-tt:none; --lbl-ls:.01em; --lbl-fw:600;
+  --grain:.075; --scan:0;
+}
+:root[data-skin="signal"]{
+  --l-bg:#e2e8ec;   --d-bg:#070b0e;
+  --l-sunk:#d2dade; --d-sunk:#04070a;
+  --l-sur:#f2f6f8;  --d-sur:#101a20;
+  --l-sur2:#e7eef2; --d-sur2:#16232b;
+  --l-ink:#0b1418;  --d-ink:#d5e7ef;
+  --l-ink2:#3d545e; --d-ink2:#8fabb8;
+  --l-ink3:#5d7a86; --d-ink3:#6d8b99;
+  --l-line:#b7c6ce; --d-line:#22343e;
+  --l-line2:#8299a4; --d-line2:#3a5766;
+  --l-acc:#07697f;  --d-acc:#37cfe8;
+  --l-acc2:#2d6f9e; --d-acc2:#6fa8d8;
+  --l-onacc:#f2fbfd;--d-onacc:#03161c;
+  --l-good:#1c6b52; --d-good:#4fd0a4;
+  --l-warn:#7c5600; --d-warn:#eab308;
+  --l-bad:#a32a1e;  --d-bad:#ff7a68;
+  --l-cold:#2a5f8f; --d-cold:#7fb2e8;
+  --r-s:0px; --r-m:1px; --r-l:2px;
+  --bw:1px; --bw2:1px;
+  --f-dis:ui-sans-serif,"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --f-ui:ui-sans-serif,"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --f-num:ui-monospace,"Cascadia Mono","SF Mono","Segoe UI Mono",Menlo,Consolas,monospace;
+  --lbl-tt:uppercase; --lbl-ls:.11em; --lbl-fw:650;
+  --grain:0; --scan:.45;
+}
+:root[data-skin="archive"]{
+  --l-bg:#e9e3dc;   --d-bg:#0d0a09;
+  --l-sunk:#ddd5cb; --d-sunk:#070505;
+  --l-sur:#f5f1ea;  --d-sur:#181211;
+  --l-sur2:#ebe4da; --d-sur2:#211917;
+  --l-ink:#171010;  --d-ink:#e9ddd2;
+  --l-ink2:#4c3b36; --d-ink2:#ad9a8d;
+  --l-ink3:#75605a; --d-ink3:#87736a;
+  --l-line:#c9bcae; --d-line:#33251f;
+  --l-line2:#8f7c6d; --d-line2:#54403a;
+  --l-acc:#7a191f;  --d-acc:#d4615c;
+  --l-acc2:#8a6b3a; --d-acc2:#c39a5e;
+  --l-onacc:#fbf4ec;--d-onacc:#150a09;
+  --l-good:#33603c; --d-good:#77aa77;
+  --l-warn:#7e5810; --d-warn:#d7a445;
+  --l-bad:#7a191f;  --d-bad:#e07068;
+  --l-cold:#31505f; --d-cold:#7ba6b8;
+  --r-s:0px; --r-m:0px; --r-l:0px;
+  --bw:1px; --bw2:3px;
+  --f-dis:"Bodoni MT",Didot,"Playfair Display",Georgia,"Times New Roman",serif;
+  --f-ui:"Iowan Old Style",Georgia,"Times New Roman",serif;
+  --f-num:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+  --lbl-tt:uppercase; --lbl-ls:.18em; --lbl-fw:600;
+  --grain:.05; --scan:0;
+}
+:root[data-skin="clean"]{
+  --l-bg:#f1f3f6;   --d-bg:#0b0e12;
+  --l-sunk:#e5e8ee; --d-sunk:#070a0d;
+  --l-sur:#ffffff;  --d-sur:#151a21;
+  --l-sur2:#f6f8fa; --d-sur2:#1c232c;
+  --l-ink:#111519;  --d-ink:#e9eef4;
+  --l-ink2:#4a5661; --d-ink2:#9fadbb;
+  --l-ink3:#68757f; --d-ink3:#7b8996;
+  --l-line:#dbe1e8; --d-line:#26303a;
+  --l-line2:#aab6c2; --d-line2:#3c4a58;
+  --l-acc:#2a55c8;  --d-acc:#86a9ff;
+  --l-acc2:#5566a8; --d-acc2:#9aa8d8;
+  --l-onacc:#ffffff;--d-onacc:#08101f;
+  --l-good:#186b4a; --d-good:#5ed3a0;
+  --l-warn:#7d5100; --d-warn:#f0b93a;
+  --l-bad:#b2281c;  --d-bad:#ff8878;
+  --l-cold:#2f5f9c; --d-cold:#84b4f0;
+  --r-s:5px; --r-m:9px; --r-l:14px;
+  --bw:1px; --bw2:1px;
+  --f-dis:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-num:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Menlo,Consolas,monospace;
+  --lbl-tt:none; --lbl-ls:.005em; --lbl-fw:600;
+  --grain:0; --scan:0;
+}
+
+/* --- Modusabbildung: hell ist Vorgabe, dunkel per Medienabfrage,
+       Attribut schlägt die Medienabfrage in beide Richtungen. ---------- */
+:root,
+:root[data-theme="light"]{
+  --c-bg:var(--l-bg); --c-sunk:var(--l-sunk); --c-sur:var(--l-sur); --c-sur2:var(--l-sur2);
+  --c-ink:var(--l-ink); --c-ink2:var(--l-ink2); --c-ink3:var(--l-ink3);
+  --c-line:var(--l-line); --c-line2:var(--l-line2);
+  --c-acc:var(--l-acc); --c-acc2:var(--l-acc2); --c-onacc:var(--l-onacc);
+  --c-good:var(--l-good); --c-warn:var(--l-warn); --c-bad:var(--l-bad); --c-cold:var(--l-cold);
+  --tok-l:34%; --tok-lb:86%; --shade:0,0,0; --lift:255,255,255;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --c-bg:var(--d-bg); --c-sunk:var(--d-sunk); --c-sur:var(--d-sur); --c-sur2:var(--d-sur2);
+    --c-ink:var(--d-ink); --c-ink2:var(--d-ink2); --c-ink3:var(--d-ink3);
+    --c-line:var(--d-line); --c-line2:var(--d-line2);
+    --c-acc:var(--d-acc); --c-acc2:var(--d-acc2); --c-onacc:var(--d-onacc);
+    --c-good:var(--d-good); --c-warn:var(--d-warn); --c-bad:var(--d-bad); --c-cold:var(--d-cold);
+    --tok-l:72%; --tok-lb:24%;
+  }
+}
+:root[data-theme="dark"]{
+  --c-bg:var(--d-bg); --c-sunk:var(--d-sunk); --c-sur:var(--d-sur); --c-sur2:var(--d-sur2);
+  --c-ink:var(--d-ink); --c-ink2:var(--d-ink2); --c-ink3:var(--d-ink3);
+  --c-line:var(--d-line); --c-line2:var(--d-line2);
+  --c-acc:var(--d-acc); --c-acc2:var(--d-acc2); --c-onacc:var(--d-onacc);
+  --c-good:var(--d-good); --c-warn:var(--d-warn); --c-bad:var(--d-bad); --c-cold:var(--d-cold);
+  --tok-l:72%; --tok-lb:24%;
+}
+
+/* --- Ableitungen: Karte, Tiefe, Takt ------------------------------------ */
+:root{
+  --map-void: color-mix(in oklab, var(--c-sunk) 76%, var(--c-ink));
+  --map-water:color-mix(in oklab, var(--c-cold) 40%, var(--c-sunk));
+  --map-wave: color-mix(in oklab, var(--c-cold) 62%, var(--c-sur));
+  --map-stone:color-mix(in oklab, var(--c-sunk) 70%, var(--c-ink2));
+  --map-floor:color-mix(in oklab, var(--c-sur2) 58%, var(--c-acc2));
+  --map-plank:color-mix(in oklab, var(--c-acc2) 26%, var(--map-void));
+  --map-wood: color-mix(in oklab, var(--c-acc2) 50%, var(--c-ink));
+  --map-salt: color-mix(in oklab, rgb(var(--lift)) 62%, var(--c-cold));
+  --map-wall: color-mix(in oklab, var(--c-ink) 58%, var(--c-line2));
+  --map-grid: color-mix(in oklab, var(--c-ink3) 30%, transparent);
+  --map-glow: color-mix(in oklab, var(--c-warn) 68%, var(--c-acc));
+  --map-fog:  color-mix(in oklab, rgb(var(--shade)) 80%, var(--c-cold));
+
+  --sh1:0 1px 2px rgb(var(--shade)/.14);
+  --sh2:0 2px 6px rgb(var(--shade)/.16), 0 10px 24px rgb(var(--shade)/.14);
+  --sh3:0 6px 14px rgb(var(--shade)/.22), 0 28px 60px rgb(var(--shade)/.28);
+  --inset:inset 0 1px 0 rgb(var(--lift)/.06);
+
+  --t-res:140ms;      /* Antwort: Druck, Hover, Fokus            */
+  --t-state:280ms;    /* Zustand: Auswahl, Schaden, Enthüllung   */
+  --t-trans:820ms;    /* Übergang: Szene, Vorhang                */
+  --ease:cubic-bezier(.22,.72,.24,1);
+  --ease-back:cubic-bezier(.34,1.32,.5,1);
+
+  --sp:4px;
+  --rail-w:186px; --lens-w:334px;
+  --cell:34px;
+  color-scheme: light dark;
+}
+:root[data-theme="dark"]{ color-scheme: dark }
+:root[data-theme="light"]{ color-scheme: light }
+
+/* ============================================================ 2. BASIS  */
+*{box-sizing:border-box}
+/* display-Regeln dürfen [hidden] nicht überstimmen — sonst steht ein
+   Pflichtdialog beim Laden offen. */
+[hidden]{display:none !important}
+/* Erster Anstrich ohne Übergänge: sonst reist jede Marke beim Laden aus
+   der Ecke los. Die Klasse wird nach dem ersten Render entfernt. */
+:root.booting *,:root.booting *::before,:root.booting *::after{
+  transition-duration:0s !important; animation-duration:0s !important}
+body{margin:0; background:var(--c-bg)}
+.app,.pop,.reason{font-family:var(--f-ui)}
+/* Feste Höhe, nicht min-height: in einem Raster mit unbestimmter Höhe
+   wächst eine 1fr-Zeile bis zum max-content und schiebt die Regalleiste
+   aus dem Bild. Die Bühne scrollt stattdessen in sich. */
+.app{
+  height:100vh; height:100dvh; background:var(--c-bg); color:var(--c-ink);
+  font-size:14px; line-height:1.45;
+  display:grid; grid-template-rows:auto minmax(0,1fr) auto;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,p,ul,ol,figure,dl,dd{margin:0}
+ul,ol{padding:0;list-style:none}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--c-acc); outline-offset:2px; border-radius:var(--r-s)}
+.num{font-family:var(--f-num); font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+    clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.lbl{font-size:10.5px; text-transform:var(--lbl-tt); letter-spacing:var(--lbl-ls);
+     font-weight:var(--lbl-fw); color:var(--c-ink3)}
+code{font-family:var(--f-num); font-size:.92em}
+.rm-note{display:none}
+
+/* Zustandsstreifen: die sechs Balken, die rückwärts laufen. Dieses DOM wird
+   nie neu gebaut, nur aktualisiert — deshalb ist der Rücklauf eine echte
+   Übergangsanimation und kein Neuzeichnen.                              */
+.glance{margin-top:10px; display:grid; gap:7px;
+  grid-template-columns:repeat(auto-fill, minmax(146px,1fr))}
+.glance li{border:var(--bw) solid var(--c-line); border-radius:var(--r-m); padding:6px 8px;
+  background:var(--c-sur); display:grid; gap:4px;
+  transition:border-color var(--t-state) var(--ease), background-color var(--t-state) var(--ease)}
+.glance li[data-pend="1"]{border-color:var(--c-warn);
+  background:color-mix(in oklab,var(--c-warn) 10%, var(--c-sur))}
+.glance li[data-sel="1"]{border-color:var(--c-acc)}
+.glance__n{display:flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600;
+  min-width:0}
+.glance__n b{width:14px;height:14px;border-radius:99px;flex:none; display:grid; place-items:center;
+  font-size:8.5px; color:hsl(var(--hue) 60% 96%); background:hsl(var(--hue) 44% 34%)}
+.glance__n span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.glance__v{display:flex; align-items:baseline; justify-content:space-between; gap:6px;
+  flex-wrap:wrap; font-family:var(--f-num); font-variant-numeric:tabular-nums; font-size:11px;
+  color:var(--c-ink2)}
+.glance__v > span:first-child{white-space:nowrap}
+.glance__v > [data-st]{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.glance__b{display:block; height:5px; border-radius:99px; overflow:hidden;
+  background:color-mix(in oklab,var(--c-ink) 20%, transparent)}
+.glance__b i{display:block; height:100%; border-radius:99px; background:var(--c-good);
+  transition:width var(--t-state) var(--ease), background-color var(--t-state) var(--ease)}
+.glance li[data-hurt="1"] .glance__b i{background:var(--c-warn)}
+.glance li[data-hurt="2"] .glance__b i{background:var(--c-bad)}
+
+/* Materialschicht: Korn und Rasterlinien, rein dekorativ */
+.grain{position:fixed; inset:0; pointer-events:none; z-index:60; mix-blend-mode:overlay}
+.grain rect{opacity:var(--grain)}
+.scanlines{position:fixed; inset:0; pointer-events:none; z-index:59; opacity:var(--scan);
+  background:repeating-linear-gradient(to bottom,
+    rgb(var(--shade)/.09) 0 1px, transparent 1px 3px)}
+
+/* Schaltflächen ---------------------------------------------------------- */
+.btn{
+  display:inline-flex; align-items:center; gap:calc(var(--sp)*1.5);
+  padding:7px 12px; border:var(--bw) solid var(--c-line2); border-radius:var(--r-m);
+  background:linear-gradient(180deg, var(--c-sur), var(--c-sur2));
+  color:var(--c-ink); cursor:pointer; font-weight:600; font-size:12.5px;
+  box-shadow:var(--sh1), var(--inset);
+  transition:transform var(--t-res) var(--ease), box-shadow var(--t-res) var(--ease),
+             background-color var(--t-res) var(--ease), border-color var(--t-res) var(--ease),
+             color var(--t-res) var(--ease);
+}
+.btn:hover{border-color:var(--c-acc); color:var(--c-acc)}
+.btn:active{transform:translateY(1px); box-shadow:none}
+.btn[disabled]{opacity:.42; cursor:not-allowed; box-shadow:none}
+.btn[disabled]:hover{border-color:var(--c-line2); color:var(--c-ink)}
+.btn--pri{background:var(--c-acc); border-color:var(--c-acc); color:var(--c-onacc)}
+.btn--pri:hover{color:var(--c-onacc); filter:brightness(1.08)}
+.btn--danger{border-color:color-mix(in oklab,var(--c-bad) 58%, var(--c-line2)); color:var(--c-bad)}
+.btn--danger:hover{border-color:var(--c-bad); color:var(--c-bad)}
+.btn--ghost{background:transparent; border-color:transparent; box-shadow:none; color:var(--c-ink2)}
+.btn--ghost:hover{background:var(--c-sur2); border-color:var(--c-line); color:var(--c-ink)}
+.btn--sm{padding:3px 8px; font-size:11.5px; border-radius:var(--r-s)}
+.btn kbd{font-family:var(--f-num); font-size:10px; padding:0 4px; border-radius:2px;
+  border:1px solid color-mix(in oklab, currentColor 30%, transparent); opacity:.85}
+
+.seg{display:inline-flex; border:var(--bw) solid var(--c-line2); border-radius:var(--r-m);
+     overflow:hidden; background:var(--c-sur2)}
+.seg button{padding:5px 9px; border:0; background:transparent; cursor:pointer;
+  font-size:11px; font-weight:600; color:var(--c-ink2);
+  transition:background-color var(--t-res) var(--ease), color var(--t-res) var(--ease)}
+.seg button + button{border-left:var(--bw) solid var(--c-line)}
+.seg button:hover{background:var(--c-sur); color:var(--c-ink)}
+.seg button[aria-pressed="true"]{background:var(--c-acc); color:var(--c-onacc)}
+
+.chip{display:inline-flex; align-items:center; gap:5px; padding:2px 8px;
+  border:var(--bw) solid var(--c-line2); border-radius:99px; font-size:11px;
+  background:var(--c-sur2); color:var(--c-ink2); white-space:nowrap}
+.chip--live{border-color:var(--c-bad); color:var(--c-bad)}
+.chip--warn{border-color:var(--c-warn); color:var(--c-warn);
+  background:color-mix(in oklab, var(--c-warn) 13%, var(--c-sur))}
+.chip--ok{border-color:var(--c-good); color:var(--c-good)}
+.dot{width:7px;height:7px;border-radius:99px;background:currentColor;flex:none}
+
+/* ============================================================ 3. SCHALE */
+.ctx{
+  display:flex; align-items:center; gap:calc(var(--sp)*3); flex-wrap:wrap;
+  padding:8px 14px; background:var(--c-sur);
+  border-bottom:var(--bw2) solid var(--c-line2);
+  box-shadow:var(--sh1); position:relative; z-index:20;
+}
+.ctx::after{content:""; position:absolute; left:0; right:0; bottom:-4px; height:3px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in oklab,var(--c-acc2) 45%, transparent), transparent);
+  opacity:.7; pointer-events:none}
+.ctx__id{display:flex; align-items:center; gap:10px; min-width:0}
+.sigil{width:34px;height:34px;flex:none; border-radius:var(--r-m);
+  border:var(--bw) solid var(--c-line2); background:var(--c-sur2); display:grid; place-items:center;
+  box-shadow:var(--inset)}
+.ctx__campaign{font-family:var(--f-dis); font-size:16px; font-weight:600; line-height:1.15;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ctx__meta{font-size:11px; color:var(--c-ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ctx__spacer{flex:1 1 12px; min-width:0}
+.ctx__ctl{display:flex; align-items:center; gap:calc(var(--sp)*2.5); flex-wrap:wrap}
+.ctl-grp{display:flex; align-items:center; gap:6px}
+
+/* Geräteleiste (Konvergenz) */
+.clients{display:flex; gap:5px; flex-wrap:wrap; align-items:center}
+.client{display:flex; align-items:center; gap:5px; padding:2px 8px 2px 3px;
+  border:var(--bw) solid var(--c-line); border-radius:99px; background:var(--c-sur2);
+  font-size:10.5px; color:var(--c-ink2); white-space:nowrap;
+  transition:border-color var(--t-res) var(--ease), background-color var(--t-res) var(--ease)}
+.client__av{width:17px;height:17px;border-radius:99px; display:grid; place-items:center;
+  font-size:9px; font-weight:700; color:hsl(var(--hue) 60% 96%);
+  background:hsl(var(--hue) 42% 32%); flex:none}
+.client__ms{font-family:var(--f-num); font-variant-numeric:tabular-nums; font-size:10px;
+  color:var(--c-ink3); min-width:46px; text-align:right}
+.client[data-sync="busy"]{border-color:var(--c-warn);
+  background:color-mix(in oklab,var(--c-warn) 12%, var(--c-sur2))}
+.client[data-sync="done"]{border-color:var(--c-good)}
+
+.body{display:grid; grid-template-columns:var(--rail-w) minmax(0,1fr) var(--lens-w);
+  min-height:0; align-items:stretch}
+
+/* Bereichsleiste */
+.rail{background:var(--c-sunk); border-right:var(--bw) solid var(--c-line2);
+  padding:10px 8px; display:flex; flex-direction:column; gap:2px}
+.rail__h{padding:0 6px 8px}
+.rail button{display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+  padding:8px 9px; border:var(--bw) solid transparent; border-radius:var(--r-m);
+  background:transparent; cursor:pointer; color:var(--c-ink2); font-size:13px; font-weight:600;
+  transition:background-color var(--t-res) var(--ease), color var(--t-res) var(--ease),
+             border-color var(--t-res) var(--ease)}
+.rail button:hover{background:var(--c-sur2); color:var(--c-ink)}
+.rail button[aria-current="page"]{background:var(--c-sur); color:var(--c-ink);
+  border-color:var(--c-line2); box-shadow:var(--sh1)}
+.rail button[aria-current="page"] .glyph{color:var(--c-acc)}
+.rail .glyph{width:18px; flex:none; display:grid; place-items:center; color:var(--c-ink3)}
+.rail__note{margin-top:auto; padding:8px 7px 2px; font-size:10.5px; color:var(--c-ink3);
+  border-top:var(--bw) solid var(--c-line); line-height:1.5}
+
+/* Bühne */
+.stage{min-width:0; display:flex; flex-direction:column; background:var(--c-bg)}
+.stage__bar{display:flex; align-items:center; gap:calc(var(--sp)*2); flex-wrap:wrap;
+  padding:8px 14px; border-bottom:var(--bw) solid var(--c-line)}
+.stage__title{font-family:var(--f-dis); font-size:15px; font-weight:600}
+.stage__sub{font-size:11px; color:var(--c-ink3)}
+.stage__body{padding:14px; min-width:0; min-height:0; overflow-y:auto; flex:1 1 auto}
+
+/* Linse */
+.lens{background:var(--c-sunk); border-left:var(--bw) solid var(--c-line2);
+  display:flex; flex-direction:column; min-width:0}
+.lens__h{padding:10px 12px; border-bottom:var(--bw) solid var(--c-line);
+  display:flex; align-items:center; justify-content:space-between; gap:8px}
+.lens__b{padding:12px; min-height:0; overflow-y:auto; display:grid; gap:12px; align-content:start}
+.lens__close{display:none}
+
+/* Regalleiste (Abweichung D1: kollabiert nie) */
+.ledger{background:var(--c-sur); border-top:var(--bw2) solid var(--c-line2);
+  box-shadow:0 -6px 18px rgb(var(--shade)/.12); position:relative; z-index:15}
+.ledger__row{display:flex; align-items:center; gap:calc(var(--sp)*2.5); padding:8px 14px; flex-wrap:wrap}
+.ledger__row + .ledger__row{border-top:var(--bw) solid var(--c-line)}
+.transport{display:flex; gap:6px; align-items:center; overflow-x:auto; padding-bottom:2px;
+  scrollbar-width:thin; max-width:100%}
+.clock{font-family:var(--f-num); font-variant-numeric:tabular-nums; font-size:15px;
+  letter-spacing:.02em}
+.beatno{font-family:var(--f-num); font-size:11px; color:var(--c-ink3); white-space:nowrap}
+
+/* Rückspuler */
+.scrub{display:flex; align-items:center; gap:8px; min-width:220px; flex:1 1 250px}
+.scrub input[type="range"]{flex:1; min-width:80px; -webkit-appearance:none; appearance:none;
+  height:22px; background:transparent; cursor:pointer}
+.scrub input[type="range"]::-webkit-slider-runnable-track{height:4px; border-radius:99px;
+  background:linear-gradient(90deg,var(--c-acc) var(--pct,100%), var(--c-line) var(--pct,100%))}
+.scrub input[type="range"]::-moz-range-track{height:4px; border-radius:99px; background:var(--c-line)}
+.scrub input[type="range"]::-moz-range-progress{height:4px; border-radius:99px; background:var(--c-acc)}
+.scrub input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px;
+  margin-top:-5px; border-radius:99px; background:var(--c-sur); border:2px solid var(--c-acc);
+  box-shadow:var(--sh1)}
+.scrub input[type="range"]::-moz-range-thumb{width:12px;height:12px;border-radius:99px;
+  background:var(--c-sur); border:2px solid var(--c-acc)}
+
+/* Protokollschwanz */
+.tail{display:grid; gap:3px; flex:1 1 300px; min-width:0}
+.tail li{display:flex; align-items:baseline; gap:8px; font-size:12px; min-width:0;
+  padding:2px 0; transition:opacity var(--t-state) var(--ease), color var(--t-state) var(--ease)}
+.tail time{font-family:var(--f-num); font-size:10.5px; color:var(--c-ink3); flex:none}
+.tail .txt{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tail li[data-status="reverted"]{color:var(--c-ink3); opacity:.75}
+.tail li[data-status="reverted"] .txt{text-decoration:line-through;
+  text-decoration-color:color-mix(in oklab,var(--c-bad) 75%, transparent);
+  text-decoration-thickness:1.5px}
+.tail .why{margin-left:auto; flex:none}
+.reason-tag{font-size:10.5px; color:var(--c-bad); flex:none;
+  border:1px dashed color-mix(in oklab,var(--c-bad) 55%,transparent);
+  border-radius:var(--r-s); padding:0 5px}
+
+/* ============================================================ 4. KARTE  */
+/* Die Karte wird nie kleiner als lesbar: unterschreitet der Platz das
+   Minimum, scrollt sie in ihrem eigenen Kasten. Der Seitenkörper scrollt
+   niemals seitwärts. */
+.map-wrap{position:relative; margin:0 auto; width:100%; max-width:900px;
+  overflow-x:auto; overflow-y:hidden; scrollbar-width:thin}
+.map-fit{position:relative; width:calc(680px * var(--fit,1)); height:calc(408px * var(--fit,1))}
+.map{position:absolute; top:0; left:0; width:680px; height:408px;
+  transform:scale(var(--fit,1)); transform-origin:top left;
+  border:var(--bw2) solid var(--c-line2); border-radius:var(--r-m);
+  background:var(--map-void); overflow:hidden; box-shadow:var(--sh3)}
+.map > svg{position:absolute; inset:0; width:100%; height:100%; display:block}
+.fog-c{transition:r var(--t-state) var(--ease)}
+
+/* Flächenschablone */
+.tmpl{position:absolute; left:0; top:0; width:0; height:0; pointer-events:none;
+  transform:translate3d(calc(var(--tx,0) * var(--cell)), calc(var(--ty,0) * var(--cell)), 0);
+  transition:transform var(--t-state) var(--ease), opacity var(--t-state) var(--ease)}
+.tmpl__disc{position:absolute; left:50%; top:50%;
+  width:calc(var(--tr) * var(--cell) * 2); height:calc(var(--tr) * var(--cell) * 2);
+  transform:translate(-50%,-50%); border-radius:99px;
+  background:radial-gradient(circle,
+    color-mix(in oklab,var(--map-glow) 44%, transparent) 0%,
+    color-mix(in oklab,var(--map-glow) 20%, transparent) 58%,
+    color-mix(in oklab,var(--map-glow) 3%, transparent) 100%);
+  border:1.5px dashed color-mix(in oklab,var(--map-glow) 80%, transparent)}
+.tmpl__x{position:absolute; left:50%; top:50%; width:11px; height:11px;
+  transform:translate(-50%,-50%) rotate(45deg);
+  border-left:1.5px solid var(--map-glow); border-top:1.5px solid var(--map-glow); opacity:.9}
+
+/* Marken */
+.tok{position:absolute; left:0; top:0; width:calc(var(--cell) - 4px); height:calc(var(--cell) - 4px);
+  margin:2px; padding:0; border-radius:99px; cursor:pointer;
+  border:2px solid hsl(var(--hue) 48% var(--tok-l));
+  background:radial-gradient(circle at 34% 28%,
+    hsl(var(--hue) 40% calc(var(--tok-lb) + 7%)), hsl(var(--hue) 32% var(--tok-lb)));
+  color:hsl(var(--hue) 62% var(--tok-l));
+  display:grid; place-items:center; font-weight:700; font-size:12px;
+  transform:translate3d(calc(var(--x,0) * var(--cell)), calc(var(--y,0) * var(--cell)), 0);
+  transition:transform var(--t-state) var(--ease), box-shadow var(--t-res) var(--ease),
+             opacity var(--t-state) var(--ease), filter var(--t-state) var(--ease);
+  box-shadow:0 2px 5px rgb(var(--shade)/.45)}
+.tok:hover{box-shadow:0 0 0 3px color-mix(in oklab,var(--c-acc) 45%, transparent),
+  0 2px 5px rgb(var(--shade)/.45)}
+.tok[data-side="foe"]{border-radius:var(--r-s)}
+.tok[data-side="neutral"]{border-style:dashed}
+.tok[data-sel="1"]{box-shadow:0 0 0 3px var(--c-acc), 0 2px 6px rgb(var(--shade)/.5)}
+.tok[data-down="1"]{filter:grayscale(.6) brightness(.9)}
+.tok__hp{position:absolute; left:3px; right:3px; bottom:-1px; height:3.5px; border-radius:99px;
+  background:color-mix(in oklab, var(--c-ink) 45%, transparent); overflow:hidden}
+.tok__hp i{display:block; height:100%; width:var(--w,100%); border-radius:99px;
+  background:var(--c-good);
+  transition:width var(--t-state) var(--ease), background-color var(--t-state) var(--ease)}
+.tok[data-hurt="1"] .tok__hp i{background:var(--c-warn)}
+.tok[data-hurt="2"] .tok__hp i{background:var(--c-bad)}
+.tok__pend{position:absolute; top:-7px; right:-7px; width:15px; height:15px; border-radius:99px;
+  background:var(--c-warn); color:#1c1305; font-size:10px; font-weight:800;
+  display:grid; place-items:center; border:1.5px solid var(--c-sur);
+  animation:pulse var(--t-anim,1800ms) var(--ease) infinite;
+  transition:transform var(--t-state) var(--ease-back), opacity var(--t-state) var(--ease)}
+.tok__pend[data-leaving="1"]{transform:scale(.1); opacity:0}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 color-mix(in oklab,var(--c-warn) 55%, transparent)}
+  55%{box-shadow:0 0 0 6px color-mix(in oklab,var(--c-warn) 0%, transparent)}}
+/* Beschriftungen weichen einander aus: unter der Marke, sonst darüber,
+   sonst rechts daneben. Was nirgends Platz hat, bleibt aus — der Name
+   steht dann im Zustandsstreifen, im Umriss und in der ARIA-Beschriftung. */
+.tok__name{position:absolute; left:0; top:0; pointer-events:none; white-space:nowrap;
+  transform:translate3d(calc(var(--x,0) * var(--cell) + var(--cell)/2),
+                        calc(var(--y,0) * var(--cell) + var(--cell) - 1px), 0) translateX(-50%);
+  font-size:9.5px; font-weight:600; color:var(--c-ink);
+  text-shadow:0 1px 2px var(--map-void), 0 0 5px var(--map-void);
+  transition:transform var(--t-state) var(--ease), opacity var(--t-res) var(--ease)}
+.tok__name[data-place="above"]{
+  transform:translate3d(calc(var(--x,0) * var(--cell) + var(--cell)/2),
+                        calc(var(--y,0) * var(--cell) - 12px), 0) translateX(-50%)}
+.tok__name[data-place="right"]{
+  transform:translate3d(calc(var(--x,0) * var(--cell) + var(--cell) + 3px),
+                        calc(var(--y,0) * var(--cell) + var(--cell)/2 - 7px), 0)}
+.tok__name b{display:inline-block; padding:0 3px; border-radius:var(--r-s);
+  background:color-mix(in oklab, var(--map-void) 62%, transparent); font-weight:600}
+.map--tight .tok__name{opacity:0}
+.turnring{position:absolute; left:0; top:0; width:var(--cell); height:var(--cell);
+  pointer-events:none; border:2px solid var(--c-acc); border-radius:var(--r-s);
+  transform:translate3d(calc(var(--x,0) * var(--cell)), calc(var(--y,0) * var(--cell)), 0);
+  transition:transform var(--t-state) var(--ease);
+  box-shadow:0 0 12px color-mix(in oklab,var(--c-acc) 55%,transparent)}
+
+/* Wiedergabe-Auflage — visibility hält die Abbrechen-Taste aus der
+   Fokusreihenfolge, solange nichts läuft. */
+.replay{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:10px;
+  padding:8px 12px; background:color-mix(in oklab, var(--map-void) 84%, transparent);
+  border-top:var(--bw) solid var(--c-acc); color:var(--c-ink); visibility:hidden;
+  transform:translateY(101%);
+  transition:transform var(--t-state) var(--ease), visibility 0s linear var(--t-state)}
+.map[data-replay="1"] .replay{transform:none; visibility:visible; transition-delay:0s}
+.map[data-replay="1"]{outline:2px solid var(--c-acc); outline-offset:2px}
+.replay__bar{flex:1; height:3px; border-radius:99px;
+  background:color-mix(in oklab,var(--c-ink) 35%, transparent)}
+.replay__bar i{display:block; height:100%; width:0%; background:var(--c-acc); border-radius:99px}
+
+/* Umrissrezeptur */
+.outline{border:var(--bw) solid var(--c-line2); border-radius:var(--r-m); overflow:hidden;
+  background:var(--c-sur)}
+.otable{width:100%; border-collapse:collapse; font-size:12.5px; min-width:560px}
+.otable caption{text-align:left; padding:9px 11px; font-size:11px; color:var(--c-ink3);
+  border-bottom:var(--bw) solid var(--c-line)}
+.otable th,.otable td{padding:6px 10px; text-align:left; border-bottom:var(--bw) solid var(--c-line)}
+.otable th{font-size:10.5px; text-transform:var(--lbl-tt); letter-spacing:var(--lbl-ls);
+  color:var(--c-ink3); font-weight:var(--lbl-fw); background:var(--c-sur2)}
+.otable td.n{font-family:var(--f-num); font-variant-numeric:tabular-nums; text-align:right}
+.otable tr[data-down="1"] td{color:var(--c-ink3)}
+.otable tbody tr:hover{background:var(--c-sur2)}
+.otable tbody tr[data-sel="1"]{background:color-mix(in oklab,var(--c-acc) 12%, var(--c-sur))}
+
+/* ============================================================ 5. INHALT */
+.card{border:var(--bw) solid var(--c-line2); border-radius:var(--r-m); background:var(--c-sur);
+  box-shadow:var(--sh1)}
+.card__h{padding:8px 11px; border-bottom:var(--bw) solid var(--c-line);
+  display:flex; align-items:center; justify-content:space-between; gap:8px}
+.card__b{padding:11px; display:grid; gap:8px}
+.trace__line{display:flex; gap:8px; align-items:baseline; font-size:12.5px; flex-wrap:wrap}
+.ttable{width:100%; border-collapse:collapse; font-size:12px; min-width:280px}
+.ttable th,.ttable td{padding:4px 5px; border-bottom:var(--bw) solid var(--c-line); text-align:left}
+.ttable th{font-size:10px; color:var(--c-ink3); text-transform:var(--lbl-tt);
+  letter-spacing:var(--lbl-ls); font-weight:var(--lbl-fw)}
+.ttable td.n{font-family:var(--f-num); font-variant-numeric:tabular-nums; text-align:right;
+  white-space:nowrap}
+.ttable tr[data-rev="1"] td{color:var(--c-ink3); text-decoration:line-through;
+  text-decoration-color:color-mix(in oklab,var(--c-bad) 70%, transparent)}
+.scroll-x{overflow-x:auto; scrollbar-width:thin; max-width:100%}
+.mini{font-size:11.5px; color:var(--c-ink3); line-height:1.5}
+.q{border:0; background:transparent; padding:0 3px; cursor:pointer; color:var(--c-acc);
+  font-family:var(--f-num); font-weight:700; border-bottom:1px dotted currentColor}
+.q:hover{background:color-mix(in oklab,var(--c-acc) 14%, transparent)}
+
+/* Chronikseite */
+.page{max-width:730px; margin:0 auto; display:grid; gap:15px}
+.page__crown{display:flex; align-items:flex-end; justify-content:space-between; gap:12px;
+  border-bottom:var(--bw2) solid var(--c-line2); padding-bottom:8px; flex-wrap:wrap}
+.page h2{font-family:var(--f-dis); font-size:26px; line-height:1.1; font-weight:600}
+.page__id{font-family:var(--f-num); font-size:10.5px; color:var(--c-ink3)}
+.infobox{border:var(--bw) solid var(--c-line2); border-radius:var(--r-m); background:var(--c-sur2);
+  overflow:hidden}
+.infobox h3{padding:7px 11px; font-size:11px; text-transform:var(--lbl-tt);
+  letter-spacing:var(--lbl-ls); color:var(--c-ink3);
+  border-bottom:var(--bw) solid var(--c-line); font-weight:var(--lbl-fw)}
+.infobox dl{display:grid; grid-template-columns:minmax(96px,auto) 1fr}
+.infobox dt{padding:6px 11px; font-size:11.5px; color:var(--c-ink3);
+  border-bottom:var(--bw) solid var(--c-line)}
+.infobox dd{padding:4px 9px 4px 0; border-bottom:var(--bw) solid var(--c-line); font-size:13px;
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+.infobox dl > :nth-last-child(-n+2){border-bottom:0}
+.fact{display:inline-flex; align-items:center; gap:6px; padding:2px 7px; border-radius:var(--r-s);
+  border:var(--bw) dotted var(--c-line2); background:var(--c-sur); cursor:pointer;
+  text-align:left; font:inherit; font-size:13px;
+  transition:border-color var(--t-res) var(--ease), background-color var(--t-res) var(--ease)}
+.fact:hover{border-style:solid; border-color:var(--c-acc);
+  background:color-mix(in oklab,var(--c-acc) 9%, var(--c-sur))}
+.fact--contested{border-color:color-mix(in oklab,var(--c-warn) 70%, transparent)}
+.fact__mark{font-size:10px; color:var(--c-ink3); font-family:var(--f-num)}
+.prose{width:100%; min-height:82px; padding:9px 11px; resize:vertical;
+  border:var(--bw) solid var(--c-line2); border-radius:var(--r-m); background:var(--c-sur);
+  font-family:var(--f-dis); font-size:14px; line-height:1.55}
+.prose:focus-visible{border-color:var(--c-acc)}
+.happened li{display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:baseline;
+  padding:7px 2px; border-bottom:var(--bw) solid var(--c-line); font-size:12.5px}
+.happened li:last-child{border-bottom:0}
+.happened time{font-family:var(--f-num); font-size:10.5px; color:var(--c-ink3)}
+.happened li[data-status="reverted"]{opacity:.62}
+.happened li[data-status="reverted"] .txt{text-decoration:line-through}
+.empty{border:var(--bw) dashed var(--c-line2); border-radius:var(--r-m); padding:11px;
+  background:var(--c-sur2); display:flex; gap:10px; align-items:center;
+  justify-content:space-between; flex-wrap:wrap}
+.empty p{font-size:12.5px; color:var(--c-ink2); max-width:52ch}
+.backlinks{display:flex; gap:6px; flex-wrap:wrap}
+
+/* Ehrlichkeitsnotiz */
+.honest{margin:18px auto 0; max-width:730px; border:var(--bw) dashed var(--c-line2);
+  border-radius:var(--r-m); background:var(--c-sunk)}
+.honest > summary{padding:9px 12px; cursor:pointer; font-size:12px; font-weight:600;
+  color:var(--c-ink2)}
+.honest > summary:hover{color:var(--c-ink)}
+.honest__b{padding:0 14px 12px; font-size:12.5px; color:var(--c-ink2)}
+.honest__b li{padding-left:15px; position:relative; margin-bottom:7px; line-height:1.5}
+.honest__b li::before{content:"—"; position:absolute; left:0; color:var(--c-ink3)}
+
+/* Herkunftsfenster */
+.pop{position:fixed; z-index:70; width:min(370px, calc(100vw - 20px));
+  border:var(--bw2) solid var(--c-line2); border-radius:var(--r-m); background:var(--c-sur);
+  box-shadow:var(--sh3); color:var(--c-ink);
+  opacity:0; transform:translateY(5px); pointer-events:none;
+  transition:opacity var(--t-res) var(--ease), transform var(--t-res) var(--ease)}
+.pop[data-open="1"]{opacity:1; transform:none; pointer-events:auto}
+.pop__h{display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:8px 11px; border-bottom:var(--bw) solid var(--c-line); background:var(--c-sur2)}
+.pop__t{font-size:11px; text-transform:var(--lbl-tt); letter-spacing:var(--lbl-ls);
+  color:var(--c-ink3); font-weight:var(--lbl-fw)}
+.pop__b{padding:11px; display:grid; gap:9px; font-size:12.5px; line-height:1.5}
+.pop__f{padding:9px 11px; border-top:var(--bw) solid var(--c-line); display:flex; gap:6px;
+  flex-wrap:wrap; background:var(--c-sur2)}
+.kv{display:grid; grid-template-columns:auto 1fr; gap:3px 10px; font-size:12px}
+.kv dt{color:var(--c-ink3)}
+.kv dd{font-family:var(--f-num); font-variant-numeric:tabular-nums}
+
+/* Begründungsformular */
+.reason{position:fixed; inset:0; z-index:75; display:grid; place-items:end center;
+  padding:0 12px 90px; pointer-events:none}
+.reason__box{width:min(540px,100%); pointer-events:auto;
+  border:var(--bw2) solid var(--c-bad); border-radius:var(--r-m);
+  background:var(--c-sur); box-shadow:var(--sh3); overflow:hidden;
+  animation:rise var(--t-state) var(--ease)}
+@keyframes rise{from{transform:translateY(18px); opacity:0} to{transform:none; opacity:1}}
+.reason__h{padding:9px 12px; background:color-mix(in oklab,var(--c-bad) 11%, var(--c-sur));
+  border-bottom:var(--bw) solid var(--c-line); display:flex; align-items:center; gap:9px;
+  flex-wrap:wrap}
+.reason__b{padding:12px; display:grid; gap:9px}
+.reason input[type="text"]{width:100%; padding:9px 11px; border-radius:var(--r-m);
+  border:var(--bw2) solid var(--c-line2); background:var(--c-sur2)}
+.reason input:focus-visible{border-color:var(--c-acc)}
+.reason__row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.reason__err{color:var(--c-bad); font-size:12px; min-height:17px}
+.suggest{display:flex; gap:5px; flex-wrap:wrap}
+
+/* ============================================================ 6. SCHMAL */
+.drawerbtn{display:none}
+@media (max-width:1180px){
+  .body{grid-template-columns:var(--rail-w) minmax(0,1fr)}
+  .lens{position:fixed; top:0; right:0; bottom:0; width:min(340px,86vw); z-index:40;
+    box-shadow:var(--sh3); transform:translateX(101%);
+    transition:transform var(--t-state) var(--ease)}
+  .lens[data-open="1"]{transform:none}
+  .lens__close{display:inline-flex}
+  .drawerbtn{display:inline-flex}
+}
+@media (max-width:900px){
+  :root{--rail-w:54px}
+  .rail button{justify-content:center; padding:9px 4px}
+  .rail .rail__txt,.rail__note,.rail__h{display:none}
+  .ctx__meta{display:none}
+}
+@media (max-width:640px){
+  .app{font-size:13.5px}
+  .ctx{padding:7px 9px; gap:9px}
+  .clients{display:none}
+  .stage__body{padding:9px}
+  .ledger__row{padding:7px 9px; gap:9px}
+  .tail li:nth-child(n+3){display:none}
+  .page h2{font-size:21px}
+  .infobox dl{grid-template-columns:1fr}
+  .infobox dt{border-bottom:0; padding-bottom:0}
+  .reason{padding-bottom:12px; place-items:center}
+}
+@media (max-width:430px){
+  .scrub{flex-basis:100%}
+  .ctx__ctl{width:100%}
+  .ledger__row:first-child{gap:7px}
+}
+
+/* ============================================================ 7. RUHE   */
+/* Bewegung ist Zustandsauskunft. Ohne sie bleibt die Auskunft, die Reise
+   entfällt: Werte springen, die Änderungen erscheinen als Zeilen.
+   Jede Dauer im Dokument hängt an genau diesen vier Tokens — deshalb
+   braucht dieser Block kein einziges !important und die Nutzerwahl
+   („Voll“) kann die Systemeinstellung sauber überstimmen.              */
+@media (prefers-reduced-motion: reduce){
+  :root{--t-res:1ms; --t-state:1ms; --t-trans:1ms; --t-anim:1ms}
+  .rm-note{display:block}
+}
+:root[data-motion="reduced"]{--t-res:1ms; --t-state:1ms; --t-trans:1ms; --t-anim:1ms}
+:root[data-motion="reduced"] .rm-note{display:block}
+:root[data-motion="full"]{--t-res:140ms; --t-state:280ms; --t-trans:820ms; --t-anim:1800ms}
+:root[data-motion="full"] .rm-note{display:none}
+:root[data-motion="reduced"] .tok__pend,
+:root[data-motion="reduced"] .replay__bar i{animation-name:none}
+@media (prefers-reduced-motion: reduce){
+  :root:not([data-motion="full"]) .tok__pend{animation-name:none}
+}
+</style>
+
+<svg class="grain" aria-hidden="true" focusable="false" width="100%" height="100%">
+  <filter id="fgrain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3"
+    stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#fgrain)"></rect>
+</svg>
+<div class="scanlines" aria-hidden="true"></div>
+
+<div class="app" id="app">
+
+  <!-- ============================ Kampagnenkontext ==================== -->
+  <header class="ctx">
+    <div class="ctx__id">
+      <span class="sigil" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M4 15.5 10 3l6 12.5" stroke="var(--c-acc)" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M6.6 12.4h6.8" stroke="var(--c-acc2)" stroke-width="1.2"/>
+          <circle cx="10" cy="16.6" r="1.3" fill="var(--c-acc2)"/>
+        </svg>
+      </span>
+      <div>
+        <h1 class="ctx__campaign">Die Salzhaus-Chronik</h1>
+        <p class="ctx__meta">Aldenfall · Sitzung&nbsp;12 · Regie: Kaya · Paket „Aschenpakt-Grundregeln 0.4.2“</p>
+      </div>
+    </div>
+
+    <div class="ctx__spacer"></div>
+
+    <div class="clients" id="clients" role="group" aria-label="Verbundene Geräte und ihr Protokollstand"></div>
+
+    <div class="ctx__ctl">
+      <div class="ctl-grp">
+        <span class="lbl" id="lbl-skin">Haut</span>
+        <div class="seg" role="group" aria-labelledby="lbl-skin" id="skinseg">
+          <button type="button" data-skin="relic"   aria-pressed="true">Relikt</button>
+          <button type="button" data-skin="signal"  aria-pressed="false">Signal</button>
+          <button type="button" data-skin="archive" aria-pressed="false">Archiv</button>
+          <button type="button" data-skin="clean"   aria-pressed="false">Klar</button>
+        </div>
+      </div>
+      <div class="ctl-grp">
+        <span class="lbl" id="lbl-theme">Licht</span>
+        <div class="seg" role="group" aria-labelledby="lbl-theme" id="themeseg">
+          <button type="button" data-theme="auto"  aria-pressed="true">System</button>
+          <button type="button" data-theme="light" aria-pressed="false">Hell</button>
+          <button type="button" data-theme="dark"  aria-pressed="false">Dunkel</button>
+        </div>
+      </div>
+      <div class="ctl-grp">
+        <span class="lbl" id="lbl-motion">Bewegung</span>
+        <div class="seg" role="group" aria-labelledby="lbl-motion" id="motionseg">
+          <button type="button" data-motion="auto"    aria-pressed="true">System</button>
+          <button type="button" data-motion="full"    aria-pressed="false">Voll</button>
+          <button type="button" data-motion="reduced" aria-pressed="false">Reduziert</button>
+        </div>
+      </div>
+      <button type="button" class="btn btn--ghost drawerbtn" id="lensToggle" aria-expanded="false"
+              aria-controls="lens">Linse</button>
+    </div>
+  </header>
+
+  <div class="body">
+
+    <!-- ============================ Bereichsleiste =================== -->
+    <nav class="rail" aria-label="Bereiche">
+      <p class="rail__h lbl">Bereiche</p>
+      <button type="button" data-zone="session">
+        <span class="glyph" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.2h12M5.5 3V1.6M10.5 3V1.6" stroke="currentColor" stroke-width="1.3"/></svg></span>
+        <span class="rail__txt">Sitzung</span>
+      </button>
+      <button type="button" data-zone="record">
+        <span class="glyph" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h7l3 3v8H3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5.2 8h5.6M5.2 10.4h4" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        <span class="rail__txt">Aufzeichnung</span>
+      </button>
+      <button type="button" data-zone="cast">
+        <span class="glyph" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.6" r="2.4" stroke="currentColor" stroke-width="1.3"/><path d="M2 13c.6-2.4 2.1-3.6 4-3.6S9.4 10.6 10 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="11.6" cy="6" r="1.7" stroke="currentColor" stroke-width="1.1"/></svg></span>
+        <span class="rail__txt">Ensemble</span>
+      </button>
+      <button type="button" data-zone="library">
+        <span class="glyph" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="3" width="3" height="10" rx=".6" stroke="currentColor" stroke-width="1.2"/><rect x="6.6" y="3" width="3" height="10" rx=".6" stroke="currentColor" stroke-width="1.2"/><path d="m10.8 4.2 2.6.7-2 9.2" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        <span class="rail__txt">Fundus</span>
+      </button>
+      <button type="button" data-zone="table" aria-current="page">
+        <span class="glyph" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="m2 5.5 6-3 6 3-6 3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="m2 8.5 6 3 6-3M2 11.5l6 3 6-3" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>
+        <span class="rail__txt">Tisch</span>
+      </button>
+      <button type="button" data-zone="forge">
+        <span class="glyph" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 12.5 9.5 6M8 4.5 11.5 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="m10.4 2.6 2.9 2.9-1.6 1.6-2.9-2.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></span>
+        <span class="rail__txt">Schmiede</span>
+      </button>
+      <p class="rail__note">Sitzung ist die Wurzel, nicht ein Blatt. Der Tisch bleibt offen,
+        auch während du in der Aufzeichnung liest.</p>
+    </nav>
+
+    <!-- ============================ Bühne ============================ -->
+    <main class="stage" id="stage">
+      <div class="stage__bar">
+        <div>
+          <h2 class="stage__title" id="stageTitle">Salzhaus am Nordkai</h2>
+          <p class="stage__sub" id="stageSub">Szene 3 · UVTT-Import „nordkai-salzhaus.dd2vtt“ · Raster 1,5&nbsp;m · Vorhang: Live</p>
+        </div>
+        <div class="ctx__spacer"></div>
+        <div class="seg" role="group" aria-label="Darstellungsrezeptur der Szene" id="recipeSeg">
+          <button type="button" data-recipe="tactical" aria-pressed="true">Taktisch</button>
+          <button type="button" data-recipe="outline"  aria-pressed="false">Umriss</button>
+        </div>
+        <button type="button" class="btn btn--sm" id="btnNames" aria-pressed="false">Alle Namen</button>
+        <button type="button" class="btn btn--sm" id="zoneJump">Chronik: Vaugn Kesselmann →</button>
+      </div>
+
+      <div class="stage__body" id="stageBody">
+
+        <!-- Taktische Rezeptur -->
+        <section id="viewTable" aria-labelledby="stageTitle">
+          <div class="map-wrap" id="mapWrap">
+            <div class="map-fit" id="mapFit">
+              <div class="map" id="map">
+                <svg viewBox="0 0 680 408" aria-hidden="true" focusable="false" id="mapArt"></svg>
+                <div class="tmpl" id="tmpl" hidden><span class="tmpl__disc"></span><span class="tmpl__x"></span></div>
+                <div id="tokens"></div>
+                <div class="turnring" id="turnring" hidden></div>
+                <div class="replay" id="replayHud">
+                  <span class="lbl" style="color:var(--c-acc)">Wiedergabe</span>
+                  <span class="num" id="replayLabel" style="font-size:11px">Beat 6 · 0,0 s</span>
+                  <span class="replay__bar"><i id="replayBar"></i></span>
+                  <button type="button" class="btn btn--sm" id="replayStop">Abbrechen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h3 class="vh">Zustand der Anwesenden</h3>
+          <ul class="glance" id="glance"></ul>
+
+          <p class="rm-note" style="margin-top:9px; font-size:11.5px; color:var(--c-ink3)">
+            Reduzierte Bewegung ist aktiv: Zustände wechseln ohne Reise. Jede Änderung des
+            Rückspulers erscheint stattdessen als Zeile in der Linse — der Flex hängt nicht
+            an einer Animation.
+          </p>
+        </section>
+
+        <!-- Umrissrezeptur -->
+        <section id="viewOutline" hidden aria-labelledby="stageTitle">
+          <div class="outline scroll-x">
+            <table class="otable" id="outlineTable">
+              <caption>Dieselbe Szene, semantisch. Auswahl, Zustand und Rückspulstand sind
+                identisch — nur die Darstellung wechselt.</caption>
+              <thead>
+                <tr><th scope="col">Marke</th><th scope="col">Seite</th><th scope="col">Feld</th>
+                    <th scope="col">KP</th><th scope="col">Zustand</th><th scope="col">Zug</th></tr>
+              </thead>
+              <tbody id="outlineBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Aufzeichnung: Vaugns Seite -->
+        <section id="viewRecord" hidden aria-labelledby="recordTitle">
+          <article class="page">
+            <div class="page__crown">
+              <div>
+                <h2 id="recordTitle">Vaugn Kesselmann</h2>
+                <p class="page__id num">akt/vaugn-kesselmann · Person · aus Erwähnung entstanden, S12 B6</p>
+              </div>
+              <p class="lbl">Projektion desselben Protokolls</p>
+            </div>
+
+            <div class="infobox">
+              <h3>Typisierte Felder</h3>
+              <dl id="infoDl"></dl>
+            </div>
+
+            <section aria-labelledby="hp-h">
+              <h3 id="hp-h" class="lbl" style="margin-bottom:6px">Was geschah · gefiltertes Protokoll</h3>
+              <ul class="happened" id="happened"></ul>
+            </section>
+
+            <section aria-labelledby="know-h">
+              <h3 id="know-h" class="lbl" style="margin-bottom:6px">Was Ossa Brandt über diese Person weiß</h3>
+              <div class="empty">
+                <p><strong>Nichts aufgezeichnet.</strong> Das ist nicht dasselbe wie „nichts geschehen“ —
+                  Ossa stand im Nebenraum, als Vaugn sprach.</p>
+                <button type="button" class="btn btn--sm" id="whyEmpty">Warum leer?</button>
+              </div>
+            </section>
+
+            <section aria-labelledby="prose-h">
+              <h3 id="prose-h" class="lbl" style="margin-bottom:6px">Freitext der Spielleitung</h3>
+              <label class="vh" for="proseField">Freitext zu Vaugn Kesselmann</label>
+              <textarea class="prose" id="proseField" spellcheck="false">Vaugn hält den Nordkai seit neun Wintern und verkauft dem [[Aschenpakt]] still den Zugang zum Salzhaus. Er lügt nicht gern, aber er lügt gut.</textarea>
+              <p class="mini" style="margin-top:5px">
+                Klartextfeld mit <code>[[…]]</code>-Verweisen. Scheibe&nbsp;1 hat bewusst keinen
+                Rich-Text-Editor — das ist ein Mehrmonatsprojekt und steht als solches im
+                Kandidatendokument. Diese zwei Sätze sind das Einzige auf dieser Seite,
+                das ein Mensch geschrieben hat.
+              </p>
+            </section>
+
+            <section aria-labelledby="bl-h">
+              <h3 id="bl-h" class="lbl" style="margin-bottom:6px">Rückverweise · abgefragt, nicht gepflegt</h3>
+              <p class="backlinks">
+                <span class="chip">Sela Vandt · 3 Beats</span>
+                <span class="chip">Salzhaus am Nordkai · 6 Beats</span>
+                <span class="chip">Der Aschenpakt · 2 Beats</span>
+                <span class="chip">Hafenbuch (Gegenstand) · 1 Beat</span>
+              </p>
+            </section>
+          </article>
+
+          <details class="honest">
+            <summary>Was dieser Spike beweist — und was nicht</summary>
+            <div class="honest__b">
+              <ul>
+                <li><strong>Bewiesen:</strong> Tisch und Chronikseite sind zwei Lesarten <em>einer</em>
+                  Beat-Liste. Bewege den Rückspuler, und beide Seiten ändern sich aus derselben
+                  Faltung <code>project(seq)</code>. In dieser Datei gibt es keinen zweiten
+                  Schreibpfad — auch keinen heimlichen.</li>
+                <li><strong>Bewiesen:</strong> Rückgängig ist kein Skript. Der Beat wird als
+                  <code>zurückgenommen</code> markiert und aus der Faltung ausgeschlossen; die sechs
+                  Balken laufen rückwärts, weil die Projektion es sagt, nicht weil eine Animation
+                  es vorführt.</li>
+                <li><strong>Nicht bewiesen — Zugriffsschutz.</strong> Alles liegt in einer Datei; jede
+                  Konsole liest die Fixtures. Ein Einzeldatei-Spike kann den <em>Vertrag</em> einer
+                  Antwort zeigen, niemals die serverseitige Auslassung. Der Differenztest aus §7 des
+                  Kandidatendokuments bleibt die einzige Instanz, die darüber entscheidet.</li>
+                <li><strong>Nicht bewiesen — die Karte.</strong> Die Bühnenzeile nennt
+                  <code>nordkai-salzhaus.dd2vtt</code>, aber diese Datei importiert nichts:
+                  Wände, Nebelkanten und Markenfelder sind gezeichnete Festwerte, keine
+                  eingelesenen UVTT-Daten. Bewiesen ist, wie eine taktische Fläche unter dem
+                  Rückspuler <em>aussieht</em> — nicht, dass sie aus fremden Dateien entsteht.
+                  Der UVTT-Import steht in Scheibe 1 (§7.3) und ist ungespikt.</li>
+                <li><strong>Nicht geprüft — die Achsen.</strong> Ein Inhalt, eine Rolle, eine
+                  Sprache. Häute und Farbmodi lassen sich hier umschalten, aber niemand hat
+                  gegengerechnet. Diese Prüfung ist der Auftrag des zweiten Sitzes; dieses
+                  Artefakt darf nicht als Beleg für Universalität gelesen werden.</li>
+                <li><strong>Nicht bewiesen — Konvergenz.</strong> Die fünf Gerätechips und ihre
+                  Millisekunden sind gestellt. Echt ist daran nur die Behauptung, die das
+                  Rückspul-Tor (§7.2) messen muss: fünf Klienten, ein zurückgenommener
+                  Mehrzielangriff, unter 1,5&nbsp;s, Prüfpfad intakt.</li>
+                <li><strong>Nicht bewiesen — Wiedergabe.</strong> Hier sind es drei Beats mit Dauern.
+                  In echt ist das E1 („Beat-Clip“) und hat Aktgröße, nicht Transitionsgröße.</li>
+                <li><strong>Ungeprüft — Kontrast.</strong> Diese Datei rechnet keine Kontrastwerte.
+                  Vier Häute × zwei Lichtmodi sind rechnerisch offen und gehören vor jede Wertung
+                  durch das automatische Tor.</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+      </div>
+    </main>
+
+    <!-- ============================ Linse ============================ -->
+    <aside class="lens" id="lens" aria-label="Linse: ausgewähltes Objekt">
+      <div class="lens__h">
+        <h2 class="lbl" id="lensTitle">Linse · Zug</h2>
+        <button type="button" class="btn btn--ghost btn--sm lens__close" id="lensClose">Schließen</button>
+      </div>
+      <div class="lens__b" id="lensBody"></div>
+    </aside>
+  </div>
+
+  <!-- ============================ Regalleiste ======================== -->
+  <footer class="ledger" aria-label="Sitzungsregal">
+    <div class="ledger__row">
+      <span class="chip chip--live"><span class="dot"></span> Vorhang: Live</span>
+      <span class="clock num" id="clock">21:47:12</span>
+      <span class="beatno" id="beatNo">Beat 12 / 12</span>
+
+      <div class="scrub">
+        <label class="lbl" for="scrubber">Rückspulen</label>
+        <input type="range" id="scrubber" min="5" max="12" step="1" value="12"
+               aria-describedby="scrubLabel">
+        <output class="num" id="scrubLabel" for="scrubber" style="font-size:11px; min-width:118px">Beat 12 · 21:47</output>
+      </div>
+
+      <div class="ctx__spacer"></div>
+
+      <div class="transport" role="group" aria-label="Transport">
+        <button type="button" class="btn btn--sm" id="btnPreview">Vorschau</button>
+        <button type="button" class="btn btn--sm btn--pri" id="btnRecommit" hidden>Ein Feld westlich neu ansetzen</button>
+        <button type="button" class="btn btn--sm btn--danger" id="btnUndo">
+          Rückgängig <kbd>Strg</kbd><kbd>Z</kbd>
+        </button>
+        <button type="button" class="btn btn--sm" id="btnBlame">Herkunft</button>
+        <button type="button" class="btn btn--sm" id="btnReplay">Wiedergabe 18&nbsp;s</button>
+      </div>
+    </div>
+
+    <div class="ledger__row">
+      <span class="lbl" style="flex:none">Protokoll</span>
+      <ul class="tail" id="tail" aria-live="polite"></ul>
+      <span class="chip" id="diceChip">5W6 · 3 6 2 5 1 = 17</span>
+    </div>
+  </footer>
+</div>
+
+<div class="pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="popTitle" hidden>
+  <div class="pop__h">
+    <p class="pop__t" id="popTitle">Herkunft</p>
+    <button type="button" class="btn btn--ghost btn--sm" id="popClose" aria-label="Fenster schließen">Esc</button>
+  </div>
+  <div class="pop__b" id="popBody"></div>
+  <div class="pop__f" id="popFoot"></div>
+</div>
+
+<div class="reason" id="reasonWrap" hidden>
+  <form class="reason__box" id="reasonForm" aria-labelledby="reasonTitle">
+    <div class="reason__h">
+      <span class="chip chip--warn"><span class="dot"></span> Beat 12 zurückgenommen</span>
+      <h2 id="reasonTitle" style="font-size:13px; font-weight:600">Grund ist Pflicht</h2>
+    </div>
+    <div class="reason__b">
+      <p style="font-size:12.5px; color:var(--c-ink2)">
+        Die Rücknahme steht bereits im Protokoll — sichtbar, durchgestrichen, nicht gelöscht.
+        Ohne Grund wird sie nicht festgeschrieben.
+      </p>
+      <label class="lbl" for="reasonInput">Grund der Rücknahme</label>
+      <input type="text" id="reasonInput" name="reason" required maxlength="80"
+             placeholder="z. B. falsch angesetzt" autocomplete="off">
+      <div class="suggest">
+        <button type="button" class="btn btn--sm" data-fill="falsch angesetzt">falsch angesetzt</button>
+        <button type="button" class="btn btn--sm" data-fill="falsches Ziel gewählt">falsches Ziel gewählt</button>
+        <button type="button" class="btn btn--sm" data-fill="Regel falsch angewandt">Regel falsch angewandt</button>
+      </div>
+      <p class="reason__err" id="reasonErr" role="alert"></p>
+      <div class="reason__row">
+        <button type="submit" class="btn btn--pri">Rücknahme festschreiben</button>
+        <button type="button" class="btn" id="reasonCancel">Doch nicht — Beat 12 wiederherstellen</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<p aria-live="assertive" class="vh" id="announce"></p>
+
+<script>
+/* ==========================================================================
+   EIN PROTOKOLL, DREI LESARTEN.
+   project(seq) faltet die Beat-Liste zu einem Zustand. Der Tisch rendert ihn,
+   der Umriss rendert ihn, die Chronikseite rendert ihn. Rückgängig markiert
+   einen Beat als zurückgenommen und faltet erneut. Wiedergabe faltet in
+   Schritten. Es gibt keinen zweiten Schreibpfad.
+   ========================================================================== */
+(function(){
+"use strict";
+var $  = function(s,r){ return (r||document).querySelector(s); };
+var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+var root = document.documentElement;
+root.setAttribute("data-skin","relic");
+
+var CELL = 34, COLS = 20, ROWS = 12, W = COLS*CELL, H = ROWS*CELL;
+
+/* ---------------------------------------------------------------- Besetzung */
+var CAST = [
+  {id:"sela", name:"Sela Vandt",       side:"pc",      role:"Späherin",     hpMax:28, ctrl:"Nina"},
+  {id:"ossa", name:"Ossa Brandt",      side:"pc",      role:"Rammbock",     hpMax:34, ctrl:"Tobias"},
+  {id:"jarn", name:"Jarn Ost",         side:"pc",      role:"Kesselwart",   hpMax:24, ctrl:"Ruth"},
+  {id:"mira", name:"Mira Falkenhand",  side:"pc",      role:"Bundschwester",hpMax:26, ctrl:"Alia"},
+  {id:"vaugn",name:"Vaugn Kesselmann", side:"neutral", role:"Hafenmeister", hpMax:14, ctrl:"Regie"},
+  {id:"rauk", name:"Rauk Sill",        side:"neutral", role:"Salzträger",   hpMax:9,  ctrl:"Regie"},
+  {id:"kord", name:"Kord",             side:"foe",     role:"Pakt-Schläger",hpMax:18, ctrl:"Regie"},
+  {id:"vell", name:"Vell",             side:"foe",     role:"Pakt-Schläger",hpMax:21, ctrl:"Regie"},
+  {id:"brix", name:"Brix",             side:"foe",     role:"Pakt-Schläger",hpMax:19, ctrl:"Regie"},
+  {id:"nesk", name:"Zündlerin Nesk",   side:"foe",     role:"Zündlerin",    hpMax:22, ctrl:"Regie"}
+];
+var BY = {}; CAST.forEach(function(c){ BY[c.id]=c; });
+
+/* Farbtöne werden aus der Figuren-Kennung ERZEUGT, nicht von Hand gesetzt.
+   Kollisionen unter 22° werden deterministisch um den goldenen Winkel
+   verschoben, damit auch zwölf Figuren noch unterscheidbar bleiben.
+   Farbe trägt nie allein: Initiale, Name und Seitenform stehen daneben.   */
+function hash(str){ var h=2166138111; for(var i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+(function assignHues(){
+  var used=[];
+  CAST.forEach(function(c){
+    var h = hash(c.id)%360, guard=0;
+    while(used.some(function(u){ var d=Math.abs(u-h); return Math.min(d,360-d)<22; }) && guard++<24){
+      h = (h+137.508)%360;
+    }
+    used.push(h); c.hue = Math.round(h);
+    c.ini = c.name.replace(/^(Zündlerin|Wirt)\s+/,"").charAt(0).toUpperCase();
+  });
+})();
+
+var CLIENTS = [
+  {id:"kaya",  name:"Kaya",   dev:"Regie · Laptop"},
+  {id:"nina",  name:"Nina",   dev:"Firefox"},
+  {id:"tobias",name:"Tobias", dev:"Chrome"},
+  {id:"alia",  name:"Alia",   dev:"Edge"},
+  {id:"ruth",  name:"Ruth",   dev:"iPad · Safari"}
+];
+CLIENTS.forEach(function(c){ c.hue = hash(c.id)%360; });
+
+/* ------------------------------------------------------------- Grundzustand */
+function baseState(){
+  var tok={};
+  CAST.forEach(function(c){ tok[c.id]={id:c.id,x:0,y:0,hp:c.hpMax,pend:false,vis:false}; });
+  var put=function(id,x,y){ tok[id].x=x; tok[id].y=y; tok[id].vis=true; };
+  put("sela",5,7); put("ossa",5,6); put("jarn",4,7); put("mira",4,6);
+  put("vaugn",14,6); put("rauk",14,4);
+  return {
+    tok:tok,
+    fog:[{id:"quay", x:4.5, y:6.5, r:3.0}],
+    order:null, idx:-1,
+    hits:null, tmpl:null, blastBeat:null,
+    stub:false, claim:null,
+    scene:"Nordkai · vor dem Salzhaus"
+  };
+}
+
+function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
+function targetsAt(s, a, r){
+  return CAST.filter(function(c){
+    var t=s.tok[c.id]; return t.vis && dist(t.x,t.y,a.x,a.y) <= r;
+  }).map(function(c){ return c.id; });
+}
+/* Auflösung ohne Nebenwirkung — dieselbe Funktion trägt Vorschau,
+   Festschreibung und die durchgestrichene Anzeige eines zurückgenommenen
+   Beats. Ein Mechanismus, eine Testreihe (Kandidat §6, Änderung 2).      */
+function resolveBlast(s, b){
+  return targetsAt(s, b.anchor, b.radius).map(function(id){
+    var roll = b.saves[id] != null ? b.saves[id] : 10;
+    var ok   = roll >= b.dc;
+    var dmg  = ok ? Math.floor(b.base/2) : b.base;
+    var before = s.tok[id].hp;
+    return {id:id, roll:roll, ok:ok, dmg:dmg, before:before, after:Math.max(0, before-dmg)};
+  });
+}
+function applyBlast(s, b){
+  s.tmpl = {x:b.anchor.x, y:b.anchor.y, r:b.radius};
+  s.blastBeat = b.seq;
+  s.hits = resolveBlast(s, b);
+  s.hits.forEach(function(h){
+    var t = s.tok[h.id];
+    t.hp = h.after;
+    if(t.hp === 0) t.pend = true;
+  });
+  s.fog.push({id:"blast"+b.seq, x:b.anchor.x, y:b.anchor.y, r:b.reveal});
+  s.idx = b.nextIdx;
+}
+
+/* -------------------------------------------------------------- Das Protokoll */
+var ORDER = ["kord","sela","mira","ossa","vell","jarn","brix","nesk"];
+
+var BEATS = [
+  { seq:5, t:"21:31", kind:"Szenenwechsel", status:"committed", rep:0,
+    title:"Vorhang gestrichen — Salzhaus am Nordkai",
+    lines:[{txt:"Vorhang gestrichen: Szene 3 · Salzhaus am Nordkai · vier Anwesende"}],
+    apply:function(s){
+      s.scene="Salzhaus am Nordkai";
+      s.tok.sela.x=10; s.tok.sela.y=7;
+      s.tok.ossa.x=11; s.tok.ossa.y=6;
+      s.tok.jarn.x=9;  s.tok.jarn.y=6;
+      s.tok.mira.x=9;  s.tok.mira.y=9;
+      s.fog.push({id:"hall", x:10, y:6.5, r:4.4});
+      s.fog.push({id:"lamp", x:14, y:5, r:2.8});
+    }},
+
+  { seq:6, t:"21:36", kind:"Erwähnung", status:"committed", rep:6,
+    title:"„Vaugn“ getippt, kein Treffer → Stub angelegt",
+    lines:[{txt:"Stub angelegt: Vaugn Kesselmann (Person) · erstmals gesehen S12 B6"}],
+    apply:function(s){ s.stub=true; s.tok.ossa.x=12; s.tok.ossa.y=6; }},
+
+  { seq:7, t:"21:38", kind:"Zuteilung", status:"committed", rep:8,
+    title:"Passage → Sela · Modus gesagt · Quelle Vaugn",
+    lines:[{txt:"Sela Vandt erfährt: „Fraktion: Der Aschenpakt“ — gesagt, unter Zwang"}],
+    apply:function(s){
+      s.claim = {predicate:"Fraktion", object:"Der Aschenpakt", standing:"offen",
+                 mode:"gesagt", source:"Vaugn Kesselmann", holder:"Sela Vandt", beat:7};
+      s.tok.sela.x=13; s.tok.sela.y=6;
+      s.fog.push({id:"sweep", x:14, y:5.5, r:2.6});
+    }},
+
+  { seq:8, t:"21:39", kind:"Bewegung", status:"committed", rep:4,
+    title:"Sela tritt zurück, Ossa stellt sich vor Vaugn",
+    lines:[{txt:"Bewegung: Sela Vandt → K8, Ossa Brandt → O6"}],
+    apply:function(s){ s.tok.sela.x=10; s.tok.sela.y=7; s.tok.ossa.x=14; s.tok.ossa.y=5; }},
+
+  { seq:9, t:"21:41", kind:"Initiative", status:"committed", rep:0,
+    title:"Initiative gewürfelt — der Pakt kommt durch die Westtür",
+    lines:[{txt:"Initiative: Kord · Sela · Mira · Ossa · Vell · Jarn · Brix · Nesk"}],
+    apply:function(s){
+      ["kord","vell","brix","nesk"].forEach(function(id){ s.tok[id].vis=true; });
+      s.tok.kord.x=7; s.tok.kord.y=7;
+      s.tok.vell.x=7; s.tok.vell.y=5;
+      s.tok.brix.x=7; s.tok.brix.y=9;
+      s.tok.nesk.x=6; s.tok.nesk.y=8;
+      s.fog.push({id:"gate", x:7, y:7, r:3.4});
+      s.order = ORDER.slice(); s.idx = 0;
+    }},
+
+  { seq:10, t:"21:43", kind:"Zug", status:"committed", rep:0,
+    title:"Zug Kord — die Schläger stürmen vor, Ossa nimmt 7",
+    lines:[{txt:"Kord · Kettenkolben (Reichweite 3 m) trifft Ossa Brandt · 7 Schaden · KP 34 → 27"}],
+    apply:function(s){
+      s.tok.kord.x=12; s.tok.kord.y=5;
+      s.tok.vell.x=12; s.tok.vell.y=4;
+      s.tok.brix.x=12; s.tok.brix.y=6;
+      s.tok.ossa.hp = Math.max(0, s.tok.ossa.hp - 7);
+      s.idx = 1;
+    }},
+
+  { seq:11, t:"21:46", kind:"Widerspruch", status:"committed", rep:0,
+    title:"Zug Sela — das Hafenbuch widerspricht Vaugn",
+    lines:[{txt:"Widerspruch gegen „Fraktion: Der Aschenpakt“ · Quelle: Hafenbuch · Stand: bestritten"}],
+    apply:function(s){ if(s.claim) s.claim.standing="bestritten"; s.idx = 2; }},
+
+  { seq:12, t:"21:47", kind:"Fläche", status:"committed", rep:0,
+    title:"Zug Mira — Glutstoß, von der Regie festgeschrieben",
+    anchor:{x:13,y:5}, radius:1.6, reveal:4.2, base:17, dc:15, nextIdx:3,
+    roll:[3,6,2,5,1],
+    saves:{ossa:11, vaugn:7, rauk:9, kord:18, vell:13, brix:16},
+    lines:[{txt:"Glutstoß angesetzt auf N6 · 5W6 = 17 Feuer · Ausweichen gegen SG 15 halbiert"},
+           {txt:"6 Ziele · 2 × Niederlage offen: Vaugn Kesselmann, Rauk Sill"}],
+    apply:function(s){ applyBlast(s, this); }}
+];
+
+/* Beat 13 entsteht erst, wenn die Regie neu ansetzt: ein Feld westlich. */
+var RECOMMIT = {
+  seq:13, t:"21:47", kind:"Fläche", status:"proposed", rep:0,
+  title:"Zug Mira — Glutstoß, ein Feld westlich neu angesetzt",
+  anchor:{x:12,y:5}, radius:1.6, reveal:3.8, base:16, dc:15, nextIdx:3,
+  roll:[4,2,6,3,1],
+  saves:{kord:12, vell:17, brix:9},
+  lines:[{txt:"Glutstoß angesetzt auf M6 · 5W6 = 16 Feuer · Ausweichen gegen SG 15 halbiert"},
+         {txt:"3 Ziele · nur die Schlägerreihe · keine Niederlage offen"}],
+  apply:function(s){ applyBlast(s, this); }
+};
+
+function beatBySeq(n){ for(var i=0;i<BEATS.length;i++){ if(BEATS[i].seq===n) return BEATS[i]; } return null; }
+function maxSeq(){ return BEATS[BEATS.length-1].seq; }
+
+function project(upto){
+  var s = baseState();
+  for(var i=0;i<BEATS.length;i++){
+    var b = BEATS[i];
+    if(b.seq > upto) break;
+    if(b.status === "reverted" || b.status === "proposed") continue;
+    b.apply(s);
+  }
+  return s;
+}
+
+/* ------------------------------------------------------------------- Zustand */
+var cursor = 12;
+var prev = null;
+var selected = null;
+var proposal = null;      /* offener Vorschlag (Vorschau) */
+var replaying = false;
+var replayAbort = false;
+var namesAll = false;
+var hover = null;
+var view = "table";       /* table | outline | record */
+
+function reduced(){
+  var m = root.getAttribute("data-motion");
+  if(m === "reduced") return true;
+  if(m === "full") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+function esc(x){ return String(x).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+function say(msg){ $("#announce").textContent = msg; }
+
+/* =============================================================== KARTENKUNST */
+function drawMap(){
+  var g = [];
+  g.push('<defs>');
+  g.push('<pattern id="grid" width="'+CELL+'" height="'+CELL+'" patternUnits="userSpaceOnUse">'+
+         '<path d="M '+CELL+' 0 L 0 0 0 '+CELL+'" fill="none" stroke="var(--map-grid)" stroke-width="1"/></pattern>');
+  g.push('<radialGradient id="pool"><stop offset="0%" stop-color="var(--map-glow)" stop-opacity=".40"/>'+
+         '<stop offset="70%" stop-color="var(--map-glow)" stop-opacity=".10"/>'+
+         '<stop offset="100%" stop-color="var(--map-glow)" stop-opacity="0"/></radialGradient>');
+  g.push('<linearGradient id="floorg" x1="0" y1="0" x2="0" y2="1">'+
+         '<stop offset="0%" stop-color="var(--map-floor)" stop-opacity=".95"/>'+
+         '<stop offset="100%" stop-color="var(--map-plank)" stop-opacity=".95"/></linearGradient>');
+  g.push('<filter id="soft" x="-40%" y="-40%" width="180%" height="180%">'+
+         '<feGaussianBlur stdDeviation="11"/></filter>');
+  g.push('<mask id="fogmask"><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#fff"/>'+
+         '<g id="fogHoles" filter="url(#soft)"></g></mask>');
+  g.push('</defs>');
+
+  /* Wasser und Kai */
+  g.push('<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="var(--map-void)"/>');
+  g.push('<rect x="0" y="0" width="122" height="'+H+'" fill="var(--map-water)"/>');
+  for(var wy=16; wy<H; wy+=27){
+    g.push('<path d="M0 '+wy+' q 16 -6 32 0 t 32 0 t 32 0 t 32 0" fill="none" stroke="var(--map-wave)" '+
+           'stroke-width="1.1" opacity=".30"/>');
+  }
+  g.push('<rect x="122" y="0" width="82" height="'+H+'" fill="var(--map-stone)"/>');
+  for(var sy=0; sy<H; sy+=34){
+    g.push('<path d="M122 '+sy+' H204" stroke="var(--map-void)" stroke-width="1" opacity=".35"/>');
+  }
+  /* Steg */
+  g.push('<rect x="86" y="150" width="40" height="106" fill="var(--map-wood)" opacity=".85"/>');
+  for(var py=154; py<256; py+=13){
+    g.push('<path d="M86 '+py+' H126" stroke="var(--map-void)" stroke-width="1" opacity=".45"/>');
+  }
+
+  /* Halle */
+  g.push('<rect x="204" y="20" width="468" height="374" fill="url(#floorg)"/>');
+  for(var fy=36; fy<394; fy+=16){
+    g.push('<path d="M206 '+fy+' H670" stroke="var(--map-void)" stroke-width="1" opacity=".16"/>');
+  }
+  for(var fx=238; fx<672; fx+=68){
+    g.push('<path d="M'+fx+' 22 V392" stroke="var(--map-void)" stroke-width="1" opacity=".10"/>');
+  }
+
+  /* Salzbunker, Kisten, Fässer, Pfeiler */
+  function pile(cx,cy,w){
+    return '<path d="M'+(cx-w)+' '+(cy+w*0.55)+' L'+cx+' '+(cy-w*0.75)+' L'+(cx+w)+' '+(cy+w*0.55)+' Z" '+
+           'fill="var(--map-salt)" opacity=".9"/>'+
+           '<path d="M'+(cx-w*0.45)+' '+(cy+w*0.1)+' L'+cx+' '+(cy-w*0.75)+' L'+(cx+w*0.2)+' '+(cy+w*0.1)+' Z" '+
+           'fill="var(--map-salt)" opacity=".55"/>';
+  }
+  g.push(pile(596,74,32)); g.push(pile(640,116,26)); g.push(pile(586,296,30));
+  function crate(cx,cy,s){
+    return '<g><rect x="'+(cx-s/2)+'" y="'+(cy-s/2)+'" width="'+s+'" height="'+s+'" rx="1.5" '+
+      'fill="var(--map-wood)" stroke="var(--map-void)" stroke-width="1.2" opacity=".96"/>'+
+      '<path d="M'+(cx-s/2)+' '+(cy-s/6)+' h'+s+' M'+(cx-s/2)+' '+(cy+s/6)+' h'+s+'" '+
+      'stroke="var(--map-void)" stroke-width="1" opacity=".45"/>'+
+      '<path d="M'+(cx-s/2+2)+' '+(cy-s/2+2)+' h'+(s-4)+'" stroke="var(--map-salt)" stroke-width="1" opacity=".25"/></g>';
+  }
+  g.push(crate(323,119,26)); g.push(crate(357,119,24));
+  g.push(crate(289,187,25)); g.push(crate(289,221,23));
+  g.push(crate(357,289,22));   /* die Kiste, aus der Sela das Hafenbuch zieht */
+  function barrel(cx,cy,r){
+    return '<g><ellipse cx="'+cx+'" cy="'+cy+'" rx="'+r+'" ry="'+(r*0.92)+'" fill="var(--map-wood)" '+
+      'stroke="var(--map-void)" stroke-width="1.2"/>'+
+      '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+(r*0.6)+'" ry="'+(r*0.55)+'" fill="none" '+
+      'stroke="var(--map-void)" stroke-width="1" opacity=".5"/></g>';
+  }
+  g.push(barrel(566,326,13)); g.push(barrel(600,340,12)); g.push(barrel(632,322,11));
+  function pillar(cx,cy){
+    return '<rect x="'+(cx-11)+'" y="'+(cy-11)+'" width="22" height="22" rx="2" fill="var(--map-stone)" '+
+      'stroke="var(--map-void)" stroke-width="1.4"/>';
+  }
+  g.push(pillar(425,84)); g.push(pillar(425,324));
+
+  /* Lichtpfützen: Kohlenbecken und Türlaterne */
+  g.push('<circle cx="629" cy="357" r="96" fill="url(#pool)"/>');
+  g.push('<circle cx="629" cy="357" r="9" fill="var(--map-glow)" opacity=".85"/>');
+  g.push('<circle cx="212" cy="289" r="72" fill="url(#pool)"/>');
+  g.push('<circle cx="212" cy="289" r="5" fill="var(--map-glow)" opacity=".8"/>');
+
+  /* Raster */
+  g.push('<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="url(#grid)" opacity=".55"/>');
+
+  /* Wände aus dem UVTT-Import — Daten, kein Zeichenwerkzeug */
+  var wall = 'stroke="var(--map-wall)" stroke-width="5" stroke-linecap="square" fill="none"';
+  g.push('<path d="M204 20 H672 V394 H204 V326" '+wall+'/>');
+  g.push('<path d="M204 258 V20" '+wall+'/>');
+  g.push('<path d="M500 20 V122" '+wall+' stroke-width="4"/>');
+  g.push('<path d="M204 258 v-6 M204 326 v6" stroke="var(--map-glow)" stroke-width="3" opacity=".55"/>');
+
+  /* Nebel */
+  g.push('<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="var(--map-fog)" mask="url(#fogmask)" opacity=".60"/>');
+  /* Vignette */
+  g.push('<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="none" stroke="var(--map-void)" '+
+         'stroke-width="18" opacity=".35"/>');
+  $("#mapArt").innerHTML = g.join("");
+}
+
+/* ================================================================== MARKEN */
+var TOKEL = {};
+function buildTokens(s0){
+  var host = $("#tokens"); host.innerHTML = "";
+  CAST.forEach(function(c){
+    var t0 = s0.tok[c.id];
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "tok"; b.dataset.side = c.side; b.dataset.id = c.id;
+    /* Startwerte VOR dem Einhängen: das erste berechnete transform ist damit
+       schon das richtige, und es gibt keinen Übergang aus der Ecke.        */
+    b.style.setProperty("--hue", c.hue);
+    b.style.setProperty("--x", t0.x); b.style.setProperty("--y", t0.y);
+    b.innerHTML = '<span aria-hidden="true">'+esc(c.ini)+'</span>'+
+                  '<span class="tok__hp"><i></i></span>';
+    var nm = document.createElement("span");
+    nm.className = "tok__name"; nm.style.setProperty("--hue", c.hue);
+    nm.style.setProperty("--x", t0.x); nm.style.setProperty("--y", t0.y);
+    nm.innerHTML = '<b>'+esc(c.name)+'</b>';
+    b.addEventListener("mouseenter", function(){ hover = c.id; renderTokens(project(cursor)); });
+    b.addEventListener("mouseleave", function(){ hover = null; renderTokens(project(cursor)); });
+    b.addEventListener("focus", function(){ hover = c.id; renderTokens(project(cursor)); });
+    b.addEventListener("blur", function(){ hover = null; renderTokens(project(cursor)); });
+    b.addEventListener("click", function(){ select(c.id); });
+    host.appendChild(b); host.appendChild(nm);
+    TOKEL[c.id] = {btn:b, name:nm, bar:b.querySelector(".tok__hp i"), pend:null};
+  });
+}
+
+function renderTokens(s){
+  CAST.forEach(function(c){
+    var t = s.tok[c.id], el = TOKEL[c.id], pct = Math.round(t.hp/c.hpMax*100);
+    el.btn.hidden = !t.vis;
+    /* Namen: standardmäßig nur Spielfiguren — sonst überschreiben sich in
+       einem Handgemenge sechs Beschriftungen gegenseitig. Auswahl, Hover
+       und Tastaturfokus zeigen jeden Namen; Zustandsstreifen und Umriss
+       nennen ohnehin alle.                                              */
+    var wanted = namesAll || c.side === "pc" || selected === c.id || hover === c.id;
+    var place = wanted ? labelPlace(s, t) : null;
+    el.name.hidden = !t.vis || !wanted || !place;
+    if(place) el.name.dataset.place = place;
+    el.btn.style.setProperty("--x", t.x); el.btn.style.setProperty("--y", t.y);
+    el.name.style.setProperty("--x", t.x); el.name.style.setProperty("--y", t.y);
+    el.bar.style.setProperty("--w", pct+"%");
+    el.btn.dataset.hurt = pct<=25 ? "2" : (pct<=60 ? "1" : "0");
+    el.btn.dataset.down = t.hp===0 ? "1" : "0";
+    el.btn.dataset.sel  = selected===c.id ? "1" : "0";
+    el.btn.setAttribute("aria-label",
+      c.name+", "+c.role+", "+({pc:"Spielfigur",foe:"Gegenseite",neutral:"unbeteiligt"}[c.side])+
+      ", Feld "+cellName(t.x,t.y)+", "+t.hp+" von "+c.hpMax+" Kontaktpunkten"+
+      (t.pend ? ", Niederlage offen — noch nicht bestätigt" : ""));
+    if(t.pend && !el.pend){
+      var p = document.createElement("span");
+      p.className = "tok__pend"; p.setAttribute("aria-hidden","true"); p.textContent = "!";
+      el.btn.appendChild(p); el.pend = p;
+    } else if(!t.pend && el.pend){
+      var old = el.pend; el.pend = null; old.dataset.leaving = "1";
+      window.setTimeout(function(){ if(old.parentNode) old.parentNode.removeChild(old); },
+        reduced() ? 10 : 300);
+    }
+  });
+}
+function cellName(x,y){
+  return String.fromCharCode(65 + Math.round(x)) + (Math.round(y)+1);
+}
+
+/* Wo darf die Beschriftung stehen? Unter der Marke, sonst darüber, sonst
+   rechts. Ist alles belegt, bleibt sie aus, statt fremde Marken zu
+   überdecken — genau der Fehler, den ein Handgemenge sonst produziert. */
+function occupied(s, x, y){
+  for(var i=0;i<CAST.length;i++){
+    var t = s.tok[CAST[i].id];
+    if(t.vis && Math.round(t.x)===x && Math.round(t.y)===y) return true;
+  }
+  return false;
+}
+function labelPlace(s, t){
+  var x = Math.round(t.x), y = Math.round(t.y);
+  if(!occupied(s, x, y+1)) return "below";
+  if(!occupied(s, x, y-1)) return "above";
+  /* rechts nur, wenn zwei Felder frei sind — die Beschriftung ist breiter
+     als ihre eigene Zelle. */
+  if(!occupied(s, x+1, y) && !occupied(s, x+2, y) && x+2 < COLS) return "right";
+  return null;
+}
+
+/* Zahlen laufen mit den Balken zurück. Ein Zähler pro Element verhindert,
+   dass zwei Läufe sich überschreiben. */
+var twSeq = 0;
+function tweenNum(el, to){
+  var from = parseInt(el.getAttribute("data-v"), 10);
+  if(isNaN(from)) from = to;
+  el.setAttribute("data-v", to);
+  if(from === to || reduced()){ el.textContent = to; return; }
+  var id = ++twSeq; el._tw = id;
+  var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+  (function frame(now){
+    if(el._tw !== id) return;
+    var k = Math.min(1, ((now||Date.now()) - t0) / 280);
+    var e = 1 - Math.pow(1-k, 3);
+    el.textContent = Math.round(from + (to-from)*e);
+    if(k < 1) window.requestAnimationFrame(frame); else el.textContent = to;
+  })(t0);
+  /* Sicherung: fällt rAF aus (Hintergrundtab, gedrosselter Renderer),
+     steht am Ende trotzdem die richtige Zahl da. */
+  window.setTimeout(function(){ if(el._tw === id) el.textContent = to; }, 340);
+}
+
+/* Der Zustandsstreifen wird EINMAL gebaut und danach nur aktualisiert —
+   nur so ist der Rücklauf eine echte Übergangsanimation. */
+var GLEL = {};
+function buildGlance(){
+  var host = $("#glance"); if(!host) return;
+  host.innerHTML = "";
+  CAST.forEach(function(c){
+    var li = document.createElement("li");
+    li.style.setProperty("--hue", c.hue);
+    li.innerHTML =
+      '<span class="glance__n"><b aria-hidden="true">'+esc(c.ini)+'</b>'+
+        '<span>'+esc(c.name)+'</span></span>'+
+      '<span class="glance__v"><span>KP <span data-kp>'+c.hpMax+'</span> / '+c.hpMax+'</span>'+
+        '<span data-st></span></span>'+
+      '<span class="glance__b"><i></i></span>';
+    host.appendChild(li);
+    GLEL[c.id] = {li:li, kp:li.querySelector("[data-kp]"), st:li.querySelector("[data-st]"),
+                  bar:li.querySelector(".glance__b i")};
+  });
+}
+function renderGlance(s){
+  CAST.forEach(function(c){
+    var t = s.tok[c.id], el = GLEL[c.id]; if(!el) return;
+    el.li.hidden = !t.vis;
+    var pct = Math.round(t.hp/c.hpMax*100);
+    tweenNum(el.kp, t.hp);
+    el.bar.style.width = pct+"%";
+    el.li.dataset.hurt = pct<=25 ? "2" : (pct<=60 ? "1" : "0");
+    el.li.dataset.pend = t.pend ? "1" : "0";
+    el.li.dataset.sel  = selected===c.id ? "1" : "0";
+    el.st.textContent = t.pend ? "Niederlage offen" :
+      (t.hp===0 ? "kampfunfähig" : (t.hp<c.hpMax ? "verwundet" : "unversehrt"));
+    el.li.setAttribute("aria-label", c.name+": "+t.hp+" von "+c.hpMax+" Kontaktpunkten, "+
+      el.st.textContent);
+  });
+}
+
+function renderFog(s){
+  var host = $("#fogHoles"); if(!host) return;
+  var seen = {};
+  s.fog.forEach(function(f){
+    seen[f.id] = 1;
+    var c = host.querySelector('[data-fid="'+f.id+'"]');
+    if(!c){
+      c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      c.setAttribute("data-fid", f.id); c.setAttribute("class","fog-c");
+      c.setAttribute("fill","#000");
+      c.setAttribute("cx", f.x*CELL+CELL/2); c.setAttribute("cy", f.y*CELL+CELL/2);
+      c.style.setProperty("r","0px");
+      host.appendChild(c);
+      /* im nächsten Rahmen aufziehen, damit die Übergangszeit greift */
+      window.requestAnimationFrame(function(){ c.style.setProperty("r", (f.r*CELL)+"px"); });
+    } else {
+      c.style.setProperty("r", (f.r*CELL)+"px");
+    }
+  });
+  $$("#fogHoles circle").forEach(function(c){
+    if(!seen[c.getAttribute("data-fid")]) c.style.setProperty("r","0px");
+  });
+}
+
+function renderTemplate(s){
+  var el = $("#tmpl"), show = proposal || s.tmpl;
+  if(!show){ el.hidden = true; return; }
+  el.hidden = false;
+  el.style.setProperty("--tx", show.x + 0.5);
+  el.style.setProperty("--ty", show.y + 0.5);
+  el.style.setProperty("--tr", show.r);
+  el.style.opacity = proposal ? ".62" : "1";
+}
+
+function renderTurn(s){
+  var ring = $("#turnring");
+  if(!s.order || s.idx < 0){ ring.hidden = true; return; }
+  var id = s.order[s.idx], t = s.tok[id];
+  ring.hidden = false;
+  ring.style.setProperty("--x", t.x); ring.style.setProperty("--y", t.y);
+}
+
+/* ================================================================= PROTOKOLL */
+function visibleBeats(){
+  return BEATS.filter(function(b){ return b.seq <= cursor && b.status !== "proposed"; });
+}
+function renderTail(){
+  var host = $("#tail"); host.innerHTML = "";
+  visibleBeats().slice(-3).forEach(function(b){
+    var li = document.createElement("li");
+    li.dataset.status = b.status;
+    li.innerHTML = '<time>'+esc(b.t)+'</time>'+
+      '<span class="txt">'+esc(b.lines[0].txt)+'</span>'+
+      (b.reason ? '<span class="reason-tag">Grund: '+esc(b.reason)+'</span>' : "");
+    var why = document.createElement("button");
+    why.type="button"; why.className="btn btn--ghost btn--sm why"; why.textContent="Warum?";
+    why.setAttribute("aria-label","Herkunft von Beat "+b.seq+" zeigen");
+    why.addEventListener("click", function(){ popBeat(b, why); });
+    li.appendChild(why);
+    host.appendChild(li);
+  });
+}
+
+/* =================================================================== UMRISS */
+function renderOutline(s){
+  var body = $("#outlineBody"); body.innerHTML = "";
+  var turn = (s.order && s.idx>=0) ? s.order[s.idx] : null;
+  CAST.forEach(function(c){
+    var t = s.tok[c.id]; if(!t.vis) return;
+    var tr = document.createElement("tr");
+    tr.dataset.down = t.hp===0 ? "1" : "0";
+    tr.dataset.sel  = selected===c.id ? "1" : "0";
+    var zust = t.pend ? "Niederlage offen (unbestätigt)" :
+               (t.hp===0 ? "kampfunfähig" :
+               (t.hp < c.hpMax ? "verwundet" : "unversehrt"));
+    tr.innerHTML =
+      '<th scope="row" style="font-weight:600">'+esc(c.name)+
+        ' <span class="mini">· '+esc(c.role)+'</span></th>'+
+      '<td>'+({pc:"Spielfigur",foe:"Gegenseite",neutral:"unbeteiligt"}[c.side])+'</td>'+
+      '<td class="n">'+cellName(t.x,t.y)+'</td>'+
+      '<td class="n"><span data-kp="'+c.id+'">'+t.hp+'</span> / '+c.hpMax+'</td>'+
+      '<td>'+esc(zust)+'</td>'+
+      '<td>'+(turn===c.id ? "am Zug" : "")+'</td>';
+    tr.addEventListener("click", function(){ select(c.id); });
+    body.appendChild(tr);
+  });
+}
+
+/* ============================================================== CHRONIKSEITE */
+function renderRecord(s){
+  var dl = $("#infoDl"), v = s.tok.vaugn, rows = [];
+  rows.push(["Rolle", '<span>Hafenmeister</span><span class="fact__mark">beobachtet · B6</span>']);
+  rows.push(["Ort", '<span>Salzhaus am Nordkai</span><span class="fact__mark">B6</span>']);
+  if(s.claim){
+    var contested = s.claim.standing === "bestritten";
+    rows.push(["Fraktion",
+      '<button type="button" class="fact'+(contested?" fact--contested":"")+'" id="factBtn" '+
+      'aria-haspopup="dialog">'+esc(s.claim.object)+
+      (contested ? ' <span class="chip chip--warn">bestritten</span>' :
+                   ' <span class="chip">offen</span>')+
+      ' <span class="fact__mark">?</span></button>'+
+      '<span class="mini">Rechtsklick oder Eingabetaste → Herkunft</span>']);
+  } else {
+    rows.push(["Fraktion", '<span class="mini">nichts aufgezeichnet</span>']);
+  }
+  rows.push(["Zustand", v.pend
+    ? '<span class="chip chip--warn"><span class="dot"></span>Niederlage offen</span>'+
+      '<span class="num">KP 0 / 14</span>'
+    : '<span class="chip'+(v.hp<14?" chip--warn":" chip--ok")+'"><span class="dot"></span>'+
+      (v.hp<14 ? "verwundet" : "unverletzt")+'</span><span class="num">KP '+v.hp+' / 14</span>']);
+  rows.push(["Erstmals gesehen", '<span class="num">Sitzung 12 · Beat 6 · 21:36</span>']);
+  rows.push(["Stand der Seite", '<span class="num">gefaltet bis Beat '+cursor+'</span>']);
+  dl.innerHTML = rows.map(function(r){
+    return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>';
+  }).join("");
+  var fb = $("#factBtn");
+  if(fb){
+    fb.addEventListener("click", function(e){ e.preventDefault(); popClaim(s, fb); });
+    fb.addEventListener("contextmenu", function(e){ e.preventDefault(); popClaim(s, fb); });
+  }
+
+  var host = $("#happened"); host.innerHTML = "";
+  var mine = visibleBeats().filter(function(b){
+    return [6,7,11,12,13].indexOf(b.seq) >= 0;
+  });
+  if(!mine.length){
+    host.innerHTML = '<li><time>—</time><span class="txt mini">nichts aufgezeichnet</span><span></span></li>';
+  }
+  mine.forEach(function(b){
+    var li = document.createElement("li");
+    li.dataset.status = b.status;
+    li.innerHTML = '<time>'+esc(b.t)+' · B'+b.seq+'</time>'+
+      '<span class="txt">'+esc(b.lines[0].txt)+
+      (b.reason ? ' <span class="reason-tag">zurückgenommen: '+esc(b.reason)+'</span>' : "")+'</span>';
+    var btn = document.createElement("button");
+    btn.type="button"; btn.className="btn btn--ghost btn--sm";
+    btn.textContent = b.rep ? "Wiedergabe" : "Warum?";
+    btn.setAttribute("aria-label", (b.rep ? "Beat "+b.seq+" abspielen" : "Herkunft von Beat "+b.seq));
+    btn.addEventListener("click", function(){ b.rep ? startReplay() : popBeat(b, btn); });
+    li.appendChild(btn);
+    host.appendChild(li);
+  });
+}
+
+/* ==================================================================== LINSE */
+function bar(pct, tone){
+  return '<span style="display:block;height:5px;border-radius:99px;background:'+
+    'color-mix(in oklab,var(--c-ink) 22%, transparent);overflow:hidden">'+
+    '<i style="display:block;height:100%;width:'+pct+'%;border-radius:99px;background:var(--c-'+tone+
+    ');transition:width var(--t-state) var(--ease)"></i></span>';
+}
+function renderLens(s){
+  var host = $("#lensBody"), out = [];
+  /* Der Zug, den die Linse zeigt: der offene Vorschlag, sonst der
+     festgeschriebene Flächenbeat — und wenn der zurückgenommen wurde,
+     derselbe Beat noch einmal, aufgelöst gegen den Zustand davor. */
+  var hitBeat = s.blastBeat ? beatBySeq(s.blastBeat) : null;
+  var revertedBeat = null;
+  if(!hitBeat){
+    BEATS.forEach(function(b){
+      if(b.seq <= cursor && b.status === "reverted" && b.anchor) revertedBeat = b;
+    });
+  }
+  var shown = proposal ? RECOMMIT : (hitBeat || revertedBeat);
+
+  if(selected){
+    var c = BY[selected], t = s.tok[selected];
+    $("#lensTitle").textContent = "Linse · Objekt";
+    out.push('<section class="card"><div class="card__h"><h3 style="font-size:13px">'+esc(c.name)+
+      '</h3><span class="chip">'+({pc:"Spielfigur",foe:"Gegenseite",neutral:"unbeteiligt"}[c.side])+
+      '</span></div><div class="card__b">'+
+      '<p class="mini">'+esc(c.role)+' · geführt von '+esc(c.ctrl)+' · Feld '+cellName(t.x,t.y)+'</p>'+
+      '<p class="num" style="font-size:13px">KP '+t.hp+' / '+c.hpMax+'</p>'+
+      bar(Math.round(t.hp/c.hpMax*100), t.hp/c.hpMax<=0.25?"bad":(t.hp/c.hpMax<=0.6?"warn":"good"))+
+      (t.pend ? '<p class="chip chip--warn" style="justify-self:start"><span class="dot"></span>'+
+                'Niederlage offen — die Regie hat noch nicht bestätigt</p>' : "")+
+      '<p class="mini">Farbton '+c.hue+'° ist aus der Kennung <code>'+esc(c.id)+
+      '</code> erzeugt, nicht gesetzt. Initiale und Randform tragen dieselbe Auskunft.</p>'+
+      '</div></section>');
+  } else {
+    $("#lensTitle").textContent = proposal ? "Linse · Vorschlag" : "Linse · Zug";
+  }
+
+  if(shown){
+    var reverted = !proposal && !hitBeat && !!revertedBeat;
+    var hits = proposal ? resolveBlast(project(cursor), RECOMMIT)
+             : (reverted ? resolveBlast(project(shown.seq - 1), shown)
+                         : (s.hits || []));
+    out.push('<section class="card"><div class="card__h">'+
+      '<h3 style="font-size:13px">'+esc(shown.title.replace(/^Zug \w+ — /,""))+'</h3>'+
+      '<span class="chip'+(proposal?" chip--warn":(reverted?"":" chip--ok"))+'">'+
+      (proposal ? "Vorschlag" : (reverted ? "zurückgenommen" : "festgeschrieben"))+'</span></div>'+
+      '<div class="card__b">'+
+      '<p class="trace__line"><span class="lbl">Paket</span>'+
+        '<span class="num">aschenpakt-grundregeln 0.4.2 · angeheftet</span></p>'+
+      '<p class="trace__line"><span class="lbl">Grundschaden</span>'+
+        '<span class="num">5W6 = '+shown.roll.join(" + ")+' = <b>'+shown.base+'</b> Feuer</span>'+
+        '<button type="button" class="q" data-q="base" aria-label="Herleitung des Grundschadens">?</button></p>'+
+      '<p class="trace__line"><span class="lbl">Probe</span>'+
+        '<span class="num">Ausweichen gegen SG '+shown.dc+' halbiert</span></p>'+
+      '<p class="trace__line"><span class="lbl">Anker</span>'+
+        '<span class="num">'+cellName(shown.anchor.x, shown.anchor.y)+' · Fläche '+shown.radius+
+        ' Felder · '+hits.length+' Ziele</span></p>'+
+      '<div class="scroll-x"><table class="ttable"><caption class="vh">Betroffene Ziele</caption><thead><tr>'+
+        '<th scope="col">Ziel</th><th scope="col">Ausw.</th><th scope="col">Schaden</th>'+
+        '<th scope="col">KP</th></tr></thead><tbody>'+
+      hits.map(function(h){
+        var c2 = BY[h.id];
+        return '<tr'+(reverted?' data-rev="1"':'')+'><td>'+esc(c2.name)+
+          (h.after===0?' <span class="chip chip--warn">!</span>':'')+'</td>'+
+          '<td class="n">'+h.roll+(h.ok?" ✓":" ✗")+'</td>'+
+          '<td class="n">'+h.dmg+'</td>'+
+          '<td class="n"><span data-kpl="'+h.id+'">'+h.before+'</span> → '+h.after+'</td></tr>'+
+          '<tr'+(reverted?' data-rev="1"':'')+'><td colspan="4" style="padding-top:0;padding-bottom:6px">'+
+          bar(Math.round((proposal?h.before:h.after)/c2.hpMax*100),
+              (proposal?h.before:h.after)/c2.hpMax<=0.25?"bad":((proposal?h.before:h.after)/c2.hpMax<=0.6?"warn":"good"))+
+          '</td></tr>';
+      }).join("")+
+      '</tbody></table></div>'+
+      (proposal
+        ? '<p class="mini">Vorschlag, nicht festgeschrieben. Nichts davon steht im Protokoll, '+
+          'solange die Regie nicht bestätigt. Genau dieselbe Mechanik trägt „Niederlage offen“ '+
+          'und die Sitzungsbilanz — ein Vorschlag, ein Test (§6, Änderung 2).</p>'
+        : (reverted
+          ? '<p class="mini">Zurückgenommen · Grund: '+esc(shown.reason||"—")+
+            '. Der Beat bleibt im Protokoll stehen — durchgestrichen, nicht gelöscht. '+
+            'Diese Tabelle wird gegen den Zustand <em>vor</em> Beat '+shown.seq+' aufgelöst; '+
+            'sie ist Erinnerung, nicht Wirkung.</p>'
+          : (shown.seq === 12
+            ? '<p class="mini">Sechs Ziele, drei davon die falsche Spalte: Ossa, Vaugn und Rauk '+
+              'standen ein Feld weiter östlich. Das ist der Moment, in dem der Regie klar wird, '+
+              'dass der Anker daneben saß.</p>'
+            : '<p class="mini">Drei Ziele, nur die Schlägerreihe. So war es gemeint.</p>')))+
+      '</div></section>');
+  }
+
+  /* Zustandsänderungen: die Nicht-Bewegungs-Form desselben Ereignisses */
+  if(lastDiff.length){
+    out.push('<section class="card"><div class="card__h"><h3 style="font-size:13px">Zustandsänderungen</h3>'+
+      '<span class="chip">'+lastDiff.length+'</span></div><div class="card__b">'+
+      '<ul class="mini" style="display:grid;gap:4px">'+
+      lastDiff.map(function(d){ return '<li>'+esc(d)+'</li>'; }).join("")+'</ul>'+
+      '<p class="mini">Diese Liste ist die Pflicht, die Animation die Kür. Bei reduzierter '+
+      'Bewegung bleibt nur sie — und der Flex funktioniert weiter.</p></div></section>');
+  }
+  host.innerHTML = out.join("");
+  $$("#lensBody .q").forEach(function(q){
+    q.addEventListener("click", function(){ popDerivation(shown, q); });
+  });
+}
+
+/* =============================================================== REGALLEISTE */
+function renderLedger(){
+  var top = maxSeq();
+  var sc = $("#scrubber");
+  sc.max = String(top);
+  sc.value = String(cursor);
+  sc.style.setProperty("--pct", ((cursor-5)/(top-5)*100)+"%");
+  var b = beatBySeq(cursor);
+  $("#scrubLabel").textContent = "Beat "+cursor+" · "+(b?b.t:"—")+(b&&b.status==="reverted"?" · zurückgenommen":"");
+  $("#beatNo").textContent = "Beat "+cursor+" / "+top;
+  $("#clock").textContent = b ? (b.t+":12") : "21:47:12";
+}
+
+/* ==================================================================== DIFF */
+var lastDiff = [];
+function computeDiff(a, b){
+  if(!a) return [];
+  var out = [];
+  CAST.forEach(function(c){
+    var x=a.tok[c.id], y=b.tok[c.id];
+    if(x.hp !== y.hp) out.push(c.name+": KP "+x.hp+" → "+y.hp);
+    if(x.pend !== y.pend) out.push(c.name+": Niederlage offen "+(y.pend?"gesetzt":"aufgehoben"));
+    if(x.vis !== y.vis) out.push(c.name+(y.vis?" betritt die Szene":" verlässt die Szene"));
+    else if(x.vis && (x.x!==y.x || x.y!==y.y))
+      out.push(c.name+": "+cellName(x.x,x.y)+" → "+cellName(y.x,y.y));
+  });
+  if(a.fog.length !== b.fog.length)
+    out.push(b.fog.length > a.fog.length ? "Nebel geöffnet" : "Nebel wieder geschlossen");
+  if(a.idx !== b.idx && b.order)
+    out.push("Initiative: "+(a.order?BY[a.order[a.idx]].name:"—")+" → "+BY[b.order[b.idx]].name);
+  if((a.claim&&a.claim.standing) !== (b.claim&&b.claim.standing))
+    out.push("Behauptung „Fraktion“: "+((a.claim&&a.claim.standing)||"nicht vorhanden")+
+             " → "+((b.claim&&b.claim.standing)||"nicht vorhanden"));
+  return out;
+}
+
+/* ================================================================== RENDERN */
+function render(){
+  var s = project(cursor);
+  lastDiff = computeDiff(prev, s);
+  renderTokens(s); renderFog(s); renderTemplate(s); renderTurn(s); renderGlance(s);
+  renderTail(); renderOutline(s); renderRecord(s); renderLens(s); renderLedger();
+  prev = s;
+  return s;
+}
+function select(id){ selected = (selected === id) ? null : id; render(); }
+
+/* ================================================================= FENSTER */
+var popReturn = null;
+function openPop(title, bodyHTML, footEls, anchorEl){
+  var pop = $("#pop");
+  $("#popTitle").textContent = title;
+  $("#popBody").innerHTML = bodyHTML;
+  var foot = $("#popFoot"); foot.innerHTML = "";
+  (footEls||[]).forEach(function(f){ foot.appendChild(f); });
+  pop.hidden = false;
+  var r = anchorEl.getBoundingClientRect();
+  var w = Math.min(370, window.innerWidth - 20);
+  var left = Math.max(10, Math.min(r.left, window.innerWidth - w - 10));
+  pop.style.left = left+"px";
+  pop.style.width = w+"px";
+  window.requestAnimationFrame(function(){
+    var h = pop.offsetHeight;
+    var below = r.bottom + 8;
+    pop.style.top = (below + h > window.innerHeight - 10 ? Math.max(10, r.top - h - 8) : below)+"px";
+    pop.dataset.open = "1";
+  });
+  popReturn = anchorEl;
+  $("#popClose").focus();
+}
+function closePop(){
+  var pop = $("#pop");
+  if(!pop.dataset.open) return;
+  delete pop.dataset.open;
+  window.setTimeout(function(){ pop.hidden = true; }, reduced()?5:160);
+  if(popReturn && document.contains(popReturn)) popReturn.focus();
+  popReturn = null;
+}
+function mkBtn(label, cls, fn){
+  var b = document.createElement("button");
+  b.type="button"; b.className="btn btn--sm"+(cls?" "+cls:""); b.textContent = label;
+  b.addEventListener("click", fn);
+  return b;
+}
+
+function popClaim(s, anchor){
+  if(!s.claim){ return; }
+  var body =
+    '<p><strong>Wahr geworden um 21:38, Sitzung 12, Beat 7.</strong> Sela Vandt wurde dies von '+
+    'Vaugn Kesselmann unter Zwang gesagt.</p>'+
+    '<dl class="kv">'+
+      '<dt>Modus</dt><dd>gesagt</dd>'+
+      '<dt>Quelle</dt><dd>Vaugn Kesselmann</dd>'+
+      '<dt>Trägerin</dt><dd>Sela Vandt</dd>'+
+      '<dt>Stand</dt><dd>'+esc(s.claim.standing)+(s.claim.standing==="bestritten"?" seit B11":"")+'</dd>'+
+      '<dt>Erzeugt von</dt><dd>Projektion</dd>'+
+    '</dl>'+
+    (s.claim.standing==="bestritten"
+      ? '<p class="mini">Das Hafenbuch widerspricht seit Beat 11. Selas Buch zeigt weiterhin, was '+
+        'ihr gesagt wurde — jetzt mit Bestreitungsmarke. Das ist der korrekte erkenntnistheoretische '+
+        'Zustand und der interessantere.</p>'
+      : '<p class="mini">Unwidersprochen. Kein Konfidenzwert: eine deterministische Faltung kann '+
+        'keinen erfinden.</p>');
+  openPop("Herkunft · Fraktion", body, [
+    mkBtn("Wiedergabe 18 s", "btn--pri", function(){ closePop(); startReplay(); }),
+    mkBtn("Zum Beat", "", function(){ closePop(); setCursor(7, true); }),
+    mkBtn("Zurücknehmen", "btn--danger", function(){ popIrreversible(anchor); })
+  ], anchor);
+}
+
+function popIrreversible(anchor){
+  openPop("Zurücknehmen · Warnung",
+    '<p><strong>Diese Rücknahme reicht weiter, als die Software zurückholen kann.</strong></p>'+
+    '<p class="mini">Was das Protokoll zurücknimmt: die Zuteilung an Sela, die Behauptung auf dieser '+
+    'Seite, den Rückverweis, die Bestreitung.</p>'+
+    '<p class="mini"><strong>Was es nicht zurücknimmt:</strong> Nina hat es am Tisch gehört. '+
+    'Der Satz ist gefallen. Zwei weitere Beats hängen an dieser Behauptung.</p>'+
+    '<p class="mini">Deshalb ist Rückspulen standardmäßig auf den aktuellen Beat begrenzt; '+
+    'alles darüber verlangt diese Bestätigung mit Namen.</p>',
+    [ mkBtn("Verstanden, nicht zurücknehmen", "btn--pri", closePop) ], anchor);
+}
+
+function popBeat(b, anchor){
+  var body = '<p><strong>'+esc(b.title)+'</strong></p>'+
+    '<dl class="kv"><dt>Beat</dt><dd>'+b.seq+'</dd>'+
+    '<dt>Zeit</dt><dd>'+esc(b.t)+' · Sitzung 12</dd>'+
+    '<dt>Art</dt><dd>'+esc(b.kind)+'</dd>'+
+    '<dt>Stand</dt><dd>'+esc(b.status==="reverted"?"zurückgenommen":"festgeschrieben")+'</dd>'+
+    '<dt>Paket</dt><dd>0.4.2 (angeheftet)</dd></dl>'+
+    b.lines.map(function(l){ return '<p class="mini">'+esc(l.txt)+'</p>'; }).join("")+
+    (b.reason ? '<p class="mini">Grund der Rücknahme: <em>'+esc(b.reason)+'</em></p>' : "");
+  var foot = [ mkBtn("Zum Beat", "", function(){ closePop(); setCursor(b.seq, true); }) ];
+  if(b.rep) foot.unshift(mkBtn("Wiedergabe", "btn--pri", function(){ closePop(); startReplay(); }));
+  openPop("Herkunft · Beat "+b.seq, body, foot, anchor);
+}
+
+function popDerivation(b, anchor){
+  openPop("Herleitung · Grundschaden",
+    '<p class="num" style="font-size:14px">5W6 = '+b.roll.join(" + ")+' = '+b.base+'</p>'+
+    '<dl class="kv">'+
+      '<dt>Ausdruck</dt><dd>glutstoss.schaden</dd>'+
+      '<dt>Quelle</dt><dd>Paket 0.4.2 · Aktion „Glutstoß“</dd>'+
+      '<dt>Wurf</dt><dd>Beat '+b.seq+' · serverseitig</dd>'+
+      '<dt>Halbierung</dt><dd>abgerundet auf '+Math.floor(b.base/2)+'</dd>'+
+    '</dl>'+
+    '<p class="mini">Jeder Term ist ein Verweis in die Aufzeichnung. Kein Wert im Produkt '+
+    'existiert ohne die Frage „woher?“ — das ist Invariante 6, nicht eine Nettigkeit.</p>',
+    [], anchor);
+}
+
+/* ============================================================ GERÄTELEISTE */
+function buildClients(){
+  var host = $("#clients");
+  host.innerHTML = CLIENTS.map(function(c){
+    return '<span class="client" data-cid="'+c.id+'" data-sync="idle" style="--hue:'+c.hue+'">'+
+      '<span class="client__av" aria-hidden="true">'+esc(c.name.charAt(0))+'</span>'+
+      esc(c.name)+' <span class="mini">'+esc(c.dev)+'</span>'+
+      '<span class="client__ms">Beat 12</span></span>';
+  }).join("");
+}
+function syncClients(seq){
+  var t0 = reduced() ? 0 : 1;
+  CLIENTS.forEach(function(c, i){
+    var el = $('[data-cid="'+c.id+'"]');
+    if(!el) return;
+    var ms = 120 + i*38 + (hash(c.id+seq)%90);
+    el.dataset.sync = "busy";
+    el.querySelector(".client__ms").textContent = "sendet";
+    window.setTimeout(function(){
+      el.dataset.sync = "done";
+      el.querySelector(".client__ms").textContent = ms+" ms";
+      window.setTimeout(function(){
+        el.dataset.sync = "idle";
+        el.querySelector(".client__ms").textContent = "Beat "+seq;
+      }, 2200);
+    }, t0 * ms);
+  });
+}
+
+/* ================================================================= AKTIONEN */
+function setCursor(n, announce){
+  cursor = Math.max(5, Math.min(maxSeq(), n));
+  if(view === "record" && announce) { /* Seite bleibt, faltet mit */ }
+  render();
+  if(announce) say("Zurückgespult auf Beat "+cursor+".");
+}
+
+function doUndo(){
+  var b = beatBySeq(12);
+  if(!b || b.status === "reverted"){ say("Beat 12 ist bereits zurückgenommen."); return; }
+  if(view === "record") switchView("table");
+  b.status = "reverted";
+  proposal = null;
+  selected = null;
+  render();
+  syncClients(11);
+  say("Beat 12 zurückgenommen. Sechs Ziele wiederhergestellt, zwei offene Niederlagen aufgehoben, "+
+      "Initiative einen Schritt zurück. Grund erforderlich.");
+  var wrap = $("#reasonWrap");
+  wrap.hidden = false;
+  $("#reasonInput").value = "";
+  $("#reasonErr").textContent = "";
+  window.setTimeout(function(){ $("#reasonInput").focus(); }, reduced()?0:180);
+  $("#btnUndo").disabled = true;
+}
+
+function finishUndo(reason){
+  var b = beatBySeq(12);
+  b.reason = reason;
+  $("#reasonWrap").hidden = true;
+  $("#btnPreview").disabled = false;
+  $("#btnRecommit").hidden = false;
+  render();
+  say("Rücknahme festgeschrieben mit Grund: "+reason+". Der Beat bleibt sichtbar durchgestrichen.");
+  $("#btnPreview").focus();
+}
+
+function restoreBeat12(){
+  var b = beatBySeq(12);
+  b.status = "committed"; delete b.reason;
+  $("#reasonWrap").hidden = true;
+  $("#btnUndo").disabled = false;
+  $("#btnPreview").disabled = true;
+  $("#btnRecommit").hidden = true;
+  proposal = null;
+  render(); syncClients(12);
+  say("Beat 12 wiederhergestellt.");
+  $("#btnUndo").focus();
+}
+
+function doPreview(){
+  proposal = {x:RECOMMIT.anchor.x, y:RECOMMIT.anchor.y, r:RECOMMIT.radius};
+  render();
+  say("Vorschau: Anker ein Feld westlich auf "+cellName(RECOMMIT.anchor.x, RECOMMIT.anchor.y)+
+      ", drei Ziele, keine offene Niederlage. Noch nicht festgeschrieben.");
+  $("#btnRecommit").focus();
+}
+
+function doRecommit(){
+  if(beatBySeq(13)) return;
+  var b = RECOMMIT; b.status = "committed";
+  BEATS.push(b);
+  proposal = null;
+  cursor = 13;
+  render(); renderLedger();
+  syncClients(13);
+  $("#btnRecommit").disabled = true;
+  $("#btnPreview").disabled = true;
+  say("Beat 13 festgeschrieben: drei Ziele, keine offene Niederlage. Vier Sekunden statt sechs "+
+      "Handkorrekturen.");
+}
+
+/* ------------------------------------------------------------- Wiedergabe */
+function startReplay(){
+  if(replaying) return;
+  var back = {view:view, cursor:cursor, focus:document.activeElement};
+  replaying = true; replayAbort = false;
+  switchView("table");
+  var hud = $("#replayHud"); $("#map").dataset.replay = "1";
+  var steps = [beatBySeq(6), beatBySeq(7), beatBySeq(8)];
+  var total = steps.reduce(function(a,b){ return a+b.rep; },0);
+  var speed = reduced() ? 8 : 2;      /* 18 s Spielzeit, hier 2-fach */
+  var done = 0;
+  cursor = 5; render();
+  $("#btnReplay").disabled = true;
+
+  function step(i){
+    if(replayAbort || i >= steps.length){ finish(); return; }
+    var b = steps[i];
+    cursor = b.seq; render();
+    $("#replayLabel").textContent = "Beat "+b.seq+" · "+b.t+" · "+(done+b.rep)+",0 s von "+total+" s";
+    $("#replayBar").style.width = Math.round((done+b.rep)/total*100)+"%";
+    $("#replayBar").style.transition = "width "+(b.rep*1000/speed)+"ms linear";
+    done += b.rep;
+    window.setTimeout(function(){ step(i+1); }, b.rep*1000/speed);
+  }
+  function finish(){
+    replaying = false;
+    $("#map").dataset.replay = "0";
+    $("#replayBar").style.transition = "none";
+    $("#replayBar").style.width = "0%";
+    $("#btnReplay").disabled = false;
+    cursor = back.cursor;
+    switchView(back.view);
+    render();
+    say("Wiedergabe beendet. Zurück bei Beat "+cursor+".");
+    if(back.focus && document.contains(back.focus)) back.focus.focus();
+  }
+  say("Wiedergabe: 18 Sekunden ab Beat 6, in doppelter Geschwindigkeit.");
+  step(0);
+}
+
+/* -------------------------------------------------------------- Ansichten */
+function switchView(v){
+  view = v;
+  $("#viewTable").hidden   = (v !== "table");
+  $("#viewOutline").hidden = (v !== "outline");
+  $("#viewRecord").hidden  = (v !== "record");
+  $$("#recipeSeg button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.recipe === v));
+  });
+  $$(".rail button").forEach(function(b){
+    if(b.dataset.zone === "record") b.setAttribute("aria-current", v==="record" ? "page":"false");
+    else if(b.dataset.zone === "table") b.setAttribute("aria-current", v!=="record" ? "page":"false");
+  });
+  $("#recipeSeg").hidden = (v === "record");
+  $("#zoneJump").textContent = (v === "record") ? "← Zurück auf den Tisch" : "Chronik: Vaugn Kesselmann →";
+  $("#stageTitle").textContent = (v === "record") ? "Aufzeichnung · Person" : "Salzhaus am Nordkai";
+  $("#stageSub").textContent = (v === "record")
+    ? "Dieselbe Faltung, rückwärts gelesen · Stand: Beat "+cursor
+    : "Szene 3 · UVTT-Import „nordkai-salzhaus.dd2vtt“ · Raster 1,5 m · Vorhang: Live";
+  if(v !== "record") fitMap();
+}
+
+/* ------------------------------------------------------------- Einpassung */
+function fitMap(){
+  var wrap = $("#mapWrap"), fitBox = $("#mapFit");
+  if(!wrap || !fitBox || !wrap.clientWidth) return;
+  var fit = Math.min(1.28, Math.max(0.78, wrap.clientWidth / W));
+  fitBox.style.setProperty("--fit", fit.toFixed(4));
+  $("#map").classList.toggle("map--tight", fit < 0.86);
+  /* Passt die Karte nicht, wird auf das Geschehen zentriert statt auf das
+     Hafenbecken: der Anker des offenen Zuges, sonst die Marke am Zug. */
+  if(W*fit > wrap.clientWidth + 2){
+    var s = project(cursor);
+    var focusCell = (proposal || s.tmpl) ? (proposal || s.tmpl)
+      : (s.order && s.idx >= 0 ? s.tok[s.order[s.idx]] : {x:12, y:5});
+    wrap.scrollLeft = Math.max(0, (focusCell.x + 0.5) * CELL * fit - wrap.clientWidth/2);
+  }
+}
+
+/* ==================================================================== DRAHT */
+function wire(){
+  $("#scrubber").addEventListener("input", function(){
+    setCursor(parseInt(this.value,10), false);
+  });
+  $("#scrubber").addEventListener("change", function(){
+    say("Stand: Beat "+cursor+".");
+  });
+  $("#btnUndo").addEventListener("click", doUndo);
+  $("#btnPreview").addEventListener("click", doPreview);
+  $("#btnPreview").disabled = true;
+  $("#btnRecommit").addEventListener("click", doRecommit);
+  $("#btnReplay").addEventListener("click", startReplay);
+  $("#btnBlame").addEventListener("click", function(){
+    switchView("record");
+    window.setTimeout(function(){
+      var fb = $("#factBtn");
+      if(fb) popClaim(project(cursor), fb);
+      else say("Diese Behauptung entsteht erst in Beat 7 — spule vorwärts.");
+    }, 60);
+  });
+  $("#replayStop").addEventListener("click", function(){ replayAbort = true; });
+
+  $("#reasonForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var v = $("#reasonInput").value.trim();
+    if(v.length < 3){
+      $("#reasonErr").textContent = "Ein Grund ist Pflicht — mindestens drei Zeichen.";
+      $("#reasonInput").focus(); return;
+    }
+    $("#btnUndo").disabled = true;
+    finishUndo(v);
+  });
+  $("#reasonCancel").addEventListener("click", restoreBeat12);
+  $$("#reasonForm [data-fill]").forEach(function(b){
+    b.addEventListener("click", function(){
+      $("#reasonInput").value = b.dataset.fill;
+      $("#reasonInput").focus();
+    });
+  });
+
+  $$("#recipeSeg button").forEach(function(b){
+    b.addEventListener("click", function(){ switchView(b.dataset.recipe); render(); });
+  });
+  $("#btnNames").addEventListener("click", function(){
+    namesAll = !namesAll;
+    this.setAttribute("aria-pressed", String(namesAll));
+    this.textContent = namesAll ? "Nur Spielfiguren" : "Alle Namen";
+    render();
+  });
+  $("#zoneJump").addEventListener("click", function(){
+    switchView(view === "record" ? "table" : "record"); render();
+  });
+  $$(".rail button").forEach(function(b){
+    b.addEventListener("click", function(){
+      var z = b.dataset.zone;
+      if(z === "record"){ switchView("record"); render(); return; }
+      if(z === "table"){ switchView("table"); render(); return; }
+      openPop("Nicht in diesem Spike",
+        '<p>Sitz 1 zeigt <strong>einen</strong> Moment in voller Tiefe: 21:47, Sitzung 12.</p>'+
+        '<p class="mini">Sitzung, Ensemble, Fundus und Schmiede stehen im Kandidatendokument §3, '+
+        'aber sie hier anzudeuten hieße, Breite zu behaupten, die diese Datei nicht prüft. '+
+        'Die Breite ist der Auftrag des zweiten Sitzes.</p>', [], b);
+    });
+  });
+
+  $("#whyEmpty").addEventListener("click", function(){
+    openPop("Warum leer?",
+      '<p>Ossa Brandt hat zu dieser Person <strong>keine Zuteilung</strong>.</p>'+
+      '<dl class="kv"><dt>Anwesend</dt><dd>ja, ab Beat 5</dd>'+
+      '<dt>Im Raum bei B7</dt><dd>nein</dd>'+
+      '<dt>Zuteilungen</dt><dd>0</dd></dl>'+
+      '<p class="mini">Die Abwesenheit ist befragbar, nicht bloß leer. Und sie wird nie als '+
+      'Tatsache gerendert: „nichts aufgezeichnet“ heißt nicht „nichts geschehen“. Was am Tisch '+
+      'nur gesagt und nie berührt wurde, weiß diese Software nicht — das ist die härteste '+
+      'Schwäche des Kandidaten (W1), und sie gehört sichtbar in die Oberfläche.</p>',
+      [], $("#whyEmpty"));
+  });
+
+  $("#popClose").addEventListener("click", closePop);
+  $("#lensToggle").addEventListener("click", function(){
+    var open = $("#lens").dataset.open === "1";
+    if(open){ delete $("#lens").dataset.open; } else { $("#lens").dataset.open = "1"; }
+    this.setAttribute("aria-expanded", String(!open));
+  });
+  $("#lensClose").addEventListener("click", function(){
+    delete $("#lens").dataset.open;
+    $("#lensToggle").setAttribute("aria-expanded","false");
+    $("#lensToggle").focus();
+  });
+
+  /* Häute, Licht, Bewegung */
+  $$("#skinseg button").forEach(function(b){
+    b.addEventListener("click", function(){
+      root.setAttribute("data-skin", b.dataset.skin);
+      $$("#skinseg button").forEach(function(o){ o.setAttribute("aria-pressed", String(o===b)); });
+      say("Haut: "+b.textContent+". Die Kartenpalette wird daraus abgeleitet, nicht neu gesetzt.");
+    });
+  });
+  $$("#themeseg button").forEach(function(b){
+    b.addEventListener("click", function(){
+      if(b.dataset.theme === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", b.dataset.theme);
+      $$("#themeseg button").forEach(function(o){ o.setAttribute("aria-pressed", String(o===b)); });
+    });
+  });
+  $$("#motionseg button").forEach(function(b){
+    b.addEventListener("click", function(){
+      if(b.dataset.motion === "auto") root.removeAttribute("data-motion");
+      else root.setAttribute("data-motion", b.dataset.motion);
+      $$("#motionseg button").forEach(function(o){ o.setAttribute("aria-pressed", String(o===b)); });
+    });
+  });
+
+  /* Tastatur: Strg+Z ist der Flex, nicht ein Menüpunkt. */
+  document.addEventListener("keydown", function(e){
+    var tag = (e.target.tagName||"").toLowerCase();
+    var typing = tag === "input" || tag === "textarea";
+    if(e.key === "Escape"){
+      if($("#pop").dataset.open){ closePop(); return; }
+      if(!$("#reasonWrap").hidden){ restoreBeat12(); return; }
+      if($("#lens").dataset.open){ $("#lensClose").click(); return; }
+    }
+    if(typing) return;
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z"){
+      e.preventDefault(); doUndo();
+    }
+    if(e.key === "ArrowLeft" && e.altKey){ e.preventDefault(); setCursor(cursor-1, true); }
+    if(e.key === "ArrowRight" && e.altKey){ e.preventDefault(); setCursor(cursor+1, true); }
+  });
+
+  window.addEventListener("resize", fitMap);
+  window.addEventListener("scroll", function(){ if($("#pop").dataset.open) closePop(); }, true);
+  if(window.ResizeObserver){ new ResizeObserver(fitMap).observe($("#stageBody")); }
+}
+
+/* ===================================================================== START */
+root.classList.add("booting");
+drawMap();
+buildTokens(project(cursor));
+buildGlance();
+buildClients();
+wire();
+switchView("table");
+render();
+fitMap();
+window.setTimeout(function(){ root.classList.remove("booting"); fitMap(); }, 80);
+})();
+</script>

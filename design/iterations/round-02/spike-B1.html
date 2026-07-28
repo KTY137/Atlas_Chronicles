@@ -1,0 +1,1722 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Es gibt keine Datei. Es gibt eine Karte. — Chronicle, Kandidat B</title>
+
+<style>
+/* ─────────────────────────────────────────────────────────────────────────
+   TOKENS — Skin „Archive" (redaktionell, für die Lesefassung gebaut).
+   Jede Farbe, Schrift, Kante, Radius, Schatten und Dauer ist ein Token.
+   Hell ist der Standard. Dunkel kommt über die Media Query UND über
+   [data-theme] — das Attribut gewinnt in beide Richtungen.
+   ───────────────────────────────────────────────────────────────────────── */
+:root{
+  color-scheme: light;
+
+  --f-serif: "Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+  --f-sans: ui-sans-serif,-apple-system,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-mono: ui-monospace,"Cascadia Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+
+  --t-100: .6875rem;  --t-200: .75rem;   --t-300: .8125rem;
+  --t-400: .875rem;   --t-500: .9375rem; --t-600: 1.0625rem;
+  --t-700: 1.1875rem; --t-800: 1.5rem;   --t-900: 2.125rem;
+  --lh-prosa: 1.62;   --lh-ui: 1.35;
+  --ls-kapital: .1em;
+
+  --s-1: .25rem; --s-2: .5rem;  --s-3: .75rem; --s-4: 1rem;
+  --s-5: 1.5rem; --s-6: 2rem;   --s-7: 3rem;
+
+  --r-xs: 2px; --r-sm: 3px; --r-md: 5px; --r-lg: 8px; --r-pill: 999px;
+
+  --c-shell:      #ddd4c4;
+  --c-shell-tief: #cfc4b0;
+  --c-chrom:      #f2ece1;
+  --c-panel:      #f8f4ec;
+  --c-papier:     #fdfbf6;
+  --c-papier-2:   #f4efe4;
+  --c-ink:        #1d1a15;
+  --c-ink-2:      #635a4d;
+  --c-ink-3:      #8b8173;
+  --c-linie:      #ddd3c2;
+  --c-linie-satt: #bfb3a0;
+  --c-akzent:     #7a2733;
+  --c-akzent-2:   #a24151;
+  --c-akzent-weich:#f3e3e2;
+  --c-akzent-auf: #fdfbf6;
+  --c-messing:    #7a5e26;
+  --c-messing-weich:#efe4c9;
+  --c-link:       #2b4c7e;
+  --c-link-rot:   #8f2b18;
+  --c-gut:        #34603f;
+  --c-gut-weich:  #e2ecdf;
+  --c-fokus:      #12439e;
+  --c-fokus-auf:  #fdfbf6;
+
+  --tex-papier:
+    repeating-linear-gradient(94deg, rgba(90,70,40,.020) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(3deg, rgba(90,70,40,.014) 0 1px, transparent 1px 6px);
+  --tex-chrom:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.018) 0 1px, transparent 1px 3px);
+
+  --sh-1: 0 1px 1px rgba(48,36,20,.07), 0 2px 4px rgba(48,36,20,.05);
+  --sh-2: 0 1px 2px rgba(48,36,20,.10), 0 10px 26px -14px rgba(48,36,20,.45);
+  --sh-hoch: 0 2px 4px rgba(48,36,20,.12), 0 22px 48px -22px rgba(48,36,20,.55);
+  --sh-innen: inset 0 1px 0 rgba(255,255,255,.7);
+
+  --m-antwort: 140ms;
+  --m-zustand: 280ms;
+  --m-uebergang: 820ms;
+  --m-abbruch: 4000ms;
+  --e-aus: cubic-bezier(.2,.7,.3,1);
+  --e-ein: cubic-bezier(.4,0,.6,1);
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --c-shell:      #100f0e;
+    --c-shell-tief: #0a0a09;
+    --c-chrom:      #1a1816;
+    --c-panel:      #1e1b18;
+    --c-papier:     #23201c;
+    --c-papier-2:   #1b1815;
+    --c-ink:        #ece4d5;
+    --c-ink-2:      #a79c8c;
+    --c-ink-3:      #9a9082;
+    --c-linie:      #37322c;
+    --c-linie-satt: #4d463d;
+    --c-akzent:     #d78b81;
+    --c-akzent-2:   #e5a79c;
+    --c-akzent-weich:#3a2422;
+    --c-akzent-auf: #1a1210;
+    --c-messing:    #cba75f;
+    --c-messing-weich:#3a3222;
+    --c-link:       #94b8ea;
+    --c-link-rot:   #e08c72;
+    --c-gut:        #86bf94;
+    --c-gut-weich:  #22301f;
+    --c-fokus:      #8ab4ff;
+    --c-fokus-auf:  #14120f;
+    --tex-papier:
+      repeating-linear-gradient(94deg, rgba(255,240,210,.016) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(3deg, rgba(255,240,210,.010) 0 1px, transparent 1px 6px);
+    --tex-chrom: repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px);
+    --sh-1: 0 1px 1px rgba(0,0,0,.5), 0 2px 5px rgba(0,0,0,.35);
+    --sh-2: 0 1px 2px rgba(0,0,0,.6), 0 12px 30px -16px rgba(0,0,0,.9);
+    --sh-hoch: 0 2px 6px rgba(0,0,0,.65), 0 26px 54px -24px rgba(0,0,0,1);
+    --sh-innen: inset 0 1px 0 rgba(255,255,255,.045);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --c-shell:      #100f0e;
+  --c-shell-tief: #0a0a09;
+  --c-chrom:      #1a1816;
+  --c-panel:      #1e1b18;
+  --c-papier:     #23201c;
+  --c-papier-2:   #1b1815;
+  --c-ink:        #ece4d5;
+  --c-ink-2:      #a79c8c;
+  --c-ink-3:      #9a9082;
+  --c-linie:      #37322c;
+  --c-linie-satt: #4d463d;
+  --c-akzent:     #d78b81;
+  --c-akzent-2:   #e5a79c;
+  --c-akzent-weich:#3a2422;
+  --c-akzent-auf: #1a1210;
+  --c-messing:    #cba75f;
+  --c-messing-weich:#3a3222;
+  --c-link:       #94b8ea;
+  --c-link-rot:   #e08c72;
+  --c-gut:        #86bf94;
+  --c-gut-weich:  #22301f;
+  --c-fokus:      #8ab4ff;
+  --c-fokus-auf:  #14120f;
+  --tex-papier:
+    repeating-linear-gradient(94deg, rgba(255,240,210,.016) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(3deg, rgba(255,240,210,.010) 0 1px, transparent 1px 6px);
+  --tex-chrom: repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px);
+  --sh-1: 0 1px 1px rgba(0,0,0,.5), 0 2px 5px rgba(0,0,0,.35);
+  --sh-2: 0 1px 2px rgba(0,0,0,.6), 0 12px 30px -16px rgba(0,0,0,.9);
+  --sh-hoch: 0 2px 6px rgba(0,0,0,.65), 0 26px 54px -24px rgba(0,0,0,1);
+  --sh-innen: inset 0 1px 0 rgba(255,255,255,.045);
+}
+
+/* ── Grundlagen ─────────────────────────────────────────────────────────── */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0; background:var(--c-shell); color:var(--c-ink);
+  font-family:var(--f-sans); font-size:var(--t-400); line-height:var(--lh-ui);
+  overflow-x:hidden;
+}
+button,input,select,textarea{ font:inherit; color:inherit; }
+:where(a){ color:var(--c-link); }
+:focus-visible{
+  outline:2px solid var(--c-fokus); outline-offset:2px; border-radius:var(--r-xs);
+  box-shadow:0 0 0 4px var(--c-fokus-auf);
+}
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+.zahl{ font-variant-numeric:tabular-nums; }
+
+/* ── Gerüst ─────────────────────────────────────────────────────────────── */
+.app{ display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; min-height:100dvh; }
+@media (min-width:1100px){ .app{ height:100dvh; } }
+
+.topbar{
+  display:flex; align-items:center; gap:var(--s-4); flex-wrap:wrap;
+  padding:var(--s-3) var(--s-4);
+  background:var(--c-chrom); background-image:var(--tex-chrom);
+  border-bottom:1px solid var(--c-linie-satt);
+  box-shadow:var(--sh-1);
+}
+.marke{ display:flex; align-items:center; gap:var(--s-3); min-width:0; }
+.marke svg{ display:block; width:26px; height:26px; color:var(--c-akzent); flex:none; }
+.marke-txt{ min-width:0; }
+.marke-uni{
+  margin:0; font-size:var(--t-300); font-weight:600;
+  letter-spacing:var(--ls-kapital); text-transform:uppercase; color:var(--c-ink);
+}
+.marke-kmp{ margin:0; font-size:var(--t-200); color:var(--c-ink-2); }
+.topbar-spacer{ flex:1 1 auto; }
+
+.praesenz{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
+.pchip{
+  display:inline-flex; align-items:center; gap:.375rem;
+  font-size:var(--t-200); color:var(--c-ink-2);
+  padding:.15rem .5rem .15rem .35rem; border-radius:var(--r-pill);
+  background:var(--c-panel); border:1px solid var(--c-linie);
+}
+.pdot{ width:7px; height:7px; border-radius:50%; background:var(--c-gut); flex:none; }
+.pchip[data-an="0"] .pdot{ background:transparent; border:1.5px solid var(--c-ink-3); }
+.pchip[data-an="0"]{ color:var(--c-ink-3); }
+
+.knopf{
+  display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+  padding:.4rem .7rem; border-radius:var(--r-sm); cursor:pointer;
+  background:var(--c-panel); color:var(--c-ink);
+  border:1px solid var(--c-linie-satt); box-shadow:var(--sh-1);
+  font-size:var(--t-300); font-weight:550;
+  transition:background var(--m-antwort) var(--e-aus),
+             border-color var(--m-antwort) var(--e-aus),
+             transform var(--m-antwort) var(--e-aus),
+             box-shadow var(--m-antwort) var(--e-aus);
+}
+.knopf:hover{ background:var(--c-papier); border-color:var(--c-linie-satt); }
+.knopf:active{ transform:translateY(1px); box-shadow:none; }
+.knopf[disabled],.knopf[aria-disabled="true"]{ opacity:.5; cursor:not-allowed; box-shadow:none; }
+.knopf.haupt{
+  background:var(--c-akzent); color:var(--c-akzent-auf);
+  border-color:color-mix(in srgb, var(--c-akzent) 70%, #000 30%);
+}
+.knopf.haupt:hover{ background:var(--c-akzent-2); }
+.knopf.klein{ padding:.25rem .5rem; font-size:var(--t-200); }
+.knopf svg{ width:14px; height:14px; display:block; }
+
+/* ── Projektionsleiste ──────────────────────────────────────────────────── */
+.projleiste{
+  display:flex; align-items:center; gap:var(--s-4); flex-wrap:wrap;
+  padding:var(--s-2) var(--s-4);
+  background:var(--c-shell-tief); background-image:var(--tex-chrom);
+  border-bottom:1px solid var(--c-linie-satt);
+}
+.pl-label{
+  font-size:var(--t-100); text-transform:uppercase; letter-spacing:var(--ls-kapital);
+  color:var(--c-ink-2); font-weight:700; flex:none;
+}
+.leserband{
+  display:flex; gap:var(--s-2); overflow-x:auto; padding:.2rem .1rem; flex:1 1 22rem;
+  scrollbar-width:thin;
+}
+.leser{
+  flex:none; cursor:pointer; text-align:left; white-space:nowrap;
+  padding:.3rem .65rem; border-radius:var(--r-sm);
+  background:var(--c-panel); border:1px solid var(--c-linie);
+  transition:background var(--m-antwort) var(--e-aus),
+             border-color var(--m-antwort) var(--e-aus),
+             color var(--m-antwort) var(--e-aus);
+}
+.leser b{ display:block; font-size:var(--t-300); font-weight:600; }
+.leser span{ display:block; font-size:var(--t-100); color:var(--c-ink-3); }
+.leser:hover{ background:var(--c-papier); }
+.leser[aria-checked="true"]{
+  background:var(--c-akzent); border-color:var(--c-akzent);
+  color:var(--c-akzent-auf); box-shadow:var(--sh-1);
+}
+.leser[aria-checked="true"] span{ color:color-mix(in srgb, var(--c-akzent-auf) 78%, transparent); }
+.anzeige{ display:flex; gap:var(--s-2); align-items:center; flex:none; }
+
+/* ── Hauptraster ────────────────────────────────────────────────────────── */
+.main{
+  display:grid; gap:var(--s-4); padding:var(--s-4);
+  grid-template-columns:12.25rem minmax(0,1fr) 21.5rem;
+  min-height:0;
+}
+@media (max-width:1240px){ .main{ grid-template-columns:12.25rem minmax(0,1fr); } }
+@media (max-width:900px){ .main{ grid-template-columns:minmax(0,1fr); padding:var(--s-3); } }
+
+.rail{ display:flex; flex-direction:column; gap:.15rem; min-width:0; }
+@media (max-width:900px){
+  .rail{ flex-direction:row; overflow-x:auto; gap:var(--s-2); padding-bottom:var(--s-1); }
+}
+.rail-kopf{
+  font-size:var(--t-100); text-transform:uppercase; letter-spacing:var(--ls-kapital);
+  color:var(--c-ink-3); font-weight:700; padding:0 var(--s-2) var(--s-2);
+}
+@media (max-width:900px){ .rail-kopf{ display:none; } }
+.modul{
+  display:flex; align-items:center; gap:var(--s-2); white-space:nowrap;
+  padding:.45rem var(--s-2); border-radius:var(--r-sm); cursor:pointer;
+  background:transparent; border:1px solid transparent; text-align:left;
+  color:var(--c-ink-2); font-size:var(--t-400);
+  transition:background var(--m-antwort) var(--e-aus), color var(--m-antwort) var(--e-aus);
+}
+.modul svg{ width:16px; height:16px; flex:none; opacity:.85; }
+.modul:hover{ background:var(--c-panel); color:var(--c-ink); }
+.modul[aria-current="page"]{
+  background:var(--c-panel); color:var(--c-ink); font-weight:600;
+  border-color:var(--c-linie); box-shadow:var(--sh-1);
+}
+.modul[aria-current="page"] svg{ color:var(--c-akzent); opacity:1; }
+.modul[aria-disabled="true"]{ opacity:.55; }
+
+/* ── Bühne ──────────────────────────────────────────────────────────────── */
+.stage{
+  min-width:0; display:flex; flex-direction:column;
+  background:var(--c-papier); background-image:var(--tex-papier);
+  border:1px solid var(--c-linie-satt); border-radius:var(--r-md);
+  box-shadow:var(--sh-2); overflow:hidden;
+}
+.stage-kopf{
+  display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap;
+  padding:var(--s-3) var(--s-4);
+  border-bottom:1px solid var(--c-linie);
+  background:linear-gradient(180deg, var(--c-panel), transparent);
+}
+.rezepte{ display:flex; gap:.15rem; padding:.15rem; background:var(--c-papier-2);
+  border:1px solid var(--c-linie); border-radius:var(--r-sm); }
+.rezept{
+  cursor:pointer; padding:.3rem .7rem; border-radius:var(--r-xs);
+  background:transparent; border:0; font-size:var(--t-300); color:var(--c-ink-2);
+  transition:background var(--m-antwort) var(--e-aus), color var(--m-antwort) var(--e-aus);
+}
+.rezept:hover{ color:var(--c-ink); }
+.rezept[aria-selected="true"]{
+  background:var(--c-papier); color:var(--c-ink); font-weight:600; box-shadow:var(--sh-1);
+}
+.schalter{ display:inline-flex; align-items:center; gap:.45rem; font-size:var(--t-300);
+  color:var(--c-ink-2); cursor:pointer; }
+.schalter input{ accent-color:var(--c-akzent); width:.95rem; height:.95rem; }
+.stage-kopf-spacer{ flex:1 1 auto; }
+.stage-zaehler{ font-size:var(--t-200); color:var(--c-ink-3); }
+
+.stage-koerper{ overflow:auto; padding:var(--s-5) var(--s-5) var(--s-7); min-height:0; }
+@media (max-width:900px){ .stage-koerper{ padding:var(--s-4) var(--s-3) var(--s-6); } }
+
+/* ── Lesefassung: eine Fandom-Seite, keine Kartenwand ───────────────────── */
+.artikel{ max-width:52rem; margin:0 auto; }
+.artikel h1{
+  font-family:var(--f-serif); font-size:var(--t-900); line-height:1.15;
+  margin:0 0 .15rem; font-weight:600; letter-spacing:-.01em;
+}
+.artikel-unter{
+  margin:0 0 var(--s-2); font-size:var(--t-200); color:var(--c-ink-3);
+  font-family:var(--f-mono);
+}
+.artikel-regel{ height:2px; background:var(--c-akzent); opacity:.85; margin:0 0 var(--s-1); }
+.artikel-regel + .artikel-regel{ height:1px; background:var(--c-messing); opacity:.55; margin-bottom:var(--s-5); }
+
+.abschnitt{ margin:0 0 var(--s-5); }
+.abschnitt h2{
+  font-family:var(--f-sans); font-size:var(--t-300); font-weight:700;
+  text-transform:uppercase; letter-spacing:var(--ls-kapital);
+  color:var(--c-ink-2); margin:var(--s-6) 0 var(--s-3);
+  padding-bottom:.3rem; border-bottom:1px solid var(--c-linie);
+}
+.prosa{
+  font-family:var(--f-serif); font-size:var(--t-600); line-height:var(--lh-prosa);
+  margin:0 0 var(--s-3); color:var(--c-ink); hyphens:auto;
+}
+.karte-block{ position:relative; }
+.karte-block + .karte-block{ margin-top:0; }
+.griff{
+  position:absolute; left:-2.6rem; top:.35rem;
+  width:2rem; height:1.5rem; display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; background:var(--c-papier-2); border:1px solid var(--c-linie);
+  border-radius:var(--r-xs); color:var(--c-ink-3);
+  font-family:var(--f-mono); font-size:var(--t-100);
+  opacity:0; transition:opacity var(--m-antwort) var(--e-aus),
+                        color var(--m-antwort) var(--e-aus),
+                        border-color var(--m-antwort) var(--e-aus);
+}
+.karte-block:hover .griff,.griff:focus-visible,.karte-block:focus-within .griff{ opacity:1; }
+.griff:hover{ color:var(--c-akzent); border-color:var(--c-akzent); }
+@media (max-width:1000px){
+  .griff{ position:static; opacity:1; margin:0 0 .3rem; width:auto; padding:0 .4rem; height:1.25rem; }
+}
+.karte-block.gewaehlt::before{
+  content:""; position:absolute; left:-1rem; top:.2rem; bottom:.2rem; width:3px;
+  background:var(--c-akzent); border-radius:var(--r-pill);
+}
+@media (max-width:1000px){ .karte-block.gewaehlt::before{ left:-.5rem; } }
+
+/* Kanten zeigen: derselbe Text, sichtbare Atome */
+.kanten .karte-block{
+  outline:1px dashed var(--c-linie-satt); outline-offset:6px; border-radius:var(--r-xs);
+  margin-bottom:var(--s-4);
+}
+.kanten .griff{ opacity:1; }
+.kanten .karte-block::after{
+  content:attr(data-id) " · " attr(data-art) " · S" attr(data-s);
+  position:absolute; right:-.2rem; top:-1.15rem;
+  font-family:var(--f-mono); font-size:var(--t-100); color:var(--c-ink-3);
+  font-variant-numeric:tabular-nums;
+}
+
+.wiki{ text-decoration-color:color-mix(in srgb, currentColor 40%, transparent); text-underline-offset:2px; }
+.wiki.rot{ color:var(--c-link-rot); }
+.abschnitt-lede .prosa:first-of-type::first-letter{
+  font-size:3.1em; line-height:.86; float:left; padding:.06em .09em 0 0;
+  font-weight:600; color:var(--c-akzent);
+}
+
+/* Infobox aus Feldkarten */
+.infobox{
+  float:right; width:19.5rem; margin:0 0 var(--s-4) var(--s-5);
+  background:var(--c-panel); border:1px solid var(--c-linie-satt);
+  border-radius:var(--r-sm); box-shadow:var(--sh-1); overflow:hidden;
+}
+@media (max-width:760px){ .infobox{ float:none; width:100%; margin:0 0 var(--s-4); } }
+.infobox-kopf{
+  background:var(--c-akzent); color:var(--c-akzent-auf);
+  padding:var(--s-2) var(--s-3); display:flex; align-items:center; gap:var(--s-2);
+}
+.infobox-kopf h2{
+  margin:0; font-family:var(--f-serif); font-size:var(--t-500); font-weight:600;
+  text-transform:none; letter-spacing:0; border:0; padding:0; color:inherit;
+}
+.infobox-kopf svg{ width:18px; height:18px; flex:none; opacity:.9; }
+.wappen{ display:block; margin:var(--s-3) auto var(--s-2); width:104px; height:82px; color:var(--c-ink-3); }
+.infobox dl{ margin:0; padding:0 var(--s-3) var(--s-3); }
+.infobox .zeile{
+  display:grid; grid-template-columns:8.25rem minmax(0,1fr); gap:var(--s-2);
+  padding:.42rem 0; border-top:1px solid var(--c-linie); align-items:baseline;
+}
+.infobox .zeile:first-child{ border-top:0; }
+@media (max-width:430px){
+  .infobox .zeile{ grid-template-columns:minmax(0,1fr); gap:.1rem; }
+}
+.infobox dt{ font-size:var(--t-200); color:var(--c-ink-2); text-transform:uppercase; letter-spacing:.06em; }
+.infobox dd{ margin:0; font-size:var(--t-400); font-family:var(--f-serif); }
+.infobox .sl-notiz{
+  display:block; margin-top:.2rem; font-family:var(--f-sans); font-size:var(--t-100);
+  color:var(--c-akzent); background:var(--c-akzent-weich);
+  border-left:2px solid var(--c-akzent); padding:.2rem .35rem; border-radius:0 var(--r-xs) var(--r-xs) 0;
+}
+.infobox-fuss{
+  padding:var(--s-2) var(--s-3); border-top:1px solid var(--c-linie);
+  font-size:var(--t-100); color:var(--c-ink-3); background:var(--c-papier-2);
+}
+
+/* ── Berichtigung: gestrichen + Korrektur ───────────────────────────────── */
+.gestrichen{ position:relative; color:var(--c-ink-3); display:inline; }
+.gestrichen::after{
+  content:""; position:absolute; left:0; top:.62em; height:1.5px;
+  width:var(--strich, 100%); background:var(--c-akzent); opacity:.85;
+}
+.karte-block.frisch .gestrichen::after{ animation:strich var(--m-uebergang) var(--e-aus) both; }
+@keyframes strich{ from{ width:0; } to{ width:100%; } }
+.korrektur{
+  margin:.35rem 0 var(--s-3); padding:var(--s-3) var(--s-3) var(--s-3) var(--s-4);
+  border-left:3px solid var(--c-akzent); background:var(--c-akzent-weich);
+  border-radius:0 var(--r-sm) var(--r-sm) 0;
+}
+.karte-block.frisch .korrektur{ animation:aufsteigen var(--m-zustand) var(--e-aus) both; animation-delay:180ms; }
+@keyframes aufsteigen{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+.korrektur .prosa{ margin:0; }
+.stempel{
+  display:block; margin-top:var(--s-2); font-family:var(--f-mono); font-size:var(--t-100);
+  color:var(--c-akzent); font-variant-numeric:tabular-nums; letter-spacing:.01em;
+}
+.marker{
+  display:inline-flex; align-items:center; gap:.3rem; vertical-align:.06em;
+  font-family:var(--f-sans); font-size:var(--t-100); font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em;
+  padding:.05rem .35rem; border-radius:var(--r-xs);
+  background:var(--c-akzent-weich); color:var(--c-akzent);
+  border:1px solid color-mix(in srgb, var(--c-akzent) 35%, transparent);
+}
+.marker.grau{ background:var(--c-papier-2); color:var(--c-ink-3); border-color:var(--c-linie); }
+.marker.gut{ background:var(--c-gut-weich); color:var(--c-gut); border-color:color-mix(in srgb, var(--c-gut) 35%, transparent); }
+.marker.messing{ background:var(--c-messing-weich); color:var(--c-messing); border-color:color-mix(in srgb, var(--c-messing) 35%, transparent); }
+
+.tisch-quelle{
+  display:inline-flex; align-items:center; gap:.3rem; font-family:var(--f-sans);
+  font-size:var(--t-100); color:var(--c-ink-3); margin-left:.35rem; vertical-align:.08em;
+}
+
+/* ── Einzelkarten-Editor ────────────────────────────────────────────────── */
+.editor{
+  margin:var(--s-3) 0 var(--s-4); border:1px solid var(--c-akzent);
+  border-radius:var(--r-sm); background:var(--c-papier); box-shadow:var(--sh-hoch);
+  animation:aufsteigen var(--m-zustand) var(--e-aus) both;
+}
+.editor-nachhall{
+  padding:var(--s-3); background:var(--c-akzent-weich);
+  border-bottom:1px solid color-mix(in srgb, var(--c-akzent) 30%, transparent);
+}
+.editor-nachhall p{ margin:0; font-size:var(--t-300); color:var(--c-ink); }
+.editor-nachhall b{ color:var(--c-akzent); }
+.editor-nachhall .vorlauf{
+  display:block; font-size:var(--t-100); text-transform:uppercase;
+  letter-spacing:var(--ls-kapital); color:var(--c-akzent); font-weight:700; margin-bottom:.3rem;
+}
+.kartengrenze{
+  display:flex; align-items:center; gap:var(--s-2); padding:.25rem var(--s-3);
+  font-family:var(--f-mono); font-size:var(--t-100); color:var(--c-ink-3);
+  background:var(--c-papier-2); border-bottom:1px dashed var(--c-linie-satt);
+}
+.kartengrenze.unten{ border-bottom:0; border-top:1px dashed var(--c-linie-satt); }
+.kartengrenze .strichlinie{ flex:1 1 auto; height:1px; background:repeating-linear-gradient(90deg,var(--c-linie-satt) 0 4px, transparent 4px 8px); }
+.feld{
+  padding:var(--s-3); font-family:var(--f-serif); font-size:var(--t-600);
+  line-height:var(--lh-prosa); min-height:4.5rem; outline:0;
+}
+.feld:focus-visible{ box-shadow:inset 0 0 0 2px var(--c-fokus); border-radius:var(--r-xs); }
+.editor-fuss{
+  display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap;
+  padding:var(--s-2) var(--s-3); border-top:1px solid var(--c-linie); background:var(--c-panel);
+}
+.klassifikator{
+  flex:1 1 14rem; min-width:0; font-size:var(--t-200); color:var(--c-ink-2);
+  transition:color var(--m-zustand) var(--e-aus);
+}
+.klassifikator b{ color:var(--c-akzent); }
+.klassifikator[data-art="redaktion"] b{ color:var(--c-messing); }
+
+/* ── Kartei ─────────────────────────────────────────────────────────────── */
+.kartei-gruppe{ margin:0 0 var(--s-5); }
+.kartei-gruppe > h2{
+  font-size:var(--t-300); font-weight:700; text-transform:uppercase;
+  letter-spacing:var(--ls-kapital); color:var(--c-ink-2);
+  margin:0 0 var(--s-1); padding-bottom:.3rem; border-bottom:1px solid var(--c-linie);
+}
+.kartei-gruppe > p.hinweis{ margin:0 0 var(--s-3); font-size:var(--t-200); color:var(--c-ink-3); }
+.kartei{ display:grid; gap:var(--s-3); grid-template-columns:repeat(auto-fill,minmax(15rem,1fr)); list-style:none; margin:0; padding:0; }
+.zettel{
+  position:relative; text-align:left; width:100%; cursor:pointer;
+  background:var(--c-panel); border:1px solid var(--c-linie-satt);
+  border-radius:var(--r-sm); box-shadow:var(--sh-1); padding:var(--s-3);
+  display:flex; flex-direction:column; gap:var(--s-2);
+  transition:transform var(--m-antwort) var(--e-aus),
+             box-shadow var(--m-antwort) var(--e-aus),
+             border-color var(--m-antwort) var(--e-aus);
+}
+.zettel:hover{ transform:translateY(-2px); box-shadow:var(--sh-2); }
+.zettel.gewaehlt{ border-color:var(--c-akzent); box-shadow:0 0 0 1px var(--c-akzent), var(--sh-2); }
+.zettel-kopf{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap;
+  font-family:var(--f-mono); font-size:var(--t-100); color:var(--c-ink-3); font-variant-numeric:tabular-nums; }
+.zettel-text{ font-family:var(--f-serif); font-size:var(--t-400); line-height:1.45; margin:0; }
+.zettel-fuss{ display:flex; gap:var(--s-1); flex-wrap:wrap; margin-top:auto; }
+.eti{ font-size:var(--t-100); color:var(--c-ink-3); background:var(--c-papier-2);
+  border:1px solid var(--c-linie); border-radius:var(--r-pill); padding:.05rem .4rem; }
+.zettel.animiert{ animation:zerfall var(--m-zustand) var(--e-aus) both; }
+@keyframes zerfall{
+  from{ opacity:0; transform:translateY(10px) rotate(-.4deg) scale(.985); }
+  to{ opacity:1; transform:none; }
+}
+
+/* ── Umriss ─────────────────────────────────────────────────────────────── */
+.umriss{ font-size:var(--t-400); }
+.umriss ol{ list-style:none; margin:0; padding:0 0 0 var(--s-4); border-left:1px solid var(--c-linie); }
+.umriss > ol{ padding-left:0; border-left:0; }
+.umriss li{ margin:0 0 .3rem; }
+.umriss .u-abschnitt > .u-titel{
+  font-weight:700; text-transform:uppercase; letter-spacing:var(--ls-kapital);
+  font-size:var(--t-200); color:var(--c-ink-2); margin:var(--s-4) 0 var(--s-2); display:block;
+}
+.u-karte{
+  display:flex; gap:var(--s-2); align-items:baseline; flex-wrap:wrap;
+  padding:.25rem .35rem; border-radius:var(--r-xs);
+}
+.u-karte code{ font-family:var(--f-mono); font-size:var(--t-200); color:var(--c-ink-3); font-variant-numeric:tabular-nums; }
+.u-karte .u-incipit{ color:var(--c-ink); }
+.u-karte .u-rel{ font-size:var(--t-200); color:var(--c-akzent); }
+
+/* ── Kontextlinse ───────────────────────────────────────────────────────── */
+.lens{
+  min-width:0; display:flex; flex-direction:column;
+  background:var(--c-panel); border:1px solid var(--c-linie-satt);
+  border-radius:var(--r-md); box-shadow:var(--sh-2); overflow:hidden;
+}
+@media (max-width:1240px){ .lens{ grid-column:1 / -1; } }
+.lens-kopf{ padding:var(--s-3) var(--s-3) var(--s-2); border-bottom:1px solid var(--c-linie);
+  background:linear-gradient(180deg, var(--c-papier-2), transparent); }
+.lens-kopf.ankunft{ animation:ankunft var(--m-zustand) var(--e-aus) both; }
+@keyframes ankunft{ from{ background-color:var(--c-akzent-weich); } to{ background-color:transparent; } }
+.lens-id{ font-family:var(--f-mono); font-size:var(--t-200); color:var(--c-ink-3);
+  display:flex; gap:var(--s-2); flex-wrap:wrap; align-items:center; font-variant-numeric:tabular-nums; }
+.lens-text{ font-family:var(--f-serif); font-size:var(--t-400); line-height:1.45; margin:var(--s-2) 0 0; }
+.lens-tabs{ display:flex; gap:.15rem; padding:var(--s-2) var(--s-3) 0; border-bottom:1px solid var(--c-linie); }
+.lens-tab{
+  cursor:pointer; background:transparent; border:0; border-bottom:2px solid transparent;
+  padding:.35rem .55rem; font-size:var(--t-300); color:var(--c-ink-2);
+  transition:color var(--m-antwort) var(--e-aus), border-color var(--m-antwort) var(--e-aus);
+}
+.lens-tab[aria-selected="true"]{ color:var(--c-ink); font-weight:650; border-bottom-color:var(--c-akzent); }
+.lens-koerper{ overflow:auto; padding:var(--s-3); min-height:0; flex:1 1 auto; }
+.lens-satz{
+  font-family:var(--f-serif); font-size:var(--t-500); line-height:1.5; margin:0 0 var(--s-3);
+  padding-bottom:var(--s-3); border-bottom:1px solid var(--c-linie);
+}
+.lens-satz b{ color:var(--c-akzent); }
+.lens-h{
+  font-size:var(--t-100); text-transform:uppercase; letter-spacing:var(--ls-kapital);
+  color:var(--c-ink-3); font-weight:700; margin:var(--s-4) 0 var(--s-2);
+}
+.lens-h:first-child{ margin-top:0; }
+.liste{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.3rem; }
+.liste li{ display:flex; gap:var(--s-2); align-items:baseline; font-size:var(--t-300); }
+.liste code{ font-family:var(--f-mono); font-size:var(--t-200); color:var(--c-ink-3); flex:none; font-variant-numeric:tabular-nums; }
+.anord{
+  display:flex; align-items:center; gap:var(--s-2); justify-content:space-between;
+  padding:.4rem var(--s-2); border:1px solid var(--c-linie); border-radius:var(--r-xs);
+  background:var(--c-papier); font-size:var(--t-300);
+  transition:border-color var(--m-zustand) var(--e-aus), background var(--m-zustand) var(--e-aus);
+}
+.anord.fertig{ border-color:color-mix(in srgb, var(--c-gut) 45%, transparent); background:var(--c-gut-weich); }
+.sicht{ width:100%; }
+.sicht tr{ border-top:1px solid var(--c-linie); }
+.sicht tr:first-child{ border-top:0; }
+.sicht th{ text-align:left; font-size:var(--t-100); text-transform:uppercase;
+  letter-spacing:.06em; color:var(--c-ink-3); font-weight:700; padding:.3rem .2rem; }
+.sicht td{ padding:.4rem .2rem; font-size:var(--t-300); vertical-align:top; }
+.sicht td:first-child{ width:6.5rem; }
+.sicht button{
+  background:transparent; border:0; cursor:pointer; padding:0; text-align:left;
+  font-weight:650; color:var(--c-link); text-decoration:underline;
+  text-decoration-color:color-mix(in srgb, var(--c-link) 40%, transparent); text-underline-offset:2px;
+}
+.sicht [data-k="absent"]{ color:var(--c-ink-3); font-style:italic; }
+.kette{ font-family:var(--f-mono); font-size:var(--t-200); line-height:1.7;
+  font-variant-numeric:tabular-nums; color:var(--c-ink-2); }
+.kette b{ color:var(--c-ink); }
+.kette .weg{ text-decoration:line-through; color:var(--c-ink-3); }
+.lens-aktionen{ display:flex; gap:var(--s-2); flex-wrap:wrap; padding:var(--s-3);
+  border-top:1px solid var(--c-linie); background:var(--c-papier-2); }
+.notiz{
+  font-size:var(--t-200); color:var(--c-ink-2); background:var(--c-papier-2);
+  border-left:2px solid var(--c-linie-satt); padding:var(--s-2); border-radius:0 var(--r-xs) var(--r-xs) 0;
+  margin:var(--s-2) 0 0;
+}
+
+/* ── Sitzungsleiste ─────────────────────────────────────────────────────── */
+.shelf{
+  display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap;
+  padding:var(--s-2) var(--s-4);
+  background:var(--c-chrom); background-image:var(--tex-chrom);
+  border-top:1px solid var(--c-linie-satt);
+}
+.strom{ display:flex; gap:var(--s-2); overflow-x:auto; flex:1 1 20rem; padding:.2rem 0; scrollbar-width:thin; }
+.strom-zeile{
+  flex:none; display:flex; align-items:baseline; gap:var(--s-2); white-space:nowrap;
+  font-size:var(--t-200); color:var(--c-ink-2);
+  background:var(--c-panel); border:1px solid var(--c-linie);
+  border-radius:var(--r-sm); padding:.25rem .55rem;
+}
+.strom-zeile time{ font-family:var(--f-mono); color:var(--c-ink-3); font-variant-numeric:tabular-nums; }
+.strom-zeile.neu{ border-color:var(--c-akzent); animation:aufsteigen var(--m-zustand) var(--e-aus) both; }
+
+/* ── Abbruchfenster ─────────────────────────────────────────────────────── */
+.toastwrap{ position:fixed; right:var(--s-4); bottom:var(--s-4); z-index:40;
+  display:flex; flex-direction:column; gap:var(--s-2); max-width:min(26rem, calc(100vw - 2rem)); }
+.toast{
+  display:flex; gap:var(--s-3); align-items:flex-start;
+  background:var(--c-panel); border:1px solid var(--c-akzent);
+  border-radius:var(--r-md); box-shadow:var(--sh-hoch); padding:var(--s-3);
+  animation:aufsteigen var(--m-zustand) var(--e-aus) both;
+}
+.toast.ruhig{ border-color:var(--c-linie-satt); }
+.toast-txt{ flex:1 1 auto; min-width:0; }
+.toast-titel{ margin:0 0 .2rem; font-size:var(--t-400); font-weight:650; }
+.toast-sub{ margin:0; font-size:var(--t-200); color:var(--c-ink-2); }
+.toast-akt{ display:flex; gap:var(--s-2); margin-top:var(--s-2); flex-wrap:wrap; }
+.ring{ position:relative; width:38px; height:38px; flex:none; }
+.ring svg{ width:38px; height:38px; transform:rotate(-90deg); }
+.ring circle{ fill:none; stroke-width:3; }
+.ring .bahn{ stroke:var(--c-linie); }
+.ring .lauf{ stroke:var(--c-akzent); stroke-linecap:round;
+  stroke-dasharray:100.53; stroke-dashoffset:0; animation:ringlauf var(--m-abbruch) linear both; }
+@keyframes ringlauf{ to{ stroke-dashoffset:100.53; } }
+.ring .rest{
+  position:absolute; inset:0; display:grid; place-items:center;
+  font-family:var(--f-mono); font-size:var(--t-300); font-variant-numeric:tabular-nums; color:var(--c-akzent);
+}
+
+/* ── Ehrlichkeitsnotiz ──────────────────────────────────────────────────── */
+.ehrlich{
+  max-width:52rem; margin:var(--s-6) auto 0; border-top:1px solid var(--c-linie);
+  padding-top:var(--s-3); font-size:var(--t-300); color:var(--c-ink-2);
+}
+.ehrlich summary{ cursor:pointer; font-weight:650; color:var(--c-ink); }
+.ehrlich h3{ font-size:var(--t-200); text-transform:uppercase; letter-spacing:var(--ls-kapital);
+  color:var(--c-ink-3); margin:var(--s-3) 0 var(--s-1); }
+.ehrlich ul{ margin:0; padding-left:1.1rem; }
+.ehrlich li{ margin:.15rem 0; }
+
+/* ── Bewegung aus ───────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  :root:not([data-motion="voll"]){ --m-antwort:1ms; --m-zustand:1ms; --m-uebergang:1ms; }
+  :root:not([data-motion="voll"]) *{
+    animation-duration:1ms !important; animation-delay:0ms !important;
+    transition-duration:1ms !important; scroll-behavior:auto !important;
+  }
+  :root:not([data-motion="voll"]) .ring .lauf{ animation:none; stroke-dashoffset:0; opacity:.35; }
+}
+:root[data-motion="reduziert"]{ --m-antwort:1ms; --m-zustand:1ms; --m-uebergang:1ms; }
+:root[data-motion="reduziert"] *{
+  animation-duration:1ms !important; animation-delay:0ms !important;
+  transition-duration:1ms !important; scroll-behavior:auto !important;
+}
+:root[data-motion="reduziert"] .ring .lauf{ animation:none; stroke-dashoffset:0; opacity:.35; }
+:root[data-motion="reduziert"] .zettel:hover{ transform:none; }
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <div class="marke">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M12 3v16"/><path d="M5 7h14"/><path d="M5 7 2.5 13h5L5 7Z"/><path d="M19 7l-2.5 6h5L19 7Z"/>
+        <path d="M8 20h8"/>
+      </svg>
+      <div class="marke-txt">
+        <p class="marke-uni">Aschenkrone</p>
+        <p class="marke-kmp">Das Kestrel-Erbe · Sitzung <span class="zahl">14</span> · <time datetime="21:52">21:52</time></p>
+      </div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="praesenz" id="praesenz"></div>
+    <button class="knopf klein" type="button" id="reset">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      Sitzung zurücksetzen
+    </button>
+  </header>
+
+  <div class="projleiste">
+    <span class="pl-label" id="lb-leser">Ansicht als</span>
+    <div class="leserband" role="radiogroup" aria-labelledby="lb-leser" id="leserband"></div>
+    <div class="anzeige">
+      <label class="sr-only" for="thema">Thema</label>
+      <select class="knopf klein" id="thema">
+        <option value="auto">Thema: automatisch</option>
+        <option value="light">Thema: hell</option>
+        <option value="dark">Thema: dunkel</option>
+      </select>
+      <label class="sr-only" for="bewegung">Bewegung</label>
+      <select class="knopf klein" id="bewegung">
+        <option value="auto">Bewegung: System</option>
+        <option value="voll">Bewegung: voll</option>
+        <option value="reduziert">Bewegung: reduziert</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="main">
+    <nav class="rail" aria-label="Module">
+      <p class="rail-kopf">Module</p>
+      <button class="modul" type="button" aria-disabled="true" data-modul="strom">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h10M4 17h13"/></svg>
+        Der Strom
+      </button>
+      <button class="modul" type="button" aria-current="page" data-modul="anordnungen">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        Die Anordnungen
+      </button>
+      <button class="modul" type="button" aria-disabled="true" data-modul="ensemble">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 0 0 0-6"/><path d="M18 20a5 5 0 0 0-3-4.6"/></svg>
+        Das Ensemble
+      </button>
+      <button class="modul" type="button" aria-disabled="true" data-modul="kasten">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h18v11H3z"/><path d="M3 8l2-3h14l2 3"/><path d="M10 12h4"/></svg>
+        Der Kasten
+      </button>
+      <button class="modul" type="button" aria-disabled="true" data-modul="wissenskarte">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>
+        Die Wissenskarte
+      </button>
+      <button class="modul" type="button" aria-disabled="true" data-modul="schmiede">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 18h16"/><path d="M7 18V9l5-4 5 4v9"/><path d="M10 18v-4h4v4"/></svg>
+        Die Schmiede
+      </button>
+    </nav>
+
+    <main class="stage" aria-label="Hauptbühne">
+      <div class="stage-kopf">
+        <div class="rezepte" role="tablist" aria-label="Wiedergabe der Anordnung">
+          <button class="rezept" type="button" role="tab" id="tab-lese" aria-controls="buehne" aria-selected="true" data-rezept="lese">Lesefassung</button>
+          <button class="rezept" type="button" role="tab" id="tab-kartei" aria-controls="buehne" aria-selected="false" data-rezept="kartei" tabindex="-1">Kartei</button>
+          <button class="rezept" type="button" role="tab" id="tab-umriss" aria-controls="buehne" aria-selected="false" data-rezept="umriss" tabindex="-1">Umriss</button>
+        </div>
+        <label class="schalter"><input type="checkbox" id="kanten"> Kanten zeigen</label>
+        <div class="stage-kopf-spacer"></div>
+        <p class="stage-zaehler zahl" id="zaehler"></p>
+      </div>
+      <div class="stage-koerper" id="buehne" role="tabpanel" aria-labelledby="tab-lese" tabindex="0"></div>
+    </main>
+
+    <aside class="lens" aria-label="Kontextlinse" id="lens"></aside>
+  </div>
+
+  <footer class="shelf">
+    <span class="pl-label">Der Strom</span>
+    <div class="strom" id="strom" aria-label="Ereignisse dieser Sitzung"></div>
+  </footer>
+</div>
+
+<div class="toastwrap" id="toastwrap"></div>
+<p class="sr-only" role="status" aria-live="polite" id="live"></p>
+
+<script>
+(function(){
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · DATEN — ein Kasten, 41 Karten, eine Anordnung, echte Ausgaben.
+   Jede Zahl auf dem Bildschirm wird aus diesen Daten gerechnet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+var FIGUREN = {
+  sera:   { name:"Sera",   voll:"Sera Valtin",  an:true },
+  brannt: { name:"Brannt", voll:"Brannt Ohm",   an:true },
+  ossa:   { name:"Ossa",   voll:"Ossa Kell",    an:true },
+  vesper: { name:"Vesper", voll:"Vesper Ryn",   an:false, fehlt:"abwesend seit Sitzung 12" }
+};
+
+var LESER = [
+  { id:"sl",     label:"Kaya (SL)",   sub:"sieht den ganzen Kasten" },
+  { id:"sera",   label:"Sera",        sub:"hält die alte Karte" },
+  { id:"brannt", label:"Brannt",      sub:"hält die alte Karte" },
+  { id:"ossa",   label:"Ossa",        sub:"hielt sie nie" },
+  { id:"vesper", label:"Vesper",      sub:"abwesend" },
+  { id:"gruppe", label:"Die Gruppe",  sub:"öffentliche Anordnung" }
+];
+
+/* art: text | roh | feld | binde | ereignis | notiz | regel | geometrie | medien
+   h  : Halter (Ausgaben) · hs: Sitzung der Ausgabe · oeff: öffentlich
+   von: sl | sera | brannt | ossa | system                                     */
+var KARTEN = [
+  /* Feldkarten — die Infobox ist N Karten, nicht ein Block */
+  { id:"k_f01",  art:"feld", s:1,  von:"sl",     lab:"Sitz",                t:"Kestrelflügel, Obere Stadt", oeff:true },
+  { id:"k_f02",  art:"feld", s:1,  von:"sl",     lab:"Oberhaupt",           t:"[[Lady Ilva Vharon]]", oeff:true },
+  { id:"k_f03",  art:"feld", s:2,  von:"sl",     lab:"Gegründet",           t:"1044 n. d. A." },
+  { id:"k_f03b", art:"feld", s:3,  von:"sl",     lab:"Gegründet",           t:"1041 n. d. A.", h:"sera", hs:3 },
+  { id:"k_f04",  art:"feld", s:5,  von:"sl",     lab:"Einwohner des Flügels", t:"212" },
+  { id:"k_f05",  art:"feld", s:1,  von:"sl",     lab:"Wappen",              t:"Aschene Waage, silbern auf Rauchgrau", oeff:true },
+  { id:"k_f06",  art:"feld", s:7,  von:"sl",     lab:"Ratsstimme",          t:"eine von neun, seit 1069", h:"sera,brannt", hs:7 },
+  { id:"k_f07",  art:"feld", s:11, von:"brannt", lab:"Hausbank",            t:"[[Kontor Malvette|rot]], Untere Werft", h:"brannt", hs:11 },
+
+  /* Lede */
+  { id:"k_lede", art:"text", s:1, von:"sl", oeff:true,
+    t:"**Haus Vharon** ist ein Handelshaus der Oberen Stadt, dessen Vermögen aus dem Aschehandel der Kestrelküste stammt. Seit 1069 hält es eine der neun Ratsstimmen; seine Waagesiegel gelten an jedem Kai zwischen Halbmond und [[Kestrelflügel]] als Zahlungsversprechen." },
+
+  /* Geschichte */
+  { id:"k_g01", art:"text", s:2, von:"sl", oeff:true,
+    t:"Der Aufstieg beginnt mit einer Spekulation im Hungerwinter 1058: Ilvas Vater kaufte die Asche dreier abgebrannter Speicher auf, ließ sie sieben und verkaufte sie den Talgütern als Dünger zurück — zum vierfachen Preis, in Raten, gegen Anteile an der Ernte." },
+  { id:"k_roh1", art:"roh", s:2, von:"sl", oeff:true,
+    t:"Die Kestrelküste ist keine Küste, sondern eine Reihe von Aschewegen: Sandbänke, die sich nach jedem Sturm neu ordnen. Wer dort Handel treibt, handelt mit Wissen über Tiefen, nicht mit Waren. Die Häuser der Oberen Stadt kaufen darum keine Schiffe, sondern Lotsen — und die Lotsen kaufen keine Häuser, sondern Schweigen." },
+  { id:"k_g02", art:"text", s:4, von:"sl", oeff:true,
+    t:"Der Talgut-Vertrag von 1063 machte aus dem Gläubiger einen Grundherrn: sieben Güter zahlten in Anteilen, drei zahlten nie, und am Ende saß Haus Vharon in ihren Kontoren." },
+  { id:"k_g03", art:"text", s:6, von:"sl", oeff:true,
+    t:"1069 nahm der Rat das Haus auf. Die Stimme kostete vierzigtausend Kronen und eine Zusage, die in keinem Protokoll steht." },
+  { id:"k_g04", art:"binde", s:6, von:"sl", oeff:true,
+    t:"Was danach kommt, hat das Haus nie in seine Chronik geschrieben. Es steht nur in den Rechnungsbüchern." },
+  { id:"k_g05", art:"text", s:9, von:"sl", oeff:true,
+    t:"[[Lady Ilva Vharon]] führt das Haus seit dem Tod ihres Vaters im Nebelmond 1070. Sie unterschreibt selbst, sie siegelt selbst, und sie empfängt im Kartenraum, nicht im Kontor." },
+  { id:"k_g06", art:"text", s:12, von:"brannt", h:"brannt", hs:12,
+    t:"Aus dem [[Kontor Malvette|rot]]: das Haus zahlt seit drei Jahren eine Rente von 200 Kronen im Quartal an eine Adresse in der Unteren Werft, die es dort nicht gibt." },
+
+  /* Das Aschene Siegel */
+  { id:"k_s01", art:"text", s:6, von:"sl", oeff:true,
+    t:"Das Aschene Siegel ist keine Wappenprägung, sondern eine Zahlungspunze: wer sie führt, verspricht den Ausgleich in Asche, Korn oder Kronen — gleich, wer die Urkunde vorlegt." },
+  { id:"k_9f21", art:"text", s:6, von:"sl", h:"sera,brannt,vesper", hs:6,
+    t:"Das Aschene Siegel am [[Kestrel-Vertrag]] ist echt. Lady Ilva ließ die Punze 1064 in der Oberen Münze schlagen und führt sie seither allein." },
+  { id:"k_6_ilva", art:"text", s:6, von:"sl", h:"sera,brannt,vesper", hs:6, qn:"Lady Ilva",
+    t:"Lady Ilva bezeugt vor dem Rat, das Siegel am [[Kestrel-Vertrag]] sei ihr eigenes und niemand sonst führe die Punze." },
+  { id:"k_44a0", art:"text", s:6, von:"sl", h:"sera,brannt", hs:6,
+    t:"Die Rechnungsbücher des Hauses liegen im zweiten Keller unter dem Archiv, hinter der Tür mit der Aschenwaage." },
+  { id:"k_s05", art:"text", s:8, von:"sl", oeff:true,
+    t:"Punzen der Oberen Münze tragen seit 1071 eine zweite, kleinere Randmarke — ein Halbmond über der Ziffer des Münzmeisters. Vorher gab es sie nicht." },
+  { id:"k_s06", art:"text", s:13, von:"ossa", h:"ossa", hs:13,
+    t:"Die Waage auf dem Siegel hat zehn Kerben. Die Waage im Ratswappen hat neun. Niemand am Tisch weiß, warum." },
+
+  /* Der Kestrel-Vertrag */
+  { id:"k_v01", art:"text", s:7, von:"sl", oeff:true,
+    t:"Der [[Kestrel-Vertrag]] überschreibt dem Haus die Zollhoheit über den nördlichen Kai auf neunundneunzig Jahre, gegen einen jährlichen Anteil an den Aschefuhren." },
+  { id:"k_v02", art:"text", s:7, von:"sl", oeff:true,
+    t:"Unterzeichnet sind drei Parteien: der Rat, das Haus und die Lotsenzunft. Die Zunft hat ihre Ausfertigung nie erhalten." },
+  { id:"k_v03", art:"text", s:10, von:"sl", h:"sera,brannt", hs:10,
+    t:"Das Original liegt im Ratsarchiv. Die Abschrift, die das Haus vorlegt, trägt das Aschene Siegel — und nur diese Abschrift nennt die neunundneunzig Jahre." },
+  { id:"k_v04", art:"binde", s:10, von:"sl", h:"sera,brannt", hs:10,
+    t:"Ob die Abschrift den Vertrag beweist, hängt einzig am Siegel." },
+
+  /* Theorien am Tisch — Feldnotizen */
+  { id:"k_n01", art:"notiz", s:11, von:"sera",   h:"sera", hs:11,
+    t:"Wenn Ilva die Punze allein führt — warum liegt das Original dann im Ratsarchiv und nicht im Haus?" },
+  { id:"k_n02", art:"notiz", s:12, von:"brannt", h:"brannt", hs:12,
+    t:"Malvette taucht in drei Rechnungen auf, die nie ins Hauptbuch übertragen wurden. Immer im selben Quartal." },
+  { id:"k_n03", art:"notiz", s:13, von:"sera",   h:"sera", hs:13,
+    t:"Vermutung: die Abschrift wurde nach 1071 hergestellt und rückdatiert." },
+  { id:"k_n04", art:"notiz", s:9,  von:"ossa",   h:"ossa", hs:9,
+    t:"Zehn Kerben. Ich zähle sie jedes Mal nach." },
+
+  /* Ereigniskarten — vom Protokoll erzeugt, niemand hat sie getippt */
+  { id:"k_e01",  art:"ereignis", s:14, von:"system", zeit:"21:06", h:"sera,brannt,ossa", hs:14,
+    t:"Sitzung 14, 21:06 — Brannt bricht das Schloss zum zweiten Keller. Fingerfertigkeit 14 gegen 12. Erfolg." },
+  { id:"k_e441", art:"ereignis", s:14, von:"system", zeit:"21:14", h:"sera,brannt,ossa", hs:14,
+    t:"Sitzung 14, 21:14 — Sera durchsucht die Vharon-Rechnungsbücher. Menschenkenntnis 17 gegen 15. Erfolg." },
+  { id:"k_e03",  art:"ereignis", s:14, von:"system", zeit:"21:15",
+    t:"Sitzung 14, 21:15 — Ausgabe k_9f21 an Sera, Quelle k_44a0. Zwei Zeilen nach dem Abbruchfenster." },
+  { id:"k_e04",  art:"ereignis", s:14, von:"system", zeit:"21:31", h:"sera,brannt,ossa", hs:14,
+    t:"Sitzung 14, 21:31 — Regelkarte erfasst: Deckung halbiert Flächenschaden. Status informell." },
+  { id:"k_e05",  art:"ereignis", s:14, von:"system", zeit:"21:44", h:"sera,brannt,ossa", hs:14,
+    t:"Sitzung 14, 21:44 — Ossa vergleicht die Randmarke mit der Münzordnung. Wahrnehmung 12 gegen 15. Fehlschlag." },
+  { id:"k_e06",  art:"ereignis", s:14, von:"system", zeit:"21:49", h:"brannt", hs:14,
+    t:"Sitzung 14, 21:49 — Brannt liest den Eintrag Malvette, 12. Nebelmond: 4.200 Kronen, ohne Gegenbuchung." },
+
+  /* Nicht angeordnet — der Kasten hat mehr als die Seite */
+  { id:"k_r01",  art:"regel", s:14, von:"sl", oeff:true, status:"informell",
+    t:"Deckung halbiert Flächenschaden. Ausnahme: Explosionen hinter der Deckung." },
+  { id:"k_r02",  art:"regel", s:7,  von:"sl", oeff:true, status:"formell",
+    t:"Wer eine Punze prüfen will, würfelt Handwerk (Münze) gegen 15." },
+  { id:"k_geo1", art:"geometrie", s:6,  von:"sl", h:"sera,brannt,ossa", hs:14,
+    t:"Zweiter Keller unter dem Archiv: vier Regalgassen, eine Tür mit Aschenwaage, kein zweiter Ausgang." },
+  { id:"k_geo2", art:"geometrie", s:13, von:"sl",
+    t:"Kestrelflügel, Obergeschoss: Kontor, Kartenraum, Ilvas Arbeitszimmer, ein Treppenhaus für das Gesinde." },
+  { id:"k_m01",  art:"medien", s:6, von:"sl", h:"sera,brannt,vesper", hs:6,
+    t:"Handzettel: Abschrift des Kestrel-Vertrags, Foto der Siegelpunze, Sitzung 6." }
+];
+
+var K = {};
+KARTEN.forEach(function(c){ c.eti = ["haus-vharon"]; K[c.id] = c; });
+
+/* Ausgaben (Revelations) werden aus den Halterlisten erzeugt. */
+var AUSGABEN = [];
+function ausgabenAufbauen(){
+  AUSGABEN.length = 0;
+  KARTEN.forEach(function(c){
+    if(!c.h) return;
+    c.h.split(",").forEach(function(ch){
+      AUSGABEN.push({ karte:c.id, figur:ch, s:(c.hs||c.s), quelle:null });
+    });
+  });
+  /* Quellenkarten einzelner Ausgaben — „Quelle von N weiteren Ausgaben" */
+  setzeQuelle("k_9f21","sera","k_6_ilva");
+  setzeQuelle("k_9f21","brannt","k_6_ilva");
+  setzeQuelle("k_9f21","vesper","k_6_ilva");
+  setzeQuelle("k_44a0","sera","k_9f21");
+  setzeQuelle("k_m01","brannt","k_9f21");
+}
+function setzeQuelle(karte, figur, quelle){
+  var r = AUSGABEN.filter(function(a){ return a.karte===karte && a.figur===figur; })[0];
+  if(r) r.quelle = quelle;
+}
+
+var RELATIONEN = [
+  { von:"k_44a0",   zu:"k_9f21", art:"stützt" },
+  { von:"k_6_ilva", zu:"k_9f21", art:"stützt" },
+  { von:"k_f03",    zu:"k_f03b", art:"widerlegt" },
+  { von:"k_s05",    zu:"k_9f21", art:"zitiert" }
+];
+
+var KLAUSELN = [
+  { karte:"k_9f21", figur:"sera", txt:"+2 Menschenkenntnis", geg:"Gegenstand: Haus Vharon · Finanzen", off:"sealed", grund:12, wert:14 }
+];
+
+/* Die vier Anordnungen. Nur „Haus Vharon" wird in diesem Spike gerendert. */
+var ANORDNUNGEN = [
+  { slug:"haus-vharon", titel:"Haus Vharon", form:"Artikel", gerendert:true,
+    abschnitte:[
+      { id:"lede",      titel:null,                        pins:["k_lede"] },
+      { id:"geschichte",titel:"Geschichte",                pins:["k_g01","k_roh1","k_g02","k_g03","k_g04","k_g05","k_g06"] },
+      { id:"siegel",    titel:"Das Aschene Siegel",        pins:["k_s01","k_9f21","k_6_ilva","k_44a0","k_s05","k_s06"] },
+      { id:"vertrag",   titel:"Der Kestrel-Vertrag",       pins:["k_v01","k_v02","k_v03","k_v04"] },
+      { id:"theorien",  titel:"Theorien am Tisch",         pins:["k_n01","k_n02","k_n03","k_n04"] },
+      { id:"sitzung14", titel:"Was in Sitzung 14 geschah", frage:{ art:"ereignis", sitzung:14, etikett:"haus-vharon" } }
+    ]
+  },
+  { slug:"aschenes-siegel", titel:"Aschenes Siegel", form:"Artikel", enthaelt:["k_9f21"] },
+  { slug:"kestrelfluegel",  titel:"Kestrelflügel",   form:"Artikel", enthaelt:["k_9f21"] },
+  { slug:"handzettel-s6",   titel:"Handzettel, Sitzung 6", form:"Handzettel", enthaelt:["k_9f21"] }
+];
+ANORDNUNGEN[0].enthaelt = (function(){
+  var ids = [];
+  ANORDNUNGEN[0].abschnitte.forEach(function(a){ if(a.pins) ids = ids.concat(a.pins); });
+  return ids;
+})();
+
+var STROM_START = [
+  { zeit:"21:06", txt:"Schloss zum zweiten Keller · Brannt · Erfolg" },
+  { zeit:"21:14", txt:"Rechnungsbücher durchsucht · Sera · Erfolg" },
+  { zeit:"21:15", txt:"Ausgabe k_9f21 → Sera · Quelle k_44a0" },
+  { zeit:"21:31", txt:"Regelkarte erfasst · Deckung/Flächenschaden · informell" },
+  { zeit:"21:44", txt:"Randmarke verglichen · Ossa · Fehlschlag" },
+  { zeit:"21:49", txt:"Eintrag Malvette · 4.200 Kronen · ohne Gegenbuchung" }
+];
+
+var NEU_TEXT = "Das Aschene Siegel am [[Kestrel-Vertrag]] ist eine Fälschung. Die Punze trägt die Randmarke, die die Obere Münze erst seit 1071 schlägt.";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · ZUSTAND
+   ═══════════════════════════════════════════════════════════════════════════ */
+var S = {
+  leser:"sl", rezept:"lese", gewaehlt:"k_9f21", kanten:false,
+  linse:"nachhall", phase:"vor", ossaAusgegeben:false, ilvaWiderlegt:false,
+  bearbeitet:false, frisch:null, strom:STROM_START.slice()
+};
+
+function zuruecksetzen(){
+  delete K.k_a7e3;
+  var i = KARTEN.map(function(c){ return c.id; }).indexOf("k_a7e3");
+  if(i > -1) KARTEN.splice(i,1);
+  RELATIONEN = RELATIONEN.filter(function(r){ return r.von !== "k_a7e3"; });
+  ANORDNUNGEN.forEach(function(a){ a.berichtigt = false; });
+  S.phase = "vor"; S.ossaAusgegeben = false; S.ilvaWiderlegt = false;
+  S.gewaehlt = "k_9f21"; S.linse = "nachhall"; S.bearbeitet = false; S.frisch = null;
+  S.strom = STROM_START.slice();
+  ausgabenAufbauen();
+  alles();
+  sag("Sitzung 14 zurückgesetzt. Die Karte k_9f21 ist wieder unberichtigt.");
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · PROJEKTION — eine Funktion. Seite, Kartei, Umriss und die Tabelle
+   „Wer sieht was" benutzen dieselbe. Sie können sich nicht widersprechen.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function haelt(figur, id){
+  for(var i=0;i<AUSGABEN.length;i++){
+    if(AUSGABEN[i].karte===id && AUSGABEN[i].figur===figur) return AUSGABEN[i];
+  }
+  return null;
+}
+function sieht(id, leser){
+  var c = K[id]; if(!c) return false;
+  if(leser === "sl") return true;
+  if(leser === "gruppe") return !!c.oeff;
+  return !!c.oeff || !!haelt(leser, id);
+}
+function ersetztDurch(id){
+  for(var i=0;i<RELATIONEN.length;i++){
+    if(RELATIONEN[i].zu===id && RELATIONEN[i].art==="supersedes") return RELATIONEN[i].von;
+  }
+  return null;
+}
+/* Was ist diese Karte für diese Leserin? null = nicht vorhanden, ohne Lücke. */
+function block(id, leser){
+  var neuId = ersetztDurch(id);
+  if(neuId){
+    var alt = sieht(id, leser), neu = sieht(neuId, leser);
+    if(alt && neu) return { typ:"korrigiert", alt:K[id], neu:K[neuId] };
+    if(neu)        return { typ:"normal", karte:K[neuId] };
+    if(alt)        return { typ:"normal", karte:K[id] };
+    return null;
+  }
+  return sieht(id, leser) ? { typ:"normal", karte:K[id] } : null;
+}
+function frageAuswerten(f, leser){
+  return KARTEN.filter(function(c){
+    return c.art===f.art && c.s===f.sitzung && c.eti.indexOf(f.etikett)>-1 && sieht(c.id, leser);
+  }).sort(function(a,b){ return (a.zeit||"").localeCompare(b.zeit||""); });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · WERKZEUG
+   ═══════════════════════════════════════════════════════════════════════════ */
+function $(s,r){ return (r||document).querySelector(s); }
+function esc(s){
+  return String(s).replace(/[&<>"]/g, function(m){
+    return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[m];
+  });
+}
+function inline(t){
+  var s = esc(t);
+  s = s.replace(/\[\[([^\]|]+)\|rot\]\]/g, '<a class="wiki rot" href="#" data-wiki="$1" title="Diese Anordnung gibt es noch nicht (roter Link)">$1</a>');
+  s = s.replace(/\[\[([^\]|]+)\]\]/g, '<a class="wiki" href="#" data-wiki="$1">$1</a>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  return s;
+}
+function nur(t){ return String(t).replace(/\[\[([^\]|]+)(\|rot)?\]\]/g,"$1").replace(/\*+/g,""); }
+function sag(t){ $("#live").textContent = t; }
+function autorName(v){
+  if(v === "sl") return "Kaya (SL)";
+  if(v === "system") return "Protokoll";
+  return FIGUREN[v] ? FIGUREN[v].name : v;
+}
+var ARTNAME = { text:"Text", roh:"roh", feld:"Feld", binde:"Binde", ereignis:"Ereignis",
+  notiz:"Feldnotiz", regel:"Regel", geometrie:"Geometrie", medien:"Medien" };
+
+/* Deterministischer Klassifizierer: Redaktion wird angeboten, nie gewählt. */
+var NEGATIONEN = ["nicht","nie","niemals","kein","keine","keinen","keiner","keinem","nichts","ohne","kaum","schwerlich","weder","noch"];
+function klassifiziere(alt, neu){
+  var a = nur(alt).replace(/\s+/g," ").trim();
+  var b = nur(neu).replace(/\s+/g," ").trim();
+  if(a === b) return { art:"gleich", grund:"Kein Unterschied." };
+  var na = a.replace(/[.,;:!?»«„"'()\-–—]/g,"").replace(/\s+/g," ").trim().toLowerCase();
+  var nb = b.replace(/[.,;:!?»«„"'()\-–—]/g,"").replace(/\s+/g," ").trim().toLowerCase();
+  if(na !== nb) return { art:"berichtigung", grund:"Der Wortlaut ändert sich." };
+  var za = a.match(/\d[\d.,]*/g) || [], zb = b.match(/\d[\d.,]*/g) || [];
+  if(za.join("|") !== zb.join("|")) return { art:"berichtigung", grund:"Eine Zahl ändert sich." };
+  var ga = a.match(/\b[A-ZÄÖÜ][\wäöüß]+/g) || [], gb = b.match(/\b[A-ZÄÖÜ][\wäöüß]+/g) || [];
+  if(ga.join("|") !== gb.join("|")) return { art:"berichtigung", grund:"Ein großgeschriebenes Wort ändert sich." };
+  var la = (alt.match(/\[\[[^\]]+\]\]/g)||[]).join("|"), lb = (neu.match(/\[\[[^\]]+\]\]/g)||[]).join("|");
+  if(la !== lb) return { art:"berichtigung", grund:"Ein Linkziel ändert sich." };
+  var za2 = NEGATIONEN.map(function(w){ return (na.split(" ").filter(function(x){return x===w;})).length; }).join(",");
+  var zb2 = NEGATIONEN.map(function(w){ return (nb.split(" ").filter(function(x){return x===w;})).length; }).join(",");
+  if(za2 !== zb2) return { art:"berichtigung", grund:"Eine Verneinung ändert sich." };
+  return { art:"redaktion", grund:"Nur Zeichensetzung, Groß-/Kleinschreibung oder Leerraum." };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · LESEFASSUNG — eine Enzyklopädieseite. Kein Kartenrahmen, keine Kiste.
+   Die Kartengrenze ist ein Absatzumbruch; der Griff erscheint bei Fokus.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function wappenSVG(){
+  return '<svg class="wappen" viewBox="0 0 120 92" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">'+
+    '<path d="M60 12v62"/><path d="M28 24h64"/><path d="M60 12a4 4 0 1 1 0-.01"/>'+
+    '<path d="M28 24 16 50h24L28 24Z"/><path d="M92 24 80 50h24L92 24Z"/>'+
+    '<path d="M14 50a14 14 0 0 0 28 0"/><path d="M78 50a14 14 0 0 0 28 0"/>'+
+    '<path d="M44 78h32"/><path d="M50 78v-4h20v4"/></svg>';
+}
+
+function renderInfobox(){
+  var felder = KARTEN.filter(function(c){ return c.art==="feld"; });
+  var sichtbar = felder.filter(function(c){ return sieht(c.id, S.leser); });
+  if(!sichtbar.length) return "";
+  var proLabel = {};
+  sichtbar.forEach(function(c){ (proLabel[c.lab] = proLabel[c.lab] || []).push(c); });
+  var reihenfolge = ["Sitz","Oberhaupt","Gegründet","Ratsstimme","Einwohner des Flügels","Hausbank","Wappen"];
+  var zeilen = "";
+  reihenfolge.forEach(function(lab){
+    var gr = proLabel[lab]; if(!gr) return;
+    var haupt = gr[0], notiz = "";
+    if(gr.length > 1){
+      /* Nur die SL sieht mehr als eine Karte pro Zeile — und damit den Irrtum. */
+      var kanon = gr.filter(function(c){ return !RELATIONEN.some(function(r){ return r.zu===c.id && r.art==="widerlegt"; }); })[0] || gr[0];
+      var falsch = gr.filter(function(c){ return c !== kanon; });
+      haupt = kanon;
+      notiz = falsch.map(function(f){
+        var h = (f.h||"").split(",").map(function(x){ return FIGUREN[x] ? FIGUREN[x].name : x; }).join(", ");
+        return h + " glaubt „" + nur(f.t) + "“ seit Sitzung " + (f.hs||f.s) + " · widerlegt durch " + kanon.id;
+      }).join(" · ");
+    }
+    zeilen += '<div class="zeile"><dt>'+esc(lab)+'</dt><dd>'+inline(haupt.t)+
+      (notiz ? '<span class="sl-notiz">'+esc(notiz)+'</span>' : "")+
+      '</dd></div>';
+  });
+  return '<aside class="infobox" aria-label="Steckbrief Haus Vharon">'+
+    '<div class="infobox-kopf">'+
+      '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v16M5 7h14M8 20h8"/><path d="M5 7 2.5 13h5L5 7Z"/><path d="M19 7l-2.5 6h5L19 7Z"/></svg>'+
+      '<h2>Haus Vharon</h2></div>'+
+    wappenSVG()+
+    '<dl>'+zeilen+'</dl>'+
+    '<div class="infobox-fuss">'+sichtbar.length+' von '+felder.length+' Feldkarten sind für diese Leserin vorhanden. '+
+      'Die fehlenden werden nicht ausgegraut — sie sind abwesend.</div>'+
+    '</aside>';
+}
+
+function griff(c){
+  return '<button class="griff" type="button" data-karte="'+c.id+'" '+
+    'aria-label="Karte '+c.id+' auswählen — '+esc(nur(c.t).slice(0,60))+'…">¶</button>';
+}
+
+function blockHTML(b, id){
+  var gew = (S.gewaehlt === id || (b.karte && S.gewaehlt === b.karte.id) ||
+             (b.neu && S.gewaehlt === b.neu.id)) ? " gewaehlt" : "";
+  var fr = (S.frisch === id) ? " frisch" : "";
+  if(b.typ === "normal"){
+    var c = b.karte;
+    var extra = "";
+    if(S.ilvaWiderlegt && c.id === "k_6_ilva"){
+      extra = ' <span class="marker">widerlegt · Sitzung 14</span>' +
+        '<span class="stempel">wahr als Protokoll, falsch als Tatsache · Ilva hat es gesagt · widerlegt durch k_a7e3</span>';
+    }
+    if(c.von !== "sl" && c.von !== "system"){
+      extra += ' <span class="tisch-quelle">— '+esc(autorName(c.von))+', Sitzung '+c.s+'</span>';
+    }
+    if(c.art === "roh"){
+      extra += ' <span class="marker grau">roh · ungeschnitten · '+nur(c.t).split(/\s+/).length+' Wörter</span>';
+    }
+    return '<div class="karte-block'+gew+fr+'" data-id="'+c.id+'" data-art="'+c.art+'" data-s="'+c.s+'">'+
+      griff(c)+'<p class="prosa">'+inline(c.t)+extra+'</p></div>';
+  }
+  /* korrigiert: die alte Karte bleibt stehen, gestrichen und datiert. */
+  var a = b.alt, n = b.neu;
+  var aus = haelt(S.leser, a.id) ||
+    AUSGABEN.filter(function(x){ return x.karte===a.id && x.quelle; })[0] || {};
+  var q = aus.quelle && K[aus.quelle] ? (K[aus.quelle].qn || aus.quelle) : "—";
+  var stempel = "berichtigt, Sitzung 14 · vorher Sitzung "+(aus.s||a.s)+", Quelle "+q;
+  return '<div class="karte-block'+gew+fr+'" data-id="'+n.id+'" data-art="'+n.art+'" data-s="'+n.s+'">'+
+    griff(n)+
+    '<p class="prosa"><span class="gestrichen">'+inline(a.t)+'</span></p>'+
+    '<div class="korrektur"><p class="prosa">'+inline(n.t)+'</p>'+
+      '<span class="stempel">'+esc(stempel)+'</span></div></div>';
+}
+
+function renderLese(){
+  var an = ANORDNUNGEN[0];
+  var teile = [], gezeigt = 0;
+  an.abschnitte.forEach(function(ab){
+    var bloecke = [];
+    if(ab.pins){
+      ab.pins.forEach(function(id){
+        var b = block(id, S.leser);
+        if(b) bloecke.push(blockHTML(b, id));
+      });
+    } else {
+      frageAuswerten(ab.frage, S.leser).forEach(function(c){
+        bloecke.push(blockHTML({ typ:"normal", karte:c }, c.id));
+      });
+    }
+    /* Abschnittskaskade: projiziert der Abschnitt leer, gibt es keine Überschrift. */
+    if(!bloecke.length) return;
+    gezeigt += bloecke.length;
+    teile.push('<section class="abschnitt abschnitt-'+ab.id+'">'+
+      (ab.titel ? '<h2>'+esc(ab.titel)+'</h2>' : "")+bloecke.join("")+'</section>');
+  });
+
+  var leser = LESER.filter(function(l){ return l.id===S.leser; })[0];
+  return '<article class="artikel'+(S.kanten ? " kanten" : "")+'">'+
+    renderInfobox()+
+    '<h1>Haus Vharon</h1>'+
+    '<p class="artikel-unter">Anordnung · '+gezeigt+' Karten in dieser Fassung · Ansicht als '+esc(leser.label)+'</p>'+
+    '<div class="artikel-regel"></div><div class="artikel-regel"></div>'+
+    teile.join("")+
+    ehrlichkeit()+
+    '</article>';
+}
+
+/* ── Kartei ─────────────────────────────────────────────────────────────── */
+function zettel(c, i){
+  var stempel = "S"+c.s+(c.zeit ? " · "+c.zeit : "");
+  var halter = (c.h||"").split(",").filter(Boolean).map(function(x){ return FIGUREN[x].name; });
+  var gew = (S.gewaehlt === c.id) ? " gewaehlt" : "";
+  var vomTisch = (c.von !== "sl");
+  return '<li><button class="zettel'+gew+' animiert" type="button" data-karte="'+c.id+'" '+
+      'style="animation-delay:'+Math.min(i*22, 420)+'ms">'+
+    '<span class="zettel-kopf"><span>'+c.id+'</span><span class="marker grau">'+ARTNAME[c.art]+'</span>'+
+      '<span>'+stempel+'</span>'+(vomTisch ? '<span class="marker messing">'+esc(autorName(c.von))+'</span>' : "")+'</span>'+
+    '<p class="zettel-text">'+esc(nur(c.t).slice(0,180))+(nur(c.t).length>180?"…":"")+'</p>'+
+    '<span class="zettel-fuss"><span class="eti">#haus-vharon</span>'+
+      (c.lab ? '<span class="eti">'+esc(c.lab)+'</span>' : "")+
+      (c.status ? '<span class="eti">'+esc(c.status)+'</span>' : "")+
+      (halter.length ? '<span class="eti">hält: '+esc(halter.join(", "))+'</span>' : "")+
+    '</span></button></li>';
+}
+function renderKartei(){
+  var sichtbar = KARTEN.filter(function(c){ return sieht(c.id, S.leser); });
+  var pins = ANORDNUNGEN[0].enthaelt.concat(KARTEN.filter(function(c){ return c.art==="feld" || (c.art==="ereignis" && c.s===14); }).map(function(c){ return c.id; }));
+  if(ersetztDurch("k_9f21")) pins.push("k_a7e3");
+  var ang = sichtbar.filter(function(c){ return pins.indexOf(c.id) > -1; });
+  var frei = sichtbar.filter(function(c){ return pins.indexOf(c.id) < 0; });
+  var vomTisch = sichtbar.filter(function(c){ return c.von !== "sl"; });
+  var vonSpielern = vomTisch.filter(function(c){ return c.von !== "system"; });
+  var i = 0;
+  var h = '<div class="kartei-gruppe"><h2>Angeordnet · '+ang.length+' Karten</h2>'+
+    '<p class="hinweis">Dieselben Atome wie die Lesefassung. Nichts wurde kopiert, nichts konvertiert — nur anders gerendert.</p>'+
+    '<ul class="kartei">'+ang.map(function(c){ return zettel(c, i++); }).join("")+'</ul></div>';
+  if(frei.length){
+    h += '<div class="kartei-gruppe"><h2>Nicht angeordnet · '+frei.length+' Karten</h2>'+
+      '<p class="hinweis">Die To-do-Liste des Kastens. §8.3 des Kandidaten sagt es offen: Anordnen ist Arbeit, '+
+      'und der Normalzustand einer neuen Anordnung ist unangeordnet.</p>'+
+      '<ul class="kartei">'+frei.map(function(c){ return zettel(c, i++); }).join("")+'</ul></div>';
+  }
+  h += '<p class="hinweis" style="margin-top:1rem">'+sichtbar.length+' Karten tragen das Etikett <code>#haus-vharon</code>. '+
+    vomTisch.length+' davon hat die SL nicht getippt — '+vonSpielern.length+' von Spielerinnen, '+
+    (vomTisch.length-vonSpielern.length)+' aus dem Spielprotokoll.</p>';
+  return '<div class="artikel">'+h+ehrlichkeit()+'</div>';
+}
+
+/* ── Umriss ─────────────────────────────────────────────────────────────── */
+function renderUmriss(){
+  var an = ANORDNUNGEN[0], h = '<div class="umriss"><h1 class="sr-only">Umriss der Anordnung Haus Vharon</h1><ol>';
+  an.abschnitte.forEach(function(ab){
+    var eintraege = [];
+    var ids = ab.pins ? ab.pins : frageAuswerten(ab.frage, S.leser).map(function(c){ return c.id; });
+    ids.forEach(function(id){
+      var b = block(id, S.leser); if(!b) return;
+      var c = b.typ === "korrigiert" ? b.neu : b.karte;
+      var rel = RELATIONEN.filter(function(r){ return r.von===c.id || r.zu===c.id; })
+        .map(function(r){ return r.von===c.id ? (r.art+" → "+r.zu) : (r.von+" "+r.art+" →"); });
+      eintraege.push('<li><span class="u-karte"><code>'+c.id+'</code>'+
+        '<span class="marker grau">'+ARTNAME[c.art]+'</span>'+
+        '<span class="u-incipit">'+esc(nur(c.t).split(/\s+/).slice(0,7).join(" "))+'…</span>'+
+        (b.typ==="korrigiert" ? '<span class="marker">berichtigt</span>' : "")+
+        (rel.length ? '<span class="u-rel">'+esc(rel.join(" · "))+'</span>' : "")+
+        '</span></li>');
+    });
+    if(!eintraege.length) return;
+    h += '<li class="u-abschnitt"><span class="u-titel">'+esc(ab.titel || "Einleitung")+'</span><ol>'+eintraege.join("")+'</ol></li>';
+  });
+  return h + '</ol></div>' + '<div class="artikel">'+ehrlichkeit()+'</div>';
+}
+
+function ehrlichkeit(){
+  return '<details class="ehrlich"><summary>Ehrlichkeitsnotiz — was hier echt läuft und was nur gezeigt wird</summary>'+
+    '<h3>Echt in dieser Datei</h3><ul>'+
+    '<li>Die Projektion pro Leserin: Seite, Kartei, Umriss und die Tabelle „Wer sieht was" kommen aus <em>einer</em> Funktion.</li>'+
+    '<li>Die Abschnittskaskade: projiziert ein Abschnitt leer, wird auch seine Überschrift nicht gerendert.</li>'+
+    '<li>Die Ordinalzahlen entstehen <em>nach</em> der Projektion. Keine Lücke, keine Trefferzahl, kein Hinweis auf Ausgelassenes.</li>'+
+    '<li>Der Einzelkarten-Editor: Enter erzeugt keinen Absatz, sondern schreibt fest; Einfügen verwirft jede Struktur und ergibt genau eine Karte.</li>'+
+    '<li>Der Klassifizierer Berichtigung/Redaktion rechnet wirklich — Zahlen, Großschreibung, Linkziele, Verneinungen.</li>'+
+    '<li>Das Abbruchfenster: vier Sekunden, jederzeit mit Escape zu verwerfen.</li>'+
+    '</ul><h3>Gezeigt, nicht gebaut</h3><ul>'+
+    '<li><b>Kein Zugriffsschutz.</b> Alle Karten liegen im Browser. Produktiv muss der Server nicht sichtbare Zeilen weglassen, bevor er antwortet.</li>'+
+    '<li>Von den vier betroffenen Anordnungen ist nur <em>Haus Vharon</em> wirklich gerendert; die anderen drei sind Zeilen in der Linse.</li>'+
+    '<li>Die Klausel (+2) gehört in Scheibe Z2 und hat keine Regel-Engine unter sich. Sie ist als Entwurf markiert.</li>'+
+    '<li>Der Schnitt (das Zerlegen einer Einfügung) ist nicht gebaut — §8.1 nennt ihn die wahrscheinlichste Todesursache dieses Kandidaten.</li>'+
+    '<li>Kein Server, keine Sitzung, keine Rechte, kein Export. Ein Spike, keine Architektur.</li>'+
+    '</ul></details>';
+}
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · DIE LINSE — Registerkarte „Nachhall": der Radius, als Tatsache.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function nachhallZahlen(id){
+  var anord = ANORDNUNGEN.filter(function(a){ return (a.enthaelt||[]).indexOf(id) > -1; });
+  var stuetzen = RELATIONEN.filter(function(r){ return r.zu===id && r.art==="stützt"; });
+  var klauseln = KLAUSELN.filter(function(k){ return k.karte===id; });
+  var halter = AUSGABEN.filter(function(a){ return a.karte===id; });
+  var quelleFuer = AUSGABEN.filter(function(a){ return a.quelle===id; });
+  return { anord:anord, stuetzen:stuetzen, klauseln:klauseln, halter:halter, quelleFuer:quelleFuer };
+}
+function sichtLabel(leser){
+  var b = block("k_9f21", leser);
+  if(!b) return { t:"nichts — die Karte ist für sie nicht vorhanden, nicht ausgegraut", k:"absent" };
+  if(b.typ === "korrigiert") return { t:"gestrichen, darunter die Berichtigung, gestempelt", k:"korr" };
+  if(b.karte.id === "k_a7e3") return { t:"die neue Karte, ohne Vorgeschichte", k:"neu" };
+  return { t:"die alte Karte, unverändert", k:"alt" };
+}
+function renderLinse(){
+  var id = S.gewaehlt, c = K[id] || K.k_9f21;
+  var z = nachhallZahlen(c.id === "k_a7e3" ? "k_9f21" : c.id);
+  var kopf =
+    '<div class="lens-kopf" id="lenskopf">'+
+      '<div class="lens-id"><span>'+c.id+'</span>'+
+        '<span class="marker grau">'+ARTNAME[c.art]+'</span>'+
+        '<span>Sitzung '+c.s+'</span>'+
+        '<span class="marker '+(c.von==="sl"?"grau":"messing")+'">'+esc(autorName(c.von))+'</span>'+
+        (ersetztDurch(c.id) ? '<span class="marker">ersetzt</span>' : "")+
+        (c.id==="k_a7e3" ? '<span class="marker">ersetzt k_9f21</span>' : "")+
+      '</div>'+
+      '<p class="lens-text">'+esc(nur(c.t))+'</p>'+
+    '</div>'+
+    '<div class="lens-tabs" role="tablist" aria-label="Kontextlinse">'+
+      ["ueberblick","nachhall","verlauf"].map(function(t){
+        var n = { ueberblick:"Überblick", nachhall:"Nachhall", verlauf:"Verlauf" }[t];
+        return '<button class="lens-tab" type="button" role="tab" data-linse="'+t+'" '+
+          'aria-selected="'+(S.linse===t)+'" tabindex="'+(S.linse===t?"0":"-1")+'">'+n+'</button>';
+      }).join("")+
+    '</div>';
+
+  var koerper = "";
+  if(S.linse === "nachhall"){
+    koerper =
+      '<p class="lens-satz">Diese Karte liegt in <b>'+z.anord.length+' Anordnungen</b>, ist von <b>'+
+        z.stuetzen.length+' Karten</b> gestützt, trägt <b>'+z.klauseln.length+' Klausel</b>, ist an <b>'+
+        (new Set(z.halter.map(function(a){return a.figur;}))).size+' Charaktere</b> ausgegeben und ist die <b>Quelle</b> von '+
+        z.quelleFuer.length+' weiteren Ausgaben.</p>'+
+      '<p class="lens-h">Anordnungen</p>'+
+      '<div class="liste">'+z.anord.map(function(a){
+        return '<div class="anord'+(a.berichtigt?" fertig":"")+'"><span>'+esc(a.titel)+
+          ' <span class="eti">'+esc(a.form)+'</span></span>'+
+          '<span class="marker '+(a.berichtigt?"gut":"grau")+'">'+(a.berichtigt?"berichtigt":(a.gerendert?"gerendert":"betroffen"))+'</span></div>';
+      }).join("")+'</div>'+
+      '<p class="lens-h">Gestützt von</p><ul class="liste">'+z.stuetzen.map(function(r){
+        return '<li><code>'+r.von+'</code><span>'+esc(nur(K[r.von].t).slice(0,72))+'…</span></li>';
+      }).join("")+'</ul>'+
+      '<p class="lens-h">Klausel</p>'+ klauselHTML(z.klauseln) +
+      '<p class="lens-h">Ausgegeben an</p><ul class="liste">'+z.halter.map(function(a){
+        var f = FIGUREN[a.figur];
+        return '<li><code>S'+a.s+'</code><span>'+esc(f.name)+
+          (a.quelle ? ' · Quelle '+esc(a.quelle) : "")+
+          (f.an ? "" : ' <span class="marker grau">'+esc(f.fehlt)+'</span>')+'</span></li>';
+      }).join("")+'</ul>'+
+      '<p class="lens-h">Quelle von</p><ul class="liste">'+z.quelleFuer.map(function(a){
+        return '<li><code>'+a.karte+'</code><span>→ '+esc(FIGUREN[a.figur].name)+', Sitzung '+a.s+'</span></li>';
+      }).join("")+'</ul>'+
+      '<p class="lens-h">Wer sieht was</p>'+
+      '<table class="sicht"><tbody>'+LESER.map(function(l){
+        var v = sichtLabel(l.id);
+        return '<tr><td><button type="button" data-leser="'+l.id+'">'+esc(l.label)+'</button></td>'+
+          '<td data-k="'+v.k+'">'+esc(v.t)+'</td></tr>';
+      }).join("")+'</tbody></table>'+
+      '<p class="notiz">Diese Tabelle wird aus derselben Projektionsfunktion erzeugt wie die Seite. '+
+      'Sie kann der Bühne nicht widersprechen.</p>';
+  } else if(S.linse === "ueberblick"){
+    koerper =
+      '<p class="lens-h">Etiketten</p><p><span class="eti">#haus-vharon</span></p>'+
+      '<p class="lens-h">Unveränderlich</p>'+
+      '<p class="notiz">Auf <code>inhalt</code> gibt es kein UPDATE — durchgesetzt per Datenbank-Grant, nicht per Disziplin. '+
+      'Eine Korrektur erzeugt eine <em>neue</em> Karte mit <code>supersedes</code>. Die alte stirbt nie.</p>'+
+      '<p class="lens-h">Relationen</p><ul class="liste">'+
+        RELATIONEN.filter(function(r){ return r.von===c.id || r.zu===c.id; }).map(function(r){
+          return '<li><code>'+esc(r.art)+'</code><span>'+esc(r.von)+' → '+esc(r.zu)+'</span></li>';
+        }).join("")+'</ul>'+
+      '<p class="lens-h">Erfasst</p>'+
+      '<p class="notiz">'+esc(autorName(c.von))+', Sitzung '+c.s+(c.zeit ? ", "+c.zeit : "")+'. '+
+      'Der Kasten weiß, was der Tisch erfasst hat — nicht, was am Tisch gesagt wurde.</p>';
+  } else {
+    koerper = '<ul class="liste">'+
+      '<li><code>S6</code><span>erfasst von Kaya · Quelle: Aussage Lady Ilva vor dem Rat</span></li>'+
+      '<li><code>S6</code><span>ausgegeben an Sera, Brannt, Vesper · Quelle k_6_ilva</span></li>'+
+      '<li><code>S8</code><span>zitiert von k_s05 (Randmarke seit 1071)</span></li>'+
+      (S.phase === "nach"
+        ? '<li><code>S14</code><span>berichtigt → k_a7e3 · 21:52 · Halter benachrichtigt</span></li>'+
+          (S.ilvaWiderlegt ? '<li><code>S14</code><span>k_6_ilva als <b>widerlegt</b> markiert — nicht ersetzt</span></li>' : "")+
+          (S.ossaAusgegeben ? '<li><code>S14</code><span>k_a7e3 an Ossa ausgegeben · 21:53 · frisch, ohne Vorgeschichte</span></li>' : "")
+        : '<li><code>jetzt</code><span>21:52 · Sera legt das Rechnungsbuch auf den Tisch</span></li>')+
+      '</ul>';
+  }
+
+  var aktionen = "";
+  if(S.phase === "vor"){
+    aktionen = '<button class="knopf haupt" type="button" id="btn-berichtigen">'+
+        '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h16"/><path d="m14.5 4.5 5 5L9 20H4v-5z"/></svg>'+
+        'Berichtigen</button>'+
+      '<button class="knopf" type="button" aria-disabled="true" title="Nicht Teil dieses Spikes">Ausgeben</button>'+
+      '<button class="knopf" type="button" aria-disabled="true" title="Nicht Teil dieses Spikes">Widerlegen</button>';
+  } else {
+    aktionen =
+      (S.ossaAusgegeben ? "" :
+        '<button class="knopf haupt" type="button" id="btn-ossa">k_a7e3 an Ossa ausgeben</button>')+
+      (S.ilvaWiderlegt ? "" :
+        '<button class="knopf" type="button" id="btn-widerlegen">k_6_ilva als widerlegt markieren</button>');
+    if(!aktionen) aktionen = '<span class="notiz" style="margin:0">Alles gelandet. Vier Anordnungen, sechs Leser, ein Atom.</span>';
+  }
+
+  return kopf + '<div class="lens-koerper">'+koerper+'</div><div class="lens-aktionen">'+aktionen+'</div>';
+}
+function klauselHTML(kl){
+  if(!kl.length) return '<p class="notiz" style="margin-top:0">Keine.</p>';
+  var k = kl[0];
+  var inert = (S.phase === "nach");
+  return '<div class="notiz" style="margin-top:0">'+
+    '<b>'+esc(k.txt)+'</b> · '+esc(k.geg)+' · '+esc(k.off)+' · '+esc(FIGUREN[k.figur].name)+
+    ' <span class="marker messing">Scheibe Z2 · nicht implementiert, hier als Entwurf</span>'+
+    '<p class="kette" style="margin:.5rem 0 0">'+
+      '<b>'+k.grund+'</b> (Grundwert)<br>→ <b>'+k.wert+'</b> (Sitzung 14 · +2 · k_9f21)'+
+      (inert ? '<br>→ <span class="weg">'+k.wert+'</span> <b>'+k.grund+'</b> (Sitzung 14, 21:52 · Klausel erloschen · Karte berichtigt)' : "")+
+    '</p>'+
+    (inert ? '<p style="margin:.4rem 0 0"><span class="marker">inert, mit sichtbarem Marker</span> Die Biographie bleibt lesbar — inspizierbar, nicht sicher (§15.7).</p>' : "")+
+    '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · EINZELKARTEN-EDITOR — der Cursor verlässt die Karte nicht.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function oeffneEditor(){
+  S.bearbeitet = true; S.gewaehlt = "k_9f21"; S.rezept = "lese"; alles();
+  var zielBlock = document.querySelector('.karte-block[data-id="k_9f21"]');
+  if(!zielBlock) return;
+  var z = nachhallZahlen("k_9f21");
+  var ed = document.createElement("div");
+  ed.className = "editor";
+  ed.innerHTML =
+    '<div class="editor-nachhall"><span class="vorlauf">Nachhall — bevor der Editor öffnet</span>'+
+      '<p>Diese Karte liegt in <b>'+z.anord.length+' Anordnungen</b>, ist von <b>'+z.stuetzen.length+
+      ' Karten</b> gestützt, trägt <b>'+z.klauseln.length+' Klausel</b>, ist an <b>'+
+      (new Set(z.halter.map(function(a){return a.figur;}))).size+' Charaktere</b> ausgegeben und ist die <b>Quelle</b> von '+
+      z.quelleFuer.length+' weiteren Ausgaben.</p></div>'+
+    '<div class="kartengrenze"><span>Kartengrenze</span><span class="strichlinie"></span><span>k_9f21</span></div>'+
+    '<div class="feld" contenteditable="true" role="textbox" aria-multiline="false" spellcheck="false" '+
+      'aria-label="Kartentext berichtigen. Enter schreibt fest, Escape bricht ab."></div>'+
+    '<div class="kartengrenze unten"><span>Kartengrenze</span><span class="strichlinie"></span>'+
+      '<span>Enter schreibt fest · kein Absatz, kein Umbruch</span></div>'+
+    '<div class="editor-fuss">'+
+      '<p class="klassifikator" id="klass"></p>'+
+      '<button class="knopf klein" type="button" id="btn-beispiel">Beispieltext einsetzen</button>'+
+      '<button class="knopf klein" type="button" id="btn-abbrechen-ed">Verwerfen (Esc)</button>'+
+      '<button class="knopf haupt klein" type="button" id="btn-festschreiben">Berichtigen · festschreiben</button>'+
+    '</div>';
+  zielBlock.replaceWith(ed);
+
+  var feld = ed.querySelector(".feld");
+  feld.textContent = nur(K.k_9f21.t);
+  var pruefe = function(){
+    var r = klassifiziere(nur(K.k_9f21.t), feld.textContent);
+    var k = $("#klass");
+    k.dataset.art = r.art;
+    if(r.art === "gleich"){
+      k.innerHTML = "<b>Unverändert.</b> Nichts festzuschreiben.";
+    } else if(r.art === "redaktion"){
+      k.innerHTML = "<b>Redaktion angeboten</b> — dieselbe Karte, korrigiert dargestellt. Kein supersedes, keine Strichlinie, niemand wird benachrichtigt. "+
+        esc(r.grund)+" <em>Angeboten, nie gewählt.</em>";
+    } else {
+      k.innerHTML = "<b>Berichtigung</b> — neue Karte, <code>supersedes k_9f21</code>. Halter sehen die Abweichung. "+esc(r.grund);
+    }
+  };
+  feld.addEventListener("input", pruefe);
+  feld.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); festschreiben(feld.textContent); }
+    if(e.key === "Escape"){ e.preventDefault(); S.bearbeitet = false; alles(); fokus('[data-karte="k_9f21"]'); }
+  });
+  feld.addEventListener("paste", function(e){
+    e.preventDefault();
+    var t = (e.clipboardData || window.clipboardData).getData("text/plain") || "";
+    document.execCommand("insertText", false, t.replace(/\s+/g," ").trim());
+    sag("Struktur verworfen. Die Einfügung ergibt genau eine Karte.");
+    pruefe();
+  });
+  pruefe();
+  ed.querySelector("#btn-beispiel").addEventListener("click", function(){
+    feld.textContent = nur(NEU_TEXT); pruefe(); feld.focus();
+  });
+  ed.querySelector("#btn-abbrechen-ed").addEventListener("click", function(){
+    S.bearbeitet = false; alles(); fokus('[data-karte="k_9f21"]');
+  });
+  ed.querySelector("#btn-festschreiben").addEventListener("click", function(){ festschreiben(feld.textContent); });
+  feld.focus();
+  var r = document.createRange(); r.selectNodeContents(feld);
+  var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  sag("Editor offen für eine einzige Karte. Enter schreibt fest, Escape verwirft.");
+}
+
+function festschreiben(text){
+  var t = String(text).replace(/\s+/g," ").trim();
+  if(!t){ sag("Leere Karten gibt es nicht."); return; }
+  var r = klassifiziere(nur(K.k_9f21.t), t);
+  if(r.art === "gleich"){ sag("Unverändert. Nichts festzuschreiben."); return; }
+  S.bearbeitet = false; alles();
+  abbruchfenster({
+    titel:"Berichtigung wird gesendet",
+    sub:"Noch hat nichts den Server verlassen. 4 Anordnungen · 3 Halter · 1 Klausel.",
+    ok:function(){ berichtigungLanden(t); }
+  });
+}
+
+function berichtigungLanden(t){
+  var neu = { id:"k_a7e3", art:"text", s:14, von:"sl", zeit:"21:52",
+    t:t.replace("Kestrel-Vertrag","[[Kestrel-Vertrag]]"), eti:["haus-vharon"] };
+  if(neu.t.indexOf("[[") < 0) neu.t = t;
+  KARTEN.push(neu); K.k_a7e3 = neu;
+  RELATIONEN.push({ von:"k_a7e3", zu:"k_9f21", art:"supersedes" });
+  /* Halter der alten Karte erhalten die Berichtigung — dieselbe Menge, kein Fanout. */
+  AUSGABEN.filter(function(a){ return a.karte==="k_9f21"; }).forEach(function(a){
+    AUSGABEN.push({ karte:"k_a7e3", figur:a.figur, s:14, quelle:"k_9f21" });
+  });
+  neu.h = AUSGABEN.filter(function(a){ return a.karte==="k_a7e3"; }).map(function(a){ return a.figur; }).join(",");
+  neu.hs = 14;
+  S.phase = "nach"; S.gewaehlt = "k_a7e3"; S.frisch = "k_9f21"; S.linse = "nachhall";
+  S.strom.push({ zeit:"21:52", txt:"Berichtigung k_9f21 → k_a7e3 · 4 Anordnungen · 3 Halter", neu:true });
+  alles();
+  /* Die vier Anordnungen kippen gestaffelt auf „berichtigt". */
+  var betroffen = ANORDNUNGEN.filter(function(a){ return (a.enthaelt||[]).indexOf("k_9f21") > -1; });
+  betroffen.forEach(function(a, i){
+    setTimeout(function(){ a.berichtigt = true; if(S.linse==="nachhall") $("#lens").innerHTML = renderLinse(), bindeLinse(); }, 200 + i*160);
+  });
+  setTimeout(function(){ S.frisch = null; }, 1400);
+  toastRuhig("Berichtigung festgeschrieben",
+    "Ein Satz. Vier Anordnungen sind jetzt richtig — und jede Leserin weiß etwas anderes davon.");
+  sag("Berichtigung festgeschrieben. Vier Anordnungen korrigiert, drei Halter sehen die Abweichung, "+
+      "die öffentliche Anordnung zeigt nichts. Es gibt keine Datei. Es gibt eine Karte.");
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · ABBRUCHFENSTER — vier Sekunden, in denen nichts passiert ist.
+   ═══════════════════════════════════════════════════════════════════════════ */
+var laufend = null;
+function abbruchfenster(o){
+  abbruchAus();
+  var wrap = $("#toastwrap");
+  var el = document.createElement("div");
+  el.className = "toast"; el.setAttribute("role","alertdialog"); el.setAttribute("aria-label", o.titel);
+  el.innerHTML =
+    '<div class="ring"><svg viewBox="0 0 38 38" aria-hidden="true">'+
+      '<circle class="bahn" cx="19" cy="19" r="16"/><circle class="lauf" cx="19" cy="19" r="16"/></svg>'+
+      '<span class="rest zahl">4</span></div>'+
+    '<div class="toast-txt"><p class="toast-titel">'+esc(o.titel)+'</p>'+
+      '<p class="toast-sub">'+esc(o.sub)+'</p>'+
+      '<div class="toast-akt">'+
+        '<button class="knopf klein" type="button" data-akt="abbruch">Abbrechen (Esc)</button>'+
+        '<button class="knopf haupt klein" type="button" data-akt="jetzt">Jetzt senden</button>'+
+      '</div></div>';
+  wrap.appendChild(el);
+  var ende = Date.now() + 4000;
+  var tick = setInterval(function(){
+    var rest = Math.max(0, Math.ceil((ende - Date.now())/1000));
+    var r = el.querySelector(".rest"); if(r) r.textContent = rest;
+  }, 120);
+  var timer = setTimeout(function(){ feuern(); }, 4000);
+  function aufraeumen(){ clearTimeout(timer); clearInterval(tick); el.remove(); laufend = null; }
+  function feuern(){ aufraeumen(); o.ok(); }
+  laufend = { weg:aufraeumen, abbrechen:function(){
+    aufraeumen();
+    toastRuhig("Verworfen", "Nichts hat den Server verlassen. Der Kasten ist unverändert.");
+    sag("Verworfen. Nichts hat den Server verlassen.");
+  }, feuern:feuern };
+  el.querySelector('[data-akt="abbruch"]').addEventListener("click", function(){ laufend.abbrechen(); });
+  el.querySelector('[data-akt="jetzt"]').addEventListener("click", function(){ feuern(); });
+  el.querySelector('[data-akt="jetzt"]').focus();
+  sag(o.titel + ". " + o.sub + " Vier Sekunden zum Abbrechen mit Escape.");
+}
+function abbruchAus(){ if(laufend && laufend.weg) laufend.weg(); laufend = null; }
+function toastRuhig(titel, sub){
+  var el = document.createElement("div");
+  el.className = "toast ruhig";
+  el.innerHTML = '<div class="toast-txt"><p class="toast-titel">'+esc(titel)+'</p><p class="toast-sub">'+esc(sub)+'</p></div>';
+  $("#toastwrap").appendChild(el);
+  setTimeout(function(){ el.remove(); }, 7000);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9 · RAHMEN, BINDUNG, START
+   ═══════════════════════════════════════════════════════════════════════════ */
+function renderLeser(){
+  $("#leserband").innerHTML = LESER.map(function(l){
+    return '<button class="leser" type="button" role="radio" data-leser="'+l.id+'" '+
+      'aria-checked="'+(S.leser===l.id)+'" tabindex="'+(S.leser===l.id?"0":"-1")+'">'+
+      '<b>'+esc(l.label)+'</b><span>'+esc(l.sub)+'</span></button>';
+  }).join("");
+}
+function renderPraesenz(){
+  $("#praesenz").innerHTML = Object.keys(FIGUREN).map(function(k){
+    var f = FIGUREN[k];
+    return '<span class="pchip" data-an="'+(f.an?1:0)+'"><span class="pdot"></span>'+esc(f.name)+
+      (f.an ? "" : " · abwesend")+'</span>';
+  }).join("");
+}
+function renderStrom(){
+  $("#strom").innerHTML = S.strom.map(function(e){
+    return '<span class="strom-zeile'+(e.neu?" neu":"")+'"><time>'+esc(e.zeit)+'</time>'+esc(e.txt)+'</span>';
+  }).join("");
+  var s = $("#strom"); s.scrollLeft = s.scrollWidth;
+}
+function renderZaehler(){
+  var sichtbar = KARTEN.filter(function(c){ return sieht(c.id, S.leser); }).length;
+  $("#zaehler").textContent = sichtbar + " von " + KARTEN.length + " Karten im Kasten sind für diese Leserin vorhanden";
+}
+function alles(){
+  var b = $("#buehne");
+  b.innerHTML = S.rezept === "lese" ? renderLese() : (S.rezept === "kartei" ? renderKartei() : renderUmriss());
+  b.setAttribute("aria-labelledby", "tab-" + S.rezept);
+  $("#lens").innerHTML = renderLinse();
+  renderLeser(); renderPraesenz(); renderStrom(); renderZaehler();
+  bindeLinse();
+  document.querySelectorAll(".rezept").forEach(function(t){
+    var an = t.dataset.rezept === S.rezept;
+    t.setAttribute("aria-selected", an ? "true" : "false");
+    t.tabIndex = an ? 0 : -1;
+  });
+  $("#kanten").checked = S.kanten;
+}
+function bindeLinse(){
+  var l = $("#lens");
+  var kopf = l.querySelector("#lenskopf"); if(kopf) kopf.classList.add("ankunft");
+  l.querySelectorAll(".lens-tab").forEach(function(t){
+    t.addEventListener("click", function(){ S.linse = t.dataset.linse; $("#lens").innerHTML = renderLinse(); bindeLinse(); });
+  });
+  var bb = l.querySelector("#btn-berichtigen");
+  if(bb) bb.addEventListener("click", oeffneEditor);
+  var bo = l.querySelector("#btn-ossa");
+  if(bo) bo.addEventListener("click", function(){
+    abbruchfenster({ titel:"Ausgabe an Ossa", sub:"k_a7e3 · Ossa hielt die alte Karte nie. Sie bekommt keine Vorgeschichte.",
+      ok:function(){
+        AUSGABEN.push({ karte:"k_a7e3", figur:"ossa", s:14, quelle:null });
+        K.k_a7e3.h += ",ossa"; S.ossaAusgegeben = true;
+        S.strom.push({ zeit:"21:53", txt:"Ausgabe k_a7e3 → Ossa · frisch, ohne Strich", neu:true });
+        alles(); toastRuhig("Ausgegeben", "Ossa sieht die neue Karte, sauber. Keine Strichlinie, keine Historie.");
+        sag("k_a7e3 an Ossa ausgegeben. Sie sieht die neue Karte ohne jede Spur einer Korrektur.");
+      } });
+  });
+  var bw = l.querySelector("#btn-widerlegen");
+  if(bw) bw.addEventListener("click", function(){
+    RELATIONEN.push({ von:"k_a7e3", zu:"k_6_ilva", art:"widerlegt" });
+    S.ilvaWiderlegt = true;
+    S.strom.push({ zeit:"21:54", txt:"k_6_ilva widerlegt — nicht ersetzt", neu:true });
+    alles();
+    toastRuhig("Widerlegt, nicht ersetzt",
+      "Ilva hat es gesagt. Die Karte bleibt als Protokoll wahr und ist als Tatsache falsch.");
+    sag("k_6_ilva als widerlegt markiert. Der Datensatz der Sitzung 6 bleibt unangetastet.");
+  });
+  l.querySelectorAll(".sicht button[data-leser]").forEach(function(b){
+    b.addEventListener("click", function(){ leserWechseln(b.dataset.leser); });
+  });
+}
+function leserWechseln(id){
+  if(S.leser === id) return;
+  S.leser = id; S.bearbeitet = false; alles();
+  var l = LESER.filter(function(x){ return x.id===id; })[0];
+  var v = sichtLabel(id);
+  sag("Ansicht als " + l.label + ". Die Karte k_9f21 ist für sie: " + v.t + ".");
+  var b = $('#leserband [data-leser="'+id+'"]'); if(b) b.focus();
+}
+function fokus(sel){ var e = document.querySelector(sel); if(e) e.focus(); }
+
+/* Ereignisse */
+document.addEventListener("click", function(e){
+  var g = e.target.closest("[data-karte]");
+  if(g){
+    S.gewaehlt = g.dataset.karte; S.linse = "nachhall"; alles();
+    var k = K[S.gewaehlt];
+    sag("Karte " + S.gewaehlt + " gewählt. " + nur(k.t).slice(0,90));
+    return;
+  }
+  var lr = e.target.closest("#leserband [data-leser]");
+  if(lr){ leserWechseln(lr.dataset.leser); return; }
+  var rz = e.target.closest(".rezept");
+  if(rz){
+    S.rezept = rz.dataset.rezept; S.bearbeitet = false; alles();
+    rz.focus();
+    sag("Wiedergabe: " + rz.textContent + ". Auswahl bleibt bei " + S.gewaehlt + ".");
+    return;
+  }
+  var w = e.target.closest("[data-wiki]");
+  if(w){
+    e.preventDefault();
+    sag('In diesem Spike ist nur die Anordnung „Haus Vharon" gerendert. „' + w.dataset.wiki + '“ ist im Modell ein echter Link.');
+    toastRuhig("Nur eine Anordnung gerendert", "„" + w.dataset.wiki + "“ existiert im Modell, nicht in dieser Datei.");
+    return;
+  }
+  var m = e.target.closest(".modul[aria-disabled='true']");
+  if(m){
+    sag('Nur „Die Anordnungen" ist in diesem Spike gebaut.');
+    toastRuhig("Nicht Teil dieses Spikes", 'Gebaut ist nur die Zone „Die Anordnungen".');
+    return;
+  }
+  var d = e.target.closest(".knopf[aria-disabled='true']");
+  if(d){ sag("Diese Aktion ist in diesem Spike nicht gebaut."); }
+});
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && laufend){ e.preventDefault(); laufend.abbrechen(); return; }
+  var band = e.target.closest("#leserband, .rezepte");
+  if(band && (e.key === "ArrowRight" || e.key === "ArrowLeft")){
+    e.preventDefault();
+    var items = Array.prototype.slice.call(band.querySelectorAll("button"));
+    var i = items.indexOf(e.target);
+    var n = items[(i + (e.key === "ArrowRight" ? 1 : items.length - 1)) % items.length];
+    n.click(); n.focus();
+  }
+});
+
+$("#kanten").addEventListener("change", function(e){
+  S.kanten = e.target.checked; alles(); $("#kanten").focus();
+  var n = document.querySelectorAll(".karte-block").length;
+  sag(S.kanten ? ("Kanten sichtbar. Derselbe Text, jetzt als " + n + " einzelne Atome.") : "Kanten verborgen. Es liest sich als Fließtext.");
+});
+$("#thema").addEventListener("change", function(e){
+  if(e.target.value === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", e.target.value);
+});
+$("#bewegung").addEventListener("change", function(e){
+  if(e.target.value === "auto") document.documentElement.removeAttribute("data-motion");
+  else document.documentElement.setAttribute("data-motion", e.target.value);
+});
+$("#reset").addEventListener("click", zuruecksetzen);
+
+ausgabenAufbauen();
+alles();
+sag("Sitzung 14, 21:52. Die Anordnung Haus Vharon, gelesen als Kaya. Karte k_9f21 ist gewählt.");
+})();
+</script>

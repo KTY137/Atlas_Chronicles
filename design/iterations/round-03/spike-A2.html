@@ -1,0 +1,2334 @@
+<title>Chronicle · Der Konvent — Die Universalitätsprobe (Spike A2)</title>
+
+<script>
+  /* Bootstrap: die Achsen liegen als Attribute auf :root, damit jede Kombination
+     rein über Tokens auflösbar ist. Läuft vor dem ersten Paint. */
+  (function () {
+    var r = document.documentElement;
+    r.setAttribute('lang', 'de');
+    r.setAttribute('data-skin', 'relic');
+    r.setAttribute('data-theme', 'system');
+    r.setAttribute('data-kontrast', 'normal');
+    r.setAttribute('data-motion', 'system');
+    r.setAttribute('data-dichte', 'komfortabel');
+    r.setAttribute('data-ornament', 'gestaltet');
+    r.setAttribute('data-art', 'an');
+    r.setAttribute('data-labels', 'kurz');
+    r.setAttribute('data-rolle', 'sl');
+  })();
+</script>
+
+<style>
+/* ═════════════════════════════════════════════════════════════════════════
+   0 · GRUNDTOKENS — Maß, Rhythmus, Zeit. Keine Farbe.
+   ═════════════════════════════════════════════════════════════════════════ */
+:root {
+  color-scheme: light dark;
+
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
+  --fs-mikro: 10.5px; --fs-meta: 12px; --fs-klein: 13px;
+  --fs-text: 15.5px;  --fs-lead: 17px;
+  --fs-h3: 16px; --fs-h2: 20px; --fs-h1: 33px;
+
+  --lh-text: 1.62; --lh-eng: 1.3;
+  --ls-kapitaelchen: .13em;
+
+  --r-1: 2px; --r-2: 5px; --r-3: 9px; --r-voll: 999px;
+
+  --t-antwort: 140ms; --t-zustand: 280ms; --t-uebergang: 820ms;
+  --ease: cubic-bezier(.22, .61, .24, 1);
+
+  --w-modul: 68px; --w-sammlung: 212px; --w-lens: 330px; --w-rand: 216px;
+  --gutter: 32px;
+  --measure: 68ch;
+
+  --ornament: 1;
+  --scheibe: 22px;
+
+  --font-text: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: var(--font-text);
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
+}
+
+:root[data-dichte="kompakt"] {
+  --sp-3: 9px; --sp-4: 12px; --sp-5: 18px; --sp-6: 24px; --sp-7: 34px;
+  --fs-text: 14.5px; --lh-text: 1.5; --scheibe: 20px;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   1 · SKINS — je Skin eine helle und eine dunkle Palette plus Schrift & Form.
+        Nichts unterhalb dieses Blocks kennt eine Farbe außer über Tokens.
+   ═════════════════════════════════════════════════════════════════════════ */
+:root[data-skin="relic"] {
+  --l-bg:#e9dfcb; --l-flaeche:#f7f1e4; --l-flaeche2:#e6dcc7; --l-text:#221b12;
+  --l-gedaempft:#5c5142; --l-schwach:#7d6f5c; --l-akzent:#8a5518; --l-zweit:#2c6650;
+  --l-gefahr:#97302e; --l-linie:#c3b394; --l-fokus:#8a5518;
+  --d-bg:#0b0906; --d-flaeche:#15110b; --d-flaeche2:#1d1710; --d-text:#f0e7d4;
+  --d-gedaempft:#b0a48e; --d-schwach:#877a66; --d-akzent:#e6bd63; --d-zweit:#62cfa6;
+  --d-gefahr:#e8828a; --d-linie:#3d3122; --d-fokus:#e6bd63;
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-text: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --r-1: 3px; --r-2: 6px; --r-3: 11px;
+  --korn: .045;
+}
+:root[data-skin="signal"] {
+  --l-bg:#e9eef2; --l-flaeche:#ffffff; --l-flaeche2:#dee7ed; --l-text:#08131c;
+  --l-gedaempft:#40596a; --l-schwach:#6b8091; --l-akzent:#0a6379; --l-zweit:#5b34ad;
+  --l-gefahr:#a3252f; --l-linie:#b8cad6; --l-fokus:#0a6379;
+  --d-bg:#030710; --d-flaeche:#08131d; --d-flaeche2:#0d2130; --d-text:#e9f4f7;
+  --d-gedaempft:#a0b6c0; --d-schwach:#74899a; --d-akzent:#6fe1f5; --d-zweit:#b18cf5;
+  --d-gefahr:#ff8a97; --d-linie:#1c3d4d; --d-fokus:#6fe1f5;
+  --font-display: "Bahnschrift SemiCondensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --font-text: "Segoe UI", ui-sans-serif, system-ui, Roboto, sans-serif;
+  --r-1: 0px; --r-2: 1px; --r-3: 2px; --r-voll: 2px;
+  --korn: 0;
+}
+:root[data-skin="archive"] {
+  --l-bg:#ece4da; --l-flaeche:#faf5ee; --l-flaeche2:#e6dccf; --l-text:#1b1512;
+  --l-gedaempft:#5b4e47; --l-schwach:#7f6f65; --l-akzent:#8e2f21; --l-zweit:#2f5663;
+  --l-gefahr:#a1291b; --l-linie:#cbb9a8; --l-fokus:#8e2f21;
+  --d-bg:#0c0807; --d-flaeche:#171211; --d-flaeche2:#211917; --d-text:#f1e8db;
+  --d-gedaempft:#b7a89f; --d-schwach:#8a7870; --d-akzent:#e39a7c; --d-zweit:#a3c0cc;
+  --d-gefahr:#ec8378; --d-linie:#3b2c25; --d-fokus:#e39a7c;
+  --font-display: "Bodoni MT", Didot, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-text: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --r-1: 0px; --r-2: 0px; --r-3: 0px; --r-voll: 0px;
+  --korn: .03;
+}
+:root[data-skin="clean"] {
+  --l-bg:#f4f6f6; --l-flaeche:#ffffff; --l-flaeche2:#ebeeee; --l-text:#12181a;
+  --l-gedaempft:#48545a; --l-schwach:#6f7c82; --l-akzent:#0f6a58; --l-zweit:#235a86;
+  --l-gefahr:#9e211d; --l-linie:#ccd3d4; --l-fokus:#0f6a58;
+  --d-bg:#0a0d0e; --d-flaeche:#131718; --d-flaeche2:#1a2021; --d-text:#f2f5f5;
+  --d-gedaempft:#b0bbbb; --d-schwach:#7e8a8a; --d-akzent:#62d7a5; --d-zweit:#7ed0e2;
+  --d-gefahr:#ff8f89; --d-linie:#2d3739; --d-fokus:#62d7a5;
+  --font-display: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-text: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --r-1: 3px; --r-2: 6px; --r-3: 10px;
+  --korn: 0;
+  --ornament: 0;
+}
+:root[data-ornament="klar"] { --ornament: 0; --korn: 0; }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   2 · MODUS-ABBILDUNG — hell ist Voreinstellung, dunkel gewinnt über
+        Systemwunsch, Attribut gewinnt über Systemwunsch, Kontrast über beides.
+   ═════════════════════════════════════════════════════════════════════════ */
+:root {
+  --bg: var(--l-bg); --flaeche: var(--l-flaeche); --flaeche2: var(--l-flaeche2);
+  --text: var(--l-text); --gedaempft: var(--l-gedaempft); --schwach: var(--l-schwach);
+  --akzent: var(--l-akzent); --zweit: var(--l-zweit); --gefahr: var(--l-gefahr);
+  --linie: var(--l-linie); --fokus: var(--l-fokus);
+  --schatten: 0 1px 2px rgba(0,0,0,.07), 0 8px 22px -14px rgba(0,0,0,.34);
+  --schatten-hoch: 0 2px 6px rgba(0,0,0,.09), 0 20px 44px -22px rgba(0,0,0,.4);
+  --tinte: rgba(0,0,0,.055);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--d-bg); --flaeche: var(--d-flaeche); --flaeche2: var(--d-flaeche2);
+    --text: var(--d-text); --gedaempft: var(--d-gedaempft); --schwach: var(--d-schwach);
+    --akzent: var(--d-akzent); --zweit: var(--d-zweit); --gefahr: var(--d-gefahr);
+    --linie: var(--d-linie); --fokus: var(--d-fokus);
+    --schatten: 0 1px 0 rgba(255,255,255,.04), 0 14px 30px -18px rgba(0,0,0,.9);
+    --schatten-hoch: 0 1px 0 rgba(255,255,255,.06), 0 30px 60px -26px rgba(0,0,0,.95);
+    --tinte: rgba(255,255,255,.05);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: var(--d-bg); --flaeche: var(--d-flaeche); --flaeche2: var(--d-flaeche2);
+  --text: var(--d-text); --gedaempft: var(--d-gedaempft); --schwach: var(--d-schwach);
+  --akzent: var(--d-akzent); --zweit: var(--d-zweit); --gefahr: var(--d-gefahr);
+  --linie: var(--d-linie); --fokus: var(--d-fokus);
+  --schatten: 0 1px 0 rgba(255,255,255,.04), 0 14px 30px -18px rgba(0,0,0,.9);
+  --schatten-hoch: 0 1px 0 rgba(255,255,255,.06), 0 30px 60px -26px rgba(0,0,0,.95);
+  --tinte: rgba(255,255,255,.05);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: var(--l-bg); --flaeche: var(--l-flaeche); --flaeche2: var(--l-flaeche2);
+  --text: var(--l-text); --gedaempft: var(--l-gedaempft); --schwach: var(--l-schwach);
+  --akzent: var(--l-akzent); --zweit: var(--l-zweit); --gefahr: var(--l-gefahr);
+  --linie: var(--l-linie); --fokus: var(--l-fokus);
+  --schatten: 0 1px 2px rgba(0,0,0,.07), 0 8px 22px -14px rgba(0,0,0,.34);
+  --schatten-hoch: 0 2px 6px rgba(0,0,0,.09), 0 20px 44px -22px rgba(0,0,0,.4);
+  --tinte: rgba(0,0,0,.055);
+  color-scheme: light;
+}
+/* Hoher Kontrast — hell */
+:root[data-kontrast="hoch"] {
+  --bg:#ffffff; --flaeche:#ffffff; --flaeche2:#f2f4f4; --text:#000000;
+  --gedaempft:#1b2222; --schwach:#3a4343; --akzent:#5a2a00; --zweit:#123f66;
+  --gefahr:#8a0f0c; --linie:#4a5454; --fokus:#000000;
+  --schatten: none; --schatten-hoch: none; --tinte: transparent;
+  --ornament: 0; --korn: 0; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-kontrast="hoch"] {
+    --bg:#000000; --flaeche:#000000; --flaeche2:#0d1111; --text:#ffffff;
+    --gedaempft:#eef3f3; --schwach:#c9d2d2; --akzent:#ffd479; --zweit:#8fe8ff;
+    --gefahr:#ff9b93; --linie:#b4bcbc; --fokus:#ffffff; color-scheme: dark;
+  }
+}
+:root[data-kontrast="hoch"][data-theme="dark"] {
+  --bg:#000000; --flaeche:#000000; --flaeche2:#0d1111; --text:#ffffff;
+  --gedaempft:#eef3f3; --schwach:#c9d2d2; --akzent:#ffd479; --zweit:#8fe8ff;
+  --gefahr:#ff9b93; --linie:#b4bcbc; --fokus:#ffffff; color-scheme: dark;
+}
+:root[data-kontrast="hoch"][data-theme="light"] {
+  --bg:#ffffff; --flaeche:#ffffff; --flaeche2:#f2f4f4; --text:#000000;
+  --gedaempft:#1b2222; --schwach:#3a4343; --akzent:#5a2a00; --zweit:#123f66;
+  --gefahr:#8a0f0c; --linie:#4a5454; --fokus:#000000; color-scheme: light;
+}
+
+/* Bewegung ist Zustandsauskunft. Systemwunsch zuerst, Attribut gewinnt. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-antwort: 1ms; --t-zustand: 1ms; --t-uebergang: 1ms; }
+}
+:root[data-motion="reduziert"] { --t-antwort: 1ms; --t-zustand: 1ms; --t-uebergang: 1ms; }
+:root[data-motion="voll"] { --t-antwort: 140ms; --t-zustand: 280ms; --t-uebergang: 820ms; }
+</style>
+
+<style>
+/* ═════════════════════════════════════════════════════════════════════════
+   3 · GRUNDLAGE
+   ═════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  overflow-x: hidden;
+  transition: background-color var(--t-uebergang) var(--ease), color var(--t-zustand) var(--ease);
+}
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  opacity: calc(var(--korn, 0) * var(--ornament));
+  background-image:
+    repeating-linear-gradient(0deg, var(--text) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, var(--text) 0 1px, transparent 1px 4px);
+  mix-blend-mode: overlay;
+}
+h1, h2, h3, h4 { font-family: var(--font-display); line-height: var(--lh-eng); margin: 0; font-weight: 600; }
+p { margin: 0; }
+button, input, textarea, select { font: inherit; color: inherit; }
+a { color: var(--akzent); }
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+:root[data-kontrast="hoch"] :focus-visible { outline-width: 3px; outline-offset: 3px; }
+.nur-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.zahl { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.kapitaelchen {
+  font-family: var(--font-display); font-size: var(--fs-mikro);
+  letter-spacing: var(--ls-kapitaelchen); text-transform: uppercase;
+  color: var(--schwach); font-weight: 700;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   4 · SCHALE — sechs Zonen, eine Raumgrammatik
+   ═════════════════════════════════════════════════════════════════════════ */
+.app {
+  position: relative; z-index: 1;
+  display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr);
+  height: 100vh; height: 100dvh;
+}
+.schale {
+  display: grid;
+  grid-template-columns: var(--w-modul) var(--w-sammlung) minmax(0, 1fr) var(--w-lens);
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  min-height: 0;
+}
+.saeule {
+  min-height: 0; min-width: 0;
+  overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: var(--linie) transparent;
+}
+.tafelflaeche {
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: var(--r-3);
+  box-shadow: var(--schatten);
+  position: relative;
+}
+.tafelflaeche::before {
+  content: ""; position: absolute; inset: 5px; pointer-events: none; z-index: 0;
+  border: 1px solid var(--akzent); opacity: calc(var(--ornament) * .17);
+  border-radius: calc(var(--r-3) - 4px);
+}
+:root[data-skin="signal"] .tafelflaeche::before {
+  inset: 0; border: none; border-radius: 0;
+  background:
+    linear-gradient(var(--akzent), var(--akzent)) 0 0 / 14px 1px no-repeat,
+    linear-gradient(var(--akzent), var(--akzent)) 0 0 / 1px 14px no-repeat,
+    linear-gradient(var(--akzent), var(--akzent)) 100% 100% / 14px 1px no-repeat,
+    linear-gradient(var(--akzent), var(--akzent)) 100% 100% / 1px 14px no-repeat;
+  opacity: calc(var(--ornament) * .55);
+}
+:root[data-skin="archive"] .tafelflaeche::before {
+  inset: 3px; border-width: 3px; border-style: double; opacity: calc(var(--ornament) * .26);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   5 · KAMPAGNENKOPF
+   ═════════════════════════════════════════════════════════════════════════ */
+.kopfleiste {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--linie);
+  background: var(--flaeche2);
+}
+.marke { display: flex; align-items: baseline; gap: var(--sp-2); min-width: 0; }
+.marke b { font-family: var(--font-display); font-size: var(--fs-h3); letter-spacing: .01em; }
+.pfad { color: var(--gedaempft); font-size: var(--fs-meta); display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.kopf-fuell { flex: 1 1 var(--sp-2); }
+.praesenz { margin-left: auto; }
+.achsen { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; }
+.achse {
+  display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap;
+  border: 1px solid var(--linie); border-radius: var(--r-voll);
+  padding: 2px; background: var(--flaeche);
+}
+.achse > .achsen-name {
+  padding: 0 var(--sp-2) 0 var(--sp-3);
+  font-family: var(--font-display); font-size: var(--fs-mikro);
+  letter-spacing: var(--ls-kapitaelchen); text-transform: uppercase;
+  color: var(--schwach); font-weight: 700;
+}
+.knopf {
+  border: 1px solid transparent; background: transparent; color: var(--gedaempft);
+  border-radius: var(--r-voll); padding: 5px 11px; cursor: pointer;
+  font-size: var(--fs-meta); font-family: var(--font-display); white-space: normal;
+  transition: background-color var(--t-antwort) var(--ease),
+              color var(--t-antwort) var(--ease), border-color var(--t-antwort) var(--ease);
+}
+.knopf:hover { color: var(--text); background: var(--tinte); }
+.knopf[aria-pressed="true"], .knopf[aria-current="page"] {
+  background: var(--akzent); border-color: var(--akzent); color: var(--flaeche); font-weight: 700;
+}
+:root[data-kontrast="hoch"] .knopf { border-color: var(--linie); }
+:root[data-kontrast="hoch"] .knopf[aria-pressed="true"] { outline: 2px solid var(--text); outline-offset: -4px; }
+.knopf[disabled] { opacity: .45; cursor: not-allowed; }
+.knopf.klein { padding: 3px 9px; font-size: var(--fs-mikro); }
+.praesenz {
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-size: var(--fs-meta); color: var(--gedaempft);
+}
+.praesenz i {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--zweit); display: block;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zweit) 22%, transparent);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   6 · MODUL- UND SAMMLUNGSSCHIENE
+   ═════════════════════════════════════════════════════════════════════════ */
+.modulschiene { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2) 0; }
+.modulknopf {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: var(--sp-2) 2px; border: 1px solid transparent; border-radius: var(--r-2);
+  background: transparent; color: var(--gedaempft); cursor: pointer; text-align: center;
+  transition: background-color var(--t-antwort) var(--ease), color var(--t-antwort) var(--ease);
+}
+.modulknopf .zeichen { font-size: 17px; line-height: 1; font-family: var(--font-display); }
+.modulknopf .beschriftung { font-size: var(--fs-mikro); letter-spacing: .03em; line-height: 1.2; overflow-wrap: break-word; hyphens: auto; }
+:root[data-labels="lang"] { --w-modul: 112px; --w-sammlung: 236px; }
+.modulknopf:hover { background: var(--tinte); color: var(--text); }
+.modulknopf[aria-current="page"] {
+  background: color-mix(in srgb, var(--akzent) 15%, transparent);
+  color: var(--text); border-color: color-mix(in srgb, var(--akzent) 45%, transparent);
+}
+.modulknopf[aria-current="page"] .zeichen { color: var(--akzent); }
+
+.sammlung { padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-3); }
+.suchfeld {
+  display: flex; align-items: center; gap: var(--sp-2);
+  border: 1px solid var(--linie); border-radius: var(--r-2);
+  padding: 6px var(--sp-2); background: var(--flaeche2);
+}
+.suchfeld input { border: 0; background: transparent; width: 100%; font-size: var(--fs-klein); min-width: 0; }
+.eintragsliste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.eintragsknopf {
+  width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: var(--sp-2);
+  align-items: center; text-align: left; padding: var(--sp-2); cursor: pointer;
+  border: 1px solid transparent; border-radius: var(--r-2); background: transparent;
+  transition: background-color var(--t-antwort) var(--ease);
+}
+.eintragsknopf:hover { background: var(--tinte); }
+.eintragsknopf[aria-current="true"] {
+  background: color-mix(in srgb, var(--akzent) 13%, transparent);
+  border-color: color-mix(in srgb, var(--akzent) 38%, transparent);
+}
+.eintragsknopf .titel { font-size: var(--fs-klein); font-family: var(--font-display); }
+.eintragsknopf .unter { font-size: var(--fs-mikro); color: var(--schwach); }
+.signet { display: block; width: 30px; height: 30px; }
+.rotmarke { color: var(--gefahr); font-weight: 700; }
+</style>
+
+<style>
+/* ═════════════════════════════════════════════════════════════════════════
+   7 · HAUPTBÜHNE — der Artikel
+   ═════════════════════════════════════════════════════════════════════════ */
+.buehne { padding: var(--sp-5) var(--sp-5) var(--sp-7); }
+@media (max-width: 1100px) { .buehne { padding: var(--sp-4); } }
+
+.artikelkopf { position: relative; z-index: 1; }
+.kicker {
+  font-family: var(--font-display); font-size: var(--fs-mikro);
+  letter-spacing: var(--ls-kapitaelchen); text-transform: uppercase;
+  color: var(--akzent); font-weight: 700; margin-bottom: var(--sp-2);
+}
+.artikeltitel {
+  font-size: var(--fs-h1); letter-spacing: -.012em;
+  overflow-wrap: break-word; hyphens: auto;
+}
+:root[data-skin="archive"] .artikeltitel { letter-spacing: .01em; }
+.artikelunter { color: var(--gedaempft); font-size: var(--fs-klein); margin-top: var(--sp-2); }
+.titelregel {
+  height: 0; border: 0; margin: var(--sp-3) 0 var(--sp-3);
+  border-top: 1px solid var(--linie);
+  position: relative;
+}
+.titelregel::after {
+  content: ""; position: absolute; left: 0; top: -1px; width: 84px; height: 2px;
+  background: var(--akzent); opacity: calc(.35 + .5 * var(--ornament));
+}
+:root[data-skin="archive"] .titelregel { border-top-style: double; border-top-width: 3px; }
+
+/* Autorenleiste — Erstklassiges Element der Bühne, kein Hover-Behelf. */
+.autorenleiste {
+  display: flex; align-items: center; gap: var(--sp-2);
+  overflow-x: auto; padding: 2px 0 var(--sp-2);
+  scrollbar-width: thin;
+}
+.autorenleiste > .kapitaelchen { flex: 0 0 auto; padding-right: var(--sp-1); }
+.autorknopf {
+  display: inline-flex; align-items: center; gap: var(--sp-2); flex: 0 0 auto;
+  border: 1px solid var(--linie); border-radius: var(--r-voll);
+  background: var(--flaeche2); color: var(--text);
+  padding: 3px var(--sp-3) 3px 3px; cursor: pointer;
+  font-size: var(--fs-meta); font-family: var(--font-display);
+  transition: border-color var(--t-antwort) var(--ease), background-color var(--t-antwort) var(--ease);
+}
+.autorknopf:hover { border-color: var(--akzent); }
+.autorknopf[aria-pressed="true"] {
+  border-color: var(--akzent);
+  background: color-mix(in srgb, var(--akzent) 16%, var(--flaeche2));
+  font-weight: 700;
+}
+.autorknopf.ausgetreten { color: var(--gedaempft); border-style: dashed; }
+.autorknopf.ausgetreten .scheibe { filter: grayscale(1); }
+.scheibe {
+  width: var(--scheibe); height: var(--scheibe); border-radius: 50%;
+  display: grid; place-items: center; flex: 0 0 auto;
+  font-family: var(--font-display); font-size: calc(var(--scheibe) * .5); font-weight: 700;
+  background: var(--flaeche);
+  border: 2px solid var(--autorfarbe, var(--akzent));
+  color: var(--text); line-height: 1;
+}
+.scheibe.hohl { border-style: dashed; }
+
+/* Aus-Sicht-Wählscheibe */
+.sichtblock {
+  margin: var(--sp-3) 0 var(--sp-5); padding: var(--sp-3);
+  border: 1px solid var(--linie); border-radius: var(--r-2);
+  background: var(--flaeche2);
+}
+.sichtkopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.sichtkopf .erklaerung { font-size: var(--fs-mikro); color: var(--schwach); }
+.waehlscheibe {
+  position: relative; display: flex; gap: var(--sp-1); flex-wrap: wrap;
+  border: 0; padding: 0; margin: 0; min-width: 0;
+}
+.waehlscheibe legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.sitz { position: relative; }
+.sitz input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.sitz label {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: 4px var(--sp-3) 4px 4px; cursor: pointer;
+  border: 1px solid var(--linie); border-radius: var(--r-voll);
+  background: var(--flaeche); font-size: var(--fs-meta); font-family: var(--font-display);
+  transition: background-color var(--t-antwort) var(--ease), border-color var(--t-antwort) var(--ease);
+}
+.sitz label:hover { border-color: var(--akzent); }
+.sitz input:checked + label {
+  background: var(--akzent); border-color: var(--akzent); color: var(--flaeche); font-weight: 700;
+}
+.sitz input:checked + label .scheibe { background: var(--flaeche); border-color: var(--flaeche); }
+.sitz input:focus-visible + label { outline: 2px solid var(--fokus); outline-offset: 2px; }
+.sitz input:disabled + label { opacity: .4; cursor: not-allowed; }
+.sitzstand {
+  margin-top: var(--sp-2); font-size: var(--fs-meta); color: var(--gedaempft);
+  display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center;
+}
+.entfallen {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--gefahr); color: var(--gefahr);
+  border-radius: var(--r-voll); padding: 1px var(--sp-2);
+  font-size: var(--fs-mikro); font-weight: 700;
+}
+.entfallen.puls { animation: pulsen var(--t-zustand) var(--ease) 2; }
+@keyframes pulsen { 50% { transform: scale(1.06); } }
+
+/* Körper: Text + Randspalte */
+.artikelkoerper {
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--w-rand);
+  gap: var(--sp-5); align-items: start;
+}
+.prosa { container-type: inline-size; min-width: 0; max-width: var(--measure); }
+.absatz {
+  position: relative; padding-left: var(--gutter); margin-bottom: var(--sp-4);
+}
+.absatz > .scheibe {
+  position: absolute; left: 0; top: .22em;
+}
+.absatzknopf {
+  position: absolute; left: 0; top: .22em; padding: 0; border: 0; background: none; cursor: pointer;
+  border-radius: 50%;
+}
+.absatztext { overflow-wrap: break-word; }
+:root:not([data-ornament="klar"]):not([data-skin="clean"]) .prosa > .absatz:first-of-type .absatztext::first-letter {
+  float: left; font-family: var(--font-display); font-size: 3.05em; line-height: .82;
+  padding: .06em .1em 0 0; color: var(--akzent); font-weight: 700;
+}
+.stempel {
+  margin-top: 3px; font-size: var(--fs-mikro); color: var(--gedaempft);
+  font-family: var(--font-display); letter-spacing: .02em;
+}
+.stempel b { color: var(--text); font-weight: 700; }
+.absatz.hervor {
+  background: color-mix(in srgb, var(--akzent) 12%, transparent);
+  box-shadow: -6px 0 0 0 var(--akzent);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+}
+.absatz.frisch { animation: einlaufen var(--t-zustand) var(--ease); }
+@keyframes einlaufen { from { opacity: 0; transform: translateY(-6px); } }
+.platzhalter { overflow: hidden; transition: height var(--t-zustand) var(--ease); }
+
+.wikilink { text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.rotlink { color: var(--gefahr); border-bottom: 1px dashed var(--gefahr); text-decoration: none; }
+.rotlink::after { content: "?"; font-size: .72em; vertical-align: super; margin-left: 1px; }
+
+/* Beiwerk: Tafel + Infobox. Umflossen, sobald die Textspalte breit genug ist. */
+/* Drei Stufen, alle absichtlich: schmal gestapelt · mittel als Steckbriefstreifen
+   · breit vom Text umflossen. Dieselben Bauteile, dieselbe DOM-Reihenfolge. */
+.beiwerk { margin: 0 0 var(--sp-5); width: 100%; display: grid; gap: var(--sp-3); grid-template-columns: minmax(0, 1fr); }
+.beiwerk .infobox { margin-top: 0; }
+@container (min-width: 460px) {
+  .beiwerk { grid-template-columns: 200px minmax(0, 1fr); align-items: start; }
+}
+@container (min-width: 660px) {
+  .beiwerk { float: right; display: block; width: clamp(220px, 34%, 264px); margin: 0 0 var(--sp-4) var(--sp-5); }
+  .beiwerk .infobox { margin-top: var(--sp-3); }
+}
+.tafel { border: 1px solid var(--linie); border-radius: var(--r-2); overflow: hidden; background: var(--flaeche2); }
+.tafel img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.tafelersatz { display: grid; place-items: center; width: 100%; aspect-ratio: 4 / 3; background: var(--flaeche2); color: var(--gedaempft); }
+.tafelersatz .signet { width: 62%; height: auto; max-width: 168px; }
+.bildunterschrift {
+  padding: var(--sp-2); font-size: var(--fs-mikro); color: var(--gedaempft);
+  border-top: 1px solid var(--linie); line-height: 1.4;
+}
+.infobox {
+  border: 1px solid var(--linie); border-radius: var(--r-2);
+  background: var(--flaeche2); overflow: hidden;
+}
+.infokopf {
+  padding: var(--sp-2) var(--sp-3); background: color-mix(in srgb, var(--akzent) 13%, transparent);
+  border-bottom: 1px solid var(--linie);
+  font-family: var(--font-display); font-size: var(--fs-klein); font-weight: 700;
+}
+.infozeile { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--linie); display: grid; gap: 2px; }
+.infozeile:last-child { border-bottom: 0; }
+.infofeld { font-size: var(--fs-mikro); color: var(--schwach); letter-spacing: .05em; text-transform: uppercase; font-weight: 700; }
+.infowert { font-size: var(--fs-klein); overflow-wrap: break-word; }
+.infoherkunft { font-size: var(--fs-mikro); color: var(--gedaempft); display: flex; align-items: center; gap: 5px; }
+.infoherkunft .scheibe { --scheibe: 15px; border-width: 1.5px; }
+
+/* Streitfall — zwei Fassungen, beide Kanon */
+.streitfall {
+  margin: var(--sp-4) 0 var(--sp-4) var(--gutter);
+  border: 1px solid var(--linie); border-left: 3px solid var(--zweit);
+  border-radius: var(--r-2); background: var(--flaeche2); overflow: hidden;
+}
+.streitkopf {
+  padding: var(--sp-2) var(--sp-3); font-family: var(--font-display);
+  font-size: var(--fs-mikro); letter-spacing: var(--ls-kapitaelchen); text-transform: uppercase;
+  color: var(--zweit); font-weight: 700; border-bottom: 1px solid var(--linie);
+}
+.konten { display: grid; grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); }
+.konto { padding: var(--sp-3); border-right: 1px solid var(--linie); }
+.konto:last-child { border-right: 0; }
+.kontokopf { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.kontokopf .name { font-family: var(--font-display); font-size: var(--fs-klein); font-weight: 700; }
+.kontotext { font-size: var(--fs-klein); }
+.halter { margin-top: var(--sp-2); font-size: var(--fs-mikro); color: var(--gedaempft); }
+.streitfuss { padding: var(--sp-2) var(--sp-3); border-top: 1px solid var(--linie); font-size: var(--fs-mikro); color: var(--gedaempft); }
+
+/* Randspalte — Anträge neben dem Satz, der sie ausgelöst hat */
+.randspalte { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.randkopf { position: sticky; top: 0; background: var(--flaeche); padding-bottom: var(--sp-1); z-index: 2; }
+.antrag {
+  border: 1px solid var(--linie); border-left: 3px solid var(--akzent);
+  border-radius: var(--r-2); background: var(--flaeche2); padding: var(--sp-3);
+  transition: margin-top var(--t-zustand) var(--ease), opacity var(--t-zustand) var(--ease);
+}
+.antrag.weg { opacity: 0; }
+.antragkopf { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.antragkopf .name { font-family: var(--font-display); font-size: var(--fs-meta); font-weight: 700; }
+.ankerzeile { font-size: var(--fs-mikro); color: var(--schwach); margin-bottom: var(--sp-2); }
+.antragtext { font-size: var(--fs-klein); }
+.antragaktionen { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-top: var(--sp-3); }
+.tastenknopf {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  border: 1px solid var(--linie); background: var(--flaeche); color: var(--text);
+  border-radius: var(--r-2); padding: 4px var(--sp-2); font-size: var(--fs-mikro);
+  font-family: var(--font-display); white-space: normal; text-align: left;
+  transition: border-color var(--t-antwort) var(--ease), background-color var(--t-antwort) var(--ease);
+}
+.tastenknopf:hover { border-color: var(--akzent); background: var(--tinte); }
+.tastenknopf kbd {
+  font-family: var(--font-mono); font-size: 9.5px; border: 1px solid var(--linie);
+  border-radius: 3px; padding: 0 3px; color: var(--gedaempft); background: var(--flaeche2);
+}
+.tastenknopf.gefahr:hover { border-color: var(--gefahr); }
+.begruendung { margin-top: var(--sp-2); display: grid; gap: var(--sp-2); }
+.begruendung textarea, .notizfeld textarea {
+  width: 100%; border: 1px solid var(--linie); border-radius: var(--r-2);
+  background: var(--flaeche); padding: var(--sp-2); font-size: var(--fs-klein);
+  resize: vertical; min-height: 58px; font-family: inherit;
+}
+.leiselinie { font-size: var(--fs-mikro); color: var(--schwach); }
+.notizkarte {
+  border: 1px dashed var(--linie); border-radius: var(--r-2); padding: var(--sp-3);
+  background: var(--flaeche2);
+}
+.warnband {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center;
+  border: 1px solid var(--gefahr); border-left: 4px solid var(--gefahr);
+  background: color-mix(in srgb, var(--gefahr) 12%, transparent);
+  border-radius: var(--r-2); padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-klein); margin-bottom: var(--sp-4);
+}
+.warnband b { color: var(--gefahr); }
+</style>
+
+<style>
+/* ═════════════════════════════════════════════════════════════════════════
+   8 · KONTEXTLINSE — der Prüfstand
+   ═════════════════════════════════════════════════════════════════════════ */
+.lens { padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-3); }
+.lenskopf { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
+.lenskopf h2 { font-size: var(--fs-h3); }
+.pruefgruppe { border: 1px solid var(--linie); border-radius: var(--r-2); overflow: hidden; }
+.pruefkopf {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3); background: var(--flaeche2); border-bottom: 1px solid var(--linie);
+  font-family: var(--font-display); font-size: var(--fs-mikro);
+  letter-spacing: var(--ls-kapitaelchen); text-transform: uppercase; font-weight: 700;
+}
+.pruefzeile {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--sp-2); align-items: baseline;
+  padding: 6px var(--sp-3); border-bottom: 1px solid var(--linie); font-size: var(--fs-meta);
+}
+.pruefzeile:last-child { border-bottom: 0; }
+.pruefname { color: var(--gedaempft); overflow-wrap: anywhere; }
+.pruefwert { font-family: var(--font-mono); font-size: var(--fs-meta); }
+.urteil {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  border-radius: var(--r-1); padding: 1px 5px; border: 1px solid currentColor; white-space: nowrap;
+}
+.urteil.gut { color: var(--zweit); }
+.urteil.schlecht { color: var(--gefahr); background: color-mix(in srgb, var(--gefahr) 15%, transparent); }
+.urteil.neutral { color: var(--schwach); }
+.pruefnotiz { padding: var(--sp-2) var(--sp-3); font-size: var(--fs-mikro); color: var(--gedaempft); line-height: 1.5; border-bottom: 1px solid var(--linie); }
+.pruefnotiz:last-child { border-bottom: 0; }
+.achsenmarken { display: flex; flex-wrap: wrap; gap: 4px; padding: var(--sp-2) var(--sp-3); }
+.marke-chip {
+  font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+  border: 1px solid var(--linie); border-radius: var(--r-voll); padding: 1px 6px; color: var(--schwach);
+}
+.marke-chip.geprueft { color: var(--zweit); border-color: var(--zweit); }
+.marke-chip.gescheitert { color: var(--gefahr); border-color: var(--gefahr); }
+.protokoll { list-style: none; margin: 0; padding: 0; max-height: 148px; overflow-y: auto; }
+.protokoll li {
+  display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: var(--sp-2);
+  padding: 5px var(--sp-3); border-bottom: 1px solid var(--linie); font-size: var(--fs-mikro);
+}
+.protokoll li:last-child { border-bottom: 0; }
+.protokoll .seq { font-family: var(--font-mono); color: var(--schwach); }
+.werkbank { display: flex; flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-3); }
+.schalter {
+  display: inline-flex; align-items: center; gap: var(--sp-2); cursor: pointer;
+  border: 1px solid var(--linie); border-radius: var(--r-2); padding: 5px var(--sp-2);
+  font-size: var(--fs-mikro); font-family: var(--font-display); background: var(--flaeche2);
+}
+.schalter input { accent-color: var(--akzent); }
+.fussnote { font-size: var(--fs-mikro); color: var(--gedaempft); line-height: 1.55; }
+.fussnote b { color: var(--text); }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   9 · SITZUNGSBRETT
+   ═════════════════════════════════════════════════════════════════════════ */
+.brett {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4); border-top: 1px solid var(--linie);
+  background: var(--flaeche2); font-size: var(--fs-meta);
+}
+.autorenzeile { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.zaehler {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--linie); border-radius: var(--r-voll); padding: 1px var(--sp-2);
+  font-size: var(--fs-mikro);
+}
+.zaehler .scheibe { --scheibe: 15px; border-width: 1.5px; }
+.meldung { color: var(--gedaempft); flex: 1 1 240px; min-width: 0; }
+.meldung b { color: var(--text); }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   10 · SCHMALE LAYOUTS — bis 380 px, ohne seitliches Rollen des Dokuments
+   ═════════════════════════════════════════════════════════════════════════ */
+.schublade-auf { display: none; }
+@media (max-width: 1380px) { :root { --w-lens: 300px; --w-sammlung: 190px; } }
+@media (max-width: 1240px) {
+  .schale { grid-template-columns: var(--w-modul) minmax(0, 1fr) var(--w-lens); }
+  .sammlung-saeule { display: none; }
+  .sammlung-saeule.offen {
+    display: block; position: fixed; z-index: 40; inset: auto auto 0 0;
+    top: 0; width: min(300px, 86vw); box-shadow: var(--schatten-hoch);
+    border-radius: 0 var(--r-3) var(--r-3) 0;
+  }
+  .schublade-auf { display: inline-flex; }
+}
+@media (max-width: 1060px) {
+  .artikelkoerper { grid-template-columns: minmax(0, 1fr); }
+  .randspalte { border-top: 1px solid var(--linie); padding-top: var(--sp-3); }
+  .randkopf { position: static; }
+}
+@media (max-width: 940px) {
+  .app { height: auto; min-height: 100vh; }
+  .schale { grid-template-columns: minmax(0, 1fr); }
+  .saeule { overflow: visible; }
+  .modul-saeule {
+    order: -1;
+  }
+  .modulschiene { flex-direction: row; overflow-x: auto; padding: var(--sp-2); gap: var(--sp-2); }
+  .modulknopf { flex: 0 0 auto; flex-direction: row; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); }
+  .lens-saeule { order: 3; }
+  .brett { position: sticky; bottom: 0; z-index: 30; }
+}
+@media (max-width: 620px) {
+  .kopfleiste { padding: var(--sp-2) var(--sp-3); gap: var(--sp-2); }
+  .marke, .pfad { flex: 1 1 100%; min-width: 0; }
+  .praesenz { margin-left: 0; }
+  .achsen { gap: var(--sp-2); }
+  .buehne { padding: var(--sp-3); }
+  :root { --fs-h1: 26px; --gutter: 28px; }
+  .streitfall { margin-left: 0; }
+  .pruefzeile { grid-template-columns: minmax(0, 1fr) auto; }
+  .pruefzeile .urteil { grid-column: 2; }
+}
+@media (max-width: 400px) {
+  :root { --fs-h1: 23px; --sp-5: 16px; --gutter: 26px; --scheibe: 20px; }
+  .achse { border-radius: var(--r-2); }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   11 · BEWEGUNG — Zustandsauskunft, niemals Tapete
+   ═════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="voll"]) *,
+  :root:not([data-motion="voll"]) *::before,
+  :root:not([data-motion="voll"]) *::after {
+    animation-duration: 1ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important; scroll-behavior: auto !important;
+  }
+}
+:root[data-motion="reduziert"] *, :root[data-motion="reduziert"] *::before, :root[data-motion="reduziert"] *::after {
+  animation-duration: 1ms !important; animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important; scroll-behavior: auto !important;
+}
+</style>
+
+<div class="app">
+
+  <header class="kopfleiste" data-part="kopfleiste">
+    <div class="marke">
+      <b>Chronicle</b>
+      <span class="kapitaelchen" data-i18n="produkt">Der Konvent</span>
+    </div>
+    <nav class="pfad" aria-label="Kontext" id="pfad" data-part="kontextpfad"></nav>
+    <span class="kopf-fuell"></span>
+
+    <div class="achsen" data-part="achsenleiste">
+      <div class="achse" role="group" aria-label="Inhaltspaket">
+        <span class="achsen-name" data-i18n="achse-inhalt">Inhalt</span>
+        <button class="knopf" type="button" data-achse="paket" data-wert="aldenfall" aria-pressed="true">Aldenfall</button>
+        <button class="knopf" type="button" data-achse="paket" data-wert="kepler" aria-pressed="false">Kepler-9</button>
+        <button class="knopf" type="button" data-achse="paket" data-wert="nebelakte" aria-pressed="false">Nebelakte</button>
+      </div>
+
+      <div class="achse" role="group" aria-label="Kunstskin">
+        <span class="achsen-name" data-i18n="achse-skin">Skin</span>
+        <button class="knopf" type="button" data-achse="skin" data-wert="relic" aria-pressed="true">Relic</button>
+        <button class="knopf" type="button" data-achse="skin" data-wert="signal" aria-pressed="false">Signal</button>
+        <button class="knopf" type="button" data-achse="skin" data-wert="archive" aria-pressed="false">Archiv</button>
+        <button class="knopf" type="button" data-achse="skin" data-wert="clean" aria-pressed="false">Clean</button>
+      </div>
+
+      <div class="achse" role="group" aria-label="Rolle">
+        <span class="achsen-name" data-i18n="achse-rolle">Rolle</span>
+        <button class="knopf" type="button" data-achse="rolle" data-wert="sl" aria-pressed="true" data-i18n="rolle-sl">Spielleitung</button>
+        <button class="knopf" type="button" data-achse="rolle" data-wert="spieler" aria-pressed="false" data-i18n="rolle-spieler">Spieler</button>
+        <button class="knopf" type="button" data-achse="rolle" data-wert="beobachter" aria-pressed="false" data-i18n="rolle-beobachter">Beobachter</button>
+      </div>
+
+      <div class="achse" role="group" aria-label="Helligkeit">
+        <span class="achsen-name" data-i18n="achse-modus">Modus</span>
+        <button class="knopf" type="button" data-achse="theme" data-wert="system" aria-pressed="true" data-i18n="modus-system">System</button>
+        <button class="knopf" type="button" data-achse="theme" data-wert="light" aria-pressed="false" data-i18n="modus-hell">Hell</button>
+        <button class="knopf" type="button" data-achse="theme" data-wert="dark" aria-pressed="false" data-i18n="modus-dunkel">Dunkel</button>
+      </div>
+
+      <div class="achse" role="group" aria-label="Darstellung">
+        <span class="achsen-name" data-i18n="achse-darstellung">Darstellung</span>
+        <button class="knopf" type="button" data-achse="ornament" data-wert="umschalt" aria-pressed="true" data-i18n="orn-gestaltet">Ornament</button>
+        <button class="knopf" type="button" data-achse="art" data-wert="umschalt" aria-pressed="true" data-i18n="art-an">Bildwerk</button>
+        <button class="knopf" type="button" data-achse="dichte" data-wert="umschalt" aria-pressed="false" data-i18n="dichte-kompakt">Kompakt</button>
+        <button class="knopf" type="button" data-achse="kontrast" data-wert="umschalt" aria-pressed="false" data-i18n="kontrast-hoch">Hoher Kontrast</button>
+        <button class="knopf" type="button" data-achse="motion" data-wert="umschalt" aria-pressed="false" data-i18n="motion-reduziert">Weniger Bewegung</button>
+      </div>
+    </div>
+
+    <button class="knopf schublade-auf" type="button" id="sammlung-schalter" aria-expanded="false" aria-controls="sammlung-saeule" data-i18n="sammlung-oeffnen">Sammlung</button>
+    <span class="praesenz"><i aria-hidden="true"></i><span><span class="zahl">4</span>&nbsp;am Tisch</span></span>
+  </header>
+
+  <div class="schale">
+
+    <div class="saeule modul-saeule tafelflaeche">
+      <nav class="modulschiene" aria-label="Hauptbereiche" data-part="modulrail">
+        <button class="modulknopf" type="button" data-modul="session"><span class="zeichen" aria-hidden="true">◷</span><span class="beschriftung" data-i18n="modul-session">Session</span></button>
+        <button class="modulknopf" type="button" data-modul="story" aria-current="page"><span class="zeichen" aria-hidden="true">¶</span><span class="beschriftung" data-i18n="modul-story">Story</span></button>
+        <button class="modulknopf" type="button" data-modul="cast"><span class="zeichen" aria-hidden="true">◉</span><span class="beschriftung" data-i18n="modul-cast">Cast</span></button>
+        <button class="modulknopf" type="button" data-modul="library"><span class="zeichen" aria-hidden="true">◇</span><span class="beschriftung" data-i18n="modul-library">Library</span></button>
+        <button class="modulknopf" type="button" data-modul="table"><span class="zeichen" aria-hidden="true">⌗</span><span class="beschriftung" data-i18n="modul-table">Table</span></button>
+        <button class="modulknopf" type="button" data-modul="forge"><span class="zeichen" aria-hidden="true">⚒</span><span class="beschriftung" data-i18n="modul-forge">Forge</span></button>
+      </nav>
+    </div>
+
+    <div class="saeule sammlung-saeule tafelflaeche" id="sammlung-saeule">
+      <div class="sammlung" data-part="sammlungsrail">
+        <div class="suchfeld">
+          <span aria-hidden="true">⌕</span>
+          <label class="nur-sr" for="suche">Einträge durchsuchen</label>
+          <input id="suche" type="search" placeholder="Einträge durchsuchen" autocomplete="off">
+        </div>
+        <p class="kapitaelchen" data-i18n="sammlung-titel">Einträge in diesem Paket</p>
+        <ul class="eintragsliste" id="eintragsliste"></ul>
+        <p class="fussnote" data-i18n="sammlung-fuss">Die Liste zeigt nur, was der gewählte Sitz halten darf. Ein roter Titel ist ein Verweis ohne Artikel.</p>
+      </div>
+    </div>
+
+    <main class="saeule buehne-saeule tafelflaeche" id="buehne-saeule" aria-label="Hauptbühne">
+      <article class="buehne" id="buehne" data-part="buehne"></article>
+    </main>
+
+    <aside class="saeule lens-saeule tafelflaeche" aria-label="Prüfstand" id="lens-saeule">
+      <div class="lens" data-part="lens">
+
+        <div class="lenskopf">
+          <h2 data-i18n="pruefstand">Der Prüfstand</h2>
+          <button class="knopf klein" type="button" id="pruefen-knopf" data-i18n="pruefen">Prüfen</button>
+        </div>
+        <p class="fussnote" data-i18n="pruefstand-intro">Jede Zeile wird beim Öffnen und nach jeder Änderung neu gerechnet — aus dem echten DOM dieser Seite, nicht aus einer Behauptung.</p>
+
+        <section class="pruefgruppe" aria-labelledby="pg-struktur">
+          <h3 class="pruefkopf" id="pg-struktur"><span data-i18n="pg-struktur">Struktur</span></h3>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-domsig">DOM-Signatur der Bühne</span><span class="pruefwert zahl" id="w-domsig">—</span><span class="urteil neutral" id="u-domsig">offen</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-vokabular">Bauteil-Vokabular</span><span class="pruefwert zahl" id="w-vokabular">—</span><span class="urteil neutral" id="u-vokabular">offen</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-bauteile">Verschiedene Bauteile im Einsatz</span><span class="pruefwert zahl" id="w-bauteile">—</span><span class="urteil neutral" id="u-bauteile">—</span></div>
+          <p class="pruefnotiz" data-i18n="n-struktur">Darstellungsachsen dürfen das DOM nicht verändern. Geprüft wird nach jedem Wechsel; grün wird eine Achse erst, wenn du sie benutzt hast.</p>
+          <div class="achsenmarken" id="achsenmarken"></div>
+        </section>
+
+        <section class="pruefgruppe" aria-labelledby="pg-projektion">
+          <h3 class="pruefkopf" id="pg-projektion"><span data-i18n="pg-projektion">Leseprojektion</span></h3>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-sitz">Gewählter Sitz</span><span class="pruefwert" id="w-sitz">—</span><span class="urteil neutral" id="u-sitz">—</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-absaetze">Absätze im Dokument</span><span class="pruefwert zahl" id="w-absaetze">—</span><span class="urteil neutral" id="u-absaetze">—</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-entfallen">Gegenüber der Spielleitung entfallen</span><span class="pruefwert zahl" id="w-entfallen">—</span><span class="urteil neutral" id="u-entfallen">—</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-scheiben">Autorenscheiben in der Leiste</span><span class="pruefwert zahl" id="w-scheiben">—</span><span class="urteil neutral" id="u-scheiben">—</span></div>
+          <p class="pruefnotiz" data-i18n="n-projektion">Ein Rollen- oder Sitzwechsel ändert die Struktur mit Absicht. Das ist der Unterschied zwischen einer Ansicht und einer Auslieferung.</p>
+        </section>
+
+        <section class="pruefgruppe" aria-labelledby="pg-leck">
+          <h3 class="pruefkopf" id="pg-leck"><span data-i18n="pg-leck">Leak-Bench</span></h3>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-verboten">Verbotene Zeichenfolgen</span><span class="pruefwert zahl" id="w-verboten">—</span><span class="urteil neutral">Eingabe</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-domtreffer">Treffer im Dokument</span><span class="pruefwert zahl" id="w-domtreffer">—</span><span class="urteil neutral" id="u-domtreffer">—</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-a11ytreffer">Treffer im Barrierefreiheitsbaum</span><span class="pruefwert zahl" id="w-a11ytreffer">—</span><span class="urteil neutral" id="u-a11ytreffer">—</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-bytes">Fremde Bytes im Dokument</span><span class="pruefwert zahl" id="w-bytes">—</span><span class="urteil neutral" id="u-bytes">—</span></div>
+          <p class="pruefnotiz" id="leck-fund"></p>
+          <p class="pruefnotiz" data-i18n="n-leck">Autorennamen werden nur auf Byline-Flächen geprüft: im Fließtext darf „Ossa“ vorkommen — sie ist als Nichtspielerfigur im Kanon geblieben, nachdem ihre Spielerin 2029 ausgetreten ist. Ein Name als Fließtext ist keine Byline.</p>
+        </section>
+
+        <section class="pruefgruppe" aria-labelledby="pg-kontrast">
+          <h3 class="pruefkopf" id="pg-kontrast"><span data-i18n="pg-kontrast">Kontrast (WCAG 2.1)</span><span id="kontrast-lage">—</span></h3>
+          <div id="kontrastzeilen"></div>
+          <p class="pruefnotiz" data-i18n="n-kontrast">Gemessen wird der schlechteste Fall gegen Fläche, Nebenfläche und Hintergrund — mit den Farben, die dieser Browser gerade auflöst.</p>
+        </section>
+
+        <section class="pruefgruppe" aria-labelledby="pg-darstellung">
+          <h3 class="pruefkopf" id="pg-darstellung"><span data-i18n="pg-darstellung">Darstellung</span></h3>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-tempi">Bewegungsbudget (Antwort · Zustand · Übergang)</span><span class="pruefwert zahl" id="w-tempi">—</span><span class="urteil neutral" id="u-tempi">—</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-ersatz">Aktive Ersatzsignete</span><span class="pruefwert zahl" id="w-ersatz">—</span><span class="urteil neutral" id="u-ersatz">—</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-beschnitt">Abgeschnittene Beschriftungen</span><span class="pruefwert zahl" id="w-beschnitt">—</span><span class="urteil neutral" id="u-beschnitt">—</span></div>
+          <div class="pruefzeile"><span class="pruefname" data-i18n="z-seitlich">Seitliches Rollen des Dokuments</span><span class="pruefwert zahl" id="w-seitlich">—</span><span class="urteil neutral" id="u-seitlich">—</span></div>
+        </section>
+
+        <section class="pruefgruppe" aria-labelledby="pg-protokoll">
+          <h3 class="pruefkopf" id="pg-protokoll"><span data-i18n="pg-protokoll">Abstammung</span><span class="zahl" id="seq-stand">—</span></h3>
+          <ul class="protokoll" id="protokoll" aria-live="off"></ul>
+        </section>
+
+        <section class="pruefgruppe" aria-labelledby="pg-werkbank">
+          <h3 class="pruefkopf" id="pg-werkbank"><span data-i18n="pg-werkbank">Werkbank — nicht Teil des Produkts</span></h3>
+          <div class="werkbank">
+            <label class="schalter"><input type="checkbox" id="s-naiv"><span data-i18n="s-naiv">Naive Umsetzung vorführen</span></label>
+            <label class="schalter"><input type="checkbox" id="s-labels"><span data-i18n="s-labels">Lange Beschriftungen</span></label>
+            <button class="knopf klein" type="button" id="zuruecksetzen" data-i18n="zuruecksetzen">Zurücksetzen</button>
+          </div>
+          <p class="pruefnotiz" data-i18n="n-werkbank"><b>Naive Umsetzung</b> versteckt fremde Absätze per CSS, statt sie wegzulassen — der übliche Kurzschluss. Die Leak-Bench sagt dann, was das kostet.</p>
+        </section>
+
+        <details class="pruefgruppe">
+          <summary class="pruefkopf" style="cursor:pointer">Bestimmbare Vorschauen</summary>
+          <div class="pruefnotiz">
+            Jede Achsenkombination ist als Adresse verlinkbar — anhängen an den Dateinamen:
+            <ul style="margin:var(--sp-2) 0 0;padding-left:1.1em;line-height:1.7">
+              <li><code>?sitz=brannt</code> — der Flex</li>
+              <li><code>?sitz=brannt&amp;naiv=1</code> — derselbe Sitz, naiv umgesetzt</li>
+              <li><code>?rolle=beobachter</code> — Stream ohne Autorenschaft</li>
+              <li><code>?paket=nebelakte&amp;skin=clean&amp;art=aus&amp;kontrast=hoch</code> — ohne Kunst, ohne Ornament</li>
+              <li><code>?paket=kepler&amp;skin=signal&amp;theme=light&amp;labels=lang</code> — Übersetzungstest</li>
+            </ul>
+          </div>
+        </details>
+
+        <p class="fussnote" data-i18n="grenze"><b>Grenze dieses Spikes:</b> hier projiziert der Browser. Produktiv entfernt der Server die Absätze vor der Auslieferung, und dieser Prüfstand ersetzt keinen Zugriffsbeweis — er beweist nur, dass die Oberfläche nichts hinzufügt, was der Server weggelassen hat.</p>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="brett" data-part="brett">
+    <span class="kapitaelchen" data-i18n="autorenzeile">Autorenzeile</span>
+    <div class="autorenzeile" id="autorenzeile"></div>
+    <p class="meldung" id="meldung" role="status" aria-live="polite"></p>
+  </footer>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   DATEN — drei Inhaltspakete, ein Tisch, dieselben Bauteile.
+   Personen (Autorinnen und Autoren) sind über die Pakete hinweg dieselben;
+   ihre Figuren sind es nicht. Das ist der Unterschied zwischen
+   autor_user_id und autor_actor_id, und er ist hier sichtbar gemacht.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const PERSONEN = {
+  kaya:   { name: 'Kaya',   kurz: 'K', farbe: 'var(--akzent)', rolle: 'Spielleitung' },
+  sera:   { name: 'Sera',   kurz: 'S', farbe: 'var(--zweit)',  rolle: 'Spielerin' },
+  brannt: { name: 'Brannt', kurz: 'B', farbe: 'var(--gefahr)', rolle: 'Spieler' },
+  vesper: { name: 'Vesper', kurz: 'V', farbe: 'var(--text)',   rolle: 'Spielerin' },
+  ossa:   { name: 'Ossa',   kurz: 'O', farbe: 'var(--schwach)', rolle: 'ausgetreten 2029', ausgetreten: true }
+};
+
+const ALLE = ['sl', 'sera', 'brannt', 'vesper', 'stream'];
+
+const PAKETE = {
+  aldenfall: {
+    welt: 'Aldenfall', genre: 'Fantasy', kampagne: 'Aldenfall · Die Alte Münze',
+    skinVorschlag: 'relic', sitzung: 15,
+    figuren: { sera: 'Hallis Vane', brannt: 'Sturmwart Kell', vesper: 'Nima Lohd', ossa: 'Ossa Brunn' },
+    eintrag: {
+      kicker: 'Aldenfall · Personen · Der Stille Gang',
+      titel: 'Bruder Alder',
+      unter: 'Leichenwäscher am Sterbehaus der Alten Münze · zuletzt geändert in Sitzung 15'
+    },
+    tafel: {
+      quelle: '../../spikes/chronicle-harbor-world.png',
+      alt: 'Nachtansicht des Hafenviertels um die Alte Münze',
+      unter: 'Die Alte Münze bei Nacht · Tafel aus dem Kampagnenpaket „Aldenfall — Hafenviertel“'
+    },
+    infobox: [
+      { feld: 'Rolle', wert: 'Leichenwäscher, Sterbehaus an der Alten Münze', autor: 'kaya', haelt: ALLE },
+      { feld: 'Trägt', wert: 'Ring an einer Schnur', autor: 'sera', haelt: ALLE, stempel: 'eingetragen von Sera · Kanon seit Sitzung 15' },
+      { feld: 'Gründungsjahr des Ordens', wert: '1187 n. F.', autor: 'sera', haelt: ['sl', 'sera', 'vesper'], stempel: 'eingetragen von Sera · Kanon seit Sitzung 3' },
+      { feld: 'Verbleib der Aufzeichnungen', wert: 'Gruft unter der Alten Münze', autor: 'kaya', haelt: ['sl', 'sera'] }
+    ],
+    bloecke: [
+      { pid: 'p-01', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Bruder Alder führt seit elf Jahren das Sterbehaus an der Alten Münze. Er ist der Einzige im Viertel, der die Toten noch beim Namen ruft, bevor er sie wäscht.' },
+      { pid: 'p-02', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Wer ihn sucht, findet ihn selten im Haus. Zwischen Vesperläuten und Mitternacht steht er meist auf der unteren Treppe und zählt die Lampen am Kai.' },
+      { pid: 'p-03', typ: 'absatz', autor: 'sera', haelt: ALLE,
+        text: 'Er trägt den Ring seiner Schwester an einer Schnur um den Hals. Er nimmt ihn nie ab — auch nicht beim Waschen.',
+        stempel: 'Kanon seit Sitzung 15 · aus einer Feldnotiz' },
+      { pid: 'p-04', typ: 'streitfall', haelt: ALLE,
+        kopf: 'Streitfall · der Ring', fuss: 'Offen seit Sitzung 15 · nicht entschieden · beide Fassungen sind Kanon',
+        konten: [
+          { autor: 'sera', text: 'Der Ring gehörte seiner Schwester. Sie ist im Brand geblieben, und er hat ihn aus der Asche geholt.', halter: 4 },
+          { autor: 'brannt', text: 'Der Ring war ein Pfand. Er lag beim Pfandleiher am Zollhaus, zwei Winter vor dem Brand, in der Auslage.', halter: 3 }
+        ] },
+      { pid: 'p-05', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Der [[Stille Gang]] bestreitet, ihn je aufgenommen zu haben. Seine Handschrift steht trotzdem in drei ihrer Bücher, und eine vierte Hand hat sie durchgestrichen — vermutlich ((Ossa)).' },
+      { pid: 'p-06', typ: 'absatz', autor: 'kaya', haelt: ['sl', 'sera', 'vesper'],
+        text: 'Was er über die Nacht des Brandes weiß, hat er keinem Lebenden gesagt. Er hat es aufgeschrieben, gefaltet und in die Gruft getragen.' },
+      { pid: 'p-07', typ: 'absatz', autor: 'sera', haelt: ['sl', 'sera'],
+        text: 'Unter dem dritten Sarkophag liegt ein Bündel Briefe, mit Bindfaden zusammengehalten. Sie sind an eine Ossa adressiert und nie abgeschickt worden.',
+        stempel: 'Kanon seit Sitzung 14 · aus einer Feldnotiz' },
+      { pid: 'p-08', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Geld nimmt er nicht. Er nimmt Wachs, Öl und Fragen — in dieser Reihenfolge, und die dritte Sorte nur einmal je Besuch.' },
+      { pid: 'p-09', typ: 'absatz', autor: 'brannt', haelt: ALLE,
+        text: 'Am Zollhaus erinnert man sich an ihn. Der Schreiber dort nennt ihn nicht Bruder, sondern beim Vornamen — und will nicht sagen, welcher das ist.',
+        stempel: 'Kanon seit Sitzung 15 · aus einer Feldnotiz' },
+      { pid: 'p-10', typ: 'absatz', autor: 'kaya', haelt: ['sl', 'sera', 'vesper'],
+        text: 'Zweimal hat er den Rat um Fürsprache gebeten, beide Male für dieselbe Familie, beide Male vergeblich. Die Eingaben liegen im Archiv; seine Unterschrift ist durchgestrichen.' },
+      { pid: 'p-11', typ: 'absatz', autor: 'sera', haelt: ['sl', 'sera', 'vesper'],
+        text: 'Ich habe ihn in der Gruft gehört, als er sich allein glaubte. Er hat mit jemandem gesprochen, der nicht geantwortet hat, und er hat dabei den Namen einer Toten benutzt.',
+        stempel: 'Kanon seit Sitzung 14 · aus einer Feldnotiz' },
+      { pid: 'p-12', typ: 'absatz', autor: 'ossa', haelt: ['sl', 'vesper'],
+        text: 'Er weiß, dass ich noch lebe. Er hat es nie jemandem gesagt, und er hat aufgehört zu fragen, warum ich nicht heimkomme.',
+        stempel: 'Kanon seit Sitzung 9 · Autorin 2029 ausgetreten, Figur blieb im Kanon' }
+    ],
+    antrag: {
+      id: 'a-1', autor: 'sera', ankerPid: 'p-02', ankerNr: 2,
+      text: 'Die Lampen am Kai sind seit dem Brand drei weniger. Er ruft trotzdem die alte Zahl aus.',
+      empfaenger: ['sl', 'sera', 'brannt'],
+      empfaengerText: 'Sera und Brannt sind anwesend · Vesper seit Sitzung 12 nicht'
+    },
+    verwandte: [
+      { titel: 'Der Stille Gang', unter: 'Orden · 6 Absätze', rot: false },
+      { titel: 'Die Alte Münze', unter: 'Ort · 9 Absätze', rot: false },
+      { titel: 'Ossa', unter: 'Verweis ohne Artikel', rot: true },
+      { titel: 'Der Pfandleiher am Zollhaus', unter: 'Person · neu aus einer Feldnotiz', rot: false },
+      { titel: 'Die Nacht des Brandes', unter: 'Ereignis · 4 Absätze', rot: false }
+    ]
+  },
+
+  kepler: {
+    welt: 'Kepler-9', genre: 'Science-Fiction', kampagne: 'Kepler-9 · Sektion 4',
+    skinVorschlag: 'signal', sitzung: 13,
+    figuren: { sera: 'Dr. Ilva Renk', brannt: 'Techniker Osei', vesper: 'Kadettin Mox', ossa: 'Systemarchivar Tann' },
+    eintrag: {
+      kicker: 'Kepler-9 · Personen · Sektion Archiv',
+      titel: 'Kurator Ohm',
+      unter: 'Archivdienst der Sektion 4 · zuletzt geändert in Sitzung 13'
+    },
+    tafel: {
+      quelle: '../../spikes/assets/universal-ui/kepler-scene-v1.png',
+      alt: 'Ringstation Kepler-9, Blick in die Archivsektion beim Schichtwechsel',
+      unter: 'Sektion 4 beim Schichtwechsel · Tafel aus dem Kampagnenpaket „Kepler-9 — Ringstation“'
+    },
+    infobox: [
+      { feld: 'Dienst', wert: 'Archiv, Sektion 4', autor: 'kaya', haelt: ALLE },
+      { feld: 'Führt', wert: 'Zweitverzeichnis auf Papier', autor: 'sera', haelt: ALLE, stempel: 'eingetragen von Sera · Kanon seit Sitzung 12' },
+      { feld: 'Dienstantritt', wert: 'Umlauf 2 · Tag 118', autor: 'sera', haelt: ['sl', 'sera', 'vesper'], stempel: 'eingetragen von Sera · Kanon seit Sitzung 6' },
+      { feld: 'Kabine', wert: 'C-9-12', autor: 'kaya', haelt: ['sl', 'sera'] }
+    ],
+    bloecke: [
+      { pid: 'k-01', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Kurator Ohm verwaltet das Archiv der Sektion 4 seit dem zweiten Umlauf. Er ist kein Systemdienst: er hat einen Vertrag, eine Kabine und eine Kaffeeration.' },
+      { pid: 'k-02', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Anfragen beantwortet er in der Reihenfolge des Eingangs. Ausnahmen macht er nur für Dinge, die schon einmal verloren gegangen sind.' },
+      { pid: 'k-03', typ: 'absatz', autor: 'sera', haelt: ALLE,
+        text: 'Er führt ein zweites Verzeichnis von Hand, auf Papier. Er sagt, das Netz vergesse zu ordentlich.',
+        stempel: 'Kanon seit Sitzung 12 · aus einer Feldnotiz' },
+      { pid: 'k-04', typ: 'streitfall', haelt: ALLE,
+        kopf: 'Streitfall · das Papierverzeichnis', fuss: 'Offen seit Sitzung 13 · nicht entschieden · beide Fassungen sind Kanon',
+        konten: [
+          { autor: 'sera', text: 'Das Papierverzeichnis ist seine eigene Idee. Er hat damit angefangen, als die Sektion drei Tage ohne Netz lag.', halter: 3 },
+          { autor: 'brannt', text: 'Das Papierverzeichnis war eine Auflage der Sektion. Sie wurde nie zurückgenommen und nie bezahlt.', halter: 2 }
+        ] },
+      { pid: 'k-05', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Die [[Sektion 4]] bestreitet, dass es ein Zweitverzeichnis gibt. In drei Übergabeprotokollen steht es trotzdem, gegengezeichnet von einer Kennung, die niemand mehr zuordnet — vermutlich ((Tann)).' },
+      { pid: 'k-06', typ: 'absatz', autor: 'kaya', haelt: ['sl', 'sera', 'vesper'],
+        text: 'Was bei der Dekompression auf Deck C geschah, hat er in kein Protokoll geschrieben. Er hat es in das Papierverzeichnis geschrieben, auf die letzte Seite.' },
+      { pid: 'k-07', typ: 'absatz', autor: 'sera', haelt: ['sl', 'sera'],
+        text: 'Unter dem Regalboden R-14 klebt ein Datenträger ohne Kennung. Adressiert ist er an eine Personalnummer, die im Register nicht existiert.',
+        stempel: 'Kanon seit Sitzung 11 · aus einer Feldnotiz' },
+      { pid: 'k-08', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Bezahlen lässt er sich nicht. Er tauscht: Filterpatronen gegen Auskunft, Auskunft gegen Ruhe.' },
+      { pid: 'k-09', typ: 'absatz', autor: 'brannt', haelt: ALLE,
+        text: 'In der Werkstatt kennt man ihn. Dort nennt ihn niemand Kurator, sondern bei einer Dienstnummer, die seit dem ersten Umlauf gelöscht ist.',
+        stempel: 'Kanon seit Sitzung 13 · aus einer Feldnotiz' },
+      { pid: 'k-10', typ: 'absatz', autor: 'ossa', haelt: ['sl', 'vesper'],
+        text: 'Er weiß, dass meine Kennung noch läuft. Er hat es nie gemeldet, und er hat aufgehört zu fragen, warum ich nicht an Bord bin.',
+        stempel: 'Kanon seit Sitzung 7 · Autor 2029 ausgetreten, Figur blieb im Kanon' }
+    ],
+    antrag: {
+      id: 'a-2', autor: 'sera', ankerPid: 'k-02', ankerNr: 2,
+      text: 'Die Warteliste am Schalter ist seit dem Zwischenfall drei Namen kürzer. Er ruft trotzdem die alte Zahl auf.',
+      empfaenger: ['sl', 'sera', 'brannt'],
+      empfaengerText: 'Sera und Brannt sind anwesend · Vesper seit Sitzung 12 nicht'
+    },
+    verwandte: [
+      { titel: 'Sektion 4', unter: 'Ort · 7 Absätze', rot: false },
+      { titel: 'Das Papierverzeichnis', unter: 'Gegenstand · 5 Absätze', rot: false },
+      { titel: 'Tann', unter: 'Verweis ohne Artikel', rot: true },
+      { titel: 'Deck C', unter: 'Ort · neu aus einer Feldnotiz', rot: false },
+      { titel: 'Die Dekompression', unter: 'Ereignis · 3 Absätze', rot: false }
+    ]
+  },
+
+  nebelakte: {
+    welt: 'Nebelakte', genre: 'Gegenwartskrimi', kampagne: 'Nebelakte · Betriebshof Nord',
+    skinVorschlag: 'archive', sitzung: 11,
+    figuren: { sera: 'Kommissarin Halbe', brannt: 'Reporter Reike', vesper: 'Dr. Sanda Otto', ossa: 'Archivarin Perl' },
+    eintrag: {
+      kicker: 'Nebelakte · Personen · Zeugen',
+      titel: 'Zeuge Ahrend',
+      unter: 'Schrankenwärter am Betriebshof Nord · zuletzt geändert in Sitzung 11'
+    },
+    tafel: {
+      quelle: '../../spikes/assets/universal-ui/nebelakte-portrait-v1.png',
+      alt: 'Betriebshof Nord, Tor 2, nachts',
+      unter: 'Betriebshof Nord, Tor 2 · Tafel im Paket deklariert, Datei fehlt — absichtlich, als Härtetest'
+    },
+    infobox: [
+      { feld: 'Funktion', wert: 'Schrankenwärter, Betriebshof Nord, Nachtschicht', autor: 'kaya', haelt: ALLE },
+      { feld: 'Trägt', wert: 'Dienstausweis seiner Schwester', autor: 'sera', haelt: ALLE, stempel: 'eingetragen von Sera · Kanon seit Sitzung 9' },
+      { feld: 'Erste Aussage', wert: '14. März 2024, 03:20 Uhr', autor: 'sera', haelt: ['sl', 'sera', 'vesper'], stempel: 'eingetragen von Sera · Kanon seit Sitzung 4' },
+      { feld: 'Aktenzeichen', wert: 'NB-2024/114', autor: 'kaya', haelt: ['sl', 'sera'] }
+    ],
+    bloecke: [
+      { pid: 'n-01', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Martin Ahrend hat den Wagen gesehen. Er sagt es seit vierzehn Monaten in denselben Worten, und die Worte sind jedes Mal dieselben.' },
+      { pid: 'n-02', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Er arbeitet nachts an der Schranke des Betriebshofs. Zwischen zwei und drei geht er die Reihe der Laternen ab und zählt sie.' },
+      { pid: 'n-03', typ: 'absatz', autor: 'sera', haelt: ALLE,
+        text: 'Er trägt den Dienstausweis seiner Schwester in der Brusttasche. Zurückgegeben hat er ihn nie.',
+        stempel: 'Kanon seit Sitzung 9 · aus einer Feldnotiz' },
+      { pid: 'n-04', typ: 'streitfall', haelt: ALLE,
+        kopf: 'Streitfall · der Dienstausweis', fuss: 'Offen seit Sitzung 10 · nicht entschieden · beide Fassungen sind Kanon',
+        konten: [
+          { autor: 'sera', text: 'Der Ausweis ist ein Andenken. Sie ist 2011 im Betriebshof gestorben, und er hat ihn behalten.', halter: 3 },
+          { autor: 'brannt', text: 'Der Ausweis ist ein Werkzeug. Damit kommt er nachts in Hallen, für die er keine Berechtigung hat.', halter: 3 }
+        ] },
+      { pid: 'n-05', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Das Ordnungsamt führt ihn in keiner Personalliste. Auf vier Schichtbüchern des [[Betriebshof Nord]] steht trotzdem seine Unterschrift, dreimal mit demselben Datum, einmal gegengezeichnet von ((Perl)).' },
+      { pid: 'n-06', typ: 'absatz', autor: 'kaya', haelt: ['sl', 'sera', 'vesper'],
+        text: 'Was er in der Brandnacht auf dem Hof gesehen hat, steht in keiner Vernehmung. Er hat es aufgeschrieben und in ein Schließfach gelegt.' },
+      { pid: 'n-07', typ: 'absatz', autor: 'sera', haelt: ['sl', 'sera'],
+        text: 'In Schließfach 214 liegt ein Bündel Briefe mit einem Gummiband. Sie sind an eine Perl adressiert und nie abgeschickt worden.',
+        stempel: 'Kanon seit Sitzung 8 · aus einer Feldnotiz' },
+      { pid: 'n-08', typ: 'absatz', autor: 'kaya', haelt: ALLE,
+        text: 'Schenken lässt er sich nichts. Wer etwas wissen will, bringt Kaffee mit und stellt genau eine Frage.' },
+      { pid: 'n-09', typ: 'absatz', autor: 'brannt', haelt: ALLE,
+        text: 'In der Redaktion liegt seine Aussage doppelt: einmal von 2024, einmal von 2011. Die zweite ist auf denselben Wagen ausgestellt.',
+        stempel: 'Kanon seit Sitzung 10 · aus einer Feldnotiz' },
+      { pid: 'n-10', typ: 'absatz', autor: 'ossa', haelt: ['sl', 'vesper'],
+        text: 'Er weiß, dass ich nicht in der Akte stehe. Er hat es nie richtiggestellt, und er hat aufgehört zu fragen, warum.',
+        stempel: 'Kanon seit Sitzung 5 · Autorin 2029 ausgetreten, Figur blieb im Kanon' }
+    ],
+    antrag: {
+      id: 'a-3', autor: 'sera', ankerPid: 'n-02', ankerNr: 2,
+      text: 'Seit dem Brand fehlen drei Laternen in der Reihe. Er zählt trotzdem die alte Zahl.',
+      empfaenger: ['sl', 'sera', 'brannt'],
+      empfaengerText: 'Sera und Brannt sind anwesend · Vesper seit Sitzung 12 nicht'
+    },
+    verwandte: [
+      { titel: 'Betriebshof Nord', unter: 'Ort · 8 Absätze', rot: false },
+      { titel: 'Schließfach 214', unter: 'Gegenstand · 3 Absätze', rot: false },
+      { titel: 'Perl', unter: 'Verweis ohne Artikel', rot: true },
+      { titel: 'Der Wagen', unter: 'Gegenstand · neu aus einer Feldnotiz', rot: false },
+      { titel: 'Die Brandnacht 2011', unter: 'Ereignis · 6 Absätze', rot: false }
+    ]
+  }
+};
+
+const SITZE = [
+  { id: 'sl',      person: 'kaya',   art: 'sl',      stand: 'Spielleitung · sieht alles' },
+  { id: 'sera',    person: 'sera',   art: 'spieler', stand: 'anwesend seit Sitzung 1' },
+  { id: 'brannt',  person: 'brannt', art: 'spieler', stand: 'anwesend seit Sitzung 4' },
+  { id: 'vesper',  person: 'vesper', art: 'spieler', stand: 'abwesend seit Sitzung 12' },
+  { id: 'stream',  person: null,     art: 'beobachter', stand: 'nur öffentliche Absätze · keine Bylines' }
+];
+
+/* Lange Beschriftungen: echte, längere deutsche Fassungen desselben Befehls.
+   Der Test ist nicht Kauderwelsch, sondern Übersetzungslänge. */
+const KURZ = {
+  'produkt': 'Der Konvent', 'achse-inhalt': 'Inhalt', 'achse-skin': 'Skin', 'achse-rolle': 'Rolle',
+  'achse-modus': 'Modus', 'achse-darstellung': 'Darstellung',
+  'rolle-sl': 'Spielleitung', 'rolle-spieler': 'Spieler', 'rolle-beobachter': 'Beobachter',
+  'modus-system': 'System', 'modus-hell': 'Hell', 'modus-dunkel': 'Dunkel',
+  'orn-gestaltet': 'Ornament', 'art-an': 'Bildwerk', 'dichte-kompakt': 'Kompakt',
+  'kontrast-hoch': 'Hoher Kontrast', 'motion-reduziert': 'Weniger Bewegung',
+  'sammlung-oeffnen': 'Sammlung',
+  'modul-session': 'Session', 'modul-story': 'Story', 'modul-cast': 'Cast',
+  'modul-library': 'Library', 'modul-table': 'Table', 'modul-forge': 'Forge',
+  'sammlung-titel': 'Einträge in diesem Paket',
+  'sammlung-fuss': 'Die Liste zeigt nur, was der gewählte Sitz halten darf. Ein roter Titel ist ein Verweis ohne Artikel.',
+  'pruefstand': 'Der Prüfstand', 'pruefen': 'Prüfen',
+  'pruefstand-intro': 'Jede Zeile wird beim Öffnen und nach jeder Änderung neu gerechnet — aus dem echten DOM dieser Seite, nicht aus einer Behauptung.',
+  'pg-struktur': 'Struktur', 'z-domsig': 'DOM-Signatur der Bühne', 'z-vokabular': 'Bauteil-Vokabular',
+  'z-bauteile': 'Verschiedene Bauteile im Einsatz',
+  'n-struktur': 'Darstellungsachsen dürfen das DOM nicht verändern. Geprüft wird nach jedem Wechsel; grün wird eine Achse erst, wenn du sie benutzt hast.',
+  'pg-projektion': 'Leseprojektion', 'z-sitz': 'Gewählter Sitz', 'z-absaetze': 'Absätze im Dokument',
+  'z-entfallen': 'Gegenüber der Spielleitung entfallen', 'z-scheiben': 'Autorenscheiben in der Leiste',
+  'n-projektion': 'Ein Rollen- oder Sitzwechsel ändert die Struktur mit Absicht. Das ist der Unterschied zwischen einer Ansicht und einer Auslieferung.',
+  'pg-leck': 'Leak-Bench', 'z-verboten': 'Verbotene Zeichenfolgen', 'z-domtreffer': 'Treffer im Dokument',
+  'z-a11ytreffer': 'Treffer im Barrierefreiheitsbaum', 'z-bytes': 'Fremde Bytes im Dokument',
+  'pg-kontrast': 'Kontrast (WCAG 2.1)',
+  'n-kontrast': 'Gemessen wird der schlechteste Fall gegen Fläche, Nebenfläche und Hintergrund — mit den Farben, die dieser Browser gerade auflöst.',
+  'pg-darstellung': 'Darstellung', 'z-tempi': 'Bewegungsbudget (Antwort · Zustand · Übergang)',
+  'z-ersatz': 'Aktive Ersatzsignete', 'z-beschnitt': 'Abgeschnittene Beschriftungen',
+  'z-seitlich': 'Seitliches Rollen des Dokuments',
+  'pg-protokoll': 'Abstammung', 'pg-werkbank': 'Werkbank — nicht Teil des Produkts',
+  's-naiv': 'Naive Umsetzung vorführen', 's-labels': 'Lange Beschriftungen', 'zuruecksetzen': 'Zurücksetzen',
+  'autorenzeile': 'Autorenzeile',
+  'aus-sicht': 'Aus Sicht', 'angemeldet-als': 'Angemeldet als',
+  'kanon': 'Kanon', 'ablehnen': 'Ablehnen', 'weiterleiten': 'Weiterleiten',
+  'feldnotiz-anlegen': 'Feldnotiz anlegen', 'antrag-stellen': 'Antrag stellen', 'senden': 'Senden'
+};
+
+const LANG = {
+  'produkt': 'Der Konvent — die mitgeschriebene Kampagne',
+  'achse-inhalt': 'Inhaltspaket der Kampagne', 'achse-skin': 'Kunstskin der Oberfläche',
+  'achse-rolle': 'Rolle in dieser Kampagne', 'achse-modus': 'Helligkeitsmodus',
+  'achse-darstellung': 'Darstellung und Barrierefreiheit',
+  'rolle-sl': 'Spielleitung mit Sichtbrille', 'rolle-spieler': 'Spielerin oder Spieler am eigenen Platz',
+  'rolle-beobachter': 'Beobachtung für Aufzeichnung und Stream',
+  'modus-system': 'Systemvorgabe übernehmen', 'modus-hell': 'Helle Darstellung erzwingen',
+  'modus-dunkel': 'Dunkle Darstellung erzwingen',
+  'orn-gestaltet': 'Ornamente und Materialwirkung zeigen', 'art-an': 'Bildwerk aus dem Themenpaket laden',
+  'dichte-kompakt': 'Kompakte Informationsdichte', 'kontrast-hoch': 'Erhöhter Kontrast für schwierige Sicht',
+  'motion-reduziert': 'Bewegung auf das Nötigste reduzieren',
+  'sammlung-oeffnen': 'Sammlungsschiene einblenden',
+  'modul-session': 'Sitzungsvorbereitung', 'modul-story': 'Geschichte und Nachschlagewerk',
+  'modul-cast': 'Figuren und Fraktionen', 'modul-library': 'Bibliothek und Sammlungen',
+  'modul-table': 'Tisch und Wissenskarte', 'modul-forge': 'Werkstatt für Regeln und Themen',
+  'sammlung-titel': 'Einträge in diesem Inhaltspaket, gefiltert nach Lesbarkeit',
+  'pruefstand': 'Der Prüfstand für Universalität', 'pruefen': 'Alle Prüfungen erneut ausführen',
+  'z-domsig': 'Signatur des ausgelieferten Bühnen-DOM',
+  'z-vokabular': 'Signatur des verwendeten Bauteil-Vokabulars',
+  'z-bauteile': 'Anzahl verschiedener Bauteiltypen im Einsatz',
+  'z-sitz': 'Gegenwärtig gewählter Lesesitz',
+  'z-absaetze': 'Absätze, die in diesem Dokument tatsächlich stehen',
+  'z-entfallen': 'Gegenüber der Sicht der Spielleitung entfallene Absätze',
+  'z-scheiben': 'Autorenscheiben, die in der Autorenleiste erscheinen',
+  'z-verboten': 'Zeichenfolgen, die dieser Sitz nicht erhalten darf',
+  'z-domtreffer': 'Treffer dieser Zeichenfolgen im ausgelieferten Dokument',
+  'z-a11ytreffer': 'Treffer im serialisierten Barrierefreiheitsbaum',
+  'z-bytes': 'Bytes im Dokument, die dieser Sitz nicht halten darf',
+  'z-tempi': 'Bewegungsbudget für Antwort, Zustand und Übergang',
+  'z-ersatz': 'Ersatzsignete, die fehlendes Bildwerk vertreten',
+  'z-beschnitt': 'Beschriftungen, die von ihrem Behälter beschnitten werden',
+  'z-seitlich': 'Waagerechtes Rollen des gesamten Dokuments',
+  'pg-werkbank': 'Werkbank — gehört zum Prüfrig, nicht zum Produkt',
+  's-naiv': 'Naive Umsetzung mit CSS-Verstecken vorführen',
+  's-labels': 'Lange Beschriftungen für den Übersetzungstest',
+  'zuruecksetzen': 'Prüfstand und Anträge zurücksetzen',
+  'autorenzeile': 'Autorenzeile dieser Sitzung',
+  'aus-sicht': 'Aus der Sicht dieser Spielfigur lesen',
+  'angemeldet-als': 'Angemeldet als diese Spielfigur',
+  'kanon': 'In den Kanon aufnehmen und zuteilen',
+  'ablehnen': 'Mit Begründung ablehnen',
+  'weiterleiten': 'Als Randfrage in die Vorbereitung',
+  'feldnotiz-anlegen': 'Feldnotiz im eigenen Kodex anlegen',
+  'antrag-stellen': 'Als Antrag an die Spielleitung',
+  'senden': 'Begründung zustellen'
+};
+</script>
+
+<style>
+  .naiv-verborgen { display: none !important; }
+  .signetflaeche { background: var(--flaeche2); }
+</style>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZUSTAND UND WERKZEUG
+   ═══════════════════════════════════════════════════════════════════════════ */
+const R = document.documentElement;
+const zustand = {
+  paket: 'aldenfall',
+  sitz: 'sl',
+  rolle: 'sl',
+  naiv: false,
+  hervorAutor: null,
+  begruendung: false,
+  animiert: false,
+  extra: { aldenfall: [], kepler: [], nebelakte: [] },
+  antragErledigt: { aldenfall: null, kepler: null, nebelakte: null },
+  notizen: { aldenfall: [], kepler: [], nebelakte: [] },
+  seq: 40,
+  protokoll: [],
+  achsenurteil: {},
+  letzteSig: null,
+  ersatzsignete: 0
+};
+
+const $ = (s, w) => (w || document).querySelector(s);
+const $$ = (s, w) => Array.from((w || document).querySelectorAll(s));
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function hashHex(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}
+function hashNum(s) { return parseInt(hashHex(s), 16); }
+function txt(key) { return (R.getAttribute('data-labels') === 'lang' && LANG[key]) ? LANG[key] : (KURZ[key] || key); }
+function paket() { return PAKETE[zustand.paket]; }
+function figurVon(personId) {
+  if (personId === 'kaya') return 'Spielleitung';
+  return paket().figuren[personId] || '—';
+}
+function bloeckeAlle() {
+  const p = paket();
+  const basis = p.bloecke.slice();
+  zustand.extra[zustand.paket].forEach(e => {
+    const i = basis.findIndex(b => b.pid === e.nachPid);
+    basis.splice(i < 0 ? basis.length : i + 1, 0, e.block);
+  });
+  return basis;
+}
+function sichtbar(b, sitz) { return sitz === 'sl' ? true : b.haelt.indexOf(sitz) >= 0; }
+function erlaubteSitze() {
+  if (zustand.rolle === 'sl') return SITZE;
+  if (zustand.rolle === 'spieler') return SITZE.filter(s => s.art === 'spieler');
+  return SITZE.filter(s => s.art === 'beobachter');
+}
+function motionAn() {
+  const m = R.getAttribute('data-motion');
+  if (m === 'reduziert') return false;
+  if (m === 'voll') return true;
+  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/* Ersatzsignet: deterministische Geometrie aus dem Titel. Kein Zufall,
+   damit derselbe Eintrag immer dasselbe Zeichen bekommt. */
+function signet(text, klasse) {
+  const h = hashNum(text);
+  const inset = 5 + (h % 4);
+  const drehung = (h >> 4) % 45;
+  const balken = 1 + ((h >> 8) % 3);
+  const init = (text.match(/[A-Za-zÄÖÜäöüß]/g) || ['?']).slice(0, 1).join('').toUpperCase();
+  let striche = '';
+  for (let i = 0; i < balken; i++) {
+    const y = 30 + i * 3.4;
+    const w = 8 + ((h >> (i * 3)) % 14);
+    striche += '<rect x="' + (20 - w / 2) + '" y="' + y + '" width="' + w + '" height="1" fill="currentColor" opacity=".45"/>';
+  }
+  return '<svg class="signet ' + (klasse || '') + ' signetflaeche" viewBox="0 0 40 40" role="img" aria-label="Ersatzsignet für ' + esc(text) + '" focusable="false">'
+    + '<rect x=".5" y=".5" width="39" height="39" fill="none" stroke="currentColor" opacity=".35"/>'
+    + '<rect x="' + inset + '" y="' + inset + '" width="' + (40 - inset * 2) + '" height="' + (40 - inset * 2) + '" fill="none" stroke="var(--akzent)" opacity=".55" transform="rotate(' + drehung + ' 20 20)"/>'
+    + '<text x="20" y="24" text-anchor="middle" font-family="var(--font-display)" font-size="15" font-weight="700" fill="var(--akzent)">' + esc(init) + '</text>'
+    + striche + '</svg>';
+}
+
+function scheibe(personId, extra) {
+  const p = PERSONEN[personId];
+  return '<span class="scheibe' + (p.ausgetreten ? ' hohl' : '') + '" data-part="autorenscheibe" style="--autorfarbe:' + p.farbe + '" aria-hidden="true">' + p.kurz + '</span>' + (extra || '');
+}
+
+function marktext(s) {
+  let out = esc(s);
+  out = out.replace(/\[\[([^\]]+)\]\]/g, (m, z) =>
+    '<a class="wikilink" data-part="wikilink" href="#" onclick="return false">' + z + '</a>');
+  out = out.replace(/\(\(([^)]+)\)\)/g, (m, z) =>
+    '<a class="rotlink" data-part="rotlink" href="#" onclick="return false">' + z + '<span class="nur-sr"> — Verweis ohne Artikel</span></a>');
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROJEKTION — was dieser Sitz überhaupt bekommt
+   ═══════════════════════════════════════════════════════════════════════════ */
+function projektion(sitz) {
+  const p = paket();
+  const bloecke = bloeckeAlle();
+  const sichtbareBloecke = bloecke.filter(b => sichtbar(b, sitz));
+  const sichtbareInfo = p.infobox.filter(f => sichtbar(f, sitz));
+  const autoren = [];
+  const nimm = a => { if (a && autoren.indexOf(a) < 0) autoren.push(a); };
+  sichtbareBloecke.forEach(b => {
+    if (b.typ === 'streitfall') { b.konten.forEach(k => nimm(k.autor)); } else { nimm(b.autor); }
+  });
+  sichtbareInfo.forEach(f => nimm(f.autor));
+  return {
+    bloecke: sichtbareBloecke,
+    infobox: sichtbareInfo,
+    autoren: sitz === 'stream' ? [] : autoren,
+    verborgen: bloecke.filter(b => !sichtbar(b, sitz)),
+    verborgenInfo: p.infobox.filter(f => !sichtbar(f, sitz))
+  };
+}
+
+function absatzZahl(pr) { return pr.bloecke.filter(b => b.typ === 'absatz').length; }
+
+/* Verbotene Zeichenfolgen für die Leak-Bench: der Volltext jedes nicht
+   gehaltenen Absatzes, jeder nicht gehaltene Feldwert — und Autorennamen
+   nur dann, wenn diese Person für diesen Sitz gar keine sichtbare Passage hat. */
+function verbotenesGut(sitz) {
+  const pr = projektion(sitz);
+  const texte = [];
+  pr.verborgen.forEach(b => {
+    if (b.typ === 'streitfall') { b.konten.forEach(k => texte.push({ t: k.text, q: 'Streitfall ' + b.pid })); }
+    else { texte.push({ t: b.text.replace(/\[\[|\]\]|\(\(|\)\)/g, ''), q: 'Absatz ' + b.pid }); }
+  });
+  pr.verborgenInfo.forEach(f => texte.push({ t: f.wert, q: 'Infoboxfeld „' + f.feld + '“' }));
+  const namen = [];
+  const alleAutoren = [];
+  bloeckeAlle().forEach(b => {
+    if (b.typ === 'streitfall') b.konten.forEach(k => { if (alleAutoren.indexOf(k.autor) < 0) alleAutoren.push(k.autor); });
+    else if (alleAutoren.indexOf(b.autor) < 0) alleAutoren.push(b.autor);
+  });
+  paket().infobox.forEach(f => { if (alleAutoren.indexOf(f.autor) < 0) alleAutoren.push(f.autor); });
+  alleAutoren.forEach(a => { if (pr.autoren.indexOf(a) < 0) namen.push(PERSONEN[a].name); });
+  return { texte: texte, namen: namen };
+}
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   BÜHNE ZEICHNEN
+   ═══════════════════════════════════════════════════════════════════════════ */
+function bylineText(autor, stempel) {
+  const p = PERSONEN[autor];
+  const teile = ['geschrieben von <b>' + esc(p.name) + '</b>'];
+  if (autor !== 'kaya') teile.push('als ' + esc(figurVon(autor)));
+  if (stempel) teile.push(esc(stempel));
+  return teile.join(' · ');
+}
+
+function absatzHtml(b, nr, sitz, verborgen) {
+  const zeigeByline = sitz !== 'stream';
+  const klassen = ['absatz'];
+  if (verborgen) klassen.push('naiv-verborgen');
+  if (zustand.hervorAutor && b.autor === zustand.hervorAutor) klassen.push('hervor');
+  if (b.frisch) klassen.push('frisch');
+  const label = 'Absatz ' + nr + (zeigeByline ? ', geschrieben von ' + PERSONEN[b.autor].name : '');
+  return '<div class="' + klassen.join(' ') + '" data-part="absatz" data-pid="' + b.pid + '"'
+    + (verborgen ? ' aria-hidden="true"' : '') + '>'
+    + (zeigeByline
+      ? '<button class="absatzknopf" type="button" data-autor="' + b.autor + '" data-part="autorknopf" aria-label="' + esc(label) + '" aria-pressed="' + (zustand.hervorAutor === b.autor) + '">' + scheibe(b.autor) + '</button>'
+      : '')
+    + '<p class="absatztext">' + marktext(b.text) + '</p>'
+    + (zeigeByline && b.stempel ? '<p class="stempel" data-part="byline">' + bylineText(b.autor, b.stempel) + '</p>' : '')
+    + '</div>';
+}
+
+function streitfallHtml(b, sitz, verborgen) {
+  const zeigeByline = sitz !== 'stream';
+  return '<section class="streitfall' + (verborgen ? ' naiv-verborgen' : '') + '" data-part="streitfall" data-pid="' + b.pid + '"'
+    + (verborgen ? ' aria-hidden="true"' : '') + ' aria-label="' + esc(b.kopf) + '">'
+    + '<h2 class="streitkopf" data-part="streitkopf">' + esc(b.kopf) + '</h2>'
+    + '<div class="konten">'
+    + b.konten.map((k, i) =>
+      '<div class="konto" data-part="konto">'
+      + (zeigeByline
+        ? '<div class="kontokopf" data-part="kontokopf">' + scheibe(k.autor) + '<span class="name">' + esc(PERSONEN[k.autor].name) + '</span><span class="leiselinie">als ' + esc(figurVon(k.autor)) + '</span></div>'
+        : '<div class="kontokopf" data-part="kontokopf"><span class="name">Fassung ' + (i === 0 ? 'A' : 'B') + '</span></div>')
+      + '<p class="kontotext">' + esc(k.text) + '</p>'
+      + (zeigeByline ? '<p class="halter zahl" data-part="halterzahl">gehalten von ' + k.halter + '</p>' : '')
+      + '</div>').join('')
+    + '</div>'
+    + '<p class="streitfuss">' + esc(b.fuss) + '</p>'
+    + '</section>';
+}
+
+function beiwerkHtml(pr, sitz) {
+  const p = paket();
+  const artAn = R.getAttribute('data-art') === 'an';
+  const zeigeByline = sitz !== 'stream';
+  const tafelInhalt = artAn
+    ? '<img src="' + esc(p.tafel.quelle) + '" alt="' + esc(p.tafel.alt) + '" data-part="tafelbild" loading="lazy" onerror="tafelErsatz(this)">'
+    : '<span class="tafelersatz" data-part="tafelersatz">' + signet(p.eintrag.titel) + '</span>';
+  return '<aside class="beiwerk" data-part="beiwerk" aria-label="Steckbrief und Tafel">'
+    + '<figure class="tafel" data-part="tafel" style="margin:0">'
+    + tafelInhalt
+    + '<figcaption class="bildunterschrift" data-part="bildunterschrift">' + esc(p.tafel.unter) + '</figcaption>'
+    + '</figure>'
+    + '<div class="infobox" data-part="infobox">'
+    + '<div class="infokopf">' + esc(p.eintrag.titel) + '</div>'
+    + pr.infobox.map(f =>
+      '<div class="infozeile" data-part="infozeile">'
+      + '<span class="infofeld" data-part="infofeld">' + esc(f.feld) + '</span>'
+      + '<span class="infowert" data-part="infowert">' + esc(f.wert) + '</span>'
+      + (zeigeByline && f.stempel
+        ? '<span class="infoherkunft" data-part="infoherkunft">' + scheibe(f.autor) + '<span>' + esc(f.stempel) + '</span></span>'
+        : '')
+      + '</div>').join('')
+    + (zustand.naiv ? p.infobox.filter(f => !sichtbar(f, sitz)).map(f =>
+      '<div class="infozeile naiv-verborgen" data-part="infozeile" aria-hidden="true">'
+      + '<span class="infofeld" data-part="infofeld">' + esc(f.feld) + '</span>'
+      + '<span class="infowert" data-part="infowert">' + esc(f.wert) + '</span></div>').join('') : '')
+    + '</div></aside>';
+}
+
+function tafelErsatz(img) {
+  const fig = img.closest('.tafel');
+  if (!fig) return;
+  const titel = paket().eintrag.titel;
+  const span = document.createElement('span');
+  span.className = 'tafelersatz';
+  span.setAttribute('data-part', 'tafelersatz');
+  span.innerHTML = signet(titel);
+  img.replaceWith(span);
+  const cap = $('.bildunterschrift', fig);
+  if (cap && cap.textContent.indexOf('Ersatzsignet aktiv') < 0) {
+    cap.textContent = cap.textContent + ' · Ersatzsignet aktiv, Datei nicht auffindbar';
+  }
+  pruefe();
+}
+
+function autorenleisteHtml(pr, sitz) {
+  if (sitz === 'stream') {
+    return '<p class="leiselinie" data-part="autorenleiste-ersatz">Autorenschaft wird an Beobachter nicht ausgeliefert — weder als Scheibe noch als Name noch als Zahl.</p>';
+  }
+  const liste = zustand.naiv
+    ? ['kaya', 'sera', 'brannt', 'vesper', 'ossa'].filter(a => bloeckeAlle().some(b => b.autor === a || (b.konten || []).some(k => k.autor === a)))
+    : pr.autoren;
+  return '<div class="autorenleiste" data-part="autorenleiste" role="group" aria-label="Autorenleiste dieses Eintrags">'
+    + '<span class="kapitaelchen">Geschrieben von</span>'
+    + liste.map(a => {
+      const p = PERSONEN[a];
+      const n = pr.bloecke.filter(b => b.autor === a).length;
+      return '<button class="autorknopf' + (p.ausgetreten ? ' ausgetreten' : '') + '" type="button" data-autor="' + a + '" data-part="autorknopf"'
+        + ' aria-pressed="' + (zustand.hervorAutor === a) + '"'
+        + ' aria-label="' + esc(p.name + (p.ausgetreten ? ', bis 2029' : '') + ' · ' + n + ' sichtbare Absätze hervorheben') + '">'
+        + scheibe(a) + '<span>' + esc(p.name) + (p.ausgetreten ? ' · bis 2029' : '') + '</span></button>';
+    }).join('')
+    + '</div>';
+}
+
+function sichtblockHtml(sitz) {
+  const sitze = erlaubteSitze();
+  const istBrille = zustand.rolle === 'sl';
+  const aktiv = SITZE.find(s => s.id === sitz);
+  const pr = projektion(sitz);
+  const prSl = projektion('sl');
+  const entfallen = absatzZahl(prSl) - absatzZahl(pr);
+  return '<div class="sichtblock" data-part="sichtwaehler">'
+    + '<div class="sichtkopf">'
+    + '<span class="kapitaelchen">' + esc(istBrille ? txt('aus-sicht') : txt('angemeldet-als')) + '</span>'
+    + '<span class="erklaerung">' + esc(istBrille
+      ? 'Sichtbrille der Spielleitung — die Seite wird für diesen Sitz neu erzeugt, nicht eingefärbt.'
+      : 'Dein eigener Platz. Diese Seite ist die, die der Server dir schickt.') + '</span>'
+    + '</div>'
+    + '<fieldset class="waehlscheibe" data-part="waehlscheibe">'
+    + '<legend>Lesesitz wählen</legend>'
+    + sitze.map(s => {
+      const p = s.person ? PERSONEN[s.person] : null;
+      const name = p ? p.name : 'Beobachter';
+      const fig = s.person ? figurVon(s.person) : 'Aufzeichnung';
+      return '<span class="sitz"><input type="radio" name="sicht" id="sitz-' + s.id + '" value="' + s.id + '"'
+        + (s.id === sitz ? ' checked' : '') + '>'
+        + '<label for="sitz-' + s.id + '">'
+        + (p ? scheibe(s.person) : '<span class="scheibe" aria-hidden="true">◍</span>')
+        + '<span>' + esc(name) + '</span></label></span>';
+    }).join('')
+    + '</fieldset>'
+    + '<p class="sitzstand" data-part="sitzstand">'
+    + '<span><b>' + esc(aktiv && aktiv.person ? PERSONEN[aktiv.person].name : 'Beobachter') + '</b>'
+    + ' · ' + esc(aktiv && aktiv.person ? figurVon(aktiv.person) : 'Aufzeichnung')
+    + ' · ' + esc(aktiv ? aktiv.stand : '') + '</span>'
+    + (entfallen > 0 ? '<span class="entfallen' + (motionAn() ? ' puls' : '') + '" data-part="entfallzaehler">'
+      + '<span class="zahl">−' + entfallen + '</span> Absätze entfallen</span>' : '')
+    + '</p></div>';
+}
+
+function randspalteHtml(sitz) {
+  if (zustand.rolle === 'beobachter') return '';
+  const p = paket();
+  const a = p.antrag;
+  const erledigt = zustand.antragErledigt[zustand.paket];
+  const eigeneNotizen = zustand.notizen[zustand.paket];
+  let inhalt = '';
+
+  if (zustand.rolle === 'sl' && !erledigt) {
+    inhalt += '<article class="antrag" data-part="antrag" id="antrag-karte" data-anker="' + a.ankerPid + '" tabindex="-1">'
+      + '<div class="antragkopf" data-part="antragkopf">' + scheibe(a.autor)
+      + '<span class="name">' + esc(PERSONEN[a.autor].name) + '</span>'
+      + '<span class="leiselinie">Antrag</span></div>'
+      + '<p class="ankerzeile">↳ verankert an Absatz <span class="zahl">' + a.ankerNr + '</span></p>'
+      + '<p class="antragtext">' + esc(a.text) + '</p>'
+      + '<div class="antragaktionen" data-part="antragaktionen">'
+      + '<button class="tastenknopf" type="button" data-tat="kanon"><kbd>Alt+K</kbd><span>' + esc(txt('kanon')) + '</span></button>'
+      + '<button class="tastenknopf gefahr" type="button" data-tat="ablehnen"><kbd>Alt+X</kbd><span>' + esc(txt('ablehnen')) + '</span></button>'
+      + '<button class="tastenknopf" type="button" data-tat="weiter"><kbd>Alt+W</kbd><span>' + esc(txt('weiterleiten')) + '</span></button>'
+      + '</div>'
+      + (zustand.begruendung
+        ? '<div class="begruendung"><label class="leiselinie" for="grund">Begründung — wird Sera zugestellt. Ohne sie geht es nicht.</label>'
+        + '<textarea id="grund" rows="2" placeholder="Noch nicht wahr, aber merk es dir."></textarea>'
+        + '<button class="knopf klein" type="button" data-tat="ablehnen-senden">' + esc(txt('senden')) + '</button></div>'
+        : '<p class="leiselinie">Nichts tun ist die Voreinstellung und kostet keine Taste. Schweigen veröffentlicht nichts.</p>')
+      + '</article>';
+  }
+  if (zustand.rolle === 'sl' && erledigt) {
+    inhalt += '<p class="notizkarte leiselinie" data-part="antragsspur">' + esc(erledigt) + '</p>';
+  }
+  if (zustand.rolle === 'spieler') {
+    inhalt += '<form class="notizkarte" data-part="feldnotiz" id="notizform">'
+      + '<p class="kapitaelchen">Feldnotiz</p>'
+      + '<p class="leiselinie">Landet in deinem Kodex. Sichtbar für dich und die Spielleitung. Von niemandem sonst, bis du sie einreichst.</p>'
+      + '<div class="notizfeld"><label class="nur-sr" for="notiztext">Feldnotiz</label>'
+      + '<textarea id="notiztext" rows="3" placeholder="Ein Satz. Verankert an Absatz ' + a.ankerNr + '."></textarea></div>'
+      + '<div class="antragaktionen">'
+      + '<button class="tastenknopf" type="submit"><kbd>Strg+↵</kbd><span>' + esc(txt('feldnotiz-anlegen')) + '</span></button>'
+      + '</div></form>';
+    eigeneNotizen.filter(n => n.sitz === sitz).forEach(n => {
+      inhalt += '<article class="notizkarte" data-part="eigene-notiz">' + scheibe(n.autor)
+        + '<p class="antragtext">' + esc(n.text) + '</p>'
+        + '<p class="leiselinie">nur du und die Spielleitung</p></article>';
+    });
+  }
+  if (!inhalt) return '';
+  return '<div class="randspalte" data-part="randspalte">'
+    + '<p class="kapitaelchen randkopf">Der Rand — Anträge neben dem Satz, der sie ausgelöst hat</p>'
+    + inhalt + '</div>';
+}
+
+function renderBuehne() {
+  const sitz = zustand.sitz;
+  const p = paket();
+  const pr = projektion(sitz);
+  const rand = randspalteHtml(sitz);
+  const bloecke = zustand.naiv ? bloeckeAlle() : pr.bloecke;
+  let nr = 0;
+  const koerper = bloecke.map(b => {
+    const verborgen = zustand.naiv && !sichtbar(b, sitz);
+    if (b.typ === 'streitfall') return streitfallHtml(b, sitz, verborgen);
+    nr += 1;
+    return absatzHtml(b, nr, sitz, verborgen);
+  }).join('');
+
+  $('#buehne').innerHTML =
+    (zustand.naiv
+      ? '<div class="warnband" data-part="warnband" role="status"><b>Vorführmodus:</b> naive Umsetzung. Fremde Absätze werden per CSS versteckt statt weggelassen. Die Leak-Bench rechnet mit, was das kostet.</div>'
+      : '')
+    + '<header class="artikelkopf" data-part="artikelkopf">'
+    + '<p class="kicker" data-part="kicker">' + esc(p.eintrag.kicker) + '</p>'
+    + '<h1 class="artikeltitel" data-part="titel">' + esc(p.eintrag.titel) + '</h1>'
+    + '<p class="artikelunter" data-part="untertitel">' + esc(p.eintrag.unter) + '</p>'
+    + '<hr class="titelregel">'
+    + autorenleisteHtml(pr, sitz)
+    + sichtblockHtml(sitz)
+    + '</header>'
+    + '<div class="artikelkoerper" data-part="artikelkoerper">'
+    + '<div class="prosa" data-part="prosa">' + beiwerkHtml(pr, sitz) + koerper + '</div>'
+    + rand
+    + '</div>';
+
+  bloeckeAlle().forEach(b => { delete b.frisch; });
+  richteRandAus();
+}
+
+/* Anträge senkrecht auf ihren Anker legen — «neben dem Satz» wörtlich. */
+function richteRandAus() {
+  const karte = $('#antrag-karte');
+  if (!karte) return;
+  karte.style.marginTop = '0px';
+  if (window.innerWidth < 1060) return;
+  const anker = $('[data-pid="' + karte.dataset.anker + '"]');
+  const spalte = karte.closest('.randspalte');
+  if (!anker || !spalte) return;
+  const versatz = anker.getBoundingClientRect().top - karte.getBoundingClientRect().top;
+  if (versatz > 0) karte.style.marginTop = Math.round(versatz) + 'px';
+}
+
+function renderSammlung() {
+  const p = paket();
+  const pr = projektion(zustand.sitz);
+  const roh = $('#suche').value.trim().toLowerCase();
+  const eintraege = [{ titel: p.eintrag.titel, unter: absatzZahl(pr) + ' Absätze für diesen Sitz', rot: false, aktiv: true }]
+    .concat(p.verwandte);
+  $('#eintragsliste').innerHTML = eintraege
+    .filter(e => !roh || e.titel.toLowerCase().indexOf(roh) >= 0)
+    .map(e =>
+      '<li><button class="eintragsknopf" type="button" data-part="sammlungskarte"' + (e.aktiv ? ' aria-current="true"' : '') + '>'
+      + signet(e.titel)
+      + '<span><span class="titel' + (e.rot ? ' rotmarke' : '') + '">' + esc(e.titel) + (e.rot ? ' ?' : '') + '</span><br>'
+      + '<span class="unter">' + esc(e.unter) + '</span></span></button></li>').join('');
+}
+
+function renderAutorenzeile() {
+  const pr = projektion(zustand.sitz);
+  if (zustand.sitz === 'stream') {
+    $('#autorenzeile').innerHTML = '<span class="leiselinie">für Beobachter unterdrückt</span>';
+    return;
+  }
+  $('#autorenzeile').innerHTML = pr.autoren.map(a => {
+    const n = pr.bloecke.filter(b => b.autor === a).length;
+    return '<span class="zaehler" data-part="zaehler">' + scheibe(a)
+      + '<span>' + esc(PERSONEN[a].name) + '</span><span class="zahl">' + n + '</span></span>';
+  }).join('');
+}
+
+function renderKopf() {
+  const p = paket();
+  $('#pfad').innerHTML = '<span>' + esc(p.kampagne) + '</span><span>·</span><span>Sitzung <span class="zahl">'
+    + p.sitzung + '</span></span><span>·</span><span>' + esc(p.genre) + '</span><span>·</span><span>Story</span>';
+}
+
+function meldung(html) { $('#meldung').innerHTML = html; }
+
+function uebersetze() {
+  $$('[data-i18n]').forEach(el => { el.textContent = txt(el.getAttribute('data-i18n')); });
+}
+
+function renderAlles() {
+  /* Fokus überlebt das Neuzeichnen — sonst wäre Tastaturbedienung eine Behauptung. */
+  const vorherId = document.activeElement && document.activeElement.id;
+  const vorherTeil = document.activeElement && document.activeElement.dataset
+    ? document.activeElement.dataset.tat || document.activeElement.dataset.autor : null;
+  uebersetze();
+  renderKopf();
+  renderBuehne();
+  renderSammlung();
+  renderAutorenzeile();
+  pruefe();
+  if (vorherId) {
+    const z = document.getElementById(vorherId);
+    if (z && typeof z.focus === 'function') { z.focus({ preventScroll: true }); return; }
+  }
+  if (vorherTeil) {
+    const z = $('[data-tat="' + vorherTeil + '"]') || $('[data-autor="' + vorherTeil + '"]');
+    if (z) z.focus({ preventScroll: true });
+  }
+}
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   DER PRÜFSTAND — alles hier rechnet, nichts behauptet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const farbprobe = document.createElement('span');
+farbprobe.setAttribute('aria-hidden', 'true');
+farbprobe.style.cssText = 'position:absolute;left:-99999px;top:0;width:1px;height:1px;';
+document.body.appendChild(farbprobe);
+
+function loeseFarbe(token) {
+  farbprobe.style.color = 'rgb(1, 2, 3)';
+  farbprobe.style.color = 'var(' + token + ')';
+  const c = getComputedStyle(farbprobe).color;
+  const m = c.match(/(\d+(?:\.\d+)?)/g);
+  return m ? [+m[0], +m[1], +m[2]] : [0, 0, 0];
+}
+function leucht(rgb) {
+  const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]);
+}
+function verhaeltnis(a, b) {
+  const l1 = leucht(a), l2 = leucht(b);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+const KONTRASTZEILEN = [
+  { token: '--text', name: 'Fließtext', schwelle: 4.5 },
+  { token: '--gedaempft', name: 'Nebentext', schwelle: 4.5 },
+  { token: '--schwach', name: 'Zierde und deaktivierte Zustände', schwelle: 3.0 },
+  { token: '--akzent', name: 'Akzent und Verweise', schwelle: 4.5 },
+  { token: '--zweit', name: 'Zweitfarbe', schwelle: 4.5 },
+  { token: '--gefahr', name: 'Warnfarbe', schwelle: 4.5 },
+  { token: '--fokus', name: 'Fokusring (Nichttext)', schwelle: 3.0 }
+];
+
+function pruefeKontrast() {
+  const gruende = ['--flaeche', '--flaeche2', '--bg'].map(loeseFarbe);
+  let schlecht = 0;
+  const html = KONTRASTZEILEN.map(z => {
+    const vg = loeseFarbe(z.token);
+    const min = Math.min.apply(null, gruende.map(g => verhaeltnis(vg, g)));
+    const gut = min >= z.schwelle;
+    if (!gut) schlecht++;
+    return '<div class="pruefzeile"><span class="pruefname">' + esc(z.name)
+      + '</span><span class="pruefwert zahl">' + min.toFixed(2) + ' : 1</span>'
+      + '<span class="urteil ' + (gut ? 'gut' : 'schlecht') + '">' + (gut ? '≥ ' + z.schwelle.toFixed(1) : 'unter ' + z.schwelle.toFixed(1)) + '</span></div>';
+  }).join('');
+  $('#kontrastzeilen').innerHTML = html;
+  const lage = $('#kontrast-lage');
+  lage.textContent = schlecht === 0 ? 'alle bestanden' : schlecht + ' gescheitert';
+  lage.className = schlecht === 0 ? 'urteil gut' : 'urteil schlecht';
+  return schlecht;
+}
+
+/* Signaturen */
+function ohneStil(s) { return s.replace(/ style="[^"]*"/g, ''); }
+function domSig() { return hashHex(ohneStil($('#buehne').innerHTML)); }
+function vokabularSig() {
+  const paare = new Set();
+  const arten = new Set();
+  $$('[data-part]').forEach(el => {
+    arten.add(el.dataset.part);
+    const eltern = el.parentElement && el.parentElement.closest('[data-part]');
+    paare.add((eltern ? eltern.dataset.part : '∅') + '>' + el.dataset.part);
+  });
+  return { sig: hashHex(Array.from(arten).sort().join('|') + '#' + Array.from(paare).sort().join('|')), n: arten.size };
+}
+
+/* Leak-Bench */
+function scanRaum() {
+  return ['#buehne', '#eintragsliste', '#autorenzeile', '#pfad']
+    .map(s => { const el = $(s); return el ? el.innerHTML : ''; }).join('\n');
+}
+function zaehleVorkommen(heu, nadel) {
+  if (!nadel) return 0;
+  let n = 0, i = 0;
+  while ((i = heu.indexOf(nadel, i)) >= 0) { n++; i += nadel.length; }
+  return n;
+}
+const BYLINEFLAECHEN = '[data-part="autorenscheibe"],[data-part="byline"],[data-part="autorknopf"],[data-part="kontokopf"],[data-part="infoherkunft"],[data-part="zaehler"]';
+
+function imA11yBaum(el) {
+  let n = el;
+  while (n && n.nodeType === 1) {
+    if (n.getAttribute('aria-hidden') === 'true' || n.hasAttribute('hidden')) return false;
+    const cs = getComputedStyle(n);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+    n = n.parentElement;
+  }
+  return true;
+}
+
+function leakBench() {
+  const g = verbotenesGut(zustand.sitz);
+  const raum = scanRaum();
+  const enc = new TextEncoder();
+  let domTreffer = 0, bytes = 0;
+  const funde = [];
+
+  g.texte.forEach(o => {
+    const nadel = esc(o.t).slice(0, 48);
+    const n = zaehleVorkommen(raum, nadel);
+    if (n) { domTreffer += n; bytes += n * enc.encode(o.t).length; funde.push(o.q); }
+  });
+
+  const flaechen = $$(BYLINEFLAECHEN, $('#buehne')).concat($$(BYLINEFLAECHEN, $('#autorenzeile')));
+  g.namen.forEach(name => {
+    flaechen.forEach(el => {
+      const roh = (el.getAttribute('aria-label') || '') + ' ' + (el.getAttribute('title') || '') + ' ' + el.textContent;
+      if (roh.indexOf(name) >= 0) {
+        domTreffer++; bytes += enc.encode(name).length;
+        funde.push('Byline-Fläche „' + (el.dataset.part) + '“ nennt ' + name);
+      }
+    });
+  });
+
+  let a11yTreffer = 0;
+  const wurzeln = [$('#buehne'), $('#autorenzeile'), $('#eintragsliste')].filter(Boolean);
+  wurzeln.forEach(w => {
+    w.querySelectorAll('*').forEach(el => {
+      if (!imA11yBaum(el)) return;
+      const attr = (el.getAttribute('aria-label') || '') + ' ' + (el.getAttribute('title') || '') + ' ' + (el.getAttribute('alt') || '');
+      const eigen = Array.from(el.childNodes).filter(n => n.nodeType === 3).map(n => n.nodeValue).join(' ');
+      const roh = attr + ' ' + eigen;
+      g.texte.forEach(o => { if (roh.indexOf(o.t.slice(0, 48)) >= 0) a11yTreffer++; });
+      if (el.matches(BYLINEFLAECHEN)) {
+        const bylineRoh = attr + ' ' + el.textContent;
+        g.namen.forEach(n => { if (bylineRoh.indexOf(n) >= 0) a11yTreffer++; });
+      }
+    });
+  });
+
+  return { verboten: g.texte.length + g.namen.length, dom: domTreffer, a11y: a11yTreffer, bytes: bytes, funde: funde };
+}
+
+/* Darstellungsprüfungen */
+function pruefeDarstellung() {
+  const cs = getComputedStyle(R);
+  const t = ['--t-antwort', '--t-zustand', '--t-uebergang'].map(k => cs.getPropertyValue(k).trim());
+  $('#w-tempi').textContent = t.join(' · ');
+  const reduziert = t[0] === '1ms';
+  const u = $('#u-tempi');
+  u.textContent = reduziert ? 'ruhig' : 'im Budget';
+  u.className = 'urteil gut';
+
+  const ersatz = $$('.signet').length;
+  $('#w-ersatz').textContent = ersatz;
+  $('#u-ersatz').textContent = 'gestaltet';
+  $('#u-ersatz').className = 'urteil gut';
+
+  let beschnitten = 0;
+  $$('.knopf, .modulknopf .beschriftung, .tastenknopf span, .achsen-name, .eintragsknopf .titel, .pruefname')
+    .forEach(el => { if (el.scrollWidth > el.clientWidth + 1) beschnitten++; });
+  $('#w-beschnitt').textContent = beschnitten;
+  $('#u-beschnitt').textContent = beschnitten === 0 ? 'bestanden' : 'gescheitert';
+  $('#u-beschnitt').className = 'urteil ' + (beschnitten === 0 ? 'gut' : 'schlecht');
+
+  const seitlich = Math.max(0, R.scrollWidth - R.clientWidth);
+  $('#w-seitlich').textContent = seitlich + ' px';
+  $('#u-seitlich').textContent = seitlich <= 1 ? 'bestanden' : 'gescheitert';
+  $('#u-seitlich').className = 'urteil ' + (seitlich <= 1 ? 'gut' : 'schlecht');
+}
+
+const ACHSENLISTE = [
+  ['Relic', 'dom'], ['Signal', 'dom'], ['Archiv', 'dom'], ['Clean', 'dom'],
+  ['Hell', 'dom'], ['Dunkel', 'dom'], ['Hoher Kontrast', 'dom'], ['Weniger Bewegung', 'dom'],
+  ['Kompakt', 'dom'], ['Ohne Ornament', 'dom'], ['Lange Labels', 'vokabular'],
+  ['Aldenfall', 'vokabular'], ['Kepler-9', 'vokabular'], ['Nebelakte', 'vokabular'],
+  ['Ohne Bildwerk', 'erwartet']
+];
+
+function zeichneAchsenmarken() {
+  $('#achsenmarken').innerHTML = ACHSENLISTE.map(a => {
+    const u = zustand.achsenurteil[a[0]];
+    const kl = u === 'geprueft' ? ' geprueft' : (u === 'gescheitert' ? ' gescheitert' : '');
+    const suffix = u === 'geprueft' ? ' ✓' : (u === 'gescheitert' ? ' ✕' : '');
+    return '<span class="marke-chip' + kl + '">' + esc(a[0]) + suffix + '</span>';
+  }).join('');
+}
+
+function protokolliere(art, text) {
+  zustand.seq += 1;
+  zustand.protokoll.unshift({ seq: zustand.seq, art: art, text: text });
+  zeichneProtokoll();
+}
+function zeichneProtokoll() {
+  $('#seq-stand').textContent = 'entry_seq ' + zustand.seq;
+  $('#protokoll').innerHTML = zustand.protokoll.slice(0, 24).map(e =>
+    '<li><span class="seq">' + e.seq + '</span><span><b>' + esc(e.art) + '</b> · ' + esc(e.text) + '</span></li>').join('')
+    || '<li><span class="seq">—</span><span>Noch nichts ratifiziert. Schweigen veröffentlicht nichts.</span></li>';
+}
+
+function pruefe() {
+  const prSl = projektion('sl');
+  const pr = projektion(zustand.sitz);
+  const v = vokabularSig();
+
+  $('#w-domsig').textContent = domSig();
+  $('#w-vokabular').textContent = v.sig;
+  $('#w-bauteile').textContent = v.n;
+  $('#u-bauteile').textContent = 'Vokabular';
+  $('#u-bauteile').className = 'urteil neutral';
+
+  const sitzObj = SITZE.find(s => s.id === zustand.sitz);
+  $('#w-sitz').textContent = sitzObj && sitzObj.person ? PERSONEN[sitzObj.person].name : 'Beobachter';
+  $('#u-sitz').textContent = zustand.rolle === 'sl' ? 'Sichtbrille' : (zustand.rolle === 'spieler' ? 'eigener Platz' : 'Aufzeichnung');
+  $('#u-sitz').className = 'urteil neutral';
+  $('#w-absaetze').textContent = absatzZahl(pr);
+  $('#u-absaetze').textContent = 'ausgeliefert';
+  $('#u-absaetze').className = 'urteil neutral';
+  const entfallen = absatzZahl(prSl) - absatzZahl(pr);
+  $('#w-entfallen').textContent = entfallen;
+  $('#u-entfallen').textContent = entfallen ? 'beabsichtigt' : 'keine';
+  $('#u-entfallen').className = 'urteil neutral';
+  $('#w-scheiben').textContent = $$('[data-part="autorknopf"]', $('#buehne')).filter(el => el.closest('[data-part="autorenleiste"]')).length;
+  $('#u-scheiben').textContent = zustand.sitz === 'stream' ? 'unterdrückt' : 'projiziert';
+  $('#u-scheiben').className = 'urteil neutral';
+
+  const lb = leakBench();
+  $('#w-verboten').textContent = lb.verboten;
+  $('#w-domtreffer').textContent = lb.dom;
+  $('#u-domtreffer').textContent = lb.dom === 0 ? 'bestanden' : 'gescheitert';
+  $('#u-domtreffer').className = 'urteil ' + (lb.dom === 0 ? 'gut' : 'schlecht');
+  $('#w-a11ytreffer').textContent = lb.a11y;
+  $('#u-a11ytreffer').textContent = lb.a11y === 0 ? 'bestanden' : 'gescheitert';
+  $('#u-a11ytreffer').className = 'urteil ' + (lb.a11y === 0 ? 'gut' : 'schlecht');
+  $('#w-bytes').textContent = lb.bytes;
+  $('#u-bytes').textContent = lb.bytes === 0 ? 'bestanden' : 'gescheitert';
+  $('#u-bytes').className = 'urteil ' + (lb.bytes === 0 ? 'gut' : 'schlecht');
+  $('#leck-fund').innerHTML = lb.funde.length
+    ? '<b>Fundstellen:</b> ' + esc(Array.from(new Set(lb.funde)).slice(0, 6).join(' · '))
+    : 'Keine Fundstelle. Die entfallenen Absätze stehen nicht im Dokument — sie sind nicht ausgegraut, nicht gestummelt, nicht gezählt.';
+
+  pruefeKontrast();
+  pruefeDarstellung();
+  zeichneAchsenmarken();
+}
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACHSEN — jede Umschaltung wird gemessen, nicht behauptet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function mitAchsenpruefung(marke, art, tat) {
+  const vorher = art === 'vokabular' ? vokabularSig().sig : domSig();
+  tat();
+  renderAlles();
+  const nachher = art === 'vokabular' ? vokabularSig().sig : domSig();
+  if (art === 'erwartet') {
+    zustand.achsenurteil[marke] = 'geprueft';
+  } else {
+    zustand.achsenurteil[marke] = (vorher === nachher) ? 'geprueft' : 'gescheitert';
+  }
+  zeichneAchsenmarken();
+  return vorher === nachher;
+}
+
+function setzeGedrueckt(achse, wert) {
+  $$('[data-achse="' + achse + '"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.wert === wert)));
+}
+function umschalten(attr, an, aus) {
+  return R.getAttribute(attr) === an ? aus : an;
+}
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+
+  /* Inhaltspaket */
+  if (b.dataset.achse === 'paket') {
+    const alt = zustand.paket;
+    if (alt === b.dataset.wert) return;
+    const marke = { aldenfall: 'Aldenfall', kepler: 'Kepler-9', nebelakte: 'Nebelakte' }[b.dataset.wert];
+    mitAchsenpruefung(marke, 'vokabular', () => {
+      zustand.paket = b.dataset.wert;
+      zustand.hervorAutor = null;
+      setzeGedrueckt('paket', b.dataset.wert);
+    });
+    meldung('Inhaltspaket <b>' + esc(paket().welt) + '</b> · dieselben Bauteile, andere Welt, andere Figuren für dieselben Personen.');
+    return;
+  }
+
+  /* Skin */
+  if (b.dataset.achse === 'skin') {
+    const marke = { relic: 'Relic', signal: 'Signal', archive: 'Archiv', clean: 'Clean' }[b.dataset.wert];
+    const gleich = mitAchsenpruefung(marke, 'dom', () => {
+      R.setAttribute('data-skin', b.dataset.wert);
+      setzeGedrueckt('skin', b.dataset.wert);
+    });
+    meldung('Skin <b>' + esc(marke) + '</b> · DOM-Signatur ' + (gleich ? 'unverändert' : '<b>verändert — das wäre ein Fehler</b>') + '.');
+    return;
+  }
+
+  /* Rolle */
+  if (b.dataset.achse === 'rolle') {
+    zustand.rolle = b.dataset.wert;
+    R.setAttribute('data-rolle', zustand.rolle);
+    setzeGedrueckt('rolle', zustand.rolle);
+    const erlaubt = erlaubteSitze().map(s => s.id);
+    if (erlaubt.indexOf(zustand.sitz) < 0) zustand.sitz = erlaubt[0];
+    zustand.begruendung = false;
+    renderAlles();
+    meldung(zustand.rolle === 'sl'
+      ? 'Spielleitung · die Sichtbrille steht dir offen, und die Anträge stehen neben dem Satz.'
+      : zustand.rolle === 'spieler'
+        ? 'Spielerplatz · keine Brille. Was hier steht, ist das, was der Server dir schickt.'
+        : 'Beobachtung · keine Bylines, keine Anträge, kein Rand. Autorenschaft wird gar nicht erst ausgeliefert.');
+    return;
+  }
+
+  /* Helligkeit */
+  if (b.dataset.achse === 'theme') {
+    const w = b.dataset.wert;
+    const marke = w === 'dark' ? 'Dunkel' : (w === 'light' ? 'Hell' : null);
+    const tat = () => { R.setAttribute('data-theme', w); setzeGedrueckt('theme', w); };
+    if (marke) mitAchsenpruefung(marke, 'dom', tat); else { tat(); renderAlles(); }
+    meldung('Modus <b>' + esc(w === 'system' ? 'Systemvorgabe' : (w === 'dark' ? 'Dunkel' : 'Hell')) + '</b> · beide Modi sind entworfen, keiner ist invertiert.');
+    return;
+  }
+
+  /* Darstellung */
+  if (b.dataset.achse === 'ornament') {
+    const neu = umschalten('data-ornament', 'klar', 'gestaltet');
+    mitAchsenpruefung('Ohne Ornament', 'dom', () => {
+      R.setAttribute('data-ornament', neu);
+      b.setAttribute('aria-pressed', String(neu === 'gestaltet'));
+    });
+    meldung(neu === 'klar'
+      ? 'Ornament aus · dieselbe Seite ohne Materialwirkung. Wenn sie jetzt zerfällt, war die Gestaltung nur Lack.'
+      : 'Ornament an · Materialwirkung kommt aus dem Themenpaket, nicht aus dem Bauteil.');
+    return;
+  }
+  if (b.dataset.achse === 'art') {
+    const neu = umschalten('data-art', 'aus', 'an');
+    mitAchsenpruefung('Ohne Bildwerk', 'erwartet', () => {
+      R.setAttribute('data-art', neu);
+      b.setAttribute('aria-pressed', String(neu === 'an'));
+    });
+    meldung(neu === 'aus'
+      ? 'Bildwerk aus · jede Tafel bekommt ihr Ersatzsignet. Das DOM ändert sich hier <b>mit Absicht</b> — Bild gegen Zeichen.'
+      : 'Bildwerk an · geladen wird nur, was das Paket wirklich mitbringt.');
+    return;
+  }
+  if (b.dataset.achse === 'dichte') {
+    const neu = umschalten('data-dichte', 'kompakt', 'komfortabel');
+    mitAchsenpruefung('Kompakt', 'dom', () => {
+      R.setAttribute('data-dichte', neu);
+      b.setAttribute('aria-pressed', String(neu === 'kompakt'));
+    });
+    return;
+  }
+  if (b.dataset.achse === 'kontrast') {
+    const neu = umschalten('data-kontrast', 'hoch', 'normal');
+    mitAchsenpruefung('Hoher Kontrast', 'dom', () => {
+      R.setAttribute('data-kontrast', neu);
+      b.setAttribute('aria-pressed', String(neu === 'hoch'));
+    });
+    meldung(neu === 'hoch'
+      ? 'Hoher Kontrast · Ornament und Korn fallen weg, der Fokusring wird dicker, die Kontrastprüfung rechnet neu.'
+      : 'Normaler Kontrast · die Kampagnenpalette ist zurück.');
+    return;
+  }
+  if (b.dataset.achse === 'motion') {
+    const neu = umschalten('data-motion', 'reduziert', 'system');
+    mitAchsenpruefung('Weniger Bewegung', 'dom', () => {
+      R.setAttribute('data-motion', neu);
+      b.setAttribute('aria-pressed', String(neu === 'reduziert'));
+    });
+    meldung(neu === 'reduziert'
+      ? 'Weniger Bewegung · alle drei Tempi stehen auf 1 ms. Zustandswechsel bleiben, Reisen entfallen.'
+      : 'Bewegung nach Systemvorgabe · Antwort 140 ms, Zustand 280 ms, Übergang 820 ms.');
+    return;
+  }
+
+  /* Autorenscheiben — der Autorenfilter, projiziert */
+  if (b.dataset.part === 'autorknopf') {
+    const a = b.dataset.autor;
+    zustand.hervorAutor = zustand.hervorAutor === a ? null : a;
+    renderBuehne(); pruefe();
+    if (zustand.hervorAutor) {
+      const n = projektion(zustand.sitz).bloecke.filter(x => x.autor === a).length;
+      meldung('<b>' + esc(PERSONEN[a].name) + '</b> · <span class="zahl">' + n + '</span> Absätze auf dieser Seite — gezählt wird nur, was dieser Sitz hält. Kein Nenner, keine Restzahl.');
+    } else { meldung(''); }
+    return;
+  }
+
+  /* Anträge */
+  if (b.dataset.tat === 'kanon') { ratifiziere(); return; }
+  if (b.dataset.tat === 'ablehnen') { zustand.begruendung = true; renderAlles(); const t = $('#grund'); if (t) t.focus(); return; }
+  if (b.dataset.tat === 'ablehnen-senden') { ablehnenSenden(); return; }
+  if (b.dataset.tat === 'weiter') { weiterleiten(); return; }
+
+  /* Module und Sammlung */
+  if (b.dataset.modul) {
+    $$('.modulknopf').forEach(m => m.removeAttribute('aria-current'));
+    b.setAttribute('aria-current', 'page');
+    if (b.dataset.modul !== 'story') {
+      meldung('<b>' + esc(b.textContent.trim()) + '</b> · in diesem Spike ist nur <b>Story</b> ausgebaut. Die Schale bleibt dieselbe, das ist der Punkt.');
+      $$('.modulknopf').forEach(m => m.removeAttribute('aria-current'));
+      $('[data-modul="story"]').setAttribute('aria-current', 'page');
+    }
+    return;
+  }
+  if (b.id === 'sammlung-schalter') {
+    const s = $('#sammlung-saeule');
+    const offen = s.classList.toggle('offen');
+    b.setAttribute('aria-expanded', String(offen));
+    return;
+  }
+  if (b.id === 'pruefen-knopf') { pruefe(); meldung('Prüfstand neu gerechnet — aus dem DOM, das gerade wirklich dasteht.'); return; }
+  if (b.id === 'zuruecksetzen') { zuruecksetzen(); return; }
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RATIFIKATION UND FELDNOTIZ
+   ═══════════════════════════════════════════════════════════════════════════ */
+function ratifiziere() {
+  if (zustand.rolle !== 'sl' || zustand.antragErledigt[zustand.paket]) return;
+  const p = paket(), a = p.antrag;
+  const neu = {
+    pid: 'r-' + a.id, typ: 'absatz', autor: a.autor, haelt: a.empfaenger.slice(),
+    text: a.text, frisch: true,
+    stempel: 'Kanon seit Sitzung ' + p.sitzung + ' · ratifiziert im Spiel'
+  };
+  zustand.extra[zustand.paket].push({ nachPid: a.ankerPid, block: neu });
+  zustand.antragErledigt[zustand.paket] = 'Antrag von ' + PERSONEN[a.autor].name + ' ratifiziert · ' + a.empfaengerText + '.';
+  zustand.begruendung = false;
+  protokolliere('ratify', 'pid ' + neu.pid + ' an Anker ' + a.ankerPid + ' · granted_via: ratifikation · ' + (a.empfaenger.length - 1) + ' Figuren');
+  renderAlles();
+  meldung('<b>Ratifiziert.</b> Der Satz steht im Artikel, an seinem Anker, mit Seras Scheibe darauf. Vesper war nicht dabei — stell die Sicht auf <b>Vesper</b>: der Absatz und seine Byline sind dort nicht.');
+}
+function ablehnenSenden() {
+  const t = $('#grund');
+  const wert = t ? t.value.trim() : '';
+  if (!wert) {
+    meldung('<b>Ohne Begründung nicht.</b> Eine Ablehnung ohne Grund ist das, was ein Kollektiv umbringt. Die Begründung ist selbst eine Passage und geht an Sera.');
+    if (t) t.focus();
+    return;
+  }
+  const a = paket().antrag;
+  zustand.antragErledigt[zustand.paket] = 'Antrag von ' + PERSONEN[a.autor].name + ' abgelehnt · Begründung zugestellt: „' + wert + '“';
+  zustand.begruendung = false;
+  protokolliere('reject', 'Antrag ' + a.id + ' abgelehnt · Begründung als Passage an ' + PERSONEN[a.autor].name);
+  renderAlles();
+  meldung('<b>Abgelehnt, mit Grund.</b> Die Begründung ist eine Passage mit <code>geltung: notiz</code>, adressiert an die Autorin.');
+}
+function weiterleiten() {
+  const a = paket().antrag;
+  zustand.antragErledigt[zustand.paket] = 'Antrag von ' + PERSONEN[a.autor].name + ' als Randfrage in die Vorbereitung übernommen.';
+  zustand.begruendung = false;
+  protokolliere('frage', 'Antrag ' + a.id + ' → Randfrage · nichts wurde Kanon');
+  renderAlles();
+  meldung('<b>Weitergeleitet.</b> Aus einer Behauptung wurde eine Frage in der Vorbereitung — die Fluchttür für „schöne Idee, noch nicht wahr“.');
+}
+function zuruecksetzen() {
+  zustand.extra = { aldenfall: [], kepler: [], nebelakte: [] };
+  zustand.antragErledigt = { aldenfall: null, kepler: null, nebelakte: null };
+  zustand.notizen = { aldenfall: [], kepler: [], nebelakte: [] };
+  zustand.begruendung = false; zustand.hervorAutor = null;
+  zustand.protokoll = []; zustand.seq = 40; zustand.achsenurteil = {};
+  renderAlles(); zeichneProtokoll();
+  meldung('Zurückgesetzt. Anträge stehen wieder offen, die Achsenmarken sind wieder unbewiesen.');
+}
+
+document.addEventListener('submit', ev => {
+  if (ev.target.id !== 'notizform') return;
+  ev.preventDefault();
+  const t = $('#notiztext');
+  const wert = t.value.trim();
+  if (!wert) { meldung('<b>Eine Feldnotiz braucht einen Satz.</b>'); t.focus(); return; }
+  const sitzObj = SITZE.find(s => s.id === zustand.sitz);
+  zustand.notizen[zustand.paket].push({ sitz: zustand.sitz, autor: sitzObj.person, text: wert });
+  protokolliere('notiz', 'Feldnotiz von ' + PERSONEN[sitzObj.person].name + ' · geltung: notiz · sichtbar: Autorin und Spielleitung');
+  renderAlles();
+  meldung('<b>Angelegt.</b> Die Notiz liegt in deinem Kodex. Von der Spielleitung wurde nichts verlangt — das ist die ganze Auffahrt.');
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SITZWECHSEL — der Text ist im ersten Bild fort, die Leerstelle fällt danach zu.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function wechsleSitz(neu) {
+  if (zustand.animiert || neu === zustand.sitz) return;
+  const alt = zustand.sitz;
+  const gehen = $$('[data-pid]', $('#buehne')).filter(el => {
+    const b = bloeckeAlle().find(x => x.pid === el.dataset.pid);
+    return b && !sichtbar(b, neu);
+  });
+  const prAlt = projektion(alt), prNeu = projektion(neu);
+  const diff = prAlt.bloecke.length - prNeu.bloecke.length;
+
+  if (motionAn() && gehen.length) {
+    zustand.animiert = true;
+    gehen.forEach(el => {
+      const h = el.offsetHeight;
+      el.textContent = '';
+      el.setAttribute('aria-hidden', 'true');
+      el.classList.add('platzhalter');
+      el.style.height = h + 'px';
+      el.style.marginBottom = '0px';
+      requestAnimationFrame(() => { el.style.height = '0px'; });
+    });
+    zustand.sitz = neu;
+    setTimeout(() => { zustand.animiert = false; renderAlles(); nachSitzwechsel(alt, neu, diff); }, 300);
+  } else {
+    zustand.sitz = neu;
+    renderAlles();
+    nachSitzwechsel(alt, neu, diff);
+  }
+}
+function nachSitzwechsel(alt, neu, diff) {
+  const s = SITZE.find(x => x.id === neu);
+  const name = s.person ? PERSONEN[s.person].name : 'Beobachter';
+  const fort = absatzZahl(projektion('sl')) - absatzZahl(projektion(neu));
+  const seraFort = projektion('sl').bloecke.filter(b => b.autor === 'sera' && !sichtbar(b, neu)).length;
+  meldung('Sicht: <b>' + esc(name) + '</b> · <span class="zahl">' + fort + '</span> Absätze stehen für diesen Sitz nicht im Dokument'
+    + (seraFort ? ', <span class="zahl">' + seraFort + '</span> davon hat <b>Sera</b> geschrieben' : '')
+    + '. Nicht ausgegraut, nicht gestummelt — nicht vorhanden.');
+}
+
+document.addEventListener('change', ev => {
+  if (ev.target.name === 'sicht') { wechsleSitz(ev.target.value); return; }
+  if (ev.target.id === 's-naiv') {
+    zustand.naiv = ev.target.checked;
+    renderAlles();
+    meldung(zustand.naiv
+      ? '<b>Naive Umsetzung.</b> Die Absätze sind wieder da — nur per CSS versteckt. Die Leak-Bench zeigt jetzt, was in der Antwort steht und was der Screenreader trotzdem findet.'
+      : '<b>Korrekte Umsetzung.</b> Die Absätze werden gar nicht erst erzeugt.');
+    return;
+  }
+  if (ev.target.id === 's-labels') {
+    const lang = ev.target.checked;
+    mitAchsenpruefung('Lange Labels', 'vokabular', () => { R.setAttribute('data-labels', lang ? 'lang' : 'kurz'); });
+    meldung(lang
+      ? '<b>Lange Beschriftungen.</b> Echte, längere deutsche Fassungen derselben Befehle. Geprüft wird, ob irgendetwas beschnitten wird — nicht, ob es schön aussieht.'
+      : 'Kurze Beschriftungen.');
+    return;
+  }
+});
+
+$('#suche').addEventListener('input', () => { renderSammlung(); });
+
+/* Tastatur: keine nackten Einzeltasten, alles auch über Schaltflächen erreichbar. */
+document.addEventListener('keydown', ev => {
+  if (ev.altKey && !ev.ctrlKey && !ev.metaKey && zustand.rolle === 'sl' && !zustand.antragErledigt[zustand.paket]) {
+    const k = ev.key.toLowerCase();
+    if (k === 'k') { ev.preventDefault(); ratifiziere(); return; }
+    if (k === 'x') { ev.preventDefault(); zustand.begruendung = true; renderAlles(); const t = $('#grund'); if (t) t.focus(); return; }
+    if (k === 'w') { ev.preventDefault(); weiterleiten(); return; }
+  }
+  if (ev.ctrlKey && ev.key === 'Enter' && ev.target.id === 'notiztext') {
+    ev.preventDefault();
+    $('#notizform').requestSubmit ? $('#notizform').requestSubmit() : $('#notizform').dispatchEvent(new Event('submit', { cancelable: true }));
+  }
+});
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { richteRandAus(); pruefeDarstellung(); }, 120);
+});
+['change'].forEach(t => {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener(t, pruefe);
+  window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener(t, pruefe);
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   START
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Bestimmbare Vorschau-Adressen — jede Achsenkombination ist verlinkbar.
+   Beispiel: ?paket=nebelakte&skin=clean&art=aus&kontrast=hoch&sitz=brannt */
+(function ausAdresse() {
+  const q = new URLSearchParams(location.search);
+  const setz = (k, attr, erlaubt) => { const v = q.get(k); if (v && erlaubt.indexOf(v) >= 0) R.setAttribute(attr, v); };
+  setz('skin', 'data-skin', ['relic', 'signal', 'archive', 'clean']);
+  setz('theme', 'data-theme', ['system', 'light', 'dark']);
+  setz('kontrast', 'data-kontrast', ['normal', 'hoch']);
+  setz('motion', 'data-motion', ['system', 'voll', 'reduziert']);
+  setz('dichte', 'data-dichte', ['komfortabel', 'kompakt']);
+  setz('ornament', 'data-ornament', ['gestaltet', 'klar']);
+  setz('art', 'data-art', ['an', 'aus']);
+  setz('labels', 'data-labels', ['kurz', 'lang']);
+  if (PAKETE[q.get('paket')]) zustand.paket = q.get('paket');
+  const rolle = q.get('rolle');
+  if (['sl', 'spieler', 'beobachter'].indexOf(rolle) >= 0) { zustand.rolle = rolle; R.setAttribute('data-rolle', rolle); }
+  const erlaubt = erlaubteSitze().map(s => s.id);
+  const sitz = q.get('sitz');
+  if (erlaubt.indexOf(sitz) >= 0) zustand.sitz = sitz;
+  else if (erlaubt.indexOf(zustand.sitz) < 0) zustand.sitz = erlaubt[0];
+  if (q.get('naiv') === '1') zustand.naiv = true;
+  setzeGedrueckt('paket', zustand.paket);
+  setzeGedrueckt('skin', R.getAttribute('data-skin'));
+  setzeGedrueckt('rolle', zustand.rolle);
+  setzeGedrueckt('theme', R.getAttribute('data-theme'));
+  $('[data-achse="ornament"]').setAttribute('aria-pressed', String(R.getAttribute('data-ornament') === 'gestaltet'));
+  $('[data-achse="art"]').setAttribute('aria-pressed', String(R.getAttribute('data-art') === 'an'));
+  $('[data-achse="dichte"]').setAttribute('aria-pressed', String(R.getAttribute('data-dichte') === 'kompakt'));
+  $('[data-achse="kontrast"]').setAttribute('aria-pressed', String(R.getAttribute('data-kontrast') === 'hoch'));
+  $('[data-achse="motion"]').setAttribute('aria-pressed', String(R.getAttribute('data-motion') === 'reduziert'));
+  $('#s-naiv').checked = zustand.naiv;
+  $('#s-labels').checked = R.getAttribute('data-labels') === 'lang';
+})();
+
+renderAlles();
+zeichneProtokoll();
+(function ersteMeldung() {
+  const pr = projektion(zustand.sitz);
+  const prSl = projektion('sl');
+  const fort = absatzZahl(prSl) - absatzZahl(pr);
+  const seraFort = prSl.bloecke.filter(b => b.autor === 'sera' && b.typ === 'absatz' && !sichtbar(b, zustand.sitz)).length;
+  if (zustand.paket === 'aldenfall' && zustand.sitz === 'sl') {
+    meldung('<b>Bruder Alder</b> · <span class="zahl">' + absatzZahl(prSl) + '</span> Absätze, vier Autorinnen und Autoren. Stell die Sicht auf <b>Brannt</b> — fünf Absätze verschwinden, zwei davon hat <b>Sera</b> geschrieben.');
+  } else {
+    meldung('<b>' + esc(paket().eintrag.titel) + '</b> · <span class="zahl">' + absatzZahl(pr) + '</span> Absätze für diesen Sitz'
+      + (fort ? ', <span class="zahl">' + fort + '</span> stehen nicht im Dokument' + (seraFort ? ' — <span class="zahl">' + seraFort + '</span> davon von <b>Sera</b>' : '') : '')
+      + '. Nicht ausgegraut, nicht gestummelt — nicht vorhanden.');
+  }
+})();
+window.addEventListener('load', () => { richteRandAus(); pruefe(); });
+</script>

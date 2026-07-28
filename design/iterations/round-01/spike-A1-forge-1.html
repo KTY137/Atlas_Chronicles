@@ -1,0 +1,1994 @@
+<title>Eiserner Tresor · Sitzung 14 — Chronicle Codex</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   CHRONICLE · Kandidat A — „The Living Codex"
+   Spike A1 · Der Flex-Moment: „Drücke R"
+   Skin: ARCHIVE (Oxblut / Kohle / Messing, redaktionelle Typografie)
+   Alles läuft über Token. Keine externe Ressource.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Typografie ────────────────────────────────────────────────────── */
+  --schrift-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
+                "Helvetica Neue", Arial, sans-serif;
+  --schrift-lese: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+                  "Times New Roman", serif;
+  --schrift-zahl: "Cascadia Mono", "Segoe UI Mono", ui-monospace, "SF Mono",
+                  Consolas, "Liberation Mono", monospace;
+
+  --grad-mikro: 0.6875rem;   /* 11px  Label, Kapitälchen */
+  --grad-klein: 0.75rem;     /* 12px  Metazeilen */
+  --grad-ui: 0.8125rem;      /* 13px  Bedienelemente */
+  --grad-basis: 0.9375rem;   /* 15px  UI-Fließtext */
+  --grad-lese: 1.0625rem;    /* 17px  Artikelkörper */
+  --grad-titel: 1.75rem;
+  --grad-gross: 2.25rem;
+
+  --zeile-eng: 1.25;
+  --zeile-lese: 1.62;
+  --spur-kap: 0.1em;
+
+  /* ── Raum ──────────────────────────────────────────────────────────── */
+  --r1: 0.25rem;  --r2: 0.5rem;  --r3: 0.75rem;
+  --r4: 1rem;     --r5: 1.5rem;  --r6: 2rem;   --r7: 3rem;
+
+  --radius-s: 2px;
+  --radius-m: 4px;
+  --radius-l: 7px;
+  --radius-pille: 999px;
+
+  /* ── Zeit ──────────────────────────────────────────────────────────── */
+  --ms-antwort: 140ms;      /* Druck, Hover, Fokus            */
+  --ms-zustand: 280ms;      /* Auswahl, Enthüllung, Inspektor  */
+  --ms-reise:   340ms;      /* Wanderung Quelle → Ziel         */
+  --ms-uebergang: 820ms;    /* inszenierter Moment             */
+  --bogen: cubic-bezier(.2,.72,.16,1);
+  --bogen-weich: cubic-bezier(.32,.06,.24,1);
+
+  /* ── Farbe · HELL (Archiv bei Tag: gealtertes Papier) ──────────────── */
+  --grund:          #ddd4c3;
+  --grund-tief:     #cfc4b0;
+  --flaeche:        #efe8da;
+  --flaeche-hoch:   #f8f3e8;
+  --flaeche-tief:   #e5dccb;
+  --flaeche-plan:   #e9e0cf;
+
+  --linie:          #cbbfa9;
+  --linie-zart:     #dcd2be;
+  --linie-stark:    #a9997d;
+
+  --tinte:          #241f1a;
+  --tinte-leise:    #5d5245;
+  --tinte-schwach:  #8a7d6b;
+
+  --oxblut:         #7d2029;
+  --oxblut-hell:    #9c2c36;
+  --oxblut-flaeche: rgba(125, 32, 41, .10);
+  --oxblut-linie:   rgba(125, 32, 41, .34);
+
+  --messing:        #8a6318;
+  --messing-hell:   #b58a2c;
+  --messing-flaeche:rgba(138, 99, 24, .13);
+  --messing-linie:  rgba(138, 99, 24, .40);
+
+  --verweis:        #2b5878;
+  --verweis-hover:  #17415f;
+  --verweis-rot:    #9c2c36;
+
+  --fokus:          #1f5f8b;
+  --fokus-kontrast: #f8f3e8;
+
+  --kante-licht:    rgba(255,255,255,.72);
+  --kante-dunkel:   rgba(60,44,24,.10);
+
+  --schatten-1: 0 1px 2px rgba(60,44,24,.14);
+  --schatten-2: 0 2px 4px rgba(60,44,24,.10), 0 6px 14px rgba(60,44,24,.10);
+  --schatten-3: 0 1px 1px rgba(60,44,24,.10), 0 8px 22px rgba(60,44,24,.14),
+                0 28px 60px rgba(60,44,24,.12);
+  --schatten-tief-innen: inset 0 1px 3px rgba(60,44,24,.14);
+
+  --korn-staerke: .055;
+  --vignette: rgba(90,70,44,.16);
+
+  --breite-docket: 16.5rem;
+  --breite-linse: 21.5rem;
+  --mass-lese: 38rem;
+}
+
+/* ── Farbe · DUNKEL (Archiv bei Lampenlicht) ─────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grund:          #100d0b;
+    --grund-tief:     #0a0807;
+    --flaeche:        #1a1613;
+    --flaeche-hoch:   #201b17;
+    --flaeche-tief:   #141110;
+    --flaeche-plan:   #17130f;
+
+    --linie:          #372f27;
+    --linie-zart:     #292219;
+    --linie-stark:    #4d4236;
+
+    --tinte:          #ece2d1;
+    --tinte-leise:    #a8998a;
+    --tinte-schwach:  #7c6f62;
+
+    --oxblut:         #c2454b;
+    --oxblut-hell:    #dd6a6c;
+    --oxblut-flaeche: rgba(194, 69, 75, .13);
+    --oxblut-linie:   rgba(194, 69, 75, .38);
+
+    --messing:        #cfa14f;
+    --messing-hell:   #ecc57c;
+    --messing-flaeche:rgba(207, 161, 79, .13);
+    --messing-linie:  rgba(207, 161, 79, .40);
+
+    --verweis:        #7fb0d4;
+    --verweis-hover:  #a6cbe6;
+    --verweis-rot:    #e0757a;
+
+    --fokus:          #86bde4;
+    --fokus-kontrast: #100d0b;
+
+    --kante-licht:    rgba(255,236,200,.055);
+    --kante-dunkel:   rgba(0,0,0,.5);
+
+    --schatten-1: 0 1px 2px rgba(0,0,0,.6);
+    --schatten-2: 0 2px 5px rgba(0,0,0,.5), 0 8px 18px rgba(0,0,0,.44);
+    --schatten-3: 0 1px 1px rgba(0,0,0,.5), 0 10px 26px rgba(0,0,0,.5),
+                  0 34px 70px rgba(0,0,0,.55);
+    --schatten-tief-innen: inset 0 1px 4px rgba(0,0,0,.55);
+
+    --korn-staerke: .07;
+    --vignette: rgba(0,0,0,.55);
+  }
+}
+
+/* ── Attribut-Overrides schlagen die Media Query (beide Richtungen) ──── */
+:root[data-thema="dark"] {
+  --grund:#100d0b; --grund-tief:#0a0807; --flaeche:#1a1613; --flaeche-hoch:#201b17;
+  --flaeche-tief:#141110; --flaeche-plan:#17130f;
+  --linie:#372f27; --linie-zart:#292219; --linie-stark:#4d4236;
+  --tinte:#ece2d1; --tinte-leise:#a8998a; --tinte-schwach:#7c6f62;
+  --oxblut:#c2454b; --oxblut-hell:#dd6a6c; --oxblut-flaeche:rgba(194,69,75,.13);
+  --oxblut-linie:rgba(194,69,75,.38);
+  --messing:#cfa14f; --messing-hell:#ecc57c; --messing-flaeche:rgba(207,161,79,.13);
+  --messing-linie:rgba(207,161,79,.40);
+  --verweis:#7fb0d4; --verweis-hover:#a6cbe6; --verweis-rot:#e0757a;
+  --fokus:#86bde4; --fokus-kontrast:#100d0b;
+  --kante-licht:rgba(255,236,200,.055); --kante-dunkel:rgba(0,0,0,.5);
+  --schatten-1:0 1px 2px rgba(0,0,0,.6);
+  --schatten-2:0 2px 5px rgba(0,0,0,.5), 0 8px 18px rgba(0,0,0,.44);
+  --schatten-3:0 1px 1px rgba(0,0,0,.5), 0 10px 26px rgba(0,0,0,.5), 0 34px 70px rgba(0,0,0,.55);
+  --schatten-tief-innen: inset 0 1px 4px rgba(0,0,0,.55);
+  --korn-staerke:.07; --vignette:rgba(0,0,0,.55);
+}
+:root[data-thema="light"] {
+  --grund:#ddd4c3; --grund-tief:#cfc4b0; --flaeche:#efe8da; --flaeche-hoch:#f8f3e8;
+  --flaeche-tief:#e5dccb; --flaeche-plan:#e9e0cf;
+  --linie:#cbbfa9; --linie-zart:#dcd2be; --linie-stark:#a9997d;
+  --tinte:#241f1a; --tinte-leise:#5d5245; --tinte-schwach:#8a7d6b;
+  --oxblut:#7d2029; --oxblut-hell:#9c2c36; --oxblut-flaeche:rgba(125,32,41,.10);
+  --oxblut-linie:rgba(125,32,41,.34);
+  --messing:#8a6318; --messing-hell:#b58a2c; --messing-flaeche:rgba(138,99,24,.13);
+  --messing-linie:rgba(138,99,24,.40);
+  --verweis:#2b5878; --verweis-hover:#17415f; --verweis-rot:#9c2c36;
+  --fokus:#1f5f8b; --fokus-kontrast:#f8f3e8;
+  --kante-licht:rgba(255,255,255,.72); --kante-dunkel:rgba(60,44,24,.10);
+  --schatten-1:0 1px 2px rgba(60,44,24,.14);
+  --schatten-2:0 2px 4px rgba(60,44,24,.10), 0 6px 14px rgba(60,44,24,.10);
+  --schatten-3:0 1px 1px rgba(60,44,24,.10), 0 8px 22px rgba(60,44,24,.14), 0 28px 60px rgba(60,44,24,.12);
+  --schatten-tief-innen: inset 0 1px 3px rgba(60,44,24,.14);
+  --korn-staerke:.055; --vignette:rgba(90,70,44,.16);
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--grund); }
+
+.codex-wurzel {
+  font-family: var(--schrift-ui);
+  font-size: var(--grad-basis);
+  line-height: 1.5;
+  color: var(--tinte);
+  background: var(--grund);
+  min-height: 100dvh;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Papierkorn + Vignette — statisch, rein dekorativ, ohne Zeigerereignisse */
+.codex-wurzel::before {
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='k'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23k)'/%3E%3C/svg%3E");
+  opacity: var(--korn-staerke);
+  mix-blend-mode: overlay;
+}
+.codex-wurzel::after {
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 0%, transparent 42%, var(--vignette) 100%);
+}
+
+.schale { position: relative; z-index: 1; }
+
+h1,h2,h3,h4 { margin: 0; font-weight: 600; line-height: var(--zeile-eng); }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
+/* ── Kapitälchen-Label ────────────────────────────────────────────────── */
+.label {
+  font-size: var(--grad-mikro);
+  letter-spacing: var(--spur-kap);
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--tinte-schwach);
+}
+
+.zahl { font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums; }
+.tab  { font-variant-numeric: tabular-nums; }
+
+/* ── Fokus: überall sichtbar ─────────────────────────────────────────── */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+.seg input:focus-visible + .seg-flaeche {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+}
+
+/* ══ KOPFLEISTE ════════════════════════════════════════════════════════ */
+.kopf {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--r4);
+  padding: var(--r3) var(--r5);
+  background: linear-gradient(180deg, var(--flaeche) 0%, var(--flaeche-plan) 100%);
+  border-bottom: 1px solid var(--linie-stark);
+  box-shadow: 0 1px 0 var(--kante-licht) inset, var(--schatten-1);
+}
+.marke { display: flex; align-items: center; gap: var(--r3); min-width: 0; }
+.sigill { flex: none; color: var(--oxblut); }
+.marke-text { min-width: 0; }
+.marke-kampagne {
+  font-family: var(--schrift-lese);
+  font-size: 1.0625rem; font-weight: 600; letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.marke-sitzung {
+  font-size: var(--grad-klein); color: var(--tinte-leise);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.kopf-mitte { display: flex; align-items: center; gap: var(--r4); flex-wrap: wrap; }
+.kopf-rechts { margin-left: auto; display: flex; align-items: center; gap: var(--r4); flex-wrap: wrap; }
+
+.uhr {
+  font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums;
+  font-size: var(--grad-ui);
+  padding: var(--r1) var(--r2);
+  border: 1px solid var(--linie); border-radius: var(--radius-m);
+  background: var(--flaeche-tief);
+  color: var(--tinte-leise);
+}
+
+.praesenz { display: flex; align-items: center; gap: var(--r2); }
+.praesenz-liste { display: flex; }
+.punkt {
+  width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: var(--grad-mikro); font-weight: 700;
+  border: 1px solid var(--linie-stark);
+  background: var(--flaeche-tief); color: var(--tinte-leise);
+  margin-left: -0.375rem;
+  box-shadow: var(--schatten-1);
+}
+.punkt:first-child { margin-left: 0; }
+.punkt.sl { background: var(--oxblut); color: #fff; border-color: var(--oxblut); }
+
+/* ── Segmentierte Regler ─────────────────────────────────────────────── */
+.reglergruppe { display: flex; align-items: center; gap: var(--r2); }
+.segleiste {
+  display: flex; border: 1px solid var(--linie-stark); border-radius: var(--radius-m);
+  background: var(--flaeche-tief); padding: 2px; gap: 2px;
+  box-shadow: var(--schatten-tief-innen);
+}
+.seg { position: relative; display: flex; }
+.seg input {
+  position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer;
+}
+.seg-flaeche {
+  display: block; padding: 0.3125rem var(--r3);
+  font-size: var(--grad-ui); font-weight: 500; color: var(--tinte-leise);
+  border-radius: 3px; white-space: nowrap; cursor: pointer;
+  transition: background var(--ms-antwort) var(--bogen),
+              color var(--ms-antwort) var(--bogen),
+              box-shadow var(--ms-antwort) var(--bogen);
+}
+.seg:hover .seg-flaeche { color: var(--tinte); }
+.seg input:checked + .seg-flaeche {
+  background: var(--flaeche-hoch); color: var(--tinte); font-weight: 600;
+  box-shadow: 0 1px 0 var(--kante-licht) inset, var(--schatten-1);
+}
+.segleiste.oxblut input:checked + .seg-flaeche {
+  background: var(--oxblut); color: #fff;
+  box-shadow: var(--schatten-1);
+}
+
+/* ══ HAUPTRASTER ═══════════════════════════════════════════════════════ */
+.mitte {
+  display: grid;
+  grid-template-columns: var(--breite-docket) minmax(0, 1fr) var(--breite-linse);
+  gap: var(--r4);
+  padding: var(--r4) var(--r5);
+  align-items: start;
+}
+.spalte { min-width: 0; display: flex; flex-direction: column; gap: var(--r3); }
+
+@media (min-width: 1180px) and (min-height: 760px) {
+  .schale {
+    display: grid; grid-template-rows: auto minmax(0,1fr) auto auto;
+    height: 100dvh;
+  }
+  .mitte { overflow: hidden; min-height: 0; }
+  .spalte { max-height: 100%; overflow-y: auto; overscroll-behavior: contain;
+            scrollbar-width: thin; padding-right: 2px; }
+}
+
+/* ── Panel-Grundform ─────────────────────────────────────────────────── */
+.panel {
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-l);
+  box-shadow: 0 1px 0 var(--kante-licht) inset, var(--schatten-2);
+}
+.panel-kopf {
+  display: flex; align-items: baseline; gap: var(--r2);
+  padding: var(--r3) var(--r4);
+  border-bottom: 1px solid var(--linie-zart);
+}
+.panel-kopf h2 { font-size: var(--grad-mikro); letter-spacing: var(--spur-kap);
+                 text-transform: uppercase; color: var(--tinte-leise); font-weight: 700; }
+.panel-kopf .zaehler { margin-left: auto; font-size: var(--grad-klein);
+                       color: var(--tinte-schwach); font-variant-numeric: tabular-nums; }
+
+/* ══ DOCKET (links) ════════════════════════════════════════════════════ */
+.docket-liste { padding: var(--r2); display: flex; flex-direction: column; gap: 2px; }
+.docket-zeile {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--r2);
+  align-items: center;
+  padding: var(--r2) var(--r3);
+  border-radius: var(--radius-m);
+  border: 1px solid transparent;
+  transition: background var(--ms-antwort) var(--bogen),
+              border-color var(--ms-antwort) var(--bogen);
+}
+.docket-zeile:hover { background: var(--flaeche-tief); }
+.docket-titel { font-size: var(--grad-ui); font-weight: 500; }
+.docket-titel .mark { color: var(--tinte-schwach); font-family: var(--schrift-zahl); }
+.docket-meta { grid-column: 1 / -1; font-size: var(--grad-mikro); color: var(--tinte-schwach);
+               font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.docket-zeile.scharf {
+  background: var(--messing-flaeche);
+  border-color: var(--messing-linie);
+  box-shadow: 0 0 0 1px var(--messing-flaeche);
+}
+.docket-zeile.scharf .docket-titel { font-weight: 700; }
+.docket-zeile.erledigt .docket-titel { color: var(--tinte-leise); }
+
+.haken { color: var(--messing); font-weight: 700; }
+.kbd {
+  font-family: var(--schrift-zahl); font-size: var(--grad-mikro);
+  padding: 1px 0.375rem; min-width: 1.375rem; text-align: center;
+  border: 1px solid var(--linie-stark); border-bottom-width: 2px;
+  border-radius: var(--radius-s);
+  background: var(--flaeche-hoch); color: var(--tinte-leise);
+  box-shadow: 0 1px 0 var(--kante-licht) inset;
+}
+.docket-zeile.scharf .kbd {
+  border-color: var(--messing-linie); color: var(--messing);
+  background: var(--flaeche-hoch);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .docket-zeile.scharf .kbd { animation: puls 2.6s var(--bogen-weich) infinite; }
+}
+@keyframes puls {
+  0%, 100% { box-shadow: 0 0 0 0 var(--messing-flaeche); }
+  50%      { box-shadow: 0 0 0 4px var(--messing-flaeche); }
+}
+
+.rotliste { padding: var(--r2) var(--r4) var(--r4); }
+.rotliste li { font-size: var(--grad-klein); padding: 3px 0; color: var(--tinte-leise); }
+.rotliste .rot { color: var(--verweis-rot); border-bottom: 1px dashed var(--verweis-rot); }
+
+/* ══ BÜHNE / ARTIKEL (Mitte) ═══════════════════════════════════════════ */
+.werkzeugleiste {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--r3);
+  padding: var(--r3) var(--r4);
+}
+.werkzeugleiste .label { flex: none; }
+.artikel-meta {
+  margin-left: auto; display: flex; align-items: center; gap: var(--r3);
+  font-size: var(--grad-klein); color: var(--tinte-schwach);
+  font-variant-numeric: tabular-nums;
+}
+.artikel-meta .wechsel { transition: color var(--ms-zustand) var(--bogen); }
+.artikel-meta.frisch .wechsel { color: var(--messing); }
+
+.papier {
+  position: relative;
+  background:
+    linear-gradient(180deg, var(--flaeche-hoch) 0%, var(--flaeche) 74%, var(--flaeche-plan) 100%);
+  border: 1px solid var(--linie-stark);
+  border-radius: var(--radius-l);
+  box-shadow: 0 1px 0 var(--kante-licht) inset, var(--schatten-3);
+  padding: var(--r6) var(--r6) var(--r5);
+  overflow: hidden;
+}
+.papier::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  background: linear-gradient(90deg, var(--oxblut) 0 22%, transparent 22%);
+  opacity: .8;
+}
+
+.artikel-kopf { margin-bottom: var(--r5); }
+.typ-zeile { display: flex; align-items: center; gap: var(--r2); margin-bottom: var(--r2); }
+.typ-marke {
+  font-size: var(--grad-mikro); letter-spacing: var(--spur-kap); text-transform: uppercase;
+  font-weight: 700; color: var(--oxblut);
+  border: 1px solid var(--oxblut-linie); border-radius: var(--radius-s);
+  padding: 1px var(--r2); background: var(--oxblut-flaeche);
+}
+.geltung {
+  font-size: var(--grad-mikro); letter-spacing: .05em; text-transform: uppercase;
+  font-weight: 600; color: var(--tinte-schwach);
+  border: 1px dashed var(--linie-stark); border-radius: var(--radius-s);
+  padding: 1px var(--r2);
+}
+.artikel-titel {
+  font-family: var(--schrift-lese);
+  font-size: var(--grad-gross);
+  font-weight: 600; letter-spacing: -.012em;
+  margin-bottom: var(--r3);
+}
+.titelregel { display: flex; align-items: center; gap: var(--r2); }
+.titelregel .strich { height: 1px; background: var(--linie-stark); flex: 1; }
+.titelregel .balken { height: 2px; width: 3.5rem; background: var(--oxblut); }
+.titelregel svg { color: var(--oxblut); opacity: .75; }
+
+/* ── Infobox ─────────────────────────────────────────────────────────── */
+.infobox {
+  border: 1px solid var(--linie-stark);
+  border-radius: var(--radius-m);
+  background: var(--flaeche-tief);
+  box-shadow: var(--schatten-tief-innen);
+  margin: 0 0 var(--r5);
+  overflow: hidden;
+}
+@media (min-width: 780px) {
+  .infobox { float: right; width: 15.5rem; margin: 0 0 var(--r4) var(--r5); }
+}
+.infobox-kopf {
+  padding: var(--r2) var(--r3);
+  background: var(--oxblut); color: #fff;
+  font-family: var(--schrift-lese); font-size: var(--grad-basis); font-weight: 600;
+  letter-spacing: .01em;
+}
+.infobox-bild {
+  display: block; width: 100%; height: auto;
+  background: var(--flaeche-plan);
+  border-bottom: 1px solid var(--linie);
+  color: var(--tinte-leise);
+}
+.infobox dl { margin: 0; padding: var(--r2) var(--r3) var(--r3); }
+.infobox .zeile {
+  display: grid; grid-template-columns: 5.5rem 1fr; gap: var(--r2);
+  padding: var(--r1) 0; border-bottom: 1px solid var(--linie-zart);
+  font-size: var(--grad-klein);
+}
+.infobox .zeile:last-child { border-bottom: 0; }
+.infobox dt { color: var(--tinte-schwach); font-weight: 600; }
+.infobox dd { margin: 0; }
+.infobox .zeile.nursl { background: var(--oxblut-flaeche); margin: 0 calc(var(--r2) * -1);
+                        padding-left: var(--r2); padding-right: var(--r2); border-radius: 2px; }
+
+/* ── Absätze ─────────────────────────────────────────────────────────── */
+.absatz-liste { display: flex; flex-direction: column; gap: var(--r2); }
+.absatz {
+  position: relative;
+  display: grid; grid-template-columns: 3rem minmax(0, 1fr);
+  gap: var(--r3);
+  padding: var(--r3) var(--r3) var(--r3) var(--r2);
+  border-left: 2px solid transparent;
+  border-radius: var(--radius-m);
+  transition: background var(--ms-zustand) var(--bogen),
+              border-color var(--ms-zustand) var(--bogen),
+              box-shadow var(--ms-zustand) var(--bogen),
+              transform var(--ms-zustand) var(--bogen),
+              opacity var(--ms-zustand) var(--bogen);
+}
+.absatz:hover { background: var(--flaeche-tief); }
+.absatz-mark {
+  font-family: var(--schrift-zahl); font-size: var(--grad-klein);
+  color: var(--tinte-schwach); padding-top: .3rem;
+  font-variant-numeric: tabular-nums;
+}
+.absatz-koerper { min-width: 0; }
+.absatz p {
+  font-family: var(--schrift-lese);
+  font-size: var(--grad-lese);
+  line-height: var(--zeile-lese);
+  max-width: var(--mass-lese);
+  hyphens: auto;
+}
+.absatz-fuss {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--r2);
+  margin-top: var(--r2);
+}
+
+.sicht {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: var(--grad-mikro); letter-spacing: .04em; text-transform: uppercase;
+  font-weight: 600; padding: 1px var(--r2); border-radius: var(--radius-pille);
+  border: 1px solid var(--linie-stark); color: var(--tinte-schwach);
+  background: var(--flaeche-tief);
+  font-variant-numeric: tabular-nums;
+}
+.sicht.nursl { color: var(--oxblut); border-color: var(--oxblut-linie); background: var(--oxblut-flaeche); }
+.sicht.enthuellt { color: var(--messing); border-color: var(--messing-linie); background: var(--messing-flaeche); }
+
+.absatz.geheim { background: repeating-linear-gradient(
+    -45deg, transparent 0 9px, var(--oxblut-flaeche) 9px 10px);
+  border-left-color: var(--oxblut-linie); }
+.absatz.scharf {
+  background: var(--messing-flaeche);
+  border-left-color: var(--messing);
+  box-shadow: var(--schatten-1);
+}
+.absatz.blitzt { animation: blitz var(--ms-uebergang) var(--bogen-weich); }
+@keyframes blitz {
+  0%   { background: var(--messing-flaeche); box-shadow: 0 0 0 0 var(--messing-linie); }
+  22%  { background: var(--messing-flaeche); box-shadow: 0 0 0 6px var(--messing-flaeche); }
+  100% { background: transparent; box-shadow: 0 0 0 0 transparent; }
+}
+.absatz.hebt { transform: translateY(-3px); box-shadow: var(--schatten-2); }
+.absatz.neu { opacity: 0; transform: translateY(10px) scale(.99); }
+
+/* ── Klausel ─────────────────────────────────────────────────────────── */
+.klausel {
+  display: inline-grid; grid-template-columns: auto auto; align-items: center;
+  gap: 0 var(--r2);
+  margin-top: var(--r3);
+  padding: var(--r2) var(--r3);
+  border: 1px solid var(--messing-linie);
+  border-left: 3px solid var(--messing);
+  border-radius: var(--radius-m);
+  background: var(--messing-flaeche);
+  box-shadow: var(--schatten-tief-innen);
+  max-width: 100%;
+}
+.klausel .label { grid-column: 1 / -1; color: var(--messing); }
+.klausel-wert {
+  font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums;
+  font-size: var(--grad-basis); font-weight: 700; color: var(--tinte);
+  white-space: nowrap;
+}
+.klausel-ziel { font-size: var(--grad-klein); color: var(--tinte-leise); }
+.klausel.aktiv { border-left-color: var(--oxblut); }
+
+.widerspruch {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: var(--grad-mikro); font-weight: 600;
+  color: var(--oxblut); border: 1px dashed var(--oxblut-linie);
+  padding: 1px var(--r2); border-radius: var(--radius-s);
+}
+
+/* ── Verweise ────────────────────────────────────────────────────────── */
+.verweis {
+  font: inherit; color: var(--verweis); background: none; border: 0; padding: 0;
+  cursor: pointer;
+  border-bottom: 1px solid color-mix(in srgb, var(--verweis) 40%, transparent);
+  transition: color var(--ms-antwort) var(--bogen),
+              border-color var(--ms-antwort) var(--bogen);
+}
+.verweis:hover { color: var(--verweis-hover); border-bottom-color: currentColor; }
+.verweis.rot { color: var(--verweis-rot); border-bottom-style: dashed;
+               border-bottom-color: color-mix(in srgb, var(--verweis-rot) 55%, transparent); }
+.verweis.rot::after { content: "?"; font-size: .72em; vertical-align: super; opacity: .8; }
+.verweis-stumm { color: inherit; }
+
+/* ── Tabellenabsatz ──────────────────────────────────────────────────── */
+.tabellenrahmen { overflow-x: auto; max-width: 100%; padding-bottom: 2px; }
+table.gebuehren {
+  border-collapse: collapse; font-size: var(--grad-ui); min-width: 26rem;
+  font-variant-numeric: tabular-nums;
+}
+table.gebuehren caption {
+  text-align: left; font-size: var(--grad-mikro); letter-spacing: var(--spur-kap);
+  text-transform: uppercase; color: var(--tinte-schwach); font-weight: 700;
+  padding-bottom: var(--r2);
+}
+table.gebuehren th, table.gebuehren td {
+  padding: var(--r2) var(--r3); border-bottom: 1px solid var(--linie-zart); text-align: left;
+}
+table.gebuehren thead th {
+  border-bottom: 1px solid var(--linie-stark); color: var(--tinte-leise);
+  font-size: var(--grad-klein); font-weight: 700;
+}
+table.gebuehren td.num, table.gebuehren th.num { text-align: right;
+  font-family: var(--schrift-zahl); }
+table.gebuehren tbody tr:hover { background: var(--flaeche-tief); }
+
+/* ── Serverhinweis ───────────────────────────────────────────────────── */
+.serverhinweis {
+  clear: both;
+  margin-top: var(--r5); padding: var(--r3);
+  border-top: 1px solid var(--linie-zart);
+  font-size: var(--grad-klein); color: var(--tinte-schwach);
+  display: flex; gap: var(--r2); align-items: flex-start;
+}
+.serverhinweis strong { color: var(--tinte-leise); font-weight: 600; }
+
+/* ══ KNÖPFE ════════════════════════════════════════════════════════════ */
+.knopf {
+  font-family: inherit; font-size: var(--grad-ui); font-weight: 600;
+  display: inline-flex; align-items: center; gap: var(--r2);
+  padding: 0.4375rem var(--r4);
+  border-radius: var(--radius-m); cursor: pointer;
+  border: 1px solid var(--linie-stark);
+  background: linear-gradient(180deg, var(--flaeche-hoch), var(--flaeche));
+  color: var(--tinte);
+  box-shadow: 0 1px 0 var(--kante-licht) inset, var(--schatten-1);
+  transition: transform var(--ms-antwort) var(--bogen),
+              box-shadow var(--ms-antwort) var(--bogen),
+              background var(--ms-antwort) var(--bogen),
+              border-color var(--ms-antwort) var(--bogen),
+              opacity var(--ms-antwort) var(--bogen);
+}
+.knopf:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 1px 0 var(--kante-licht) inset, var(--schatten-2); }
+.knopf:active:not(:disabled) { transform: translateY(0); box-shadow: var(--schatten-tief-innen); }
+.knopf:disabled { opacity: .42; cursor: not-allowed; }
+.knopf .kbd { margin-left: var(--r1); }
+
+.knopf.stark {
+  background: linear-gradient(180deg, var(--oxblut-hell), var(--oxblut));
+  border-color: var(--oxblut); color: #fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, var(--schatten-2);
+}
+.knopf.stark .kbd { background: rgba(0,0,0,.22); color: #fff; border-color: rgba(255,255,255,.3); }
+.knopf.messing {
+  background: linear-gradient(180deg, var(--flaeche-hoch), var(--flaeche));
+  border-color: var(--messing-linie); color: var(--messing);
+}
+.knopf.leise {
+  background: none; border-color: transparent; color: var(--tinte-leise); box-shadow: none;
+  font-weight: 500;
+}
+.knopf.leise:hover:not(:disabled) { background: var(--flaeche-tief); color: var(--tinte); box-shadow: none; }
+
+/* ══ KONTEXT-LINSE (rechts) ════════════════════════════════════════════ */
+.linse-fach { display: flex; flex-direction: column; gap: var(--r3); }
+
+/* Herleitung */
+.herleitung { border-color: var(--messing-linie); }
+.herleitung .panel-kopf { border-bottom-color: var(--messing-linie); }
+.herleitung .panel-kopf h2 { color: var(--messing); }
+.herleitung-koerper { padding: var(--r3) var(--r4) var(--r4); }
+.hl-summe {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--r3); padding-bottom: var(--r2); margin-bottom: var(--r2);
+  border-bottom: 1px solid var(--linie-stark);
+}
+.hl-summe .name { font-family: var(--schrift-lese); font-size: 1.0625rem; font-weight: 600; }
+.hl-summe .wert {
+  font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums;
+  font-size: 1.875rem; font-weight: 700; line-height: 1; color: var(--tinte);
+}
+.hl-zeile {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--r2);
+  align-items: baseline; padding: var(--r2) 0;
+  border-bottom: 1px solid var(--linie-zart);
+  font-size: var(--grad-ui);
+}
+.hl-zeile:last-child { border-bottom: 0; }
+.hl-zeile .betrag { font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums; font-weight: 600; }
+.hl-quelle { grid-column: 1 / -1; font-size: var(--grad-klein); color: var(--tinte-schwach); }
+.hl-zeile.zitat { background: var(--messing-flaeche); border-radius: var(--radius-m);
+                  padding: var(--r2) var(--r3); margin: var(--r1) calc(var(--r3) * -1);
+                  border-bottom: 0; }
+.hl-zeile.zitat .betrag { color: var(--messing); }
+.quellknopf {
+  font: inherit; font-size: var(--grad-klein); text-align: left;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--verweis); border-bottom: 1px solid color-mix(in srgb, var(--verweis) 40%, transparent);
+  transition: color var(--ms-antwort) var(--bogen);
+}
+.quellknopf:hover { color: var(--verweis-hover); border-bottom-color: currentColor; }
+.hl-fuss { margin-top: var(--r3); font-size: var(--grad-klein); color: var(--tinte-schwach); }
+
+/* Bücher */
+.buecher { padding: var(--r2); display: flex; flex-direction: column; gap: var(--r2); }
+.buch {
+  border: 1px solid var(--linie-zart); border-radius: var(--radius-m);
+  background: var(--flaeche-tief);
+  box-shadow: var(--schatten-tief-innen);
+  padding: var(--r3);
+  transition: border-color var(--ms-zustand) var(--bogen),
+              background var(--ms-zustand) var(--bogen);
+}
+.buch.leuchtet { border-color: var(--messing-linie); background: var(--messing-flaeche); }
+.buch-kopf { display: flex; align-items: center; gap: var(--r2); }
+.buch-portraet {
+  width: 1.875rem; height: 1.875rem; flex: none; border-radius: var(--radius-s);
+  display: grid; place-items: center;
+  font-family: var(--schrift-lese); font-weight: 700; font-size: var(--grad-basis);
+  background: linear-gradient(150deg, var(--flaeche-hoch), var(--flaeche-plan));
+  border: 1px solid var(--linie-stark); color: var(--tinte-leise);
+  box-shadow: 0 1px 0 var(--kante-licht) inset;
+}
+.buch-name { font-weight: 600; font-size: var(--grad-ui); }
+.buch-rolle { font-size: var(--grad-mikro); color: var(--tinte-schwach); }
+.buch-bogen { margin-left: auto; text-align: right; }
+.buch-bogen .feld { font-size: var(--grad-mikro); letter-spacing: .05em;
+                    text-transform: uppercase; color: var(--tinte-schwach); font-weight: 600; }
+.buch-bogen .wert {
+  font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums;
+  font-size: 1.125rem; font-weight: 700; line-height: 1.1;
+  transition: color var(--ms-zustand) var(--bogen);
+}
+.buch-bogen .wert.frisch { color: var(--messing); }
+.buch-stand {
+  margin-top: var(--r2); font-size: var(--grad-mikro); color: var(--tinte-schwach);
+  font-variant-numeric: tabular-nums;
+  display: flex; justify-content: space-between; gap: var(--r2);
+}
+.buch-karte {
+  margin-top: var(--r2); padding: var(--r2) var(--r3);
+  border-left: 2px solid var(--messing);
+  background: var(--flaeche-hoch);
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  box-shadow: var(--schatten-1);
+  transition: opacity var(--ms-zustand) var(--bogen),
+              transform var(--ms-zustand) var(--bogen);
+}
+.buch-karte.neu { opacity: 0; transform: translateY(8px); }
+.buch-karte p {
+  font-family: var(--schrift-lese); font-size: var(--grad-klein);
+  line-height: 1.45; color: var(--tinte-leise);
+}
+.buch-stempel {
+  margin-top: var(--r1); font-size: var(--grad-mikro); color: var(--messing);
+  letter-spacing: .04em; font-variant-numeric: tabular-nums; font-weight: 600;
+}
+
+/* ══ SITZUNGSSCHIENE (unten) ═══════════════════════════════════════════ */
+.schiene {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) auto;
+  gap: var(--r4);
+  align-items: stretch;
+  padding: var(--r3) var(--r5) var(--r4);
+  border-top: 1px solid var(--linie-stark);
+  background: linear-gradient(180deg, var(--flaeche-plan), var(--grund-tief));
+  box-shadow: 0 -1px 0 var(--kante-licht) inset;
+}
+.schiene-block { min-width: 0; display: flex; flex-direction: column; gap: var(--r2); }
+.schiene-block > .label { display: flex; align-items: baseline; gap: var(--r2); }
+
+.buehne {
+  flex: 1; min-height: 5.5rem;
+  border: 1px solid var(--linie); border-radius: var(--radius-m);
+  background: var(--flaeche);
+  box-shadow: var(--schatten-tief-innen);
+  padding: var(--r3);
+  display: flex; align-items: center;
+}
+.buehne.leer {
+  border-style: dashed; color: var(--tinte-schwach);
+  justify-content: center; font-size: var(--grad-klein);
+}
+.handzettel {
+  width: 100%;
+  border: 1px solid var(--linie-stark);
+  border-left: 3px solid var(--oxblut);
+  border-radius: var(--radius-s);
+  background: linear-gradient(180deg, var(--flaeche-hoch), var(--flaeche));
+  box-shadow: 0 1px 0 var(--kante-licht) inset, var(--schatten-2);
+  padding: var(--r3);
+  transition: opacity var(--ms-zustand) var(--bogen),
+              transform var(--ms-zustand) var(--bogen);
+}
+.handzettel.neu { opacity: 0; transform: translateY(10px) scale(.985); }
+.handzettel-kopf {
+  display: flex; align-items: baseline; gap: var(--r2); margin-bottom: var(--r1);
+}
+.handzettel-kopf .quelle { font-size: var(--grad-mikro); letter-spacing: .05em;
+  text-transform: uppercase; font-weight: 700; color: var(--oxblut); }
+.handzettel-kopf .stempel { margin-left: auto; font-size: var(--grad-mikro);
+  color: var(--tinte-schwach); font-variant-numeric: tabular-nums; }
+.handzettel p {
+  font-family: var(--schrift-lese); font-size: var(--grad-ui); line-height: 1.5;
+}
+
+.protokoll {
+  flex: 1; min-height: 5.5rem; max-height: 8.5rem; overflow-y: auto;
+  border: 1px solid var(--linie); border-radius: var(--radius-m);
+  background: var(--flaeche-tief);
+  box-shadow: var(--schatten-tief-innen);
+  padding: var(--r2) var(--r3);
+  scrollbar-width: thin;
+}
+.log-zeile {
+  display: grid; grid-template-columns: 3.25rem 1fr; gap: var(--r2);
+  padding: 3px 0; font-size: var(--grad-klein);
+  border-bottom: 1px solid var(--linie-zart);
+  transition: background var(--ms-zustand) var(--bogen);
+}
+.log-zeile:last-child { border-bottom: 0; }
+.log-zeit { font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums;
+            color: var(--tinte-schwach); }
+.log-text { color: var(--tinte-leise); }
+.log-text b { color: var(--tinte); font-weight: 600; }
+.log-zeile.frisch { background: var(--messing-flaeche); }
+.log-zeile.zurueckgezogen .log-text { text-decoration: line-through; opacity: .55; }
+.log-zeile.zurueckgezogen .log-zeit { opacity: .55; }
+
+.wurfknopf {
+  font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums;
+  font-size: var(--grad-ui); font-weight: 700;
+  padding: 0 var(--r2); margin: 0 2px; cursor: pointer;
+  border: 1px solid var(--messing-linie); border-radius: var(--radius-s);
+  background: var(--messing-flaeche); color: var(--messing);
+  transition: background var(--ms-antwort) var(--bogen),
+              color var(--ms-antwort) var(--bogen),
+              transform var(--ms-antwort) var(--bogen);
+}
+.wurfknopf:hover { background: var(--messing); color: var(--flaeche-hoch); transform: translateY(-1px); }
+.wurfknopf[aria-expanded="true"] { background: var(--messing); color: var(--flaeche-hoch); }
+@media (prefers-reduced-motion: no-preference) {
+  .wurfknopf.lockt { animation: puls 2.2s var(--bogen-weich) 3; }
+}
+
+.aktionen { display: flex; flex-direction: column; gap: var(--r2); justify-content: flex-end;
+            min-width: 12.5rem; }
+.aktions-hinweis { font-size: var(--grad-mikro); color: var(--tinte-schwach);
+                   font-variant-numeric: tabular-nums; }
+
+/* ══ VORSCHAU-KARTE (Wiki-Hovercard) ═══════════════════════════════════ */
+.vorschau {
+  position: fixed; z-index: 70; width: min(19rem, calc(100vw - 2rem));
+  border: 1px solid var(--linie-stark); border-radius: var(--radius-m);
+  background: var(--flaeche-hoch);
+  box-shadow: var(--schatten-3);
+  padding: var(--r3);
+  opacity: 0; transform: translateY(-4px); pointer-events: none;
+  transition: opacity var(--ms-antwort) var(--bogen), transform var(--ms-antwort) var(--bogen);
+}
+.vorschau[data-offen="1"] { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.vorschau h3 { font-family: var(--schrift-lese); font-size: 1rem; margin-bottom: 2px; }
+.vorschau .vtyp { font-size: var(--grad-mikro); letter-spacing: var(--spur-kap);
+  text-transform: uppercase; color: var(--oxblut); font-weight: 700; }
+.vorschau p { font-size: var(--grad-klein); color: var(--tinte-leise); line-height: 1.5;
+              margin-top: var(--r2); }
+.vorschau .vfuss { margin-top: var(--r2); padding-top: var(--r2);
+  border-top: 1px solid var(--linie-zart);
+  font-size: var(--grad-mikro); color: var(--tinte-schwach);
+  display: flex; justify-content: space-between; gap: var(--r2); }
+
+/* ══ WANDERNDE MOTE ════════════════════════════════════════════════════ */
+.motenschicht { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+.mote {
+  position: fixed; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, var(--messing-hell), var(--messing) 58%, transparent 72%);
+  box-shadow: 0 0 16px 5px var(--messing-flaeche), 0 0 3px 1px var(--messing-linie);
+  transition: transform var(--ms-reise) var(--bogen), opacity var(--ms-reise) linear;
+}
+
+/* ══ FUSSNOTE ══════════════════════════════════════════════════════════ */
+.fussnote {
+  display: flex; flex-wrap: wrap; gap: var(--r2) var(--r5);
+  padding: var(--r2) var(--r5) var(--r4);
+  font-size: var(--grad-mikro); color: var(--tinte-schwach);
+  border-top: 1px solid var(--linie-zart);
+  background: var(--grund-tief);
+}
+.fussnote .tasten { display: flex; gap: var(--r2); flex-wrap: wrap; align-items: center; }
+
+/* ══ ZUGÄNGLICHKEIT ════════════════════════════════════════════════════ */
+.nur-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important; scroll-behavior: auto !important;
+  }
+}
+:root[data-bewegung="reduziert"] *,
+:root[data-bewegung="reduziert"] *::before,
+:root[data-bewegung="reduziert"] *::after {
+  animation-duration: 1ms !important; animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important; scroll-behavior: auto !important;
+}
+
+/* ══ SCHMALE LAYOUTS ═══════════════════════════════════════════════════ */
+@media (max-width: 1179px) {
+  .mitte { grid-template-columns: minmax(0, 1fr); }
+  .spalte.docket-spalte { order: 3; }
+  .spalte.buehnen-spalte { order: 1; }
+  .spalte.linsen-spalte { order: 2; }
+  .schiene { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .aktionen { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; min-width: 0; }
+}
+@media (max-width: 760px) {
+  .mitte { padding: var(--r3); gap: var(--r3); }
+  .kopf { padding: var(--r3); gap: var(--r3); }
+  .kopf-rechts { margin-left: 0; width: 100%; }
+  .papier { padding: var(--r5) var(--r4) var(--r4); }
+  .artikel-titel { font-size: var(--grad-titel); }
+  .schiene { grid-template-columns: minmax(0, 1fr); padding: var(--r3); }
+  .absatz { grid-template-columns: minmax(0, 1fr); gap: var(--r1); }
+  .absatz-mark { padding-top: 0; }
+  .werkzeugleiste { padding: var(--r2) var(--r3); }
+  .artikel-meta { margin-left: 0; width: 100%; }
+  .fussnote { padding: var(--r3); }
+}
+@media (max-width: 420px) {
+  :root { --grad-lese: 1rem; --grad-gross: 1.5rem; --r5: 1rem; --r6: 1.125rem; }
+  .segleiste { width: 100%; }
+  .seg { flex: 1; }
+  .seg-flaeche { text-align: center; padding-left: var(--r2); padding-right: var(--r2); }
+  .infobox { margin-left: 0; }
+}
+</style>
+
+<div class="codex-wurzel" id="wurzel">
+<div class="schale">
+
+  <!-- ══ KOPFLEISTE ═══════════════════════════════════════════════════ -->
+  <header class="kopf">
+    <div class="marke">
+      <svg class="sigill" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <path d="M15 1.5 L28.5 15 L15 28.5 L1.5 15 Z" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".55"/>
+        <path d="M15 5.5 L24.5 15 L15 24.5 L5.5 15 Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M15 9.5 L20.5 15 L15 20.5 L9.5 15 Z" fill="currentColor" opacity=".85"/>
+      </svg>
+      <div class="marke-text">
+        <div class="marke-kampagne">Aldenfall</div>
+        <div class="marke-sitzung">Sitzung 14 &middot; Der Eiserne Tresor</div>
+      </div>
+    </div>
+
+    <div class="kopf-mitte">
+      <span class="uhr" id="uhr">21:47</span>
+      <div class="praesenz">
+        <span class="label">Am Tisch</span>
+        <ul class="praesenz-liste" aria-label="Anwesende">
+          <li class="punkt sl" title="Spielleitung">SL</li>
+          <li class="punkt" title="Kael">K</li>
+          <li class="punkt" title="Ossa">O</li>
+          <li class="punkt" title="Brenn">B</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="kopf-rechts">
+      <div class="reglergruppe">
+        <span class="label" id="lbl-thema">Darstellung</span>
+        <div class="segleiste" role="radiogroup" aria-labelledby="lbl-thema">
+          <label class="seg"><input type="radio" name="thema" value="system" checked><span class="seg-flaeche">System</span></label>
+          <label class="seg"><input type="radio" name="thema" value="light"><span class="seg-flaeche">Hell</span></label>
+          <label class="seg"><input type="radio" name="thema" value="dark"><span class="seg-flaeche">Dunkel</span></label>
+        </div>
+      </div>
+      <div class="reglergruppe">
+        <span class="label" id="lbl-bewegung">Bewegung</span>
+        <div class="segleiste" role="radiogroup" aria-labelledby="lbl-bewegung">
+          <label class="seg"><input type="radio" name="bewegung" value="system" checked><span class="seg-flaeche">Voll</span></label>
+          <label class="seg"><input type="radio" name="bewegung" value="reduziert"><span class="seg-flaeche">Reduziert</span></label>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ HAUPTRASTER ══════════════════════════════════════════════════ -->
+  <main class="mitte">
+
+    <!-- ── Docket ─────────────────────────────────────────────────── -->
+    <aside class="spalte docket-spalte" aria-labelledby="docket-titel">
+      <section class="panel">
+        <div class="panel-kopf">
+          <h2 id="docket-titel">Docket &middot; Sitzung 14</h2>
+          <span class="zaehler" id="docket-zaehler">3 / 9 enthüllt</span>
+        </div>
+        <ul class="docket-liste" id="docket-liste"></ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel-kopf"><h2>Offene Fragen</h2><span class="zaehler">2 rot</span></div>
+        <ul class="rotliste">
+          <li><span class="rot">Kepler-Gießerei</span> — 1 Verweis, kein Artikel</li>
+          <li><span class="rot">Vharon-Kontobuch</span> — 4 Nennungen im Sitzungschat</li>
+          <li style="color:var(--tinte-schwach);padding-top:var(--r2)">
+            Rote Verknüpfungen wandern in den Kanon-Diff am Sitzungsende.</li>
+        </ul>
+      </section>
+    </aside>
+
+    <!-- ── Bühne: der Artikel ─────────────────────────────────────── -->
+    <section class="spalte buehnen-spalte" aria-labelledby="artikel-titel">
+      <div class="panel werkzeugleiste">
+        <span class="label" id="lbl-cut">Leseransicht</span>
+        <div class="segleiste oxblut" role="radiogroup" aria-labelledby="lbl-cut">
+          <label class="seg"><input type="radio" name="cut" value="sl" checked><span class="seg-flaeche">Als SL</span></label>
+          <label class="seg"><input type="radio" name="cut" value="kael"><span class="seg-flaeche">Als Kael</span></label>
+          <label class="seg"><input type="radio" name="cut" value="tisch"><span class="seg-flaeche">Als der Tisch</span></label>
+        </div>
+        <p class="artikel-meta" id="artikel-meta"></p>
+      </div>
+
+      <article class="papier" id="artikel">
+        <header class="artikel-kopf">
+          <div class="typ-zeile">
+            <span class="typ-marke">Ort</span>
+            <span class="geltung" title="Dieser Artikel gehört der Welt, nicht der Kampagne.">Welt</span>
+          </div>
+          <h1 class="artikel-titel" id="artikel-titel">Eiserner Tresor</h1>
+          <div class="titelregel" aria-hidden="true">
+            <span class="balken"></span>
+            <svg width="26" height="7" viewBox="0 0 26 7"><path d="M3 3.5 6 .8 9 3.5 6 6.2Z M13 3.5 16 .8 19 3.5 16 6.2Z" fill="currentColor"/></svg>
+            <span class="strich"></span>
+          </div>
+        </header>
+
+        <div id="infobox-halter"></div>
+        <div class="absatz-liste" id="absatz-liste"></div>
+        <p class="serverhinweis" id="serverhinweis"></p>
+      </article>
+    </section>
+
+    <!-- ── Kontext-Linse ──────────────────────────────────────────── -->
+    <aside class="spalte linsen-spalte" aria-labelledby="linse-titel">
+      <div class="linse-fach">
+        <section class="panel herleitung" id="herleitung" hidden aria-labelledby="hl-titel" tabindex="-1">
+          <div class="panel-kopf">
+            <h2 id="hl-titel">Herleitung</h2>
+            <button type="button" class="knopf leise" id="hl-schliessen" style="margin-left:auto;padding:2px 8px">
+              Schließen <span class="kbd">Esc</span>
+            </button>
+          </div>
+          <div class="herleitung-koerper" id="herleitung-koerper"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="linse-titel">
+          <div class="panel-kopf">
+            <h2 id="linse-titel">Wer weiß was</h2>
+            <span class="zaehler" id="linse-zaehler"></span>
+          </div>
+          <div class="buecher" id="buecher"></div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ══ SITZUNGSSCHIENE ══════════════════════════════════════════════ -->
+  <section class="schiene" aria-label="Sitzungsschiene">
+    <div class="schiene-block">
+      <span class="label">Die Bühne <span style="color:var(--tinte-schwach);font-weight:500;text-transform:none;letter-spacing:0">— geteilt mit allen</span></span>
+      <div id="buehne" class="buehne leer">Keine Einblendung</div>
+    </div>
+
+    <div class="schiene-block">
+      <span class="label">Protokoll</span>
+      <ol class="protokoll" id="protokoll"></ol>
+      <p class="nur-sr" role="status" id="ansage"></p>
+    </div>
+
+    <div class="schiene-block aktionen">
+      <span class="label">Aktion</span>
+      <button type="button" class="knopf stark" id="knopf-enthuellen">
+        Enthüllen &middot; §3 &rarr; Kampagne <span class="kbd">R</span>
+      </button>
+      <button type="button" class="knopf" id="knopf-zurueck" disabled>
+        Rückgängig <span class="kbd">Z</span>
+      </button>
+      <p class="aktions-hinweis" id="aktions-hinweis">
+        Vorschau &rarr; Festschreiben &rarr; Rückgängig. Jede Enthüllung ist eine Zeile, keine Löschung.
+      </p>
+    </div>
+  </section>
+
+  <p class="fussnote">
+    <span><strong>Spike A1</strong> &middot; Kandidat A „The Living Codex" &middot; Skin <em>Archive</em> &middot;
+    Der Server rendert den Leser — hier projiziert die Seite im Browser. Das ist ein UI-Beweis,
+    kein Zugriffsbeweis.</span>
+    <span class="tasten">
+      <span class="kbd">R</span> enthüllen
+      <span class="kbd">Z</span> zurück
+      <span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span> Leseransicht
+      <span class="kbd">Esc</span> schließen
+    </span>
+  </p>
+</div>
+</div>
+
+<div class="motenschicht" id="motenschicht" aria-hidden="true"></div>
+<div class="vorschau" id="vorschau" role="dialog" aria-label="Artikelvorschau" data-offen="0"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ════════════════════════════════════════════════════════════════════
+     1 · WELT-DATEN — eine Quelle, kein pro-Leser geschriebener Text.
+     ════════════════════════════════════════════════════════════════════ */
+
+  var ARTIKELREGISTER = {
+    "aldenfall":        { titel: "Aldenfall",        typ: "Ort",      existiert: true,
+      abriss: "Hafenstadt an der Mündung der Ossen. Vierzigtausend Seelen, drei Kaie, eine Flutmauer, die zweimal versagt hat." },
+    "vharon-mark":      { titel: "Vharon-Mark",      typ: "Ort",      existiert: true,
+      abriss: "Die östlichen Gießereitäler. Seit 1140 im Lehen von Haus Vharon; Erz aus dem Norden, Schulden aus dem Süden." },
+    "haus-vharon":      { titel: "Haus Vharon",      typ: "Fraktion", existiert: true,
+      abriss: "Gießerherren und Geldverleiher. Drei Generationen im Stadtrat, keine einzige im Gefängnis." },
+    "yrsa-vharon":      { titel: "Yrsa Vharon",      typ: "Person",   existiert: true,
+      abriss: "Rechnungsführerin des Hauses. Zuletzt bezeugt 1204, im Monat nach dem dritten Prüfer." },
+    "kepler-giesserei": { titel: "Kepler-Gießerei",  typ: "Ort",      existiert: false,
+      abriss: "Noch kein Artikel. Rote Verknüpfung — eine offene Frage, die dein Tisch heute gestellt hat." }
+  };
+
+  /* Welche Artikel der jeweilige Leser überhaupt kennt.
+     „sl" kennt alles. Kennt ein Leser das Ziel nicht, wird der Verweis
+     zu gewöhnlichem Text — keine Sperre, keine Schwärzung, kein Hinweis. */
+  var KENNTNIS = {
+    sl:    "*",
+    kael:  ["aldenfall", "vharon-mark", "haus-vharon"],
+    tisch: ["aldenfall", "vharon-mark"]
+  };
+
+  /* Ein Absatz. Ein Text. Die Projektion entsteht aus den Enthüllungen. */
+  var ABSAETZE = [
+    {
+      id: "a1", marke: "§1", art: "prosa",
+      text: "Der Eiserne Tresor steht am Nordkai von [[aldenfall|Aldenfall]], zwei Handbreit über der " +
+            "Flutmarke, und hat in zweihundert Jahren weder Feuer noch Belagerung gesehen. Die Stadt " +
+            "nennt ihn den ehrlichsten Bau ihrer Geschichte, weil er nichts verspricht, was er nicht " +
+            "hält: eine Tür, keine Fenster, und eine Miete, die niemand laut nennt.",
+      enthuellungen: [ { publikum: "oeffentlich", zeit: "20:31", sitzung: 14 } ]
+    },
+    {
+      id: "a2", marke: "§2", art: "prosa",
+      text: "Das Schloss trägt kein Zunftzeichen, sondern eine dreifach geschlagene Marke — drei Kerben, " +
+            "die letzte quer. Wer in [[aldenfall|Aldenfall]] Schlösser baut, kennt diese Marke nicht. " +
+            "Wer in der [[vharon-mark|Vharon-Mark]] Gießereien betreibt, weigert sich, sie zu erklären.",
+      enthuellungen: [
+        { publikum: "ossa",     zeit: "21:02", sitzung: 14, grund: "Recherche 21 gegen SG 15" },
+        { publikum: "kampagne", zeit: "21:14", sitzung: 14, grund: "Ossa erzählt es der Gruppe" }
+      ]
+    },
+    {
+      id: "a3", marke: "§3", art: "prosa", flex: true,
+      text: "Der wahre Inhalt des Tresors sind die Kontobücher des Hauses. Wer sie gelesen hat, streitet " +
+            "über die Finanzen von [[haus-vharon|Haus Vharon]] mit unverdienter Sicherheit — und behält " +
+            "meistens recht.",
+      klausel: { feld: "Gespür", wert: 2, gegenstand: "Finanzen des Hauses Vharon" },
+      widerspruch: "§4 widerspricht dieser Klausel",
+      enthuellungen: []
+    },
+    {
+      id: "a4", marke: "§4", art: "prosa", geheim: true,
+      text: "Zwei der Kontobücher sind Fälschungen. [[yrsa-vharon|Yrsa Vharon]] ließ sie 1204 einlegen, " +
+            "im Monat nachdem der dritte Prüfer verschwand. Wer sich auf sie beruft, irrt mit genau " +
+            "derselben Sicherheit.",
+      glaube: { quelle: "Yrsa Vharon", vertrauen: "belegt" },
+      enthuellungen: []
+    },
+    {
+      id: "a5", marke: "§5", art: "tabelle",
+      titel: "Verwahrgebühren nach Kammerklasse",
+      spalten: ["Kammer", "Klasse", "Gebühr / Jahr", "Zugang"],
+      zeilen: [
+        ["Untergeschoss", "I",   "12 Kronen",  "Zwei Schlüssel"],
+        ["Nordwand",      "II",  "34 Kronen",  "Zwei Schlüssel"],
+        ["Kernkammer",    "III", "180 Kronen", "Drei Schlüssel, Zeuge"],
+        ["Hauskammer",    "—",   "keine",      "Nur das Haus"]
+      ],
+      text: "Verwahrgebühren nach Kammerklasse: Untergeschoss zwölf Kronen, Nordwand vierunddreißig " +
+            "Kronen, Kernkammer einhundertachtzig Kronen, Hauskammer gebührenfrei.",
+      enthuellungen: [ { publikum: "oeffentlich", zeit: "—", sitzung: null } ]
+    }
+  ];
+
+  var INFOBOX = [
+    { feld: "Typ",          wert: "Ort",                                   publikum: "oeffentlich" },
+    { feld: "Region",       wert: "[[vharon-mark|Vharon-Mark]]",           publikum: "oeffentlich" },
+    { feld: "Errichtet",    wert: "1187 n. B.",                            publikum: "oeffentlich" },
+    { feld: "Status",       wert: "Versiegelt",                            publikum: "oeffentlich",
+      vorschlag: "Vorschlag: Aufgebrochen — Brenn, Kraft 18, 21:41" },
+    { feld: "Verwaltet",    wert: "[[haus-vharon|Haus Vharon]]",           publikum: "kampagne" },
+    { feld: "Erbauer",      wert: "[[kepler-giesserei|Kepler-Gießerei]]",  publikum: "sl" }
+  ];
+
+  var SPIELER = [
+    { id: "kael",  name: "Kael",  rolle: "Duellant, Vharon-Blut", initial: "K", basis: 5, poss: "Sein" },
+    { id: "ossa",  name: "Ossa",  rolle: "Archivarin",            initial: "O", basis: 6, poss: "Ihr"  },
+    { id: "brenn", name: "Brenn", rolle: "Söldner",               initial: "B", basis: 1, poss: "Sein" }
+  ];
+
+  var PROTOKOLL_START = [
+    { zeit: "20:04", text: "<b>Sitzung 14</b> begonnen &middot; Docket: 9 Absätze vorbereitet" },
+    { zeit: "20:31", text: "<b>Enthüllung</b> &middot; Eiserner Tresor §1 &rarr; öffentlich" },
+    { zeit: "21:02", text: "<b>Probe</b> &middot; Ossa &middot; Recherche 21 gegen SG 15 &rarr; §2 enthüllt (nur Ossa)" },
+    { zeit: "21:14", text: "<b>Enthüllung</b> &middot; Eiserner Tresor §2 &rarr; Kampagne" },
+    { zeit: "21:41", text: "<b>Aktion</b> &middot; Brenn &middot; Kraft 18 gegen SG 15 &middot; Tür aufgebrochen" }
+  ];
+
+  var DOCKET = [
+    { titel: "Eiserner Tresor", mark: "§1", zustand: "fertig",  meta: "20:31 &middot; öffentlich" },
+    { titel: "Eiserner Tresor", mark: "§2", zustand: "fertig",  meta: "21:02 nur Ossa &middot; 21:14 Kampagne" },
+    { titel: "Eiserner Tresor", mark: "§3", zustand: "scharf",  meta: "trägt Klausel +2 Gespür", taste: "R", id: "a3" },
+    { titel: "Eiserner Tresor", mark: "§4", zustand: "halten",  meta: "zurückgehalten &middot; widerspricht §3" },
+    { titel: "Haus Vharon",     mark: "§2", zustand: "bereit",  meta: "vorbereitet", taste: "T" },
+    { titel: "Nordkai",         mark: "§1", zustand: "bereit",  meta: "vorbereitet", taste: "N" },
+    { titel: "Yrsa Vharon",     mark: "§1", zustand: "halten",  meta: "zurückgehalten" }
+  ];
+
+  /* ════════════════════════════════════════════════════════════════════
+     2 · ZUSTAND
+     ════════════════════════════════════════════════════════════════════ */
+
+  var zustand = {
+    leser: "sl",
+    enthuellt: false,          /* §3 an die Kampagne enthüllt? */
+    zeitpunkt: "21:47",
+    ruecknahmen: 0,
+    herleitungOffen: false,
+    wurfSichtbar: false,
+    protokoll: PROTOKOLL_START.slice()
+  };
+
+  var el = {
+    wurzel:        document.getElementById("wurzel"),
+    docketListe:   document.getElementById("docket-liste"),
+    docketZaehler: document.getElementById("docket-zaehler"),
+    infoboxHalter: document.getElementById("infobox-halter"),
+    absatzListe:   document.getElementById("absatz-liste"),
+    artikelMeta:   document.getElementById("artikel-meta"),
+    serverhinweis: document.getElementById("serverhinweis"),
+    buecher:       document.getElementById("buecher"),
+    linseZaehler:  document.getElementById("linse-zaehler"),
+    herleitung:    document.getElementById("herleitung"),
+    hlKoerper:     document.getElementById("herleitung-koerper"),
+    hlSchliessen:  document.getElementById("hl-schliessen"),
+    buehne:        document.getElementById("buehne"),
+    protokoll:     document.getElementById("protokoll"),
+    ansage:        document.getElementById("ansage"),
+    knopfR:        document.getElementById("knopf-enthuellen"),
+    knopfZ:        document.getElementById("knopf-zurueck"),
+    hinweis:       document.getElementById("aktions-hinweis"),
+    uhr:           document.getElementById("uhr"),
+    moten:         document.getElementById("motenschicht"),
+    vorschau:      document.getElementById("vorschau")
+  };
+
+  /* ════════════════════════════════════════════════════════════════════
+     3 · DER ENGPASS
+     Jeder Lesepfad geht durch genau diese Funktion. In Produktion lebt
+     sie auf dem Server und der Antwort-Body enthält nichts anderes.
+     ════════════════════════════════════════════════════════════════════ */
+
+  function enthuellungenVon(absatz) {
+    var liste = absatz.enthuellungen.slice();
+    if (absatz.id === "a3" && zustand.enthuellt) {
+      liste.push({ publikum: "kampagne", zeit: zustand.zeitpunkt, sitzung: 14,
+                   grund: "SL, Taste R" });
+    }
+    return liste;
+  }
+
+  function darfLesen(absatz, leser) {
+    if (leser === "sl") return true;
+    var revs = enthuellungenVon(absatz);
+    for (var i = 0; i < revs.length; i++) {
+      var p = revs[i].publikum;
+      if (p === "oeffentlich") return true;
+      if (leser === "tisch") continue;          /* der Tisch sieht nur Öffentliches */
+      if (p === "kampagne") return true;
+      if (p === leser) return true;
+    }
+    return false;
+  }
+
+  function sichtbareAbsaetze(leser) {
+    return ABSAETZE.filter(function (a) { return darfLesen(a, leser); });
+  }
+
+  function kenntArtikel(slug, leser) {
+    if (leser === "sl") return true;
+    var k = KENNTNIS[leser] || [];
+    return k.indexOf(slug) !== -1;
+  }
+
+  function sichtbareInfobox(leser) {
+    return INFOBOX.filter(function (r) {
+      if (leser === "sl") return true;
+      if (r.publikum === "oeffentlich") return true;
+      if (r.publikum === "kampagne") return leser !== "tisch";
+      return false;
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     4 · AUSZEICHNUNG
+     ════════════════════════════════════════════════════════════════════ */
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c];
+    });
+  }
+
+  /* [[slug|Anzeige]] → Verweis, roter Verweis oder schlichter Text. */
+  function markup(text, leser) {
+    return esc(text).replace(/\[\[([a-z0-9\-]+)\|([^\]]+)\]\]/g, function (_, slug, label) {
+      var eintrag = ARTIKELREGISTER[slug];
+      if (!eintrag || !kenntArtikel(slug, leser)) {
+        return '<span class="verweis-stumm">' + label + "</span>";
+      }
+      var klasse = eintrag.existiert ? "verweis" : "verweis rot";
+      var titel  = eintrag.existiert ? eintrag.titel : eintrag.titel + " — noch kein Artikel";
+      return '<button type="button" class="' + klasse + '" data-slug="' + slug +
+             '" aria-expanded="false" title="' + esc(titel) + '">' + label + "</button>";
+    });
+  }
+
+  function nurText(text) {
+    return text.replace(/\[\[[a-z0-9\-]+\|([^\]]+)\]\]/g, "$1");
+  }
+
+  function zaehleWoerter(s) {
+    var t = nurText(s).replace(/\s+/g, " ").trim();
+    return t ? t.split(" ").length : 0;
+  }
+
+  function zaehleVerweise(text, leser) {
+    var n = 0, re = /\[\[([a-z0-9\-]+)\|/g, m;
+    while ((m = re.exec(text))) { if (kenntArtikel(m[1], leser)) n++; }
+    return n;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     5 · ZEICHNEN
+     ════════════════════════════════════════════════════════════════════ */
+
+  var TRESOR_SVG =
+    '<svg class="infobox-bild" viewBox="0 0 240 150" role="img" ' +
+    'aria-label="Zeichnung: eine fensterlose Eisentür mit Schlossrad, dreifach geschlagene Marke.">' +
+    '<rect width="240" height="150" fill="none"/>' +
+    '<g stroke="currentColor" fill="none" stroke-width="1">' +
+    '<path d="M14 138 H226 M14 138 V44 Q120 6 226 44 V138" opacity=".45"/>' +
+    '<path d="M40 138 V56 Q120 26 200 56 V138 Z" stroke-width="1.6"/>' +
+    '<path d="M120 138 V32" opacity=".35"/>' +
+    '<circle cx="120" cy="92" r="26" stroke-width="1.6"/><circle cx="120" cy="92" r="17" opacity=".6"/>' +
+    '<path d="M120 66 V78 M120 106 V118 M94 92 H106 M134 92 H146 ' +
+    'M102 74 l8 8 M138 74 l-8 8 M102 110 l8 -8 M138 110 l-8 -8" stroke-width="1.4"/>' +
+    '<path d="M52 62 V132 M188 62 V132" opacity=".3"/>' +
+    '<path d="M58 44 l0 8 M64 44 l0 8 M70 47 l6 0" stroke-width="2" opacity=".9"/>' +
+    "</g>" +
+    '<g fill="currentColor" opacity=".55">' +
+    '<circle cx="52" cy="70" r="2"/><circle cx="52" cy="94" r="2"/><circle cx="52" cy="118" r="2"/>' +
+    '<circle cx="188" cy="70" r="2"/><circle cx="188" cy="94" r="2"/><circle cx="188" cy="118" r="2"/>' +
+    "</g></svg>";
+
+  function zeichneInfobox() {
+    var leser = zustand.leser;
+    var zeilen = sichtbareInfobox(leser).map(function (r) {
+      var nurSl = r.publikum === "sl";
+      var wert = markup(r.wert, leser);
+      var extra = "";
+      if (r.vorschlag && leser === "sl") {
+        extra = '<div style="font-size:var(--grad-mikro);color:var(--oxblut);margin-top:2px">' +
+                esc(r.vorschlag) + "</div>";
+      }
+      return '<div class="zeile' + (nurSl ? " nursl" : "") + '">' +
+               "<dt>" + esc(r.feld) + (nurSl ? ' <span title="nur Spielleitung">◆</span>' : "") + "</dt>" +
+               "<dd>" + wert + extra + "</dd>" +
+             "</div>";
+    }).join("");
+
+    el.infoboxHalter.innerHTML =
+      '<aside class="infobox" aria-label="Steckbrief Eiserner Tresor">' +
+        '<div class="infobox-kopf">Eiserner Tresor</div>' +
+        TRESOR_SVG +
+        "<dl>" + zeilen + "</dl>" +
+      "</aside>";
+  }
+
+  function sichtMarke(absatz, leser) {
+    var revs = enthuellungenVon(absatz);
+    if (leser === "sl") {
+      if (revs.length === 0) {
+        return '<span class="sicht nursl">' +
+               (absatz.geheim ? "nur SL &middot; zurückgehalten" : "nur SL &middot; vorbereitet") + "</span>";
+      }
+      var teile = revs.map(function (r) {
+        if (r.publikum === "oeffentlich") return "öffentlich";
+        if (r.publikum === "kampagne")    return "Kampagne " + r.zeit;
+        return "nur " + r.publikum.charAt(0).toUpperCase() + r.publikum.slice(1) + " " + r.zeit;
+      });
+      var oeff = revs.length === 1 && revs[0].publikum === "oeffentlich";
+      return '<span class="sicht ' + (oeff ? "" : "enthuellt") + '">' +
+             (oeff ? "" : "enthüllt &middot; ") + teile.join(" &middot; ") + "</span>";
+    }
+    /* Spielersicht: der Stempel, der ihm den Absatz gegeben hat. */
+    var meins = null;
+    for (var i = 0; i < revs.length; i++) {
+      var p = revs[i].publikum;
+      if (p === "oeffentlich" || p === "kampagne" || p === leser) { meins = revs[i]; break; }
+    }
+    if (!meins || meins.publikum === "oeffentlich") {
+      return '<span class="sicht">öffentlich</span>';
+    }
+    return '<span class="sicht enthuellt">gelernt in Sitzung ' + meins.sitzung +
+           " &middot; " + meins.zeit + "</span>";
+  }
+
+  function tabelleHTML(a) {
+    var kopf = a.spalten.map(function (s, i) {
+      return '<th scope="col"' + (i === 2 ? ' class="num"' : "") + ">" + esc(s) + "</th>";
+    }).join("");
+    var koerper = a.zeilen.map(function (z) {
+      return "<tr>" + z.map(function (c, i) {
+        if (i === 0) return '<th scope="row">' + esc(c) + "</th>";
+        return "<td" + (i === 2 ? ' class="num"' : "") + ">" + esc(c) + "</td>";
+      }).join("") + "</tr>";
+    }).join("");
+    return '<div class="tabellenrahmen"><table class="gebuehren">' +
+             "<caption>" + esc(a.titel) + "</caption>" +
+             "<thead><tr>" + kopf + "</tr></thead><tbody>" + koerper + "</tbody></table></div>";
+  }
+
+  function absatzHTML(a, leser, alsNeu) {
+    var klassen = ["absatz"];
+    if (a.geheim && leser === "sl") klassen.push("geheim");
+    if (a.id === "a3" && !zustand.enthuellt && leser === "sl") klassen.push("scharf");
+    if (alsNeu) klassen.push("neu");
+
+    var inhalt = a.art === "tabelle" ? tabelleHTML(a)
+                                     : "<p>" + markup(a.text, leser) + "</p>";
+
+    var klausel = "";
+    if (a.klausel) {
+      var aktiv = zustand.enthuellt;
+      klausel =
+        '<div class="klausel' + (aktiv ? " aktiv" : "") + '">' +
+          '<span class="label">Klausel &middot; ' + (aktiv ? "aktiv auf 3 Bögen" : "ruht") + "</span>" +
+          '<span class="klausel-wert">+' + a.klausel.wert + " " + esc(a.klausel.feld) + "</span>" +
+          '<span class="klausel-ziel">Gegenstand: ' + esc(a.klausel.gegenstand) + "</span>" +
+        "</div>";
+    }
+
+    var glaube = "";
+    if (a.glaube && leser === "sl") {
+      glaube = '<span class="sicht" title="Quelle und Vertrauen dieses Absatzes">Glaube &middot; ' +
+               esc(a.glaube.quelle) + " &middot; " + esc(a.glaube.vertrauen) + "</span>";
+    }
+    var widerspruch = (a.widerspruch && leser === "sl")
+      ? '<span class="widerspruch">▲ ' + esc(a.widerspruch) + "</span>" : "";
+
+    var aktion = "";
+    if (a.id === "a3" && !zustand.enthuellt && leser === "sl") {
+      aktion = '<button type="button" class="knopf messing" data-tue="enthuellen" ' +
+               'style="margin-top:var(--r3)">Enthüllen &middot; Kampagne <span class="kbd">R</span></button>';
+    }
+
+    return '<div class="' + klassen.join(" ") + '" data-absatz="' + a.id + '">' +
+             '<div class="absatz-mark">' + a.marke + "</div>" +
+             '<div class="absatz-koerper">' + inhalt + klausel +
+               '<div class="absatz-fuss">' + sichtMarke(a, leser) + glaube + widerspruch + "</div>" +
+               aktion +
+             "</div>" +
+           "</div>";
+  }
+
+  function zeichneArtikel(neueIds) {
+    neueIds = neueIds || [];
+    var leser = zustand.leser;
+    var sichtbar = sichtbareAbsaetze(leser);
+
+    el.absatzListe.innerHTML = sichtbar.map(function (a) {
+      return absatzHTML(a, leser, neueIds.indexOf(a.id) !== -1);
+    }).join("");
+
+    zeichneInfobox();
+
+    var woerter = 0, verweise = 0;
+    sichtbar.forEach(function (a) {
+      woerter += zaehleWoerter(a.text);
+      verweise += zaehleVerweise(a.text, leser);
+    });
+
+    var namen = { sl: "Spielleitung", kael: "Kael", tisch: "der Tisch (öffentlich)" };
+    el.artikelMeta.innerHTML =
+      '<span class="wechsel"><strong class="tab">' + sichtbar.length + "</strong> Absätze</span>" +
+      '<span aria-hidden="true">&middot;</span>' +
+      '<span class="wechsel"><strong class="tab">' + woerter + "</strong> Wörter</span>" +
+      '<span aria-hidden="true">&middot;</span>' +
+      '<span class="wechsel"><strong class="tab">' + verweise + "</strong> Verweise</span>" +
+      '<span aria-hidden="true">&middot;</span>' +
+      "<span>gelesen als " + esc(namen[leser]) + "</span>";
+
+    if (leser === "sl") {
+      el.serverhinweis.innerHTML =
+        "<span aria-hidden=\"true\">◆</span><span><strong>Vollansicht.</strong> Fünf Absätze, " +
+        "zwei davon hat noch niemand am Tisch gelesen. Die Leseransicht schaltet nicht Sichtbarkeit " +
+        "um, sie baut den Artikel neu.</span>";
+    } else {
+      var fehlend = ABSAETZE.length - sichtbar.length;
+      el.serverhinweis.innerHTML =
+        "<span aria-hidden=\"true\">◆</span><span><strong>" + fehlend + " Absätze fehlen im Antwort-Body</strong> — " +
+        "nicht ausgeblendet, nicht geschwärzt, nicht vorhanden. Kein Platzhalter verrät ihre Länge, " +
+        "und Verweise auf unbekannte Artikel sind gewöhnlicher Text.</span>";
+    }
+  }
+
+  function zeichneDocket() {
+    el.docketListe.innerHTML = DOCKET.map(function (d) {
+      var zustandJetzt = d.zustand;
+      if (d.id === "a3") zustandJetzt = zustand.enthuellt ? "fertig" : "scharf";
+      var meta = d.meta;
+      if (d.id === "a3" && zustand.enthuellt) meta = zustand.zeitpunkt + " &middot; Kampagne";
+
+      var rechts = "";
+      if (zustandJetzt === "fertig") rechts = '<span class="haken" aria-hidden="true">✓</span><span class="nur-sr">enthüllt</span>';
+      else if (d.taste)              rechts = '<span class="kbd">' + d.taste + "</span>";
+      else                           rechts = '<span class="label">halten</span>';
+
+      return '<li class="docket-zeile ' +
+               (zustandJetzt === "scharf" ? "scharf" : zustandJetzt === "fertig" ? "erledigt" : "") +
+               '"' + (d.id ? ' data-docket="' + d.id + '"' : "") + ">" +
+               '<span class="docket-titel">' + esc(d.titel) +
+                 ' <span class="mark">' + d.mark + "</span></span>" +
+               rechts +
+               '<span class="docket-meta">' + meta + "</span>" +
+             "</li>";
+    }).join("");
+    el.docketZaehler.textContent = (zustand.enthuellt ? 4 : 3) + " / 9 enthüllt";
+  }
+
+  function zeichneBuecher(alsNeu) {
+    el.buecher.innerHTML = SPIELER.map(function (s) {
+      var wert = s.basis + (zustand.enthuellt ? 2 : 0);
+      var absaetze = zustand.enthuellt ? 4 : 3;
+      var karte = "";
+      if (zustand.enthuellt) {
+        karte =
+          '<div class="buch-karte' + (alsNeu ? " neu" : "") + '" data-karte="' + s.id + '">' +
+            "<p>&bdquo;Der wahre Inhalt des Tresors sind die Kontobücher des Hauses &hellip;&ldquo;</p>" +
+            '<div class="buch-stempel">§3 &middot; gelernt in Sitzung 14 &middot; ' + zustand.zeitpunkt + "</div>" +
+          "</div>";
+      }
+      return '<article class="buch' + (zustand.enthuellt ? " leuchtet" : "") + '" data-buch="' + s.id + '">' +
+               '<div class="buch-kopf">' +
+                 '<div class="buch-portraet" aria-hidden="true">' + s.initial + "</div>" +
+                 "<div><div class=\"buch-name\">" + esc(s.name) + "</div>" +
+                 '<div class="buch-rolle">' + esc(s.rolle) + "</div></div>" +
+                 '<div class="buch-bogen"><div class="feld">Gespür</div>' +
+                   '<div class="wert' + (zustand.enthuellt ? " frisch" : "") + '" data-wert="' + s.id +
+                   '">+' + wert + "</div></div>" +
+               "</div>" +
+               '<div class="buch-stand"><span>' + s.poss + ' Buch: <span class="tab">' + absaetze +
+                 "</span> Absätze</span><span>" +
+                 (zustand.enthuellt ? "zuletzt " + zustand.zeitpunkt : "zuletzt 21:14") + "</span></div>" +
+               karte +
+             "</article>";
+    }).join("");
+    el.linseZaehler.textContent = zustand.enthuellt ? "3 von 3 kennen §3" : "0 von 3 kennen §3";
+  }
+
+  function zeichneBuehne(alsNeu) {
+    if (!zustand.enthuellt) {
+      el.buehne.className = "buehne leer";
+      el.buehne.textContent = "Keine Einblendung";
+      return;
+    }
+    el.buehne.className = "buehne";
+    el.buehne.innerHTML =
+      '<div class="handzettel' + (alsNeu ? " neu" : "") + '" id="handzettel">' +
+        '<div class="handzettel-kopf"><span class="quelle">Eiserner Tresor &middot; §3</span>' +
+        '<span class="stempel">Sitzung 14 &middot; ' + zustand.zeitpunkt + "</span></div>" +
+        "<p>Der wahre Inhalt des Tresors sind die Kontobücher des Hauses. Wer sie gelesen hat, " +
+        "streitet über die Finanzen von Haus Vharon mit unverdienter Sicherheit — und behält " +
+        "meistens recht.</p>" +
+      "</div>";
+  }
+
+  function zeichneProtokoll() {
+    el.protokoll.innerHTML = zustand.protokoll.map(function (z) {
+      var kl = ["log-zeile"];
+      if (z.frisch) kl.push("frisch");
+      if (z.zurueckgezogen) kl.push("zurueckgezogen");
+      return '<li class="' + kl.join(" ") + '">' +
+               '<span class="log-zeit">' + z.zeit + "</span>" +
+               '<span class="log-text">' + z.text + "</span></li>";
+    }).join("");
+    el.protokoll.scrollTop = el.protokoll.scrollHeight;
+  }
+
+  function sage(text) {
+    if (!el.ansage) return;
+    el.ansage.textContent = "";
+    setTimeout(function () { el.ansage.textContent = text; }, 40);
+  }
+
+  function zeichneAktionen() {
+    el.knopfR.disabled = zustand.enthuellt;
+    el.knopfZ.disabled = !zustand.enthuellt;
+    el.hinweis.innerHTML = zustand.enthuellt
+      ? "Festgeschrieben um " + zustand.zeitpunkt +
+        ". Rücknahme schreibt eine Zeile, sie löscht keine."
+      : "Vorschau &rarr; Festschreiben &rarr; Rückgängig. Jede Enthüllung ist eine Zeile, keine Löschung.";
+  }
+
+  function zeichneAlles(opt) {
+    opt = opt || {};
+    zeichneArtikel(opt.neueAbsaetze);
+    zeichneDocket();
+    zeichneBuecher(opt.buecherNeu);
+    zeichneBuehne(opt.buehneNeu);
+    zeichneProtokoll();
+    zeichneAktionen();
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     6 · BEWEGUNG
+     ════════════════════════════════════════════════════════════════════ */
+
+  function bewegungAus() {
+    if (document.documentElement.getAttribute("data-bewegung") === "reduziert") return true;
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function warte(ms) {
+    return new Promise(function (r) { setTimeout(r, bewegungAus() ? 0 : ms); });
+  }
+
+  function mote(vonEl, zuEl) {
+    if (bewegungAus() || !vonEl || !zuEl) return Promise.resolve();
+    var a = vonEl.getBoundingClientRect(), b = zuEl.getBoundingClientRect();
+    if (!a.width || !b.width) return Promise.resolve();
+    var d = document.createElement("span");
+    d.className = "mote";
+    d.style.left = (a.left + a.width / 2) + "px";
+    d.style.top  = (a.top + a.height / 2) + "px";
+    el.moten.appendChild(d);
+    var dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+    var dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+    return new Promise(function (res) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          d.style.transform = "translate(" + dx + "px," + dy + "px) scale(.55)";
+          d.style.opacity = "0.12";
+        });
+      });
+      setTimeout(function () { d.remove(); res(); }, 340);
+    });
+  }
+
+  function zeigeAn(node) {
+    if (!node) return;
+    if (bewegungAus()) { node.classList.remove("neu"); return; }
+    requestAnimationFrame(function () { node.classList.remove("neu"); });
+  }
+
+  function tickZahl(node, von, bis) {
+    if (!node) return;
+    if (bewegungAus()) { node.textContent = (bis >= 0 ? "+" : "") + bis; return; }
+    var t0 = performance.now(), dauer = 300;
+    function schritt(t) {
+      var p = Math.min(1, (t - t0) / dauer);
+      var e = 1 - Math.pow(1 - p, 3);
+      node.textContent = "+" + Math.round(von + (bis - von) * e);
+      if (p < 1) requestAnimationFrame(schritt);
+    }
+    requestAnimationFrame(schritt);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     7 · DIE AKTION: ENTHÜLLEN
+     ════════════════════════════════════════════════════════════════════ */
+
+  var laeuft = false;
+
+  async function enthuelle() {
+    if (zustand.enthuellt || laeuft) return;
+    laeuft = true;
+
+    var quelle = el.absatzListe.querySelector('[data-absatz="a3"]');
+    if (quelle) { quelle.classList.add("hebt"); }
+    await warte(160);
+
+    zustand.enthuellt = true;
+    zustand.zeitpunkt = zustand.ruecknahmen === 0 ? "21:47" : "22:3" + Math.min(9, 3 + zustand.ruecknahmen);
+    el.uhr.textContent = zustand.zeitpunkt;
+
+    zustand.protokoll.push({
+      zeit: zustand.zeitpunkt,
+      text: "<b>Enthüllung</b> &middot; Eiserner Tresor §3 &rarr; Kampagne &middot; " +
+            "Klausel <span class=\"tab\">+2 Gespür</span> auf 3 Bögen aktiv",
+      frisch: true,
+      schluessel: "reveal"
+    });
+
+    /* Neu zeichnen; ankommende Teile starten im Zustand „neu". */
+    zeichneAlles({
+      neueAbsaetze: zustand.leser === "sl" ? [] : ["a3"],
+      buecherNeu: true,
+      buehneNeu: true
+    });
+
+    var quelleNeu = el.absatzListe.querySelector('[data-absatz="a3"]') || el.knopfR;
+
+    /* 1 — Absatz → Bühne */
+    await mote(quelleNeu, el.buehne);
+    zeigeAn(document.getElementById("handzettel"));
+    var a3neu = el.absatzListe.querySelector('[data-absatz="a3"].neu');
+    if (a3neu) zeigeAn(a3neu);
+    await warte(120);
+
+    /* 2 — Bühne → die drei Bücher, gestaffelt; dann tickt der Bogen */
+    for (var i = 0; i < SPIELER.length; i++) {
+      (function (s, idx) {
+        setTimeout(async function () {
+          var buch = el.buecher.querySelector('[data-buch="' + s.id + '"]');
+          await mote(el.buehne, buch);
+          zeigeAn(el.buecher.querySelector('[data-karte="' + s.id + '"]'));
+          tickZahl(el.buecher.querySelector('[data-wert="' + s.id + '"]'), s.basis, s.basis + 2);
+        }, bewegungAus() ? 0 : idx * 80);
+      })(SPIELER[i], i);
+    }
+    await warte(560);
+
+    /* 3 — neunzig Sekunden später: der Wurf */
+    if (!zustand.wurfSichtbar) {
+      zustand.wurfSichtbar = true;
+      zustand.protokoll.push({
+        zeit: "22:20",
+        text: "<b>Probe</b> &middot; Kael &middot; Gespür " +
+              '<button type="button" class="wurfknopf lockt" id="wurf-19" aria-expanded="false" ' +
+              'aria-controls="herleitung">19</button> gegen den Vharon-Bankier &middot; ' +
+              '<span style="color:var(--tinte-schwach)">tippe auf die Zahl</span>',
+        schluessel: "wurf"
+      });
+      zeichneProtokoll();
+    }
+
+    sage("Absatz 3 des Eisernen Tresors an die Kampagne enthüllt um " + zustand.zeitpunkt +
+         ". Klausel plus zwei Gespür ist auf drei Charakterbögen aktiv. Kael würfelt Gespür 19.");
+    el.knopfZ.focus();
+    laeuft = false;
+  }
+
+  function nimmZurueck() {
+    if (!zustand.enthuellt) return;
+    zustand.enthuellt = false;
+    zustand.ruecknahmen++;
+    zustand.wurfSichtbar = false;
+    schliesseHerleitung(true);
+
+    zustand.protokoll.forEach(function (z) {
+      if (z.schluessel === "reveal") { z.zurueckgezogen = true; z.frisch = false; }
+    });
+    zustand.protokoll = zustand.protokoll.filter(function (z) { return z.schluessel !== "wurf"; });
+    zustand.protokoll.push({
+      zeit: "22:31",
+      text: "<b>Rücknahme</b> &middot; Enthüllung von " + zustand.zeitpunkt +
+            " zurückgezogen &middot; Klausel erloschen, Zeile bleibt stehen"
+    });
+    el.uhr.textContent = "22:31";
+
+    zeichneAlles();
+    sage("Enthüllung zurückgenommen. Die Klausel ist erloschen, die Protokollzeile bleibt " +
+         "durchgestrichen stehen.");
+    var knopfImAbsatz = el.absatzListe.querySelector('[data-tue="enthuellen"]');
+    (knopfImAbsatz || el.knopfR).focus();
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     8 · HERLEITUNG
+     ════════════════════════════════════════════════════════════════════ */
+
+  var HERLEITUNG = [
+    { name: "W20",           betrag: 12, quelle: "offener Wurf, 22:20" },
+    { name: "Verstand",      betrag: 3,  quelle: "Kael &middot; Verstand 3" },
+    { name: "Ausgebildet",   betrag: 2,  quelle: "Kael &middot; Gespür (ausgebildet)" },
+    { name: "Tresorwissen",  betrag: 2,  zitat: true }
+  ];
+
+  function oeffneHerleitung() {
+    zustand.herleitungOffen = true;
+    el.hlKoerper.innerHTML =
+      '<div class="hl-summe"><span class="name">Gespür</span><span class="wert">19</span></div>' +
+      HERLEITUNG.map(function (z) {
+        var betrag = (z.name === "W20" ? "" : "+") + z.betrag;
+        var quelle = z.zitat
+          ? '<span class="hl-quelle"><button type="button" class="quellknopf" id="hl-quelle">' +
+            "&larr; Eiserner Tresor §3 &middot; gelernt in Sitzung 14 &middot; " + zustand.zeitpunkt +
+            "</button></span>"
+          : '<span class="hl-quelle">' + z.quelle + "</span>";
+        return '<div class="hl-zeile' + (z.zitat ? " zitat" : "") + '">' +
+                 "<span>" + z.name + '</span><span class="betrag">' + betrag + "</span>" +
+                 quelle +
+               "</div>";
+      }).join("") +
+      '<p class="hl-fuss">Der Bonus ist kein eingetippter Modifikator. Er ist ein Satz, den Kael ' +
+      "gelesen hat — und der Satz hat eine Adresse.</p>";
+
+    el.herleitung.hidden = false;
+    el.herleitung.focus();
+    var w = document.getElementById("wurf-19");
+    if (w) { w.setAttribute("aria-expanded", "true"); w.classList.remove("lockt"); }
+  }
+
+  function schliesseHerleitung(still) {
+    zustand.herleitungOffen = false;
+    el.herleitung.hidden = true;
+    var w = document.getElementById("wurf-19");
+    if (w) {
+      w.setAttribute("aria-expanded", "false");
+      if (!still) w.focus();
+    }
+  }
+
+  function springeZurQuelle() {
+    if (zustand.leser === "tisch") {
+      setzeLeser("sl");
+      var r = document.querySelector('input[name="cut"][value="sl"]');
+      if (r) r.checked = true;
+      zustand.protokoll.push({
+        zeit: "22:21",
+        text: "<b>Leseransicht</b> &middot; auf &bdquo;Als SL&ldquo; gewechselt, um die Quelle zu zeigen"
+      });
+      zeichneProtokoll();
+    }
+    var ziel = el.absatzListe.querySelector('[data-absatz="a3"]');
+    if (!ziel) return;
+    ziel.scrollIntoView({ behavior: bewegungAus() ? "auto" : "smooth", block: "center" });
+    ziel.classList.remove("blitzt");
+    void ziel.offsetWidth;
+    ziel.classList.add("blitzt");
+    var d = el.docketListe.querySelector('[data-docket="a3"]');
+    if (d) { d.classList.add("scharf"); setTimeout(function () { zeichneDocket(); }, 900); }
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     9 · VORSCHAU-KARTE
+     ════════════════════════════════════════════════════════════════════ */
+
+  var offenerVerweis = null;
+
+  function zeigeVorschau(knopf) {
+    var slug = knopf.getAttribute("data-slug");
+    var e = ARTIKELREGISTER[slug];
+    if (!e) return;
+    var sichtbarFuer = zustand.leser;
+    var text = e.existiert
+      ? "<p>" + esc(e.abriss) + "</p>"
+      : '<p style="color:var(--verweis-rot)">' + esc(e.abriss) + "</p>";
+    el.vorschau.innerHTML =
+      '<div class="vtyp">' + esc(e.typ) + (e.existiert ? "" : " &middot; rote Verknüpfung") + "</div>" +
+      "<h3>" + esc(e.titel) + "</h3>" + text +
+      '<div class="vfuss"><span>' +
+        (e.existiert ? "Vorschau, gerendert für " + (sichtbarFuer === "sl" ? "die Spielleitung" :
+          sichtbarFuer === "kael" ? "Kael" : "den Tisch") : "Im Kanon-Diff als offene Frage") +
+      "</span><span>Esc</span></div>";
+
+    var r = knopf.getBoundingClientRect();
+    el.vorschau.setAttribute("data-offen", "1");
+    var breite = el.vorschau.offsetWidth;
+    var links = Math.min(Math.max(8, r.left), window.innerWidth - breite - 8);
+    var oben = r.bottom + 8;
+    if (oben + el.vorschau.offsetHeight > window.innerHeight - 8) {
+      oben = Math.max(8, r.top - el.vorschau.offsetHeight - 8);
+    }
+    el.vorschau.style.left = links + "px";
+    el.vorschau.style.top = oben + "px";
+    knopf.setAttribute("aria-expanded", "true");
+    offenerVerweis = knopf;
+  }
+
+  function schliesseVorschau() {
+    el.vorschau.setAttribute("data-offen", "0");
+    if (offenerVerweis) { offenerVerweis.setAttribute("aria-expanded", "false"); offenerVerweis = null; }
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     10 · LESERANSICHT
+     ════════════════════════════════════════════════════════════════════ */
+
+  function setzeLeser(neu) {
+    if (zustand.leser === neu) return;
+    zustand.leser = neu;
+    schliesseVorschau();
+    zeichneArtikel();
+    el.artikelMeta.classList.add("frisch");
+    setTimeout(function () { el.artikelMeta.classList.remove("frisch"); }, 600);
+    var namen = { sl: "die Spielleitung", kael: "Kael", tisch: "den Tisch" };
+    sage("Artikel neu gerendert für " + namen[neu] + ": " +
+         sichtbareAbsaetze(neu).length + " von " + ABSAETZE.length + " Absätzen.");
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     11 · VERDRAHTUNG
+     ════════════════════════════════════════════════════════════════════ */
+
+  document.querySelectorAll('input[name="cut"]').forEach(function (r) {
+    r.addEventListener("change", function () { if (r.checked) setzeLeser(r.value); });
+  });
+  document.querySelectorAll('input[name="thema"]').forEach(function (r) {
+    r.addEventListener("change", function () {
+      if (!r.checked) return;
+      if (r.value === "system") document.documentElement.removeAttribute("data-thema");
+      else document.documentElement.setAttribute("data-thema", r.value);
+    });
+  });
+  document.querySelectorAll('input[name="bewegung"]').forEach(function (r) {
+    r.addEventListener("change", function () {
+      if (!r.checked) return;
+      if (r.value === "system") document.documentElement.removeAttribute("data-bewegung");
+      else document.documentElement.setAttribute("data-bewegung", "reduziert");
+    });
+  });
+
+  el.knopfR.addEventListener("click", enthuelle);
+  el.knopfZ.addEventListener("click", nimmZurueck);
+  el.hlSchliessen.addEventListener("click", function () { schliesseHerleitung(); });
+
+  document.addEventListener("click", function (ev) {
+    var t = ev.target;
+    var verweis = t.closest ? t.closest(".verweis") : null;
+    var quell = t.closest ? t.closest("#hl-quelle") : null;
+    var wurf = t.closest ? t.closest("#wurf-19") : null;
+    var tue = t.closest ? t.closest("[data-tue]") : null;
+
+    if (verweis) { ev.preventDefault();
+      if (offenerVerweis === verweis) schliesseVorschau(); else zeigeVorschau(verweis);
+      return; }
+    if (quell) { springeZurQuelle(); return; }
+    if (wurf) { if (zustand.herleitungOffen) schliesseHerleitung(); else oeffneHerleitung(); return; }
+    if (tue && tue.getAttribute("data-tue") === "enthuellen") { enthuelle(); return; }
+    if (!t.closest || !t.closest("#vorschau")) schliesseVorschau();
+  });
+
+  document.addEventListener("keydown", function (ev) {
+    var tag = (ev.target && ev.target.tagName) || "";
+    if (tag === "INPUT" && ev.target.type !== "radio") return;
+    if (tag === "TEXTAREA" || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+
+    var k = ev.key.toLowerCase();
+    if (k === "r") { ev.preventDefault(); enthuelle(); }
+    else if (k === "z") { ev.preventDefault(); nimmZurueck(); }
+    else if (k === "escape") {
+      if (el.vorschau.getAttribute("data-offen") === "1") schliesseVorschau();
+      else if (zustand.herleitungOffen) schliesseHerleitung();
+    }
+    else if (k === "1" || k === "2" || k === "3") {
+      var werte = { "1": "sl", "2": "kael", "3": "tisch" };
+      var r = document.querySelector('input[name="cut"][value="' + werte[k] + '"]');
+      if (r) { r.checked = true; setzeLeser(werte[k]); }
+    }
+  });
+
+  window.addEventListener("resize", schliesseVorschau, { passive: true });
+
+  /* ── Start ──────────────────────────────────────────────────────── */
+  zeichneAlles();
+})();
+</script>

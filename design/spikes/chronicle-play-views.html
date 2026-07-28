@@ -1,0 +1,1664 @@
+<title>Chronicle — Spielansichten · Die Schatten von Aldenfall</title>
+<style>
+/* ============================================================
+   TOKENS — Kampagnen-Theme "Fantasy" (Nebel, Smaragd, Arkanviolett, Gold)
+   Hell ist Standard; Dunkel via Media-Query UND data-theme-Attribut.
+   ============================================================ */
+:root {
+  --font-display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: Consolas, 'Cascadia Mono', 'SF Mono', monospace;
+  --radius: 14px; --radius-sm: 9px; --radius-pill: 999px;
+
+  --bg: #e6eee8;
+  --bg-img: radial-gradient(900px 480px at 88% -8%, rgba(106,86,166,.10), transparent 60%),
+            radial-gradient(1000px 560px at -8% 108%, rgba(46,135,99,.12), transparent 55%);
+  --panel: #f7faf6; --panel2: #eef4ee; --inset: #e2ebe3;
+  --text: #24322a; --dim: #59695f; --faint: #6d7f75;
+  --border: #d2ddd3; --border-strong: #b0c2b4;
+  --accent: #2a7d5c; --accent-c: #ffffff; --accent-soft: rgba(42,125,92,.13);
+  --accent2: #64509e; --accent2-c: #ffffff; --accent2-soft: rgba(100,80,158,.13);
+  --gold: #96701f; --gold-soft: rgba(150,112,31,.15);
+  --ok: #2f7d4f; --ok-soft: rgba(47,125,79,.14);
+  --warn: #a26312; --warn-soft: rgba(162,99,18,.13);
+  --crit: #b03a37; --crit-soft: rgba(176,58,55,.12);
+  --glow: rgba(42,125,92,.3); --shadowc: rgba(30,45,38,.18);
+  --panel-img: linear-gradient(180deg, rgba(255,255,255,.55), transparent 42%);
+  --shadow-panel: 0 10px 30px -14px var(--shadowc);
+  --shadow-btn: 0 1px 3px var(--shadowc);
+
+  /* Nachtszene — bleibt in beiden Themes dunkel (Hafen bei Nacht) */
+  --map-sky: #101c26; --map-water: #0d2530; --map-water2: #143641;
+  --map-quay: #2a3630; --map-stone: #39463f; --map-dock: #5c4830; --map-dock2: #4a3a26;
+  --map-roof: #22312b; --map-roof2: #2d4038;
+  --map-grid: rgba(210,230,220,.07); --map-fog: rgba(4,10,8,.55);
+  --lantern: rgba(240,196,110,.55);
+  --ring-you: #d8a83c; --ring-p1: #4cbd8b; --ring-p2: #a08fdd; --ring-p3: #5aa7c7; --ring-npc: #8a8f8c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1815;
+    --bg-img: radial-gradient(900px 480px at 88% -8%, rgba(160,143,221,.09), transparent 60%),
+              radial-gradient(1000px 560px at -8% 108%, rgba(76,189,139,.08), transparent 55%);
+    --panel: #16221c; --panel2: #1c2a23; --inset: #0d1613;
+    --text: #d9e6dd; --dim: #93a89a; --faint: #7d9385;
+    --border: #27392f; --border-strong: #3c5446;
+    --accent: #4cbd8b; --accent-c: #0b1512; --accent-soft: rgba(76,189,139,.15);
+    --accent2: #a08fdd; --accent2-c: #14101f; --accent2-soft: rgba(160,143,221,.16);
+    --gold: #d0a54c; --gold-soft: rgba(208,165,76,.15);
+    --ok: #55b380; --ok-soft: rgba(85,179,128,.17);
+    --warn: #d99a3d; --warn-soft: rgba(217,154,61,.16);
+    --crit: #e06c5f; --crit-soft: rgba(224,108,95,.15);
+    --glow: rgba(76,189,139,.35); --shadowc: rgba(0,0,0,.5);
+    --panel-img: linear-gradient(180deg, rgba(255,255,255,.03), transparent 45%);
+    --ring-you: #e8c15a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1815;
+  --bg-img: radial-gradient(900px 480px at 88% -8%, rgba(160,143,221,.09), transparent 60%),
+            radial-gradient(1000px 560px at -8% 108%, rgba(76,189,139,.08), transparent 55%);
+  --panel: #16221c; --panel2: #1c2a23; --inset: #0d1613;
+  --text: #d9e6dd; --dim: #93a89a; --faint: #7d9385;
+  --border: #27392f; --border-strong: #3c5446;
+  --accent: #4cbd8b; --accent-c: #0b1512; --accent-soft: rgba(76,189,139,.15);
+  --accent2: #a08fdd; --accent2-c: #14101f; --accent2-soft: rgba(160,143,221,.16);
+  --gold: #d0a54c; --gold-soft: rgba(208,165,76,.15);
+  --ok: #55b380; --ok-soft: rgba(85,179,128,.17);
+  --warn: #d99a3d; --warn-soft: rgba(217,154,61,.16);
+  --crit: #e06c5f; --crit-soft: rgba(224,108,95,.15);
+  --glow: rgba(76,189,139,.35); --shadowc: rgba(0,0,0,.5);
+  --panel-img: linear-gradient(180deg, rgba(255,255,255,.03), transparent 45%);
+  --ring-you: #e8c15a;
+}
+:root[data-theme="light"] {
+  --bg: #e6eee8;
+  --bg-img: radial-gradient(900px 480px at 88% -8%, rgba(106,86,166,.10), transparent 60%),
+            radial-gradient(1000px 560px at -8% 108%, rgba(46,135,99,.12), transparent 55%);
+  --panel: #f7faf6; --panel2: #eef4ee; --inset: #e2ebe3;
+  --text: #24322a; --dim: #59695f; --faint: #6d7f75;
+  --border: #d2ddd3; --border-strong: #b0c2b4;
+  --accent: #2a7d5c; --accent-c: #ffffff; --accent-soft: rgba(42,125,92,.13);
+  --accent2: #64509e; --accent2-c: #ffffff; --accent2-soft: rgba(100,80,158,.13);
+  --gold: #96701f; --gold-soft: rgba(150,112,31,.15);
+  --ok: #2f7d4f; --ok-soft: rgba(47,125,79,.14);
+  --warn: #a26312; --warn-soft: rgba(162,99,18,.13);
+  --crit: #b03a37; --crit-soft: rgba(176,58,55,.12);
+  --glow: rgba(42,125,92,.3); --shadowc: rgba(30,45,38,.18);
+  --panel-img: linear-gradient(180deg, rgba(255,255,255,.55), transparent 42%);
+  --ring-you: #d8a83c;
+}
+
+/* ============================================================ BASIS */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg-img), var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ============================================================ SHELL */
+#app { min-height: 100vh; display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 20px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-img), var(--panel);
+  box-shadow: 0 4px 18px -12px var(--shadowc);
+}
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.wordmark {
+  font-family: var(--font-display); font-size: 22px; letter-spacing: .02em;
+  color: var(--text); white-space: nowrap;
+}
+.wordmark .spark { color: var(--gold); }
+.campaign {
+  font-family: var(--font-display); font-style: italic; font-size: 14px;
+  color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: var(--radius-pill);
+  border: 1px solid var(--border); background: var(--panel2);
+  font-size: 12px; color: var(--dim); white-space: nowrap;
+}
+.chip b { color: var(--text); font-weight: 600; }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
+.chip-pkg { border-color: var(--accent2); color: var(--accent2); background: var(--accent2-soft); }
+.chip-pkg b { color: inherit; }
+.chip-role { border-color: var(--border-strong); }
+.top-spacer { flex: 1; }
+
+.tabbar {
+  display: flex; gap: 4px; align-items: center;
+  padding: 8px 20px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-img), var(--panel);
+  overflow-x: auto;
+}
+.tab {
+  appearance: none; border: 1px solid transparent; border-bottom: none;
+  background: transparent; cursor: pointer;
+  padding: 8px 18px 9px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  font-family: var(--font-display); font-size: 15px; color: var(--dim);
+  white-space: nowrap; position: relative;
+  transition: color .15s, background .15s;
+}
+.tab:hover { color: var(--text); background: var(--accent-soft); }
+.tab[aria-selected="true"] {
+  color: var(--text); background: var(--bg);
+  border-color: var(--border);
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+main { flex: 1; padding: 18px 20px 26px; display: flex; flex-direction: column; }
+.view { display: flex; flex-direction: column; gap: 14px; }
+.view[hidden] { display: none; }
+
+.footer {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 20px; border-top: 1px solid var(--border);
+  background: var(--panel); font-size: 11.5px; color: var(--faint);
+}
+.footer .sep { opacity: .5; }
+.footer .attr { font-style: italic; }
+.footer .ver { margin-left: auto; font-family: var(--font-mono); }
+
+/* Karten-Grundform */
+.card {
+  background: var(--panel-img), var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-panel);
+  padding: 14px 16px;
+}
+.card h2 {
+  margin: 0 0 8px; font-family: var(--font-display); font-weight: 600;
+  font-size: 15px; letter-spacing: .01em; color: var(--text);
+}
+.card h2 .sub { font-family: var(--font-body); font-size: 11.5px; color: var(--faint); font-weight: 400; }
+
+/* Sichtbarkeits-Badges */
+.vis {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 9px; border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  border: 1px solid;
+}
+.vis svg { width: 12px; height: 12px; flex: none; }
+.vis-sl     { color: var(--crit); border-color: var(--crit); background: var(--crit-soft); }
+.vis-owner  { color: var(--accent2); border-color: var(--accent2); background: var(--accent2-soft); }
+.vis-group  { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.vis-public { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); }
+.vis-me     { color: var(--dim); border-color: var(--border-strong); background: var(--panel2); }
+
+/* ƒx-Chip + Trace-Popover */
+.fx-wrap { position: relative; display: inline-flex; }
+.fx-btn {
+  appearance: none; cursor: pointer;
+  border: 1px solid var(--accent2); background: var(--accent2-soft);
+  color: var(--accent2); border-radius: var(--radius-pill);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  padding: 1px 8px; line-height: 1.5;
+  transition: transform .12s, box-shadow .15s;
+}
+.fx-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px -2px var(--accent2-soft); }
+.fx-pop {
+  position: absolute; z-index: 40; top: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%);
+  min-width: 240px; max-width: 300px;
+  background: var(--panel); border: 1px solid var(--accent2);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-panel);
+  padding: 10px 12px; font-size: 12px; color: var(--text);
+}
+.fx-pop::before {
+  content: ""; position: absolute; top: -5px; left: 50%; margin-left: -5px;
+  width: 9px; height: 9px; transform: rotate(45deg);
+  background: var(--panel); border-left: 1px solid var(--accent2); border-top: 1px solid var(--accent2);
+}
+.fx-pop .trace {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px;
+}
+.fx-pop .trace .arr { color: var(--accent2); font-weight: 700; }
+.fx-pop .src { margin-top: 6px; font-size: 11px; color: var(--faint); }
+</style>
+
+<style>
+/* ============================================================ TAB 1 — CHARAKTERBOGEN */
+.sheet-head { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.medallion {
+  width: 84px; height: 84px; border-radius: 50%; flex: none;
+  display: grid; place-items: center; position: relative;
+  background: radial-gradient(circle at 32% 28%, var(--accent-soft), transparent 65%), var(--panel2);
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 0 3px var(--panel), 0 0 0 4px var(--border-strong), 0 0 18px -4px var(--glow);
+  font-family: var(--font-display); font-size: 28px; color: var(--gold);
+}
+.medallion::after {
+  content: ""; position: absolute; inset: 4px; border-radius: 50%;
+  border: 1px dashed var(--gold); opacity: .55;
+}
+.sheet-id { min-width: 220px; flex: 1; }
+.sheet-name {
+  margin: 0; font-family: var(--font-display); font-size: 27px; font-weight: 600;
+  letter-spacing: .01em; line-height: 1.2; text-wrap: balance;
+}
+.sheet-chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; align-items: center; }
+.sheet-note { font-size: 11.5px; color: var(--faint); margin-top: 7px; }
+.sheet-note .fxnote { color: var(--accent2); }
+
+/* Ressourcen */
+.res-row { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: stretch; }
+.res-lp .lp-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.lp-label { font-family: var(--font-display); font-size: 14px; }
+.lp-nums { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 21px; font-weight: 700; color: var(--ok); }
+.lp-nums .of { font-size: 13px; color: var(--faint); font-weight: 400; }
+.lp-bar {
+  margin-top: 8px; height: 14px; border-radius: var(--radius-pill);
+  background: var(--inset); border: 1px solid var(--border); overflow: hidden;
+}
+.lp-fill {
+  height: 100%; width: 74%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--ok), var(--accent));
+  box-shadow: 0 0 10px -2px var(--glow);
+}
+.res-gb { display: flex; flex-direction: column; justify-content: center; gap: 6px; min-width: 180px; }
+.gb-top { display: flex; align-items: baseline; gap: 8px; }
+.gb-label { font-family: var(--font-display); font-size: 13.5px; }
+.gb-nums { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent2); }
+.gb-pips { display: flex; gap: 6px; }
+.gb-pip { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--accent2); background: var(--accent2-soft); }
+.gb-pip.spent { background: transparent; opacity: .4; }
+.gb-src { font-size: 10.5px; color: var(--faint); }
+
+/* Bereiche */
+.bereich-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.bereich .b-head {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
+}
+.b-name { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+.b-base { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+.b-base .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 17px; font-weight: 700; color: var(--accent); }
+.talent { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px dashed var(--border); }
+.talent:last-of-type { border-bottom: none; }
+.t-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-val {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 21px; font-weight: 700; color: var(--text); min-width: 40px; text-align: right;
+}
+.roll-btn {
+  appearance: none; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent);
+  border-radius: var(--radius-pill); padding: 4px 12px;
+  font-size: 12px; font-weight: 600; letter-spacing: .01em;
+  box-shadow: var(--shadow-btn);
+  transition: background .15s, color .15s, transform .12s;
+}
+.roll-btn:hover { background: var(--accent); color: var(--accent-c); transform: translateY(-1px); }
+.roll-btn:active { transform: translateY(0); }
+.roll-btn .die { font-family: var(--font-mono); font-size: 10.5px; opacity: .8; margin-left: 3px; }
+
+/* Status + Notizen */
+.status-notes { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+.fx-chiprow { display: flex; gap: 8px; flex-wrap: wrap; }
+.status-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: var(--radius-pill);
+  font-size: 12.5px; font-weight: 600; border: 1px solid;
+}
+.status-chip small { font-weight: 400; opacity: .85; }
+.st-warn { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); }
+.st-ok   { color: var(--ok); border-color: var(--ok); background: var(--ok-soft); }
+.notes-body {
+  font-size: 13px; color: var(--dim); background: var(--inset);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 9px 11px; font-style: italic;
+}
+.notes-hint { margin-top: 7px; font-size: 11px; color: var(--faint); }
+
+/* Proben-Log */
+.probe-log .pl-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.pl-toggle {
+  appearance: none; cursor: pointer;
+  border: 1px solid var(--border-strong); background: var(--panel2); color: var(--dim);
+  border-radius: var(--radius-pill); padding: 3px 11px; font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: border-color .15s, color .15s;
+}
+.pl-toggle .st-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.pl-toggle[aria-pressed="false"] .st-dot { background: var(--accent2); }
+.pl-toggle:hover { border-color: var(--accent); color: var(--text); }
+.pl-foot { margin-left: auto; font-size: 10.5px; color: var(--faint); }
+.pl-list { display: flex; flex-direction: column; gap: 6px; }
+.pl-empty { font-size: 12.5px; color: var(--faint); font-style: italic; padding: 6px 2px; }
+.pl-entry {
+  border: 1px solid var(--border); border-left: 3px solid var(--dim);
+  border-radius: var(--radius-sm); background: var(--panel2); overflow: hidden;
+}
+.pl-entry.res-ok   { border-left-color: var(--ok); }
+.pl-entry.res-fail { border-left-color: var(--crit); }
+.pl-entry.res-crit { border-left-color: var(--gold); box-shadow: 0 0 12px -5px var(--gold); }
+.pl-entry.res-fumble { border-left-color: var(--crit); box-shadow: 0 0 12px -5px var(--crit); }
+.pl-line {
+  appearance: none; border: none; background: transparent; cursor: pointer;
+  width: 100%; display: flex; align-items: center; gap: 9px; text-align: left;
+  padding: 7px 11px; font-size: 13px;
+}
+.pl-line:hover { background: var(--accent-soft); }
+.pl-line .who { color: var(--faint); font-size: 11px; flex: none; }
+.pl-line .txt { flex: 1; min-width: 0; }
+.pl-line .txt .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; }
+.pl-line .verdict { font-weight: 700; flex: none; }
+.pl-entry.res-ok .verdict { color: var(--ok); }
+.pl-entry.res-fail .verdict, .pl-entry.res-fumble .verdict { color: var(--crit); }
+.pl-entry.res-crit .verdict { color: var(--gold); }
+.pl-line .chev { flex: none; color: var(--faint); transition: transform .18s; font-size: 11px; }
+.pl-line[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.pl-detail {
+  padding: 8px 12px 10px; border-top: 1px dashed var(--border);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--dim);
+  display: flex; flex-wrap: wrap; gap: 5px 12px;
+}
+.pl-detail b { color: var(--text); }
+.pl-detail .arr { color: var(--accent2); font-weight: 700; }
+@keyframes pl-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.pl-entry.fresh { animation: pl-in .3s ease; }
+
+/* Wurf-Banner (orchestrierter Moment 1) */
+#roll-fly {
+  position: fixed; z-index: 90; left: 50%; bottom: 46px;
+  transform: translateX(-50%);
+  display: none; align-items: center; gap: 14px;
+  background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); box-shadow: 0 18px 50px -18px var(--shadowc), 0 0 30px -8px var(--glow);
+  padding: 12px 20px;
+}
+#roll-fly.on { display: flex; animation: rf-pop .22s ease; }
+#roll-fly .rf-label { font-family: var(--font-display); font-size: 14px; }
+#roll-fly .rf-label small { display: block; font-family: var(--font-body); font-size: 10.5px; color: var(--faint); }
+#roll-fly .rf-num {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 34px; font-weight: 700; min-width: 62px; text-align: center; color: var(--text);
+}
+#roll-fly .rf-verdict { font-weight: 700; font-size: 14px; min-width: 96px; }
+#roll-fly.v-ok .rf-verdict, #roll-fly.v-ok.settle .rf-num { color: var(--ok); }
+#roll-fly.v-fail .rf-verdict, #roll-fly.v-fail.settle .rf-num { color: var(--crit); }
+#roll-fly.v-crit .rf-verdict, #roll-fly.v-crit.settle .rf-num { color: var(--gold); }
+@keyframes rf-pop { 0% { transform: translateX(-50%) scale(.92); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+@keyframes rf-flash { 0% { box-shadow: 0 0 0 0 var(--glow); } 100% { box-shadow: 0 0 0 22px transparent; } }
+#roll-fly.settle { animation: rf-flash .5s ease; }
+</style>
+
+<style>
+/* ============================================================ TAB 2 — INVENTAR */
+.inv-grid { display: grid; grid-template-columns: 290px minmax(0,1fr) 320px; gap: 14px; align-items: start; }
+.slot { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px dashed var(--border); }
+.slot:last-of-type { border-bottom: none; }
+.slot-ico {
+  width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none;
+  display: grid; place-items: center;
+  background: var(--inset); border: 1px solid var(--border-strong); color: var(--dim);
+}
+.slot-ico svg { width: 18px; height: 18px; }
+.slot-body { flex: 1; min-width: 0; }
+.slot-kind { font-size: 10.5px; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+.slot-name { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.slot-name button {
+  appearance: none; border: none; background: none; padding: 0; cursor: pointer;
+  font: inherit; color: inherit; text-decoration: underline dotted var(--faint); text-underline-offset: 3px;
+}
+.slot-name button:hover { color: var(--accent); }
+.slot-stat { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--accent); flex: none; }
+.mini-tag {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: var(--radius-pill);
+  color: var(--accent2); border: 1px solid var(--accent2); background: var(--accent2-soft);
+}
+.load-wrap { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.load-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--dim); }
+.load-top .mono { font-weight: 700; color: var(--text); }
+.load-bar { margin-top: 5px; height: 9px; border-radius: var(--radius-pill); background: var(--inset); border: 1px solid var(--border); overflow: hidden; }
+.load-fill { height: 100%; width: 57%; background: linear-gradient(90deg, var(--accent), var(--gold)); border-radius: inherit; }
+
+.pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.item-card {
+  appearance: none; text-align: left; cursor: pointer;
+  background: var(--panel2); border: 1px solid var(--border);
+  border-left: 4px solid var(--border-strong);
+  border-radius: var(--radius-sm); padding: 9px 11px;
+  display: flex; flex-direction: column; gap: 5px; position: relative;
+  transition: transform .13s, box-shadow .15s, border-color .15s;
+}
+.item-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -10px var(--shadowc); }
+.item-card[aria-pressed="true"] { border-color: var(--accent); border-left-width: 4px; box-shadow: 0 0 0 1px var(--accent); }
+.item-card.r-selten { border-left-color: var(--accent2); }
+.item-card.r-episch { border-left-color: var(--gold); }
+.item-card.quest { box-shadow: 0 0 14px -4px var(--gold); }
+.item-card.quest:hover { box-shadow: 0 0 18px -3px var(--gold); }
+.ic-name { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.ic-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cat {
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  padding: 1px 7px; border-radius: var(--radius-pill); border: 1px solid;
+}
+.cat-waffe { color: var(--crit); border-color: var(--crit); background: var(--crit-soft); }
+.cat-trank { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.cat-werkzeug { color: var(--dim); border-color: var(--border-strong); background: var(--inset); }
+.cat-quest { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); }
+.ic-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); }
+.ic-meta .w { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.qty {
+  position: absolute; top: -7px; right: -7px;
+  min-width: 22px; height: 22px; padding: 0 5px;
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-c);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  border-radius: var(--radius-pill); box-shadow: var(--shadow-btn);
+}
+.pips { display: flex; gap: 3px; }
+.pip { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent); }
+.pip.empty { background: transparent; opacity: .45; }
+
+.dt-name { margin: 0; font-family: var(--font-display); font-size: 19px; font-weight: 600; line-height: 1.25; }
+.dt-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 9px 0; }
+.dt-rows { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.dt-row { display: flex; gap: 10px; }
+.dt-row .k { color: var(--faint); min-width: 86px; flex: none; font-size: 12px; padding-top: 1px; }
+.dt-row .v { color: var(--text); }
+.dt-row .v.mono { font-weight: 700; color: var(--accent); }
+.dt-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn {
+  appearance: none; cursor: pointer;
+  border: 1px solid var(--accent); border-radius: var(--radius-pill);
+  padding: 6px 15px; font-size: 12.5px; font-weight: 600;
+  background: var(--accent); color: var(--accent-c);
+  box-shadow: var(--shadow-btn);
+  transition: transform .12s, filter .15s;
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.ghost:hover { background: var(--accent-soft); }
+.dt-note { margin-top: 11px; font-size: 11px; color: var(--faint); border-top: 1px dashed var(--border); padding-top: 9px; }
+
+.audit { display: flex; flex-direction: column; gap: 4px; }
+.audit-row { display: flex; align-items: baseline; gap: 9px; font-size: 12.5px; padding: 4px 2px; flex-wrap: wrap; }
+.audit-row .a-kind { font-weight: 700; color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; min-width: 78px; flex: none; }
+.audit-row .a-kind.out { color: var(--accent2); }
+.audit-row .a-txt { color: var(--dim); flex: 1; min-width: 160px; }
+.audit-row .a-time { color: var(--faint); font-size: 11px; white-space: nowrap; }
+
+/* ============================================================ TAB 3 — SPIELTISCH */
+.table-grid {
+  display: grid; grid-template-columns: 52px minmax(0,1fr) 300px; gap: 12px;
+  align-items: stretch;
+}
+.table-grid.rail-closed { grid-template-columns: 52px minmax(0,1fr) 0; }
+.table-grid.rail-closed .rail { display: none; }
+
+.toolbar {
+  display: flex; flex-direction: column; gap: 6px; align-self: start;
+  background: var(--panel-img), var(--panel);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 7px 6px; box-shadow: var(--shadow-panel);
+}
+.tool {
+  appearance: none; cursor: pointer;
+  width: 38px; height: 38px; border-radius: var(--radius-sm);
+  border: 1px solid transparent; background: transparent; color: var(--dim);
+  display: grid; place-items: center; position: relative;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.tool svg { width: 19px; height: 19px; }
+.tool:hover { background: var(--accent-soft); color: var(--text); }
+.tool[aria-pressed="true"] { background: var(--accent); color: var(--accent-c); border-color: var(--accent); box-shadow: 0 0 12px -4px var(--glow); }
+.tool[data-inert] { color: var(--faint); }
+.tool[data-inert]:hover { background: var(--panel2); }
+.tool-sep { height: 1px; background: var(--border); margin: 2px 4px; }
+.tool .tt {
+  position: absolute; left: calc(100% + 9px); top: 50%; transform: translateY(-50%);
+  background: var(--panel); color: var(--text); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); padding: 3px 9px; font-size: 11px; white-space: nowrap;
+  box-shadow: var(--shadow-panel); pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 50;
+}
+.tool:hover .tt, .tool:focus-visible .tt { opacity: 1; }
+.tool .tt small { color: var(--faint); }
+
+.stage-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.combat-strip {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--panel-img), var(--panel);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 14px; box-shadow: var(--shadow-panel);
+}
+.combat-strip .c-label { font-family: var(--font-display); font-size: 14px; }
+.combat-strip .c-label b { color: var(--accent); }
+.queue { display: flex; gap: 5px; align-items: center; }
+.q-face {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--inset); border: 2px solid var(--border-strong);
+  font-size: 9.5px; font-weight: 700; color: var(--dim);
+  font-family: var(--font-mono);
+}
+.q-face.active { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 8px -2px var(--glow); }
+.spectate { margin-left: auto; }
+
+/* Szene */
+.stage-wrap { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-strong); box-shadow: var(--shadow-panel); }
+#stage {
+  position: relative; overflow: hidden; height: clamp(380px, 58vh, 620px);
+  background: var(--map-sky); cursor: crosshair; touch-action: manipulation;
+}
+#world {
+  position: absolute; left: 50%; top: 50%;
+  width: 900px; height: 560px;
+  transform-origin: center;
+}
+.scene { position: absolute; inset: 0; }
+.sc-water {
+  position: absolute; left: 0; right: 0; top: 46%; bottom: 0;
+  background:
+    radial-gradient(60% 30% at 30% 8%, rgba(240,196,110,.10), transparent 60%),
+    radial-gradient(50% 26% at 72% 16%, rgba(180,220,255,.06), transparent 60%),
+    repeating-linear-gradient(178deg, transparent 0 16px, rgba(255,255,255,.025) 16px 17px),
+    linear-gradient(180deg, var(--map-water2), var(--map-water) 55%);
+}
+.sc-quay {
+  position: absolute; left: 0; right: 0; top: 0; height: 47%;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 68px, rgba(0,0,0,.10) 68px 70px),
+    repeating-linear-gradient(0deg, transparent 0 40px, rgba(0,0,0,.08) 40px 42px),
+    linear-gradient(180deg, var(--map-quay), var(--map-stone));
+  border-bottom: 3px solid rgba(0,0,0,.35);
+}
+.pier {
+  position: absolute; background:
+    repeating-linear-gradient(90deg, var(--map-dock) 0 26px, var(--map-dock2) 26px 30px);
+  border: 2px solid rgba(0,0,0,.3); border-top-color: rgba(255,255,255,.08);
+  box-shadow: 0 6px 14px -4px rgba(0,0,0,.5);
+}
+.bldg {
+  position: absolute; border-radius: 3px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.07), transparent 55%),
+    var(--map-roof);
+  border: 2px solid rgba(0,0,0,.4);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 8px 18px -6px rgba(0,0,0,.6);
+}
+.bldg.alt { background: linear-gradient(135deg, rgba(255,255,255,.07), transparent 55%), var(--map-roof2); }
+.bldg .b-label {
+  position: absolute; left: 50%; bottom: -18px; transform: translateX(-50%);
+  font-size: 9px; color: rgba(230,240,235,.5); white-space: nowrap; letter-spacing: .06em;
+}
+.lamp { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #f4cf82; box-shadow: 0 0 4px 1px #f4cf82; }
+.lamp::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 120px; height: 120px; transform: translate(-50%,-50%);
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, var(--lantern), transparent 62%);
+  opacity: .5; animation: flicker 4.5s ease-in-out infinite;
+}
+.lamp.l2::after { animation-delay: -2.1s; width: 100px; height: 100px; }
+.lamp.l3::after { animation-delay: -3.4s; width: 140px; height: 140px; }
+@keyframes flicker { 0%,100% { opacity: .42; } 50% { opacity: .58; } 72% { opacity: .48; } }
+
+.sc-grid {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s;
+  background:
+    repeating-linear-gradient(90deg, var(--map-grid) 0 1px, transparent 1px 45px),
+    repeating-linear-gradient(0deg, var(--map-grid) 0 1px, transparent 1px 45px);
+}
+#stage.grid-on .sc-grid { opacity: 1; }
+.sc-fog {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 42%, transparent 46%, var(--map-fog) 100%);
+}
+.sc-anno { position: absolute; inset: 0; pointer-events: none; }
+.anno-label {
+  position: absolute; font-size: 9px; color: #c9bdf0; background: rgba(30,22,52,.55);
+  padding: 1px 6px; border-radius: 6px; border: 1px solid rgba(160,143,221,.5);
+}
+.hidden-mark {
+  position: absolute; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; cursor: help;
+  border: 1.5px dashed rgba(230,240,235,.4); color: rgba(230,240,235,.55);
+  font-family: var(--font-display); font-size: 15px;
+  background: rgba(10,16,14,.35);
+}
+.hidden-mark .tt2 {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: var(--panel); color: var(--text); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); padding: 4px 10px; font-size: 11px; white-space: nowrap;
+  font-family: var(--font-body); box-shadow: var(--shadow-panel);
+  opacity: 0; pointer-events: none; transition: opacity .15s;
+}
+.hidden-mark:hover .tt2, .hidden-mark:focus-visible .tt2 { opacity: 1; }
+</style>
+
+<style>
+/* Tokens auf der Szene */
+.token {
+  position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border-radius: 50%; cursor: pointer; z-index: 10;
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-size: 13px; font-weight: 700;
+  color: #f2ebdc; background: radial-gradient(circle at 34% 30%, #3d554a, #1d2b25 78%);
+  border: 2px solid var(--tk-ring, var(--ring-npc));
+  box-shadow: 0 0 0 2px rgba(0,0,0,.45), 0 0 12px -2px var(--tk-ring, var(--ring-npc)), 0 6px 12px -4px rgba(0,0,0,.6);
+  transition: left .12s ease, top .12s ease, box-shadow .2s;
+}
+.token .plate {
+  position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  font-family: var(--font-body); font-size: 10px; font-weight: 600; white-space: nowrap;
+  background: rgba(8,14,11,.78); color: #e8f0ea; border: 1px solid rgba(255,255,255,.16);
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  opacity: 0; transition: opacity .15s; pointer-events: none;
+}
+.token:hover .plate, .token.selected .plate, .token:focus-visible .plate { opacity: 1; }
+.token.you { --tk-ring: var(--ring-you); }
+.token.you::before {
+  content: ""; position: absolute; inset: -7px; border-radius: 50%;
+  border: 1.5px solid var(--ring-you); opacity: .5;
+  animation: you-pulse 2.6s ease-in-out infinite;
+}
+@keyframes you-pulse { 0%,100% { transform: scale(.96); opacity: .5; } 50% { transform: scale(1.06); opacity: .2; } }
+.token.selected {
+  box-shadow: 0 0 0 3px var(--tk-ring), 0 0 0 5px rgba(0,0,0,.4), 0 0 20px 0 var(--tk-ring);
+  z-index: 12;
+}
+.token.locked { cursor: not-allowed; }
+.token.npc { background: radial-gradient(circle at 34% 30%, #4a4038, #241d18 78%); }
+
+.move-hint {
+  position: absolute; left: 12px; bottom: 12px; z-index: 20;
+  display: none; align-items: center; gap: 7px;
+  background: rgba(8,14,11,.8); color: #e8f0ea;
+  border: 1px solid rgba(255,255,255,.18); border-radius: var(--radius-pill);
+  padding: 5px 13px; font-size: 11.5px;
+}
+.move-hint.on { display: inline-flex; }
+.move-hint kbd {
+  font-family: var(--font-mono); font-size: 10px; background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25); border-radius: 4px; padding: 0 5px;
+}
+
+/* Ping (orchestrierter Moment 2) */
+.ping { position: absolute; z-index: 18; width: 0; height: 0; pointer-events: none; }
+.ping i {
+  position: absolute; left: 0; top: 0; border-radius: 50%;
+  border: 2.5px solid var(--ping-c, #e8c15a); transform: translate(-50%,-50%);
+  width: 12px; height: 12px;
+  animation: ping-ring 1.1s cubic-bezier(.2,.7,.3,1) forwards;
+}
+.ping i:nth-child(2) { animation-delay: .18s; border-width: 1.5px; }
+.ping .core {
+  position: absolute; left: 0; top: 0; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ping-c, #e8c15a); transform: translate(-50%,-50%);
+  box-shadow: 0 0 10px 2px var(--ping-c, #e8c15a);
+  animation: ping-core 1.3s ease forwards;
+}
+@keyframes ping-ring { 0% { width: 12px; height: 12px; opacity: 1; } 100% { width: 110px; height: 110px; opacity: 0; } }
+@keyframes ping-core { 0%,60% { opacity: 1; } 100% { opacity: 0; } }
+.ping.static i { display: none; }
+.ping.static .core { animation: none; opacity: 1; transition: opacity 1.2s ease .4s; }
+.ping.static.fade .core { opacity: 0; }
+
+/* Zoom */
+.zoom-dock {
+  position: absolute; right: 12px; bottom: 12px; z-index: 20;
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(8,14,11,.8); border: 1px solid rgba(255,255,255,.18);
+  border-radius: var(--radius-pill); padding: 4px 6px;
+}
+.z-btn {
+  appearance: none; cursor: pointer; border: none; background: transparent;
+  color: #e8f0ea; width: 26px; height: 26px; border-radius: 50%;
+  font-size: 15px; line-height: 1; display: grid; place-items: center;
+  transition: background .15s;
+}
+.z-btn:hover { background: rgba(255,255,255,.14); }
+.z-val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 11.5px; color: #e8f0ea; min-width: 44px; text-align: center; }
+.z-fit {
+  appearance: none; cursor: pointer; border: 1px solid rgba(255,255,255,.25); background: transparent;
+  color: #e8f0ea; border-radius: var(--radius-pill); font-size: 10.5px; padding: 3px 10px;
+  transition: background .15s;
+}
+.z-fit:hover { background: rgba(255,255,255,.14); }
+
+/* Rechte Leiste */
+.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.rail-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.rail-head h2 { margin: 0; flex: 1; }
+.rail-collapse {
+  appearance: none; cursor: pointer; border: 1px solid var(--border); background: var(--panel2);
+  color: var(--dim); border-radius: var(--radius-sm); width: 24px; height: 24px;
+  display: grid; place-items: center; font-size: 12px;
+}
+.rail-collapse:hover { color: var(--text); border-color: var(--border-strong); }
+.rail-open-btn {
+  position: absolute; right: 12px; top: 12px; z-index: 25;
+  display: none; appearance: none; cursor: pointer;
+  border: 1px solid rgba(255,255,255,.2); background: rgba(8,14,11,.8); color: #e8f0ea;
+  border-radius: var(--radius-pill); padding: 5px 12px; font-size: 11.5px;
+}
+.table-grid.rail-closed ~ * .rail-open-btn { display: block; }
+.ev-list { display: flex; flex-direction: column; gap: 6px; }
+.ev {
+  border: 1px solid var(--border); border-left: 3px solid var(--dim);
+  border-radius: var(--radius-sm); background: var(--panel2); overflow: hidden;
+}
+.ev.e-ok { border-left-color: var(--ok); }
+.ev.e-dmg { border-left-color: var(--crit); }
+.ev.e-info { border-left-color: var(--accent2); }
+.ev.e-ping { border-left-color: var(--gold); }
+.ev-line {
+  appearance: none; border: none; background: transparent; cursor: pointer; width: 100%;
+  display: flex; align-items: flex-start; gap: 8px; text-align: left;
+  padding: 7px 10px; font-size: 12.5px; line-height: 1.4;
+}
+.ev-line:hover { background: var(--accent-soft); }
+.ev-line .who { font-weight: 700; color: var(--text); flex: none; }
+.ev-line .txt { flex: 1; color: var(--dim); min-width: 0; }
+.ev-line .txt .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text); }
+.ev-line .txt .good { color: var(--ok); font-weight: 700; }
+.ev-line .txt .bad { color: var(--crit); font-weight: 700; }
+.ev-line .chev { flex: none; color: var(--faint); font-size: 10px; margin-top: 3px; transition: transform .18s; }
+.ev-line[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.ev-detail {
+  padding: 7px 11px 9px; border-top: 1px dashed var(--border);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 11.5px; color: var(--dim); display: flex; flex-wrap: wrap; gap: 4px 10px;
+}
+.ev-detail b { color: var(--text); }
+.ev-detail .arr { color: var(--accent2); font-weight: 700; }
+.ev-static { padding: 7px 10px; font-size: 12.5px; display: flex; gap: 8px; align-items: flex-start; }
+.ev-static .who { font-weight: 700; flex: none; }
+.ev-static .txt { color: var(--dim); }
+.handout-thumb {
+  width: 100%; height: 74px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
+  background:
+    radial-gradient(30% 40% at 70% 30%, rgba(240,196,110,.25), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0 14px, rgba(0,0,0,.12) 14px 15px),
+    linear-gradient(150deg, #b9a97e, #8f7c53);
+  position: relative; overflow: hidden;
+}
+.handout-thumb::after {
+  content: "✕"; position: absolute; right: 24%; top: 34%;
+  color: rgba(90,30,20,.75); font-size: 13px; font-weight: 700;
+}
+.handout-card .h-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.handout-card .h-name { font-family: var(--font-display); font-size: 13.5px; font-weight: 600; flex: 1; }
+
+/* Toast */
+#toast {
+  position: fixed; z-index: 95; left: 50%; bottom: 14px; transform: translateX(-50%);
+  background: var(--panel); color: var(--text); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill); padding: 7px 16px; font-size: 12.5px;
+  box-shadow: var(--shadow-panel); opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+/* ============================================================ RESPONSIVE */
+@media (max-width: 1080px) {
+  .inv-grid { grid-template-columns: 250px minmax(0,1fr); }
+  .inv-detail-card { grid-column: 1 / -1; }
+  .table-grid { grid-template-columns: 52px minmax(0,1fr); }
+  .rail { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+  .rail > .card { flex: 1 1 280px; }
+}
+@media (max-width: 820px) {
+  .bereich-grid { grid-template-columns: 1fr; }
+  .status-notes { grid-template-columns: 1fr; }
+  .res-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .topbar { padding: 10px 12px 8px; gap: 8px; }
+  .tabbar { padding: 6px 12px 0; }
+  main { padding: 12px 12px 20px; }
+  .footer { padding: 8px 12px; }
+  .campaign { display: none; }
+  .chip-pkg .pkg-long { display: none; }
+  .inv-grid { grid-template-columns: 1fr; }
+  .table-grid { grid-template-columns: 1fr; }
+  .toolbar { flex-direction: row; align-self: stretch; overflow-x: auto; }
+  .tool-sep { width: 1px; height: auto; margin: 4px 2px; }
+  .tool .tt { display: none; }
+  #stage { height: clamp(300px, 55vh, 460px); }
+  .sheet-name { font-size: 22px; }
+}
+
+/* ============================================================ REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001s !important;
+  }
+  .token.you::before { animation: none; opacity: .4; }
+  .lamp::after { animation: none; opacity: .5; }
+}
+</style>
+
+<style>
+.rail-open-btn.on { display: block; }
+</style>
+
+<div id="app">
+  <!-- ============================== KOPFLEISTE ============================== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="wordmark">Chronicle<span class="spark">&#10022;</span></span>
+      <span class="campaign">Die Schatten von Aldenfall</span>
+    </div>
+    <span class="chip chip-pkg" title="Installiertes Regelpaket dieser Kampagne">
+      <b>Regelpaket: How to be a Hero</b><span class="pkg-long">&nbsp;&middot; Community-Paket &middot; CC BY-NC-SA 4.0</span>
+    </span>
+    <span class="top-spacer"></span>
+    <span class="chip chip-role" title="Deine Rolle in dieser Kampagne">Spielerin &middot; <b>Lena</b></span>
+    <span class="chip" title="Verbindungs- und Speicherstatus"><span class="dot"></span> Gespeichert &middot; Verbunden</span>
+  </header>
+
+  <!-- ============================== TAB-NAVIGATION ============================== -->
+  <nav class="tabbar" role="tablist" aria-label="Spielansichten">
+    <button class="tab" role="tab" id="tabbtn-sheet" aria-selected="true" aria-controls="panel-sheet" data-tab="sheet">Charakterbogen</button>
+    <button class="tab" role="tab" id="tabbtn-inv" aria-selected="false" aria-controls="panel-inv" data-tab="inv" tabindex="-1">Inventar</button>
+    <button class="tab" role="tab" id="tabbtn-table" aria-selected="false" aria-controls="panel-table" data-tab="table" tabindex="-1">Spieltisch</button>
+  </nav>
+
+  <main>
+    <!-- ============================== TAB 1: CHARAKTERBOGEN ============================== -->
+    <section class="view" id="panel-sheet" role="tabpanel" aria-labelledby="tabbtn-sheet">
+
+      <div class="card sheet-head">
+        <div class="medallion" aria-hidden="true">BE</div>
+        <div class="sheet-id">
+          <h1 class="sheet-name">Brakka Eisenfaust</h1>
+          <div class="sheet-chips">
+            <span class="chip"><b>Zwergin</b></span>
+            <span class="chip">Schmiedin auf Wanderschaft</span>
+            <span class="vis vis-owner" title="Sichtbarkeit dieses Bogens: nur du und die Spielleitung">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>
+              Besitzer + SL
+            </span>
+          </div>
+          <div class="sheet-note">Bogen-Layout: <span class="fxnote">Regelpaket &raquo;How to be a Hero&laquo; v2.1</span> &mdash; Felder und Anordnung kommen aus dem Paketschema.</div>
+        </div>
+      </div>
+
+      <div class="res-row">
+        <div class="card res-lp">
+          <div class="lp-top">
+            <span class="lp-label">Lebenspunkte</span>
+            <span class="lp-nums">74<span class="of">&thinsp;/&thinsp;100</span></span>
+          </div>
+          <div class="lp-bar" role="img" aria-label="Lebenspunkte: 74 von 100"><div class="lp-fill"></div></div>
+        </div>
+        <div class="card res-gb">
+          <div class="gb-top">
+            <span class="gb-label">Geistesblitze</span>
+            <span class="gb-nums">2&thinsp;/&thinsp;3</span>
+          </div>
+          <div class="gb-pips" role="img" aria-label="Geistesblitze: 2 von 3 verfügbar">
+            <span class="gb-pip"></span><span class="gb-pip"></span><span class="gb-pip spent"></span>
+          </div>
+          <span class="gb-src">Ressource aus dem Regelpaket</span>
+        </div>
+      </div>
+
+      <div class="bereich-grid">
+        <!-- HANDELN -->
+        <div class="card bereich">
+          <div class="b-head">
+            <span class="b-name">Handeln</span>
+            <span class="b-base">Grundwert <span class="val mono">14</span>
+              <span class="fx-wrap">
+                <button class="fx-btn" aria-expanded="false" aria-label="Rechenweg für Grundwert Handeln anzeigen">&fnof;x</button>
+                <div class="fx-pop" hidden>
+                  <div class="trace"><span>Talentpunkte im Bereich: <b>145</b></span><span class="arr">&rarr;</span><span>&divide; 10 (abgerundet)</span><span class="arr">&rarr;</span><span>Grundwert <b>14</b></span></div>
+                  <div class="src">berechnet vom Regelpaket &raquo;How to be a Hero&laquo; v2.1</div>
+                </div>
+              </span>
+            </span>
+          </div>
+          <div class="talent">
+            <span class="t-name">Schwertkampf</span>
+            <span class="t-val mono">62</span>
+            <button class="roll-btn" data-talent="Schwertkampf" data-value="62">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+          <div class="talent">
+            <span class="t-name">Klettern</span>
+            <span class="t-val mono">45</span>
+            <button class="roll-btn" data-talent="Klettern" data-value="45">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+          <div class="talent">
+            <span class="t-name">Schleichen</span>
+            <span class="t-val mono">38</span>
+            <button class="roll-btn" data-talent="Schleichen" data-value="38">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+        </div>
+        <!-- WISSEN -->
+        <div class="card bereich">
+          <div class="b-head">
+            <span class="b-name">Wissen</span>
+            <span class="b-base">Grundwert <span class="val mono">14</span>
+              <span class="fx-wrap">
+                <button class="fx-btn" aria-expanded="false" aria-label="Rechenweg für Grundwert Wissen anzeigen">&fnof;x</button>
+                <div class="fx-pop" hidden>
+                  <div class="trace"><span>Talentpunkte im Bereich: <b>143</b></span><span class="arr">&rarr;</span><span>&divide; 10 (abgerundet)</span><span class="arr">&rarr;</span><span>Grundwert <b>14</b></span></div>
+                  <div class="src">berechnet vom Regelpaket &raquo;How to be a Hero&laquo; v2.1</div>
+                </div>
+              </span>
+            </span>
+          </div>
+          <div class="talent">
+            <span class="t-name">Alchemie</span>
+            <span class="t-val mono">55</span>
+            <button class="roll-btn" data-talent="Alchemie" data-value="55">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+          <div class="talent">
+            <span class="t-name">Spurenlesen</span>
+            <span class="t-val mono">47</span>
+            <button class="roll-btn" data-talent="Spurenlesen" data-value="47">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+          <div class="talent">
+            <span class="t-name">Geschichte</span>
+            <span class="t-val mono">41</span>
+            <button class="roll-btn" data-talent="Geschichte" data-value="41">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+        </div>
+        <!-- SOZIALES -->
+        <div class="card bereich">
+          <div class="b-head">
+            <span class="b-name">Soziales</span>
+            <span class="b-base">Grundwert <span class="val mono">13</span>
+              <span class="fx-wrap">
+                <button class="fx-btn" aria-expanded="false" aria-label="Rechenweg für Grundwert Soziales anzeigen">&fnof;x</button>
+                <div class="fx-pop" hidden>
+                  <div class="trace"><span>Talentpunkte im Bereich: <b>138</b></span><span class="arr">&rarr;</span><span>&divide; 10 (abgerundet)</span><span class="arr">&rarr;</span><span>Grundwert <b>13</b></span></div>
+                  <div class="src">berechnet vom Regelpaket &raquo;How to be a Hero&laquo; v2.1</div>
+                </div>
+              </span>
+            </span>
+          </div>
+          <div class="talent">
+            <span class="t-name">&Uuml;berzeugen</span>
+            <span class="t-val mono">58</span>
+            <button class="roll-btn" data-talent="&Uuml;berzeugen" data-value="58">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+          <div class="talent">
+            <span class="t-name">Einsch&uuml;chtern</span>
+            <span class="t-val mono">44</span>
+            <button class="roll-btn" data-talent="Einsch&uuml;chtern" data-value="44">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+          <div class="talent">
+            <span class="t-name">Feilschen</span>
+            <span class="t-val mono">36</span>
+            <button class="roll-btn" data-talent="Feilschen" data-value="36">W&uuml;rfeln<span class="die">W100</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-notes">
+        <div class="card">
+          <h2>Zust&auml;nde</h2>
+          <div class="fx-chiprow">
+            <span class="status-chip st-warn">Vergiftet <small>(2 Runden)</small></span>
+            <span class="status-chip st-ok">Gesegnet <small>(bis Rast)</small></span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Meine Notizen
+            <span class="vis vis-me" title="Nur du siehst diese Notizen">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+              Nur ich
+            </span>
+          </h2>
+          <div class="notes-body">Der Hafenmeister wich meiner Frage nach der &raquo;Nachtlieferung&laquo; aus. Morgen die Lagerhalle 3 ansehen &mdash; vorher Mira Bescheid geben.</div>
+          <div class="notes-hint">SL-Zugriff laut Kampagnenregel: <b>aus</b> &mdash; die Spielleitung kann diese Notizen nicht lesen.</div>
+        </div>
+      </div>
+
+      <div class="card probe-log">
+        <div class="pl-head">
+          <h2 style="margin:0">Proben-Log</h2>
+          <button class="pl-toggle" id="vis-toggle" aria-pressed="true" title="Legt fest, ob deine Würfe für die Gruppe sichtbar sind">
+            <span class="st-dot"></span><span class="pl-mode">&Ouml;ffentlich w&uuml;rfeln</span>
+          </button>
+          <span class="pl-foot">Krit-B&auml;nder: 1&ndash;10 krit. Erfolg &middot; 91&ndash;100 Patzer &middot; im Regelpaket konfigurierbar</span>
+        </div>
+        <div class="pl-list" id="probe-log" aria-live="polite">
+          <div class="pl-empty" id="pl-empty">Noch keine Proben &mdash; klicke bei einem Talent auf &raquo;W&uuml;rfeln&laquo;.</div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================== TAB 2: INVENTAR ============================== -->
+    <section class="view" id="panel-inv" role="tabpanel" aria-labelledby="tabbtn-inv" hidden>
+      <div class="inv-grid">
+
+        <!-- AUSGERÜSTET -->
+        <div class="card">
+          <h2>Ausger&uuml;stet</h2>
+          <div class="slot">
+            <span class="slot-ico" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16 13.5 6.5M13 3l4 4-2.5 2.5-4-4L13 3ZM4 16l-1 1M5.5 12.5 7.5 14.5"/></svg></span>
+            <div class="slot-body">
+              <div class="slot-kind">Haupthand</div>
+              <div class="slot-name"><button data-item="funkenbiss">Kurzschwert &raquo;Funkenbiss&laquo;</button> <span class="mini-tag">Instanz</span></div>
+            </div>
+            <span class="slot-stat" title="Schaden">1W10+3</span>
+          </div>
+          <div class="slot">
+            <span class="slot-ico" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2.5 16.5 5v5c0 4-3 6.5-6.5 7.5C6.5 16.5 3.5 14 3.5 10V5L10 2.5Z"/></svg></span>
+            <div class="slot-body">
+              <div class="slot-kind">Nebenhand</div>
+              <div class="slot-name"><button data-item="eichenschild">Eichenschild</button></div>
+            </div>
+            <span class="slot-stat" title="Block">&minus;2 Schaden</span>
+          </div>
+          <div class="slot">
+            <span class="slot-ico" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3h8l1.5 3-2 1v9h-7V7l-2-1L6 3ZM10 3v4"/></svg></span>
+            <div class="slot-body">
+              <div class="slot-kind">R&uuml;stung</div>
+              <div class="slot-name"><button data-item="lederruestung">Lederr&uuml;stung</button></div>
+            </div>
+            <span class="slot-stat" title="Rüstungsschutz">&minus;4 Schaden</span>
+          </div>
+          <div class="slot">
+            <span class="slot-ico" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 4h4v2.5l1.5 2v7A1.5 1.5 0 0 1 12 17H8a1.5 1.5 0 0 1-1.5-1.5v-7l1.5-2V4ZM8 4h4"/></svg></span>
+            <div class="slot-body">
+              <div class="slot-kind">G&uuml;rtel</div>
+              <div class="slot-name"><button data-item="heiltrank">2&times; Heiltrank</button></div>
+            </div>
+            <span class="slot-stat" title="Heilung">2W10 LP</span>
+          </div>
+          <div class="load-wrap">
+            <div class="load-top"><span>Traglast</span><span class="mono">34&thinsp;/&thinsp;60</span></div>
+            <div class="load-bar" role="img" aria-label="Traglast: 34 von 60"><div class="load-fill"></div></div>
+          </div>
+        </div>
+
+        <!-- RUCKSACK -->
+        <div class="card">
+          <h2>Rucksack <span class="sub">&middot; Klick &ouml;ffnet Details</span></h2>
+          <div class="pack-grid" id="pack-grid">
+            <button class="item-card r-selten" data-item="funkenbiss" aria-pressed="true">
+              <span class="ic-name">Kurzschwert &raquo;Funkenbiss&laquo;</span>
+              <span class="ic-row"><span class="cat cat-waffe">Waffe</span><span class="mini-tag">Instanz</span></span>
+              <span class="ic-meta"><span class="w">1,2 kg</span><span>ausger&uuml;stet</span></span>
+            </button>
+            <button class="item-card" data-item="heiltrank" aria-pressed="false">
+              <span class="qty">&times;2</span>
+              <span class="ic-name">Heiltrank</span>
+              <span class="ic-row"><span class="cat cat-trank">Trank</span></span>
+              <span class="ic-meta"><span class="w">0,5 kg</span><span class="pips" title="2 von 2 Ladungen"><span class="pip"></span><span class="pip"></span></span></span>
+            </button>
+            <button class="item-card r-selten" data-item="adleraugen" aria-pressed="false">
+              <span class="ic-name">Elixier der Adleraugen</span>
+              <span class="ic-row"><span class="cat cat-trank">Trank</span></span>
+              <span class="ic-meta"><span class="w">0,3 kg</span><span class="pips" title="1 von 1 Ladung"><span class="pip"></span></span></span>
+            </button>
+            <button class="item-card" data-item="wurfmesser" aria-pressed="false">
+              <span class="qty">&times;3</span>
+              <span class="ic-name">Wurfmesser</span>
+              <span class="ic-row"><span class="cat cat-waffe">Waffe</span></span>
+              <span class="ic-meta"><span class="w">0,2 kg</span></span>
+            </button>
+            <button class="item-card" data-item="schmiedehammer" aria-pressed="false">
+              <span class="ic-name">Schmiedehammer</span>
+              <span class="ic-row"><span class="cat cat-werkzeug">Werkzeug</span></span>
+              <span class="ic-meta"><span class="w">2,5 kg</span></span>
+            </button>
+            <button class="item-card" data-item="hanfseil" aria-pressed="false">
+              <span class="ic-name">Hanfseil, 10 Schritt</span>
+              <span class="ic-row"><span class="cat cat-werkzeug">Werkzeug</span></span>
+              <span class="ic-meta"><span class="w">3,0 kg</span></span>
+            </button>
+            <button class="item-card" data-item="fackel" aria-pressed="false">
+              <span class="qty">&times;3</span>
+              <span class="ic-name">Fackel</span>
+              <span class="ic-row"><span class="cat cat-werkzeug">Werkzeug</span></span>
+              <span class="ic-meta"><span class="w">0,6 kg</span></span>
+            </button>
+            <button class="item-card r-selten" data-item="sturmlaterne" aria-pressed="false">
+              <span class="ic-name">Sturmlaterne</span>
+              <span class="ic-row"><span class="cat cat-werkzeug">Werkzeug</span></span>
+              <span class="ic-meta"><span class="w">1,1 kg</span></span>
+            </button>
+            <button class="item-card r-episch quest" data-item="siegelbrief" aria-pressed="false">
+              <span class="ic-name">Versiegelter Brief des Hafenmeisters</span>
+              <span class="ic-row"><span class="cat cat-quest">Quest</span></span>
+              <span class="ic-meta"><span class="w">0,1 kg</span></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- DETAIL -->
+        <div class="card inv-detail-card" id="inv-detail" aria-live="polite">
+          <!-- wird per JS gefüllt -->
+        </div>
+      </div>
+
+      <!-- AUDIT -->
+      <div class="card">
+        <h2>Letzte Vorg&auml;nge <span class="sub">&middot; Inventar-Protokoll</span></h2>
+        <div class="audit">
+          <div class="audit-row">
+            <span class="a-kind">Erhalten</span>
+            <span class="a-txt">2&times; Heiltrank &mdash; vergeben von der SL</span>
+            <span class="a-time">vor 3 Min</span>
+          </div>
+          <div class="audit-row">
+            <span class="a-kind out">&Uuml;bergeben</span>
+            <span class="a-txt">Fackel an Mira</span>
+            <span class="a-time">gestern</span>
+          </div>
+          <div class="audit-row">
+            <span class="a-kind">Ausger&uuml;stet</span>
+            <span class="a-txt">Eichenschild in Slot Nebenhand</span>
+            <span class="a-time">gestern</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================== TAB 3: SPIELTISCH ============================== -->
+    <section class="view" id="panel-table" role="tabpanel" aria-labelledby="tabbtn-table" hidden>
+      <div class="table-grid" id="table-grid">
+
+        <!-- WERKZEUGLEISTE -->
+        <div class="toolbar" role="toolbar" aria-label="Spieltisch-Werkzeuge">
+          <button class="tool" id="tool-select" aria-pressed="true" aria-label="Auswählen">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3.5 15.5 10l-4.6 1.2L8.5 16 5 3.5Z"/></svg>
+            <span class="tt">Ausw&auml;hlen <small>&middot; eigene Tokens</small></span>
+          </button>
+          <button class="tool" id="tool-ping" aria-pressed="false" aria-label="Ping setzen">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="2"/><circle cx="10" cy="10" r="5.5" opacity=".6"/><circle cx="10" cy="10" r="8" opacity=".3"/></svg>
+            <span class="tt">Ping <small>&middot; Klick auf die Karte</small></span>
+          </button>
+          <button class="tool" id="tool-grid" aria-pressed="false" aria-label="Raster ein- oder ausblenden">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 3h14v14H3zM3 8h14M3 13h14M8 3v14M13 3v14"/></svg>
+            <span class="tt">Raster <small>&middot; ein/aus</small></span>
+          </button>
+          <div class="tool-sep" role="separator"></div>
+          <button class="tool" data-inert aria-label="Zeichnen — im Spike ohne Funktion">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16c0-4 2-6 5-7M13 3.5l3.5 3.5L9 14.5 5 15l.5-4L13 3.5Z"/></svg>
+            <span class="tt">Zeichnen <small>&middot; geteilte Skizzen</small></span>
+          </button>
+          <button class="tool" data-inert aria-label="Messen — bald verfügbar">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13.5 13.5 3l3.5 3.5L6.5 17 3 13.5ZM7 13l1.5 1.5M10 10l1.5 1.5M13 7l1.5 1.5"/></svg>
+            <span class="tt">Messen <small>&middot; Bald</small></span>
+          </button>
+          <button class="tool" data-inert aria-label="Ebenen — bald verfügbar">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m10 3 7 4-7 4-7-4 7-4ZM3 11l7 4 7-4"/></svg>
+            <span class="tt">Ebenen <small>&middot; Bald</small></span>
+          </button>
+        </div>
+
+        <!-- SZENE -->
+        <div class="stage-col">
+          <div class="combat-strip">
+            <span class="c-label">Kampf &middot; Runde 3 &mdash; am Zug: <b>Mira</b></span>
+            <span class="queue" aria-label="Initiative-Reihenfolge">
+              <span class="q-face active" title="Mira — am Zug">MI</span>
+              <span class="q-face" title="Brakka (du)">BR</span>
+              <span class="q-face" title="Kellan">KE</span>
+              <span class="q-face" title="Thorge">TH</span>
+              <span class="q-face" title="Hafenschläger (NSC)">HS</span>
+            </span>
+            <span class="chip spectate" title="Der Spieltisch ist für dich lesend — Aktionen führt die Spielleitung aus">Nur ansehen &mdash; die SL f&uuml;hrt Aktionen aus</span>
+          </div>
+
+          <div class="stage-wrap">
+            <div id="stage" aria-label="Szene: Hafenviertel bei Nacht">
+              <div id="world">
+                <div class="scene" aria-hidden="true">
+                  <div class="sc-quay"></div>
+                  <div class="sc-water"></div>
+                  <div class="pier" style="left:180px; top:44%; width:70px; height:250px;"></div>
+                  <div class="pier" style="left:560px; top:44%; width:70px; height:190px;"></div>
+                  <div class="bldg" style="left:60px; top:40px; width:170px; height:110px;"><span class="b-label">Lagerhalle 3</span></div>
+                  <div class="bldg alt" style="left:330px; top:20px; width:130px; height:90px;"><span class="b-label">Zollhaus</span></div>
+                  <div class="bldg" style="left:640px; top:56px; width:150px; height:100px;"><span class="b-label">&raquo;Zur nassen Katze&laquo;</span></div>
+                  <div class="lamp" style="left:250px; top:170px;"></div>
+                  <div class="lamp l2" style="left:520px; top:130px;"></div>
+                  <div class="lamp l3" style="left:214px; top:400px;"></div>
+                  <svg class="sc-anno" viewBox="0 0 900 560">
+                    <path d="M340 250 C 390 230, 470 235, 520 265 S 600 330, 640 320" fill="none" stroke="#a08fdd" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9" opacity=".85"/>
+                  </svg>
+                  <span class="anno-label" style="left:455px; top:222px;">Skizze: Mira</span>
+                </div>
+
+                <button class="hidden-mark" style="left:610px; top:480px;" aria-label="Verborgener Bereich">?
+                  <span class="tt2">Vom SL verborgen &mdash; du siehst nur, was aufgedeckt ist.</span>
+                </button>
+
+                <button class="token you" id="tk-you" style="left:214px; top:380px; --tk-ring: var(--ring-you);" aria-label="Dein Token: Brakka. Klicken zum Auswählen, bewegen mit Pfeiltasten.">BR<span class="plate">Brakka &middot; du</span></button>
+                <button class="token locked" style="left:259px; top:335px; --tk-ring: var(--ring-p1);" aria-label="Token Mira — nur eigene Tokens auswählbar" data-name="Mira">MI<span class="plate">Mira</span></button>
+                <button class="token locked" style="left:169px; top:335px; --tk-ring: var(--ring-p2);" aria-label="Token Kellan — nur eigene Tokens auswählbar" data-name="Kellan">KE<span class="plate">Kellan</span></button>
+                <button class="token locked" style="left:214px; top:290px; --tk-ring: var(--ring-p3);" aria-label="Token Thorge — nur eigene Tokens auswählbar" data-name="Thorge">TH<span class="plate">Thorge</span></button>
+                <button class="token locked npc" style="left:394px; top:200px; --tk-ring: var(--ring-npc);" aria-label="Token Hafenschläger (NSC) — nur eigene Tokens auswählbar" data-name="Hafenschläger">HS<span class="plate">Hafenschl&auml;ger &middot; NSC</span></button>
+
+                <div class="sc-grid"></div>
+                <div class="sc-fog"></div>
+              </div>
+
+              <div class="move-hint" id="move-hint">Bewegen: <kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></div>
+              <div class="zoom-dock">
+                <button class="z-btn" id="zoom-out" aria-label="Herauszoomen">&minus;</button>
+                <span class="z-val" id="zoom-val">100&thinsp;%</span>
+                <button class="z-btn" id="zoom-in" aria-label="Hineinzoomen">+</button>
+                <button class="z-fit" id="zoom-fit">Einpassen</button>
+              </div>
+              <button class="rail-open-btn" id="rail-open">Log einblenden</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECHTE LEISTE -->
+        <div class="rail" id="rail">
+          <div class="card">
+            <div class="rail-head">
+              <h2>Ereignis-Log</h2>
+              <button class="rail-collapse" id="rail-close" aria-label="Ereignis-Log ausblenden">&rsaquo;</button>
+            </div>
+            <div class="ev-list" id="ev-list" aria-live="polite">
+              <div class="ev e-ok">
+                <button class="ev-line" aria-expanded="false">
+                  <span class="who">Mira:</span>
+                  <span class="txt">&Uuml;berzeugen &mdash; <span class="num">41 &le; 58</span> &rarr; <span class="good">Erfolg</span></span>
+                  <span class="chev">&#9660;</span>
+                </button>
+                <div class="ev-detail" hidden>
+                  <span>W100: <b>41</b></span><span class="arr">&middot;</span><span>Zielwert (&Uuml;berzeugen): <b>58</b></span><span class="arr">&rarr;</span><span>41 &le; 58 <b>Erfolg</b></span>
+                </div>
+              </div>
+              <div class="ev e-dmg">
+                <button class="ev-line" aria-expanded="false">
+                  <span class="who">SL:</span>
+                  <span class="txt">Schaden an Hafenschl&auml;ger &mdash; <span class="num">1W10+3 &rarr; 9</span></span>
+                  <span class="chev">&#9660;</span>
+                </button>
+                <div class="ev-detail" hidden>
+                  <span>W10: <b>6</b></span><span class="arr">+</span><span>Bonus: <b>3</b></span><span class="arr">&rarr;</span><span><b>9</b> Schaden</span>
+                </div>
+              </div>
+              <div class="ev e-info">
+                <div class="ev-static">
+                  <span class="who">SL:</span>
+                  <span class="txt">Handout &raquo;Karte des Hafens&laquo; geteilt &mdash; siehe unten</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card handout-card">
+            <h2>Handout</h2>
+            <div class="handout-thumb" role="img" aria-label="Vorschau: vergilbte Hafenkarte mit Markierung"></div>
+            <div class="h-row">
+              <span class="h-name">Karte des Hafens</span>
+              <span class="vis vis-group" title="Sichtbar für die ganze Gruppe">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5.5" cy="6" r="2"/><circle cx="10.5" cy="6" r="2"/><path d="M2.5 12.5c.5-2 1.6-3 3-3s2.5 1 3 3M8 12.5c.5-2 1.6-3 3-3s2.5 1 3 3"/></svg>
+                Gruppe
+              </span>
+              <button class="btn ghost" title="Im Spike ohne Funktion">&Ouml;ffnen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================== FUSSLEISTE ============================== -->
+  <footer class="footer">
+    <span>Automatisch gespeichert &middot; vor 12 s</span>
+    <span class="sep">|</span>
+    <span class="chip">Kampagnen-Theme: <b>Fantasy</b></span>
+    <span class="sep">|</span>
+    <span class="attr">&raquo;How to be a Hero&laquo; (howtobeahero.de) &middot; CC BY-NC-SA 4.0 &mdash; genutzt wird nur die mechanische Struktur, keine Regeltexte.</span>
+    <span class="ver">Spike &middot; Play-Views v0.1</span>
+  </footer>
+</div>
+
+<!-- Wurf-Banner + Toast -->
+<div id="roll-fly" role="status" aria-live="assertive">
+  <span class="rf-label"><span id="rf-talent">Schwertkampf</span><small>W100 &middot; Wurf &le; Talentwert = Erfolg</small></span>
+  <span class="rf-num mono" id="rf-num">--</span>
+  <span class="rf-verdict" id="rf-verdict"></span>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+(function () {
+  "use strict";
+  var RM = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function reduced() { return RM.matches; }
+
+  /* ---------- Toast ---------- */
+  var toastEl = document.getElementById("toast"), toastT = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("on");
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { toastEl.classList.remove("on"); }, 2200);
+  }
+
+  /* ---------- Tabs ---------- */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  function selectTab(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById("panel-" + t.dataset.tab).hidden = !on;
+    });
+    if (tab.dataset.tab === "table") fitStage();
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () { selectTab(t); });
+    t.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var n = tabs[(i + d + tabs.length) % tabs.length];
+      n.focus(); selectTab(n);
+    });
+  });
+
+  /* ---------- fx-Popover ---------- */
+  var fxBtns = Array.prototype.slice.call(document.querySelectorAll(".fx-btn"));
+  function closeFx() {
+    fxBtns.forEach(function (b) {
+      b.setAttribute("aria-expanded", "false");
+      b.parentElement.querySelector(".fx-pop").hidden = true;
+    });
+  }
+  fxBtns.forEach(function (b) {
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var pop = b.parentElement.querySelector(".fx-pop");
+      var open = !pop.hidden;
+      closeFx();
+      if (!open) { pop.hidden = false; b.setAttribute("aria-expanded", "true"); }
+    });
+  });
+  document.addEventListener("click", closeFx);
+
+  /* ---------- W100-Probe ---------- */
+  var fly = document.getElementById("roll-fly"),
+      rfTalent = document.getElementById("rf-talent"),
+      rfNum = document.getElementById("rf-num"),
+      rfVerdict = document.getElementById("rf-verdict"),
+      plList = document.getElementById("probe-log"),
+      plEmpty = document.getElementById("pl-empty"),
+      visToggle = document.getElementById("vis-toggle"),
+      flyT1 = null, flyT2 = null, tickI = null;
+
+  visToggle.addEventListener("click", function () {
+    var pub = visToggle.getAttribute("aria-pressed") === "true";
+    visToggle.setAttribute("aria-pressed", pub ? "false" : "true");
+    visToggle.querySelector(".pl-mode").textContent = pub ? "Privat würfeln" : "Öffentlich würfeln";
+    toast(pub ? "Neue Proben sind nur für dich und die SL sichtbar." : "Neue Proben sind für die Gruppe sichtbar.");
+  });
+
+  function verdictFor(roll, value) {
+    if (roll <= 10) return { cls: "res-crit", fly: "v-crit", label: "Kritischer Erfolg!" };
+    if (roll >= 91) return { cls: "res-fumble", fly: "v-fail", label: "Patzer!" };
+    if (roll <= value) return { cls: "res-ok", fly: "v-ok", label: "Erfolg" };
+    return { cls: "res-fail", fly: "v-fail", label: "Fehlschlag" };
+  }
+
+  function logProbe(talent, value, roll, v) {
+    var pub = visToggle.getAttribute("aria-pressed") === "true";
+    var cmp = roll <= value ? "≤" : ">";
+    if (plEmpty) { plEmpty.remove(); plEmpty = null; }
+    var el = document.createElement("div");
+    el.className = "pl-entry fresh " + v.cls;
+    el.innerHTML =
+      '<button class="pl-line" aria-expanded="false">' +
+        '<span class="who">' + (pub ? "Öffentlich" : "Privat") + "</span>" +
+        '<span class="txt">' + talent + ' — Wurf <span class="num">' + roll + " " + cmp + " " + value + "</span></span>" +
+        '<span class="verdict">' + v.label + "</span>" +
+        '<span class="chev">▼</span>' +
+      "</button>" +
+      '<div class="pl-detail" hidden>' +
+        "<span>W100: <b>" + roll + "</b></span><span class=\"arr\">·</span>" +
+        "<span>Zielwert (" + talent + "): <b>" + value + "</b></span><span class=\"arr\">→</span>" +
+        "<span>" + roll + " " + cmp + " " + value + " <b>" + v.label + "</b></span><span class=\"arr\">·</span>" +
+        "<span>Krit-Band: 1–10 / 91–100</span>" +
+      "</div>";
+    plList.prepend(el);
+    while (plList.children.length > 6) plList.lastElementChild.remove();
+  }
+
+  document.querySelectorAll(".roll-btn").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var talent = b.dataset.talent, value = parseInt(b.dataset.value, 10);
+      var roll = 1 + Math.floor(Math.random() * 100);
+      var v = verdictFor(roll, value);
+      clearTimeout(flyT1); clearTimeout(flyT2); clearInterval(tickI);
+      fly.className = "on";
+      rfTalent.textContent = talent;
+      rfVerdict.textContent = "";
+      function settle() {
+        rfNum.textContent = roll;
+        rfVerdict.textContent = v.label;
+        fly.classList.add("settle", v.fly);
+        logProbe(talent, value, roll, v);
+        flyT2 = setTimeout(function () { fly.className = ""; }, 1700);
+      }
+      if (reduced()) { settle(); return; }
+      var t0 = Date.now();
+      rfNum.textContent = "--";
+      tickI = setInterval(function () {
+        rfNum.textContent = 1 + Math.floor(Math.random() * 100);
+        if (Date.now() - t0 > 700) { clearInterval(tickI); settle(); }
+      }, 55);
+    });
+  });
+
+  /* ---------- Inventar ---------- */
+  var EYE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg>';
+  var ITEMS = {
+    funkenbiss: { name: "Kurzschwert »Funkenbiss«", tpl: "Instanz von Vorlage »Kurzschwert« v1.2", cat: ["Waffe", "cat-waffe"],
+      rows: [["Schaden", "1W10+3", true], ["Gewicht", "1,2 kg", false], ["Zustand", "Kerbe im Griff (Instanz-Notiz)", false]],
+      equipBtn: "Ablegen" },
+    heiltrank: { name: "Heiltrank", tpl: "Instanz von Vorlage »Heiltrank« v1.0", cat: ["Trank", "cat-trank"],
+      rows: [["Wirkung", "stellt 2W10 LP wieder her", true], ["Ladungen", "2 Ladungen", false], ["Gewicht", "0,5 kg · ×2 im Gepäck", false]],
+      equipBtn: "Anlegen (Gürtel)" },
+    adleraugen: { name: "Elixier der Adleraugen", tpl: "Instanz von Vorlage »Elixier« v1.1", cat: ["Trank", "cat-trank"],
+      rows: [["Wirkung", "+20 auf die nächste Probe auf Spurenlesen", true], ["Ladungen", "1 Ladung", false], ["Gewicht", "0,3 kg", false]],
+      equipBtn: "Anlegen (Gürtel)" },
+    wurfmesser: { name: "Wurfmesser", tpl: "Instanz von Vorlage »Wurfmesser« v1.0", cat: ["Waffe", "cat-waffe"],
+      rows: [["Schaden", "1W10", true], ["Gewicht", "0,2 kg · ×3 im Gepäck", false]],
+      equipBtn: "Ausrüsten" },
+    schmiedehammer: { name: "Schmiedehammer", tpl: "Instanz von Vorlage »Schmiedewerkzeug« v1.0", cat: ["Werkzeug", "cat-werkzeug"],
+      rows: [["Nutzen", "Werkzeug für Schmiedearbeiten", false], ["Zustand", "Griff frisch gewickelt (Instanz-Notiz)", false], ["Gewicht", "2,5 kg", false]],
+      equipBtn: "Ausrüsten" },
+    hanfseil: { name: "Hanfseil, 10 Schritt", tpl: "Instanz von Vorlage »Seil« v1.0", cat: ["Werkzeug", "cat-werkzeug"],
+      rows: [["Nutzen", "Klettern, Sichern, Festbinden", false], ["Gewicht", "3,0 kg", false]],
+      equipBtn: "Ausrüsten" },
+    fackel: { name: "Fackel", tpl: "Instanz von Vorlage »Fackel« v1.0", cat: ["Werkzeug", "cat-werkzeug"],
+      rows: [["Brenndauer", "ca. 1 Stunde", false], ["Gewicht", "0,6 kg · ×3 im Gepäck", false]],
+      equipBtn: "Ausrüsten" },
+    sturmlaterne: { name: "Sturmlaterne", tpl: "Instanz von Vorlage »Laterne« v1.2", cat: ["Werkzeug", "cat-werkzeug"],
+      rows: [["Nutzen", "Licht, windfest — brennt auch am Kai", false], ["Gewicht", "1,1 kg", false]],
+      equipBtn: "Ausrüsten" },
+    siegelbrief: { name: "Versiegelter Brief des Hafenmeisters", tpl: "Instanz von Vorlage »Dokument« v1.0", cat: ["Questgegenstand", "cat-quest"],
+      rows: [["Hinweis", "Wachssiegel des Hafenmeisters — ungebrochen", false], ["Gewicht", "0,1 kg", false], ["Quest", "»Die Nachtlieferung« — kann nicht fallen gelassen werden", false]],
+      equipBtn: "Ausrüsten" },
+    eichenschild: { name: "Eichenschild", tpl: "Instanz von Vorlage »Holzschild« v1.0", cat: ["Waffe", "cat-waffe"],
+      rows: [["Block", "−2 Schaden", true], ["Gewicht", "3,2 kg", false]],
+      equipBtn: "Ablegen" },
+    lederruestung: { name: "Lederrüstung", tpl: "Instanz von Vorlage »Lederrüstung« v1.3", cat: ["Werkzeug", "cat-werkzeug"],
+      rows: [["Rüstungsschutz", "−4 Schaden", true], ["Gewicht", "4,0 kg", false]],
+      equipBtn: "Ablegen" }
+  };
+  var detail = document.getElementById("inv-detail");
+  function showItem(key) {
+    var it = ITEMS[key];
+    if (!it) return;
+    var rows = it.rows.map(function (r) {
+      return '<div class="dt-row"><span class="k">' + r[0] + '</span><span class="v' + (r[2] ? " mono" : "") + '">' + r[1] + "</span></div>";
+    }).join("");
+    detail.innerHTML =
+      '<h2 style="margin-bottom:2px">Gegenstand</h2>' +
+      '<h3 class="dt-name">' + it.name + "</h3>" +
+      '<div class="dt-chips">' +
+        '<span class="mini-tag">' + it.tpl + "</span>" +
+        '<span class="cat ' + it.cat[1] + '">' + it.cat[0] + "</span>" +
+        '<span class="vis vis-owner">' + EYE + " Besitzer + SL</span>" +
+      "</div>" +
+      '<div class="dt-rows">' + rows + "</div>" +
+      '<div class="dt-actions">' +
+        '<button class="btn" data-demo>' + it.equipBtn + "</button>" +
+        '<button class="btn ghost" data-demo>Übergeben</button>' +
+        '<button class="btn ghost" data-demo>Teilen</button>' +
+      "</div>" +
+      '<div class="dt-note">Vorlagen-Änderungen berühren diese Instanz nie automatisch.</div>';
+    document.querySelectorAll(".item-card").forEach(function (c) {
+      c.setAttribute("aria-pressed", c.dataset.item === key ? "true" : "false");
+    });
+  }
+  document.addEventListener("click", function (e) {
+    var card = e.target.closest("[data-item]");
+    if (card) showItem(card.dataset.item);
+    if (e.target.closest("[data-demo]")) toast("Spike-Demo — diese Aktion ist noch ohne Funktion.");
+  });
+  showItem("funkenbiss");
+
+  /* ---------- Spieltisch: Zoom & Einpassen ---------- */
+  var stage = document.getElementById("stage"),
+      world = document.getElementById("world"),
+      zoomVal = document.getElementById("zoom-val"),
+      STEPS = [80, 100, 125, 150], zi = 1, fit = 1;
+  function applyZoom() {
+    var total = fit * STEPS[zi] / 100;
+    world.style.transform = "translate(-50%,-50%) scale(" + total + ")";
+    zoomVal.textContent = STEPS[zi] + " %";
+  }
+  function fitStage() {
+    if (!stage.clientWidth) return;
+    fit = Math.min(stage.clientWidth / 900, stage.clientHeight / 560);
+    applyZoom();
+  }
+  document.getElementById("zoom-in").addEventListener("click", function () { zi = Math.min(zi + 1, STEPS.length - 1); applyZoom(); });
+  document.getElementById("zoom-out").addEventListener("click", function () { zi = Math.max(zi - 1, 0); applyZoom(); });
+  document.getElementById("zoom-fit").addEventListener("click", function () { zi = 1; fitStage(); });
+  window.addEventListener("resize", fitStage);
+  fitStage();
+
+  /* ---------- Werkzeuge ---------- */
+  var toolSelect = document.getElementById("tool-select"),
+      toolPing = document.getElementById("tool-ping"),
+      toolGrid = document.getElementById("tool-grid");
+  function setTool(which) {
+    toolSelect.setAttribute("aria-pressed", which === "select" ? "true" : "false");
+    toolPing.setAttribute("aria-pressed", which === "ping" ? "true" : "false");
+  }
+  toolSelect.addEventListener("click", function () { setTool("select"); });
+  toolPing.addEventListener("click", function () { setTool("ping"); });
+  toolGrid.addEventListener("click", function () {
+    var on = toolGrid.getAttribute("aria-pressed") === "true";
+    toolGrid.setAttribute("aria-pressed", on ? "false" : "true");
+    stage.classList.toggle("grid-on", !on);
+  });
+  document.querySelectorAll(".tool[data-inert]").forEach(function (b) {
+    b.addEventListener("click", function () { toast("Bald — dieses Werkzeug ist im Spike noch nicht aktiv."); });
+  });
+
+  /* ---------- Token: Auswahl & Bewegung ---------- */
+  var you = document.getElementById("tk-you"),
+      hint = document.getElementById("move-hint"),
+      selected = false;
+  function setSelected(on) {
+    selected = on;
+    you.classList.toggle("selected", on);
+    hint.classList.toggle("on", on);
+  }
+  you.addEventListener("click", function (e) { e.stopPropagation(); setSelected(!selected); });
+  document.querySelectorAll(".token.locked").forEach(function (t) {
+    t.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toast("Nur eigene Tokens — »" + t.dataset.name + "« gehört dir nicht.");
+    });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { setSelected(false); closeFx(); return; }
+    if (!selected || document.getElementById("panel-table").hidden) return;
+    var dx = e.key === "ArrowLeft" ? -45 : e.key === "ArrowRight" ? 45 : 0;
+    var dy = e.key === "ArrowUp" ? -45 : e.key === "ArrowDown" ? 45 : 0;
+    if (!dx && !dy) return;
+    e.preventDefault();
+    var x = Math.min(875, Math.max(25, parseFloat(you.style.left) + dx));
+    var y = Math.min(535, Math.max(25, parseFloat(you.style.top) + dy));
+    you.style.left = x + "px";
+    you.style.top = y + "px";
+  });
+
+  /* ---------- Ping ---------- */
+  var evList = document.getElementById("ev-list");
+  stage.addEventListener("click", function (e) {
+    if (e.target.closest(".token, .hidden-mark, .zoom-dock, .rail-open-btn, .move-hint")) return;
+    var wr = world.getBoundingClientRect();
+    var total = wr.width / 900;
+    var x = (e.clientX - wr.left) / total;
+    var y = (e.clientY - wr.top) / total;
+    if (x < 0 || y < 0 || x > 900 || y > 560) return;
+    var p = document.createElement("div");
+    p.className = "ping" + (reduced() ? " static" : "");
+    p.style.left = x + "px";
+    p.style.top = y + "px";
+    p.style.setProperty("--ping-c", getComputedStyle(document.documentElement).getPropertyValue("--ring-you"));
+    p.innerHTML = "<i></i><i></i><span class=\"core\"></span>";
+    world.appendChild(p);
+    if (reduced()) requestAnimationFrame(function () { p.classList.add("fade"); });
+    setTimeout(function () { p.remove(); }, 1800);
+    var ev = document.createElement("div");
+    ev.className = "ev e-ping";
+    ev.innerHTML = '<div class="ev-static"><span class="who">Du:</span><span class="txt">Ping gesetzt — alle am Tisch sehen ihn.</span></div>';
+    evList.prepend(ev);
+    while (evList.children.length > 7) evList.lastElementChild.remove();
+  });
+
+  /* ---------- Ereignis-Log: Auf-/Zuklappen + Leiste ---------- */
+  document.addEventListener("click", function (e) {
+    var line = e.target.closest(".ev-line, .pl-line");
+    if (!line) return;
+    var det = line.parentElement.querySelector(".ev-detail, .pl-detail");
+    if (!det) return;
+    var open = line.getAttribute("aria-expanded") === "true";
+    line.setAttribute("aria-expanded", open ? "false" : "true");
+    det.hidden = open;
+  });
+  var grid = document.getElementById("table-grid"),
+      railOpen = document.getElementById("rail-open");
+  document.getElementById("rail-close").addEventListener("click", function () {
+    grid.classList.add("rail-closed");
+    railOpen.classList.add("on");
+  });
+  railOpen.addEventListener("click", function () {
+    grid.classList.remove("rail-closed");
+    railOpen.classList.remove("on");
+  });
+})();
+</script>
+

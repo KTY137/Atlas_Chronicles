@@ -1,0 +1,2000 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chronicle · Der Zettelkasten — Universalitätsprüfung (Kandidat B, Spike B2)</title>
+<style>
+/* ============================================================================
+   SPIKE B2 — Universalitätsprüfung
+   Jede Farbe, Schrift, Rundung und jeder Schatten ist ein Token.
+   Kein Bauteil greift an den Tokens vorbei.
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* --- 1. Basistoken (skinunabhängig) ------------------------------------- */
+:root {
+  --sp: 8px;
+  --hc: 0;                                   /* High-Contrast-Faktor 0|1 */
+  --orn: 1;                                  /* Ornament an/aus */
+  --anim: karteEin;
+
+  --r-lg: 14px; --r-md: 10px; --r-sm: 6px; --r-pill: 999px;
+  --line-w: calc(1px + var(--hc) * 1px);
+  --focus-w: calc(3px + var(--hc) * 1px);
+
+  --t-response: 140ms; --t-state: 280ms; --t-transition: 720ms;
+  --ease: cubic-bezier(.2,.7,.2,1);
+
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-read: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-num: ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --tracking-label: .04em;
+  --tracking-head: 0em;
+  --weight-head: 650;
+  --measure: 66ch;
+  --lede-size: 1.06rem;
+
+  --shadow-1: 0 1px 2px var(--schatten), 0 2px 10px -6px var(--schatten);
+  --shadow-2: 0 2px 6px var(--schatten), 0 18px 40px -22px var(--schatten);
+  --textur: none;
+  --plattengrad: linear-gradient(140deg, var(--art-a), var(--art-b));
+}
+
+/* --- 2. Skins: je Skin ein helles und ein dunkles Set --------------------- */
+/* CLEAN — die Nagelprobe: muss ohne jede Kunst bestellt aussehen. */
+:root, :root[data-skin="clean"] {
+  --l-bg:#eef0f4; --l-bg2:#f7f8fa; --l-stage:#ffffff; --l-ink:#16181d; --l-ink2:#565b66;
+  --l-ink3:#7b818d; --l-line:#d9dde5; --l-line2:#b6bdc9; --l-akzent:#12508f; --l-akzent-ink:#ffffff;
+  --l-akzent-soft:#e4edf9; --l-rot:#9a2033; --l-siegel:#3c5a44; --l-focus:#0b4fd0;
+  --l-schatten:rgba(20,26,38,.16); --l-art-a:#dfe4ec; --l-art-b:#c6cedb;
+  --d-bg:#0e1013; --d-bg2:#171a20; --d-stage:#14161a; --d-ink:#e9ecf2; --d-ink2:#a2a9b8;
+  --d-ink3:#848c9b; --d-line:#2a2f38; --d-line2:#3d444f; --d-akzent:#8fb6ee; --d-akzent-ink:#0d1219;
+  --d-akzent-soft:#1b2635; --d-rot:#f0a0ad; --d-siegel:#9dc4aa; --d-focus:#9dc0ff;
+  --d-schatten:rgba(0,0,0,.6); --d-art-a:#232830; --d-art-b:#171b22;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-read: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --r-lg:14px; --r-md:10px; --r-sm:6px;
+  --tracking-head:-.01em; --weight-head:640; --textur:none;
+}
+
+/* RELIC — Pergament & Tinte, Buchsatz. */
+:root[data-skin="relic"] {
+  --l-bg:#e3d8c2; --l-bg2:#efe6d3; --l-stage:#f5efe2; --l-ink:#241c12; --l-ink2:#5c4b33;
+  --l-ink3:#7d6a4e; --l-line:#cdbb9b; --l-line2:#a8926e; --l-akzent:#7a3a12; --l-akzent-ink:#f8f2e5;
+  --l-akzent-soft:#ecdfc7; --l-rot:#8f2020; --l-siegel:#3f5a3a; --l-focus:#1d4ea8;
+  --l-schatten:rgba(60,40,16,.22); --l-art-a:#e8d9b8; --l-art-b:#c9b48b;
+  --d-bg:#120e0a; --d-bg2:#221b13; --d-stage:#1c1712; --d-ink:#efe4d2; --d-ink2:#b5a288;
+  --d-ink3:#93816a; --d-line:#3a2f22; --d-line2:#544430; --d-akzent:#e0a463; --d-akzent-ink:#1a130b;
+  --d-akzent-soft:#2b2116; --d-rot:#e79a8c; --d-siegel:#a9c69c; --d-focus:#c8a7ff;
+  --d-schatten:rgba(0,0,0,.66); --d-art-a:#2e2517; --d-art-b:#1c1710;
+  --font-read: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --font-ui: "Iowan Old Style", Palatino, Georgia, serif;
+  --r-lg:6px; --r-md:4px; --r-sm:3px;
+  --tracking-label:.14em; --tracking-head:.01em; --weight-head:600; --lede-size:1.12rem;
+  --textur: radial-gradient(circle at 18% 12%, rgba(140,110,60,.10), transparent 42%),
+            radial-gradient(circle at 82% 78%, rgba(120,90,40,.09), transparent 46%);
+}
+
+/* SIGNAL — Graphit & Cyan, technische Auszeichnung. */
+:root[data-skin="signal"] {
+  --l-bg:#dde3e8; --l-bg2:#e9edf1; --l-stage:#eceff3; --l-ink:#0d1319; --l-ink2:#46525f;
+  --l-ink3:#68757f; --l-line:#c2ccd4; --l-line2:#9aa8b3; --l-akzent:#0a6472; --l-akzent-ink:#eefaff;
+  --l-akzent-soft:#d7eaee; --l-rot:#9c2b2b; --l-siegel:#1f5a5f; --l-focus:#0b6b7d;
+  --l-schatten:rgba(16,30,40,.20); --l-art-a:#d3dde4; --l-art-b:#b3c1cc;
+  --d-bg:#080b0d; --d-bg2:#12181c; --d-stage:#0f1417; --d-ink:#dfe8ee; --d-ink2:#93a3ae;
+  --d-ink3:#75858f; --d-line:#232d33; --d-line2:#37454d; --d-akzent:#4fd6e6; --d-akzent-ink:#04191d;
+  --d-akzent-soft:#0f2b31; --d-rot:#ff9d9d; --d-siegel:#7fd8c8; --d-focus:#5ce0f2;
+  --d-schatten:rgba(0,0,0,.72); --d-art-a:#161f24; --d-art-b:#0d1417;
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, "Roboto Condensed", Arial, sans-serif;
+  --font-read: "Segoe UI Variable Text", "Segoe UI", system-ui, Roboto, Arial, sans-serif;
+  --r-lg:3px; --r-md:2px; --r-sm:2px;
+  --tracking-label:.16em; --tracking-head:.005em; --weight-head:600;
+  --textur: repeating-linear-gradient(0deg, rgba(120,160,180,.055) 0 1px, transparent 1px 4px);
+}
+
+/* ARCHIVE — Ochsenblut & Kohle, Redaktionssatz. */
+:root[data-skin="archive"] {
+  --l-bg:#e6e1d8; --l-bg2:#efebe4; --l-stage:#f4f1ec; --l-ink:#1b1a19; --l-ink2:#59504a;
+  --l-ink3:#7a6f67; --l-line:#cfc7ba; --l-line2:#a89c8d; --l-akzent:#7a1f26; --l-akzent-ink:#fbf4f1;
+  --l-akzent-soft:#eeddd9; --l-rot:#7a1f26; --l-siegel:#3d4f3a; --l-focus:#2b3f8f;
+  --l-schatten:rgba(40,30,26,.20); --l-art-a:#e2dacd; --l-art-b:#c0b4a2;
+  --d-bg:#0d0a09; --d-bg2:#1c1512; --d-stage:#17110f; --d-ink:#ece2d9; --d-ink2:#b09a90;
+  --d-ink3:#8e7b73; --d-line:#332622; --d-line2:#4b3830; --d-akzent:#e8a7a7; --d-akzent-ink:#1a0e0e;
+  --d-akzent-soft:#2b1a19; --d-rot:#e8a7a7; --d-siegel:#a8c39c; --d-focus:#c4b5ff;
+  --d-schatten:rgba(0,0,0,.7); --d-art-a:#261c18; --d-art-b:#17100e;
+  --font-read: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --font-ui: system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  --r-lg:2px; --r-md:2px; --r-sm:2px;
+  --tracking-label:.2em; --tracking-head:.02em; --weight-head:700; --lede-size:1.1rem;
+  --textur: linear-gradient(180deg, rgba(122,31,38,.05), transparent 30%);
+}
+
+/* --- 3. Farbschema-Abbildung: eine Stelle, drei Auslöser ------------------ */
+:root {
+  --bg:var(--l-bg); --bg2:var(--l-bg2); --stage:var(--l-stage); --ink:var(--l-ink);
+  --ink2:var(--l-ink2); --ink3:var(--l-ink3); --line:var(--l-line); --line2:var(--l-line2);
+  --akzent:var(--l-akzent); --akzent-ink:var(--l-akzent-ink); --akzent-soft:var(--l-akzent-soft);
+  --rot:var(--l-rot); --siegel:var(--l-siegel); --focus:var(--l-focus);
+  --schatten:var(--l-schatten); --art-a:var(--l-art-a); --art-b:var(--l-art-b);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:var(--d-bg); --bg2:var(--d-bg2); --stage:var(--d-stage); --ink:var(--d-ink);
+    --ink2:var(--d-ink2); --ink3:var(--d-ink3); --line:var(--d-line); --line2:var(--d-line2);
+    --akzent:var(--d-akzent); --akzent-ink:var(--d-akzent-ink); --akzent-soft:var(--d-akzent-soft);
+    --rot:var(--d-rot); --siegel:var(--d-siegel); --focus:var(--d-focus);
+    --schatten:var(--d-schatten); --art-a:var(--d-art-a); --art-b:var(--d-art-b);
+    color-scheme: dark;
+  }
+}
+/* Attributwahl schlägt die Media Query — in beide Richtungen. */
+:root[data-theme="light"] {
+  --bg:var(--l-bg); --bg2:var(--l-bg2); --stage:var(--l-stage); --ink:var(--l-ink);
+  --ink2:var(--l-ink2); --ink3:var(--l-ink3); --line:var(--l-line); --line2:var(--l-line2);
+  --akzent:var(--l-akzent); --akzent-ink:var(--l-akzent-ink); --akzent-soft:var(--l-akzent-soft);
+  --rot:var(--l-rot); --siegel:var(--l-siegel); --focus:var(--l-focus);
+  --schatten:var(--l-schatten); --art-a:var(--l-art-a); --art-b:var(--l-art-b);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg:var(--d-bg); --bg2:var(--d-bg2); --stage:var(--d-stage); --ink:var(--d-ink);
+  --ink2:var(--d-ink2); --ink3:var(--d-ink3); --line:var(--d-line); --line2:var(--d-line2);
+  --akzent:var(--d-akzent); --akzent-ink:var(--d-akzent-ink); --akzent-soft:var(--d-akzent-soft);
+  --rot:var(--d-rot); --siegel:var(--d-siegel); --focus:var(--d-focus);
+  --schatten:var(--d-schatten); --art-a:var(--d-art-a); --art-b:var(--d-art-b);
+  color-scheme: dark;
+}
+
+/* --- 4. Kontrast als ein Faktor über der Leiter --------------------------- */
+:root[data-kontrast="hoch"] {
+  --hc: 1;
+  --l-bg:#ffffff; --l-bg2:#ffffff; --l-stage:#ffffff; --l-ink:#000000; --l-ink2:#1c1c1c;
+  --l-ink3:#333333; --l-line:#000000; --l-line2:#000000; --l-akzent:#00308f; --l-akzent-ink:#ffffff;
+  --l-akzent-soft:#ffffff; --l-rot:#8a0011; --l-siegel:#0d4720; --l-focus:#00308f;
+  --l-schatten:transparent; --l-art-a:#ffffff; --l-art-b:#ffffff;
+  --d-bg:#000000; --d-bg2:#000000; --d-stage:#000000; --d-ink:#ffffff; --d-ink2:#eaeaea;
+  --d-ink3:#d2d2d2; --d-line:#ffffff; --d-line2:#ffffff; --d-akzent:#8fd8ff; --d-akzent-ink:#000000;
+  --d-akzent-soft:#000000; --d-rot:#ffb0b0; --d-siegel:#9ff0b8; --d-focus:#8fd8ff;
+  --d-schatten:transparent; --d-art-a:#000000; --d-art-b:#000000;
+  --textur:none; --shadow-1:none; --shadow-2:none; --orn:0;
+}
+
+/* --- 5. Bewegung: Zustandssprache, kein Hintergrundbild ------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-response:1ms; --t-state:1ms; --t-transition:1ms; --anim:none; }
+}
+:root[data-motion="reduziert"] { --t-response:1ms; --t-state:1ms; --t-transition:1ms; --anim:none; }
+:root[data-motion="voll"] { --t-response:140ms; --t-state:280ms; --t-transition:720ms; --anim:karteEin; }
+
+/* --- 6. Kunst: Kit geladen · bewusst aus · 404 ---------------------------- */
+:root[data-kunst="aus"], :root[data-kunst="fehlt"] { --orn:0; --textur:none; }
+
+/* --- 7. Dichte ------------------------------------------------------------ */
+:root[data-dichte="kompakt"] { --sp:6px; --measure:72ch; }
+
+/* --- 8. Grundgerüst ------------------------------------------------------- */
+html { text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+body {
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-ui); font-size:15px; line-height:1.5;
+  transition: background-color var(--t-state) var(--ease), color var(--t-state) var(--ease);
+  overflow-x: hidden;
+}
+h1,h2,h3,h4 { margin:0; font-weight:var(--weight-head); letter-spacing:var(--tracking-head); line-height:1.22; }
+p { margin:0; }
+a { color:var(--akzent); }
+:focus-visible {
+  outline: var(--focus-w) solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+.sr-only {
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+.num { font-variant-numeric: tabular-nums; font-feature-settings:"tnum" 1; }
+
+.app { display:grid; grid-template-rows:auto 1fr auto; min-height:100vh; }
+
+/* --- 9. Kampagnenkontext -------------------------------------------------- */
+.ctx {
+  background:var(--bg2); border-bottom:var(--line-w) solid var(--line);
+  padding:calc(var(--sp)*1.25) calc(var(--sp)*2);
+  display:flex; flex-direction:column; gap:calc(var(--sp)*1.25);
+  position:relative;
+}
+.ctx::after {
+  content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px;
+  background:linear-gradient(90deg, transparent, var(--akzent), transparent);
+  opacity:calc(var(--orn) * .55); pointer-events:none;
+}
+.ctx-kopf { display:flex; flex-wrap:wrap; align-items:baseline; gap:calc(var(--sp)*1.5); }
+.marke {
+  font-size:.72rem; letter-spacing:var(--tracking-label); text-transform:uppercase;
+  color:var(--ink2); font-weight:700; white-space:nowrap;
+}
+.ctx-kopf h1 { font-size:1.05rem; }
+.ctx-kopf .sub { color:var(--ink2); font-size:.85rem; }
+.ctx-kopf .spacer { flex:1 1 auto; }
+
+/* Achsenkonsole */
+.konsole { display:flex; flex-wrap:wrap; gap:calc(var(--sp)*1.5) calc(var(--sp)*2); }
+.achse { border:0; padding:0; margin:0; min-width:0; }
+.achse > legend {
+  padding:0; font-size:.66rem; letter-spacing:var(--tracking-label);
+  text-transform:uppercase; color:var(--ink3); font-weight:700; margin-bottom:4px;
+}
+.seg { display:flex; flex-wrap:wrap; gap:2px; background:var(--stage);
+       border:var(--line-w) solid var(--line); border-radius:var(--r-md); padding:2px; }
+.seg input { position:absolute; opacity:0; width:1px; height:1px; }
+.seg label {
+  display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+  padding:5px 10px; border-radius:calc(var(--r-md) - 3px);
+  font-size:.8rem; color:var(--ink2); white-space:nowrap;
+  transition: background-color var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+.seg label:hover { background:var(--akzent-soft); color:var(--ink); }
+.seg input:checked + label {
+  background:var(--akzent); color:var(--akzent-ink); font-weight:640;
+  box-shadow:var(--shadow-1);
+}
+.seg input:focus-visible + label {
+  outline:var(--focus-w) solid var(--focus); outline-offset:2px;
+}
+
+/* --- 10. Schale ----------------------------------------------------------- */
+.shell {
+  display:grid; gap:calc(var(--sp)*1.5);
+  grid-template-columns: 172px 268px minmax(0,1fr) 336px;
+  padding:calc(var(--sp)*1.5) calc(var(--sp)*2);
+  align-items:start;
+}
+.zone {
+  background:var(--bg2); border:var(--line-w) solid var(--line);
+  border-radius:var(--r-lg); box-shadow:var(--shadow-1);
+  min-width:0;
+}
+.zone-kopf {
+  display:flex; align-items:center; gap:var(--sp); justify-content:space-between;
+  padding:calc(var(--sp)*1.25) calc(var(--sp)*1.5);
+  border-bottom:var(--line-w) solid var(--line);
+}
+.zone-kopf h2 { font-size:.72rem; letter-spacing:var(--tracking-label); text-transform:uppercase; color:var(--ink2); }
+
+/* Modulschiene */
+.rail-module ul { list-style:none; margin:0; padding:var(--sp); display:flex; flex-direction:column; gap:2px; }
+.modul-btn {
+  width:100%; text-align:left; display:flex; align-items:center; gap:var(--sp);
+  background:transparent; border:0; border-radius:var(--r-md); color:var(--ink2);
+  padding:9px 10px; font:inherit; font-size:.86rem; cursor:pointer;
+  transition: background-color var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+.modul-btn:hover { background:var(--akzent-soft); color:var(--ink); }
+.modul-btn[aria-current="page"] { background:var(--akzent); color:var(--akzent-ink); font-weight:640; }
+.modul-btn .glyph { width:18px; text-align:center; flex:0 0 auto; }
+.modul-btn[disabled] { opacity:.5; cursor:not-allowed; }
+
+/* Sammelschiene / Kasten */
+.facetten { display:flex; flex-wrap:wrap; gap:4px; padding:var(--sp) calc(var(--sp)*1.5); }
+.facette {
+  font:inherit; font-size:.74rem; padding:4px 9px; border-radius:var(--r-pill); cursor:pointer;
+  border:var(--line-w) solid var(--line2); background:transparent; color:var(--ink2);
+  transition: background-color var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+.facette:hover { background:var(--akzent-soft); color:var(--ink); }
+.facette[aria-pressed="true"] { background:var(--akzent); color:var(--akzent-ink); border-color:var(--akzent); }
+.kastenliste { list-style:none; margin:0; padding:0 var(--sp) var(--sp); display:flex; flex-direction:column; gap:4px;
+               max-height:52vh; overflow-y:auto; }
+.kasten-btn {
+  width:100%; text-align:left; background:var(--stage); border:var(--line-w) solid var(--line);
+  border-left:3px solid var(--line2);
+  border-radius:var(--r-sm); padding:7px 9px; font:inherit; cursor:pointer; color:var(--ink);
+  display:flex; flex-direction:column; gap:3px;
+  transition: border-color var(--t-response) var(--ease), transform var(--t-response) var(--ease);
+}
+.kasten-btn:hover { border-left-color:var(--akzent); }
+.kasten-btn[aria-current="true"] { border-left-color:var(--akzent); background:var(--akzent-soft); }
+.kasten-btn .kid { font-family:var(--font-num); font-size:.7rem; color:var(--ink3); }
+.kasten-btn .kt { font-size:.78rem; line-height:1.35; color:var(--ink2); }
+
+/* --- 11. Bühne ------------------------------------------------------------ */
+.stage {
+  background:var(--stage); background-image:var(--textur);
+  border:var(--line-w) solid var(--line); border-radius:var(--r-lg);
+  box-shadow:var(--shadow-2); min-width:0; position:relative; overflow:hidden;
+}
+.stage::before {
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:var(--orn);
+  border-top:2px solid var(--akzent); border-radius:var(--r-lg) var(--r-lg) 0 0; height:3px;
+}
+.stage-kopf {
+  display:flex; flex-wrap:wrap; gap:var(--sp) calc(var(--sp)*1.5); align-items:flex-end;
+  justify-content:space-between; padding:calc(var(--sp)*2) calc(var(--sp)*2.5) var(--sp);
+  border-bottom:var(--line-w) solid var(--line);
+}
+.stage-kopf .titelblock { min-width:0; }
+.stage-kopf h2 { font-family:var(--font-read); font-size:1.6rem; }
+.stage-kopf .kanon {
+  display:inline-flex; align-items:center; gap:6px; margin-top:5px;
+  font-size:.7rem; letter-spacing:var(--tracking-label); text-transform:uppercase; color:var(--ink2);
+}
+.chip {
+  display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:var(--r-pill);
+  border:var(--line-w) solid var(--line2); font-size:.68rem; color:var(--ink2);
+  letter-spacing:var(--tracking-label); text-transform:uppercase; white-space:nowrap;
+}
+.chip.stark { border-color:var(--akzent); color:var(--akzent); }
+.chip.rot { border-color:var(--rot); color:var(--rot); }
+.chip.siegel { border-color:var(--siegel); color:var(--siegel); }
+
+/* Rezeptumschalter */
+[role="tablist"] { display:flex; gap:2px; background:var(--bg2); border:var(--line-w) solid var(--line);
+                   border-radius:var(--r-md); padding:2px; flex-wrap:wrap; }
+[role="tab"] {
+  font:inherit; font-size:.8rem; padding:6px 12px; border:0; background:transparent; color:var(--ink2);
+  border-radius:calc(var(--r-md) - 3px); cursor:pointer;
+  transition: background-color var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+[role="tab"]:hover { background:var(--akzent-soft); color:var(--ink); }
+[role="tab"][aria-selected="true"] { background:var(--akzent); color:var(--akzent-ink); font-weight:640; }
+
+.stage-koerper { padding:calc(var(--sp)*2.5); }
+
+/* Lesefassung */
+.artikel { display:grid; grid-template-columns: minmax(0,1fr) 250px; gap:calc(var(--sp)*3); align-items:start; }
+.artikel-text { max-width:var(--measure); font-family:var(--font-read); }
+.lede { font-size:var(--lede-size); line-height:1.62; }
+.abschnitt { margin-top:calc(var(--sp)*3); }
+.abschnitt > h3 {
+  font-family:var(--font-read); font-size:1.12rem; padding-bottom:5px;
+  border-bottom:var(--line-w) solid var(--line2); margin-bottom:calc(var(--sp)*1.5);
+}
+.karte-abs { position:relative; padding:2px 0 2px 0; margin-bottom:calc(var(--sp)*1.75); }
+.karte-abs p { line-height:1.66; }
+.griff {
+  position:absolute; left:-30px; top:2px; width:24px; height:24px; padding:0;
+  border:var(--line-w) solid var(--line); border-radius:var(--r-sm); background:var(--bg2);
+  color:var(--ink3); font:inherit; font-size:.7rem; cursor:pointer; opacity:0;
+  transition: opacity var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+.karte-abs:hover .griff, .griff:focus-visible, .karte-abs:focus-within .griff { opacity:1; color:var(--akzent); }
+.karte-abs[data-gewaehlt="true"] { box-shadow:-3px 0 0 0 var(--akzent); padding-left:10px; margin-left:-13px; }
+del { color:var(--ink3); text-decoration-color:var(--rot); text-decoration-thickness:2px; }
+.korrektur { display:block; margin-top:6px; }
+.stempel {
+  display:block; margin-top:6px; font-family:var(--font-ui); font-size:.72rem; color:var(--siegel);
+  letter-spacing:.02em;
+}
+.wikilink { text-decoration-thickness:1px; text-underline-offset:2px; }
+.wikilink.rot { color:var(--rot); text-decoration-style:dashed; }
+
+/* Infobox aus Feldkarten */
+.infobox { border:var(--line-w) solid var(--line2); border-radius:var(--r-md); background:var(--bg2); overflow:hidden; }
+.infobox > h3 {
+  font-size:.72rem; letter-spacing:var(--tracking-label); text-transform:uppercase;
+  padding:10px 12px; background:var(--akzent); color:var(--akzent-ink);
+}
+.kunstplatz { display:block; }
+.kunstplatte {
+  height:120px; background:var(--plattengrad); border-bottom:var(--line-w) solid var(--line);
+  display:flex; align-items:center; justify-content:center; color:var(--ink3);
+}
+.kunstplatte svg { width:76px; height:76px; }
+.kunst-hinweis { display:block; padding:6px 12px; font-size:.7rem; color:var(--ink3); border-bottom:var(--line-w) solid var(--line); }
+.infobox dl { margin:0; }
+.feldzeile {
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:8px;
+  padding:9px 12px; border-bottom:var(--line-w) solid var(--line); align-items:baseline;
+}
+.feldzeile:last-child { border-bottom:0; }
+.feldzeile dt { font-size:.74rem; color:var(--ink2); letter-spacing:.01em; }
+.feldzeile dd { margin:0; font-size:.86rem; }
+.feldzeile .fq { display:block; font-size:.66rem; color:var(--ink3); margin-top:2px; }
+
+/* Kartei */
+.kartei { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(260px,100%),1fr)); gap:calc(var(--sp)*1.5); }
+.karteikarte {
+  background:var(--bg2); border:var(--line-w) solid var(--line2); border-radius:var(--r-md);
+  padding:calc(var(--sp)*1.5); display:flex; flex-direction:column; gap:8px;
+  animation-name:var(--anim); animation-duration:var(--t-transition); animation-fill-mode:both;
+  animation-timing-function:var(--ease); animation-delay:calc(var(--i,0) * 34ms);
+  box-shadow:var(--shadow-1);
+}
+.karteikarte[data-gewaehlt="true"] { border-color:var(--akzent); box-shadow:var(--shadow-2); }
+.kk-kopf { display:flex; flex-wrap:wrap; gap:5px; align-items:center; justify-content:space-between; }
+.kk-id { font-family:var(--font-num); font-size:.72rem; color:var(--ink3); }
+.kk-text { font-family:var(--font-read); font-size:.88rem; line-height:1.55; }
+.kk-fuss { display:flex; flex-wrap:wrap; gap:5px; margin-top:auto; padding-top:6px; border-top:var(--line-w) solid var(--line); }
+.kk-ord { font-family:var(--font-num); font-size:.72rem; color:var(--ink3); }
+@keyframes karteEin {
+  from { opacity:0; transform:translateY(10px) scale(.985); }
+  to   { opacity:1; transform:none; }
+}
+
+/* Umriss */
+.umriss ol { margin:0; padding-left:1.4em; }
+.umriss > ol > li { margin-bottom:calc(var(--sp)*1.5); }
+.umriss h3 { font-size:1rem; margin-bottom:6px; }
+.umriss li { line-height:1.6; }
+.umriss .u-stempel { color:var(--ink3); font-size:.74rem; }
+
+/* Leerzustand */
+.leer { border:var(--line-w) dashed var(--line2); border-radius:var(--r-md); padding:calc(var(--sp)*2);
+        color:var(--ink2); font-size:.86rem; }
+
+/* --- 12. Linse ------------------------------------------------------------ */
+.lens .linsen-koerper { padding:calc(var(--sp)*1.5); display:flex; flex-direction:column; gap:calc(var(--sp)*1.5); }
+.block { border:var(--line-w) solid var(--line); border-radius:var(--r-md); background:var(--stage); }
+.block > h3 {
+  font-size:.68rem; letter-spacing:var(--tracking-label); text-transform:uppercase; color:var(--ink2);
+  padding:8px 10px; border-bottom:var(--line-w) solid var(--line);
+}
+.block .inhalt { padding:10px; display:flex; flex-direction:column; gap:8px; font-size:.82rem; }
+.kv { display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+.kv dt, .kv .k { color:var(--ink2); }
+.kv dd, .kv .v { margin:0; font-family:var(--font-num); font-variant-numeric:tabular-nums; }
+.mess { font-family:var(--font-num); font-variant-numeric:tabular-nums; }
+.gut { color:var(--siegel); font-weight:700; }
+.schlecht { color:var(--rot); font-weight:700; }
+.notiz { font-size:.74rem; color:var(--ink3); line-height:1.5; }
+.tabellenrolle { overflow-x:auto; }
+table.mini { border-collapse:collapse; width:100%; font-size:.76rem; }
+table.mini th, table.mini td { text-align:left; padding:5px 7px; border-bottom:var(--line-w) solid var(--line); white-space:nowrap; }
+table.mini th { color:var(--ink2); font-weight:640; font-size:.68rem; letter-spacing:var(--tracking-label); text-transform:uppercase; }
+table.mini td.n { font-family:var(--font-num); font-variant-numeric:tabular-nums; }
+
+/* --- 13. Sitzungsleiste --------------------------------------------------- */
+.shelf {
+  background:var(--bg2); border-top:var(--line-w) solid var(--line);
+  padding:calc(var(--sp)*1.25) calc(var(--sp)*2);
+  display:flex; flex-wrap:wrap; gap:var(--sp) calc(var(--sp)*1.5); align-items:center;
+}
+.btn {
+  font:inherit; font-size:.84rem; padding:8px 14px; border-radius:var(--r-md); cursor:pointer;
+  border:var(--line-w) solid var(--line2); background:var(--stage); color:var(--ink);
+  display:inline-flex; align-items:center; gap:7px;
+  transition: background-color var(--t-response) var(--ease), border-color var(--t-response) var(--ease),
+              transform var(--t-response) var(--ease);
+}
+.btn:hover:not([disabled]) { border-color:var(--akzent); background:var(--akzent-soft); }
+.btn:active:not([disabled]) { transform:translateY(1px); }
+.btn[disabled] { opacity:.55; cursor:not-allowed; }
+.btn.primaer { background:var(--akzent); color:var(--akzent-ink); border-color:var(--akzent); font-weight:640; }
+.btn.primaer:hover:not([disabled]) { filter:brightness(1.08); background:var(--akzent); }
+.btn.gefahr { border-color:var(--rot); color:var(--rot); }
+.erfassleiste { display:flex; gap:6px; flex:1 1 320px; min-width:220px; }
+.erfassleiste input, .feld {
+  flex:1 1 auto; min-width:0; font:inherit; font-size:.86rem; padding:8px 10px;
+  border:var(--line-w) solid var(--line2); border-radius:var(--r-md);
+  background:var(--stage); color:var(--ink);
+}
+.shelf .stat { font-size:.74rem; color:var(--ink2); }
+
+/* Abbruchfenster */
+.commitbar {
+  display:flex; align-items:center; gap:var(--sp); flex:1 1 100%;
+  border:var(--line-w) solid var(--akzent); border-radius:var(--r-md);
+  background:var(--akzent-soft); padding:8px 12px; color:var(--ink);
+}
+.commitbar .ring { width:26px; height:26px; flex:0 0 auto; }
+.commitbar .ring circle.bahn { fill:none; stroke:var(--line2); stroke-width:3; }
+.commitbar .ring circle.zeiger { fill:none; stroke:var(--akzent); stroke-width:3; stroke-linecap:round;
+                                 transform:rotate(-90deg); transform-origin:50% 50%; }
+.commitbar .zahl { font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:1rem; font-weight:700; }
+.commitbar .txt { flex:1 1 auto; font-size:.84rem; }
+
+/* --- 14. Dialog ----------------------------------------------------------- */
+.backdrop {
+  position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center;
+  justify-content:center; padding:calc(var(--sp)*2); z-index:40;
+}
+.backdrop[hidden] { display:none; }
+.dialog {
+  background:var(--bg2); color:var(--ink); border:var(--line-w) solid var(--line2);
+  border-radius:var(--r-lg); box-shadow:var(--shadow-2); width:min(720px,100%);
+  max-height:92vh; overflow-y:auto;
+}
+.dialog-kopf { padding:calc(var(--sp)*2); border-bottom:var(--line-w) solid var(--line); }
+.dialog-kopf h2 { font-size:1.12rem; }
+.dialog-koerper { padding:calc(var(--sp)*2); display:flex; flex-direction:column; gap:calc(var(--sp)*1.75); }
+.dialog-fuss { padding:calc(var(--sp)*2); border-top:var(--line-w) solid var(--line);
+               display:flex; flex-wrap:wrap; gap:var(--sp); justify-content:flex-end; }
+.nachhall {
+  border:var(--line-w) solid var(--akzent); border-radius:var(--r-md);
+  background:var(--akzent-soft); padding:calc(var(--sp)*1.5);
+}
+.nachhall ul { list-style:none; margin:8px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px 18px; }
+.nachhall li { font-size:.84rem; }
+.nachhall b { font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:1rem; }
+textarea.feld { width:100%; min-height:110px; resize:vertical; font-family:var(--font-read); line-height:1.55; }
+.pruefliste { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:.78rem; }
+.pruefliste li { display:flex; gap:8px; align-items:baseline; }
+.pruefliste .ja { color:var(--siegel); font-weight:700; }
+.pruefliste .nein { color:var(--rot); font-weight:700; }
+.optzeile { display:flex; gap:8px; align-items:flex-start; font-size:.84rem; }
+.optzeile input { margin-top:3px; }
+
+/* --- 15. Schubladenknöpfe & Responsivität -------------------------------- */
+.drawer-btns { display:none; gap:6px; }
+@media (max-width:1300px) {
+  .shell { grid-template-columns: 160px minmax(0,1fr) 320px; }
+  .rail-collection { display:none; }
+  :root[data-coll="auf"] .rail-collection { display:block; grid-column:1 / -1; }
+  .drawer-btns { display:flex; }
+}
+@media (max-width:1020px) {
+  .shell { grid-template-columns: minmax(0,1fr); padding:var(--sp); }
+  .rail-module ul { flex-direction:row; overflow-x:auto; }
+  .modul-btn { white-space:nowrap; }
+  .lens { display:none; }
+  :root[data-lens="auf"] .lens { display:block; }
+  .artikel { grid-template-columns:minmax(0,1fr); }
+  .stage-koerper { padding:calc(var(--sp)*2); }
+  .karte-abs { padding-left:32px; }
+  .griff { left:0; opacity:1; }
+}
+@media (max-width:620px) {
+  body { font-size:14px; }
+  .ctx { padding:var(--sp); }
+  .stage-kopf { padding:calc(var(--sp)*1.5); }
+  .stage-kopf h2 { font-size:1.28rem; }
+  .konsole { gap:var(--sp) calc(var(--sp)*1.25); }
+  .seg label { padding:6px 8px; font-size:.76rem; }
+  .shelf { padding:var(--sp); }
+}
+/* --- 16. Kontrastsonde (unsichtbar, aber echt gestrichen) ---------------- */
+.sonde { position:absolute; left:-9999px; top:0; background-color:var(--stage); }
+#sonde-ink { color:var(--ink); }
+#sonde-ink2 { color:var(--ink2); }
+#sonde-akzent { color:var(--akzent); }
+#sonde-focus { color:var(--focus); }
+.sonde-flaeche { background-color:var(--akzent); }
+#sonde-akzentink { color:var(--akzent-ink); }
+
+@media print {
+  .ctx, .rail-module, .rail-collection, .lens, .shelf { display:none; }
+  .shell { display:block; padding:0; }
+  .stage { border:0; box-shadow:none; }
+}
+</style>
+
+<div class="app" id="app">
+
+  <header class="ctx">
+    <div class="ctx-kopf">
+      <span class="marke">Chronicle · Zettelkasten</span>
+      <h1 id="kampagnenname">Aldenfall</h1>
+      <span class="sub" id="kampagnensub">Sitzung 14 · Mittwoch, 21:52</span>
+      <span class="spacer"></span>
+      <div class="drawer-btns">
+        <button class="btn" type="button" id="btn-coll" aria-expanded="false" aria-controls="rail-collection">Kasten</button>
+        <button class="btn" type="button" id="btn-lens" aria-expanded="false" aria-controls="lens">Linse</button>
+      </div>
+    </div>
+    <div class="konsole" id="konsole"></div>
+    <p class="notiz" style="max-width:100ch">
+      <b>Sitzung 14, 21:52.</b> Drei Monate lang stand in vier Anordnungen, dass das Siegel echt ist.
+      Es ist eine Karte. Ändere sie — und beobachte, was jeder der fünf Leser danach liest.
+      Jede Achse oben ist unabhängig: dieselbe Software, anderer Inhalt, anderer Skin, andere Rolle.
+    </p>
+  </header>
+
+  <div class="shell">
+    <nav class="zone rail-module" aria-label="Module" id="rail-module">
+      <div class="zone-kopf"><h2>Module</h2></div>
+      <ul id="modulliste"></ul>
+    </nav>
+
+    <aside class="zone rail-collection" id="rail-collection" aria-label="Der Kasten">
+      <div class="zone-kopf"><h2>Der Kasten</h2><span class="chip" id="kasten-zahl">—</span></div>
+      <div class="facetten" id="facetten"></div>
+      <ul class="kastenliste" id="kastenliste"></ul>
+    </aside>
+
+    <main class="stage" id="stage" aria-labelledby="anordnungstitel">
+      <div class="stage-kopf">
+        <div class="titelblock">
+          <h2 id="anordnungstitel">—</h2>
+          <span class="kanon" id="anordnungskanon"></span>
+        </div>
+        <div role="tablist" aria-label="Rezept der Anordnung" id="rezepte"></div>
+      </div>
+      <div class="stage-koerper" id="stage-koerper" role="tabpanel" tabindex="0"
+           aria-labelledby="tab-lese"></div>
+    </main>
+
+    <aside class="zone lens" id="lens" aria-label="Kontextlinse">
+      <div class="zone-kopf"><h2>Kontextlinse</h2></div>
+      <div role="tablist" aria-label="Linsentabs" id="linsentabs" style="margin:8px"></div>
+      <div class="linsen-koerper" id="linsen-koerper" role="tabpanel" tabindex="0"></div>
+    </aside>
+  </div>
+
+  <footer class="shelf" id="shelf">
+    <div class="erfassleiste">
+      <label class="sr-only" for="erfass-eingabe">Neue Karte erfassen</label>
+      <input id="erfass-eingabe" type="text" placeholder="Karte erfassen — ein Satz, vier Sekunden …">
+      <button class="btn primaer" type="button" id="btn-erfassen">Erfassen</button>
+    </div>
+    <button class="btn" type="button" id="btn-ausgeben">Ausgeben</button>
+    <button class="btn" type="button" id="btn-berichtigen">Berichtigen</button>
+    <button class="btn" type="button" id="btn-anordnen" aria-describedby="anordnen-grund">Anordnen</button>
+    <span class="sr-only" id="anordnen-grund">In diesem Spike nicht implementiert. Anordnen ist die Prep-Geste am Dienstag; hier wird gelesen, erfasst, ausgegeben und berichtigt.</span>
+    <button class="btn" type="button" id="btn-reset">Zurücksetzen</button>
+    <span class="stat" id="shelf-stat"></span>
+    <div id="commit-slot" style="flex:1 1 100%"></div>
+  </footer>
+
+  <p class="sr-only" role="status" aria-live="polite" id="ansage"></p>
+</div>
+
+<div class="backdrop" id="backdrop" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-titel" id="dialog">
+    <div class="dialog-kopf">
+      <h2 id="dlg-titel">Berichtigen</h2>
+      <p class="notiz" id="dlg-sub"></p>
+    </div>
+    <div class="dialog-koerper" id="dlg-koerper"></div>
+    <div class="dialog-fuss" id="dlg-fuss"></div>
+  </div>
+</div>
+
+<div id="sonde" class="sonde" aria-hidden="true">
+  <span id="sonde-ink">A</span>
+  <span id="sonde-ink2">A</span>
+  <span id="sonde-akzent">A</span>
+  <span id="sonde-focus">A</span>
+  <span id="sonde-flaeche" class="sonde-flaeche"><span id="sonde-akzentink">A</span></span>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   SPIKE B2 — Universalitätsprüfung für Kandidat B „Der Zettelkasten"
+   Die Projektion läuft hier im Browser. Im Produkt lässt der Server die
+   Zeilen weg, bevor er antwortet (§6.7, §6.6.2). Das ist ein Spike, kein
+   Zugriffsschutz-Beweis.
+   ========================================================================== */
+
+const SLOTS = ["f1","f2","f3","f4","c0","c1","c2","c3","c4","c5","c6","c7","c8"];
+
+const HALTER = {
+  f1:["sera","brannt","ossa","ruven"],
+  f2:["sera","brannt","ossa","ruven"],
+  f3:["sera"],
+  f4:[],
+  c0:["sera","brannt","ossa","ruven"],
+  c1:["sera","brannt","ossa","ruven"],
+  c2:["sera","brannt","ruven"],
+  c3:["brannt"],
+  c4:["sera","brannt","ruven"],
+  c5:["sera","brannt","ossa"],
+  c6:["ossa"],
+  c7:["sera"],
+  c8:["brannt"]
+};
+const OEFFENTLICH = new Set(["f1","f2","c0","c1"]);
+
+const STEMPEL = {
+  f1:{s:2,  von:"SL",     art:"feld",     pin:"angeheftet"},
+  f2:{s:2,  von:"SL",     art:"feld",     pin:"angeheftet"},
+  f3:{s:3,  von:"SL",     art:"feld",     pin:"angeheftet", glaube:false},
+  f4:{s:7,  von:"SL",     art:"feld",     pin:"angeheftet"},
+  c0:{s:1,  von:"SL",     art:"text",     pin:"angeheftet"},
+  c1:{s:2,  von:"SL",     art:"text",     pin:"angeheftet"},
+  c2:{s:6,  von:"SL",     art:"text",     pin:"angeheftet", quelle:"Lady Ilva"},
+  c3:{s:9,  von:"Tisch",  art:"ereignis", pin:"abfrage"},
+  c4:{s:6,  von:"SL",     art:"text",     pin:"angeheftet", quelle:"Lady Ilva"},
+  c5:{s:6,  von:"SL",     art:"text",     pin:"angeheftet"},
+  c6:{s:11, von:"SL",     art:"text",     pin:"abfrage"},
+  c7:{s:13, von:"Sera",   art:"notiz",    pin:"abfrage"},
+  c8:{s:12, von:"Brannt", art:"notiz",    pin:"abfrage"}
+};
+
+const LESER = {
+  sl:       {name:"Spielleitung (Kaya)", kurz:"SL",       zusatz:"sieht den Kasten"},
+  sera:     {name:"Sera",                kurz:"Sera",     zusatz:"hält die alte Karte"},
+  brannt:   {name:"Brannt",              kurz:"Brannt",   zusatz:"hält die alte Karte"},
+  ossa:     {name:"Ossa",                kurz:"Ossa",     zusatz:"hat sie nie gehalten"},
+  publikum: {name:"Beobachtung / Stream",kurz:"Publikum", zusatz:"öffentliche Anordnung"}
+};
+
+const WELTEN = {
+  aldenfall: {
+    genre:"Fantasy", kampagne:"Aldenfall", sitzung:14, uhr:"21:52",
+    titel:"Haus Vharon", kanon:"Kanon · Universum Aldenfall",
+    ids:{f1:"k_1a04",f2:"k_1a05",f3:"k_2c19",f4:"k_5e70",c0:"k_0011",c1:"k_02b6",c2:"k_6_ilva",
+         c3:"k_e441",c4:"k_9f21",c5:"k_44a0",c6:"k_7d18",c7:"k_c103",c8:"k_b902",c4n:"k_a7c3"},
+    infobox:[
+      {slot:"f1", label:"Sitz",           wert:"Kestrel-Flügel, Obere Stadt"},
+      {slot:"f2", label:"Oberhaupt",      wert:"[[Lady Ilva Vharon]]"},
+      {slot:"f3", label:"Gegründet",      wert:"1044 n. d. F."},
+      {slot:"f4", label:"Stimmen im Rat", wert:"3"}
+    ],
+    abschnitte:[
+      {id:"lede", titel:null, slots:["c0"]},
+      {id:"herkunft", titel:"Herkunft", slots:["c1","c2","c3"]},
+      {id:"kern", titel:"Das Aschene Siegel", slots:["c4","c5","c6"]},
+      {id:"theorien", titel:"Theorien am Tisch", slots:["c7","c8"]}
+    ],
+    text:{
+      c0:"Haus Vharon hält seit vier Generationen den Kestrel-Flügel und drei Stimmen im Rat der Oberen Stadt. Sein Wappen ist der aschgraue Reiher; sein Ruf hängt an einem einzigen Stück Wachs.",
+      c1:"Die Vharon kamen als Salzhändler aus dem Süden und kauften sich mit dem Salzzoll in den Rat ein.",
+      c2:"Lady Ilva bezeugt, dass ihr Urgroßvater den Flügel als Lehen und nicht als Kauf erhielt.",
+      c3:"Sitzung 9, 22:03 — Brannt prüft die Zollrollen. Nachforschen 15 gegen 12. Erfolg: zwei Jahre fehlen im Register.",
+      c4:"Das Aschene Siegel des Hauses ist echt; die Kanzlei hat es im Jahr 1044 beglaubigt.",
+      c5:"Die Rechnungsbücher lagen im [[Zweiter Keller#rot]] unter dem Archiv.",
+      c6:"Der Wachszieher der Kanzlei starb im Winter 1071; seine Werkstatt ging an das Haus über.",
+      c7:"Wenn die Gebühr erst 1071 gebucht wurde, dann hat jemand das Wachs nach Ilvas Geburt gezogen. Ich glaube, sie weiß es.",
+      c8:"Der Reiher auf dem Siegel hat vier Schwungfedern. Auf dem Wappen am Tor sind es fünf."
+    },
+    vorschlag:"Das Aschene Siegel ist eine Fälschung: das Rechnungsbuch weist die Beglaubigungsgebühr erst für 1071 aus — siebenundzwanzig Jahre nach dem Datum im Wachs.",
+    anordnungen:["Haus Vharon","Das Aschene Siegel","Kestrel-Flügel","Handzettel · Sitzung 6"],
+    klausel:"+2 Menschenkenntnis · Gegenstand: Haus Vharon, Finanzen"
+  },
+
+  kepler: {
+    genre:"Science-Fiction", kampagne:"Kepler-9", sitzung:14, uhr:"21:52",
+    titel:"Konsortium Achene", kanon:"Kanon · Universum Kepler-9",
+    ids:{f1:"k_3f11",f2:"k_3f12",f3:"k_4b02",f4:"k_8a31",c0:"k_0101",c1:"k_0288",c2:"k_6_lund",
+         c3:"k_e502",c4:"k_9c40",c5:"k_44b7",c6:"k_7e05",c7:"k_c211",c8:"k_b710",c4n:"k_a8d2"},
+    infobox:[
+      {slot:"f1", label:"Registerhafen",      wert:"Ringdock 4, Kepler-9c"},
+      {slot:"f2", label:"Direktorat",         wert:"[[Ilva Lund]]"},
+      {slot:"f3", label:"Zertifiziert",       wert:"2189 Standardzeit"},
+      {slot:"f4", label:"Stimmrechte im Rat", wert:"3"}
+    ],
+    abschnitte:[
+      {id:"lede", titel:null, slots:["c0"]},
+      {id:"herkunft", titel:"Herkunft", slots:["c1","c2","c3"]},
+      {id:"kern", titel:"Die Achene-Signatur", slots:["c4","c5","c6"]},
+      {id:"theorien", titel:"Theorien am Tisch", slots:["c7","c8"]}
+    ],
+    text:{
+      c0:"Das Konsortium Achene hält seit vier Umläufen die Liegeplätze an Ringdock 4 und drei Stimmrechte in der Hafenkammer. Sein Zeichen ist der graue Reiher; sein Ruf hängt an einer einzigen Signaturdatei.",
+      c1:"Die Achene kamen als Kühlfrachtfahrer aus dem inneren System und kauften sich mit der Frachtabgabe in die Kammer ein.",
+      c2:"Direktorin Lund bezeugt, dass ihre Urgroßmutter den Liegeplatz als Konzession und nicht als Kauf erhielt.",
+      c3:"Sitzung 9, 22:03 — Brannt prüft die Zollprotokolle. Recherche 15 gegen 12. Erfolg: zwei Umläufe fehlen im Register.",
+      c4:"Die Achene-Signatur der Fracht ist gültig; die Hafenbehörde hat sie 2189 beglaubigt.",
+      c5:"Die Frachtbücher lagen auf dem [[Zweiter Speicherring#rot]] unter dem Archivkern.",
+      c6:"Der Signaturtechniker der Hafenbehörde starb im Winter 2216; seine Werkstatt ging an das Konsortium über.",
+      c7:"Wenn die Gebühr erst 2216 gebucht wurde, dann hat jemand die Datei nach Lunds Geburt signiert. Ich glaube, sie weiß es.",
+      c8:"Der Reiher im Konsortiumszeichen hat vier Schwungfedern. Auf der Plakette am Dock sind es fünf."
+    },
+    vorschlag:"Die Achene-Signatur ist gefälscht: das Frachtbuch weist die Zertifizierungsgebühr erst für 2216 aus — siebenundzwanzig Jahre nach dem Zeitstempel in der Datei.",
+    anordnungen:["Konsortium Achene","Die Achene-Signatur","Ringdock 4","Handzettel · Sitzung 6"],
+    klausel:"+2 Menschenkenntnis · Gegenstand: Konsortium-Bilanzen"
+  },
+
+  nebelakte: {
+    genre:"Moderner Kriminalfall", kampagne:"Nebelakte", sitzung:14, uhr:"21:52",
+    titel:"Kanzlei Warnholt", kanon:"Kanon · Universum Nebelakte",
+    ids:{f1:"k_9001",f2:"k_9002",f3:"k_9110",f4:"k_9260",c0:"k_0301",c1:"k_0344",c2:"k_6_warn",
+         c3:"k_e660",c4:"k_9b77",c5:"k_44c1",c6:"k_7f20",c7:"k_c380",c8:"k_b551",c4n:"k_a9e4"},
+    infobox:[
+      {slot:"f1", label:"Sitz",             wert:"Rothenbaumchaussee 12, Hamburg"},
+      {slot:"f2", label:"Geschäftsführung", wert:"[[Ilva Warnholt]]"},
+      {slot:"f3", label:"Gegründet",        wert:"1974"},
+      {slot:"f4", label:"Sitze im Beirat",  wert:"3"}
+    ],
+    abschnitte:[
+      {id:"lede", titel:null, slots:["c0"]},
+      {id:"herkunft", titel:"Herkunft", slots:["c1","c2","c3"]},
+      {id:"kern", titel:"Das Aschgraue Testament", slots:["c4","c5","c6"]},
+      {id:"theorien", titel:"Theorien am Tisch", slots:["c7","c8"]}
+    ],
+    text:{
+      c0:"Die Kanzlei Warnholt führt seit vier Generationen die Rothenbaumchaussee 12 und drei Sitze im Beirat der Handelskammer. Ihr Zeichen ist der graue Reiher; ihr Ruf hängt an einem einzigen Stempel.",
+      c1:"Die Warnholts begannen als Speditionsmakler am Freihafen und kauften sich mit der Umschlagsabgabe in die Kammer ein.",
+      c2:"Ilva Warnholt sagt aus, dass ihr Urgroßvater das Haus als Erbpacht und nicht als Kauf erhielt.",
+      c3:"Sitzung 9, 22:03 — Brannt prüft die Zollakten im Staatsarchiv. Recherche 15 gegen 12. Erfolg: zwei Jahre fehlen im Bestand.",
+      c4:"Das Aschgraue Testament ist echt; das Notariat hat es 1974 beglaubigt.",
+      c5:"Die Kassenbücher lagen im [[Zweiter Keller#rot]] unter dem Archiv.",
+      c6:"Der Notar der Kanzlei starb im Winter 2001; seine Praxis ging an das Haus über.",
+      c7:"Wenn die Gebühr erst 2001 gebucht wurde, dann hat jemand den Stempel nach Ilvas Geburt gesetzt. Ich glaube, sie weiß es.",
+      c8:"Der Reiher im Kanzleizeichen hat vier Schwungfedern. Auf dem Messingschild am Eingang sind es fünf."
+    },
+    vorschlag:"Das Aschgraue Testament ist gefälscht: das Kassenbuch weist die Beglaubigungsgebühr erst für 2001 aus — siebenundzwanzig Jahre nach dem Datum auf dem Stempel.",
+    anordnungen:["Kanzlei Warnholt","Das Aschgraue Testament","Rothenbaumchaussee 12","Handzettel · Sitzung 6"],
+    klausel:"+2 Menschenkenntnis · Gegenstand: Kanzleibuchhaltung"
+  }
+};
+
+const LABELS = {
+  kurz: {
+    module:["Sitzung","Geschichte","Besetzung","Kasten","Tisch","Schmiede"],
+    rezepte:["Lesefassung","Kartei","Umriss"],
+    erfassen:"Erfassen", ausgeben:"Ausgeben", berichtigen:"Berichtigen",
+    anordnen:"Anordnen", reset:"Zurücksetzen",
+    linsen:["Nachhall","Beweis","Karte"],
+    facetten:["Alles","Vom Tisch","Feldkarten","Waisen","Sitzung 14"]
+  },
+  lang: {
+    module:["Sitzungsverwaltung","Geschichte und Anordnungen","Besetzung und Spielfiguren",
+            "Zettelkasten-Register","Tisch und Wissenskarte","Schmiede für Kartenarten"],
+    rezepte:["Lesefassung (Fließtext)","Kartei (Karteikartenansicht)","Umriss (semantische Gliederung)"],
+    erfassen:"Neue Karte erfassen", ausgeben:"An eine Spielfigur ausgeben",
+    berichtigen:"Richtigstellung mit Nachhall-Vorschau", anordnen:"In eine Anordnung einsortieren",
+    reset:"Vorführung zurücksetzen",
+    linsen:["Nachhall dieser Karte","Beweisführung","Karteneigenschaften"],
+    facetten:["Alles im Kasten","Am Tisch entstanden","Feldkarten der Infobox",
+              "Karten ohne Anordnung","Aus Sitzung 14"]
+  }
+};
+
+const S = {
+  welt:"aldenfall", skin:"relic", theme:"auto", kontrast:"normal", motion:"auto",
+  kunst:"kit", labels:"kurz", dichte:"komfortabel",
+  rolle:"sl", rezept:"lese", modul:"geschichte",
+  auswahl:"c4", linse:"nachhall", facette:"alle",
+  korrigiert:false, ossaErhaelt:true,
+  ausgaben:null, erfasst:[], letzteAchse:"—", sigCache:[]
+};
+
+function initAusgaben() {
+  S.ausgaben = {sera:new Set(), brannt:new Set(), ossa:new Set(), ruven:new Set()};
+  SLOTS.forEach(function (slot) {
+    HALTER[slot].forEach(function (p) { S.ausgaben[p].add(slot); });
+  });
+}
+initAusgaben();
+
+const $ = function (id) { return document.getElementById(id); };
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                  .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function links(s) {
+  return esc(s).replace(/\[\[([^\]]+)\]\]/g, function (_, ziel) {
+    var rot = /#rot$/.test(ziel);
+    var name = ziel.replace(/#rot$/, "");
+    var href = "#" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return '<a class="wikilink' + (rot ? " rot" : "") + '" href="' + href + '"' +
+           (rot ? ' title="Anordnung existiert noch nicht — roter Link"' : "") +
+           ">" + name + (rot ? " ↯" : "") + "</a>";
+  });
+}
+function fnv(str) {
+  var h = 2166136261 >>> 0;
+  for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return ("00000000" + h.toString(16)).slice(-8);
+}
+function L() { return LABELS[S.labels]; }
+function W() { return WELTEN[S.welt]; }
+function ansagen(t) { $("ansage").textContent = t; }
+</script>
+<script>
+"use strict";
+/* ==========================================================================
+   TEIL 2 — Projektion und Bühnenrenderer
+   ========================================================================== */
+
+function erfasstEintrag(slot) {
+  for (var i = 0; i < S.erfasst.length; i++) { if (S.erfasst[i].slot === slot) return S.erfasst[i]; }
+  return null;
+}
+function textVon(slot) {
+  if (slot === "c4n") return S.neuText || W().vorschlag;
+  var e = erfasstEintrag(slot);
+  if (e) return e.text;
+  var w = W();
+  if (w.text[slot]) return w.text[slot];
+  var f = feldVon(slot);
+  return f ? f.label + ": " + f.wert : "";
+}
+function feldVon(slot) {
+  var ib = W().infobox;
+  for (var i = 0; i < ib.length; i++) { if (ib[i].slot === slot) return ib[i]; }
+  return null;
+}
+function idVon(slot) {
+  var e = erfasstEintrag(slot);
+  if (e) return e.id;
+  return W().ids[slot] || slot;
+}
+function stempelVon(slot) {
+  var e = erfasstEintrag(slot);
+  if (e) return {s: 14, von: "SL", art: "roh", pin: "angeheftet"};
+  if (slot === "c4n") return {s: 14, von: "SL", art: "text", pin: "angeheftet", supersedes: "c4"};
+  return STEMPEL[slot];
+}
+function alleSlots() {
+  var l = SLOTS.slice();
+  if (S.korrigiert) l.push("c4n");
+  S.erfasst.forEach(function (e) { l.push(e.slot); });
+  return l;
+}
+function sichtbar(rolle, slot) {
+  if (rolle === "sl") return true;
+  if (rolle === "publikum") return OEFFENTLICH.has(slot);
+  var m = S.ausgaben[rolle];
+  return !!(m && m.has(slot));
+}
+
+/* Einheiten eines Abschnitts nach der Projektion — die Berichtigung ist der
+   einzige Ort, an dem eine Position mehrere Lesarten hat. */
+function einheiten(abschnitt, rolle) {
+  var out = [];
+  abschnitt.slots.forEach(function (slot) {
+    if (slot === "c4" && S.korrigiert) {
+      var neu = sichtbar(rolle, "c4n"), alt = sichtbar(rolle, "c4");
+      if (rolle === "sl") out.push({slot: "c4n", modus: "sl"});
+      else if (neu && alt) out.push({slot: "c4n", modus: "divergenz"});
+      else if (neu) out.push({slot: "c4n", modus: "rein"});
+      return;                       /* sonst: abwesend, nicht ausgegraut */
+    }
+    if (sichtbar(rolle, slot)) out.push({slot: slot, modus: "normal"});
+  });
+  return out;
+}
+
+function heuteAbschnitt() {
+  return {id: "heute", titel: "Heute erfasst", slots: S.erfasst.map(function (e) { return e.slot; })};
+}
+function abschnitteFuer(rolle) {
+  var liste = W().abschnitte.slice();
+  liste.push(heuteAbschnitt());
+  return liste.map(function (a) {
+    return {id: a.id, titel: a.titel, einheiten: einheiten(a, rolle)};
+  }).filter(function (a) { return a.einheiten.length > 0; });
+}
+function infoboxFuer(rolle) {
+  return W().infobox.filter(function (z) { return sichtbar(rolle, z.slot); });
+}
+function bilanz(rolle) {
+  var gesamt = alleSlots().length;
+  var sichtbarN = alleSlots().filter(function (s) {
+    if (s === "c4" && S.korrigiert && rolle !== "sl") return false;
+    return sichtbar(rolle, s);
+  }).length;
+  var abschnGesamt = W().abschnitte.length + (S.erfasst.length ? 1 : 0);
+  var abschnSicht = abschnitteFuer(rolle).length;
+  return {gesamt: gesamt, sicht: sichtbarN, weg: gesamt - sichtbarN,
+          abschnWeg: abschnGesamt - abschnSicht, abschnGesamt: abschnGesamt};
+}
+
+/* ---------- Kunst: Kit · bewusst aus · 404 mit deterministischem Sigill --- */
+function sigill(seed) {
+  var h = parseInt(fnv(seed), 16);
+  var pts = [], i, a;
+  for (i = 0; i < 7; i++) {
+    a = ((h >>> (i * 3)) % 12) / 12 * Math.PI * 2;
+    pts.push([32 + Math.cos(a) * 22, 32 + Math.sin(a) * 22]);
+  }
+  var d = "";
+  for (i = 0; i < pts.length; i++) {
+    d += (i ? "L" : "M") + pts[i][0].toFixed(1) + " " + pts[i][1].toFixed(1);
+  }
+  d += "Z";
+  var buch = seed.replace(/[^A-Za-zÄÖÜ]/g, "").charAt(0).toUpperCase() || "K";
+  return '<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">' +
+         '<circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55"/>' +
+         '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".85"/>' +
+         '<text x="32" y="38" text-anchor="middle" font-size="15" fill="currentColor" ' +
+         'font-family="serif">' + esc(buch) + '</text></svg>';
+}
+function kunstplatz(seed) {
+  if (S.kunst === "kit") {
+    return '<span class="kunstplatz" data-k="kunst"><span class="kunstplatte">' +
+           sigill(seed) + '</span></span>';
+  }
+  if (S.kunst === "fehlt") {
+    return '<span class="kunstplatz" data-k="kunst"><span class="kunstplatte">' + sigill(seed) +
+           '</span><span class="kunst-hinweis">Kunst fehlt (404) · Sigill aus dem Titel erzeugt</span></span>';
+  }
+  return '<span class="kunstplatz" data-k="kunst"></span>';
+}
+
+/* ---------- Herkunftszeile ------------------------------------------------ */
+function stempelText(slot) {
+  var st = stempelVon(slot);
+  var t = "Sitzung " + st.s + " · " + (st.von === "SL" ? "Spielleitung"
+        : st.von === "Tisch" ? "am Tisch entstanden" : st.von);
+  if (st.quelle) t += " · Quelle " + st.quelle;
+  return t;
+}
+
+/* ---------- Rezept 1: Lesefassung ---------------------------------------- */
+function renderLesefassung(rolle) {
+  var w = W(), h = "";
+  var ib = infoboxFuer(rolle);
+  h += '<div class="artikel" data-k="artikel">';
+  h += '<div class="artikel-text" data-k="artikeltext">';
+
+  abschnitteFuer(rolle).forEach(function (a) {
+    h += '<section class="abschnitt" data-k="abschnitt">';
+    if (a.titel) h += '<h3 data-k="abschnitt-titel">' + esc(a.titel) + "</h3>";
+    a.einheiten.forEach(function (e) {
+      var gew = S.auswahl === e.slot ? ' data-gewaehlt="true"' : "";
+      h += '<div class="karte-abs" data-k="karte"' + gew + ">";
+      h += '<button class="griff" type="button" data-slot="' + e.slot +
+           '" aria-label="Karte ' + esc(idVon(e.slot)) + ' auswählen">≡</button>';
+      h += '<p class="' + (a.id === "lede" ? "lede" : "") + '" data-k="karte-text">';
+      if (e.modus === "divergenz") {
+        h += "<del>" + links(w.text.c4) + "</del>";
+        h += '<span class="korrektur">' + links(textVon("c4n")) + "</span>";
+        h += '<span class="stempel" data-k="stempel">berichtigt, Sitzung 14 · vorher Sitzung 6, Quelle ' +
+             esc(STEMPEL.c4.quelle) + "</span>";
+      } else if (e.modus === "sl") {
+        h += links(textVon("c4n"));
+        h += '<span class="stempel" data-k="stempel">ersetzt ' + esc(w.ids.c4) +
+             " · Sitzung 6, Quelle " + esc(STEMPEL.c4.quelle) + " · alte Karte bleibt im Kasten</span>";
+      } else {
+        h += links(textVon(e.slot));
+      }
+      h += "</p></div>";
+    });
+    h += "</section>";
+  });
+  h += "</div>";
+
+  h += '<aside class="infobox" data-k="infobox"><h3>' + esc(w.titel) + "</h3>";
+  h += kunstplatz(w.titel);
+  h += "<dl>";
+  ib.forEach(function (z) {
+    var st = stempelVon(z.slot);
+    var gew = S.auswahl === z.slot ? ' data-gewaehlt="true"' : "";
+    h += '<div class="feldzeile" data-k="feldzeile"' + gew + ">";
+    h += "<dt>" + esc(z.label) + "</dt><dd>" + links(z.wert) +
+         '<span class="fq">' + esc("Sitzung " + st.s) +
+         (st.glaube === false ? " · für Sera falsch" : "") + "</span></dd></div>";
+  });
+  h += "</dl></aside></div>";
+  return h;
+}
+
+/* ---------- Rezept 2: Kartei --------------------------------------------- */
+function renderKartei(rolle) {
+  var h = '<div class="kartei" data-k="kartei">', n = 0;
+  abschnitteFuer(rolle).forEach(function (a) {
+    a.einheiten.forEach(function (e) {
+      n++;
+      var st = stempelVon(e.slot);
+      var gew = S.auswahl === e.slot ? ' data-gewaehlt="true"' : "";
+      h += '<article class="karteikarte" data-k="karteikarte"' + gew +
+           ' style="--i:' + n + '">';
+      h += '<div class="kk-kopf"><span class="kk-id">' + esc(idVon(e.slot)) + "</span>" +
+           '<span class="chip">' + esc(st.art) + "</span></div>";
+      h += '<button class="btn" type="button" data-slot="' + e.slot +
+           '" style="align-self:flex-start;font-size:.72rem;padding:3px 8px">Auswählen</button>';
+      h += '<p class="kk-text" data-k="karte-text">';
+      if (e.modus === "divergenz") {
+        h += "<del>" + links(W().text.c4) + "</del><span class=\"korrektur\">" +
+             links(textVon("c4n")) + "</span>";
+      } else { h += links(textVon(e.slot)); }
+      h += "</p>";
+      h += '<div class="kk-fuss"><span class="kk-ord num" data-k="ordnung">' + n + "</span>" +
+           '<span class="chip">' + esc(st.pin === "abfrage" ? "Abfrage" : "angeheftet") + "</span>" +
+           '<span class="chip siegel">' + esc(stempelText(e.slot)) + "</span>";
+      if (e.modus !== "normal") h += '<span class="chip rot">berichtigt</span>';
+      h += "</div></article>";
+    });
+  });
+  h += "</div>";
+  h += '<p class="notiz" style="margin-top:14px">' +
+       (rolle === "sl"
+        ? "Ordnungszahlen werden nach der Projektion vergeben. Für die Spielleitung ist das die volle Menge."
+        : "Ordnungszahlen werden nach der Projektion vergeben: keine Lücke, keine Trefferzahl, kein Hinweis darauf, dass mehr existiert.") +
+       "</p>";
+  return h;
+}
+
+/* ---------- Rezept 3: Umriss --------------------------------------------- */
+function renderUmriss(rolle) {
+  var h = '<div class="umriss" data-k="umriss"><ol>';
+  abschnitteFuer(rolle).forEach(function (a) {
+    h += '<li data-k="umriss-abschnitt"><h3>' + esc(a.titel || "Einleitung") + "</h3><ol>";
+    a.einheiten.forEach(function (e) {
+      var t = textVon(e.slot).replace(/\[\[|\]\]|#rot/g, "");
+      h += '<li data-k="umriss-karte">' + esc(t.length > 78 ? t.slice(0, 78) + "…" : t) +
+           ' <span class="u-stempel num">' + esc(stempelText(e.slot)) + "</span></li>";
+    });
+    h += "</ol></li>";
+  });
+  h += "</ol></div>";
+  h += '<p class="notiz" style="margin-top:14px">Der Umriss ist die Fassung, die zuerst gebaut ' +
+       'wurde: Überschriften, Reihenfolge, Herkunft — keine Prosa, kein Kartenrahmen, keine Kunst.</p>';
+  return h;
+}
+
+/* ---------- Bühne --------------------------------------------------------- */
+function renderStage() {
+  var w = W(), rolle = S.rolle;
+  $("anordnungstitel").textContent = w.titel;
+  var b = bilanz(rolle);
+  $("anordnungskanon").innerHTML =
+    '<span class="chip stark">' + esc(w.kanon) + "</span>" +
+    '<span class="chip">' + esc(w.genre) + "</span>" +
+    '<span class="chip">Leser: ' + esc(LESER[rolle].kurz) + "</span>" +
+    (rolle === "sl" ? '<span class="chip siegel num">' + b.sicht + " Karten</span>" : "");
+
+  var koerper = $("stage-koerper");
+  var html = S.rezept === "lese" ? renderLesefassung(rolle)
+           : S.rezept === "kartei" ? renderKartei(rolle)
+           : renderUmriss(rolle);
+  if (!abschnitteFuer(rolle).length) {
+    html = '<p class="leer">Diese Anordnung ist für diesen Leser leer. Es gibt keine ausgegrauten ' +
+           "Zeilen, keine Platzhalter und keine Trefferzahl — die Karten existieren in dieser Antwort nicht.</p>";
+  }
+  koerper.innerHTML = html;
+  koerper.querySelectorAll("[data-slot]").forEach(function (btn) {
+    btn.addEventListener("click", function () { waehle(btn.getAttribute("data-slot")); });
+  });
+}
+
+/* ---------- Struktursignatur --------------------------------------------- */
+function signatur() {
+  var teile = [];
+  $("stage-koerper").querySelectorAll("[data-k]").forEach(function (el) {
+    teile.push(el.tagName + ":" + el.getAttribute("data-k"));
+  });
+  return fnv(teile.join("|"));
+}
+</script>
+<script>
+"use strict";
+/* ==========================================================================
+   TEIL 3 — Achsenkonsole, Schienen, Auswahl
+   ========================================================================== */
+
+var ACHSEN = [
+  {key:"welt", legende:"Inhalt", opts:[
+    ["aldenfall","Aldenfall"], ["kepler","Kepler-9"], ["nebelakte","Nebelakte"]]},
+  {key:"skin", legende:"Skin", opts:[
+    ["relic","Relic"], ["signal","Signal"], ["archive","Archive"], ["clean","Clean"]]},
+  {key:"rolle", legende:"Leser", opts:[
+    ["sl","SL"], ["sera","Sera"], ["brannt","Brannt"], ["ossa","Ossa"], ["publikum","Publikum"]]},
+  {key:"theme", legende:"Farbschema", opts:[
+    ["auto","System"], ["light","Hell"], ["dark","Dunkel"]]},
+  {key:"kontrast", legende:"Kontrast", opts:[
+    ["normal","Normal"], ["hoch","Hoch"]]},
+  {key:"motion", legende:"Bewegung", opts:[
+    ["auto","System"], ["voll","Voll"], ["reduziert","Reduziert"]]},
+  {key:"kunst", legende:"Kunst", opts:[
+    ["kit","Kit geladen"], ["aus","Bewusst aus"], ["fehlt","404"]]},
+  {key:"labels", legende:"Labels", opts:[
+    ["kurz","Quelle (DE)"], ["lang","Längste Übersetzung"]]},
+  {key:"dichte", legende:"Dichte", opts:[
+    ["komfortabel","Komfortabel"], ["kompakt","Kompakt"]]}
+];
+
+function buildKonsole() {
+  var h = "";
+  ACHSEN.forEach(function (a) {
+    h += '<fieldset class="achse"><legend>' + esc(a.legende) + '</legend><div class="seg">';
+    a.opts.forEach(function (o) {
+      var id = "ax-" + a.key + "-" + o[0];
+      h += '<input type="radio" name="ax-' + a.key + '" id="' + id + '" value="' + o[0] + '"' +
+           (S[a.key] === o[0] ? " checked" : "") + ">";
+      h += '<label for="' + id + '">' + esc(o[1]) +
+           (a.key === "rolle" && LESER[o[0]] ?
+             '<span class="sr-only"> — ' + esc(LESER[o[0]].zusatz) + "</span>" : "") +
+           "</label>";
+    });
+    h += "</div></fieldset>";
+  });
+  $("konsole").innerHTML = h;
+  ACHSEN.forEach(function (a) {
+    document.getElementsByName("ax-" + a.key).forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        if (!inp.checked) return;
+        S[a.key] = inp.value;
+        S.letzteAchse = a.legende;
+        applyAttrs();
+        renderAll();
+        if (a.key === "rolle") {
+          var b = bilanz(S.rolle);
+          ansagen("Leser: " + LESER[S.rolle].name + ". " + b.sicht + " von " + b.gesamt +
+                  " Karten vorhanden, " + b.weg + " nicht vorhanden, 0 ausgegraut.");
+        } else {
+          ansagen(a.legende + ": " + inp.nextElementSibling.textContent +
+                  ". Struktursignatur " + signatur() + ".");
+        }
+      });
+    });
+  });
+}
+
+function applyAttrs() {
+  var r = document.documentElement;
+  r.setAttribute("data-skin", S.skin);
+  r.setAttribute("data-kontrast", S.kontrast);
+  r.setAttribute("data-motion", S.motion);
+  r.setAttribute("data-kunst", S.kunst);
+  r.setAttribute("data-dichte", S.dichte);
+  if (S.theme === "auto") r.removeAttribute("data-theme");
+  else r.setAttribute("data-theme", S.theme);
+}
+
+/* ---------- Modulschiene -------------------------------------------------- */
+var MODUL_GLYPH = ["◷","❦","☗","▤","◉","⚒"];
+var MODUL_KEYS = ["sitzung","geschichte","besetzung","kasten","tisch","schmiede"];
+function renderModule() {
+  var h = "";
+  L().module.forEach(function (name, i) {
+    var key = MODUL_KEYS[i], aktiv = S.modul === key;
+    h += '<li><button class="modul-btn" type="button" data-modul="' + key + '"' +
+         (aktiv ? ' aria-current="page"' : "") +
+         (key === "geschichte" ? "" : ' disabled aria-describedby="modul-grund"') + ">" +
+         '<span class="glyph" aria-hidden="true">' + MODUL_GLYPH[i] + "</span><span>" +
+         esc(name) + "</span></button></li>";
+  });
+  h += '<li><span class="sr-only" id="modul-grund">In diesem Spike ist nur Geschichte ausgebaut.</span></li>';
+  $("modulliste").innerHTML = h;
+}
+
+/* ---------- Der Kasten ---------------------------------------------------- */
+var FACETTEN = ["alle","tisch","feld","waisen","sitzung14"];
+function renderKasten() {
+  var rolle = S.rolle, h = "";
+  L().facetten.forEach(function (name, i) {
+    var key = FACETTEN[i];
+    h += '<button class="facette" type="button" data-facette="' + key + '" aria-pressed="' +
+         (S.facette === key) + '">' + esc(name) + "</button>";
+  });
+  $("facetten").innerHTML = h;
+  $("facetten").querySelectorAll("[data-facette]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      S.facette = b.getAttribute("data-facette"); renderKasten();
+    });
+  });
+
+  var slots = [];
+  abschnitteFuer(rolle).forEach(function (a) {
+    a.einheiten.forEach(function (e) { slots.push(e.slot); });
+  });
+  slots = slots.filter(function (slot) {
+    var st = stempelVon(slot);
+    if (S.facette === "tisch") return st.von !== "SL";
+    if (S.facette === "feld") return st.art === "feld";
+    if (S.facette === "waisen") return st.pin === "abfrage";
+    if (S.facette === "sitzung14") return st.s === 14;
+    return true;
+  });
+  /* Feldkarten der Infobox gehören auch in den Kasten */
+  if (S.facette === "alle" || S.facette === "feld") {
+    infoboxFuer(rolle).forEach(function (z) {
+      if (slots.indexOf(z.slot) < 0) slots.unshift(z.slot);
+    });
+  }
+
+  var li = "";
+  slots.forEach(function (slot) {
+    var st = stempelVon(slot);
+    var t = textVon(slot).replace(/\[\[|\]\]|#rot/g, "");
+    li += '<li><button class="kasten-btn" type="button" data-slot="' + slot + '" aria-current="' +
+          (S.auswahl === slot) + '">' +
+          '<span class="kid num">' + esc(idVon(slot)) + " · S" + st.s + " · " + esc(st.art) + "</span>" +
+          '<span class="kt">' + esc(t.length > 74 ? t.slice(0, 74) + "…" : t) + "</span></button></li>";
+  });
+  $("kastenliste").innerHTML = li ||
+    '<li><p class="notiz" style="padding:8px">Keine Karte in dieser Facette.</p></li>';
+  $("kastenliste").querySelectorAll("[data-slot]").forEach(function (b) {
+    b.addEventListener("click", function () { waehle(b.getAttribute("data-slot")); });
+  });
+  $("kasten-zahl").textContent = rolle === "sl" ? slots.length + " Karten" : "projiziert";
+}
+
+/* ---------- Rezepte ------------------------------------------------------- */
+var REZEPT_KEYS = ["lese","kartei","umriss"];
+function renderRezepte() {
+  var h = "";
+  L().rezepte.forEach(function (name, i) {
+    var key = REZEPT_KEYS[i], aktiv = S.rezept === key;
+    h += '<button role="tab" type="button" id="tab-' + key + '" aria-selected="' + aktiv +
+         '" aria-controls="stage-koerper" tabindex="' + (aktiv ? "0" : "-1") +
+         '" data-rezept="' + key + '">' + esc(name) + "</button>";
+  });
+  $("rezepte").innerHTML = h;
+  $("stage-koerper").setAttribute("aria-labelledby", "tab-" + S.rezept);
+  var tabs = Array.prototype.slice.call($("rezepte").querySelectorAll('[role="tab"]'));
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () {
+      S.rezept = t.getAttribute("data-rezept"); S.letzteAchse = "Rezept";
+      renderAll();
+      ansagen("Rezept: " + t.textContent + ". Auswahl bleibt: " + idVon(S.auswahl) + ".");
+    });
+    t.addEventListener("keydown", function (ev) {
+      var d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+      if (!d) return;
+      ev.preventDefault();
+      var n = tabs[(i + d + tabs.length) % tabs.length];
+      n.focus(); n.click();
+    });
+  });
+}
+
+/* ---------- Auswahl reist in die Linse ----------------------------------- */
+function waehle(slot) {
+  S.auswahl = slot;
+  renderKasten(); renderStage(); renderLinse();
+  ansagen("Ausgewählt: " + idVon(slot) + ". " + stempelText(slot) + ".");
+  var ziel = $("stage-koerper").querySelector('[data-gewaehlt="true"]');
+  if (ziel && S.motion !== "reduziert" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    ziel.animate(
+      [{boxShadow: "0 0 0 3px var(--akzent)"}, {boxShadow: "0 0 0 0 transparent"}],
+      {duration: 280, easing: "cubic-bezier(.2,.7,.2,1)"});
+  }
+}
+</script>
+<script>
+"use strict";
+/* ==========================================================================
+   TEIL 4 — Die Linse: Nachhall · Beweis · Karte
+   ========================================================================== */
+
+function anordnungenVon(slot) {
+  return (slot === "c4" || slot === "c4n") ? W().anordnungen : [W().titel];
+}
+function gestuetztVon(slot) {
+  return (slot === "c4" || slot === "c4n") ? ["c2", "c5"] : [];
+}
+function quelleVonN(slot) { return (slot === "c4" || slot === "c4n") ? 2 : 0; }
+function halterVon(slot) {
+  var out = [];
+  ["sera", "brannt", "ossa", "ruven"].forEach(function (p) {
+    if (S.ausgaben[p].has(slot)) out.push(p);
+  });
+  return out;
+}
+function kernSlot() { return S.korrigiert ? "c4n" : "c4"; }
+
+/* ---------- Kontrastsonde (echt gemessen, darf rot werden) --------------- */
+function rgbVon(str) {
+  var m = String(str).match(/[\d.]+/g);
+  return (m && m.length >= 3) ? [ +m[0], +m[1], +m[2] ] : null;
+}
+function linear(c) {
+  c = c / 255;
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+function luminanz(rgb) {
+  return 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
+}
+function verhaeltnis(a, b) {
+  if (!a || !b) return null;                 /* nicht messbar statt Fantasiezahl */
+  var l1 = luminanz(a), l2 = luminanz(b);
+  var hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+function messePaare() {
+  var bg = rgbVon(getComputedStyle($("sonde")).backgroundColor);
+  var paare = [
+    ["Fließtext auf Bühne", "sonde-ink", 4.5],
+    ["Sekundärtext auf Bühne", "sonde-ink2", 4.5],
+    ["Akzent auf Bühne", "sonde-akzent", 4.5],
+    ["Fokusring auf Bühne", "sonde-focus", 3]
+  ];
+  var liste = paare.map(function (p) {
+    var v = verhaeltnis(rgbVon(getComputedStyle($(p[1])).color), bg);
+    return {name: p[0], wert: v, soll: p[2], ok: v !== null && v >= p[2]};
+  });
+  var flaeche = rgbVon(getComputedStyle($("sonde-flaeche")).backgroundColor);
+  var vAk = verhaeltnis(rgbVon(getComputedStyle($("sonde-akzentink")).color), flaeche);
+  liste.push({name: "Schrift auf Akzentfläche", wert: vAk, soll: 4.5,
+              ok: vAk !== null && vAk >= 4.5});
+  return liste;
+}
+
+/* ---------- Universalitätsprüfung ---------------------------------------- */
+function universalitaetspruefung() {
+  var sicher = {welt:S.welt, skin:S.skin, theme:S.theme, kontrast:S.kontrast,
+                kunst:S.kunst, labels:S.labels, dichte:S.dichte, rolle:S.rolle, rezept:S.rezept};
+  var sigs = {}, n = 0, t0 = performance.now();
+  S.rezept = "lese"; S.rolle = "sl";
+  ["aldenfall","kepler","nebelakte"].forEach(function (w) {
+   ["relic","signal","archive","clean"].forEach(function (sk) {
+    ["light","dark"].forEach(function (th) {
+     ["normal","hoch"].forEach(function (ko) {
+      ["kit","aus","fehlt"].forEach(function (ku) {
+       ["kurz","lang"].forEach(function (la) {
+        ["komfortabel","kompakt"].forEach(function (di) {
+          S.welt = w; S.skin = sk; S.theme = th; S.kontrast = ko;
+          S.kunst = ku; S.labels = la; S.dichte = di;
+          applyAttrs(); renderStage();
+          var s = signatur(); sigs[s] = (sigs[s] || 0) + 1; n++;
+        });});});});});});});
+  var dauer = Math.round(performance.now() - t0);
+
+  /* Rollenachse getrennt: sie DARF die Struktur ändern — durch Weglassen. */
+  S.welt = sicher.welt; S.skin = sicher.skin; S.theme = sicher.theme;
+  S.kontrast = sicher.kontrast; S.kunst = sicher.kunst; S.labels = sicher.labels;
+  S.dichte = sicher.dichte;
+  var rollen = [];
+  ["sl","sera","brannt","ossa","publikum"].forEach(function (r) {
+    S.rolle = r; applyAttrs(); renderStage();
+    var b = bilanz(r);
+    rollen.push({r: r, sig: signatur(), sicht: b.sicht, weg: b.weg,
+                 abschnWeg: b.abschnWeg, gesamt: b.gesamt});
+  });
+
+  Object.keys(sicher).forEach(function (k) { S[k] = sicher[k]; });
+  applyAttrs(); renderAll();
+
+  var schluessel = Object.keys(sigs);
+  var rollenSigs = {};
+  rollen.forEach(function (x) { rollenSigs[x.sig] = 1; });
+
+  return {n: n, dauer: dauer, sigs: schluessel, rollen: rollen,
+          rollenAnzahl: Object.keys(rollenSigs).length};
+}
+
+var LETZTES_ERGEBNIS = null;
+
+/* ---------- Linsentabs ---------------------------------------------------- */
+var LINSEN_KEYS = ["nachhall","beweis","karte"];
+function renderLinsentabs() {
+  var h = "";
+  L().linsen.forEach(function (name, i) {
+    var key = LINSEN_KEYS[i], aktiv = S.linse === key;
+    h += '<button role="tab" type="button" id="ltab-' + key + '" aria-selected="' + aktiv +
+         '" aria-controls="linsen-koerper" tabindex="' + (aktiv ? "0" : "-1") +
+         '" data-linse="' + key + '">' + esc(name) + "</button>";
+  });
+  $("linsentabs").innerHTML = h;
+  $("linsen-koerper").setAttribute("aria-labelledby", "ltab-" + S.linse);
+  var tabs = Array.prototype.slice.call($("linsentabs").querySelectorAll('[role="tab"]'));
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () {
+      S.linse = t.getAttribute("data-linse"); renderLinsentabs(); renderLinse();
+    });
+    t.addEventListener("keydown", function (ev) {
+      var d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+      if (!d) return;
+      ev.preventDefault();
+      var nx = tabs[(i + d + tabs.length) % tabs.length];
+      nx.focus(); nx.click();
+    });
+  });
+}
+
+function renderLinse() {
+  var k = $("linsen-koerper");
+  if (S.linse === "nachhall") k.innerHTML = linseNachhall();
+  else if (S.linse === "beweis") k.innerHTML = linseBeweis();
+  else k.innerHTML = linseKarte();
+
+  var btn = k.querySelector("#btn-pruefen");
+  if (btn) {
+    btn.addEventListener("click", function () {
+      btn.disabled = true; btn.textContent = "läuft …";
+      setTimeout(function () {
+        LETZTES_ERGEBNIS = universalitaetspruefung();
+        S.linse = "beweis"; renderLinsentabs(); renderLinse();
+        ansagen("Universalitätsprüfung fertig: " + LETZTES_ERGEBNIS.n + " Kombinationen, " +
+                LETZTES_ERGEBNIS.sigs.length + " Struktursignatur.");
+      }, 30);
+    });
+  }
+}
+
+function linseNachhall() {
+  var slot = S.auswahl, st = stempelVon(slot), w = W();
+  var anord = anordnungenVon(slot), stuetzt = gestuetztVon(slot);
+  var halter = halterVon(slot), qv = quelleVonN(slot);
+  var istKern = (slot === "c4" || slot === "c4n");
+  var h = "";
+
+  h += '<div class="block"><h3>Nachhall · ' + esc(idVon(slot)) + "</h3><div class=\"inhalt\">";
+  h += '<p class="notiz">' + esc(textVon(slot).replace(/\[\[|\]\]|#rot/g, "").slice(0, 120)) + "…</p>";
+  h += '<div class="kv"><span class="k">liegt in Anordnungen</span><span class="v num">' +
+       anord.length + "</span></div>";
+  h += '<div class="kv"><span class="k">gestützt von Karten</span><span class="v num">' +
+       stuetzt.length + "</span></div>";
+  h += '<div class="kv"><span class="k">ausgegeben an Figuren</span><span class="v num">' +
+       (S.rolle === "sl" ? halter.length : "—") + "</span></div>";
+  h += '<div class="kv"><span class="k">Quelle weiterer Ausgaben</span><span class="v num">' +
+       (S.rolle === "sl" ? qv : "—") + "</span></div>";
+  h += '<div class="kv"><span class="k">trägt Klauseln</span><span class="v num">' +
+       (istKern ? 1 : 0) + "</span></div>";
+  if (S.rolle !== "sl") {
+    h += '<p class="notiz">Wer eine Karte sonst noch hält, ist selbst eine Auskunft. ' +
+         "Diese Zahlen sieht nur die Spielleitung — 404 statt 403, gleiche Antwort, gleiche Zeit.</p>";
+  }
+  h += "</div></div>";
+
+  if (istKern) {
+    h += '<div class="block"><h3>Anordnungen, die diese eine Karte tragen</h3><div class="inhalt">';
+    anord.forEach(function (a) { h += '<div class="kv"><span class="k">' + esc(a) +
+      '</span><span class="v">1 Karte</span></div>'; });
+    h += '<p class="notiz">Vier Seiten, eine Karte, keine Kopie. Das ist der ganze Trick — ' +
+         "und der Grund, warum eine Berichtigung vier Seiten gleichzeitig richtig macht.</p></div></div>";
+
+    h += '<div class="block"><h3>Klausel</h3><div class="inhalt">';
+    h += '<div class="kv"><span class="k">' + esc(w.klausel) +
+         '</span><span class="chip rot">Z2 · nicht ausgeführt</span></div>';
+    h += '<p class="notiz">Die Klausel wird hier <b>gezählt</b>, nicht gerechnet. Eine animierte ' +
+         "+2 ohne Regelwerk wäre genau die Fassade, die die Vorgabe verbietet. Slice Z2.</p></div></div>";
+  }
+
+  if (S.korrigiert) {
+    h += '<div class="block"><h3>Was seit 21:52 unterschiedlich gelesen wird</h3><div class="inhalt">';
+    ["sl","sera","brannt","ossa","publikum"].forEach(function (r) {
+      var lage = r === "sl" ? "neue Fassung, alte Karte bleibt im Kasten"
+        : r === "publikum" ? "abwesend — die Karte war nie öffentlich"
+        : (sichtbar(r, "c4n") && sichtbar(r, "c4")) ? "durchgestrichen + Korrektur + Stempel"
+        : sichtbar(r, "c4n") ? "neue Karte, sauber, ohne Spur"
+        : "abwesend";
+      h += '<div class="kv"><span class="k">' + esc(LESER[r].kurz) +
+           '</span><span class="v" style="font-family:var(--font-ui);font-size:.78rem">' +
+           esc(lage) + "</span></div>";
+    });
+    h += "</div></div>";
+  }
+  return h;
+}
+
+function linseKarte() {
+  var slot = S.auswahl, st = stempelVon(slot);
+  var h = '<div class="block"><h3>Karte</h3><div class="inhalt">';
+  h += '<div class="kv"><span class="k">Kennung</span><span class="v">' + esc(idVon(slot)) + "</span></div>";
+  h += '<div class="kv"><span class="k">Art</span><span class="v">' + esc(st.art) + "</span></div>";
+  h += '<div class="kv"><span class="k">Sitzung</span><span class="v num">' + st.s + "</span></div>";
+  h += '<div class="kv"><span class="k">Urheber</span><span class="v">' + esc(st.von) + "</span></div>";
+  h += '<div class="kv"><span class="k">im Abschnitt</span><span class="v">' +
+       esc(st.pin === "abfrage" ? "durch Abfrage" : "angeheftet") + "</span></div>";
+  if (st.quelle) h += '<div class="kv"><span class="k">Quelle</span><span class="v">' +
+       esc(st.quelle) + "</span></div>";
+  if (st.supersedes) h += '<div class="kv"><span class="k">ersetzt</span><span class="v">' +
+       esc(W().ids[st.supersedes]) + "</span></div>";
+  h += "</div></div>";
+
+  h += '<div class="block"><h3>Halter</h3><div class="inhalt">';
+  if (S.rolle === "sl") {
+    var hl = halterVon(slot);
+    h += hl.length
+      ? hl.map(function (p) { return '<div class="kv"><span class="k">' +
+          esc(LESER[p] ? LESER[p].kurz : "Ruven") + '</span><span class="v">hält</span></div>'; }).join("")
+      : '<p class="notiz">Niemand hält diese Karte. Sie ist Kanon und unerzählt.</p>';
+  } else {
+    h += '<p class="notiz">Die Halterliste ist keine Leseransicht. Ein Spieler erfährt nie, ' +
+         "wer sonst etwas weiß — sonst wäre die Linse der bequemste Orakelzugang im Produkt.</p>";
+  }
+  h += "</div></div>";
+  h += '<div class="block"><h3>Beziehungen</h3><div class="inhalt">';
+  var g = gestuetztVon(slot);
+  h += g.length
+    ? g.map(function (x) { return '<div class="kv"><span class="k">stützt</span><span class="v">' +
+        esc(idVon(x)) + "</span></div>"; }).join("")
+    : '<p class="notiz">Keine eingehenden Beziehungen erfasst.</p>';
+  h += "</div></div>";
+  return h;
+}
+</script>
+<script>
+"use strict";
+/* ==========================================================================
+   TEIL 5 — Die Beweisführung
+   ========================================================================== */
+
+function linseBeweis() {
+  var b = bilanz(S.rolle), h = "";
+
+  h += '<div class="block"><h3>Struktursignatur der Bühne</h3><div class="inhalt">';
+  h += '<div class="kv"><span class="k">jetzt</span><span class="v">' + signatur() + "</span></div>";
+  h += '<div class="kv"><span class="k">zuletzt geänderte Achse</span><span class="v" ' +
+       'style="font-family:var(--font-ui)">' + esc(S.letzteAchse) + "</span></div>";
+  h += '<p class="notiz">Die Signatur ist ein Hash über die Folge aus Tagname und Bauteilrolle ' +
+       "im Bühnenbereich — ohne Text, ohne Farbe, ohne Klassen. Sie beantwortet genau eine Frage: " +
+       "<b>Ist das dieselbe Software?</b></p>";
+  h += '<p><button class="btn primaer" type="button" id="btn-pruefen">Universalitätsprüfung starten</button></p>';
+  h += "</div></div>";
+
+  if (LETZTES_ERGEBNIS) {
+    var e = LETZTES_ERGEBNIS;
+    h += '<div class="block"><h3>Ergebnis</h3><div class="inhalt">';
+    h += '<div class="kv"><span class="k">geprüfte Kombinationen</span><span class="v num">' +
+         e.n + "</span></div>";
+    h += '<div class="kv"><span class="k">verschiedene Signaturen</span><span class="v num ' +
+         (e.sigs.length === 1 ? "gut" : "schlecht") + '">' + e.sigs.length + "</span></div>";
+    h += '<div class="kv"><span class="k">Dauer</span><span class="v num">' + e.dauer + " ms</span></div>";
+    h += '<p class="notiz">Inhalt (3) × Skin (4) × Farbschema (2) × Kontrast (2) × Kunst (3) × ' +
+         "Labels (2) × Dichte (2). Wären es zwei Signaturen, hätte eine dieser Achsen heimlich " +
+         "Logik einer anderen enthalten — genau der Fehler, den die Richtung verbietet.</p>";
+    h += '<div class="tabellenrolle"><table class="mini"><caption class="sr-only">Rollenachse</caption>' +
+         "<thead><tr><th>Leser</th><th>Signatur</th><th>vorhanden</th><th>nicht vorhanden</th>" +
+         "<th>Abschnitte weg</th></tr></thead><tbody>";
+    e.rollen.forEach(function (r) {
+      h += "<tr><td>" + esc(LESER[r.r].kurz) + '</td><td class="n">' + r.sig +
+           '</td><td class="n">' + r.sicht + " / " + r.gesamt + '</td><td class="n">' + r.weg +
+           '</td><td class="n">' + r.abschnWeg + "</td></tr>";
+    });
+    h += "</tbody></table></div>";
+    h += '<p class="notiz"><b>' + e.rollenAnzahl + " von 5 Rollen erzeugen verschiedene Strukturen.</b> " +
+         "Das ist kein Fehler, sondern die Aussage: Die Rolle ist die einzige Achse, die die Struktur " +
+         "ändern darf — und sie ändert sie durch <b>Weglassen</b>, nicht durch Verstecken. " +
+         "Kein <code>display:none</code>, kein Grau, keine Lücke, keine Trefferzahl.</p>";
+    h += "</div></div>";
+  }
+
+  h += '<div class="block"><h3>Weglass-Register · ' + esc(LESER[S.rolle].kurz) + "</h3><div class=\"inhalt\">";
+  h += '<div class="kv"><span class="k">Karten in dieser Antwort</span><span class="v num">' +
+       b.sicht + "</span></div>";
+  h += '<div class="kv"><span class="k">nicht vorhanden</span><span class="v num">' + b.weg + "</span></div>";
+  h += '<div class="kv"><span class="k">ausgegraut</span><span class="v num">0</span></div>';
+  h += '<div class="kv"><span class="k">Abschnitte ohne Überschrift entfallen</span><span class="v num">' +
+       b.abschnWeg + "</span></div>";
+  h += '<p class="notiz">Ein Abschnitt, dessen Inhalt leer projiziert, rendert keine Überschrift ' +
+       "(Abschnittskaskade). Sonst verrät die Überschrift, dass es dort etwas gibt.</p>";
+  h += "</div></div>";
+
+  var paare = messePaare();
+  h += '<div class="block"><h3>Kontrastsonde (live gemessen)</h3><div class="inhalt">';
+  paare.forEach(function (p) {
+    h += '<div class="kv"><span class="k">' + esc(p.name) + '</span><span class="v num ' +
+         (p.wert === null ? "" : p.ok ? "gut" : "schlecht") + '">' +
+         (p.wert === null ? "nicht messbar" : p.wert.toFixed(2) + " : 1") + "</span></div>";
+  });
+  h += '<p class="notiz">Gemessen an den tatsächlich aufgelösten Tokenwerten dieses Skins in ' +
+       "diesem Farbschema. <b>Die Sonde darf rot werden</b> — sie ist kein Siegel, sondern ein Test. " +
+       "Sie misst hier das Tokenpaar, nicht den gemalten Pixel; die CI-Sonde aus K1 muss den " +
+       "Pixel messen, und das ist der teurere und richtige Test.</p>";
+  h += "</div></div>";
+
+  h += '<div class="block"><h3>Was dieser Spike <em>nicht</em> beweist</h3><div class="inhalt">';
+  h += '<ul class="pruefliste">' +
+       '<li><span class="nein">✗</span><span>Zugriffsschutz. Die Projektion läuft im Browser; ' +
+       "im Produkt muss der Server die Zeilen weglassen, bevor er antwortet.</span></li>" +
+       '<li><span class="nein">✗</span><span>Den Schnitt (§8.1) — die Stelle, an der der Kandidat ' +
+       "am ehesten stirbt. Hier wird nichts geteilt.</span></li>" +
+       '<li><span class="nein">✗</span><span>Das Anordnen. Die Kompositionsarbeit am Dienstag ' +
+       "(§8.3) ist die zweite unbelegte Verhaltenswette und in diesem Bild nicht enthalten.</span></li>" +
+       '<li><span class="nein">✗</span><span>Fandom-Maßstab. 13 Karten sind kein Beleg für 60.000.</span></li>' +
+       '<li><span class="ja">✓</span><span>Dass ein Bauteilsatz Inhalt, Skin, Farbschema, Kontrast, ' +
+       "Kunstausfall, Labellänge und Dichte überlebt — und dass die Rolle strukturell wirkt.</span></li>" +
+       "</ul>";
+  h += '<p class="notiz">Der Spike baut Markup mit <code>innerHTML</code>. Das Produkt verbietet ' +
+       "das (§10.4): dort baut der Renderer Knoten aus einem geschlossenen AST, ohne HTML-Pfad.</p>";
+  h += "</div></div>";
+  return h;
+}
+</script>
+<script>
+"use strict";
+/* ==========================================================================
+   TEIL 6 — Gesten: Erfassen · Ausgeben · Berichtigen, mit Abbruchfenster
+   ========================================================================== */
+
+/* ---------- Der deterministische Klassifikator (§8.2) -------------------- */
+var NEGATION = ["nie","niemals","nicht","kein","keine","keinen","keiner","keinem","keines",
+                "ohne","schwerlich","kaum","nichts","weder"];
+function normText(s) { return String(s).replace(/\s+/g, " ").trim(); }
+function skelett(s) { return normText(s).toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""); }
+function zahlen(s) { return (normText(s).match(/\d+/g) || []).sort().join(","); }
+function grossTokens(s) {
+  return (normText(s).match(/\b[A-ZÄÖÜ][\p{L}]+/gu) || [])
+         .map(function (t) { return t.toLowerCase(); }).sort().join(",");
+}
+function negationen(s) {
+  var w = normText(s).toLowerCase().replace(/[^\p{L}\s]/gu, " ").split(/\s+/);
+  return w.filter(function (t) { return NEGATION.indexOf(t) >= 0; }).sort().join(",");
+}
+function verweise(s) { return (String(s).match(/\[\[[^\]]+\]\]/g) || []).sort().join(","); }
+
+function klassifiziere(alt, neu) {
+  var pruefungen = [
+    {t: "nur Leerraum, Satzzeichen, Groß-/Kleinschreibung", ok: skelett(alt) === skelett(neu)},
+    {t: "keine Zahl verändert", ok: zahlen(alt) === zahlen(neu)},
+    {t: "kein großgeschriebenes Wort verändert", ok: grossTokens(alt) === grossTokens(neu)},
+    {t: "keine Verneinungspartikel verändert", ok: negationen(alt) === negationen(neu)},
+    {t: "kein [[Verweis]] verändert", ok: verweise(alt) === verweise(neu)}
+  ];
+  var alleOk = pruefungen.every(function (p) { return p.ok; });
+  var gleich = normText(alt) === normText(neu);
+  return {pruefungen: pruefungen,
+          art: gleich ? "keine" : (alleOk ? "redaktion" : "berichtigung")};
+}
+
+/* ---------- Dialoggerüst -------------------------------------------------- */
+var VORHERIGER_FOKUS = null;
+function dialogOeffnen(titel, sub, koerper, fuss) {
+  VORHERIGER_FOKUS = document.activeElement;
+  $("dlg-titel").textContent = titel;
+  $("dlg-sub").textContent = sub;
+  $("dlg-koerper").innerHTML = koerper;
+  $("dlg-fuss").innerHTML = fuss;
+  $("backdrop").hidden = false;
+  var f = fokusierbare();
+  if (f.length) f[0].focus();
+}
+function dialogSchliessen() {
+  $("backdrop").hidden = true;
+  if (VORHERIGER_FOKUS && VORHERIGER_FOKUS.focus) VORHERIGER_FOKUS.focus();
+}
+function fokusierbare() {
+  return Array.prototype.slice.call($("dialog").querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), textarea, select, a[href]'));
+}
+$("dialog").addEventListener("keydown", function (ev) {
+  if (ev.key === "Escape") { ev.preventDefault(); dialogSchliessen(); return; }
+  if (ev.key !== "Tab") return;
+  var f = fokusierbare();
+  if (!f.length) return;
+  var erste = f[0], letzte = f[f.length - 1];
+  if (ev.shiftKey && document.activeElement === erste) { ev.preventDefault(); letzte.focus(); }
+  else if (!ev.shiftKey && document.activeElement === letzte) { ev.preventDefault(); erste.focus(); }
+});
+$("backdrop").addEventListener("mousedown", function (ev) {
+  if (ev.target === $("backdrop")) dialogSchliessen();
+});
+
+/* ---------- Abbruchfenster: nichts verlässt den Server für 4 Sekunden ---- */
+var COMMIT_TIMER = null;
+function reduziert() {
+  return S.motion === "reduziert" ||
+    (S.motion === "auto" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+function commitBar(text, fertig) {
+  if (COMMIT_TIMER) { clearInterval(COMMIT_TIMER); COMMIT_TIMER = null; }
+  var dauer = 4000, start = Date.now(), U = 2 * Math.PI * 11;
+  var slot = $("commit-slot");
+  slot.innerHTML =
+    '<div class="commitbar" role="status">' +
+    (reduziert() ? "" :
+      '<svg class="ring" viewBox="0 0 26 26" aria-hidden="true"><circle class="bahn" cx="13" cy="13" r="11"/>' +
+      '<circle class="zeiger" cx="13" cy="13" r="11" stroke-dasharray="' + U.toFixed(2) +
+      '" stroke-dashoffset="0"/></svg>') +
+    '<span class="zahl num" id="cb-zahl">4</span>' +
+    '<span class="txt">' + esc(text) + ' — nichts hat den Server verlassen.</span>' +
+    '<button class="btn gefahr" type="button" id="cb-abbruch">Abbrechen</button></div>';
+  var zeiger = slot.querySelector(".zeiger");
+  $("cb-abbruch").addEventListener("click", function () {
+    clearInterval(COMMIT_TIMER); COMMIT_TIMER = null; slot.innerHTML = "";
+    ansagen("Abgebrochen. Es wurde nichts festgeschrieben.");
+  });
+  COMMIT_TIMER = setInterval(function () {
+    var rest = dauer - (Date.now() - start);
+    if (rest <= 0) {
+      clearInterval(COMMIT_TIMER); COMMIT_TIMER = null; slot.innerHTML = "";
+      fertig();
+      return;
+    }
+    $("cb-zahl").textContent = Math.ceil(rest / 1000);
+    if (zeiger) zeiger.setAttribute("stroke-dashoffset", (U * (1 - rest / dauer)).toFixed(2));
+  }, reduziert() ? 250 : 60);
+}
+
+/* ---------- Berichtigen --------------------------------------------------- */
+function oeffneBerichtigen() {
+  var w = W(), altText = w.text.c4;
+  var anz = anordnungenVon("c4").length, stz = gestuetztVon("c4").length;
+  var halter = halterVon("c4").length, qv = quelleVonN("c4");
+
+  var koerper =
+    '<div class="nachhall"><strong>Nachhall — bevor der Editor aufgeht:</strong>' +
+    "<ul><li>liegt in <b class=\"num\">" + anz + "</b> Anordnungen</li>" +
+    '<li>gestützt von <b class="num">' + stz + "</b> Karten</li>" +
+    '<li>trägt <b class="num">1</b> Klausel <span class="chip rot">Z2</span></li>' +
+    '<li>ausgegeben an <b class="num">' + halter + "</b> Figuren</li>" +
+    '<li>Quelle von <b class="num">' + qv + "</b> weiteren Ausgaben</li></ul>" +
+    '<p class="notiz" style="margin-top:8px">Keine Warnung. Eine Feststellung.</p></div>' +
+
+    '<div><label for="dlg-text" style="display:block;font-size:.8rem;margin-bottom:6px">' +
+    "Neue Fassung dieser einen Karte (" + esc(w.ids.c4) + ")</label>" +
+    '<textarea class="feld" id="dlg-text">' + esc(altText) + "</textarea>" +
+    '<p class="notiz">Ein Cursor überquert hier keine Kartengrenze. Kein Teilen, kein ' +
+    "Verschmelzen, keine Auswahl über zwei Karten — die vier Operationen, die den Editor teuer " +
+    "machen, stehen nicht im Vertrag.</p>" +
+    '<p style="margin-top:8px"><button class="btn" type="button" id="dlg-vorschlag">' +
+    "Formulierung aus dem Rechnungsbuch einsetzen</button></p></div>" +
+
+    '<div class="block"><h3>Klassifikator</h3><div class="inhalt" id="dlg-klass"></div></div>' +
+
+    '<div class="block"><h3>Wer den neuen Stand bekommt</h3><div class="inhalt">' +
+    '<p class="notiz">Sera, Brannt und Ruven halten die alte Karte; sie sehen die Divergenz, ' +
+    "ohne dass etwas ausgegeben werden muss. Ossa hält sie nicht.</p>" +
+    '<label class="optzeile"><input type="checkbox" id="dlg-ossa"' +
+    (S.ossaErhaelt ? " checked" : "") + ">" +
+    "<span>Neue Karte zusätzlich an <b>Ossa</b> ausgeben (hält die alte Karte nicht). " +
+    '<span class="notiz">Im Produkt ist das aus. Hier vorbelegt, damit der fünfte Bildschirm ' +
+    "entsteht.</span></span></label></div></div>";
+
+  var fuss = '<button class="btn" type="button" id="dlg-abbrechen">Abbrechen</button>' +
+             '<button class="btn primaer" type="button" id="dlg-commit">Berichtigung festschreiben</button>';
+
+  dialogOeffnen("Berichtigen — " + w.ids.c4,
+                "Sitzung 14 · 21:52 · eine Karte, vier Anordnungen, fünf Leser", koerper, fuss);
+
+  var ta = $("dlg-text");
+  function aktualisiere() {
+    var k = klassifiziere(altText, ta.value);
+    var h = "<ul class=\"pruefliste\">";
+    k.pruefungen.forEach(function (p) {
+      h += "<li><span class=\"" + (p.ok ? "ja" : "nein") + '">' + (p.ok ? "✓" : "✗") +
+           "</span><span>" + esc(p.t) + "</span></li>";
+    });
+    h += "</ul>";
+    h += '<p style="margin-top:6px"><span class="chip ' +
+         (k.art === "berichtigung" ? "rot" : "siegel") + '">' +
+         (k.art === "keine" ? "kein Unterschied"
+          : k.art === "redaktion" ? "Redaktion wird angeboten" : "Berichtigung — kein Angebot") +
+         "</span></p>";
+    h += '<p class="notiz">Redaktion wird nie gewählt, sondern nur <em>angeboten</em>, und nur wenn ' +
+         "alle fünf Prüfungen grün sind. Alles andere ist eine Berichtigung mit Strich, Stempel und " +
+         "Nachhall.</p>";
+    h += '<p class="notiz"><b>Fund aus dem Bau:</b> §8.2 nennt „Vharron → Vharon" als Beispiel für ' +
+         "eine Redaktion und verbietet gleichzeitig jede Änderung an einem großgeschriebenen Token. " +
+         "Beides zusammen geht nicht. Hier gilt die <em>Regel</em>, nicht das Beispiel — der Tippfehler " +
+         "im Eigennamen wird zur Berichtigung. Offene Frage für den Angriffsdurchgang.</p>";
+    $("dlg-klass").innerHTML = h;
+  }
+  ta.addEventListener("input", aktualisiere);
+  aktualisiere();
+
+  $("dlg-vorschlag").addEventListener("click", function () {
+    ta.value = w.vorschlag; aktualisiere(); ta.focus();
+  });
+  $("dlg-abbrechen").addEventListener("click", dialogSchliessen);
+  $("dlg-commit").addEventListener("click", function () {
+    var neu = normText(ta.value);
+    if (!neu || neu === normText(altText)) {
+      ansagen("Keine Änderung — nichts festzuschreiben."); return;
+    }
+    S.ossaErhaelt = $("dlg-ossa").checked;
+    dialogSchliessen();
+    commitBar("Berichtigung von " + w.ids.c4, function () {
+      S.korrigiert = true;
+      S.neuText = neu;
+      ["sera", "brannt", "ruven"].forEach(function (p) { S.ausgaben[p].add("c4n"); });
+      if (S.ossaErhaelt) S.ausgaben.ossa.add("c4n");
+      S.auswahl = "c4n";
+      S.letzteAchse = "Berichtigung";
+      renderAll();
+      ansagen("Berichtigt. Vier Anordnungen lesen jetzt richtig. Sera und Brannt sehen den " +
+              "Strich und die Korrektur, Ossa " +
+              (S.ossaErhaelt ? "die neue Karte ohne Spur" : "weiterhin nichts") +
+              ", die öffentliche Anordnung nichts.");
+    });
+  });
+}
+
+/* ---------- Ausgeben ------------------------------------------------------ */
+function oeffneAusgeben() {
+  var slot = S.auswahl;
+  var kandidaten = ["sera", "brannt", "ossa", "ruven"].filter(function (p) {
+    return !S.ausgaben[p].has(slot);
+  });
+  var koerper;
+  if (!kandidaten.length) {
+    koerper = '<p class="notiz">Alle Figuren halten diese Karte bereits.</p>';
+  } else {
+    koerper = '<p style="font-size:.86rem">Vorschau der Bytes, die die Empfängerin bekommt:</p>' +
+      '<div class="block"><div class="inhalt"><p>' +
+      esc(textVon(slot).replace(/\[\[|\]\]|#rot/g, "")) + "</p></div></div>" +
+      '<div><label for="dlg-empf" style="display:block;font-size:.8rem;margin-bottom:6px">' +
+      "Empfängerin — keine Vorauswahl</label><select class=\"feld\" id=\"dlg-empf\">" +
+      '<option value="">— bitte wählen —</option>' +
+      kandidaten.map(function (p) {
+        return '<option value="' + p + '">' + esc(LESER[p] ? LESER[p].kurz : "Ruven") + "</option>";
+      }).join("") + "</select></div>" +
+      '<p class="notiz">Nichts ist vorausgewählt. Ein Fehlklick darf keine Wahrheit ' +
+      "in fremde Hände legen.</p>";
+  }
+  dialogOeffnen("Ausgeben — " + idVon(slot), stempelText(slot), koerper,
+    '<button class="btn" type="button" id="dlg-abbrechen2">Abbrechen</button>' +
+    (kandidaten.length ? '<button class="btn primaer" type="button" id="dlg-ausgeben">Ausgabe festschreiben</button>' : ""));
+  $("dlg-abbrechen2").addEventListener("click", dialogSchliessen);
+  if (!kandidaten.length) return;
+  $("dlg-ausgeben").addEventListener("click", function () {
+    var p = $("dlg-empf").value;
+    if (!p) { ansagen("Keine Empfängerin gewählt."); return; }
+    dialogSchliessen();
+    commitBar("Ausgabe von " + idVon(slot) + " an " + (LESER[p] ? LESER[p].kurz : "Ruven"), function () {
+      S.ausgaben[p].add(slot);
+      renderAll();
+      ansagen("Ausgegeben. " + (LESER[p] ? LESER[p].kurz : "Ruven") +
+              " hält jetzt " + idVon(slot) + ".");
+    });
+  });
+}
+
+/* ---------- Erfassen ------------------------------------------------------ */
+function erfasse() {
+  var txt = normText($("erfass-eingabe").value);
+  if (!txt) { ansagen("Leere Karte — nichts erfasst."); return; }
+  var slot = "n" + (S.erfasst.length + 1);
+  var eintrag = {slot: slot, text: txt, id: "k_" + fnv(slot + txt).slice(0, 4)};
+  S.erfasst.push(eintrag);
+  HALTER[slot] = [];
+  if (S.rolle !== "sl" && S.rolle !== "publikum") {
+    HALTER[slot] = [S.rolle];
+    S.ausgaben[S.rolle].add(slot);
+  }
+  $("erfass-eingabe").value = "";
+  S.auswahl = slot;
+  renderAll();
+  ansagen("Erfasst: " + eintrag.id + ". " +
+    (S.rolle === "sl"
+      ? "Kanon, unerzählt — kein Spieler sieht diese Karte."
+      : "Feldnotiz in deinem Bereich — nur du und die Spielleitung sehen sie."));
+}
+</script>
+<script>
+"use strict";
+/* ==========================================================================
+   TEIL 7 — Zusammenbau
+   ========================================================================== */
+
+function renderShelf() {
+  var l = L(), w = W();
+  $("btn-erfassen").textContent = l.erfassen;
+  $("btn-ausgeben").textContent = l.ausgeben;
+  $("btn-berichtigen").textContent = l.berichtigen;
+  $("btn-anordnen").textContent = l.anordnen;
+  $("btn-reset").textContent = l.reset;
+  $("btn-anordnen").disabled = true;
+
+  var istSL = S.rolle === "sl";
+  var kernWaehlbar = istSL && !S.korrigiert && S.auswahl === "c4";
+  $("btn-berichtigen").disabled = !kernWaehlbar;
+  $("btn-berichtigen").title = kernWaehlbar ? "" :
+    (!istSL ? "Berichtigen ist ein Recht der Spielleitung."
+     : S.korrigiert ? "Bereits berichtigt — zum Wiederholen zurücksetzen."
+     : "In diesem Spike ist nur die Kernkarte " + w.ids.c4 + " berichtigbar. Wähle sie im Kasten.");
+  $("btn-ausgeben").disabled = !istSL;
+  $("btn-ausgeben").title = istSL ? "" : "Ausgeben ist ein Recht der Spielleitung.";
+  $("btn-erfassen").disabled = S.rolle === "publikum";
+  $("erfass-eingabe").disabled = S.rolle === "publikum";
+  $("erfass-eingabe").placeholder = istSL
+    ? "Karte erfassen — ein Satz, vier Sekunden …"
+    : S.rolle === "publikum" ? "Beobachtung erfasst nichts."
+    : "Feldnotiz erfassen — sichtbar für dich und die Spielleitung …";
+
+  var st = stempelVon(S.auswahl);
+  $("shelf-stat").textContent = "Auswahl: " + idVon(S.auswahl) + " · " + stempelText(S.auswahl) +
+    (istSL ? "" : " · als " + LESER[S.rolle].kurz + ": nur lesen und erfassen");
+}
+
+function renderAll() {
+  var w = W();
+  $("kampagnenname").textContent = w.kampagne;
+  $("kampagnensub").textContent = "Sitzung " + w.sitzung + " · " + w.genre + " · " + w.uhr;
+  applyAttrs();
+  renderModule();
+  renderRezepte();
+  renderStage();
+  renderKasten();
+  renderLinsentabs();
+  renderLinse();
+  renderShelf();
+}
+
+function zuruecksetzen() {
+  S.korrigiert = false; S.neuText = null; S.erfasst = [];
+  S.auswahl = "c4"; S.ossaErhaelt = true; S.letzteAchse = "Zurückgesetzt";
+  LETZTES_ERGEBNIS = null;
+  initAusgaben();
+  if (COMMIT_TIMER) { clearInterval(COMMIT_TIMER); COMMIT_TIMER = null; }
+  $("commit-slot").innerHTML = "";
+  renderAll();
+  ansagen("Vorführung zurückgesetzt. Sitzung 14, 21:52, vor der Berichtigung.");
+}
+
+/* ---------- Schubladen ---------------------------------------------------- */
+function schublade(btnId, attr) {
+  var b = $(btnId);
+  b.addEventListener("click", function () {
+    var r = document.documentElement;
+    var auf = r.getAttribute(attr) === "auf";
+    r.setAttribute(attr, auf ? "zu" : "auf");
+    b.setAttribute("aria-expanded", String(!auf));
+  });
+}
+
+/* ---------- Start --------------------------------------------------------- */
+buildKonsole();
+schublade("btn-coll", "data-coll");
+schublade("btn-lens", "data-lens");
+$("btn-erfassen").addEventListener("click", erfasse);
+$("erfass-eingabe").addEventListener("keydown", function (ev) {
+  if (ev.key === "Enter") { ev.preventDefault(); erfasse(); }
+});
+$("btn-ausgeben").addEventListener("click", oeffneAusgeben);
+$("btn-berichtigen").addEventListener("click", oeffneBerichtigen);
+$("btn-reset").addEventListener("click", zuruecksetzen);
+renderAll();
+ansagen("Bereit. Aldenfall, Sitzung 14, Leser: Spielleitung.");
+</script>
+
+

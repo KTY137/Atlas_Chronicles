@@ -1,0 +1,62 @@
+
+=== SPIKE-B-W1 — gate „die Tuerquote“ run as an instrument (round 5, candidate B) ===
+
+Model: N campaigns x 4 weeks. Per campaign one latent enthusiasm p ~ Beta(mu*4, (1-mu)*4);
+issuance rate rises with p (lambda = 0.6 + 3.4p, capped at 3/week per CHAMPION §11);
+P(Zugangsvorfall) = 0.08 and those attempts leave the denominator (CHAMPION §5.3).
+H1 (thesis alive) mu=0.6   H0 (thesis dead) mu=0.3   4000 trials per cell.
+
+--- 1. Can the gate tell a live thesis from a dead one? ---
+
+rule                                                              N=3        N=5        N=8       N=12       N=20       N=40
+champion, as written (pooled over Vollmachten, >=50%)           82/23      89/16      93/11       97/7       99/3      100/0
+campaign-level median rate >= 50%                               78/20      83/17       86/7       91/5       95/2       99/0
+campaign vote: >=60% of campaigns individually >=50%            78/21      82/16       81/5       71/1       89/1       93/0
+champion conjunction (rate AND >=3/4 off-day weeks AND issuance-time)       69/9       74/5       87/5       91/2       96/0       98/0
+
+read as  power% / false-green%  — power = P(green | thesis alive), false-green = P(green | thesis dead).
+
+--- 2. Criterion 3 (GM issuance <= 120 s/session): is it reachable at all? ---
+
+Path A — CHAMPION §15.14, a sealed line written in prose at 23:41:
+         90.0 s per Vollmacht (the champion's own estimate; KLM cannot price composition)
+Path B — die Nachlese, this candidate: the issuance surface has NO text field.
+         M  1.35 s   decide which gap to open
+         K  0.28 s   V — open der Vollmachtszettel
+         M  1.35 s   scan the Lücke candidate list
+         K  0.56 s   arrow to the candidate (mean 2 presses over a 5-row list)
+         M  1.35 s   choose a threshold
+         K  0.28 s   threshold ring, one press
+         K  0.28 s   Enter — seal
+         5.45 s per Vollmacht (KLM, Card/Moran/Newell 1980)
+
+n Vollmachten     champion (s)  Nachlese (s)   budget 120 s
+1                           90             5   champion GREEN · Nachlese GREEN
+2                          180            11   champion RED   · Nachlese GREEN
+3                          270            16   champion RED   · Nachlese GREEN
+4                          360            22   champion RED   · Nachlese GREEN
+5                          450            27   champion RED   · Nachlese GREEN
+
+--- 3. What running W1 actually costs, criterion by criterion ---
+
+criterion                                       instrument                                                needs slice 1?
+fire rate: issued vs. fired before expiry       a shared sheet: one row per door, GM ticks fired/expired  no
+GM issuance time per session                    a stopwatch on the GM's phone, one number per session     no
+>=1 Vorhaben per player per week                the same sheet, one row per player-week                   no
+>=3 of 4 weeks with an off-session-day mint     the date column of the same sheet                         no
+der Zugangsvorfall exclusion                    one extra column: 'could you get in?' asked once          no
+
+--- verdict rows ---
+
+FAIL  W1-a   champion's pooled rule at a recruitable N=8: does a DEAD thesis stay red?    | false-green 11.2% at N=8 (target <=10%)
+PASS  W1-b   champion's pooled rule at N=8: does a LIVE thesis go green?                  | power 93.1% at N=8 (target >=80%)
+PASS  W1-c   is there ANY N at which the campaign-median rule is a real instrument?       | yes: N=8 gives power 86%, false-green 7%
+PASS  W1-d   the champion ANDs several criteria: what does the conjunction do to power?   | conjunction power 87.1% vs pooled-rate-alone 93.1% at N=8
+FAIL  W1-e   champion issuance vs. its own criterion 3: can a GM issue 3 doors inside 120 s? | champion tops out at 1 Vollmacht/session inside the budget (3x90 s = 270 s = RED)
+PASS  W1-f   die Nachlese vs. criterion 3: can a GM issue 3 doors inside 120 s?           | Nachlese tops out at 22 Vollmachten/session inside the budget (3 x 5.5 s = 16 s)
+PASS  W1-g   the arithmetic that makes criterion 3 decidable rather than rhetorical       | budget 120 s / champion 90 s = 1.33 doors; / Nachlese 5.45 s = 22.0 doors
+PASS  W1-h   die Papiertür: can W1 be run with no product at all?                         | 5/5 criteria are measurable by a GM with a spreadsheet, a stopwatch and a group chat
+PASS  W1-i   the days a red W1 would save if the pilot runs BEFORE the build              | 38 of 105 slice-1 days (36%) are die Woche's delta and would not be spent
+
+FAIL here does not mean the code is broken. It means the GATE, as the champion writes it,
+cannot do the job the champion assigns it. That is the finding.

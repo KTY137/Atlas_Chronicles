@@ -1,0 +1,1363 @@
+<title>Skriptorium — Haus Vharon · Sitzung 15 · Chronicle</title>
+
+<style>
+/* ───────────────────────────────────────────────────────────────
+   TOKENS — Archive-Skin, typografiegeführt.
+   Hell = bedrucktes Papier. Dunkel = Archiv um 02:00 mit Lampe.
+   Jede Farbe, Schrift, Rundung, Schattierung und Dauer ist ein Token.
+   ─────────────────────────────────────────────────────────────── */
+:root{
+  color-scheme: light dark;
+
+  --c-shell:#dcd1bc;      --c-shell-2:#d2c5ac;
+  --c-rail:#eae2d2;       --c-rail-2:#e2d9c6;
+  --c-paper:#f7f2e7;      --c-paper-2:#f1ead9;
+  --c-ink:#241d16;        --c-ink-2:#57493b;      --c-ink-3:#73644f;
+  --c-rule:#d7cab3;       --c-rule-2:#bfae90;
+  --c-accent:#875712;     --c-accent-2:#b3842b;   --c-accent-wash:rgba(179,132,43,.14);
+  --c-ox:#8d2320;         --c-ox-2:#a83a30;       --c-ox-wash:rgba(141,35,32,.075);
+  --c-ok:#39653f;
+  --c-sera:#2c6055;       --c-brannt:#544184;
+  --c-focus:#14507d;      --c-focus-halo:rgba(20,80,125,.22);
+  --c-seal-ink:#fbf7ee;
+  --c-screen:#f9f5ec;     --c-bezel:#3a332c;      --c-bezel-2:#231e19;
+
+  --f-text:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,"Times New Roman",Georgia,serif;
+  --f-ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+
+  --r-sm:2px; --r-md:4px; --r-lg:9px; --r-pill:999px;
+  --sh-1:0 1px 2px rgba(36,29,22,.10);
+  --sh-2:0 2px 6px rgba(36,29,22,.12);
+  --sh-paper:0 1px 0 rgba(255,255,255,.7) inset, 0 22px 46px -30px rgba(36,29,22,.55), 0 1px 3px rgba(36,29,22,.10);
+  --sh-tablet:0 26px 40px -26px rgba(36,29,22,.6), 0 2px 0 rgba(255,255,255,.18) inset;
+  --sh-screen:none;
+
+  --dur-1:150ms;   /* Antwort: Druck, Hover, Fokus, Prüfung */
+  --dur-2:300ms;   /* Zustand: Auswahl, Teilung, Blocker */
+  --dur-3:740ms;   /* Übergang: Ankunft beim Leser */
+  --ease:cubic-bezier(.2,.8,.25,1);
+  --ease-io:cubic-bezier(.4,0,.2,1);
+
+  --gutter:2.7rem; --seals:2.4rem;
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-op:.28; --grain-blend:multiply;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --c-shell:#0b0908;      --c-shell-2:#070605;
+    --c-rail:#141010;       --c-rail-2:#1a1513;
+    --c-paper:#191512;      --c-paper-2:#1f1a15;
+    --c-ink:#ece2d1;        --c-ink-2:#a99a86;      --c-ink-3:#9a8b78;
+    --c-rule:#352c23;       --c-rule-2:#4a3d31;
+    --c-accent:#d9a441;     --c-accent-2:#c08f34;   --c-accent-wash:rgba(217,164,65,.13);
+    --c-ox:#e2665c;         --c-ox-2:#f08a80;       --c-ox-wash:rgba(226,102,92,.10);
+    --c-ok:#7db98a;
+    --c-sera:#6fc0ab;       --c-brannt:#a596e0;
+    --c-focus:#7fc4f2;      --c-focus-halo:rgba(127,196,242,.24);
+    --c-seal-ink:#15110e;
+    --c-screen:#1d1813;     --c-bezel:#2a241f;      --c-bezel-2:#100d0b;
+    --sh-paper:0 1px 0 rgba(255,255,255,.045) inset, 0 30px 60px -34px #000, 0 0 0 1px rgba(255,255,255,.03);
+    --sh-1:0 1px 2px rgba(0,0,0,.5);
+    --sh-2:0 3px 10px rgba(0,0,0,.55);
+    --sh-tablet:0 30px 46px -28px #000, 0 1px 0 rgba(255,255,255,.07) inset;
+    --sh-screen:0 0 44px -10px rgba(217,164,65,.22);
+    --grain-op:.16; --grain-blend:overlay;
+  }
+}
+
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --c-shell:#0b0908;      --c-shell-2:#070605;
+  --c-rail:#141010;       --c-rail-2:#1a1513;
+  --c-paper:#191512;      --c-paper-2:#1f1a15;
+  --c-ink:#ece2d1;        --c-ink-2:#a99a86;      --c-ink-3:#9a8b78;
+  --c-rule:#352c23;       --c-rule-2:#4a3d31;
+  --c-accent:#d9a441;     --c-accent-2:#c08f34;   --c-accent-wash:rgba(217,164,65,.13);
+  --c-ox:#e2665c;         --c-ox-2:#f08a80;       --c-ox-wash:rgba(226,102,92,.10);
+  --c-ok:#7db98a;
+  --c-sera:#6fc0ab;       --c-brannt:#a596e0;
+  --c-focus:#7fc4f2;      --c-focus-halo:rgba(127,196,242,.24);
+  --c-seal-ink:#15110e;
+  --c-screen:#1d1813;     --c-bezel:#2a241f;      --c-bezel-2:#100d0b;
+  --sh-paper:0 1px 0 rgba(255,255,255,.045) inset, 0 30px 60px -34px #000, 0 0 0 1px rgba(255,255,255,.03);
+  --sh-1:0 1px 2px rgba(0,0,0,.5);
+  --sh-2:0 3px 10px rgba(0,0,0,.55);
+  --sh-tablet:0 30px 46px -28px #000, 0 1px 0 rgba(255,255,255,.07) inset;
+  --sh-screen:0 0 44px -10px rgba(217,164,65,.22);
+  --grain-op:.16; --grain-blend:overlay;
+}
+:root[data-theme="light"]{ color-scheme: light; }
+
+/* ── Grundlage ─────────────────────────────────────────────── */
+*,*::before,*::after{ box-sizing:border-box; }
+.tnum{ font-variant-numeric:tabular-nums; }
+.vh{ position:absolute!important; width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap; }
+
+.shell{
+  font-family:var(--f-ui);
+  color:var(--c-ink);
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--c-shell) 0%, var(--c-shell-2) 70%);
+  min-height:100svh;
+  display:flex; flex-direction:column;
+  font-size:15px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+
+:where(a,button,input,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--c-focus); outline-offset:2px;
+  box-shadow:0 0 0 4px var(--c-focus-halo); border-radius:var(--r-sm);
+}
+[contenteditable="true"]:focus-visible{
+  outline:2px dashed var(--c-focus); outline-offset:7px; box-shadow:none;
+}
+button{ font:inherit; color:inherit; }
+
+/* ── Kopfleiste (Campaign Context) ─────────────────────────── */
+.topbar{
+  display:flex; align-items:center; gap:.85rem; flex-wrap:wrap;
+  padding:.55rem .9rem;
+  background:linear-gradient(180deg, var(--c-rail-2), var(--c-rail));
+  border-bottom:1px solid var(--c-rule);
+  box-shadow:var(--sh-1);
+  position:relative; z-index:5;
+}
+.brand{ display:flex; align-items:center; gap:.5rem; }
+.brand svg{ width:19px; height:19px; color:var(--c-accent); flex:none; }
+.brand b{ font-family:var(--f-text); font-size:1.02rem; letter-spacing:.02em; font-weight:600; }
+.brand span{ color:var(--c-ink-3); font-size:.74rem; letter-spacing:.14em; text-transform:uppercase; }
+.crumbs ol{ list-style:none; margin:0; padding:0; display:flex; gap:.4rem; align-items:center; font-size:.82rem; flex-wrap:wrap; }
+.crumbs li+li::before{ content:"›"; color:var(--c-ink-3); margin-right:.4rem; }
+.crumbs a{ color:var(--c-ink-2); text-decoration:none; border-bottom:1px solid transparent; }
+.crumbs a:hover{ color:var(--c-ink); border-bottom-color:var(--c-rule-2); }
+.crumbs [aria-current]{ color:var(--c-ink); font-weight:600; }
+.spacer{ flex:1 1 2rem; }
+.session-chip{
+  display:flex; align-items:center; gap:.45rem; font-size:.78rem; color:var(--c-ink-2);
+  padding:.2rem .55rem; border:1px solid var(--c-rule); border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--c-paper) 55%, transparent);
+}
+.live{ width:7px;height:7px;border-radius:50%;background:var(--c-ox);flex:none;
+  box-shadow:0 0 0 0 var(--c-ox-wash); animation:pulse 2.4s var(--ease-io) infinite; }
+@keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(141,35,32,.35)} 70%{box-shadow:0 0 0 7px rgba(141,35,32,0)} 100%{box-shadow:0 0 0 0 rgba(141,35,32,0)} }
+.presence{ display:flex; gap:.3rem; align-items:center; }
+.pchip{ display:flex; align-items:center; gap:.35rem; font-size:.76rem; color:var(--c-ink-2);
+  padding:.15rem .5rem .15rem .18rem; border-radius:var(--r-pill); border:1px solid transparent; }
+.pchip:hover{ border-color:var(--c-rule); }
+.disc{ width:20px;height:20px;border-radius:50%; display:grid; place-items:center;
+  font-size:.65rem; font-weight:700; letter-spacing:.02em; color:var(--c-seal-ink); flex:none; }
+.d-kaya{ background:var(--c-accent); } .d-sera{ background:var(--c-sera); } .d-brannt{ background:var(--c-brannt); }
+.prefs{ display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
+.seg{ display:flex; border:1px solid var(--c-rule-2); border-radius:var(--r-md); overflow:hidden; background:color-mix(in srgb, var(--c-paper) 45%, transparent); }
+.seg button{
+  border:0; background:transparent; padding:.24rem .55rem; font-size:.76rem; color:var(--c-ink-2);
+  cursor:pointer; transition:background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.seg button+button{ border-left:1px solid var(--c-rule); }
+.seg button:hover{ background:var(--c-accent-wash); color:var(--c-ink); }
+.seg button[aria-pressed="true"]{ background:var(--c-ink); color:var(--c-paper); }
+.btn-sm{
+  border:1px solid var(--c-rule-2); background:color-mix(in srgb, var(--c-paper) 45%, transparent);
+  padding:.24rem .55rem; font-size:.76rem; border-radius:var(--r-md); color:var(--c-ink-2); cursor:pointer;
+  transition:background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.btn-sm:hover{ background:var(--c-accent-wash); border-color:var(--c-accent-2); color:var(--c-ink); }
+
+/* ── Körper: Modul · Kollektion · Bühne · Rand ─────────────── */
+.body{
+  flex:1 1 auto; min-height:0;
+  display:grid; grid-template-columns:auto auto minmax(0,1fr) auto;
+}
+.modules{ background:var(--c-rail-2); border-right:1px solid var(--c-rule); padding:.6rem .35rem; }
+.modules ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.15rem; }
+.mod{
+  display:flex; flex-direction:column; align-items:center; gap:.18rem;
+  width:4.35rem; padding:.5rem .2rem; border-radius:var(--r-md);
+  color:var(--c-ink-3); text-decoration:none; font-size:.68rem; letter-spacing:.03em;
+  transition:background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.mod svg{ width:19px; height:19px; }
+.mod:hover{ background:var(--c-accent-wash); color:var(--c-ink-2); }
+.mod[aria-current]{ background:color-mix(in srgb, var(--c-paper) 70%, transparent); color:var(--c-accent); box-shadow:var(--sh-1); }
+.mod[aria-current] span{ color:var(--c-ink); font-weight:600; }
+
+.collection{
+  width:15rem; background:var(--c-rail); border-right:1px solid var(--c-rule);
+  padding:.7rem .6rem; overflow-y:auto; display:flex; flex-direction:column; gap:.5rem;
+}
+.rail-head{ display:flex; align-items:baseline; justify-content:space-between; gap:.5rem; }
+.rail-head h2{ margin:0; font-family:var(--f-text); font-size:.95rem; font-weight:600; letter-spacing:.02em; }
+.rail-head .cnt{ font-size:.7rem; color:var(--c-ink-3); }
+.collection input[type="search"]{
+  width:100%; font:inherit; font-size:.8rem; padding:.32rem .5rem; color:var(--c-ink);
+  background:var(--c-paper); border:1px solid var(--c-rule); border-radius:var(--r-md);
+}
+.entries{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1px; }
+.entry{
+  display:flex; align-items:center; justify-content:space-between; gap:.4rem;
+  padding:.3rem .45rem; border-radius:var(--r-sm); text-decoration:none; color:var(--c-ink-2); font-size:.83rem;
+  border-left:2px solid transparent;
+  transition:background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.entry:hover{ background:var(--c-accent-wash); color:var(--c-ink); }
+.entry[aria-current]{ background:color-mix(in srgb, var(--c-paper) 80%, transparent); border-left-color:var(--c-accent); color:var(--c-ink); font-weight:600; }
+.entry .n{ font-size:.7rem; color:var(--c-ink-3); }
+.entry.rot .nm{ color:var(--c-ox); }
+.rail-note{ font-size:.7rem; color:var(--c-ink-3); line-height:1.45; margin:0; }
+
+/* ── Bühne + Blatt ─────────────────────────────────────────── */
+.stage{ overflow-y:auto; padding:1.6rem 1.2rem 3rem; display:flex; justify-content:center; }
+.sheet{
+  width:min(52rem,100%); background:linear-gradient(180deg,var(--c-paper),var(--c-paper-2));
+  border:1px solid var(--c-rule); border-radius:2px; box-shadow:var(--sh-paper);
+  padding:2.2rem 2rem 2.6rem; position:relative; isolation:isolate;
+}
+.sheet::before{
+  content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background-image:var(--grain); opacity:var(--grain-op); mix-blend-mode:var(--grain-blend);
+  border-radius:inherit;
+}
+.sheet > *{ position:relative; z-index:1; }
+.head{ padding-left:var(--gutter); }
+.eyebrow{ margin:0; font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--c-ink-3); }
+.sheet h1{
+  font-family:var(--f-text); font-weight:600; font-size:clamp(1.9rem,4.4vw,2.7rem);
+  margin:.25rem 0 .3rem; letter-spacing:-.012em; line-height:1.08; color:var(--c-ink);
+}
+.byline{ margin:0 0 .2rem; font-size:.78rem; color:var(--c-ink-2); }
+.rule-1{ border:0; border-top:1px solid var(--c-rule-2); margin:.9rem 0 1.1rem; }
+</style>
+<style>
+/* ── Steckbrief (Infobox) ──────────────────────────────────── */
+.steckbrief{
+  float:right; width:14.5rem; margin:.15rem 0 1rem 1.5rem;
+  border:1px solid var(--c-rule-2); background:color-mix(in srgb,var(--c-paper) 60%, var(--c-rail));
+  padding:.75rem .8rem .8rem; box-shadow:var(--sh-1);
+}
+.steckbrief h2{ margin:0 0 .5rem; font-family:var(--f-text); font-size:.82rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--c-ink-3); font-weight:600; text-align:center; }
+.crest{ display:block; width:64px; height:64px; margin:.1rem auto .55rem; color:var(--c-accent); }
+.steckbrief dl{ margin:0; display:grid; grid-template-columns:auto minmax(0,1fr); gap:.05rem .55rem; font-size:.76rem; }
+.steckbrief dt{ color:var(--c-ink-3); }
+.steckbrief dd{ margin:0; color:var(--c-ink); }
+.steckbrief dd+dt{ border-top:1px solid var(--c-rule); padding-top:.28rem; margin-top:.24rem; }
+.steckbrief dt+dd{ border-top:1px solid var(--c-rule); padding-top:.28rem; margin-top:.24rem; }
+
+/* ── Prosa: Zeile = Griff · Absatz · Siegel ────────────────── */
+.prose{ font-family:var(--f-text); color:var(--c-ink); }
+.row{
+  display:grid; grid-template-columns:var(--gutter) minmax(0,1fr) var(--seals);
+  align-items:start; border-left:2px solid transparent; margin-left:-2px;
+  transition:background var(--dur-2) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.row.is-sel{ background:var(--c-accent-wash); border-left-color:var(--c-accent); }
+.row.is-new{ animation:wash var(--dur-2) var(--ease) both; }
+@keyframes wash{ from{ background:var(--c-accent-wash); transform:translateY(-3px); opacity:.4 } to{ background:transparent; transform:none; opacity:1 } }
+.row.is-refused .passage{ animation:refuse var(--dur-1) var(--ease-io) 1; }
+@keyframes refuse{ 0%,100%{transform:none} 28%{transform:translateX(-5px)} 64%{transform:translateX(4px)} }
+
+.gutter{ display:flex; flex-direction:column; align-items:flex-end; padding:.5rem .55rem 0 0; }
+.handle{
+  border:1px solid transparent; background:transparent; cursor:pointer;
+  font-family:var(--f-mono); font-size:.7rem; color:var(--c-ink-3);
+  padding:.05rem .28rem; border-radius:var(--r-sm); line-height:1.35;
+  transition:color var(--dur-1) var(--ease), background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.handle:hover{ color:var(--c-accent); border-color:var(--c-rule); background:var(--c-paper); }
+.row.is-sel .handle{ color:var(--c-accent); background:var(--c-paper); border-color:var(--c-accent-2); }
+.handle .pid{ display:block; font-size:.58rem; opacity:0; transition:opacity var(--dur-1) var(--ease); }
+.handle:hover .pid,.handle:focus-visible .pid,.row.is-sel .handle .pid{ opacity:.85; }
+
+.passage{
+  margin:0; padding:.34rem .2rem .34rem 0; min-height:1.6em;
+  font-size:1.045rem; line-height:1.62; hyphens:auto; overflow-wrap:break-word;
+}
+.passage:empty::after{ content:"leerer Absatz — eigene Kennung, geprägt bei der Teilung";
+  color:var(--c-ink-3); font-style:italic; font-size:.85rem; }
+h2.passage{ font-size:1.32rem; font-weight:600; letter-spacing:-.005em; margin-top:1.5rem; padding-bottom:.15rem;
+  border-bottom:1px solid var(--c-rule); }
+.row[data-kind="lead"] .passage{ font-size:1.09rem; }
+.row[data-kind="lead"] .passage::first-letter{
+  float:left; font-size:3.3em; line-height:.82; padding:.06em .1em 0 0; color:var(--c-ox); font-weight:600;
+}
+blockquote.passage{ font-style:italic; color:var(--c-ink-2); border-left:2px solid var(--c-rule-2); padding-left:.9rem; margin-left:.1rem; }
+.wl{ color:var(--c-accent); text-decoration:none; border-bottom:1px solid color-mix(in srgb,var(--c-accent) 40%, transparent); }
+.wl:hover{ border-bottom-color:var(--c-accent); }
+.wl.rot{ color:var(--c-ox); border-bottom-style:dotted; border-bottom-color:color-mix(in srgb,var(--c-ox) 55%, transparent); }
+
+.seals{ display:flex; flex-wrap:wrap; gap:.18rem; padding:.62rem 0 0 .3rem; align-content:flex-start; }
+.seal{ width:17px;height:17px;border-radius:50%; display:grid; place-items:center;
+  font-family:var(--f-ui); font-size:.58rem; font-weight:700; color:var(--c-seal-ink); }
+.seal.s-sera{ background:var(--c-sera); } .seal.s-brannt{ background:var(--c-brannt); }
+.seal.belief-false{ box-shadow:0 0 0 1.5px var(--c-paper),0 0 0 3px var(--c-ox); }
+.mark-marg{ font-size:.8rem; color:var(--c-accent); line-height:1; padding-top:.1rem; }
+
+/* ── Der Blocker: das rote Apparat-Feld ────────────────────── */
+.blocker{
+  grid-column:1 / -1; margin:.5rem 0 .6rem var(--gutter);
+  border-left:3px solid var(--c-ox); background:var(--c-ox-wash);
+  padding:.75rem .9rem .8rem; font-family:var(--f-ui);
+  animation:blockIn var(--dur-2) var(--ease) both;
+}
+@keyframes blockIn{ from{ opacity:0; transform:translateY(-5px) } to{ opacity:1; transform:none } }
+.blocker h3{
+  margin:0 0 .3rem; font-family:var(--f-text); font-size:1rem; color:var(--c-ox);
+  display:flex; align-items:baseline; gap:.45rem; font-weight:600;
+}
+.blocker h3 .obelus{ font-size:1.1rem; }
+.blocker p{ margin:0 0 .5rem; font-size:.86rem; line-height:1.55; color:var(--c-ink); max-width:44rem; }
+.gains{ width:100%; border-collapse:collapse; font-size:.78rem; margin:0 0 .6rem; }
+.gains th{ text-align:left; font-weight:600; color:var(--c-ink-3); font-size:.68rem;
+  letter-spacing:.12em; text-transform:uppercase; padding:0 .8rem .2rem 0; white-space:nowrap; }
+.gains td{ padding:.2rem .8rem .2rem 0; border-top:1px solid color-mix(in srgb,var(--c-ox) 22%, transparent); vertical-align:top; }
+.gains td:last-child{ padding-right:0; }
+.scroll-x{ overflow-x:auto; }
+.blocker-actions{ display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:.5rem; }
+.b-primary,.b-second,.b-third{
+  font-size:.81rem; padding:.34rem .7rem; border-radius:var(--r-md); cursor:pointer;
+  transition:background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.b-primary{ background:var(--c-ox); color:var(--c-seal-ink); border:1px solid var(--c-ox); font-weight:600; }
+.b-primary:hover{ background:var(--c-ox-2); }
+.b-second{ background:transparent; border:1px solid var(--c-ox); color:var(--c-ox); }
+.b-second:hover{ background:var(--c-ox-wash); }
+.b-third{ background:transparent; border:1px solid transparent; color:var(--c-ink-2); }
+.b-third:hover{ border-color:var(--c-rule-2); }
+.b-primary:active,.b-second:active,.b-third:active{ transform:translateY(1px); }
+.blocker-meta{ font-family:var(--f-mono); font-size:.68rem; color:var(--c-ink-3); margin:0!important; }
+
+/* ── Der Rand (Apparat) ────────────────────────────────────── */
+.rand{
+  width:21.5rem; background:var(--c-rail); border-left:1px solid var(--c-rule);
+  overflow-y:auto; padding:.8rem .8rem 2rem; display:flex; flex-direction:column; gap:1.05rem;
+}
+.rand h2{
+  margin:0 0 .45rem; font-size:.7rem; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--c-ink-3); font-weight:600; border-bottom:1px solid var(--c-rule); padding-bottom:.3rem;
+}
+.step{
+  font-size:.76rem; color:var(--c-ink-2); background:var(--c-accent-wash);
+  border-left:2px solid var(--c-accent-2); padding:.35rem .5rem; margin:0 0 .55rem; line-height:1.45;
+}
+.step b{ color:var(--c-ink); }
+.apparat{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.4rem; }
+.ev{
+  border-left:2px solid var(--c-rule-2); padding:.25rem .1rem .3rem .55rem;
+  animation:evIn var(--dur-2) var(--ease) both;
+}
+@keyframes evIn{ from{ opacity:0; transform:translateX(9px) } to{ opacity:1; transform:none } }
+.ev-head{ display:flex; align-items:baseline; gap:.45rem; }
+.ev-kind{ font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--c-ink-3); }
+.ev-time{ font-size:.68rem; color:var(--c-ink-3); margin-left:auto; }
+.ev p{ margin:.12rem 0 .2rem; font-size:.79rem; line-height:1.45; color:var(--c-ink); }
+.ev code{ font-family:var(--f-mono); font-size:.72rem; background:color-mix(in srgb,var(--c-paper) 70%,transparent);
+  padding:0 .18rem; border-radius:var(--r-sm); }
+.ev.k-split{ border-left-color:var(--c-accent-2); } .ev.k-split .ev-kind{ color:var(--c-accent); }
+.ev.k-merge{ border-left-color:var(--c-ink-3); }
+.ev.k-reveal{ border-left-color:var(--c-sera); } .ev.k-reveal .ev-kind{ color:var(--c-sera); }
+.ev.k-retract{ border-left-color:var(--c-ox-2); } .ev.k-retract .ev-kind{ color:var(--c-ox); }
+.ev.k-blocked{ border-left-color:var(--c-ox); background:var(--c-ox-wash); } .ev.k-blocked .ev-kind{ color:var(--c-ox); }
+.ev.k-margin{ border-left-color:var(--c-brannt); } .ev.k-margin .ev-kind{ color:var(--c-brannt); }
+.linky{ background:none; border:0; padding:0; font-size:.74rem; color:var(--c-accent);
+  text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.linky:hover{ color:var(--c-ink); }
+
+.lens dl{ margin:0 0 .5rem; display:grid; grid-template-columns:auto minmax(0,1fr); gap:.12rem .5rem; font-size:.76rem; }
+.lens dt{ color:var(--c-ink-3); } .lens dd{ margin:0; }
+.lens dd code{ font-family:var(--f-mono); font-size:.73rem; }
+.lens h3{ margin:.55rem 0 .28rem; font-size:.68rem; letter-spacing:.13em; text-transform:uppercase; color:var(--c-ink-3); font-weight:600; }
+.holder-btns{ display:flex; gap:.35rem; flex-wrap:wrap; }
+.hb{
+  display:flex; align-items:center; gap:.35rem; padding:.2rem .5rem .2rem .22rem;
+  border:1px solid var(--c-rule-2); border-radius:var(--r-pill); background:transparent;
+  font-size:.76rem; color:var(--c-ink-3); cursor:pointer;
+  transition:background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.hb .disc{ width:17px;height:17px;font-size:.58rem; filter:grayscale(1); opacity:.55; transition:filter var(--dur-1) var(--ease),opacity var(--dur-1) var(--ease); }
+.hb[aria-pressed="true"]{ color:var(--c-ink); border-color:var(--c-ink-3); background:var(--c-paper); }
+.hb[aria-pressed="true"] .disc{ filter:none; opacity:1; }
+.hb:hover{ border-color:var(--c-accent-2); }
+.holder-note{ font-size:.7rem; color:var(--c-ink-3); margin:.25rem 0 0; line-height:1.4; }
+.pre{ font-size:.76rem; line-height:1.45; margin:.45rem 0 0; padding:.35rem .5rem; border-left:2px solid var(--c-ok); background:color-mix(in srgb,var(--c-ok) 9%, transparent); }
+.pre.bad{ border-left-color:var(--c-ox); background:var(--c-ox-wash); }
+.pre b{ display:block; font-size:.64rem; letter-spacing:.13em; text-transform:uppercase; color:var(--c-ink-3); }
+.acts{ display:flex; flex-direction:column; gap:.3rem; margin-top:.55rem; }
+.act{
+  text-align:left; border:1px solid var(--c-rule-2); background:var(--c-paper);
+  border-radius:var(--r-md); padding:.32rem .55rem; font-size:.79rem; color:var(--c-ink-2); cursor:pointer;
+  transition:background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.act:hover:not(:disabled){ background:var(--c-accent-wash); border-color:var(--c-accent-2); color:var(--c-ink); }
+.act:disabled{ opacity:.45; cursor:not-allowed; }
+.act kbd{ font-family:var(--f-mono); font-size:.68rem; color:var(--c-ink-3); float:right; }
+.marg-list{ list-style:none; margin:.2rem 0 0; padding:0; display:flex; flex-direction:column; gap:.35rem; }
+.marg{ font-size:.77rem; border-left:2px solid var(--c-accent-2); padding:.15rem .1rem .15rem .5rem; line-height:1.45; }
+.marg span{ display:block; font-size:.68rem; color:var(--c-ink-3); }
+#margInput{ width:100%; font:inherit; font-size:.79rem; padding:.3rem .45rem; margin-top:.35rem;
+  background:var(--c-paper); border:1px solid var(--c-accent-2); border-radius:var(--r-md); color:var(--c-ink); }
+.hint-live{ font-size:.74rem; color:var(--c-ox); margin:.35rem 0 0; min-height:1em; }
+
+/* ── Seras Kodex: das Gerät auf dem Tisch ──────────────────── */
+.tablet-frame{
+  background:linear-gradient(160deg,var(--c-bezel),var(--c-bezel-2));
+  border-radius:var(--r-lg); padding:.5rem .42rem; box-shadow:var(--sh-tablet);
+}
+.tablet-screen{
+  background:var(--c-screen); border-radius:3px; padding:.6rem .6rem .5rem;
+  box-shadow:var(--sh-screen); display:flex; flex-direction:column; gap:.4rem;
+  max-height:19rem; overflow-y:auto;
+}
+.kd-top{ display:flex; align-items:center; justify-content:space-between; gap:.4rem;
+  border-bottom:1px solid var(--c-rule); padding-bottom:.3rem; }
+.kd-title{ font-family:var(--f-text); font-size:.82rem; font-weight:600; }
+.seg-sm button{ padding:.12rem .38rem; font-size:.7rem; }
+.kd{ animation:none; }
+.kd.arriving{ animation:arrive var(--dur-3) var(--ease) both; }
+@keyframes arrive{ from{ opacity:0; transform:translateY(8px); max-height:0 } to{ opacity:1; transform:none; max-height:40rem } }
+.kd-text{ font-family:var(--f-text); font-size:.83rem; line-height:1.5; margin:0; color:var(--c-ink); }
+.kd-text.h{ font-weight:600; font-size:.9rem; margin-top:.3rem; }
+.kd-text.q{ font-style:italic; border-left:2px solid var(--c-rule-2); padding-left:.5rem; color:var(--c-ink-2); }
+.kd-stamp{ margin:.1rem 0 .45rem; font-size:.64rem; color:var(--c-ink-3); letter-spacing:.02em; }
+.kd.gone .kd-text{ text-decoration:line-through; color:var(--c-ink-3); }
+.kd.gone .kd-stamp{ color:var(--c-ox); }
+.kd-foot{ margin:.2rem 0 0; font-size:.66rem; color:var(--c-ink-3); border-top:1px solid var(--c-rule); padding-top:.28rem; }
+.capt{ font-size:.7rem; color:var(--c-ink-3); margin:.4rem 0 0; line-height:1.45; }
+.keys{ list-style:none; margin:0; padding:0; font-size:.75rem; color:var(--c-ink-2); display:flex; flex-direction:column; gap:.2rem; }
+.keys kbd{ font-family:var(--f-mono); font-size:.72rem; background:var(--c-paper); border:1px solid var(--c-rule);
+  border-bottom-width:2px; border-radius:var(--r-sm); padding:0 .28rem; }
+
+/* ── Ehrlichkeitsleiste ────────────────────────────────────── */
+.honesty{
+  border-top:1px solid var(--c-rule); background:var(--c-rail-2);
+  padding:.5rem .9rem .6rem; font-size:.76rem; color:var(--c-ink-2); line-height:1.5;
+}
+.honesty p{ margin:0; }
+.honesty b{ color:var(--c-ink); }
+.honesty code{ font-family:var(--f-mono); font-size:.72rem; }
+.honesty ul{ margin:.4rem 0 0; padding-left:1.1rem; display:flex; flex-direction:column; gap:.2rem; max-width:78ch; }
+.prose-hint{ margin-top:1.1rem; }
+
+/* ── Schmale Layouts ───────────────────────────────────────── */
+@media (min-width:1180px){ .shell{ height:100svh; overflow:hidden; } .body{ grid-template-rows:minmax(0,1fr); } }
+@media (max-width:1440px){ .collection{ width:13rem; } .rand{ width:19.5rem; } }
+@media (max-width:1180px){
+  .collection{ display:none; }
+  .body{ grid-template-columns:auto minmax(0,1fr) auto; }
+  .rand{ width:18.5rem; }
+  .stage{ padding:1.1rem .8rem 2rem; }
+  .sheet{ padding:1.6rem 1.3rem 2rem; }
+}
+@media (max-width:960px){
+  .body{ grid-template-columns:minmax(0,1fr); }
+  .modules{ border-right:0; border-bottom:1px solid var(--c-rule); padding:.35rem .5rem; overflow-x:auto; }
+  .modules ul{ flex-direction:row; gap:.25rem; }
+  .mod{ flex-direction:row; width:auto; gap:.4rem; padding:.35rem .6rem; }
+  .rand{ width:auto; border-left:0; border-top:1px solid var(--c-rule); }
+  .steckbrief{ float:none; width:auto; margin:.4rem 0 1.2rem; }
+}
+@media (max-width:640px){
+  :root{ --gutter:2.1rem; --seals:0rem; }
+  .row{ grid-template-columns:var(--gutter) minmax(0,1fr); }
+  .seals{ grid-column:2; padding:.1rem 0 .3rem 0; }
+  .sheet{ padding:1.2rem .9rem 1.6rem; }
+  .passage{ font-size:1rem; }
+  .blocker{ margin-left:0; }
+  .blocker-actions{ flex-direction:column; align-items:stretch; }
+  .topbar{ gap:.5rem .6rem; }
+  .crumbs,.session-chip{ order:5; }
+}
+
+/* ── Bewegung aus ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  :root:not([data-motion="full"]) *,
+  :root:not([data-motion="full"]) *::before,
+  :root:not([data-motion="full"]) *::after{
+    animation-duration:1ms!important; animation-iteration-count:1!important;
+    transition-duration:1ms!important; scroll-behavior:auto!important;
+  }
+}
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after{
+  animation-duration:1ms!important; animation-iteration-count:1!important;
+  transition-duration:1ms!important; scroll-behavior:auto!important;
+}
+</style>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L19 20 L12 16 L5 20 Z" fill="currentColor" opacity=".9"/><path d="M12 9 V15.4" stroke="var(--c-rail)" stroke-width="1.3" fill="none"/></svg>
+      <span class="brand-text"><b>Chronicle</b> <span>Skriptorium</span></span>
+    </div>
+    <nav class="crumbs" aria-label="Pfad">
+      <ol>
+        <li><a href="#">Aldenfall</a></li>
+        <li><a href="#">Story</a></li>
+        <li><span aria-current="page">Haus Vharon</span></li>
+      </ol>
+    </nav>
+    <div class="session-chip"><span class="live" aria-hidden="true"></span> Sitzung&nbsp;15 · <span class="tnum" id="clock">21:33</span></div>
+    <div class="spacer"></div>
+    <div class="presence" role="group" aria-label="Am Tisch">
+      <span class="pchip"><span class="disc d-kaya" aria-hidden="true">K</span>Kaya <span class="vh">, Spielleitung</span></span>
+      <span class="pchip"><span class="disc d-sera" aria-hidden="true">S</span>Sera</span>
+      <span class="pchip"><span class="disc d-brannt" aria-hidden="true">B</span>Brannt</span>
+    </div>
+    <div class="prefs">
+      <div class="seg" role="group" aria-label="Darstellung">
+        <button type="button" data-theme-set="light" aria-pressed="false">Hell</button>
+        <button type="button" data-theme-set="dark" aria-pressed="false">Dunkel</button>
+        <button type="button" data-theme-set="auto" aria-pressed="true">System</button>
+      </div>
+      <div class="seg" role="group" aria-label="Bewegung">
+        <button type="button" data-motion-set="full" aria-pressed="false">Bewegung</button>
+        <button type="button" data-motion-set="reduced" aria-pressed="false">Reduziert</button>
+        <button type="button" data-motion-set="auto" aria-pressed="true">System</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="body">
+
+    <nav class="modules" aria-label="Module">
+      <ul>
+        <li><a href="#" class="mod"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.4l3.4 2"/></svg><span>Sitzung</span></a></li>
+        <li><a href="#" class="mod" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 5.5c3-1.2 6-1.2 9 0v13c-3-1.2-6-1.2-9 0z"/><path d="M21 5.5c-3-1.2-6-1.2-9 0v13c3-1.2 6-1.2 9 0z"/></svg><span>Story</span></a></li>
+        <li><a href="#" class="mod"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-4.8 5.5-4.8s4.9 1.6 5.5 4.8"/><path d="M16 6.2a3.2 3.2 0 010 6"/><path d="M17 14.6c2 .6 3.3 2.1 3.7 4.4"/></svg><span>Besetzung</span></a></li>
+        <li><a href="#" class="mod"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="4.5" width="4" height="15" rx="1"/><rect x="10" y="4.5" width="4" height="15" rx="1"/><path d="M16.5 6.2l3.6 1 -3.4 12.1 -3.6-1z"/></svg><span>Bibliothek</span></a></li>
+        <li><a href="#" class="mod"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3.2l7.4 4.3v8.9L12 20.8 4.6 16.4V7.5z"/><path d="M12 3.2v17.6M4.6 7.5l14.8 8.9M19.4 7.5L4.6 16.4"/></svg><span>Tisch</span></a></li>
+        <li><a href="#" class="mod"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 9.5h9.5c1.6 0 2.5 1.1 2.5 2.4v.6h4V9.5"/><path d="M8.5 12.5c0 3.2-1.5 5-4 6.2h11c-2.5-1.2-4-3-4-6.2"/></svg><span>Schmiede</span></a></li>
+      </ul>
+    </nav>
+
+    <aside class="collection" aria-label="Kodex-Einträge">
+      <div class="rail-head"><h2>Kodex</h2><span class="cnt tnum" id="entryCount">7 sichtbar</span></div>
+      <label class="vh" for="entrySearch">Kodex durchsuchen</label>
+      <input type="search" id="entrySearch" placeholder="Einträge filtern…" autocomplete="off">
+      <ul class="entries" id="entryList">
+        <li><a class="entry" href="#" aria-current="true"><span class="nm">Haus Vharon</span><span class="n tnum">10</span></a></li>
+        <li><a class="entry" href="#"><span class="nm">Bruder Alder</span><span class="n tnum">4</span></a></li>
+        <li><a class="entry" href="#"><span class="nm">Der Eiserne Tresor</span><span class="n tnum">12</span></a></li>
+        <li><a class="entry" href="#"><span class="nm">Kestrel-Flügel</span><span class="n tnum">6</span></a></li>
+        <li><a class="entry" href="#"><span class="nm">Lady Ilva Vharon</span><span class="n tnum">9</span></a></li>
+        <li><a class="entry" href="#"><span class="nm">Rat der Bürgen</span><span class="n tnum">3</span></a></li>
+        <li><a class="entry rot" href="#"><span class="nm">Ossa</span><span class="n tnum">0</span></a></li>
+      </ul>
+      <p class="rail-note">Rot = Rotlink. Der Eintrag wird beim ersten <code>[[…]]</code> angelegt, ohne dass jemand die Seite verlässt.</p>
+    </aside>
+
+    <main class="stage" aria-label="Skriptorium — Primärbühne">
+      <article class="sheet" aria-labelledby="artTitle">
+        <div class="head">
+          <p class="eyebrow">Aldenfall · Kanon · Adelshäuser</p>
+          <h1 id="artTitle">Haus Vharon</h1>
+          <p class="byline tnum" id="byline">10 Absätze · 12 Enthüllungen an 2 Leser · Fassung r_318</p>
+          <hr class="rule-1">
+        </div>
+
+        <aside class="steckbrief" aria-labelledby="sbT">
+          <h2 id="sbT">Steckbrief</h2>
+          <svg class="crest" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M32 3 A29 29 0 1 1 25.6 3.7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <circle cx="32" cy="32" r="24.5" fill="none" stroke="currentColor" stroke-width=".6" stroke-dasharray="2 3.4" opacity=".8"/>
+            <path d="M32 14 L44 30 L36 30 L40 48 L32 40 L24 48 L28 30 L20 30 Z" fill="currentColor" opacity=".9"/>
+          </svg>
+          <dl>
+            <dt>Typus</dt><dd>Adelshaus</dd>
+            <dt>Sitz</dt><dd>Kestrel-Flügel, Aldenfall</dd>
+            <dt>Oberhaupt</dt><dd>Lady Ilva Vharon</dd>
+            <dt>Wappen</dt><dd>Aschener Falke auf Grau</dd>
+            <dt>Bürgschaften</dt><dd>über den Eisernen Tresor</dd>
+            <dt>Erste Erwähnung</dt><dd class="tnum">Sitzung 3</dd>
+          </dl>
+        </aside>
+
+        <div class="prose" id="prose" spellcheck="false" aria-describedby="proseHint"><!-- Absätze werden aus dem State erzeugt --></div>
+        <p class="capt prose-hint" id="proseHint">
+          Schreibfläche. <b>Enter</b> teilt den Absatz an der Einfügemarke, <b>Rückschritt</b> am Absatzanfang
+          verschmilzt ihn nach oben, <b>Strg+Enter</b> legt eine Marginalie an. Jede Strukturänderung wird im Rand quittiert.
+        </p>
+      </article>
+    </main>
+
+    <aside class="rand" aria-label="Der Rand — Apparat der Sitzung">
+      <section>
+        <h2>Apparat · Sitzung 15</h2>
+        <p class="step" id="stepChip"></p>
+        <ol class="apparat" id="apparat" aria-live="polite"></ol>
+      </section>
+
+      <section class="lens" aria-labelledby="lensH">
+        <h2 id="lensH">Absatz-Apparat</h2>
+        <div id="lens"></div>
+        <p class="hint-live" id="hintLive" role="status"></p>
+      </section>
+
+      <section>
+        <h2>Marginalien</h2>
+        <ul class="marg-list" id="margList"></ul>
+      </section>
+
+      <section aria-labelledby="kodexH">
+        <h2 id="kodexH">Auf dem Tisch</h2>
+        <div class="tablet-frame">
+          <div class="tablet-screen">
+            <div class="kd-top">
+              <span class="kd-title">Kodex · Haus&nbsp;Vharon</span>
+              <div class="seg seg-sm" role="group" aria-label="Gerät">
+                <button type="button" data-reader="sera" aria-pressed="true">Sera</button>
+                <button type="button" data-reader="brannt" aria-pressed="false">Brannt</button>
+              </div>
+            </div>
+            <div id="kodexBody"></div>
+            <p class="kd-foot tnum" id="kodexFoot"></p>
+          </div>
+        </div>
+        <p class="capt">Nicht gehaltene Absätze fehlen — keine Platzhalter, keine grauen Balken, keine Lücken. Im Produkt fehlen auch die Bytes.</p>
+      </section>
+
+      <section>
+        <h2>Tasten</h2>
+        <ul class="keys">
+          <li><kbd>Enter</kbd> Absatz an der Einfügemarke teilen</li>
+          <li><kbd>Rückschritt</kbd> am Anfang: nach oben verschmelzen</li>
+          <li><kbd>Entf</kbd> am Ende: den folgenden heraufziehen</li>
+          <li><kbd>Strg</kbd>+<kbd>Enter</kbd> Marginalie</li>
+          <li><kbd>Esc</kbd> Blocker abbrechen</li>
+          <li><kbd>↑</kbd><kbd>↓</kbd> auf einem Griff: Absatz wechseln</li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="honesty">
+    <p><b>Design-Spike, kein Produkt.</b> Teilung, Verschmelzung, <code>mergeGuard</code>, Lineage,
+      Enthüllung, Rücknahme und Rückgängig laufen hier als echter Code über echten State: die Sätze im roten Feld
+      werden aus den Leser-Mengen erzeugt, nicht aus einer Zeichenkette gelesen. Ändere oben im Absatz-Apparat, wer
+      einen Absatz kennt, und der Blocker ändert sein Urteil.
+      <button type="button" class="linky" id="honestyBtn" aria-expanded="false" aria-controls="honestyList">Was hier <em>nicht</em> echt ist</button>
+    </p>
+    <ul id="honestyList" hidden>
+      <li>Die Projektion (<i>Seras Kodex</i>) rendert im Browser aus demselben State. Im Produkt entscheidet der Server — ein Nicht-Halter bekommt die Bytes nie (§6.3). Diese Seite ist kein Zugriffsschutz-Beweis.</li>
+      <li>Kein ProseMirror. Die Identitätsschicht ist hier Demo-Code; die gemessene liegt in <code>design/spikes/spike-A-passage-identity</code> (116 SLOC, 25/27 Assertions, 0,087 ms je Anschlag).</li>
+      <li>Jeder Absatz ist eine eigene <code>contenteditable</code>-Fläche — eine Spike-Vereinfachung, keine Produktentscheidung. Screenreader × contenteditable ist damit <i>nicht</i> gelöst (§8.1), und genau dort bricht die Schätzung.</li>
+      <li>Einfügen ist auf reinen Text reduziert. Das entspricht der Regel, ersetzt aber keinen Sanitizer (§8.7).</li>
+      <li>Der Wächter unterscheidet: die beiden Hälften einer Teilung lassen sich wieder verschmelzen, weil ihre Leser-Menge gleich ist — nur das Verschmelzen mit dem Geheimnis wird abgelehnt. Wie oft er in einem echten Dokument feuert, ist damit <i>nicht</i> beantwortet (§8.4, Gate: ≤ 3 pro Vier-Stunden-Sitzung).</li>
+      <li>Der Kodex zeigt die festgeschriebene Fassung: Tippen ändert ihn nicht, erst eine Strukturänderung tut es. Das ist die Revisions-Bindung aus §3.1, hier verkürzt.</li>
+      <li>Uhrzeit, Präsenz, Sitzungsnummern, Eintragszähler und die Fassungsnummer sind Fixtures.</li>
+    </ul>
+  </footer>
+</div>
+<script>
+(function(){
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   1 · STATE — Absätze mit Kennung, Leser-Menge und Fassung.
+   Alles Weitere (Kodex, Apparat, Blocker-Text) ist daraus abgeleitet.
+   ═══════════════════════════════════════════════════════════════ */
+var READERS = {
+  sera:   { name:"Sera",   initial:"S", cls:"s-sera",   disc:"d-sera" },
+  brannt: { name:"Brannt", initial:"B", cls:"s-brannt", disc:"d-brannt" }
+};
+var GRP = function(who){ return { who:who, session:3, source:"Gruppenwissen", group:true, belief:true }; };
+
+var state = {
+  rev: 318,
+  clock: 21*60 + 33,
+  viewer: "sera",
+  selected: "p_4f9c",
+  passages: [
+    { pid:"p_1a01", kind:"lead", holders:[GRP("sera"),GRP("brannt")], retracted:[],
+      html:'<b>Haus Vharon</b> ist ein Adelshaus der zweiten Reihe, dessen Einfluss weniger auf Land als auf Bürgschaften beruht. Seit dem Brand von 1194 verwaltet es die Reste des <a class="wl" href="#">Kestrel-Flügels</a> und hält zwei Sitze im Rat der Bürgen.' },
+    { pid:"p_1b02", kind:"p", holders:[GRP("sera"),GRP("brannt")], retracted:[],
+      html:'Die Bürgschaften laufen über <a class="wl" href="#">Der Eiserne Tresor</a>, dessen Schließer dem Haus seit drei Generationen verpflichtet sind. Wer bei Vharon leiht, leiht faktisch beim Tresor — eine Unterscheidung, auf die das Haus bei Hofe großen Wert legt.' },
+    { pid:"p_2c11", kind:"h2", holders:[GRP("sera"),GRP("brannt")], retracted:[], html:'Das Aschene Siegel' },
+    { pid:"p_4f9c", kind:"p", retracted:[],
+      holders:[ {who:"sera",session:14,source:"Bruder Alder",belief:true}, {who:"brannt",session:14,source:"Bruder Alder",belief:true} ],
+      html:'Das Aschene Siegel, das Haus Vharon bei Hofe vorzeigt, ist eine Fälschung. Das Original verbrannte mit dem Kestrel-Flügel 1194.' },
+    { pid:"p_7b21", kind:"p", holders:[], retracted:[],
+      html:'Bruder Alder schweigt seit dem Brand.' },
+    { pid:"p_9f52", kind:"p", holders:[], retracted:[],
+      html:'Alders Quelle war ein Schreiber namens <a class="wl rot" href="#">Ossa<span class="vh"> — Seite noch nicht geschrieben</span></a>, und der Name steht in keinem Register des Hauses.' },
+    { pid:"p_8d34", kind:"p", holders:[], retracted:[],
+      html:'Wer den Abdruck von 1191 neben das heutige Siegel legt, findet drei Abweichungen im Federkleid des Falken. Zwei davon sind Alterung, eine nicht.' },
+    { pid:"p_3e18", kind:"h2", holders:[GRP("sera"),GRP("brannt")], retracted:[], html:'Der Brand von 1194' },
+    { pid:"p_5a77", kind:"p", retracted:[],
+      holders:[ {who:"brannt",session:9,source:"Lady Ilva",belief:true} ],
+      html:'Die Chronik des Hauses nennt einen Kaminfunken im Ostkabinett. Der Schreiber, der die Chronik führte, war zu diesem Zeitpunkt seit zwei Wochen tot.' },
+    { pid:"p_6c40", kind:"quote", retracted:[],
+      holders:[ {who:"sera",session:6,source:"Lady Ilva",belief:false} ],
+      html:'Man sagt, der Falke sei mit dem Flügel verbrannt. Man sagt vieles im Tresor.' }
+  ],
+  marginalia: [ { pid:"p_9f52", text:"Schreiber Ossa — Alders Quelle. Erfunden 21:16.", session:15, at:"21:16" } ],
+  events: []
+};
+
+/* deterministische Kennungen, damit Screenshots reproduzierbar bleiben */
+var POOL = ["p_a2f1","p_b73d","p_c58e","p_d19a","p_e4b7","p_f062","p_0d3c","p_1e85","p_2af4","p_3b6d"];
+var poolI = 0;
+function mint(){ return poolI < POOL.length ? POOL[poolI++] : "p_"+Math.random().toString(16).slice(2,6); }
+
+/* ═══════════════════════════════════════════════════════════════
+   2 · Helfer
+   ═══════════════════════════════════════════════════════════════ */
+var $ = function(s){ return document.querySelector(s); };
+var prose = $("#prose"), root = document.documentElement;
+var scratch = document.createElement("div");
+
+function textOf(p){ scratch.innerHTML = p.html; return scratch.textContent.replace(/\s+/g," ").trim(); }
+function idx(pid){ for(var i=0;i<state.passages.length;i++){ if(state.passages[i].pid===pid) return i; } return -1; }
+function byPid(pid){ var i=idx(pid); return i<0?null:state.passages[i]; }
+function holdersOf(p){ return p.holders.map(function(h){ return h.who; }); }
+function names(list){
+  var n = list.map(function(w){ return READERS[w].name; });
+  if(!n.length) return "niemand";
+  if(n.length===1) return n[0];
+  return n.slice(0,-1).join(", ") + " und " + n[n.length-1];
+}
+function quote(t){ return "„" + (t.length>132 ? t.slice(0,129)+"…" : t) + "“"; }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function reduced(){
+  return root.getAttribute("data-motion")==="reduced" ||
+    (root.getAttribute("data-motion")!=="full" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+function clockStr(){ var h=Math.floor(state.clock/60)%24, m=state.clock%60; return (h<10?"0":"")+h+":"+(m<10?"0":"")+m; }
+function tick(){ state.clock += 1 + Math.floor(Math.random()*3); $("#clock").textContent = clockStr(); }
+function snapshot(){ return JSON.parse(JSON.stringify({ passages:state.passages, marginalia:state.marginalia, rev:state.rev })); }
+function restore(s){ state.passages = s.passages; state.marginalia = s.marginalia; state.rev = s.rev; }
+function hint(msg){ var el=$("#hintLive"); el.textContent = msg||""; }
+
+/* ═══════════════════════════════════════════════════════════════
+   3 · RENDER
+   ═══════════════════════════════════════════════════════════════ */
+var TAG = { lead:"p", p:"p", h2:"h2", quote:"blockquote" };
+
+function renderProse(newPids){
+  newPids = newPids || [];
+  prose.textContent = "";
+  state.passages.forEach(function(p, i){
+    var row = document.createElement("div");
+    row.className = "row" + (p.pid===state.selected ? " is-sel" : "") + (newPids.indexOf(p.pid)>=0 ? " is-new" : "");
+    row.dataset.pid = p.pid; row.dataset.kind = p.kind;
+
+    var g = document.createElement("div"); g.className = "gutter";
+    var hs = holdersOf(p);
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "handle"; b.dataset.pid = p.pid;
+    b.tabIndex = p.pid===state.selected ? 0 : -1;
+    b.setAttribute("aria-label",
+      "Absatz " + (i+1) + " von " + state.passages.length + ", Kennung " + p.pid +
+      (hs.length ? ", gehalten von " + names(hs) : ", von niemandem gehalten") + ". Auswählen.");
+    b.innerHTML = '<span class="tnum">'+(i+1)+'</span><span class="pid">'+esc(p.pid.replace("p_",""))+'</span>';
+    g.appendChild(b); row.appendChild(g);
+
+    var el = document.createElement(TAG[p.kind]);
+    el.className = "passage"; el.contentEditable = "true"; el.dataset.pid = p.pid;
+    el.innerHTML = p.html;
+    row.appendChild(el);
+
+    var s = document.createElement("div"); s.className = "seals"; s.setAttribute("aria-hidden","true");
+    p.holders.forEach(function(h){
+      var d = document.createElement("span");
+      d.className = "seal " + READERS[h.who].cls + (h.belief===false ? " belief-false" : "");
+      d.title = READERS[h.who].name + " · Sitzung " + h.session + " · von " + h.source + (h.belief===false ? " · Gerücht" : "");
+      d.textContent = READERS[h.who].initial;
+      s.appendChild(d);
+    });
+    if(state.marginalia.some(function(m){ return m.pid===p.pid; })){
+      var mm = document.createElement("span"); mm.className="mark-marg"; mm.textContent="※"; s.appendChild(mm);
+    }
+    row.appendChild(s);
+    prose.appendChild(row);
+  });
+}
+
+function renderStats(){
+  var rev = 0; state.passages.forEach(function(p){ rev += p.holders.length; });
+  $("#byline").textContent = state.passages.length + " Absätze · " + rev + " Enthüllungen an 2 Leser · Fassung r_" + state.rev;
+}
+
+function renderLens(){
+  var p = byPid(state.selected), box = $("#lens");
+  if(!p){ box.innerHTML = '<p class="capt">Kein Absatz gewählt.</p>'; return; }
+  var i = idx(p.pid), up = i>0 ? state.passages[i-1] : null;
+  var h = '<dl><dt>Kennung</dt><dd><code>'+esc(p.pid)+'</code></dd>' +
+          '<dt>Art</dt><dd>'+ (p.kind==="h2"?"Überschrift":p.kind==="quote"?"Zitat":p.kind==="lead"?"Aufschlag":"Absatz") +'</dd>' +
+          '<dt>Position</dt><dd class="tnum">'+(i+1)+' von '+state.passages.length+'</dd>' +
+          '<dt>Fassung</dt><dd class="tnum">r_'+state.rev+'</dd></dl>';
+
+  h += '<h3>Enthüllt an</h3><div class="holder-btns">';
+  ["sera","brannt"].forEach(function(w){
+    var has = holdersOf(p).indexOf(w)>=0;
+    h += '<button type="button" class="hb" data-toggle-holder="'+w+'" aria-pressed="'+has+'">' +
+         '<span class="disc '+READERS[w].disc+'" aria-hidden="true">'+READERS[w].initial+'</span>'+READERS[w].name+'</button>';
+  });
+  h += '</div>';
+  if(p.holders.length){
+    h += '<p class="holder-note">' + p.holders.map(function(x){
+      return READERS[x.who].name+": Sitzung "+x.session+" · von "+x.source+(x.belief===false?" · Gerücht (belief: false)":"");
+    }).join("<br>") + '</p>';
+  } else {
+    h += '<p class="holder-note">Diesen Absatz hält niemand. Er existiert nur im Kanon der Spielleitung.</p>';
+  }
+
+  if(up && up.kind!=="h2" && p.kind!=="h2"){
+    var g = mergeGuard(up, p);
+    h += '<p class="pre'+(g?" bad":"")+'"><b>Vorbedingung · nach oben verschmelzen</b>' +
+      (g ? "würde blockieren — " + names(g.gains.map(function(x){return x.who;}).filter(function(v,k,a){return a.indexOf(v)===k;})) + " bekämen Text, den sie nicht kennen."
+         : "erlaubt — beide Absätze haben dieselbe Leser-Menge (" + (holdersOf(p).length? names(holdersOf(p)) : "niemand") + ").") + '</p>';
+  }
+
+  h += '<div class="acts">' +
+    '<button type="button" class="act" data-act="split"'+(p.kind==="h2"?" disabled":"")+'>Vor dem letzten Satz teilen <kbd>Enter</kbd></button>' +
+    '<button type="button" class="act" data-act="merge"'+((!up||up.kind==="h2"||p.kind==="h2")?" disabled":"")+'>Mit dem Absatz darüber verschmelzen <kbd>⌫</kbd></button>' +
+    '<button type="button" class="act" data-act="marg">Marginalie anlegen <kbd>Strg+Enter</kbd></button>' +
+    '</div><div id="margSlot"></div>';
+  box.innerHTML = h;
+}
+
+function renderApparat(){
+  var ol = $("#apparat");
+  ol.textContent = "";
+  if(!state.events.length){
+    var li = document.createElement("li");
+    li.className = "capt";
+    li.textContent = "Noch keine Strukturänderung in dieser Sitzung.";
+    ol.appendChild(li);
+  }
+  state.events.slice().reverse().forEach(function(ev, n){
+    var li = document.createElement("li");
+    li.className = "ev k-" + ev.kind;
+    li.innerHTML = '<div class="ev-head"><span class="ev-kind">'+esc(ev.label)+'</span><span class="ev-time tnum">'+esc(ev.at)+'</span></div>' +
+                   '<p>'+ev.text+'</p>';
+    if(n===0 && ev.before){
+      var u = document.createElement("button");
+      u.type="button"; u.className="linky"; u.textContent="Rückgängig";
+      u.addEventListener("click", function(){ undoEvent(ev.id); });
+      li.appendChild(u);
+    }
+    ol.appendChild(li);
+  });
+  renderStep();
+}
+
+function renderStep(){
+  var has = function(k){ return state.events.some(function(e){ return e.kind===k; }); };
+  var el = $("#stepChip"), t;
+  if(!has("split")) t = "<b>Schritt 1 von 3.</b> Setze die Einfügemarke in Absatz 4 zwischen die beiden Sätze und drücke Enter — oder nutze „Vor dem letzten Satz teilen“.";
+  else if(!has("blocked")) t = "<b>Schritt 2 von 3.</b> Stelle dich an den Anfang von „Bruder Alder schweigt seit dem Brand.“ und drücke Rückschritt.";
+  else if(!has("merge")) t = "<b>Schritt 3 von 3.</b> Löse den Blocker auf — enthüllen oder zurücknehmen. Beide Wege sind echt.";
+  else t = "<b>Durch.</b> Rückgängig macht jeden Schritt zurück; die Kennungen kehren dabei exakt zurück (H7/H8 im Spike).";
+  el.innerHTML = t;
+}
+
+function renderMarginalia(){
+  var ul = $("#margList"); ul.textContent = "";
+  if(!state.marginalia.length){ ul.innerHTML = '<li class="capt">Keine Marginalie. Strg+Enter auf einem Absatz legt eine an.</li>'; return; }
+  state.marginalia.forEach(function(m){
+    var i = idx(m.pid);
+    var li = document.createElement("li"); li.className = "marg";
+    li.innerHTML = esc(m.text) + '<span class="tnum">zu Absatz ' + (i>=0 ? i+1 : "—") + ' · <code>'+esc(m.pid)+'</code> · Sitzung '+m.session+' · '+esc(m.at)+' · nur Spielleitung</span>';
+    ul.appendChild(li);
+  });
+}
+
+function renderKodex(arriving){
+  arriving = arriving || [];
+  var body = $("#kodexBody"), v = state.viewer, shown = 0;
+  body.textContent = "";
+  state.passages.forEach(function(p){
+    var held = holdersOf(p).indexOf(v)>=0;
+    var ret = p.retracted.filter(function(r){ return r.who===v; })[0];
+    if(!held && !ret) return;
+    shown++;
+    var art = document.createElement("article");
+    art.className = "kd" + (held ? "" : " gone") + (arriving.indexOf(p.pid)>=0 ? " arriving" : "");
+    var cls = p.kind==="h2" ? "kd-text h" : p.kind==="quote" ? "kd-text q" : "kd-text";
+    var h = held ? p.holders.filter(function(x){ return x.who===v; })[0] : null;
+    art.innerHTML = '<p class="'+cls+'">' + (held ? p.html : esc(ret.text)) + '</p>' +
+      '<p class="kd-stamp tnum">' + (held
+        ? (h.group ? "Gruppenwissen · Sitzung " + h.session : "gelernt Sitzung " + h.session + " · von " + esc(h.source))
+        : "zurückgenommen in Sitzung " + ret.session) + '</p>';
+    body.appendChild(art);
+  });
+  if(!shown){ body.innerHTML = '<p class="capt">Dieses Buch ist leer.</p>'; }
+  $("#kodexFoot").textContent = shown + " von " + state.passages.length + " Absätzen · " + READERS[v].name + " · Stand " + clockStr();
+}
+
+function renderAll(newPids, arriving){
+  renderProse(newPids);
+  if(blocker){
+    var node = blockerNode();
+    var row = node && prose.querySelector('.row[data-pid="'+blocker.lo+'"]');
+    if(row) row.parentNode.insertBefore(node, row);
+  }
+  renderStats(); renderLens(); renderApparat(); renderMarginalia(); renderKodex(arriving);
+}
+/* ═══════════════════════════════════════════════════════════════
+   4 · DIE VORBEDINGUNG — mergeGuard.
+   Im Produkt serverseitig, in derselben Familie wie visibility ⊇ audience.
+   Hier: identische Logik, damit der Blockertext beweisbar berechnet ist.
+   ═══════════════════════════════════════════════════════════════ */
+function mergeGuard(up, lo){
+  var hu = holdersOf(up), hl = holdersOf(lo), gains = [];
+  hu.forEach(function(w){ if(hl.indexOf(w)<0) gains.push({ who:w, wouldGain:lo.pid, text:textOf(lo) }); });
+  hl.forEach(function(w){ if(hu.indexOf(w)<0) gains.push({ who:w, wouldGain:up.pid, text:textOf(up) }); });
+  return gains.length ? { blocked:true, gains:gains } : null;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5 · Ereignisse und Rückgängig
+   ═══════════════════════════════════════════════════════════════ */
+var evId = 0;
+function pushEvent(kind, label, text, before){
+  tick();
+  state.events.push({ id:++evId, kind:kind, label:label, text:text, at:clockStr(), before:before });
+}
+function undoEvent(id){
+  for(var i=0;i<state.events.length;i++){
+    if(state.events[i].id===id){
+      restore(state.events[i].before);
+      state.events = state.events.slice(0,i);
+      closeBlocker();
+      if(idx(state.selected)<0) state.selected = state.passages[0].pid;
+      renderAll();
+      hint("Rückgängig — Kennungen und Enthüllungen exakt wiederhergestellt.");
+      var b = document.querySelector('.handle[data-pid="'+state.selected+'"]'); if(b) b.focus();
+      return;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6 · Gesten: Teilen, Verschmelzen, Enthüllen, Zurücknehmen
+   ═══════════════════════════════════════════════════════════════ */
+function syncFromDom(){
+  Array.prototype.forEach.call(prose.querySelectorAll(".passage"), function(el){
+    var p = byPid(el.dataset.pid); if(p) p.html = el.innerHTML;
+  });
+}
+function splitHTML(el, range){
+  var r1 = document.createRange(); r1.setStart(el,0); r1.setEnd(range.endContainer, range.endOffset);
+  var r2 = document.createRange(); r2.setStart(range.endContainer, range.endOffset); r2.setEnd(el, el.childNodes.length);
+  var a = document.createElement("div"); a.appendChild(r1.cloneContents());
+  var b = document.createElement("div"); b.appendChild(r2.cloneContents());
+  return { left:a.innerHTML.replace(/(\s|&nbsp;)+$/,""), right:b.innerHTML.replace(/^(\s|&nbsp;)+/,"") };
+}
+function rangeAtIndex(el, gi){
+  var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false), acc = 0, n;
+  while((n = w.nextNode())){
+    if(acc + n.length >= gi){ var r = document.createRange(); r.setStart(n, gi-acc); r.collapse(true); return r; }
+    acc += n.length;
+  }
+  return null;
+}
+function lastSentenceRange(el){
+  var t = el.textContent, re = /[.!?»“]\s+/g, m, last = null;
+  while((m = re.exec(t))){ last = m; }
+  if(!last) return null;
+  var gi = last.index + last[0].length;
+  if(gi <= 0 || gi >= t.length) return null;
+  return rangeAtIndex(el, gi);
+}
+
+function doSplit(pid, range){
+  closeBlocker(); syncFromDom();
+  var i = idx(pid), p = state.passages[i];
+  if(!p || p.kind==="h2"){ hint("Überschriften sind ein Absatz und werden nicht geteilt."); return; }
+  var el = prose.querySelector('.passage[data-pid="'+pid+'"]');
+  if(!range) range = lastSentenceRange(el);
+  if(!range){ hint("Kein Satzende zum Teilen gefunden."); return; }
+
+  var before = snapshot();
+  var parts = splitHTML(el, range);
+  var a = mint(), b = mint();
+  var mk = function(html){
+    return { pid: html===parts.left ? a : b, kind: p.kind==="lead" ? "lead" : p.kind, html: html,
+             holders: JSON.parse(JSON.stringify(p.holders)), retracted: JSON.parse(JSON.stringify(p.retracted)) };
+  };
+  var top = mk(parts.left), bot = mk(parts.right);
+  bot.pid = b; bot.kind = p.kind==="lead" ? "p" : p.kind;
+  state.passages.splice(i, 1, top, bot);
+  state.marginalia.forEach(function(m){ if(m.pid===pid) m.pid = a; });
+  state.rev++;
+  state.selected = b;
+
+  var hs = holdersOf(p);
+  pushEvent("split","Teilung",
+    'Absatz geteilt · <code>'+esc(pid)+'</code> stillgelegt → <code>'+esc(a)+'</code> + <code>'+esc(b)+'</code> · ' +
+    (hs.length ? hs.length+' Enthüllung'+(hs.length>1?'en':'')+' wandern mit: <b>'+esc(names(hs))+'</b> — beide Hälften'
+               : 'keine Enthüllung betroffen'), before);
+
+  renderAll([a,b]);
+  focusBlock(b, "start");
+  hint("");
+}
+
+function commitMerge(upPid, loPid, before, extraNote){
+  var i = idx(upPid), up = state.passages[i], lo = state.passages[i+1];
+  var pid = mint();
+  var merged = {
+    pid: pid, kind: up.kind, html: up.html + " " + lo.html,
+    holders: JSON.parse(JSON.stringify(up.holders)),
+    retracted: dedupeRetracted(up.retracted.concat(lo.retracted))
+  };
+  state.passages.splice(i, 2, merged);
+  state.marginalia.forEach(function(m){ if(m.pid===upPid || m.pid===loPid) m.pid = pid; });
+  state.rev++; state.selected = pid;
+  var hs = holdersOf(merged);
+  pushEvent("merge","Verschmelzung",
+    'Absätze verschmolzen · <code>'+esc(upPid)+'</code> + <code>'+esc(loPid)+'</code> → <code>'+esc(pid)+'</code> · ' +
+    (hs.length ? 'Leser unverändert: <b>'+esc(names(hs))+'</b>' : 'niemand hält den Absatz') +
+    (extraNote ? ' · ' + extraNote : ''), before);
+  renderAll([pid]);
+  focusBlock(pid, "start");
+}
+function dedupeRetracted(list){
+  var seen = {}, out = [];
+  list.forEach(function(r){ var k = r.who+"|"+r.text; if(!seen[k]){ seen[k]=1; out.push(r); } });
+  return out;
+}
+
+function tryMerge(loPid){
+  closeBlocker(); syncFromDom();
+  var i = idx(loPid);
+  if(i <= 0){ hint("Kein Absatz darüber."); return; }
+  var up = state.passages[i-1], lo = state.passages[i];
+  if(up.kind==="h2" || lo.kind==="h2"){ hint("Eine Überschrift wird nicht verschmolzen."); return; }
+  var g = mergeGuard(up, lo);
+  if(g){ openBlocker(up.pid, lo.pid); return; }
+  commitMerge(up.pid, lo.pid, snapshot());
+  hint("");
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7 · Der Blocker
+   ═══════════════════════════════════════════════════════════════ */
+var blocker = null;   /* {up, lo} */
+
+function openBlocker(upPid, loPid){
+  blocker = { up:upPid, lo:loPid };
+  state.selected = loPid;
+  var before = snapshot();
+  var up = byPid(upPid), lo = byPid(loPid), g = mergeGuard(up, lo);
+  var whos = g.gains.map(function(x){ return x.who; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+  pushEvent("blocked","Abgelehnt",
+    'Verschmelzen abgelehnt · <code>'+esc(upPid)+'</code> ← <code>'+esc(loPid)+'</code> · ' +
+    '<b>'+esc(names(whos))+'</b> hätten '+quote(textOf(byPid(g.gains[0].wouldGain)))+' bekommen', before);
+  renderAll();
+  var row = prose.querySelector('.row[data-pid="'+loPid+'"]');
+  if(row){ row.classList.add("is-refused"); setTimeout(function(){ row.classList.remove("is-refused"); }, 260); }
+  var btn = prose.querySelector(".blocker .b-primary");
+  if(btn) btn.focus();
+}
+function closeBlocker(){ blocker = null; }
+
+function blockerNode(){
+  var up = byPid(blocker.up), lo = byPid(blocker.lo);
+  if(!up || !lo){ blocker = null; return null; }
+  var g = mergeGuard(up, lo);
+  if(!g){ blocker = null; return null; }
+  var hu = holdersOf(up), hl = holdersOf(lo);
+  var whos = g.gains.map(function(x){ return x.who; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+  var dat = whos.length===2 ? "beiden" : names(whos);
+  var s1 = hu.length ? names(hu) + (hu.length>1 ? " kennen" : " kennt") + " den oberen Absatz." : "Den oberen Absatz kennt niemand.";
+  var s2 = hl.length ? names(hl) + (hl.length>1 ? " kennen" : " kennt") + " den unteren Absatz." : "Den unteren kennt niemand.";
+  var gained = textOf(byPid(g.gains[0].wouldGain));
+
+  var d = document.createElement("div");
+  d.className = "blocker"; d.setAttribute("role","alert"); d.contentEditable = "false";
+  var rows = g.gains.map(function(x){
+    return '<tr><td><span class="disc '+READERS[x.who].disc+'" aria-hidden="true">'+READERS[x.who].initial+'</span> '+
+           esc(READERS[x.who].name)+'</td><td><code>'+esc(x.wouldGain)+'</code></td><td>'+esc(quote(x.text))+'</td></tr>';
+  }).join("");
+  d.innerHTML =
+    '<h3><span class="obelus" aria-hidden="true">†</span>Verschmelzen abgelehnt.</h3>' +
+    '<p>'+esc(s1)+' '+esc(s2)+' Zusammenführen gäbe '+esc(dat)+': '+esc(quote(gained))+'</p>' +
+    '<div class="scroll-x"><table class="gains"><caption class="vh">Wer bekäme was</caption><thead><tr>' +
+    '<th scope="col">Leser</th><th scope="col">Absatz</th><th scope="col">Text</th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
+    '<div class="blocker-actions">' +
+      '<button type="button" class="b-primary" data-fix="reveal">'+esc(dat==="beiden"?"Beiden zuerst enthüllen":"Zuerst enthüllen")+'</button>' +
+      '<button type="button" class="b-second" data-fix="retract">Verschmelzen und Enthüllungen zurückziehen</button>' +
+      '<button type="button" class="b-third" data-fix="cancel">Abbrechen</button>' +
+    '</div>' +
+    '<p class="blocker-meta">mergeGuard(<code>'+esc(up.pid)+'</code>, <code>'+esc(lo.pid)+'</code>) · serverseitige Vorbedingung · der Klient darf sie zeigen, nicht entscheiden</p>';
+  return d;
+}
+
+function fixReveal(){
+  var up = byPid(blocker.up), lo = byPid(blocker.lo), g = mergeGuard(up, lo);
+  var before = snapshot(), upPid = up.pid, loPid = lo.pid, touched = [];
+  g.gains.forEach(function(x){
+    var t = byPid(x.wouldGain);
+    if(holdersOf(t).indexOf(x.who) < 0){
+      t.holders.push({ who:x.who, session:15, source:"Kaya", belief:true, via:"Blocker" });
+      if(touched.indexOf(x.who) < 0) touched.push(x.who);
+    }
+  });
+  closeBlocker();
+  pushEvent("reveal","Enthüllung",
+    'Enthüllt vor dem Verschmelzen · <code>'+esc(loPid)+'</code> → <b>'+esc(names(touched))+'</b> · Sitzung 15, von Kaya', before);
+  renderAll([], [loPid]);
+  hint("Erst enthüllt, dann verschmolzen — die Reihenfolge ist der ganze Unterschied.");
+  var go = function(){ commitMerge(upPid, loPid, snapshot(), 'nach Enthüllung an <b>'+esc(names(touched))+'</b>'); };
+  if(reduced()) go(); else setTimeout(go, 820);
+}
+
+function fixRetract(){
+  var up = byPid(blocker.up), lo = byPid(blocker.lo), g = mergeGuard(up, lo);
+  var before = snapshot(), upPid = up.pid, loPid = lo.pid, touched = [];
+  g.gains.forEach(function(x){
+    var keeper = x.wouldGain === up.pid ? lo : up;   /* der Absatz, den diese Person hält */
+    var t = textOf(keeper);
+    keeper.holders = keeper.holders.filter(function(h){
+      if(h.who !== x.who) return true;
+      keeper.retracted.push({ who:h.who, session:15, text:t });
+      if(touched.indexOf(h.who) < 0) touched.push(h.who);
+      return false;
+    });
+  });
+  closeBlocker();
+  pushEvent("retract","Rücknahme",
+    'Enthüllungen zurückgezogen · <b>'+esc(names(touched))+'</b> · der Absatz bleibt in ihrem Kodex stehen, durchgestrichen, mit Sitzungsnummer', before);
+  renderAll();
+  hint("Rücknahme löscht nichts — sie streicht durch. Ein Buch, aus dem etwas verschwindet, ist ein falsches Buch.");
+  var go = function(){ commitMerge(upPid, loPid, snapshot(), "nach Rücknahme"); };
+  if(reduced()) go(); else setTimeout(go, 620);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8 · Auswahl, Fokus, Tastatur
+   ═══════════════════════════════════════════════════════════════ */
+function focusBlock(pid, where){
+  var el = prose.querySelector('.passage[data-pid="'+pid+'"]');
+  if(!el) return;
+  el.focus();
+  try{
+    var r = document.createRange(); r.selectNodeContents(el); r.collapse(where !== "end");
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }catch(err){ /* Auswahl ist Kür, Fokus ist Pflicht */ }
+}
+function selectPid(pid){
+  if(state.selected === pid) return;
+  state.selected = pid;
+  Array.prototype.forEach.call(prose.querySelectorAll(".row"), function(r){
+    r.classList.toggle("is-sel", r.dataset.pid === pid);
+  });
+  Array.prototype.forEach.call(prose.querySelectorAll(".handle"), function(h){
+    h.tabIndex = h.dataset.pid === pid ? 0 : -1;
+  });
+  renderLens();
+}
+function caretAt(el, where){
+  var s = window.getSelection();
+  if(!s.rangeCount) return false;
+  var r = s.getRangeAt(0);
+  if(!r.collapsed) return false;
+  var t = document.createRange();
+  if(where === "start"){ t.setStart(el,0); t.setEnd(r.startContainer, r.startOffset); }
+  else { t.setStart(r.endContainer, r.endOffset); t.setEnd(el, el.childNodes.length); }
+  return t.toString().length === 0;
+}
+function openMarginalie(pid){
+  selectPid(pid);
+  var slot = document.getElementById("margSlot");
+  if(!slot) return;
+  slot.innerHTML = '<label class="vh" for="margInput">Marginalie zu diesem Absatz</label>' +
+                   '<input id="margInput" type="text" autocomplete="off" placeholder="Eine Zeile — Enter legt sie an, Esc bricht ab">';
+  var inp = document.getElementById("margInput");
+  inp.focus();
+  inp.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){
+      e.preventDefault();
+      var v = inp.value.trim(); if(!v) return;
+      var before = snapshot();
+      tick();
+      state.marginalia.push({ pid:pid, text:v, session:15, at:clockStr() });
+      pushEvent("margin","Marginalie",
+        'Marginalie zu <code>'+esc(pid)+'</code>: '+esc(quote(v))+' · nur Spielleitung · <code>block_type: margin</code>, keine neue Tabelle', before);
+      renderAll();
+      hint("Marginalie angelegt, ohne den Absatz zu verlassen.");
+      var b = document.querySelector('.handle[data-pid="'+pid+'"]'); if(b) b.focus();
+    } else if(e.key === "Escape"){ e.preventDefault(); slot.innerHTML = ""; focusBlock(pid,"start"); }
+  });
+}
+/* ═══════════════════════════════════════════════════════════════
+   9 · Verdrahtung
+   ═══════════════════════════════════════════════════════════════ */
+prose.addEventListener("keydown", function(e){
+  var el = e.target.closest && e.target.closest(".passage");
+
+  if(!el && e.target.classList && e.target.classList.contains("handle")){
+    var pid = e.target.dataset.pid, i = idx(pid), n = null;
+    if(e.key === "ArrowDown") n = state.passages[i+1];
+    else if(e.key === "ArrowUp") n = state.passages[i-1];
+    else if(e.key === "Home") n = state.passages[0];
+    else if(e.key === "End") n = state.passages[state.passages.length-1];
+    else if(e.key === "Enter" || e.key === " "){ e.preventDefault(); selectPid(pid); focusBlock(pid,"start"); return; }
+    if(n){ e.preventDefault(); selectPid(n.pid); var b = prose.querySelector('.handle[data-pid="'+n.pid+'"]'); if(b) b.focus(); }
+    return;
+  }
+  if(!el) return;
+  var pid2 = el.dataset.pid;
+
+  if(e.key === "Enter" && e.ctrlKey){ e.preventDefault(); openMarginalie(pid2); return; }
+  if(e.key === "Enter" && !e.shiftKey && !e.altKey){
+    e.preventDefault();
+    var s = window.getSelection();
+    doSplit(pid2, s.rangeCount ? s.getRangeAt(0) : null);
+    return;
+  }
+  if(e.key === "Backspace" && caretAt(el,"start")){ e.preventDefault(); tryMerge(pid2); return; }
+  if(e.key === "Delete" && caretAt(el,"end")){
+    e.preventDefault();
+    var nx = state.passages[idx(pid2)+1];
+    if(nx) tryMerge(nx.pid); else hint("Kein Absatz danach.");
+    return;
+  }
+  if(e.key === "ArrowUp" && caretAt(el,"start")){
+    var pv = state.passages[idx(pid2)-1];
+    if(pv){ e.preventDefault(); selectPid(pv.pid); focusBlock(pv.pid,"end"); }
+    return;
+  }
+  if(e.key === "ArrowDown" && caretAt(el,"end")){
+    var nn = state.passages[idx(pid2)+1];
+    if(nn){ e.preventDefault(); selectPid(nn.pid); focusBlock(nn.pid,"start"); }
+    return;
+  }
+});
+
+/* Einfügen ist reiner Text — die Regel des Kandidaten, nicht der Sanitizer. */
+prose.addEventListener("paste", function(e){
+  if(!(e.target.closest && e.target.closest(".passage"))) return;
+  e.preventDefault();
+  var t = (e.clipboardData || window.clipboardData).getData("text/plain").replace(/\s+/g," ");
+  document.execCommand("insertText", false, t);
+  hint("Als reiner Text eingefügt — fremde Kennungen können hier nicht eintreffen.");
+});
+
+prose.addEventListener("input", function(e){
+  var el = e.target.closest && e.target.closest(".passage");
+  if(!el) return;
+  var p = byPid(el.dataset.pid); if(p) p.html = el.innerHTML;
+});
+
+prose.addEventListener("focusin", function(e){
+  var t = e.target;
+  if(t.dataset && t.dataset.pid) selectPid(t.dataset.pid);
+});
+prose.addEventListener("click", function(e){
+  var h = e.target.closest && e.target.closest(".handle");
+  if(h){ selectPid(h.dataset.pid); return; }
+  var p = e.target.closest && e.target.closest(".passage");
+  if(p) selectPid(p.dataset.pid);
+});
+prose.addEventListener("click", function(e){
+  var f = e.target.closest && e.target.closest("[data-fix]");
+  if(!f || !blocker) return;
+  var k = f.dataset.fix;
+  if(k === "reveal") fixReveal();
+  else if(k === "retract") fixRetract();
+  else { var lo = blocker.lo; closeBlocker(); renderAll(); hint("Abgebrochen — nichts verschmolzen, nichts enthüllt."); focusBlock(lo,"start"); }
+});
+prose.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && blocker){
+    var lo = blocker.lo; closeBlocker(); renderAll();
+    hint("Abgebrochen — nichts verschmolzen, nichts enthüllt."); focusBlock(lo,"start");
+  }
+});
+prose.addEventListener("click", function(e){
+  var a = e.target.closest && e.target.closest("a.wl");
+  if(a){ e.preventDefault(); hint(a.classList.contains("rot")
+    ? "Rotlink: der Eintrag wird beim ersten Speichern angelegt — in diesem Spike nicht verdrahtet."
+    : "Sprungziel im Kodex — in diesem Spike nicht verdrahtet."); }
+});
+
+/* Absatz-Apparat: Leser umschalten, Aktionen */
+$("#lens").addEventListener("click", function(e){
+  var t = e.target.closest && e.target.closest("[data-toggle-holder]");
+  if(t){
+    var who = t.dataset.toggleHolder, p = byPid(state.selected), before = snapshot();
+    if(holdersOf(p).indexOf(who) >= 0){
+      var txt = textOf(p);
+      p.holders = p.holders.filter(function(h){ return h.who !== who; });
+      p.retracted.push({ who:who, session:15, text:txt });
+      pushEvent("retract","Rücknahme",
+        'Zurückgenommen · <code>'+esc(p.pid)+'</code> · <b>'+esc(READERS[who].name)+'</b> · bleibt durchgestrichen im Kodex stehen', before);
+      renderAll();
+    } else {
+      p.holders.push({ who:who, session:15, source:"Kaya", belief:true });
+      pushEvent("reveal","Enthüllung",
+        'Enthüllt · <code>'+esc(p.pid)+'</code> → <b>'+esc(READERS[who].name)+'</b> · Sitzung 15, von Kaya', before);
+      renderAll([], [p.pid]);
+    }
+    hint("Die Vorbedingung rechnet neu — probier jetzt „nach oben verschmelzen“.");
+    return;
+  }
+  var a = e.target.closest && e.target.closest("[data-act]");
+  if(!a) return;
+  if(a.dataset.act === "split") doSplit(state.selected, null);
+  else if(a.dataset.act === "merge") tryMerge(state.selected);
+  else if(a.dataset.act === "marg") openMarginalie(state.selected);
+});
+
+/* Gerät auf dem Tisch */
+document.addEventListener("click", function(e){
+  var r = e.target.closest && e.target.closest("[data-reader]");
+  if(!r) return;
+  state.viewer = r.dataset.reader;
+  Array.prototype.forEach.call(document.querySelectorAll("[data-reader]"), function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.reader === state.viewer));
+  });
+  renderKodex();
+});
+
+/* Darstellung */
+document.addEventListener("click", function(e){
+  var t = e.target.closest && e.target.closest("[data-theme-set]");
+  if(!t) return;
+  var v = t.dataset.themeSet;
+  if(v === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", v);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-theme-set]"), function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.themeSet === v));
+  });
+});
+document.addEventListener("click", function(e){
+  var t = e.target.closest && e.target.closest("[data-motion-set]");
+  if(!t) return;
+  var v = t.dataset.motionSet;
+  if(v === "auto") root.removeAttribute("data-motion"); else root.setAttribute("data-motion", v);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-motion-set]"), function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.motionSet === v));
+  });
+});
+
+/* Kodex-Rail filtern */
+$("#entrySearch").addEventListener("input", function(){
+  var q = this.value.trim().toLowerCase(), n = 0;
+  Array.prototype.forEach.call(document.querySelectorAll("#entryList li"), function(li){
+    var hit = li.textContent.toLowerCase().indexOf(q) >= 0;
+    li.hidden = !hit; if(hit) n++;
+  });
+  $("#entryCount").textContent = n + " sichtbar";
+});
+
+/* Ehrlichkeitsleiste */
+$("#honestyBtn").addEventListener("click", function(){
+  var open = this.getAttribute("aria-expanded") === "true";
+  this.setAttribute("aria-expanded", String(!open));
+  $("#honestyList").hidden = open;
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   10 · Start
+   ═══════════════════════════════════════════════════════════════ */
+renderAll();
+hint("");
+})();
+</script>

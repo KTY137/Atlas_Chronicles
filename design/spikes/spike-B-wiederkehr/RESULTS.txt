@@ -1,0 +1,54 @@
+
+=== SPIKE-B-WIEDERKEHR — die Wiederkehr, built and attacked (round 5, candidate B) ===
+
+PASS  R1   registration: a passkey registers against a nullable-email gast user_id        | cred=cr_11cAT… platform_role=gast
+PASS  R2   assertion: Tuesday, a different tab, the same device — identity resolves       | user_id=u_sera
+PASS  R3   der Ausweis lists exactly what carries her access                              | 1 credential: passkey „Pixel 8"
+PASS  A1   replay: the same assertion posted twice                                        | rejected: challenge-replayed
+PASS  A2   phishing: a valid signature from a different origin                            | rejected: clientdata-origin
+PASS  A3   RP-ID substitution: signed for the GM's LAN host instead of ours               | rejected: rpid-mismatch
+PASS  A4   cross-origin iframe assertion (crossOrigin:true)                               | rejected: clientdata-crossorigin
+PASS  A5   cloned authenticator: signCount rolls back                                     | rejected: signcount-rollback
+PASS  A6   a revoked device still holding a valid key                                     | rejected: credential-unknown-or-revoked
+PASS  A7   another player revoking someone else's device                                  | rejected: credential-unknown-or-revoked
+PASS  A8   a stale challenge (>TTL) with a perfect signature                              | rejected: challenge-expired
+PASS  A9   registration ceremony replayed as an assertion                                 | rejected: challenge-wrong-purpose
+PASS  K1   lost phone → GM mints a Kopplungscode → new device, SAME user_id               | user_id preserved; her open Vollmacht v_ZTxI1RNg still resolves as a door
+PASS  K2   a Kopplungscode used twice                                                     | rejected: kopplung-used
+PASS  K3   a Kopplungscode redeemed in another campaign                                   | rejected: kopplung-wrong-scope
+PASS  K4   a Kopplungscode after its 10 minutes                                           | rejected: kopplung-expired
+PASS  K5   a Kopplungscode the GM revoked before it was used                              | rejected: kopplung-revoked
+PASS  K6   every recovery step is in the append-only audit log                            | kopplung.minted, kopplung.redeemed, kopplung.minted, kopplung.redeemed, kopplung.minted, kopplung.minted, kopplung.revoked
+PASS  K7   guessing space of a 12-char code inside its 10-minute window                   | 72 bits; at 100 guesses/s a 600 s window covers 2^-56 of it
+PASS  C1   authenticator-less browser: HttpOnly/Secure/SameSite=Strict, never a URL       | HttpOnly; Secure; SameSite=Strict; Path=/
+PASS  C2   the cookie resolves to the same identity a passkey would                       | user_id=u_sera
+PASS  C3   a forged cookie with a tampered credential id                                  | rejected: cookie-bad-mac
+PASS  C4   a cookie whose credential the player revoked from der Ausweis                  | rejected: credential-unknown-or-revoked
+PASS  D1   die Nachlese: a Vollmacht may only point at a passage that already exists      | a freshly typed line is unrepresentable here: freigabe-must-preexist
+PASS  D2   der Zwillingsbeweis (door privacy): non-holder sees byte-identical red link    | holder=tuer · table-mate={"kind":"roter-link"} === stranger-with-no-campaign
+PASS  D3   reopening a pending door never re-rolls (no seed grinding by reload)           | same Wurf w_lqi8XkTN, same seed, ergebnis 4
+PASS  D4   confirm is idempotent under 200 racing calls: exactly one Revelation           | minted=1, idempotent replies=199, Revelations for c_sera:p_0412 = 1
+PASS  D5   THE REVOCATION RACE (handed to Athena, unattacked for a round): revoke between roll and confirm | no mint; the compare-and-set refused with "vollmacht-not-open" (404, not 403)
+PASS  D6   the reverse race: confirm lands first, the later revoke does not un-mint       | status stays "eingeloest"; the paragraph Sera already read does not disappear
+PASS  D7   window lapse: an abandoned roll returns the Vollmacht unspent, and the stale confirm 404s | stale confirm → "wurf-window-lapsed"; Vollmacht still offen; the next visit rolls fresh (w_Y9yOJw-2)
+PASS  D8   a non-holder at the same table firing the door                                 | refused as "not-holder", mapped to 404 like every other Gone
+PASS  D9   der Zugangsvorfall: a locked-out holder is logged, so W1 can exclude her       | 1 Zugangsvorfall on v_VEUAIDXZ — the expiry is attributable to lockout, not disengagement
+PASS  D10  Nachrechnen replays the Tuesday roll from the frozen seed                      | byte-identical against paket_pin kern@1.0.0
+PASS  D11  every rejection above is the same shape: one error class, mapped to 404        | one class (Gone) for unknown / not-yours / expired / revoked — no 403 anywhere
+PASS  N1   passkey eligibility · hosted room                                              | https://tafel.example → ok
+PASS  N2   passkey eligibility · Plex-pattern DNS + cert                                  | https://kaya-a1b2c3.pnp.direct → ok
+PASS  N3   passkey eligibility · LAN IP, plain http — the default self-host               | http://192.168.1.44:30000 → insecure-context
+PASS  N4   passkey eligibility · LAN IP with a self-signed cert                           | https://192.168.1.44:30000 → rp-id-cannot-be-an-ip
+PASS  N5   passkey eligibility · mDNS name, plain http                                    | http://kaya-laptop.local:30000 → insecure-context
+PASS  N6   passkey eligibility · the GM's own machine                                     | http://localhost:30000 → ok
+PASS  P4   404 timing spread across unknown / revoked / not-yours (median, µs)            | unknown 8.10 · revoked 8.80 · not-yours 8.80 · spread 0.70 µs
+
+--- price ---
+      assertion verify (P-256 ECDSA, full ceremony)                | 0.3728 ms
+      cookie-fallback verify (HMAC-SHA256)                         | 0.0872 ms
+      openDoor → confirmMint (full Tuesday round trip, in-process) | 0.0154 ms
+      wiederkehr.mjs, non-comment non-blank lines                  | 273 SLOC
+      external dependencies                                        | 0 (node:crypto only)
+      new tables                                                   | Credentials, Kopplungscode, Zugangsvorfall (3)
+
+41/41 passing.

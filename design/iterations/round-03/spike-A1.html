@@ -1,0 +1,2079 @@
+<title>Bruder Alder · Der Konvent — Aldenfall</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   SPIKE A1 — „Sie hat das geschrieben. Und er darf es nicht lesen."
+   Produktkandidat A · Der Konvent · Runde 3 · Sitz 1 (Der Flex)
+   Skin: RELIC · Atmosphäre: Werkstoff | Klar · alles über Tokens.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Schrift ─────────────────────────────────────────────────────────── */
+  --font-serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+
+  --fs-micro: 0.6875rem;
+  --fs-small: 0.78125rem;
+  --fs-ui:    0.875rem;
+  --fs-body:  1.0625rem;
+  --fs-lead:  1.1875rem;
+  --fs-h2:    1.0625rem;
+  --fs-h1:    2.375rem;
+
+  --lh-body: 1.68;
+  --lh-ui:   1.45;
+  --track-label: 0.09em;
+
+  /* ── Fläche & Tinte (Relic, hell: Pergament) ──────────────────────────── */
+  --paper-0: #e9e0cf;
+  --paper-1: #faf5e9;
+  --paper-2: #f1e9d9;
+  --paper-3: #e5dbc6;
+  --paper-sunk: #ded2ba;
+
+  --ink-0: #1f1a13;
+  --ink-1: #463d2f;
+  --ink-2: #6f6250;
+  --ink-3: #8d8069;
+
+  --line-0: rgba(60, 44, 20, 0.22);
+  --line-1: rgba(60, 44, 20, 0.12);
+  --line-2: rgba(60, 44, 20, 0.06);
+
+  --accent:      #8b3a20;
+  --accent-ink:  #6f2d18;
+  --accent-soft: rgba(139, 58, 32, 0.10);
+  --accent-line: rgba(139, 58, 32, 0.34);
+  --gold:        #8a6d24;
+  --gold-soft:   rgba(138, 109, 36, 0.14);
+  --live:        #2f6b46;
+  --live-soft:   rgba(47, 107, 70, 0.14);
+
+  --focus: #14507d;
+  --focus-halo: rgba(20, 80, 125, 0.22);
+
+  /* ── Autorenfarben (nie alleiniger Träger von Bedeutung) ──────────────── */
+  --a-kaya:   #33455e;
+  --a-sera:   #8e2f39;
+  --a-brannt: #7c5a1c;
+  --a-ossa:   #6b6459;
+
+  /* ── Radien, Schatten, Maße ───────────────────────────────────────────── */
+  --r-1: 3px;
+  --r-2: 6px;
+  --r-3: 11px;
+  --r-pill: 999px;
+
+  --sh-1: 0 1px 0 rgba(255, 252, 245, 0.55) inset, 0 1px 2px rgba(48, 33, 12, 0.10);
+  --sh-2: 0 1px 0 rgba(255, 252, 245, 0.5) inset, 0 2px 6px rgba(48, 33, 12, 0.10), 0 10px 30px -14px rgba(48, 33, 12, 0.34);
+  --sh-stage: 0 1px 0 rgba(255, 253, 246, 0.7) inset, 0 1px 3px rgba(45, 30, 10, 0.10), 0 24px 60px -30px rgba(45, 30, 10, 0.55);
+  --sh-lift: 0 2px 4px rgba(48, 33, 12, 0.12), 0 18px 44px -18px rgba(48, 33, 12, 0.5);
+
+  --pad-rail: 13px;
+  --gap: 18px;
+  --w-mod: 60px;
+  --w-rand: 284px;
+  --w-lens: 264px;
+  --w-app: 1760px;
+
+  /* ── Bewegung ─────────────────────────────────────────────────────────── */
+  --t-response: 140ms;
+  --t-state: 280ms;
+  --t-transition: 820ms;
+  --ease: cubic-bezier(0.2, 0.72, 0.18, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Werkstoff (wird von Atmosphäre „Klar" abgeschaltet) ──────────────── */
+  --grain-opacity: 0.5;
+  --vignette: 0.55;
+  --ornament: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper-0: #100e0b;
+    --paper-1: #1b1813;
+    --paper-2: #16130f;
+    --paper-3: #221e18;
+    --paper-sunk: #0d0b09;
+
+    --ink-0: #efe6d4;
+    --ink-1: #c9bda6;
+    --ink-2: #9a8e79;
+    --ink-3: #7c7161;
+
+    --line-0: rgba(232, 216, 184, 0.18);
+    --line-1: rgba(232, 216, 184, 0.10);
+    --line-2: rgba(232, 216, 184, 0.05);
+
+    --accent:      #d98254;
+    --accent-ink:  #e79a6d;
+    --accent-soft: rgba(217, 130, 84, 0.13);
+    --accent-line: rgba(217, 130, 84, 0.38);
+    --gold:        #d3ac57;
+    --gold-soft:   rgba(211, 172, 87, 0.13);
+    --live:        #6fbf90;
+    --live-soft:   rgba(111, 191, 144, 0.14);
+
+    --focus: #7cc0f0;
+    --focus-halo: rgba(124, 192, 240, 0.26);
+
+    --a-kaya:   #8ea6c8;
+    --a-sera:   #d98a90;
+    --a-brannt: #d3ac57;
+    --a-ossa:   #a49a8b;
+
+    --sh-1: 0 1px 0 rgba(255, 240, 214, 0.06) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+    --sh-2: 0 1px 0 rgba(255, 240, 214, 0.07) inset, 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 34px -16px rgba(0, 0, 0, 0.8);
+    --sh-stage: 0 1px 0 rgba(255, 240, 214, 0.08) inset, 0 2px 6px rgba(0, 0, 0, 0.5), 0 30px 70px -34px rgba(0, 0, 0, 0.95);
+    --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.5), 0 22px 50px -20px rgba(0, 0, 0, 0.9);
+
+    --grain-opacity: 0.34;
+    --vignette: 0.78;
+  }
+}
+
+/* Attribut-Overrides schlagen die Media Query (höhere Spezifität, und danach notiert) */
+:root[data-theme="light"] {
+  --paper-0: #e9e0cf; --paper-1: #faf5e9; --paper-2: #f1e9d9; --paper-3: #e5dbc6; --paper-sunk: #ded2ba;
+  --ink-0: #1f1a13; --ink-1: #463d2f; --ink-2: #6f6250; --ink-3: #8d8069;
+  --line-0: rgba(60,44,20,0.22); --line-1: rgba(60,44,20,0.12); --line-2: rgba(60,44,20,0.06);
+  --accent: #8b3a20; --accent-ink: #6f2d18; --accent-soft: rgba(139,58,32,0.10); --accent-line: rgba(139,58,32,0.34);
+  --gold: #8a6d24; --gold-soft: rgba(138,109,36,0.14); --live: #2f6b46; --live-soft: rgba(47,107,70,0.14);
+  --focus: #14507d; --focus-halo: rgba(20,80,125,0.22);
+  --a-kaya: #33455e; --a-sera: #8e2f39; --a-brannt: #7c5a1c; --a-ossa: #6b6459;
+  --sh-1: 0 1px 0 rgba(255,252,245,0.55) inset, 0 1px 2px rgba(48,33,12,0.10);
+  --sh-2: 0 1px 0 rgba(255,252,245,0.5) inset, 0 2px 6px rgba(48,33,12,0.10), 0 10px 30px -14px rgba(48,33,12,0.34);
+  --sh-stage: 0 1px 0 rgba(255,253,246,0.7) inset, 0 1px 3px rgba(45,30,10,0.10), 0 24px 60px -30px rgba(45,30,10,0.55);
+  --sh-lift: 0 2px 4px rgba(48,33,12,0.12), 0 18px 44px -18px rgba(48,33,12,0.5);
+  --grain-opacity: 0.5; --vignette: 0.55;
+}
+
+:root[data-theme="dark"] {
+  --paper-0: #100e0b; --paper-1: #1b1813; --paper-2: #16130f; --paper-3: #221e18; --paper-sunk: #0d0b09;
+  --ink-0: #efe6d4; --ink-1: #c9bda6; --ink-2: #9a8e79; --ink-3: #7c7161;
+  --line-0: rgba(232,216,184,0.18); --line-1: rgba(232,216,184,0.10); --line-2: rgba(232,216,184,0.05);
+  --accent: #d98254; --accent-ink: #e79a6d; --accent-soft: rgba(217,130,84,0.13); --accent-line: rgba(217,130,84,0.38);
+  --gold: #d3ac57; --gold-soft: rgba(211,172,87,0.13); --live: #6fbf90; --live-soft: rgba(111,191,144,0.14);
+  --focus: #7cc0f0; --focus-halo: rgba(124,192,240,0.26);
+  --a-kaya: #8ea6c8; --a-sera: #d98a90; --a-brannt: #d3ac57; --a-ossa: #a49a8b;
+  --sh-1: 0 1px 0 rgba(255,240,214,0.06) inset, 0 1px 2px rgba(0,0,0,0.5);
+  --sh-2: 0 1px 0 rgba(255,240,214,0.07) inset, 0 2px 6px rgba(0,0,0,0.45), 0 12px 34px -16px rgba(0,0,0,0.8);
+  --sh-stage: 0 1px 0 rgba(255,240,214,0.08) inset, 0 2px 6px rgba(0,0,0,0.5), 0 30px 70px -34px rgba(0,0,0,0.95);
+  --sh-lift: 0 2px 6px rgba(0,0,0,0.5), 0 22px 50px -20px rgba(0,0,0,0.9);
+  --grain-opacity: 0.34; --vignette: 0.78;
+}
+
+/* Atmosphäre „Klar": Ornament, Korn und Vignette aus — die Software muss ohne Kunst exzellent sein */
+:root[data-atmo="klar"] {
+  --grain-opacity: 0;
+  --vignette: 0;
+  --ornament: 0;
+  --sh-stage: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 10px -6px rgba(0, 0, 0, 0.22);
+  --sh-2: 0 1px 2px rgba(0, 0, 0, 0.07);
+  --sh-1: none;
+  --sh-lift: 0 4px 18px -8px rgba(0, 0, 0, 0.4);
+}
+
+/* ══ Grundlagen ═════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+.chr {
+  font-family: var(--font-sans);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-ui);
+  color: var(--ink-1);
+  background: var(--paper-0);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Kerzenlicht + Korn + Vignette — reine CSS-/SVG-Materialität, keine externen Dateien */
+.chr::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(88% 62% at 16% -6%, color-mix(in oklab, var(--gold) 16%, transparent), transparent 62%),
+    radial-gradient(70% 54% at 92% 4%, color-mix(in oklab, var(--accent) 11%, transparent), transparent 66%),
+    radial-gradient(120% 96% at 50% 118%, rgba(0, 0, 0, calc(var(--vignette) * 0.42)), transparent 60%);
+}
+
+.chr::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+}
+
+.chr > * { position: relative; z-index: 2; }
+
+h1, h2, h3, p, dl, dd, dt, ul, ol, figure, blockquote { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+a { color: var(--accent-ink); }
+
+:where(button, a, input, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+  box-shadow: 0 0 0 5px var(--focus-halo);
+}
+
+.vh {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip {
+  position: absolute;
+  left: 12px; top: -60px;
+  z-index: 60;
+  background: var(--paper-1);
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-2);
+  padding: 9px 14px;
+  color: var(--ink-0);
+  text-decoration: none;
+  box-shadow: var(--sh-2);
+  transition: top var(--t-response) var(--ease);
+}
+.skip:focus { top: 12px; }
+
+.label {
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* ══ Kopfleiste (Campaign Context) ══════════════════════════════════════ */
+
+.kopf {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 10px clamp(12px, 2.4vw, 26px);
+  background: color-mix(in oklab, var(--paper-2) 88%, transparent);
+  border-bottom: 1px solid var(--line-0);
+  -webkit-backdrop-filter: blur(9px) saturate(1.05);
+  backdrop-filter: blur(9px) saturate(1.05);
+}
+
+.marke { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.marke svg { width: 26px; height: 26px; flex: none; color: var(--accent); }
+.marke-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.marke-text b { font-family: var(--font-serif); font-size: 0.95rem; color: var(--ink-0); letter-spacing: 0.02em; font-weight: 600; }
+.marke-text span { font-size: var(--fs-micro); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
+
+.brotkrume {
+  display: flex; align-items: center; gap: 8px;
+  font-size: var(--fs-small); color: var(--ink-2);
+  min-width: 0; overflow: hidden;
+}
+.brotkrume b { color: var(--ink-0); font-weight: 600; }
+.brotkrume i { font-style: normal; color: var(--ink-3); }
+
+.kopf-rechts { margin-left: auto; display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-pill);
+  background: var(--paper-1);
+  font-size: var(--fs-small);
+  color: var(--ink-1);
+  white-space: nowrap;
+}
+.chip b { color: var(--ink-0); font-weight: 600; }
+
+.chip-live { border-color: color-mix(in oklab, var(--live) 45%, var(--line-0)); background: var(--live-soft); color: color-mix(in oklab, var(--live) 78%, var(--ink-0)); }
+.puls { width: 7px; height: 7px; border-radius: 50%; background: var(--live); flex: none; animation: puls 2.4s var(--ease) infinite; }
+@keyframes puls { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.42; transform: scale(0.76); } }
+
+.chip-rolle { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
+
+/* Segmentierte Schalter */
+.seg-gruppe { display: flex; flex-direction: column; gap: 4px; }
+.seg-gruppe > .label { padding-left: 2px; }
+.seg {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--paper-sunk);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-2);
+}
+.seg button {
+  padding: 4px 10px;
+  border-radius: var(--r-1);
+  font-size: var(--fs-small);
+  color: var(--ink-2);
+  transition: background var(--t-response) var(--ease), color var(--t-response) var(--ease);
+  white-space: nowrap;
+}
+.seg button:hover { color: var(--ink-0); background: var(--line-2); }
+.seg button[aria-pressed="true"] {
+  background: var(--paper-1);
+  color: var(--ink-0);
+  box-shadow: var(--sh-1);
+  font-weight: 600;
+}
+
+/* ══ Gerüst ═════════════════════════════════════════════════════════════ */
+
+.raster {
+  display: grid;
+  grid-template-columns: var(--w-mod) var(--w-rand) minmax(0, 1fr) var(--w-lens);
+  gap: var(--gap);
+  align-items: start;
+  max-width: var(--w-app);
+  margin: 0 auto;
+  padding: var(--gap) clamp(12px, 2.4vw, 26px) 64px;
+}
+
+/* Modulschiene */
+.module {
+  position: sticky; top: 76px;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 6px;
+  background: var(--paper-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-3);
+  box-shadow: var(--sh-1);
+}
+.module a {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 9px 2px 7px;
+  border-radius: var(--r-2);
+  color: var(--ink-3);
+  text-decoration: none;
+  transition: background var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+.module a svg { width: 19px; height: 19px; }
+.module a span { font-size: 0.625rem; letter-spacing: 0.04em; }
+.module a:hover { color: var(--ink-0); background: var(--line-2); }
+.module a[aria-current="page"] {
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+  font-weight: 600;
+}
+
+/* Rail-Karten (Der Rand · Die Linse) */
+.karte {
+  background: var(--paper-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-3);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+}
+.karte + .karte { margin-top: 14px; }
+.karte-kopf {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding: 11px var(--pad-rail) 9px;
+  border-bottom: 1px solid var(--line-1);
+  background: linear-gradient(var(--line-2), transparent);
+}
+.karte-kopf h2 {
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink-0);
+  letter-spacing: 0.01em;
+}
+.karte-kopf .zaehler {
+  margin-left: auto;
+  font-size: var(--fs-micro);
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--paper-sunk);
+  border: 1px solid var(--line-1);
+  color: var(--ink-2);
+}
+.karte-leib { padding: var(--pad-rail); display: flex; flex-direction: column; gap: 12px; }
+.karte-fuss {
+  padding: 9px var(--pad-rail);
+  border-top: 1px dashed var(--line-1);
+  font-size: var(--fs-micro);
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+.rand, .linse { position: sticky; top: 76px; min-width: 0; }
+
+/* ══ Autorenscheiben ════════════════════════════════════════════════════ */
+
+.scheibe {
+  --disc: var(--ink-2);
+  display: inline-grid;
+  place-items: center;
+  width: 22px; height: 22px;
+  flex: none;
+  border-radius: 50%;
+  font-family: var(--font-serif);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #fff;
+  background:
+    radial-gradient(120% 120% at 30% 22%, rgba(255, 255, 255, 0.34), transparent 58%),
+    var(--disc);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--disc) 55%, transparent), 0 1px 2px rgba(0, 0, 0, 0.28);
+  -webkit-user-select: none;
+  user-select: none;
+}
+:root[data-theme="dark"] .scheibe, :root:not([data-theme]) .scheibe { color: #16130f; }
+@media (prefers-color-scheme: light) { :root:not([data-theme]) .scheibe { color: #fff; } }
+:root[data-theme="light"] .scheibe { color: #fff; }
+
+.scheibe[data-autor="kaya"]   { --disc: var(--a-kaya); }
+.scheibe[data-autor="sera"]   { --disc: var(--a-sera); }
+.scheibe[data-autor="brannt"] { --disc: var(--a-brannt); }
+.scheibe[data-autor="ossa"]   { --disc: var(--a-ossa); }
+.scheibe[data-fort="1"] { filter: saturate(0.28); opacity: 0.72; box-shadow: 0 0 0 1px var(--line-0); }
+
+/* Autorenleiste unter dem Titel */
+.autorenleiste {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 9px 0 10px;
+  border-top: 1px solid var(--line-1);
+  border-bottom: 1px solid var(--line-1);
+}
+.autorenleiste > .label { margin-right: 2px; }
+.autorenleiste ul { display: flex; gap: 7px; flex-wrap: wrap; }
+
+.autor-knopf {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 3px 10px 3px 3px;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-pill);
+  background: var(--paper-1);
+  font-size: var(--fs-small);
+  color: var(--ink-1);
+  transition: border-color var(--t-response) var(--ease), background var(--t-response) var(--ease), transform var(--t-response) var(--ease);
+}
+.autor-knopf:hover { border-color: var(--line-0); transform: translateY(-1px); }
+.autor-knopf b { font-weight: 600; color: var(--ink-0); }
+.autor-knopf .zahl { color: var(--ink-3); font-size: var(--fs-micro); }
+.autor-knopf[aria-pressed="true"] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  box-shadow: var(--sh-1);
+}
+.autor-knopf[data-fort="1"] b { color: var(--ink-2); font-weight: 500; }
+
+/* ══ Bühne: der Artikel ═════════════════════════════════════════════════ */
+
+.buehne { min-width: 0; }
+
+.blatt {
+  position: relative;
+  background:
+    radial-gradient(130% 58% at 50% 0%, color-mix(in oklab, var(--gold) calc(var(--ornament) * 9%), transparent), transparent 68%),
+    radial-gradient(80% 46% at 8% 100%, color-mix(in oklab, var(--accent) calc(var(--ornament) * 6%), transparent), transparent 70%),
+    var(--paper-1);
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-3);
+  box-shadow: var(--sh-stage);
+  padding: clamp(20px, 2.6vw, 36px) clamp(16px, 2.6vw, 36px) 28px;
+  min-width: 0;
+}
+
+/* Kronen-Ornament: nur bei Atmosphäre „Werkstoff" */
+.blatt::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: var(--r-3) var(--r-3) 0 0;
+  opacity: var(--ornament);
+  background: linear-gradient(90deg, transparent, var(--accent-line) 18%, var(--gold) 50%, var(--accent-line) 82%, transparent);
+}
+
+/* Innenrahmen — eine Kanzleilinie, die die Atmosphäre „Klar" fortnimmt */
+.blatt::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1px solid var(--line-1);
+  border-radius: calc(var(--r-3) - 4px);
+  pointer-events: none;
+  opacity: calc(var(--ornament) * 0.8);
+}
+
+.blatt[data-brille="1"] {
+  box-shadow: var(--sh-stage), 0 0 0 1px var(--accent-line);
+}
+
+.kicker {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+}
+.kicker .punkt { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+
+.blatt h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.75rem, 3.6vw, var(--fs-h1));
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: var(--ink-0);
+  margin-bottom: 4px;
+}
+.untertitel {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+}
+
+/* Aus-Sicht-Wähler im Artikelkopf */
+.sicht {
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-3);
+  background: var(--paper-2);
+  padding: 10px 12px 11px;
+  margin: 14px 0 22px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  min-width: 0;
+}
+.sicht legend { padding: 0 6px; margin-left: 4px; }
+.sicht-optionen { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
+
+.sicht-opt { position: relative; }
+.sicht-opt input {
+  position: absolute; inset: 0;
+  opacity: 0;
+  margin: 0;
+  width: 100%; height: 100%;
+  cursor: pointer;
+}
+.sicht-opt label {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 6px 13px;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-2);
+  background: var(--paper-1);
+  cursor: pointer;
+  transition: border-color var(--t-response) var(--ease), background var(--t-response) var(--ease), transform var(--t-response) var(--ease);
+}
+.sicht-opt label b { font-size: var(--fs-ui); font-weight: 600; color: var(--ink-1); }
+.sicht-opt label span { font-size: var(--fs-micro); color: var(--ink-3); }
+.sicht-opt:hover label { transform: translateY(-1px); border-color: var(--line-0); }
+.sicht-opt input:checked + label {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: var(--sh-1), inset 0 -2px 0 var(--accent);
+}
+.sicht-opt input:checked + label b { color: var(--accent-ink); }
+.sicht-opt input:focus-visible + label {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--focus-halo);
+}
+
+.brille-hinweis {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+  font-size: var(--fs-small);
+  color: var(--accent-ink);
+}
+.brille-hinweis button {
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+  font-size: var(--fs-micro);
+  color: var(--accent-ink);
+  background: var(--paper-1);
+}
+.brille-hinweis button:hover { background: var(--accent-soft); }
+
+/* Korpus: Infobox + Prosa */
+.korpus { display: grid; grid-template-columns: minmax(0, 1fr) 212px; gap: 24px; align-items: start; }
+
+.infobox {
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-2);
+  background: var(--paper-2);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+  position: sticky; top: 84px;
+}
+.infobox-kopf {
+  padding: 9px 12px;
+  background: linear-gradient(var(--gold-soft), transparent);
+  border-bottom: 1px solid var(--line-1);
+}
+.infobox-kopf h2 { font-family: var(--font-serif); font-size: 0.875rem; font-weight: 600; color: var(--ink-0); }
+.infobox-kopf p { font-size: var(--fs-micro); color: var(--ink-3); }
+.infobox dl { display: grid; grid-template-columns: 1fr; }
+.infobox .zeile { padding: 9px 12px; border-top: 1px solid var(--line-2); }
+.infobox .zeile:first-child { border-top: 0; }
+.infobox dt { font-size: var(--fs-micro); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.infobox dd { font-size: var(--fs-small); color: var(--ink-0); margin-top: 2px; }
+.infobox .stempel {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 5px;
+  font-size: var(--fs-micro);
+  color: var(--ink-2);
+}
+.infobox .stempel .scheibe { width: 16px; height: 16px; font-size: 0.5625rem; }
+.zeile[data-neu="1"] { background: var(--accent-soft); }
+
+/* ══ Absätze ════════════════════════════════════════════════════════════ */
+
+.prosa { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.abschnitt { margin-top: 20px; }
+.abschnitt:first-child { margin-top: 0; }
+.abschnitt > h2 {
+  font-family: var(--font-serif);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  color: var(--ink-0);
+  letter-spacing: 0.01em;
+  padding-bottom: 5px;
+  margin: 0 0 10px 34px;
+  border-bottom: 1px solid var(--line-1);
+}
+
+.absatz {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 8px;
+  padding: 5px 8px 5px 0;
+  border-radius: var(--r-2);
+  transition: background var(--t-response) var(--ease);
+}
+.absatz:hover { background: var(--line-2); }
+.absatz .rinne { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 3px; }
+.absatz .ord { font-size: 0.625rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.absatz .scheibe { width: 21px; height: 21px; }
+.absatz button.scheibe { cursor: pointer; transition: transform var(--t-response) var(--ease); }
+.absatz button.scheibe:hover { transform: scale(1.14); }
+
+.absatz p {
+  font-family: var(--font-serif);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--ink-0);
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+.abschnitt:first-child .absatz:first-of-type p { font-size: var(--fs-lead); }
+.absatz em { color: var(--ink-1); }
+
+.absatz .stempel {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 5px;
+  font-size: var(--fs-micro);
+  color: var(--ink-3);
+}
+.absatz .stempel .marke-punkt { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+
+.prosa[data-hervor] .absatz { opacity: 0.42; transition: opacity var(--t-state) var(--ease); }
+.prosa[data-hervor="kaya"]   .absatz[data-autor="kaya"],
+.prosa[data-hervor="sera"]   .absatz[data-autor="sera"],
+.prosa[data-hervor="brannt"] .absatz[data-autor="brannt"],
+.prosa[data-hervor="ossa"]   .absatz[data-autor="ossa"] {
+  opacity: 1;
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.absatz[data-gelandet="1"] { animation: landung var(--t-transition) var(--ease-out) 1; }
+@keyframes landung {
+  0%   { background: color-mix(in oklab, var(--gold) 26%, transparent); }
+  100% { background: transparent; }
+}
+
+.neu-marke {
+  display: inline-flex; align-items: center;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--gold-soft);
+  border: 1px solid color-mix(in oklab, var(--gold) 40%, transparent);
+  color: color-mix(in oklab, var(--gold) 70%, var(--ink-0));
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Wiki-Links */
+.wl {
+  color: var(--accent-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-line);
+  transition: background var(--t-response) var(--ease);
+  padding: 0 1px;
+}
+.wl:hover { background: var(--accent-soft); }
+button.rot {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--accent);
+  border-bottom: 1px dashed var(--accent);
+  padding: 0 1px;
+}
+button.rot::after { content: " ?"; font-size: 0.75em; vertical-align: super; opacity: 0.8; }
+button.rot[data-geloest="1"] { color: var(--accent-ink); border-bottom: 1px solid var(--accent-line); cursor: default; }
+button.rot[data-geloest="1"]::after { content: none; }
+
+.sitzungsspiegel {
+  display: flex; gap: 8px 18px; flex-wrap: wrap;
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-1);
+  font-size: var(--fs-micro);
+  color: var(--ink-3);
+}
+.sitzungsspiegel b { color: var(--ink-1); font-weight: 600; }
+
+/* ══ Der Rand: Antragsspur ══════════════════════════════════════════════ */
+
+.antrag {
+  border: 1px solid var(--line-0);
+  border-left: 3px solid var(--a-brannt);
+  border-radius: var(--r-2);
+  background: var(--paper-1);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+  transition: opacity var(--t-state) var(--ease), transform var(--t-state) var(--ease);
+}
+.antrag-kopf {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 11px 8px;
+  border-bottom: 1px solid var(--line-2);
+}
+.antrag-kopf b { font-size: var(--fs-small); color: var(--ink-0); font-weight: 600; }
+.antrag-kopf time { margin-left: auto; font-size: var(--fs-micro); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.anker {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 11px;
+  background: var(--paper-sunk);
+  border-bottom: 1px solid var(--line-2);
+  font-size: var(--fs-micro);
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.anker:hover { color: var(--ink-0); background: var(--line-2); }
+.anker q { font-family: var(--font-serif); font-style: italic; color: var(--ink-1); }
+
+.antrag-text {
+  padding: 10px 11px;
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-0);
+}
+.antrag-tasten { display: flex; flex-direction: column; gap: 5px; padding: 0 11px 11px; }
+
+.taste {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-2);
+  background: var(--paper-2);
+  font-size: var(--fs-small);
+  color: var(--ink-1);
+  text-align: left;
+  transition: background var(--t-response) var(--ease), border-color var(--t-response) var(--ease), transform var(--t-response) var(--ease);
+}
+.taste:hover:not(:disabled) { background: var(--paper-1); border-color: var(--line-0); transform: translateX(2px); }
+.taste:disabled { opacity: 0.45; cursor: not-allowed; }
+.taste b { font-weight: 600; color: var(--ink-0); }
+.taste kbd {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  padding: 2px 6px;
+  border: 1px solid var(--line-0);
+  border-bottom-width: 2px;
+  border-radius: var(--r-1);
+  background: var(--paper-1);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.taste-kanon { border-color: var(--accent-line); background: var(--accent-soft); }
+.taste-kanon b { color: var(--accent-ink); }
+
+.grund { display: none; flex-direction: column; gap: 6px; padding: 0 11px 11px; }
+.grund[data-offen="1"] { display: flex; }
+.grund label { font-size: var(--fs-micro); color: var(--ink-2); }
+.grund input {
+  font: inherit;
+  font-size: var(--fs-small);
+  padding: 7px 9px;
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-2);
+  background: var(--paper-1);
+  color: var(--ink-0);
+  width: 100%;
+}
+.grund .zeile-tasten { display: flex; gap: 6px; }
+.grund .zeile-tasten button { flex: 1; justify-content: center; }
+
+.erledigt {
+  padding: 10px 11px;
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--ink-2);
+  border-top: 1px solid var(--line-2);
+  background: var(--paper-2);
+}
+.erledigt b { color: var(--ink-0); }
+
+.leer {
+  padding: 14px 4px;
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--ink-3);
+  font-style: italic;
+}
+
+/* Konventspiegel */
+.spiegel { overflow-x: auto; }
+.spiegel table { border-collapse: collapse; width: 100%; min-width: 250px; font-size: var(--fs-micro); }
+.spiegel th, .spiegel td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--line-2); }
+.spiegel th:first-child, .spiegel td:first-child { text-align: left; }
+.spiegel thead th { color: var(--ink-3); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.625rem; }
+.spiegel td { color: var(--ink-1); font-variant-numeric: tabular-nums; }
+.spiegel td:first-child { display: flex; align-items: center; gap: 6px; color: var(--ink-0); }
+.spiegel td .scheibe { width: 17px; height: 17px; font-size: 0.5625rem; }
+.riss { display: flex; align-items: center; gap: 7px; margin-top: 9px; font-size: var(--fs-micro); color: var(--ink-2); }
+.riss .stufe {
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent-ink);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+}
+
+/* ══ Die Linse: SL-Diagnose ═════════════════════════════════════════════ */
+
+.diagnose { border-color: var(--accent-line); }
+.diagnose .karte-kopf { background: linear-gradient(var(--accent-soft), transparent); }
+
+.beleg { display: flex; flex-direction: column; gap: 0; }
+.beleg-zeile {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: var(--fs-micro);
+}
+.beleg-zeile:last-child { border-bottom: 0; }
+.beleg-zeile dt { color: var(--ink-2); min-width: 0; flex: 1; line-height: 1.45; }
+.beleg-zeile dd {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-0);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+}
+.beleg-zeile[data-null="1"] dd { color: var(--live); font-weight: 700; }
+
+.balken {
+  display: flex; height: 8px; border-radius: var(--r-pill); overflow: hidden;
+  background: var(--paper-sunk);
+  border: 1px solid var(--line-1);
+}
+.balken i { display: block; height: 100%; transition: width var(--t-state) var(--ease); }
+.balken .sichtbar { background: var(--live); }
+.balken .fehlend { background: repeating-linear-gradient(135deg, var(--line-0), var(--line-0) 2px, transparent 2px, transparent 5px); }
+
+.pruef { display: flex; flex-direction: column; gap: 6px; }
+.pruef li { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.5; }
+.pruef .haken { color: var(--live); font-weight: 700; flex: none; width: 13px; }
+
+.verfassung { display: flex; flex-direction: column; gap: 7px; }
+.verfassung .preset {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px;
+  align-self: flex-start;
+  border: 1px solid var(--gold);
+  border-radius: var(--r-pill);
+  background: var(--gold-soft);
+  font-size: var(--fs-small);
+  color: color-mix(in oklab, var(--gold) 68%, var(--ink-0));
+  font-weight: 600;
+}
+.verfassung dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: var(--fs-micro); }
+.verfassung dt { color: var(--ink-3); }
+.verfassung dd { color: var(--ink-1); font-family: var(--font-mono); font-size: 0.6875rem; overflow-wrap: anywhere; }
+
+details.note { border-top: 1px dashed var(--line-1); padding-top: 9px; }
+details.note summary {
+  cursor: pointer;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+  list-style: none;
+}
+details.note summary::-webkit-details-marker { display: none; }
+details.note summary::before { content: "▸ "; }
+details.note[open] summary::before { content: "▾ "; }
+details.note p { font-size: var(--fs-micro); line-height: 1.6; color: var(--ink-2); margin-top: 8px; }
+details.note p + p { margin-top: 7px; }
+
+/* ══ Das Enthüllungsblatt (Reveal Sheet) ════════════════════════════════ */
+
+.schleier {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  padding: 18px;
+  background: color-mix(in oklab, var(--paper-sunk) 84%, transparent);
+  -webkit-backdrop-filter: blur(5px) saturate(0.7);
+  backdrop-filter: blur(5px) saturate(0.7);
+  animation: einblenden var(--t-state) var(--ease) 1;
+}
+.schleier[hidden] { display: none; }
+@keyframes einblenden { from { opacity: 0; } to { opacity: 1; } }
+
+.blatt-enthuellung {
+  width: min(470px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--paper-1);
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-3);
+  box-shadow: var(--sh-lift);
+  animation: aufsteigen var(--t-state) var(--ease-out) 1;
+}
+@keyframes aufsteigen { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
+
+.blatt-enthuellung header { padding: 16px 18px 12px; border-bottom: 1px solid var(--line-1); }
+.blatt-enthuellung h2 { font-family: var(--font-serif); font-size: 1.125rem; font-weight: 600; color: var(--ink-0); }
+.blatt-enthuellung header p { font-size: var(--fs-small); color: var(--ink-2); margin-top: 4px; }
+.blatt-leib { padding: 14px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.vorschau {
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-0);
+  padding: 11px 13px;
+  border-left: 3px solid var(--a-brannt);
+  background: var(--paper-2);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
+}
+
+.empfaenger { display: flex; flex-direction: column; gap: 6px; }
+.empfaenger-zeile {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-2);
+  background: var(--paper-2);
+}
+.empfaenger-zeile input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; cursor: pointer; }
+.empfaenger-zeile label { display: flex; flex-direction: column; gap: 1px; cursor: pointer; min-width: 0; }
+.empfaenger-zeile label b { font-size: var(--fs-small); color: var(--ink-0); font-weight: 600; }
+.empfaenger-zeile label span { font-size: var(--fs-micro); color: var(--ink-3); }
+.empfaenger-zeile[data-vor="1"] { border-color: var(--accent-line); background: var(--accent-soft); }
+.empfaenger-zeile .vor-marke {
+  margin-left: auto; font-size: 0.625rem; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--accent-ink); font-weight: 600; white-space: nowrap;
+}
+.empfaenger-zeile[data-abwesend="1"] .vor-marke { color: var(--ink-3); }
+
+.bytes {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: var(--fs-micro);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.bytes b { font-family: var(--font-mono); color: var(--ink-0); }
+
+.blatt-fuss {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 18px;
+  border-top: 1px solid var(--line-1);
+  background: var(--paper-2);
+  flex-wrap: wrap;
+}
+.ring-halter { position: relative; width: 42px; height: 42px; flex: none; }
+.ring-halter svg { width: 42px; height: 42px; transform: rotate(-90deg); }
+.ring-halter circle { fill: none; stroke-width: 3; }
+.ring-bg { stroke: var(--line-0); }
+.ring-fg { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: 106.8; stroke-dashoffset: 0; }
+.ring-halter[data-lauf="1"] .ring-fg { animation: ringlauf 4s linear 1 forwards; }
+@keyframes ringlauf { to { stroke-dashoffset: 106.8; } }
+.ring-zahl {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+.knopf {
+  padding: 8px 16px;
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-2);
+  background: var(--paper-1);
+  font-size: var(--fs-ui);
+  color: var(--ink-1);
+  transition: background var(--t-response) var(--ease), transform var(--t-response) var(--ease);
+}
+.knopf:hover { background: var(--paper-3); transform: translateY(-1px); }
+.knopf-haupt {
+  margin-left: auto;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--paper-1);
+  font-weight: 600;
+}
+:root[data-theme="dark"] .knopf-haupt, :root:not([data-theme]) .knopf-haupt { color: #16130f; }
+@media (prefers-color-scheme: light) { :root:not([data-theme]) .knopf-haupt { color: #faf5e9; } }
+:root[data-theme="light"] .knopf-haupt { color: #faf5e9; }
+.knopf-haupt:hover { background: var(--accent-ink); }
+
+/* Meldung */
+.meldung {
+  position: fixed;
+  left: 50%; bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 55;
+  display: flex; align-items: center; gap: 10px;
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 10px 16px;
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-pill);
+  background: var(--paper-1);
+  box-shadow: var(--sh-lift);
+  font-size: var(--fs-small);
+  color: var(--ink-0);
+  animation: melden var(--t-state) var(--ease-out) 1;
+}
+.meldung[hidden] { display: none; }
+@keyframes melden { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ══ Aufteilung ═════════════════════════════════════════════════════════ */
+
+@media (max-width: 1400px) {
+  .raster { grid-template-columns: var(--w-mod) var(--w-rand) minmax(0, 1fr); }
+  .linse { grid-column: 2; grid-row: 2; position: static; }
+  .rand { position: static; }
+}
+@media (max-width: 1120px) {
+  .korpus { grid-template-columns: minmax(0, 1fr); }
+  .infobox { position: static; order: -1; max-width: 420px; }
+}
+@media (max-width: 980px) {
+  .raster { grid-template-columns: var(--w-mod) minmax(0, 1fr); }
+  .rand, .linse { grid-column: 2; grid-row: auto; }
+  .module { position: sticky; top: 76px; }
+  .autorenleiste { gap: 6px; }
+}
+@media (max-width: 700px) {
+  :root { --gap: 12px; --fs-body: 1rem; }
+  .raster { grid-template-columns: minmax(0, 1fr); padding-bottom: 40px; }
+  .module {
+    position: sticky; top: 60px; z-index: 20;
+    flex-direction: row; overflow-x: auto; gap: 2px;
+  }
+  .module a { flex: 1 0 auto; flex-direction: row; gap: 6px; padding: 8px 11px; }
+  .module a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--accent); }
+  .rand, .linse { grid-column: 1; grid-row: auto; }
+  .blatt { padding: 18px 14px 22px; border-radius: var(--r-2); }
+  .abschnitt > h2 { margin-left: 0; }
+  .sicht { margin: 12px 0 18px; }
+  .brille-hinweis { margin-left: 0; }
+  .kopf { gap: 10px; padding: 8px 12px; }
+  .kopf-rechts { width: 100%; }
+  .brotkrume { display: none; }
+}
+@media (max-width: 420px) {
+  .absatz { grid-template-columns: 22px minmax(0, 1fr); gap: 6px; }
+  .sicht-opt label { padding: 5px 9px; }
+}
+
+/* ══ Bewegung aus ═══════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-response: 1ms; --t-state: 1ms; --t-transition: 1ms; }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ring-halter[data-lauf="1"] .ring-fg { animation: none; }
+}
+:root[data-motion="reduziert"] { --t-response: 1ms; --t-state: 1ms; --t-transition: 1ms; }
+:root[data-motion="reduziert"] *,
+:root[data-motion="reduziert"] *::before,
+:root[data-motion="reduziert"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}
+:root[data-motion="reduziert"] .ring-halter[data-lauf="1"] .ring-fg { animation: none; }
+:root[data-motion="voll"] { }
+</style>
+
+<div class="chr">
+
+<a class="skip" href="#buehne">Zum Artikel springen</a>
+
+<!-- ══ Campaign Context ══════════════════════════════════════════════ -->
+<header class="kopf">
+  <div class="marke">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+      <path d="M4 4.5h6.4c.9 0 1.6.7 1.6 1.6v13c0-.9-.7-1.6-1.6-1.6H4z"/>
+      <path d="M20 4.5h-6.4c-.9 0-1.6.7-1.6 1.6v13c0-.9.7-1.6 1.6-1.6H20z"/>
+      <path d="M12 8.6v8.5"/>
+    </svg>
+    <span class="marke-text">
+      <b>Chronicle</b>
+      <span>Aldenfall</span>
+    </span>
+  </div>
+
+  <nav class="brotkrume" aria-label="Pfad">
+    <i>Story</i><span aria-hidden="true">›</span><i>Der Konvent</i><span aria-hidden="true">›</span><b>Bruder Alder</b>
+  </nav>
+
+  <div class="kopf-rechts">
+    <span class="chip chip-live"><span class="puls" aria-hidden="true"></span>Sitzung&nbsp;<b class="num">15</b>&nbsp;· läuft</span>
+    <span class="chip chip-rolle">Rolle: <b>Spielleitung</b></span>
+
+    <div class="seg-gruppe">
+      <span class="label" id="lbl-atmo">Atmosphäre</span>
+      <div class="seg" role="group" aria-labelledby="lbl-atmo" id="seg-atmo">
+        <button type="button" data-atmo="werkstoff" aria-pressed="true">Werkstoff</button>
+        <button type="button" data-atmo="klar" aria-pressed="false">Klar</button>
+      </div>
+    </div>
+
+    <div class="seg-gruppe">
+      <span class="label" id="lbl-theme">Licht</span>
+      <div class="seg" role="group" aria-labelledby="lbl-theme" id="seg-theme">
+        <button type="button" data-theme="" aria-pressed="true">System</button>
+        <button type="button" data-theme="light" aria-pressed="false">Hell</button>
+        <button type="button" data-theme="dark" aria-pressed="false">Dunkel</button>
+      </div>
+    </div>
+
+    <div class="seg-gruppe">
+      <span class="label" id="lbl-motion">Bewegung</span>
+      <div class="seg" role="group" aria-labelledby="lbl-motion" id="seg-motion">
+        <button type="button" data-motion="" aria-pressed="true">System</button>
+        <button type="button" data-motion="voll" aria-pressed="false">Voll</button>
+        <button type="button" data-motion="reduziert" aria-pressed="false">Reduziert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="raster">
+
+  <!-- ══ Modulschiene ═══════════════════════════════════════════════ -->
+  <nav class="module" aria-label="Bereiche">
+    <a href="#" aria-label="Session">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7.6V12l3 1.8"/></svg><span>Session</span>
+    </a>
+    <a href="#buehne" aria-current="page" aria-label="Story — aktuell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M7 9h2M15 9h2"/></svg><span>Story</span>
+    </a>
+    <a href="#" aria-label="Cast">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="9" cy="9" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="10.5" r="2.2"/><path d="M15 19c0-2 1.3-3.6 3-4"/></svg><span>Cast</span>
+    </a>
+    <a href="#" aria-label="Library">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 6v12M16 6v12"/></svg><span>Library</span>
+    </a>
+    <a href="#" aria-label="Table">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M4 9.3h16M4 14.6h16M9.3 4v16M14.6 4v16"/></svg><span>Table</span>
+    </a>
+    <a href="#" aria-label="Forge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 15h9l4-4"/><path d="M14 15v4H6l-1-4z"/><path d="M15 6.5l4 4"/></svg><span>Forge</span>
+    </a>
+  </nav>
+
+  <!-- ══ Der Rand ═══════════════════════════════════════════════════ -->
+  <aside class="rand" aria-label="Der Rand — Apparat der Sitzung">
+
+    <section class="karte" aria-labelledby="h-antragsspur">
+      <div class="karte-kopf">
+        <h2 id="h-antragsspur">Die Antragsspur</h2>
+        <span class="zaehler num" id="antrag-zaehler">1 offen</span>
+      </div>
+      <div class="karte-leib" id="antragsspur"></div>
+      <p class="karte-fuss"><b>[Nichts tun]</b> ist die Vorgabe und kostet keine Taste. Ein nicht ratifizierter Antrag bleibt die private Notiz seines Autors — Schweigen veröffentlicht nie.</p>
+    </section>
+
+    <section class="karte" aria-labelledby="h-spiegel">
+      <div class="karte-kopf">
+        <h2 id="h-spiegel">Der Konventspiegel</h2>
+        <span class="zaehler">#der-ring</span>
+      </div>
+      <div class="karte-leib">
+        <div class="spiegel">
+          <table>
+            <caption class="vh">Halten und Schreiben am Etikett „der-ring“</caption>
+            <thead><tr><th scope="col">Person</th><th scope="col">hält</th><th scope="col">schrieb</th></tr></thead>
+            <tbody id="spiegel-leib"></tbody>
+          </table>
+        </div>
+        <p class="riss">Riss (symmetrische Differenz): <span class="stufe num" id="riss-stufe">—</span></p>
+        <details class="note">
+          <summary>Wie das gerechnet ist</summary>
+          <p>Zwei Verknüpfungen, keine Semantik, keine KI: Absätze mit dem Etikett <code>der-ring</code>, gruppiert nach Halterschaft und nach Autorschaft. Der Riss ist die paarweise symmetrische Differenz der gehaltenen Mengen. Jede Zahl ist aus den Zeilen ableitbar, die ohnehin existieren.</p>
+        </details>
+      </div>
+    </section>
+
+  </aside>
+
+  <!-- ══ Primary Stage: der Artikel ═════════════════════════════════ -->
+  <main class="buehne" id="buehne">
+    <article class="blatt" id="blatt" aria-labelledby="artikel-titel">
+
+      <p class="kicker">
+        <span>Der Konvent</span><span class="punkt" aria-hidden="true"></span>
+        <span>Eintrag · Person</span><span class="punkt" aria-hidden="true"></span>
+        <span>Aldenfall</span>
+      </p>
+
+      <h1 id="artikel-titel">Bruder Alder</h1>
+      <p class="untertitel">Schlüsselträger des Kapitelhauses Vharon, seit dem Winter 1301</p>
+
+      <nav class="autorenleiste" aria-labelledby="lbl-autoren" id="autorenleiste">
+        <span class="label" id="lbl-autoren">Autorenleiste</span>
+        <ul id="autoren-liste"></ul>
+      </nav>
+
+      <fieldset class="sicht">
+        <legend class="label">Aus Sicht</legend>
+        <div class="sicht-optionen" id="sicht-optionen" role="radiogroup" aria-label="Aus Sicht von"></div>
+        <p class="brille-hinweis" id="brille-hinweis" hidden>
+          <span id="brille-text"></span>
+          <button type="button" id="brille-ab">Brille abnehmen</button>
+        </p>
+      </fieldset>
+
+      <div class="korpus">
+        <div class="prosa" id="prosa"></div>
+
+        <aside class="infobox" aria-labelledby="h-infobox">
+          <div class="infobox-kopf">
+            <h2 id="h-infobox">Bruder Alder</h2>
+            <p>Die geteilte Infobox</p>
+          </div>
+          <dl id="infobox-liste"></dl>
+        </aside>
+      </div>
+
+      <p class="sitzungsspiegel">
+        <span>Sitzung <b class="num">15</b></span>
+        <span>Enthüllungen: <b class="num" id="ss-enth">11</b></span>
+        <span>Anträge: <b class="num" id="ss-antraege">1 offen</b></span>
+        <span>Streitfälle: <b class="num">0</b></span>
+        <span>Autorenzeile: <b id="ss-zeile">—</b></span>
+      </p>
+
+    </article>
+  </main>
+
+  <!-- ══ Die Linse ══════════════════════════════════════════════════ -->
+  <aside class="linse" aria-label="Kontextlinse">
+
+    <section class="karte diagnose" aria-labelledby="h-diagnose">
+      <div class="karte-kopf">
+        <h2 id="h-diagnose">SL-Diagnose · Sicht-Brille</h2>
+      </div>
+      <div class="karte-leib">
+        <p style="font-size:var(--fs-micro);color:var(--ink-2);line-height:1.55">
+          Nur für die Spielleitung. Sie hält alles, also darf sie einen Nenner sehen. <b>Die Projektion einer Leserin enthält nie einen Nenner</b> — „5 von 11“ ist im <code>Sicht</code>-Typ nicht schreibbar.
+        </p>
+
+        <div class="balken" role="img" aria-label="Anteil sichtbarer Absätze" id="balken">
+          <i class="sichtbar" style="width:100%"></i><i class="fehlend" style="width:0%"></i>
+        </div>
+
+        <dl class="beleg" id="beleg"></dl>
+
+        <ul class="pruef" id="pruef"></ul>
+
+        <details class="note">
+          <summary>Was dieser Beleg misst</summary>
+          <p>Die Zahlen werden nach jedem Rendern <em>live aus dem echten DOM</em> gelesen, nicht aus dem Datenmodell: Knotenzahl, Autorenscheiben, Volltext-Treffer und Bytegröße von <code>#prosa</code>. Ein Absatz, den die gewählte Leserin nicht hält, ist kein <code>display:none</code>, kein Stummel und keine Zeile „5 weitere“ — er ist <b>nicht im Dokument</b>.</p>
+          <p>Ordinalzahlen werden pro Projektion neu vergeben (1…n). Kanonische Ordinalzahlen stehen zu lassen wäre selbst ein Orakel: aus einer Lücke zwischen 4 und 7 ließe sich zählen, was fehlt.</p>
+          <p><b>Ehrlich:</b> dies ist ein Spike. Alle Absätze liegen hier im Browser, weil es keinen Server gibt. In Produktion entscheidet der Server vor der Antwort — der DOM-Beleg zeigt die <em>beabsichtigte</em> Endstufe, er beweist sie nicht.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="karte" aria-labelledby="h-verfassung">
+      <div class="karte-kopf"><h2 id="h-verfassung">Die Verfassung</h2></div>
+      <div class="karte-leib verfassung">
+        <span class="preset">Preset · Der Konvent</span>
+        <dl>
+          <dt>schreiben</dt><dd>alle</dd>
+          <dt>kanon</dt><dd>mitleitung_ratifiziert</dd>
+          <dt>eigenbereich</dt><dd>figurenartikel_und_feldnotizen</dd>
+          <dt>streitfall</dt><dd>erlaubt</dd>
+          <dt>austritt</dt><dd>bleibt_kanon</dd>
+          <dt>nachfolge</dt><dd>konvent(mehrheit, 90&nbsp;d)</dd>
+        </dl>
+        <details class="note">
+          <summary>Ossa · Autorin bis 2029</summary>
+          <p>Ossa hat den Tisch 2029 verlassen. Nach <code>austritt: bleibt_kanon</code> bleiben ihre drei Absätze Kanon und ihre Zuschreibung erhalten; ihre Scheibe wird entsättigt und datiert. Eine Pseudonymisierung der Zuschreibung ist auf Verlangen möglich — <b>das Löschen des Absatzes ist es nicht</b>, denn ein Absatz aus einer gemeinsamen Welt zu entfernen ist eine andere Handlung als einen Namen zu entfernen.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="karte" aria-labelledby="h-ehrlich">
+      <div class="karte-kopf"><h2 id="h-ehrlich">Der ehrliche Nachtrag</h2></div>
+      <div class="karte-leib">
+        <p style="font-size:var(--fs-micro);color:var(--ink-2);line-height:1.6">
+          Timos Satz stimmt über <em>diese Seite</em>. Er stimmt nicht über <em>diesen Tisch</em>: Sera kann es Brannt im Sprachkanal erzählen, und keine Software verhindert das. Was hier gebaut ist, ist eine Enzyklopädie, die die Geheimnisse des Tisches hält — kein Maulkorb.
+        </p>
+      </div>
+    </section>
+
+  </aside>
+
+</div>
+
+<!-- ══ Enthüllungsblatt ═══════════════════════════════════════════════ -->
+<div class="schleier" id="schleier" hidden>
+  <div class="blatt-enthuellung" role="dialog" aria-modal="true" aria-labelledby="eh-titel" aria-describedby="eh-unter" id="enthuellung">
+    <header>
+      <h2 id="eh-titel">Ratifikation ist Enthüllung</h2>
+      <p id="eh-unter">Der Absatz wird Kanon <em>und</em> geht an die Figuren, die heute Abend dabei sind. Wer nicht dabei war, bekommt ihn nicht — auch seine Zeile nicht.</p>
+    </header>
+    <div class="blatt-leib">
+      <blockquote class="vorschau" id="eh-vorschau"></blockquote>
+
+      <fieldset style="border:0;padding:0;margin:0">
+        <legend class="label" style="margin-bottom:7px">Empfänger · vorausgewählt: anwesend in Sitzung 15</legend>
+        <div class="empfaenger" id="eh-empfaenger"></div>
+      </fieldset>
+
+      <p class="bytes">
+        <span>Überträgt</span><b id="eh-bytes">0</b><span>Bytes an</span><b id="eh-zahl">0</b><span>Empfänger.</span>
+        <span style="color:var(--ink-3)">Bis zur Bestätigung hat nichts den Server verlassen.</span>
+      </p>
+    </div>
+    <div class="blatt-fuss">
+      <div class="ring-halter" id="ring" data-lauf="0">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><circle class="ring-bg" cx="20" cy="20" r="17"/><circle class="ring-fg" cx="20" cy="20" r="17"/></svg>
+        <span class="ring-zahl num" id="ring-zahl">4</span>
+      </div>
+      <button type="button" class="knopf" id="eh-abbruch">Abbrechen <kbd style="font-family:var(--font-mono);font-size:0.625rem">Esc</kbd></button>
+      <button type="button" class="knopf knopf-haupt" id="eh-jetzt">Jetzt enthüllen</button>
+    </div>
+  </div>
+</div>
+
+<div class="meldung" id="meldung" role="status" hidden></div>
+<p class="vh" id="ansage" role="status" aria-live="polite"></p>
+
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   1 · Die Daten
+   Passage(pid, gen, autor_user_id, geltung, haelt[], abschnitt, etikett[])
+   „haelt" ist die Menge der Figuren, denen der Absatz enthüllt wurde.
+   Die Spielleitung hält alles.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const AUTOREN = {
+  kaya:   { name: "Kaya",   kurz: "K", rolle: "Spielleitung",         zeit: "seit 2026" },
+  sera:   { name: "Sera",   kurz: "S", rolle: "Spielerin",            zeit: "seit 2026" },
+  brannt: { name: "Brannt", kurz: "B", rolle: "Spieler",              zeit: "seit 2027" },
+  ossa:   { name: "Ossa",   kurz: "O", rolle: "Autorin, ausgetreten", zeit: "bis 2029", fort: true }
+};
+
+const LESER = [
+  { id: "sl",     name: "Spielleitung", unter: "alles, was existiert",      sl: true },
+  { id: "sera",   name: "Sera",         unter: "Figur · anwesend seit S. 1" },
+  { id: "brannt", name: "Brannt",       unter: "Figur · anwesend seit S. 4" },
+  { id: "vesper", name: "Vesper",       unter: "Figur · abwesend seit S. 12" }
+];
+
+const ABSCHNITTE = [
+  { id: "a", titel: "Amt, Herkunft, Erscheinung" },
+  { id: "b", titel: "Die stillen Jahre (1288–1294)" },
+  { id: "c", titel: "Der Ring" },
+  { id: "d", titel: "Der dritte Umgang" }
+];
+
+const ALLE = ["sera", "brannt", "vesper"];
+
+const ROTLINK = '<button type="button" class="rot" data-rot="pfandleiher">Pfandleiher am Sattelmarkt</button>';
+
+let PASSAGEN = [
+  { pid: "p1", abschnitt: "a", autor: "kaya", haelt: [...ALLE], etikett: [],
+    html: '<strong>Bruder Alder</strong> ist Laienbruder im <a class="wl" href="#buehne">Kapitelhaus Vharon</a> und seit dem Winter 1301 dessen Schlüsselträger. Er führt das Totenbuch, öffnet die <a class="wl" href="#buehne">Gruft</a> für Bestattungen und gilt in Aldenfall als der einzige Mensch, der den unteren Umgang vollständig kennt.' },
+
+  { pid: "p2", abschnitt: "a", autor: "ossa", haelt: [...ALLE], etikett: [], stempel: "Kanon seit Sitzung 2 · Zuschreibung erhalten",
+    html: 'Alder kam als Findelkind an das Haus. Die Bruderschaft nahm ihn 1272 auf, ohne ihn je zu weihen — eine Eigenheit, die das Kapitel bis heute nicht erklärt und die in den Rechnungsbüchern seit sechzig Jahren als <em>„Alder, ohne Stand“</em> fortgeschrieben wird.' },
+
+  { pid: "p7", abschnitt: "a", autor: "brannt", haelt: [...ALLE], etikett: [], stempel: "Kanon seit Sitzung 9 · eingetragen von Brannt",
+    html: 'Während der Waschung spricht Alder kein Wort. Wer ihn anspricht, bekommt zwei Finger, nach unten. Im Hafen von Aldenfall heißt dieselbe Geste <em>„nicht hier“</em>.' },
+
+  { pid: "p11", abschnitt: "a", autor: "brannt", haelt: [...ALLE], etikett: [], stempel: "Kanon seit Sitzung 12 · eingetragen von Brannt",
+    html: 'Er ist Linkshänder und trägt den Schlüsselbund trotzdem rechts. Das macht man, wenn die linke Hand frei bleiben soll. Ich habe das bei zwei Leuten gesehen, und keiner von beiden war Mönch.' },
+
+  { pid: "p3", abschnitt: "b", autor: "ossa", haelt: ["sera", "vesper"], etikett: [], stempel: "Kanon seit Sitzung 5 · Zuschreibung erhalten",
+    html: 'Zwischen 1288 und 1294 fehlt sein Name in jeder Anwesenheitsliste. Das Kapitel führt ihn in diesen Jahren als <em>abwesend im Dienst</em> und nennt keinen Ort. Ein Bruder, der sechs Jahre lang nirgends ist, ist in Vharon keine Verwaltungslücke, sondern eine Entscheidung.' },
+
+  { pid: "p8", abschnitt: "b", autor: "ossa", haelt: ["sera"], etikett: [], stempel: "Kanon seit Sitzung 6 · Zuschreibung erhalten",
+    html: 'Das Totenbuch trägt für 1288 bis 1294 eine zweite Handschrift: kleiner, schneller, die Kreuze links statt rechts. Wer immer in Alders Abwesenheit die Toten eintrug, hat nie unterschrieben — und hat vier Namen eingetragen, die es im Kirchspiel nie gab.' },
+
+  { pid: "p4", abschnitt: "c", autor: "sera", haelt: ["sera", "brannt"], etikett: ["der-ring"], stempel: "Kanon seit Sitzung 15 · eingetragen von Sera · ratifiziert von Kaya",
+    html: 'Bruder Alder trägt den Ring seiner Schwester an einer Schnur unter dem Habit. Er nimmt ihn nie ab — auch nicht bei der Waschung der Toten, wo die Regel es ausdrücklich verlangt.' },
+
+  { pid: "p5", abschnitt: "c", autor: "kaya", haelt: ["sera", "vesper"], etikett: ["der-ring"],
+    html: 'Der Ring gehört ihm nicht. Das Kapitel hat ihn 1301 als Pfand eingezogen und im Totenbuch ausgetragen; dass er dennoch an Alders Hals hängt, weiß im Haus niemand außer dem Kellermeister — und der schweigt seit dem Brand.' },
+
+  { pid: "p10", abschnitt: "c", autor: "kaya", haelt: ["brannt", "vesper"], etikett: ["der-ring"],
+    html: 'Wer Alder nach seiner Schwester fragt, wird an den ' + ROTLINK + ' verwiesen. Der Pfandleiher sagt, er habe den Ring nie in der Hand gehabt — was sein eigenes Buch widerlegt.' },
+
+  { pid: "p6", abschnitt: "d", autor: "sera", haelt: ["sera"], etikett: ["der-ring"], stempel: "Kanon seit Sitzung 13 · eingetragen von Sera · ratifiziert von Kaya",
+    html: 'Dritter Umgang, linke Wand: eine Nische ohne Namen. Ich habe die Kerze hineingehalten. Der Stein an der Schwelle ist ausgeschliffen, so wie Stufen ausgeschliffen sind. Da geht jemand seit Jahren jede Woche hin.' },
+
+  { pid: "p9", abschnitt: "d", autor: "sera", haelt: ["sera"], etikett: ["der-ring"], stempel: "Kanon seit Sitzung 14 · eingetragen von Sera · ratifiziert von Kaya",
+    html: 'Ich habe die Nische geöffnet. Darin liegt kein Leichnam, sondern ein <em>zweiter Ring</em>: gleiche Arbeit, gleiche Schnur. Er war warm. Ich habe es niemandem am Tisch erzählt und ich schreibe es hier auf, damit es jemand weiß, wenn ich es nicht mehr kann.' }
+];
+
+let INFOBOX = [
+  { label: "Art",              wert: "Person · Mensch",                              haelt: [...ALLE] },
+  { label: "Haus",             wert: '<a class="wl" href="#buehne">Kapitelhaus Vharon</a>', haelt: [...ALLE] },
+  { label: "Amt",              wert: "Schlüsselträger, seit Winter 1301",             haelt: [...ALLE] },
+  { label: "Trägt",            wert: "Ring an Schnur, silbern, ungestempelt",         haelt: ["sera", "brannt"], autor: "sera", stempel: "eingetragen von Sera · Kanon seit Sitzung 15" },
+  { label: "Schwester",        wert: "Ilv Alder († 1301)",                            haelt: ["sera"] },
+  { label: "Erste Erwähnung",  wert: "Sitzung 7",                                     haelt: [...ALLE] }
+];
+
+/* Der offene Antrag — Brannt, 21:31, verankert an p4 (Seras Satz) */
+const ANTRAG = {
+  id: "n1",
+  autor: "brannt",
+  zeit: "21:31",
+  anker: "p4",
+  etikett: ["der-ring"],
+  html: 'Den Ring habe ich schon einmal gesehen: beim ' + ROTLINK + ', im Regal für unausgelöste Pfänder, mit einer Nummer aus dem Vorjahr. Entweder ist es nicht derselbe Ring — oder Alder war dort.',
+  roh: "Den Ring habe ich schon einmal gesehen: beim Pfandleiher am Sattelmarkt, im Regal für unausgelöste Pfänder, mit einer Nummer aus dem Vorjahr. Entweder ist es nicht derselbe Ring — oder Alder war dort."
+};
+
+const ANWESEND = ["sera", "brannt"];          /* in Sitzung 15 am Tisch */
+const ABWESEND_SEIT = { vesper: 12 };
+
+/* ══════════════════════════════════════════════════════════════════════
+   2 · Zustand
+   ══════════════════════════════════════════════════════════════════════ */
+
+const S = {
+  leser: "sl",
+  hervor: null,
+  antragStatus: "offen",   /* offen | kanon | abgelehnt | weitergeleitet */
+  rotGeloest: false,
+  gelandet: null,
+  ehTimer: null,
+  ehTick: null,
+  letzterFokus: null
+};
+
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const wurzel = document.documentElement;
+
+const wenigerBewegung = () =>
+  wurzel.dataset.motion === "reduziert" ||
+  (!wurzel.dataset.motion && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+const haelt = (p, leser) => leser === "sl" || p.haelt.includes(leser);
+
+function scheibe(id, tag = "span", extra = "") {
+  const a = AUTOREN[id];
+  return `<${tag} class="scheibe" data-autor="${id}"${a.fort ? ' data-fort="1"' : ""} ${extra}>${a.kurz}</${tag}>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   3 · Rendern — die Projektion
+   Was die gewählte Leserin nicht hält, wird nicht erzeugt. Kein display:none,
+   kein Stummel, keine Zählzeile, keine kanonische Ordinalzahl.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const elProsa   = $("#prosa");
+const elAutoren = $("#autoren-liste");
+const elInfo    = $("#infobox-liste");
+
+function sichtbarePassagen() {
+  return PASSAGEN.filter(p => haelt(p, S.leser));
+}
+
+function absatzKnoten(p, ordinal) {
+  const el = document.createElement("div");
+  el.className = "absatz";
+  el.dataset.pid = p.pid;
+  el.dataset.autor = p.autor;
+  if (S.gelandet === p.pid) el.dataset.gelandet = "1";
+
+  const a = AUTOREN[p.autor];
+  const label = `Absatz ${ordinal}, geschrieben von ${a.name}. Absätze von ${a.name} hervorheben.`;
+
+  el.innerHTML =
+    `<div class="rinne">` +
+      `<span class="ord num" aria-hidden="true">${ordinal}</span>` +
+      scheibe(p.autor, "button", `type="button" data-hervor="${p.autor}" aria-pressed="${S.hervor === p.autor}" aria-label="${label}" title="${a.name} · ${a.rolle}"`) +
+    `</div>` +
+    `<p>${p.html}` +
+      (p.stempel || S.gelandet === p.pid
+        ? `<span class="stempel">` +
+            (S.gelandet === p.pid ? `<span class="neu-marke">neu</span>` : "") +
+            (p.stempel ? `<span>${p.stempel}</span>` : "") +
+          `</span>`
+        : "") +
+    `</p>`;
+  return el;
+}
+
+function renderProsa() {
+  /* FLIP: Positionen vorher merken, damit das Umbrechen lesbar bleibt */
+  const vorher = new Map();
+  $$(".absatz", elProsa).forEach(el => vorher.set(el.dataset.pid, el.getBoundingClientRect().top));
+
+  const sicht = sichtbarePassagen();
+  const frag = document.createDocumentFragment();
+  let ord = 0;
+
+  ABSCHNITTE.forEach(sec => {
+    const drin = sicht.filter(p => p.abschnitt === sec.id);
+    if (drin.length === 0) return;          /* leere Überschrift wäre selbst ein Orakel */
+    const box = document.createElement("section");
+    box.className = "abschnitt";
+    const h = document.createElement("h2");
+    h.textContent = sec.titel;
+    box.appendChild(h);
+    drin.forEach(p => box.appendChild(absatzKnoten(p, ++ord)));
+    frag.appendChild(box);
+  });
+
+  elProsa.replaceChildren(frag);
+
+  if (!wenigerBewegung()) {
+    $$(".absatz", elProsa).forEach(el => {
+      const alt = vorher.get(el.dataset.pid);
+      if (alt === undefined) {
+        el.animate([{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }],
+          { duration: 280, easing: "cubic-bezier(.16,1,.3,1)" });
+        return;
+      }
+      const dy = alt - el.getBoundingClientRect().top;
+      if (Math.abs(dy) > 1) {
+        el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }],
+          { duration: 300, easing: "cubic-bezier(.2,.72,.18,1)" });
+      }
+    });
+  }
+}
+
+function renderAutorenleiste() {
+  const sicht = sichtbarePassagen();
+  const zaehl = {};
+  sicht.forEach(p => { zaehl[p.autor] = (zaehl[p.autor] || 0) + 1; });
+
+  /* Anwesend ist, wer einen sichtbaren Absatz ODER eine sichtbare Infobox-Zeile hat.
+     Die Zahl auf der Scheibe zählt nur Absätze — „drei davon sind von mir". */
+  const anwesend = new Set(Object.keys(zaehl));
+  INFOBOX.filter(r => r.autor && haelt(r, S.leser)).forEach(r => anwesend.add(r.autor));
+
+  elAutoren.replaceChildren();
+  Object.keys(AUTOREN).forEach(id => {
+    if (!anwesend.has(id)) return;           /* Wer hier nichts Sichtbares hat, hat keine Scheibe. */
+    const n = zaehl[id] || 0;
+    const a = AUTOREN[id];
+    const li = document.createElement("li");
+    li.innerHTML =
+      `<button type="button" class="autor-knopf" data-hervor="${id}"${a.fort ? ' data-fort="1"' : ""}` +
+      ` aria-pressed="${S.hervor === id}"` +
+      ` aria-label="${a.name}, ${a.rolle}, ${n} sichtbare${n === 1 ? "r" : ""} Beitrag${n === 1 ? "" : "e"}. Hervorheben.">` +
+        scheibe(id) +
+        `<b>${a.name}</b>` +
+        `<span class="zahl num">${a.fort ? a.zeit : n}</span>` +
+      `</button>`;
+    elAutoren.appendChild(li);
+  });
+}
+
+function renderInfobox() {
+  elInfo.replaceChildren();
+  INFOBOX.forEach(r => {
+    if (!haelt(r, S.leser)) return;
+    const d = document.createElement("div");
+    d.className = "zeile";
+    d.innerHTML =
+      `<dt>${r.label}</dt><dd>${r.wert}</dd>` +
+      (r.autor && r.stempel
+        ? `<dd class="stempel">${scheibe(r.autor)}<span>${r.stempel}</span></dd>`
+        : "");
+    elInfo.appendChild(d);
+  });
+}
+
+/* ── Der Rand: Antragsspur ─────────────────────────────────────────── */
+
+function renderAntrag() {
+  const host = $("#antragsspur");
+  const zaehler = $("#antrag-zaehler");
+  const alsLeser = S.leser !== "sl";
+
+  if (S.antragStatus !== "offen") {
+    const text = {
+      kanon:          `<b>Ratifiziert.</b> Der Satz steht im Kanon, an seinem Anker, mit Brannts Scheibe — und er ging an die zwei Figuren, die dabei waren. <code>PassageLineage.kind = ratify</code> · <code>granted_via = ratifikation</code>.`,
+      abgelehnt:      `<b>Abgelehnt.</b> Die Begründung ist Brannt als Notiz in seinem eigenen Kodex zugestellt. Der Antrag bleibt seine private Notiz.`,
+      weitergeleitet: `<b>Weitergeleitet.</b> Aus dem Antrag ist eine Randfrage in der Vorbereitung geworden — eine Frage in der Warteschlange statt einer Behauptung im Kanon.`
+    }[S.antragStatus];
+    host.innerHTML = `<div class="antrag"><p class="erledigt">${text}</p></div>` +
+      `<button type="button" class="taste" id="zuruecksetzen"><b>Vorführung zurücksetzen</b><kbd>Alt+R</kbd></button>`;
+    zaehler.textContent = "0 offen";
+    $("#ss-antraege").textContent = "0 offen";
+    $("#zuruecksetzen").addEventListener("click", zuruecksetzen);
+    return;
+  }
+
+  zaehler.textContent = "1 offen";
+  $("#ss-antraege").textContent = "1 offen";
+
+  const ankerP = PASSAGEN.find(p => p.pid === ANTRAG.anker);
+  const ankerText = ankerP ? ankerP.html.replace(/<[^>]+>/g, "").slice(0, 62) + "…" : "";
+
+  host.innerHTML =
+    `<article class="antrag" aria-labelledby="antrag-kopf">` +
+      `<header class="antrag-kopf">` +
+        scheibe(ANTRAG.autor) +
+        `<b id="antrag-kopf">Antrag · Brannt</b>` +
+        `<time class="num" datetime="21:31">21:31</time>` +
+      `</header>` +
+      `<button type="button" class="anker" data-ziel="${ANTRAG.anker}">` +
+        `Anker: derselbe Absatz wie Seras Satz — <q>${ankerText}</q>` +
+      `</button>` +
+      `<p class="antrag-text">${ANTRAG.html}</p>` +
+      `<div class="antrag-tasten">` +
+        `<button type="button" class="taste taste-kanon" data-tat="kanon"${alsLeser ? " disabled" : ""}><b>Kanon</b><kbd>Alt+K</kbd></button>` +
+        `<button type="button" class="taste" data-tat="ablehnen"${alsLeser ? " disabled" : ""}><b>Ablehnen</b> — mit Begründung<kbd>Alt+X</kbd></button>` +
+        `<button type="button" class="taste" data-tat="weiter"${alsLeser ? " disabled" : ""}><b>Weiterleiten</b> — als Randfrage<kbd>Alt+W</kbd></button>` +
+      `</div>` +
+      `<div class="grund" id="grund" data-offen="0">` +
+        `<label for="grund-feld">Begründung (eine Zeile, wird Brannt zugestellt). Eine Ablehnung ohne Grund ist das, was einen Konvent tötet.</label>` +
+        `<input type="text" id="grund-feld" maxlength="120" placeholder="z. B. Schöne Idee — aber der Pfandleiher kam erst 1302 in die Stadt.">` +
+        `<div class="zeile-tasten">` +
+          `<button type="button" class="taste" data-tat="grund-ab">Zurück</button>` +
+          `<button type="button" class="taste taste-kanon" id="grund-senden" data-tat="grund-senden" disabled><b>Zustellen</b></button>` +
+        `</div>` +
+      `</div>` +
+    `</article>` +
+    (alsLeser
+      ? `<p class="leer">Ratifikation ist eine Handlung der Spielleitung. Nimm die Brille ab, um zu entscheiden.</p>`
+      : "");
+
+  host.querySelectorAll("[data-tat]").forEach(b => b.addEventListener("click", () => tat(b.dataset.tat)));
+  const anker = host.querySelector(".anker");
+  if (anker) anker.addEventListener("click", () => zeigeAnker(ANTRAG.anker));
+  const feld = $("#grund-feld");
+  if (feld) feld.addEventListener("input", () => { $("#grund-senden").disabled = feld.value.trim().length < 3; });
+}
+
+function zeigeAnker(pid) {
+  const el = elProsa.querySelector(`[data-pid="${pid}"]`);
+  if (!el) { melden("Der Ankerabsatz ist in dieser Sicht nicht vorhanden."); return; }
+  el.scrollIntoView({ block: "center", behavior: wenigerBewegung() ? "auto" : "smooth" });
+  el.animate([{ background: "var(--gold-soft)" }, { background: "transparent" }],
+    { duration: wenigerBewegung() ? 1 : 900, easing: "cubic-bezier(.16,1,.3,1)" });
+}
+
+/* ── Der Konventspiegel ────────────────────────────────────────────── */
+
+function renderSpiegel() {
+  const tag = "der-ring";
+  const markiert = PASSAGEN.filter(p => (p.etikett || []).includes(tag));
+  const leser = ["sera", "brannt"];
+  const mengen = {};
+  const leib = $("#spiegel-leib");
+  leib.replaceChildren();
+
+  leser.forEach(id => {
+    const haltend = markiert.filter(p => p.haelt.includes(id));
+    const geschrieben = markiert.filter(p => p.autor === id);
+    mengen[id] = new Set(haltend.map(p => p.pid));
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${scheibe(id)}${AUTOREN[id].name}</td><td>${haltend.length}</td><td>${geschrieben.length}</td>`;
+    leib.appendChild(tr);
+  });
+
+  const a = mengen.sera, b = mengen.brannt;
+  let riss = 0, gemeinsam = 0;
+  new Set([...a, ...b]).forEach(pid => { (a.has(pid) && b.has(pid)) ? gemeinsam++ : riss++; });
+  const stufe = riss >= 3 ? "hoch" : riss >= 1 ? "mittel" : "keiner";
+  $("#riss-stufe").textContent = `${riss} · ${stufe}`;
+  $("#riss-stufe").previousSibling.textContent = `Riss · gemeinsam ${gemeinsam} · `;
+}
+
+/* ── Die Linse: SL-Diagnose, live aus dem DOM gelesen ──────────────── */
+
+function renderDiagnose() {
+  const gesamt = PASSAGEN.length;
+  const knoten = $$(".absatz", elProsa).length;
+  const scheiben = $$(".scheibe", elProsa).length;
+  /* Nur die Projektion selbst wird abgesucht: Prosa, Infobox, Autorenleiste.
+     Die Aus-Sicht-Wählscheibe ist SL-Apparat und gehört nicht zur Seite der Leserin. */
+  const text = elProsa.textContent + " " + elInfo.textContent + " " + elAutoren.textContent;
+  const sera = (text.match(/Sera/g) || []).length;
+  const geheim = (text.match(/zweiter Ring/g) || []).length;
+  const bytes = new TextEncoder().encode(elProsa.innerHTML).length;
+  const abschnitte = $$(".abschnitt", elProsa).length;
+
+  const zeilen = [
+    ["Absatzknoten in <code>#prosa</code>", knoten, knoten === 0],
+    ["Autorenscheiben im Artikel", scheiben, false],
+    ["Abschnittsüberschriften", `${abschnitte} / ${ABSCHNITTE.length}`, false],
+    ["Volltext <code>„Sera“</code> in Prosa, Infobox, Leiste", sera, sera === 0],
+    ["Volltext <code>„zweiter Ring“</code>", geheim, geheim === 0],
+    ["Bytes im Artikel-DOM", bytes.toLocaleString("de-DE"), false]
+  ];
+
+  $("#beleg").innerHTML = zeilen.map(([k, v, gruen]) =>
+    `<div class="beleg-zeile"${gruen ? ' data-null="1"' : ""}><dt>${k}</dt><dd class="num">${v}</dd></div>`).join("");
+
+  const pct = Math.round((knoten / gesamt) * 100);
+  $("#balken").innerHTML = `<i class="sichtbar" style="width:${pct}%"></i><i class="fehlend" style="width:${100 - pct}%"></i>`;
+  $("#balken").setAttribute("aria-label",
+    S.leser === "sl" ? `Alle ${gesamt} Absätze sichtbar` : `${knoten} von ${gesamt} Absätzen sichtbar, ${gesamt - knoten} nicht vorhanden`);
+
+  const namen = new Set($$(".autor-knopf", elAutoren).map(b => b.dataset.hervor));
+  const fehlend = Object.keys(AUTOREN).filter(id => !namen.has(id));
+  $("#pruef").innerHTML = [
+    `Leere Abschnitte werden nicht gerendert — ${ABSCHNITTE.length - abschnitte} unterdrückt.`,
+    `Ordinalzahlen neu vergeben: 1…${knoten}. Keine Lücke, aus der sich zählen ließe.`,
+    fehlend.length
+      ? `Ohne sichtbaren Beitrag und daher <b>ohne jede Scheibe</b>: ${fehlend.map(i => AUTOREN[i].name).join(", ")}.`
+      : `Alle vier Autoren haben hier sichtbare Beiträge.`,
+    `Kein Nenner in der Leserprojektion — „x von y“ steht nur in dieser SL-Karte.`
+  ].map(t => `<li><span class="haken" aria-hidden="true">✓</span><span>${t}</span></li>`).join("");
+
+  $("#ss-enth").textContent = String(knoten);
+  const zaehl = {};
+  sichtbarePassagen().forEach(p => { zaehl[p.autor] = (zaehl[p.autor] || 0) + 1; });
+  $("#ss-zeile").textContent = Object.keys(AUTOREN)
+    .filter(id => zaehl[id]).map(id => `${AUTOREN[id].name} ${zaehl[id]}`).join(" · ") || "—";
+}
+
+function renderBrille() {
+  const alsLeser = S.leser !== "sl";
+  $("#blatt").dataset.brille = alsLeser ? "1" : "0";
+  const h = $("#brille-hinweis");
+  h.hidden = !alsLeser;
+  if (alsLeser) {
+    const l = LESER.find(x => x.id === S.leser);
+    $("#brille-text").textContent = `Du liest gerade als ${l.name}.`;
+  }
+}
+
+function render() {
+  renderProsa();
+  renderAutorenleiste();
+  renderInfobox();
+  renderAntrag();
+  renderSpiegel();
+  renderBrille();
+  if (S.hervor) elProsa.dataset.hervor = S.hervor; else delete elProsa.dataset.hervor;
+  if (S.rotGeloest) $$("[data-rot]").forEach(b => { b.dataset.geloest = "1"; b.title = "Eintrag vorhanden"; });
+  requestAnimationFrame(renderDiagnose);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   4 · Interaktion 1 — die Aus-Sicht-Wählscheibe
+   ══════════════════════════════════════════════════════════════════════ */
+
+function baueSichtWaehler() {
+  const host = $("#sicht-optionen");
+  host.innerHTML = LESER.map((l, i) =>
+    `<span class="sicht-opt">` +
+      `<input type="radio" name="ausSicht" id="sicht-${l.id}" value="${l.id}"${l.id === S.leser ? " checked" : ""}>` +
+      `<label for="sicht-${l.id}"><b>${l.name}</b><span>${l.unter} · Alt+${i + 1}</span></label>` +
+    `</span>`).join("");
+  $$("input[name=ausSicht]", host).forEach(r =>
+    r.addEventListener("change", () => { if (r.checked) setzeLeser(r.value); }));
+}
+
+function setzeLeser(id) {
+  if (S.leser === id) return;
+  const vorher = sichtbarePassagen().length;
+  S.leser = id;
+  const r = $(`#sicht-${id}`);
+  if (r) r.checked = true;
+  render();
+  const jetzt = sichtbarePassagen().length;
+  const l = LESER.find(x => x.id === id);
+  ansagen(id === "sl"
+    ? `Aus Sicht der Spielleitung. Alle ${jetzt} Absätze sichtbar.`
+    : `Aus Sicht von ${l.name}. ${jetzt} von ${PASSAGEN.length} Absätzen sichtbar, ${PASSAGEN.length - jetzt} nicht vorhanden.`);
+  if (id !== "sl" && jetzt < vorher) {
+    melden(`Aus Sicht von ${l.name}: ${PASSAGEN.length - jetzt} Absätze sind nicht vorhanden — samt ihrer Zeilen.`);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   5 · Interaktion 2 — Hervorheben nach Autorschaft
+   ══════════════════════════════════════════════════════════════════════ */
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-hervor]");
+  if (b) {
+    const id = b.dataset.hervor;
+    S.hervor = (S.hervor === id) ? null : id;
+    if (S.hervor) elProsa.dataset.hervor = S.hervor; else delete elProsa.dataset.hervor;
+    $$("[data-hervor]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.hervor === S.hervor)));
+    ansagen(S.hervor ? `Absätze von ${AUTOREN[S.hervor].name} hervorgehoben.` : "Hervorhebung aufgehoben.");
+    return;
+  }
+  const rot = e.target.closest("[data-rot]");
+  if (rot) {
+    if (S.rotGeloest) { melden("Der Eintrag „Der Pfandleiher am Sattelmarkt“ existiert bereits."); return; }
+    melden("Rotlink — für diesen Namen gibt es noch keinen Eintrag. Er entsteht, sobald ein Antrag ratifiziert wird, der ihn nennt.");
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════════
+   6 · Interaktion 3 — Ratifikation über das Enthüllungsblatt
+   ══════════════════════════════════════════════════════════════════════ */
+
+function tat(was) {
+  if (S.antragStatus !== "offen") return;
+  if (S.leser !== "sl" && was !== "grund-ab") {
+    melden("Ratifikation ist eine Handlung der Spielleitung — nimm zuerst die Brille ab.");
+    return;
+  }
+  if (was === "kanon")        { oeffneEnthuellung(); return; }
+  if (was === "ablehnen")     { $("#grund").dataset.offen = "1"; $("#grund-feld").focus(); return; }
+  if (was === "grund-ab")     { $("#grund").dataset.offen = "0"; return; }
+  if (was === "grund-senden") {
+    const g = $("#grund-feld").value.trim();
+    if (g.length < 3) return;
+    S.antragStatus = "abgelehnt";
+    render();
+    melden(`Abgelehnt · Begründung an Brannt zugestellt: „${g}“`);
+    ansagen("Antrag abgelehnt, Begründung zugestellt.");
+    return;
+  }
+  if (was === "weiter") {
+    S.antragStatus = "weitergeleitet";
+    render();
+    melden("Weitergeleitet · aus dem Antrag ist eine Randfrage in der Vorbereitung geworden.");
+    ansagen("Antrag weitergeleitet.");
+  }
+}
+
+function oeffneEnthuellung() {
+  S.letzterFokus = document.activeElement;
+  $("#eh-vorschau").innerHTML = ANTRAG.html;
+
+  const bytes = new TextEncoder().encode(ANTRAG.roh).length;
+  $("#eh-bytes").textContent = bytes.toLocaleString("de-DE");
+
+  $("#eh-empfaenger").innerHTML = LESER.filter(l => !l.sl).map(l => {
+    const da = ANWESEND.includes(l.id);
+    return `<div class="empfaenger-zeile" data-vor="${da ? 1 : 0}" data-abwesend="${da ? 0 : 1}">` +
+      `<input type="checkbox" id="eh-${l.id}" value="${l.id}"${da ? " checked" : ""}>` +
+      `<label for="eh-${l.id}"><b>${l.name}</b><span>${l.unter}</span></label>` +
+      `<span class="vor-marke">${da ? "anwesend" : `abwesend seit S. ${ABWESEND_SEIT[l.id]}`}</span>` +
+    `</div>`;
+  }).join("");
+
+  const zaehleEmpf = () => {
+    const n = $$("#eh-empfaenger input:checked").length;
+    $("#eh-zahl").textContent = String(n);
+  };
+  $$("#eh-empfaenger input").forEach(i => i.addEventListener("change", zaehleEmpf));
+  zaehleEmpf();
+
+  $("#schleier").hidden = false;
+  const ring = $("#ring");
+  const zahl = $("#ring-zahl");
+  let rest = 4;
+  zahl.textContent = String(rest);
+
+  if (wenigerBewegung()) {
+    ring.dataset.lauf = "0";
+  } else {
+    ring.dataset.lauf = "0";
+    void ring.offsetWidth;
+    ring.dataset.lauf = "1";
+  }
+  S.ehTick = setInterval(() => { rest -= 1; zahl.textContent = String(Math.max(0, rest)); }, 1000);
+  S.ehTimer = setTimeout(() => vollziehe(), 4000);
+
+  $("#eh-abbruch").focus();
+}
+
+function schliesseEnthuellung() {
+  clearTimeout(S.ehTimer); clearInterval(S.ehTick);
+  S.ehTimer = S.ehTick = null;
+  $("#ring").dataset.lauf = "0";
+  $("#schleier").hidden = true;
+  if (S.letzterFokus && document.contains(S.letzterFokus)) S.letzterFokus.focus();
+}
+
+function vollziehe() {
+  const empf = $$("#eh-empfaenger input:checked").map(i => i.value);
+  schliesseEnthuellung();
+
+  const neu = {
+    pid: "n1", abschnitt: "c", autor: ANTRAG.autor, haelt: empf, etikett: ["der-ring"],
+    html: ANTRAG.html,
+    stempel: "Kanon seit Sitzung 15 · eingetragen von Brannt · ratifiziert von Kaya · granted_via: ratifikation"
+  };
+  const i = PASSAGEN.findIndex(p => p.pid === ANTRAG.anker);
+  PASSAGEN.splice(i + 1, 0, neu);
+
+  S.antragStatus = "kanon";
+  S.gelandet = "n1";
+  S.rotGeloest = true;
+
+  INFOBOX.splice(4, 0, {
+    label: "Pfand", wert: "Regal für unausgelöste Pfänder, Nr. aus 1300",
+    haelt: [...empf], autor: "brannt", stempel: "eingetragen von Brannt · Kanon seit Sitzung 15"
+  });
+
+  render();
+  $$('[data-rot]').forEach(b => { b.dataset.geloest = "1"; b.title = "Eintrag vorhanden"; });
+
+  const nicht = LESER.filter(l => !l.sl && !empf.includes(l.id)).map(l => l.name);
+  melden(`Kanon. Neuer Eintrag „Der Pfandleiher am Sattelmarkt“ angelegt — erster Absatz von Brannt.` +
+    (nicht.length ? ` ${nicht.join(", ")} ${nicht.length === 1 ? "hat" : "haben"} nichts bekommen: kein Strich, kein Stempel, keine Zeile.` : ""));
+  ansagen("Antrag ratifiziert und enthüllt.");
+  setTimeout(() => { S.gelandet = null; }, 1200);
+}
+
+$("#eh-abbruch").addEventListener("click", () => { schliesseEnthuellung(); melden("Abgebrochen. Nichts hat den Server verlassen."); });
+$("#eh-jetzt").addEventListener("click", () => vollziehe());
+
+/* ══════════════════════════════════════════════════════════════════════
+   7 · Schalter, Tastatur, Rückstellung
+   ══════════════════════════════════════════════════════════════════════ */
+
+function segment(id, attr) {
+  const g = $(id);
+  g.addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    const v = b.dataset[attr];
+    if (v) wurzel.setAttribute("data-" + attr, v); else wurzel.removeAttribute("data-" + attr);
+    $$("button", g).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  });
+}
+segment("#seg-theme", "theme");
+segment("#seg-atmo", "atmo");
+segment("#seg-motion", "motion");
+
+$("#brille-ab").addEventListener("click", () => { setzeLeser("sl"); $("#sicht-sl").focus(); });
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("#schleier").hidden) {
+    e.preventDefault(); schliesseEnthuellung(); melden("Abgebrochen. Nichts hat den Server verlassen."); return;
+  }
+  if (!e.altKey || e.ctrlKey || e.metaKey) return;
+  const map = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3 };
+  if (e.code in map) { e.preventDefault(); setzeLeser(LESER[map[e.code]].id); $(`#sicht-${LESER[map[e.code]].id}`).focus(); return; }
+  if (e.code === "KeyK") { e.preventDefault(); tat("kanon"); return; }
+  if (e.code === "KeyX") { e.preventDefault(); tat("ablehnen"); return; }
+  if (e.code === "KeyW") { e.preventDefault(); tat("weiter"); return; }
+  if (e.code === "KeyR") { e.preventDefault(); zuruecksetzen(); }
+});
+
+function zuruecksetzen() {
+  PASSAGEN = PASSAGEN.filter(p => p.pid !== "n1");
+  INFOBOX = INFOBOX.filter(r => r.label !== "Pfand");
+  S.antragStatus = "offen";
+  S.rotGeloest = false;
+  S.gelandet = null;
+  S.hervor = null;
+  setzeLeser("sl");
+  render();
+  melden("Vorführung zurückgesetzt.");
+}
+
+let meldeTimer = null;
+function melden(text) {
+  const m = $("#meldung");
+  m.textContent = text;
+  m.hidden = false;
+  clearTimeout(meldeTimer);
+  meldeTimer = setTimeout(() => { m.hidden = true; }, 6000);
+}
+function ansagen(text) { $("#ansage").textContent = text; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   8 · Start
+   ══════════════════════════════════════════════════════════════════════ */
+
+baueSichtWaehler();
+render();
+
+})();
+
+</script>
+
+
+
+

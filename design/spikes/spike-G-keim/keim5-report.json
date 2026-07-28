@@ -1,0 +1,77 @@
+{
+  "landmasses": 19,
+  "states": 25,
+  "provinces": 155,
+  "burgs": 664,
+  "rootFanout": 44,
+  "provincesPerState": {
+    "n": 24,
+    "min": 2,
+    "p50": 6,
+    "p90": 11,
+    "max": 18,
+    "mean": 6.46
+  },
+  "burgsPerProvince": {
+    "n": 147,
+    "min": 1,
+    "p50": 4,
+    "p90": 8,
+    "max": 20,
+    "mean": 4.52
+  },
+  "burgsPerState": {
+    "n": 24,
+    "min": 5,
+    "p50": 26,
+    "p90": 53,
+    "max": 80,
+    "mean": 27.67
+  },
+  "markersPerProvince": {
+    "n": 45,
+    "min": 1,
+    "p50": 1,
+    "p90": 2,
+    "max": 5,
+    "mean": 1.24
+  },
+  "statesWithNoProvinceRow": 1,
+  "provincesWithNoBurg": 8,
+  "namesTotal": 1163,
+  "namesDistinct": 1093,
+  "worstCollisions": [
+    [
+      "1st Fleet",
+      19
+    ],
+    [
+      "inns",
+      10
+    ],
+    [
+      "encounters",
+      6
+    ],
+    [
+      "lighthouses",
+      5
+    ],
+    [
+      "brigands",
+      5
+    ],
+    [
+      "2nd Fleet",
+      4
+    ],
+    [
+      "Tamsa",
+      3
+    ],
+    [
+      "bridges",
+      3
+    ]
+  ]
+}

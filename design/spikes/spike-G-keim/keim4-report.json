@@ -1,0 +1,71 @@
+{
+  "burgs": 664,
+  "burgsWithNoProvinceViaCell": 0,
+  "stateFieldVsCellMismatch": 0,
+  "routes": 575,
+  "routesMultiState": 207,
+  "routesMultiProv": 324,
+  "rivers": 157,
+  "riversMultiState": 136,
+  "states": 25,
+  "statesMultiReligion": 17,
+  "statesMultiCulture": 16,
+  "statesMultiLandmass": 8,
+  "sample": [
+    {
+      "i": 1,
+      "name": "Jiopio",
+      "stateField": 1,
+      "stateCell": 1,
+      "provCell": 1,
+      "cultCell": 7,
+      "relCell": 12,
+      "biome": 7,
+      "feature": 2
+    },
+    {
+      "i": 2,
+      "name": "Sagyhafu",
+      "stateField": 2,
+      "stateCell": 2,
+      "provCell": 5,
+      "cultCell": 10,
+      "relCell": 13,
+      "biome": 7,
+      "feature": 2
+    },
+    {
+      "i": 3,
+      "name": "Domlos",
+      "stateField": 3,
+      "stateCell": 3,
+      "provCell": 10,
+      "cultCell": 10,
+      "relCell": 14,
+      "biome": 7,
+      "feature": 2
+    },
+    {
+      "i": 4,
+      "name": "Duhadvar",
+      "stateField": 4,
+      "stateCell": 4,
+      "provCell": 17,
+      "cultCell": 10,
+      "relCell": 15,
+      "biome": 7,
+      "feature": 2
+    },
+    {
+      "i": 5,
+      "name": "Liekarin",
+      "stateField": 5,
+      "stateCell": 5,
+      "provCell": 20,
+      "cultCell": 7,
+      "relCell": 15,
+      "biome": 7,
+      "feature": 2
+    }
+  ]
+}

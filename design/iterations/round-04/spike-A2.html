@@ -1,0 +1,2280 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Der rote Link ist eine Tür — Universalitätsprüfung (Kandidat A · Runde 4)</title>
+
+<script>
+  /* Bootstrap: the page content is injected without <html>/<head>, so the root
+     attributes that carry every independent axis are set before first paint. */
+  (function () {
+    var r = document.documentElement;
+    r.lang = "de";
+    r.dataset.welt = "aldenfall";
+    r.dataset.skin = "relic";
+    r.dataset.rolle = "spielerin";
+    r.dataset.thema = "system";
+    r.dataset.kontrast = "standard";
+    r.dataset.motion = "system";
+    r.dataset.labels = "kurz";
+    r.dataset.art = "an";
+  })();
+</script>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   1 · TOKENS
+   Every colour, font, radius, shadow and duration is a custom property.
+   Each skin declares a light palette (--l-*) and a dark palette (--d-*) exactly
+   once; the mapping block below picks one. prefers-color-scheme is the default
+   signal, the [data-thema] attribute beats it in both directions.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* — non-colour tokens, skin-independent defaults — */
+  --u: 4px;
+  --r-1: 2px;
+  --r-2: 5px;
+  --r-3: 10px;
+  --measure: 64ch;
+
+  --font-body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  /* The provenance glyph is one of four channels; it must never fall back to tofu. */
+  --font-symbol: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", "DejaVu Sans", var(--font-body);
+  --tracking-label: .09em;
+  --weight-label: 620;
+
+  --dur-1: 140ms;   /* response  — press, hover, focus, validation      */
+  --dur-2: 280ms;   /* state     — select, reveal, inspector change     */
+  --dur-3: 820ms;   /* transition— mint arrival, chapter change         */
+  --ease: cubic-bezier(.2, .74, .24, 1);
+
+  --ornament: 1;
+  --hatch: .055;
+
+  /* — mapping: light is the default, dark under the media query — */
+  --bg:            var(--l-bg);
+  --bg-2:          var(--l-bg-2);
+  --surface:       var(--l-surface);
+  --surface-2:     var(--l-surface-2);
+  --line:          var(--l-line);
+  --line-strong:   var(--l-line-strong);
+  --text:          var(--l-text);
+  --muted:         var(--l-muted);
+  --dim:           var(--l-dim);
+  --accent:        var(--l-accent);
+  --accent-ink:    var(--l-accent-ink);
+  --secondary:     var(--l-secondary);
+  --seal:          var(--l-seal);
+  --danger:        var(--l-danger);
+  --ok:            var(--l-ok);
+  --rot:           var(--l-rot);
+  --shadow-1:      var(--l-shadow-1);
+  --shadow-2:      var(--l-shadow-2);
+  --focus:         var(--l-focus);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:          var(--d-bg);
+    --bg-2:        var(--d-bg-2);
+    --surface:     var(--d-surface);
+    --surface-2:   var(--d-surface-2);
+    --line:        var(--d-line);
+    --line-strong: var(--d-line-strong);
+    --text:        var(--d-text);
+    --muted:       var(--d-muted);
+    --dim:         var(--d-dim);
+    --accent:      var(--d-accent);
+    --accent-ink:  var(--d-accent-ink);
+    --secondary:   var(--d-secondary);
+    --seal:        var(--d-seal);
+    --danger:      var(--d-danger);
+    --ok:          var(--d-ok);
+    --rot:         var(--d-rot);
+    --shadow-1:    var(--d-shadow-1);
+    --shadow-2:    var(--d-shadow-2);
+    --focus:       var(--d-focus);
+    --hatch: .085;
+  }
+}
+
+:root[data-thema="dark"] {
+  --bg: var(--d-bg);              --bg-2: var(--d-bg-2);
+  --surface: var(--d-surface);    --surface-2: var(--d-surface-2);
+  --line: var(--d-line);          --line-strong: var(--d-line-strong);
+  --text: var(--d-text);          --muted: var(--d-muted);
+  --dim: var(--d-dim);            --accent: var(--d-accent);
+  --accent-ink: var(--d-accent-ink); --secondary: var(--d-secondary);
+  --seal: var(--d-seal);          --danger: var(--d-danger);
+  --ok: var(--d-ok);              --rot: var(--d-rot);
+  --shadow-1: var(--d-shadow-1);  --shadow-2: var(--d-shadow-2);
+  --focus: var(--d-focus);        --hatch: .085;
+  color-scheme: dark;
+}
+
+:root[data-thema="light"] {
+  --bg: var(--l-bg);              --bg-2: var(--l-bg-2);
+  --surface: var(--l-surface);    --surface-2: var(--l-surface-2);
+  --line: var(--l-line);          --line-strong: var(--l-line-strong);
+  --text: var(--l-text);          --muted: var(--l-muted);
+  --dim: var(--l-dim);            --accent: var(--l-accent);
+  --accent-ink: var(--l-accent-ink); --secondary: var(--l-secondary);
+  --seal: var(--l-seal);          --danger: var(--l-danger);
+  --ok: var(--l-ok);              --rot: var(--l-rot);
+  --shadow-1: var(--l-shadow-1);  --shadow-2: var(--l-shadow-2);
+  --focus: var(--l-focus);        --hatch: .055;
+  color-scheme: light;
+}
+
+/* ── Skin: RELIC — warm parchment / candle-lit vellum, editorial serif ────── */
+:root[data-skin="relic"] {
+  --font-display: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --l-bg: #efe7d6;        --l-bg-2: #e6dcc7;
+  --l-surface: #faf5ea;   --l-surface-2: #f2ebdb;
+  --l-line: #d3c6ab;      --l-line-strong: #8a7853;
+  --l-text: #2a2318;      --l-muted: #5d5340;   --l-dim: #6f6653;
+  --l-accent: #7c4715;    --l-accent-ink: #fdf8ee;
+  --l-secondary: #2f6353; --l-seal: #6a3a5e;
+  --l-danger: #94271f;    --l-ok: #2f6338;      --l-rot: #a52a1c;
+  --l-shadow-1: 0 1px 0 rgba(42,35,24,.06);
+  --l-shadow-2: 0 8px 26px -18px rgba(42,35,24,.55);
+  --l-focus: #7c4715;
+
+  --d-bg: #14120e;        --d-bg-2: #0d0c09;
+  --d-surface: #1c1913;   --d-surface-2: #242018;
+  --d-line: #3a3327;      --d-line-strong: #7d6e4f;
+  --d-text: #f0e8d6;      --d-muted: #bcb098;   --d-dim: #918875;
+  --d-accent: #e0ad5f;    --d-accent-ink: #1a1610;
+  --d-secondary: #6fc4a6; --d-seal: #c79ad3;
+  --d-danger: #e5867d;    --d-ok: #79c98a;      --d-rot: #e8776a;
+  --d-shadow-1: 0 1px 0 rgba(0,0,0,.4);
+  --d-shadow-2: 0 10px 30px -18px rgba(0,0,0,.9);
+  --d-focus: #e0ad5f;
+}
+
+/* ── Skin: SIGNAL — graphite / cyan, condensed technical ─────────────────── */
+:root[data-skin="signal"] {
+  --font-display: "Bahnschrift SemiCondensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --tracking-label: .13em;
+  --r-1: 0px; --r-2: 2px; --r-3: 3px;
+  --l-bg: #e7edf1;        --l-bg-2: #dde5eb;
+  --l-surface: #f7fafc;   --l-surface-2: #eaf1f5;
+  --l-line: #c1cfd8;      --l-line-strong: #5c7684;
+  --l-text: #0f1d26;      --l-muted: #43606f;   --l-dim: #586c77;
+  --l-accent: #0a5f72;    --l-accent-ink: #f2fbfd;
+  --l-secondary: #5a3fa8; --l-seal: #7a3b6e;
+  --l-danger: #a32a2a;    --l-ok: #17614a;      --l-rot: #b02b26;
+  --l-shadow-1: 0 1px 0 rgba(15,29,38,.07);
+  --l-shadow-2: 0 8px 24px -18px rgba(15,29,38,.6);
+  --l-focus: #0a5f72;
+
+  --d-bg: #050b13;        --d-bg-2: #030710;
+  --d-surface: #0a1520;   --d-surface-2: #0e1e2c;
+  --d-line: #1e3444;      --d-line-strong: #4c7d95;
+  --d-text: #e6f3f7;      --d-muted: #a5bcc7;   --d-dim: #74909d;
+  --d-accent: #62d8ef;    --d-accent-ink: #04141b;
+  --d-secondary: #b295f2; --d-seal: #e39ad0;
+  --d-danger: #f0847f;    --d-ok: #62d3a4;      --d-rot: #ff8177;
+  --d-shadow-1: 0 1px 0 rgba(0,0,0,.5);
+  --d-shadow-2: 0 10px 30px -18px rgba(0,0,0,.95);
+  --d-focus: #62d8ef;
+}
+
+/* ── Skin: ARCHIVE — oxblood / charcoal, Deco editorial ──────────────────── */
+:root[data-skin="archive"] {
+  --font-display: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --l-bg: #ece7df;        --l-bg-2: #e2dbd1;
+  --l-surface: #f9f6f1;   --l-surface-2: #f0ebe3;
+  --l-line: #cdc3b6;      --l-line-strong: #7d6f60;
+  --l-text: #201a17;      --l-muted: #55483f;   --l-dim: #72655c;
+  --l-accent: #8b2f1e;    --l-accent-ink: #fbf5f2;
+  --l-secondary: #26525f; --l-seal: #5b3b70;
+  --l-danger: #8b2f1e;    --l-ok: #2b5c3a;      --l-rot: #a8301f;
+  --l-shadow-1: 0 1px 0 rgba(32,26,23,.06);
+  --l-shadow-2: 0 8px 26px -18px rgba(32,26,23,.55);
+  --l-focus: #8b2f1e;
+
+  --d-bg: #120d0c;        --d-bg-2: #0a0706;
+  --d-surface: #1a1413;   --d-surface-2: #221a18;
+  --d-line: #3a2d2a;      --d-line-strong: #7e6459;
+  --d-text: #f2e9dd;      --d-muted: #c2ae9f;   --d-dim: #958271;
+  --d-accent: #e0917a;    --d-accent-ink: #1a100c;
+  --d-secondary: #9fc3cf; --d-seal: #c9a2df;
+  --d-danger: #ee8b80;    --d-ok: #82c795;      --d-rot: #f08a7c;
+  --d-shadow-1: 0 1px 0 rgba(0,0,0,.45);
+  --d-shadow-2: 0 10px 30px -18px rgba(0,0,0,.9);
+  --d-focus: #e0917a;
+}
+
+/* ── Skin: CLEAN — no ornament, no texture. The acid test. ───────────────── */
+:root[data-skin="clean"] {
+  --font-display: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --ornament: 0;
+  --hatch: 0;
+  --r-1: 3px; --r-2: 6px; --r-3: 12px;
+  --l-bg: #f1f3f3;        --l-bg-2: #e8ebeb;
+  --l-surface: #ffffff;   --l-surface-2: #f4f6f6;
+  --l-line: #d5dbdb;      --l-line-strong: #6d7878;
+  --l-text: #12191a;      --l-muted: #4a5758;   --l-dim: #647070;
+  --l-accent: #0c6b52;    --l-accent-ink: #f3fbf8;
+  --l-secondary: #2b5aa8; --l-seal: #6a3f8f;
+  --l-danger: #9c2626;    --l-ok: #0c6b52;      --l-rot: #ad2a24;
+  --l-shadow-1: 0 1px 2px rgba(18,25,26,.05);
+  --l-shadow-2: 0 10px 28px -20px rgba(18,25,26,.5);
+  --l-focus: #0c6b52;
+
+  --d-bg: #0b100f;        --d-bg-2: #070b0a;
+  --d-surface: #121918;   --d-surface-2: #182120;
+  --d-line: #27302f;      --d-line-strong: #647573;
+  --d-text: #eef3f2;      --d-muted: #adbcb9;   --d-dim: #7f8f8c;
+  --d-accent: #5fd3a4;    --d-accent-ink: #05100c;
+  --d-secondary: #8ab6f5; --d-seal: #c39bee;
+  --d-danger: #f08984;    --d-ok: #5fd3a4;      --d-rot: #fb8a80;
+  --d-shadow-1: 0 1px 2px rgba(0,0,0,.5);
+  --d-shadow-2: 0 12px 30px -22px rgba(0,0,0,.95);
+  --d-focus: #5fd3a4;
+}
+
+/* ── High contrast: overrides the palettes, so it works in light AND dark ── */
+:root[data-kontrast="hoch"] {
+  --ornament: 0;
+  --hatch: 0;
+  --l-bg: #ffffff;   --l-bg-2: #ffffff;   --l-surface: #ffffff; --l-surface-2: #ffffff;
+  --l-text: #000000; --l-muted: #131313;  --l-dim: #2b2b2b;
+  --l-line: #000000; --l-line-strong: #000000;
+  --l-shadow-1: none; --l-shadow-2: none;
+  --d-bg: #000000;   --d-bg-2: #000000;   --d-surface: #000000; --d-surface-2: #060606;
+  --d-text: #ffffff; --d-muted: #f2f2f2;  --d-dim: #dcdcdc;
+  --d-line: #ffffff; --d-line-strong: #ffffff;
+  --d-shadow-1: none; --d-shadow-2: none;
+}
+:root[data-kontrast="hoch"][data-skin="relic"]   { --l-accent:#6b3200; --l-secondary:#12463a; --l-rot:#8f1b0d; --l-seal:#4d1f44; --l-focus:#6b3200;
+                                                   --d-accent:#ffd479; --d-secondary:#8bf0cc; --d-rot:#ff9c90; --d-seal:#e0b6ea; --d-focus:#ffd479; }
+:root[data-kontrast="hoch"][data-skin="signal"]  { --l-accent:#004657; --l-secondary:#3b2185; --l-rot:#8f1b16; --l-seal:#5c1f52; --l-focus:#004657;
+                                                   --d-accent:#8ceeff; --d-secondary:#cbb4ff; --d-rot:#ffa199; --d-seal:#f5b6e4; --d-focus:#8ceeff; }
+:root[data-kontrast="hoch"][data-skin="archive"] { --l-accent:#6f1a0b; --l-secondary:#123a45; --l-rot:#8b2010; --l-seal:#3f2352; --l-focus:#6f1a0b;
+                                                   --d-accent:#ffb096; --d-secondary:#bfe0ea; --d-rot:#ffa08e; --d-seal:#dfbbf5; --d-focus:#ffb096; }
+:root[data-kontrast="hoch"][data-skin="clean"]   { --l-accent:#004d38; --l-secondary:#123a7d; --l-rot:#8c1a15; --l-seal:#4a2568; --l-focus:#004d38;
+                                                   --d-accent:#82f0c3; --d-secondary:#aacdff; --d-rot:#ffa39a; --d-seal:#dcb7ff; --d-focus:#82f0c3; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2 · RESET & FRAME
+   ══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+.app {
+  min-height: 100svh;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+}
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--hatch);
+  background-image:
+    repeating-linear-gradient(101deg, currentColor 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(11deg, currentColor 0 1px, transparent 1px 11px);
+}
+.app > * { position: relative; z-index: 1; }
+
+p, h1, h2, h3, h4, figure, ul, ol, dl, blockquote { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+:root[data-kontrast="hoch"] :focus-visible { outline-width: 3px; outline-offset: 3px; }
+
+.vh {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.skip {
+  position: absolute; left: calc(var(--u) * 3); top: calc(var(--u) * -14); z-index: 40;
+  background: var(--accent); color: var(--accent-ink);
+  padding: calc(var(--u) * 2) calc(var(--u) * 4); border-radius: var(--r-2);
+  text-decoration: none; font-weight: 650;
+  transition: top var(--dur-1) var(--ease);
+}
+.skip:focus-visible { top: calc(var(--u) * 3); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3 · CAMPAIGN CONTEXT
+   ══════════════════════════════════════════════════════════════════════════ */
+.ctx {
+  display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--u) * 3);
+  padding: calc(var(--u) * 3) calc(var(--u) * 4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+}
+.ctx-mark {
+  display: flex; align-items: center; gap: calc(var(--u) * 2.5);
+  min-width: 0;
+}
+.ctx-sigil {
+  width: 34px; height: 34px; flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-size: 13px; font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--accent);
+  background: var(--surface-2);
+}
+.ctx-title { min-width: 0; }
+.ctx-title b {
+  display: block; font-family: var(--font-display); font-size: 16px;
+  font-weight: 600; letter-spacing: .01em; line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.ctx-title span {
+  display: block; color: var(--dim); font-size: 11.5px;
+  letter-spacing: var(--tracking-label); text-transform: uppercase;
+  font-weight: var(--weight-label);
+}
+.ctx-spacer { flex: 1 1 auto; }
+.ctx-reader {
+  display: flex; align-items: center; gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5);
+  border: 1px solid var(--line); border-radius: var(--r-2);
+  background: var(--surface-2);
+  min-width: 0;
+}
+.ctx-reader .lbl {
+  font-size: 10.5px; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label);
+}
+.ctx-reader .who { font-weight: 650; overflow-wrap: anywhere; }
+.ctx-reader .who small { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4 · ACHSENPULT (the independent-axis console)
+   ══════════════════════════════════════════════════════════════════════════ */
+.axes {
+  display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2) calc(var(--u) * 5);
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 4);
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.axgrp { display: flex; align-items: center; gap: calc(var(--u) * 2); min-width: 0; }
+.axgrp > .cap {
+  font-size: 10.5px; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label); white-space: nowrap;
+}
+.seg { display: flex; border: 1px solid var(--line); border-radius: var(--r-2); overflow: hidden; background: var(--surface); }
+.seg button {
+  border: 0; background: transparent; cursor: pointer;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5);
+  font-size: 12.5px; font-weight: 560; white-space: nowrap;
+  color: var(--muted);
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+  border-right: 1px solid var(--line);
+}
+.seg button:last-child { border-right: 0; }
+.seg button:hover { background: var(--surface-2); color: var(--text); }
+.seg button[aria-pressed="true"] {
+  background: var(--accent); color: var(--accent-ink); font-weight: 680;
+}
+:root[data-kontrast="hoch"] .seg button[aria-pressed="true"] { outline: 1px solid var(--line); outline-offset: -1px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5 · SIX-ZONE FRAME
+   ══════════════════════════════════════════════════════════════════════════ */
+.frame {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 12.5rem) minmax(0, 15rem) minmax(0, 1fr) minmax(0, 22rem);
+  gap: calc(var(--u) * 4);
+  padding: calc(var(--u) * 4);
+  align-items: start;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-2);
+  min-width: 0;
+}
+.panel-hd {
+  display: flex; align-items: baseline; justify-content: space-between; gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 3.5);
+  border-bottom: 1px solid var(--line);
+  font-size: 10.5px; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label);
+}
+.panel-hd b { color: var(--muted); font-weight: var(--weight-label); }
+.panel-bd { padding: calc(var(--u) * 3.5); }
+
+/* — Module rail — */
+.rail-mod ul { display: flex; flex-direction: column; gap: calc(var(--u) * 1); }
+.mod {
+  display: flex; align-items: center; gap: calc(var(--u) * 2.5);
+  width: 100%; text-align: left; cursor: pointer;
+  border: 1px solid transparent; border-radius: var(--r-2);
+  background: transparent;
+  padding: calc(var(--u) * 2) calc(var(--u) * 2.5);
+  color: var(--muted);
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.mod:hover { background: var(--surface-2); color: var(--text); }
+.mod .gl { flex: none; width: 20px; text-align: center; color: var(--dim); font-size: 15px; font-family: var(--font-symbol); }
+.mod .tx { min-width: 0; overflow-wrap: anywhere; hyphens: auto; font-size: 13.5px; line-height: 1.3; }
+.mod[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--text); font-weight: 650;
+}
+.mod[aria-current="page"] .gl { color: var(--accent); }
+.mod .rt {
+  margin-left: auto; font-family: var(--font-mono); font-size: 9.5px;
+  color: var(--dim); opacity: .75; letter-spacing: 0;
+}
+
+/* — Collection rail — */
+.kodex { display: flex; flex-direction: column; gap: calc(var(--u) * .5); }
+.kodex > li { min-width: 0; }
+.kodex button {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  border: 0; border-left: 2px solid transparent; background: transparent;
+  padding: calc(var(--u) * 1.75) calc(var(--u) * 2.5);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.kodex button:hover { background: var(--surface-2); }
+.kodex button[aria-current="true"] {
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.kodex .t { display: block; font-size: 13.5px; overflow-wrap: anywhere; }
+.kodex button[aria-current="true"] .t { font-weight: 650; }
+.kodex .m {
+  display: block; font-size: 11px; color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.neu-mark {
+  display: inline-block; margin-left: calc(var(--u) * 1.5);
+  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  font-weight: 700; color: var(--accent-ink); background: var(--accent);
+  padding: 1px 5px; border-radius: var(--r-1); vertical-align: 1px;
+}
+.umbruch-note {
+  margin-top: calc(var(--u) * 3);
+  padding-top: calc(var(--u) * 3);
+  border-top: 1px dashed var(--line);
+  font-size: 12px; color: var(--muted);
+}
+.umbruch-note b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6 · THE ARTICLE (Primary Stage)
+   ══════════════════════════════════════════════════════════════════════════ */
+.stage { min-width: 0; }
+.stage .panel-bd { padding: calc(var(--u) * 6) calc(var(--u) * 6) calc(var(--u) * 7); }
+
+.at-kicker {
+  font-size: 10.5px; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label);
+}
+.at-titel {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4.4vw, 38px);
+  line-height: 1.1; font-weight: 600; letter-spacing: -.012em;
+  margin-top: calc(var(--u) * 1.5);
+  overflow-wrap: anywhere;
+}
+.at-sub { color: var(--muted); font-size: 14px; margin-top: calc(var(--u) * 1); }
+.at-rule {
+  height: 1px; background: var(--line-strong); opacity: .5;
+  margin: calc(var(--u) * 3) 0 calc(var(--u) * 2.5);
+}
+:root[data-skin="archive"] .at-rule { height: 3px; background: none; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); opacity: .55; }
+
+/* Saatbilanz */
+.bilanz {
+  display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1) calc(var(--u) * 3);
+  font-size: 12.5px; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.bilanz span { white-space: nowrap; }
+.bilanz b { color: var(--text); font-weight: 660; }
+.bilanz .achse { color: var(--accent); }
+.bilanz .achse b { color: var(--accent); }
+
+/* Infobox */
+.infobox {
+  float: right; width: 19.5rem; margin: 0 0 calc(var(--u) * 4) calc(var(--u) * 5);
+  border: 1px solid var(--line); border-radius: var(--r-2);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.infobox > figcaption {
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  font-family: var(--font-display); font-weight: 650; font-size: 14px;
+  text-align: center; border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.ib-art { padding: calc(var(--u) * 3) calc(var(--u) * 3) calc(var(--u) * 2); text-align: center; }
+.ib-art figcaption { font-size: 11px; color: var(--dim); margin-top: calc(var(--u) * 1.5); }
+.sigil-svg { display: block; margin: 0 auto; width: 88px; height: 96px; }
+.art-fallback {
+  width: 88px; height: 96px; margin: 0 auto; display: grid; place-items: center;
+  border: 1px dashed var(--line-strong); border-radius: var(--r-1);
+  font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--muted);
+  background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--line) 55%, transparent) 6px 7px);
+}
+:root[data-art="an"] .art-fallback { display: none; }
+:root[data-art="aus"] .art-paint { display: none; }
+
+.ib-rows { display: grid; grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr); }
+.ib-rows dt, .ib-rows dd {
+  padding: calc(var(--u) * 1.75) calc(var(--u) * 3);
+  border-top: 1px solid var(--line);
+  font-size: 12.5px; min-width: 0; overflow-wrap: anywhere;
+}
+.ib-rows dt { color: var(--dim); font-weight: var(--weight-label); }
+.ib-rows dd { margin: 0; }
+
+/* Sections & paragraphs */
+.at-abschnitt { margin-top: calc(var(--u) * 6); }
+.at-abschnitt > h2 {
+  font-family: var(--font-display); font-size: 19px; font-weight: 620;
+  letter-spacing: -.005em; padding-bottom: calc(var(--u) * 1.5);
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.abs { margin-top: calc(var(--u) * 3.5); max-width: var(--measure); }
+.abs > p { font-size: 15.5px; line-height: 1.66; }
+.abs-nr {
+  float: left; width: 2.6em; margin-left: -3.2em; text-align: right;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--dim);
+  padding-top: .45em; font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1500px) { .abs-nr { display: none; } }
+
+.wl { color: var(--secondary); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.wl:hover { text-decoration-thickness: 2px; }
+.rl { color: var(--rot); text-decoration: underline dotted; text-underline-offset: 3px; }
+
+/* Footnote marker */
+.fn-marker {
+  border: 0; background: transparent; cursor: pointer; padding: 0 1px;
+  color: var(--accent); font-size: 11.5px; vertical-align: super;
+  font-variant-numeric: tabular-nums; font-weight: 700;
+  transition: color var(--dur-1) var(--ease);
+}
+.fn-marker:hover { color: var(--text); }
+.fn-marker[aria-expanded="true"] { color: var(--text); background: color-mix(in srgb, var(--accent) 30%, transparent); border-radius: var(--r-1); }
+
+/* the minted paragraph */
+.abs[data-neu="true"] {
+  border-left: 2px solid var(--accent);
+  padding-left: calc(var(--u) * 3);
+  margin-left: calc(var(--u) * -3.5);
+}
+.abs-ankunft {
+  animation: ankunft var(--dur-3) var(--ease) both;
+}
+@keyframes ankunft {
+  from { opacity: 0; transform: translateY(9px); }
+  to   { opacity: 1; transform: none; }
+}
+.arrival-tag {
+  display: inline-block; margin-left: calc(var(--u) * 2);
+  font-size: 10px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700;
+  color: var(--accent); border: 1px solid currentColor; border-radius: var(--r-1);
+  padding: 0 5px; vertical-align: 2px;
+}
+
+/* Provenance chips — four independent channels: glyph, colour, stroke, weekday text */
+.chips { display: flex; flex-direction: column; gap: calc(var(--u) * 1); margin-top: calc(var(--u) * 2); }
+.chip {
+  display: flex; align-items: baseline; gap: calc(var(--u) * 2);
+  font-size: 11.5px; color: var(--muted);
+  padding: calc(var(--u) * .75) calc(var(--u) * 2);
+  background: var(--surface-2);
+  border-left: 3px solid var(--dim);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.chip .g { flex: none; width: 1.2em; text-align: center; font-size: 13px; font-family: var(--font-symbol); }
+.chip .wd {
+  flex: none; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; font-size: 10px;
+  border: 1px solid currentColor; border-radius: var(--r-1);
+  padding: 0 4px;
+}
+.chip[data-kanal="getippt"]   { border-left-style: dotted; color: var(--dim); }
+.chip[data-kanal="wurf"]      { border-left-color: var(--accent); color: var(--muted); }
+.chip[data-kanal="brief"]     { border-left-style: dashed; border-left-color: var(--secondary); }
+.chip[data-kanal="vollmacht"] { border-left-style: double; border-left-width: 4px; border-left-color: var(--seal); }
+.chip[data-kanal="ereignis"]  { border-left-color: var(--danger); }
+.chip[data-wochentag="werktag"] .wd { color: var(--accent); }
+
+/* Plates */
+.tafeln { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: calc(var(--u) * 3); margin-top: calc(var(--u) * 5); }
+.tafel { border: 1px solid var(--line); border-radius: var(--r-2); overflow: hidden; background: var(--surface-2); min-width: 0; }
+.tafel .bild { height: 108px; position: relative; }
+.tafel .art-paint {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 90% at 30% 12%, color-mix(in srgb, var(--accent) 42%, transparent), transparent 62%),
+    linear-gradient(168deg, color-mix(in srgb, var(--secondary) 34%, transparent), transparent 58%),
+    repeating-linear-gradient(74deg, color-mix(in srgb, var(--text) 22%, transparent) 0 1px, transparent 1px 5px),
+    linear-gradient(200deg, var(--surface), var(--bg-2));
+}
+.tafel .art-fallback {
+  position: absolute; inset: 0; width: auto; height: auto;
+  font-size: 12px; font-family: var(--font-body); color: var(--dim);
+  text-align: center; padding: calc(var(--u) * 2);
+  border: 0; border-bottom: 1px dashed var(--line-strong);
+  background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--line) 60%, transparent) 8px 9px);
+}
+.tafel figcaption { padding: calc(var(--u) * 2) calc(var(--u) * 2.5); font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+.tafel figcaption b { display: block; color: var(--text); font-weight: 620; font-size: 12px; }
+
+/* Siehe auch */
+.siehe { margin-top: calc(var(--u) * 6); padding-top: calc(var(--u) * 3); border-top: 1px solid var(--line); }
+.siehe h2 { font-family: var(--font-display); font-size: 15px; font-weight: 620; }
+.siehe ul { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1) calc(var(--u) * 4); margin-top: calc(var(--u) * 2); font-size: 13.5px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7 · DIE TÜR — the red link that is a door
+   ══════════════════════════════════════════════════════════════════════════ */
+.tuerzeile { display: flex; flex-direction: column; gap: calc(var(--u) * 1.5); }
+.tuer {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: calc(var(--u) * .5) calc(var(--u) * 2);
+  align-self: flex-start; max-width: 100%;
+  border-radius: var(--r-3);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+  padding: calc(var(--u) * 1) calc(var(--u) * 2.5);
+  cursor: pointer;
+  font-size: 12.5px; font-weight: 600;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+  text-align: left; min-width: 0;
+}
+.tuer:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); border-color: var(--accent); }
+.tuer:active { transform: translateY(1px); }
+.tuer .schwelle {
+  font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+  color: var(--accent); font-variant-numeric: tabular-nums;
+  min-width: 0; overflow-wrap: anywhere;
+}
+.tuer .ziel { display: inline-flex; align-items: center; gap: calc(var(--u) * 1.5); min-width: 0; }
+.tuer .ziel span { overflow-wrap: anywhere; }
+/* Inside the 19.5 rem infobox the threshold wraps to its own line instead of clipping. */
+.ib-rows .tuerzeile { min-width: 0; }
+.ib-rows .tuer { padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5); }
+.tuer .arr { color: var(--accent); font-family: var(--font-symbol); }
+.tuer-meta { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.nurleitung {
+  display: inline-flex; align-items: center; gap: calc(var(--u) * 1.5);
+  align-self: flex-start;
+  font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+  color: var(--seal); border: 1px dashed currentColor; border-radius: var(--r-1);
+  padding: 1px 6px;
+}
+.inline-tuer {
+  border: 0; padding: 0 3px; margin: 0 -1px; cursor: pointer;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text); border-bottom: 1px solid var(--accent);
+  border-radius: var(--r-1) var(--r-1) 0 0;
+  font: inherit;
+  transition: background var(--dur-1) var(--ease);
+}
+.inline-tuer:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+.inline-tuer .wd {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--accent); margin-left: 4px; vertical-align: 1px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8 · CONTEXT LENS
+   ══════════════════════════════════════════════════════════════════════════ */
+.lens { display: flex; flex-direction: column; gap: calc(var(--u) * 4); min-width: 0; }
+.lens .panel-bd { padding: calc(var(--u) * 3.5); }
+.lens h3 {
+  font-size: 10.5px; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label);
+  margin-bottom: calc(var(--u) * 2);
+}
+.hint { font-size: 12px; color: var(--dim); line-height: 1.5; }
+.hint + .hint { margin-top: calc(var(--u) * 2); }
+
+/* Beleg / trace */
+.beleg {
+  font-family: var(--font-mono); font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--r-2); padding: calc(var(--u) * 3);
+  overflow-x: auto;
+}
+.beleg-kopf { color: var(--muted); font-size: 11px; margin-bottom: calc(var(--u) * 2); }
+.beleg-kopf b { color: var(--text); }
+.beleg-row { display: grid; grid-template-columns: 3.2em minmax(0, 1fr); gap: calc(var(--u) * 2); padding: 2px 0; }
+.beleg-row .v { text-align: right; white-space: nowrap; }
+.beleg-row .t { color: var(--muted); overflow-wrap: anywhere; font-family: var(--font-body); font-size: 11.5px; line-height: 1.45; }
+.beleg-row.plus .v  { color: var(--ok); }
+.beleg-row.minus .v { color: var(--danger); }
+.beleg-sum { border-top: 1px solid var(--line-strong); margin-top: calc(var(--u) * 1.5); padding-top: calc(var(--u) * 1.5); }
+.beleg-sum .v { font-weight: 700; color: var(--text); }
+.beleg-fuss { margin-top: calc(var(--u) * 2.5); font-size: 10.5px; color: var(--dim); line-height: 1.5; overflow-wrap: anywhere; }
+
+/* actions */
+.actions { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 3); }
+.btn {
+  border: 1px solid var(--line-strong); border-radius: var(--r-2);
+  background: var(--surface-2); cursor: pointer;
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  font-size: 12.5px; font-weight: 620;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+  overflow-wrap: anywhere; text-align: left;
+}
+.btn:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn .kbd {
+  font-family: var(--font-mono); font-size: 10.5px; opacity: .8;
+  border: 1px solid currentColor; border-radius: var(--r-1); padding: 0 4px; margin-left: 6px;
+}
+
+.kodexzeile {
+  border-left: 3px dotted var(--dim); background: var(--surface-2);
+  padding: calc(var(--u) * 2) calc(var(--u) * 2.5); font-size: 12px;
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+}
+.kodexzeile b { display: block; color: var(--text); }
+.kodexzeile small { color: var(--dim); }
+
+/* Zwillingsbeweis */
+.zwilling { display: flex; flex-direction: column; gap: calc(var(--u) * 2); }
+.zw-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: calc(var(--u) * 2);
+  align-items: baseline;
+  font-size: 12px; padding: calc(var(--u) * 1.5) 0;
+  border-bottom: 1px dashed var(--line);
+}
+.zw-row .n { overflow-wrap: anywhere; }
+.zw-row .b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.verdict {
+  display: flex; gap: calc(var(--u) * 2); align-items: flex-start;
+  font-size: 12.5px; padding: calc(var(--u) * 2.5);
+  border: 1px solid var(--line); border-radius: var(--r-2); background: var(--surface-2);
+}
+.verdict .m { flex: none; font-weight: 700; }
+.verdict[data-ok="ja"]   { border-color: color-mix(in srgb, var(--ok) 60%, var(--line)); }
+.verdict[data-ok="ja"] .m { color: var(--ok); }
+.verdict[data-ok="nein"] { border-color: color-mix(in srgb, var(--danger) 60%, var(--line)); }
+.verdict[data-ok="nein"] .m { color: var(--danger); }
+
+/* Prüfstand */
+.pruef { display: flex; flex-direction: column; }
+.pz {
+  display: grid; grid-template-columns: 1.4em minmax(0, 1fr) auto;
+  gap: calc(var(--u) * 2); align-items: baseline;
+  padding: calc(var(--u) * 2) 0; border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.pz:last-child { border-bottom: 0; }
+.pz .s { font-weight: 700; text-align: center; }
+.pz[data-s="ok"] .s   { color: var(--ok); }
+.pz[data-s="warn"] .s { color: var(--danger); }
+.pz[data-s="idle"] .s { color: var(--dim); }
+.pz .n { overflow-wrap: anywhere; }
+.pz .n small { display: block; color: var(--dim); font-size: 10.5px; line-height: 1.4; }
+.pz .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; font-size: 11.5px; }
+
+.tabelle-scroll { overflow-x: auto; }
+.kontrast-tab { border-collapse: collapse; width: 100%; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.kontrast-tab th, .kontrast-tab td { text-align: right; padding: calc(var(--u) * 1.25) calc(var(--u) * 1.5); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.kontrast-tab th:first-child, .kontrast-tab td:first-child { text-align: left; }
+.kontrast-tab thead th { color: var(--dim); font-weight: var(--weight-label); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.kontrast-tab td.bad { color: var(--danger); font-weight: 700; }
+.kontrast-tab td.good { color: var(--ok); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9 · SESSION SHELF — die Woche
+   ══════════════════════════════════════════════════════════════════════════ */
+.shelf {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--u) * 3) calc(var(--u) * 5);
+  padding: calc(var(--u) * 3) calc(var(--u) * 4);
+  background: var(--surface);
+  border-top: 1px solid var(--line-strong);
+  box-shadow: 0 -10px 30px -26px rgba(0,0,0,.8);
+}
+.woche-item { display: flex; align-items: baseline; gap: calc(var(--u) * 2); min-width: 0; }
+.woche-item .k {
+  font-size: 10px; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label); white-space: nowrap;
+}
+.woche-item .v { font-family: var(--font-display); font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.woche-item .n { font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+.brief-chip {
+  display: inline-flex; align-items: center; gap: calc(var(--u) * 1.5);
+  border: 1px dashed var(--secondary); color: var(--secondary);
+  border-radius: 999px; padding: calc(var(--u) * .75) calc(var(--u) * 2.5);
+  font-size: 11.5px; font-variant-numeric: tabular-nums;
+  transition: background var(--dur-3) var(--ease), border-color var(--dur-3) var(--ease), color var(--dur-3) var(--ease);
+}
+.brief-chip[data-zustand="zugestellt"] {
+  border-style: solid;
+  background: color-mix(in srgb, var(--secondary) 16%, transparent);
+  color: var(--text);
+}
+.brief-chip .an {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--secondary);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   10 · MOTION OFF
+   ══════════════════════════════════════════════════════════════════════════ */
+:root[data-motion="reduziert"] .app,
+:root[data-motion="reduziert"] .app *,
+:root[data-motion="reduziert"] .app *::before,
+:root[data-motion="reduziert"] .app *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-motion="system"] .app,
+  :root[data-motion="system"] .app *,
+  :root[data-motion="system"] .app *::before,
+  :root[data-motion="system"] .app *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   11 · RESPONSIVE — down to 380 px, body never scrolls sideways
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1400px) {
+  .frame { grid-template-columns: minmax(0, 11rem) minmax(0, 13.5rem) minmax(0, 1fr) minmax(0, 20rem); gap: calc(var(--u) * 3); }
+}
+@media (max-width: 1180px) {
+  .frame {
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+    grid-template-areas: "mod col" "mod stage" "mod lens";
+  }
+  .rail-mod { grid-area: mod; }
+  .rail-col { grid-area: col; }
+  .stage    { grid-area: stage; }
+  .lens     { grid-area: lens; flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+  .lens > .panel { flex: 1 1 20rem; }
+}
+@media (max-width: 880px) {
+  .frame { grid-template-columns: minmax(0, 1fr); grid-template-areas: "mod" "col" "stage" "lens"; }
+  .rail-mod ul { flex-direction: row; overflow-x: auto; gap: calc(var(--u) * 1.5); padding-bottom: calc(var(--u) * 1); }
+  .mod { width: auto; white-space: nowrap; }
+  .mod .tx { overflow-wrap: normal; }
+  .mod .rt { display: none; }
+  .infobox { float: none; width: auto; margin: 0 0 calc(var(--u) * 4); }
+  .stage .panel-bd { padding: calc(var(--u) * 4); }
+}
+@media (max-width: 560px) {
+  .app { font-size: 14.5px; }
+  .ctx, .axes, .shelf { padding-left: calc(var(--u) * 3); padding-right: calc(var(--u) * 3); }
+  .frame { padding: calc(var(--u) * 3); gap: calc(var(--u) * 3); }
+  .stage .panel-bd { padding: calc(var(--u) * 3.5); }
+  .axes { gap: calc(var(--u) * 2) calc(var(--u) * 3); }
+  .axgrp { flex: 1 1 100%; }
+  .ib-rows { grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr); }
+  .beleg-row { grid-template-columns: 2.8em minmax(0, 1fr); }
+  .abs > p { font-size: 15px; }
+}
+</style>
+
+<div class="app">
+  <a class="skip" href="#stage">Zum Artikel springen</a>
+
+  <!-- ═══ Campaign Context ═══════════════════════════════════════════════ -->
+  <header class="ctx" data-komponente="kontext">
+    <div class="ctx-mark">
+      <div class="ctx-sigil" id="ctxSigil" aria-hidden="true">AF</div>
+      <div class="ctx-title">
+        <b id="ctxKampagne">Aldenfall · Die Saatkammer</b>
+        <span id="ctxLage">Mittwoch · keine Sitzung · Sitzung 15 am Sa 19:52</span>
+      </div>
+    </div>
+    <div class="ctx-spacer"></div>
+    <div class="ctx-reader">
+      <span class="lbl">Leser</span>
+      <span class="who" id="ctxLeser">Sera Valdris<small>Spielerin · Sicht(Sera)</small></span>
+    </div>
+  </header>
+
+  <!-- ═══ Achsenpult ═════════════════════════════════════════════════════ -->
+  <div class="axes" role="region" aria-label="Achsenpult — jede Achse schaltet unabhängig">
+    <div class="axgrp">
+      <span class="cap" id="capInhalt">Inhalt</span>
+      <div class="seg" role="group" aria-labelledby="capInhalt" id="segWelt">
+        <button type="button" data-v="aldenfall" aria-pressed="true">Fantasy</button>
+        <button type="button" data-v="kepler" aria-pressed="false">Science-Fiction</button>
+        <button type="button" data-v="nebelakte" aria-pressed="false">Mystery</button>
+      </div>
+    </div>
+    <div class="axgrp">
+      <span class="cap" id="capSkin">Skin</span>
+      <div class="seg" role="group" aria-labelledby="capSkin" id="segSkin">
+        <button type="button" data-v="relic" aria-pressed="true">Relic</button>
+        <button type="button" data-v="signal" aria-pressed="false">Signal</button>
+        <button type="button" data-v="archive" aria-pressed="false">Archive</button>
+        <button type="button" data-v="clean" aria-pressed="false">Clean</button>
+      </div>
+    </div>
+    <div class="axgrp">
+      <span class="cap" id="capRolle">Rolle</span>
+      <div class="seg" role="group" aria-labelledby="capRolle" id="segRolle">
+        <button type="button" data-v="leitung" aria-pressed="false">Spielleitung</button>
+        <button type="button" data-v="spielerin" aria-pressed="true">Inhaberin</button>
+        <button type="button" data-v="beobachter" aria-pressed="false">Beobachter</button>
+      </div>
+    </div>
+    <div class="axgrp">
+      <span class="cap" id="capThema">Thema</span>
+      <div class="seg" role="group" aria-labelledby="capThema" id="segThema">
+        <button type="button" data-v="light" aria-pressed="false">Hell</button>
+        <button type="button" data-v="system" aria-pressed="true">System</button>
+        <button type="button" data-v="dark" aria-pressed="false">Dunkel</button>
+      </div>
+    </div>
+    <div class="axgrp">
+      <span class="cap" id="capKontrast">Kontrast</span>
+      <div class="seg" role="group" aria-labelledby="capKontrast" id="segKontrast">
+        <button type="button" data-v="standard" aria-pressed="true">Standard</button>
+        <button type="button" data-v="hoch" aria-pressed="false">Hoch</button>
+      </div>
+    </div>
+    <div class="axgrp">
+      <span class="cap" id="capMotion">Bewegung</span>
+      <div class="seg" role="group" aria-labelledby="capMotion" id="segMotion">
+        <button type="button" data-v="system" aria-pressed="true">System</button>
+        <button type="button" data-v="reduziert" aria-pressed="false">Reduziert</button>
+      </div>
+    </div>
+    <div class="axgrp">
+      <span class="cap" id="capLabels">Beschriftung</span>
+      <div class="seg" role="group" aria-labelledby="capLabels" id="segLabels">
+        <button type="button" data-v="kurz" aria-pressed="true">Kurz</button>
+        <button type="button" data-v="lang" aria-pressed="false">Lange Übersetzung</button>
+      </div>
+    </div>
+    <div class="axgrp">
+      <span class="cap" id="capArt">Artwork</span>
+      <div class="seg" role="group" aria-labelledby="capArt" id="segArt">
+        <button type="button" data-v="an" aria-pressed="true">An</button>
+        <button type="button" data-v="aus" aria-pressed="false">Fehlt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Frame ══════════════════════════════════════════════════════════ -->
+  <main class="frame">
+
+    <!-- Module Rail -->
+    <nav class="panel rail-mod" aria-label="Module" data-komponente="modulschiene">
+      <div class="panel-hd"><span>Module</span><b id="modHdRoute">route ≡</b></div>
+      <div class="panel-bd">
+        <ul id="modListe"></ul>
+      </div>
+    </nav>
+
+    <!-- Collection Rail -->
+    <aside class="panel rail-col" aria-label="Kodex" data-komponente="sammelschiene">
+      <div class="panel-hd"><span id="colHd">Kodex</span><b id="colZahl">— Einträge</b></div>
+      <div class="panel-bd">
+        <ul class="kodex" id="kodexListe"></ul>
+        <p class="umbruch-note" id="umbruchNote"></p>
+      </div>
+    </aside>
+
+    <!-- Primary Stage -->
+    <section class="panel stage" id="stage" aria-label="Artikel" data-komponente="buehne" tabindex="-1">
+      <div class="panel-hd"><span id="stageHd">Geschichte · Artikel</span><b id="stageMeta">Umbruch scharf</b></div>
+      <div class="panel-bd" id="artikelHost"></div>
+    </section>
+
+    <!-- Context Lens -->
+    <div class="lens" data-komponente="linse">
+      <section class="panel" aria-labelledby="lensBelegHd">
+        <div class="panel-hd"><span id="lensBelegHd">Beleg · Rechenweg</span><b id="lensBelegMeta">—</b></div>
+        <div class="panel-bd" id="belegHost"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="lensZwHd">
+        <div class="panel-hd"><span id="lensZwHd">Zwillingsbeweis</span><b>tuer_zustand</b></div>
+        <div class="panel-bd">
+          <p class="hint">Die Tür ist ein Orakel. Sie darf <b>nur</b> für ihre Inhaberin existieren. Der Beweis rendert dieselbe Infobox-Zeile für drei Leser und vergleicht die Bytes.</p>
+          <div class="actions">
+            <button class="btn" type="button" id="btnZwilling">Zwillingsbeweis ausführen</button>
+          </div>
+          <div id="zwHost" class="zwilling" style="margin-top: 12px"></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="lensPruefHd">
+        <div class="panel-hd"><span id="lensPruefHd">Prüfstand</span><b>im Browser gemessen</b></div>
+        <div class="panel-bd">
+          <p class="hint">Kein Screenshot behauptet etwas. Diese Zeilen messen das laufende Dokument.</p>
+          <div class="actions">
+            <button class="btn primary" type="button" id="btnPruef">Prüfstand laufen lassen</button>
+            <button class="btn" type="button" id="btnKontrast">Kontrast über 16 Kombinationen</button>
+          </div>
+          <div class="pruef" id="pruefHost" style="margin-top: 10px"></div>
+          <div class="tabelle-scroll" id="kontrastHost" style="margin-top: 12px"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ═══ Session Shelf — die Woche ══════════════════════════════════════ -->
+  <footer class="shelf" aria-label="Die Woche" data-komponente="regal">
+    <div class="woche-item" id="wocheItemTueren">
+      <span class="k">Offene Türen</span>
+      <span class="v" id="wocheTueren">3</span>
+      <span class="n">kann nur fallen</span>
+    </div>
+    <div class="woche-item" id="wocheItemVollmacht">
+      <span class="k">Vollmacht</span>
+      <span class="n" id="wocheVollmacht">v_031 · ausgestellt Sa 23:41 · verfällt zu Sitzung 15</span>
+    </div>
+    <div class="woche-item" id="wocheItemBeobachter" hidden>
+      <span class="k">Die Woche</span>
+      <span class="n">Für einen Beobachter ist diese Leiste leer. Nicht ausgegraut — leer.</span>
+    </div>
+    <div class="woche-item" id="wocheItemPost">
+      <span class="k">Post</span>
+      <span class="brief-chip" id="briefChip" data-zustand="unterwegs">
+        <span aria-hidden="true">✉</span>
+        <span class="an" id="briefWd">Mo</span>
+        <span id="briefTxt">Brannt an Sera · Postlaufzeit 2 Tage · unterwegs</span>
+      </span>
+    </div>
+    <div class="ctx-spacer"></div>
+    <div class="actions" style="margin: 0">
+      <button class="btn" type="button" id="btnReset">Vorführung zurücksetzen</button>
+    </div>
+  </footer>
+
+  <p class="vh" id="ansage" role="status" aria-live="polite"></p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ────────────────────────────────────────────────────────────────────────
+     0 · Instrumentation: this lineage refuses innerHTML in the render path.
+        We count assignments so the Prüfstand can print a measured number
+        instead of a promise.
+     ──────────────────────────────────────────────────────────────────────── */
+  var innerHTMLSchreibungen = 0;
+  (function () {
+    var d = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
+    if (!d || !d.set) return;
+    Object.defineProperty(Element.prototype, "innerHTML", {
+      configurable: true,
+      enumerable: d.enumerable,
+      get: function () { return d.get.call(this); },
+      set: function (v) { innerHTMLSchreibungen++; d.set.call(this, v); }
+    });
+  })();
+
+  var root = document.documentElement;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ────────────────────────────────────────────────────────────────────────
+     1 · Tiny DOM builder — no innerHTML, no template strings into the DOM.
+     ──────────────────────────────────────────────────────────────────────── */
+  function el(tag, props) {
+    var n = document.createElement(tag), k;
+    if (props) for (k in props) {
+      if (!Object.prototype.hasOwnProperty.call(props, k)) continue;
+      var v = props[k];
+      if (v === null || v === undefined || v === false) continue;
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k === "html") throw new Error("verboten");
+      else if (k.slice(0, 2) === "on") n.addEventListener(k.slice(2), v);
+      else if (k.slice(0, 5) === "data-" || k.slice(0, 5) === "aria-") n.setAttribute(k, v);
+      else if (k in n && k !== "list") { try { n[k] = v; } catch (e) { n.setAttribute(k, v); } }
+      else n.setAttribute(k, v);
+    }
+    for (var i = 2; i < arguments.length; i++) add(n, arguments[i]);
+    return n;
+  }
+  function add(parent, child) {
+    if (child === null || child === undefined || child === false) return;
+    if (Array.isArray(child)) { child.forEach(function (c) { add(parent, c); }); return; }
+    parent.appendChild(typeof child === "object" ? child : document.createTextNode(String(child)));
+  }
+  function leeren(n) { while (n.firstChild) n.removeChild(n.firstChild); return n; }
+  function svg(tag, attrs) {
+    var n = document.createElementNS("http://www.w3.org/2000/svg", tag), k;
+    for (k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    for (var i = 2; i < arguments.length; i++) if (arguments[i]) n.appendChild(arguments[i]);
+    return n;
+  }
+
+  /* Inline markup: [[Ziel]] blue wiki link · [[Ziel|rot]] red link. */
+  function inline(text, ziel) {
+    var out = [], re = /\[\[([^\]|]+)(?:\|(rot))?\]\]/g, last = 0, m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) out.push(text.slice(last, m.index));
+      out.push(el("a", {
+        class: m[2] === "rot" ? "rl" : "wl",
+        href: "#",
+        text: m[1],
+        title: m[2] === "rot" ? "Kein Eintrag" : "Eintrag vorhanden",
+        onclick: function (e) { e.preventDefault(); }
+      }));
+      last = re.lastIndex;
+    }
+    if (last < text.length) out.push(text.slice(last));
+    return out;
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     2 · Beschriftungen — the long-translation axis.
+     ──────────────────────────────────────────────────────────────────────── */
+  var L = {
+    kurz: {
+      module:   ["Sitzung", "Geschichte", "Ensemble", "Bibliothek", "Tisch", "Schmiede"],
+      herkunft: "Herkunft einblenden",
+      herkunftAus: "Herkunft ausblenden",
+      tuerAktion: function (p, sg) { return p + " gegen " + sg; },
+      praegen:  "Prägen",
+      kodex:    "Kodex",
+      beleg:    "Beleg · Rechenweg"
+    },
+    lang: {
+      module:   ["Sitzungsvorbereitung und Nachbereitung",
+                 "Geschichtsarchiv mit Herkunftsschicht",
+                 "Personenverzeichnis und Briefwechsel",
+                 "Bibliothek, Vollmachten und Briefe",
+                 "Spieltisch ohne Leinwand (Gliederungsansicht)",
+                 "Werkstatt für Regelkarten und Vollmachtszettel"],
+      herkunft: "Herkunftsschicht mit Wochentagskanal einblenden",
+      herkunftAus: "Herkunftsschicht mit Wochentagskanal ausblenden",
+      tuerAktion: function (p, sg) { return "Probe auf " + p + " gegen Schwierigkeitsgrad " + sg + " durchführen"; },
+      praegen:  "In den Kanon prägen und Fußnote setzen",
+      kodex:    "Wissensverzeichnis dieser Kampagne",
+      beleg:    "Beleg · vollständiger Rechenweg der Probe"
+    }
+  };
+
+  var ROUTEN = ["session", "story", "cast", "library", "table", "forge"];
+  var GLYPHEN = ["◷", "▤", "☗", "▦", "▣", "⚒"];
+
+  /* ────────────────────────────────────────────────────────────────────────
+     3 · Content packages. Same shape, three genres.
+     ──────────────────────────────────────────────────────────────────────── */
+  var WELTEN = {
+
+    aldenfall: {
+      kuerzel: "AF",
+      kampagne: "Aldenfall · Die Saatkammer",
+      lage: "Mittwoch · keine Sitzung · Sitzung 15 am Sa 19:52",
+      modulNamen: ["Sitzung", "Geschichte", "Ensemble", "Bibliothek", "Tisch", "Schmiede"],
+      sigilForm: "schild",
+      leser: {
+        leitung:    { name: "Kaya",         rolle: "Spielleitung · NurLeitung" },
+        spielerin:  { name: "Sera Valdris", rolle: "Spielerin · Sicht(Sera)" },
+        beobachter: { name: "Timo",         rolle: "Beobachter · Sicht(öffentlich)" }
+      },
+      kodex: [
+        { t: "Haus Vharon",        m: "31 Absätze · 3 neu", neu: true, aktiv: true },
+        { t: "Die Saatkammer",     m: "12 Absätze" },
+        { t: "Der Bruch von 843",  m: "8 Absätze" },
+        { t: "Fährgilde Aldenfall",m: "6 Absätze" },
+        { t: "Hauptmann Vaugn",    m: "9 Absätze · 1 neu", neu: true },
+        { t: "Wollmarkt",          m: "4 Absätze" }
+      ],
+      umbruch: { neu: 4, behaelter: "Buch", satz: "Sie stehen an ihrem Ort im Artikel, nicht in einer Liste." },
+      artikel: {
+        kicker: "Adelshaus · Oberstadt",
+        titel: "Haus Vharon",
+        sub: "Handelshaus der Oberstadt Aldenfall, seit 812 n. d. F. im Rat",
+        bilanz: { zeilen: 11, absaetze: 31, getippt: 3, ausgeloest: 8, tisch: 14, zwischen: 6 },
+        infobox: {
+          titel: "Haus Vharon",
+          bildunterschrift: "Wappen des Hauses, Fassung von 843",
+          zeilen: [["Sitz", "Aldenfall, Oberstadt"], ["Oberhaupt", "Ilva Vharon"],
+                   ["Gegründet", "812 n. d. F."], ["Siegelbücher", "doppelt geführt"]],
+          tuer: { feld: "Kanzlei", ziel: "Ossa", rot: "Ossa (kein Eintrag)" }
+        },
+        abschnitte: [
+          { h: "Ursprung", absaetze: [
+            { nr: 3, t: "Haus Vharon erscheint in den Steuerlisten der Oberstadt erstmals im Jahr 812, zwölf Jahre nach dem Fall, als Pächter zweier Speicher am [[Wollmarkt]]. Der Aufstieg in den Rat vollzog sich ohne Fehde und ohne Heirat, was in Aldenfall bis heute als Hinweis auf Geld gelesen wird." },
+            { nr: 4, t: "Die Familie führt sich auf einen Saatmeister der ersten Stadt zurück. Ein Beleg dafür fehlt. Die Behauptung steht seit 830 in den eigenen Büchern und ist seither von niemandem geprüft worden." }
+          ]},
+          { h: "Die Saatkammer", absaetze: [
+            { nr: 11, t: "Unter dem Stadthaus liegt eine gemauerte Kammer, in der das Haus Saatgut für die Oberstadt lagert. Sie ist kein Keller, sondern ein Archiv: jede Lieferung wird mit Datum, Herkunft und Siegel verzeichnet, und die Verzeichnisse verlassen das Haus nicht.",
+              chip: { k: "getippt", g: "¶", wd: "—", t: "14. März · getippt · Vorbereitung" } },
+            { nr: 12, u: true, t: "[[Sera Valdris]] betrat die Archivnische am Abend des 21. Mai. Was dort verzeichnet stand, deckte sich nicht mit dem Bestand, den der Rat der Stadt ausweist.",
+              chip: { k: "wurf", g: "⚄", wd: "Sa", t: "21:29 · Sitzung 14 · Betreten · Archivnische · Sera, Brannt" } }
+          ]},
+          { h: "Der Bruch von 843", absaetze: [
+            { nr: 19, u: true, t: "843 verließ ein Drittel der Bediensteten das Haus innerhalb von neun Tagen. Die Stadtchronik nennt eine Seuche, die Kirchenbücher nennen keine Toten.",
+              chip: { k: "ereignis", g: "✝", wd: "Sa", t: "22:51 · Sitzung 17 · Niederschlag · Hauptmann Vaugn" } },
+            { nr: 20, t: "Seither führt das Haus seine Siegelbücher an zwei Orten. Der zweite Ort ist die {TUER}, und wer dort steht, steht in der Oberstadt nicht." }
+          ]},
+          { h: "Besitz und Kanzleien", absaetze: [
+            { nr: 25, u: true, t: "Das Haus hält vier Speicher, zwei Mühlen und einen Anteil an der [[Fährgilde]]. Verwaltet wird dieser Besitz nicht im Stadthaus, sondern auswärts — was in den Ratsprotokollen als Bequemlichkeit vermerkt ist.",
+              chip: { k: "brief", g: "✉", wd: "Mo", t: "15. Juni 18:02 · Brief · Brannt an Sera · Postlaufzeit 2 Tage · zugestellt Mi 06:00" } }
+          ]},
+          { h: "Rezeption", absaetze: [
+            { nr: 30, t: "In der Oberstadt gilt Haus Vharon als langweilig. Diese Einschätzung stammt aus einer Zeit, in der niemand die zweiten Bücher kannte." }
+          ]}
+        ],
+        neuerAbsatz: {
+          nr: 26,
+          t: "Die Kanzlei Ossa führt die Siegelbücher des Hauses doppelt: ein Buch für die Oberstadt, ein Buch für die Saatkammer. Wer im zweiten Buch steht, taucht im ersten nicht auf.",
+          chip: { k: "vollmacht", g: "◈", wd: "Di", t: "16. Juni 22:41 · Vollmacht · „Frag in der Kanzlei nach“ · Sera · 21 gegen 18" }
+        },
+        tafeln: [
+          { b: "Tafel I", t: "Das Stadthaus von der Wollmarktseite, Radierung um 860" },
+          { b: "Tafel II", t: "Siegel des Hauses, Fassung 843, mit dem zweiten Ring" },
+          { b: "Tafel III", t: "Grundriss der Saatkammer nach der Vermessung von 851" }
+        ],
+        siehe: ["Kanzlei Ossa|rot", "Die Saatkammer", "Der Bruch von 843", "Fährgilde Aldenfall"]
+      },
+      probe: {
+        name: "Nachforschen", attribut: "Weisheit", attributWert: 4,
+        thema: "haus-vharon", themaText: "du hältst 4 Passagen über Haus Vharon",
+        hoerensagen: "du kennst die Kanzlei nur aus Brannts Brief (Mo 18:02) — Hörensagen zählt nicht",
+        sg: 18, wann: "Di 16. Juni, 22:41:08",
+        vollmacht: "v_031 · ausgestellt Sa 23:41, Sitzung 14 · verfällt zu Sitzung 15",
+        regelpaket: "hausregeln-aldenfall 2.3 · Klausel k_nachforschen@r4 · Wurf w_212 · dauerhaft",
+        misserfolg: "Di 22:41 — in der Kanzlei nachgefragt, nichts erfahren.",
+        slHinweis: "Sera war in der Kanzlei und hat nichts gefunden. Jetzt weißt du, wo etwas hingehört."
+      },
+      brief: { von: "Brannt", an: "Sera", laufzeit: "Postlaufzeit 2 Tage", ab: "Mo", an_tag: "Mi 06:00" }
+    },
+
+    kepler: {
+      kuerzel: "K9",
+      kampagne: "Kepler-9 · Das leere Signal",
+      lage: "Zyklustag 3 · keine Schicht · Schicht 15 am Sa 19:52",
+      modulNamen: ["Schicht", "Archivstrang", "Besatzung", "Depot", "Brücke", "Werkbank"],
+      sigilForm: "sechseck",
+      leser: {
+        leitung:    { name: "Kaya",          rolle: "Spielleitung · NurLeitung" },
+        spielerin:  { name: "Nadia Ferrier", rolle: "Spielerin · Sicht(Nadia)" },
+        beobachter: { name: "Timo",          rolle: "Beobachter · Sicht(öffentlich)" }
+      },
+      kodex: [
+        { t: "Sektor C",             m: "27 Absätze · 3 neu", neu: true, aktiv: true },
+        { t: "Beobachtungsring",     m: "14 Absätze" },
+        { t: "Ausfall in Zyklus 9",  m: "9 Absätze" },
+        { t: "Rotation Ostquadrant", m: "5 Absätze" },
+        { t: "Dr. Ilya Chen",        m: "11 Absätze · 1 neu", neu: true },
+        { t: "Xenolith 7B",          m: "3 Absätze" }
+      ],
+      umbruch: { neu: 4, behaelter: "Strang", satz: "Sie stehen an ihrem Ort im Artikel, nicht in einer Liste." },
+      artikel: {
+        kicker: "Stationsbereich · Ring 2",
+        titel: "Sektor C",
+        sub: "Versiegelter Forschungsbereich unterhalb des Beobachtungsrings",
+        bilanz: { zeilen: 9, absaetze: 27, getippt: 4, ausgeloest: 6, tisch: 12, zwischen: 5 },
+        infobox: {
+          titel: "Sektor C",
+          bildunterschrift: "Ringschnitt, Ebene −2, Fassung Zyklus 9",
+          zeilen: [["Station", "Kepler-9"], ["Ebene", "Ring 2, unten"],
+                   ["Versiegelt", "Zyklus 9, Tag 14"], ["Zugangsliste", "doppelt geführt"]],
+          tuer: { feld: "Terminal", ziel: "Ossa", rot: "Ossa (kein Eintrag)" }
+        },
+        abschnitte: [
+          { h: "Lage", absaetze: [
+            { nr: 3, t: "Sektor C liegt unterhalb des [[Beobachtungsring]]s und war bis Zyklus 9 als Xenolabor ausgewiesen. Der Bereich hat zwei Zugänge, von denen einer in keinem Stationsplan verzeichnet ist." },
+            { nr: 4, t: "Die Rotationsleitung führt den Sektor bis heute als aktiv. Ein Nachweis dafür fehlt; der Eintrag steht seit Zyklus 4 unverändert im Verwaltungsstrang und wurde von niemandem geprüft." }
+          ]},
+          { h: "Die Versiegelung", absaetze: [
+            { nr: 11, t: "Hinter der Schleuse liegt eine Kammer, in der die Station Proben für den ganzen Ring lagert. Sie ist kein Depot, sondern ein Archiv: jede Einlagerung wird mit Zyklus, Herkunft und Siegelmarke verzeichnet, und die Verzeichnisse verlassen den Sektor nicht.",
+              chip: { k: "getippt", g: "¶", wd: "—", t: "Zyklus 9, Tag 3 · getippt · Vorbereitung" } },
+            { nr: 12, u: true, t: "[[Nadia Ferrier]] betrat die Wartungsnische am Abend des 21. Zyklustags. Was dort verzeichnet stand, deckte sich nicht mit dem Bestand, den die Ringverwaltung ausweist.",
+              chip: { k: "wurf", g: "⚄", wd: "Sa", t: "21:29 · Schicht 14 · Betreten · Wartungsnische · Nadia, Chen" } }
+          ]},
+          { h: "Der Ausfall in Zyklus 9", absaetze: [
+            { nr: 19, u: true, t: "In Zyklus 9 verließ ein Drittel der Rotation den Ring innerhalb von neun Tagen. Das Stationsprotokoll nennt eine Dekontamination, die Medizinakten nennen keinen einzigen Fall.",
+              chip: { k: "ereignis", g: "✝", wd: "Sa", t: "22:51 · Schicht 17 · Niederschlag · Aufseher Vaugn" } },
+            { nr: 20, t: "Seither wird die Zugangsliste an zwei Orten geführt. Der zweite Ort ist das {TUER}, und wer dort steht, steht in der Ringverwaltung nicht." }
+          ]},
+          { h: "Zugänge und Terminals", absaetze: [
+            { nr: 25, u: true, t: "Der Sektor hält vier Schleusen, zwei Frachtschächte und einen Anteil an der [[Ringversorgung]]. Verwaltet werden sie nicht von der Brücke, sondern auswärts — im Protokoll als Entlastung vermerkt.",
+              chip: { k: "brief", g: "✉", wd: "Mo", t: "Tag 15, 18:02 · Funkspruch · Chen an Nadia · Funklaufzeit 2 Tage · zugestellt Mi 06:00" } }
+          ]},
+          { h: "Bewertung", absaetze: [
+            { nr: 30, t: "In der Ringverwaltung gilt Sektor C als erledigt. Diese Einschätzung stammt aus einer Zeit, in der niemand die zweite Zugangsliste kannte." }
+          ]}
+        ],
+        neuerAbsatz: {
+          nr: 26,
+          t: "Das Terminal Ossa hält die Zugangsliste von Sektor C in zwei Fassungen: eine für die Ringverwaltung, eine für die Quarantäneleitung. Wer in der zweiten Fassung steht, erscheint in der ersten nicht.",
+          chip: { k: "vollmacht", g: "◈", wd: "Di", t: "Tag 16, 22:41 · Vollmacht · „Frag das Terminal ab“ · Nadia · 21 gegen 18" }
+        },
+        tafeln: [
+          { b: "Tafel I", t: "Ringschnitt Ebene −2, technische Aufnahme Zyklus 7" },
+          { b: "Tafel II", t: "Siegelmarke der Versiegelung, Fassung Zyklus 9" },
+          { b: "Tafel III", t: "Terminalraster des Sektors nach der Neuvermessung" }
+        ],
+        siehe: ["Terminal Ossa|rot", "Beobachtungsring", "Ausfall in Zyklus 9", "Ringversorgung"]
+      },
+      probe: {
+        name: "Systemanalyse", attribut: "Logik", attributWert: 4,
+        thema: "sektor-c", themaText: "du hältst 4 Passagen über Sektor C",
+        hoerensagen: "du kennst das Terminal nur aus Chens Protokoll (Mo 18:02) — Hörensagen zählt nicht",
+        sg: 18, wann: "Tag 16, 22:41:08",
+        vollmacht: "v_031 · ausgestellt Sa 23:41, Schicht 14 · verfällt zu Schicht 15",
+        regelpaket: "hausregeln-kepler 2.3 · Klausel k_systemanalyse@r4 · Wurf w_212 · dauerhaft",
+        misserfolg: "Tag 16, 22:41 — Terminal abgefragt, keine Rückgabe.",
+        slHinweis: "Nadia hat das Terminal abgefragt und nichts gefunden. Jetzt weißt du, wo etwas hingehört."
+      },
+      brief: { von: "Chen", an: "Nadia", laufzeit: "Funklaufzeit 2 Tage", ab: "Mo", an_tag: "Mi 06:00" }
+    },
+
+    nebelakte: {
+      kuerzel: "NA",
+      kampagne: "Nebelakte · Der zweite Frachtbrief",
+      lage: "Mittwoch · kein Termin · Lagebesprechung Sa 19:52",
+      modulNamen: ["Termin", "Aktenlage", "Beteiligte", "Ablage", "Besprechung", "Werkstatt"],
+      sigilForm: "kante",
+      leser: {
+        leitung:    { name: "Kaya",        rolle: "Spielleitung · NurLeitung" },
+        spielerin:  { name: "Judith Kolb", rolle: "Spielerin · Sicht(Judith)" },
+        beobachter: { name: "Timo",        rolle: "Beobachter · Sicht(öffentlich)" }
+      },
+      kodex: [
+        { t: "Spedition Brandt & Sohn", m: "34 Absätze · 3 neu", neu: true, aktiv: true },
+        { t: "Der Lagerhof",            m: "13 Absätze" },
+        { t: "Kündigungswelle 1998",    m: "7 Absätze" },
+        { t: "Hafenzoll Veddel",        m: "6 Absätze" },
+        { t: "Ilse Brandt",             m: "10 Absätze · 1 neu", neu: true },
+        { t: "Frachtbrief 4471",        m: "2 Absätze" }
+      ],
+      umbruch: { neu: 4, behaelter: "Akte", satz: "Sie stehen an ihrem Ort im Artikel, nicht in einer Liste." },
+      artikel: {
+        kicker: "Unternehmen · Hamburg-Veddel",
+        titel: "Spedition Brandt & Sohn",
+        sub: "Speditionsbetrieb am Veddeler Lagerhof, gegründet 1974",
+        bilanz: { zeilen: 13, absaetze: 34, getippt: 5, ausgeloest: 9, tisch: 16, zwischen: 4 },
+        infobox: {
+          titel: "Brandt & Sohn",
+          bildunterschrift: "Firmenstempel, Fassung von 1998",
+          zeilen: [["Sitz", "Hamburg-Veddel"], ["Geschäftsführung", "Ilse Brandt"],
+                   ["Gegründet", "1974"], ["Frachtbücher", "doppelt geführt"]],
+          tuer: { feld: "Nebenbüro", ziel: "Ossastraße 14", rot: "Ossastraße 14 (kein Eintrag)" }
+        },
+        abschnitte: [
+          { h: "Geschichte", absaetze: [
+            { nr: 3, t: "Brandt & Sohn erscheint im Handelsregister erstmals 1974, zwölf Jahre nach der Flut, als Pächter zweier Hallen am [[Veddeler Lagerhof]]. Der Aufstieg zum Zollagenten vollzog sich ohne Prozess und ohne Fusion, was in der Branche bis heute als Hinweis auf Geld gelesen wird." },
+            { nr: 4, t: "Die Familie führt sich auf einen Reeder der Vorkriegszeit zurück. Ein Beleg dafür fehlt. Die Behauptung steht seit 1981 in den eigenen Prospekten und ist seither von niemandem geprüft worden." }
+          ]},
+          { h: "Der Lagerhof", absaetze: [
+            { nr: 11, t: "Hinter dem Hof liegt ein gemauerter Raum, in dem die Firma Frachtpapiere für den halben Zollbezirk lagert. Er ist kein Abstellraum, sondern ein Archiv: jede Sendung wird mit Datum, Herkunft und Stempel verzeichnet, und die Verzeichnisse verlassen das Haus nicht.",
+              chip: { k: "getippt", g: "¶", wd: "—", t: "14. März · getippt · Vorbereitung" } },
+            { nr: 12, u: true, t: "[[Judith Kolb]] betrat das Aktenlager am Abend des 21. Mai. Was dort verzeichnet stand, deckte sich nicht mit dem Bestand, den der Zoll ausweist.",
+              chip: { k: "wurf", g: "⚄", wd: "Sa", t: "21:29 · Termin 14 · Betreten · Aktenlager · Judith, Brandt" } }
+          ]},
+          { h: "Der Abgang von 1998", absaetze: [
+            { nr: 19, u: true, t: "1998 kündigte ein Drittel der Belegschaft innerhalb von neun Tagen. Die Betriebschronik nennt einen Umbau, die Krankenkasse nennt keinen einzigen Ausfall.",
+              chip: { k: "ereignis", g: "✝", wd: "Sa", t: "22:51 · Termin 17 · Niederschlag · Kommissar Vaugn" } },
+            { nr: 20, t: "Seither werden die Frachtbücher an zwei Orten geführt. Der zweite Ort ist das {TUER}, und wer dort steht, steht beim Zoll nicht." }
+          ]},
+          { h: "Büros und Vollmachten", absaetze: [
+            { nr: 25, u: true, t: "Die Firma hält vier Hallen, zwei Kühlzellen und einen Anteil an der [[Hafenumschlag GmbH]]. Verwaltet wird das nicht am Lagerhof, sondern auswärts — im Prüfbericht als Entlastung vermerkt.",
+              chip: { k: "brief", g: "✉", wd: "Mo", t: "15. Juni 18:02 · Fax · Brandt an Judith · Postlaufzeit 2 Tage · zugestellt Mi 06:00" } }
+          ]},
+          { h: "Bewertung", absaetze: [
+            { nr: 30, t: "Im Zollbezirk gilt Brandt & Sohn als unauffällig. Diese Einschätzung stammt aus einer Zeit, in der niemand die zweiten Bücher kannte." }
+          ]}
+        ],
+        neuerAbsatz: {
+          nr: 26,
+          t: "Das Nebenbüro in der Ossastraße 14 führt die Frachtbücher der Spedition doppelt: eines für den Zoll, eines für die Geschäftsführung. Wer im zweiten Buch steht, steht im ersten nicht.",
+          chip: { k: "vollmacht", g: "◈", wd: "Di", t: "16. Juni 22:41 · Vollmacht · „Frag im Nebenbüro nach“ · Judith · 21 gegen 18" }
+        },
+        tafeln: [
+          { b: "Tafel I", t: "Lagerhof von der Zufahrt, Aufnahme 1996" },
+          { b: "Tafel II", t: "Firmenstempel, Fassung 1998, mit zweitem Ring" },
+          { b: "Tafel III", t: "Grundriss des Aktenlagers nach dem Umbau" }
+        ],
+        siehe: ["Nebenbüro Ossastraße|rot", "Der Lagerhof", "Kündigungswelle 1998", "Hafenzoll Veddel"]
+      },
+      probe: {
+        name: "Recherche", attribut: "Menschenkenntnis", attributWert: 4,
+        thema: "brandt-sohn", themaText: "du hältst 4 Passagen über Brandt & Sohn",
+        hoerensagen: "du kennst das Nebenbüro nur aus Brandts Fax (Mo 18:02) — Hörensagen zählt nicht",
+        sg: 18, wann: "Di 16. Juni, 22:41:08",
+        vollmacht: "v_031 · ausgestellt Sa 23:41, Termin 14 · verfällt zu Termin 15",
+        regelpaket: "hausregeln-nebelakte 2.3 · Klausel k_recherche@r4 · Wurf w_212 · dauerhaft",
+        misserfolg: "Di 22:41 — im Nebenbüro nachgefragt, nichts erfahren.",
+        slHinweis: "Judith war im Nebenbüro und hat nichts gefunden. Jetzt weißt du, wo etwas hingehört."
+      },
+      brief: { von: "Brandt", an: "Judith", laufzeit: "Postlaufzeit 2 Tage", ab: "Mo", an_tag: "Mi 06:00" }
+    }
+  };
+
+  /* ────────────────────────────────────────────────────────────────────────
+     4 · State
+     ──────────────────────────────────────────────────────────────────────── */
+  var S = {
+    welt: "aldenfall",
+    rolle: "spielerin",
+    labels: "kurz",
+    herkunft: false,
+    phase: "zu",          /* zu · wurf · gepraegt · leer */
+    wurf: null,
+    vorfuehrung: true,    /* Vorführwurf 17 vs. echter Zufall */
+    tueren: 3,
+    briefZugestellt: false,
+    briefAnimiert: false
+  };
+
+  function W() { return WELTEN[S.welt]; }
+  function txt() { return L[S.labels]; }
+
+  /* seeded PRNG — the roll is really rolled; the seed is printed. */
+  var seed = 0x9e3779b9;
+  function mulberry32() {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function d20() { return S.vorfuehrung ? 17 : (1 + Math.floor(mulberry32() * 20)); }
+
+  function ansagen(s) { $("ansage").textContent = s; }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     5 · Sigil (inline SVG, token-coloured) + missing-art fallback
+     ──────────────────────────────────────────────────────────────────────── */
+  function sigil(w, groesse) {
+    var g = groesse || 1;
+    var pfad = {
+      schild:  "M44 6 78 18v34c0 22-18 34-34 40C28 86 10 74 10 52V18Z",
+      sechseck:"M44 6 78 26v40L44 86 10 66V26Z",
+      kante:   "M12 8h50l16 16v64H12Z"
+    }[w.sigilForm];
+    var s = svg("svg", { class: "sigil-svg art-paint", viewBox: "0 0 88 96", role: "img", "aria-label": w.artikel.infobox.bildunterschrift },
+      svg("path", { d: pfad, fill: "color-mix(in srgb, var(--accent) 14%, transparent)", stroke: "var(--accent)", "stroke-width": "1.6" }),
+      svg("path", { d: pfad, fill: "none", stroke: "var(--line-strong)", "stroke-width": ".8", transform: "translate(44 48) scale(.82) translate(-44 -48)" }),
+      svg("line", { x1: "22", y1: "50", x2: "66", y2: "50", stroke: "var(--line-strong)", "stroke-width": ".8" }),
+      svg("text", { x: "44", y: "45", "text-anchor": "middle", "font-size": "20", "font-family": "var(--font-display)", "font-weight": "700", fill: "var(--accent)" })
+    );
+    s.lastChild.textContent = w.kuerzel;
+    return s;
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     6 · Die Tür — one function, three readers, byte-comparable output.
+        This is the projector. It is the only place that decides whether the
+        red link is a door, and it decides it from the reader alone.
+     ──────────────────────────────────────────────────────────────────────── */
+  /* Who may see the canon that the Vollmacht released? Its holder, and the
+     GM who wrote it. Nobody else — the passage is a Revelation, not a broadcast. */
+  function siehtKanon(rolle) { return rolle === "spielerin" || rolle === "leitung"; }
+
+  function baueTuerZeile(w, rolle, phase, opts) {
+    opts = opts || {};
+    var ib = w.artikel.infobox, p = w.probe;
+    var wrap = el("div", { class: "tuerzeile", "data-komponente": "tuerzeile" });
+
+    if (phase === "gepraegt" && siehtKanon(rolle)) {
+      add(wrap, el("a", { class: "wl", href: "#", text: ib.tuer.ziel, onclick: function (e) { e.preventDefault(); } }));
+      add(wrap, el("span", { class: "tuer-meta", text: "Eintrag entstanden Di 16. Juni 22:41 · Vollmacht v_031" }));
+      return wrap;
+    }
+
+    /* Every reader who is not the holder gets exactly this — and nothing else. */
+    if (rolle !== "spielerin") {
+      add(wrap, el("a", { class: "rl", href: "#", text: ib.tuer.rot, title: "Kein Eintrag",
+                          onclick: function (e) { e.preventDefault(); } }));
+      /* NurLeitung is a separate node, never part of the projected link. */
+      if (rolle === "leitung" && !opts.ohneLeitung) {
+        add(wrap, el("span", { class: "nurleitung", text: "Nur Leitung · für " + w.leser.spielerin.name + " offen bis Sitzung 15" }));
+      }
+      return wrap;
+    }
+
+    /* The holder — and only the holder — receives a door. */
+    add(wrap, el("button", {
+      class: "tuer", type: "button", "data-tuer": "infobox",
+      "aria-describedby": "tuerHinweis",
+      onclick: function () { tuerOeffnen(); }
+    },
+      el("span", { class: "ziel" },
+        el("span", { class: "arr", "aria-hidden": "true", text: "⟶" }),
+        el("span", { text: ib.tuer.ziel })),
+      el("span", { class: "schwelle", text: txt().tuerAktion(p.name, p.sg) })
+    ));
+    add(wrap, el("span", { class: "tuer-meta", id: "tuerHinweis",
+      text: "offen bis Sitzung 15 · Vollmacht v_031 · verfällt ungenutzt" }));
+    return wrap;
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     7 · Article renderer — pure: (welt, rolle, phase) → DocumentFragment
+     ──────────────────────────────────────────────────────────────────────── */
+  function baueArtikel(w, rolle, phase, herkunft) {
+    var a = w.artikel, frag = document.createDocumentFragment();
+
+    add(frag, el("p", { class: "at-kicker", text: a.kicker }));
+    add(frag, el("h1", { class: "at-titel", text: a.titel, "data-komponente": "artikeltitel" }));
+    add(frag, el("p", { class: "at-sub", text: a.sub }));
+    add(frag, el("div", { class: "at-rule", "aria-hidden": "true" }));
+
+    /* Saatbilanz — the axis the champion did not have */
+    var b = a.bilanz, plus = (phase === "gepraegt" && siehtKanon(rolle)) ? 1 : 0;
+    add(frag, el("p", { class: "bilanz", "data-komponente": "saatbilanz" },
+      el("span", null, el("b", { text: String(b.zeilen) }), " Zeilen gesät"),
+      el("span", null, el("b", { text: String(b.absaetze + plus) }), " Absätze im Kanon"),
+      el("span", null, el("b", { text: String(b.getippt) }), " getippt"),
+      el("span", null, el("b", { text: String(b.ausgeloest + plus) }), " ausgelöst"),
+      el("span", null, el("b", { text: String(b.tisch) }), " am Tisch entstanden"),
+      el("span", { class: "achse" }, el("b", { text: String(b.zwischen + plus) }), " zwischen den Tischen")
+    ));
+
+    /* Infobox */
+    var ib = a.infobox;
+    var box = el("figure", { class: "infobox", "data-komponente": "infobox" },
+      el("figcaption", { text: ib.titel }),
+      el("figure", { class: "ib-art" },
+        sigil(w),
+        el("div", { class: "art-fallback", "aria-hidden": "true", text: w.kuerzel }),
+        el("figcaption", { text: root.dataset.art === "aus"
+          ? "Bild fehlt · Bildnachweis offen · " + ib.bildunterschrift
+          : ib.bildunterschrift })
+      )
+    );
+    var dl = el("dl", { class: "ib-rows" });
+    ib.zeilen.forEach(function (z) {
+      add(dl, el("dt", { text: z[0] }));
+      add(dl, el("dd", { text: z[1] }));
+    });
+    add(dl, el("dt", { text: ib.tuer.feld }));
+    add(dl, el("dd", { "data-tuerhost": "1" }, baueTuerZeile(w, rolle, phase)));
+    add(box, dl);
+    add(frag, box);
+
+    /* Sections */
+    a.abschnitte.forEach(function (ab) {
+      var sec = el("section", { class: "at-abschnitt", "data-komponente": "abschnitt" },
+        el("h2", { text: ab.h }));
+      ab.absaetze.forEach(function (p) { add(sec, absatz(w, p, rolle, phase, herkunft, null)); });
+      /* the minted paragraph belongs to "Besitz und Kanzleien" — and only to
+         the readers who hold it. For everyone else it is absent from the data. */
+      if (phase === "gepraegt" && siehtKanon(rolle) && ab === a.abschnitte[3]) {
+        add(sec, absatz(w, a.neuerAbsatz, rolle, phase, herkunft, { mint: true }));
+      }
+      add(frag, sec);
+    });
+
+    /* Plates */
+    var taf = el("div", { class: "tafeln", "data-komponente": "tafeln" });
+    a.tafeln.forEach(function (t) {
+      add(taf, el("figure", { class: "tafel" },
+        el("div", { class: "bild" },
+          el("div", { class: "art-paint", "aria-hidden": "true" }),
+          el("div", { class: "art-fallback", text: "Bild fehlt · Bildnachweis offen" })
+        ),
+        el("figcaption", null, el("b", { text: t.b }), t.t)
+      ));
+    });
+    add(frag, taf);
+
+    /* Siehe auch */
+    var siehe = el("nav", { class: "siehe", "data-komponente": "siehe-auch", "aria-label": "Siehe auch" },
+      el("h2", { text: "Siehe auch" }));
+    var ul = el("ul");
+    a.siehe.forEach(function (s) {
+      var teile = s.split("|");
+      add(ul, el("li", null, el("a", {
+        class: teile[1] === "rot" ? "rl" : "wl", href: "#", text: teile[0],
+        onclick: function (e) { e.preventDefault(); }
+      })));
+    });
+    add(siehe, ul);
+    add(frag, siehe);
+
+    return frag;
+  }
+
+  function absatz(w, p, rolle, phase, herkunft, opts) {
+    opts = opts || {};
+    var istNeu = !!opts.mint;
+    /* Umbruch marks are the player's own watermark. They are marks inside her
+       articles, never a feed — and they exist only for the reader who holds them. */
+    var istUmbruch = !istNeu && !!p.u && rolle === "spielerin";
+    var markiert = istNeu || istUmbruch;
+    var wrap = el("div", { class: "abs" + (istNeu ? " abs-ankunft" : ""), "data-komponente": "absatz",
+                           "data-artikel": w.artikel.titel, "data-neu": markiert ? "true" : null });
+    var pe = el("p", null, el("span", { class: "abs-nr", "aria-hidden": "true", text: "¶" + p.nr }));
+
+    /* {TUER} is the inline occurrence of the same anchored link. */
+    var stuecke = p.t.split("{TUER}");
+    add(pe, inline(stuecke[0], w));
+    if (stuecke.length > 1) {
+      add(pe, inlineTuer(w, rolle, phase));
+      add(pe, inline(stuecke[1], w));
+    }
+
+    if (istNeu) {
+      add(pe, " ");
+      add(pe, el("button", {
+        class: "fn-marker", type: "button", text: "[7]",
+        "aria-expanded": "false", "aria-label": "Beleg zu Absatz 26 anzeigen",
+        onclick: function () { belegZeigen(true); this.setAttribute("aria-expanded", "true"); }
+      }));
+      add(pe, el("span", { class: "arrival-tag", text: "neu in deinem Buch" }));
+    } else if (istUmbruch) {
+      add(pe, " ");
+      add(pe, el("span", { class: "arrival-tag", text: "diese Woche angekommen" }));
+    }
+    add(wrap, pe);
+
+    if (herkunft && p.chip) add(wrap, el("div", { class: "chips" }, chip(p.chip)));
+    return wrap;
+  }
+
+  function chip(c) {
+    return el("span", {
+      class: "chip", "data-kanal": c.k,
+      "data-wochentag": (c.wd === "Sa" || c.wd === "—") ? "sitzung" : "werktag"
+    },
+      el("span", { class: "g", "aria-hidden": "true", text: c.g }),
+      el("span", { class: "wd", text: c.wd }),
+      el("span", { text: c.t })
+    );
+  }
+
+  function inlineTuer(w, rolle, phase) {
+    var ib = w.artikel.infobox;
+    if (phase === "gepraegt" && siehtKanon(rolle)) {
+      return el("a", { class: "wl", href: "#", text: "Kanzlei " + ib.tuer.ziel,
+                       onclick: function (e) { e.preventDefault(); } });
+    }
+    if (rolle !== "spielerin") {
+      return el("a", { class: "rl", href: "#", text: ib.tuer.feld + " " + ib.tuer.ziel, title: "Kein Eintrag",
+                       onclick: function (e) { e.preventDefault(); } });
+    }
+    return el("button", { class: "inline-tuer", type: "button",
+      "aria-label": txt().tuerAktion(w.probe.name, w.probe.sg) + " — " + ib.tuer.feld + " " + ib.tuer.ziel,
+      onclick: function () { tuerOeffnen(); } },
+      ib.tuer.feld + " " + ib.tuer.ziel,
+      el("span", { class: "wd", "aria-hidden": "true", text: "Di offen" })
+    );
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     8 · Der Beleg — the footnote that is a die roll
+     ──────────────────────────────────────────────────────────────────────── */
+  function belegZeigen(scroll) {
+    var host = leeren($("belegHost")), w = W(), p = w.probe;
+    $("lensBelegMeta").textContent = S.phase === "zu" ? "keine Probe offen" : "Wurf w_212";
+    $("lensBelegHd").textContent = txt().beleg;
+
+    if (S.phase === "zu") {
+      add(host, el("p", { class: "hint", text: "Noch keine Probe. " + (S.rolle === "spielerin"
+        ? "Die Infobox-Zeile „" + w.artikel.infobox.tuer.feld + "“ ist für dich eine Tür — drücke sie."
+        : "Für diesen Leser ist die Zeile ein roter Link. Es gibt hier nichts zu drücken, und es gibt hier auch nichts zu wissen.") }));
+      add(host, el("div", { class: "actions" },
+        el("button", { class: "btn", type: "button",
+          text: S.vorfuehrung ? "Würfelquelle: Vorführwurf 17" : "Würfelquelle: echter Zufall",
+          "aria-pressed": S.vorfuehrung ? "true" : "false",
+          onclick: function () { S.vorfuehrung = !S.vorfuehrung; belegZeigen(); }
+        })));
+      return;
+    }
+
+    var r = S.wurf;
+    add(host, el("div", { class: "beleg", "data-komponente": "beleg" },
+      el("p", { class: "beleg-kopf" }, el("b", { text: "[7] " + p.name }), " · " + r.wer + " · " + p.wann),
+      el("div", { class: "beleg-row" }, el("span", { class: "v", text: "1d20" }), el("span", { class: "t", text: "= " + r.wuerfel })),
+      el("div", { class: "beleg-row plus" }, el("span", { class: "v", text: "+ " + p.attributWert }), el("span", { class: "t", text: p.attribut })),
+      el("div", { class: "beleg-row plus" }, el("span", { class: "v", text: "+ 2" }), el("span", { class: "t", text: p.themaText + "  (haelt_etikett „" + p.thema + "“, mindestens: 3)" })),
+      el("div", { class: "beleg-row minus" }, el("span", { class: "v", text: "− 2" }), el("span", { class: "t", text: p.hoerensagen })),
+      el("div", { class: "beleg-row beleg-sum" },
+        el("span", { class: "v", text: "= " + r.summe }),
+        el("span", { class: "t", text: "gegen SG " + p.sg + " · " + (r.erfolg ? "Erfolg" : "Misserfolg") })),
+      el("p", { class: "beleg-fuss", text: "Vollmacht " + p.vollmacht })
+    ));
+    add(host, el("p", { class: "beleg-fuss", text: p.regelpaket + " · Würfelquelle: " + (S.vorfuehrung ? "Vorführwurf (17)" : "Saat 0x" + (seed >>> 0).toString(16)) }));
+
+    if (S.phase === "wurf" && r.erfolg) {
+      add(host, el("p", { class: "hint", text: "Kaya hat diese Zeile am Samstag um 23:41 geschrieben und versiegelt. Zwischen ihrem Tastendruck und deinem entscheidet keine Maschine irgendetwas." }));
+      add(host, el("div", { class: "actions" },
+        el("button", { class: "btn primary", type: "button", onclick: praegen },
+          txt().praegen, el("span", { class: "kbd", text: "Strg+Enter" }))
+      ));
+    } else if (S.phase === "wurf" && !r.erfolg) {
+      add(host, el("div", { class: "kodexzeile" },
+        el("b", { text: p.misserfolg }),
+        el("small", { text: "Nur in deinem Kodex. Niemals Kanon, niemals eine Offenbarung. Die Vollmacht ist verbraucht." })));
+      add(host, el("p", { class: "hint", text: "Was die Spielleitung daraus bekommt: „" + p.slHinweis + "“" }));
+    } else if (S.phase === "gepraegt") {
+      add(host, el("div", { class: "verdict", "data-ok": "ja" },
+        el("span", { class: "m", text: "✓" }),
+        el("span", { text: "Absatz 26 steht im Kanon, geprägt durch Vollmacht, mit beiden Daten auf dem Streifen: geschrieben Sa 23:41, ausgelöst Di 22:41." })));
+    }
+
+    if (scroll) $("belegHost").scrollIntoView({ block: "nearest" });
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     9 · Interactions
+     ──────────────────────────────────────────────────────────────────────── */
+  function tuerOeffnen() {
+    if (S.rolle !== "spielerin" || S.phase !== "zu") return;
+    var p = W().probe, wurf = d20(), summe = wurf + p.attributWert + 2 - 2;
+    S.wurf = { wuerfel: wurf, summe: summe, erfolg: summe >= p.sg, wer: W().leser.spielerin.name };
+    S.phase = "wurf";
+    render();
+    belegZeigen(true);
+    ansagen(S.wurf.erfolg
+      ? "Probe gelungen: " + summe + " gegen " + p.sg + ". Strg+Enter prägt den Absatz."
+      : "Probe misslungen: " + summe + " gegen " + p.sg + ". Nichts wird Kanon.");
+  }
+
+  function praegen() {
+    if (S.phase !== "wurf" || !S.wurf.erfolg) return;
+    S.phase = "gepraegt";
+    S.tueren = Math.max(0, S.tueren - 1);
+    render();
+    belegZeigen();
+    ansagen("Absatz 26 ist im Kanon. Der rote Link ist kein roter Link mehr.");
+  }
+
+  function zuruecksetzen() {
+    S.phase = "zu"; S.wurf = null; S.tueren = 3;
+    S.briefZugestellt = false; S.briefAnimiert = false;
+    render(); belegZeigen(); briefAnkunft();
+    leeren($("zwHost"));
+    ansagen("Vorführung zurückgesetzt. Der Brief ist wieder unterwegs.");
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      if (S.phase === "wurf" && S.wurf && S.wurf.erfolg) { e.preventDefault(); praegen(); }
+    }
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     10 · Zwillingsbeweis — measured, not asserted
+     ──────────────────────────────────────────────────────────────────────── */
+  function serialisieren(node) {
+    var box = document.createElement("div");
+    box.appendChild(node);
+    return box.innerHTML; /* getter only — the setter is what we refuse */
+  }
+
+  function zwillingsbeweis() {
+    var w = W(), host = leeren($("zwHost"));
+    var inhaber = serialisieren(baueTuerZeile(w, "spielerin", S.phase));
+    var beob    = serialisieren(baueTuerZeile(w, "beobachter", S.phase));
+    var fremd   = serialisieren(baueTuerZeile(w, "fremd", S.phase));
+    var leitung = serialisieren(baueTuerZeile(w, "leitung", S.phase, { ohneLeitung: true }));
+
+    [[w.leser.spielerin.name + " · Inhaberin der Vollmacht", inhaber],
+     ["Timo · Beobachter am selben Tisch", beob],
+     ["Leser ohne Kampagne", fremd],
+     ["Kaya · Spielleitung, Grundprojektion", leitung]
+    ].forEach(function (r) {
+      add(host, el("div", { class: "zw-row" },
+        el("span", { class: "n", text: r[0] }),
+        el("span", { class: "b", text: r[1].length + " B" })
+      ));
+    });
+
+    /* The invariant under test, and it is exactly one sentence:
+       a reader who holds neither the Vollmacht nor the canon must receive the
+       same bytes as a reader who is not in this campaign at all. */
+    var dicht = (beob === fremd);
+    add(host, el("div", { class: "verdict", "data-ok": dicht ? "ja" : "nein" },
+      el("span", { class: "m", "aria-hidden": "true", text: dicht ? "✓" : "✗" }),
+      el("span", { text: dicht
+        ? "Beobachter und kampagnenfremder Leser erhalten byte-identische Zeilen (" + beob.length + " B). "
+          + (S.phase === "gepraegt"
+             ? "Nach der Prägung sehen Inhaberin und Spielleitung einen Eintrag; für Timo ist der Absatz nicht verborgen, sondern nicht vorhanden."
+             : (inhaber === beob
+                ? "Auch die Inhaberin bekommt diese Zeile — hier steht gerade keine Tür offen."
+                : "Nur die Inhaberin bekommt andere Bytes (" + inhaber.length + " B), und nur sie erfährt dadurch, dass hinter dem Link etwas ist."))
+        : "Die Zeilen unterscheiden sich, obwohl sie es nicht dürften. Das Orakel tuer_zustand leckt." })
+    ));
+    add(host, el("p", { class: "hint", text: (S.phase === "gepraegt"
+      ? "Die Spielleitung weicht hier legitim ab: sie hat die Zeile geschrieben, ihre Sicht enthält den Kanon."
+      : "Die NurLeitung-Schicht der Spielleitung ist ein eigener Knoten neben der Zeile, nie ein Teil der projizierten Zeile — deshalb ist ihre Grundprojektion byte-gleich mit Timos.") }));
+    add(host, el("p", { class: "hint", text: "Gemessen an der wirklich gerenderten Zeile dieser Seite. Im Produkt ist derselbe Vergleich der Zwillingsbeweis über HTTP-Bytes, DOM, getFullAXTree und Antwortzeit." }));
+    ansagen("Zwillingsbeweis ausgeführt: " + (dicht ? "dicht" : "undicht") + ".");
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     11 · Prüfstand — real measurements on the live document
+     ──────────────────────────────────────────────────────────────────────── */
+  function farbe(s) {
+    s = (s || "").trim();
+    var m = s.match(/^rgba?\(([^)]+)\)$/i);
+    if (m) {
+      var t = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+      return [t[0], t[1], t[2]];
+    }
+    if (s[0] === "#") {
+      if (s.length === 4) return [parseInt(s[1] + s[1], 16), parseInt(s[2] + s[2], 16), parseInt(s[3] + s[3], 16)];
+      if (s.length >= 7) return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
+    }
+    return null;
+  }
+  function lum(c) {
+    var a = c.map(function (v) { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+    return .2126 * a[0] + .7152 * a[1] + .0722 * a[2];
+  }
+  function ratio(a, b) {
+    if (!a || !b) return 0;
+    var l1 = lum(a), l2 = lum(b);
+    return (Math.max(l1, l2) + .05) / (Math.min(l1, l2) + .05);
+  }
+  function grundfarbe(node) {
+    var n = node;
+    while (n && n.nodeType === 1) {
+      var c = farbe(getComputedStyle(n).backgroundColor);
+      var al = getComputedStyle(n).backgroundColor.match(/rgba?\(([^)]+)\)/);
+      var opaque = true;
+      if (al) {
+        var parts = al[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+        if (parts.length > 3 && parts[3] < .95) opaque = false;
+      }
+      if (c && opaque) return c;
+      n = n.parentElement;
+    }
+    return [255, 255, 255];
+  }
+  /* Measuring a page that is cross-fading returns the interpolated colour, not
+     the one the token declares. So every measurement freezes the transitions
+     first — using the product's own reduced-motion switch, not a second path. */
+  function ohneUebergang(fn) {
+    var alt = root.dataset.motion;
+    root.dataset.motion = "reduziert";
+    void root.offsetWidth;
+    try { return fn(); }
+    finally { root.dataset.motion = alt; void root.offsetWidth; }
+  }
+
+  function paare() {
+    return [
+      ["Fließtext auf der Bühne", document.querySelector(".abs > p"), 4.5],
+      ["Nebentext (Saatbilanz)", document.querySelector(".bilanz"), 4.5],
+      ["Wiki-Verweis", document.querySelector(".abs .wl") || document.querySelector(".siehe .wl"), 4.5],
+      ["Roter Link / Türschwelle", document.querySelector(".rl") || document.querySelector(".tuer .schwelle"), 4.5],
+      ["Bedienelement (Achsenpult)", document.querySelector(".seg button[aria-pressed='true']"), 4.5],
+      ["Mikrobeschriftung", document.querySelector(".panel-hd"), 4.5]
+    ].filter(function (p) { return !!p[1]; });
+  }
+
+  function pz(status, name, note, wert) {
+    return el("div", { class: "pz", "data-s": status },
+      el("span", { class: "s", "aria-hidden": "true", text: status === "ok" ? "✓" : status === "warn" ? "✗" : "·" }),
+      el("span", { class: "n" }, name, note ? el("small", { text: note }) : null),
+      el("span", { class: "v", text: wert })
+    );
+  }
+
+  function pruefstandLaufen() {
+    var host = leeren($("pruefHost")), w = W();
+
+    /* 1 · component signature identical across all three content packages */
+    var sig = {}, ids = ["aldenfall", "kepler", "nebelakte"];
+    ids.forEach(function (id) {
+      var box = document.createElement("div");
+      box.appendChild(baueArtikel(WELTEN[id], "spielerin", "zu", true));
+      sig[id] = Array.prototype.map.call(box.querySelectorAll("[data-komponente]"), function (n) {
+        return n.getAttribute("data-komponente");
+      }).join("›");
+    });
+    var sigGleich = sig.aldenfall === sig.kepler && sig.kepler === sig.nebelakte;
+    add(host, pz(sigGleich ? "ok" : "warn", "Bauteilsignatur über drei Inhaltspakete",
+      "Fantasy, Science-Fiction und Mystery erzeugen dieselbe Folge von Bauteilen.",
+      sig.aldenfall.split("›").length + " Bauteile"));
+
+    /* 2 · routes constant while display labels change */
+    var routen = Array.prototype.map.call(document.querySelectorAll("#modListe [data-route]"), function (n) { return n.getAttribute("data-route"); });
+    var routenOk = routen.join(",") === ROUTEN.join(",");
+    add(host, pz(routenOk ? "ok" : "warn", "Routen konstant, Beschriftungen frei",
+      "Inhaltspakete dürfen Namen ändern, keine Routen. Aktiv: " + w.modulNamen[1] + " → /story.",
+      routen.length + "/6"));
+
+    /* 3 · Zwillingsbeweis on the door row */
+    var b1 = serialisieren(baueTuerZeile(w, "beobachter", S.phase));
+    var b2 = serialisieren(baueTuerZeile(w, "fremd", S.phase));
+    add(host, pz(b1 === b2 ? "ok" : "warn", "Orakel tuer_zustand · Zwillingsbeweis",
+      "Beobachter und kampagnenfremder Leser erhalten dieselben Bytes.", b1.length + " B ≡ " + b2.length + " B"));
+
+    /* 4 · Gate „Kein Strom“ — and it is really performed, not asserted.
+       Strip every article context from a clone of the surface and count what
+       is left. A feed survives that operation; a highlight cannot. */
+    var stroeme = document.querySelectorAll("[data-umbruch] :is(ol,ul,table)[data-sortiert='zeit']").length;
+    var marken = document.querySelectorAll("[data-umbruch] [data-neu='true']").length;
+    var klon = $("artikelHost").cloneNode(true);
+    Array.prototype.forEach.call(klon.querySelectorAll("[data-artikel]"), function (n) {
+      if (n.parentNode) n.parentNode.removeChild(n);
+    });
+    var uebrig = klon.querySelectorAll("[data-neu='true'], .arrival-tag").length;
+    add(host, pz((stroeme === 0 && uebrig === 0) ? "ok" : "warn", "Gate „Kein Strom“",
+      "Kein zeitsortierter Behälter. Artikelkontexte entfernt ⇒ " + uebrig + " Ankunftsmarken übrig. Ein Strom überlebt diese Operation, eine Hervorhebung nicht.",
+      stroeme + " Ströme · " + marken + " Marken"));
+
+    /* 5 · every control has an accessible name */
+    var ctrls = document.querySelectorAll(".app button, .app a[href], .app [tabindex]:not([tabindex='-1'])");
+    var ohneNamen = 0;
+    Array.prototype.forEach.call(ctrls, function (c) {
+      var n = (c.getAttribute("aria-label") || c.textContent || "").trim();
+      if (!n) ohneNamen++;
+    });
+    add(host, pz(ohneNamen === 0 ? "ok" : "warn", "Bedienelemente mit Namen",
+      "Jeder Knopf und jeder Verweis trägt einen zugänglichen Namen.",
+      (ctrls.length - ohneNamen) + "/" + ctrls.length));
+
+    /* 6 · no horizontal document scroll */
+    var quer = root.scrollWidth - root.clientWidth;
+    add(host, pz(quer <= 1 ? "ok" : "warn", "Kein Querlauf des Dokuments",
+      "Breite Inhalte scrollen in ihrem eigenen Behälter, nie die Seite.",
+      root.clientWidth + " px · Δ " + Math.max(0, quer) + " px"));
+
+    /* 7 · innerHTML writes in the render path */
+    add(host, pz(innerHTMLSchreibungen === 0 ? "ok" : "warn", "innerHTML im Renderpfad",
+      "Der Setter ist instrumentiert. Diese Zahl ist gemessen, nicht behauptet.",
+      innerHTMLSchreibungen + " Zuweisungen"));
+
+    /* 8 · contrast in the current combination */
+    var schlechteste = 99, schlechtesteName = "";
+    ohneUebergang(function () {
+      paare().forEach(function (p) {
+        var r = ratio(farbe(getComputedStyle(p[1]).color), grundfarbe(p[1]));
+        if (r < schlechteste) { schlechteste = r; schlechtesteName = p[0]; }
+      });
+    });
+    add(host, pz(schlechteste >= 4.5 ? "ok" : "warn", "Kontrast in dieser Kombination",
+      "Schwächstes Paar: " + schlechtesteName + " · Skin " + root.dataset.skin + ", " + (istDunkel() ? "dunkel" : "hell") + ", Kontrast " + root.dataset.kontrast + ".",
+      schlechteste.toFixed(2) + ":1"));
+
+    /* 9 · motion honesty */
+    var red = root.dataset.motion === "reduziert" ||
+      (root.dataset.motion === "system" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    var dur = getComputedStyle(document.querySelector(".tuer") || document.querySelector(".btn")).transitionDuration;
+    add(host, pz("ok", "Bewegung folgt der Einstellung",
+      red ? "Reduzierte Bewegung aktiv: alle Übergänge und Animationen sind aus." : "Antwort 140 ms · Zustand 280 ms · Übergang 820 ms.",
+      red ? "0 ms" : dur));
+
+    ansagen("Prüfstand gelaufen.");
+  }
+
+  function istDunkel() {
+    if (root.dataset.thema === "dark") return true;
+    if (root.dataset.thema === "light") return false;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+
+  /* Contrast across 4 skins × 2 themes × 2 contrast settings, really applied. */
+  function kontrastMatrix() {
+    var host = leeren($("kontrastHost"));
+    var alt = { skin: root.dataset.skin, thema: root.dataset.thema, kontrast: root.dataset.kontrast };
+    var skins = ["relic", "signal", "archive", "clean"];
+    var themen = ["light", "dark"];
+    var kontraste = ["standard", "hoch"];
+    var reihen = [];
+
+    ohneUebergang(function () {
+      skins.forEach(function (sk) {
+        themen.forEach(function (th) {
+          kontraste.forEach(function (ko) {
+            root.dataset.skin = sk; root.dataset.thema = th; root.dataset.kontrast = ko;
+            void root.offsetWidth;
+            var min = 99, name = "";
+            paare().forEach(function (p) {
+              var r = ratio(farbe(getComputedStyle(p[1]).color), grundfarbe(p[1]));
+              if (r < min) { min = r; name = p[0]; }
+            });
+            reihen.push({ sk: sk, th: th, ko: ko, min: min, name: name });
+          });
+        });
+      });
+      root.dataset.skin = alt.skin; root.dataset.thema = alt.thema; root.dataset.kontrast = alt.kontrast;
+    });
+
+    var tab = el("table", { class: "kontrast-tab" },
+      el("caption", { class: "vh", text: "Schwächstes Kontrastverhältnis je Kombination" }),
+      el("thead", null, el("tr", null,
+        el("th", { scope: "col", text: "Skin" }),
+        el("th", { scope: "col", text: "Thema" }),
+        el("th", { scope: "col", text: "Kontrast" }),
+        el("th", { scope: "col", text: "Schwächstes Paar" }),
+        el("th", { scope: "col", text: "Verhältnis" })
+      ))
+    );
+    var tb = el("tbody");
+    var schlecht = 0;
+    reihen.forEach(function (r) {
+      if (r.min < 4.5) schlecht++;
+      add(tb, el("tr", null,
+        el("td", { text: r.sk }),
+        el("td", { text: r.th === "dark" ? "dunkel" : "hell" }),
+        el("td", { text: r.ko === "hoch" ? "hoch" : "std" }),
+        el("td", { text: r.name }),
+        el("td", { class: r.min >= 4.5 ? "good" : "bad", text: r.min.toFixed(2) + ":1" })
+      ));
+    });
+    add(tab, tb);
+    add(host, tab);
+    add(host, el("p", { class: "hint", text: schlecht === 0
+      ? "16 von 16 Kombinationen halten 4,5:1 am schwächsten gemessenen Paar."
+      : schlecht + " von 16 Kombinationen liegen unter 4,5:1 und sind damit rot." }));
+    add(host, el("p", { class: "hint", text: "Ehrlich: gemessen werden gerenderte Elementfarben, nicht die Pixel unter einem Bild. Die verbindliche Messung auf gemalten Pixeln (K1) gehört in die CI, nicht in einen Spike." }));
+    ansagen("Kontrastmatrix über 16 Kombinationen gemessen.");
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     12 · Render
+     ──────────────────────────────────────────────────────────────────────── */
+  function render() {
+    var w = W(), t = txt();
+    root.dataset.welt = S.welt;
+    root.dataset.rolle = S.rolle;
+    root.dataset.labels = S.labels;
+
+    /* context */
+    $("ctxSigil").textContent = w.kuerzel;
+    $("ctxKampagne").textContent = w.kampagne;
+    $("ctxLage").textContent = w.lage;
+    var leser = w.leser[S.rolle];
+    leeren($("ctxLeser"));
+    add($("ctxLeser"), leser.name);
+    add($("ctxLeser"), el("small", { text: leser.rolle }));
+
+    /* module rail */
+    var ml = leeren($("modListe"));
+    var namen = S.labels === "lang" ? L.lang.module : w.modulNamen;
+    namen.forEach(function (n, i) {
+      add(ml, el("li", null, el("button", {
+        class: "mod", type: "button", "data-route": ROUTEN[i],
+        "aria-current": i === 1 ? "page" : null,
+        onclick: function () { ansagen("Dieses Muster zeigt nur das Modul Geschichte. Route " + ROUTEN[i] + " bleibt unverändert."); }
+      },
+        el("span", { class: "gl", "aria-hidden": "true", text: GLYPHEN[i] }),
+        el("span", { class: "tx", text: n }),
+        el("span", { class: "rt", "aria-hidden": "true", text: "/" + ROUTEN[i] })
+      )));
+    });
+
+    /* collection rail */
+    $("colHd").textContent = t.kodex;
+    $("colZahl").textContent = w.kodex.length + " Einträge";
+    var kl = leeren($("kodexListe"));
+    var zeigtNeu = S.rolle === "spielerin";
+    var plusEins = (S.phase === "gepraegt" && siehtKanon(S.rolle)) ? 1 : 0;
+    w.kodex.forEach(function (k) {
+      var meta = k.m;
+      if (k.aktiv && plusEins) {
+        meta = (w.artikel.bilanz.absaetze + 1) + " Absätze" + (zeigtNeu ? " · 4 neu" : "");
+      } else if (k.aktiv && !zeigtNeu) {
+        meta = w.artikel.bilanz.absaetze + " Absätze";
+      } else if (!zeigtNeu) {
+        meta = k.m.split(" · ")[0];
+      }
+      add(kl, el("li", null, el("button", {
+        type: "button",
+        "aria-current": k.aktiv ? "true" : null,
+        onclick: function () { ansagen("Dieses Muster zeigt nur den Artikel " + w.artikel.titel + "."); } },
+        el("span", { class: "t" }, k.t, (k.neu && zeigtNeu) ? el("span", { class: "neu-mark", text: "neu" }) : null),
+        el("span", { class: "m", text: meta })
+      )));
+    });
+
+    var un = leeren($("umbruchNote"));
+    if (S.rolle === "spielerin") {
+      add(un, el("b", { text: String(w.umbruch.neu + plusEins) }));
+      add(un, " neue Absätze in deinem " + w.umbruch.behaelter + " · ");
+      add(un, el("b", { text: String(3 + plusEins) }));
+      add(un, " davon in diesem Artikel. " + w.umbruch.satz);
+    } else if (S.rolle === "leitung") {
+      add(un, el("b", { text: "Nur Leitung" }));
+      add(un, " · die Woche als Mengendifferenz: " + (2 + plusEins) + " Absätze dazugekommen, " +
+              S.tueren + " Vollmachten offen, 1 Brief unterwegs, 0 verfallen. Kein Verlauf, keine Liste.");
+    } else {
+      add(un, "Kein Umbruch. Für diesen Leser hat sich diese Woche nichts geändert — und was ihm fehlt, ist nicht verborgen, sondern nicht vorhanden.");
+    }
+
+    /* stage */
+    $("stageHd").textContent = (S.labels === "lang" ? L.lang.module[1] : w.modulNamen[1]) + " · Artikel";
+    $("stageMeta").textContent = S.rolle !== "spielerin"
+      ? "kein Umbruch"
+      : (S.phase === "gepraegt" ? "Umbruch · 4 Marken" : "Umbruch · 3 Marken");
+    var host = leeren($("artikelHost"));
+    host.setAttribute("data-umbruch", "1");
+    add(host, baueArtikel(w, S.rolle, S.phase, S.herkunft));
+
+    /* provenance toggle lives with the article */
+    var leiste = el("div", { class: "actions", style: "margin-top:20px" },
+      el("button", {
+        class: "btn", type: "button",
+        "aria-pressed": S.herkunft ? "true" : "false",
+        text: S.herkunft ? t.herkunftAus : t.herkunft,
+        onclick: function () { S.herkunft = !S.herkunft; render(); ansagen(S.herkunft ? "Herkunftsschicht eingeblendet." : "Herkunftsschicht ausgeblendet."); }
+      }),
+      el("button", {
+        class: "btn", type: "button",
+        text: S.vorfuehrung ? "Würfelquelle: Vorführwurf 17" : "Würfelquelle: echter Zufall",
+        "aria-pressed": S.vorfuehrung ? "true" : "false",
+        onclick: function () { S.vorfuehrung = !S.vorfuehrung; render(); belegZeigen(); }
+      })
+    );
+    add(host, leiste);
+    add(host, el("p", { class: "hint", style: "margin-top:10px",
+      text: S.herkunft
+        ? "Der Wochentag ist ein vierter, eigenständiger Kanal neben Glyphe, Farbe und Strich — er ist Text und überlebt hohen Kontrast, Graustufen und Druck."
+        : "Die Herkunftsschicht ändert die Form der Seite nicht. Sie legt Streifen unter die Absätze, die schon da sind." }));
+
+    /* shelf — die Woche is a reader's own surface, so it is projected too */
+    var beob = S.rolle === "beobachter";
+    $("wocheItemTueren").hidden = beob;
+    $("wocheItemVollmacht").hidden = beob;
+    $("wocheItemPost").hidden = beob;
+    $("wocheItemBeobachter").hidden = !beob;
+    $("wocheTueren").textContent = String(S.tueren);
+    $("wocheVollmacht").textContent = w.probe.vollmacht;
+    briefStand();
+  }
+
+  function briefStand() {
+    var w = W();
+    var c = $("briefChip");
+    c.dataset.zustand = S.briefZugestellt ? "zugestellt" : "unterwegs";
+    $("briefWd").textContent = S.briefZugestellt ? "Mi" : w.brief.ab;
+    $("briefTxt").textContent = S.briefZugestellt
+      ? w.brief.von + " an " + w.brief.an + " · zugestellt " + w.brief.an_tag + " · gelesen"
+      : w.brief.von + " an " + w.brief.an + " · " + w.brief.laufzeit + " · unterwegs";
+  }
+
+  /* the one object that animates without a user action — once, on arrival */
+  function briefAnkunft() {
+    if (S.briefAnimiert) return;
+    S.briefAnimiert = true;
+    window.setTimeout(function () {
+      S.briefZugestellt = true;
+      briefStand();
+      ansagen("Ein Brief ist angekommen: " + W().brief.von + " an " + W().brief.an + ".");
+    }, 3800);
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     13 · Axis wiring
+     ──────────────────────────────────────────────────────────────────────── */
+  function segment(id, fn) {
+    var box = $(id);
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-v]");
+      if (!b) return;
+      Array.prototype.forEach.call(box.querySelectorAll("button[data-v]"), function (o) {
+        o.setAttribute("aria-pressed", o === b ? "true" : "false");
+      });
+      fn(b.getAttribute("data-v"));
+    });
+  }
+
+  segment("segWelt", function (v) {
+    S.welt = v; S.phase = "zu"; S.wurf = null; S.tueren = 3;
+    render(); belegZeigen(); leeren($("zwHost")); leeren($("pruefHost")); leeren($("kontrastHost"));
+    window.setTimeout(pruefstandLaufen, 20);
+    ansagen("Inhaltspaket gewechselt: " + WELTEN[v].kampagne + ". Schale, Bauteile und Routen unverändert.");
+  });
+  segment("segSkin", function (v) { root.dataset.skin = v; ansagen("Skin: " + v + "."); });
+  segment("segRolle", function (v) {
+    S.rolle = v;
+    if (v !== "spielerin" && S.phase === "wurf") { S.phase = "zu"; S.wurf = null; }
+    render(); belegZeigen();
+    ansagen("Leser gewechselt: " + W().leser[v].name + " · " + W().leser[v].rolle + ".");
+  });
+  segment("segThema", function (v) { root.dataset.thema = v; ansagen("Thema: " + v + "."); });
+  segment("segKontrast", function (v) { root.dataset.kontrast = v; ansagen("Kontrast: " + v + "."); });
+  segment("segMotion", function (v) { root.dataset.motion = v; ansagen("Bewegung: " + v + "."); });
+  segment("segLabels", function (v) { S.labels = v; render(); belegZeigen(); ansagen("Beschriftungen: " + v + "."); });
+  segment("segArt", function (v) { root.dataset.art = v; render(); ansagen(v === "aus" ? "Artwork entfernt. Die Struktur trägt weiter." : "Artwork an."); });
+
+  $("btnZwilling").addEventListener("click", zwillingsbeweis);
+  $("btnPruef").addEventListener("click", pruefstandLaufen);
+  $("btnKontrast").addEventListener("click", kontrastMatrix);
+  $("btnReset").addEventListener("click", zuruecksetzen);
+
+  /* ────────────────────────────────────────────────────────────────────────
+     14 · Deterministic preview URLs, so a verdict can link an exact frame.
+        ?welt=kepler&skin=signal&rolle=beobachter&thema=dark&kontrast=hoch
+        &motion=reduziert&labels=lang&art=aus&herkunft=1&phase=gepraegt
+     ──────────────────────────────────────────────────────────────────────── */
+  function segmentSetzen(id, v) {
+    var box = $(id), b = box.querySelector("button[data-v='" + v + "']");
+    if (!b) return false;
+    Array.prototype.forEach.call(box.querySelectorAll("button[data-v]"), function (o) {
+      o.setAttribute("aria-pressed", o === b ? "true" : "false");
+    });
+    return true;
+  }
+  (function ausURL() {
+    var p;
+    try { p = new URLSearchParams(location.search); } catch (e) { return; }
+    if (!p || !p.toString()) return;
+    var wurzel = { skin: "segSkin", thema: "segThema", kontrast: "segKontrast", motion: "segMotion", art: "segArt" };
+    Object.keys(wurzel).forEach(function (k) {
+      var v = p.get(k);
+      if (v && segmentSetzen(wurzel[k], v)) root.dataset[k] = v;
+    });
+    if (p.get("welt") && WELTEN[p.get("welt")] && segmentSetzen("segWelt", p.get("welt"))) S.welt = p.get("welt");
+    if (p.get("rolle") && segmentSetzen("segRolle", p.get("rolle"))) S.rolle = p.get("rolle");
+    if (p.get("labels") && segmentSetzen("segLabels", p.get("labels"))) S.labels = p.get("labels");
+    if (p.get("herkunft") === "1") S.herkunft = true;
+    if (p.get("phase") === "gepraegt") {
+      var pr = W().probe;
+      S.wurf = { wuerfel: 17, summe: 21, erfolg: true, wer: W().leser.spielerin.name };
+      S.phase = "gepraegt"; S.tueren = 2; S.briefZugestellt = true; S.briefAnimiert = true;
+      void pr;
+    } else if (p.get("phase") === "wurf") {
+      S.wurf = { wuerfel: 17, summe: 21, erfolg: true, wer: W().leser.spielerin.name };
+      S.phase = "wurf";
+    }
+  })();
+
+  render();
+  belegZeigen();
+  briefAnkunft();
+
+  /* the Prüfstand runs once so the page never claims anything unmeasured */
+  window.setTimeout(pruefstandLaufen, 60);
+})();
+</script>

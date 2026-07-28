@@ -1,0 +1,78 @@
+
+=== 1 · Die Sicht — der Projektor, zum ersten Mal in fünf Runden ausgeführt (S-P1)
+  OK   SL sieht alle 4 Regionen  ·  4
+  OK   Sera sieht 3 Regionen (Hof, Saal, Kanzlei)  ·  Der Hof, Der Saal, Die Kanzlei
+  OK   Brannt sieht 2 Regionen (Hof, Saal)  ·  Der Hof, Der Saal
+  OK   Ein Fremder sieht 0 Regionen
+  OK   Erfahren schlägt Gehört: beide Zweige gerechnet und verschieden  ·  Sera=gesprochen · Brannt=gehoert
+  OK   und der Bonus fällt daraus, nicht aus einer Tabelle  ·  Sera +2 · Brannt +0
+  OK   Der Keller kommt in Seras Bytes NICHT vor
+  OK   Der Schreiber kommt in Brannts Bytes NICHT vor
+  OK   Kein `visible`/`hidden`-Feld existiert überhaupt
+ FAIL  Initiative hat keine Lücken und keine Platzhalter  ·  Brannt sieht 3 von 4 Initiativplätzen
+  OK   NPC-Trefferpunkte sind für Spieler null, für die Leitung Zahlen
+  OK   B9: NurLeitung im Spielerpaket wirft beim Kodieren
+  OK   Das SL-Paket trägt die Wochendifferenz
+       Der Projektor ist 38 Zeilen. Vier Runden haben ihn ~120 Tage lang beschrieben.
+  OK   Projektion bei 304 Regionen / 304 Figuren unter 5 ms  ·  0.304 ms je Projektion
+
+=== 2 · Der Zwillingsbeweis — auf der Tafel, nicht nur auf der Seite
+  OK   Welt A ≡ Welt B für sera: byte-identisch  ·  1106 vs 1106 Bytes
+  OK   Welt A ≡ Welt B für brannt: verschieden (er hält die Türen)  ·  743 vs 893 Bytes
+ FAIL  Und für einen Fremden sind beide Welten byte-identisch leer  ·  382 Bytes
+       Welt B trägt 2 Regionen, 2 Figuren, 2 Initiativplätze und 2 Vollmachten mehr —
+       und Seras Paket ist trotzdem Byte für Byte dasselbe.
+
+=== 3 · Die Wiederkehr — das Identitätssubsystem, gebaut statt geschätzt (§15.15)
+  OK   Beitritt registriert still einen Passkey
+  OK   Dienstagmorgen: das Gerät weist sich aus
+  OK   Neues Gerät ohne Credential wird abgewiesen
+  OK   …und schreibt einen Zugangsvorfall mit offener Tür
+  OK   Ein Spieler kann sich selbst keinen Kopplungscode ausstellen
+  OK   Die Leitung stellt einen Kopplungscode aus  ·  K-fq2ia9
+  OK   Eingelöst: neues Credential, GLEICHE user_id
+  OK   Zweite Einlösung schlägt fehl (einmalig)
+  OK   Nach 10 Minuten verfällt der Code
+  OK   Widerruf eines verlorenen Geräts wirkt sofort
+  OK   Das erneuerte Gerät funktioniert weiter
+       Die Wiederkehr ist 40 Zeilen Zustandsmaschine. Runde 4 hat sie mit 5 Tagen und Risiko „hoch" bepreist.
+       Was die 40 Zeilen NICHT enthalten: WebAuthn-Attestation, Ratenbegrenzung, das Gerätepanel.
+
+=== 4 · Der ausstehende Wurf — Idempotenz unter Netztrennung, gefuzzt
+  OK   2000 feindliche Wiederhol-Sequenzen: keine Doppelprägung
+  OK   …und kein einziger Neuwurf beim erneuten Öffnen der Tür
+  OK   Nach 30 Minuten verfällt der Wurf und die Vollmacht ist wieder offen
+
+=== 5 · Die Nachlese — die Autorenkosten, gezählt statt geschätzt (§15.14)
+  OK   Die Nachlese schlägt genau drei Zeilen vor
+  OK   Regelrede fällt raus
+  OK   Schon Geprägtes fällt raus
+         12 P · b01 · „Die Kanzlei Ossa führt Bücher, die niemand seh…"  [nennt einen Eintrag +3 · hat eine Klausel +2 · unbeantwortete Frage +4 · mehrfach erwähnt ×3 +3]
+         9 P · b03 · „Der Schreiber hat gezittert, als der Name Ossa…"  [nennt einen Eintrag +3 · hat eine Klausel +2 · unbeantwortete Frage +4]
+         8 P · b07 · „Die Gruft unter dem Haus ist älter als das Hau…"  [hat eine Klausel +2 · unbeantwortete Frage +4 · mehrfach erwähnt ×2 +2]
+  OK   Drei Türen aus der Nachlese: 0 getippte Zeichen  ·  6 Tastendrücke gesamt
+       Dieselben drei Türen kalt getippt: 154 Zeichen.
+       Bei 180 Zeichen/min für eine müde Spielleitung um 23:41 → 51 s getippt gegen ~7 s gedrückt.
+       Die 180 Zeichen/min sind ein Modell, keine Messung. Die 154 und die 0 sind Messungen.
+  OK   Prägerate-Budget (240 s Tippen je Sitzung) wird von der Nachlese nicht angetastet
+       Kalt getippt verbraucht die Türausstellung allein 21 % des Sitzungsbudgets.
+  OK   Jede Vollmacht trägt ihre Herkunft
+  OK   Eine Zeile ohne Wiki-Anker bekommt trotzdem einen Keim (W0)
+
+=== 6 · Die Wochenprobe — Gate W1 als Rechnung, die rot werden kann
+       naive Quote  56.7 %   ·   zugerechnete Quote  63.0 %
+       Nenner 54 · Zähler 34 · W0-Ausschlüsse 2 Kampagnen · Aussperrungen 6 Türen
+         k02: Zugangsvorfall: 2 Tür(en) als Aussperrung ausgebucht
+         k03: W0: keine Vollmacht ausgestellt (Ankerprobe rot)
+         k04: Zugangsvorfall: 1 Tür(en) als Aussperrung ausgebucht
+         k07: W0: keine Vollmacht ausgestellt (Ankerprobe rot)
+         k08: Zugangsvorfall: 3 Tür(en) als Aussperrung ausgebucht
+       Urteil: grün — die Woche trägt
+  OK   Die Probe kann rot werden — sie tut es hier fast
+  OK   Zwei Kampagnen sind mit Grund ausgeschlossen, nicht weggemittelt
+  OK   Die Zurechnung verschiebt die Quote messbar  ·  6.3 Prozentpunkte
+  OK   Bei schlechten Daten sagt sie ROT und nicht „vielversprechend"  ·  18.5 %
+
+=== Summe
+
+  40 grün · 2 rot

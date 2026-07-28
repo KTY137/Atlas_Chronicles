@@ -1,0 +1,2098 @@
+<meta charset="utf-8">
+<title>Prüfstand: Der Beleg unter fünf Achsen — Chronicle, Kandidat B</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   0 · Reset
+   ══════════════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;padding:0}
+img,svg{max-width:100%;display:block}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3,h4,p,ul,ol,figure,blockquote,dl,dd{margin:0}
+ul,ol{padding:0;list-style:none}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1 · Skin token sources.  Every skin declares a light (--l-*) and a
+       dark (--d-*) palette plus its own type, radius, ornament and shadow.
+       Nothing below this block ever names a colour literal.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root{
+  --font-m: ui-monospace, "Cascadia Mono", "Consolas", "SF Mono", "Menlo", monospace;
+  --bw: 1px;                     /* base border width, raised by high contrast */
+  --ornament: 1;                 /* 0 disables every drawn ornament            */
+  --t-response: .14s;            /* press / hover / focus                      */
+  --t-state: .28s;               /* select / reveal / inspector change         */
+  --t-transition: .80s;          /* scene + chapter change                     */
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --maxw: 1600px;
+}
+
+/* ── Relic — warm parchment, umber ink, brass ────────────────────────────── */
+:root[data-skin="relic"]{
+  --l-bg:#efe7d8; --l-sunk:#e5dbc8; --l-surf:#f7f1e4; --l-surf2:#ece3d0;
+  --l-line:#cbbb9c; --l-line2:#8a7550; --l-ink:#23190f; --l-ink2:#4a3a25;
+  --l-ink3:#6b573b; --l-acc:#7a4a12; --l-accink:#fdf7ea; --l-accsoft:#f0e2c9;
+  --l-ok:#2f5d2a; --l-bad:#8e2317; --l-warn:#7a5206; --l-solid:#7a4a12;
+  --l-hollow:#8a7550; --l-focus:#1f4fd8;
+  --d-bg:#17120c; --d-sunk:#100c07; --d-surf:#201a11; --d-surf2:#292116;
+  --d-line:#4a3d29; --d-line2:#6e5c3f; --d-ink:#f2e8d5; --d-ink2:#d6c7ab;
+  --d-ink3:#ac9a7c; --d-acc:#d9a441; --d-accink:#201a11; --d-accsoft:#33291a;
+  --d-ok:#74c46a; --d-bad:#ef7a6a; --d-warn:#e0b25a; --d-solid:#d9a441;
+  --d-hollow:#6e5c3f; --d-focus:#86b4ff;
+  --font-d: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --font-b: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --r1:3px; --r2:5px; --r3:2px;
+  --track-d:.005em; --wt-d:600;
+  --shadow-l: 0 1px 0 rgba(255,252,244,.7) inset, 0 2px 10px rgba(60,42,16,.10);
+  --shadow-d: 0 1px 0 rgba(255,235,190,.05) inset, 0 2px 14px rgba(0,0,0,.55);
+}
+/* ── Signal — graphite, cyan, technical ─────────────────────────────────── */
+:root[data-skin="signal"]{
+  --l-bg:#eef1f4; --l-sunk:#e2e7ec; --l-surf:#ffffff; --l-surf2:#f2f5f8;
+  --l-line:#c2ccd6; --l-line2:#6b7c8a; --l-ink:#0d1720; --l-ink2:#33424f;
+  --l-ink3:#566672; --l-acc:#0a6c8a; --l-accink:#ffffff; --l-accsoft:#dcedf3;
+  --l-ok:#1a6b3c; --l-bad:#a41d1d; --l-warn:#7a5206; --l-solid:#0a6c8a;
+  --l-hollow:#6b7c8a; --l-focus:#0b57d0;
+  --d-bg:#0b1016; --d-sunk:#070b0f; --d-surf:#131a22; --d-surf2:#1a232c;
+  --d-line:#2c3a46; --d-line2:#46586a; --d-ink:#e6eef5; --d-ink2:#b8c6d2;
+  --d-ink3:#8b9dab; --d-acc:#45c8e8; --d-accink:#06131a; --d-accsoft:#14303a;
+  --d-ok:#4fd08a; --d-bad:#ff8a7a; --d-warn:#f0c064; --d-solid:#45c8e8;
+  --d-hollow:#46586a; --d-focus:#7fb8ff;
+  --font-d: "Segoe UI Semibold", "Roboto Condensed", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-b: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --r1:2px; --r2:3px; --r3:1px;
+  --track-d:.055em; --wt-d:600;
+  --shadow-l: 0 1px 2px rgba(13,23,32,.10);
+  --shadow-d: 0 1px 2px rgba(0,0,0,.6);
+}
+/* ── Archive — oxblood, charcoal, editorial deco ────────────────────────── */
+:root[data-skin="archive"]{
+  --l-bg:#f0ece7; --l-sunk:#e5e0d9; --l-surf:#faf8f5; --l-surf2:#efeae3;
+  --l-line:#cfc7bc; --l-line2:#7d7168; --l-ink:#1b1715; --l-ink2:#453c37;
+  --l-ink3:#6a5e56; --l-acc:#7c1f24; --l-accink:#faf8f5; --l-accsoft:#f2dfdf;
+  --l-ok:#2c5c33; --l-bad:#7c1f24; --l-warn:#7a5410; --l-solid:#7c1f24;
+  --l-hollow:#7d7168; --l-focus:#1f4fd8;
+  --d-bg:#14100f; --d-sunk:#0d0a09; --d-surf:#1e1917; --d-surf2:#262020;
+  --d-line:#443a37; --d-line2:#6a5b56; --d-ink:#f2ebe4; --d-ink2:#d3c6bc;
+  --d-ink3:#a8988e; --d-acc:#d4626a; --d-accink:#1e1917; --d-accsoft:#3a2426;
+  --d-ok:#6fc07a; --d-bad:#ef7f86; --d-warn:#e2b45e; --d-solid:#d4626a;
+  --d-hollow:#6a5b56; --d-focus:#86b4ff;
+  --font-d: "Bodoni MT", "Didot", "Playfair Display", "Times New Roman", Georgia, serif;
+  --font-b: "Seravek", "Optima", "Segoe UI", system-ui, ui-sans-serif, sans-serif;
+  --r1:0px; --r2:0px; --r3:0px;
+  --track-d:.08em; --wt-d:700;
+  --shadow-l: 0 2px 0 rgba(27,23,21,.06);
+  --shadow-d: 0 2px 0 rgba(0,0,0,.5);
+}
+/* ── Clean — no ornament at all.  Must still look commissioned. ─────────── */
+:root[data-skin="clean"]{
+  --l-bg:#f6f7f8; --l-sunk:#eceef0; --l-surf:#ffffff; --l-surf2:#f4f6f7;
+  --l-line:#dde1e5; --l-line2:#79838d; --l-ink:#14181c; --l-ink2:#3c454e;
+  --l-ink3:#5c6772; --l-acc:#2a4fa2; --l-accink:#ffffff; --l-accsoft:#e6ecf8;
+  --l-ok:#17663e; --l-bad:#a32020; --l-warn:#7a5206; --l-solid:#2a4fa2;
+  --l-hollow:#79838d; --l-focus:#2a4fa2;
+  --d-bg:#0f1215; --d-sunk:#0a0c0e; --d-surf:#171b1f; --d-surf2:#1e2328;
+  --d-line:#2b3238; --d-line2:#465059; --d-ink:#eef2f5; --d-ink2:#c2cad1;
+  --d-ink3:#939ea8; --d-acc:#7fa5ff; --d-accink:#0f1215; --d-accsoft:#1b2436;
+  --d-ok:#56cc8c; --d-bad:#ff8c80; --d-warn:#efc060; --d-solid:#7fa5ff;
+  --d-hollow:#465059; --d-focus:#7fa5ff;
+  --font-d: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-b: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --r1:8px; --r2:12px; --r3:6px;
+  --track-d:-.01em; --wt-d:650;
+  --shadow-l: 0 1px 2px rgba(20,24,28,.06), 0 6px 18px rgba(20,24,28,.05);
+  --shadow-d: 0 1px 2px rgba(0,0,0,.5);
+}
+
+/* ── High contrast is an override of the SOURCES, so it survives every skin
+      and both modes without a single duplicated mapping. ─────────────────── */
+:root[data-contrast="high"]{
+  --l-bg:#ffffff; --l-sunk:#f2f2f2; --l-surf:#ffffff; --l-surf2:#ffffff;
+  --l-line:#000000; --l-line2:#000000; --l-ink:#000000; --l-ink2:#000000;
+  --l-ink3:#1a1a1a; --l-acc:#0000cc; --l-accink:#ffffff; --l-accsoft:#e4e4ff;
+  --l-ok:#005c1f; --l-bad:#a00000; --l-warn:#5c3d00; --l-solid:#0000cc;
+  --l-hollow:#000000; --l-focus:#cc0000;
+  --d-bg:#000000; --d-sunk:#000000; --d-surf:#000000; --d-surf2:#0a0a0a;
+  --d-line:#ffffff; --d-line2:#ffffff; --d-ink:#ffffff; --d-ink2:#ffffff;
+  --d-ink3:#e8e8e8; --d-acc:#7fd4ff; --d-accink:#000000; --d-accsoft:#00232e;
+  --d-ok:#5cff9a; --d-bad:#ff9c8c; --d-warn:#ffd166; --d-solid:#7fd4ff;
+  --d-hollow:#ffffff; --d-focus:#ffd400;
+  --ornament:0; --bw:2px;
+  --shadow-l:none; --shadow-d:none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2 · The single mapping layer.  Light default → media query → attribute
+       overrides that beat the media query in BOTH directions.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:var(--l-bg); --sunk:var(--l-sunk); --surf:var(--l-surf); --surf2:var(--l-surf2);
+  --line:var(--l-line); --line2:var(--l-line2); --ink:var(--l-ink); --ink2:var(--l-ink2);
+  --ink3:var(--l-ink3); --acc:var(--l-acc); --accink:var(--l-accink); --accsoft:var(--l-accsoft);
+  --ok:var(--l-ok); --bad:var(--l-bad); --warn:var(--l-warn); --solid:var(--l-solid);
+  --hollow:var(--l-hollow); --focus:var(--l-focus); --shadow:var(--shadow-l);
+  --grain: rgba(0,0,0,.028);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:var(--d-bg); --sunk:var(--d-sunk); --surf:var(--d-surf); --surf2:var(--d-surf2);
+    --line:var(--d-line); --line2:var(--d-line2); --ink:var(--d-ink); --ink2:var(--d-ink2);
+    --ink3:var(--d-ink3); --acc:var(--d-acc); --accink:var(--d-accink); --accsoft:var(--d-accsoft);
+    --ok:var(--d-ok); --bad:var(--d-bad); --warn:var(--d-warn); --solid:var(--d-solid);
+    --hollow:var(--d-hollow); --focus:var(--d-focus); --shadow:var(--shadow-d);
+    --grain: rgba(255,255,255,.030);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:var(--d-bg); --sunk:var(--d-sunk); --surf:var(--d-surf); --surf2:var(--d-surf2);
+  --line:var(--d-line); --line2:var(--d-line2); --ink:var(--d-ink); --ink2:var(--d-ink2);
+  --ink3:var(--d-ink3); --acc:var(--d-acc); --accink:var(--d-accink); --accsoft:var(--d-accsoft);
+  --ok:var(--d-ok); --bad:var(--d-bad); --warn:var(--d-warn); --solid:var(--d-solid);
+  --hollow:var(--d-hollow); --focus:var(--d-focus); --shadow:var(--shadow-d);
+  --grain: rgba(255,255,255,.030);
+}
+:root[data-theme="light"]{
+  --bg:var(--l-bg); --sunk:var(--l-sunk); --surf:var(--l-surf); --surf2:var(--l-surf2);
+  --line:var(--l-line); --line2:var(--l-line2); --ink:var(--l-ink); --ink2:var(--l-ink2);
+  --ink3:var(--l-ink3); --acc:var(--l-acc); --accink:var(--l-accink); --accsoft:var(--l-accsoft);
+  --ok:var(--l-ok); --bad:var(--l-bad); --warn:var(--l-warn); --solid:var(--l-solid);
+  --hollow:var(--l-hollow); --focus:var(--l-focus); --shadow:var(--shadow-l);
+  --grain: rgba(0,0,0,.028);
+}
+
+/* Motion: media query, then explicit overrides that beat it both ways. */
+@media (prefers-reduced-motion: reduce){
+  :root{ --t-response:.001s; --t-state:.001s; --t-transition:.001s }
+}
+:root[data-motion="reduced"]{ --t-response:.001s; --t-state:.001s; --t-transition:.001s }
+:root[data-motion="full"]{ --t-response:.14s; --t-state:.28s; --t-transition:.80s }
+
+:root[data-art="off"]{ --ornament:0 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3 · Page frame
+   ══════════════════════════════════════════════════════════════════════════ */
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--font-b);
+  font-size:16px; line-height:1.6;
+  overflow-x:hidden;
+  transition: background-color var(--t-state) var(--ease), color var(--t-state) var(--ease);
+}
+.app{ max-width:var(--maxw); margin:0 auto; min-width:0; transition:max-width var(--t-state) var(--ease) }
+:root[data-width="1280"] .app{ --maxw:1280px }
+:root[data-width="900"]  .app{ --maxw:900px }
+:root[data-width="380"]  .app{ --maxw:380px }
+:root[data-width="380"] .app, :root[data-width="900"] .app{ outline:2px dashed var(--line2); outline-offset:0 }
+
+:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; border-radius:var(--r3) }
+::selection{ background:var(--accsoft); color:var(--ink) }
+
+.skip{ position:absolute; left:-9999px; top:0; background:var(--acc); color:var(--accink);
+       padding:.6rem 1rem; z-index:99; border-radius:var(--r1) }
+.skip:focus{ left:.5rem; top:.5rem }
+
+/* ── Panels + per-skin ornament ─────────────────────────────────────────── */
+.panel{
+  position:relative; background:var(--surf); border:var(--bw) solid var(--line);
+  border-radius:var(--r2); box-shadow:var(--shadow);
+  transition: background-color var(--t-state) var(--ease), border-color var(--t-state) var(--ease);
+}
+.panel::before{ content:""; position:absolute; inset:0; pointer-events:none;
+  opacity:var(--ornament); border-radius:inherit;
+  transition:opacity var(--t-state) var(--ease) }
+
+:root[data-skin="relic"] .panel::before{
+  border:1px solid var(--line); margin:4px; border-radius:var(--r3);
+  background:
+    repeating-linear-gradient(0deg, var(--grain) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, var(--grain) 0 1px, transparent 1px 5px);
+  opacity:calc(var(--ornament) * .55);
+}
+:root[data-skin="signal"] .panel::before{
+  background:
+    linear-gradient(var(--acc),var(--acc)) 0 0/2.6rem 2px no-repeat,
+    repeating-linear-gradient(90deg, var(--grain) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(0deg, var(--grain) 0 1px, transparent 1px 22px);
+  opacity:calc(var(--ornament) * .75);
+}
+:root[data-skin="archive"] .panel::before{
+  background:
+    linear-gradient(var(--acc),var(--acc)) 0 0/100% 3px no-repeat,
+    linear-gradient(var(--line2),var(--line2)) 0 5px/100% 1px no-repeat;
+  opacity:calc(var(--ornament) * .9);
+}
+:root[data-skin="clean"] .panel::before{ background:none; border:0 }
+
+.panel > *{ position:relative }
+.pad{ padding:1rem 1.15rem }
+
+/* ── Topbar ─────────────────────────────────────────────────────────────── */
+.top{
+  position:sticky; top:0; z-index:20; background:var(--sunk);
+  border-bottom:var(--bw) solid var(--line);
+  transition: background-color var(--t-state) var(--ease);
+}
+.top__id{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.35rem .8rem;
+  padding:.7rem 1rem .45rem }
+.brand{ font-family:var(--font-d); font-weight:var(--wt-d); letter-spacing:var(--track-d);
+  font-size:1.02rem; text-transform:uppercase }
+.brand em{ font-style:normal; color:var(--acc) }
+.top__sub{ color:var(--ink3); font-size:.83rem; line-height:1.35 }
+
+.axes{ display:flex; flex-wrap:wrap; gap:.4rem .55rem; padding:0 1rem .7rem;
+  overflow-x:auto; scrollbar-width:thin }
+.axis{ display:flex; align-items:center; gap:.3rem; flex:0 0 auto;
+  border:var(--bw) solid var(--line); border-radius:var(--r1);
+  background:var(--surf); padding:.22rem .3rem }
+.axis__k{ font-size:.66rem; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink3); padding:0 .35rem 0 .2rem; white-space:nowrap }
+.seg{ display:flex; gap:.15rem }
+.seg button{
+  border:var(--bw) solid transparent; background:transparent; color:var(--ink2);
+  padding:.25rem .55rem; border-radius:var(--r3); cursor:pointer;
+  font-size:.8rem; white-space:nowrap; line-height:1.35;
+  transition: background-color var(--t-response) var(--ease),
+              color var(--t-response) var(--ease),
+              border-color var(--t-response) var(--ease);
+}
+.seg button:hover{ background:var(--surf2); color:var(--ink) }
+.seg button[aria-pressed="true"]{
+  background:var(--acc); color:var(--accink); border-color:var(--acc); font-weight:600 }
+.seg button[aria-pressed="true"]:hover{ background:var(--acc); color:var(--accink) }
+
+/* ── Shell grid ─────────────────────────────────────────────────────────── */
+.shell{ display:grid; gap:.85rem; padding:.85rem 1rem; align-items:start;
+  grid-template-columns: 13.5rem minmax(0,1fr) 22rem }
+@media (max-width:1279px){ .shell{ grid-template-columns: 4rem minmax(0,1fr) 19.5rem } }
+@media (max-width:1023px){ .shell{ grid-template-columns: minmax(0,1fr) }
+  .rail{ order:-1 } }
+:root[data-width="900"] .shell, :root[data-width="380"] .shell{ grid-template-columns:minmax(0,1fr) }
+
+/* ── Module rail ────────────────────────────────────────────────────────── */
+.rail ul{ display:flex; flex-direction:column; gap:.15rem }
+@media (max-width:1023px){ .rail ul{ flex-direction:row; overflow-x:auto; gap:.25rem } }
+:root[data-width="900"] .rail ul, :root[data-width="380"] .rail ul{ flex-direction:row; overflow-x:auto }
+.rail button{
+  display:flex; align-items:center; gap:.55rem; width:100%; text-align:left;
+  background:transparent; border:var(--bw) solid transparent; border-radius:var(--r1);
+  padding:.42rem .5rem; cursor:pointer; color:var(--ink2); font-size:.87rem;
+  white-space:nowrap;
+  transition: background-color var(--t-response) var(--ease), color var(--t-response) var(--ease);
+}
+.rail button:hover:not([aria-disabled="true"]){ background:var(--surf2); color:var(--ink) }
+.rail button[aria-current="page"]{ background:var(--accsoft); color:var(--ink);
+  border-color:var(--line2); font-weight:600 }
+.rail button[aria-disabled="true"]{ opacity:.55; cursor:not-allowed }
+.rail .gl{ width:1.35rem; text-align:center; font-family:var(--font-m); font-size:.9rem; color:var(--acc) }
+.rail .lbl{ min-width:0; overflow:hidden; text-overflow:ellipsis }
+.rail .hint{ margin-left:auto; font-size:.65rem; color:var(--ink3); letter-spacing:.06em }
+@media (min-width:1024px) and (max-width:1279px){
+  .rail .lbl, .rail .hint{ display:none } .rail button{ justify-content:center }
+}
+
+/* ── Stage / article ────────────────────────────────────────────────────── */
+.stage{ min-width:0 }
+.kitband{ position:relative; height:6.5rem; overflow:hidden; border-bottom:var(--bw) solid var(--line);
+  border-radius:var(--r2) var(--r2) 0 0; background:var(--surf2) }
+.kitband img{ width:100%; height:100%; object-fit:cover; opacity:calc(var(--ornament)*.55);
+  filter:saturate(.75); transition:opacity var(--t-transition) var(--ease) }
+.kitband--fallback{ display:grid; place-items:center }
+.kitband__fb{ display:none; position:absolute; inset:0; place-items:center;
+  background:
+    repeating-linear-gradient(135deg, var(--grain) 0 6px, transparent 6px 12px);
+}
+.kitband[data-state="fallback"] img{ display:none }
+.kitband[data-state="fallback"] .kitband__fb{ display:grid }
+.kitband__note{ position:absolute; right:.5rem; bottom:.35rem; font-size:.68rem;
+  color:var(--ink3); background:var(--surf); border:var(--bw) solid var(--line);
+  border-radius:var(--r3); padding:.1rem .4rem }
+:root[data-art="off"] .kitband{ height:2.25rem }
+:root[data-art="off"] .kitband img{ display:none }
+
+.artmeta{ display:flex; flex-wrap:wrap; gap:.4rem .8rem; align-items:baseline;
+  padding:.85rem 1.15rem .2rem }
+.kicker{ font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink3) }
+h1{ font-family:var(--font-d); font-weight:var(--wt-d); letter-spacing:var(--track-d);
+  font-size:clamp(1.5rem,1.1rem + 1.9vw,2.35rem); line-height:1.12; padding:0 1.15rem .2rem }
+:root[data-skin="archive"] h1{ text-transform:uppercase }
+.subline{ padding:0 1.15rem .75rem; color:var(--ink2); font-size:.94rem }
+
+.bilanz{ margin:0 1.15rem 1rem; padding:.6rem .75rem; background:var(--surf2);
+  border:var(--bw) solid var(--line); border-left:3px solid var(--acc);
+  border-radius:var(--r3); font-size:.86rem; color:var(--ink2);
+  font-variant-numeric:tabular-nums }
+.bilanz b{ color:var(--ink) }
+
+/* Infobox */
+.infobox{ float:right; width:min(21rem,100%); margin:0 0 1rem 1.15rem;
+  border:var(--bw) solid var(--line2); border-radius:var(--r1); background:var(--surf2) }
+@media (max-width:719px){ .infobox{ float:none; width:auto; margin:0 0 1rem } }
+:root[data-width="380"] .infobox{ float:none; width:auto; margin:0 0 1rem }
+.infobox__h{ font-family:var(--font-d); font-weight:var(--wt-d); letter-spacing:var(--track-d);
+  font-size:.95rem; padding:.5rem .7rem; border-bottom:var(--bw) solid var(--line2);
+  background:var(--accsoft) }
+.infobox__crest{ display:flex; justify-content:center; padding:.7rem 0 .2rem }
+.infobox dl{ display:grid; grid-template-columns: 8.4rem minmax(0,1fr); gap:0 }
+.infobox dt,.infobox dd{ padding:.3rem .7rem; border-top:var(--bw) solid var(--line);
+  font-size:.82rem; min-width:0; overflow-wrap:anywhere }
+.infobox dt{ color:var(--ink3); display:flex; align-items:baseline; gap:.3rem }
+.chip--mini{ margin-top:0; width:1.1rem; height:1.1rem; font-size:.58rem; flex:0 0 auto;
+  border-width:2px; align-self:center }
+.infobox dd{ color:var(--ink); font-variant-numeric:tabular-nums }
+
+.kanon{ padding:0 1.15rem 1.2rem }
+.kanon h2{ font-family:var(--font-d); font-weight:var(--wt-d); letter-spacing:var(--track-d);
+  font-size:1.08rem; margin:1.35rem 0 .1rem; padding-bottom:.25rem;
+  border-bottom:var(--bw) solid var(--line) }
+:root[data-skin="archive"] .kanon h2{ text-transform:uppercase; font-size:.98rem }
+.kanon a{ color:var(--acc); text-decoration-thickness:1px; text-underline-offset:2px }
+.kanon a.rot{ color:var(--bad) }
+.kanon a:hover{ text-decoration-style:double }
+
+/* Atom + provenance gutter.  The gutter column is ALWAYS reserved so that
+   opening the provenance layer cannot change the page's height — gate
+   „Der Streifen". The panel below measures it and prints the delta. */
+.atom{ display:grid; grid-template-columns: 1.9rem minmax(0,1fr); gap:.15rem;
+  align-items:start; margin:.62rem 0 }
+.atom__body{ min-width:0 }
+.atom__body p{ margin:0 }
+.chip{
+  grid-column:1; margin-top:.28rem; width:1.45rem; height:1.45rem; padding:0;
+  display:grid; place-items:center; cursor:pointer; border-radius:999px;
+  border:2px solid var(--hollow); background:transparent; color:var(--ink2);
+  font-family:var(--font-m); font-size:.72rem; line-height:1;
+  opacity:0; visibility:hidden;
+  transition: opacity var(--t-state) var(--ease),
+              background-color var(--t-state) var(--ease),
+              border-color var(--t-state) var(--ease),
+              transform var(--t-response) var(--ease);
+}
+:root[data-prov="an"] .chip{ opacity:1; visibility:visible }
+.chip:hover{ transform:scale(1.12) }
+.chip[data-herkunft="am_tisch"]{ background:var(--solid); border-color:var(--solid); color:var(--accink) }
+.chip[aria-pressed="true"]{ box-shadow:0 0 0 3px var(--accsoft) }
+:root[data-skin="archive"] .chip{ border-radius:0 }
+:root[data-skin="signal"] .chip{ border-radius:var(--r3) }
+
+.atom--sel .atom__body{ background:var(--accsoft); border-radius:var(--r3);
+  box-shadow:0 0 0 .35rem var(--accsoft) }
+.atom--neu .atom__body{ animation: praegung var(--t-transition) var(--ease) }
+@keyframes praegung{
+  from{ background:var(--accsoft); box-shadow:0 0 0 .6rem var(--accsoft) }
+  to  { background:transparent;    box-shadow:0 0 0 0 transparent }
+}
+.atom--versiegelt .atom__body{ border-left:3px solid var(--warn); padding-left:.6rem;
+  color:var(--ink2); font-style:italic }
+.atom--anmerkung .atom__body{ border-left:3px dotted var(--acc); padding-left:.6rem;
+  color:var(--ink2); font-size:.9rem }
+blockquote.atom__body{ border-left:3px solid var(--line2); padding-left:.7rem;
+  font-family:var(--font-d); font-size:1.02rem }
+.fn{ font-variant-numeric:tabular-nums; font-size:.72em; vertical-align:super;
+  border:0; background:transparent; color:var(--acc); cursor:pointer; padding:0 .1em;
+  text-decoration:underline }
+
+.plate{ margin:1rem 0 .3rem }
+.plate figcaption{ font-size:.8rem; color:var(--ink3); padding-top:.35rem }
+.plate .board{ display:flex; justify-content:center }
+.plate .board svg{ min-width:0; width:auto; max-width:100%; height:15rem }
+.board{ overflow-x:auto; border:var(--bw) solid var(--line2); border-radius:var(--r1);
+  background:var(--sunk) }
+.board svg{ min-width:24rem; width:100%; height:auto }
+
+.siehe{ display:flex; flex-wrap:wrap; gap:.4rem .9rem; padding-top:.3rem; font-size:.88rem }
+
+/* ── Lens ───────────────────────────────────────────────────────────────── */
+.lens{ min-width:0; position:sticky; top:6.7rem }
+@media (max-width:1023px){ .lens{ position:static } }
+.tabs{ display:flex; gap:.2rem; padding:.45rem .5rem; border-bottom:var(--bw) solid var(--line);
+  background:var(--surf2); border-radius:var(--r2) var(--r2) 0 0; overflow-x:auto }
+.tabs button{ background:transparent; border:var(--bw) solid transparent; border-radius:var(--r3);
+  padding:.3rem .6rem; cursor:pointer; color:var(--ink2); font-size:.83rem; white-space:nowrap;
+  transition: background-color var(--t-response) var(--ease) }
+.tabs button[aria-selected="true"]{ background:var(--surf); border-color:var(--line2);
+  color:var(--ink); font-weight:600 }
+
+.card__h{ font-family:var(--font-d); font-weight:var(--wt-d); letter-spacing:var(--track-d);
+  font-size:.95rem; margin-bottom:.15rem }
+.card__sub{ font-size:.78rem; color:var(--ink3); font-variant-numeric:tabular-nums }
+
+.witness{ display:flex; gap:.6rem; align-items:center; margin:.7rem 0 .55rem }
+.sigil{ flex:0 0 auto; width:2.6rem; height:2.6rem; display:grid; place-items:center;
+  border:2px solid var(--line2); border-radius:var(--r1); background:var(--surf2);
+  font-family:var(--font-d); font-weight:700; font-size:1.05rem; color:var(--ink2) }
+:root[data-skin="clean"] .sigil{ border-radius:999px }
+.witness__t{ min-width:0; font-size:.83rem; line-height:1.35 }
+.witness__t b{ display:block; font-size:.9rem }
+.witness__t span{ color:var(--ink3) }
+
+.deriv{ overflow-x:auto; margin:.4rem 0 .6rem; border:var(--bw) solid var(--line);
+  border-radius:var(--r3); background:var(--sunk) }
+.deriv table{ border-collapse:collapse; width:100%; min-width:17rem;
+  font-family:var(--font-m); font-size:.79rem; font-variant-numeric:tabular-nums }
+.deriv td{ padding:.24rem .5rem; vertical-align:top }
+.deriv td.n{ text-align:right; white-space:nowrap; width:3.2rem }
+.deriv tr.sum td{ border-top:2px solid var(--line2); font-weight:700 }
+.deriv tr.res td{ color:var(--ok); font-weight:700 }
+.deriv td.note{ color:var(--ink3); font-size:.72rem }
+.pin{ font-family:var(--font-m); font-size:.7rem; color:var(--ink3);
+  overflow-wrap:anywhere; line-height:1.5 }
+
+.actions{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.65rem 0 .2rem }
+.btn{ display:inline-flex; align-items:center; gap:.4rem; cursor:pointer;
+  border:var(--bw) solid var(--line2); background:var(--surf2); color:var(--ink);
+  border-radius:var(--r1); padding:.42rem .7rem; font-size:.85rem; line-height:1.3;
+  transition: background-color var(--t-response) var(--ease),
+              transform var(--t-response) var(--ease),
+              border-color var(--t-response) var(--ease) }
+.btn:hover{ background:var(--accsoft) }
+.btn:active{ transform:translateY(1px) }
+.btn--primary{ background:var(--acc); border-color:var(--acc); color:var(--accink); font-weight:600 }
+.btn--primary:hover{ background:var(--acc); filter:brightness(1.08) }
+.btn--danger{ border-color:var(--bad); color:var(--bad) }
+.btn[disabled]{ opacity:.5; cursor:not-allowed }
+
+.seal{ margin-top:.6rem; border:2px solid var(--line2); border-radius:var(--r1);
+  padding:.55rem .7rem; font-size:.83rem; background:var(--surf2);
+  opacity:0; transform:translateY(-4px);
+  transition: opacity var(--t-state) var(--ease), transform var(--t-state) var(--ease),
+              border-color var(--t-state) var(--ease) }
+.seal[data-shown="1"]{ opacity:1; transform:none }
+.seal[data-verdict="ok"]{ border-color:var(--ok) }
+.seal[data-verdict="bad"]{ border-color:var(--bad) }
+.seal__h{ display:flex; align-items:baseline; gap:.4rem; font-weight:700; margin-bottom:.25rem }
+.seal[data-verdict="ok"] .seal__h{ color:var(--ok) }
+.seal[data-verdict="bad"] .seal__h{ color:var(--bad) }
+.seal__glyph{ font-family:var(--font-m) }
+.seal p{ color:var(--ink2); font-size:.82rem }
+.seal ul{ margin:.3rem 0 0; display:grid; gap:.15rem }
+.seal li{ font-family:var(--font-m); font-size:.74rem; color:var(--ink2);
+  overflow-wrap:anywhere; padding-left:.9rem; position:relative }
+.seal li::before{ content:"·"; position:absolute; left:.25rem }
+
+.claim{ margin-top:.7rem; border-top:var(--bw) dashed var(--line2); padding-top:.55rem }
+.claim h4{ font-size:.76rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3) }
+.claim ul{ margin:.25rem 0 .5rem; display:grid; gap:.2rem }
+.claim li{ font-size:.79rem; color:var(--ink2); padding-left:1.05rem; position:relative }
+.claim li::before{ position:absolute; left:0; font-family:var(--font-m) }
+.claim li.y::before{ content:"✔"; color:var(--ok) }
+.claim li.n::before{ content:"✕"; color:var(--bad) }
+
+/* ── Prüfbericht ────────────────────────────────────────────────────────── */
+.report{ margin:.15rem 1rem 1rem }
+.report__h{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.5rem .9rem;
+  padding:.8rem 1.15rem .1rem }
+.report__h h2{ font-family:var(--font-d); font-weight:var(--wt-d); letter-spacing:var(--track-d);
+  font-size:1.05rem }
+.report__grid{ display:grid; gap:.85rem; padding:.7rem 1.15rem 1.1rem;
+  grid-template-columns:repeat(auto-fit,minmax(17rem,1fr)) }
+.rbox{ border:var(--bw) solid var(--line); border-radius:var(--r1); background:var(--surf2);
+  padding:.6rem .7rem; min-width:0 }
+.rbox h3{ font-size:.73rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3);
+  margin-bottom:.35rem }
+.kv{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.1rem .6rem;
+  font-size:.79rem; font-variant-numeric:tabular-nums }
+.kv dt{ color:var(--ink2); min-width:0; overflow-wrap:anywhere }
+.kv dd{ text-align:right; font-family:var(--font-m); font-size:.76rem; white-space:nowrap }
+.badge{ display:inline-block; border:var(--bw) solid currentColor; border-radius:var(--r3);
+  padding:0 .3rem; font-size:.68rem; font-family:var(--font-m) }
+.b-ok{ color:var(--ok) } .b-bad{ color:var(--bad) } .b-warn{ color:var(--warn) }
+.log{ display:grid; gap:.2rem; max-height:11rem; overflow:auto; font-size:.74rem;
+  font-family:var(--font-m) }
+.log li{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:.4rem;
+  border-bottom:var(--bw) dotted var(--line); padding-bottom:.15rem }
+.log .v{ white-space:nowrap }
+.log .t{ min-width:0; overflow-wrap:anywhere; color:var(--ink2) }
+
+/* ── Shelf ──────────────────────────────────────────────────────────────── */
+.shelf{ position:sticky; bottom:0; z-index:15; background:var(--sunk);
+  border-top:var(--bw) solid var(--line2); padding:.55rem 1rem;
+  display:flex; flex-wrap:wrap; gap:.5rem .9rem; align-items:center }
+.tally{ display:flex; align-items:center; gap:.45rem; font-size:.84rem;
+  font-variant-numeric:tabular-nums; color:var(--ink2) }
+.dot{ width:.72rem; height:.72rem; border-radius:999px; border:2px solid var(--hollow);
+  display:inline-block }
+.dot--solid{ background:var(--solid); border-color:var(--solid) }
+:root[data-skin="archive"] .dot{ border-radius:0 }
+.shelf__sp{ flex:1 1 auto; min-width:0 }
+.kbd{ font-family:var(--font-m); font-size:.72rem; border:var(--bw) solid var(--line2);
+  border-radius:var(--r3); padding:0 .3rem; color:var(--ink3) }
+
+.foot{ padding:0 1rem 2rem; color:var(--ink3); font-size:.78rem; line-height:1.6 }
+.foot p{ max-width:62ch; margin-bottom:.45rem }
+.foot b{ color:var(--ink2) }
+
+.vh{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);
+  white-space:nowrap }
+.num{ font-variant-numeric:tabular-nums }
+</style>
+
+<a class="skip" href="#kanon">Zum Kanon springen</a>
+
+<div class="app" id="app">
+
+  <!-- ══════════════ Campaign Context / Prüfstand-Achsen ══════════════ -->
+  <header class="top">
+    <div class="top__id">
+      <span class="brand">Chronicle <em>· Prüfstand</em></span>
+      <span class="top__sub" id="topsub"></span>
+    </div>
+    <div class="axes" id="axes"></div>
+  </header>
+
+  <main class="shell">
+
+    <!-- ── Module Rail ── -->
+    <nav class="rail panel pad" aria-label="Bereiche" id="rail"></nav>
+
+    <!-- ── Primary Stage ── -->
+    <section class="stage panel" aria-labelledby="titel">
+      <div class="kitband" id="kitband">
+        <img id="kitimg" alt="" aria-hidden="true" loading="lazy">
+        <div class="kitband__fb" aria-hidden="true">
+          <svg width="120" height="44" viewBox="0 0 120 44" role="img" aria-label="">
+            <g fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65">
+              <path d="M4 40 L4 12 L16 4 L28 12 L28 40"/>
+              <path d="M46 40 L46 4 M46 4 L62 4 L62 20 L46 20"/>
+              <path d="M80 40 L80 4 L96 4 M80 21 L92 21"/>
+              <path d="M110 4 L110 40"/>
+            </g>
+          </svg>
+        </div>
+        <span class="kitband__note" id="kitnote"></span>
+      </div>
+
+      <div class="artmeta"><span class="kicker" id="kicker"></span></div>
+      <h1 id="titel"></h1>
+      <p class="subline" id="subline"></p>
+      <p class="bilanz" id="bilanz" role="status"></p>
+
+      <div id="stagebody"></div>
+    </section>
+
+    <!-- ── Context Lens ── -->
+    <aside class="lens panel" aria-label="Kontextlinse">
+      <div class="tabs" role="tablist" aria-label="Linsenansicht" id="tabs"></div>
+      <div class="pad" id="lensbody" role="tabpanel" tabindex="0"></div>
+    </aside>
+  </main>
+
+  <!-- ══════════════ Prüfbericht ══════════════ -->
+  <section class="report panel" aria-labelledby="rep-h">
+    <div class="report__h">
+      <h2 id="rep-h">Prüfbericht — was diese Seite über sich selbst nachweist</h2>
+      <span class="top__sub">Alle Werte werden im Browser gemessen, keiner ist eingetippt.</span>
+    </div>
+    <div class="report__grid" id="repgrid"></div>
+  </section>
+
+  <!-- ══════════════ Session Shelf ══════════════ -->
+  <footer class="shelf" id="shelf"></footer>
+
+  <div class="foot">
+    <p><b>Was dieser Prüfstand ist.</b> Ein Vision-Spike für Produktkandidat B, Runde 4, Sitzplatz 2:
+      der <b>Universalitätsbeweis</b>. Dieselben Komponenten tragen drei Inhaltspakete, vier Skins,
+      drei Rollen, hohen Kontrast, reduzierte Bewegung, lange Übersetzungen und fehlende Kunst.
+      Der Strukturabdruck über dem Artikel wird bei jedem Achsenwechsel neu berechnet: er darf sich
+      <b>nur</b> ändern, wenn die Rolle wechselt — denn nur dort ist das Weglassen von Datensätzen
+      die eigentliche Sicherheitseigenschaft.</p>
+    <p><b>Was er nicht ist.</b> Kein Zugriffsschutznachweis: alle drei Rollenprojektionen werden hier
+      im Browser aus derselben Fixture gerechnet. In der Produktion muss der Server die
+      unberechtigten Datensätze aus der Antwort entfernen, bevor sie das Netz verlässt. Der
+      Nachrechnen-Verifizierer ist dagegen echt: dieselbe Ganzzahl-Arithmetik, derselbe eingefrorene
+      Abdruck, keine Attrappe.</p>
+    <p><b>Kunst.</b> Die optionale Kopfbahn lädt echte Skin-Kits aus
+      <span class="num">design/spikes/assets/universal-ui/</span>. Fehlen sie, greift die
+      gezeichnete Ersatzbahn. <b>Clean führt bewusst kein Kit</b> — das ist kein Fehlbild, das ist
+      die Gestaltung.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · Würfelmaschine — ganzzahlig, gebietsschema-frei, deterministisch.
+       Exakt dieselbe Funktion, die den eingefrorenen Abdruck erzeugt hat.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function fmix32(h){h^=h>>>16;h=Math.imul(h,0x85ebca6b)>>>0;h^=h>>>13;h=Math.imul(h,0xc2b2ae35)>>>0;h^=h>>>16;return h>>>0;}
+function h32(s){let h=0x811c9dc5>>>0;for(let i=0;i<s.length;i++){h=(h^s.charCodeAt(i))>>>0;h=Math.imul(h,0x01000193)>>>0;}return fmix32(h);}
+function hex8(n){return ("0000000"+(n>>>0).toString(16)).slice(-8);}
+function wuerfel(saat,idx,seiten){return (h32(saat+"|"+idx)%seiten)+1;}
+
+function auswerten(rec, ver, rev){
+  const schritte=[]; let summe=0; const wuerfe=[];
+  rec.ast.forEach(function(t){
+    if(t.op==="wurf"){
+      let s=0; for(let k=0;k<t.anzahl;k++){const w=wuerfel(rec.saat,t.index+k,t.seiten);wuerfe.push(w);s+=w;}
+      schritte.push({op:"wurf",label:t.anzahl+"d"+t.seiten,wert:s,note:""}); summe+=s;
+    } else if(t.op==="konstante"){
+      schritte.push({op:"konst",label:t.label,wert:t.wert,note:""}); summe+=t.wert;
+    } else if(t.op==="praedikat"){
+      const b=(rev===rec.klauselRev)?t.bonus:t.bonusAlt;
+      const erfuellt=t.gehalten>=t.mindestens; const w=erfuellt?b:0;
+      schritte.push({op:"praed",label:t.label,wert:w,
+        note:'haelt_etikett("'+t.etikett+'", mindestens: '+t.mindestens+")"});
+      summe+=w;
+    }
+  });
+  return {schritte:schritte,summe:summe,wuerfe:wuerfe,erfolg:summe>=rec.sg};
+}
+/* Kanonische Form: bewusst rein ASCII, damit der Abdruck nicht von der
+   Zeichenkodierung der Anzeigetexte abhängt. */
+function kanonisch(rec,erg,ver,rev){
+  return ["v1",rec.saat,rec.paket+"@"+ver,rec.klausel+"@"+rev,
+    erg.schritte.map(function(s,i){return s.op+"#"+i+"="+s.wert;}).join(";"),
+    "summe="+erg.summe,"sg="+rec.sg,"erfolg="+(erg.erfolg?1:0)].join("|");
+}
+function abdruckVon(rec,erg,ver,rev){ return hex8(h32(kanonisch(rec,erg,ver,rev))); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · Drei Inhaltspakete. Strukturell isomorph, inhaltlich eigenständig.
+       25 Atome je Paket: 10 Felder · 13 Absätze · 2 Bildunterschriften.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const WELTEN = {
+
+aldenfall:{
+  welt:"Aldenfall", genre:"Fantasy", skin:"relic",
+  anlass:{titel:"Der Aldenfall-Auftakt",autor:"Marek Sanz",abende:4,versiegelt:6,
+          belege:118,geprueft:"27.07.2026",paket:"hausregeln-aldenfall 2.3"},
+  kicker:"Kanon · Geschichte · Fraktion",
+  titel:"Haus Vharon",
+  subline:"Ein Lehen an der oberen Aldenau, dessen einziger Besitz ein Siegelrecht ist.",
+  crest:"reiher",
+  ort:"Die Archivnische", zeit:"21:14:38", sitzung:3, datum:"14. Juni 2026",
+  besetzung:[{k:"S",name:"Sera Valdris",rolle:"Kanzleischreiberin",zelle:[2,3]},
+             {k:"B",name:"Brannt",rolle:"Fährmann",zelle:[7,6]},
+             {k:"V",name:"Vaugn",rolle:"Siegelwache",zelle:[11,2]}],
+  regionen:["Archivnische","Treppenschacht","Kanzleiflur"],
+  felder:[
+    ["Sitz","Burg Vharon, obere Aldenau"],
+    ["Oberhaupt","Aldis Vharon, die Dritte ihres Namens"],
+    ["Gegründet","812, im Jahr nach dem Kalten Sommer"],
+    ["Wappen","Silberner Reiher auf gespaltenem Feld"],
+    ["Kanzlei","Ossa",{rot:true}],
+    ["Vasallen","Haus Kerne, Haus Bracht, die Fährleute von Simm"],
+    ["Einkünfte","Salzrecht der unteren Furt"],
+    ["Erbfolge","Ältestenrecht, seit 866 angefochten"],
+    ["Bündnis","Bruderschaft vom Zweiten Keller"],
+    ["Zuletzt erwähnt","Sitzung 4, 23:12"]
+  ],
+  abschnitte:[
+    {titel:"Ursprung", atome:[
+      {id:"p1",art:"text",text:"Haus Vharon sitzt seit dem Kalten Sommer auf dem Felsvorsprung über der oberen Aldenau — und es sitzt dort, weil vor zweihundert Jahren niemand sonst den Unterhalt der Furtbrücke übernehmen wollte. Aus der Pflicht wurde binnen dreier Generationen ein Recht, und aus dem Recht ein Zoll.",
+       herkunft:"getippt", zeit:"3. März", quelle:"Marek Sanz"},
+      {id:"p2",art:"text",text:"Die Reiherfahne ist älter als das Haus. Sie gehörte den Fährleuten von Simm, die Vharon zuerst bezahlte und zwei Generationen später heiratete; wer im Tal von »den Reihern« spricht, meint bis heute beide Familien und weiß meist nicht mehr, welche zuerst da war.",
+       herkunft:"getippt", zeit:"3. März", quelle:"Marek Sanz"},
+      {id:"p3",art:"text",text:"Gesichert ist davon wenig. Die Chronik der unteren Furt setzt erst 844 ein, und die dreißig Jahre davor sind ausschließlich durch Abschriften bezeugt, die das Haus selbst angefertigt und selbst beglaubigt hat.",
+       herkunft:"getippt", zeit:"3. März", quelle:"Marek Sanz"}
+    ]},
+    {titel:"Das Siegelrecht", atome:[
+      {id:"p4",art:"text",text:"Das Siegelrecht der Kanzlei ist der eigentliche Besitz des Hauses. Ein Vertrag ohne Vharon-Siegel gilt in der oberen Aldenau nicht, und die Prüfung eines fremden Siegels kostet die Prüfende eine Handlung — eine Regel, über die am dritten Abend eine Viertelstunde gestritten wurde.",
+       herkunft:"Regelkarte", zeit:"21:47, Sitzung 3", quelle:"„Siegel prüfen kostet eine Handlung“", glyph:"§"},
+      {id:"p5",art:"text",beleg:true,
+       text:"Sera Valdris hielt den Siegelring des Kanzlers gegen das Fensterlicht und wusste im selben Atemzug, dass der Abdruck nachgeschnitten war: der Reiherschnabel zeigte nach links.",
+       herkunft:"Wurf", zeit:"21:14, Sitzung 3", quelle:"Menschenkenntnis · Sera · 21 gegen 15 · geprüft", glyph:"⚄"},
+      {id:"a1",art:"anmerkung",sicht:"eigner",
+       text:"Notiz, nur für Sera: Der zweite Ring lag im Futter des Mantels, nicht in der Lade. Nicht laut sagen.",
+       herkunft:"Anmerkung", zeit:"21:16, Sitzung 3", quelle:"Sera Valdris", glyph:"✎"}
+    ]},
+    {titel:"Die Kanzlei Ossa", atome:[
+      {id:"p6",art:"text",link:{wort:"Kanzlei Ossa",rot:true},
+       text:"Die {{link}} verwaltet die Siegel, ohne dem Haus zu gehören. Sie ist ein Amt und kein Besitz, und sie hat Vharon bereits zweimal überlebt.",
+       herkunft:"getippt", zeit:"9. März", quelle:"Marek Sanz"},
+      {id:"p7",art:"text",text:"Wer den Kanzler stellt, entscheidet die Bruderschaft vom Zweiten Keller. Das steht in keinem Vertrag und weiß im Tal jeder.",
+       herkunft:"vorgelesen", zeit:"21:22, Sitzung 3", quelle:"der zweite Keller", glyph:"❝"},
+      {id:"s1",art:"versiegelt",sicht:"leitung",
+       text:"Versiegelt · Zeile 3: Der amtierende Kanzler hat das zweite Siegel bereits verkauft. Der Käufer sitzt am Tisch.",
+       herkunft:"versiegelt", zeit:"ungeöffnet", quelle:"Anlass-Saat", glyph:"◆"},
+      {id:"s2",art:"versiegelt",sicht:"leitung",
+       text:"Versiegelt · Zeile 5: Aldis Vharon weiß es seit dem Frühjahr und schweigt, weil der Käufer ihre Schwester ist.",
+       herkunft:"versiegelt", zeit:"ungeöffnet", quelle:"Anlass-Saat", glyph:"◆"}
+    ]},
+    {titel:"Der Aldenfall", atome:[
+      {id:"p8",art:"text",text:"Der Aldenfall ist keine Schlacht, sondern ein Winter. 866 fror die Furt zu, der Zoll fiel aus, und das Haus lieh sich Geld bei Leuten, die keine Zinsen wollten, sondern Gefälligkeiten.",
+       herkunft:"getippt", zeit:"11. März", quelle:"Marek Sanz"},
+      {id:"p9",art:"zitat",text:"»Wir haben den Winter nicht verloren«, sagte Aldis. »Wir haben ihn auf Raten gekauft.«",
+       herkunft:"vorgelesen", zeit:"21:29, Sitzung 3", quelle:"Aldis am Kamin", glyph:"❝"},
+      {id:"p10",art:"text",text:"Von elf Gefälligkeiten sind sieben eingelöst. Welche vier offen sind, weiß im Tal niemand außer der Kanzlei — und die führt darüber kein Buch, das man beschlagnahmen könnte.",
+       herkunft:"getippt", zeit:"11. März", quelle:"Marek Sanz"}
+    ]}
+  ],
+  bilder:[
+    "Die Archivnische um 21:14:38 — Sera am Regal, Brannt an der Tür, Vaugn zwei Felder vom Ausgang.",
+    "Der Nebel, wie Sera ihn sah. Brannt sah in derselben Sekunde vier Felder weniger."
+  ],
+  siehe:["Kanzlei Ossa","Bruderschaft vom Zweiten Keller","Fährleute von Simm","Aldis Vharon"],
+  wurf:{
+    fertigkeit:"Menschenkenntnis", charakter:"Sera Valdris", sitzung:3, uhrzeit:"21:14:38",
+    saat:"4f2aba684eafb2c1", paket:"hausregeln-aldenfall", ver:"2.3",
+    klausel:"k_vharon_kenntnis", klauselRev:"r7", klauselAlt:"r8", verAlt:"2.4",
+    sg:15, wurfId:"w_003", abdruck:"ee6258be",
+    ast:[
+      {op:"wurf",anzahl:1,seiten:20,index:0},
+      {op:"konstante",wert:4,label:"Weisheit"},
+      {op:"praedikat",etikett:"haus-vharon",mindestens:3,gehalten:4,bonus:2,bonusAlt:3,
+       label:"du hältst 4 Passagen über Haus Vharon"},
+      {op:"konstante",wert:2,label:"Bruder Alders Hinweis (Sitzung 2)"}
+    ]
+  },
+  praegung:{
+    fertigkeit:"Menschenkenntnis", charakter:"Sera Valdris", attribut:"Weisheit", attrWert:4,
+    etikett:"haus-vharon", gehalten:4, sg:15, bonus:2,
+    zweit:{wert:2,label:"Bruder Alders Hinweis (Sitzung 2)"},
+    erfolg:"Der Reiherschnabel zeigt nach links. Sera sagt es laut, und der Kanzler zieht die Hand zurück, bevor sie ausgesprochen hat, was sie meint.",
+    fehl:"Sera dreht den Ring ins Licht und wird nicht klug daraus. Der Kanzler nimmt ihn ihr aus der Hand, höflich, und legt ihn zurück in die Lade."
+  }
+},
+
+kepler:{
+  welt:"Kepler-9", genre:"Science-Fiction", skin:"signal",
+  anlass:{titel:"Der Nordhang-Auftakt",autor:"Ilva Roth",abende:4,versiegelt:5,
+          belege:94,geprueft:"27.07.2026",paket:"hausregeln-nordhang 1.4"},
+  kicker:"Kanon · Stationsgeschichte · Organisation",
+  titel:"Der Reyes-Verbund",
+  subline:"Eine Wartungsgenossenschaft mit Vorstand, die das Andockrecht der unteren Schleusenreihe hält.",
+  crest:"ring",
+  ort:"Wartungsgang D-4", zeit:"22:06:11", sitzung:3, datum:"14. Juni 2026",
+  besetzung:[{k:"V",name:"Vesper Ndiaye",rolle:"Lotsin",zelle:[2,3]},
+             {k:"T",name:"Toré Amsel",rolle:"Schleusentechniker",zelle:[7,6]},
+             {k:"K",name:"Kiran Ost",rolle:"Auditgehilfe",zelle:[11,2]}],
+  regionen:["Wartungsgang D-4","Schleusenvorraum","Kabeltrasse"],
+  felder:[
+    ["Sitz","Ring 3, Sektion Nordhang"],
+    ["Vorstand","Amara Reyes-Tolan, dritte Amtszeit"],
+    ["Eingetragen","Zyklus 812 der Stationszeit"],
+    ["Emblem","Gespaltener Ring über offener Schleuse"],
+    ["Auditbüro","Sekante",{rot:true}],
+    ["Zulieferer","Werft Kerne, Bergungsdienst Bracht, Lotsen von Simm-9"],
+    ["Einkünfte","Andockrecht der unteren Schleusenreihe"],
+    ["Nachfolge","Vorstandsrecht, seit Zyklus 866 angefochten"],
+    ["Bündnis","Wartungsbund Zweiter Kern"],
+    ["Zuletzt erwähnt","Sitzung 4, 23:12"]
+  ],
+  abschnitte:[
+    {titel:"Herkunft", atome:[
+      {id:"p1",art:"text",text:"Der Reyes-Verbund ist kein Konzern, sondern eine Wartungsgenossenschaft mit Vorstand — ein Rechtskonstrukt aus der Zeit, als Kepler-9 noch ein Bergungsprojekt war und keine Station. Dass er heute das Andockrecht der unteren Schleusenreihe hält, steht in keiner Gründungsurkunde.",
+       herkunft:"getippt", zeit:"2. Mai", quelle:"Ilva Roth"},
+      {id:"p2",art:"text",text:"Das gespaltene Ringemblem gehörte ursprünglich den Lotsen von Simm-9. Reyes kaufte die Lotsen im Zyklus 831 auf, behielt das Emblem und ließ den Namen fallen; auf den unteren Decks sagt man trotzdem weiter »die Lotsen«.",
+       herkunft:"getippt", zeit:"2. Mai", quelle:"Ilva Roth"},
+      {id:"p3",art:"text",text:"Nachprüfbar ist davon wenig. Das Schleusenprotokoll setzt erst mit Zyklus 844 ein, und die siebzehn Zyklen davor existieren nur als Abschriften im Archiv des Verbunds — mit Prüfsummen, die der Verbund selbst gesetzt hat.",
+       herkunft:"getippt", zeit:"2. Mai", quelle:"Ilva Roth"}
+    ]},
+    {titel:"Das Andockrecht", atome:[
+      {id:"p4",art:"text",text:"Das Andockrecht ist der eigentliche Besitz des Verbunds. Eine Frachtfreigabe ohne Reyes-Signatur gilt am Nordhang nicht, und die Prüfung einer fremden Signatur kostet die Prüfende eine Handlung — eine Regel, über die am dritten Abend eine Viertelstunde gestritten wurde.",
+       herkunft:"Regelkarte", zeit:"22:41, Sitzung 3", quelle:"„Signatur prüfen kostet eine Handlung“", glyph:"§"},
+      {id:"p5",art:"text",beleg:true,
+       text:"Vesper Ndiaye hielt das Freigabeprotokoll ins Arbeitslicht und sah es sofort: die Prüfsumme war nachgerechnet worden, denn der Zeitstempel lag vor dem Andockvorgang, den er quittierte.",
+       herkunft:"Wurf", zeit:"22:06, Sitzung 3", quelle:"Lagebeurteilung · Vesper · 17 gegen 14 · geprüft", glyph:"⚄"},
+      {id:"a1",art:"anmerkung",sicht:"eigner",
+       text:"Notiz, nur für Vesper: Der zweite Schlüssel liegt auf einem Wartungsterminal, nicht im Safe. Nicht über Funk sagen.",
+       herkunft:"Anmerkung", zeit:"22:09, Sitzung 3", quelle:"Vesper Ndiaye", glyph:"✎"}
+    ]},
+    {titel:"Das Auditbüro Sekante", atome:[
+      {id:"p6",art:"text",link:{wort:"Auditbüro Sekante",rot:true},
+       text:"Das {{link}} verwaltet die Signaturschlüssel, ohne zum Verbund zu gehören. Es ist eine Aufsicht und kein Tochterbetrieb, und es hat zwei Vorstände überstanden.",
+       herkunft:"getippt", zeit:"6. Mai", quelle:"Ilva Roth"},
+      {id:"p7",art:"text",text:"Wer das Büro besetzt, schlägt der Wartungsbund Zweiter Kern vor. Das steht in keiner Satzung und weiß auf Ring 3 jeder.",
+       herkunft:"vorgelesen", zeit:"22:18, Sitzung 3", quelle:"Gespräch in der Kantine", glyph:"❝"},
+      {id:"s1",art:"versiegelt",sicht:"leitung",
+       text:"Versiegelt · Zeile 2: Der amtierende Auditor hat den zweiten Schlüssel bereits verkauft. Die Käuferin sitzt am Tisch.",
+       herkunft:"versiegelt", zeit:"ungeöffnet", quelle:"Anlass-Saat", glyph:"◆"},
+      {id:"s2",art:"versiegelt",sicht:"leitung",
+       text:"Versiegelt · Zeile 4: Amara Reyes-Tolan weiß es seit dem Frühzyklus und schweigt, weil die Käuferin ihre Schwester ist.",
+       herkunft:"versiegelt", zeit:"ungeöffnet", quelle:"Anlass-Saat", glyph:"◆"}
+    ]},
+    {titel:"Der Druckabfall", atome:[
+      {id:"p8",art:"text",text:"Der Druckabfall im Zyklus 866 dauerte neun Tage und kostete den Verbund zwei Quartale Gebühreneinnahmen. Die Kontingente, mit denen er die Lücke schloss, kamen von Gläubigern, die keine Zinsen verlangten, sondern Gegenleistungen.",
+       herkunft:"getippt", zeit:"8. Mai", quelle:"Ilva Roth"},
+      {id:"p9",art:"zitat",text:"»Neun Tage sind nichts«, sagte Amara ins Protokoll. »Wir zahlen sie seit vierzehn Zyklen ab.«",
+       herkunft:"vorgelesen", zeit:"22:33, Sitzung 3", quelle:"Vorstandsprotokoll", glyph:"❝"},
+      {id:"p10",art:"text",text:"Elf Gegenleistungen sind vermerkt, sieben davon abgerufen. Welche vier offen sind, führt allein das Auditbüro — in einem Bestand, der ausdrücklich nicht der Stationsaufsicht untersteht.",
+       herkunft:"getippt", zeit:"8. Mai", quelle:"Ilva Roth"}
+    ]}
+  ],
+  bilder:[
+    "Der Wartungsgang D-4 um 22:06:11 — Vesper an der Konsole, Toré an der Schleuse, Kiran zwei Felder vom Ausstieg.",
+    "Die Sichtgrenze, wie Vesper sie sah. Toré sah in derselben Sekunde vier Felder weniger."
+  ],
+  siehe:["Auditbüro Sekante","Wartungsbund Zweiter Kern","Lotsen von Simm-9","Amara Reyes-Tolan"],
+  wurf:{
+    fertigkeit:"Lagebeurteilung", charakter:"Vesper Ndiaye", sitzung:3, uhrzeit:"22:06:11",
+    saat:"9b1791f0cb523ee4", paket:"hausregeln-nordhang", ver:"1.4",
+    klausel:"k_reyes_lage", klauselRev:"r3", klauselAlt:"r4", verAlt:"1.5",
+    sg:14, wurfId:"w_017", abdruck:"dcc826fe",
+    ast:[
+      {op:"wurf",anzahl:1,seiten:20,index:0},
+      {op:"konstante",wert:3,label:"Auffassung"},
+      {op:"praedikat",etikett:"reyes-verbund",mindestens:3,gehalten:5,bonus:2,bonusAlt:3,
+       label:"du hältst 5 Passagen über den Reyes-Verbund"},
+      {op:"konstante",wert:1,label:"Sekante-Protokoll (Sitzung 2)"}
+    ]
+  },
+  praegung:{
+    fertigkeit:"Lagebeurteilung", charakter:"Vesper Ndiaye", attribut:"Auffassung", attrWert:3,
+    etikett:"reyes-verbund", gehalten:5, sg:14, bonus:2,
+    zweit:{wert:1,label:"Sekante-Protokoll (Sitzung 2)"},
+    erfolg:"Vesper legt beide Protokolle übereinander und der Verstoß steht als weißer Streifen zwischen den Zeilen. Sie fotografiert ihn, bevor jemand das Terminal sperren kann.",
+    fehl:"Vesper legt beide Protokolle übereinander und findet nichts, was vor Gericht bestünde. Das Terminal wird gesperrt, während sie noch sucht."
+  }
+},
+
+nebelakte:{
+  welt:"Nebelakte", genre:"Moderne Mystery", skin:"archive",
+  anlass:{titel:"Die Akte Vahrenholt",autor:"Jonas Preuß",abende:3,versiegelt:7,
+          belege:71,geprueft:"27.07.2026",paket:"hausregeln-nebelakte 0.9"},
+  kicker:"Kanon · Ermittlung · Organisation",
+  titel:"Kanzlei Vahrenholt",
+  subline:"Hafenstraße 41, zweiter Stock Hinterhaus. Eine Tür ohne Klingelschild.",
+  crest:"reiher",
+  ort:"Der Aktenkeller", zeit:"20:48:02", sitzung:2, datum:"14. Juni 2026",
+  besetzung:[{k:"R",name:"Rike Ohlsen",rolle:"Ermittlerin",zelle:[2,3]},
+             {k:"J",name:"Jonas Weill",rolle:"Gutachter",zelle:[7,6]},
+             {k:"M",name:"Mira Kant",rolle:"Kanzleigehilfin",zelle:[11,2]}],
+  regionen:["Aktenkeller","Treppenabgang","Heizungsraum"],
+  felder:[
+    ["Adresse","Hafenstraße 41, Hinterhaus, zweiter Stock"],
+    ["Geschäftsführung","Dr. Almut Vahrenholt"],
+    ["Eingetragen","1971, Registergericht Bremen"],
+    ["Briefkopf","Grauer Reiher, geprägt, ohne Farbe"],
+    ["Notariat","Ossa & Partner",{rot:true}],
+    ["Mandanten","Werft Kerne GmbH, Spedition Bracht, Fährgenossenschaft Simm"],
+    ["Umsatz","nicht veröffentlichungspflichtig"],
+    ["Nachfolge","ungeklärt seit März"],
+    ["Verbindung","Verein Zweiter Keller e. V."],
+    ["Zuletzt erwähnt","Sitzung 3, 22:40"]
+  ],
+  abschnitte:[
+    {titel:"Herkunft", atome:[
+      {id:"p1",art:"text",text:"Die Kanzlei Vahrenholt firmiert seit 1971 in der Hafenstraße 41, zweiter Stock Hinterhaus, hinter einer Tür ohne Klingelschild. Wer hinkommt, hat die Adresse von jemandem, der sie nicht schriftlich weitergegeben hat.",
+       herkunft:"getippt", zeit:"19. Juni", quelle:"Jonas Preuß"},
+      {id:"p2",art:"text",text:"Der geprägte Reiher auf dem Briefkopf stammt aus dem Bestand der Fährgenossenschaft Simm, deren Rechtsnachfolge Vahrenholt 1984 übernahm. Die Genossenschaft existiert nicht mehr; der Reiher steht weiter auf jedem Schreiben.",
+       herkunft:"getippt", zeit:"19. Juni", quelle:"Jonas Preuß"},
+      {id:"p3",art:"text",text:"Belegbar ist das erst ab 1984. Die Handakten der ersten dreizehn Jahre sind laut Auskunft der Kanzlei 1993 bei einem Wasserschaden vernichtet worden — die Schadensmeldung an die Versicherung fehlt.",
+       herkunft:"getippt", zeit:"19. Juni", quelle:"Jonas Preuß"}
+    ]},
+    {titel:"Die Beglaubigung", atome:[
+      {id:"p4",art:"text",text:"Das Geschäft der Kanzlei ist die Beglaubigung. Ein Kaufvertrag über Hafengrundstücke gilt in diesem Viertel praktisch nicht ohne Vahrenholt-Stempel, und wer einen fremden Stempel prüfen lässt, verliert dabei einen Werktag — worüber am zweiten Abend eine Viertelstunde diskutiert wurde.",
+       herkunft:"Regelkarte", zeit:"21:52, Sitzung 2", quelle:"„Stempel prüfen kostet einen Werktag“", glyph:"§"},
+      {id:"p5",art:"text",beleg:true,
+       text:"Rike Ohlsen hielt die beglaubigte Abschrift schräg ins Fensterlicht und sah es sofort: Der Prägestempel saß zwei Millimeter zu hoch, und der Reiher blickte nach links.",
+       herkunft:"Wurf", zeit:"20:48, Sitzung 2", quelle:"Verhörgespür · Rike · 15 gegen 15 · geprüft", glyph:"⚄"},
+      {id:"a1",art:"anmerkung",sicht:"eigner",
+       text:"Notiz, nur für Rike: Der zweite Stempel lag im Futter der Aktentasche, nicht im Tresor. Nicht am Telefon sagen.",
+       herkunft:"Anmerkung", zeit:"20:51, Sitzung 2", quelle:"Rike Ohlsen", glyph:"✎"}
+    ]},
+    {titel:"Das Notariat", atome:[
+      {id:"p6",art:"text",link:{wort:"Ossa & Partner",rot:true},
+       text:"{{link}} führt das Stempelverzeichnis, ohne zur Kanzlei zu gehören. Es ist eine Aufsicht und kein Tochterunternehmen, und es hat zwei Vahrenholt-Generationen überdauert.",
+       herkunft:"getippt", zeit:"21. Juni", quelle:"Jonas Preuß"},
+      {id:"p7",art:"text",text:"Wer dort die Verzeichnisführung übernimmt, schlägt der Verein Zweiter Keller e. V. vor. Das steht in keiner Satzung und weiß im Viertel jeder.",
+       herkunft:"vorgelesen", zeit:"21:04, Sitzung 2", quelle:"Aussage Frau Kerner", glyph:"❝"},
+      {id:"s1",art:"versiegelt",sicht:"leitung",
+       text:"Versiegelt · Zeile 1: Der zweite Stempel ist im Februar verkauft worden. Die Käuferin sitzt mit am Tisch.",
+       herkunft:"versiegelt", zeit:"ungeöffnet", quelle:"Anlass-Saat", glyph:"◆"},
+      {id:"s2",art:"versiegelt",sicht:"leitung",
+       text:"Versiegelt · Zeile 6: Frau Vahrenholt weiß es seit März und schweigt, weil die Käuferin ihre Schwester ist.",
+       herkunft:"versiegelt", zeit:"ungeöffnet", quelle:"Anlass-Saat", glyph:"◆"}
+    ]},
+    {titel:"Die Nacht auf den 14. Juni", atome:[
+      {id:"p8",art:"text",text:"In der Nacht auf den 14. Juni brannte im Hinterhaus der Aktenkeller — genauer: ein Regalabschnitt von vier Metern. Die Brandmelder der übrigen Etagen lösten aus, der des Kellers nicht. Die Feuerwehr war nach elf Minuten da.",
+       herkunft:"getippt", zeit:"24. Juni", quelle:"Jonas Preuß"},
+      {id:"p9",art:"zitat",text:"»Es hat genau das gebrannt, was wir sehen wollten«, sagte Rike ins Protokoll. »Nicht mehr und nicht weniger.«",
+       herkunft:"vorgelesen", zeit:"21:16, Sitzung 2", quelle:"Vernehmungsprotokoll", glyph:"❝"},
+      {id:"p10",art:"text",text:"Von den elf Vorgängen, die in diesem Abschnitt lagen, sind sieben anderweitig rekonstruiert. Welche vier fehlen, weiß allein das Notariat — und dessen Verzeichnis ist der Ermittlung bislang nicht zugänglich.",
+       herkunft:"getippt", zeit:"24. Juni", quelle:"Jonas Preuß"}
+    ]}
+  ],
+  bilder:[
+    "Der Aktenkeller um 20:48:02 — Rike am Regal, Jonas an der Tür, Mira zwei Felder vom Ausgang.",
+    "Die Rauchgrenze, wie Rike sie sah. Jonas sah in derselben Sekunde vier Felder weniger."
+  ],
+  siehe:["Ossa & Partner","Verein Zweiter Keller e. V.","Fährgenossenschaft Simm","Dr. Almut Vahrenholt"],
+  wurf:{
+    fertigkeit:"Verhörgespür", charakter:"Rike Ohlsen", sitzung:2, uhrzeit:"20:48:02",
+    saat:"2c60a23d2e128aaf", paket:"hausregeln-nebelakte", ver:"0.9",
+    klausel:"k_vahrenholt_gespuer", klauselRev:"r2", klauselAlt:"r3", verAlt:"1.0",
+    sg:15, wurfId:"w_009", abdruck:"0b4efacd",
+    ast:[
+      {op:"wurf",anzahl:1,seiten:20,index:0},
+      {op:"konstante",wert:3,label:"Empathie"},
+      {op:"praedikat",etikett:"kanzlei-vahrenholt",mindestens:3,gehalten:3,bonus:2,bonusAlt:3,
+       label:"du hältst 3 Passagen über die Kanzlei"},
+      {op:"konstante",wert:2,label:"Aussage Frau Kerner (Sitzung 1)"}
+    ]
+  },
+  praegung:{
+    fertigkeit:"Verhörgespür", charakter:"Rike Ohlsen", attribut:"Empathie", attrWert:3,
+    etikett:"kanzlei-vahrenholt", gehalten:3, sg:15, bonus:2,
+    zweit:{wert:2,label:"Aussage Frau Kerner (Sitzung 1)"},
+    erfolg:"Rike sagt den Satz, den Frau Vahrenholt seit März vermeidet, und sieht an der Hand am Türrahmen, dass er stimmt. Niemand widerspricht.",
+    fehl:"Rike stellt die Frage zu früh. Frau Vahrenholt antwortet freundlich und vollständig, und danach ist der Raum zu."
+  }
+}
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · Beschriftungen. „lang“ simuliert eine echte Übersetzung mit langen
+       Zusammensetzungen — der harte Test für jedes Steuerelement.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const L = {
+ de:{
+  achse_inhalt:"Inhalt", achse_skin:"Skin", achse_rolle:"Rolle", achse_licht:"Licht",
+  achse_a11y:"Zugang", achse_kunst:"Kunst", achse_breite:"Breite", achse_sprache:"Labels",
+  licht_auto:"System", licht_hell:"Hell", licht_dunkel:"Dunkel",
+  a11y_normal:"Standard", a11y_kontrast:"Hoher Kontrast", a11y_bewegung:"Ruhig",
+  kunst_an:"an", kunst_aus:"aus", kunst_fehlt:"fehlt",
+  rolle_gm:"Leitung", rolle_pl:"Spielerin", rolle_ob:"Beobachter",
+  zone_sitzung:"Sitzung", zone_geschichte:"Geschichte", zone_ensemble:"Ensemble",
+  zone_bibliothek:"Bibliothek", zone_tisch:"Tisch", zone_schmiede:"Schmiede",
+  tab_beleg:"Beleg", tab_augenblick:"Augenblick", tab_herkunft:"Herkunft",
+  prov_an:"Herkunftsschicht", nachrechnen:"Nachrechnen",
+  augenblick:"Der Augenblick", praegen:"Absatz prägen",
+  zuruecknehmen:"Zurücknehmen",
+  recipe_takt:"Taktisch", recipe_gliederung:"Gliederung",
+  sprache_de:"Deutsch", sprache_lang:"Lang (fi)",
+  breite_auto:"Auto"
+ },
+ lang:{
+  achse_inhalt:"Sisältöpaketti", achse_skin:"Ulkoasukokonaisuus", achse_rolle:"Käyttäjärooli",
+  achse_licht:"Valaistustila", achse_a11y:"Saavutettavuusasetukset", achse_kunst:"Kuvitusaineisto",
+  achse_breite:"Näkymäleveys", achse_sprache:"Käyttöliittymäkieli",
+  licht_auto:"Järjestelmä", licht_hell:"Vaalea", licht_dunkel:"Tumma",
+  a11y_normal:"Perusasetukset", a11y_kontrast:"Korkea kontrasti", a11y_bewegung:"Vähennetty liike",
+  kunst_an:"käytössä", kunst_aus:"poissa", kunst_fehlt:"puuttuu",
+  rolle_gm:"Pelinjohtaja", rolle_pl:"Pelaaja", rolle_ob:"Tarkkailija",
+  zone_sitzung:"Istuntonäkymä", zone_geschichte:"Tarinatietokanta",
+  zone_ensemble:"Henkilögalleria", zone_bibliothek:"Aineistokirjasto",
+  zone_tisch:"Pelipöytänäkymä", zone_schmiede:"Sääntöpajahuone",
+  tab_beleg:"Todistusaineisto", tab_augenblick:"Tapahtumahetki", tab_herkunft:"Alkuperätiedot",
+  prov_an:"Alkuperätietokerros", nachrechnen:"Laske uudelleen ja vertaa sinettiin",
+  augenblick:"Tapahtumahetken pelilautanäkymä", praegen:"Kirjaa kappale pöytäkirjaan",
+  zuruecknehmen:"Peruuta viimeisin pöytäkirjamerkintä",
+  recipe_takt:"Taktinen ruudukko", recipe_gliederung:"Rakenteellinen luettelo",
+  sprache_de:"Saksa", sprache_lang:"Pitkä (fi)",
+  breite_auto:"Automaattinen"
+ }
+};
+function t(k){ return L[S.sprache][k] || L.de[k] || k; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · Zustand
+   ═══════════════════════════════════════════════════════════════════════════ */
+const S = {
+  welt:"aldenfall", skin:"relic", rolle:"gm", licht:"auto", kontrast:"normal",
+  bewegung:"auto", kunst:"an", breite:"auto", sprache:"de", prov:"an",
+  zone:"geschichte", recipe:"takt", tab:"beleg",
+  fogChar:0, auswahl:null,
+  paketVer:null, klauselRev:null,           // Manipulationszustand
+  gepraegt:[],                              // eigene Absätze
+  eigenerBeleg:null,
+  strukturHash:null, log:[]
+};
+
+const $ = function(s,r){ return (r||document).querySelector(s); };
+const el = function(tag,cls,txt){ const n=document.createElement(tag);
+  if(cls) n.className=cls; if(txt!=null) n.textContent=txt; return n; };
+
+function W(){ return WELTEN[S.welt]; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · Achsenleiste
+   ═══════════════════════════════════════════════════════════════════════════ */
+const ACHSEN = [
+ {k:"achse_inhalt", feld:"welt", opt:[["aldenfall","Aldenfall"],["kepler","Kepler-9"],["nebelakte","Nebelakte"]]},
+ {k:"achse_skin",   feld:"skin", opt:[["relic","Relic"],["signal","Signal"],["archive","Archive"],["clean","Clean"]]},
+ {k:"achse_rolle",  feld:"rolle", opt:[["gm","rolle_gm"],["pl","rolle_pl"],["ob","rolle_ob"]], i18n:true},
+ {k:"achse_licht",  feld:"licht", opt:[["auto","licht_auto"],["light","licht_hell"],["dark","licht_dunkel"]], i18n:true},
+ {k:"achse_a11y",   feld:"a11y", opt:[["normal","a11y_normal"],["kontrast","a11y_kontrast"],["ruhig","a11y_bewegung"]], i18n:true, multi:true},
+ {k:"achse_kunst",  feld:"kunst", opt:[["an","kunst_an"],["aus","kunst_aus"],["fehlt","kunst_fehlt"]], i18n:true},
+ {k:"achse_breite", feld:"breite", opt:[["auto","breite_auto"],["1280","1280"],["900","900"],["380","380"]]},
+ {k:"achse_sprache",feld:"sprache", opt:[["de","sprache_de"],["lang","sprache_lang"]], i18n:true}
+];
+
+function baueAchsen(){
+  const host = $("#axes"); host.textContent="";
+  ACHSEN.forEach(function(a){
+    const box = el("div","axis");
+    box.appendChild(el("span","axis__k", t(a.k)));
+    const seg = el("div","seg");
+    seg.setAttribute("role","group");
+    seg.setAttribute("aria-label", t(a.k));
+    a.opt.forEach(function(o){
+      const b = el("button", null, a.i18n ? t(o[1]) : o[1]);
+      b.type="button";
+      b.setAttribute("aria-pressed", String(istAktiv(a.feld,o[0])));
+      b.addEventListener("click", function(){ setzeAchse(a.feld,o[0]); });
+      seg.appendChild(b);
+    });
+    box.appendChild(seg);
+    host.appendChild(box);
+  });
+}
+function istAktiv(feld,val){
+  if(feld==="a11y"){
+    if(val==="kontrast") return S.kontrast==="high";
+    if(val==="ruhig")    return S.bewegung==="reduced";
+    return S.kontrast!=="high" && S.bewegung!=="reduced";
+  }
+  return S[feld]===val;
+}
+function setzeAchse(feld,val){
+  const vorher = strukturAbdruck();
+  let name = feld, von = S[feld], nach = val;
+
+  if(feld==="a11y"){
+    if(val==="normal"){ von = beschreibeA11y(); S.kontrast="normal"; S.bewegung="auto"; }
+    else if(val==="kontrast"){ von = beschreibeA11y(); S.kontrast = S.kontrast==="high"?"normal":"high"; }
+    else { von = beschreibeA11y(); S.bewegung = S.bewegung==="reduced"?"auto":"reduced"; }
+    nach = beschreibeA11y(); name="Zugang";
+  } else if(feld==="welt"){
+    S.welt=val; S.skin=WELTEN[val].skin; S.auswahl=null; S.gepraegt=[];
+    S.eigenerBeleg=null; S.paketVer=null; S.klauselRev=null; S.fogChar=0;
+    nach = WELTEN[val].welt + " + " + WELTEN[val].skin;
+    von  = WELTEN[von] ? WELTEN[von].welt : von;
+    name = "Inhalt";
+  } else {
+    S[feld]=val;
+    name = {skin:"Skin",rolle:"Rolle",licht:"Licht",kunst:"Kunst",breite:"Breite",sprache:"Labels"}[feld]||feld;
+  }
+  if(feld==="rolle" && S.rolle==="ob"){ S.tab = S.tab==="beleg"?"beleg":S.tab; }
+
+  zeichne();
+  const nachher = strukturAbdruck();
+  protokolliere(name, von, nach, vorher, nachher);
+  bericht();
+}
+function beschreibeA11y(){
+  const teile=[];
+  if(S.kontrast==="high") teile.push("Kontrast hoch");
+  if(S.bewegung==="reduced") teile.push("Bewegung ruhig");
+  return teile.length?teile.join(" + "):"Standard";
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · Rolle → Sichtbarkeit.  „ob“ verliert Eignerdaten, „pl“ verliert
+       Leitungsdaten. Weggelassen heißt weggelassen, nicht ausgeblendet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function sichtbar(atom){
+  const s = atom.sicht || "alle";
+  if(s==="alle") return true;
+  if(s==="leitung") return S.rolle==="gm";
+  if(s==="eigner")  return S.rolle==="gm" || S.rolle==="pl";
+  return true;
+}
+function ausgelassen(){
+  let n=0;
+  W().abschnitte.forEach(function(ab){ ab.atome.forEach(function(a){ if(!sichtbar(a)) n++; }); });
+  if(S.rolle!=="gm") n++;            // NurLeitung-Zähler der Gegenüberstellung
+  if(S.rolle==="ob") n++;            // Prägesteuerung
+  return n;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · Rail
+   ═══════════════════════════════════════════════════════════════════════════ */
+const ZONEN = [
+ {id:"sitzung", k:"zone_sitzung", gl:"◷", aktiv:false},
+ {id:"geschichte", k:"zone_geschichte", gl:"¶", aktiv:true},
+ {id:"ensemble", k:"zone_ensemble", gl:"☖", aktiv:false},
+ {id:"bibliothek", k:"zone_bibliothek", gl:"▤", aktiv:false},
+ {id:"tisch", k:"zone_tisch", gl:"⬚", aktiv:true},
+ {id:"schmiede", k:"zone_schmiede", gl:"⚒", aktiv:false}
+];
+function baueRail(){
+  const nav=$("#rail"); nav.textContent="";
+  const ul=el("ul");
+  ZONEN.forEach(function(z){
+    const li=el("li"); const b=el("button"); b.type="button";
+    b.appendChild(el("span","gl",z.gl));
+    b.appendChild(el("span","lbl",t(z.k)));
+    if(!z.aktiv){
+      b.appendChild(el("span","hint","—"));
+      b.setAttribute("aria-disabled","true");
+      b.title="In diesem Prüfstand nicht belegt.";
+      b.addEventListener("click",function(e){e.preventDefault();});
+    } else {
+      if(S.zone===z.id) b.setAttribute("aria-current","page");
+      b.addEventListener("click",function(){
+        const v=strukturAbdruck(); S.zone=z.id; zeichne();
+        protokolliere("Bereich", "—", t(z.k), v, strukturAbdruck()); bericht();
+      });
+    }
+    li.appendChild(b); ul.appendChild(li);
+  });
+  nav.appendChild(ul);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · Wappen / Sigill — CSS-freie Inline-SVG, rein tokengefärbt
+   ═══════════════════════════════════════════════════════════════════════════ */
+function crest(art){
+  const ns="http://www.w3.org/2000/svg";
+  const s=document.createElementNS(ns,"svg");
+  s.setAttribute("viewBox","0 0 64 72"); s.setAttribute("width","56"); s.setAttribute("height","63");
+  s.setAttribute("role","img");
+  s.setAttribute("aria-label","Gezeichnetes Wappen — Ersatz für fehlendes Bildmaterial");
+  const g=document.createElementNS(ns,"g");
+  g.setAttribute("fill","none"); g.setAttribute("stroke","currentColor");
+  g.setAttribute("stroke-width","1.6"); g.setAttribute("stroke-linejoin","round");
+  const schild=document.createElementNS(ns,"path");
+  schild.setAttribute("d","M4 6 H60 V40 C60 56 44 66 32 70 C20 66 4 56 4 40 Z");
+  g.appendChild(schild);
+  const inner=document.createElementNS(ns,"path");
+  if(art==="ring"){
+    inner.setAttribute("d","M32 18 m-13 0 a13 13 0 1 0 26 0 a13 13 0 1 0 -26 0 M32 5 V31 M14 46 H50 M20 54 H44");
+  } else {
+    inner.setAttribute("d","M22 46 C22 34 30 26 40 24 M40 24 L50 18 M40 24 L44 32 M22 46 L18 54 M22 46 H40 M26 20 L32 14");
+  }
+  inner.setAttribute("stroke-width","1.4");
+  g.appendChild(inner);
+  s.appendChild(g);
+  return s;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9 · Bühne: Artikel
+   ═══════════════════════════════════════════════════════════════════════════ */
+const KITS = {
+  relic:  "../../spikes/assets/universal-ui/chronicle-panel-frame.png",
+  signal: "../../spikes/assets/universal-ui/signal-frame-kit-v1.png",
+  archive:"../../spikes/assets/universal-ui/archive-frame-kit-v1.png",
+  clean:  null
+};
+function kitband(){
+  const band=$("#kitband"), img=$("#kitimg"), note=$("#kitnote");
+  const src = S.kunst==="fehlt" ? "../../spikes/assets/universal-ui/gibt-es-nicht.png" : KITS[S.skin];
+  if(S.kunst==="aus"){ band.dataset.state="off"; note.textContent="Kunst abgeschaltet"; img.removeAttribute("src"); return; }
+  if(!src){ band.dataset.state="fallback"; note.textContent="Clean führt kein Kit — beabsichtigt"; img.removeAttribute("src"); return; }
+  band.dataset.state="laedt"; note.textContent="Skin-Kit: "+S.skin;
+  img.onload  = function(){ band.dataset.state="ok"; note.textContent="Skin-Kit geladen: "+S.skin; };
+  img.onerror = function(){ band.dataset.state="fallback"; note.textContent="Fehlbild — gezeichnete Ersatzbahn"; };
+  img.src = src;
+}
+
+function textMitLink(atom){
+  const frag=document.createDocumentFragment();
+  if(!atom.link){ frag.appendChild(document.createTextNode(atom.text)); return frag; }
+  const teile=atom.text.split("{{link}}");
+  frag.appendChild(document.createTextNode(teile[0]));
+  const a=el("a", atom.link.rot?"rot":null, atom.link.wort);
+  a.href="#"; a.title = atom.link.rot ? "Kein Eintrag — roter Link" : "Interner Link";
+  a.addEventListener("click",function(e){e.preventDefault();});
+  frag.appendChild(a);
+  frag.appendChild(document.createTextNode(teile[1]||""));
+  return frag;
+}
+
+function chipFuer(atom, herkunftsklasse){
+  const b=el("button","chip"); b.type="button";
+  b.dataset.herkunft = herkunftsklasse;
+  b.textContent = atom.glyph || (atom.art==="anmerkung" ? "✎" : "¶");
+  const wort = herkunftsklasse==="am_tisch" ? "am Tisch" : "mitgebracht";
+  b.setAttribute("aria-label", wort+" · "+atom.zeit+" · "+atom.quelle);
+  b.title = wort+" · "+atom.zeit+" · "+atom.quelle;
+  b.setAttribute("aria-pressed", String(S.auswahl===atom.id));
+  b.addEventListener("click",function(){
+    S.auswahl = (S.auswahl===atom.id) ? null : atom.id;
+    S.tab = atom.beleg || atom.eigen ? "beleg" : "herkunft";
+    zeichne();
+  });
+  return b;
+}
+
+function atomKnoten(atom){
+  const wrap = el("div","atom");
+  if(S.auswahl===atom.id) wrap.classList.add("atom--sel");
+  if(atom.art==="versiegelt") wrap.classList.add("atom--versiegelt");
+  if(atom.art==="anmerkung")  wrap.classList.add("atom--anmerkung");
+  if(atom.neu) wrap.classList.add("atom--neu");
+  wrap.dataset.atom = atom.id;
+
+  wrap.appendChild(chipFuer(atom, atom.eigen ? "am_tisch" : "mitgebracht"));
+
+  const body = el(atom.art==="zitat" ? "blockquote" : "p", "atom__body");
+  body.appendChild(textMitLink(atom));
+  if(atom.beleg || atom.eigen){
+    const nr = atom.eigen ? atom.fnNr : 1;
+    const fn=el("button","fn","["+nr+"]"); fn.type="button";
+    fn.setAttribute("aria-label","Fußnote "+nr+" öffnen: Beleg zum Wurf");
+    fn.addEventListener("click",function(){ S.auswahl=atom.id; S.tab="beleg"; zeichne();
+      const l=$(".lens"); if(l) l.scrollIntoView({behavior: S.bewegung==="reduced"?"auto":"smooth", block:"nearest"}); });
+    body.appendChild(document.createTextNode(" "));
+    body.appendChild(fn);
+  }
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function baueArtikel(){
+  const host = el("div");
+
+  /* Infobox */
+  const box = el("aside","infobox");
+  box.setAttribute("aria-label","Kurzübersicht "+W().titel);
+  box.appendChild(el("h2","infobox__h",W().titel));
+  const cr = el("div","infobox__crest"); cr.appendChild(crest(W().crest)); box.appendChild(cr);
+  const dl = el("dl");
+  W().felder.forEach(function(f,i){
+    /* Jede Infobox-Zeile ist ein feld-Atom und trägt denselben Herkunftschip
+       wie jeder Absatz — das ist der adressierbare Atom unterhalb der Seite. */
+    const feldAtom = {id:"feld"+i, art:"feld", glyph:"⬚",
+      zeit: W().abschnitte[0].atome[0].zeit, quelle: W().anlass.autor+" · getippt",
+      text: f[0]+": "+f[1]};
+    const dt=el("dt"); dt.id="feld-"+i;
+    const c=chipFuer(feldAtom,"mitgebracht");
+    c.classList.add("chip--mini");
+    dt.appendChild(c);
+    dt.appendChild(document.createTextNode(f[0]));
+    const dd=el("dd");
+    if(f[2] && f[2].rot){
+      const a=el("a","rot",f[1]); a.href="#"; a.title="Kein Eintrag";
+      a.addEventListener("click",function(e){e.preventDefault();});
+      dd.appendChild(a); dd.appendChild(document.createTextNode(" (kein Eintrag)"));
+    } else dd.textContent=f[1];
+    dl.appendChild(dt); dl.appendChild(dd);
+  });
+  box.appendChild(dl);
+  host.appendChild(box);
+
+  /* Abschnitte */
+  W().abschnitte.forEach(function(ab,ai){
+    const h=el("h2",null,ab.titel); h.id="ab-"+ai; host.appendChild(h);
+    ab.atome.forEach(function(a){ if(sichtbar(a)) host.appendChild(atomKnoten(a)); });
+    if(ai===1){
+      /* Tafel 1 — Augenblick als Bild-Passage */
+      host.appendChild(bildAtom(0, brett(false)));
+      /* eigene Prägungen landen im Siegelrecht-Abschnitt */
+      S.gepraegt.forEach(function(a){ host.appendChild(atomKnoten(a)); });
+    }
+    if(ai===2 && S.rolle==="gm"){
+      const g=el("p","bilanz");
+      g.innerHTML = "<b>Gegenüberstellung</b> · nur Leitung: "+
+        (W().besetzung[0].name.split(" ")[0])+"s Fassung weicht in <b class='num'>4</b> Absätzen von "+
+        (W().besetzung[2].name.split(" ")[0])+"s Fassung ab.";
+      host.appendChild(g);
+    }
+  });
+
+  host.appendChild(bildAtom(1, brett(true)));
+
+  const sh=el("h2",null,"Siehe auch"); host.appendChild(sh);
+  const sl=el("div","siehe");
+  W().siehe.forEach(function(s,i){
+    const a=el("a",i===0?"rot":null,s); a.href="#";
+    a.addEventListener("click",function(e){e.preventDefault();});
+    sl.appendChild(a);
+  });
+  host.appendChild(sl);
+  return host;
+}
+
+function bildAtom(i, svg){
+  const atom = {id:"bild"+i, art:"bild", glyph:"▣",
+    zeit: i===0 ? W().zeit+", Sitzung "+W().sitzung : "Nebelstand, Sitzung "+W().sitzung,
+    quelle: i===0 ? "Augenblick, aufgezeichnet" : "Augenblick, Sichtprojektion",
+    text: W().bilder[i]};
+  const wrap=el("div","atom");
+  wrap.dataset.atom=atom.id;
+  if(S.auswahl===atom.id) wrap.classList.add("atom--sel");
+  wrap.appendChild(chipFuer(atom,"mitgebracht"));
+  const fig=el("figure","atom__body plate");
+  const bd=el("div","board"); bd.appendChild(svg); fig.appendChild(bd);
+  fig.appendChild(el("figcaption",null,W().bilder[i]));
+  wrap.appendChild(fig);
+  return wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   10 · Eine Szene, zwei Rezepte: Brett (taktisch) und Gliederung
+   ═══════════════════════════════════════════════════════════════════════════ */
+const NS="http://www.w3.org/2000/svg";
+const FOG = [ [[10,14]], [[6,14]], [[0,4],[11,14]] ];   // verdeckte Spaltenbereiche je Figur
+function sichtbarFuerFigur(cx, fi){
+  return !FOG[fi].some(function(r){ return cx>=r[0] && cx<r[1]; });
+}
+/* Farben werden über inline style gesetzt, nicht über Präsentationsattribute:
+   var() ist in SVG-Präsentationsattributen nicht auflösbar, im style-Attribut schon. */
+function svgEl(tag, attrs, styles){
+  const n=document.createElementNS(NS,tag);
+  if(attrs) for(const k in attrs) n.setAttribute(k, attrs[k]);
+  if(styles) for(const k in styles) n.style.setProperty(k, styles[k]);
+  return n;
+}
+function brett(klein){
+  const cols=14, rows=9, cs= klein?22:26;
+  const hoehe = rows*cs + (klein?0:26);
+  const s=svgEl("svg",{viewBox:"0 0 "+(cols*cs)+" "+hoehe, role:"img"});
+  const fi = S.fogChar;
+  s.setAttribute("aria-label","Spielbrett "+W().ort+", "+W().zeit+
+    " — Sichtprojektion von "+W().besetzung[fi].name+
+    ". Die vollständige Liste steht im Rezept Gliederung.");
+
+  s.appendChild(svgEl("rect",{x:0,y:0,width:cols*cs,height:rows*cs},{fill:"var(--surf2)"}));
+  for(let x=0;x<=cols;x++)
+    s.appendChild(svgEl("line",{x1:x*cs,y1:0,x2:x*cs,y2:rows*cs},
+      {stroke:"var(--line)","stroke-width":".7"}));
+  for(let y=0;y<=rows;y++)
+    s.appendChild(svgEl("line",{x1:0,y1:y*cs,x2:cols*cs,y2:y*cs},
+      {stroke:"var(--line)","stroke-width":".7"}));
+
+  /* Wände + Tür */
+  s.appendChild(svgEl("path",{d:
+    "M"+(1*cs)+" "+(1*cs)+" H"+(9*cs)+" M"+(9*cs)+" "+(1*cs)+" V"+(4*cs)+
+    " M"+(9*cs)+" "+(6*cs)+" V"+(8*cs)+" M"+(1*cs)+" "+(1*cs)+" V"+(8*cs)+
+    " M"+(1*cs)+" "+(8*cs)+" H"+(9*cs)},
+    {stroke:"var(--ink2)","stroke-width":"2.4",fill:"none"}));
+  s.appendChild(svgEl("path",{d:"M"+(9*cs)+" "+(4*cs)+" V"+(6*cs)},
+    {stroke:"var(--acc)","stroke-width":"3.2",fill:"none"}));
+
+  /* Nebel — die verdeckten Spalten dieser Figur.  Als schraffierter Deckel,
+     nicht als Farbschleier: das liest sich in Hell, Dunkel und hohem Kontrast
+     gleich als „nicht gewusst“ und überlebt Graustufen. */
+  const pid="nebel-"+(++brett.zaehler);
+  const defs=svgEl("defs");
+  const pat=svgEl("pattern",{id:pid,width:7,height:7,
+    patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  pat.appendChild(svgEl("rect",{x:0,y:0,width:7,height:7},{fill:"var(--sunk)"}));
+  pat.appendChild(svgEl("line",{x1:0,y1:0,x2:0,y2:7},
+    {stroke:"var(--line2)","stroke-width":"2.2",opacity:".8"}));
+  defs.appendChild(pat); s.appendChild(defs);
+  FOG[fi].forEach(function(r){
+    s.appendChild(svgEl("rect",{x:r[0]*cs,y:0,width:(r[1]-r[0])*cs,height:rows*cs},
+      {fill:"url(#"+pid+")",opacity:".96"}));
+  });
+
+  /* Figuren */
+  W().besetzung.forEach(function(f,idx){
+    if(!sichtbarFuerFigur(f.zelle[0],fi)) return;
+    const g=svgEl("g");
+    g.appendChild(svgEl("circle",
+      {cx:f.zelle[0]*cs+cs/2, cy:f.zelle[1]*cs+cs/2, r:cs*0.38},
+      {fill: idx===fi?"var(--acc)":"var(--surf)", stroke:"var(--ink)","stroke-width":"1.6"}));
+    const tx=svgEl("text",
+      {x:f.zelle[0]*cs+cs/2, y:f.zelle[1]*cs+cs/2+4, "text-anchor":"middle"},
+      {"font-size":(cs*0.44)+"px","font-family":"var(--font-d)","font-weight":"700",
+       fill: idx===fi?"var(--accink)":"var(--ink)"});
+    tx.textContent=f.k;
+    g.appendChild(tx); s.appendChild(g);
+  });
+
+  /* Initiativleiste */
+  if(!klein){
+    const y=rows*cs+6;
+    W().besetzung.forEach(function(f,idx){
+      const g=svgEl("g");
+      g.appendChild(svgEl("rect",{x:idx*76+2,y:y,width:72,height:16},
+        {fill: idx===0?"var(--accsoft)":"var(--surf)", stroke:"var(--line2)","stroke-width":"1"}));
+      const tx=svgEl("text",{x:idx*76+8,y:y+12},
+        {"font-size":"10px","font-family":"var(--font-m)",fill:"var(--ink2)"});
+      tx.textContent=(idx===0?"▸ ":"  ")+f.k+" · "+(18-idx*4);
+      g.appendChild(tx); s.appendChild(g);
+    });
+  }
+  return s;
+}
+brett.zaehler = 0;   // eindeutige Muster-IDs, mehrere Bretter je Seite
+
+function gliederung(){
+  const fi=S.fogChar;
+  const host=el("div");
+  const ol=el("ol"); ol.style.display="grid"; ol.style.gap=".25rem";
+  let fehlt=0;
+  W().regionen.forEach(function(r,i){
+    const li=el("li"); li.style.fontSize=".85rem";
+    li.textContent = "Region "+(i+1)+": "+r+" — "+(i===0?"betreten":"nicht betreten");
+    ol.appendChild(li);
+  });
+  W().besetzung.forEach(function(f,idx){
+    if(!sichtbarFuerFigur(f.zelle[0],fi)){ fehlt++; return; }
+    const li=el("li"); li.style.fontSize=".85rem";
+    li.innerHTML = "<b>"+f.name+"</b> ("+f.rolle+") — Feld <span class='num'>"+
+      String.fromCharCode(65+f.zelle[0])+f.zelle[1]+"</span>, "+
+      (idx===0?"am Zug":"wartend");
+    ol.appendChild(li);
+  });
+  host.appendChild(ol);
+  const p=el("p"); p.style.fontSize=".8rem"; p.style.marginTop=".5rem"; p.style.color="var(--ink3)";
+  p.textContent = fehlt
+    ? fehlt+" Objekt(e) sind in dieser Projektion strukturell nicht enthalten — nicht ausgeblendet."
+    : "Alle Objekte dieser Szene sind in dieser Projektion enthalten.";
+  host.appendChild(p);
+  return host;
+}
+
+function baueTisch(){
+  const host=el("div"); host.className="pad";
+  const bar=el("div","actions");
+  [["takt","recipe_takt"],["gliederung","recipe_gliederung"]].forEach(function(o){
+    const b=el("button","btn"+(S.recipe===o[0]?" btn--primary":""),t(o[1]));
+    b.type="button"; b.setAttribute("aria-pressed",String(S.recipe===o[0]));
+    b.addEventListener("click",function(){
+      const v=strukturAbdruck(); S.recipe=o[0]; zeichne();
+      protokolliere("Szenenrezept","—",t(o[1]),v,strukturAbdruck()); bericht();
+    });
+    bar.appendChild(b);
+  });
+  host.appendChild(bar);
+
+  const fb=el("div","actions");
+  fb.appendChild(el("span","card__sub","Nebel aus Sicht von:"));
+  W().besetzung.forEach(function(f,i){
+    const b=el("button","btn"+(S.fogChar===i?" btn--primary":""),f.name);
+    b.type="button"; b.setAttribute("aria-pressed",String(S.fogChar===i));
+    b.addEventListener("click",function(){
+      const v=strukturAbdruck(); S.fogChar=i; zeichne();
+      protokolliere("Sichtfigur","—",f.name,v,strukturAbdruck()); bericht();
+    });
+    fb.appendChild(b);
+  });
+  host.appendChild(fb);
+
+  if(S.recipe==="takt"){
+    const bd=el("div","board"); bd.appendChild(brett(false)); host.appendChild(bd);
+  } else host.appendChild(gliederung());
+
+  const p=el("p","card__sub");
+  p.style.marginTop=".6rem";
+  p.textContent="Eine Szene, zwei Rezepte. Das dritte Rezept (Cinematic) ist im Artikel als Tafel eingebettet. "
+    +"Die Auswahl bleibt beim Rezeptwechsel erhalten.";
+  host.appendChild(p);
+  return host;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   11 · Linse
+   ═══════════════════════════════════════════════════════════════════════════ */
+function aktivesAtom(){
+  if(!S.auswahl) return null;
+  let out=null;
+  W().abschnitte.forEach(function(ab){ ab.atome.forEach(function(a){ if(a.id===S.auswahl) out=a; }); });
+  S.gepraegt.forEach(function(a){ if(a.id===S.auswahl) out=a; });
+  if(!out && S.auswahl.indexOf("bild")===0){
+    const i=+S.auswahl.slice(4);
+    out={id:S.auswahl,art:"bild",zeit:W().zeit,quelle:"Augenblick",text:W().bilder[i],glyph:"▣"};
+  }
+  if(!out && S.auswahl.indexOf("feld")===0){
+    const i=+S.auswahl.slice(4); const f=W().felder[i];
+    out={id:S.auswahl,art:"feld",glyph:"⬚",zeit:W().abschnitte[0].atome[0].zeit,
+         quelle:W().anlass.autor+" · getippt", text:f[0]+": "+f[1]};
+  }
+  return out;
+}
+function belegRecord(){
+  const a=aktivesAtom();
+  if(a && a.eigen) return a.rec || S.eigenerBeleg;   // jeder eigene Absatz trägt seinen eigenen Wurf
+  return W().wurf;
+}
+function baueTabs(){
+  const host=$("#tabs"); host.textContent="";
+  [["beleg","tab_beleg"],["augenblick","tab_augenblick"],["herkunft","tab_herkunft"]].forEach(function(o){
+    const b=el("button",null,t(o[1])); b.type="button";
+    b.id="tab-"+o[0];
+    b.setAttribute("role","tab");
+    b.setAttribute("aria-controls","lensbody");
+    b.setAttribute("aria-selected",String(S.tab===o[0]));
+    b.tabIndex = S.tab===o[0] ? 0 : -1;
+    b.addEventListener("click",function(){ S.tab=o[0]; zeichne(); });
+    host.appendChild(b);
+  });
+  const panel=$("#lensbody");
+  if(panel) panel.setAttribute("aria-labelledby","tab-"+S.tab);
+  /* Rovender Tabindex braucht Pfeiltasten, sonst sind zwei Reiter unerreichbar. */
+  host.addEventListener("keydown",function(e){
+    const ids=["beleg","augenblick","herkunft"];
+    let i=ids.indexOf(S.tab);
+    if(e.key==="ArrowRight") i=(i+1)%ids.length;
+    else if(e.key==="ArrowLeft") i=(i+ids.length-1)%ids.length;
+    else if(e.key==="Home") i=0;
+    else if(e.key==="End") i=ids.length-1;
+    else return;
+    e.preventDefault(); S.tab=ids[i]; zeichne();
+    const nb=document.getElementById("tab-"+S.tab); if(nb) nb.focus();
+  });
+}
+
+function baueLinse(){
+  const host=$("#lensbody"); host.textContent="";
+  if(S.tab==="augenblick"){ host.appendChild(linseAugenblick()); return; }
+  if(S.tab==="herkunft"){ host.appendChild(linseHerkunft()); return; }
+  host.appendChild(linseBeleg());
+}
+
+function linseHerkunft(){
+  const h=el("div"); const a=aktivesAtom();
+  if(!a){ h.appendChild(el("p","card__sub","Kein Absatz gewählt. Herkunftsschicht einschalten und einen Chip drücken.")); return h; }
+  h.appendChild(el("div","card__h", a.eigen ? "am Tisch" : "mitgebracht"));
+  h.appendChild(el("div","card__sub", (a.zeit||"")+" · "+(a.quelle||"")));
+  const dl=el("dl","kv"); dl.style.marginTop=".6rem";
+  const rows = a.eigen
+    ? [["Herkunftsklasse","am_tisch"],["herkunft_anlass_id","NULL"],["Geste","praegung.wurf"],
+       ["Akteurin",W().praegung.charakter],["Instanz","dieser Tisch"]]
+    : [["Herkunftsklasse","mitgebracht"],["herkunft_anlass_id","ai_0071"],
+       ["Anlass",W().anlass.titel],["Autor",W().anlass.autor],["Instanz","fremd"]];
+  rows.forEach(function(r){ dl.appendChild(el("dt",null,r[0])); dl.appendChild(el("dd",null,r[1])); });
+  h.appendChild(dl);
+  const p=el("p","card__sub"); p.style.marginTop=".6rem";
+  p.textContent = a.eigen
+    ? "Dieses Feld kann kein Importpfad schreiben: die INSERT-Rechte aus anlass/* und import/* tragen CHECK (herkunft_anlass_id IS NOT NULL)."
+    : "Diese Zeile wurde an einem fremden Tisch geprägt und behält das dauerhaft. Das Etikett ist nicht entfernbar.";
+  h.appendChild(p);
+  return h;
+}
+
+function linseAugenblick(){
+  const h=el("div");
+  h.appendChild(el("div","card__h", W().ort+" · "+W().zeit));
+  h.appendChild(el("div","card__sub","Sitzung "+W().sitzung+" · "+W().datum+" · Sicht: "+W().besetzung[S.fogChar].name));
+  const bd=el("div","board"); bd.style.marginTop=".5rem"; bd.appendChild(brett(true)); h.appendChild(bd);
+  const fb=el("div","actions");
+  W().besetzung.forEach(function(f,i){
+    const b=el("button","btn"+(S.fogChar===i?" btn--primary":""),f.k+" · "+f.name.split(" ")[0]);
+    b.type="button"; b.setAttribute("aria-pressed",String(S.fogChar===i));
+    b.setAttribute("aria-label","Nebel aus Sicht von "+f.name);
+    b.addEventListener("click",function(){ S.fogChar=i; zeichne(); });
+    fb.appendChild(b);
+  });
+  h.appendChild(fb);
+  const p=el("p","card__sub");
+  p.textContent="Das Brett kam als Geometrie im Anlass mit. Der Nebel kommt aus den Revelation-Zeilen dieses Tisches.";
+  h.appendChild(p);
+  return h;
+}
+
+function linseBeleg(){
+  const h=el("div");
+  const a=aktivesAtom();
+  const eigen = !!(a && a.eigen);
+  const rec = belegRecord();
+  if(!rec){ h.appendChild(el("p","card__sub","Kein Beleg gewählt.")); return h; }
+
+  const ver = eigen ? rec.ver : (S.paketVer || rec.ver);
+  const rev = eigen ? rec.klauselRev : (S.klauselRev || rec.klauselRev);
+  const erg = auswerten(rec, ver, rev);
+
+  h.appendChild(el("div","card__h", rec.fertigkeit+" · "+rec.charakter));
+  h.appendChild(el("div","card__sub","Sitzung "+rec.sitzung+" · "+rec.uhrzeit+" · "+
+    (eigen?"an diesem Tisch":"mitgebracht")+" · "+rec.wurfId));
+
+  const wit=el("div","witness");
+  const sg=el("div","sigil", rec.charakter.split(" ").map(function(x){return x[0];}).join(""));
+  sg.setAttribute("role","img");
+  sg.setAttribute("aria-label","Monogramm als Ersatz für fehlendes Figurenbild");
+  wit.appendChild(sg);
+  const wt=el("div","witness__t");
+  wt.appendChild(el("b",null,rec.charakter));
+  wt.appendChild(el("span",null,"Fehlbild-Ersatz: Monogramm aus Tokens gezeichnet"));
+  wit.appendChild(wt);
+  h.appendChild(wit);
+
+  /* Herleitung */
+  const box=el("div","deriv"); const tb=el("table");
+  tb.setAttribute("aria-label","Herleitung des Wurfergebnisses");
+  erg.schritte.forEach(function(s,i){
+    const tr=el("tr");
+    tr.appendChild(el("td",null, s.label));
+    tr.appendChild(el("td","n", i===0 ? String(s.wert) : (s.wert<0?"− ":"+ ")+Math.abs(s.wert)));
+    tb.appendChild(tr);
+    if(s.note){ const tr2=el("tr"); const td=el("td","note",s.note); td.colSpan=2; tr2.appendChild(td); tb.appendChild(tr2); }
+  });
+  const trs=el("tr","sum");
+  trs.appendChild(el("td",null,"Summe gegen SG "+rec.sg));
+  trs.appendChild(el("td","n",String(erg.summe)));
+  tb.appendChild(trs);
+  const trr=el("tr","res");
+  trr.appendChild(el("td",null, erg.erfolg ? (erg.summe===rec.sg?"Erfolg (gleichauf zählt)":"Erfolg") : "Misserfolg"));
+  trr.appendChild(el("td","n", erg.summe+" / "+rec.sg));
+  tb.appendChild(trr);
+  box.appendChild(tb); h.appendChild(box);
+
+  const pin=el("p","pin");
+  pin.textContent = "Paket "+rec.paket+" "+ver+" · Klausel "+rec.klausel+"@"+rev+
+    " · Saat "+rec.saat.slice(0,4)+"…"+rec.saat.slice(-4)+" · Abdruck "+rec.abdruck;
+  h.appendChild(pin);
+
+  /* Steuerung */
+  const act=el("div","actions");
+  const nb=el("button","btn btn--primary",t("nachrechnen")); nb.type="button";
+  nb.addEventListener("click",function(){ nachrechnen(rec,ver,rev); });
+  act.appendChild(nb);
+  const ab=el("button","btn",t("augenblick")); ab.type="button";
+  ab.addEventListener("click",function(){ S.tab="augenblick"; zeichne(); });
+  act.appendChild(ab);
+  h.appendChild(act);
+
+  const seal=el("div","seal"); seal.id="seal"; seal.setAttribute("role","status");
+  seal.dataset.shown="0"; h.appendChild(seal);
+
+  /* Manipulation — nur am mitgebrachten Beleg sinnvoll */
+  if(!eigen){
+    const man=el("div","claim");
+    man.appendChild(el("h4",null,"Angriff auf den Beleg"));
+    const mact=el("div","actions");
+    const b1=el("button","btn btn--danger",
+      "Klausel "+rec.klauselRev+" → "+rec.klauselAlt); b1.type="button";
+    b1.setAttribute("aria-pressed", String(!!S.klauselRev));
+    b1.addEventListener("click",function(){
+      S.klauselRev = S.klauselRev ? null : rec.klauselAlt; zeichne(); });
+    const b2=el("button","btn btn--danger",
+      "Paket "+rec.ver+" → "+rec.verAlt); b2.type="button";
+    b2.setAttribute("aria-pressed", String(!!S.paketVer));
+    b2.addEventListener("click",function(){
+      S.paketVer = S.paketVer ? null : rec.verAlt; zeichne(); });
+    mact.appendChild(b1); mact.appendChild(b2);
+    if(S.klauselRev||S.paketVer){
+      const b3=el("button","btn","Zurücksetzen"); b3.type="button";
+      b3.addEventListener("click",function(){ S.klauselRev=null; S.paketVer=null; zeichne(); });
+      mact.appendChild(b3);
+    }
+    man.appendChild(mact);
+    const mp=el("p","card__sub");
+    mp.textContent="Der Abdruck ee… wurde beim Packen des Anlasses eingefroren. Verändere Klausel oder Paketpin und drücke erneut „"+t("nachrechnen")+"“.";
+    mp.textContent = mp.textContent.replace("ee…", rec.abdruck);
+    man.appendChild(mp);
+    h.appendChild(man);
+  }
+
+  /* Ehrlichkeitskasten */
+  const cl=el("div","claim");
+  cl.appendChild(el("h4",null,"Was das Siegel behauptet"));
+  const ul1=el("ul");
+  ["Die gedruckte Zahl folgt aus Saat, Ausdruck, Paketversion und Klauselrevision.",
+   "Nichts an dieser Karte hat sich seit dem Prägen verschoben.",
+   "Ein Paket-Update in drei Jahren ändert nicht, was dieser Wurf hieß."
+  ].forEach(function(x){ ul1.appendChild(el("li","y",x)); });
+  cl.appendChild(ul1);
+  cl.appendChild(el("h4",null,"Was es nicht behauptet"));
+  const ul2=el("ul");
+  ["Dass ein Mensch dabei war.",
+   "Dass die Saat nicht so lange gedreht wurde, bis eine 13 fiel.",
+   "Dass der Zeitstempel stimmt."
+  ].forEach(function(x){ ul2.appendChild(el("li","n",x)); });
+  cl.appendChild(ul2);
+  h.appendChild(cl);
+  return h;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   12 · Nachrechnen — echte Wiederholung, echter Abgleich
+   ═══════════════════════════════════════════════════════════════════════════ */
+function nachrechnen(rec, ver, rev){
+  const erg = auswerten(rec, ver, rev);
+  const neu = abdruckVon(rec, erg, ver, rev);
+  const orig = auswerten(rec, rec.ver, rec.klauselRev);
+  const ok = (neu === rec.abdruck);
+  const seal=$("#seal"); if(!seal) return;
+  seal.textContent=""; seal.dataset.shown="1"; seal.dataset.verdict = ok?"ok":"bad";
+
+  const hd=el("div","seal__h");
+  hd.appendChild(el("span","seal__glyph", ok?"✔":"✕"));
+  hd.appendChild(el("span",null, ok?"Nachgerechnet — byteidentisch":"Abweichung — der Abdruck stimmt nicht"));
+  seal.appendChild(hd);
+
+  const p=el("p");
+  if(ok){
+    p.textContent = "Saat "+rec.saat.slice(0,4)+"…"+rec.saat.slice(-4)+", Ausdruck unverändert, Paket "+
+      rec.paket+" "+ver+" gehasht, Klausel "+rec.klausel+"@"+rev+". "+
+      erg.schritte[0].label+" = "+erg.schritte[0].wert+". Ergebnis "+erg.summe+". "+
+      "Dieser Wurf wurde am "+(rec.sitzung===5?"heute":W().datum)+" um "+rec.uhrzeit+" geworfen — "+
+      (rec.sitzung===5 ? "an diesem Tisch." : "an "+W().anlass.autor.split(" ")[0]+"s Tisch, nicht an deinem.");
+  } else {
+    p.textContent = (erg.summe===orig.summe)
+      ? "Die Zahl ist zufällig dieselbe geblieben, der Abdruck nicht. Dieser Wurf ist nicht mehr der Wurf, gegen den er entstanden ist."
+      : "Die Wiederholung liefert ein anderes Ergebnis als der eingefrorene Abdruck. Ein Wurf, der sich nachträglich ändert, ist kein Beleg.";
+  }
+  seal.appendChild(p);
+
+  const ul=el("ul");
+  ul.appendChild(el("li",null,"Abdruck eingefroren: "+rec.abdruck));
+  ul.appendChild(el("li",null,"Abdruck nachgerechnet: "+neu));
+  if(!ok){
+    if(ver!==rec.ver) ul.appendChild(el("li",null,"Paketpin: "+rec.ver+" → "+ver));
+    if(rev!==rec.klauselRev) ul.appendChild(el("li",null,"Klausel: "+rec.klauselRev+" → "+rev));
+    if(erg.summe!==orig.summe) ul.appendChild(el("li",null,"Summe: "+orig.summe+" → "+erg.summe));
+    erg.schritte.forEach(function(s,i){
+      if(s.wert!==orig.schritte[i].wert)
+        ul.appendChild(el("li",null,"Term "+(i+1)+" ("+s.label+"): "+orig.schritte[i].wert+" → "+s.wert));
+    });
+  } else {
+    ul.appendChild(el("li",null,"Kanonische Form: "+kanonisch(rec,erg,ver,rev)));
+  }
+  seal.appendChild(ul);
+
+  protokolliere("Nachrechnen", rec.abdruck, neu+(ok?" ✔":" ✕"), S.strukturHash, S.strukturHash);
+  bericht();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   13 · Prägen — Ctrl+Enter
+   ═══════════════════════════════════════════════════════════════════════════ */
+function praegen(){
+  if(S.rolle==="ob") return;
+  if(S.gepraegt.length>=3) return;
+  const pr = W().praegung;
+  const nonce = String(Date.now())+"|"+Math.floor(performance.now()*1000)+"|"+S.welt+"|"+S.gepraegt.length;
+  const saat = hex8(h32(nonce)) + hex8(h32(nonce+"#2"));
+  const rec = {
+    fertigkeit:pr.fertigkeit, charakter:pr.charakter, sitzung:5,
+    uhrzeit: new Date().toLocaleTimeString("de-DE",{hour12:false}),
+    saat:saat, paket:W().wurf.paket, ver:W().wurf.ver,
+    klausel:W().wurf.klausel, klauselRev:W().wurf.klauselRev,
+    klauselAlt:W().wurf.klauselAlt, verAlt:W().wurf.verAlt,
+    sg:pr.sg, wurfId:"w_"+String(51+S.gepraegt.length),
+    ast:[
+      {op:"wurf",anzahl:1,seiten:20,index:0},
+      {op:"konstante",wert:pr.attrWert,label:pr.attribut},
+      {op:"praedikat",etikett:pr.etikett,mindestens:3,gehalten:pr.gehalten,bonus:pr.bonus,bonusAlt:pr.bonus+1,
+       label:"du hältst "+pr.gehalten+" Passagen über dieses Thema"},
+      {op:"konstante",wert:pr.zweit.wert,label:pr.zweit.label}
+    ]
+  };
+  const erg = auswerten(rec, rec.ver, rec.klauselRev);
+  rec.abdruck = abdruckVon(rec, erg, rec.ver, rec.klauselRev);   // frisch geprägt = frisch eingefroren
+  S.eigenerBeleg = rec;
+
+  const atom = {
+    id:"eigen"+S.gepraegt.length, art:"text", eigen:true, neu:true, glyph:"⚄",
+    fnNr: 2 + S.gepraegt.length, rec: rec,
+    text: (erg.erfolg?pr.erfolg:pr.fehl),
+    herkunft:"am Tisch", zeit:rec.uhrzeit+", Sitzung 5",
+    quelle: pr.fertigkeit+" · "+pr.charakter.split(" ")[0]+" · "+erg.summe+" gegen "+rec.sg+" · dein Tisch"
+  };
+  S.gepraegt.push(atom);
+  S.auswahl = atom.id; S.tab="beleg"; S.prov="an";
+  zeichne();
+  protokolliere("Prägung","0 am Tisch",S.gepraegt.length+" am Tisch",S.strukturHash,strukturAbdruck());
+  bericht();
+  const n=document.querySelector('[data-atom="'+atom.id+'"]');
+  if(n) n.scrollIntoView({behavior:S.bewegung==="reduced"?"auto":"smooth",block:"center"});
+  atom.neu=false;
+}
+/* Zurücknehmen — die Prägung ist reversibel, nicht nur eine Einbahnstraße:
+   dieselbe Geste, die champion §13 als „reversible action" verlangt. */
+function zuruecknehmen(){
+  if(!S.gepraegt.length) return;
+  const v=strukturAbdruck();
+  const atom = S.gepraegt.pop();
+  if(S.eigenerBeleg===atom.rec) S.eigenerBeleg=null;
+  if(S.auswahl===atom.id){ S.auswahl=null; S.tab="beleg"; }
+  zeichne();
+  protokolliere("Prägung", S.gepraegt.length+1+" am Tisch", S.gepraegt.length+" am Tisch", v, strukturAbdruck());
+  bericht();
+}
+document.addEventListener("keydown",function(e){
+  if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); praegen(); }
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   14 · Strukturabdruck — Tags, Rollen und Tiefe, ohne jeden Text
+   ═══════════════════════════════════════════════════════════════════════════ */
+function strukturAbdruck(){
+  const root=document.getElementById("kanon");
+  if(!root) return "—";
+  let sig="", n=0;
+  (function walk(node,d){
+    for(let i=0;i<node.children.length;i++){
+      const c=node.children[i];
+      sig += c.tagName + "/" + (c.getAttribute("role")||"") + "/" + d + ";";
+      n++;
+      walk(c,d+1);
+    }
+  })(root,0);
+  S.strukturKnoten = n;
+  return hex8(h32(sig));
+}
+function protokolliere(achse, von, nach, vorher, nachher){
+  const na = (vorher==="—" || nachher==="—");     // Kanon gerade nicht auf der Bühne
+  const gleich = vorher===nachher;
+  const erwartet = na ? true : ((achse==="Rolle") ? !gleich : gleich);
+  S.log.unshift({achse:achse, von:String(von), nach:String(nach),
+    vorher:vorher, nachher:nachher, gleich:gleich, erwartet:erwartet, na:na});
+  if(S.log.length>24) S.log.pop();
+  if(nachher!=="—") S.strukturHash = nachher;     // letzter gültiger Kanon-Abdruck bleibt stehen
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   15 · Kontrastmessung über echte Sonden
+   ═══════════════════════════════════════════════════════════════════════════ */
+let sonde=null;
+function messeFarbe(varname){
+  if(!sonde){
+    sonde=document.createElement("span");
+    sonde.className="vh"; sonde.setAttribute("aria-hidden","true");
+    document.getElementById("app").appendChild(sonde);
+  }
+  sonde.style.color="var("+varname+")";
+  const c=getComputedStyle(sonde).color;
+  const m=c.match(/\d+(\.\d+)?/g);
+  return m ? [ +m[0], +m[1], +m[2] ] : [0,0,0];
+}
+function lum(rgb){
+  const f=rgb.map(function(v){ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); });
+  return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2];
+}
+function verhaeltnis(a,b){
+  const l1=lum(a), l2=lum(b);
+  return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   16 · Prüfbericht
+   ═══════════════════════════════════════════════════════════════════════════ */
+let streifenBasis=null;
+function messeStreifen(){
+  const vorher = S.prov;
+  const root=document.documentElement;
+  const h1 = document.body.scrollHeight;
+  root.dataset.prov = (vorher==="an") ? "aus" : "an";
+  const h2 = document.body.scrollHeight;
+  root.dataset.prov = vorher;
+  return {auf: vorher==="an"?h1:h2, zu: vorher==="an"?h2:h1};
+}
+
+function bericht(){
+  const g=$("#repgrid"); g.textContent="";
+
+  /* Box 1 — Strukturabdruck */
+  const b1=el("div","rbox");
+  b1.appendChild(el("h3",null,"Strukturabdruck des Kanons"));
+  const dl1=el("dl","kv");
+  [["Abdruck (Tag · Rolle · Tiefe)", S.strukturHash||"—"],
+   ["Elemente im Kanon", String(S.strukturKnoten||0)],
+   ["Inhalt", W().welt+" ("+W().genre+")"],
+   ["Skin", S.skin],
+   ["Rolle", {gm:t("rolle_gm"),pl:t("rolle_pl"),ob:t("rolle_ob")}[S.rolle]]
+  ].forEach(function(r){ dl1.appendChild(el("dt",null,r[0])); dl1.appendChild(el("dd",null,r[1])); });
+  b1.appendChild(dl1);
+  const note=el("p","card__sub"); note.style.marginTop=".4rem";
+  note.textContent="Regel: nur die Achse Rolle darf den Abdruck ändern. Jede andere Änderung wäre ein verstecktes Sonderfall-Layout.";
+  b1.appendChild(note);
+  g.appendChild(b1);
+
+  /* Box 2 — Achsenprotokoll */
+  const b2=el("div","rbox");
+  b2.appendChild(el("h3",null,"Achsenprotokoll (live)"));
+  const ul=el("ul","log");
+  if(!S.log.length) ul.appendChild(el("li",null,"Noch keine Achse geschaltet."));
+  S.log.forEach(function(e){
+    const li=el("li");
+    const v=el("span","v");
+    if(e.achse==="Nachrechnen"){
+      v.textContent = e.nach.indexOf("✔")>=0 ? "SIEGEL ✔" : "SIEGEL ✕";
+      v.style.color = e.nach.indexOf("✔")>=0 ? "var(--ok)" : "var(--bad)";
+    } else {
+      v.textContent = e.erwartet ? "OK" : "PRÜF";
+      v.style.color = e.erwartet ? "var(--ok)" : "var(--warn)";
+    }
+    li.appendChild(v);
+    const tt=el("span","t");
+    tt.textContent = e.achse+": "+e.von+" → "+e.nach+
+      (e.achse==="Nachrechnen" ? "" :
+       e.na ? " · Kanon nicht auf der Bühne, Abdruck nicht anwendbar"
+            : " · Abdruck "+(e.gleich?"unverändert":"geändert")+" ("+e.vorher+" → "+e.nachher+")");
+    li.appendChild(tt);
+    ul.appendChild(li);
+  });
+  b2.appendChild(ul);
+  g.appendChild(b2);
+
+  /* Box 3 — Kontrast */
+  const b3=el("div","rbox");
+  b3.appendChild(el("h3",null,"Kontrast, im Browser gemessen"));
+  const dl3=el("dl","kv");
+  const surf=messeFarbe("--surf");
+  [["Fließtext","--ink",4.5],["Sekundärtext","--ink3",4.5],["Akzent","--acc",4.5],
+   ["Siegel grün","--ok",4.5],["Siegel rot","--bad",4.5],["Bedienlinie","--line2",3],
+   ["Fokusring","--focus",3]
+  ].forEach(function(r){
+    const v=verhaeltnis(messeFarbe(r[1]),surf);
+    const dt=el("dt",null,r[0]);
+    const dd=el("dd");
+    dd.appendChild(document.createTextNode(v.toFixed(2)+":1 "));
+    const cls = v>=7 ? "b-ok" : (v>=r[2] ? "b-ok" : (v>=3 ? "b-warn" : "b-bad"));
+    const lbl = v>=7 ? "AAA" : (v>=4.5 ? "AA" : (v>=3 ? "AA-groß" : "durchgefallen"));
+    dd.appendChild(el("span","badge "+cls,lbl));
+    dl3.appendChild(dt); dl3.appendChild(dd);
+  });
+  b3.appendChild(dl3);
+  const n3=el("p","card__sub"); n3.style.marginTop=".4rem";
+  n3.textContent="Gemessen gegen die Kartenfläche des aktuellen Skins im aktuellen Lichtmodus. Zielwerte: Text 4,5:1 · Bedienelemente 3:1.";
+  b3.appendChild(n3);
+  g.appendChild(b3);
+
+  /* Box 4 — Gates */
+  const b4=el("div","rbox");
+  b4.appendChild(el("h3",null,"Gates dieser Seite"));
+  const dl4=el("dl","kv");
+  const st = messeStreifen();
+  const delta = st.auf===0 ? 0 : Math.abs(st.auf-st.zu)/Math.max(st.auf,1)*100;
+  const seit = document.documentElement.scrollWidth > document.documentElement.clientWidth;
+  const bewegt = getComputedStyle(document.documentElement).getPropertyValue("--t-state").trim();
+  const rows=[
+    ["Der Streifen (Höhe auf/zu)", st.auf+" / "+st.zu+" px", delta<=4],
+    ["Abweichung", delta.toFixed(2)+" %", delta<=4],
+    ["Kein Seitwärts-Scroll", seit?"scrollt":"sauber", !seit],
+    ["Bewegungsdauer (State)", bewegt, true],
+    ["Herkunft über Form, nicht Farbe", "hohl / gefüllt", true],
+    ["Strukturell ausgelassen (Rolle)", String(ausgelassen()), true]
+  ];
+  rows.forEach(function(r){
+    dl4.appendChild(el("dt",null,r[0]));
+    const dd=el("dd");
+    dd.appendChild(document.createTextNode(r[1]+" "));
+    dd.appendChild(el("span","badge "+(r[2]?"b-ok":"b-bad"), r[2]?"✔":"✕"));
+    dl4.appendChild(dd);
+  });
+  b4.appendChild(dl4);
+  const n4=el("p","card__sub"); n4.style.marginTop=".4rem";
+  n4.textContent="„Der Streifen“: das Einschalten der Herkunftsschicht darf die Seitenhöhe um höchstens 4 % ändern. Die Rinne ist deshalb immer reserviert.";
+  b4.appendChild(n4);
+  g.appendChild(b4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   17 · Shelf
+   ═══════════════════════════════════════════════════════════════════════════ */
+function baueShelf(){
+  const f=$("#shelf"); f.textContent="";
+  const sichtbareAtome = zaehleAtome();
+  const eigen = S.gepraegt.length;
+
+  const t1=el("div","tally");
+  const d1=el("span","dot"); t1.appendChild(d1);
+  t1.appendChild(document.createTextNode((sichtbareAtome-eigen)+" mitgebracht"));
+  f.appendChild(t1);
+
+  const t2=el("div","tally");
+  const d2=el("span","dot dot--solid"); t2.appendChild(d2);
+  t2.appendChild(document.createTextNode(eigen+" an diesem Tisch"));
+  f.appendChild(t2);
+
+  const pv=el("button","btn"+(S.prov==="an"?" btn--primary":""),t("prov_an"));
+  pv.type="button"; pv.setAttribute("aria-pressed",String(S.prov==="an"));
+  pv.addEventListener("click",function(){
+    const v=strukturAbdruck(); S.prov = S.prov==="an"?"aus":"an"; zeichne();
+    protokolliere("Herkunftsschicht", v===null?"—":(S.prov==="an"?"aus":"an"), S.prov, v, strukturAbdruck());
+    bericht();
+  });
+  f.appendChild(pv);
+
+  f.appendChild(el("div","shelf__sp"));
+
+  if(S.rolle==="ob"){
+    const p=el("span","card__sub","Beobachter prägen nicht — die Steuerung ist nicht vorhanden, nicht deaktiviert.");
+    f.appendChild(p);
+  } else {
+    const pb=el("button","btn btn--primary",t("praegen"));
+    pb.type="button";
+    pb.disabled = S.gepraegt.length>=3;
+    pb.addEventListener("click",praegen);
+    f.appendChild(pb);
+    const kb=el("span","kbd","Strg + Eintaste"); f.appendChild(kb);
+    const ub=el("button","btn",t("zuruecknehmen"));
+    ub.type="button"; ub.disabled = S.gepraegt.length===0;
+    ub.addEventListener("click",zuruecknehmen);
+    f.appendChild(ub);
+  }
+}
+function zaehleAtome(){
+  let n = W().felder.length + 2 + S.gepraegt.length;   // Felder + zwei Tafeln + eigene
+  W().abschnitte.forEach(function(ab){ ab.atome.forEach(function(a){ if(sichtbar(a)) n++; }); });
+  return n;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   18 · Gesamtzeichnung
+   ═══════════════════════════════════════════════════════════════════════════ */
+function zeichne(){
+  const r=document.documentElement;
+  r.dataset.skin=S.skin;
+  r.dataset.art=S.kunst==="an"?"an":(S.kunst==="aus"?"off":"an");
+  r.dataset.prov=S.prov;
+  r.dataset.contrast = S.kontrast==="high" ? "high" : "normal";
+  r.dataset.width = S.breite;
+  if(S.licht==="auto") r.removeAttribute("data-theme"); else r.dataset.theme=S.licht;
+  if(S.bewegung==="reduced") r.dataset.motion="reduced"; else r.removeAttribute("data-motion");
+  r.lang = "de";
+
+  baueAchsen();
+  baueRail();
+  baueTabs();
+
+  $("#kicker").textContent = W().kicker;
+  $("#titel").textContent  = W().titel;
+  $("#subline").textContent = W().subline;
+
+  const sichtbareAtome = zaehleAtome();
+  const eigen = S.gepraegt.length;
+  const aus = ausgelassen();
+  const bil = $("#bilanz");
+  bil.textContent = "";
+  bil.appendChild(document.createTextNode(sichtbareAtome+" Absätze sichtbar · "));
+  const b=el("b",null, eigen+" an diesem Tisch"); bil.appendChild(b);
+  bil.appendChild(document.createTextNode(" · "+(sichtbareAtome-eigen)+" mitgebracht aus »"+
+    W().anlass.titel+"« von "+W().anlass.autor+" · Siegel geprüft, "+W().anlass.belege+
+    " Belege nachgerechnet am "+W().anlass.geprueft+
+    (aus? " · "+aus+" Datensätze in dieser Rolle strukturell nicht ausgeliefert":"")+"."));
+
+  $("#topsub").textContent = W().welt+" · "+W().genre+" · Anlass »"+W().anlass.titel+"« · "+
+    W().anlass.abende+" Abende · "+W().anlass.versiegelt+" versiegelte Zeilen · Paket "+W().anlass.paket;
+
+  kitband();
+
+  const sb=$("#stagebody"); sb.textContent="";
+  if(S.zone==="tisch"){ sb.appendChild(baueTisch()); }
+  else {
+    const k=el("div","kanon"); k.id="kanon";
+    k.appendChild(baueArtikel());
+    sb.appendChild(k);
+  }
+  if(!document.getElementById("kanon")){
+    /* Der Abdruck bezieht sich immer auf den Kanon; im Tisch-Bereich bleibt er stehen. */
+  }
+  baueLinse();
+  baueShelf();
+  if(typeof inURL==="function") inURL();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   19 · Deterministische Vorschau-URLs — jede Achsenstellung ist adressierbar
+        und wird beim Schalten in die Adresszeile zurückgeschrieben.
+        ?welt=kepler&skin=clean&rolle=ob&licht=dark&kontrast=high&bewegung=reduced
+        &kunst=fehlt&breite=380&sprache=lang&zone=tisch&prov=aus
+   ═══════════════════════════════════════════════════════════════════════════ */
+const URL_FELDER=["welt","skin","rolle","licht","kontrast","bewegung","kunst","breite",
+                  "sprache","zone","prov","recipe"];
+function ausURL(){
+  let p;
+  try{ p=new URLSearchParams(location.search); }catch(e){ return; }
+  URL_FELDER.forEach(function(k){
+    const v=p.get(k); if(v===null) return;
+    if(k==="welt" && !WELTEN[v]) return;
+    S[k]=v;
+    if(k==="welt" && !p.get("skin")) S.skin=WELTEN[v].skin;
+  });
+}
+function inURL(){
+  if(!window.history || !history.replaceState) return;
+  const p=new URLSearchParams();
+  URL_FELDER.forEach(function(k){ p.set(k,String(S[k])); });
+  try{ history.replaceState(null,"", location.pathname+"?"+p.toString()); }catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   20 · Start
+   ═══════════════════════════════════════════════════════════════════════════ */
+ausURL();
+zeichne();
+S.strukturHash = strukturAbdruck();
+bericht();
+window.addEventListener("resize", function(){ clearTimeout(window.__rt);
+  window.__rt=setTimeout(bericht,180); });
+if(window.matchMedia){
+  const mq=window.matchMedia("(prefers-color-scheme: dark)");
+  if(mq.addEventListener) mq.addEventListener("change", bericht);
+}
+</script>

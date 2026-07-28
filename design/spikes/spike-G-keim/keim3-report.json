@@ -1,0 +1,100 @@
+{
+  "perKey": {
+    "features": 12911,
+    "cultures": 1700,
+    "burgs": 803977,
+    "states": 42317,
+    "provinces": 48055,
+    "religions": 3897,
+    "rivers": 32627,
+    "goods": 17591,
+    "markers": 4345,
+    "markets": 63662,
+    "deals": 1285223,
+    "routes": 104040,
+    "zones": 2570,
+    "measurers": 50,
+    "notes": 29765,
+    "nameBases": 82967,
+    "biomesData": 2018
+  },
+  "nodesCount": 863,
+  "nodesJson": 112600,
+  "byKind": {
+    "landmass": 19,
+    "state": 25,
+    "province": 155,
+    "burg": 664
+  },
+  "namedThings": {
+    "burgs": 664,
+    "states": 25,
+    "provinces": 155,
+    "cultures": 12,
+    "religions": 19,
+    "namedRivers": 157,
+    "namedFeatures": 1,
+    "markers": 56,
+    "regiments": 75,
+    "markets": 28,
+    "goods": 71
+  },
+  "noteBreakdown": {
+    "total": 131,
+    "markerNotes": 56,
+    "regimentNotes": 75,
+    "markerLegendChars": 5915,
+    "sampleMarkerNote": [
+      {
+        "id": "marker0",
+        "name": "Viemidema Purifying Well",
+        "legend": "This legendary water source is whispered about in ancient tales and believed to possess mystical properties. The spring emanates crystal-clear water, shimmering with an otherworldly iridescence that sparkles even in the "
+      },
+      {
+        "id": "marker1",
+        "name": "Kiupunlin — silver mining town",
+        "legend": "Kiupunlin is a mining town of 2119 people just nearby the silver mine."
+      },
+      {
+        "id": "marker2",
+        "name": "Kaurejaara Bridge",
+        "legend": "A stone bridge spans over the Ruoki River near Kaurejaara."
+      }
+    ]
+  },
+  "burgTypeHistogram": {
+    "Naval": 140,
+    "River": 23,
+    "Generic": 478,
+    "Lake": 1,
+    "Hunting": 21,
+    "Nomadic": 1
+  },
+  "markerTypeHistogram": {
+    "water-sources": 1,
+    "mines": 1,
+    "bridges": 3,
+    "inns": 10,
+    "lighthouses": 5,
+    "battlefields": 3,
+    "dungeons": 2,
+    "sea-monsters": 2,
+    "sacred-forests": 1,
+    "brigands": 5,
+    "pirates": 3,
+    "statues": 3,
+    "ruins": 3,
+    "libraries": 1,
+    "circuses": 2,
+    "jousts": 1,
+    "fairs": 1,
+    "canoes": 1,
+    "migration": 1,
+    "necropolises": 1,
+    "encounters": 6
+  },
+  "orphanProvinceParents": 8,
+  "burgsWithoutProvince": 664,
+  "burgsInNeutral": 0,
+  "nodesGz": 21174
+}

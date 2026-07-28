@@ -1,0 +1,50 @@
+{
+ "quelle": "Andaria_03.02.2024.webp",
+ "quelle_px": [
+  8192,
+  8192
+ ],
+ "kachelgroesse": 256,
+ "format": "image/webp q82",
+ "ebenen": [
+  {
+   "z": 0,
+   "px": "256x256",
+   "kacheln": 1,
+   "bytes": 17690
+  },
+  {
+   "z": 1,
+   "px": "512x512",
+   "kacheln": 4,
+   "bytes": 63802
+  },
+  {
+   "z": 2,
+   "px": "1024x1024",
+   "kacheln": 16,
+   "bytes": 226140
+  },
+  {
+   "z": 3,
+   "px": "2048x2048",
+   "kacheln": 64,
+   "bytes": 790628
+  },
+  {
+   "z": 4,
+   "px": "4096x4096",
+   "kacheln": 256,
+   "bytes": 2547502
+  },
+  {
+   "z": 5,
+   "px": "8192x8192",
+   "kacheln": 1024,
+   "bytes": 6764522
+  }
+ ],
+ "kacheln_gesamt": 1365,
+ "bytes_gesamt": 10410284,
+ "bauzeit_s": 31.7
+}

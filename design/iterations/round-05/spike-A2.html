@@ -1,0 +1,2751 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die Leinwand hält — Universalitätsprüfung an der Karte (Kandidat A · Runde 5)</title>
+
+<script>
+  /* Bootstrap. Der Seiteninhalt wird ohne <html>/<head> eingehängt; die Wurzelattribute,
+     die jede unabhängige Achse tragen, stehen deshalb vor dem ersten Bild. */
+  (function () {
+    var r = document.documentElement;
+    r.lang = "de";
+    r.dataset.welt      = "eron";       /* Inhaltspaket:  eron | kepler | nebelakte      */
+    r.dataset.skin      = "relic";      /* Skin:          relic | signal | archive | clean */
+    r.dataset.rolle     = "leitung";    /* Rolle:         leitung | spieler | beobachter */
+    r.dataset.thema     = "system";     /* Thema:         system | light | dark          */
+    r.dataset.kontrast  = "standard";   /* Kontrast:      standard | hoch                */
+    r.dataset.motion    = "system";     /* Bewegung:      system | reduziert             */
+    r.dataset.etiketten = "kurz";       /* Beschriftung:  kurz | lang                    */
+    r.dataset.art       = "vorhanden";  /* Artwork:       vorhanden | fehlt              */
+    r.dataset.buehne    = "beide";      /* Bühne:         leinwand | beide | tafel       */
+  })();
+</script>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════════
+   1 · TOKENS
+   Jede Farbe, Schrift, Rundung, Schatten- und Zeitangabe ist eine Custom Property.
+   Jeder Skin deklariert eine helle (--l-*) und eine dunkle (--d-*) Palette genau
+   einmal; der Mapping-Block wählt eine aus. prefers-color-scheme ist das Default-
+   Signal, [data-thema] schlägt es in BEIDE Richtungen.
+   Neu in Runde 5: die KARTENTOKEN. Die Leinwand hat keine eigenen Farben — sie
+   liest dieselben Token wie das DOM, über Sondenelemente, bei jedem Neuzeichnen.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --u: 4px;
+  --r-1: 2px;
+  --r-2: 5px;
+  --r-3: 10px;
+  --measure: 62ch;
+
+  --font-body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-symbol: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", "DejaVu Sans", var(--font-body);
+  --tracking-label: .09em;
+  --weight-label: 620;
+
+  --dur-1: 140ms;   /* Antwort   — Druck, Hover, Fokus, Prüfung        */
+  --dur-2: 280ms;   /* Zustand   — Auswahl, Freigabe, Linsenwechsel    */
+  --dur-3: 820ms;   /* Übergang  — Szenenwechsel, Ankunft              */
+  --ease: cubic-bezier(.2, .74, .24, 1);
+
+  --ornament: 1;
+  --hatch: .055;
+  --map-fuellung: 1;      /* 0 = reine Strichzeichnung (Hochkontrast)  */
+  --map-linie: 1;         /* Linienstärkenfaktor der Karte             */
+  --map-glaettung: 1;     /* 0 = harte Polygone statt organischer Kurven */
+
+  --bg:            var(--l-bg);
+  --bg-2:          var(--l-bg-2);
+  --surface:       var(--l-surface);
+  --surface-2:     var(--l-surface-2);
+  --line:          var(--l-line);
+  --line-strong:   var(--l-line-strong);
+  --text:          var(--l-text);
+  --muted:         var(--l-muted);
+  --dim:           var(--l-dim);
+  --accent:        var(--l-accent);
+  --accent-ink:    var(--l-accent-ink);
+  --secondary:     var(--l-secondary);
+  --seal:          var(--l-seal);
+  --danger:        var(--l-danger);
+  --ok:            var(--l-ok);
+  --rot:           var(--l-rot);
+  --shadow-1:      var(--l-shadow-1);
+  --shadow-2:      var(--l-shadow-2);
+  --focus:         var(--l-focus);
+  --map-tief:      var(--l-map-tief);
+  --map-fels:      var(--l-map-fels);
+  --map-boden:     var(--l-map-boden);
+  --map-weg:       var(--l-map-weg);
+  --map-nebel:     var(--l-map-nebel);
+  --map-verdeckt:     var(--l-map-verdeckt);
+  --map-verdeckt:  var(--l-map-verdeckt);
+  --map-marke:     var(--l-map-marke);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--d-bg);              --bg-2: var(--d-bg-2);
+    --surface: var(--d-surface);    --surface-2: var(--d-surface-2);
+    --line: var(--d-line);          --line-strong: var(--d-line-strong);
+    --text: var(--d-text);          --muted: var(--d-muted);
+    --dim: var(--d-dim);            --accent: var(--d-accent);
+    --accent-ink: var(--d-accent-ink); --secondary: var(--d-secondary);
+    --seal: var(--d-seal);          --danger: var(--d-danger);
+    --ok: var(--d-ok);              --rot: var(--d-rot);
+    --shadow-1: var(--d-shadow-1);  --shadow-2: var(--d-shadow-2);
+    --focus: var(--d-focus);        --hatch: .085;
+    --map-tief: var(--d-map-tief);  --map-fels: var(--d-map-fels);
+    --map-boden: var(--d-map-boden);--map-weg: var(--d-map-weg);
+    --map-nebel: var(--d-map-nebel);--map-verdeckt: var(--d-map-verdeckt);--map-marke: var(--d-map-marke);
+  }
+}
+
+:root[data-thema="dark"] {
+  --bg: var(--d-bg);              --bg-2: var(--d-bg-2);
+  --surface: var(--d-surface);    --surface-2: var(--d-surface-2);
+  --line: var(--d-line);          --line-strong: var(--d-line-strong);
+  --text: var(--d-text);          --muted: var(--d-muted);
+  --dim: var(--d-dim);            --accent: var(--d-accent);
+  --accent-ink: var(--d-accent-ink); --secondary: var(--d-secondary);
+  --seal: var(--d-seal);          --danger: var(--d-danger);
+  --ok: var(--d-ok);              --rot: var(--d-rot);
+  --shadow-1: var(--d-shadow-1);  --shadow-2: var(--d-shadow-2);
+  --focus: var(--d-focus);        --hatch: .085;
+  --map-tief: var(--d-map-tief);  --map-fels: var(--d-map-fels);
+  --map-boden: var(--d-map-boden);--map-weg: var(--d-map-weg);
+  --map-nebel: var(--d-map-nebel);--map-verdeckt: var(--d-map-verdeckt);--map-marke: var(--d-map-marke);
+  color-scheme: dark;
+}
+
+:root[data-thema="light"] {
+  --bg: var(--l-bg);              --bg-2: var(--l-bg-2);
+  --surface: var(--l-surface);    --surface-2: var(--l-surface-2);
+  --line: var(--l-line);          --line-strong: var(--l-line-strong);
+  --text: var(--l-text);          --muted: var(--l-muted);
+  --dim: var(--l-dim);            --accent: var(--l-accent);
+  --accent-ink: var(--l-accent-ink); --secondary: var(--l-secondary);
+  --seal: var(--l-seal);          --danger: var(--l-danger);
+  --ok: var(--l-ok);              --rot: var(--l-rot);
+  --shadow-1: var(--l-shadow-1);  --shadow-2: var(--l-shadow-2);
+  --focus: var(--l-focus);        --hatch: .055;
+  --map-tief: var(--l-map-tief);  --map-fels: var(--l-map-fels);
+  --map-boden: var(--l-map-boden);--map-weg: var(--l-map-weg);
+  --map-nebel: var(--l-map-nebel);--map-verdeckt: var(--l-map-verdeckt);--map-marke: var(--l-map-marke);
+  color-scheme: light;
+}
+
+/* ── RELIC — warmes Pergament, Kerzenlicht, redaktionelle Serife ───────────── */
+:root[data-skin="relic"] {
+  --font-display: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --l-bg: #efe7d6;        --l-bg-2: #e6dcc7;
+  --l-surface: #faf5ea;   --l-surface-2: #f2ebdb;
+  --l-line: #d3c6ab;      --l-line-strong: #8a7853;
+  --l-text: #2a2318;      --l-muted: #574d3b;   --l-dim: #6b6250;
+  --l-accent: #7c4715;    --l-accent-ink: #fdf8ee;
+  --l-secondary: #2b5c4d; --l-seal: #613556;
+  --l-danger: #8e241d;    --l-ok: #2b5c34;      --l-rot: #9c2719;
+  --l-shadow-1: 0 1px 0 rgba(42,35,24,.06);
+  --l-shadow-2: 0 8px 26px -18px rgba(42,35,24,.55);
+  --l-focus: #7c4715;
+  --l-map-tief: #b9a988;  --l-map-fels: #a08c68; --l-map-boden: #f6eeda;
+  --l-map-weg: #d6c39c;   --l-map-nebel: #2a2318;--l-map-verdeckt: #8a6d33;--l-map-marke: #3a2d17;
+
+  --d-bg: #14120e;        --d-bg-2: #0d0c09;
+  --d-surface: #1c1913;   --d-surface-2: #242018;
+  --d-line: #3a3327;      --d-line-strong: #7d6e4f;
+  --d-text: #f0e8d6;      --d-muted: #c3b79e;   --d-dim: #998f7a;
+  --d-accent: #e0ad5f;    --d-accent-ink: #1a1610;
+  --d-secondary: #6fc4a6; --d-seal: #cba2d6;
+  --d-danger: #e5867d;    --d-ok: #79c98a;      --d-rot: #ec8073;
+  --d-shadow-1: 0 1px 0 rgba(0,0,0,.4);
+  --d-shadow-2: 0 10px 30px -18px rgba(0,0,0,.9);
+  --d-focus: #e0ad5f;
+  --d-map-tief: #0c0a07;  --d-map-fels: #241f16; --d-map-boden: #3a3122;
+  --d-map-weg: #574931;   --d-map-nebel: #05040a;--d-map-verdeckt: #9c8752;--d-map-marke: #efe3c6;
+}
+
+/* ── SIGNAL — Graphit/Cyan, technische Schmalschrift ───────────────────────── */
+:root[data-skin="signal"] {
+  --font-display: "Bahnschrift SemiCondensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --tracking-label: .13em;
+  --r-1: 0px; --r-2: 2px; --r-3: 3px;
+  --map-glaettung: 0;
+  --l-bg: #e7edf1;        --l-bg-2: #dde5eb;
+  --l-surface: #f7fafc;   --l-surface-2: #eaf1f5;
+  --l-line: #c1cfd8;      --l-line-strong: #5c7684;
+  --l-text: #0f1d26;      --l-muted: #3d5b6a;   --l-dim: #526774;
+  --l-accent: #0a5f72;    --l-accent-ink: #f2fbfd;
+  --l-secondary: #53399f; --l-seal: #74366a;
+  --l-danger: #9c2626;    --l-ok: #16604a;      --l-rot: #a72723;
+  --l-shadow-1: 0 1px 0 rgba(15,29,38,.07);
+  --l-shadow-2: 0 8px 24px -18px rgba(15,29,38,.6);
+  --l-focus: #0a5f72;
+  --l-map-tief: #b3c3cd;  --l-map-fels: #98adb9; --l-map-boden: #eef4f7;
+  --l-map-weg: #cadbe4;   --l-map-nebel: #0f1d26;--l-map-verdeckt: #4d6b7a;--l-map-marke: #12303f;
+
+  --d-bg: #050b13;        --d-bg-2: #030710;
+  --d-surface: #0a1520;   --d-surface-2: #0e1e2c;
+  --d-line: #1e3444;      --d-line-strong: #4c7d95;
+  --d-text: #e6f3f7;      --d-muted: #adc3ce;   --d-dim: #7d99a6;
+  --d-accent: #62d8ef;    --d-accent-ink: #04141b;
+  --d-secondary: #b295f2; --d-seal: #e8a4d6;
+  --d-danger: #f0847f;    --d-ok: #62d3a4;      --d-rot: #ff8177;
+  --d-shadow-1: 0 1px 0 rgba(0,0,0,.5);
+  --d-shadow-2: 0 10px 30px -18px rgba(0,0,0,.95);
+  --d-focus: #62d8ef;
+  --d-map-tief: #02070c;  --d-map-fels: #0d1c27; --d-map-boden: #16303f;
+  --d-map-weg: #1f4a61;   --d-map-nebel: #01070c;--d-map-verdeckt: #5d8aa0;--d-map-marke: #cfe9f2;
+}
+
+/* ── ARCHIVE — Ochsenblut/Kohle, Deco-Redaktion ────────────────────────────── */
+:root[data-skin="archive"] {
+  --font-display: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --l-bg: #ece7df;        --l-bg-2: #e2dbd1;
+  --l-surface: #f9f6f1;   --l-surface-2: #f0ebe3;
+  --l-line: #cdc3b6;      --l-line-strong: #7d6f60;
+  --l-text: #201a17;      --l-muted: #504239;   --l-dim: #6b5e55;
+  --l-accent: #8b2f1e;    --l-accent-ink: #fbf5f2;
+  --l-secondary: #24505d; --l-seal: #533467;
+  --l-danger: #8b2f1e;    --l-ok: #2b5c3a;      --l-rot: #9d2c1c;
+  --l-shadow-1: 0 1px 0 rgba(32,26,23,.06);
+  --l-shadow-2: 0 8px 26px -18px rgba(32,26,23,.55);
+  --l-focus: #8b2f1e;
+  --l-map-tief: #c0b3a4;  --l-map-fels: #a89887; --l-map-boden: #f7f1e8;
+  --l-map-weg: #dbcfbf;   --l-map-nebel: #201a17;--l-map-verdeckt: #8a6450;--l-map-marke: #32251f;
+
+  --d-bg: #120d0c;        --d-bg-2: #0a0706;
+  --d-surface: #1a1413;   --d-surface-2: #221a18;
+  --d-line: #3a2d2a;      --d-line-strong: #7e6459;
+  --d-text: #f2e9dd;      --d-muted: #c8b5a6;   --d-dim: #9d8a79;
+  --d-accent: #e0917a;    --d-accent-ink: #1a100c;
+  --d-secondary: #9fc3cf; --d-seal: #d0a9e4;
+  --d-danger: #ee8b80;    --d-ok: #82c795;      --d-rot: #f08a7c;
+  --d-shadow-1: 0 1px 0 rgba(0,0,0,.45);
+  --d-shadow-2: 0 10px 30px -18px rgba(0,0,0,.9);
+  --d-focus: #e0917a;
+  --d-map-tief: #0a0706;  --d-map-fels: #201917; --d-map-boden: #362b26;
+  --d-map-weg: #4c3a33;   --d-map-nebel: #060302;--d-map-verdeckt: #a07a63;--d-map-marke: #eddcc9;
+}
+
+/* ── CLEAN — kein Ornament, keine Textur. Die Säureprobe. ──────────────────── */
+:root[data-skin="clean"] {
+  --font-display: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --ornament: 0;
+  --hatch: 0;
+  --map-glaettung: 0;
+  --r-1: 3px; --r-2: 6px; --r-3: 12px;
+  --l-bg: #f1f3f3;        --l-bg-2: #e8ebeb;
+  --l-surface: #ffffff;   --l-surface-2: #f4f6f6;
+  --l-line: #d5dbdb;      --l-line-strong: #6d7878;
+  --l-text: #12191a;      --l-muted: #445152;   --l-dim: #5c6868;
+  --l-accent: #0c6b52;    --l-accent-ink: #f3fbf8;
+  --l-secondary: #2a559c; --l-seal: #633a86;
+  --l-danger: #96231f;    --l-ok: #0c6b52;      --l-rot: #a52621;
+  --l-shadow-1: 0 1px 2px rgba(18,25,26,.05);
+  --l-shadow-2: 0 10px 28px -20px rgba(18,25,26,.5);
+  --l-focus: #0c6b52;
+  --l-map-tief: #cbd3d3;  --l-map-fels: #b2bcbc; --l-map-boden: #ffffff;
+  --l-map-weg: #dde4e4;   --l-map-nebel: #12191a;--l-map-verdeckt: #5b6a6a;--l-map-marke: #1d2a29;
+
+  --d-bg: #0b100f;        --d-bg-2: #070b0a;
+  --d-surface: #121918;   --d-surface-2: #182120;
+  --d-line: #27302f;      --d-line-strong: #647573;
+  --d-text: #eef3f2;      --d-muted: #b3c1be;   --d-dim: #8a9a97;
+  --d-accent: #5fd3a4;    --d-accent-ink: #05100c;
+  --d-secondary: #8ab6f5; --d-seal: #c9a3f2;
+  --d-danger: #f08984;    --d-ok: #5fd3a4;      --d-rot: #fb8a80;
+  --d-shadow-1: 0 1px 2px rgba(0,0,0,.5);
+  --d-shadow-2: 0 12px 30px -22px rgba(0,0,0,.95);
+  --d-focus: #5fd3a4;
+  --d-map-tief: #040706;  --d-map-fels: #121a19; --d-map-boden: #1e2a29;
+  --d-map-weg: #2b3b39;   --d-map-nebel: #020605;--d-map-verdeckt: #6e8785;--d-map-marke: #dfeae8;
+}
+
+/* ── Hochkontrast: überschreibt die Paletten, gilt in hell UND dunkel ──────── */
+:root[data-kontrast="hoch"] {
+  --ornament: 0;
+  --hatch: 0;
+  --map-fuellung: 0;      /* die Karte wird zur reinen Strichzeichnung */
+  --map-linie: 2.2;
+  --map-glaettung: 0;
+  --l-bg: #ffffff;   --l-bg-2: #ffffff;   --l-surface: #ffffff; --l-surface-2: #ffffff;
+  --l-text: #000000; --l-muted: #101010;  --l-dim: #262626;
+  --l-line: #000000; --l-line-strong: #000000;
+  --l-shadow-1: none; --l-shadow-2: none;
+  --l-map-tief: #ffffff; --l-map-fels: #ffffff; --l-map-boden: #ffffff;
+  --l-map-weg: #000000;  --l-map-nebel: #000000;--l-map-verdeckt: #000000; --l-map-marke: #000000;
+  --d-bg: #000000;   --d-bg-2: #000000;   --d-surface: #000000; --d-surface-2: #060606;
+  --d-text: #ffffff; --d-muted: #f4f4f4;  --d-dim: #e0e0e0;
+  --d-line: #ffffff; --d-line-strong: #ffffff;
+  --d-shadow-1: none; --d-shadow-2: none;
+  --d-map-tief: #000000; --d-map-fels: #000000; --d-map-boden: #000000;
+  --d-map-weg: #ffffff;  --d-map-nebel: #ffffff;--d-map-verdeckt: #ffffff; --d-map-marke: #ffffff;
+}
+:root[data-kontrast="hoch"][data-skin="relic"]   { --l-accent:#5f2c00; --l-secondary:#0f4034; --l-rot:#84190b; --l-seal:#46193d; --l-focus:#5f2c00; --l-ok:#0f4a24; --l-danger:#84190b;
+                                                   --d-accent:#ffd479; --d-secondary:#8bf0cc; --d-rot:#ff9c90; --d-seal:#e5bdef; --d-focus:#ffd479; --d-ok:#8ff0a4; --d-danger:#ff9c90; }
+:root[data-kontrast="hoch"][data-skin="signal"]  { --l-accent:#003f4f; --l-secondary:#331c78; --l-rot:#851713; --l-seal:#551a4b; --l-focus:#003f4f; --l-ok:#0d4a38; --l-danger:#851713;
+                                                   --d-accent:#8ceeff; --d-secondary:#cbb4ff; --d-rot:#ffa199; --d-seal:#f7bbe8; --d-focus:#8ceeff; --d-ok:#82ecc2; --d-danger:#ffa199; }
+:root[data-kontrast="hoch"][data-skin="archive"] { --l-accent:#65170a; --l-secondary:#0e343e; --l-rot:#7f1c0d; --l-seal:#391f4b; --l-focus:#65170a; --l-ok:#12492a; --l-danger:#7f1c0d;
+                                                   --d-accent:#ffb096; --d-secondary:#bfe0ea; --d-rot:#ffa08e; --d-seal:#e4c2f7; --d-focus:#ffb096; --d-ok:#94dfa6; --d-danger:#ffa08e; }
+:root[data-kontrast="hoch"][data-skin="clean"]   { --l-accent:#00452f; --l-secondary:#123a7d; --l-rot:#83130f; --l-seal:#42206b; --l-focus:#00452f; --l-ok:#00452f; --l-danger:#83130f;
+                                                   --d-accent:#7ff0c1; --d-secondary:#a8ccff; --d-rot:#ffa39c; --d-seal:#dbb9ff; --d-focus:#7ff0c1; --d-ok:#7ff0c1; --d-danger:#ffa39c; }
+
+/* ── Artwork fehlt: Ornament und Textur verschwinden, Struktur bleibt ─────── */
+:root[data-art="fehlt"] { --ornament: 0; --hatch: 0; --map-glaettung: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   2 · GRUNDLAGE
+   ══════════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+/* Ein eigenes display: beats [hidden] aus dem UA-Stylesheet. Hier nicht. */
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 600; line-height: 1.2; }
+p { margin: 0 0 .7em; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+button { font: inherit; color: inherit; }
+:where(a, button, [tabindex], summary, canvas):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+.vh {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.skip {
+  position: absolute; left: 8px; top: -60px; z-index: 60;
+  background: var(--accent); color: var(--accent-ink);
+  padding: 8px 14px; border-radius: var(--r-2); text-decoration: none; font-weight: 640;
+  transition: top var(--dur-1) var(--ease);
+}
+.skip:focus { top: 8px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   3 · SCHALE
+   Container-Queries statt Media-Queries: die Schale reagiert auf IHRE Breite.
+   Deshalb kann der Prüfstand sie in der Seite auf 380 px stellen und messen.
+   ══════════════════════════════════════════════════════════════════════════════ */
+.app {
+  container-type: inline-size;
+  container-name: app;
+  min-height: 100vh;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background:
+    radial-gradient(120% 80% at 50% -20%, color-mix(in srgb, var(--accent) calc(var(--ornament) * 7%), transparent), transparent 70%),
+    var(--bg);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+.panel::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: var(--ornament);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--line-strong) 8%, transparent), transparent 90px);
+}
+.panel-hd {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  position: relative; z-index: 1;
+}
+.panel-hd > span:first-child {
+  font-family: var(--font-display); font-weight: 640; font-size: .92rem;
+  letter-spacing: .01em;
+}
+.panel-hd > b, .panel-hd .meta {
+  margin-left: auto; font-weight: var(--weight-label); font-size: .66rem;
+  letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--dim);
+}
+.panel-bd { padding: 12px; position: relative; z-index: 1; }
+
+/* — Kontextkopf — */
+.ctx {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+}
+.ctx-sigil {
+  width: 40px; height: 40px; flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--r-2);
+  background: var(--accent); color: var(--accent-ink);
+  font-family: var(--font-display); font-weight: 700; letter-spacing: .04em; font-size: .82rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, var(--line-strong));
+}
+:root[data-art="fehlt"] .ctx-sigil {
+  background: transparent; color: var(--muted);
+  border: 1px dashed var(--line-strong);
+}
+.ctx-title { display: flex; flex-direction: column; min-width: 0; }
+.ctx-title b { font-family: var(--font-display); font-size: 1.02rem; font-weight: 640; }
+.ctx-title span { font-size: .76rem; color: var(--muted); }
+.ctx-spacer { flex: 1 1 auto; }
+.ctx-leser {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface-2);
+}
+.ctx-leser .lbl {
+  font-size: .6rem; letter-spacing: var(--tracking-label);
+  text-transform: uppercase; color: var(--dim); font-weight: var(--weight-label);
+}
+.ctx-leser .who { display: flex; flex-direction: column; line-height: 1.15; }
+.ctx-leser .who b { font-size: .82rem; font-family: var(--font-body); font-weight: 640; }
+.ctx-leser .who small { font-size: .66rem; color: var(--muted); font-family: var(--font-mono); }
+
+/* — Achsenpult — */
+.achsen {
+  display: flex; flex-wrap: wrap; gap: 8px 14px;
+  padding: 9px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+}
+.achsgrp { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.achsgrp .cap {
+  font-size: .58rem; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label);
+}
+.seg { display: flex; border: 1px solid var(--line-strong); border-radius: var(--r-2); overflow: hidden; }
+.seg button {
+  appearance: none; border: 0; background: var(--surface);
+  padding: 5px 9px; font-size: .74rem; cursor: pointer; white-space: nowrap;
+  border-right: 1px solid var(--line);
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.seg button:last-child { border-right: 0; }
+.seg button:hover { background: var(--surface-2); }
+.seg button[aria-pressed="true"] {
+  background: var(--accent); color: var(--accent-ink); font-weight: 640;
+}
+.seg button:focus-visible { outline-offset: -2px; }
+
+/* — Rahmen — */
+.rahmen {
+  display: grid;
+  grid-template-columns: 168px 226px minmax(0, 1fr) 318px;
+  gap: 10px;
+  align-items: stretch;
+  min-height: 0;
+}
+.rahmen > * { min-width: 0; }
+.linse { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+@container app (max-width: 1400px) {
+  .rahmen { grid-template-columns: 150px 200px minmax(0, 1fr) 296px; }
+}
+@container app (max-width: 1180px) {
+  .rahmen { grid-template-columns: 60px 186px minmax(0, 1fr); }
+  .linse { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+  .linse > .panel { flex: 1 1 300px; }
+  .rail-mod .mod-label, .rail-mod .mod-route { display: none; }
+  .rail-mod .mod-kuerzel { display: block; }
+}
+@container app (max-width: 900px) {
+  .rahmen { grid-template-columns: minmax(0, 1fr); }
+  .rail-mod { order: -1; }
+  .rail-mod .panel-bd ul { display: flex; overflow-x: auto; gap: 6px; }
+  .rail-mod .mod-label { display: inline; }
+  .rail-mod .mod-kuerzel { display: none; }
+  .rail-col { order: 3; }
+  .linse { order: 4; }
+}
+@container app (max-width: 560px) {
+  .app { padding: 8px; }
+  .achsen { gap: 8px 10px; }
+  /* Spalte UND nowrap: eine umbrechende Spalten-Flexbox bemisst ihre Kinder
+     nach deren max-content und läuft dann über. Das war der Überlauf. */
+  .linse { flex-direction: column; flex-wrap: nowrap; }
+  .achsgrp { max-width: 100%; }
+  .seg { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
+  .werkzeug { max-width: 100%; overflow-x: auto; }
+}
+
+/* — Modulschiene — */
+.rail-mod .panel-bd { padding: 8px; }
+.mod-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 8px; border: 1px solid transparent; border-radius: var(--r-2);
+  background: transparent; cursor: pointer; text-align: left;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.mod-btn:hover { background: var(--surface-2); }
+.mod-btn[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  font-weight: 640;
+}
+.mod-glyph {
+  width: 22px; height: 22px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--line-strong); border-radius: var(--r-1);
+  font-family: var(--font-symbol); font-size: .78rem; color: var(--muted);
+}
+.mod-btn[aria-current="page"] .mod-glyph { color: var(--accent); border-color: var(--accent); }
+.mod-txt { display: flex; flex-direction: column; min-width: 0; }
+.mod-label { font-size: .8rem; overflow-wrap: anywhere; }
+.mod-kuerzel { display: none; font-size: .7rem; font-weight: 640; }
+.mod-route { font-family: var(--font-mono); font-size: .62rem; color: var(--dim); }
+
+/* — Sammelschiene: der Ortsbaum — */
+.baum { display: flex; flex-direction: column; gap: 2px; }
+.baum-zeile {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 5px 7px; border-radius: var(--r-2); border: 1px solid transparent;
+  background: transparent; cursor: pointer; text-align: left; font-size: .8rem;
+}
+.baum-zeile:hover { background: var(--surface-2); }
+.baum-zeile[aria-current="true"] {
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  font-weight: 640;
+}
+.baum-zeile .tiefe { flex: none; width: calc(var(--t) * 10px); }
+.baum-zeile .nm { min-width: 0; overflow-wrap: anywhere; }
+.baum-zeile .zh {
+  margin-left: auto; font-family: var(--font-mono); font-size: .66rem; color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.baum-zeile.ist-tuer .nm {
+  color: var(--rot);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+.baum-zeile.ist-tuer::after {
+  content: "";
+  width: 9px; height: 9px; flex: none; border-radius: 50%;
+  border: 1.5px solid var(--rot); margin-left: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   4 · DIE BÜHNE — Leinwand und Tafel, gleichrangig
+   ══════════════════════════════════════════════════════════════════════════════ */
+.buehne { display: flex; flex-direction: column; }
+.buehne .panel-bd {
+  padding: 0; display: grid; gap: 10px; align-items: stretch;
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+  flex: 1 1 auto;
+}
+:root[data-buehne="leinwand"] .buehne .panel-bd { grid-template-columns: minmax(0, 1fr); }
+:root[data-buehne="leinwand"] .tafel { display: none; }
+:root[data-buehne="tafel"] .buehne .panel-bd { grid-template-columns: minmax(0, 1fr); }
+:root[data-buehne="tafel"] .leinwand-host { display: none; }
+@container app (max-width: 1180px) {
+  .buehne .panel-bd { grid-template-columns: minmax(0, 1fr); }
+}
+
+.leinwand-host {
+  position: relative;
+  min-height: 360px;
+  background: var(--map-tief);
+  border-right: 1px solid var(--line);
+}
+@container app (max-width: 1180px) { .leinwand-host { border-right: 0; border-bottom: 1px solid var(--line); } }
+/* Absolut positioniert: die Leinwand kann die Höhe ihres Wirts nicht verändern,
+   deshalb kann der ResizeObserver nicht in eine Schleife laufen. */
+.leinwand-host canvas {
+  position: absolute; left: 0; top: 0; right: 0; bottom: 30px;
+  display: block; width: 100%; height: calc(100% - 30px);
+  touch-action: none; cursor: default;
+}
+.leinwand-host canvas.greifbar { cursor: grab; }
+.leinwand-host canvas.greift { cursor: grabbing; }
+
+.hud {
+  position: absolute; left: 8px; top: 8px; right: 8px;
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start;
+  pointer-events: none;
+}
+.hud .chip, .hud .werkzeug { pointer-events: auto; }
+.werkzeug {
+  display: flex; gap: 2px; padding: 3px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--line-strong); border-radius: var(--r-2);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.werkzeug button {
+  appearance: none; border: 1px solid transparent; background: transparent;
+  padding: 3px 7px; font-size: .7rem; border-radius: var(--r-1); cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.werkzeug button:hover { background: var(--surface-2); }
+.werkzeug button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 640; }
+.hud-rechts { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  font-size: .68rem; color: var(--muted); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--text); font-weight: 640; }
+.chip.warn { border-color: var(--danger); color: var(--danger); }
+.chip[data-echt="ja"] { border-color: var(--ok); color: var(--ok); }
+.chip[data-echt="nein"] { border-style: dashed; color: var(--seal); border-color: var(--seal); }
+.chip.tuer { border-color: var(--rot); color: var(--rot); }
+.chip.freistelle {
+  border-style: dashed; color: var(--dim);
+  background: repeating-linear-gradient(135deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--line-strong) 22%, transparent) 5px 6px);
+}
+.chip .glyph { font-family: var(--font-symbol); }
+
+.karten-fuss {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 30px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 10px; overflow-x: auto;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font-size: .68rem; color: var(--muted); white-space: nowrap;
+}
+.massstab { display: flex; align-items: center; gap: 6px; }
+.massstab .balken {
+  display: block; width: 54px; height: 7px;
+  border: 1px solid var(--map-marke); border-left-width: 2px; border-right-width: 2px;
+  background: repeating-linear-gradient(90deg, var(--map-marke) 0 9px, transparent 9px 18px);
+}
+
+/* Zustand: kein Kartenbild — die Tafel IST die Karte */
+.keine-karte {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 30px;
+  display: flex; flex-direction: column; justify-content: center; gap: 10px;
+  padding: 22px; background: var(--surface); text-align: left; overflow: auto;
+}
+.keine-karte h3 { font-size: 1.05rem; }
+.keine-karte p { font-size: .82rem; color: var(--muted); max-width: 46ch; }
+.keine-karte .rahmenlos {
+  border: 1.5px dashed var(--line-strong); border-radius: var(--r-2);
+  padding: 10px 12px; font-size: .76rem; color: var(--dim);
+  background: repeating-linear-gradient(135deg, transparent 0 7px,
+      color-mix(in srgb, var(--line-strong) 14%, transparent) 7px 8px);
+}
+
+/* — Die Tafel (Outline-Rezept) — */
+.tafel { display: flex; flex-direction: column; min-width: 0; overflow: auto; max-height: 62vh; }
+@container app (max-width: 1180px) { .tafel { max-height: none; } }
+.tafel-abschnitt { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.tafel-abschnitt:last-child { border-bottom: 0; }
+.tafel-abschnitt > h3 {
+  font-size: .64rem; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label); font-family: var(--font-body);
+  margin-bottom: 6px; display: flex; gap: 6px; align-items: baseline;
+}
+.tafel-abschnitt > h3 span { margin-left: auto; font-family: var(--font-mono); }
+.tafel-liste { display: flex; flex-direction: column; gap: 4px; }
+.tafel-zeile {
+  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 7px; align-items: center; width: 100%;
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-2);
+  background: var(--surface); cursor: pointer; text-align: left;
+  transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.tafel-zeile:hover { background: var(--surface-2); }
+.tafel-zeile[aria-current="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+}
+.tafel-marke {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .6rem; font-weight: 700; color: var(--accent-ink);
+  background: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line-strong));
+}
+.tafel-marke[data-fraktion="nsc"] { background: var(--secondary); }
+.tafel-marke[data-fraktion="geheim"] { background: var(--seal); }
+.tafel-marke[data-fraktion="gefallen"] { background: var(--danger); }
+.tafel-marke[data-form="ort"] { border-radius: var(--r-1); }
+.tafel-txt { display: flex; flex-direction: column; min-width: 0; }
+.tafel-txt b { font-size: .8rem; font-weight: 640; overflow-wrap: anywhere; }
+.tafel-txt small { font-size: .67rem; color: var(--muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tafel-rechts { display: flex; align-items: center; gap: 5px; }
+.mini-balken {
+  width: 46px; height: 6px; border-radius: 3px; overflow: hidden;
+  background: color-mix(in srgb, var(--line-strong) 30%, transparent);
+  border: 1px solid var(--line);
+}
+.mini-balken i { display: block; height: 100%; background: var(--ok); }
+.mini-balken[data-kritisch="ja"] i { background: var(--danger); }
+.tafel-hilfe {
+  font-size: .7rem; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px;
+}
+kbd {
+  font-family: var(--font-mono); font-size: .68rem;
+  border: 1px solid var(--line-strong); border-bottom-width: 2px;
+  border-radius: var(--r-1); padding: 0 4px; background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   5 · LINSE — Freigabe, Beleg, Prüfstand
+   ══════════════════════════════════════════════════════════════════════════════ */
+.diff-liste { display: flex; flex-direction: column; gap: 6px; }
+.diff-zeile {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px; align-items: center;
+  padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--r-2);
+  background: var(--surface-2);
+}
+.diff-zeile[data-art="haelt"] { opacity: .78; }
+.diff-zeile[data-art="abwesend"] {
+  border-style: dashed;
+  background: repeating-linear-gradient(135deg, transparent 0 6px,
+      color-mix(in srgb, var(--line-strong) 16%, transparent) 6px 7px);
+}
+.diff-name { display: flex; flex-direction: column; min-width: 0; }
+.diff-name b { font-size: .82rem; font-weight: 640; }
+.diff-name small { font-size: .68rem; color: var(--muted); overflow-wrap: anywhere; }
+.diff-wert {
+  font-family: var(--font-mono); font-size: .86rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.diff-wert[data-plus="ja"] { color: var(--ok); }
+.diff-wert[data-plus="nein"] { color: var(--dim); }
+.aktionen { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.btn {
+  appearance: none; cursor: pointer;
+  border: 1px solid var(--line-strong); border-radius: var(--r-2);
+  background: var(--surface); padding: 6px 11px; font-size: .78rem;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: translateY(1px); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn.primaer { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 640; }
+.btn.primaer:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); }
+.btn .taste {
+  font-family: var(--font-mono); font-size: .66rem; opacity: .85;
+  border: 1px solid currentColor; border-radius: var(--r-1); padding: 0 3px;
+}
+.hinweis { font-size: .73rem; color: var(--muted); margin: 0 0 8px; }
+
+.beleg {
+  border-left: 3px solid var(--accent);
+  padding: 2px 0 2px 10px; margin: 0 0 8px;
+  font-family: var(--font-display); font-size: .86rem; line-height: 1.55;
+  max-width: var(--measure);
+}
+.herkunft {
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: .68rem; color: var(--muted);
+  border-top: 1px dotted var(--line-strong); padding-top: 6px;
+}
+.herkunft .z { display: flex; gap: 6px; align-items: baseline; }
+.herkunft .g { font-family: var(--font-symbol); color: var(--accent); flex: none; width: 1em; }
+.herkunft .w { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.echtheit {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .64rem; letter-spacing: .04em; text-transform: uppercase;
+  font-weight: var(--weight-label); color: var(--dim);
+  border: 1px solid var(--line-strong); border-radius: var(--r-1); padding: 1px 6px;
+}
+.echtheit[data-echt="ja"] { color: var(--ok); border-color: var(--ok); }
+.echtheit[data-echt="nein"] { color: var(--seal); border-color: var(--seal); border-style: dashed; }
+
+/* — Prüfstand — */
+.pruef { display: flex; flex-direction: column; gap: 3px; }
+.pruef-zeile {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto;
+  gap: 7px; align-items: baseline;
+  font-size: .73rem; padding: 3px 0;
+  border-bottom: 1px dotted color-mix(in srgb, var(--line-strong) 40%, transparent);
+}
+.pruef-zeile .st { font-family: var(--font-symbol); font-weight: 700; }
+.pruef-zeile[data-st="gruen"] .st { color: var(--ok); }
+.pruef-zeile[data-st="rot"] .st { color: var(--danger); }
+.pruef-zeile[data-st="grau"] .st { color: var(--dim); }
+.pruef-zeile .wert {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  white-space: nowrap; font-size: .72rem;
+}
+.pruef-zeile .txt { overflow-wrap: anywhere; }
+.tabelle-scroll { overflow-x: auto; max-width: 100%; }
+table.mess {
+  border-collapse: collapse; font-size: .7rem; min-width: 100%;
+}
+table.mess th, table.mess td {
+  border-bottom: 1px solid var(--line); padding: 3px 7px; text-align: left; white-space: nowrap;
+}
+table.mess th {
+  font-size: .6rem; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label);
+}
+table.mess td.n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+table.mess tr[data-st="rot"] td { color: var(--danger); }
+
+/* Schmale Schale: die Messwerte rutschen unter ihren Text statt zu überlaufen.
+   Steht hinter der Grunddefinition, damit die Regel auch gewinnt. */
+@container app (max-width: 940px) {
+  .pruef-zeile { grid-template-columns: 14px minmax(0, 1fr); }
+  .pruef-zeile .wert { grid-column: 2; white-space: normal; overflow-wrap: anywhere; opacity: .92; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   6 · REGAL (Sitzungsleiste)
+   ══════════════════════════════════════════════════════════════════════════════ */
+.regal {
+  display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+}
+.regal-block { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.regal-block .k {
+  font-size: .58rem; letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--dim); font-weight: var(--weight-label);
+}
+.ini-liste { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px; max-width: 100%; }
+.ini-eintrag {
+  display: flex; align-items: center; gap: 6px; flex: none;
+  padding: 3px 8px 3px 4px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface-2); font-size: .72rem; cursor: pointer;
+}
+.ini-eintrag[data-dran="ja"] {
+  border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  font-weight: 640;
+}
+.ini-eintrag .w {
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-ink); font-size: .62rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ini-eintrag[data-fraktion="nsc"] .w { background: var(--secondary); }
+.ini-eintrag[data-fraktion="geheim"] .w { background: var(--seal); }
+.ini-eintrag[data-fraktion="gefallen"] .w { background: var(--danger); }
+.zaehler {
+  font-family: var(--font-mono); font-size: 1.02rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--accent);
+}
+
+/* — Kolophon — */
+.kolophon {
+  font-size: .68rem; color: var(--muted);
+  border-top: 1px solid var(--line); padding: 10px 4px 4px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.kolophon b { color: var(--text); }
+.kolophon a { color: var(--accent); }
+.kolophon .reihe { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   7 · BEWEGUNG — Zustandskommunikation, kein Bildschirmschoner
+   ══════════════════════════════════════════════════════════════════════════════ */
+@keyframes puls-freigabe {
+  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); }
+  to   { box-shadow: 0 0 0 14px transparent; }
+}
+.puls { animation: puls-freigabe var(--dur-3) var(--ease) 1; }
+@keyframes ankunft {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+.ankommt { animation: ankunft var(--dur-2) var(--ease) 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-motion="system"] *, :root[data-motion="system"] *::before, :root[data-motion="system"] *::after {
+    animation-duration: 1ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important; scroll-behavior: auto !important;
+  }
+}
+:root[data-motion="reduziert"] *, :root[data-motion="reduziert"] *::before, :root[data-motion="reduziert"] *::after {
+  animation-duration: 1ms !important; animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important; scroll-behavior: auto !important;
+}
+
+/* Der Prüfstand darf die Schale in der Seite verengen. */
+.app.probe-380 { width: 380px !important; max-width: 380px !important; }
+</style>
+
+<div class="app" id="app">
+  <a class="skip" href="#buehne">Zur Leinwand springen</a>
+
+  <!-- ═══ Kontext ══════════════════════════════════════════════════════════ -->
+  <header class="ctx" data-komponente="kontext">
+    <div class="ctx-sigil" id="ctxSigil" aria-hidden="true">ERO</div>
+    <div class="ctx-title">
+      <b id="ctxKampagne">Eron · Die Minenreiche</b>
+      <span id="ctxLage">Sitzung 14 · Samstag 21:47 · Leitung Kaya</span>
+    </div>
+    <div class="ctx-spacer"></div>
+    <div class="chip" id="ctxEchtheit" title="Herkunft des Inhaltspakets">
+      <span class="glyph" aria-hidden="true">◆</span><span id="ctxEchtheitTxt">echter Korpus</span>
+    </div>
+    <div class="ctx-leser" data-komponente="leser">
+      <span class="lbl">Leser</span>
+      <span class="who"><b id="ctxLeser">Kaya</b><small id="ctxSicht">Spielleitung · Sicht(alle)</small></span>
+    </div>
+  </header>
+
+  <!-- ═══ Achsenpult — jede Achse schaltet unabhängig ═══════════════════════ -->
+  <div class="achsen" role="region" aria-label="Achsenpult — jede Achse schaltet unabhängig" data-komponente="achsenpult">
+    <div class="achsgrp">
+      <span class="cap" id="capWelt">Inhalt</span>
+      <div class="seg" role="group" aria-labelledby="capWelt" id="segWelt">
+        <button type="button" data-v="eron" aria-pressed="true">Fantasy · Eron</button>
+        <button type="button" data-v="kepler" aria-pressed="false">Science-Fiction</button>
+        <button type="button" data-v="nebelakte" aria-pressed="false">Mystery</button>
+      </div>
+    </div>
+    <div class="achsgrp">
+      <span class="cap" id="capSkin">Skin</span>
+      <div class="seg" role="group" aria-labelledby="capSkin" id="segSkin">
+        <button type="button" data-v="relic" aria-pressed="true">Relic</button>
+        <button type="button" data-v="signal" aria-pressed="false">Signal</button>
+        <button type="button" data-v="archive" aria-pressed="false">Archive</button>
+        <button type="button" data-v="clean" aria-pressed="false">Clean</button>
+      </div>
+    </div>
+    <div class="achsgrp">
+      <span class="cap" id="capRolle">Rolle</span>
+      <div class="seg" role="group" aria-labelledby="capRolle" id="segRolle">
+        <button type="button" data-v="leitung" aria-pressed="true">Spielleitung</button>
+        <button type="button" data-v="spieler" aria-pressed="false" id="btnRolleSpieler">Spieler</button>
+        <button type="button" data-v="beobachter" aria-pressed="false">Beobachter</button>
+      </div>
+    </div>
+    <div class="achsgrp">
+      <span class="cap" id="capThema">Thema</span>
+      <div class="seg" role="group" aria-labelledby="capThema" id="segThema">
+        <button type="button" data-v="light" aria-pressed="false">Hell</button>
+        <button type="button" data-v="system" aria-pressed="true">System</button>
+        <button type="button" data-v="dark" aria-pressed="false">Dunkel</button>
+      </div>
+    </div>
+    <div class="achsgrp">
+      <span class="cap" id="capKontrast">Kontrast</span>
+      <div class="seg" role="group" aria-labelledby="capKontrast" id="segKontrast">
+        <button type="button" data-v="standard" aria-pressed="true">Standard</button>
+        <button type="button" data-v="hoch" aria-pressed="false">Hoch</button>
+      </div>
+    </div>
+    <div class="achsgrp">
+      <span class="cap" id="capMotion">Bewegung</span>
+      <div class="seg" role="group" aria-labelledby="capMotion" id="segMotion">
+        <button type="button" data-v="system" aria-pressed="true">System</button>
+        <button type="button" data-v="reduziert" aria-pressed="false">Reduziert</button>
+      </div>
+    </div>
+    <div class="achsgrp">
+      <span class="cap" id="capEtiketten">Beschriftung</span>
+      <div class="seg" role="group" aria-labelledby="capEtiketten" id="segEtiketten">
+        <button type="button" data-v="kurz" aria-pressed="true">Kurz</button>
+        <button type="button" data-v="lang" aria-pressed="false">Lange Übersetzung</button>
+      </div>
+    </div>
+    <div class="achsgrp">
+      <span class="cap" id="capArt">Artwork</span>
+      <div class="seg" role="group" aria-labelledby="capArt" id="segArt">
+        <button type="button" data-v="vorhanden" aria-pressed="true">Vorhanden</button>
+        <button type="button" data-v="fehlt" aria-pressed="false">Fehlt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Rahmen ═══════════════════════════════════════════════════════════ -->
+  <main class="rahmen">
+
+    <nav class="panel rail-mod" aria-label="Module" data-komponente="modulschiene">
+      <div class="panel-hd"><span>Module</span><b id="modRouteKopf">Etikett ≠ Route</b></div>
+      <div class="panel-bd"><ul id="modListe"></ul></div>
+    </nav>
+
+    <aside class="panel rail-col" aria-labelledby="colHd" data-komponente="sammelschiene">
+      <div class="panel-hd"><span id="colHd">Orte</span><b id="colMeta">— Ebenen</b></div>
+      <div class="panel-bd">
+        <div class="baum" id="ortBaum" role="tree" aria-labelledby="colHd"></div>
+        <p class="hinweis" id="baumNote" style="margin-top:10px"></p>
+      </div>
+    </aside>
+
+    <section class="panel buehne" id="buehne" tabindex="-1" aria-labelledby="buehneHd" data-komponente="buehne">
+      <div class="panel-hd">
+        <span id="buehneHd">Der Tisch · Die Leinwand</span>
+        <div class="werkzeug" role="group" aria-label="Bühnenrezept" id="segBuehne" style="margin-left:auto">
+          <button type="button" data-v="leinwand" aria-pressed="false">Leinwand</button>
+          <button type="button" data-v="beide" aria-pressed="true">beide</button>
+          <button type="button" data-v="tafel" aria-pressed="false">Tafel</button>
+        </div>
+      </div>
+      <div class="panel-bd">
+
+        <div class="leinwand-host" id="leinwandHost">
+          <canvas id="leinwand" aria-hidden="true"></canvas>
+
+          <div class="hud">
+            <div class="werkzeug" role="group" aria-label="Raster" id="segRaster">
+              <button type="button" data-v="quadrat" aria-pressed="true">Quadrat</button>
+              <button type="button" data-v="hex" aria-pressed="false">Hex</button>
+              <button type="button" data-v="rasterlos" aria-pressed="false">rasterlos</button>
+            </div>
+            <div class="werkzeug" role="group" aria-label="Fangpunkt" id="segFang">
+              <button type="button" data-v="mitte" aria-pressed="true">Mitte</button>
+              <button type="button" data-v="ecke" aria-pressed="false">Ecke</button>
+              <button type="button" data-v="frei" aria-pressed="false">frei</button>
+            </div>
+            <div class="hud-rechts">
+              <span class="chip" id="chipBild"><b id="chipBildZ">—</b> ms/Bild</span>
+              <div class="werkzeug" role="group" aria-label="Ansicht">
+                <button type="button" id="btnZoomAus" title="Verkleinern">−</button>
+                <button type="button" id="btnZoomAn" title="Anpassen">Anpassen</button>
+                <button type="button" id="btnZoomEin" title="Vergrößern">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="keine-karte" id="keineKarte" hidden>
+            <h3 id="keineKarteTitel">Blattheim</h3>
+            <p id="keineKarteText"></p>
+            <div class="rahmenlos" id="keineKarteKasten"></div>
+          </div>
+
+          <div class="karten-fuss">
+            <span class="massstab" id="massstabHost"><span class="balken" aria-hidden="true"></span><span id="massstabTxt">1 Feld = 1,5 m</span></span>
+            <span id="kartenFussInfo"></span>
+            <span class="ctx-spacer"></span>
+            <span id="kartenFussArt"></span>
+          </div>
+        </div>
+
+        <div class="tafel" id="tafel" data-komponente="tafel" aria-label="Die Tafel — die Karte als Text">
+          <div class="tafel-abschnitt">
+            <h3>Die Tafel · Ortsgliederung <span id="tafelOrtZahl">0</span></h3>
+            <div class="tafel-liste" id="tafelOrte"></div>
+          </div>
+          <div class="tafel-abschnitt">
+            <h3>Figuren im Ausschnitt <span id="tafelFigZahl">0</span></h3>
+            <div class="tafel-liste" id="tafelFiguren"></div>
+            <div class="tafel-hilfe">
+              <span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> bewegen</span>
+              <span><kbd>+</kbd><kbd>−</kbd> Höhe</span>
+              <span><kbd>F</kbd> freigeben</span>
+              <span><kbd>Z</kbd> zurücknehmen</span>
+              <span><kbd>N</kbd> nächste Figur in der Initiative</span>
+            </div>
+          </div>
+          <div class="tafel-abschnitt">
+            <h3>Ausgewählt <span id="tafelWahlKuerzel">—</span></h3>
+            <p class="hinweis" id="tafelWahl" style="margin:0"></p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="linse" data-komponente="linse">
+
+      <section class="panel" aria-labelledby="hdFreigabe" data-komponente="freigabe">
+        <div class="panel-hd"><span id="hdFreigabe">Freigabe</span><b id="freigabeMeta">eine Taste</b></div>
+        <div class="panel-bd">
+          <p class="hinweis" id="freigabeHinweis"></p>
+          <div class="diff-liste" id="diffListe"></div>
+          <div class="aktionen">
+            <button class="btn primaer" type="button" id="btnFreigeben"><span class="taste">F</span> <span id="btnFreigebenTxt">freigeben</span></button>
+            <button class="btn" type="button" id="btnZurueck"><span class="taste">Z</span> zurücknehmen</button>
+          </div>
+          <p class="hinweis" id="freigabeAudit" style="margin:9px 0 0"></p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="hdBeleg" data-komponente="beleg">
+        <div class="panel-hd"><span id="hdBeleg">Beleg</span><b id="belegMeta">—</b></div>
+        <div class="panel-bd">
+          <blockquote class="beleg" id="belegText"></blockquote>
+          <div class="herkunft" id="belegHerkunft"></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="hdPruef" data-komponente="pruefstand">
+        <div class="panel-hd"><span id="hdPruef">Prüfstand</span><b>im Browser gemessen</b></div>
+        <div class="panel-bd">
+          <p class="hinweis">Kein Screenshot behauptet etwas. Diese Zeilen messen das laufende Dokument — Bildzeit, Nebelzeit, Bauteilsignatur über drei Weltpakete, Kontrast über 144 Paare, Überlauf bei 380 px.</p>
+          <div class="aktionen" style="margin-top:0">
+            <button class="btn primaer" type="button" id="btnPruef" data-etikett="pruef">Universalitätsprüfung laufen lassen</button>
+            <button class="btn" type="button" id="btnKontrast">Kontrastmatrix (144 Paare)</button>
+            <button class="btn" type="button" id="btnZwilling">Zwillingsbeweis</button>
+          </div>
+          <div class="pruef" id="pruefHost" style="margin-top:10px"></div>
+          <div class="tabelle-scroll" id="matrixHost" style="margin-top:10px"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ═══ Regal ════════════════════════════════════════════════════════════ -->
+  <footer class="regal" aria-label="Sitzungsleiste" data-komponente="regal">
+    <div class="regal-block">
+      <span class="k">Initiative</span>
+      <div class="ini-liste" id="iniListe"></div>
+    </div>
+    <div class="regal-block">
+      <span class="k" id="zaehlerLabel">Offenbarungen</span>
+      <span class="zaehler num" id="zaehlerTueren">0</span>
+    </div>
+    <div class="regal-block" id="niederlageBlock" hidden>
+      <span class="chip warn" id="niederlageChip"><span class="glyph" aria-hidden="true">⚠</span><span id="niederlageTxt"></span></span>
+      <button class="btn" type="button" id="btnNiederlage">Niederlage bestätigen</button>
+    </div>
+    <span class="ctx-spacer"></span>
+    <div class="regal-block">
+      <button class="btn" type="button" id="btnReset">Vorführung zurücksetzen</button>
+    </div>
+  </footer>
+
+  <p class="vh" id="ansage" role="status" aria-live="polite"></p>
+
+  <section class="kolophon" aria-label="Kolophon">
+    <div class="reihe" id="kolophonQuelle"></div>
+    <div class="reihe"><b>Was hier echt ist und was nicht:</b> <span id="kolophonEchtheit"></span></div>
+    <div class="reihe"><b>Grenze:</b> Alle Projektionen liegen in dieser Datei im Client. Das ist ein UI-Beweis, kein Zugriffsbeweis — produktiv muss der Server die unberechtigten Datensätze weglassen, bevor er antwortet (S-P1, ungebaut seit fünf Runden).</div>
+    <div class="reihe"><b>Nicht in dieser Scheibe:</b> Kachelpyramide · KTX2 · Stempelbibliothek · Atlas · Pinsel · dynamische Sichtlinien · Scene Levels · UVTT-Export. Höhe ist ein Skalarband am Knoten (RB-21a R6), keine Ebenenhierarchie.</div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     0 · INSTRUMENTIERUNG
+     Diese Linie verbietet innerHTML im Renderpfad. Der Prüfstand druckt keine
+     Zusage, sondern die gezählten Zuweisungen.
+     ══════════════════════════════════════════════════════════════════════════ */
+  var innerHTMLZuweisungen = 0;
+  (function () {
+    var d = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
+    if (!d || !d.set) return;
+    Object.defineProperty(Element.prototype, "innerHTML", {
+      configurable: true, enumerable: d.enumerable, get: d.get,
+      set: function (v) { innerHTMLZuweisungen++; d.set.call(this, v); }
+    });
+  })();
+
+  /* ── kleine DOM-Werkzeuge ─────────────────────────────────────────────── */
+  function el(tag, attr, txt) {
+    var e = document.createElement(tag);
+    if (attr) for (var k in attr) {
+      if (k === "class") e.className = attr[k];
+      else if (k.slice(0, 5) === "data-" || k.slice(0, 5) === "aria-" || k === "role" || k === "hidden" || k === "id" || k === "type" || k === "href" || k === "title" || k === "tabindex" || k === "lang") {
+        if (attr[k] === false || attr[k] == null) continue;
+        e.setAttribute(k, attr[k] === true ? "" : attr[k]);
+      } else e[k] = attr[k];
+    }
+    if (txt != null) e.appendChild(document.createTextNode(String(txt)));
+    return e;
+  }
+  function add(parent) {
+    for (var i = 1; i < arguments.length; i++) if (arguments[i]) parent.appendChild(arguments[i]);
+    return parent;
+  }
+  function leer(node) { while (node.firstChild) node.removeChild(node.firstChild); return node; }
+  function $(id) { return document.getElementById(id); }
+  function nz(n, d) { return Number(n).toLocaleString("de-DE", { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     1 · GEOMETRIE — drei Weltpakete, drei Formensprachen, EIN Renderer.
+     Der Renderer kennt nur Punktlisten. Wie die Punktliste entsteht, ist Inhalt.
+     ══════════════════════════════════════════════════════════════════════════ */
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function geoBlob(g) {                       /* Höhle, organisch */
+    var rnd = mulberry32(g.seed), n = g.n || 9, pts = [], i;
+    for (i = 0; i < n; i++) {
+      var a = (i / n) * Math.PI * 2 + (rnd() - 0.5) * 0.18;
+      var rr = g.r * (1 - (g.j == null ? 0.2 : g.j) * rnd());
+      pts.push([g.c[0] + Math.cos(a) * rr * (g.sx || 1), g.c[1] + Math.sin(a) * rr * (g.sy || 1)]);
+    }
+    return pts;
+  }
+  function geoSektor(g) {                     /* Ringstation, Kreisringsegment */
+    var s = g.s || 16, pts = [], i, a;
+    for (i = 0; i <= s; i++) { a = g.a0 + (g.a1 - g.a0) * i / s; pts.push([g.c[0] + Math.cos(a) * g.r1, g.c[1] + Math.sin(a) * g.r1]); }
+    for (i = s; i >= 0; i--) { a = g.a0 + (g.a1 - g.a0) * i / s; pts.push([g.c[0] + Math.cos(a) * g.r0, g.c[1] + Math.sin(a) * g.r0]); }
+    return pts;
+  }
+  function geoRechteck(g) {                   /* Lagerhaus, rechtwinklig */
+    var f = g.f || 0, x = g.x, y = g.y, b = g.b, h = g.h;
+    return f ? [[x + f, y], [x + b - f, y], [x + b, y + f], [x + b, y + h - f], [x + b - f, y + h], [x + f, y + h], [x, y + h - f], [x, y + f]]
+             : [[x, y], [x + b, y], [x + b, y + h], [x, y + h]];
+  }
+  function geo(g) {
+    return g.typ === "sektor" ? geoSektor(g) : g.typ === "rechteck" ? geoRechteck(g) : geoBlob(g);
+  }
+  function bogenWeg(c, r, a0, a1, s) {
+    var pts = [], i; for (i = 0; i <= (s || 20); i++) { var a = a0 + (a1 - a0) * i / (s || 20); pts.push([c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r]); }
+    return pts;
+  }
+  function mittelpunkt(pts) {
+    var x = 0, y = 0, i; for (i = 0; i < pts.length; i++) { x += pts[i][0]; y += pts[i][1]; }
+    return [x / pts.length, y / pts.length];
+  }
+  function imPolygon(p, poly) {
+    var d = false, i, j;
+    for (i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      if ((poly[i][1] > p[1]) !== (poly[j][1] > p[1]) &&
+          p[0] < (poly[j][0] - poly[i][0]) * (p[1] - poly[i][1]) / (poly[j][1] - poly[i][1]) + poly[i][0]) d = !d;
+    }
+    return d;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     2 · DIE DREI INHALTSPAKETE
+     „eron" ist der ECHTE Korpus (Ernte 2026-07-27, CC BY-SA 3.0): echte Namen,
+     echte Prosa, echte rote Links, echte Zahlen. Die Kartengeometrie ist eine
+     Crew-Skizze und wird als solche in der Seite ausgewiesen.
+     „kepler" und „nebelakte" sind von der Crew geschrieben — der Beweis, dass
+     kein Byte Eron im Bauteil steckt (K7).
+     ══════════════════════════════════════════════════════════════════════════ */
+  var MODULE = ["/sitzung", "/geschichte", "/besetzung", "/regal", "/tisch", "/schmiede"];
+
+  var WELTEN = {
+    eron: {
+      kennung: "ERO",
+      name: "Eron · Die Minenreiche",
+      lage: "Sitzung 14 · Samstag 21:47 · Leitung Kaya",
+      echt: true,
+      echtTxt: "echter Korpus · CC BY-SA 3.0",
+      quelle: {
+        titel: "Eron Wiki", url: "eron.fandom.com/de", lizenz: "CC BY-SA 3.0",
+        geerntet: "2026-07-27", artikel: 74, rotAnteil: "69,3 %", roteKanten: 1253, ziele: 689
+      },
+      module: [
+        { kurz: "Sitzung", lang: "Sitzungsvorbereitung und Ablaufplanung" },
+        { kurz: "Geschichte", lang: "Weltwissen, Artikelbestand und rote Türen" },
+        { kurz: "Besetzung", lang: "Figuren, Fraktionen und ihre Beziehungen" },
+        { kurz: "Regal", lang: "Sammlungen, Vorlagen und Handreichungen" },
+        { kurz: "Tisch", lang: "Taktische Leinwand der laufenden Sitzung" },
+        { kurz: "Schmiede", lang: "Formulare, Regelbausteine und Themengestaltung" }
+      ],
+      baum: [
+        { id: "andaria", name: "Andaria", tiefe: 0, zahl: "Kontinent" },
+        { id: "kleingebirge", name: "Kleingebirge", tiefe: 1, tuer: true, eingehend: 1 },
+        { id: "kleines-horn", name: "Kleines Horn", tiefe: 2, tuer: true, eingehend: 1 },
+        { id: "bjoldiri", name: "Bjoldiri", tiefe: 3, szene: "bjoldiri", zahl: "7 Bereiche" },
+        { id: "treidiri", name: "Treidiri", tiefe: 3, tuer: true, eingehend: 1 },
+        { id: "blattheim", name: "Blattheim", tiefe: 1, tuer: true, eingehend: 14,
+          nachfrage: ["Almek", "Baldur", "Das Kind", "Der Falsche Zwerg"] },
+        { id: "noerdliche-minenreiche", name: "Nördliche Minenreiche", tiefe: 1, tuer: true, eingehend: 16,
+          nachfrage: ["Adalgis Numerion", "Bjoldiri", "Bodin", "Fjördin der Tapfere"] }
+      ],
+      baumNote: "Bjoldiri hat eine Karte. Blattheim nicht — und Blattheim ist trotzdem ein Ort: 14 Artikel verlinken darauf, keiner existiert. Für ihn ist die Tafel die Karte (RB-21a §3.4).",
+      szenen: {
+        bjoldiri: {
+          titel: "Bjoldiri · Das Tor und die Lorengrube",
+          ort: "Kleines Horn, Kleingebirge",
+          groesse: [1200, 780], raster: "quadrat", zelle: 60, meter: 1.5,
+          bodenGeo: { typ: "blob", c: [600, 390], r: 520, n: 16, j: 0.14, sx: 1.05, sy: 0.72, seed: 7 },
+          wege: [
+            [[250, 420], [415, 330], [620, 385], [840, 245]],
+            [[620, 385], [650, 520]],
+            [[620, 385], [860, 440], [940, 470]]
+          ],
+          regionen: [
+            { id: "tor", name: "Das Tor", geo: { typ: "blob", c: [250, 420], r: 100, n: 8, j: 0.18, seed: 11 }, offen: true, passagen: 4,
+              beleg: "Die einzige Ausnahme bilden Waffen, die vor dem Betreten der Stadt abgegeben und beim Verlassen wieder ausgehändigt werden.",
+              belegQuelle: "Bjoldiri · Einleitung, Absatz 2", klausel: "Ortsklausel: Waffen werden am Tor abgegeben." },
+            { id: "fackelmarkt", name: "Fackelmarkt", geo: { typ: "blob", c: [415, 290], r: 104, n: 9, j: 0.2, seed: 23 }, offen: true, passagen: 3,
+              beleg: "Aufgrund des begrenzten Zugangs zum Sonnenlicht wirkt die Stadt meist schattig und düster. Die Bewohner sind daher darauf angewiesen, die Stadt mit Fackeln, Laternen und anderen Lichtquellen zu erhellen.",
+              belegQuelle: "Bjoldiri · Abschnitt „Klima“" },
+            { id: "kupfer", name: "Kupferleute", geo: { typ: "blob", c: [605, 190], r: 92, n: 8, j: 0.19, seed: 31 }, offen: false, passagen: 2,
+              tuer: true, eingehend: 1, belegQuelle: "Bjoldiri · roter Link" },
+            { id: "passage", name: "Passage nach Treidiri", geo: { typ: "blob", c: [840, 245], r: 104, n: 9, j: 0.2, seed: 43 }, offen: false, passagen: 3,
+              beleg: "Bjoldiri liegt wie auch die benachbarte Stadt Treidiri im inneren eines Berges namens Kleines Horn im Kleingebirge. Die Stadt liegt dort in einer Passage, die die Nördlichen und Südlichen Minenreiche miteinander verbindet.",
+              belegQuelle: "Bjoldiri · Abschnitt „Lage“" },
+            { id: "administration", name: "Bjoldiri Administration", geo: { typ: "blob", c: [620, 385], r: 88, n: 8, j: 0.16, seed: 57 }, offen: false, passagen: 2,
+              tuer: true, eingehend: 1,
+              beleg: "Die Stadt wird verwaltet von der Administration.", belegQuelle: "Bjoldiri · Einleitung, Absatz 1" },
+            { id: "lorengrube", name: "Lorengrube", geo: { typ: "blob", c: [940, 470], r: 110, n: 9, j: 0.22, seed: 67 }, offen: false, passagen: 2,
+              tuer: true, eingehend: 1, belegQuelle: "Bjoldiri · roter Link" },
+            { id: "tempel", name: "Tempelruine der Atlaner", geo: { typ: "blob", c: [650, 585], r: 112, n: 10, j: 0.21, seed: 79 }, offen: false, passagen: 4,
+              beleg: "Sie wurde auf den Ruinen einer Tempelanlage der Atlaner erbaut, was der Stadt eine mystische Atmosphäre verleiht.",
+              belegQuelle: "Bjoldiri · Einleitung, Absatz 1" }
+          ],
+          figuren: [
+            { id: "olav", name: "Olav der Ehrliche", kurz: "Ol", spieler: "Timo", fraktion: "spieler", region: "tor", x: 218, y: 400, hoehe: 0, hp: 41, hpMax: 48, ini: 17,
+              zeile: "Zwerg · 1,40 m · Kopfgeld 150.000 Silberlinge", haelt: ["tor", "fackelmarkt"], schreibrecht: "lorengrube" },
+            { id: "baldur", name: "Baldur", kurz: "Ba", spieler: "Rike", fraktion: "spieler", region: "tor", x: 282, y: 448, hoehe: 0, hp: 33, hpMax: 36, ini: 14,
+              zeile: "Halb-Cousin Olavs · Flüsterer, Anführer ab 867", haelt: ["tor", "fackelmarkt", "passage"] },
+            { id: "bodin", name: "Bodin", kurz: "Bo", spieler: "Nuri", fraktion: "spieler", region: "fackelmarkt", x: 398, y: 268, hoehe: 0, hp: 28, hpMax: 34, ini: 11,
+              zeile: "Zwerg · Onkel Olavs · geboren in Nord Tal", haelt: ["tor", "fackelmarkt"] },
+            { id: "irme", name: "Irme", kurz: "Ir", spieler: "Jana", fraktion: "spieler", region: "fackelmarkt", x: 452, y: 318, hoehe: 0, hp: 30, hpMax: 30, ini: 9,
+              zeile: "Gemahlin Olavs", haelt: ["tor", "fackelmarkt"], abwesend: true },
+            { id: "wache", name: "Stadtwache", kurz: "SW", fraktion: "nsc", region: "tor", x: 252, y: 356, hoehe: 0, hp: 0, hpMax: 22, ini: 12,
+              zeile: "„drückt oft ein Auge zu“ · Bjoldiri, Absatz 2", haelt: [] },
+            { id: "thorbin", name: "Thorbin", kurz: "Th", fraktion: "geheim", region: "lorengrube", x: 930, y: 470, hoehe: -3, hp: 26, hpMax: 26, ini: 15,
+              zeile: "Unter Gedanken Kontrolle (851–867) · Flüsterer, Infobox-Zeile „anführer“", haelt: [], geheim: true }
+          ]
+        }
+      }
+    },
+
+    kepler: {
+      kennung: "K9",
+      name: "Kepler-9 · Frachtring Tsiolkowski",
+      lage: "Schicht 3 · Zyklus 214 · Leitung Kaya",
+      echt: false,
+      echtTxt: "von der Crew geschrieben",
+      quelle: null,
+      module: [
+        { kurz: "Wache", lang: "Wachplanung und Schichtübergabe" },
+        { kurz: "Datenbestand", lang: "Wissensbestand, Berichte und offene Verweise" },
+        { kurz: "Mannschaft", lang: "Besatzung, Zünfte und ihre Verpflichtungen" },
+        { kurz: "Lager", lang: "Bestände, Baupläne und Ausgabescheine" },
+        { kurz: "Brücke", lang: "Taktische Leinwand der laufenden Schicht" },
+        { kurz: "Werkbank", lang: "Formulare, Regelbausteine und Themengestaltung" }
+      ],
+      baum: [
+        { id: "kepler-system", name: "Kepler-9", tiefe: 0, zahl: "System" },
+        { id: "tsiolkowski", name: "Frachtring Tsiolkowski", tiefe: 1, szene: "ring", zahl: "7 Bereiche" },
+        { id: "aussenhuelle", name: "Außenhülle", tiefe: 2, tuer: true, eingehend: 3 },
+        { id: "bergungscharta", name: "Zweite Bergungscharta", tiefe: 1, tuer: true, eingehend: 9,
+          nachfrage: ["Kranzmeisterei", "Havarie 118", "Zunft der Nieter", "Protokoll Yb"] },
+        { id: "kohaerenz", name: "Kohärenzprotokoll", tiefe: 1, tuer: true, eingehend: 7,
+          nachfrage: ["Reaktorhaube", "Zyklus 199", "Mira Halland", "Der Zeuge"] }
+      ],
+      baumNote: "Der Ring hat eine Karte. Die Zweite Bergungscharta nicht — 9 Berichte berufen sich auf sie, geschrieben hat sie niemand. Für sie ist die Tafel die Karte.",
+      szenen: {
+        ring: {
+          titel: "Tsiolkowski · Kranz und Schleuse 4",
+          ort: "Frachtring, Spange A–C",
+          groesse: [1200, 780], raster: "hex", zelle: 40, meter: 2,
+          bodenGeo: { typ: "sektor", c: [600, 390], r0: 148, r1: 332, a0: 0, a1: Math.PI * 2, s: 60 },
+          wege: [bogenWeg([600, 390], 240, 0, Math.PI * 2, 48), [[600, 242], [600, 148]]],
+          regionen: [
+            { id: "kranz", name: "Andockkranz", geo: { typ: "sektor", c: [600, 390], r0: 246, r1: 326, a0: -0.52, a1: 0.40, s: 12 }, offen: true, passagen: 3,
+              beleg: "Kinetikwaffen werden vor dem Durchschleusen entladen. Die Ladung bleibt beim Kranzmeister, die Quittung läuft auf den Namen.",
+              belegQuelle: "Kranzordnung §4 · Crew-Text", klausel: "Ortsklausel: Waffen werden am Kranz entladen." },
+            { id: "schleuse4", name: "Frachtschleuse 4", geo: { typ: "sektor", c: [600, 390], r0: 246, r1: 326, a0: 0.56, a1: 1.46, s: 12 }, offen: true, passagen: 2,
+              beleg: "Schleuse 4 ist seit Zyklus 199 die einzige, die noch beide Dichtringe hat.", belegQuelle: "Schichtbericht 214-b · Crew-Text" },
+            { id: "zentrifuge", name: "Zentrifugenspange B", geo: { typ: "sektor", c: [600, 390], r0: 246, r1: 326, a0: 1.60, a1: 2.50, s: 12 }, offen: false, passagen: 2,
+              beleg: "In Spange B steht die Rotation seit der Havarie bei 0,4 g.", belegQuelle: "Schichtbericht 214-b · Crew-Text" },
+            { id: "reaktor", name: "Reaktorhaube", geo: { typ: "sektor", c: [600, 390], r0: 246, r1: 326, a0: 2.64, a1: 3.56, s: 12 }, offen: false, passagen: 4,
+              tuer: true, eingehend: 7, beleg: "Die Haube wird nur geöffnet, wenn zwei Namen im Buch stehen.", belegQuelle: "Kohärenzprotokoll · roter Verweis" },
+            { id: "hydroponik", name: "Hydroponikfach 2", geo: { typ: "sektor", c: [600, 390], r0: 246, r1: 326, a0: 3.70, a1: 4.60, s: 12 }, offen: false, passagen: 2,
+              beleg: "Fach 2 trägt die einzige Saat, die den Zyklus überlebt hat.", belegQuelle: "Bestandsliste 214 · Crew-Text" },
+            { id: "kanzel", name: "Kontrollkanzel", geo: { typ: "sektor", c: [600, 390], r0: 158, r1: 236, a0: 0.56, a1: 1.46, s: 12 }, offen: false, passagen: 3,
+              beleg: "Von der Kanzel aus sieht man beide Spangen — und wer sie betritt.", belegQuelle: "Schichtbericht 214-b · Crew-Text" },
+            { id: "havariegang", name: "Havariegang", geo: { typ: "sektor", c: [600, 390], r0: 158, r1: 236, a0: 4.72, a1: 5.66, s: 12 }, offen: false, passagen: 1,
+              tuer: true, eingehend: 3, belegQuelle: "Außenhülle · roter Verweis" }
+          ],
+          figuren: [
+            { id: "ravi", name: "Ravi Oduya", kurz: "Ra", spieler: "Timo", fraktion: "spieler", region: "kranz", x: 858, y: 372, hoehe: 0, hp: 22, hpMax: 28, ini: 16,
+              zeile: "Kranzmeister im dritten Zyklus", haelt: ["kranz", "schleuse4"], schreibrecht: "havariegang" },
+            { id: "mira", name: "Mira Halland", kurz: "Mi", spieler: "Rike", fraktion: "spieler", region: "kranz", x: 826, y: 434, hoehe: 0, hp: 19, hpMax: 24, ini: 13,
+              zeile: "Nieterin · Zunftbuch Seite 44", haelt: ["kranz", "schleuse4"] },
+            { id: "tessai", name: "Tessai Groot", kurz: "Te", spieler: "Nuri", fraktion: "spieler", region: "schleuse4", x: 700, y: 640, hoehe: 2, hp: 25, hpMax: 30, ini: 10,
+              zeile: "Frachtaufseher · trägt zwei Dichtringe bei sich", haelt: ["kranz", "schleuse4", "reaktor"] },
+            { id: "ada", name: "Ada Nwosu", kurz: "Ad", spieler: "Jana", fraktion: "spieler", region: "schleuse4", x: 636, y: 664, hoehe: 0, hp: 21, hpMax: 21, ini: 8,
+              zeile: "Ärztin der Spange C", haelt: ["kranz", "schleuse4"], abwesend: true },
+            { id: "drohne", name: "Wartungsdrohne W-4", kurz: "W4", fraktion: "nsc", region: "kranz", x: 892, y: 414, hoehe: 4, hp: 0, hpMax: 12, ini: 12,
+              zeile: "seit Zyklus 199 nicht neu bespielt", haelt: [] },
+            { id: "zeuge", name: "Der Zeuge", kurz: "Zg", fraktion: "geheim", region: "reaktor", x: 330, y: 250, hoehe: -2, hp: 18, hpMax: 18, ini: 15,
+              zeile: "steht im Kohärenzprotokoll unter einem anderen Namen", haelt: [], geheim: true }
+          ]
+        }
+      }
+    },
+
+    nebelakte: {
+      kennung: "NA",
+      name: "Die Nebelakte · Lagerhaus 4",
+      lage: "Akte 44/6 · Hamburg-Veddel, 12. November 1974 · Leitung Kaya",
+      echt: false,
+      echtTxt: "von der Crew geschrieben",
+      quelle: null,
+      module: [
+        { kurz: "Dienst", lang: "Dienstplanung und Ermittlungsstand" },
+        { kurz: "Akten", lang: "Aktenbestand, Vermerke und offene Verweise" },
+        { kurz: "Beteiligte", lang: "Personen, Firmen und ihre Verbindungen" },
+        { kurz: "Asservate", lang: "Asservate, Vordrucke und Ausgabescheine" },
+        { kurz: "Tatort", lang: "Taktische Leinwand des laufenden Termins" },
+        { kurz: "Formulare", lang: "Formulare, Regelbausteine und Themengestaltung" }
+      ],
+      baum: [
+        { id: "veddel", name: "Hamburg-Veddel", tiefe: 0, zahl: "Bezirk" },
+        { id: "lagerhaus4", name: "Lagerhaus 4", tiefe: 1, szene: "lager", zahl: "7 Bereiche" },
+        { id: "gleisanschluss", name: "Gleisanschluss 7", tiefe: 2, tuer: true, eingehend: 2 },
+        { id: "speditionsakte", name: "Speditionsakte 44/6", tiefe: 1, tuer: true, eingehend: 11,
+          nachfrage: ["Kontorbuch III", "Zollgang", "Halbach, Vermerk 9", "Frachtbrief 1174"] },
+        { id: "zollgang", name: "Der Zollgang", tiefe: 1, tuer: true, eingehend: 6,
+          nachfrage: ["Speditionsakte 44/6", "Werkschutz", "Kesselgang", "Der Buchhalter"] }
+      ],
+      baumNote: "Das Lagerhaus hat einen Grundriss. Die Speditionsakte 44/6 nicht — elf Vermerke verweisen auf sie, die Akte selbst liegt nicht vor. Für sie ist die Tafel die Karte.",
+      szenen: {
+        lager: {
+          titel: "Lagerhaus 4 · Rampe und Aktenkeller",
+          ort: "Veddeler Damm, Block 4",
+          groesse: [1200, 780], raster: "rasterlos", zelle: 60, meter: 1,
+          bodenGeo: { typ: "rechteck", x: 110, y: 90, b: 980, h: 600, f: 26 },
+          wege: [
+            [[245, 300], [245, 505], [470, 505], [470, 200], [705, 200], [705, 505], [960, 505], [960, 235]]
+          ],
+          regionen: [
+            { id: "rampe", name: "Die Rampe", geo: { typ: "rechteck", x: 130, y: 110, b: 230, h: 180 }, offen: true, passagen: 3,
+              beleg: "Der Pförtner nimmt Dienstwaffen entgegen. Die Quittung läuft auf den Namen und bleibt im Kontor.",
+              belegQuelle: "Hausordnung Blatt 2 · Crew-Text", klausel: "Ortsklausel: Waffen werden an der Rampe abgegeben." },
+            { id: "kontor", name: "Das Kontor", geo: { typ: "rechteck", x: 130, y: 320, b: 230, h: 170 }, offen: true, passagen: 2,
+              beleg: "Im Kontor stehen drei Schränke. Zwei sind abgeschlossen, der dritte steht offen und ist leer.",
+              belegQuelle: "Vermerk 9, Halbach · Crew-Text" },
+            { id: "kesselgang", name: "Der Kesselgang", geo: { typ: "rechteck", x: 385, y: 110, b: 170, h: 560 }, offen: false, passagen: 2,
+              tuer: true, eingehend: 6, beleg: "Der Gang ist warm und man hört von hier jede Tür im Haus.", belegQuelle: "Der Zollgang · roter Verweis" },
+            { id: "kuehlhaus", name: "Das Kühlhaus", geo: { typ: "rechteck", x: 580, y: 110, b: 250, h: 250 }, offen: false, passagen: 3,
+              beleg: "Die Kühlung läuft, obwohl der Bestand seit August ausgetragen ist.", belegQuelle: "Frachtbrief 1174 · Crew-Text" },
+            { id: "aktenkeller", name: "Der Aktenkeller", geo: { typ: "rechteck", x: 580, y: 385, b: 250, h: 285 }, offen: false, passagen: 4,
+              tuer: true, eingehend: 11, beleg: "Im Keller liegen Kontorbücher bis 1969. Der Band III fehlt.", belegQuelle: "Speditionsakte 44/6 · roter Verweis" },
+            { id: "hof", name: "Der Hof", geo: { typ: "rechteck", x: 855, y: 110, b: 215, h: 250 }, offen: false, passagen: 2,
+              beleg: "Der Hof ist von drei Seiten geschlossen. Die vierte ist das Gleis.", belegQuelle: "Lageplan Blatt 1 · Crew-Text" },
+            { id: "dachkammer", name: "Die Dachkammer", geo: { typ: "rechteck", x: 855, y: 385, b: 215, h: 285 }, offen: false, passagen: 2,
+              beleg: "Von oben sieht man in den Hof und auf das Gleis. Jemand hat hier gewartet.", belegQuelle: "Vermerk 12, Öz · Crew-Text" }
+          ],
+          figuren: [
+            { id: "halbach", name: "Kommissarin Halbach", kurz: "Ha", spieler: "Timo", fraktion: "spieler", region: "rampe", x: 200, y: 175, hoehe: 0, hp: 17, hpMax: 20, ini: 15,
+              zeile: "führt die Akte 44/6 seit August", haelt: ["rampe", "kontor", "kesselgang"], schreibrecht: "aktenkeller" },
+            { id: "ruhe", name: "Dr. Wenzel Ruhe", kurz: "Ru", spieler: "Rike", fraktion: "spieler", region: "rampe", x: 288, y: 235, hoehe: 0, hp: 12, hpMax: 16, ini: 11,
+              zeile: "Gerichtsmediziner · seit 1961 im Dienst", haelt: ["rampe", "kontor"] },
+            { id: "oez", name: "Sedat Öz", kurz: "Öz", spieler: "Nuri", fraktion: "spieler", region: "kontor", x: 196, y: 385, hoehe: 0, hp: 19, hpMax: 22, ini: 13,
+              zeile: "Werkschutz a. D. · kennt das Haus von innen", haelt: ["rampe", "kontor"] },
+            { id: "frey", name: "Marlene Frey", kurz: "Fr", spieler: "Jana", fraktion: "spieler", region: "kontor", x: 290, y: 440, hoehe: 0, hp: 14, hpMax: 14, ini: 7,
+              zeile: "Stenografin · protokolliert die Vernehmungen", haelt: ["rampe", "kontor"], abwesend: true },
+            { id: "werkschutz", name: "Werkschutzmann", kurz: "WS", fraktion: "nsc", region: "rampe", x: 320, y: 150, hoehe: 0, hp: 0, hpMax: 14, ini: 9,
+              zeile: "steht seit 22 Uhr an der Rampe", haelt: [] },
+            { id: "buchhalter", name: "Der Buchhalter", kurz: "Bu", fraktion: "geheim", region: "aktenkeller", x: 700, y: 520, hoehe: -4, hp: 15, hpMax: 15, ini: 14,
+              zeile: "trägt Band III bei sich", haelt: [], geheim: true }
+          ]
+        }
+      }
+    }
+  };
+
+  /* Lange UI-Etiketten (Achse „Beschriftung“) — echte deutsche Amtslänge. */
+  var ETIKETTEN = {
+    buehneHd:      { kurz: "Der Tisch · Die Leinwand", lang: "Der Tisch · Taktische Darstellungsfläche der laufenden Sitzung" },
+    hdFreigabe:    { kurz: "Freigabe", lang: "Freigabe von Wissen an namentlich benannte Figuren" },
+    hdBeleg:       { kurz: "Beleg", lang: "Beleg, Herkunftsschicht und Lizenzangabe" },
+    hdPruef:       { kurz: "Prüfstand", lang: "Prüfstand · im Browser gemessene Selbstauskunft" },
+    colHd:         { kurz: "Orte", lang: "Ortsgliederung des Weltbestandes" },
+    btnFreigebenTxt: { kurz: "freigeben", lang: "an die ausgewählten Figuren freigeben" },
+    pruef:         { kurz: "Universalitätsprüfung laufen lassen", lang: "Universalitätsprüfung über alle Achsen laufen lassen" }
+  };
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     3 · ZUSTAND
+     ══════════════════════════════════════════════════════════════════════════ */
+  var R = document.documentElement;
+  var Z = {
+    welt: "eron", ortId: "bjoldiri", szene: null,
+    raster: "quadrat", fang: "mitte",
+    wahlFigur: null, wahlRegion: null,
+    modul: "/tisch",
+    iniIndex: 0,
+    offenbarungen: [],      /* Undo-Ring: jede Freigabe ist EIN Eintrag mit N Offenbarungen */
+    audit: [],
+    ansageStumm: false
+  };
+  var ANFANG = JSON.stringify(WELTEN);   /* für „zurücksetzen“ */
+
+  function welt() { return WELTEN[Z.welt]; }
+  function szene() { return Z.szene; }
+  function rolle() { return R.dataset.rolle; }
+  function ichFigur() { var s = szene(); if (!s) return null; return s.figuren.filter(function (f) { return f.fraktion === "spieler" && !f.abwesend; })[0]; }
+
+  function ansage(t) {
+    if (Z.ansageStumm) return;
+    var a = $("ansage"); a.textContent = ""; a.textContent = t;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     4 · FARBSONDEN — die Leinwand hat keine eigenen Farben.
+     Sie liest bei jedem Bild dieselben Token wie das DOM. Deshalb überlebt sie
+     Skin, Thema, Hochkontrast und „Artwork fehlt“ ohne eine Zeile Kartencode.
+     ══════════════════════════════════════════════════════════════════════════ */
+  var TOKENNAMEN = ["map-tief", "map-fels", "map-boden", "map-weg", "map-nebel", "map-marke", "map-verdeckt",
+                    "accent", "accent-ink", "secondary", "seal", "danger", "ok", "line-strong", "surface", "text", "muted", "rot", "focus", "bg", "bg-2", "line"];
+  var sondenHost = null, sonden = {};
+  function sondenBauen() {
+    sondenHost = el("div", { "aria-hidden": "true", class: "vh" });
+    TOKENNAMEN.forEach(function (n) {
+      var s = el("span"); s.style.color = "var(--" + n + ")"; sonden[n] = s; sondenHost.appendChild(s);
+    });
+    document.getElementById("app").appendChild(sondenHost);
+  }
+  function farben() {
+    var C = {}; TOKENNAMEN.forEach(function (n) { C[n] = getComputedStyle(sonden[n]).color; });
+    var cs = getComputedStyle(R);
+    C.fuellung = parseFloat(cs.getPropertyValue("--map-fuellung")) || 0;
+    C.linie = parseFloat(cs.getPropertyValue("--map-linie")) || 1;
+    C.glatt = parseFloat(cs.getPropertyValue("--map-glaettung")) || 0;
+    C.ornament = parseFloat(cs.getPropertyValue("--ornament")) || 0;
+    C.schrift = (cs.getPropertyValue("--font-display") || "serif").trim();
+    return C;
+  }
+  function rgbArr(c) {
+    var m = String(c).match(/-?[\d.]+/g); return m ? [+m[0], +m[1], +m[2]] : [0, 0, 0];
+  }
+  function mitAlpha(c, a) { var r = rgbArr(c); return "rgba(" + r[0] + "," + r[1] + "," + r[2] + "," + a + ")"; }
+  function relLum(c) {
+    var r = rgbArr(c).map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * r[0] + 0.7152 * r[1] + 0.0722 * r[2];
+  }
+  function kontrastwert(a, b) {
+    var l1 = relLum(a), l2 = relLum(b);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  }
+  function lesbar(bg) {  /* Figurenkürzel: Schwarz oder Weiß, nach gemessenem Kontrast */
+    return kontrastwert("rgb(255,255,255)", bg) >= kontrastwert("rgb(0,0,0)", bg) ? "rgb(255,255,255)" : "rgb(0,0,0)";
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     5 · DIE LEINWAND
+     ══════════════════════════════════════════════════════════════════════════ */
+  var K = { cv: null, ctx: null, maske: null, mctx: null, w: 0, h: 0, dpr: 1, zoom: 1, px: 0, py: 0,
+            ziehen: null, panStart: null, zeiten: [], nebelMs: 0, ops: 0, letzte: 0, polyCache: {} };
+
+  function poly(g, key) {
+    if (key && K.polyCache[key]) return K.polyCache[key];
+    var p = geo(g); if (key) K.polyCache[key] = p; return p;
+  }
+  function skala() {
+    var s = szene(); if (!s) return 1;
+    return Math.min(K.w / s.groesse[0], K.h / s.groesse[1]) * 0.98 * K.zoom;
+  }
+  function bbox(pts) {
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, i;
+    for (i = 0; i < pts.length; i++) {
+      if (pts[i][0] < x0) x0 = pts[i][0]; if (pts[i][0] > x1) x1 = pts[i][0];
+      if (pts[i][1] < y0) y0 = pts[i][1]; if (pts[i][1] > y1) y1 = pts[i][1];
+    }
+    return [x0, y0, x1, y1];
+  }
+  function w2s(p) {
+    var s = szene(), k = skala();
+    return [(p[0] - s.groesse[0] / 2) * k + K.w / 2 + K.px, (p[1] - s.groesse[1] / 2) * k + K.h / 2 + K.py];
+  }
+  function s2w(q) {
+    var s = szene(), k = skala();
+    return [(q[0] - K.w / 2 - K.px) / k + s.groesse[0] / 2, (q[1] - K.h / 2 - K.py) / k + s.groesse[1] / 2];
+  }
+  function pfad(ctx, pts, glatt) {
+    var n = pts.length, i;
+    ctx.beginPath();
+    if (!glatt || n < 4) {
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (i = 1; i < n; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.closePath(); return;
+    }
+    var m = [(pts[n - 1][0] + pts[0][0]) / 2, (pts[n - 1][1] + pts[0][1]) / 2];
+    ctx.moveTo(m[0], m[1]);
+    for (i = 0; i < n; i++) {
+      var p = pts[i], q = pts[(i + 1) % n];
+      ctx.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+    }
+    ctx.closePath();
+  }
+  function schirmPoly(p) { return p.map(w2s); }
+
+  /* — Rasterarithmetik. Ein Renderer, drei Raster. — */
+  function hexR() { return szene().zelle; }
+  function hexZentrum(q, r) {
+    var R0 = hexR();
+    return [Math.sqrt(3) * R0 * (q + r / 2) + szene().groesse[0] / 2, 1.5 * R0 * r + szene().groesse[1] / 2];
+  }
+  function hexAxial(p) {
+    var R0 = hexR(), x = p[0] - szene().groesse[0] / 2, y = p[1] - szene().groesse[1] / 2;
+    var q = (Math.sqrt(3) / 3 * x - y / 3) / R0, r = (2 / 3 * y) / R0;
+    var cx = q, cz = r, cy = -cx - cz;
+    var rx = Math.round(cx), ry = Math.round(cy), rz = Math.round(cz);
+    var dx = Math.abs(rx - cx), dy = Math.abs(ry - cy), dz = Math.abs(rz - cz);
+    if (dx > dy && dx > dz) rx = -ry - rz; else if (dy > dz) ry = -rx - rz; else rz = -rx - ry;
+    return [rx, rz];
+  }
+  function fangen(p) {
+    var s = szene(), c = s.zelle;
+    if (Z.raster === "rasterlos" || Z.fang === "frei") return p;
+    if (Z.raster === "quadrat") {
+      if (Z.fang === "mitte") return [Math.floor(p[0] / c) * c + c / 2, Math.floor(p[1] / c) * c + c / 2];
+      return [Math.round(p[0] / c) * c, Math.round(p[1] / c) * c];
+    }
+    var a = hexAxial(p), z = hexZentrum(a[0], a[1]);
+    if (Z.fang === "mitte") return z;
+    var R0 = hexR(), best = null, bd = 1e9;
+    for (var i = 0; i < 6; i++) {
+      var ang = Math.PI / 180 * (60 * i - 90);
+      var v = [z[0] + R0 * Math.cos(ang), z[1] + R0 * Math.sin(ang)];
+      var d = (v[0] - p[0]) * (v[0] - p[0]) + (v[1] - p[1]) * (v[1] - p[1]);
+      if (d < bd) { bd = d; best = v; }
+    }
+    return best;
+  }
+  function feldname(f) {
+    var s = szene(), c = s.zelle;
+    if (Z.raster === "rasterlos") return Math.round(f.x / c * s.meter) + " / " + Math.round(f.y / c * s.meter) + " m";
+    if (Z.raster === "quadrat") {
+      var sp = Math.floor(f.x / c), ze = Math.floor(f.y / c);
+      return String.fromCharCode(65 + (sp % 26)) + (ze + 1);
+    }
+    var a = hexAxial([f.x, f.y]); return "q" + a[0] + " r" + a[1];
+  }
+
+  /* — Zwei verschiedene Fragen, und sie werden dauernd verwechselt:
+       freigegeben() = was ist FREIGEGEBEN (für diesen Leser)
+       gezeigt()     = was DARF dieser Leser überhaupt sehen
+     Für die Spielleitung fallen sie auseinander: sie sieht auch das Verdeckte,
+     als Schraffur. Für alle anderen sind sie dasselbe — deshalb der Nebel. — */
+  function freigegebeneRegionen() {
+    var s = szene(); if (!s) return [];
+    if (rolle() === "spieler") { var ich = ichFigur(); return ich ? ich.haelt.slice() : []; }
+    return s.regionen.filter(function (r) { return r.offen; }).map(function (r) { return r.id; });
+  }
+  function gezeigteRegionen() {
+    var s = szene(); if (!s) return [];
+    if (rolle() === "leitung") return s.regionen.map(function (r) { return r.id; });
+    return freigegebeneRegionen();
+  }
+  function sichtbareFiguren() {
+    var s = szene(); if (!s) return [];
+    var ro = rolle(), sicht = gezeigteRegionen();
+    return s.figuren.filter(function (f) {
+      if (f.geheim && ro !== "leitung") return false;                 /* strukturell abwesend */
+      if (ro === "leitung") return true;
+      if (ro === "beobachter") return f.fraktion !== "geheim" && sicht.indexOf(f.region) >= 0;
+      return sicht.indexOf(f.region) >= 0;
+    });
+  }
+
+  function groesseAnpassen() {
+    var host = $("leinwandHost"), cv = K.cv;
+    var b = host.clientWidth, h = host.clientHeight - 30;
+    if (b < 40 || h < 40) return;                 /* Bühne = „nur Tafel“: nichts zu bemessen */
+    K.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    K.w = b; K.h = h;
+    cv.width = Math.round(b * K.dpr); cv.height = Math.round(h * K.dpr);
+    K.maske.width = cv.width; K.maske.height = cv.height;
+  }
+
+  function zeichnen() {
+    if (!szene() || !K.ctx || K.w < 40) return;
+    var t0 = performance.now();
+    var ctx = K.ctx, s = szene(), C = farben(), ops = 0;
+    ctx.setTransform(K.dpr, 0, 0, K.dpr, 0, 0);
+    ctx.clearRect(0, 0, K.w, K.h);
+    var glatt = C.glatt > 0.5;
+    var dranId = (initiativliste()[Z.iniIndex] || {}).id;
+
+    /* 1 · Fels / Außenraum */
+    ctx.fillStyle = C.fuellung ? C["map-tief"] : C["map-boden"];
+    ctx.fillRect(0, 0, K.w, K.h); ops++;
+    if (C.ornament && C.fuellung) {          /* Felsschraffur, nur wenn Artwork vorhanden */
+      ctx.save(); ctx.strokeStyle = C["map-fels"]; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      for (var x = -K.h; x < K.w; x += 8) { ctx.moveTo(x, 0); ctx.lineTo(x + K.h, K.h); }
+      ctx.stroke(); ops++;
+      ctx.restore();
+    }
+
+    /* 2 · Boden */
+    var bodenS = schirmPoly(poly(s.bodenGeo, Z.welt + ":boden"));
+    ctx.save();
+    pfad(ctx, bodenS, glatt);
+    if (C.fuellung) {
+      ctx.fillStyle = C["map-boden"]; ctx.fill(); ops++;
+      ctx.save(); ctx.clip();
+      for (var i = 6; i >= 1; i--) {          /* gemeißelter Rand statt Schlagschatten */
+        ctx.strokeStyle = mitAlpha(C["map-fels"], 0.14);
+        ctx.lineWidth = i * 4 * K.zoom; pfad(ctx, bodenS, glatt); ctx.stroke(); ops++;
+      }
+      ctx.restore();
+    }
+    ctx.strokeStyle = C["map-marke"]; ctx.lineWidth = 1.6 * C.linie; pfad(ctx, bodenS, glatt); ctx.stroke(); ops++;
+    ctx.restore();
+
+    /* 3 · Regionen */
+    var sicht = freigegebeneRegionen(), gezeigt = gezeigteRegionen(), k = skala();
+    s.regionen.forEach(function (rg) {
+      var sichtbar = sicht.indexOf(rg.id) >= 0;
+      if (gezeigt.indexOf(rg.id) < 0) return;
+      var p = schirmPoly(poly(rg.geo, Z.welt + ":" + rg.id));
+      ctx.save();
+      pfad(ctx, p, glatt);
+      if (C.fuellung) {
+        if (sichtbar) {
+          ctx.fillStyle = C["map-weg"]; ctx.fill(); ops++;
+          if (C.ornament) {                 /* weicher Innenrand statt harter Kante */
+            ctx.save(); ctx.clip();
+            for (var q1 = 4; q1 >= 1; q1--) {
+              ctx.strokeStyle = mitAlpha(C["map-boden"], 0.16);
+              ctx.lineWidth = q1 * 5 * K.zoom; pfad(ctx, p, glatt); ctx.stroke(); ops++;
+            }
+            ctx.restore();
+          }
+        } else {
+          ctx.fillStyle = mitAlpha(C["map-verdeckt"], 0.2); ctx.fill(); ops++;
+          ctx.save(); ctx.clip(); ctx.strokeStyle = mitAlpha(C["map-verdeckt"], 0.9); ctx.lineWidth = 1.4 * C.linie;
+          ctx.beginPath();
+          for (var xx = -K.h; xx < K.w; xx += 8) { ctx.moveTo(xx, 0); ctx.lineTo(xx + K.h, K.h); }
+          ctx.stroke(); ops++;
+          ctx.restore();
+        }
+      }
+      ctx.setLineDash(sichtbar ? [] : [7 * C.linie, 5 * C.linie]);
+      ctx.strokeStyle = sichtbar ? C["map-marke"] : C["map-verdeckt"];
+      ctx.lineWidth = (Z.wahlRegion === rg.id ? 3.2 : 1.3) * C.linie;
+      pfad(ctx, p, glatt); ctx.stroke(); ops++;
+      ctx.setLineDash([]);
+      ctx.restore();
+    });
+
+    /* 4 · Wege */
+    ctx.save();
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    (s.wege || []).forEach(function (w) {
+      var ps = w.map(w2s);
+      ctx.beginPath(); ctx.moveTo(ps[0][0], ps[0][1]);
+      for (var i = 1; i < ps.length; i++) ctx.lineTo(ps[i][0], ps[i][1]);
+      if (C.fuellung) { ctx.strokeStyle = mitAlpha(C["map-marke"], 0.22); ctx.lineWidth = 15 * k / 6; ctx.stroke(); ops++; }
+      ctx.strokeStyle = C["map-marke"]; ctx.lineWidth = 1.1 * C.linie; ctx.stroke(); ops++;
+    });
+    ctx.restore();
+
+    /* 5 · Raster, auf den Boden beschnitten */
+    if (Z.raster !== "rasterlos") {
+      ctx.save(); pfad(ctx, bodenS, glatt); ctx.clip();
+      ctx.strokeStyle = mitAlpha(C["map-marke"], C.fuellung ? 0.22 : 0.85);
+      ctx.lineWidth = 0.9 * C.linie;
+      /* Ein Pfad, ein Strich — das Raster kostet EINE Zeichenoperation, nicht 550. */
+      ctx.beginPath();
+      if (Z.raster === "quadrat") {
+        var c = s.zelle, gx, gy;
+        for (gx = 0; gx <= s.groesse[0]; gx += c) {
+          var a = w2s([gx, 0]), b2 = w2s([gx, s.groesse[1]]);
+          ctx.moveTo(a[0], a[1]); ctx.lineTo(b2[0], b2[1]);
+        }
+        for (gy = 0; gy <= s.groesse[1]; gy += c) {
+          var a2 = w2s([0, gy]), b3 = w2s([s.groesse[0], gy]);
+          ctx.moveTo(a2[0], a2[1]); ctx.lineTo(b3[0], b3[1]);
+        }
+      } else {
+        var R0 = hexR(), q, r, j;
+        var qs = Math.ceil(s.groesse[0] / (Math.sqrt(3) * R0)) + 2;
+        var rs = Math.ceil(s.groesse[1] / (1.5 * R0) / 2) + 2;
+        for (r = -rs; r <= rs; r++) for (q = -qs; q <= qs; q++) {
+          var z = hexZentrum(q, r);
+          if (z[0] < -R0 || z[0] > s.groesse[0] + R0 || z[1] < -R0 || z[1] > s.groesse[1] + R0) continue;
+          for (j = 0; j <= 6; j++) {
+            var ang = Math.PI / 180 * (60 * (j % 6) - 90);
+            var v = w2s([z[0] + R0 * Math.cos(ang), z[1] + R0 * Math.sin(ang)]);
+            if (j === 0) ctx.moveTo(v[0], v[1]); else ctx.lineTo(v[0], v[1]);
+          }
+        }
+      }
+      ctx.stroke(); ops++;
+      ctx.restore();
+    }
+
+    /* 6 · Regionsnamen */
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    var fs = Math.max(10, Math.min(17, 13 * k / 0.55));
+    ctx.font = "600 " + fs + "px " + C.schrift;
+    s.regionen.forEach(function (rg) {
+      var sichtbar = sicht.indexOf(rg.id) >= 0;
+      if (gezeigt.indexOf(rg.id) < 0) return;
+      /* Der Name sitzt im oberen Drittel des Bereichs, damit die Figur in der
+         Mitte ihn nicht verdeckt — Beschriftung ist Information, kein Dekor. */
+      var bb = bbox(poly(rg.geo, Z.welt + ":" + rg.id));
+      var m = w2s([(bb[0] + bb[2]) / 2, bb[1] + (bb[3] - bb[1]) * 0.22]);
+      var txt = rg.name + (sichtbar ? "" : " ·  verdeckt");
+      if (C.fuellung && C.ornament) {
+        var br = ctx.measureText(txt).width + 12;
+        ctx.fillStyle = mitAlpha(C["map-boden"], 0.82);
+        ctx.fillRect(m[0] - br / 2, m[1] - fs * 0.75, br, fs * 1.5); ops++;
+      }
+      ctx.fillStyle = C["map-marke"]; ctx.fillText(txt, m[0], m[1]); ops++;
+      if (rg.tuer) {
+        ctx.save(); ctx.strokeStyle = C.rot; ctx.lineWidth = 1.6 * C.linie;
+        ctx.beginPath(); ctx.arc(m[0], m[1] + fs * 1.4, fs * 0.36, 0, Math.PI * 2); ctx.stroke(); ops++;
+        ctx.restore();
+      }
+    });
+    ctx.restore();
+
+    /* 7 · Figuren */
+    var figs = sichtbareFiguren();
+    figs.forEach(function (f) {
+      var p = w2s([f.x, f.y]), rr = Math.max(9, 22 * k);
+      var fill = f.hp <= 0 ? C.danger : f.fraktion === "spieler" ? C.accent : f.fraktion === "geheim" ? C.seal : C.secondary;
+      ctx.save();
+      if (C.ornament && C.fuellung) { ctx.shadowColor = mitAlpha(C["map-nebel"], 0.45); ctx.shadowBlur = 8; ctx.shadowOffsetY = 2; }
+      ctx.beginPath(); ctx.arc(p[0], p[1], rr, 0, Math.PI * 2);
+      ctx.fillStyle = C.fuellung ? fill : C["map-boden"]; ctx.fill(); ops++;
+      ctx.shadowColor = "transparent";
+      ctx.lineWidth = (Z.wahlFigur === f.id ? 3.4 : 1.8) * C.linie;
+      ctx.strokeStyle = Z.wahlFigur === f.id ? C.focus : (C.fuellung ? C["map-marke"] : fill);
+      ctx.stroke(); ops++;
+      /* Trefferpunkte als Bogen */
+      if (f.hpMax) {
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], rr + 4 * C.linie, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, f.hp / f.hpMax));
+        ctx.strokeStyle = f.hp / f.hpMax <= 0.34 ? C.danger : C.ok; ctx.lineWidth = 3 * C.linie; ctx.stroke(); ops++;
+      }
+      /* Kürzel */
+      ctx.font = "700 " + Math.max(8, rr * 0.72) + "px " + C.schrift;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = C.fuellung ? lesbar(fill) : C["map-marke"];
+      ctx.fillText(f.kurz, p[0], p[1] + 1); ops++;
+      /* Höhenband (RB-21a R6: Skalar am Knoten, keine Ebene) */
+      if (f.hoehe) {
+        var hb = (f.hoehe > 0 ? "+" : "−") + Math.abs(f.hoehe) + " m";
+        ctx.font = "600 " + Math.max(8, rr * 0.5) + "px " + C.schrift;
+        var w2 = ctx.measureText(hb).width + 8;
+        ctx.fillStyle = C.fuellung ? mitAlpha(C["map-boden"], 0.92) : C["map-boden"];
+        ctx.fillRect(p[0] + rr - 2, p[1] - rr - 4, w2, rr * 0.72); ops++;
+        ctx.strokeStyle = C["map-marke"]; ctx.lineWidth = 1 * C.linie;
+        ctx.strokeRect(p[0] + rr - 2, p[1] - rr - 4, w2, rr * 0.72); ops++;
+        ctx.fillStyle = C["map-marke"]; ctx.textAlign = "center";
+        ctx.fillText(hb, p[0] + rr - 2 + w2 / 2, p[1] - rr - 4 + rr * 0.36); ops++;
+      }
+      /* Niederlage offen */
+      if (f.hp <= 0 && !f.gefallen) {
+        ctx.strokeStyle = C.danger; ctx.lineWidth = 2.4 * C.linie;
+        ctx.beginPath(); ctx.arc(p[0], p[1], rr + 9 * C.linie, 0, Math.PI * 2); ctx.setLineDash([4, 4]); ctx.stroke();
+        ctx.setLineDash([]); ops++;
+      }
+      /* Schreibrecht: ein Ring mit einer Feder darin */
+      if (f.schreibrecht) {
+        ctx.strokeStyle = C.rot; ctx.lineWidth = 1.6 * C.linie;
+        ctx.beginPath(); ctx.arc(p[0] - rr * 0.9, p[1] - rr * 0.9, rr * 0.34, 0, Math.PI * 2); ctx.stroke(); ops++;
+        ctx.beginPath(); ctx.moveTo(p[0] - rr * 1.05, p[1] - rr * 0.75); ctx.lineTo(p[0] - rr * 0.75, p[1] - rr * 1.05); ctx.stroke(); ops++;
+      }
+      /* Wer dran ist */
+      if (dranId === f.id) {
+        ctx.fillStyle = C.focus; ctx.beginPath();
+        ctx.moveTo(p[0], p[1] - rr - 12 * C.linie);
+        ctx.lineTo(p[0] - 6 * C.linie, p[1] - rr - 22 * C.linie);
+        ctx.lineTo(p[0] + 6 * C.linie, p[1] - rr - 22 * C.linie);
+        ctx.closePath(); ctx.fill(); ops++;
+      }
+      ctx.restore();
+    });
+
+    /* 8 · Nebel — die Maske ist ein Vektor, kein Bild. Nur für Nicht-Leitung. */
+    K.nebelMs = 0;
+    if (rolle() !== "leitung") {
+      var tn = performance.now();
+      var m = K.mctx;
+      m.setTransform(K.dpr, 0, 0, K.dpr, 0, 0);
+      m.clearRect(0, 0, K.w, K.h);
+      m.globalCompositeOperation = "source-over";
+      m.fillStyle = mitAlpha(C["map-nebel"], C.fuellung ? 0.93 : 0.99);
+      m.fillRect(0, 0, K.w, K.h);
+      m.globalCompositeOperation = "destination-out";
+      try { m.filter = C.ornament ? "blur(7px)" : "none"; } catch (e) {}
+      sicht.forEach(function (id) {
+        var rg = s.regionen.filter(function (x) { return x.id === id; })[0]; if (!rg) return;
+        pfad(m, schirmPoly(poly(rg.geo, Z.welt + ":" + rg.id)), glatt);
+        m.fillStyle = "#000"; m.fill();
+      });
+      try { m.filter = "none"; } catch (e) {}
+      m.globalCompositeOperation = "source-over";
+      K.nebelMs = performance.now() - tn;
+      ctx.drawImage(K.maske, 0, 0, K.w, K.h); ops++;
+    }
+
+    /* 9 · Vignette */
+    if (C.ornament && C.fuellung) {
+      var g = ctx.createRadialGradient(K.w / 2, K.h / 2, Math.min(K.w, K.h) * 0.3, K.w / 2, K.h / 2, Math.max(K.w, K.h) * 0.72);
+      g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, mitAlpha(C["map-nebel"], 0.3));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, K.w, K.h); ops++;
+    }
+
+    K.ops = ops;
+    K.letzte = performance.now() - t0;
+    K.zeiten.push(K.letzte); if (K.zeiten.length > 200) K.zeiten.shift();
+    var chip = $("chipBildZ"); if (chip) chip.textContent = K.letzte.toFixed(1).replace(".", ",");
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     6 · DIE TAFEL — das Outline-Rezept. Gleichrangig, nicht Ersatz.
+     Alles auf der Leinwand hat hier einen echten Knopf, eine echte Fokusreihe
+     und eine echte Ansage. (K7 / Invariante 8.)
+     ══════════════════════════════════════════════════════════════════════════ */
+  function initiativliste() {
+    return sichtbareFiguren().slice().sort(function (a, b) { return b.ini - a.ini; });
+  }
+
+  function tafelZeichnen() {
+    var s = szene(), host = leer($("tafelOrte")), sicht = freigegebeneRegionen(), gezeigt = gezeigteRegionen();
+    var ort = welt().baum.filter(function (b) { return b.id === Z.ortId; })[0];
+
+    if (!s) {  /* Ort ohne Karte: die Tafel IST die Karte */
+      $("tafelOrtZahl").textContent = (ort && ort.eingehend ? ort.eingehend : 0) + " Artikel";
+      (ort && ort.nachfrage ? ort.nachfrage : []).forEach(function (n) {
+        var z = el("div", { class: "tafel-zeile" });
+        add(z, el("span", { class: "tafel-marke", "data-form": "ort", "aria-hidden": "true" }, "→"),
+            add(el("span", { class: "tafel-txt" }), el("b", null, n), el("small", null, "verlinkt auf " + ort.name)));
+        add(z, el("span", { class: "tafel-rechts" }, ""));
+        host.appendChild(z);
+      });
+      if (ort && ort.eingehend > 4) {
+        host.appendChild(el("p", { class: "hinweis" }, "…" + (ort.eingehend - 4) + " weitere Artikel verlangen diese Seite."));
+      }
+      leer($("tafelFiguren")).appendChild(el("p", { class: "hinweis" }, "Keine Figuren in diesem Ausschnitt."));
+      $("tafelFigZahl").textContent = "0";
+      $("tafelWahl").textContent = "Kein Kartenbild. Die Gliederung oben ist die vollständige Darstellung dieses Ortes.";
+      $("tafelWahlKuerzel").textContent = "—";
+      return;
+    }
+
+    $("tafelOrtZahl").textContent = s.regionen.length;
+    s.regionen.forEach(function (rg) {
+      var sichtbar = sicht.indexOf(rg.id) >= 0;
+      if (gezeigt.indexOf(rg.id) < 0) return;      /* strukturell abwesend, nicht ausgegraut */
+      var z = el("button", { type: "button", class: "tafel-zeile", "aria-current": Z.wahlRegion === rg.id ? "true" : "false" });
+      var haltend = s.figuren.filter(function (f) { return f.haelt.indexOf(rg.id) >= 0; }).length;
+      add(z,
+        el("span", { class: "tafel-marke", "data-form": "ort", "data-fraktion": sichtbar ? "" : "geheim", "aria-hidden": "true" }, sichtbar ? "▣" : "▤"),
+        add(el("span", { class: "tafel-txt" }),
+            el("b", null, rg.name),
+            el("small", null, (sichtbar ? "freigegeben" : "verdeckt") + " · " + rg.passagen + " Passagen · " + haltend + " halten ihn" + (rg.tuer ? " · rote Tür (" + rg.eingehend + " eingehend)" : ""))),
+        add(el("span", { class: "tafel-rechts" }), rg.tuer ? el("span", { class: "chip tuer" }, "Tür") : el("span", { class: "chip" }, rg.passagen + " P"))
+      );
+      z.addEventListener("click", function () { regionWaehlen(rg.id); });
+      host.appendChild(z);
+    });
+
+    var fhost = leer($("tafelFiguren")), figs = sichtbareFiguren();
+    $("tafelFigZahl").textContent = figs.length;
+    figs.slice().sort(function (a, b) { return b.ini - a.ini; }).forEach(function (f) {
+      var z = el("button", { type: "button", class: "tafel-zeile", "aria-current": Z.wahlFigur === f.id ? "true" : "false" });
+      var rg = s.regionen.filter(function (x) { return x.id === f.region; })[0];
+      var unter = feldname(f) + " · Höhe " + (f.hoehe > 0 ? "+" : f.hoehe < 0 ? "−" : "±") + Math.abs(f.hoehe) + " m · " +
+                  (rg ? rg.name : "—") + " · Ini " + f.ini + " · " + f.zeile;
+      add(z,
+        el("span", { class: "tafel-marke", "data-fraktion": f.hp <= 0 ? "gefallen" : f.fraktion, "aria-hidden": "true" }, f.kurz),
+        add(el("span", { class: "tafel-txt" }),
+            el("b", null, f.name + (f.spieler ? " (" + f.spieler + ")" : "")),
+            el("small", null, unter)),
+        add(el("span", { class: "tafel-rechts" }),
+            f.abwesend ? el("span", { class: "chip freistelle" }, "nicht am Tisch") : null,
+            f.schreibrecht ? el("span", { class: "chip tuer" }, "Schreibrecht") : null,
+            balken(f))
+      );
+      z.addEventListener("click", function () { figurWaehlen(f.id); });
+      z.addEventListener("keydown", function (ev) { figurTasten(ev, f); });
+      fhost.appendChild(z);
+    });
+
+    var w = Z.wahlFigur ? s.figuren.filter(function (f) { return f.id === Z.wahlFigur; })[0] : null;
+    var wr = Z.wahlRegion ? s.regionen.filter(function (r) { return r.id === Z.wahlRegion; })[0] : null;
+    $("tafelWahlKuerzel").textContent = w ? w.kurz : wr ? "▣" : "—";
+    $("tafelWahl").textContent = w
+      ? w.name + " steht auf " + feldname(w) + ", Höhe " + w.hoehe + " m. Pfeiltasten bewegen, + und − ändern die Höhe."
+      : wr ? wr.name + (freigegebeneRegionen().indexOf(wr.id) >= 0 ? " ist freigegeben." : " ist verdeckt. F gibt ihn frei.")
+           : "Nichts ausgewählt. Wähle eine Figur oder einen Bereich.";
+  }
+  function balken(f) {
+    if (!f.hpMax) return null;
+    var b = el("span", { class: "mini-balken", "data-kritisch": f.hp / f.hpMax <= 0.34 ? "ja" : "nein",
+                         title: f.hp + " von " + f.hpMax + " Trefferpunkten" });
+    var i = el("i"); i.style.width = Math.round(100 * Math.max(0, f.hp / f.hpMax)) + "%";
+    return add(b, i);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     7 · DIE FREIGABE — die Karte als Zustimmungsfläche
+     Vor dem Druck steht, was der eine Druck wem beibringt. Danach: N
+     Offenbarungen, N Namen, EIN Auditeintrag, ein Undo-Ring.
+     ══════════════════════════════════════════════════════════════════════════ */
+  function differenz(regionId) {
+    var s = szene(), rg = s.regionen.filter(function (r) { return r.id === regionId; })[0];
+    if (!rg) return [];
+    return s.figuren.filter(function (f) { return f.fraktion === "spieler"; }).map(function (f) {
+      if (f.haelt.indexOf(rg.id) >= 0) return { f: f, art: "haelt", wert: 0, note: "hält ihn bereits — Sitzung 11" };
+      if (f.abwesend) return { f: f, art: "abwesend", wert: 0, note: "nicht am Tisch → nichts mitgebracht" };
+      return { f: f, art: "neu", wert: rg.passagen, note: "bekommt " + rg.passagen + " Passagen" };
+    });
+  }
+  function freigabeZeichnen() {
+    var host = leer($("diffListe")), s = szene();
+    var rg = s && Z.wahlRegion ? s.regionen.filter(function (r) { return r.id === Z.wahlRegion; })[0] : null;
+    var btn = $("btnFreigeben"), meta = $("freigabeMeta");
+
+    if (rolle() !== "leitung") {
+      $("freigabeHinweis").textContent = "Freigabe ist eine Handlung der Spielleitung. In dieser Rolle ist die Steuerung nicht ausgegraut, sondern nicht vorhanden — und die Zahl im Regal zählt nur, was DIESE Figur bekommen hat.";
+      btn.disabled = true; $("btnZurueck").disabled = true; meta.textContent = "nicht in dieser Rolle";
+      return;
+    }
+    $("btnZurueck").disabled = Z.offenbarungen.length === 0;
+
+    if (!rg) {
+      $("freigabeHinweis").textContent = "Wähle einen verdeckten Bereich auf der Leinwand oder in der Tafel. Dann steht hier, was ein Tastendruck wem beibringt — bevor er gedrückt wird.";
+      meta.textContent = "kein Bereich gewählt"; btn.disabled = true; return;
+    }
+    var d = differenz(rg.id), summe = 0;
+    d.forEach(function (x) { summe += x.wert; });
+    var schonOffen = d.every(function (x) { return x.art !== "neu"; });
+    btn.disabled = schonOffen;
+    meta.textContent = schonOffen ? "nichts mehr zu lehren" : summe + " Offenbarungen";
+    $("freigabeHinweis").textContent = rg.name + " freigeben · " + d.length + " Figuren · ein Tastendruck, " +
+      summe + " Offenbarungen, " + d.filter(function (x) { return x.art === "neu"; }).length + " Namen, ein Auditeintrag.";
+
+    d.forEach(function (x) {
+      var z = el("div", { class: "diff-zeile", "data-art": x.art });
+      add(z,
+        add(el("span", { class: "diff-name" }),
+            el("b", null, x.f.name + (x.f.spieler ? " (" + x.f.spieler + ")" : "")),
+            el("small", null, x.note)),
+        el("span", { class: "diff-wert", "data-plus": x.wert > 0 ? "ja" : "nein" }, (x.wert > 0 ? "+" : "±") + x.wert));
+      if (x.art === "abwesend") z.appendChild(el("span", { class: "chip freistelle" }, "Freistelle"));
+      host.appendChild(z);
+    });
+  }
+  function freigeben() {
+    if (rolle() !== "leitung" || !Z.wahlRegion) return;
+    var s = szene(), rg = s.regionen.filter(function (r) { return r.id === Z.wahlRegion; })[0];
+    var d = differenz(rg.id).filter(function (x) { return x.art === "neu"; });
+    if (!d.length) return;
+    rg.offen = true;
+    var eintrag = { regionId: rg.id, wer: d.map(function (x) { return x.f.id; }), zahl: 0, zeit: neueZeit() };
+    d.forEach(function (x) { x.f.haelt.push(rg.id); eintrag.zahl += x.wert; });
+    Z.offenbarungen.push(eintrag);
+    Z.audit.push("Freigabe · " + rg.name + " · " + eintrag.zahl + " Offenbarungen an " +
+                 d.map(function (x) { return x.f.name; }).join(", ") + " · Kaya · " + eintrag.zeit + " · Prüfsumme " + pruefsumme(eintrag));
+    alles();
+    $("hdFreigabe").parentNode.classList.add("puls");
+    setTimeout(function () { $("hdFreigabe").parentNode.classList.remove("puls"); }, 900);
+    ansage(rg.name + " freigegeben. " + eintrag.zahl + " Offenbarungen an " + d.length + " Figuren. Ein Auditeintrag.");
+  }
+  function zuruecknehmen() {
+    var e = Z.offenbarungen.pop(); if (!e) return;
+    var s = szene(), rg = s.regionen.filter(function (r) { return r.id === e.regionId; })[0];
+    e.wer.forEach(function (fid) {
+      var f = s.figuren.filter(function (x) { return x.id === fid; })[0];
+      if (f) f.haelt = f.haelt.filter(function (r) { return r !== e.regionId; });
+    });
+    if (rg) rg.offen = s.figuren.some(function (f) { return f.haelt.indexOf(rg.id) >= 0; });
+    Z.audit.push("Zurückgenommen · " + (rg ? rg.name : e.regionId) + " · " + e.zahl + " Offenbarungen · der Eintrag bleibt stehen.");
+    alles();
+    ansage((rg ? rg.name : "") + " zurückgenommen. Der Auditeintrag bleibt.");
+  }
+  var uhr = 0;
+  function neueZeit() { uhr++; return "Sa 21:" + (47 + uhr); }
+  function pruefsumme(o) {
+    var s = JSON.stringify(o), h = 2166136261, i;
+    for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return ("00000000" + (h >>> 0).toString(16)).slice(-8);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     8 · BELEG — Herkunftsschicht, Lizenz, Echtheitsangabe
+     ══════════════════════════════════════════════════════════════════════════ */
+  function belegZeichnen() {
+    var s = szene(), w = welt();
+    var rg = s && Z.wahlRegion ? s.regionen.filter(function (r) { return r.id === Z.wahlRegion; })[0] : null;
+    var txt = $("belegText"), hk = leer($("belegHerkunft"));
+    leer(txt);
+    if (!rg) {
+      txt.appendChild(document.createTextNode(
+        s ? "Kein Bereich gewählt. Jeder Bereich dieser Karte zitiert die Passage, aus der er stammt — oder sagt, dass es keine gibt."
+          : "Dieser Ort hat keinen Artikel. Er hat nur Nachfrage."));
+      $("belegMeta").textContent = "—";
+      hk.appendChild(zeile("◇", w.echt ? "Quelle: " + w.quelle.titel + " · " + w.quelle.url + " · " + w.quelle.lizenz : "Quelle: von der Crew geschrieben, kein fremdes Material."));
+      return;
+    }
+    $("belegMeta").textContent = rg.tuer ? "rote Tür" : rg.passagen + " Passagen";
+    if (rg.beleg) {
+      txt.appendChild(document.createTextNode("„" + rg.beleg + "“"));
+    } else {
+      txt.appendChild(document.createTextNode(
+        "Keine Passage. " + rg.name + " ist ein roter Link mit " + rg.eingehend + " eingehendem Artikel — " +
+        "der Zustand, den ein Wiki nicht kennt: zwischen „Artikel“ und „nichts“ gibt es dort nichts."));
+    }
+    hk.appendChild(zeile("✍", rg.beleg ? "Herkunft: " + rg.belegQuelle : "Herkunft: " + rg.belegQuelle));
+    if (rg.klausel) hk.appendChild(zeile("§", rg.klausel + " — eine Ortsklausel, in allen drei Weltpaketen dasselbe Bauteil."));
+    hk.appendChild(zeile("⚄", "Freigabe: " + (freigegebeneRegionen().indexOf(rg.id) >= 0 ? "freigegeben" : "verdeckt") +
+                              " · " + szene().figuren.filter(function (f) { return f.haelt.indexOf(rg.id) >= 0; }).length + " Figuren halten ihn"));
+    if (w.echt) {
+      hk.appendChild(zeile("©", "Übernommen aus " + w.quelle.url + " · " + w.quelle.lizenz +
+        " · geerntet " + w.quelle.geerntet + " · Weitergabe unter gleichen Bedingungen."));
+    } else {
+      hk.appendChild(zeile("©", "Von der Crew geschrieben für die Universalitätsprüfung. Kein fremdes Material, keine Lizenzpflicht."));
+    }
+    if (Z.audit.length) hk.appendChild(zeile("⌚", Z.audit[Z.audit.length - 1]));
+  }
+  function zeile(g, t) {
+    return add(el("div", { class: "z" }), el("span", { class: "g", "aria-hidden": "true" }, g), el("span", { class: "w" }, t));
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     9 · SCHALE ZEICHNEN
+     ══════════════════════════════════════════════════════════════════════════ */
+  function lang() { return R.dataset.etiketten === "lang"; }
+  function eti(id) { var e = ETIKETTEN[id]; return e ? (lang() ? e.lang : e.kurz) : ""; }
+
+  function schaleZeichnen() {
+    var w = welt();
+    $("ctxSigil").textContent = w.kennung;
+    $("ctxKampagne").textContent = w.name;
+    $("ctxLage").textContent = w.lage;
+    $("ctxEchtheitTxt").textContent = w.echtTxt;
+    $("ctxEchtheit").setAttribute("data-echt", w.echt ? "ja" : "nein");
+    var ro = rolle();
+    $("ctxLeser").textContent = ro === "leitung" ? "Kaya" : ro === "spieler" ? (ichFigur() ? ichFigur().spieler + " · " + ichFigur().name : "Spieler") : "Gast";
+    $("ctxSicht").textContent = ro === "leitung" ? "Spielleitung · Sicht(alle)"
+      : ro === "spieler" ? "Spieler · Sicht(" + (ichFigur() ? ichFigur().name : "?") + ")" : "Beobachter · Sicht(öffentlich)";
+
+    /* Modulschiene: gleiche Routen, andere Etiketten */
+    var ml = leer($("modListe"));
+    w.module.forEach(function (m, i) {
+      var li = el("li");
+      var b = el("button", { type: "button", class: "mod-btn", "data-etikett": "modul",
+                             "aria-current": MODULE[i] === Z.modul ? "page" : "false" });
+      add(b, el("span", { class: "mod-glyph", "aria-hidden": "true" }, m.kurz.slice(0, 2)),
+             add(el("span", { class: "mod-txt" }),
+                 el("span", { class: "mod-label" }, lang() ? m.lang : m.kurz),
+                 el("span", { class: "mod-kuerzel" }, m.kurz.slice(0, 2)),
+                 el("span", { class: "mod-route" }, MODULE[i])));
+      b.addEventListener("click", function () {
+        Z.modul = MODULE[i]; schaleZeichnen();
+        ansage("Modul " + m.kurz + ", Route " + MODULE[i] + ". Nur das Etikett wechselt mit dem Weltpaket, nie die Route.");
+      });
+      add(li, b); ml.appendChild(li);
+    });
+    $("modRouteKopf").textContent = "Etikett ≠ Route";
+
+    /* Ortsbaum */
+    var bh = leer($("ortBaum"));
+    $("colHd").textContent = eti("colHd");
+    $("colMeta").textContent = w.baum.length + " Knoten";
+    w.baum.forEach(function (b) {
+      var z = el("button", { type: "button", class: "baum-zeile" + (b.tuer ? " ist-tuer" : ""), role: "treeitem",
+                             "aria-current": Z.ortId === b.id ? "true" : "false" });
+      z.style.setProperty("--t", b.tiefe);
+      add(z, el("span", { class: "tiefe", "aria-hidden": "true" }),
+             el("span", { class: "nm" }, b.name),
+             el("span", { class: "zh" }, b.szene ? b.zahl : b.tuer ? b.eingehend + "×" : (b.zahl || "")));
+      z.addEventListener("click", function () { ortWaehlen(b.id); });
+      bh.appendChild(z);
+    });
+    $("baumNote").textContent = w.baumNote;
+
+    $("buehneHd").textContent = eti("buehneHd");
+    $("hdFreigabe").textContent = eti("hdFreigabe");
+    $("hdBeleg").textContent = eti("hdBeleg");
+    $("hdPruef").textContent = eti("hdPruef");
+    $("btnFreigebenTxt").textContent = eti("btnFreigebenTxt");
+    $("btnPruef").textContent = eti("pruef");
+
+    /* Regal */
+    var s = szene();
+    var il = leer($("iniListe"));
+    if (s) {
+      initiativliste().forEach(function (f, i) {
+        var e = el("button", { type: "button", class: "ini-eintrag", "data-dran": i === Z.iniIndex ? "ja" : "nein",
+                               "data-fraktion": f.hp <= 0 ? "gefallen" : f.fraktion });
+        add(e, el("span", { class: "w", "aria-hidden": "true" }, f.ini), el("span", null, f.name));
+        e.addEventListener("click", function () { Z.iniIndex = i; figurWaehlen(f.id); });
+        il.appendChild(e);
+      });
+    }
+    var zl = $("zaehlerLabel"), zz = $("zaehlerTueren");
+    if (ro === "leitung") { zl.textContent = "Offenbarungen gesamt"; zz.textContent = Z.offenbarungen.reduce(function (a, b) { return a + b.zahl; }, 0); }
+    else if (ro === "spieler") {
+      var ich = ichFigur(), n = 0;
+      Z.offenbarungen.forEach(function (e) { if (s && ich && e.wer.indexOf(ich.id) >= 0) { var rg = s.regionen.filter(function (r) { return r.id === e.regionId; })[0]; n += rg ? rg.passagen : 0; } });
+      zl.textContent = "Deine Offenbarungen"; zz.textContent = n;
+    } else { zl.textContent = "Öffentlich freigegeben"; zz.textContent = s ? s.regionen.filter(function (r) { return r.offen; }).length : 0; }
+
+    /* Niederlage — Invariante 4: nie automatisch */
+    var nb = $("niederlageBlock");
+    var offen = s ? s.figuren.filter(function (f) { return f.hp <= 0 && !f.gefallen && (rolle() === "leitung"); })[0] : null;
+    nb.hidden = !offen;
+    if (offen) { $("niederlageTxt").textContent = offen.name + " · 0 von " + offen.hpMax + " — defeat_pending"; }
+
+    /* Kartenfuß + Kolophon */
+    var kf = $("kartenFussInfo");
+    if (s) {
+      kf.textContent = s.titel + " · " + (Z.raster === "rasterlos" ? "rasterlos, kein Fangpunkt" : Z.fang);
+      $("massstabTxt").textContent = Z.raster === "rasterlos"
+        ? "rasterlos · Distanzen in Metern"
+        : "1 Feld = " + String(s.meter).replace(".", ",") + " m";
+    } else kf.textContent = "";
+    $("kartenFussArt").textContent = R.dataset.art === "fehlt"
+      ? "kein Kartenbild — Geometrie aus Ort/Bezug"
+      : "Farben aus den Token gelesen";
+
+    var kq = leer($("kolophonQuelle"));
+    if (w.echt) {
+      add(kq, el("b", null, "Inhalt:"), el("span", null,
+        w.quelle.titel + " · " + w.quelle.url + " · " + w.quelle.lizenz + " · Ernte " + w.quelle.geerntet + " · " +
+        w.quelle.artikel + " Artikel · " + nz(w.quelle.roteKanten) + " rote Kanten (" + w.quelle.rotAnteil + ") · " +
+        nz(w.quelle.ziele) + " distinkte fehlende Seiten. Die Welt gehört Kaya und seinen Kollegen; das Produkt bleibt welt- und systemagnostisch."));
+    } else {
+      add(kq, el("b", null, "Inhalt:"), el("span", null, w.name + " — von der Crew für diese Prüfung geschrieben. Kein fremdes Material."));
+    }
+    $("kolophonEchtheit").textContent = w.echt
+      ? "Echt: alle Namen, alle Zitate, alle Zahlen, alle roten Links, die Ortsklausel am Tor, die beiden Spielerfiguren (Olav und Baldur sind die einzigen Artikel, die 2026 noch bearbeitet wurden). Skizziert: die Kartengeometrie — ein Hobby-Wiki hat keine Koordinaten."
+      : "Vollständig von der Crew geschrieben. Dieses Paket existiert, um zu zeigen, dass kein Byte Eron im Bauteil steckt.";
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     10 · AUSWAHL & TASTEN
+     ══════════════════════════════════════════════════════════════════════════ */
+  function ortWaehlen(id) {
+    var w = welt(), b = w.baum.filter(function (x) { return x.id === id; })[0];
+    Z.ortId = id;
+    Z.szene = b && b.szene ? w.szenen[b.szene] : null;
+    Z.wahlFigur = null; Z.wahlRegion = null;
+    if (Z.szene) { Z.raster = Z.szene.raster; K.zoom = 1; K.px = K.py = 0; }
+    alles();
+    ansage(b.name + (Z.szene ? " geöffnet." : " hat keine Karte. Die Tafel ist die Karte."));
+  }
+  function figurWaehlen(id) {
+    Z.wahlFigur = id; Z.wahlRegion = null;
+    var f = szene().figuren.filter(function (x) { return x.id === id; })[0];
+    alles();
+    if (f) ansage(f.name + " gewählt · " + feldname(f) + " · Höhe " + f.hoehe + " m.");
+  }
+  function regionWaehlen(id) {
+    Z.wahlRegion = id; Z.wahlFigur = null;
+    alles();
+    var rg = szene().regionen.filter(function (x) { return x.id === id; })[0];
+    if (rg) ansage(rg.name + " gewählt. " + (freigegebeneRegionen().indexOf(id) >= 0 ? "Freigegeben." : "Verdeckt."));
+  }
+  function figurBewegen(f, dx, dy) {
+    var s = szene(), c = s.zelle;
+    if (Z.raster === "quadrat") { f.x += dx * c; f.y += dy * c; }
+    else if (Z.raster === "hex") {
+      var a = hexAxial([f.x, f.y]);
+      if (dx) a[0] += dx; else { a[0] += (dy < 0 ? 1 : -1); a[1] += dy; }
+      var z = hexZentrum(a[0], a[1]); f.x = z[0]; f.y = z[1];
+    } else { f.x += dx * 20; f.y += dy * 20; }
+    var p = fangen([f.x, f.y]); f.x = p[0]; f.y = p[1];
+    f.x = Math.max(10, Math.min(s.groesse[0] - 10, f.x));
+    f.y = Math.max(10, Math.min(s.groesse[1] - 10, f.y));
+    regionAktualisieren(f);
+    alles();
+    ansage(f.name + " · " + feldname(f) + " · " + (s.regionen.filter(function (r) { return r.id === f.region; })[0] || { name: "außerhalb" }).name);
+  }
+  function regionAktualisieren(f) {
+    var s = szene(), treffer = null;
+    s.regionen.forEach(function (rg) { if (imPolygon([f.x, f.y], poly(rg.geo, Z.welt + ":" + rg.id))) treffer = rg.id; });
+    f.region = treffer || f.region;
+  }
+  function figurTasten(ev, f) {
+    var t = ev.key, d = null;
+    if (t === "ArrowUp") d = [0, -1]; else if (t === "ArrowDown") d = [0, 1];
+    else if (t === "ArrowLeft") d = [-1, 0]; else if (t === "ArrowRight") d = [1, 0];
+    if (d) { ev.preventDefault(); Z.wahlFigur = f.id; figurBewegen(f, d[0], d[1]); fokusFigur(f.id); return; }
+    if (t === "+" || t === "-") {
+      ev.preventDefault(); f.hoehe = Math.max(-8, Math.min(12, f.hoehe + (t === "+" ? 1 : -1)));
+      Z.wahlFigur = f.id; alles(); fokusFigur(f.id);
+      ansage(f.name + " · Höhe " + f.hoehe + " m. Höhe ist ein Skalarband am Knoten, keine Ebene.");
+    }
+  }
+  function fokusFigur(id) {
+    var s = szene(); if (!s) return;
+    var figs = sichtbareFiguren().slice().sort(function (a, b) { return b.ini - a.ini; });
+    var i = figs.map(function (f) { return f.id; }).indexOf(id);
+    var host = $("tafelFiguren");
+    if (i >= 0 && host.children[i] && host.children[i].focus) host.children[i].focus();
+  }
+
+  /* — Zeiger auf der Leinwand — */
+  function leinwandZeiger() {
+    var cv = K.cv;
+    cv.addEventListener("pointerdown", function (ev) {
+      if (!szene()) return;
+      var rect = cv.getBoundingClientRect();
+      var q = [ev.clientX - rect.left, ev.clientY - rect.top], p = s2w(q);
+      var s = szene(), k = skala(), treffer = null;
+      sichtbareFiguren().forEach(function (f) {
+        var d = Math.hypot(f.x - p[0], f.y - p[1]); if (d * k <= 24 * k) treffer = f;
+      });
+      if (treffer && rolle() === "leitung") {
+        K.ziehen = { f: treffer, ox: p[0] - treffer.x, oy: p[1] - treffer.y, start: [treffer.x, treffer.y] };
+        cv.setPointerCapture(ev.pointerId); cv.classList.add("greift");
+        Z.wahlFigur = treffer.id; Z.wahlRegion = null; alles();
+        return;
+      }
+      if (treffer) { figurWaehlen(treffer.id); return; }
+      var rg = null;
+      s.regionen.forEach(function (r) {
+        if ((gezeigteRegionen().indexOf(r.id) >= 0) && imPolygon(p, poly(r.geo, Z.welt + ":" + r.id))) rg = r;
+      });
+      if (rg) { regionWaehlen(rg.id); return; }
+      K.panStart = { x: ev.clientX, y: ev.clientY, px: K.px, py: K.py };
+      cv.setPointerCapture(ev.pointerId); cv.classList.add("greift");
+    });
+    cv.addEventListener("pointermove", function (ev) {
+      var rect = cv.getBoundingClientRect();
+      if (K.ziehen) {
+        var p = s2w([ev.clientX - rect.left, ev.clientY - rect.top]);
+        var z = fangen([p[0] - K.ziehen.ox, p[1] - K.ziehen.oy]);
+        K.ziehen.f.x = z[0]; K.ziehen.f.y = z[1];
+        zeichnen(); return;
+      }
+      if (K.panStart) { K.px = K.panStart.px + (ev.clientX - K.panStart.x); K.py = K.panStart.py + (ev.clientY - K.panStart.y); zeichnen(); return; }
+      if (!szene()) return;
+      var pp = s2w([ev.clientX - rect.left, ev.clientY - rect.top]), nah = false;
+      sichtbareFiguren().forEach(function (f) { if (Math.hypot(f.x - pp[0], f.y - pp[1]) <= 24) nah = true; });
+      cv.classList.toggle("greifbar", nah);
+    });
+    function los(ev) {
+      if (K.ziehen) {
+        var f = K.ziehen.f, s = szene();
+        f.x = Math.max(10, Math.min(s.groesse[0] - 10, f.x));
+        f.y = Math.max(10, Math.min(s.groesse[1] - 10, f.y));
+        regionAktualisieren(f);
+        var d = Math.hypot(f.x - K.ziehen.start[0], f.y - K.ziehen.start[1]) / s.zelle * s.meter;
+        K.ziehen = null; alles();
+        ansage(f.name + " bewegt · " + feldname(f) + " · " + d.toFixed(1).replace(".", ",") + " m.");
+      }
+      K.panStart = null; cv.classList.remove("greift");
+      if (ev && ev.pointerId != null && cv.hasPointerCapture && cv.hasPointerCapture(ev.pointerId)) cv.releasePointerCapture(ev.pointerId);
+    }
+    cv.addEventListener("pointerup", los);
+    cv.addEventListener("pointercancel", los);
+    cv.addEventListener("wheel", function (ev) {
+      if (!szene()) return;
+      ev.preventDefault();
+      K.zoom = Math.max(0.6, Math.min(2.6, K.zoom * (ev.deltaY > 0 ? 0.92 : 1.087)));
+      zeichnen();
+    }, { passive: false });
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     11 · PRÜFSTAND
+     ══════════════════════════════════════════════════════════════════════════ */
+  function pz(host, st, txt, wert) {
+    var z = el("div", { class: "pruef-zeile", "data-st": st });
+    add(z, el("span", { class: "st", "aria-hidden": "true" }, st === "gruen" ? "✔" : st === "rot" ? "✘" : "•"),
+           el("span", { class: "txt" }, txt),
+           el("span", { class: "wert" }, wert == null ? "" : String(wert)));
+    host.appendChild(z);
+    return z;
+  }
+
+  /* Bauteilsignatur: tiefen- und mengenunabhängig. Zustandsklassen (s-…) fliegen
+     raus — sie sind Zustand, nicht Struktur. */
+  function signatur(root) {
+    var out = [];
+    Array.prototype.forEach.call(root.querySelectorAll("[data-komponente]"), function (k) {
+      var set = {};
+      Array.prototype.forEach.call(k.querySelectorAll("*"), function (e) {
+        var c = e.getAttribute("class");
+        var kl = c ? "." + c.trim().split(/\s+/).filter(function (x) { return x && x.slice(0, 2) !== "s-"; }).sort().join(".") : "";
+        set[e.tagName.toLowerCase() + kl] = 1;
+      });
+      out.push(k.getAttribute("data-komponente") + "{" + Object.keys(set).sort().join("|") + "}");
+    });
+    return out.sort().join("\n");
+  }
+  function fnv(s) {
+    var h = 2166136261, i;
+    for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return ("00000000" + (h >>> 0).toString(16)).slice(-8);
+  }
+
+  var KONTRASTPAARE = [
+    { n: "Fließtext auf Fläche", a: "text", b: "surface", soll: 4.5 },
+    { n: "Gedämpft auf Fläche", a: "muted", b: "surface", soll: 4.5 },
+    { n: "Knopfschrift auf Akzent", a: "accent-ink", b: "accent", soll: 4.5 },
+    { n: "Rote Tür auf Fläche", a: "rot", b: "surface", soll: 4.5 },
+    { n: "Fokusring auf Hintergrund", a: "focus", b: "bg", soll: 3 },
+    { n: "Fließtext auf Hintergrund 2", a: "text", b: "bg-2", soll: 4.5 },
+    { n: "Kartenbeschriftung auf Kartenboden", a: "map-marke", b: "map-boden", soll: 4.5 },
+    { n: "Verdeckt-Schraffur auf Kartenboden", a: "map-verdeckt", b: "map-boden", soll: 3 },
+    { n: "Figurenkürzel auf Füllfarbe", a: "*kuerzel", b: "accent", soll: 4.5 }
+  ];
+  function kontrastMatrix() {
+    var alt = { skin: R.dataset.skin, thema: R.dataset.thema, kontrast: R.dataset.kontrast };
+    var skins = ["relic", "signal", "archive", "clean"], themen = ["light", "dark"], kontraste = ["standard", "hoch"];
+    var zeilen = [], gepr = 0, fehler = 0, min = 99;
+    skins.forEach(function (sk) { themen.forEach(function (th) { kontraste.forEach(function (ko) {
+      R.dataset.skin = sk; R.dataset.thema = th; R.dataset.kontrast = ko;
+      var C = farben();
+      KONTRASTPAARE.forEach(function (p) {
+        var w;
+        if (p.a === "*kuerzel") {
+          w = 99;
+          ["accent", "secondary", "seal", "danger"].forEach(function (f) {
+            w = Math.min(w, kontrastwert(lesbar(C[f]), C[f]));
+          });
+        } else w = kontrastwert(C[p.a], C[p.b]);
+        gepr++; if (w < p.soll) fehler++; if (w < min) min = w;
+        zeilen.push({ sk: sk, th: th, ko: ko, n: p.n, w: w, soll: p.soll, ok: w >= p.soll });
+      });
+    }); }); });
+    R.dataset.skin = alt.skin; R.dataset.thema = alt.thema; R.dataset.kontrast = alt.kontrast;
+    return { zeilen: zeilen, gepr: gepr, fehler: fehler, min: min };
+  }
+
+  function bildzeitMessen(n) {
+    var t = [], i;
+    for (i = 0; i < (n || 60); i++) { var a = performance.now(); zeichnen(); t.push(performance.now() - a); }
+    t.sort(function (x, y) { return x - y; });
+    return { median: t[Math.floor(t.length / 2)], p95: t[Math.floor(t.length * 0.95)], n: t.length };
+  }
+  function nebelzeitMessen(n) {
+    var alt = R.dataset.rolle; R.dataset.rolle = "spieler";
+    var t = [], i;
+    for (i = 0; i < (n || 40); i++) { zeichnen(); t.push(K.nebelMs); }
+    R.dataset.rolle = alt; zeichnen();
+    t.sort(function (x, y) { return x - y; });
+    return { median: t[Math.floor(t.length / 2)], max: t[t.length - 1], n: t.length };
+  }
+  function ueberlaufMessen(breite) {
+    var app = $("app");
+    app.classList.add("probe-380");
+    void app.offsetWidth;
+    var schlimm = null, zahl = 0;
+    Array.prototype.forEach.call(app.querySelectorAll("*"), function (e) {
+      if (e.closest(".vh")) return;                 /* Sonden und Ansagen sind absichtlich 1 px breit */
+      var cs = getComputedStyle(e);
+      if (cs.overflowX === "auto" || cs.overflowX === "scroll" || cs.display === "none") return;
+      var d = e.scrollWidth - e.clientWidth;
+      if (d > 1) { zahl++; if (!schlimm || d > schlimm.d) schlimm = { d: d, e: e }; }
+    });
+    var body = document.body.scrollWidth - document.documentElement.clientWidth;
+    app.classList.remove("probe-380");
+    void app.offsetWidth;
+    return { zahl: zahl, schlimm: schlimm, body: body };
+  }
+  function etikettenMessen() {
+    var alt = R.dataset.etiketten;
+    R.dataset.etiketten = "lang"; schaleZeichnen(); void $("app").offsetWidth;
+    var maxLen = 0, geschnitten = 0;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-etikett]"), function (e) {
+      maxLen = Math.max(maxLen, e.textContent.trim().length);
+      if (e.scrollWidth - e.clientWidth > 1) geschnitten++;
+    });
+    R.dataset.etiketten = alt; schaleZeichnen();
+    return { maxLen: maxLen, geschnitten: geschnitten };
+  }
+  function signaturLauf() {
+    var alt = { welt: Z.welt, ort: Z.ortId, szene: Z.szene, skin: R.dataset.skin, raster: Z.raster,
+                rolle: R.dataset.rolle, fang: Z.fang, wahlF: Z.wahlFigur, wahlR: Z.wahlRegion,
+                offb: Z.offenbarungen, audit: Z.audit, ini: Z.iniIndex };
+    R.dataset.rolle = "leitung";
+    var sigWelt = {}, roh = {};
+    ["eron", "kepler", "nebelakte"].forEach(function (wn) {
+      weltSetzen(wn, true);
+      var s = signatur($("app")); roh[wn] = s; sigWelt[wn] = fnv(s);
+    });
+    weltSetzen(alt.welt, true);
+    Z.ortId = alt.ort; Z.szene = alt.szene; Z.fang = alt.fang;
+    Z.wahlFigur = alt.wahlF; Z.wahlRegion = alt.wahlR;
+    Z.offenbarungen = alt.offb; Z.audit = alt.audit; Z.iniIndex = alt.ini;
+    var sigSkin = {};
+    ["relic", "signal", "archive", "clean"].forEach(function (sk) { R.dataset.skin = sk; alles(); sigSkin[sk] = fnv(signatur($("app"))); });
+    R.dataset.skin = alt.skin;
+    var sigRaster = {};
+    ["quadrat", "hex", "rasterlos"].forEach(function (rs) { Z.raster = rs; alles(); sigRaster[rs] = fnv(signatur($("app"))); });
+    Z.raster = alt.raster; R.dataset.rolle = alt.rolle; rasterKnoepfe(); alles();
+    return { welt: sigWelt, skin: sigSkin, raster: sigRaster, laenge: roh.eron.length,
+             bauteile: (roh.eron.match(/\n/g) || []).length + 1 };
+  }
+  function zwillingsbeweis() {
+    if (!szene()) { var mk = welt().baum.filter(function (b) { return b.szene; })[0]; ortWaehlen(mk.id); }
+    var alt = R.dataset.rolle, s = szene();
+    var geheim = s.figuren.filter(function (f) { return f.geheim; })[0];
+    var erg = [];
+    ["leitung", "spieler", "beobachter"].forEach(function (ro) {
+      R.dataset.rolle = ro; alles();
+      var t = $("tafel").textContent.replace(/\s+/g, " ").trim();
+      erg.push({
+        rolle: ro,
+        knoten: $("tafel").querySelectorAll(".tafel-zeile").length,
+        bytes: new TextEncoder().encode(t).length,
+        gezeichnet: sichtbareFiguren().length,
+        traegtGeheimnis: geheim ? t.indexOf(geheim.name) >= 0 : false
+      });
+    });
+    R.dataset.rolle = alt; alles();
+    return { zeilen: erg, geheim: geheim ? geheim.name : "—" };
+  }
+
+  function pruefstandLaufen() {
+    var host = leer($("pruefHost"));
+    if (!szene()) {                       /* Prüfstand braucht eine Karte — also eine holen. */
+      var mitKarte = welt().baum.filter(function (b) { return b.szene; })[0];
+      ortWaehlen(mitKarte.id);
+    }
+    Z.ansageStumm = true;
+    var t0 = performance.now();
+
+    var bz = bildzeitMessen(60);
+    pz(host, bz.median <= 16.7 ? "gruen" : "rot",
+       "Bildzeit der Leinwand · Median über " + bz.n + " Bildern (" + K.ops + " Zeichenoperationen, " +
+       szene().regionen.length + " Regionen, " + sichtbareFiguren().length + " Figuren, dpr " + K.dpr + ")",
+       bz.median.toFixed(2).replace(".", ",") + " ms · p95 " + bz.p95.toFixed(2).replace(".", ",") + " ms");
+
+    var nz2 = nebelzeitMessen(40);
+    pz(host, nz2.median <= 9.4 ? "gruen" : "grau",
+       "Nebelmaske neu gebaut (Vektor, destination-out) · RB-20b maß 9,4 ms je Offenbarung",
+       nz2.median.toFixed(2).replace(".", ",") + " ms · max " + nz2.max.toFixed(2).replace(".", ",") + " ms");
+
+    var sg = signaturLauf();
+    var wGleich = sg.welt.eron === sg.welt.kepler && sg.welt.kepler === sg.welt.nebelakte;
+    pz(host, wGleich ? "gruen" : "rot",
+       "Bauteilsignatur über 3 Weltpakete (Fantasy · Science-Fiction · Mystery), " + sg.bauteile + " Bauteile, " + sg.laenge + " Zeichen",
+       sg.welt.eron + " / " + sg.welt.kepler + " / " + sg.welt.nebelakte);
+    var sGleich = Object.keys(sg.skin).every(function (k) { return sg.skin[k] === sg.skin.relic; });
+    pz(host, sGleich ? "gruen" : "rot", "Bauteilsignatur über 4 Skins (Relic · Signal · Archive · Clean)", sg.skin.relic + " ×4");
+    var rGleich = Object.keys(sg.raster).every(function (k) { return sg.raster[k] === sg.raster.quadrat; });
+    pz(host, rGleich ? "gruen" : "rot", "Bauteilsignatur über 3 Raster (Quadrat · Hex · rasterlos)", sg.raster.quadrat + " ×3");
+
+    var routenGleich = ["eron", "kepler", "nebelakte"].every(function (w) { return WELTEN[w].module.length === MODULE.length; });
+    pz(host, routenGleich ? "gruen" : "rot", "Routen über 3 Weltpakete identisch — nur die Etiketten wechseln", MODULE.join(" "));
+
+    var zw = zwillingsbeweis();
+    var okZw = zw.zeilen[0].traegtGeheimnis && !zw.zeilen[1].traegtGeheimnis && !zw.zeilen[2].traegtGeheimnis;
+    pz(host, okZw ? "gruen" : "rot",
+       "Zwillingsbeweis · „" + zw.geheim + "“ steht NUR im Dokument der Leitung — strukturell abwesend, nicht ausgeblendet",
+       zw.zeilen.map(function (z) { return z.rolle.slice(0, 3) + " " + z.bytes + " B/" + z.knoten + " Z/" + z.gezeichnet + " F"; }).join(" · "));
+
+    var km = kontrastMatrix();
+    pz(host, km.fehler === 0 ? "gruen" : "rot",
+       "Kontrast · " + km.gepr + " Paare (4 Skins × hell/dunkel × Standard/Hoch × " + KONTRASTPAARE.length + " Paare), Karte eingeschlossen",
+       km.fehler + " Verstöße · Minimum " + km.min.toFixed(2).replace(".", ",") + ":1");
+
+    var ue = ueberlaufMessen();
+    pz(host, ue.zahl === 0 ? "gruen" : "rot",
+       "Waagerechter Überlauf bei Schalenbreite 380 px (Container-Query, keine Media-Query)",
+       ue.zahl + " Elemente" + (ue.schlimm ? " · schlimmstes +" + ue.schlimm.d + " px" : ""));
+
+    var et = etikettenMessen();
+    pz(host, et.geschnitten === 0 ? "gruen" : "rot",
+       "Lange Übersetzung · längstes Etikett " + et.maxLen + " Zeichen, kein Beschnitt",
+       et.geschnitten + " abgeschnitten");
+
+    pz(host, innerHTMLZuweisungen === 0 ? "gruen" : "rot",
+       "innerHTML im Renderpfad (gemessen, nicht versprochen)", innerHTMLZuweisungen + " Zuweisungen");
+
+    var artOk = (function () {
+      var alt = R.dataset.art; R.dataset.art = "fehlt"; alles();
+      var n = $("app").querySelectorAll("button, [role=treeitem]").length;
+      R.dataset.art = alt; alles();
+      return n === $("app").querySelectorAll("button, [role=treeitem]").length;
+    })();
+    pz(host, artOk ? "gruen" : "rot", "Fehlendes Artwork entfernt keine einzige Bedienstelle", "gleiche Knopfzahl");
+
+    Z.ansageStumm = false;
+    pz(host, "grau", "Prüfstand gesamt", ((performance.now() - t0) / 1000).toFixed(2).replace(".", ",") + " s");
+    ansage("Prüfstand fertig. " + host.querySelectorAll('[data-st="rot"]').length + " rote Zeilen.");
+  }
+
+  function matrixZeigen() {
+    var km = kontrastMatrix(), host = leer($("matrixHost"));
+    var t = el("table", { class: "mess" });
+    var thead = el("thead"), tr = el("tr");
+    ["Skin", "Thema", "Kontrast", "Paar", "Wert", "Soll"].forEach(function (h) { tr.appendChild(el("th", null, h)); });
+    add(thead, tr); add(t, thead);
+    var tb = el("tbody");
+    km.zeilen.slice().sort(function (a, b) { return a.w - b.w; }).slice(0, 14).forEach(function (z) {
+      var r = el("tr", { "data-st": z.ok ? "gruen" : "rot" });
+      add(r, el("td", null, z.sk), el("td", null, z.th === "light" ? "hell" : "dunkel"), el("td", null, z.ko),
+             el("td", null, z.n),
+             el("td", { class: "n" }, z.w.toFixed(2).replace(".", ",")),
+             el("td", { class: "n" }, String(z.soll).replace(".", ",")));
+      tb.appendChild(r);
+    });
+    add(t, tb);
+    host.appendChild(el("p", { class: "hinweis" }, "Die 14 schlechtesten von " + km.gepr + " Paaren. Verstöße: " + km.fehler + "."));
+    host.appendChild(t);
+    ansage("Kontrastmatrix: " + km.gepr + " Paare geprüft, " + km.fehler + " Verstöße.");
+  }
+  function zwillingZeigen() {
+    var zw = zwillingsbeweis(), host = leer($("matrixHost"));
+    var t = el("table", { class: "mess" }), thead = el("thead"), tr = el("tr");
+    ["Rolle", "Tafelzeilen", "Bytes", "Figuren gezeichnet", "trägt „" + zw.geheim + "“"].forEach(function (h) { tr.appendChild(el("th", null, h)); });
+    add(thead, tr); add(t, thead);
+    var tb = el("tbody");
+    zw.zeilen.forEach(function (z) {
+      var r = el("tr", { "data-st": z.rolle !== "leitung" && z.traegtGeheimnis ? "rot" : "gruen" });
+      add(r, el("td", null, z.rolle), el("td", { class: "n" }, z.knoten), el("td", { class: "n" }, z.bytes),
+             el("td", { class: "n" }, z.gezeichnet), el("td", null, z.traegtGeheimnis ? "ja" : "nein"));
+      tb.appendChild(r);
+    });
+    add(t, tb);
+    host.appendChild(el("p", { class: "hinweis" }, "Drei Leser, drei Dokumente. Für Spieler und Beobachter ist die geheime Figur nicht ausgeblendet — sie ist nicht da: nicht in der Tafel, nicht in der Zeichenliste, nicht in den Bytes."));
+    host.appendChild(t);
+    ansage("Zwillingsbeweis gelaufen.");
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     12 · ACHSEN & VERDRAHTUNG
+     ══════════════════════════════════════════════════════════════════════════ */
+  function segment(id, fn) {
+    var g = $(id);
+    g.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button"); if (!b || !g.contains(b)) return;
+      Array.prototype.forEach.call(g.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      fn(b.getAttribute("data-v"));
+    });
+  }
+  function weltSetzen(name, still) {
+    Z.welt = name; R.dataset.welt = name;
+    var w = WELTEN[name];
+    var ersterMitKarte = w.baum.filter(function (b) { return b.szene; })[0];
+    Z.ortId = ersterMitKarte.id;
+    Z.szene = w.szenen[ersterMitKarte.szene];
+    Z.raster = Z.szene.raster; Z.fang = "mitte";
+    Z.wahlFigur = null; Z.wahlRegion = null; Z.iniIndex = 0;
+    Z.offenbarungen = []; Z.audit = [];
+    K.zoom = 1; K.px = K.py = 0; K.polyCache = {};
+    rasterKnoepfe();
+    alles();
+    if (!still) ansage("Inhaltspaket " + w.name + ". Gleiche Bauteile, gleiche Routen, anderer Inhalt.");
+  }
+  function rasterKnoepfe() {
+    Array.prototype.forEach.call($("segRaster").querySelectorAll("button"), function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-v") === Z.raster ? "true" : "false");
+    });
+    Array.prototype.forEach.call($("segFang").querySelectorAll("button"), function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-v") === Z.fang ? "true" : "false");
+      b.disabled = Z.raster === "rasterlos" && b.getAttribute("data-v") !== "frei";
+    });
+  }
+
+  function alles() {
+    schaleZeichnen();
+    var s = szene();
+    $("keineKarte").hidden = !!s;
+    $("leinwand").style.visibility = s ? "visible" : "hidden";
+    if (!s) {
+      var ort = welt().baum.filter(function (b) { return b.id === Z.ortId; })[0];
+      $("keineKarteTitel").textContent = ort.name;
+      $("keineKarteText").textContent = "Dieser Ort hat kein Kartenbild — und ist trotzdem ein Ort: " + ort.eingehend +
+        " Artikel verlinken darauf, geschrieben hat ihn niemand. Die Tafel rechts ist hier nicht der Ersatz für die Karte, sie IST die Karte (RB-21a §3.4). Am Importtag gilt das für 100 % der Orte.";
+      $("keineKarteKasten").textContent = "Rote Tür · " + ort.eingehend + " eingehende Artikel · keine Geometrie · keine Passage. " +
+        "Ein Wiki kennt keinen Zustand zwischen „Artikel“ und „nichts“.";
+    }
+    tafelZeichnen();
+    freigabeZeichnen();
+    belegZeichnen();
+    if (s) zeichnen();
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     13 · START
+     ══════════════════════════════════════════════════════════════════════════ */
+  function start() {
+    K.cv = $("leinwand"); K.ctx = K.cv.getContext("2d");
+    K.maske = document.createElement("canvas"); K.mctx = K.maske.getContext("2d");
+    sondenBauen();
+
+    segment("segWelt", function (v) { weltSetzen(v); });
+    segment("segSkin", function (v) { R.dataset.skin = v; alles(); ansage("Skin " + v + ". Die Leinwand liest dieselben Token wie das DOM."); });
+    segment("segRolle", function (v) { R.dataset.rolle = v; Z.wahlRegion = null; alles(); ansage("Rolle " + v + "."); });
+    segment("segThema", function (v) { R.dataset.thema = v; alles(); });
+    segment("segKontrast", function (v) { R.dataset.kontrast = v; alles(); ansage(v === "hoch" ? "Hochkontrast. Die Karte wird zur Strichzeichnung — eine entworfene Fassung, kein Verfall." : "Standardkontrast."); });
+    segment("segMotion", function (v) { R.dataset.motion = v; });
+    segment("segEtiketten", function (v) { R.dataset.etiketten = v; alles(); });
+    segment("segArt", function (v) { R.dataset.art = v; alles(); ansage(v === "fehlt" ? "Artwork fehlt. Struktur, Geometrie und jede Bedienstelle bleiben." : "Artwork vorhanden."); });
+    segment("segBuehne", function (v) { R.dataset.buehne = v; requestAnimationFrame(function () { groesseAnpassen(); zeichnen(); }); });
+    segment("segRaster", function (v) { Z.raster = v; rasterKnoepfe(); alles(); ansage("Raster " + v + ". Ein Renderer, drei Raster — die Rasterrechnung ist Arithmetik."); });
+    segment("segFang", function (v) { Z.fang = v; rasterKnoepfe(); alles(); });
+
+    $("btnFreigeben").addEventListener("click", freigeben);
+    $("btnZurueck").addEventListener("click", zuruecknehmen);
+    $("btnPruef").addEventListener("click", pruefstandLaufen);
+    $("btnKontrast").addEventListener("click", matrixZeigen);
+    $("btnZwilling").addEventListener("click", zwillingZeigen);
+    $("btnZoomEin").addEventListener("click", function () { K.zoom = Math.min(2.6, K.zoom * 1.2); zeichnen(); });
+    $("btnZoomAus").addEventListener("click", function () { K.zoom = Math.max(0.6, K.zoom / 1.2); zeichnen(); });
+    $("btnZoomAn").addEventListener("click", function () { K.zoom = 1; K.px = K.py = 0; zeichnen(); ansage("Ausschnitt angepasst."); });
+    $("btnNiederlage").addEventListener("click", function () {
+      var f = szene().figuren.filter(function (x) { return x.hp <= 0 && !x.gefallen; })[0]; if (!f) return;
+      f.gefallen = true;
+      Z.audit.push("Niederlage bestätigt · " + f.name + " · durch Kaya · " + neueZeit() + " — nie automatisch (Invariante 4).");
+      alles(); ansage(f.name + ": Niederlage bestätigt. Ein Ereignis, ein Name, ein Zeitpunkt.");
+    });
+    $("btnReset").addEventListener("click", function () {
+      var frisch = JSON.parse(ANFANG);
+      Object.keys(frisch).forEach(function (k) { WELTEN[k] = frisch[k]; });
+      /* Die Bogen-Wege des Rings sind berechnet, nicht serialisiert — neu erzeugen. */
+      WELTEN.kepler.szenen.ring.wege = [bogenWeg([600, 390], 240, 0, Math.PI * 2, 48), [[600, 242], [600, 148]]];
+      uhr = 0; leer($("pruefHost")); leer($("matrixHost"));
+      weltSetzen(Z.welt);
+      ansage("Vorführung zurückgesetzt.");
+    });
+
+    leinwandZeiger();
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.target && /input|textarea|select/i.test(ev.target.tagName)) return;
+      var t = ev.key.toLowerCase();
+      if (t === "f") { ev.preventDefault(); freigeben(); }
+      else if (t === "z") { ev.preventDefault(); zuruecknehmen(); }
+      else if (t === "n") {
+        ev.preventDefault();
+        var li = initiativliste(); if (!li.length) return;
+        Z.iniIndex = (Z.iniIndex + 1) % li.length;
+        figurWaehlen(li[Z.iniIndex].id);
+      } else if (!ev.target.closest || !ev.target.closest(".tafel-zeile")) {
+        var f = Z.wahlFigur && szene() ? szene().figuren.filter(function (x) { return x.id === Z.wahlFigur; })[0] : null;
+        if (f && rolle() === "leitung") figurTasten(ev, f);
+      }
+    });
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { groesseAnpassen(); zeichnen(); }).observe($("leinwandHost"));
+    }
+    window.addEventListener("resize", function () { groesseAnpassen(); zeichnen(); });
+
+    weltSetzen("eron", true);
+    groesseAnpassen();
+    alles();
+    /* Ein zweiter Durchlauf, nachdem die Container-Query die Bühne bemessen hat. */
+    requestAnimationFrame(function () { groesseAnpassen(); zeichnen(); });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
+})();
+</script>

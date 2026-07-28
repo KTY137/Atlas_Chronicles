@@ -1,0 +1,2877 @@
+<title>Der Schwellentisch — elf Ringe im Nebel · Chronicle (Kandidat B, Runde 5)</title>
+
+<style>
+/* ==========================================================================
+   Chronicle · Spike B1 — „Der Schwellentisch"
+   Kandidat B „Die Schwelle" · Runde 5 · Sprosse: die Leinwand.
+   Alles Token. Keine Webfont, kein CDN, kein externes Bild, kein Raster
+   aus dem Eron-Korpus (0 von 41 Dateien tragen ein Lizenzfeld).
+   Vier Häute (Relic · Signal · Archive · Clean) × hell/dunkel.
+   ========================================================================== */
+
+:root {
+  /* --- Schrift ---------------------------------------------------------- */
+  --f-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-read: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "Hoefler Text", Georgia, serif;
+  --f-disp: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --f-mono: "Cascadia Mono", "SF Mono", Consolas, ui-monospace, "Liberation Mono", monospace;
+
+  --fs-nano: 0.625rem;
+  --fs-micro: 0.6875rem;
+  --fs-small: 0.75rem;
+  --fs-base: 0.8125rem;
+  --fs-ui: 0.875rem;
+  --fs-read: 1rem;
+  --fs-h3: 1rem;
+  --fs-h2: 1.25rem;
+  --fs-h1: 1.875rem;
+  --fs-num: 1.5rem;
+
+  --lh-tight: 1.2;
+  --lh-ui: 1.42;
+  --lh-read: 1.62;
+  --ls-caps: 0.15em;
+  --ls-num: 0.01em;
+
+  /* --- Maß -------------------------------------------------------------- */
+  --sp-1: 0.25rem;  --sp-2: 0.5rem;   --sp-3: 0.75rem;  --sp-4: 1rem;
+  --sp-5: 1.5rem;   --sp-6: 2rem;     --sp-7: 3rem;
+  --rail-w: 17.5rem;
+  --lens-w: 22rem;
+
+  --r-xs: 2px; --r-sm: 3px; --r-md: 6px; --r-lg: 10px; --r-pill: 999px;
+  --hair: 1px;
+
+  /* --- Bewegung --------------------------------------------------------- */
+  --t-resp: 140ms;
+  --t-state: 260ms;
+  --t-trans: 820ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --- Palette: RELIC, hell („Tageslicht über Andaria") ------------------ */
+  --bg:    #e6ddcb;
+  --sf:    #f7f2e6;
+  --sf2:   #efe7d5;
+  --sunk:  #ddd2b9;
+  --ink:   #211a12;
+  --ink2:  #4a3d2c;
+  --ink3:  #776a52;
+  --ink4:  #9d9179;
+  --rule:  #d3c7ab;
+  --rule2: #bcab88;
+  --acc:   #8d3a17;
+  --acc2:  #b25a2c;
+  --accw:  #f2e0d3;
+  --gold:  #8a6c1f;
+  --goldw: #f1e7ca;
+  --good:  #2f5d3a;
+  --goodw: #dfe9dc;
+  --bad:   #8b2317;
+  --badw:  #f3ded9;
+  --warn:  #8a5a09;
+  --warnw: #f6e8c9;
+  --focus: #1f5670;
+  --link:  #22536b;
+  --nen:   #6d6045;
+  --schw:  #a3550f;
+  --schw2: #d08b3a;
+  --fog:   #1a1408;
+  --fog-a: 0.80;
+  --w0:  #9fb8bd;
+  --w1:  #ddcfad;
+  --w2:  #cfbf96;
+  --w3:  #bcaa7e;
+  --w4:  #a89468;
+  --w5:  #907d55;
+  --w6:  #776645;
+  --cont: rgba(78, 62, 36, 0.42);
+  --tk1: #7d2f22;  --tk2: #2c4d63;  --tk3: #5b4a17;  --tk4: #3d5c3f;
+  --grain: rgba(70, 52, 22, 0.045);
+  --sheen: rgba(255, 252, 243, 0.72);
+
+  --e-flat:  0 1px 0 rgba(33, 26, 18, 0.06);
+  --e-panel: 0 1px 2px rgba(33, 26, 18, 0.10), 0 10px 26px -18px rgba(33, 26, 18, 0.45);
+  --e-lift:  0 2px 5px rgba(33, 26, 18, 0.14), 0 22px 46px -26px rgba(33, 26, 18, 0.62);
+  --e-in:    inset 0 1px 0 var(--sheen), inset 0 -1px 0 rgba(33, 26, 18, 0.07);
+  --e-focus: 0 0 0 2px var(--sf), 0 0 0 4px var(--focus);
+}
+
+/* --- Palette: SIGNAL, hell ------------------------------------------------ */
+:root[data-skin="signal"] {
+  --f-ui: "Segoe UI", "Roboto Condensed", system-ui, -apple-system, Arial, sans-serif;
+  --f-read: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --f-disp: "Segoe UI Semibold", "Segoe UI", system-ui, Arial, sans-serif;
+  --ls-caps: 0.18em;
+  --r-xs: 0; --r-sm: 0; --r-md: 2px; --r-lg: 3px;
+  --bg: #dde3e7; --sf: #f2f6f8; --sf2: #e7eef2; --sunk: #cfd8de;
+  --ink: #0d151b; --ink2: #33434e; --ink3: #5f707c; --ink4: #8798a3;
+  --rule: #c1ccd3; --rule2: #a2b1bb;
+  --acc: #0a6072; --acc2: #128299; --accw: #d9edf1;
+  --gold: #8a5c0c; --goldw: #f6e9cd;
+  --good: #17603f; --goodw: #d9ece3; --bad: #97281c; --badw: #f6dfdb;
+  --warn: #8a5c0c; --warnw: #f6e9cd;
+  --focus: #0a5b96; --link: #0a5b96;
+  --nen: #64757f; --schw: #0a6072; --schw2: #12a0bd;
+  --fog: #0b1116; --fog-a: 0.84;
+  --w0: #9db6c1; --w1: #d5dcdd; --w2: #c4cdd0; --w3: #b1bcc0; --w4: #9fabb0; --w5: #8b979d; --w6: #778389;
+  --cont: rgba(20, 40, 52, 0.40);
+  --tk1: #8c2f22; --tk2: #14566e; --tk3: #7a5a0d; --tk4: #245c43;
+  --grain: rgba(20, 40, 52, 0.03);
+  --sheen: rgba(255, 255, 255, 0.8);
+}
+
+/* --- Palette: ARCHIVE, hell (die Haut aus Runde 4, fortgeführt) ----------- */
+:root[data-skin="archive"] {
+  --f-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --f-read: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --f-disp: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --bg: #e9e2d5; --sf: #fbf8f2; --sf2: #f0e9db; --sunk: #e0d7c4;
+  --ink: #241f1c; --ink2: #4a423b; --ink3: #736858; --ink4: #9c907d;
+  --rule: #d5cab4; --rule2: #bdae92;
+  --acc: #7a1f27; --acc2: #a4444c; --accw: #f0e2df;
+  --gold: #8a6a2f; --goldw: #f2e9d2;
+  --good: #2c5c42; --goodw: #e2ecdf; --bad: #8c3210; --badw: #f6e5da;
+  --warn: #8a6a2f; --warnw: #f2e9d2;
+  --focus: #1f4f6b; --link: #1f4f6b;
+  --nen: #6d6154; --schw: #8c3210; --schw2: #b8642f;
+  --fog: #1b1713; --fog-a: 0.78;
+  --w0: #a5b4b1; --w1: #ded4bd; --w2: #cec2a6; --w3: #bcae90; --w4: #a89a7c; --w5: #948668; --w6: #7d7157;
+  --cont: rgba(60, 46, 28, 0.40);
+  --tk1: #6f2f34; --tk2: #2f4a63; --tk3: #5c4a1e; --tk4: #35563d;
+  --grain: rgba(60, 46, 28, 0.035);
+  --sheen: rgba(255, 253, 246, 0.72);
+}
+
+/* --- Palette: CLEAN, hell ------------------------------------------------- */
+:root[data-skin="clean"] {
+  --f-ui: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --f-read: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --f-disp: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --r-md: 8px; --r-lg: 14px;
+  --bg: #eef0f3; --sf: #ffffff; --sf2: #f6f7f9; --sunk: #e6e9ed;
+  --ink: #14161a; --ink2: #3b4048; --ink3: #646b75; --ink4: #8b929c;
+  --rule: #dcdfe4; --rule2: #c2c7cf;
+  --acc: #1a5bbd; --acc2: #2f77e0; --accw: #e2ecfb;
+  --gold: #7a5900; --goldw: #f7edd4;
+  --good: #1c6340; --goodw: #dfeee7; --bad: #9c2620; --badw: #fadedb;
+  --warn: #7a5900; --warnw: #f7edd4;
+  --focus: #1a5bbd; --link: #1a5bbd;
+  --nen: #6b7280; --schw: #a04600; --schw2: #d97316;
+  --fog: #12161d; --fog-a: 0.82;
+  --w0: #a9bcc9; --w1: #dfe2e6; --w2: #d0d4d9; --w3: #c0c5cb; --w4: #b0b5bc; --w5: #9fa5ad; --w6: #8d939c;
+  --cont: rgba(30, 40, 55, 0.34);
+  --tk1: #a13226; --tk2: #1e5b86; --tk3: #7a5900; --tk4: #1c6340;
+  --grain: rgba(0, 0, 0, 0.016);
+  --sheen: rgba(255, 255, 255, 0.9);
+}
+</style>
+
+<style>
+/* ==========================================================================
+   Dunkle Paletten. Jede Haut definiert ihre Nachtwerte EINMAL als --d-*;
+   die Zuordnung --x: var(--d-x) steht genau zweimal (Medienabfrage +
+   Attribut-Override), nicht achtmal. Das Attribut gewinnt in beide
+   Richtungen, weil es später steht und gleich spezifisch ist.
+   ========================================================================== */
+
+/* RELIC, dunkel — „Kerzenlicht, 21:47" */
+:root {
+  --d-bg: #0c0a06; --d-sf: #17120b; --d-sf2: #1e1810; --d-sunk: #100c07;
+  --d-ink: #f0e5d0; --d-ink2: #c9b99b; --d-ink3: #96866a; --d-ink4: #6e6149;
+  --d-rule: #32281a; --d-rule2: #4a3c26;
+  --d-acc: #e07a3c; --d-acc2: #f0a065; --d-accw: #2b1a0e;
+  --d-gold: #d3a94e; --d-goldw: #2a2211;
+  --d-good: #77b98d; --d-goodw: #16251b; --d-bad: #e5806e; --d-badw: #2b1512;
+  --d-warn: #d9a441; --d-warnw: #2a2011;
+  --d-focus: #8fd0ec; --d-link: #8cc2dc;
+  --d-nen: #8b7c60; --d-schw: #f0a44e; --d-schw2: #ffc98a;
+  --d-fog: #05040a; --d-fog-a: 0.88;
+  --d-w0: #16232c; --d-w1: #24261c; --d-w2: #2d2c20; --d-w3: #383426; --d-w4: #443c2b;
+  --d-w5: #514631; --d-w6: #5f5138;
+  --d-cont: rgba(214, 178, 106, 0.30);
+  --d-tk1: #d0705f; --d-tk2: #74a6cc; --d-tk3: #d2ae5c; --d-tk4: #7db083;
+  --d-grain: rgba(255, 226, 176, 0.030);
+  --d-sheen: rgba(255, 232, 190, 0.055);
+  --d-eflat: 0 1px 0 rgba(0, 0, 0, 0.45);
+  --d-epanel: 0 1px 2px rgba(0, 0, 0, 0.6), 0 12px 30px -18px rgba(0, 0, 0, 0.95);
+  --d-elift: 0 2px 6px rgba(0, 0, 0, 0.7), 0 26px 54px -28px rgba(0, 0, 0, 1);
+}
+:root[data-skin="signal"] {
+  --d-bg: #060a0d; --d-sf: #0e1418; --d-sf2: #141c22; --d-sunk: #0a0f13;
+  --d-ink: #e4eef3; --d-ink2: #b0c1cb; --d-ink3: #7b8d99; --d-ink4: #566671;
+  --d-rule: #202e38; --d-rule2: #32444f;
+  --d-acc: #3ecfe8; --d-acc2: #77e4f5; --d-accw: #08252c;
+  --d-gold: #d9a441; --d-goldw: #2a2011;
+  --d-good: #4fc48b; --d-goodw: #0c2419; --d-bad: #f07a68; --d-badw: #2a120e;
+  --d-warn: #d9a441; --d-warnw: #2a2011;
+  --d-focus: #6fd6f2; --d-link: #6fd6f2;
+  --d-nen: #788995; --d-schw: #4fe0f0; --d-schw2: #a6f2fb;
+  --d-fog: #01060a; --d-fog-a: 0.90;
+  --d-w0: #0d2733; --d-w1: #17242b; --d-w2: #1d2c34; --d-w3: #24353e; --d-w4: #2c3f49;
+  --d-w5: #354a55; --d-w6: #3f5660;
+  --d-cont: rgba(120, 214, 240, 0.28);
+  --d-tk1: #f0806c; --d-tk2: #5cb6dd; --d-tk3: #dcae4e; --d-tk4: #52c191;
+  --d-grain: rgba(150, 220, 255, 0.022);
+  --d-sheen: rgba(190, 232, 255, 0.06);
+  --d-eflat: 0 1px 0 rgba(0, 0, 0, 0.55);
+  --d-epanel: 0 0 0 1px rgba(120, 214, 240, 0.06), 0 12px 28px -20px rgba(0, 0, 0, 0.9);
+  --d-elift: 0 0 0 1px rgba(120, 214, 240, 0.10), 0 24px 50px -26px rgba(0, 0, 0, 1);
+}
+:root[data-skin="archive"] {
+  --d-bg: #100e0c; --d-sf: #1a1613; --d-sf2: #221c17; --d-sunk: #14110e;
+  --d-ink: #ece2d2; --d-ink2: #cbbfae; --d-ink3: #9d9182; --d-ink4: #776d60;
+  --d-rule: #362e26; --d-rule2: #4a3f33;
+  --d-acc: #c9585f; --d-acc2: #e08a8f; --d-accw: #2c1b1b;
+  --d-gold: #c9a35e; --d-goldw: #2a2317;
+  --d-good: #74b592; --d-goodw: #17251d; --d-bad: #e08a5c; --d-badw: #2a1a12;
+  --d-warn: #c9a35e; --d-warnw: #2a2317;
+  --d-focus: #9fcfe8; --d-link: #7db4d1;
+  --d-nen: #8b8071; --d-schw: #e08a5c; --d-schw2: #f3b98e;
+  --d-fog: #050403; --d-fog-a: 0.85;
+  --d-w0: #1a2628; --d-w1: #262319; --d-w2: #2f2a1e; --d-w3: #393224; --d-w4: #443b2a;
+  --d-w5: #504530; --d-w6: #5d5037;
+  --d-cont: rgba(201, 163, 94, 0.30);
+  --d-tk1: #c76b70; --d-tk2: #7ba0c4; --d-tk3: #c2a45e; --d-tk4: #7bb08c;
+  --d-grain: rgba(255, 232, 190, 0.028);
+  --d-sheen: rgba(255, 240, 214, 0.06);
+  --d-eflat: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --d-epanel: 0 1px 2px rgba(0, 0, 0, 0.6), 0 10px 26px -16px rgba(0, 0, 0, 0.9);
+  --d-elift: 0 2px 6px rgba(0, 0, 0, 0.65), 0 22px 48px -24px rgba(0, 0, 0, 1);
+}
+:root[data-skin="clean"] {
+  --d-bg: #0b0d10; --d-sf: #15181d; --d-sf2: #1c2026; --d-sunk: #101318;
+  --d-ink: #eceef2; --d-ink2: #c0c6ce; --d-ink3: #8d949e; --d-ink4: #666d77;
+  --d-rule: #2a2f36; --d-rule2: #3c424b;
+  --d-acc: #6aa9ff; --d-acc2: #98c4ff; --d-accw: #10203a;
+  --d-gold: #d5a838; --d-goldw: #2a2211;
+  --d-good: #4cbf8a; --d-goodw: #0f2620; --d-bad: #f28074; --d-badw: #2b1412;
+  --d-warn: #d5a838; --d-warnw: #2a2211;
+  --d-focus: #6aa9ff; --d-link: #6aa9ff;
+  --d-nen: #7c848f; --d-schw: #ff9d4d; --d-schw2: #ffc191;
+  --d-fog: #04060b; --d-fog-a: 0.86;
+  --d-w0: #14232e; --d-w1: #1b1f25; --d-w2: #22272d; --d-w3: #2a3037; --d-w4: #333a42;
+  --d-w5: #3d444d; --d-w6: #474f58;
+  --d-cont: rgba(160, 190, 220, 0.26);
+  --d-tk1: #ef8577; --d-tk2: #6fb0e0; --d-tk3: #d8ac4a; --d-tk4: #58c193;
+  --d-grain: rgba(255, 255, 255, 0.015);
+  --d-sheen: rgba(255, 255, 255, 0.055);
+  --d-eflat: 0 1px 0 rgba(0, 0, 0, 0.5);
+  --d-epanel: 0 1px 2px rgba(0, 0, 0, 0.55), 0 12px 30px -20px rgba(0, 0, 0, 0.9);
+  --d-elift: 0 2px 6px rgba(0, 0, 0, 0.6), 0 24px 52px -26px rgba(0, 0, 0, 1);
+}
+
+/* Die Zuordnung — Systempräferenz */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: var(--d-bg); --sf: var(--d-sf); --sf2: var(--d-sf2); --sunk: var(--d-sunk);
+    --ink: var(--d-ink); --ink2: var(--d-ink2); --ink3: var(--d-ink3); --ink4: var(--d-ink4);
+    --rule: var(--d-rule); --rule2: var(--d-rule2);
+    --acc: var(--d-acc); --acc2: var(--d-acc2); --accw: var(--d-accw);
+    --gold: var(--d-gold); --goldw: var(--d-goldw);
+    --good: var(--d-good); --goodw: var(--d-goodw); --bad: var(--d-bad); --badw: var(--d-badw);
+    --warn: var(--d-warn); --warnw: var(--d-warnw);
+    --focus: var(--d-focus); --link: var(--d-link);
+    --nen: var(--d-nen); --schw: var(--d-schw); --schw2: var(--d-schw2);
+    --fog: var(--d-fog); --fog-a: var(--d-fog-a);
+    --w0: var(--d-w0); --w1: var(--d-w1); --w2: var(--d-w2); --w3: var(--d-w3);
+    --w4: var(--d-w4); --w5: var(--d-w5); --w6: var(--d-w6);
+    --cont: var(--d-cont);
+    --tk1: var(--d-tk1); --tk2: var(--d-tk2); --tk3: var(--d-tk3); --tk4: var(--d-tk4);
+    --grain: var(--d-grain); --sheen: var(--d-sheen);
+    --e-flat: var(--d-eflat); --e-panel: var(--d-epanel); --e-lift: var(--d-elift);
+    --e-in: inset 0 1px 0 var(--d-sheen), inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+  }
+}
+
+/* Die Zuordnung — ausdrückliche Wahl. Schlägt die Medienabfrage in beide Richtungen. */
+:root[data-theme="dark"] {
+  --bg: var(--d-bg); --sf: var(--d-sf); --sf2: var(--d-sf2); --sunk: var(--d-sunk);
+  --ink: var(--d-ink); --ink2: var(--d-ink2); --ink3: var(--d-ink3); --ink4: var(--d-ink4);
+  --rule: var(--d-rule); --rule2: var(--d-rule2);
+  --acc: var(--d-acc); --acc2: var(--d-acc2); --accw: var(--d-accw);
+  --gold: var(--d-gold); --goldw: var(--d-goldw);
+  --good: var(--d-good); --goodw: var(--d-goodw); --bad: var(--d-bad); --badw: var(--d-badw);
+  --warn: var(--d-warn); --warnw: var(--d-warnw);
+  --focus: var(--d-focus); --link: var(--d-link);
+  --nen: var(--d-nen); --schw: var(--d-schw); --schw2: var(--d-schw2);
+  --fog: var(--d-fog); --fog-a: var(--d-fog-a);
+  --w0: var(--d-w0); --w1: var(--d-w1); --w2: var(--d-w2); --w3: var(--d-w3);
+  --w4: var(--d-w4); --w5: var(--d-w5); --w6: var(--d-w6);
+  --cont: var(--d-cont);
+  --tk1: var(--d-tk1); --tk2: var(--d-tk2); --tk3: var(--d-tk3); --tk4: var(--d-tk4);
+  --grain: var(--d-grain); --sheen: var(--d-sheen);
+  --e-flat: var(--d-eflat); --e-panel: var(--d-epanel); --e-lift: var(--d-elift);
+  --e-in: inset 0 1px 0 var(--d-sheen), inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+}
+</style>
+
+<style>
+/* ==========================================================================
+   Bau. Nur Token, keine Literalfarbe unterhalb dieser Zeile.
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--fs-base)/var(--lh-ui) var(--f-ui);
+  overflow-x: hidden;
+  transition: background var(--t-state) var(--ease), color var(--t-state) var(--ease);
+}
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(circle at 12% 8%, var(--grain) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 62% 44%, var(--grain) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 84% 78%, var(--grain) 0 1px, transparent 1.4px);
+  background-size: 7px 7px, 11px 11px, 13px 13px;
+}
+h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+button, input, select { font: inherit; color: inherit; }
+
+:is(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+.skip {
+  position: absolute; left: var(--sp-2); top: var(--sp-2); z-index: 90;
+  transform: translateY(-260%); padding: var(--sp-2) var(--sp-4);
+  background: var(--sf); color: var(--ink); border: var(--hair) solid var(--rule2);
+  border-radius: var(--r-sm); text-decoration: none; box-shadow: var(--e-lift);
+  transition: transform var(--t-resp) var(--ease);
+}
+.skip:focus { transform: translateY(0); }
+
+/* --- Mikrotypografie ------------------------------------------------------ */
+.caps {
+  font-size: var(--fs-nano); text-transform: uppercase; letter-spacing: var(--ls-caps);
+  color: var(--ink3); font-weight: 600; margin: 0;
+}
+.num { font-variant-numeric: tabular-nums; letter-spacing: var(--ls-num); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-micro); }
+.hair { height: var(--hair); background: var(--rule); border: 0; margin: var(--sp-3) 0; }
+.wrap-any { overflow-wrap: anywhere; }
+
+/* --- Schale --------------------------------------------------------------- */
+.app {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  max-width: 118rem; margin-inline: auto;
+}
+
+/* --- Kopfleiste ----------------------------------------------------------- */
+.kopf {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  background: linear-gradient(180deg, var(--sf) 0%, var(--sf2) 100%);
+  border: var(--hair) solid var(--rule); border-radius: var(--r-md);
+  box-shadow: var(--e-panel), var(--e-in);
+}
+.kopf__id { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.sigil { flex: none; color: var(--acc); filter: drop-shadow(0 1px 0 var(--sheen)); }
+.kopf__id b { font: 600 var(--fs-ui)/1.15 var(--f-disp); letter-spacing: -0.005em; display: block; }
+.kopf__id span { display: block; }
+.kopf__uhr {
+  margin-inline-start: auto; display: flex; align-items: baseline; gap: var(--sp-2);
+  font-family: var(--f-mono); font-variant-numeric: tabular-nums;
+}
+.kopf__uhr b { font-size: var(--fs-h3); color: var(--ink); letter-spacing: 0.02em; }
+.dials { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.dial { display: flex; align-items: center; gap: var(--sp-2); border: 0; padding: 0; margin: 0; min-width: 0; }
+
+/* Segmentiertes Stellrad */
+.seg {
+  display: inline-flex; padding: 2px; gap: 2px;
+  background: var(--sunk); border: var(--hair) solid var(--rule);
+  border-radius: var(--r-sm); box-shadow: inset 0 1px 2px rgba(0,0,0,.10);
+}
+.seg > label { position: relative; display: inline-flex; }
+.seg input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.seg span {
+  display: inline-block; padding: 3px var(--sp-3); border-radius: var(--r-xs);
+  font-size: var(--fs-micro); font-weight: 600; color: var(--ink3);
+  white-space: nowrap; transition: background var(--t-resp) var(--ease), color var(--t-resp) var(--ease);
+}
+.seg input:checked + span { background: var(--sf); color: var(--ink); box-shadow: var(--e-flat); }
+.seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 1px; }
+.seg input:not(:checked):hover + span { color: var(--ink); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: 4px var(--sp-3); background: var(--sf); color: var(--ink);
+  border: var(--hair) solid var(--rule2); border-radius: var(--r-sm);
+  font-size: var(--fs-micro); font-weight: 600; cursor: pointer;
+  box-shadow: var(--e-flat);
+  transition: background var(--t-resp) var(--ease), border-color var(--t-resp) var(--ease),
+              transform var(--t-resp) var(--ease);
+}
+.btn:hover { border-color: var(--acc); }
+.btn:active { transform: translateY(1px); }
+.btn[aria-pressed="true"] { background: var(--accw); border-color: var(--acc); color: var(--acc); }
+.btn--prim { background: var(--acc); border-color: var(--acc); color: var(--sf); }
+.btn--prim:hover { background: var(--acc2); border-color: var(--acc2); }
+.btn--ghost { background: transparent; border-color: var(--rule); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* --- Werkflaeche ---------------------------------------------------------- */
+.werk {
+  display: grid; gap: var(--sp-3);
+  grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--lens-w);
+  align-items: start;
+}
+.karte {
+  background: var(--sf); border: var(--hair) solid var(--rule);
+  border-radius: var(--r-md); box-shadow: var(--e-panel);
+}
+.karte > .kopfz {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: var(--hair) solid var(--rule);
+  background: linear-gradient(180deg, var(--sf2) 0%, var(--sf) 100%);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+}
+.karte > .kopfz b { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .01em; }
+.karte > .rumpf { padding: var(--sp-3); }
+.karte > .rumpf.tight { padding: var(--sp-2); }
+
+/* --- Schiene links: Schwellenlage ----------------------------------------- */
+.rail { display: grid; gap: var(--sp-3); }
+.bilanz { display: grid; gap: 3px; }
+.bilanz__zeile { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
+.bilanz__zeile dt { color: var(--ink3); font-size: var(--fs-micro); }
+.bilanz__zeile dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+.bilanz__gross {
+  display: flex; align-items: baseline; gap: var(--sp-2);
+  padding-top: var(--sp-2); margin-top: var(--sp-1); border-top: var(--hair) solid var(--rule);
+}
+.bilanz__gross b {
+  font: 700 var(--fs-num)/1 var(--f-disp); color: var(--schw);
+  font-variant-numeric: tabular-nums;
+}
+.bilanz__gross span { font-size: var(--fs-nano); color: var(--ink3); line-height: 1.3; }
+
+.lage { display: grid; gap: 2px; }
+.lage__row {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: var(--sp-2);
+  align-items: start; width: 100%; text-align: left;
+  padding: var(--sp-2); border: var(--hair) solid transparent; border-radius: var(--r-sm);
+  background: transparent; cursor: pointer;
+  transition: background var(--t-resp) var(--ease), border-color var(--t-resp) var(--ease);
+}
+.lage__row:hover { background: var(--sf2); border-color: var(--rule); }
+.lage__row[aria-pressed="true"] { background: var(--accw); border-color: var(--acc); }
+.lage__ring {
+  width: 12px; height: 12px; margin-top: 3px; border-radius: 50%;
+  border: 1.5px solid var(--schw); border-top-color: transparent;
+  transform: rotate(-32deg);
+}
+.lage__row[data-anker="ohne"] .lage__ring { border: 1.5px dotted var(--ink4); }
+.lage__name { font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.lage__meta { font-size: var(--fs-nano); color: var(--ink3); }
+.lage__dist {
+  font-family: var(--f-mono); font-variant-numeric: tabular-nums;
+  font-size: var(--fs-micro); color: var(--ink2); white-space: nowrap; text-align: right;
+}
+.lage__alias {
+  font-size: var(--fs-nano); color: var(--ink3); font-style: italic;
+  padding-inline-start: var(--sp-2); border-inline-start: 2px solid var(--rule2);
+  margin-top: 3px; overflow-wrap: anywhere;
+}
+.lage__row[data-nah="ja"] .lage__dist { color: var(--schw); font-weight: 700; }
+.lage__row[data-sicht="nein"] { opacity: .42; }
+</style>
+
+<style>
+/* --- Die Buehne: die Leinwand --------------------------------------------- */
+.stage { display: grid; gap: var(--sp-3); min-width: 0; }
+.werkzeug {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: linear-gradient(180deg, var(--sf2), var(--sf));
+  border: var(--hair) solid var(--rule); border-radius: var(--r-md) var(--r-md) 0 0;
+  border-bottom: 0;
+}
+.werkzeug__grp { display: flex; align-items: center; gap: var(--sp-2); }
+.werkzeug__grp > .caps { flex: none; }
+
+.platte {
+  position: relative;
+  border: var(--hair) solid var(--rule);
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  background: var(--sunk);
+  box-shadow: var(--e-lift), inset 0 0 0 1px var(--sheen);
+  overflow: hidden;
+}
+.platte::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 60px -14px rgba(0,0,0,.55), inset 0 0 0 1px var(--rule2);
+  border-radius: inherit;
+}
+.platte canvas { display: block; width: 100%; height: auto; touch-action: none; cursor: crosshair; }
+.platte canvas:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; }
+
+/* Ecken-Marken wie auf einer echten Seekarte */
+.ecke { position: absolute; width: 14px; height: 14px; pointer-events: none; opacity: .85; }
+.ecke::before, .ecke::after { content: ""; position: absolute; background: var(--schw2); }
+.ecke::before { width: 100%; height: 1px; top: 0; }
+.ecke::after { width: 1px; height: 100%; left: 0; }
+.ecke--tl { top: 8px; left: 8px; }
+.ecke--tr { top: 8px; right: 8px; transform: scaleX(-1); }
+.ecke--bl { bottom: 8px; left: 8px; transform: scaleY(-1); }
+.ecke--br { bottom: 8px; right: 8px; transform: scale(-1); }
+
+.hud {
+  position: absolute; left: var(--sp-3); top: var(--sp-3);
+  display: grid; gap: 2px; padding: var(--sp-2) var(--sp-3);
+  background: color-mix(in srgb, var(--sf) 82%, transparent);
+  border: var(--hair) solid var(--rule2); border-radius: var(--r-sm);
+  backdrop-filter: blur(3px); box-shadow: var(--e-panel);
+  font-family: var(--f-mono); font-size: var(--fs-nano); font-variant-numeric: tabular-nums;
+  color: var(--ink2); pointer-events: none; max-width: 62%;
+}
+.hud b { color: var(--ink); }
+.hud .warn { color: var(--schw); }
+
+.gliederung {
+  display: none; padding: var(--sp-3); background: var(--sf);
+  max-height: 30rem; overflow: auto;
+}
+.stage[data-ansicht="gliederung"] .gliederung { display: block; }
+.stage[data-ansicht="gliederung"] .platte canvas,
+.stage[data-ansicht="gliederung"] .hud,
+.stage[data-ansicht="gliederung"] .ecke { display: none; }
+.gliederung ul { display: grid; gap: 3px; }
+.gliederung > ul { border-inline-start: 0; }
+.gliederung ul ul {
+  margin-inline-start: var(--sp-3); padding-inline-start: var(--sp-3);
+  border-inline-start: var(--hair) solid var(--rule);
+}
+.gliederung li { font-size: var(--fs-micro); line-height: 1.5; }
+.gliederung li > b { font-family: var(--f-ui); }
+.gliederung .mono { color: var(--ink3); }
+
+.quelle {
+  font-size: var(--fs-nano); line-height: 1.55; color: var(--ink3);
+  padding: var(--sp-2) var(--sp-3); background: var(--sf2);
+  border: var(--hair) solid var(--rule); border-radius: var(--r-sm);
+}
+.quelle b { color: var(--ink2); }
+
+/* Messstreifen */
+.mess {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2);
+  padding: var(--sp-2); background: var(--sf); border: var(--hair) solid var(--rule);
+  border-radius: var(--r-sm);
+}
+.mess__z {
+  display: grid; gap: 1px; padding: var(--sp-2) var(--sp-3);
+  background: var(--sf2); border: var(--hair) solid var(--rule); border-radius: var(--r-xs);
+  min-width: 6.5rem; flex: 1 1 auto;
+}
+.mess__z dt { font-size: var(--fs-nano); color: var(--ink3); text-transform: uppercase; letter-spacing: var(--ls-caps); }
+.mess__z dd {
+  margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums;
+  font-size: var(--fs-base); font-weight: 700; color: var(--ink);
+}
+.mess__z dd small { font-weight: 400; font-size: var(--fs-nano); color: var(--ink3); }
+.mess__z[data-status="gut"] { border-color: var(--good); background: var(--goodw); }
+.mess__z[data-status="gut"] dd { color: var(--good); }
+.mess__z[data-status="warn"] { border-color: var(--warn); background: var(--warnw); }
+.mess__z[data-status="warn"] dd { color: var(--warn); }
+.mess__z[data-status="bad"] { border-color: var(--bad); background: var(--badw); }
+.mess__z[data-status="bad"] dd { color: var(--bad); }
+
+/* --- Die Ordnung (Initiative) --------------------------------------------- */
+.ordnung { display: grid; gap: 2px; }
+.ord {
+  display: grid; grid-template-columns: 2.1rem 1.35rem minmax(0,1fr) auto auto;
+  gap: var(--sp-2); align-items: center;
+  padding: var(--sp-2); border-radius: var(--r-sm);
+  border: var(--hair) solid var(--rule); background: var(--sf2);
+  transition: background var(--t-resp) var(--ease), border-color var(--t-resp) var(--ease),
+              transform var(--t-resp) var(--ease);
+}
+.ord:hover { border-color: var(--rule2); }
+.ord[aria-current="true"] {
+  border-color: var(--acc); background: var(--accw); box-shadow: var(--e-flat);
+}
+.ord[data-gewaehlt="ja"] { outline: 2px solid var(--focus); outline-offset: 1px; }
+.ord__i {
+  font-family: var(--f-mono); font-variant-numeric: tabular-nums;
+  font-weight: 700; font-size: var(--fs-ui); text-align: right; color: var(--ink2);
+}
+.ord__marke {
+  width: 1.35rem; height: 1.35rem; border-radius: 50%;
+  display: grid; place-items: center; color: var(--sf);
+  font-size: var(--fs-nano); font-weight: 700; box-shadow: var(--e-flat);
+}
+.ord__name { min-width: 0; }
+.ord__name b { display: block; font-size: var(--fs-base); line-height: 1.2; overflow-wrap: anywhere; }
+.ord__name span { display: block; font-size: var(--fs-nano); color: var(--ink3); overflow-wrap: anywhere; }
+.ord__hp { display: grid; gap: 2px; justify-items: end; }
+.ord__hp b { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-micro); }
+.hpbar { width: 3.6rem; height: 4px; background: var(--sunk); border-radius: var(--r-pill); overflow: hidden; }
+.hpbar i { display: block; height: 100%; background: var(--good); transition: width var(--t-state) var(--ease); }
+.hpbar[data-krit="ja"] i { background: var(--bad); }
+.ord__tat { display: flex; gap: var(--sp-1); }
+.chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px var(--sp-2); border-radius: var(--r-pill);
+  font-size: var(--fs-nano); font-weight: 600; white-space: nowrap;
+  border: var(--hair) solid var(--rule2); background: var(--sf); color: var(--ink2);
+}
+.chip--warn { border-color: var(--warn); background: var(--warnw); color: var(--warn); }
+.chip--bad { border-color: var(--bad); background: var(--badw); color: var(--bad); }
+.chip--good { border-color: var(--good); background: var(--goodw); color: var(--good); }
+.chip--gm { border-color: var(--acc); background: var(--accw); color: var(--acc); }
+.chip--band { font-family: var(--f-mono); }
+</style>
+
+<style>
+/* --- Die Linse ------------------------------------------------------------ */
+.linse { display: grid; gap: var(--sp-3); min-width: 0; }
+.tabs {
+  display: flex; gap: 2px; padding: 2px; background: var(--sunk);
+  border: var(--hair) solid var(--rule); border-radius: var(--r-sm);
+  overflow-x: auto;
+}
+.tabs button {
+  flex: 1 1 auto; padding: var(--sp-2); border: 0; border-radius: var(--r-xs);
+  background: transparent; color: var(--ink3); cursor: pointer;
+  font-size: var(--fs-micro); font-weight: 600; white-space: nowrap;
+  transition: background var(--t-resp) var(--ease), color var(--t-resp) var(--ease);
+}
+.tabs button[aria-selected="true"] { background: var(--sf); color: var(--ink); box-shadow: var(--e-flat); }
+.tafel { display: grid; gap: var(--sp-3); }
+.tafel[hidden] { display: none; }
+
+/* Der Grund — Urteil + Rechenweg */
+.urteil { display: grid; gap: var(--sp-2); }
+.urteil__kopf { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; }
+.urteil__kopf h3 { font: 600 var(--fs-h3)/1.2 var(--f-disp); overflow-wrap: anywhere; }
+.marke {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px var(--sp-2); border-radius: var(--r-xs);
+  font-size: var(--fs-nano); font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+}
+.marke--schwelle { background: var(--schw); color: var(--sf); }
+.marke--nennung { background: var(--sunk); color: var(--ink2); border: var(--hair) dashed var(--nen); }
+.marke--verworfen { background: var(--badw); color: var(--bad); border: var(--hair) solid var(--bad); }
+
+.stufen { display: grid; gap: 0; counter-reset: st; }
+.stufe {
+  display: grid; grid-template-columns: 1.15rem minmax(0,1fr); gap: var(--sp-2);
+  padding: var(--sp-2) 0; border-bottom: var(--hair) dashed var(--rule);
+  font-size: var(--fs-micro);
+}
+.stufe:last-child { border-bottom: 0; }
+.stufe__n {
+  width: 1.15rem; height: 1.15rem; border-radius: 50%; display: grid; place-items: center;
+  font-size: var(--fs-nano); font-weight: 700; font-family: var(--f-mono);
+  background: var(--sunk); color: var(--ink3);
+}
+.stufe[data-erg="durch"] .stufe__n { background: var(--goodw); color: var(--good); box-shadow: inset 0 0 0 1px var(--good); }
+.stufe[data-erg="stop"] .stufe__n { background: var(--badw); color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.stufe b { display: block; }
+.stufe span { color: var(--ink3); overflow-wrap: anywhere; }
+.stufe code { font-family: var(--f-mono); font-size: var(--fs-nano); background: var(--sunk); padding: 0 3px; border-radius: var(--r-xs); }
+
+.hinweis {
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm);
+  border-inline-start: 3px solid var(--warn); background: var(--warnw);
+  font-size: var(--fs-micro); color: var(--ink2); line-height: 1.5;
+}
+.hinweis b { color: var(--warn); }
+.hinweis--bad { border-color: var(--bad); background: var(--badw); }
+.hinweis--good { border-color: var(--good); background: var(--goodw); }
+
+/* Das Namensregister — Konkordanz */
+.konkordanz { display: grid; gap: var(--sp-2); max-height: 22rem; overflow: auto; padding-inline-end: var(--sp-1); }
+.beleg {
+  display: grid; gap: 2px; padding: var(--sp-2);
+  background: var(--sf2); border-radius: var(--r-sm);
+  border-inline-start: 2px solid var(--rule2);
+}
+.beleg__q { font-size: var(--fs-nano); color: var(--ink3); font-weight: 600; letter-spacing: .02em; }
+.beleg__t { font-family: var(--f-read); font-size: var(--fs-micro); line-height: 1.55; color: var(--ink2); overflow-wrap: anywhere; }
+.beleg__t mark { background: var(--goldw); color: var(--ink); padding: 0 1px; border-radius: var(--r-xs); }
+
+/* Beweis + Messung */
+.probe { display: grid; gap: var(--sp-2); }
+.probe__z {
+  display: grid; grid-template-columns: minmax(0,1fr) auto; gap: var(--sp-2);
+  align-items: baseline; padding: var(--sp-2) 0; border-bottom: var(--hair) dashed var(--rule);
+  font-size: var(--fs-micro);
+}
+.probe__z:last-child { border-bottom: 0; }
+.probe__z b { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.siegel {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm);
+  font-weight: 700; font-size: var(--fs-micro);
+}
+.siegel--ja { background: var(--goodw); color: var(--good); box-shadow: inset 0 0 0 1px var(--good); }
+.siegel--nein { background: var(--badw); color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+
+.trichter { display: grid; gap: 0; font-family: var(--f-mono); font-size: var(--fs-micro); }
+.trichter__z {
+  display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: var(--sp-2);
+  align-items: baseline; padding: 3px 0;
+}
+.trichter__z i { color: var(--ink4); font-style: normal; }
+.trichter__z span { color: var(--ink3); font-family: var(--f-ui); font-size: var(--fs-nano); overflow-wrap: anywhere; }
+.trichter__z b { font-variant-numeric: tabular-nums; text-align: right; }
+.trichter__z[data-ton="ziel"] b { color: var(--schw); font-size: var(--fs-base); }
+.trichter__z[data-ton="ziel"] { border-top: var(--hair) solid var(--rule); padding-top: var(--sp-2); margin-top: var(--sp-1); }
+
+/* --- Die drei Namenszustaende (drei nicht-farbliche Merkmale) -------------- */
+.n-geschrieben {
+  font-weight: 600; color: var(--link);
+  text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px;
+  cursor: pointer; background: none; border: 0; padding: 0; font-family: inherit; font-size: inherit;
+}
+.n-nennung {
+  color: var(--nen); border-bottom: 1px dotted currentColor;
+  cursor: default; padding-bottom: 1px;
+}
+.n-nennung:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.n-schwelle {
+  color: var(--schw); font-weight: 600; cursor: pointer;
+  background: none; border: 0; padding: 0 0 0 13px; font-family: inherit; font-size: inherit;
+  position: relative;
+}
+.n-schwelle::before {
+  content: ""; position: absolute; left: 0; top: 50%; width: 9px; height: 9px;
+  margin-top: -4.5px; border-radius: 50%;
+  border: 1.4px solid currentColor; border-top-color: transparent; transform: rotate(-32deg);
+}
+
+/* --- Das Regal: Arvex-Streifen + Rinne ------------------------------------ */
+.regal { display: grid; gap: var(--sp-3); }
+.streifen { display: flex; gap: var(--sp-2); overflow-x: auto; padding-bottom: var(--sp-2); }
+.zeile {
+  flex: 0 0 auto; width: 13.5rem; display: grid; gap: 3px;
+  padding: var(--sp-2) var(--sp-3); text-align: left;
+  background: var(--sf2); border: var(--hair) solid var(--rule); border-radius: var(--r-sm);
+  cursor: pointer; transition: border-color var(--t-resp) var(--ease), transform var(--t-resp) var(--ease);
+}
+.zeile:hover { border-color: var(--acc); transform: translateY(-1px); }
+.zeile[aria-pressed="true"] { border-color: var(--acc); background: var(--accw); }
+.zeile__l { font-size: var(--fs-nano); text-transform: uppercase; letter-spacing: var(--ls-caps); color: var(--ink3); font-weight: 700; }
+.zeile__v { font-family: var(--f-read); font-size: var(--fs-micro); line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; }
+.zeile__u { display: flex; flex-wrap: wrap; gap: 3px; }
+.rinne {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2);
+  min-height: 2.4rem; padding: var(--sp-2) var(--sp-3);
+  background: var(--sunk); border: var(--hair) solid var(--rule); border-radius: var(--r-sm);
+  font-family: var(--f-mono); font-size: var(--fs-micro); color: var(--ink2);
+  transition: background var(--t-resp) var(--ease);
+}
+.rinne b { color: var(--ink); }
+.rinne em { font-style: normal; color: var(--ink3); }
+
+.fuss {
+  font-size: var(--fs-nano); line-height: 1.6; color: var(--ink3);
+  padding: var(--sp-3); border-top: var(--hair) solid var(--rule);
+}
+.fuss a { color: var(--link); }
+.protokoll { display: grid; gap: 2px; max-height: 10rem; overflow: auto; }
+.protokoll li {
+  display: grid; grid-template-columns: 3.4rem minmax(0,1fr); gap: var(--sp-2);
+  font-size: var(--fs-nano); padding: 3px 0; border-bottom: var(--hair) dashed var(--rule);
+}
+.protokoll time { font-family: var(--f-mono); color: var(--ink3); }
+.protokoll span { overflow-wrap: anywhere; }
+
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* --- Enge Lagen ----------------------------------------------------------- */
+@media (max-width: 1180px) {
+  .werk { grid-template-columns: minmax(0, 1fr); }
+  .rail, .linse { position: static; }
+  .rail { order: 2; }
+  .stage { order: 1; }
+  .linse { order: 3; }
+}
+@media (max-width: 620px) {
+  :root { --fs-base: 0.8125rem; }
+  .app { padding: var(--sp-2); gap: var(--sp-2); }
+  .kopf { gap: var(--sp-2); }
+  .kopf__uhr { margin-inline-start: 0; }
+  .zeile { width: 11rem; }
+  .ord { grid-template-columns: 1.9rem 1.2rem minmax(0,1fr); row-gap: var(--sp-1); }
+  .ord__hp, .ord__tat { grid-column: 2 / -1; justify-items: start; }
+  .ord__hp { justify-content: start; }
+}
+@media (max-width: 400px) {
+  .mess__z { min-width: 100%; }
+}
+
+/* --- Bewegung aus -------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+  }
+}
+:root[data-motion="reduziert"] *, :root[data-motion="reduziert"] *::before, :root[data-motion="reduziert"] *::after {
+  animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+</style>
+
+<a class="skip" href="#stage">Direkt zur Leinwand</a>
+
+<div class="app">
+
+  <header class="kopf">
+    <div class="kopf__id">
+      <svg class="sigil" width="26" height="28" viewBox="0 0 26 28" fill="none" aria-hidden="true">
+        <path d="M13 1.4 24.2 7.4v13L13 26.6 1.8 20.4v-13z" stroke="currentColor" stroke-width="1.1"/>
+        <circle cx="13" cy="13.9" r="5.4" stroke="currentColor" stroke-width="1.1" stroke-dasharray="24 5.6"/>
+        <path d="M13 8.5v10.8" stroke="currentColor" stroke-width="0.8" opacity=".55"/>
+      </svg>
+      <span>
+        <b>Kampagne Bjoldiri &middot; Sitzung&nbsp;15</b>
+        <span class="caps">Der Schwellentisch &middot; Karte:Andaria</span>
+      </span>
+    </div>
+
+    <p class="kopf__uhr"><b>21:47</b> <span class="caps">Samstag</span></p>
+
+    <div class="dials">
+      <fieldset class="dial">
+        <legend class="caps" id="lblSicht">Sicht</legend>
+        <div class="seg" id="segSicht" role="group" aria-labelledby="lblSicht">
+          <label><input type="radio" name="sicht" value="irme" checked><span>Irme</span></label>
+          <label><input type="radio" name="sicht" value="bodin"><span>Bodin</span></label>
+          <label><input type="radio" name="sicht" value="baldur"><span>Baldur</span></label>
+          <label><input type="radio" name="sicht" value="gm"><span>Spielleitung</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="dial">
+        <legend class="caps">Haut</legend>
+        <div class="seg" id="segHaut">
+          <label><input type="radio" name="haut" value="relic" checked><span>Relic</span></label>
+          <label><input type="radio" name="haut" value="signal"><span>Signal</span></label>
+          <label><input type="radio" name="haut" value="archive"><span>Archive</span></label>
+          <label><input type="radio" name="haut" value="clean"><span>Clean</span></label>
+        </div>
+      </fieldset>
+
+      <button class="btn" id="btnModus" type="button" aria-label="Farbmodus wechseln">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="7" cy="7" r="3"/><path d="M7 .8v1.6M7 11.6v1.6M13.2 7h-1.6M2.4 7H.8M11.4 2.6l-1.1 1.1M3.7 10.3l-1.1 1.1M11.4 11.4l-1.1-1.1M3.7 3.7 2.6 2.6"/></svg>
+        <span id="modusText">System</span>
+      </button>
+      <button class="btn" id="btnBewegung" type="button" aria-pressed="false">Bewegung: an</button>
+    </div>
+  </header>
+
+  <div class="werk">
+
+    <!-- ================= Schiene: die Schwellenlage ================= -->
+    <aside class="rail" aria-label="Schwellenlage und Bilanz">
+
+      <section class="karte">
+        <div class="kopfz"><b>Die Bilanz</b><span class="caps">41&nbsp;s</span></div>
+        <div class="rumpf">
+          <dl class="bilanz">
+            <div class="bilanz__zeile"><dt>Artikel</dt><dd>74</dd></div>
+            <div class="bilanz__zeile"><dt>Passagen</dt><dd>1&nbsp;075</dd></div>
+            <div class="bilanz__zeile"><dt>rote Kanten</dt><dd>1&nbsp;253</dd></div>
+            <div class="bilanz__zeile"><dt>Namen</dt><dd>689</dd></div>
+          </dl>
+          <div class="bilanz__gross">
+            <b id="bilanzSchwellen">11</b>
+            <span>Schwellen mit Anker<br>davon <b id="bilanzNah">3</b> in Reitweite</span>
+          </div>
+          <p class="quelle" style="margin-top:var(--sp-2)">
+            Zahlen: <b>RB-12 §5.3/§5.4</b>, <b>WELT.md §3.3</b>. Live in dieser Seite gepr&uuml;ft:
+            <b id="bilanzGeprueft">47</b> echte Namen &mdash; die vier Stufen laufen im Browser.
+          </p>
+        </div>
+      </section>
+
+      <section class="karte">
+        <div class="kopfz"><b>Die Schwellen</b><span class="caps" id="lageZahl">&mdash;</span></div>
+        <div class="rumpf tight">
+          <div class="lage" id="lageListe"></div>
+        </div>
+        <div class="rumpf" style="border-top:var(--hair) solid var(--rule);display:grid;gap:var(--sp-2)">
+          <button class="btn btn--ghost" id="btnNamen" type="button">678 Namen &mdash; das Register</button>
+          <button class="btn btn--ghost" id="btnNennungen" type="button">678 Nennungen auf der Karte einblenden</button>
+        </div>
+      </section>
+
+      <section class="karte">
+        <div class="kopfz"><b>Die F&auml;llung</b><span class="caps">Pr&uuml;fprotokoll</span></div>
+        <div class="rumpf tight">
+          <ol class="protokoll" id="protokoll"></ol>
+        </div>
+      </section>
+    </aside>
+
+    <!-- ================= Buehne: die Leinwand ================= -->
+    <section class="stage" id="stage" data-ansicht="leinwand" tabindex="-1">
+
+      <div>
+        <div class="werkzeug">
+          <div class="werkzeug__grp">
+            <p class="caps" id="lblRaster">Raster</p>
+            <div class="seg" id="segRaster" role="group" aria-labelledby="lblRaster">
+              <label><input type="radio" name="raster" value="quadrat" checked><span>Quadrat</span></label>
+              <label><input type="radio" name="raster" value="hex"><span>Hex</span></label>
+              <label><input type="radio" name="raster" value="gitterlos"><span>Gitterlos</span></label>
+            </div>
+          </div>
+          <div class="werkzeug__grp">
+            <p class="caps" id="lblBand">Ebene</p>
+            <div class="seg" id="segBand" role="group" aria-labelledby="lblBand">
+              <label><input type="radio" name="band" value="-1"><span>Tiefe Stollen</span></label>
+              <label><input type="radio" name="band" value="0" checked><span>Oberfl&auml;che</span></label>
+              <label><input type="radio" name="band" value="1"><span>Kleines Horn</span></label>
+            </div>
+          </div>
+          <div class="werkzeug__grp">
+            <p class="caps" id="lblAnsicht">Ansicht</p>
+            <div class="seg" id="segAnsicht" role="group" aria-labelledby="lblAnsicht">
+              <label><input type="radio" name="ansicht" value="leinwand" checked><span>Leinwand</span></label>
+              <label><input type="radio" name="ansicht" value="gliederung"><span>Gliederung</span></label>
+            </div>
+          </div>
+          <div class="werkzeug__grp" style="margin-inline-start:auto">
+            <button class="btn" id="btnZoomAus" type="button" aria-label="Verkleinern">&minus;</button>
+            <span class="mono" id="zoomText">1,00&times;</span>
+            <button class="btn" id="btnZoomEin" type="button" aria-label="Vergr&ouml;&szlig;ern">+</button>
+            <button class="btn btn--prim" id="btnFreigabe" type="button">Eine Freigabe</button>
+          </div>
+        </div>
+
+        <div class="platte" id="platte">
+          <canvas id="leinwand" width="1200" height="760" tabindex="0"
+                  role="img" aria-describedby="leinwandBeschreibung"
+                  aria-label="Taktische Leinwand wird geladen"></canvas>
+          <span class="ecke ecke--tl"></span><span class="ecke ecke--tr"></span>
+          <span class="ecke ecke--bl"></span><span class="ecke ecke--br"></span>
+          <div class="hud" id="hud"></div>
+          <div class="gliederung" id="gliederung"></div>
+        </div>
+        <p class="sr" id="leinwandBeschreibung"></p>
+        <p class="sr" role="status" aria-live="polite" id="ansage"></p>
+      </div>
+
+      <p class="quelle" id="quelleZeile"></p>
+
+      <dl class="mess" id="messStreifen"></dl>
+
+      <section class="karte">
+        <div class="kopfz">
+          <b>Die Ordnung</b>
+          <span class="caps">Pfeiltasten bewegen die gew&auml;hlte Marke &middot; die Liste ist die Wahrheit</span>
+        </div>
+        <div class="rumpf tight">
+          <ol class="ordnung" id="ordnung"></ol>
+        </div>
+      </section>
+    </section>
+
+    <!-- ================= Die Linse ================= -->
+    <aside class="linse" aria-label="Kontextlinse">
+      <div class="tabs" role="tablist" aria-label="Linsenansicht">
+        <button role="tab" id="tGrund" aria-controls="pGrund" aria-selected="true" type="button">Grund</button>
+        <button role="tab" id="tReg" aria-controls="pReg" aria-selected="false" tabindex="-1" type="button">Register</button>
+        <button role="tab" id="tBew" aria-controls="pBew" aria-selected="false" tabindex="-1" type="button">Beweis</button>
+        <button role="tab" id="tMess" aria-controls="pMess" aria-selected="false" tabindex="-1" type="button">Messung</button>
+      </div>
+
+      <section class="tafel" role="tabpanel" id="pGrund" aria-labelledby="tGrund" tabindex="0">
+        <div class="karte"><div class="rumpf" id="grundHost"></div></div>
+      </section>
+
+      <section class="tafel" role="tabpanel" id="pReg" aria-labelledby="tReg" tabindex="0" hidden>
+        <div class="karte">
+          <div class="kopfz"><b>Das Namensregister</b><span class="caps" id="regMeta">&mdash;</span></div>
+          <div class="rumpf" id="regHost"></div>
+        </div>
+      </section>
+
+      <section class="tafel" role="tabpanel" id="pBew" aria-labelledby="tBew" tabindex="0" hidden>
+        <div class="karte">
+          <div class="kopfz"><b>Der Zwillingsbeweis</b><span class="caps">&uuml;ber die Szene und das DOM</span></div>
+          <div class="rumpf" id="bewHost"></div>
+        </div>
+      </section>
+
+      <section class="tafel" role="tabpanel" id="pMess" aria-labelledby="tMess" tabindex="0" hidden>
+        <div class="karte">
+          <div class="kopfz"><b>Die Namenspr&uuml;fung</b><span class="caps">vier Stufen, live</span></div>
+          <div class="rumpf" id="trichterHost"></div>
+        </div>
+        <div class="karte">
+          <div class="kopfz"><b>Der Pr&uuml;fstand</b><span class="caps">im Browser gemessen</span></div>
+          <div class="rumpf" id="pruefHost"></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- ================= Das Regal ================= -->
+  <section class="karte regal" aria-labelledby="regalH">
+    <div class="kopfz">
+      <b id="regalH">Arvex Aurelius Paradon &mdash; 18 Infobox-Zeilen, kein Flie&szlig;text</b>
+      <span class="caps">M18 &middot; der Renderer setzt keine Lead-Prosa voraus</span>
+    </div>
+    <div class="rumpf">
+      <div class="streifen" id="arvexStreifen" tabindex="0" role="group"
+           aria-label="Infobox-Zeilen des Artikels Arvex Aurelius Paradon, waagerecht scrollbar"></div>
+      <p class="rinne" id="rinne" role="status" aria-live="polite">
+        <em>Zeiger oder Tastatur auf einen Namen &mdash; die Rinne druckt den Grund.</em>
+      </p>
+    </div>
+  </section>
+
+  <footer class="fuss">
+    <p><b>Herkunft.</b> Prosa, Entit&auml;ten, Feldetiketten, Nachfragez&auml;hlungen und rote Kanten stammen
+    aus dem <b>Eron&nbsp;Wiki</b> (eron.fandom.com/de, Harvest 2026-07-27), <b>CC&nbsp;BY-SA&nbsp;3.0</b>,
+    geschrieben von Kaya und seinen Kollegen. Fixture:
+    <code class="mono">design/fixtures/eron/fixture.js</code>,
+    <code class="mono">articles.json</code>, <code class="mono">graph.json</code>.
+    <b>Eron ist Beispiel und Haut, nie Gegenstand</b> (K7) &mdash; kein Weltbegriff steht in einem
+    Komponentennamen, einer Route oder einem Token dieser Seite.</p>
+    <p><b>Keine Pixel aus dem Korpus.</b> Das 7,2-MB-Basisraster <code class="mono">Andaria 03.02.2024.jpg</code>
+    ist nicht eingebettet, nicht geladen, nicht weiterverbreitet: <b>0 von 41 Dateien</b> im Wiki tragen
+    ein Lizenzfeld, und das Wiki erkl&auml;rt mit <code class="mono">Kategorie:Lizenz unbekannt</code> selbst,
+    dass ein Teil nicht von den Autoren stammt (WELT.md §3.8, Invariante 7).</p>
+  </footer>
+</div>
+
+<script>
+/* ==========================================================================
+   Spike B1 — „Der Schwellentisch"
+   Alle Inhalte sind echt: Namen, Feldetiketten, Nachfragezahlen, Prosa und
+   Kanten stammen aus dem Eron-Korpus (fixture.js / articles.json / graph.json,
+   Harvest 2026-07-27, CC BY-SA 3.0). Erfunden ist NICHTS ausser dem Relief
+   (prozedural) und zehn der elf Ankerpositionen — beides ist in der Seite
+   als „gesetzt" ausgewiesen.
+   ========================================================================== */
+"use strict";
+
+/* --- 1. Das Regelpaket: deklarativ, versioniert, pro Welt austauschbar ----- */
+/*     Invariante 2: niemals Code. Die Universalitaet steckt genau hier:      */
+/*     Weltwechsel = Paketwechsel, kein DOM-, Controls- oder Komponententausch.*/
+const REGELPAKET = {
+  id: "eron.de", revision: 3, sprache: "de",
+  notation: [/^[NnVv]\.\s?K\.?$/],
+  ortsfeld: ["Heimat", "Geburtsort", "Todesort", "sitz", "regierungssitz", "Hauptstadt",
+             "Region", "ausdehnung", "kontinente", "mitgliedsstaaten",
+             "staaten/länder_mit_mehrheit"],
+  personenfeld: ["Verwandte", "anführer", "gründer", "oberhaupt", "Gemahlin", "Vater",
+                 "besondere_mitglieder", "Kommandeure1", "Kommandeure2",
+                 "Schlüsselfiguren", "besitzer", "schmied"],
+  attributfeld: ["Sprache", "sprache", "Kaste", "Rasse", "Spezies", "Volk", "Titel", "Beruf",
+                 "klasse", "effekt", "bonus", "währung", "Epoche", "aufgabe", "Zweck",
+                 "nutzer", "Familie", "Merkmale", "folgeregierung", "hervorgegangen_aus",
+                 "Kontrahent1", "Kontrahent2", "Aufträge", "Auftraggeber", "institution(en)"],
+  nachfrage_min: 3,
+  naehe_tage: 6,
+  verfall_sitzungen: 3
+};
+
+/* Dasselbe Paket fuer zwei andere Genres — nur Daten, kein Code (K7 / §8.5). */
+const PAKETE_ANDERE = {
+  "sci-fi": { ortsfeld: ["homeworld", "station", "sector", "dock"], attributfeld: ["species", "clearance", "stardate"], notation: "^SD ?\\d{4}\\.\\d$" },
+  "moderne Mystery": { ortsfeld: ["precinct", "last seen", "address"], attributfeld: ["alias", "charge", "case no."], notation: "^\\d{2}/\\d{2}/\\d{4}$" }
+};
+
+/* --- 2. Der Korpus, gemessen ---------------------------------------------- */
+const KORPUS = {
+  artikel: 74, passagen: 1075, infoboxzeilen: 583, prosaabsaetze: 492,
+  kanten_blau: 556, kanten_rot: 1253, namen: 689,
+  notation_ziele: 17, notation_kanten: 28,
+  referenten_nach_kollaps: 672, kandidaten_nachfrage: 113,
+  marker_gesamt: 190, marker_ohne_artikel: 187, marker_mit_prosa: 54,
+  kartenvertrag: { bounds: [[0, 0], [8192, 8192]], origin: "bottom-left", order: "xy" }
+};
+
+/* --- 3. Die Namen. wantedBy und feld[] sind aus dem Korpus ausgelesen. ----- */
+/*     feld = [Artikel, Etikett] — genau dort, wo der Autor den Link schrieb. */
+const NAMEN = [
+  { n: "Andarisch", w: 18, f: [["Arvex Aurelius Paradon", "Sprache"], ["Olav der Ehrliche", "Sprache"], ["Haus Paradon", "sprache"], ["Hochelfenrat", "sprache"], ["Kaiserreich", "sprache"]] },
+  { n: "Nördliche Minenreiche", w: 16, f: [["Olav der Ehrliche", "Geburtsort"], ["Olav der Ehrliche", "Heimat"], ["Kaiserreich", "mitgliedsstaaten"], ["Bjoldiri", "Zweck"], ["Zwerg", "staaten/länder_mit_mehrheit"]] },
+  { n: "Andaria", w: 15, f: [["Kaiserreich", "ausdehnung"], ["Eron (Planet)", "kontinente"]] },
+  { n: "Blattheim", w: 14, f: [["Olav der Ehrliche", "Aufträge"], ["Hochelfenrat", "sitz"], ["Kaiserreich", "regierungssitz"]] },
+  { n: "Königreich Terabur", w: 13, f: [["Arvex Aurelius Paradon", "Heimat"], ["Kaiserreich", "hervorgegangen_aus"], ["Kaiserreich", "mitgliedsstaaten"], ["Mensch", "staaten/länder_mit_mehrheit"]] },
+  { n: "Remus Paradon II.", w: 13, f: [["Arvex Aurelius Paradon", "Verwandte"], ["Haus Paradon", "besondere_mitglieder"]] },
+  { n: "Minenreiche", w: 12, f: [["Olav der Ehrliche", "Volk"], ["Kaiserreich", "mitgliedsstaaten"], ["Der Große Krieg", "Kontrahent2"], ["Zwerg", "staaten/länder_mit_mehrheit"]] },
+  { n: "Baumgard", w: 11, f: [["Olav der Ehrliche", "Aufträge"], ["Hochelfenrat", "sitz"], ["Kaiserreich", "regierungssitz"]] },
+  { n: "Haus Numerion", w: 10, f: [] },
+  { n: "Die Zeugen von Al Masin", w: 10, f: [] },
+  { n: "Geeintes Elfenreich Demmaros", w: 9, f: [["Hochelfenrat", "aufgabe"], ["Kaiserreich", "hervorgegangen_aus"], ["Kaiserreich", "mitgliedsstaaten"]] },
+  { n: "Schwarzweide", w: 9, f: [["Kaiserreich", "regierungssitz"]] },
+  { n: "Resif", w: 8, f: [["Valor Saron", "Geburtsort"], ["Haus Paradon", "sitz"], ["Hochelfenrat", "sitz"]] },
+  { n: "König der Zwerge", w: 8, f: [] },
+  { n: "Sahin", w: 8, f: [["Valor Saron", "Sprache"], ["Haus Paradon", "sprache"], ["Hochelfenrat", "sprache"]] },
+  { n: "West-Kaiserreich", w: 8, f: [["Hochelfenrat", "aufgabe"], ["Kaiserreich", "folgeregierung"]] },
+  { n: "Landmann", w: 7, f: [] },
+  { n: "Tal", w: 7, f: [] },
+  { n: "Eron", w: 7, f: [], alias_von: "Eron (Planet)", alias_grund: "Schreibvariante eines bereits geschriebenen Artikels" },
+  { n: "König von Terabur", w: 6, f: [["Arvex Aurelius Paradon", "Titel"]] },
+  { n: "Südliche Minenreiche", w: 6, f: [["Bjoldiri", "Zweck"], ["Zwerg", "staaten/länder_mit_mehrheit"]] },
+  { n: "Der Höchstelf", w: 6, f: [["Hochelfenrat", "gründer"], ["Hochelfenrat", "anführer"]] },
+  { n: "Nord Tal", w: 6, f: [["Olav der Ehrliche", "Geburtsort"], ["Olav der Ehrliche", "Heimat"]] },
+  { n: "Eromir Paradon", w: 6, f: [["Haus Paradon", "besondere_mitglieder"], ["Kaiserreich", "gründer"]] },
+  { n: "Oggugat", w: 6, f: [] },
+  { n: "Caridil", w: 6, f: [["Kaiserreich", "gründer"]] },
+  { n: "Hoher Ratsmeister", w: 6, f: [["Hochelfenrat", "oberhaupt"]], verdacht: "Amtsbezeichnung im Personenfeld" },
+  { n: "Terabur Numerion", w: 5, f: [["Kaiserreich", "gründer"]] },
+  { n: "Oslaven", w: 5, f: [] },
+  { n: "Oslavisches Sheikat", w: 5, f: [["Der Große Krieg", "Kontrahent1"], ["Mensch", "staaten/länder_mit_mehrheit"]] },
+
+  /* Schreibvarianten — Stufe 2, verifiziert in WELT.md §3.3(b) */
+  { n: "Geeinte Elfenreich Demmaros", w: 1, f: [], kollaps: "Geeintes Elfenreich Demmaros" },
+  { n: "Geeinigtes Elfenreich Demmaros", w: 1, f: [], kollaps: "Geeintes Elfenreich Demmaros" },
+  { n: "Vereinigtes Elfenreich Demmaros", w: 1, f: [], kollaps: "Geeintes Elfenreich Demmaros" },
+  { n: "Königgreich Terabur", w: 1, f: [], kollaps: "Königreich Terabur" },
+  { n: "Südlichen Minenreiche", w: 1, f: [], kollaps: "Südliche Minenreiche" },
+  { n: "Olsavisches Sheikat", w: 1, f: [], kollaps: "Oslavisches Sheikat" },
+
+  /* Notationsziele — Stufe 1, 15 Kanten auf ein Datumsformat */
+  { n: "N. K.", w: 5, f: [] }, { n: "N. K", w: 4, f: [] },
+  { n: "V. K.", w: 4, f: [] }, { n: "V. K", w: 2, f: [] },
+
+  /* Einzelnennungen aus Arvex' eigener Infobox — Stufe 3 raeumt sie ab */
+  { n: "Gluthafen", w: 2, f: [["Arvex Aurelius Paradon", "Heimat"], ["Arvex Aurelius Paradon", "Geburtsort"]] },
+  { n: "Königreich Eromir", w: 2, f: [["Arvex Aurelius Paradon", "Heimat"], ["Arvex Aurelius Paradon", "Geburtsort"]] },
+  { n: "Adel in Andaria", w: 1, f: [["Arvex Aurelius Paradon", "Kaste"]] },
+  { n: "Hochelf", w: 1, f: [["Arvex Aurelius Paradon", "Rasse"]] },
+  { n: "Argus Paradon", w: 1, f: [["Arvex Aurelius Paradon", "Verwandte"]] },
+  { n: "Zira Ambros", w: 1, f: [["Arvex Aurelius Paradon", "Verwandte"]] },
+  { n: "Nelia Nim", w: 1, f: [["Arvex Aurelius Paradon", "Verwandte"]] },
+  { n: "Herzog von Akkator", w: 1, f: [["Arvex Aurelius Paradon", "Titel"]] },
+  { n: "Versteck der Flüsterer in Blattheim", w: 1, f: [] }
+];
+
+/* --- 4. Die Koerper. Ein Anker gemessen, zehn gesetzt — beides ausgewiesen. */
+const ANKER = {
+  "Blattheim":                    { x: 1185.4, y: 5518.0, q: "gemessen", kat: "Elfenunion" },
+  "Nördliche Minenreiche":   { x: 1620,   y: 5980,   q: "gesetzt" },
+  "Königreich Terabur":      { x: 2380,   y: 4820,   q: "gesetzt" },
+  "Minenreiche":                  { x: 1780,   y: 5610,   q: "gesetzt" },
+  "Baumgard":                     { x: 940,    y: 4960,   q: "gesetzt" },
+  "Geeintes Elfenreich Demmaros": { x: 760,    y: 5760,   q: "gesetzt" },
+  "Schwarzweide":                 { x: 1980,   y: 5250,   q: "gesetzt" },
+  "Resif":                        { x: 620,    y: 5120,   q: "gesetzt" },
+  "Südliche Minenreiche":    { x: 1560,   y: 4720,   q: "gesetzt" },
+  "Nord Tal":                     { x: 1340,   y: 6010,   q: "gesetzt" },
+  "Oslavisches Sheikat":          { x: 2460,   y: 5820,   q: "gesetzt" }
+  /* Andaria fehlt mit Absicht: der Kontinent hat 190 Pins und selbst keinen.
+     RB-21a §6.2, live nachgeprueft. Andaria ist die Karte, kein Punkt darauf. */
+};
+
+/* Klassen fuer die Zeile (aus dem Feldkontext, nicht aus einer Kategorie) */
+const KLASSE = {
+  "Blattheim": "Siedlung", "Nördliche Minenreiche": "Reich", "Königreich Terabur": "Reich",
+  "Minenreiche": "Reich", "Baumgard": "Siedlung", "Geeintes Elfenreich Demmaros": "Reich",
+  "Schwarzweide": "Siedlung", "Resif": "Siedlung", "Südliche Minenreiche": "Reich",
+  "Nord Tal": "Siedlung", "Oslavisches Sheikat": "Reich", "Andaria": "Kontinent",
+  "Remus Paradon II.": "Person", "Der Höchstelf": "Person", "Eromir Paradon": "Person",
+  "Caridil": "Person", "Hoher Ratsmeister": "Amt?", "Terabur Numerion": "Person",
+  "Andarisch": "Sprache", "Sahin": "Sprache", "König von Terabur": "Amt",
+  "Haus Numerion": "Haus", "Die Zeugen von Al Masin": "Glaube", "König der Zwerge": "Amt",
+  "West-Kaiserreich": "Nachfolgestaat", "Landmann": "Stand", "Tal": "Ort?", "Oslaven": "Volk",
+  "Oggugat": "Ort?", "Gluthafen": "Siedlung", "Königreich Eromir": "Reich"
+};
+</script>
+
+<script>
+"use strict";
+/* --- 5. Die Konkordanz: echte Saetze aus dem Korpus ------------------------ */
+/*     Das ist der Ersatz fuer 678 geloeschte Tueren: nicht ein 404, sondern  */
+/*     die Saetze der eigenen Welt, die das Wort benutzen.                     */
+const BELEGE = {
+  "Blattheim": [
+    ["Baldur", "Er war ein Mitglied der Flüsterer in Blattheim."],
+    ["Das Kind", "Sie trafen dort auf Baldur, einem Flüsterer, der ebenfalls ein Interesse hatte, das Kind an sich zu nehmen und in das Versteck der Flüsterer in Blattheim zu bringen."],
+    ["Der Falsche Zwerg", "Er erlangte Informationen darüber, dass eine Gruppe rund um Olav den Ehrliche und Song Kayn das Kind nach Blattheim bringen."],
+    ["Ekmont von Radfurt", "Er lies Schiffe bemannen und folgte ihnen bis nach Blattheim."],
+    ["Hochelfenrat · Feld »sitz«", "*Resif (… v. K – 0) *Blattheim (0 – 867) *Baumgard (Ab 867)"],
+    ["Kaiserthing · Feld »sitz«", "sitz = Blattheim · gründung = 0"]
+  ],
+  "Andarisch": [
+    ["Bjoldiri", "Die meistgesprochene Sprache und auch Amtssprache ist Andarisch."],
+    ["Arvex Aurelius Paradon · Feld »Sprache«", "Andarisch"],
+    ["Hochelfenrat · Feld »sprache«", "*Sahin (de facto) *Andarisch (de jure)"],
+    ["Haus Paradon · Feld »sprache«", "*Sahin (Ursprünglich) *Andarisch (Heute)"],
+    ["Kaiserreich", "Das Kaiserreich begann von dort an zur mächtigsten Instanz auf dem Andarischen Kontinent zu werden."],
+    ["Erismus", "… als erster Prophet auf Andarischen Boden in Erscheinung."]
+  ],
+  "Geeintes Elfenreich Demmaros": [
+    ["Hochelfenrat", "Sieben Jahre vor der Gründung des Kaiserreichs konnte der Waldelf Caridil, ein General der Elfischen Armee, durch einen Militär Putsch und mit Hilfe des Höchstelfen das Vereinigte Elfenreich Demmaros unter seine Kontrolle bringen und den Hochelfenrat neu gründen."],
+    ["Haus der Münze", "Es besteht aus den Herzogen der Provinzen von Königreich Terabur, bis zur Auflösung des Kaiserreiches den Protektoren der Protektorate von Demmaros und seit dem Zwergischen Eingliederungskrieg aus höheren Jarls der Nördlichen Minenreiche."],
+    ["Dunkelelf", "Sie befinden sich fast ausschließlich in Grau Demmaros, einem Land bei dem es unterschiedliche Meinungen gibt, ob es nun unabhängig sei oder nicht."],
+    ["Erismus", "Der Erismus lehrt, dass es einen Schöpfer namens Eron gibt und dass dieser die drei Gründer des Kaiserreichs, Demmaros Nimored, Terabur Numerion und Eromir Paradon erwählt hat, um sie zu gleichwertigen Gottheiten neben ihm zu machen."],
+    ["Epiphania", "Die ebenfalls wichtigen Hauptgötter des Erismus Terabur, Demmaros und Eromir finden ebenfalls keine Erwähnung in der Epiphania."],
+    ["Elfischer Unionssäbel", "Der Griff ist mit Leder aus Demmaros verziert."]
+  ],
+  "Nördliche Minenreiche": [
+    ["Bjoldiri", "Die Stadt liegt dort in einer Passage, die die Nördlichen und Südlichen Minenreiche miteinander verbindet."],
+    ["Olav der Ehrliche · Feld »Geburtsort«", "Nord Tal, Nördliche Minenreiche"],
+    ["Haus der Münze", "… und seit dem Zwergischen Eingliederungskrieg aus höheren Jarls der Nördlichen Minenreiche."]
+  ],
+  "Sahin": [
+    ["Hochelfenrat · Feld »sprache«", "*Sahin (de facto) *Andarisch (de jure)"],
+    ["Haus Paradon · Feld »sprache«", "*Sahin (Ursprünglich) *Andarisch (Heute)"],
+    ["Valor Saron · Feld »Sprache«", "Sahin"]
+  ],
+  "Hoher Ratsmeister": [
+    ["Hochelfenrat · Feld »oberhaupt«", "Hoher Ratsmeister"],
+    ["Kaiser", "… wird durch den Hochelfenritus beinahe unsterblich gemacht …"]
+  ],
+  "Oggugat": [
+    ["Olav der Ehrliche", "Olav nahm den Auftrag an und reiste nach Oggugat."],
+    ["Flüsterer", "Ein Teil der Flüsterer operierte aus Oggugat heraus."],
+    ["Kukiria", "Die Handelswege nach Oggugat waren im Krieg unterbrochen."]
+  ],
+  "Andaria": [
+    ["Kaiserreich · Feld »ausdehnung«", "Andaria"],
+    ["Eron (Planet) · Feld »kontinente«", "Andaria"],
+    ["Liste der Häuser von Andaria", "Eine sortierbare Aufstellung der Häuser des Kontinents."]
+  ],
+  "König von Terabur": [
+    ["Arvex Aurelius Paradon · Feld »Titel«", "Kaiser, König von Terabur, Herzog von Akkator"],
+    ["Haus Paradon", "Das Haus stellte über Jahrhunderte die Könige von Terabur."]
+  ],
+  "Gluthafen": [
+    ["Arvex Aurelius Paradon · Feld »Heimat«", "Gluthafen, Königreich Eromir (Bis 751)"],
+    ["Arvex Aurelius Paradon · Feld »Geburtsort«", "Gluthafen, Königreich Eromir"]
+  ]
+};
+
+/* --- 6. Der Ausschnitt und die Regionen ----------------------------------- */
+/*     Sicht ist KEINE Geometrie: Sicht ist eine Menge von Regions-IDs.       */
+/*     Die Polygonmaske unten ist ein abgeleitetes Render-Artefakt.           */
+const AUSSCHNITT = { x0: 150, y0: 4400, x1: 3000, y1: 6300, spalten: 8, zeilen: 6 };
+const MASSSTAB = { km_je_einheit: 0.4, km_je_tag: 40 };  /* gesetzt, siehe Quellzeile */
+
+const LESER = {
+  irme:   { name: "Irme", rolle: "Spielerin", gm: false,
+            haelt: { "Blattheim": 4, "Minenreiche": 3, "Nord Tal": 2 },
+            regionen: ["1-2","1-3","1-4","2-3","2-4","2-5","3-3","3-4","3-5","4-3","4-4","4-5"] },
+  bodin:  { name: "Bodin", rolle: "Spieler", gm: false,
+            haelt: { "Minenreiche": 3, "Nord Tal": 2 },
+            regionen: ["1-2","1-3","1-4","2-3","2-4","2-5","3-3","3-4","3-5","4-3","4-4","4-5"] },
+  baldur: { name: "Baldur", rolle: "Spieler", gm: false,
+            haelt: { "Blattheim": 6, "Baumgard": 2, "Geeintes Elfenreich Demmaros": 1,
+                     "Schwarzweide": 2, "Resif": 1, "Minenreiche": 3, "Nord Tal": 2 },
+            regionen: ["1-2","1-3","1-4","2-2","2-3","2-4","2-5","3-3","3-4","3-5",
+                       "4-2","4-3","4-4","4-5","5-3","5-4"] },
+  gm:     { name: "Spielleitung", rolle: "GM", gm: true, haelt: "alles", regionen: "alles" }
+};
+
+/* --- 7. Die Marken. Echte Figuren des Korpus. ----------------------------- */
+const MARKEN = [
+  { id: "spaeher", name: "Späher der Flüsterer", kurz: "S", x: 1290, y: 5462, band: 0,
+    farbe: "tk1", hp: 9, hpmax: 9, ini: 21, verdeckt: true, zustand: [] },
+  { id: "olav", name: "Olav der Ehrliche", kurz: "O", x: 1420, y: 5390, band: 0,
+    farbe: "tk1", hp: 38, hpmax: 44, ini: 19, verdeckt: false, zustand: [],
+    art: "Zwerg · Spielerfigur" },
+  { id: "irme", name: "Irme", kurz: "I", x: 1392, y: 5416, band: 0,
+    farbe: "tk2", hp: 27, hpmax: 30, ini: 16, verdeckt: false, zustand: [],
+    art: "Zwergin · Spielerfigur" },
+  { id: "baldur", name: "Baldur", kurz: "B", x: 1448, y: 5364, band: 1,
+    farbe: "tk4", hp: 31, hpmax: 31, ini: 14, verdeckt: false,
+    zustand: [{ t: "Waffen am Tor abgegeben", q: "Ortsregel Bjoldiri", ton: "warn" }],
+    art: "Flüsterer · Spielerfigur" },
+  { id: "ekmont", name: "Ekmont von Radfurt", kurz: "E", x: 1338, y: 5498, band: 0,
+    farbe: "tk3", hp: 0, hpmax: 26, ini: 13, verdeckt: true,
+    zustand: [{ t: "niedergeschlagen?", q: "wartet auf Bestätigung", ton: "bad" }],
+    defeat_pending: true },
+  { id: "bodin", name: "Bodin", kurz: "D", x: 1376, y: 5372, band: 0,
+    farbe: "tk3", hp: 22, hpmax: 33, ini: 12, verdeckt: false,
+    zustand: [{ t: "Silberwahnsinn · Frühstadium", q: "keine dokumentierte Heilung", ton: "bad" }],
+    art: "Zwerg · Spielerfigur" }
+];
+
+/* --- 8. Arvex Aurelius Paradon: 18 echte Infobox-Zeilen, null Prosa ------- */
+const ARVEX = [
+  ["Spezies", "Humanoid", []],
+  ["Heimat", "Gluthafen, Königreich Eromir (Bis 751) · Kukiria, Königreich Terabur (756-802) · Akkator, Königreich Terabur (Ab 802)", ["Gluthafen", "Königreich Eromir", "Königreich Terabur"]],
+  ["Titel", "Kaiser, König von Terabur, Herzog von Akkator", ["König von Terabur", "Herzog von Akkator"]],
+  ["Kaste", "Hochadel", ["Adel in Andaria"]],
+  ["Sprache", "Andarisch", ["Andarisch"]],
+  ["Beruf", "Kaiser, des Kaiserreichs", []],
+  ["Verwandte", "Argus Paradon (Vater) · Baira Paradon (Erste Frau) · Remus Paradon (Sohn) · Zira Ambros (Tochter) · Nelia Nim · …", ["Argus Paradon", "Zira Ambros", "Nelia Nim", "Remus Paradon II."]],
+  ["Familie", "Haus Paradon", []],
+  ["Geburtsort", "Gluthafen, Königreich Eromir", ["Gluthafen", "Königreich Eromir"]],
+  ["Rasse", "Hochelf, früher Mensch", ["Hochelf"]],
+  ["Geburt", "729", []],
+  ["Merkmale", "Weißer Vollbart", []],
+  ["Größe", "1,87m", []],
+  ["Augen", "Eisblau", []],
+  ["Haare", "Weiß", []],
+  ["Haut", "Blass", []],
+  ["Geschlecht", "Männlich", []],
+  ["Zugehörigkeit", "Kaiserreich", []]
+];
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   VF1 — DIE NAMENSPRÜFUNG. Vier Stufen, deterministisch, ohne KI, ohne
+   Heuristik auf Wortlaenge. Jede Stufe druckt ihren Grund.
+   ========================================================================== */
+const HAND = new Map();          /* Befoerderung / Rueckstufung, auditiert */
+const PROTOKOLL = [];            /* die Faellung */
+let PRUEFUNG = null;             /* letztes Ergebnis */
+let PRUEF_MS = 0;
+
+function feldklasse(etikett) {
+  if (REGELPAKET.ortsfeld.includes(etikett)) return "ortsfeld";
+  if (REGELPAKET.personenfeld.includes(etikett)) return "personenfeld";
+  if (REGELPAKET.attributfeld.includes(etikett)) return "attributfeld";
+  return "unbekannt";
+}
+
+function pruefeAlle() {
+  const t0 = performance.now();
+  const aus = new Map();
+  const kollapsZiel = new Map();
+
+  /* Stufe 2 vorbereiten: Nachfrage der Varianten auf den Referenten buchen */
+  const nachfrage = new Map();
+  for (const e of NAMEN) {
+    if (REGELPAKET.notation.some(re => re.test(e.n))) continue;
+    if (e.alias_von) continue;
+    const ziel = e.kollaps || e.n;
+    nachfrage.set(ziel, (nachfrage.get(ziel) || 0) + e.w);
+    if (e.kollaps) {
+      if (!kollapsZiel.has(ziel)) kollapsZiel.set(ziel, []);
+      kollapsZiel.get(ziel).push(e.n);
+    }
+  }
+
+  for (const e of NAMEN) {
+    const spur = [];
+    const r = { name: e.n, w: e.w, felder: e.f, spur: spur, klasse: KLASSE[e.n] || "unbestimmt" };
+
+    /* --- Stufe 1: Notationswache (Form, nicht Bedeutung) ------------------ */
+    const notation = REGELPAKET.notation.some(re => re.test(e.n));
+    spur.push({ nr: 1, name: "Notationswache", ok: !notation,
+      txt: notation ? "Form ist ein Epochenmarker (»nach/vor Kaiser«) — ein Datumsformat ist keine Seite."
+                    : "keine Notationsform" });
+    if (notation) {
+      r.urteil = "verworfen"; r.grund = "Notation: " + e.n + " ist ein Datumsformat, kein Ziel.";
+      aus.set(e.n, r); continue;
+    }
+
+    /* --- Stufe 2: Referent-Kollaps --------------------------------------- */
+    if (e.alias_von) {
+      spur.push({ nr: 2, name: "Referent-Kollaps", ok: false,
+        txt: e.alias_grund + " → " + e.alias_von + " (geschrieben)." });
+      r.urteil = "verworfen";
+      r.grund = "Schreibvariante von »" + e.alias_von + "«, und der Artikel existiert bereits.";
+      aus.set(e.n, r); continue;
+    }
+    if (e.kollaps) {
+      spur.push({ nr: 2, name: "Referent-Kollaps", ok: false,
+        txt: "fällt mit »" + e.kollaps + "« zusammen — ein Land, mehrere Schreibweisen." });
+      r.urteil = "alias"; r.referent = e.kollaps;
+      r.grund = "Schreibvariante von »" + e.kollaps + "«. Kein eigener Referent.";
+      aus.set(e.n, r); continue;
+    }
+    const varianten = kollapsZiel.get(e.n) || [];
+    spur.push({ nr: 2, name: "Referent-Kollaps", ok: true,
+      txt: varianten.length ? (varianten.length + " Schreibweise(n) eingesammelt: " + varianten.join(" · "))
+                            : "keine Schreibvariante gefunden" });
+    r.varianten = varianten;
+
+    /* --- Stufe 3: Nachfrage ---------------------------------------------- */
+    const n = nachfrage.get(e.n) || e.w;
+    r.nachfrage = n;
+    const genug = n >= REGELPAKET.nachfrage_min;
+    spur.push({ nr: 3, name: "Nachfrage", ok: genug,
+      txt: n + " Artikel nennen den Namen (Schwelle " + REGELPAKET.nachfrage_min + ")" +
+           (varianten.length ? " — nach Kollaps" : "") });
+    if (!genug) {
+      r.urteil = "nennung";
+      r.grund = "keine Schwelle: nur " + n + " Artikel nennen es — unter der Nachfrage von " +
+                REGELPAKET.nachfrage_min + ".";
+      aus.set(e.n, r); continue;
+    }
+
+    /* --- Stufe 4: Erreichbarkeit — abgelesen am Etikett des Autors -------- */
+    const orte = e.f.filter(f => feldklasse(f[1]) === "ortsfeld");
+    const pers = e.f.filter(f => feldklasse(f[1]) === "personenfeld");
+    const attr = e.f.filter(f => feldklasse(f[1]) === "attributfeld");
+    const handUrteil = HAND.get(e.n);
+    let erreichbar = null;
+
+    if (handUrteil === "schwelle") erreichbar = "hand";
+    else if (handUrteil === "nennung") erreichbar = null;
+    else if (orte.length) erreichbar = "ortsfeld";
+    else if (pers.length) erreichbar = "personenfeld";
+
+    r.orte = orte; r.pers = pers; r.attr = attr;
+
+    if (erreichbar === "hand") {
+      spur.push({ nr: 4, name: "Erreichbarkeit", ok: true, txt: "von Hand befördert (auditiert)." });
+      r.urteil = "schwelle"; r.erreichbarkeit = "hand"; r.hatOrt = true;
+      r.grund = "Schwelle von Hand: die Spielleitung hat widersprochen. Regelpaket unverändert.";
+    } else if (handUrteil === "nennung") {
+      spur.push({ nr: 4, name: "Erreichbarkeit", ok: false, txt: "von Hand zurückgestuft (auditiert)." });
+      r.urteil = "nennung";
+      r.grund = "zurückgestuft: seit " + REGELPAKET.verfall_sitzungen +
+                " Sitzungen unberührt — eine Tür ist gemietet, nicht besessen.";
+    } else if (erreichbar === "ortsfeld") {
+      spur.push({ nr: 4, name: "Erreichbarkeit", ok: true,
+        txt: "Ortsfeld: " + orte.map(f => "»" + f[1] + "« in " + f[0]).join(" · ") });
+      r.urteil = "schwelle"; r.erreichbarkeit = "ortsfeld"; r.hatOrt = true;
+      r.grund = "Schwelle: in " + orte.length + " Ortsfeld(ern) genannt (" +
+                orte.map(f => "»" + f[1] + "«").join(", ") + ") — man kann hingehen.";
+    } else if (erreichbar === "personenfeld") {
+      spur.push({ nr: 4, name: "Erreichbarkeit", ok: true,
+        txt: "Personenfeld: " + pers.map(f => "»" + f[1] + "« in " + f[0]).join(" · ") });
+      r.urteil = "schwelle"; r.erreichbarkeit = "personenfeld"; r.hatOrt = false;
+      r.grund = "Schwelle ohne Ort: in Personenfeld(ern) genannt (" +
+                pers.map(f => "»" + f[1] + "«").join(", ") + ") — man kann jemanden suchen, aber nicht hinreiten.";
+    } else if (attr.length) {
+      spur.push({ nr: 4, name: "Erreichbarkeit", ok: false,
+        txt: "nur Attributfelder: " + attr.map(f => "»" + f[1] + "«").join(" · ") });
+      r.urteil = "nennung";
+      r.grund = "keine Schwelle: nur in Feldern " + [...new Set(attr.map(f => "»" + f[1] + "«"))].join(", ") +
+                " genannt — man kann nicht hingehen.";
+    } else {
+      spur.push({ nr: 4, name: "Erreichbarkeit", ok: false,
+        txt: "kein Feld: der Name steht nur im Fließtext, nie in einer Infobox-Zeile." });
+      r.urteil = "nennung";
+      r.grund = "keine Schwelle: nur im Fließtext genannt, in keinem Feld — der Autor hat nie gesagt, wo es liegt.";
+    }
+
+    /* Der Koerper (VF2): Anker nur, wo Geometrie existiert. */
+    if (r.urteil === "schwelle") {
+      const a = ANKER[e.n] || HAND.get("anker:" + e.n);
+      if (a) { r.anker = a; }
+      else if (r.hatOrt) { r.ankerlos = true; }
+    }
+    if (e.verdacht) r.verdacht = e.verdacht;
+    aus.set(e.n, r);
+  }
+
+  PRUEF_MS = performance.now() - t0;
+  PRUEFUNG = aus;
+  return aus;
+}
+
+/* Abgeleitete Sichten auf das Ergebnis */
+function schwellen()   { return [...PRUEFUNG.values()].filter(r => r.urteil === "schwelle"); }
+function mitOrt()      { return schwellen().filter(r => r.hatOrt); }
+function mitAnker()    { return schwellen().filter(r => r.anker); }
+function nennungen()   { return [...PRUEFUNG.values()].filter(r => r.urteil === "nennung"); }
+function verworfene()  { return [...PRUEFUNG.values()].filter(r => r.urteil === "verworfen"); }
+
+/* Entfernung: Raum-Distanz vom Standort der Gruppe (Marke »olav«) */
+function partei() { return MARKEN.find(m => m.id === "olav"); }
+function tageBis(a) {
+  const p = partei();
+  const d = Math.hypot(a.x - p.x, a.y - p.y);
+  return { einheiten: d, km: d * MASSSTAB.km_je_einheit,
+           tage: d * MASSSTAB.km_je_einheit / MASSSTAB.km_je_tag };
+}
+function tageText(a) {
+  const t = tageBis(a).tage;
+  if (t < 1) return "< 1 Tag";
+  return Math.round(t) + (Math.round(t) === 1 ? " Tag Ritt" : " Tage Ritt");
+}
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   DIE WELT — prozedurales Relief ueber dem echten Koordinatenvertrag
+   bounds [[0,0],[8192,8192]] · origin bottom-left · coordinateOrder xy
+   ========================================================================== */
+const WELT_N = 512;                      /* Stuetzstellen je Achse */
+const WELT_SCHRITT = 8192 / WELT_N;
+let HOEHE = null;                        /* Float32Array(WELT_N*WELT_N) */
+let RELIEF_MS = 0;
+
+function hsh(x, y, s) {
+  let n = (x | 0) * 374761393 + (y | 0) * 668265263 + (s | 0) * 1442695041;
+  n = (n ^ (n >>> 13)) >>> 0;
+  n = Math.imul(n, 1274126177) >>> 0;
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+}
+function vnoise(x, y, s) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hsh(xi, yi, s), b = hsh(xi + 1, yi, s), c = hsh(xi, yi + 1, s), d = hsh(xi + 1, yi + 1, s);
+  return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+}
+function fbm(x, y, s) {
+  let t = 0, amp = 0.5, f = 1;
+  for (let i = 0; i < 5; i++) { t += amp * vnoise(x * f, y * f, s + i * 17); f *= 2; amp *= 0.5; }
+  return t;
+}
+function bauWelt() {
+  const t0 = performance.now();
+  HOEHE = new Float32Array(WELT_N * WELT_N);
+  for (let j = 0; j < WELT_N; j++) {
+    const wy = j * WELT_SCHRITT;
+    for (let i = 0; i < WELT_N; i++) {
+      const wx = i * WELT_SCHRITT;
+      let e = fbm(wx / 1500, wy / 1500, 7) * 0.86 + fbm(wx / 340, wy / 340, 41) * 0.14;
+      /* Das Kleingebirge mit dem Kleinen Horn — folgt dem Artikeltext Bjoldiri §Lage. */
+      const dh = Math.hypot(wx - 1430, wy - 5330);
+      e += 0.34 * Math.exp(-(dh * dh) / (2 * 300 * 300));
+      const dg = Math.hypot(wx - 1750, wy - 5750);
+      e += 0.16 * Math.exp(-(dg * dg) / (2 * 620 * 620));
+      /* Kuestenabfall nach Sueden und Westen */
+      e -= 0.30 * Math.exp(-(wy / 900));
+      e -= 0.22 * Math.exp(-(wx / 700));
+      HOEHE[j * WELT_N + i] = e;
+    }
+  }
+  RELIEF_MS = performance.now() - t0;
+}
+function hoeheAn(wx, wy) {
+  const fx = Math.min(WELT_N - 1.001, Math.max(0, wx / WELT_SCHRITT));
+  const fy = Math.min(WELT_N - 1.001, Math.max(0, wy / WELT_SCHRITT));
+  const i = fx | 0, j = fy | 0, tx = fx - i, ty = fy - j;
+  const a = HOEHE[j * WELT_N + i], b = HOEHE[j * WELT_N + i + 1];
+  const c = HOEHE[(j + 1) * WELT_N + i], d = HOEHE[(j + 1) * WELT_N + i + 1];
+  return (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
+}
+const BAENDER = [0.335, 0.415, 0.500, 0.585, 0.665, 0.745];
+function bandVon(e) {
+  for (let k = 0; k < BAENDER.length; k++) if (e < BAENDER[k]) return k;
+  return BAENDER.length;
+}
+
+/* --- Regionen: die Einheit, aus der Sicht besteht ------------------------- */
+const REGIONEN = [];
+function bauRegionen() {
+  const { x0, y0, x1, y1, spalten, zeilen } = AUSSCHNITT;
+  const bw = (x1 - x0) / spalten, bh = (y1 - y0) / zeilen;
+  for (let r = 0; r < zeilen; r++) {
+    for (let c = 0; c < spalten; c++) {
+      const id = r + "-" + c;
+      const jit = (i, j, s) => (hsh(i * 31 + s, j * 17 + s, 909) - 0.5) * 0.42;
+      const pts = [];
+      const ecken = [[c, r], [c + 1, r], [c + 1, r + 1], [c, r + 1]];
+      for (const [ci, ri] of ecken) {
+        const jx = (ci === 0 || ci === spalten) ? 0 : jit(ci, ri, 3) * bw;
+        const jy = (ri === 0 || ri === zeilen) ? 0 : jit(ci, ri, 8) * bh;
+        pts.push([x0 + ci * bw + jx, y0 + ri * bh + jy]);
+      }
+      REGIONEN.push({ id: id, pts: pts, mx: x0 + (c + 0.5) * bw, my: y0 + (r + 0.5) * bh });
+    }
+  }
+}
+function regionVon(wx, wy) {
+  const { x0, y0, x1, y1, spalten, zeilen } = AUSSCHNITT;
+  const c = Math.max(0, Math.min(spalten - 1, Math.floor((wx - x0) / ((x1 - x0) / spalten))));
+  const r = Math.max(0, Math.min(zeilen - 1, Math.floor((wy - y0) / ((y1 - y0) / zeilen))));
+  return r + "-" + c;
+}
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   DIE LEINWAND — Canvas2D hinter der MapRenderer-Grenze.
+   Das DOM bleibt autoritativ (K7): jede Sache auf der Leinwand hat eine
+   Entsprechung in der Gliederung, in der Ordnung oder in der Schwellenliste.
+   ========================================================================== */
+const S = {
+  leser: "irme", raster: "quadrat", band: 0, ansicht: "leinwand",
+  zoom: 1, gewaehlt: "olav", gewaehlteSchwelle: "Blattheim",
+  freigaben: { irme: [], bodin: [], baldur: [], gm: [] },
+  bewegung: true, nennungsversuche: 0, sitzung: 15
+};
+const VIEW = { cx: 1520, cy: 5420, spanX: 2600 };
+
+const cv = document.getElementById("leinwand");
+const ctx = cv.getContext("2d", { alpha: false });
+let CW = 1200, CH = 760, DPR = 1;
+let tGeo = null, tFog = null;               /* Offscreen-Platten */
+let geoKey = "", fogKey = "";
+let RAHMEN = [], letzterRahmen = 0, NEBEL_MS = 0, PROJ_MS = 0, GEO_MS = 0;
+let TOK = {};                               /* Token-Farben, aus dem CSS gelesen */
+let FONT = "system-ui, sans-serif";
+
+function leseTokens() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = n => cs.getPropertyValue(n).trim();
+  FONT = cs.getPropertyValue("--f-ui").trim() || "system-ui, sans-serif";
+  TOK = {
+    w: [g("--w0"), g("--w1"), g("--w2"), g("--w3"), g("--w4"), g("--w5"), g("--w6")],
+    cont: g("--cont"), fog: g("--fog"), fogA: parseFloat(g("--fog-a")) || 0.82,
+    schw: g("--schw"), schw2: g("--schw2"), ink: g("--ink"), ink2: g("--ink2"),
+    ink3: g("--ink3"), ink4: g("--ink4"), rule: g("--rule2"), sf: g("--sf"),
+    focus: g("--focus"), acc: g("--acc"), gold: g("--gold"),
+    tk1: g("--tk1"), tk2: g("--tk2"), tk3: g("--tk3"), tk4: g("--tk4")
+  };
+}
+
+function k()     { return CW / (VIEW.spanX / S.zoom); }
+function spanY() { return CH / k(); }
+function vx0()   { return VIEW.cx - (VIEW.spanX / S.zoom) / 2; }
+function vy0()   { return VIEW.cy - spanY() / 2; }
+function sx(wx)  { return (wx - vx0()) * k(); }
+function sy(wy)  { return CH - (wy - vy0()) * k(); }
+function wxOf(px) { return vx0() + px / k(); }
+function wyOf(py) { return vy0() + (CH - py) / k(); }
+
+/* --- Sicht: die Menge der freigegebenen Regions-IDs ----------------------- */
+function sichtVon(id) {
+  const l = LESER[id];
+  if (l.regionen === "alles") return new Set(REGIONEN.map(r => r.id));
+  return new Set(l.regionen.concat(S.freigaben[id] || []));
+}
+function haeltNamen(id, name) {
+  const l = LESER[id];
+  return l.haelt === "alles" ? 99 : (l.haelt[name] || 0);
+}
+
+/* --- Die Projektion. Ein Praedikat fuer Nebel UND Schwellen. -------------- */
+function projiziere(quelle, leserId) {
+  const t0 = performance.now();
+  const l = LESER[leserId];
+  const sicht = sichtVon(leserId);
+  const ringe = [];
+  for (const r of quelle.schwellen) {
+    if (!r.anker) continue;
+    const halt = haeltNamen(leserId, r.name);
+    if (!halt) continue;
+    const d = tageBis(r.anker);
+    ringe.push({
+      name: r.name, klasse: r.klasse, x: r.anker.x, y: r.anker.y,
+      nachfrage: r.nachfrage, tage: Math.round(d.tage), km: Math.round(d.km),
+      belege: l.gm ? r.nachfrage : halt, herkunft: r.anker.q
+    });
+  }
+  ringe.sort((a, b) => a.tage - b.tage || a.name.localeCompare(b.name, "de"));
+  const marken = quelle.marken
+    .filter(m => l.gm || !m.verdeckt)
+    .map(m => ({ id: m.id, name: m.name, x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10,
+                 band: m.band, hp: m.hp, hpmax: m.hpmax, ini: m.ini,
+                 zustand: m.zustand.map(z => z.t),
+                 defeat_pending: m.defeat_pending ? true : undefined }));
+  marken.sort((a, b) => b.ini - a.ini);
+  const szene = {
+    karte: "k:andaria", bounds: KORPUS.kartenvertrag.bounds,
+    origin: KORPUS.kartenvertrag.origin, order: KORPUS.kartenvertrag.order,
+    raster: S.raster, band: S.band,
+    regionen: [...sicht].sort(),
+    ringe: ringe, marken: marken
+  };
+  PROJ_MS = performance.now() - t0;
+  return szene;
+}
+function quelleJetzt(ohne) {
+  let sch = mitAnker();
+  if (ohne) sch = sch.filter(r => r.name !== ohne);
+  return { schwellen: sch, marken: MARKEN };
+}
+
+/* --- Platten --------------------------------------------------------------*/
+function neuePlatte(w, h) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * DPR)); c.height = Math.max(1, Math.round(h * DPR));
+  const x = c.getContext("2d"); x.scale(DPR, DPR);
+  return { c: c, x: x };
+}
+
+function baueGeo() {
+  const t0 = performance.now();
+  const rw = Math.max(2, Math.round(CW / 2)), rh = Math.max(2, Math.round(CH / 2));
+  const off = document.createElement("canvas");
+  off.width = rw; off.height = rh;
+  const ox = off.getContext("2d");
+  const img = ox.createImageData(rw, rh);
+  const d = img.data;
+  const rgb = TOK.w.map(hex2rgb);
+  const cont = rgba2rgb(TOK.cont);
+  const px = (VIEW.spanX / S.zoom) / rw, py = spanY() / rh;
+  const bx = vx0(), by = vy0();
+  let prevRow = new Int8Array(rw);
+  for (let j = 0; j < rh; j++) {
+    const wy = by + (rh - 1 - j + 0.5) * py;
+    let prev = -1;
+    for (let i = 0; i < rw; i++) {
+      const wx = bx + (i + 0.5) * px;
+      const b = bandVon(hoeheAn(wx, wy));
+      const o = (j * rw + i) * 4;
+      let c = rgb[b] || rgb[6];
+      if ((prev !== -1 && prev !== b) || (j > 0 && prevRow[i] !== b)) c = cont;
+      d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
+      prev = b; prevRow[i] = b;
+    }
+  }
+  ox.putImageData(img, 0, 0);
+  tGeo = off;
+  GEO_MS = performance.now() - t0;
+}
+function hex2rgb(h) {
+  h = (h || "#888").trim();
+  if (h[0] !== "#") { const m = h.match(/\d+/g); return m ? [+m[0], +m[1], +m[2]] : [128, 128, 128]; }
+  if (h.length === 4) h = "#" + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+  return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+}
+function rgba2rgb(s) {
+  const m = (s || "").match(/[\d.]+/g);
+  if (!m) return [90, 74, 46];
+  const a = m.length > 3 ? +m[3] : 1;
+  return [Math.round(+m[0] * a + 128 * (1 - a)), Math.round(+m[1] * a + 128 * (1 - a)), Math.round(+m[2] * a + 128 * (1 - a))];
+}
+
+function baueNebel(sicht) {
+  const t0 = performance.now();
+  const p = neuePlatte(CW, CH);
+  p.x.fillStyle = TOK.fog; p.x.globalAlpha = TOK.fogA;
+  p.x.fillRect(0, 0, CW, CH);
+  p.x.globalAlpha = 1;
+  p.x.globalCompositeOperation = "destination-out";
+  const mask = neuePlatte(CW, CH);
+  try { mask.x.filter = "blur(9px)"; } catch (e) {}
+  mask.x.fillStyle = "#000";
+  for (const r of REGIONEN) {
+    if (!sicht.has(r.id)) continue;
+    mask.x.beginPath();
+    r.pts.forEach((pt, i) => { const X = sx(pt[0]), Y = sy(pt[1]); i ? mask.x.lineTo(X, Y) : mask.x.moveTo(X, Y); });
+    mask.x.closePath(); mask.x.fill();
+  }
+  p.x.drawImage(mask.c, 0, 0, CW, CH);
+  p.x.globalCompositeOperation = "source-over";
+  tFog = p.c;
+  NEBEL_MS = performance.now() - t0;
+}
+</script>
+
+<script>
+"use strict";
+/* --- Raster: drei Sorten, live umschaltbar, unterschiedliches Einrasten --- */
+const ZELLE = 64;        /* Welteinheiten je Quadrat */
+const HEXR = 40;         /* Umkreisradius je Hex (spitz oben) */
+const W3 = Math.sqrt(3);
+
+function hexAus(wx, wy) {
+  const q = (W3 / 3 * wx - wy / 3) / HEXR, r = (2 / 3 * wy) / HEXR;
+  let x = q, z = r, y = -x - z;
+  let rx = Math.round(x), ry = Math.round(y), rz = Math.round(z);
+  const dx = Math.abs(rx - x), dy = Math.abs(ry - y), dz = Math.abs(rz - z);
+  if (dx > dy && dx > dz) rx = -ry - rz; else if (dy > dz) ry = -rx - rz; else rz = -rx - ry;
+  return [rx, rz];
+}
+function hexMitte(q, r) {
+  return [HEXR * (W3 * q + W3 / 2 * r), HEXR * (3 / 2 * r)];
+}
+function einrasten(wx, wy) {
+  if (S.raster === "quadrat") return [Math.floor(wx / ZELLE) * ZELLE + ZELLE / 2, Math.floor(wy / ZELLE) * ZELLE + ZELLE / 2];
+  if (S.raster === "hex") { const [q, r] = hexAus(wx, wy); return hexMitte(q, r); }
+  return [Math.round(wx * 10) / 10, Math.round(wy * 10) / 10];
+}
+function schritt() { return S.raster === "quadrat" ? ZELLE : (S.raster === "hex" ? HEXR * 1.5 : 24); }
+
+function zeichneRaster() {
+  const px = ZELLE * k();
+  ctx.save();
+  ctx.strokeStyle = TOK.ink4; ctx.globalAlpha = 0.28; ctx.lineWidth = 0.6;
+  if (S.raster === "quadrat") {
+    if (px < 5) { ctx.restore(); return; }
+    const x0 = Math.floor(vx0() / ZELLE) * ZELLE, y0 = Math.floor(vy0() / ZELLE) * ZELLE;
+    ctx.beginPath();
+    for (let wx = x0; wx <= vx0() + VIEW.spanX / S.zoom; wx += ZELLE) { const X = Math.round(sx(wx)) + .5; ctx.moveTo(X, 0); ctx.lineTo(X, CH); }
+    for (let wy = y0; wy <= vy0() + spanY(); wy += ZELLE) { const Y = Math.round(sy(wy)) + .5; ctx.moveTo(0, Y); ctx.lineTo(CW, Y); }
+    ctx.stroke();
+  } else if (S.raster === "hex") {
+    if (HEXR * k() < 4) { ctx.restore(); return; }
+    const r0 = Math.floor(vy0() / (1.5 * HEXR)) - 1, r1 = Math.ceil((vy0() + spanY()) / (1.5 * HEXR)) + 1;
+    ctx.beginPath();
+    for (let r = r0; r <= r1; r++) {
+      const y = HEXR * 1.5 * r;
+      const q0 = Math.floor((vx0() / (W3 * HEXR)) - r / 2) - 1;
+      const q1 = Math.ceil(((vx0() + VIEW.spanX / S.zoom) / (W3 * HEXR)) - r / 2) + 1;
+      for (let q = q0; q <= q1; q++) {
+        const [hx, hy] = hexMitte(q, r);
+        const CXp = sx(hx), CYp = sy(hy), R = HEXR * k();
+        for (let i = 0; i < 6; i++) {
+          const a = Math.PI / 180 * (60 * i - 90);
+          const X = CXp + R * Math.cos(a), Y = CYp + R * Math.sin(a);
+          i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
+        }
+        ctx.closePath();
+      }
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* --- Lineal am Rand: beweist den Koordinatenvertrag ----------------------- */
+function zeichneLineal() {
+  const stufen = [50, 100, 250, 500, 1000, 2000];
+  let st = stufen.find(s => s * k() > 70) || 2000;
+  ctx.save();
+  ctx.font = "500 9px " + (FONT);
+  ctx.fillStyle = TOK.ink3; ctx.strokeStyle = TOK.ink4; ctx.globalAlpha = 0.75; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let wx = Math.ceil(vx0() / st) * st; wx < vx0() + VIEW.spanX / S.zoom; wx += st) {
+    const X = Math.round(sx(wx)) + .5;
+    ctx.moveTo(X, CH); ctx.lineTo(X, CH - 7);
+    ctx.fillText(String(wx), X + 3, CH - 10);
+  }
+  for (let wy = Math.ceil(vy0() / st) * st; wy < vy0() + spanY(); wy += st) {
+    const Y = Math.round(sy(wy)) + .5;
+    ctx.moveTo(0, Y); ctx.lineTo(7, Y);
+    ctx.fillText(String(wy), 10, Y - 3);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = TOK.ink3;
+  ctx.fillText("y ↑ · Ursprung unten links", 10, CH - 22);
+  /* Massstabsbalken */
+  const kmZiel = [10, 20, 50, 100, 200, 400].find(v => (v / MASSSTAB.km_je_einheit) * k() > 70) || 400;
+  const len = (kmZiel / MASSSTAB.km_je_einheit) * k();
+  const bx = CW - len - 18, by = CH - 18;
+  ctx.strokeStyle = TOK.ink2; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + len, by);
+  ctx.moveTo(bx, by - 4); ctx.lineTo(bx, by + 4);
+  ctx.moveTo(bx + len, by - 4); ctx.lineTo(bx + len, by + 4); ctx.stroke();
+  ctx.fillStyle = TOK.ink2;
+  ctx.fillText(kmZiel + " km · " + Math.round(kmZiel / MASSSTAB.km_je_tag * 10) / 10 + " Tage Ritt", bx, by - 7);
+  /* Nordpfeil */
+  ctx.strokeStyle = TOK.ink2; ctx.lineWidth = 1.2;
+  const nx = CW - 22, ny = 34;
+  ctx.beginPath(); ctx.moveTo(nx, ny + 13); ctx.lineTo(nx, ny - 11);
+  ctx.moveTo(nx - 4, ny - 5); ctx.lineTo(nx, ny - 11); ctx.lineTo(nx + 4, ny - 5); ctx.stroke();
+  ctx.fillText("N", nx - 3, ny - 14);
+  ctx.restore();
+}
+
+/* --- Die Ringe. Elf Schwellen liegen im Nebel; Nennungen zeichnen NICHTS. - */
+function zeichneRinge(szene, t) {
+  const puls = (S.bewegung && !reduziert()) ? (0.5 + 0.5 * Math.sin(t / 1200)) : 0.5;
+  for (const r of szene.ringe) {
+    const X = sx(r.x), Y = sy(r.y);
+    if (X < -80 || X > CW + 80 || Y < -60 || Y > CH + 60) continue;
+    const gewaehlt = r.name === S.gewaehlteSchwelle;
+    const R = 15 + (gewaehlt ? 3 : 0);
+    ctx.save();
+    ctx.strokeStyle = TOK.schw;
+    ctx.shadowColor = TOK.schw2; ctx.shadowBlur = 6 + 8 * puls;
+    ctx.lineWidth = gewaehlt ? 2.1 : 1.5;
+    ctx.beginPath();
+    ctx.arc(X, Y, R, -0.30 * Math.PI, 1.14 * Math.PI);   /* unvollendet, mit Absicht */
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    if (gewaehlt) {
+      ctx.setLineDash([3, 4]); ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
+      const p = partei();
+      ctx.beginPath(); ctx.moveTo(sx(p.x), sy(p.y)); ctx.lineTo(X, Y); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+    /* Beschriftung — Entdichtung: schwache Nachfrage schweigt beim Herauszoomen */
+    if (S.zoom >= 0.9 || r.nachfrage >= 12 || gewaehlt) {
+      ctx.font = "600 11px " + FONT;
+      const txt = r.name;
+      const meta = "unbeschrieben · " + r.tage + (r.tage === 1 ? " Tag" : " Tage") + " Ritt · " +
+                   r.nachfrage + " Artikel nennen es";
+      const w = Math.max(ctx.measureText(txt).width, 8) + 12;
+      ctx.fillStyle = TOK.sf; ctx.globalAlpha = 0.80;
+      ctx.fillRect(X + R + 5, Y - 16, w + 4, 30);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = TOK.schw; ctx.fillText(txt, X + R + 9, Y - 4);
+      ctx.font = "400 9px " + FONT;
+      ctx.fillStyle = TOK.ink3; ctx.fillText(meta, X + R + 9, Y + 8);
+    }
+    ctx.restore();
+  }
+}
+
+/* --- Die Marken ----------------------------------------------------------- */
+function zeichneMarken(szene) {
+  for (const m of szene.marken) {
+    const voll = MARKEN.find(x => x.id === m.id);
+    const X = sx(m.x), Y = sy(m.y);
+    const andereEbene = m.band !== S.band;
+    ctx.save();
+    ctx.globalAlpha = andereEbene ? 0.34 : 1;
+    const farbe = TOK[voll.farbe] || TOK.ink2;
+    ctx.beginPath(); ctx.arc(X, Y, 11, 0, Math.PI * 2);
+    ctx.fillStyle = farbe; ctx.fill();
+    ctx.lineWidth = andereEbene ? 1.6 : 1.2;
+    if (andereEbene) ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = TOK.sf; ctx.stroke(); ctx.setLineDash([]);
+    if (m.id === S.gewaehlt) {
+      ctx.strokeStyle = TOK.focus; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(X, Y, 15, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.fillStyle = TOK.sf; ctx.font = "700 10px " + FONT;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(voll.kurz, X, Y + 0.5);
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    /* Hoehenband als Abzeichen — R6: ein Skalar, kein zweiter Baum */
+    if (m.band !== 0) {
+      ctx.beginPath(); ctx.arc(X + 9, Y - 9, 6, 0, Math.PI * 2);
+      ctx.fillStyle = TOK.gold; ctx.fill();
+      ctx.fillStyle = TOK.sf; ctx.font = "700 8px " + FONT;
+      ctx.textAlign = "center";
+      ctx.fillText(m.band > 0 ? "+" + m.band : String(m.band), X + 9, Y - 6.5);
+      ctx.textAlign = "left";
+    }
+    if (m.defeat_pending) {
+      ctx.strokeStyle = TOK.schw; ctx.lineWidth = 1.4; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.arc(X, Y, 16, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
+}
+
+function reduziert() {
+  return document.documentElement.getAttribute("data-motion") === "reduziert" ||
+         (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+
+/* --- Der Rahmen ----------------------------------------------------------- */
+let SZENE = null;
+function zeichne(t) {
+  const t0 = performance.now();
+  const sicht = sichtVon(S.leser);
+  const gk = [vx0() | 0, vy0() | 0, (VIEW.spanX / S.zoom) | 0, CW | 0, CH | 0,
+              document.documentElement.dataset.skin, document.documentElement.dataset.theme,
+              window.matchMedia("(prefers-color-scheme: dark)").matches].join("|");
+  if (gk !== geoKey) { baueGeo(); geoKey = gk; }
+  const fk = gk + "|" + [...sicht].join(",");
+  if (fk !== fogKey) { baueNebel(sicht); fogKey = fk; }
+
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = TOK.w[0]; ctx.fillRect(0, 0, CW, CH);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(tGeo, 0, 0, CW, CH);
+  zeichneRaster();
+  ctx.drawImage(tFog, 0, 0, CW, CH);
+  zeichneRinge(SZENE, t || 0);
+  zeichneMarken(SZENE);
+  zeichneLineal();
+
+  letzterRahmen = performance.now() - t0;
+  RAHMEN.push(letzterRahmen); if (RAHMEN.length > 60) RAHMEN.shift();
+}
+
+let laeuft = false;
+function schleife(t) {
+  if (!laeuft) return;
+  zeichne(t);
+  requestAnimationFrame(schleife);
+}
+function anstossen() {
+  SZENE = projiziere(quelleJetzt(), S.leser);
+  if (S.ansicht === "gliederung") { zeichneGliederung(); }
+  zeichne(performance.now());
+  aktualisiereHud();
+}
+function starteSchleife() {
+  const willAnim = S.bewegung && !reduziert() && S.ansicht === "leinwand";
+  if (willAnim && !laeuft) { laeuft = true; requestAnimationFrame(schleife); }
+  if (!willAnim) { laeuft = false; }
+}
+
+function passeAn() {
+  const platte = document.getElementById("platte");
+  const b = platte.getBoundingClientRect();
+  CW = Math.max(280, Math.round(b.width));
+  CH = Math.max(220, Math.round(CW * 0.615));
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(CW * DPR); cv.height = Math.round(CH * DPR);
+  cv.style.width = CW + "px"; cv.style.height = CH + "px";
+  geoKey = ""; fogKey = "";
+  anstossen();
+}
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   DAS DOM — autoritativ. Alles, was die Leinwand zeigt, steht hier als Text.
+   ========================================================================== */
+const $ = s => document.querySelector(s);
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function nz(n, d) { return Number(n).toLocaleString("de-DE", { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+
+/* --- Die Schwellenlage ---------------------------------------------------- */
+function renderLage() {
+  const alle = schwellen();
+  const mA = alle.filter(r => r.anker).sort((a, b) => tageBis(a.anker).tage - tageBis(b.anker).tage);
+  const oA = alle.filter(r => !r.anker && r.hatOrt);
+  const oO = alle.filter(r => !r.hatOrt);
+  const sicht = S.leser;
+  let h = "";
+  const zeile = (r, art) => {
+    const halt = haeltNamen(sicht, r.name);
+    const sichtbar = LESER[sicht].gm || halt > 0;
+    const t = r.anker ? tageBis(r.anker) : null;
+    const nah = t && t.tage <= REGELPAKET.naehe_tage;
+    return '<button class="lage__row" type="button" data-name="' + esc(r.name) + '"' +
+      ' data-anker="' + (r.anker ? "ja" : "ohne") + '" data-nah="' + (nah ? "ja" : "nein") + '"' +
+      ' data-sicht="' + (sichtbar ? "ja" : "nein") + '"' +
+      ' aria-pressed="' + (S.gewaehlteSchwelle === r.name) + '">' +
+      '<span class="lage__ring" aria-hidden="true"></span>' +
+      '<span><span class="lage__name">' + esc(r.name) + '</span>' +
+      '<span class="lage__meta">' + esc(r.klasse) + " &middot; " + r.nachfrage + " Artikel &middot; " +
+        (r.anker ? (r.anker.q === "gemessen" ? "Anker gemessen" : "Anker gesetzt") : art) +
+        (sichtbar ? "" : " &middot; f&uuml;r " + esc(LESER[sicht].name) + " nicht sichtbar") + '</span>' +
+      (r.varianten && r.varianten.length ?
+        '<span class="lage__alias">auch geschrieben: ' + r.varianten.map(esc).join(" &middot; ") +
+        '<br><b>' + (r.varianten.length + 1) + ' rote Links im Wiki. Eine Schwelle.</b></span>' : "") +
+      '</span>' +
+      '<span class="lage__dist">' + (t ? esc(tageText(r.anker)) + "<br>" + nz(t.km) + "&nbsp;km" : "&mdash;") + '</span>' +
+      '</button>';
+  };
+  mA.forEach(r => { h += zeile(r, "Anker"); });
+  if (oA.length) {
+    h += '<p class="caps" style="padding:var(--sp-2) var(--sp-2) 0">Schwelle ohne Anker</p>';
+    oA.forEach(r => { h += zeile(r, "kein Ring: keine Geometrie"); });
+  }
+  if (oO.length) {
+    h += '<p class="caps" style="padding:var(--sp-2) var(--sp-2) 0">Schwelle ohne Ort &mdash; Personen&auml;mter</p>';
+    oO.forEach(r => { h += zeile(r, "kein Ort"); });
+  }
+  $("#lageListe").innerHTML = h;
+  const ringe = mitAnker().length;
+  const nah = mitAnker().filter(r => tageBis(r.anker).tage <= REGELPAKET.naehe_tage).length;
+  $("#lageZahl").textContent = ringe + " Ringe · " + mitOrt().length + " mit Ort · " + schwellen().length + " gesamt";
+  $("#bilanzSchwellen").textContent = ringe;
+  $("#bilanzNah").textContent = nah;
+  $("#bilanzGeprueft").textContent = NAMEN.length;
+}
+
+/* --- Die Ordnung: die Liste ist die Wahrheit, die Leinwand ist die Ansicht - */
+function renderOrdnung() {
+  const dran = SZENE.marken[0];
+  let h = "";
+  for (const m of SZENE.marken) {
+    const voll = MARKEN.find(x => x.id === m.id);
+    const pct = Math.round(m.hp / m.hpmax * 100);
+    h += '<li><button class="ord" type="button" data-mark="' + m.id + '"' +
+      ' aria-current="' + (dran && m.id === dran.id) + '"' +
+      ' data-gewaehlt="' + (S.gewaehlt === m.id ? "ja" : "nein") + '">' +
+      '<span class="ord__i">' + m.ini + '</span>' +
+      '<span class="ord__marke" style="background:var(--' + voll.farbe + ')">' + esc(voll.kurz) + '</span>' +
+      '<span class="ord__name"><b>' + esc(m.name) + '</b><span>' +
+        esc(voll.art || (voll.verdeckt ? "verdeckt — nur Spielleitung" : "")) +
+        ' &middot; ' + ["Tiefe Stollen", "Oberfläche", "Kleines Horn"][m.band + 1] + '</span></span>' +
+      '<span class="ord__hp"><b>' + m.hp + '/' + m.hpmax + '</b>' +
+        '<span class="hpbar" data-krit="' + (pct < 34 ? "ja" : "nein") + '" role="img" aria-label="Trefferpunkte ' +
+        m.hp + ' von ' + m.hpmax + '"><i style="width:' + pct + '%"></i></span></span>' +
+      '<span class="ord__tat">' +
+        (voll.verdeckt ? '<span class="chip chip--gm">nur SL</span>' : "") +
+        (voll.zustand || []).map(z => '<span class="chip chip--' + z.ton + '">' + esc(z.t) + '</span>').join("") +
+        (m.defeat_pending ? '<span class="chip chip--bad">Niederlage unbest&auml;tigt</span>' : "") +
+      '</span></button>' +
+      (m.defeat_pending
+        ? '<div style="display:flex;gap:var(--sp-2);align-items:center;padding:var(--sp-2) var(--sp-2) var(--sp-3) 3.6rem">' +
+          '<button class="btn btn--prim" type="button" data-bestaetigen="' + m.id + '">Niederlage best&auml;tigen</button>' +
+          '<span class="mono" style="color:var(--ink3)">zwei Handlungen mit Absicht &mdash; ein Wurf allein nimmt niemanden vom Tisch</span></div>'
+        : "") +
+      '</li>';
+  }
+  $("#ordnung").innerHTML = h;
+}
+
+/* --- Die Gliederung: dieselbe Szene, rein semantisch --------------------- */
+function gliederungHtml(sz) {
+  const l = LESER[S.leser];
+  let h = '<p class="caps">Gliederung &mdash; die Leinwand als Baum. Identischer Datenstand, keine Grafik.</p>';
+  h += '<ul><li><b>Karte</b> <span class="mono">' + esc(sz.karte) + " &middot; bounds " +
+       JSON.stringify(sz.bounds) + " &middot; " + esc(sz.origin) + " &middot; " + esc(sz.order) + '</span><ul>' +
+       '<li><b>Raster</b> <span class="mono">' + esc(sz.raster) + '</span></li>' +
+       '<li><b>Ebene</b> <span class="mono">' + ["Tiefe Stollen", "Oberfläche", "Kleines Horn"][sz.band + 1] + '</span></li>' +
+       '<li><b>Sicht</b> <span class="mono">' + sz.regionen.length + " von " + REGIONEN.length +
+       ' Regionen freigegeben</span><ul><li class="mono">' + sz.regionen.join(" ") + '</li></ul></li>';
+  h += '<li><b>Schwellen im Nebel</b> <span class="mono">' + sz.ringe.length + '</span><ul>';
+  if (!sz.ringe.length) h += '<li>keine &mdash; ' + esc(l.name) + ' h&auml;lt keine Passage, die eine Schwelle nennt.</li>';
+  for (const r of sz.ringe) {
+    h += '<li><b>' + esc(r.name) + '</b> <span class="mono">[' + r.x + ", " + r.y + "] &middot; " +
+      r.tage + " Tage &middot; " + r.km + " km &middot; " + r.nachfrage + " Artikel &middot; Anker " +
+      esc(r.herkunft) + '</span></li>';
+  }
+  h += '</ul></li>';
+  h += '<li><b>Marken</b> <span class="mono">' + sz.marken.length + '</span><ul>';
+  for (const m of sz.marken) {
+    h += '<li><b>' + esc(m.name) + '</b> <span class="mono">Ini ' + m.ini + " &middot; [" + m.x + ", " + m.y +
+      "] &middot; Ebene " + m.band + " &middot; " + m.hp + "/" + m.hpmax +
+      (m.zustand.length ? " &middot; " + m.zustand.map(esc).join(", ") : "") +
+      (m.defeat_pending ? " &middot; Niederlage unbestätigt" : "") + '</span></li>';
+  }
+  h += '</ul></li>';
+  h += '<li><b>Nennungen auf der Karte</b> <span class="mono">0</span><ul><li>' +
+       'Eine Nennung hat keinen Ort. Es gibt nichts zu zeichnen und nichts vorzulesen &mdash; ' +
+       'das ist die ehrliche Darstellung, nicht eine fehlende Funktion.</li></ul></li>';
+  h += '</ul></li></ul>';
+  return h;
+}
+function zeichneGliederung() { $("#gliederung").innerHTML = gliederungHtml(SZENE); }
+
+/* --- HUD, Quellzeile, Messstreifen --------------------------------------- */
+function aktualisiereHud() {
+  const l = LESER[S.leser];
+  const sicht = sichtVon(S.leser);
+  const rp = mitAnker().length;
+  $("#hud").innerHTML =
+    "<div><b>" + esc(l.name) + "</b> &middot; " + esc(l.rolle) + "</div>" +
+    "<div>Sicht: <b>" + sicht.size + "</b>/" + REGIONEN.length + " Regionen &middot; Ringe sichtbar: <b>" +
+      SZENE.ringe.length + "</b> von " + rp + "</div>" +
+    "<div>Raster " + esc(S.raster) + " &middot; Ebene " +
+      ["Tiefe Stollen", "Oberfläche", "Kleines Horn"][S.band + 1] + " &middot; " + (S.zoom).toFixed(2).replace(".", ",") + "&times;</div>" +
+    (SZENE.ringe.length === 0 ? '<div class="warn">Kein Ring. Das ist kein Fehler: ' +
+      esc(l.name) + " hält keine Passage, die eine Schwelle nennt.</div>" : "");
+  cv.setAttribute("aria-label",
+    "Taktische Leinwand, Karte Andaria, Ausschnitt " + Math.round(vx0()) + " bis " +
+    Math.round(vx0() + VIEW.spanX / S.zoom) + " mal " + Math.round(vy0()) + " bis " + Math.round(vy0() + spanY()) +
+    " Welteinheiten. " + SZENE.marken.length + " Marken, " + SZENE.ringe.length +
+    " unvollendete Ringe im Nebel, " + sicht.size + " von " + REGIONEN.length + " Regionen freigegeben. " +
+    "Die vollständige Entsprechung steht in der Ordnung darunter und in der Gliederung.");
+  $("#leinwandBeschreibung").textContent =
+    SZENE.ringe.map(r => r.name + ": " + r.tage + " Tage Ritt, " + r.nachfrage + " Artikel nennen es").join(". ");
+}
+
+function renderQuelle() {
+  const gem = Object.values(ANKER).filter(a => a.q === "gemessen").length;
+  $("#quelleZeile").innerHTML =
+    "<b>Basisrelief prozedural erzeugt</b> (deterministisch, Saat 8192, 512&sup2; St&uuml;tzstellen; die Erhebung am " +
+    "Kleinen Horn folgt dem Artikeltext <i>Bjoldiri &sect;Lage</i>). <b>Originalraster nicht eingebettet</b> &mdash; " +
+    "0 von 41 Dateien im Wiki tragen ein Lizenzfeld. &mdash; Koordinatenvertrag echt: " +
+    "<span class='mono'>bounds [[0,0],[8192,8192]] &middot; origin bottom-left &middot; coordinateOrder xy</span>. " +
+    "Anker: <b>" + gem + " von " + Object.keys(ANKER).length + " gemessen</b> " +
+    "(<span class='mono'>Blattheim [1185.4, 5518.0]</span>, RB-21a &sect;4.3); die &uuml;brigen sind f&uuml;r diese " +
+    "Vorf&uuml;hrung <b>gesetzt</b> &mdash; <span class='mono'>map-andaria.json</span> ist eine benannte L&uuml;cke " +
+    "(RB-12 &sect;1.5). Ma&szlig;stab 1&nbsp;Einheit = 0,4&nbsp;km, 40&nbsp;km/Tag: <b>gesetzt</b>, die Karte nennt keinen. " +
+    "Prosa: Eron Wiki, CC&nbsp;BY-SA&nbsp;3.0.";
+}
+
+function feld(dt, dd, sub, status) {
+  return '<div class="mess__z"' + (status ? ' data-status="' + status + '"' : "") + '><dt>' + dt +
+    '</dt><dd>' + dd + (sub ? ' <small>' + sub + '</small>' : "") + '</dd></div>';
+}
+function renderMess() {
+  const mittel = RAHMEN.length ? RAHMEN.reduce((a, b) => a + b, 0) / RAHMEN.length : letzterRahmen;
+  const max = RAHMEN.length ? Math.max.apply(null, RAHMEN) : letzterRahmen;
+  $("#messStreifen").innerHTML =
+    feld("Rahmen", mittel.toFixed(1).replace(".", ",") + "&nbsp;ms", "Mittel &middot; max " + max.toFixed(1).replace(".", ",") + "&nbsp;ms",
+         mittel < 16.7 ? "gut" : (mittel < 33 ? "warn" : "bad")) +
+    feld("Relief", RELIEF_MS.toFixed(0) + "&nbsp;ms", "einmalig &middot; 512&sup2;") +
+    feld("Geo-Platte", GEO_MS.toFixed(1).replace(".", ",") + "&nbsp;ms", "je Ausschnitt") +
+    feld("Nebelmaske", NEBEL_MS.toFixed(1).replace(".", ",") + "&nbsp;ms", "RB-20b nennt 9,4&nbsp;ms",
+         NEBEL_MS <= 9.4 ? "gut" : "warn") +
+    feld("Sichtprojektion", PROJ_MS.toFixed(2).replace(".", ",") + "&nbsp;ms", "Nebel + Ringe, ein Pr&auml;dikat", "gut") +
+    feld("Namenspr&uuml;fung", PRUEF_MS.toFixed(1).replace(".", ",") + "&nbsp;ms", NAMEN.length + " Namen, 4 Stufen", "gut") +
+    feld("Marken", String(SZENE.marken.length), "Grenze 300") +
+    feld("Regionen frei", sichtVon(S.leser).size + "/" + REGIONEN.length, "Grenze 64");
+}
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   DIE LINSE — Grund · Register · Beweis · Messung
+   ========================================================================== */
+let AUSWAHL = "Blattheim";
+
+function renderGrund(name) {
+  AUSWAHL = name;
+  const r = PRUEFUNG.get(name);
+  const host = $("#grundHost");
+  if (!r) { host.innerHTML = "<p>Unbekannter Name.</p>"; return; }
+  const mk = r.urteil === "schwelle" ? "schwelle" : (r.urteil === "verworfen" ? "verworfen" : "nennung");
+  const mkTxt = r.urteil === "schwelle" ? (r.hatOrt ? "Schwelle" : "Schwelle ohne Ort")
+              : (r.urteil === "verworfen" ? "verworfen" : (r.urteil === "alias" ? "Schreibvariante" : "Nennung"));
+  let h = '<div class="urteil"><div class="urteil__kopf">' +
+    '<h3 class="wrap-any">' + esc(r.name) + '</h3>' +
+    '<span class="marke marke--' + mk + '">' + esc(mkTxt) + '</span>' +
+    '<span class="chip">' + esc(r.klasse) + '</span>' +
+    '<span class="chip">' + (r.nachfrage || r.w) + ' Artikel</span></div>';
+  h += '<p class="mono" style="color:var(--ink3)">' + (r.nachfrage || r.w) + " Artikel nennen es &middot; Regelpaket " +
+       esc(REGELPAKET.id) + " r" + REGELPAKET.revision + '</p>';
+  h += '<p style="font-family:var(--f-read);font-size:var(--fs-micro);line-height:1.55">' + esc(r.grund) + '</p>';
+
+  h += '<p class="caps" style="margin-top:var(--sp-2)">Der Rechenweg</p><div class="stufen">';
+  for (const s of r.spur) {
+    h += '<div class="stufe" data-erg="' + (s.ok ? "durch" : "stop") + '">' +
+      '<span class="stufe__n">' + s.nr + '</span><span><b>' + esc(s.name) + '</b><span>' + esc(s.txt) + '</span></span></div>';
+  }
+  if (r.urteil === "schwelle" && r.anker) {
+    h += '<div class="stufe" data-erg="durch"><span class="stufe__n">5</span><span><b>K&ouml;rper</b><span>' +
+      'Anker auf <code>k:andaria</code> bei <code>[' + r.anker.x + ", " + r.anker.y + ']</code> (' + esc(r.anker.q) +
+      ') &middot; ' + esc(tageText(r.anker)) + ' vom Standort der Gruppe.</span></span></div>';
+  } else if (r.urteil === "schwelle" && r.hatOrt) {
+    h += '<div class="stufe" data-erg="stop"><span class="stufe__n">5</span><span><b>K&ouml;rper</b><span>' +
+      'kein Anker &mdash; f&uuml;r diesen Referenten liefert der Korpus keine Geometrie. ' +
+      'Kein Ring auf der Leinwand, und das ist die ehrliche Darstellung.</span></span></div>';
+  } else if (r.urteil === "schwelle") {
+    h += '<div class="stufe" data-erg="stop"><span class="stufe__n">5</span><span><b>K&ouml;rper</b><span>' +
+      'kein <code>Ort</code>: ein Personenfeld macht jemanden auffindbar, nicht einen Platz erreitbar.</span></span></div>';
+  }
+  h += '</div>';
+
+  if (r.verdacht) {
+    h += '<div class="hinweis hinweis--bad"><b>Verdacht auf Fehlurteil.</b> ' + esc(r.verdacht) +
+      '. Vergleiche &raquo;K&ouml;nig von Terabur&laquo;, das &uuml;ber das Feld <code>Titel</code> korrekt als ' +
+      'Nennung f&auml;llt. Ein richtig gedruckter Grund an einem falschen Schluss ist schlimmer als ein ' +
+      'stiller Fehler &mdash; deshalb steht die Grundquote in §12 <b>&uuml;ber</b> der Urteilsquote.</div>';
+  }
+  if (r.name === "Andarisch") {
+    h += '<div class="hinweis"><b>Der meistgew&uuml;nschte fehlende Artikel des Korpus ist eine Sprache.</b> ' +
+      '18 Artikel wollen ihn. Kein einziger sagt, wo er liegt &mdash; weil man dorthin nicht reiten kann. ' +
+      'Fandom h&auml;tte hier eine T&uuml;r gebaut. Wir bauen einen Registereintrag mit ' +
+      (BELEGE["Andarisch"] || []).length + ' S&auml;tzen.</div>';
+  }
+  if (r.name === "Andaria") {
+    h += '<div class="hinweis"><b>Andaria ist die Karte, kein Punkt darauf.</b> 190 Pins, 16 Fraktionen, ' +
+      '15 eingehende rote Links &mdash; und nachgepr&uuml;ft <b>kein eigener Marker</b> (RB-21a §6.2). ' +
+      'Deshalb: Schwelle mit Ort, aber ohne Ring.</div>';
+  }
+
+  /* Beförderung / Rückstufung — eine Taste, auditiert */
+  h += '<div style="display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-3)">';
+  if (r.urteil === "nennung") {
+    h += '<button class="btn btn--prim" id="btnDoch" type="button">doch &rarr; bef&ouml;rdern</button>' +
+         '<span class="mono" style="color:var(--ink3);align-self:center">Anker wird am Standort der Gruppe gesetzt</span>';
+  } else if (r.urteil === "schwelle") {
+    h += '<button class="btn" id="btnZurueck" type="button">zur&uuml;ckstufen</button>' +
+         '<span class="mono" style="color:var(--ink3);align-self:center">eine T&uuml;r ist gemietet, nicht besessen</span>';
+  }
+  h += "</div></div>";
+  host.innerHTML = h;
+  const b1 = $("#btnDoch"), b2 = $("#btnZurueck");
+  if (b1) b1.addEventListener("click", () => befoerdere(name));
+  if (b2) b2.addEventListener("click", () => stufeZurueck(name));
+  renderRegister(name);
+}
+
+/* --- Das Namensregister: die Konkordanz ---------------------------------- */
+function renderRegister(name) {
+  const r = PRUEFUNG.get(name);
+  const alleBelege = BELEGE[name] || [];
+  const gehalten = LESER[S.leser].gm ? alleBelege.length : Math.min(alleBelege.length, haeltNamen(S.leser, name) || 0);
+  const zeigbar = LESER[S.leser].gm ? alleBelege : alleBelege.slice(0, gehalten);
+  $("#regMeta").textContent = (r ? (r.nachfrage || r.w) : 0) + " Artikel · " +
+    zeigbar.length + " von " + alleBelege.length + " Belegen sichtbar";
+  let h = '<p style="font-size:var(--fs-micro);color:var(--ink3);line-height:1.5">' +
+    'Die S&auml;tze der eigenen Welt, die dieses Wort benutzen &mdash; projiziert durch <code>Sicht</code>. ' +
+    '<b>Eine Interaktion, null Seitenaufrufe</b> (RB-13 M11 verlangt &le;2).</p>';
+  if (!alleBelege.length) {
+    h += '<div class="hinweis">F&uuml;r diesen Namen ist in diesem Auszug keine Belegstelle hinterlegt. ' +
+      'Im vollen Korpus stehen ' + (r ? (r.nachfrage || r.w) : 0) + ' &mdash; der Auszug tr&auml;gt zehn Namen mit ihren S&auml;tzen.</div>';
+  }
+  h += '<div class="konkordanz">';
+  for (const [q, t] of zeigbar) {
+    const teil = name.split(" ").pop();
+    const re = new RegExp("(" + teil.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\w*)", "gi");
+    h += '<div class="beleg"><div class="beleg__q">' + esc(q) + '</div>' +
+      '<div class="beleg__t">' + esc(t).replace(re, "<mark>$1</mark>") + '</div></div>';
+  }
+  h += "</div>";
+  if (!LESER[S.leser].gm && zeigbar.length < alleBelege.length) {
+    h += '<div class="hinweis"><b>' + (alleBelege.length - zeigbar.length) + ' weitere Belege sind nicht Teil von ' +
+      esc(LESER[S.leser].name) + 's H&auml;lfte.</b> Sie fehlen in der Antwort, nicht in der Anzeige &mdash; ' +
+      'und der Z&auml;hler dar&uuml;ber ist &uuml;ber die eigene Projektion gerechnet, nicht &uuml;ber die Wahrheit ' +
+      '(<code>Kein Nenner</code>, §11.4: offen, mit Orakelzeile).</div>';
+  }
+  $("#regHost").innerHTML = h;
+}
+
+/* --- Der Trichter --------------------------------------------------------- */
+function renderTrichter() {
+  const notation = verworfene().filter(r => r.grund.indexOf("Notation") === 0);
+  const alias = [...PRUEFUNG.values()].filter(r => r.urteil === "alias" || r.alias_von);
+  const z = (i, txt, sub, n, ton) =>
+    '<div class="trichter__z"' + (ton ? ' data-ton="' + ton + '"' : "") + '><i>' + i + '</i><span>' +
+    txt + (sub ? "<br>" + sub : "") + '</span><b>' + n + '</b></div>';
+  let h = '<div class="trichter">' +
+    z("", "<b>rote Kanten im Korpus</b>", "gemessen, RB-12 §5.3", nz(KORPUS.kanten_rot)) +
+    z("−", "Notation &amp; Schreibvarianten", "17 Ziele / 28 Kanten &mdash; <code>n. K.</code>, <code>v. K.</code>, Tippfehler", nz(KORPUS.notation_kanten)) +
+    z("=", "Kanten auf Referenten", "nach Kollaps: 22 Schreibweisen &rarr; 9 Dinge (WELT §3.3b)", nz(KORPUS.referenten_nach_kollaps)) +
+    z("⇣", "Nachfrage &ge; " + REGELPAKET.nachfrage_min + " Artikel", "83&nbsp;% fallen in EINEM Schritt weg (RB-12 §5.4)", nz(KORPUS.kandidaten_nachfrage)) +
+    z("⇣", "<b>Erreichbarkeit</b> &mdash; abgelesen am Feldetikett", "live in dieser Seite &uuml;ber " + NAMEN.length + " echte Namen gerechnet", schwellen().length) +
+    z("", "davon mit <code>Ort</code>", "Ortsfeld statt Personenfeld", mitOrt().length) +
+    z("", "davon mit <code>Anker</code> &mdash; <b>die Ringe</b>", "Andaria hat 190 Pins und selbst keinen", mitAnker().length) +
+    z("⇣", "N&auml;he &le; " + REGELPAKET.naehe_tage + " Tage Ritt", "vom Standort der Gruppe, gerechnet nicht gew&auml;hlt",
+      mitAnker().filter(r => tageBis(r.anker).tage <= REGELPAKET.naehe_tage).length, "ziel") +
+    "</div>";
+  h += '<p style="font-size:var(--fs-nano);color:var(--ink3);line-height:1.5;margin-top:var(--sp-2)">' +
+    'Stufen 1 und 2 sowie die Gesamtzahlen stammen aus RB-12 §5.3/§5.4 und WELT.md §3.3 (dort verifiziert). ' +
+    'Stufe 3 und 4 laufen <b>hier im Browser</b> &uuml;ber ' + NAMEN.length + ' echte Namen mit ihren echten ' +
+    'Feldetiketten &mdash; in ' + PRUEF_MS.toFixed(1).replace(".", ",") + '&nbsp;ms. ' +
+    '<b>Verworfen:</b> ' + notation.length + ' &middot; <b>Schreibvarianten eingesammelt:</b> ' + alias.length +
+    ' &middot; <b>Nennungen:</b> ' + nennungen().length + '.</p>';
+  h += '<div class="hinweis hinweis--good" style="margin-top:var(--sp-2)"><b>Der Satz, den zwei Zeilen einer ' +
+    'einzigen Infobox beweisen.</b> <code>Sprache: Andarisch</code> &rarr; Nennung. ' +
+    '<code>Heimat: Gluthafen, K&ouml;nigreich Eromir</code> &rarr; Ortsfeld. Derselbe Artikel, derselbe Autor, ' +
+    'dasselbe Jahr &mdash; und der Unterschied ist ein Wort, das 2023 ohne Nachdenken getippt wurde. ' +
+    'Kategorien h&auml;tten hier nichts geliefert: <b>3 von 74</b> Artikeln tragen eine, zwei davon automatisch.</div>';
+  $("#trichterHost").innerHTML = h;
+}
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   DIE SELBSTPRÜFUNGEN — jede kann rot werden.
+   ========================================================================== */
+function fnv1a(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return ("00000000" + h.toString(16)).slice(-8);
+}
+function ersterUnterschied(a, b) {
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i++) if (a[i] !== b[i]) return i;
+  return a.length === b.length ? -1 : n;
+}
+
+/* --- Der Zwillingsbeweis, ausgedehnt auf die Leinwand --------------------- */
+function zwillingsbeweis() {
+  const t0 = performance.now();
+  const szIrme = projiziere(quelleJetzt(), "irme");
+  const szBodin = projiziere(quelleJetzt(), "bodin");
+  /* Kontrolle: dieselbe Haelfte wie Bodin, aber aus einer Quelle, in der die
+     Schwelle Blattheim GAR NICHT existiert. Leckt die Projektion, divergiert es. */
+  const szKontrolle = projiziere(quelleJetzt("Blattheim"), "bodin");
+
+  const sIrme = JSON.stringify(szIrme), sBodin = JSON.stringify(szBodin), sKon = JSON.stringify(szKontrolle);
+  const dIrme = gliederungHtml(szIrme), dBodin = gliederungHtml(szBodin), dKon = gliederungHtml(szKontrolle);
+
+  const leck = [];
+  for (const nadel of ["Blattheim", "1185", "5518", "Elfenunion"]) {
+    if (sBodin.indexOf(nadel) >= 0 || dBodin.indexOf(nadel) >= 0) leck.push(nadel);
+  }
+  const gleich = fnv1a(sBodin) === fnv1a(sKon) && fnv1a(dBodin) === fnv1a(dKon);
+  const verschieden = fnv1a(sIrme) !== fnv1a(sBodin);
+  const ok = gleich && verschieden && leck.length === 0;
+  const ms = performance.now() - t0;
+
+  const z = (t, v) => '<div class="probe__z"><span>' + t + '</span><b>' + v + "</b></div>";
+  let h = '<p style="font-size:var(--fs-micro);line-height:1.5;color:var(--ink3)">' +
+    'Zwei Leser, deren gehaltene H&auml;lften sich <b>nur</b> in den Passagen unterscheiden, die ' +
+    '<i>Blattheim</i> nennen: identische Regionen, identische Marken, identische Ordnung. ' +
+    'Verglichen wird die serialisierte <b>Szenenbeschreibung der Leinwand</b> und das <b>vollst&auml;ndige DOM</b> ' +
+    'ihrer Entsprechung. Die Kontrolle ist Bodins H&auml;lfte aus einer Quelle, in der die Schwelle nie existierte.</p>';
+  h += '<div class="probe">' +
+    z("Szene · Irme", fnv1a(sIrme) + " · " + nz(sIrme.length) + " B") +
+    z("Szene · Bodin", fnv1a(sBodin) + " · " + nz(sBodin.length) + " B") +
+    z("Szene · Kontrolle", fnv1a(sKon) + " · " + nz(sKon.length) + " B") +
+    z("DOM · Bodin", fnv1a(dBodin) + " · " + nz(dBodin.length) + " B") +
+    z("DOM · Kontrolle", fnv1a(dKon) + " · " + nz(dKon.length) + " B") +
+    z("erster Byte-Unterschied Irme/Bodin", (ersterUnterschied(sIrme, sBodin) >= 0 ? "@" + ersterUnterschied(sIrme, sBodin) : "keiner")) +
+    z("Leck-Scan (Blattheim, 1185, 5518, Elfenunion)", leck.length ? leck.join(", ") : "0 Treffer") +
+    z("Laufzeit", ms.toFixed(2).replace(".", ",") + " ms") +
+    "</div>";
+  h += '<p style="margin-top:var(--sp-3)"><span class="siegel siegel--' + (ok ? "ja" : "nein") + '">' +
+    (ok ? "bestanden" : "GEFALLEN") + " &mdash; Bodin ist byte-identisch mit der Kontrolle" +
+    (verschieden ? ", und Irme ist es nicht" : ", ABER Irme auch") + ".</span></p>";
+  h += '<div class="hinweis' + (ok ? " hinweis--good" : " hinweis--bad") + '"><b>Was das hei&szlig;t.</b> ' +
+    'Der Ring ist f&uuml;r Bodin nicht ausgeblendet, sondern <b>nicht vorhanden</b> &mdash; nicht in der Szene, ' +
+    'nicht im DOM, nicht im Nachfragez&auml;hler, nicht in der Entfernung. Ein <code>display:none</code> h&auml;tte ' +
+    'hier dieselbe Optik und einen anderen Hash.</div>';
+  h += '<p class="caps" style="margin-top:var(--sp-3)">Zwei Zeilen aus Bodins Szene</p>' +
+    '<pre class="mono" style="white-space:pre-wrap;overflow-wrap:anywhere;background:var(--sunk);padding:var(--sp-2);border-radius:var(--r-sm);margin:0">' +
+    esc(sBodin.slice(0, 260)) + "…</pre>";
+  $("#bewHost").innerHTML = h;
+  return ok;
+}
+
+/* --- Kontrast: vier Häute × zwei Modi × drei Paare, live gemessen --------- */
+function lum(rgb) {
+  const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]);
+}
+function kontrast(a, b) {
+  const l1 = lum(a), l2 = lum(b);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+function mischeAufFog(fogHex, fogA, unter) {
+  const f = hex2rgb(fogHex), u = hex2rgb(unter);
+  return [0, 1, 2].map(i => Math.round(f[i] * fogA + u[i] * (1 - fogA)));
+}
+function messeKontraste() {
+  const root = document.documentElement;
+  const altSkin = root.dataset.skin, altTheme = root.dataset.theme;
+  const reihen = [];
+  for (const skin of ["relic", "signal", "archive", "clean"]) {
+    for (const modus of ["light", "dark"]) {
+      root.dataset.skin = skin; root.dataset.theme = modus;
+      const cs = getComputedStyle(root);
+      const g = n => cs.getPropertyValue(n).trim();
+      const ink = hex2rgb(g("--ink")), sf = hex2rgb(g("--sf"));
+      const nen = hex2rgb(g("--nen"));
+      const fogA = parseFloat(g("--fog-a"));
+      const untergrund = hex2rgb(g("--w3"));
+      const fogFlaeche = mischeAufFog(g("--fog"), fogA, "#" + untergrund.map(v => ("0" + v.toString(16)).slice(-2)).join(""));
+      const ring = hex2rgb(g("--schw"));
+      reihen.push({
+        skin: skin, modus: modus,
+        text: kontrast(ink, sf),
+        nennung: kontrast(nen, sf),
+        ring: kontrast(ring, fogFlaeche)
+      });
+    }
+  }
+  if (altSkin) root.dataset.skin = altSkin; else delete root.dataset.skin;
+  if (altTheme) root.dataset.theme = altTheme; else delete root.dataset.theme;
+  leseTokens();
+  return reihen;
+}
+
+/* --- Die Lastprobe: S-K1 „der erste Rahmen", hier gefahren ---------------- */
+let LAST = null;
+function lastprobe() {
+  const altMarken = MARKEN.slice();
+  const altFrei = S.freigaben[S.leser].slice();
+  for (let i = 0; i < 294; i++) {
+    const a = i * 2.399963;
+    MARKEN.push({ id: "L" + i, name: "Last " + i, kurz: "·",
+      x: VIEW.cx + Math.cos(a) * (120 + i * 3.1), y: VIEW.cy + Math.sin(a) * (90 + i * 2.4),
+      band: 0, farbe: "tk2", hp: 5, hpmax: 5, ini: 1, verdeckt: false, zustand: [] });
+  }
+  S.freigaben[S.leser] = REGIONEN.slice(0, 64).map(r => r.id);
+  SZENE = projiziere(quelleJetzt(), S.leser);
+  fogKey = "";
+  const zeiten = [];
+  for (let f = 0; f < 60; f++) { const a = performance.now(); zeichne(a); zeiten.push(performance.now() - a); }
+  zeiten.sort((a, b) => a - b);
+  LAST = {
+    marken: MARKEN.length, regionen: 64,
+    mittel: zeiten.reduce((a, b) => a + b, 0) / zeiten.length,
+    p95: zeiten[Math.floor(zeiten.length * 0.95)], max: zeiten[zeiten.length - 1]
+  };
+  MARKEN.length = 0; altMarken.forEach(m => MARKEN.push(m));
+  S.freigaben[S.leser] = altFrei;
+  fogKey = "";
+  anstossen();
+  renderPruef();
+}
+
+function renderPruef() {
+  const reihen = messeKontraste();
+  const minText = Math.min.apply(null, reihen.map(r => r.text));
+  const minRing = Math.min.apply(null, reihen.map(r => r.ring));
+  const minNen = Math.min.apply(null, reihen.map(r => r.nennung));
+  let h = '<p style="font-size:var(--fs-micro);color:var(--ink3);line-height:1.5">' +
+    '<b>' + (reihen.length * 3) + ' Kontrastwerte</b>, in dieser Sekunde gemessen: vier H&auml;ute &times; hell/dunkel ' +
+    '&times; (Text/Fl&auml;che, Nennung/Fl&auml;che, <b>Ring gegen den Nebel, in dem er liegt</b>). ' +
+    'Der dritte Wert ist neu: er misst eine Farbe auf der Leinwand, nicht im DOM.</p>';
+  h += '<div style="overflow-x:auto"><table class="mono" style="border-collapse:collapse;width:100%;font-size:var(--fs-nano)">' +
+    '<thead><tr><th style="text-align:left;padding:3px 6px">Haut</th><th style="text-align:left;padding:3px 6px">Modus</th>' +
+    '<th style="text-align:right;padding:3px 6px">Text</th><th style="text-align:right;padding:3px 6px">Nennung</th>' +
+    '<th style="text-align:right;padding:3px 6px">Ring/Nebel</th></tr></thead><tbody>';
+  for (const r of reihen) {
+    const bad = v => v < 4.5 ? ' style="color:var(--bad);font-weight:700"' : (v < 7 ? ' style="color:var(--warn)"' : ' style="color:var(--good)"');
+    h += '<tr style="border-top:1px solid var(--rule)"><td style="padding:3px 6px">' + r.skin + '</td><td style="padding:3px 6px">' + r.modus + '</td>' +
+      '<td align="right"' + bad(r.text) + '>' + r.text.toFixed(2).replace(".", ",") + '</td>' +
+      '<td align="right"' + bad(r.nennung) + '>' + r.nennung.toFixed(2).replace(".", ",") + '</td>' +
+      '<td align="right"' + bad(r.ring) + '>' + r.ring.toFixed(2).replace(".", ",") + '</td></tr>';
+  }
+  h += "</tbody></table></div>";
+  h += '<p style="margin-top:var(--sp-2)"><span class="siegel siegel--' + (minText >= 7 && minRing >= 3 && minNen >= 4.5 ? "ja" : "nein") + '">' +
+    "Minimum: Text " + minText.toFixed(2).replace(".", ",") + " · Nennung " + minNen.toFixed(2).replace(".", ",") +
+    " · Ring/Nebel " + minRing.toFixed(2).replace(".", ",") + "</span></p>";
+  h += '<div class="hinweis"><b>Drei Namenszust&auml;nde, drei nicht-farbliche Merkmale.</b> ' +
+    'geschrieben = Gewicht + Unterstreichung &middot; Nennung = punktierte Grundlinie, <b>kein Klickziel</b> &middot; ' +
+    'Schwelle = Ring. Die Unterscheidung &uuml;berlebt Graustufen, hohen Kontrast und <code>forced-colors</code> ' +
+    'bauartbedingt, nicht durch Nachbesserung.</div>';
+  h += '<p class="caps" style="margin-top:var(--sp-3)">S-K1 &middot; der erste Rahmen</p>';
+  h += '<p style="font-size:var(--fs-micro);color:var(--ink3);line-height:1.5">Die Sprosse verlangt eine Leinwand. ' +
+    '§11.5 sagt, die 14 Tage daf&uuml;r sind eine Sch&auml;tzung in einer unkalibrierten Einheit. Diese Seite kann ' +
+    'die Sch&auml;tzung nicht heilen, aber sie kann den Falsifikator fahren: 300 Marken, 64 Regionen, 60 Rahmen.</p>';
+  h += '<button class="btn btn--prim" id="btnLast" type="button">Lastprobe fahren</button>';
+  if (LAST) {
+    h += '<div class="probe" style="margin-top:var(--sp-2)">' +
+      '<div class="probe__z"><span>Marken</span><b>' + LAST.marken + "</b></div>" +
+      '<div class="probe__z"><span>Regionen freigegeben</span><b>' + LAST.regionen + "</b></div>" +
+      '<div class="probe__z"><span>Rahmen, Mittel</span><b>' + LAST.mittel.toFixed(1).replace(".", ",") + " ms</b></div>" +
+      '<div class="probe__z"><span>Rahmen, p95</span><b>' + LAST.p95.toFixed(1).replace(".", ",") + " ms</b></div>" +
+      '<div class="probe__z"><span>Rahmen, max</span><b>' + LAST.max.toFixed(1).replace(".", ",") + " ms</b></div></div>" +
+      '<p style="margin-top:var(--sp-2)"><span class="siegel siegel--' + (LAST.p95 < 16.7 ? "ja" : "nein") + '">' +
+      (LAST.p95 < 16.7 ? "60 Hz gehalten" : "unter 60 Hz — und das steht hier, statt weggelassen zu werden") +
+      "</span></p>";
+  }
+  $("#pruefHost").innerHTML = h;
+  const bl = $("#btnLast"); if (bl) bl.addEventListener("click", lastprobe);
+}
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   DIE DREI NAMENSZUSTÄNDE — an Arvex' echter Infobox, ohne Lead-Prosa.
+   ========================================================================== */
+function namensKnoten(name) {
+  const r = PRUEFUNG.get(name);
+  if (!r) return '<span class="n-nennung" tabindex="0" data-name="' + esc(name) + '">' + esc(name) + "</span>";
+  if (r.urteil === "schwelle") {
+    return '<button type="button" class="n-schwelle" data-name="' + esc(name) + '">' + esc(name) + "</button>";
+  }
+  return '<span class="n-nennung" tabindex="0" role="note" data-name="' + esc(name) + '">' + esc(name) + "</span>";
+}
+
+function renderArvex() {
+  let h = "";
+  for (const [label, wert, rot] of ARVEX) {
+    let v = esc(wert);
+    for (const rl of rot) {
+      const teile = v.split(esc(rl));
+      if (teile.length > 1) v = teile.join(namensKnoten(rl));
+    }
+    const urteile = rot.map(rl => {
+      const r = PRUEFUNG.get(rl);
+      const u = !r ? "?" : (r.urteil === "schwelle" ? (r.hatOrt ? "Schwelle" : "ohne Ort") : (r.urteil === "verworfen" ? "verworfen" : "Nennung"));
+      const ton = !r ? "" : (r.urteil === "schwelle" ? " chip--good" : "");
+      return '<span class="chip' + ton + '">' + esc(rl) + " → " + u + "</span>";
+    }).join("");
+    h += '<div class="zeile"><span class="zeile__l">' + esc(label) + "</span>" +
+      '<span class="zeile__v">' + v + "</span>" +
+      (urteile ? '<span class="zeile__u">' + urteile + "</span>" : "") + "</div>";
+  }
+  $("#arvexStreifen").innerHTML = h;
+}
+
+function rinneSetzen(name) {
+  const r = PRUEFUNG.get(name);
+  const el = $("#rinne");
+  if (!r) { el.innerHTML = "<em>&mdash;</em>"; return; }
+  const belege = (BELEGE[name] || []).length;
+  el.innerHTML = "<b>" + esc(r.name) + "</b> &middot; " + esc(r.klasse) + " &middot; in " +
+    (r.nachfrage || r.w) + " Artikeln genannt" + (belege ? " &middot; " + belege + " Belegstellen im Auszug" : "") +
+    "<br><em>" + esc(r.grund) + "</em>" +
+    (r.urteil === "nennung" ? '  <span class="chip">kein Klickziel</span>' : "");
+}
+
+/* ==========================================================================
+   BEFÖRDERUNG UND RÜCKSTUFUNG — eine Taste, auditiert, mit Grund.
+   ========================================================================== */
+function protokolliere(txt) {
+  const t = new Date();
+  PROTOKOLL.unshift({ z: (21 + Math.floor(PROTOKOLL.length / 30)) + ":" +
+    ("0" + ((47 + PROTOKOLL.length) % 60)).slice(-2), t: txt });
+  $("#protokoll").innerHTML = PROTOKOLL.map(p =>
+    "<li><time>" + esc(p.z) + "</time><span>" + p.t + "</span></li>").join("") ||
+    "<li><span>Noch nichts gefällt.</span></li>";
+}
+function befoerdere(name) {
+  const p = partei();
+  HAND.set(name, "schwelle");
+  HAND.set("anker:" + name, { x: Math.round(p.x + 210), y: Math.round(p.y + 160), q: "hand" });
+  pruefeAlle();
+  protokolliere("<b>Beförderung</b>: »" + esc(name) + "« ist jetzt eine Schwelle. Anker am Standort der Gruppe gesetzt (<code>Herkunft: hand</code>). Regelpaket unverändert — das Urteil, nicht die Regel.");
+  neuZeichnenAlles();
+  S.gewaehlteSchwelle = name;
+  renderGrund(name);
+  ansagen("»" + name + "« befördert. Ein Ring liegt jetzt im Nebel.");
+}
+function stufeZurueck(name) {
+  HAND.set(name, "nennung");
+  HAND.delete("anker:" + name);
+  pruefeAlle();
+  protokolliere("<b>Rückstufung</b>: »" + esc(name) + "« fällt zur Nennung zurück. Grund: seit Sitzung " +
+    (S.sitzung - REGELPAKET.verfall_sitzungen) + " unberührt. Der Name bleibt im Register, mit allen Belegen.");
+  neuZeichnenAlles();
+  renderGrund(name);
+  ansagen("»" + name + "« zurückgestuft. Der Ring ist weg, die Belege bleiben.");
+}
+function ansagen(t) { $("#ansage").textContent = t; }
+
+function neuZeichnenAlles() {
+  anstossen();
+  renderLage();
+  renderOrdnung();
+  renderArvex();
+  renderTrichter();
+  renderMess();
+  zwillingsbeweis();
+}
+</script>
+
+<script>
+"use strict";
+/* ==========================================================================
+   DIE BEDIENUNG
+   ========================================================================== */
+function wechsleTab(id) {
+  const tabs = ["tGrund", "tReg", "tBew", "tMess"], panels = ["pGrund", "pReg", "pBew", "pMess"];
+  tabs.forEach((t, i) => {
+    const sel = t === id;
+    const bt = document.getElementById(t);
+    bt.setAttribute("aria-selected", String(sel));
+    bt.tabIndex = sel ? 0 : -1;
+    document.getElementById(panels[i]).hidden = !sel;
+  });
+  if (id === "tBew") zwillingsbeweis();
+  if (id === "tMess") { renderTrichter(); renderPruef(); }
+}
+["tGrund", "tReg", "tBew", "tMess"].forEach((t, i, arr) => {
+  const el = document.getElementById(t);
+  el.addEventListener("click", () => wechsleTab(t));
+  el.addEventListener("keydown", e => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const n = arr[(i + (e.key === "ArrowRight" ? 1 : arr.length - 1)) % arr.length];
+    wechsleTab(n); document.getElementById(n).focus();
+  });
+});
+
+$("#segSicht").addEventListener("change", e => {
+  S.leser = e.target.value;
+  neuZeichnenAlles();
+  renderGrund(AUSWAHL);
+  ansagen("Sicht: " + LESER[S.leser].name + ". " + SZENE.ringe.length + " Ringe sichtbar von " + mitAnker().length + ".");
+});
+$("#segHaut").addEventListener("change", e => {
+  document.documentElement.dataset.skin = e.target.value;
+  leseTokens(); geoKey = ""; fogKey = "";
+  anstossen(); renderMess();
+  if (!document.getElementById("pMess").hidden) renderPruef();
+});
+$("#segRaster").addEventListener("change", e => {
+  S.raster = e.target.value;
+  anstossen(); renderMess();
+  ansagen("Raster: " + S.raster + ". Einrasten " +
+    (S.raster === "quadrat" ? "auf Feldmitte (64 Einheiten)" : S.raster === "hex" ? "auf Hexmitte (Radius 40, spitz oben)" : "aus — freie Position"));
+});
+$("#segBand").addEventListener("change", e => {
+  S.band = parseInt(e.target.value, 10);
+  anstossen();
+  ansagen("Ebene: " + ["Tiefe Stollen", "Oberfläche", "Kleines Horn"][S.band + 1] +
+    ". Das Höhenband ist ein Skalar auf dem Knoten, kein zweiter Baum: die Tiefen Stollen sind ein Geschwister der Oberfläche, kein Kind.");
+});
+$("#segAnsicht").addEventListener("change", e => {
+  S.ansicht = e.target.value;
+  $("#stage").dataset.ansicht = S.ansicht;
+  if (S.ansicht === "gliederung") zeichneGliederung();
+  starteSchleife(); anstossen();
+});
+$("#btnModus").addEventListener("click", () => {
+  const r = document.documentElement;
+  const jetzt = r.dataset.theme || "system";
+  const naechste = jetzt === "system" ? "light" : jetzt === "light" ? "dark" : "system";
+  if (naechste === "system") delete r.dataset.theme; else r.dataset.theme = naechste;
+  $("#modusText").textContent = naechste === "system" ? "System" : naechste === "light" ? "Hell" : "Dunkel";
+  leseTokens(); geoKey = ""; fogKey = ""; anstossen();
+  if (!document.getElementById("pMess").hidden) renderPruef();
+});
+$("#btnBewegung").addEventListener("click", e => {
+  S.bewegung = !S.bewegung;
+  document.documentElement.dataset.motion = S.bewegung ? "" : "reduziert";
+  e.currentTarget.setAttribute("aria-pressed", String(!S.bewegung));
+  e.currentTarget.textContent = "Bewegung: " + (S.bewegung ? "an" : "aus");
+  starteSchleife(); anstossen();
+});
+$("#btnZoomEin").addEventListener("click", () => { S.zoom = Math.min(3.2, S.zoom * 1.28); zoomFertig(); });
+$("#btnZoomAus").addEventListener("click", () => { S.zoom = Math.max(0.55, S.zoom / 1.28); zoomFertig(); });
+function zoomFertig() {
+  $("#zoomText").textContent = S.zoom.toFixed(2).replace(".", ",") + "×";
+  geoKey = ""; fogKey = ""; anstossen(); renderMess();
+}
+
+/* Eine einzige Freigabe: der Nebel öffnet sich, WEIL das Wissen sich öffnet. */
+const FREIGABE_FOLGE = ["3-2", "4-2", "3-1", "2-2", "5-2", "2-1"];
+$("#btnFreigabe").addEventListener("click", () => {
+  const l = S.leser;
+  const frei = S.freigaben[l];
+  const naechste = FREIGABE_FOLGE.find(id => !sichtVon(l).has(id));
+  if (!naechste) { ansagen("Alles im Ausschnitt ist freigegeben."); return; }
+  const t0 = performance.now();
+  frei.push(naechste);
+  fogKey = "";
+  anstossen();
+  const ms = performance.now() - t0;
+  renderMess();
+  protokolliere("<b>Freigabe</b>: Region <code>" + naechste + "</code> für " + esc(LESER[l].name) +
+    ". Eine Handlung — Nebel und Wissen öffnen sich zusammen (" + ms.toFixed(1).replace(".", ",") + " ms).");
+  ansagen("Region " + naechste + " freigegeben in " + ms.toFixed(1) + " Millisekunden. " +
+    sichtVon(l).size + " von " + REGIONEN.length + " Regionen sichtbar.");
+  zwillingsbeweis();
+});
+
+/* Die ehrlichste Schaltfläche der Seite. */
+$("#btnNennungen").addEventListener("click", e => {
+  S.nennungsversuche++;
+  const n = nennungen().length;
+  $("#rinne").innerHTML = "<b>Es gibt nichts einzublenden.</b> <em>678 Namen haben keinen Ort — deshalb zeichnet " +
+    "die Leinwand sie nicht. Kein Geist, kein Pin, kein gepunkteter Kreis. Das ist die ehrliche Darstellung " +
+    "und die ganze These in einer Bildentscheidung. Was sie stattdessen haben: " +
+    "einen Registereintrag mit den Sätzen, die sie benutzen. " +
+    "(In dieser Seite live geprüft: " + n + " Nennungen von " + NAMEN.length + " Namen.)</em>";
+  ansagen("Nichts eingeblendet. Eine Nennung hat keinen Ort.");
+  e.currentTarget.textContent = "678 Nennungen einblenden (" + S.nennungsversuche + "× versucht)";
+});
+$("#btnNamen").addEventListener("click", () => { wechsleTab("tReg"); $("#tReg").focus(); });
+
+/* Die Schwellenliste */
+$("#lageListe").addEventListener("click", e => {
+  const b = e.target.closest(".lage__row"); if (!b) return;
+  S.gewaehlteSchwelle = b.dataset.name;
+  renderLage(); renderGrund(b.dataset.name); anstossen();
+  wechsleTab("tGrund");
+});
+
+/* Die Ordnung */
+$("#ordnung").addEventListener("click", e => {
+  const chip = e.target.closest("[data-bestaetigen]");
+  if (chip) {
+    const m = MARKEN.find(x => x.id === chip.dataset.bestaetigen);
+    m.defeat_pending = false;
+    m.zustand = [{ t: "niedergeschlagen", q: "von der Spielleitung bestätigt", ton: "bad" }];
+    protokolliere("<b>Niederlage bestätigt</b>: " + esc(m.name) + ". Zwei Handlungen, mit Absicht — ein Wurf allein entfernt niemanden vom Tisch.");
+    neuZeichnenAlles(); return;
+  }
+  const b = e.target.closest(".ord"); if (!b) return;
+  S.gewaehlt = b.dataset.mark;
+  renderOrdnung(); anstossen();
+});
+$("#ordnung").addEventListener("keydown", e => {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) < 0) return;
+  const b = e.target.closest(".ord"); if (!b) return;
+  e.preventDefault();
+  S.gewaehlt = b.dataset.mark;
+  bewegeMarke(e.key);
+});
+</script>
+
+<script>
+"use strict";
+/* --- Marken bewegen: Tastatur ist der Hauptweg, der Zeiger der zweite ----- */
+function bewegeMarke(taste) {
+  const m = MARKEN.find(x => x.id === S.gewaehlt);
+  if (!m) return;
+  const s = schritt();
+  const dx = taste === "ArrowLeft" ? -s : taste === "ArrowRight" ? s : 0;
+  const dy = taste === "ArrowUp" ? s : taste === "ArrowDown" ? -s : 0;
+  const [nx, ny] = einrasten(m.x + dx, m.y + dy);
+  m.x = Math.max(0, Math.min(8192, nx)); m.y = Math.max(0, Math.min(8192, ny));
+  anstossen(); renderLage(); renderOrdnung(); renderMess();
+  if (S.gewaehlteSchwelle && PRUEFUNG.get(S.gewaehlteSchwelle) && PRUEFUNG.get(S.gewaehlteSchwelle).anker) {
+    renderGrund(S.gewaehlteSchwelle);
+  }
+  const b = document.querySelector('.ord[data-mark="' + m.id + '"]'); if (b) b.focus();
+  const naechste = mitAnker().map(r => ({ n: r.name, t: tageBis(r.anker).tage }))
+    .filter(r => haeltNamen(S.leser, r.n) || LESER[S.leser].gm).sort((a, b) => a.t - b.t)[0];
+  ansagen(m.name + " auf [" + Math.round(m.x) + ", " + Math.round(m.y) + "], Einrasten " + S.raster +
+    (naechste ? ". Nächste Schwelle: " + naechste.n + ", " + Math.round(naechste.t) + " Tage Ritt." : "."));
+}
+
+/* --- Zeiger: Marke ziehen, Ring wählen ----------------------------------- */
+let zieht = null;
+cv.addEventListener("pointerdown", e => {
+  const r = cv.getBoundingClientRect();
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  let treffer = null, best = 18;
+  for (const m of SZENE.marken) {
+    const d = Math.hypot(sx(m.x) - px, sy(m.y) - py);
+    if (d < best) { best = d; treffer = m.id; }
+  }
+  if (treffer) {
+    S.gewaehlt = treffer; zieht = treffer; cv.setPointerCapture(e.pointerId);
+    renderOrdnung(); anstossen(); return;
+  }
+  let rTreffer = null, rBest = 22;
+  for (const ring of SZENE.ringe) {
+    const d = Math.hypot(sx(ring.x) - px, sy(ring.y) - py);
+    if (d < rBest) { rBest = d; rTreffer = ring.name; }
+  }
+  if (rTreffer) {
+    S.gewaehlteSchwelle = rTreffer; renderLage(); renderGrund(rTreffer); wechsleTab("tGrund"); anstossen();
+  }
+});
+cv.addEventListener("pointermove", e => {
+  const r = cv.getBoundingClientRect();
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  if (zieht) {
+    const m = MARKEN.find(x => x.id === zieht);
+    const [nx, ny] = einrasten(wxOf(px), wyOf(py));
+    m.x = nx; m.y = ny; anstossen(); return;
+  }
+  const hudEl = $("#hud");
+  if (hudEl && !hudEl.dataset.locked) {
+    const w = "[" + Math.round(wxOf(px)) + ", " + Math.round(wyOf(py)) + "]";
+    const alt = hudEl.querySelector(".koord");
+    if (alt) alt.textContent = "Zeiger " + w + " · Region " + regionVon(wxOf(px), wyOf(py));
+    else hudEl.insertAdjacentHTML("beforeend", '<div class="koord">Zeiger ' + w + "</div>");
+  }
+});
+cv.addEventListener("pointerup", e => {
+  if (zieht) {
+    const m = MARKEN.find(x => x.id === zieht);
+    protokolliere("<b>Zug</b>: " + esc(m.name) + " nach <code>[" + Math.round(m.x) + ", " + Math.round(m.y) +
+      "]</code> (" + S.raster + "). Rückgängig-Ring bereit.");
+    zieht = null; renderLage(); renderOrdnung(); renderMess();
+  }
+});
+cv.addEventListener("keydown", e => {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) >= 0) { e.preventDefault(); bewegeMarke(e.key); }
+  if (e.key === "+" || e.key === "=") { e.preventDefault(); S.zoom = Math.min(3.2, S.zoom * 1.28); zoomFertig(); }
+  if (e.key === "-") { e.preventDefault(); S.zoom = Math.max(0.55, S.zoom / 1.28); zoomFertig(); }
+});
+
+/* --- Namen: schweben oder fokussieren, die Rinne druckt den Grund -------- */
+function nameEreignis(e) {
+  const el = e.target.closest("[data-name]"); if (!el) return;
+  rinneSetzen(el.dataset.name);
+  if (e.type === "click" && el.classList.contains("n-schwelle")) {
+    S.gewaehlteSchwelle = el.dataset.name;
+    renderLage(); renderGrund(el.dataset.name); wechsleTab("tGrund"); anstossen();
+  }
+  if (e.type === "focusin") renderGrund(el.dataset.name);
+}
+["mouseover", "focusin", "click"].forEach(t => {
+  $("#arvexStreifen").addEventListener(t, nameEreignis);
+});
+$("#arvexStreifen").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.classList.contains("n-nennung")) {
+    rinneSetzen(e.target.dataset.name);
+    ansagen("Keine Schwelle. " + PRUEFUNG.get(e.target.dataset.name).grund + " Der Grund steht in der Rinne.");
+  }
+});
+
+/* ==========================================================================
+   START
+   ========================================================================== */
+function start() {
+  document.documentElement.dataset.skin = "relic";
+  leseTokens();
+  bauWelt();
+  bauRegionen();
+  pruefeAlle();
+  passeAn();
+  renderLage();
+  renderOrdnung();
+  renderArvex();
+  renderQuelle();
+  renderGrund("Blattheim");
+  renderTrichter();
+  renderPruef();
+  zwillingsbeweis();
+  renderMess();
+  protokolliere("<b>Übernahme</b>: 74 Artikel · 1 075 Passagen · 1 253 rote Kanten → 689 Namen → " +
+    mitAnker().length + " Schwellen mit Anker. 41 s.");
+  starteSchleife();
+  setInterval(renderMess, 900);
+  if (window.ResizeObserver) new ResizeObserver(() => passeAn()).observe(document.getElementById("platte"));
+  else window.addEventListener("resize", passeAn);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    leseTokens(); geoKey = ""; fogKey = ""; anstossen();
+  });
+}
+start();
+</script>

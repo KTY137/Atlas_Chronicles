@@ -1,0 +1,241 @@
+{
+  "A1": {
+    "seed": "chronicle-1",
+    "mapId": 1785153228052,
+    "ms": 41920,
+    "cellsPack": 4758,
+    "cellsGrid": 9975,
+    "counts": {
+      "burgs": 664,
+      "burgsRaw": 665,
+      "states": 25,
+      "provinces": 155,
+      "cultures": 12,
+      "religions": 19,
+      "rivers": 157,
+      "routes": 575,
+      "markers": 56,
+      "zones": 8,
+      "features": 22,
+      "markets": 28,
+      "goods": 71,
+      "deals": 10742,
+      "notes": 131,
+      "military": 75
+    },
+    "digest": {
+      "burg": "2eb0b3f4c30a165a",
+      "state": "1d476f79634e4608",
+      "prov": "632f98d57d35957a",
+      "cult": "42b839522358cf73",
+      "rel": "278c49a15ad2a055",
+      "river": "5c459fe8469d9d28",
+      "route": "ccf919b2fadfa17c",
+      "marker": "eeb3de4565701268",
+      "height": "0a81f6f9b1062cbb",
+      "biome": "24e5ed49d4b25d6c",
+      "stateCell": "8c24253a93f75fcc"
+    }
+  },
+  "A2": {
+    "seed": "chronicle-1",
+    "mapId": 1785153271204,
+    "ms": 38547,
+    "cellsPack": 4758,
+    "counts": {
+      "burgs": 664,
+      "burgsRaw": 665,
+      "states": 25,
+      "provinces": 155,
+      "cultures": 12,
+      "religions": 19,
+      "rivers": 157,
+      "routes": 575,
+      "markers": 56,
+      "zones": 8,
+      "features": 22,
+      "markets": 28,
+      "goods": 71,
+      "deals": 10742,
+      "notes": 131,
+      "military": 75
+    },
+    "digest": {
+      "burg": "2eb0b3f4c30a165a",
+      "state": "1d476f79634e4608",
+      "prov": "632f98d57d35957a",
+      "cult": "42b839522358cf73",
+      "rel": "278c49a15ad2a055",
+      "river": "5c459fe8469d9d28",
+      "route": "ccf919b2fadfa17c",
+      "marker": "eeb3de4565701268",
+      "height": "0a81f6f9b1062cbb",
+      "biome": "24e5ed49d4b25d6c",
+      "stateCell": "8c24253a93f75fcc"
+    }
+  },
+  "B1": {
+    "seed": "chronicle-2",
+    "mapId": 1785153313071,
+    "ms": 38554,
+    "counts": {
+      "burgs": 645,
+      "burgsRaw": 646,
+      "states": 17,
+      "provinces": 159,
+      "cultures": 15,
+      "religions": 25,
+      "rivers": 69,
+      "routes": 530,
+      "markers": 50,
+      "zones": 12,
+      "features": 20,
+      "markets": 22,
+      "goods": 71,
+      "deals": 10032,
+      "notes": 126,
+      "military": 76
+    },
+    "digest": {
+      "burg": "5b2652771b6dc7d0",
+      "state": "b3e315af820cc4ea",
+      "prov": "abbcfd618bc082e1",
+      "cult": "abc5e7d170d6f7ed",
+      "rel": "854e1d3494579b4c",
+      "river": "f01a1aee56b19b47",
+      "route": "7d1ce99e35c27d6d",
+      "marker": "685fafc70cdfff4b",
+      "height": "fd32ee897e87c1a8",
+      "biome": "8b3dc496d150b5c9",
+      "stateCell": "8cfda86e6d968111"
+    }
+  },
+  "sampleBurgs": [
+    {
+      "i": 2,
+      "name": "Sagyhafu",
+      "pop": 49.114,
+      "type": "Naval",
+      "state": 2,
+      "capital": 1,
+      "port": 1,
+      "mfcgSeedField": null,
+      "hasCoa": true
+    },
+    {
+      "i": 3,
+      "name": "Domlos",
+      "pop": 29.751,
+      "type": "Naval",
+      "state": 3,
+      "capital": 1,
+      "port": 1,
+      "mfcgSeedField": null,
+      "hasCoa": true
+    },
+    {
+      "i": 4,
+      "name": "Duhadvar",
+      "pop": 20.444,
+      "type": "Naval",
+      "state": 4,
+      "capital": 1,
+      "port": 1,
+      "mfcgSeedField": null,
+      "hasCoa": true
+    },
+    {
+      "i": 5,
+      "name": "Liekarin",
+      "pop": 8.383,
+      "type": "Naval",
+      "state": 5,
+      "capital": 1,
+      "port": 1,
+      "mfcgSeedField": null,
+      "hasCoa": true
+    },
+    {
+      "i": 6,
+      "name": "Nadoroks",
+      "pop": 19.063,
+      "type": "River",
+      "state": 6,
+      "capital": 1,
+      "mfcgSeedField": null,
+      "hasCoa": true
+    },
+    {
+      "i": 7,
+      "name": "Valopega",
+      "pop": 14.092,
+      "type": "Naval",
+      "state": 7,
+      "capital": 1,
+      "port": 1,
+      "mfcgSeedField": null,
+      "hasCoa": true
+    },
+    {
+      "i": 8,
+      "name": "Kylva",
+      "pop": 18.471,
+      "type": "Generic",
+      "state": 8,
+      "capital": 1,
+      "mfcgSeedField": null,
+      "hasCoa": true
+    },
+    {
+      "i": 9,
+      "name": "Pabelas",
+      "pop": 3.754,
+      "type": "Naval",
+      "state": 9,
+      "capital": 1,
+      "port": 1,
+      "mfcgSeedField": null,
+      "hasCoa": true
+    }
+  ],
+  "noteSample": [
+    {
+      "id": "regiment1-0",
+      "name": "1st (Vahia) Regiment",
+      "legendLen": 216
+    },
+    {
+      "id": "regiment1-1",
+      "name": "2nd (Vahia) Regiment",
+      "legendLen": 226
+    },
+    {
+      "id": "regiment1-2",
+      "name": "1st Fleet",
+      "legendLen": 151
+    },
+    {
+      "id": "regiment2-0",
+      "name": "1st (Sagyhafu) Regiment",
+      "legendLen": 226
+    }
+  ],
+  "nameCounts": {
+    "burgs": 664,
+    "states": 25,
+    "provinces": 155,
+    "cultures": 12,
+    "religions": 19,
+    "rivers": 157,
+    "routes": 0,
+    "features": 1,
+    "markers": 56
+  },
+  "distinctNames": {
+    "total": 1089,
+    "distinct": 1040
+  },
+  "deterministic_same_seed": true,
+  "differs_other_seed": true,
+  "mapId_stable": false
+}

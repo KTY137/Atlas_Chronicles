@@ -1,0 +1,1800 @@
+﻿<title>Haus Vharon — Der rote Link ist eine Tür · Chronicle</title>
+
+<style>
+/* ───────────────────────────────────────────────────────────────────────────
+   SPIKE A1 · „Der rote Link ist eine Tür"
+   Kandidat A, Runde 4 — der Flex-Moment.
+   Haut: ARCHIVE (Kanzleipapier / Oxblut / redaktioneller Satz).
+   Alles läuft über Tokens. Kein einziger externer Aufruf.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: light dark;
+
+  /* ── Fläche & Tinte ───────────────────────────────────────────────── */
+  --c-bg:            #e7dfd0;
+  --c-paper:         #f4efe4;
+  --c-paper-2:       #ece5d6;
+  --c-paper-3:       #e0d7c4;
+  --c-ink:           #221c17;
+  --c-ink-2:         #4c4137;
+  --c-ink-3:         #7a6d5f;
+  --c-ink-4:         #9b8f80;
+
+  /* ── Linien ───────────────────────────────────────────────────────── */
+  --c-rule:          #cbbfa9;
+  --c-rule-2:        #b3a48a;
+  --c-rule-strong:   #8d7c60;
+
+  /* ── Semantik ─────────────────────────────────────────────────────── */
+  --c-accent:        #7c2420;   /* Oxblut — Haus, Wappen, Marginalie      */
+  --c-accent-2:      #a3423a;
+  --c-auf-akzent:    #f7f1e6;   /* Text auf Akzentfläche                  */
+  --c-link:          #2b4a64;   /* Tinte blau — Eintrag vorhanden         */
+  --c-leer:          #9a2f22;   /* roter Link — kein Eintrag              */
+  --c-tuer:          #7d5a10;   /* Messing — eine Tür                     */
+  --c-tuer-2:        #a97c1c;
+  --c-tuer-glanz:    rgba(169,124,28,.16);
+  --c-gm:            #2f5646;   /* nur Leitung                            */
+  --c-neu:           #6a4d0d;   /* Umbruch-Ankunftsmarke                  */
+  --c-ok:            #2c5a3c;
+  --c-hoer:          #6b5b7a;   /* Hörensagen                             */
+
+  /* ── Flächen mit Funktion ─────────────────────────────────────────── */
+  --c-chip-bg:       rgba(124,36,32,.055);
+  --c-chip-line:     rgba(124,36,32,.22);
+  --c-gm-bg:         rgba(47,86,70,.08);
+  --c-tuer-bg:       linear-gradient(100deg, rgba(169,124,28,.13), rgba(169,124,28,.03) 62%);
+  --c-focus:         #1f5f8b;
+
+  /* ── Schrift ──────────────────────────────────────────────────────── */
+  --f-buch: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif;
+  --f-ui:   "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "Cascadia Mono", Consolas, ui-monospace, "SFMono-Regular", "Liberation Mono", monospace;
+
+  --fs-mikro: .688rem;
+  --fs-klein: .781rem;
+  --fs-ui:    .844rem;
+  --fs-body:  1.0625rem;
+  --fs-lead:  1.1875rem;
+  --fs-h2:    1.25rem;
+  --fs-h1:    2.125rem;
+
+  /* ── Maß & Form (Archive = scharf, redaktionell) ──────────────────── */
+  --r-1: 1px;
+  --r-2: 3px;
+  --r-3: 6px;
+  --r-pill: 999px;
+  --sp-1: .25rem;
+  --sp-2: .5rem;
+  --sp-3: .75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2.25rem;
+  --sp-7: 3.25rem;
+  --satzbreite: 66ch;
+
+  /* ── Tiefe ────────────────────────────────────────────────────────── */
+  --sh-1: 0 1px 0 rgba(34,28,23,.05);
+  --sh-2: 0 1px 2px rgba(34,28,23,.09), 0 6px 18px -10px rgba(34,28,23,.28);
+  --sh-3: 0 2px 4px rgba(34,28,23,.10), 0 18px 42px -18px rgba(34,28,23,.42);
+  --sh-tuer: 0 0 0 1px var(--c-tuer-2), 0 10px 28px -16px rgba(125,90,16,.75);
+
+  /* ── Korn (Data-URI, kein externer Aufruf) ────────────────────────── */
+  --grain: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="170" height="170"><filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="170" height="170" filter="url(%23g)" opacity="0.26"/></svg>');
+  --grain-blend: multiply;
+
+  /* ── Bewegung ist Zustandsmeldung ─────────────────────────────────── */
+  --t-antwort:  140ms;
+  --t-zustand:  280ms;
+  --t-uebergang: 820ms;
+  --ease: cubic-bezier(.2,.78,.22,1);
+  --ease-aus: cubic-bezier(.16,1,.3,1);
+}
+
+/* ── Dunkel: Medienabfrage … ─────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg:          #100d0b;
+    --c-paper:       #17130f;
+    --c-paper-2:     #1e1915;
+    --c-paper-3:     #26201a;
+    --c-ink:         #ece1d0;
+    --c-ink-2:       #c3b6a4;
+    --c-ink-3:       #94877a;
+    --c-ink-4:       #74695e;
+    --c-rule:        #3a322a;
+    --c-rule-2:      #4d4238;
+    --c-rule-strong: #6b5c4a;
+    --c-accent:      #d9776a;
+    --c-accent-2:    #e6968a;
+    --c-auf-akzent:  #1a1310;
+    --c-link:        #91bcdd;
+    --c-leer:        #e2796a;
+    --c-tuer:        #e3b45f;
+    --c-tuer-2:      #f0c878;
+    --c-tuer-glanz:  rgba(227,180,95,.14);
+    --c-gm:          #8fc9ab;
+    --c-neu:         #e8c67c;
+    --c-ok:          #86c79b;
+    --c-hoer:        #b6a3c9;
+    --c-chip-bg:     rgba(217,119,106,.07);
+    --c-chip-line:   rgba(217,119,106,.26);
+    --c-gm-bg:       rgba(143,201,171,.09);
+    --c-tuer-bg:     linear-gradient(100deg, rgba(227,180,95,.15), rgba(227,180,95,.03) 62%);
+    --c-focus:       #7fc2ee;
+    --sh-1: 0 1px 0 rgba(0,0,0,.3);
+    --sh-2: 0 1px 2px rgba(0,0,0,.5), 0 6px 18px -10px rgba(0,0,0,.8);
+    --sh-3: 0 2px 4px rgba(0,0,0,.5), 0 18px 42px -18px rgba(0,0,0,.95);
+    --sh-tuer: 0 0 0 1px var(--c-tuer-2), 0 12px 30px -16px rgba(227,180,95,.5);
+    --grain: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="170" height="170"><filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="170" height="170" filter="url(%23g)" opacity="0.5"/></svg>');
+    --grain-blend: soft-light;
+  }
+}
+
+/* ── … und Attribut-Umschaltung, die die Medienabfrage in beide
+      Richtungen schlägt. ─────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bg:          #100d0b;
+  --c-paper:       #17130f;
+  --c-paper-2:     #1e1915;
+  --c-paper-3:     #26201a;
+  --c-ink:         #ece1d0;
+  --c-ink-2:       #c3b6a4;
+  --c-ink-3:       #94877a;
+  --c-ink-4:       #74695e;
+  --c-rule:        #3a322a;
+  --c-rule-2:      #4d4238;
+  --c-rule-strong: #6b5c4a;
+  --c-accent:      #d9776a;
+  --c-accent-2:    #e6968a;
+  --c-auf-akzent:  #1a1310;
+  --c-link:        #91bcdd;
+  --c-leer:        #e2796a;
+  --c-tuer:        #e3b45f;
+  --c-tuer-2:      #f0c878;
+  --c-tuer-glanz:  rgba(227,180,95,.14);
+  --c-gm:          #8fc9ab;
+  --c-neu:         #e8c67c;
+  --c-ok:          #86c79b;
+  --c-hoer:        #b6a3c9;
+  --c-chip-bg:     rgba(217,119,106,.07);
+  --c-chip-line:   rgba(217,119,106,.26);
+  --c-gm-bg:       rgba(143,201,171,.09);
+  --c-tuer-bg:     linear-gradient(100deg, rgba(227,180,95,.15), rgba(227,180,95,.03) 62%);
+  --c-focus:       #7fc2ee;
+  --sh-1: 0 1px 0 rgba(0,0,0,.3);
+  --sh-2: 0 1px 2px rgba(0,0,0,.5), 0 6px 18px -10px rgba(0,0,0,.8);
+  --sh-3: 0 2px 4px rgba(0,0,0,.5), 0 18px 42px -18px rgba(0,0,0,.95);
+  --sh-tuer: 0 0 0 1px var(--c-tuer-2), 0 12px 30px -16px rgba(227,180,95,.5);
+  --grain: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="170" height="170"><filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="170" height="170" filter="url(%23g)" opacity="0.5"/></svg>');
+  --grain-blend: soft-light;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --c-bg:          #e7dfd0;
+  --c-paper:       #f4efe4;
+  --c-paper-2:     #ece5d6;
+  --c-paper-3:     #e0d7c4;
+  --c-ink:         #221c17;
+  --c-ink-2:       #4c4137;
+  --c-ink-3:       #7a6d5f;
+  --c-ink-4:       #9b8f80;
+  --c-rule:        #cbbfa9;
+  --c-rule-2:      #b3a48a;
+  --c-rule-strong: #8d7c60;
+  --c-accent:      #7c2420;
+  --c-accent-2:    #a3423a;
+  --c-auf-akzent:  #f7f1e6;
+  --c-link:        #2b4a64;
+  --c-leer:        #9a2f22;
+  --c-tuer:        #7d5a10;
+  --c-tuer-2:      #a97c1c;
+  --c-tuer-glanz:  rgba(169,124,28,.16);
+  --c-gm:          #2f5646;
+  --c-neu:         #6a4d0d;
+  --c-ok:          #2c5a3c;
+  --c-hoer:        #6b5b7a;
+  --c-chip-bg:     rgba(124,36,32,.055);
+  --c-chip-line:   rgba(124,36,32,.22);
+  --c-gm-bg:       rgba(47,86,70,.08);
+  --c-tuer-bg:     linear-gradient(100deg, rgba(169,124,28,.13), rgba(169,124,28,.03) 62%);
+  --c-focus:       #1f5f8b;
+  --sh-1: 0 1px 0 rgba(34,28,23,.05);
+  --sh-2: 0 1px 2px rgba(34,28,23,.09), 0 6px 18px -10px rgba(34,28,23,.28);
+  --sh-3: 0 2px 4px rgba(34,28,23,.10), 0 18px 42px -18px rgba(34,28,23,.42);
+  --sh-tuer: 0 0 0 1px var(--c-tuer-2), 0 10px 28px -16px rgba(125,90,16,.75);
+  --grain: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="170" height="170"><filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="170" height="170" filter="url(%23g)" opacity="0.26"/></svg>');
+  --grain-blend: multiply;
+}
+
+/* ═══ Grundlage ══════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* `hidden` bedeutet weg — auch bei flex/grid-Anzeige. */
+.app [hidden] { display: none !important; }
+
+.app {
+  min-height: 100vh;
+  background-color: var(--c-bg);
+  background-image: var(--grain);
+  background-blend-mode: var(--grain-blend);
+  color: var(--c-ink);
+  font-family: var(--f-buch);
+  font-size: var(--fs-body);
+  line-height: 1.62;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.app :focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 2px;
+  border-radius: var(--r-2);
+}
+
+.vh {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+.skip {
+  position: absolute; left: var(--sp-3); top: var(--sp-3);
+  transform: translateY(-200%);
+  z-index: 50;
+  background: var(--c-paper); color: var(--c-ink);
+  border: 1px solid var(--c-rule-strong);
+  padding: var(--sp-2) var(--sp-3);
+  font: 600 var(--fs-ui)/1 var(--f-ui);
+  border-radius: var(--r-2);
+  transition: transform var(--t-antwort) var(--ease);
+}
+.skip:focus-visible { transform: translateY(0); }
+
+/* ═══ Kopfleiste (Zone: Campaign Context) ════════════════════════════ */
+
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  padding: var(--sp-2) var(--sp-4);
+  background: color-mix(in srgb, var(--c-paper) 92%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  backdrop-filter: blur(10px) saturate(1.1);
+  border-bottom: 1px solid var(--c-rule);
+  box-shadow: var(--sh-1);
+}
+.marke {
+  display: flex; align-items: baseline; gap: var(--sp-2);
+  font-family: var(--f-ui);
+  font-size: var(--fs-ui);
+  letter-spacing: .06em;
+}
+.marke b { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: var(--fs-mikro); color: var(--c-accent); }
+.marke span { color: var(--c-ink-2); }
+.uhr {
+  margin: 0 auto 0 0;
+  font: 500 var(--fs-klein)/1.2 var(--f-ui);
+  color: var(--c-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.topbar-akt { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+
+.knopf {
+  font: 600 var(--fs-ui)/1 var(--f-ui);
+  color: var(--c-ink-2);
+  background: transparent;
+  border: 1px solid var(--c-rule-2);
+  border-radius: var(--r-2);
+  padding: .44rem .66rem;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: .4rem;
+  transition: background var(--t-antwort) var(--ease),
+              color var(--t-antwort) var(--ease),
+              border-color var(--t-antwort) var(--ease),
+              transform var(--t-antwort) var(--ease);
+}
+.knopf:hover { background: var(--c-paper-3); color: var(--c-ink); border-color: var(--c-rule-strong); }
+.knopf:active { transform: translateY(1px); }
+.knopf[aria-pressed="true"] {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-auf-akzent);
+}
+.knopf .gl { font-size: .95em; line-height: 1; }
+
+/* ═══ Leserad (die Wahl der Sicht) ═══════════════════════════════════ */
+
+.leserbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-5);
+  padding: var(--sp-3) var(--sp-4) var(--sp-3);
+  border-bottom: 1px solid var(--c-rule);
+  background: linear-gradient(180deg, var(--c-paper-2), var(--c-bg));
+}
+.dial { border: 0; margin: 0; padding: 0; min-width: 0; }
+.dial legend {
+  padding: 0 0 var(--sp-2);
+  font: 700 var(--fs-mikro)/1 var(--f-ui);
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+.dial-track {
+  position: relative;
+  display: grid; grid-template-columns: repeat(3, minmax(0,1fr));
+  padding: 3px;
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-2);
+  border-radius: var(--r-3);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
+  overflow: hidden;
+}
+.dial-thumb {
+  position: absolute; top: 3px; bottom: 3px; left: 3px;
+  width: calc((100% - 6px) / 3);
+  background: var(--c-accent);
+  border-radius: var(--r-2);
+  transform: translateX(calc(var(--i, 0) * 100%));
+  transition: transform var(--t-zustand) var(--ease-aus);
+  pointer-events: none;
+  box-shadow: 0 2px 6px -2px rgba(0,0,0,.4);
+}
+.dial-opt {
+  position: relative; z-index: 1;
+  display: grid; gap: 1px; justify-items: center;
+  padding: .42rem .55rem .5rem;
+  cursor: pointer;
+  text-align: center;
+  transition: color var(--t-antwort) var(--ease);
+}
+.dial-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.dial-name { font: 600 var(--fs-ui)/1.15 var(--f-ui); color: var(--c-ink); }
+.dial-rolle { font: 500 var(--fs-mikro)/1.15 var(--f-ui); color: var(--c-ink-3); letter-spacing: .04em; }
+/* :has() wo vorhanden, Klasse aus dem Skript als Rückfall */
+.dial-opt:has(input:checked) .dial-name,
+.dial-opt:has(input:checked) .dial-rolle,
+.dial-opt.gewaehlt .dial-name,
+.dial-opt.gewaehlt .dial-rolle { color: var(--c-auf-akzent); }
+.dial-opt:has(input:focus-visible),
+.dial-opt.hat-fokus {
+  outline: 2px solid var(--c-focus); outline-offset: -2px; border-radius: var(--r-2);
+}
+.leser-note {
+  max-width: 44ch;
+  margin: 0;
+  font: 400 var(--fs-klein)/1.5 var(--f-ui);
+  color: var(--c-ink-3);
+}
+.leser-note b { color: var(--c-ink-2); font-weight: 600; }
+
+/* Vorführungs-Hinweis */
+.hinweis {
+  display: flex; align-items: flex-start; gap: var(--sp-3);
+  margin: 0; padding: var(--sp-2) var(--sp-4);
+  background: var(--c-gm-bg);
+  border-bottom: 1px solid var(--c-rule);
+  font: 400 var(--fs-klein)/1.5 var(--f-ui);
+  color: var(--c-ink-2);
+}
+.hinweis b { color: var(--c-gm); font-weight: 700; letter-spacing: .04em; }
+.hinweis .knopf { margin-left: auto; flex: none; padding: .2rem .45rem; font-size: var(--fs-mikro); }
+.hinweis[hidden] { display: none; }
+
+/* ═══ Bogen / Satzspiegel ════════════════════════════════════════════ */
+
+.bogen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-5);
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-4) 7rem;
+}
+@media (min-width: 1180px) {
+  .bogen { grid-template-columns: minmax(0,1fr) 19rem; align-items: start; padding-bottom: 6rem; }
+}
+
+.artikel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r-3);
+  box-shadow: var(--sh-2);
+  padding: var(--sp-5) var(--sp-4) var(--sp-6);
+  transition: opacity var(--t-zustand) var(--ease), filter var(--t-zustand) var(--ease);
+}
+.artikel.projiziert { opacity: .42; filter: saturate(.6); }
+@media (min-width: 860px) {
+  .artikel {
+    grid-template-columns: minmax(0, 1fr) 19.5rem;
+    column-gap: var(--sp-5);
+    padding: var(--sp-6) var(--sp-6) var(--sp-7);
+  }
+  .artikel-kopf { grid-column: 1 / -1; }
+  .infobox { grid-column: 2; grid-row: 2; position: sticky; top: 7.5rem; }
+  .fliess  { grid-column: 1; grid-row: 2; }
+}
+
+/* ── Artikelkopf ─────────────────────────────────────────────────────── */
+.kicker {
+  margin: 0 0 var(--sp-2);
+  font: 700 var(--fs-mikro)/1 var(--f-ui);
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--c-accent);
+}
+h1 {
+  margin: 0;
+  font: 400 var(--fs-h1)/1.1 var(--f-buch);
+  letter-spacing: -.012em;
+}
+@media (min-width: 700px) { h1 { font-size: 2.75rem; } }
+
+.kopf-regel {
+  height: 0; margin: var(--sp-3) 0 var(--sp-3);
+  border: 0;
+  border-top: 1px solid var(--c-rule-strong);
+  box-shadow: 0 3px 0 -2px var(--c-rule-strong);
+}
+
+.saatbilanz {
+  margin: 0;
+  font: 500 var(--fs-klein)/1.75 var(--f-ui);
+  color: var(--c-ink-2);
+  font-variant-numeric: tabular-nums;
+  display: flex; flex-wrap: wrap; gap: 0 .55rem;
+}
+.saatbilanz .tr { color: var(--c-ink-4); }
+.saatbilanz .zahl { font-weight: 700; color: var(--c-ink); }
+.saatbilanz .heraus { color: var(--c-accent); }
+.saatbilanz .heraus .zahl { color: var(--c-accent); }
+.saatbilanz [data-tick] { transition: color var(--t-zustand) var(--ease); }
+.saatbilanz.gestiegen .zahl[data-tick] { color: var(--c-neu); }
+
+.toc {
+  margin: var(--sp-4) 0 0;
+  padding: var(--sp-2) 0 0;
+  border-top: 1px solid var(--c-rule);
+  font: 500 var(--fs-klein)/1.9 var(--f-ui);
+  display: flex; flex-wrap: wrap; gap: 0 var(--sp-3);
+  color: var(--c-ink-3);
+}
+.toc a { color: var(--c-link); text-decoration-color: var(--c-rule-2); text-underline-offset: 3px; }
+.toc a:hover { text-decoration-color: currentColor; }
+.toc .num { color: var(--c-ink-4); font-variant-numeric: tabular-nums; }
+
+/* Umbruch-Band */
+.umbruch-band {
+  display: none;
+  align-items: center; gap: var(--sp-3);
+  margin: var(--sp-4) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--c-neu);
+  background: color-mix(in srgb, var(--c-neu) 8%, transparent);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
+  font: 500 var(--fs-klein)/1.45 var(--f-ui);
+  color: var(--c-ink-2);
+}
+.artikel[data-leser="sera"] .umbruch-band,
+.artikel[data-leser="brannt"] .umbruch-band { display: flex; }
+.umbruch-band b { color: var(--c-neu); font-weight: 700; font-variant-numeric: tabular-nums; }
+.umbruch-band .knopf { margin-left: auto; padding: .28rem .5rem; font-size: var(--fs-mikro); }
+
+/* ── Infobox ─────────────────────────────────────────────────────────── */
+.infobox {
+  align-self: start;
+  border: 1px solid var(--c-rule-2);
+  border-top: 3px solid var(--c-accent);
+  border-radius: var(--r-2);
+  background: var(--c-paper-2);
+  box-shadow: var(--sh-1);
+  padding: var(--sp-3);
+  font-family: var(--f-ui);
+}
+.infobox h2 {
+  margin: 0 0 var(--sp-1);
+  font: 700 var(--fs-ui)/1.25 var(--f-ui);
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--c-accent);
+  text-align: center;
+}
+.infobox .unterzeile {
+  margin: 0 0 var(--sp-3);
+  text-align: center;
+  font: 400 var(--fs-mikro)/1.3 var(--f-ui);
+  color: var(--c-ink-3); letter-spacing: .05em;
+}
+.wappen {
+  display: block; width: 92px; height: auto; margin: 0 auto var(--sp-3);
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.22));
+}
+.ib-liste { margin: 0; display: grid; gap: 0; }
+.ib-zeile {
+  display: grid; grid-template-columns: 6.2rem minmax(0,1fr);
+  gap: var(--sp-2);
+  padding: .42rem 0;
+  border-top: 1px solid var(--c-rule);
+  align-items: baseline;
+}
+.ib-zeile:first-child { border-top: 0; }
+.ib-liste dt {
+  font: 600 var(--fs-mikro)/1.4 var(--f-ui);
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+.ib-liste dd { margin: 0; font-size: var(--fs-klein); line-height: 1.45; color: var(--c-ink); }
+.ib-liste dd .jahr { font-variant-numeric: tabular-nums; }
+
+a.eintrag, .fliess a {
+  color: var(--c-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--c-link) 45%, transparent);
+  transition: text-decoration-color var(--t-antwort) var(--ease), color var(--t-antwort) var(--ease);
+}
+a.eintrag:hover, .fliess a:hover { text-decoration-color: currentColor; }
+
+.leer {
+  color: var(--c-leer);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+.leer-hint { color: var(--c-ink-4); font-size: .92em; text-decoration: none; display: inline-block; }
+
+/* ── DIE TÜR ──────────────────────────────────────────────────────────
+   Vier unabhängige Kanäle, damit der Zustand nie nur Farbe ist:
+   Messingring + linke Türkante + „⟶" + Klartext-Wochenlabel.        */
+.tuer {
+  position: relative;
+  display: grid; gap: .18rem;
+  width: 100%;
+  text-align: left;
+  font-family: var(--f-ui);
+  padding: .48rem .6rem .5rem .78rem;
+  background: var(--c-tuer-bg);
+  border: 1px solid var(--c-tuer-2);
+  border-radius: var(--r-2);
+  box-shadow: var(--sh-tuer);
+  color: var(--c-ink);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--t-antwort) var(--ease),
+              box-shadow var(--t-antwort) var(--ease),
+              padding-left var(--t-zustand) var(--ease-aus);
+}
+.tuer::before {                       /* die Türkante */
+  content: "";
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--c-tuer-2);
+  transition: width var(--t-zustand) var(--ease-aus);
+}
+.tuer::after {                        /* der Spalt, der aufgeht */
+  content: "";
+  position: absolute; left: 3px; top: 8%; bottom: 8%;
+  width: 0; background: var(--c-tuer-glanz);
+  transition: width var(--t-zustand) var(--ease-aus);
+}
+.tuer:hover, .tuer:focus-visible { padding-left: 1.05rem; }
+.tuer:hover::after, .tuer:focus-visible::after { width: 6px; }
+.tuer:active { transform: translateY(1px) scale(.996); }
+.tuer[aria-expanded="true"] { padding-left: 1.05rem; }
+.tuer[aria-expanded="true"]::after { width: 6px; }
+.tuer-kopf { display: flex; align-items: baseline; gap: .4rem; }
+.tuer-ziel { font: 600 var(--fs-body)/1.2 var(--f-ui); }
+.tuer-pfeil { color: var(--c-tuer); font-size: 1.05em; transition: transform var(--t-zustand) var(--ease-aus); }
+.tuer:hover .tuer-pfeil, .tuer[aria-expanded="true"] .tuer-pfeil { transform: translateX(3px); }
+.tuer-meta {
+  font: 500 var(--fs-mikro)/1.4 var(--f-ui);
+  color: var(--c-tuer);
+  letter-spacing: .02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.nurleitung {
+  margin: var(--sp-2) 0 0;
+  padding: .34rem .5rem;
+  background: var(--c-gm-bg);
+  border-left: 2px solid var(--c-gm);
+  font: 500 var(--fs-mikro)/1.45 var(--f-ui);
+  color: var(--c-gm);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+}
+.zwilling {
+  margin: var(--sp-2) 0 0;
+  font: 400 var(--fs-mikro)/1.5 var(--f-ui);
+  color: var(--c-ink-3);
+  border-top: 1px dashed var(--c-rule-2);
+  padding-top: var(--sp-2);
+}
+
+/* ── Fließtext ───────────────────────────────────────────────────────── */
+.fliess { max-width: var(--satzbreite); }
+.fliess h2 {
+  margin: var(--sp-6) 0 var(--sp-3);
+  padding-bottom: .3rem;
+  border-bottom: 1px solid var(--c-rule);
+  font: 400 var(--fs-h2)/1.25 var(--f-buch);
+  letter-spacing: -.005em;
+  display: flex; align-items: baseline; gap: .55rem;
+}
+.fliess section:first-child h2 { margin-top: var(--sp-2); }
+.fliess h2 .num {
+  font: 700 var(--fs-mikro)/1 var(--f-ui);
+  color: var(--c-accent); letter-spacing: .14em;
+  font-variant-numeric: tabular-nums;
+}
+.fliess h2 .fort {
+  margin-left: auto;
+  font: 400 var(--fs-mikro)/1 var(--f-ui);
+  color: var(--c-ink-4); letter-spacing: .1em; text-transform: uppercase;
+}
+
+.absatz { position: relative; margin: 0 0 .35rem; }
+/* „Der Streifen": der Chip-Streifen ist IMMER reserviert.
+   Das Ein-/Ausblenden der Herkunft verändert die Form der Seite um 0 px. */
+.absatz > p { margin: 0; }
+.absatz > p:not(.chip) {
+  padding-bottom: 1.75rem;   /* der reservierte Streifen — exakt eine Chipzeile */
+  hyphens: auto;
+}
+
+/* Ein Beleg-Chip ist genau EINE Zeile hoch. Ist er länger, rollt er in sich
+   selbst – damit der reservierte Streifen für alle Chips gleich hoch bleibt
+   und das Einblenden der Herkunft die Seite um 0 px verschiebt.            */
+.chip {
+  position: absolute; left: 0; right: 0; bottom: .1rem;
+  height: 1.5rem;
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 0 .5rem;
+  white-space: nowrap;
+  overflow-x: auto; overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  font: 500 var(--fs-mikro)/1.5 var(--f-ui);
+  color: var(--c-ink-3);
+  font-variant-numeric: tabular-nums;
+  padding: .1rem .45rem .1rem .4rem;
+  border-left: 2px solid var(--c-chip-line);
+  background: var(--c-chip-bg);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity var(--t-zustand) var(--ease), transform var(--t-zustand) var(--ease);
+  pointer-events: none;
+}
+.chip::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.chip > * { flex: none; }
+.app[data-herkunft="an"] .chip { opacity: 1; transform: none; pointer-events: auto; }
+.chip .gl { font-size: 1.02em; color: var(--c-accent); width: 1.05em; text-align: center; }
+.chip .tag { font-weight: 700; color: var(--c-ink-2); }
+.chip.wochentag { border-left-color: var(--c-tuer-2); background: var(--c-tuer-glanz); }
+.chip.wochentag .gl { color: var(--c-tuer); }
+.chip.wochentag .tag {
+  color: var(--c-tuer);
+  text-decoration: underline; text-decoration-style: double;
+  text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+.chip .sep { color: var(--c-ink-4); }
+.chip .nl { color: var(--c-gm); font-weight: 600; }
+
+/* Stempel & Quellenmarken im Text */
+.stempel {
+  display: inline-block;
+  font: 700 var(--fs-mikro)/1.25 var(--f-ui);
+  letter-spacing: .13em; text-transform: uppercase;
+  color: var(--c-hoer);
+  border: 1px solid color-mix(in srgb, var(--c-hoer) 55%, transparent);
+  border-radius: var(--r-1);
+  padding: .06rem .32rem;
+  margin-right: .38rem;
+  transform: rotate(-1.2deg);
+  vertical-align: .1em;
+}
+.quelle { color: var(--c-ink-3); font-style: italic; font-size: .93em; }
+
+/* Fußnotenzeiger */
+.fnref {
+  font: 600 var(--fs-mikro)/1 var(--f-ui);
+  vertical-align: super;
+  color: var(--c-accent);
+  background: transparent;
+  border: 0; border-bottom: 1px solid transparent;
+  padding: 0 .12rem;
+  margin-left: .05rem;
+  cursor: pointer;
+  border-radius: var(--r-1);
+  transition: background var(--t-antwort) var(--ease), color var(--t-antwort) var(--ease);
+}
+.fnref:hover { background: var(--c-chip-bg); color: var(--c-accent-2); }
+.fnref[aria-expanded="true"] { background: var(--c-accent); color: var(--c-auf-akzent); }
+
+/* ── Der Beleg (die Fußnote als Würfelwurf) ──────────────────────────── */
+.beleg {
+  margin: 0 0 var(--sp-4);
+  border: 1px solid var(--c-rule-2);
+  border-left: 3px solid var(--c-accent);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
+  background: var(--c-paper-2);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+}
+.beleg[hidden] { display: none; }
+.beleg-kopf {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem;
+  padding: .5rem .7rem;
+  border-bottom: 1px solid var(--c-rule);
+  background: color-mix(in srgb, var(--c-accent) 6%, transparent);
+  font: 600 var(--fs-klein)/1.35 var(--f-ui);
+  font-variant-numeric: tabular-nums;
+}
+.beleg-kopf .nr { color: var(--c-accent); font-weight: 700; }
+.beleg-kopf .wer { color: var(--c-ink); }
+.beleg-kopf .wann { color: var(--c-tuer); font-weight: 700; }
+.scrollx { overflow-x: auto; min-width: 0; }
+.wurf {
+  margin: 0; padding: .7rem;
+  font: 400 var(--fs-klein)/1.62 var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink-2);
+  white-space: pre;
+  min-width: max-content;
+}
+.wurf .w { color: var(--c-ink); font-weight: 700; }
+.wurf .plus { color: var(--c-ok); }
+.wurf .minus { color: var(--c-leer); }
+.wurf .sum { color: var(--c-ink); font-weight: 700; }
+.wurf .ok { color: var(--c-ok); font-weight: 700; }
+.wurf .kante { color: var(--c-tuer); font-weight: 700; }
+.wurf .dim { color: var(--c-ink-4); }
+.beleg-fuss {
+  padding: .5rem .7rem .6rem;
+  border-top: 1px dashed var(--c-rule-2);
+  font: 400 var(--fs-mikro)/1.6 var(--f-ui);
+  color: var(--c-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.satz {
+  margin: .55rem .7rem .7rem;
+  padding-left: .7rem;
+  border-left: 2px solid var(--c-tuer-2);
+  font: italic 400 var(--fs-klein)/1.6 var(--f-buch);
+  color: var(--c-ink-2);
+}
+
+/* ── Umbruch-Marke: die Ankunft steckt IM Artikel, nicht in einer Liste ─ */
+.artikel[data-leser="kaya"] .neu-marke { display: none; }
+.neu-marke {
+  display: inline-flex; align-items: center; gap: .28rem;
+  font: 700 var(--fs-mikro)/1 var(--f-ui);
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--c-neu);
+  border: 1px solid color-mix(in srgb, var(--c-neu) 50%, transparent);
+  border-radius: var(--r-pill);
+  padding: .1rem .4rem;
+  margin-right: .4rem;
+  vertical-align: .12em;
+  white-space: nowrap;
+}
+.neu-marke::before { content: "◆"; font-size: .8em; }
+
+/* Frisch geprägter Absatz */
+@keyframes einfliessen {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes tinte {
+  0%   { background: color-mix(in srgb, var(--c-tuer) 26%, transparent); }
+  100% { background: transparent; }
+}
+.absatz.frisch { animation: einfliessen var(--t-uebergang) var(--ease-aus) both; }
+.absatz.frisch > p { animation: tinte 1600ms var(--ease) both; border-radius: var(--r-2); }
+
+/* ═══ Das Vorhaben (Würfel- und Prägekarte) ══════════════════════════ */
+.vorhaben {
+  margin: var(--sp-3) 0 0;
+  border: 1px solid var(--c-tuer-2);
+  border-radius: var(--r-3);
+  background: var(--c-paper);
+  box-shadow: var(--sh-3);
+  overflow: hidden;
+  font-family: var(--f-ui);
+}
+.vorhaben[hidden] { display: none; }
+.vorhaben.oeffnet { animation: einfliessen var(--t-zustand) var(--ease-aus) both; }
+.vh-kopf {
+  padding: .6rem .7rem .55rem;
+  background: var(--c-tuer-bg);
+  border-bottom: 1px solid var(--c-rule-2);
+}
+.vh-kopf h3 {
+  margin: 0 0 .12rem;
+  font: 700 var(--fs-ui)/1.3 var(--f-ui);
+  color: var(--c-ink);
+}
+.vh-kopf p { margin: 0; font: 500 var(--fs-mikro)/1.5 var(--f-ui); color: var(--c-tuer); font-variant-numeric: tabular-nums; }
+.vh-koerper { padding: .6rem .7rem .7rem; display: grid; gap: var(--sp-3); }
+.vh-koerper > * { min-width: 0; }
+/* Die Rechnung vor dem Wurf: ein Raster, kein Monospace-Block —
+   damit sie in einer 300-px-Spalte lesbar bleibt statt zu scrollen. */
+.rechnung {
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  gap: .12rem .5rem;
+  margin: 0;
+  font: 500 var(--fs-klein)/1.45 var(--f-ui);
+  color: var(--c-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.rechnung dt { text-align: right; font-weight: 700; }
+.rechnung dd { margin: 0; }
+.rechnung .plus { color: var(--c-ok); }
+.rechnung .minus { color: var(--c-leer); }
+.rechnung .fein { display: block; color: var(--c-ink-4); font-size: var(--fs-mikro); }
+.rechnung-strich {
+  grid-column: 1 / -1; height: 0; margin: .25rem 0 .15rem;
+  border: 0; border-top: 1px solid var(--c-rule-2);
+}
+.rechnung .summe { color: var(--c-ink); font-weight: 700; }
+.vh-label {
+  font: 700 var(--fs-mikro)/1 var(--f-ui);
+  letter-spacing: .14em; text-transform: uppercase; color: var(--c-ink-3);
+  display: block; margin-bottom: .35rem;
+}
+.wuerfel-zeile { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.d20 {
+  width: 3.1rem; height: 3.1rem; flex: none;
+  display: grid; place-items: center;
+  font: 700 1.4rem/1 var(--f-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink);
+  background: var(--c-paper-2);
+  border: 1px solid var(--c-rule-strong);
+  clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  transition: color var(--t-zustand) var(--ease), background var(--t-zustand) var(--ease);
+}
+.d20.rollt { color: var(--c-ink-4); animation: zittern 90ms linear infinite; }
+.d20.fertig { color: var(--c-tuer); background: color-mix(in srgb, var(--c-tuer) 12%, var(--c-paper-2)); }
+@keyframes zittern {
+  0%,100% { transform: translate(0,0) rotate(0deg); }
+  25% { transform: translate(.6px,-.7px) rotate(.7deg); }
+  50% { transform: translate(-.5px,.6px) rotate(-.6deg); }
+  75% { transform: translate(.4px,.5px) rotate(.4deg); }
+}
+.ergebnis {
+  display: grid; gap: .1rem;
+  min-width: 0; flex: 1 1 9rem;
+  font-variant-numeric: tabular-nums;
+}
+.ergebnis .gross { font: 700 1.05rem/1.25 var(--f-ui); color: var(--c-ink); }
+.ergebnis .klein { font: 500 var(--fs-mikro)/1.4 var(--f-ui); color: var(--c-ink-3); }
+.ergebnis .kante { color: var(--c-tuer); font-weight: 700; }
+
+.vh-aktionen { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.vh-aktionen .knopf { flex: 1 1 auto; justify-content: center; }
+.knopf.primaer {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-auf-akzent);
+  padding: .52rem .8rem;
+  box-shadow: 0 6px 18px -10px var(--c-accent);
+}
+.knopf.primaer:hover { background: var(--c-accent-2); border-color: var(--c-accent-2); }
+.knopf.primaer:disabled, .knopf:disabled { opacity: .42; cursor: not-allowed; }
+.kbd {
+  font: 600 var(--fs-mikro)/1 var(--f-mono);
+  border: 1px solid currentColor; border-bottom-width: 2px;
+  border-radius: var(--r-2);
+  padding: .16rem .3rem; opacity: .75;
+}
+.vh-fuss {
+  padding: .45rem .7rem .55rem;
+  border-top: 1px dashed var(--c-rule-2);
+  font: 400 var(--fs-mikro)/1.55 var(--f-ui);
+  color: var(--c-ink-3);
+}
+
+/* ═══ Lupe: Die Woche ════════════════════════════════════════════════ */
+.woche {
+  align-self: start;
+  display: grid; gap: var(--sp-3);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r-3);
+  background: var(--c-paper-2);
+  box-shadow: var(--sh-1);
+  padding: var(--sp-4);
+  font-family: var(--f-ui);
+}
+@media (min-width: 1180px) { .woche { position: sticky; top: 7.5rem; } }
+.woche h2 {
+  margin: 0;
+  font: 700 var(--fs-mikro)/1 var(--f-ui);
+  letter-spacing: .18em; text-transform: uppercase; color: var(--c-accent);
+  display: flex; align-items: baseline; gap: .5rem;
+}
+.woche h2 .rolle { margin-left: auto; color: var(--c-ink-4); letter-spacing: .1em; }
+.woche-gruppe { display: grid; gap: .3rem; }
+.woche-gruppe + .woche-gruppe { margin-top: .7rem; }
+.zahlreihe { font-variant-numeric: tabular-nums; }
+.ruhig { color: var(--c-ink-3); font-weight: 400; }
+.woche-gruppe > h3 {
+  margin: 0;
+  font: 600 var(--fs-mikro)/1.3 var(--f-ui);
+  letter-spacing: .1em; text-transform: uppercase; color: var(--c-ink-3);
+  display: flex; align-items: baseline; gap: .4rem;
+}
+.woche-gruppe > h3 .n {
+  font-variant-numeric: tabular-nums; color: var(--c-ink);
+  border: 1px solid var(--c-rule-2); border-radius: var(--r-pill);
+  padding: 0 .34rem; font-size: .95em;
+}
+.woche-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: .28rem; }
+.woche-liste li {
+  font: 400 var(--fs-klein)/1.45 var(--f-ui);
+  color: var(--c-ink-2);
+  padding: .28rem .4rem .3rem .5rem;
+  border-left: 2px solid var(--c-rule-2);
+  background: var(--c-paper);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  font-variant-numeric: tabular-nums;
+}
+.woche-liste li b { color: var(--c-ink); font-weight: 600; }
+.woche-liste li .meta { display: block; color: var(--c-ink-3); font-size: var(--fs-mikro); }
+.woche-liste li.tuerpost { border-left-color: var(--c-tuer-2); }
+.woche-liste li.leer-hinweis { border-left-color: var(--c-rule); color: var(--c-ink-3); font-style: italic; }
+.woche .fussnote { margin: .8rem 0 0; font: 400 var(--fs-mikro)/1.55 var(--f-ui); color: var(--c-ink-3); border-top: 1px solid var(--c-rule); padding-top: var(--sp-2); }
+.woche[data-fuer="leitung"] { border-left: 3px solid var(--c-gm); }
+.woche[data-fuer="leitung"] h2 { color: var(--c-gm); }
+
+/* ═══ Regal (Session Shelf) ══════════════════════════════════════════ */
+.regal {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+  display: flex; flex-wrap: wrap; align-items: center; gap: .4rem var(--sp-4);
+  padding: .5rem var(--sp-4);
+  background: color-mix(in srgb, var(--c-paper) 94%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  backdrop-filter: blur(10px) saturate(1.1);
+  border-top: 1px solid var(--c-rule-strong);
+  box-shadow: 0 -8px 24px -18px rgba(0,0,0,.6);
+  font: 500 var(--fs-klein)/1.35 var(--f-ui);
+  color: var(--c-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.regal .pos { display: inline-flex; align-items: baseline; gap: .38rem; }
+.regal .gl { color: var(--c-accent); }
+.regal .pos b { color: var(--c-ink); font-weight: 700; }
+.regal .pos.tueren .gl { color: var(--c-tuer); }
+.regal .pos.tueren b { color: var(--c-tuer); }
+.regal .weg { margin-left: auto; color: var(--c-ink-3); font-size: var(--fs-mikro); }
+.regal .fallend {
+  font-size: var(--fs-mikro); color: var(--c-ink-4);
+  border-left: 1px solid var(--c-rule-2); padding-left: .55rem;
+}
+
+/* Kolophon */
+.kolophon {
+  max-width: 78rem; margin: 0 auto; padding: 0 var(--sp-4) 5.5rem;
+  font: 400 var(--fs-mikro)/1.65 var(--f-ui);
+  color: var(--c-ink-4);
+}
+.kolophon b { color: var(--c-ink-3); font-weight: 600; }
+
+/* Legende der Herkunftsglyphen */
+.legende {
+  display: none;
+  margin: var(--sp-4) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--c-rule-2);
+  border-radius: var(--r-2);
+  font: 500 var(--fs-mikro)/1.7 var(--f-ui);
+  color: var(--c-ink-3);
+  gap: 0 var(--sp-3); flex-wrap: wrap;
+}
+.app[data-herkunft="an"] .legende { display: flex; }
+.legende > span { display: inline-flex; align-items: baseline; gap: .34rem; }
+.legende .gl { color: var(--c-accent); }
+.legende .wt { color: var(--c-tuer); font-weight: 700; }
+
+/* Absätze, die dem Leser fehlen, sind nicht ausgeblendet — sie fehlen. */
+.absatz[hidden] { display: none; }
+
+/* ═══ Bewegung aus ═══════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .app *, .app *::before, .app *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .tuer:hover, .tuer:focus-visible, .tuer[aria-expanded="true"] { padding-left: .78rem; }
+  .tuer::after { display: none; }
+}
+
+/* Schmale Geräte bis 380 px */
+@media (max-width: 420px) {
+  :root { --fs-h1: 1.85rem; --sp-4: .8rem; }
+  .bogen { padding-left: .7rem; padding-right: .7rem; }
+  .artikel { padding: var(--sp-4) var(--sp-3) var(--sp-5); }
+  .ib-zeile { grid-template-columns: 5.2rem minmax(0,1fr); }
+  .topbar { gap: .4rem .6rem; }
+  .uhr { order: 3; width: 100%; }
+}
+</style>
+
+<div class="app" id="app" data-herkunft="aus">
+
+<a class="skip" href="#fliess">Zum Artikeltext springen</a>
+
+<!-- ═══ Zone: Campaign Context ═══════════════════════════════════════ -->
+<header class="topbar">
+  <div class="marke"><b>Chronicle</b> <span>Aldenfall</span></div>
+  <p class="uhr">Mi&nbsp;17.&nbsp;Juni · 18:37 &nbsp;·&nbsp; Sitzung&nbsp;14 abgeschlossen</p>
+  <div class="topbar-akt">
+    <button type="button" class="knopf" id="btn-herkunft" aria-pressed="false">
+      <span class="gl" aria-hidden="true">◈</span> Herkunft
+    </button>
+    <button type="button" class="knopf" id="btn-theme" aria-pressed="false">
+      <span class="gl" aria-hidden="true">◐</span> <span id="theme-label">Dunkel</span>
+    </button>
+    <button type="button" class="knopf" id="btn-reset">Vorführung zurücksetzen</button>
+  </div>
+</header>
+
+<!-- ═══ Das Leserad ══════════════════════════════════════════════════ -->
+<div class="leserbar">
+  <fieldset class="dial">
+    <legend>Lesen als</legend>
+    <div class="dial-track">
+      <span class="dial-thumb" aria-hidden="true" id="thumb"></span>
+      <label class="dial-opt">
+        <input type="radio" name="leser" value="kaya" checked>
+        <span class="dial-name">Kaya</span>
+        <span class="dial-rolle">Spielleitung</span>
+      </label>
+      <label class="dial-opt">
+        <input type="radio" name="leser" value="sera">
+        <span class="dial-name">Sera Valdris</span>
+        <span class="dial-rolle">Spielerin</span>
+      </label>
+      <label class="dial-opt">
+        <input type="radio" name="leser" value="brannt">
+        <span class="dial-name">Brannt Feil</span>
+        <span class="dial-rolle">Spieler</span>
+      </label>
+    </div>
+  </fieldset>
+  <p class="leser-note" id="leser-note">
+    <b>Die Sicht wird auf dem Server berechnet.</b> Jeder Leser bekommt ein anderes Dokument –
+    nicht dasselbe Dokument mit ausgeblendeten Stellen.
+  </p>
+</div>
+
+<p class="hinweis" id="hinweis">
+  <b>Vorführung</b>
+  <span>Vier Schritte: <em>Herkunft</em> einblenden → Fußnote <em>[7]</em> öffnen →
+  <em>Lesen als Sera Valdris</em> → die Zeile „Kanzlei" in der Infobox drücken.</span>
+  <button type="button" class="knopf" id="btn-hinweis-zu">Ausblenden</button>
+</p>
+
+<!-- ═══ Bogen ════════════════════════════════════════════════════════ -->
+<div class="bogen">
+
+  <article class="artikel" id="artikel" data-leser="kaya" aria-labelledby="titel">
+
+    <header class="artikel-kopf">
+      <p class="kicker">Aldenfall · Enzyklopädie · Häuser und Kontore</p>
+      <h1 id="titel">Haus Vharon</h1>
+      <hr class="kopf-regel">
+
+      <!-- Die Saatbilanz — Kaya (Leitung) -->
+      <p class="saatbilanz" id="bilanz-gm">
+        <span><span class="zahl">11</span> Zeilen gesät</span><span class="tr">·</span>
+        <span><span class="zahl" data-tick id="z-kanon">31</span> Absätze im Kanon</span><span class="tr">·</span>
+        <span><span class="zahl">3</span> getippt</span><span class="tr">·</span>
+        <span><span class="zahl" data-tick id="z-ausgeloest">8</span> ausgelöst</span><span class="tr">·</span>
+        <span><span class="zahl">14</span> am Tisch entstanden</span><span class="tr">·</span>
+        <span class="heraus"><span class="zahl" data-tick id="z-zwischen">6</span> zwischen den Tischen</span>
+      </p>
+
+      <!-- Die Saatbilanz — Spielerin/Spieler: Zählung nur über Gehaltenes, kein Nenner -->
+      <p class="saatbilanz" id="bilanz-spieler" hidden>
+        <span><span class="zahl" data-tick id="z-buch">24</span> Absätze in deinem Buch</span><span class="tr">·</span>
+        <span class="heraus"><span class="zahl" data-tick id="z-neu">4</span> neu seit Sitzung 14</span><span class="tr">·</span>
+        <span><span class="zahl" data-tick id="z-tuer-artikel">1</span> Tür in diesem Artikel</span>
+      </p>
+
+      <nav class="toc" aria-label="Abschnitte dieses Artikels">
+        <span class="num">1</span> <a href="#a-herkunft">Herkunft</a>
+        <span class="num">2</span> <a href="#a-saatgut">Das Saatgutrecht</a>
+        <span class="num">3</span> <a href="#a-kanzlei">Die Kanzlei zu Ossa</a>
+        <span class="num">4</span> <a href="#a-vaugn">Der Fall Vaugn</a>
+        <span class="num">5</span> <a href="#a-siehe">Siehe auch</a>
+      </nav>
+
+      <p class="umbruch-band" id="umbruch-band">
+        <span><b id="umbruch-n">4</b> neue Absätze stehen in deinen Artikeln – dort, wo sie hingehören.</span>
+        <button type="button" class="knopf" id="btn-umbruch">Zur ersten Marke</button>
+      </p>
+
+      <p class="legende" aria-hidden="true">
+        <span><span class="gl">¶</span> getippt</span>
+        <span><span class="gl">⚄</span> am Tisch</span>
+        <span><span class="gl">✉</span> Brief</span>
+        <span><span class="gl">◈</span> Vollmacht</span>
+        <span><span class="gl">✝</span> Niederschlag</span>
+        <span class="wt">Wochentag = vierter Kanal, reiner Text – übersteht Hochkontrast, Graustufe und Druck.</span>
+      </p>
+    </header>
+
+    <!-- ── Infobox ───────────────────────────────────────────────────── -->
+    <aside class="infobox" aria-labelledby="ib-titel">
+      <svg class="wappen" viewBox="0 0 100 118" role="img" aria-label="Wappen des Hauses Vharon: geteilter Schild mit drei Ähren über einem Kanzleischlüssel">
+        <defs>
+          <linearGradient id="feldA" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="currentColor" stop-opacity=".92"/>
+            <stop offset="1" stop-color="currentColor" stop-opacity=".62"/>
+          </linearGradient>
+        </defs>
+        <g color="var(--c-accent)">
+          <path d="M6 6 h88 v58c0 26-20 40-44 48C26 104 6 90 6 64Z"
+                fill="var(--c-paper-3)" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M50 6 h44 v58c0 26-20 40-44 48Z" fill="url(#feldA)" opacity=".22"/>
+          <path d="M6 34 h88" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
+          <g stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round">
+            <path d="M50 24 v-14"/><path d="M34 27 v-11"/><path d="M66 27 v-11"/>
+            <path d="M50 15 q-5 -4 -6 -9 q6 1 6 6"/><path d="M50 15 q5 -4 6 -9 q-6 1 -6 6"/>
+            <path d="M34 19 q-4 -3 -5 -7 q5 1 5 5"/><path d="M66 19 q4 -3 5 -7 q-5 1 -5 5"/>
+          </g>
+          <g stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round">
+            <circle cx="42" cy="62" r="9"/>
+            <path d="M51 62 h26"/><path d="M70 62 v9"/><path d="M77 62 v7"/>
+          </g>
+          <path d="M28 88 h44" stroke="currentColor" stroke-width="1.4" opacity=".45"/>
+        </g>
+      </svg>
+      <h2 id="ib-titel">Haus Vharon</h2>
+      <p class="unterzeile">Saatguthaus · Aldenfall · seit 1187&nbsp;n.&nbsp;F.</p>
+
+      <dl class="ib-liste">
+        <div class="ib-zeile"><dt>Sitz</dt><dd>Aldenfall, Untere Saatgasse 9</dd></div>
+        <div class="ib-zeile"><dt>Oberhaupt</dt><dd><a class="eintrag" href="#a-herkunft">Ismene Vharon</a></dd></div>
+        <div class="ib-zeile"><dt>Gegründet</dt><dd><span class="jahr">1187</span>&nbsp;n.&nbsp;F.</dd></div>
+        <div class="ib-zeile"><dt>Saatgutrecht</dt><dd>seit <span class="jahr">1204</span> · dritte Klasse</dd></div>
+        <div class="ib-zeile"><dt>Kontor</dt><dd><a class="eintrag" href="#a-saatgut">Levantis</a></dd></div>
+
+        <!-- ══ DIE ZEILE ══ -->
+        <div class="ib-zeile" id="zeile-kanzlei">
+          <dt>Kanzlei</dt>
+          <dd>
+            <!-- Kaya und Brannt: ein roter Link. Byte-gleich. -->
+            <span class="leer" id="kanzlei-rot" title="Für diesen Artikel existiert kein Eintrag.">Ossa <span class="leer-hint">(kein Eintrag)</span></span>
+
+            <!-- Sera: eine Tür. -->
+            <button type="button" class="tuer" id="tuer" hidden
+                    aria-expanded="false" aria-controls="vorhaben">
+              <span class="tuer-kopf">
+                <span class="tuer-ziel">Ossa</span>
+                <span class="tuer-pfeil" aria-hidden="true">⟶</span>
+              </span>
+              <span class="tuer-meta">offen bis Sitzung&nbsp;15 · Nachforschen gegen&nbsp;18</span>
+            </button>
+
+            <!-- Nach dem Prägen: ein gewöhnlicher blauer Link. -->
+            <a class="eintrag" id="kanzlei-blau" href="#a-kanzlei" hidden>Ossa</a>
+          </dd>
+        </div>
+
+        <div class="ib-zeile"><dt>Belege</dt><dd><span class="jahr" id="z-belege">12</span> Würfe · <span class="jahr">3</span> Briefe</dd></div>
+      </dl>
+
+      <!-- Das Vorhaben klappt hier auf, direkt unter der Zeile. -->
+      <div class="vorhaben" id="vorhaben" hidden role="group" aria-labelledby="vh-titel">
+        <div class="vh-kopf">
+          <h3 id="vh-titel" tabindex="-1">Nachforschen in der Kanzlei zu Ossa</h3>
+          <p>Vollmacht v_038 · freischwebend · ausgestellt Sa&nbsp;13.&nbsp;Juni 23:41, Sitzung&nbsp;14 · verfällt zu Sitzung&nbsp;15</p>
+        </div>
+        <div class="vh-koerper">
+          <div>
+            <span class="vh-label">Rechnung vor dem Wurf</span>
+            <dl class="rechnung">
+              <dt class="plus">+4</dt><dd>Weisheit</dd>
+              <dt class="plus">+2</dt><dd>du hältst 5 Passagen über Haus Vharon
+                <span class="fein">haelt_etikett „haus-vharon", mindestens: 3</span></dd>
+              <dt class="minus">−2</dt><dd>du kennst die Kanzlei nur aus Brannts Brief (Mo 18:02)
+                <span class="fein">Hörensagen zählt nicht</span></dd>
+              <hr class="rechnung-strich">
+              <dt class="summe">+4</dt><dd class="summe">auf den Wurf · SG 18 · du brauchst 14</dd>
+            </dl>
+          </div>
+
+          <div class="wuerfel-zeile">
+            <div class="d20" id="d20" aria-hidden="true">d20</div>
+            <output class="ergebnis" id="ergebnis" for="btn-wuerfeln">
+              <span class="klein">Der Server würfelt. Du siehst die Rechnung vorher.</span>
+            </output>
+          </div>
+
+          <div class="vh-aktionen">
+            <button type="button" class="knopf primaer" id="btn-wuerfeln">Würfeln lassen</button>
+            <button type="button" class="knopf primaer" id="btn-praegen" disabled>
+              Prägen <span class="kbd">Strg</span><span class="kbd">↵</span>
+            </button>
+            <button type="button" class="knopf" id="btn-vh-zu">Schließen</button>
+          </div>
+        </div>
+        <p class="vh-fuss">
+          Der versiegelte Satz wurde am Samstag um 23:41 geschrieben. Er liegt beim Server, nicht in
+          diesem Fenster – dein Gerät hat ihn nie gesehen.
+        </p>
+      </div>
+
+      <p class="nurleitung" id="nl-tuer">
+        ◈ Eine Tür offen an dieser Zeile · Halterin <b>Sera Valdris</b> · v_038 — <em>nur Leitung</em>
+      </p>
+      <p class="zwilling" id="zwilling" hidden>
+        Für Brannt ist diese Zeile ein gewöhnlicher roter Link. Nicht versteckt – <b>nicht in den Daten.</b>
+        Seine Antwort ist byte-gleich mit der eines Lesers ohne Kampagne.
+      </p>
+    </aside>
+
+    <!-- ── Fließtext ─────────────────────────────────────────────────── -->
+    <div class="fliess" id="fliess">
+
+      <section id="a-kanzlei" aria-labelledby="h-kanzlei">
+        <h2 id="h-kanzlei"><span class="num">3</span> Die Kanzlei zu Ossa <span class="fort">Absätze 24–31</span></h2>
+
+        <div class="absatz" data-abs="24">
+          <p>Die Geschäfte des Hauses jenseits der Flussgrenze führt seit <span class="zahlreihe">1211</span>
+          eine Kanzlei in Ossa. Ihre Siegelbriefe tragen das Hauszeichen, aber keinen Namen: wer für
+          Vharon zeichnet, ist in Aldenfall nicht aktenkundig. Die <span class="leer">Wechselbrief-Ordnung <span class="leer-hint">(kein Eintrag)</span></span>
+          der Freien Flussstädte lässt das ausdrücklich zu.</p>
+          <p class="chip"><span class="gl" aria-hidden="true">⚄</span><span class="tag">Sa 13. Juni</span><span>21:29</span><span class="sep">·</span><span>Sitzung 14</span><span class="sep">·</span><span>Betreten · Archivnische</span><span class="sep">·</span><span>Sera, Brannt</span></p>
+        </div>
+
+        <div class="absatz" data-abs="25">
+          <p>Der Postweg nach Ossa ist kurz und dennoch nicht beiläufig. Ein Brief, der abends in der
+          Unteren Saatgasse abgegeben wird, liegt am folgenden Morgen in der Kanzlei; das Haus nutzt
+          diese eine Nacht Vorsprung seit Jahren mit Bedacht.</p>
+          <p class="chip"><span class="gl" aria-hidden="true">¶</span><span class="tag">14. März</span><span class="sep">·</span><span>getippt</span><span class="sep">·</span><span>Vorbereitung</span></p>
+        </div>
+
+        <div class="absatz mit-fussnote" data-abs="26" data-leser="kaya sera" data-neu>
+          <p><span class="neu-marke">neu · Di</span>Die Kanzlei hält mindestens vier Saatgutkontrakte,
+          die in den Aldenfaller Registern nie eingetragen wurden. Zwei davon nennen als
+          Gegenzeichnenden einen Namen, den das Haus offiziell nicht führt.<button type="button"
+          class="fnref" id="fn7-ref" aria-expanded="false" aria-controls="fn7"
+          aria-label="Beleg 7 öffnen: Wurf vom Dienstag">[7]</button></p>
+          <p class="chip wochentag"><span class="gl" aria-hidden="true">◈</span><span class="tag">Di 16. Juni</span><span>22:41</span><span class="sep">·</span><span>Vollmacht</span><span class="sep">·</span><span>Nachforschen · Sera Valdris</span><span class="sep">·</span><span>21 gegen 18</span></p>
+        </div>
+
+        <div class="beleg" id="fn7" hidden>
+          <p class="beleg-kopf">
+            <span class="nr">[7]</span>
+            <span class="wer">Nachforschen · Sera Valdris</span>
+            <span class="wann">Di 16. Juni, 22:41:08</span>
+          </p>
+          <div class="scrollx">
+<pre class="wurf">1d20 = <span class="w">17</span>
+  <span class="plus">+ 4</span>   Weisheit
+  <span class="plus">+ 2</span>   du hältst 4 Passagen über Haus Vharon
+        <span class="dim">haelt_etikett „haus-vharon", mindestens: 3</span>
+  <span class="minus">− 2</span>   du kennst die Kanzlei nur aus Brannts Brief (Mo 18:02)
+        <span class="dim">— Hörensagen zählt nicht</span>
+  ───────────────────────────────────
+  = <span class="sum">21</span>  gegen SG 18 · <span class="ok">Erfolg</span></pre>
+          </div>
+          <p class="satz">
+            Ein Brief vom Montag ist ein −2 auf einen Wurf vom Dienstag, gedruckt in der Fußnote
+            eines Artikels, den du am Mittwoch liest.
+          </p>
+          <p class="beleg-fuss">
+            Vollmacht v_031 · ausgestellt Sa 13. Juni 23:41, Sitzung 14 · verfällt zu Sitzung 15<br>
+            Regelpaket hausregeln-aldenfall 2.3 · Klausel k_nachforschen@r4 · Wurf w_212 · dauerhaft
+          </p>
+        </div>
+
+        <div class="absatz" data-abs="27" data-leser="kaya sera" data-neu>
+          <p><span class="neu-marke">neu · Di</span><span class="stempel">Hörensagen</span>Vor dem Kontor
+          arbeite ein Schreiber, der die Bücher zweimal führe – einmal für Aldenfall, einmal für Ossa.
+          <span class="quelle">Von Brannt Feil gehört.</span></p>
+          <p class="chip wochentag"><span class="gl" aria-hidden="true">✉</span><span class="tag">Mo 15. Juni</span><span>18:02</span><span class="sep">·</span><span>Brief · Brannt an Sera</span><span class="sep">·</span><span>Postlaufzeit 1 Tag</span><span class="sep">·</span><span>zugestellt Di 06:00</span></p>
+        </div>
+
+        <div class="absatz" data-abs="28" data-leser="kaya">
+          <p>Der Schreiber heißt Talm Osser und ist seit dem Herbst nicht mehr in Ossa gesehen worden.</p>
+          <p class="chip wochentag"><span class="gl" aria-hidden="true">◈</span><span class="tag">Di 16. Juni</span><span>23:04</span><span class="sep">·</span><span>Vollmacht</span><span class="sep">·</span><span>Vesper Lund</span><span class="sep">·</span><span>19 gegen 16</span><span class="sep">·</span><span class="nl">nur in Vespers Buch</span></p>
+        </div>
+
+        <!-- Hier landet der geprägte Absatz 32. -->
+        <div id="einsatz-32"></div>
+      </section>
+
+      <section id="a-vaugn" aria-labelledby="h-vaugn">
+        <h2 id="h-vaugn"><span class="num">4</span> Der Fall Vaugn</h2>
+
+        <div class="absatz" data-abs="29">
+          <p>Hauptmann Ilvo Vaugn, der die Zollwache an der Flussgrenze führte, fiel am Abend des
+          Marktfestes in der Unteren Saatgasse. Das Haus bestreitet jede Beteiligung und hat die
+          Bestattung bezahlt.</p>
+          <p class="chip"><span class="gl" aria-hidden="true">✝</span><span class="tag">Sa 6. Juni</span><span>22:51</span><span class="sep">·</span><span>Sitzung 12</span><span class="sep">·</span><span>Niederschlag · Hauptmann Vaugn</span></p>
+        </div>
+
+        <div class="absatz" data-abs="30">
+          <p>In Vaugns Diensttasche fand sich ein Zollbuch mit elf herausgetrennten Seiten. Die
+          Schnittkante ist frisch.</p>
+          <p class="chip"><span class="gl" aria-hidden="true">⚄</span><span class="tag">Sa 13. Juni</span><span>22:14</span><span class="sep">·</span><span>Sitzung 14</span><span class="sep">·</span><span>Fund · Zollbuch</span></p>
+        </div>
+
+        <div class="absatz" data-abs="31">
+          <p>Seither führt die Zollwache die Flussgrenze mit halber Besetzung, und die Abfertigung
+          der Saatgutfuhren geschieht ohne Gegenzeichnung.</p>
+          <p class="chip"><span class="gl" aria-hidden="true">¶</span><span class="tag">14. März</span><span class="sep">·</span><span>getippt</span><span class="sep">·</span><span>Vorbereitung</span></p>
+        </div>
+      </section>
+
+      <section id="a-siehe" aria-labelledby="h-siehe">
+        <h2 id="h-siehe"><span class="num">5</span> Siehe auch</h2>
+        <div class="absatz">
+          <p><a class="eintrag" href="#a-saatgut">Das Saatgutrecht von Aldenfall</a> ·
+             <a class="eintrag" href="#a-kanzlei">Freie Flussstädte</a> ·
+             <a class="eintrag" href="#a-vaugn">Zollwache an der Flussgrenze</a> ·
+             <span class="leer">Talm Osser <span class="leer-hint">(kein Eintrag)</span></span></p>
+          <p class="chip"><span class="gl" aria-hidden="true">¶</span><span class="tag">14. März</span><span class="sep">·</span><span>getippt</span><span class="sep">·</span><span>Vorbereitung</span></p>
+        </div>
+      </section>
+    </div>
+  </article>
+
+  <!-- ═══ Lupe: Die Woche ═══════════════════════════════════════════ -->
+  <aside class="woche" id="woche" data-fuer="leitung" aria-labelledby="woche-titel">
+    <h2 id="woche-titel"><span id="woche-name">Die Woche</span> <span class="rolle" id="woche-rolle">nur Leitung</span></h2>
+
+    <!-- Leitung: die Mengendifferenz -->
+    <div id="woche-gm">
+      <div class="woche-gruppe">
+        <h3>Dazugekommen <span class="n">3</span></h3>
+        <ul class="woche-liste">
+          <li><b>Sera Valdris</b> · Absatz 26 <span class="meta">Vollmacht v_031 · Di 22:41</span></li>
+          <li><b>Sera Valdris</b> · Absatz 27 <span class="meta">Brief von Brannt · zugestellt Di 06:00</span></li>
+          <li><b>Vesper Lund</b> · Absatz 28 <span class="meta">Vollmacht v_039 · Di 23:04</span></li>
+        </ul>
+      </div>
+      <div class="woche-gruppe">
+        <h3>Noch offen <span class="n" id="gm-offen-n">3</span></h3>
+        <ul class="woche-liste" id="gm-offen">
+          <li class="tuerpost" id="gm-v038"><b>Sera</b> · Kanzlei zu Ossa <span class="meta">v_038 · Nachforschen gegen 18 · bis Sitzung 15</span></li>
+          <li class="tuerpost"><b>Brannt</b> · Das Zollbuch <span class="meta">v_040 · Erinnern gegen 14 · bis Sitzung 15</span></li>
+          <li class="tuerpost"><b>Vesper</b> · Der Marktfestabend <span class="meta">v_042 · Menschenkenntnis gegen 16 · bis Sitzung 15</span></li>
+        </ul>
+      </div>
+      <div class="woche-gruppe">
+        <h3>Unterwegs <span class="n">1</span></h3>
+        <ul class="woche-liste">
+          <li><b>Sera</b> → <b>Vesper</b> <span class="meta">Brief · abgeschickt Mi 07:40 · zugestellt Do 06:00</span></li>
+        </ul>
+      </div>
+      <p class="fussnote">
+        5 Vollmachten am Samstag ausgestellt, Höchstzahl erreicht (je Spieler eine, dazu zwei
+        freischwebende). Was am Samstag 19:52 nicht eingelöst ist, verfällt – als Auftrag, nicht als
+        Entscheidung. <b>Diese Zahl kann nur fallen.</b>
+      </p>
+    </div>
+
+    <!-- Spieler: die eigenen Türen -->
+    <div id="woche-spieler" hidden>
+      <div class="woche-gruppe">
+        <h3>Deine Türen <span class="n" id="sp-tueren-n">1</span></h3>
+        <ul class="woche-liste" id="sp-tueren">
+          <li class="tuerpost" id="sp-v038"><b>Kanzlei zu Ossa</b> <span class="meta">Nachforschen gegen 18 · offen bis Sitzung 15</span></li>
+        </ul>
+      </div>
+      <div class="woche-gruppe">
+        <h3>Briefe <span class="n">1</span></h3>
+        <ul class="woche-liste">
+          <li id="sp-brief"><b>an Vesper Lund</b> <span class="meta">unterwegs · zugestellt Do 06:00</span></li>
+        </ul>
+      </div>
+      <div class="woche-gruppe">
+        <h3>Der Umbruch <span class="n" id="sp-umbruch-n">4</span></h3>
+        <ul class="woche-liste">
+          <li class="leer-hinweis">Keine Liste. Die neuen Absätze stehen in deinen Artikeln, an ihrer Stelle.</li>
+        </ul>
+      </div>
+      <p class="fussnote">
+        Nächste Sitzung: <b>Sa 20. Juni, 19:52</b>. Was bis dahin nicht durchschritten ist, verfällt.
+      </p>
+    </div>
+  </aside>
+</div>
+
+<p class="kolophon">
+  <b>Spike A1 · Runde 4 · Kandidat A „Die Woche".</b> Ein Bildschirm, ein Moment: Mittwoch, Zug,
+  Telefon. Haut <em>Archive</em>, Zone <em>Story → das Archiv</em>. Alle Projektionen liegen in
+  dieser Datei im Client – in Produktion entscheidet der Server, bevor Bytes das Haus verlassen
+  (siehe Zwillingsbeweis). Kein externer Aufruf, keine Schriftdatei, kein Bild.
+</p>
+
+<!-- ═══ Zone: Session Shelf ══════════════════════════════════════════ -->
+<footer class="regal" aria-label="Zustand der Woche">
+  <span class="pos tueren"><span class="gl" aria-hidden="true">◈</span>
+    <b id="regal-tueren">3</b> <span id="regal-tueren-wort">Türen offen</span></span>
+  <span class="pos"><span class="gl" aria-hidden="true">✉</span> <b>1</b> Brief unterwegs</span>
+  <span class="pos"><span class="gl" aria-hidden="true">◆</span> <b id="regal-neu">3</b> Absätze diese Woche</span>
+  <span class="fallend">kann nur fallen</span>
+  <span class="weg">Sitzung 15 · Sa 20. Juni</span>
+</footer>
+
+<p class="vh" role="status" aria-live="polite" id="ansage"></p>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var app      = document.getElementById("app");
+  var artikel  = document.getElementById("artikel");
+  var ansage   = document.getElementById("ansage");
+  var wurzel   = document.documentElement;
+
+  var mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function ruhig() { return mqMotion.matches; }
+
+  function sagen(text) { ansage.textContent = ""; window.setTimeout(function () { ansage.textContent = text; }, 30); }
+
+  /* ── 1. Herkunftsschicht ────────────────────────────────────────────
+     Kein Umbau der Seite: der Chipstreifen ist immer reserviert.        */
+  var btnHerkunft = document.getElementById("btn-herkunft");
+  btnHerkunft.addEventListener("click", function () {
+    var an = app.getAttribute("data-herkunft") === "an";
+    app.setAttribute("data-herkunft", an ? "aus" : "an");
+    btnHerkunft.setAttribute("aria-pressed", String(!an));
+    sagen(an ? "Herkunftsschicht ausgeblendet." : "Herkunftsschicht eingeblendet. Drei Belege tragen einen Wochentag statt eines Samstags.");
+  });
+
+  /* ── 2. Hell / Dunkel ───────────────────────────────────────────────── */
+  var btnTheme  = document.getElementById("btn-theme");
+  var lblTheme  = document.getElementById("theme-label");
+  var mqDark    = window.matchMedia("(prefers-color-scheme: dark)");
+  function themaJetzt() {
+    var gesetzt = wurzel.getAttribute("data-theme");
+    return gesetzt ? gesetzt : (mqDark.matches ? "dark" : "light");
+  }
+  function themaZeigen() {
+    var d = themaJetzt() === "dark";
+    lblTheme.textContent = d ? "Hell" : "Dunkel";
+    btnTheme.setAttribute("aria-pressed", String(d));
+    btnTheme.setAttribute("aria-label", d ? "Zur hellen Darstellung wechseln" : "Zur dunklen Darstellung wechseln");
+  }
+  btnTheme.addEventListener("click", function () {
+    wurzel.setAttribute("data-theme", themaJetzt() === "dark" ? "light" : "dark");
+    themaZeigen();
+  });
+  mqDark.addEventListener("change", themaZeigen);
+  themaZeigen();
+
+  /* ── 3. Vorführungshinweis ──────────────────────────────────────────── */
+  var hinweis = document.getElementById("hinweis");
+  document.getElementById("btn-hinweis-zu").addEventListener("click", function () {
+    hinweis.hidden = true;
+  });
+
+  /* ── 4. Das Leserad — Sicht wechseln ────────────────────────────────── */
+  var thumb   = document.getElementById("thumb");
+  var radios  = Array.prototype.slice.call(document.querySelectorAll('input[name="leser"]'));
+  var absaetze = Array.prototype.slice.call(document.querySelectorAll(".absatz[data-leser]"));
+
+  var bilanzGM  = document.getElementById("bilanz-gm");
+  var bilanzSp  = document.getElementById("bilanz-spieler");
+  var wocheGM   = document.getElementById("woche-gm");
+  var wocheSp   = document.getElementById("woche-spieler");
+  var wocheBox  = document.getElementById("woche");
+  var wocheName = document.getElementById("woche-name");
+  var wocheRolle= document.getElementById("woche-rolle");
+  var tuer      = document.getElementById("tuer");
+  var rot       = document.getElementById("kanzlei-rot");
+  var blau      = document.getElementById("kanzlei-blau");
+  var nlTuer    = document.getElementById("nl-tuer");
+  var zwilling  = document.getElementById("zwilling");
+  var umbruchN  = document.getElementById("umbruch-n");
+  var zBuch     = document.getElementById("z-buch");
+  var zNeu      = document.getElementById("z-neu");
+  var zTuerArt  = document.getElementById("z-tuer-artikel");
+  var leserNote = document.getElementById("leser-note");
+
+  var GEPRAEGT = false;   /* Zustand der Vorführung */
+
+  var NOTIZ = {
+    kaya:   "<b>Die Sicht wird auf dem Server berechnet.</b> Die Leitung sieht jedes Buch – und sieht, dass Absatz 28 nur in Vespers Buch steht.",
+    sera:   "<b>Die Sicht wird auf dem Server berechnet.</b> Seras Antwort enthält ihre Tür. Kein anderes Gerät bekommt diese Bytes.",
+    brannt: "<b>Die Sicht wird auf dem Server berechnet.</b> Brannt fehlen drei Absätze – sie sind nicht ausgeblendet, sie sind nicht in der Antwort."
+  };
+
+  function sichtbar(el, leser) {
+    var erlaubt = el.getAttribute("data-leser");
+    return !erlaubt || erlaubt.split(" ").indexOf(leser) !== -1;
+  }
+
+  function projizieren(leser) {
+    artikel.setAttribute("data-leser", leser);
+
+    absaetze.forEach(function (el) { el.hidden = !sichtbar(el, leser); });
+
+    /* Ein Beleg, dessen Absatz dem Leser fehlt, existiert auch nicht. */
+    Array.prototype.slice.call(document.querySelectorAll(".fnref")).forEach(function (ref) {
+      var kasten = document.getElementById(ref.getAttribute("aria-controls"));
+      var traeger = ref.closest(".absatz");
+      if (kasten && traeger && traeger.hidden) {
+        kasten.hidden = true;
+        ref.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    var gm = leser === "kaya";
+    bilanzGM.hidden = !gm;
+    bilanzSp.hidden = gm;
+    wocheGM.hidden  = !gm;
+    wocheSp.hidden  = gm;
+    wocheBox.setAttribute("data-fuer", gm ? "leitung" : "spieler");
+    wocheName.textContent = gm ? "Die Woche" : "Deine Woche";
+    wocheRolle.textContent = gm ? "nur Leitung" : (leser === "sera" ? "Sera Valdris" : "Brannt Feil");
+    nlTuer.hidden = !gm || GEPRAEGT;
+
+    /* Die Zeile „Kanzlei" — drei mögliche Gestalten, eine je Sicht.
+       Nach dem Prägen ist die Zeile NUR für Kaya und Sera ein Eintrag.
+       Brannt hält Absatz 32 nicht, also bleibt seine Zeile ein roter Link. */
+    var seraOffen  = (leser === "sera") && !GEPRAEGT;
+    var hatEintrag = GEPRAEGT && (leser === "kaya" || leser === "sera");
+    tuer.hidden = !seraOffen;
+    blau.hidden = !hatEintrag;
+    rot.hidden  = seraOffen || hatEintrag;
+    zwilling.hidden = leser !== "brannt";
+    zwilling.innerHTML = GEPRAEGT
+      ? 'Sera ist heute Abend hindurchgegangen. Brannts Zeile hat sich dadurch <b>nicht verändert</b> – '
+        + 'nicht die Farbe, nicht ein Byte. Er erfährt es, wenn sie es ihm schreibt.'
+      : 'Für Brannt ist diese Zeile ein gewöhnlicher roter Link. Nicht versteckt – <b>nicht in den Daten.</b> '
+        + 'Seine Antwort ist byte-gleich mit der eines Lesers ohne Kampagne.';
+    if (!seraOffen) { schliesseVorhaben(false); }
+
+    /* Bilanz je Leser (Kein Nenner: nur Zählungen über Gehaltenes) */
+    if (leser === "sera")  { zBuch.textContent = GEPRAEGT ? "25" : "24"; zNeu.textContent = GEPRAEGT ? "5" : "4"; zTuerArt.textContent = GEPRAEGT ? "0" : "1"; umbruchN.textContent = GEPRAEGT ? "5" : "4"; }
+    if (leser === "brannt"){ zBuch.textContent = "19"; zNeu.textContent = "2"; zTuerArt.textContent = "0"; umbruchN.textContent = "2"; }
+    document.getElementById("sp-umbruch-n").textContent = umbruchN.textContent;
+
+    leserNote.innerHTML = NOTIZ[leser];
+    regalStellen(leser);
+  }
+
+  function regalStellen(leser) {
+    var tueren = document.getElementById("regal-tueren");
+    var wort   = document.getElementById("regal-tueren-wort");
+    var neu    = document.getElementById("regal-neu");
+    if (leser === "kaya")   { tueren.textContent = GEPRAEGT ? "2" : "3"; wort.textContent = "Türen offen (Kampagne)"; neu.textContent = GEPRAEGT ? "4" : "3"; }
+    if (leser === "sera")   { tueren.textContent = GEPRAEGT ? "0" : "1"; wort.textContent = (GEPRAEGT ? "Türen offen" : "Tür offen"); neu.textContent = GEPRAEGT ? "5" : "4"; }
+    if (leser === "brannt") { tueren.textContent = "1"; wort.textContent = "Tür offen"; neu.textContent = "2"; }
+  }
+
+  /* Rückfall für Browser ohne :has() — das Skript markiert die Wahl mit. */
+  function dialMarkieren() {
+    radios.forEach(function (r) {
+      r.closest(".dial-opt").classList.toggle("gewaehlt", r.checked);
+    });
+  }
+  radios.forEach(function (r) {
+    r.addEventListener("focus", function () {
+      var tastatur = true;
+      try { tastatur = r.matches(":focus-visible"); } catch (e) { tastatur = true; }
+      if (tastatur) { r.closest(".dial-opt").classList.add("hat-fokus"); }
+    });
+    r.addEventListener("blur",  function () { r.closest(".dial-opt").classList.remove("hat-fokus"); });
+  });
+
+  radios.forEach(function (r, i) {
+    r.addEventListener("change", function () {
+      if (!r.checked) { return; }
+      thumb.style.setProperty("--i", String(i));
+      dialMarkieren();
+      /* Das Umschalten ist eine Serveranfrage — und darf danach aussehen. */
+      if (ruhig()) {
+        projizieren(r.value);
+      } else {
+        artikel.classList.add("projiziert");
+        window.setTimeout(function () {
+          projizieren(r.value);
+          artikel.classList.remove("projiziert");
+        }, 220);
+      }
+      sagen("Sicht gewechselt: " + (r.value === "kaya" ? "Spielleitung Kaya" : r.value === "sera" ? "Sera Valdris" : "Brannt Feil") + ".");
+    });
+  });
+
+  /* ── 5. Der Beleg [7] ───────────────────────────────────────────────── */
+  document.addEventListener("click", function (ev) {
+    var ref = ev.target.closest ? ev.target.closest(".fnref") : null;
+    if (!ref) { return; }
+    var ziel = document.getElementById(ref.getAttribute("aria-controls"));
+    if (!ziel) { return; }
+    var offen = ref.getAttribute("aria-expanded") === "true";
+    ref.setAttribute("aria-expanded", String(!offen));
+    ziel.hidden = offen;
+    if (!offen) { sagen("Beleg geöffnet. Die Rechnung steht im Fließtext, nicht in einem Protokoll."); }
+  });
+
+  /* ── 6. Der Umbruch: zur ersten Marke ───────────────────────────────── */
+  document.getElementById("btn-umbruch").addEventListener("click", function () {
+    var erste = document.querySelector('.absatz[data-neu]:not([hidden])');
+    if (!erste) { return; }
+    erste.scrollIntoView({ behavior: ruhig() ? "auto" : "smooth", block: "center" });
+    var p = erste.querySelector("p");
+    p.setAttribute("tabindex", "-1");
+    p.focus({ preventScroll: true });
+  });
+
+  /* ── 7. DIE TÜR ─────────────────────────────────────────────────────── */
+  var vorhaben  = document.getElementById("vorhaben");
+  var vhTitel   = document.getElementById("vh-titel");
+  var d20       = document.getElementById("d20");
+  var ergebnis  = document.getElementById("ergebnis");
+  var btnWuerfeln = document.getElementById("btn-wuerfeln");
+  var btnPraegen  = document.getElementById("btn-praegen");
+  var GEWUERFELT = false;
+
+  function oeffneVorhaben() {
+    vorhaben.hidden = false;
+    vorhaben.classList.add("oeffnet");
+    tuer.setAttribute("aria-expanded", "true");
+    vhTitel.focus({ preventScroll: true });
+    sagen("Vorhaben geöffnet: Nachforschen in der Kanzlei zu Ossa, Schwellenwert 18.");
+  }
+  function schliesseVorhaben(fokusZurueck) {
+    vorhaben.hidden = true;
+    vorhaben.classList.remove("oeffnet");
+    tuer.setAttribute("aria-expanded", "false");
+    if (fokusZurueck && !tuer.hidden) { tuer.focus(); }
+  }
+  tuer.addEventListener("click", function () {
+    if (vorhaben.hidden) { oeffneVorhaben(); } else { schliesseVorhaben(true); }
+  });
+  document.getElementById("btn-vh-zu").addEventListener("click", function () { schliesseVorhaben(true); });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && !vorhaben.hidden) { schliesseVorhaben(true); }
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey) && !vorhaben.hidden && !btnPraegen.disabled) {
+      ev.preventDefault();
+      praegen();
+    }
+  });
+
+  /* Der Wurf. Fest verdrahtet, damit die Vorführung reproduzierbar ist:
+     1d20 = 14, +4 +2 −2 = 18 gegen SG 18 — Erfolg auf der Kante.        */
+  btnWuerfeln.addEventListener("click", function () {
+    if (GEWUERFELT) { return; }
+    GEWUERFELT = true;
+    btnWuerfeln.disabled = true;
+    ergebnis.innerHTML = '<span class="klein">Anfrage an die Welt … der Server würfelt.</span>';
+
+    function fertig() {
+      d20.classList.remove("rollt");
+      d20.classList.add("fertig");
+      d20.textContent = "14";
+      ergebnis.innerHTML =
+        '<span class="gross"><span class="kante">18</span> gegen SG 18</span>' +
+        '<span class="klein">1d20 = 14 · <span class="ruhig">+4 +2 −2</span> · Erfolg, genau auf der Kante.</span>' +
+        '<span class="klein">Vollmacht v_038 ist damit verbraucht.</span>';
+      btnPraegen.disabled = false;
+      btnPraegen.focus();
+      sagen("Wurf 14, Summe 18 gegen Schwellenwert 18. Erfolg. Jetzt prägen mit Strg und Enter.");
+    }
+
+    if (ruhig()) { fertig(); return; }
+
+    d20.classList.add("rollt");
+    var t0 = Date.now();
+    var takt = window.setInterval(function () {
+      d20.textContent = String(1 + Math.floor(Math.random() * 20));
+      if (Date.now() - t0 > 760) { window.clearInterval(takt); fertig(); }
+    }, 55);
+  });
+
+  /* ── 8. Prägen: der zweite Tastendruck, drei Tage nach dem ersten ───── */
+  function zaehleHoch(el, von, bis) {
+    if (ruhig()) { el.textContent = String(bis); return; }
+    var start = performance.now();
+    function schritt(t) {
+      var p = Math.min(1, (t - start) / 280);
+      el.textContent = String(Math.round(von + (bis - von) * p));
+      if (p < 1) { window.requestAnimationFrame(schritt); }
+    }
+    window.requestAnimationFrame(schritt);
+  }
+
+  var ABSATZ32 =
+    '<div class="absatz mit-fussnote frisch" data-abs="32" data-leser="kaya sera" data-neu>' +
+      '<p><span class="neu-marke">neu · Mi</span>Die Kanzlei zu Ossa führt kein eigenes Siegel. Sie ' +
+      'zeichnet mit dem Handzeichen des Hauses und einer laufenden Nummer; die Folge beginnt jedes ' +
+      'Jahr neu, und im laufenden Jahr fehlt die Siebenunddreißig.' +
+      '<button type="button" class="fnref" aria-expanded="false" aria-controls="fn8" ' +
+      'aria-label="Beleg 8 öffnen: Wurf von heute">[8]</button></p>' +
+      '<p class="chip wochentag"><span class="gl" aria-hidden="true">◈</span><span class="tag">Mi 17. Juni</span>' +
+      '<span>18:37</span><span class="sep">·</span><span>Vollmacht</span><span class="sep">·</span>' +
+      '<span>Nachforschen · Sera Valdris</span><span class="sep">·</span><span>18 gegen 18</span></p>' +
+    '</div>' +
+    '<div class="beleg" id="fn8" hidden>' +
+      '<p class="beleg-kopf"><span class="nr">[8]</span><span class="wer">Nachforschen · Sera Valdris</span>' +
+      '<span class="wann">Mi 17. Juni, 18:37:04</span></p>' +
+      '<div class="scrollx"><pre class="wurf">1d20 = <span class="w">14</span>\n' +
+      '  <span class="plus">+ 4</span>   Weisheit\n' +
+      '  <span class="plus">+ 2</span>   du hältst 5 Passagen über Haus Vharon\n' +
+      '        <span class="dim">haelt_etikett „haus-vharon", mindestens: 3</span>\n' +
+      '  <span class="minus">− 2</span>   du kennst die Kanzlei nur aus Brannts Brief (Mo 18:02)\n' +
+      '        <span class="dim">— Hörensagen zählt nicht</span>\n' +
+      '  ───────────────────────────────────\n' +
+      '  = <span class="sum">18</span>  gegen SG 18 · <span class="kante">Erfolg auf der Kante</span></pre></div>' +
+      '<p class="satz">Der Satz wurde am Samstag um 23:41 geschrieben. Freigegeben hat ihn niemand ' +
+      'heute – freigegeben hat ihn ein Würfel, den ein Mensch angefordert hat, gegen eine Schwelle, ' +
+      'die ein anderer Mensch vier Tage vorher gesetzt hat.</p>' +
+      '<p class="beleg-fuss">Vollmacht v_038 · ausgestellt Sa 13. Juni 23:41, Sitzung 14 · eingelöst Mi 17. Juni 18:37<br>' +
+      'Regelpaket hausregeln-aldenfall 2.3 · Klausel k_nachforschen@r4 · Wurf w_247 · dauerhaft · geprägt_durch: vollmacht</p>' +
+    '</div>';
+
+  function praegen() {
+    if (GEPRAEGT) { return; }
+    GEPRAEGT = true;
+
+    /* 1 — der Absatz kommt an, an seiner Stelle im Artikel. */
+    var einsatz = document.getElementById("einsatz-32");
+    einsatz.insertAdjacentHTML("beforebegin", ABSATZ32);
+    var neu = document.querySelector('.absatz[data-abs="32"]');
+    absaetze.push(neu);
+
+    /* 2 — die Tür ist keine Tür mehr, sie ist ein Eintrag. */
+    schliesseVorhaben(false);
+    tuer.hidden = true;
+    rot.hidden  = true;
+    blau.hidden = false;
+    nlTuer.hidden = true;
+
+    /* 3 — die Zahlen. Die offene Zahl fällt; die Kanonzahl steigt. */
+    zaehleHoch(document.getElementById("z-kanon"), 31, 32);
+    zaehleHoch(document.getElementById("z-ausgeloest"), 8, 9);
+    zaehleHoch(document.getElementById("z-zwischen"), 6, 7);
+    zaehleHoch(document.getElementById("z-belege"), 12, 13);
+    document.getElementById("bilanz-gm").classList.add("gestiegen");
+
+    /* 4 — die Woche: eine Tür weniger, überall. */
+    document.getElementById("gm-v038").remove();
+    document.getElementById("gm-offen-n").textContent = "2";
+    document.getElementById("sp-v038").outerHTML =
+      '<li class="leer-hinweis">Keine Tür mehr offen. Die nächste Ausgabe kommt Sa 20. Juni, 23:41.</li>';
+    document.getElementById("sp-tueren-n").textContent = "0";
+
+    projizieren(artikel.getAttribute("data-leser"));
+
+    /* 5 — Fokus wandert in den neuen Absatz: der Bildschirmleser landet dort,
+           wo die Veränderung ist. */
+    var p = neu.querySelector("p");
+    p.setAttribute("tabindex", "-1");
+    if (!ruhig()) { neu.scrollIntoView({ behavior: "smooth", block: "center" }); }
+    window.setTimeout(function () { p.focus({ preventScroll: ruhig() ? false : true }); }, ruhig() ? 0 : 320);
+
+    sagen("Absatz 32 geprägt. Er steht jetzt im Abschnitt „Die Kanzlei zu Ossa“, mit dem Mittwoch über der Fußnote. Eine Tür weniger offen.");
+  }
+  btnPraegen.addEventListener("click", praegen);
+
+  /* ── 9. Zurücksetzen ────────────────────────────────────────────────── */
+  document.getElementById("btn-reset").addEventListener("click", function () {
+    window.location.reload();
+  });
+
+  /* Startzustand */
+  thumb.style.setProperty("--i", "0");
+  dialMarkieren();
+  projizieren("kaya");
+})();
+</script>

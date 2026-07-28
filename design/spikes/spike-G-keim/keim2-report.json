@@ -1,0 +1,61 @@
+{
+  "base": {
+    "seed": "chronicle-1",
+    "cells": 4758,
+    "counts": {
+      "burgs": 664,
+      "states": 25,
+      "provinces": 155,
+      "cultures": 12,
+      "religions": 19,
+      "rivers": 157,
+      "routes": 575,
+      "markers": 56,
+      "notes": 131,
+      "deals": 10742
+    },
+    "sizes": {
+      "minimalJson": 2537912,
+      "packCellsJson": 713346,
+      "burgsOnly": 803975,
+      "statesOnly": 42317,
+      "provincesOnly": 48053,
+      "riversOnly": 32627,
+      "routesOnly": 104040,
+      "dealsOnly": 1285223,
+      "notesOnly": 29765,
+      "nameBases": 82967,
+      "coaTotal": 104125
+    },
+    "minimalGz": 360165,
+    "minimalRaw": 2537912
+  },
+  "wider": {
+    "seed": "chronicle-1",
+    "cells": 5444,
+    "counts": {
+      "burgs": 814,
+      "states": 25,
+      "provinces": 181,
+      "cultures": 12,
+      "religions": 19,
+      "rivers": 197,
+      "routes": 704,
+      "markers": 62,
+      "notes": 182,
+      "deals": 12497
+    },
+    "minimalGz": 418100,
+    "minimalRaw": 2962543
+  },
+  "idStabilityUnderCanvasChange": {
+    "baseBurgs": 664,
+    "widerBurgs": 814,
+    "sameIdSameName": 0,
+    "nameSurvivorsAnyId": 8,
+    "stateNameSurvivors": 1,
+    "baseStates": 25,
+    "widerStates": 25
+  },
+  "seedBytes": 11
+}

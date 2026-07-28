@@ -1,0 +1,2067 @@
+<title>Skriptorium — Universalitätsnachweis · Kandidat A, Runde 2</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   TOKENS
+   Every colour, font, radius, shadow and duration is a custom property.
+   Per skin we declare a DARK set (--d-*) and a LIGHT set (--l-*).
+   Three resolver blocks map them onto the live tokens:
+     1. default            → dark
+     2. prefers-color-scheme: light
+     3. [data-theme]       → beats the media query in both directions
+   High contrast overrides the --d-/--l- layer, so it works in both modes.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --font-ui: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-prose: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --font-display: Georgia, "Iowan Old Style", serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", "Liberation Mono", monospace;
+
+  --r-xs: 2px; --r-sm: 3px; --r-md: 6px; --r-lg: 10px; --r-pill: 999px;
+  --rule: 1px;
+  --gap: .75rem;
+  --stage-measure: 34rem;
+
+  --sh-1: 0 1px 2px rgba(0,0,0,.28);
+  --sh-2: 0 8px 26px -14px rgba(0,0,0,.65);
+  --sh-lift: 0 14px 34px -18px rgba(0,0,0,.7);
+
+  --dur-response: 140ms;
+  --dur-state: 280ms;
+  --dur-transition: 760ms;
+  --ease: cubic-bezier(.2,.75,.25,1);
+
+  --ornament: 1;
+  --orn-inset: .35rem;
+
+  /* ── Skin: RELIC (default) — warm parchment, gold, engraved serif ───────── */
+  --d-bg:#0c0a07; --d-bg-2:#141009; --d-surface:#17130c; --d-surface-2:#1e1810;
+  --d-line:#3a2f1e; --d-line-strong:#5a4828;
+  --d-text:#f1e7d4; --d-muted:#b6a68a; --d-dim:#8a7a60;
+  --d-accent:#d8ac57; --d-accent-ink:#221a08; --d-secondary:#7fb79a;
+  --d-danger:#e2757a; --d-danger-soft:rgba(226,117,122,.13);
+  --d-ok:#7fb79a; --d-focus:#ffd977; --d-scrim:rgba(0,0,0,.55);
+
+  --l-bg:#efe7d7; --l-bg-2:#e6dcc7; --l-surface:#fbf6ea; --l-surface-2:#f3ecdb;
+  --l-line:#d3c4a5; --l-line-strong:#b09b72;
+  --l-text:#241d10; --l-muted:#5e5238; --l-dim:#7c6f52;
+  --l-accent:#8a6415; --l-accent-ink:#fff8e6; --l-secondary:#2e6b52;
+  --l-danger:#98202a; --l-danger-soft:rgba(152,32,42,.09);
+  --l-ok:#2e6b52; --l-focus:#7a4f00; --l-scrim:rgba(60,48,26,.35);
+}
+
+/* ── Skin: SIGNAL — graphite, cyan, condensed technical ──────────────────── */
+:root[data-skin="signal"] {
+  --font-prose: "Segoe UI", system-ui, Roboto, sans-serif;
+  --font-display: "Bahnschrift SemiCondensed", "Arial Narrow", "Segoe UI Semibold", system-ui, sans-serif;
+  --r-xs:0; --r-sm:0; --r-md:2px; --r-lg:3px;
+  --d-bg:#050a10; --d-bg-2:#081019; --d-surface:#0a141d; --d-surface-2:#0e1c28;
+  --d-line:#1e3444; --d-line-strong:#2d5064;
+  --d-text:#e4f1f6; --d-muted:#9ab2bf; --d-dim:#6b8494;
+  --d-accent:#5ed3ea; --d-accent-ink:#02161d; --d-secondary:#a58cf0;
+  --d-danger:#ff7a86; --d-danger-soft:rgba(255,122,134,.12);
+  --d-ok:#63d6a5; --d-focus:#8be9ff; --d-scrim:rgba(0,8,14,.6);
+
+  --l-bg:#e3eaef; --l-bg-2:#d6e0e8; --l-surface:#f6f9fb; --l-surface-2:#eaf1f5;
+  --l-line:#b9cad6; --l-line-strong:#8ba6b7;
+  --l-text:#0b1a24; --l-muted:#3f5766; --l-dim:#5b7383;
+  --l-accent:#0d6480; --l-accent-ink:#f2fbff; --l-secondary:#5a3fae;
+  --l-danger:#a4131f; --l-danger-soft:rgba(164,19,31,.08);
+  --l-ok:#146449; --l-focus:#004e66; --l-scrim:rgba(11,26,36,.3);
+}
+
+/* ── Skin: ARCHIVE — oxblood, charcoal, editorial ────────────────────────── */
+:root[data-skin="archive"] {
+  --font-prose: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --font-display: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --r-xs:0; --r-sm:0; --r-md:0; --r-lg:0;
+  --d-bg:#0d0a0a; --d-bg-2:#141010; --d-surface:#1a1414; --d-surface-2:#221a19;
+  --d-line:#3d2c2a; --d-line-strong:#5d3f3b;
+  --d-text:#f2e9dd; --d-muted:#bcaa9f; --d-dim:#8d7a71;
+  --d-accent:#d9846b; --d-accent-ink:#1d0f0b; --d-secondary:#9dc0cc;
+  --d-danger:#f0757c; --d-danger-soft:rgba(240,117,124,.13);
+  --d-ok:#9dc0cc; --d-focus:#ffb99e; --d-scrim:rgba(10,6,6,.6);
+
+  --l-bg:#efe9e2; --l-bg-2:#e5ddd3; --l-surface:#fdfaf5; --l-surface-2:#f4eee5;
+  --l-line:#d2c4b6; --l-line-strong:#a8907f;
+  --l-text:#1e1512; --l-muted:#584940; --l-dim:#786458;
+  --l-accent:#8c2f14; --l-accent-ink:#fff6f0; --l-secondary:#28545f;
+  --l-danger:#8c1420; --l-danger-soft:rgba(140,20,32,.08);
+  --l-ok:#28545f; --l-focus:#6d2410; --l-scrim:rgba(30,21,18,.32);
+}
+
+/* ── Skin: CLEAN — the accessible baseline, zero ornament ────────────────── */
+:root[data-skin="clean"] {
+  --font-prose: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: system-ui, "Segoe UI", Roboto, sans-serif;
+  --r-xs:3px; --r-sm:5px; --r-md:8px; --r-lg:12px;
+  --ornament: 0;
+  --stage-measure: 33rem;
+  --d-bg:#0e1113; --d-bg-2:#151a1d; --d-surface:#191f23; --d-surface-2:#20272c;
+  --d-line:#2f383e; --d-line-strong:#455158;
+  --d-text:#eef2f4; --d-muted:#aab6bd; --d-dim:#7f8d95;
+  --d-accent:#79c0ff; --d-accent-ink:#0a1420; --d-secondary:#8ddbb4;
+  --d-danger:#ff8a92; --d-danger-soft:rgba(255,138,146,.12);
+  --d-ok:#8ddbb4; --d-focus:#a8d8ff; --d-scrim:rgba(0,0,0,.5);
+
+  --l-bg:#eceef0; --l-bg-2:#e2e6e9; --l-surface:#ffffff; --l-surface-2:#f4f6f8;
+  --l-line:#ccd3d8; --l-line-strong:#9aa6ae;
+  --l-text:#11171b; --l-muted:#47535b; --l-dim:#65727a;
+  --l-accent:#12558f; --l-accent-ink:#ffffff; --l-secondary:#12604a;
+  --l-danger:#9a1420; --l-danger-soft:rgba(154,20,32,.07);
+  --l-ok:#12604a; --l-focus:#0b4a80; --l-scrim:rgba(17,23,27,.3);
+}
+
+/* ── High contrast: overrides the d/l layer, therefore works in both modes ─ */
+:root[data-contrast="high"] {
+  --d-bg:#000; --d-bg-2:#000; --d-surface:#0a0a0a; --d-surface-2:#111;
+  --d-line:#8b8b8b; --d-line-strong:#e8e8e8;
+  --d-text:#fff; --d-muted:#f0f0f0; --d-dim:#d6d6d6;
+  --d-accent:#ffe066; --d-accent-ink:#000; --d-secondary:#8affd4;
+  --d-danger:#ff9aa2; --d-danger-soft:rgba(255,154,162,.2);
+  --d-ok:#8affd4; --d-focus:#fff; --d-scrim:rgba(0,0,0,.8);
+
+  --l-bg:#fff; --l-bg-2:#fff; --l-surface:#fff; --l-surface-2:#f2f2f2;
+  --l-line:#4a4a4a; --l-line-strong:#000;
+  --l-text:#000; --l-muted:#141414; --l-dim:#2c2c2c;
+  --l-accent:#5a3600; --l-accent-ink:#fff; --l-secondary:#00443a;
+  --l-danger:#8a0010; --l-danger-soft:rgba(138,0,16,.12);
+  --l-ok:#00443a; --l-focus:#000; --l-scrim:rgba(0,0,0,.45);
+  --rule: 2px;
+  --ornament: 0;
+}
+
+/* ── Resolvers ───────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+  --bg:var(--d-bg); --bg-2:var(--d-bg-2); --surface:var(--d-surface); --surface-2:var(--d-surface-2);
+  --line:var(--d-line); --line-strong:var(--d-line-strong);
+  --text:var(--d-text); --muted:var(--d-muted); --dim:var(--d-dim);
+  --accent:var(--d-accent); --accent-ink:var(--d-accent-ink); --secondary:var(--d-secondary);
+  --danger:var(--d-danger); --danger-soft:var(--d-danger-soft); --ok:var(--d-ok);
+  --focus:var(--d-focus); --scrim:var(--d-scrim);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg:var(--l-bg); --bg-2:var(--l-bg-2); --surface:var(--l-surface); --surface-2:var(--l-surface-2);
+    --line:var(--l-line); --line-strong:var(--l-line-strong);
+    --text:var(--l-text); --muted:var(--l-muted); --dim:var(--l-dim);
+    --accent:var(--l-accent); --accent-ink:var(--l-accent-ink); --secondary:var(--l-secondary);
+    --danger:var(--l-danger); --danger-soft:var(--l-danger-soft); --ok:var(--l-ok);
+    --focus:var(--l-focus); --scrim:var(--l-scrim);
+    --sh-1: 0 1px 2px rgba(40,32,20,.14);
+    --sh-2: 0 8px 24px -16px rgba(40,32,20,.4);
+    --sh-lift: 0 14px 30px -18px rgba(40,32,20,.45);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg:var(--l-bg); --bg-2:var(--l-bg-2); --surface:var(--l-surface); --surface-2:var(--l-surface-2);
+  --line:var(--l-line); --line-strong:var(--l-line-strong);
+  --text:var(--l-text); --muted:var(--l-muted); --dim:var(--l-dim);
+  --accent:var(--l-accent); --accent-ink:var(--l-accent-ink); --secondary:var(--l-secondary);
+  --danger:var(--l-danger); --danger-soft:var(--l-danger-soft); --ok:var(--l-ok);
+  --focus:var(--l-focus); --scrim:var(--l-scrim);
+  --sh-1: 0 1px 2px rgba(40,32,20,.14);
+  --sh-2: 0 8px 24px -16px rgba(40,32,20,.4);
+  --sh-lift: 0 14px 30px -18px rgba(40,32,20,.45);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:var(--d-bg); --bg-2:var(--d-bg-2); --surface:var(--d-surface); --surface-2:var(--d-surface-2);
+  --line:var(--d-line); --line-strong:var(--d-line-strong);
+  --text:var(--d-text); --muted:var(--d-muted); --dim:var(--d-dim);
+  --accent:var(--d-accent); --accent-ink:var(--d-accent-ink); --secondary:var(--d-secondary);
+  --danger:var(--d-danger); --danger-soft:var(--d-danger-soft); --ok:var(--d-ok);
+  --focus:var(--d-focus); --scrim:var(--d-scrim);
+  --sh-1: 0 1px 2px rgba(0,0,0,.28);
+  --sh-2: 0 8px 26px -14px rgba(0,0,0,.65);
+  --sh-lift: 0 14px 34px -18px rgba(0,0,0,.7);
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-response:1ms; --dur-state:1ms; --dur-transition:1ms; }
+}
+:root[data-motion="reduced"] { --dur-response:1ms; --dur-state:1ms; --dur-transition:1ms; }
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:1ms !important; animation-iteration-count:1 !important; }
+}
+:root.is-testing *, :root.is-testing *::before, :root.is-testing *::after {
+  transition: none !important; animation: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BASE
+   ══════════════════════════════════════════════════════════════════════════ */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  transition: background var(--dur-state) var(--ease), color var(--dur-state) var(--ease);
+}
+:root[data-skin="relic"] body {
+  background:
+    radial-gradient(115% 62% at 50% -14%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 62%),
+    var(--bg);
+}
+:root[data-skin="signal"] body {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 34%),
+    var(--bg);
+}
+:root[data-skin="archive"] body {
+  background:
+    radial-gradient(120% 50% at 78% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%),
+    var(--bg);
+}
+
+h1,h2,h3,h4 { font-family: var(--font-display); font-weight: 600; margin: 0; line-height: 1.22; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+:root[data-contrast="high"] :focus-visible { outline-width: 4px; }
+
+.skip {
+  position: absolute; left: .5rem; top: -4rem; z-index: 60;
+  background: var(--accent); color: var(--accent-ink);
+  padding: .5rem .9rem; border-radius: var(--r-md); font-weight: 600;
+  text-decoration: none;
+  transition: top var(--dur-response) var(--ease);
+}
+.skip:focus { top: .5rem; }
+
+.tnum { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .82em; letter-spacing: -.01em; }
+.vh {
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+.kicker {
+  font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--dim); font-family: var(--font-ui); font-weight: 600;
+}
+:root[data-skin="signal"] .kicker { letter-spacing: .2em; }
+
+/* Panel = the one surface primitive. Ornament is skin, never structure. */
+.panel {
+  position: relative;
+  background: var(--surface);
+  border: var(--rule) solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+}
+.panel::after {
+  content: ""; position: absolute; inset: var(--orn-inset);
+  pointer-events: none; opacity: var(--ornament);
+  border-radius: calc(var(--r-lg) - 2px);
+  transition: opacity var(--dur-state) var(--ease);
+}
+:root[data-skin="relic"] .panel::after {
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background:
+    radial-gradient(circle at 0% 0%,  color-mix(in srgb, var(--accent) 20%, transparent), transparent 12px),
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 12px),
+    radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 12px),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 12px);
+}
+:root[data-skin="signal"] .panel::after {
+  inset: 0;
+  background:
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 14px 2px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 2px 14px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 100% 100% / 14px 2px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 100% 100% / 2px 14px no-repeat;
+}
+:root[data-skin="archive"] .panel::after {
+  inset: .28rem;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent);
+  box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 4px color-mix(in srgb, var(--line-strong) 45%, transparent);
+}
+:root[data-artwork="aus"] .panel::after { opacity: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PRÜFSTAND — the axis harness (spike scaffolding, excluded from signature)
+   ══════════════════════════════════════════════════════════════════════════ */
+.frame { max-width: 118rem; margin: 0 auto; padding: .75rem clamp(.5rem, 1.6vw, 1.25rem) 3rem; }
+
+#pruefstand {
+  margin-bottom: .75rem;
+  padding: .7rem .8rem;
+  background: color-mix(in srgb, var(--surface) 82%, var(--bg));
+  border: var(--rule) solid var(--line);
+  border-radius: var(--r-lg);
+}
+.ps-head { display:flex; flex-wrap:wrap; gap:.5rem .9rem; align-items:baseline; margin-bottom:.6rem; }
+.ps-head h2 { font-size: .95rem; letter-spacing:.02em; }
+.ps-head p { color: var(--muted); font-size: .8rem; max-width: 62ch; }
+.ps-groups { display:flex; flex-wrap:wrap; gap:.5rem .7rem; }
+.axis { border:0; padding:0; margin:0; min-width:0; }
+.axis > legend {
+  padding:0; font-size:.6rem; letter-spacing:.13em; text-transform:uppercase;
+  color: var(--dim); font-weight:700; margin-bottom:.22rem;
+}
+.seg { display:flex; background: var(--surface-2); border: var(--rule) solid var(--line); border-radius: var(--r-md); padding: 2px; gap: 2px; }
+.seg button {
+  appearance:none; border:0; background:transparent; cursor:pointer;
+  padding:.28rem .55rem; border-radius: calc(var(--r-md) - 2px);
+  font-size:.76rem; color: var(--muted); white-space: nowrap;
+  transition: background var(--dur-response) var(--ease), color var(--dur-response) var(--ease);
+}
+.seg button:hover { color: var(--text); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.seg button[aria-checked="true"] { background: var(--accent); color: var(--accent-ink); font-weight:600; }
+.ps-actions { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin-top:.65rem; }
+
+.btn {
+  appearance:none; cursor:pointer; border:var(--rule) solid var(--line-strong);
+  background: var(--surface-2); color: var(--text);
+  padding:.42rem .8rem; border-radius: var(--r-md); font-size:.82rem; font-weight:600;
+  transition: background var(--dur-response) var(--ease), border-color var(--dur-response) var(--ease), transform var(--dur-response) var(--ease);
+}
+.btn:hover { background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-primary:hover { background: color-mix(in srgb, var(--accent) 84%, var(--text)); }
+.btn-danger { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
+.btn-sm { padding:.24rem .55rem; font-size:.74rem; font-weight:500; }
+
+.progress {
+  flex:1 1 12rem; min-width:8rem; height:.42rem; background: var(--surface-2);
+  border:var(--rule) solid var(--line); border-radius: var(--r-pill); overflow:hidden;
+}
+.progress > i { display:block; height:100%; width:0%; background: var(--accent); transition: width var(--dur-response) linear; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SHELL
+   ══════════════════════════════════════════════════════════════════════════ */
+.contextbar {
+  display:flex; flex-wrap:wrap; gap:.55rem .9rem; align-items:center;
+  padding:.55rem .8rem; margin-bottom: var(--gap);
+  background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+}
+.crest { width:2.1rem; height:2.1rem; flex:none; color: var(--accent); }
+.crest[hidden] { display:none; }
+.ctx-titles { min-width:0; }
+.ctx-titles strong { display:block; font-family: var(--font-display); font-size:1rem; }
+.ctx-titles span { display:block; font-size:.74rem; color: var(--muted); }
+.ctx-spacer { flex:1 1 2rem; }
+.presence { display:flex; gap:.3rem; align-items:center; }
+.pdot {
+  width:1.55rem; height:1.55rem; border-radius:var(--r-pill); flex:none;
+  display:grid; place-items:center; font-size:.66rem; font-weight:700;
+  background: var(--surface-2); border: var(--rule) solid var(--line-strong); color: var(--text);
+}
+.pdot[data-live="true"] { border-color: var(--ok); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 28%, transparent); }
+.chip {
+  display:inline-flex; align-items:center; gap:.32rem;
+  padding:.16rem .5rem; border-radius: var(--r-pill);
+  border: var(--rule) solid var(--line-strong); background: var(--surface-2);
+  font-size:.7rem; color: var(--muted); white-space:nowrap;
+}
+.chip b { color: var(--text); font-weight:600; }
+
+/* Four columns only when the prose column can still hold a real measure. Below that the rails
+   stack beside a full-width stage — the reading surface never pays for the chrome. */
+.shell {
+  display:grid; gap: var(--gap);
+  grid-template-columns: max-content 12rem minmax(0,1fr) 18rem;
+  grid-template-areas: "mods coll stage lens";
+  align-items: start;
+}
+@media (max-width: 1600px) {
+  .shell { grid-template-columns: max-content minmax(0,1fr); grid-template-areas: "mods coll" "mods stage" "mods lens"; }
+}
+@media (max-width: 800px) {
+  .shell { grid-template-columns: minmax(0,1fr); grid-template-areas: "mods" "coll" "stage" "lens"; }
+}
+
+/* Module rail */
+.rail-mods { grid-area: mods; padding:.45rem; }
+.rail-mods ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.2rem; }
+.rail-mods button {
+  display:flex; align-items:center; gap:.5rem; width:100%;
+  appearance:none; border:0; background:transparent; cursor:pointer;
+  padding:.42rem .5rem; border-radius: var(--r-md); text-align:left;
+  font-size:.79rem; color: var(--muted); white-space:nowrap;
+  transition: background var(--dur-response) var(--ease), color var(--dur-response) var(--ease);
+}
+.rail-mods button:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text); }
+.rail-mods button[aria-current="page"] { background: var(--surface-2); color: var(--text); font-weight:600; box-shadow: inset 2px 0 0 var(--accent); }
+.rail-mods .glyph { width:1.1rem; height:1.1rem; flex:none; opacity:.9; }
+@media (max-width: 800px) {
+  .rail-mods ul { flex-direction:row; overflow-x:auto; }
+  .rail-mods button[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--accent); }
+}
+
+/* Collection rail */
+.rail-coll { grid-area: coll; padding:.6rem; min-width:0; }
+.rail-coll h2 { font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color: var(--dim); margin-bottom:.45rem; }
+.entries { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.22rem; }
+.entries button {
+  display:grid; grid-template-columns: .55rem minmax(0,1fr); gap:.45rem; align-items:baseline;
+  width:100%; appearance:none; border:0; background:transparent; cursor:pointer; text-align:left;
+  padding:.34rem .4rem; border-radius: var(--r-sm); color: var(--muted); font-size:.79rem;
+  transition: background var(--dur-response) var(--ease), color var(--dur-response) var(--ease);
+}
+.entries button:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text); }
+.entries button[aria-current="true"] { background: var(--surface-2); color: var(--text); font-weight:600; }
+.entries .bullet { width:.42rem; height:.42rem; border-radius:var(--r-pill); background: var(--dim); align-self:center; }
+.entries [data-state="rot"] .bullet { background: var(--danger); }
+.entries [data-state="neu"] .bullet { background: var(--accent); }
+.entries .ename { min-width:0; overflow-wrap:anywhere; }
+.entries .ekind { display:block; font-size:.66rem; color: var(--dim); font-weight:400; }
+@media (max-width: 1600px) and (min-width: 801px) {
+  .entries { flex-direction:row; overflow-x:auto; padding-bottom:.25rem; }
+  .entries li { flex:0 0 auto; }
+  .entries button { width:auto; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   STAGE — the article, set as a critical edition: text centre, apparatus margin
+   ══════════════════════════════════════════════════════════════════════════ */
+.stage { grid-area: stage; min-width:0; padding: clamp(.8rem, 2vw, 1.6rem); }
+.art-head { margin-bottom: 1rem; }
+.art-head h1 {
+  font-size: clamp(1.5rem, 3.4vw, 2.15rem); margin:.15rem 0 .3rem;
+  letter-spacing: -.01em;
+}
+:root[data-skin="archive"] .art-head h1 { letter-spacing: .01em; }
+:root[data-skin="signal"] .art-head h1 { text-transform: uppercase; letter-spacing: .04em; font-size: clamp(1.35rem, 3vw, 1.85rem); }
+.art-sub { color: var(--muted); font-size:.83rem; }
+.rule-crown { height: 3px; margin:.6rem 0 0; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent), transparent 62%); opacity: calc(.35 + .55 * var(--ornament)); }
+
+.art-body { display:grid; grid-template-columns: minmax(0,1fr) 14rem; gap: 1.2rem; align-items:start; }
+@media (max-width: 1249px) { .art-body { grid-template-columns: minmax(0,1fr); } }
+
+.infobox { margin:0 0 1rem; padding:.7rem .8rem; background: var(--surface-2); border: var(--rule) solid var(--line); border-radius: var(--r-md); }
+.infobox h2 { font-size:.74rem; letter-spacing:.11em; text-transform:uppercase; color: var(--dim); margin-bottom:.5rem; }
+.infobox dl { margin:0; display:grid; grid-template-columns: minmax(0,auto) minmax(0,1fr); gap:.25rem .7rem; font-size:.79rem; }
+.infobox dt { color: var(--muted); }
+.infobox dd { margin:0; font-variant-numeric: tabular-nums; overflow-wrap:anywhere; }
+
+.plate { margin:0 0 1rem; }
+.plate img { display:block; width:100%; height:auto; aspect-ratio: 4/3; object-fit: cover; border-radius: var(--r-md); border: var(--rule) solid var(--line); }
+.plate img[hidden], .plate-fallback[hidden] { display:none; }
+.plate-fallback {
+  aspect-ratio: 4/3; border-radius: var(--r-md);
+  border: var(--rule) dashed var(--line-strong);
+  background:
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--line) 26%, transparent) 0 6px, transparent 6px 12px),
+    var(--surface-2);
+  display:grid; place-items:center; gap:.4rem; padding:.8rem; text-align:center;
+}
+.plate-fallback .mono-mark {
+  width:3.2rem; height:3.2rem; border-radius: var(--r-md);
+  display:grid; place-items:center; font-family: var(--font-display); font-size:1.35rem; font-weight:700;
+  color: var(--accent); border:2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--surface);
+}
+.plate-fallback small { color: var(--muted); font-size:.68rem; line-height:1.35; }
+.plate figcaption { font-size:.7rem; color: var(--dim); margin-top:.3rem; }
+
+/* Passages */
+.passages { display:flex; flex-direction:column; gap:.15rem; }
+.passage {
+  display:grid; grid-template-columns: 1.5rem minmax(0,1fr) 9.5rem; gap:.55rem;
+  align-items:start; padding:.28rem .2rem .28rem 0; border-radius: var(--r-sm);
+  transition: background var(--dur-response) var(--ease);
+}
+.passage:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.passage.is-selected { background: color-mix(in srgb, var(--accent) 11%, transparent); box-shadow: inset 2px 0 0 var(--accent); }
+.passage.just-split { animation: wash var(--dur-state) var(--ease) 1; }
+@keyframes wash { from { background: color-mix(in srgb, var(--ok) 26%, transparent); } to { background: transparent; } }
+@media (max-width: 1249px) {
+  .passage { grid-template-columns: 1.5rem minmax(0,1fr); }
+  .passage .apparatus { grid-column: 2; }
+}
+@media (max-width: 420px) {
+  .passage { grid-template-columns: 1.15rem minmax(0,1fr); gap:.35rem; }
+}
+
+.handle {
+  appearance:none; border:0; background:transparent; cursor:pointer; padding:.3rem 0 0; margin:0;
+  display:grid; place-items:center; border-radius: var(--r-sm);
+}
+.handle .dot {
+  width:.6rem; height:.6rem; border-radius: var(--r-pill);
+  border: 2px solid var(--dim); background: transparent;
+  transition: border-color var(--dur-response) var(--ease), background var(--dur-response) var(--ease);
+}
+.handle[data-vis="kanon"] .dot { border-color: var(--line-strong); background: var(--line-strong); }
+.handle[data-vis="revealed"] .dot { border-color: var(--ok); background: var(--ok); }
+.handle[data-vis="secret"] .dot { border-color: var(--danger); background: transparent; }
+.handle[data-vis="margin"] .dot { border-color: var(--accent); background: transparent; border-radius: var(--r-xs); transform: rotate(45deg); }
+.handle:hover .dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+
+.prose {
+  font-family: var(--font-prose); font-size: 1.02rem; line-height: 1.68;
+  max-width: var(--stage-measure); hyphens: auto; overflow-wrap: break-word;
+  padding:.05rem .25rem; border-radius: var(--r-xs); min-height: 1.4em;
+  outline-offset: 3px;
+}
+.prose:focus-visible { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+h2.prose { font-family: var(--font-display); font-size:1.22rem; line-height:1.3; margin-top:.9rem; padding-top:.2rem; }
+:root[data-skin="signal"] h2.prose { text-transform: uppercase; letter-spacing:.05em; font-size:1.05rem; }
+.prose.margin-note {
+  font-size:.87rem; color: var(--muted); font-style: italic;
+  border-left: 2px solid var(--accent); padding-left:.6rem;
+}
+.prose[contenteditable="true"] { caret-color: var(--accent); }
+.wikilink { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+.wikilink.red { color: var(--danger); text-decoration-style: dashed; }
+
+.apparatus { font-size:.68rem; color: var(--dim); line-height:1.45; padding-top:.35rem; }
+.apparatus .pid { color: var(--muted); }
+.apparatus .stamp { display:block; color: var(--muted); }
+.apparatus .stamp b { color: var(--text); font-weight:600; }
+.apparatus .lin {
+  display:block; margin-top:.2rem; padding-left:.45rem;
+  border-left: 2px solid var(--ok); color: var(--text);
+  animation: slidein var(--dur-state) var(--ease) 1;
+}
+@keyframes slidein { from { opacity:0; transform: translateX(8px); } to { opacity:1; transform:none; } }
+.apparatus .lin button { margin-top:.15rem; }
+
+/* The blocker — the flex. Red apparatus inside a typeset page. */
+.blocker {
+  margin:.5rem 0 .7rem 2.05rem; max-width: calc(var(--stage-measure) + 2rem);
+  border-left: 3px solid var(--danger);
+  background: var(--danger-soft);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  padding:.65rem .8rem;
+  animation: blockin var(--dur-state) var(--ease) 1;
+}
+@keyframes blockin { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform:none; } }
+.blocker h3 { color: var(--danger); font-size:.92rem; font-family: var(--font-ui); letter-spacing:.01em; }
+.blocker p { font-size:.83rem; margin-top:.3rem; color: var(--text); max-width: 56ch; }
+.blocker q { font-family: var(--font-prose); font-style: italic; }
+.blocker .gains { margin:.45rem 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:.15rem; font-size:.78rem; }
+.blocker .gains li { display:flex; gap:.4rem; align-items:baseline; }
+.blocker .gains .who { font-weight:700; color: var(--danger); }
+.blocker .acts { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.6rem; }
+@media (max-width: 420px) { .blocker { margin-left: 0; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LENS
+   ══════════════════════════════════════════════════════════════════════════ */
+.lens { grid-area: lens; min-width:0; padding:.7rem; display:flex; flex-direction:column; gap:.8rem; }
+.lens section { min-width:0; }
+.lens h2 { font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color: var(--dim); margin-bottom:.4rem; }
+.knows { width:100%; border-collapse: collapse; font-size:.76rem; }
+.knows th, .knows td { text-align:left; padding:.26rem .3rem; border-bottom: var(--rule) solid var(--line); vertical-align: top; }
+.knows th { color: var(--dim); font-weight:600; font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; }
+.knows td { font-variant-numeric: tabular-nums; }
+.knows .state-yes { color: var(--ok); font-weight:600; }
+.knows .state-no { color: var(--danger); }
+.tablewrap { overflow-x:auto; }
+
+.log { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.35rem; font-size:.74rem; }
+.log li { display:grid; grid-template-columns: 2.6rem minmax(0,1fr); gap:.4rem; padding-bottom:.35rem; border-bottom: var(--rule) solid var(--line); }
+.log time { color: var(--dim); font-variant-numeric: tabular-nums; font-size:.7rem; }
+.log .ev { min-width:0; overflow-wrap:anywhere; }
+.log .ev b { font-weight:600; }
+.log .ev[data-kind="block"] b { color: var(--danger); }
+.log .ev[data-kind="split"] b { color: var(--ok); }
+.log .ev[data-kind="merge"] b { color: var(--accent); }
+.empty { font-size:.76rem; color: var(--dim); font-style: italic; }
+
+/* Signature panel (the instrument — excluded from what it measures) */
+#sigPanel { padding:.6rem; background: var(--surface-2); border: var(--rule) solid var(--line); border-radius: var(--r-md); }
+.sigrow { display:flex; justify-content:space-between; gap:.6rem; font-size:.74rem; padding:.16rem 0; border-bottom: var(--rule) dotted var(--line); }
+.sigrow:last-of-type { border-bottom:0; }
+.sigrow > span:first-child { color: var(--muted); flex:0 1 auto; }
+.sigrow > span:last-child { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align:right; overflow-wrap:anywhere; min-width:0; }
+.verdict-row { margin-bottom:.4rem; }
+.verdict { display:inline-flex; align-items:center; gap:.35rem; font-weight:700; font-size:.76rem; padding:.2rem .5rem; border-radius: var(--r-pill); }
+.verdict[data-ok="true"] { color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, transparent); border: var(--rule) solid color-mix(in srgb, var(--ok) 45%, transparent); }
+.verdict[data-ok="false"] { color: var(--danger); background: var(--danger-soft); border: var(--rule) solid color-mix(in srgb, var(--danger) 45%, transparent); }
+.verdict[data-ok="info"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); border: var(--rule) solid color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SHELF + NOTES
+   ══════════════════════════════════════════════════════════════════════════ */
+.shelf {
+  margin-top: var(--gap); padding:.55rem .8rem;
+  display:flex; flex-wrap:wrap; gap:.5rem .9rem; align-items:center;
+}
+.counters { display:flex; flex-wrap:wrap; gap:.45rem; }
+.counter {
+  display:flex; align-items:baseline; gap:.35rem; padding:.2rem .55rem;
+  background: var(--surface-2); border: var(--rule) solid var(--line); border-radius: var(--r-md);
+  font-size:.72rem; color: var(--muted);
+}
+.counter b { font-size:.92rem; color: var(--text); font-variant-numeric: tabular-nums; }
+.counter[data-alarm="true"] b { color: var(--danger); }
+
+#notes { margin-top: 1.6rem; }
+#notes h2 { font-size:1.05rem; margin-bottom:.5rem; }
+#notes h3 { font-size:.85rem; margin:.9rem 0 .3rem; color: var(--accent); }
+.notes-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr)); gap:1rem; }
+#notes p, #notes li { font-size:.82rem; color: var(--muted); max-width: 68ch; }
+#notes ol, #notes ul { margin:.2rem 0; padding-left:1.1rem; display:flex; flex-direction:column; gap:.28rem; }
+#notes .panel { padding:.9rem 1rem; }
+kbd {
+  font-family: var(--font-mono); font-size:.78em; padding:.06rem .34rem;
+  border: var(--rule) solid var(--line-strong); border-bottom-width:2px;
+  border-radius: var(--r-xs); background: var(--surface-2); color: var(--text);
+}
+.matrix { width:100%; border-collapse:collapse; font-size:.76rem; min-width: 34rem; }
+.matrix th, .matrix td { padding:.3rem .45rem; border-bottom: var(--rule) solid var(--line); text-align:left; }
+.matrix th { color: var(--dim); font-size:.66rem; letter-spacing:.07em; text-transform:uppercase; }
+.matrix td { font-variant-numeric: tabular-nums; }
+.matrix .pass { color: var(--ok); font-weight:600; }
+.matrix .fail { color: var(--danger); font-weight:700; }
+</style>
+
+<a class="skip" href="#stage" data-sig-ignore>Zum Dokument springen</a>
+
+<div class="frame">
+
+  <!-- ══════════════ PRÜFSTAND — spike scaffolding, not product chrome ══════════════ -->
+  <section id="pruefstand" data-sig-ignore aria-labelledby="ps-title">
+    <div class="ps-head">
+      <h2 id="ps-title">Prüfstand — Achsen unabhängig schalten</h2>
+      <p>Dieselben Komponenten, dieselbe Struktur. Inhalt, Skin, Kontrast, Bewegung, Labelänge und
+        Artwork dürfen den DOM <em>nicht</em> verändern. Die Rolle darf und muss ihn verändern — sie
+        lässt Knoten weg.</p>
+    </div>
+    <div class="ps-groups" id="psGroups"></div>
+    <div class="ps-actions">
+      <button type="button" class="btn btn-primary" id="btnTest">Härtetest starten</button>
+      <button type="button" class="btn" id="btnReset">Dokument zurücksetzen</button>
+      <div class="progress" role="progressbar" aria-label="Fortschritt Härtetest" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="prog"><i></i></div>
+      <output id="testOut" class="mono" style="font-size:.76rem;color:var(--muted)">bereit</output>
+    </div>
+    <div id="testResults" hidden style="margin-top:.7rem">
+      <div class="tablewrap"><table class="matrix" id="matrixTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ THE PRODUCT ══════════════ -->
+  <div id="shell-root">
+
+    <header class="contextbar panel" id="ctxbar">
+      <svg class="crest" id="crest" viewBox="0 0 40 40" aria-hidden="true"></svg>
+      <div class="ctx-titles">
+        <strong id="ctxCampaign">—</strong>
+        <span id="ctxSession">—</span>
+      </div>
+      <div class="ctx-spacer"></div>
+      <span class="chip" id="ctxRole"><b>—</b></span>
+      <div class="presence" id="presence" aria-label="Anwesend"></div>
+    </header>
+
+    <div class="shell" id="shell">
+
+      <nav class="rail-mods panel" aria-label="Module" id="railMods">
+        <ul id="modList"></ul>
+      </nav>
+
+      <aside class="rail-coll panel" aria-labelledby="collTitle">
+        <h2 id="collTitle">Sammlung</h2>
+        <ul class="entries" id="entryList"></ul>
+      </aside>
+
+      <main class="stage panel" id="stage" tabindex="-1">
+        <div class="art-head">
+          <p class="kicker" id="artKicker">—</p>
+          <h1 id="artTitle">—</h1>
+          <p class="art-sub" id="artSub">—</p>
+          <div class="rule-crown" aria-hidden="true"></div>
+        </div>
+
+        <div class="art-body">
+          <div>
+            <div class="passages" id="passages"></div>
+            <div id="blockerSlot" data-sig-ignore aria-live="assertive"></div>
+          </div>
+
+          <div>
+            <section class="infobox" aria-labelledby="ibTitle">
+              <h2 id="ibTitle">Steckbrief</h2>
+              <dl id="infobox"></dl>
+            </section>
+            <figure class="plate">
+              <img id="plateImg" alt="" width="640" height="480">
+              <div class="plate-fallback" id="plateFallback" hidden>
+                <span class="mono-mark" id="plateMark" aria-hidden="true">V</span>
+                <small><span id="plateMsg">Bild fehlt</span><br><span class="mono" id="plateFile">—</span></small>
+              </div>
+              <figcaption id="plateCap">—</figcaption>
+            </figure>
+          </div>
+        </div>
+      </main>
+
+      <aside class="lens panel" aria-label="Kontextlinse">
+        <section id="sigPanel" data-sig-ignore aria-labelledby="sigTitle">
+          <h2 id="sigTitle">Struktursignatur</h2>
+          <div id="sigBody"></div>
+        </section>
+
+        <section aria-labelledby="knowsTitle">
+          <h2 id="knowsTitle">Wer weiß was</h2>
+          <div class="tablewrap"><table class="knows" id="knowsTable"></table></div>
+        </section>
+
+        <section aria-labelledby="apparatTitle">
+          <h2 id="apparatTitle">Apparat</h2>
+          <div id="logHost"></div>
+        </section>
+      </aside>
+    </div>
+
+    <footer class="shelf panel" aria-label="Sitzungsleiste">
+      <div class="counters" id="counters"></div>
+      <div class="ctx-spacer"></div>
+      <button type="button" class="btn btn-sm" id="btnUndo">Rückgängig</button>
+    </footer>
+  </div>
+
+  <!-- ══════════════ HONESTY ══════════════ -->
+  <section id="notes" data-sig-ignore aria-labelledby="notesTitle">
+    <h2 id="notesTitle">Was dieser Prototyp beweist — und was nicht</h2>
+    <div class="notes-grid">
+      <div class="panel">
+        <h3>So prüfst du ihn in 60 Sekunden</h3>
+        <ol>
+          <li>Cursor zwischen die beiden Sätze in Absatz 4 setzen, <kbd>Enter</kbd> drücken. Der Absatz
+            teilt sich, die Randspalte nennt die Enthüllungen, die mitwandern.</li>
+          <li>Rolle auf <b>Spielerin (Sera)</b> schalten: beide Hälften stehen da, beide gestempelt.
+            Der geheime Absatz ist nicht versteckt, er ist <em>nicht im DOM</em>.</li>
+          <li>Zurück auf <b>Spielleitung</b>, Cursor an den Anfang des Absatzes
+            „…schweigt seit dem Brand“, <kbd>Backspace</kbd>. Der Editor verweigert und sagt, wer was
+            bekäme.</li>
+          <li>Jetzt alle Achsen drehen: Kepler-9, Skin Clean, Hoher Kontrast, Reduzierte Bewegung,
+            Langlabels, Artwork fehlend. Die Signatur oben rechts bleibt identisch.</li>
+          <li><kbd>Strg</kbd>+<kbd>Enter</kbd> setzt eine Marginalie, <kbd>Strg</kbd>+<kbd>Z</kbd>
+            nimmt zurück und stellt die Original-pid wieder her.</li>
+          <li>Gegenprobe: <kbd>Backspace</kbd> am Anfang von Absatz 2 (beides Kanon) verschmilzt
+            wortlos. Der Guard schreit nicht ständig — er schweigt, wenn die Haltermengen gleich
+            sind. Genau das ist die offene Frage aus §8.4, die nur Messung beantwortet.</li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h3>Was hier echt ist</h3>
+        <ul>
+          <li>Die Absatzidentität, das Teilen, das Verschmelzen und der Merge-Guard laufen wirklich —
+            keine Attrappe, keine hartkodierte Antwort. Der Guard rechnet die <em>symmetrische</em>
+            Differenz <span class="mono">holder(oben) △ holder(unten)</span>: weil ein verschmolzener
+            Absatz aus beiden Herkunfts-pids auflöst, ist sein Publikum die Vereinigung, und jede
+            Asymmetrie ist für irgendwen eine Erweiterung. Sind die Mengen gleich, schweigt er —
+            <kbd>Backspace</kbd> auf den beiden Kanon-Absätzen oben verschmilzt wortlos.</li>
+          <li>Die Struktursignatur wird im Browser aus dem echten Elementbaum berechnet
+            (Tag + <span class="mono">role</span> + ARIA-Attributnamen + Tiefe, FNV-1a-Hash) und gegen
+            eine Basisaufnahme desselben Dokumentstands verglichen.</li>
+          <li>Der Härtetest rendert wirklich jede Kombination durch und zählt Abweichungen. Wenn er
+            grün meldet, hat er 3 Rollen × 288 Kombinationen (3 Inhalte × 4 Skins × 2 Kontraste ×
+            2 Bewegungsstufen × 2 Labellängen × 3 Artwork-Zustände) tatsächlich gerendert und je
+            Rolle gegen die erste Aufnahme verglichen.</li>
+          <li>Rollenprojektion ist Weglassen, nicht Verstecken: <span class="mono">display:none</span>
+            kommt hier nirgends für Geheimnisse vor.</li>
+          <li>Auch das Wappen ist ein <b>Slot mit Formvertrag</b> — drei <span class="mono">&lt;path&gt;</span>,
+            in jeder Welt. Der erste Durchlauf des Härtetests fiel genau daran durch: Aldenfall hatte
+            vier Knoten, Kepler-9 drei, und „Inhalt“ war damit heimlich eine Strukturachse. Das ist
+            der Zweck des Tests.</li>
+          <li>Provenienz wird nie eingeebnet: verschmilzt man zwei Absätze mit verschiedenen
+            Enthüllungssitzungen, steht im Stempel <em>„gelernt Sitzung 14 und 15“</em> — einer
+            Spielerin das frühere Datum für den ganzen Absatz zu zeigen, wäre eine leise
+            Fälschung ihres eigenen Buchs.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Was hier gelogen wäre, wenn wir es nicht sagen</h3>
+        <ul>
+          <li><b>Das ist keine Zugriffskontrolle.</b> Die Projektion läuft im Browser. In Produktion
+            muss der Server die Bytes weglassen; dieser Prototyp beweist nur die UI-Zustände.</li>
+          <li><b>Kein ProseMirror.</b> Die Absätze sind einzelne
+            <span class="mono">contenteditable</span>-Blöcke. IME, Android-Tastaturen, natives Einfügen
+            und Screenreader im Editiermodus sind hier <em>nicht</em> geprüft — genau die Lücke, die
+            Kandidat A §8.1 selbst benennt.</li>
+          <li><b>Signatur ≠ Barrierefreiheitsbaum.</b> Verglichen werden Elemente, Rollen und
+            ARIA-Attributnamen, nicht deren Werte, nicht Sichtbarkeit, nicht berechnete Namen.
+            Zwei Knoten sind absichtlich ausgenommen: der Prüfstand und der Blocker-Slot.</li>
+          <li><b>Langlabels sind deutsche Langformen</b>, kein echtes fi/hu-Bundle. Sie testen die
+            Layout-Toleranz, nicht die Übersetzung.</li>
+          <li><b>Helligkeit ist nicht Teil der Matrix.</b> Hell/Dunkel schaltet ausschließlich Tokens
+            auf <span class="mono">:root</span> und kann den DOM konstruktionsbedingt nicht
+            verändern — sie mitzuzählen würde die Zahl aufblähen, ohne etwas zu beweisen. Prüfe sie
+            von Hand: der Schalter steht oben.</li>
+          <li>Die Tafel lädt eine echte Datei aus <span class="mono">design/spikes/assets/…</span>.
+            Fehlt sie, greift der Fallback — deshalb gibt es die Achse „Artwork: fehlend“.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+(function () {
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. CONTENT — three genres, one component contract
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const WORLDS = {
+  aldenfall: {
+    label: "Aldenfall", genre: "Fantasy", skin: "relic",
+    campaign: "Die Asche von Aldenfall",
+    sessionWord: "Sitzung", session: 15, prevSession: 14,
+    crest: "seal",
+    source: "Bruder Alder",
+    chars: [
+      { id: "sera", name: "Sera", short: "SE" },
+      { id: "brannt", name: "Brannt", short: "BR" }
+    ],
+    entries: [
+      { name: "Haus Vharon", kind: "Organisation", state: "aktiv", current: true },
+      { name: "Bruder Alder", kind: "Person", state: "aktiv" },
+      { name: "Der Eiserne Tresor", kind: "Ort", state: "aktiv" },
+      { name: "Das Vharon-Ledger", kind: "Gegenstand", state: "aktiv" },
+      { name: "Kestrel-Flügel", kind: "Ort", state: "aktiv" },
+      { name: "Ossa", kind: "Person", state: "rot" }
+    ],
+    kicker: "Organisation · Kanon seit Sitzung 3",
+    title: "Haus Vharon",
+    sub: "Siegelamt der Oberen Stadt · 7 Absätze · 4 Rückverweise",
+    infobox: [
+      ["Sitz", "Aldenfall, Obere Stadt"],
+      ["Oberhaupt", "Lady Ilva Vharon"],
+      ["Wappen", "Aschenes Siegel"],
+      ["Erste Erwähnung", "Sitzung 3"],
+      ["Seitentyp", "Organisation"]
+    ],
+    plate: { src: "../../spikes/assets/harbor-night/harbor-map.png", alt: "Aufriss des Kestrel-Flügels vor dem Brand", cap: "Tafel — Kestrel-Flügel, Aufriss vor 1194 · CC0, Asset-Ledger #A-114", file: "Tafel_Kestrel_1194.png" },
+    doc: [
+      { pid: "p_1a20", kind: "p", vis: "kanon",
+        text: "Haus Vharon führt seit vier Generationen das Siegelamt von Aldenfall. Wer in der Oberen Stadt ein Testament, einen Kaufbrief oder ein Urteil beglaubigen lässt, lässt es bei den Vharon beglaubigen." },
+      { pid: "p_2c07", kind: "p", vis: "kanon",
+        text: "Die Belege lagern im [[Der Eiserne Tresor|Eisernen Tresor]] unter dem Nordflügel. Zutritt haben das Oberhaupt, ihr Schreiber und sonst niemand." },
+      { pid: "h_3311", kind: "h2", vis: "kanon", text: "Das Aschene Siegel" },
+      { pid: "p_4f9c", kind: "p", vis: "revealed", holders: ["sera", "brannt"],
+        text: "Das Aschene Siegel, das Haus Vharon bei Hofe vorzeigt, ist eine Fälschung. Das Original verbrannte mit dem Kestrel-Flügel 1194." },
+      { pid: "p_51e8", kind: "p", vis: "secret", holders: [],
+        text: "[[Bruder Alder]] schweigt seit dem Brand." },
+      { pid: "m_6a02", kind: "margin", vis: "margin",
+        text: "Alders Quelle heißt Ossa, eine Schreiberin. Erfunden 21:16." },
+      { pid: "p_7bd1", kind: "p", vis: "kanon",
+        text: "Siehe auch [[Das Vharon-Ledger]], [[Kestrel-Flügel]] und [[Ossa]]." }
+    ]
+  },
+
+  kepler: {
+    label: "Kepler-9", genre: "Science-Fiction", skin: "signal",
+    campaign: "Kepler-9 · Ausfallzyklus",
+    sessionWord: "Zyklus", session: 15, prevSession: 14,
+    crest: "hull",
+    source: "Techniker Alder",
+    chars: [
+      { id: "sera", name: "Sera Vok", short: "SV" },
+      { id: "brannt", name: "Brannt Ude", short: "BU" }
+    ],
+    entries: [
+      { name: "Werft Vharon", kind: "Betreiber", state: "aktiv", current: true },
+      { name: "Techniker Alder", kind: "Person", state: "aktiv" },
+      { name: "Der Eiserne Tresor", kind: "Anlage", state: "aktiv" },
+      { name: "Das Vharon-Protokoll", kind: "Datensatz", state: "aktiv" },
+      { name: "Kestrel-Modul", kind: "Anlage", state: "neu" },
+      { name: "Ossa", kind: "Person", state: "rot" }
+    ],
+    kicker: "Betreiber · Kanon seit Zyklus 3",
+    title: "Werft Vharon",
+    sub: "Zertifikatsamt im dritten Ring · 7 Absätze · 4 Rückverweise",
+    infobox: [
+      ["Registrierung", "K9-WV-0114"],
+      ["Leitung", "Direktorin Ilva Vharon"],
+      ["Zertifikat", "Aschesiegel-Kette"],
+      ["Erste Erwähnung", "Zyklus 3"],
+      ["Seitentyp", "Organisation"]
+    ],
+    plate: { src: "../../spikes/assets/universal-ui/kepler-scene-v1.png", alt: "Der dritte Ring von Kepler-9 nach dem Ausfall", cap: "Tafel — Dritter Ring nach dem Ausfall · CC0, Asset-Ledger #K-207", file: "Tafel_Ring3_2194.png" },
+    doc: [
+      { pid: "p_1a20", kind: "p", vis: "kanon",
+        text: "Die Werft Vharon hält seit vier Zyklen das Zertifikatsamt von Kepler-9. Wer im dritten Ring eine Hülle, einen Frachtbrief oder eine Freigabe beglaubigen lässt, lässt sie bei Vharon beglaubigen." },
+      { pid: "p_2c07", kind: "p", vis: "kanon",
+        text: "Die Belege liegen im [[Der Eiserne Tresor|Eisernen Tresor]], einem Offline-Archiv hinter dem Nordschott. Zutritt haben die Direktorin, ihr Schreiber und sonst niemand." },
+      { pid: "h_3311", kind: "h2", vis: "kanon", text: "Die Aschesiegel-Kette" },
+      { pid: "p_4f9c", kind: "p", vis: "revealed", holders: ["sera", "brannt"],
+        text: "Die Zertifikatskette, die Werft Vharon der Aufsicht vorlegt, ist gefälscht. Der Originalschlüssel verbrannte mit dem Kestrel-Modul 2194." },
+      { pid: "p_51e8", kind: "p", vis: "secret", holders: [],
+        text: "[[Techniker Alder]] schweigt seit dem Ausfall." },
+      { pid: "m_6a02", kind: "margin", vis: "margin",
+        text: "Alders Quelle heißt Ossa, eine Archivarin. Erfunden 21:16." },
+      { pid: "p_7bd1", kind: "p", vis: "kanon",
+        text: "Siehe auch [[Das Vharon-Protokoll]], [[Kestrel-Modul]] und [[Ossa]]." }
+    ]
+  },
+
+  nebelakte: {
+    label: "Nebelakte", genre: "Mystery", skin: "archive",
+    campaign: "Nebelakte · Der Fall Vharon",
+    sessionWord: "Sitzung", session: 15, prevSession: 14,
+    crest: "stamp",
+    source: "Archivar Alder",
+    chars: [
+      { id: "sera", name: "Sera Roth", short: "SR" },
+      { id: "brannt", name: "Brannt Kell", short: "BK" }
+    ],
+    entries: [
+      { name: "Kanzlei Vharon", kind: "Kanzlei", state: "aktiv", current: true },
+      { name: "Archivar Alder", kind: "Person", state: "aktiv" },
+      { name: "Der Eiserne Tresor", kind: "Ort", state: "aktiv" },
+      { name: "Das Vharon-Journal", kind: "Beweismittel", state: "neu" },
+      { name: "Kestrel-Flügel", kind: "Ort", state: "aktiv" },
+      { name: "Ossa", kind: "Person", state: "rot" }
+    ],
+    kicker: "Kanzlei · Kanon seit Sitzung 3",
+    title: "Kanzlei Vharon",
+    sub: "Nachlasssiegel am Landgericht · 7 Absätze · 4 Rückverweise",
+    infobox: [
+      ["Aktenzeichen", "4 O 118/94"],
+      ["Vertretung", "Ilva Vharon"],
+      ["Beweisstück", "Aschesiegel-Stempel"],
+      ["Erste Erwähnung", "Sitzung 3"],
+      ["Seitentyp", "Organisation"]
+    ],
+    plate: { src: "../../spikes/assets/universal-ui/nebelakte-scene-v1.png", alt: "Der Kellerflur der Kanzlei Vharon", cap: "Tafel — Kellerflur der Kanzlei, 1994 · CC0, Asset-Ledger #N-018", file: "Tafel_Keller_1994.png" },
+    doc: [
+      { pid: "p_1a20", kind: "p", vis: "kanon",
+        text: "Die Kanzlei Vharon führt seit vier Generationen die Nachlasssiegel des Landgerichts. Wer im Bezirk ein Testament, einen Kaufvertrag oder ein Urteil beglaubigen lässt, lässt es bei Vharon beglaubigen." },
+      { pid: "p_2c07", kind: "p", vis: "kanon",
+        text: "Die Belege liegen im [[Der Eiserne Tresor|Eisernen Tresor]], dem Kellerarchiv unter dem Nordflügel. Zutritt haben die Seniorpartnerin, ihr Referendar und sonst niemand." },
+      { pid: "h_3311", kind: "h2", vis: "kanon", text: "Der Aschesiegel-Stempel" },
+      { pid: "p_4f9c", kind: "p", vis: "revealed", holders: ["sera", "brannt"],
+        text: "Der Nachlassstempel, den die Kanzlei Vharon dem Gericht vorlegt, ist eine Fälschung. Das Original verbrannte beim Brand im Kestrel-Flügel 1994." },
+      { pid: "p_51e8", kind: "p", vis: "secret", holders: [],
+        text: "[[Archivar Alder]] schweigt seit dem Brand." },
+      { pid: "m_6a02", kind: "margin", vis: "margin",
+        text: "Alders Quelle heißt Ossa, eine Archivarin. Erfunden 21:16." },
+      { pid: "p_7bd1", kind: "p", vis: "kanon",
+        text: "Siehe auch [[Das Vharon-Journal]], [[Kestrel-Flügel]] und [[Ossa]]." }
+    ]
+  }
+};
+
+/* The crest is an art SLOT with a fixed shape contract: exactly three <path> children, whatever
+   the world. A theme kit may change the geometry, never the node count — otherwise "content" would
+   secretly be a structural axis. The Härtetest below would catch a violation immediately. */
+const CRESTS = {
+  seal: '<path d="M5 20a15 15 0 1 0 30 0a15 15 0 1 0-30 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.6 2.2"/>' +
+        '<path d="M9.5 20a10.5 10.5 0 1 0 21 0a10.5 10.5 0 1 0-21 0" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".7"/>' +
+        '<path d="M14.6 14.4 20 26.4l5.4-12M8.5 31 31.5 9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
+  hull: '<path d="M20 5 32.5 12v16L20 35 7.5 28V12Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' +
+        '<path d="M20 12.5 26.5 16v8L20 27.5 13.5 24v-8Z" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".75"/>' +
+        '<path d="M20 5v7.5M32.5 12l-6 4M7.5 12l6 4M20 35v-7.5" fill="none" stroke="currentColor" stroke-width="1" opacity=".6"/>',
+  stamp: '<path d="M6.5 11h27v18h-27Z" fill="none" stroke="currentColor" stroke-width="1.6" transform="rotate(-6 20 20)"/>' +
+         '<path d="M13 16.5h14" fill="none" stroke="currentColor" stroke-width="2.2" transform="rotate(-6 20 20)"/>' +
+         '<path d="M12.5 20.5h15M12.5 24h9" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".7" transform="rotate(-6 20 20)"/>'
+};
+
+const MOD_GLYPHS = {
+  session: '<path d="M3 4h14v13H3z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 8h14M7 2v4M13 2v4" stroke="currentColor" stroke-width="1.5"/>',
+  story:   '<path d="M4 3h8l4 4v11H4z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 9h6M7 12h6M7 15h4" stroke="currentColor" stroke-width="1.4"/>',
+  cast:    '<circle cx="8" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 17c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M14 5.5a2.8 2.8 0 0 1 0 5.4M15 17c0-2.4-.7-4-1.8-5" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".7"/>',
+  library: '<path d="M3 4h4v13H3zM8 4h3v13H8z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m13 5 3.5 1-3 12-3.4-1z" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+  table:   '<path d="M2.5 6.5 7 4l6 2.5L17.5 4v10L13 16.5 7 14l-4.5 2.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 4v10M13 6.5v10" stroke="currentColor" stroke-width="1.3" opacity=".7"/>',
+  forge:   '<path d="M4 15h12M6 15V9l4-5 4 5v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 4v11" stroke="currentColor" stroke-width="1.3" opacity=".7"/>'
+};
+
+/* Chrome strings: short vs. the longest realistic German long-form.
+   This is a layout-tolerance test, not a translation. */
+const I18N = {
+  kurz: {
+    "mod.session": "Sitzung", "mod.story": "Geschichte", "mod.cast": "Besetzung",
+    "mod.library": "Bibliothek", "mod.table": "Tisch", "mod.forge": "Schmiede",
+    "coll.title": "Sammlung", "lens.sig": "Struktursignatur", "lens.who": "Wer weiß was",
+    "lens.app": "Apparat",
+    "blocker.title": "Verschmelzen abgelehnt.",
+    "act.revealFirst": "Beiden zuerst enthüllen",
+    "act.mergeRetract": "Verschmelzen und Enthüllungen zurückziehen",
+    "act.cancel": "Abbrechen",
+    "act.undo": "Rückgängig",
+    "cnt.rev": "Enthüllungen", "cnt.margin": "Randnotizen", "cnt.red": "Rote Links",
+    "cnt.split": "Teilungen", "cnt.block": "Blockiert", "cnt.miss": "Fehlstellen",
+    "ib.title": "Steckbrief",
+    "th.holder": "Halter", "th.state": "Zustand", "th.source": "Quelle", "th.since": "seit",
+    "st.yes": "kennt", "st.no": "kennt nicht"
+  },
+  lang: {
+    "mod.session": "Sitzungsvorbereitung", "mod.story": "Geschichte & Weltwissen",
+    "mod.cast": "Besetzung & Charakterbögen", "mod.library": "Bibliothek & Sammlungen",
+    "mod.table": "Tisch & Wissenskarte", "mod.forge": "Schmiede & Regelwerkstatt",
+    "coll.title": "Sammlung dieses Moduls", "lens.sig": "Struktursignatur & Universalitätsprüfung",
+    "lens.who": "Wer weiß was über diesen Absatz", "lens.app": "Apparat dieser Sitzung",
+    "blocker.title": "Zusammenführung der beiden Absätze wurde abgelehnt.",
+    "act.revealFirst": "Beiden Halterinnen zuerst enthüllen",
+    "act.mergeRetract": "Zusammenführen und alle Enthüllungen zurückziehen",
+    "act.cancel": "Vorgang abbrechen und Cursor zurücksetzen",
+    "act.undo": "Letzte Änderung rückgängig machen",
+    "cnt.rev": "Enthüllungen insgesamt", "cnt.margin": "Randnotizen dieser Sitzung",
+    "cnt.red": "Unbeschriebene Verweise", "cnt.split": "Absatzteilungen",
+    "cnt.block": "Abgelehnte Zusammenführungen", "cnt.miss": "Unerfasste Enthüllungen",
+    "ib.title": "Steckbrief der Seite",
+    "th.holder": "Haltende Figur", "th.state": "Kenntnisstand", "th.source": "Erzählte Quelle", "th.since": "erfahren in",
+    "st.yes": "kennt den Absatz", "st.no": "kennt den Absatz nicht"
+  }
+};
+
+const MODULES = ["session", "story", "cast", "library", "table", "forge"];
+
+const AXES = [
+  { key: "world",    legend: "Inhalt",    opts: [["aldenfall","Aldenfall"],["kepler","Kepler-9"],["nebelakte","Nebelakte"]] },
+  { key: "skin",     legend: "Skin",      opts: [["relic","Relic"],["signal","Signal"],["archive","Archiv"],["clean","Clean"]] },
+  { key: "role",     legend: "Rolle",     opts: [["gm","Spielleitung"],["player","Spielerin"],["observer","Beobachter"]] },
+  { key: "contrast", legend: "Kontrast",  opts: [["standard","Standard"],["high","Hoch"]] },
+  { key: "motion",   legend: "Bewegung",  opts: [["full","Voll"],["reduced","Reduziert"]] },
+  { key: "labels",   legend: "Labels",    opts: [["kurz","Kurz"],["lang","Langlabels"]] },
+  { key: "artwork",  legend: "Artwork",   opts: [["an","An"],["aus","Aus"],["fehlend","Fehlend"]] },
+  { key: "theme",    legend: "Helligkeit",opts: [["system","System"],["light","Hell"],["dark","Dunkel"]] }
+];
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. STATE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const root = document.documentElement;
+const state = {
+  world: "aldenfall", skin: "relic", role: "gm", contrast: "standard",
+  motion: "full", labels: "kurz", artwork: "an", theme: "system",
+  module: "story",
+  doc: null, selected: "p_4f9c",
+  log: [], counters: { rev: 6, margin: 3, red: 1, split: 0, block: 0, miss: 0 },
+  docVersion: 0,
+  history: [],
+  pending: null,
+  mintSeq: 0
+};
+
+const MINT_POOL = ["9c41","a0d7","b3e2","c58f","d719","e24b","f0a6","1d38","2e95","3b7c","4a11","57d0","6f83","72c4","8ea9","95bd"];
+function mint(prefix) {
+  const t = MINT_POOL[state.mintSeq % MINT_POOL.length];
+  state.mintSeq++;
+  return prefix + "_" + t;
+}
+
+function W() { return WORLDS[state.world]; }
+function t(key) { return I18N[state.labels][key] || key; }
+function charName(id) { const c = W().chars.find(c => c.id === id); return c ? c.name : id; }
+
+function loadWorld(id) {
+  state.world = id;
+  const w = WORLDS[id];
+  state.doc = JSON.parse(JSON.stringify(w.doc));
+  state.selected = "p_4f9c";
+  state.mintSeq = 0;
+  state.history = [];
+  state.counters = { rev: 6, margin: 3, red: 1, split: 0, block: 0, miss: 0 };
+  state.log = [
+    { at: "21:14", kind: "reveal", roles: ["gm", "player"],
+      text: "<b>Enthüllt</b> · Absatz p_4f9c an " + w.chars[0].name + " und " + w.chars[1].name + " · Quelle " + w.source },
+    { at: "21:16", kind: "margin", roles: ["gm"],
+      text: "<b>Marginalie</b> · m_6a02 an p_51e8 · nur Spielleitung" },
+    { at: "21:16", kind: "link", roles: ["gm"],
+      text: "<b>Roter Verweis</b> · [[Ossa]] · erstmals erwähnt in " + w.sessionWord + " " + w.session }
+  ];
+  state.pending = null;
+  state.docVersion++;
+}
+
+function snapshot() {
+  state.history.push(JSON.stringify({
+    doc: state.doc, log: state.log, counters: state.counters,
+    selected: state.selected, mintSeq: state.mintSeq
+  }));
+  if (state.history.length > 40) state.history.shift();
+}
+function undo() {
+  const s = state.history.pop();
+  if (!s) return false;
+  const o = JSON.parse(s);
+  state.doc = o.doc; state.log = o.log; state.counters = o.counters;
+  state.selected = o.selected; state.mintSeq = o.mintSeq;
+  state.pending = null; state.docVersion++;
+  return true;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. PROJECTION — role decides which nodes exist at all
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const VIEWER = { gm: null, player: "sera", observer: null };
+
+function visibleDoc() {
+  const r = state.role;
+  if (r === "gm") return state.doc;
+  if (r === "observer") return state.doc.filter(p => p.vis === "kanon");
+  const me = VIEWER.player;
+  return state.doc.filter(p =>
+    p.vis === "kanon" || (p.vis === "revealed" && (p.holders || []).indexOf(me) > -1));
+}
+
+function holdersOf(p) {
+  if (!p) return [];
+  if (p.vis === "kanon") return W().chars.map(c => c.id);
+  return (p.holders || []).slice();
+}
+
+/* mergeGuard — the priced precondition.
+   Under §3.2 a merged block resolves from BOTH parent pids, so its effective audience is the
+   union. Any asymmetry in the holder sets is therefore a widening for somebody — the guard is
+   symmetric, not one-directional. It returns null (silent, no friction) when the sets match. */
+function mergeGuard(upper, lower) {
+  if (!upper || !lower) return null;
+  if (upper.kind === "margin" || lower.kind === "margin") return null;
+  const up = holdersOf(upper), lo = holdersOf(lower);
+  const gains = [];
+  up.forEach(function (h) { if (lo.indexOf(h) === -1) gains.push({ holder: h, dir: "lower" }); });
+  lo.forEach(function (h) { if (up.indexOf(h) === -1) gains.push({ holder: h, dir: "upper" }); });
+  if (!gains.length) return null;
+  return { blocked: true, gains: gains, textLower: plainOf(lower.text), textUpper: plainOf(upper.text) };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. TEXT — source with [[links]] ↔ plain text, split-safe
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const LINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
+function plainOf(src) {
+  return src.replace(LINK_RE, (m, target, label) => label || target);
+}
+function renderInline(src) {
+  const known = W().entries.filter(e => e.state !== "rot").map(e => e.name);
+  return src.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, function (m, target, label) {
+      const red = known.indexOf(target) === -1;
+      return '<a class="wikilink' + (red ? " red" : "") + '" href="#" data-link="' + target +
+        '" title="' + (red ? "Noch nicht geschrieben" : "Artikel öffnen") + '">' + (label || target) + "</a>";
+    });
+}
+function plainToSrc(src, plainIdx) {
+  let p = 0, i = 0;
+  while (i < src.length && p < plainIdx) {
+    if (src.charAt(i) === "[" && src.charAt(i + 1) === "[") {
+      const end = src.indexOf("]]", i);
+      if (end > -1) {
+        const inner = src.slice(i + 2, end);
+        const label = inner.indexOf("|") > -1 ? inner.split("|")[1] : inner;
+        if (p + label.length <= plainIdx) { p += label.length; i = end + 2; continue; }
+        // Caret inside a link: snap forward past it. A split may never cut wiki markup in half —
+        // that would mint a passage containing a dangling "[[".
+        return end + 2;
+      }
+    }
+    p++; i++;
+  }
+  return i;
+}
+function serializeFromDom(el) {
+  let out = "";
+  el.childNodes.forEach(function (n) {
+    if (n.nodeType === 3) out += n.nodeValue;
+    else if (n.nodeType === 1 && n.dataset && n.dataset.link) {
+      const label = n.textContent;
+      out += label === n.dataset.link ? "[[" + label + "]]" : "[[" + n.dataset.link + "|" + label + "]]";
+    } else if (n.nodeType === 1) out += n.textContent;
+  });
+  return out.replace(/ /g, " ");
+}
+function caretOffset(el) {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return null;
+  const r = sel.getRangeAt(0);
+  if (!el.contains(r.startContainer)) return null;
+  const pre = document.createRange();
+  pre.selectNodeContents(el);
+  pre.setEnd(r.startContainer, r.startOffset);
+  return pre.toString().length;
+}
+function placeCaret(el, plainIdx) {
+  el.focus();
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  let n, seen = 0;
+  while ((n = walker.nextNode())) {
+    const len = n.nodeValue.length;
+    if (seen + len >= plainIdx) {
+      const r = document.createRange();
+      r.setStart(n, Math.max(0, plainIdx - seen)); r.collapse(true);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      return;
+    }
+    seen += len;
+  }
+  const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+  const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5. RENDER
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const el = {
+  psGroups: document.getElementById("psGroups"),
+  crest: document.getElementById("crest"),
+  ctxCampaign: document.getElementById("ctxCampaign"),
+  ctxSession: document.getElementById("ctxSession"),
+  ctxRole: document.getElementById("ctxRole"),
+  presence: document.getElementById("presence"),
+  modList: document.getElementById("modList"),
+  collTitle: document.getElementById("collTitle"),
+  entryList: document.getElementById("entryList"),
+  artKicker: document.getElementById("artKicker"),
+  artTitle: document.getElementById("artTitle"),
+  artSub: document.getElementById("artSub"),
+  passages: document.getElementById("passages"),
+  blockerSlot: document.getElementById("blockerSlot"),
+  infobox: document.getElementById("infobox"),
+  ibTitle: document.getElementById("ibTitle"),
+  plateImg: document.getElementById("plateImg"),
+  plateFallback: document.getElementById("plateFallback"),
+  plateMark: document.getElementById("plateMark"),
+  plateMsg: document.getElementById("plateMsg"),
+  plateFile: document.getElementById("plateFile"),
+  plateCap: document.getElementById("plateCap"),
+  sigBody: document.getElementById("sigBody"),
+  sigTitle: document.getElementById("sigTitle"),
+  knowsTitle: document.getElementById("knowsTitle"),
+  knowsTable: document.getElementById("knowsTable"),
+  apparatTitle: document.getElementById("apparatTitle"),
+  logHost: document.getElementById("logHost"),
+  counters: document.getElementById("counters"),
+  btnUndo: document.getElementById("btnUndo"),
+  shell: document.getElementById("shell-root")
+};
+
+function applyAxes() {
+  root.dataset.skin = state.skin;
+  root.dataset.contrast = state.contrast;
+  root.dataset.motion = state.motion;
+  root.dataset.artwork = state.artwork;
+  root.dataset.role = state.role;
+  if (state.theme === "system") root.removeAttribute("data-theme");
+  else root.dataset.theme = state.theme;
+}
+
+let lastPlateKey = "";
+function renderPlate() {
+  const w = W();
+  const key = state.world + "|" + state.artwork;
+  el.plateImg.alt = w.plate.alt;
+  el.plateCap.textContent = w.plate.cap;
+  el.plateMark.textContent = w.title.charAt(0);
+  // The fallback's node structure is fixed; only its text changes. Anything else would make the
+  // artwork axis a structural axis, which is precisely what this spike claims it is not.
+  el.plateFile.textContent = w.plate.file;
+  if (state.artwork === "aus") {
+    el.plateImg.hidden = true; el.plateFallback.hidden = false;
+    el.plateMsg.textContent = "Artwork abgeschaltet · Platzhalter aus dem Theme-Manifest";
+  } else if (state.artwork === "fehlend") {
+    el.plateImg.hidden = true; el.plateFallback.hidden = false;
+    el.plateMsg.textContent = "Bild fehlt · Platzhalter aus dem Theme-Manifest";
+  } else {
+    el.plateFallback.hidden = true; el.plateImg.hidden = false;
+    el.plateMsg.textContent = "Bild fehlt · Platzhalter aus dem Theme-Manifest";
+    if (key !== lastPlateKey) el.plateImg.src = w.plate.src;
+  }
+  lastPlateKey = key;
+}
+el.plateImg.addEventListener("error", function () {
+  if (state.artwork !== "an") return;
+  el.plateImg.hidden = true;
+  el.plateFallback.hidden = false;
+  el.plateMsg.textContent = "Bild nicht ladbar · Platzhalter aus dem Theme-Manifest";
+  el.plateFile.textContent = W().plate.file;
+});
+
+function renderChrome() {
+  const w = W();
+  el.crest.innerHTML = CRESTS[w.crest];
+  el.crest.hidden = state.artwork === "aus";
+  el.ctxCampaign.textContent = w.campaign;
+  el.ctxSession.textContent = w.sessionWord + " " + w.session + " · läuft seit 21:02 · " + w.genre;
+  const roleLabel = { gm: "Spielleitung · Kaya", player: "Spielerin · " + w.chars[0].name, observer: "Beobachter · Zuschauerlink" }[state.role];
+  el.ctxRole.innerHTML = "<b>" + roleLabel + "</b>";
+
+  el.presence.innerHTML = "";
+  const people = [{ n: "KA", live: true, name: "Kaya" }]
+    .concat(w.chars.map(c => ({ n: c.short, live: true, name: c.name })))
+    .concat([{ n: "TI", live: false, name: "Timo (schaut zu)" }]);
+  people.forEach(function (p) {
+    const s = document.createElement("span");
+    s.className = "pdot"; s.dataset.live = String(p.live);
+    s.textContent = p.n; s.title = p.name;
+    el.presence.appendChild(s);
+  });
+
+  el.modList.innerHTML = "";
+  MODULES.forEach(function (m) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = '<svg class="glyph" viewBox="0 0 20 20" aria-hidden="true">' + MOD_GLYPHS[m] + "</svg><span>" + t("mod." + m) + "</span>";
+    if (m === state.module) b.setAttribute("aria-current", "page");
+    b.addEventListener("click", function () { state.module = m; render(); });
+    li.appendChild(b); el.modList.appendChild(li);
+  });
+
+  el.collTitle.textContent = t("coll.title");
+  el.entryList.innerHTML = "";
+  w.entries.forEach(function (e) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button"; b.dataset.state = e.state;
+    if (e.current) b.setAttribute("aria-current", "true");
+    b.innerHTML = '<span class="bullet" aria-hidden="true"></span><span class="ename">' + e.name +
+      '<span class="ekind">' + e.kind + (e.state === "rot" ? " · noch nicht geschrieben" : "") + "</span></span>";
+    li.appendChild(b); el.entryList.appendChild(li);
+  });
+
+  el.artKicker.textContent = w.kicker;
+  el.artTitle.textContent = w.title;
+  const vis = visibleDoc();
+  el.artSub.textContent = state.role === "gm"
+    ? w.sub
+    : (state.role === "player"
+      ? vis.length + " Absätze in deinem Kodex · zuletzt ergänzt " + w.sessionWord + " " + w.prevSession
+      : vis.length + " öffentliche Absätze · Zuschauerprojektion");
+
+  el.ibTitle.textContent = t("ib.title");
+  el.infobox.innerHTML = "";
+  w.infobox.forEach(function (row) {
+    const dt = document.createElement("dt"); dt.textContent = row[0];
+    const dd = document.createElement("dd"); dd.textContent = row[1];
+    el.infobox.appendChild(dt); el.infobox.appendChild(dd);
+  });
+
+  el.sigTitle.textContent = t("lens.sig");
+  el.knowsTitle.textContent = t("lens.who");
+  el.apparatTitle.textContent = t("lens.app");
+  el.btnUndo.textContent = t("act.undo");
+  renderPlate();
+}
+
+/* A stamp never flattens two different grants into one date. */
+function grantWhen(p) {
+  const w = W();
+  return w.sessionWord + " " + (p.grantedSpan || (p.grantedIn || w.prevSession));
+}
+
+function renderPassages() {
+  const w = W();
+  const editable = state.role === "gm";
+  el.passages.innerHTML = "";
+  visibleDoc().forEach(function (p) {
+    const wrap = document.createElement("article");
+    wrap.className = "passage" + (p.pid === state.selected ? " is-selected" : "") + (p.fresh ? " just-split" : "");
+    wrap.dataset.pid = p.pid;
+
+    const hCount = holdersOf(p).length;
+    const handle = document.createElement("button");
+    handle.type = "button"; handle.className = "handle";
+    handle.dataset.vis = p.vis;
+    handle.setAttribute("aria-label", "Absatz " + p.pid + " auswählen — " +
+      (p.vis === "kanon" ? "Kanon, alle kennen ihn"
+        : p.vis === "margin" ? "Randnotiz, nur Spielleitung"
+          : hCount ? hCount + " Halter" : "geheim, niemand kennt ihn"));
+    handle.innerHTML = '<span class="dot" aria-hidden="true"></span>';
+    handle.addEventListener("click", function () { state.selected = p.pid; render(); });
+
+    const body = document.createElement(p.kind === "h2" ? "h2" : "p");
+    body.className = "prose" + (p.kind === "margin" ? " margin-note" : "");
+    body.id = "prose-" + p.pid;
+    body.setAttribute("lang", "de");
+    body.spellcheck = false;
+    if (editable) body.setAttribute("contenteditable", "true");
+    body.innerHTML = renderInline(p.text);
+
+    const app = document.createElement("div");
+    app.className = "apparatus";
+    let appHtml = '<span class="pid mono">' + p.pid + "</span>";
+    if (state.role === "gm") {
+      if (p.vis === "revealed" && hCount) {
+        appHtml += '<span class="stamp">' + hCount + " Halter: <b>" +
+          (p.holders || []).map(charName).join(", ") + "</b><br>" + grantWhen(p) +
+          " · von " + (p.source || w.source) + "</span>";
+      } else if (p.vis === "secret") {
+        appHtml += '<span class="stamp">niemand kennt ihn</span>';
+      } else if (p.vis === "margin") {
+        appHtml += '<span class="stamp">Randnotiz · nur SL</span>';
+      } else {
+        appHtml += '<span class="stamp">Kanon</span>';
+      }
+    } else if (state.role === "player") {
+      if (p.vis === "revealed") {
+        appHtml += '<span class="stamp">gelernt ' + grantWhen(p) +
+          "<br>von <b>" + (p.source || w.source) + "</b></span>";
+      } else {
+        appHtml += '<span class="stamp">Kanon</span>';
+      }
+    } else {
+      appHtml += '<span class="stamp">öffentlich</span>';
+    }
+    if (p.lineage) {
+      appHtml += '<span class="lin">' + p.lineage + "</span>";
+    }
+    app.innerHTML = appHtml;
+
+    if (p.lineage && p.showUndo && state.role === "gm") {
+      const u = document.createElement("button");
+      u.type = "button"; u.className = "btn btn-sm";
+      u.textContent = t("act.undo");
+      u.addEventListener("click", function () { if (undo()) render(); });
+      app.querySelector(".lin").appendChild(document.createElement("br"));
+      app.querySelector(".lin").appendChild(u);
+    }
+
+    wrap.appendChild(handle); wrap.appendChild(body); wrap.appendChild(app);
+    el.passages.appendChild(wrap);
+
+    if (editable) {
+      body.addEventListener("keydown", onProseKey);
+      body.addEventListener("input", function () {
+        const target = state.doc.find(x => x.pid === p.pid);
+        if (target) target.text = serializeFromDom(body);
+      });
+      body.addEventListener("focus", function () {
+        if (state.selected !== p.pid) { state.selected = p.pid; renderLens(); markSelected(); }
+      });
+    }
+  });
+  state.doc.forEach(function (p) { p.fresh = false; });
+}
+
+function markSelected() {
+  Array.prototype.forEach.call(el.passages.children, function (c) {
+    c.classList.toggle("is-selected", c.dataset.pid === state.selected);
+  });
+}
+
+function renderLens() {
+  const w = W();
+  const p = state.doc.find(x => x.pid === state.selected) || state.doc[0];
+
+  // who_knows
+  let html = "<caption class=\"vh\">Kenntnisstand zu Absatz " + (p ? p.pid : "—") + "</caption><thead><tr>" +
+    "<th scope=\"col\">" + t("th.holder") + "</th><th scope=\"col\">" + t("th.state") + "</th>" +
+    "<th scope=\"col\">" + t("th.since") + "</th></tr></thead><tbody>";
+  if (state.role === "observer") {
+    html += '<tr><td colspan="3">Kenntnisstände sind in dieser Rolle nicht Teil der Antwort.</td></tr>';
+  } else {
+    w.chars.forEach(function (c) {
+      const knows = p ? holdersOf(p).indexOf(c.id) > -1 : false;
+      if (state.role === "player" && c.id !== VIEWER.player) return;
+      html += "<tr><td>" + c.name + "</td><td class=\"" + (knows ? "state-yes" : "state-no") + "\">" +
+        (knows ? t("st.yes") : t("st.no")) + "</td><td>" +
+        (knows ? (p.vis === "kanon" ? "Kanon" : w.sessionWord + " " + (p.grantedIn || w.prevSession)) : "—") + "</td></tr>";
+    });
+    if (state.role === "gm") {
+      html += "<tr><td>Timo</td><td class=\"state-no\">" + t("st.no") + "</td><td>Zuschauer</td></tr>";
+    }
+  }
+  html += "</tbody>";
+  el.knowsTable.innerHTML = html;
+
+  // apparatus log
+  const entries = state.log.filter(function (e) { return e.roles.indexOf(state.role) > -1; });
+  if (!entries.length) {
+    el.logHost.innerHTML = '<p class="empty">Keine Apparat-Einträge in dieser Rolle.</p>';
+  } else {
+    let l = '<ol class="log">';
+    entries.forEach(function (e) {
+      l += "<li><time>" + e.at + '</time><span class="ev" data-kind="' + e.kind + '">' + e.text + "</span></li>";
+    });
+    el.logHost.innerHTML = l + "</ol>";
+  }
+
+  // counters
+  const C = state.counters;
+  const rows = [
+    ["cnt.rev", C.rev, false], ["cnt.margin", C.margin, false], ["cnt.red", C.red, false],
+    ["cnt.split", C.split, false], ["cnt.block", C.block, C.block > 3], ["cnt.miss", C.miss, C.miss > 0]
+  ];
+  el.counters.innerHTML = rows.map(function (r) {
+    return '<span class="counter" data-alarm="' + r[2] + '"><b>' + r[1] + "</b>" + t(r[0]) + "</span>";
+  }).join("");
+}
+
+function renderBlocker() {
+  el.blockerSlot.innerHTML = "";
+  if (!state.pending) return;
+  const g = state.pending;
+  const w = W();
+  const box = document.createElement("div");
+  box.className = "blocker";
+  box.setAttribute("role", "alert");
+  const dn = g.gains.filter(function (x) { return x.dir === "lower"; }).map(function (x) { return charName(x.holder); });
+  const up = g.gains.filter(function (x) { return x.dir === "upper"; }).map(function (x) { return charName(x.holder); });
+
+  let sentence;
+  if (dn.length && !up.length) {
+    const others = g.lowerHolderNames;
+    sentence = dn.join(" und ") + (dn.length > 1 ? " kennen" : " kennt") +
+      " den oberen Absatz <span class=\"mono\">" + g.upperPid + "</span>. Den unteren <span class=\"mono\">" +
+      g.lowerPid + "</span> kennt " + (others.length ? "nur " + others.join(" und ") : "niemand") +
+      ". Zusammenführen gäbe " + (dn.length > 1 ? "beiden" : "ihr") + ": <q>" + g.textLower + "</q>";
+  } else if (up.length && !dn.length) {
+    sentence = up.join(" und ") + (up.length > 1 ? " kennen" : " kennt") +
+      " den unteren Absatz <span class=\"mono\">" + g.lowerPid + "</span>, aber nicht den oberen. " +
+      "Zusammenführen gäbe " + (up.length > 1 ? "beiden" : "ihr") + ": <q>" + g.textUpper + "</q>";
+  } else {
+    sentence = "Die beiden Absätze haben verschiedene Halter. Ein verschmolzener Absatz löst aus " +
+      "beiden Herkunfts-pids auf — sein Publikum wäre die Vereinigung, und damit erführe jede " +
+      "der folgenden Figuren etwas, das ihr nie enthüllt wurde.";
+  }
+
+  box.innerHTML =
+    "<h3>" + t("blocker.title") + "</h3>" +
+    "<p>" + sentence + "</p>" +
+    '<ul class="gains">' + g.gains.map(function (x) {
+      return '<li><span class="who">' + charName(x.holder) + "</span><span>bekäme " +
+        '<span class="mono">' + (x.dir === "lower" ? g.lowerPid : g.upperPid) + "</span> ohne Enthüllung</span></li>";
+    }).join("") + "</ul>";
+
+  const acts = document.createElement("div");
+  acts.className = "acts";
+  const b1 = document.createElement("button");
+  b1.type = "button"; b1.className = "btn btn-primary"; b1.textContent = t("act.revealFirst");
+  b1.addEventListener("click", function () { resolveBlock("reveal"); });
+  const b2 = document.createElement("button");
+  b2.type = "button"; b2.className = "btn btn-danger"; b2.textContent = t("act.mergeRetract");
+  b2.addEventListener("click", function () { resolveBlock("retract"); });
+  const b3 = document.createElement("button");
+  b3.type = "button"; b3.className = "btn"; b3.textContent = t("act.cancel");
+  b3.addEventListener("click", function () { resolveBlock("cancel"); });
+  acts.appendChild(b1); acts.appendChild(b2); acts.appendChild(b3);
+  box.appendChild(acts);
+  el.blockerSlot.appendChild(box);
+  // Focus travels to the refusal exactly once — not on every unrelated re-render.
+  if (!state.pending.focused) { state.pending.focused = true; b1.focus(); }
+}
+
+let sigBaselines = {};
+function render() {
+  applyAxes();
+  renderChrome();
+  renderPassages();
+  renderBlocker();
+  renderLens();
+  updateSignaturePanel();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. EDITOR — Enter splits, Backspace is a permission action
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function nowStamp() {
+  const base = 21 * 60 + 31 + state.counters.split * 2 + state.counters.block;
+  const h = Math.floor(base / 60), m = base % 60;
+  return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
+}
+function logEvent(kind, text, roles) {
+  state.log.push({ at: nowStamp(), kind: kind, text: text, roles: roles || ["gm"] });
+  state.docVersion++;
+}
+
+function onProseKey(ev) {
+  const host = ev.currentTarget;
+  const pid = host.id.replace("prose-", "");
+  const idx = state.doc.findIndex(x => x.pid === pid);
+  if (idx < 0) return;
+  const p = state.doc[idx];
+
+  if (ev.key === "Enter" && ev.ctrlKey) { ev.preventDefault(); addMargin(idx); return; }
+
+  if (ev.key === "Enter") {
+    ev.preventDefault();
+    p.text = serializeFromDom(host);
+    const off = caretOffset(host);
+    doSplit(idx, off == null ? plainOf(p.text).length : off);
+    return;
+  }
+
+  if (ev.key === "Backspace") {
+    const off = caretOffset(host);
+    const sel = window.getSelection();
+    if (off !== 0 || (sel && !sel.isCollapsed)) return;
+    ev.preventDefault();
+    p.text = serializeFromDom(host);
+    doMergeUp(idx);
+    return;
+  }
+
+  if (ev.key === "z" && (ev.ctrlKey || ev.metaKey)) {
+    ev.preventDefault();
+    if (undo()) render();
+  }
+}
+
+function doSplit(idx, plainIdx) {
+  const p = state.doc[idx];
+  const src = p.text;
+  const cut = plainToSrc(src, plainIdx);
+  const a = src.slice(0, cut).replace(/\s+$/, "");
+  const b = src.slice(cut).replace(/^\s+/, "");
+  snapshot();
+  const parentPid = p.pid;
+  const kindA = p.kind === "h2" ? "h2" : p.kind;
+  const n1 = Object.assign({}, p, { pid: mint(parentPid.charAt(0)), text: a, kind: kindA, lineage: null, fresh: true });
+  const n2 = Object.assign({}, p, { pid: mint("p"), text: b, kind: p.kind === "h2" ? "p" : p.kind, lineage: null, fresh: true });
+  n1.holders = (p.holders || []).slice();
+  n2.holders = (p.holders || []).slice();
+
+  const moved = p.vis === "revealed" ? (p.holders || []).map(charName).join(", ") : null;
+  // Decision 1 of the spike: nobody inherits a split. Even an edge split — where one half is
+  // empty — retires the parent and mints two, precisely so an empty paragraph can never keep
+  // the identity of the sentence a character was told (spike finding H3).
+  const empty = (!a.length || !b.length) ? " · eine Hälfte ist leer — beide werden trotzdem neu vergeben (H3)" : "";
+  const line = "Absatz geteilt · <span class=\"mono\">" + parentPid + "</span> → zwei Absätze" +
+    (moved ? " · " + (p.holders || []).length + " Enthüllungen wandern mit: <b>" + moved + "</b> — beide Hälften"
+      : " · keine Enthüllung betroffen") + empty;
+  n1.lineage = line; n1.showUndo = true;
+  n2.lineage = line; n2.showUndo = false;
+
+  state.doc.splice(idx, 1, n1, n2);
+  state.counters.split++;
+  logEvent("split", "<b>Geteilt</b> · " + parentPid + " → " + n1.pid + " + " + n2.pid +
+    (moved ? " · Enthüllungen wandern mit: " + moved : ""), moved ? ["gm", "player"] : ["gm"]);
+  state.selected = n2.pid;
+  state.docVersion++;
+  render();
+  const target = document.getElementById("prose-" + n2.pid);
+  if (target && state.role === "gm") placeCaret(target, 0);
+}
+
+function doMergeUp(idx) {
+  if (idx === 0) return;
+  const lower = state.doc[idx];
+  const upper = state.doc[idx - 1];
+  const guard = mergeGuard(upper, lower);
+  if (guard) {
+    state.pending = {
+      upperIdx: idx - 1, lowerIdx: idx, upperPid: upper.pid, lowerPid: lower.pid,
+      gains: guard.gains, textLower: guard.textLower, textUpper: guard.textUpper,
+      lowerHolderNames: holdersOf(lower).map(charName), focused: false
+    };
+    state.counters.block++;
+    logEvent("block", "<b>Verschmelzen abgelehnt</b> · " + upper.pid + " ← " + lower.pid +
+      " · gewönne: " + guard.gains.map(function (x) { return charName(x.holder); }).join(", "), ["gm"]);
+    render();
+    return;
+  }
+  snapshot();
+  performMerge(idx - 1, idx, null);
+}
+
+function performMerge(ui, li, note) {
+  const upper = state.doc[ui], lower = state.doc[li];
+  const newPid = mint(upper.pid.charAt(0));
+  // The merged block resolves from both parent pids: its audience is the union, by construction.
+  const bothKanon = upper.vis === "kanon" && lower.vis === "kanon";
+  const union = (upper.holders || []).concat((lower.holders || []).filter(function (h) {
+    return (upper.holders || []).indexOf(h) === -1;
+  }));
+  // Provenance may not be flattened. If the two halves were learned in different sessions, the
+  // merged block says so — telling a player she learned all of it in the earlier session would be
+  // a quiet falsification of her own book.
+  const w0 = W();
+  const gs = [];
+  [upper, lower].forEach(function (x) {
+    if (x.vis === "revealed") { const s = x.grantedIn || w0.prevSession; if (gs.indexOf(s) === -1) gs.push(s); }
+  });
+  gs.sort(function (x, y) { return x - y; });
+  const late = (lower.grantedIn || 0) >= (upper.grantedIn || 0) ? lower : upper;
+  const merged = Object.assign({}, upper, {
+    pid: newPid,
+    vis: bothKanon ? "kanon" : (union.length ? "revealed" : "secret"),
+    holders: bothKanon ? undefined : union,
+    grantedIn: gs.length ? gs[gs.length - 1] : upper.grantedIn,
+    grantedSpan: gs.length > 1 ? gs.join(" und ") : null,
+    source: gs.length > 1 ? (late.source || upper.source || w0.source) : (upper.source || late.source),
+    text: upper.text.replace(/\s+$/, "") + " " + lower.text.replace(/^\s+/, ""),
+    lineage: "Absätze verschmolzen · <span class=\"mono\">" + upper.pid + "</span> + <span class=\"mono\">" +
+      lower.pid + "</span> → <span class=\"mono\">" + newPid + "</span>" + (note ? " · " + note : " · kein Halter gewinnt etwas"),
+    showUndo: true, fresh: true
+  });
+  state.doc.splice(ui, 2, merged);
+  state.selected = newPid;
+  logEvent("merge", "<b>Verschmolzen</b> · " + upper.pid + " + " + lower.pid + " → " + newPid + (note ? " · " + note : ""),
+    ["gm", "player"]);
+  state.pending = null;
+  state.docVersion++;
+  render();
+}
+
+function resolveBlock(mode) {
+  const g = state.pending;
+  if (!g) return;
+  if (mode === "cancel") {
+    state.pending = null;
+    state.docVersion++;
+    render();
+    const back = document.getElementById("prose-" + g.lowerPid);
+    if (back) placeCaret(back, 0);
+    return;
+  }
+  snapshot();
+  const w = W();
+  if (mode === "reveal") {
+    // Grant, on each side, exactly the holders the guard named — then the sets match and merging
+    // widens nobody's audience. The reveal is stamped with THIS session, never backdated.
+    const upper = state.doc[g.upperIdx], lower = state.doc[g.lowerIdx];
+    g.gains.forEach(function (x) {
+      const target = x.dir === "lower" ? lower : upper;
+      target.vis = "revealed";
+      target.holders = (target.holders || []).slice();
+      if (target.holders.indexOf(x.holder) === -1) target.holders.push(x.holder);
+      target.grantedIn = w.session;
+      target.source = "Kaya (im Spiel)";
+    });
+    state.counters.rev += g.gains.length;
+    logEvent("reveal", "<b>Enthüllt</b> · " + g.gains.map(function (x) {
+      return charName(x.holder) + " ← " + (x.dir === "lower" ? g.lowerPid : g.upperPid);
+    }).join(", ") + " · " + w.sessionWord + " " + w.session, ["gm", "player"]);
+    performMerge(g.upperIdx, g.lowerIdx, g.gains.length + " Enthüllungen zuerst ergänzt");
+  } else {
+    const upper = state.doc[g.upperIdx], lower = state.doc[g.lowerIdx];
+    const lost = holdersOf(upper).length + holdersOf(lower).length;
+    upper.vis = "secret"; upper.holders = [];
+    lower.vis = "secret"; lower.holders = [];
+    state.counters.rev = Math.max(0, state.counters.rev - lost);
+    logEvent("retract", "<b>Zurückgenommen</b> · " + g.upperPid + " + " + g.lowerPid + " · " + lost +
+      " Enthüllungen widerrufen in " + w.sessionWord + " " + w.session, ["gm", "player"]);
+    performMerge(g.upperIdx, g.lowerIdx, lost + " Enthüllungen zurückgezogen");
+  }
+}
+
+function addMargin(idx) {
+  snapshot();
+  const anchor = state.doc[idx];
+  const n = {
+    pid: mint("m"), kind: "margin", vis: "margin", anchor: anchor.pid,
+    text: "Neue Randnotiz — " + W().sessionWord + " " + W().session + ", " + nowStamp() + ".",
+    lineage: "Marginalie angelegt · Anker <span class=\"mono\">" + anchor.pid + "</span> · nur SL",
+    showUndo: true, fresh: true
+  };
+  state.doc.splice(idx + 1, 0, n);
+  state.counters.margin++;
+  logEvent("margin", "<b>Marginalie</b> · " + n.pid + " an " + anchor.pid + " · nur Spielleitung", ["gm"]);
+  state.selected = n.pid;
+  state.docVersion++;
+  render();
+  const target = document.getElementById("prose-" + n.pid);
+  if (target) placeCaret(target, plainOf(n.text).length);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7. STRUCTURAL SIGNATURE — the rational proof
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function sigLines(rootEl) {
+  const out = [];
+  (function walk(node, depth) {
+    if (node.nodeType !== 1) return;
+    if (node.hasAttribute("data-sig-ignore")) return;
+    const attrs = [];
+    for (let i = 0; i < node.attributes.length; i++) {
+      const n = node.attributes[i].name;
+      if (n.indexOf("aria-") === 0) attrs.push(n);
+    }
+    attrs.sort();
+    const role = node.getAttribute("role");
+    out.push(depth + "/" + node.tagName.toLowerCase() + (role ? ":" + role : "") + (attrs.length ? "#" + attrs.join(",") : ""));
+    for (let i = 0; i < node.children.length; i++) walk(node.children[i], depth + 1);
+  })(rootEl, 0);
+  return out;
+}
+function focusLine(rootEl) {
+  const sel = 'a[href],button,input,select,textarea,[tabindex],[contenteditable="true"]';
+  const out = [];
+  const all = rootEl.querySelectorAll(sel);
+  for (let i = 0; i < all.length; i++) {
+    let n = all[i], skip = false;
+    while (n && n !== rootEl) { if (n.hasAttribute && n.hasAttribute("data-sig-ignore")) { skip = true; break; } n = n.parentElement; }
+    if (!skip) out.push(all[i].tagName.toLowerCase());
+  }
+  return out;
+}
+function headingLine(rootEl) {
+  const out = [];
+  const all = rootEl.querySelectorAll("h1,h2,h3,h4");
+  for (let i = 0; i < all.length; i++) {
+    let n = all[i], skip = false;
+    while (n && n !== rootEl) { if (n.hasAttribute && n.hasAttribute("data-sig-ignore")) { skip = true; break; } n = n.parentElement; }
+    if (!skip) out.push(all[i].tagName.toLowerCase());
+  }
+  return out;
+}
+function fnv1a(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return ("0000000" + h.toString(16)).slice(-8);
+}
+function measure() {
+  const r = el.shell;
+  const s = sigLines(r), f = focusLine(r), hd = headingLine(r);
+  return { sig: s, hash: fnv1a(s.join("|")), focus: f.length, focusHash: fnv1a(f.join(",")), heads: hd.join(" "), nodes: s.length };
+}
+function comboLabel() {
+  return [WORLDS[state.world].label, state.skin, state.contrast === "high" ? "Kontrast hoch" : "Kontrast standard",
+    state.motion === "reduced" ? "Bewegung reduziert" : "Bewegung voll",
+    state.labels === "lang" ? "Langlabels" : "Kurzlabels",
+    "Artwork " + state.artwork,
+    state.theme].join(" · ");
+}
+
+function updateSignaturePanel() {
+  const m = measure();
+  const key = state.role + "@" + state.docVersion;
+  let base = sigBaselines[key];
+  if (!base) { base = sigBaselines[key] = { hash: m.hash, focus: m.focus, heads: m.heads, nodes: m.nodes, combo: comboLabel(), sig: m.sig }; }
+  const same = base.hash === m.hash;
+  const focusSame = base.focus === m.focus;
+  const headSame = base.heads === m.heads;
+
+  // role delta against the GM baseline of the same document version
+  const gmKey = "gm@" + state.docVersion;
+  let roleDelta = "";
+  if (state.role !== "gm" && sigBaselines[gmKey]) {
+    const d = sigBaselines[gmKey].nodes - m.nodes;
+    roleDelta = (d > 0 ? "−" + d : "+" + (-d)) + " Knoten ggü. SL";
+  } else if (state.role !== "gm") {
+    roleDelta = "SL-Basis noch nicht aufgenommen";
+  } else {
+    roleDelta = "Referenzrolle";
+  }
+
+  const rows = [
+    ["Basis", '<span class="mono">' + base.hash + "</span>"],
+    ["Aktuell", '<span class="mono">' + m.hash + "</span>"],
+    ["Knoten", '<span class="tnum">' + m.nodes + "</span>"],
+    ["Fokusstationen", '<span class="tnum">' + m.focus + "</span> " + (focusSame ? "identisch" : "abweichend")],
+    ["Überschriften", m.heads + " " + (headSame ? "identisch" : "abweichend")],
+    ["Rollenprojektion", roleDelta],
+    ["Basiskombination", base.combo]
+  ];
+  let html = '<div class="verdict-row"><span class="verdict" data-ok="' + (same ? "true" : "false") + '">' +
+    (same ? "strukturidentisch" : "abweichend") + "</span></div>";
+  rows.forEach(function (r) {
+    html += '<div class="sigrow"><span>' + r[0] + "</span><span>" + r[1] + "</span></div>";
+  });
+  el.sigBody.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8. HÄRTETEST — render every combination, count real deviations
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const btnTest = document.getElementById("btnTest");
+const testOut = document.getElementById("testOut");
+const prog = document.getElementById("prog");
+const progBar = prog.querySelector("i");
+const testResults = document.getElementById("testResults");
+const matrixTable = document.getElementById("matrixTable");
+
+async function hardTest() {
+  const saved = {
+    world: state.world, skin: state.skin, role: state.role, contrast: state.contrast,
+    motion: state.motion, labels: state.labels, artwork: state.artwork, theme: state.theme,
+    doc: JSON.stringify(state.doc), log: JSON.stringify(state.log), sel: state.selected,
+    counters: JSON.stringify(state.counters), mintSeq: state.mintSeq,
+    history: state.history.slice(), pending: state.pending
+  };
+  state.pending = null;
+  root.classList.add("is-testing");
+  btnTest.disabled = true;
+  testResults.hidden = true;
+
+  const worlds = ["aldenfall", "kepler", "nebelakte"];
+  const skins = ["relic", "signal", "archive", "clean"];
+  const contrasts = ["standard", "high"];
+  const motions = ["full", "reduced"];
+  const labelsA = ["kurz", "lang"];
+  const artworks = ["an", "aus", "fehlend"];
+  const roles = ["gm", "player", "observer"];
+
+  const perRole = worlds.length * skins.length * contrasts.length * motions.length * labelsA.length * artworks.length;
+  const total = perRole * roles.length;
+  const results = [];
+  let done = 0;
+
+  for (const role of roles) {
+    state.role = role;
+    let baseline = null, ok = 0, bad = 0, focusBad = 0, headBad = 0;
+    const failures = [];
+    for (const world of worlds) {
+      // Always reload: every role must meet every world in exactly the same document state.
+      loadWorld(world);
+      state.role = role;
+      for (const skin of skins) for (const contrast of contrasts) for (const motion of motions)
+        for (const labels of labelsA) for (const artwork of artworks) {
+          state.skin = skin; state.contrast = contrast; state.motion = motion;
+          state.labels = labels; state.artwork = artwork;
+          applyAxes(); renderChrome(); renderPassages(); renderLens();
+          const m = measure();
+          if (!baseline) baseline = m;
+          if (m.hash === baseline.hash) ok++; else {
+            bad++;
+            if (failures.length < 6) failures.push(WORLDS[world].label + "/" + skin + "/" + contrast + "/" + labels + "/" + artwork);
+          }
+          if (m.focus !== baseline.focus) focusBad++;
+          if (m.heads !== baseline.heads) headBad++;
+          done++;
+          if (done % 48 === 0) {
+            const pct = Math.round(done / total * 100);
+            progBar.style.width = pct + "%";
+            prog.setAttribute("aria-valuenow", String(pct));
+            testOut.textContent = pct + " % · " + done + "/" + total;
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+    }
+    results.push({ role: role, total: perRole, ok: ok, bad: bad, focusBad: focusBad, headBad: headBad, nodes: baseline.nodes, failures: failures });
+  }
+
+  // restore
+  loadWorld(saved.world);
+  state.doc = JSON.parse(saved.doc); state.log = JSON.parse(saved.log);
+  state.counters = JSON.parse(saved.counters); state.selected = saved.sel;
+  state.skin = saved.skin; state.role = saved.role; state.contrast = saved.contrast;
+  state.motion = saved.motion; state.labels = saved.labels; state.artwork = saved.artwork;
+  state.theme = saved.theme; state.mintSeq = saved.mintSeq;
+  state.history = saved.history; state.pending = saved.pending;
+  state.docVersion++;
+  sigBaselines = {};
+  root.classList.remove("is-testing");
+  btnTest.disabled = false;
+  progBar.style.width = "100%";
+  prog.setAttribute("aria-valuenow", "100");
+  render();
+
+  const roleName = { gm: "Spielleitung", player: "Spielerin (Sera)", observer: "Beobachter" };
+  const gmNodes = results[0].nodes;
+  let html = "<caption class=\"vh\">Ergebnis des Härtetests</caption><thead><tr>" +
+    "<th scope=\"col\">Rolle</th><th scope=\"col\">Kombinationen</th><th scope=\"col\">strukturidentisch</th>" +
+    "<th scope=\"col\">Fokusreihenfolge</th><th scope=\"col\">Überschriften</th><th scope=\"col\">Knoten</th>" +
+    "<th scope=\"col\">ggü. SL</th></tr></thead><tbody>";
+  results.forEach(function (r) {
+    const d = gmNodes - r.nodes;
+    html += "<tr><td>" + roleName[r.role] + '</td><td class="tnum">' + r.total + "</td>" +
+      '<td class="' + (r.bad ? "fail" : "pass") + '">' + r.ok + " / " + r.total + (r.bad ? " (" + r.failures.join(", ") + ")" : "") + "</td>" +
+      '<td class="' + (r.focusBad ? "fail" : "pass") + '">' + (r.focusBad ? r.focusBad + " Abw." : "stabil") + "</td>" +
+      '<td class="' + (r.headBad ? "fail" : "pass") + '">' + (r.headBad ? r.headBad + " Abw." : "stabil") + "</td>" +
+      '<td class="tnum">' + r.nodes + "</td>" +
+      "<td>" + (r.role === "gm" ? "Referenz" : (d > 0 ? "−" + d + " Knoten (beabsichtigt)" : "+" + (-d) + " Knoten")) + "</td></tr>";
+  });
+  html += "</tbody>";
+  matrixTable.innerHTML = html;
+  testResults.hidden = false;
+
+  const allOk = results.every(r => r.bad === 0 && r.focusBad === 0 && r.headBad === 0);
+  testOut.textContent = allOk
+    ? total + "/" + total + " gerendert · 0 Strukturabweichungen · Rollen unterscheiden sich absichtlich"
+    : total + " gerendert · Abweichungen gefunden — siehe Tabelle";
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9. AXIS CONTROLS — roving tabindex radiogroups
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function buildAxes() {
+  AXES.forEach(function (ax) {
+    const fs = document.createElement("fieldset");
+    fs.className = "axis";
+    const lg = document.createElement("legend");
+    lg.textContent = ax.legend;
+    fs.appendChild(lg);
+    const grp = document.createElement("div");
+    grp.className = "seg";
+    grp.setAttribute("role", "radiogroup");
+    grp.setAttribute("aria-label", ax.legend);
+    ax.opts.forEach(function (o, i) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("role", "radio");
+      b.dataset.value = o[0];
+      b.textContent = o[1];
+      const on = state[ax.key] === o[0];
+      b.setAttribute("aria-checked", String(on));
+      b.tabIndex = on ? 0 : -1;
+      b.addEventListener("click", function () { setAxis(ax, o[0]); });
+      b.addEventListener("keydown", function (ev) {
+        const kids = Array.prototype.slice.call(grp.children);
+        let i2 = kids.indexOf(b), n = null;
+        if (ev.key === "ArrowRight" || ev.key === "ArrowDown") n = kids[(i2 + 1) % kids.length];
+        else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") n = kids[(i2 - 1 + kids.length) % kids.length];
+        else if (ev.key === "Home") n = kids[0];
+        else if (ev.key === "End") n = kids[kids.length - 1];
+        if (n) { ev.preventDefault(); n.focus(); setAxis(ax, n.dataset.value); }
+      });
+      grp.appendChild(b);
+    });
+    fs.appendChild(grp);
+    el.psGroups.appendChild(fs);
+  });
+}
+function syncAxes() {
+  Array.prototype.forEach.call(el.psGroups.querySelectorAll('[role="radiogroup"]'), function (grp, gi) {
+    const ax = AXES[gi];
+    Array.prototype.forEach.call(grp.children, function (b) {
+      const on = state[ax.key] === b.dataset.value;
+      b.setAttribute("aria-checked", String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+  });
+}
+function setAxis(ax, value) {
+  if (state[ax.key] === value) return;
+  if (ax.key === "world") {
+    loadWorld(value);
+    state.skin = WORLDS[value].skin;
+  } else {
+    state[ax.key] = value;
+  }
+  syncAxes();
+  render();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   10. BOOT
+   ══════════════════════════════════════════════════════════════════════════ */
+
+document.getElementById("btnReset").addEventListener("click", function () {
+  loadWorld(state.world);
+  sigBaselines = {};
+  render();
+});
+el.btnUndo.addEventListener("click", function () { if (undo()) render(); });
+btnTest.addEventListener("click", function () { hardTest(); });
+document.addEventListener("click", function (ev) {
+  const a = ev.target.closest && ev.target.closest("a.wikilink");
+  if (a) ev.preventDefault();
+});
+
+loadWorld("aldenfall");
+buildAxes();
+render();
+
+})();
+</script>

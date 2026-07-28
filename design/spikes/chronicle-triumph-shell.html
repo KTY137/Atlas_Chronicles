@@ -1,0 +1,2351 @@
+<!doctype html>
+<html lang="de" data-world="aldenfall" data-skin="relic" data-role="gm" data-atmosphere="crafted" data-motion="full" data-contrast="standard">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chronicle — Triumph Shell · Living Campaign Instrument</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050909;
+      --bg-rgb: 5, 9, 9;
+      --surface: #0d1413;
+      --surface-rgb: 13, 20, 19;
+      --surface-2: #121d1b;
+      --text: #eee8da;
+      --muted: #a0aeaa;
+      --dim: #6f7e7a;
+      --accent: #e2b85d;
+      --accent-rgb: 226, 184, 93;
+      --secondary: #58cba1;
+      --secondary-rgb: 88, 203, 161;
+      --danger: #d26972;
+      --danger-rgb: 210, 105, 114;
+      --frame-filter: none;
+      --frame-opacity: .94;
+      --ornament: 1;
+      --panel-frame: url("assets/universal-ui/chronicle-panel-frame.png");
+      --rail-frame: url("assets/universal-ui/chronicle-loadout-panel-v2.png");
+      --stage-frame: url("assets/universal-ui/chronicle-collection-panel-v2.png");
+      --lens-frame: url("assets/universal-ui/chronicle-detail-panel-v2.png");
+      --card-frame: url("assets/universal-ui/chronicle-card-frame.png");
+      --display-font: Georgia, serif;
+      --ease: cubic-bezier(.2, .78, .22, 1);
+      --mx: 50%;
+      --my: 32%;
+    }
+
+    html[data-skin="signal"] {
+      --bg: #040813;
+      --bg-rgb: 4, 8, 19;
+      --surface: #08131d;
+      --surface-rgb: 8, 19, 29;
+      --surface-2: #0b1e2b;
+      --text: #e8f4f6;
+      --muted: #9db2bb;
+      --dim: #647b85;
+      --accent: #6de0f4;
+      --accent-rgb: 109, 224, 244;
+      --secondary: #aa82ef;
+      --secondary-rgb: 170, 130, 239;
+      --panel-frame: url("assets/universal-ui/signal-frame-kit-v1.png");
+      --rail-frame: url("assets/universal-ui/signal-frame-kit-v1.png");
+      --stage-frame: url("assets/universal-ui/signal-frame-kit-v1.png");
+      --lens-frame: url("assets/universal-ui/signal-frame-kit-v1.png");
+      --card-frame: url("assets/universal-ui/signal-frame-kit-v1.png");
+      --display-font: "Bahnschrift SemiCondensed", "Arial Narrow", "Segoe UI", sans-serif;
+      --frame-filter: none;
+      --frame-opacity: .9;
+    }
+
+    html[data-skin="archive"] {
+      --bg: #0d0908;
+      --bg-rgb: 13, 9, 8;
+      --surface: #181312;
+      --surface-rgb: 24, 19, 18;
+      --surface-2: #211918;
+      --text: #f0e7da;
+      --muted: #b5a69e;
+      --dim: #816f68;
+      --accent: #df9475;
+      --accent-rgb: 223, 148, 117;
+      --secondary: #9db9c5;
+      --secondary-rgb: 157, 185, 197;
+      --panel-frame: url("assets/universal-ui/archive-frame-kit-v1.png");
+      --rail-frame: url("assets/universal-ui/archive-frame-kit-v1.png");
+      --stage-frame: url("assets/universal-ui/archive-frame-kit-v1.png");
+      --lens-frame: url("assets/universal-ui/archive-frame-kit-v1.png");
+      --card-frame: url("assets/universal-ui/archive-frame-kit-v1.png");
+      --display-font: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      --frame-filter: none;
+      --frame-opacity: .91;
+    }
+
+    html[data-skin="clean"] {
+      --bg: #07100f;
+      --bg-rgb: 7, 16, 15;
+      --surface: #10201d;
+      --surface-rgb: 16, 32, 29;
+      --surface-2: #152923;
+      --text: #f2f5f2;
+      --muted: #b7c5c0;
+      --dim: #7f918b;
+      --accent: #63d6a5;
+      --accent-rgb: 99, 214, 165;
+      --secondary: #7bcfe1;
+      --secondary-rgb: 123, 207, 225;
+      --frame-filter: grayscale(1) contrast(.82) brightness(.75);
+      --frame-opacity: .15;
+      --ornament: 0;
+    }
+
+    html[data-contrast="high"] {
+      --text: #fff;
+      --muted: #eef4f1;
+      --dim: #c8d4d0;
+      --accent: #ffe37f;
+      --accent-rgb: 255, 227, 127;
+      --secondary: #79ffd0;
+      --secondary-rgb: 121, 255, 208;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      overflow: hidden;
+      background:
+        radial-gradient(circle at var(--mx) var(--my), rgba(var(--accent-rgb), .09), transparent 29%),
+        radial-gradient(circle at 78% 12%, rgba(var(--secondary-rgb), .06), transparent 24%),
+        linear-gradient(145deg, var(--bg), #020404 76%);
+      color: var(--text);
+      font-family: "Segoe UI", Inter, system-ui, sans-serif;
+      transition: background .45s ease, color .3s ease;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      z-index: -2;
+      inset: -15%;
+      background:
+        conic-gradient(from 210deg at 47% 44%,
+          transparent 0 18%,
+          rgba(var(--accent-rgb), .035) 28%,
+          transparent 39% 64%,
+          rgba(var(--secondary-rgb), .028) 73%,
+          transparent 83%);
+      filter: blur(28px);
+      animation: ambient-drift 28s ease-in-out infinite alternate;
+    }
+
+    body::after {
+      z-index: 200;
+      opacity: calc(.07 * var(--ornament));
+      mix-blend-mode: soft-light;
+      background-image: repeating-radial-gradient(circle at 33% 72%, transparent 0 2px, rgba(255,255,255,.15) 2.5px 3px);
+      background-size: 12px 14px;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible,
+    input:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    #ambient {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: calc(.42 * var(--ornament));
+    }
+
+    #app {
+      width: min(1760px, 100%);
+      height: 100vh;
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: grid;
+      grid-template-rows: 68px minmax(0, 1fr) 76px;
+      gap: 9px;
+      position: relative;
+    }
+
+    .command-bar {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 238px minmax(160px, 1fr) auto auto;
+      align-items: center;
+      gap: 15px;
+      padding: 0 4px 5px;
+      border-bottom: 1px solid rgba(var(--accent-rgb), .18);
+      position: relative;
+    }
+
+    .command-bar::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      bottom: -1px;
+      width: 24%;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      box-shadow: 0 0 12px rgba(var(--accent-rgb), .35);
+    }
+
+    .brand {
+      min-width: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .brand strong {
+      color: #f5e8c8;
+      font: 600 20px var(--display-font);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(var(--accent-rgb), .16);
+    }
+
+    .brand small {
+      color: var(--dim);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .campaign-context {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .campaign-copy {
+      min-width: 0;
+    }
+
+    .campaign-copy b {
+      display: block;
+      overflow: hidden;
+      color: var(--text);
+      font: 600 14px var(--display-font);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .campaign-copy span {
+      display: block;
+      margin-top: 2px;
+      overflow: hidden;
+      color: var(--dim);
+      font-size: 10px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .command-button {
+      width: 31px;
+      height: 31px;
+      flex: 0 0 auto;
+      border: 1px solid rgba(var(--accent-rgb), .18);
+      background: rgba(0,0,0,.2);
+      color: var(--accent);
+      cursor: pointer;
+      clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+    }
+
+    .axis-lab {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .axis {
+      display: flex;
+      align-items: center;
+      padding: 3px;
+      border: 1px solid rgba(var(--accent-rgb), .12);
+      background: rgba(0,0,0,.2);
+    }
+
+    .axis > span {
+      padding: 0 6px;
+      color: var(--dim);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .axis button,
+    .utility-button {
+      min-width: 28px;
+      height: 26px;
+      padding: 0 7px;
+      border: 0;
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      font-size: 10px;
+      transition: color .18s, background .18s, box-shadow .18s;
+    }
+
+    .axis button:hover,
+    .utility-button:hover { color: var(--text); }
+
+    .axis button[aria-pressed="true"],
+    .utility-button[aria-pressed="true"] {
+      color: var(--accent);
+      background: rgba(var(--accent-rgb), .09);
+      box-shadow: inset 0 -1px var(--accent);
+    }
+
+    .utility-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .mobile-drawer-control { display:none; }
+
+    .utility-button {
+      min-width: 35px;
+      border: 1px solid rgba(var(--accent-rgb), .12);
+      background: rgba(0,0,0,.18);
+      clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    }
+
+    .presence {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 4px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .presence i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--secondary);
+      box-shadow: 0 0 9px rgba(var(--secondary-rgb), .75);
+    }
+
+    .shell {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 68px 246px minmax(510px, 1fr) 326px;
+      gap: 9px;
+    }
+
+    .module-rail {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 5px;
+      padding: 8px 5px;
+      border: 1px solid rgba(var(--accent-rgb), .13);
+      background:
+        linear-gradient(180deg, rgba(var(--accent-rgb), .045), transparent 22%),
+        rgba(3,8,8,.66);
+      box-shadow: inset 0 0 26px rgba(0,0,0,.35), 0 17px 40px rgba(0,0,0,.24);
+      clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    }
+
+    .module-button {
+      min-height: 55px;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 4px;
+      padding: 6px 2px;
+      border: 0;
+      border-left: 1px solid transparent;
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      position: relative;
+      transition: color .2s, background .2s, transform .2s;
+    }
+
+    .module-button:hover {
+      color: var(--text);
+      background: rgba(var(--accent-rgb), .045);
+    }
+
+    .module-button[aria-current="page"] {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: linear-gradient(90deg, rgba(var(--accent-rgb), .12), transparent);
+      text-shadow: 0 0 11px rgba(var(--accent-rgb), .35);
+    }
+
+    .module-button[aria-current="page"]::after {
+      content: "";
+      position: absolute;
+      right: 2px;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .module-icon {
+      font: 600 18px var(--display-font);
+      line-height: 1;
+    }
+
+    .module-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .module-spacer { flex: 1; }
+
+    .art-panel {
+      --role-art: var(--panel-frame);
+      --slice: 108;
+      --panel-delay: 0ms;
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+      padding: 28px;
+      isolation: isolate;
+      opacity: 0;
+      transform: translateY(12px) scale(.988);
+      animation: panel-enter .46s calc(60ms + var(--panel-delay)) var(--ease) forwards;
+    }
+
+    .art-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      border: 30px solid transparent;
+      border-image-source: var(--role-art);
+      border-image-slice: var(--slice) fill;
+      border-image-width: 30px;
+      border-image-repeat: stretch;
+      filter: var(--frame-filter);
+      opacity: var(--frame-opacity);
+      pointer-events: none;
+      transition: filter .38s ease, opacity .35s ease;
+    }
+
+    .art-panel::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      z-index: 2;
+      pointer-events: none;
+      opacity: calc(.25 * var(--ornament));
+      background:
+        radial-gradient(circle at var(--shine-x, 50%) var(--shine-y, 20%),
+          rgba(255,255,255,.09),
+          rgba(var(--accent-rgb), .035) 17%,
+          transparent 38%);
+      mix-blend-mode: screen;
+    }
+
+    .panel-inner {
+      height: 100%;
+      min-height: 0;
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .collection-rail {
+      --role-art: var(--rail-frame);
+      --slice: 116;
+      --panel-delay: 0ms;
+      padding: 29px 25px;
+    }
+
+    .primary-stage {
+      --role-art: var(--stage-frame);
+      --slice: 105;
+      --panel-delay: 55ms;
+      padding: 29px 28px;
+    }
+
+    .context-lens {
+      --role-art: var(--lens-frame);
+      --slice: 110;
+      --panel-delay: 110ms;
+      padding: 29px 25px;
+    }
+
+    .panel-heading {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 11px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(var(--accent-rgb), .15);
+      position: relative;
+    }
+
+    .panel-heading::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -1px;
+      width: 42px;
+      height: 1px;
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(var(--accent-rgb), .45);
+    }
+
+    .panel-heading small {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--dim);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .panel-heading h2 {
+      margin: 0;
+      color: var(--text);
+      font: 600 17px/1.05 var(--display-font);
+    }
+
+    .panel-count {
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .search {
+      position: relative;
+      margin-bottom: 9px;
+    }
+
+    .search input {
+      width: 100%;
+      height: 33px;
+      padding: 0 10px 0 29px;
+      border: 1px solid rgba(var(--accent-rgb), .12);
+      border-radius: 0;
+      background: rgba(0,0,0,.23);
+      color: var(--text);
+      outline: none;
+      clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    }
+
+    .search::before {
+      content: "⌕";
+      position: absolute;
+      left: 9px;
+      top: 7px;
+      z-index: 2;
+      color: var(--dim);
+      font-size: 14px;
+    }
+
+    .collection-list {
+      min-height: 0;
+      display: grid;
+      align-content: start;
+      gap: 5px;
+      overflow: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(var(--accent-rgb), .22) transparent;
+    }
+
+    .collection-entry {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 32px minmax(0,1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 7px;
+      border: 1px solid transparent;
+      border-bottom-color: rgba(255,255,255,.05);
+      background: linear-gradient(90deg, rgba(var(--accent-rgb), .028), transparent);
+      color: var(--muted);
+      text-align: left;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+
+    .collection-entry:hover {
+      color: var(--text);
+      background: linear-gradient(90deg, rgba(var(--accent-rgb), .09), transparent);
+      transform: translateX(2px);
+    }
+
+    .collection-entry[aria-pressed="true"] {
+      color: var(--text);
+      border-left-color: var(--accent);
+      background: linear-gradient(90deg, rgba(var(--accent-rgb), .13), transparent 74%);
+      box-shadow: inset 8px 0 18px rgba(var(--accent-rgb), .035);
+    }
+
+    .entry-icon,
+    .glyph {
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      background:
+        radial-gradient(circle at 36% 30%, rgba(var(--accent-rgb), .15), rgba(0,0,0,.22) 68%),
+        var(--surface-2);
+      box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .2);
+      clip-path: polygon(20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%,0 20%);
+    }
+
+    .entry-icon {
+      width: 31px;
+      height: 31px;
+      font: 600 13px var(--display-font);
+    }
+
+    .entry-copy { min-width: 0; }
+    .entry-copy b {
+      display: block;
+      overflow: hidden;
+      color: inherit;
+      font-size: 11px;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .entry-copy small {
+      display: block;
+      margin-top: 2px;
+      overflow: hidden;
+      color: var(--dim);
+      font-size: 9px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .entry-state {
+      color: var(--secondary);
+      font-size: 9px;
+      text-transform: uppercase;
+    }
+
+    .secret-mark {
+      color: var(--danger);
+      font-size: 10px;
+    }
+
+    .collection-foot {
+      margin-top: auto;
+      padding-top: 10px;
+      color: var(--dim);
+      border-top: 1px solid rgba(255,255,255,.05);
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .stage-content,
+    .lens-content {
+      min-height: 0;
+      flex: 1;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(var(--accent-rgb), .22) transparent;
+    }
+
+    .stage-toolbar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+
+    .chips,
+    .mode-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .chip,
+    .mode-tabs button {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border: 1px solid rgba(255,255,255,.07);
+      background: rgba(0,0,0,.17);
+      color: var(--dim);
+      font-size: 9px;
+      letter-spacing: .05em;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .chip.active,
+    .mode-tabs button[aria-pressed="true"] {
+      color: var(--accent);
+      border-color: rgba(var(--accent-rgb), .26);
+      background: rgba(var(--accent-rgb), .07);
+      box-shadow: inset 0 -1px var(--accent);
+    }
+
+    .generic-button,
+    .primary-button,
+    .danger-button {
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid rgba(var(--accent-rgb), .24);
+      background: rgba(0,0,0,.22);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 650;
+      clip-path: polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+      transition: transform .18s, filter .18s, background .18s;
+    }
+
+    .primary-button {
+      color: #fff0ca;
+      background:
+        linear-gradient(180deg, rgba(var(--accent-rgb), .22), rgba(var(--accent-rgb), .07)),
+        rgba(0,0,0,.28);
+    }
+
+    .danger-button {
+      color: #ffd5d8;
+      border-color: rgba(var(--danger-rgb), .28);
+      background: rgba(var(--danger-rgb), .07);
+    }
+
+    .generic-button:hover,
+    .primary-button:hover,
+    .danger-button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.16);
+    }
+
+    .card-grid {
+      min-height: 0;
+      height: calc(100% - 40px);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+      grid-template-rows: repeat(2, minmax(145px, 1fr));
+      gap: 7px;
+    }
+
+    .object-card {
+      --delay: 0ms;
+      min-width: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 11px 12px;
+      border: 10px solid transparent;
+      border-image-source: var(--card-frame);
+      border-image-slice: 148 fill;
+      border-image-width: 10px;
+      border-image-repeat: stretch;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      isolation: isolate;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(9px) scale(.988);
+      animation: card-enter .36s var(--delay) var(--ease) forwards;
+      transition: transform .2s var(--ease), filter .2s;
+    }
+
+    .object-card::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      z-index: -2;
+      background:
+        linear-gradient(180deg, rgba(3,7,7,.08), rgba(3,7,7,.88)),
+        var(--art, radial-gradient(circle at 72% 25%, rgba(var(--accent-rgb), .09), transparent 42%));
+      background-position: center;
+      background-size: cover;
+      opacity: var(--art-opacity, .75);
+      filter: saturate(.7) contrast(1.05);
+      transition: transform .45s var(--ease), opacity .25s, filter .25s;
+    }
+
+    .object-card::after {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      bottom: 2px;
+      z-index: 3;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      box-shadow: 0 0 9px rgba(var(--accent-rgb), .65);
+      transition: opacity .2s;
+    }
+
+    .object-card:hover {
+      z-index: 2;
+      transform: translateY(-4px) scale(1.008);
+      filter: brightness(1.08) drop-shadow(0 12px 14px rgba(0,0,0,.34));
+    }
+
+    .object-card:hover::before { transform: scale(1.035); filter: saturate(.9) contrast(1.04); }
+    .object-card[aria-pressed="true"] {
+      filter: brightness(1.13) drop-shadow(0 0 9px rgba(var(--accent-rgb), .28));
+    }
+    .object-card[aria-pressed="true"]::after { opacity: 1; }
+
+    .card-illustration {
+      position: absolute;
+      left: 24%;
+      right: 24%;
+      top: 24%;
+      z-index: 0;
+      display: grid;
+      aspect-ratio: 1;
+      place-items: center;
+      color: var(--secondary);
+      border: 1px solid rgba(var(--accent-rgb), .12);
+      background:
+        radial-gradient(circle, rgba(var(--accent-rgb), .11), transparent 58%),
+        repeating-conic-gradient(from 45deg, rgba(var(--accent-rgb), .035) 0 1deg, transparent 1deg 45deg);
+      box-shadow:
+        inset 0 0 35px rgba(var(--accent-rgb), .05),
+        0 0 28px rgba(var(--accent-rgb), .04);
+      opacity: .62;
+      transform: rotate(45deg);
+      pointer-events: none;
+    }
+
+    .card-illustration::before,
+    .card-illustration::after {
+      content: "";
+      position: absolute;
+      inset: 12%;
+      border: 1px solid rgba(var(--accent-rgb), .12);
+      border-radius: 50%;
+    }
+
+    .card-illustration::after {
+      inset: 28%;
+      border-style: dotted;
+      box-shadow: 0 0 17px rgba(var(--accent-rgb), .12);
+    }
+
+    .card-illustration span {
+      position: relative;
+      z-index: 1;
+      color: var(--accent);
+      font: 400 31px/1 var(--display-font);
+      text-shadow: 0 0 18px rgba(var(--accent-rgb), .44);
+      transform: rotate(-45deg);
+    }
+
+    .card-top,
+    .object-card h3,
+    .card-meta {
+      z-index: 2;
+    }
+
+    .card-top {
+      position: absolute;
+      left: 11px;
+      right: 11px;
+      top: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .glyph {
+      width: 36px;
+      height: 36px;
+      font-size: 14px;
+    }
+
+    .quantity,
+    .badge {
+      padding: 3px 5px;
+      color: var(--accent);
+      border: 1px solid rgba(var(--accent-rgb), .2);
+      background: rgba(4,8,8,.62);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .object-card h3 {
+      margin: 0 0 5px;
+      color: var(--text);
+      font: 600 13px/1.12 var(--display-font);
+      text-shadow: 0 2px 5px #000;
+      overflow-wrap: anywhere;
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      color: var(--dim);
+      font-size: 9px;
+    }
+
+    .card-meta span:first-child {
+      color: var(--secondary);
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .detail-hero {
+      min-height: 185px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      margin: -3px 0 11px;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 45%, rgba(var(--accent-rgb), .11), transparent 42%);
+      clip-path: polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);
+    }
+
+    .detail-hero::before {
+      content: "";
+      position: absolute;
+      width: 122px;
+      height: 122px;
+      border: 1px solid rgba(var(--accent-rgb), .1);
+      transform: rotate(45deg);
+      animation: halo-turn 34s linear infinite;
+    }
+
+    .detail-hero img {
+      position: absolute;
+      inset: -16% 3% -18%;
+      width: 94%;
+      height: 134%;
+      object-fit: contain;
+      object-position: center;
+      opacity: .84;
+      filter: saturate(.75) contrast(1.06) drop-shadow(0 16px 20px rgba(0,0,0,.55));
+      mix-blend-mode: screen;
+      mask-image: linear-gradient(180deg,transparent 0,#000 12%,#000 73%,transparent 97%);
+      transition: opacity .32s, transform .45s var(--ease);
+    }
+
+    .detail-hero .fallback-glyph {
+      width: 84px;
+      height: 84px;
+      position: relative;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      background: rgba(var(--surface-rgb), .82);
+      box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .22), 0 16px 26px rgba(0,0,0,.4);
+      clip-path: polygon(18% 0,82% 0,100% 18%,100% 82%,82% 100%,18% 100%,0 82%,0 18%);
+      font: 600 30px var(--display-font);
+    }
+
+    .lens-kicker {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 5px;
+      color: var(--secondary);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .lens-kicker::before { content:""; width:18px; height:1px; background:var(--secondary); }
+
+    .lens-content h3 {
+      margin: 0 0 7px;
+      font: 600 20px/1.08 var(--display-font);
+    }
+
+    .lens-description {
+      margin: 0 0 11px;
+      color: var(--muted);
+      font: italic 10px/1.45 var(--display-font);
+    }
+
+    .field-list {
+      display: grid;
+      border-top: 1px solid rgba(255,255,255,.055);
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: 83px minmax(0,1fr);
+      gap: 8px;
+      padding: 6px 1px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      font-size: 10px;
+    }
+
+    .field span { color: var(--dim); }
+    .field b { color: var(--text); text-align: right; overflow-wrap: anywhere; }
+
+    .lens-actions {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      padding-top: 9px;
+    }
+
+    .document {
+      min-height: 100%;
+      padding: 24px clamp(24px, 5vw, 68px);
+      background:
+        linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .035) 48%, transparent),
+        rgba(var(--surface-rgb), .26);
+      box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .06);
+    }
+
+    .document .doc-kicker {
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .document h1 {
+      margin: 8px 0 4px;
+      font: 600 clamp(27px, 3vw, 42px)/1.02 var(--display-font);
+    }
+
+    .document .lead {
+      color: var(--muted);
+      font: italic 13px/1.5 var(--display-font);
+    }
+
+    .document p {
+      max-width: 72ch;
+      color: #c7cfcb;
+      font: 12px/1.7 var(--display-font);
+    }
+
+    .relation-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 7px;
+      margin-top: 22px;
+    }
+
+    .relation {
+      padding: 11px;
+      border: 1px solid rgba(var(--accent-rgb), .11);
+      background: rgba(0,0,0,.16);
+    }
+
+    .relation small { color: var(--dim); font-size: 9px; text-transform: uppercase; }
+    .relation b { display:block; margin-top:3px; font:600 11px var(--display-font); }
+
+    .cast-sheet {
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 11px;
+    }
+
+    .cast-hero {
+      display: grid;
+      grid-template-columns: 94px minmax(0,1fr) auto;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      border: 1px solid rgba(var(--accent-rgb), .11);
+      background:
+        radial-gradient(circle at 10% 50%, rgba(var(--accent-rgb), .12), transparent 28%),
+        rgba(0,0,0,.13);
+    }
+
+    .portrait {
+      width: 88px;
+      height: 88px;
+      display:grid;
+      place-items:center;
+      color:var(--accent);
+      border:1px solid rgba(var(--accent-rgb),.25);
+      background:radial-gradient(circle,rgba(var(--accent-rgb),.12),rgba(0,0,0,.45));
+      font:600 28px var(--display-font);
+      clip-path:polygon(18% 0,82% 0,100% 18%,100% 82%,82% 100%,18% 100%,0 82%,0 18%);
+    }
+
+    .cast-hero h1 { margin:0 0 5px; font:600 26px/1 var(--display-font); }
+    .cast-hero p { margin:0; color:var(--muted); font-size:10px; }
+
+    .resources {
+      min-width: 160px;
+      display:grid;
+      gap:7px;
+    }
+
+    .resource-line { font-size:10px; color:var(--dim); }
+    .resource-line b { float:right; color:var(--text); }
+    .resource-track { clear:both; height:5px; margin-top:4px; background:rgba(0,0,0,.4); }
+    .resource-track i { display:block; height:100%; width:var(--value); background:linear-gradient(90deg,var(--secondary),var(--accent)); }
+
+    .field-groups {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+    }
+
+    .field-group {
+      padding:12px;
+      border:1px solid rgba(var(--accent-rgb),.1);
+      background:rgba(0,0,0,.13);
+    }
+
+    .field-group h3 { margin:0 0 8px; font:600 13px var(--display-font); }
+    .skill { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.045); color:var(--muted); font-size:11px; }
+    .skill b { color:var(--text); }
+
+    .session-grid {
+      min-height:100%;
+      display:grid;
+      grid-template-columns:minmax(0,1.45fr) minmax(240px,.8fr);
+      grid-template-rows:minmax(210px,1.1fr) minmax(170px,.9fr);
+      gap:8px;
+    }
+
+    .session-hero {
+      grid-row:1 / -1;
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:flex-end;
+      padding:22px;
+      background-size:cover;
+      background-position:center;
+      isolation:isolate;
+    }
+
+    .session-hero::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:-1;
+      background:linear-gradient(180deg,rgba(2,5,5,.06),rgba(2,5,5,.9));
+    }
+
+    .session-hero h1 { margin:5px 0; font:600 30px/1 var(--display-font); }
+    .session-hero p { margin:0; max-width:55ch; color:var(--muted); font-size:10px; }
+
+    .dashboard-card {
+      padding:14px;
+      border:1px solid rgba(var(--accent-rgb),.1);
+      background:rgba(0,0,0,.15);
+    }
+
+    .dashboard-card h3 { margin:0 0 9px; font:600 13px var(--display-font); }
+    .agenda-row { display:grid; grid-template-columns:auto 1fr auto; gap:8px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.045); font-size:10px; }
+    .agenda-row i { color:var(--secondary); font-style:normal; }
+    .agenda-row span { color:var(--muted); }
+    .agenda-row small { color:var(--dim); }
+
+    .table-workspace {
+      min-height:0;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .table-workspace > .stage-toolbar {
+      flex:0 0 auto;
+    }
+
+    .scene-stage {
+      min-height:0;
+      flex:1;
+      position:relative;
+      overflow:hidden;
+      background:#030606;
+      isolation:isolate;
+    }
+
+    .scene-art {
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      filter:saturate(.78) brightness(.68) contrast(1.05);
+      transform:scale(1.015);
+      transition:filter .35s, transform .7s var(--ease);
+    }
+
+    .scene-stage::after {
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      box-shadow:inset 0 0 100px 28px rgba(0,0,0,.58);
+      background:linear-gradient(180deg,rgba(0,0,0,.18),transparent 33%,rgba(0,0,0,.58));
+    }
+
+    .scene-title {
+      position:absolute;
+      left:22px;
+      bottom:19px;
+      z-index:5;
+    }
+
+    .scene-title small { color:var(--accent); font-size:9px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }
+    .scene-title h1 { margin:5px 0 3px; font:600 28px/1 var(--display-font); text-shadow:0 3px 9px #000; }
+    .scene-title p { margin:0; color:#c7d0cc; font-size:11px; }
+
+    .tactical-grid {
+      position:absolute;
+      inset:0;
+      z-index:2;
+      background-image:
+        linear-gradient(rgba(var(--accent-rgb),.12) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(var(--accent-rgb),.12) 1px,transparent 1px);
+      background-size:54px 54px;
+      mix-blend-mode:screen;
+    }
+
+    .token {
+      position:absolute;
+      z-index:4;
+      left:var(--x);
+      top:var(--y);
+      width:42px;
+      height:42px;
+      display:grid;
+      place-items:center;
+      border:2px solid var(--token-color,var(--secondary));
+      border-radius:50%;
+      background:rgba(4,10,9,.88);
+      box-shadow:0 0 16px var(--token-color,var(--secondary));
+      color:var(--text);
+      font:700 10px var(--display-font);
+      transform:translate(-50%,-50%);
+    }
+
+    .outline-view {
+      min-height:0;
+      flex:1;
+      overflow:auto;
+      padding:15px;
+      background:rgba(0,0,0,.14);
+    }
+
+    .outline-group { margin-bottom:14px; }
+    .outline-group h3 { margin:0 0 6px; color:var(--accent); font:600 12px var(--display-font); }
+    .outline-row { display:grid; grid-template-columns:1fr auto auto; gap:12px; padding:8px; border-bottom:1px solid rgba(255,255,255,.05); color:var(--muted); font-size:11px; }
+    .outline-row b { color:var(--text); }
+
+    .forge-grid {
+      min-height:100%;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(270px,.7fr);
+      gap:8px;
+    }
+
+    .theme-preview {
+      position:relative;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      border:1px solid rgba(var(--accent-rgb),.11);
+      background:radial-gradient(circle,rgba(var(--accent-rgb),.09),rgba(0,0,0,.2));
+    }
+
+    .mini-shell {
+      width:78%;
+      aspect-ratio:1.55;
+      display:grid;
+      grid-template-columns:18% 1fr 25%;
+      gap:4px;
+      padding:7px;
+      border:1px solid rgba(var(--accent-rgb),.35);
+      box-shadow:0 18px 35px rgba(0,0,0,.42),inset 0 0 20px rgba(var(--accent-rgb),.04);
+      transform:perspective(700px) rotateX(3deg) rotateY(-5deg);
+    }
+
+    .mini-shell span { border:1px solid rgba(var(--accent-rgb),.18); background:rgba(var(--surface-rgb),.65); }
+    .forge-controls { display:grid; align-content:start; gap:7px; }
+    .control-row { padding:10px; border:1px solid rgba(var(--accent-rgb),.1); background:rgba(0,0,0,.14); }
+    .control-row label { display:flex; justify-content:space-between; color:var(--muted); font-size:10px; }
+    .control-row input { width:100%; margin-top:8px; accent-color:var(--accent); }
+
+    .trace-box {
+      margin-top:10px;
+      padding:10px;
+      border:1px solid rgba(var(--secondary-rgb),.18);
+      background:rgba(var(--secondary-rgb),.035);
+    }
+
+    .trace-box h4 { margin:0 0 7px; color:var(--secondary); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+    .trace-step { display:flex; gap:6px; padding:4px 0; color:var(--muted); font-size:10px; }
+    .trace-step i { color:var(--secondary); font-style:normal; }
+
+    .session-shelf {
+      --role-art: var(--stage-frame);
+      --slice: 105;
+      padding: 19px 23px;
+      margin-left: 77px;
+    }
+
+    .session-shelf::before {
+      border-width:20px;
+      border-image-width:20px;
+    }
+
+    .shelf-inner {
+      height:100%;
+      min-width:0;
+      display:grid;
+      grid-template-columns:235px minmax(0,1fr) 280px;
+      align-items:center;
+      gap:13px;
+      position:relative;
+      z-index:3;
+    }
+
+    .actor-glance {
+      min-width:0;
+      display:grid;
+      grid-template-columns:38px minmax(0,1fr);
+      gap:9px;
+      align-items:center;
+    }
+
+    .actor-glance .portrait { width:38px; height:38px; font-size:12px; }
+    .actor-copy { min-width:0; }
+    .actor-copy b { display:block; overflow:hidden; font:600 11px var(--display-font); text-overflow:ellipsis; white-space:nowrap; }
+    .actor-copy span { display:block; margin-top:3px; color:var(--dim); font-size:9px; }
+    .micro-track { height:3px; margin-top:5px; background:rgba(0,0,0,.45); }
+    .micro-track i { display:block; width:72%; height:100%; background:linear-gradient(90deg,var(--secondary),var(--accent)); }
+
+    .shelf-actions {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:5px;
+      overflow-x:auto;
+      scrollbar-width:none;
+    }
+
+    .shelf-action {
+      flex:0 0 auto;
+      min-width:72px;
+      height:36px;
+      padding:0 9px;
+      border:1px solid rgba(var(--accent-rgb),.19);
+      background:rgba(0,0,0,.22);
+      color:var(--muted);
+      cursor:pointer;
+      font-size:10px;
+      transition:.18s ease;
+      clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+    }
+
+    .shelf-action:hover { color:var(--text); transform:translateY(-2px); background:rgba(var(--accent-rgb),.07); }
+    .shelf-action.primary { color:var(--accent); border-color:rgba(var(--accent-rgb),.38); }
+
+    .shelf-history {
+      min-width:0;
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+      gap:8px;
+      color:var(--dim);
+      font-size:9px;
+    }
+
+    .history-copy { min-width:0; text-align:right; }
+    .history-copy b { display:block; overflow:hidden; color:var(--muted); font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+    .history-copy span { display:block; margin-top:2px; }
+
+    #focus-transfer {
+      position:fixed;
+      inset:0;
+      z-index:300;
+      width:100vw;
+      height:100vh;
+      pointer-events:none;
+      opacity:0;
+    }
+
+    #focus-transfer.play { animation:transfer-fade .68s ease-out forwards; }
+    #focus-path {
+      fill:none;
+      stroke:var(--accent);
+      stroke-width:1.3;
+      stroke-linecap:round;
+      stroke-dasharray:1;
+      stroke-dashoffset:1;
+      filter:drop-shadow(0 0 5px rgba(var(--accent-rgb),.9));
+    }
+    #focus-transfer.play #focus-path { animation:transfer-draw .5s var(--ease) forwards; }
+    #focus-orb { fill:var(--accent); opacity:0; filter:drop-shadow(0 0 8px rgba(var(--accent-rgb),1)); }
+    #focus-transfer.play #focus-orb { animation:orb-pop .5s .14s var(--ease) forwards; }
+
+    #toast {
+      position:fixed;
+      left:50%;
+      bottom:96px;
+      z-index:400;
+      min-width:270px;
+      padding:11px 17px;
+      border:1px solid rgba(var(--accent-rgb),.28);
+      background:rgba(var(--bg-rgb),.95);
+      color:var(--text);
+      box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 16px rgba(var(--accent-rgb),.07);
+      font-size:10px;
+      text-align:center;
+      opacity:0;
+      pointer-events:none;
+      transform:translate(-50%,10px) scale(.98);
+      transition:.22s var(--ease);
+      clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px);
+    }
+
+    #toast.show { opacity:1; transform:translate(-50%,0) scale(1); }
+
+    dialog {
+      width:min(560px,calc(100vw - 30px));
+      padding:0;
+      border:1px solid rgba(var(--accent-rgb),.32);
+      background:rgba(var(--bg-rgb),.97);
+      color:var(--text);
+      box-shadow:0 35px 100px rgba(0,0,0,.72),0 0 35px rgba(var(--accent-rgb),.08);
+    }
+
+    dialog::backdrop { background:rgba(0,0,0,.64); backdrop-filter:blur(7px); }
+    .command-dialog-inner { padding:18px; }
+    .command-dialog-inner h2 { margin:0 0 12px; font:600 18px var(--display-font); }
+    .command-dialog-inner input { width:100%; height:39px; padding:0 12px; border:1px solid rgba(var(--accent-rgb),.2); background:rgba(0,0,0,.22); color:var(--text); }
+    .command-results { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin-top:10px; }
+    .command-result { padding:11px; border:1px solid rgba(var(--accent-rgb),.1); background:rgba(255,255,255,.018); color:var(--muted); cursor:pointer; text-align:left; }
+    .command-result:hover { color:var(--text); background:rgba(var(--accent-rgb),.06); }
+
+    html[data-atmosphere="clean"] {
+      --frame-opacity:.18;
+      --ornament:0;
+    }
+
+    html[data-atmosphere="cinematic"] {
+      --frame-opacity:1;
+      --ornament:1.25;
+    }
+
+    html[data-atmosphere="cinematic"] .scene-art { filter:saturate(.93) brightness(.78) contrast(1.04); transform:scale(1.035); }
+
+    html[data-role="observer"] .collection-rail,
+    html[data-role="observer"] .context-lens { display:none; }
+    html[data-role="observer"] .shell { grid-template-columns:68px minmax(0,1fr); }
+    html[data-role="observer"] .primary-stage { grid-column:2; }
+    html[data-role="observer"] .session-shelf { margin-left:77px; }
+
+    @keyframes panel-enter { to { opacity:1; transform:none; } }
+    @keyframes card-enter { to { opacity:1; transform:none; } }
+    @keyframes ambient-drift { to { transform:translate3d(2.5%,-2%,0) rotate(3deg) scale(1.04); } }
+    @keyframes halo-turn { to { transform:rotate(405deg); } }
+    @keyframes transfer-fade { 0%,72%{opacity:.8} 100%{opacity:0} }
+    @keyframes transfer-draw { to { stroke-dashoffset:0; } }
+    @keyframes orb-pop { 0%{opacity:0;r:2} 35%{opacity:1;r:5} 100%{opacity:0;r:9} }
+
+    @media (max-width:1380px) {
+      .command-bar { grid-template-columns:190px minmax(130px,1fr) auto auto; gap:8px; }
+      .brand small { display:none; }
+      .utility-controls .presence { display:none; }
+      .shell { grid-template-columns:64px 220px minmax(470px,1fr) 292px; }
+      .card-grid { grid-template-columns:repeat(2,minmax(140px,1fr)); grid-template-rows:repeat(3,minmax(125px,1fr)); }
+    }
+
+    @media (max-width:1050px) {
+      body { overflow:auto; }
+      #app { height:auto; min-height:100vh; grid-template-rows:auto auto auto; }
+      .command-bar { grid-template-columns:1fr auto; min-height:64px; }
+      .axis-lab { grid-column:1 / -1; overflow-x:auto; padding-bottom:5px; }
+      .utility-controls { grid-column:2; grid-row:1; }
+      .campaign-context { display:none; }
+      .shell { grid-template-columns:62px minmax(220px,.42fr) minmax(460px,1fr); min-height:750px; }
+      .context-lens { grid-column:2 / -1; min-height:480px; }
+      .session-shelf { margin-left:71px; min-height:76px; }
+    }
+
+    @media (max-width:760px) {
+      #app { padding:8px; }
+      .shell { grid-template-columns:52px minmax(0,1fr); align-items:start; }
+      .module-rail {
+        grid-column:1;
+        grid-row:1;
+        position:sticky;
+        top:8px;
+        height:calc(100vh - 170px);
+      }
+      .mobile-drawer-control { display:block; }
+      .collection-rail,
+      .context-lens {
+        display:none;
+        position:fixed;
+        left:69px;
+        right:8px;
+        top:91px;
+        bottom:78px;
+        z-index:310;
+        min-height:0;
+        background:var(--bg);
+        box-shadow:0 24px 70px rgba(0,0,0,.78);
+      }
+      html[data-mobile-drawer="collection"] .collection-rail { display:block; }
+      html[data-mobile-drawer="lens"] .context-lens { display:block; }
+      html[data-role="observer"] .collection-rail,
+      html[data-role="observer"] .context-lens { display:none !important; }
+      html[data-role="observer"] .mobile-drawer-control { display:none; }
+      .primary-stage { grid-column:2; min-height:calc(100vh - 170px); }
+      .module-label { display:none; }
+      .session-shelf {
+        position:fixed;
+        left:69px;
+        right:8px;
+        bottom:8px;
+        z-index:320;
+        width:auto;
+        height:62px;
+        min-height:62px;
+        margin:0;
+        padding:12px 18px;
+        background:var(--bg);
+        box-shadow:0 -16px 40px rgba(0,0,0,.55);
+      }
+      .shelf-inner { grid-template-columns:1fr; }
+      .actor-glance,.shelf-history { display:none; }
+      .card-grid { grid-template-columns:repeat(2,minmax(120px,1fr)); }
+      .field-groups,.relation-strip { grid-template-columns:1fr; }
+    }
+
+    html[data-motion="reduced"] *,
+    html[data-motion="reduced"] *::before,
+    html[data-motion="reduced"] *::after {
+      scroll-behavior:auto !important;
+      animation-duration:.01ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.01ms !important;
+    }
+    html[data-motion="reduced"] #ambient { display:none; }
+
+    @media (prefers-reduced-motion:reduce) {
+      *,*::before,*::after {
+        scroll-behavior:auto !important;
+        animation-duration:.01ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.01ms !important;
+      }
+      #ambient { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="ambient" aria-hidden="true"></canvas>
+
+  <main id="app">
+    <header class="command-bar">
+      <div class="brand"><strong>Chronicle</strong><small>Triumph shell</small></div>
+
+      <div class="campaign-context">
+        <button class="command-button" id="command-button" type="button" aria-label="Befehlspalette öffnen">⌕</button>
+        <div class="campaign-copy"><b id="campaign-name">Die Schatten von Aldenfall</b><span id="campaign-line">Session 7 · Hafenviertel bei Nacht</span></div>
+      </div>
+
+      <div class="axis-lab" aria-label="Unabhängige Preview-Achsen">
+        <div class="axis" role="group" aria-label="Inhaltspaket">
+          <span>Inhalt</span>
+          <button type="button" data-world="aldenfall" aria-pressed="true">A</button>
+          <button type="button" data-world="kepler" aria-pressed="false">K9</button>
+          <button type="button" data-world="nebelakte" aria-pressed="false">N17</button>
+        </div>
+        <div class="axis" role="group" aria-label="Art-Skin">
+          <span>Skin</span>
+          <button type="button" data-skin="relic" aria-pressed="true">Relic</button>
+          <button type="button" data-skin="signal" aria-pressed="false">Signal</button>
+          <button type="button" data-skin="archive" aria-pressed="false">Archiv</button>
+          <button type="button" data-skin="clean" aria-pressed="false">Clean</button>
+        </div>
+        <div class="axis" role="group" aria-label="Rolle">
+          <span>Rolle</span>
+          <button type="button" data-role="gm" aria-pressed="true">GM</button>
+          <button type="button" data-role="player" aria-pressed="false">Player</button>
+          <button type="button" data-role="observer" aria-pressed="false">View</button>
+        </div>
+      </div>
+
+      <div class="utility-controls">
+        <button class="utility-button mobile-drawer-control" type="button" data-mobile-drawer="collection" aria-label="Sammlung öffnen" aria-pressed="false">List</button>
+        <button class="utility-button mobile-drawer-control" type="button" data-mobile-drawer="lens" aria-label="Kontextdetails öffnen" aria-pressed="false">Lens</button>
+        <button class="utility-button" id="atmosphere-button" type="button" aria-pressed="false">Craft</button>
+        <button class="utility-button" id="motion-button" type="button" aria-pressed="false">Motion</button>
+        <button class="utility-button" id="contrast-button" type="button" aria-pressed="false">A11y</button>
+        <span class="presence"><i></i><span>4 online</span></span>
+      </div>
+    </header>
+
+    <section class="shell">
+      <nav class="module-rail" id="module-rail" aria-label="Hauptbereiche">
+        <button class="module-button" type="button" data-module="session" aria-label="Session"><span class="module-icon">⌂</span><span class="module-label">Session</span></button>
+        <button class="module-button" type="button" data-module="story" aria-label="Story"><span class="module-icon">¶</span><span class="module-label">Story</span></button>
+        <button class="module-button" type="button" data-module="cast" aria-label="Cast"><span class="module-icon">◉</span><span class="module-label">Cast</span></button>
+        <button class="module-button" type="button" data-module="library" aria-label="Library" aria-current="page"><span class="module-icon">◇</span><span class="module-label">Library</span></button>
+        <button class="module-button" type="button" data-module="table" aria-label="Table"><span class="module-icon">⌗</span><span class="module-label">Table</span></button>
+        <div class="module-spacer"></div>
+        <button class="module-button" type="button" data-module="forge" aria-label="Forge"><span class="module-icon">⚒</span><span class="module-label">Forge</span></button>
+      </nav>
+
+      <aside class="art-panel collection-rail" aria-label="Sammlung">
+        <div class="panel-inner" id="collection-panel"></div>
+      </aside>
+
+      <section class="art-panel primary-stage" aria-label="Primäre Arbeitsfläche">
+        <div class="panel-inner" id="stage-panel"></div>
+      </section>
+
+      <aside class="art-panel context-lens" aria-label="Kontextdetails">
+        <div class="panel-inner" id="lens-panel"></div>
+      </aside>
+    </section>
+
+    <footer class="art-panel session-shelf" aria-label="Session-Aktionsleiste">
+      <div class="shelf-inner" id="session-shelf"></div>
+    </footer>
+  </main>
+
+  <svg id="focus-transfer" aria-hidden="true">
+    <path id="focus-path" pathLength="1"></path>
+    <circle id="focus-orb" cx="0" cy="0" r="3"></circle>
+  </svg>
+
+  <dialog id="command-dialog" aria-labelledby="command-title">
+    <div class="command-dialog-inner">
+      <h2 id="command-title">Alles in Chronicle</h2>
+      <input id="command-search" type="search" placeholder="Bereich, Objekt oder Aktion …" autocomplete="off">
+      <div class="command-results" id="command-results"></div>
+    </div>
+  </dialog>
+
+  <output id="toast" aria-live="polite"></output>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var WORLDS = {
+        aldenfall: {
+          universe: "Westmark-Chroniken",
+          campaign: "Die Schatten von Aldenfall",
+          session: "Session 7 · Hafenviertel bei Nacht",
+          system: "How to be a Hero · v2.1",
+          sceneImage: "assets/harbor-night/harbor-map.png",
+          sceneName: "Hafenviertel bei Nacht",
+          sceneLine: "Die Nachtlieferung muss den violetten Kai erreichen.",
+          actor: { name:"Brakka Eisenfaust", initials:"BE", role:"Zwergin · Schmiedin", resource:"74 / 100 LP" },
+          items: [
+            { id:"blade", icon:"†", name:"Kurzschwert »Funkenbiss«", type:"Waffe", meta:"ausgerüstet", qty:1, art:"assets/universal-ui/funkenbiss-detail-v2.png", visibility:"Besitzer + SL", action:"Ablegen", description:"Eine konkrete Instanz der Kurzschwert-Vorlage. Kerben, Name und Geschichte gehören nur diesem Gegenstand.", fields:[["Schaden","1W10+3"],["Gewicht","1,2 kg"],["Zustand","Kerbe am Griff"],["Vorlage","Kurzschwert v1.2"]] },
+            { id:"potion", icon:"◒", name:"Heiltrank", type:"Verbrauch", meta:"2 Ladungen", qty:2, visibility:"Gruppe", action:"Benutzen", description:"Dunkelrote Flüssigkeit in einer dickwandigen Phiole.", fields:[["Wirkung","+2W10 LP"],["Gewicht","0,5 kg"],["Ladungen","2 / 2"],["Aktion","Verbrauchen"]] },
+            { id:"rope", icon:"∞", name:"Hanfseil, 10 Schritt", type:"Werkzeug", meta:"3,0 kg", qty:1, visibility:"Gruppe", action:"Ausrüsten", description:"Robustes Reisegut zum Klettern und Sichern.", fields:[["Nutzen","Klettern · Sichern"],["Gewicht","3,0 kg"],["Zustand","trocken"],["Teilbar","nein"]] },
+            { id:"letter", icon:"□", name:"Versiegelter Brief", type:"Dokument", meta:"Questobjekt", qty:1, secret:true, audience:["player"], visibility:"Besitzer + SL", action:"Untersuchen", description:"Das Wachssiegel des Hafenmeisters ist noch ungebrochen.", fields:[["Hinweis","Siegel ungebrochen"],["Gewicht","0,1 kg"],["Quest","Die Nachtlieferung"],["Fallbar","nein"]] },
+            { id:"lantern", icon:"☼", name:"Sturmlaterne", type:"Werkzeug", meta:"windfest", qty:1, visibility:"Gruppe", action:"Entzünden", description:"Eine schwere Laterne mit geschützt liegender Flamme.", fields:[["Licht","6 Schritt"],["Brenndauer","3 Stunden"],["Gewicht","1,1 kg"],["Brennstoff","72 %"]] },
+            { id:"shard", icon:"◇", name:"Flüsternder Splitter", type:"Anomalie", meta:"unbekannt", qty:1, secret:true, audience:["player"], visibility:"Nur Besitzer", action:"Resonanz prüfen", description:"Kaltes Material, das manchmal eine Stimme trägt.", fields:[["Resonanz","schwach"],["Analyse","offen"],["Gewicht","0,2 kg"],["Bindung","Brakka"]] }
+          ],
+          story: [
+            { id:"night-delivery", icon:"¶", name:"Die Nachtlieferung", type:"Quest", meta:"aktiv", visibility:"Gruppe", summary:"Eine versiegelte Lieferung soll den violetten Kai erreichen, bevor die Wache Verstärkung ruft.", body:["Der Hafenmeister bestreitet, eine Lieferung erwartet zu haben. Trotzdem trägt der Brief sein ungebrochenes Siegel.","Mira sah kurz vor Mitternacht ein violettes Licht hinter Lagerhalle Drei. Oren vermutet keine gewöhnliche Laterne."], relations:["Hafenmeister Rauk","Lagerhalle Drei","Versiegelter Brief"] },
+            { id:"violet-door", icon:"◇", name:"Die violette Tür", type:"Ort", meta:"unentdeckt", secret:true, visibility:"Nur SL", summary:"Eine Tür, die auf keiner Karte des Hafenviertels verzeichnet ist.", body:["Die Tür erscheint nur, wenn das Licht der Sturmlaterne durch den flüsternden Splitter fällt.","Hinter ihr liegt kein Raum, sondern eine Erinnerung an den alten Hafen."], relations:["Flüsternder Splitter","Alter Hafen","Oren"] },
+            { id:"harbor-master", icon:"◉", name:"Hafenmeister Rauk", type:"Person", meta:"zweifelhaft", visibility:"Gruppe", summary:"Verwalter des Ostkais und mutmaßlicher Auftraggeber.", body:["Rauk beantwortet konkrete Fragen mit Gegenfragen. Seine Unterschrift stimmt mit dem Brief überein.","Er trägt eine schwarze Lotsenmünze an einer Kette."], relations:["Die Nachtlieferung","Ostkai","Lotsenmünze"] }
+          ],
+          cast: [
+            { id:"brakka", icon:"BE", name:"Brakka Eisenfaust", type:"Spielerfigur", meta:"74 LP", visibility:"Gruppe", role:"Zwergin · Schmiedin auf Wanderschaft", resources:[["Lebenspunkte",74],["Geistesblitze",66]], groups:[["Handeln",["Schwertkampf 62","Klettern 45","Schleichen 38"]],["Wissen",["Alchemie 55","Spurenlesen 47","Geschichte 41"]],["Soziales",["Überzeugen 58","Einschüchtern 44","Feilschen 36"]]] },
+            { id:"mira", icon:"MI", name:"Mira Vey", type:"Spielerfigur", meta:"91 LP", visibility:"Gruppe", role:"Spurenleserin · Informantin", resources:[["Lebenspunkte",91],["Fokus",58]], groups:[["Körper",["Klingen 54","Akrobatik 68","Ausdauer 42"]],["Geist",["Ermitteln 71","Straßenwissen 64","Alchemie 29"]],["Präsenz",["Täuschen 73","Verhandeln 59","Drohung 31"]]] },
+            { id:"oren", icon:"OR", name:"Oren Val", type:"Spielerfigur", meta:"62 LP", visibility:"Gruppe", role:"Arkanist · Chronist", resources:[["Lebenspunkte",62],["Resonanz",81]], groups:[["Körper",["Stab 33","Ausweichen 42","Ausdauer 37"]],["Wissen",["Arkane Kunde 78","Geschichte 66","Analyse 74"]],["Präsenz",["Lehren 61","Überzeugen 48","Ritual 70"]]] }
+          ],
+          scenes: [
+            { id:"harbor", icon:"⌗", name:"Hafenviertel bei Nacht", type:"Aktive Scene", meta:"Runde 3", visibility:"Gruppe", description:"Nasser Kai, Lagerhallen und die violette Tür.", fields:[["Modus","Cinematic / Tactical"],["Tokens","7"],["Lichter","5"],["Fog","spielerbezogen"]] },
+            { id:"warehouse", icon:"⌗", name:"Lagerhalle Drei", type:"Vorbereitet", meta:"verborgen", secret:true, visibility:"Nur SL", description:"Vorbereitete Folgeszene mit zwei möglichen Eingängen.", fields:[["Modus","Tactical"],["Tokens","11"],["Trigger","3"],["Status","bereit"]] }
+          ]
+        },
+
+        kepler: {
+          universe: "Helios-Zyklus",
+          campaign: "Kepler‑9 · Das leere Signal",
+          session: "Schicht 12 · Beobachtungsring",
+          system: "Void Crew · v0.9",
+          sceneImage: "assets/universal-ui/kepler-scene-v1.png",
+          sceneName: "Der leere Beobachtungsring",
+          sceneLine: "Das Signal stammt aus einem versiegelten Stationssektor.",
+          actor: { name:"Mira Sol", initials:"MS", role:"Außenteam · Technikerin", resource:"6 / 8 Stabilität" },
+          items: [
+            { id:"cutter", icon:"⌁", name:"Thermalschneider K‑4", type:"Werkzeug", meta:"ausgerüstet", qty:1, art:"assets/universal-ui/thermal-cutter-detail-v2.png", visibility:"Crew", action:"Diagnose", description:"Kompakter Industrieschneider mit protokolliertem Energieverbrauch.", fields:[["Leistung","4,8 kW"],["Ladung","63 %"],["Masse","3,1 kg"],["Zustand","Düse kalibrieren"]] },
+            { id:"medgel", icon:"◒", name:"Trauma-Gel", type:"Verbrauch", meta:"steril", qty:3, visibility:"Crew", action:"Anwenden", description:"Versiegelte Einwegkartusche für akute Gewebeschäden.", fields:[["Wirkung","+2 Stabilität"],["Dosis","45 ml"],["Masse","0,2 kg"],["Ablauf","2149-08"]] },
+            { id:"tether", icon:"∞", name:"Mag-Tether", type:"Werkzeug", meta:"20 m", qty:1, visibility:"Crew", action:"Koppeln", description:"Selbsteinrollende Sicherungsleine für Außenarbeiten.", fields:[["Länge","20 m"],["Zuglast","900 kg"],["Masse","1,7 kg"],["Anker","magnetisch"]] },
+            { id:"blackbox", icon:"□", name:"Blackbox-Fragment", type:"Daten", meta:"verschlüsselt", qty:1, secret:true, audience:["player"], visibility:"Nur Mira", action:"Entschlüsseln", description:"Beschädigter Speicher aus Sektor C.", fields:[["Integrität","41 %"],["Codec","unbekannt"],["Quelle","Sektor C"],["Freigabe","privat"]] },
+            { id:"beacon", icon:"⌁", name:"Notfall-Beacon", type:"Signal", meta:"standby", qty:1, visibility:"Crew", action:"Aktivieren", description:"Richtsender mit kurzer Reichweite.", fields:[["Reichweite","4.000 km"],["Ladung","92 %"],["Status","Standby"],["Risiko","Ortung"]] },
+            { id:"xenolith", icon:"◇", name:"Xenolith-Probe 7B", type:"Anomalie", meta:"isoliert", qty:1, secret:true, audience:["player"], visibility:"Mira + SL", action:"Scan starten", description:"Nicht klassifizierbares Material im Feldbehälter.", fields:[["Temperatur","−18 °C"],["Emission","11 mSv"],["Masse","0,8 kg"],["Protokoll","Quarantäne"]] }
+          ],
+          story: [
+            { id:"empty-signal", icon:"¶", name:"Das leere Signal", type:"Mysterium", meta:"aktiv", visibility:"Crew", summary:"Eine automatische Nachricht trifft alle 47 Minuten ein, enthält aber scheinbar keine Daten.", body:["Die Trägerwelle stammt eindeutig aus dem Beobachtungsring. Laut Stationslog ist dort seit neun Jahren niemand eingetragen.","Im Rauschen liegt ein zweiter Zeitstempel, der drei Stunden in der Zukunft liegt."], relations:["Beobachtungsring","Blackbox-Fragment","AX‑17"] },
+            { id:"sector-c", icon:"◇", name:"Sektor C", type:"Ort", meta:"Quarantäne", secret:true, visibility:"Nur SL", summary:"Versiegelter Forschungsbereich unterhalb des Rings.", body:["Die Zugangsliste wurde nicht gelöscht, sondern durch eine perfekte leere Kopie ersetzt.","Die Außenwand zeigt von innen kommende Hitzespuren."], relations:["Xenolith 7B","Dr. Chen","Leeres Signal"] },
+            { id:"chen", icon:"◉", name:"Dr. Chen", type:"Person", meta:"vermisst", visibility:"Crew", summary:"Leiter der letzten dokumentierten Forschungsrotation.", body:["Chens letzte persönliche Nachricht wurde sechs Stunden nach seinem offiziellen Abflug gesendet.","Sein biometrischer Schlüssel öffnet weiterhin Türen."], relations:["Sektor C","AX‑17","Beobachtungsring"] }
+          ],
+          cast: [
+            { id:"mira", icon:"MS", name:"Mira Sol", type:"Spielerfigur", meta:"6 Stabilität", visibility:"Crew", role:"Technikerin · Außenteam", resources:[["Stabilität",75],["Sauerstoff",81]], groups:[["Körper",["Null‑G 68","Ausdauer 51","Reflexe 57"]],["Systeme",["Technik 76","Sensorik 63","Hack 49"]],["Crew",["Führung 44","Empathie 58","Druck 39"]]] },
+            { id:"chen", icon:"DC", name:"Dr. Ilya Chen", type:"NPC", meta:"vermisst", secret:true, visibility:"Nur SL", role:"Xenobiologe · Rotationsleiter", resources:[["Status",20],["Signal",88]], groups:[["Forschung",["Xenologie 82","Analyse 77","Medizin 61"]],["Station",["Zugang 74","Protokoll 69","Wartung 33"]],["Sozial",["Überzeugen 54","Täuschen 71","Ruhe 66"]]] },
+            { id:"ax17", icon:"AX", name:"AX‑17", type:"Synthet", meta:"online", visibility:"Crew", role:"Stationsassistenz · eingeschränkt", resources:[["Integrität",86],["Vertrauen",42]], groups:[["Kern",["Analyse 88","Navigation 79","Archiv 92"]],["Körper",["Kraft 60","Präzision 74","Reparatur 55"]],["Sozial",["Imitation 48","Loyalität 39","Protokoll 90"]]] }
+          ],
+          scenes: [
+            { id:"ring", icon:"⌗", name:"Beobachtungsring", type:"Aktive Scene", meta:"Signal T−04:12", visibility:"Crew", description:"Stromloser Ring mit Blick auf Kepler‑9.", fields:[["Modus","Cinematic"],["Crew","4"],["Atmosphäre","Vakuumwarnung"],["Signal","47-Minuten-Zyklus"]] },
+            { id:"sector", icon:"⌗", name:"Sektor C", type:"Vorbereitet", meta:"Quarantäne", secret:true, visibility:"Nur SL", description:"Taktische Szene mit versiegelten Laboren.", fields:[["Modus","Tactical"],["Drohungen","6"],["Trigger","5"],["Status","gesperrt"]] }
+          ]
+        },
+
+        nebelakte: {
+          universe: null,
+          campaign: "Nebelakte 17",
+          session: "Fallabend 4 · Hotel Miramar",
+          system: "Open Investigation · v1.4",
+          sceneImage: "assets/universal-ui/nebelakte-scene-v1.png",
+          sceneName: "Hotel Miramar nach Mitternacht",
+          sceneLine: "Die letzte Fotografie entstand nach dem Ende des Empfangs.",
+          actor: { name:"Ellis Vale", initials:"EV", role:"Ermittler · Presse", resource:"5 / 7 Fassung" },
+          items: [
+            { id:"key", icon:"⚿", name:"Messing-Schlüssel 314", type:"Zugang", meta:"Fundort: Hotel", qty:1, art:"assets/universal-ui/brass-key-detail-v2.png", visibility:"Nur Ellis", action:"Vergleichen", description:"Schwerer Schlüssel ohne Anhänger. In den Rillen sitzt grauer Staub.", fields:[["Fundort","Hotel Miramar"],["Beweiskette","Ellis → Archiv"],["Material","Messing"],["Notiz","passt nicht zu Zimmer 314"]] },
+            { id:"film", icon:"□", name:"Unentwickelter Film", type:"Beweis", meta:"8 Aufnahmen", qty:1, visibility:"Ellis + SL", action:"Entwickeln", description:"Die letzte Aufnahme entstand nach dem dokumentierten Empfang.", fields:[["Aufnahmen","8"],["Kamera","Leica III"],["Zeitfenster","23:41–00:12"],["Status","lichtdicht"]] },
+            { id:"tape", icon:"⌁", name:"Kassettenband B", type:"Audio", meta:"31 Minuten", qty:1, visibility:"Gruppe", action:"Abspielen", description:"Interview, Straßenlärm und bei Minute 26 eine zweite Stimme.", fields:[["Dauer","31:08"],["Qualität","verrauscht"],["Markierung","26:14"],["Transkript","62 %"]] },
+            { id:"letter", icon:"□", name:"Brief ohne Absender", type:"Dokument", meta:"ungeöffnet", qty:1, secret:true, audience:["player"], visibility:"Nur Ellis", action:"Öffnen", description:"Dünnes Papier, maschinengeschriebene Adresse, kein Poststempel.", fields:[["Empfänger","E. Vale"],["Papier","Hotelbestand"],["Fingerabdrücke","ungeprüft"],["Siegel","keines"]] },
+            { id:"torch", icon:"☼", name:"Taschenlampe", type:"Werkzeug", meta:"Batterie 54 %", qty:1, visibility:"Gruppe", action:"Einschalten", description:"Verbeultes Gehäuse; funktioniert mit Druck auf den Schalter.", fields:[["Ladung","54 %"],["Zustand","verbeult"],["Herkunft","Fundbüro"],["Licht","gebündelt"]] },
+            { id:"dust", icon:"◇", name:"Glasstaub-Probe", type:"Anomalie", meta:"Probe C", qty:1, secret:true, audience:["player"], visibility:"Ellis + SL", action:"Analysieren", description:"Grau schimmernder Staub, der auf Fotografien heller erscheint.", fields:[["Behälter","C"],["Menge","3,2 g"],["Labor","ausstehend"],["Eigenschaft","fotoreaktiv?"]] }
+          ],
+          story: [
+            { id:"miramar", icon:"¶", name:"Hotel Miramar", type:"Fall", meta:"offen", visibility:"Gruppe", summary:"Ein leerer Empfang, acht Fotografien und ein Schlüssel, der zu keiner Tür passt.", body:["Der Portier erinnert sich an Ellis, obwohl Ellis das Hotel nie zuvor betreten hat.","Alle Uhren in der Lobby gehen seit Mitternacht vier Minuten nach."], relations:["Zimmer 314","Unentwickelter Film","Porter Bell"] },
+            { id:"room314", icon:"◇", name:"Zimmer 314", type:"Ort", meta:"existiert nicht", secret:true, visibility:"Nur SL", summary:"In keinem Plan vorhanden; der Fahrstuhl besitzt dennoch eine abgenutzte Taste.", body:["Das dritte Stockwerk endet laut Bauplan bei Zimmer 312.","Auf dem Film ist hinter dem Portier eine Tür mit der Nummer 314 sichtbar."], relations:["Messing-Schlüssel","Hotel Miramar","Glasstaub"] },
+            { id:"porter", icon:"◉", name:"Porter Bell", type:"Person", meta:"Zeuge", visibility:"Gruppe", summary:"Nachtportier des Miramar, seit 28 Jahren im Dienst.", body:["Bell kennt jede Person, die das Hotel betritt. Auf die Frage nach Zimmer 314 antwortet er mit einer Zimmerrechnung.","Seine Stimme fehlt vollständig auf Kassettenband B."], relations:["Hotel Miramar","Band B","Zimmer 314"] }
+          ],
+          cast: [
+            { id:"ellis", icon:"EV", name:"Ellis Vale", type:"Spielerfigur", meta:"5 Fassung", visibility:"Gruppe", role:"Ermittler · Presse", resources:[["Fassung",71],["Verdacht",48]], groups:[["Körper",["Beobachten 62","Verfolgen 48","Ausdauer 41"]],["Ermittlung",["Recherche 77","Fotografie 68","Forensik 52"]],["Sozial",["Interview 73","Täuschen 59","Druck 43"]]] },
+            { id:"june", icon:"JC", name:"June Calder", type:"Spielerfigur", meta:"ruhig", visibility:"Gruppe", role:"Archivarin · Historikerin", resources:[["Fassung",84],["Intuition",67]], groups:[["Körper",["Beobachten 55","Fahren 49","Heimlichkeit 44"]],["Ermittlung",["Archive 86","Geschichte 79","Analyse 72"]],["Sozial",["Beruhigen 68","Interview 57","Täuschen 35"]]] },
+            { id:"porter", icon:"PB", name:"Porter Bell", type:"NPC", meta:"Zeuge", secret:true, visibility:"Nur SL", role:"Nachtportier · unklar", resources:[["Fassung",100],["Wissen",91]], groups:[["Hotel",["Erinnerung 94","Schlüssel 88","Gänge 99"]],["Verbergen",["Täuschen 72","Schweigen 84","Ablenken 67"]],["Sozial",["Höflichkeit 90","Drohung 22","Beobachten 76"]]] }
+          ],
+          scenes: [
+            { id:"lobby", icon:"⌗", name:"Lobby des Miramar", type:"Aktive Scene", meta:"00:17", visibility:"Gruppe", description:"Leere Lobby, Regen und vier Minuten Zeitversatz.", fields:[["Modus","Cinematic"],["Personen","3"],["Hinweise","7"],["Wetter","Starkregen"]] },
+            { id:"third", icon:"⌗", name:"Drittes Stockwerk", type:"Vorbereitet", meta:"verborgen", secret:true, visibility:"Nur SL", description:"Outline- und Tactical-Variante eines unmöglichen Flurs.", fields:[["Modus","Outline / Tactical"],["Räume","13"],["Trigger","4"],["Status","bereit"]] }
+          ]
+        }
+      };
+
+      var MODULES = {
+        session: { label:"Session", kicker:"GM-Arbeitslast · Heute" },
+        story: { label:"Story", kicker:"Chronicle · Verknüpfte Erinnerung" },
+        cast: { label:"Cast", kicker:"Entities · Schema-Ansichten" },
+        library: { label:"Library", kicker:"Collections · Instanzen" },
+        table: { label:"Table", kicker:"Scene · Drei Renderer" },
+        forge: { label:"Forge", kicker:"Themes · Regeln · Pakete" }
+      };
+
+      var state = {
+        world:"aldenfall",
+        skin:"relic",
+        role:"gm",
+        atmosphere:"crafted",
+        motion:"full",
+        contrast:"standard",
+        module:"library",
+        selection:{ session:"agenda", story:"night-delivery", cast:"brakka", library:"blade", table:"harbor", forge:"theme" },
+        sceneMode:"cinematic",
+        trace:null,
+        lastCommitted:null,
+        mobileDrawer:"none"
+      };
+
+      var refs = {
+        html:document.documentElement,
+        campaign:document.getElementById("campaign-name"),
+        campaignLine:document.getElementById("campaign-line"),
+        modules:document.getElementById("module-rail"),
+        collection:document.getElementById("collection-panel"),
+        stage:document.getElementById("stage-panel"),
+        lens:document.getElementById("lens-panel"),
+        shelf:document.getElementById("session-shelf"),
+        atmosphere:document.getElementById("atmosphere-button"),
+        motion:document.getElementById("motion-button"),
+        contrast:document.getElementById("contrast-button"),
+        focus:document.getElementById("focus-transfer"),
+        focusPath:document.getElementById("focus-path"),
+        focusOrb:document.getElementById("focus-orb"),
+        toast:document.getElementById("toast"),
+        commandButton:document.getElementById("command-button"),
+        commandDialog:document.getElementById("command-dialog"),
+        commandSearch:document.getElementById("command-search"),
+        commandResults:document.getElementById("command-results")
+      };
+
+      function world() { return WORLDS[state.world]; }
+
+      function visible(record) {
+        if (!record) return false;
+        if (state.role === "gm") return true;
+        if (record.secret) return Array.isArray(record.audience) && record.audience.indexOf(state.role) !== -1;
+        if (state.role === "observer" && /Nur|privat/i.test(record.visibility || "")) return false;
+        return true;
+      }
+
+      function listForModule(module) {
+        var data = world();
+        if (module === "story") return data.story.filter(visible);
+        if (module === "cast") return data.cast.filter(visible);
+        if (module === "library") return data.items.filter(visible);
+        if (module === "table") return data.scenes.filter(visible);
+        if (module === "forge") return [
+          {id:"theme",icon:"◈",name:"Theme Studio",type:"Art Manifest",meta:"4 Skins"},
+          {id:"rules",icon:"⌘",name:"Rule Builder",type:"Deklarativ",meta:"17 Knoten"},
+          {id:"generator",icon:"⌗",name:"Generator Lab",type:"WFC + Tabellen",meta:"3 Presets"}
+        ];
+        return [
+          {id:"agenda",icon:"✓",name:"Session-Agenda",type:"Heute",meta:"3 offen"},
+          {id:"decisions",icon:"?",name:"Offene Entscheidungen",type:"Vorbereitung",meta:"2 kritisch"},
+          {id:"recent",icon:"↺",name:"Zuletzt bearbeitet",type:"Chronicle",meta:"vor 8 Min"}
+        ];
+      }
+
+      function selectedRecord() {
+        var list = listForModule(state.module);
+        var id = state.selection[state.module];
+        return list.find(function (entry) { return entry.id === id; }) || list[0];
+      }
+
+      function resetSelectionForWorld() {
+        var data = world();
+        state.selection.story = (data.story.filter(visible)[0] || data.story[0]).id;
+        state.selection.cast = (data.cast.filter(visible)[0] || data.cast[0]).id;
+        state.selection.library = (data.items.filter(visible)[0] || data.items[0]).id;
+        state.selection.table = (data.scenes.filter(visible)[0] || data.scenes[0]).id;
+      }
+
+      function panelHeading(kicker, title, count) {
+        return '<header class="panel-heading"><div><small>' + kicker + '</small><h2>' + title + '</h2></div><span class="panel-count">' + (count || "") + "</span></header>";
+      }
+
+      function renderAll() {
+        refs.html.dataset.world = state.world;
+        refs.html.dataset.skin = state.skin;
+        refs.html.dataset.role = state.role;
+        refs.html.dataset.atmosphere = state.atmosphere;
+        refs.html.dataset.motion = state.motion;
+        refs.html.dataset.contrast = state.contrast;
+        refs.html.dataset.mobileDrawer = state.mobileDrawer;
+        refs.campaign.textContent = world().campaign;
+        refs.campaignLine.textContent = (world().universe ? world().universe + " › " : "") + world().session;
+
+        document.querySelectorAll("[data-world]").forEach(function (button) {
+          button.setAttribute("aria-pressed", button.dataset.world === state.world ? "true" : "false");
+        });
+        document.querySelectorAll("[data-skin]").forEach(function (button) {
+          button.setAttribute("aria-pressed", button.dataset.skin === state.skin ? "true" : "false");
+        });
+        document.querySelectorAll("[data-role]").forEach(function (button) {
+          button.setAttribute("aria-pressed", button.dataset.role === state.role ? "true" : "false");
+        });
+        document.querySelectorAll("[data-module]").forEach(function (button) {
+          if (button.dataset.module === state.module) button.setAttribute("aria-current","page");
+          else button.removeAttribute("aria-current");
+          if (button.dataset.module === "forge") button.hidden = state.role !== "gm";
+        });
+        document.querySelectorAll("button[data-mobile-drawer]").forEach(function (button) {
+          button.setAttribute("aria-pressed", button.dataset.mobileDrawer === state.mobileDrawer ? "true" : "false");
+        });
+        refs.atmosphere.textContent = state.atmosphere === "clean" ? "Clean" : state.atmosphere === "cinematic" ? "Cinema" : "Craft";
+        refs.atmosphere.setAttribute("aria-pressed", state.atmosphere !== "crafted" ? "true" : "false");
+        refs.motion.textContent = state.motion === "reduced" ? "Still" : "Motion";
+        refs.motion.setAttribute("aria-pressed", state.motion === "reduced" ? "true" : "false");
+        refs.contrast.textContent = state.contrast === "high" ? "High‑C" : "A11y";
+        refs.contrast.setAttribute("aria-pressed", state.contrast === "high" ? "true" : "false");
+
+        renderCollection();
+        renderStage();
+        renderLens();
+        renderShelf();
+      }
+
+      function renderCollection() {
+        var module = MODULES[state.module];
+        var list = listForModule(state.module);
+        refs.collection.innerHTML =
+          panelHeading(stageKicker(), module.label, list.length + " Einträge") +
+          '<label class="search"><input type="search" id="collection-search" placeholder="In ' + module.label + ' suchen …" autocomplete="off"></label>' +
+          '<div class="collection-list">' +
+            list.map(function (entry) {
+              var selected = state.selection[state.module] === entry.id;
+              return '<button class="collection-entry" type="button" data-select="' + entry.id + '" aria-pressed="' + selected + '">' +
+                '<span class="entry-icon">' + (entry.icon || "◇") + '</span>' +
+                '<span class="entry-copy"><b>' + entry.name + '</b><small>' + (entry.type || "") + '</small></span>' +
+                (entry.secret ? '<span class="secret-mark" title="' + (entry.visibility || "Eingeschränkt") + '">◆</span>' : '<span class="entry-state">' + (entry.meta || "") + '</span>') +
+              "</button>";
+            }).join("") +
+          '</div><div class="collection-foot">Lokale UI-Projektion · Produktion filtert Berechtigungen serverseitig.</div>';
+
+        var search = document.getElementById("collection-search");
+        search.addEventListener("input", function () {
+          var q = search.value.toLocaleLowerCase("de");
+          refs.collection.querySelectorAll(".collection-entry").forEach(function (button) {
+            button.hidden = button.textContent.toLocaleLowerCase("de").indexOf(q) === -1;
+          });
+        });
+      }
+
+      function renderStage() {
+        refs.stage.innerHTML = panelHeading(stageKicker(), stageTitle(), stageCount()) + '<div class="stage-content">' + stageMarkup() + "</div>";
+      }
+
+      function stageKicker() {
+        if (state.module !== "session") return MODULES[state.module].kicker;
+        if (state.role === "gm") return "GM-Arbeitslast · Heute";
+        if (state.role === "player") return "Session · Spielerfokus";
+        return "Session · Synchronisierte Ansicht";
+      }
+
+      function stageTitle() {
+        if (state.module === "session") return state.role === "gm" ? "Heute am Tisch" : state.role === "player" ? "Deine Session" : "Live am Tisch";
+        if (state.module === "story") return selectedRecord().name;
+        if (state.module === "cast") return selectedRecord().name;
+        if (state.module === "library") return "Sammlung";
+        if (state.module === "table") return selectedRecord().name;
+        return "Theme & Rule Studio";
+      }
+
+      function stageCount() {
+        if (state.module === "library") return listForModule("library").length + " Objekte";
+        if (state.module === "table") return state.sceneMode;
+        if (state.module === "forge") return "validiert";
+        return "";
+      }
+
+      function stageMarkup() {
+        if (state.module === "session") return sessionMarkup();
+        if (state.module === "story") return storyMarkup(selectedRecord());
+        if (state.module === "cast") return castMarkup(selectedRecord());
+        if (state.module === "library") return libraryMarkup();
+        if (state.module === "table") return tableMarkup(selectedRecord());
+        return forgeMarkup();
+      }
+
+      function sessionMarkup() {
+        var sidePanels;
+        if (state.role === "gm") {
+          sidePanels = '<section class="dashboard-card"><h3>Session-Agenda</h3><div class="agenda-row"><i>✓</i><span>Spielerzusammenfassung freigeben</span><small>bereit</small></div><div class="agenda-row"><i>○</i><span>Offenen Hinweis platzieren</span><small>2 Min</small></div><div class="agenda-row"><i>○</i><span>Folgeszene prüfen</span><small>GM</small></div></section>' +
+            '<section class="dashboard-card"><h3>Offene Entscheidungen</h3><div class="agenda-row"><i>!</i><span>Was weiß die Gruppe bereits?</span><small>kritisch</small></div><div class="agenda-row"><i>?</i><span>Abbruchpunkt der Session</span><small>offen</small></div></section>';
+        } else if (state.role === "player") {
+          sidePanels = '<section class="dashboard-card"><h3>Dein Fokus</h3><div class="agenda-row"><i>✓</i><span>Rückblick gelesen</span><small>bereit</small></div><div class="agenda-row"><i>○</i><span>Offene Spur verfolgen</span><small>geteilt</small></div><div class="agenda-row"><i>○</i><span>Auf Scene vorbereiten</span><small>jetzt</small></div></section>' +
+            '<section class="dashboard-card"><h3>Mit der Gruppe geteilt</h3><div class="agenda-row"><i>!</i><span>Letzter öffentlicher Hinweis</span><small>neu</small></div><div class="agenda-row"><i>?</i><span>Gemeinsame offene Frage</span><small>offen</small></div></section>';
+        } else {
+          sidePanels = '<section class="dashboard-card"><h3>Session-Stand</h3><div class="agenda-row"><i>✓</i><span>Gruppe verbunden</span><small>4 online</small></div><div class="agenda-row"><i>○</i><span>Aktueller Abschnitt</span><small>Scene 2</small></div><div class="agenda-row"><i>○</i><span>Letzte Synchronisierung</span><small>vor 6 s</small></div></section>' +
+            '<section class="dashboard-card"><h3>Öffentliche Chronik</h3><div class="agenda-row"><i>!</i><span>Geteilter Hinweis</span><small>neu</small></div><div class="agenda-row"><i>?</i><span>Gruppenfrage</span><small>offen</small></div></section>';
+        }
+        return '<div class="session-grid">' +
+          '<section class="session-hero" style="background-image:url(&quot;' + world().sceneImage + '&quot;)"><div><span class="badge">Nächste Scene</span><h1>' + world().sceneName + '</h1><p>' + world().sceneLine + '</p></div></section>' +
+          sidePanels +
+        "</div>";
+      }
+
+      function storyMarkup(record) {
+        return '<article class="document"><span class="doc-kicker">' + record.type + " · " + record.visibility + '</span><h1>' + record.name + '</h1><p class="lead">' + record.summary + '</p>' +
+          record.body.map(function (p) { return "<p>" + p + "</p>"; }).join("") +
+          '<div class="relation-strip">' + record.relations.map(function (relation, index) { return '<div class="relation"><small>' + (index === 0 ? "Person / Entity" : index === 1 ? "Ort / Scene" : "Objekt / Hinweis") + '</small><b>' + relation + "</b></div>"; }).join("") + "</div></article>";
+      }
+
+      function castMarkup(record) {
+        return '<div class="cast-sheet"><section class="cast-hero"><div class="portrait">' + record.icon + '</div><div><h1>' + record.name + '</h1><p>' + record.role + ' · ' + record.visibility + '</p></div><div class="resources">' +
+          record.resources.map(function (resource) { return '<div class="resource-line">' + resource[0] + '<b>' + resource[1] + '%</b><div class="resource-track"><i style="--value:' + resource[1] + '%"></i></div></div>'; }).join("") +
+          '</div></section><div class="stage-toolbar"><div class="chips"><span class="chip active">Übersicht</span><span class="chip">Aktionen</span><span class="chip">Notizen</span><span class="chip">Historie</span></div><button class="generic-button" data-action="sheet-edit">Layout bearbeiten</button></div><div class="field-groups">' +
+          record.groups.map(function (group) { return '<section class="field-group"><h3>' + group[0] + '</h3>' + group[1].map(function (skill) { var parts=skill.split(" "); return '<div class="skill"><span>' + parts.slice(0,-1).join(" ") + '</span><b>' + parts[parts.length-1] + "</b></div>"; }).join("") + "</section>"; }).join("") +
+          "</div></div>";
+      }
+
+      function libraryMarkup() {
+        var items = listForModule("library");
+        return '<div class="stage-toolbar"><div class="chips"><span class="chip active">Alle</span><span class="chip">Ausrüstung</span><span class="chip">Dokumente</span><span class="chip">Hinweise</span></div><button class="generic-button" data-action="collection-view">▦ Raster</button></div><div class="card-grid">' +
+          items.map(function (item,index) {
+            var selected = state.selection.library === item.id;
+            var art = item.art ? 'url(&quot;' + item.art + '&quot;)' : "";
+            return '<button class="object-card' + (art ? " has-art" : "") + '" type="button" data-select="' + item.id + '" aria-pressed="' + selected + '" style="--delay:' + (index*35) + 'ms;' + (art ? "--art:" + art + ";--art-opacity:.66" : "") + '">' +
+              '<span class="card-top"><span class="glyph">' + item.icon + '</span>' + (item.qty > 1 ? '<span class="quantity">×' + item.qty + '</span>' : "") + '</span>' + (art ? "" : '<span class="card-illustration" aria-hidden="true"><span>' + item.icon + '</span></span>') + '<h3>' + item.name + '</h3><span class="card-meta"><span>' + item.type + '</span><span>' + item.meta + "</span></span></button>";
+          }).join("") + "</div>";
+      }
+
+      function tableMarkup(scene) {
+        var tabs = '<div class="stage-toolbar"><div class="mode-tabs" role="group" aria-label="Scene-Darstellung"><button type="button" data-scene-mode="cinematic" aria-pressed="' + (state.sceneMode==="cinematic") + '">Cinematic</button><button type="button" data-scene-mode="tactical" aria-pressed="' + (state.sceneMode==="tactical") + '">Tactical</button><button type="button" data-scene-mode="outline" aria-pressed="' + (state.sceneMode==="outline") + '">Outline</button></div><button class="generic-button" data-action="scene-focus">Fokusmodus</button></div>';
+        if (state.sceneMode === "outline") {
+          return '<div class="table-workspace">' + tabs + '<div class="outline-view"><div class="outline-group"><h3>Party · 3</h3><div class="outline-row"><b>' + world().actor.name + '</b><span>Zone Mitte</span><span>bereit</span></div><div class="outline-row"><b>Verbündete Figur</b><span>Zone Eingang</span><span>verdeckt</span></div><div class="outline-row"><b>Beobachter</b><span>Zone Ost</span><span>wartet</span></div></div><div class="outline-group"><h3>Objekte & Hinweise · 4</h3><div class="outline-row"><b>Interaktiver Zugang</b><span>12 m</span><span>geschlossen</span></div><div class="outline-row"><b>Hinweis</b><span>8 m</span><span>unentdeckt</span></div></div></div></div>';
+        }
+        var tactical = state.sceneMode === "tactical";
+        return '<div class="table-workspace">' + tabs + '<div class="scene-stage"><img class="scene-art" src="' + world().sceneImage + '" alt=""><div class="' + (tactical ? "tactical-grid" : "") + '"></div>' +
+          (tactical ? '<span class="token" style="--x:42%;--y:61%">' + world().actor.initials + '</span><span class="token" style="--x:57%;--y:48%;--token-color:var(--accent)">A2</span><span class="token" style="--x:69%;--y:57%;--token-color:var(--danger)">?</span>' : "") +
+          '<div class="scene-title"><small>' + (tactical ? "Tactical View · dieselbe Scene" : "Cinematic View · Ambience") + '</small><h1>' + scene.name + '</h1><p>' + scene.description + "</p></div></div></div>";
+      }
+
+      function forgeMarkup() {
+        return '<div class="forge-grid"><div class="theme-preview"><div class="mini-shell"><span></span><span></span><span></span></div></div><div class="forge-controls"><div class="control-row"><label><span>Ornament-Dichte</span><b>' + state.atmosphere + '</b></label><input type="range" min="0" max="2" value="' + (state.atmosphere==="clean"?0:state.atmosphere==="cinematic"?2:1) + '"></div><div class="control-row"><label><span>Leseflächen-Kontrast</span><b>AA+</b></label><input type="range" min="0" max="100" value="84"></div><div class="control-row"><label><span>Motion Profil</span><b>' + state.motion + '</b></label><input type="range" min="0" max="100" value="' + (state.motion==="reduced"?0:72) + '"></div><button class="primary-button" data-action="validate-theme">Theme validieren</button><button class="generic-button" data-action="open-rules">Rule Graph öffnen</button></div></div>';
+      }
+
+      function renderLens() {
+        var record = selectedRecord();
+        refs.lens.innerHTML = panelHeading("Context Lens · " + (state.role==="gm"?"Director":"Role View"), "Details", record && record.visibility ? record.visibility : state.role.toUpperCase()) +
+          '<div class="lens-content">' + lensMarkup(record) + '</div><div class="lens-actions">' + lensActions(record) + "</div>";
+      }
+
+      function lensMarkup(record) {
+        if (state.trace) return traceMarkup();
+        if (state.module === "library") {
+          var art = record.art ? '<img src="' + record.art + '" alt="Illustration: ' + record.name + '">' : '<span class="fallback-glyph">' + record.icon + '</span>';
+          return '<div class="detail-hero">' + art + '</div><div class="lens-kicker">' + record.type + '</div><h3>' + record.name + '</h3><p class="lens-description">' + record.description + '</p><div class="field-list">' + record.fields.map(fieldRow).join("") + "</div>";
+        }
+        if (state.module === "story") {
+          return '<div class="lens-kicker">Verknüpfte Erinnerung</div><h3>' + record.name + '</h3><p class="lens-description">' + record.summary + '</p><div class="field-list">' + [["Sichtbarkeit",record.visibility],["Relationen",record.relations.length],["Backlinks","4"],["Letzte Änderung","vor 8 Min"]].map(fieldRow).join("") + '</div><div class="trace-box"><h4>Backlinks</h4>' + record.relations.map(function (r) { return '<div class="trace-step"><i>↗</i><span>' + r + "</span></div>"; }).join("") + "</div>";
+        }
+        if (state.module === "cast") {
+          return '<div class="detail-hero"><span class="fallback-glyph">' + record.icon + '</span></div><div class="lens-kicker">' + record.type + '</div><h3>' + record.name + '</h3><p class="lens-description">' + record.role + '</p><div class="field-list">' + [["Sichtbarkeit",record.visibility],["Ressourcen",record.resources.length],["Feldgruppen",record.groups.length],["Instanz","actor."+record.id]].map(fieldRow).join("") + "</div>";
+        }
+        if (state.module === "table") {
+          var sceneFields = record.fields.map(function (field) {
+            return field[0] === "Modus" ? ["Modus", state.sceneMode.charAt(0).toUpperCase() + state.sceneMode.slice(1)] : field;
+          });
+          return '<div class="lens-kicker">Scene · ' + state.sceneMode + '</div><h3>' + record.name + '</h3><p class="lens-description">' + record.description + '</p><div class="field-list">' + sceneFields.map(fieldRow).join("") + '</div>' +
+            (state.role==="gm" ? '<div class="trace-box"><h4>Director Layer</h4><div class="trace-step"><i>◆</i><span>Verborgene Entities sichtbar</span></div><div class="trace-step"><i>◆</i><span>Fog & Trigger editierbar</span></div><div class="trace-step"><i>◆</i><span>View as Player verfügbar</span></div></div>' : "");
+        }
+        if (state.module === "forge") {
+          return '<div class="lens-kicker">Theme Manifest</div><h3>Unabhängige Art-Schicht</h3><p class="lens-description">Skin, Inhalt, Rolle und Dichte sind getrennte Datenachsen.</p><div class="field-list">' + [["Kontrast","AA bestanden"],["Safe Insets","definiert"],["Slice-Metriken","3 Rollen"],["Lizenzstatus","Prototype only"]].map(fieldRow).join("") + '</div><div class="trace-box"><h4>Package Gates</h4><div class="trace-step"><i>✓</i><span>Keine eingebrannten Texte</span></div><div class="trace-step"><i>✓</i><span>Reduced Motion Fallback</span></div><div class="trace-step"><i>✓</i><span>Clean Surface vorhanden</span></div></div>';
+        }
+        return '<div class="lens-kicker">Session Readiness</div><h3>' + world().sceneName + '</h3><p class="lens-description">' + world().sceneLine + '</p><div class="field-list">' + [["Spieler online","4 / 4"],["Agenda","3 Punkte"],["Offene Entscheidungen","2"],["Backups","aktuell"]].map(fieldRow).join("") + "</div>";
+      }
+
+      function fieldRow(field) {
+        return '<div class="field"><span>' + field[0] + '</span><b>' + field[1] + "</b></div>";
+      }
+
+      function traceMarkup() {
+        return '<div class="lens-kicker">Transparente Aktion · Vorschau</div><h3>' + state.trace.title + '</h3><p class="lens-description">Noch nicht committed. Chronicle zeigt Wirkung und Berechtigung vor der Änderung.</p><div class="trace-box"><h4>Berechnung & Audit</h4>' +
+          state.trace.steps.map(function (step) { return '<div class="trace-step"><i>✓</i><span>' + step + "</span></div>"; }).join("") +
+          '</div><div class="field-list" style="margin-top:10px">' + [["Ergebnis",state.trace.result],["Undo","verfügbar"],["Sichtbarkeit",state.role==="gm"?"Audit + Spielerlog":"Eigenes Log"]].map(fieldRow).join("") + "</div>";
+      }
+
+      function lensActions(record) {
+        if (state.role === "observer") return '<button class="generic-button" type="button" disabled>Nur Ansicht</button><button class="generic-button" type="button" aria-label="Mehr">•••</button>';
+        if (state.trace) return '<button class="primary-button" type="button" data-action="commit-trace">Änderung bestätigen</button><button class="generic-button" type="button" data-action="cancel-trace">×</button>';
+        var label = state.module==="library" ? record.action : state.module==="story" ? (state.role==="gm"?"Für Spieler enthüllen":"Notiz hinzufügen") : state.module==="cast" ? "Aktion ausführen" : state.module==="table" ? (state.role==="gm"?"Scene starten":"Bereit") : state.module==="forge" ? "Validieren" : "Session vorbereiten";
+        return '<button class="primary-button" type="button" data-action="primary">' + label + '</button><button class="generic-button" type="button" data-action="more">•••</button>';
+      }
+
+      function renderShelf() {
+        var actions;
+        if (state.role === "observer") actions = ["Übersicht","Scene ansehen","Handout"];
+        else if (state.module === "table") actions = ["Initiative","Probe","Ping","Zug beenden"];
+        else if (state.module === "story") actions = ["Enthüllen","Verknüpfen","Handout","Notiz"];
+        else if (state.module === "cast") actions = ["Probe","Zustand","Ressource","Aktion"];
+        else if (state.module === "library") actions = ["Ausrüsten","Übergeben","Teilen","Vergleichen"];
+        else if (state.module === "forge") actions = ["Preview","Validieren","Testlauf","Export"];
+        else if (state.role === "player") actions = ["Bereit","Probe","Notiz","Handout"];
+        else actions = ["Agenda","Scene öffnen","Einladen","Starten"];
+
+        refs.shelf.innerHTML =
+          (state.role === "observer" ? '<div class="actor-glance"><div class="portrait">◎</div><div class="actor-copy"><b>Live-Tisch</b><span>4 Personen · synchronisiert</span><div class="micro-track"><i></i></div></div></div>' : '<div class="actor-glance"><div class="portrait">' + world().actor.initials + '</div><div class="actor-copy"><b>' + world().actor.name + '</b><span>' + world().actor.resource + '</span><div class="micro-track"><i></i></div></div></div>') +
+          '<div class="shelf-actions">' + actions.map(function (action,index) { return '<button class="shelf-action ' + (index===0?"primary":"") + '" type="button" data-shelf-action="' + action + '">' + action + "</button>"; }).join("") + '</div>' +
+          '<div class="shelf-history"><div class="history-copy"><b>' + (state.trace ? state.trace.title : state.lastCommitted ? state.lastCommitted.title : "Alles gespeichert") + '</b><span>' + (state.trace ? "Vorschau · nicht committed" : state.lastCommitted ? "Committed · Undo verfügbar" : world().system + " · vor 6 s") + '</span></div>' +
+          (state.trace ? '<button class="generic-button" type="button" data-action="cancel-trace">Verwerfen</button>' : state.lastCommitted ? '<button class="generic-button" type="button" data-action="undo-last">Undo</button>' : "") + "</div>";
+      }
+
+      function showTrace(title) {
+        var record = selectedRecord();
+        state.trace = {
+          title:title + (record && record.name ? " · " + record.name : ""),
+          steps:[
+            "Rolle " + state.role + " besitzt die erforderliche Berechtigung",
+            "Deklarative Action wurde gegen Schema und aktuellen Zustand geprüft",
+            "Auswirkungen auf Ressourcen, Relationen und Sichtbarkeit berechnet",
+            "Audit-Eintrag und reversible Operation vorbereitet"
+          ],
+          result:"gültig · bereit zum Commit"
+        };
+        renderLens();
+        renderShelf();
+        pulseFocus(null);
+      }
+
+      var toastTimer;
+      function toast(message) {
+        clearTimeout(toastTimer);
+        refs.toast.textContent = message;
+        refs.toast.classList.add("show");
+        toastTimer = setTimeout(function () { refs.toast.classList.remove("show"); }, 1900);
+      }
+
+      function pulseFocus(source) {
+        if (state.motion === "reduced" || matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+        var from = source ? source.getBoundingClientRect() : refs.stage.getBoundingClientRect();
+        var to = refs.lens.getBoundingClientRect();
+        var x1 = source ? from.right : from.left + from.width*.78;
+        var y1 = from.top + from.height*.5;
+        var x2 = to.left + 30;
+        var y2 = to.top + Math.min(230,to.height*.35);
+        refs.focusPath.setAttribute("d","M "+x1+" "+y1+" C "+(x1+80)+" "+y1+", "+(x2-80)+" "+y2+", "+x2+" "+y2);
+        refs.focusOrb.setAttribute("cx",x2);
+        refs.focusOrb.setAttribute("cy",y2);
+        refs.focus.classList.remove("play");
+        void refs.focus.offsetWidth;
+        refs.focus.classList.add("play");
+      }
+
+      document.addEventListener("click", function (event) {
+        var drawerButton = event.target.closest("button[data-mobile-drawer]");
+        if (drawerButton) {
+          state.mobileDrawer = state.mobileDrawer === drawerButton.dataset.mobileDrawer ? "none" : drawerButton.dataset.mobileDrawer;
+          refs.html.dataset.mobileDrawer = state.mobileDrawer;
+          document.querySelectorAll("button[data-mobile-drawer]").forEach(function (button) {
+            button.setAttribute("aria-pressed", button.dataset.mobileDrawer === state.mobileDrawer ? "true" : "false");
+          });
+          return;
+        }
+        var worldButton = event.target.closest("[data-world]");
+        if (worldButton) {
+          state.world = worldButton.dataset.world;
+          resetSelectionForWorld();
+          state.trace = null;
+          state.lastCommitted = null;
+          renderAll();
+          toast("Inhaltspaket gewechselt · Skin und Layout unverändert");
+          return;
+        }
+        var skinButton = event.target.closest("[data-skin]");
+        if (skinButton) {
+          state.skin = skinButton.dataset.skin;
+          renderAll();
+          toast("Art-Skin gewechselt · Inhalt und Rolle unverändert");
+          return;
+        }
+        var roleButton = event.target.closest("[data-role]");
+        if (roleButton) {
+          state.role = roleButton.dataset.role;
+          if (state.role !== "gm" && state.module === "forge") state.module = "session";
+          state.mobileDrawer = "none";
+          resetSelectionForWorld();
+          state.trace = null;
+          state.lastCommitted = null;
+          renderAll();
+          toast("Rolle gewechselt · lokale UI-Projektion neu gefiltert");
+          return;
+        }
+        var moduleButton = event.target.closest("[data-module]");
+        if (moduleButton) {
+          state.module = moduleButton.dataset.module;
+          state.trace = null;
+          state.mobileDrawer = "none";
+          renderAll();
+          return;
+        }
+        var select = event.target.closest("[data-select]");
+        if (select) {
+          state.selection[state.module] = select.dataset.select;
+          state.trace = null;
+          renderCollection();
+          renderStage();
+          renderLens();
+          renderShelf();
+          if (matchMedia("(max-width:760px)").matches) {
+            state.mobileDrawer = "lens";
+            refs.html.dataset.mobileDrawer = state.mobileDrawer;
+            document.querySelectorAll("button[data-mobile-drawer]").forEach(function (button) {
+              button.setAttribute("aria-pressed", button.dataset.mobileDrawer === state.mobileDrawer ? "true" : "false");
+            });
+          } else pulseFocus(select);
+          return;
+        }
+        var mode = event.target.closest("[data-scene-mode]");
+        if (mode) {
+          state.sceneMode = mode.dataset.sceneMode;
+          state.trace = null;
+          renderStage();
+          renderLens();
+          renderShelf();
+          return;
+        }
+        var shelfAction = event.target.closest("[data-shelf-action]");
+        if (shelfAction) {
+          if (state.role === "observer") {
+            toast(shelfAction.dataset.shelfAction + " · schreibgeschützte Ansicht");
+            return;
+          }
+          showTrace(shelfAction.dataset.shelfAction);
+          return;
+        }
+        var action = event.target.closest("[data-action]");
+        if (action) {
+          if (action.dataset.action === "cancel-trace") {
+            state.trace = null;
+            renderLens();
+            renderShelf();
+            toast("Vorschau verworfen · Zustand unverändert");
+          } else if (action.dataset.action === "commit-trace") {
+            var title = state.trace ? state.trace.title : "Aktion";
+            state.lastCommitted = { title:title };
+            state.trace = null;
+            renderLens();
+            renderShelf();
+            toast(title + " · committed · Undo verfügbar");
+          } else if (action.dataset.action === "undo-last") {
+            var undone = state.lastCommitted ? state.lastCommitted.title : "Letzte Aktion";
+            state.lastCommitted = null;
+            renderShelf();
+            toast(undone + " · rückgängig gemacht");
+          } else if (action.dataset.action === "more") {
+            toast("Historie · Berechtigungen · Verknüpfen · Export");
+          } else {
+            showTrace(action.textContent.trim() || "Aktion");
+          }
+        }
+      });
+
+      refs.atmosphere.addEventListener("click", function () {
+        state.atmosphere = state.atmosphere === "clean" ? "crafted" : state.atmosphere === "crafted" ? "cinematic" : "clean";
+        renderAll();
+      });
+      refs.motion.addEventListener("click", function () {
+        state.motion = state.motion === "full" ? "reduced" : "full";
+        renderAll();
+      });
+      refs.contrast.addEventListener("click", function () {
+        state.contrast = state.contrast === "standard" ? "high" : "standard";
+        renderAll();
+      });
+
+      function commandResults(query) {
+        var q = (query || "").toLocaleLowerCase("de");
+        var commands = Object.keys(MODULES).filter(function (key) { return key !== "forge" || state.role === "gm"; }).map(function (key) {
+          return {module:key,label:"Öffne " + MODULES[key].label,detail:MODULES[key].kicker};
+        });
+        return commands.filter(function (command) { return (command.label+" "+command.detail).toLocaleLowerCase("de").indexOf(q) !== -1; });
+      }
+
+      function renderCommands(query) {
+        refs.commandResults.innerHTML = commandResults(query).map(function (command) {
+          return '<button class="command-result" type="button" data-command-module="' + command.module + '"><b>' + command.label + '</b><br><small>' + command.detail + "</small></button>";
+        }).join("");
+      }
+
+      refs.commandButton.addEventListener("click", function () {
+        renderCommands("");
+        refs.commandDialog.showModal();
+        setTimeout(function () { refs.commandSearch.focus(); }, 30);
+      });
+      refs.commandSearch.addEventListener("input", function () { renderCommands(refs.commandSearch.value); });
+      refs.commandDialog.addEventListener("click", function (event) {
+        var command = event.target.closest("[data-command-module]");
+        if (command) {
+          state.module = command.dataset.commandModule;
+          refs.commandDialog.close();
+          renderAll();
+        } else if (event.target === refs.commandDialog) refs.commandDialog.close();
+      });
+
+      window.addEventListener("keydown", function (event) {
+        if (event.key === "/" && !event.target.matches("input")) {
+          event.preventDefault();
+          refs.commandButton.click();
+        }
+        if (event.key === "Escape" && refs.commandDialog.open) refs.commandDialog.close();
+        else if (event.key === "Escape" && state.mobileDrawer !== "none") {
+          state.mobileDrawer = "none";
+          refs.html.dataset.mobileDrawer = "none";
+          document.querySelectorAll("button[data-mobile-drawer]").forEach(function (button) {
+            button.setAttribute("aria-pressed","false");
+          });
+        }
+      });
+
+      document.addEventListener("pointermove", function (event) {
+        var x = event.clientX / innerWidth;
+        var y = event.clientY / innerHeight;
+        document.body.style.setProperty("--mx",x*100+"%");
+        document.body.style.setProperty("--my",y*100+"%");
+        document.querySelectorAll(".art-panel").forEach(function (panel) {
+          var rect=panel.getBoundingClientRect();
+          panel.style.setProperty("--shine-x",Math.max(0,Math.min(100,(event.clientX-rect.left)/rect.width*100))+"%");
+          panel.style.setProperty("--shine-y",Math.max(0,Math.min(100,(event.clientY-rect.top)/rect.height*100))+"%");
+        });
+      },{passive:true});
+
+      function ambient() {
+        var canvas=document.getElementById("ambient"),ctx=canvas.getContext("2d"),particles=[];
+        function resize() {
+          var ratio=devicePixelRatio||1;
+          canvas.width=innerWidth*ratio; canvas.height=innerHeight*ratio;
+          canvas.style.width=innerWidth+"px"; canvas.style.height=innerHeight+"px";
+          ctx.setTransform(ratio,0,0,ratio,0,0);
+          particles=Array.from({length:15},function(){return{x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:.35+Math.random()*.8,v:-.05-Math.random()*.1,a:.07+Math.random()*.13};});
+        }
+        function frame() {
+          ctx.clearRect(0,0,innerWidth,innerHeight);
+          if (state.motion!=="reduced" && state.atmosphere!=="clean") {
+            var color=getComputedStyle(document.documentElement).getPropertyValue("--accent-rgb").trim();
+            particles.forEach(function(p){p.y+=p.v;if(p.y<0){p.y=innerHeight;p.x=Math.random()*innerWidth;}ctx.fillStyle="rgba("+color+","+p.a+")";ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
+          }
+          requestAnimationFrame(frame);
+        }
+        addEventListener("resize",resize);resize();frame();
+      }
+
+      var query = new URLSearchParams(location.search);
+      if (WORLDS[query.get("world")]) state.world=query.get("world");
+      if (["relic","signal","archive","clean"].indexOf(query.get("skin"))!==-1) state.skin=query.get("skin");
+      if (["gm","player","observer"].indexOf(query.get("role"))!==-1) state.role=query.get("role");
+      if (MODULES[query.get("module")]) state.module=query.get("module");
+      if (["clean","crafted","cinematic"].indexOf(query.get("atmosphere"))!==-1) state.atmosphere=query.get("atmosphere");
+      if (["full","reduced"].indexOf(query.get("motion"))!==-1) state.motion=query.get("motion");
+      if (["standard","high"].indexOf(query.get("contrast"))!==-1) state.contrast=query.get("contrast");
+      if (["cinematic","tactical","outline"].indexOf(query.get("scene"))!==-1) state.sceneMode=query.get("scene");
+      if (["none","collection","lens"].indexOf(query.get("drawer"))!==-1) state.mobileDrawer=query.get("drawer");
+      if (state.role !== "gm" && state.module === "forge") state.module = "session";
+      if (state.role === "observer") state.mobileDrawer = "none";
+      resetSelectionForWorld();
+      renderAll();
+      if (query.get("trace") === "1" && state.role !== "observer") showTrace("Vorschau");
+      ambient();
+    }());
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+
+=== SKRIPTORIUM PASSAGE-IDENTITY SPIKE — prosemirror-model/state/transform/history ===
+
+FAIL  N1 split — naive (attrs only, no plugin): are ids still unique?                                   | pids=[p_0001, p_0002, p_0002, p_0003]  texts=["Haus Vharon","Das Aschene Siegel ist eine Faelschung."," Das Original verbrannte 1194.","Bruder Alder schweigt."]
+FAIL  N2 split — naive: does the ORIGINAL pid now address two different sentences?                      | p_0002 occurs 2x, addressing ["Das Aschene Siegel ist eine Faelschung."," Das Original verbrannte 1194."]
+PASS  H1 split: ids unique after plugin                                                                 | pids=[p_0001, n_0001, n_0002, p_0003]
+PASS  H2 split: parent pid is RETIRED, not silently inherited by one half                               | pids=[p_0001, n_0001, n_0002, p_0003]
+PASS  H3 split at position 0 (Enter at start): no half silently keeps the id                            | blocks=[["p_0001","Haus Vharon"],["n_0001",""],["n_0002","Das Aschene Siegel"],["p_0003","Bruder Alder schwe"]]
+PASS  H4 merge (Backspace at start of block 2): the absorbed pid disappears                             | pids=[p_0001, p_0002] texts=["Haus Vharon","Das Aschene Siegel ist eine Faelschung. Das Original verbrannte 1194.Bruder Alder schweigt."]
+PASS  H5 paste-over of a range spanning two passages: foreign pids are re-minted                        | pids=[p_0001, p_0002, n_0001] texts=["Haus Vharon","Das AEingefuegt eins.","Eingefuegt zwei.r Alder schweigt."]
+PASS  H6 duplicate paste from the SAME document: resident keeps its pid, copy is re-minted              | pids=[p_0001, p_0002, p_0003, n_0001]
+PASS  H7 undo after split restores the ORIGINAL pid (no orphan after Ctrl+Z)                            | after=[p_0001, n_0001, n_0002, p_0003] -> undo=[p_0001, p_0002, p_0003]
+PASS  H8 undo->redo is stable (redo does not mint a THIRD generation)                                   | split=[p_0001, n_0001, n_0002, p_0003] undo=[p_0001, p_0002, p_0003] redo=[p_0001, n_0001, n_0002, p_0003]
+PASS  H11 paste-over: the partially overwritten RESIDENT passage keeps its pid (edit, not re-identify)  | pids=[p_0001, p_0002, n_0001] texts=["Haus Vharon","Das AEingefuegt eins.","Eingefuegt zwei.r Alder schweigt."]
+PASS  H12 import: pasting a whole foreign article (12 blocks) re-mints every one of them                | 15 blocks, foreign survivors: 0
+PASS  H9 typing inside a passage never changes its pid                                                  | pids=[p_0001, p_0002, p_0003] after 40 keystrokes
+PASS  H10 reorder (cut+paste a whole block): the pid MOVES with the node                                | pids=[p_0003, p_0001, p_0002]
+PASS  L1 commit-time lineage reconstructs the split as parent->[children]                               | [{"kind":"split","parent":"p_0002","children":["n_0001","n_0002"]}]
+PASS  L2 a revelation written against the parent resolves to BOTH children (no silent orphan)           | resolve(p_0002) = [n_0002, n_0001]; live = [p_0001, n_0001, n_0002, p_0003]
+PASS  L3 lineage reconstructs a merge as [parents]->child                                               | [{"kind":"merge","parents":["p_0002","p_0003"],"child":"p_0002"}]
+PASS  L4 a content edit keeps the pid and emits `revise`, not `retire`                                  | [{"kind":"revise","pid":"p_0002"}]
+PASS  L5 delete a passage -> `retire`; a pointer resolves to NOTHING (dead), never to a wrong passage   | [{"kind":"retire","pid":"p_0002"}] resolve=[]
+PASS  X1 MERGE GUARD: merging a revealed passage with a secret one is BLOCKED (this is the leak)        | {"blocked":true,"gains":[{"holder":"Sera","wouldGain":"p_0003"},{"holder":"Brannt","wouldGain":"p_0003"}]}
+PASS  X2 MERGE GUARD: merging two passages with identical audiences is allowed                          | null
+PASS  X3 UNGUARDED merge would widen an audience — demonstrate the leak the guard prevents              | WITHOUT the guard, resolving Sera's revelation yields "Das Aschene Siegel ist eine Faelschung. Das Original verbrannte 1194.Bruder Alder schweigt." — secret text included: true
+PASS  PERF keystroke cost with the identity plugin, 300-passage article                                 | 0.095 ms / keystroke (budget 8 ms), 300 passages, 300 blocks
+PASS  PERF commit-time lineage diff, 300-passage article with 5 structural edits                        | 0.35 ms per commit diff; 5 splits + 0 other events detected
+PASS  PERF worst case: 2000-passage article, keystroke cost                                             | 0.372 ms / keystroke at 2000 passages (budget 8 ms)
+PASS  FUZZ 3000 random operations: ids stay unique and non-null, always                                 | 3000 ops applied, 496 blocks, all pids unique and non-null
+PASS  FUZZ leak check: no pid ever appears twice, and no EXT_ (foreign) pid survives                    | 2778 blocks; foreign pids surviving: 0; unique: true
+
+25/27 passing.  (N1/N2 are the NAIVE baseline: FAIL there is the finding.)
+

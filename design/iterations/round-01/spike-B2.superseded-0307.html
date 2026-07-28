@@ -1,0 +1,2020 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chronicle · Prüfstand — Das Zeugenregister im Härtetest (Kandidat B)</title>
+
+<style>
+/* =========================================================================
+   SPIKE B2 — "Der Prüfstand"
+   Kandidat B (The Table Engine), Runde 1, Sitz 2: Beweis der Universalität.
+   Jede Farbe, Schrift, Rundung, Kante, Dauer und Abstand ist ein Token.
+   Kein Bauteil greift an den Tokens vorbei.
+   ========================================================================= */
+
+/* ---------- 1. Nicht-farbliche Tokens (skinunabhängige Grundlage) -------- */
+:root{
+  --f-ui: "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --f-display: "Palatino Linotype","Book Antiqua",Palatino,Georgia,"Times New Roman",serif;
+  --f-mono: "Cascadia Mono",Consolas,"SF Mono","Roboto Mono",ui-monospace,monospace;
+
+  --fs-micro: .688rem;
+  --fs-meta:  .75rem;
+  --fs-body:  .875rem;
+  --fs-lead:  1rem;
+  --fs-h3:    1.0625rem;
+  --fs-h2:    1.5rem;
+  --fs-h1:    1.125rem;
+
+  --lh-tight: 1.25;
+  --lh-body: 1.55;
+
+  --sp-1: .25rem; --sp-2: .5rem; --sp-3: .75rem; --sp-4: 1rem;
+  --sp-5: 1.5rem; --sp-6: 2rem;
+
+  --r-panel: 4px; --r-card: 3px; --r-ctl: 3px; --r-pill: 999px;
+  --bw: 1px;
+  --panel-clip: none;
+  --panel-shadow: 0 1px 0 rgba(0,0,0,.35), 0 14px 34px -26px rgba(0,0,0,.9);
+  --orn: 1;                 /* Zierrat an/aus */
+  --orn-rule: 1px solid;    /* Regelstil unter Überschriften */
+  --label-tt: uppercase;
+  --label-ls: .16em;
+  --display-ls: .01em;
+
+  --t-res: 140ms;    /* Antwort: Druck, Hover, Fokus */
+  --t-state: 260ms;  /* Zustand: Auswahl, Enthüllung, Lupenwechsel */
+  --t-trans: 800ms;  /* Übergang: Szene, Vorhang */
+  --ease: cubic-bezier(.2,.8,.25,1);
+  --travel: 1;       /* 0 = keine räumliche Bewegung */
+
+  color-scheme: dark light;
+}
+
+/* ---------- 2. Skins: Form, Schrift, Zierrat + beide Paletten ------------ */
+/* RELIC — gestochene Serifen, Messingkanten, Pergamentwärme.               */
+:root{
+  --d-bg:#0b0906; --d-bg2:#120e09; --d-surface:#17120c; --d-surface2:#201911; --d-surface3:#2b2117;
+  --d-line:#3a2e20; --d-line2:#7a6242;
+  --d-text:#f4ecdc; --d-muted:#cbbca2; --d-dim:#a49175;
+  --d-accent:#e6b455; --d-ink:#1a1204;
+  --d-truth:#f08d84; --d-wit:#79cfa2; --d-told:#e3ae62; --d-inf:#b6afee; --d-abs:#a09585;
+  --d-focus:#ffd77a;
+
+  --l-bg:#e8dfcd; --l-bg2:#f0e8d9; --l-surface:#faf5ea; --l-surface2:#f2ebdb; --l-surface3:#e9dfca;
+  --l-line:#d6c8ae; --l-line2:#9a8461;
+  --l-text:#231b11; --l-muted:#4d3f2e; --l-dim:#635340;
+  --l-accent:#7a4a08; --l-ink:#fff7e8;
+  --l-truth:#9a2620; --l-wit:#1a5f3c; --l-told:#744c05; --l-inf:#463aa0; --l-abs:#5d5347;
+  --l-focus:#7a4a08;
+
+  --dh-bg:#000000; --dh-bg2:#050403; --dh-surface:#0a0806; --dh-surface2:#12100c; --dh-surface3:#181410;
+  --dh-line:#5a4a34; --dh-line2:#b39b74;
+  --dh-text:#ffffff; --dh-muted:#f2ead9; --dh-dim:#ddd0b8;
+  --dh-accent:#ffd97a; --dh-ink:#000000;
+  --dh-truth:#ffada4; --dh-wit:#8ff0bd; --dh-told:#ffc978; --dh-inf:#cfc8ff; --dh-abs:#d8cfc0;
+  --dh-focus:#ffe9a8;
+
+  --lh-bg:#efe8da; --lh-bg2:#f6f1e6; --lh-surface:#ffffff; --lh-surface2:#f8f4ec; --lh-surface3:#efe8da;
+  --lh-line:#a8926d; --lh-line2:#6b5a3d;
+  --lh-text:#000000; --lh-muted:#231b11; --lh-dim:#3a2f22;
+  --lh-accent:#5c3600; --lh-ink:#ffffff;
+  --lh-truth:#7d1810; --lh-wit:#0d472a; --lh-told:#553600; --lh-inf:#2f2585; --lh-abs:#3d352b;
+  --lh-focus:#4a2c00;
+}
+
+/* SIGNAL — kondensierte Technik, gekerbte Ecken, harte Kanten. */
+:root[data-skin="signal"]{
+  --f-display:"Bahnschrift SemiCondensed",Bahnschrift,"Arial Narrow","Segoe UI",system-ui,sans-serif;
+  --r-panel:0; --r-card:0; --r-ctl:0;
+  --panel-clip: polygon(0 9px, 9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
+  --orn:1; --orn-rule:1px solid; --label-ls:.2em; --display-ls:.03em;
+  --panel-shadow: 0 0 0 1px rgba(0,0,0,.5), 0 18px 40px -32px #000;
+
+  --d-bg:#04080f; --d-bg2:#071019; --d-surface:#0a141d; --d-surface2:#0f1e2a; --d-surface3:#152a39;
+  --d-line:#1e3746; --d-line2:#3d6a83;
+  --d-text:#e8f3f8; --d-muted:#b3c8d3; --d-dim:#8ea7b4;
+  --d-accent:#5fd9f2; --d-ink:#031015;
+  --d-truth:#ff8f96; --d-wit:#5cdcae; --d-told:#f2b967; --d-inf:#bb9df8; --d-abs:#93a7b1;
+  --d-focus:#8ee9ff;
+
+  --l-bg:#dde7ec; --l-bg2:#e8f0f4; --l-surface:#f7fbfd; --l-surface2:#ecf3f7; --l-surface3:#dfeaf0;
+  --l-line:#c2d4de; --l-line2:#5f8598;
+  --l-text:#0b1a22; --l-muted:#38505d; --l-dim:#4f6975;
+  --l-accent:#005c76; --l-ink:#f2fbff;
+  --l-truth:#9d1421; --l-wit:#0d5c45; --l-told:#6f4700; --l-inf:#42349e; --l-abs:#4c5d66;
+  --l-focus:#00475c;
+
+  --dh-bg:#000000; --dh-bg2:#03080c; --dh-surface:#050b11; --dh-surface2:#0b141c; --dh-surface3:#101c26;
+  --dh-line:#2c4d61; --dh-line2:#6ea0b8;
+  --dh-text:#ffffff; --dh-muted:#e6f4fa; --dh-dim:#c9dde7;
+  --dh-accent:#8ceeff; --dh-ink:#000000;
+  --dh-truth:#ffb3b8; --dh-wit:#86f5c8; --dh-told:#ffd28a; --dh-inf:#d5c2ff; --dh-abs:#cddbe2;
+  --dh-focus:#b9f4ff;
+
+  --lh-bg:#e2ecf1; --lh-bg2:#eef4f7; --lh-surface:#ffffff; --lh-surface2:#f4f9fb; --lh-surface3:#e6eff4;
+  --lh-line:#9ab4c1; --lh-line2:#4a6f80;
+  --lh-text:#000000; --lh-muted:#0b1a22; --lh-dim:#22343d;
+  --lh-accent:#004255; --lh-ink:#ffffff;
+  --lh-truth:#7d0f19; --lh-wit:#084433; --lh-told:#523500; --lh-inf:#2d2278; --lh-abs:#2b3940;
+  --lh-focus:#00303e;
+}
+
+/* ARCHIVE — Ochsenblut, Doppellinien, redaktioneller Satz. */
+:root[data-skin="archive"]{
+  --f-display:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --r-panel:0; --r-card:0; --r-ctl:0;
+  --panel-clip:none; --orn:1; --orn-rule:3px double; --label-ls:.22em; --display-ls:.015em;
+  --panel-shadow: 0 1px 0 rgba(0,0,0,.3), 0 20px 46px -34px rgba(0,0,0,.85);
+
+  --d-bg:#0d0908; --d-bg2:#140f0d; --d-surface:#1a1413; --d-surface2:#231b19; --d-surface3:#2d2320;
+  --d-line:#3c2d29; --d-line2:#7d6259;
+  --d-text:#f2e8dd; --d-muted:#cbb6a9; --d-dim:#a68f83;
+  --d-accent:#e89a7e; --d-ink:#1c0d07;
+  --d-truth:#f28f88; --d-wit:#84cbaa; --d-told:#e0ad6c; --d-inf:#b3aeea; --d-abs:#a29289;
+  --d-focus:#ffc0a4;
+
+  --l-bg:#e6ded2; --l-bg2:#efe8de; --l-surface:#fbf7f1; --l-surface2:#f3ece2; --l-surface3:#e9e0d3;
+  --l-line:#d5c8b8; --l-line2:#96806f;
+  --l-text:#1d1614; --l-muted:#4b3a34; --l-dim:#5f4b44;
+  --l-accent:#8c2c14; --l-ink:#fff6f1;
+  --l-truth:#8c2c14; --l-wit:#175a3c; --l-told:#6d4703; --l-inf:#42359b; --l-abs:#584a44;
+  --l-focus:#8c2c14;
+
+  --dh-bg:#000000; --dh-bg2:#050303; --dh-surface:#0b0807; --dh-surface2:#131010; --dh-surface3:#1a1514;
+  --dh-line:#5c4740; --dh-line2:#a8897d;
+  --dh-text:#ffffff; --dh-muted:#f4e9e0; --dh-dim:#dfcdc2;
+  --dh-accent:#ffbfa4; --dh-ink:#000000;
+  --dh-truth:#ffb0a8; --dh-wit:#93f0c4; --dh-told:#ffc887; --dh-inf:#cec8ff; --dh-abs:#dccec6;
+  --dh-focus:#ffd2bd;
+
+  --lh-bg:#ece3d8; --lh-bg2:#f4efe7; --lh-surface:#ffffff; --lh-surface2:#f8f3ec; --lh-surface3:#efe7dc;
+  --lh-line:#a8968a; --lh-line2:#6d564c;
+  --lh-text:#000000; --lh-muted:#1d1614; --lh-dim:#332723;
+  --lh-accent:#6d1e08; --lh-ink:#ffffff;
+  --lh-truth:#6d1e08; --lh-wit:#0c422b; --lh-told:#4f3200; --lh-inf:#2c2178; --lh-abs:#332924;
+  --lh-focus:#5a1804;
+}
+
+/* CLEAN — kein Zierrat, ruhige Flächen, maximale Lesbarkeit. */
+:root[data-skin="clean"]{
+  --f-display:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+  --r-panel:10px; --r-card:8px; --r-ctl:7px;
+  --panel-clip:none; --orn:0; --orn-rule:1px solid; --label-tt:none; --label-ls:.04em; --display-ls:0;
+  --panel-shadow: 0 1px 2px rgba(0,0,0,.12), 0 12px 28px -24px rgba(0,0,0,.6);
+
+  --d-bg:#0b0f11; --d-bg2:#11171a; --d-surface:#151c1f; --d-surface2:#1d262a; --d-surface3:#243036;
+  --d-line:#2c383d; --d-line2:#5d7178;
+  --d-text:#f3f7f8; --d-muted:#c3d0d4; --d-dim:#9dadb2;
+  --d-accent:#7cc7f0; --d-ink:#04141d;
+  --d-truth:#ff9a9a; --d-wit:#6ed3a7; --d-told:#e8b567; --d-inf:#b4a9f2; --d-abs:#9aa8ac;
+  --d-focus:#9ad8ff;
+
+  --l-bg:#e4e9ea; --l-bg2:#eef2f3; --l-surface:#ffffff; --l-surface2:#f3f6f7; --l-surface3:#e8eded;
+  --l-line:#d0d8da; --l-line2:#66787d;
+  --l-text:#101618; --l-muted:#3c4a4e; --l-dim:#526166;
+  --l-accent:#0b5c8c; --l-ink:#ffffff;
+  --l-truth:#a01521; --l-wit:#0f5a41; --l-told:#6f4700; --l-inf:#3d349b; --l-abs:#4d585b;
+  --l-focus:#0b5c8c;
+
+  --dh-bg:#000000; --dh-bg2:#050708; --dh-surface:#080b0c; --dh-surface2:#101617; --dh-surface3:#161e20;
+  --dh-line:#3a4a4f; --dh-line2:#7d9299;
+  --dh-text:#ffffff; --dh-muted:#eef4f5; --dh-dim:#d3dfe2;
+  --dh-accent:#a8dcff; --dh-ink:#000000;
+  --dh-truth:#ffb8b8; --dh-wit:#8cefc2; --dh-told:#ffcd85; --dh-inf:#cfc6ff; --dh-abs:#d5dee0;
+  --dh-focus:#c2e8ff;
+
+  --lh-bg:#e9eeef; --lh-bg2:#f2f6f7; --lh-surface:#ffffff; --lh-surface2:#f6f9fa; --lh-surface3:#eaf0f1;
+  --lh-line:#9fadb1; --lh-line2:#4d5e63;
+  --lh-text:#000000; --lh-muted:#101618; --lh-dim:#263134;
+  --lh-accent:#00415f; --lh-ink:#ffffff;
+  --lh-truth:#7d0d17; --lh-wit:#08432f; --lh-told:#523500; --lh-inf:#291f73; --lh-abs:#2b3639;
+  --lh-focus:#00344d;
+}
+
+/* ---------- 3. Moduswahl: dunkel/hell einmal je Kontext umgehängt -------- */
+:root{
+  --p-bg:var(--d-bg); --p-bg2:var(--d-bg2); --p-surface:var(--d-surface);
+  --p-surface2:var(--d-surface2); --p-surface3:var(--d-surface3);
+  --p-line:var(--d-line); --p-line2:var(--d-line2);
+  --p-text:var(--d-text); --p-muted:var(--d-muted); --p-dim:var(--d-dim);
+  --p-accent:var(--d-accent); --p-ink:var(--d-ink);
+  --p-truth:var(--d-truth); --p-wit:var(--d-wit); --p-told:var(--d-told);
+  --p-inf:var(--d-inf); --p-abs:var(--d-abs); --p-focus:var(--d-focus);
+  --h-bg:var(--dh-bg); --h-bg2:var(--dh-bg2); --h-surface:var(--dh-surface);
+  --h-surface2:var(--dh-surface2); --h-surface3:var(--dh-surface3);
+  --h-line:var(--dh-line); --h-line2:var(--dh-line2);
+  --h-text:var(--dh-text); --h-muted:var(--dh-muted); --h-dim:var(--dh-dim);
+  --h-accent:var(--dh-accent); --h-ink:var(--dh-ink);
+  --h-truth:var(--dh-truth); --h-wit:var(--dh-wit); --h-told:var(--dh-told);
+  --h-inf:var(--dh-inf); --h-abs:var(--dh-abs); --h-focus:var(--dh-focus);
+  --scheme: dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --p-bg:var(--l-bg); --p-bg2:var(--l-bg2); --p-surface:var(--l-surface);
+    --p-surface2:var(--l-surface2); --p-surface3:var(--l-surface3);
+    --p-line:var(--l-line); --p-line2:var(--l-line2);
+    --p-text:var(--l-text); --p-muted:var(--l-muted); --p-dim:var(--l-dim);
+    --p-accent:var(--l-accent); --p-ink:var(--l-ink);
+    --p-truth:var(--l-truth); --p-wit:var(--l-wit); --p-told:var(--l-told);
+    --p-inf:var(--l-inf); --p-abs:var(--l-abs); --p-focus:var(--l-focus);
+    --h-bg:var(--lh-bg); --h-bg2:var(--lh-bg2); --h-surface:var(--lh-surface);
+    --h-surface2:var(--lh-surface2); --h-surface3:var(--lh-surface3);
+    --h-line:var(--lh-line); --h-line2:var(--lh-line2);
+    --h-text:var(--lh-text); --h-muted:var(--lh-muted); --h-dim:var(--lh-dim);
+    --h-accent:var(--lh-accent); --h-ink:var(--lh-ink);
+    --h-truth:var(--lh-truth); --h-wit:var(--lh-wit); --h-told:var(--lh-told);
+    --h-inf:var(--lh-inf); --h-abs:var(--lh-abs); --h-focus:var(--lh-focus);
+    --scheme: light;
+  }
+}
+:root[data-theme="light"]{
+  --p-bg:var(--l-bg); --p-bg2:var(--l-bg2); --p-surface:var(--l-surface);
+  --p-surface2:var(--l-surface2); --p-surface3:var(--l-surface3);
+  --p-line:var(--l-line); --p-line2:var(--l-line2);
+  --p-text:var(--l-text); --p-muted:var(--l-muted); --p-dim:var(--l-dim);
+  --p-accent:var(--l-accent); --p-ink:var(--l-ink);
+  --p-truth:var(--l-truth); --p-wit:var(--l-wit); --p-told:var(--l-told);
+  --p-inf:var(--l-inf); --p-abs:var(--l-abs); --p-focus:var(--l-focus);
+  --h-bg:var(--lh-bg); --h-bg2:var(--lh-bg2); --h-surface:var(--lh-surface);
+  --h-surface2:var(--lh-surface2); --h-surface3:var(--lh-surface3);
+  --h-line:var(--lh-line); --h-line2:var(--lh-line2);
+  --h-text:var(--lh-text); --h-muted:var(--lh-muted); --h-dim:var(--lh-dim);
+  --h-accent:var(--lh-accent); --h-ink:var(--lh-ink);
+  --h-truth:var(--lh-truth); --h-wit:var(--lh-wit); --h-told:var(--lh-told);
+  --h-inf:var(--lh-inf); --h-abs:var(--lh-abs); --h-focus:var(--lh-focus);
+  --scheme: light;
+}
+:root[data-theme="dark"]{
+  --p-bg:var(--d-bg); --p-bg2:var(--d-bg2); --p-surface:var(--d-surface);
+  --p-surface2:var(--d-surface2); --p-surface3:var(--d-surface3);
+  --p-line:var(--d-line); --p-line2:var(--d-line2);
+  --p-text:var(--d-text); --p-muted:var(--d-muted); --p-dim:var(--d-dim);
+  --p-accent:var(--d-accent); --p-ink:var(--d-ink);
+  --p-truth:var(--d-truth); --p-wit:var(--d-wit); --p-told:var(--d-told);
+  --p-inf:var(--d-inf); --p-abs:var(--d-abs); --p-focus:var(--d-focus);
+  --h-bg:var(--dh-bg); --h-bg2:var(--dh-bg2); --h-surface:var(--dh-surface);
+  --h-surface2:var(--dh-surface2); --h-surface3:var(--dh-surface3);
+  --h-line:var(--dh-line); --h-line2:var(--dh-line2);
+  --h-text:var(--dh-text); --h-muted:var(--dh-muted); --h-dim:var(--dh-dim);
+  --h-accent:var(--dh-accent); --h-ink:var(--dh-ink);
+  --h-truth:var(--dh-truth); --h-wit:var(--dh-wit); --h-told:var(--dh-told);
+  --h-inf:var(--dh-inf); --h-abs:var(--dh-abs); --h-focus:var(--dh-focus);
+  --scheme: dark;
+}
+
+/* ---------- 4. Die eine Ebene, die alle Bauteile lesen ------------------- */
+:root{
+  --c-bg:var(--p-bg); --c-bg2:var(--p-bg2); --c-surface:var(--p-surface);
+  --c-surface2:var(--p-surface2); --c-surface3:var(--p-surface3);
+  --c-line:var(--p-line); --c-line2:var(--p-line2);
+  --c-text:var(--p-text); --c-muted:var(--p-muted); --c-dim:var(--p-dim);
+  --c-accent:var(--p-accent); --c-ink:var(--p-ink);
+  --c-truth:var(--p-truth); --c-wit:var(--p-wit); --c-told:var(--p-told);
+  --c-inf:var(--p-inf); --c-abs:var(--p-abs); --c-focus:var(--p-focus);
+}
+:root[data-contrast="high"]{
+  --c-bg:var(--h-bg); --c-bg2:var(--h-bg2); --c-surface:var(--h-surface);
+  --c-surface2:var(--h-surface2); --c-surface3:var(--h-surface3);
+  --c-line:var(--h-line); --c-line2:var(--h-line2);
+  --c-text:var(--h-text); --c-muted:var(--h-muted); --c-dim:var(--h-dim);
+  --c-accent:var(--h-accent); --c-ink:var(--h-ink);
+  --c-truth:var(--h-truth); --c-wit:var(--h-wit); --c-told:var(--h-told);
+  --c-inf:var(--h-inf); --c-abs:var(--h-abs); --c-focus:var(--h-focus);
+  --orn:0;
+  --panel-shadow:none;
+}
+
+/* ---------- 5. Dichte + Bewegung ---------------------------------------- */
+:root[data-density="compact"]{
+  --sp-2:.375rem; --sp-3:.5rem; --sp-4:.75rem; --sp-5:1rem; --sp-6:1.375rem;
+  --fs-body:.8125rem; --fs-meta:.7rem; --fs-h2:1.3125rem; --lh-body:1.45;
+}
+@media (prefers-reduced-motion: reduce){
+  :root:not([data-motion="full"]){ --t-res:1ms; --t-state:1ms; --t-trans:1ms; --travel:0; }
+}
+:root[data-motion="reduced"]{ --t-res:1ms; --t-state:1ms; --t-trans:1ms; --travel:0; }
+
+/* ---------- 6. Grundlagen ------------------------------------------------ */
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0; padding:0; overflow-x:hidden;
+  background:var(--c-bg); color:var(--c-text);
+  font-family:var(--f-ui); font-size:var(--fs-body); line-height:var(--lh-body);
+  color-scheme:var(--scheme);
+  -webkit-text-size-adjust:100%; text-size-adjust:100%;
+}
+h1,h2,h3,h4,p,ul,ol,figure,pre,dl,dd{ margin:0; }
+ul,ol{ list-style:none; padding:0; }
+button{ font:inherit; color:inherit; }
+:where(a){ color:var(--c-accent); }
+:focus-visible{
+  outline:2px solid var(--c-focus); outline-offset:2px;
+  border-radius:var(--r-ctl);
+}
+.num{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+.vh{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
+     clip-path:inset(50%); white-space:nowrap; border:0; }
+
+/* ---------- 7. Prüfstand (Jig) — bewusst NICHT das Produkt --------------- */
+.rig{
+  max-width:2000px; margin:0 auto; padding:clamp(.5rem,1.6vw,1.25rem);
+  display:flex; flex-direction:column; gap:var(--sp-4);
+}
+.rig-head{
+  display:flex; flex-wrap:wrap; align-items:flex-end; gap:var(--sp-4) var(--sp-5);
+  padding:var(--sp-3) var(--sp-4);
+  border:var(--bw) dashed var(--c-line2); border-radius:var(--r-panel);
+  background:var(--c-bg2);
+}
+.rig-head__id{ flex:1 1 22rem; min-width:0; }
+.rig-kicker{
+  font-family:var(--f-mono); font-size:var(--fs-micro); letter-spacing:.18em;
+  text-transform:uppercase; color:var(--c-dim);
+}
+.rig-head h1{
+  font-family:var(--f-display); font-size:var(--fs-h1); font-weight:600;
+  letter-spacing:var(--display-ls); line-height:var(--lh-tight); margin-top:2px;
+}
+.rig-head p{ font-size:var(--fs-meta); color:var(--c-muted); margin-top:var(--sp-1); max-width:64ch; }
+.lamps{ display:flex; flex-wrap:wrap; gap:var(--sp-2); }
+.lamp{
+  display:flex; align-items:center; gap:.4rem; padding:.3rem .55rem;
+  border:var(--bw) solid var(--c-line); border-radius:var(--r-ctl);
+  background:var(--c-surface); font-size:var(--fs-micro);
+  font-family:var(--f-mono); letter-spacing:.06em; white-space:nowrap;
+  transition:border-color var(--t-state) var(--ease), background var(--t-state) var(--ease);
+}
+.lamp__dot{ width:.55rem; height:.55rem; border-radius:var(--r-pill); background:var(--c-dim); flex:none; }
+.lamp[data-state="pass"]{ border-color:var(--c-wit); }
+.lamp[data-state="pass"] .lamp__dot{ background:var(--c-wit); }
+.lamp[data-state="fail"]{ border-color:var(--c-truth); background:var(--c-surface2); }
+.lamp[data-state="fail"] .lamp__dot{ background:var(--c-truth); }
+.lamp b{ font-weight:600; color:var(--c-text); }
+.lamp span{ color:var(--c-muted); }
+
+/* Achsenleiste */
+.axes{
+  display:flex; flex-wrap:wrap; gap:var(--sp-3);
+  padding:var(--sp-3); border:var(--bw) dashed var(--c-line2);
+  border-radius:var(--r-panel); background:var(--c-bg2);
+}
+.axis{ border:0; padding:0; margin:0; min-width:0; }
+.axis legend{
+  padding:0 0 .3rem; font-family:var(--f-mono); font-size:var(--fs-micro);
+  letter-spacing:.14em; text-transform:uppercase; color:var(--c-dim);
+}
+.seg{ display:flex; flex-wrap:wrap; gap:2px; }
+.seg input{ position:absolute; opacity:0; width:1px; height:1px; }
+.seg label{
+  display:inline-block; padding:.32rem .6rem; cursor:pointer;
+  border:var(--bw) solid var(--c-line); border-radius:var(--r-ctl);
+  background:var(--c-surface); color:var(--c-muted);
+  font-size:var(--fs-meta); line-height:1.2;
+  transition:background var(--t-res) var(--ease), color var(--t-res) var(--ease),
+             border-color var(--t-res) var(--ease);
+}
+.seg label:hover{ color:var(--c-text); border-color:var(--c-line2); }
+.seg input:checked + label{
+  background:var(--c-accent); color:var(--c-ink); border-color:var(--c-accent); font-weight:600;
+}
+.seg input:focus-visible + label{ outline:2px solid var(--c-focus); outline-offset:2px; }
+.axis select{
+  font:inherit; font-size:var(--fs-meta); padding:.3rem .4rem; max-width:14rem;
+  background:var(--c-surface); color:var(--c-text);
+  border:var(--bw) solid var(--c-line); border-radius:var(--r-ctl);
+}
+
+/* ---------- 8. Produkt-Shell — die sechs Zonen --------------------------- */
+.shell{
+  display:grid; gap:var(--sp-3);
+  grid-template-columns:max-content 15.5rem minmax(0,1fr) 22rem;
+  grid-template-areas:
+    "ctx ctx ctx ctx"
+    "mod col stage lens"
+    "shelf shelf shelf shelf";
+  align-items:start;
+}
+@media (max-width:1300px){
+  .shell{
+    grid-template-columns:max-content 14rem minmax(0,1fr);
+    grid-template-areas:
+      "ctx ctx ctx"
+      "mod col stage"
+      "mod col lens"
+      "shelf shelf shelf";
+  }
+}
+@media (max-width:940px){
+  .shell{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"ctx" "mod" "col" "stage" "lens" "shelf";
+  }
+}
+.zone{
+  background:var(--c-surface); color:var(--c-text);
+  border:var(--bw) solid var(--c-line);
+  border-radius:var(--r-panel); clip-path:var(--panel-clip);
+  box-shadow:var(--panel-shadow);
+  min-width:0; position:relative;
+}
+/* Messing-/Technikecken: reines Zierrat-Token, in Clean und HC aus */
+.zone::before,.zone::after{
+  content:""; position:absolute; width:12px; height:12px; pointer-events:none;
+  opacity:calc(var(--orn) * .85); border-color:var(--c-accent); border-style:solid; border-width:0;
+}
+.zone::before{ top:3px; left:3px; border-top-width:2px; border-left-width:2px; }
+.zone::after{ bottom:3px; right:3px; border-bottom-width:2px; border-right-width:2px; }
+
+.zone-ctx{ grid-area:ctx; } .zone-mod{ grid-area:mod; }
+.zone-col{ grid-area:col; } .zone-stage{ grid-area:stage; }
+.zone-lens{ grid-area:lens; } .zone-shelf{ grid-area:shelf; position:sticky; bottom:0; z-index:5; }
+
+.zone-head{
+  display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-3);
+  padding:var(--sp-3) var(--sp-4);
+  border-bottom:var(--orn-rule) var(--c-line);
+}
+.zone-head h2,.zone-head h3{
+  font-family:var(--f-display); font-weight:600; letter-spacing:var(--display-ls);
+  line-height:var(--lh-tight); font-size:var(--fs-h3); overflow-wrap:anywhere;
+}
+.zone-label{
+  font-family:var(--f-mono); font-size:var(--fs-micro); letter-spacing:var(--label-ls);
+  text-transform:var(--label-tt); color:var(--c-dim); overflow-wrap:anywhere;
+}
+.zone-head > .zone-label{ white-space:nowrap; }
+.zone-body{ padding:var(--sp-3) var(--sp-4) var(--sp-4); }
+
+/* Kontextleiste */
+.ctx{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-3) var(--sp-4); padding:var(--sp-3) var(--sp-4); }
+.ctx__crumbs{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.4rem; min-width:0; flex:1 1 20rem; }
+.ctx__universe{ font-family:var(--f-mono); font-size:var(--fs-micro); letter-spacing:var(--label-ls);
+  text-transform:var(--label-tt); color:var(--c-dim); }
+.ctx__campaign{ font-family:var(--f-display); font-size:var(--fs-lead); font-weight:600;
+  letter-spacing:var(--display-ls); overflow-wrap:anywhere; }
+.ctx__sep{ color:var(--c-line2); }
+.chips{ display:flex; flex-wrap:wrap; gap:var(--sp-2); align-items:center; }
+.chip{
+  display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .5rem;
+  border:var(--bw) solid var(--c-line); border-radius:var(--r-pill);
+  background:var(--c-surface2); color:var(--c-muted);
+  font-size:var(--fs-micro); line-height:1.35; white-space:nowrap;
+}
+.chip--role{ border-color:var(--c-accent); color:var(--c-text); }
+.chip--live{ border-color:var(--c-wit); color:var(--c-text); }
+.chip--backstage{ border-color:var(--c-told); color:var(--c-text); }
+.chip--struck{ border-color:var(--c-abs); color:var(--c-muted); }
+.chip__dot{ width:.45rem; height:.45rem; border-radius:var(--r-pill); background:currentColor; flex:none; }
+
+/* Modulschiene */
+.zone-mod .zone-body{ padding:var(--sp-2); }
+.modules{ display:flex; flex-direction:column; gap:2px; }
+@media (max-width:940px){ .modules{ flex-direction:row; overflow-x:auto; padding-bottom:var(--sp-1); } }
+.module-btn{
+  display:flex; align-items:center; gap:.55rem; width:100%;
+  padding:.5rem .6rem; text-align:left; cursor:pointer;
+  background:transparent; border:var(--bw) solid transparent; border-radius:var(--r-ctl);
+  color:var(--c-muted); font-size:var(--fs-meta);
+  transition:background var(--t-res) var(--ease), color var(--t-res) var(--ease),
+             border-color var(--t-res) var(--ease);
+}
+.module-btn:hover{ background:var(--c-surface2); color:var(--c-text); }
+.module-btn[aria-current="page"]{
+  background:var(--c-surface3); color:var(--c-text); border-color:var(--c-line2); font-weight:600;
+}
+.module-btn svg{ flex:none; width:16px; height:16px; }
+.module-btn span{ overflow-wrap:anywhere; min-width:0; }
+@media (max-width:940px){ .module-btn{ width:auto; white-space:nowrap; } .module-btn span{ overflow-wrap:normal; } }
+
+/* Sammlungsschiene */
+.rail-toggle{ display:none; }
+@media (max-width:940px){
+  .rail-toggle{
+    display:inline-flex; align-items:center; gap:.4rem; cursor:pointer;
+    padding:.3rem .6rem; background:var(--c-surface2); color:var(--c-text);
+    border:var(--bw) solid var(--c-line); border-radius:var(--r-ctl); font-size:var(--fs-meta);
+  }
+  .zone-col[data-collapsed="true"] .zone-body{ display:none; }
+}
+.coll{ display:flex; flex-direction:column; gap:var(--sp-2); }
+.coll-item{
+  display:flex; gap:var(--sp-2); align-items:center; width:100%; text-align:left; cursor:pointer;
+  padding:var(--sp-2); background:var(--c-surface2); color:var(--c-text);
+  border:var(--bw) solid var(--c-line); border-radius:var(--r-card);
+  transition:transform var(--t-res) var(--ease), border-color var(--t-res) var(--ease),
+             background var(--t-res) var(--ease);
+}
+.coll-item:hover{ border-color:var(--c-line2); transform:translateX(calc(2px * var(--travel))); }
+.coll-item[aria-current="true"]{ border-color:var(--c-accent); background:var(--c-surface3); }
+.coll-item__txt{ min-width:0; display:flex; flex-direction:column; gap:1px; }
+.coll-item__name{ display:block; font-size:var(--fs-meta); font-weight:600; overflow-wrap:anywhere; }
+.coll-item__kind{ display:block; font-size:var(--fs-micro); color:var(--c-dim); overflow-wrap:anywhere; }
+
+/* Sigill-Ersatzgrafik */
+.sigil{ flex:none; display:grid; place-items:center; position:relative;
+  border:var(--bw) solid var(--c-line2); border-radius:var(--r-card);
+  background:var(--c-surface3); color:var(--c-accent); overflow:hidden; }
+.sigil svg{ position:absolute; inset:0; width:100%; height:100%; opacity:.55; }
+.sigil b{ position:relative; font-family:var(--f-display); font-weight:600; color:var(--c-text);
+  letter-spacing:.02em; }
+
+/* ---------- 9. Bühne: Das Zeugenregister -------------------------------- */
+.subject{ position:relative; overflow:hidden; border-bottom:var(--orn-rule) var(--c-line); }
+.subject__artwrap{ position:absolute; inset:0; margin:0; z-index:0; }
+.subject__art{ position:absolute; inset:0; z-index:0; }
+.subject__art img{ width:100%; height:100%; object-fit:cover; display:block;
+  filter:saturate(.82) contrast(1.04) brightness(1.22); }
+.subject__art::after{
+  content:""; position:absolute; inset:0;
+  background:
+    linear-gradient(96deg, var(--c-surface) 3%,
+      color-mix(in srgb, var(--c-surface) 58%, transparent) 44%, transparent 88%),
+    linear-gradient(0deg, var(--c-surface) 0%, transparent 54%);
+}
+.subject__fallback{
+  position:absolute; inset:0; z-index:0;
+  background:
+    repeating-linear-gradient(115deg, transparent 0 22px, var(--c-surface3) 22px 23px),
+    radial-gradient(120% 100% at 82% 0%, var(--c-surface3), var(--c-surface) 68%);
+  opacity:.9;
+}
+.subject__inner{ position:relative; z-index:1; display:flex; gap:var(--sp-4); min-height:9.5rem;
+  padding:var(--sp-4); align-items:flex-start; flex-wrap:wrap; }
+.subject__text{ flex:1 1 18rem; min-width:0; max-width:52rem; }
+.subject h2{
+  font-family:var(--f-display); font-size:var(--fs-h2); font-weight:600;
+  letter-spacing:var(--display-ls); line-height:1.15; overflow-wrap:anywhere;
+}
+.subject__meta{ display:flex; flex-wrap:wrap; gap:var(--sp-2); margin-top:var(--sp-2); }
+.subject__prompt{
+  margin-top:var(--sp-3); padding:var(--sp-2) var(--sp-3);
+  border-left:3px solid var(--c-accent); background:var(--c-surface2);
+  border-radius:0 var(--r-card) var(--r-card) 0;
+  font-size:var(--fs-meta); color:var(--c-muted); max-width:60ch;
+}
+.subject__prompt b{ color:var(--c-text); font-weight:600; }
+.artnote{ font-size:var(--fs-micro); color:var(--c-dim); font-family:var(--f-mono); }
+
+/* Register */
+.ledger-scroll{ overflow-x:auto; overscroll-behavior-x:contain; padding:var(--sp-3) var(--sp-4) var(--sp-4); }
+.ledger-scroll:focus-visible{ outline:2px solid var(--c-focus); outline-offset:-2px; }
+.ledger{ display:grid; grid-auto-flow:column; grid-auto-columns:minmax(14rem,1fr);
+  gap:var(--sp-3); align-items:start; min-width:min-content; }
+.lcol{
+  background:var(--c-surface2); border:var(--bw) solid var(--c-line);
+  border-radius:var(--r-card); border-top:3px solid var(--c-line2); min-width:0;
+}
+.lcol--truth{ border-top-color:var(--c-truth); background:var(--c-surface3); }
+.lcol--public{ border-top-color:var(--c-accent); }
+.lcol--empty{ border-top-color:var(--c-abs); }
+.lcol--self{ border-top-color:var(--c-accent); }
+.lcol__head{ padding:var(--sp-2) var(--sp-3); border-bottom:var(--bw) solid var(--c-line); }
+.lcol__name{ font-family:var(--f-display); font-size:var(--fs-body); font-weight:600;
+  letter-spacing:var(--display-ls); overflow-wrap:anywhere; }
+.lcol__sub{ font-size:var(--fs-micro); color:var(--c-dim); overflow-wrap:anywhere; margin-top:1px; }
+.lcol__tally{ display:flex; align-items:center; gap:.35rem; margin-top:var(--sp-2); }
+.tally{ font-family:var(--f-mono); font-size:var(--fs-micro); color:var(--c-muted); }
+.lcol__list{ display:flex; flex-direction:column; gap:2px; padding:var(--sp-2); }
+
+.grant{
+  display:block; width:100%; text-align:left; cursor:pointer;
+  padding:var(--sp-2); background:var(--c-surface); color:var(--c-text);
+  border:var(--bw) solid var(--c-line); border-left:3px solid var(--c-line2);
+  border-radius:var(--r-card);
+  transition:transform var(--t-state) var(--ease), border-color var(--t-state) var(--ease),
+             background var(--t-state) var(--ease), box-shadow var(--t-state) var(--ease);
+}
+.grant:hover{ border-color:var(--c-line2); background:var(--c-surface2); }
+.grant[aria-current="true"]{
+  border-color:var(--c-accent); background:var(--c-surface2);
+  box-shadow:0 0 0 1px var(--c-accent);
+  transform:translateX(calc(3px * var(--travel)));
+}
+.grant--wit{ border-left-color:var(--c-wit); }
+.grant--told{ border-left-color:var(--c-told); }
+.grant--inf{ border-left-color:var(--c-inf); }
+.grant--read{ border-left-color:var(--c-accent); }
+.grant--fiat{ border-left-color:var(--c-truth); }
+.grant--new{ animation:arrive var(--t-state) var(--ease) both; }
+@keyframes arrive{ from{ opacity:0; transform:translateY(calc(6px * var(--travel))); } to{ opacity:1; } }
+.grant__claim{ font-size:var(--fs-meta); line-height:1.4; overflow-wrap:anywhere; }
+.grant__meta{ display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.4rem; align-items:center; }
+.tag{
+  display:inline-flex; align-items:center; gap:.25rem; padding:.1rem .38rem;
+  border:var(--bw) solid currentColor; border-radius:var(--r-pill);
+  font-size:var(--fs-micro); line-height:1.4; white-space:nowrap;
+}
+.tag--wit{ color:var(--c-wit); } .tag--told{ color:var(--c-told); }
+.tag--inf{ color:var(--c-inf); } .tag--read{ color:var(--c-accent); }
+.tag--fiat{ color:var(--c-truth); } .tag--abs{ color:var(--c-abs); }
+.tag--canon{ color:var(--c-muted); } .tag--proposed{ color:var(--c-told); border-style:dashed; }
+.tag__glyph{ font-family:var(--f-mono); font-weight:700; }
+.stamp{ font-family:var(--f-mono); font-size:var(--fs-micro); color:var(--c-dim); white-space:nowrap; }
+
+.empty{
+  padding:var(--sp-3); border:1px dashed var(--c-line2); border-radius:var(--r-card);
+  background:var(--c-surface); color:var(--c-muted); font-size:var(--fs-meta);
+}
+.empty b{ display:block; color:var(--c-text); font-size:var(--fs-body); font-family:var(--f-display);
+  margin-bottom:.3rem; overflow-wrap:anywhere; }
+.empty p + p{ margin-top:var(--sp-2); }
+.curtain-note{
+  margin:var(--sp-4); padding:var(--sp-4); text-align:center;
+  border:1px dashed var(--c-told); border-radius:var(--r-card); background:var(--c-surface2);
+}
+
+/* ---------- 10. Kontextlupe --------------------------------------------- */
+.lens-body{ padding:var(--sp-3) var(--sp-4) var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-3); }
+.lens-claim{ font-family:var(--f-display); font-size:var(--fs-lead); line-height:1.3;
+  letter-spacing:var(--display-ls); overflow-wrap:anywhere; }
+.lens-sec h4{
+  font-family:var(--f-mono); font-size:var(--fs-micro); letter-spacing:var(--label-ls);
+  text-transform:var(--label-tt); color:var(--c-dim); margin-bottom:var(--sp-2);
+  padding-bottom:.25rem; border-bottom:var(--bw) solid var(--c-line);
+}
+.kv{ display:grid; grid-template-columns:minmax(6rem,auto) 1fr; gap:.25rem var(--sp-3); font-size:var(--fs-meta); }
+.kv dt{ color:var(--c-dim); overflow-wrap:anywhere; }
+.kv dd{ color:var(--c-text); overflow-wrap:anywhere; }
+.trace{ display:flex; flex-direction:column; gap:0; counter-reset:t; }
+.trace li{ position:relative; padding:0 0 var(--sp-3) var(--sp-4); border-left:1px solid var(--c-line2); }
+.trace li:last-child{ border-left-color:transparent; padding-bottom:0; }
+.trace li::before{
+  counter-increment:t; content:counter(t);
+  position:absolute; left:-9px; top:0; width:18px; height:18px; border-radius:var(--r-pill);
+  display:grid; place-items:center; background:var(--c-surface3); color:var(--c-muted);
+  border:var(--bw) solid var(--c-line2); font-family:var(--f-mono); font-size:.625rem;
+}
+.trace strong{ display:block; font-size:var(--fs-meta); font-weight:600; overflow-wrap:anywhere; }
+.trace span{ display:block; font-size:var(--fs-micro); color:var(--c-dim); font-family:var(--f-mono);
+  overflow-wrap:anywhere; }
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:.4rem; cursor:pointer;
+  padding:.42rem .7rem; border-radius:var(--r-ctl);
+  border:var(--bw) solid var(--c-line2); background:var(--c-surface2); color:var(--c-text);
+  font-size:var(--fs-meta); text-align:center; overflow-wrap:anywhere;
+  transition:background var(--t-res) var(--ease), border-color var(--t-res) var(--ease),
+             transform var(--t-res) var(--ease);
+}
+.btn:hover{ border-color:var(--c-accent); background:var(--c-surface3); }
+.btn:active{ transform:translateY(calc(1px * var(--travel))); }
+.btn--primary{ background:var(--c-accent); color:var(--c-ink); border-color:var(--c-accent); font-weight:600; }
+.btn--primary:hover{ background:var(--c-accent); filter:brightness(1.06); }
+.btn--wide{ width:100%; }
+.btn[disabled]{ opacity:.55; cursor:not-allowed; }
+.btn[aria-pressed="true"]{ background:var(--c-accent); color:var(--c-ink);
+  border-color:var(--c-accent); font-weight:600; }
+.zone-shelf .seg{ gap:2px; }
+code{ font-family:var(--f-mono); font-size:.95em; color:var(--c-text); }
+.brief{ border:var(--bw) solid var(--c-line); border-radius:var(--r-card);
+  padding:var(--sp-3); background:var(--c-surface2); }
+.brief legend{ font-family:var(--f-mono); font-size:var(--fs-micro); letter-spacing:var(--label-ls);
+  text-transform:var(--label-tt); color:var(--c-dim); padding:0 .3rem; }
+.brief ul{ display:flex; flex-direction:column; gap:.3rem; margin:var(--sp-2) 0; }
+.brief label{ display:flex; gap:.45rem; align-items:flex-start; font-size:var(--fs-meta); cursor:pointer; }
+.brief input{ margin-top:.2rem; accent-color:var(--c-accent); }
+.hint{ font-size:var(--fs-micro); color:var(--c-dim); overflow-wrap:anywhere; }
+
+/* ---------- 11. Transportleiste (Session Shelf) -------------------------- */
+.shelf{ display:flex; flex-wrap:wrap; gap:var(--sp-3) var(--sp-4); align-items:center;
+  padding:var(--sp-2) var(--sp-4); }
+.shelf__clock{ display:flex; align-items:baseline; gap:.5rem; }
+.shelf__clock b{ font-family:var(--f-mono); font-size:var(--fs-lead); letter-spacing:.02em; }
+.shelf__group{ display:flex; gap:var(--sp-2); align-items:center; flex-wrap:wrap; }
+.beattail{ flex:1 1 22rem; min-width:0; overflow-x:auto; }
+.beattail ol{ display:flex; gap:var(--sp-2); min-width:min-content; }
+.beat{ display:flex; gap:.4rem; align-items:baseline; padding:.25rem .5rem; white-space:nowrap;
+  border:var(--bw) solid var(--c-line); border-radius:var(--r-pill);
+  background:var(--c-surface2); font-size:var(--fs-micro); }
+.beat time{ font-family:var(--f-mono); color:var(--c-dim); }
+.beat b{ font-weight:600; color:var(--c-accent); }
+.beat span{ color:var(--c-muted); }
+
+/* ---------- 12. Prüfprotokoll ------------------------------------------- */
+.audit{ border:var(--bw) dashed var(--c-line2); border-radius:var(--r-panel); background:var(--c-bg2); }
+.audit > .zone-head{ border-bottom:1px dashed var(--c-line2); }
+.audit-grid{ display:grid; gap:var(--sp-3); padding:var(--sp-3) var(--sp-4) var(--sp-4);
+  grid-template-columns:repeat(auto-fit,minmax(19rem,1fr)); align-items:start; }
+.acard{ border:var(--bw) solid var(--c-line); border-radius:var(--r-card);
+  background:var(--c-surface); padding:var(--sp-3); min-width:0; }
+.acard h3{ font-family:var(--f-mono); font-size:var(--fs-micro); letter-spacing:var(--label-ls);
+  text-transform:uppercase; color:var(--c-dim); margin-bottom:var(--sp-2); }
+.acard p{ font-size:var(--fs-meta); color:var(--c-muted); }
+.acard p + p, .acard p + .btn, .acard table + .btn, .acard p + pre{ margin-top:var(--sp-2); }
+.verdict{ display:flex; align-items:center; gap:.45rem; font-size:var(--fs-meta); margin-bottom:var(--sp-2); }
+.verdict b{ font-family:var(--f-mono); }
+.verdict[data-state="pass"]{ color:var(--c-wit); }
+.verdict[data-state="fail"]{ color:var(--c-truth); }
+.verdict[data-state="info"]{ color:var(--c-muted); }
+.atable{ width:100%; border-collapse:collapse; font-size:var(--fs-micro); }
+.atable th,.atable td{ text-align:left; padding:.28rem .3rem; border-bottom:var(--bw) solid var(--c-line);
+  vertical-align:top; }
+.atable th{ color:var(--c-dim); font-weight:600; font-family:var(--f-mono); letter-spacing:.06em; }
+.atable td:nth-child(2),.atable td:nth-child(3){ text-align:right; white-space:nowrap;
+  font-family:var(--f-mono); font-variant-numeric:tabular-nums; }
+.ok{ color:var(--c-wit); } .bad{ color:var(--c-truth); }
+.scrollx{ overflow-x:auto; }
+pre.json{
+  margin:0; max-height:17rem; overflow:auto; padding:var(--sp-2);
+  background:var(--c-surface2); border:var(--bw) solid var(--c-line); border-radius:var(--r-card);
+  font-family:var(--f-mono); font-size:var(--fs-micro); line-height:1.5; color:var(--c-muted);
+  white-space:pre; tab-size:2;
+}
+.caveats li{ font-size:var(--fs-meta); color:var(--c-muted); padding-left:1rem; position:relative;
+  margin-bottom:.35rem; overflow-wrap:anywhere; }
+.caveats li::before{ content:"–"; position:absolute; left:0; color:var(--c-truth); }
+.probe{ position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;
+  transition:opacity var(--t-state) var(--ease); }
+.sweeproom{ position:absolute; left:-9999px; top:0; width:1200px; height:1px; overflow:hidden; }
+.rig-foot{ font-size:var(--fs-micro); color:var(--c-dim); padding:0 var(--sp-2) var(--sp-3);
+  font-family:var(--f-mono); }
+</style>
+
+<div class="rig">
+
+  <header class="rig-head">
+    <div class="rig-head__id">
+      <div class="rig-kicker">Kandidat B · The Table Engine · Runde 1 · Spike B2</div>
+      <h1>Prüfstand: dasselbe Zeugenregister, feindlich umgeschaltet</h1>
+      <p>Der Rahmen mit der gestrichelten Kante ist <b>Messwerkzeug</b>, nicht Produkt. Innen läuft die
+        unveränderte Sechs-Zonen-Shell. Schalten Sie Inhalt, Skin, Rolle, Farbmodus, Kontrast, Bewegung,
+        Dichte, Sprache und Artwork um: Der Komponentenvertrag darf sich nur dort ändern, wo die
+        <em>Rolle</em> es befiehlt.</p>
+    </div>
+    <div class="lamps" id="lamps" aria-live="polite" aria-label="Prüfergebnisse in Kurzform">
+      <span class="lamp" data-state="info" id="lampStruct"><span class="lamp__dot"></span><b>Struktur</b><span>—</span></span>
+      <span class="lamp" data-state="info" id="lampContrast"><span class="lamp__dot"></span><b>Kontrast</b><span>—</span></span>
+      <span class="lamp" data-state="info" id="lampMotion"><span class="lamp__dot"></span><b>Bewegung</b><span>—</span></span>
+      <span class="lamp" data-state="info" id="lampOmit"><span class="lamp__dot"></span><b>Auslassung</b><span>—</span></span>
+    </div>
+  </header>
+
+  <form class="axes" id="axes" aria-label="Achsen des Härtetests">
+    <fieldset class="axis">
+      <legend>Inhalt</legend>
+      <div class="seg">
+        <input type="radio" name="world" id="w1" value="aldenfall" checked><label for="w1">Aldenfall · Fantasy</label>
+        <input type="radio" name="world" id="w2" value="kepler"><label for="w2">Kepler-9 · Science-Fiction</label>
+        <input type="radio" name="world" id="w3" value="nebelakte"><label for="w3">Nebelakte · Krimi</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Skin</legend>
+      <div class="seg">
+        <input type="radio" name="skin" id="s1" value="relic" checked><label for="s1">Relic</label>
+        <input type="radio" name="skin" id="s2" value="signal"><label for="s2">Signal</label>
+        <input type="radio" name="skin" id="s3" value="archive"><label for="s3">Archive</label>
+        <input type="radio" name="skin" id="s4" value="clean"><label for="s4">Clean</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Rolle</legend>
+      <div class="seg">
+        <input type="radio" name="role" id="r1" value="gm" checked><label for="r1">Spielleitung</label>
+        <input type="radio" name="role" id="r2" value="player"><label for="r2">Spielende</label>
+        <input type="radio" name="role" id="r3" value="observer"><label for="r3">Zuschauend</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis" id="identityAxis" hidden>
+      <legend>Als Figur</legend>
+      <label class="vh" for="identity">Spielfigur wählen</label>
+      <select id="identity"></select>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Farbmodus</legend>
+      <div class="seg">
+        <input type="radio" name="theme" id="t0" value="auto" checked><label for="t0">System</label>
+        <input type="radio" name="theme" id="t1" value="light"><label for="t1">Hell</label>
+        <input type="radio" name="theme" id="t2" value="dark"><label for="t2">Dunkel</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Kontrast</legend>
+      <div class="seg">
+        <input type="radio" name="contrast" id="c1" value="standard" checked><label for="c1">Standard</label>
+        <input type="radio" name="contrast" id="c2" value="high"><label for="c2">Hoch</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Bewegung</legend>
+      <div class="seg">
+        <input type="radio" name="motion" id="m0" value="auto" checked><label for="m0">System</label>
+        <input type="radio" name="motion" id="m1" value="full"><label for="m1">Voll</label>
+        <input type="radio" name="motion" id="m2" value="reduced"><label for="m2">Reduziert</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Dichte</legend>
+      <div class="seg">
+        <input type="radio" name="density" id="d1" value="comfortable" checked><label for="d1">Komfortabel</label>
+        <input type="radio" name="density" id="d2" value="compact"><label for="d2">Kompakt</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Sprache</legend>
+      <div class="seg">
+        <input type="radio" name="lang" id="l1" value="std" checked><label for="l1">de · Standard</label>
+        <input type="radio" name="lang" id="l2" value="long"><label for="l2">de · Langtext-Locale</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Artwork</legend>
+      <div class="seg">
+        <input type="radio" name="art" id="a1" value="on" checked><label for="a1">An</label>
+        <input type="radio" name="art" id="a2" value="off"><label for="a2">Aus</label>
+        <input type="radio" name="art" id="a3" value="broken"><label for="a3">Fehlend (Testfall)</label>
+      </div>
+    </fieldset>
+  </form>
+
+  <main class="shell" id="shellMount" aria-label="Chronicle — Produkt-Shell"></main>
+
+  <p class="vh" id="live" role="status" aria-live="polite"></p>
+
+  <section class="audit" aria-labelledby="auditTitle">
+    <div class="zone-head">
+      <h2 id="auditTitle">Prüfprotokoll</h2>
+      <span class="zone-label">gemessen, nicht behauptet</span>
+    </div>
+    <div class="audit-grid" id="auditGrid"></div>
+  </section>
+
+  <p class="rig-foot">design/iterations/round-01/spike-B2.html · Sitz 2 · Beweis der Universalität ·
+    Alle Zahlen im Prüfprotokoll werden im Browser gerechnet, nicht eingetippt.</p>
+</div>
+
+<div class="sweeproom" id="sweeproom" aria-hidden="true"></div>
+<div class="probe" id="probe"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   A. Vokabular und Inhalte. Drei Genres, identische Datensatzform.
+   ========================================================================= */
+var esc = function (s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+};
+
+var MODES = {
+  wit:  { std: "bezeugt",     lng: "selbst bezeugt (am Tisch anwesend)", g: "•", cls: "wit" },
+  told: { std: "gehört",  lng: "weitererzählt bekommen",        g: "◦", cls: "told" },
+  inf:  { std: "geschlossen", lng: "selbst erschlossen (Vermutung)",     g: "?",      cls: "inf" },
+  read: { std: "gelesen",     lng: "aus einem Dokument gelesen",         g: "¶", cls: "read" },
+  fiat: { std: "SL-Setzung",  lng: "von der Spielleitung gesetzt",       g: "§", cls: "fiat" }
+};
+var CONF = { firm: "fest", soft: "unbestätigt" };
+var CANON = { canon: "Kampagnenkanon", proposed: "Vorschlag", world: "Weltkanon" };
+
+var T = {
+  std: {
+    mod: { session: "Sitzung", story: "Chronik", cast: "Ensemble", library: "Fundus", table: "Tisch", forge: "Schmiede" },
+    zCtx: "Kampagnenkontext", zMod: "Module", zColl: "Sammlung", zStage: "Hauptbühne",
+    zLens: "Kontextlupe", zShelf: "Transportleiste",
+    ledger: "Zeugenregister", truth: "Wahrheit (SL)",
+    truthSub: "wird an Spielendenclients nicht ausgeliefert",
+    cast: "In dieser Szene", lens: "Herkunft dieses Fakts",
+    why: "Warum?", brief: "Briefen", briefLegend: "An diese Figuren weitergeben",
+    briefHint: "Erzeugt Wissensrechte im Modus „gehört“ — die Weitergabe selbst wird zum Beat.",
+    undo: "Rückgängig", curtain: "Vorhang", endSession: "Sitzung beenden", dice: "Würfeln",
+    record: "Datensatz", noSelection: "Kein Fakt gewählt", tally1: "Eintrag",
+    noSelectionHint: "Wählen Sie im Zeugenregister eine Zeile. Die Auswahl wandert hierher.",
+    broadcast: "Sendefreigabe", broadcastSub: "kuratiert durch die Spielleitung",
+    scene: "Szene", inWorld: "Weltdatum", tally: "Einträge", collapse: "Sammlung",
+    expandColl: "Sammlung einblenden"
+  },
+  long: {
+    mod: {
+      session: "Sitzungsleitung und Ablaufplanung",
+      story: "Weltchronik und Wissensnachweise",
+      cast: "Figurenensemble und Anwesenheiten",
+      library: "Requisitenfundus und Objektvorlagen",
+      table: "Spieltisch und Bühnenbild",
+      forge: "Werkstatt für Regeln und Erscheinungsbilder"
+    },
+    zCtx: "Kampagnenkontext und Sitzungsidentität",
+    zMod: "Hauptnavigation über alle Produktmodule",
+    zColl: "Objektsammlung der aktuellen Szene",
+    zStage: "Hauptbühne mit genau einer Aufgabe",
+    zLens: "Kontextlupe des ausgewählten Datensatzes",
+    zShelf: "Dauerhafte Transportleiste der laufenden Sitzung",
+    ledger: "Zeugenregister mit Herkunftsnachweis je Spielfigur",
+    truth: "Spielleitungswahrheit",
+    truthSub: "wird an die Clients der Spielenden grundsätzlich nicht ausgeliefert",
+    cast: "Objekte und Personen in dieser Szene",
+    lens: "Vollständige Herkunftskette dieses Fakts",
+    why: "Herkunftskette dieses Fakts vollständig nachvollziehen",
+    brief: "Unterrichten und dabei Wissensrechte erzeugen",
+    briefLegend: "Diese Spielfiguren über den Sachverhalt unterrichten",
+    briefHint: "Erzeugt Wissensrechte im Modus „weitererzählt bekommen“ — die Weitergabe selbst wird als Beat protokolliert.",
+    undo: "Letzten Eingriff zurücknehmen (Rewind)",
+    curtain: "Vorhangzustand dieser Sitzung",
+    endSession: "Sitzung beenden und Chronikdurchgang starten",
+    dice: "Probe werfen und als Beat festschreiben",
+    record: "Datensatzfelder in Rohform",
+    noSelection: "Es ist derzeit kein Fakt ausgewählt",
+    noSelectionHint: "Wählen Sie im Zeugenregister eine Zeile aus. Die Auswahl wandert anschließend in diese Kontextlupe.",
+    broadcast: "Zur Öffentlichkeit freigegebener Wissensstand",
+    broadcastSub: "ausdrücklich durch die Spielleitung kuratiert",
+    scene: "Gegenwärtige Szene", inWorld: "Datum in der Spielwelt",
+    tally: "Einträge in dieser Spalte", tally1: "Eintrag in dieser Spalte", collapse: "Objektsammlung",
+    expandColl: "Objektsammlung der Szene einblenden"
+  }
+};
+
+var WORLDS = {
+  aldenfall: {
+    id: "aldenfall", universe: "Aldenfall", campaign: "Die Lilienkammer", genre: "Fantasy",
+    pkg: "aldenfall-grundregeln@1.2",
+    session: { no: 8, clock: "21:47", inWorld: "14. Frostmond 1147", scene: "Aldrics Arbeitszimmer" },
+    subject: { name: "Baron Aldric von Marn", kind: "Person · Nichtspielfigur", tags: ["Haus Marn", "Adel", "seit Sitzung 3 im Spiel"] },
+    art: { src: "../../spikes/assets/harbor-night/harbor-map.png", credit: "Prototyp-Richtungsgrafik, kein Tier-0-Bestand" },
+    prompt: "Ein Spieler fragt: „Warte — kennen wir den überhaupt?“",
+    coll: [
+      { n: "Baron Aldric von Marn", k: "Person" },
+      { n: "Das Hauptbuch", k: "Gegenstandsinstanz · Beute aus Sitzung 8" },
+      { n: "Lilienbrosche", k: "Gegenstandsinstanz" },
+      { n: "Kurier Deveaux", k: "Person · verstorben in Sitzung 3" },
+      { n: "Aldrics Arbeitszimmer", k: "Ort · von der Gruppe „Lilienzimmer“ genannt" }
+    ],
+    facts: [
+      { id: "F1", claim: "ist in Wahrheit der Lich von Marn.", canon: "canon", beat: "B-0912", s: 5, iw: "9. Frostmond", type: "Reveal" },
+      { id: "F2", claim: "hat den Mord an Kurier Deveaux in Auftrag gegeben.", canon: "canon", beat: "B-1007", s: 6, iw: "11. Frostmond", type: "Mark" },
+      { id: "F3", claim: "Sein Siegel steht im Hauptbuch, das die Gruppe trägt.", canon: "canon", beat: "B-1131", s: 8, iw: "14. Frostmond", type: "Reveal", cast: 1 },
+      { id: "F4", claim: "Der Name „Aldric“ fiel aus dem Mund des sterbenden Kuriers.", canon: "canon", beat: "B-0644", s: 3, iw: "2. Frostmond", type: "Reveal", cast: 1 },
+      { id: "F5", claim: "trägt eine Lilienbrosche, wie sie nur das Haus Marn vergibt.", canon: "proposed", beat: "B-1088", s: 7, iw: "13. Frostmond", type: "Mark" },
+      { id: "F6", claim: "war in der Brandnacht nachweislich in Marn.", canon: "canon", beat: "B-1012", s: 6, iw: "11. Frostmond", type: "Reveal" }
+    ],
+    chars: [
+      { id: "mira", n: "Mira Falkenhand", part: "Späherin", pl: "Nora", grants: [
+        { f: "F4", m: "wit", c: "firm", s: 3, iw: "2. Frostmond", b: "B-0644" } ] },
+      { id: "bjorn", n: "Bjorn Steinweg", part: "Rammbock", pl: "Til", grants: [],
+        why: "Sitzung 5 und 6 nicht anwesend — Anwesenheit ist erfasst, nicht geraten.",
+        why2: "In Sitzung 8 stand Bjorn im Hof, als das Hauptbuch gefunden wurde. Zeugenmenge des Beats B-1131: Sela, Halvard.",
+        whySelf: "Du warst in Sitzung 5 und 6 nicht am Tisch — deine Anwesenheit ist erfasst, nicht geraten.",
+        why2Self: "In Sitzung 8 standest du im Hof, als im Arbeitszimmer etwas gefunden wurde. Du gehörst nicht zur Zeugenmenge dieses Beats." },
+      { id: "sela", n: "Sela Duong", part: "Unterhändlerin", pl: "Ida", grants: [
+        { f: "F2", m: "told", c: "soft", s: 6, iw: "11. Frostmond", b: "B-1007", src: "Wirt Halgar" },
+        { f: "F3", m: "wit", c: "firm", s: 8, iw: "14. Frostmond", b: "B-1131" } ] },
+      { id: "halvard", n: "Halvard Krenn", part: "Feldscher", pl: "Ole", grants: [
+        { f: "F3", m: "wit", c: "firm", s: 8, iw: "14. Frostmond", b: "B-1131" },
+        { f: "F5", m: "inf", c: "soft", s: 7, iw: "13. Frostmond", b: "B-1088" },
+        { f: "F6", m: "read", c: "firm", s: 6, iw: "11. Frostmond", b: "B-1012", src: "Zollbuch Marn" } ] }
+    ],
+    beats: [
+      { t: "21:31", k: "SceneChange", d: "Vorhang hoch — Aldrics Arbeitszimmer" },
+      { t: "21:34", k: "Roll", d: "Mira · Wahrnehmung · 17" },
+      { t: "21:39", k: "Reveal", d: "Hauptbuch · Zeugen: Sela, Halvard",
+        pub: "Hauptbuch · Enthüllung an einen Teil des Tisches" },
+      { t: "21:42", k: "Outcome", d: "defeat_pending — nicht bestätigt",
+        pub: "Ergebnis offen — noch nicht bestätigt" }
+    ]
+  },
+
+  kepler: {
+    id: "kepler", universe: "Kepler-9", campaign: "Umlauf 212 · Der Frachtbrief", genre: "Science-Fiction",
+    pkg: "vektor-regelwerk@0.9",
+    session: { no: 8, clock: "21:47", inWorld: "Zyklus 212.4 · Schicht B", scene: "Dockring D, Liegeplatz 14" },
+    subject: { name: "Kurator Vane Ossory", kind: "Person · Nichtspielfigur", tags: ["Kuratorium", "Dockring D", "seit Sitzung 3 im Spiel"] },
+    art: { src: "../../spikes/assets/universal-ui/kepler-scene-v1.png", credit: "Prototyp-Richtungsgrafik, kein Tier-0-Bestand" },
+    prompt: "Eine Spielerin fragt: „Sind wir dem schon mal begegnet?“",
+    coll: [
+      { n: "Kurator Vane Ossory", k: "Person" },
+      { n: "Manifest SIR-4471", k: "Gegenstandsinstanz · geborgen in Sitzung 8" },
+      { n: "Siegelmarke Ossory", k: "Gegenstandsinstanz" },
+      { n: "Läufer Ptah", k: "Person · stillgelegt in Sitzung 3" },
+      { n: "Dockring D", k: "Ort · Liegeplatz 14" }
+    ],
+    facts: [
+      { id: "K1", claim: "ist seit Umlauf 209 offiziell abberufen — und trotzdem an Bord.", canon: "canon", beat: "B-2201", s: 5, iw: "Zyklus 209.7", type: "Reveal" },
+      { id: "K2", claim: "hat den Frachtbrief SIR-4471 gegenzeichnen lassen, obwohl der Laderaum leer war.", canon: "canon", beat: "B-2318", s: 6, iw: "Zyklus 211.2", type: "Mark" },
+      { id: "K3", claim: "Seine Siegelmarke liegt im Manifest, das die Gruppe geborgen hat.", canon: "canon", beat: "B-2477", s: 8, iw: "Zyklus 212.4", type: "Reveal", cast: 1 },
+      { id: "K4", claim: "Der Name „Ossory“ kam über den Notruf des Läufers Ptah.", canon: "canon", beat: "B-2098", s: 3, iw: "Zyklus 206.1", type: "Reveal", cast: 1 },
+      { id: "K5", claim: "hält einen zweiten Zugangsschlüssel zum Dockring.", canon: "proposed", beat: "B-2402", s: 7, iw: "Zyklus 212.0", type: "Mark" }
+    ],
+    chars: [
+      { id: "tessa", n: "Tessa Rhue", part: "Navigatorin", pl: "Nora", grants: [
+        { f: "K4", m: "wit", c: "firm", s: 3, iw: "Zyklus 206.1", b: "B-2098" } ] },
+      { id: "odell", n: "Odell Barsk", part: "Schiffstechniker", pl: "Til", grants: [],
+        why: "Sitzung 5 und 6 nicht anwesend — Anwesenheit ist erfasst, nicht geraten.",
+        why2: "In Sitzung 8 war Odell im Maschinenraum. Zeugenmenge des Beats B-2477: Nyra.",
+        whySelf: "Du warst in Sitzung 5 und 6 nicht am Tisch — deine Anwesenheit ist erfasst, nicht geraten.",
+        why2Self: "In Sitzung 8 warst du im Maschinenraum. Du gehörst nicht zur Zeugenmenge dieses Beats." },
+      { id: "nyra", n: "Nyra Sadeq", part: "Unterhändlerin", pl: "Ida", grants: [
+        { f: "K2", m: "told", c: "soft", s: 6, iw: "Zyklus 211.2", b: "B-2318", src: "Dockmeisterin Ehl" },
+        { f: "K3", m: "wit", c: "firm", s: 8, iw: "Zyklus 212.4", b: "B-2477" },
+        { f: "K5", m: "inf", c: "soft", s: 7, iw: "Zyklus 212.0", b: "B-2402" } ] }
+    ],
+    beats: [
+      { t: "21:29", k: "SceneChange", d: "Vorhang hoch — Dockring D, Liegeplatz 14" },
+      { t: "21:36", k: "Roll", d: "Tessa · Systemkunde · 14" },
+      { t: "21:38", k: "Reveal", d: "Manifest · Zeugen: Nyra",
+        pub: "Manifest · Enthüllung an einen Teil des Tisches" },
+      { t: "21:44", k: "Mark", d: "„Der Kurator war nie an Bord“ · Modus: gehört" }
+    ]
+  },
+
+  nebelakte: {
+    id: "nebelakte", universe: "Nebelakte", campaign: "Der Fall Kienbaum", genre: "Krimi der Gegenwart",
+    pkg: "nebelakte-untersuchung@1.0",
+    session: { no: 8, clock: "21:47", inWorld: "17. November, 23:10", scene: "Kanzlei Kienbaum, 3. Obergeschoss" },
+    subject: { name: "Dr. Lothar Kienbaum", kind: "Person · Nichtspielfigur", tags: ["Kanzlei Kienbaum", "Nachlasspflegschaft", "seit Sitzung 3 im Spiel"] },
+    art: { src: "../../spikes/assets/universal-ui/nebelakte-scene-v1.png", credit: "Prototyp-Richtungsgrafik, kein Tier-0-Bestand" },
+    prompt: "Eine Spielerin fragt: „Hatten wir mit dem schon zu tun?“",
+    coll: [
+      { n: "Dr. Lothar Kienbaum", k: "Person" },
+      { n: "Umschlag ohne Absender", k: "Gegenstandsinstanz · sichergestellt in Sitzung 8" },
+      { n: "Vollmacht vom 3. November", k: "Dokument" },
+      { n: "Zeugin Broy", k: "Person · nicht erreichbar seit Sitzung 4" },
+      { n: "Kanzlei Kienbaum", k: "Ort · 3. Obergeschoss" }
+    ],
+    facts: [
+      { id: "N1", claim: "führt seit 2019 ein zweites Mandantenkonto in Vaduz.", canon: "canon", beat: "B-3140", s: 5, iw: "2. November", type: "Reveal" },
+      { id: "N2", claim: "hat die Vollmacht der Erblasserin nach ihrem Tod datiert.", canon: "canon", beat: "B-3266", s: 6, iw: "9. November", type: "Mark" },
+      { id: "N3", claim: "Sein Aktenzeichen steht auf dem Umschlag, den die Gruppe hat.", canon: "canon", beat: "B-3401", s: 8, iw: "17. November", type: "Reveal", cast: 1 },
+      { id: "N4", claim: "Der Name „Kienbaum“ fiel im letzten Anruf der Zeugin Broy.", canon: "canon", beat: "B-2988", s: 3, iw: "24. Oktober", type: "Reveal", cast: 1 },
+      { id: "N5", claim: "war am Abend des 3. November nicht in der Kanzlei.", canon: "proposed", beat: "B-3350", s: 7, iw: "15. November", type: "Mark" },
+      { id: "N6", claim: "sitzt seit 2021 im Ausschuss für Nachlasspflegschaft.", canon: "canon", beat: "B-0001", s: 1, iw: "vor Kampagnenbeginn", type: "Mark" }
+    ],
+    chars: [
+      { id: "mirak", n: "Mira Kovač", part: "Journalistin", pl: "Nora", grants: [
+        { f: "N4", m: "wit", c: "firm", s: 3, iw: "24. Oktober", b: "B-2988" },
+        { f: "N3", m: "wit", c: "firm", s: 8, iw: "17. November", b: "B-3401" } ] },
+      { id: "ben", n: "Ben Ostrowski", part: "Ex-Polizist", pl: "Til", grants: [],
+        why: "Sitzung 5 und 6 nicht anwesend — Anwesenheit ist erfasst, nicht geraten.",
+        why2: "In Sitzung 8 telefonierte Ben im Treppenhaus. Zeugenmenge des Beats B-3401: Mira Kovač, Selma Aydin.",
+        whySelf: "Du warst in Sitzung 5 und 6 nicht am Tisch — deine Anwesenheit ist erfasst, nicht geraten.",
+        why2Self: "In Sitzung 8 hast du im Treppenhaus telefoniert. Du gehörst nicht zur Zeugenmenge dieses Beats." },
+      { id: "selma", n: "Selma Aydin", part: "Archivarin", pl: "Ida", grants: [
+        { f: "N2", m: "read", c: "firm", s: 6, iw: "9. November", b: "B-3266", src: "Handelsregisterauszug" },
+        { f: "N3", m: "wit", c: "firm", s: 8, iw: "17. November", b: "B-3401" } ] },
+      { id: "timo", n: "Timo Reeb", part: "Anwaltsgehilfe", pl: "Ole", grants: [
+        { f: "N2", m: "told", c: "soft", s: 6, iw: "9. November", b: "B-3266", src: "Selma Aydin" },
+        { f: "N5", m: "inf", c: "soft", s: 7, iw: "15. November", b: "B-3350" } ] },
+      { id: "ines", n: "Dr. Ines Barre", part: "Gerichtsmedizinerin", pl: "Fee", grants: [
+        { f: "N6", m: "fiat", c: "firm", s: 1, iw: "vor Kampagnenbeginn", b: "B-0001", src: "Figurenhintergrund" } ] }
+    ],
+    beats: [
+      { t: "21:27", k: "SceneChange", d: "Vorhang hoch — Kanzlei Kienbaum, 3. OG" },
+      { t: "21:33", k: "Roll", d: "Selma · Recherche · 19" },
+      { t: "21:39", k: "Reveal", d: "Umschlag · Zeugen: Mira Kovač, Selma Aydin",
+        pub: "Umschlag · Enthüllung an einen Teil des Tisches" },
+      { t: "21:45", k: "Mark", d: "„Das Datum stimmt nicht“ · Modus: bezeugt" }
+    ]
+  }
+};
+
+var MODULES = [
+  { id: "session", d: "M3 4h18v4H3zM3 10h10v10H3zM15 10h6v10h-6z" },
+  { id: "story",   d: "M4 3h11l5 5v13H4zM15 3v5h5" },
+  { id: "cast",    d: "M12 3a4 4 0 110 8 4 4 0 010-8zM4 21a8 8 0 0116 0" },
+  { id: "library", d: "M4 4h4v16H4zM10 4h4v16h-4zM16 6l4 1-3 14-4-1z" },
+  { id: "table",   d: "M3 6h18v9H3zM7 15l-2 5M17 15l2 5" },
+  { id: "forge",   d: "M6 20h12M9 4l6 3-2 9H11zM4 9l5-2M20 9l-5-2" }
+];
+
+/* =========================================================================
+   B. Projektion. Der Renderer sieht ausschliesslich diese Nutzlast.
+      Was hier nicht drinsteht, existiert im DOM nicht — auch nicht versteckt.
+   ========================================================================= */
+function fnv(s) {
+  var h = 0x811c9dc5;
+  for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+  return h >>> 0;
+}
+
+function sigil(name, size) {
+  var h = fnv(name), rays = 5 + (h % 4), rot = h % 72, lines = "";
+  for (var i = 0; i < rays; i++) {
+    var a = ((i * 360) / rays + rot) * Math.PI / 180;
+    lines += '<line x1="50" y1="50" x2="' + (50 + 47 * Math.cos(a)).toFixed(1) +
+             '" y2="' + (50 + 47 * Math.sin(a)).toFixed(1) + '"/>';
+  }
+  var initials = name.replace(/^(Dr\.|Kurator|Baron|Läufer)\s+/, "").split(/\s+/)
+    .slice(0, 2).map(function (x) { return x.charAt(0); }).join("").toUpperCase();
+  return '<span class="sigil" style="width:' + size + "px;height:" + size + "px;font-size:" +
+    Math.round(size * 0.36) + 'px">' +
+    '<svg viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">' +
+    '<circle cx="50" cy="50" r="45"/><circle cx="50" cy="50" r="' + (26 + (h % 9)) + '"/>' + lines +
+    "</svg><b>" + esc(initials) + "</b></span>";
+}
+
+function allGrantsOf(st, w, ch) {
+  var base = ch.grants.slice();
+  st.added.forEach(function (g) {
+    if (g.world === w.id && g.char === ch.id) { base.push(g.grant); }
+  });
+  return base;
+}
+
+function factById(w, id) {
+  for (var i = 0; i < w.facts.length; i++) { if (w.facts[i].id === id) return w.facts[i]; }
+  return null;
+}
+
+function project(st) {
+  var w = WORLDS[st.world];
+  var out = {
+    rolle: st.role === "gm" ? "Spielleitung" : st.role === "player" ? "Spielende" : "Zuschauend",
+    sitzung: { nr: w.session.no, weltdatum: w.session.inWorld, szene: w.session.scene, vorhang: st.curtain },
+    spalten: []
+  };
+
+  if (st.role !== "gm" && st.curtain !== "live") {
+    out.hinweis = "Vorhang unten. Der Server liefert diesem Client für diese Szene keine Datensätze.";
+    out.beats = [];
+    return out;
+  }
+
+  /* Auch der Beat-Verlauf ist projiziert: die Zeugenmenge eines Reveals ist
+     Spielleitungswissen und darf nicht über die Transportleiste hinauslecken. */
+  out.beats = w.beats.map(function (b) {
+    return { t: b.t, typ: b.k, text: st.role === "gm" ? b.d : (b.pub || b.d) };
+  });
+  st.added.forEach(function (g) {
+    if (g.world !== w.id) return;
+    out.beats.push({ t: "21:48", typ: "Mark",
+      text: st.role === "gm" ? g.label : "Weitergabe am Tisch" });
+  });
+
+  out.subjekt = { name: w.subject.name, art: w.subject.kind, merkmale: w.subject.tags };
+
+  function charCol(ch, self) {
+    var gs = allGrantsOf(st, w, ch);
+    return {
+      typ: "figur", figur: ch.n, rolle: ch.part, spielperson: ch.pl, selbst: !!self,
+      /* Anwesenheit ist ein eigener Datensatz — sie hängt nicht daran,
+         ob die Figur zufällig etwas weiß. Genau darum funktioniert das Register. */
+      anwesend: !ch.why,
+      anwesenheit: ch.why ? "Sitzung 5 und 6 gefehlt" : "durchgehend anwesend",
+      luecke: gs.length ? null : {
+        grund: self ? (ch.whySelf || ch.why) : ch.why,
+        detail: self ? (ch.why2Self || ch.why2) : ch.why2
+      },
+      eintraege: gs.map(function (g) {
+        var f = factById(w, g.f);
+        return {
+          fakt: g.f, aussage: f.claim, modus: MODES[g.m].std, sicherheit: CONF[g.c],
+          sitzung: g.s, weltdatum: g.iw, quellbeat: g.b, quelle: g.src || null,
+          _m: g.m, _c: g.c, _neu: !!g.neu
+        };
+      })
+    };
+  }
+
+  if (st.role === "gm") {
+    out.spalten.push({
+      typ: "wahrheit",
+      eintraege: w.facts.map(function (f) {
+        return { fakt: f.id, aussage: f.claim, kanon: CANON[f.canon], quellbeat: f.beat,
+                 sitzung: f.s, weltdatum: f.iw, beattyp: f.type, _canon: f.canon };
+      })
+    });
+    w.chars.forEach(function (ch) { out.spalten.push(charCol(ch, false)); });
+  } else if (st.role === "player") {
+    var me = null;
+    w.chars.forEach(function (ch) { if (ch.id === st.identity) me = ch; });
+    if (!me) me = w.chars[0];
+    out.spalten.push(charCol(me, true));
+  } else {
+    out.spalten.push({
+      typ: "sendung",
+      eintraege: w.facts.filter(function (f) { return f.cast; }).map(function (f) {
+        return { fakt: f.id, aussage: f.claim, kanon: CANON[f.canon], sitzung: f.s, weltdatum: f.iw };
+      })
+    });
+  }
+  return out;
+}
+
+function visibleFacts(p) {
+  var ids = [];
+  (p.spalten || []).forEach(function (c) {
+    (c.eintraege || []).forEach(function (e) { if (ids.indexOf(e.fakt) < 0) ids.push(e.fakt); });
+  });
+  return ids;
+}
+
+/* =========================================================================
+   C. Der Renderer. Eine reine Funktion: Zustand rein, Markup raus.
+      Genau diese Funktion füttert auch den Struktur-Durchlauf.
+   ========================================================================= */
+function tallyWord(n, L) { return n === 1 ? L.tally1 : L.tally; }
+
+function chip(text, cls) { return '<li><span class="chip ' + (cls || "") + '">' + text + "</span></li>"; }
+
+function tag(text, cls) { return '<span class="tag tag--' + cls + '">' + esc(text) + "</span>"; }
+
+function buildShell(st) {
+  var w = WORLDS[st.world], L = T[st.lang], p = project(st);
+  var vis = visibleFacts(p);
+  var sel = vis.indexOf(st.selected) >= 0 ? st.selected : null;
+  var isGM = st.role === "gm";
+
+  /* --- Zone 1: Kampagnenkontext ---------------------------------------- */
+  var roleWord = p.rolle;
+  var curtainWord = st.curtain === "live" ? "Vorhang oben" :
+                    st.curtain === "backstage" ? "Hinter dem Vorhang" : "Vorhang abgebaut";
+  var curtainCls = st.curtain === "live" ? "chip--live" :
+                   st.curtain === "backstage" ? "chip--backstage" : "chip--struck";
+  var ctx =
+    '<header class="zone zone-ctx" data-comp="context-bar" aria-label="' + esc(L.zCtx) + '">' +
+      '<div class="ctx">' +
+        '<div class="ctx__crumbs">' +
+          '<span class="ctx__universe">' + esc(w.universe) + " · " + esc(w.genre) + "</span>" +
+          '<span class="ctx__sep">/</span>' +
+          '<span class="ctx__campaign">' + esc(w.campaign) + "</span>" +
+        "</div>" +
+        '<ul class="chips">' +
+          chip('<span class="chip__dot"></span>' + esc(curtainWord), curtainCls) +
+          chip("Sitzung <span class=\"num\">" + w.session.no + "</span> · <span class=\"num\">" +
+               w.session.clock + "</span>") +
+          chip(esc(L.inWorld) + ": <span class=\"num\">" + esc(w.session.inWorld) + "</span>") +
+          chip(esc(roleWord), "chip--role") +
+          chip("Regelpaket <span class=\"num\">" + esc(w.pkg) + "</span>") +
+        "</ul>" +
+      "</div>" +
+    "</header>";
+
+  /* --- Zone 2: Modulschiene -------------------------------------------- */
+  var mods = MODULES.map(function (m) {
+    var on = m.id === st.module;
+    return '<li><button type="button" class="module-btn" data-module="' + m.id + '"' +
+      (on ? ' aria-current="page"' : "") + '>' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><path d="' + m.d + '"/></svg>' +
+      "<span>" + esc(L.mod[m.id]) + "</span></button></li>";
+  }).join("");
+  var rail =
+    '<nav class="zone zone-mod" data-comp="module-rail" aria-label="' + esc(L.zMod) + '">' +
+      '<div class="zone-body"><ul class="modules">' + mods + "</ul></div>" +
+    "</nav>";
+
+  /* --- Zone 3: Sammlungsschiene ---------------------------------------- */
+  var collItems = w.coll.map(function (o, i) {
+    return '<li><button type="button" class="coll-item" data-coll="' + i + '"' +
+      (i === 0 ? ' aria-current="true"' : "") + ">" +
+      sigil(o.n, 30) +
+      '<span class="coll-item__txt"><span class="coll-item__name">' + esc(o.n) + "</span>" +
+      '<span class="coll-item__kind">' + esc(o.k) + "</span></span></button></li>";
+  }).join("");
+  var coll =
+    '<aside class="zone zone-col" data-comp="collection-rail" aria-label="' + esc(L.zColl) + '"' +
+      ' data-collapsed="' + (st.collOpen ? "false" : "true") + '">' +
+      '<div class="zone-head"><h3>' + esc(L.cast) + "</h3>" +
+        '<button type="button" class="rail-toggle" data-act="toggleColl" aria-expanded="' +
+        (st.collOpen ? "true" : "false") + '">' + esc(st.collOpen ? "Zuklappen" : L.expandColl) + "</button>" +
+      "</div>" +
+      '<div class="zone-body"><ul class="coll" data-comp="collection-list" data-leaf>' + collItems + "</ul></div>" +
+    "</aside>";
+
+  /* --- Zone 4: Hauptbühne — das Zeugenregister ------------------------- */
+  var artBlock;
+  if (st.art === "off") {
+    artBlock = '<div class="subject__fallback"></div>';
+  } else {
+    var src = st.art === "broken" ? w.art.src.replace(/\.png$/, "--fehlt.png") : w.art.src;
+    artBlock = '<div class="subject__art" data-artslot><img src="' + esc(src) + '" alt="" ' +
+      'data-artimg loading="lazy" decoding="async"></div>';
+  }
+
+  var stageBody;
+  if (p.hinweis) {
+    stageBody = '<div class="curtain-note"><b>' + esc(curtainWord) + "</b>" +
+      '<p class="hint">' + esc(p.hinweis) + "</p></div>";
+  } else {
+    var cols = p.spalten.map(function (c) {
+      if (c.typ === "wahrheit") {
+        return '<li class="lcol lcol--truth" data-comp="ledger-column-truth">' +
+          '<div class="lcol__head"><div class="lcol__name">' + esc(L.truth) + "</div>" +
+          '<div class="lcol__sub">' + esc(L.truthSub) + "</div>" +
+          '<div class="lcol__tally"><span class="tally num">' + c.eintraege.length + " " +
+          esc(tallyWord(c.eintraege.length, L)) + "</span></div></div>" +
+          '<ul class="lcol__list" data-comp="grant-list" data-leaf>' +
+          c.eintraege.map(function (e) {
+            return "<li>" + '<button type="button" class="grant grant--fiat" data-fact="' + e.fakt + '"' +
+              (sel === e.fakt ? ' aria-current="true"' : "") + ">" +
+              '<span class="grant__claim">' + esc(e.aussage) + "</span>" +
+              '<span class="grant__meta">' +
+              tag(e.kanon, e._canon === "proposed" ? "proposed" : "canon") +
+              '<span class="stamp num">' + esc(e.beattyp) + " " + esc(e.quellbeat) + " · S" + e.sitzung + "</span>" +
+              "</span></button></li>";
+          }).join("") + "</ul></li>";
+      }
+      if (c.typ === "sendung") {
+        return '<li class="lcol lcol--public" data-comp="ledger-column-public">' +
+          '<div class="lcol__head"><div class="lcol__name">' + esc(L.broadcast) + "</div>" +
+          '<div class="lcol__sub">' + esc(L.broadcastSub) + "</div>" +
+          '<div class="lcol__tally"><span class="tally num">' + c.eintraege.length + " " +
+          esc(tallyWord(c.eintraege.length, L)) + "</span></div></div>" +
+          '<ul class="lcol__list" data-comp="grant-list" data-leaf>' +
+          c.eintraege.map(function (e) {
+            return "<li>" + '<button type="button" class="grant grant--read" data-fact="' + e.fakt + '"' +
+              (sel === e.fakt ? ' aria-current="true"' : "") + ">" +
+              '<span class="grant__claim">' + esc(e.aussage) + "</span>" +
+              '<span class="grant__meta">' + tag(e.kanon, "canon") +
+              '<span class="stamp num">S' + e.sitzung + " · " + esc(e.weltdatum) + "</span>" +
+              "</span></button></li>";
+          }).join("") + "</ul></li>";
+      }
+      var klass = c.luecke ? " lcol--empty" : c.selbst ? " lcol--self" : "";
+      var body = c.luecke
+        ? '<li><div class="empty"><b>Kein Eintrag.</b>' +
+            "<p>" + esc(c.luecke.grund) + "</p><p>" + esc(c.luecke.detail) + "</p></div></li>"
+        : c.eintraege.map(function (e) {
+            return "<li>" + '<button type="button" class="grant grant--' + MODES[e._m].cls +
+              (e._neu ? " grant--new" : "") + '" data-fact="' + e.fakt + '"' +
+              (sel === e.fakt ? ' aria-current="true"' : "") + ">" +
+              '<span class="grant__claim">' + esc(e.aussage) + "</span>" +
+              '<span class="grant__meta">' +
+              tag(MODES[e._m].g + " " + e.modus, MODES[e._m].cls) +
+              tag(e.sicherheit, e._c === "firm" ? "canon" : "proposed") +
+              '<span class="stamp num">S' + e.sitzung + " · " + esc(e.weltdatum) + "</span>" +
+              "</span></button></li>";
+          }).join("");
+      return '<li class="lcol' + klass + '" data-comp="ledger-column">' +
+        '<div class="lcol__head"><div class="lcol__name">' + esc(c.figur) +
+        (c.selbst ? " <span class=\"stamp\">(du)</span>" : "") + "</div>" +
+        '<div class="lcol__sub">' + esc(c.rolle) + " · gespielt von " + esc(c.spielperson) + "</div>" +
+        '<div class="lcol__tally"><span class="tally num">' + c.eintraege.length + " " + esc(tallyWord(c.eintraege.length, L)) +
+        "</span>" + tag(c.anwesenheit, c.anwesend ? "wit" : "abs") + "</div></div>" +
+        '<ul class="lcol__list" data-comp="grant-list" data-leaf>' + body + "</ul></li>";
+    }).join("");
+
+    stageBody = '<div class="ledger-scroll" tabindex="0" role="group" ' +
+      'aria-label="' + esc(L.ledger) + ', waagerecht scrollbar"><ol class="ledger" data-comp="ledger">' +
+      cols + "</ol></div>";
+  }
+
+  var stage =
+    '<section class="zone zone-stage" data-comp="primary-stage" aria-labelledby="stageTitle">' +
+      '<div class="subject" data-comp="subject-head">' +
+        '<figure class="subject__artwrap" data-comp="scene-art" data-leaf>' + artBlock + "</figure>" +
+        '<div class="subject__inner">' +
+          '<figure data-comp="portrait" data-leaf title="Kein Artwork hinterlegt — Sigill-Ersatz">' +
+            sigil(w.subject.name, 58) + "</figure>" +
+          '<div class="subject__text">' +
+            '<p class="zone-label">' + esc(L.ledger) + "</p>" +
+            '<h2 id="stageTitle">' + esc(w.subject.name) + "</h2>" +
+            '<ul class="chips subject__meta">' + chip(esc(w.subject.kind)) +
+              w.subject.tags.map(function (t) { return chip(esc(t)); }).join("") +
+              chip(esc(L.scene) + ": " + esc(w.session.scene)) + "</ul>" +
+            '<p class="subject__prompt"><b>' + esc(w.session.clock) + " · Sitzung " + w.session.no +
+              ".</b> " + esc(w.prompt) + " Die Spielleitung tippt die Person an und drückt " +
+              "<b>W</b>. Niemand hat eine Zeile davon geschrieben.</p>" +
+          "</div>" +
+        "</div>" +
+      "</div>" + stageBody +
+    "</section>";
+
+  /* --- Zone 5: Kontextlupe --------------------------------------------- */
+  var lensInner;
+  if (!sel) {
+    lensInner = '<div class="empty"><b>' + esc(L.noSelection) + "</b><p>" + esc(L.noSelectionHint) + "</p></div>";
+  } else {
+    var f = factById(w, sel);
+    var holders = [];
+    w.chars.forEach(function (ch) {
+      allGrantsOf(st, w, ch).forEach(function (g) { if (g.f === sel && holders.indexOf(ch.n) < 0) holders.push(ch.n); });
+    });
+    var steps = [
+      { s: "Beat " + f.beat + " · " + f.type, d: "Sitzung " + f.s + " · " + f.iw + " · Szene erfasst" },
+      { s: "Zeugenmenge zum Zeitpunkt des Beats", d: holders.length ? holders.join(", ") : "keine — reine Spielleitungswahrheit" },
+      { s: "Projektor v1 · " + w.pkg, d: "deterministische Faltung, kein KI-Anteil, wiederholbar" },
+      { s: "Wissensrechte erzeugt: " + holders.length, d: "je Figur ein Recht mit Modus und Sicherheit" },
+      { s: "Kanonstatus: " + CANON[f.canon], d: f.canon === "proposed" ? "Vorschlag — wartet auf den Chronikdurchgang" : "im Chronikdurchgang der Sitzung " + f.s + " angenommen" }
+    ];
+    /* Wer sonst noch Bescheid weiß, ist selbst ein Geheimnis: die Zeugenmenge und
+       die Zahl der erteilten Wissensrechte gehören ausschließlich der Spielleitung. */
+    if (!isGM) { steps = [steps[0], steps[2], steps[4]]; }
+    lensInner =
+      '<p class="lens-claim">' + esc(f.claim) + "</p>" +
+      '<ul class="chips">' + chip(esc(CANON[f.canon]), f.canon === "proposed" ? "chip--backstage" : "") +
+        chip('<span class="num">' + esc(f.id) + "</span>") + "</ul>" +
+      '<section class="lens-sec"><h4>' + esc(L.lens) + "</h4>" +
+        '<ol class="trace" data-comp="trace" data-leaf>' +
+        steps.map(function (x) { return "<li><strong>" + esc(x.s) + "</strong><span>" + esc(x.d) + "</span></li>"; }).join("") +
+        "</ol></section>" +
+      '<section class="lens-sec"><h4>' + esc(L.record) + "</h4>" +
+        '<dl class="kv" data-comp="record-fields" data-leaf>' +
+          "<dt>subject_ref</dt><dd>" + esc(w.subject.name) + "</dd>" +
+          "<dt>source_beat</dt><dd class=\"num\">" + esc(f.beat) + "</dd>" +
+          "<dt>in_world_date</dt><dd class=\"num\">" + esc(f.iw) + "</dd>" +
+          "<dt>canon_status</dt><dd>" + esc(f.canon === "proposed" ? "proposed" : "campaign_canon") + "</dd>" +
+          "<dt>created_by</dt><dd>projector</dd>" +
+        "</dl></section>";
+    if (isGM) {
+      var without = w.chars.filter(function (ch) {
+        return !allGrantsOf(st, w, ch).some(function (g) { return g.f === sel; });
+      });
+      lensInner += '<fieldset class="brief"><legend>' + esc(L.briefLegend) + "</legend>" +
+        '<ul data-comp="brief-list" data-leaf>' +
+        (without.length
+          ? without.map(function (ch) {
+              return '<li><label><input type="checkbox" name="briefTarget" value="' + ch.id + '">' +
+                "<span>" + esc(ch.n) + ' <span class="stamp">' + esc(ch.part) + "</span></span></label></li>";
+            }).join("")
+          : '<li><p class="hint">Alle Figuren am Tisch haben diesen Fakt bereits.</p></li>') +
+        "</ul>" +
+        '<button type="button" class="btn btn--primary btn--wide" data-act="brief"' +
+        (without.length ? "" : " disabled") + ">" + esc(L.brief) + "</button>" +
+        '<p class="hint">' + esc(L.briefHint) + "</p></fieldset>";
+    }
+  }
+  var lens =
+    '<aside class="zone zone-lens" data-comp="context-lens" aria-label="' + esc(L.zLens) + '">' +
+      '<div class="zone-head"><h3>' + esc(L.zLens) + "</h3><span class=\"zone-label\">" +
+      (sel ? esc(sel) : "leer") + "</span></div>" +
+      '<div class="lens-body" data-comp="lens-body">' + lensInner + "</div>" +
+    "</aside>";
+
+  /* --- Zone 6: Transportleiste ----------------------------------------- */
+  var beats = p.beats || [];
+  var shelf =
+    '<footer class="zone zone-shelf" data-comp="session-shelf" aria-label="' + esc(L.zShelf) + '">' +
+      '<div class="shelf">' +
+        '<div class="shelf__clock"><span class="zone-label">Sitzung</span>' +
+          '<b class="num">' + esc(w.session.clock) + "</b>" +
+          '<span class="stamp num">' + esc(w.session.inWorld) + "</span></div>" +
+        '<div class="beattail" tabindex="0" role="group" aria-label="Beat-Verlauf, waagerecht scrollbar">' +
+          '<ol data-comp="beat-tail" data-leaf>' +
+          (beats.length
+            ? beats.slice(-6).map(function (b) {
+                return '<li class="beat"><time>' + esc(b.t) + "</time><b>" + esc(b.typ) + "</b><span>" +
+                  esc(b.text) + "</span></li>";
+              }).join("")
+            : '<li class="beat"><span>Für diesen Client enthält die Antwort keine Beats.</span></li>') +
+          "</ol></div>" +
+        '<div class="shelf__group">' +
+          (isGM
+            ? '<span class="zone-label">' + esc(L.curtain) + "</span>" +
+              '<div class="seg" role="group" aria-label="' + esc(L.curtain) + '">' +
+              ["backstage", "live", "struck"].map(function (c) {
+                var lbl = c === "live" ? "Oben" : c === "backstage" ? "Hinter dem Vorhang" : "Abgebaut";
+                return '<button type="button" class="btn" data-curtain="' + c + '" aria-pressed="' +
+                  (st.curtain === c ? "true" : "false") + '">' + lbl + "</button>";
+              }).join("") + "</div>"
+            : "") +
+          '<button type="button" class="btn" data-act="undo"' +
+            (st.added.length ? "" : " disabled") + ">" + esc(L.undo) + "</button>" +
+          (isGM ? '<button type="button" class="btn">' + esc(L.endSession) + "</button>" : "") +
+        "</div>" +
+      "</div>" +
+    "</footer>";
+
+  return ctx + rail + coll + stage + lens + shelf;
+}
+
+/* =========================================================================
+   D. Das Prüfprotokoll. Alles hier wird gerechnet, nichts behauptet.
+   ========================================================================= */
+var st = {
+  world: "aldenfall", skin: "relic", role: "gm", theme: "auto", contrast: "standard",
+  motion: "auto", density: "comfortable", lang: "std", art: "on",
+  identity: "bjorn", curtain: "live", selected: "F3", module: "table",
+  collOpen: true, added: [], batch: 0
+};
+
+var mount = document.getElementById("shellMount");
+var room = document.getElementById("sweeproom");
+var probe = document.getElementById("probe");
+var live = document.getElementById("live");
+var grid = document.getElementById("auditGrid");
+var baselines = {};
+var artStatus = "unbekannt";
+var sweepStructResult = null;
+var sweepContrastResult = null;
+
+/* --- Strukturvertrag ---------------------------------------------------- */
+/* Zustands-ARIA (current/pressed/expanded/live) gehört nicht zum Vertrag,
+   sondern zur Bedienung — es fliesst bewusst nicht in die Signatur ein. */
+var ARIA_STATE = { "aria-current": 1, "aria-pressed": 1, "aria-expanded": 1, "aria-live": 1, "aria-disabled": 1 };
+function sigOf(el) {
+  var t = el.tagName.toLowerCase();
+  var role = el.getAttribute("role");
+  var comp = el.getAttribute("data-comp");
+  var aria = [];
+  for (var i = 0; i < el.attributes.length; i++) {
+    var n = el.attributes[i].name;
+    if (n.indexOf("aria-") === 0 && !ARIA_STATE[n]) aria.push(n);
+  }
+  aria.sort();
+  var head = t + (role ? ":" + role : "") + (comp ? "#" + comp : "") +
+             (aria.length ? "[" + aria.join(" ") + "]" : "");
+  if (el.hasAttribute("data-leaf")) return head + "{}";
+  var parts = [], prev = null;
+  for (var c = el.firstElementChild; c; c = c.nextElementSibling) {
+    var s = sigOf(c);
+    if (s === prev) continue;
+    prev = s; parts.push(s);
+  }
+  return head + "{" + parts.join(",") + "}";
+}
+function containerSig(el) {
+  var parts = [], prev = null;
+  for (var c = el.firstElementChild; c; c = c.nextElementSibling) {
+    var s = sigOf(c);
+    if (s === prev) continue;
+    prev = s; parts.push(s);
+  }
+  return parts.join(",");
+}
+function hash(s) { return ("0000000" + fnv(s).toString(16)).slice(-8); }
+
+function groupKey(s) {
+  var p = project(s);
+  var visible = visibleFacts(p).indexOf(s.selected) >= 0;
+  return s.role + "/" + s.curtain + "/" + (visible ? "sel" : "leer");
+}
+
+function defaultFact(wid) {
+  var w = WORLDS[wid], f = w.facts.filter(function (x) { return x.cast; })[0] || w.facts[0];
+  return f.id;
+}
+function defaultIdentity(wid) {
+  var w = WORLDS[wid], pick = w.chars[0].id;
+  w.chars.forEach(function (c) { if (!c.grants.length) pick = c.id; });
+  return pick;
+}
+
+function sweepStructure() {
+  var worlds = ["aldenfall", "kepler", "nebelakte"];
+  var langs = ["std", "long"], arts = ["on", "off", "broken"], dens = ["comfortable", "compact"];
+  var groups = {}, n = 0, dev = 0, devList = [];
+  worlds.forEach(function (wid) {
+    var w = WORLDS[wid];
+    var seats = [{ role: "gm", id: null }, { role: "observer", id: null },
+                 { role: "player", id: w.chars[0].id }, { role: "player", id: defaultIdentity(wid) }];
+    seats.forEach(function (seat) {
+      langs.forEach(function (lang) {
+        arts.forEach(function (art) {
+          dens.forEach(function (den) {
+            var s = {
+              world: wid, skin: st.skin, role: seat.role, theme: st.theme, contrast: st.contrast,
+              motion: st.motion, density: den, lang: lang, art: art,
+              identity: seat.id || defaultIdentity(wid), curtain: "live",
+              selected: defaultFact(wid), module: "table", collOpen: true, added: [], batch: 0
+            };
+            room.innerHTML = buildShell(s);
+            var sg = containerSig(room), k = groupKey(s);
+            n++;
+            if (!groups[k]) { groups[k] = { sig: sg, n: 0 }; }
+            groups[k].n++;
+            if (groups[k].sig !== sg) {
+              dev++;
+              if (devList.length < 3) devList.push(k + " · " + wid + "/" + lang + "/" + art + "/" + den);
+            }
+          });
+        });
+      });
+    });
+  });
+  room.innerHTML = "";
+  var keys = Object.keys(groups).sort();
+  sweepStructResult = { n: n, groups: keys.length, dev: dev, list: devList,
+    detail: keys.map(function (k) { return { k: k, h: hash(groups[k].sig), n: groups[k].n }; }) };
+  paint();
+}
+
+/* --- Kontrast (WCAG 2.2, im Browser gerechnet) -------------------------- */
+var PAIRS = [
+  ["--c-text", "--c-surface", 4.5, "Fließtext auf Fläche"],
+  ["--c-text", "--c-surface2", 4.5, "Fließtext auf Karte"],
+  ["--c-text", "--c-bg", 4.5, "Fließtext auf Grundfläche"],
+  ["--c-muted", "--c-surface", 4.5, "Sekundärtext auf Fläche"],
+  ["--c-muted", "--c-surface2", 4.5, "Sekundärtext auf Karte"],
+  ["--c-dim", "--c-surface", 4.5, "Metatext auf Fläche"],
+  ["--c-dim", "--c-surface2", 4.5, "Metatext auf Karte"],
+  ["--c-accent", "--c-surface", 3.0, "Akzent auf Fläche (UI)"],
+  ["--c-ink", "--c-accent", 4.5, "Text auf Akzentfläche"],
+  ["--c-truth", "--c-surface2", 4.5, "Marke: Wahrheit"],
+  ["--c-wit", "--c-surface2", 4.5, "Modus: bezeugt"],
+  ["--c-told", "--c-surface2", 4.5, "Modus: gehört"],
+  ["--c-inf", "--c-surface2", 4.5, "Modus: geschlossen"],
+  ["--c-abs", "--c-surface2", 4.5, "Marke: abwesend"],
+  ["--c-focus", "--c-surface", 3.0, "Fokusring auf Fläche"],
+  ["--c-focus", "--c-surface2", 3.0, "Fokusring auf Karte"],
+  ["--c-line2", "--c-surface", 3.0, "Tragende Trennlinie"]
+];
+function parseColor(v) {
+  v = (v || "").trim();
+  var m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (m) {
+    var h = m[1];
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  m = v.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+  if (m) return [+m[1], +m[2], +m[3]];
+  return null;
+}
+function lumi(c) {
+  var s = c.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+  return 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+}
+function ratio(a, b) {
+  var x = lumi(a), y = lumi(b), hi = Math.max(x, y), lo = Math.min(x, y);
+  return (hi + 0.05) / (lo + 0.05);
+}
+function contrastRows() {
+  var cs = getComputedStyle(document.documentElement), rows = [];
+  PAIRS.forEach(function (p) {
+    var a = parseColor(cs.getPropertyValue(p[0])), b = parseColor(cs.getPropertyValue(p[1]));
+    if (!a || !b) { rows.push({ l: p[3], r: null, min: p[2], ok: null }); return; }
+    var r = ratio(a, b);
+    rows.push({ l: p[3], r: r, min: p[2], ok: r >= p[2] });
+  });
+  return rows;
+}
+function sweepContrast() {
+  var root = document.documentElement;
+  var keepSkin = root.getAttribute("data-skin"), keepTheme = root.getAttribute("data-theme"),
+      keepContrast = root.getAttribute("data-contrast");
+  var checks = 0, bad = 0, worst = { r: 99, l: "" }, list = [];
+  ["relic", "signal", "archive", "clean"].forEach(function (skin) {
+    ["dark", "light"].forEach(function (theme) {
+      ["standard", "high"].forEach(function (con) {
+        root.setAttribute("data-skin", skin);
+        root.setAttribute("data-theme", theme);
+        root.setAttribute("data-contrast", con);
+        contrastRows().forEach(function (row) {
+          if (row.r === null) return;
+          checks++;
+          if (row.r / row.min < worst.r) { worst = { r: row.r / row.min, l: skin + "/" + theme + "/" + con + " · " + row.l, abs: row.r, min: row.min }; }
+          if (!row.ok) { bad++; if (list.length < 4) list.push(skin + "/" + theme + "/" + con + " · " + row.l + " = " + row.r.toFixed(2)); }
+        });
+      });
+    });
+  });
+  if (keepSkin) root.setAttribute("data-skin", keepSkin);
+  if (keepTheme) root.setAttribute("data-theme", keepTheme); else root.removeAttribute("data-theme");
+  if (keepContrast) root.setAttribute("data-contrast", keepContrast);
+  sweepContrastResult = { checks: checks, bad: bad, list: list, worst: worst };
+  paint();
+}
+
+/* --- Bewegung ----------------------------------------------------------- */
+function motionState() {
+  var cs = getComputedStyle(document.documentElement);
+  function ms(name) {
+    var v = (cs.getPropertyValue(name) || "").trim();
+    if (v.slice(-2) === "ms") return parseFloat(v);
+    if (v.slice(-1) === "s") return parseFloat(v) * 1000;
+    return NaN;
+  }
+  var res = ms("--t-res"), sta = ms("--t-state"), tra = ms("--t-trans");
+  var probeMs = parseFloat(getComputedStyle(probe).transitionDuration) * 1000;
+  var off = res <= 1 && sta <= 1 && tra <= 1;
+  var inBand = res >= 110 && res <= 180 && sta >= 220 && sta <= 340 && tra >= 600 && tra <= 1000;
+  return { res: res, sta: sta, tra: tra, probe: probeMs, off: off, ok: off || inBand, travel: (cs.getPropertyValue("--travel") || "").trim() };
+}
+
+/* --- Auslassung und Leckprüfung ----------------------------------------- */
+function omission() {
+  var w = WORLDS[st.world];
+  var fixtureFacts = w.facts.length;
+  var fixtureGrants = 0;
+  w.chars.forEach(function (c) { fixtureGrants += allGrantsOf(st, w, c).length; });
+  var p = project(st);
+  var delivered = 0;
+  (p.spalten || []).forEach(function (c) { delivered += (c.eintraege || []).length; });
+  var visible = visibleFacts(p);
+  var withheld = w.facts.filter(function (f) { return visible.indexOf(f.id) < 0; });
+  var html = mount.innerHTML;
+  var leaks = withheld.filter(function (f) { return html.indexOf(esc(f.claim)) >= 0; });
+  return { fixtureFacts: fixtureFacts, fixtureGrants: fixtureGrants, delivered: delivered,
+           withheld: withheld.length, leaks: leaks.length, payload: p };
+}
+function payloadJSON(p) {
+  return JSON.stringify(p, function (k, v) { return k.charAt(0) === "_" ? undefined : v; }, 2);
+}
+
+/* --- Lampen und Karten -------------------------------------------------- */
+function lamp(id, state, text) {
+  var el = document.getElementById(id);
+  el.setAttribute("data-state", state);
+  el.lastElementChild.textContent = text;
+}
+
+function paint() {
+  var L = T[st.lang];
+  var liveSig = containerSig(mount), k = groupKey(st), h = hash(liveSig);
+  if (!baselines[k]) baselines[k] = h;
+  var drift = baselines[k] !== h;
+
+  var rows = contrastRows();
+  var badNow = rows.filter(function (r) { return r.ok === false; }).length;
+  var mo = motionState();
+  var om = omission();
+
+  var sSum = sweepStructResult;
+  lamp("lampStruct", drift ? "fail" : (sSum && sSum.dev === 0 ? "pass" : "info"),
+       drift ? "Abweichung!" : (sSum ? sSum.n + " Perm. · " + sSum.groups + " Sign." : "bereit"));
+  var cSum = sweepContrastResult;
+  lamp("lampContrast", (badNow || (cSum && cSum.bad)) ? "fail" : (cSum ? "pass" : "info"),
+       cSum ? cSum.checks + " Prüfungen · " + cSum.bad + " Verstöße" : badNow + " Verstöße (aktuell)");
+  lamp("lampMotion", mo.ok ? "pass" : "fail",
+       mo.off ? "aus (0 ms)" : Math.round(mo.res) + "/" + Math.round(mo.sta) + "/" + Math.round(mo.tra) + " ms");
+  lamp("lampOmit", om.leaks ? "fail" : "pass",
+       om.withheld + " zurückgehalten · " + om.leaks + " im DOM");
+
+  grid.innerHTML =
+    /* 1 — Struktur */
+    '<article class="acard"><h3>1 · Komponentenvertrag</h3>' +
+      '<p class="verdict" data-state="' + (drift ? "fail" : "pass") + '">' +
+      (drift ? "◼ Abweichung gegenüber der Grundsignatur dieser Rolle" : "◼ Signatur stabil") +
+      ' — <b>' + h + "</b></p>" +
+      '<p>Signatur = Baum aus Tag, ARIA-Rolle und <code>data-comp</code>. Der Abstieg endet an ' +
+      "Komponentengrenzen (<code>data-leaf</code>), gleiche Nachbarn werden zusammengefasst. " +
+      "Geprüft wird also der Vertrag, nicht Inhalt oder Anzahl.</p>" +
+      '<p>Gruppe: <b>' + esc(k) + "</b> — eine Signatur je Rolle × Vorhang × Auswahlzustand. " +
+      "Skin, Inhalt, Sprache, Artwork, Dichte und Farbmodus dürfen darin nichts ändern.</p>" +
+      (sSum
+        ? '<p class="verdict" data-state="' + (sSum.dev ? "fail" : "pass") + '">' +
+          "<b class=\"num\">" + sSum.n + "</b> Permutationen · <b class=\"num\">" + sSum.groups +
+          "</b> Signaturen · <b class=\"num\">" + sSum.dev + "</b> unerwartete Abweichungen</p>" +
+          '<div class="scrollx"><table class="atable"><thead><tr><th>Gruppe</th><th>Signatur</th><th>Fälle</th></tr></thead><tbody>' +
+          sSum.detail.map(function (d) {
+            return "<tr><td>" + esc(d.k) + "</td><td>" + d.h + "</td><td>" + d.n + "</td></tr>";
+          }).join("") + "</tbody></table></div>"
+        : "") +
+      '<button type="button" class="btn btn--wide" id="btnStruct">144 Strukturpermutationen durchrechnen</button>' +
+    "</article>" +
+
+    /* 2 — Kontrast */
+    '<article class="acard"><h3>2 · Kontrast, gerechnet</h3>' +
+      '<p class="verdict" data-state="' + (badNow ? "fail" : "pass") + '">' +
+      (badNow ? "◼ " + badNow + " Verstöße im aktuellen Zustand" : "◼ aktueller Zustand: alle Paare bestanden") + "</p>" +
+      '<div class="scrollx"><table class="atable"><caption class="vh">Kontrastwerte der aktuellen Tokens</caption>' +
+      "<thead><tr><th>Paar</th><th>Ist</th><th>Soll</th></tr></thead><tbody>" +
+      rows.map(function (r) {
+        return "<tr><td>" + esc(r.l) + "</td><td class=\"" + (r.ok ? "ok" : "bad") + "\">" +
+          (r.r === null ? "—" : r.r.toFixed(2)) + "</td><td>" + r.min.toFixed(1) + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      (cSum
+        ? '<p class="verdict" data-state="' + (cSum.bad ? "fail" : "pass") + '">' +
+          "<b class=\"num\">" + cSum.checks + "</b> Prüfungen über 4 Skins × 2 Farbmodi × 2 Kontraststufen · <b class=\"num\">" +
+          cSum.bad + "</b> Verstöße</p>" +
+          '<p class="hint">Engster Wert: ' + esc(cSum.worst.l) + " = " +
+          (cSum.worst.abs ? cSum.worst.abs.toFixed(2) : "—") + " bei Soll " +
+          (cSum.worst.min ? cSum.worst.min.toFixed(1) : "—") + ".</p>"
+        : "") +
+      '<button type="button" class="btn btn--wide" id="btnContrast">16 Token-Kombinationen durchrechnen</button>' +
+    "</article>" +
+
+    /* 3 — Bewegung */
+    '<article class="acard"><h3>3 · Bewegung als Zustand</h3>' +
+      '<p class="verdict" data-state="' + (mo.ok ? "pass" : "fail") + '">' +
+      (mo.off ? "◼ Bewegung abgeschaltet — Zustände wechseln ohne Weg" : "◼ alle drei Tempi im Zielband") + "</p>" +
+      '<div class="scrollx"><table class="atable"><thead><tr><th>Tempo</th><th>Ist</th><th>Band</th></tr></thead><tbody>' +
+      "<tr><td>Antwort</td><td>" + Math.round(mo.res) + " ms</td><td>110–180</td></tr>" +
+      "<tr><td>Zustand</td><td>" + Math.round(mo.sta) + " ms</td><td>220–340</td></tr>" +
+      "<tr><td>Übergang</td><td>" + Math.round(mo.tra) + " ms</td><td>600–1000</td></tr>" +
+      "<tr><td>Messsonde</td><td>" + Math.round(mo.probe) + " ms</td><td>= Zustand</td></tr>" +
+      "<tr><td>Raumweg</td><td>" + esc(mo.travel || "1") + "</td><td>0 = aus</td></tr>" +
+      "</tbody></table></div>" +
+      '<p class="hint">Gemessen an einer echten Sonde im Dokument, nicht aus der Konfiguration abgelesen. ' +
+      "Systemvorgabe <code>prefers-reduced-motion</code> wirkt ohne Zutun; die Achse „Bewegung“ überschreibt sie bewusst.</p>" +
+    "</article>" +
+
+    /* 4 — Auslassung */
+    '<article class="acard"><h3>4 · Auslassung statt Verstecken</h3>' +
+      '<p class="verdict" data-state="' + (om.leaks ? "fail" : "pass") + '">' +
+      (om.leaks ? "◼ " + om.leaks + " zurückgehaltene Aussagen sind im DOM auffindbar" :
+                  "◼ 0 zurückgehaltene Aussagen im DOM auffindbar") + "</p>" +
+      "<p>Fixture: <b class=\"num\">" + om.fixtureFacts + "</b> Fakten, <b class=\"num\">" +
+      om.fixtureGrants + "</b> Wissensrechte. Ausgeliefert an diesen Client: <b class=\"num\">" +
+      om.delivered + "</b> Einträge. Zurückgehalten: <b class=\"num\">" + om.withheld + "</b> Fakten.</p>" +
+      '<p class="hint">Der Test durchsucht das gerenderte DOM nach dem Wortlaut jeder zurückgehaltenen ' +
+      "Aussage. Nicht ausgeliefert heißt hier: nicht vorhanden — nicht „mit CSS ausgeblendet“.</p>" +
+      '<p class="hint">' + esc(L.record) + " — Rohantwort an diesen Client:</p>" +
+      '<pre class="json" tabindex="0" aria-label="Serverantwort im Rohformat">' +
+      esc(payloadJSON(om.payload)) + "</pre>" +
+    "</article>" +
+
+    /* 5 — Artwork */
+    '<article class="acard"><h3>5 · Artwork und Ersatzdarstellung</h3>' +
+      '<p class="verdict" data-state="' + (artStatus === "fehlt" ? "info" : "pass") + '">◼ Bühnenbild: ' +
+      esc(artStatus) + "</p>" +
+      "<p>Die Figurensigille sind <b>immer</b> Ersatzdarstellungen: für diese Personen existiert kein " +
+      "Bildbestand. Sie werden aus dem Namen erzeugt (Initialen, Strahlenzahl, Ringradius) und tragen " +
+      "ausschließlich Theme-Tokens — deshalb sehen sie in jedem Skin wie bestellt aus.</p>" +
+      '<p class="hint">Achse „Artwork: Fehlend“ zeigt auf eine Datei, die es nicht gibt. Der Ausfall ist ' +
+      "gestaltet, nicht abgefangen. Enthaltene Rasterbilder sind Prototyp-Richtungsgrafik " +
+      "(kein Tier-0-Rechtebestand).</p>" +
+    "</article>" +
+
+    /* 6 — Grenzen */
+    '<article class="acard"><h3>6 · Was dieser Spike <em>nicht</em> beweist</h3>' +
+      '<ul class="caveats">' +
+        "<li>Die Projektion läuft im Browser. Das Fixture liegt in derselben Datei — das ist ein " +
+        "Nachweis über den <em>Vertrag</em> der Antwort, kein Zugriffsschutz. Produktion muss " +
+        "serverseitig auslassen, und der Test dafür existiert vor der Oberfläche.</li>" +
+        "<li>Kein Server, kein Socket, keine Nebenläufigkeit. Zwei Spielleitungen gleichzeitig sind hier kein Thema.</li>" +
+        "<li>Keine Karte, keine Tokens, kein Lichtmodell. Der Tisch dieses Kandidaten steht in Scheibe 1 ohne Battlemap.</li>" +
+        "<li>Das Zeugenregister zeigt <b>Erfasstes</b>, nicht <b>Gewusstes</b>. Was am Tisch gesagt und " +
+        "nicht markiert wurde, fehlt hier — und die Oberfläche darf das nie verschweigen (W2).</li>" +
+        "<li>Zoom 200 %, NVDA und VoiceOver sind hier nicht gemessen, nur vorbereitet.</li>" +
+      "</ul>" +
+    "</article>";
+
+  document.getElementById("btnStruct").addEventListener("click", sweepStructure);
+  document.getElementById("btnContrast").addEventListener("click", sweepContrast);
+}
+
+/* =========================================================================
+   E. Zustand anlegen, verdrahten, laufen lassen.
+   ========================================================================= */
+function applyRoot() {
+  var r = document.documentElement;
+  r.setAttribute("data-skin", st.skin);
+  r.setAttribute("data-contrast", st.contrast);
+  r.setAttribute("data-density", st.density);
+  r.setAttribute("lang", "de");
+  if (st.theme === "auto") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", st.theme);
+  if (st.motion === "auto") r.removeAttribute("data-motion"); else r.setAttribute("data-motion", st.motion);
+}
+
+function wireArt() {
+  if (st.art === "off") { artStatus = "abgeschaltet — Ersatzfläche aus Tokens"; return; }
+  var img = mount.querySelector("[data-artimg]");
+  if (!img) { artStatus = "keine Bildfläche"; return; }
+  artStatus = "wird geladen …";
+  var fail = function () {
+    artStatus = "fehlt";
+    var slot = mount.querySelector("[data-artslot]");
+    if (slot) { slot.className = "subject__fallback"; slot.removeAttribute("data-artslot"); slot.innerHTML = ""; }
+    paint();
+  };
+  var done = function () { artStatus = "geladen (" + img.naturalWidth + "×" + img.naturalHeight + " px)"; paint(); };
+  if (img.complete) { if (img.naturalWidth) { done(); } else { fail(); } return; }
+  img.addEventListener("error", fail, { once: true });
+  img.addEventListener("load", done, { once: true });
+}
+
+function say(text) { live.textContent = text; }
+
+/* Man kann nur untersuchen, was einem ausgeliefert wurde. */
+function normalizeSelection() {
+  var vis = visibleFacts(project(st));
+  if (vis.indexOf(st.selected) < 0 && vis.length) st.selected = vis[0];
+}
+
+function render(keepFocus) {
+  applyRoot();
+  mount.innerHTML = buildShell(st);
+  wireArt();
+  paint();
+  if (keepFocus) {
+    var t = mount.querySelector('[data-fact="' + st.selected + '"]');
+    if (t) t.focus();
+  }
+}
+
+function syncIdentityAxis() {
+  var box = document.getElementById("identityAxis");
+  var sel = document.getElementById("identity");
+  var w = WORLDS[st.world];
+  sel.innerHTML = w.chars.map(function (c) {
+    return '<option value="' + c.id + '"' + (c.id === st.identity ? " selected" : "") + ">" +
+      esc(c.n) + " — " + esc(c.part) + "</option>";
+  }).join("");
+  box.hidden = st.role !== "player";
+}
+
+document.getElementById("axes").addEventListener("change", function (e) {
+  var t = e.target;
+  if (t.name === "world") {
+    st.world = t.value;
+    st.selected = defaultFact(st.world);
+    st.identity = defaultIdentity(st.world);
+    syncIdentityAxis();
+  } else if (t.name === "role") {
+    st.role = t.value;
+    syncIdentityAxis();
+  } else if (t.id === "identity") {
+    st.identity = t.value;
+  } else if (t.name) {
+    st[t.name] = t.value;
+  }
+  normalizeSelection();
+  render(false);
+});
+document.getElementById("axes").addEventListener("submit", function (e) { e.preventDefault(); });
+
+mount.addEventListener("click", function (e) {
+  var el = e.target.closest("[data-fact],[data-curtain],[data-act],[data-module],[data-coll]");
+  if (!el) return;
+
+  if (el.hasAttribute("data-fact")) {
+    st.selected = el.getAttribute("data-fact");
+    render(true);
+    say("Fakt " + st.selected + " ausgewählt. Die Herkunftskette steht in der Kontextlupe.");
+    return;
+  }
+  if (el.hasAttribute("data-curtain")) {
+    st.curtain = el.getAttribute("data-curtain");
+    render(false);
+    say("Vorhang: " + st.curtain + ". Bei gesenktem Vorhang enthält die Antwort an Spielende keine Datensätze.");
+    return;
+  }
+  if (el.hasAttribute("data-module")) {
+    var label = el.textContent.trim();
+    st.module = el.getAttribute("data-module");
+    render(false);
+    say("Modul „" + label + "“ ist in diesem Prüfstand nicht ausgebaut. Die Bühne bleibt beim Zeugenregister — " +
+        "gewechselt hat nur die Navigation, nicht der Komponentenvertrag.");
+    return;
+  }
+  if (el.hasAttribute("data-coll")) {
+    mount.querySelectorAll("[data-coll]").forEach(function (b) { b.removeAttribute("aria-current"); });
+    el.setAttribute("aria-current", "true");
+    say(el.querySelector(".coll-item__name").textContent + " gewählt.");
+    return;
+  }
+
+  var act = el.getAttribute("data-act");
+  if (act === "toggleColl") { st.collOpen = !st.collOpen; render(false); return; }
+  if (act === "undo") {
+    if (!st.added.length) return;
+    var last = st.added[st.added.length - 1].batch;
+    var n = st.added.length;
+    st.added = st.added.filter(function (g) { return g.batch !== last; });
+    render(false);
+    say((n - st.added.length) + " Wissensrechte zurückgenommen. Der Beat bleibt im Protokoll, als zurückgenommen markiert.");
+    return;
+  }
+  if (act === "brief") {
+    var boxes = mount.querySelectorAll('input[name="briefTarget"]:checked');
+    if (!boxes.length) { say("Keine Figur ausgewählt."); return; }
+    var w = WORLDS[st.world];
+    st.batch++;
+    var names = [];
+    boxes.forEach(function (b) {
+      var ch = null;
+      w.chars.forEach(function (c) { if (c.id === b.value) ch = c; });
+      names.push(ch.n);
+      st.added.push({
+        world: w.id, char: ch.id, batch: st.batch,
+        label: "„" + w.subject.name + "“ · Weitergabe an " + ch.n,
+        grant: { f: st.selected, m: "told", c: "soft", s: w.session.no, iw: w.session.inWorld,
+                 b: "B-NEU-" + st.batch, src: "Briefing am Tisch", neu: true }
+      });
+    });
+    render(false);
+    say(names.length + " Wissensrechte erzeugt für " + names.join(", ") +
+        " — Modus gehört, Sicherheit unbestätigt. Rückgang steht in der Transportleiste.");
+    return;
+  }
+});
+
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "w" && e.key !== "W") return;
+  var t = e.target;
+  if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  var first = mount.querySelector("[data-fact]");
+  if (!first) return;
+  e.preventDefault();
+  first.focus();
+  say("Zeugenregister im Fokus. Mit Tabulator durch die Spalten, mit Eingabe die Herkunft öffnen.");
+});
+
+/* Deterministische Vorschau-Adressen — jeder Zustand ist verlinkbar.
+   z. B. ?world=nebelakte&skin=clean&role=player&theme=light&contrast=high&motion=reduced&lang=long&art=off */
+var ALLOWED = {
+  world: ["aldenfall", "kepler", "nebelakte"], skin: ["relic", "signal", "archive", "clean"],
+  role: ["gm", "player", "observer"], theme: ["auto", "light", "dark"],
+  contrast: ["standard", "high"], motion: ["auto", "full", "reduced"],
+  density: ["comfortable", "compact"], lang: ["std", "long"], art: ["on", "off", "broken"],
+  curtain: ["backstage", "live", "struck"]
+};
+function readQuery() {
+  var q = new URLSearchParams(location.search);
+  Object.keys(ALLOWED).forEach(function (k) {
+    var v = q.get(k);
+    if (v && ALLOWED[k].indexOf(v) >= 0) st[k] = v;
+  });
+  var ident = q.get("identity");
+  if (ident) {
+    WORLDS[st.world].chars.forEach(function (c) { if (c.id === ident) st.identity = ident; });
+  }
+  document.querySelectorAll("#axes input[type=radio]").forEach(function (i) {
+    i.checked = st[i.name] === i.value;
+  });
+}
+
+/* Erststart */
+(function init() {
+  readQuery();
+  st.selected = defaultFact(st.world);
+  var known = false;
+  WORLDS[st.world].chars.forEach(function (c) { if (c.id === st.identity) known = true; });
+  if (!known) st.identity = defaultIdentity(st.world);
+  normalizeSelection();
+  syncIdentityAxis();
+  render(false);
+  sweepStructure();
+  sweepContrast();
+})();
+</script>
+

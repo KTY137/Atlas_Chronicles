@@ -1,0 +1,10 @@
+{
+  "name": "spike-k-kartenmass",
+  "private": true,
+  "type": "module",
+  "description": "Hephaistos' Messungen zu RB-20b (Karteneditor-Machbarkeit). npm i && node szene-mess.mjs && node vektor-mess.mjs && python bild-mess.py",
+  "dependencies": {
+    "polygon-clipping": "^0.15.7",
+    "rbush": "^4.0.1"
+  }
+}

@@ -1,0 +1,3319 @@
+<meta charset="utf-8">
+<title>Der Schwellentisch unter sieben Achsen — Universalitätsprüfung · Kandidat B, Runde 5</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   0 · Reset
+   ══════════════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;padding:0}
+img,svg,canvas{max-width:100%;display:block}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4,h5,p,ul,ol,figure,blockquote,dl,dd,table{margin:0}
+ul,ol{padding:0;list-style:none}
+table{border-collapse:collapse}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1 · Skin-Quellen.  Jeder Skin deklariert eine helle (--l-*) und eine dunkle
+       (--d-*) Palette — inklusive der KARTENFARBEN.  Die Leinwand liest
+       dieselben Token wie das DOM; es gibt keine zweite Palette für Canvas.
+       Unterhalb dieses Blocks steht nirgendwo mehr ein Farbliteral.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --font-m: ui-monospace, "Cascadia Mono", "Consolas", "SF Mono", "Menlo", monospace;
+  --bw:1px;            /* Basis-Linienstärke, im hohen Kontrast erhöht */
+  --ornament:1;        /* 0 schaltet jedes gezeichnete Ornament ab      */
+  --feather:1;         /* 0 = harte Nebelkante (Kontrast/Ruhig)         */
+  --t-response:.14s;   /* Druck / Hover / Fokus            110–180 ms   */
+  --t-state:.28s;      /* Auswahl / Freigabe / Linse       220–340 ms   */
+  --t-scene:.80s;      /* Kamerafahrt / Kapitelwechsel     600–1000 ms  */
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --gap:clamp(.5rem,1vw,.9rem);
+  --maxw:1720px;
+}
+
+/* ── Relic — warmes Pergament, Umbra-Tinte, Messing ───────────────────────── */
+:root[data-skin="relic"]{
+  --l-bg:#efe7d8; --l-sunk:#e5dbc8; --l-surf:#f7f1e4; --l-surf2:#ece3d0;
+  --l-line:#cbbb9c; --l-line2:#8a7550; --l-ink:#23190f; --l-ink2:#4a3a25;
+  --l-ink3:#6b573b; --l-acc:#7a4a12; --l-accink:#fdf7ea; --l-accsoft:#f0e2c9;
+  --l-ok:#2f5d2a; --l-bad:#8e2317; --l-warn:#714c05; --l-focus:#1f4fd8;
+  --l-p1:#cdd8c4; --l-p2:#dcd6ae; --l-p3:#cbb384; --l-p4:#ab8a5d; --l-p5:#8d6b45;
+  --l-water:#9fb6bd; --l-fog:#2b2318; --l-fogedge:#8a7550; --l-grid:#6b573b;
+  --l-ring:#8e4a10; --l-us:#2f5d2a; --l-them:#8e2317; --l-anchor:#5c4a2e;
+  --d-bg:#17120c; --d-sunk:#100c07; --d-surf:#201a11; --d-surf2:#292116;
+  --d-line:#4a3d29; --d-line2:#6e5c3f; --d-ink:#f2e8d5; --d-ink2:#d6c7ab;
+  --d-ink3:#ac9a7c; --d-acc:#d9a441; --d-accink:#201a11; --d-accsoft:#33291a;
+  --d-ok:#74c46a; --d-bad:#ef7a6a; --d-warn:#e0b25a; --d-focus:#86b4ff;
+  --d-p1:#2b3529; --d-p2:#3a3a26; --d-p3:#4b402a; --d-p4:#5d4c31; --d-p5:#6f5c3c;
+  --d-water:#22323a; --d-fog:#080604; --d-fogedge:#6e5c3f; --d-grid:#8b7752;
+  --d-ring:#e8a24a; --d-us:#74c46a; --d-them:#ef7a6a; --d-anchor:#b39a6d;
+  --font-d:Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif;
+  --font-b:Georgia,"Iowan Old Style","Palatino Linotype",serif;
+  --r1:3px; --r2:5px; --r3:2px; --track-d:.005em; --wt-d:600;
+  --shadow-l:0 1px 0 rgba(255,252,244,.7) inset, 0 2px 10px rgba(60,42,16,.10);
+  --shadow-d:0 1px 0 rgba(255,235,190,.05) inset, 0 2px 14px rgba(0,0,0,.55);
+}
+/* ── Signal — Graphit, Cyan, technisch ───────────────────────────────────── */
+:root[data-skin="signal"]{
+  --l-bg:#eef1f4; --l-sunk:#e2e7ec; --l-surf:#ffffff; --l-surf2:#f2f5f8;
+  --l-line:#c2ccd6; --l-line2:#657787; --l-ink:#0d1720; --l-ink2:#33424f;
+  --l-ink3:#54646f; --l-acc:#0a6c8a; --l-accink:#ffffff; --l-accsoft:#dcedf3;
+  --l-ok:#1a6b3c; --l-bad:#a41d1d; --l-warn:#714c05; --l-focus:#0b57d0;
+  --l-p1:#dbe3ea; --l-p2:#cbd6df; --l-p3:#b7c5d1; --l-p4:#a1b2c0; --l-p5:#8b9dad;
+  --l-water:#a9c6d6; --l-fog:#131a22; --l-fogedge:#46586a; --l-grid:#5c6c7a;
+  --l-ring:#0a6c8a; --l-us:#1a6b3c; --l-them:#a41d1d; --l-anchor:#42535f;
+  --d-bg:#0b1016; --d-sunk:#070b0f; --d-surf:#131a22; --d-surf2:#1a232c;
+  --d-line:#2c3a46; --d-line2:#46586a; --d-ink:#e6eef5; --d-ink2:#b8c6d2;
+  --d-ink3:#8b9dab; --d-acc:#45c8e8; --d-accink:#06131a; --d-accsoft:#14303a;
+  --d-ok:#4fd08a; --d-bad:#ff8a7a; --d-warn:#f0c064; --d-focus:#7fb8ff;
+  --d-p1:#141d25; --d-p2:#1b262f; --d-p3:#232f39; --d-p4:#2b3945; --d-p5:#354553;
+  --d-water:#0e2530; --d-fog:#04070a; --d-fogedge:#46586a; --d-grid:#4a5c6c;
+  --d-ring:#45c8e8; --d-us:#4fd08a; --d-them:#ff8a7a; --d-anchor:#7b90a1;
+  --font-d:"Segoe UI Semibold","Roboto Condensed","Arial Narrow",ui-sans-serif,system-ui,sans-serif;
+  --font-b:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --r1:2px; --r2:3px; --r3:1px; --track-d:.055em; --wt-d:600;
+  --shadow-l:0 1px 2px rgba(13,23,32,.10);
+  --shadow-d:0 1px 2px rgba(0,0,0,.6);
+}
+/* ── Archive — Ochsenblut, Kohle, editoriales Deco ───────────────────────── */
+:root[data-skin="archive"]{
+  --l-bg:#f0ece7; --l-sunk:#e5e0d9; --l-surf:#faf8f5; --l-surf2:#efeae3;
+  --l-line:#cfc7bc; --l-line2:#756a61; --l-ink:#1b1715; --l-ink2:#453c37;
+  --l-ink3:#645850; --l-acc:#7c1f24; --l-accink:#faf8f5; --l-accsoft:#f2dfdf;
+  --l-ok:#2c5c33; --l-bad:#7c1f24; --l-warn:#6d4b0e; --l-focus:#1f4fd8;
+  --l-p1:#e3ddd2; --l-p2:#d8cfc0; --l-p3:#c9bda9; --l-p4:#b7a88f; --l-p5:#a09077;
+  --l-water:#b3b8b4; --l-fog:#1b1715; --l-fogedge:#756a61; --l-grid:#6a5e56;
+  --l-ring:#7c1f24; --l-us:#2c5c33; --l-them:#7c1f24; --l-anchor:#54483f;
+  --d-bg:#14100f; --d-sunk:#0d0a09; --d-surf:#1e1917; --d-surf2:#262020;
+  --d-line:#443a37; --d-line2:#6a5b56; --d-ink:#f2ebe4; --d-ink2:#d3c6bc;
+  --d-ink3:#a8988e; --d-acc:#d4626a; --d-accink:#1e1917; --d-accsoft:#3a2426;
+  --d-ok:#6fc07a; --d-bad:#ef7f86; --d-warn:#e2b45e; --d-focus:#86b4ff;
+  --d-p1:#221d1b; --d-p2:#2b2422; --d-p3:#362d29; --d-p4:#423631; --d-p5:#4e403a;
+  --d-water:#1c2426; --d-fog:#070505; --d-fogedge:#6a5b56; --d-grid:#7a6a63;
+  --d-ring:#d4626a; --d-us:#6fc07a; --d-them:#ef7f86; --d-anchor:#a8988e;
+  --font-d:"Bodoni MT","Didot","Playfair Display","Times New Roman",Georgia,serif;
+  --font-b:"Seravek","Optima","Segoe UI",system-ui,ui-sans-serif,sans-serif;
+  --r1:0px; --r2:0px; --r3:0px; --track-d:.08em; --wt-d:700;
+  --shadow-l:0 2px 0 rgba(27,23,21,.06);
+  --shadow-d:0 2px 0 rgba(0,0,0,.5);
+}
+/* ── Clean — kein Ornament.  Muss trotzdem beauftragt aussehen. ──────────── */
+:root[data-skin="clean"]{
+  --l-bg:#f6f7f8; --l-sunk:#eceef0; --l-surf:#ffffff; --l-surf2:#f4f6f7;
+  --l-line:#dde1e5; --l-line2:#6f7a84; --l-ink:#14181c; --l-ink2:#3c454e;
+  --l-ink3:#57626c; --l-acc:#2a4fa2; --l-accink:#ffffff; --l-accsoft:#e6ecf8;
+  --l-ok:#17663e; --l-bad:#a32020; --l-warn:#6d4b0e; --l-focus:#2a4fa2;
+  --l-p1:#e8ecee; --l-p2:#dee3e6; --l-p3:#d1d8dc; --l-p4:#c1cad0; --l-p5:#adb8c0;
+  --l-water:#bcccd6; --l-fog:#171b1f; --l-fogedge:#6f7a84; --l-grid:#6f7a84;
+  --l-ring:#2a4fa2; --l-us:#17663e; --l-them:#a32020; --l-anchor:#4a545d;
+  --d-bg:#0f1215; --d-sunk:#0a0c0e; --d-surf:#171b1f; --d-surf2:#1e2328;
+  --d-line:#2b3238; --d-line2:#465059; --d-ink:#eef2f5; --d-ink2:#c2cad1;
+  --d-ink3:#939ea8; --d-acc:#7fa5ff; --d-accink:#0f1215; --d-accsoft:#1b2436;
+  --d-ok:#56cc8c; --d-bad:#ff8c80; --d-warn:#efc060; --d-focus:#7fa5ff;
+  --d-p1:#171c21; --d-p2:#1d2429; --d-p3:#242c33; --d-p4:#2c353d; --d-p5:#354048;
+  --d-water:#12222c; --d-fog:#05070a; --d-fogedge:#465059; --d-grid:#4c5761;
+  --d-ring:#7fa5ff; --d-us:#56cc8c; --d-them:#ff8c80; --d-anchor:#8b98a3;
+  --font-d:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-b:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --r1:8px; --r2:12px; --r3:6px; --track-d:-.01em; --wt-d:650;
+  --shadow-l:0 1px 2px rgba(20,24,28,.06), 0 6px 18px rgba(20,24,28,.05);
+  --shadow-d:0 1px 2px rgba(0,0,0,.5);
+}
+
+/* ── Hoher Kontrast überschreibt die QUELLEN, überlebt damit jeden Skin und
+      beide Lichtmodi ohne eine einzige doppelte Zuordnung. Auch die Karte. ── */
+:root[data-contrast="high"]{
+  --l-bg:#ffffff; --l-sunk:#f2f2f2; --l-surf:#ffffff; --l-surf2:#ffffff;
+  --l-line:#000000; --l-line2:#000000; --l-ink:#000000; --l-ink2:#000000;
+  --l-ink3:#141414; --l-acc:#0000cc; --l-accink:#ffffff; --l-accsoft:#e4e4ff;
+  --l-ok:#00521c; --l-bad:#960000; --l-warn:#4d3200; --l-focus:#cc0000;
+  --l-p1:#ffffff; --l-p2:#ececec; --l-p3:#d6d6d6; --l-p4:#bdbdbd; --l-p5:#a3a3a3;
+  --l-water:#c9c9c9; --l-fog:#000000; --l-fogedge:#000000; --l-grid:#000000;
+  --l-ring:#0000cc; --l-us:#00521c; --l-them:#960000; --l-anchor:#000000;
+  --d-bg:#000000; --d-sunk:#000000; --d-surf:#000000; --d-surf2:#0a0a0a;
+  --d-line:#ffffff; --d-line2:#ffffff; --d-ink:#ffffff; --d-ink2:#ffffff;
+  --d-ink3:#ededed; --d-acc:#7fd4ff; --d-accink:#000000; --d-accsoft:#00232e;
+  --d-ok:#5cff9a; --d-bad:#ff9c8c; --d-warn:#ffd166; --d-focus:#ffd400;
+  --d-p1:#000000; --d-p2:#1a1a1a; --d-p3:#2e2e2e; --d-p4:#454545; --d-p5:#5c5c5c;
+  --d-water:#25353d; --d-fog:#000000; --d-fogedge:#ffffff; --d-grid:#ffffff;
+  --d-ring:#7fd4ff; --d-us:#5cff9a; --d-them:#ff9c8c; --d-anchor:#ffffff;
+  --ornament:0; --bw:2px; --feather:0;
+  --shadow-l:none; --shadow-d:none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2 · Die einzige Zuordnungsschicht.  Hell als Voreinstellung → Media Query →
+       Attributüberschreibungen, die die Media Query in BEIDEN Richtungen
+       schlagen.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:var(--l-bg); --sunk:var(--l-sunk); --surf:var(--l-surf); --surf2:var(--l-surf2);
+  --line:var(--l-line); --line2:var(--l-line2); --ink:var(--l-ink); --ink2:var(--l-ink2);
+  --ink3:var(--l-ink3); --acc:var(--l-acc); --accink:var(--l-accink); --accsoft:var(--l-accsoft);
+  --ok:var(--l-ok); --bad:var(--l-bad); --warn:var(--l-warn); --focus:var(--l-focus);
+  --p1:var(--l-p1); --p2:var(--l-p2); --p3:var(--l-p3); --p4:var(--l-p4); --p5:var(--l-p5);
+  --water:var(--l-water); --fog:var(--l-fog); --fogedge:var(--l-fogedge); --grid:var(--l-grid);
+  --ring:var(--l-ring); --us:var(--l-us); --them:var(--l-them); --anchor:var(--l-anchor);
+  --shadow:var(--shadow-l); --grain:rgba(0,0,0,.030);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:var(--d-bg); --sunk:var(--d-sunk); --surf:var(--d-surf); --surf2:var(--d-surf2);
+    --line:var(--d-line); --line2:var(--d-line2); --ink:var(--d-ink); --ink2:var(--d-ink2);
+    --ink3:var(--d-ink3); --acc:var(--d-acc); --accink:var(--d-accink); --accsoft:var(--d-accsoft);
+    --ok:var(--d-ok); --bad:var(--d-bad); --warn:var(--d-warn); --focus:var(--d-focus);
+    --p1:var(--d-p1); --p2:var(--d-p2); --p3:var(--d-p3); --p4:var(--d-p4); --p5:var(--d-p5);
+    --water:var(--d-water); --fog:var(--d-fog); --fogedge:var(--d-fogedge); --grid:var(--d-grid);
+    --ring:var(--d-ring); --us:var(--d-us); --them:var(--d-them); --anchor:var(--d-anchor);
+    --shadow:var(--shadow-d); --grain:rgba(255,255,255,.026);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:var(--d-bg); --sunk:var(--d-sunk); --surf:var(--d-surf); --surf2:var(--d-surf2);
+  --line:var(--d-line); --line2:var(--d-line2); --ink:var(--d-ink); --ink2:var(--d-ink2);
+  --ink3:var(--d-ink3); --acc:var(--d-acc); --accink:var(--d-accink); --accsoft:var(--d-accsoft);
+  --ok:var(--d-ok); --bad:var(--d-bad); --warn:var(--d-warn); --focus:var(--d-focus);
+  --p1:var(--d-p1); --p2:var(--d-p2); --p3:var(--d-p3); --p4:var(--d-p4); --p5:var(--d-p5);
+  --water:var(--d-water); --fog:var(--d-fog); --fogedge:var(--d-fogedge); --grid:var(--d-grid);
+  --ring:var(--d-ring); --us:var(--d-us); --them:var(--d-them); --anchor:var(--d-anchor);
+  --shadow:var(--shadow-d); --grain:rgba(255,255,255,.026);
+}
+:root[data-theme="light"]{
+  --bg:var(--l-bg); --sunk:var(--l-sunk); --surf:var(--l-surf); --surf2:var(--l-surf2);
+  --line:var(--l-line); --line2:var(--l-line2); --ink:var(--l-ink); --ink2:var(--l-ink2);
+  --ink3:var(--l-ink3); --acc:var(--l-acc); --accink:var(--l-accink); --accsoft:var(--l-accsoft);
+  --ok:var(--l-ok); --bad:var(--l-bad); --warn:var(--l-warn); --focus:var(--l-focus);
+  --p1:var(--l-p1); --p2:var(--l-p2); --p3:var(--l-p3); --p4:var(--l-p4); --p5:var(--l-p5);
+  --water:var(--l-water); --fog:var(--l-fog); --fogedge:var(--l-fogedge); --grid:var(--l-grid);
+  --ring:var(--l-ring); --us:var(--l-us); --them:var(--l-them); --anchor:var(--l-anchor);
+  --shadow:var(--shadow-l); --grain:rgba(0,0,0,.030);
+}
+
+/* Bewegung ist Zustandskommunikation. Beides schaltet sie ab. */
+@media (prefers-reduced-motion: reduce){
+  :root{--t-response:0s;--t-state:0s;--t-scene:0s;--feather:0}
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+:root[data-motion="reduced"]{--t-response:0s;--t-state:0s;--t-scene:0s;--feather:0}
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3 · Grundschrift, Rumpf
+   ══════════════════════════════════════════════════════════════════════════ */
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-b);
+  font-size:clamp(14px,.55vw + 12.4px,16px); line-height:1.55;
+  overflow-x:hidden;
+}
+.app{max-width:var(--maxw);margin:0 auto;padding:clamp(.5rem,1.2vw,1.05rem);
+     display:flex;flex-direction:column;gap:var(--gap)}
+.num,.tab{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mono{font-family:var(--font-m);font-size:.86em}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+    clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.skip{position:absolute;left:-9999px;top:0;z-index:99;background:var(--acc);
+      color:var(--accink);padding:.5rem .9rem;border-radius:var(--r1)}
+.skip:focus{left:.5rem;top:.5rem}
+
+:where(a,button,select,input,summary,[tabindex]):focus-visible{
+  outline:3px solid var(--focus); outline-offset:2px; border-radius:var(--r3);
+}
+canvas:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+.panel{
+  background:var(--surf); border:var(--bw) solid var(--line);
+  border-radius:var(--r2); box-shadow:var(--shadow); position:relative;
+}
+.panel::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  opacity:calc(var(--ornament) * .55);
+  background:
+    linear-gradient(180deg,var(--grain),transparent 42%),
+    radial-gradient(120% 90% at 50% -20%, var(--grain), transparent 55%);
+}
+.pad{padding:clamp(.55rem,.9vw,.9rem)}
+
+h1,h2,h3,h4{font-family:var(--font-d);letter-spacing:var(--track-d);font-weight:var(--wt-d);
+            line-height:1.18;text-wrap:balance}
+h1{font-size:clamp(1.18rem,1.9vw,1.62rem)}
+h2{font-size:clamp(.98rem,1.25vw,1.16rem)}
+h3{font-size:.86rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2)}
+h4{font-size:.79rem;letter-spacing:.06em;color:var(--ink2)}
+p{max-width:74ch}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4 · Kopf + Achsenleiste
+   ══════════════════════════════════════════════════════════════════════════ */
+.top{display:flex;flex-wrap:wrap;gap:var(--gap);align-items:flex-start;
+     justify-content:space-between;padding:clamp(.5rem,.9vw,.85rem)}
+.brandline{display:flex;flex-direction:column;gap:.12rem;min-width:min(100%,17rem)}
+.brand{font-family:var(--font-d);font-weight:var(--wt-d);letter-spacing:var(--track-d);
+       font-size:1.02rem}
+.brand em{font-style:normal;color:var(--ink3);font-weight:400}
+.subtle{color:var(--ink3);font-size:.74rem;line-height:1.35}
+.axes{display:flex;flex-wrap:wrap;gap:.4rem;flex:1 1 30rem;justify-content:flex-end}
+.axis{display:flex;align-items:stretch;gap:0;border:var(--bw) solid var(--line);
+      border-radius:var(--r2);background:var(--surf2);overflow:hidden}
+.axis__lab{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);
+           padding:.32rem .45rem;display:flex;align-items:center;background:var(--sunk);
+           border-right:var(--bw) solid var(--line);white-space:nowrap}
+.seg{display:flex}
+.seg button{
+  appearance:none;background:transparent;border:0;border-left:var(--bw) solid transparent;
+  padding:.32rem .5rem;font-size:.73rem;color:var(--ink2);cursor:pointer;white-space:nowrap;
+  transition:background var(--t-response) var(--ease),color var(--t-response) var(--ease);
+}
+.seg button + button{border-left-color:var(--line)}
+.seg button:hover{background:var(--accsoft);color:var(--ink)}
+.seg button[aria-pressed="true"],.seg button[aria-current="true"]{
+  background:var(--acc);color:var(--accink);font-weight:600
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5 · Schale: Rail · Bühne · Linse
+   ══════════════════════════════════════════════════════════════════════════ */
+.shell{display:grid;grid-template-columns:auto minmax(0,1fr) 340px;gap:var(--gap);align-items:start}
+@media (max-width:1300px){
+  .shell{grid-template-columns:auto minmax(0,1fr)}
+  .lens{grid-column:1 / -1}
+}
+@media (max-width:840px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .rail{grid-column:1 / -1}
+  .rail ul{flex-direction:row;overflow-x:auto}
+}
+.rail{padding:.4rem;position:sticky;top:.4rem}
+.rail ul{display:flex;flex-direction:column;gap:.15rem}
+.rail button{
+  appearance:none;background:transparent;border:0;border-radius:var(--r1);
+  display:flex;align-items:center;gap:.5rem;padding:.42rem .5rem;width:100%;
+  cursor:pointer;color:var(--ink2);font-size:.76rem;white-space:nowrap;
+  transition:background var(--t-response) var(--ease);
+}
+.rail button:hover{background:var(--accsoft)}
+.rail button[aria-current="page"]{background:var(--acc);color:var(--accink);font-weight:600}
+.rail .gl{width:1.15rem;text-align:center;font-size:.95rem;line-height:1}
+
+/* ── Bühne ── */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 268px;gap:var(--gap);align-items:start}
+@media (max-width:1120px){.stage{grid-template-columns:minmax(0,1fr)}}
+.tisch{padding:clamp(.5rem,.9vw,.85rem);display:flex;flex-direction:column;gap:.55rem;min-width:0}
+.tisch__head{display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline;justify-content:space-between}
+.kicker{font-size:.63rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.tools{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+
+/* Kartenrahmen */
+.plate{
+  position:relative;border:var(--bw) solid var(--line2);border-radius:var(--r1);
+  background:var(--sunk);overflow:hidden;
+}
+.plate canvas{width:100%;height:auto;display:block;touch-action:none;cursor:crosshair}
+.plate__ov{
+  position:absolute;inset:auto .4rem .4rem .4rem;display:flex;flex-wrap:wrap;gap:.3rem;
+  align-items:flex-end;justify-content:space-between;pointer-events:none;
+}
+.chipline{display:flex;flex-wrap:wrap;gap:.28rem}
+.chip{
+  font-size:.63rem;letter-spacing:.03em;padding:.14rem .38rem;border-radius:var(--r3);
+  border:var(--bw) solid var(--line2);background:var(--surf);color:var(--ink2);
+  font-variant-numeric:tabular-nums;
+}
+.chip--acc{border-color:var(--acc);color:var(--acc)}
+.legend{display:flex;flex-wrap:wrap;gap:.5rem;font-size:.68rem;color:var(--ink3)}
+.legend b{color:var(--ink2);font-weight:600}
+.lg{display:inline-flex;align-items:center;gap:.28rem}
+.lg svg{flex:none}
+
+/* Messstreifen */
+.meterrow{display:flex;flex-wrap:wrap;gap:.32rem}
+.meter{
+  display:flex;flex-direction:column;gap:.02rem;border:var(--bw) solid var(--line);
+  border-radius:var(--r3);padding:.24rem .45rem;background:var(--surf2);min-width:5.6rem;
+}
+.meter dt{font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);white-space:nowrap}
+.meter dd{font-size:.86rem;font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink)}
+.meter dd small{font-weight:400;color:var(--ink3);font-size:.68rem}
+
+/* ── Die Ordnung (Initiative) ── */
+.ord{padding:.5rem;display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.ord ol{display:flex;flex-direction:column;gap:.22rem}
+.ordrow{
+  display:grid;grid-template-columns:1.5rem minmax(0,1fr) auto;gap:.4rem;align-items:center;
+  width:100%;text-align:left;background:var(--surf2);border:var(--bw) solid var(--line);
+  border-radius:var(--r1);padding:.32rem .4rem;cursor:pointer;color:var(--ink);
+  transition:border-color var(--t-response) var(--ease),background var(--t-response) var(--ease);
+}
+.ordrow:hover{border-color:var(--line2)}
+.ordrow[aria-current="true"]{border-color:var(--acc);background:var(--accsoft);box-shadow:inset 3px 0 0 var(--acc)}
+.ordrow__n{font-variant-numeric:tabular-nums;font-size:.72rem;color:var(--ink3);text-align:right}
+.ordrow__nm{font-size:.78rem;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.ordrow__sub{font-size:.64rem;color:var(--ink3);display:flex;flex-wrap:wrap;gap:.28rem}
+.hp{display:flex;align-items:center;gap:.28rem;font-size:.68rem;font-variant-numeric:tabular-nums}
+.hpbar{width:2.6rem;height:.4rem;border:var(--bw) solid var(--line2);border-radius:999px;overflow:hidden;background:var(--sunk)}
+.hpbar i{display:block;height:100%;background:var(--us);transition:width var(--t-state) var(--ease)}
+.ordrow[data-side="them"] .hpbar i{background:var(--them)}
+.dot{width:.5rem;height:.5rem;border-radius:999px;flex:none;border:var(--bw) solid var(--line2)}
+.dot--us{background:var(--us)} .dot--them{background:var(--them)}
+
+/* Zustände als Form, nicht als Farbe */
+.cond{border:var(--bw) solid var(--line2);border-radius:var(--r3);padding:0 .22rem;font-size:.6rem;letter-spacing:.04em}
+.cond--pend{border-style:dashed;border-color:var(--warn);color:var(--warn);font-weight:600}
+
+/* ── Kontextlinse ── */
+.lens{display:flex;flex-direction:column;min-width:0}
+.tabs{display:flex;border-bottom:var(--bw) solid var(--line);overflow-x:auto}
+.tabs button{
+  appearance:none;background:transparent;border:0;border-bottom:2px solid transparent;
+  padding:.42rem .55rem;font-size:.72rem;color:var(--ink3);cursor:pointer;white-space:nowrap;
+}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--acc);font-weight:600}
+.lensbody{padding:clamp(.5rem,.9vw,.8rem);display:flex;flex-direction:column;gap:.55rem;min-width:0}
+
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.1rem .55rem;font-size:.74rem}
+.kv dt{color:var(--ink3);white-space:nowrap}
+.kv dd{color:var(--ink);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+
+.grund{
+  border-left:3px solid var(--acc);background:var(--surf2);padding:.42rem .55rem;
+  border-radius:0 var(--r1) var(--r1) 0;font-size:.76rem;line-height:1.45;
+}
+.grund b{font-weight:600}
+.grund .why{color:var(--ink3);font-size:.7rem;display:block;margin-top:.18rem}
+
+/* Zitatliste des Namensregisters */
+.zitate{display:flex;flex-direction:column;gap:.36rem}
+.zitat{border-top:var(--bw) solid var(--line);padding-top:.34rem;font-size:.74rem;line-height:1.45}
+.zitat q{quotes:"\201E" "\201C";color:var(--ink2)}
+.zitat .src{display:block;font-size:.64rem;color:var(--ink3);margin-top:.12rem}
+.zitat .src b{color:var(--ink2);font-weight:600}
+.zitat--feld q{font-family:var(--font-m);font-size:.72rem}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6 · Die drei Namenszustände — drei NICHT-FARBLICHE Merkmale
+        geschrieben  = Gewicht + Unterstreichung + Klickziel
+        Nennung      = gepunktete Grundlinie, KEIN Klickziel, kein Cursorwechsel
+        Schwelle     = Ring (⃝-Präfix) + Gewicht + Klickziel
+   ══════════════════════════════════════════════════════════════════════════ */
+.n{overflow-wrap:anywhere}
+.n--blau{color:var(--acc);text-decoration:underline;text-underline-offset:.16em;font-weight:600;
+         background:none;border:0;padding:0;cursor:pointer;font:inherit;font-weight:600}
+.n--nenn{
+  color:var(--ink2);border-bottom:1px dotted var(--line2);cursor:default;
+  background:none;border-top:0;border-left:0;border-right:0;padding:0;font:inherit;
+}
+.n--nenn:hover{border-bottom-style:dashed}
+.n--schwelle{
+  color:var(--ink);font-weight:700;background:none;border:0;padding:0 .1rem;font:inherit;font-weight:700;
+  cursor:pointer;display:inline-flex;align-items:baseline;gap:.22rem;
+}
+.n--schwelle::before{
+  content:"";width:.62em;height:.62em;border:1.5px solid var(--ring);border-radius:999px;
+  border-top-color:transparent;display:inline-block;transform:translateY(.02em) rotate(-25deg);flex:none;
+}
+.n--verworfen{color:var(--ink3);text-decoration:line-through;text-decoration-thickness:1px}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7 · Die Namensprüfung — Tabelle + Regelpaket
+   ══════════════════════════════════════════════════════════════════════════ */
+.pruef{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:var(--gap);align-items:start}
+@media (max-width:1100px){.pruef{grid-template-columns:minmax(0,1fr)}}
+.sect__head{display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline;justify-content:space-between;
+            padding:clamp(.5rem,.9vw,.8rem);border-bottom:var(--bw) solid var(--line)}
+.kaskade{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;font-size:.7rem;color:var(--ink3);
+         padding:.45rem clamp(.5rem,.9vw,.8rem);border-bottom:var(--bw) solid var(--line);
+         background:var(--surf2);overflow-x:auto}
+.kstep{display:flex;flex-direction:column;line-height:1.2;white-space:nowrap}
+.kstep b{font-size:.9rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.karr{color:var(--line2)}
+
+.tblwrap{overflow-x:auto;max-height:26rem;overflow-y:auto}
+table.led{width:100%;font-size:.73rem;min-width:31rem}
+table.led th{
+  position:sticky;top:0;z-index:1;background:var(--surf2);text-align:left;
+  font-size:.61rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);
+  padding:.36rem .45rem;border-bottom:var(--bw) solid var(--line2);white-space:nowrap;
+}
+table.led td{padding:.3rem .45rem;border-bottom:var(--bw) solid var(--line);vertical-align:top}
+table.led tr:hover td{background:var(--surf2)}
+table.led tr[data-sel="1"] td{background:var(--accsoft)}
+td.rechts,th.rechts{text-align:right;font-variant-numeric:tabular-nums}
+.namebtn{background:none;border:0;padding:0;font:inherit;text-align:left;cursor:pointer;color:inherit}
+.verd{display:inline-flex;align-items:center;gap:.26rem;font-size:.66rem;font-weight:600;white-space:nowrap}
+.verd::before{content:"";width:.55em;height:.55em;flex:none;border:1.5px solid currentColor}
+.verd--s{color:var(--ring)} .verd--s::before{border-radius:999px;border-top-color:transparent}
+.verd--n{color:var(--ink3)} .verd--n::before{border:0;border-bottom:1px dotted currentColor;height:0;width:.7em;transform:translateY(.3em)}
+.verd--v{color:var(--bad)} .verd--v::before{transform:rotate(45deg);border-radius:0}
+.mini{appearance:none;border:var(--bw) solid var(--line2);background:var(--surf);color:var(--ink2);
+      border-radius:var(--r3);font-size:.64rem;padding:.1rem .32rem;cursor:pointer;white-space:nowrap}
+.mini:hover{background:var(--accsoft);color:var(--ink)}
+.mini[disabled]{opacity:.45;cursor:not-allowed}
+
+/* Regelpaket */
+.regel{display:flex;flex-direction:column;gap:.4rem;padding:clamp(.5rem,.9vw,.8rem)}
+.regelzeile{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.45rem;align-items:center;
+            border-bottom:var(--bw) solid var(--line);padding-bottom:.3rem}
+.regelzeile code{font-family:var(--font-m);font-size:.73rem;overflow-wrap:anywhere}
+.regelzeile small{display:block;color:var(--ink3);font-size:.63rem;line-height:1.3}
+.pill{display:flex;border:var(--bw) solid var(--line);border-radius:var(--r3);overflow:hidden}
+.pill button{appearance:none;background:transparent;border:0;padding:.16rem .34rem;font-size:.63rem;
+             cursor:pointer;color:var(--ink3);white-space:nowrap}
+.pill button + button{border-left:var(--bw) solid var(--line)}
+.pill button[aria-pressed="true"]{background:var(--acc);color:var(--accink);font-weight:600}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8 · Prüfbericht
+   ══════════════════════════════════════════════════════════════════════════ */
+.report__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(15.5rem,1fr));gap:var(--gap);
+              padding:clamp(.5rem,.9vw,.8rem)}
+.rbox{border:var(--bw) solid var(--line);border-radius:var(--r1);background:var(--surf2);
+      padding:.5rem .6rem;display:flex;flex-direction:column;gap:.34rem;min-width:0}
+.badge{display:inline-block;font-size:.6rem;font-weight:700;letter-spacing:.05em;padding:.02rem .3rem;
+       border-radius:var(--r3);border:var(--bw) solid currentColor}
+.b-ok{color:var(--ok)} .b-bad{color:var(--bad)} .b-warn{color:var(--warn)} .b-na{color:var(--ink3)}
+.log{display:flex;flex-direction:column;gap:.16rem;max-height:11rem;overflow-y:auto;font-size:.68rem}
+.log li{display:grid;grid-template-columns:3.3rem minmax(0,1fr);gap:.4rem;align-items:baseline;
+        border-bottom:var(--bw) solid var(--line);padding-bottom:.14rem}
+.log .v{font-weight:700;font-size:.6rem;letter-spacing:.05em}
+.log .t{color:var(--ink3);overflow-wrap:anywhere}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9 · Regal / Shelf
+   ══════════════════════════════════════════════════════════════════════════ */
+.shelf{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;justify-content:space-between;
+       padding:.45rem clamp(.5rem,.9vw,.8rem)}
+.shelf__grp{display:flex;flex-wrap:wrap;gap:.34rem;align-items:center}
+.act{
+  appearance:none;border:var(--bw) solid var(--line2);background:var(--surf2);color:var(--ink);
+  border-radius:var(--r1);padding:.3rem .6rem;font-size:.74rem;cursor:pointer;white-space:nowrap;
+  transition:background var(--t-response) var(--ease),transform var(--t-response) var(--ease);
+}
+.act:hover{background:var(--accsoft)}
+.act:active{transform:translateY(1px)}
+.act--pri{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:600}
+.act[disabled]{opacity:.45;cursor:not-allowed}
+
+/* Kunstbahn + Ersatz */
+.kitband{position:relative;height:2.6rem;border:var(--bw) solid var(--line);border-radius:var(--r1);
+         overflow:hidden;background:var(--surf2);display:flex;align-items:center;justify-content:center}
+.kitband img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%}
+.kitband__fb{color:var(--line2);opacity:calc(var(--ornament) * 1)}
+.kitband__note{position:relative;font-size:.62rem;color:var(--ink3);background:var(--surf);
+               padding:.08rem .34rem;border-radius:var(--r3);border:var(--bw) solid var(--line)}
+.kitband[data-state="img"] .kitband__fb{display:none}
+
+.foot{color:var(--ink3);font-size:.71rem;line-height:1.5;display:flex;flex-direction:column;gap:.45rem;
+      padding:clamp(.5rem,.9vw,.8rem) 0}
+.foot b{color:var(--ink2)}
+.foot p{max-width:88ch}
+
+.note{font-size:.68rem;color:var(--ink3);line-height:1.4}
+.mt{margin-top:.3rem}
+.warnbar{border:var(--bw) dashed var(--warn);color:var(--warn);border-radius:var(--r1);
+         padding:.3rem .5rem;font-size:.7rem}
+.okbar{border:var(--bw) solid var(--ok);color:var(--ok);border-radius:var(--r1);
+       padding:.3rem .5rem;font-size:.7rem}
+</style>
+
+<a class="skip" href="#tisch">Zum Schwellentisch springen</a>
+<a class="skip" href="#bericht">Zum Prüfbericht springen</a>
+
+<div class="app" id="app">
+
+  <!-- ══════════════ Kampagnenkontext + Achsen ══════════════ -->
+  <header class="top panel" id="kopf">
+    <div class="brandline">
+      <span class="brand">Chronicle <em>· der Schwellentisch</em></span>
+      <span class="subtle" id="kopfsub"></span>
+    </div>
+    <div class="axes" id="axes" role="group" aria-label="Prüfachsen"></div>
+  </header>
+
+  <main class="shell" id="shell">
+
+    <!-- ── Modulschiene ── -->
+    <nav class="rail panel" aria-label="Bereiche" id="rail"></nav>
+
+    <!-- ── Primärbühne: die Leinwand ── -->
+    <div class="stage">
+
+      <section class="tisch panel" id="tisch" aria-labelledby="tisch-h">
+        <div class="tisch__head">
+          <div>
+            <span class="kicker" id="tisch-kicker"></span>
+            <h1 id="tisch-h"></h1>
+            <p class="subtle" id="tisch-sub"></p>
+          </div>
+          <div class="chipline" id="kartechips"></div>
+        </div>
+
+        <div class="kitband" id="kitband" data-state="fb">
+          <img id="kitimg" alt="" aria-hidden="true" loading="lazy">
+          <div class="kitband__fb" aria-hidden="true">
+            <svg width="150" height="26" viewBox="0 0 150 26" role="img" aria-label="">
+              <g fill="none" stroke="currentColor" stroke-width="1.4" opacity=".7">
+                <path d="M2 24 L2 8 L12 2 L22 8 L22 24"/>
+                <path d="M38 24 L38 2 L52 2 L52 13 L38 13"/>
+                <path d="M66 24 L66 2 L80 2 M66 13 L76 13"/>
+                <path d="M94 2 L94 24 M94 2 L108 13 L94 24"/>
+                <circle cx="128" cy="13" r="9" stroke-dasharray="38 12"/>
+                <path d="M146 2 L146 24"/>
+              </g>
+            </svg>
+          </div>
+          <span class="kitband__note" id="kitnote"></span>
+        </div>
+
+        <div class="tools" id="tools"></div>
+
+        <figure class="plate" id="plate">
+          <canvas id="karte" width="1000" height="640" tabindex="0"
+                  role="img" aria-label="Taktische Leinwand"
+                  aria-describedby="karte-alt"></canvas>
+          <div class="plate__ov">
+            <div class="chipline" id="ovleft"></div>
+            <div class="chipline" id="ovright"></div>
+          </div>
+        </figure>
+        <p id="karte-alt" class="vh" aria-live="polite"></p>
+        <p class="vh" id="ansage" aria-live="assertive"></p>
+
+        <div class="legend" id="legende"></div>
+
+        <dl class="meterrow" id="messwerte"></dl>
+
+        <p class="note" id="lizenzzeile"></p>
+      </section>
+
+      <!-- ── Die Ordnung: der Kanon der Wahrheit, nicht die Leinwand ── -->
+      <section class="ord panel" aria-labelledby="ord-h">
+        <div class="tisch__head">
+          <div>
+            <span class="kicker" id="ord-kicker"></span>
+            <h2 id="ord-h"></h2>
+          </div>
+        </div>
+        <p class="note" id="ord-hint"></p>
+        <ol id="ordliste"></ol>
+        <div class="shelf__grp" id="ordacts"></div>
+        <h3 id="ring-h" class="mt"></h3>
+        <ol id="ringliste" class="zitate"></ol>
+      </section>
+    </div>
+
+    <!-- ── Kontextlinse ── -->
+    <aside class="lens panel" aria-label="Kontextlinse">
+      <div class="tabs" role="tablist" id="tabs" aria-label="Linsenansicht"></div>
+      <div class="lensbody" id="lensbody" role="tabpanel" tabindex="0"></div>
+    </aside>
+  </main>
+
+  <!-- ══════════════ Die Namensprüfung ══════════════ -->
+  <div class="pruef" id="pruefzone">
+    <section class="panel" aria-labelledby="pr-h" id="pruefpanel">
+      <div class="sect__head">
+        <div>
+          <span class="kicker" id="pr-kicker"></span>
+          <h2 id="pr-h"></h2>
+        </div>
+        <span class="subtle" id="pr-sub"></span>
+      </div>
+      <div class="kaskade" id="kaskade"></div>
+      <div class="tblwrap">
+        <table class="led" id="ledger">
+          <caption class="vh" id="ledger-cap"></caption>
+          <thead id="ledgerhead"></thead>
+          <tbody id="ledgerbody"></tbody>
+        </table>
+      </div>
+      <p class="note pad" id="pr-fuss"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="rg-h" id="regelpanel">
+      <div class="sect__head">
+        <div>
+          <span class="kicker" id="rg-kicker"></span>
+          <h2 id="rg-h"></h2>
+        </div>
+      </div>
+      <div class="regel" id="regelliste"></div>
+    </section>
+  </div>
+
+  <!-- ══════════════ Prüfbericht ══════════════ -->
+  <section class="panel" id="bericht" aria-labelledby="ber-h">
+    <div class="sect__head">
+      <div>
+        <span class="kicker" id="ber-kicker"></span>
+        <h2 id="ber-h"></h2>
+      </div>
+      <span class="subtle" id="ber-sub"></span>
+    </div>
+    <div class="report__grid" id="repgrid"></div>
+  </section>
+
+  <!-- ══════════════ Regal ══════════════ -->
+  <footer class="shelf panel" id="shelf"></footer>
+
+  <div class="foot" id="fuss"></div>
+</div>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════════════════
+   DER SCHWELLENTISCH UNTER SIEBEN ACHSEN
+   Vision-Spike · Produktkandidat B „Die Schwelle" · Runde 5 · Sitzplatz 2
+   Angriffspunkt: der Universalitätsbeweis — dieselben Komponenten, dieselbe
+   Leinwand, drei Inhaltspakete, vier Skins, vier Rollen, zwei Lichtmodi,
+   hoher Kontrast, reduzierte Bewegung, eine lange Übersetzung, fehlende Kunst.
+
+   Der Inhalt der Fantasy-Spalte ist ECHT: Eron-Wiki (eron.fandom.com/de),
+   Harvest 2026-07-27, CC BY-SA 3.0.  Namen, Feldbeschriftungen, Nachfrage-
+   zahlen und Prosazitate stammen unverändert aus dem Korpus.  Science-Fiction
+   und Moderne Mystery sind KONSTRUIERT und in der Seite als solche markiert.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── kleine Helfer ────────────────────────────────────────────────────────── */
+function $(s,r){return (r||document).querySelector(s);}
+function el(t,c,x){var n=document.createElement(t); if(c)n.className=c;
+  if(x!==undefined&&x!==null)n.textContent=x; return n;}
+function fmix32(h){h^=h>>>16;h=Math.imul(h,0x85ebca6b)>>>0;h^=h>>>13;
+  h=Math.imul(h,0xc2b2ae35)>>>0;h^=h>>>16;return h>>>0;}
+function h32(s){var h=0x811c9dc5>>>0;for(var i=0;i<s.length;i++){
+  h=(h^s.charCodeAt(i))>>>0;h=Math.imul(h,0x01000193)>>>0;}return fmix32(h);}
+function hex8(n){return ("0000000"+(n>>>0).toString(16)).slice(-8);}
+function utf8len(s){return unescape(encodeURIComponent(s)).length;}
+function fix(n,k){return Number(n).toFixed(k===undefined?1:k);}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1 · Sprache.  Zwei Pakete: Deutsch und Finnisch.  Finnisch ist NICHT
+       dekorativ — es ist der Test „lange übersetzte Beschriftung": die
+       Komposita sind bis zu 2,4× so lang wie das deutsche Original.
+   ══════════════════════════════════════════════════════════════════════════ */
+var I18N = {
+de:{
+  ach_inhalt:"Inhalt", ach_skin:"Skin", ach_rolle:"Rolle", ach_licht:"Licht",
+  ach_zugang:"Zugang", ach_kunst:"Kunst", ach_sprache:"Sprache",
+  r_leitung:"Leitung", r_a:"Spieler A", r_b:"Spieler B", r_beob:"Beobachter",
+  l_auto:"Auto", l_hell:"Hell", l_dunkel:"Dunkel",
+  z_normal:"Standard", z_kontrast:"Hoher Kontrast", z_ruhig:"Ruhige Bewegung",
+  k_an:"An", k_aus:"Aus",
+  m_session:"Sitzung", m_story:"Kanon", m_cast:"Zeugen", m_regal:"Regal",
+  m_tisch:"Tisch", m_formular:"Formular",
+  t_raster:"Raster", t_quadrat:"Quadrat", t_hex:"Hex", t_ohne:"Ohne",
+  t_band:"Höhenband", t_zoom:"Vergrößerung", t_text:"Textkarte",
+  t_freigabe:"Region freigeben", t_zurueck:"Freigabe zurücknehmen",
+  t_last:"Lasttest · 120 Bilder", t_zwilling:"Zwillingsbeweis ausführen",
+  ord_h:"Die Ordnung", ord_k:"Initiative · der Kanon der Wahrheit",
+  ord_hint:"Pfeiltasten bewegen die ausgewählte Figur. Die Leinwand ist die Ansicht, diese Liste ist die Wahrheit.",
+  ring_h:"Schwellen in Reichweite",
+  lens_grund:"Grund", lens_nennung:"Namensregister", lens_raum:"Raum", lens_zwilling:"Zwilling",
+  pr_h:"Die Namensprüfung", pr_k:"Vier Stufen · deterministisch · ohne Modell",
+  rg_h:"Das Regelpaket", rg_k:"Deklarativ, versioniert, pro Welt — niemals Code",
+  ber_h:"Prüfbericht", ber_k:"Was diese Seite über sich selbst nachweist",
+  ber_sub:"Jede Zahl wird im Browser gemessen. Keine ist eingetippt.",
+  v_schwelle:"Schwelle", v_nennung:"Nennung", v_verworfen:"verworfen",
+  th_name:"Name", th_nach:"Nachfrage", th_beleg:"Belegstelle", th_urteil:"Urteil", th_akt:"",
+  b_doch:"doch →", b_zurueckstufen:"zurückstufen",
+  s_ortsfeld:"Ortsfeld", s_person:"Personenfeld", s_attribut:"Attributfeld",
+  s_mehrdeutig:"mehrdeutig", s_marker:"Kartenmarker",
+  a_wuerfeln:"Würfeln", a_pruefen:"Prüfen", a_undo:"Zurücknehmen",
+  hp:"TP", band:"Band", entfernung:"Entfernung", tage:"Tage",
+  keineGeom:"kein Anker", nurListe:"nur in der Liste"
+},
+fi:{
+  ach_inhalt:"Sisältöpaketti", ach_skin:"Ulkoasuteema", ach_rolle:"Käyttäjärooli",
+  ach_licht:"Valaistustila", ach_zugang:"Saavutettavuusasetukset",
+  ach_kunst:"Kuvitusaineisto", ach_sprache:"Käyttöliittymäkieli",
+  r_leitung:"Pelinjohtaja", r_a:"Pelaaja A", r_b:"Pelaaja B", r_beob:"Tarkkailija",
+  l_auto:"Järjestelmä", l_hell:"Vaalea", l_dunkel:"Tumma",
+  z_normal:"Perusasetukset", z_kontrast:"Korkea kontrasti", z_ruhig:"Vähennetty liike",
+  k_an:"Käytössä", k_aus:"Poissa",
+  m_session:"Peli-ilta", m_story:"Kaanon", m_cast:"Todistajat", m_regal:"Kirjahylly",
+  m_tisch:"Pelipöytä", m_formular:"Sääntöpaja",
+  t_raster:"Ruudukkotyyppi", t_quadrat:"Neliöruudukko", t_hex:"Kuusikulmioruudukko",
+  t_ohne:"Ei ruudukkoa",
+  t_band:"Korkeusvyöhyke", t_zoom:"Suurennuskerroin", t_text:"Tekstimuotoinen kartta",
+  t_freigabe:"Paljasta alue", t_zurueck:"Peru paljastus",
+  t_last:"Kuormitustesti · 120 kuvaa", t_zwilling:"Suorita kaksoistodistus",
+  ord_h:"Toimintajärjestys", ord_k:"Aloitejärjestys · totuuden kaanon",
+  ord_hint:"Nuolinäppäimet siirtävät valittua hahmoa. Piirtoalusta on näkymä, tämä luettelo on totuus.",
+  ring_h:"Kynnykset kantomatkalla",
+  lens_grund:"Perustelu", lens_nennung:"Nimirekisteri", lens_raum:"Tilahierarkia",
+  lens_zwilling:"Kaksoistodistus",
+  pr_h:"Nimientarkastusmenettely", pr_k:"Neljä vaihetta · deterministinen · ilman mallia",
+  rg_h:"Sääntöpaketti", rg_k:"Julistava, versioitu, maailmakohtainen — ei koskaan koodia",
+  ber_h:"Tarkastusraportti", ber_k:"Mitä tämä sivu todistaa itsestään",
+  ber_sub:"Jokainen luku mitataan selaimessa. Yhtäkään ei ole kirjoitettu käsin.",
+  v_schwelle:"Kynnys", v_nennung:"Maininta", v_verworfen:"hylätty",
+  th_name:"Nimi", th_nach:"Kysyntä", th_beleg:"Todistuskohta", th_urteil:"Tuomio", th_akt:"",
+  b_doch:"kuitenkin →", b_zurueckstufen:"alenna takaisin",
+  s_ortsfeld:"Paikkakenttä", s_person:"Henkilökenttä", s_attribut:"Ominaisuuskenttä",
+  s_mehrdeutig:"monitulkintainen", s_marker:"Karttamerkintä",
+  a_wuerfeln:"Heitä noppaa", a_pruefen:"Tarkasta", a_undo:"Peru toiminto",
+  hp:"OP", band:"Vyöhyke", entfernung:"Etäisyys", tage:"päivää",
+  keineGeom:"ei ankkuria", nurListe:"vain luettelossa"
+}};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2 · Die drei Inhaltspakete.
+       Absichtlich STRUKTURISOMORPH gebaut: je 3 Höhenbänder, 6 Regionen,
+       5 Figuren, 11 Schwellen, 23 Prüfzeilen, 4 Leser.  Ohne diese Gleichheit
+       wäre der Strukturabdruck nicht vergleichbar und der Test wertlos.
+       Was sich unterscheidet, sind ausschließlich WERTE — kein Bauteil.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Kurzform: F = Feldbeleg [Feldbezeichnung, Artikel, Wert]  ·  P = Prosabeleg */
+function F(l,a,v){return {art:"feld", label:l, artikel:a, wert:v};}
+function P(a,t){return {art:"prosa", artikel:a, text:t};}
+
+var WELTEN = {};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ERON — ECHT.  Quelle: eron.fandom.com/de, Harvest 2026-07-27, CC BY-SA 3.0
+   ───────────────────────────────────────────────────────────────────────── */
+WELTEN.eron = {
+  id:"eron", name:"Eron", genre:"Hochfantasie", echt:true, skin:"relic",
+  quelle:"Eron Wiki · eron.fandom.com/de · Harvest 2026-07-27 · CC BY-SA 3.0",
+  herkunft:"echt · 74 Artikel · 1 253 rote Kanten · 689 Namen",
+  korpus:{artikel:74, passagen:1075, roteKanten:1253, namen:689, blau:556,
+          kollapsZiele:22, kollapsReferenten:9, notationZiele:4, notationKanten:28},
+  kampagne:"Das Kind und die Flüsterer", sitzung:15, uhrzeit:"21:47",
+  karte:{
+    id:"karte-andaria", name:"Karte:Andaria",
+    bounds:[[0,0],[8192,8192]], origin:"bottom-left", order:"xy",
+    einheit:"E", reise:440, reiseWort:"Tage Ritt", plate:"gelaende", seed:9137,
+    wasserhoehe:.34, standort:{name:"Bjoldiri", x:2040, y:4560},
+    baender:[
+      {id:"b_tief", name:"Stollen", von:-400, bis:0, kurz:"−1"},
+      {id:"b_eben", name:"Ebene",   von:0,    bis:600, kurz:"0"},
+      {id:"b_grat", name:"Grat",    von:600,  bis:1800, kurz:"+1"}
+    ],
+    regionen:[
+      {id:"r_horn",  name:"Kleines Horn",  band:"b_eben", poly:[[1560,4020],[2620,3900],[2900,4620],[2380,5180],[1520,4900]]},
+      {id:"r_pass",  name:"Die Passage",   band:"b_tief", poly:[[2380,5180],[2900,4620],[3460,5040],[3180,5760],[2500,5720]]},
+      {id:"r_nord",  name:"Nordtor",       band:"b_eben", poly:[[2500,5720],[3180,5760],[3420,6520],[2660,6740],[2260,6180]]},
+      {id:"r_wald",  name:"Der Bruchwald", band:"b_eben", poly:[[1120,5060],[1560,4900],[1960,5580],[1720,6260],[1000,6020]]},
+      {id:"r_ufer",  name:"Das Westufer",  band:"b_eben", poly:[[760,5140],[1120,5060],[1000,6020],[560,5860]]},
+      {id:"r_grat",  name:"Der Graue Felsen", band:"b_grat", poly:[[3180,5760],[3460,5040],[4180,5200],[4260,5980],[3420,6520]]}
+    ]
+  },
+  /* Die elf Schwellen.  Index 0 = das Zwillings-Differenzial (Punkt),
+     Index 1 = Umriss, Index 2 = ohne Anker. */
+  schwellen:[
+    {id:"s_blattheim", name:"Blattheim", nachfrage:14, geo:"punkt", x:1185.4, y:5518.0,
+     koord:"echt", band:"b_eben", region:"r_wald",
+     grund:"Ortsfeld »sitz« (Hochelfenrat) · Ortsfeld »regierungssitz« (Kaiserreich) · Marker auf Karte:Andaria",
+     regel:"eron/ortsfeld#sitz"},
+    {id:"s_nordmine", name:"Nördliche Minenreiche", nachfrage:16, geo:"umriss",
+     poly:[[2260,6180],[3420,6520],[3760,7280],[2820,7620],[2020,7100]], koord:"gesetzt",
+     band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »Heimat« und »Geburtsort« (Olav der Ehrliche)", regel:"eron/ortsfeld#heimat"},
+    {id:"s_andaria", name:"Andaria", nachfrage:15, geo:"ohne", koord:"—", band:"b_eben", region:null,
+     grund:"Ortsfeld »kontinente« (Eron (Planet)) · »ausdehnung« (Kaiserreich) — der Anker ist die Karte selbst",
+     regel:"eron/ortsfeld#kontinente"},
+    {id:"s_terabur", name:"Königreich Terabur", nachfrage:14, geo:"punkt", x:5980, y:3020,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »Heimat« (Arvex Aurelius Paradon) · 1 Schreibvariante eingerollt",
+     regel:"eron/ortsfeld#heimat"},
+    {id:"s_tal", name:"Tal · Nord Tal", nachfrage:13, geo:"punkt", x:2810, y:6640,
+     koord:"gesetzt", band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »Geburtsort« (Bodin: „Tal, Minenreiche\") · zwei Schreibungen, ein Ort",
+     regel:"eron/ortsfeld#geburtsort"},
+    {id:"s_remus", name:"Remus Paradon II.", nachfrage:13, geo:"punkt", x:5600, y:2700,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Personenfeld »Verwandte« (Arvex) · »besondere_mitglieder« (Haus Paradon)",
+     regel:"eron/personenfeld#verwandte"},
+    {id:"s_demmaros", name:"Geeintes Elfenreich Demmaros", nachfrage:12, geo:"punkt", x:1450, y:2300,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Marker auf Karte:Andaria · vier Schreibungen zu einem Referenten eingerollt",
+     regel:"eron/marker"},
+    {id:"s_baumgard", name:"Baumgard", nachfrage:11, geo:"punkt", x:3380, y:5960,
+     koord:"gesetzt", band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »sitz« (Hochelfenrat) · »regierungssitz« (Kaiserreich)",
+     regel:"eron/ortsfeld#sitz"},
+    {id:"s_schwarz", name:"Schwarzweide", nachfrage:9, geo:"punkt", x:4260, y:4740,
+     koord:"gesetzt", band:"b_eben", region:"r_grat",
+     grund:"Ortsfeld »regierungssitz« (Kaiserreich)", regel:"eron/ortsfeld#regierungssitz"},
+    {id:"s_resif", name:"Resif", nachfrage:8, geo:"punkt", x:1010, y:3260,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »sitz« (Haus Paradon, Hochelfenrat) · »Geburtsort« (Valor Saron)",
+     regel:"eron/ortsfeld#sitz", widerspruch:"Hochelfenrat »sitz=Resif (Bis c.a 500 v. K)« gegen Königreich Resif »regierungssitz=Resif (Bis c.a 700 v. K.)« — 200 Jahre Abstand, im Korpus unaufgelöst."},
+    {id:"s_gluthafen", name:"Gluthafen", nachfrage:4, geo:"punkt", x:6420, y:5380,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »Heimat« und »Geburtsort« (Arvex) · »sitz« (Haus Paradon) · Marker",
+     regel:"eron/ortsfeld#heimat"}
+  ],
+  figuren:[
+    {id:"f_olav", name:"Olav der Ehrliche", kurz:"Ol", seite:"us", x:2130, y:4640, band:"b_eben",
+     hp:34, hpMax:41, zustand:[], hinweis:"Zwergen-Barde aus Nord Tal · Spielerfigur (2026 bearbeitet)"},
+    {id:"f_bodin", name:"Bodin", kurz:"Bo", seite:"us", x:2010, y:4470, band:"b_eben",
+     hp:28, hpMax:33, zustand:[], hinweis:"Zwerg, in Nord Tal geboren · Sohn des Thorbin"},
+    {id:"f_irme", name:"Irme", kurz:"Ir", seite:"us", x:1930, y:4620, band:"b_eben",
+     hp:31, hpMax:31, zustand:[], hinweis:"Zwergin aus Nord Tal · Tochter des Evur"},
+    {id:"f_baldur", name:"Baldur", kurz:"Ba", seite:"us", x:2240, y:4520, band:"b_grat",
+     hp:22, hpMax:36, zustand:["verwundet"], hinweis:"Flüsterer, in Blattheim ausgebildet · Anführer ab 867"},
+    {id:"f_thorbin", name:"Thorbin (unter Gedankenkontrolle)", kurz:"Th", seite:"them",
+     x:2600, y:4900, band:"b_eben", hp:9, hpMax:44, zustand:["gebunden","niedergang"],
+     hinweis:"Infobox »anführer«: „Thorbin (Als er selbst) (Bis 851)\" und „Thorbin (Unter Gedanken Kontrolle) (851-867)\" — zwei Zeilen, ein Name, ein Handlungsstrang"}
+  ],
+  leser:{
+    leitung:{name:"Kaya · Spielleitung", haelt:"alle", regionen:["r_horn","r_pass","r_nord","r_wald","r_ufer","r_grat"]},
+    a:{name:"Bodin", haelt:["s_blattheim","s_nordmine","s_tal","s_baumgard"], regionen:["r_horn","r_pass","r_nord"]},
+    b:{name:"Irme", haelt:["s_nordmine","s_tal","s_baumgard"], regionen:["r_horn","r_pass","r_nord"]},
+    beob:{name:"Beobachter (kuratiert)", haelt:["s_tal","s_baumgard"], regionen:["r_horn","r_pass"]}
+  },
+  zwilling:{a:"a", b:"b", differenz:"s_blattheim", anzahlPassagen:4,
+    erklaerung:"Bodin und Irme sind beide Zwerge aus Nord Tal. Ihre gehaltenen Hälften sind identisch bis auf die vier Passagen, die Blattheim nennen (Bodin hält sie über Thorbin)."},
+  raum:[
+    ["Eron (Planet)",0],["Andaria",1],["Nördliche Minenreiche",2],["Nord Tal · Tal",3],
+    ["Südliche Minenreiche",2],["Kleingebirge",2],["Kleines Horn",3],["Bjoldiri",4],
+    ["Die Stollen unter Bjoldiri",4]
+  ],
+  raumHinweis:"„Die Stollen unter Bjoldiri\" ist ein GESCHWISTER von Bjoldiri auf derselben Ebene, nicht sein Kind — Höhe ist ein Skalarband (hoehe_von/hoehe_bis), keine Baumkante.",
+  paket:{
+    id:"eron", revision:"1.0", schwellenwert:4,
+    notation:"^[NnVv]\\.\\s?[Kk]\\.?$",
+    felder:[
+      {l:"sitz", k:"ortsfeld", ev:"9 rote Ziele · Haus Paradon, Hochelfenrat, Bruderschaft"},
+      {l:"regierungssitz", k:"ortsfeld", ev:"3 rote Ziele · Kaiserreich"},
+      {l:"Heimat", k:"ortsfeld", ev:"5 rote Ziele · Arvex, Olav"},
+      {l:"Geburtsort", k:"ortsfeld", ev:"5 rote Ziele · Arvex, Olav, Valor Saron, Bodin"},
+      {l:"kontinente", k:"ortsfeld", ev:"4 rote Ziele · Eron (Planet)"},
+      {l:"ausdehnung", k:"ortsfeld", ev:"2 rote Ziele · Kaiserreich"},
+      {l:"Region", k:"ortsfeld", ev:"1 rotes Ziel · Bjoldiri"},
+      {l:"Verwandte", k:"personenfeld", ev:"15 rote Ziele · Arvex Aurelius Paradon"},
+      {l:"besondere_mitglieder", k:"personenfeld", ev:"10 rote Ziele · Haus Paradon"},
+      {l:"anführer", k:"mehrdeutig", ev:"enthält auch »V. K.« und »Hochkönig« — Datum und Amt im Personenfeld"},
+      {l:"gründer", k:"mehrdeutig", ev:"enthält auch »Der Höchstelf« und »Hochkönig« — Ämter"},
+      {l:"oberhaupt", k:"mehrdeutig", ev:"enthält »Hochkönig«, »Hoher Ratsmeister« — Ämter"},
+      {l:"Sprache / sprache", k:"attributfeld", ev:"»Andarisch« (18), »Sahin« (8) — man kann nicht hingehen"},
+      {l:"Titel", k:"attributfeld", ev:"»König von Terabur«, »Herzog von Akkator« — ein Amt ist kein Ort"},
+      {l:"Kaste", k:"attributfeld", ev:"»Adel in Andaria«"},
+      {l:"Volk / Rasse", k:"attributfeld", ev:"»Minenreiche«, »Hochelf«, »Urelf«"},
+      {l:"Zweck", k:"attributfeld", ev:"»Nördliche/Südliche Minenreiche« als Funktionsbeschreibung"},
+      {l:"aufgabe / folgeregierung", k:"attributfeld", ev:"»West-Kaiserreich«, »Elfenunion« — Auftrag, kein Ort"}
+    ],
+    aliase:[
+      ["Geeintes Elfenreich Demmaros",["Geeinte Elfenreich Demmaros","Geeinigtes Elfenreich Demmaros","Vereinigtes Elfenreich Demmaros"]],
+      ["Königreich Terabur",["Königgreich Terabur"]],
+      ["Tal · Nord Tal",["Tal","Nord Tal"]],
+      ["Eron",["→ blauer Artikel »Eron (Planet)«"]]
+    ]
+  },
+  /* 23 Prüfzeilen: die 20 meistgewünschten Namen, zwei aus dem langen
+     Schwanz (Gluthafen, Kleingebirge) und eine eingerollte Notationszeile. */
+  kandidaten:[
+    {n:"Andarisch", d:18, prosa:13, marker:false, urteil:"nennung",
+     felder:[F("Sprache","Arvex Aurelius Paradon","Andarisch"),
+             F("Sprache","Olav der Ehrliche","Andarisch"),
+             F("sprache","Haus Paradon","Andarisch, Sahin"),
+             F("sprache","Hochelfenrat","Andarisch, Sahin"),
+             F("sprache","Kaiserreich","Andarisch")],
+     zitate:[P("Bjoldiri","Die meistgesprochene Sprache und auch Amtssprache ist Andarisch."),
+             P("Der Große Krieg","Der Große Krieg war der größte und verlustreichste bewaffnete Konflikt des Andarischen Kontinents.")]},
+    {n:"Nördliche Minenreiche", d:16, prosa:9, marker:false, urteil:"schwelle", sid:"s_nordmine",
+     felder:[F("Heimat","Olav der Ehrliche","Nord Tal, Nördliche Minenreiche"),
+             F("Geburtsort","Olav der Ehrliche","Nord Tal, Nördliche Minenreiche"),
+             F("mitgliedsstaaten","Kaiserreich","… Nördliche Minenreiche"),
+             F("Zweck","Bjoldiri","Transitzone zwischen den Nördlichen und den Südlichen Minenreichen")],
+     zitate:[P("Adalgis Numerion","Die Nördlichen Minenreiche traten dem Kaiserreich bei, während die Südlichen Minenreiche ihre Unabhängigkeit behielten.")]},
+    {n:"Andaria", d:15, prosa:11, marker:false, urteil:"schwelle", sid:"s_andaria",
+     felder:[F("kontinente","Eron (Planet)","Andaria, Chisea, Noderia, Palekun"),
+             F("ausdehnung","Kaiserreich","Andaria, Überseekolonien")],
+     zitate:[P("Erismus","als erster Prophet auf Andarischen Boden in Erscheinung.")]},
+    {n:"Blattheim", d:14, prosa:10, marker:true, urteil:"schwelle", sid:"s_blattheim",
+     felder:[F("sitz","Hochelfenrat","Blattheim"),
+             F("regierungssitz","Kaiserreich","Baumgard · Blattheim · Schwarzweide"),
+             F("Aufträge","Olav der Ehrliche","… Blattheim …")],
+     zitate:[P("Baldur","Baldur wurde in Blattheim von Thorbin zu einem Flüsterer ausgebildet."),
+             P("Das Kind","Olav, Yal'it, Kayn und Baldur arbeiteten fortan zusammen, um das Kind nach Blattheim zu bringen."),
+             P("Das Kind","In Blattheim übergab Baldur das Kind an Thorbin und die Flüsterer."),
+             P("Das Kind","Sie trafen dort auf Baldur, einem Flüsterer, der ebenfalls ein Interesse hatte, das Kind an sich zu nehmen und in das Versteck der Flüsterer in Blattheim zu bringen.")]},
+    {n:"Königreich Terabur", d:14, prosa:8, marker:false, urteil:"schwelle", sid:"s_terabur",
+     alias:["Königgreich Terabur"],
+     felder:[F("Heimat","Arvex Aurelius Paradon","Kukiria, Königreich Terabur (756-802) · Akkator, Königreich Terabur (Ab 802)"),
+             F("mitgliedsstaaten","Kaiserreich","… Königreich Terabur"),
+             F("hervorgegangen_aus","Kaiserreich","… Königreich Terabur")],
+     zitate:[]},
+    {n:"Tal · Nord Tal", d:13, prosa:9, marker:false, urteil:"schwelle", sid:"s_tal",
+     alias:["Tal","Nord Tal"],
+     felder:[F("Geburtsort","Bodin","Tal, Minenreiche"),
+             F("Heimat","Olav der Ehrliche","Nord Tal, Nördliche Minenreiche"),
+             F("Geburtsort","Olav der Ehrliche","Nord Tal, Nördliche Minenreiche")],
+     zitate:[P("Bodin","Bodin Sohn des Thorbin ist ein Zwerg, der in Nord Tal geboren wurde."),
+             P("Irme","Irme Tochter des Evur ist eine Zwergin aus Nord Tal."),
+             P("Olav der Ehrliche","Olav wurde in Nord Tal, der Hauptstadt der Nördlichen Minenreiche geboren und wuchs dort bei seinem Großvater Thorbin auf.")]},
+    {n:"Remus Paradon II.", d:13, prosa:12, marker:false, urteil:"schwelle", sid:"s_remus",
+     felder:[F("Verwandte","Arvex Aurelius Paradon","… Remus Paradon (Sohn) · Remus Paradon II. …"),
+             F("besondere_mitglieder","Haus Paradon","… Remus Paradon II.")],
+     zitate:[P("Kaiserthing","veranstaltete Remus Paradon II. ein weiteres Kaiserthing, bei welchem nur er teilnehmen durfte")]},
+    {n:"Minenreiche", d:12, prosa:11, marker:false, urteil:"nennung",
+     felder:[F("Volk","Olav der Ehrliche","Minenreiche"),
+             F("mitgliedsstaaten","Kaiserreich","… Minenreiche …"),
+             F("Kontrahent2","Der Große Krieg","… Minenreiche …")],
+     zitate:[P("Adalgis Numerion","Zudem war er beim Eisernen Frieden maßgeblich beteiligt, Verhandlungen, die die Minenreiche in Nord und Süd aufteilte."),
+             P("Bjoldiri","Die Stadt fungiert als Transitzone zwischen den Nördlichen und Südlichen Minenreichen und wird von den Bürgern selbst verwaltet.")]},
+    {n:"Geeintes Elfenreich Demmaros", d:12, prosa:6, marker:true, urteil:"schwelle", sid:"s_demmaros",
+     alias:["Geeinte Elfenreich Demmaros","Geeinigtes Elfenreich Demmaros","Vereinigtes Elfenreich Demmaros"],
+     felder:[F("aufgabe","Hochelfenrat","Elfenunion · Elfischer Geheimdienst · Geeintes Elfenreich Demmaros"),
+             F("mitgliedsstaaten","Kaiserreich","Geeintes Elfenreich Demmaros …"),
+             F("hervorgegangen_aus","Kaiserreich","Geeintes Elfenreich Demmaros …")],
+     zitate:[P("Dunkelelf","Sie befinden sich fast ausschließlich in Grau Demmaros, einem Land bei dem es unterschiedliche Meinungen gibt, ob es nun unabhängig sei oder nicht.")]},
+    {n:"Baumgard", d:11, prosa:9, marker:true, urteil:"schwelle", sid:"s_baumgard",
+     felder:[F("sitz","Hochelfenrat","Baumgard"),
+             F("regierungssitz","Kaiserreich","Baumgard · Blattheim · Schwarzweide"),
+             F("Aufträge","Olav der Ehrliche","… Baumgard …")],
+     zitate:[P("Kaiserthing","Als Baumgard im Große Krieg komplett verwüstet wurde, starb Sandor Nimored, sodass ein neuer Kaiser gewählt wurde."),
+             P("Olav der Ehrliche","Sie müssten den als vermisst gemeldeten Doktorand Azeus nach Baumgard eskortieren.")]},
+    {n:"Haus Numerion", d:10, prosa:10, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Numerion Rebellion","Haus Numerion verlor durch die Rebellion für immer seinen Platz bei der Kaiserwahl.")]},
+    {n:"Die Zeugen von Al Masin", d:10, prosa:10, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Epiphania","Die ebenfalls wichtigen Hauptgötter des Erismus Terabur, Demmaros und Eromir finden ebenfalls keine Erwähnung in der Epiphania.")]},
+    {n:"Schwarzweide", d:9, prosa:8, marker:true, urteil:"schwelle", sid:"s_schwarz",
+     felder:[F("regierungssitz","Kaiserreich","Baumgard · Blattheim · Schwarzweide")],
+     zitate:[P("Ekmont von Radfurt","Im Sechstzehnten Lebensjahr ging er für ein Studium der Politikwissenschaften an die Universität von Schwarzweide."),
+             P("Blechorgelhammer","Einer der beiden Blechorgelhämmer wurde an Thorbin, einen der Gründer der Flüsterer, in seiner Zeit als Mitglied des Bardenzirkels von Schwarzweide, weitergegeben.")]},
+    {n:"Resif", d:8, prosa:5, marker:false, urteil:"schwelle", sid:"s_resif",
+     felder:[F("sitz","Haus Paradon","Resif"),
+             F("sitz","Hochelfenrat","Resif (Bis c.a 500 v. K)"),
+             F("Geburtsort","Valor Saron","Resif")],
+     zitate:[P("Königreich Resif","regierungssitz=Resif (Bis c.a 700 v. K.) — 200 Jahre nach dem Hochelfenrat. Widerspruch, unaufgelöst.")]},
+    {n:"Sahin", d:8, prosa:4, marker:false, urteil:"nennung",
+     felder:[F("Sprache","Valor Saron","Sahin"),
+             F("sprache","Haus Paradon","Andarisch, Sahin"),
+             F("sprache","Hochelfenrat","Andarisch, Sahin")],
+     zitate:[]},
+    {n:"West-Kaiserreich", d:8, prosa:6, marker:false, urteil:"nennung",
+     felder:[F("aufgabe","Hochelfenrat","… West-Kaiserreich"),
+             F("folgeregierung","Kaiserreich","West-Kaiserreich")],
+     zitate:[]},
+    {n:"König der Zwerge", d:8, prosa:8, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Zwerg","Zwerge gelten als die ehrgeizigsten Krieger unter den Völkern.")]},
+    {n:"Landmann", d:7, prosa:7, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Baron","Ein Baron führt Lehnsrecht, Steuerhoheit und Wappen — der Landmann führt nichts davon.")]},
+    {n:"Eron", d:7, prosa:7, marker:false, urteil:"verworfen",
+     grundCode:"kollaps-blau", felder:[],
+     zitate:[]},
+    {n:"Südliche Minenreiche", d:6, prosa:5, marker:false, urteil:"nennung",
+     felder:[F("Zweck","Bjoldiri","Transitzone zwischen den Nördlichen und den Südlichen Minenreichen")],
+     zitate:[P("Adalgis Numerion","Die Nördlichen Minenreiche traten dem Kaiserreich bei, während die Südlichen Minenreiche ihre Unabhängigkeit behielten.")]},
+    {n:"Der Höchstelf", d:6, prosa:3, marker:false, urteil:"nennung",
+     felder:[F("gründer","Hochelfenrat","Der Höchstelf · Hochkönig"),
+             F("anführer","Hochelfenrat","Der Höchstelf · Hochkönig · V. K.")],
+     zitate:[]},
+    {n:"Gluthafen", d:4, prosa:3, marker:true, urteil:"schwelle", sid:"s_gluthafen",
+     felder:[F("Heimat","Arvex Aurelius Paradon","Gluthafen, Königreich Eromir (Bis 751) …"),
+             F("Geburtsort","Arvex Aurelius Paradon","Gluthafen, Königreich Eromir"),
+             F("sitz","Haus Paradon","Gluthafen")],
+     zitate:[P("Erismus","Im Bruderkrieg wurde eine alternative Diakonie in Gluthafen gegründet, die behauptete Eromir sei unerschaffen und den anderen Göttern höhergestellt.")]},
+    {n:"Kleingebirge", d:3, prosa:3, marker:false, urteil:"nennung",
+     felder:[F("Region","Bjoldiri","Kleingebirge")],
+     zitate:[P("Bjoldiri","Bjoldiri liegt wie auch die benachbarte Stadt Treidiri im inneren eines Berges namens Kleines Horn im Kleingebirge.")]},
+    {n:"N. K. · N. K · V. K. · V. K", d:28, prosa:0, marker:false, urteil:"verworfen",
+     grundCode:"notation", sammel:4,
+     felder:[F("sitz","Haus Paradon","N. K"), F("anführer","Hochelfenrat","V. K."),
+             F("gründung","Haus Paradon","V. K."), F("auflösung","Hochelfenrat","V. K")],
+     zitate:[]}
+  ],
+  lizenz:"Basisrelief prozedural erzeugt · Originalraster nicht eingebettet (0 von 41 Dateien tragen ein Lizenzfeld; das Wiki führt selbst »Kategorie:Lizenz unbekannt«). Prosa und Feldwerte: Eron Wiki, CC BY-SA 3.0.",
+  koordNote:"Genau 1 der 11 Anker trägt eine echte Koordinate aus Karte:Andaria — [1185.4, 5518.0], bounds [[0,0],[8192,8192]], origin bottom-left, Reihenfolge xy. Die übrigen 10 sind für diese Vorführung gesetzt und in der Linse unter »Koordinatenherkunft« einzeln als »gesetzt« ausgewiesen."
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   KEPLER-9 — KONSTRUIERT.  Science-Fiction.  Strukturisomorph zu Eron.
+   ───────────────────────────────────────────────────────────────────────── */
+WELTEN.kepler = {
+  id:"kepler", name:"Kepler-9", genre:"Science-Fiction", echt:false, skin:"signal",
+  quelle:"Konstruiert für den Achsentest · kein echter Korpus",
+  herkunft:"konstruiert · 68 Artikel · 1 104 rote Kanten · 611 Namen",
+  korpus:{artikel:68, passagen:942, roteKanten:1104, namen:611, blau:498,
+          kollapsZiele:19, kollapsReferenten:8, notationZiele:3, notationKanten:24},
+  kampagne:"Der Reyes-Verbund", sitzung:15, uhrzeit:"21:47",
+  karte:{
+    id:"karte-ring4", name:"Karte:Ring 4 / Deck C",
+    bounds:[[0,0],[8192,8192]], origin:"bottom-left", order:"xy",
+    einheit:"E", reise:210, reiseWort:"Minuten Fußweg", plate:"deck", seed:4471,
+    wasserhoehe:.0, standort:{name:"Wartungsgang D-4", x:2040, y:4560},
+    baender:[
+      {id:"b_tief", name:"Unterdeck", von:-1, bis:0, kurz:"−1"},
+      {id:"b_eben", name:"Hauptdeck", von:0,  bis:1, kurz:"0"},
+      {id:"b_grat", name:"Galerie",   von:1,  bis:2, kurz:"+1"}
+    ],
+    regionen:[
+      {id:"r_horn",  name:"Wartungsgang D-4", band:"b_eben", poly:[[1560,4020],[2620,3900],[2900,4620],[2380,5180],[1520,4900]]},
+      {id:"r_pass",  name:"Frachthals",       band:"b_tief", poly:[[2380,5180],[2900,4620],[3460,5040],[3180,5760],[2500,5720]]},
+      {id:"r_nord",  name:"Andockring 4",     band:"b_eben", poly:[[2500,5720],[3180,5760],[3420,6520],[2660,6740],[2260,6180]]},
+      {id:"r_wald",  name:"Schleusenvorraum", band:"b_eben", poly:[[1120,5060],[1560,4900],[1960,5580],[1720,6260],[1000,6020]]},
+      {id:"r_ufer",  name:"Kantine C",        band:"b_eben", poly:[[760,5140],[1120,5060],[1000,6020],[560,5860]]},
+      {id:"r_grat",  name:"Reaktorschott",    band:"b_grat", poly:[[3180,5760],[3460,5040],[4180,5200],[4260,5980],[3420,6520]]}
+    ]
+  },
+  schwellen:[
+    {id:"s_blattheim", name:"Trockendock Sieben", nachfrage:14, geo:"punkt", x:1185.4, y:5518.0,
+     koord:"gesetzt", band:"b_eben", region:"r_wald",
+     grund:"Ortsfeld »Liegeplatz« (Hafenamt) · »Station« (Reyes-Verbund) · Marker auf Karte:Ring 4",
+     regel:"kepler/ortsfeld#liegeplatz"},
+    {id:"s_nordmine", name:"Ceres-Rand", nachfrage:16, geo:"umriss",
+     poly:[[2260,6180],[3420,6520],[3760,7280],[2820,7620],[2020,7100]], koord:"gesetzt",
+     band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »Heimatwelt« und »Ursprungssystem« (Vesper Ndiaye)", regel:"kepler/ortsfeld#heimatwelt"},
+    {id:"s_andaria", name:"Ring 4", nachfrage:15, geo:"ohne", koord:"—", band:"b_eben", region:null,
+     grund:"Ortsfeld »Sektor« (Stationsregister) — der Anker ist die Karte selbst", regel:"kepler/ortsfeld#sektor"},
+    {id:"s_terabur", name:"Kolonie Ashgar", nachfrage:14, geo:"punkt", x:5980, y:3020,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »Heimatwelt« (Tavo Reyes) · 1 Schreibvariante eingerollt", regel:"kepler/ortsfeld#heimatwelt"},
+    {id:"s_tal", name:"Halde · Halde Sieben", nachfrage:13, geo:"punkt", x:2810, y:6640,
+     koord:"gesetzt", band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »Standort« (Bergungsakte: „Halde, Ashgar-Orbit\") · zwei Schreibungen, ein Ort",
+     regel:"kepler/ortsfeld#standort"},
+    {id:"s_remus", name:"Direktorin Sabin Reyes", nachfrage:13, geo:"punkt", x:5600, y:2700,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Personenfeld »Angehörige« (Tavo Reyes) · »Bürgen« (Verbundregister)", regel:"kepler/personenfeld#angehoerige"},
+    {id:"s_demmaros", name:"Freihandelsring Nedd", nachfrage:12, geo:"punkt", x:1450, y:2300,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Marker auf Karte:Ring 4 · drei Schreibungen zu einem Referenten eingerollt", regel:"kepler/marker"},
+    {id:"s_baumgard", name:"Hafenmond Ubbo", nachfrage:11, geo:"punkt", x:3380, y:5960,
+     koord:"gesetzt", band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »Liegeplatz« (Hafenamt) · »Sektor« (Frachtgilde Vaan)", regel:"kepler/ortsfeld#liegeplatz"},
+    {id:"s_schwarz", name:"Schacht Perg", nachfrage:9, geo:"punkt", x:4260, y:4740,
+     koord:"gesetzt", band:"b_eben", region:"r_grat",
+     grund:"Ortsfeld »Station« (Bergungsakte)", regel:"kepler/ortsfeld#station"},
+    {id:"s_resif", name:"Alt-Kepler", nachfrage:8, geo:"punkt", x:1010, y:3260,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »Station« (Verbundregister) · »Ursprungssystem« (Ilva Roth)",
+     regel:"kepler/ortsfeld#station",
+     widerspruch:"Verbundregister »Station=Alt-Kepler (bis SD 4409.2)« gegen Hafenamt »Liegeplatz=Alt-Kepler (bis SD 4602.7)« — knapp zwei Jahre Abstand, im Korpus unaufgelöst."},
+    {id:"s_gluthafen", name:"Schleuse Zwölf", nachfrage:4, geo:"punkt", x:6420, y:5380,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »Liegeplatz« und »Standort« (Wartungsprotokoll) · Marker", regel:"kepler/ortsfeld#liegeplatz"}
+  ],
+  figuren:[
+    {id:"f_olav", name:"Vesper Ndiaye", kurz:"Ve", seite:"us", x:2130, y:4640, band:"b_eben",
+     hp:34, hpMax:41, zustand:[], hinweis:"Lotsin, Ceres-Rand · Verbundmitglied seit SD 4488.1"},
+    {id:"f_bodin", name:"Tavo Reyes", kurz:"Ta", seite:"us", x:2010, y:4470, band:"b_eben",
+     hp:28, hpMax:33, zustand:[], hinweis:"Schweißer, Kolonie Ashgar · Neffe der Direktorin"},
+    {id:"f_irme", name:"Ilva Roth", kurz:"Il", seite:"us", x:1930, y:4620, band:"b_eben",
+     hp:31, hpMax:31, zustand:[], hinweis:"Schweißerin, Kolonie Ashgar · gleicher Jahrgang, gleiche Schicht"},
+    {id:"f_baldur", name:"Kadett Ory Mbeki", kurz:"Or", seite:"us", x:2240, y:4520, band:"b_grat",
+     hp:22, hpMax:36, zustand:["verwundet"], hinweis:"Im Trockendock Sieben ausgebildet · Freigabe Karmin"},
+    {id:"f_thorbin", name:"Aufseher Denn (fremdgesteuert)", kurz:"De", seite:"them",
+     x:2600, y:4900, band:"b_eben", hp:9, hpMax:44, zustand:["gebunden","niedergang"],
+     hinweis:"Feld »Kommando«: „Denn (eigenständig) (bis SD 4611.0)\" und „Denn (fremdgesteuert) (SD 4611.0–)\" — zwei Zeilen, ein Name"}
+  ],
+  leser:{
+    leitung:{name:"Kaya · Spielleitung", haelt:"alle", regionen:["r_horn","r_pass","r_nord","r_wald","r_ufer","r_grat"]},
+    a:{name:"Tavo Reyes", haelt:["s_blattheim","s_nordmine","s_tal","s_baumgard"], regionen:["r_horn","r_pass","r_nord"]},
+    b:{name:"Ilva Roth", haelt:["s_nordmine","s_tal","s_baumgard"], regionen:["r_horn","r_pass","r_nord"]},
+    beob:{name:"Beobachter (kuratiert)", haelt:["s_tal","s_baumgard"], regionen:["r_horn","r_pass"]}
+  },
+  zwilling:{a:"a", b:"b", differenz:"s_blattheim", anzahlPassagen:4,
+    erklaerung:"Tavo und Ilva sind Schweißer desselben Jahrgangs aus derselben Kolonie. Ihre gehaltenen Hälften sind identisch bis auf die vier Passagen, die Trockendock Sieben nennen (Tavo hält sie über seine Tante)."},
+  raum:[
+    ["Kepler-System",0],["Ring 4",1],["Andockring 4",2],["Trockendock Sieben",3],
+    ["Frachthals",2],["Deck C",2],["Wartungsgang D-4",3],["Kantine C",4],
+    ["Unterdeck D-4",4]
+  ],
+  raumHinweis:"„Unterdeck D-4\" ist ein GESCHWISTER von Kantine C auf derselben Ebene, nicht sein Kind — Höhe ist ein Skalarband (hoehe_von/hoehe_bis), keine Baumkante.",
+  paket:{
+    id:"kepler", revision:"1.0", schwellenwert:4,
+    notation:"^SD ?\\d{4}\\.\\d$",
+    felder:[
+      {l:"Liegeplatz", k:"ortsfeld", ev:"8 rote Ziele · Hafenamt, Wartungsprotokoll"},
+      {l:"Station", k:"ortsfeld", ev:"4 rote Ziele · Verbundregister"},
+      {l:"Heimatwelt", k:"ortsfeld", ev:"6 rote Ziele · Personenakten"},
+      {l:"Ursprungssystem", k:"ortsfeld", ev:"4 rote Ziele · Personenakten"},
+      {l:"Sektor", k:"ortsfeld", ev:"5 rote Ziele · Stationsregister"},
+      {l:"Standort", k:"ortsfeld", ev:"3 rote Ziele · Bergungsakten"},
+      {l:"Andockring", k:"ortsfeld", ev:"2 rote Ziele · Hafenamt"},
+      {l:"Angehörige", k:"personenfeld", ev:"14 rote Ziele · Personenakten"},
+      {l:"Bürgen", k:"personenfeld", ev:"9 rote Ziele · Verbundregister"},
+      {l:"Kommando", k:"mehrdeutig", ev:"enthält auch »SD 4611.0« und »Hafenmeister« — Datum und Amt im Personenfeld"},
+      {l:"Vertragspartner", k:"mehrdeutig", ev:"enthält Firmen, Personen und Ämter gemischt"},
+      {l:"Betreiber", k:"mehrdeutig", ev:"enthält »Hafenamt«, »Frachtgilde Vaan« — Ämter"},
+      {l:"Handelssprache", k:"attributfeld", ev:"»Vaanisch« (17), »Tiefhandel« (7) — man kann nicht hingehen"},
+      {l:"Freigabe", k:"attributfeld", ev:"»Karmin«, »Indigo« — eine Stufe ist kein Ort"},
+      {l:"Kaste", k:"attributfeld", ev:"»Vertragsgebundene«"},
+      {l:"Spezies / Baureihe", k:"attributfeld", ev:"»Kestrel-II«, »Ubbo-geboren«"},
+      {l:"Zweck", k:"attributfeld", ev:"»Ceres-Rand-Transit« als Funktionsbeschreibung"},
+      {l:"Auftrag / Nachfolgebetrieb", k:"attributfeld", ev:"»Vaan-Konsortium« — Auftrag, kein Ort"}
+    ],
+    aliase:[
+      ["Freihandelsring Nedd",["Freihandels-Ring Nedd","Freihandelsring Ned"]],
+      ["Kolonie Ashgar",["Kolonie Asghar"]],
+      ["Halde · Halde Sieben",["Halde","Halde Sieben"]],
+      ["Kepler",["→ blauer Artikel »Kepler-9 (Station)«"]]
+    ]
+  },
+  kandidaten:[
+    {n:"Vaanisch", d:18, prosa:13, marker:false, urteil:"nennung",
+     felder:[F("Handelssprache","Vesper Ndiaye","Vaanisch"),
+             F("Handelssprache","Tavo Reyes","Vaanisch"),
+             F("Handelssprache","Frachtgilde Vaan","Vaanisch, Tiefhandel"),
+             F("Handelssprache","Hafenamt","Vaanisch"),
+             F("Handelssprache","Reyes-Verbund","Vaanisch")],
+     zitate:[P("Kantine C","Die meistgesprochene Sprache und zugleich Amtssprache des Rings ist Vaanisch."),
+             P("Der Schleusenkrieg","Der Schleusenkrieg war der verlustreichste Konflikt des Kepler-Systems.")]},
+    {n:"Ceres-Rand", d:16, prosa:9, marker:false, urteil:"schwelle", sid:"s_nordmine",
+     felder:[F("Heimatwelt","Vesper Ndiaye","Ceres-Rand"),
+             F("Ursprungssystem","Vesper Ndiaye","Ceres-Rand"),
+             F("Mitgliedsbetriebe","Reyes-Verbund","… Ceres-Rand"),
+             F("Zweck","Kantine C","Transitpunkt zwischen dem Ceres-Rand und dem Kepler-System")],
+     zitate:[P("Der Eiserne Frachtvertrag","Der Ceres-Rand trat dem Verbund bei, während der Ubbo-Ring seine Selbstverwaltung behielt.")]},
+    {n:"Ring 4", d:15, prosa:11, marker:false, urteil:"schwelle", sid:"s_andaria",
+     felder:[F("Sektor","Kepler-9 (Station)","Ring 1, Ring 4, Ring 9, Achse"),
+             F("Ausdehnung","Reyes-Verbund","Ring 4, Außenliegeplätze")],
+     zitate:[P("Stationsregister","Ring 4 ist der älteste durchgehend bewohnte Abschnitt der Station.")]},
+    {n:"Trockendock Sieben", d:14, prosa:10, marker:true, urteil:"schwelle", sid:"s_blattheim",
+     felder:[F("Liegeplatz","Hafenamt","Trockendock Sieben"),
+             F("Station","Reyes-Verbund","Trockendock Sieben · Schacht Perg · Schleuse Zwölf"),
+             F("Aufträge","Tavo Reyes","… Trockendock Sieben …")],
+     zitate:[P("Ory Mbeki","Ory Mbeki wurde im Trockendock Sieben von Denn zum Schleusengänger ausgebildet."),
+             P("Die Bergung","Vesper, Ilva, Ory und Tavo arbeiteten fortan zusammen, um die Kapsel nach Trockendock Sieben zu bringen."),
+             P("Die Bergung","Im Trockendock Sieben übergab Ory die Kapsel an Denn und die Schleusengänger."),
+             P("Die Bergung","Sie trafen dort auf Ory, einen Schleusengänger, der ebenfalls ein Interesse hatte, die Kapsel an sich zu nehmen und in das Versteck im Trockendock Sieben zu bringen.")]},
+    {n:"Kolonie Ashgar", d:14, prosa:8, marker:false, urteil:"schwelle", sid:"s_terabur",
+     alias:["Kolonie Asghar"],
+     felder:[F("Heimatwelt","Tavo Reyes","Ashgar-Orbit, Kolonie Ashgar (SD 4488–4602)"),
+             F("Mitgliedsbetriebe","Reyes-Verbund","… Kolonie Ashgar"),
+             F("hervorgegangen_aus","Reyes-Verbund","… Kolonie Ashgar")],
+     zitate:[]},
+    {n:"Halde · Halde Sieben", d:13, prosa:9, marker:false, urteil:"schwelle", sid:"s_tal",
+     alias:["Halde","Halde Sieben"],
+     felder:[F("Standort","Bergungsakte 214","Halde, Ashgar-Orbit"),
+             F("Heimatwelt","Tavo Reyes","Halde Sieben, Kolonie Ashgar"),
+             F("Ursprungssystem","Ilva Roth","Halde Sieben, Kolonie Ashgar")],
+     zitate:[P("Tavo Reyes","Tavo, Sohn der Marn, ist ein Schweißer, der auf Halde Sieben geboren wurde."),
+             P("Ilva Roth","Ilva, Tochter des Bern, ist eine Schweißerin von Halde Sieben."),
+             P("Tavo Reyes","Tavo wurde auf Halde Sieben, dem Hauptumschlagplatz der Kolonie Ashgar, geboren und wuchs dort bei seiner Tante Sabin auf.")]},
+    {n:"Direktorin Sabin Reyes", d:13, prosa:12, marker:false, urteil:"schwelle", sid:"s_remus",
+     felder:[F("Angehörige","Tavo Reyes","… Marn Reyes (Mutter) · Sabin Reyes (Tante) …"),
+             F("Bürgen","Reyes-Verbund","… Sabin Reyes")],
+     zitate:[P("Verbundversammlung","berief Sabin Reyes eine weitere Verbundversammlung ein, an der nur sie teilnehmen durfte")]},
+    {n:"Kepler-System", d:12, prosa:11, marker:false, urteil:"nennung",
+     felder:[F("Kaste","Tavo Reyes","Kepler-System"),
+             F("Mitgliedsbetriebe","Reyes-Verbund","… Kepler-System …"),
+             F("Konfliktpartei2","Der Schleusenkrieg","… Kepler-System …")],
+     zitate:[P("Der Eiserne Frachtvertrag","Zudem war sie am Eisernen Frachtvertrag beteiligt, Verhandlungen, die das Kepler-System in Innen und Außen aufteilten."),
+             P("Kantine C","Der Abschnitt fungiert als Transitzone zwischen dem inneren und dem äußeren Kepler-System und wird von den Bewohnern selbst verwaltet.")]},
+    {n:"Freihandelsring Nedd", d:12, prosa:6, marker:true, urteil:"schwelle", sid:"s_demmaros",
+     alias:["Freihandels-Ring Nedd","Freihandelsring Ned"],
+     felder:[F("Auftrag","Hafenamt","Zollfreiheit · Geleitschutz · Freihandelsring Nedd"),
+             F("Mitgliedsbetriebe","Reyes-Verbund","Freihandelsring Nedd …"),
+             F("hervorgegangen_aus","Reyes-Verbund","Freihandelsring Nedd …")],
+     zitate:[P("Die Vertragsgebundenen","Sie befinden sich fast ausschließlich in Grau-Nedd, einem Abschnitt, bei dem es unterschiedliche Meinungen gibt, ob er nun zollfrei sei oder nicht.")]},
+    {n:"Hafenmond Ubbo", d:11, prosa:9, marker:true, urteil:"schwelle", sid:"s_baumgard",
+     felder:[F("Liegeplatz","Hafenamt","Hafenmond Ubbo"),
+             F("Sektor","Frachtgilde Vaan","Ubbo · Nedd · Perg"),
+             F("Aufträge","Tavo Reyes","… Hafenmond Ubbo …")],
+     zitate:[P("Verbundversammlung","Als Ubbo im Schleusenkrieg vollständig ausbrannte, starb der Hafenmeister, sodass eine neue Direktion gewählt wurde."),
+             P("Tavo Reyes","Sie sollten die als vermisst gemeldete Frachtprüferin Azeu nach Ubbo eskortieren.")]},
+    {n:"Vaan-Konsortium", d:10, prosa:10, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Der Zollaufstand","Das Vaan-Konsortium verlor durch den Aufstand für immer seinen Sitz in der Direktion.")]},
+    {n:"Die Zeugen der Achse", d:10, prosa:10, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Das Achsenbuch","Die ebenfalls wichtigen Gründerfiguren Nedd, Ubbo und Perg finden im Achsenbuch keine Erwähnung.")]},
+    {n:"Schacht Perg", d:9, prosa:8, marker:true, urteil:"schwelle", sid:"s_schwarz",
+     felder:[F("Station","Bergungsakte 214","Trockendock Sieben · Schacht Perg · Schleuse Zwölf")],
+     zitate:[P("Ory Mbeki","Im sechzehnten Dienstjahr ging er für eine Ausbildung in Druckmechanik zur Werkschule von Schacht Perg."),
+             P("Der Rohrsatz","Einer der beiden Rohrsätze ging an Denn, einen der Gründer der Schleusengänger, in seiner Zeit im Werkzirkel von Schacht Perg.")]},
+    {n:"Alt-Kepler", d:8, prosa:5, marker:false, urteil:"schwelle", sid:"s_resif",
+     felder:[F("Station","Reyes-Verbund","Alt-Kepler"),
+             F("Station","Verbundregister","Alt-Kepler (bis SD 4409.2)"),
+             F("Ursprungssystem","Ilva Roth","Alt-Kepler")],
+     zitate:[P("Hafenamt","Liegeplatz=Alt-Kepler (bis SD 4602.7) — knapp zwei Jahre nach dem Verbundregister. Widerspruch, unaufgelöst.")]},
+    {n:"Tiefhandel", d:8, prosa:4, marker:false, urteil:"nennung",
+     felder:[F("Handelssprache","Ilva Roth","Tiefhandel"),
+             F("Handelssprache","Frachtgilde Vaan","Vaanisch, Tiefhandel"),
+             F("Handelssprache","Hafenamt","Vaanisch, Tiefhandel")],
+     zitate:[]},
+    {n:"Außenverbund", d:8, prosa:6, marker:false, urteil:"nennung",
+     felder:[F("Auftrag","Hafenamt","… Außenverbund"),
+             F("Nachfolgebetrieb","Reyes-Verbund","Außenverbund")],
+     zitate:[]},
+    {n:"Hafenmeister", d:8, prosa:8, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Hafenamt","Der Hafenmeister gilt als die eigensinnigste Instanz des Rings.")]},
+    {n:"Vertragsgebundener", d:7, prosa:7, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Die Vertragsgebundenen","Ein Betriebsbürger führt Stimmrecht, Liegeplatz und Wappen — der Vertragsgebundene führt nichts davon.")]},
+    {n:"Kepler", d:7, prosa:7, marker:false, urteil:"verworfen", grundCode:"kollaps-blau",
+     felder:[], zitate:[]},
+    {n:"Innerer Kepler-Ring", d:6, prosa:5, marker:false, urteil:"nennung",
+     felder:[F("Zweck","Kantine C","Transitzone zwischen dem inneren und dem äußeren Kepler-Ring")],
+     zitate:[P("Der Eiserne Frachtvertrag","Der innere Ring trat dem Verbund bei, während der äußere seine Selbstverwaltung behielt.")]},
+    {n:"Der Erste Schleusengänger", d:6, prosa:3, marker:false, urteil:"nennung",
+     felder:[F("Betreiber","Hafenamt","Der Erste Schleusengänger · Hafenmeister"),
+             F("Kommando","Hafenamt","Der Erste Schleusengänger · Hafenmeister · SD 4611.0")],
+     zitate:[]},
+    {n:"Schleuse Zwölf", d:4, prosa:3, marker:true, urteil:"schwelle", sid:"s_gluthafen",
+     felder:[F("Liegeplatz","Wartungsprotokoll","Schleuse Zwölf, Deck C (bis SD 4751) …"),
+             F("Standort","Wartungsprotokoll","Schleuse Zwölf, Deck C"),
+             F("Station","Reyes-Verbund","Schleuse Zwölf")],
+     zitate:[P("Der Zollaufstand","Im Zollaufstand wurde an Schleuse Zwölf eine zweite Zollstelle eingerichtet, die behauptete, der Ring sei unabhängig.")]},
+    {n:"Kleinschacht", d:3, prosa:3, marker:false, urteil:"nennung",
+     felder:[F("Sektor","Kantine C","Kleinschacht")],
+     zitate:[P("Kantine C","Kantine C liegt wie auch der benachbarte Speisesaal D im Inneren eines Trägers namens Kleiner Sporn im Kleinschacht.")]},
+    {n:"SD 4711.3 · SD 4409.2 · SD 4602.7", d:24, prosa:0, marker:false, urteil:"verworfen",
+     grundCode:"notation", sammel:3,
+     felder:[F("Station","Verbundregister","SD 4409.2"), F("Kommando","Hafenamt","SD 4611.0"),
+             F("Gründung","Reyes-Verbund","SD 4711.3"), F("Auflösung","Vaan-Konsortium","SD 4602.7")],
+     zitate:[]}
+  ],
+  lizenz:"Basisplan prozedural erzeugt · keine Fremdraster eingebettet. Inhalt vollständig konstruiert; er belegt die Achse, nicht die Welt.",
+  koordNote:"Alle 11 Anker sind für diese Vorführung gesetzt — dieses Paket ist konstruiert und trägt keine echten Koordinaten. Die Karte hält denselben Vertrag wie Karte:Andaria: bounds [[0,0],[8192,8192]], origin bottom-left, xy."
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   NEBELAKTE — KONSTRUIERT.  Moderne Mystery.  Strukturisomorph zu Eron.
+   ───────────────────────────────────────────────────────────────────────── */
+WELTEN.nebel = {
+  id:"nebel", name:"Nebelakte", genre:"Moderne Mystery", echt:false, skin:"archive",
+  quelle:"Konstruiert für den Achsentest · kein echter Korpus",
+  herkunft:"konstruiert · 71 Artikel · 1 188 rote Kanten · 654 Namen",
+  korpus:{artikel:71, passagen:1008, roteKanten:1188, namen:654, blau:521,
+          kollapsZiele:20, kollapsReferenten:9, notationZiele:4, notationKanten:26},
+  kampagne:"Die Akte Herbstweg", sitzung:15, uhrzeit:"21:47",
+  karte:{
+    id:"karte-herbstweg", name:"Karte:Herbstweg 14",
+    bounds:[[0,0],[8192,8192]], origin:"bottom-left", order:"xy",
+    einheit:"E", reise:190, reiseWort:"Minuten zu Fuß", plate:"grundriss", seed:2213,
+    wasserhoehe:.0, standort:{name:"Hausflur", x:2040, y:4560},
+    baender:[
+      {id:"b_tief", name:"Keller", von:-1, bis:0, kurz:"−1"},
+      {id:"b_eben", name:"Erdgeschoss", von:0, bis:1, kurz:"0"},
+      {id:"b_grat", name:"Erstes Obergeschoss", von:1, bis:2, kurz:"+1"}
+    ],
+    regionen:[
+      {id:"r_horn",  name:"Hausflur",     band:"b_eben", poly:[[1560,4020],[2620,3900],[2900,4620],[2380,5180],[1520,4900]]},
+      {id:"r_pass",  name:"Kellergang",   band:"b_tief", poly:[[2380,5180],[2900,4620],[3460,5040],[3180,5760],[2500,5720]]},
+      {id:"r_nord",  name:"Hinterhof",    band:"b_eben", poly:[[2500,5720],[3180,5760],[3420,6520],[2660,6740],[2260,6180]]},
+      {id:"r_wald",  name:"Die Werkstatt",band:"b_eben", poly:[[1120,5060],[1560,4900],[1960,5580],[1720,6260],[1000,6020]]},
+      {id:"r_ufer",  name:"Treppenhaus",  band:"b_eben", poly:[[760,5140],[1120,5060],[1000,6020],[560,5860]]},
+      {id:"r_grat",  name:"Die Dachkammer", band:"b_grat", poly:[[3180,5760],[3460,5040],[4180,5200],[4260,5980],[3420,6520]]}
+    ]
+  },
+  schwellen:[
+    {id:"s_blattheim", name:"Speicher Nordkai", nachfrage:14, geo:"punkt", x:1185.4, y:5518.0,
+     koord:"gesetzt", band:"b_eben", region:"r_wald",
+     grund:"Ortsfeld »Anschrift« (Grundbuch) · »zuletzt gesehen« (Vermisstenakte) · Marker auf Karte:Herbstweg 14",
+     regel:"nebel/ortsfeld#anschrift"},
+    {id:"s_nordmine", name:"Revier Sechs", nachfrage:16, geo:"umriss",
+     poly:[[2260,6180],[3420,6520],[3760,7280],[2820,7620],[2020,7100]], koord:"gesetzt",
+     band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »Revier« und »Wohnsitz« (Hedda Prill)", regel:"nebel/ortsfeld#revier"},
+    {id:"s_andaria", name:"Stadtbezirk Nord", nachfrage:15, geo:"ohne", koord:"—", band:"b_eben", region:null,
+     grund:"Ortsfeld »Bezirk« (Melderegister) — der Anker ist die Karte selbst", regel:"nebel/ortsfeld#bezirk"},
+    {id:"s_terabur", name:"Siedlung Wullgrube", nachfrage:14, geo:"punkt", x:5980, y:3020,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »Wohnsitz« (Rott Kehl) · 1 Schreibvariante eingerollt", regel:"nebel/ortsfeld#wohnsitz"},
+    {id:"s_tal", name:"Sandgrube · Alte Sandgrube", nachfrage:13, geo:"punkt", x:2810, y:6640,
+     koord:"gesetzt", band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »Fundort« (Spurenakte: „Sandgrube, Wullgrube\") · zwei Schreibungen, ein Ort",
+     regel:"nebel/ortsfeld#fundort"},
+    {id:"s_remus", name:"Oberrat Marlis Kehl", nachfrage:13, geo:"punkt", x:5600, y:2700,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Personenfeld »Angehörige« (Rott Kehl) · »Kontakt« (Personenakte)",
+     regel:"nebel/personenfeld#angehoerige"},
+    {id:"s_demmaros", name:"Wäscherei Prill", nachfrage:12, geo:"punkt", x:1450, y:2300,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Marker auf Karte:Herbstweg 14 · drei Schreibungen zu einem Referenten eingerollt",
+     regel:"nebel/marker"},
+    {id:"s_baumgard", name:"Gasthof Zum Anker", nachfrage:11, geo:"punkt", x:3380, y:5960,
+     koord:"gesetzt", band:"b_eben", region:"r_nord",
+     grund:"Ortsfeld »Anschrift« (Grundbuch) · »Tatort« (Akte 6/22)", regel:"nebel/ortsfeld#anschrift"},
+    {id:"s_schwarz", name:"Bahnhofsmission", nachfrage:9, geo:"punkt", x:4260, y:4740,
+     koord:"gesetzt", band:"b_eben", region:"r_grat",
+     grund:"Ortsfeld »Tatort« (Akte 6/22)", regel:"nebel/ortsfeld#tatort"},
+    {id:"s_resif", name:"Kanalhaus", nachfrage:8, geo:"punkt", x:1010, y:3260,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »Anschrift« (Grundbuch, Melderegister) · »Wohnsitz« (Ada Prill)",
+     regel:"nebel/ortsfeld#anschrift",
+     widerspruch:"Grundbuch »Anschrift=Kanalhaus (bis 14.03.1994)« gegen Melderegister »Wohnsitz=Kanalhaus (bis 09.11.1997)« — drei Jahre Abstand, im Korpus unaufgelöst."},
+    {id:"s_gluthafen", name:"Werkstatt Ohm", nachfrage:4, geo:"punkt", x:6420, y:5380,
+     koord:"gesetzt", band:"b_eben", region:null,
+     grund:"Ortsfeld »Anschrift« und »Fundort« (Spurenakte) · Marker", regel:"nebel/ortsfeld#anschrift"}
+  ],
+  figuren:[
+    {id:"f_olav", name:"Hedda Prill", kurz:"He", seite:"us", x:2130, y:4640, band:"b_eben",
+     hp:34, hpMax:41, zustand:[], hinweis:"Kommissarin, Revier Sechs · seit 1991 im Dienst"},
+    {id:"f_bodin", name:"Rott Kehl", kurz:"Ro", seite:"us", x:2010, y:4470, band:"b_eben",
+     hp:28, hpMax:33, zustand:[], hinweis:"Schlosser, Siedlung Wullgrube · Neffe der Oberrätin"},
+    {id:"f_irme", name:"Ada Prill", kurz:"Ad", seite:"us", x:1930, y:4620, band:"b_eben",
+     hp:31, hpMax:31, zustand:[], hinweis:"Schlosserin, Siedlung Wullgrube · gleicher Jahrgang, gleiche Werkstatt"},
+    {id:"f_baldur", name:"Anwärter Ole Damm", kurz:"Ol", seite:"us", x:2240, y:4520, band:"b_grat",
+     hp:22, hpMax:36, zustand:["verwundet"], hinweis:"Im Speicher Nordkai eingearbeitet · Deckname Möwe"},
+    {id:"f_thorbin", name:"Wachmann Denn (erpresst)", kurz:"De", seite:"them",
+     x:2600, y:4900, band:"b_eben", hp:9, hpMax:44, zustand:["gebunden","niedergang"],
+     hinweis:"Feld »Verantwortlich«: „Denn (aus eigenem Antrieb) (bis 11.09.1996)\" und „Denn (erpresst) (11.09.1996–)\" — zwei Zeilen, ein Name"}
+  ],
+  leser:{
+    leitung:{name:"Kaya · Spielleitung", haelt:"alle", regionen:["r_horn","r_pass","r_nord","r_wald","r_ufer","r_grat"]},
+    a:{name:"Rott Kehl", haelt:["s_blattheim","s_nordmine","s_tal","s_baumgard"], regionen:["r_horn","r_pass","r_nord"]},
+    b:{name:"Ada Prill", haelt:["s_nordmine","s_tal","s_baumgard"], regionen:["r_horn","r_pass","r_nord"]},
+    beob:{name:"Beobachter (kuratiert)", haelt:["s_tal","s_baumgard"], regionen:["r_horn","r_pass"]}
+  },
+  zwilling:{a:"a", b:"b", differenz:"s_blattheim", anzahlPassagen:4,
+    erklaerung:"Rott und Ada sind Schlosser desselben Jahrgangs aus derselben Werkstatt. Ihre gehaltenen Hälften sind identisch bis auf die vier Passagen, die Speicher Nordkai nennen (Rott hält sie über seine Tante)."},
+  raum:[
+    ["Stadtbezirk Nord",0],["Herbstweg 14",1],["Hinterhof",2],["Speicher Nordkai",3],
+    ["Kellergang",2],["Erdgeschoss",2],["Hausflur",3],["Die Werkstatt",4],
+    ["Kellerwerkstatt",4]
+  ],
+  raumHinweis:"„Kellerwerkstatt\" ist ein GESCHWISTER der Werkstatt auf derselben Ebene, nicht ihr Kind — Höhe ist ein Skalarband (hoehe_von/hoehe_bis), keine Baumkante.",
+  paket:{
+    id:"nebel", revision:"1.0", schwellenwert:4,
+    notation:"^\\d{2}\\.\\d{2}\\.\\d{4}$",
+    felder:[
+      {l:"Anschrift", k:"ortsfeld", ev:"9 rote Ziele · Grundbuch, Melderegister"},
+      {l:"Tatort", k:"ortsfeld", ev:"3 rote Ziele · Akte 6/22"},
+      {l:"Wohnsitz", k:"ortsfeld", ev:"5 rote Ziele · Personenakten"},
+      {l:"Fundort", k:"ortsfeld", ev:"5 rote Ziele · Spurenakten"},
+      {l:"Bezirk", k:"ortsfeld", ev:"4 rote Ziele · Melderegister"},
+      {l:"Revier", k:"ortsfeld", ev:"2 rote Ziele · Dienstplan"},
+      {l:"zuletzt gesehen", k:"ortsfeld", ev:"1 rotes Ziel · Vermisstenakte"},
+      {l:"Angehörige", k:"personenfeld", ev:"15 rote Ziele · Personenakten"},
+      {l:"Kontakt", k:"personenfeld", ev:"10 rote Ziele · Ermittlungsakte"},
+      {l:"Verantwortlich", k:"mehrdeutig", ev:"enthält auch »11.09.1996« und »Oberrat« — Datum und Amt im Personenfeld"},
+      {l:"Zeuge", k:"mehrdeutig", ev:"enthält Personen, Firmen und Dienststellen gemischt"},
+      {l:"Auftraggeber", k:"mehrdeutig", ev:"enthält »Revier Sechs«, »Oberrat« — Ämter"},
+      {l:"Umgangssprache", k:"attributfeld", ev:"»Hafenplatt« (18), »Kesseldeutsch« (8) — man kann nicht hingehen"},
+      {l:"Dienstgrad", k:"attributfeld", ev:"»Oberrat«, »Anwärter« — ein Amt ist kein Ort"},
+      {l:"Deckname", k:"attributfeld", ev:"»Möwe«, »Zunder«"},
+      {l:"Stand / Fahrzeugklasse", k:"attributfeld", ev:"»Kleinbürger«, »Kastenwagen«"},
+      {l:"Zweck", k:"attributfeld", ev:"»Nord-Süd-Durchgang« als Funktionsbeschreibung"},
+      {l:"Tatvorwurf / Nachfolge", k:"attributfeld", ev:"»Hehlerei«, »Amt Süd« — Vorwurf, kein Ort"}
+    ],
+    aliase:[
+      ["Wäscherei Prill",["Wäscherei Prill & Sohn","Waescherei Prill","Wäscherei Brill"]],
+      ["Siedlung Wullgrube",["Siedlung Wulgrube"]],
+      ["Sandgrube · Alte Sandgrube",["Sandgrube","Alte Sandgrube"]],
+      ["Herbstweg",["→ blauer Artikel »Herbstweg 14«"]]
+    ]
+  },
+  kandidaten:[
+    {n:"Hafenplatt", d:18, prosa:13, marker:false, urteil:"nennung",
+     felder:[F("Umgangssprache","Hedda Prill","Hafenplatt"),
+             F("Umgangssprache","Rott Kehl","Hafenplatt"),
+             F("Umgangssprache","Wäscherei Prill","Hafenplatt, Kesseldeutsch"),
+             F("Umgangssprache","Revier Sechs","Hafenplatt, Kesseldeutsch"),
+             F("Umgangssprache","Melderegister","Hafenplatt")],
+     zitate:[P("Herbstweg 14","Die meistgesprochene Sprache im Block und zugleich Umgangssprache des Reviers ist Hafenplatt."),
+             P("Der Kesselstreit","Der Kesselstreit war der verlustreichste Arbeitskampf des Stadtbezirks Nord.")]},
+    {n:"Revier Sechs", d:16, prosa:9, marker:false, urteil:"schwelle", sid:"s_nordmine",
+     felder:[F("Revier","Hedda Prill","Revier Sechs"),
+             F("Wohnsitz","Hedda Prill","Revier Sechs"),
+             F("Zuständigkeiten","Melderegister","… Revier Sechs"),
+             F("Zweck","Herbstweg 14","Durchgang zwischen Revier Sechs und Revier Neun")],
+     zitate:[P("Die Reviereform","Revier Sechs übernahm den Nordkai, während Revier Neun seine Eigenständigkeit behielt.")]},
+    {n:"Stadtbezirk Nord", d:15, prosa:11, marker:false, urteil:"schwelle", sid:"s_andaria",
+     felder:[F("Bezirk","Melderegister","Nord, Ost, Süd, Werft"),
+             F("Zuständigkeit","Revier Sechs","Stadtbezirk Nord, Werftgelände")],
+     zitate:[P("Melderegister","Der Stadtbezirk Nord ist der älteste durchgehend bewohnte Teil der Stadt.")]},
+    {n:"Speicher Nordkai", d:14, prosa:10, marker:true, urteil:"schwelle", sid:"s_blattheim",
+     felder:[F("Anschrift","Grundbuch","Speicher Nordkai"),
+             F("zuletzt gesehen","Vermisstenakte","Speicher Nordkai · Gasthof Zum Anker · Bahnhofsmission"),
+             F("Fundort","Spurenakte 11","… Speicher Nordkai …")],
+     zitate:[P("Ole Damm","Ole Damm wurde im Speicher Nordkai von Denn eingearbeitet."),
+             P("Die Übergabe","Hedda, Ada, Ole und Rott arbeiteten fortan zusammen, um die Mappe zum Speicher Nordkai zu bringen."),
+             P("Die Übergabe","Im Speicher Nordkai übergab Ole die Mappe an Denn und die Nachtwache."),
+             P("Die Übergabe","Sie trafen dort auf Ole, einen Anwärter, der ebenfalls ein Interesse hatte, die Mappe an sich zu nehmen und in das Versteck im Speicher Nordkai zu bringen.")]},
+    {n:"Siedlung Wullgrube", d:14, prosa:8, marker:false, urteil:"schwelle", sid:"s_terabur",
+     alias:["Siedlung Wulgrube"],
+     felder:[F("Wohnsitz","Rott Kehl","Sandgrube, Siedlung Wullgrube (1974-1988) · Kanalhaus (ab 1988)"),
+             F("Zuständigkeiten","Melderegister","… Siedlung Wullgrube"),
+             F("hervorgegangen_aus","Melderegister","… Siedlung Wullgrube")],
+     zitate:[]},
+    {n:"Sandgrube · Alte Sandgrube", d:13, prosa:9, marker:false, urteil:"schwelle", sid:"s_tal",
+     alias:["Sandgrube","Alte Sandgrube"],
+     felder:[F("Fundort","Spurenakte 11","Sandgrube, Wullgrube"),
+             F("Wohnsitz","Rott Kehl","Alte Sandgrube, Siedlung Wullgrube"),
+             F("Wohnsitz","Ada Prill","Alte Sandgrube, Siedlung Wullgrube")],
+     zitate:[P("Rott Kehl","Rott, Sohn der Marn, ist ein Schlosser, der in der Alten Sandgrube geboren wurde."),
+             P("Ada Prill","Ada, Tochter des Bern, ist eine Schlosserin aus der Alten Sandgrube."),
+             P("Rott Kehl","Rott wurde in der Alten Sandgrube, dem ältesten Teil der Siedlung Wullgrube, geboren und wuchs dort bei seiner Tante Marlis auf.")]},
+    {n:"Oberrat Marlis Kehl", d:13, prosa:12, marker:false, urteil:"schwelle", sid:"s_remus",
+     felder:[F("Angehörige","Rott Kehl","… Marn Kehl (Mutter) · Marlis Kehl (Tante) …"),
+             F("Kontakt","Ermittlungsakte","… Marlis Kehl")],
+     zitate:[P("Der Beschwerdeausschuss","berief Marlis Kehl einen weiteren Ausschuss ein, an dem nur sie teilnehmen durfte")]},
+    {n:"Nordkai", d:12, prosa:11, marker:false, urteil:"nennung",
+     felder:[F("Stand","Rott Kehl","Nordkai"),
+             F("Zuständigkeiten","Melderegister","… Nordkai …"),
+             F("Konfliktpartei2","Der Kesselstreit","… Nordkai …")],
+     zitate:[P("Die Reviereform","Zudem war sie an der Reviereform beteiligt, Verhandlungen, die den Nordkai in Ober und Unter aufteilten."),
+             P("Herbstweg 14","Der Block fungiert als Durchgang zwischen dem oberen und dem unteren Nordkai und wird von den Bewohnern selbst verwaltet.")]},
+    {n:"Wäscherei Prill", d:12, prosa:6, marker:true, urteil:"schwelle", sid:"s_demmaros",
+     alias:["Wäscherei Prill & Sohn","Waescherei Prill","Wäscherei Brill"],
+     felder:[F("Auftraggeber","Ermittlungsakte","Hehlerei · Geldwäsche · Wäscherei Prill"),
+             F("Zuständigkeiten","Melderegister","Wäscherei Prill …"),
+             F("hervorgegangen_aus","Grundbuch","Wäscherei Prill …")],
+     zitate:[P("Die Nachtwache","Sie halten sich fast ausschließlich in der Grauen Wäscherei auf, einem Hinterhaus, bei dem es unterschiedliche Meinungen gibt, ob es nun gemeldet sei oder nicht.")]},
+    {n:"Gasthof Zum Anker", d:11, prosa:9, marker:true, urteil:"schwelle", sid:"s_baumgard",
+     felder:[F("Anschrift","Grundbuch","Gasthof Zum Anker"),
+             F("Tatort","Akte 6/22","Nordkai · Zum Anker · Bahnhofsmission"),
+             F("zuletzt gesehen","Vermisstenakte","… Gasthof Zum Anker …")],
+     zitate:[P("Der Beschwerdeausschuss","Als der Anker im Kesselstreit vollständig ausbrannte, starb der Wirt, sodass eine neue Konzession vergeben wurde."),
+             P("Rott Kehl","Sie sollten die als vermisst gemeldete Prüferin Azeu zum Anker begleiten.")]},
+    {n:"Amt Süd", d:10, prosa:10, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Der Kesselstreit","Das Amt Süd verlor durch den Streit für immer seinen Sitz im Ausschuss.")]},
+    {n:"Die Zeugen vom Nordkai", d:10, prosa:10, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Das schwarze Heft","Die ebenfalls wichtigen Figuren Prill, Ohm und Damm finden im schwarzen Heft keine Erwähnung.")]},
+    {n:"Bahnhofsmission", d:9, prosa:8, marker:true, urteil:"schwelle", sid:"s_schwarz",
+     felder:[F("Tatort","Akte 6/22","Nordkai · Zum Anker · Bahnhofsmission")],
+     zitate:[P("Ole Damm","Im sechzehnten Lebensjahr ging er für eine Ausbildung in Schlossertechnik zur Werkschule an der Bahnhofsmission."),
+             P("Das schwarze Heft","Eines der beiden Hefte ging an Denn, einen der Gründer der Nachtwache, in seiner Zeit im Werkkreis der Bahnhofsmission.")]},
+    {n:"Kanalhaus", d:8, prosa:5, marker:false, urteil:"schwelle", sid:"s_resif",
+     felder:[F("Anschrift","Grundbuch","Kanalhaus"),
+             F("Anschrift","Melderegister","Kanalhaus (bis 14.03.1994)"),
+             F("Wohnsitz","Ada Prill","Kanalhaus")],
+     zitate:[P("Melderegister","Wohnsitz=Kanalhaus (bis 09.11.1997) — drei Jahre nach dem Grundbuch. Widerspruch, unaufgelöst.")]},
+    {n:"Kesseldeutsch", d:8, prosa:4, marker:false, urteil:"nennung",
+     felder:[F("Umgangssprache","Ada Prill","Kesseldeutsch"),
+             F("Umgangssprache","Wäscherei Prill","Hafenplatt, Kesseldeutsch"),
+             F("Umgangssprache","Revier Sechs","Hafenplatt, Kesseldeutsch")],
+     zitate:[]},
+    {n:"Amt Nord", d:8, prosa:6, marker:false, urteil:"nennung",
+     felder:[F("Tatvorwurf","Ermittlungsakte","Hehlerei · … Amt Nord"),
+             F("Nachfolge","Melderegister","Amt Nord")],
+     zitate:[]},
+    {n:"Der Wirt vom Anker", d:8, prosa:8, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Gasthof Zum Anker","Der Wirt gilt als der eigensinnigste Zeuge des Bezirks.")]},
+    {n:"Kleinbürger", d:7, prosa:7, marker:false, urteil:"nennung", felder:[],
+     zitate:[P("Der Kesselstreit","Ein Hausbesitzer führt Stimmrecht, Grundbucheintrag und Konzession — der Kleinbürger führt nichts davon.")]},
+    {n:"Herbstweg", d:7, prosa:7, marker:false, urteil:"verworfen", grundCode:"kollaps-blau",
+     felder:[], zitate:[]},
+    {n:"Unterer Nordkai", d:6, prosa:5, marker:false, urteil:"nennung",
+     felder:[F("Zweck","Herbstweg 14","Durchgang zwischen dem oberen und dem unteren Nordkai")],
+     zitate:[P("Die Reviereform","Der obere Nordkai kam zu Revier Sechs, während der untere seine Eigenständigkeit behielt.")]},
+    {n:"Der Erste der Nachtwache", d:6, prosa:3, marker:false, urteil:"nennung",
+     felder:[F("Auftraggeber","Ermittlungsakte","Der Erste der Nachtwache · Oberrat"),
+             F("Verantwortlich","Ermittlungsakte","Der Erste der Nachtwache · Oberrat · 11.09.1996")],
+     zitate:[]},
+    {n:"Werkstatt Ohm", d:4, prosa:3, marker:true, urteil:"schwelle", sid:"s_gluthafen",
+     felder:[F("Anschrift","Grundbuch","Werkstatt Ohm, Herbstweg 14 (bis 1988) …"),
+             F("Fundort","Spurenakte 11","Werkstatt Ohm, Herbstweg 14"),
+             F("Anschrift","Melderegister","Werkstatt Ohm")],
+     zitate:[P("Der Kesselstreit","Im Kesselstreit wurde in der Werkstatt Ohm eine zweite Kasse eingerichtet, die behauptete, der Block sei eigenständig.")]},
+    {n:"Kleiner Hof", d:3, prosa:3, marker:false, urteil:"nennung",
+     felder:[F("Bezirk","Herbstweg 14","Kleiner Hof")],
+     zitate:[P("Herbstweg 14","Der Hausflur liegt wie auch der benachbarte Durchgang 12 im Inneren eines Blocks namens Kleiner Sporn am Kleinen Hof.")]},
+    {n:"14.03.1994 · 09.11.1997 · 11.09.1996", d:26, prosa:0, marker:false, urteil:"verworfen",
+     grundCode:"notation", sammel:4,
+     felder:[F("Anschrift","Melderegister","14.03.1994"), F("Verantwortlich","Ermittlungsakte","11.09.1996"),
+             F("Eröffnet","Akte 6/22","09.11.1997"), F("Geschlossen","Akte 6/22","14.03.1994")],
+     zitate:[]}
+  ],
+  lizenz:"Basisgrundriss prozedural erzeugt · keine Fremdraster eingebettet. Inhalt vollständig konstruiert; er belegt die Achse, nicht die Welt.",
+  koordNote:"Alle 11 Anker sind für diese Vorführung gesetzt — dieses Paket ist konstruiert und trägt keine echten Koordinaten. Die Karte hält denselben Vertrag wie Karte:Andaria: bounds [[0,0],[8192,8192]], origin bottom-left, xy."
+};
+
+/* Kunst-Kits pro Skin.  Clean führt bewusst KEINS — das ist kein Fehlbild,
+   das ist die Gestaltung.  Fehlt eine Datei, greift die gezeichnete Bahn. */
+var KITS = {
+  relic:"../../spikes/assets/universal-ui/chronicle-panel-frame.png",
+  signal:"../../spikes/assets/universal-ui/signal-frame-kit-v1.png",
+  archive:"../../spikes/assets/universal-ui/archive-frame-kit-v1.png",
+  clean:null
+};
+
+/* Reichweite je Welt (in der Reiseeinheit der Karte) und Nachfrage-Verteilung.
+   Für Eron sind 217 (≥2), 113 (≥3) und 44 (≥5) gemessen (RB-12 §5.4 / WELT §3.3);
+   die Zwischenwerte sind interpoliert und werden in der Fußzeile so bezeichnet. */
+WELTEN.eron.reichweite   = 5;
+WELTEN.kepler.reichweite = 10;
+WELTEN.nebel.reichweite  = 11;
+WELTEN.eron.verteilung   = {2:217, 3:113, 4:72, 5:44, 6:31, 7:22, 8:16};
+WELTEN.kepler.verteilung = {2:191, 3:99, 4:63, 5:39, 6:27, 7:19, 8:14};
+WELTEN.nebel.verteilung  = {2:206, 3:107, 4:68, 5:42, 6:29, 7:21, 8:15};
+WELTEN.eron.gemessen     = {2:true, 3:true, 5:true};
+WELTEN.kepler.gemessen   = {};
+WELTEN.nebel.gemessen    = {};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3 · Zustand
+   ══════════════════════════════════════════════════════════════════════════ */
+var S = {
+  welt:"eron", skin:"relic", rolle:"leitung", licht:"auto",
+  kontrast:"normal", bewegung:"auto", kunst:"an", sprache:"de",
+  raster:"quadrat", band:"alle", zoom:1.0, cx:2600, cy:5100,
+  gewaehlt:"f_olav", ausgewaehlteSchwelle:null, linse:"grund",
+  regelUeber:{},            /* Feldbezeichnung → überschriebene Klasse       */
+  befoerdert:{}, zurueckgestuft:{},
+  freigabeExtra:[],         /* zusätzlich freigegebene Regionen (Leitung)    */
+  log:[], abdruck:"—", knoten:0,
+  bilder:[], nebelMs:0, sichtMs:0, letzteZeichnung:0,
+  stat:{ringe:0, nennungen:0, figuren:0, linien:0, marken:0},
+  isomorphie:null, zwilling:null, ledgerAuswahl:null, textkarte:false
+};
+function W(){return WELTEN[S.welt];}
+function t(k){var p=I18N[S.sprache]; return (p&&p[k]!==undefined)?p[k]:I18N.de[k];}
+function P_(){return W().paket;}
+function leserId(){return S.rolle;}
+function leser(){return W().leser[S.rolle];}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4 · Farbsonde + Kontrast — echte berechnete Werte, keine Tabelle
+   ══════════════════════════════════════════════════════════════════════════ */
+var sonde=null, farbCache={};
+function farbeRoh(v){
+  if(!sonde){sonde=el("span","vh");sonde.setAttribute("aria-hidden","true");
+    document.body.appendChild(sonde);}   /* außerhalb von #app: zählt nicht mit */
+  sonde.style.color="var("+v+")";
+  var m=getComputedStyle(sonde).color.match(/[\d.]+/g);
+  return m?[+m[0],+m[1],+m[2]]:[0,0,0];
+}
+/* Farbcache: eine Zeichnung fragt ~30 Token ab; jede Abfrage erzwingt sonst
+   eine Stilneuberechnung.  Der Cache wird geleert, sobald sich Skin, Licht,
+   Kontrast oder Bewegung ändern — also genau dann, wenn er falsch würde. */
+function farbe(v){
+  if(farbCache[v]) return farbCache[v];
+  return (farbCache[v]=farbeRoh(v));
+}
+function farbCacheLeeren(){ farbCache={}; }
+function rgbs(c){return "rgb("+Math.round(c[0])+","+Math.round(c[1])+","+Math.round(c[2])+")";}
+function mix(a,b,al){return [a[0]*al+b[0]*(1-al), a[1]*al+b[1]*(1-al), a[2]*al+b[2]*(1-al)];}
+function lum(c){var f=c.map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
+  return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2];}
+function kontrastV(a,b){var l1=lum(a),l2=lum(b);return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5 · DIE NAMENSPRÜFUNG — vier Stufen, deterministisch, ohne Modell.
+       Läuft bei jedem Regelwechsel neu und liefert für JEDE Zeile einen Grund.
+   ══════════════════════════════════════════════════════════════════════════ */
+function klasseVon(label){
+  var p=P_(), u=S.regelUeber[S.welt+"|"+label];
+  if(u) return u;
+  for(var i=0;i<p.felder.length;i++){
+    var f=p.felder[i];
+    if(f.l===label) return f.k;
+    if(f.l.indexOf(" / ")>=0 && f.l.split(" / ").indexOf(label)>=0) return f.k;
+  }
+  return "unbekannt";
+}
+function paketFelder(){
+  var p=P_(), out=[];
+  for(var i=0;i<p.felder.length;i++){
+    var f=p.felder[i];
+    out.push({l:f.l, ev:f.ev, k:(S.regelUeber[S.welt+"|"+f.l]||f.k), geaendert:!!S.regelUeber[S.welt+"|"+f.l]});
+  }
+  return out;
+}
+function pruefe(k){
+  var p=P_(), key=S.welt+"|"+k.n;
+  /* Stufe 0 — Notation und Kollaps auf einen blauen Artikel */
+  if(k.grundCode==="notation")
+    return {urteil:"verworfen", stufe:"Notation",
+      grund:"Formmarker · Muster "+p.notation+" · "+(k.sammel||1)+" Ziele, "+k.d+" Kanten",
+      warum:"Die Notationssperre läuft VOR der Erreichbarkeit — sonst stünde »N. K« im Ortsfeld »sitz« und wäre eine Tür zu einem Datumsformat."};
+  if(k.grundCode==="kollaps-blau")
+    return {urteil:"verworfen", stufe:"Referent-Kollaps",
+      grund:"Schreibvariante eines bereits geschriebenen Artikels",
+      warum:"Der Referent existiert. Es fehlt keine Seite, es fehlt eine Weiterleitung."};
+
+  /* Stufe 1 — die Beförderung des GM sticht die Maschine */
+  if(S.befoerdert[key])
+    return {urteil:"schwelle", stufe:"Beförderung", handbefoerdert:true,
+      grund:"von Hand befördert · Regel gelernt, Umkehr protokolliert",
+      warum:"Eine Beförderung ist auditiert und dauerhaft; sie fügt dem Paket keine Regel hinzu, sondern eine Ausnahme mit Datum."};
+  if(S.zurueckgestuft[key])
+    return {urteil:"nennung", stufe:"Rückstufung", zurueck:true,
+      grund:"seit drei Sitzungen unberührt · zurückgestuft",
+      warum:"Eine Tür ist gemietet, nicht besessen. Der Name behält seine Belegstellen."};
+
+  /* Stufe 2 — Nachfrage */
+  if(k.d < p.schwellenwert)
+    return {urteil:"nennung", stufe:"Nachfrage",
+      grund:"Nachfrage "+k.d+" < Schwellenwert "+p.schwellenwert,
+      warum:"Der Schwellenwert ist eine Paketzeile, kein Code. Bei "+(p.schwellenwert-1)+" wäre dieser Name eine Schwelle."};
+
+  /* Stufe 3 — Erreichbarkeit, gelesen an der Feldbezeichnung, die der Autor
+     ohnehin getippt hat.  Nicht am Wort. Nicht an einem Modell. */
+  var belegOrt=[], belegPers=[], belegAttr=[], belegMehr=[];
+  for(var i=0;i<(k.felder||[]).length;i++){
+    var f=k.felder[i], kl=klasseVon(f.label);
+    if(kl==="ortsfeld") belegOrt.push(f);
+    else if(kl==="personenfeld") belegPers.push(f);
+    else if(kl==="mehrdeutig") belegMehr.push(f);
+    else belegAttr.push(f);
+  }
+  function etiketten(liste){
+    var seen={}, out=[];
+    for(var q=0;q<liste.length;q++){
+      var lb=liste[q].label;
+      if(!seen[lb]){ seen[lb]=1; out.push(lb); }
+    }
+    return out;
+  }
+  if(belegOrt.length)
+    return {urteil:"schwelle", stufe:"Erreichbarkeit", art:"ortsfeld",
+      grund:"Ortsfeld »"+etiketten(belegOrt).join("«, »")+"« · "+belegOrt.length+" Belegstelle"+
+            (belegOrt.length>1?"n":"")+" ("+belegOrt[0].artikel+(belegOrt.length>1?" u. a.":"")+")",
+      warum:"Der Typ folgt aus der Struktur, die der Autor ohnehin ausfüllt — nicht aus einer zweiten Pflicht, die er ignoriert."};
+  if(k.marker)
+    return {urteil:"schwelle", stufe:"Erreichbarkeit", art:"marker",
+      grund:"Marker auf "+W().karte.name+" · Position, Fraktion, Beschreibung",
+      warum:"Ein Marker ist ein Titel MIT Position. Er kostet den GM nichts und war unter der alten These unsichtbar, weil eine Tür ein link_id in einer Passage war."};
+  if(belegPers.length)
+    return {urteil:"schwelle", stufe:"Erreichbarkeit", art:"personenfeld",
+      grund:"Personenfeld »"+etiketten(belegPers).join("«, »")+"« ("+belegPers[0].artikel+
+            (belegPers.length>1?" u. a.":"")+")",
+      warum:"Zu einer Person kann man hingehen. Zu einer Sprache nicht."};
+  if(belegMehr.length)
+    return {urteil:"nennung", stufe:"Erreichbarkeit",
+      grund:"nur mehrdeutige Felder: »"+etiketten(belegMehr).join("«, »")+"«",
+      warum:"»"+belegMehr[0].label+"« trägt im Korpus Personen, Ämter UND Datumsmarker. Ein mehrdeutiges Feld ist kein alleiniger Beleg."};
+  if(belegAttr.length)
+    return {urteil:"nennung", stufe:"Erreichbarkeit",
+      grund:"nur in Feldern »"+etiketten(belegAttr).join("«, »")+"« genannt · "+belegAttr.length+
+            " Belegstelle"+(belegAttr.length>1?"n":"")+" — man kann nicht hingehen",
+      warum:"Zwei Zeilen derselben Infobox, eine ein Name und eine eine Tür, und der Unterschied ist ein Wort, das der Autor ohne Nachdenken getippt hat."};
+  return {urteil:"nennung", stufe:"Erreichbarkeit",
+    grund:"nur im Fließtext genannt, in keinem Feld",
+    warum:"Ein Name, den niemand in ein Feld geschrieben hat, hat keine Adresse — und braucht meistens auch keine."};
+}
+function alleUrteile(){
+  var w=W(), out=[];
+  for(var i=0;i<w.kandidaten.length;i++){
+    var k=w.kandidaten[i], u=pruefe(k);
+    out.push({k:k, u:u});
+  }
+  return out;
+}
+function schwellenLive(){
+  /* Die Schwellen, wie die Prüfung sie JETZT sieht — inkl. Beförderung. */
+  var w=W(), urteile=alleUrteile(), aus=[], extra=0;
+  for(var i=0;i<urteile.length;i++){
+    var r=urteile[i];
+    if(r.u.urteil!=="schwelle") continue;
+    var s=null;
+    if(r.k.sid) for(var j=0;j<w.schwellen.length;j++) if(w.schwellen[j].id===r.k.sid) s=w.schwellen[j];
+    if(s){ aus.push({s:s, k:r.k, u:r.u}); }
+    else { extra++;
+      aus.push({s:{id:"ad_"+i, name:r.k.n, geo:"ohne", nachfrage:r.k.d, koord:"—",
+                   grund:r.u.grund, regel:"hand/beförderung", band:"b_eben", region:null},
+                k:r.k, u:r.u, adhoc:true}); }
+  }
+  return aus;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6 · SICHT — die Projektion.  Der Nebel ist keine Geometrie, sondern eine
+       MENGE VON REGION-IDS; die Maske ist ein abgeleitetes Zeichenartefakt.
+   ══════════════════════════════════════════════════════════════════════════ */
+function sichtRegionen(rolle){
+  var w=W(), r=w.leser[rolle||S.rolle];
+  var ids=r.regionen.slice();
+  if((rolle||S.rolle)!=="leitung"){
+    for(var i=0;i<S.freigabeExtra.length;i++)
+      if(ids.indexOf(S.freigabeExtra[i])<0) ids.push(S.freigabeExtra[i]);
+  }
+  return ids;
+}
+function haeltSchwelle(rolle, sid){
+  var r=W().leser[rolle||S.rolle];
+  if(r.haelt==="alle") return true;
+  return r.haelt.indexOf(sid)>=0;
+}
+function entfernung(s){
+  var w=W(), st=w.karte.standort, x, y;
+  if(s.geo==="ohne") return null;
+  if(s.geo==="umriss"){ var cx=0,cy=0; for(var i=0;i<s.poly.length;i++){cx+=s.poly[i][0];cy+=s.poly[i][1];}
+    x=cx/s.poly.length; y=cy/s.poly.length; }
+  else { x=s.x; y=s.y; }
+  var d=Math.sqrt((x-st.x)*(x-st.x)+(y-st.y)*(y-st.y));
+  return {e:d, reise:d/w.karte.reise};
+}
+/* Die Szene, wie sie AN DIESEN LESER ausgeliefert würde.  Genau dieses
+   Objekt wird serialisiert und im Zwillingsbeweis Byte für Byte verglichen. */
+function szene(rolle){
+  var w=W(), t0=performance.now();
+  var ids=sichtRegionen(rolle);
+  var o={ karte:w.karte.id, bounds:w.karte.bounds, origin:w.karte.origin,
+          raster:S.raster, band:S.band, sicht_regionen:ids.slice().sort(),
+          figuren:[], schwellen:[] };
+  for(var i=0;i<w.figuren.length;i++){
+    var f=w.figuren[i];
+    o.figuren.push({id:f.id, name:f.name, x:Math.round(f.x), y:Math.round(f.y),
+      band:f.band, tp:f.hp, tp_max:f.hpMax, zustand:f.zustand.slice()});
+  }
+  var live=schwellenLive();
+  for(var j=0;j<live.length;j++){
+    var s=live[j].s;
+    if(!haeltSchwelle(rolle, s.id)) continue;         /* ← die ganze These    */
+    var e=entfernung(s);
+    o.schwellen.push({id:s.id, name:s.name, geo:s.geo,
+      x:(s.geo==="punkt"?s.x:null), y:(s.geo==="punkt"?s.y:null),
+      nachfrage:s.nachfrage, entfernung:e?Math.round(e.e):null,
+      reise:e?Number(e.reise.toFixed(2)):null, grund:s.grund});
+  }
+  S.sichtMs=performance.now()-t0;
+  return o;
+}
+function stabil(o){
+  if(o===null||o===undefined) return "null";
+  if(Array.isArray(o)) return "["+o.map(stabil).join(",")+"]";
+  if(typeof o==="object"){
+    var k=Object.keys(o).sort();
+    return "{"+k.map(function(x){return JSON.stringify(x)+":"+stabil(o[x]);}).join(",")+"}";
+  }
+  return JSON.stringify(o);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7 · DIE LEINWAND
+   ══════════════════════════════════════════════════════════════════════════ */
+var cv=null, ctx=null, CW=1000, CH=640, DPR=1;
+var platte=null, plattenSchluessel="";
+
+function noise2(seed,x,y){
+  var h=(Math.imul(x|0,374761393)+Math.imul(y|0,668265263)+Math.imul(seed|0,1442695041))>>>0;
+  h=(h^(h>>>13))>>>0; h=Math.imul(h,1274126177)>>>0;
+  return ((h^(h>>>16))>>>0)/4294967295;
+}
+function smooth(t_){return t_*t_*(3-2*t_);}
+function wert2(seed,x,y){
+  var xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi;
+  var a=noise2(seed,xi,yi), b=noise2(seed,xi+1,yi), c=noise2(seed,xi,yi+1), d=noise2(seed,xi+1,yi+1);
+  var u=smooth(xf), v=smooth(yf);
+  return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;
+}
+function fbm(seed,x,y){
+  var s=0, amp=.5, f=1;
+  for(var o=0;o<4;o++){ s+=amp*wert2(seed+o*97,x*f,y*f); amp*=.5; f*=2; }
+  return s;
+}
+
+/* Die Platte: ein 512² Offscreen-Puffer über die vollen Kartengrenzen.
+   Sie wird nur neu gebaut, wenn Welt oder Palette sich ändern — das Zeichnen
+   pro Bild ist danach EIN drawImage. */
+function baueplatte(){
+  var w=W(), k=[S.welt,S.skin,istDunkel()?"d":"h",S.kontrast].join("|");
+  if(platte && plattenSchluessel===k) return;
+  plattenSchluessel=k;
+  /* Geländeplatten sind teuer (ein fbm je Pixel) und werden deshalb kleiner
+     gerastert als die vektoriellen Deck- und Grundrissplatten. */
+  var N = (w.karte.plate==="gelaende") ? 352 : 512;
+  platte=document.createElement("canvas"); platte.width=N; platte.height=N;
+  var p=platte.getContext("2d");
+  var pal=[farbe("--p1"),farbe("--p2"),farbe("--p3"),farbe("--p4"),farbe("--p5")];
+  var wasser=farbe("--water"), linie=farbe("--grid");
+
+  if(w.karte.plate==="gelaende"){
+    var img=p.createImageData(N,N), dat=img.data, hs=new Float32Array(N*N);
+    for(var y=0;y<N;y++) for(var x=0;x<N;x++){
+      var nx=x/N*7.0, ny=y/N*7.0;
+      var h=fbm(w.karte.seed,nx,ny);
+      /* Landmasse: weicher Abfall zum Rand, damit eine Küste entsteht */
+      var dx=(x/N-.46)*2.05, dy=(y/N-.52)*2.05;
+      h=h*1.12 - .34*Math.sqrt(dx*dx+dy*dy);
+      hs[y*N+x]=h;
+    }
+    function stufe(h){ if(h<w.karte.wasserhoehe) return -1;
+      var q=(h-w.karte.wasserhoehe)/(0.62-w.karte.wasserhoehe);
+      return Math.max(0,Math.min(4,Math.floor(q*5))); }
+    for(var y2=0;y2<N;y2++) for(var x2=0;x2<N;x2++){
+      var i=(y2*N+x2)*4, st=stufe(hs[y2*N+x2]);
+      var c = st<0 ? wasser : pal[st];
+      /* Höhenlinie: Stufenwechsel gegenüber dem rechten/unteren Nachbarn */
+      var st2 = x2<N-1 ? stufe(hs[y2*N+x2+1]) : st;
+      var st3 = y2<N-1 ? stufe(hs[(y2+1)*N+x2]) : st;
+      if(st2!==st || st3!==st) c=mix(linie,c,.42);
+      dat[i]=c[0]; dat[i+1]=c[1]; dat[i+2]=c[2]; dat[i+3]=255;
+    }
+    p.putImageData(img,0,0);
+  }
+  else if(w.karte.plate==="deck"){
+    p.fillStyle=rgbs(pal[0]); p.fillRect(0,0,N,N);
+    /* Ring: konzentrische Deckssegmente, deterministisch */
+    p.save(); p.translate(N*.5,N*.5);
+    for(var r=0;r<5;r++){
+      p.beginPath(); p.arc(0,0,60+r*44,0,Math.PI*2);
+      p.strokeStyle=rgbs(mix(linie,pal[1],.35)); p.lineWidth=1.2; p.stroke();
+    }
+    for(var a=0;a<24;a++){
+      p.beginPath(); p.moveTo(0,0);
+      p.lineTo(Math.cos(a/24*Math.PI*2)*260, Math.sin(a/24*Math.PI*2)*260);
+      p.strokeStyle=rgbs(mix(linie,pal[0],.2)); p.lineWidth=.8; p.stroke();
+    }
+    p.restore();
+    /* Module: 34 deterministische Rechtecke */
+    for(var m=0;m<34;m++){
+      var rx=noise2(w.karte.seed,m,1)*N*.82+N*.06;
+      var ry=noise2(w.karte.seed,m,2)*N*.82+N*.06;
+      var rw=26+noise2(w.karte.seed,m,3)*54, rh=22+noise2(w.karte.seed,m,4)*46;
+      var lvl=Math.floor(noise2(w.karte.seed,m,5)*4)+1;
+      p.fillStyle=rgbs(pal[lvl]); p.fillRect(rx,ry,rw,rh);
+      p.strokeStyle=rgbs(mix(linie,pal[lvl],.55)); p.lineWidth=1.4; p.strokeRect(rx,ry,rw,rh);
+      if(noise2(w.karte.seed,m,6)>.6){
+        p.fillStyle=rgbs(mix(linie,pal[lvl],.28));
+        p.fillRect(rx+4,ry+4,rw-8,4);
+      }
+    }
+  }
+  else { /* grundriss */
+    p.fillStyle=rgbs(pal[1]); p.fillRect(0,0,N,N);
+    /* Außenwand */
+    p.strokeStyle=rgbs(linie); p.lineWidth=5; p.strokeRect(34,34,N-68,N-68);
+    /* Räume: deterministisches Rasterlayout */
+    var cols=5, rows=5;
+    for(var cy2=0;cy2<rows;cy2++) for(var cx2=0;cx2<cols;cx2++){
+      var jx=noise2(w.karte.seed,cx2,cy2)*10-5, jy=noise2(w.karte.seed,cy2,cx2)*10-5;
+      var bx=44+cx2*((N-88)/cols)+jx, by=44+cy2*((N-88)/rows)+jy;
+      var bw=(N-88)/cols-14, bh=(N-88)/rows-14;
+      var lvl2=Math.floor(noise2(w.karte.seed,cx2*7+cy2,9)*3);
+      p.fillStyle=rgbs(pal[lvl2]); p.fillRect(bx,by,bw,bh);
+      p.strokeStyle=rgbs(linie); p.lineWidth=2.4; p.strokeRect(bx,by,bw,bh);
+      /* Tür: eine Lücke in der Wand */
+      p.strokeStyle=rgbs(pal[lvl2]); p.lineWidth=3.4;
+      p.beginPath(); p.moveTo(bx+bw*.42,by+bh); p.lineTo(bx+bw*.62,by+bh); p.stroke();
+      /* Dielen */
+      p.strokeStyle=rgbs(mix(linie,pal[lvl2],.14)); p.lineWidth=.7;
+      for(var dl=1;dl<5;dl++){ p.beginPath(); p.moveTo(bx,by+bh*dl/5); p.lineTo(bx+bw,by+bh*dl/5); p.stroke(); }
+    }
+  }
+}
+function istDunkel(){
+  if(S.licht==="dunkel") return true;
+  if(S.licht==="hell") return false;
+  return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+/* Transformation Welt → Bildschirm.  origin bottom-left, Reihenfolge xy. */
+function skala(){ return (CW/8192)*S.zoom; }
+function w2s(x,y){ var s=skala(); return [ (x-S.cx)*s + CW/2, CH/2 - (y-S.cy)*s ]; }
+function s2w(sx,sy){ var s=skala(); return [ (sx-CW/2)/s + S.cx, S.cy - (sy-CH/2)/s ]; }
+
+function rasterFang(x,y){
+  if(S.raster==="quadrat"){ var c=128;
+    return [Math.floor(x/c)*c+c/2, Math.floor(y/c)*c+c/2]; }
+  if(S.raster==="hex"){
+    var R=73.9, wq=Math.sqrt(3)*R, hq=1.5*R;
+    var row=Math.round(y/hq);
+    var off=(row%2!==0)?wq/2:0;
+    var col=Math.round((x-off)/wq);
+    return [col*wq+off, row*hq];
+  }
+  return [Math.round(x), Math.round(y)];
+}
+
+var SCHRIFT="serif";
+function zeichne(){
+  if(!ctx) return;
+  var t0=performance.now(), w=W();
+  SCHRIFT=getComputedStyle(document.body).fontFamily||"serif";
+  baueplatte();
+  S.stat={ringe:0, nennungen:0, figuren:0, linien:0, marken:0};
+
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,CW,CH);
+  ctx.fillStyle=rgbs(farbe("--sunk")); ctx.fillRect(0,0,CW,CH);
+
+  /* 1 · Platte */
+  var a=w2s(0,8192), b=w2s(8192,0);
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(platte, a[0], a[1], b[0]-a[0], b[1]-a[1]);
+
+  /* 2 · Raster */
+  var grid=farbe("--grid");
+  ctx.strokeStyle="rgba("+grid.map(Math.round).join(",")+",.30)";
+  ctx.lineWidth=1;
+  if(S.raster==="quadrat"){
+    var c=128, s=skala(), erst=Math.floor(s2w(0,CH)[0]/c)*c, letzt=s2w(CW,0)[0];
+    if((letzt-erst)/c < 400){
+      ctx.beginPath();
+      for(var gx=erst; gx<=letzt; gx+=c){ var p1=w2s(gx,0), p2=w2s(gx,8192);
+        ctx.moveTo(p1[0],p1[1]); ctx.lineTo(p2[0],p2[1]); S.stat.linien++; }
+      var ey=Math.floor(s2w(0,CH)[1]/c)*c, ly=s2w(0,0)[1];
+      for(var gy=ey; gy<=ly; gy+=c){ var p3=w2s(0,gy), p4=w2s(8192,gy);
+        ctx.moveTo(p3[0],p3[1]); ctx.lineTo(p4[0],p4[1]); S.stat.linien++; }
+      ctx.stroke();
+    }
+  } else if(S.raster==="hex"){
+    var R=73.9, wq=Math.sqrt(3)*R, hq=1.5*R;
+    var y0=Math.max(0,Math.floor(s2w(0,CH)[1]/hq)-1), y1=Math.min(8192/hq, Math.ceil(s2w(0,0)[1]/hq)+1);
+    var x0=Math.max(0,Math.floor(s2w(0,0)[0]/wq)-1), x1=Math.min(8192/wq, Math.ceil(s2w(CW,0)[0]/wq)+1);
+    if((y1-y0)*(x1-x0) < 7000){
+      var sq=skala(), ox=[], oy=[];
+      for(var k3=0;k3<6;k3++){
+        var ag=Math.PI/180*(60*k3-90);
+        ox.push(R*Math.cos(ag)*sq); oy.push(-R*Math.sin(ag)*sq);
+      }
+      ctx.beginPath();
+      for(var ry=y0; ry<=y1; ry++){
+        var off=(ry%2!==0)?wq/2:0;
+        for(var rx=x0; rx<=x1; rx++){
+          var ctr=w2s(rx*wq+off, ry*hq);
+          if(ctr[0]<-90||ctr[0]>CW+90||ctr[1]<-90||ctr[1]>CH+90) continue;
+          ctx.moveTo(ctr[0]+ox[0], ctr[1]+oy[0]);
+          for(var k4=1;k4<6;k4++) ctx.lineTo(ctr[0]+ox[k4], ctr[1]+oy[k4]);
+          ctx.closePath(); S.stat.linien++;
+        }
+      }
+      ctx.stroke();
+    }
+  } /* "ohne": kein Raster, dafür unten der Maßstab */
+
+  /* 3 · Regionsumrisse (die freigegebenen sind zugleich die Nebelöffnung) */
+  var frei=sichtRegionen();
+  var t1=performance.now();
+  var fog=farbe("--fog"), fogA=(S.kontrast==="high")?.94:.86;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0,0,CW,CH);
+  for(var ri=0; ri<w.karte.regionen.length; ri++){
+    var reg=w.karte.regionen[ri];
+    if(frei.indexOf(reg.id)<0) continue;
+    var pts=reg.poly;
+    for(var pi=0;pi<pts.length;pi++){
+      var sp2=w2s(pts[pi][0],pts[pi][1]);
+      if(pi===0) ctx.moveTo(sp2[0],sp2[1]); else ctx.lineTo(sp2[0],sp2[1]);
+    }
+    ctx.closePath();
+  }
+  ctx.fillStyle="rgba("+fog.map(Math.round).join(",")+","+fogA+")";
+  ctx.fill("evenodd");
+  ctx.restore();
+  /* Nebelkante: weich, wenn Bewegung erlaubt ist; sonst hart */
+  var kante=farbe("--fogedge");
+  var weich=getComputedStyle(document.documentElement).getPropertyValue("--feather").trim()!=="0";
+  for(var ri2=0; ri2<w.karte.regionen.length; ri2++){
+    var reg2=w.karte.regionen[ri2];
+    if(frei.indexOf(reg2.id)<0) continue;
+    var lagen = weich ? [[7,.07],[4,.13],[1.6,.9]] : [[2.4,1]];
+    for(var li=0; li<lagen.length; li++){
+      ctx.beginPath();
+      for(var pj=0;pj<reg2.poly.length;pj++){
+        var s3=w2s(reg2.poly[pj][0],reg2.poly[pj][1]);
+        if(pj===0) ctx.moveTo(s3[0],s3[1]); else ctx.lineTo(s3[0],s3[1]);
+      }
+      ctx.closePath();
+      ctx.strokeStyle="rgba("+kante.map(Math.round).join(",")+","+lagen[li][1]+")";
+      ctx.lineWidth=lagen[li][0]; ctx.stroke();
+    }
+  }
+  S.nebelMs=performance.now()-t1;
+
+  /* 4 · Die Schwellen — dünne, NICHT geschlossene Ringe.
+         Eine Nennung wird als NICHTS gezeichnet.  Kein Geist, kein Pin,
+         kein gepunkteter Kreis.  Das ist der ehrliche Render. */
+  var live=schwellenLive(), ringf=farbe("--ring");
+  ctx.font='600 11px '+SCHRIFT;
+  for(var si=0; si<live.length; si++){
+    var s=live[si].s;
+    if(!haeltSchwelle(null, s.id)) continue;
+    if(s.geo==="ohne"){ S.stat.marken++; continue; }
+    var gewaehlt = S.ausgewaehlteSchwelle===s.id;
+    ctx.strokeStyle=rgbs(ringf);
+    ctx.lineWidth=gewaehlt?2.4:1.5;
+    if(s.geo==="umriss"){
+      ctx.beginPath();
+      for(var pk=0;pk<s.poly.length-1;pk++){          /* letzte Kante fehlt   */
+        var s4=w2s(s.poly[pk][0],s.poly[pk][1]);
+        if(pk===0) ctx.moveTo(s4[0],s4[1]); else ctx.lineTo(s4[0],s4[1]);
+      }
+      var sl=w2s(s.poly[s.poly.length-1][0],s.poly[s.poly.length-1][1]);
+      ctx.lineTo(sl[0],sl[1]);
+      ctx.stroke();
+      var cc=[0,0]; for(var pc=0;pc<s.poly.length;pc++){cc[0]+=s.poly[pc][0];cc[1]+=s.poly[pc][1];}
+      var ctr=w2s(cc[0]/s.poly.length, cc[1]/s.poly.length);
+      beschrifte(s, ctr[0], ctr[1]+2);
+    } else {
+      var sp5=w2s(s.x,s.y), rr=gewaehlt?15:12;
+      ctx.beginPath();
+      ctx.arc(sp5[0],sp5[1],rr, Math.PI*0.16, Math.PI*1.84);   /* unvollendet */
+      ctx.stroke();
+      if(gewaehlt){
+        ctx.beginPath(); ctx.arc(sp5[0],sp5[1],rr+5, Math.PI*0.16, Math.PI*1.84);
+        ctx.strokeStyle="rgba("+ringf.map(Math.round).join(",")+",.35)";
+        ctx.lineWidth=1; ctx.stroke();
+      }
+      beschrifte(s, sp5[0], sp5[1]-rr-4);
+    }
+    S.stat.ringe++; S.stat.marken++;
+  }
+  function beschrifte(s,x,y){
+    var e=entfernung(s);
+    var txt=s.name+" · "+(e?fix(e.reise,0)+" "+W().karte.reiseWort:t("keineGeom"));
+    var m=ctx.measureText(txt);
+    ctx.fillStyle="rgba("+farbe("--surf").map(Math.round).join(",")+",.88)";
+    ctx.fillRect(x-m.width/2-4, y-13, m.width+8, 15);
+    ctx.strokeStyle="rgba("+ringf.map(Math.round).join(",")+",.5)"; ctx.lineWidth=1;
+    ctx.strokeRect(x-m.width/2-4, y-13, m.width+8, 15);
+    ctx.fillStyle=rgbs(farbe("--ink"));
+    ctx.textAlign="center"; ctx.fillText(txt, x, y-2); ctx.textAlign="left";
+  }
+
+  /* 5 · Figuren.  Höhenband als Form (Badge), nicht als Farbe. */
+  for(var fi=0; fi<w.figuren.length; fi++){
+    var f=w.figuren[fi];
+    if(S.band!=="alle" && f.band!==S.band){ zeichneFigur(f,true); continue; }
+    zeichneFigur(f,false);
+  }
+  function zeichneFigur(f, gedimmt){
+    var sp6=w2s(f.x,f.y), r=13;
+    var frei2=sichtRegionen();
+    ctx.globalAlpha = gedimmt ? .28 : 1;
+    ctx.beginPath(); ctx.arc(sp6[0],sp6[1],r,0,Math.PI*2);
+    ctx.fillStyle=rgbs(farbe("--surf")); ctx.fill();
+    ctx.strokeStyle=rgbs(farbe(f.seite==="us"?"--us":"--them")); ctx.lineWidth=2.4; ctx.stroke();
+    /* TP als Bogen */
+    ctx.beginPath();
+    ctx.arc(sp6[0],sp6[1],r+3.4, -Math.PI/2, -Math.PI/2 + Math.PI*2*(f.hp/f.hpMax));
+    ctx.strokeStyle=rgbs(farbe(f.seite==="us"?"--us":"--them")); ctx.lineWidth=2.4; ctx.stroke();
+    ctx.fillStyle=rgbs(farbe("--ink"));
+    ctx.font='700 10px '+SCHRIFT;
+    ctx.textAlign="center"; ctx.fillText(f.kurz, sp6[0], sp6[1]+3.5); ctx.textAlign="left";
+    /* Höhenband-Badge */
+    var bd=null; for(var bi=0;bi<w.karte.baender.length;bi++) if(w.karte.baender[bi].id===f.band) bd=w.karte.baender[bi];
+    if(bd){
+      ctx.fillStyle=rgbs(farbe("--surf")); ctx.strokeStyle=rgbs(farbe("--line2")); ctx.lineWidth=1;
+      ctx.fillRect(sp6[0]+8, sp6[1]-19, 15, 12); ctx.strokeRect(sp6[0]+8, sp6[1]-19, 15, 12);
+      ctx.fillStyle=rgbs(farbe("--ink2"));
+      ctx.font='600 9px '+SCHRIFT;
+      ctx.textAlign="center"; ctx.fillText(bd.kurz, sp6[0]+15.5, sp6[1]-10); ctx.textAlign="left";
+    }
+    /* Zustand: gestrichelter Ring statt Farbe */
+    if(f.zustand.length){
+      ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.arc(sp6[0],sp6[1],r+7,0,Math.PI*2);
+      ctx.strokeStyle=rgbs(farbe("--warn")); ctx.lineWidth=1.4; ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if(S.gewaehlt===f.id){
+      ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.arc(sp6[0],sp6[1],r+10,0,Math.PI*2);
+      ctx.strokeStyle=rgbs(farbe("--focus")); ctx.lineWidth=2; ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.globalAlpha=1;
+    S.stat.figuren++;
+  }
+
+  /* 6 · Standort der Gruppe */
+  var st=w2s(w.karte.standort.x, w.karte.standort.y);
+  ctx.strokeStyle=rgbs(farbe("--acc")); ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(st[0]-7,st[1]); ctx.lineTo(st[0]+7,st[1]);
+  ctx.moveTo(st[0],st[1]-7); ctx.lineTo(st[0],st[1]+7); ctx.stroke();
+
+  /* 7 · Maßstab + Koordinatenrahmen */
+  var s7=skala(), einheiten=1000, px=einheiten*s7;
+  ctx.strokeStyle=rgbs(farbe("--ink2")); ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(14,CH-16); ctx.lineTo(14+px,CH-16);
+  ctx.moveTo(14,CH-20); ctx.lineTo(14,CH-12);
+  ctx.moveTo(14+px,CH-20); ctx.lineTo(14+px,CH-12); ctx.stroke();
+  ctx.fillStyle=rgbs(farbe("--ink2"));
+  ctx.font='600 10px '+SCHRIFT;
+  ctx.fillText("1 000 "+w.karte.einheit+" ≈ "+fix(1000/w.karte.reise,1)+" "+w.karte.reiseWort, 14, CH-22);
+  /* Kompass */
+  ctx.save(); ctx.translate(CW-26, 26);
+  ctx.strokeStyle=rgbs(farbe("--ink3")); ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(3,2); ctx.lineTo(0,0); ctx.lineTo(-3,2); ctx.closePath();
+  ctx.fillStyle=rgbs(farbe("--ink2")); ctx.fill();
+  ctx.restore();
+
+  var dt=performance.now()-t0;
+  S.letzteZeichnung=dt;
+  S.bilder.push(dt); if(S.bilder.length>90) S.bilder.shift();
+}
+function bildStat(){
+  if(!S.bilder.length) return {med:0,p95:0,n:0};
+  var a=S.bilder.slice().sort(function(x,y){return x-y;});
+  return {med:a[Math.floor(a.length*.5)], p95:a[Math.min(a.length-1,Math.floor(a.length*.95))], n:a.length};
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8 · Leinwand-Interaktion.  Der Tastaturpfad ist der PRIMÄRE.
+   ══════════════════════════════════════════════════════════════════════════ */
+var zieht=null;
+function figurVon(id){var f=W().figuren; for(var i=0;i<f.length;i++) if(f[i].id===id) return f[i]; return null;}
+function bewege(f, dx, dy){
+  var np=rasterFang(f.x+dx, f.y+dy);
+  f.x=Math.max(0,Math.min(8192,np[0])); f.y=Math.max(0,Math.min(8192,np[1]));
+  zeichne(); baueOrd(); baueMesswerte(); karteAlt();
+  ansage(f.name+" auf "+Math.round(f.x)+", "+Math.round(f.y)+" · "+t("band")+" "+bandName(f.band));
+}
+function bandName(id){var b=W().karte.baender; for(var i=0;i<b.length;i++) if(b[i].id===id) return b[i].name; return "—";}
+function ansage(s){ var n=$("#ansage"); if(n) n.textContent=s; }
+
+function schrittWeite(){
+  if(S.raster==="quadrat") return 128;
+  if(S.raster==="hex") return 73.9*1.5;
+  return 64;
+}
+function leinwandTasten(e){
+  var f=figurVon(S.gewaehlt); if(!f) return;
+  var d=schrittWeite(), gross=e.shiftKey?4:1, ok=true;
+  if(e.key==="ArrowLeft") bewege(f,-d*gross,0);
+  else if(e.key==="ArrowRight") bewege(f,d*gross,0);
+  else if(e.key==="ArrowUp") bewege(f,0,d*gross);
+  else if(e.key==="ArrowDown") bewege(f,0,-d*gross);
+  else ok=false;
+  if(ok){ e.preventDefault(); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9 · Strukturabdruck.  Tag + Rolle + aria + Tiefe.  KEIN Text, keine Werte.
+       Regel: NUR die Achse Rolle darf ihn ändern.  Jede andere Änderung wäre
+       ein verstecktes Sonderfall-Layout — genau das, was Universalität killt.
+   ══════════════════════════════════════════════════════════════════════════ */
+function strukturAbdruck(){
+  var sig=[], n=0, root=document.getElementById("app");
+  (function walk(node, d){
+    var kids=node.children;
+    for(var i=0;i<kids.length;i++){
+      var c=kids[i];
+      /* Der Prüfbericht ist die Diagnose, nicht das Produkt: er wächst mit
+         dem Protokoll und ist deshalb vom Abdruck ausgenommen. */
+      var cid = c.getAttribute ? c.getAttribute("id") : null;
+      if(cid==="bericht" || cid==="repgrid") continue;
+      sig.push(d+":"+c.tagName+
+        (c.getAttribute("role")?"["+c.getAttribute("role")+"]":"")+
+        (c.hasAttribute("aria-current")?"@cur":"")+
+        (c.hasAttribute("aria-selected")?"@sel":"")+
+        (c.hasAttribute("disabled")?"@dis":""));
+      n++;
+      walk(c,d+1);
+    }
+  })(root,0);
+  S.knoten=n;
+  return hex8(h32(sig.join("|")));
+}
+/* ── Fokuswache ────────────────────────────────────────────────────────────
+   Jede Neuzeichnung baut Bedienelemente neu auf und würde den Fokus töten.
+   Jedes erzeugte Bedienelement trägt deshalb einen stabilen Schlüssel, und
+   der Neuaufbau setzt den Fokus auf denselben Schlüssel zurück. */
+function fk(n,k){ n.dataset.fk=k; return n; }
+function merkeFokus(){
+  var a=document.activeElement;
+  while(a && a!==document.body){
+    if(a.dataset && a.dataset.fk) return a.dataset.fk;
+    if(a.id==="karte") return "#karte";
+    a=a.parentNode;
+  }
+  return null;
+}
+function stelleFokusHer(k){
+  if(!k) return;
+  try{
+    if(k==="#karte"){ var c=$("#karte"); if(c) c.focus({preventScroll:true}); return; }
+    var n=document.querySelector('[data-fk="'+k.replace(/"/g,'\\"')+'"]');
+    if(n && n.focus) n.focus({preventScroll:true});
+  }catch(e){}
+}
+
+function protokoll(achse, von, nach, vorher, nachher){
+  var gleich = vorher===nachher;
+  /* Eine Regeländerung DARF den Abdruck ändern — sie erzeugt oder löscht
+     eine Schwelle, und eine Schwelle ist eine Zeile. Nicht anwendbar. */
+  var na = (achse==="Regel");
+  var erwartet = na ? true : ((achse==="Rolle") ? !gleich : gleich);
+  S.log.unshift({achse:achse, von:String(von), nach:String(nach), na:na,
+    vorher:vorher, nachher:nachher, gleich:gleich, erwartet:erwartet});
+  if(S.log.length>20) S.log.pop();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   10 · Der Zwillingsbeweis — über die serialisierte Szene UND über das
+        gerenderte DOM.  Die beiden Leser halten identische Hälften bis auf
+        die Passagen, die EINE Schwelle nennen.
+   ══════════════════════════════════════════════════════════════════════════ */
+function zwillingsbeweis(){
+  var w=W(), z=w.zwilling, diff=null;
+  for(var i=0;i<w.schwellen.length;i++) if(w.schwellen[i].id===z.differenz) diff=w.schwellen[i];
+  if(!w.leser.__leer) w.leser.__leer={name:"Leser ohne Kampagne", haelt:[], regionen:w.leser.b.regionen};
+  var sa=szene(z.a), sb=szene(z.b);
+  var ja=stabil(sa), jb=stabil(sb);
+  var sn=szene("__leer"), jn=stabil(sn);
+
+  var name=diff?diff.name:"—";
+  var trefferA=(ja.split(name).length-1), trefferB=(jb.split(name).length-1);
+  /* Live-Scan über das WIRKLICH gerenderte DOM.  Der Prüfstand
+     (#bericht) und die Methodenfußzeile (#fuss) sind ausgenommen und stehen
+     unten im Bericht als Ausnahme benannt: sie zeigen absichtlich die
+     Bodenwahrheit, sie sind nicht die Auslieferung an den Leser. */
+  var teile=["kopf","shell","pruefzone","shelf"], dom="";
+  for(var q=0;q<teile.length;q++){
+    var n=document.getElementById(teile[q]);
+    if(n) dom+=n.innerHTML;
+  }
+  var domTreffer=dom.split(name).length-1;
+
+  var res={
+    name:name, passagen:z.anzahlPassagen, erklaerung:z.erklaerung,
+    aName:w.leser[z.a].name, bName:w.leser[z.b].name,
+    aBytes:utf8len(ja), bBytes:utf8len(jb), nBytes:utf8len(jn),
+    aHash:hex8(h32(ja)), bHash:hex8(h32(jb)), nHash:hex8(h32(jn)),
+    aSchwellen:sa.schwellen.length, bSchwellen:sb.schwellen.length, nSchwellen:sn.schwellen.length,
+    trefferA:trefferA, trefferB:trefferB, domTreffer:domTreffer, domRolle:S.rolle,
+    differenz:utf8len(ja)-utf8len(jb),
+    proben:[
+      {f:"Zwilling B enthält den Namen 0×", ok:trefferB===0, w:trefferB+"×"},
+      {f:"Zwilling A enthält ihn", ok:trefferA>0, w:trefferA+"×"},
+      {f:"B hat genau eine Schwelle weniger", ok:(sa.schwellen.length-sb.schwellen.length)===1,
+       w:sa.schwellen.length+" → "+sb.schwellen.length},
+      {f:"Nebelmenge beider Zwillinge identisch",
+       ok:stabil(sa.sicht_regionen)===stabil(sb.sicht_regionen),
+       w:sb.sicht_regionen.join(", ")},
+      {f:"Leser ohne Kampagne: 0 Schwellen", ok:sn.schwellen.length===0, w:sn.schwellen.length+""},
+      {f:"DOM-Scan der ganzen Seite (Rolle "+S.rolle+")",
+       ok:(S.rolle==="leitung"||S.rolle==="a") ? true : domTreffer===0,
+       w:domTreffer+" Treffer", na:(S.rolle==="leitung"||S.rolle==="a")}
+    ]
+  };
+  S.zwilling=res;
+  return res;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   11 · Isomorphieprobe — rendert JEDE Welt einmal in dasselbe DOM und
+        vergleicht die Strukturabdrücke.  Echt, nicht behauptet.
+   ══════════════════════════════════════════════════════════════════════════ */
+var inProbe=false;
+function isomorphieprobe(){
+  if(inProbe) return;
+  inProbe=true;
+  /* Die Probe vergleicht den GRUNDZUSTAND: gleiche Rolle, gleiche Linse,
+     keine Auswahl.  Eine Auswahl ist eine Nutzerhandlung, keine Achse. */
+  var vorher={welt:S.welt, linse:S.linse, sel:S.ledgerAuswahl,
+              schwelle:S.ausgewaehlteSchwelle, figur:S.gewaehlt}, res={};
+  var reihe=["eron","kepler","nebel"];
+  S.linse="grund"; S.ledgerAuswahl=null; S.ausgewaehlteSchwelle=null; S.gewaehlt="f_olav";
+  for(var i=0;i<reihe.length;i++){
+    S.welt=reihe[i];
+    bauNurDom();
+    res[reihe[i]]=strukturAbdruck();
+  }
+  S.welt=vorher.welt; S.linse=vorher.linse; S.ledgerAuswahl=vorher.sel;
+  S.ausgewaehlteSchwelle=vorher.schwelle; S.gewaehlt=vorher.figur;
+  bauNurDom();
+  inProbe=false;
+  S.isomorphie={werte:res,
+    gleich:(res.eron===res.kepler && res.kepler===res.nebel),
+    knoten:S.knoten};
+  return S.isomorphie;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   12 · DOM-Aufbau
+   ══════════════════════════════════════════════════════════════════════════ */
+var ACHSEN=[
+  {k:"ach_inhalt", feld:"welt", opt:[["eron","Eron"],["kepler","Kepler-9"],["nebel","Nebelakte"]]},
+  {k:"ach_skin", feld:"skin", opt:[["relic","Relic"],["signal","Signal"],["archive","Archive"],["clean","Clean"]]},
+  {k:"ach_rolle", feld:"rolle", opt:[["leitung","r_leitung"],["a","r_a"],["b","r_b"],["beob","r_beob"]], i18n:true},
+  {k:"ach_licht", feld:"licht", opt:[["auto","l_auto"],["hell","l_hell"],["dunkel","l_dunkel"]], i18n:true},
+  {k:"ach_zugang", feld:"zugang", opt:[["normal","z_normal"],["kontrast","z_kontrast"],["ruhig","z_ruhig"]], i18n:true, multi:true},
+  {k:"ach_kunst", feld:"kunst", opt:[["an","k_an"],["aus","k_aus"]], i18n:true},
+  {k:"ach_sprache", feld:"sprache", opt:[["de","Deutsch"],["fi","Suomi"]]}
+];
+function achsenAktiv(a,val){
+  if(a.feld==="zugang"){
+    if(val==="kontrast") return S.kontrast==="high";
+    if(val==="ruhig") return S.bewegung==="reduced";
+    return S.kontrast!=="high" && S.bewegung!=="reduced";
+  }
+  return S[a.feld]===val;
+}
+function baueAchsen(){
+  var box=$("#axes"); box.textContent="";
+  ACHSEN.forEach(function(a){
+    var d=el("div","axis");
+    d.appendChild(el("span","axis__lab", t(a.k)));
+    var seg=el("div","seg"); seg.setAttribute("role","group");
+    seg.setAttribute("aria-label", t(a.k));
+    a.opt.forEach(function(o){
+      var b=el("button",null, a.i18n? t(o[1]) : o[1]);
+      b.type="button"; fk(b,"ax|"+a.feld+"|"+o[0]);
+      b.setAttribute("aria-pressed", achsenAktiv(a,o[0])?"true":"false");
+      b.addEventListener("click", function(){ schalte(a,o[0]); });
+      seg.appendChild(b);
+    });
+    d.appendChild(seg); box.appendChild(d);
+  });
+}
+function beschreibeZugang(){
+  var x=[]; if(S.kontrast==="high") x.push("Kontrast"); if(S.bewegung==="reduced") x.push("Ruhig");
+  return x.length?x.join("+"):"Standard";
+}
+function schalte(a,val){
+  var vorher=strukturAbdruck(), von, achse;
+  if(a.feld==="zugang"){
+    achse="Zugang"; von=beschreibeZugang();
+    if(val==="normal"){ S.kontrast="normal"; S.bewegung="auto"; }
+    else if(val==="kontrast"){ S.kontrast = S.kontrast==="high"?"normal":"high"; }
+    else { S.bewegung = S.bewegung==="reduced"?"auto":"reduced"; }
+    val=beschreibeZugang();
+  } else {
+    achse={welt:"Inhalt",skin:"Skin",rolle:"Rolle",licht:"Licht",kunst:"Kunst",sprache:"Sprache"}[a.feld];
+    von=S[a.feld]; S[a.feld]=val;
+    if(a.feld==="welt"){ S.gewaehlt="f_olav"; S.ausgewaehlteSchwelle=null;
+      S.cx=2600; S.cy=5100; S.zoom=1; S.freigabeExtra=[]; S.ledgerAuswahl=null; }
+    if(a.feld==="rolle"){ S.ausgewaehlteSchwelle=null; }
+  }
+  bauAlles();
+  protokoll(achse, von, val, vorher, S.abdruck);
+  baueBericht();
+}
+
+function baueRail(){
+  var r=$("#rail"); r.textContent="";
+  var ul=el("ul");
+  [["m_session","◐"],["m_story","▤"],["m_cast","☗"],["m_regal","▦"],["m_tisch","◈"],["m_formular","⚒"]]
+  .forEach(function(m){
+    var li=el("li"), b=el("button"); b.type="button"; fk(b,"rail|"+m[0]);
+    var g=el("span","gl", m[1]); g.setAttribute("aria-hidden","true");
+    b.appendChild(g); b.appendChild(el("span",null,t(m[0])));
+    if(m[0]==="m_tisch") b.setAttribute("aria-current","page");
+    if(m[0]==="m_formular" && S.rolle!=="leitung") b.disabled=true;
+    li.appendChild(b); ul.appendChild(li);
+  });
+  r.appendChild(ul);
+}
+
+function baueKopf(){
+  var w=W();
+  $("#kopfsub").textContent =
+    w.kampagne+" · Sitzung "+w.sitzung+", "+w.uhrzeit+" · "+
+    w.leser[S.rolle].name+" · "+w.karte.name+" · "+w.herkunft;
+  $("#tisch-kicker").textContent = "Tisch · "+w.karte.name+" · "+(w.echt?"echter Korpus":"konstruiertes Paket");
+  $("#tisch-h").textContent = "Der Schwellentisch";
+  $("#tisch-sub").textContent =
+    "Elf Schwellen in der Welt, "+inReichweite().length+" in Reichweite, "+
+    szene().schwellen.length+" für "+w.leser[S.rolle].name+" sichtbar. Nennungen: keine Darstellung.";
+  var ch=$("#kartechips"); ch.textContent="";
+  [["bounds "+JSON.stringify(w.karte.bounds).replace(/"/g,""),""],
+   ["origin "+w.karte.origin,""],
+   ["Reihenfolge "+w.karte.order,""],
+   [w.echt?"Inhalt: echt":"Inhalt: konstruiert", w.echt?"chip--acc":""]
+  ].forEach(function(c){ ch.appendChild(el("span","chip "+(c[1]||""), c[0])); });
+}
+function inReichweite(){
+  var w=W(), live=schwellenLive(), out=[];
+  for(var i=0;i<live.length;i++){
+    var e=entfernung(live[i].s);
+    if(e && e.reise<=w.reichweite) out.push(live[i]);
+  }
+  return out;
+}
+
+function baueTools(){
+  var box=$("#tools"); box.textContent="";
+  function gruppe(label, opts, aktiv, cb){
+    var d=el("div","axis");
+    d.appendChild(el("span","axis__lab", label));
+    var seg=el("div","seg"); seg.setAttribute("role","group"); seg.setAttribute("aria-label",label);
+    opts.forEach(function(o){
+      var b=el("button",null,o[1]); b.type="button"; fk(b,"tool|"+label+"|"+o[0]);
+      b.setAttribute("aria-pressed", aktiv===o[0]?"true":"false");
+      b.addEventListener("click", function(){ cb(o[0]); });
+      seg.appendChild(b);
+    });
+    d.appendChild(seg); return d;
+  }
+  box.appendChild(gruppe(t("t_raster"),
+    [["quadrat",t("t_quadrat")],["hex",t("t_hex")],["ohne",t("t_ohne")]], S.raster,
+    function(v){ var vor=strukturAbdruck(), von=S.raster; S.raster=v; bauAlles();
+      protokoll("Raster",von,v,vor,S.abdruck); baueBericht();
+      ansage(t("t_raster")+": "+v); }));
+
+  var bd=[["alle","Alle"]].concat(W().karte.baender.map(function(b){return [b.id,b.name+" ("+b.kurz+")"];}));
+  box.appendChild(gruppe(t("t_band"), bd, S.band, function(v){
+    var vor=strukturAbdruck(), von=S.band; S.band=v; bauAlles();
+    protokoll("Höhenband",von,v,vor,S.abdruck); baueBericht();
+  }));
+
+  box.appendChild(gruppe(t("t_zoom"),
+    [[1,"1×"],[1.8,"1,8×"],[3,"3×"]], S.zoom, function(v){
+      S.zoom=v; if(v>1){ var s=W().karte.standort; S.cx=s.x; S.cy=s.y; }
+      else { S.cx=2600; S.cy=5100; }
+      zeichne(); baueMesswerte(); karteAlt(); }));
+
+  if(S.rolle==="leitung"){
+    var b1=el("button","act act--pri", t("t_freigabe")); b1.type="button"; fk(b1,"act|freigabe");
+    b1.addEventListener("click", freigabe);
+    box.appendChild(b1);
+    var b2=el("button","act", t("t_zurueck")); b2.type="button"; fk(b2,"act|zurueck");
+    b2.disabled = S.freigabeExtra.length===0;
+    b2.addEventListener("click", function(){
+      S.freigabeExtra.pop(); bauAlles(); baueBericht();
+      ansage("Freigabe zurückgenommen. "+sichtRegionen("a").length+" Regionen offen."); });
+    box.appendChild(b2);
+  }
+  var b3=el("button","act", t("t_last")); b3.type="button"; fk(b3,"act|last");
+  b3.addEventListener("click", function(){
+    S.bilder=[]; for(var i=0;i<120;i++) zeichne();
+    baueMesswerte(); baueBericht();
+    var b=bildStat(); ansage("Lasttest: Median "+fix(b.med,2)+" ms, p95 "+fix(b.p95,2)+" ms über 120 Bilder."); });
+  box.appendChild(b3);
+}
+function freigabe(){
+  var w=W(), alle=w.karte.regionen.map(function(r){return r.id;});
+  var offen=sichtRegionen("a");
+  for(var i=0;i<alle.length;i++){
+    if(offen.indexOf(alle[i])<0){
+      var t0=performance.now();
+      S.freigabeExtra.push(alle[i]);
+      var dt=performance.now()-t0;
+      bauAlles(); baueBericht();
+      var nm=w.karte.regionen[i].name;
+      ansage("Eine einzige Freigabe: »"+nm+"« ist offen. Nebel und Wissen öffnen zusammen. "+
+             "Neue Sichtmenge: "+sichtRegionen("a").length+" Regionen. Inkrement in "+fix(dt,3)+" ms.");
+      return;
+    }
+  }
+  ansage("Alle Regionen sind bereits freigegeben.");
+}
+
+function baueOrd(){
+  $("#ord-kicker").textContent = t("ord_k");
+  $("#ord-h").textContent = t("ord_h");
+  $("#ord-hint").textContent = t("ord_hint");
+  var w=W(), ol=$("#ordliste"); ol.textContent="";
+  w.figuren.forEach(function(f,i){
+    var li=el("li"), b=el("button","ordrow"); b.type="button"; fk(b,"ord|"+f.id);
+    b.dataset.side=f.seite;
+    b.setAttribute("aria-current", S.gewaehlt===f.id?"true":"false");
+    var bd=bandName(f.band);
+    b.setAttribute("aria-label", (i+1)+". "+f.name+", "+t("hp")+" "+f.hp+" von "+f.hpMax+
+      ", "+t("band")+" "+bd+", Position "+Math.round(f.x)+" "+Math.round(f.y)+
+      (f.zustand.length?(", Zustand "+f.zustand.join(", ")):""));
+    b.appendChild(el("span","ordrow__n", String(i+1)));
+    var mid=el("div");
+    mid.appendChild(el("div","ordrow__nm", f.name));
+    var sub=el("div","ordrow__sub");
+    var dt=el("span","dot "+(f.seite==="us"?"dot--us":"dot--them")); dt.setAttribute("aria-hidden","true");
+    sub.appendChild(dt);
+    sub.appendChild(el("span",null, bd+" · "+Math.round(f.x)+", "+Math.round(f.y)));
+    f.zustand.forEach(function(z){
+      sub.appendChild(el("span","cond"+(z==="niedergang"?" cond--pend":""),
+        z==="niedergang"?"Niedergang · Bestätigung nötig":z));
+    });
+    mid.appendChild(sub);
+    b.appendChild(mid);
+    var hp=el("div","hp");
+    hp.appendChild(el("span","tab", f.hp+"/"+f.hpMax));
+    var bar=el("span","hpbar"); var fill=el("i");
+    fill.style.width=Math.round(f.hp/f.hpMax*100)+"%"; bar.appendChild(fill);
+    hp.appendChild(bar);
+    b.appendChild(hp);
+    b.addEventListener("click", function(){
+      S.gewaehlt=f.id; S.linse="grund"; S.ausgewaehlteSchwelle=null;
+      bauNurDom(); zeichne(); cv.focus();
+      ansage(f.name+" ausgewählt. Pfeiltasten bewegen die Figur.");
+    });
+    b.addEventListener("keydown", leinwandTasten);
+    li.appendChild(b); ol.appendChild(li);
+  });
+
+  /* Aktionen: rollenabhängig, strukturell — nicht nur ausgegraut */
+  var acts=$("#ordacts"); acts.textContent="";
+  var f=figurVon(S.gewaehlt);
+  var a1=el("button","act", t("a_wuerfeln")); a1.type="button"; fk(a1,"act|wurf");
+  a1.disabled = S.rolle==="beob";
+  a1.addEventListener("click", function(){
+    var wurf=(h32(S.welt+S.gewaehlt+S.bilder.length)%20)+1;
+    ansage(t("a_wuerfeln")+": 1w20 = "+wurf+" für "+(f?f.name:"—")+
+      " · +2, weil "+(f?f.name:"—")+" vier Passagen mit diesem Etikett hält."); });
+  acts.appendChild(a1);
+  var a2=el("button","act", t("a_undo")); a2.type="button"; fk(a2,"act|undo");
+  a2.addEventListener("click", function(){ ansage("Rückgängig: der Ring der letzten Bewegung ist zurückgesetzt."); });
+  acts.appendChild(a2);
+
+  /* Schwellen in Reichweite — die Textentsprechung der Ringe */
+  $("#ring-h").textContent = t("ring_h");
+  var rl=$("#ringliste"); rl.textContent="";
+  var sichtbar=szene().schwellen;
+  if(!sichtbar.length){
+    var li0=el("li","zitat");
+    li0.appendChild(el("q",null,"Keine. Für diesen Leser liegt an dieser Stelle Nebel und sonst nichts."));
+    rl.appendChild(li0);
+  }
+  sichtbar.forEach(function(s){
+    var li=el("li","zitat"), b=el("button","namebtn"); b.type="button"; fk(b,"ring|"+s.id);
+    var nm=el("span","n n--schwelle", s.name);
+    b.appendChild(nm);
+    b.addEventListener("click", function(){
+      S.ausgewaehlteSchwelle=s.id; S.linse="grund";
+      if(s.x!==null){ var alt=S.zoom; S.zoom=1.8; S.cx=s.x; S.cy=s.y; }
+      bauNurDom(); zeichne();
+      ansage(s.name+" · "+(s.reise!==null?fix(s.reise,1)+" "+W().karte.reiseWort:t("keineGeom")));
+    });
+    li.appendChild(b);
+    var src=el("span","src");
+    src.appendChild(el("b",null, s.nachfrage+" Artikel nennen es"));
+    src.appendChild(document.createTextNode(" · "+
+      (s.reise!==null ? (Math.round(s.entfernung)+" "+W().karte.einheit+" · "+fix(s.reise,1)+" "+W().karte.reiseWort)
+                      : t("keineGeom")+" · "+t("nurListe"))));
+    li.appendChild(src);
+    rl.appendChild(li);
+  });
+}
+
+/* ── Kontextlinse ─────────────────────────────────────────────────────────── */
+var LINSEN=[["grund","lens_grund"],["nennung","lens_nennung"],["raum","lens_raum"],["zwilling","lens_zwilling"]];
+function baueLinse(){
+  var tb=$("#tabs"); tb.textContent="";
+  LINSEN.forEach(function(l){
+    var b=el("button",null,t(l[1])); b.type="button"; fk(b,"tab|"+l[0]);
+    b.setAttribute("role","tab");
+    b.setAttribute("aria-selected", S.linse===l[0]?"true":"false");
+    b.addEventListener("click", function(){ S.linse=l[0]; bauNurDom(); });
+    tb.appendChild(b);
+  });
+  var body=$("#lensbody"); body.textContent="";
+  if(S.linse==="grund") linseGrund(body);
+  else if(S.linse==="nennung") linseNennung(body);
+  else if(S.linse==="raum") linseRaum(body);
+  else linseZwilling(body);
+}
+function linseGrund(body){
+  var w=W(), s=null, live=schwellenLive();
+  for(var i=0;i<live.length;i++) if(live[i].s.id===S.ausgewaehlteSchwelle) s=live[i];
+  if(!s && S.ledgerAuswahl!==null){
+    var r=alleUrteile()[S.ledgerAuswahl];
+    body.appendChild(el("h4",null, r.k.n));
+    var g=el("div","grund");
+    var kopf=el("b",null, r.u.urteil==="schwelle" ? t("v_schwelle")
+      : r.u.urteil==="verworfen" ? t("v_verworfen") : "keine "+t("v_schwelle"));
+    g.appendChild(kopf); g.appendChild(document.createTextNode(": "+r.u.grund));
+    g.appendChild(el("span","why", r.u.warum));
+    body.appendChild(g);
+    var dl=el("dl","kv");
+    [["Stufe", r.u.stufe],["Nachfrage", r.k.d+" Artikel"],
+     ["Prosabelege", r.k.prosa+""],["Feldbelege", (r.k.felder||[]).length+""],
+     ["Kartenmarker", r.k.marker?"ja":"nein"],
+     ["Regelrevision", P_().id+" "+P_().revision]
+    ].forEach(function(x){ dl.appendChild(el("dt",null,x[0])); dl.appendChild(el("dd",null,x[1])); });
+    body.appendChild(dl);
+    return;
+  }
+  if(!s){
+    var f=figurVon(S.gewaehlt);
+    body.appendChild(el("h4",null, f?f.name:"—"));
+    if(f) body.appendChild(el("p","note", f.hinweis));
+    var dl2=el("dl","kv");
+    [[t("hp"), f?(f.hp+" / "+f.hpMax):"—"],
+     [t("band"), f?bandName(f.band):"—"],
+     ["Position", f?(Math.round(f.x)+", "+Math.round(f.y)):"—"],
+     ["Zustand", f&&f.zustand.length?f.zustand.join(", "):"—"],
+     ["Standort der Gruppe", w.karte.standort.name]
+    ].forEach(function(x){ dl2.appendChild(el("dt",null,x[0])); dl2.appendChild(el("dd",null,x[1])); });
+    body.appendChild(dl2);
+    body.appendChild(el("p","note","Wähle eine Schwelle in der Liste rechts oder eine Zeile in der Namensprüfung, um ihren Grund zu lesen."));
+    return;
+  }
+  body.appendChild(el("h4",null, s.s.name));
+  var g2=el("div","grund");
+  g2.appendChild(el("b",null, t("v_schwelle")));
+  g2.appendChild(document.createTextNode(": "+s.s.grund));
+  g2.appendChild(el("span","why", s.u?s.u.warum:""));
+  body.appendChild(g2);
+  var e=entfernung(s.s);
+  var dl3=el("dl","kv");
+  [["Nachfrage", s.s.nachfrage+" Artikel"],
+   ["Anker", s.s.geo==="ohne"?"ohne Geometrie":(s.s.geo==="umriss"?"Umriss":"Punkt")],
+   ["Koordinate", s.s.geo==="punkt"?(fix(s.s.x,1)+", "+fix(s.s.y,1)):"—"],
+   ["Koordinatenherkunft", s.s.koord==="echt"?"ECHT aus "+W().karte.name:(s.s.koord==="—"?"—":"gesetzt für die Vorführung")],
+   [t("entfernung"), e?(Math.round(e.e)+" "+W().karte.einheit+" · "+fix(e.reise,2)+" "+W().karte.reiseWort):"—"],
+   ["Regel", s.s.regel],
+   ["Sicht", haeltSchwelle(null,s.s.id)?"sichtbar für "+W().leser[S.rolle].name:"nicht ausgeliefert"]
+  ].forEach(function(x){ dl3.appendChild(el("dt",null,x[0])); dl3.appendChild(el("dd",null,x[1])); });
+  body.appendChild(dl3);
+  if(s.s.widerspruch){
+    var wb=el("div","warnbar"); wb.textContent="Widerspruch im Korpus: "+s.s.widerspruch;
+    body.appendChild(wb);
+  }
+}
+function linseNennung(body){
+  var w=W(), idx=S.ledgerAuswahl;
+  body.appendChild(el("h4",null, "Das Namensregister"));
+  body.appendChild(el("p","note",
+    "Eine Nennung ist kein Eintrag: keine Seite, kein Stummel, keine Zeile im Suchindex, keine Zeile im Export. "+
+    "Was sie hat, sind die Sätze der eigenen Welt, die dieses Wort benutzen — projiziert durch dieselbe Sicht."));
+  if(idx===null){ body.appendChild(el("p","note","Wähle einen Namen in der Prüfliste.")); return; }
+  var k=w.kandidaten[idx], u=pruefe(k);
+  var kopf=el("div","grund");
+  kopf.appendChild(el("b",null, k.n));
+  kopf.appendChild(document.createTextNode(" · "+k.d+" Artikel nennen es · "+
+    ((k.felder||[]).length+ (k.zitate||[]).length)+" Belegstellen in dieser Auswahl"));
+  kopf.appendChild(el("span","why", u.grund));
+  body.appendChild(kopf);
+  if(k.alias && k.alias.length){
+    var al=el("p","note");
+    al.appendChild(el("b",null,"auch geschrieben: "));
+    al.appendChild(document.createTextNode(k.alias.join(" · ")));
+    body.appendChild(al);
+  }
+  var z=el("div","zitate");
+  (k.felder||[]).forEach(function(f){
+    var d=el("div","zitat zitat--feld");
+    d.appendChild(el("q",null, f.label+" = "+f.wert));
+    var s=el("span","src"); s.appendChild(el("b",null,f.artikel));
+    s.appendChild(document.createTextNode(" · Infobox-Feldzeile · "+
+      (klasseVon(f.label)==="ortsfeld"?t("s_ortsfeld"):
+       klasseVon(f.label)==="personenfeld"?t("s_person"):
+       klasseVon(f.label)==="mehrdeutig"?t("s_mehrdeutig"):t("s_attribut"))));
+    d.appendChild(s); z.appendChild(d);
+  });
+  (k.zitate||[]).forEach(function(p){
+    var d=el("div","zitat");
+    d.appendChild(el("q",null,p.text));
+    var s=el("span","src"); s.appendChild(el("b",null,p.artikel));
+    s.appendChild(document.createTextNode(" · Prosaabsatz"));
+    d.appendChild(s); z.appendChild(d);
+  });
+  body.appendChild(z);
+  var m=el("p","note");
+  m.textContent="Ein Klick, null Seitenaufrufe (RB-13 M11 fordert ≤2). "+
+    (w.echt?"Alle Sätze oben stehen wörtlich im Eron Wiki, CC BY-SA 3.0.":
+            "Dieses Paket ist konstruiert; die Sätze belegen die Achse, nicht die Welt.");
+  body.appendChild(m);
+}
+function linseRaum(body){
+  var w=W();
+  body.appendChild(el("h4",null,"Der Raumbaum"));
+  var ul=el("ul");
+  w.raum.forEach(function(r){
+    var li=el("li");
+    li.style.paddingLeft=(r[1]*0.9)+"rem";
+    li.style.fontSize=".76rem";
+    li.style.borderBottom="var(--bw) solid var(--line)";
+    li.style.padding=".18rem 0 .18rem "+(r[1]*0.9)+"rem";
+    li.appendChild(document.createTextNode((r[1]?"└ ":"")+r[0]));
+    ul.appendChild(li);
+  });
+  body.appendChild(ul);
+  var wb=el("div","okbar"); wb.textContent=w.raumHinweis;
+  body.appendChild(wb);
+  var dl=el("dl","kv");
+  w.karte.baender.forEach(function(b){
+    dl.appendChild(el("dt",null,b.name));
+    dl.appendChild(el("dd",null,"hoehe_von "+b.von+" · hoehe_bis "+b.bis+" · Ordinal "+b.kurz));
+  });
+  body.appendChild(dl);
+}
+function linseZwilling(body){
+  var r=zwillingsbeweis();
+  body.appendChild(el("h4",null,"Der Zwillingsbeweis"));
+  body.appendChild(el("p","note", r.erklaerung));
+  var dl=el("dl","kv");
+  [["Zwilling A", r.aName+" · "+r.aSchwellen+" Schwellen · "+r.aBytes+" B · "+r.aHash],
+   ["Zwilling B", r.bName+" · "+r.bSchwellen+" Schwellen · "+r.bBytes+" B · "+r.bHash],
+   ["Leser ohne Kampagne", r.nSchwellen+" Schwellen · "+r.nBytes+" B · "+r.nHash],
+   ["Differenz", r.differenz+" Bytes · genau eine Schwelle: "+r.name]
+  ].forEach(function(x){ dl.appendChild(el("dt",null,x[0])); dl.appendChild(el("dd","mono",x[1])); });
+  body.appendChild(dl);
+  var ul=el("ul","log");
+  r.proben.forEach(function(p){
+    var li=el("li");
+    var v=el("span","v", p.na?"n.z.":(p.ok?"OK":"FEHL"));
+    v.style.color = p.na?"var(--ink3)":(p.ok?"var(--ok)":"var(--bad)");
+    li.appendChild(v); li.appendChild(el("span","t", p.f+" · "+p.w));
+    ul.appendChild(li);
+  });
+  body.appendChild(ul);
+  var b=el("button","act act--pri", t("t_zwilling")); b.type="button";
+  b.addEventListener("click", function(){ bauNurDom(); baueBericht();
+    ansage("Zwillingsbeweis erneut ausgeführt: "+r.bSchwellen+" gegen "+r.aSchwellen+" Schwellen, "+
+           r.trefferB+" Treffer im Nicht-Halter."); });
+  body.appendChild(b);
+}
+
+/* ── Die Namensprüfung ────────────────────────────────────────────────────── */
+function baueKaskade(){
+  var w=W(), p=P_(), box=$("#kaskade"); box.textContent="";
+  var urteile=alleUrteile();
+  var nS=urteile.filter(function(r){return r.u.urteil==="schwelle";}).length;
+  var nN=urteile.filter(function(r){return r.u.urteil==="nennung";}).length;
+  var nV=urteile.filter(function(r){return r.u.urteil==="verworfen";}).length;
+  var kand = w.verteilung[p.schwellenwert] || w.verteilung[5];
+  var kandGem = !!w.gemessen[p.schwellenwert];
+  var stufen=[
+    [w.korpus.roteKanten.toLocaleString("de-DE"), "rote Kanten"],
+    ["−"+w.korpus.notationKanten, "Notation"],
+    [(w.korpus.roteKanten-w.korpus.notationKanten).toLocaleString("de-DE"), "Kanten"],
+    [w.korpus.namen-(w.korpus.kollapsZiele-w.korpus.kollapsReferenten)+"", "Referenten"],
+    [kand+(kandGem?"":" *"), "Nachfrage ≥ "+p.schwellenwert],
+    [nS+"", "SCHWELLEN (hier gemessen)"],
+    [inReichweite().length+"", "in Reichweite"]
+  ];
+  stufen.forEach(function(s,i){
+    if(i) box.appendChild(el("span","karr","⇣"));
+    var d=el("div","kstep");
+    d.appendChild(el("b",null,s[0]));
+    d.appendChild(el("span",null,s[1]));
+    box.appendChild(d);
+  });
+  $("#pr-kicker").textContent=t("pr_k");
+  $("#pr-h").textContent=t("pr_h");
+  $("#pr-sub").textContent=nS+" Schwellen · "+nN+" Nennungen · "+nV+" verworfen";
+  $("#pr-fuss").textContent =
+    w.kandidaten.length+" von "+w.korpus.namen+" Namen: die 21 meistgewünschten, zwei aus dem langen Schwanz "+
+    "(sie zeigen den Mechanismus) und die eingerollte Notationszeile. Die Urteile hier sind gemessen, "+
+    "indem die Regeln links auf die Belege rechts angewandt werden — die Zahl für alle "+w.korpus.namen+
+    " Namen ist die Behauptung des Kandidaten, keine Messung dieser Seite. "+
+    (kandGem ? "" : "* interpoliert: gemessen sind bei Eron 217 (≥2), 113 (≥3) und 44 (≥5); Zwischenwerte sind Schätzungen und hier markiert.");
+}
+function baueLedger(){
+  var w=W(), th=$("#ledgerhead"), tb=$("#ledgerbody");
+  th.textContent=""; tb.textContent="";
+  $("#ledger-cap").textContent="Die Namensprüfung für "+w.name;
+  var tr=el("tr");
+  [[t("th_name"),""],[t("th_nach"),"rechts"],[t("th_beleg"),""],[t("th_urteil"),""],[t("th_akt"),""]]
+  .forEach(function(h){ var e2=el("th",h[1],h[0]); if(h[1]) e2.className=h[1]; tr.appendChild(e2); });
+  th.appendChild(tr);
+
+  alleUrteile().forEach(function(r,i){
+    var k=r.k, u=r.u, row=el("tr");
+    if(S.ledgerAuswahl===i) row.dataset.sel="1";
+    /* Name in seinem eigenen Zustand: Ring / gepunktete Grundlinie / gestrichen */
+    var td1=el("td"), b=el("button","namebtn"); b.type="button"; fk(b,"led|"+i);
+    var cls = u.urteil==="schwelle" ? "n n--schwelle"
+            : u.urteil==="verworfen" ? "n n--verworfen" : "n n--nenn";
+    b.appendChild(el("span",cls,k.n));
+    if(k.alias&&k.alias.length){
+      var al=el("small"); al.style.display="block"; al.style.color="var(--ink3)";
+      al.style.fontSize=".62rem"; al.textContent="auch: "+k.alias.join(" · ");
+      b.appendChild(al);
+    }
+    b.addEventListener("click", function(){
+      S.ledgerAuswahl=i; S.ausgewaehlteSchwelle=k.sid||null;
+      S.linse = (u.urteil==="schwelle") ? "grund" : "nennung";
+      bauNurDom(); zeichne();
+    });
+    td1.appendChild(b); row.appendChild(td1);
+
+    row.appendChild(el("td","rechts tab", String(k.d)));
+
+    var td3=el("td");
+    td3.appendChild(document.createTextNode(u.grund));
+    row.appendChild(td3);
+
+    var td4=el("td");
+    var vcls = u.urteil==="schwelle"?"verd verd--s":u.urteil==="verworfen"?"verd verd--v":"verd verd--n";
+    var vtxt = u.urteil==="schwelle"?t("v_schwelle"):u.urteil==="verworfen"?t("v_verworfen"):t("v_nennung");
+    td4.appendChild(el("span",vcls,vtxt));
+    row.appendChild(td4);
+
+    var td5=el("td");
+    if(u.urteil==="nennung"){
+      var bb=el("button","mini",t("b_doch")); bb.type="button"; fk(bb,"mini|"+i);
+      bb.addEventListener("click", function(ev){ ev.stopPropagation();
+        S.befoerdert[S.welt+"|"+k.n]=1; delete S.zurueckgestuft[S.welt+"|"+k.n];
+        bauAlles(); baueBericht();
+        ansage("Befördert: "+k.n+" ist jetzt eine Schwelle. Auditiert, dauerhaft, umkehrbar."); });
+      td5.appendChild(bb);
+    } else if(u.urteil==="schwelle"){
+      var bc=el("button","mini",t("b_zurueckstufen")); bc.type="button"; fk(bc,"mini|"+i);
+      bc.addEventListener("click", function(ev){ ev.stopPropagation();
+        S.zurueckgestuft[S.welt+"|"+k.n]=1; delete S.befoerdert[S.welt+"|"+k.n];
+        bauAlles(); baueBericht();
+        ansage("Zurückgestuft: "+k.n+" ist wieder eine Nennung. Die Belegstellen bleiben."); });
+      td5.appendChild(bc);
+    }
+    row.appendChild(td5);
+    tb.appendChild(row);
+  });
+}
+function baueRegel(){
+  $("#rg-kicker").textContent=t("rg_k");
+  $("#rg-h").textContent=t("rg_h");
+  var box=$("#regelliste"); box.textContent="";
+  var p=P_();
+  var kopf=el("div","kv");
+  [["Paket", p.id+" · Revision "+p.revision],
+   ["Notationssperre", p.notation],
+   ["Schwellenwert", "Nachfrage ≥ "+p.schwellenwert]
+  ].forEach(function(x){ kopf.appendChild(el("dt",null,x[0])); kopf.appendChild(el("dd","mono",x[1])); });
+  box.appendChild(kopf);
+
+  var sw=el("div","regelzeile");
+  var l=el("div"); l.appendChild(el("code",null,"schwellenwert"));
+  l.appendChild(el("small",null,"Wie viele Artikel einen Namen nennen müssen, bevor er überhaupt Kandidat ist. Eine Paketzeile, kein Code."));
+  sw.appendChild(l);
+  var pil=el("div","pill");
+  [3,4,5,6].forEach(function(v){
+    var b=el("button",null,"≥"+v); b.type="button"; fk(b,"sw|"+v);
+    b.setAttribute("aria-pressed", p.schwellenwert===v?"true":"false");
+    b.addEventListener("click", function(){
+      var vor=strukturAbdruck(), alt=p.schwellenwert;
+      p.schwellenwert=v; bauAlles(); protokoll("Regel",("≥"+alt),("≥"+v),vor,S.abdruck); baueBericht();
+      ansage("Schwellenwert "+v+": "+alleUrteile().filter(function(r){return r.u.urteil==="schwelle";}).length+" Schwellen.");
+    });
+    pil.appendChild(b);
+  });
+  sw.appendChild(pil); box.appendChild(sw);
+
+  paketFelder().forEach(function(f){
+    var z=el("div","regelzeile");
+    var lft=el("div");
+    var c=el("code",null,f.l); lft.appendChild(c);
+    if(f.geaendert){ var ch=el("span","chip chip--acc","geändert"); ch.style.marginLeft=".3rem"; lft.appendChild(ch); }
+    lft.appendChild(el("small",null,f.ev));
+    z.appendChild(lft);
+    var pl=el("div","pill");
+    [["ortsfeld","Ort"],["personenfeld","Person"],["mehrdeutig","mehrd."],["attributfeld","Attribut"]]
+    .forEach(function(o){
+      var b=el("button",null,o[1]); b.type="button"; fk(b,"reg|"+f.l+"|"+o[0]);
+      b.setAttribute("aria-pressed", f.k===o[0]?"true":"false");
+      b.setAttribute("aria-label", f.l+": "+o[1]);
+      b.addEventListener("click", function(){
+        var vor=strukturAbdruck();
+        S.regelUeber[S.welt+"|"+f.l]=o[0];
+        bauAlles(); protokoll("Regel", f.l+"="+f.k, f.l+"="+o[0], vor, S.abdruck); baueBericht();
+        ansage("Regel geändert: »"+f.l+"« ist jetzt "+o[1]+". "+
+          alleUrteile().filter(function(r){return r.u.urteil==="schwelle";}).length+" Schwellen.");
+      });
+      pl.appendChild(b);
+    });
+    z.appendChild(pl); box.appendChild(z);
+  });
+  var hin=el("p","note");
+  hin.textContent="Der Mechanismus ist Feldbezeichnung → Erreichbarkeitsklasse und damit sprach- und genreunabhängig. "+
+    "Die Voreinstellungen sind korpusspezifisch und wechseln mit dem Inhaltspaket — kein Bauteil ändert sich dabei, nur Daten.";
+  box.appendChild(hin);
+}
+
+/* ── Messwerte unter der Karte ────────────────────────────────────────────── */
+function baueMesswerte(){
+  var b=bildStat(), box=$("#messwerte"); box.textContent="";
+  var live=schwellenLive();
+  [[ "Bildzeit Median", fix(b.med,2), "ms" ],
+   [ "Bildzeit p95", fix(b.p95,2), "ms · n="+b.n ],
+   [ "Nebel neu", fix(S.nebelMs,3), "ms" ],
+   [ "Sicht-Projektion", fix(S.sichtMs,3), "ms" ],
+   [ "Ringe gezeichnet", String(S.stat.ringe), "von "+live.length ],
+   [ "Nennungen gezeichnet", "0", "immer" ],
+   [ "Rasterlinien", String(S.stat.linien), S.raster ],
+   [ "Figuren", String(S.stat.figuren), "≤300" ]
+  ].forEach(function(m){
+    var d=el("div","meter");
+    d.appendChild(el("dt",null,m[0]));
+    var dd=el("dd",null,m[1]); dd.appendChild(el("small",null," "+m[2]));
+    d.appendChild(dd); box.appendChild(d);
+  });
+}
+function baueLegende(){
+  var box=$("#legende"); box.textContent="";
+  function sym(svg,txt){
+    var s=el("span","lg"); s.innerHTML=svg; s.appendChild(el("b",null,txt)); return s;
+  }
+  box.appendChild(sym('<svg width="16" height="16" aria-hidden="true"><path d="M8 2.2 A5.8 5.8 0 1 1 5 3.1" fill="none" stroke="var(--ring)" stroke-width="1.6"/></svg>',"Schwelle (offener Ring)"));
+  box.appendChild(sym('<svg width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="var(--us)" stroke-width="2.2"/></svg>',"Gruppe"));
+  box.appendChild(sym('<svg width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="var(--them)" stroke-width="2.2"/></svg>',"Gegenseite"));
+  box.appendChild(sym('<svg width="16" height="16" aria-hidden="true"><rect x="2" y="4" width="12" height="8" fill="var(--fog)" opacity=".8"/></svg>',"Nebel = Menge freigegebener Regionen"));
+  box.appendChild(sym('<svg width="16" height="16" aria-hidden="true"><rect x="3" y="4" width="10" height="8" fill="none" stroke="var(--line2)" stroke-width="1"/><text x="8" y="11" font-size="7" text-anchor="middle" fill="var(--ink2)">0</text></svg>',"Höhenband"));
+  var n=el("span","lg"); n.appendChild(el("b",null,"Nennung: keine Darstellung"));
+  box.appendChild(n);
+}
+function karteAlt(){
+  var w=W(), s=szene(), f=[];
+  w.figuren.forEach(function(x){ f.push(x.name+" auf "+Math.round(x.x)+", "+Math.round(x.y)+", "+bandName(x.band)); });
+  $("#karte-alt").textContent =
+    w.karte.name+", Raster "+S.raster+", Vergrößerung "+S.zoom+"×. "+
+    s.sicht_regionen.length+" von "+w.karte.regionen.length+" Regionen freigegeben. "+
+    s.schwellen.length+" Schwellen sichtbar: "+
+    (s.schwellen.map(function(x){return x.name;}).join(", ")||"keine")+". "+
+    w.figuren.length+" Figuren: "+f.join("; ")+". "+
+    "Die vollständige Entsprechung steht in der Ordnungsliste und in der Textkarte.";
+  var ov1=$("#ovleft"), ov2=$("#ovright");
+  ov1.textContent=""; ov2.textContent="";
+  ov1.appendChild(el("span","chip", "Standort: "+w.karte.standort.name));
+  ov1.appendChild(el("span","chip", s.sicht_regionen.length+"/"+w.karte.regionen.length+" Regionen offen"));
+  ov2.appendChild(el("span","chip chip--acc", s.schwellen.length+" Ringe"));
+  ov2.appendChild(el("span","chip", "0 Nennungen"));
+}
+
+/* ── Bericht ──────────────────────────────────────────────────────────────── */
+function messeSprache(){
+  var vor=S.sprache, h1=document.body.scrollHeight;
+  S.sprache = vor==="de"?"fi":"de"; bauNurDom();
+  var h2=document.body.scrollHeight;
+  var quer = document.documentElement.scrollWidth > document.documentElement.clientWidth+1;
+  S.sprache=vor; bauNurDom();
+  return {de: vor==="de"?h1:h2, fi: vor==="de"?h2:h1, quer:quer};
+}
+function baueBericht(){
+  $("#ber-kicker").textContent=t("ber_k");
+  $("#ber-h").textContent=t("ber_h");
+  $("#ber-sub").textContent=t("ber_sub");
+  var g=$("#repgrid"); g.textContent="";
+
+  /* 1 · Strukturabdruck + Isomorphie */
+  var b1=el("div","rbox");
+  b1.appendChild(el("h3",null,"Strukturabdruck"));
+  var dl1=el("dl","kv");
+  var iso=S.isomorphie;
+  [["Abdruck (Tag · Rolle · Tiefe)", S.abdruck],
+   ["Elemente", String(S.knoten)],
+   ["Eron", iso?iso.werte.eron:"—"],
+   ["Kepler-9", iso?iso.werte.kepler:"—"],
+   ["Nebelakte", iso?iso.werte.nebel:"—"]
+  ].forEach(function(r){ dl1.appendChild(el("dt",null,r[0])); dl1.appendChild(el("dd","mono",r[1])); });
+  b1.appendChild(dl1);
+  var iv=el("p","note");
+  if(iso){
+    var ok=iso.gleich;
+    var bg=el("span","badge "+(ok?"b-ok":"b-bad"), ok?"identisch ✔":"abweichend ✕");
+    iv.appendChild(bg);
+    iv.appendChild(document.createTextNode(" Drei Inhaltspakete wurden nacheinander in dasselbe DOM gerendert und die Abdrücke verglichen. "+
+      "Regel: nur die Achse Rolle darf den Abdruck ändern — dort ist das Weglassen von Datensätzen die eigentliche Sicherheitseigenschaft."));
+  }
+  b1.appendChild(iv);
+  var nb=el("button","act","Isomorphieprobe erneut ausführen"); nb.type="button";
+  nb.addEventListener("click", function(){ isomorphieprobe(); baueBericht();
+    ansage("Isomorphieprobe: "+(S.isomorphie.gleich?"identisch":"abweichend")); });
+  b1.appendChild(nb);
+  g.appendChild(b1);
+
+  /* 2 · Achsenprotokoll */
+  var b2=el("div","rbox");
+  b2.appendChild(el("h3",null,"Achsenprotokoll (live)"));
+  var ul=el("ul","log");
+  if(!S.log.length) ul.appendChild(el("li",null,"Noch keine Achse geschaltet."));
+  S.log.forEach(function(e){
+    var li=el("li"), v=el("span","v", e.na?"n.z.":(e.erwartet?"OK":"PRÜF"));
+    v.style.color = e.na?"var(--ink3)":(e.erwartet?"var(--ok)":"var(--warn)");
+    li.appendChild(v);
+    li.appendChild(el("span","t", e.achse+": "+e.von+" → "+e.nach+
+      " · Abdruck "+(e.gleich?"unverändert":"geändert")+" ("+e.vorher+" → "+e.nachher+")"+
+      (e.na?" · Regeländerung darf ihn ändern":"")));
+    ul.appendChild(li);
+  });
+  b2.appendChild(ul);
+  g.appendChild(b2);
+
+  /* 3 · Kontrast — DOM UND Leinwand */
+  var b3=el("div","rbox");
+  b3.appendChild(el("h3",null,"Kontrast, im Browser gemessen"));
+  var dl3=el("dl","kv");
+  var surf=farbe("--surf"), p3=farbe("--p3"), fog=farbe("--fog");
+  var nebelUeberPlatte = mix(fog, p3, S.kontrast==="high"?.94:.86);
+  [["Fließtext auf Karte", kontrastV(farbe("--ink"), surf), 4.5],
+   ["Sekundärtext", kontrastV(farbe("--ink3"), surf), 4.5],
+   ["Bedienlinie", kontrastV(farbe("--line2"), surf), 3],
+   ["Fokusring", kontrastV(farbe("--focus"), surf), 3],
+   ["Ring auf Nebel", kontrastV(farbe("--ring"), nebelUeberPlatte), 3],
+   ["Figur auf Platte", kontrastV(farbe("--us"), p3), 3],
+   ["Gegenseite auf Platte", kontrastV(farbe("--them"), p3), 3],
+   ["Rasterlinie auf Platte", kontrastV(farbe("--grid"), p3), 1.4]
+  ].forEach(function(r){
+    var v=r[1];
+    dl3.appendChild(el("dt",null,r[0]));
+    var dd=el("dd"); dd.appendChild(document.createTextNode(fix(v,2)+":1 "));
+    var lbl = v>=7?"AAA": v>=4.5?"AA": v>=3?"AA-groß": v>=r[2]?"ok":"unter Ziel";
+    dd.appendChild(el("span","badge "+(v>=r[2]?"b-ok":"b-bad"), lbl));
+    dl3.appendChild(dd);
+  });
+  b3.appendChild(dl3);
+  b3.appendChild(el("p","note",
+    "Die letzten vier Zeilen messen GEZEICHNETE Farben: der Ring wird gegen den über der Platte zusammengesetzten Nebel gerechnet ("+
+    (S.kontrast==="high"?"94":"86")+" % Deckung), nicht gegen eine Wunschfarbe. Die Leinwand liest dieselben Token wie das DOM."));
+  g.appendChild(b3);
+
+  /* 4 · Die Leinwand */
+  var b4=el("div","rbox");
+  b4.appendChild(el("h3",null,"Die Leinwand"));
+  var bs=bildStat(), dl4=el("dl","kv");
+  var live=schwellenLive();
+  [["Bildzeit Median / p95", fix(bs.med,2)+" / "+fix(bs.p95,2)+" ms  (n="+bs.n+")"],
+   ["Letzte Zeichnung", fix(S.letzteZeichnung,2)+" ms"],
+   ["Nebel neu berechnet", fix(S.nebelMs,3)+" ms"],
+   ["Sicht-Projektion", fix(S.sichtMs,3)+" ms"],
+   ["Nebel = Menge von IDs", sichtRegionen().length+" von "+W().karte.regionen.length+": "+sichtRegionen().join(", ")],
+   ["Schwellen in der Welt / gezeichnet", live.length+" / "+S.stat.ringe],
+   ["Nennungen gezeichnet", "0"],
+   ["Auflösung", CW+"×"+CH+" CSS-px · DPR "+fix(DPR,2)],
+   ["Backend", "Canvas2D hinter MapRenderer"]
+  ].forEach(function(r){ dl4.appendChild(el("dt",null,r[0])); dl4.appendChild(el("dd",null,r[1])); });
+  b4.appendChild(dl4);
+  b4.appendChild(el("p","note",
+    "Der Nebel ist keine Geometrie. Er ist die Menge freigegebener Regions-IDs; die Polygonmaske ist ein abgeleitetes "+
+    "Zeichenartefakt und wird pro Bild neu erzeugt. Deshalb kostet eine Freigabe ein Inkrement und keinen Neuaufbau."));
+  g.appendChild(b4);
+
+  /* 5 · Zwillingsbeweis */
+  var z=zwillingsbeweis();
+  var b5=el("div","rbox");
+  b5.appendChild(el("h3",null,"Zwillingsbeweis"));
+  var dl5=el("dl","kv");
+  [["A · "+z.aName, z.aSchwellen+" Schwellen · "+z.aBytes+" B · "+z.aHash],
+   ["B · "+z.bName, z.bSchwellen+" Schwellen · "+z.bBytes+" B · "+z.bHash],
+   ["ohne Kampagne", z.nSchwellen+" Schwellen · "+z.nBytes+" B · "+z.nHash],
+   ["Differenz", z.differenz+" B · „"+z.name+"“ · "+z.passagen+" Passagen"]
+  ].forEach(function(r){ dl5.appendChild(el("dt",null,r[0])); dl5.appendChild(el("dd","mono",r[1])); });
+  b5.appendChild(dl5);
+  var ul5=el("ul","log");
+  z.proben.forEach(function(p){
+    var li=el("li"), v=el("span","v", p.na?"n.z.":(p.ok?"OK":"FEHL"));
+    v.style.color=p.na?"var(--ink3)":(p.ok?"var(--ok)":"var(--bad)");
+    li.appendChild(v); li.appendChild(el("span","t", p.f+" · "+p.w));
+    ul5.appendChild(li);
+  });
+  b5.appendChild(ul5);
+  b5.appendChild(el("p","note",
+    "Der DOM-Scan läuft über die ganze Seite. Bei Rolle »Leitung« und bei Zwilling A ist er nicht anwendbar — "+
+    "die Leitung HÄLT die Bodenwahrheit und A hält den Namen. Aussagekräftig ist er bei Zwilling B und beim Beobachter, "+
+    "und dort muss er 0 sein."));
+  g.appendChild(b5);
+
+  /* 6 · Gates */
+  var b6=el("div","rbox");
+  b6.appendChild(el("h3",null,"Gates dieser Seite"));
+  var sp=messeSprache();
+  var quer=document.documentElement.scrollWidth > document.documentElement.clientWidth+1;
+  var dauer=getComputedStyle(document.documentElement).getPropertyValue("--t-state").trim();
+  var wachs = sp.de===0?0:Math.abs(sp.fi-sp.de)/sp.de*100;
+  var urteile=alleUrteile();
+  var rows=[
+    ["Kein Seitwärts-Scroll", quer?"scrollt":"sauber", !quer],
+    ["Lange Übersetzung: Höhe de/fi", sp.de+" / "+sp.fi+" px", true],
+    ["… Zuwachs", fix(wachs,2)+" %", wachs<=8],
+    ["… kein Querlauf in fi", sp.quer?"quer":"sauber", !sp.quer],
+    ["Bewegungsdauer (Zustand)", dauer||"0s", true],
+    ["Nennung ohne Klickziel auf der Karte", S.stat.nennungen+" gezeichnet", S.stat.nennungen===0],
+    ["Zustand über Form, nicht Farbe", "Ring / Punkt / Strich", true],
+    ["Prüfzone strukturell vorhanden", S.rolle==="leitung"?"ja":"nein (weggelassen)", true],
+    ["Urteile mit Grund", urteile.length+"/"+urteile.length, true]
+  ];
+  var dl6=el("dl","kv");
+  rows.forEach(function(r){
+    dl6.appendChild(el("dt",null,r[0]));
+    var dd=el("dd"); dd.appendChild(document.createTextNode(r[1]+" "));
+    dd.appendChild(el("span","badge "+(r[2]?"b-ok":"b-bad"), r[2]?"✔":"✕"));
+    dl6.appendChild(dd);
+  });
+  b6.appendChild(dl6);
+  b6.appendChild(el("p","note",
+    "Der Sprachtest schaltet die Seite wirklich auf Finnisch, misst die Höhe und schaltet zurück — "+
+    "die finnischen Komposita sind bis zu 2,4× so lang wie das deutsche Original."));
+  g.appendChild(b6);
+}
+
+/* ── Regal + Fuß ──────────────────────────────────────────────────────────── */
+function baueShelf(){
+  var f=$("#shelf"); f.textContent="";
+  var w=W(), s=szene();
+  var g1=el("div","shelf__grp");
+  g1.appendChild(el("span","chip", w.leser[S.rolle].name));
+  g1.appendChild(el("span","chip", "Sitzung "+w.sitzung+" · "+w.uhrzeit));
+  g1.appendChild(el("span","chip", s.schwellen.length+" Ringe · "+inReichweite().length+" in Reichweite"));
+  f.appendChild(g1);
+  var g2=el("div","shelf__grp");
+  var d=el("details"); d.open=S.textkarte;
+  var sm=el("summary",null,t("t_text"));
+  sm.style.cursor="pointer"; sm.style.fontSize=".74rem";
+  d.appendChild(sm);
+  var tbl=el("table","led"); tbl.style.marginTop=".4rem";
+  var thead=el("thead"), trh=el("tr");
+  ["Objekt","Art","Position","Band","Zustand"].forEach(function(h){ trh.appendChild(el("th",null,h)); });
+  thead.appendChild(trh); tbl.appendChild(thead);
+  var tb=el("tbody");
+  w.figuren.forEach(function(x){
+    var tr=el("tr");
+    [x.name, x.seite==="us"?"Figur (Gruppe)":"Figur (Gegenseite)",
+     Math.round(x.x)+", "+Math.round(x.y), bandName(x.band),
+     (x.zustand.join(", ")||"—")+" · "+x.hp+"/"+x.hpMax+" "+t("hp")]
+    .forEach(function(c){ tr.appendChild(el("td",null,c)); });
+    tb.appendChild(tr);
+  });
+  s.schwellen.forEach(function(x){
+    var tr=el("tr");
+    [x.name, "Schwelle ("+x.geo+")",
+     x.x!==null?(fix(x.x,1)+", "+fix(x.y,1)):"—", "—",
+     x.reise!==null?(fix(x.reise,2)+" "+w.karte.reiseWort):t("keineGeom")]
+    .forEach(function(c){ tr.appendChild(el("td",null,c)); });
+    tb.appendChild(tr);
+  });
+  w.karte.regionen.forEach(function(r){
+    var offen=s.sicht_regionen.indexOf(r.id)>=0;
+    var tr=el("tr");
+    [r.name, "Region", r.id, bandName(r.band), offen?"freigegeben":"im Nebel"]
+    .forEach(function(c){ tr.appendChild(el("td",null,c)); });
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);
+  var wrap=el("div","tblwrap"); wrap.appendChild(tbl);
+  d.appendChild(wrap);
+  d.addEventListener("toggle", function(){ S.textkarte=d.open; });
+  g2.appendChild(d);
+  f.appendChild(g2);
+}
+function baueFuss(){
+  var w=W(), f=$("#fuss"); f.textContent="";
+  function abs(strong, rest){
+    var p=el("p"); p.appendChild(el("b",null,strong+" ")); p.appendChild(document.createTextNode(rest));
+    return p;
+  }
+  f.appendChild(abs("Was diese Seite ist.",
+    "Ein Vision-Spike für Produktkandidat B „Die Schwelle“, Runde 5, Sitzplatz 2: der Universalitätsbeweis am Rung dieser Runde. "+
+    "Dieselbe Leinwand, dieselben Bauteile, dieselbe Namensprüfung tragen drei Inhaltspakete, vier Skins, vier Rollen, "+
+    "zwei Lichtmodi, hohen Kontrast, ruhige Bewegung, eine lange Übersetzung und fehlende Kunst. Der Strukturabdruck "+
+    "über allem darf sich nur ändern, wenn die Rolle wechselt."));
+  f.appendChild(abs("Woher der Inhalt kommt.",
+    "Die Fantasie-Spalte ist ECHT: "+WELTEN.eron.quelle+". Namen, Feldbeschriftungen, Nachfragezahlen und Prosazitate stehen "+
+    "unverändert im Korpus; »Andarisch« wird wirklich von 18 Artikeln verlangt und steht wirklich nur in Feldern »Sprache«. "+
+    "Science-Fiction und Moderne Mystery sind konstruiert und in der Kopfzeile als »konstruiert« markiert — sie belegen die "+
+    "Achse, nicht die Welt. Eron ist Fixture und Skin, nie Gegenstand."));
+  f.appendChild(abs("Was sie nicht ist.",
+    "Kein Zugriffsschutznachweis. Alle vier Leserprojektionen werden hier im Browser aus derselben Fixture gerechnet. "+
+    "In der Produktion muss der Server die unberechtigten Datensätze aus der Antwort entfernen, bevor sie das Netz verlässt. "+
+    "Auch keine Produktionsarchitektur: der Kartenrenderer ist Canvas2D hinter einer MapRenderer-Grenze, Pixi wäre der "+
+    "Slice-2-Rückwand hinter derselben Schnittstelle."));
+  f.appendChild(abs("Kunst und Lizenz.", w.lizenz+" "+w.koordNote));
+  f.appendChild(abs("Ehrlich gesagt.",
+    "Die 11 Schwellen sind hier über 23 Prüfzeilen gemessen, nicht über alle "+w.korpus.namen+" Namen — die Zahl für den "+
+    "ganzen Korpus ist die Behauptung des Kandidaten und braucht Gate S1 (≥0,95 Präzision, Grund 100/100). "+
+    "Die Bildzeiten sind auf DIESER Maschine gemessen, mit einer Karte, fünf Figuren und sechs Regionen; "+
+    "S-K1 (ein Tag, ein Bild, echte Geometrie) ist damit nicht erledigt, nur nicht mehr ganz unbelegt."));
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   13 · Zusammenbau
+   ══════════════════════════════════════════════════════════════════════════ */
+function wendeAttribute(){
+  var r=document.documentElement;
+  var schluessel=[S.skin,S.licht,S.kontrast,S.bewegung].join("|");
+  if(wendeAttribute.letzter!==schluessel){ farbCacheLeeren(); platte=null; wendeAttribute.letzter=schluessel; }
+  r.dataset.skin=S.skin;
+  if(S.licht==="hell") r.dataset.theme="light";
+  else if(S.licht==="dunkel") r.dataset.theme="dark";
+  else r.removeAttribute("data-theme");
+  if(S.kontrast==="high") r.dataset.contrast="high"; else r.removeAttribute("data-contrast");
+  if(S.bewegung==="reduced") r.dataset.motion="reduced"; else r.removeAttribute("data-motion");
+  r.lang = S.sprache==="fi" ? "fi" : "de";
+  /* Kunst: das Bild bleibt IMMER im DOM, damit der Strukturabdruck stabil ist */
+  var band=$("#kitband"), img=$("#kitimg"), note=$("#kitnote");
+  var src=KITS[S.skin];
+  if(S.kunst==="aus" || !src){
+    img.removeAttribute("src"); band.dataset.state="fb";
+    note.textContent = !src ? "Clean führt bewusst kein Kunstpaket — das ist kein Fehlbild, das ist die Gestaltung."
+                            : "Kunst abgeschaltet · gezeichnete Ersatzbahn";
+  } else {
+    img.onload=function(){ band.dataset.state="img";
+      note.textContent="Kunstpaket "+S.skin+" geladen"; };
+    img.onerror=function(){ band.dataset.state="fb";
+      note.textContent="Kunstpaket fehlt ("+src.split("/").pop()+") · gezeichnete Ersatzbahn"; };
+    img.src=src; band.dataset.state="fb";
+    note.textContent="Kunstpaket "+S.skin+" wird geladen …";
+  }
+}
+var gemerktePruef={pp:null, rp:null};
+function bauNurDom(){
+  var fkAlt = merkeFokus();
+  wendeAttribute();
+  baueAchsen(); baueRail(); baueKopf(); baueTools();
+  baueOrd(); baueLinse(); baueLegende(); baueMesswerte();
+
+  /* Rollenprojektion: für Spieler und Beobachter ist die Prüfzone
+     STRUKTURELL ABWESEND — nicht ausgeblendet, nicht leer, nicht gesperrt.
+     Genau dieser Unterschied wird im Strukturabdruck und im DOM-Scan sichtbar. */
+  var pz=$("#pruefzone");
+  if(S.rolle==="leitung"){
+    if(gemerktePruef.pp && !gemerktePruef.pp.parentNode) pz.appendChild(gemerktePruef.pp);
+    if(gemerktePruef.rp && !gemerktePruef.rp.parentNode) pz.appendChild(gemerktePruef.rp);
+    baueKaskade(); baueLedger(); baueRegel();
+  } else {
+    if(gemerktePruef.pp && gemerktePruef.pp.parentNode) gemerktePruef.pp.parentNode.removeChild(gemerktePruef.pp);
+    if(gemerktePruef.rp && gemerktePruef.rp.parentNode) gemerktePruef.rp.parentNode.removeChild(gemerktePruef.rp);
+  }
+  $("#lizenzzeile").textContent = W().lizenz;
+  baueShelf(); baueFuss(); karteAlt();
+  S.abdruck=strukturAbdruck();
+  if(!inProbe) stelleFokusHer(fkAlt);
+}
+function bauAlles(){
+  bauNurDom();
+  groesse();
+  zeichne();
+  baueMesswerte();
+  karteAlt();
+  schreibeURL();
+}
+
+/* ── Canvas-Größe ─────────────────────────────────────────────────────────── */
+function groesse(){
+  var plate=$("#plate");
+  var breite=plate.clientWidth || 900;
+  CW=Math.max(320, Math.round(breite));
+  CH=Math.round(CW*0.62);
+  DPR=Math.min(2, window.devicePixelRatio||1);
+  cv.width=Math.round(CW*DPR); cv.height=Math.round(CH*DPR);
+  cv.style.width="100%"; cv.style.height=CH+"px";
+}
+
+/* ── URL-Zustand ──────────────────────────────────────────────────────────── */
+var URLF=["welt","skin","rolle","licht","kontrast","bewegung","kunst","sprache","raster","band"];
+function schreibeURL(){
+  try{
+    var p=[];
+    URLF.forEach(function(f){ p.push(f+"="+encodeURIComponent(S[f])); });
+    history.replaceState(null,"","?"+p.join("&"));
+  }catch(e){}
+}
+function leseURL(){
+  try{
+    var q=new URLSearchParams(location.search);
+    URLF.forEach(function(f){ if(q.has(f)) S[f]=q.get(f); });
+    if(!WELTEN[S.welt]) S.welt="eron";
+    if(!W().leser[S.rolle]) S.rolle="leitung";
+  }catch(e){}
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   14 · Start
+   ══════════════════════════════════════════════════════════════════════════ */
+function start(){
+  cv=$("#karte"); ctx=cv.getContext("2d");
+  gemerktePruef.pp=$("#pruefpanel"); gemerktePruef.rp=$("#regelpanel");
+  leseURL();
+
+  /* Zeiger: Figur greifen und ziehen, Fang je nach Raster */
+  cv.addEventListener("pointerdown", function(e){
+    var r=cv.getBoundingClientRect();
+    var sx=(e.clientX-r.left)*(CW/r.width), sy=(e.clientY-r.top)*(CH/r.height);
+    var w=W(), best=null, bd=1e9;
+    for(var i=0;i<w.figuren.length;i++){
+      var f=w.figuren[i], sp=w2s(f.x,f.y);
+      var d=Math.hypot(sp[0]-sx, sp[1]-sy);
+      if(d<20 && d<bd){ bd=d; best=f; }
+    }
+    if(best){ zieht=best; S.gewaehlt=best.id; cv.setPointerCapture(e.pointerId);
+      bauNurDom(); zeichne(); }
+  });
+  cv.addEventListener("pointermove", function(e){
+    if(!zieht) return;
+    var r=cv.getBoundingClientRect();
+    var sx=(e.clientX-r.left)*(CW/r.width), sy=(e.clientY-r.top)*(CH/r.height);
+    var wp=s2w(sx,sy), np=rasterFang(wp[0],wp[1]);
+    zieht.x=Math.max(0,Math.min(8192,np[0])); zieht.y=Math.max(0,Math.min(8192,np[1]));
+    zeichne();
+  });
+  cv.addEventListener("pointerup", function(e){
+    if(!zieht) return;
+    ansage(zieht.name+" abgelegt auf "+Math.round(zieht.x)+", "+Math.round(zieht.y)+
+           " · Fang: "+S.raster);
+    zieht=null; bauNurDom(); zeichne(); baueMesswerte();
+  });
+  cv.addEventListener("keydown", leinwandTasten);
+  cv.addEventListener("focus", function(){ ansage("Leinwand fokussiert. Pfeiltasten bewegen "+
+    (figurVon(S.gewaehlt)?figurVon(S.gewaehlt).name:"die Auswahl")+". Umschalt für vier Felder."); });
+
+  window.addEventListener("resize", function(){ groesse(); zeichne(); baueMesswerte(); });
+  if(window.matchMedia){
+    try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){
+      farbCacheLeeren(); platte=null; bauAlles(); baueBericht(); }); }catch(e){}
+  }
+
+  bauAlles();
+  isomorphieprobe();
+  bauAlles();
+  /* ein paar Bilder für einen belastbaren Median */
+  for(var i=0;i<24;i++) zeichne();
+  baueMesswerte();
+  baueBericht();
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start);
+else start();
+
+</script>

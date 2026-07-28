@@ -1,0 +1,2510 @@
+<title>Härtetest B2 · Dieselbe Rücknahme in drei Welten — Chronicle, Kandidat B</title>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHRONICLE · Kandidat B — „The Table Engine"
+   Spike B2 · Der Beweis der Universalität.
+
+   These: Rücknahme, Herkunft und Wiedergabe sind keine Fantasy-Features.
+   Es sind Komponenten über einem Beat-Protokoll. Dieselben Komponenten müssen
+   Inhalt, Haut, Rolle, Farbmodus, Kontrast, Bewegung, Dichte, Sprache und
+   Bildausfall überleben, ohne dass ihr Vertrag sich ändert.
+
+   Jede Farbe, jede Schrift, jeder Radius, jeder Schatten ist ein Token.
+   Kein CDN, keine Webfont, kein Skript von außen. Rasterbilder sind optional
+   und ihr Ausfall ist gestaltet, nicht abgefangen.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · Strukturtokens ─────────────────────────────────────────────────── */
+:root {
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 22px; --sp-6: 30px; --sp-7: 44px;
+
+  --t-res: 140ms;    /* Antwort   110–180  */
+  --t-state: 280ms;  /* Zustand   220–340  */
+  --t-trans: 780ms;  /* Übergang  600–1000 */
+  --travel: 1;       /* 0 = kein räumlicher Weg */
+  --ease: cubic-bezier(.2, .78, .22, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+
+  --fs-micro: 11px; --fs-tiny: 12px;  --fs-small: 13px;
+  --fs-body: 14px;  --fs-lead: 15.5px; --fs-h3: 16px;
+  --fs-h2: 19px;    --fs-h1: 23px;    --fs-display: 28px;
+
+  --ui-font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono-font: "Cascadia Mono", Consolas, "SF Mono", ui-monospace, monospace;
+
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='150' height='150' filter='url(%23n)' opacity='.55'/></svg>");
+}
+
+/* ── 2 · Häute. Form zuerst, Farbe danach. ──────────────────────────────── */
+/*    Eine Haut ist mehr als eine Palette: Radius, Rahmenstärke, Laufweite,   */
+/*    Versalien, Anzeigeschrift, Balkenform und Ornamentmenge gehören dazu.   */
+
+:root, :root[data-skin="relic"] {
+  --display-font: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --label-tf: none; --label-track: .04em;
+  --r-sm: 3px; --r-md: 5px; --r-lg: 9px;
+  --frame-w: 1px; --ornament: 1; --grain-op: .05;
+  --bar-r: 999px; --bar-h: 9px; --bar-tick: 0;
+  --hc-a-d: #ffd479; --hc-a-l: #6b4200;
+
+  --d-bg:#060f0c; --d-bg2:#08150f; --d-surface:#0d1a15; --d-surface2:#122320; --d-surfaceHi:#18302a;
+  --d-text:#f3ead6; --d-muted:#b9c3b4; --d-dim:#a3ae9f;
+  --d-accent:#e2b95f; --d-accentText:#eac876; --d-accentInk:#1a1206;
+  --d-ok:#6fd6ad; --d-warn:#efb862; --d-gm:#f2929a;
+  --d-border:#5a6d61; --d-barTrack:#1c2b26; --d-barFill:#d9a94f;
+  --d-shadow:0,0,0; --d-shadowA:.55; --d-glow:.26;
+
+  --l-bg:#e7dec9; --l-bg2:#efe7d5; --l-surface:#faf5e9; --l-surface2:#f2ebdb; --l-surfaceHi:#fffdf5;
+  --l-text:#201709; --l-muted:#54492f; --l-dim:#5f5436;
+  --l-accent:#8a5c0a; --l-accentText:#78500a; --l-accentInk:#fff8e8;
+  --l-ok:#116048; --l-warn:#714d0e; --l-gm:#94202b;
+  --l-border:#8a7a58; --l-barTrack:#ded4bc; --l-barFill:#8a5c0a;
+  --l-shadow:60,44,18; --l-shadowA:.18; --l-glow:.10;
+}
+
+:root[data-skin="signal"] {
+  --display-font: "Bahnschrift SemiCondensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --label-tf: uppercase; --label-track: .13em;
+  --r-sm: 1px; --r-md: 2px; --r-lg: 2px;
+  --frame-w: 1px; --ornament: .5; --grain-op: .02;
+  --bar-r: 0px; --bar-h: 8px; --bar-tick: 1;
+  --hc-a-d: #7fe9ff; --hc-a-l: #004e63;
+
+  --d-bg:#03070e; --d-bg2:#050e17; --d-surface:#08141e; --d-surface2:#0c1d29; --d-surfaceHi:#112a3a;
+  --d-text:#e7f4f8; --d-muted:#a7bfc9; --d-dim:#93aab4;
+  --d-accent:#57d6ef; --d-accentText:#6ee0f6; --d-accentInk:#02202a;
+  --d-ok:#75e5c1; --d-warn:#ffc46b; --d-gm:#ff8ba1;
+  --d-border:#4d6b7a; --d-barTrack:#132734; --d-barFill:#48cbe6;
+  --d-shadow:0,8,16; --d-shadowA:.6; --d-glow:.3;
+
+  --l-bg:#dbe4ea; --l-bg2:#e6edf2; --l-surface:#f7fafc; --l-surface2:#eef4f8; --l-surfaceHi:#ffffff;
+  --l-text:#05141d; --l-muted:#425760; --l-dim:#4b616b;
+  --l-accent:#0a5a70; --l-accentText:#0a5568; --l-accentInk:#f2fbfd;
+  --l-ok:#0f6049; --l-warn:#6f4806; --l-gm:#a1153c;
+  --l-border:#6d8794; --l-barTrack:#dbe6ec; --l-barFill:#0a5a70;
+  --l-shadow:8,40,56; --l-shadowA:.15; --l-glow:.09;
+}
+
+:root[data-skin="archive"] {
+  --display-font: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --label-tf: uppercase; --label-track: .17em;
+  --r-sm: 0px; --r-md: 0px; --r-lg: 0px;
+  --frame-w: 2px; --ornament: 1; --grain-op: .065;
+  --bar-r: 0px; --bar-h: 11px; --bar-tick: 0;
+  --hc-a-d: #ffb08a; --hc-a-l: #7a2408;
+
+  --d-bg:#0d0908; --d-bg2:#130e0c; --d-surface:#191312; --d-surface2:#211a18; --d-surfaceHi:#2c211e;
+  --d-text:#f3eadd; --d-muted:#c0b0a6; --d-dim:#ac9b91;
+  --d-accent:#e2966f; --d-accentText:#eaa780; --d-accentInk:#1e0f09;
+  --d-ok:#9fd0a8; --d-warn:#e6b46c; --d-gm:#f2848f;
+  --d-border:#7b6459; --d-barTrack:#261d1b; --d-barFill:#d98a62;
+  --d-shadow:0,0,0; --d-shadowA:.62; --d-glow:.22;
+
+  --l-bg:#e9e1d4; --l-bg2:#f0e9de; --l-surface:#fbf7f0; --l-surface2:#f3ece2; --l-surfaceHi:#ffffff;
+  --l-text:#1c1512; --l-muted:#544239; --l-dim:#5e4b41;
+  --l-accent:#8a3618; --l-accentText:#82330f; --l-accentInk:#fff6ef;
+  --l-ok:#265535; --l-warn:#714c0d; --l-gm:#78141e;
+  --l-border:#8d7568; --l-barTrack:#e3d8ca; --l-barFill:#8a3618;
+  --l-shadow:70,36,22; --l-shadowA:.17; --l-glow:.08;
+}
+
+:root[data-skin="clean"] {
+  --display-font: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --label-tf: none; --label-track: .01em;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+  --frame-w: 1px; --ornament: 0; --grain-op: 0;
+  --bar-r: 999px; --bar-h: 8px; --bar-tick: 0;
+  --hc-a-d: #a8ccff; --hc-a-l: #103f9e;
+
+  --d-bg:#0a0e13; --d-bg2:#0d141a; --d-surface:#141c24; --d-surface2:#1a242d; --d-surfaceHi:#212e39;
+  --d-text:#eff4f8; --d-muted:#adbcc7; --d-dim:#9aa9b4;
+  --d-accent:#7db4ff; --d-accentText:#93c1ff; --d-accentInk:#05101f;
+  --d-ok:#6fdcb2; --d-warn:#ffc978; --d-gm:#ff8fa1;
+  --d-border:#62717f; --d-barTrack:#1f2b35; --d-barFill:#6aa9f7;
+  --d-shadow:0,0,0; --d-shadowA:.5; --d-glow:.16;
+
+  --l-bg:#e9edf1; --l-bg2:#f1f4f7; --l-surface:#ffffff; --l-surface2:#f4f7fa; --l-surfaceHi:#ffffff;
+  --l-text:#0c1318; --l-muted:#48565f; --l-dim:#4f5d67;
+  --l-accent:#1a56c0; --l-accentText:#1a53b8; --l-accentInk:#ffffff;
+  --l-ok:#0f6349; --l-warn:#6f4a07; --l-gm:#a0123a;
+  --l-border:#7b8b98; --l-barTrack:#dde4ea; --l-barFill:#1a56c0;
+  --l-shadow:20,40,60; --l-shadowA:.12; --l-glow:.07;
+}
+
+/* ── 3 · Farbmodus. Hell ist die Basis, Dunkel per Media-Query,            */
+/*       Attribut-Overrides schlagen die Media-Query.                       */
+:root, :root[data-theme="light"] {
+  --bg:var(--l-bg); --bg2:var(--l-bg2); --surface:var(--l-surface);
+  --surface2:var(--l-surface2); --surface-hi:var(--l-surfaceHi);
+  --text:var(--l-text); --muted:var(--l-muted); --dim:var(--l-dim);
+  --accent:var(--l-accent); --accent-text:var(--l-accentText); --accent-ink:var(--l-accentInk);
+  --ok:var(--l-ok); --warn:var(--l-warn); --gm:var(--l-gm);
+  --border-strong:var(--l-border); --bar-track:var(--l-barTrack); --bar-fill:var(--l-barFill);
+  --shadow-rgb:var(--l-shadow); --shadow-a:var(--l-shadowA); --glow-a:var(--l-glow);
+  --ch-s: 65%; --ch-l: 30%;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:var(--d-bg); --bg2:var(--d-bg2); --surface:var(--d-surface);
+    --surface2:var(--d-surface2); --surface-hi:var(--d-surfaceHi);
+    --text:var(--d-text); --muted:var(--d-muted); --dim:var(--d-dim);
+    --accent:var(--d-accent); --accent-text:var(--d-accentText); --accent-ink:var(--d-accentInk);
+    --ok:var(--d-ok); --warn:var(--d-warn); --gm:var(--d-gm);
+    --border-strong:var(--d-border); --bar-track:var(--d-barTrack); --bar-fill:var(--d-barFill);
+    --shadow-rgb:var(--d-shadow); --shadow-a:var(--d-shadowA); --glow-a:var(--d-glow);
+    --ch-s: 62%; --ch-l: 70%;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:var(--d-bg); --bg2:var(--d-bg2); --surface:var(--d-surface);
+  --surface2:var(--d-surface2); --surface-hi:var(--d-surfaceHi);
+  --text:var(--d-text); --muted:var(--d-muted); --dim:var(--d-dim);
+  --accent:var(--d-accent); --accent-text:var(--d-accentText); --accent-ink:var(--d-accentInk);
+  --ok:var(--d-ok); --warn:var(--d-warn); --gm:var(--d-gm);
+  --border-strong:var(--d-border); --bar-track:var(--d-barTrack); --bar-fill:var(--d-barFill);
+  --shadow-rgb:var(--d-shadow); --shadow-a:var(--d-shadowA); --glow-a:var(--d-glow);
+  --ch-s: 62%; --ch-l: 70%;
+}
+
+/* ── 4 · Hochkontrast. Nutzt die Hautfarbe, opfert das Ornament. ────────── */
+:root[data-contrast="high"] {
+  --bg:#ffffff; --bg2:#fafafa; --surface:#ffffff; --surface2:#f3f3f3; --surface-hi:#ffffff;
+  --text:#000000; --muted:#1c1c1c; --dim:#2c2c2c;
+  --accent:var(--hc-a-l); --accent-text:var(--hc-a-l); --accent-ink:#ffffff;
+  --ok:#005c3f; --warn:#6b4400; --gm:#97001f;
+  --border-strong:#000000; --bar-track:#d8d8d8; --bar-fill:var(--hc-a-l);
+  --shadow-rgb:0,0,0; --shadow-a:0; --glow-a:0;
+  --ornament:0; --grain-op:0; --frame-w:2px;
+  --ch-s:65%; --ch-l:30%;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-contrast="high"]:not([data-theme="light"]) {
+    --bg:#000000; --bg2:#050505; --surface:#0a0a0a; --surface2:#101010; --surface-hi:#181818;
+    --text:#ffffff; --muted:#e8e8e8; --dim:#d4d4d4;
+    --accent:var(--hc-a-d); --accent-text:var(--hc-a-d); --accent-ink:#000000;
+    --ok:#7df0c2; --warn:#ffcf7a; --gm:#ff9aa6;
+    --border-strong:#ffffff; --bar-track:#2b2b2b; --bar-fill:var(--hc-a-d);
+    --ch-s:62%; --ch-l:70%;
+  }
+}
+:root[data-theme="dark"][data-contrast="high"] {
+  --bg:#000000; --bg2:#050505; --surface:#0a0a0a; --surface2:#101010; --surface-hi:#181818;
+  --text:#ffffff; --muted:#e8e8e8; --dim:#d4d4d4;
+  --accent:var(--hc-a-d); --accent-text:var(--hc-a-d); --accent-ink:#000000;
+  --ok:#7df0c2; --warn:#ffcf7a; --gm:#ff9aa6;
+  --border-strong:#ffffff; --bar-track:#2b2b2b; --bar-fill:var(--hc-a-d);
+  --ch-s:62%; --ch-l:70%;
+}
+:root[data-theme="light"][data-contrast="high"] {
+  --bg:#ffffff; --bg2:#fafafa; --surface:#ffffff; --surface2:#f3f3f3; --surface-hi:#ffffff;
+  --text:#000000; --muted:#1c1c1c; --dim:#2c2c2c;
+  --accent:var(--hc-a-l); --accent-text:var(--hc-a-l); --accent-ink:#ffffff;
+  --ok:#005c3f; --warn:#6b4400; --gm:#97001f;
+  --border-strong:#000000; --bar-track:#d8d8d8; --bar-fill:var(--hc-a-l);
+  --ch-s:65%; --ch-l:30%;
+}
+
+/* abgeleitete Tokens */
+:root {
+  --line: color-mix(in srgb, var(--border-strong) 40%, var(--surface));
+  --line-2: color-mix(in srgb, var(--border-strong) 72%, var(--surface));
+  --shadow-1: 0 1px 2px rgba(var(--shadow-rgb), calc(var(--shadow-a) * .55));
+  --shadow-2: 0 8px 22px -8px rgba(var(--shadow-rgb), var(--shadow-a));
+  --shadow-3: 0 26px 64px -26px rgba(var(--shadow-rgb), var(--shadow-a));
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+:root[data-contrast="high"] { --line: var(--border-strong); --line-2: var(--border-strong); }
+
+/* ── 5 · Bewegung ist Zustandssprache, nie Tapete. ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) {
+    --t-res: 1ms; --t-state: 1ms; --t-trans: 1ms; --travel: 0;
+  }
+  :root:not([data-motion="full"]) *,
+  :root:not([data-motion="full"]) *::before,
+  :root:not([data-motion="full"]) *::after { animation: none !important; }
+}
+:root[data-motion="reduced"] { --t-res: 1ms; --t-state: 1ms; --t-trans: 1ms; --travel: 0; }
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after { animation: none !important; }
+
+/* ── 6 · Dichte ─────────────────────────────────────────────────────────── */
+:root[data-density="compact"] {
+  --sp-2: 6px; --sp-3: 9px; --sp-4: 12px; --sp-5: 16px; --sp-6: 22px; --sp-7: 30px;
+  --fs-body: 13px; --fs-lead: 14.5px; --fs-h2: 17.5px; --fs-h1: 21px; --fs-display: 25px;
+}
+
+/* ── 7 · Grundlagen ─────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+body {
+  margin: 0; overflow-x: hidden;
+  background: var(--bg); color: var(--text);
+  font: var(--fs-body)/1.55 var(--ui-font);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { margin: 0; font-family: var(--display-font); font-weight: 600; line-height: 1.22; }
+p, dl, dd { margin: 0; }
+ol, ul { margin: 0; padding: 0; list-style: none; }
+button, input, select { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: pointer; text-align: left; }
+[hidden] { display: none !important; }
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r-sm); }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.scrollx { overflow-x: auto; max-width: 100%; }
+code, .mono { font-family: var(--mono-font); font-size: .92em; }
+
+.page {
+  max-width: 1560px; margin: 0 auto; padding: var(--sp-5) var(--sp-5) var(--sp-7);
+  display: flex; flex-direction: column; gap: var(--sp-5);
+}
+
+/* ── 8 · Prüfstandkopf ──────────────────────────────────────────────────── */
+.hero { display: flex; flex-direction: column; gap: var(--sp-3); }
+.hero .kicker {
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--accent-text);
+}
+.hero h1 { font-size: var(--fs-display); max-width: 30ch; }
+.hero .claim { color: var(--muted); max-width: 82ch; font-size: var(--fs-lead); }
+.hero .claim b { color: var(--text); }
+
+.lamps { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.lamp {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px; border-radius: var(--r-md);
+  border: var(--frame-w) solid var(--line-2); background: var(--surface);
+  font-size: var(--fs-tiny);
+}
+.lamp b { font-weight: 700; letter-spacing: var(--label-track); text-transform: var(--label-tf); }
+.lamp span:last-child { color: var(--muted); }
+.lamp .dot { width: 9px; height: 9px; border-radius: 2px; background: var(--dim); flex: none; }
+.lamp[data-state="pass"] { border-color: color-mix(in srgb, var(--ok) 60%, transparent); }
+.lamp[data-state="pass"] .dot { background: var(--ok); }
+.lamp[data-state="fail"] { border-color: var(--gm); }
+.lamp[data-state="fail"] .dot { background: var(--gm); }
+.lamp[data-state="fail"] span:last-child { color: var(--gm); font-weight: 700; }
+
+/* ── 9 · Achsen ─────────────────────────────────────────────────────────── */
+.axes {
+  display: grid; gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  padding: var(--sp-4); border: var(--frame-w) solid var(--line);
+  border-radius: var(--r-lg); background: var(--surface2);
+}
+.axis { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.axis > legend {
+  padding: 0; font-size: var(--fs-micro); font-weight: 800;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--dim);
+}
+.opts { display: flex; flex-wrap: wrap; gap: 3px; }
+.opts input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.opts label {
+  padding: 4px 9px; border-radius: var(--r-sm); cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface);
+  font-size: var(--fs-tiny); color: var(--muted); white-space: nowrap;
+  transition: background var(--t-res) var(--ease), color var(--t-res) var(--ease),
+              border-color var(--t-res) var(--ease);
+}
+.opts label:hover { border-color: var(--accent); color: var(--text); }
+.opts input:checked + label {
+  background: var(--accent); color: var(--accent-ink);
+  border-color: var(--accent); font-weight: 700;
+}
+.opts input:focus-visible + label { box-shadow: var(--focus); }
+.axis select {
+  border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  border-radius: var(--r-sm); padding: 5px 7px; font-size: var(--fs-tiny); max-width: 100%;
+}
+
+/* ── 10 · Das Produkt selbst ────────────────────────────────────────────── */
+.prod {
+  position: relative; isolation: isolate;
+  border: var(--frame-w) solid var(--line-2); border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--bg2), var(--bg) 60%);
+  box-shadow: var(--shadow-3); overflow: hidden;
+}
+.prod::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: var(--grain); opacity: var(--grain-op); mix-blend-mode: overlay;
+}
+.prod > * { position: relative; z-index: 1; }
+
+/* Kampagnenkontext */
+.ctx {
+  display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-4);
+  align-items: center; justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: var(--frame-w) solid var(--line);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent);
+}
+.ctx__id { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.ctx__id h2 { font-size: var(--fs-h2); }
+.ctx__meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2);
+  font-size: var(--fs-tiny); color: var(--muted); margin-top: 2px;
+}
+.ctx__meta b { color: var(--text); }
+.ctx__right { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  font-size: var(--fs-micro); font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase;
+  border: 1px solid var(--line-2); color: var(--muted); background: var(--surface);
+}
+.badge[data-tone="gm"]   { color: var(--gm);   border-color: color-mix(in srgb, var(--gm) 60%, transparent); }
+.badge[data-tone="ok"]   { color: var(--ok);   border-color: color-mix(in srgb, var(--ok) 60%, transparent); }
+.badge[data-tone="warn"] { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 60%, transparent); }
+.badge[data-tone="acc"]  { color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.badge .pip { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+
+/* Raster der Shell */
+.shell {
+  display: grid; min-width: 0;
+  grid-template-columns: auto minmax(190px, 232px) minmax(0, 1fr) minmax(302px, 372px);
+}
+.shell > * { min-width: 0; }
+
+.rail {
+  display: flex; flex-direction: column; gap: 2px; padding: var(--sp-3) var(--sp-2);
+  border-right: var(--frame-w) solid var(--line);
+}
+.rail__h {
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim); padding: 0 var(--sp-2) var(--sp-2);
+}
+.rail button {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 7px var(--sp-2); border-radius: var(--r-md);
+  font-size: var(--fs-tiny); font-weight: 600; color: var(--muted);
+  letter-spacing: var(--label-track); text-transform: var(--label-tf);
+  transition: background var(--t-res) var(--ease), color var(--t-res) var(--ease);
+  max-width: 168px;
+}
+.rail button svg { width: 15px; height: 15px; flex: none; opacity: .85; }
+.rail button:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text); }
+.rail button[aria-current="page"] {
+  color: var(--accent-text); background: color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.coll {
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  padding: var(--sp-3); border-right: var(--frame-w) solid var(--line);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+.coll__h { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .14em;
+           text-transform: uppercase; color: var(--dim); }
+.coll__item {
+  display: flex; align-items: center; gap: var(--sp-2); width: 100%;
+  padding: 6px var(--sp-2); border-radius: var(--r-md);
+  border: 1px solid transparent; font-size: var(--fs-tiny); color: var(--muted);
+  transition: background var(--t-res) var(--ease), border-color var(--t-res) var(--ease);
+}
+.coll__item:hover { background: var(--surface); border-color: var(--line); color: var(--text); }
+.coll__item[aria-current="true"] {
+  background: var(--surface-hi); border-color: var(--accent); color: var(--text); font-weight: 600;
+}
+.coll__item .cnt { margin-left: auto; color: var(--dim); }
+.coll__note { margin-top: auto; padding-top: var(--sp-3); border-top: 1px solid var(--line);
+              font-size: var(--fs-micro); color: var(--dim); line-height: 1.55; }
+
+/* ── 11 · Bühne ─────────────────────────────────────────────────────────── */
+.stage { display: flex; flex-direction: column; min-width: 0;
+         border-right: var(--frame-w) solid var(--line); }
+.stage__head {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3);
+  align-items: flex-start; justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line);
+}
+.stage__head h3 { font-size: var(--fs-h2); }
+.stage__head .sub { font-size: var(--fs-tiny); color: var(--muted); margin-top: 2px; }
+.recipes { display: flex; border: 1px solid var(--line-2); border-radius: var(--r-md); overflow: hidden; }
+.recipes button {
+  padding: 4px 10px; font-size: var(--fs-micro); font-weight: 700; color: var(--muted);
+  letter-spacing: var(--label-track); text-transform: var(--label-tf);
+  border-right: 1px solid var(--line); transition: background var(--t-res) var(--ease);
+}
+.recipes button:last-child { border-right: 0; }
+.recipes button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.recipes button:focus-visible { box-shadow: var(--focus); position: relative; z-index: 2; }
+
+.scene {
+  position: relative; overflow: hidden;
+  min-height: 132px; border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(60% 80% at 28% 42%, color-mix(in srgb, var(--accent) calc(var(--glow-a) * 42%), transparent), transparent 68%),
+    linear-gradient(178deg, var(--surface-hi), var(--bg2));
+}
+.scene__art { position: absolute; inset: 0; margin: 0; }
+.scene__art img { width: 100%; height: 100%; object-fit: cover; display: block;
+                  opacity: calc(.42 + .18 * var(--ornament)); }
+.scene__fallback {
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(115deg, transparent 0 13px, color-mix(in srgb, var(--border-strong) 16%, transparent) 13px 14px),
+    radial-gradient(70% 90% at 30% 20%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+}
+.scene__scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(var(--shadow-rgb), calc(var(--shadow-a) * .5)), transparent 40%,
+              color-mix(in srgb, var(--bg) 78%, transparent));
+}
+.scene__plan { position: absolute; inset: 0; }
+.pin {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center; font-size: var(--fs-micro); font-weight: 800;
+  color: var(--text); background: var(--surface);
+  border: 2px solid var(--ch, var(--border-strong));
+  box-shadow: var(--shadow-2);
+  transition: transform var(--t-state) var(--ease-out), opacity var(--t-state) var(--ease);
+}
+.pin[data-tone="out"] { border-style: dashed; opacity: .62; }
+.pin[data-sel="true"] { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent), var(--shadow-2); }
+.scene__fog {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, transparent), color-mix(in srgb, var(--bg) 74%, transparent));
+  -webkit-mask-image: radial-gradient(circle at 62% 52%, transparent var(--fog-hole, 0%), #000 calc(var(--fog-hole, 0%) + 12%));
+  mask-image: radial-gradient(circle at 62% 52%, transparent var(--fog-hole, 0%), #000 calc(var(--fog-hole, 0%) + 12%));
+  transition: opacity var(--t-trans) var(--ease);
+}
+.scene__caption {
+  position: absolute; left: var(--sp-3); bottom: var(--sp-2); right: var(--sp-3);
+  display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center;
+  font-size: var(--fs-micro); color: var(--muted);
+}
+.scene__caption .tag {
+  padding: 2px 7px; border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border: 1px solid var(--line);
+}
+
+/* Zielliste — dieselbe Komponente für LP, Hüllenintegrität und Belastung. */
+.targets { display: flex; flex-direction: column; padding: var(--sp-2) 0; }
+.target {
+  display: grid; gap: 2px var(--sp-3); align-items: center;
+  grid-template-columns: 34px minmax(0, 1fr) 96px;
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  transition: background var(--t-res) var(--ease);
+}
+.target:last-child { border-bottom: 0; }
+.target:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.target[data-sel="true"] { background: color-mix(in srgb, var(--accent) 11%, transparent);
+                           box-shadow: inset 3px 0 0 var(--accent); }
+.target__sig { grid-row: span 2; }
+.target__name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: var(--fs-small); }
+.target__name b { font-weight: 700; }
+.target__name .kind { font-size: var(--fs-micro); color: var(--dim);
+                      letter-spacing: var(--label-track); text-transform: var(--label-tf); }
+.target__val {
+  grid-row: span 2; text-align: right; font-size: var(--fs-small); color: var(--muted);
+}
+.target__val b { display: block; font-size: var(--fs-h3); color: var(--text); }
+.target__bar { grid-column: 2; }
+.bar {
+  display: block;
+  position: relative; height: var(--bar-h); border-radius: var(--bar-r);
+  background: var(--bar-track); overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 45%, transparent);
+}
+.bar__fill {
+  position: absolute; inset: 0 auto 0 0; border-radius: var(--bar-r);
+  background: var(--bar-fill);
+  transition: width var(--t-state) var(--ease-out), background var(--t-state) var(--ease);
+}
+.bar[data-tone="warn"] .bar__fill { background: var(--warn); }
+.bar[data-tone="bad"]  .bar__fill { background: var(--gm); }
+.bar[data-tone="out"]  .bar__fill { background: var(--gm); }
+.bar__ticks {
+  position: absolute; inset: 0; pointer-events: none; opacity: var(--bar-tick);
+  background: repeating-linear-gradient(90deg, transparent 0 9px,
+              color-mix(in srgb, var(--bg) 70%, transparent) 9px 10px);
+}
+.chips { display: flex; flex-wrap: wrap; gap: 4px; grid-column: 2; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 7px; border-radius: 999px; font-size: var(--fs-micro); font-weight: 700;
+  border: 1px solid var(--line-2); color: var(--muted); background: var(--surface);
+  letter-spacing: .03em; white-space: nowrap;
+}
+.chip[data-tone="warn"] { color: var(--warn); border-color: var(--warn);
+                          background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.chip[data-tone="bad"]  { color: var(--gm);  border-color: var(--gm);
+                          background: color-mix(in srgb, var(--gm) 12%, transparent); }
+.chip[data-tone="ok"]   { color: var(--ok);  border-color: color-mix(in srgb, var(--ok) 60%, transparent); }
+.chip[data-tone="acc"]  { color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.chip.enter { animation: chipIn var(--t-state) var(--ease-out) backwards; }
+@keyframes chipIn {
+  from { opacity: 0; transform: translateY(calc(-6px * var(--travel))) scale(.94); }
+  to   { opacity: 1; transform: none; }
+}
+
+.initiative {
+  margin-top: auto;
+  display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-4); border-top: 1px solid var(--line);
+  font-size: var(--fs-micro); color: var(--dim);
+}
+.initiative ol { display: flex; gap: 4px; flex-wrap: wrap; }
+.initiative li {
+  padding: 2px 8px; border-radius: var(--r-sm); border: 1px solid var(--line);
+  color: var(--muted); transition: background var(--t-state) var(--ease);
+}
+.initiative li[aria-current="true"] {
+  background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700;
+}
+
+/* ── 12 · Kontextlupe = die Chronikseite ────────────────────────────────── */
+.lens { display: flex; flex-direction: column; min-width: 0; background: var(--surface); }
+.lens__head { padding: var(--sp-3) var(--sp-4); border-bottom: var(--frame-w) solid var(--line); }
+.lens__title { display: flex; align-items: center; gap: var(--sp-3); }
+.lens__title h3 { font-size: var(--fs-h2); }
+.lens__title .kind { font-size: var(--fs-micro); color: var(--dim);
+                     letter-spacing: var(--label-track); text-transform: var(--label-tf); }
+.lens__body { padding: var(--sp-3) var(--sp-4) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); }
+.sect__h {
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--dim); margin-bottom: var(--sp-2);
+}
+
+.facts { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.fact {
+  display: flex; flex-direction: column; gap: 3px; width: 100%;
+  padding: var(--sp-2) var(--sp-2); border-bottom: 1px solid var(--line);
+  transition: background var(--t-res) var(--ease);
+}
+.fact:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.fact[data-sel="true"] { background: color-mix(in srgb, var(--accent) 13%, transparent);
+                         box-shadow: inset 3px 0 0 var(--accent); }
+.fact__k { font-size: var(--fs-micro); color: var(--dim);
+           letter-spacing: var(--label-track); text-transform: var(--label-tf); }
+.fact__v { font-size: var(--fs-small); font-family: var(--display-font); line-height: 1.35; }
+.fact[data-struck="true"] .fact__v { text-decoration: line-through; color: var(--muted); }
+
+.prose {
+  padding: var(--sp-3); border-left: 3px solid var(--accent);
+  background: var(--surface2); border-radius: 0 var(--r-md) var(--r-md) 0;
+  font-family: var(--display-font); font-size: var(--fs-small); line-height: 1.6;
+}
+.prose + .prose-note { font-size: var(--fs-micro); color: var(--dim); margin-top: 5px; }
+
+.happened { display: flex; flex-direction: column; gap: var(--sp-2); }
+.happened li { display: flex; gap: var(--sp-2); font-size: var(--fs-tiny); color: var(--muted); }
+.happened .t { color: var(--dim); flex: none; }
+.empty-note {
+  padding: var(--sp-3); border: 1px dashed var(--line-2); border-radius: var(--r-md);
+  font-size: var(--fs-tiny); color: var(--dim); line-height: 1.6;
+}
+.omit {
+  padding: var(--sp-3); border: 1px solid var(--line);
+  border-left: 3px solid var(--ok); border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: var(--surface2); font-size: var(--fs-micro); color: var(--muted); line-height: 1.65;
+}
+.omit b { color: var(--text); }
+
+/* Herkunfts-Aufsteller */
+.blame {
+  position: fixed; z-index: 60; width: min(392px, calc(100vw - 24px));
+  border: var(--frame-w) solid var(--line-2); border-radius: var(--r-lg);
+  background: var(--surface-hi); box-shadow: var(--shadow-3);
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  animation: pop var(--t-state) var(--ease-out);
+}
+@keyframes pop {
+  from { opacity: 0; transform: translateY(calc(8px * var(--travel))) scale(calc(1 - .02 * var(--travel))); }
+  to   { opacity: 1; transform: none; }
+}
+.blame h4 { font-size: var(--fs-h3); }
+.blame dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px var(--sp-2);
+            font-size: var(--fs-tiny); }
+.blame dt { color: var(--dim); }
+.blame dd { color: var(--text); overflow-wrap: anywhere; }
+.blame__acts { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-1); }
+.blame__prog { height: 5px; border-radius: 999px; background: var(--bar-track); overflow: hidden; }
+.blame__prog i { display: block; height: 100%; width: 0; background: var(--accent);
+                 transition: width 200ms linear; }
+.blame__warn {
+  padding: var(--sp-2) var(--sp-3); border: 1px solid var(--gm); border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--gm) 10%, transparent);
+  font-size: var(--fs-tiny); line-height: 1.6;
+}
+.blame__warn b { color: var(--gm); }
+.blame__close { position: absolute; top: 6px; right: 8px; padding: 4px 8px;
+                font-size: var(--fs-tiny); color: var(--muted); border-radius: var(--r-sm); }
+.blame__close:hover { color: var(--text); }
+
+/* ── 13 · Ledger-Bar (Session Shelf, nie ruhig) ─────────────────────────── */
+.shelf {
+  display: grid; gap: var(--sp-3);
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: var(--sp-3) var(--sp-4);
+  border-top: var(--frame-w) solid var(--line-2);
+  background: linear-gradient(180deg, var(--surface), var(--bg2));
+}
+.shelf__clock { display: flex; flex-direction: column; gap: 1px; }
+.shelf__clock .big { font: 700 25px/1 var(--mono-font); font-variant-numeric: tabular-nums; }
+.shelf__clock .sub { font-size: var(--fs-micro); color: var(--dim);
+                     letter-spacing: .09em; text-transform: uppercase; }
+.shelf__main { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+
+.tail { display: flex; gap: var(--sp-2); padding-bottom: 3px; }
+.beat {
+  flex: none; display: flex; align-items: center; gap: 7px;
+  padding: 4px 10px; border-radius: var(--r-md);
+  border: 1px solid var(--line); background: var(--surface);
+  font-size: var(--fs-micro); color: var(--muted); white-space: nowrap;
+  transition: border-color var(--t-res) var(--ease), background var(--t-res) var(--ease);
+}
+.beat:hover { border-color: var(--accent); color: var(--text); }
+.beat[aria-pressed="true"] { border-color: var(--accent);
+                             background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--text); }
+.beat .id { font-family: var(--mono-font); color: var(--dim); font-variant-numeric: tabular-nums; }
+.beat .ty { font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+.beat[data-status="reverted"] { opacity: .55; text-decoration: line-through; }
+.beat[data-status="reverted"] .ty { color: var(--gm); }
+.beat.flash { animation: flash var(--t-trans) var(--ease); }
+@keyframes flash { from { background: color-mix(in srgb, var(--accent) 40%, transparent); } to { background: var(--surface); } }
+
+.trace {
+  border: 1px solid var(--line-2); border-left: 3px solid var(--accent);
+  border-radius: 0 var(--r-md) var(--r-md) 0; background: var(--surface2);
+  padding: var(--sp-2) var(--sp-3); font-size: var(--fs-micro); line-height: 1.7;
+}
+.trace ol { display: flex; flex-direction: column; gap: 1px; font-family: var(--mono-font); }
+.trace .h { font-family: var(--ui-font); font-weight: 800; letter-spacing: .1em;
+            text-transform: uppercase; color: var(--accent-text); margin-bottom: 4px; }
+
+.transport { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: var(--r-md);
+  border: 1px solid var(--line-2); background: var(--surface);
+  font-size: var(--fs-tiny); font-weight: 600; color: var(--text);
+  letter-spacing: var(--label-track);
+  transition: background var(--t-res) var(--ease), border-color var(--t-res) var(--ease),
+              transform var(--t-res) var(--ease);
+}
+.btn:hover { background: var(--surface-hi); border-color: var(--accent); }
+.btn:active { transform: translateY(calc(1px * var(--travel))); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn[disabled]:hover { background: var(--surface); border-color: var(--line-2); }
+.btn[data-kind="primary"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn[data-kind="danger"]  { border-color: var(--gm); color: var(--gm); }
+.btn[data-kind="danger"]:hover { background: color-mix(in srgb, var(--gm) 12%, transparent); }
+.btn kbd { font: 700 var(--fs-micro)/1 var(--mono-font); padding: 3px 5px;
+           border-radius: 3px; background: color-mix(in srgb, var(--border-strong) 30%, transparent); }
+.btn[data-kind="primary"] kbd { background: color-mix(in srgb, var(--accent-ink) 22%, transparent); }
+.btn--sm { padding: 3px 9px; font-size: var(--fs-micro); }
+
+.reason { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.reason label { font-size: var(--fs-micro); color: var(--dim);
+                letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+.reason input {
+  padding: 5px 9px; min-width: 168px; flex: 1 1 168px; max-width: 320px;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  background: var(--surface-hi); color: var(--text); font-size: var(--fs-tiny);
+}
+.reason input::placeholder { color: var(--dim); }
+.reason input:focus-visible { box-shadow: var(--focus); }
+.reason .sug { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.note { font-size: var(--fs-micro); color: var(--muted); line-height: 1.6; }
+.note b { color: var(--text); }
+.note .g { color: var(--ok); font-weight: 700; }
+
+/* Klientenstreifen — der Beleg „auf jedem Schirm" */
+.clients { display: flex; gap: var(--sp-2); padding-bottom: 3px; }
+.client {
+  flex: none; width: 150px; padding: var(--sp-2);
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+}
+.client__h { display: flex; align-items: center; gap: 5px; font-size: var(--fs-micro); color: var(--muted); }
+.client__h svg { width: 13px; height: 13px; flex: none; }
+.client__h b { color: var(--text); font-weight: 700; }
+.client__seq { margin-left: auto; font-family: var(--mono-font); color: var(--dim);
+               font-variant-numeric: tabular-nums; }
+.client__bars { display: flex; flex-direction: column; gap: 2px; margin-top: 5px; }
+.client__bars .bar { height: 4px; border-radius: var(--bar-r); }
+
+/* Chat / Protokollzeilen */
+.log { display: flex; flex-direction: column; gap: 2px; }
+.log li {
+  display: flex; gap: var(--sp-2); font-size: var(--fs-micro); color: var(--muted);
+  padding: 2px 0; transition: color var(--t-state) var(--ease);
+}
+.log .t { color: var(--dim); flex: none; font-family: var(--mono-font);
+          font-variant-numeric: tabular-nums; }
+.log li[data-struck="true"] { color: var(--dim); }
+.log li[data-struck="true"] .txt { position: relative; }
+.log li[data-struck="true"] .txt::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 52%; height: 1px;
+  background: currentColor; transform-origin: left;
+  animation: strike var(--t-state) var(--ease-out);
+}
+@keyframes strike { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.log .reason-tag { color: var(--gm); font-style: italic; }
+
+/* ── 14 · Prüfprotokoll ─────────────────────────────────────────────────── */
+.audit { display: flex; flex-direction: column; gap: var(--sp-3); }
+.audit > header h2 { font-size: var(--fs-h1); }
+.audit > header p { color: var(--muted); max-width: 84ch; font-size: var(--fs-small); }
+.cards { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
+.card {
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  padding: var(--sp-4); border: var(--frame-w) solid var(--line);
+  border-radius: var(--r-lg); background: var(--surface);
+}
+.card h3 { font-size: var(--fs-h3); }
+.card p, .card li { font-size: var(--fs-tiny); color: var(--muted); line-height: 1.65; }
+.card b { color: var(--text); }
+.verdict {
+  padding: 5px 10px; border-radius: var(--r-md); font-weight: 700;
+  font-size: var(--fs-tiny) !important; border: 1px solid var(--line-2);
+}
+.verdict[data-state="pass"] { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 60%, transparent);
+                              background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.verdict[data-state="fail"] { color: var(--gm); border-color: var(--gm);
+                              background: color-mix(in srgb, var(--gm) 10%, transparent); }
+.verdict[data-state="info"] { color: var(--muted); }
+table.at { width: 100%; border-collapse: collapse; font-size: var(--fs-micro); }
+table.at th, table.at td { text-align: left; padding: 3px 9px 3px 0; border-bottom: 1px solid var(--line);
+                           white-space: nowrap; }
+table.at th { color: var(--dim); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+table.at td.n { font-variant-numeric: tabular-nums; font-family: var(--mono-font); }
+table.at td.ok { color: var(--ok); }
+table.at td.bad { color: var(--gm); font-weight: 700; }
+pre.json {
+  margin: 0; padding: var(--sp-3); max-height: 260px; overflow: auto;
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface2);
+  font: var(--fs-micro)/1.6 var(--mono-font); color: var(--muted); white-space: pre;
+}
+.caveats li { padding-left: 15px; position: relative; margin-bottom: 6px; }
+.caveats li::before { content: "—"; position: absolute; left: 0; color: var(--dim); }
+
+.colophon { font-size: var(--fs-micro); color: var(--dim); line-height: 1.7; max-width: 88ch;
+            border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+
+/* ── 15 · Responsiv. Der Körper scrollt niemals seitwärts. ──────────────── */
+[data-act="coll"] { display: none; }
+@media (max-width: 1320px) {
+  [data-act="coll"] { display: inline-flex; }
+  .shell { grid-template-columns: auto minmax(0, 1fr) minmax(288px, 340px); }
+  .coll { display: none; }
+  .coll[data-open="true"] {
+    display: flex; position: absolute; z-index: 40; top: 0; bottom: 0; left: 0; width: 250px;
+    background: var(--surface); box-shadow: var(--shadow-3);
+  }
+}
+@media (max-width: 1040px) {
+  .shell { grid-template-columns: auto minmax(0, 1fr); }
+  .stage { border-right: 0; }
+  .lens { grid-column: 1 / -1; border-top: var(--frame-w) solid var(--line-2); }
+}
+@media (max-width: 780px) {
+  .page { padding: var(--sp-4) var(--sp-3) var(--sp-6); }
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .rail { flex-direction: row; overflow-x: auto; gap: var(--sp-1);
+          border-right: 0; border-bottom: var(--frame-w) solid var(--line); }
+  .rail__h { display: none; }
+  .rail button[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--accent); }
+  .lens { grid-column: auto; }
+  .shelf { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 460px) {
+  :root { --fs-display: 22px; --fs-h1: 19px; }
+  .scene { min-height: 158px; }
+  .pin { width: 26px; height: 26px; font-size: 10px; }
+  .scene__caption { bottom: var(--sp-1); gap: var(--sp-1); }
+  .target { grid-template-columns: 28px minmax(0, 1fr); }
+  .target__val { grid-row: auto; grid-column: 2; text-align: left; display: flex;
+                 align-items: baseline; gap: 6px; }
+  .target__val b { display: inline; }
+  .axes { grid-template-columns: minmax(0, 1fr); }
+  .client { width: 132px; }
+}
+
+@media (forced-colors: active) {
+  .btn, .chip, .beat, .card, .prod, .lamp, .bar { border-color: CanvasText; }
+  .bar__fill { background: Highlight; }
+  .fact[data-sel="true"], .target[data-sel="true"] { outline: 2px solid Highlight; }
+}
+
+/* Messsonde für die Bewegungsprüfung — echt, nicht abgelesen. */
+.probe { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
+         transition: opacity var(--t-state) linear; }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <p class="kicker">Chronicle · Kandidat B „The Table Engine" · Runde 1 · Spike B2</p>
+    <h1>Dieselbe Rücknahme, in drei Welten, mit abgeschalteter Kunst</h1>
+    <p class="claim">
+      B1 führt den Moment vor. Dieser Spike führt den <b>Beweis</b>: Rücknahme, Herkunft und
+      Wiedergabe sind keine Fantasy-Features, sondern Komponenten über einem Beat-Protokoll.
+      Schalten Sie unten Inhalt, Haut, Rolle, Farbmodus, Kontrast, Bewegung, Dichte, Sprache und
+      Bildbestand um. <b>Der Komponentenvertrag darf sich dabei nicht ändern</b> — und in
+      <b>Clean, hell, Hochkontrast, ohne jedes Bild</b> muss das Ergebnis noch immer aussehen wie
+      bestellt. Die vier Lampen rechnen mit; sie sind kein Siegel, sondern eine Messung.
+    </p>
+    <div class="lamps" id="lamps" role="group" aria-label="Prüfergebnisse in Kurzform">
+      <span class="lamp" data-state="info" id="lampStruct"><span class="dot"></span><b>Struktur</b><span>—</span></span>
+      <span class="lamp" data-state="info" id="lampContrast"><span class="dot"></span><b>Kontrast</b><span>—</span></span>
+      <span class="lamp" data-state="info" id="lampMotion"><span class="dot"></span><b>Bewegung</b><span>—</span></span>
+      <span class="lamp" data-state="info" id="lampOmit"><span class="dot"></span><b>Auslassung</b><span>—</span></span>
+    </div>
+  </header>
+
+  <form class="axes" id="axes" aria-label="Achsen des Härtetests">
+    <fieldset class="axis">
+      <legend>Inhalt</legend>
+      <div class="opts">
+        <input type="radio" name="world" id="w-a" value="aldenfall" checked><label for="w-a">Aldenfall · Fantasy</label>
+        <input type="radio" name="world" id="w-k" value="kepler"><label for="w-k">Kepler-9 · Science-Fiction</label>
+        <input type="radio" name="world" id="w-n" value="nebelakte"><label for="w-n">Nebelakte · Krimi</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Haut</legend>
+      <div class="opts">
+        <input type="radio" name="skin" id="s-r" value="relic" checked><label for="s-r">Relic</label>
+        <input type="radio" name="skin" id="s-s" value="signal"><label for="s-s">Signal</label>
+        <input type="radio" name="skin" id="s-a" value="archive"><label for="s-a">Archive</label>
+        <input type="radio" name="skin" id="s-c" value="clean"><label for="s-c">Clean</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Rolle</legend>
+      <div class="opts">
+        <input type="radio" name="role" id="r-g" value="gm" checked><label for="r-g">Spielleitung</label>
+        <input type="radio" name="role" id="r-p" value="player"><label for="r-p">Spielende</label>
+        <input type="radio" name="role" id="r-o" value="observer"><label for="r-o">Zuschauend</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis" id="identityAxis" hidden>
+      <legend><label for="identity">Als wen?</label></legend>
+      <select id="identity"></select>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Farbmodus</legend>
+      <div class="opts">
+        <input type="radio" name="theme" id="t-a" value="auto" checked><label for="t-a">System</label>
+        <input type="radio" name="theme" id="t-l" value="light"><label for="t-l">Hell</label>
+        <input type="radio" name="theme" id="t-d" value="dark"><label for="t-d">Dunkel</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Kontrast</legend>
+      <div class="opts">
+        <input type="radio" name="contrast" id="c-s" value="standard" checked><label for="c-s">Standard</label>
+        <input type="radio" name="contrast" id="c-h" value="high"><label for="c-h">Hoch</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Bewegung</legend>
+      <div class="opts">
+        <input type="radio" name="motion" id="m-a" value="auto" checked><label for="m-a">System</label>
+        <input type="radio" name="motion" id="m-f" value="full"><label for="m-f">Voll</label>
+        <input type="radio" name="motion" id="m-r" value="reduced"><label for="m-r">Reduziert</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Dichte</legend>
+      <div class="opts">
+        <input type="radio" name="density" id="d-c" value="comfortable" checked><label for="d-c">Komfortabel</label>
+        <input type="radio" name="density" id="d-k" value="compact"><label for="d-k">Kompakt</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Beschriftung</legend>
+      <div class="opts">
+        <input type="radio" name="lang" id="l-s" value="std" checked><label for="l-s">de · knapp</label>
+        <input type="radio" name="lang" id="l-l" value="long"><label for="l-l">de · Langtext</label>
+      </div>
+    </fieldset>
+    <fieldset class="axis">
+      <legend>Bildbestand</legend>
+      <div class="opts">
+        <input type="radio" name="art" id="a-1" value="on" checked><label for="a-1">Vorhanden</label>
+        <input type="radio" name="art" id="a-2" value="off"><label for="a-2">Abgeschaltet</label>
+        <input type="radio" name="art" id="a-3" value="broken"><label for="a-3">Fehlend</label>
+      </div>
+    </fieldset>
+  </form>
+
+  <main class="prod" id="mount" aria-label="Chronicle — Produkt-Shell im Härtetest"></main>
+  <p class="vh" id="live" role="status" aria-live="polite"></p>
+
+  <section class="audit" aria-labelledby="auditH">
+    <header>
+      <h2 id="auditH">Prüfprotokoll</h2>
+      <p>
+        Alles hier ist im Browser gerechnet, in dieser Sekunde, an genau dem DOM und genau den
+        Tokens, die oben stehen. Keine Zahl ist eingetippt. Wo eine Prüfung etwas <em>nicht</em>
+        beweisen kann, steht das in Karte 7 — und nirgends sonst.
+      </p>
+    </header>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <footer class="colophon">
+    Chronicle · Kandidat B · Spike B2 · GUI-Architekt 2 · 2026-07-27 — Einzeldatei, keine externe
+    Ressource, keine Webfont, kein Skript von außen. Enthaltene Rasterbilder unter
+    <code>design/spikes/assets/</code> sind <b>Prototyp-Richtungsgrafik</b>, kein
+    Tier-0-Rechtebestand; die Achse „Bildbestand“ zeigt, dass das Produkt ohne sie vollständig ist.
+    Dieser Spike ist Gestaltungsnachweis, keine Produktionsarchitektur.
+  </footer>
+</div>
+
+<span class="probe" id="probe" aria-hidden="true"></span>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     A · Inhalt. Drei Welten, drei Genres, ein Komponentensatz.
+         Was sich unterscheidet, ist Paketvokabular — nicht Struktur.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  var WORLDS = {
+
+    aldenfall: {
+      id: "aldenfall", genre: "Fantasy", campaign: "Aldenfall",
+      pkg: "aldenfall-grundregeln@1.4.0", schema: "beat-v3",
+      session: { no: 12, scene: "Salzhaus am Kai", inWorld: "14. Frostmond, kurz vor Mitternacht",
+                 clock: "21:47", dur: "3 h 41 min" },
+      res: { key: "hp", label: "Lebenspunkte", abbr: "LP", dir: "depletes" },
+      pending: { key: "defeat_pending", label: "Niederlage offen" },
+      action: { label: "Feuerball · Schablone 6 m", verb: "Feuerball",
+                mistake: "ein Feld zu weit östlich angesetzt" },
+      fog: { on: "Nebel über den Kaikisten: aufgebrannt", off: "Nebel über den Kaikisten: steht" },
+      art: "../../spikes/assets/harbor-night/harbor-map.png",
+      artAlt: "Nächtliche Hafenkarte von Aldenfall, Prototyp-Richtungsgrafik",
+      modules: [
+        { r: "session", s: "Sitzung",   l: "Sitzung heute Abend" },
+        { r: "record",  s: "Chronik",   l: "Weltchronik und Wissensstände" },
+        { r: "cast",    s: "Greenroom", l: "Greenroom der Mitspielenden" },
+        { r: "library", s: "Requisite", l: "Requisiten und Handouts" },
+        { r: "table",   s: "Tisch",     l: "Tisch mit Bühne und Nebel" },
+        { r: "forge",   s: "Schmiede",  l: "Schmiede für Regeln und Häute" }
+      ],
+      coll: [ { n: "Salzhaus am Kai", c: "6" }, { n: "Kaiweg, nördlich", c: "0" },
+              { n: "Hafenkontor", c: "3" }, { n: "Vaugns Kammer", c: "1" } ],
+      targets: [
+        { id: "ossa",  n: "Ossa Grimmwacht",  k: "SC",     max: 31, v0: 31, v1: 9 },
+        { id: "sela",  n: "Sela Marrow",      k: "SC",     max: 26, v0: 26, v1: 14 },
+        { id: "bruk",  n: "Kaimann Bruk",     k: "NSC",    max: 18, v0: 18, v1: 0 },
+        { id: "suelt", n: "Kaimann Sülte",    k: "NSC",    max: 18, v0: 18, v1: 2 },
+        { id: "ott",   n: "Netzfischer Ott",  k: "NSC",    max: 12, v0: 12, v1: 0 },
+        { id: "karre", n: "Salzkarren",       k: "Objekt", max: 20, v0: 20, v1: 6 }
+      ],
+      order: ["Ossa", "Sela", "Bruk", "Sülte", "Ott", "Vaugn"],
+      chars: [
+        { id: "ossa", n: "Ossa Grimmwacht", p: "Nell",   dev: "Browser" },
+        { id: "sela", n: "Sela Marrow",     p: "Tomke",  dev: "Browser" },
+        { id: "mira", n: "Mira Valgard",    p: "Rike",   dev: "Browser" },
+        { id: "bjorn", n: "Bjorn Eichhorst", p: "Jannis", dev: "iPad" }
+      ],
+      subject: { n: "Vaugn Halm", k: "Person · Hafenmeister",
+                 prose: "Vaugn hält den Kai seit elf Jahren und kennt jede Planke beim Namen. " +
+                        "Seit dem Brand im Salzhaus schläft er im Kontor, mit dem Rücken zur Tür." },
+      facts: [
+        { id: "f1", k: "Rolle", v: "Hafenmeister von Aldenfall", standing: "offen",
+          mode: "bezeugt", src: "Szene am Kai", beat: 388, sess: 9, at: "S9 · Beat 2",
+          holders: ["ossa", "sela", "mira", "bjorn"] },
+        { id: "f2", k: "Fraktion", v: "Der Aschene Pakt", standing: "bestritten",
+          mode: "erzählt", src: "Vaugn Halm, unter Zwang", beat: 407, sess: 12, at: "21:38 · S12 · Beat 7",
+          holders: ["sela"], hot: true,
+          contest: "seit Beat 11, weil ein Eintrag im Hafenbuch widerspricht",
+          replay: [
+            { t: "21:38:02", s: "Sela drückt Vaugn gegen die Kaimauer. Wurf: Einschüchtern 2W6+3 = 15." },
+            { t: "21:38:09", s: "Vaugn nennt den Aschenen Pakt. Die Spielleitung markiert den Satz und zieht ihn auf Selas Porträt." },
+            { t: "21:38:20", s: "Wissensrecht erteilt: Sela, Modus erzählt, Quelle Vaugn. Ossa steht zwei Kisten weiter und hört nichts." }
+          ] },
+        { id: "f3", k: "Erstmals gesehen", v: "Sitzung 9, Beat 2 — als Stub angelegt", standing: "offen",
+          mode: "abgeleitet", src: "Projektion über das Protokoll", beat: 388, sess: 9, at: "S9 · Beat 2",
+          holders: ["ossa", "sela", "mira", "bjorn"] },
+        { id: "f4", k: "Offene Schuld", v: "40 Silber an das Salzhaus", standing: "offen",
+          mode: "gelesen", src: "Hafenbuch, Seite 14", beat: 411, sess: 12, at: "21:45 · S12 · Beat 11",
+          holders: ["mira", "ossa"] },
+        { id: "f5", k: "Wahrheit", v: "Nimmt seit zwei Wintern Geld vom Pakt — aber nicht von dem, den er nannte",
+          standing: "offen", mode: "gm_fiat", src: "vor Kampagnenbeginn gesetzt", beat: null, sess: 0,
+          at: "ohne Beat", holders: [], gmOnly: true },
+        { id: "f6", k: "Widerspruch", v: "Das Hafenbuch nennt einen anderen Zahler", standing: "offen",
+          mode: "gelesen", src: "Hafenbuch, Seite 14", beat: 411, sess: 12, at: "21:45 · S12 · Beat 11",
+          holders: ["mira", "ossa"] }
+      ],
+      beats: [
+        { id: 406, ty: "Szene",     t: "21:31", s: "Vorhang auf — Salzhaus am Kai.", wit: "all" },
+        { id: 407, ty: "Enthüllung", t: "21:38", s: "Vaugn nennt unter Zwang den Aschenen Pakt. Zeugin: Sela.", wit: ["sela"] },
+        { id: 408, ty: "Wurf",      t: "21:41", s: "Ossa · Wahrnehmung · 2W6+2 = 11.", wit: "all" },
+        { id: 409, ty: "Bewegung",  t: "21:43", s: "Die Kaimänner rücken hinter die Kisten.", wit: "all" },
+        { id: 410, ty: "Regelung",  t: "21:44", s: "Hausregel „Deckung halbiert Flächenschaden“ greift zum dritten Mal.", wit: "gm" },
+        { id: 411, ty: "Enthüllung", t: "21:45", s: "Das Hafenbuch widerspricht Vaugn. Anspruch wird bestritten.", wit: "all" },
+        { id: 412, ty: "Handlung",  t: "21:47", s: "Feuerball, Schablone 6 m, über den Kaikisten.", wit: "all" }
+      ]
+    },
+
+    kepler: {
+      id: "kepler", genre: "Science-Fiction", campaign: "Kepler-9",
+      pkg: "kepler-neun-kern@0.9.2", schema: "beat-v3",
+      session: { no: 12, scene: "Frachtdeck C · Orbitalring", inWorld: "Zyklus 214.6, dritte Wache",
+                 clock: "21:47", dur: "3 h 41 min" },
+      res: { key: "hp", label: "Hüllenintegrität", abbr: "HI", dir: "depletes" },
+      pending: { key: "defeat_pending", label: "Havarie offen" },
+      action: { label: "Streufeuer · Salvenkegel 40°", verb: "Streufeuer",
+                mistake: "Kegel um eine Sektion zu weit achtern gelegt" },
+      fog: { on: "Sensorschatten hinter Rippe 4: durchbrochen", off: "Sensorschatten hinter Rippe 4: dicht" },
+      art: "../../spikes/assets/universal-ui/kepler-scene-v1.png",
+      artAlt: "Frachtdeck einer Orbitalstation, Prototyp-Richtungsgrafik",
+      modules: [
+        { r: "session", s: "Einsatz",   l: "Einsatz dieser Wache" },
+        { r: "record",  s: "Datenbank", l: "Datenbank und Wissensstände" },
+        { r: "cast",    s: "Besatzung", l: "Besatzung und Zugriffsrechte" },
+        { r: "library", s: "Frachtraum", l: "Frachtraum, Module und Handouts" },
+        { r: "table",   s: "Brücke",    l: "Brücke mit Lage und Sensorschatten" },
+        { r: "forge",   s: "Werft",     l: "Werft für Regeln und Häute" }
+      ],
+      coll: [ { n: "Frachtdeck C", c: "6" }, { n: "Schleuse C-2", c: "0" },
+              { n: "Kontrollkanzel", c: "2" }, { n: "Kwans Kabine", c: "1" } ],
+      targets: [
+        { id: "ilva",  n: "Ilva Norn",         k: "SC",     max: 34, v0: 34, v1: 11 },
+        { id: "teod",  n: "Teodor Baz",        k: "SC",     max: 28, v0: 28, v1: 17 },
+        { id: "kl6",   n: "Frachtdrohne KL-6", k: "NSC",    max: 16, v0: 16, v1: 0 },
+        { id: "kl9",   n: "Frachtdrohne KL-9", k: "NSC",    max: 16, v0: 16, v1: 3 },
+        { id: "arm",   n: "Bergungsarm B",     k: "Objekt", max: 22, v0: 22, v1: 0 },
+        { id: "rippe", n: "Kühlrippe 4",       k: "Objekt", max: 25, v0: 25, v1: 8 }
+      ],
+      order: ["Ilva", "Teodor", "KL-6", "KL-9", "Arm B", "Kwan"],
+      chars: [
+        { id: "ilva",  n: "Ilva Norn",   p: "Nell",   dev: "Browser" },
+        { id: "anouk", n: "Anouk Vess",  p: "Tomke",  dev: "Browser" },
+        { id: "teod",  n: "Teodor Baz",  p: "Rike",   dev: "Browser" },
+        { id: "rhea",  n: "Rhea Solt",   p: "Jannis", dev: "iPad" }
+      ],
+      subject: { n: "Idris Kwan", k: "Person · Frachtmeister",
+                 prose: "Kwan fährt seit neun Zyklen dieselbe Schleife und hat noch nie eine Ladung verloren. " +
+                        "Seit dem Zwischenfall an Rippe 4 lässt er die Kanzel nicht mehr unbesetzt." },
+      facts: [
+        { id: "f1", k: "Rolle", v: "Frachtmeister des Orbitalrings", standing: "offen",
+          mode: "bezeugt", src: "Andockmanöver", beat: 388, sess: 9, at: "S9 · Beat 2",
+          holders: ["ilva", "anouk", "teod", "rhea"] },
+        { id: "f2", k: "Zugehörigkeit", v: "Aschekartell", standing: "bestritten",
+          mode: "erzählt", src: "Idris Kwan, unter Zwang", beat: 407, sess: 12, at: "21:38 · S12 · Beat 7",
+          holders: ["anouk"], hot: true,
+          contest: "seit Beat 11, weil ein Eintrag im Frachtjournal widerspricht",
+          replay: [
+            { t: "21:38:02", s: "Anouk klemmt Kwans Handterminal ab. Wurf: Verhör 2W6+3 = 15." },
+            { t: "21:38:09", s: "Kwan nennt das Aschekartell. Die Spielleitung markiert den Satz und zieht ihn auf Anouks Porträt." },
+            { t: "21:38:20", s: "Wissensrecht erteilt: Anouk, Modus erzählt, Quelle Kwan. Ilva steht in der Schleuse und hört nichts." }
+          ] },
+        { id: "f3", k: "Erstmals erfasst", v: "Sitzung 9, Beat 2 — als Stub angelegt", standing: "offen",
+          mode: "abgeleitet", src: "Projektion über das Protokoll", beat: 388, sess: 9, at: "S9 · Beat 2",
+          holders: ["ilva", "anouk", "teod", "rhea"] },
+        { id: "f4", k: "Offene Fracht", v: "40 Einheiten Kühlmittel, nicht verzollt", standing: "offen",
+          mode: "gelesen", src: "Frachtjournal, Eintrag 14", beat: 411, sess: 12, at: "21:45 · S12 · Beat 11",
+          holders: ["teod", "ilva"] },
+        { id: "f5", k: "Wahrheit", v: "Nimmt seit zwei Zyklen Geld — aber nicht von denen, die er nannte",
+          standing: "offen", mode: "gm_fiat", src: "vor Kampagnenbeginn gesetzt", beat: null, sess: 0,
+          at: "ohne Beat", holders: [], gmOnly: true },
+        { id: "f6", k: "Widerspruch", v: "Das Frachtjournal nennt einen anderen Auftraggeber", standing: "offen",
+          mode: "gelesen", src: "Frachtjournal, Eintrag 14", beat: 411, sess: 12, at: "21:45 · S12 · Beat 11",
+          holders: ["teod", "ilva"] }
+      ],
+      beats: [
+        { id: 406, ty: "Szene",     t: "21:31", s: "Schott auf — Frachtdeck C.", wit: "all" },
+        { id: 407, ty: "Enthüllung", t: "21:38", s: "Kwan nennt unter Zwang das Aschekartell. Zeugin: Anouk.", wit: ["anouk"] },
+        { id: 408, ty: "Wurf",      t: "21:41", s: "Ilva · Sensorik · 2W6+2 = 11.", wit: "all" },
+        { id: 409, ty: "Bewegung",  t: "21:43", s: "Die Frachtdrohnen ziehen hinter die Kühlrippe.", wit: "all" },
+        { id: 410, ty: "Regelung",  t: "21:44", s: "Hausregel „Deckung halbiert Flächenschaden“ greift zum dritten Mal.", wit: "gm" },
+        { id: 411, ty: "Enthüllung", t: "21:45", s: "Das Frachtjournal widerspricht Kwan. Anspruch wird bestritten.", wit: "all" },
+        { id: 412, ty: "Handlung",  t: "21:47", s: "Streufeuer, Salvenkegel 40°, über das Frachtdeck.", wit: "all" }
+      ]
+    },
+
+    nebelakte: {
+      id: "nebelakte", genre: "Krimi", campaign: "Nebelakte",
+      pkg: "nebelakte-ermittlung@2.0.1", schema: "beat-v3",
+      session: { no: 12, scene: "Lagerhalle 4 · Hafenstraße", inWorld: "11. November, 23:10 Uhr",
+                 clock: "21:47", dur: "3 h 41 min" },
+      res: { key: "hp", label: "Belastung", abbr: "BL", dir: "accumulates" },
+      pending: { key: "defeat_pending", label: "Zusammenbruch offen" },
+      action: { label: "Zugriff · Hallenabschnitt B", verb: "Zugriff",
+                mistake: "auf den falschen Hallenabschnitt angesetzt" },
+      fog: { on: "Sichtschatten hinter den Regalreihen: ausgeleuchtet",
+             off: "Sichtschatten hinter den Regalreihen: dunkel" },
+      art: "../../spikes/assets/universal-ui/nebelakte-scene-v1.png",
+      artAlt: "Lagerhalle bei Nacht, Prototyp-Richtungsgrafik",
+      modules: [
+        { r: "session", s: "Ermittlungstag", l: "Ermittlungstag und Termine" },
+        { r: "record",  s: "Aktenlage",      l: "Aktenlage und Wissensstände" },
+        { r: "cast",    s: "Beteiligte",     l: "Beteiligte und Zuständigkeiten" },
+        { r: "library", s: "Asservate",      l: "Asservate und Handakten" },
+        { r: "table",   s: "Tatort",         l: "Tatort mit Lageplan und Sichtschatten" },
+        { r: "forge",   s: "Werkbank",       l: "Werkbank für Regeln und Häute" }
+      ],
+      coll: [ { n: "Lagerhalle 4", c: "6" }, { n: "Hof, Nordseite", c: "0" },
+              { n: "Verwalterbüro", c: "3" }, { n: "Bosses Wohnung", c: "1" } ],
+      targets: [
+        { id: "hanne", n: "Hanne Prahl",     k: "SC",  max: 10, v0: 3, v1: 7 },
+        { id: "milo",  n: "Milo Sander",     k: "SC",  max: 10, v0: 5, v1: 10 },
+        { id: "doro",  n: "Doro Kex",        k: "SC",  max: 10, v0: 2, v1: 6 },
+        { id: "ewald", n: "Ewald Bosse",     k: "NSC", max: 10, v0: 4, v1: 10 },
+        { id: "ruth",  n: "Ruth Adler",      k: "NSC", max: 10, v0: 1, v1: 5 },
+        { id: "pit",   n: "Pit Loos",        k: "NSC", max: 10, v0: 6, v1: 9 }
+      ],
+      order: ["Hanne", "Milo", "Doro", "Bosse", "Adler", "Loos"],
+      chars: [
+        { id: "hanne", n: "Hanne Prahl", p: "Nell",   dev: "Browser" },
+        { id: "doro",  n: "Doro Kex",    p: "Tomke",  dev: "Browser" },
+        { id: "milo",  n: "Milo Sander", p: "Rike",   dev: "Browser" },
+        { id: "rana",  n: "Rana Kilic",  p: "Jannis", dev: "iPad" }
+      ],
+      subject: { n: "Ewald Bosse", k: "Person · Hallenverwalter",
+                 prose: "Bosse verwaltet die Halle seit elf Jahren und kennt jeden Schlüssel im Haus. " +
+                        "Seit dem Brand im Nachbartrakt schläft er im Büro, mit dem Rücken zur Tür." },
+      facts: [
+        { id: "f1", k: "Funktion", v: "Verwalter der Lagerhalle 4", standing: "offen",
+          mode: "bezeugt", src: "Erste Vernehmung", beat: 388, sess: 9, at: "S9 · Beat 2",
+          holders: ["hanne", "doro", "milo", "rana"] },
+        { id: "f2", k: "Verbindung", v: "Aschener Konsortium", standing: "bestritten",
+          mode: "erzählt", src: "Ewald Bosse, unter Druck", beat: 407, sess: 12, at: "21:38 · S12 · Beat 7",
+          holders: ["doro"], hot: true,
+          contest: "seit Beat 11, weil ein Blatt im Wareneingangsbuch widerspricht",
+          replay: [
+            { t: "21:38:02", s: "Doro hält Bosse den Lieferschein hin. Wurf: Vernehmung 2W6+3 = 15." },
+            { t: "21:38:09", s: "Bosse nennt das Aschener Konsortium. Die Spielleitung markiert den Satz und zieht ihn auf Doros Porträt." },
+            { t: "21:38:20", s: "Wissensrecht erteilt: Doro, Modus erzählt, Quelle Bosse. Hanne steht im Hof und hört nichts." }
+          ] },
+        { id: "f3", k: "Erstmals erfasst", v: "Sitzung 9, Beat 2 — als Stub angelegt", standing: "offen",
+          mode: "abgeleitet", src: "Projektion über das Protokoll", beat: 388, sess: 9, at: "S9 · Beat 2",
+          holders: ["hanne", "doro", "milo", "rana"] },
+        { id: "f4", k: "Offener Posten", v: "40 Paletten ohne Wareneingang", standing: "offen",
+          mode: "gelesen", src: "Wareneingangsbuch, Blatt 14", beat: 411, sess: 12, at: "21:45 · S12 · Beat 11",
+          holders: ["milo", "hanne"] },
+        { id: "f5", k: "Wahrheit", v: "Nimmt seit zwei Jahren Geld — aber nicht von denen, die er nannte",
+          standing: "offen", mode: "gm_fiat", src: "vor Kampagnenbeginn gesetzt", beat: null, sess: 0,
+          at: "ohne Beat", holders: [], gmOnly: true },
+        { id: "f6", k: "Widerspruch", v: "Das Wareneingangsbuch nennt einen anderen Absender", standing: "offen",
+          mode: "gelesen", src: "Wareneingangsbuch, Blatt 14", beat: 411, sess: 12, at: "21:45 · S12 · Beat 11",
+          holders: ["milo", "hanne"] }
+      ],
+      beats: [
+        { id: 406, ty: "Szene",     t: "21:31", s: "Tor auf — Lagerhalle 4.", wit: "all" },
+        { id: 407, ty: "Enthüllung", t: "21:38", s: "Bosse nennt unter Druck das Aschener Konsortium. Zeugin: Doro.", wit: ["doro"] },
+        { id: 408, ty: "Wurf",      t: "21:41", s: "Hanne · Beobachtung · 2W6+2 = 11.", wit: "all" },
+        { id: 409, ty: "Bewegung",  t: "21:43", s: "Die Wachleute ziehen sich hinter die Regalreihen zurück.", wit: "all" },
+        { id: 410, ty: "Regelung",  t: "21:44", s: "Hausregel „Deckung halbiert Streuwirkung“ greift zum dritten Mal.", wit: "gm" },
+        { id: 411, ty: "Enthüllung", t: "21:45", s: "Das Wareneingangsbuch widerspricht Bosse. Anspruch wird bestritten.", wit: "all" },
+        { id: 412, ty: "Handlung",  t: "21:47", s: "Zugriff, Hallenabschnitt B, sechs Betroffene.", wit: "all" }
+      ]
+    }
+  };
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     B · Beschriftung. Dieselbe Oberfläche, zwei Textlängen.
+         „Langtext“ ist kein Scherz: es ist die Locale, an der Layouts sterben.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  var T = {
+    std: {
+      preview: "Vorschau", commit: "Festschreiben", undo: "Zurücknehmen",
+      recommit: "Erneut festschreiben", rewind: "Zurückspulen",
+      blame: "Herkunft", replay: "Wiedergabe 18 s", goBeat: "Zum Beat",
+      revert: "Aussage zurücknehmen", cancel: "Abbrechen", confirm: "Verstanden, zurücknehmen",
+      reason: "Grund", reasonPh: "Pflichtfeld — warum?",
+      curtain: "Vorhang", live: "Live",
+      recipeT: "Taktisch", recipeO: "Umriss",
+      areas: "Bereiche", scenes: "Szenen", record: "Chronikseite",
+      truth: "Nur Spielleitung", happened: "Was geschah", prose: "Prosa",
+      clients: "Verbundene Klienten", tail: "Beat-Verlauf",
+      order: "Reihenfolge", stand: "Stand"
+    },
+    long: {
+      preview: "Auswirkungen vorab berechnen",
+      commit: "Handlung verbindlich festschreiben",
+      undo: "Letzte festgeschriebene Handlung zurücknehmen",
+      recommit: "Handlung erneut verbindlich festschreiben",
+      rewind: "Sitzungsstand auf einen früheren Beat zurückspulen",
+      blame: "Herkunftsnachweis dieser Aussage anzeigen",
+      replay: "Diese achtzehn Sekunden erneut abspielen",
+      goBeat: "Im Sitzungsverlauf zu diesem Beat springen",
+      revert: "Diese Aussage samt Wissensrechten zurücknehmen",
+      cancel: "Vorgang abbrechen und nichts verändern",
+      confirm: "Ich habe verstanden — trotzdem zurücknehmen",
+      reason: "Begründung der Rücknahme",
+      reasonPh: "Pflichtfeld — Begründung für das Protokoll",
+      curtain: "Vorhangzustand der Spielsitzung", live: "Vorhang offen, Klienten empfangen",
+      recipeT: "Taktische Darstellung", recipeO: "Semantische Umrissdarstellung",
+      areas: "Bereiche dieser Kampagne", scenes: "Szenen dieser Sitzung",
+      record: "Chronikseite dieser Person",
+      truth: "Ausschließlich für die Spielleitung sichtbar",
+      happened: "Was in dieser Kampagne geschehen ist",
+      prose: "Von Hand geschriebene Prosa",
+      clients: "Gegenwärtig verbundene Klientengeräte",
+      tail: "Verlauf der letzten Beats dieser Sitzung",
+      order: "Reihenfolge der Handelnden",
+      stand: "Protokollstand"
+    }
+  };
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     C · Zustand
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  var st = {
+    world: "aldenfall", skin: "relic", role: "gm", identity: null,
+    theme: "auto", contrast: "standard", motion: "auto",
+    density: "comfortable", lang: "std", art: "on",
+    recipe: "tactical", collOpen: false,
+    phase: "vor",          /* vor | vorschau | nach | zurueck */
+    reason: "",
+    selTarget: null, selFact: "f2",
+    reverted: {},          /* factId -> Grund */
+    seq: 1204,
+    blame: null            /* { fact, mode:'info'|'confirm' } */
+  };
+
+  var root = document.documentElement;
+  var mount = document.getElementById("mount");
+  var live = document.getElementById("live");
+  var cards = document.getElementById("cards");
+  var probe = document.getElementById("probe");
+
+  var baselines = {};          /* rolle -> Signatur */
+  var sweepStruct = null, sweepContrast = null;
+  var artStatus = "—";
+  var replayTimers = [];
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function W() { return WORLDS[st.world]; }
+  function L() { return T[st.lang]; }
+  function say(s) { live.textContent = s; }
+  function reduced() {
+    if (st.motion === "reduced") return true;
+    if (st.motion === "full") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  /* Figurenfarbe wird aus der Kennung erzeugt, nicht gesetzt.
+     Sättigung und Helligkeit sind Modus-Tokens; damit ist jeder Farbton
+     rechnerisch über 3:1 gegen jede Fläche der Palette (siehe Karte 6). */
+  function hashOf(s) {
+    var h = 2166136261, i;
+    for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h;
+  }
+  function hueOf(id) { return hashOf(id) % 360; }
+  function chOf(id) { return "hsl(" + hueOf(id) + " var(--ch-s) var(--ch-l))"; }
+  function initials(n) {
+    var p = n.replace(/[^\wÄÖÜäöüß \-]/g, "").split(/[ \-]+/).filter(Boolean);
+    return ((p[0] || "?")[0] + (p[1] ? p[1][0] : "")).toUpperCase();
+  }
+
+  /* Sigille: es gibt kein Porträt und wird nie eines geben. Die Ersatz-
+     darstellung ist deshalb entworfen, nicht abgefangen — Kerbenzahl und
+     Ringstärke stammen aus dem Namen, die Farbe aus Tokens. */
+  function sigil(name, px) {
+    var h = hashOf(name), notches = 5 + (h % 7), i, ticks = "", a, x1, y1, x2, y2;
+    for (i = 0; i < notches; i++) {
+      a = (i / notches) * Math.PI * 2 - Math.PI / 2;
+      x1 = 16 + Math.cos(a) * 12.4; y1 = 16 + Math.sin(a) * 12.4;
+      x2 = 16 + Math.cos(a) * 14.6; y2 = 16 + Math.sin(a) * 14.6;
+      ticks += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) +
+               '" y2="' + y2.toFixed(1) + '" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>';
+    }
+    return '<span class="sig" data-leaf style="--ch:' + chOf(name) + ';display:grid;place-items:center;' +
+      "width:" + px + "px;height:" + px + "px;position:relative;color:var(--ch)\">" +
+      '<svg viewBox="0 0 32 32" width="' + px + '" height="' + px + '" aria-hidden="true" style="position:absolute;inset:0">' +
+      '<circle cx="16" cy="16" r="12.4" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".85"/>' +
+      '<circle cx="16" cy="16" r="10" fill="currentColor" opacity=".13"/>' + ticks + "</svg>" +
+      '<b style="position:relative;font:700 ' + Math.round(px * 0.34) + 'px/1 var(--display-font);color:var(--text)">' +
+      esc(initials(name)) + "</b></span>";
+  }
+
+  /* ── Ableitungen ─────────────────────────────────────────────────────── */
+  function committed() { return st.phase === "nach"; }
+  function valueOf(t) { return committed() ? t.v1 : t.v0; }
+  function isPending(t) {
+    var w = W();
+    return committed() && (w.res.dir === "depletes" ? t.v1 <= 0 : t.v1 >= t.max);
+  }
+  function toneOf(t) {
+    var w = W(), r = valueOf(t) / t.max;
+    if (w.res.dir === "depletes") {
+      if (r <= 0) return "out";
+      return r < 0.34 ? "bad" : (r < 0.67 ? "warn" : "ok");
+    }
+    if (r >= 1) return "out";
+    return r > 0.66 ? "bad" : (r > 0.33 ? "warn" : "ok");
+  }
+  var TONE_WORD = { ok: "stabil", warn: "angeschlagen", bad: "kritisch", out: "am Limit" };
+  function deltaOf(t) { return Math.abs(t.v1 - t.v0); }
+
+  function chars() { return W().chars; }
+  function me() {
+    var cs = chars(), i;
+    for (i = 0; i < cs.length; i++) if (cs[i].id === st.identity) return cs[i];
+    return cs[0];
+  }
+
+  /* Die Projektion: was dieser Klient überhaupt geliefert bekommt.
+     Serverseitige Auslassung wird hier nachgebildet, nicht bewiesen (Karte 7). */
+  function project() {
+    var w = W(), out = { welt: w.id, sitzung: w.session.no, rolle: st.role, paket: w.pkg,
+                         schema: w.schema, stand: st.seq, seite: w.subject.n, aussagen: [] };
+    if (st.role === "player") out.figur = me().n;
+    w.facts.forEach(function (f) {
+      if (st.role === "gm") {
+        out.aussagen.push({ id: f.id, feld: f.k, wert: f.v, stand: standingOf(f),
+                            modus: f.mode, quelle: f.src, beat: f.beat,
+                            inhaber: f.holders.slice(), nurSL: !!f.gmOnly });
+      } else if (st.role === "player") {
+        if (f.gmOnly) return;
+        if (f.holders.indexOf(me().id) < 0) return;
+        out.aussagen.push({ id: f.id, feld: f.k, wert: f.v, stand: standingOf(f),
+                            modus: f.mode, quelle: f.src, beat: f.beat });
+      } else {
+        if (f.gmOnly) return;
+        if (f.holders.length < chars().length) return;   /* Zuschauende: nur allgemein Bekanntes */
+        out.aussagen.push({ id: f.id, feld: f.k, wert: f.v, stand: standingOf(f), beat: f.beat });
+      }
+    });
+    return out;
+  }
+  function standingOf(f) { return st.reverted[f.id] ? "zurückgenommen" : f.standing; }
+  function visibleFactIds() { return project().aussagen.map(function (a) { return a.id; }); }
+
+  /* Der Beat-Verlauf ist kein öffentliches Logbuch. Ein Beat trägt seine
+     Zeugenmenge; wer nicht dabei war, bekommt ihn nicht geliefert. Ohne diese
+     Regel leckt die Transportleiste genau die Aussage, die die Chronikseite
+     zurückhält — derselbe Fehler, nur eine Komponente weiter unten. */
+  function visibleBeats() {
+    var w = W();
+    return w.beats.filter(function (b) {
+      if (b.id === 412 && (st.phase === "vor" || st.phase === "vorschau")) return false;
+      if (st.role === "gm") return true;
+      if (b.wit === "gm") return false;
+      if (b.wit === "all") return true;
+      if (st.role === "player") return b.wit.indexOf(me().id) >= 0;
+      return false;
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     D · Die Shell. Ein Baum, drei Rollen, sonst nichts Bewegliches.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  var ICON = {
+    session: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M3 8h14M7 4v12"/></svg>',
+    record:  '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h5a2 2 0 0 1 2 2v10a2 2 0 0 0-2-2H4Z"/><path d="M16 4h-5a2 2 0 0 0-2 2v10a2 2 0 0 1 2-2h5Z"/></svg>',
+    cast:    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3 2.7-5 6-5s6 2 6 5"/></svg>',
+    library: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="14" height="10" rx="1.5"/><path d="M3 9h14M8 15v2M12 15v2"/></svg>',
+    table:   '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 7.5h15L15 15H5Z"/><path d="M2.5 7.5 10 3l7.5 4.5"/></svg>',
+    forge:   '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3v5l-3 4v5h14v-5l-3-4V3Z"/><path d="M6 3h8"/></svg>',
+    laptop:  '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="12" height="8" rx="1"/><path d="M2 15h16"/></svg>',
+    browser: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M3 7.5h14"/></svg>',
+    tablet:  '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="3" width="10" height="14" rx="1.5"/><path d="M9 14.5h2"/></svg>'
+  };
+
+  function bar(pct, tone, extra) {
+    return '<span class="bar" data-tone="' + tone + '" aria-hidden="true"' + (extra || "") + '>' +
+      '<span class="bar__fill" style="width:' + pct + '%"></span><span class="bar__ticks"></span></span>';
+  }
+
+  function buildShell() {
+    var w = W(), t = L(), i;
+
+    /* — Kampagnenkontext — */
+    var roleLabel = st.role === "gm" ? "Spielleitung" :
+                    (st.role === "player" ? "Spielende · " + me().n : "Zuschauend");
+    var html = '<div data-comp="app">';
+
+    html += '<header class="ctx" data-comp="ctx"><div class="ctx__id">' +
+      sigil(w.campaign, 34) +
+      "<div><h2>" + esc(w.campaign) + "</h2><p class=\"ctx__meta\">" +
+        '<span class="num">Sitzung ' + w.session.no + "</span><span aria-hidden=\"true\">·</span>" +
+        "<b>" + esc(w.session.scene) + "</b><span aria-hidden=\"true\">·</span>" +
+        '<span class="num">' + esc(w.session.inWorld) + "</span>" +
+      "</p></div></div>" +
+      '<div class="ctx__right">' +
+        '<span class="badge" data-tone="acc">' + esc(w.genre) + "</span>" +
+        '<span class="badge" data-tone="ok"><span class="pip"></span>' + esc(t.curtain) + ": " + esc(t.live) + "</span>" +
+        '<span class="badge" data-tone="' + (st.role === "gm" ? "gm" : "") + '">' + esc(roleLabel) + "</span>" +
+        '<button type="button" class="btn btn--sm" data-act="coll">Sammlung</button>' +
+      "</div></header>";
+
+    /* — Shell-Raster — */
+    html += '<div class="shell">';
+
+    html += '<nav class="rail" data-comp="rail" aria-label="' + esc(t.areas) + '">' +
+      '<p class="rail__h">' + esc(t.areas) + "</p>";
+    for (i = 0; i < w.modules.length; i++) {
+      var m = w.modules[i], cur = m.r === "table";
+      html += '<button type="button" data-module="' + m.r + '"' + (cur ? ' aria-current="page"' : "") + ">" +
+        ICON[m.r] + "<span>" + esc(st.lang === "long" ? m.l : m.s) + "</span></button>";
+    }
+    html += "</nav>";
+
+    html += '<aside class="coll" data-comp="coll" data-open="' + st.collOpen + '" aria-label="' + esc(t.scenes) + '">' +
+      '<p class="coll__h">' + esc(t.scenes) + "</p>";
+    for (i = 0; i < w.coll.length; i++) {
+      html += '<button type="button" class="coll__item" data-coll="' + i + '"' + (i === 0 ? ' aria-current="true"' : "") +
+        "><span>" + esc(w.coll[i].n) + '</span><span class="cnt num">' + w.coll[i].c + "</span></button>";
+    }
+    html += '<p class="coll__note">Die Sammlung listet Szenen, keine Dateien. Eine Szene ohne Beats zeigt ' +
+      "<b>0</b> — nicht „leer“, sondern <em>nichts aufgezeichnet</em>.</p></aside>";
+
+    /* — Bühne — */
+    html += '<section class="stage" data-comp="stage" aria-labelledby="stageH">';
+    html += '<div class="stage__head"><div><h3 id="stageH">' + esc(w.session.scene) + "</h3>" +
+      '<p class="sub">' + esc(w.pkg) + " · " + esc(w.schema) +
+      " · Ressource <b>" + esc(w.res.label) + "</b> (" + esc(w.res.abbr) + ")</p></div>" +
+      '<div class="recipes" role="group" aria-label="Darstellung der Szene">' +
+        '<button type="button" data-recipe="tactical" aria-pressed="' + (st.recipe === "tactical") + '">' + esc(t.recipeT) + "</button>" +
+        '<button type="button" data-recipe="outline" aria-pressed="' + (st.recipe === "outline") + '">' + esc(t.recipeO) + "</button>" +
+      "</div></div>";
+
+    /* Szenenbild — Bühnenbild ist Beiwerk; die Liste darunter ist das Produkt. */
+    var fogHole = committed() ? 26 : 0;
+    html += '<div class="scene" data-comp="scene" style="--fog-hole:' + fogHole + '%">';
+    html += '<figure class="scene__art" data-leaf data-artslot>';
+    if (st.art === "on") {
+      html += '<img data-artimg src="' + esc(w.art) + '" alt="' + esc(w.artAlt) + '">';
+    } else if (st.art === "broken") {
+      html += '<img data-artimg src="../../spikes/assets/nicht-vorhanden/fehlt-absichtlich.webp" alt="' + esc(w.artAlt) + '">';
+    } else {
+      html += '<div class="scene__fallback"></div>';
+    }
+    html += "</figure>";
+    html += '<div class="scene__scrim"></div>';
+    html += '<div class="scene__plan"' + (st.recipe === "outline" ? " hidden" : "") + ' aria-hidden="true">';
+    var POS = [[22, 34], [36, 62], [58, 30], [69, 58], [82, 38], [47, 78]];
+    for (i = 0; i < w.targets.length; i++) {
+      var tg = w.targets[i];
+      html += '<span class="pin" data-tone="' + toneOf(tg) + '" data-sel="' + (st.selTarget === tg.id) +
+        '" style="left:' + POS[i][0] + "%;top:" + POS[i][1] + "%;--ch:" + chOf(tg.id) + '">' +
+        esc(initials(tg.n)) + "</span>";
+    }
+    html += "</div>";
+    html += '<div class="scene__fog" style="opacity:' + (committed() ? ".55" : "1") + '"></div>';
+    html += '<p class="scene__caption"><span class="tag">' +
+      esc(committed() ? w.fog.on : w.fog.off) + '</span><span class="tag">' +
+      (st.recipe === "outline" ? "Umriss — Lageplan abgeschaltet, Semantik unverändert" : "Taktisch") +
+      "</span><span class=\"tag\" data-artstatus>Bild: " + esc(artStatus) + "</span></p>";
+    html += "</div>";
+
+    /* Zielliste — dieselbe Komponente für LP, Hüllenintegrität und Belastung */
+    html += '<ol class="targets" data-comp="targets" aria-label="Betroffene dieser Handlung">';
+    for (i = 0; i < w.targets.length; i++) {
+      var g = w.targets[i], val = valueOf(g), pct = Math.max(0, Math.min(100, (val / g.max) * 100));
+      var tone = toneOf(g), pend = isPending(g);
+      html += '<li class="target" data-comp="target" data-target="' + g.id + '" data-sel="' + (st.selTarget === g.id) + '">' +
+        '<span class="target__sig">' + sigil(g.n, 30) + "</span>" +
+        '<span class="target__name"><b>' + esc(g.n) + '</b><span class="kind">' + esc(g.k) + "</span></span>" +
+        '<span class="target__val"><b class="num">' + val + "</b><span class=\"num\">/ " + g.max + " " + esc(w.res.abbr) + "</span></span>" +
+        '<span class="target__bar">' + bar(pct, tone) + "</span>" +
+        '<span class="chips">' +
+          '<span class="chip" data-tone="' + (tone === "ok" ? "ok" : (tone === "warn" ? "warn" : "bad")) + '">' +
+            esc(TONE_WORD[tone]) + "</span>" +
+          (committed() ? '<span class="chip enter" data-tone="acc">−' + deltaOf(g) + " " + esc(w.res.abbr) + "</span>" : "") +
+          (pend ? '<span class="chip enter" data-tone="warn">' + esc(w.pending.label) + "</span>" : "") +
+          (st.phase === "zurueck" ? '<span class="chip" data-tone="">zurückgenommen</span>' : "") +
+        "</span></li>";
+    }
+    html += "</ol>";
+
+    var idx = committed() ? 3 : 2;
+    html += '<div class="initiative" data-comp="initiative"><span>' + esc(t.order) + "</span><ol>";
+    for (i = 0; i < w.order.length; i++) {
+      html += "<li" + (i === idx ? ' aria-current="true"' : "") + ">" + esc(w.order[i]) + "</li>";
+    }
+    html += "</ol></div>";
+    html += "</section>";
+
+    /* — Kontextlupe: dieselbe Chronikseite in jeder Welt — */
+    html += '<aside class="lens" data-comp="lens" aria-labelledby="lensH">';
+    html += '<div class="lens__head"><div class="lens__title">' + sigil(w.subject.n, 36) +
+      '<div><h3 id="lensH">' + esc(w.subject.n) + '</h3><p class="kind">' + esc(w.subject.k) + "</p></div></div></div>";
+    html += '<div class="lens__body">';
+
+    var vis = visibleFactIds();
+    html += '<div><p class="sect__h">' + esc(t.record) + "</p>" + '<ol class="facts" data-comp="facts">';
+    for (i = 0; i < w.facts.length; i++) {
+      var f = w.facts[i];
+      if (vis.indexOf(f.id) < 0) continue;
+      var strk = !!st.reverted[f.id];
+      html += '<li><button type="button" class="fact" data-comp="fact" data-fact="' + f.id +
+        '" data-sel="' + (st.selFact === f.id) + '" data-struck="' + strk + '" aria-haspopup="dialog">' +
+        '<span class="fact__k">' + esc(f.k) + "</span>" +
+        '<span class="fact__v">' + esc(f.v) + "</span>" +
+        '<span class="chips">' +
+          '<span class="chip" data-tone="' + (standingOf(f) === "bestritten" ? "warn" : (strk ? "bad" : "")) + '">' +
+            esc(standingOf(f)) + "</span>" +
+          '<span class="chip">' + esc(f.mode) + "</span>" +
+          (f.gmOnly ? '<span class="chip" data-tone="bad">' + esc(t.truth) + "</span>" : "") +
+          '<span class="chip">' + esc(t.blame) + " ▸</span>" +
+        "</span></button></li>";
+    }
+    html += "</ol></div>";
+
+    html += "<div><p class=\"sect__h\">" + esc(t.prose) + "</p>" +
+      '<p class="prose">' + esc(w.subject.prose) + "</p>" +
+      '<p class="prose-note">Zwei Sätze, von der Spielleitung getippt. Alles darüber — Seite, Felder, ' +
+      "Herkunft, Rückverweise, Datum — ist Auswurf des Protokolls. Die Software schreibt keine Prosa.</p></div>";
+
+    html += "<div><p class=\"sect__h\">" + esc(t.happened) + '</p><ol class="happened">';
+    var hb = visibleBeats(), shown = 0;
+    for (i = hb.length - 1; i >= 0 && shown < 4; i--) {
+      html += '<li><span class="t num">' + esc(hb[i].t) + '</span><span>' + esc(hb[i].s) + "</span></li>";
+      shown++;
+    }
+    html += "</ol>";
+    html += '<p class="empty-note">Vor Sitzung 9 ist zu dieser Person <b>nichts aufgezeichnet</b>. ' +
+      "Das heißt nicht, dass nichts geschah.</p></div>";
+
+    html += '<p class="omit" data-comp="omit" data-leaf>' + (st.role === "gm"
+      ? "<b>Vollansicht.</b> Sie sehen die Wahrheitsebene und alle Wissensrechte. Was Ihre Spielenden " +
+        "sehen, prüfen Sie über die Achse <em>Rolle</em> — nicht über eine Vorschau, sondern über " +
+        "dieselbe Projektion, die deren Klient bekommt."
+      : (st.role === "player"
+        ? "<b>Diese Antwort enthält, was " + esc(me().n) + " weiß.</b> Über den Rest sagt sie nichts — " +
+          "auch nicht, wie viel Rest es gibt. Eine Auslassung, die ihre eigene Größe verrät, ist keine."
+        : "<b>Zuschauendenansicht.</b> Private Aussagen und Wissensstände einzelner Figuren sind nicht " +
+          "Bestandteil dieser Antwort. Was hier fehlt, fehlt in der Antwort, nicht im Stylesheet."))
+      + "</p>";
+
+    html += "</div></aside>";
+    html += "</div>"; /* /shell */
+
+    /* — Ledger-Bar — */
+    html += '<footer class="shelf" data-comp="shelf">';
+    html += '<div class="shelf__clock"><span class="big num">' + esc(w.session.clock) + "</span>" +
+      '<span class="sub">Sitzungsuhr · <span class="num">' + esc(w.session.dur) + "</span></span></div>";
+    html += '<div class="shelf__main">';
+
+    html += '<div class="scrollx"><div class="tail" data-comp="tail" role="group" aria-label="' + esc(t.tail) + '">';
+    var vb = visibleBeats();
+    for (i = 0; i < vb.length; i++) {
+      var b = vb[i];
+      var status = (b.id === 412 && st.phase === "zurueck") ? "reverted" : "committed";
+      html += '<button type="button" class="beat" data-beat="' + b.id + '" data-status="' + status +
+        '" aria-pressed="false" aria-label="Beat ' + b.id + ", " + esc(b.ty) + ", " + esc(b.t) + ". " + esc(b.s) + '">' +
+        '<span class="id num">#' + b.id + '</span><span class="num">' + esc(b.t) + '</span>' +
+        '<span class="ty">' + esc(b.ty) + "</span></button>";
+    }
+    html += "</div></div>";
+
+    /* Vorschau-Trace: immer im Baum, nur verborgen. Der Vertrag bleibt gleich. */
+    html += '<div class="trace" data-comp="trace"' + (st.phase === "vorschau" ? "" : " hidden") + '>' +
+      '<p class="h">Vorschau · noch nichts festgeschrieben</p><ol>';
+    for (i = 0; i < w.targets.length; i++) {
+      var tt = w.targets[i];
+      html += "<li>" + esc(tt.n) + " · " + esc(w.res.abbr) + " " + tt.v0 + " → " + tt.v1 +
+        " (" + (w.res.dir === "depletes" ? "−" : "+") + deltaOf(tt) + ")" +
+        ((w.res.dir === "depletes" ? tt.v1 <= 0 : tt.v1 >= tt.max) ? " · " + esc(w.pending.key) : "") + "</li>";
+    }
+    html += "</ol><p style=\"margin-top:6px\">Regelpaket <b>" + esc(w.pkg) + "</b>, an diesen Beat gepinnt. " +
+      "Ohne Pin ist Wiedergabe über ein Paketupdate hinweg undefiniert.</p></div>";
+
+    /* Protokollzeilen */
+    html += '<ol class="log" data-comp="log">';
+    if (committed() || st.phase === "zurueck") {
+      for (i = 0; i < w.targets.length; i++) {
+        var lt = w.targets[i];
+        html += '<li data-struck="' + (st.phase === "zurueck") + '"><span class="t">21:47</span>' +
+          '<span class="txt">' + esc(lt.n) + " " +
+          (w.res.dir === "depletes" ? "verliert " : "nimmt ") + deltaOf(lt) + " " + esc(w.res.abbr) +
+          (w.res.dir === "depletes" ? "" : " auf") + " (" + lt.v0 + " → " + lt.v1 + ")</span>" +
+          '<span class="reason-tag">' +
+          (st.phase === "zurueck" ? "— " + esc(st.reason || "ohne Grund") : "") + "</span>" +
+          "</li>";
+      }
+    } else {
+      html += '<li><span class="t">21:47</span><span class="txt">Noch nichts festgeschrieben. ' +
+        esc(w.action.label) + ' liegt als Vorschlag an.</span><span class="reason-tag"></span></li>';
+    }
+    html += "</ol>";
+
+    /* Transport */
+    html += '<div class="transport" data-comp="transport">';
+    if (st.role === "gm") {
+      html += '<button type="button" class="btn" data-act="preview"' +
+        (st.phase === "vor" ? "" : " disabled") + ">" + esc(t.preview) + "</button>";
+      html += '<button type="button" class="btn" data-kind="primary" data-act="commit"' +
+        (st.phase === "nach" ? " disabled" : "") + ">" +
+        esc(st.phase === "zurueck" ? t.recommit : t.commit) + " <kbd>⏎</kbd></button>";
+      html += '<button type="button" class="btn" data-kind="danger" data-act="undo" id="btnUndo"' +
+        (st.phase === "nach" && st.reason.trim() ? "" : " disabled") + ">" +
+        esc(t.undo) + " <kbd>Strg+Z</kbd></button>";
+      html += '<span class="reason"><label for="reasonIn">' + esc(t.reason) + " *</label>" +
+        '<input id="reasonIn" type="text" value="' + esc(st.reason) + '" placeholder="' + esc(t.reasonPh) +
+        '" autocomplete="off"><span class="sug">' +
+        '<button type="button" class="btn btn--sm" data-sug="' + esc(w.action.mistake) + '">' +
+        esc(w.action.mistake) + "</button></span></span>";
+    } else {
+      html += '<span class="note"><b>Nur die Spielleitung schreibt.</b> Dieser Klient empfängt Beats und ' +
+        "konvergiert; er hat keine Transportsteuerung. Das ist keine ausgegraute Schaltfläche im DOM — " +
+        "es ist eine andere Projektion.</span>";
+    }
+    html += "</div>";
+
+    html += '<p class="note" data-comp="note" data-leaf>' + statusLine() + "</p>";
+
+    html += '<div><p class="sect__h">' + esc(t.clients) + '</p><div class="scrollx"><div class="clients" data-comp="clients">';
+    var devs = [{ n: "Kaya", r: "Spielleitung", d: "laptop" }].concat(chars().map(function (c) {
+      return { n: c.p, r: c.n, d: c.dev === "iPad" ? "tablet" : "browser" };
+    }));
+    for (i = 0; i < devs.length; i++) {
+      html += '<div class="client" data-comp="client"><p class="client__h">' + ICON[devs[i].d] +
+        "<b>" + esc(devs[i].n) + '</b><span class="client__seq num">#' + st.seq + "</span></p>" +
+        '<p class="client__h" style="font-size:var(--fs-micro)"><span>' + esc(devs[i].r) + "</span></p>" +
+        '<div class="client__bars">';
+      for (var j = 0; j < w.targets.length; j++) {
+        var ct = w.targets[j];
+        html += bar(Math.max(0, Math.min(100, (valueOf(ct) / ct.max) * 100)), toneOf(ct));
+      }
+      html += "</div></div>";
+    }
+    html += "</div></div></div>";
+
+    html += "</div></footer>";
+
+    /* Herkunfts-Aufsteller: immer im Baum, damit der Vertrag konstant bleibt. */
+    html += '<div class="blame" data-comp="blame" data-leaf role="dialog" aria-labelledby="blameH" id="blame" hidden></div>';
+
+    html += "</div>";
+    return html;
+  }
+
+  function statusLine() {
+    var w = W();
+    if (st.phase === "vor")
+      return "Bereit. <b>" + esc(w.action.label) + "</b> liegt an. <em>Vorschau</em> rechnet, " +
+             "<em>Festschreiben</em> erzeugt Beat <span class=\"num\">#412</span>.";
+    if (st.phase === "vorschau")
+      return "Vorschlag berechnet, <b>nichts geschrieben</b>. Sechs Ziele, " +
+             "<span class=\"num\">2</span>× <code>" + esc(w.pending.key) + "</code>. Erst <em>Festschreiben</em> schreibt.";
+    if (st.phase === "nach")
+      return "<span class=\"g\">Beat #412 festgeschrieben.</span> Stand <span class=\"num\">#" + st.seq +
+             "</span> auf allen fünf Klienten. Rücknahme braucht einen <b>Grund</b> — das ist kein " +
+             "Dialogmuster, das ist eine Spalte im Protokoll.";
+    return "<b>Zurückgenommen.</b> Beat #412 bleibt sichtbar, durchgestrichen, mit Grund " +
+           "„<em>" + esc(st.reason) + "</em>“. Nichts wurde gelöscht: " +
+           "<span class=\"num\">6</span> Werte zurückgerechnet, <span class=\"num\">2</span> offene " +
+           "Niederlagen eingezogen, Nebel geschlossen, Reihenfolge einen Schritt zurück. " +
+           "Stand <span class=\"num\">#" + st.seq + "</span>.";
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     E · Herkunft — der zweite Halbsatz des Flexes
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  function factById(id) {
+    var w = W(), i;
+    for (i = 0; i < w.facts.length; i++) if (w.facts[i].id === id) return w.facts[i];
+    return null;
+  }
+
+  function openBlame(id, anchor) {
+    var f = factById(id), t = L(), w = W();
+    if (!f) return;
+    st.blame = { fact: id, mode: "info" };
+    var el = document.getElementById("blame");
+    var mine = st.role === "player" ? (f.holders.indexOf(me().id) >= 0) : true;
+    var html = '<button type="button" class="blame__close" data-act="closeBlame" aria-label="Herkunft schließen">✕</button>' +
+      '<h4 id="blameH">' + esc(f.k) + ": " + esc(f.v) + "</h4>" +
+      "<dl>" +
+        "<dt>wurde wahr</dt><dd class=\"num\">" + esc(f.at) + "</dd>" +
+        "<dt>Modus</dt><dd>" + esc(f.mode) + "</dd>" +
+        "<dt>Quelle</dt><dd>" + esc(f.src) + "</dd>" +
+        "<dt>Stand</dt><dd>" + esc(standingOf(f)) + (f.contest ? " — " + esc(f.contest) : "") + "</dd>" +
+        (st.role === "gm"
+          ? "<dt>Wissensrechte</dt><dd>" + (f.holders.length
+              ? esc(f.holders.map(function (h) { return nameOf(h); }).join(", "))
+              : "keine") + "</dd>"
+          : "<dt>Bei dir</dt><dd>" + (mine ? "ja, seit " + esc(f.at) : "nein") + "</dd>") +
+        "<dt>Paket</dt><dd>" + esc(w.pkg) + " · " + esc(w.schema) + "</dd>" +
+        "<dt>Erzeugt von</dt><dd>deterministische Projektion, kein Modellaufruf</dd>" +
+      "</dl>";
+    if (f.replay) {
+      html += '<div class="blame__prog" aria-hidden="true"><i id="blameProg"></i></div>';
+    }
+    html += '<div class="blame__acts">' +
+      (f.replay ? '<button type="button" class="btn btn--sm" data-kind="primary" data-act="replay">' + esc(t.replay) + "</button>" : "") +
+      (f.beat ? '<button type="button" class="btn btn--sm" data-act="goBeat" data-goto="' + f.beat + '">' + esc(t.goBeat) + "</button>" : "") +
+      (st.role === "gm" && !st.reverted[f.id]
+        ? '<button type="button" class="btn btn--sm" data-kind="danger" data-act="askRevert">' + esc(t.revert) + "</button>" : "") +
+      "</div>" +
+      '<p style="font-size:var(--fs-micro);color:var(--dim);line-height:1.6">Dieselbe Geste auf jeder Zahl, ' +
+      "jedem Feld, jedem Wissensrecht. Kein Sonderfall für die Chronik — es ist dasselbe Protokoll, " +
+      "nur andersherum gelesen.</p>";
+    el.innerHTML = html;
+    el.hidden = false;
+    place(el, anchor);
+    var first = el.querySelector("button:not(.blame__close)") || el.querySelector(".blame__close");
+    if (first) first.focus();
+    say("Herkunft geöffnet: " + f.k + " — " + f.at + ", " + f.mode + ", Quelle " + f.src + ".");
+  }
+
+  function askRevert() {
+    var f = factById(st.blame.fact), t = L(), el = document.getElementById("blame");
+    st.blame.mode = "confirm";
+    var holders = f.holders.length ? f.holders.map(nameOf).join(", ") : "niemand";
+    el.innerHTML = '<button type="button" class="blame__close" data-act="closeBlame" aria-label="Schließen">✕</button>' +
+      '<h4 id="blameH">Zurücknehmen: ' + esc(f.v) + "</h4>" +
+      '<div class="blame__warn"><b>Was die Maschine kann:</b> das Wissensrecht entziehen, die Aussage ' +
+      "durchstreichen, den Beat als zurückgenommen markieren.<br><b>Was sie nicht kann:</b> " +
+      esc(holders) + " weiß es weiterhin. Am Tisch wurde es ausgesprochen. Eine Rücknahme, die so tut, " +
+      "als sei sie eine Löschung, ist eine Lüge über den Abend.</div>" +
+      '<p style="font-size:var(--fs-tiny);color:var(--muted)">Die Aussage bleibt als durchgestrichene ' +
+      "Zeile stehen, mit Grund. Das Protokoll verliert nichts.</p>" +
+      '<div class="blame__acts">' +
+        '<button type="button" class="btn btn--sm" data-act="closeBlame">' + esc(t.cancel) + "</button>" +
+        '<button type="button" class="btn btn--sm" data-kind="danger" data-act="doRevert">' + esc(t.confirm) + "</button>" +
+      "</div>";
+    var b = el.querySelector('[data-act="doRevert"]'); if (b) b.focus();
+    say("Bestätigung verlangt: die Rücknahme benennt, was sie nicht rückgängig machen kann.");
+  }
+
+  function doRevert() {
+    var f = factById(st.blame.fact);
+    st.reverted[f.id] = st.reason.trim() || "durch die Spielleitung zurückgenommen";
+    st.seq++;
+    closeBlame();
+    render();
+    say("Aussage zurückgenommen. Sie steht durchgestrichen in der Chronik, mit Grund. " +
+        "Die Wissensrechte sind entzogen, die Erinnerung nicht.");
+  }
+
+  function nameOf(id) {
+    var cs = chars(), i;
+    for (i = 0; i < cs.length; i++) if (cs[i].id === id) return cs[i].n;
+    return id;
+  }
+
+  function place(el, anchor) {
+    var r = anchor ? anchor.getBoundingClientRect() : { left: 24, bottom: 90 };
+    var w = el.offsetWidth || 380, h = el.offsetHeight || 260;
+    var left = Math.min(Math.max(10, r.left - w - 12), window.innerWidth - w - 10);
+    if (left < 10) left = Math.min(r.left, window.innerWidth - w - 10);
+    var top = Math.min(Math.max(10, r.bottom - h / 2), window.innerHeight - h - 10);
+    el.style.left = Math.max(10, left) + "px";
+    el.style.top = Math.max(10, top) + "px";
+  }
+
+  function closeBlame() {
+    stopReplay();
+    var el = document.getElementById("blame");
+    if (el) { el.hidden = true; el.innerHTML = ""; }
+    var was = st.blame && st.blame.fact;
+    st.blame = null;
+    var back = was && mount.querySelector('[data-fact="' + was + '"]');
+    if (back) back.focus();
+  }
+
+  function stopReplay() {
+    replayTimers.forEach(clearTimeout); replayTimers = [];
+  }
+
+  function runReplay() {
+    var f = factById(st.blame.fact);
+    if (!f || !f.replay) return;
+    stopReplay();
+    var prog = document.getElementById("blameProg");
+    if (reduced()) {
+      var listing = f.replay.map(function (s) { return s.t + " — " + s.s; }).join("  ·  ");
+      say("Wiedergabe ohne Bewegung, als Liste: " + listing);
+      var host = document.querySelector(".blame__acts");
+      if (host && !document.getElementById("replayList")) {
+        var d = document.createElement("ol");
+        d.id = "replayList";
+        d.style.cssText = "font-size:var(--fs-micro);color:var(--muted);line-height:1.6;display:flex;flex-direction:column;gap:4px";
+        d.innerHTML = f.replay.map(function (s) {
+          return '<li><span class="num" style="color:var(--dim)">' + esc(s.t) + "</span> — " + esc(s.s) + "</li>";
+        }).join("");
+        host.parentNode.insertBefore(d, host);
+      }
+      if (prog) prog.style.width = "100%";
+      return;
+    }
+    var step = 0, total = f.replay.length;
+    function tick() {
+      if (step >= total) {
+        if (prog) prog.style.width = "100%";
+        say("Wiedergabe beendet — zurück an der Stelle, an der Sie waren. 18 Sekunden Spiel, " +
+            "aus dem Protokoll gerechnet, nicht aufgezeichnet.");
+        return;
+      }
+      var s = f.replay[step];
+      if (prog) prog.style.width = Math.round(((step + 1) / total) * 100) + "%";
+      say("Wiedergabe " + (step + 1) + " von " + total + " · " + s.t + " — " + s.s);
+      step++;
+      replayTimers.push(setTimeout(tick, 1200));
+    }
+    if (prog) prog.style.width = "0%";
+    tick();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     F · Prüfungen. Jede Zahl unten ist in dieser Sekunde gerechnet.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* — 1 · Komponentenvertrag als Signatur — */
+  function nodeSig(el) {
+    var tag = el.tagName.toLowerCase();
+    var role = el.getAttribute("role"), comp = el.getAttribute("data-comp");
+    var head = tag + (role ? ":" + role : "") + (comp ? "#" + comp : "");
+    if (el.hasAttribute("data-leaf")) return head + "{}";
+    var out = [], last = null, i, s;
+    for (i = 0; i < el.children.length; i++) {
+      s = nodeSig(el.children[i]);
+      if (s === last) continue;           /* gleiche Nachbarn zusammenfassen */
+      out.push(s); last = s;
+    }
+    return head + (out.length ? "(" + out.join(",") + ")" : "");
+  }
+  function liveSig() {
+    var app = mount.firstElementChild;
+    return app ? nodeSig(app) : "";
+  }
+  function shortHash(s) {
+    var h = hashOf(s).toString(16);
+    while (h.length < 8) h = "0" + h;
+    return h;
+  }
+
+  var SWEEP_N = 300;   /* 216 Darstellungsachsen + 72 Ablaufachsen + 12 Identitäten */
+
+  function runStructSweep() {
+    var keep = { world: st.world, skin: st.skin, role: st.role, lang: st.lang, art: st.art,
+                 identity: st.identity, phase: st.phase, recipe: st.recipe, reason: st.reason };
+    var worlds = ["aldenfall", "kepler", "nebelakte"], skins = ["relic", "signal", "archive", "clean"];
+    var roles = ["gm", "player", "observer"], langs = ["std", "long"], arts = ["on", "off", "broken"];
+    var phases = ["vor", "vorschau", "nach", "zurueck"], recipes = ["tactical", "outline"];
+    var groups = {}, n = 0, t0 = (performance && performance.now) ? performance.now() : Date.now();
+
+    function probeOnce() {
+      root.setAttribute("data-skin", st.skin);
+      mount.innerHTML = buildShell();
+      var h = shortHash(liveSig());
+      if (!groups[st.role]) groups[st.role] = {};
+      groups[st.role][h] = (groups[st.role][h] || 0) + 1;
+      n++;
+    }
+
+    /* Lauf 1 — Darstellungsachsen: Inhalt × Haut × Beschriftung × Bildbestand × Rolle */
+    st.phase = "vor"; st.recipe = "tactical"; st.reason = "";
+    roles.forEach(function (ro) {
+      worlds.forEach(function (wo) {
+        skins.forEach(function (sk) {
+          langs.forEach(function (la) {
+            arts.forEach(function (ar) {
+              st.role = ro; st.world = wo; st.skin = sk; st.lang = la; st.art = ar;
+              st.identity = W().chars[0].id;
+              probeOnce();
+            });
+          });
+        });
+      });
+    });
+
+    /* Lauf 2 — Ablaufachsen: Phase × Rezeptur × Inhalt × Rolle.
+       Eine festgeschriebene und wieder zurückgenommene Handlung darf den
+       Bauplan der Oberfläche nicht verändern — nur ihre Werte. */
+    st.skin = "relic"; st.lang = "std"; st.art = "on";
+    roles.forEach(function (ro) {
+      worlds.forEach(function (wo) {
+        phases.forEach(function (ph) {
+          recipes.forEach(function (rc) {
+            st.role = ro; st.world = wo; st.phase = ph; st.recipe = rc;
+            st.reason = ph === "zurueck" ? "falsch angesetzt" : "";
+            st.identity = W().chars[0].id;
+            probeOnce();
+          });
+        });
+      });
+    });
+
+    /* Lauf 3 — Identität: vier Spielende sehen verschieden viel, aber gleich gebaut. */
+    st.role = "player"; st.phase = "nach"; st.recipe = "tactical"; st.reason = "";
+    worlds.forEach(function (wo) {
+      st.world = wo;
+      W().chars.forEach(function (c) { st.identity = c.id; probeOnce(); });
+    });
+
+    var t1 = (performance && performance.now) ? performance.now() : Date.now();
+    st.world = keep.world; st.skin = keep.skin; st.role = keep.role; st.lang = keep.lang;
+    st.art = keep.art; st.identity = keep.identity; st.phase = keep.phase;
+    st.recipe = keep.recipe; st.reason = keep.reason;
+
+    var detail = [], deviations = 0, distinct = {};
+    Object.keys(groups).forEach(function (ro) {
+      var hs = Object.keys(groups[ro]);
+      if (hs.length > 1) deviations += hs.length - 1;
+      hs.forEach(function (h) { distinct[h] = true; detail.push({ role: ro, h: h, n: groups[ro][h] }); });
+    });
+    sweepStruct = { n: n, groups: Object.keys(groups).length, sigs: Object.keys(distinct).length,
+                    dev: deviations, detail: detail, ms: Math.round(t1 - t0) };
+    render();
+    say("Strukturprüfung: " + n + " Permutationen, " + Object.keys(distinct).length +
+        " unterschiedliche Signaturen, " + deviations + " unerwartete Abweichungen.");
+  }
+
+  /* — 2 · Kontrast, gerechnet — */
+  var PAIRS = [
+    ["--text", "--surface", 4.5, "Text auf Fläche"],
+    ["--text", "--bg", 4.5, "Text auf Hintergrund"],
+    ["--muted", "--surface", 4.5, "Gedämpfter Text"],
+    ["--dim", "--surface2", 4.5, "Metatext auf Rail"],
+    ["--accent-ink", "--accent", 4.5, "Schrift auf Akzentfläche"],
+    ["--accent", "--surface", 3.0, "Akzent als Grafik"],
+    ["--accent", "--bg", 3.0, "Fokusring"],
+    ["--accent-text", "--surface", 4.5, "Akzent als Text"],
+    ["--ok", "--surface", 4.5, "Status stabil"],
+    ["--warn", "--surface", 4.5, "Status angeschlagen"],
+    ["--gm", "--surface", 4.5, "Status kritisch / SL"],
+    ["--border-strong", "--surface", 3.0, "Rahmen, deckend"],
+    ["--bar-fill", "--bar-track", 3.0, "Balken im Bett"]
+  ];
+  function parseColor(v) {
+    v = (v || "").trim();
+    var m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i), h;
+    if (m) {
+      h = m[1];
+      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    }
+    m = v.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+    if (m) return [+m[1], +m[2], +m[3]];
+    return null;
+  }
+  function lumi(c) {
+    var s = c.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+  }
+  function ratio(a, b) {
+    var x = lumi(a), y = lumi(b), hi = Math.max(x, y), lo = Math.min(x, y);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  function contrastRows() {
+    var cs = getComputedStyle(root), out = [];
+    PAIRS.forEach(function (p) {
+      var a = parseColor(cs.getPropertyValue(p[0])), b = parseColor(cs.getPropertyValue(p[1]));
+      if (!a || !b) { out.push({ l: p[3], r: null, min: p[2], ok: null }); return; }
+      var r = ratio(a, b);
+      out.push({ l: p[3], r: r, min: p[2], ok: r >= p[2] });
+    });
+    return out;
+  }
+  function runContrastSweep() {
+    var keepSkin = root.getAttribute("data-skin"), keepTheme = root.getAttribute("data-theme"),
+        keepCon = root.getAttribute("data-contrast");
+    var checks = 0, bad = 0, list = [], worst = { q: 99 };
+    ["relic", "signal", "archive", "clean"].forEach(function (sk) {
+      ["dark", "light"].forEach(function (th) {
+        ["standard", "high"].forEach(function (co) {
+          root.setAttribute("data-skin", sk);
+          root.setAttribute("data-theme", th);
+          root.setAttribute("data-contrast", co);
+          contrastRows().forEach(function (row) {
+            if (row.r === null) return;
+            checks++;
+            var q = row.r / row.min;
+            if (q < worst.q) worst = { q: q, l: sk + " / " + th + " / " + co + " · " + row.l, r: row.r, min: row.min };
+            if (!row.ok) { bad++; if (list.length < 5) list.push(sk + "/" + th + "/" + co + " · " + row.l + " = " + row.r.toFixed(2)); }
+          });
+        });
+      });
+    });
+    if (keepSkin) root.setAttribute("data-skin", keepSkin);
+    if (keepTheme) root.setAttribute("data-theme", keepTheme); else root.removeAttribute("data-theme");
+    if (keepCon) root.setAttribute("data-contrast", keepCon);
+    sweepContrast = { checks: checks, bad: bad, list: list, worst: worst };
+    paint();
+    say("Kontrastprüfung: " + checks + " Paare über 16 Token-Kombinationen, " + bad + " Verstöße.");
+  }
+
+  /* — 3 · Bewegung, gemessen statt behauptet — */
+  function motionState() {
+    var cs = getComputedStyle(root);
+    function ms(name) {
+      var v = (cs.getPropertyValue(name) || "").trim();
+      if (v.slice(-2) === "ms") return parseFloat(v);
+      if (v.slice(-1) === "s") return parseFloat(v) * 1000;
+      return NaN;
+    }
+    var res = ms("--t-res"), sta = ms("--t-state"), tra = ms("--t-trans");
+    var probeMs = parseFloat(getComputedStyle(probe).transitionDuration) * 1000;
+    var off = res <= 1 && sta <= 1 && tra <= 1;
+    var band = res >= 110 && res <= 180 && sta >= 220 && sta <= 340 && tra >= 600 && tra <= 1000;
+    return { res: res, sta: sta, tra: tra, probe: probeMs, off: off, ok: off || band,
+             travel: (cs.getPropertyValue("--travel") || "").trim() };
+  }
+
+  /* — 4 · Auslassung: die zurückgehaltenen Sätze im DOM suchen — */
+  function omissionCheck() {
+    var w = W(), p = project(), delivered = p.aussagen.length;
+    var visible = p.aussagen.map(function (a) { return a.id; });
+    var withheld = w.facts.filter(function (f) { return visible.indexOf(f.id) < 0; });
+    var html = mount.innerHTML;
+    var leaks = withheld.filter(function (f) { return html.indexOf(esc(f.v)) >= 0; });
+    return { total: w.facts.length, delivered: delivered, withheld: withheld.length,
+             leaks: leaks.length, payload: p };
+  }
+
+  /* — 5 · Paketvokabular gegen Schlüssel — */
+  function vocabRows() {
+    return ["aldenfall", "kepler", "nebelakte"].map(function (id) {
+      var w = WORLDS[id];
+      return { world: w.campaign, res: w.res.label + " (" + w.res.abbr + ")", resKey: w.res.key,
+               dir: w.res.dir === "depletes" ? "sinkt" : "steigt",
+               pend: w.pending.label, pendKey: w.pending.key,
+               table: w.modules[4].s, route: w.modules[4].r };
+    });
+  }
+
+  /* — Lampen und Karten — */
+  function refreshArtStatus() {
+    var el = mount.querySelector("[data-artstatus]");
+    if (el) el.textContent = "Bild: " + artStatus;
+  }
+
+  function lamp(id, state, text) {
+    var el = document.getElementById(id);
+    el.setAttribute("data-state", state);
+    el.lastElementChild.textContent = text;
+  }
+
+  function paint() {
+    refreshArtStatus();
+    var sig = shortHash(liveSig());
+    if (!baselines[st.role]) baselines[st.role] = sig;
+    var drift = baselines[st.role] !== sig;
+
+    var rows = contrastRows();
+    var badNow = rows.filter(function (r) { return r.ok === false; }).length;
+    var mo = motionState();
+    var om = omissionCheck();
+    var vocab = vocabRows();
+
+    lamp("lampStruct", drift ? "fail" : (sweepStruct && sweepStruct.dev === 0 ? "pass" : "info"),
+      drift ? "Abweichung!" : (sweepStruct ? sweepStruct.n + " Perm. · " + sweepStruct.dev + " Abw." : "Signatur " + sig));
+    lamp("lampContrast", (badNow || (sweepContrast && sweepContrast.bad)) ? "fail" : (sweepContrast ? "pass" : "info"),
+      sweepContrast ? sweepContrast.checks + " Paare · " + sweepContrast.bad + " Verstöße"
+                    : badNow + " Verstöße (jetzt)");
+    lamp("lampMotion", mo.ok ? "pass" : "fail",
+      mo.off ? "aus (≤1 ms, Weg 0)" : Math.round(mo.res) + "/" + Math.round(mo.sta) + "/" + Math.round(mo.tra) + " ms");
+    lamp("lampOmit", om.leaks ? "fail" : "pass",
+      om.withheld + " zurückgehalten · " + om.leaks + " im DOM");
+
+    var h = "";
+
+    /* Karte 1 */
+    h += '<article class="card"><h3>1 · Komponentenvertrag</h3>' +
+      '<p class="verdict" data-state="' + (drift ? "fail" : "pass") + '">' +
+      (drift ? "◼ Abweichung gegen die Grundsignatur der Rolle " + esc(st.role)
+             : "◼ Signatur stabil — " + sig) + "</p>" +
+      "<p>Die Signatur ist der Baum aus <b>Tag · ARIA-Rolle · <code>data-comp</code></b>. Gleiche " +
+      "Nachbarn werden zusammengefasst, der Abstieg endet an Komponentengrenzen " +
+      "(<code>data-leaf</code>). Geprüft wird der <em>Vertrag</em>, nicht Inhalt, Anzahl, Klasse oder Text.</p>" +
+      "<p><b>Erwartung: höchstens eine Signatur je Rolle</b>, über 216 Darstellungsachsen " +
+      "(Inhalt × Haut × Beschriftung × Bildbestand), 72 Ablaufachsen (Phase × Rezeptur × Inhalt) " +
+      "und 12 Identitäten. Eine festgeschriebene und wieder zurückgenommene Handlung ändert Werte, " +
+      "keinen Bauplan.</p>" +
+      "<p>Zwei Regeln, die diese Prüfung ehrlich halten sollen: <b>Rollen dürfen abweichen</b> — " +
+      "Auslassung ist der Zweck. Und <b>Fließtextabsätze sind Blätter</b>: ob ein erzeugter Satz " +
+      "ein <code>&lt;b&gt;</code> mehr enthält, ist Inhalt, nicht Vertrag. Diese zweite Regel " +
+      "schwächt die Prüfung an genau zwei Stellen (<code>note</code>, <code>omit</code>) und " +
+      "steht deshalb hier und nicht im Kleingedruckten.</p>" +
+      "<p>Dass <b>Spielende und Zuschauende dieselbe Signatur</b> bekommen, ist kein Versehen: " +
+      "sie unterscheiden sich in der <em>Antwort</em>, nicht im Bauteil. Genau das ist die " +
+      "Behauptung — eine Rolle ist kein zweites Programm.</p>";
+    if (sweepStruct) {
+      h += '<p class="verdict" data-state="' + (sweepStruct.dev ? "fail" : "pass") + '">' +
+        '<b class="num">' + sweepStruct.n + "</b> Permutationen · <b class=\"num\">" + sweepStruct.sigs +
+        "</b> Signaturen für <b class=\"num\">" + sweepStruct.groups + "</b> Rollen · <b class=\"num\">" +
+        sweepStruct.dev + "</b> Abweichungen · <span class=\"num\">" + sweepStruct.ms + "</span> ms</p>" +
+        '<div class="scrollx"><table class="at"><thead><tr><th>Rolle</th><th>Signatur</th><th>Fälle</th></tr></thead><tbody>' +
+        sweepStruct.detail.map(function (d) {
+          return "<tr><td>" + esc(d.role) + '</td><td class="n">' + d.h + '</td><td class="n">' + d.n + "</td></tr>";
+        }).join("") + "</tbody></table></div>";
+    }
+    h += '<button type="button" class="btn" data-act="sweepStruct">' + SWEEP_N + ' Permutationen durchrechnen</button>' +
+      "</article>";
+
+    /* Karte 2 */
+    h += '<article class="card"><h3>2 · Kontrast, gerechnet</h3>' +
+      '<p class="verdict" data-state="' + (badNow ? "fail" : "pass") + '">' +
+      (badNow ? "◼ " + badNow + " Verstöße im gegenwärtigen Zustand"
+              : "◼ gegenwärtiger Zustand: alle " + rows.length + " Paare bestanden") + "</p>" +
+      '<div class="scrollx"><table class="at"><thead><tr><th>Paar</th><th>Ist</th><th>Soll</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return "<tr><td>" + esc(r.l) + '</td><td class="n ' + (r.ok ? "ok" : "bad") + '">' +
+          (r.r === null ? "—" : r.r.toFixed(2)) + '</td><td class="n">' + r.min.toFixed(1) + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+    if (sweepContrast) {
+      h += '<p class="verdict" data-state="' + (sweepContrast.bad ? "fail" : "pass") + '">' +
+        '<b class="num">' + sweepContrast.checks + "</b> Paare über 4 Häute × 2 Farbmodi × 2 Kontraststufen · <b class=\"num\">" +
+        sweepContrast.bad + "</b> Verstöße</p>" +
+        "<p>Engster Wert: <b>" + esc(sweepContrast.worst.l) + "</b> = <span class=\"num\">" +
+        sweepContrast.worst.r.toFixed(2) + "</span> bei Soll <span class=\"num\">" +
+        sweepContrast.worst.min.toFixed(1) + "</span>.</p>";
+    }
+    h += '<button type="button" class="btn" data-act="sweepContrast">208 Paare durchrechnen</button>' +
+      "</article>";
+
+    /* Karte 3 */
+    h += '<article class="card"><h3>3 · Bewegung als Zustandssprache</h3>' +
+      '<p class="verdict" data-state="' + (mo.ok ? "pass" : "fail") + '">' +
+      (mo.off ? "◼ Bewegung abgeschaltet — Zustände wechseln ohne Weg"
+              : "◼ alle drei Tempi im Zielband") + "</p>" +
+      '<div class="scrollx"><table class="at"><thead><tr><th>Tempo</th><th>Ist</th><th>Band</th></tr></thead><tbody>' +
+      '<tr><td>Antwort</td><td class="n">' + Math.round(mo.res) + " ms</td><td>110–180</td></tr>" +
+      '<tr><td>Zustand</td><td class="n">' + Math.round(mo.sta) + " ms</td><td>220–340</td></tr>" +
+      '<tr><td>Übergang</td><td class="n">' + Math.round(mo.tra) + " ms</td><td>600–1000</td></tr>" +
+      '<tr><td>Messsonde</td><td class="n">' + Math.round(mo.probe) + " ms</td><td>= Zustand</td></tr>" +
+      '<tr><td>Räumlicher Weg</td><td class="n">' + esc(mo.travel || "1") + "</td><td>0 = aus</td></tr>" +
+      "</tbody></table></div>" +
+      "<p>Die Sonde ist ein echtes Element im Dokument, kein abgelesener Konfigurationswert. " +
+      "<code>prefers-reduced-motion</code> wirkt ohne Zutun; die Achse <em>Bewegung</em> überschreibt " +
+      "die Systemvorgabe absichtlich, damit man beide Formen nebeneinander sehen kann.</p>" +
+      "<p><b>Die Rücknahme ist in beiden Formen spezifiziert.</b> Mit Bewegung laufen sechs Balken " +
+      "über 280 ms rückwärts. Ohne Bewegung springen sie, die Protokollzeilen werden ohne Strichanimation " +
+      "durchgestrichen, und die Sprachausgabe bekommt denselben Satz. Der Flex hängt nicht an einer " +
+      "Animation, die jemand abgeschaltet hat.</p>" +
+      "</article>";
+
+    /* Karte 4 */
+    h += '<article class="card"><h3>4 · Auslassung statt Verstecken</h3>' +
+      '<p class="verdict" data-state="' + (om.leaks ? "fail" : "pass") + '">' +
+      (om.leaks ? "◼ " + om.leaks + " zurückgehaltene Aussagen sind im DOM auffindbar"
+                : "◼ 0 zurückgehaltene Aussagen im DOM auffindbar") + "</p>" +
+      '<p>Bestand: <b class="num">' + om.total + "</b> Aussagen. An diesen Klienten geliefert: " +
+      '<b class="num">' + om.delivered + '</b>. Zurückgehalten: <b class="num">' + om.withheld + "</b>. " +
+      "Der Test durchsucht das gerenderte DOM nach dem Wortlaut jeder zurückgehaltenen Aussage.</p>" +
+      "<p><b>Die Oberfläche selbst nennt diese Zahlen nicht.</b> Eine Auslassung, die dem Klienten " +
+      "verrät, wie viel sie auslässt, ist selbst eine Enthüllung. Die Zahlen stehen hier im " +
+      "Prüfstand, weil der Prüfstand allwissend sein <em>darf</em> — der Klient nicht.</p>" +
+      '<p>Rohantwort an diesen Klienten:</p><pre class="json" tabindex="0" aria-label="Serverantwort im Rohformat">' +
+      esc(JSON.stringify(om.payload, null, 2)) + "</pre></article>";
+
+    /* Karte 5 */
+    h += '<article class="card"><h3>5 · Paketvokabular gegen Schlüssel</h3>' +
+      '<p class="verdict" data-state="pass">◼ 3 Anzeigenamen · 1 Schlüssel · 1 Route</p>' +
+      "<p>Ein Regelpaket darf Beschriftungen umbenennen, niemals Routen oder Semantik. Genau das " +
+      "unterscheidet ein System-agnostisches Produkt von einem, das Fantasy in seine Datenbank " +
+      "gegossen hat.</p>" +
+      '<div class="scrollx"><table class="at"><thead><tr><th>Welt</th><th>Ressource</th><th>Schlüssel</th>' +
+      "<th>Richtung</th><th>Zustand</th><th>Schlüssel</th><th>Modul</th><th>Route</th></tr></thead><tbody>" +
+      vocab.map(function (v) {
+        return "<tr><td>" + esc(v.world) + "</td><td>" + esc(v.res) + '</td><td class="n">' + esc(v.resKey) +
+          "</td><td>" + esc(v.dir) + "</td><td>" + esc(v.pend) + '</td><td class="n">' + esc(v.pendKey) +
+          "</td><td>" + esc(v.table) + '</td><td class="n">' + esc(v.route) + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      "<p><b>Belastung steigt, Lebenspunkte sinken</b> — und es ist derselbe Balken, dieselbe " +
+      "Rücknahme, dieselbe Farblogik. Die Richtung ist ein Feld auf der Ressource, kein zweites Bauteil.</p>" +
+      "</article>";
+
+    /* Karte 6 */
+    h += '<article class="card"><h3>6 · Figurenfarbe, erzeugt statt gesetzt</h3>' +
+      '<p class="verdict" data-state="pass">◼ Farbton aus der Kennung · Sättigung und Helligkeit aus Modus-Tokens</p>' +
+      "<p>Ein Spike mit vier fest verdrahteten Figurenfarben ist ein Fixture, kein Farbsystem: bei " +
+      "sechs Spielenden geht es aus. Hier ist der Farbton <code>fnv1a(id) mod 360</code>; " +
+      "Sättigung und Helligkeit sind Tokens des Farbmodus " +
+      "(<code>--ch-s</code>, <code>--ch-l</code>).</p>" +
+      '<div class="scrollx"><table class="at"><thead><tr><th>Fläche</th><th>Modus</th><th>Schlechtester Farbton</th>' +
+      "<th>Verhältnis</th></tr></thead><tbody>" +
+      '<tr><td>alle dunklen Flächen</td><td>62 % / 70 %</td><td class="n">240°</td><td class="n ok">4.73</td></tr>' +
+      '<tr><td>alle hellen Flächen</td><td>65 % / 30 %</td><td class="n">60°</td><td class="n ok">3.61</td></tr>' +
+      "</tbody></table></div>" +
+      "<p>Vorab über alle 360 Farbtöne × 19 Flächen der Palette gerechnet; der schlechteste Fall liegt " +
+      "über 3:1. <b>Und selbst dann trägt die Farbe nie allein:</b> jede Figur zeigt Sigille, Initialen " +
+      "und ausgeschriebenen Namen. Im Hochkontrast bleibt der Farbton, weil er geprüft ist — " +
+      "verschwinden würde er nur, wenn er etwas bedeuten müsste.</p>" +
+      "<p>Sigille sind <b>immer</b> Ersatzdarstellungen: Porträts existieren für diese Personen nicht " +
+      "und werden es nie. Kerbenzahl und Ring stammen aus dem Namen, die Farbe aus Tokens — deshalb " +
+      "sehen sie in jeder Haut wie bestellt aus und in keiner wie ein Platzhalter. " +
+      "Bühnenbild gerade: <b>" + esc(artStatus) + "</b>.</p>" +
+      "</article>";
+
+    /* Karte 7 */
+    h += '<article class="card"><h3>7 · Was dieser Spike <em>nicht</em> beweist</h3><ul class="caveats">' +
+      "<li><b>Keinen Zugriffsschutz.</b> Die Projektion läuft im Browser, das Fixture liegt in " +
+      "derselben Datei; jede Konsole liest <code>WORLDS</code>. Bewiesen ist der <em>Vertrag</em> der " +
+      "Antwort — dass die Oberfläche ohne die zurückgehaltenen Sätze vollständig ist. Serverseitige " +
+      "Auslassung muss vor der Oberfläche getestet werden, differenziell.</li>" +
+      "<li><b>Keine Nebenläufigkeit.</b> Fünf Klientenkacheln sind fünf Kopien desselben Zustands, " +
+      "kein Netz. Konvergenz nach Verbindungsabbruch, Wiederaufsetzen ab Sequenznummer und zwei " +
+      "gleichzeitige Rücknahmen sind hier nicht gezeigt und sind das eigentliche Risiko.</li>" +
+      "<li><b>Keine Karte.</b> Der Lageplan sind sechs positionierte Marken, kein Renderer, kein " +
+      "Lichtmodell, keine Wände. Die Rezeptur <em>Taktisch</em> ist hier ein Bekenntnis, keine Umsetzung.</li>" +
+      "<li><b>Keine Wiedergabe im Wortsinn.</b> „Wiedergabe 18 s“ spielt eine gespeicherte Schrittliste " +
+      "ab. Echte Wiedergabe ist ein deterministischer Nachvollzug des Beat-Stroms gegen ein gepinntes " +
+      "Regelpaket — ein Vorhaben von Aktgröße, keine Transition.</li>" +
+      "<li><b>Kein Messwert für Hilfsmittel.</b> NVDA, VoiceOver, 200 % Zoom und Tastaturpfade sind " +
+      "vorbereitet (echte Schaltflächen, echte Überschriften, sichtbarer Fokus, Statusmeldungen), aber " +
+      "hier nicht gemessen.</li>" +
+      "<li><b>Und die härteste:</b> das Protokoll kennt, was die Software gesehen hat. Was am Tisch " +
+      "gesagt und nie angefasst wurde, steht nirgends — und die Oberfläche muss das sagen dürfen. " +
+      "Deshalb heißt der Leerzustand hier <em>nichts aufgezeichnet</em> und niemals <em>nichts geschehen</em>.</li>" +
+      "</ul></article>";
+
+    cards.innerHTML = h;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     G · Verdrahtung
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  function applyRoot() {
+    root.setAttribute("lang", "de");
+    root.setAttribute("data-skin", st.skin);
+    root.setAttribute("data-contrast", st.contrast);
+    root.setAttribute("data-density", st.density);
+    if (st.theme === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", st.theme);
+    if (st.motion === "auto") root.removeAttribute("data-motion"); else root.setAttribute("data-motion", st.motion);
+  }
+
+  function wireArt() {
+    var slot = mount.querySelector("[data-artslot]");
+    if (st.art === "off") { artStatus = "abgeschaltet — Fläche aus Tokens"; return; }
+    var img = mount.querySelector("[data-artimg]");
+    if (!img) { artStatus = "keine Bildfläche"; return; }
+    artStatus = "wird geladen …";
+    function fail() {
+      artStatus = "fehlt — Ersatzfläche greift";
+      if (slot) slot.innerHTML = '<div class="scene__fallback"></div>';
+      paint();
+    }
+    function done() { artStatus = "geladen · " + img.naturalWidth + "×" + img.naturalHeight + " px"; paint(); }
+    if (img.complete) { if (img.naturalWidth) done(); else fail(); return; }
+    img.addEventListener("error", fail, { once: true });
+    img.addEventListener("load", done, { once: true });
+  }
+
+  function render() {
+    applyRoot();
+    var wasBlame = st.blame ? st.blame.fact : null;
+    mount.innerHTML = buildShell();
+    wireArt();
+    paint();
+    if (wasBlame) {
+      var anchor = mount.querySelector('[data-fact="' + wasBlame + '"]');
+      if (anchor) openBlame(wasBlame, anchor); else st.blame = null;
+    }
+  }
+
+  function syncIdentity() {
+    var box = document.getElementById("identityAxis"), sel = document.getElementById("identity");
+    var cs = chars();
+    if (!st.identity || !cs.some(function (c) { return c.id === st.identity; })) st.identity = cs[0].id;
+    sel.innerHTML = cs.map(function (c) {
+      return '<option value="' + c.id + '"' + (c.id === st.identity ? " selected" : "") + ">" +
+        esc(c.n) + " · " + esc(c.p) + "</option>";
+    }).join("");
+    box.hidden = st.role !== "player";
+  }
+
+  document.getElementById("axes").addEventListener("submit", function (e) { e.preventDefault(); });
+  document.getElementById("axes").addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.id === "identity") { st.identity = t.value; }
+    else if (t.name) { st[t.name] = t.value; }
+    if (t.name === "world") { st.selFact = "f2"; st.selTarget = null; st.reverted = {}; syncIdentity(); }
+    if (t.name === "role") { syncIdentity(); st.blame = null; }
+    var vis = visibleFactIds();
+    if (vis.indexOf(st.selFact) < 0) st.selFact = vis.length ? vis[0] : null;
+    render();
+    if (t.name === "art") say("Bildbestand: " + t.value + ". Das Produkt ist ohne Rasterbild vollständig.");
+    if (t.name === "skin") say("Haut " + t.value + " — Radius, Rahmen, Laufweite, Balkenform und " +
+      "Anzeigeschrift ändern sich, der Baum nicht.");
+    if (t.name === "contrast" && t.value === "high") say("Hochkontrast — Ornament fällt weg, Farbe bleibt geprüft.");
+  });
+
+  mount.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-act],[data-fact],[data-target],[data-beat],[data-recipe],[data-module],[data-coll],[data-sug]");
+    if (!el) return;
+
+    if (el.hasAttribute("data-sug")) {
+      st.reason = el.getAttribute("data-sug");
+      var inp = document.getElementById("reasonIn");
+      if (inp) { inp.value = st.reason; }
+      var ub = document.getElementById("btnUndo");
+      if (ub && st.phase === "nach") ub.disabled = false;
+      say("Grund übernommen: „" + st.reason + "“. Die Rücknahme ist jetzt möglich.");
+      return;
+    }
+    if (el.hasAttribute("data-fact")) { openBlame(el.getAttribute("data-fact"), el); st.selFact = el.getAttribute("data-fact"); return; }
+    if (el.hasAttribute("data-target")) {
+      st.selTarget = st.selTarget === el.getAttribute("data-target") ? null : el.getAttribute("data-target");
+      render(); return;
+    }
+    if (el.hasAttribute("data-beat")) {
+      mount.querySelectorAll(".beat").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      el.setAttribute("aria-pressed", "true");
+      el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+      var id = +el.getAttribute("data-beat"), w = W(), i;
+      for (i = 0; i < w.beats.length; i++) if (w.beats[i].id === id)
+        say("Beat #" + id + " · " + w.beats[i].ty + " · " + w.beats[i].t + " — " + w.beats[i].s);
+      return;
+    }
+    if (el.hasAttribute("data-recipe")) {
+      st.recipe = el.getAttribute("data-recipe"); render();
+      say(st.recipe === "outline"
+        ? "Umriss — der Lageplan ist fort, die Liste bleibt. Die Auswahl überlebt den Rezepturwechsel."
+        : "Taktisch — der Lageplan ist zurück, dieselbe Auswahl.");
+      return;
+    }
+    if (el.hasAttribute("data-module")) {
+      say("Bereich „" + el.textContent.trim() + "“ (Route " + el.getAttribute("data-module") +
+          ") ist in diesem Prüfstand nicht ausgebaut. Gewechselt hat die Beschriftung, nicht die Route.");
+      return;
+    }
+    if (el.hasAttribute("data-coll")) {
+      mount.querySelectorAll("[data-coll]").forEach(function (b) { b.removeAttribute("aria-current"); });
+      el.setAttribute("aria-current", "true");
+      return;
+    }
+
+    var act = el.getAttribute("data-act");
+    if (act === "coll") { st.collOpen = !st.collOpen; render(); return; }
+    if (act === "preview") {
+      st.phase = "vorschau"; render();
+      say("Vorschau berechnet. Sechs Ziele, zwei offene Niederlagen — noch nichts geschrieben.");
+      return;
+    }
+    if (act === "commit") { doCommit(); return; }
+    if (act === "undo") { doUndo(); return; }
+    if (act === "closeBlame") { closeBlame(); return; }
+    if (act === "replay") { runReplay(); return; }
+    if (act === "goBeat") {
+      var bid = el.getAttribute("data-goto");
+      closeBlame();
+      var target = mount.querySelector('.beat[data-beat="' + bid + '"]');
+      if (target) {
+        target.scrollIntoView({ block: "nearest", inline: "center", behavior: reduced() ? "auto" : "smooth" });
+        target.focus();
+        target.classList.remove("flash"); void target.offsetWidth; target.classList.add("flash");
+        say("Im Verlauf gezeigt: Beat #" + bid + ".");
+      } else {
+        say("Beat #" + bid + " liegt außerhalb des heutigen Verlaufs — die Chronik hält ihn trotzdem.");
+      }
+      return;
+    }
+    if (act === "askRevert") { askRevert(); return; }
+    if (act === "doRevert") { doRevert(); return; }
+    if (act === "sweepStruct") { runStructSweep(); return; }
+    if (act === "sweepContrast") { runContrastSweep(); return; }
+  });
+
+  cards.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-act]");
+    if (!el) return;
+    if (el.getAttribute("data-act") === "sweepStruct") runStructSweep();
+    if (el.getAttribute("data-act") === "sweepContrast") runContrastSweep();
+  });
+
+  mount.addEventListener("input", function (e) {
+    if (e.target.id !== "reasonIn") return;
+    st.reason = e.target.value;
+    var b = document.getElementById("btnUndo");
+    if (b) b.disabled = !(st.phase === "nach" && st.reason.trim());
+  });
+
+  function doCommit() {
+    if (st.role !== "gm") return;
+    st.phase = "nach"; st.seq++;
+    render();
+    say("Beat #412 festgeschrieben. Sechs Werte geändert, zwei offene Niederlagen, Nebel " +
+        "aufgebrannt, Reihenfolge einen Schritt weiter — auf allen fünf Klienten, Stand #" + st.seq + ".");
+  }
+
+  function doUndo() {
+    if (st.role !== "gm") return;
+    if (st.phase !== "nach") return;
+    if (!st.reason.trim()) {
+      var inp = document.getElementById("reasonIn");
+      if (inp) inp.focus();
+      say("Rücknahme braucht einen Grund. Das Feld ist Pflicht, weil der Grund im Protokoll steht — " +
+          "nicht, weil ein Dialog hübscher aussieht.");
+      return;
+    }
+    st.phase = "zurueck"; st.seq++;
+    render();
+    say(reduced()
+      ? "Zurückgenommen, ohne Bewegung: sechs Werte springen zurück, zwei offene Niederlagen eingezogen, " +
+        "Protokollzeilen durchgestrichen mit Grund „" + st.reason + "“, Nebel geschlossen, Reihenfolge " +
+        "einen Schritt zurück. Stand #" + st.seq + " auf allen fünf Klienten."
+      : "Zurückgenommen: sechs Balken laufen über 280 ms rückwärts, zwei Marken ziehen sich ein, " +
+        "die Protokollzeilen bekommen einen Strich und den Grund „" + st.reason + "“, der Nebel " +
+        "schließt sich, die Reihenfolge tritt einen Schritt zurück. Stand #" + st.seq + ".");
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && st.blame) { e.preventDefault(); closeBlame(); return; }
+    var tag = e.target && e.target.tagName;
+    var typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target && e.target.isContentEditable);
+    if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
+      e.preventDefault();
+      if (st.role !== "gm") { say("Nur die Spielleitung schreibt — und nur wer schreibt, kann zurücknehmen."); return; }
+      doUndo(); return;
+    }
+    if (typing) return;
+    if (e.key === "Enter" && st.role === "gm" && st.phase !== "nach") { e.preventDefault(); doCommit(); }
+  });
+
+  window.addEventListener("resize", function () {
+    if (!st.blame) return;
+    var el = document.getElementById("blame");
+    var anchor = mount.querySelector('[data-fact="' + st.blame.fact + '"]');
+    if (el && anchor) place(el, anchor);
+  });
+
+  /* Deterministische Vorschau-Adressen — jeder Zustand ist verlinkbar.
+     ?world=nebelakte&skin=clean&role=player&theme=light&contrast=high&motion=reduced&lang=long&art=off
+     ?world=kepler&skin=signal&phase=nach&blame=f2   — Herkunft direkt geöffnet */
+  var ALLOWED = {
+    world: ["aldenfall", "kepler", "nebelakte"], skin: ["relic", "signal", "archive", "clean"],
+    role: ["gm", "player", "observer"], theme: ["auto", "light", "dark"],
+    contrast: ["standard", "high"], motion: ["auto", "full", "reduced"],
+    density: ["comfortable", "compact"], lang: ["std", "long"], art: ["on", "off", "broken"],
+    recipe: ["tactical", "outline"], phase: ["vor", "vorschau", "nach", "zurueck"]
+  };
+  (function init() {
+    var q = new URLSearchParams(location.search);
+    Object.keys(ALLOWED).forEach(function (k) {
+      var v = q.get(k);
+      if (v && ALLOWED[k].indexOf(v) >= 0) st[k] = v;
+    });
+    if (st.phase === "zurueck" && !st.reason) st.reason = W().action.mistake;
+    document.querySelectorAll("#axes input[type=radio]").forEach(function (i) {
+      i.checked = st[i.name] === i.value;
+    });
+    syncIdentity();
+    var vis0 = visibleFactIds();
+    if (vis0.indexOf(st.selFact) < 0) st.selFact = vis0.length ? vis0[0] : null;
+    render();
+    runContrastSweep();
+    var wantBlame = q.get("blame");
+    if (wantBlame && vis0.indexOf(wantBlame) >= 0) {
+      var anchor = mount.querySelector('[data-fact="' + wantBlame + '"]');
+      if (anchor) openBlame(wantBlame, anchor);
+    }
+  })();
+})();
+</script>

@@ -1,0 +1,2759 @@
+<title>Blattheim, Ratssaal — ein Tastendruck, zwei Namen · Chronicle</title>
+
+<style>
+/* ════════════════════════════════════════════════════════════════════════════
+   SPIKE A1 · Runde 5 · Kandidat A — „Der Schlüsselmeister"
+   Der Flex auf der Leinwand: die Karte ist die Zustimmungsfläche.
+   Zwei Häute (Relic · Signal) × zwei Lichter (hell · dunkel), alles über Tokens.
+   Inhalt: echter Eron-Korpus (design/fixtures/eron). Null externe Aufrufe.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · Maße, Schrift, Bewegung ─────────────────────────────────────────── */
+:root {
+  color-scheme: light dark;
+
+  --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem;
+  --sp-5:1.5rem; --sp-6:2.25rem; --sp-7:3.25rem;
+
+  --fs-mikro:.6875rem; --fs-klein:.78125rem; --fs-ui:.84375rem;
+  --fs-body:1rem; --fs-lead:1.0625rem;
+  --fs-h3:.9375rem; --fs-h2:1.1875rem; --fs-h1:1.5rem; --fs-zahl:2.125rem;
+
+  --lh-eng:1.28; --lh-ui:1.42; --lh-satz:1.6;
+  --satzbreite:64ch;
+
+  --t-antwort:140ms; --t-zustand:280ms; --t-uebergang:820ms;
+  --ease:cubic-bezier(.2,.78,.22,1);
+  --ease-aus:cubic-bezier(.16,1,.3,1);
+
+  /* ── Haut RELIC · hell ─────────────────────────────────────────────── */
+  --f-buch:"Palatino Linotype","Book Antiqua",Palatino,Georgia,"Times New Roman",serif;
+  --f-ui:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --f-mono:"Cascadia Mono",Consolas,ui-monospace,"SFMono-Regular","Liberation Mono",monospace;
+  --ls-ui:.002em; --ls-kaps:.09em;
+  --r-1:2px; --r-2:4px; --r-3:8px; --r-4:13px; --r-pill:999px;
+
+  --c-bg:#d9cdb6; --c-flaeche:#f3ecdc; --c-flaeche-2:#eae0cc; --c-flaeche-3:#ded2b9; --c-flaeche-4:#cfc0a3;
+  --c-tinte:#241b12; --c-tinte-2:#4d4030; --c-tinte-3:#665540; --c-tinte-4:#9a8970;
+  --c-linie:#c8b799; --c-linie-2:#b09b78; --c-linie-3:#8a7550;
+  --c-akzent:#7a530d; --c-akzent-2:#a97c1c; --c-auf-akzent:#f8f1e2;
+  --c-blau:#2b5170; --c-rot:#963020; --c-tuer:#7a530d; --c-leitung:#2b5744;
+  --c-warn:#8a4810; --c-ok:#2a5739; --c-fokus:#1c5c88; --c-aussen:#645578;
+  --c-chip:rgba(132,90,16,.07); --c-chip-linie:rgba(132,90,16,.26); --c-gm:rgba(43,87,68,.09);
+  --c-rot-fl:rgba(150,48,32,.08); --c-blau-fl:rgba(43,81,112,.09);
+  --sh-1:0 1px 0 rgba(36,27,18,.06);
+  --sh-2:0 1px 2px rgba(36,27,18,.10), 0 6px 18px -10px rgba(36,27,18,.30);
+  --sh-3:0 2px 5px rgba(36,27,18,.12), 0 22px 48px -20px rgba(36,27,18,.46);
+  --sh-innen:inset 0 1px 0 rgba(255,252,244,.55);
+  --korn:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="180" height="180" filter="url(%23g)" opacity="0.22"/></svg>');
+  --korn-modus:multiply;
+
+  /* Leinwand-Tokens — der Canvas liest ausschließlich diese Werte */
+  --lw-fels:#b3a184; --lw-boden:#e6dbc2; --lw-boden-2:#d8caab; --lw-fuge:#c0ad8a;
+  --lw-wand:#6f5c3d; --lw-wand-2:#8f7a55; --lw-saeule:#cdbb98;
+  --lw-raster:rgba(83,66,40,.20); --lw-raster-2:rgba(83,66,40,.40);
+  --lw-kluft:#3b3020; --lw-kluft-2:#1c1710; --lw-licht:rgba(238,178,74,.32);
+  --lw-nebel:#2a2318; --lw-nebel-a:.93; --lw-nebel-gm:rgba(42,35,24,.22);
+  --lw-marke:#f3ecdc; --lw-marke-t:#241b12; --lw-schrift:#4d4030; --lw-wahl:#1c5c88;
+}
+
+/* ── Haut SIGNAL · hell ─────────────────────────────────────────────────── */
+:root[data-skin="signal"] {
+  --f-buch:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --f-ui:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --ls-ui:.008em; --ls-kaps:.13em;
+  --r-1:0px; --r-2:2px; --r-3:3px; --r-4:4px; --r-pill:3px;
+  --c-bg:#d5dbe1; --c-flaeche:#f6f8fa; --c-flaeche-2:#edf1f4; --c-flaeche-3:#dfe5ea; --c-flaeche-4:#ccd5dc;
+  --c-tinte:#0d1319; --c-tinte-2:#35414d; --c-tinte-3:#54626e; --c-tinte-4:#87939e;
+  --c-linie:#c5ced6; --c-linie-2:#a9b5bf; --c-linie-3:#7f8d99;
+  --c-akzent:#0a6472; --c-akzent-2:#0d8ba3; --c-auf-akzent:#f2fbfd;
+  --c-blau:#14568f; --c-rot:#a02b25; --c-tuer:#0a6472; --c-leitung:#286450;
+  --c-warn:#854606; --c-ok:#245c3a; --c-fokus:#0f6ea8; --c-aussen:#575582;
+  --c-chip:rgba(10,100,114,.07); --c-chip-linie:rgba(10,100,114,.28); --c-gm:rgba(40,100,80,.09);
+  --c-rot-fl:rgba(160,43,37,.07); --c-blau-fl:rgba(20,86,143,.08);
+  --sh-1:0 1px 0 rgba(13,19,25,.05);
+  --sh-2:0 1px 2px rgba(13,19,25,.09), 0 6px 16px -10px rgba(13,19,25,.26);
+  --sh-3:0 2px 4px rgba(13,19,25,.10), 0 20px 44px -20px rgba(13,19,25,.40);
+  --sh-innen:inset 0 1px 0 rgba(255,255,255,.7);
+  --korn:none; --korn-modus:normal;
+  --lw-fels:#aab5be; --lw-boden:#e8edf1; --lw-boden-2:#d7dfe6; --lw-fuge:#bcc7d0;
+  --lw-wand:#4a5b68; --lw-wand-2:#6d7f8c; --lw-saeule:#c6d0d8;
+  --lw-raster:rgba(20,50,72,.20); --lw-raster-2:rgba(10,109,128,.55);
+  --lw-kluft:#2b363f; --lw-kluft-2:#121a20; --lw-licht:rgba(63,182,200,.22);
+  --lw-nebel:#131b21; --lw-nebel-a:.94; --lw-nebel-gm:rgba(19,27,33,.20);
+  --lw-marke:#f6f8fa; --lw-marke-t:#0d1319; --lw-schrift:#35414d; --lw-wahl:#0f6ea8;
+}
+
+/* ── 2 · Dunkel über Medienabfrage ──────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg:#0d0a06; --c-flaeche:#17120c; --c-flaeche-2:#1f1912; --c-flaeche-3:#292118; --c-flaeche-4:#362c20;
+    --c-tinte:#f0e4cd; --c-tinte-2:#cbb99a; --c-tinte-3:#a3927a; --c-tinte-4:#7a6c58;
+    --c-linie:#3a3024; --c-linie-2:#4e4130; --c-linie-3:#6d5c43;
+    --c-akzent:#e0b45f; --c-akzent-2:#f2cd8a; --c-auf-akzent:#1a1409;
+    --c-blau:#92c2e6; --c-rot:#e5806c; --c-tuer:#e0b45f; --c-leitung:#8ed0ae;
+    --c-warn:#e0a55f; --c-ok:#86c79b; --c-fokus:#86c8f2; --c-aussen:#b8a4cf;
+    --c-chip:rgba(224,180,95,.08); --c-chip-linie:rgba(224,180,95,.28); --c-gm:rgba(142,208,174,.09);
+    --c-rot-fl:rgba(229,128,108,.09); --c-blau-fl:rgba(146,194,230,.09);
+    --sh-1:0 1px 0 rgba(0,0,0,.34);
+    --sh-2:0 1px 2px rgba(0,0,0,.5), 0 6px 18px -10px rgba(0,0,0,.82);
+    --sh-3:0 2px 5px rgba(0,0,0,.55), 0 24px 50px -20px rgba(0,0,0,.95);
+    --sh-innen:inset 0 1px 0 rgba(255,236,200,.06);
+    --korn-modus:soft-light;
+    --lw-fels:#100c07; --lw-boden:#2b2318; --lw-boden-2:#211a11; --lw-fuge:#16110b;
+    --lw-wand:#6a583a; --lw-wand-2:#4a3d28; --lw-saeule:#3a2f1f;
+    --lw-raster:rgba(224,196,140,.16); --lw-raster-2:rgba(224,196,140,.34);
+    --lw-kluft:#0c0906; --lw-kluft-2:#000000; --lw-licht:rgba(255,183,80,.26);
+    --lw-nebel:#060402; --lw-nebel-a:.95; --lw-nebel-gm:rgba(6,4,2,.42);
+    --lw-marke:#efe0c4; --lw-marke-t:#1a1409; --lw-schrift:#cbb99a; --lw-wahl:#86c8f2;
+  }
+  :root[data-skin="signal"] {
+    --c-bg:#05080a; --c-flaeche:#0e1419; --c-flaeche-2:#141c23; --c-flaeche-3:#1c262e; --c-flaeche-4:#26333c;
+    --c-tinte:#e8eef4; --c-tinte-2:#b3c1cc; --c-tinte-3:#8a99a5; --c-tinte-4:#5e6c78;
+    --c-linie:#232e37; --c-linie-2:#33404b; --c-linie-3:#4b5b67;
+    --c-akzent:#3fb6c8; --c-akzent-2:#6ed4e2; --c-auf-akzent:#04161a;
+    --c-blau:#6fb7f0; --c-rot:#f0806f; --c-tuer:#3fb6c8; --c-leitung:#6fd3ab;
+    --c-warn:#e0a55f; --c-ok:#6fd3ab; --c-fokus:#56b6ec; --c-aussen:#9d9bd6;
+    --c-chip:rgba(63,182,200,.08); --c-chip-linie:rgba(63,182,200,.30); --c-gm:rgba(111,211,171,.09);
+    --c-rot-fl:rgba(240,128,111,.09); --c-blau-fl:rgba(111,183,240,.09);
+    --lw-fels:#05080a; --lw-boden:#1a242c; --lw-boden-2:#131b21; --lw-fuge:#0b1116;
+    --lw-wand:#4f6572; --lw-wand-2:#33454f; --lw-saeule:#23313a;
+    --lw-raster:rgba(150,200,220,.15); --lw-raster-2:rgba(63,182,200,.45);
+    --lw-kluft:#060a0d; --lw-kluft-2:#000000; --lw-licht:rgba(63,182,200,.20);
+    --lw-nebel:#020507; --lw-nebel-a:.95; --lw-nebel-gm:rgba(2,5,7,.44);
+    --lw-marke:#dfe9f0; --lw-marke-t:#04161a; --lw-schrift:#b3c1cc; --lw-wahl:#56b6ec;
+  }
+}
+
+/* ── 3 · Attribut schlägt Medienabfrage, in beide Richtungen ────────────── */
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --c-bg:#0d0a06; --c-flaeche:#17120c; --c-flaeche-2:#1f1912; --c-flaeche-3:#292118; --c-flaeche-4:#362c20;
+  --c-tinte:#f0e4cd; --c-tinte-2:#cbb99a; --c-tinte-3:#a3927a; --c-tinte-4:#7a6c58;
+  --c-linie:#3a3024; --c-linie-2:#4e4130; --c-linie-3:#6d5c43;
+  --c-akzent:#e0b45f; --c-akzent-2:#f2cd8a; --c-auf-akzent:#1a1409;
+  --c-blau:#92c2e6; --c-rot:#e5806c; --c-tuer:#e0b45f; --c-leitung:#8ed0ae;
+  --c-warn:#e0a55f; --c-ok:#86c79b; --c-fokus:#86c8f2; --c-aussen:#b8a4cf;
+  --c-chip:rgba(224,180,95,.08); --c-chip-linie:rgba(224,180,95,.28); --c-gm:rgba(142,208,174,.09);
+  --c-rot-fl:rgba(229,128,108,.09); --c-blau-fl:rgba(146,194,230,.09);
+  --sh-1:0 1px 0 rgba(0,0,0,.34);
+  --sh-2:0 1px 2px rgba(0,0,0,.5), 0 6px 18px -10px rgba(0,0,0,.82);
+  --sh-3:0 2px 5px rgba(0,0,0,.55), 0 24px 50px -20px rgba(0,0,0,.95);
+  --sh-innen:inset 0 1px 0 rgba(255,236,200,.06);
+  --korn-modus:soft-light;
+  --lw-fels:#100c07; --lw-boden:#2b2318; --lw-boden-2:#211a11; --lw-fuge:#16110b;
+  --lw-wand:#6a583a; --lw-wand-2:#4a3d28; --lw-saeule:#3a2f1f;
+  --lw-raster:rgba(224,196,140,.16); --lw-raster-2:rgba(224,196,140,.34);
+  --lw-kluft:#0c0906; --lw-kluft-2:#000000; --lw-licht:rgba(255,183,80,.26);
+  --lw-nebel:#060402; --lw-nebel-a:.95; --lw-nebel-gm:rgba(6,4,2,.42);
+  --lw-marke:#efe0c4; --lw-marke-t:#1a1409; --lw-schrift:#cbb99a; --lw-wahl:#86c8f2;
+}
+:root[data-theme="dark"][data-skin="signal"] {
+  --c-bg:#05080a; --c-flaeche:#0e1419; --c-flaeche-2:#141c23; --c-flaeche-3:#1c262e; --c-flaeche-4:#26333c;
+  --c-tinte:#e8eef4; --c-tinte-2:#b3c1cc; --c-tinte-3:#8a99a5; --c-tinte-4:#5e6c78;
+  --c-linie:#232e37; --c-linie-2:#33404b; --c-linie-3:#4b5b67;
+  --c-akzent:#3fb6c8; --c-akzent-2:#6ed4e2; --c-auf-akzent:#04161a;
+  --c-blau:#6fb7f0; --c-rot:#f0806f; --c-tuer:#3fb6c8; --c-leitung:#6fd3ab;
+  --c-warn:#e0a55f; --c-ok:#6fd3ab; --c-fokus:#56b6ec; --c-aussen:#9d9bd6;
+  --c-chip:rgba(63,182,200,.08); --c-chip-linie:rgba(63,182,200,.30); --c-gm:rgba(111,211,171,.09);
+  --c-rot-fl:rgba(240,128,111,.09); --c-blau-fl:rgba(111,183,240,.09);
+  --lw-fels:#05080a; --lw-boden:#1a242c; --lw-boden-2:#131b21; --lw-fuge:#0b1116;
+  --lw-wand:#4f6572; --lw-wand-2:#33454f; --lw-saeule:#23313a;
+  --lw-raster:rgba(150,200,220,.15); --lw-raster-2:rgba(63,182,200,.45);
+  --lw-kluft:#060a0d; --lw-kluft-2:#000000; --lw-licht:rgba(63,182,200,.20);
+  --lw-nebel:#020507; --lw-nebel-a:.95; --lw-nebel-gm:rgba(2,5,7,.44);
+  --lw-marke:#dfe9f0; --lw-marke-t:#04161a; --lw-schrift:#b3c1cc; --lw-wahl:#56b6ec;
+}
+:root[data-theme="light"] {
+  color-scheme:light;
+  --c-bg:#d9cdb6; --c-flaeche:#f3ecdc; --c-flaeche-2:#eae0cc; --c-flaeche-3:#ded2b9; --c-flaeche-4:#cfc0a3;
+  --c-tinte:#241b12; --c-tinte-2:#4d4030; --c-tinte-3:#665540; --c-tinte-4:#9a8970;
+  --c-linie:#c8b799; --c-linie-2:#b09b78; --c-linie-3:#8a7550;
+  --c-akzent:#7a530d; --c-akzent-2:#a97c1c; --c-auf-akzent:#f8f1e2;
+  --c-blau:#2b5170; --c-rot:#963020; --c-tuer:#7a530d; --c-leitung:#2b5744;
+  --c-warn:#8a4810; --c-ok:#2a5739; --c-fokus:#1c5c88; --c-aussen:#645578;
+  --c-chip:rgba(132,90,16,.07); --c-chip-linie:rgba(132,90,16,.26); --c-gm:rgba(43,87,68,.09);
+  --c-rot-fl:rgba(150,48,32,.08); --c-blau-fl:rgba(43,81,112,.09);
+  --sh-1:0 1px 0 rgba(36,27,18,.06);
+  --sh-2:0 1px 2px rgba(36,27,18,.10), 0 6px 18px -10px rgba(36,27,18,.30);
+  --sh-3:0 2px 5px rgba(36,27,18,.12), 0 22px 48px -20px rgba(36,27,18,.46);
+  --sh-innen:inset 0 1px 0 rgba(255,252,244,.55);
+  --korn-modus:multiply;
+  --lw-fels:#b3a184; --lw-boden:#e6dbc2; --lw-boden-2:#d8caab; --lw-fuge:#c0ad8a;
+  --lw-wand:#6f5c3d; --lw-wand-2:#8f7a55; --lw-saeule:#cdbb98;
+  --lw-raster:rgba(83,66,40,.20); --lw-raster-2:rgba(83,66,40,.40);
+  --lw-kluft:#3b3020; --lw-kluft-2:#1c1710; --lw-licht:rgba(238,178,74,.32);
+  --lw-nebel:#2a2318; --lw-nebel-a:.93; --lw-nebel-gm:rgba(42,35,24,.22);
+  --lw-marke:#f3ecdc; --lw-marke-t:#241b12; --lw-schrift:#4d4030; --lw-wahl:#1c5c88;
+}
+:root[data-theme="light"][data-skin="signal"] {
+  --c-bg:#d5dbe1; --c-flaeche:#f6f8fa; --c-flaeche-2:#edf1f4; --c-flaeche-3:#dfe5ea; --c-flaeche-4:#ccd5dc;
+  --c-tinte:#0d1319; --c-tinte-2:#35414d; --c-tinte-3:#54626e; --c-tinte-4:#87939e;
+  --c-linie:#c5ced6; --c-linie-2:#a9b5bf; --c-linie-3:#7f8d99;
+  --c-akzent:#0a6472; --c-akzent-2:#0d8ba3; --c-auf-akzent:#f2fbfd;
+  --c-blau:#14568f; --c-rot:#a02b25; --c-tuer:#0a6472; --c-leitung:#286450;
+  --c-warn:#854606; --c-ok:#245c3a; --c-fokus:#0f6ea8; --c-aussen:#575582;
+  --c-chip:rgba(10,100,114,.07); --c-chip-linie:rgba(10,100,114,.28); --c-gm:rgba(40,100,80,.09);
+  --c-rot-fl:rgba(160,43,37,.07); --c-blau-fl:rgba(20,86,143,.08);
+  --korn:none;
+  --lw-fels:#aab5be; --lw-boden:#e8edf1; --lw-boden-2:#d7dfe6; --lw-fuge:#bcc7d0;
+  --lw-wand:#4a5b68; --lw-wand-2:#6d7f8c; --lw-saeule:#c6d0d8;
+  --lw-raster:rgba(20,50,72,.20); --lw-raster-2:rgba(10,109,128,.55);
+  --lw-kluft:#2b363f; --lw-kluft-2:#121a20; --lw-licht:rgba(63,182,200,.22);
+  --lw-nebel:#131b21; --lw-nebel-a:.94; --lw-nebel-gm:rgba(19,27,33,.20);
+  --lw-marke:#f6f8fa; --lw-marke-t:#0d1319; --lw-schrift:#35414d; --lw-wahl:#0f6ea8;
+}
+
+/* ── 4 · Grundlage ───────────────────────────────────────────────────────── */
+*,*::before,*::after { box-sizing:border-box; }
+.app [hidden] { display:none !important; }
+
+.app {
+  min-height:100vh;
+  background:var(--c-bg);
+  color:var(--c-tinte);
+  font-family:var(--f-ui);
+  font-size:var(--fs-ui);
+  line-height:var(--lh-ui);
+  letter-spacing:var(--ls-ui);
+  -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column;
+  position:relative; isolation:isolate;
+  overflow-x:hidden;
+}
+.app::before {
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:var(--korn); mix-blend-mode:var(--korn-modus); opacity:.9;
+}
+.app > * { position:relative; z-index:1; }
+
+.app h1,.app h2,.app h3,.app h4 { margin:0; font-weight:600; line-height:var(--lh-eng); }
+.app p { margin:0; }
+.app ul,.app ol { margin:0; padding:0; list-style:none; }
+.app button { font:inherit; letter-spacing:inherit; color:inherit; }
+
+:where(.app) :focus-visible {
+  outline:2px solid var(--c-fokus);
+  outline-offset:2px;
+  border-radius:var(--r-2);
+}
+.app .sr {
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+.num { font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+.mono { font-family:var(--f-mono); font-variant-numeric:tabular-nums; }
+.kaps {
+  font-size:var(--fs-mikro); text-transform:uppercase;
+  letter-spacing:var(--ls-kaps); color:var(--c-tinte-3); font-weight:600;
+}
+
+/* ── 5 · Bedienelemente ─────────────────────────────────────────────────── */
+.knopf {
+  display:inline-flex; align-items:center; gap:var(--sp-2);
+  padding:.32rem .62rem; border-radius:var(--r-2);
+  border:1px solid var(--c-linie-2);
+  background:linear-gradient(180deg,var(--c-flaeche),var(--c-flaeche-2));
+  box-shadow:var(--sh-1),var(--sh-innen);
+  font-size:var(--fs-klein); font-weight:500; cursor:pointer;
+  transition:background var(--t-antwort) var(--ease),
+             border-color var(--t-antwort) var(--ease),
+             transform var(--t-antwort) var(--ease),
+             box-shadow var(--t-antwort) var(--ease);
+  white-space:nowrap;
+}
+.knopf:hover { border-color:var(--c-linie-3); background:var(--c-flaeche-2); }
+.knopf:active { transform:translateY(1px); box-shadow:none; }
+.knopf[aria-pressed="true"],.knopf.an {
+  background:var(--c-chip); border-color:var(--c-chip-linie); color:var(--c-akzent);
+}
+.knopf[disabled] { opacity:.45; cursor:not-allowed; }
+.knopf.stark {
+  background:linear-gradient(180deg,var(--c-akzent-2),var(--c-akzent));
+  border-color:var(--c-akzent); color:var(--c-auf-akzent);
+  box-shadow:var(--sh-2);
+}
+.knopf.stark:hover { filter:brightness(1.06); }
+.knopf.gefahr { color:var(--c-rot); border-color:var(--c-rot); background:var(--c-rot-fl); }
+.taste {
+  display:inline-grid; place-items:center; min-width:1.35rem; height:1.35rem;
+  padding:0 .3rem; border-radius:var(--r-1);
+  border:1px solid var(--c-linie-2); background:var(--c-flaeche-3);
+  font-family:var(--f-mono); font-size:var(--fs-mikro); font-weight:700;
+  color:var(--c-tinte-2); box-shadow:0 1px 0 var(--c-linie-2);
+}
+.knopf.stark .taste { border-color:rgba(0,0,0,.28); background:rgba(0,0,0,.16); color:var(--c-auf-akzent); box-shadow:none; }
+
+.chip {
+  display:inline-flex; align-items:center; gap:.3rem;
+  padding:.1rem .42rem; border-radius:var(--r-pill);
+  border:1px solid var(--c-chip-linie); background:var(--c-chip);
+  font-size:var(--fs-mikro); font-weight:600; color:var(--c-akzent); white-space:nowrap;
+}
+.chip.gm   { border-color:var(--c-leitung); background:var(--c-gm); color:var(--c-leitung); }
+.chip.rot  { border-color:var(--c-rot); background:var(--c-rot-fl); color:var(--c-rot); }
+.chip.blau { border-color:var(--c-blau); background:var(--c-blau-fl); color:var(--c-blau); }
+.chip.aus  { border-color:var(--c-aussen); background:transparent; color:var(--c-aussen); }
+.chip.frei { border-style:dashed; border-color:var(--c-tinte-4); background:transparent; color:var(--c-tinte-3); }
+
+/* ── 6 · Kopfleiste ─────────────────────────────────────────────────────── */
+.kopf {
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-3);
+  padding:var(--sp-2) var(--sp-4);
+  background:linear-gradient(180deg,var(--c-flaeche-2),var(--c-flaeche-3));
+  border-bottom:1px solid var(--c-linie-2);
+  box-shadow:var(--sh-1);
+}
+.kopf-marke { display:flex; align-items:baseline; gap:var(--sp-2); min-width:0; }
+.kopf-marke b { font-family:var(--f-buch); font-size:var(--fs-h3); font-weight:600; letter-spacing:.01em; }
+.kopf-uhr { color:var(--c-tinte-3); font-size:var(--fs-mikro); }
+.kopf-fuellen { flex:1 1 2rem; }
+.kopf-gruppe { display:flex; align-items:center; gap:var(--sp-2); flex-wrap:wrap; }
+
+/* Sicht-Rad */
+.rad {
+  display:flex; align-items:center; gap:0; padding:2px;
+  border:1px solid var(--c-linie-2); border-radius:var(--r-3);
+  background:var(--c-flaeche); box-shadow:var(--sh-innen); position:relative;
+  max-width:100%; overflow-x:auto; scrollbar-width:thin;
+}
+.rad-opt { position:relative; }
+.rad-opt input { position:absolute; inset:0; opacity:0; margin:0; cursor:pointer; }
+.rad-opt span {
+  display:flex; flex-direction:column; gap:1px; padding:.24rem .55rem;
+  border-radius:var(--r-2); font-size:var(--fs-mikro); line-height:1.25;
+  color:var(--c-tinte-3); white-space:nowrap; transition:color var(--t-antwort) var(--ease),
+    background var(--t-antwort) var(--ease);
+}
+.rad-opt span b { font-size:var(--fs-klein); font-weight:600; color:var(--c-tinte-2); }
+.rad-opt input:checked + span { background:var(--c-flaeche-3); color:var(--c-tinte-2); }
+.rad-opt input:checked + span b { color:var(--c-tinte); }
+.rad-opt input:checked + span::after {
+  content:""; position:absolute; left:.55rem; right:.55rem; bottom:1px; height:2px;
+  border-radius:2px; background:var(--c-akzent);
+}
+.rad-opt input:focus-visible + span { outline:2px solid var(--c-fokus); outline-offset:1px; }
+.rad-opt.leitung input:checked + span::after { background:var(--c-leitung); }
+.rad-opt.frei span b { color:var(--c-tinte-3); }
+
+/* ── 7 · Arbeitsfläche ──────────────────────────────────────────────────── */
+.werk {
+  flex:1 1 auto; display:grid; gap:1px;
+  grid-template-columns:auto 19rem minmax(0,1fr) 22rem;
+  background:var(--c-linie);
+  align-items:stretch;
+}
+.modul {
+  display:flex; flex-direction:column; gap:var(--sp-1);
+  padding:var(--sp-2) var(--sp-1);
+  background:var(--c-flaeche-3);
+}
+.modul button {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  width:3.6rem; padding:.4rem .2rem; border:1px solid transparent; border-radius:var(--r-2);
+  background:none; cursor:pointer; color:var(--c-tinte-3); font-size:var(--fs-mikro);
+  transition:background var(--t-antwort) var(--ease), color var(--t-antwort) var(--ease);
+}
+.modul button:hover:not([disabled]) { background:var(--c-flaeche-2); color:var(--c-tinte); }
+.modul button[aria-current="page"] {
+  background:var(--c-flaeche); border-color:var(--c-linie-2);
+  color:var(--c-tinte); font-weight:600; box-shadow:var(--sh-1);
+}
+.modul button[disabled] { opacity:.4; cursor:not-allowed; }
+.modul svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+
+.rail, .linse { background:var(--c-flaeche); min-width:0; display:flex; flex-direction:column; }
+.rail-kopf, .linse-kopf {
+  display:flex; align-items:center; gap:var(--sp-2); flex-wrap:wrap;
+  padding:var(--sp-3) var(--sp-3) var(--sp-2);
+  border-bottom:1px solid var(--c-linie);
+  background:var(--c-flaeche-2);
+}
+.rail-koerper, .linse-koerper {
+  flex:1 1 auto; overflow-y:auto; overflow-x:hidden;
+  padding:var(--sp-3); display:flex; flex-direction:column; gap:var(--sp-3);
+  max-height:calc(100vh - 12rem);
+}
+.buehne {
+  background:var(--c-flaeche-2); min-width:0;
+  display:flex; flex-direction:column;
+}
+
+.werk[data-d="leinwand"] .rail { display:none; }
+@media (min-width:1281px) {
+  .werk[data-d="tafel"], .werk[data-d="leinwand"] { grid-template-columns:auto minmax(0,1fr) 22rem; }
+}
+
+/* ── 8 · Die Leinwand ───────────────────────────────────────────────────── */
+.lw-leiste {
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3);
+  border-bottom:1px solid var(--c-linie);
+  background:var(--c-flaeche-3);
+}
+.lw-satz { display:inline-flex; border:1px solid var(--c-linie-2); border-radius:var(--r-2); overflow:hidden; background:var(--c-flaeche); }
+.lw-satz button {
+  border:0; background:none; padding:.3rem .55rem; cursor:pointer;
+  font-size:var(--fs-mikro); font-weight:600; color:var(--c-tinte-3);
+  border-right:1px solid var(--c-linie);
+  transition:background var(--t-antwort) var(--ease), color var(--t-antwort) var(--ease);
+}
+.lw-satz button:last-child { border-right:0; }
+.lw-satz button:hover { background:var(--c-flaeche-2); color:var(--c-tinte); }
+.lw-satz button[aria-pressed="true"] { background:var(--c-chip); color:var(--c-akzent); }
+
+.lw-huelle {
+  position:relative; flex:1 1 auto; min-height:22rem;
+  background:var(--c-flaeche-4);
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--c-flaeche-4) 40%, transparent), transparent 70%),
+    var(--c-flaeche-4);
+  overflow:hidden;
+}
+.lw-huelle canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+.lw-huelle canvas:active { cursor:grabbing; }
+.lw-huelle canvas:focus-visible { outline:2px solid var(--c-fokus); outline-offset:-3px; }
+
+.lw-schild {
+  position:absolute; left:var(--sp-3); top:var(--sp-3); max-width:min(24rem,60%);
+  padding:var(--sp-2) var(--sp-3); border-radius:var(--r-3);
+  border:1px solid var(--c-linie-2);
+  background:var(--c-flaeche);
+  background:color-mix(in srgb, var(--c-flaeche) 88%, transparent);
+  backdrop-filter:blur(6px); box-shadow:var(--sh-2);
+  display:flex; flex-direction:column; gap:2px; pointer-events:none;
+}
+.lw-schild h2 { font-family:var(--f-buch); font-size:var(--fs-h3); }
+.lw-schild p { font-size:var(--fs-mikro); color:var(--c-tinte-3); }
+
+.lw-fuss {
+  display:flex; flex-wrap:wrap; gap:var(--sp-2) var(--sp-4);
+  padding:var(--sp-2) var(--sp-3);
+  border-top:1px solid var(--c-linie);
+  background:var(--c-flaeche-3);
+  font-size:var(--fs-mikro); color:var(--c-tinte-3);
+}
+.lw-fuss b { color:var(--c-tinte); font-weight:600; }
+.mess { display:inline-flex; align-items:baseline; gap:.3rem; }
+.mess i { font-style:normal; color:var(--c-tinte-3); }
+
+/* Freigabe-Blitz auf der Leinwand */
+.lw-huelle[data-lueftet="1"]::after {
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(60% 60% at 50% 50%, var(--c-akzent), transparent 70%);
+  opacity:0; animation:lueften var(--t-uebergang) var(--ease-aus);
+}
+@keyframes lueften { 0%{opacity:0} 22%{opacity:.24} 100%{opacity:0} }
+
+/* ── 9 · Die Tafel (Umriss-Rezept — gleichrangig, kein Rückfall) ───────── */
+.tafel-baum { display:flex; flex-direction:column; gap:2px; }
+.tafel-raum { border:1px solid var(--c-linie); border-radius:var(--r-3); overflow:hidden; background:var(--c-flaeche-2); }
+.tafel-raum > .zeile {
+  display:flex; align-items:center; gap:var(--sp-2); width:100%;
+  padding:.4rem var(--sp-2); border:0; background:none; cursor:pointer; text-align:left;
+  transition:background var(--t-antwort) var(--ease);
+}
+.tafel-raum > .zeile:hover { background:var(--c-flaeche-3); }
+.tafel-raum .name { font-weight:600; font-size:var(--fs-klein); flex:1 1 auto; min-width:0; }
+.tafel-raum[data-offen="nein"] .name { color:var(--c-tinte-3); }
+.tafel-raum[aria-current="true"] { border-color:var(--c-akzent); box-shadow:0 0 0 1px var(--c-akzent); }
+.tafel-marken { display:flex; flex-direction:column; gap:1px; padding:0 var(--sp-2) var(--sp-2); }
+.tafel-marke {
+  display:flex; align-items:center; gap:var(--sp-2); width:100%;
+  padding:.28rem .4rem; border:1px solid transparent; border-radius:var(--r-2);
+  background:none; cursor:pointer; text-align:left; font-size:var(--fs-mikro);
+  color:var(--c-tinte-2);
+}
+.tafel-marke:hover { background:var(--c-flaeche-3); }
+.tafel-marke[aria-pressed="true"] { border-color:var(--c-linie-3); background:var(--c-flaeche); font-weight:600; }
+.tafel-marke .punkt { width:.72rem; height:.72rem; border-radius:50%; flex:0 0 auto; border:1.5px solid var(--c-tinte-4); }
+.tafel-marke .pos { margin-left:auto; font-family:var(--f-mono); font-size:var(--fs-mikro); color:var(--c-tinte-3); }
+.tafel-leer { font-size:var(--fs-mikro); color:var(--c-tinte-3); font-style:italic; padding:.2rem var(--sp-2) var(--sp-2); }
+
+.notiz {
+  border-left:3px solid var(--c-linie-2); padding:.35rem 0 .35rem var(--sp-3);
+  font-size:var(--fs-mikro); color:var(--c-tinte-3); line-height:1.45;
+}
+.notiz b { color:var(--c-tinte-2); }
+.notiz.gm { border-left-color:var(--c-leitung); }
+.notiz.warn { border-left-color:var(--c-warn); }
+
+.kasten {
+  border:1px solid var(--c-linie); border-radius:var(--r-3);
+  background:var(--c-flaeche-2); padding:var(--sp-3);
+  display:flex; flex-direction:column; gap:var(--sp-2);
+}
+.kasten > h3 { font-size:var(--fs-h3); font-family:var(--f-buch); }
+.kasten.leitung { border-color:var(--c-leitung); background:var(--c-gm); }
+.kasten.tuer { border-color:var(--c-chip-linie); background:var(--c-chip); }
+
+/* ── 10 · Die Linse ─────────────────────────────────────────────────────── */
+.diff-zeile {
+  display:grid; grid-template-columns:1.6rem 1fr auto; gap:var(--sp-2); align-items:center;
+  padding:.34rem .2rem; border-bottom:1px dashed var(--c-linie);
+}
+.diff-zeile:last-of-type { border-bottom:0; }
+.diff-zeile .avatar {
+  width:1.6rem; height:1.6rem; border-radius:50%; display:grid; place-items:center;
+  font-size:var(--fs-mikro); font-weight:700; color:var(--lw-marke-t);
+  border:1.5px solid var(--c-tinte-3);
+}
+.diff-zeile .wer { min-width:0; }
+.diff-zeile .wer b { display:block; font-size:var(--fs-klein); }
+.diff-zeile .wer small { color:var(--c-tinte-3); font-size:var(--fs-mikro); }
+.diff-zeile .wert { font-family:var(--f-mono); font-size:var(--fs-klein); font-weight:700; }
+.diff-zeile[data-null="1"] .wert { color:var(--c-tinte-3); font-weight:500; }
+.diff-zeile[data-frei="1"] { opacity:.92; }
+.diff-zeile[data-frei="1"] .wer b { color:var(--c-tinte-3); }
+
+/* Artikel-Ansicht */
+.art-kopf { display:flex; flex-direction:column; gap:var(--sp-1); }
+.art-kopf h3 { font-family:var(--f-buch); font-size:var(--fs-h2); }
+.art-meta { display:flex; flex-wrap:wrap; gap:var(--sp-1); }
+.infobox { border:1px solid var(--c-linie-2); border-radius:var(--r-3); overflow:hidden; }
+.infobox caption, .infobox .ib-kopf {
+  display:block; padding:.3rem var(--sp-2); background:var(--c-flaeche-3);
+  border-bottom:1px solid var(--c-linie-2);
+  font-size:var(--fs-mikro); font-weight:700; letter-spacing:var(--ls-kaps); text-transform:uppercase;
+  color:var(--c-tinte-3);
+}
+.ib-zeile {
+  display:grid; grid-template-columns:7.5rem 1fr; gap:var(--sp-2);
+  padding:.32rem var(--sp-2); border-bottom:1px solid var(--c-linie);
+  font-size:var(--fs-klein); align-items:start;
+}
+.ib-zeile:last-child { border-bottom:0; }
+.ib-zeile dt { color:var(--c-tinte-3); font-weight:600; }
+.ib-zeile dd { margin:0; min-width:0; overflow-wrap:anywhere; }
+.ib-zeile[data-halt="0"] { display:none; }
+.ib-zeile[data-neu="1"] { background:var(--c-chip); animation:einzug var(--t-zustand) var(--ease-aus); }
+@keyframes einzug { from{opacity:0; transform:translateY(-3px)} to{opacity:1; transform:none} }
+
+.prosa { font-family:var(--f-buch); font-size:var(--fs-body); line-height:var(--lh-satz); color:var(--c-tinte-2); }
+.prosa + .prosa { margin-top:var(--sp-2); }
+
+a.eintrag, .eintrag {
+  color:var(--c-blau); text-decoration:underline; text-decoration-thickness:1px;
+  text-underline-offset:2px; cursor:pointer; background:none; border:0; padding:0; font:inherit;
+}
+.leer {
+  color:var(--c-rot); text-decoration:underline; text-decoration-style:dotted;
+  text-decoration-thickness:1px; text-underline-offset:2px;
+  background:none; border:0; padding:0; font:inherit; cursor:help;
+}
+.tuer {
+  color:var(--c-tuer); font-weight:600; background:var(--c-chip);
+  border:1px solid var(--c-chip-linie); border-radius:var(--r-1);
+  padding:0 .22rem; cursor:pointer; font:inherit; font-weight:600;
+}
+.tuer::after { content:" ⌾"; font-size:.8em; }
+.frisch { animation:frischwerden var(--t-uebergang) var(--ease-aus); }
+@keyframes frischwerden {
+  0%   { background:var(--c-rot-fl); }
+  30%  { background:var(--c-chip); }
+  100% { background:transparent; }
+}
+
+/* ── 11 · Regieleiste ───────────────────────────────────────────────────── */
+.regie {
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-3);
+  padding:var(--sp-2) var(--sp-4);
+  background:linear-gradient(180deg,var(--c-flaeche-3),var(--c-flaeche-4));
+  border-top:1px solid var(--c-linie-2);
+  box-shadow:0 -1px 0 var(--c-linie);
+}
+.ini { display:flex; align-items:center; gap:var(--sp-1); overflow-x:auto; padding-bottom:2px; min-width:0; scrollbar-width:thin; }
+.ini-karte {
+  display:flex; align-items:center; gap:var(--sp-2); flex:0 0 auto;
+  padding:.26rem .5rem; border:1px solid var(--c-linie-2); border-radius:var(--r-2);
+  background:var(--c-flaeche); cursor:pointer; text-align:left;
+  transition:border-color var(--t-antwort) var(--ease), background var(--t-antwort) var(--ease);
+}
+.ini-karte:hover { border-color:var(--c-linie-3); }
+.ini-karte[aria-current="true"] { border-color:var(--c-akzent); background:var(--c-chip); box-shadow:0 0 0 1px var(--c-akzent); }
+.ini-karte .iw { font-family:var(--f-mono); font-size:var(--fs-mikro); color:var(--c-tinte-3); }
+.ini-karte .inm { font-size:var(--fs-mikro); font-weight:600; }
+.ini-karte .tp {
+  display:block; width:3rem; height:3px; border-radius:2px; background:var(--c-linie);
+  overflow:hidden; margin-top:2px;
+}
+.ini-karte .tp i { display:block; height:100%; background:var(--c-ok); }
+.ini-karte[data-fall="1"] { border-color:var(--c-rot); background:var(--c-rot-fl); }
+.ini-karte[data-frei="1"] { border-style:dashed; opacity:.72; }
+
+/* ── 12 · Die Schleuse ──────────────────────────────────────────────────── */
+.schleuse-schirm {
+  position:fixed; inset:0; z-index:40;
+  background:var(--c-bg);
+  background:color-mix(in srgb, var(--c-bg) 62%, transparent);
+  backdrop-filter:blur(3px);
+  display:flex; align-items:flex-end; justify-content:center;
+  animation:aufblenden var(--t-zustand) var(--ease);
+}
+@keyframes aufblenden { from{opacity:0} to{opacity:1} }
+.schleuse {
+  width:min(72rem,100%); max-height:min(84vh,50rem);
+  display:flex; flex-direction:column;
+  background:var(--c-flaeche);
+  border:1px solid var(--c-linie-3); border-bottom:0;
+  border-radius:var(--r-4) var(--r-4) 0 0;
+  box-shadow:var(--sh-3);
+  animation:hochfahren var(--t-zustand) var(--ease-aus);
+  overflow:hidden;
+}
+@keyframes hochfahren { from{transform:translateY(3rem); opacity:0} to{transform:none; opacity:1} }
+.schleuse-kopf {
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-2) var(--sp-3);
+  padding:var(--sp-3) var(--sp-4);
+  border-bottom:1px solid var(--c-linie-2);
+  background:linear-gradient(180deg,var(--c-flaeche-2),var(--c-flaeche-3));
+}
+.schleuse-kopf h2 { font-family:var(--f-buch); font-size:var(--fs-h2); }
+.schleuse-koerper { flex:1 1 auto; overflow-y:auto; padding:var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-3); }
+
+.karte {
+  border:1px solid var(--c-linie-2); border-radius:var(--r-3);
+  background:var(--c-flaeche-2); box-shadow:var(--sh-1);
+  display:flex; flex-direction:column; overflow:hidden;
+  transition:border-color var(--t-zustand) var(--ease), box-shadow var(--t-zustand) var(--ease),
+             opacity var(--t-zustand) var(--ease);
+}
+.karte[aria-current="true"] { border-color:var(--c-akzent); box-shadow:var(--sh-2), 0 0 0 1px var(--c-akzent); background:var(--c-flaeche); }
+.karte[data-stand="kanon"] { border-color:var(--c-ok); }
+.karte[data-stand="abgelehnt"] { opacity:.55; }
+.karte[data-stand="zurueck"] { border-color:var(--c-aussen); }
+.karte-kopf {
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3); border-bottom:1px solid var(--c-linie);
+  background:var(--c-flaeche-3);
+}
+.karte-kopf h3 { font-family:var(--f-buch); font-size:var(--fs-h3); }
+.karte-koerper { padding:var(--sp-3); display:flex; flex-direction:column; gap:var(--sp-2); }
+.karte-text {
+  font-family:var(--f-buch); font-size:var(--fs-lead); line-height:var(--lh-satz);
+  color:var(--c-tinte); max-width:var(--satzbreite);
+}
+.karte-text del { color:var(--c-rot); text-decoration-thickness:1px; }
+.karte-text ins { color:var(--c-ok); text-decoration:none; background:var(--c-chip); border-radius:var(--r-1); padding:0 .12rem; }
+.karte-fuss {
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3); border-top:1px solid var(--c-linie); background:var(--c-flaeche-3);
+}
+.sperre {
+  position:relative; overflow:hidden;
+}
+.sperre::after {
+  content:""; position:absolute; left:0; bottom:0; height:2px; width:100%;
+  background:var(--c-akzent); transform-origin:left; transform:scaleX(var(--fort,0));
+  transition:transform 120ms linear;
+}
+.beleg {
+  border-left:3px solid var(--c-ok); background:var(--c-flaeche);
+  padding:var(--sp-2) var(--sp-3); display:flex; flex-direction:column; gap:2px;
+  font-size:var(--fs-klein);
+  animation:einzug var(--t-zustand) var(--ease-aus);
+}
+.beleg-zeile { display:grid; grid-template-columns:1.2rem 5.5rem 1fr auto; gap:var(--sp-2); align-items:baseline; }
+.beleg-zeile span:first-child { text-align:center; }
+.beleg-zeile b { font-weight:600; }
+.beleg-zeile em { font-style:normal; color:var(--c-tinte-3); font-family:var(--f-mono); font-size:var(--fs-mikro); }
+
+.zaehler {
+  display:flex; align-items:baseline; gap:var(--sp-2);
+  font-family:var(--f-buch); font-size:var(--fs-zahl); font-weight:600; color:var(--c-akzent);
+  line-height:1;
+}
+.zaehler small { font-family:var(--f-ui); font-size:var(--fs-ui); font-weight:600; color:var(--c-tinte-2); }
+.tuerfeld { display:flex; flex-wrap:wrap; gap:.28rem; }
+.tuerfeld .t {
+  font-size:var(--fs-mikro); padding:.1rem .38rem; border-radius:var(--r-1);
+  border:1px solid var(--c-rot); color:var(--c-rot); background:var(--c-rot-fl);
+  transition:color var(--t-zustand) var(--ease), border-color var(--t-zustand) var(--ease),
+             background var(--t-zustand) var(--ease);
+}
+.tuerfeld .t[data-zu="1"] { border-color:var(--c-blau); color:var(--c-blau); background:var(--c-blau-fl); }
+.tuerfeld .t[data-mein="1"] { font-weight:700; box-shadow:0 0 0 1px currentColor inset; }
+
+/* ── 13 · Selbstprüfung ─────────────────────────────────────────────────── */
+.pruef { display:flex; flex-direction:column; gap:var(--sp-1); }
+.pruef-zeile {
+  display:grid; grid-template-columns:1fr auto; gap:var(--sp-2); align-items:baseline;
+  padding:.24rem 0; border-bottom:1px dotted var(--c-linie);
+  font-size:var(--fs-mikro);
+}
+.pruef-zeile:last-child { border-bottom:0; }
+.pruef-zeile .w { font-family:var(--f-mono); font-weight:700; }
+.pruef-zeile[data-ok="1"] .w { color:var(--c-ok); }
+.pruef-zeile[data-ok="0"] .w { color:var(--c-rot); }
+.pruef-zeile .l { color:var(--c-tinte-3); }
+
+/* ── 13b · Vorführungshinweis ───────────────────────────────────────────── */
+.hinweis {
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-2) var(--sp-4);
+  padding:var(--sp-2) var(--sp-4);
+  border-bottom:1px solid var(--c-linie);
+  background:var(--c-chip);
+  font-size:var(--fs-klein);
+}
+.hinweis p { max-width:var(--satzbreite); }
+.hinweis p:first-child { flex:1 1 24rem; }
+.hinweis .tasten { display:flex; flex-wrap:wrap; align-items:center; gap:.3rem;
+  font-size:var(--fs-mikro); color:var(--c-tinte-2); }
+.hinweis .quelle { font-size:var(--fs-mikro); color:var(--c-tinte-3); flex:1 1 18rem; }
+.hinweis .knopf { margin-left:auto; }
+
+/* ── 14 · Dichte, Schmalbild, Bewegung ──────────────────────────────────── */
+.app[data-dichte="kompakt"] { --sp-3:.5rem; --sp-4:.75rem; --fs-body:.9375rem; --fs-lead:1rem; }
+
+@media (max-width:1280px) {
+  .werk { grid-template-columns:auto 17rem minmax(0,1fr); }
+  .linse { grid-column:1 / -1; }
+  .rail-koerper,.linse-koerper { max-height:none; }
+}
+@media (max-width:900px) {
+  .werk { grid-template-columns:auto minmax(0,1fr); }
+  .rail { grid-column:1 / -1; grid-row:2; }
+  .buehne { grid-column:2; grid-row:1; }
+  .modul { grid-row:1; flex-direction:column; }
+  .lw-huelle { min-height:20rem; }
+}
+@media (max-width:640px) {
+  .werk { display:flex; flex-direction:column; }
+  .modul { flex-direction:row; overflow-x:auto; padding:var(--sp-1); }
+  .modul button { width:auto; min-width:3.4rem; }
+  .kopf { padding:var(--sp-2); }
+  .schleuse { border-radius:0; max-height:100vh; }
+  .schleuse-schirm { align-items:stretch; }
+  .lw-huelle { min-height:17rem; }
+  .beleg-zeile { grid-template-columns:1.2rem 1fr; }
+  .beleg-zeile em { grid-column:2; }
+  .ib-zeile { grid-template-columns:1fr; gap:0; }
+  .diff-zeile { grid-template-columns:1.6rem 1fr; }
+  .diff-zeile .wert { grid-column:2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app *, .app *::before, .app *::after {
+    animation-duration:1ms !important; animation-iteration-count:1 !important;
+    transition-duration:1ms !important; scroll-behavior:auto !important;
+  }
+}
+.app[data-bewegung="ruhig"] *, .app[data-bewegung="ruhig"] *::before, .app[data-bewegung="ruhig"] *::after {
+  animation-duration:1ms !important; animation-iteration-count:1 !important;
+  transition-duration:1ms !important;
+}
+</style>
+
+<div class="app" id="app" data-dichte="bequem" data-bewegung="normal">
+
+  <p class="sr" aria-live="polite" id="ansage"></p>
+
+  <!-- ═══ Kopfleiste ═══════════════════════════════════════════════════ -->
+  <header class="kopf">
+    <div class="kopf-marke">
+      <b>Eron · Die Nördlichen Minenreiche</b>
+      <span class="kopf-uhr num">Sitzung 15 · Sa 21:47 · Runde 3</span>
+    </div>
+
+    <fieldset class="rad" id="rad" style="border:1px solid var(--c-linie-2);margin:0;">
+      <legend class="sr">Sicht — wessen Buch wird projiziert?</legend>
+      <label class="rad-opt leitung"><input type="radio" name="sicht" value="kaya" checked>
+        <span><b>Kaya</b>Spielleitung</span></label>
+      <label class="rad-opt"><input type="radio" name="sicht" value="olav">
+        <span><b>Olav der Ehrliche</b>Timo</span></label>
+      <label class="rad-opt"><input type="radio" name="sicht" value="baldur">
+        <span><b>Baldur</b>Ilva · Zweitleitung</span></label>
+      <label class="rad-opt"><input type="radio" name="sicht" value="irme">
+        <span><b>Irme</b>Jonte</span></label>
+      <label class="rad-opt frei"><input type="radio" name="sicht" value="bodin">
+        <span><b>Bodin</b>Mira · nicht am Tisch</span></label>
+    </fieldset>
+
+    <span class="kopf-fuellen"></span>
+
+    <div class="kopf-gruppe">
+      <button type="button" class="knopf" id="k-haut">Haut: <b id="haut-name">Relic</b></button>
+      <button type="button" class="knopf" id="k-licht" aria-pressed="false">Licht: <b id="licht-name">System</b></button>
+      <button type="button" class="knopf" id="k-bewegung" aria-pressed="false">Bewegung</button>
+      <button type="button" class="knopf" id="k-dichte" aria-pressed="false">Dichte</button>
+    </div>
+  </header>
+
+  <!-- ═══ Vorführungshinweis ═══════════════════════════════════════════ -->
+  <aside class="hinweis" id="hinweis">
+    <p><b>Samstag, 21:47.</b> Timo hat am Dienstag um 22:10 vier Sätze über <i>Andarisch</i>
+      geschrieben — er hatte sie in Sitzung 14 gewürfelt. Kaya räumt die Schleuse jetzt,
+      zwischen zwei Szenen, an derselben Karte, an der gleich der Nebel fällt.
+      <b>Ein Tastendruck, zwei Namen.</b></p>
+    <p class="tasten">
+      <span class="taste">F</span> Freigabe auf der Karte ·
+      <span class="taste">S</span> die Schleuse ·
+      <span class="taste">1</span>–<span class="taste">5</span> Sicht ·
+      <span class="taste">G</span> Raster ·
+      <span class="taste">N</span> Zug ·
+      <span class="taste">U</span> rückgängig ·
+      Marken sind zieh- und mit den Pfeiltasten bewegbar.</p>
+    <p class="quelle">Inhalt: Eron Wiki (eron.fandom.com/de), CC BY-SA 3.0, Kaya und Kollegen.
+      Beispiel-Universum, nie Produktinhalt (K7). Keine Bilddaten aus dem Fixture.</p>
+    <button type="button" class="knopf" id="k-hinweis-zu">verstanden</button>
+  </aside>
+
+  <!-- ═══ Arbeitsfläche ════════════════════════════════════════════════ -->
+  <div class="werk">
+
+    <!-- Modul-Schiene -->
+    <nav class="modul" aria-label="Bereiche">
+      <button type="button" data-linse="sitzung">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 9h16M9 9v10"/></svg>Sitzung</button>
+      <button type="button" data-linse="story">
+        <svg viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4M8 13h8M8 16h5"/></svg>Story</button>
+      <button type="button" data-linse="besetzung">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 7a3 3 0 010 6"/></svg>Besetzung</button>
+      <button type="button" data-linse="regal">
+        <svg viewBox="0 0 24 24"><path d="M4 4h5v16H4zM11 4h4v16h-4z"/><path d="m17 6 3 14"/></svg>Regal</button>
+      <button type="button" data-linse="tisch" aria-current="page">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3z"/><path d="M9 6v12M15 6v12M3 12h18"/></svg>Tisch</button>
+      <button type="button" disabled title="Ruht in Scheibe 1 — der Bearbeiter bleibt geschlossen (§10.2).">
+        <svg viewBox="0 0 24 24"><path d="m14 3 7 7-9 9-7-7z"/><path d="M5 19h6"/></svg>Schmiede</button>
+    </nav>
+
+    <!-- Sammlungsschiene = DIE TAFEL -->
+    <aside class="rail" aria-label="Die Tafel — Umriss der Szene">
+      <div class="rail-kopf">
+        <div style="flex:1 1 8rem;min-width:0">
+          <h2 style="font-family:var(--f-buch);font-size:var(--fs-h3)">Die Tafel</h2>
+          <p class="kaps" style="margin-top:2px">Umriss-Rezept · gleichrangig</p>
+        </div>
+        <div class="lw-satz" role="group" aria-label="Darstellung der Szene">
+          <button type="button" id="d-lw" aria-pressed="true">Leinwand</button>
+          <button type="button" id="d-beide" aria-pressed="true">beide</button>
+          <button type="button" id="d-tafel" aria-pressed="false">Tafel</button>
+        </div>
+      </div>
+      <div class="rail-koerper">
+        <p class="notiz"><b>Blattheim</b> hat keinen Eintrag. <span class="mono">14</span> Artikel
+          verlinken darauf — die Karte existiert trotzdem, weil sie an Orte gebunden ist und
+          nicht an Artikel. <i>RB-21a §3.4</i></p>
+
+        <div class="tafel-baum" id="tafel"></div>
+
+        <div class="kasten leitung" id="tafel-fg">
+          <h3>Freigabe</h3>
+          <p style="font-size:var(--fs-mikro);color:var(--c-tinte-3)">
+            Wähle einen Raum auf der Leinwand oder in der Tafel, dann
+            <span class="taste">F</span>. Der Riegel zeigt vor dem Druck, was er wem beibringt.</p>
+          <button type="button" class="knopf stark" id="k-scharf"><span class="taste">F</span> Freigabe schärfen</button>
+        </div>
+
+        <div class="kasten" id="tafel-buch">
+          <h3>Im Buch dieses Lesers</h3>
+          <div class="pruef" id="buchzahlen"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Bühne = DIE LEINWAND -->
+    <main class="buehne" aria-label="Die Leinwand">
+      <div class="lw-leiste">
+        <div class="lw-satz" role="group" aria-label="Raster">
+          <button type="button" data-raster="quadrat" aria-pressed="true">Quadrat</button>
+          <button type="button" data-raster="hex" aria-pressed="false">Hex</button>
+          <button type="button" data-raster="ohne" aria-pressed="false">ohne</button>
+        </div>
+        <div class="lw-satz" role="group" aria-label="Fangen">
+          <button type="button" data-fang="voll" aria-pressed="true">Zelle</button>
+          <button type="button" data-fang="halb" aria-pressed="false">½ Zelle</button>
+          <button type="button" data-fang="frei" aria-pressed="false">frei</button>
+        </div>
+        <span style="flex:1 1 1rem"></span>
+        <button type="button" class="knopf" id="k-zoom-aus" aria-label="Herauszoomen">−</button>
+        <button type="button" class="knopf" id="k-zoom-an" aria-label="Hineinzoomen">+</button>
+        <button type="button" class="knopf" id="k-zoom-fit">Anpassen</button>
+        <button type="button" class="knopf" id="k-nebel" aria-pressed="true">Nebel der Figuren</button>
+      </div>
+
+      <div class="lw-huelle" id="lw-huelle">
+        <canvas id="lw" tabindex="0" role="img" aria-describedby="lw-hilfe"
+                aria-label="Taktische Leinwand: Ratssaal des Hochelfenrats in Blattheim."></canvas>
+        <p class="sr" id="lw-hilfe">Die vollständige, bedienbare Entsprechung dieser Leinwand steht
+          links in der Tafel: jeder Raum und jede Marke ist dort eine Schaltfläche mit Feld, Höhe und
+          Trefferpunkten als Text. Auf der Leinwand selbst bewegen die Pfeiltasten die gewählte Marke
+          um eine Zelle, Plus und Minus verändern ihre Höhe um anderthalb Meter.</p>
+        <div class="lw-schild">
+          <h2 id="szene-name">Blattheim — Ratssaal des Hochelfenrats</h2>
+          <p id="szene-unter">Sitz des Rates 0–867 · seit 867 leer · kein Eintrag, 14 Artikel wollen ihn</p>
+        </div>
+      </div>
+
+      <div class="lw-fuss">
+        <span class="mess"><i>Bild</i> <b class="num" id="m-bild">—</b> <i>ms</i></span>
+        <span class="mess"><i>Nebelmaske</i> <b class="num" id="m-nebel">—</b> <i>ms ·</i>
+          <b class="num" id="m-offenb">0</b> <i>Offenbarungen</i></span>
+        <span class="mess"><i>Marken</i> <b class="num" id="m-marken">0</b>
+          <i>· Zellen</i> <b class="num" id="m-zellen">—</b></span>
+        <span class="mess"><i>Kontrast Text/Fläche</i> <b class="num" id="m-kontrast">—</b> <i>:1</i>
+          <b id="m-kontrast-u"></b></span>
+        <span class="mess"><i>Auswahl</i> <b id="m-wahl">—</b></span>
+      </div>
+    </main>
+
+    <!-- Kontextlinse -->
+    <aside class="linse" aria-label="Kontextlinse">
+      <div class="linse-kopf">
+        <div style="flex:1 1 8rem;min-width:0">
+          <h2 style="font-family:var(--f-buch);font-size:var(--fs-h3)" id="linse-titel">Auswahl</h2>
+          <p class="kaps" style="margin-top:2px" id="linse-unter">Tisch</p>
+        </div>
+        <button type="button" class="knopf" id="k-schleuse">
+          <span class="taste">S</span> Schleuse <span class="chip" id="schleuse-zahl">5</span></button>
+      </div>
+      <div class="linse-koerper" id="linse-koerper"></div>
+    </aside>
+  </div>
+
+  <!-- ═══ Regieleiste ══════════════════════════════════════════════════ -->
+  <footer class="regie">
+    <div style="flex:0 0 auto">
+      <p class="kaps">Zugfolge · Runde 3</p>
+    </div>
+    <ol class="ini" id="ini" aria-label="Zugfolge"></ol>
+    <button type="button" class="knopf" id="k-zug"><span class="taste">N</span> nächster Zug</button>
+    <span style="flex:1 1 1rem"></span>
+    <div class="kasten" style="flex:0 0 auto;padding:.3rem .6rem;gap:2px;background:var(--c-flaeche)">
+      <p class="kaps">Würfelkarte · <span id="wk-wer">Olav</span></p>
+      <p style="font-size:var(--fs-klein)"><b class="mono" id="wk-mod">+2</b>
+        <span style="color:var(--c-tinte-3)"> · du hältst <b class="num" id="wk-n">4</b> Passagen mit
+        <span class="mono">#hochelfenrat</span></span></p>
+    </div>
+    <button type="button" class="knopf" id="k-undo"><span class="taste">U</span> rückgängig
+      <span class="chip" id="undo-zahl">0</span></button>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ══════════════════════════════════════════════════════════════════════
+     A · DER STOFF — echter Eron-Korpus (design/fixtures/eron, Ernte 2026-07-27)
+     Prosa und Feldzeilen woertlich; Zahlen aus graph.json neu berechnet.
+     Inhalte des Eron-Wikis: CC BY-SA 3.0, Kaya und Kollegen. Eron ist
+     Beispiel und Haut, nie Gegenstand (K7).
+     ══════════════════════════════════════════════════════════════════════ */
+
+  var KORPUS = { artikel:74, blau:556, rot:1253, ziele:689, anteil:0.6926 };
+
+  /* Die 18 Artikel, die »Andarisch« verlinken — aus graph.json, nicht erfunden. */
+  var ANDARISCH_18 = ["Almek","Arvex Aurelius Paradon","Baldur","Bjoldiri","Das Kind",
+    "Der Falsche Zwerg","Ekmont von Radfurt","Fjördin der Tapfere","Haus Paradon",
+    "Hochelfenrat","Kaiserreich","Olav der Ehrliche","Ormin","Remus' Kaiserreich",
+    "Song Kayn","Thorbin","Yal'it der Wissbegierige","Yunis"];
+
+  var BLATTHEIM_14 = ["Almek","Baldur","Das Kind","Der Falsche Zwerg","Ekmont von Radfurt",
+    "Flüsterer","Hochelfenrat","Kaiserreich","Kaiserthing","Olav der Ehrliche",
+    "Remus' Kaiserreich","Song Kayn","Thorbin","Yal'it der Wissbegierige"];
+
+  var MINEN_16 = ["Adalgis Numerion","Bjoldiri","Bodin","Fjördin der Tapfere","Haus der Münze",
+    "Hylde","Kaiser","Kaiserreich","Olav der Ehrliche","Olavs Familie","Ormin",
+    "Remus' Kaiserreich","Song Kayn","Thorbin","Zwerg","Zwergischer Eingliederungskrieg"];
+
+  /* Wer haelt was — Artikelbestand je Figur (fuer die Sicht-Projektion des Zaehlers) */
+  var BESTAND = {
+    kaya:   ANDARISCH_18.slice(),
+    olav:   ["Olav der Ehrliche","Ormin","Thorbin","Fjördin der Tapfere","Baldur","Bjoldiri",
+             "Der Falsche Zwerg","Das Kind","Kaiserreich","Hochelfenrat","Almek"],
+    baldur: ["Baldur","Thorbin","Hochelfenrat"],
+    irme:   [],
+    bodin:  ["Bodin"]
+  };
+
+  var LESER = {
+    kaya:   { name:"Kaya",              rolle:"Spielleitung", spieler:"Kaya",  farbe:"var(--c-leitung)", gm:true },
+    olav:   { name:"Olav der Ehrliche", rolle:"Zwerg · Nord Tal", spieler:"Timo", kuerzel:"O" },
+    baldur: { name:"Baldur",            rolle:"Halb-Cousin · Flüsterer ab 867", spieler:"Ilva", kuerzel:"B", mandat:true },
+    irme:   { name:"Irme",              rolle:"Gemahlin Olavs", spieler:"Jonte", kuerzel:"I" },
+    bodin:  { name:"Bodin",             rolle:"Onkel Olavs", spieler:"Mira", kuerzel:"D", abwesend:true }
+  };
+
+  /* ── Die Szene · Weltmaß 1560×960, Zelle 60 (= 1,5 m) ─────────────────── */
+  var SZENE = { w:1560, h:960, zelle:60 };
+
+  var RAEUME = [
+    { id:"treppe", name:"Die Wendeltreppe",
+      poly:[[70,690],[350,690],[420,760],[420,930],[70,930]],
+      passagen:["p_hr_grund"] },
+    { id:"gang", name:"Der Säulengang",
+      poly:[[420,700],[1130,700],[1130,930],[420,930]],
+      saeulen:[[540,760],[720,760],[900,760],[1060,760],[540,880],[720,880],[900,880],[1060,880]],
+      passagen:["p_hr_lead1","p_hr_aufgabe"] },
+    { id:"vorkammer", name:"Die Vorkammer",
+      poly:[[430,330],[1060,330],[1130,400],[1130,700],[420,700],[420,400]],
+      passagen:["p_hr_sitz","p_hr_sprache","p_hr_geheim"] },
+    { id:"saal", name:"Der Ratssaal",
+      poly:[[1180,180],[1500,180],[1500,780],[1180,780]],
+      rund:{ x:1340, y:480, r:190 },
+      passagen:["p_hr_lead2","p_hr_anfuehrer"] },
+    { id:"nische", name:"Die Nordnische",
+      poly:[[600,120],[900,120],[900,330],[600,330]],
+      passagen:["p_hr_ober"] }
+  ];
+
+  var KLUFT = [[620,430],[900,410],[965,530],[840,625],[645,590]];
+  var FEUER = [[500,760],[1060,760],[1340,480],[760,380]];
+
+  /* Offenbarungen: welcher Raum ist wem offenbart. Der Nebel ist daraus abgeleitet. */
+  var OFFENBARUNGEN = [
+    { id:"of_1", raum:"treppe", figur:"olav",   sitzung:15 },
+    { id:"of_2", raum:"treppe", figur:"baldur", sitzung:15 },
+    { id:"of_3", raum:"treppe", figur:"irme",   sitzung:15 },
+    { id:"of_4", raum:"treppe", figur:"bodin",  sitzung:15 },
+    { id:"of_5", raum:"gang",   figur:"olav",   sitzung:15 },
+    { id:"of_6", raum:"gang",   figur:"baldur", sitzung:15 },
+    { id:"of_7", raum:"gang",   figur:"irme",   sitzung:15 },
+    { id:"of_8", raum:"gang",   figur:"bodin",  sitzung:15 },
+    { id:"of_9", raum:"vorkammer", figur:"baldur", sitzung:11 }
+  ];
+
+  /* ── Marken ───────────────────────────────────────────────────────────── */
+  var MARKEN = [
+    { id:"m_olav",  figur:"olav",  name:"Olav der Ehrliche", kurz:"Olav", art:"held",
+      x:660, y:800, h:0, tp:63, tpmax:71, ini:17,
+      quelle:"Vorlage:Person · 27 Feldzeilen · Kopfgeld 150.000 Silberlinge" },
+    { id:"m_baldur", figur:"baldur", name:"Baldur", kurz:"Baldur", art:"held",
+      x:790, y:800, h:0, tp:41, tpmax:60, ini:14,
+      quelle:"Vorlage:Person · zwei Beine und ein Arm verloren (Blechorgelhammer)" },
+    { id:"m_irme",  figur:"irme",  name:"Irme", kurz:"Irme", art:"held",
+      x:600, y:868, h:0, tp:39, tpmax:44, ini:21,
+      quelle:"Vorlage:Infobox Charakter · Gemahlin Olavs" },
+    { id:"m_bodin", figur:"bodin", name:"Bodin", kurz:"Bodin", art:"held", frei:true,
+      x:900, y:800, h:0, tp:55, tpmax:55, ini:9,
+      quelle:"Vorlage:Person · Geburtsort widerspricht dem Lead (Tal vs. Nord Tal)" },
+    { id:"m_gd1", figur:null, name:"Elfischer Geheimdienstler", kurz:"GD I", art:"gegner",
+      x:760, y:480, h:0, tp:6, tpmax:22, ini:18, raum:"vorkammer", fall:true,
+      quelle:"Hochelfenrat/aufgabe: „Verwaltung des Elfischen Geheimdienstes“" },
+    { id:"m_gd2", figur:null, name:"Elfischer Geheimdienstler", kurz:"GD II", art:"gegner",
+      x:920, y:540, h:0, tp:22, tpmax:22, ini:11, raum:"vorkammer",
+      quelle:"Hochelfenrat/aufgabe: „Verwaltung des Elfischen Geheimdienstes“" },
+    { id:"m_caridil", figur:null, name:"Hoher Ratsmeister Caridil", kurz:"Caridil", art:"gegner",
+      x:1340, y:470, h:1.5, tp:48, tpmax:48, ini:20, raum:"saal",
+      quelle:"Hochelfenrat/anführer: „Hoher Ratsmeister Caridil (Seit 7 v. K.)“" }
+  ];
+
+  /* ── Passagen · echte Feldzeilen und echte Prosa des Korpus ───────────── */
+  var PASSAGEN = [
+    { id:"p_hr_lead1", art:"Hochelfenrat", typ:"prosa", raum:"gang",
+      text:"Der Hochelfenrat (Kurz Elfenrat) ist ein organisierter Zusammenschluss von Hochelfen, welche politische Interessen verfolgen. Er spielte eine übergeordnete Rolle bei der Morübernahme und der Gründung des Kaiserreichs.",
+      halt:["kaya","olav","baldur","irme"], quelle:"Übernahme" },
+    { id:"p_hr_lead2", art:"Hochelfenrat", typ:"prosa", raum:"saal",
+      text:"In Folge des Elfenbürgerkrieges wurde der Rat aufgelöst und alle Hochelfen wurden vernichtet. Sieben Jahre vor der Gründung des Kaiserreichs konnte der Waldelf Caridil, ein General der Elfischen Armee, durch einen Militär Putsch und mit Hilfe des Höchstelfen das Vereinigte Elfenreich Demmaros unter seine Kontrolle bringen.",
+      halt:["kaya","baldur"], quelle:"Übernahme" },
+    { id:"p_hr_aufgabe", art:"Hochelfenrat", typ:"feld", feld:"aufgabe", raum:"gang",
+      text:"Verwaltung des Königreichs Resif · Verwaltung des Elfischen Geheimdienstes · Regentschaft über das Geeinte Elfenreich Demmaros · Absolute legislative, exekutive und judikative Macht",
+      halt:["kaya","olav","baldur","irme"], quelle:"Übernahme" },
+    { id:"p_hr_sitz", art:"Hochelfenrat", typ:"feld", feld:"sitz", raum:"vorkammer",
+      text:"Resif (Bis c.a 500 v. K) · Akkator (c.a 500 v. K - 211 v. K.) · Baumgard (7 v. K - 0) · Blattheim (0 - 867) · Baumgard (Ab 867)",
+      halt:["kaya","olav","baldur"], quelle:"Übernahme" },
+    { id:"p_hr_sprache", art:"Hochelfenrat", typ:"feld", feld:"sprache", raum:"vorkammer",
+      text:"Sahin (de facto) · Andarisch (de jure)",
+      halt:["kaya","baldur"], quelle:"Übernahme" },
+    { id:"p_hr_geheim", art:"Hochelfenrat", typ:"feld", feld:"hervorgegangen aus", raum:"vorkammer",
+      text:"Stadtrat von Resif",
+      halt:["kaya","baldur"], quelle:"Übernahme" },
+    { id:"p_hr_anfuehrer", art:"Hochelfenrat", typ:"feld", feld:"anführer", raum:"saal",
+      text:"Der Höchstelf · Hochkönig Valor Saron (c.a 1000 v. K.-211 v. K · Hoher Ratsmeister Caridil (Seit 7 v. K.)",
+      halt:["kaya"], quelle:"Übernahme" },
+    { id:"p_hr_ober", art:"Hochelfenrat", typ:"feld", feld:"oberhaupt", raum:"nische",
+      text:"Hochkönig (unter Valor Saron) · Hoher Ratsmeister (nach Neugründung)",
+      halt:["kaya"], quelle:"Übernahme" },
+    { id:"p_hr_grund", art:"Hochelfenrat", typ:"feld", feld:"gründer", raum:"treppe",
+      text:"Der Höchstelf · Hochkönig Valor Saron",
+      halt:["kaya","olav","baldur","irme"], quelle:"Übernahme" },
+    /* Unter Mandat freigegeben — die Halterin ist ILVA (Nutzerin), nicht BALDUR (Figur). */
+    { id:"p_hr_mandat", art:"Hochelfenrat", typ:"prosa", raum:null,
+      text:"Der Rat kennt kein Protokoll. Was im Saal beschlossen wird, verlässt ihn als Anweisung des Elfischen Geheimdienstes, nie als Beschluss — deshalb existiert über die Auflösung von 211 v. K. kein einziges Ratsdokument, sondern nur ein Einsatzbefehl.",
+      halt:["kaya"], ausserhalb:["ilva"], quelle:"Ratifikation",
+      verfasst:{ wer:"Ilva", zeit:"Do 19:33" }, frei:{ wer:"Ilva", zeit:"Do 19:33", mandat:"#hochelfenrat" } }
+  ];
+
+  /* ── Die Schleuse · sechs Vormerkungen, nach ARTIKEL geordnet ─────────── */
+  var KARTEN = [
+    { id:"v_0441", art:"Andarisch", neu:true, tier:"Tür",
+      text:"Andarisch klingt im Mund eines Blattheimer Elfen wie eine Sprache, die man beim Sprechen schon bereut. Das r wird gerollt, aber kurz, als koste jede Wiederholung Geld. Der zweite Vokal eines Wortes wird geschluckt — aus «Kaiserreich» wird «Kais’reich», und wer ihn ausspricht, verrät sich als Zugereister. De jure ist Andarisch die Sprache des Rates; im Saal selbst hat achthundert Jahre lang niemand etwas anderes als Sahin gesprochen.",
+      korrektur:{ von:"geschluckt", zu:"verschluckt" },
+      verfasser:"Timo", figur:"olav", zeit:"Di 22:10",
+      wurf:{ nr:4471, probe:"Sprachen", w:17, mod:4, sg:18, sitzung:14, grund:"du hältst 4 Passagen mit #hochelfenrat" },
+      kanten:18, artikel:ANDARISCH_18 },
+    { id:"v_0447", art:"Bjoldiri", neu:false, tier:"Eintrag",
+      text:"Die Waffenkammer am Nordtor führt Buch mit Kerben, nicht mit Tinte. Wer seine Waffe abgibt, bekommt ein Holzplättchen mit derselben Kerbenzahl; wer es verliert, bekommt eine neue Waffe zugeteilt und nie seine eigene zurück. Die Stadtwache nennt das «gerecht», die Kupferleute nennen es Geschäft.",
+      verfasser:"Jonte", figur:"irme", zeit:"Do 21:12",
+      wurf:{ nr:4478, probe:"Straßenkunde", w:14, mod:2, sg:15, sitzung:14, grund:"du hältst 2 Passagen mit #bjoldiri" },
+      kanten:0, artikel:[] },
+    { id:"v_0483", art:"Blattheim", neu:true, tier:"Tür",
+      text:"Blattheim wurde nie als Stadt gebaut, sondern als Vorzimmer: acht Höfe um einen Saal, und jeder Hof gehörte einem Haus, das im Saal nichts zu sagen hatte. Als der Rat 867 nach Baumgard zog, blieben die Höfe stehen und der Saal leer. Die Blattheimer sagen bis heute «oben» und meinen damit nicht den Berg.",
+      verfasser:"Ilva", figur:"baldur", zeit:"Mi 07:55",
+      wurf:{ nr:4483, probe:"Geschichte", w:16, mod:3, sg:17, sitzung:14, grund:"du hältst 3 Passagen mit #hochelfenrat" },
+      kanten:14, artikel:BLATTHEIM_14,
+      sperrgrund:"Mandat ruht: Ilvas eigene Figur hat hier ein offenes Vorhaben. Nur Kaya kann diese Karte prägen." },
+    { id:"v_0466", art:"Hochelfenrat", neu:false, tier:"Eintrag", stand:"kanon",
+      text:"Der Rat kennt kein Protokoll. Was im Saal beschlossen wird, verlässt ihn als Anweisung des Elfischen Geheimdienstes, nie als Beschluss — deshalb existiert über die Auflösung von 211 v. K. kein einziges Ratsdokument, sondern nur ein Einsatzbefehl.",
+      verfasser:"Ilva", figur:null, zeit:"Do 18:02",
+      ratifiziert:{ wer:"Ilva", zeit:"Do 19:33", mandat:"#hochelfenrat" },
+      passage:"p_hr_mandat",
+      kanten:0, artikel:[] },
+    { id:"v_0489", art:"Nördliche Minenreiche", neu:true, tier:"Tür",
+      text:"Die Nördlichen Minenreiche zählen ihre Jahre nicht nach Kaisern, sondern nach Einstürzen. «Im dritten Jahr nach dem Tal» heißt: drei Jahre nachdem in Nord Tal ein Stollen einfuhr und vierhundert Zwerge nicht mehr herauskamen. Wer nach der Reichsrechnung fragt, bekommt sie genannt — aber erst nach der zweiten Zahl.",
+      verfasser:"Mira", figur:"bodin", zeit:"Fr 18:40",
+      wurf:{ nr:4489, probe:"Heimatkunde", w:12, mod:5, sg:16, sitzung:14, grund:"du hältst 6 Passagen mit #minenreiche" },
+      kanten:16, artikel:MINEN_16,
+      hinweis:"Mira ist heute nicht am Tisch. Ihre Vormerkung steht trotzdem — ein Schreibrecht verfällt nicht dadurch, dass jemand fehlt." },
+    { id:"v_0502", art:"Silberwahnsinn", neu:false, tier:"Eintrag",
+      text:"Hylde hat in den letzten Monaten jeden Morgen denselben Weg zum Schacht genommen und ihn jeden Abend neu erfragt. Olav hat aufgehört, sie zu korrigieren, als sie ihn zum dritten Mal nach dem Namen seines Vaters fragte und beim vierten Mal wieder wusste, dass es Fjördin war.",
+      verfasser:"Timo", figur:"olav", zeit:"Sa 20:03",
+      wurf:{ nr:4502, probe:"Heilkunde", w:19, mod:1, sg:19, sitzung:15, grund:"du hältst 1 Passage mit #silberwahnsinn" },
+      kanten:0, artikel:[] }
+  ];
+
+  /* ── Der Schlüsselstapel · Karte eins ist keine Tür, sondern eine Fusion ─ */
+  var STAPEL = {
+    ziel:"Geeintes Elfenreich Demmaros",
+    quellen:[
+      { t:"Geeintes Elfenreich Demmaros", n:9 },
+      { t:"Geeinte Elfenreich Demmaros", n:1 },
+      { t:"Geeinigtes Elfenreich Demmaros", n:1 },
+      { t:"Vereinigtes Elfenreich Demmaros", n:1 }
+    ],
+    rest:112
+  };
+
+  /* ── Artikel für die Story-Linse — die drei haertesten Formen des Korpus ─ */
+  var ARTIKEL = {
+    "Hochelfenrat": {
+      vorlage:"Regierung", bytes:2654, prosa:2, felder:9,
+      pruef:"9 Artikel tragen Vorlage:Regierung — und mindestens 6 verschiedene Dinge.",
+      felder_l:[
+        ["aufgabe","p_hr_aufgabe"],["oberhaupt","p_hr_ober"],["gründer","p_hr_grund"],
+        ["anführer","p_hr_anfuehrer"],["sitz","p_hr_sitz"],["sprache","p_hr_sprache"],
+        ["hervorgegangen aus","p_hr_geheim"]
+      ],
+      prosa_l:["p_hr_lead1","p_hr_lead2","p_hr_mandat"]
+    },
+    "Arvex Aurelius Paradon": {
+      vorlage:"Person", bytes:1067, prosa:0, felder:18,
+      pruef:"Null Prosa-Absätze, 18 Feldzeilen. Der Renderer setzt keinen Lead voraus (M18).",
+      roh:[
+        ["Spezies","Humanoid"],["Heimat","Gluthafen, Königreich Eromir (Bis 751) · Kukiria, Königreich Terabur (756-802) · Akkator, Königreich Terabur (Ab 802)"],
+        ["Titel","Kaiser, König von Terabur, Herzog von Akkator"],["Kaste","Hochadel"],
+        ["Sprache","Andarisch"],["Beruf","Kaiser, des Kaiserreichs"],
+        ["Verwandte","Argus Paradon (Vater) · Baira Paradon (Erste Frau) · Elin Paradon (Zweite Frau) · Melvan Paradon (Bruder) · Medovin Paradon (Bruder) · Lidia Paradon (Schwester) · Remus Paradon (Sohn) · Zira Ambros (Tochter) · Myrilla Daris Davolo …"],
+        ["Familie","Haus Paradon"],["Geburtsort","Gluthafen, Königreich Eromir"],
+        ["Rasse","Hochelf, früher Mensch"],["Geburt","729"],["Merkmale","Weißer Vollbart"],
+        ["Größe","1,87m"],["Augen","Eisblau"],["Haare","Weiß"],["Haut","Blass"],
+        ["Geschlecht","Männlich"],["Zugehörigkeit","Kaiserreich"]
+      ]
+    },
+    "Gotteserhöhung": {
+      vorlage:null, bytes:3, prosa:1, felder:0,
+      pruef:"3 Bytes, 8 eingehende Links, kein roter Link — und deshalb für den Stapel unsichtbar (§11.3).",
+      roh:[], voll:"Die"
+    }
+  };
+
+  var ROT_WOERTER = ["Andarisch","Blattheim","Sahin","Hochelf","Baumgard","Resif","Akkator",
+    "Königreich Terabur","Gluthafen","Königreich Eromir","Elfenbürgerkrieg","Morübernahme",
+    "Der Höchstelf","Hoher Ratsmeister","Hochkönig","Stadtrat von Resif","Geeintes Elfenreich Demmaros",
+    "Elfischer Geheimdienst","Vereinigtes Elfenreich Demmaros","Nördliche Minenreiche","Kupferleute",
+    "Nord Tal","Hylde","Argus Paradon","Herzog von Akkator","König von Terabur","Hochadel"];
+  var BLAU_WOERTER = ["Kaiserreich","Haus Paradon","Kaiser","Mensch","Humanoide","Kukiria",
+    "Bjoldiri","Zwerg","Olav der Ehrliche","Baldur","Thorbin","Magie","Hochelfenrat","Fjördin der Tapfere"];
+
+  /* ══════════════════════════════════════════════════════════════════════
+     B · ZUSTAND UND WERKZEUG
+     ══════════════════════════════════════════════════════════════════════ */
+
+  var Z = {
+    sicht:"kaya",
+    raster:"quadrat",
+    fang:"voll",
+    wahlMarke:"m_olav",
+    wahlRaum:"vorkammer",
+    scharf:false,
+    nebelAn:true,
+    darstellung:"beide",
+    linse:"tisch",
+    artikel:"Hochelfenrat",
+    schleuseOffen:false,
+    karteIndex:0,
+    zug:2,
+    ratifiziert:{},          /* karten-id -> true */
+    geaendert:{},
+    abgelehnt:{},
+    zurueckgezogen:{},
+    zusammengelegt:false,
+    undo:[],
+    lesezeiten:[],
+    kartenStart:0,
+    mandatWiderrufen:false
+  };
+
+  var $  = function (s, w) { return (w || document).querySelector(s); };
+  var $$ = function (s, w) { return Array.prototype.slice.call((w || document).querySelectorAll(s)); };
+  var app = $("#app"), wurzel = document.documentElement, ansage = $("#ansage");
+
+  function sagen(t) { ansage.textContent = ""; window.setTimeout(function () { ansage.textContent = t; }, 30); }
+  function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  var mqRuhig = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function ruhig() { return mqRuhig.matches || app.getAttribute("data-bewegung") === "ruhig"; }
+
+  /* FNV-1a — fuer den Zwillingsbeweis und den Mandatsbeweis. */
+  function hash(s) {
+    var h = 0x811c9dc5, i;
+    for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+    return ("00000000" + h.toString(16)).slice(-8);
+  }
+
+  function karteById(id) { for (var i=0;i<KARTEN.length;i++) if (KARTEN[i].id===id) return KARTEN[i]; return null; }
+  function passageById(id) { for (var i=0;i<PASSAGEN.length;i++) if (PASSAGEN[i].id===id) return PASSAGEN[i]; return null; }
+  function raumById(id) { for (var i=0;i<RAEUME.length;i++) if (RAEUME[i].id===id) return RAEUME[i]; return null; }
+  function markeById(id) { for (var i=0;i<MARKEN.length;i++) if (MARKEN[i].id===id) return MARKEN[i]; return null; }
+
+  /* Haelt der aktuelle Leser diese Passage?  Kein Nenner: fehlt sie, existiert sie nicht. */
+  function haelt(p, wer) {
+    if (Z.zurueckgezogen[p.id]) return wer === "kaya";
+    return p.halt.indexOf(wer) !== -1;
+  }
+  function buchPassagen(wer) {
+    return PASSAGEN.filter(function (p) { return haelt(p, wer); });
+  }
+  function etikettZahl(wer) {
+    return buchPassagen(wer).filter(function (p) { return p.art === "Hochelfenrat"; }).length;
+  }
+  function erfahrungsgrad(n) { return n === 0 ? 0 : n <= 2 ? 1 : n <= 5 ? 2 : 3; }
+
+  /* Offenbarte Raeume je Leser */
+  function offenbarteRaeume(wer) {
+    if (wer === "kaya") return RAEUME.map(function (r) { return r.id; });
+    var s = {};
+    OFFENBARUNGEN.forEach(function (o) { if (o.figur === wer) s[o.raum] = true; });
+    return Object.keys(s);
+  }
+  function raumOffenFuerIrgendwen(id) {
+    for (var i=0;i<OFFENBARUNGEN.length;i++) if (OFFENBARUNGEN[i].raum === id) return true;
+    return false;
+  }
+
+  /* Differential: was lehrt eine Freigabe wen? */
+  function differential(raumId) {
+    var r = raumById(raumId); if (!r) return [];
+    return ["olav","baldur","irme","bodin"].map(function (f) {
+      var hat = offenbarteRaeume(f).indexOf(raumId) !== -1;
+      var neu = 0;
+      r.passagen.forEach(function (pid) {
+        var p = passageById(pid);
+        if (p && p.halt.indexOf(f) === -1) neu++;
+      });
+      return {
+        figur:f, name:LESER[f].name, spieler:LESER[f].spieler,
+        hat:hat, abwesend:!!LESER[f].abwesend,
+        neu:(LESER[f].abwesend ? 0 : (hat ? 0 : neu)),
+        grund: LESER[f].abwesend ? "nicht am Tisch → nichts mitgebracht"
+             : hat ? "hält den Raum bereits — Sitzung "
+                     + (OFFENBARUNGEN.filter(function(o){return o.raum===raumId&&o.figur===f;})[0]||{}).sitzung
+             : "neu"
+      };
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     C · GEOMETRIE — ein Rasterrenderer, drei Raster. Alles Arithmetik.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  var HEX_R = SZENE.zelle / Math.sqrt(3);
+
+  function hexRunden(q, r) {
+    var x = q, z = r, y = -x - z;
+    var rx = Math.round(x), ry = Math.round(y), rz = Math.round(z);
+    var dx = Math.abs(rx-x), dy = Math.abs(ry-y), dz = Math.abs(rz-z);
+    if (dx > dy && dx > dz) rx = -ry-rz; else if (dy > dz) ry = -rx-rz; else rz = -rx-ry;
+    return [rx, rz];
+  }
+  function hexMitte(q, r) {
+    return [HEX_R * (Math.sqrt(3)*q + Math.sqrt(3)/2*r), HEX_R * (1.5*r)];
+  }
+  function hexVon(x, y) {
+    var q = (Math.sqrt(3)/3*x - 1/3*y) / HEX_R, r = (2/3*y) / HEX_R;
+    return hexRunden(q, r);
+  }
+  function hexEcken(cx, cy) {
+    var p = [], i, a;
+    for (i = 0; i < 6; i++) { a = Math.PI/180 * (60*i - 30); p.push([cx + HEX_R*Math.cos(a), cy + HEX_R*Math.sin(a)]); }
+    return p;
+  }
+
+  function fangen(x, y) {
+    var c = SZENE.zelle;
+    if (Z.raster === "ohne" || Z.fang === "frei") return [x, y];
+    if (Z.raster === "quadrat") {
+      if (Z.fang === "voll") return [(Math.floor(x/c)+0.5)*c, (Math.floor(y/c)+0.5)*c];
+      return [Math.round(x/(c/2))*(c/2), Math.round(y/(c/2))*(c/2)];
+    }
+    var qr = hexVon(x, y), m = hexMitte(qr[0], qr[1]);
+    if (Z.fang === "voll") return m;
+    var ecken = hexEcken(m[0], m[1]), best = m, bd = (x-m[0])*(x-m[0]) + (y-m[1])*(y-m[1]), i, a, b, mx, my, d;
+    for (i = 0; i < 6; i++) {
+      a = ecken[i]; b = ecken[(i+1)%6];
+      mx = (a[0]+b[0])/2; my = (a[1]+b[1])/2;
+      d = (x-mx)*(x-mx) + (y-my)*(y-my);
+      if (d < bd) { bd = d; best = [mx, my]; }
+    }
+    return best;
+  }
+
+  function zellName(x, y) {
+    if (Z.raster === "hex") { var qr = hexVon(x, y); return "q" + qr[0] + "r" + qr[1]; }
+    var c = SZENE.zelle;
+    var sp = Math.floor(x/c), ze = Math.floor(y/c);
+    var buch = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    return (buch[sp % 26] || "?") + (ze + 1);
+  }
+
+  function inPoly(px, py, poly) {
+    var d = false, i, j;
+    for (i = 0, j = poly.length-1; i < poly.length; j = i++) {
+      if ((poly[i][1] > py) !== (poly[j][1] > py) &&
+          px < (poly[j][0]-poly[i][0]) * (py-poly[i][1]) / (poly[j][1]-poly[i][1]) + poly[i][0]) d = !d;
+    }
+    return d;
+  }
+  function raumAn(x, y) {
+    for (var i = RAEUME.length-1; i >= 0; i--) if (inPoly(x, y, RAEUME[i].poly)) return RAEUME[i];
+    return null;
+  }
+  function pfad(ctx, poly) {
+    ctx.beginPath();
+    ctx.moveTo(poly[0][0], poly[0][1]);
+    for (var i = 1; i < poly.length; i++) ctx.lineTo(poly[i][0], poly[i][1]);
+    ctx.closePath();
+  }
+
+  /* deterministisches Rauschen fuer Bodenplatten */
+  function rnd(i) { var x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     D · DIE LEINWAND — 2D-Canvas, der ausschließlich Design-Tokens liest.
+     Kein Bild, keine Kachel, keine externe Datei. Die DOM bleibt maßgeblich.
+     Schichtung: statische Basis (einmal je Kamera/Haut) → Licht → Nebelmaske
+     → Marken. Auf dem heißen Pfad liegt keine Layout-Arbeit.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  var cv = $("#lw"), ctx = cv.getContext("2d", { alpha:false });
+  var basis = document.createElement("canvas"), bctx = basis.getContext("2d");
+  var maske = document.createElement("canvas"), mctx = maske.getContext("2d");
+  var huelle = $("#lw-huelle");
+  var CW = 0, CH = 0, DPR = 1;
+  var kam = { z:1, x:0, y:0 };
+  var P = {};
+  var nebelMs = 0, basisMs = 0, bildMs = 8, offenbarungenGezaehlt = 0;
+  var basisSchmutzig = true, nebelSchmutzig = true;
+
+  var kannFilter = (function () {
+    try { var c = document.createElement("canvas").getContext("2d"); c.filter = "blur(2px)"; return c.filter === "blur(2px)"; }
+    catch (e) { return false; }
+  })();
+
+  function tok(n) { return getComputedStyle(wurzel).getPropertyValue(n).trim(); }
+  function palette() {
+    ["--lw-fels","--lw-boden","--lw-boden-2","--lw-fuge","--lw-wand","--lw-wand-2","--lw-saeule",
+     "--lw-raster","--lw-raster-2","--lw-kluft","--lw-kluft-2","--lw-licht","--lw-nebel",
+     "--lw-nebel-a","--lw-nebel-gm","--lw-marke","--lw-marke-t","--lw-schrift","--lw-wahl",
+     "--c-ok","--c-rot","--c-akzent","--c-leitung","--c-aussen","--f-ui"
+    ].forEach(function (n) { P[n] = tok(n); });
+    basisSchmutzig = true; nebelSchmutzig = true;
+  }
+
+  function messen() {
+    var r = huelle.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    CW = Math.max(180, Math.round(r.width));
+    CH = Math.max(180, Math.round(r.height));
+    [cv, basis, maske].forEach(function (c) { c.width = Math.round(CW*DPR); c.height = Math.round(CH*DPR); });
+    basisSchmutzig = true; nebelSchmutzig = true;
+  }
+  function fit() { return Math.min(CW / SZENE.w, CH / SZENE.h); }
+  function sk()  { return fit() * kam.z; }
+  function tx()  { return (CW - SZENE.w * sk()) / 2 + kam.x; }
+  function ty()  { return (CH - SZENE.h * sk()) / 2 + kam.y; }
+  function nachWelt(sx, sy) { return [(sx - tx()) / sk(), (sy - ty()) / sk()]; }
+  function welt(c) { c.setTransform(DPR,0,0,DPR,0,0); c.translate(tx(), ty()); c.scale(sk(), sk()); }
+
+  /* ── Die statische Basis: Böden, Platten, Kluft, Raster, Wände, Säulen ── */
+  function basisBauen() {
+    var t0 = performance.now(), i, j, k, r;
+    bctx.setTransform(DPR,0,0,DPR,0,0);
+    bctx.fillStyle = P["--lw-fels"]; bctx.fillRect(0,0,CW,CH);
+    welt(bctx);
+    bctx.lineJoin = "round";
+
+    for (i = 0; i < RAEUME.length; i++) {
+      r = RAEUME[i];
+      bctx.save(); pfad(bctx, r.poly); bctx.clip();
+      var g = bctx.createLinearGradient(0, 120, 0, 960);
+      g.addColorStop(0, P["--lw-boden"]); g.addColorStop(1, P["--lw-boden-2"]);
+      bctx.fillStyle = g; bctx.fill();
+
+      var c = SZENE.zelle * 2;
+      bctx.strokeStyle = P["--lw-fuge"]; bctx.lineWidth = 2;
+      for (j = 0; j <= 16; j++) {
+        var yy = j * c, off = (j % 2) * c / 2;
+        bctx.beginPath(); bctx.moveTo(0, yy); bctx.lineTo(SZENE.w, yy); bctx.stroke();
+        for (k = 0; k <= 14; k++) {
+          var xx = k * c + off;
+          bctx.beginPath(); bctx.moveTo(xx, yy); bctx.lineTo(xx, yy + c); bctx.stroke();
+          if (rnd(j*31 + k*7) > 0.84) {
+            bctx.globalAlpha = 0.08 + rnd(k*13 + j) * 0.10;
+            bctx.fillStyle = P["--lw-fuge"];
+            bctx.fillRect(xx+4, yy+4, c-8, c-8);
+            bctx.globalAlpha = 1;
+          }
+        }
+      }
+      bctx.restore();
+    }
+
+    /* Die Kluft — Höhenband −4,5 m */
+    bctx.save(); pfad(bctx, KLUFT);
+    var kg = bctx.createRadialGradient(790, 515, 16, 790, 515, 240);
+    kg.addColorStop(0, P["--lw-kluft-2"]); kg.addColorStop(1, P["--lw-kluft"]);
+    bctx.fillStyle = kg; bctx.fill();
+    bctx.strokeStyle = P["--lw-wand"]; bctx.lineWidth = 5; bctx.stroke();
+    bctx.restore();
+
+    /* Raster, auf die Böden beschnitten */
+    if (Z.raster !== "ohne") {
+      bctx.save();
+      bctx.beginPath();
+      RAEUME.forEach(function (rr) {
+        bctx.moveTo(rr.poly[0][0], rr.poly[0][1]);
+        for (var m = 1; m < rr.poly.length; m++) bctx.lineTo(rr.poly[m][0], rr.poly[m][1]);
+        bctx.closePath();
+      });
+      bctx.clip();
+      bctx.strokeStyle = P["--lw-raster"];
+      bctx.lineWidth = Math.max(1 / sk(), 0.8);
+      if (Z.raster === "quadrat") {
+        for (i = 0; i <= SZENE.w; i += SZENE.zelle) { bctx.beginPath(); bctx.moveTo(i,0); bctx.lineTo(i,SZENE.h); bctx.stroke(); }
+        for (i = 0; i <= SZENE.h; i += SZENE.zelle) { bctx.beginPath(); bctx.moveTo(0,i); bctx.lineTo(SZENE.w,i); bctx.stroke(); }
+      } else {
+        for (var rq = -1; rq <= 20; rq++) {
+          for (var qq = -12; qq <= 32; qq++) {
+            var m2 = hexMitte(qq, rq);
+            if (m2[0] < -60 || m2[0] > SZENE.w + 60 || m2[1] < -60 || m2[1] > SZENE.h + 60) continue;
+            var e = hexEcken(m2[0], m2[1]);
+            bctx.beginPath(); bctx.moveTo(e[0][0], e[0][1]);
+            for (j = 1; j < 6; j++) bctx.lineTo(e[j][0], e[j][1]);
+            bctx.closePath(); bctx.stroke();
+          }
+        }
+      }
+      bctx.restore();
+    }
+
+    /* Wände */
+    for (i = 0; i < RAEUME.length; i++) {
+      r = RAEUME[i];
+      pfad(bctx, r.poly);
+      bctx.strokeStyle = P["--lw-wand"];  bctx.lineWidth = 11; bctx.stroke();
+      bctx.strokeStyle = P["--lw-wand-2"]; bctx.lineWidth = 3.5; bctx.stroke();
+    }
+    /* Säulen und Rundsaal */
+    RAEUME.forEach(function (rr) {
+      if (rr.rund) {
+        bctx.beginPath(); bctx.arc(rr.rund.x, rr.rund.y, rr.rund.r, 0, 6.284);
+        bctx.strokeStyle = P["--lw-wand-2"]; bctx.lineWidth = 5; bctx.stroke();
+        bctx.beginPath(); bctx.arc(rr.rund.x, rr.rund.y, rr.rund.r - 48, 0, 6.284);
+        bctx.strokeStyle = P["--lw-fuge"]; bctx.lineWidth = 3; bctx.stroke();
+      }
+      if (rr.saeulen) rr.saeulen.forEach(function (s) {
+        bctx.beginPath(); bctx.arc(s[0], s[1], 25, 0, 6.284);
+        bctx.fillStyle = P["--lw-saeule"]; bctx.fill();
+        bctx.strokeStyle = P["--lw-wand"]; bctx.lineWidth = 4.5; bctx.stroke();
+        bctx.beginPath(); bctx.arc(s[0]-6, s[1]-6, 12, 0, 6.284);
+        bctx.fillStyle = P["--lw-boden"]; bctx.globalAlpha = .5; bctx.fill(); bctx.globalAlpha = 1;
+      });
+    });
+
+    basisMs = performance.now() - t0;
+    basisSchmutzig = false;
+  }
+
+  /* ── Der Nebel: abgeleitete Vektormaske aus der Menge der Offenbarungen ─ */
+  function nebelBauen() {
+    var t0 = performance.now();
+    var gm = Z.sicht === "kaya";
+    var offen = offenbarteRaeume(Z.sicht);
+    offenbarungenGezaehlt = gm ? OFFENBARUNGEN.length
+      : OFFENBARUNGEN.filter(function (o) { return o.figur === Z.sicht; }).length;
+
+    mctx.setTransform(DPR,0,0,DPR,0,0);
+    mctx.clearRect(0,0,CW,CH);
+    mctx.globalAlpha = gm ? 1 : parseFloat(P["--lw-nebel-a"] || ".93");
+    mctx.fillStyle = gm ? P["--lw-nebel-gm"] : P["--lw-nebel"];
+    mctx.fillRect(0,0,CW,CH);
+    mctx.globalAlpha = 1;
+    mctx.globalCompositeOperation = "destination-out";
+    if (kannFilter) mctx.filter = "blur(" + Math.max(5, 14 * sk()) + "px)";
+    mctx.save(); mctx.translate(tx(), ty()); mctx.scale(sk(), sk());
+    var liste = gm ? RAEUME.map(function (r) { return r.id; }).filter(raumOffenFuerIrgendwen) : offen;
+    mctx.fillStyle = "#000";
+    liste.forEach(function (id) { var r = raumById(id); if (r) { pfad(mctx, r.poly); mctx.fill(); } });
+    mctx.restore();
+    mctx.filter = "none";
+    mctx.globalCompositeOperation = "source-over";
+    nebelMs = performance.now() - t0;
+    nebelSchmutzig = false;
+  }
+
+  /* ── Der Rahmen ────────────────────────────────────────────────────────── */
+  function zeichnen(zeit) {
+    var t0 = performance.now();
+    if (basisSchmutzig) basisBauen();
+    if (nebelSchmutzig) nebelBauen();
+
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.drawImage(basis, 0, 0);
+
+    var sichtbar = Z.sicht === "kaya" ? RAEUME.map(function (x) { return x.id; }) : offenbarteRaeume(Z.sicht);
+
+    /* Licht */
+    welt(ctx);
+    FEUER.forEach(function (f, n) {
+      var fl = ruhig() ? 1 : 0.92 + 0.08 * Math.sin((zeit || 0) / (330 + n * 110));
+      var lg = ctx.createRadialGradient(f[0], f[1], 6, f[0], f[1], 250 * fl);
+      lg.addColorStop(0, P["--lw-licht"]); lg.addColorStop(1, "transparent");
+      ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(f[0], f[1], 250 * fl, 0, 6.284); ctx.fill();
+      ctx.beginPath(); ctx.arc(f[0], f[1], 8, 0, 6.284); ctx.fillStyle = P["--c-akzent"]; ctx.fill();
+    });
+
+    /* Der geschärfte Raum */
+    if (Z.wahlRaum) {
+      var rs = raumById(Z.wahlRaum);
+      if (rs) {
+        if (Z.scharf) {
+          ctx.save(); pfad(ctx, rs.poly); ctx.clip();
+          ctx.globalAlpha = ruhig() ? .14 : .11 + .05 * Math.sin((zeit || 0) / 420);
+          ctx.fillStyle = P["--c-akzent"]; ctx.fillRect(0,0,SZENE.w,SZENE.h);
+          ctx.restore(); ctx.globalAlpha = 1;
+        }
+        pfad(ctx, rs.poly);
+        ctx.strokeStyle = Z.scharf ? P["--c-akzent"] : P["--lw-wahl"];
+        ctx.lineWidth = (Z.scharf ? 7 : 4) / Math.max(sk(), .4) * sk();
+        if (!Z.scharf) ctx.setLineDash([18, 12]);
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+
+    /* Nebel */
+    if (Z.nebelAn) { ctx.drawImage(maske, 0, 0, maske.width, maske.height, 0, 0, CW, CH); }
+
+    /* Marken */
+    welt(ctx);
+    var gezeigt = 0;
+    MARKEN.forEach(function (m) {
+      var rr = raumAn(m.x, m.y), rid = rr ? rr.id : null;
+      if (Z.nebelAn && Z.sicht !== "kaya" && sichtbar.indexOf(rid) === -1) return;
+      gezeigt++;
+      var rad = 26, hy = m.y - m.h * 13, sel = Z.wahlMarke === m.id;
+
+      if (m.h !== 0) {
+        ctx.globalAlpha = .55; ctx.lineWidth = 3;
+        ctx.strokeStyle = m.h > 0 ? P["--c-ok"] : P["--c-rot"];
+        ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x, hy); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.globalAlpha = .3; ctx.fillStyle = "#000";
+      ctx.beginPath(); ctx.ellipse(m.x + 3, m.y + 8, rad*.92, rad*.4, 0, 0, 6.284); ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.beginPath(); ctx.arc(m.x, hy, rad, 0, 6.284);
+      ctx.fillStyle = P["--lw-marke"]; ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = m.art === "gegner" ? P["--c-rot"]
+                      : m.frei ? P["--c-aussen"]
+                      : m.figur === "baldur" ? P["--c-akzent"] : P["--c-leitung"];
+      if (m.frei) ctx.setLineDash([8, 6]);
+      ctx.stroke(); ctx.setLineDash([]);
+
+      if (m.tp < m.tpmax) {
+        ctx.beginPath();
+        ctx.arc(m.x, hy, rad + 4, -Math.PI/2, -Math.PI/2 + 6.284 * Math.max(m.tp,0) / m.tpmax);
+        ctx.strokeStyle = m.tp <= 0 ? P["--c-rot"] : P["--c-ok"]; ctx.lineWidth = 4; ctx.stroke();
+      }
+      if (sel) {
+        ctx.beginPath(); ctx.arc(m.x, hy, rad + 9, 0, 6.284);
+        ctx.strokeStyle = P["--lw-wahl"]; ctx.lineWidth = 3; ctx.setLineDash([6,5]); ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.fillStyle = P["--lw-marke-t"];
+      ctx.font = "700 21px " + (P["--f-ui"] || "sans-serif");
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(m.kurz.slice(0,2), m.x, hy + 1);
+      ctx.font = "600 15px " + (P["--f-ui"] || "sans-serif");
+      ctx.fillStyle = P["--lw-schrift"]; ctx.textBaseline = "top";
+      ctx.fillText(m.kurz + (m.h ? "  " + (m.h > 0 ? "+" : "−") + Math.abs(m.h).toFixed(1).replace(".", ",") + " m" : ""),
+                   m.x, hy + rad + 7);
+    });
+
+    /* Raumnamen */
+    ctx.font = "600 19px " + (P["--f-ui"] || "sans-serif");
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    RAEUME.forEach(function (rr) {
+      if (Z.nebelAn && Z.sicht !== "kaya" && sichtbar.indexOf(rr.id) === -1) return;
+      var cx = 0, cy = 0;
+      rr.poly.forEach(function (p) { cx += p[0]; cy += p[1]; });
+      cx /= rr.poly.length; cy /= rr.poly.length;
+      ctx.fillStyle = P["--lw-schrift"]; ctx.globalAlpha = .72;
+      ctx.fillText(rr.name.toUpperCase(), cx, cy - 128);
+      ctx.globalAlpha = 1;
+    });
+    ctx.setTransform(1,0,0,1,0,0);
+
+    bildMs = bildMs * 0.86 + (performance.now() - t0) * 0.14;
+    $("#m-bild").textContent = bildMs.toFixed(1).replace(".", ",");
+    $("#m-nebel").textContent = nebelMs.toFixed(1).replace(".", ",");
+    $("#m-offenb").textContent = String(offenbarungenGezaehlt);
+    $("#m-marken").textContent = String(gezeigt);
+    $("#m-zellen").textContent = Z.raster === "ohne" ? "—"
+      : Z.raster === "quadrat" ? "26 × 16" : "≈ 470 Hex";
+  }
+
+  function schleife(t) { zeichnen(t); window.requestAnimationFrame(schleife); }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     E · EINGABE — Maus, Zeiger, Tastatur. Beide Wege senden denselben Befehl.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  var zieht = null, schiebt = null;
+
+  function markeAn(wx, wy) {
+    for (var i = MARKEN.length-1; i >= 0; i--) {
+      var m = MARKEN[i];
+      if (Z.nebelAn && Z.sicht !== "kaya") {
+        var rr = raumAn(m.x, m.y);
+        if (!rr || offenbarteRaeume(Z.sicht).indexOf(rr.id) === -1) continue;
+      }
+      var hy = m.y - m.h * 13;
+      if ((wx-m.x)*(wx-m.x) + (wy-hy)*(wy-hy) <= 30*30) return m;
+    }
+    return null;
+  }
+
+  cv.addEventListener("pointerdown", function (ev) {
+    cv.setPointerCapture(ev.pointerId);
+    var r = cv.getBoundingClientRect();
+    var w = nachWelt(ev.clientX - r.left, ev.clientY - r.top);
+    var m = markeAn(w[0], w[1]);
+    if (m) {
+      zieht = { m:m, dx:w[0]-m.x, dy:w[1]-m.y, von:{x:m.x, y:m.y} };
+      wahlMarke(m.id, false);
+    } else {
+      var rm = raumAn(w[0], w[1]);
+      if (rm) wahlRaum(rm.id);
+      schiebt = { x:ev.clientX, y:ev.clientY, kx:kam.x, ky:kam.y };
+    }
+  });
+  cv.addEventListener("pointermove", function (ev) {
+    var r = cv.getBoundingClientRect();
+    if (zieht) {
+      var w = nachWelt(ev.clientX - r.left, ev.clientY - r.top);
+      var p = fangen(w[0] - zieht.dx, w[1] - zieht.dy);
+      zieht.m.x = Math.max(20, Math.min(SZENE.w-20, p[0]));
+      zieht.m.y = Math.max(20, Math.min(SZENE.h-20, p[1]));
+      tafelZeichnen(); linseZeichnen();
+    } else if (schiebt) {
+      kam.x = schiebt.kx + (ev.clientX - schiebt.x);
+      kam.y = schiebt.ky + (ev.clientY - schiebt.y);
+      basisSchmutzig = true; nebelSchmutzig = true;
+    }
+  });
+  function losLassen() {
+    if (zieht) {
+      var m = zieht.m, von = zieht.von;
+      if (von.x !== m.x || von.y !== m.y) {
+        merken("Marke bewegt: " + m.name + " → " + zellName(m.x, m.y), function () {
+          m.x = von.x; m.y = von.y; tafelZeichnen(); linseZeichnen();
+        });
+        sagen(m.name + " steht auf " + zellName(m.x, m.y) + ".");
+      }
+    }
+    zieht = null; schiebt = null;
+  }
+  cv.addEventListener("pointerup", losLassen);
+  cv.addEventListener("pointercancel", losLassen);
+  cv.addEventListener("wheel", function (ev) {
+    ev.preventDefault();
+    var alt = kam.z;
+    kam.z = Math.max(0.55, Math.min(3.2, kam.z * (ev.deltaY < 0 ? 1.12 : 0.893)));
+    if (kam.z !== alt) { basisSchmutzig = true; nebelSchmutzig = true; }
+  }, { passive:false });
+
+  cv.addEventListener("keydown", function (ev) {
+    var m = markeById(Z.wahlMarke); if (!m) return;
+    var s = SZENE.zelle * (Z.fang === "halb" ? .5 : 1), t = false, von = { x:m.x, y:m.y, h:m.h };
+    if (ev.key === "ArrowLeft")  { m.x -= s; t = true; }
+    if (ev.key === "ArrowRight") { m.x += s; t = true; }
+    if (ev.key === "ArrowUp")    { m.y -= s; t = true; }
+    if (ev.key === "ArrowDown")  { m.y += s; t = true; }
+    if (ev.key === "+" || ev.key === "=") { m.h = Math.min(12, m.h + 1.5); t = true; }
+    if (ev.key === "-" || ev.key === "_") { m.h = Math.max(-9, m.h - 1.5); t = true; }
+    if (!t) return;
+    ev.preventDefault();
+    var p = fangen(m.x, m.y); m.x = p[0]; m.y = p[1];
+    merken("Marke bewegt: " + m.name, function () { m.x = von.x; m.y = von.y; m.h = von.h; tafelZeichnen(); linseZeichnen(); });
+    tafelZeichnen(); linseZeichnen();
+    sagen(m.name + " · " + zellName(m.x, m.y) + " · Höhe "
+      + (m.h > 0 ? "+" : "") + m.h.toFixed(1).replace(".", ",") + " Meter.");
+  });
+
+  function wahlMarke(id, ansagen) {
+    Z.wahlMarke = id;
+    var m = markeById(id);
+    if (m) {
+      var rr = raumAn(m.x, m.y);
+      if (rr) Z.wahlRaum = rr.id;
+      $("#m-wahl").textContent = m.kurz + " · " + zellName(m.x, m.y);
+      if (ansagen !== false) sagen(m.name + " gewählt, " + zellName(m.x, m.y) + ".");
+    }
+    tafelZeichnen(); linseZeichnen();
+  }
+  function wahlRaum(id) {
+    Z.wahlRaum = id;
+    if (!Z.scharf) $("#m-wahl").textContent = (raumById(id) || {}).name || "—";
+    tafelZeichnen(); linseZeichnen();
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     F · DIE TAFEL — das Umriss-Rezept. Gleichrangig, nicht Rückfall.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  function tafelZeichnen() {
+    var wrap = $("#tafel"), sicht = Z.sicht;
+    var offen = offenbarteRaeume(sicht);
+    var html = "";
+    RAEUME.forEach(function (r) {
+      var sichtbar = sicht === "kaya" || offen.indexOf(r.id) !== -1;
+      if (!sichtbar) return;
+      var marken = MARKEN.filter(function (m) { var rr = raumAn(m.x, m.y); return rr && rr.id === r.id; });
+      var offenFuer = OFFENBARUNGEN.filter(function (o) { return o.raum === r.id; });
+      var pz = r.passagen.filter(function (pid) { var p = passageById(pid); return p && haelt(p, sicht); }).length;
+      html += '<section class="tafel-raum" data-raum="' + r.id + '" data-offen="'
+        + (offenFuer.length ? "ja" : "nein") + '"'
+        + (Z.wahlRaum === r.id ? ' aria-current="true"' : '') + '>'
+        + '<button type="button" class="zeile" data-raum="' + r.id + '">'
+        + '<span class="name">' + esc(r.name) + '</span>'
+        + (offenFuer.length
+            ? '<span class="chip">' + offenFuer.length + ' offenbart</span>'
+            : '<span class="chip rot">nicht offenbart</span>')
+        + '<span class="chip blau num">' + pz + ' P</span>'
+        + '</button>';
+      if (marken.length) {
+        html += '<div class="tafel-marken">';
+        marken.forEach(function (m) {
+          html += '<button type="button" class="tafel-marke" data-marke="' + m.id + '"'
+            + (Z.wahlMarke === m.id ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>'
+            + '<span class="punkt" style="border-color:' + (m.art === "gegner" ? "var(--c-rot)"
+                : m.frei ? "var(--c-aussen)" : m.figur === "baldur" ? "var(--c-akzent)" : "var(--c-leitung)") + '"></span>'
+            + '<span>' + esc(m.name) + (m.frei ? ' <span class="chip frei">Freistelle</span>' : '') + '</span>'
+            + '<span class="pos num">' + zellName(m.x, m.y)
+            + (m.h ? ' · ' + (m.h > 0 ? "+" : "−") + Math.abs(m.h).toFixed(1).replace(".", ",") + " m" : '')
+            + ' · ' + Math.max(m.tp,0) + '/' + m.tpmax + '</span>'
+            + '</button>';
+        });
+        html += '</div>';
+      } else {
+        html += '<p class="tafel-leer">keine Marke</p>';
+      }
+      html += '</section>';
+    });
+    if (sicht !== "kaya") {
+      var fehlt = RAEUME.length - offen.length;
+      if (fehlt > 0) html += '<p class="notiz warn">' + fehlt + ' Räume stehen nicht in dieser Antwort. '
+        + 'Sie sind nicht ausgeblendet — sie sind <b>nicht in den Daten</b>.</p>';
+    }
+    wrap.innerHTML = html;
+
+    $$(".tafel-raum .zeile", wrap).forEach(function (b) {
+      b.addEventListener("click", function () { wahlRaum(b.getAttribute("data-raum")); });
+    });
+    $$(".tafel-marke", wrap).forEach(function (b) {
+      b.addEventListener("click", function () { wahlMarke(b.getAttribute("data-marke")); });
+    });
+
+    /* Buchzahlen */
+    var bp = buchPassagen(sicht);
+    var ez = etikettZahl(sicht);
+    $("#buchzahlen").innerHTML =
+        zeile("Passagen im Buch", bp.length)
+      + zeile("davon Feldzeilen", bp.filter(function (p) { return p.typ === "feld"; }).length)
+      + zeile("davon Prosa", bp.filter(function (p) { return p.typ === "prosa"; }).length)
+      + zeile("#hochelfenrat", ez)
+      + zeile("Erfahrungsgrad", "+" + erfahrungsgrad(ez))
+      + zeile("Offenbarungen", sicht === "kaya" ? OFFENBARUNGEN.length
+          : OFFENBARUNGEN.filter(function (o) { return o.figur === sicht; }).length);
+
+    /* Würfelkarte */
+    var wer = sicht === "kaya" ? "olav" : sicht;
+    var n = etikettZahl(wer);
+    $("#wk-wer").textContent = LESER[wer].name;
+    $("#wk-n").textContent = String(n);
+    $("#wk-mod").textContent = "+" + erfahrungsgrad(n);
+  }
+  function zeile(l, w) {
+    return '<div class="pruef-zeile"><span class="l">' + esc(l) + '</span><span class="w num">' + esc(w) + '</span></div>';
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     G · DIE LINSE — fünf echte Ansichten, eine ehrlich abgeschaltete.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  var LINSE_TITEL = {
+    tisch:["Auswahl","Tisch · der Riegel der Freigabe"],
+    story:["Der Eintrag","Story · das Archiv"],
+    besetzung:["Die Mandatstafel","Besetzung · die Zeugen"],
+    regal:["Der Schlüsselstapel","Regal · Karte 1 von 113"],
+    sitzung:["Die Woche","Sitzung · die Verlustliste"]
+  };
+
+  var WORT = /[0-9A-Za-zÄÖÜäöüß]/;
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  var ALLE_WOERTER = ROT_WOERTER.concat(BLAU_WOERTER)
+    .sort(function (a, b) { return b.length - a.length; });
+  var WORT_RE = new RegExp("(" + ALLE_WOERTER.map(escRe).join("|") + ")", "g");
+
+  /* Ein einziger Durchlauf über den bereits maskierten Text — keine
+     Ersetzung in einer Ersetzung, kein Lookbehind (Safari < 16.4). */
+  function verlinke(text) {
+    var s = esc(text);
+    return s.replace(WORT_RE, function (m, g, off) {
+      if (WORT.test(s.charAt(off - 1) || "") || WORT.test(s.charAt(off + m.length) || "")) return m;
+      var offen = (m === "Andarisch" && Z.ratifiziert["v_0441"])
+               || (m === "Blattheim" && Z.ratifiziert["v_0483"]);
+      if (BLAU_WOERTER.indexOf(m) !== -1) return '<span class="eintrag">' + m + '</span>';
+      if (offen) return '<span class="eintrag frisch" title="Eintrag seit heute Abend">' + m + '</span>';
+      return '<span class="leer" title="kein Eintrag — ' + m + '">' + m + '</span>';
+    });
+  }
+
+  function linseZeichnen() {
+    var k = $("#linse-koerper"), t = LINSE_TITEL[Z.linse] || ["",""];
+    $("#linse-titel").textContent = t[0];
+    $("#linse-unter").textContent = t[1];
+    if (Z.linse === "tisch")     k.innerHTML = ansichtTisch();
+    else if (Z.linse === "story") k.innerHTML = ansichtStory();
+    else if (Z.linse === "besetzung") k.innerHTML = ansichtBesetzung();
+    else if (Z.linse === "regal") k.innerHTML = ansichtRegal();
+    else k.innerHTML = ansichtSitzung();
+    verdrahten(k);
+  }
+
+  /* ── Tisch: die Auswahl und DER RIEGEL ───────────────────────────────── */
+  function ansichtTisch() {
+    var r = raumById(Z.wahlRaum), m = markeById(Z.wahlMarke), h = "";
+    if (m) {
+      h += '<div class="kasten"><h3>' + esc(m.name) + '</h3>'
+        + '<p style="font-size:var(--fs-mikro);color:var(--c-tinte-3)">' + esc(m.quelle) + '</p>'
+        + '<div class="pruef">'
+        + zeile("Feld", zellName(m.x, m.y))
+        + zeile("Höhe", (m.h > 0 ? "+" : m.h < 0 ? "−" : "") + Math.abs(m.h).toFixed(1).replace(".", ",") + " m")
+        + zeile("Trefferpunkte", Math.max(m.tp,0) + " / " + m.tpmax)
+        + zeile("Zugwert", m.ini)
+        + '</div>'
+        + (m.frei ? '<p class="notiz warn"><b>Freistelle.</b> ' + esc(LESER[m.figur].spieler)
+            + ' ist nicht am Tisch. Die Figur steht, die Hand fehlt — und jede Freigabe schreibt ihr <b>nichts</b> gut.</p>' : '')
+        + (m.tp <= 0 ? '<p class="notiz warn"><b>defeat_pending.</b> Nichts ist entschieden, '
+            + 'bis die Spielleitung es bestätigt. <span class="mono">Invariante 4</span></p>'
+            + '<div style="display:flex;gap:.4rem;flex-wrap:wrap">'
+            + '<button type="button" class="knopf stark" data-tat="fall-ja">Niederlage bestätigen</button>'
+            + '<button type="button" class="knopf" data-tat="fall-nein">steht noch</button></div>' : '')
+        + '<button type="button" class="knopf" data-tat="treffer">Treffer 1d8 auf diese Marke</button>'
+        + '</div>';
+    }
+    if (r) {
+      var diff = differential(r.id);
+      var neu = diff.filter(function (d) { return d.neu > 0 && !d.abwesend; });
+      h += '<div class="kasten ' + (Z.scharf ? "tuer" : "") + '">'
+        + '<h3>' + esc(r.name) + (Z.scharf ? ' — freigeben?' : '') + '</h3>'
+        + '<p style="font-size:var(--fs-mikro);color:var(--c-tinte-3)">'
+        + r.passagen.length + ' Passagen hängen an diesem Ort · '
+        + (raumOffenFuerIrgendwen(r.id) ? "teilweise offenbart" : "niemandem offenbart") + '</p>';
+      if (Z.scharf) {
+        h += '<p class="kaps">Was ein Tastendruck wem beibringt</p>';
+        diff.forEach(function (d) {
+          h += '<div class="diff-zeile" data-null="' + (d.neu === 0 ? 1 : 0) + '" data-frei="' + (d.abwesend ? 1 : 0) + '">'
+            + '<span class="avatar" style="border-color:' + (d.abwesend ? "var(--c-aussen)" : "var(--c-leitung)")
+            + ';background:var(--c-flaeche-3)">' + esc((LESER[d.figur].kuerzel || "?")) + '</span>'
+            + '<span class="wer"><b>' + esc(d.name) + (d.abwesend ? ' ⚠' : '') + '</b><small>'
+            + esc(d.spieler) + ' · ' + esc(d.grund) + '</small></span>'
+            + '<span class="wert">' + (d.neu > 0 ? "+" + d.neu + " Passagen" : "+0") + '</span>'
+            + '</div>';
+        });
+        h += '<p class="notiz gm">Ein Druck · <b>' + neu.length + ' Offenbarungen</b> geprägt · '
+          + '4 Namen genannt · <b>1 Prüfeintrag</b>. Der Nebel hebt sich für genau die Figuren, '
+          + 'für die er sich heben soll — und die Zeile <i>nichts mitgebracht</i> ist keine Zierde, '
+          + 'sondern die ehrliche Lücke.</p>'
+          + '<div style="display:flex;gap:.4rem;flex-wrap:wrap">'
+          + '<button type="button" class="knopf stark" data-tat="freigeben"><span class="taste">F</span> freigeben</button>'
+          + '<button type="button" class="knopf" data-tat="abbrechen"><span class="taste">Esc</span> abbrechen</button></div>';
+      } else {
+        h += '<button type="button" class="knopf" data-tat="scharf"><span class="taste">F</span> Freigabe schärfen</button>';
+      }
+      h += '</div>';
+      h += '<div class="kasten"><h3>Passagen an diesem Ort</h3>' + passagenListe(r.passagen) + '</div>';
+    }
+    h += selbstpruefung();
+    return h;
+  }
+
+  function passagenListe(ids) {
+    var s = "", n = 0;
+    ids.forEach(function (pid) {
+      var p = passageById(pid); if (!p) return;
+      if (!haelt(p, Z.sicht)) return;
+      n++;
+      s += '<div style="border-top:1px solid var(--c-linie);padding-top:.4rem">'
+        + '<p class="kaps">' + esc(p.art) + (p.typ === "feld" ? ' · Feldzeile „' + esc(p.feld) + '“' : ' · Prosa') + '</p>'
+        + '<p class="prosa" style="font-size:var(--fs-klein)">' + verlinke(p.text) + '</p></div>';
+    });
+    if (!n) s = '<p class="notiz">Dieser Leser hält hier nichts. <b>Kein Nenner:</b> es steht keine Zahl da, '
+      + 'die verrät, wie viel fehlt.</p>';
+    return s;
+  }
+
+  /* ── Story: drei echte Artikel, drei harte Formen ─────────────────────── */
+  function ansichtStory() {
+    var name = Z.artikel, a = ARTIKEL[name], h = "";
+    h += '<div class="lw-satz" role="group" aria-label="Eintrag wählen" style="flex-wrap:wrap">';
+    Object.keys(ARTIKEL).forEach(function (n) {
+      h += '<button type="button" data-art="' + esc(n) + '" aria-pressed="' + (n === name) + '">' + esc(n) + '</button>';
+    });
+    h += '</div>';
+    h += '<div class="art-kopf"><h3>' + esc(name) + '</h3><div class="art-meta">'
+      + '<span class="chip">' + (a.vorlage ? "Vorlage:" + esc(a.vorlage) : "keine Vorlage") + '</span>'
+      + '<span class="chip num">' + a.bytes + ' B</span>'
+      + '<span class="chip num">' + a.felder + ' Feldzeilen</span>'
+      + '<span class="chip num' + (a.prosa === 0 ? ' rot' : '') + '">' + a.prosa + ' Prosa-Absätze</span>'
+      + '</div><p class="notiz warn">' + esc(a.pruef) + '</p></div>';
+
+    if (name === "Hochelfenrat") {
+      h += '<div class="infobox"><span class="ib-kopf">Die geteilte Infobox — jede Zeile eine Passage</span>';
+      a.felder_l.forEach(function (f) {
+        var p = passageById(f[1]);
+        var halten = p && haelt(p, Z.sicht);
+        if (!halten) return;
+        h += '<dl class="ib-zeile" data-neu="' + (Z.ratifiziert["v_0441"] && f[0] === "sprache" ? 1 : 0) + '">'
+          + '<dt>' + esc(f[0]) + '</dt><dd>' + verlinke(p.text) + '</dd></dl>';
+      });
+      h += '</div>';
+      var sicht = Z.sicht;
+      a.prosa_l.forEach(function (pid) {
+        var p = passageById(pid); if (!p) return;
+        if (Z.zurueckgezogen[pid]) {
+          if (sicht !== "kaya") return;
+          h += '<p class="prosa" style="opacity:.55"><s>' + verlinke(p.text) + '</s></p>'
+            + '<p class="notiz warn"><b>zurückgezogen.</b> Lesbar, adressierbar, dauerhaft markiert — '
+            + 'außerhalb des Kanons, außerhalb jeder Ausgabe, außerhalb jeder Ableitung.</p>';
+          return;
+        }
+        if (!haelt(p, sicht)) return;
+        h += '<p class="prosa">' + verlinke(p.text) + '</p>';
+        if (p.frei) h += '<p class="notiz gm">✔ freigegeben <b>' + esc(p.frei.wer) + '</b> ' + esc(p.frei.zeit)
+          + ' · unter Mandat <span class="mono">' + esc(p.frei.mandat) + '</span> · '
+          + '<b>ausserhalb</b> — lehrt keiner Figur etwas.</p>';
+      });
+      if (Z.ratifiziert["v_0441"]) {
+        h += '<div class="beleg"><p class="kaps">Neu heute Abend · Eintrag Andarisch</p>'
+          + belegZeilen(karteById("v_0441")) + '</div>';
+      }
+    } else if (name === "Gotteserhöhung") {
+      h += '<p class="prosa" style="font-size:var(--fs-h1);font-family:var(--f-buch)">' + esc(a.voll) + '</p>'
+        + '<p class="notiz warn">Der ganze Artikel. Drei Bytes, ein abgebrochener Satz, '
+        + '<b>8 eingehende Links</b> — und <b>kein roter Link</b>, also für den Schlüsselstapel unsichtbar. '
+        + 'Fandom kennt keinen Zustand zwischen „Artikel“ und „nichts“; wir kennen einen (eine Passage) — '
+        + '<b>aber der Stapel rankt ihn nicht.</b> §11.3, ungelöst.</p>';
+    } else {
+      h += '<div class="infobox"><span class="ib-kopf">18 Feldzeilen, kein Fließtext</span>';
+      a.roh.forEach(function (f) {
+        h += '<dl class="ib-zeile"><dt>' + esc(f[0]) + '</dt><dd>' + verlinke(f[1]) + '</dd></dl>';
+      });
+      h += '</div><p class="notiz">Kein Lead, keine Überschrift, keine Kategorie — und trotzdem eine '
+        + 'vollständige Seite. <b>Der letzte Kaiser des Reiches</b> ist der Artikel, an dem ein Renderer '
+        + 'mit Lead-Voraussetzung zerbricht.</p>';
+    }
+    h += '<p class="notiz"><b>Quelle:</b> Eron Wiki (eron.fandom.com/de), CC BY-SA 3.0, '
+      + 'Kaya und Kollegen · Ernte 2026-07-27 · Bilder werden aus diesem Fixture nicht eingebettet '
+      + '(0 von 41 Dateien tragen ein Lizenzfeld).</p>';
+    return h;
+  }
+
+  /* ── Besetzung: die Mandatstafel ─────────────────────────────────────── */
+  function ansichtBesetzung() {
+    var h = '<p class="notiz">Es gibt in diesem Produkt <b>keine geheime Autorität</b>. '
+      + 'Jedes Mandat steht hier, für den ganzen Tisch.</p>';
+    h += '<div class="kasten' + (Z.mandatWiderrufen ? '' : ' leitung') + '">'
+      + '<h3>Ilva · Zweitleitung</h3>'
+      + '<div class="pruef">'
+      + zeile("Geltung", "#hochelfenrat")
+      + zeile("Erteilt von", "Kaya · Mi 09:02")
+      + zeile("Verfall", "So, Sitzung 16")
+      + zeile("Kappung", "5 / Woche")
+      + zeile("Gebunden an", "user_id — nie character_id")
+      + zeile("Freigegeben", Z.mandatWiderrufen ? "0 (widerrufen)" : "1")
+      + '</div>'
+      + (Z.mandatWiderrufen
+        ? '<p class="notiz warn"><b>Widerrufen.</b> Rückwirkend und verlustfrei: die freigegebene Passage '
+          + 'ist <span class="mono">zurückgezogen</span>, für immer lesbar, für immer markiert, aus dem '
+          + 'Kanon heraus. <b>Deshalb ist Delegieren billig, wenn man sich irrt.</b></p>'
+          + '<button type="button" class="knopf" data-tat="mandat-zurueck">Widerruf rückgängig</button>'
+        : '<p class="notiz gm">Ilva spielt <b>Baldur</b>. Alles, was ihr Mandat sie lehrt, ist '
+          + '<span class="mono">ausserhalb</span>: null Erfahrungsgrad, null Würfelbonus, nie eine Quelle. '
+          + 'Und über <b>Blattheim</b> ruht ihr Mandat, weil ihre eigene Figur dort ein offenes Vorhaben hat.</p>'
+          + '<div style="display:flex;gap:.4rem;flex-wrap:wrap">'
+          + '<button type="button" class="knopf" data-tat="mandatsbeweis">Mandatsbeweis prüfen (S3)</button>'
+          + '<button type="button" class="knopf gefahr" data-tat="widerruf">Widerrufen</button></div>')
+      + '<div class="pruef" id="mb-ergebnis"></div>'
+      + '</div>';
+
+    h += '<div class="kasten"><h3>Am Tisch</h3>';
+    ["olav","baldur","irme","bodin"].forEach(function (f) {
+      var L = LESER[f];
+      h += '<div class="diff-zeile" data-frei="' + (L.abwesend ? 1 : 0) + '">'
+        + '<span class="avatar" style="border-color:' + (L.abwesend ? "var(--c-aussen)" : "var(--c-leitung)") + '">'
+        + esc(L.kuerzel) + '</span>'
+        + '<span class="wer"><b>' + esc(L.name) + '</b><small>' + esc(L.spieler) + ' · ' + esc(L.rolle) + '</small></span>'
+        + '<span class="wert">' + (L.abwesend ? '<span class="chip frei">nicht am Tisch</span>'
+            : L.mandat ? '<span class="chip">Mandat</span>' : buchPassagen(f).length + ' P') + '</span></div>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  /* ── Regal: der Schlüsselstapel, Karte eins ist eine Fusion ───────────── */
+  function ansichtRegal() {
+    var summe = STAPEL.quellen.reduce(function (a, b) { return a + b.n; }, 0);
+    var h = '<div class="kasten tuer"><h3>' + (Z.zusammengelegt ? "Eine Tür, ein Land." : "Vier Türen, ein Land.") + '</h3>';
+    if (!Z.zusammengelegt) {
+      STAPEL.quellen.forEach(function (q) {
+        h += '<div class="diff-zeile"><span class="avatar" style="border-color:var(--c-rot)">✕</span>'
+          + '<span class="wer"><b style="color:var(--c-rot)">' + esc(q.t) + '</b>'
+          + '<small>' + q.n + ' eingehende Kante' + (q.n === 1 ? '' : 'n') + '</small></span>'
+          + '<span class="wert num">' + q.n + '</span></div>';
+      });
+      h += '<p class="notiz"><b>' + summe + ' Links, eine Seite.</b> Der Tippfehler ist unsichtbar, '
+        + 'weil er verrohrt ist: 26 % aller Rotlink-Vorkommen im Korpus zeigen dem Leser ein sauberes '
+        + 'Wort und verschweigen das Ziel.</p>'
+        + '<button type="button" class="knopf stark" data-tat="zusammenlegen"><span class="taste">Z</span> zusammenlegen</button>';
+    } else {
+      h += '<div class="diff-zeile"><span class="avatar" style="border-color:var(--c-tuer)">⌾</span>'
+        + '<span class="wer"><b>' + esc(STAPEL.ziel) + '</b><small>3 Alias-Zeilen geschrieben · auditiert · umkehrbar</small></span>'
+        + '<span class="wert num">' + summe + '</span></div>'
+        + '<p class="notiz gm"><b>689 → 686 Ziele.</b> Und die ehrliche Gegenrechnung, bevor sie jemand '
+        + 'anders aufmacht: alle acht verifizierten Cluster zusammen entfernen ≈30 von 689 Zielen — '
+        + '<b>4,4 %. Das ist keine Ökonomiereparatur.</b> Der Wert liegt darin, dass ein Tippfehler-Tor '
+        + 'bis eben von einer echten Weltlücke ununterscheidbar war.</p>'
+        + '<button type="button" class="knopf" data-tat="zusammen-zurueck">rückgängig</button>';
+    }
+    h += '</div>';
+    h += '<div class="kasten"><h3>Der Rest des Stapels</h3><div class="pruef">'
+      + zeile("Karten insgesamt", 113)
+      + zeile("noch nicht gesichtet", Z.zusammengelegt ? STAPEL.rest : 113)
+      + zeile("Ziele mit ≥ 3 eingehenden", 113)
+      + zeile("Ziele mit genau 1 (Tier Notiz)", "472 — und dafür hat dieses Produkt nichts")
+      + '</div><p class="notiz warn"><b>69 % von allem, was fehlt, wird genau einmal gewünscht.</b> '
+      + 'Der Stapel rankt nach Nachfrage; das ist Arithmetik ohne KI — und es ist auch seine Decke.</p></div>';
+    return h;
+  }
+
+  /* ── Sitzung: die Verlustliste ───────────────────────────────────────── */
+  function ansichtSitzung() {
+    return '<div class="kasten"><h3>Die Verlustliste</h3>'
+      + '<p style="font-size:var(--fs-mikro);color:var(--c-tinte-3)">Bildschirm eins der Übernahme. '
+      + 'Kein Erfolgsbanner — eine Liste der Verluste.</p><div class="pruef">'
+      + zeile("Einträge", "73 + 1 Weiterleitung")
+      + zeile("Passagen", "1.100")
+      + zeile("Feldzeilen", 543)
+      + zeile("Absätze", 497)
+      + zeile("nicht übernommen · Vorlagen", 137)
+      + zeile("nicht übernommen · Module", 22)
+      + zeile("Dateien ohne feststellbare Lizenz", "31 von 41")
+      + zeile("Textbewahrung", "97,2 %")
+      + '</div><p class="notiz warn">RB-12 §2.6 zählt <b>1.100</b> Passagen, WELT.md §3.2 zählt <b>1.075</b> '
+      + 'und korrigiert die Prosa-Absätze von 216 auf 492. <b>Die Abweichung ist offen</b> und wird hier '
+      + 'gezeigt statt gemittelt.</p></div>'
+      + '<div class="kasten"><h3>Die Saatbilanz</h3><div class="pruef">'
+      + zeile("übernommen", "1.100 Absätze")
+      + zeile("am Tisch entstanden", 31)
+      + zeile("zwischen den Tischen", 6)
+      + zeile("von anderen Händen", Z.ratifiziert["v_0441"] ? 10 : 9)
+      + '</div><p class="notiz">Die vierte Achse ist neu in dieser Runde — und sie ist die einzige, '
+      + 'die einen zweiten Namen trägt.</p></div>'
+      + '<div class="kasten"><h3>Der Korpus, gemessen</h3><div class="pruef">'
+      + zeile("Artikel", KORPUS.artikel)
+      + zeile("blaue Kanten", KORPUS.blau)
+      + zeile("rote Kanten", KORPUS.rot)
+      + zeile("distinkte fehlende Ziele", KORPUS.ziele)
+      + zeile("Rotanteil", (KORPUS.anteil * 100).toFixed(1).replace(".", ",") + " %")
+      + zeile("Türen je geschriebenem Artikel", "9,3")
+      + zeile("Artikel mit Kategorie", "3 von 74")
+      + '</div></div>';
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     H · DIE SELBSTPRÜFUNG — jede Zahl wird auf dieser Seite ausgerechnet.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* Nutzlast eines Lesers — genau das, was der Server ihm schickt. */
+  function nutzlast(wer) {
+    return JSON.stringify(buchPassagen(wer).map(function (p) {
+      return [p.id, p.art, p.feld || "", p.text];
+    }).concat(offenbarteRaeume(wer).sort().map(function (r) { return ["of", r]; })));
+  }
+  var NUTZLAST_VORHER = {};
+  ["olav","baldur","irme","bodin"].forEach(function (f) { NUTZLAST_VORHER[f] = hash(nutzlast(f)); });
+
+  function tuerenFuer(karte, wer) {
+    if (!karte.artikel || !karte.artikel.length) return 0;
+    if (wer === "kaya") return karte.artikel.length;
+    var b = BESTAND[wer] || [];
+    return karte.artikel.filter(function (a) { return b.indexOf(a) !== -1; }).length;
+  }
+
+  /* Kontrastprüfung nach WCAG 2.1, live aus den gerechneten Tokens. */
+  function farbe(str) {
+    str = (str || "").trim();
+    var m;
+    if ((m = /^#([0-9a-f]{6})$/i.exec(str))) {
+      var n = parseInt(m[1], 16); return [(n>>16)&255, (n>>8)&255, n&255];
+    }
+    if ((m = /^#([0-9a-f]{3})$/i.exec(str))) {
+      return [parseInt(m[1][0]+m[1][0],16), parseInt(m[1][1]+m[1][1],16), parseInt(m[1][2]+m[1][2],16)];
+    }
+    if ((m = /rgba?\(([^)]+)\)/i.exec(str))) {
+      var t = m[1].split(/[,\s\/]+/); return [+t[0], +t[1], +t[2]];
+    }
+    return [0,0,0];
+  }
+  function lum(c) {
+    var v = c.map(function (x) { x /= 255; return x <= 0.03928 ? x/12.92 : Math.pow((x+0.055)/1.055, 2.4); });
+    return 0.2126*v[0] + 0.7152*v[1] + 0.0722*v[2];
+  }
+  function kontrast(a, b) {
+    var la = lum(farbe(a)), lb = lum(farbe(b));
+    return (Math.max(la,lb) + 0.05) / (Math.min(la,lb) + 0.05);
+  }
+  /* Der schlechteste Fall über alle drei Textflächen, nicht der schmeichelhafteste. */
+  function kontrastPruefen() {
+    var flaechen = ["--c-flaeche","--c-flaeche-2","--c-flaeche-3"].map(tok);
+    var paare = [["--c-tinte","Text"],["--c-tinte-2","Fließtext"],["--c-tinte-3","Mikrotext"],
+                 ["--c-rot","kein Eintrag"],["--c-blau","Eintrag"],["--c-akzent","Akzent"],
+                 ["--c-leitung","nur Leitung"],["--c-aussen","ausserhalb"],["--c-warn","Warnung"]];
+    var min = 99, wo = "";
+    paare.forEach(function (p) {
+      var v = tok(p[0]);
+      flaechen.forEach(function (f) {
+        var k = kontrast(v, f);
+        if (k < min) { min = k; wo = p[1]; }
+      });
+    });
+    $("#m-kontrast").textContent = min.toFixed(2).replace(".", ",");
+    $("#m-kontrast-u").textContent = min >= 4.5 ? " ✓ AA" : min >= 3 ? " ⚠ nur groß" : " ✕";
+    $("#m-kontrast-u").style.color = min >= 4.5 ? "var(--c-ok)" : "var(--c-rot)";
+    return { min:min, wo:wo };
+  }
+
+  function selbstpruefung() {
+    var k = kontrastPruefen();
+    var v = KARTEN[0], nach = {};
+    ["olav","baldur","irme","bodin"].forEach(function (f) { nach[f] = hash(nutzlast(f)); });
+    var lz = Z.lesezeiten.length
+      ? (Z.lesezeiten.slice().sort(function (a,b) { return a-b; })[Math.floor(Z.lesezeiten.length/2)] / 1000)
+      : null;
+    var w = v.wurf, ergebnis = w.w + w.mod, ok = ergebnis >= w.sg;
+
+    var h = '<div class="kasten"><h3>Selbstprüfung — auf dieser Seite gerechnet</h3><div class="pruef">';
+    h += pz("Nachrechnen · Wurf #" + w.nr, w.w + " + " + w.mod + " = " + ergebnis + " gegen SG " + w.sg
+        + (ok ? " · Erfolg" : " · Fehlschlag"), ok);
+    h += pz("Bild (gleitendes Mittel)", bildMs.toFixed(1).replace(".", ",") + " ms", bildMs < 16.7);
+    h += pz("Nebelmaske neu berechnet", nebelMs.toFixed(1).replace(".", ",") + " ms", nebelMs < 16.7);
+    h += pz("Basis neu gebaut", basisMs.toFixed(1).replace(".", ",") + " ms", true);
+    h += pz("kleinster Kontrast (" + k.wo + ")", k.min.toFixed(2).replace(".", ",") + " : 1", k.min >= 4.5);
+    h += pz("Zwillingsbeweis · Irme vorher/nachher",
+        NUTZLAST_VORHER.irme + " / " + nach.irme,
+        NUTZLAST_VORHER.irme === nach.irme);
+    h += pz("Türen geschlossen für diesen Leser",
+        Z.ratifiziert["v_0441"] ? String(tuerenFuer(v, Z.sicht)) : "—",
+        true);
+    if (lz !== null) h += pz("S2 · Median Lesezeit je Karte (" + Z.lesezeiten.length + ")",
+        lz.toFixed(1).replace(".", ",") + " s", lz >= 8);
+    h += '</div><p class="notiz">Der Zwillingsbeweis vergleicht den <b>Hash der Nutzlast</b>, die Irme '
+      + 'bekäme, vor und nach der Ratifikation. Sie hält keinen der 18 Artikel — also darf sich kein '
+      + 'einziges Byte geändert haben. Ändert es sich doch, ist die Sichtprojektion kaputt.</p></div>';
+    return h;
+  }
+  function pz(l, w, ok) {
+    return '<div class="pruef-zeile" data-ok="' + (ok ? 1 : 0) + '"><span class="l">' + esc(l)
+      + '</span><span class="w">' + esc(w) + (ok ? " ✓" : " ✕") + '</span></div>';
+  }
+
+  function belegZeilen(k) {
+    var w = k.wurf, r = k.ratifiziert || { wer:"Kaya", zeit:"Sa 21:47" };
+    var s = '<div class="beleg-zeile"><span>✍</span><span>verfasst</span><b>' + esc(k.verfasser)
+      + (k.figur ? " (" + esc(LESER[k.figur].name) + ")" : "") + '</b><em>' + esc(k.zeit) + '</em></div>'
+      + '<div class="beleg-zeile"><span>✔</span><span>bestätigt</span><b>' + esc(r.wer) + '</b><em>'
+      + esc(r.zeit) + (Z.geaendert[k.id] ? " · 1 Wort geändert" : "")
+      + (r.mandat ? " · unter Mandat " + esc(r.mandat) : "") + '</em></div>';
+    if (w) s += '<div class="beleg-zeile"><span>⚄</span><span>erworben</span><b>Wurf #' + w.nr
+      + ' · Sitzung ' + w.sitzung + '</b><em>1d20+' + w.mod + ' = ' + (w.w + w.mod) + ' gegen SG ' + w.sg + '</em></div>';
+    return s;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     I · DIE SCHLEUSE
+     ══════════════════════════════════════════════════════════════════════ */
+
+  var schirm = null, sperrTimer = null;
+
+  function offeneKarten() {
+    return KARTEN.filter(function (k) {
+      return !Z.ratifiziert[k.id] && !Z.abgelehnt[k.id] && k.stand !== "kanon";
+    });
+  }
+  function schleuseZahl() {
+    $("#schleuse-zahl").textContent = String(offeneKarten().length);
+  }
+
+  function schleuseAuf() {
+    if (Z.schleuseOffen) return;
+    Z.schleuseOffen = true;
+    schirm = document.createElement("div");
+    schirm.className = "schleuse-schirm";
+    schirm.innerHTML = '<section class="schleuse" role="dialog" aria-modal="true" aria-labelledby="sl-t">'
+      + '<header class="schleuse-kopf">'
+      + '<div style="flex:1 1 14rem;min-width:0"><h2 id="sl-t">Die Schleuse</h2>'
+      + '<p class="kaps">nach Artikel geordnet — nie nach Eingang</p></div>'
+      + '<span class="chip gm">Ratifiziert: Kaya</span>'
+      + '<button type="button" class="knopf" data-tat="stapel">Der Stapel</button>'
+      + '<button type="button" class="knopf" data-tat="zu"><span class="taste">Esc</span> schließen</button>'
+      + '</header><div class="schleuse-koerper" id="sl-koerper"></div></section>';
+    app.appendChild(schirm);
+    verdrahten(schirm);
+    naechsteKarte();
+    schleuseZeichnen();
+    window.setTimeout(function () {
+      var f = schirm.querySelector(".karte[aria-current='true'] .knopf");
+      if (f) f.focus();
+    }, 60);
+    sagen("Die Schleuse ist offen. " + offeneKarten().length + " Vormerkungen, nach Artikel geordnet.");
+  }
+  function schleuseZu() {
+    if (!Z.schleuseOffen) return;
+    Z.schleuseOffen = false;
+    if (schirm && schirm.parentNode) schirm.parentNode.removeChild(schirm);
+    schirm = null;
+    if (sperrTimer) { window.clearInterval(sperrTimer); sperrTimer = null; }
+    $("#k-schleuse").focus();
+  }
+
+  function schleuseZeichnen() {
+    var k = $("#sl-koerper", schirm); if (!k) return;
+    var h = "";
+    KARTEN.forEach(function (v, i) {
+      var kanon = Z.ratifiziert[v.id] || v.stand === "kanon";
+      var abgel = Z.abgelehnt[v.id];
+      var zurueck = v.passage && Z.zurueckgezogen[v.passage];
+      var akt = i === Z.karteIndex;
+      var stand = zurueck ? "zurueck" : kanon ? "kanon" : abgel ? "abgelehnt" : "offen";
+      h += '<article class="karte" data-stand="' + stand + '" data-id="' + v.id + '"'
+        + (akt ? ' aria-current="true"' : '') + '>'
+        + '<header class="karte-kopf"><h3>' + esc(v.art) + '</h3>'
+        + '<span class="chip ' + (v.neu ? "" : "blau") + '">' + (v.neu ? "kein Eintrag · Tier Tür" : "Eintrag vorhanden") + '</span>'
+        + (v.kanten ? '<span class="chip rot num">schließt ' + v.kanten + ' rote Kanten in ' + v.artikel.length + ' Artikeln</span>'
+                    : '<span class="chip frei">schließt keine Tür</span>')
+        + '<span style="flex:1 1 1rem"></span>'
+        + '<span class="kaps">' + esc(v.verfasser) + (v.figur ? " · " + esc(LESER[v.figur].name) : "") + ' · ' + esc(v.zeit) + '</span>'
+        + '</header><div class="karte-koerper">';
+
+      if (kanon && !zurueck) {
+        h += '<p class="karte-text">' + textMit(v) + '</p>'
+          + '<div class="beleg"><div class="beleg-zeile" style="grid-template-columns:1fr">'
+          + '<b>' + esc(v.art) + ' · Kanon</b></div>' + belegZeilen(v)
+          + (v.artikel && v.artikel.length ? tuerBlock(v) : "")
+          + '</div>';
+      } else if (zurueck) {
+        h += '<p class="karte-text" style="opacity:.55"><s>' + esc(v.text) + '</s></p>'
+          + '<p class="notiz warn"><b>zurückgezogen</b> durch Widerruf des Mandats — dauerhaft adressierbar, '
+          + 'außerhalb des Kanons.</p>';
+      } else if (abgel) {
+        h += '<p class="karte-text" style="opacity:.6"><s>' + esc(v.text) + '</s></p>'
+          + '<p class="notiz warn">Abgelehnt. Die Vormerkung geht in den <b>Kodex der Verfasserin</b> zurück — '
+          + 'nie in den Kanon. Und die Zeile zurück ist eine soziale Handlung, die dieses Produkt erzeugt '
+          + 'und nicht bezahlen kann. <span class="mono">§11.5</span></p>';
+      } else {
+        h += '<p class="karte-text">' + textMit(v) + '</p>';
+        if (v.wurf) h += '<p class="notiz"><b>Erworben:</b> Wurf #' + v.wurf.nr + ' · ' + esc(v.wurf.probe)
+          + ' · 1d20 = ' + v.wurf.w + ' + ' + v.wurf.mod + ' = ' + (v.wurf.w + v.wurf.mod)
+          + ' gegen SG ' + v.wurf.sg + ' · <span class="mono">' + esc(v.wurf.grund) + '</span></p>';
+        if (v.hinweis) h += '<p class="notiz warn">' + esc(v.hinweis) + '</p>';
+        if (v.sperrgrund) h += '<p class="notiz warn"><b>' + esc(v.sperrgrund) + '</b></p>';
+        if (v.artikel && v.artikel.length) h += tuerBlock(v);
+      }
+      h += '</div>';
+
+      if (!kanon && !abgel && !zurueck) {
+        h += '<footer class="karte-fuss">'
+          + '<button type="button" class="knopf stark sperre" data-tat="rat" data-id="' + v.id + '" disabled>'
+          + '<span class="taste">K</span> als Kanon prägen</button>'
+          + '<button type="button" class="knopf sperre" data-tat="rat-e" data-id="' + v.id + '" disabled>'
+          + '<span class="taste">E</span> mit Änderung prägen</button>'
+          + '<button type="button" class="knopf gefahr" data-tat="ablehnen" data-id="' + v.id + '">'
+          + '<span class="taste">X</span> ablehnen, eine Zeile zurück</button>'
+          + '<span style="flex:1 1 1rem"></span>'
+          + '<span class="kaps" data-rest="' + v.id + '">Taste 1,5 s gesperrt</span>'
+          + '</footer>';
+      }
+      h += '</article>';
+    });
+    k.innerHTML = h;
+    verdrahten(k);
+    sperreStarten();
+  }
+
+  function textMit(v) {
+    if (Z.geaendert[v.id] && v.korrektur) {
+      return esc(v.text).replace(v.korrektur.von,
+        '<del>' + v.korrektur.von + '</del> <ins>' + v.korrektur.zu + '</ins>');
+    }
+    return esc(v.text);
+  }
+  function tuerBlock(v) {
+    var zu = !!Z.ratifiziert[v.id], b = BESTAND[Z.sicht] || [];
+    var s = '<p class="kaps">' + (zu ? "geschlossene" : "offene") + ' Kanten · '
+      + v.artikel.length + ' Artikel wollen diesen Eintrag</p><div class="tuerfeld">';
+    v.artikel.forEach(function (a, i) {
+      s += '<span class="t" data-zu="' + (zu ? 1 : 0) + '" data-mein="'
+        + (b.indexOf(a) !== -1 ? 1 : 0) + '" style="transition-delay:' + (zu ? Math.min(i*34, 640) : 0) + 'ms">'
+        + esc(a) + '</span>';
+    });
+    s += '</div>';
+    if (zu) {
+      var n = tuerenFuer(v, Z.sicht);
+      if (n === 0) {
+        s += '<p class="notiz warn"><b>Für diesen Leser wird die Zeile nicht gerendert.</b> Er hält keinen '
+          + 'der ' + v.artikel.length + ' Artikel — und eine Zahl, die er nicht prüfen kann, ist keine Zahl, '
+          + 'die er bekommt. <span class="mono">Kein Nenner</span></p>';
+      } else {
+        s += '<p class="zaehler"><span class="num">' + n + '</span> <small>Türen geschlossen'
+          + (Z.sicht === "kaya" ? "" : " · in deinem Buch") + '</small></p>';
+      }
+    }
+    return s;
+  }
+
+  function sperreStarten() {
+    if (sperrTimer) window.clearInterval(sperrTimer);
+    Z.kartenStart = performance.now();
+    var k = KARTEN[Z.karteIndex];
+    if (!k || !schirm) return;
+    var knoepfe = $$('.karte[aria-current="true"] .sperre', schirm);
+    var rest = schirm.querySelector('[data-rest="' + k.id + '"]');
+    var t0 = performance.now(), DAUER = 1500;
+    sperrTimer = window.setInterval(function () {
+      var d = performance.now() - t0, f = Math.min(1, d / DAUER);
+      knoepfe.forEach(function (b) { b.style.setProperty("--fort", f); });
+      if (rest) rest.textContent = f < 1
+        ? "Taste gesperrt · " + ((DAUER - d) / 1000).toFixed(1).replace(".", ",") + " s"
+        : "Taste frei — S2 misst mit";
+      if (f >= 1) {
+        knoepfe.forEach(function (b) { b.disabled = false; });
+        window.clearInterval(sperrTimer); sperrTimer = null;
+      }
+    }, 60);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     J · TATEN — jede geht rückwärts, jede schreibt einen Prüfeintrag.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  function merken(was, zurueck) {
+    Z.undo.push({ was:was, zurueck:zurueck });
+    $("#undo-zahl").textContent = String(Z.undo.length);
+  }
+  function rueckgaengig() {
+    var e = Z.undo.pop();
+    if (!e) { sagen("Nichts rückgängig zu machen."); return; }
+    e.zurueck();
+    $("#undo-zahl").textContent = String(Z.undo.length);
+    alles();
+    sagen("Rückgängig: " + e.was);
+  }
+
+  function alles() {
+    nebelSchmutzig = true;
+    tafelZeichnen(); linseZeichnen(); iniZeichnen(); schleuseZahl();
+    if (Z.schleuseOffen) schleuseZeichnen();
+  }
+
+  /* ── Die Freigabe: ein Druck, benannte Namen ──────────────────────────── */
+  function freigeben() {
+    var r = raumById(Z.wahlRaum); if (!r) return;
+    var diff = differential(r.id);
+    var neue = [], zusatz = [];
+    diff.forEach(function (d) {
+      if (d.abwesend || d.hat) return;
+      var of = { id:"of_n" + (OFFENBARUNGEN.length+1), raum:r.id, figur:d.figur, sitzung:15 };
+      OFFENBARUNGEN.push(of); neue.push(of);
+      r.passagen.forEach(function (pid) {
+        var p = passageById(pid);
+        if (p && p.halt.indexOf(d.figur) === -1) { p.halt.push(d.figur); zusatz.push([p, d.figur]); }
+      });
+    });
+    Z.scharf = false;
+    huelle.setAttribute("data-lueftet", "1");
+    window.setTimeout(function () { huelle.removeAttribute("data-lueftet"); }, 1000);
+
+    merken("Freigabe: " + r.name, function () {
+      neue.forEach(function (o) { var i = OFFENBARUNGEN.indexOf(o); if (i >= 0) OFFENBARUNGEN.splice(i,1); });
+      zusatz.forEach(function (z) { var i = z[0].halt.indexOf(z[1]); if (i >= 0) z[0].halt.splice(i,1); });
+    });
+    alles();
+    var n = etikettZahl("olav");
+    sagen(r.name + " freigegeben. " + neue.length + " Offenbarungen geprägt, vier Namen genannt, "
+      + "ein Prüfeintrag. Olavs Erfahrungsgrad steht jetzt auf plus " + erfahrungsgrad(n) + ".");
+  }
+
+  /* ── Die Ratifikation ────────────────────────────────────────────────── */
+  function ratifizieren(id, mitAenderung) {
+    var v = karteById(id); if (!v || Z.ratifiziert[id]) return;
+    Z.lesezeiten.push(performance.now() - Z.kartenStart);
+    Z.ratifiziert[id] = true;
+    if (mitAenderung) Z.geaendert[id] = true;
+
+    var neueP = null;
+    if (v.art === "Hochelfenrat" || v.art === "Bjoldiri" || v.art === "Silberwahnsinn"
+        || v.neu) {
+      neueP = { id:"p_neu_" + id, art:v.art, typ:"prosa", raum:null,
+        text:(mitAenderung && v.korrektur) ? v.text.replace(v.korrektur.von, v.korrektur.zu) : v.text,
+        halt:["kaya", v.figur].filter(Boolean), quelle:"Ratifikation",
+        verfasst:{ wer:v.verfasser, zeit:v.zeit } };
+      PASSAGEN.push(neueP);
+    }
+    merken("Ratifikation " + v.id + " (" + v.art + ")", function () {
+      delete Z.ratifiziert[id]; delete Z.geaendert[id];
+      if (neueP) { var i = PASSAGEN.indexOf(neueP); if (i >= 0) PASSAGEN.splice(i,1); }
+    });
+    naechsteKarte();
+    alles();
+    var n = tuerenFuer(v, Z.sicht);
+    sagen(v.art + " ist Kanon. Zwei Namen auf dem Absatz: verfasst " + v.verfasser
+      + ", bestätigt Kaya. " + (n ? n + " Türen geschlossen in deinem Buch." : "Für diesen Leser wird keine Zahl gerendert."));
+  }
+  function ablehnen(id) {
+    var v = karteById(id); if (!v) return;
+    Z.lesezeiten.push(performance.now() - Z.kartenStart);
+    Z.abgelehnt[id] = true;
+    merken("Ablehnung " + v.id, function () { delete Z.abgelehnt[id]; });
+    naechsteKarte(); alles();
+    sagen(v.art + " abgelehnt. Eine Zeile zurück an " + v.verfasser + ", in ihren Kodex, nie in den Kanon.");
+  }
+  function naechsteKarte() {
+    for (var i = 0; i < KARTEN.length; i++) {
+      var k = KARTEN[i];
+      if (!Z.ratifiziert[k.id] && !Z.abgelehnt[k.id] && k.stand !== "kanon") { Z.karteIndex = i; return; }
+    }
+    Z.karteIndex = -1;
+  }
+
+  /* ── Der Widerruf ────────────────────────────────────────────────────── */
+  function widerrufen() {
+    Z.mandatWiderrufen = true;
+    Z.zurueckgezogen["p_hr_mandat"] = true;
+    merken("Widerruf des Mandats #hochelfenrat", function () {
+      Z.mandatWiderrufen = false; delete Z.zurueckgezogen["p_hr_mandat"];
+    });
+    alles();
+    sagen("Mandat widerrufen. Rückwirkend und verlustfrei: eine Passage ist zurückgezogen, "
+      + "lesbar, markiert, außerhalb des Kanons.");
+  }
+
+  /* ── Zugfolge ────────────────────────────────────────────────────────── */
+  function iniZeichnen() {
+    var liste = MARKEN.slice().sort(function (a,b) { return b.ini - a.ini; });
+    var h = "";
+    liste.forEach(function (m, i) {
+      if (Z.nebelAn && Z.sicht !== "kaya") {
+        var rr = raumAn(m.x, m.y);
+        if (!rr || offenbarteRaeume(Z.sicht).indexOf(rr.id) === -1) return;
+      }
+      h += '<li><button type="button" class="ini-karte" data-marke="' + m.id + '"'
+        + (i === Z.zug ? ' aria-current="true"' : '')
+        + ' data-fall="' + (m.tp <= 0 ? 1 : 0) + '" data-frei="' + (m.frei ? 1 : 0) + '">'
+        + '<span class="iw num">' + m.ini + '</span>'
+        + '<span><span class="inm">' + esc(m.kurz) + '</span>'
+        + '<span class="tp"><i style="width:' + Math.max(0, Math.round(m.tp/m.tpmax*100)) + '%"></i></span></span>'
+        + (m.tp <= 0 ? '<span class="chip rot">defeat_pending</span>' : '')
+        + '</button></li>';
+    });
+    $("#ini").innerHTML = h;
+    $$("#ini .ini-karte").forEach(function (b) {
+      b.addEventListener("click", function () { wahlMarke(b.getAttribute("data-marke")); });
+    });
+  }
+
+  /* ── Verdrahtung delegierter Taten ───────────────────────────────────── */
+  function verdrahten(wurzelEl) {
+    $$("[data-tat]", wurzelEl).forEach(function (b) {
+      if (b.__v) return; b.__v = true;
+      b.addEventListener("click", function () {
+        var t = b.getAttribute("data-tat"), id = b.getAttribute("data-id"), m;
+        if (t === "scharf")     { Z.scharf = true;  linseZeichnen(); sagen("Freigabe geschärft. Der Riegel zeigt, was ein Druck wem beibringt."); }
+        if (t === "abbrechen")  { Z.scharf = false; linseZeichnen(); sagen("Abgebrochen. Nichts freigegeben."); }
+        if (t === "freigeben")  { freigeben(); }
+        if (t === "rat")        { ratifizieren(id, false); }
+        if (t === "rat-e")      { ratifizieren(id, true); }
+        if (t === "ablehnen")   { ablehnen(id); }
+        if (t === "zu")         { schleuseZu(); }
+        if (t === "stapel")     { schleuseZu(); modulWechseln("regal"); }
+        if (t === "widerruf")   { widerrufen(); }
+        if (t === "mandat-zurueck") { rueckgaengig(); }
+        if (t === "zusammenlegen") {
+          Z.zusammengelegt = true;
+          merken("Zusammenlegung: vier Türen, ein Land", function () { Z.zusammengelegt = false; });
+          alles(); sagen("Vier Türen zu einer zusammengelegt. Zwölf eingehende Links auf eine Seite.");
+        }
+        if (t === "zusammen-zurueck") { rueckgaengig(); }
+        if (t === "mandatsbeweis") {
+          var a = hash(nutzlast("baldur"));
+          var b2 = hash(nutzlast("irme"));
+          var gleich = buchPassagen("baldur").filter(function (p) { return p.ausserhalb; }).length === 0;
+          $("#mb-ergebnis").innerHTML =
+              pz("Baldurs Buch enthält die Mandats-Passage", gleich ? "nein" : "JA", gleich)
+            + pz("Baldurs Erfahrungsgrad #hochelfenrat", "+" + erfahrungsgrad(etikettZahl("baldur")), true)
+            + pz("Hash Baldur", a, true)
+            + pz("Hash Irme (Kontrolle)", b2, true);
+          sagen("Mandatsbeweis: Ilva weiß es, Baldur nicht. Null Erfahrungsgrad, null Würfelbonus.");
+        }
+        if (t === "treffer") {
+          m = markeById(Z.wahlMarke); if (!m) return;
+          var w = 1 + Math.floor(Math.random()*8), alt = m.tp;
+          m.tp = m.tp - w;
+          merken("Treffer " + w + " auf " + m.name, function () { m.tp = alt; });
+          alles(); sagen("1d8 = " + w + ". " + m.name + " steht auf " + Math.max(m.tp,0) + " von " + m.tpmax + ".");
+        }
+        if (t === "fall-ja") {
+          m = markeById(Z.wahlMarke); if (!m) return;
+          var altT = m.tp; m.tp = -99;
+          merken("Niederlage bestätigt: " + m.name, function () { m.tp = altT; });
+          alles(); sagen("Niederlage bestätigt. Eine Ereignis-Passage wird geprägt — durch einen Menschen, nicht durch die Regel.");
+        }
+        if (t === "fall-nein") {
+          m = markeById(Z.wahlMarke); if (!m) return;
+          var altT2 = m.tp; m.tp = 1;
+          merken("Steht noch: " + m.name, function () { m.tp = altT2; });
+          alles(); sagen(m.name + " steht noch.");
+        }
+      });
+    });
+    $$("[data-art]", wurzelEl).forEach(function (b) {
+      if (b.__v) return; b.__v = true;
+      b.addEventListener("click", function () { Z.artikel = b.getAttribute("data-art"); linseZeichnen(); });
+    });
+    $$(".karte", wurzelEl).forEach(function (c) {
+      if (c.__v) return; c.__v = true;
+      c.addEventListener("focusin", function () {
+        var id = c.getAttribute("data-id");
+        for (var i = 0; i < KARTEN.length; i++) if (KARTEN[i].id === id && i !== Z.karteIndex) {
+          Z.karteIndex = i; schleuseZeichnen(); return;
+        }
+      });
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     K · SCHALTER, TASTEN, START
+     ══════════════════════════════════════════════════════════════════════ */
+
+  function modulWechseln(l) {
+    Z.linse = l;
+    $$(".modul button").forEach(function (b) {
+      if (b.getAttribute("data-linse") === l) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+    linseZeichnen();
+  }
+  $$(".modul button[data-linse]").forEach(function (b) {
+    b.addEventListener("click", function () { modulWechseln(b.getAttribute("data-linse")); });
+  });
+
+  $$('input[name="sicht"]').forEach(function (r) {
+    r.addEventListener("change", function () {
+      if (!r.checked) return;
+      Z.sicht = r.value;
+      Z.scharf = false;
+      nebelSchmutzig = true;
+      alles();
+      sagen("Sicht: " + LESER[r.value].name + ". Die Projektion wird auf dem Server gerechnet — "
+        + "was fehlt, ist nicht ausgeblendet, sondern nicht in der Antwort.");
+    });
+  });
+
+  $$("[data-raster]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      Z.raster = b.getAttribute("data-raster");
+      $$("[data-raster]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      $$("[data-fang]").forEach(function (x) { x.disabled = Z.raster === "ohne"; });
+      basisSchmutzig = true;
+      tafelZeichnen();
+      sagen("Raster: " + (Z.raster === "quadrat" ? "Quadrat" : Z.raster === "hex" ? "Hex" : "ohne")
+        + ". Ein Renderer, drei Raster — die Rastermathematik ist Arithmetik.");
+    });
+  });
+  $$("[data-fang]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      Z.fang = b.getAttribute("data-fang");
+      $$("[data-fang]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    });
+  });
+
+  $("#k-zoom-an").addEventListener("click", function () { kam.z = Math.min(3.2, kam.z*1.18); basisSchmutzig = nebelSchmutzig = true; });
+  $("#k-zoom-aus").addEventListener("click", function () { kam.z = Math.max(0.55, kam.z/1.18); basisSchmutzig = nebelSchmutzig = true; });
+  $("#k-zoom-fit").addEventListener("click", function () { kam = { z:1, x:0, y:0 }; basisSchmutzig = nebelSchmutzig = true; });
+  $("#k-nebel").addEventListener("click", function () {
+    Z.nebelAn = !Z.nebelAn;
+    this.setAttribute("aria-pressed", String(Z.nebelAn));
+    alles();
+    sagen(Z.nebelAn ? "Nebel an." : "Nebel aus — die Leitung sieht die Karte ohne Maske.");
+  });
+
+  $("#k-scharf").addEventListener("click", function () {
+    Z.scharf = true; modulWechseln("tisch");
+    sagen("Freigabe geschärft. Der Riegel in der Linse zeigt, was ein Tastendruck wem beibringt. "
+      + "Noch einmal F gibt frei, Esc bricht ab.");
+  });
+  $("#k-schleuse").addEventListener("click", function () { Z.schleuseOffen ? schleuseZu() : schleuseAuf(); });
+  $("#k-undo").addEventListener("click", rueckgaengig);
+  $("#k-zug").addEventListener("click", function () {
+    var n = $$("#ini .ini-karte").length || 1;
+    Z.zug = (Z.zug + 1) % n; iniZeichnen();
+    var b = $$("#ini .ini-karte")[Z.zug];
+    if (b) { wahlMarke(b.getAttribute("data-marke"), false); sagen("Am Zug: " + b.querySelector(".inm").textContent + "."); }
+  });
+
+  /* Darstellung: Leinwand / beide / Tafel — gleichrangig */
+  function darstellung(d) {
+    Z.darstellung = d;
+    $("#d-lw").setAttribute("aria-pressed", String(d !== "tafel"));
+    $("#d-tafel").setAttribute("aria-pressed", String(d !== "leinwand"));
+    $("#d-beide").setAttribute("aria-pressed", String(d === "beide"));
+    $(".buehne").hidden = d === "tafel";
+    $(".werk").setAttribute("data-d", d);
+    window.setTimeout(function () { messen(); }, 20);
+    sagen(d === "tafel" ? "Nur die Tafel. Sie ist die Karte, nicht ihr Ersatz."
+      : d === "leinwand" ? "Nur die Leinwand." : "Leinwand und Tafel.");
+  }
+  $("#d-lw").addEventListener("click", function () { darstellung("leinwand"); });
+  $("#d-tafel").addEventListener("click", function () { darstellung("tafel"); });
+  $("#d-beide").addEventListener("click", function () { darstellung("beide"); });
+
+  /* Haut, Licht, Bewegung, Dichte */
+  $("#k-haut").addEventListener("click", function () {
+    var s = wurzel.getAttribute("data-skin") === "signal" ? "relic" : "signal";
+    wurzel.setAttribute("data-skin", s);
+    $("#haut-name").textContent = s === "signal" ? "Signal" : "Relic";
+    palette(); kontrastPruefen(); linseZeichnen();
+    sagen("Haut: " + (s === "signal" ? "Signal" : "Relic")
+      + ". Dieselbe DOM, dieselbe Leinwand — der Canvas liest die Tokens neu.");
+  });
+  var mqDunkel = window.matchMedia("(prefers-color-scheme: dark)");
+  function lichtJetzt() { return wurzel.getAttribute("data-theme") || (mqDunkel.matches ? "dark" : "light"); }
+  function lichtZeigen() {
+    var g = wurzel.getAttribute("data-theme");
+    $("#licht-name").textContent = g ? (g === "dark" ? "Dunkel" : "Hell") : "System";
+    $("#k-licht").setAttribute("aria-pressed", String(lichtJetzt() === "dark"));
+    palette(); kontrastPruefen();
+  }
+  $("#k-licht").addEventListener("click", function () {
+    wurzel.setAttribute("data-theme", lichtJetzt() === "dark" ? "light" : "dark");
+    lichtZeigen(); linseZeichnen();
+  });
+  mqDunkel.addEventListener("change", lichtZeigen);
+  $("#k-bewegung").addEventListener("click", function () {
+    var r = app.getAttribute("data-bewegung") === "ruhig";
+    app.setAttribute("data-bewegung", r ? "normal" : "ruhig");
+    this.setAttribute("aria-pressed", String(!r));
+    nebelSchmutzig = true;
+    sagen(r ? "Bewegung normal." : "Bewegung ruhig: kein Flackern, keine Reise, nur Zustandswechsel.");
+  });
+  $("#k-dichte").addEventListener("click", function () {
+    var k = app.getAttribute("data-dichte") === "kompakt";
+    app.setAttribute("data-dichte", k ? "bequem" : "kompakt");
+    this.setAttribute("aria-pressed", String(!k));
+    window.setTimeout(messen, 20);
+  });
+
+  /* Tastatur */
+  document.addEventListener("keydown", function (ev) {
+    var t = ev.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if (t === cv && ev.key.indexOf("Arrow") === 0) return;
+    var k = ev.key.toLowerCase();
+    if (ev.key === "Escape") { if (Z.schleuseOffen) schleuseZu(); else if (Z.scharf) { Z.scharf = false; linseZeichnen(); } return; }
+    if (Z.schleuseOffen) {
+      var v = KARTEN[Z.karteIndex];
+      if (!v) return;
+      var frei = performance.now() - Z.kartenStart >= 1500;
+      if (k === "k" && frei) { ev.preventDefault(); ratifizieren(v.id, false); }
+      if (k === "e" && frei) { ev.preventDefault(); ratifizieren(v.id, true); }
+      if (k === "x")         { ev.preventDefault(); ablehnen(v.id); }
+      return;
+    }
+    if (k === "s") { ev.preventDefault(); schleuseAuf(); }
+    if (k === "f") { ev.preventDefault(); if (Z.scharf) freigeben(); else { Z.scharf = true; modulWechseln("tisch"); sagen("Freigabe geschärft. Noch einmal F gibt frei."); } }
+    if (k === "u") { ev.preventDefault(); rueckgaengig(); }
+    if (k === "n") { ev.preventDefault(); $("#k-zug").click(); }
+    if (k === "z") { ev.preventDefault(); modulWechseln("regal"); }
+    if (k === "g") {
+      ev.preventDefault();
+      var r = Z.raster === "quadrat" ? "hex" : Z.raster === "hex" ? "ohne" : "quadrat";
+      var b = document.querySelector('[data-raster="' + r + '"]'); if (b) b.click();
+    }
+    if (k >= "1" && k <= "5") {
+      var rs = $$('input[name="sicht"]')[parseInt(k,10)-1];
+      if (rs) { rs.checked = true; rs.dispatchEvent(new Event("change")); }
+    }
+  });
+
+  $("#k-hinweis-zu").addEventListener("click", function () {
+    $("#hinweis").hidden = true;
+    window.setTimeout(messen, 20);
+    cv.focus();
+  });
+
+  /* Start */
+  palette();
+  messen();
+  if (window.ResizeObserver) new ResizeObserver(function () { messen(); }).observe(huelle);
+  else window.addEventListener("resize", messen);
+  mqRuhig.addEventListener("change", function () { nebelSchmutzig = true; });
+
+  darstellung("beide");
+  modulWechseln("tisch");
+  lichtZeigen();
+  naechsteKarte();
+  wahlMarke("m_olav", false);
+  Z.scharf = true;              /* der Riegel steht beim Öffnen offen — er ist der Beweis */
+  wahlRaum("vorkammer");
+  iniZeichnen();
+  schleuseZahl();
+  kontrastPruefen();
+  window.requestAnimationFrame(schleife);
+})();
+</script>
