@@ -1,0 +1,23 @@
+{
+  "name": "visual-lab-dev",
+  "call_name": "Ariadne",
+  "model_tier": "sonnet",
+  "external_ok": true,
+  "owns": [
+    "design/visual-lab/src/App.tsx"
+  ],
+  "triggers": [
+    "accessibility",
+    "aria",
+    "visual lab",
+    "react",
+    "typescript"
+  ],
+  "must_read": [
+    "CLAUDE.md",
+    "STATUS.md",
+    "design/05-visual-reset.md"
+  ],
+  "output_schema": "agent_report_v1",
+  "category": "implementation"
+}
