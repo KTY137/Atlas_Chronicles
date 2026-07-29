@@ -1,0 +1,36 @@
+{
+  "_comment": "Repo-local Daedalus policy for the Chronicle Visual Lab trial. This file was installed directly rather than through init_repo so PnP's CLAUDE/STATUS/design-lineage files and agent templates remain untouched.",
+
+  "name": "PnP_App",
+
+  "policy": {
+    "_comment_write_allow": "Fail-closed write surface: an entry without a trailing slash names exactly one file. Daedalus candidates may change App.tsx and nothing else.",
+    "write_allow": [
+      "design/visual-lab/src/App.tsx"
+    ],
+
+    "_comment_egress": "Only the candidate file may be sent to an untrusted external model through Daedalus context assembly. Generic secret and credential denies are still merged by the policy loader.",
+    "default_deny": true,
+    "allow": [
+      "design/visual-lab/src/app.tsx"
+    ],
+
+    "_comment_high_risk": "These project-control and design-authority surfaces remain explicitly high-risk even though write_allow already excludes them.",
+    "high_risk_paths": [
+      ".agentenv/",
+      ".git/",
+      "CLAUDE.md",
+      "STATUS.md",
+      "design/iterations/",
+      "design/research/",
+      "design/fixtures/",
+      "design/spikes/"
+    ]
+  },
+
+  "_comment_test": "Verifier uses shlex.split with shell=False. cmd /d /s /c is therefore required so npm ci and the requested root-relative build compose correctly on Windows. npm ci is necessary because disposable git worktrees do not contain ignored node_modules.",
+  "test_command": "cmd /d /s /c \"npm.cmd --prefix design/visual-lab ci --ignore-scripts --no-audit --no-fund && npm.cmd --prefix design/visual-lab run build\"",
+  "_comment_test_timeout": "Measured 2026-07-29: existing checkout build 12.83 s; clean exported checkout npm ci plus build 25.86 s; fresh linked-worktree command through daedalus.verifier 13.86 s with a warm npm cache. 180 s is a runaway guard with about 7x headroom over the slowest observed run for concurrent-load and registry variance.",
+  "test_timeout_s": 180,
+  "test_cwd": "."
+}
