@@ -1,0 +1,34 @@
+{
+  "schema": "daedalus-work-queue/1",
+  "repo_state": {
+    "head": "7bc8d0f77794528e9d02b2ca2c2526eb25debe85",
+    "meaning": "candidate_base_revision",
+    "note": "This revision is the exact base on which the curated candidate may be attempted. It intentionally names the policy-and-routing commit before this queue metadata exists; it is not a claim that the queue file is contained in that revision."
+  },
+  "tasks": [
+    {
+      "id": "daedalus-pnp-bootstrap-20260729-r1",
+      "state": "ready",
+      "instruction": "Edit only design/visual-lab/src/main.tsx. Replace the non-null assertion on the root element lookup with an explicit rootElement binding and a clear thrown Error when the element is absent, then pass the narrowed element to ReactDOM.createRoot. Preserve imports, StrictMode, rendering, and every other file.",
+      "authority_refs": [
+        "operator-authorization:2026-07-29/full-daedalus-pnp-test",
+        "CLAUDE.md",
+        ".agentenv/agentenv.json"
+      ],
+      "target_paths": [
+        "design/visual-lab/src/main.tsx"
+      ],
+      "gate": {
+        "argv": [
+          "cmd.exe",
+          "/d",
+          "/s",
+          "/c",
+          "npm.cmd --prefix design/visual-lab ci --ignore-scripts --no-audit --no-fund && npm.cmd --prefix design/visual-lab run build"
+        ],
+        "cwd": ".",
+        "timeout_s": 180
+      }
+    }
+  ]
+}

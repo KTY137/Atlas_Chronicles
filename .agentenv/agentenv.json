@@ -12,6 +12,24 @@
     }
   },
 
+  "work_queue": {
+    "enabled": true,
+    "path": ".agentenv/work-queue.json"
+  },
+
+  "_comment_picker_sources": "This trial is driven only by the explicitly curated queue. Daedalus' Python architecture map, generated feature inventory, agent_env eval baseline and opt-in whole-repo hotspot scan are not applicable to this React/TypeScript target and are disabled rather than reported as empty healthy sources.",
+  "picker_sources": {
+    "map": "disabled",
+    "inventory": "disabled",
+    "eval_baseline": "disabled",
+    "eval_gate": "disabled",
+    "hotspots": "disabled"
+  },
+
+  "spine": {
+    "ledger_path": "runs/spine/spine.sqlite3"
+  },
+
   "policy": {
     "_comment_write_allow": "Fail-closed write surface: entries without a trailing slash name exact files. Daedalus candidates may change only the two executable Visual Lab entry surfaces.",
     "write_allow": [

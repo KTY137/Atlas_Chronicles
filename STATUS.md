@@ -1,6 +1,6 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-07-27** (Codex continuation after Claude session limit)
+Updated: **2026-07-29** (Daedalus Visual Lab acceptance in progress)
 
 ## Where we are
 
@@ -13,6 +13,12 @@ Updated: **2026-07-27** (Codex continuation after Claude session limit)
 - **Visual reset is now binding.** Kaya rejected the current look after inspecting the artifact direction: the round-5 pages are functional proofs, not visual ancestors. `design/05-visual-reset.md` governs the next visual work.
 - **The first React visual lab is built.** `design/visual-lab/` uses React 19, Motion, Radix and the real Andaria/Eron assets; its deterministic concealed/revealed states are captured at 1600×1000 and a real 390×844 viewport. TypeScript and the Vite production build pass. Honest boundary: the map is still a DOM image, not Pixi or `MapRenderer`.
 - **A full product/GUI architecture draft now exists:** `design/06-giga-product-architecture.md`. It audits the 771-entry register and current competitor stack, proposes Home/`Heute` as router outside the rail, the campaign loop `Welt → [Vorbereitung als zu testender Slot] → Tisch` and `Schmiede` as a separate creator context. It defines the shared object/view-recipe model, app shell, route and screen inventory, capability registry, technical boundaries, delivery slices and measurable validation gates. **It is a proposal for ratification, not a replacement for the Champion or its dependency/security contracts.**
+
+## Daedalus Visual Lab trial
+
+- Repo-local confinement admits only `design/visual-lab/src/App.tsx` and `main.tsx`; the active `visual-lab-dev` role routes to local `qwen2.5-coder:7b`; the verifier is `npm ci` plus the TypeScript/Vite production build.
+- The first externally isolated attempt at base `7bc8d0f` produced the inert `main.tsx` root-guard patch `fdb1b9dc…59e0`, passed contained build gates, left the primary checkout untouched, and was independently mounted through headless Edge.
+- Promotion remains false and no candidate patch is applied. `.agentenv/work-queue.json` now records that exact operator-authorised task and base so the remaining acceptance can exercise real queue discovery and picker selection rather than a manually constructed `TaskSpec`; that full picker run is still pending.
 
 ## Round 5 — actual interrupted fork
 
