@@ -13,15 +13,17 @@
   },
 
   "policy": {
-    "_comment_write_allow": "Fail-closed write surface: an entry without a trailing slash names exactly one file. Daedalus candidates may change App.tsx and nothing else.",
+    "_comment_write_allow": "Fail-closed write surface: entries without a trailing slash name exact files. Daedalus candidates may change only the two executable Visual Lab entry surfaces.",
     "write_allow": [
-      "design/visual-lab/src/App.tsx"
+      "design/visual-lab/src/App.tsx",
+      "design/visual-lab/src/main.tsx"
     ],
 
     "_comment_egress": "Only the candidate file may be sent to an untrusted external model through Daedalus context assembly. Generic secret and credential denies are still merged by the policy loader.",
     "default_deny": true,
     "allow": [
-      "design/visual-lab/src/app.tsx"
+      "design/visual-lab/src/app.tsx",
+      "design/visual-lab/src/main.tsx"
     ],
 
     "_comment_high_risk": "These project-control and design-authority surfaces remain explicitly high-risk even though write_allow already excludes them.",
