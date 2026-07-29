@@ -1,6 +1,6 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-07-29** (Daedalus Visual Lab acceptance in progress)
+Updated: **2026-07-29** (Daedalus Visual Lab end-to-end trial complete)
 
 ## Where we are
 
@@ -18,7 +18,8 @@ Updated: **2026-07-29** (Daedalus Visual Lab acceptance in progress)
 
 - Repo-local confinement admits only `design/visual-lab/src/App.tsx` and `main.tsx`; the active `visual-lab-dev` role routes to local `qwen2.5-coder:7b`; the verifier is `npm ci` plus the TypeScript/Vite production build.
 - The first externally isolated attempt at base `7bc8d0f` produced the inert `main.tsx` root-guard patch `fdb1b9dc…59e0`, passed contained build gates, left the primary checkout untouched, and was independently mounted through headless Edge.
-- Promotion remains false and no candidate patch is applied. `.agentenv/work-queue.json` now records that exact operator-authorised task and base so the remaining acceptance can exercise real queue discovery and picker selection rather than a manually constructed `TaskSpec`; that full picker run is still pending.
+- The committed curated queue was then exercised through the real picker CLI against Daedalus `c49b4a0`: it selected queue SHA `757fef92…a417`, routed the local writer, reproduced the exact 577-byte patch, passed the contained queue gate, recorded completed ledger intent 3 and reaped its isolated worktree and branch. The canonical Windows-console run exited 0; Daedalus `09a89a5` additionally suppresses the now-reaped branch from its inspection hints.
+- Promotion remains false and no candidate patch is applied. The primary checkout is clean, the raw patch remains under `runs/spine/picker-patches/`, and the queue item is now `done` so an unattended picker will not repeat the accepted trial.
 
 ## Round 5 — actual interrupted fork
 

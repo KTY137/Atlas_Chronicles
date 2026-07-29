@@ -8,7 +8,7 @@
   "tasks": [
     {
       "id": "daedalus-pnp-bootstrap-20260729-r1",
-      "state": "ready",
+      "state": "done",
       "instruction": "Edit only design/visual-lab/src/main.tsx. Replace the non-null assertion on the root element lookup with an explicit rootElement binding and a clear thrown Error when the element is absent, then pass the narrowed element to ReactDOM.createRoot. Preserve imports, StrictMode, rendering, and every other file.",
       "authority_refs": [
         "operator-authorization:2026-07-29/full-daedalus-pnp-test",
@@ -28,6 +28,16 @@
         ],
         "cwd": ".",
         "timeout_s": 180
+      },
+      "completion": {
+        "result": "clean",
+        "ledger_intent_id": 3,
+        "artifact_sha256": "fdb1b9dc21d34e87e37585c322afcafedff9187ba3e5620a75a98631993159e0",
+        "artifact_path": "runs/spine/picker-patches/fdb1b9dc21d34e87e37585c322afcafedff9187ba3e5620a75a98631993159e0.patch",
+        "gate_name": "queue-command",
+        "gate_output_sha256": "2a71848df952127bc4130ed32b62ee5d411e5edc3056e1daaccc2e20e21edbf8",
+        "promotion": false,
+        "note": "Accepted as end-to-end evidence; the candidate patch was intentionally not applied."
       }
     }
   ]
