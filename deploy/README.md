@@ -19,10 +19,11 @@ Downgrade: fehlt eine Ebene, benennt die App den Zustand.
 ## Schnellstart (Self-Host)
 
 ```bash
-node deploy/configure-selfhost.mjs chronik.example.org      # schreibt deploy/.env mit frischen Geheimnissen
-# DNS: chronik.example.org und livekit.chronik.example.org → dieser Host. PUBLIC_IP in deploy/.env eintragen.
+node deploy/configure-selfhost.mjs chronik.example.org      # schreibt deploy/.env (ohne Medienebene)
+# mit Voice/Video: node deploy/configure-selfhost.mjs chronik.example.org --media <öffentliche IP>
+# DNS: chronik.example.org (und mit --media livekit.chronik.example.org) → dieser Host.
 docker compose --env-file deploy/.env -f deploy/docker-compose.selfhost.yml --profile tls up -d --build
-# optional Voice/Video:
+# Voice/Video (nur mit --media erzeugter .env; PUBLIC_IP leer ⇒ TURN/ICE kaputt, ohne Startfehler):
 docker compose --env-file deploy/.env -f deploy/docker-compose.selfhost.yml --profile tls --profile media up -d
 ```
 
@@ -61,7 +62,7 @@ Degradationsleiter, sichtbar und benannt, nie still: **SFU → TURN-Relay → P2
 
 - ✅ `docker compose config` löst beide Profile und alle Variablen auf (2026-09-06, lokal).
 - ✅ Das Image baut aus `deploy/Dockerfile` (siehe Ledger in `STATUS.md`, Datum des Laufs).
-- ⏳ App + Postgres aus diesem Compose lokal hochgefahren und `/api/health`/`/api/setup` geprüft — Stand in `STATUS.md`.
+- ✅ App + Postgres aus diesem Compose lokal hochgefahren (2026-09-06): `/api/health` ok, `/api/setup` required, `/` 200 html, POST ohne Origin → 404, danach `down -v`.
 - ❌ **UNVERIFIED:** Caddy-TLS gegen eine echte Domain; LiveKit/coturn mit `PUBLIC_IP` hinter NAT
   (die lokale Loopback-Variante liegt unter `deploy/media/`). Beides braucht einen erreichbaren Host und
   ist die Abnahme von Meilenstein M5, nicht dieser Datei.
