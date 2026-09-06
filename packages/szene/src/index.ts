@@ -4,6 +4,13 @@
  * May NOT know: knowledge decisions, and may never import `@chronicle/chronik`.
  * No Pixi, no React, no server (RB-20b:520-525).
  */
+/**
+ * Knoten, Kante, Ort and Anker are all keyed by KnotenId, so a consumer of this package must
+ * be able to name it. Re-exported rather than left to @chronicle/core, so that using the scene
+ * model does not force a second dependency purely to spell its own ids.
+ */
+export type { KnotenId } from "@chronicle/core";
+
 export {
   MAX_TIEFE,
   RAUM_KANTEN,
