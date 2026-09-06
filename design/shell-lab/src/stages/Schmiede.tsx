@@ -1,14 +1,15 @@
-import { Check, Hammer, LayoutTemplate, X } from "lucide-react";
+import { BookMarked, Check, Hammer, LayoutTemplate, X } from "lucide-react";
 
 import { FORGE } from "../fixture";
 
 interface Props {
   role: "gm" | "player";
   onVorlagen: () => void;
+  onKompendien: () => void;
 }
 
 /** Schmiede: maximale Tiefe hinter einer ehrlichen Schwelle — eigener Creator-Kontext. */
-export function Schmiede({ role, onVorlagen }: Props) {
+export function Schmiede({ role, onVorlagen, onKompendien }: Props) {
   return (
     <div className="stage-scroll">
       <div className="forge-wrap">
@@ -24,6 +25,10 @@ export function Schmiede({ role, onVorlagen }: Props) {
           <button type="button" className="chip accent" onClick={onVorlagen}>
             <LayoutTemplate size={11} />
             {role === "gm" ? "Infobox-Vorlagen bearbeiten" : "Infobox-Vorlagen ansehen"}
+          </button>
+          <button type="button" className="chip" onClick={onKompendien}>
+            <BookMarked size={11} />
+            Kompendien
           </button>
         </div>
 

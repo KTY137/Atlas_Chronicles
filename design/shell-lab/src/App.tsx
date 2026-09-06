@@ -18,6 +18,7 @@ import { WeltImport } from "./stages/WeltImport";
 import { Journal } from "./stages/Journal";
 import { Sammlungen } from "./stages/Sammlungen";
 import { InfoboxStudio } from "./stages/InfoboxStudio";
+import { Kompendium } from "./stages/Kompendium";
 import { DEFAULT_ARTICLE } from "./wiki";
 import { subscribe } from "./wikiStore";
 
@@ -72,12 +73,12 @@ export function App() {
   const [articleHistory, setArticleHistory] = useState<string[]>([]);
   /* Welt traegt vier Zustaende: Artikel, Verzeichnis, Import, Journale,
      Sammlungen — alle ueber die Flaeche erreichbar, keiner im Rail (07 §12). */
-  const [schmiedeSub, setSchmiedeSub] = useState<"paket" | "vorlagen">(
-    () =>
-      new URLSearchParams(window.location.search).get("schmiede") === "vorlagen"
-        ? "vorlagen"
-        : "paket",
-  );
+  const [schmiedeSub, setSchmiedeSub] = useState<
+    "paket" | "vorlagen" | "kompendien"
+  >(() => {
+    const value = new URLSearchParams(window.location.search).get("schmiede");
+    return value === "vorlagen" || value === "kompendien" ? value : "paket";
+  });
   const [weltSub, setWeltSub] = useState<"artikel" | "import" | "journal" | "sammlungen">(
     () => {
       const value = new URLSearchParams(window.location.search).get("welt");
@@ -118,8 +119,8 @@ export function App() {
     if (selection) params.set("lens", selection);
     if (whisperTarget) params.set("whisper", whisperTarget);
     if (voiceDown) params.set("voice", "down");
-    if (effectiveStage === "schmiede" && schmiedeSub === "vorlagen") {
-      params.set("schmiede", "vorlagen");
+    if (effectiveStage === "schmiede" && schmiedeSub !== "paket") {
+      params.set("schmiede", schmiedeSub);
     }
     if (effectiveStage === "welt") {
       params.set("artikel", article);
@@ -246,10 +247,14 @@ export function App() {
       case "kanal":
         return <Kanal role={role} onSelect={select} />;
       case "schmiede":
-        return schmiedeSub === "vorlagen" ? (
-          <InfoboxStudio role={role} />
-        ) : (
-          <Schmiede role={role} onVorlagen={() => setSchmiedeSub("vorlagen")} />
+        if (schmiedeSub === "vorlagen") return <InfoboxStudio role={role} />;
+        if (schmiedeSub === "kompendien") return <Kompendium role={role} />;
+        return (
+          <Schmiede
+            role={role}
+            onVorlagen={() => setSchmiedeSub("vorlagen")}
+            onKompendien={() => setSchmiedeSub("kompendien")}
+          />
         );
       case "netz":
         return <Netz voiceDown={voiceDown} onToggleVoice={setVoiceDown} />;

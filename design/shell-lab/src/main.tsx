@@ -15,6 +15,7 @@ import "./shell.css";
 import "./journal.css";
 import "./sammlungen.css";
 import "./infobox.css";
+import "./kompendium.css";
 
 import { App } from "./App";
 
