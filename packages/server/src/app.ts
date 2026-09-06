@@ -28,6 +28,7 @@ import { registerBundles } from "./http/bundles.ts";
 import { registerActors } from "./http/actors.ts";
 import { registerTactical } from "./http/tactical.ts";
 import { registerGrundriss } from "./http/grundriss.ts";
+import { registerPacks } from "./http/packs.ts";
 import { registerAuthoring } from "./http/authoring.ts";
 import { registerPublication } from "./http/publication.ts";
 import { AuthoringValidationError } from "./domain/authoring.ts";
@@ -140,6 +141,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerActors(app, db, config);
   registerTactical(app, db, config);
   registerGrundriss(app, db, config);
+  registerPacks(app, db, config);
   registerAuthoring(app, db, config);
   registerPublication(app, db, config);
   registerMedia(app,db,config,config.livekit);
