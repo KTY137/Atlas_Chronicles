@@ -1,6 +1,52 @@
 # Codex work alongside Claude — 2026-09-06
 
-## Latest handoff — HTBAH, tactical entities and desktop recovery
+## Verified integrated checkpoint and operative host — 2026-09-06 21:33
+
+**Current localhost3000 is exact commit `53996fea23612e4cdec90720608521173e6e8061`**, in
+`.local/checkouts/htbah-desktop-gate`, owned app **PID12600 / exec session1549**. Start from that
+checkout with `node .local/verification-htbah-desktop/start-operative.mjs`. This ignored wrapper
+loads the preserved local config and media settings, explicitly selects its configured database
+instead of an inherited placeholder DATABASE_URL, and keeps public delivery disabled. Do not
+remove or rebuild this operative checkout. The older authoring-gate checkout is retained;
+its app PID13124/session9596 is stopped.
+
+Its independent `npm ci` installed296 packages, audited311 and reported0 vulnerabilities.
+`node_modules` is a real directory, with no shared junction. Exact-source root TypeScript,
+324 boundary files /8 rules /0 violations,41 assets plus the binary identity regressions,
+and **1178 tests /115 files** pass. One PGlite concurrency case intentionally skips; real
+PostgreSQL was preflighted and used, with four test workers and unchanged test budgets.
+The entire browser suite passes **24 functional flows in2.7 minutes on this one build**, including
+HTBAH, native-v5 transfer, actual three-reader tactical views, server restart, WebAuthn and
+loopback SFU. Four opt-in performance cases skip; no new hardware/accessibility acceptance.
+
+Client `index-ChSVUtKl.js` has SHA256
+`07a15908bf5bc76ab73fb47245cef81ebf98c836ace050ca64217c5504e8785f`.
+After the operative restart, health, readiness and client all returned200; the served asset
+matches that hash. A separate agent-browser session rendered the real welcome/login page
+without page errors. SQL001–012, local config and the identity digest (one user/two credentials,
+excluding last-used timestamps) are unchanged. Existing bootstrapToken is in this checkout's
+ignored `.local/config.json`; no token or cookie was written into tracked files.
+
+Evidence: the checkout's `.local/verification-htbah-desktop/{npm-ci,cold-gate,cold-build,cold-e2e}.log`,
+`operative-{before,after}.json`, `operative.png`, and `.local/e2e-htbah-desktop-all`.
+Ignored `.local/backups/pre-htbah-53996fe/public.dump` in the shared root is254928 bytes,
+SHA256`55bf2c42e8fdcc35794597e2589b4715db2add68dc5868b1ccd762fdafaef313`;
+its archive listing is verified, not an exercised restore. The preserved local config sits beside it.
+
+Commit accounting: external commit6f1fce8 included Root's explicitly staged122-file integration
+despite its desktop-only title. Subsequent53996fe contains only three documentation corrections
+despite its feature title. Both are retained without history rewriting. The isolated checkpoint
+proves the resulting complete tree; the earlier shared-dist snapshot claims below are superseded.
+
+Next phase is in progress only in the shared checkout: mandatory Desktop setup prepare / durable
+encrypted receipt / Ack / commit, locked exact-credential reconciliation, and automatic artifact
+resource hashing. Root owns host.ts and coordinates the Desktop author; independent review
+fixtures remain reviewer-owned. Installer/update/ASAR/fuses, the reviewed full painted-pack
+contract and native original-byte portability remain in full scope. The external Linux patch
+is still unapplied. Newer external UI/generator changes are preserved in the shared root and are
+not silently claimed present in this frozen operative checkpoint. Full M0–M9 remains active.
+
+## Previous working-tree handoff — HTBAH, tactical entities and desktop recovery
 
 This section supersedes the older ownership and delivery notes below. Root now participates
 in `coord/PROTOCOL.md` as `codex-root`; read its chat and actual path claims before editing

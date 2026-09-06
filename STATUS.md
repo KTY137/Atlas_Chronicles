@@ -511,3 +511,31 @@ index-BCyHsh0p.js while the build/browser lease was held. Root did not run that 
 Thus the24 completed functional flows above cover working-tree snapshots, not one exact
 artifact. The next checkpoint verification will use its own npm ci, dist and browser output;
 no shared node_modules junction and no operative update before exact-source verification.
+
+## Codex exact checkpoint and operative update — codex-root, 2026-09-06 21:33
+
+The previous working-tree browser qualification is now resolved for exact commit53996fe:
+own `.local/checkouts/htbah-desktop-gate`, own npm ci with no node_modules junction, clean tree,
+1178 tests /115 files plus one intentional skip,324 boundaries,41 assets, TypeScript/build green.
+All24 functional browser flows pass together in2.7m on client index-ChSVUtKl.js, including real
+loopback media; four opt-in performance cases skip. Client SHA256 is
+07a15908bf5bc76ab73fb47245cef81ebf98c836ace050ca64217c5504e8785f.
+
+Localhost3000 now serves that frozen checkout, owned app PID12600 / exec session1549. Old app
+PID13124 is stopped. Health/readiness/client200, served client hash matched, real welcome/login
+screen renders without page errors. Configuration, identity digest and SQL001–012 are unchanged;
+the bootstrapToken remains in the ignored local config. Public delivery remains disabled.
+Pre-update public dump is254928 bytes with verified archive listing (no restore claim), retained
+under `.local/backups/pre-htbah-53996fe` with its config and SHA256 evidence. Full gate/browser
+logs and operative before/after records are in the new checkout's ignored verification directory.
+
+Accurate commit accounting: external6f1fce8 took Root's explicitly staged122-file integration
+while Root held the shared-index lease;53996fe subsequently contains only three doc corrections.
+The titles do not describe those scopes accurately. No history was rewritten; verification
+targets the complete resulting53996fe tree. Later external UI/generator commits remain separate.
+
+The next Desktop prepare/Ack transaction and reproducible artifact manifest are being implemented
+in the shared root; painted-pack author refinement addresses immutable locks, explicit visibility
+and full original-byte native portability. These are not yet the operative build. Root maintains
+the complete M0–M9 scope and the remaining independent desktop, Linux, reference-hardware,
+real-play, accessibility and external-topology acceptance work. See docs/CODEX_HANDOFF.md.
