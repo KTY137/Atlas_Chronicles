@@ -58,3 +58,38 @@ delivery, explicit native v3 and root renderer/client/session integration. Freez
 and migrations001–010 after this checkpoint; new durable objects require another explicit format.
 Keep browser output outside the shared default `test-results/` parent to preserve other runs.
 Three external Claude sessions remain in scope; preserve their files and unrelated `.semgrep/`.
+
+## Tactical runtime integration — current
+
+The pure tactical foundation is now integrated with migration011, authenticated DTOs/routes,
+server-masked image pyramids, scene plans/capture, controlled movement, portal commands and
+50-patch Undo plus durable minimal retries. The client has import/provenance/Fidelity, region
+bindings, accessible preparation/live controls and Pixi tiles. Nativev3 includes all ten new
+tables and explicit older-format upgrades. See `docs/TACTICAL_UI.md` for usage and honest gaps.
+
+Review corrections cover large-map sync, Unicode canonical hashes, global command collisions,
+transaction rollback after compaction, in-flight revocation, missing pruned receipts, odd-edge
+LOD alignment, immediate browser texture removal after a denied scope, stale/dropped drafts,
+concurrent retry IDs and token changes during drag. Root added scene/plan preconditions to
+start and restored RulePackage's published HTTP value bounds. Six actual-component/hook and
+seven drag-contract tests cover the additional independent UI findings.
+
+Working-tree gate:592 tests in63 files plus1 intentional PGlite race skip, realPostgreSQL enabled,
+195 boundary files/8 rules/0 violations and root/client TypeScript/build green. This run includes
+Claude's concurrent asset tests. All14 functional E2E flows pass across the combined13/14 run
+and one focused correction of the old actor test's expected archive version2→3; no product
+change was needed for that assertion. Output `.local/e2e-tactical-combined` and
+`.local/e2e-tactical-actors-v3`; current canonicaldist `index-DMbNOwxc`.
+
+Another session included earlier WIP in8ebab01; do not equate that commit with this later
+integration gate. Its surrounding commits and active shell-lab/asset/generator work are retained.
+The external `.gitattributes` correction is reviewed and necessary for exact byte fixtures on
+fresh Windows checkouts. It needs no broad renormalization; clean-tree verification follows.
+
+Current root tasks: checkpoint exact paths, verify committed tree, then restart the owned
+`start:media` process9052/session65357 and verify operative migrations001–011. Do not claim the
+new APIs were already served by the old operative process. Browser worker is preparing/running
+an opt-in tactical performance harness; coordinate its exclusive browser slot. Native worker
+reviews the completed M8 theme/publication proposal; backend worker authored that proposal.
+The M8 proposal is still awaiting root adoption. M7 entity-binding UI, true S-K1/S-T1 reference
+hardware, M8 themes/publication/desktop and remaining conditional M9 gates stay in full scope.

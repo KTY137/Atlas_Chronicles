@@ -25,6 +25,8 @@ export interface ProjectedMapToken {
   readonly radius?: number;
   /** A server-projected interaction affordance; the server still authorizes every command. */
   readonly movable?: boolean;
+  /** Optional server version; a changed version invalidates an in-progress drag. */
+  readonly revision?: number;
 }
 export interface ProjectedMapScene {
   readonly id: string;

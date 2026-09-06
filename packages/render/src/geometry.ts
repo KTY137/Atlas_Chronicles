@@ -1,4 +1,9 @@
-import type { MapCamera, MapHit, MapPoint, ProjectedMapScene } from "./model.ts";
+import type { MapCamera, MapHit, MapPoint, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
+
+export function retainsTokenDrag(initial: ProjectedMapToken, current: ProjectedMapToken | undefined): boolean {
+  return !!current?.movable && current.id === initial.id && current.revision === initial.revision
+    && current.x === initial.x && current.y === initial.y && current.radius === initial.radius;
+}
 
 export const MIN_MAP_SCALE = 0.000001;
 export const MAX_MAP_SCALE = 128;
@@ -105,5 +110,6 @@ export function validateMapScene(scene: ProjectedMapScene): void {
     if (![item.x, item.y].every(Number.isFinite) || typeof item.label !== "string" || item.label.length > 4096) throw new Error("invalid map marker");
     color(item.color);
     if ("radius" in item && item.radius !== undefined && (!Number.isFinite(item.radius) || item.radius <= 0 || item.radius > 100)) throw new Error("invalid token radius");
+    if ("revision" in item && item.revision !== undefined && (!Number.isSafeInteger(item.revision) || item.revision < 1)) throw new Error("invalid token revision");
   }
 }

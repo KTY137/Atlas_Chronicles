@@ -4,17 +4,17 @@ import { Button, Notice } from "@chronicle/ui";
 import { errorText } from "../api";
 
 /** The renderer never fetches private images. This scoped host owns requests and their lifetime. */
-export function TacticalCanvas({ scene, tileBase, tileQuery = "", onMove, onSelect, onPoint }: {
-  scene: ProjectedMapScene; tileBase: string; tileQuery?: string; onMove?: (id: string, to: MapPoint) => void; onSelect?: (hit: MapHit | null) => void; onPoint?: (point: MapPoint) => void;
+export function TacticalCanvas({ scene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated }: {
+  scene: ProjectedMapScene; tileBase: string; tileQuery?: string; onMove?: (id: string, to: MapPoint) => void; onSelect?: (hit: MapHit | null) => void; onPoint?: (point: MapPoint) => void; onScopeInvalidated?: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null), renderer = useRef<MapRenderer | null>(null);
-  const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint };
-  const schedule = useRef<() => void>(() => {}), clearScope = useRef<() => void>(() => {});
+  const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated };
+  const schedule = useRef<() => void>(() => {}), clearScope = useRef<() => void>(() => {}), retryTiles = useRef<() => void>(() => {});
   const [error, setError] = useState(""), [tileError, setTileError] = useState(""), [ready, setReady] = useState(false);
   useEffect(() => {
     if (!host.current) return;
     const mount = new AbortController(); let tilesRequest: AbortController | null = null, timer: ReturnType<typeof setTimeout> | undefined;
-    let signature = "", cacheScope = "", cacheBytes = 0;
+    let signature = "", cacheScope = "", cacheBytes = 0, deniedScope = "";
     const blobs = new Map<string, Blob>();
     const clear = () => { tilesRequest?.abort(); signature = ""; cacheScope = ""; cacheBytes = 0; blobs.clear(); };
     clearScope.current = clear;
@@ -22,20 +22,31 @@ export function TacticalCanvas({ scene, tileBase, tileQuery = "", onMove, onSele
       const map = renderer.current, element = host.current, { scene: current, tileBase: base, tileQuery: query } = latest.current;
       if (!map || !element || mount.signal.aborted || !current.rasterScope) return;
       const scope = `${base}:${query}:${current.rasterScope}`;
+      if (scope === deniedScope) return;
       if (scope !== cacheScope) { clear(); cacheScope = scope; }
       const tiles = visibleMapTiles([current.width, current.height], [Math.max(1, element.clientWidth), Math.max(1, element.clientHeight)], map.getCamera(), window.devicePixelRatio);
       const key = `${scope}:${tiles.map(t => `${t.level}/${t.x}/${t.y}`).join(",")}`;
       if (signature === key) return;
       signature = key; tilesRequest?.abort(); const controller = new AbortController(); tilesRequest = controller;
       const bitmaps: MapRasterTile[] = []; let cursor = 0;
+      const invalidate = () => {
+        if (controller.signal.aborted || mount.signal.aborted || cacheScope !== scope || renderer.current !== map) return;
+        deniedScope = scope;
+        // A denied tile invalidates already displayed pixels as well as pending/cache data.
+        // Clear synchronously; projection polling can be offline or delayed indefinitely.
+        map.setRasterTiles(current.rasterScope!, []); clear();
+        setTileError("Die Kartensicht ist nicht mehr gültig. Die Ansicht wird aktualisiert.");
+        latest.current.onScopeInvalidated?.();
+      };
       const worker = async () => {
         while (cursor < tiles.length && !controller.signal.aborted) {
           const tile = tiles[cursor++]!, id = `${tile.level}/${tile.x}/${tile.y}`;
           let blob = blobs.get(id);
           if (!blob) {
             const response = await fetch(`${base}/${id}?view=${encodeURIComponent(current.rasterScope!)}${query ? `&${query}` : ""}`, { credentials: "same-origin", signal: controller.signal });
-            if (!response.ok) throw new Error(response.status === 409 ? "Die Kartensicht hat sich geändert. Bitte aktualisieren." : "Die Kartenkacheln konnten nicht geladen werden. Die Figurenliste bleibt bedienbar.");
-            if (response.headers.get("X-Tactical-View") !== current.rasterScope) throw new Error("Die Kartensicht hat sich während des Ladens geändert.");
+            if ([401, 403, 404, 409].includes(response.status)) { invalidate(); return; }
+            if (!response.ok) throw new Error("Die Kartenkacheln konnten nicht geladen werden. Die Figurenliste bleibt bedienbar.");
+            if (response.headers.get("X-Tactical-View") !== current.rasterScope) { invalidate(); return; }
             blob = await response.blob(); if (blob.type !== "image/png" || blob.size > 2 * 1024 * 1024) throw new Error("Ungültige Kartenkachel.");
             if (controller.signal.aborted || scope !== cacheScope) return;
             while (cacheBytes + blob.size > 16 * 1024 * 1024 && blobs.size) { const first = blobs.keys().next().value!; cacheBytes -= blobs.get(first)!.size; blobs.delete(first); }
@@ -59,13 +70,14 @@ export function TacticalCanvas({ scene, tileBase, tileQuery = "", onMove, onSele
     };
     const queue = () => { clearTimeout(timer); timer = setTimeout(() => { void loadTiles(); }, 100); };
     schedule.current = queue;
+    retryTiles.current = () => { deniedScope = ""; clear(); latest.current.onScopeInvalidated?.(); queue(); };
     setError(""); setReady(false);
     void createMapRenderer(host.current, latest.current.scene, { signal: mount.signal, onCameraChange: queue,
       onSelect: hit => latest.current.onSelect?.(hit), onMoveToken: (id, to) => latest.current.onMove?.(id, to),
       onPoint: point => latest.current.onPoint?.(point),
     }).then(map => { if (mount.signal.aborted) { map.destroy(); return; } renderer.current = map; map.update(latest.current.scene); setReady(true); queue(); })
       .catch(reason => { if (!mount.signal.aborted) setError(errorText(reason)); });
-    return () => { mount.abort(); clearTimeout(timer); clear(); renderer.current?.destroy(); renderer.current = null; schedule.current = () => {}; clearScope.current = () => {}; };
+    return () => { mount.abort(); clearTimeout(timer); clear(); renderer.current?.destroy(); renderer.current = null; schedule.current = () => {}; clearScope.current = () => {}; retryTiles.current = () => {}; };
   }, [scene.id]);
   useLayoutEffect(() => {
     renderer.current?.update(scene); schedule.current();
@@ -74,7 +86,7 @@ export function TacticalCanvas({ scene, tileBase, tileQuery = "", onMove, onSele
   return <div className="tactical-canvas-frame">
     <div className="button-row"><Button disabled={!ready} onClick={() => renderer.current?.fit()}>Ganze Karte</Button><Button disabled={!ready} aria-label="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.5)}>+</Button><Button disabled={!ready} aria-label="Karte verkleinern" onClick={() => renderer.current?.zoomAt(1 / 1.5)}>−</Button></div>
     {error ? <Notice error>{error} Die Liste darunter bietet dieselben Figurenbefehle.</Notice> : null}
-    {tileError ? <Notice error>{tileError} <Button onClick={() => schedule.current()}>Kacheln erneut laden</Button></Notice> : null}
+    {tileError ? <Notice error>{tileError} <Button onClick={() => retryTiles.current()}>Kacheln erneut laden</Button></Notice> : null}
     <div className="tactical-canvas" ref={host} data-canvas-ready={ready} />
     <p className="field-help">Karte ziehen oder mit Pfeiltasten verschieben. Mit dem Mausrad zoomen. Bewegliche Figuren lassen sich ziehen; genaue Werte stehen auch in der Figurenliste.</p>
   </div>;

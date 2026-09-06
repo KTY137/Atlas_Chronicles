@@ -126,7 +126,7 @@ test("templates create independent shared actors and inventory; perspective and 
     expect((await player.request.get(`${base}/entries/${entryId}`)).status()).toBe(404);
     const archiveResponse = await gm.request.get(`${base}/export`); expect(archiveResponse.status()).toBe(200);
     const bundle = parseCampaignBundleV3(await archiveResponse.text());
-    expect(bundle.version).toBe(2); expect(bundle.tables.actor_profiles.some(row => row.actor_id === actor.id)).toBe(true);
+    expect(bundle.version).toBe(3); expect(bundle.tables.actor_profiles.some(row => row.actor_id === actor.id)).toBe(true);
     expect(bundle.tables.item_instances.find(row => row.id === item.id)?.state).toMatchObject({ quantity: 2, notes: "Am Frosttor gefunden." });
     await gm.setViewportSize({ width: 390, height: 844 });
     await expect.poll(() => gm.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);

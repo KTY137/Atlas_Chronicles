@@ -95,3 +95,43 @@ roundoff, takes authoritative image dimensions, matches unambiguous retained coo
 and reports unknown metadata loss when correspondence is ambiguous. Source bytes remain
 unchanged on an untouched export. Fifty pure contract/adapter tests pass; these are not
 evidence of a delivered tactical renderer, protected raster tiles or hardware load gate.
+
+## Tactical runtime integration and independent review
+
+Migration011 and nativev3 preserve source bytes, revisions, planned token positions,
+immutable initial snapshots and live state separately. Compaction keeps the last50
+patches plus a replayable base and minimal durable command acknowledgements. Independent
+review removed a pruned receipt from a valid53-move bundle and regenerated its hashes:
+the parser incorrectly accepted it. Validation now requires distinct per-object receipt
+versions for every demonstrated advance; no-op duplicates cannot fill a missing version.
+Real PostgreSQL additionally verifies export snapshot isolation, deferred restore cycles,
+old retries after restore and rollback of a command that fails after compaction.
+
+The raster pipeline has19 tests, including real2560-square UVTT decode, secret pixel
+twins at every pyramid level, boundary footprints, malformed containers, memory/cache
+bounds, queue timeouts and retaining native worker capacity after caller timeout.
+Independent source review found no additional blocker. A separate real three-browser
+test found that a409 tile denial left9 old textures alive while projection polling was
+offline. The host now immediately clears GPU images/cache, quarantines that scope and
+requires a new authorized fetch on explicit retry. A2561-pixel LOD regression prevents
+stretching coarse texels; clipping preserves alignment at the final partial pixel.
+
+Actual-component/hook review reproduced accepted token values overwritten by stale
+props, dirty plan unmount on transient errors, silent remote map revision rebinding and
+concurrent commands losing an unresolved retry identity. A successful null plan was
+also incorrectly treated as never loaded during refresh. Six review cases pass after
+monotonic acknowledgement adoption, retained loaded state, pinned draft maps and a
+bounded per-command retry map. Seven renderer tests cover gesture invalidation when
+the original token's position/version changes, retaining unrelated cosmetic updates.
+Scene/scope changes and control removal also cancel a drag.
+
+Gameplay scene start now checks optional scene/plan versions before ending the current
+session, under the capture transaction's campaign lock. Two HTTP regressions prove
+stale rejection and empty-body compatibility. Another two actual HTTP tests preserve
+the published RulePackage96-character field/4096-character value bounds for sheet and
+action writes. Large tactical live synchronization hashes its existing projection
+digest, avoiding the smaller RulePackage JSON budget on a valid20,000-stamp document.
+
+These checks establish bounded functional behavior. They do not establish the specified
+50,000-stamp reference-laptop S-K1/S-T1 performance or the remaining authoring/publication
+and desktop gates. Current combined run counts and runtime state belong in STATUS.md.

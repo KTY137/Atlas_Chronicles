@@ -40,7 +40,7 @@ function LiveBoard({ campaignId, revision, onChanged, onDirty }: { campaignId: s
   const scene = useMemo<ProjectedMapScene | null>(() => data ? {
     id: data.sessionId, width: data.size[0], height: data.size[1], rasterScope: data.rasterDigest,
     cells: data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: [],
-    tokens: data.tokens.map(t => ({ id: t.id, x: t.x, y: t.y, label: t.name, radius: Math.min(40, Math.max(7, 11 * t.scale)), movable: data.active && t.canMove && !task.busy, color: t.canMove ? 0xebc887 : 0x81b8d1 })),
+    tokens: data.tokens.map(t => ({ id: t.id, x: t.x, y: t.y, label: t.name, ...(t.version === null ? {} : { revision: t.version }), radius: Math.min(40, Math.max(7, 11 * t.scale)), movable: data.active && t.canMove && !task.busy, color: t.canMove ? 0xebc887 : 0x81b8d1 })),
     ...(grid ? { grid: data.grid } : {}), lines: data.gm ? data.walls?.map(w => ({ id: w.id, points: w.points })) : [],
   } : null, [data, grid, task.busy]);
   const move = async (token: TacticalToken, values: Omit<TacticalMoveInput, "commandId" | "expectedVersion">) => {
@@ -58,7 +58,7 @@ function LiveBoard({ campaignId, revision, onChanged, onDirty }: { campaignId: s
   return <div className="tactical-live">{board.error || task.error ? <Notice error>{board.error || task.error}</Notice> : null}
     {!data || !scene ? <EmptyState title="Noch keine Szenenkarte am Tisch.">Die Spielleitung kann eine Karte importieren, mit einer vorbereiteten Szene verbinden und diese Szene beginnen.</EmptyState> : <>
       <div className="page-heading"><div><h2>{data.map?.name ?? "Eure Szenenkarte"}</h2><p className="field-help">{data.gm ? "Ansicht der Spielleitung" : "Karte nach deinem gewählten Wissensblick"} · Höhe ist ein einzelner Wert, kein Stockwerk.</p></div><div className="button-row"><label className="check-label"><input type="checkbox" checked={grid} onChange={e => setGrid(e.target.checked)} /> Raster anzeigen</label><label className="check-label"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)} /> Beim Ziehen einrasten</label></div></div>
-      <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tiles`)} onMove={drag} onSelect={hit => setSelected(hit?.kind === "token" ? hit.id : "")} />
+      <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tiles`)} onMove={drag} onSelect={hit => setSelected(hit?.kind === "token" ? hit.id : "")} onScopeInvalidated={onChanged} />
       <section className="panel"><h3>Figuren auf der Karte</h3><p className="field-help">Diese Liste bietet dieselben Bewegungen wie die Karte. Änderungen gelten nach Bestätigung durch den Server. Bewegung allein gibt kein neues Wissen frei.</p>
         {data.tokens.length ? <div className="tactical-token-list">{data.tokens.map(token => <TokenEditor key={`${data.sessionId}:${token.id}:${epochs[token.id] ?? 0}`} token={token} selected={token.id === selected} active={data.active} busy={task.busy} onMove={move} onDirty={report} />)}</div> : <p>In dieser Ansicht sind noch keine Figuren sichtbar.</p>}
       </section>
@@ -77,8 +77,8 @@ function TokenEditor({ token, active, busy, selected, onMove, onDirty }: {
   const task = useTask(), dirty = Object.entries(values).some(([key, value]) => value !== baseline[key as keyof typeof values]);
   const replace = (next: TacticalToken) => { setBaseline(next); setValues({ x: next.x, y: next.y, elevation: next.elevation, rotation: next.rotation, scale: next.scale }); };
   useEffect(() => { onDirty(token.id, dirty); }, [token.id, dirty, onDirty]); useEffect(() => () => onDirty(token.id, false), [token.id, onDirty]);
-  useEffect(() => { if (!dirty || !token.canMove) replace(token); }, [token, dirty]);
-  const changed = token.version !== null && baseline.version !== null && token.version !== baseline.version;
+  useEffect(() => { if (!token.canMove || (!dirty && token.version !== null && (baseline.version === null || token.version >= baseline.version))) replace(token); }, [token, dirty, baseline.version]);
+  const changed = token.version !== null && baseline.version !== null && token.version > baseline.version;
   return <form className={selected ? "tactical-token selected" : "tactical-token"} onSubmit={e => { e.preventDefault(); void task.run(async () => { const ack = await onMove(baseline, values); replace({ ...baseline, ...values, version: ack.version }); }); }}>
     <h4>{token.name}</h4>{changed && dirty ? <Notice>Die Position wurde inzwischen geändert. <Button onClick={() => { if (window.confirm("Ungespeicherte Positionswerte verwerfen?")) replace(token); }}>Aktuelle Position übernehmen</Button></Notice> : null}
     <fieldset disabled={busy || task.busy || !token.canMove || !active} className="tactical-command-fields"><div className="rule-fields">{([[

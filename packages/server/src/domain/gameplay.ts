@@ -163,17 +163,23 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       return { id, name: input.name, entryIds: input.entryIds, fictionDate: input.fictionDate, status: "prepared", version: 1 };
     });
   }
-  async function startScene(userId: string, campaignId: string, sceneId: string) {
+  async function startScene(userId: string, campaignId: string, sceneId: string, expected: { expectedSceneVersion?: number; expectedPlanVersion?: number } = {}) {
     return db.transaction(async tx => {
       await authorize(tx, userId, campaignId, true);
-      const scene = (await tx.query<{ status: string }>("SELECT status FROM scenes WHERE id=$1 AND campaign_id=$2", [sceneId, campaignId])).rows[0]; if (!scene) throw new Gone();
+      for (const [key, value] of Object.entries(expected)) if ((key !== "expectedSceneVersion" && key !== "expectedPlanVersion") || !Number.isSafeInteger(value) || value < (key === "expectedSceneVersion" ? 1 : 0)) throw new Gone("scene-start-input");
+      const scene = (await tx.query<{ status: string; version: number }>("SELECT status,version FROM scenes WHERE id=$1 AND campaign_id=$2", [sceneId, campaignId])).rows[0]; if (!scene) throw new Gone();
       if (scene.status === "active") return (await tx.query("SELECT id,scene_id AS \"sceneId\",started_at AS \"startedAt\" FROM game_sessions WHERE campaign_id=$1 AND scene_id=$2 AND ended_at IS NULL", [campaignId, sceneId])).rows[0]!;
+      if (expected.expectedSceneVersion !== undefined && expected.expectedSceneVersion !== scene.version) throw new Conflict();
+      if (expected.expectedPlanVersion !== undefined) {
+        const plan = (await tx.query<{ version: number }>("SELECT version FROM scene_tactical_plans WHERE scene_id=$1 AND campaign_id=$2", [sceneId, campaignId])).rows[0];
+        if (expected.expectedPlanVersion !== (plan?.version ?? 0)) throw new Conflict();
+      }
       await tx.query("UPDATE scenes SET status='ended',version=version+1 WHERE campaign_id=$1 AND status='active'", [campaignId]);
       await tx.query("UPDATE game_sessions SET ended_at=$2 WHERE campaign_id=$1 AND ended_at IS NULL", [campaignId, now()]);
       await tx.query("UPDATE scenes SET status='active',version=version+1 WHERE campaign_id=$1 AND id=$2", [campaignId, sceneId]);
-      const id = randomUUID(); await tx.query("INSERT INTO game_sessions(id,campaign_id,scene_id,started_at,started_by) VALUES($1,$2,$3,$4,$5)", [id, campaignId, sceneId, now(), userId]);
-      await captureTacticalSession(tx, campaignId, sceneId, id, userId, now());
-      return { id, sceneId, startedAt: now() };
+      const id = randomUUID(), startedAt = now(); await tx.query("INSERT INTO game_sessions(id,campaign_id,scene_id,started_at,started_by) VALUES($1,$2,$3,$4,$5)", [id, campaignId, sceneId, startedAt, userId]);
+      await captureTacticalSession(tx, campaignId, sceneId, id, userId, startedAt);
+      return { id, sceneId, startedAt };
     });
   }
   async function projectedActorKnowledge(tx: Db, campaignId: string, actorId: string): Promise<ProjectedKnowledge> {

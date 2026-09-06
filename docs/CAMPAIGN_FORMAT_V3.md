@@ -61,6 +61,9 @@ fields. Native map documents retain the existing TacticalMapDocumentV1 contract.
 Source evidence is stored once; an embedded UVTT image must not also be copied as
 a second full image payload merely to build delivery tiles. Restored delivery
 artifacts are reconstructed from source evidence and current authorization.
+The pure reference parser checks image containers, dimensions and content hashes;
+it does not decode pixels or certify image rendering. Current HTTP import and
+player tile delivery use the server's separately bounded pixel decoder.
 
 The outer v3 file limit is **256 MiB of actual serialized UTF-8 JSON**, including
 escaping, manifest data and any base64 expansion. Each original source is limited
@@ -96,6 +99,10 @@ inputs include `targetCommandId`. Acks contain exactly `{subjectId,version}`.
 No-op receipts keep the existing object version and add no transition. For a
 retained patch the parser reconstructs and checks that fingerprint. Compensation
 targets the permanent receipt, so its original patch may have just left the ring.
+For each live token and portal, distinct acknowledgement versions must cover every
+advance from version 2 through the current version, including pruned changes.
+Repeated no-op acknowledgements cannot fill a missing version. Validation sorts
+the stored versions instead of iterating an untrusted declared version range.
 
 The parser verifies the retained suffix from the undo-base snapshot to current
 state. It cannot reconstruct discarded movements between the original initial

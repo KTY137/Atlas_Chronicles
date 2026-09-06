@@ -3,8 +3,11 @@ import { normalizeCamera, screenToMap } from "./geometry.ts";
 import type { MapCamera, MapPoint, MapRasterTile } from "./model.ts";
 
 /** World extent assigned to decoded raster texels (separate from the clipped map bounds). */
-export function rasterTileDisplaySize(tile: Pick<MapRasterTile, "width" | "height" | "pixelScale">, _pixels: MapPoint): MapPoint {
-  return [tile.width, tile.height];
+export function rasterTileDisplaySize(tile: Pick<MapRasterTile, "width" | "height" | "pixelScale">, pixels: MapPoint): MapPoint {
+  if (![...pixels, tile.pixelScale].every(v => Number.isFinite(v) && v > 0)) throw new Error("invalid raster pixel scale");
+  // Keep every complete texel at the declared LOD scale. The last partial texel
+  // is cropped by the map's mask, never compressed into its remaining width.
+  return [pixels[0] * tile.pixelScale, pixels[1] * tile.pixelScale];
 }
 
 export interface VisibleTile { readonly level: number; readonly x: number; readonly y: number; readonly left: number; readonly top: number; readonly width: number; readonly height: number }

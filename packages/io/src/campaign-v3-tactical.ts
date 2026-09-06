@@ -10,6 +10,11 @@ import { fail, object, list, keys, string, numeric, tacticalJson as stableJson }
 const seal = (value: unknown) => textHash(stableJson(value));
 const same = (a: unknown, b: unknown) => stableJson(a) === stableJson(b);
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
+function group(rows: readonly CampaignRow[], key: (row: CampaignRow) => string): Map<string, CampaignRow[]> {
+  const index = new Map<string, CampaignRow[]>();
+  for (const row of rows) { const id = key(row), found = index.get(id); if (found) found.push(row); else index.set(id, [row]); }
+  return index;
+}
 class Graph {
   private readonly indexes = new Map<string, Map<string, CampaignRow>>();
   constructor(readonly tables: CampaignTablesV3) {}
@@ -32,18 +37,6 @@ function provenance(value: unknown): void {
     catch { fail("source.provenance", "invalid attribution URL"); }
   }
   if (row.retrievedAt !== null && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(String(row.retrievedAt)) || !Number.isFinite(Date.parse(String(row.retrievedAt))))) fail("source.provenance", "UTC attribution time required");
-}
-function fidelity(value: unknown): void {
-  const row = object(value, "source.fidelity"); keys(row, ["version", "direction", "sourceRetained", "exactSource", "nativeRoundTrip", "counts", "issues"], "source.fidelity");
-  if (row.version !== 1 || !["import", "export"].includes(String(row.direction))) fail("source.fidelity", "unsupported fidelity version/direction");
-  for (const name of ["sourceRetained", "exactSource", "nativeRoundTrip"]) if (typeof row[name] !== "boolean") fail("source.fidelity", "boolean required");
-  const counts = object(row.counts, "source.fidelity.counts"); keys(counts, ["walls", "objectBlockers", "portals", "lights"], "source.fidelity.counts");
-  for (const count of Object.values(counts)) numeric(count, "source.fidelity.counts");
-  for (const value of list(row.issues, "source.fidelity.issues")) {
-    const issue = object(value, "source.fidelity.issue"); keys(issue, ["code", "path", "severity", "message"], "source.fidelity.issue");
-    if (!["source-only", "defaulted", "ambiguous-portal", "no-region-bindings", "image-missing", "unsupported-export", "source-rebased"].includes(String(issue.code)) || !["info", "warning", "loss"].includes(String(issue.severity))) fail("source.fidelity.issue", "unknown fidelity issue");
-    string(issue.path, "source.fidelity.path", 4096); string(issue.message, "source.fidelity.message", 8192);
-  }
 }
 function imageMeta(image: UvttImage | null): unknown {
   if (!image) return null;
@@ -97,6 +90,11 @@ const changedVersions = (snap: Snapshot): bigint => [...snap.tokens, ...snap.por
 
 export function checkTacticalTables(t: CampaignTablesV3, campaignId: string): void {
   const g = new Graph(t), sources = new Map<string, ReturnType<typeof source>>(), maps = new Map<string, TacticalMapDocumentV1>();
+  const histories = group(t.tactical_map_revisions, row => String(row.map_id));
+  const anchorGroups = group(t.tactical_map_anchors, row => `${String(row.map_id)}:${row.map_revision}`);
+  const tokenPlans = group(t.scene_token_plans, row => String(row.scene_id)), tokenStates = group(t.tactical_token_states, row => String(row.session_id));
+  const transitionGroups = group(t.tactical_transitions, row => String(row.session_id));
+  const geometryTargets = new Map<string, { stamp: Set<string>; region: Set<string>; place: Set<string> }>();
   for (const table of CAMPAIGN_V3_ADDITIONAL_TABLES) for (const row of t[table.name]) {
     if (row.campaign_id !== campaignId) fail(table.name, "cross-campaign row");
     for (const key of ["created_by", "updated_by", "captured_by", "actor_user_id"]) if (row[key] !== undefined) g.ref("users", [row[key]]);
@@ -105,7 +103,7 @@ export function checkTacticalTables(t: CampaignTablesV3, campaignId: string): vo
   for (const row of t.tactical_maps) {
     if (typeof row.name !== "string" || !/\S/.test(row.name)) fail("tactical_maps", "nonempty map name required");
     g.ref("tactical_map_revisions", [row.id, row.head_revision], ["map_id", "revision"]);
-    const history = t.tactical_map_revisions.filter(rev => rev.map_id === row.id);
+    const history = histories.get(String(row.id)) ?? [];
     if (history.length !== row.head_revision || history.some(rev => Number(rev.revision) > Number(row.head_revision)) || Number(row.version) < Number(row.head_revision)) fail("tactical_maps", "map head does not match complete revision history");
   }
   for (const row of t.tactical_map_revisions) {
@@ -113,37 +111,42 @@ export function checkTacticalTables(t: CampaignTablesV3, campaignId: string): vo
     const document = parseTacticalMapDocument(row.document), artifact = sources.get(String(row.source_id))!;
     if (row.revision === 1 && !same(document, artifact.document)) fail("tactical_map_revisions", "initial map document differs from its retained source");
     if (!same(document.background, imageRef(artifact.image))) fail("tactical_map_revisions", "map background differs from retained source image");
-    const anchors = t.tactical_map_anchors.filter(anchor => anchor.map_id === row.map_id && anchor.map_revision === row.revision).map(anchor => ({ targetKind: anchor.target_kind!, targetId: anchor.target_id!, entryId: anchor.entry_id!, passageId: anchor.passage_id! }))
+    const anchors = (anchorGroups.get(`${String(row.map_id)}:${row.revision}`) ?? []).map(anchor => ({ targetKind: anchor.target_kind!, targetId: anchor.target_id!, entryId: anchor.entry_id!, passageId: anchor.passage_id! }))
       .sort((a, b) => compare(String(a.targetKind), String(b.targetKind)) || compare(String(a.targetId), String(b.targetId)));
     if (row.content_hash !== seal({ document, anchors })) fail("tactical_map_revisions", "map document/anchor hash mismatch");
     maps.set(`${String(row.map_id)}:${row.revision}`, document);
+    geometryTargets.set(`${String(row.map_id)}:${row.revision}`, { stamp: new Set(document.geometry.stamps.map(row => row.id)), region: new Set(document.geometry.regions.map(row => row.id)), place: new Set(document.geometry.places.map(row => row.id)) });
   }
   for (const row of t.tactical_map_anchors) {
     g.ref("tactical_map_revisions", [row.map_id, row.map_revision], ["map_id", "revision"]); g.ref("entries", [row.entry_id]);
     if (row.passage_id !== null && g.ref("passages", [row.passage_id]).entry_id !== row.entry_id) fail("tactical_map_anchors", "passage belongs to another entry");
-    const geometry = maps.get(`${String(row.map_id)}:${row.map_revision}`)!.geometry;
-    const targets = row.target_kind === "stamp" ? geometry.stamps : row.target_kind === "region" ? geometry.regions : geometry.places;
-    if (!targets.some(target => target.id === row.target_id)) fail("tactical_map_anchors", "missing geometry target");
+    const targets = geometryTargets.get(`${String(row.map_id)}:${row.map_revision}`)!;
+    if (!targets[row.target_kind as keyof typeof targets].has(String(row.target_id))) fail("tactical_map_anchors", "missing geometry target");
   }
   for (const row of t.scene_tactical_plans) { g.ref("scenes", [row.scene_id]); g.ref("tactical_map_revisions", [row.map_id, row.map_revision], ["map_id", "revision"]); }
   for (const row of t.scene_token_plans) { g.ref("scene_tactical_plans", [row.scene_id], ["scene_id"]); g.ref("actor_profiles", [row.actor_id], ["actor_id"]); pose(row); }
-  for (const row of t.scene_tactical_plans) if (t.scene_token_plans.filter(token => token.scene_id === row.scene_id).length > 1000) fail("scene_token_plans", "token plan limit exceeded");
+  for (const row of t.scene_tactical_plans) if ((tokenPlans.get(String(row.scene_id))?.length ?? 0) > 1000) fail("scene_token_plans", "token plan limit exceeded");
   for (const row of t.tactical_token_states) { g.ref("session_tactical_states", [row.session_id], ["session_id"]); g.ref("actor_profiles", [row.actor_id], ["actor_id"]); pose(row); }
   const currentBySession = new Map<string, Snapshot>(), baseBySession = new Map<string, Snapshot>();
+  const currentSubjects = new Map<string, Map<string, CampaignRow>>();
   for (const row of t.session_tactical_states) {
     if (g.ref("game_sessions", [row.session_id]).scene_id !== row.scene_id) fail("session_tactical_states", "session/scene mismatch");
     g.ref("scenes", [row.scene_id]); const revision = g.ref("tactical_map_revisions", [row.map_id, row.map_revision], ["map_id", "revision"]), document = maps.get(`${String(row.map_id)}:${row.map_revision}`)!;
     const initial = snapshot(row.initial_snapshot, revision, document, g), base = snapshot(row.undo_base_snapshot, revision, document, g);
     if (row.initial_hash !== seal(initial) || row.undo_base_hash !== seal(base)) fail("session_tactical_states", "snapshot hash mismatch");
-    if ([...initial.tokens, ...initial.portals].some(value => value.version !== 1) || initial.portals.some(portal => document.portals.find(p => p.id === portal.id)!.closed !== portal.closed)) fail("initial_snapshot", "initial state differs from pinned map defaults");
+    const portalDefaults = new Map(document.portals.map(row => [row.id, row.closed]));
+    if ([...initial.tokens, ...initial.portals].some(value => value.version !== 1) || initial.portals.some(portal => portalDefaults.get(String(portal.id)) !== portal.closed)) fail("initial_snapshot", "initial state differs from pinned map defaults");
     if (!same(initial.tokens.map(value => [value.id, value.actorId]), base.tokens.map(value => [value.id, value.actorId]))) fail("undo_base_snapshot", "initial actor/token roster changed");
-    const current = snapshot({ schemaVersion: 1, map: initial.map, tokens: t.tactical_token_states.filter(token => token.session_id === row.session_id).map(stateRow).sort((a, b) => compare(String(a.id), String(b.id))), portals: row.portal_states }, revision, document, g);
+    const current = snapshot({ schemaVersion: 1, map: initial.map, tokens: (tokenStates.get(String(row.session_id)) ?? []).map(stateRow).sort((a, b) => compare(String(a.id), String(b.id))), portals: row.portal_states }, revision, document, g);
     if (!same(initial.tokens.map(value => [value.id, value.actorId]), current.tokens.map(value => [value.id, value.actorId]))) fail("session_tactical_states", "current actor/token roster changed");
     const baseSeq = BigInt(String(row.base_seq)), lastSeq = BigInt(String(row.last_transition_seq));
     if (lastSeq < baseSeq || lastSeq - baseSeq > BigInt(LIMITS.undoTransitionsPerSession) || changedVersions(base) !== baseSeq || changedVersions(current) !== lastSeq) fail("session_tactical_states", "sequence/version accounting mismatch");
     if (baseSeq === 0n && !same(initial, base)) fail("undo_base_snapshot", "unpruned base must equal initial snapshot");
     currentBySession.set(String(row.session_id), current); baseBySession.set(String(row.session_id), base);
+    currentSubjects.set(String(row.session_id), new Map([...current.tokens.map(row => [`token:${String(row.id)}`, row] as const), ...current.portals.map(row => [`portal:${String(row.id)}`, row] as const)]));
   }
+  const liveAckVersions = new Map<string, Set<number>>();
+  const liveSubjectKey = (sessionId: unknown, subjectKind: unknown, subjectId: unknown) => JSON.stringify([sessionId, subjectKind, subjectId]);
   for (const receipt of t.tactical_command_receipts) {
     const ack = object(receipt.ack, "receipt.ack"); keys(ack, ["subjectId", "version"], "receipt.ack");
     if (ack.subjectId !== receipt.subject_id) fail("receipt", "ack subject mismatch");
@@ -159,10 +162,30 @@ export function checkTacticalTables(t: CampaignTablesV3, campaignId: string): vo
     } else {
       if (receipt.scope_kind !== "session" || !["token", "portal"].includes(String(receipt.subject_kind)) || (receipt.operation === "token.move" && receipt.subject_kind !== "token") || (receipt.operation === "portal.set" && receipt.subject_kind !== "portal")) fail("receipt", "live receipt scope mismatch");
       g.ref("session_tactical_states", [receipt.scope_id], ["session_id"]);
-      const snapshot = currentBySession.get(String(receipt.scope_id))!, subject = (receipt.subject_kind === "token" ? snapshot.tokens : snapshot.portals).find(value => value.id === receipt.subject_id);
+      const subject = currentSubjects.get(String(receipt.scope_id))!.get(`${String(receipt.subject_kind)}:${String(receipt.subject_id)}`);
       if (!subject) fail("receipt", "missing current subject"); currentVersion = Number(subject!.version);
+      const key = liveSubjectKey(receipt.scope_id, receipt.subject_kind, receipt.subject_id);
+      let acknowledgedVersions = liveAckVersions.get(key);
+      if (!acknowledgedVersions) { acknowledgedVersions = new Set<number>(); liveAckVersions.set(key, acknowledgedVersions); }
+      acknowledgedVersions.add(acknowledged);
     }
     if (acknowledged > currentVersion) fail("receipt", "ack version is ahead of current subject");
+  }
+  // Every live version advance has a durable minimal acknowledgement, including
+  // changes older than the undo window. No-op receipts may repeat a version but
+  // cannot replace a missing advance. Iterate stored receipts, never an untrusted
+  // current version, and make no claim about discarded positions/request inputs.
+  for (const [sessionId, current] of currentBySession) for (const kind of ["token", "portal"] as const) {
+    for (const subject of kind === "token" ? current.tokens : current.portals) {
+      const acknowledgedVersions = [...(liveAckVersions.get(liveSubjectKey(sessionId, kind, subject.id)) ?? [])].sort((a, b) => a - b);
+      let last = 1;
+      for (const acknowledged of acknowledgedVersions) {
+        if (acknowledged === 1) continue;
+        if (acknowledged !== last + 1) fail("receipt", "missing durable acknowledgement for live version advance");
+        last = acknowledged;
+      }
+      if (last !== subject.version) fail("receipt", "missing durable acknowledgement for live version advance");
+    }
   }
   const transitionCommands = new Set<string>();
   for (const row of t.tactical_transitions) {
@@ -170,13 +193,14 @@ export function checkTacticalTables(t: CampaignTablesV3, campaignId: string): vo
     if (transitionCommands.has(String(row.command_id))) fail("tactical_transitions", "duplicate transition command"); transitionCommands.add(String(row.command_id));
   }
   for (const session of t.session_tactical_states) {
-    const transitions = t.tactical_transitions.filter(row => row.session_id === session.session_id).sort((a, b) => BigInt(String(a.seq)) < BigInt(String(b.seq)) ? -1 : 1);
+    const transitions = [...(transitionGroups.get(String(session.session_id)) ?? [])].sort((a, b) => BigInt(String(a.seq)) < BigInt(String(b.seq)) ? -1 : 1);
     const base = baseBySession.get(String(session.session_id))!, replay = JSON.parse(stableJson(base)) as Snapshot, compensated = new Set<string>();
+    const positions = { token: new Map(replay.tokens.map((row, i) => [row.id, i])), portal: new Map(replay.portals.map((row, i) => [row.id, i])) };
     if (transitions.length > LIMITS.undoTransitionsPerSession || BigInt(transitions.length) !== BigInt(String(session.last_transition_seq)) - BigInt(String(session.base_seq))) fail("tactical_transitions", "retained suffix length mismatch");
     for (let i = 0; i < transitions.length; i++) {
       const row = transitions[i]!, receipt = g.ref("tactical_command_receipts", [row.command_id], ["command_id"]), kind = row.subject_kind as "token" | "portal";
       if (BigInt(String(row.seq)) !== BigInt(String(session.base_seq)) + BigInt(i + 1) || receipt.scope_kind !== "session" || receipt.scope_id !== session.session_id || receipt.subject_kind !== kind || receipt.subject_id !== row.subject_id) fail("tactical_transitions", "receipt/sequence mismatch");
-      const before = state(row.before_state, kind, g), after = state(row.after_state, kind, g), states = kind === "token" ? replay.tokens : replay.portals, index = states.findIndex(value => value.id === row.subject_id);
+      const before = state(row.before_state, kind, g), after = state(row.after_state, kind, g), states = kind === "token" ? replay.tokens : replay.portals, index = positions[kind].get(row.subject_id!) ?? -1;
       if (index < 0 || !same(states[index], before) || before.id !== row.subject_id || after.id !== row.subject_id || Number(after.version) !== Number(before.version) + 1 || same(values(before), values(after)) || kind === "token" && before.actorId !== after.actorId) fail("tactical_transitions", "invalid object change");
       if (!same(receipt.ack, { subjectId: row.subject_id, version: after.version })) fail("tactical_transitions", "ack differs from accepted object version");
       let input: CampaignRow;
@@ -190,7 +214,7 @@ export function checkTacticalTables(t: CampaignTablesV3, campaignId: string): vo
         if (retained) {
           if (BigInt(String(retained.seq)) >= BigInt(String(row.seq)) || BigInt(String(row.seq)) - BigInt(String(retained.seq)) > 50n || !same(values(before), values(object(retained.after_state, "undo.after"))) || !same(values(after), values(object(retained.before_state, "undo.before")))) fail("tactical_transitions", "compensation is not the retained target inverse");
         } else {
-          const subject = (kind === "token" ? base.tokens : base.portals).find(value => value.id === row.subject_id)!;
+          const subject = (kind === "token" ? base.tokens : base.portals)[index]!;
           if (Number(object(target.ack, "undo.ack").version) > Number(subject.version)) fail("tactical_transitions", "missing compensation target is newer than the base");
         }
         compensated.add(String(target.command_id)); input = { commandId: row.command_id!, targetCommandId: target.command_id!, expectedVersion: before.version! };

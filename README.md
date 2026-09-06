@@ -52,7 +52,9 @@ Bearbeitung, Eron-/Azgaar-Import, Karten, Charakterbögen, Szenen, Würfe,
 Bestätigungen, Kampagnenbeiträge und getrennten Tischchat. Die
 [Figurenverwaltung](docs/ACTORS_UI.md) ergänzt versionierte Vorlagen,
 eigenständige Figuren und Gegenstände, geteilte Kontrolle und einen ausdrücklich
-gewählten Wissensblick. Die
+gewählten Wissensblick. Die [Szenenkarte](docs/TACTICAL_UI.md) ergänzt UVTT-Import,
+Wissensregionen, vorbereitete Figuren, getrennten Livezustand und Undo; der Server
+liefert ausschließlich sichtbare Bildkacheln. Die
 [Wochenansicht](docs/WEEK_UI.md) verbindet Briefe, Postlaufzeit, Lesestand und
 Wochenunterschiede. Die Schmiede bietet visuellen Regel- und Bogenbau mit
 Testfiguren, Würfel-Trace und ausdrücklich bestätigter Paketmigration. Sprache,
@@ -64,7 +66,7 @@ stehen in [STATUS.md](STATUS.md).
 Die Spielleitung kann die vollständige Kampagne als native `.chronicle`-Datei
 herunterladen. Der [Restore-Leitfaden](docs/CAMPAIGN_RESTORE.md) beschreibt die
 geprüfte Wiederherstellung in eine leere Instanz und die separate Einrichtung
-neuer Zugangsdaten. Der [Formatvertrag v2](docs/CAMPAIGN_FORMAT_V2.md)
+neuer Zugangsdaten. Der [Formatvertrag v3](docs/CAMPAIGN_FORMAT_V3.md)
 benennt auch ausgeschlossene Laufzeitdaten.
 
 Für Self-Hosting und die optionale Medieninfrastruktur siehe

@@ -75,3 +75,20 @@ movement/retry/revocation/undo and native restore. Pixi and the accessible outli
 the same commands. Named-hardware S-K1/S-T1 measurements remain distinct from functional
 tests and from the pure geometry/raster evidence. Current implementation/test status
 belongs in STATUS.md; this document is the adopted implementation contract.
+
+## Review corrections in the integrated implementation
+
+- A tile denial or scope mismatch invalidates already displayed textures immediately; waiting
+  for a separate projection poll retains old pixels during a network failure. A real three-browser
+  regression revokes knowledge, interrupts only polling, and exercises the actual409 tile route.
+- A coarse image texel keeps its full power-of-two world footprint even at an odd-sized image
+  edge. The renderer clips the last partial texel to the image boundary instead of stretching the
+  entire raster, which displaced geometry over a2561-pixel-wide map.
+- Starting a reviewed preparation accepts optional scene/plan version preconditions under the
+  same campaign lock used to capture its initial snapshot. Stale input fails before ending the
+  previous session; retrying the already-active scene keeps its existing snapshot.
+- Durable per-object receipt versions cover each demonstrated version advance even after undo
+  patches are pruned. Native validation checks distinct stored versions, not receipt counts;
+  duplicate no-op acknowledgements cannot hide a missing original retry receipt.
+- Live invalidation hashes the server's tactical projection digest. Applying the smaller
+  RulePackage JSON budget to an entire valid tactical document rejected large maps after import.

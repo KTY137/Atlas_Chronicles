@@ -71,13 +71,15 @@ function ScenePlan({ campaignId, map, revision, onChanged, onDirty }: { campaign
   const [selected, setSelected] = useState(""), [dirty, setDirty] = useState(false);
   const plan = useResource<TacticalPlan | null>(selected ? apiPath(campaignId, `/scenes/${selected}/tactical-plan`) : null, revision);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
+  const selectedScene = scenes.data?.find(s => s.id === selected);
   return <section className="panel"><h2>Für eine Szene vorbereiten</h2><label>Szene<select value={selected} onChange={e => { if (dirty && !window.confirm("Ungespeicherte Vorbereitung verwerfen?")) return; setSelected(e.target.value); }}><option value="">Szene wählen</option>{scenes.data?.map(s => <option value={s.id} key={s.id}>{s.name} · {s.status === "active" ? "Aktiv" : s.status === "prepared" ? "Vorbereitet" : "Beendet"}</option>)}</select></label>
     {scenes.error || actors.error || plan.error ? <Notice error>{scenes.error || actors.error || plan.error}</Notice> : null}
-    {selected && !plan.loading && !plan.error ? <PlanForm key={`${selected}:${map.id}`} campaignId={campaignId} scene={scenes.data?.find(s => s.id === selected)!} map={map} current={plan.data} actors={actors.data ?? []} onChanged={onChanged} onDirty={report} /> : plan.loading ? <Loading /> : <p className="field-help">Eine neue Szene kannst du in der Tischansicht „Szenen“ anlegen.</p>}
+    {selectedScene && !plan.loading && (!plan.error || plan.loaded || plan.data !== null) ? <PlanForm key={`${selected}:${map.id}`} campaignId={campaignId} scene={selectedScene} map={map} current={plan.data} actors={actors.data ?? []} onChanged={onChanged} onDirty={report} /> : plan.loading ? <Loading /> : <p className="field-help">Eine neue Szene kannst du in der Tischansicht „Szenen“ anlegen.</p>}
   </section>;
 }
 
-function PlanForm({ campaignId, scene, map, current, actors, onChanged, onDirty }: { campaignId: string; scene: SceneCard; map: TacticalMapCard; current: TacticalPlan | null; actors: ActorCard[]; onChanged: () => void; onDirty: (value: boolean) => void }) {
+function PlanForm({ campaignId, scene, map: availableMap, current, actors, onChanged, onDirty }: { campaignId: string; scene: SceneCard; map: TacticalMapCard; current: TacticalPlan | null; actors: ActorCard[]; onChanged: () => void; onDirty: (value: boolean) => void }) {
+  const [map, setMap] = useState(availableMap);
   const [baseline, setBaseline] = useState(current), [tokens, setTokens] = useState<TacticalTokenPlan[]>(current?.mapId === map.id ? current.tokens : []), [actorId, setActorId] = useState("");
   const task = useTask(), command = useCommand(), mounted = useRef(true);
   const [snap, setSnap] = useState(true);
@@ -85,6 +87,7 @@ function PlanForm({ campaignId, scene, map, current, actors, onChanged, onDirty 
   const replace = (next: TacticalPlan | null) => { setBaseline(next); setTokens(next?.mapId === map.id ? next.tokens : []); };
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]); useEffect(() => { mounted.current = true; return () => { mounted.current = false; onDirty(false); }; }, [onDirty]);
   useEffect(() => { if (!dirty && (current?.version ?? 0) > (baseline?.version ?? 0)) replace(current); }, [current, dirty, baseline]);
+  useEffect(() => { if (!dirty && availableMap.revision > map.revision) setMap(availableMap); }, [availableMap, dirty, map.revision]);
   const preview = useMemo<ProjectedMapScene>(() => ({ id: `plan:${scene.id}:${map.id}`, width: map.document.geometry.size[0], height: map.document.geometry.size[1], rasterScope: map.contentHash,
     cells: map.document.geometry.regions.map(r => ({ id: r.id, polygon: r.punkte, fill: 0x60bb8d })), pins: [], grid: map.document.grid,
     tokens: tokens.map(t => ({ id: t.id, x: t.x, y: t.y, label: actors.find(a => a.id === t.actorId)?.name ?? "Figur", movable: !task.busy, radius: Math.min(40, Math.max(7, 11 * t.scale)) })),
@@ -93,6 +96,7 @@ function PlanForm({ campaignId, scene, map, current, actors, onChanged, onDirty 
     await command<TacticalAck>(apiPath(campaignId, `/scenes/${scene.id}/tactical-plan`), { expectedVersion: baseline?.version ?? 0, mapId: map.id, mapRevision: map.revision, tokens }, "PUT");
     const next = await api<TacticalPlan>(apiPath(campaignId, `/scenes/${scene.id}/tactical-plan`)); if (mounted.current) { replace(next); onChanged(); }
   }); }}><fieldset className="tactical-command-fields" disabled={task.busy}><p>Vorbereitung: <strong>{map.name} · Revision {map.revision}</strong>. Speichern gilt für den nächsten Szenenstart.</p>
+    {availableMap.revision > map.revision ? <Notice>Eine neuere Kartenrevision liegt vor. Dein Entwurf bleibt auf Revision {map.revision}. <Button onClick={() => { if (window.confirm("Zur neuen Kartenrevision wechseln und die vorbereiteten Positionen beibehalten?")) setMap(availableMap); }}>Neue Kartenrevision verwenden</Button></Notice> : null}
     <label className="check-label"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)} /> Vorbereitete Figuren am Raster einrasten</label>
     <TacticalCanvas scene={preview} tileBase={apiPath(campaignId, `/tactical/maps/${map.id}/tiles`)} tileQuery={`revision=${map.revision}`} onMove={(id, point) => { if (task.busy) return; const at = snap ? snapMapPoint(point, map.document.grid) : point; setTokens(old => old.map(t => t.id === id ? { ...t, x: at[0], y: at[1] } : t)); }} />
     {baseline?.mapId && baseline.mapId !== map.id ? <Notice>Diese Szene verwendet bisher eine andere Karte. Beim Speichern wird sie durch die hier ausgewählte Karte ersetzt.</Notice> : null}
@@ -103,7 +107,7 @@ function PlanForm({ campaignId, scene, map, current, actors, onChanged, onDirty 
       "x", "X"], ["y", "Y"], ["elevation", "Höhe"], ["rotation", "Drehung (Radiant)"], ["scale", "Größe"],
     ] as const).map(([id, label]) => <label key={id}>{label}<input type="number" step="any" required min={id === "scale" ? .001 : -1e9} max={id === "scale" ? 1e6 : 1e9} value={token[id]} onChange={e => setTokens(old => old.map(t => t.id === token.id ? { ...t, [id]: e.target.valueAsNumber } : t))} /></label>)}</div><Button onClick={() => setTokens(old => old.filter(t => t.id !== token.id))}>Aus der Vorbereitung entfernen</Button></div>)}</div>
     <Button type="submit" variant="primary">Karte & Figuren für Szene speichern</Button>
-    {scene.status !== "active" ? <Button disabled={dirty || !baseline || baseline.mapId !== map.id || baseline.mapRevision !== map.revision} onClick={() => void task.run(async () => { await api(apiPath(campaignId, `/scenes/${scene.id}/start`), { method: "POST" }); if (mounted.current) onChanged(); })}>Vorbereitete Szene beginnen</Button> : <p className="field-help">Die Szene läuft bereits. Ihre Karte und Positionen bleiben von dieser Vorbereitung getrennt.</p>}
+    {scene.status !== "active" ? <Button disabled={dirty || !baseline || baseline.mapId !== map.id || baseline.mapRevision !== map.revision} onClick={() => void task.run(async () => { await api(apiPath(campaignId, `/scenes/${scene.id}/start`), { method: "POST", body: { expectedSceneVersion: scene.version, expectedPlanVersion: baseline?.version ?? 0 } }); if (mounted.current) onChanged(); })}>Vorbereitete Szene beginnen</Button> : <p className="field-help">Die Szene läuft bereits. Ihre Karte und Positionen bleiben von dieser Vorbereitung getrennt.</p>}
     </fieldset>{task.error ? <Notice error>{task.error}</Notice> : null}
   </form>;
 }

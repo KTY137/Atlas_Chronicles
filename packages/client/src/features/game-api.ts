@@ -13,11 +13,18 @@ export const defaults = (fields: Readonly<Record<string, FieldSchema>>): Record<
 
 /** A network retry reuses its command id; a completed gesture allows a new intentional action. */
 export function useCommand() {
-  const pending = useRef<{ fingerprint: string; commandId: string } | null>(null);
+  const pending = useRef(new Map<string, string>());
   return async <T,>(path: string, body: Record<string, unknown>, method: "POST" | "PUT" = "POST"): Promise<T> => {
     const fingerprint = JSON.stringify({ path, body, method });
-    if (pending.current?.fingerprint !== fingerprint) pending.current = { fingerprint, commandId: crypto.randomUUID() };
-    const value = await api<T>(path, { method, body: { ...body, commandId: pending.current.commandId } });
-    pending.current = null; return value;
+    let commandId = pending.current.get(fingerprint);
+    if (!commandId) {
+      // Preserve unresolved acknowledgements even when several token forms share this hook.
+      // Refuse further new gestures at the bound rather than forgetting a retry identity.
+      if (pending.current.size >= 256) throw new Error("Zu viele unbestätigte Änderungen. Bitte die ausstehenden Änderungen erneut versuchen.");
+      commandId = crypto.randomUUID(); pending.current.set(fingerprint, commandId);
+    }
+    const value = await api<T>(path, { method, body: { ...body, commandId } });
+    if (pending.current.get(fingerprint) === commandId) pending.current.delete(fingerprint);
+    return value;
   };
 }

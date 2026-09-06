@@ -49,6 +49,21 @@ describe("native campaign v3 tactical state and bounded receipts", () => {
     ["position data in minimal ack", (d: ReturnType<typeof campaignFixtureV3>) => { d.tables.tactical_command_receipts[0]!.ack = { subjectId: "map", version: 1, x: 0 }; }],
     ["zero scale", (d: ReturnType<typeof campaignFixtureV3>) => { d.tables.scene_token_plans[0]!.scale = 0; }],
   ])("rejects %s with freshly generated outer hashes", (_name, mutate) => { const data = campaignFixtureV3(); mutate(data); expect(() => createCampaignBundleV3(data)).toThrow(); });
+  it("allows no-op acknowledgement duplicates without letting them replace a missing live version", () => {
+    const data = campaignFixtureV3(), first = data.tables.tactical_command_receipts.find(row => row.command_id === "move-1")!;
+    data.tables.tactical_command_receipts.push({ ...first, command_id: "old-noop", request_hash: "c".repeat(64) });
+    expect(() => createCampaignBundleV3(data)).not.toThrow();
+    data.tables.tactical_command_receipts = data.tables.tactical_command_receipts.filter(row => row.command_id !== "move-2");
+    expect(() => createCampaignBundleV3(data)).toThrow(/durable acknowledgement/);
+  });
+  it("rejects an unproven large version without iterating the declared version range", () => {
+    const data = campaignFixtureV3(), session = data.tables.session_tactical_states[0]!, current = data.tables.tactical_token_states[0]!;
+    const base = session.undo_base_snapshot as { tokens: { version: number; x: number }[] };
+    current.version = 2_147_483_647; base.tokens[0]!.version = 2_147_483_647; base.tokens[0]!.x = Number(current.x);
+    session.undo_base_hash = seal(base); session.base_seq = "2147483646"; session.last_transition_seq = "2147483646";
+    data.tables.tactical_transitions = [];
+    expect(() => createCampaignBundleV3(data)).toThrow(/durable acknowledgement/);
+  });
   it("does not claim reconstruction of discarded positions or discarded request preimages", () => {
     const data = campaignFixtureV3(); data.tables.tactical_command_receipts.find(row => row.command_id === "move-1")!.request_hash = "b".repeat(64);
     expect(() => createCampaignBundleV3(data)).not.toThrow();

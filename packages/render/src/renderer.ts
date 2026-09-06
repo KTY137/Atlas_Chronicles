@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
-import { fitCamera, hitTestMap, mapToScreen, normalizeCamera, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
+import { fitCamera, hitTestMap, mapToScreen, normalizeCamera, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
 import { rasterTileDisplaySize, visibleGridLines } from "./tactical-geometry.ts";
-import type { MapCamera, MapHit, MapPoint, MapRenderer, ProjectedMapScene } from "./model.ts";
+import type { MapCamera, MapHit, MapPoint, MapRenderer, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
 export interface MapRendererOptions {
   readonly onSelect?: (hit: MapHit | null) => void;
@@ -51,9 +51,10 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   host.appendChild(canvas);
   const world = new Container();
   const geography = new Container();
-  const raster = new Container(), overlay = new Graphics(), dragPreview = new Graphics();
+  const raster = new Container(), rasterBounds = new Graphics(), overlay = new Graphics(), dragPreview = new Graphics();
   const markers = new Container();
-  world.addChild(raster, geography, overlay, markers, dragPreview);
+  world.addChild(rasterBounds, raster, geography, overlay, markers, dragPreview);
+  raster.mask = rasterBounds;
   app.stage.addChild(world);
   const selection = new Graphics();
   const label = new Text({ text: "", style: { fontFamily: "system-ui, sans-serif", fontSize: 14, fill: 0xffffff,
@@ -106,6 +107,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     for (const child of container.removeChildren()) child.destroy({ children: true });
   };
   const draw = (): void => {
+    rasterBounds.clear().rect(0, 0, scene.width, scene.height).fill(0xffffff);
     clear(geography);
     clear(markers);
     markerGraphics = [];
@@ -139,10 +141,14 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       ensureAlive();
       validateMapScene(next);
       const changedWorld = next.id !== scene.id || next.width !== scene.width || next.height !== scene.height;
+      const changedScope = scene.rasterScope !== next.rasterScope;
       const previousSelection = selected;
-      if (scene.rasterScope !== next.rasterScope || changedWorld) clearRaster();
+      if (changedScope || changedWorld) clearRaster();
       scene = next;
-      if (drag?.token && !scene.tokens?.some(t => t.id === drag?.token && t.movable)) { drag = null; dragPreview.clear(); }
+      if (drag && (changedWorld || changedScope || (drag.snapshot && !retainsTokenDrag(drag.snapshot, scene.tokens?.find(t => t.id === drag?.token))))) {
+        if (canvas.hasPointerCapture(drag.id)) canvas.releasePointerCapture(drag.id);
+        drag = null; dragPreview.clear();
+      }
       if (changedWorld) { camera = fitCamera([scene.width, scene.height], viewport); selected = null; }
       // Remove a selection if the server's replacement projection no longer includes it.
       if (selected && !(selected.kind === "pin" ? scene.pins : selected.kind === "token" ? scene.tokens ?? [] : scene.cells).some((r) => r.id === selected!.id)) selected = null;
@@ -156,7 +162,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     setRasterTiles(scope, tiles) {
       ensureAlive();
       if (scope !== scene.rasterScope) { for (const tile of tiles) tile.image.close(); return; }
-      if (tiles.length > 128 || new Set(tiles.map(t => t.id)).size !== tiles.length || tiles.some(t => ![t.left, t.top, t.width, t.height].every(Number.isFinite) || t.left < 0 || t.top < 0 || t.width <= 0 || t.height <= 0 || t.left + t.width > scene.width || t.top + t.height > scene.height || t.image.width > 1024 || t.image.height > 1024)) {
+      if (tiles.length > 128 || new Set(tiles.map(t => t.id)).size !== tiles.length || tiles.some(t => ![t.left, t.top, t.width, t.height, t.pixelScale].every(Number.isFinite) || t.left < 0 || t.top < 0 || t.width <= 0 || t.height <= 0 || t.pixelScale < 1 || t.pixelScale > 32768 || !Number.isInteger(Math.log2(t.pixelScale)) || t.left + t.width > scene.width || t.top + t.height > scene.height || t.image.width !== Math.ceil(t.width / t.pixelScale) || t.image.height !== Math.ceil(t.height / t.pixelScale) || t.image.width > 1024 || t.image.height > 1024)) {
         for (const tile of tiles) tile.image.close(); throw new Error("invalid raster tiles");
       }
       clearRaster();
@@ -202,12 +208,12 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     const bounds = canvas.getBoundingClientRect();
     return [(event.clientX - bounds.left) * viewport[0] / Math.max(1, bounds.width), (event.clientY - bounds.top) * viewport[1] / Math.max(1, bounds.height)];
   };
-  let drag: { id: number; last: MapPoint; start: MapPoint; moved: boolean; token?: string } | null = null;
+  let drag: { id: number; last: MapPoint; start: MapPoint; moved: boolean; token?: string; snapshot?: ProjectedMapToken } | null = null;
   canvas.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || drag) return;
     const p = local(event);
     const hit = renderer.hitTest(p), token = hit?.kind === "token" ? scene.tokens?.find(t => t.id === hit.id && t.movable) : undefined;
-    drag = { id: event.pointerId, last: p, start: p, moved: false, ...(token ? { token: token.id } : {}) };
+    drag = { id: event.pointerId, last: p, start: p, moved: false, ...(token ? { token: token.id, snapshot: { ...token } } : {}) };
     canvas.setPointerCapture(event.pointerId);
     canvas.focus({ preventScroll: true });
   }, { signal: listeners.signal });

@@ -1,0 +1,49 @@
+# Line endings, and why this file is load-bearing rather than housekeeping.
+#
+# This repository pins bytes. `S-G1 · Der Keim` compares a generator export against a recorded
+# sha256; the UVTT fixture asserts its own digest; the `.chronicle` round-trip gate requires
+# export -> import -> empty diff; and gate `G-RL1 · Nachgerechnet` demands byte-identical replay
+# on Windows, macOS and Linux. Every one of those is a statement about BYTES.
+#
+# With `core.autocrlf=true` (the Windows default, and what this machine has) and no rules here,
+# Git rewrites LF to CRLF **on checkout**. The committed blobs stay clean — verified: the text
+# fixtures carry 0 CR bytes in the object database — but a fresh clone gets different bytes on
+# disk than the ones the tests were written against. Measured by session -22 in a clean
+# worktree: `sampleMap.dd2vtt` gains 379 CR bytes (3,786,608 -> 3,786,987) and its sha256 flips,
+# so `uvtt.test.ts` fails on a machine where nothing is wrong except the checkout.
+#
+# Because the blobs are already LF, this file is sufficient on its own. `git add --renormalize`
+# is NOT required — that would only be needed if CRLF had been baked into the objects.
+#
+# The failure mode this prevents is the nastiest kind: it never reproduces for the person who
+# committed the fixture, only for the next person to clone.
+
+# Default: normalise text in the object database, and check it out with LF everywhere.
+* text=auto eol=lf
+
+# Byte-pinned fixtures — never transformed in either direction.
+design/fixtures/** -text
+packages/forge/test/fixtures/** -text
+packages/io/test/fixtures/** -text
+packages/io/schema/** -text
+*.chronicle -text
+*.dd2vtt -text
+*.df2vtt -text
+*.uvtt -text
+*.dungeondraft_map -text
+
+# Binary formats. Git's NUL-byte heuristic already catches most of these; saying it explicitly
+# means a future format with a sparse header cannot slip through.
+*.gz binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ico binary
+
+# Lockfiles and generated output are diffed by humans rarely and by tools often; keep them LF.
+package-lock.json text eol=lf
+*.sql text eol=lf
