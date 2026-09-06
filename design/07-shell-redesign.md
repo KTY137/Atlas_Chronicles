@@ -267,3 +267,41 @@ Archiv. Nach dem Import ist Chronicle das Wiki.
 Das ist die Trennlinie zu World Anvil: Dort ist das Wiki ein Werk, das man
 pflegt. Hier ist es der **Rückstand des Spielens** — und der Import sorgt nur
 dafür, dass ihr nicht bei null anfangt.
+
+### 11.5 Schreiben ist gebaut, nicht skizziert
+
+Nachtrag 2026-09-06 (Kaya: „ich will dass das wiki voll funktionsfähig ist").
+
+Der Parser wanderte aus dem Import-Skript in den Browser (`src/wikitext.ts`).
+Das ist die tragende Entscheidung: **ein Parser für Import und Bearbeitung**.
+Wer einen Artikel ändert, ändert Wikitext, und dieselbe Funktion strukturiert
+ihn sofort neu — es gibt keinen Serialisierungs-Rückweg, der auseinanderlaufen
+könnte. Das Import-Skript liefert nur noch Rohtext plus Herkunft.
+
+Gebaut und im echten Browser nachgewiesen (`scripts/e2e-wiki.mjs`, 17/17 grün):
+
+- **Bearbeiten** jedes Artikels im Wikitext-Editor, mit sofortiger
+  Neustrukturierung.
+- **Anlegen** aus jedem roten Link; der Keim wird zum Artikel, und der rote Link
+  färbt sich überall grün, wo er vorkam.
+- **Backlinks entstehen sofort** — ein neuer `[[Verweis]]` erzeugt die Rückkante
+  im selben Moment.
+- **Persistenz** über das Neuladen; Änderungen sind als solche markiert und mit
+  „Import wiederherstellen" einzeln zurücknehmbar.
+- **Verzeichnis** (`?welt=index`) nach Objektart, plus „am meisten vermisst" —
+  die roten Links nach Häufigkeit, also die Liste dessen, was die Welt braucht.
+- **Suche** (⌘K) über Titel und Volltext, inklusive neu angelegter Artikel.
+
+Zwei Fehler, die erst der Funktionstest sichtbar machte und die beide behoben
+sind:
+
+1. **Stiller Rückfall.** `?artikel=<unbekannt>` sprang wortlos auf den
+   Standardartikel. Ein Keim ist ein gültiger Zustand und muss deep-linkbar
+   bleiben — genau die Art verstecktes Downgrade, die CLAUDE.md §1 verbietet.
+2. **Veraltete Bühne.** Die Bühne hing in einem `useMemo`, dessen
+   Abhängigkeiten den Änderungszähler nicht enthielten. Nach dem Speichern
+   zeigte der Prototyp weiter den alten Zustand, obwohl korrekt gespeichert
+   worden war. Im Screenshot unsichtbar — nur im Ablauf zu finden.
+
+Im Lab liegt der Schreibspeicher in `localStorage`; im Produkt liegt er auf dem
+Server hinter `Sicht`. Die Grenze ist bewusst gezogen und benannt.

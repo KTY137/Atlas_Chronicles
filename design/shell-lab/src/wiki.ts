@@ -1,45 +1,50 @@
 /**
- * Der importierte Eron-Korpus: 74 Artikel, erzeugt von `scripts/import-wiki.mjs`
- * aus `design/fixtures/eron/articles.json`.
+ * Der Eron-Korpus als lebender Bestand: importierte Artikel plus alles, was in
+ * Chronicle geschrieben wurde. Beide sind dasselbe Objekt — ein importierter
+ * Artikel unterscheidet sich nur durch seine Herkunft, nicht durch sein Format.
  *
  * Prosa: Eron Wiki (eron.fandom.com/de) · CC BY-SA 3.0 · Welt von Kaya und
  * Kollegen. Beispiel-Universum, nie Produktinhalt (Invariante K7).
  */
 
 import generated from "./wiki.generated.json";
+import { getStore, subscribe } from "./wikiStore";
+import {
+  kindOf,
+  parseWikitext,
+  plainText,
+  type ParsedArticle,
+  type Span,
+} from "./wikitext";
 
-export type Span =
-  | { t: "text"; v: string }
-  | { t: "b"; v: string }
-  | { t: "i"; v: string }
-  | { t: "link"; v: string; to: string };
+export type { Block, Span, WikiSection } from "./wikitext";
+export { plainText } from "./wikitext";
 
-export type Block =
-  | { kind: "p"; spans: Span[] }
-  | { kind: "ul"; items: Span[][] }
-  | { kind: "ol"; items: Span[][] }
-  | { kind: "table"; headers: string[]; rows: Span[][][] };
-
-export interface WikiSection {
-  level: number;
-  heading: string | null;
-  blocks: Block[];
+interface GeneratedEntry {
+  title: string;
+  wikitext: string;
+  lastEdit: string;
+  bytes: number;
+  image: string | null;
+  source: string;
+  license: string;
+  revision: number | null;
 }
 
-export interface WikiArticle {
+export interface WikiArticle extends ParsedArticle {
   id: string;
   title: string;
   kind: string;
-  lead: Span[] | null;
-  facts: [string, string][];
-  sections: WikiSection[];
-  links: string[];
+  wikitext: string;
+  image: string | null;
+  lastEdit: string;
+  /** Woher der Artikel stammt — trägt die CC-BY-SA-Pflicht. */
+  origin: { source: string; license: string; revision: number | null } | null;
+  edited: boolean;
+  created: boolean;
   backlinks: string[];
   redLinks: string[];
-  image: string | null;
-  bytes: number;
-  lastEdit: string;
-  sectionCount: number;
+  words: number;
 }
 
 /* Medien liegen als echte Assets neben der Fixture; Vite löst sie zu URLs auf. */
@@ -54,23 +59,10 @@ const mediaByFile = new Map(
   ]),
 );
 
-export const ARTICLES = (generated.articles as WikiArticle[]).map((article) => ({
-  ...article,
-  image: article.image ? (mediaByFile.get(article.image) ?? null) : null,
-}));
+const IMPORTED = (generated as { entries: GeneratedEntry[] }).entries;
+const importedByTitle = new Map(IMPORTED.map((e) => [e.title, e]));
 
-export const ARTICLE_BY_TITLE = new Map(ARTICLES.map((a) => [a.title, a]));
-
-export const articleExists = (title: string) => ARTICLE_BY_TITLE.has(title);
-
-/** Startartikel der Welt-Bühne: die Organisation, an der die Kampagne hängt. */
-export const DEFAULT_ARTICLE = "Flüsterer";
-
-export const plainText = (spans: Span[] | null): string =>
-  (spans ?? []).map((s) => s.v).join("");
-
-/** Wortzahl eines Artikels — Grundlage für „Umfang" in der Übersicht. */
-export const articleWords = (article: WikiArticle): number =>
+const countWords = (article: ParsedArticle): number =>
   plainText(article.lead).split(/\s+/).filter(Boolean).length +
   article.sections.reduce(
     (sum, section) =>
@@ -86,17 +78,129 @@ export const articleWords = (article: WikiArticle): number =>
     0,
   );
 
+interface Corpus {
+  articles: WikiArticle[];
+  byTitle: Map<string, WikiArticle>;
+  stats: {
+    articles: number;
+    words: number;
+    sections: number;
+    links: number;
+    redLinks: number;
+    edited: number;
+    created: number;
+  };
+}
+
+let corpus: Corpus | null = null;
+
+function build(): Corpus {
+  const store = getStore();
+
+  /* Titel = importierte ∪ lokal angelegte. */
+  const titles = new Set<string>([
+    ...IMPORTED.map((e) => e.title),
+    ...Object.keys(store),
+  ]);
+
+  const articles: WikiArticle[] = [];
+  for (const title of titles) {
+    const imported = importedByTitle.get(title);
+    const edit = store[title];
+    const wikitext = edit?.wikitext ?? imported?.wikitext ?? "";
+    const parsed = parseWikitext(wikitext);
+
+    articles.push({
+      ...parsed,
+      id: title,
+      title,
+      kind: kindOf(parsed.templateName),
+      wikitext,
+      image: imported?.image ? (mediaByFile.get(imported.image) ?? null) : null,
+      lastEdit: edit?.editedAt ?? imported?.lastEdit ?? "",
+      origin: imported
+        ? {
+            source: imported.source,
+            license: imported.license,
+            revision: imported.revision,
+          }
+        : null,
+      edited: Boolean(edit) && Boolean(imported),
+      created: Boolean(edit?.created) || !imported,
+      backlinks: [],
+      redLinks: [],
+      words: countWords(parsed),
+    });
+  }
+
+  articles.sort((a, b) => a.title.localeCompare(b.title, "de"));
+
+  const byTitle = new Map(articles.map((a) => [a.title, a]));
+  for (const article of articles) {
+    for (const target of article.links) {
+      const hit = byTitle.get(target);
+      if (hit && hit.title !== article.title) hit.backlinks.push(article.title);
+    }
+    article.redLinks = article.links.filter((l) => !byTitle.has(l));
+  }
+  for (const article of articles) {
+    article.backlinks = [...new Set(article.backlinks)].sort((a, b) =>
+      a.localeCompare(b, "de"),
+    );
+  }
+
+  return {
+    articles,
+    byTitle,
+    stats: {
+      articles: articles.length,
+      words: articles.reduce((s, a) => s + a.words, 0),
+      sections: articles.reduce((s, a) => s + a.sections.length, 0),
+      links: articles.reduce((s, a) => s + a.links.length, 0),
+      redLinks: new Set(articles.flatMap((a) => a.redLinks)).size,
+      edited: articles.filter((a) => a.edited).length,
+      created: articles.filter((a) => a.created).length,
+    },
+  };
+}
+
+function current(): Corpus {
+  if (!corpus) corpus = build();
+  return corpus;
+}
+
+/* Nach jedem Schreibvorgang neu aufbauen: Links, Backlinks und rote Links
+   müssen sofort stimmen — ein neuer Artikel färbt seine roten Links grün. */
+subscribe(() => {
+  corpus = null;
+});
+
+export const allArticles = (): WikiArticle[] => current().articles;
+export const getArticle = (title: string): WikiArticle | undefined =>
+  current().byTitle.get(title);
+export const articleExists = (title: string): boolean =>
+  current().byTitle.has(title);
+export const corpusStats = () => current().stats;
+
+export const DEFAULT_ARTICLE = "Flüsterer";
+
+/** Vorlage für einen neu angelegten Artikel — ein Keim, kein leeres Blatt. */
+export const seedWikitext = (title: string, from?: string): string =>
+  `'''${title}''' —${from ? ` erwähnt in [[${from}]].` : ""} Hier steht noch nichts.\n\n` +
+  `== Überblick ==\nSchreib hier, was am Tisch bekannt wurde.\n`;
+
 export interface SearchHit {
   article: WikiArticle;
   score: number;
   snippet: string;
 }
 
-/** Titel- und Volltextsuche über den ganzen Korpus. */
-export function searchArticles(query: string, limit = 12): SearchHit[] {
+export function searchArticles(query: string, limit = 40): SearchHit[] {
   const needle = query.trim().toLowerCase();
+  const articles = current().articles;
+
   if (!needle) {
-    return ARTICLES.slice(0, limit).map((article) => ({
+    return articles.slice(0, limit).map((article) => ({
       article,
       score: 0,
       snippet: plainText(article.lead).slice(0, 120),
@@ -104,7 +208,7 @@ export function searchArticles(query: string, limit = 12): SearchHit[] {
   }
 
   const hits: SearchHit[] = [];
-  for (const article of ARTICLES) {
+  for (const article of articles) {
     const title = article.title.toLowerCase();
     let score = 0;
     if (title === needle) score = 100;
@@ -112,39 +216,48 @@ export function searchArticles(query: string, limit = 12): SearchHit[] {
     else if (title.includes(needle)) score = 60;
 
     const lead = plainText(article.lead);
-    const bodyIndex = lead.toLowerCase().indexOf(needle);
-    if (bodyIndex !== -1) score = Math.max(score, 40);
+    const inLead = lead.toLowerCase().indexOf(needle);
+    if (inLead !== -1) score = Math.max(score, 40);
 
     let snippet = lead.slice(0, 120);
-    if (score === 40 && bodyIndex !== -1) {
-      const from = Math.max(0, bodyIndex - 40);
+    if (score <= 40 && inLead !== -1) {
+      const from = Math.max(0, inLead - 40);
       snippet = `${from > 0 ? "…" : ""}${lead.slice(from, from + 120)}`;
     }
 
     if (score === 0) {
-      /* Volltext über die Abschnitte — teurer, deshalb zuletzt. */
-      const found = article.sections.some((section) =>
-        section.blocks.some(
-          (block) =>
-            block.kind === "p" &&
-            plainText(block.spans).toLowerCase().includes(needle),
-        ),
-      );
-      if (found) score = 20;
+      for (const section of article.sections) {
+        for (const block of section.blocks) {
+          if (block.kind !== "p") continue;
+          const text = plainText(block.spans);
+          const at = text.toLowerCase().indexOf(needle);
+          if (at !== -1) {
+            score = 20;
+            const from = Math.max(0, at - 40);
+            snippet = `${from > 0 ? "…" : ""}${text.slice(from, from + 120)}`;
+            break;
+          }
+        }
+        if (score) break;
+      }
     }
 
     if (score > 0) hits.push({ article, score, snippet });
   }
 
   return hits
-    .sort((a, b) => b.score - a.score || a.article.title.localeCompare(b.article.title, "de"))
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.article.title.localeCompare(b.article.title, "de"),
+    )
     .slice(0, limit);
 }
 
-/** Die häufigsten roten Links — was die Welt als Nächstes braucht. */
-export function topRedLinks(limit = 8): { title: string; wanted: number }[] {
+/** Die am häufigsten verlangten roten Links — was die Welt als Nächstes braucht. */
+export function topRedLinks(limit = 12): { title: string; wanted: number }[] {
   const counts = new Map<string, number>();
-  for (const article of ARTICLES) {
+  for (const article of current().articles) {
     for (const red of article.redLinks) {
       counts.set(red, (counts.get(red) ?? 0) + 1);
     }
@@ -155,10 +268,4 @@ export function topRedLinks(limit = 8): { title: string; wanted: number }[] {
     .slice(0, limit);
 }
 
-export const CORPUS_STATS = {
-  articles: ARTICLES.length,
-  words: ARTICLES.reduce((sum, a) => sum + articleWords(a), 0),
-  sections: ARTICLES.reduce((sum, a) => sum + a.sections.length, 0),
-  links: ARTICLES.reduce((sum, a) => sum + a.links.length, 0),
-  redLinks: new Set(ARTICLES.flatMap((a) => a.redLinks)).size,
-};
+export type { Span as WikiSpan };

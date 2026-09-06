@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CornerDownLeft, Search } from "lucide-react";
 
-import { CORPUS_STATS, searchArticles } from "../wiki";
+import { corpusStats, searchArticles } from "../wiki";
 
 interface Props {
   onOpen: (title: string) => void;
@@ -18,7 +18,8 @@ export function Palette({ onOpen, onClose }: Props) {
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const hits = useMemo(() => searchArticles(query), [query]);
+  const hits = useMemo(() => searchArticles(query, 40), [query]);
+  const stats = corpusStats();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -97,8 +98,10 @@ export function Palette({ onOpen, onClose }: Props) {
         </div>
 
         <div className="palette-foot">
-          {CORPUS_STATS.articles} Artikel · {CORPUS_STATS.words.toLocaleString("de")} Wörter ·{" "}
-          {CORPUS_STATS.redLinks} rote Links — importiert aus dem Eron-Wiki
+          {stats.articles} Artikel · {stats.words.toLocaleString("de")} Wörter ·{" "}
+          {stats.redLinks} Keime
+          {stats.created ? ` · ${stats.created} hier entstanden` : ""} — ↑↓ wählen,
+          ⏎ öffnen
         </div>
       </div>
     </div>

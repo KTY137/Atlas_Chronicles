@@ -14,7 +14,8 @@ import { Kanal } from "./stages/Kanal";
 import { Schmiede } from "./stages/Schmiede";
 import { Netz } from "./stages/Netz";
 import { Palette } from "./shell/Palette";
-import { DEFAULT_ARTICLE, articleExists } from "./wiki";
+import { DEFAULT_ARTICLE } from "./wiki";
+import { subscribe } from "./wikiStore";
 
 const LOOKS: readonly LookId[] = ["obsidian", "vellum", "aurora"];
 const STAGES: readonly StageId[] = [
@@ -57,11 +58,20 @@ export function App() {
     const value = new URLSearchParams(window.location.search).get("whisper");
     return PARTY.some((p) => p.id === value) ? value : null;
   });
+  /* Ein unbekannter Titel ist KEIN Fehler, sondern ein Keim — und muss
+     deep-linkbar bleiben. Stiller Rückfall auf den Standardartikel wäre ein
+     verstecktes Downgrade. */
   const [article, setArticle] = useState<string>(() => {
     const value = new URLSearchParams(window.location.search).get("artikel");
-    return value && articleExists(value) ? value : DEFAULT_ARTICLE;
+    return value?.trim() ? value : DEFAULT_ARTICLE;
   });
   const [articleHistory, setArticleHistory] = useState<string[]>([]);
+  const [weltIndex, setWeltIndex] = useState(
+    () => new URLSearchParams(window.location.search).get("welt") === "index",
+  );
+  /* Schreibvorgänge bauen den Korpus neu auf — die Bühne muss neu rendern. */
+  const [revision, setRevision] = useState(0);
+  useEffect(() => subscribe(() => setRevision((n) => n + 1)), []);
   const [paletteOpen, setPaletteOpen] = useState(
     () => new URLSearchParams(window.location.search).get("palette") === "1",
   );
@@ -88,7 +98,10 @@ export function App() {
     if (selection) params.set("lens", selection);
     if (whisperTarget) params.set("whisper", whisperTarget);
     if (voiceDown) params.set("voice", "down");
-    if (effectiveStage === "welt") params.set("artikel", article);
+    if (effectiveStage === "welt") {
+      params.set("artikel", article);
+      if (weltIndex) params.set("welt", "index");
+    }
     window.history.replaceState(null, "", `?${params.toString()}`);
   }, [
     look,
@@ -99,6 +112,7 @@ export function App() {
     whisperTarget,
     voiceDown,
     article,
+    weltIndex,
   ]);
 
   /* ⌘K / Strg+K öffnet die Omnibox — der Ersatz für eine Artikelspalte. */
@@ -114,8 +128,9 @@ export function App() {
   }, []);
 
   const openArticle = (next: string) => {
-    setArticleHistory((past) => [...past, article]);
+    setArticleHistory((past) => (next === article ? past : [...past, article]));
     setArticle(next);
+    setWeltIndex(false);
     setStage("welt");
   };
   const backArticle = () => {
@@ -173,8 +188,10 @@ export function App() {
             title={article}
             onOpen={openArticle}
             onSelect={select}
-            history={[article, ...articleHistory]}
+            canGoBack={articleHistory.length > 0}
             onBack={backArticle}
+            showIndex={weltIndex}
+            onShowIndex={setWeltIndex}
           />
         );
       case "tisch":
@@ -187,7 +204,9 @@ export function App() {
         return <Netz voiceDown={voiceDown} onToggleVoice={setVoiceDown} />;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveStage, role, selection, voiceDown, article, articleHistory]);
+    // revision gehört in die Abhängigkeiten: Ein Schreibvorgang baut den
+    // Korpus neu auf, und ohne ihn liefert der Memo die veraltete Bühne.
+  }, [effectiveStage, role, selection, voiceDown, article, articleHistory, weltIndex, revision]);
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>

@@ -1959,3 +1959,195 @@ button {
     font-size: 19px;
   }
 }
+
+/* ------------------------------------------- Welt: Werkzeuge & Bearbeiten */
+
+.article-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.article-toolbar .chip {
+  cursor: pointer;
+  transition: border-color var(--t-response), color var(--t-response);
+}
+
+.article-toolbar .chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.seed-note {
+  color: var(--text-muted);
+  margin-top: 12px;
+  max-width: 48ch;
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+
+.seed-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.editor-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.editor {
+  width: 100%;
+  min-height: 58vh;
+  padding: 18px 20px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  resize: vertical;
+  tab-size: 2;
+}
+
+.editor:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.editor-hint {
+  margin-top: 12px;
+  color: var(--text-faint);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.editor-hint code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+/* ----------------------------------------------------------- Verzeichnis */
+
+.index-wrap {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 48px 32px 72px;
+}
+
+.index-head {
+  padding-bottom: 18px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.index-head h1 {
+  font-size: clamp(30px, 4.5vw, 46px);
+  margin: 6px 0 8px;
+}
+
+.index-stats {
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.index-head .chip {
+  cursor: pointer;
+}
+
+.index-group {
+  margin-top: 26px;
+}
+
+.index-count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-faint);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.index-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.index-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border-radius: var(--radius-m);
+  border: var(--card-border);
+  background: var(--surface);
+  text-align: left;
+  transition: border-color var(--t-response), transform var(--t-response);
+}
+
+.index-item:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.index-item-title {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.index-item-meta {
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.index-item.red .index-item-title {
+  color: var(--danger);
+}
+
+.index-item.red {
+  border-style: dashed;
+}
+
+@media (max-width: 640px) {
+  .index-wrap {
+    padding: 28px 16px 56px;
+  }
+
+  .index-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .editor {
+    min-height: 46vh;
+    font-size: 12.5px;
+  }
+}

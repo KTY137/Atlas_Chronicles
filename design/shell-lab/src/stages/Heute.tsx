@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 
 import { ATTRIBUTION, CAMPAIGN, type Role, type StageId } from "../fixture";
-import { CORPUS_STATS } from "../wiki";
+import { corpusStats } from "../wiki";
 
 interface Props {
   role: Role;
@@ -10,6 +10,7 @@ interface Props {
 
 /** Heute ist Router, kein Dashboard-Friedhof: der nächste sinnvolle Schritt. */
 export function Heute({ role, goTo }: Props) {
+  const stats = corpusStats();
   return (
     <div className="stage-scroll">
       <div className="heute">
@@ -61,10 +62,10 @@ export function Heute({ role, goTo }: Props) {
             onClick={() => goTo("welt")}
           >
             <span className="eyebrow">Im Buch weiterlesen</span>
-            <b>{CORPUS_STATS.articles} Artikel · Eron</b>
+            <b>{stats.articles} Artikel · Eron</b>
             <span>
-              {CORPUS_STATS.words.toLocaleString("de")} Wörter ·{" "}
-              {CORPUS_STATS.redLinks} rote Links warten auf einen Keim
+              {stats.words.toLocaleString("de")} Wörter · {stats.redLinks} Keime
+              warten darauf, geschrieben zu werden
             </span>
           </button>
           {role === "gm" ? (
