@@ -19,6 +19,7 @@
 .channel-message header > div { min-width: 0; }
 .channel-message header strong { display: block; font-size: 13px; font-weight: 500; }
 .channel-message time { color: var(--text-muted); font-size: 11px; }
+.channel-message-kind { color: var(--text-muted); font-size: 11px; }
 .channel-message-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; margin-bottom: 10px; }
 .channel-parent { border-left: 2px solid var(--line-strong); padding: 8px 12px; margin: 0 0 13px; color: var(--text-muted); background: var(--surface); font-size: 12px; }
 .channel-parent a { text-decoration: none; }
@@ -35,7 +36,10 @@
 .channel-reply-draft > span { font-size: 12px; overflow-wrap: anywhere; min-width: 0; }
 .channel-presence { position: sticky; top: 22px; padding: 20px; }
 .channel-presence h2 { font-size: 14px; }
-.channel-presence > p { font-size: 12px; }
+.channel-presence summary { cursor: pointer; margin-bottom: 15px; }
+.channel-presence summary h2 { margin: 0; }
+.channel-presence summary::-webkit-details-marker { margin-right: 6px; }
+.channel-presence details > p { font-size: 12px; }
 .channel-presence ul { list-style: none; padding: 0; margin: 15px 0 25px; }
 .channel-presence li { display: flex; align-items: center; gap: 11px; margin: 15px 0; min-width: 0; }
 .channel-presence li > div { min-width: 0; }

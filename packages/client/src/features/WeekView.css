@@ -1,4 +1,5 @@
 .week-page { max-width: 1400px; }
+.week-intro { max-width: 760px; margin: 0 0 20px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
 .week-book-link { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin: 0 0 25px; padding: 15px 0; border-block: 1px solid var(--line); }
 .week-book-link p { margin: 0; color: var(--text-muted); font-size: 13px; }
 .week-clock .section-heading { align-items: start; }
@@ -18,6 +19,10 @@
 .week-envelope span { color: var(--text-muted); }
 .week-envelope.active { background: var(--accent-soft); border-color: var(--line-strong); }
 .week-envelope:hover { background: var(--surface); }
+.week-envelopes .empty-state { min-height: 0; padding: 10px 0; }
+.week-envelopes .empty-glyph { display: none; }
+.week-envelopes .empty-state h2 { font-family: var(--font-body); font-size: 14px; }
+.week-envelopes .empty-state p { font-size: 12px; margin: 0 0 12px; }
 .week-letter-stage { min-width: 0; }
 .week-letter-stage .empty-state { min-height: 280px; padding: 30px 10px; }
 .week-letter-stage .empty-glyph { font-size: 36px; }
@@ -70,5 +75,9 @@
 .week-difference-columns li { font-size: 12px; margin-bottom: 18px; overflow-wrap: anywhere; }
 .week-difference-columns .button { display: block; padding: 0; text-align: left; white-space: normal; min-height: 30px; }
 .week-difference-columns li span { display: block; }
+.week-difference .empty-state { min-height: 0; padding: 6px 0; }
+.week-difference .empty-glyph { display: none; }
+.week-difference .empty-state h2 { font-family: var(--font-body); font-size: 13px; }
+.week-difference .empty-state p { font-size: 12px; margin: 0 0 10px; }
 @media (max-width: 900px) { .week-book-link { align-items: start; flex-direction: column; }.week-mail-layout { grid-template-columns: minmax(170px, .65fr) minmax(0, 1.5fr); gap: 20px; }.week-envelopes { padding-right: 15px; }.week-clock-fields, .week-difference-columns { grid-template-columns: minmax(0, 1fr); gap: 0; } }
 @media (max-width: 600px) { .week-page { padding: 25px 15px; }.week-clock, .week-composer, .week-difference { padding: 18px; }.week-mail-layout { grid-template-columns: minmax(0, 1fr); }.week-envelopes { border-right: 0; padding: 0 0 18px; border-bottom: 1px solid var(--line); }.week-envelopes ul { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 6px; }.week-envelopes li { min-width: 180px; max-width: 250px; flex-shrink: 0; }.week-mail-heading { align-items: start; }.week-mail-heading .button { white-space: normal; }.week-clock .section-heading { flex-direction: column; }.week-clock-now { text-align: left; }.week-evidence { grid-template-columns: minmax(0, 1fr); gap: 4px; }.week-evidence dd { margin-bottom: 10px; } }

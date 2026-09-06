@@ -269,3 +269,35 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
 .crash-screen p { margin: 0; color: var(--ink-muted, inherit); line-height: 1.6; }
 .crash-screen details { justify-self: stretch; }
 .crash-screen pre { overflow: auto; padding: 0.75rem; border-radius: 6px; background: var(--surface-sunken, rgba(0,0,0,.25)); font-size: 0.8rem; }
+
+/* ---------------------------------------------------------------------------------------
+   Telefon-Korrekturen, aus einer echten Begehung auf 390 px (2026-09-06), nicht aus Theorie.
+   Drei beobachtete Fehler, in der Reihenfolge ihrer Schwere.
+
+   1. Die Artikelliste war ein waagerechtes Band: 73 Artikel a 190 px ergaben eine Flaeche von
+      13.890 px Breite und 90 px Hoehe, von der zwei Artikel gleichzeitig sichtbar waren. Ein
+      Verzeichnis, durch das man seitwaerts wischt, ist auf einem Telefon kein Verzeichnis.
+      Es wird jetzt eine gewoehnliche senkrechte Liste mit eigenem Bildlauf.
+   2. Der Import war auf dem Telefon vollstaendig ausgeblendet (`.sidebar-bottom: none`), also
+      genau die Funktion, die der Auftraggeber vermisst hat. Mit der senkrechten Liste ist der
+      Platz da, und sie kommt zurueck.
+   3. Die Hauptnavigation war auf 544 px beschnitten, sodass zwei Ziele ausserhalb des Bildes
+      lagen — ohne jeden Hinweis, dass dort noch etwas ist. Die Eintraege werden schmaler, und
+      ein Schatten an der Kante zeigt, dass die Leiste weitergeht.
+   --------------------------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .entry-list { display: block; overflow-x: hidden; overflow-y: auto; max-height: 220px; padding: 0 10px 8px; }
+  .entry-item { min-width: 0; max-width: none; width: auto; margin-bottom: 6px; }
+  .entry-item.active { box-shadow: inset 2px 0 var(--accent); }
+  .entry-sidebar { max-height: 340px; }
+  .sidebar-bottom { display: block; }
+
+  /* Der Schatten ist die einzige Andeutung, dass die Leiste ueber den Rand hinausgeht. */
+  .rail { box-shadow: inset -20px 0 14px -14px rgba(0, 0, 0, .75); scrollbar-width: thin; }
+  .rail-item { min-width: 62px; }
+}
+@media (max-width: 430px) {
+  .rail-item { min-width: 52px; padding: 0 2px; }
+  .rail-item span { font-size: 8px; }
+  .rail-item svg { width: 16px; }
+}

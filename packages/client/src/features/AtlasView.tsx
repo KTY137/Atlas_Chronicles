@@ -54,6 +54,10 @@ export function AtlasView({ campaignId, role, onOpenEntry }: AtlasViewProps) {
       && (!needle || (node.title ?? "Unbenannt").toLocaleLowerCase("de").includes(needle)))
       .sort((a, b) => (a.title ?? "Unbenannt").localeCompare(b.title ?? "Unbenannt", "de"));
   }, [map.data, query, kind]);
+  // Was liegt im ausgewählten Ort? Kein eigener Server-Aufruf nötig: jeder Knoten kennt seine Eltern,
+  // die Umkehrung ergibt bereits im Client, was ein Ort enthält.
+  const children = useMemo(() => (map.data?.nodes ?? []).filter((node) => node.parents.some((parent) => parent.id === selectedId))
+    .sort((a, b) => (a.title ?? "Unbenannt").localeCompare(b.title ?? "Unbenannt", "de")), [map.data, selectedId]);
 
   useEffect(() => {
     setMapId(""); setSelectedId(""); setMessage(""); setQuery("");
@@ -134,7 +138,7 @@ export function AtlasView({ campaignId, role, onOpenEntry }: AtlasViewProps) {
 
   return <section className="atlas-feature" aria-label="Atlas">
     <header className="atlas-heading"><div><p className="eyebrow">Eure Welt, Ort für Ort</p><h1><Compass size={28} aria-hidden="true" /> Atlas</h1><p className="muted">Jede Reise beginnt mit einem Ort.</p></div>
-      <div className="atlas-heading-actions"><Button variant="quiet" aria-label="Atlas aktualisieren" disabled={task.busy} onClick={refresh}><RefreshCw size={16} /></Button>
+      <div className="atlas-heading-actions"><Button variant="quiet" aria-label="Atlas aktualisieren" title="Atlas aktualisieren" disabled={task.busy} onClick={refresh}><RefreshCw size={16} /></Button>
         {gm && <><input ref={fileInput} className="atlas-file-input" type="file" accept=".json,application/json" aria-label="Azgaar-Kartendatei auswählen"
           onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file); }} />
           <Button variant="primary" disabled={task.busy} onClick={() => fileInput.current?.click()}><Upload size={16} /> {task.busy ? "Wird gespeichert …" : "Karte importieren"}</Button></>}
@@ -143,9 +147,9 @@ export function AtlasView({ campaignId, role, onOpenEntry }: AtlasViewProps) {
     {message && <Notice>{message}</Notice>}
     {maps.error && <Notice error>{maps.error}</Notice>}
     {maps.loading && <Loading text="Euer Atlas wird geöffnet …" />}
-    {!maps.loading && !maps.error && !maps.data?.length && !mapId && <EmptyState title={gm ? "Eine Welt wartet auf ihre Geschichte." : "Deine Reise beginnt hier."}
-      action={gm ? <Button variant="primary" onClick={() => fileInput.current?.click()}><Upload size={16} /> Weltkarte auswählen</Button> : undefined}>
-      {gm ? "Exportiere deine Welt in Azgaar über Export → Full JSON. Deine Orte werden gespeichert; Artikel legst du gezielt an." : "Sobald die Spielleitung einen Ort für deine Figur freigibt, erscheint er hier."}
+    {!maps.loading && !maps.error && !maps.data?.length && !mapId && <EmptyState title={gm ? "Euer Atlas wartet auf die erste Weltkarte." : "Deine Reise beginnt hier."}
+      action={gm ? <Button variant="primary" onClick={() => fileInput.current?.click()}><Upload size={16} /> Weltkarte importieren</Button> : undefined}>
+      {gm ? "Der Atlas zeigt eure Weltkarte, verknüpft Orte mit Wiki-Artikeln und gibt sie gezielt an Spieler frei. Gebaut wird die Karte nicht im Atlas: Erstellt eure Welt im kostenlosen Kartenprogramm Azgaar und exportiert sie dort über Export → Full JSON. Diese Datei importiert ihr hier." : "Der Atlas zeigt die Weltkarte eurer Kampagne, aber nur die Orte, die eure Spielleitung für deine Figur freigegeben hat. Sobald der erste Ort freigegeben ist, erscheint er hier."}
     </EmptyState>}
     {!!maps.data?.length && <div className="atlas-map-choice"><Map size={17} aria-hidden="true" /><label htmlFor="atlas-map-select">Weltkarte</label>
       <select id="atlas-map-select" value={mapId} onChange={(event) => { setMapId(event.target.value); setMessage(""); }} disabled={task.busy}>{maps.data.map((row) => <option key={row.id} value={row.id}>{row.title}</option>)}</select>
@@ -163,27 +167,31 @@ export function AtlasView({ campaignId, role, onOpenEntry }: AtlasViewProps) {
       <div className="atlas-canvas-column"><div className="atlas-map-frame"><div ref={host} className="atlas-render-host" />
         {!rendererReady && !rendererError && <div className="atlas-canvas-loading"><Loading text="Karte wird gezeichnet …" /></div>}
         {rendererError && <div className="atlas-canvas-fallback"><Compass size={40} /><p>{rendererError}</p><p>Alle verfügbaren Orte findest du in der Ortsliste.</p></div>}
-        <div className="atlas-map-tools" aria-label="Kartenansicht"><Button disabled={!rendererReady} aria-label="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.3)}><Plus size={16} /></Button>
-          <span aria-label={`Vergrößerung ${zoom} Prozent`}>{zoom}%</span><Button disabled={!rendererReady} aria-label="Karte verkleinern" onClick={() => renderer.current?.zoomAt(1 / 1.3)}><Minus size={16} /></Button>
-          <Button disabled={!rendererReady} aria-label="Gesamte Karte anzeigen" onClick={() => renderer.current?.fit()}><Maximize size={16} /></Button></div>
+        <div className="atlas-map-tools" aria-label="Kartenansicht"><Button disabled={!rendererReady} aria-label="Karte vergrößern" title="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.3)}><Plus size={16} /></Button>
+          <span aria-label={`Vergrößerung ${zoom} Prozent`}>{zoom}%</span><Button disabled={!rendererReady} aria-label="Karte verkleinern" title="Karte verkleinern" onClick={() => renderer.current?.zoomAt(1 / 1.3)}><Minus size={16} /></Button>
+          <Button disabled={!rendererReady} aria-label="Gesamte Karte anzeigen" title="Gesamte Karte anzeigen" onClick={() => renderer.current?.fit()}><Maximize size={16} /></Button></div>
         <span className="atlas-map-caption">{map.data.title}</span></div><p className="atlas-navigation-hint">Ziehen zum Bewegen · Mausrad zum Zoomen · Orte auch über die Liste öffnen</p>
         {gm && map.data.report && <details className="atlas-import-report"><summary>Importbericht</summary><p>{map.data.report.orte} Orte · {map.data.report.zellen} Kartenzellen</p>
           <p>{map.data.report.unterdrueckteNotizen} Generatornotizen wurden als Quelle aufbewahrt und nicht veröffentlicht.</p>
           {map.data.report.hinweise.map((line) => <p key={line}>{line}</p>)}</details>}
       </div>
-      {selected && <aside className="atlas-inspector" aria-label={`Ort: ${selected.title ?? "Unbenannt"}`}><div className="atlas-inspector-top"><span className="eyebrow">{kindLabel[selected.kind] ?? selected.kind}</span><Button variant="quiet" aria-label="Ortsdetails schließen" onClick={() => { setSelectedId(""); renderer.current?.select(null); }}><X size={16} /></Button></div>
+      {selected && <aside className="atlas-inspector" aria-label={`Ort: ${selected.title ?? "Unbenannt"}`}><div className="atlas-inspector-top"><span className="eyebrow">{kindLabel[selected.kind] ?? selected.kind}</span><Button variant="quiet" aria-label="Ortsdetails schließen" title="Ortsdetails schließen" onClick={() => { setSelectedId(""); renderer.current?.select(null); }}><X size={16} /></Button></div>
         <h2>{selected.title ?? "Unbenannt"}</h2>
-        {!!selected.parents.length && <div className="atlas-parents">{selected.parents.map((parent) => {
+        {!!selected.parents.length && <div className="atlas-hierarchy"><p className="atlas-hierarchy-label">Liegt in</p><div className="atlas-parents">{selected.parents.map((parent) => {
           const node = map.data!.nodes.find((row) => row.id === parent.id);
           return node ? <button key={`${parent.kind}:${parent.id}`} type="button" onClick={() => choose(node.id)}>{node.title ?? "Unbenannt"}</button> : null;
-        })}</div>}
+        })}</div></div>}
+        {!!children.length && <div className="atlas-hierarchy"><p className="atlas-hierarchy-label">Enthält</p><div className="atlas-parents">{children.map((node) => (
+          <button key={node.id} type="button" onClick={() => choose(node.id)}>{node.title ?? "Unbenannt"}</button>
+        ))}</div></div>}
         {selected.entryId ? <Button variant="primary" className="full-width" onClick={() => onOpenEntry(selected.entryId!)}><BookOpen size={16} /> Geschichte öffnen</Button>
           : <p className="atlas-door">Ein Ort mit Raum für eure Geschichte.</p>}
         {gm && <><section className="atlas-inspector-section"><h3><Link size={15} /> Mit dem Wiki verbinden</h3>
           {entries.error && <Notice error>{entries.error}</Notice>}
+          {entries.loading && <Loading text="Artikel werden geladen …" />}
           <form onSubmit={(event) => { event.preventDefault(); void task.run(() => linkArticle(entryId)); }}><label>Vorhandener Artikel<select value={entryId} onChange={(event) => setEntryId(event.target.value)} required disabled={task.busy || entries.loading}><option value="">Artikel auswählen …</option>{entries.data?.map((entry) => <option key={entry.id} value={entry.id}>{entry.title}</option>)}</select></label>
             <Button type="submit" disabled={task.busy || !entryId || map.data.version === undefined}>Artikel verknüpfen</Button></form>
-          <Button variant="quiet" onClick={() => setShowCreate((value) => !value)} disabled={task.busy}><Plus size={14} /> Neuen Artikel verfassen</Button>
+          <Button variant="quiet" onClick={() => setShowCreate((value) => !value)} disabled={task.busy}>{showCreate ? <><X size={14} /> Formular schließen</> : <><Plus size={14} /> Neuen Artikel verfassen</>}</Button>
           {showCreate && <form className="atlas-create-form" onSubmit={(event) => { event.preventDefault(); void task.run(async () => {
             const created = await api<EntryDocument>(apiPath(campaignId, "/entries"), { method: "POST", body: { title: articleTitle.trim(), passages: [{ inhalt: { kind: "absatz", inhalt: [{ text: articleBody.trim(), marks: [] }] }, pfad: [], tags: [] }] } });
             setEntryId(created.entryId); setShowCreate(false); refresh();
@@ -191,7 +199,7 @@ export function AtlasView({ campaignId, role, onOpenEntry }: AtlasViewProps) {
           }); }}><label>Titel<input required maxLength={200} value={articleTitle} onChange={(event) => setArticleTitle(event.target.value)} /></label><label>Eure erste Passage<textarea required maxLength={64000} rows={5} value={articleBody} onChange={(event) => setArticleBody(event.target.value)} /></label><Button variant="primary" type="submit" disabled={task.busy || !articleTitle.trim() || !articleBody.trim()}>Artikel anlegen &amp; verbinden</Button></form>}
         </section><section className="atlas-inspector-section"><h3><Eye size={16} /> Diesen Ort freigeben</h3><p>Die Freigabe gilt für diesen Ort. Inhalte und weitere Orte werden einzeln freigegeben.</p>
           {roster.error && <Notice error>{roster.error}</Notice>}
-          {members.length ? <form onSubmit={(event) => { event.preventDefault(); void task.run(async () => {
+          {roster.loading ? <Loading text="Figuren werden geladen …" /> : members.length ? <form onSubmit={(event) => { event.preventDefault(); void task.run(async () => {
             await api(apiPath(campaignId, `/maps/${pathId(mapId)}/nodes/${pathId(selected.id)}/reveal`), { method: "POST", body: { actorId } });
             setMessage(`„${selected.title ?? "Unbenannt"}“ ist für die ausgewählte Figur freigegeben.`); refresh();
           }); }}><label>Figur<select value={actorId} onChange={(event) => setActorId(event.target.value)} required><option value="">Figur auswählen …</option>{members.map((member) => <option key={member.actorId} value={member.actorId!}>{member.displayName}</option>)}</select></label><Button type="submit" disabled={task.busy || !actorId}>Ort freigeben</Button></form>
