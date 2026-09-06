@@ -18,6 +18,7 @@
     "@chronicle/protocol": "*",
     "@chronicle/rules": "*",
     "@chronicle/szene": "*",
+    "@chronicle/theme": "^0.0.0",
     "@electric-sql/pglite": "0.5.8",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/static": "10.1.3",

@@ -1,0 +1,23 @@
+.authoring-workbench { padding: 24px 32px; max-width: 1500px; margin: auto; }
+.authoring-workbench h1 { font: 600 32px var(--font-display); }
+.authoring-workbench .button { white-space: normal; text-align: center; overflow-wrap: anywhere; }
+.authoring-workbench header > p { max-width: 76ch; }
+.authoring-controls { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
+.authoring-columns { display: grid; grid-template-columns: minmax(180px, 260px) minmax(0, 1fr); gap: 20px; }
+.authoring-columns > aside { align-self: start; display: grid; gap: 12px; }
+.authoring-workbench .rule-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+.authoring-workbench label { display: grid; gap: 6px; margin: 8px 0; }
+.authoring-workbench .check-label { display: flex; align-items: start; gap: 10px; }
+.authoring-workbench details { margin: 16px 0; }
+.authoring-workbench summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.theme-colors { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.theme-colors input[type="color"] { width: 100%; height: 44px; padding: 4px; }
+.theme-source { min-height: 300px; font-family: var(--font-mono); }
+.theme-preview { background: var(--surface); color: var(--text); font-family: var(--font-body); margin-top: 20px; }
+.theme-preview h2 { font-family: var(--font-display); }
+.forge-tabs { display: flex; gap: 8px; padding: 18px 32px 0; flex-wrap: wrap; }
+.forge-tabs [aria-current="page"] { border-color: var(--focus); background: var(--accent-soft); }
+.publication-preview { width: 100%; min-height: 460px; border: 1px solid var(--control-line); background: var(--surface); }
+.publication-passage { padding: 12px; border: 1px solid var(--line); margin-block: 10px; }
+.publication-passage p { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 720px) { .authoring-workbench { padding: 18px 14px; } .authoring-columns { grid-template-columns: 1fr; } .forge-tabs { padding-inline: 14px; } }

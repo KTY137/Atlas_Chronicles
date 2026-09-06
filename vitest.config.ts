@@ -8,6 +8,7 @@ export default defineConfig({
   esbuild: { jsx: "automatic" },
   resolve: {
     alias: {
+      "@chronicle/theme": pkg("theme"),
       "@chronicle/rules": pkg("rules"),
       "@chronicle/protocol": pkg("protocol"),
       "@chronicle/core": pkg("core"),

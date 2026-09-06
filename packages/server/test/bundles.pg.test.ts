@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { campaignSemanticDiffV3 as campaignSemanticDiff, type CampaignBundleV3 as CampaignBundle } from "@chronicle/io";
+import { campaignSemanticDiffV4 as campaignSemanticDiff, type CampaignBundleV4 as CampaignBundle } from "@chronicle/io";
 import { createPgDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
@@ -71,14 +71,14 @@ describe.skipIf(!connection)("native campaign restore on real PostgreSQL", () =>
       await expect(runBundleCli(["check", "--input", input], { DATABASE_URL: cliUrl })).rejects.toThrow();
       await runBundleCli(["check", "--input", input, "--upgrade-from-v1"], { DATABASE_URL: cliUrl });
       const checked = JSON.parse(String(output.mock.calls.at(-1)![0]));
-      expect(checked).toMatchObject({ formatVersion: 3, dryRun: true, migration: { sourceVersion: 1, targetVersion: 3 } });
+      expect(checked).toMatchObject({ formatVersion: 4, dryRun: true, migration: { sourceVersion: 1, targetVersion: 4 } });
       expect((await cliTarget.query("SELECT 1 FROM users")).rowCount).toBe(0);
       await runBundleCli(["restore", "--upgrade-from-v1", "--input", input], { DATABASE_URL: cliUrl });
       const restored = JSON.parse(String(output.mock.calls.at(-1)![0]));
       expect(restored.migration).toEqual(checked.migration);
       expect(restored).toMatchObject({ dryRun: false, enrollmentRequired: true });
       expect((await cliTarget.query("SELECT 1 FROM credentials")).rowCount).toBe(0);
-      expect((await exportCampaignBundle(cliTarget, "gm", "campaign", config)).manifest.coreContentHash).toBe(checked.migration.steps[0].targetContentHash);
+      expect((await exportCampaignBundle(cliTarget, "gm", "campaign", config)).manifest.coreContentHash).toBe(checked.migration.steps.at(-1).sourceContentHash);
     } finally { output.mockRestore(); }
   });
 

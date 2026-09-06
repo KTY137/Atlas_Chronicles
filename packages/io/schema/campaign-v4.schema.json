@@ -1,0 +1,4395 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:atlas-chronicles:campaign:4",
+  "title": "Atlas Chronicles native campaign v4",
+  "description": "Additive authoring profile. The unchanged V3 core, complete immutable authoring replay, source references and theme reports require reference-parser semantic validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "version",
+    "manifest",
+    "tables"
+  ],
+  "properties": {
+    "format": {
+      "const": "atlas-chronicles/campaign"
+    },
+    "version": {
+      "const": 4
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile",
+        "projection",
+        "campaignId",
+        "universeId",
+        "exportedAt",
+        "blockAstVersion",
+        "rulePackageSchemaVersion",
+        "contentHash",
+        "modules",
+        "excluded",
+        "assetMode",
+        "coreContentHash",
+        "coreFormatVersion",
+        "tacticalMapSchemaVersion",
+        "themeSchemaVersion",
+        "authoringSchemaVersion"
+      ],
+      "properties": {
+        "profile": {
+          "const": "complete-campaign"
+        },
+        "projection": {
+          "const": "gm"
+        },
+        "campaignId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "universeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "exportedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "blockAstVersion": {
+          "const": 1
+        },
+        "rulePackageSchemaVersion": {
+          "const": 1
+        },
+        "contentHash": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "modules": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "version",
+              "count",
+              "sha256"
+            ],
+            "properties": {
+              "name": {
+                "enum": [
+                  "identities",
+                  "wiki",
+                  "atlas",
+                  "rules",
+                  "play",
+                  "week",
+                  "communication",
+                  "evidence",
+                  "actors",
+                  "inventory",
+                  "tactical",
+                  "authoring"
+                ]
+              },
+              "version": {
+                "const": 1
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sha256": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "excluded": {
+          "const": [
+            "authentication",
+            "delivery-cache",
+            "table-chat",
+            "media-runtime"
+          ]
+        },
+        "assetMode": {
+          "const": "source-artifacts-and-tactical-sources"
+        },
+        "coreContentHash": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "coreFormatVersion": {
+          "const": 3
+        },
+        "tacticalMapSchemaVersion": {
+          "const": 1
+        },
+        "themeSchemaVersion": {
+          "const": 1
+        },
+        "authoringSchemaVersion": {
+          "const": 1
+        }
+      }
+    },
+    "tables": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "users",
+        "universes",
+        "campaigns",
+        "actors",
+        "campaign_memberships",
+        "universe_memberships",
+        "entries",
+        "revisions",
+        "passages",
+        "revelations",
+        "lineage_events",
+        "entry_aliases",
+        "artifacts",
+        "import_acceptances",
+        "atlas_maps",
+        "atlas_nodes",
+        "atlas_revelations",
+        "rule_packages",
+        "campaign_rule_pins",
+        "actor_sheets",
+        "scenes",
+        "game_sessions",
+        "vollmachten",
+        "rolls",
+        "action_vollmachten",
+        "action_rolls",
+        "confirmed_mints",
+        "week_clocks",
+        "letters",
+        "letter_recipients",
+        "letter_delivery_receipts",
+        "reading_watermarks",
+        "week_baselines",
+        "campaign_messages",
+        "audit",
+        "access_incidents",
+        "actor_templates",
+        "actor_template_revisions",
+        "actor_profiles",
+        "actor_controllers",
+        "reader_perspectives",
+        "item_templates",
+        "item_template_revisions",
+        "item_instances",
+        "actor_inventory_events",
+        "tactical_sources",
+        "tactical_maps",
+        "tactical_map_revisions",
+        "tactical_map_anchors",
+        "scene_tactical_plans",
+        "scene_token_plans",
+        "session_tactical_states",
+        "tactical_token_states",
+        "tactical_command_receipts",
+        "tactical_transitions",
+        "theme_presets",
+        "theme_preset_revisions",
+        "campaign_theme_pins",
+        "campaign_publications",
+        "entry_publications",
+        "publication_routes",
+        "authoring_events"
+      ],
+      "properties": {
+        "users": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "display_name",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "display_name": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "universes": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "owner_user_id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "owner_user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 512
+              }
+            }
+          }
+        },
+        "campaigns": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "universe_id",
+              "owner_user_id",
+              "name",
+              "version",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "universe_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "owner_user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "actors": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "user_id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 512
+              }
+            }
+          }
+        },
+        "campaign_memberships": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "user_id",
+              "role",
+              "display_name",
+              "name_skeleton",
+              "actor_id"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "leitung",
+                  "spieler",
+                  "beobachter"
+                ]
+              },
+              "display_name": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "name_skeleton": {
+                "type": "string",
+                "maxLength": 1024
+              },
+              "actor_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "universe_memberships": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "universe_id",
+              "user_id",
+              "role"
+            ],
+            "properties": {
+              "universe_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "besitzer",
+                  "verwalter",
+                  "autor",
+                  "leser"
+                ]
+              }
+            }
+          }
+        },
+        "entries": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "universe_id",
+              "campaign_id",
+              "slug",
+              "title",
+              "art",
+              "version",
+              "current_revision_id",
+              "created_by",
+              "kanonstatus",
+              "public",
+              "parent_entry_id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "universe_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "slug": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "art": {
+                "type": "string",
+                "enum": [
+                  "charakter",
+                  "organisation",
+                  "spezies",
+                  "gegenstand",
+                  "ereignis",
+                  "ort",
+                  "regelseite",
+                  "sonstiges"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "current_revision_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "kanonstatus": {
+                "type": "string",
+                "enum": [
+                  "kanon",
+                  "geruecht",
+                  "apokryph",
+                  "abgeloest"
+                ]
+              },
+              "public": {
+                "type": "boolean"
+              },
+              "parent_entry_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "revisions": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "entry_id",
+              "seq",
+              "author_user_id",
+              "content_hash",
+              "document",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "entry_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "seq": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "author_user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "content_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "document": {
+                "$ref": "#/$defs/json"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "passages": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "entry_id",
+              "campaign_id",
+              "revision_id",
+              "ord",
+              "path",
+              "content",
+              "ast_version",
+              "retired_at_revision",
+              "gen",
+              "geltung",
+              "praegung",
+              "tags",
+              "provenance"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "entry_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "ord": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "path": {
+                "$ref": "#/$defs/json"
+              },
+              "content": {
+                "$ref": "#/$defs/json"
+              },
+              "ast_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1
+              },
+              "retired_at_revision": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "gen": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "geltung": {
+                "type": "string",
+                "enum": [
+                  "notiz",
+                  "antrag",
+                  "kanon"
+                ]
+              },
+              "praegung": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/json"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "$ref": "#/$defs/json"
+              },
+              "provenance": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/json"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "revelations": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "actor_id",
+              "passage_id",
+              "granted_at",
+              "granted_by",
+              "vollmacht_id",
+              "quelle",
+              "revoked_at"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "passage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "granted_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "granted_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "vollmacht_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "quelle": {
+                "$ref": "#/$defs/json"
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "lineage_events": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "seq",
+              "entry_id",
+              "revision_id",
+              "event",
+              "created_at"
+            ],
+            "properties": {
+              "seq": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "entry_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "event": {
+                "$ref": "#/$defs/json"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "entry_aliases": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "slug",
+              "entry_id"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "slug": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "entry_id": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "kind",
+              "source_hash",
+              "source",
+              "report",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "eron-preview",
+                  "azgaar"
+                ]
+              },
+              "source_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "source": {
+                "$ref": "#/$defs/json"
+              },
+              "report": {
+                "$ref": "#/$defs/json"
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "import_acceptances": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "artifact_id",
+              "entry_id",
+              "revision_id",
+              "accepted_by",
+              "accepted_at"
+            ],
+            "properties": {
+              "artifact_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "entry_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "accepted_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "accepted_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "atlas_maps": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "artifact_id",
+              "title",
+              "width",
+              "height",
+              "version",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "artifact_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "width": {
+                "type": "number",
+                "minimum": 5e-324,
+                "maximum": 1000000000000
+              },
+              "height": {
+                "type": "number",
+                "minimum": 5e-324,
+                "maximum": 1000000000000
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "atlas_nodes": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "map_id",
+              "id",
+              "campaign_id",
+              "data",
+              "entry_id"
+            ],
+            "properties": {
+              "map_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "data": {
+                "$ref": "#/$defs/json"
+              },
+              "entry_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "atlas_revelations": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "map_id",
+              "node_id",
+              "campaign_id",
+              "actor_id",
+              "knowledge",
+              "granted_by",
+              "granted_at"
+            ],
+            "properties": {
+              "map_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "node_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "knowledge": {
+                "type": "string",
+                "enum": [
+                  "benannt",
+                  "erschlossen"
+                ]
+              },
+              "granted_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "granted_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "rule_packages": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "package_id",
+              "version",
+              "document",
+              "content_hash",
+              "installed_by",
+              "installed_at"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "package_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "version": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "document": {
+                "$ref": "#/$defs/json"
+              },
+              "content_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "installed_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "installed_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "campaign_rule_pins": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "package_id",
+              "package_version",
+              "version"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "package_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "package_version": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "actor_sheets": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "actor_id",
+              "campaign_id",
+              "package_id",
+              "package_version",
+              "fields",
+              "version",
+              "defeat_pending",
+              "defeated_at",
+              "updated_at"
+            ],
+            "properties": {
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "package_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "package_version": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "fields": {
+                "$ref": "#/$defs/json"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "defeat_pending": {
+                "type": "boolean"
+              },
+              "defeated_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updated_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "scenes": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "name",
+              "entry_ids",
+              "fiction_date",
+              "status",
+              "created_by",
+              "created_at",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "entry_ids": {
+                "$ref": "#/$defs/json"
+              },
+              "fiction_date": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "prepared",
+                  "active",
+                  "ended"
+                ]
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "game_sessions": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "scene_id",
+              "started_at",
+              "ended_at",
+              "started_by"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "scene_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "started_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "ended_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "started_by": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "vollmachten": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "actor_id",
+              "passage_id",
+              "issued_by",
+              "target_slug",
+              "threshold",
+              "expires_at",
+              "issued_at",
+              "repeatable",
+              "budget_kind",
+              "status",
+              "consumed_roll_id",
+              "version",
+              "package_pin"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "passage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "issued_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "target_slug": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "threshold": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "expires_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "issued_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "repeatable": {
+                "type": "boolean"
+              },
+              "budget_kind": {
+                "type": "string",
+                "enum": [
+                  "player",
+                  "floating"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "offen",
+                  "eingeloest",
+                  "verfallen",
+                  "widerrufen"
+                ]
+              },
+              "consumed_roll_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "package_pin": {
+                "type": "string",
+                "maxLength": 256
+              }
+            }
+          }
+        },
+        "rolls": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "vollmacht_id",
+              "seed",
+              "expression",
+              "result",
+              "threshold",
+              "package_pin",
+              "status",
+              "rolled_at",
+              "confirmed_at",
+              "confirmation"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "vollmacht_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "seed": {
+                "type": "string",
+                "maxLength": 1024
+              },
+              "expression": {
+                "type": "string",
+                "enum": [
+                  "1d20"
+                ]
+              },
+              "result": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "threshold": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "package_pin": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ausstehend",
+                  "bestaetigt",
+                  "verworfen"
+                ]
+              },
+              "rolled_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "confirmed_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confirmation": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/json"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "action_vollmachten": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "actor_id",
+              "passage_id",
+              "passage_hash",
+              "package_id",
+              "package_version",
+              "action_id",
+              "threshold",
+              "fixed_input",
+              "fiction_date",
+              "issued_by",
+              "issued_at",
+              "expires_at",
+              "repeatable",
+              "budget_kind",
+              "status",
+              "consumed_roll_id",
+              "revoked_at",
+              "version",
+              "command_id",
+              "request_hash"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "passage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "passage_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "package_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "package_version": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "action_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "threshold": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "fixed_input": {
+                "$ref": "#/$defs/json"
+              },
+              "fiction_date": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "issued_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "issued_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "expires_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "repeatable": {
+                "type": "boolean"
+              },
+              "budget_kind": {
+                "type": "string",
+                "enum": [
+                  "player",
+                  "floating"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "offen",
+                  "eingeloest",
+                  "verfallen",
+                  "widerrufen"
+                ]
+              },
+              "consumed_roll_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "command_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "request_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "action_rolls": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "actor_id",
+              "prepared_by",
+              "command_id",
+              "request_hash",
+              "package_id",
+              "package_version",
+              "action_id",
+              "receipt",
+              "receipt_hash",
+              "target_passage_id",
+              "target_passage_hash",
+              "vollmacht_id",
+              "fiction_date",
+              "prepared_at",
+              "confirmed_at",
+              "status",
+              "confirmation",
+              "scene_id",
+              "session_id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "prepared_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "command_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "request_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "package_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "package_version": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "action_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "receipt": {
+                "$ref": "#/$defs/json"
+              },
+              "receipt_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "target_passage_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "target_passage_hash": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "vollmacht_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "fiction_date": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "prepared_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "confirmed_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ausstehend",
+                  "bestaetigt",
+                  "verworfen"
+                ]
+              },
+              "confirmation": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/json"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "scene_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "confirmed_mints": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "kind",
+              "passage_id",
+              "revision_id",
+              "roll_id",
+              "user_id",
+              "command_id",
+              "provenance",
+              "seal",
+              "confirmed_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "wurf",
+                  "gesprochen",
+                  "ratifikation",
+                  "berichtigung",
+                  "vollmacht"
+                ]
+              },
+              "passage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "roll_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "command_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "provenance": {
+                "$ref": "#/$defs/json"
+              },
+              "seal": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "confirmed_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "week_clocks": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "day",
+              "label",
+              "post_days",
+              "version",
+              "updated_at",
+              "updated_by"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "day": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "post_days": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 365
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "updated_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "updated_by": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "letters": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "from_actor_id",
+              "sent_by",
+              "command_id",
+              "request_hash",
+              "note",
+              "snapshots",
+              "seal",
+              "sent_at",
+              "sent_day",
+              "sent_label",
+              "arrival_day"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "from_actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "sent_by": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "command_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "request_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "snapshots": {
+                "$ref": "#/$defs/json"
+              },
+              "seal": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "sent_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "sent_day": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "sent_label": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "arrival_day": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "letter_recipients": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "letter_id",
+              "campaign_id",
+              "actor_id",
+              "delivered_at",
+              "delivered_day",
+              "delivered_label",
+              "read_at",
+              "read_day"
+            ],
+            "properties": {
+              "letter_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "delivered_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "delivered_day": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "delivered_label": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "read_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "read_day": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "letter_delivery_receipts": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "letter_id",
+              "campaign_id",
+              "actor_id",
+              "proof",
+              "seal",
+              "delivered_at"
+            ],
+            "properties": {
+              "letter_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "proof": {
+                "$ref": "#/$defs/json"
+              },
+              "seal": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "delivered_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "reading_watermarks": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "reader_user_id",
+              "actor_id",
+              "entry_id",
+              "projected_hashes",
+              "read_at"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "reader_user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "entry_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "projected_hashes": {
+                "$ref": "#/$defs/json"
+              },
+              "read_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "week_baselines": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "session_id",
+              "campaign_id",
+              "captured_at",
+              "knowledge",
+              "lineage_seq"
+            ],
+            "properties": {
+              "session_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "captured_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "knowledge": {
+                "$ref": "#/$defs/json"
+              },
+              "lineage_seq": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "campaign_messages": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "user_id",
+              "author_name",
+              "body",
+              "parent_id",
+              "kind",
+              "session_id",
+              "created_at",
+              "expires_at",
+              "removed_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "user_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "author_name": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "body": {
+                "type": "string",
+                "maxLength": 8000
+              },
+              "parent_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "letter"
+                ]
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "expires_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "removed_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "audit": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "actor_user_id",
+              "kind",
+              "data",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actor_user_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "rules.migration",
+                  "action.prepared",
+                  "action.confirmed",
+                  "vollmacht.confirmed",
+                  "vollmacht.issued",
+                  "vollmacht.revoked",
+                  "vollmacht.expired",
+                  "praegung.wurf",
+                  "praegung.gesprochen",
+                  "praegung.ratifikation",
+                  "praegung.berichtigung",
+                  "praegung.vollmacht"
+                ]
+              },
+              "data": {
+                "$ref": "#/$defs/json"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "access_incidents": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "user_id",
+              "vollmacht_id",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "user_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "vollmacht_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "actor_templates": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "head_revision",
+              "version",
+              "created_by",
+              "created_at",
+              "archived_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "head_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "archived_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "actor_template_revisions": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "template_id",
+              "campaign_id",
+              "revision",
+              "definition",
+              "content_hash",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "template_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "definition": {
+                "$ref": "#/$defs/json"
+              },
+              "content_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "actor_profiles": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "actor_id",
+              "campaign_id",
+              "kind",
+              "template_id",
+              "template_revision",
+              "lore_entry_id",
+              "version",
+              "archived_at",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "player_character",
+                  "npc",
+                  "creature",
+                  "companion",
+                  "vehicle",
+                  "unspecified"
+                ]
+              },
+              "template_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[\\s\\S]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "template_revision": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lore_entry_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[\\s\\S]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "archived_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_by": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[\\s\\S]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "actor_controllers": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "actor_id",
+              "campaign_id",
+              "user_id",
+              "permission",
+              "version",
+              "granted_by",
+              "granted_at",
+              "revoked_at"
+            ],
+            "properties": {
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "user_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "permission": {
+                "type": "string",
+                "enum": [
+                  "control"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "granted_by": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[\\s\\S]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "granted_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "revoked_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "reader_perspectives": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "user_id",
+              "actor_id",
+              "version",
+              "updated_at"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "user_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "actor_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[\\s\\S]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "updated_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "item_templates": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "head_revision",
+              "version",
+              "created_by",
+              "created_at",
+              "archived_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "head_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "archived_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "item_template_revisions": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "template_id",
+              "campaign_id",
+              "revision",
+              "definition",
+              "content_hash",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "template_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "definition": {
+                "$ref": "#/$defs/json"
+              },
+              "content_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "item_instances": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "template_id",
+              "template_revision",
+              "holder_actor_id",
+              "state",
+              "version",
+              "created_by",
+              "created_at",
+              "archived_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "template_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "template_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "holder_actor_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[\\s\\S]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "state": {
+                "$ref": "#/$defs/json"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "archived_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$",
+                    "maxLength": 19
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "actor_inventory_events": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "actor_user_id",
+              "operation",
+              "subject_id",
+              "command_id",
+              "request",
+              "request_hash",
+              "before_state",
+              "after_state",
+              "result",
+              "reason",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "actor_user_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "actor.template.create",
+                  "actor.template.revise",
+                  "actor.template.archive",
+                  "actor.instantiate",
+                  "actor.update",
+                  "actor.archive",
+                  "actor.controller.grant",
+                  "actor.controller.revoke",
+                  "reader.perspective",
+                  "item.template.create",
+                  "item.template.revise",
+                  "item.template.archive",
+                  "item.instantiate",
+                  "item.update",
+                  "item.transfer",
+                  "item.archive"
+                ]
+              },
+              "subject_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "command_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "request": {
+                "$ref": "#/$defs/json"
+              },
+              "request_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "before_state": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/json"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "after_state": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/json"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "result": {
+                "$ref": "#/$defs/json"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500,
+                    "pattern": "\\S"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "tactical_sources": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "format",
+              "format_version",
+              "source_text",
+              "source_hash",
+              "source_bytes",
+              "image_base64",
+              "image_meta",
+              "provenance",
+              "fidelity",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "uvtt",
+                  "native"
+                ]
+              },
+              "format_version": {
+                "type": "string",
+                "enum": [
+                  "0.2",
+                  "0.3",
+                  "1"
+                ]
+              },
+              "source_text": {
+                "type": "string",
+                "maxLength": 67108864
+              },
+              "source_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "source_bytes": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "image_base64": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 89478488
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "image_meta": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/json"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "provenance": {
+                "$ref": "#/$defs/json"
+              },
+              "fidelity": {
+                "$ref": "#/$defs/json"
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "tactical_maps": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "name",
+              "head_revision",
+              "version",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 160
+              },
+              "head_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "tactical_map_revisions": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "map_id",
+              "campaign_id",
+              "revision",
+              "source_id",
+              "document",
+              "content_hash",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "map_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "source_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "document": {
+                "$ref": "#/$defs/json"
+              },
+              "content_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "tactical_map_anchors": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "map_id",
+              "campaign_id",
+              "map_revision",
+              "target_kind",
+              "target_id",
+              "entry_id",
+              "passage_id"
+            ],
+            "properties": {
+              "map_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "map_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "target_kind": {
+                "type": "string",
+                "enum": [
+                  "stamp",
+                  "region",
+                  "place"
+                ]
+              },
+              "target_id": {
+                "type": "string",
+                "maxLength": 256,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "entry_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "passage_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[\\s\\S]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "scene_tactical_plans": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "scene_id",
+              "campaign_id",
+              "map_id",
+              "map_revision",
+              "version",
+              "updated_by",
+              "updated_at"
+            ],
+            "properties": {
+              "scene_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "map_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "map_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "updated_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "updated_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "scene_token_plans": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "scene_id",
+              "campaign_id",
+              "token_id",
+              "actor_id",
+              "x",
+              "y",
+              "elevation",
+              "rotation",
+              "scale"
+            ],
+            "properties": {
+              "scene_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "token_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "x": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              },
+              "y": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              },
+              "elevation": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              },
+              "rotation": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              },
+              "scale": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000
+              }
+            }
+          }
+        },
+        "session_tactical_states": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "session_id",
+              "campaign_id",
+              "scene_id",
+              "map_id",
+              "map_revision",
+              "initial_snapshot",
+              "initial_hash",
+              "undo_base_snapshot",
+              "undo_base_hash",
+              "base_seq",
+              "last_transition_seq",
+              "portal_states",
+              "captured_by",
+              "captured_at"
+            ],
+            "properties": {
+              "session_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "scene_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "map_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "map_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "initial_snapshot": {
+                "$ref": "#/$defs/json"
+              },
+              "initial_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "undo_base_snapshot": {
+                "$ref": "#/$defs/json"
+              },
+              "undo_base_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "base_seq": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "last_transition_seq": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "portal_states": {
+                "$ref": "#/$defs/json"
+              },
+              "captured_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "captured_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "tactical_token_states": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "session_id",
+              "campaign_id",
+              "token_id",
+              "actor_id",
+              "x",
+              "y",
+              "elevation",
+              "rotation",
+              "scale",
+              "version"
+            ],
+            "properties": {
+              "session_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "token_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "actor_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "x": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              },
+              "y": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              },
+              "elevation": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              },
+              "rotation": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              },
+              "scale": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "tactical_command_receipts": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "command_id",
+              "actor_user_id",
+              "campaign_id",
+              "scope_kind",
+              "scope_id",
+              "subject_kind",
+              "subject_id",
+              "operation",
+              "request_hash",
+              "ack",
+              "created_at"
+            ],
+            "properties": {
+              "command_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "actor_user_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "scope_kind": {
+                "type": "string",
+                "enum": [
+                  "campaign",
+                  "map",
+                  "scene",
+                  "session"
+                ]
+              },
+              "scope_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "subject_kind": {
+                "type": "string",
+                "enum": [
+                  "map",
+                  "plan",
+                  "token",
+                  "portal"
+                ]
+              },
+              "subject_id": {
+                "type": "string",
+                "maxLength": 256,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "map.import",
+                  "map.revise",
+                  "plan.save",
+                  "token.move",
+                  "portal.set",
+                  "undo"
+                ]
+              },
+              "request_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "ack": {
+                "$ref": "#/$defs/json"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "tactical_transitions": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "session_id",
+              "campaign_id",
+              "seq",
+              "command_id",
+              "subject_kind",
+              "subject_id",
+              "before_state",
+              "after_state",
+              "compensates_command_id",
+              "created_at"
+            ],
+            "properties": {
+              "session_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "seq": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              },
+              "command_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[\\s\\S]+$"
+              },
+              "subject_kind": {
+                "type": "string",
+                "enum": [
+                  "token",
+                  "portal"
+                ]
+              },
+              "subject_id": {
+                "type": "string",
+                "maxLength": 256,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "before_state": {
+                "$ref": "#/$defs/json"
+              },
+              "after_state": {
+                "$ref": "#/$defs/json"
+              },
+              "compensates_command_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[\\s\\S]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "theme_presets": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "campaign_id",
+              "head_revision",
+              "version",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "head_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "theme_preset_revisions": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "theme_id",
+              "campaign_id",
+              "revision",
+              "manifest",
+              "content_hash",
+              "accessibility_report",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "theme_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "manifest": {
+                "$ref": "#/$defs/json"
+              },
+              "content_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "accessibility_report": {
+                "$ref": "#/$defs/json"
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "campaign_theme_pins": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "theme_id",
+              "theme_revision",
+              "version",
+              "updated_by",
+              "updated_at"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "theme_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "theme_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "updated_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "updated_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "campaign_publications": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "public_key",
+              "enabled",
+              "world_slug",
+              "title",
+              "description",
+              "locale",
+              "content_warnings",
+              "theme_id",
+              "theme_revision",
+              "version",
+              "updated_by",
+              "updated_at"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "public_key": {
+                "type": "string",
+                "maxLength": 24,
+                "pattern": "^[A-Za-z0-9_-]{24}$"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "world_slug": {
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "locale": {
+                "type": "string",
+                "enum": [
+                  "de",
+                  "en"
+                ]
+              },
+              "content_warnings": {
+                "$ref": "#/$defs/json"
+              },
+              "theme_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "theme_revision": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "updated_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "updated_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "entry_publications": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entry_id",
+              "campaign_id",
+              "revision_id",
+              "passage_ids",
+              "public_slug",
+              "public_metadata",
+              "version",
+              "published_by",
+              "published_at"
+            ],
+            "properties": {
+              "entry_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "revision_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "passage_ids": {
+                "$ref": "#/$defs/json"
+              },
+              "public_slug": {
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "public_metadata": {
+                "$ref": "#/$defs/json"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "published_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "published_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "publication_routes": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "campaign_id",
+              "kind",
+              "route",
+              "entry_id",
+              "source_url",
+              "created_by",
+              "created_at"
+            ],
+            "properties": {
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "world",
+                  "article",
+                  "legacy"
+                ]
+              },
+              "route": {
+                "type": "string",
+                "maxLength": 2048
+              },
+              "entry_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_by": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        },
+        "authoring_events": {
+          "type": "array",
+          "maxItems": 200000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "command_id",
+              "campaign_id",
+              "actor_user_id",
+              "operation",
+              "subject_id",
+              "request",
+              "request_hash",
+              "before_state",
+              "after_state",
+              "ack",
+              "created_at"
+            ],
+            "properties": {
+              "command_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "campaign_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "actor_user_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "theme.create",
+                  "theme.revise",
+                  "theme.pin",
+                  "publication.configure",
+                  "entry.publish",
+                  "entry.unpublish",
+                  "route.add",
+                  "route.remove"
+                ]
+              },
+              "subject_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "request": {
+                "$ref": "#/$defs/json"
+              },
+              "request_hash": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "before_state": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/json"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "after_state": {
+                "$ref": "#/$defs/json"
+              },
+              "ack": {
+                "$ref": "#/$defs/json"
+              },
+              "created_at": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$",
+                "maxLength": 19
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "json": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/json"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/json"
+          }
+        }
+      ]
+    }
+  }
+}

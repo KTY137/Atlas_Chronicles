@@ -3,6 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@sinclair/typebox": "0.34.52" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@chronicle/theme": "^0.0.0",
+    "@sinclair/typebox": "0.34.52"
+  }
 }

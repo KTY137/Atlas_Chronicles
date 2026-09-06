@@ -2,7 +2,7 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname, basename } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CAMPAIGN_V3_ADDITIONAL_TABLES, CAMPAIGN_V3_TABLES, createCampaignBundleV3, campaignSemanticDiffV3, parseCampaignBundleV2, upgradeCampaignBundleV2 } from "@chronicle/io";
+import { CAMPAIGN_V3_ADDITIONAL_TABLES, CAMPAIGN_V4_TABLES, createCampaignBundleV3, campaignSemanticDiffV4, parseCampaignBundleV2, upgradeCampaignBundleV2, upgradeCampaignBundleV3 } from "@chronicle/io";
 import { campaignFixtureV3 } from "../../io/test/campaign-v3-fixture.ts";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { exportCampaignBundle, initializeCampaignRestoreTarget, inspectCampaignRestore, restoreCampaignBundle } from "../src/domain/bundles.ts";
@@ -12,19 +12,19 @@ import { runBundleCli } from "../src/bundle-cli.ts";
 const cfg = { now: () => 1788696000000 }, pose = (x: number) => ({ x, y: 0, elevation: 0, rotation: 0, scale: 1 });
 describe("native v3 tactical restoration", () => {
   it("reopens all ten modules and deduplicates a pruned command after native restore and restart", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "chronicle-tactical-bundle-")), bundle = createCampaignBundleV3(campaignFixtureV3());
+    const directory = await mkdtemp(join(tmpdir(), "chronicle-tactical-bundle-")), bundle = createCampaignBundleV3(campaignFixtureV3()), expected = upgradeCampaignBundleV3(bundle).bundle;
     let target = await createTestDb(directory);
     try {
       await initializeCampaignRestoreTarget(target);
-      expect((await inspectCampaignRestore(target, bundle)).formatVersion).toBe(3);
-      for (const table of CAMPAIGN_V3_TABLES) expect((await target.query(`SELECT 1 FROM "${table.name}" LIMIT 1`)).rowCount).toBe(0);
-      await restoreCampaignBundle(target, bundle);
+      expect((await inspectCampaignRestore(target, bundle, { upgradeFromV3: true })).formatVersion).toBe(4);
+      for (const table of CAMPAIGN_V4_TABLES) expect((await target.query(`SELECT 1 FROM "${table.name}" LIMIT 1`)).rowCount).toBe(0);
+      await restoreCampaignBundle(target, bundle, { upgradeFromV3: true });
       for (const table of CAMPAIGN_V3_ADDITIONAL_TABLES) expect((await target.query(`SELECT 1 FROM "${table.name}" LIMIT 1`)).rowCount).toBe(1);
-      expect(campaignSemanticDiffV3(bundle, await exportCampaignBundle(target, "gm", "campaign", cfg))).toEqual([]);
+      expect(campaignSemanticDiffV4(expected, await exportCampaignBundle(target, "gm", "campaign", cfg))).toEqual([]);
       await target.close(); target = await createTestDb(directory); await migrate(target);
       const tactical = createTactical(target, cfg), first = { commandId: "move-1", expectedVersion: 1, ...pose(1) };
       expect(await tactical.moveToken("sera", "campaign", "session", "token", first)).toEqual({ subjectId: "token", version: 2 });
-      expect(campaignSemanticDiffV3(bundle, await exportCampaignBundle(target, "gm", "campaign", cfg))).toEqual([]);
+      expect(campaignSemanticDiffV4(expected, await exportCampaignBundle(target, "gm", "campaign", cfg))).toEqual([]);
       await expect(tactical.moveToken("sera", "campaign", "session", "token", { ...first, x: 100 })).rejects.toThrow();
       expect((await target.query("SELECT x,version FROM tactical_token_states WHERE token_id='token'")).rows[0]).toEqual({ x: 53, version: 54 });
       const move = { commandId: "new-move", expectedVersion: 54, ...pose(54) };
@@ -44,7 +44,7 @@ describe("native v3 tactical restoration", () => {
       try {
         await initializeCampaignRestoreTarget(second); await restoreCampaignBundle(second, changed);
         expect(await createTactical(second, cfg).moveToken("sera", "campaign", "session", "token", first)).toEqual({ subjectId: "token", version: 2 });
-        expect(campaignSemanticDiffV3(changed, await exportCampaignBundle(second, "gm", "campaign", cfg))).toEqual([]);
+        expect(campaignSemanticDiffV4(changed, await exportCampaignBundle(second, "gm", "campaign", cfg))).toEqual([]);
       } finally { await second.close(); }
       await target.query("UPDATE actor_controllers SET revoked_at=$1 WHERE actor_id='actor-sera' AND user_id='sera'", [cfg.now()]);
       await expect(tactical.moveToken("sera", "campaign", "session", "token", first)).rejects.toThrow();
@@ -65,22 +65,22 @@ describe("native v3 tactical restoration", () => {
         if (sql.startsWith('INSERT INTO "tactical_command_receipts"')) throw new Error("Injected tactical restore failure");
         return inner.query(sql, params);
       }, transaction: work => inner.transaction(tx => work(fault(tx))) });
-      await expect(restoreCampaignBundle(fault(db), createCampaignBundleV3(campaignFixtureV3()))).rejects.toThrow("Injected tactical restore failure");
-      for (const table of CAMPAIGN_V3_TABLES) expect((await db.query(`SELECT 1 FROM "${table.name}" LIMIT 1`)).rowCount).toBe(0);
+      await expect(restoreCampaignBundle(fault(db), createCampaignBundleV3(campaignFixtureV3()), { upgradeFromV3: true })).rejects.toThrow("Injected tactical restore failure");
+      for (const table of CAMPAIGN_V4_TABLES) expect((await db.query(`SELECT 1 FROM "${table.name}" LIMIT 1`)).rowCount).toBe(0);
     } finally { await db.close(); }
   }, 15_000);
 
   it("requires an explicit v2 upgrade and adds no invented tactical history", async () => {
-    const source = parseCampaignBundleV2(await readFile(new URL("../../io/test/fixtures/campaign-v2.chronicle", import.meta.url), "utf8")), upgraded = upgradeCampaignBundleV2(source), target = await createTestDb();
+    const source = parseCampaignBundleV2(await readFile(new URL("../../io/test/fixtures/campaign-v2.chronicle", import.meta.url), "utf8")), upgraded = upgradeCampaignBundleV2(source), v4 = upgradeCampaignBundleV3(upgraded.bundle), target = await createTestDb();
     try {
       await initializeCampaignRestoreTarget(target);
       await expect(inspectCampaignRestore(target, source)).rejects.toThrow(/explicit.*upgrade-from-v2/);
       const checked = await inspectCampaignRestore(target, source, { upgradeFromV2: true });
-      expect(checked.migration?.steps).toEqual([upgraded.report]);
+      expect(checked.migration?.steps).toEqual([upgraded.report, v4.report]);
       expect((await target.query("SELECT 1 FROM users")).rowCount).toBe(0);
       const restored = await restoreCampaignBundle(target, source, { upgradeFromV2: true });
       expect(restored.migration).toEqual(checked.migration);
-      expect(campaignSemanticDiffV3(upgraded.bundle, await exportCampaignBundle(target, "gm", "campaign", cfg))).toEqual([]);
+      expect(campaignSemanticDiffV4(v4.bundle, await exportCampaignBundle(target, "gm", "campaign", cfg))).toEqual([]);
       for (const table of CAMPAIGN_V3_ADDITIONAL_TABLES) expect((await target.query(`SELECT 1 FROM "${table.name}" LIMIT 1`)).rowCount).toBe(0);
     } finally { await target.close(); }
   }, 15_000);
@@ -99,7 +99,7 @@ describe("native v3 tactical restoration", () => {
   ])("keeps complete schema coverage after %s", async ddl => {
     const target = await createTestDb();
     try {
-      await initializeCampaignRestoreTarget(target); await restoreCampaignBundle(target, createCampaignBundleV3(campaignFixtureV3()));
+      await initializeCampaignRestoreTarget(target); await restoreCampaignBundle(target, createCampaignBundleV3(campaignFixtureV3()), { upgradeFromV3: true });
       await target.query(ddl);
       await expect(exportCampaignBundle(target, "gm", "campaign", cfg)).rejects.toThrow(/explicit format migration/);
     } finally { await target.close(); }

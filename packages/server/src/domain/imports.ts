@@ -1,14 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { canonicalHash, trustCampaignId, trustUniverseId, type CanonicalValue } from "@chronicle/core";
-import { importEron, type EronImportResult } from "@chronicle/io";
+import { importEron, ImportValidationError, type EronImportInput, type EronImportResult } from "@chronicle/io";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { Gone, Conflict } from "./errors.ts";
 
 export function createImports(db: Db, cfg: DomainConfig = {}) {
   const now = cfg.now ?? Date.now, campaigns = createCampaigns(db, cfg);
-  async function previewEron(userId: string, campaignId: string, input: { articles: unknown; templates: unknown; wikiUrl: string }) {
+  async function previewEron(userId: string, campaignId: string, input: Pick<EronImportInput, "articles" | "templates" | "wikiUrl" | "license" | "attributionByPageId">) {
     const member = await campaigns.requireMember(userId, campaignId, ["leitung"]);
+    // The optional assertion file is normalized into the existing provenance rows;
+    // it never supplies a fictional author history when no evidence was uploaded.
+    if (input.attributionByPageId !== undefined && Buffer.byteLength(JSON.stringify(input.attributionByPageId), "utf8") > 2 * 1024 * 1024) throw new ImportValidationError("attributionByPageId", "maximum author-history JSON size is 2 MiB");
     const result = importEron({ ...input, universeId: trustUniverseId(member.universeId), campaignId: trustCampaignId(campaignId), importiertAm: new Date(now()).toISOString() });
     const previous = await db.query<{ id: string; version: number }>("SELECT id,version FROM entries WHERE campaign_id=$1", [campaignId]);
     const versions = Object.fromEntries(previous.rows.map((r) => [r.id, r.version]));

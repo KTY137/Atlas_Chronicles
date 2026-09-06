@@ -19,6 +19,7 @@
     "noEmit": true,
 
     "paths": {
+      "@chronicle/theme": ["./packages/theme/src/index.ts"],
       "@chronicle/rules": ["./packages/rules/src/index.ts"],
       "@chronicle/protocol": ["./packages/protocol/src/index.ts"],
       "@chronicle/core": ["./packages/core/src/index.ts"],

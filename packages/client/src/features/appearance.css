@@ -1,0 +1,86 @@
+/* Themes supply closed token values; local access preferences are applied last. */
+html[data-appearance-theme] { color-scheme: dark light; }
+html[data-appearance-theme] body { background: var(--bg); color: var(--text); }
+html[data-appearance-theme] :is(button, input, textarea, select, .panel, .notice, .campaign-card) { border-radius: var(--radius); }
+html[data-appearance-theme] body :is(input, textarea, select) { background: var(--input-bg); color: var(--text); border-color: var(--control-line); border-width: var(--theme-border); }
+html[data-appearance-theme] body :is(input, textarea)::placeholder { color: var(--text-faint); opacity: 1; }
+html[data-appearance-theme] body :is(button, a, summary, input, textarea, select):focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+html[data-appearance-theme] body :is(input, textarea, select):focus { border-color: var(--focus); }
+/* Foreground/background pairs must switch together, including between light and dark skins. */
+html[data-appearance-theme] body .button { background: var(--surface-2); color: var(--text); border-color: var(--control-line); border-width: var(--theme-border); transition-property: transform, box-shadow; transition-duration: var(--control-motion); transition-timing-function: var(--motion-easing); }
+html[data-appearance-theme] body .button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--focus); }
+html[data-appearance-theme] body .button-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+html[data-appearance-theme] body .button-primary:hover:not(:disabled) { background: var(--accent-strong); color: var(--accent-ink); }
+html[data-appearance-theme] body .button-danger { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+html[data-appearance-theme] body .button-quiet { background: transparent; border-color: transparent; }
+html[data-appearance-theme] body :is(button, input, textarea, select):disabled { opacity: 1; color: var(--disabled); background: var(--disabled-bg); border-color: var(--line-strong); }
+html[data-appearance-theme] body .notice { color: var(--ok); background: var(--ok-soft); border-color: var(--ok); }
+html[data-appearance-theme] body .notice-error { color: var(--danger); background: var(--danger-soft); border-color: var(--danger); }
+html[data-appearance-theme] ::selection { background: var(--selection); color: var(--selection-ink); }
+html[data-appearance-theme] body :is(.context-bar, .rail, .band, .entry-sidebar, .editor-toolbar, .history-panel, .raw-block, .editor-passage, .auth-panel) { background: var(--surface); }
+html[data-appearance-theme] body :is(.main-stage, .auth-story) { background: var(--bg); }
+html[data-appearance-theme] body .auth-copy > p:not(.eyebrow) { color: var(--text-muted); }
+html[data-appearance-theme] body .campaign-card { background: var(--surface); }
+html[data-appearance-theme] body .campaign-card:hover { background: var(--surface-hover); border-color: var(--focus); }
+html[data-appearance-theme] body .avatar { background: var(--accent-soft); color: var(--text); }
+html[data-appearance-theme] body .heading-path { color: var(--text); }
+html[data-appearance-theme] body :is(.article-link, .unresolved-link, a:not(.button)) { color: var(--link); text-decoration-color: currentColor; border-bottom-color: currentColor; }
+html[data-appearance-theme] body a:not(.button):visited { color: var(--link-visited); }
+html[data-appearance-theme] body .entry-item:hover { background: var(--surface-hover); }
+html[data-appearance-theme] body .entry-item.active { background: var(--accent-soft); }
+html[data-appearance-theme] body .import-files label { background: var(--surface-2); }
+html[data-appearance-theme] body .role-chip { border-color: var(--control-line); }
+html[data-appearance-theme] .appearance-settings { max-width: 900px; }
+html[data-appearance-theme] body :is(.roll-card, .atlas-map-tools, .atlas-canvas-loading, .atlas-canvas-fallback, .media-peer) { background: var(--surface); color: var(--text); }
+html[data-appearance-theme] body .dice-results > span { background: var(--accent-soft); color: var(--text); border-color: var(--control-line); }
+html[data-appearance-theme] body .schema-status { background: var(--info-soft); color: var(--info); border-color: var(--info); }
+html[data-appearance-theme] body .schema-status.error { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+html[data-appearance-theme] body :is(.media-whisper, .media-whisper-indicator) { background: var(--private-soft); color: var(--private); border-color: var(--private); }
+html[data-appearance-theme] body :is(.media-peer.speaking, .media-band-peer.speaking) { color: var(--ok); border-color: var(--ok); box-shadow: none; }
+html[data-appearance-theme] body :is(.media-connection-dot.connected, .channel-connection-dot.connected, .channel-presence-dot.online, .live-dot.connected) { background: var(--ok); }
+html[data-appearance-theme] body .live-dot { background: var(--warning); }
+html[data-appearance-theme] body .live-dot.offline { background: var(--danger); }
+html[data-appearance-theme] body :is(.package-card.active, .atlas-place-list button.is-selected) { border-color: var(--focus); }
+html[data-appearance-theme] body .atlas-map-caption { color: var(--text-muted); background: var(--surface); padding: 4px 8px; }
+
+html[data-appearance-density="comfortable"] body :is(input, select, .button) { min-height: 44px; }
+html[data-appearance-density="comfortable"] .band { height: 52px; min-height: 52px; }
+html[data-appearance-density="comfortable"] .media-panel { bottom: 64px; }
+html[data-appearance-density="comfortable"] .panel { padding: calc(var(--theme-space) * 4); }
+html[data-appearance-density="compact"] .panel { padding: calc(var(--theme-space) * 2.5); }
+html[data-appearance-density="compact"] .page-content { padding-top: 24px; }
+html[data-appearance-density="compact"] body .button { padding-block: 6px; }
+html[data-appearance-edges="etched"] .panel { border-style: double; border-width: 3px; }
+html[data-appearance-edges="cut"] :is(.panel, .campaign-card) { border-top-width: 3px; border-bottom-right-radius: 0; }
+html[data-appearance-edges="pixel"] :is(.panel, .button, .campaign-card, input, select, textarea) { border-radius: 0; box-shadow: 3px 3px 0 var(--line-strong); }
+html[data-appearance-icons="rune"] .lucide { stroke-width: 1.5; stroke-linecap: square; }
+html[data-appearance-icons="facet"] .lucide { stroke-width: 2.5; stroke-linejoin: bevel; }
+html[data-appearance-icons="pixel"] .lucide { shape-rendering: crispEdges; stroke-linecap: square; stroke-linejoin: miter; }
+html[data-appearance-sampling="nearest"] :is(img, canvas) { image-rendering: pixelated; }
+html[data-appearance-atmosphere="cinematic"] .main-stage { background: radial-gradient(ellipse at top, var(--accent-soft), var(--bg)); }
+html[data-appearance-atmosphere="clean"] :is(.panel, .campaign-card, .button) { box-shadow: none; }
+html[data-appearance-art="off"] :is(.orbital-art, .campaign-emblem) { display: none; }
+html[data-appearance-transparency="off"] :is(.context-bar, .band, .panel, .editor-toolbar, .entry-sidebar) { backdrop-filter: none; background: var(--surface); }
+html[data-appearance-motion="none"] *, html[data-appearance-motion="none"] *::before, html[data-appearance-motion="none"] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+html[data-appearance-lowPower="true"] * { backdrop-filter: none !important; }
+html[data-appearance-contrast="high"] :is(.panel, .campaign-card, .notice) { border-color: var(--control-line); box-shadow: none; }
+/* A draft is an independent sample. Explicit resets prevent the surrounding skin
+ * from imposing its recipe on a different theme being previewed. */
+html[data-appearance-theme] body .theme-preview,
+html[data-appearance-theme] body .theme-preview :is(.button, input, select, textarea, .notice) { border-radius: var(--radius); border-style: solid; border-width: var(--theme-border); box-shadow: none; }
+html[data-appearance-theme] body .theme-preview .lucide { stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; shape-rendering: auto; }
+html[data-appearance-theme] body .theme-preview[data-appearance-edges="etched"] { border-style: double; border-width: 3px; }
+html[data-appearance-theme] body .theme-preview[data-appearance-edges="cut"] { border-top-width: 3px; border-bottom-right-radius: 0; }
+html[data-appearance-theme] body .theme-preview[data-appearance-edges="pixel"],
+html[data-appearance-theme] body .theme-preview[data-appearance-edges="pixel"] :is(.button, input, select, textarea) { border-radius: 0; box-shadow: 3px 3px 0 var(--line-strong); }
+html[data-appearance-theme] body .theme-preview[data-appearance-icons="rune"] .lucide { stroke-width: 1.5; stroke-linecap: square; }
+html[data-appearance-theme] body .theme-preview[data-appearance-icons="facet"] .lucide { stroke-width: 2.5; stroke-linejoin: bevel; }
+html[data-appearance-theme] body .theme-preview[data-appearance-icons="pixel"] .lucide { shape-rendering: crispEdges; stroke-linecap: square; stroke-linejoin: miter; }
+html[data-appearance-theme] body .theme-preview[data-appearance-sampling="nearest"] :is(img, canvas) { image-rendering: pixelated; }
+html[data-appearance-theme] body .theme-preview[data-appearance-sampling="linear"] :is(img, canvas) { image-rendering: auto; }
+html[data-appearance-theme] body .theme-preview[data-appearance-motion="none"] * { animation: none !important; transition: none !important; }
+html[data-appearance-theme] body .theme-preview[data-appearance-atmosphere="clean"] :is(.button, input, select, textarea) { box-shadow: none; }
+@media (forced-colors: active) {
+  html[data-appearance-theme] body :is(button, input, textarea, select, .panel, .notice, .campaign-card) { forced-color-adjust: auto; box-shadow: none; }
+  html[data-appearance-theme] body :is(button, a, summary, input, textarea, select):focus-visible { outline-color: Highlight; }
+}

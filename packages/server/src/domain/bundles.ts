@@ -1,9 +1,9 @@
 import {
-  CAMPAIGN_V3_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES,
-  createCampaignBundleV3 as createCampaignBundle, validateCampaignBundleV3 as validateCampaignBundle,
-  campaignSemanticDiffV3 as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2,
-  type CampaignBundleV3 as CampaignBundle, type CampaignRow, type CampaignTablesV3 as CampaignTables,
-  type CampaignTableNameV3 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3,
+  CAMPAIGN_V4_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES,
+  createCampaignBundleV4 as createCampaignBundle, validateCampaignBundleV4 as validateCampaignBundle,
+  campaignSemanticDiffV4 as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3,
+  type CampaignBundleV4 as CampaignBundle, type CampaignRow, type CampaignTablesV4 as CampaignTables,
+  type CampaignTableNameV4 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -11,8 +11,8 @@ import { createCampaigns } from "./campaigns.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { Conflict, Gone } from "./errors.ts";
 
-const MIGRATION = "011_tactical.sql";
-const identityColumns = new Set(["owner_user_id", "user_id", "created_by", "author_user_id", "issued_by", "granted_by", "prepared_by", "installed_by", "started_by", "updated_by", "sent_by", "reader_user_id", "actor_user_id", "accepted_by", "captured_by"]);
+const MIGRATION = "012_authoring.sql";
+const identityColumns = new Set(["owner_user_id", "user_id", "created_by", "author_user_id", "issued_by", "granted_by", "prepared_by", "installed_by", "started_by", "updated_by", "sent_by", "reader_user_id", "actor_user_id", "accepted_by", "captured_by", "published_by"]);
 const destinationTables = [...CAMPAIGN_TABLES.map(table => table.name), ...CAMPAIGN_EXCLUDED_TABLES.filter(name => name !== "schema_migrations")];
 const excludedTables = new Set<string>(CAMPAIGN_EXCLUDED_TABLES);
 const coveredColumns = new Map<string, ReadonlySet<string>>(CAMPAIGN_TABLES.map(table => [table.name,
@@ -32,6 +32,8 @@ const restoreOrder: readonly CampaignTableName[] = [
   "tactical_sources", "tactical_maps", "tactical_map_revisions", "tactical_map_anchors",
   "scene_tactical_plans", "scene_token_plans", "session_tactical_states", "tactical_token_states",
   "tactical_command_receipts", "tactical_transitions",
+  "theme_presets", "theme_preset_revisions", "campaign_theme_pins", "campaign_publications",
+  "entry_publications", "publication_routes", "authoring_events",
 ];
 
 export class CampaignRestoreError extends Error {
@@ -40,37 +42,43 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 3; migration?: CampaignMigrationChain;
+  formatVersion: 4; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
-  sourceVersion: 1 | 2; targetVersion: 3; sourceContentHash: string; targetContentHash: string;
-  steps: readonly (CampaignUpgradeReport | CampaignUpgradeReportV2ToV3)[]; reportHash: string;
+  sourceVersion: 1 | 2 | 3; targetVersion: 4; sourceContentHash: string; targetContentHash: string;
+  steps: readonly (CampaignUpgradeReport | CampaignUpgradeReportV2ToV3 | CampaignUpgradeReportV3ToV4)[]; reportHash: string;
 }
 function migrationChain(steps: CampaignMigrationChain["steps"]): CampaignMigrationChain {
-  const value = { sourceVersion: steps[0]!.sourceVersion, targetVersion: 3 as const,
+  const value = { sourceVersion: steps[0]!.sourceVersion, targetVersion: 4 as const,
     sourceContentHash: steps[0]!.sourceContentHash, targetContentHash: steps[steps.length - 1]!.targetContentHash, steps };
   return { ...value, reportHash: canonicalHash(value as unknown as CanonicalValue) };
 }
 function report(bundle: CampaignBundle, dryRun: boolean, migration?: CampaignMigrationChain): CampaignRestoreReport {
   return { campaignId: bundle.manifest.campaignId, universeId: bundle.manifest.universeId,
     contentHash: bundle.manifest.contentHash, rows: CAMPAIGN_TABLES.reduce((sum, table) => sum + bundle.tables[table.name].length, 0),
-    identitiesWithoutCredentials: bundle.tables.users.length, enrollmentRequired: true, dryRun, formatVersion: 3,
+    identitiesWithoutCredentials: bundle.tables.users.length, enrollmentRequired: true, dryRun, formatVersion: 4,
     ...(migration ? { migration } : {}) };
 }
-export interface CampaignRestoreOptions { upgradeFromV1?: boolean; upgradeFromV2?: boolean }
+export interface CampaignRestoreOptions { upgradeFromV1?: boolean; upgradeFromV2?: boolean; upgradeFromV3?: boolean }
 function restoreInput(input: unknown, options: CampaignRestoreOptions): { bundle: CampaignBundle; migration?: CampaignMigrationChain } {
-  if (options.upgradeFromV1 && options.upgradeFromV2) throw new CampaignRestoreError("Select exactly one explicit source-version upgrade option.");
+  if ([options.upgradeFromV1, options.upgradeFromV2, options.upgradeFromV3].filter(Boolean).length > 1) throw new CampaignRestoreError("Select exactly one explicit source-version upgrade option.");
   const version = input && typeof input === "object" ? Object.getOwnPropertyDescriptor(input, "version")?.value : undefined;
   if (options.upgradeFromV1 && version !== 1) throw new CampaignRestoreError("--upgrade-from-v1 requires a version 1 source file.");
   if (options.upgradeFromV2 && version !== 2) throw new CampaignRestoreError("--upgrade-from-v2 requires a version 2 source file.");
+  if (options.upgradeFromV3 && version !== 3) throw new CampaignRestoreError("--upgrade-from-v3 requires a version 3 source file.");
   if (version === 1) {
-    if (!options.upgradeFromV1) throw new CampaignRestoreError("Native campaign v1 requires the explicit --upgrade-from-v1 option for this v3 destination.");
-    const first = upgradeCampaignBundleV1(input), second = upgradeCampaignBundleV2(first.bundle);
-    return { bundle: second.bundle, migration: migrationChain([first.report, second.report]) };
+    if (!options.upgradeFromV1) throw new CampaignRestoreError("Native campaign v1 requires the explicit --upgrade-from-v1 option for this v4 destination.");
+    const first = upgradeCampaignBundleV1(input), second = upgradeCampaignBundleV2(first.bundle), third = upgradeCampaignBundleV3(second.bundle);
+    return { bundle: third.bundle, migration: migrationChain([first.report, second.report, third.report]) };
   }
   if (version === 2) {
-    if (!options.upgradeFromV2) throw new CampaignRestoreError("Native campaign v2 requires the explicit --upgrade-from-v2 option for this v3 destination.");
-    const upgraded = upgradeCampaignBundleV2(input);
+    if (!options.upgradeFromV2) throw new CampaignRestoreError("Native campaign v2 requires the explicit --upgrade-from-v2 option for this v4 destination.");
+    const first = upgradeCampaignBundleV2(input), second = upgradeCampaignBundleV3(first.bundle);
+    return { bundle: second.bundle, migration: migrationChain([first.report, second.report]) };
+  }
+  if (version === 3) {
+    if (!options.upgradeFromV3) throw new CampaignRestoreError("Native campaign v3 requires the explicit --upgrade-from-v3 option for this v4 destination.");
+    const upgraded = upgradeCampaignBundleV3(input);
     return { bundle: upgraded.bundle, migration: migrationChain([upgraded.report]) };
   }
   return { bundle: validateCampaignBundle(input) };
@@ -84,7 +92,7 @@ async function requireCoveredSchema(tx: Db): Promise<void> {
     LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped
     WHERE n.nspname=current_schema() AND c.relkind IN ('r','p')`)).rows;
   const present = new Map<string, Set<string>>();
-  const incompatible = () => new CampaignRestoreError("Application schema is not covered by native campaign v3; an explicit format migration is required.");
+  const incompatible = () => new CampaignRestoreError("Application schema is not covered by native campaign v4; an explicit format migration is required.");
   for (const { table_name, column_name } of columns) {
     if (excludedTables.has(table_name)) continue;
     const allowed = coveredColumns.get(table_name);
@@ -143,7 +151,7 @@ export async function exportCampaignBundle(db: Db, userId: string, campaignId: s
 
 async function requireSchema(tx: Db): Promise<void> {
   if (!(await tx.query("SELECT name FROM schema_migrations WHERE name=$1", [MIGRATION])).rowCount)
-    throw new CampaignRestoreError("Destination requires migration 011; initialize the empty destination explicitly first.");
+    throw new CampaignRestoreError("Destination requires migration 012; initialize the empty destination explicitly first.");
   await requireCoveredSchema(tx);
 }
 async function requireEmpty(tx: Db, allowMissing = false): Promise<void> {

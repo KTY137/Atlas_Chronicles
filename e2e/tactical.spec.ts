@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import sharp from "sharp";
-import { parseCampaignBundleV3 } from "@chronicle/io";
+import { parseCampaignBundleV4 } from "@chronicle/io";
 import type { UvttProvenance } from "@chronicle/forge";
 import type { TacticalAck, TacticalMapCard, TacticalMoveInput, TacticalPlan, TacticalView } from "@chronicle/protocol";
 import { buildApp } from "../packages/server/src/app.ts";
@@ -232,7 +232,7 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       const downloading = gm.waitForEvent("download"); await gm.getByRole("button", { name: "Kampagne exportieren", exact: true }).click();
       const download = await downloading; expect(download.suggestedFilename()).toBe(`campaign-${campaignId}.chronicle`);
       const archive = await readFile((await download.path())!, "utf8");
-      const bundle = parseCampaignBundleV3(archive); expect(bundle.version).toBe(3);
+      const bundle = parseCampaignBundleV4(archive); expect(bundle.version).toBe(4);
       expect(bundle.tables.tactical_sources[0]!.source_text).toBe(sourceText); expect(bundle.tables.session_tactical_states).toHaveLength(1);
       expect(bundle.tables.tactical_token_states.find(t => t.actor_id === sessions[1]!.actorId)!.x).toBe(512);
       await test.info().attach("native-tactical-campaign.chronicle", { body: Buffer.from(archive), contentType: "application/json" });

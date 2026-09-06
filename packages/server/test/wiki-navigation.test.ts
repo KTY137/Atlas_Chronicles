@@ -1,7 +1,7 @@
 import { seedActorControl } from "./actor-fixtures.ts";
 import { randomUUID } from "node:crypto";
 import { trustEntryId } from "@chronicle/core";
-import { parseCampaignBundleV3 } from "@chronicle/io";
+import { parseCampaignBundleV4 } from "@chronicle/io";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.ts";
@@ -87,7 +87,7 @@ describe("wiki navigation follows the reader's current knowledge", () => {
     const response = await get("/export", gmCookie);
     expect(response.statusCode, response.body).toBe(200);
     expect(response.headers["content-disposition"]).toContain("campaign.chronicle");
-    const bundle = parseCampaignBundleV3(response.body);
+    const bundle = parseCampaignBundleV4(response.body);
     expect(bundle.manifest.campaignId).toBe(campaignId);
     expect(bundle.tables.entries.length).toBeGreaterThan(0);
     expect(bundle.tables).not.toHaveProperty("credentials");

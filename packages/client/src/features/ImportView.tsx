@@ -10,6 +10,7 @@ interface Artifact { source: { result: { entries: { id: string; titel: string }[
 
 export function ImportView({ campaignId, onClose, onImported }: { campaignId: string; onClose: () => void; onImported: () => void }) {
   const task = useTask(), [articles, setArticles] = useState<File | null>(null), [templates, setTemplates] = useState<File | null>(null);
+  const [attributionFile, setAttributionFile] = useState<File | null>(null), [attributionConfirmed, setAttributionConfirmed] = useState(false), [license, setLicense] = useState("CC-BY-SA-3.0");
   const [wikiUrl, setWikiUrl] = useState("https://eron.fandom.com/de/"), [preview, setPreview] = useState<Preview | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set()), [applied, setApplied] = useState<number | null>(null), [resuming, setResuming] = useState(false), [resumeError, setResumeError] = useState("");
   useEffect(() => {
@@ -32,7 +33,14 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
     let articleJson: unknown, templateJson: unknown;
     try { articleJson = JSON.parse(a); templateJson = JSON.parse(t); } catch { throw new Error("Eine der Dateien enthält kein gültiges JSON."); }
     if (!Array.isArray(articleJson) || !Array.isArray(templateJson)) throw new Error("Artikel und Vorlagen müssen jeweils als JSON-Liste exportiert sein.");
-    const result = await api<Preview>(apiPath(campaignId, "/imports/eron"), { method: "POST", body: { articles: articleJson, templates: templateJson, wikiUrl } });
+    let attributionByPageId: unknown;
+    if (attributionFile) {
+      if (!attributionConfirmed) throw new Error("Bestätige die vollständige Autorenhistorie der mitgelieferten Nachweise.");
+      if (attributionFile.size > 2 * 1024 * 1024) throw new Error("Die Autorennachweise dürfen höchstens 2 MiB groß sein.");
+      try { attributionByPageId = JSON.parse(await attributionFile.text()); } catch { throw new Error("Die Autorennachweise enthalten kein gültiges JSON."); }
+      if (!attributionByPageId || typeof attributionByPageId !== "object" || Array.isArray(attributionByPageId)) throw new Error("Die Nachweisdatei muss Seitenkennungen auf Autorenhistorien abbilden.");
+    }
+    const result = await api<Preview>(apiPath(campaignId, "/imports/eron"), { method: "POST", body: { articles: articleJson, templates: templateJson, wikiUrl, license, ...(attributionByPageId ? { attributionByPageId } : {}) } });
     setPreview(result); setSelected(new Set()); setApplied(null);
     const url = new URL(location.href); url.searchParams.set("import", result.artifactId); window.history.replaceState(null, "", url);
   });
@@ -48,6 +56,12 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
     {resuming ? <Loading text="Gespeicherter Importbericht wird geöffnet …" /> : !preview ? <form className="panel" onSubmit={(event) => { event.preventDefault(); void makePreview(); }}>
       <div className="import-files"><label><FileJson size={20} /> Artikeldatei<input type="file" accept=".json,application/json" required onChange={(event) => setArticles(event.target.files?.[0] ?? null)} /><span className="field-help">articles.json mit vollständigem Wikitext</span></label><label><FileJson size={20} /> Vorlagendatei<input type="file" accept=".json,application/json" required onChange={(event) => setTemplates(event.target.files?.[0] ?? null)} /><span className="field-help">templates.json mit Infobox-Definitionen</span></label></div>
       <label>Adresse des Quell-Wikis<input type="url" value={wikiUrl} onChange={(event) => setWikiUrl(event.target.value)} required /></label>
+      <label>Lizenz der importierten Texte<input value={license} maxLength={200} required disabled={task.busy} onChange={event => setLicense(event.target.value)} /></label>
+      <details><summary>Vollständige Autorennachweise ergänzen</summary><p>Für eine spätere öffentliche Freigabe brauchen importierte Texte die vollständige Autorenhistorie und den Revisionsnachweis ihrer Quelle. Fehlende Angaben bleiben ausdrücklich offen.</p>
+        <label>Autorennachweise als JSON<input type="file" accept=".json,application/json" disabled={task.busy} onChange={event => { setAttributionFile(event.target.files?.[0] ?? null); setAttributionConfirmed(false); }} /></label>
+        <p className="field-help">Die Datei ordnet jeder Seitenkennung einen Nachweis mit complete, authors, anonymousContributions und revisionSha1 zu. Verwende die vollständige Historie, nicht nur den letzten Bearbeiter.</p>
+        <label className="check-label"><input type="checkbox" disabled={!attributionFile || task.busy} checked={attributionConfirmed} onChange={event => setAttributionConfirmed(event.target.checked)} /> Die mitgelieferten Nachweise enthalten die vollständige Autorenhistorie der angegebenen Seiten.</label>
+      </details>
       <Button type="submit" variant="primary" disabled={task.busy || !articles || !templates}><Upload size={16} /> {task.busy ? "Prüft die Quelle …" : "Importvorschau erstellen"}</Button>
     </form> : <>
       {applied !== null ? <Notice>{applied} Artikel wurden übernommen. Der Importbericht und die unveränderte Quelle sind auf dem Server gespeichert.</Notice> : null}

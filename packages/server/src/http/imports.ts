@@ -10,7 +10,11 @@ import { Id } from "@chronicle/protocol";
 export function registerImports(app: FastifyInstance,db: Db,config: AppConfig) {
   const identity = createIdentity(db,config), atlas = createAtlas(db,config), imports = createImports(db,config);
   const closed = {additionalProperties:false}, jsonBody = Type.Object({json:Type.String({maxLength:32*1024*1024})},closed);
-  const eron = Type.Object({articles:Type.Array(Type.Unknown(),{maxItems:10_000}),templates:Type.Array(Type.Unknown(),{maxItems:10_000}),wikiUrl:Type.String({maxLength:1000})},closed);
+  const attribution = Type.Object({ complete: Type.Literal(true), authors: Type.Array(Type.String({ minLength: 1, maxLength: 512, pattern: "\\S" }), { maxItems: 100_000 }),
+    anonymousContributions: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }), revisionSha1: Type.String({ pattern: "^[0-9a-zA-Z]{1,40}$" }) }, closed);
+  const eron = Type.Object({articles:Type.Array(Type.Unknown(),{maxItems:10_000}),templates:Type.Array(Type.Unknown(),{maxItems:10_000}),wikiUrl:Type.String({maxLength:1000}),
+    license: Type.Optional(Type.String({ minLength: 1, maxLength: 200, pattern: "\\S" })),
+    attributionByPageId: Type.Optional(Type.Record(Type.String({ pattern: "^[1-9][0-9]{0,15}$" }), attribution, { ...closed, maxProperties: 10_000 })) },closed);
   const selection = Type.Object({entryIds:Type.Array(Id,{maxItems:10_000})},closed);
   const link = Type.Object({entryId:Id,expectedVersion:Type.Integer({minimum:1})},closed), reveal = Type.Object({actorId:Id},closed);
   type Scope = {campaignId:string}; type Item = Scope & {id:string}; type Node = Item & {nodeId:string};

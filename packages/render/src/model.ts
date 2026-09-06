@@ -2,6 +2,8 @@
 import type { TacticalGrid } from "@chronicle/szene";
 /** Closed presentation boundary. Only records already selected by the server belong here. */
 export type MapPoint = readonly [number, number];
+export type MapRasterSampling = "nearest" | "linear";
+export type MapRendererBackend = "pixi-webgl" | "pixi-webgpu" | "pixi-canvas";
 export interface ProjectedMapCell {
   readonly id: string;
   readonly polygon: readonly MapPoint[];
@@ -39,6 +41,8 @@ export interface ProjectedMapScene {
   readonly lines?: readonly { readonly id: string; readonly points: readonly MapPoint[]; readonly color?: number }[];
   /** Changing the authorized raster scope discards every old texture immediately. */
   readonly rasterScope?: string;
+  /** Presentation only; omitted sampling uses linear filtering. */
+  readonly rasterSampling?: MapRasterSampling;
 }
 /** The host fetches authorized tiles. Ownership of each bitmap transfers to the renderer. */
 export interface MapRasterTile { readonly id: string; readonly left: number; readonly top: number; readonly width: number; readonly height: number; readonly pixelScale: number; readonly image: ImageBitmap }
@@ -48,7 +52,7 @@ export interface MapCamera { readonly x: number; readonly y: number; readonly sc
 export interface MapHit { readonly kind: "pin" | "token" | "cell"; readonly id: string }
 
 export interface MapRenderer {
-  readonly backend: "pixi-webgl";
+  readonly backend: MapRendererBackend;
   update(scene: ProjectedMapScene): void;
   applyPatch(patch: MapScenePatch): void;
   setRasterTiles(scope: string, tiles: readonly MapRasterTile[]): void;

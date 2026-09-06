@@ -103,7 +103,8 @@ describe("A-G1 · Grundriss — Determinismus über den vollständigen Optionsve
   });
 
   it("zählt das Assetpaket zum Optionsvektor — ein Paket-Bump ist eine andere Karte", () => {
-    const gebumpt: AssetpaketV1 = parseAssetpaket({ ...paket, version: "1.1.0" });
+    // Keep the counterfactual distinct when the real pack reaches the old fixture's version.
+    const gebumpt: AssetpaketV1 = parseAssetpaket({ ...paket, version: `${Number(paket.version.split(".")[0]) + 1}.0.0` });
     const a = erzeugeGrundriss({ keim: "eron:kellergewoelbe:1" }, paket);
     const b = erzeugeGrundriss({ keim: "eron:kellergewoelbe:1" }, gebumpt);
     expect(b.keim.keimHash).not.toBe(a.keim.keimHash);

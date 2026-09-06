@@ -57,7 +57,10 @@ Wissensregionen, vorbereitete Figuren, getrennten Livezustand und Undo; der Serv
 liefert ausschließlich sichtbare Bildkacheln. Die
 [Wochenansicht](docs/WEEK_UI.md) verbindet Briefe, Postlaufzeit, Lesestand und
 Wochenunterschiede. Die Schmiede bietet visuellen Regel- und Bogenbau mit
-Testfiguren, Würfel-Trace und ausdrücklich bestätigter Paketmigration. Sprache,
+Testfiguren, Würfel-Trace und ausdrücklich bestätigter Paketmigration. Die
+[Theme- und Publikationswerkstatt](docs/AUTHORING.md) ergänzt vier Presets, lokale
+Leseeinstellungen und die ausdrückliche Freigabe ausgewählter Artikelstände.
+Sprache,
 Video, Bildschirmfreigabe und private Flüsterräume bleiben beim Bühnenwechsel
 verbunden; Einrichtung und geprüfte Grenzen stehen in
 [Medien im Client](docs/MEDIA_UI.md). Aktuelle Nachweise und offene Lieferpunkte
@@ -66,7 +69,7 @@ stehen in [STATUS.md](STATUS.md).
 Die Spielleitung kann die vollständige Kampagne als native `.chronicle`-Datei
 herunterladen. Der [Restore-Leitfaden](docs/CAMPAIGN_RESTORE.md) beschreibt die
 geprüfte Wiederherstellung in eine leere Instanz und die separate Einrichtung
-neuer Zugangsdaten. Der [Formatvertrag v3](docs/CAMPAIGN_FORMAT_V3.md)
+neuer Zugangsdaten. Der [Formatvertrag v4](docs/CAMPAIGN_FORMAT_V4.md)
 benennt auch ausgeschlossene Laufzeitdaten.
 
 Für Self-Hosting und die optionale Medieninfrastruktur siehe

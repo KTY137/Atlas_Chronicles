@@ -1,5 +1,30 @@
 # Codex work alongside Claude — 2026-09-06
 
+## Latest handoff — authoring checkpoint in progress
+
+This section supersedes the historical ownership/runtime notes below. Root completed M8 theme,
+local appearance, publication/source, native-v4 and reviewed renderer integration. The working
+tree passes 781 tests in 76 files with real PostgreSQL, one intentional PGlite race skip,
+TypeScript, 233-file/8-rule boundaries and asset checks. Client `index-C4bNbIAT.js` passes all
+23 functional Playwright flows including real loopback media in 2.2 minutes. The four opt-in
+performance harness cases also pass separately; read TACTICAL_PERFORMANCE for measured limits,
+not a blanket performance acceptance. AUTHORING records the nine new browser flows and
+independent red-to-green regressions. Checkpoint and clean-tree validation follow next.
+
+The operative app still serves verified7b45296 from `.local/checkouts/tactical-gate` on
+localhost3000, owned PID22164/session29214, SQL001–011. Do not confuse test schemas with an
+operative migration. Preserve ignored local credentials/media env and the existing demo data.
+
+The user's expanded goal retains the whole implementation plan, asks us to complement Claude,
+generate map assets in parallel, and provide a How to be a Hero rules template. External Claude
+work remains active in shell-lab, import/parser fixtures and the assetpaket/grundriss modules.
+Root owns integration; the image worker owns only new assets/generated/painted-dungeon-v1 and
+its optional design note. Desktop and tactical-entity proposals are not product delivery yet.
+Asset byte delivery, archive pack portability and actual generator-to-table integration are
+known gaps; schematic symbols and diagnostic SVGs do not prove those flows.
+
+## Historical implementation notes
+
 Kaya resumed implementation after restarting VS Code and reported three active Claude sessions. Their task assignments are not yet known to this Codex session.
 
 Codex completed the HTTP shutdown/restart fix and browser verification in `e2e/`, plus document/revelation serialization and letter snapshot integrity. Current ownership: root owns wiki navigation/backlinks/slug projection, minimal App/Wiki integration and browser tests. Codex workers own new ChannelView/useCampaignLive files, the new native campaign bundle parser/schema in io, and server bundle export/dry-run/empty-database restore with **migration009_campaign_restore.sql reserved**. Prior Codex client owners are no longer active after the restart; no current external product-client ownership was found on disk. Preserve Claude's active deploy, media/realtime shutdown and fixture/import-parser work.

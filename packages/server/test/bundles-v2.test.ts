@@ -1,26 +1,26 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { createCampaignBundle, emptyCampaignTables, parseCampaignBundle, upgradeCampaignBundleV1, upgradeCampaignBundleV2, campaignSemanticDiffV3, CAMPAIGN_TABLES, type CampaignTables, type CampaignRow } from "@chronicle/io";
+import { createCampaignBundle, emptyCampaignTables, parseCampaignBundle, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, campaignSemanticDiffV4, CAMPAIGN_TABLES, type CampaignTables, type CampaignRow } from "@chronicle/io";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { exportCampaignBundle, inspectCampaignRestore, restoreCampaignBundle } from "../src/domain/bundles.ts";
 import { runBundleCli } from "../src/bundle-cli.ts";
 
-describe("unchanged explicit v1 to v2 upgrade inside the v3 restore chain", () => {
+describe("unchanged explicit v1 to v2 upgrade inside the v4 restore chain", () => {
   it("requires an explicit option and restores all v1 seals with only deterministic additions", async () => {
     const source = parseCampaignBundle(await readFile(new URL("../../io/test/fixtures/campaign-v1.chronicle", import.meta.url), "utf8"));
-    const upgraded = upgradeCampaignBundleV1(source), v3 = upgradeCampaignBundleV2(upgraded.bundle), target = await createTestDb();
+    const upgraded = upgradeCampaignBundleV1(source), v3 = upgradeCampaignBundleV2(upgraded.bundle), v4 = upgradeCampaignBundleV3(v3.bundle), target = await createTestDb();
     try {
       await migrate(target);
       await expect(inspectCampaignRestore(target, source)).rejects.toThrow(/explicit.*upgrade-from-v1/);
       await expect(restoreCampaignBundle(target, source)).rejects.toThrow(/explicit.*upgrade-from-v1/);
       const before = (await target.query("SELECT last_value::text,is_called FROM lineage_events_seq_seq")).rows;
-      expect((await inspectCampaignRestore(target, source, { upgradeFromV1: true })).migration?.steps).toEqual([upgraded.report, v3.report]);
+      expect((await inspectCampaignRestore(target, source, { upgradeFromV1: true })).migration?.steps).toEqual([upgraded.report, v3.report, v4.report]);
       expect((await target.query("SELECT 1 FROM users")).rowCount).toBe(0);
       expect((await target.query("SELECT last_value::text,is_called FROM lineage_events_seq_seq")).rows).toEqual(before);
-      expect((await restoreCampaignBundle(target, source, { upgradeFromV1: true })).migration?.steps).toEqual([upgraded.report, v3.report]);
+      expect((await restoreCampaignBundle(target, source, { upgradeFromV1: true })).migration?.steps).toEqual([upgraded.report, v3.report, v4.report]);
       const reopened = await exportCampaignBundle(target, "gm", "campaign", { now: () => Date.parse(source.manifest.exportedAt) });
-      expect(campaignSemanticDiffV3(v3.bundle, reopened)).toEqual([]);
+      expect(campaignSemanticDiffV4(v4.bundle, reopened)).toEqual([]);
       for (const table of CAMPAIGN_TABLES) expect(reopened.tables[table.name]).toEqual(source.tables[table.name]);
       expect((await target.query("SELECT 1 FROM credentials")).rowCount).toBe(0);
       expect((await target.query("SELECT 1 FROM users WHERE platform_role<>'gast'")).rowCount).toBe(0);
@@ -63,7 +63,7 @@ describe("unchanged explicit v1 to v2 upgrade inside the v3 restore chain", () =
       }
       await migrate(db);
       const actual = await exportCampaignBundle(db, "gm", "c", { now: () => Date.parse(source.manifest.exportedAt) });
-      expect(campaignSemanticDiffV3(upgradeCampaignBundleV2(upgradeCampaignBundleV1(source).bundle).bundle, actual)).toEqual([]);
+      expect(campaignSemanticDiffV4(upgradeCampaignBundleV3(upgradeCampaignBundleV2(upgradeCampaignBundleV1(source).bundle).bundle).bundle, actual)).toEqual([]);
       expect(actual.tables.actor_controllers).toHaveLength(1);
       expect(actual.tables.actor_controllers[0]!.actor_id).toBe("primary");
     } finally { await db.close(); }

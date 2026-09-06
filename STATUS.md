@@ -4,6 +4,37 @@ Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
 
 ## Current handoff — start here
 
+- **Authoring integration — verified working tree, checkpoint pending:** Themes and local
+  accessibility preferences, explicit immutable article publication, source-confirmed legacy
+  routes and native `.chronicle` v4 are integrated. SQL012 adds seven authoring tables; public
+  delivery remains a separate local process switch, off by default. See
+  [AUTHORING](docs/AUTHORING.md) and [CAMPAIGN_FORMAT_V4](docs/CAMPAIGN_FORMAT_V4.md).
+  The final real-PostgreSQL working-tree gate passes **789 tests in 77 files**, one intentional
+  PGlite concurrency skip, TypeScript, **234 boundary files / 8 rules / 0 violations** and the
+  asset gate (41 assets at this parallel-work snapshot). An earlier gate caught a fixture
+  hardcoded to bump to1.1.0 when Claude's actual pack reached1.1.0. Root changed only that test
+  to derive a distinct next major version; its47 cases and the complete gate then passed.
+  The canonical client build is `index-C4bNbIAT.js`. All **23 functional browser flows pass in
+  2.2 minutes** with actual loopback media in `.local/e2e-authoring-integrated`; its four opt-in
+  performance cases were measured separately, with all four final harness checks passing in
+  `.local/e2e-tactical-performance-cached-controlled-20260906`. Hardware release gates remain
+  open; the performance report distinguishes harness correctness from target frame budgets.
+- **Current Codex ownership:** root integrates/checkpoints M8, client, native-v4 and renderer
+  work; the performance worker is finishing `docs/TACTICAL_PERFORMANCE.md`. Read-only desktop
+  and tactical-entity implementation proposals are separate next-step documents. A new asset
+  worker owns only `assets/generated/painted-dungeon-v1/**` and its optional design note.
+  The expanded user objective also requests **How to be a Hero as a playable rules template**
+  and completion of gaps in Claude's generator integration. Official rules/licensing research
+  has begun; no template or painted asset is yet claimed delivered. Preserve ongoing Claude
+  edits in shell-lab, Eron parser/fixtures, assetpaket/grundriss and their tests. Do not stage them
+  as part of root's authoring checkpoint, except the isolated version-counterfactual test fix
+  described above. Coordinate root dependency/build/browser windows.
+- **Operative app is still the previous verified checkpoint:** localhost3000 remains on
+  `7b45296`, PID22164/session29214, `.local/checkouts/tactical-gate`, SQL001–011. The authoring
+  build and SQL012 have been tested in isolated schemas but are not yet the operative demo.
+
+### Previous tactical checkpoint and runtime evidence
+
 - **Verified tactical checkpoint —7b45296:** The real Tisch → Szenenkarte flow now includes UVTT/
   native import with provenance, editable region knowledge bindings, persisted plans, immutable
   session capture, controlled token commands, portals, bounded Undo and masked PNG tile delivery.
@@ -252,3 +283,4 @@ Do not infer a winner. The verdict does not exist.
 
 - **Nachtrag Wiki-Import (07 §11):** Der Eron-Korpus ist vollständig importiert — 74 Artikel, 35.830 Wörter, 429 Abschnitte, 556 Backlinks, 690 rote Links, 44 Infoboxen als Registerfelder (`design/shell-lab/scripts/import-wiki.mjs`). Welt-Bühne rendert jeden Artikel mit funktionierenden Links, Backlinks, Tabellen und Listen; Navigation über die Omnibox ⌘K statt einer zweiten Spalte. Fandom-Import per Link ist **verifiziert**: die MediaWiki-API von eron.fandom.com liefert HTTP 200 mit `Access-Control-Allow-Origin: *`, 74 Artikel / 316 Seiten / 38 Bilder, Paginierung via continue-Token — Import direkt aus dem Browser, ohne Proxy. Lizenz-, Bildrechte- und Template-Grenzen in 07 §11.3 benannt.
 - **Wiki voll funktionsfaehig (07 §11.5):** Parser in den Browser verlegt (ein Parser fuer Import und Bearbeitung); Bearbeiten, Anlegen aus roten Links, sofortige Backlinks, Persistenz, Einzel-Revert, Verzeichnis nach Objektart, ⌘K-Suche. Nachgewiesen durch design/shell-lab/scripts/e2e-wiki.mjs — 17/17 im echten Browser. Zwei so gefundene Fehler behoben: stiller Rueckfall bei unbekanntem ?artikel= und veraltete Buehne durch fehlende useMemo-Abhaengigkeit.
+- **Live-Import gebaut (07 §11.6):** Wiki-Adresse einfuegen, Endpunkt wird selbst ermittelt (Fandom, Wikipedia, eigene Instanz), Pruefen zeigt Name/Artikel/Bilder/Lizenz, Import mit Fortschritt und Abbruch. Gegen das echte Eron-Wiki nachgewiesen (design/shell-lab/scripts/e2e-import.mjs, 10/10): 73 Artikel, 303 kB, Herkunft mit Quelle/Lizenz/Revision je Artikel, Lizenz sichtbar am Artikel, Live-Import einzeln verwerfbar. 73 statt 74, weil "Kaiserliche Flotte" seit der Fixture-Ernte eine Weiterleitung ist — der Import liest das Wiki von heute.

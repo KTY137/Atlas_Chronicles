@@ -87,6 +87,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
   };
   const color = (value: number | undefined): void => { if (value !== undefined && (!Number.isInteger(value) || value < 0 || value > 0xffffff)) throw new Error("invalid color"); };
   if (scene.rasterScope !== undefined && (typeof scene.rasterScope !== "string" || scene.rasterScope.length > 512)) throw new Error("invalid raster scope");
+  if (scene.rasterSampling !== undefined && scene.rasterSampling !== "nearest" && scene.rasterSampling !== "linear") throw new Error("invalid raster sampling");
   if (scene.grid && scene.grid.kind !== "none") {
     if (!["square", "hex"].includes(scene.grid.kind) || !Number.isFinite(scene.grid.size) || scene.grid.size <= 0 || scene.grid.origin.length !== 2 || !scene.grid.origin.every(Number.isFinite)) throw new Error("invalid grid");
     if (scene.grid.kind === "hex" && (!["pointy", "flat"].includes(scene.grid.orientation) || !["even", "odd"].includes(scene.grid.offset))) throw new Error("invalid hex grid");

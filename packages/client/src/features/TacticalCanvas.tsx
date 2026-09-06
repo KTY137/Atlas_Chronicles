@@ -1,12 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createMapRenderer, visibleMapTiles, type MapHit, type MapPoint, type MapRasterTile, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
 import { Button, Notice } from "@chronicle/ui";
 import { errorText } from "../api";
+import { useAppearance } from "./Appearance";
 
 /** The renderer never fetches private images. This scoped host owns requests and their lifetime. */
-export function TacticalCanvas({ scene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated }: {
+export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated }: {
   scene: ProjectedMapScene; tileBase: string; tileQuery?: string; onMove?: (id: string, to: MapPoint) => void; onSelect?: (hit: MapHit | null) => void; onPoint?: (point: MapPoint) => void; onScopeInvalidated?: () => void;
 }) {
+  const { resolved } = useAppearance();
+  const scene = useMemo(() => ({ ...projectedScene, rasterSampling: resolved.sampling }), [projectedScene, resolved.sampling]);
   const host = useRef<HTMLDivElement>(null), renderer = useRef<MapRenderer | null>(null);
   const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated };
   const schedule = useRef<() => void>(() => {}), clearScope = useRef<() => void>(() => {}), retryTiles = useRef<() => void>(() => {});

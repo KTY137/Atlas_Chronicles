@@ -26,8 +26,11 @@ import { registerWikiNavigation } from "./http/wiki-navigation.ts";
 import { registerBundles } from "./http/bundles.ts";
 import { registerActors } from "./http/actors.ts";
 import { registerTactical } from "./http/tactical.ts";
+import { registerAuthoring } from "./http/authoring.ts";
+import { registerPublication } from "./http/publication.ts";
+import { AuthoringValidationError } from "./domain/authoring.ts";
 
-export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; livekit?: MediaServerConfig }
+export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; livekit?: MediaServerConfig; publicDeliveryEnabled?: boolean }
 export async function buildApp(db: Db, config: AppConfig) {
   const app = Fastify({ logger: config.logger ?? false, bodyLimit: 2 * 1024 * 1024,
     ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
@@ -50,7 +53,7 @@ export async function buildApp(db: Db, config: AppConfig) {
     const fault = error as { validation?: unknown; statusCode?: number };
     if (error instanceof Gone) return reply.code(404).send({ error: "Nicht verfügbar" });
     if (error instanceof Conflict) return reply.code(409).send({ error: "Konflikt: Bitte den aktuellen Stand laden." });
-    if (error instanceof ImportValidationError || error instanceof AzgaarImportError || error instanceof RuleValidationError) return reply.code(400).send({error:error.message});
+    if (error instanceof ImportValidationError || error instanceof AzgaarImportError || error instanceof RuleValidationError || error instanceof AuthoringValidationError) return reply.code(400).send({error:error.message});
     if (fault.validation || fault.statusCode === 400) return reply.code(400).send({ error: "Bitte Eingaben prüfen." });
     if (fault.statusCode === 429) return reply.code(429).send({ error: "Zu viele Anfragen. Bitte kurz warten." });
     if (fault.statusCode === 413) return reply.code(413).send({ error: "Die Datei ist zu groß." });
@@ -133,12 +136,14 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerBundles(app, db, config);
   registerActors(app, db, config);
   registerTactical(app, db, config);
+  registerAuthoring(app, db, config);
+  registerPublication(app, db, config);
   registerMedia(app,db,config,config.livekit);
   await registerRealtime(app,db,config);
   if (config.staticRoot) {
     await app.register(staticFiles, { root: config.staticRoot, wildcard: false });
     app.get("/*", async (req, reply) => {
-      if (req.url.startsWith("/api/") || req.url.startsWith("/join/")) return reply.code(404).send({ error: "Nicht verfügbar" });
+      if (["/api/", "/join/", "/public/", "/w/", "/wiki/"].some(prefix => req.url.startsWith(prefix))) return reply.code(404).send({ error: "Nicht verfügbar" });
       return reply.sendFile("index.html");
     });
   }

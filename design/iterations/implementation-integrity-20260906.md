@@ -135,3 +135,37 @@ digest, avoiding the smaller RulePackage JSON budget on a valid20,000-stamp docu
 These checks establish bounded functional behavior. They do not establish the specified
 50,000-stamp reference-laptop S-K1/S-T1 performance or the remaining authoring/publication
 and desktop gates. Current combined run counts and runtime state belong in STATUS.md.
+
+## Authoring, publication and native-v4 independent review
+
+SQL012 freezes seven authoring tables and exact command preimages. Theme revisions and public
+article selections are immutable pins. Anonymous HTML/JSON/search/backlinks/feed/sitemap/social
+output share one projector; a GM cookie does not expand it. Public delivery is independently
+off by default in local process configuration, never enabled by a campaign archive.
+
+Two source contract amendments were adopted before correction: language-prefixed legacy paths
+remain distinct normalized identities, and source assertions are selected at or before the
+published article revision. A later private import cannot rewrite old public bytes. An
+independent native-v4 attack moved a fully rehashed attribution assertion between entries of
+one accepted artifact; the test failed before validation restricted source passages to the
+actual accepted entry. Parser and server now use the same entry/revision cutoff semantics.
+
+Five independent client review cases exposed two defects with red-to-green evidence. A delayed
+theme-save acknowledgement followed by a historical revision read inherited a newer head CAS
+version, allowing an unseen version to be overwritten; the editor now retains the acknowledged
+version as its baseline. Terminal authorization loss retained a private editor; it now clears
+the draft and acknowledgement cache, while transient errors retain previously loaded state.
+The other two preview style contract checks were already green on first execution and are not
+presented as red-to-green findings.
+
+Actual browser tests also exposed invalid intermediate contrast during theme color transitions
+and a membership refresh error unmounting dirty editors. Color pairs now switch together; both
+503 and 429 have mounted-editor regressions. The source workflow genuinely uploads attribution,
+accepts the import, publishes selected passages and confirms a language-prefixed redirect.
+Nine authoring browser cases and the complete23-flow functional suite pass on buildC4bNbIAT.
+
+Native v4 wraps the unchanged historical v3 core and covers all seven new SQL tables. Tests
+verify closed schema/column coverage, command replay, immutable pins, source integrity, explicit
+v1/v2/v3 upgrade chains, real PostgreSQL restore/retry and atomic rollback after late insertion
+failure. Credentials, local accessibility preferences and the host public-delivery switch remain
+outside the campaign archive. Exact verification totals and operative runtime belong in STATUS.

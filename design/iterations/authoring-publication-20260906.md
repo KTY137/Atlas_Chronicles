@@ -7,6 +7,20 @@ Stand: 2026-09-06. Nach unabhängiger Gegenprüfung als Implementierungsvertrag 
 Root übernimmt Runde 2 für die bereits beauftragte Implementierung. Folgende Präzisierungen
 gehen bei abweichender Formulierung im Vorschlag vor:
 
+- Präzisierung aus dem echten Eron-Importpfad: bestätigte Legacy-Adressen dürfen
+  `/wiki/<Artikel>` oder `/<Sprache>/wiki/<Artikel>` verwenden. Die Sprache ist auf zwei
+  ASCII-Buchstaben und einen optionalen zweiten Zweibuchstabenteil beschränkt. Der
+  Sprachpräfix bleibt Bestandteil des global eindeutigen Pfads; verschiedene Sprachen
+  werden nicht zu einer Adresse zusammengelegt. Das bewahrt insbesondere die tatsächlichen
+  `/de/wiki/`-Quellen der vorhandenen Importvoreinstellung. Die vollständige Quell-URL bleibt
+  unverändert als Herkunftsbeleg erhalten; HTTP und Native-V4-Prüfer verwenden denselben Vertrag.
+- Eine ausdrücklich akzeptierte vollständige Autorenhistorie kann die vorher unvollständige
+  Quellaussage derselben Ursprungs-PID ersetzen. Für jeden publizierten Stand zählt nur die
+  zuletzt akzeptierte Aussage bis zu seiner gepinnten Artikel-Revisionssequenz. Ein späterer
+  privater Reimport verändert keine bereits veröffentlichten Attributionen; sämtliche alten
+  Artefakte bleiben erhalten. Diese Präzisierung wird mit positiven und neu gehashten negativen
+  Fixtures in Server und Native V4 geprüft, bevor der Vertrag als geliefert gilt.
+
 - Publish prüft **Artikelrevision, Artikel-Publikationsversion und Weltpolicy-Version** getrennt
   unter demselben Kampagnenlock. Zwei konkurrierende Auswahlen dürfen sich auch bei unveränderter
   Artikelrevision nicht überschreiben. Fehlende Publikationszustände haben erwartete Version0.

@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import { fitCamera, hitTestMap, mapToScreen, normalizeCamera, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
-import { rasterTileDisplaySize, visibleGridLines } from "./tactical-geometry.ts";
+import { rasterTileDisplaySize } from "./tactical-geometry.ts";
+import { createGridGeometryCache } from "./grid-cache.ts";
 import type { MapCamera, MapHit, MapPoint, MapRenderer, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
 export interface MapRendererOptions {
@@ -25,7 +26,7 @@ export class MapRendererUnavailableError extends Error {
 export async function createMapRenderer(host: HTMLElement, initial: ProjectedMapScene, options: MapRendererOptions = {}): Promise<MapRenderer> {
   validateMapScene(initial);
   if (options.signal?.aborted) throw new DOMException("Renderer creation aborted", "AbortError");
-  const { Application, Container, Graphics, Text, Sprite, Texture } = await import("pixi.js");
+  const { Application, Container, Graphics, Text, Sprite, Texture, RendererType } = await import("pixi.js");
   const app = new Application();
   let viewport: MapPoint = [Math.max(1, host.clientWidth), Math.max(1, host.clientHeight)];
   try {
@@ -39,6 +40,10 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     app.destroy(true, { children: true });
     throw new DOMException("Renderer creation aborted", "AbortError");
   }
+  const backend = app.renderer.type === RendererType.WEBGL ? "pixi-webgl" : app.renderer.type === RendererType.WEBGPU ? "pixi-webgpu"
+    : app.renderer.type === RendererType.CANVAS ? "pixi-canvas" : null;
+  if (!backend) { app.destroy(true, { children: true }); throw new MapRendererUnavailableError(new Error("Unsupported Pixi renderer type")); }
+  const nativePixelGrid = backend !== "pixi-canvas" && app.renderer.resolution === 1;
   const canvas = app.canvas as HTMLCanvasElement;
   canvas.style.display = "block";
   canvas.style.width = "100%";
@@ -47,16 +52,16 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   canvas.tabIndex = 0;
   canvas.setAttribute("role", "img");
   canvas.setAttribute("aria-label", "Interaktive Karte. Pfeiltasten verschieben, Plus und Minus zoomen, Pos1 zeigt die gesamte Karte. Orte können auch in der Ortsliste ausgewählt werden.");
-  canvas.dataset.mapBackend = "pixi-webgl";
+  canvas.dataset.mapBackend = backend;
   host.appendChild(canvas);
   const world = new Container();
   const geography = new Container();
-  const raster = new Container(), rasterBounds = new Graphics(), overlay = new Graphics(), dragPreview = new Graphics();
+  const raster = new Container(), rasterBounds = new Graphics(), gridOverlay = new Graphics(), wallsOverlay = new Graphics(), dragPreview = new Graphics();
   const markers = new Container();
-  world.addChild(rasterBounds, raster, geography, overlay, markers, dragPreview);
+  world.addChild(rasterBounds, raster, geography, gridOverlay, wallsOverlay, markers, dragPreview);
   raster.mask = rasterBounds;
   app.stage.addChild(world);
-  const selection = new Graphics();
+  const selection = new Graphics().circle(0, 0, 15).stroke({ color: 0xffe7a1, width: 2 }); selection.visible = false;
   const label = new Text({ text: "", style: { fontFamily: "system-ui, sans-serif", fontSize: 14, fill: 0xffffff,
     stroke: { color: 0x14212b, width: 4 } } });
   app.stage.addChild(selection, label);
@@ -66,6 +71,8 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   let destroyed = false;
   let scheduled = 0;
   let markerGraphics: InstanceType<typeof Graphics>[] = [];
+  const gridCache = createGridGeometryCache();
+  let previousGridLines: readonly (readonly MapPoint[])[] | undefined, previousScale = Number.NaN;
   const rasterResources: { bitmap: ImageBitmap; texture: InstanceType<typeof Texture> }[] = [];
   const clearRaster = () => {
     for (const child of raster.removeChildren()) child.destroy();
@@ -77,28 +84,51 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     scheduled = requestAnimationFrame(() => { scheduled = 0; if (!destroyed) app.render(); });
   };
   const updateSelection = (): void => {
-    selection.clear();
+    selection.visible = false;
     label.visible = false;
     if (!selected) return;
     const item = selected.kind === "pin" ? scene.pins.find((p) => p.id === selected!.id)
       : selected.kind === "token" ? scene.tokens?.find((t) => t.id === selected!.id) : undefined;
     if (item) {
       const p = mapToScreen([item.x, item.y], camera);
-      selection.circle(p[0], p[1], 15).stroke({ color: 0xffe7a1, width: 2 });
+      selection.position.set(p[0], p[1]); selection.visible = true;
       label.text = item.label;
       label.position.set(Math.min(Math.max(4, p[0] + 18), Math.max(4, viewport[0] - label.width - 4)), Math.min(Math.max(4, p[1] - 12), Math.max(4, viewport[1] - label.height - 4)));
       label.visible = true;
     }
   };
-  const applyCamera = (): void => {
+  const drawWalls = (): void => {
+    wallsOverlay.clear();
+    let color: number | undefined;
+    // Batch only adjacent equal-color paths, retaining original overlap order.
+    // Zoom still rebuilds stroke geometry to preserve exactly 2 CSS pixels.
+    for (const line of scene.lines ?? []) {
+      const next = line.color ?? 0xebc887;
+      if (color !== undefined && color !== next) wallsOverlay.stroke({ color, width: 2 / camera.scale });
+      color = next;
+      const first = line.points[0]!; wallsOverlay.moveTo(first[0], first[1]);
+      for (let i = 1; i < line.points.length; i++) { const point = line.points[i]!; wallsOverlay.lineTo(point[0], point[1]); }
+    }
+    if (color !== undefined) wallsOverlay.stroke({ color, width: 2 / camera.scale });
+  };
+  const applyCamera = (changedGeometry = false): void => {
     world.position.set(camera.x, camera.y);
     world.scale.set(camera.scale);
-    for (const marker of markerGraphics) marker.scale.set(1 / camera.scale);
-    overlay.clear();
-    if (scene.grid) for (const points of visibleGridLines([scene.width, scene.height], viewport, camera, scene.grid)) {
-      overlay.poly(points.flatMap(p => [p[0], p[1]]), false).stroke({ color: 0xddd8c8, width: 1 / camera.scale, alpha: .22 });
+    const changedScale = camera.scale !== previousScale;
+    if (changedGeometry || changedScale) { for (const marker of markerGraphics) marker.scale.set(1 / camera.scale); drawWalls(); }
+    const gridLines = gridCache.lines([scene.width, scene.height], viewport, camera, scene.grid);
+    // Native GPU lines stay one physical pixel without retessellation. At
+    // higher pixel densities, or on Canvas2D, preserve one CSS pixel explicitly.
+    if (gridLines !== previousGridLines || (!nativePixelGrid && changedScale)) {
+      gridOverlay.clear();
+      for (const points of gridLines) {
+        const first = points[0]!; gridOverlay.moveTo(first[0], first[1]);
+        for (let i = 1; i < points.length; i++) { const point = points[i]!; gridOverlay.lineTo(point[0], point[1]); }
+      }
+      if (gridLines.length) gridOverlay.stroke({ color: 0xddd8c8, width: nativePixelGrid ? 1 : 1 / camera.scale, pixelLine: nativePixelGrid, alpha: .22 });
+      previousGridLines = gridLines;
     }
-    for (const line of scene.lines ?? []) overlay.poly(line.points.flatMap(p => [p[0], p[1]]), false).stroke({ color: line.color ?? 0xebc887, width: 2 / camera.scale });
+    previousScale = camera.scale;
     updateSelection();
     render();
     options.onCameraChange?.({ ...camera });
@@ -132,11 +162,11 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       markerGraphics.push(shape);
     }
     canvas.dataset.mapScene = scene.id;
-    applyCamera();
+    applyCamera(true);
   };
   const ensureAlive = (): void => { if (destroyed) throw new Error("MapRenderer has been destroyed"); };
   const renderer: MapRenderer = {
-    backend: "pixi-webgl",
+    backend,
     update(next) {
       ensureAlive();
       validateMapScene(next);
@@ -145,6 +175,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       const previousSelection = selected;
       if (changedScope || changedWorld) clearRaster();
       scene = next;
+      for (const resource of rasterResources) resource.texture.source.scaleMode = scene.rasterSampling ?? "linear";
       if (drag && (changedWorld || changedScope || (drag.snapshot && !retainsTokenDrag(drag.snapshot, scene.tokens?.find(t => t.id === drag?.token))))) {
         if (canvas.hasPointerCapture(drag.id)) canvas.releasePointerCapture(drag.id);
         drag = null; dragPreview.clear();
@@ -166,7 +197,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
         for (const tile of tiles) tile.image.close(); throw new Error("invalid raster tiles");
       }
       clearRaster();
-      for (const tile of tiles) { const texture = Texture.from(tile.image), sprite = new Sprite(texture); sprite.position.set(tile.left, tile.top); const size = rasterTileDisplaySize(tile, [tile.image.width, tile.image.height]); sprite.width = size[0]; sprite.height = size[1]; sprite.eventMode = "none"; raster.addChild(sprite); rasterResources.push({ bitmap: tile.image, texture }); }
+      for (const tile of tiles) { const texture = Texture.from(tile.image); texture.source.scaleMode = scene.rasterSampling ?? "linear"; const sprite = new Sprite(texture); sprite.position.set(tile.left, tile.top); const size = rasterTileDisplaySize(tile, [tile.image.width, tile.image.height]); sprite.width = size[0]; sprite.height = size[1]; sprite.eventMode = "none"; raster.addChild(sprite); rasterResources.push({ bitmap: tile.image, texture }); }
       render();
     },
     resize(width, height) {

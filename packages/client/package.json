@@ -12,6 +12,7 @@
   "dependencies": {
     "@chronicle/render": "*",
     "@chronicle/rules": "*",
+    "@chronicle/theme": "^0.0.0",
     "@chronicle/ui": "*",
     "@fontsource-variable/ibm-plex-sans": "5.3.0",
     "@fontsource/cinzel": "5.3.0",

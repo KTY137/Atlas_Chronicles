@@ -5,6 +5,7 @@ import { createMapRenderer, type MapRenderer, type ProjectedMapScene } from "@ch
 import { api, apiPath, ApiError, errorText, type EntryDocument, type EntrySummary, type Member } from "../api.ts";
 import { useResource, useTask } from "../hooks.ts";
 import "./AtlasView.css";
+import { useAppearance } from "./Appearance";
 
 interface AtlasNode { id: string; title: string | null; kind: string; entryId?: string; parents: readonly { id: string; kind: string }[] }
 interface ImportReport { orte: number; zellen: number; unterdrueckteNotizen: number; hinweise: readonly string[]; ausgelasseneDatensaetze: Record<string, number> }
@@ -15,6 +16,7 @@ const kindLabel: Record<string, string> = { welt: "Welt", landmasse: "Landmasse"
 const pathId = (id: string) => encodeURIComponent(id);
 
 export function AtlasView({ campaignId, role, onOpenEntry }: AtlasViewProps) {
+  const { resolved } = useAppearance();
   const gm = role === "leitung";
   const selectionKey = `chronicle.atlas-map.${campaignId}`;
   const [mapId, setMapId] = useState("");
@@ -39,7 +41,8 @@ export function AtlasView({ campaignId, role, onOpenEntry }: AtlasViewProps) {
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<MapRenderer | null>(null);
   const sceneRef = useRef<AtlasMap | null>(null);
-  sceneRef.current = map.data;
+  const presentedScene = useMemo(() => map.data ? { ...map.data, rasterSampling: resolved.sampling } : null, [map.data, resolved.sampling]);
+  sceneRef.current = presentedScene;
   const mapIdRef = useRef(mapId);
   mapIdRef.current = mapId;
   const fileInput = useRef<HTMLInputElement>(null);
@@ -91,8 +94,8 @@ export function AtlasView({ campaignId, role, onOpenEntry }: AtlasViewProps) {
     return () => { controller.abort(); renderer.current?.destroy(); renderer.current = null; setRendererReady(false); };
   }, [map.data?.id]);
   useEffect(() => {
-    if (map.data && renderer.current) renderer.current.update(map.data);
-  }, [map.data]);
+    if (presentedScene && renderer.current) renderer.current.update(presentedScene);
+  }, [presentedScene]);
 
   function choose(nodeId: string) {
     setSelectedId(nodeId);
