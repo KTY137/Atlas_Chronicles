@@ -14,3 +14,5 @@ export { HOEHLE_ERZEUGER, HOEHLE_VERSION, HOEHLE_LIMITS, HOEHLE_STANDARD, erzeug
 export type { HoehleOptionen, HoehleAuftrag } from "./hoehle.ts";
 export { VERSCHACHTELUNG_VERSION, MAX_MASSSTABSSPRUNG, erzeugeVerschachtelt } from "./verschachtelung.ts";
 export type { EbenenArt, EbenenAuftrag, VerschachtelungsAuftrag, Uebergang, Verschachtelung, VerschachtelungsBericht } from "./verschachtelung.ts";
+export { loeseWfc, WfcError } from "./wfc.ts";
+export type { WfcKachel, WfcAuftrag, WfcErgebnis } from "./wfc.ts";

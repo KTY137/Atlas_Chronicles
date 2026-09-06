@@ -2,6 +2,7 @@
 import { fitCamera, hitTestMap, mapToScreen, normalizeCamera, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
 import { rasterTileDisplaySize } from "./tactical-geometry.ts";
 import { createGridGeometryCache } from "./grid-cache.ts";
+import { planeStapel } from "./stapel.ts";
 import type { MapCamera, MapHit, MapPoint, MapRenderer, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
 export interface MapRendererOptions {
@@ -139,17 +140,44 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     previousScale = camera.scale;
     updateSelection();
     render();
+    // Panning far enough to leave the culled window is the only thing that can reveal a stamp
+    // that was legitimately dropped last frame. Zooming always re-culls, because scale changes
+    // what fits on screen at all.
+    if (stampsVeraltet()) drawStamps();
     options.onCameraChange?.({ ...camera });
   };
   const clear = (container: InstanceType<typeof Container>): void => {
     for (const child of container.removeChildren()) child.destroy({ children: true });
   };
+  /**
+   * Slack around the viewport, in CSS pixels, that a cull covers beyond what is on screen.
+   * Culling exactly to the viewport would be correct and useless: every pan of one pixel would
+   * rebuild every sprite. Culling to a padded window means a pan only pays when it leaves it.
+   */
+  const STAMP_RAND = 256;
+  let stampAnker: { x: number; y: number; scale: number } | null = null;
+  const stampsVeraltet = (): boolean =>
+    stampAnker === null || stampAnker.scale !== camera.scale ||
+    Math.abs(stampAnker.x - camera.x) > STAMP_RAND || Math.abs(stampAnker.y - camera.y) > STAMP_RAND;
   const drawStamps = (): void => {
     for (const child of stampLayer.removeChildren()) child.destroy();
+    stampAnker = { x: camera.x, y: camera.y, scale: camera.scale };
     if (!scene.stamps?.length) return;
-    // Layer order is the author's, not the array's. Sorting here keeps the projection free to
-    // emit placements in whatever order it reads them.
-    for (const stamp of [...scene.stamps].sort((a, b) => a.l - b.l || (a.id < b.id ? -1 : 1))) {
+    // Cull against a window larger than the viewport, centred on it: grow the viewport by the
+    // slack on every side and shift the camera by half of it, so the extra coverage is
+    // symmetric rather than anchored at the top-left corner.
+    const plan = planeStapel(
+      scene.stamps,
+      { ...camera, x: camera.x + STAMP_RAND, y: camera.y + STAMP_RAND },
+      [viewport[0] + STAMP_RAND * 2, viewport[1] + STAMP_RAND * 2],
+    );
+    // Draw in the AUTHOR's order, not in bucket order. `planeStapel` groups by texture because
+    // that is what a batch wants, but layer order is a statement about what lies on top of what:
+    // a rug drawn after the table it belongs under is a wrong picture, and a wrong picture costs
+    // more than a draw call. Pixi still batches the runs that happen to share a texture.
+    const sichtbar = plan.buendel.flatMap((b) => b.stamps)
+      .sort((a, b) => a.l - b.l || (a.id < b.id ? -1 : 1));
+    for (const stamp of sichtbar) {
       const resource = stampTextures.get(stamp.asset);
       // No artwork, no shape. A placeholder box would be indistinguishable from real furniture at
       // a glance, which is exactly the kind of picture that lies about what is in the room.
