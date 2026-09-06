@@ -34,6 +34,67 @@ Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
   checkpoint. Shared `dist` now contains tactical UI; migration011 and app restart await the
   combined gate. New tactical APIs have so far been verified in isolated test applications.
 
+## Kartenerzeugung — Session Claude, 2026-09-06 18:20 (additiv, eigene Fläche)
+
+- **Der stille Blocker unter M7 und M9 ist geschlossen.** `SceneDoc.stamps[].a` verlangte seit je
+  eine paket-qualifizierte Assetreferenz und verbot ausdrücklich eine URL — und im ganzen
+  Repository gab es dafür **kein Paketformat, kein Asset und keine Auflösung**. Ein Referenzformat
+  ohne Referenten; die fehlende Hälfte war die, die die Lizenz trägt. Commit `ec22509`.
+- **Assetpaket v1** (`packages/szene/src/assetpaket.ts`, browser-rein, ohne Dateisystem):
+  geschlossenes Schema, paketrelative Kleinbuchstabenpfade ohne Traversal, und **jede Lizenz ist
+  ein gehashter Text statt eines Bezeichners** (RB-21d §6.1 — GitHub meldet für Azgaars
+  MIT-plus-Zusatz `spdx_id: NOASSERTION`; ein Bezeichner ohne Textbeleg ist in beide Richtungen
+  falsch). `assetIndex` löst Paket- und Asset-Lizenz genau einmal auf; `pruefeStampVerweise`
+  meldet, statt zu werfen — wer was sehen darf, entscheidet `szene` nie.
+- **`pk.grundriss`: 32 Assets, CC0-1.0, vollständig hier erzeugt** — Böden, Aufbauten, Türen,
+  Möbel, Gefäße, Lichter, Marken, als Code in `tools/assets/erzeuge-grundrisspaket.mjs`. Kein
+  fremdes Bild-, Textur-, Schrift- oder Vorlagenmaterial. RB-21c hat Azgaars `dist/` genau deshalb
+  abgelehnt (21,49 MB `public/`, 179 CC-BY-NC-SA-Wappen). **Es sind schematische Tuschesymbole,
+  keine gemalte Battlemap-Kunst** — das steht im Pakettitel, damit es niemand am Tisch entdeckt.
+- **Gate A-P1** (`npm run gate:assets`, in `npm run gate` verdrahtet) prüft, was ein reiner Parser
+  strukturell nicht kann: Bytes gegen sha256, Lizenztext gegen `textSha256`, keine verwaisten
+  Dateien, kein SVG mit Skript/Ereignisbehandler/externer Referenz/Raster/Doctype/Entity, exakte
+  Reproduktion aus dem Quellskript. Es ruft denselben `parseAssetpaket` wie die Anwendung — ein
+  zweiter Validator wäre der verbotene Parallelpfad.
+- **`erzeugeGrundriss` (`packages/forge/src/grundriss.ts`) ist die erste Karte, die Chronicle
+  selbst erzeugt** statt sie zu importieren. Der Keim erreicht den Zufallsgenerator nie allein: er
+  geht mit jeder Option, der Generatorversion **und der Paketidentität** in einen `Weltkeim`, und
+  dessen `keimHash` sät das Rauschen und mintet jede Id. Ein Paket-Bump ist damit ehrlich eine
+  andere Karte. Das Erzeugnis ist die Adresse, nicht die Rechtecke (RB-21d §2.2): jeder Raum
+  verlässt den Generator als `raum`-Knoten mit typisierter Elternkante, `Anker` im Bauwerksrahmen
+  und gespeichertem `kindKeim`; **die Region-Id ist die KnotenId**, damit Kartenbindung und
+  Containment nicht in zwei Identitäten für einen Raum auseinanderlaufen. Möbel werden über
+  `art`+`schlagwort` beim Paket **angefragt**, nie beim Namen genannt.
+- **Verifikation gegen den committeten Baum `ec22509`** (nicht gegen die Platte — die Korrektur zu
+  `7453c63` gilt): `gate:boundaries` GRÜN (196 Dateien, 8 Regeln, 0 Verstöße), `gate:assets` GRÜN
+  (1 Paket, 32 Assets, 32 auflösbare Verweise, 1 aus Quelle reproduziert), `tsc --noEmit` Exit 0,
+  die beiden neuen Suiten **73/73**. Zusätzlich über `git show` geprüft: 34 Blobs, jeder sha256 und
+  jede Bytezahl deckungsgleich mit dem committeten Manifest, **0 CR-Bytes in der Objektdatenbank**.
+  Der volle `vitest run` unmittelbar vor dem Commit lief mit echtem PostgreSQL auf **612 bestanden
+  / 28 übersprungen / 0 fehlgeschlagen** in 59 Dateien; das ist eine Arbeitsbaum-Messung, weil
+  fremde Sessions dort uncommittete Stände halten.
+- **Mutationsprobe 6/6 erkannt — und die sechste überlebte zunächst.** Die Saat aus dem blanken
+  Keim statt aus dem `keimHash` blieb unbemerkt, weil der Test nur prüfte, dass sich *Ids* ändern,
+  nicht die *Geometrie*. Der fehlende Regressionstest ist ergänzt, bevor irgendetwas grün genannt
+  wurde. Gate-Probe 9/9 (veränderte Bytes, veränderter Lizenztext, verwaiste Datei, Skript,
+  externe Referenz, Ereignisbehandler, gelöschtes Asset, Traversal im Manifest, falsche Paket-Id).
+  Streuung: 400 Saaten und 200 Optionsvarianten ohne Fehler und ohne Raum ohne Tür.
+- **Angesehen, nicht behauptet:** Kontaktbogen und drei Grundrisse wurden in Edge gerendert und
+  geprüft; vier schwach lesbare Symbole wurden daraufhin nachgebessert, und die
+  Erreichbarkeitsinvariante von „jede Raummitte" auf „jede Bodenzelle" verschärft.
+  Artefakte: [`design/spikes/grundriss/`](design/spikes/grundriss/).
+- **Offen, und ausdrücklich nicht geliefert:**
+  1. **`packages/render` kennt `Stamp` nicht** — der Renderer zeichnet keine Paket-Assets. Die
+     Ausgabe des Generators ist bisher nur über das Diagnosewerkzeug
+     `packages/forge/tools/zeichne-grundriss.mts` sichtbar, nie im Produkt.
+  2. **Kein Server liefert Assetbytes.** Es gibt keine `asset:`-Route und keinen
+     inhaltsadressierten Paketspeicher; das Manifest nennt Adressen, niemand löst sie aus.
+  3. **Das Kampagnenbündel trägt kein Paket.** Ein `.chronicle` mit einer Szene voller Stamps
+     verweist nach dem Restore auf einer fremden Maschine ins Leere. Das ist eine Formatlücke,
+     kein Renderdetail, und gehört vor die erste Veröffentlichung.
+  4. **Kein WFC.** M9 verlangt eine versionierte WFC-Grammatik; dies ist ein BSP-Grundriss.
+     S-K1/S-T1 (Hardware) sind unberührt.
+
 ### Previous actor/inventory checkpoint — 8457347
 
 - **Current actor/inventory checkpoint:** Versioned actor/item templates, independent instances,
