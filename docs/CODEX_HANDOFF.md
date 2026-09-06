@@ -93,3 +93,26 @@ an opt-in tactical performance harness; coordinate its exclusive browser slot. N
 reviews the completed M8 theme/publication proposal; backend worker authored that proposal.
 The M8 proposal is still awaiting root adoption. M7 entity-binding UI, true S-K1/S-T1 reference
 hardware, M8 themes/publication/desktop and remaining conditional M9 gates stay in full scope.
+
+### Verified checkpoint and actual runtime follow-up
+
+Commit **7b45296** is verified in clean `.local/checkouts/tactical-gate`, using an independent
+`npm ci`:566 tests in62 files plus1 intentional PGlite race skip,191 boundary files/8 rules,
+root/client TypeScript and client build `index-DMbNOwxc` green. A first cold concurrent-build
+run hit one unchanged5s PG-restore timeout; its focused rerun and the full unchanged gate pass.
+No limits or assertions changed. Fresh Windows checkout now preserves the UVTT checksum under
+`core.autocrlf=true`; `.gitattributes` was included without broad file renormalization.
+
+Old PID9052/session65357 is stopped. **Current owned app PID22164/session29214** serves localhost3000
+from that verified checkout. Its ignored local config is a copy of the existing local config;
+media env remains the original ignored `deploy/media/.runtime/app.env`. Startup command from
+the checkout is `node --env-file=<absolute original repo>/deploy/media/.runtime/app.env --import
+tsx packages/server/src/main.ts`. Operative SQL lists001–011; health and client both200.
+Do not remove this checkout while its app is running. New authoring migration012 is not operative.
+
+M8 round2 is now adopted with independent-review fixes recorded at the top of its design file:
+triple publication CAS, host-global legacy route uniqueness, retained normalized authoring
+request preimages and a fixed public default theme. Worker live_ui_audit owns new packages/theme;
+shutdown_audit owns new authoring/publication backend/protocol/SQL012/tests; bundle_contract owns
+the opt-in tactical performance harness/browser slot until handed back. Root owns UI/wiring and
+nativeV4 until that worker is free. All prior scope, conditional gates and unpublished work remain.

@@ -4,7 +4,7 @@ Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
 
 ## Current handoff — start here
 
-- **Tactical integration in progress:** The real Tisch → Szenenkarte flow now includes UVTT/
+- **Verified tactical checkpoint —7b45296:** The real Tisch → Szenenkarte flow now includes UVTT/
   native import with provenance, editable region knowledge bindings, persisted plans, immutable
   session capture, controlled token commands, portals, bounded Undo and masked PNG tile delivery.
   Native `.chronicle` v3 covers all10 migration011 tables. See [TACTICAL_UI](docs/TACTICAL_UI.md).
@@ -23,16 +23,25 @@ Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
   focused rerun passes in6.7s after correcting that assertion. All14 functional flows are now
   verified on the same product build. Artifacts: `.local/e2e-tactical-combined` and
   `.local/e2e-tactical-actors-v3`. Reference-hardware performance remains a separate open gate.
-- **Current ownership:** Codex root owns tactical client/render integration, gameplay/HTTP seams,
-  docs and combined gates. Codex native worker owns v3 parser/bundle fixes and independently
-  reviews UI drafts. Codex browser worker owns new tactical E2E/performance tests. Codex backend
-  worker has finished011/backend and is preparing the bounded M8 theme/publication contract.
+- **Fresh committed-tree verification:** A clean detached checkout of7b45296 with its own
+  `npm ci` passes **566 tests in62 files,1 intentional PGlite race skip**, root/client TypeScript,
+  **191 boundary files/8 rules/0 violations**, and the same `index-DMbNOwxc` build. First cold run
+  overlapped a build and hit the old5s PostgreSQL-restore test timeout; its focused run and then
+  the full unchanged gate passed. No timeout or assertion was relaxed. With `core.autocrlf=true`,
+  the checked-out UVTT fixture retains its exact `3384e501…` hash. The larger working-tree count
+  above includes external asset tests absent from this commit.
+- **Current ownership:** Codex root owns client/integration and nativeV4 until the browser worker
+  finishes the tactical performance harness. The theme worker owns new `packages/theme/**`;
+  the backend worker owns new authoring/publication protocol/domain/HTTP/tests and migration012.
+  The adopted M8 contract is [authoring/publication](design/iterations/authoring-publication-20260906.md).
   External Claude work in shell-lab, assetpaket/assets/tools and `.gitattributes` is preserved.
   Root corrected only the `assetpaket.ts` text-limit parameter's `number` annotation to unblock
   the shared client build; the asset package remains its external owner's work.
-- **Runtime boundary:** The owned operative app is still PID9052 at the previous migrations001–010
-  checkpoint. Shared `dist` now contains tactical UI; migration011 and app restart await the
-  combined gate. New tactical APIs have so far been verified in isolated test applications.
+- **Current runtime:** `http://localhost:3000` now runs the verified7b45296 checkout under
+  `.local/checkouts/tactical-gate` (owned PID22164, exec session29214), with the same local
+  credentials and media environment. Operative SQL confirms migrations001–011; `/api/health`
+  and `/` return200 and the expected client hash. This keeps later parallel WIP out of the
+  running demo. No migration012 has been applied to the operative database.
 
 ## Kartenerzeugung — Session Claude, 2026-09-06 18:20 (additiv, eigene Fläche)
 
