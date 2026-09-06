@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const PAKET_ID = "pk.grundriss";
-const PAKET_VERSION = "1.0.0";
+const PAKET_VERSION = "1.1.0";
 const PAKET_DIR = join(ROOT, "assets", "packs", PAKET_ID);
 const ZELLE = 64; // authoring pixels per grid cell — mirrored into `paket.zellgroesse`
 const URHEBER = "Chronicle";
@@ -49,6 +49,10 @@ const C = {
   flamme: "#dd8a33",
   tuch: "#b26b5e",
   erde: "#cdbb9c",
+  fels: "#b9b2a4",
+  felsTief: "#9d968a",
+  knochen: "#e3ddcc",
+  pilz: "#a98fb0",
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -444,6 +448,119 @@ function markeGeheim() {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Höhle — dieselbe Tuschesprache, rauere Hand
+// ---------------------------------------------------------------------------------------------
+
+function bodenFels(name) {
+  const r = zufall(name);
+  const teile = [rect(0, 0, ZELLE, ZELLE, { fill: C.fels })];
+  // Same seamless discipline as the flagstones: interior detail jitters, the four edges do not.
+  const mx = r.zahl(22, 42), my = r.zahl(22, 42);
+  teile.push(polyline([[mx, 0], [mx + r.zahl(-6, 6), my], [r.zahl(20, 44), ZELLE]], feder({ stroke: C.felsTief, "stroke-width": 1.4 })));
+  teile.push(polyline([[0, my], [mx, my + r.zahl(-5, 5)], [ZELLE, r.zahl(20, 44)]], feder({ stroke: C.felsTief, "stroke-width": 1.4 })));
+  teile.push(poly([[0, 0], [mx, 0], [mx, my], [0, my]], { fill: C.felsTief, "fill-opacity": 0.3 }));
+  for (let i = 0; i < 8; i++) teile.push(ellipse(r.zahl(4, 60), r.zahl(4, 60), r.zahl(1, 2.6), r.zahl(0.8, 2), { fill: C.tinte, "fill-opacity": r.zahl(0.08, 0.2) }));
+  return svg("Felsboden", ZELLE, ZELLE, teile.join(""));
+}
+
+/** A rough, closed blob. Used for boulders, puddles and bone piles alike. */
+function klumpen(r, cx, cy, radius, ecken, rauheit) {
+  return Array.from({ length: ecken }, (_, k) => {
+    const a = (k / ecken) * Math.PI * 2;
+    const rr = radius * r.zahl(1 - rauheit, 1 + rauheit);
+    return [cx + Math.cos(a) * rr, cy + Math.sin(a) * rr];
+  });
+}
+
+function stalagmit(name) {
+  const r = zufall(name);
+  const teile = [poly(klumpen(r, 32, 34, 17, 9, 0.22), { ...kontur({ "stroke-width": 1.8 }), fill: C.fels })];
+  for (const ring of [12, 7]) teile.push(poly(klumpen(r, 32, 33, ring, 8, 0.2), { ...feder({ "stroke-width": 1.2, stroke: C.felsTief }), fill: C.felsTief, "fill-opacity": 0.35 }));
+  teile.push(circle(32, 32, 2.6, { fill: C.tinte, "fill-opacity": 0.65 }));
+  return svg("Stalagmit", ZELLE, ZELLE, teile.join(""));
+}
+
+function tropfsteinsaeule(name) {
+  const r = zufall(name);
+  const teile = [poly(klumpen(r, 32, 32, 22, 11, 0.16), { ...kontur({ "stroke-width": 2.2 }), fill: C.fels })];
+  for (const ring of [16, 11, 6]) teile.push(poly(klumpen(r, 32, 32, ring, 10, 0.14), feder({ "stroke-width": 1.2, stroke: C.felsTief })));
+  return svg("Tropfsteinsäule", ZELLE, ZELLE, teile.join(""));
+}
+
+function felsblock(name) {
+  const r = zufall(name);
+  const punkte = klumpen(r, 32, 33, 21, 6, 0.18);
+  const teile = [poly(punkte, { ...kontur({ "stroke-width": 2.2 }), fill: C.fels })];
+  // Two facet lines from one vertex read as a block with volume rather than a flat splat.
+  teile.push(polyline([punkte[0], [32, 33], punkte[3]], feder({ stroke: C.felsTief, "stroke-width": 1.6 })));
+  teile.push(poly([punkte[3], [32, 33], punkte[4], punkte[5] ?? punkte[0]], { fill: C.felsTief, "fill-opacity": 0.35, stroke: "none" }));
+  return svg("Felsblock", ZELLE, ZELLE, teile.join(""));
+}
+
+function pilzgruppe(name) {
+  const r = zufall(name);
+  const teile = [];
+  for (const [cx, cy, rad] of [[24, 36, 10], [40, 30, 8], [33, 44, 6.5]]) {
+    teile.push(ellipse(cx, cy + rad * 0.55, rad * 0.35, rad * 0.5, { ...kontur({ "stroke-width": 1.4 }), fill: C.pergamentTief }));
+    teile.push(path(`M${n(cx - rad)} ${n(cy)} A${n(rad)} ${n(rad * 0.85)} 0 0 1 ${n(cx + rad)} ${n(cy)} Z`, { ...kontur({ "stroke-width": 1.6 }), fill: C.pilz }));
+    teile.push(circle(cx - rad * 0.3, cy - rad * 0.3, 1.5, { fill: C.pergament, "fill-opacity": 0.8 }));
+  }
+  return svg("Pilzgruppe", ZELLE, ZELLE, teile.join(""));
+}
+
+function wasserlache(name) {
+  const r = zufall(name);
+  const teile = [poly(klumpen(r, 32, 33, 22, 10, 0.24), { ...kontur({ "stroke-width": 1.6, stroke: C.wasserTief }), fill: C.wasser, "fill-opacity": 0.85 })];
+  teile.push(poly(klumpen(r, 30, 31, 12, 9, 0.22), { fill: C.pergament, "fill-opacity": 0.22, stroke: "none" }));
+  return svg("Wasserlache", ZELLE, ZELLE, teile.join(""));
+}
+
+function knochenhaufen(name) {
+  const r = zufall(name);
+  const teile = [];
+  for (let i = 0; i < 4; i++) {
+    const x = r.zahl(14, 44), y = r.zahl(20, 46), l = r.zahl(10, 18), w = r.zahl(3, 4.5);
+    const dreh = r.zahl(-60, 60);
+    teile.push(group({ transform: `translate(${n(x)} ${n(y)}) rotate(${n(dreh)})` },
+      rect(0, -w / 2, l, w, { ...kontur({ "stroke-width": 1.2 }), rx: w / 2, fill: C.knochen }),
+      circle(0, 0, w * 0.9, { ...kontur({ "stroke-width": 1.2 }), fill: C.knochen }),
+      circle(l, 0, w * 0.9, { ...kontur({ "stroke-width": 1.2 }), fill: C.knochen })));
+  }
+  teile.push(circle(24, 40, 8, { ...kontur({ "stroke-width": 1.6 }), fill: C.knochen }));
+  teile.push(circle(21, 39, 2, { fill: C.tinte }));
+  teile.push(circle(27, 39, 2, { fill: C.tinte }));
+  return svg("Knochenhaufen", ZELLE, ZELLE, teile.join(""));
+}
+
+function spalte(name) {
+  const r = zufall(name);
+  const links = [], rechts = [];
+  for (let i = 0; i <= 6; i++) {
+    const y = 6 + i * 8.6;
+    const breite = Math.sin((i / 6) * Math.PI) * r.zahl(6, 11) + 2;
+    links.push([32 - breite + r.zahl(-2, 2), y]);
+    rechts.push([32 + breite + r.zahl(-2, 2), y]);
+  }
+  return svg("Spalte", ZELLE, ZELLE, [
+    poly([...links, ...rechts.reverse()], { ...kontur({ "stroke-width": 2 }), fill: C.tinte, "fill-opacity": 0.82 }),
+  ].join(""));
+}
+
+function lagerfeuer(name) {
+  const r = zufall(name);
+  const teile = [];
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    teile.push(ellipse(32 + Math.cos(a) * 20, 32 + Math.sin(a) * 20, r.zahl(4, 6), r.zahl(3.5, 5), { ...kontur({ "stroke-width": 1.4 }), fill: C.fels }));
+  }
+  teile.push(circle(32, 32, 13, { fill: C.tinte, "fill-opacity": 0.5 }));
+  teile.push(line(24, 38, 40, 26, { stroke: C.holzTief, "stroke-width": 3, "stroke-linecap": "round" }));
+  teile.push(line(24, 26, 40, 38, { stroke: C.holzTief, "stroke-width": 3, "stroke-linecap": "round" }));
+  teile.push(path("M32 22 Q37 29 34 36 Q41 32 39 25 Q45 32 39 40 L25 40 Q19 32 25 25 Q23 32 30 36 Q27 29 32 22 Z", { fill: C.flamme, stroke: "none" }));
+  return svg("Lagerfeuer", ZELLE, ZELLE, teile.join(""));
+}
+
+// ---------------------------------------------------------------------------------------------
 // The catalogue. `einheiten` is the placement footprint in grid cells, not a drawing hint.
 // ---------------------------------------------------------------------------------------------
 
@@ -484,6 +601,16 @@ const KATALOG = [
 
   { name: "feuerschale", art: "licht", einheiten: [1, 1], schlagworte: ["feuer", "warm", "halle"], zeichne: feuerschale },
   { name: "kerzenstaender", art: "licht", einheiten: [1, 1], schlagworte: ["kerze", "schwach", "kammer"], zeichne: kerzenstaender },
+
+  { name: "boden_fels", art: "boden", einheiten: [1, 1], kachelbar: true, schlagworte: ["fels", "hoehle", "tief"], zeichne: () => bodenFels("boden_fels") },
+  { name: "stalagmit", art: "aufbau", einheiten: [1, 1], schlagworte: ["fels", "hoehle", "hindernis"], zeichne: () => stalagmit("stalagmit") },
+  { name: "tropfsteinsaeule", art: "aufbau", einheiten: [1, 1], schlagworte: ["fels", "traeger", "hoehle"], zeichne: () => tropfsteinsaeule("tropfsteinsaeule") },
+  { name: "felsblock", art: "aufbau", einheiten: [1, 1], schlagworte: ["fels", "geroell", "hindernis"], zeichne: () => felsblock("felsblock") },
+  { name: "pilzgruppe", art: "aufbau", einheiten: [1, 1], schlagworte: ["pilz", "feucht", "hoehle"], zeichne: () => pilzgruppe("pilzgruppe") },
+  { name: "wasserlache", art: "aufbau", einheiten: [1, 1], schlagworte: ["wasser", "feucht", "flach"], zeichne: () => wasserlache("wasserlache") },
+  { name: "knochenhaufen", art: "aufbau", einheiten: [1, 1], schlagworte: ["knochen", "verfall", "hoehle"], zeichne: () => knochenhaufen("knochenhaufen") },
+  { name: "spalte", art: "aufbau", einheiten: [1, 1], schlagworte: ["tiefe", "gefahr", "hoehle"], zeichne: () => spalte("spalte") },
+  { name: "lagerfeuer", art: "licht", einheiten: [1, 1], schlagworte: ["feuer", "warm", "lager"], zeichne: () => lagerfeuer("lagerfeuer") },
 
   { name: "marke_eingang", art: "marke", einheiten: [1, 1], schlagworte: ["eingang", "hinweis"], zeichne: markeEingang },
   { name: "marke_geheim", art: "marke", einheiten: [1, 1], schlagworte: ["geheim", "hinweis", "leitung"], zeichne: markeGeheim },
@@ -552,7 +679,7 @@ function baue() {
     schemaVersion: 1,
     kind: "asset-pack",
     id: PAKET_ID,
-    titel: "Grundriss — schematische Tuschesymbole für taktische Karten",
+    titel: "Grundriss — schematische Tuschesymbole für taktische Karten, gebaute und natürliche",
     version: PAKET_VERSION,
     urheber: URHEBER,
     zellgroesse: ZELLE,

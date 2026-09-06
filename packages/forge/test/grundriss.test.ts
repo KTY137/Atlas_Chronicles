@@ -84,7 +84,7 @@ describe("A-G1 · Grundriss — Determinismus über den vollständigen Optionsve
       const a = bauen("eron:kellergewoelbe:1");
       const b = bauen("eron:kellergewoelbe:1", optionen);
       expect(b.keim.keimHash).not.toBe(a.keim.keimHash);
-      expect(b.bauwerkId).not.toBe(a.bauwerkId);
+      expect(b.wurzelId).not.toBe(a.wurzelId);
     });
   }
 
@@ -108,7 +108,7 @@ describe("A-G1 · Grundriss — Determinismus über den vollständigen Optionsve
     const a = erzeugeGrundriss({ keim: "eron:kellergewoelbe:1" }, paket);
     const b = erzeugeGrundriss({ keim: "eron:kellergewoelbe:1" }, gebumpt);
     expect(b.keim.keimHash).not.toBe(a.keim.keimHash);
-    expect(b.bauwerkId).not.toBe(a.bauwerkId);
+    expect(b.wurzelId).not.toBe(a.wurzelId);
   });
 
   it("legt Keim, Version und Paketidentität offen im Keimvektor ab", () => {
@@ -169,16 +169,16 @@ describe("A-G1 · Grundriss — jeder Raum bekommt eine Adresse", () => {
       anker: null, herkunft: null, sichtAnker: null,
     };
     expect(pruefeContainment([welt, ...g.knoten])).toStrictEqual([]);
-    const bauwerk = g.knoten.find((k) => k.id === g.bauwerkId)!;
+    const bauwerk = g.knoten.find((k) => k.id === g.wurzelId)!;
     expect(bauwerk.art).toBe("bauwerk");
     expect(bauwerk.titel).toBe("Kellergewölbe");
-    expect(bauwerk.eltern).toStrictEqual([{ von: g.bauwerkId, nach: weltId, art: "liegt_in_geografie" }]);
+    expect(bauwerk.eltern).toStrictEqual([{ von: g.wurzelId, nach: weltId, art: "liegt_in_geografie" }]);
     expect(bauwerk.anker).toStrictEqual({ in: weltId, bei: [812.5, 419.25], massstab: 40 });
   });
 
   it("bleibt ohne Elternteil ein Fragment und behauptet keine Wurzel", () => {
     const g = bauen("andaria/burg-3");
-    const bauwerk = g.knoten.find((k) => k.id === g.bauwerkId)!;
+    const bauwerk = g.knoten.find((k) => k.id === g.wurzelId)!;
     expect(bauwerk.eltern).toStrictEqual([]);
     expect(bauwerk.anker).toBeNull();
     // A `bauwerk` without a spatial parent is exactly what `pruefeContainment` must reject:
@@ -202,7 +202,7 @@ describe("A-G1 · Grundriss — jeder Raum bekommt eine Adresse", () => {
     const raumknoten = g.knoten.filter((k) => k.art === "raum");
     expect(raumknoten).toHaveLength(g.raeume.length);
     for (const knoten of raumknoten) {
-      expect(knoten.anker?.in).toBe(g.bauwerkId);
+      expect(knoten.anker?.in).toBe(g.wurzelId);
       expect(knoten.herkunft?.keimHash).toBe(g.keim.keimHash);
       expect(knoten.herkunft?.kindKeim).toMatch(/^[a-f0-9]{32}$/);
       expect(knoten.herkunft?.erzeugungspfad[0]).toBe("raum");

@@ -45,11 +45,17 @@ keinen zweiten Validator in einer zweiten Sprache.
 
 | Id | Assets | Lizenz | Herkunft |
 |---|---:|---|---|
-| `pk.grundriss` | 32 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-grundrisspaket.mjs`](../tools/assets/erzeuge-grundrisspaket.mjs) |
+| `pk.grundriss` 1.1.0 | 41 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-grundrisspaket.mjs`](../tools/assets/erzeuge-grundrisspaket.mjs) |
 
 `pk.grundriss` sind **schematische Grundriss-Symbole in einer Tuschesprache**, lesbar bei 64 px.
 Es ist ausdrücklich keine gemalte Battlemap-Kunst; das steht so im Pakettitel, damit niemand es am
-Tisch herausfinden muss.
+Tisch herausfinden muss. Version 1.1.0 ergänzt neun natürliche Symbole (Felsboden, Stalagmit,
+Tropfsteinsäule, Felsblock, Pilzgruppe, Wasserlache, Knochenhaufen, Spalte, Lagerfeuer), damit
+neben dem gebauten auch der gefundene Ort bedient ist.
+
+Der Versionssprung ist kein Formalismus: die Paketidentität steckt im `Weltkeim`-Optionsvektor,
+also ist jede aus 1.1.0 erzeugte Karte eine **andere** Karte als dieselbe Anfrage gegen 1.0.0. Genau
+das soll passieren — eine andere Assetbasis ist eine andere Karte, kein stiller Austausch.
 
 ## Ein Paket ändern
 

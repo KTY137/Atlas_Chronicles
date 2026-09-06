@@ -810,6 +810,249 @@
         32,
         32
       ],
+      "art": "boden",
+      "bytes": 1135,
+      "datei": "boden/boden_fels.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_fels",
+      "schlagworte": [
+        "fels",
+        "hoehle",
+        "tief"
+      ],
+      "sha256": "5e70f26b0fa7ca27e14b7736d9e8757e096b4389b92b7988fae42db240377e0a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 784,
+      "datei": "aufbau/stalagmit.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "stalagmit",
+      "schlagworte": [
+        "fels",
+        "hoehle",
+        "hindernis"
+      ],
+      "sha256": "15a05063d11b003574edb547d0b87f4155e1f291f5d986ab808f5dbf28b9fd0d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 960,
+      "datei": "aufbau/tropfsteinsaeule.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tropfsteinsaeule",
+      "schlagworte": [
+        "fels",
+        "traeger",
+        "hoehle"
+      ],
+      "sha256": "f32c37561a7eb5294b46c2569f6dc56c0c38d35dc5b070990482b16b24a1290e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 515,
+      "datei": "aufbau/felsblock.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "felsblock",
+      "schlagworte": [
+        "fels",
+        "geroell",
+        "hindernis"
+      ],
+      "sha256": "983209670c0763ee0fefdab770eb2abd95edfdfe51cc21e195481aed1d0e2299"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1179,
+      "datei": "aufbau/pilzgruppe.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "pilzgruppe",
+      "schlagworte": [
+        "pilz",
+        "feucht",
+        "hoehle"
+      ],
+      "sha256": "664638fd395f8330d50c4931ef66740863cee056ce7d01be60cf30be512b57a5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 533,
+      "datei": "aufbau/wasserlache.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wasserlache",
+      "schlagworte": [
+        "wasser",
+        "feucht",
+        "flach"
+      ],
+      "sha256": "130865c0396809da009858061212e0ce3ec71530d532547683c3f62d4ea142f9"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2220,
+      "datei": "aufbau/knochenhaufen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "knochenhaufen",
+      "schlagworte": [
+        "knochen",
+        "verfall",
+        "hoehle"
+      ],
+      "sha256": "810db995134de7ec3ecd2bc36a1eaa0f061a3d09d8f7aa5e4b445012ad4c280d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 385,
+      "datei": "aufbau/spalte.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "spalte",
+      "schlagworte": [
+        "tiefe",
+        "gefahr",
+        "hoehle"
+      ],
+      "sha256": "27335951cd14dd6d9e282d7812c1e5e22a6c77a83d66752f8838d4cdd923c4ff"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 1670,
+      "datei": "licht/lagerfeuer.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "lagerfeuer",
+      "schlagworte": [
+        "feuer",
+        "warm",
+        "lager"
+      ],
+      "sha256": "5d86ee7ff033921f8a72a5d7f870f93918d22558a5790c1f88b7cc2c52822468"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
       "art": "marke",
       "bytes": 508,
       "datei": "marke/marke_eingang.svg",
@@ -870,8 +1113,8 @@
     "textSha256": "4bd9a76fcbc7302ee91c0f12a5ddf71b85ea9c1b8f23ba91f4cede6bf6980560"
   },
   "schemaVersion": 1,
-  "titel": "Grundriss — schematische Tuschesymbole für taktische Karten",
+  "titel": "Grundriss — schematische Tuschesymbole für taktische Karten, gebaute und natürliche",
   "urheber": "Chronicle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "zellgroesse": 64
 }

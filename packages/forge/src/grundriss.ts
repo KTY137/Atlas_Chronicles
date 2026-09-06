@@ -1,16 +1,21 @@
-import { canonicalHash, deriveKnotenId, type CanonicalValue, type KnotenId } from "@chronicle/core";
+import { type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
-  assetVerweis, parseTacticalMapDocument, weltkeim,
-  type AssetpaketV1, type Herkunft, type Kante, type KantenArt, type Knoten, type PaketAsset,
-  type Stamp, type TacticalLight, type TacticalMapDocumentV1, type TacticalPortal, type TacticalWall, type Weltkeim,
+  parseTacticalMapDocument, weltkeim,
+  type AssetpaketV1, type Knoten, type TacticalLight, type TacticalMapDocumentV1, type TacticalPortal, type TacticalWall, type Weltkeim,
 } from "@chronicle/szene";
+import {
+  AUSGELASSEN_BASIS, FELS, KARTENWERK_LIMITS, baueKnoten, bestuecker, fail, idFabrik,
+  rauschen, sortiereNachId, wandLaeufe,
+  type GrundrissBericht, type GrundrissEltern, type GrundrissRaum, type Rauschen,
+} from "./kartenwerk.ts";
 
 /**
- * **The first generation Chronicle performs itself**, rather than importing.
+ * **The first generation Chronicle performs itself**, rather than importing: rooms, corridors and
+ * doors — a built place.
  *
  * `IMPLEMENTATION_PLAN.md:140` is explicit that Azgaar import is the *first* map function and that
- * an embedded generator is a later, separate step. This is that step's floorplan half, and it is
- * built on the finished contracts rather than beside them: it emits an ordinary
+ * an embedded generator is a later, separate step. This is that step's built-floorplan half, and it
+ * is built on the finished contracts rather than beside them: it emits an ordinary
  * `TacticalMapDocumentV1` that `parseTacticalMapDocument` accepts, and ordinary `Knoten` that
  * `pruefeContainment` accepts. Nothing here is a private data path.
  *
@@ -41,10 +46,7 @@ export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 export const GRUNDRISS_VERSION = "1";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
-  zellenMin: 12, zellenMax: 192, zellenGesamt: 20_000,
-  zellgroesseMin: 16, zellgroesseMax: 512, kantePixelMax: 32_768,
-  raeumeMin: 2, raeumeMax: 64, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
-  versucheProStueck: 32,
+  ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
 });
 
 export interface GrundrissOptionen {
@@ -68,18 +70,11 @@ export const GRUNDRISS_STANDARD: GrundrissOptionen = Object.freeze({
   moeblierung: 1, licht: true, gangboden: "trocken",
 });
 
-export interface GrundrissEltern {
-  readonly knotenId: KnotenId;
-  readonly art: KantenArt;
-  /** Where this building sits in the parent's frame — the anchor, not a zoom level. */
-  readonly bei: readonly [number, number];
-  readonly massstab: number;
-}
-
 export interface GrundrissAuftrag {
   /**
-   * The seed. Typically an `Ort.kindKeim` — the derived child seed Azgaar computes as
-   * `seed + cellId` and then discards (RB-21d:143-157). Storing it is the whole nesting mechanism.
+   * The seed. Typically an `Ort.kindKeim` or a parent room's `Herkunft.kindKeim` — the derived
+   * child seed Azgaar computes as `seed + cellId` and then discards (RB-21d:143-157). Storing it
+   * is the whole nesting mechanism.
    */
   readonly keim: string;
   readonly titel?: string;
@@ -87,86 +82,22 @@ export interface GrundrissAuftrag {
   readonly eltern?: GrundrissEltern;
 }
 
-export interface GrundrissRaum {
-  readonly id: KnotenId;
-  /** Stable partition path, e.g. `l.r.l`. Never an array index (invariant I8). */
-  readonly pfad: string;
-  readonly thema: string;
-  /** `[x, y, breite, hoehe]` in cells. */
-  readonly zellen: readonly [number, number, number, number];
-  readonly tueren: readonly string[];
-  readonly rolle: "eingang" | "tiefe" | "kammer";
-}
-
-export interface GrundrissBericht {
-  readonly raeume: number;
-  readonly gangzellen: number;
-  readonly bodenzellen: number;
-  readonly tueren: number;
-  readonly waende: number;
-  readonly lichter: number;
-  readonly stamps: number;
-  readonly stampsNachArt: Readonly<Record<string, number>>;
-  readonly themen: Readonly<Record<string, number>>;
-  readonly paket: { readonly id: string; readonly version: string; readonly assets: number };
-  /** Theme slots the pack could not serve. Degradation is visible or it is a lie. */
-  readonly nichtBedient: readonly string[];
-  /** Slots the pack could serve but the room had no room for. */
-  readonly nichtPlatziert: readonly string[];
-  readonly ausgelassen: readonly string[];
-}
-
 export interface Grundriss {
-  readonly erzeuger: typeof GRUNDRISS_ERZEUGER;
-  readonly version: typeof GRUNDRISS_VERSION;
+  readonly art: "grundriss" | "hoehle";
+  readonly erzeuger: string;
+  readonly version: string;
   readonly keim: Weltkeim;
-  readonly bauwerkId: KnotenId;
+  /** The artefact's root node — the one that owns this map's `Rahmen`. */
+  readonly wurzelId: KnotenId;
   readonly karte: TacticalMapDocumentV1;
-  /** The building and one node per room. A fragment: merge it under a parent before validating. */
+  /** The root and one node per room. A fragment: merge it under a parent before validating. */
   readonly knoten: readonly Knoten[];
   readonly raeume: readonly GrundrissRaum[];
   readonly bericht: GrundrissBericht;
 }
 
-export class GrundrissError extends Error {
-  override readonly name = "GrundrissError";
-  constructor(readonly code: "option" | "budget" | "paket" | "geometrie", readonly path: string, message: string) {
-    super(`${path}: ${message}`);
-  }
-}
-const fail = (code: GrundrissError["code"], path: string, message: string): never => { throw new GrundrissError(code, path, message); };
-
-// ---------------------------------------------------------------------------------------------
-// Deterministic noise
-// ---------------------------------------------------------------------------------------------
-
-const rotl = (x: number, k: number): number => ((x << k) | (x >>> (32 - k))) >>> 0;
-
-/**
- * xoshiro128** seeded from four words of the `keimHash`. Implemented here rather than pulled in:
- * a PRNG is four lines of integer arithmetic, and a dependency whose version bump silently
- * reshuffles every stored floorplan is the opposite of a saving.
- */
-function rauschen(keimHash: string) {
-  let s0 = Number.parseInt(keimHash.slice(0, 8), 16) >>> 0;
-  let s1 = Number.parseInt(keimHash.slice(8, 16), 16) >>> 0;
-  let s2 = Number.parseInt(keimHash.slice(16, 24), 16) >>> 0;
-  let s3 = Number.parseInt(keimHash.slice(24, 32), 16) >>> 0;
-  if ((s0 | s1 | s2 | s3) === 0) s0 = 1; // the all-zero state is xoshiro's single fixed point
-  const next = (): number => {
-    const result = (Math.imul(rotl(Math.imul(s1, 5) >>> 0, 7), 9) >>> 0) / 4294967296;
-    const t = (s1 << 9) >>> 0;
-    s2 = (s2 ^ s0) >>> 0; s3 = (s3 ^ s1) >>> 0; s1 = (s1 ^ s2) >>> 0; s0 = (s0 ^ s3) >>> 0;
-    s2 = (s2 ^ t) >>> 0; s3 = rotl(s3, 11);
-    return result;
-  };
-  return {
-    ganz: (min: number, max: number): number => (max <= min ? min : min + Math.floor(next() * (max - min + 1))),
-    chance: (p: number): boolean => next() < p,
-    waehle: <T,>(list: readonly T[]): T | null => (list.length ? list[Math.floor(next() * list.length)]! : null),
-  };
-}
-type Rauschen = ReturnType<typeof rauschen>;
+export { GrundrissError } from "./kartenwerk.ts";
+export type { GrundrissEltern, GrundrissRaum, GrundrissBericht } from "./kartenwerk.ts";
 
 // ---------------------------------------------------------------------------------------------
 // Themes — expressed as pack *queries*, never as asset names
@@ -193,17 +124,9 @@ const THEMEN: readonly Thema[] = Object.freeze([
   { schluessel: "zisterne", boden: "flach", stuecke: [["gefaess", "vorrat"], ["aufbau", "geroell"], ["licht", "kerze"]] },
 ]);
 
-/** Draw order. A floor under a chest, a marker over everything. */
-const EBENE: Readonly<Record<string, number>> = Object.freeze({ boden: -100, aufbau: -10, moebel: 0, gefaess: 0, figur: 5, licht: 10, tuer: 20, wand: 25, marke: 30 });
-
 const AUSGELASSEN: readonly string[] = Object.freeze([
-  "Sichtlinien und Nebel werden nicht berechnet; geliefert wird Wandgeometrie, aus der ein Renderer sie ableiten kann.",
-  "Kein Hintergrundbild und keine Kachelpyramide: `background` ist null, die Karte ist reine Geometrie und Stamps.",
-  "Keine Höhen: alle Elevationen sind 0 und `geometryElevation` ist leer.",
+  ...AUSGELASSEN_BASIS,
   "Keine Geheimtüren. Ein Stamp trägt keine eigene Sichtbarkeit; eine 'versteckte' Marke im Dokument wäre für Spieler sichtbar und damit ein Leck, kein Feature.",
-  "Keine Fallen, Gegner, Schätze oder Begegnungen.",
-  "Keine Artikel, Passagen oder Wissensvergaben. Ein Raum ist ein Knoten und eine Region, nie ein Eintrag.",
-  "Keine Wandstärke: eine Wand ist eine Linie zwischen Boden und Fels, kein Volumen.",
 ]);
 
 // ---------------------------------------------------------------------------------------------
@@ -246,7 +169,7 @@ function partitioniere(breite: number, hoehe: number, optionen: GrundrissOptione
 // Generation
 // ---------------------------------------------------------------------------------------------
 
-const FELS = 0, RAUM = 1, GANG = 2;
+const RAUM = 1, GANG = 2;
 
 interface RohRaum { x: number; y: number; w: number; h: number; pfad: string; thema: Thema }
 
@@ -286,8 +209,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   });
   const r = rauschen(keim.keimHash);
   const z = optionen.zellgroesse;
-  const knotenId = (...pfad: string[]): KnotenId => deriveKnotenId({ erzeuger: GRUNDRISS_ERZEUGER, version: GRUNDRISS_VERSION, keim: keim.keimHash, kind: "knoten", pfad });
-  const geometrieId = (...pfad: string[]): string => canonicalHash({ keim: keim.keimHash, pfad }).slice(0, 32);
+  const ids = idFabrik(GRUNDRISS_ERZEUGER, GRUNDRISS_VERSION, keim.keimHash);
 
   // -- partition and rooms ---------------------------------------------------------------------
   const { wurzel, blaetter } = partitioniere(breite, hoehe, optionen, r);
@@ -311,7 +233,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   rohRaeume.forEach((raum, i) => {
     for (let y = raum.y; y < raum.y + raum.h; y++) for (let x = raum.x; x < raum.x + raum.w; x++) { gitter[idx(x, y)] = RAUM; raumVon[idx(x, y)] = i; }
   });
-  const mitte = (raum: RohRaum): [number, number] => [raum.x + (raum.w >> 1), raum.y + (raum.h >> 1)];
+  const mitteZelle = (raum: RohRaum): [number, number] => [raum.x + (raum.w >> 1), raum.y + (raum.h >> 1)];
   const grabe = (x: number, y: number) => { if (drin(x, y) && gitter[idx(x, y)] === FELS) gitter[idx(x, y)] = GANG; };
   const gang = (a: readonly [number, number], b: readonly [number, number], zuerstWaagrecht: boolean) => {
     const [ax, ay] = a, [bx, by] = b;
@@ -324,7 +246,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     }
   };
   const verbinde = (blatt: Blatt): [number, number] | null => {
-    if (!blatt.links || !blatt.rechts) return blatt.raum >= 0 ? mitte(rohRaeume[blatt.raum]!) : null;
+    if (!blatt.links || !blatt.rechts) return blatt.raum >= 0 ? mitteZelle(rohRaeume[blatt.raum]!) : null;
     const a = verbinde(blatt.links), b = verbinde(blatt.rechts);
     if (a && b) gang(a, b, r.chance(0.5));
     return a ?? b;
@@ -334,11 +256,11 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     const a = r.ganz(0, rohRaeume.length - 1);
     let b = r.ganz(0, rohRaeume.length - 1);
     if (b === a) b = (b + 1) % rohRaeume.length;
-    gang(mitte(rohRaeume[a]!), mitte(rohRaeume[b]!), r.chance(0.5));
+    gang(mitteZelle(rohRaeume[a]!), mitteZelle(rohRaeume[b]!), r.chance(0.5));
   }
 
   // -- connectivity: fail loudly rather than emit an unplayable map -----------------------------
-  const start = mitte(rohRaeume[0]!);
+  const start = mitteZelle(rohRaeume[0]!);
   const erreicht = new Uint8Array(breite * hoehe);
   const abstand = new Int32Array(breite * hoehe).fill(-1);
   const schlange: number[] = [idx(start[0], start[1])];
@@ -352,7 +274,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     }
   }
   for (const [i, raum] of rohRaeume.entries()) {
-    const [mx, my] = mitte(raum);
+    const [mx, my] = mitteZelle(raum);
     if (!erreicht[idx(mx, my)]) fail("geometrie", `raum[${i}]`, "Raum ist vom Eingang aus nicht erreichbar");
   }
   // Stricter than "every room centre": an L-shaped corridor can leave a walled pocket that no
@@ -365,41 +287,12 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   // The deep room is the one furthest from it along actual walkable cells, not in a straight line.
   let tiefsterRaum = 0, tiefsteEntfernung = -1;
   rohRaeume.forEach((raum, i) => {
-    const [mx, my] = mitte(raum), d = abstand[idx(mx, my)] ?? -1;
+    const [mx, my] = mitteZelle(raum), d = abstand[idx(mx, my)] ?? -1;
     if (d > tiefsteEntfernung) { tiefsteEntfernung = d; tiefsterRaum = i; }
   });
 
-  // -- walls: every unit edge between floor and rock, merged into maximal runs ------------------
-  const waagrecht = new Set<string>(), senkrecht = new Set<string>();
-  for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) {
-    if (gitter[idx(x, y)] === FELS) continue;
-    if (!drin(x, y - 1) || gitter[idx(x, y - 1)] === FELS) waagrecht.add(`${y}:${x}`);
-    if (!drin(x, y + 1) || gitter[idx(x, y + 1)] === FELS) waagrecht.add(`${y + 1}:${x}`);
-    if (!drin(x - 1, y) || gitter[idx(x - 1, y)] === FELS) senkrecht.add(`${x}:${y}`);
-    if (!drin(x + 1, y) || gitter[idx(x + 1, y)] === FELS) senkrecht.add(`${x + 1}:${y}`);
-  }
-  const laeufe = (kanten: ReadonlySet<string>): [number, number, number][] => {
-    const nachFest = new Map<number, number[]>();
-    for (const key of kanten) {
-      const [fest, lauf] = key.split(":").map(Number) as [number, number];
-      (nachFest.get(fest) ?? nachFest.set(fest, []).get(fest)!).push(lauf);
-    }
-    const ergebnis: [number, number, number][] = [];
-    for (const fest of [...nachFest.keys()].sort((a, b) => a - b)) {
-      const werte = nachFest.get(fest)!.sort((a, b) => a - b);
-      let anfang = werte[0]!, vorher = werte[0]!;
-      for (const wert of werte.slice(1)) {
-        if (wert === vorher + 1) { vorher = wert; continue; }
-        ergebnis.push([fest, anfang, vorher + 1]); anfang = wert; vorher = wert;
-      }
-      ergebnis.push([fest, anfang, vorher + 1]);
-    }
-    return ergebnis;
-  };
-  const waende: TacticalWall[] = [
-    ...laeufe(waagrecht).map(([y, x0, x1]): TacticalWall => ({ id: geometrieId("wand", "w", `${y}:${x0}:${x1}`), kind: "wall", points: [[x0 * z, y * z], [x1 * z, y * z]], elevation: 0 })),
-    ...laeufe(senkrecht).map(([x, y0, y1]): TacticalWall => ({ id: geometrieId("wand", "s", `${x}:${y0}:${y1}`), kind: "wall", points: [[x * z, y0 * z], [x * z, y1 * z]], elevation: 0 })),
-  ];
+  // -- walls -----------------------------------------------------------------------------------
+  const waende: TacticalWall[] = wandLaeufe((x, y) => gitter[idx(x, y)] !== FELS, breite, hoehe, z, ids.geometrieId);
 
   // -- portals: room/corridor openings, one per contiguous run ---------------------------------
   interface Oeffnung { raum: number; senkrecht: boolean; fest: number; lauf: number }
@@ -418,7 +311,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     (gruppen.get(key) ?? gruppen.set(key, []).get(key)!).push(o);
   }
   const tueren: TacticalPortal[] = [];
-  const tuerZelle = new Set<string>();
+  const tuerZelle: [number, number][] = [];
   const tuerenJeRaum = new Map<number, string[]>();
   for (const key of [...gruppen.keys()].sort()) {
     const gruppe = gruppen.get(key)!.sort((a, b) => a.lauf - b.lauf);
@@ -429,13 +322,12 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       const { senkrecht: s, fest, lauf: v, raum } = gewaehlt;
       const a: readonly [number, number] = s ? [fest * z, v * z] : [v * z, fest * z];
       const b: readonly [number, number] = s ? [fest * z, (v + 1) * z] : [(v + 1) * z, fest * z];
-      const id = geometrieId("tuer", s ? "s" : "w", `${fest}:${v}`);
+      const id = ids.geometrieId("tuer", s ? "s" : "w", `${fest}:${v}`);
       tueren.push({ id, position: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], bounds: [a, b], rotationRadians: s ? Math.PI / 2 : 0, closed: true, freestanding: false, elevation: 0 });
       (tuerenJeRaum.get(raum) ?? tuerenJeRaum.set(raum, []).get(raum)!).push(id);
       // Keep both cells beside a door clear of furniture, or the first thing the party meets is
       // a barrel in the doorway.
-      if (s) { tuerZelle.add(`${fest - 1}:${v}`); tuerZelle.add(`${fest}:${v}`); }
-      else { tuerZelle.add(`${v}:${fest - 1}`); tuerZelle.add(`${v}:${fest}`); }
+      if (s) { tuerZelle.push([fest - 1, v], [fest, v]); } else { tuerZelle.push([v, fest - 1], [v, fest]); }
       lauf = [];
     };
     for (const o of gruppe) {
@@ -446,60 +338,32 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   }
 
   // -- stamps ----------------------------------------------------------------------------------
-  const nichtBedient = new Set<string>(), nichtPlatziert: string[] = [];
-  const massstab = z / paket.zellgroesse;
-  const stamps: Stamp[] = [];
-  const stampsNachArt: Record<string, number> = {};
-  const belegt = new Uint8Array(breite * hoehe);
-  const setzeStamp = (asset: PaketAsset, zx: number, zy: number, drehung = 0) => {
-    const [ew, eh] = asset.einheiten;
-    stamps.push({
-      id: geometrieId("stamp", asset.name, `${zx}:${zy}`), a: assetVerweis(paket.id, asset.name),
-      x: (zx + ew / 2) * z, y: (zy + eh / 2) * z, s: massstab, r: drehung, l: EBENE[asset.art] ?? 0,
-    });
-    stampsNachArt[asset.art] = (stampsNachArt[asset.art] ?? 0) + 1;
-  };
-  const waehleAsset = (art: string, schlagwort: string): PaketAsset | null => {
-    const kandidaten = paket.assets.filter((a) => a.art === art && a.schlagworte.includes(schlagwort));
-    if (!kandidaten.length) { nichtBedient.add(`${art}/${schlagwort}`); return null; }
-    return r.waehle(kandidaten);
-  };
-  const passt = (asset: PaketAsset, zx: number, zy: number, raum: RohRaum): boolean => {
-    const [ew, eh] = asset.einheiten;
-    if (zx < raum.x || zy < raum.y || zx + ew > raum.x + raum.w || zy + eh > raum.y + raum.h) return false;
-    for (let y = zy; y < zy + eh; y++) for (let x = zx; x < zx + ew; x++) {
-      if (belegt[idx(x, y)] || tuerZelle.has(`${x}:${y}`)) return false;
-    }
-    return true;
-  };
-  const platziere = (asset: PaketAsset, raum: RohRaum): boolean => {
-    const [ew, eh] = asset.einheiten;
-    for (let versuch = 0; versuch < L.versucheProStueck; versuch++) {
-      const zx = r.ganz(raum.x, raum.x + raum.w - ew), zy = r.ganz(raum.y, raum.y + raum.h - eh);
-      if (!passt(asset, zx, zy, raum)) continue;
-      for (let y = zy; y < zy + eh; y++) for (let x = zx; x < zx + ew; x++) belegt[idx(x, y)] = 1;
-      setzeStamp(asset, zx, zy);
-      return true;
-    }
-    return false;
+  const werk = bestuecker(paket, r, z, ids.geometrieId);
+  const nichtPlatziert: string[] = [];
+  for (const [x, y] of tuerZelle) werk.sperre(x, y);
+
+  const zellenVon = (raum: RohRaum): [number, number][] => {
+    const liste: [number, number][] = [];
+    for (let y = raum.y; y < raum.y + raum.h; y++) for (let x = raum.x; x < raum.x + raum.w; x++) liste.push([x, y]);
+    return liste;
   };
 
   // Floors first, so that everything else draws over a complete surface.
-  const gangboden = waehleAsset("boden", optionen.gangboden);
-  const raumboden = rohRaeume.map((raum) => waehleAsset("boden", raum.thema.boden) ?? gangboden);
+  const gangboden = werk.waehle("boden", optionen.gangboden);
+  const raumboden = rohRaeume.map((raum) => werk.waehle("boden", raum.thema.boden) ?? gangboden);
   for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) {
     const feld = gitter[idx(x, y)];
     if (feld === FELS) continue;
     const asset = feld === RAUM ? raumboden[raumVon[idx(x, y)]!] ?? gangboden : gangboden;
-    if (asset) setzeStamp(asset, x, y);
+    if (asset) werk.setze(asset, x, y);
   }
 
   // Stairs before furniture: an entrance that could not be placed is a broken map, a chair that
   // could not be placed is a report line.
   const setzeMarkiert = (raum: RohRaum, art: string, schlagwort: string) => {
-    const asset = waehleAsset(art, schlagwort);
+    const asset = werk.waehle(art, schlagwort);
     if (!asset) return;
-    if (!platziere(asset, raum)) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
+    if (!werk.platziere(asset, zellenVon(raum))) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
   };
   setzeMarkiert(rohRaeume[0]!, "aufbau", "aufwaerts");
   setzeMarkiert(rohRaeume[0]!, "marke", "eingang");
@@ -515,13 +379,13 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     const durchgaenge = Math.min(4, Math.max(1, Math.round((raum.w * raum.h) / 14)));
     for (const [art, schlagwort] of Array.from({ length: durchgaenge }, () => raum.thema.stuecke).flat()) {
       if (!r.chance(optionen.moeblierung)) continue;
-      const asset = waehleAsset(art, schlagwort);
+      const asset = werk.waehle(art, schlagwort);
       if (!asset) continue;
-      if (!platziere(asset, raum)) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
+      if (!werk.platziere(asset, zellenVon(raum))) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
       else if (optionen.licht && art === "licht") {
-        const letzter = stamps[stamps.length - 1]!;
+        const letzter = werk.stamps[werk.stamps.length - 1]!;
         lichter.push({
-          id: geometrieId("licht", `${i}`, `${letzter.x}:${letzter.y}`), position: [letzter.x, letzter.y],
+          id: ids.geometrieId("licht", `${i}`, `${letzter.x}:${letzter.y}`), position: [letzter.x, letzter.y],
           // Reach is the room, not the map: a torch that lights the whole floorplan is a renderer
           // demo, not a table tool.
           range: Math.max(raum.w, raum.h) * z * 0.85, intensity: schlagwort === "kerze" ? 0.55 : 0.9,
@@ -532,33 +396,33 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   });
 
   // Doors last, on top of their opening.
-  const tuerAsset = waehleAsset("tuer", "drehbar");
+  const tuerAsset = werk.waehle("tuer", "drehbar");
   if (tuerAsset) {
     for (const tuer of tueren) {
-      stamps.push({
-        id: geometrieId("stamp", "tuer", tuer.id), a: assetVerweis(paket.id, tuerAsset.name),
-        x: tuer.position[0], y: tuer.position[1], s: massstab, r: tuer.rotationRadians, l: EBENE.tuer ?? 20,
-      });
-      stampsNachArt[tuerAsset.art] = (stampsNachArt[tuerAsset.art] ?? 0) + 1;
+      // A door sits on the edge between two cells, so its anchor cell is half a cell off. Routed
+      // through the same `setze` as everything else: `Stamp.a` is composed in exactly one place.
+      const [ew, eh] = tuerAsset.einheiten;
+      werk.setze(tuerAsset, tuer.position[0] / z - ew / 2, tuer.position[1] / z - eh / 2, tuer.rotationRadians);
     }
   }
 
   // -- document --------------------------------------------------------------------------------
-  const sortiere = <T extends { id: string }>(rows: T[]): T[] => rows.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const raeume: GrundrissRaum[] = rohRaeume.map((raum, i) => ({
-    id: knotenId("raum", raum.pfad),
+    id: ids.knotenId("raum", raum.pfad),
     pfad: raum.pfad,
     thema: raum.thema.schluessel,
     zellen: [raum.x, raum.y, raum.w, raum.h] as const,
     tueren: (tuerenJeRaum.get(i) ?? []).slice().sort(),
     rolle: i === 0 ? "eingang" : i === tiefsterRaum ? "tiefe" : "kammer",
   }));
+  const mitte = (raum: GrundrissRaum): readonly [number, number] =>
+    [(raum.zellen[0] + raum.zellen[2] / 2) * z, (raum.zellen[1] + raum.zellen[3] / 2) * z];
   const karte = parseTacticalMapDocument({
     schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels",
     frame: { ursprung: [0, 0], einheitenProPixel: 1 / z, ordnung: "xy", hoch: "unten" },
     geometry: {
       v: 3, size: [breite * z, hoehe * z],
-      stamps: sortiere(stamps),
+      stamps: sortiereNachId(werk.stamps),
       // The region id **is** the room's KnotenId, so a `MapAnchor` binding a region and a
       // containment node cannot drift apart into two identities for one room.
       regions: raeume.map((raum) => ({
@@ -568,53 +432,35 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
           [(raum.zellen[0] + raum.zellen[2]) * z, (raum.zellen[1] + raum.zellen[3]) * z], [raum.zellen[0] * z, (raum.zellen[1] + raum.zellen[3]) * z],
         ],
       })),
-      places: raeume.map((raum) => ({ id: geometrieId("ort", raum.pfad), x: (raum.zellen[0] + raum.zellen[2] / 2) * z, y: (raum.zellen[1] + raum.zellen[3] / 2) * z })),
+      places: raeume.map((raum) => ({ id: ids.geometrieId("ort", raum.pfad), x: mitte(raum)[0], y: mitte(raum)[1] })),
     },
     grid: { kind: "square", size: z, origin: [0, 0] },
     elevation: 0, geometryElevation: [],
-    walls: sortiere(waende), portals: sortiere(tueren), lights: sortiere(lichter),
+    walls: sortiereNachId(waende), portals: sortiereNachId(tueren), lights: sortiereNachId(lichter),
     environment: { bakedLighting: false, ambientLightArgb: "ff1c1a17" },
     background: null,
   });
 
-  // -- containment nodes -----------------------------------------------------------------------
-  const bauwerkId = knotenId("bauwerk");
-  const herkunft = (pfad: readonly string[], kindKeim?: string): Herkunft => ({
-    erzeuger: GRUNDRISS_ERZEUGER, version: GRUNDRISS_VERSION, keimHash: keim.keimHash, erzeugungspfad: pfad,
-    ...(kindKeim === undefined ? {} : { kindKeim }),
+  const wurzelId = ids.knotenId("bauwerk");
+  const knoten = baueKnoten({
+    erzeuger: GRUNDRISS_ERZEUGER, version: GRUNDRISS_VERSION, keim, wurzelId,
+    // A floorplan is built, so its root asserts construction.
+    wurzelArt: "bauwerk", titel: auftrag.titel ?? null, rahmen: karte.frame,
+    eltern: auftrag.eltern, raeume, mitte, ids,
   });
-  const rahmen = karte.frame;
-  const eltern: readonly Kante[] = auftrag.eltern ? [{ von: bauwerkId, nach: auftrag.eltern.knotenId, art: auftrag.eltern.art }] : [];
-  const knoten: Knoten[] = [{
-    id: bauwerkId, art: "bauwerk", titel: auftrag.titel ?? null, eltern, rahmen,
-    anker: auftrag.eltern ? { in: auftrag.eltern.knotenId, bei: auftrag.eltern.bei, massstab: auftrag.eltern.massstab } : null,
-    herkunft: herkunft(["bauwerk"]), sichtAnker: null,
-  }];
-  for (const raum of raeume) {
-    knoten.push({
-      id: raum.id, art: "raum", titel: null,
-      eltern: [{ von: raum.id, nach: bauwerkId, art: "liegt_in_geografie" }],
-      rahmen,
-      anker: { in: bauwerkId, bei: [(raum.zellen[0] + raum.zellen[2] / 2) * z, (raum.zellen[1] + raum.zellen[3] / 2) * z], massstab: 1 },
-      // The derived child seed, stored rather than discarded: this room is a re-derivable address
-      // for whatever is generated inside it next (RB-21d:677-679).
-      herkunft: herkunft(["raum", raum.pfad], canonicalHash({ keim: keim.keimHash, kind: "raum", pfad: raum.pfad }).slice(0, 32)),
-      sichtAnker: null,
-    });
-  }
 
   let bodenzellen = 0, gangzellen = 0;
   for (const feld of gitter) { if (feld !== FELS) bodenzellen++; if (feld === GANG) gangzellen++; }
 
   return Object.freeze({
-    erzeuger: GRUNDRISS_ERZEUGER, version: GRUNDRISS_VERSION, keim, bauwerkId, karte,
+    art: "grundriss", erzeuger: GRUNDRISS_ERZEUGER, version: GRUNDRISS_VERSION, keim, wurzelId, karte,
     knoten: Object.freeze(knoten), raeume: Object.freeze(raeume),
     bericht: Object.freeze({
       raeume: raeume.length, gangzellen, bodenzellen, tueren: tueren.length, waende: waende.length,
-      lichter: lichter.length, stamps: stamps.length, stampsNachArt: Object.freeze({ ...stampsNachArt }),
+      lichter: lichter.length, stamps: werk.stamps.length, stampsNachArt: Object.freeze({ ...werk.nachArt }),
       themen: Object.freeze({ ...themen }),
       paket: Object.freeze({ id: paket.id, version: paket.version, assets: paket.assets.length }),
-      nichtBedient: Object.freeze([...nichtBedient].sort()), nichtPlatziert: Object.freeze(nichtPlatziert.slice().sort()),
+      nichtBedient: Object.freeze([...werk.nichtBedient].sort()), nichtPlatziert: Object.freeze(nichtPlatziert.slice().sort()),
       ausgelassen: AUSGELASSEN,
     }),
   });

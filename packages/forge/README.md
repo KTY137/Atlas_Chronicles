@@ -65,3 +65,48 @@ pyramid are absent and enumerated in `bericht.ausgelassen` on every run.
 `packages/forge/tools/zeichne-grundriss.mts` renders a result to a standalone SVG for inspection
 (`design/spikes/grundriss/`); it resolves every `Stamp.a` through the real manifest and is a second,
 independent check that the references are real.
+
+## Forge: Höhle
+
+`erzeugeHoehle(auftrag, paket)` is the second map kind on the same contract: a cellular automaton
+smoothed by the 4-5 rule, its largest cavity partitioned into chambers by farthest-point seeding and
+a multi-source breadth-first walk. It returns the same `Grundriss` shape, so everything downstream
+of the generator is unchanged.
+
+It exists for a design reason and an engineering one. A cavern plays nothing like a keep. And it
+broke an assumption the first generator was resting on: `erzeugeGrundriss` emits a four-point
+rectangle per room because its rooms *are* rectangles, so "the scene format carries arbitrary region
+polygons" was a claim about the type and not about any code. A cavern chamber is a blob, so its
+region is a traced outline — 34 to 80 vertices on the fixture seeds.
+
+Two refusals are load-bearing. It emits **no portals**: a UVTT portal is a door or a window, a
+narrow passage between chambers is neither, and a false statement in a format four other tools read
+costs more than a missing one. And it emits **no second level**: RB-21a R6 makes vertical position a
+scalar band on the node and §1.3 case 3 makes the underdark a *sibling*, not a descendant. Its root
+node is an `ort` rather than a `bauwerk`, because nobody built it.
+
+The automaton is rolled again — up to twelve times, deterministically, from the same stream — when a
+draw leaves a cavity too small to hold two chambers. On a small grid that happens genuinely often,
+and it is a property of the process, not of the request.
+
+## Forge: Verschachtelung
+
+`erzeugeVerschachtelt(auftrag, paket)` builds a **chain of separate map artefacts**, each with its
+own `Rahmen`, joined by one containment edge and one anchor per step. RB-21a §3.1 already ruled the
+phrase: *"'nested maps' means a graph of linked artifacts with containment and anchors. It does not
+mean one continuous LOD zoom."*
+
+Each level is seeded **only** by the parent room's stored `Herkunft.kindKeim`, so the whole chain is
+re-derivable from the top seed alone; change an option on an upper level and every level below it is
+a different artefact, because the room that seeds them is different. A transition (`Uebergang`) is a
+row about a pair — never a field on either map — which is the shape §3.3 rules for `Anker`, and it
+has a measurable consequence: **the parent document is byte-identical whether or not a child
+exists.**
+
+"Inside" is checked, not asserted. The child map is scaled so that it fits the room that holds it,
+and a jump beyond `MAX_MASSSTABSSPRUNG` (32×) is refused rather than silently producing two artefacts
+that cannot be the same physical place. The chain also refuses to exceed `MAX_TIEFE`, counting the
+parent's own depth when the caller supplies it.
+
+What it will not do: stack floors. That would need the elevation band RB-21a R6 specifies and
+`Knoten` does not yet carry.
