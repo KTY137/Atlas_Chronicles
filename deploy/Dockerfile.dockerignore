@@ -1,0 +1,13 @@
+# Read by BuildKit for `docker build -f deploy/Dockerfile .`
+**/node_modules
+**/dist
+**/.semgrep
+.git
+.local
+design
+docs
+e2e
+deploy
+test-results
+playwright-report
+*.png

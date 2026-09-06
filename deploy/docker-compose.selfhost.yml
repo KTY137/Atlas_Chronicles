@@ -1,0 +1,134 @@
+# Atlas Chronicles — der eine Verbund für Self-Host UND Hosted Rooms
+# (design/07-shell-redesign.md §5, design/08-backend-architektur.md §2). Kein zweiter Codepfad:
+# App + Postgres laufen immer; TLS-Kante und Medienebene sind Profile.
+#
+#   node deploy/configure-selfhost.mjs chronik.example.org          # schreibt deploy/.env (git-ignored)
+#   docker compose --env-file deploy/.env -f deploy/docker-compose.selfhost.yml \
+#       --profile tls --profile media up -d --build
+#
+# Topologien (deploy/README.md): "tls" = eigene Domain + Zertifikat → Passkeys laufen.
+# Ohne "tls" nur http://<LAN-IP>:3000 → OPEN P11 (Cookie-Fallback), CHRONICLE_BIND=0.0.0.0 setzen.
+name: chronicle
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: chronicle/app:local
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3000"
+      CHRONICLE_ORIGIN: ${CHRONICLE_ORIGIN:?set the public origin, e.g. https://chronik.example.org}
+      DATABASE_URL: postgresql://chronicle:${POSTGRES_PASSWORD:?run node deploy/configure-selfhost.mjs}@postgres:5432/chronicle
+      COOKIE_SECRET: ${COOKIE_SECRET:?run node deploy/configure-selfhost.mjs}
+      BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?run node deploy/configure-selfhost.mjs}
+      # All four empty → app runs without the media layer (explicit in /api/health of the media routes).
+      LIVEKIT_URL: ${LIVEKIT_URL:-}
+      LIVEKIT_API_URL: ${LIVEKIT_API_URL:-}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
+    ports:
+      - "${CHRONICLE_BIND:-127.0.0.1}:${CHRONICLE_PORT:-3000}:3000"
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chronicle
+      POSTGRES_DB: chronicle
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run node deploy/configure-selfhost.mjs}
+    volumes:
+      - chronicle-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chronicle -d chronicle"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # --- TLS-Kante: die Topologie, in der Passkeys laufen (spike-B N1–N6) -------------------
+  caddy:
+    profiles: [tls]
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      CHRONICLE_DOMAIN: ${CHRONICLE_DOMAIN:-chronik.example.org}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - chronicle-caddy-data:/data
+      - chronicle-caddy-config:/config
+
+  # --- Medienebene (07 §5): eigener Pfad, ein Voice-Ausfall hält den Tisch nie an --------
+  livekit:
+    profiles: [media]
+    image: livekit/livekit-server:v1.13.6
+    restart: unless-stopped
+    environment:
+      # LiveKit reads its YAML from this variable; keys/TURN come from deploy/.env.
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50100
+          use_external_ip: true
+          turn_servers:
+            - host: ${PUBLIC_IP:-}
+              port: 3478
+              protocol: udp
+              username: chronicle
+              credential: ${TURN_SECRET:-}
+        keys:
+          ${LIVEKIT_API_KEY:-unset}: ${LIVEKIT_API_SECRET:-}
+        turn:
+          enabled: false
+        logging:
+          level: info
+    ports:
+      - "7881:7881/tcp"
+      - "50000-50100:50000-50100/udp"
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+
+  coturn:
+    profiles: [media]
+    image: coturn/coturn:4.17.2-r0-alpine
+    restart: unless-stopped
+    command:
+      - -n
+      - --listening-port=3478
+      - --realm=${CHRONICLE_DOMAIN:-chronik.example.org}
+      - --user=chronicle:${TURN_SECRET:-}
+      - --lt-cred-mech
+      - --fingerprint
+      - --no-tls
+      - --no-dtls
+      - --min-port=49160
+      - --max-port=49200
+      - --external-ip=${PUBLIC_IP:-}
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "49160-49200:49160-49200/udp"
+    read_only: true
+    tmpfs: [/tmp, /var/lib/coturn, /var/run]
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  chronicle-postgres:
+  chronicle-caddy-data:
+  chronicle-caddy-config:

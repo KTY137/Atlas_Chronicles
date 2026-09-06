@@ -1,0 +1,10 @@
+# Automatic HTTPS for the self-host Verbund. Requires DNS for both names to point at this host.
+{$CHRONICLE_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
+
+# Media signaling (profile "media"). Without that profile this site answers 502 and nothing else breaks.
+livekit.{$CHRONICLE_DOMAIN} {
+	reverse_proxy livekit:7880
+}

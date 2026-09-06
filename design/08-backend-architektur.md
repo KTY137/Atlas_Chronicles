@@ -2,11 +2,14 @@
 
 Status: **beschlossen und im Bau**, 2026-09-06.
 
-**Implementierungsstand nach dem Session-Abbruch:** Datenbankadapter, erste SQL-Migration und
-Namenswache liegen als getestetes Grundgerüst unter `packages/server/`. Domain-Services,
-Identitätszeremonien, HTTP-Routen und WebSocket-Bus sind noch nicht implementiert. Die folgenden
-Invarianten und Join-Pfade sind der Zielvertrag. Arbeitsfolge und Abnahme stehen im
-[Implementierungsplan](../docs/IMPLEMENTATION_PLAN.md).
+**Implementierungsstand (2026-09-06, 14:35):** `packages/server/` trägt Identität (echte
+WebAuthn-Zeremonien, Cookie-Wiederkehr, Kopplung, Ausweis), Kampagne/Einladung/Gast-Join/GM-Freigabe,
+Dokumente mit Revisionen und projizierter Leseroute, Gameplay, Woche, Medien (LiveKit-Token) und den
+WebSocket-Befehlsbus. Belegt: Boundary-Gate grün, Typecheck grün, vitest 188/188, Browser-E2E 2/2
+(`e2e/`, inkl. echtem Server-Neustart) — **S-P1** läuft als `http.test.ts` gegen den realen Server.
+Deployment liegt unter [`deploy/`](../deploy/README.md): ein Image, ein Compose-Verbund, Profile `tls`
+und `media`; lokal verifiziert bis `/api/health` im Container. Offen bleiben P11 (Self-Host-Join im
+LAN) und die Abnahmen mit echter Domain/NAT (M5).
 
 Auftrag (Kaya, 2026-09-06): *„ja oke bau dafür die architektur/das backend"* — für Hosting und
 Session-Einladungen. Gleiche Session ratifizierte **S4 = Ja** (minimale hosted Rooms in v1;
@@ -69,7 +72,7 @@ deploy/
 - **Zugangsvorfall:** ein Zugriff auf eine offene Tür ohne Credential wird protokolliert,
   bevor die 404 fällt — Lockout und Desinteresse bleiben trennbar (W1-Gate).
 
-## 4. Join-Pfade (06 §11.1, noch zu implementieren)
+## 4. Join-Pfade (06 §11.1, umgesetzt in `packages/server/src/app.ts`)
 
 1. **Gastabend:** `POST /join/:code` mit Anzeigename → Namenswache → Eintrag `pending` →
    GM-Freigabe → kurzlebiges Gast-Cookie, Figurzuweisung optional.
