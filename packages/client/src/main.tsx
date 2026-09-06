@@ -7,7 +7,18 @@ import "./styles.css";
 import "./features/appearance.css";
 import { App } from "./App";
 import { AppearanceProvider } from "./features/Appearance";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("App root is missing");
-createRoot(root).render(<StrictMode><AppearanceProvider><App /></AppearanceProvider></StrictMode>);
+// Die Fehlergrenze steht außen, damit sie auch dann noch greift, wenn die Darstellungsebene
+// oder eine nachgeladene Bühne beim Rendern scheitert. Ohne sie bleibt eine weiße Seite.
+createRoot(root).render(
+  <StrictMode>
+    <ErrorBoundary>
+      <AppearanceProvider>
+        <App />
+      </AppearanceProvider>
+    </ErrorBoundary>
+  </StrictMode>,
+);

@@ -261,3 +261,11 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
   .rail { overflow-x: auto; flex-shrink: 0; }
   .rail-item { min-width: 74px; flex-shrink: 0; flex-direction: column; gap: 3px; font-size: 9px; }
 }
+
+/* Die Auffangfläche der Fehlergrenze (ErrorBoundary.tsx). Bewusst ohne Abhängigkeit von der
+   App-Struktur: sie muss auch dann tragen, wenn die Oberfläche darüber gescheitert ist. */
+.crash-screen { max-width: 34rem; margin: 12vh auto; padding: 0 1.5rem; display: grid; gap: 1rem; justify-items: start; }
+.crash-screen h1 { margin: 0; font-size: 1.5rem; }
+.crash-screen p { margin: 0; color: var(--ink-muted, inherit); line-height: 1.6; }
+.crash-screen details { justify-self: stretch; }
+.crash-screen pre { overflow: auto; padding: 0.75rem; border-radius: 6px; background: var(--surface-sunken, rgba(0,0,0,.25)); font-size: 0.8rem; }
