@@ -58,6 +58,29 @@ Degradationsleiter, sichtbar und benannt, nie still: **SFU → TURN-Relay → P2
 - **Ports nach außen:** `tls`: 80/443. `media`: 7881/tcp, 50000–50100/udp (SFU), 3478 tcp+udp und
   49160–49200/udp (TURN). Ohne Profile lauscht nur `127.0.0.1:3000`.
 
+## Datenbankbetrieb
+
+Der Pool ist bewusst konfiguriert, nicht auf Vorgabewerten belassen. Jede Schraube verhindert einen
+benannten Ausfall; alle sind über die Umgebung überschreibbar, damit ein Laptop-Self-Host und ein
+gehosteter Raum sich unterscheiden dürfen, ohne einen zweiten Codepfad zu erzeugen.
+
+| Variable | Vorgabe | Verhindert |
+|---|---|---|
+| `DB_POOL_MAX` | 10 | mehr gleichzeitige Verbindungen, als Postgres' `max_connections` zulässt |
+| `DB_CONNECT_TIMEOUT_MS` | 10000 | endloses Warten auf eine freie Verbindung; ein erschöpfter Pool sieht sonst aus wie ein toter Server |
+| `DB_IDLE_TIMEOUT_MS` | 30000 | dass eine ruhende Installation tagelang Backends offen hält |
+| `DB_STATEMENT_TIMEOUT_MS` | 30000 | dass eine entlaufene Abfrage ihre Verbindung belegt, bis jemand es merkt (0 schaltet ab) |
+
+**Warum das kein Feintuning ist, sondern eine Verfügbarkeitsfrage:** ohne einen `error`-Zuhörer am
+Pool beendet **jeder** serverseitige Verbindungsabbruch den Anwendungsprozess — gemessen am
+2026-09-06, und genau das tut jeder Postgres-Neustart und jedes Update. Der Zuhörer existiert jetzt,
+protokolliert den Vorfall und überlässt dem Pool das Verwerfen der kaputten Verbindung. Belegt in
+`packages/server/test/db-pool.pg.test.ts`, das gegen echtes Postgres läuft (`TEST_DATABASE_URL`).
+
+**Statement-Timeout wird pro Verbindung gesetzt, nicht über den `options`-Parameter der
+Verbindungszeichenkette** — dort steht bereits `search_path` für isolierte Testschemata, und ein
+Überschreiben würde einen Test still auf das falsche Schema schieben.
+
 ## Was hier verifiziert wurde — und was nicht
 
 - ✅ `docker compose config` löst beide Profile und alle Variablen auf (2026-09-06, lokal).

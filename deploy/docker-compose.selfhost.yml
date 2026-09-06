@@ -28,6 +28,12 @@ services:
       DATABASE_URL: postgresql://chronicle:${POSTGRES_PASSWORD:?run node deploy/configure-selfhost.mjs}@postgres:5432/chronicle
       COOKIE_SECRET: ${COOKIE_SECRET:?run node deploy/configure-selfhost.mjs}
       BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?run node deploy/configure-selfhost.mjs}
+      # Database operation. Empty means the built-in default, which is documented in
+      # packages/server/src/db/index.ts next to the failure each one prevents.
+      DB_POOL_MAX: ${DB_POOL_MAX:-}
+      DB_CONNECT_TIMEOUT_MS: ${DB_CONNECT_TIMEOUT_MS:-}
+      DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-}
+      DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-}
       # All four empty → app runs without the media layer (explicit in /api/health of the media routes).
       LIVEKIT_URL: ${LIVEKIT_URL:-}
       LIVEKIT_API_URL: ${LIVEKIT_API_URL:-}

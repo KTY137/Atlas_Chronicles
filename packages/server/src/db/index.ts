@@ -10,8 +10,95 @@ export interface Db {
   close(): Promise<void>;
 }
 
-export function createPgDb(connectionString: string): Db {
-  const pool = new Pool({ connectionString });
+/**
+ * Operational settings. Every one of these has a failure it prevents, named at its default.
+ * All are overridable so a self-host on a laptop and a hosted room can differ without a
+ * second code path (design/08-backend-architektur.md).
+ */
+export interface PgOptions {
+  /** Ceiling on concurrent server-side connections. Postgres' own `max_connections` is the
+   *  real limit; exceeding it turns a busy evening into connection errors for everyone. */
+  readonly max?: number;
+  /** How long `pool.connect()` may wait for a free connection. Without it, an exhausted pool
+   *  makes requests hang forever instead of failing, and the hang looks like a dead server. */
+  readonly connectionTimeoutMillis?: number;
+  /** How long an unused connection is kept. Keeps idle self-host installs from holding
+   *  backends open for days. */
+  readonly idleTimeoutMillis?: number;
+  /** Server-side cap per statement. A runaway query otherwise holds its connection until
+   *  someone notices, which on a small pool is an outage. Set to 0 to disable. */
+  readonly statementTimeoutMillis?: number;
+  /** Where non-fatal pool faults are reported. Wired to the app logger in `main.ts`. */
+  readonly onError?: (error: Error) => void;
+}
+
+const envInt = (name: string, fallback: number): number => {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : fallback;
+};
+
+export function createPgDb(connectionString: string, options: PgOptions = {}): Db {
+  const statementTimeout = options.statementTimeoutMillis ?? envInt("DB_STATEMENT_TIMEOUT_MS", 30_000);
+  const report = options.onError ?? ((error: Error) => console.error("[db]", error.message));
+  const pool = new Pool({
+    connectionString,
+    max: options.max ?? envInt("DB_POOL_MAX", 10),
+    connectionTimeoutMillis: options.connectionTimeoutMillis ?? envInt("DB_CONNECT_TIMEOUT_MS", 10_000),
+    idleTimeoutMillis: options.idleTimeoutMillis ?? envInt("DB_IDLE_TIMEOUT_MS", 30_000),
+  });
+
+  // THE CRASH THIS PREVENTS, measured rather than assumed (2026-09-06): terminate a pooled
+  // connection server-side — which is what every Postgres restart, upgrade and
+  // `pg_terminate_backend` does — and `pg` emits 'error' on the Pool. An EventEmitter 'error'
+  // with no listener is an uncaught exception, so a routine database restart took the whole
+  // application process down. The pool discards the broken connection by itself; all this
+  // listener has to do is exist and say what happened.
+  pool.on("error", (error: Error) => { report(error); });
+
+  // Applied per connection rather than through the connection string's `options` parameter,
+  // because that parameter is already carrying `search_path` for isolated test schemas and
+  // overwriting it would silently move a test onto the wrong schema.
+  if (statementTimeout > 0) {
+    pool.on("connect", (client) => {
+      client.query(`SET statement_timeout = ${statementTimeout}`).catch(report);
+    });
+  }
+
+  /**
+   * Nested transactions become SAVEPOINTs.
+   *
+   * Services are routinely constructed with an open transaction (`createCampaigns(tx, config)`)
+   * and those same services call `.transaction()` themselves, so nesting is normal here rather
+   * than exotic. The previous implementation ran the inner block on the parent transaction and
+   * returned — no savepoint, no boundary. That is fine until an inner block fails and its caller
+   * handles the failure: Postgres has already marked the whole transaction aborted, so every
+   * later statement fails with `current transaction is aborted`, and the recovery the caller
+   * wrote does nothing. With a savepoint the inner failure rolls back to its own boundary and
+   * the outer transaction stays usable.
+   */
+  const wrap = (run: (sql: string, params: readonly unknown[]) => Promise<QueryResult<unknown>>, depth: number): Db => {
+    const self: Db = {
+      query: <R,>(sql: string, params: readonly unknown[] = []) => run(sql, params) as Promise<QueryResult<R>>,
+      async transaction<T>(fn: (tx: Db) => Promise<T>): Promise<T> {
+        const name = `sp_${depth}`;
+        await run(`SAVEPOINT ${name}`, []);
+        try {
+          const value = await fn(wrap(run, depth + 1));
+          await run(`RELEASE SAVEPOINT ${name}`, []);
+          return value;
+        } catch (error) {
+          // A failing rollback must never replace the error that caused it.
+          await run(`ROLLBACK TO SAVEPOINT ${name}`, []).catch(report);
+          throw error;
+        }
+      },
+      close: async () => { throw new Error("Cannot close a transaction"); },
+    };
+    return self;
+  };
+
   return {
     async query<T>(sql: string, params: readonly unknown[] = []) {
       const result = await pool.query(sql, [...params]);
@@ -19,21 +106,18 @@ export function createPgDb(connectionString: string): Db {
     },
     async transaction<T>(fn: (tx: Db) => Promise<T>): Promise<T> {
       const client = await pool.connect();
-      const tx: Db = {
-        async query<R>(sql: string, params: readonly unknown[] = []) {
-          const r = await client.query(sql, [...params]);
-          return { rows: r.rows as R[], rowCount: r.rowCount ?? 0 };
-        },
-        transaction: (f) => f(tx),
-        close: async () => { throw new Error("Cannot close a transaction"); },
+      const run = async (sql: string, params: readonly unknown[]): Promise<QueryResult<unknown>> => {
+        const r = await client.query(sql, [...params]);
+        return { rows: r.rows as unknown[], rowCount: r.rowCount ?? 0 };
       };
       try {
         await client.query("BEGIN");
-        const value = await fn(tx);
+        const value = await fn(wrap(run, 0));
         await client.query("COMMIT");
         return value;
       } catch (error) {
-        await client.query("ROLLBACK");
+        // Report a failed rollback, never let it mask the original failure.
+        await client.query("ROLLBACK").catch(report);
         throw error;
       } finally { client.release(); }
     },
@@ -57,17 +141,34 @@ export async function createTestDb(dataDir?: string): Promise<Db> {
     // PGlite reports affectedRows=0 for SELECT; pg.rowCount counts selected rows too.
     return { rows: r.rows, rowCount: Math.max(r.affectedRows ?? 0, r.rows.length) };
   };
-  const tx: Db = { query: rawQuery, transaction: (fn) => fn(tx), close: async () => { throw new Error("Cannot close a transaction"); } };
+  // Savepoints here too, so the test adapter and Postgres agree about what a nested
+  // transaction means. A test that passes against weaker semantics is not a test.
+  const wrap = (depth: number): Db => ({
+    query: rawQuery,
+    async transaction<T>(fn: (tx: Db) => Promise<T>): Promise<T> {
+      const name = `sp_${depth}`;
+      await pg.exec(`SAVEPOINT ${name}`);
+      try {
+        const value = await fn(wrap(depth + 1));
+        await pg.exec(`RELEASE SAVEPOINT ${name}`);
+        return value;
+      } catch (error) {
+        await pg.exec(`ROLLBACK TO SAVEPOINT ${name}`).catch(() => undefined);
+        throw error;
+      }
+    },
+    close: async () => { throw new Error("Cannot close a transaction"); },
+  });
   return {
     query: (sql, params) => exclusive(() => rawQuery(sql, params)),
     transaction: (fn) => exclusive(async () => {
       await pg.exec("BEGIN");
       try {
-        const result = await fn(tx);
+        const result = await fn(wrap(0));
         await pg.exec("COMMIT");
         return result;
       } catch (error) {
-        await pg.exec("ROLLBACK");
+        await pg.exec("ROLLBACK").catch(() => undefined);
         throw error;
       }
     }),
