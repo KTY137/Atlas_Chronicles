@@ -1,8 +1,8 @@
 import { useId } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { Button } from "@chronicle/ui";
-import { RULE_LIMITS, type FormulaType } from "@chronicle/rules";
-import { literalDraft, type FormulaDraft } from "./rule-forge-model";
+import { Check, Plus, Trash2 } from "lucide-react";
+import { Button, Notice } from "@chronicle/ui";
+import { RULE_LIMITS, inferFormulaType, type FormulaType } from "@chronicle/rules";
+import { compileFormula, formulaSource, literalDraft, type FormulaDraft } from "./rule-forge-model";
 
 interface Props {
   value: FormulaDraft; onChange(value: FormulaDraft): void;
@@ -18,6 +18,39 @@ const functions: { name: Extract<FormulaDraft, { kind: "call" }>["name"]; label:
   { name: "round", label: "Runden" }, { name: "abs", label: "Absoluter Betrag" }, { name: "haelt", label: "Passage wird gehalten", knowledge: true },
   { name: "haelt_etikett", label: "Gehaltene Passagen mit Etikett zählen", knowledge: true }, { name: "erfahrungsgrad", label: "Erfahrungsgrad zu einem Etikett", knowledge: true },
 ];
+const comparisonOps = new Set(["==", "!=", ">", ">=", "<", "<=", "&&", "||"]);
+const typeLabel = (type: FormulaType): string => type === "number" ? "Zahl" : type === "boolean" ? "Wahr / falsch" : "Text";
+const namedFields = (fields: Readonly<Record<string, FormulaType>>): string => Object.entries(fields).map(([name, type]) => `${name} (${typeLabel(type)})`).join(", ");
+
+/** Dieselbe Struktur- und Typprüfung, die auch das Regelpaket vor der Installation durchläuft — keine eigene Auswertung, nur ihre Vorbedingung. */
+function checkFormula(node: FormulaDraft, fields: Props["fields"]): string | null {
+  try { inferFormulaType(compileFormula(node), fields); return null; }
+  catch (error) { return error instanceof Error ? error.message : "Der Ausdruck konnte nicht geprüft werden."; }
+}
+function childDrafts(value: FormulaDraft): FormulaDraft[] {
+  switch (value.kind) {
+    case "unary": return [value.value];
+    case "binary": return [value.left, value.right];
+    case "if": return [value.condition, value.then, value.else];
+    case "call": return value.args;
+    default: return [];
+  }
+}
+/** Feste Vorlage zum Übernehmen: ein Wurf mit Attributzuschlag gegen eine Schwelle — oder, falls Würfel/Attribut hier nicht passen, die nächstbeste gültige Variante. */
+function exampleFormula(fields: Props["fields"], allowDice: boolean): { formula: FormulaDraft; hint: string } {
+  const num = (value: string): FormulaDraft => ({ kind: "literal", type: "number", value });
+  const attr = (name: string): FormulaDraft => ({ kind: "field", source: "actor", field: name });
+  const die = (): FormulaDraft => ({ kind: "dice", count: "1", sides: "20", keep: "none", keepCount: "1", explode: "" });
+  const bin = (op: Extract<FormulaDraft, { kind: "binary" }>["op"], left: FormulaDraft, right: FormulaDraft): FormulaDraft => ({ kind: "binary", op, left, right });
+  const gate = (condition: FormulaDraft, then: FormulaDraft, otherwise: FormulaDraft): FormulaDraft => ({ kind: "if", condition, then, else: otherwise });
+  const field = Object.entries(fields.actor).find(([, type]) => type === "number")?.[0];
+  if (allowDice) {
+    if (field) return { formula: gate(bin(">=", attr(field), num("12")), bin("+", die(), attr(field)), die()), hint: `Wurf 1W20, dazu „${field}“ als Zuschlag, sobald „${field}“ mindestens 12 erreicht — sonst ein einfacher Wurf.` };
+    return { formula: bin("+", die(), num("2")), hint: "Wurf 1W20 mit festem Zuschlag von 2. Lege ein Zahlenfeld am Charakter an, um stattdessen einen Attributzuschlag zu verwenden." };
+  }
+  if (field) return { formula: gate(bin(">=", attr(field), num("10")), bin("+", attr(field), num("1")), attr(field)), hint: `Erhöht „${field}“ um 1, sobald „${field}“ mindestens 10 erreicht — sonst bleibt der Wert gleich.` };
+  return { formula: num("0"), hint: "Für ein Beispiel wird zunächst ein Zahlenfeld benötigt." };
+}
 function initialNode(kind: string, fields: Props["fields"]): FormulaDraft {
   if (kind.startsWith("literal-")) return literalDraft(kind.slice(8) as FormulaType);
   if (kind === "actor" || kind === "input") return { kind: "field", source: kind, field: Object.keys(fields[kind])[0] ?? "" };
@@ -29,13 +62,35 @@ function initialNode(kind: string, fields: Props["fields"]): FormulaDraft {
 }
 
 export function FormulaBuilder(props: Props) {
-  return <div className="rf-formula"><FormulaNode {...props} depth={0} label={props.label ?? "Ergebnis der Aktion"} /></div>;
+  const { value, onChange, fields, disabled = false, allowDice = true } = props;
+  const status = checkFormula(value, fields);
+  const example = exampleFormula(fields, allowDice);
+  let preview = "";
+  try { preview = formulaSource(compileFormula(example.formula)); } catch { /* Vorlage bleibt ohne Textvorschau, falls sie ausnahmsweise nicht kompiliert. */ }
+  return <div className="rf-formula">
+    <details open><summary>Was du hier bauen kannst</summary>
+      <dl className="rf-value-list">
+        {allowDice ? <div><dt>Würfel</dt><dd>Eine Anzahl W-Seiten, z. B. 1W20 oder 4W6 — wahlweise nur die höchsten oder niedrigsten Würfel gewertet.</dd></div> : null}
+        <div><dt>Charakterfelder</dt><dd>{Object.keys(fields.actor).length ? namedFields(fields.actor) : "Noch keine Charakterfelder angelegt."}</dd></div>
+        <div><dt>Aktionseingaben</dt><dd>{Object.keys(fields.input).length ? namedFields(fields.input) : "Diese Aktion hat keine eigenen Eingaben."}</dd></div>
+        <div><dt>Konstanten</dt><dd>Feste Zahl, Text oder Wahr/Falsch.</dd></div>
+        <div><dt>Vergleiche</dt><dd>{operators.filter(([op]) => comparisonOps.has(op)).map(([, name]) => name).join(", ")}</dd></div>
+      </dl>
+      <p>Beispiel: {example.hint}</p>
+      {preview ? <code className="rf-expression">{preview}</code> : null}
+      <Button variant="quiet" disabled={disabled} onClick={() => onChange(example.formula)}><Plus size={14} />Beispiel übernehmen</Button>
+    </details>
+    <div className="rf-validation" aria-live="polite">{status ? <Notice error>Ausdruck ist noch nicht gültig: {status}</Notice> : <p><Check size={16} />Ausdruck gültig.</p>}</div>
+    <FormulaNode {...props} depth={0} label={props.label ?? "Ergebnis der Aktion"} />
+  </div>;
 }
 
 function FormulaNode({ value, onChange, fields, label, disabled = false, allowDice = true, allowKnowledge = true, depth }: Props & { depth: number }) {
   const prefix = useId(), kind = value.kind === "literal" ? `literal-${value.type}` : value.kind === "field" ? value.source : value.kind;
   const canNest = depth < RULE_LIMITS.formulaDepth;
   const child = (node: FormulaDraft, change: (v: FormulaDraft) => void, name: string) => <FormulaNode value={node} onChange={change} fields={fields} label={name} disabled={disabled} allowDice={allowDice} allowKnowledge={allowKnowledge} depth={depth + 1} />;
+  const ownError = checkFormula(value, fields), hasChildError = childDrafts(value).some(node => checkFormula(node, fields) !== null);
+  const localError = ownError && !hasChildError ? ownError : null;
   return <fieldset className="rf-formula-node" disabled={disabled} data-node-kind={value.kind}>
     <legend>{label}</legend>
     <div className="rf-formula-head"><label htmlFor={`${prefix}-kind`}>Baustein<select id={`${prefix}-kind`} value={kind} onChange={e => onChange(initialNode(e.target.value, fields))}>
@@ -44,6 +99,7 @@ function FormulaNode({ value, onChange, fields, label, disabled = false, allowDi
       {allowDice ? <option value="dice">Würfel</option> : null}<option value="binary" disabled={!canNest}>Berechnung / Vergleich</option><option value="unary" disabled={!canNest}>Vorzeichen / Verneinung</option>
       <option value="if" disabled={!canNest}>Wenn … dann … sonst</option><option value="call" disabled={!canNest}>Funktion / Wissen</option>
     </select></label><span className="rf-node-badge">{value.kind === "literal" ? value.type === "number" ? "Zahl" : value.type === "boolean" ? "Wahrheitswert" : "Text" : value.kind === "dice" ? "Zufall" : value.kind === "field" ? fields[value.source][value.field] ?? "Feld fehlt" : "Ausdruck"}</span></div>
+    {localError ? <Notice error>{localError}</Notice> : null}
 
     {value.kind === "literal" ? <label htmlFor={`${prefix}-value`}>Wert{value.type === "boolean" ? <select id={`${prefix}-value`} value={value.value} onChange={e => onChange({ ...value, value: e.target.value })}><option value="true">Wahr</option><option value="false">Falsch</option></select>
       : <input id={`${prefix}-value`} type={value.type === "number" ? "number" : "text"} step="any" value={value.value} required={value.type === "number"} maxLength={4096} onChange={e => onChange({ ...value, value: e.target.value })} />}</label> : null}
