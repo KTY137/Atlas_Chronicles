@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 64" width="128" height="64">
+<title>Werkbank</title>
+<rect x="8" y="14" width="112" height="36" fill="#a97f52" stroke="#2f2a22" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" rx="2"/><rect x="18" y="22" width="28" height="20" fill="#9aa0a8" stroke="#2f2a22" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" rx="2"/><line x1="74" y1="22" x2="74" y2="42" stroke="#7b828b" stroke-width="3" stroke-linecap="round"/><line x1="84" y1="24" x2="84" y2="40" stroke="#7b828b" stroke-width="3" stroke-linecap="round"/><line x1="94" y1="26" x2="94" y2="38" stroke="#7b828b" stroke-width="3" stroke-linecap="round"/>
+</svg>

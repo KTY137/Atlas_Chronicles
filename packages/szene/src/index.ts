@@ -37,3 +37,5 @@ export {
 } from "./containment.ts";
 export { TACTICAL_MAP_VERSION, TACTICAL_MAP_LIMITS, TacticalMapValidationError, parseBoundedMapJson, parseTacticalMapDocument, serializeTacticalMapDocument } from "./tactical-map.ts";
 export type { TacticalPoint, TacticalGrid, TacticalWall, TacticalPortal, TacticalLight, TacticalImageRef, TacticalGeometryElevation, TacticalMapDocumentV1 } from "./tactical-map.ts";
+export { ASSETPAKET_VERSION, ASSETPAKET_LIMITS, ASSET_MIME_TYPES, ASSET_ARTEN, AssetpaketValidationError, parseAssetpaket, serializeAssetpaket, assetVerweis, assetIndex, pruefeStampVerweise } from "./assetpaket.ts";
+export type { AssetMimeType, AssetArt, Lizenz, PaketAsset, AssetpaketV1, AufgeloestesAsset, UnaufgeloesterVerweis } from "./assetpaket.ts";

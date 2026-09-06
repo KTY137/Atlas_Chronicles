@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<title>Kiste</title>
+<rect x="14" y="14" width="36" height="36" fill="#c39b6d" stroke="#2f2a22" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" rx="2"/><line x1="14" y1="14" x2="50" y2="50" fill="none" stroke="#a97f52" stroke-width="1.6" stroke-linecap="round"/><line x1="50" y1="14" x2="14" y2="50" fill="none" stroke="#a97f52" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

@@ -26,7 +26,9 @@
     "test:watch": "vitest",
     "test:e2e": "npm run build && playwright test",
     "gate:boundaries": "node tools/gate-boundaries.mjs",
-    "gate": "npm run gate:boundaries && npm run typecheck && npm run test"
+    "gate:assets": "node --import tsx tools/gate-assets.mjs",
+    "assets:erzeugen": "node tools/assets/erzeuge-grundrisspaket.mjs",
+    "gate": "npm run gate:boundaries && npm run gate:assets && npm run typecheck && npm run test"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

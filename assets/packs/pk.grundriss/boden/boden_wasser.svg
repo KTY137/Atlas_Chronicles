@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<title>Flachwasser</title>
+<rect x="0" y="0" width="64" height="64" fill="#93b0bd"/><path d="M0 7.3 Q16 3.3 32 7.3 T64 7.3" fill="none" stroke="#6f95a6" stroke-width="1.6" stroke-linecap="round"/><path d="M0 26.7 Q16 22.7 32 26.7 T64 26.7" fill="none" stroke="#6f95a6" stroke-width="1.6" stroke-linecap="round"/><path d="M0 42.5 Q16 38.5 32 42.5 T64 42.5" fill="none" stroke="#6f95a6" stroke-width="1.6" stroke-linecap="round"/><path d="M0 55.4 Q16 51.4 32 55.4 T64 55.4" fill="none" stroke="#6f95a6" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
