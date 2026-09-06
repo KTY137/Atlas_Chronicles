@@ -409,3 +409,56 @@ bewusst nicht angefasst, um keine fremde In-flight-Arbeit zu beschädigen.
 `docker ps` zeigt `deploy-postgres-1`, `chronicle-media-livekit-1` und
 `chronicle-media-coturn-1` als laufende Container. Die Medienebene aus
 `07-shell-redesign.md` §5 ist real deployed, nicht nur spezifiziert.
+
+### Nachtrag zur Ledger-Korrektur: verifiziert, und eine eigene Fehldiagnose
+
+**Meine Ursachenvermutung oben war falsch.** Ich hatte den E2E-Ladefehler
+„mit hoher Wahrscheinlichkeit" auf einen Import-Zyklus in `packages/rules`
+geschoben. `atlas-chronicels-61` hat das nachgemessen und widerlegt:
+
+- Der Importgraph ist ein sauberer DAG (`validation ← knowledge ← formula ←
+  package ← package-v2 ← supported-migration`); keine Datei importiert
+  `index.ts` zurück.
+- `node --import tsx -e "import('@chronicle/rules')"` liefert 37 Exporte;
+  `parseSupportedRulePackage` ist eine `function`.
+
+Die wirkliche Ursache war ein **zerrissener Arbeitsbaum**: `index.ts` war mit
+der Re-Export-Zeile bereits gespeichert, `package-v2.ts` noch unversioniert und
+mitten im Schreiben. Bei mehreren Agenten in einem Checkout lesen `vitest` und
+Playwright verschiedene Momente derselben Platte. **Lehre für das nächste Mal:
+Bei einem Ladefehler auf fremder Fläche zuerst `git status` auf das betroffene
+Paket, bevor man eine Architekturursache vermutet.**
+
+### Die Leinwand trägt — VERIFIED, nicht mehr UNVERIFIED
+
+Nach der Reparatur selbst ausgeführt, gegen Postgres und den echten Client:
+
+```
+npx playwright test e2e/tactical.spec.ts e2e/tactical-performance.spec.ts
+  ok  real UVTT import, region knowledge, preparation, three live views,
+      commands and native persistence                              22.8s
+  ok  a real stale-scope tile denial disposes the old authorized image
+      even while projection polling fails                           3.4s
+  2 passed (30.4s)
+
+ATLAS_TACTICAL_PERF=1 npx playwright test e2e/tactical-performance.spec.ts
+  ok  100 persisted tokens on the real tactical board              25.9s
+  ok  300 persisted tokens on the real tactical board              33.3s
+  ok  1000 persisted tokens on the real tactical board             38.5s
+  ok  projected reader and rendering-unavailable DOM path retain
+      real commands                                                 7.4s
+  4 passed (1.9m)
+```
+
+Damit ist die **älteste unbezahlte Schuld des Projekts nicht nur gebaut,
+sondern belegt**: UVTT-Import (das Kartenformat, über das Roll20- und
+Foundry-Inhalte hereinkommen), Regionswissen, Vorbereitung, **drei Live-Ansichten**
+auf derselben Szene, Befehle und native Persistenz — in einem Durchlauf.
+`03-triumph-ui-direction.md` budgetierte 300 Szenen-Token; das Brett hält
+**1000**. Der DOM-Pfad ohne verfügbares Rendering behält seine Befehle, also
+trägt auch die Outline-Projektion.
+
+Offen bleibt ausdrücklich: Die Perf-Zahlen stammen von dieser Maschine, nicht
+von der in `03` genannten Referenzhardware (`referenceHardware.qualified` ist
+`false`, der Test nennt `S-K1/S-T1/G-PERF1` weiterhin als nicht geschlossen).
+Belegt ist „es trägt hier", nicht „es trägt auf dem Zielgerät".
