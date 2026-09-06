@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+
+    "paths": {
+      "@chronicle/protocol": ["./packages/protocol/src/index.ts"],
+      "@chronicle/core": ["./packages/core/src/index.ts"],
+      "@chronicle/chronik": ["./packages/chronik/src/index.ts"],
+      "@chronicle/projection": ["./packages/projection/src/index.ts"],
+      "@chronicle/szene": ["./packages/szene/src/index.ts"],
+      "@chronicle/forge": ["./packages/forge/src/index.ts"],
+      "@chronicle/io": ["./packages/io/src/index.ts"],
+      "@chronicle/server": ["./packages/server/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts", "tools/**/*.mjs"],
+  "exclude": ["node_modules", "**/dist", "design/**"]
+}
