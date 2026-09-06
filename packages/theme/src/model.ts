@@ -1,7 +1,7 @@
 /** Published V1 is closed data. Adding fields requires an explicit new version. */
 export const THEME_VERSION = 1 as const;
 export const THEME_LIMITS = Object.freeze({ bytes: 64 * 1024, depth: 12, nodes: 4096, name: 100, creator: 200, notice: 2000 });
-export const THEME_PRESET_IDS = Object.freeze(["Cyberpunk", "Medieval", "Fantasy", "PixelArt"] as const);
+export const THEME_PRESET_IDS = Object.freeze(["Cyberpunk", "Medieval", "Fantasy", "PixelArt", "Aurora"] as const);
 export type ThemePresetId = typeof THEME_PRESET_IDS[number];
 /** CSS token names without `--`. Legacy --muted/--surface-1 are renderer aliases,
  * not independently editable colors. Line tokens are decorative; control-line is meaningful. */

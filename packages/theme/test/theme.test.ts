@@ -145,7 +145,7 @@ describe("declared contrast evidence", () => {
     expect(pixel.typography).toEqual({ display: "mono", body: "mono", mono: "mono" });
     expect(pixel.geometry).toMatchObject({ radius: 0, border: 2, edges: "pixel", icons: "pixel" });
     expect(pixel.sampling).toBe("nearest"); expect(resolveTheme(pixel).motion.cadence).toBe("steps");
-    expect(new Set(THEME_PRESET_IDS.map(id => serializeThemeManifest(THEME_PRESETS[id]))).size).toBe(4);
+    expect(new Set(THEME_PRESET_IDS.map(id => serializeThemeManifest(THEME_PRESETS[id]))).size).toBe(5);
     expect(THEME_PRESETS.Medieval.colors.bg).not.toBe(THEME_PRESETS.Fantasy.colors.bg);
     expect(THEME_PRESETS.Cyberpunk.geometry.edges).not.toBe(THEME_PRESETS.Fantasy.geometry.edges);
     expect(PUBLIC_DEFAULT_THEME).toBe(THEME_PRESETS.Fantasy);

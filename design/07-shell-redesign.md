@@ -348,3 +348,35 @@ Weitere Zusicherungen, alle geprüft:
   zu verlieren — die Sitzung läuft weiter, aber der Nutzer weiß, dass ein
   Neuladen die Änderungen kostet.
 - Der Importer schreibt nie in fremde Systeme; MediaWiki wird nur gelesen.
+
+### 7.1 Die drei Looks im Produkt — Stand 2026-09-06
+
+Der Prototyp trägt alle drei; das Produkt trug bisher zwei. Abgleich zwischen
+`design/shell-lab` und `packages/theme`:
+
+| Ratifizierter Look (§7) | Produkt-Preset | Stand |
+|---|---|---|
+| **Obsidian** — Basalt, eine Glut-Akzentfarbe | `Fantasy` | war da (`packages/ui/src/tokens.css`: „extracted from the ratified Obsidian shell reference") |
+| **Vellum** — heller Foliant | `Medieval` | war da |
+| **Aurora** — Indigo, Teal, chromatische Tiefe | `Aurora` | **neu ergänzt** |
+
+Aurora ist damit nicht länger nur Laborware. Es wurde in das vorhandene
+Theme-System gelegt statt daneben: `THEME_PRESET_IDS` kennt es, und weil
+`AppearanceSettings` und `ThemeWorkbench` über diese Liste iterieren, erscheint
+es ohne eine einzige Änderung am Client in der Look-Auswahl und als Vorlage.
+
+**Nachweis statt Zusicherung.** Der Produktvertrag verlangt, dass *jedes*
+Preset *jede* deklarierte Kontrastpaarung besteht
+(`packages/theme/src/contrast.ts`, WCAG 2.2 sRGB): Text, Muted, Faint, Links
+und Akzent gegen zwölf Untergründe, Statusfarben gegen ihre weichen Flächen,
+Fokus und Steuerlinien als Nicht-Text. Aurora besteht **135 von 135 Paaren**
+(entworfen und geprüft mit `tools/aurora-contrast.mjs`).
+
+Gates nach der Ergänzung: `tsc` grün · **814 Tests grün** (0 rot) ·
+`gate:boundaries` grün (264 Dateien, 0 Verstöße) · `gate:assets` grün ·
+Client-Build grün.
+
+Was Aurora im Produkt **nicht** mitbringt: Space Grotesk und Manrope stehen in
+`THEME_FONT_IDS` nicht zur Verfügung; das Preset nutzt `system`/`plex`. Die
+Glasmaterialität aus dem Labor ist Sache der Atmosphäre-Regler, nicht des
+Farbpresets. Beides ist bewusst so und keine stille Kürzung.
