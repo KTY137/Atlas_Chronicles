@@ -3,7 +3,10 @@
 ## Latest handoff — HTBAH, tactical entities and desktop recovery
 
 This section supersedes the older ownership and delivery notes below. Root now participates
-in `coord/PROTOCOL.md` as `codex-root`; read its chat and actual path claims before editing.
+in `coord/PROTOCOL.md` as `codex-root`; read its chat and actual path claims before editing
+in the shared checkout. Those coordination files belong to another session and are still
+untracked/excluded from this checkpoint; an isolated checkout must route through the root
+shared workspace until their owner commits the coordination tools.
 Do not stage external Claude's ActorWorkbench/Week/Channel/AtlasView/ImportView/styles work
 or broad source globs. Several earlier external commits included root integration seams
 before their new dependencies; the next root checkpoint must include those dependencies.

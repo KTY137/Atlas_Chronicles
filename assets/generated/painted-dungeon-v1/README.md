@@ -95,4 +95,3 @@ C:\Users\Administrator\.codex\generated_images\01a077c4-f1e4-7750-a5d5-c5e841d40
 - `exec-6dfb80ff-813f-43a5-afe5-bd6adb9fca22.png` -> `stone-floor.png`
 - `exec-d8fd1a38-28e6-403d-afd8-959314f6e46c.png` -> `wooden-table.png`
 - `exec-ac7ecbc7-edf7-4019-ab51-0d3d49d9ed56.png` -> `rock-rubble.png`
-

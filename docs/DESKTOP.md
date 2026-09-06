@@ -201,3 +201,8 @@ configure DNS, certificates, firewall, router, TURN or a relay.
 
 The adopted [desktop design and attack rounds](../design/iterations/desktop-shell-20260906.md)
 remain the full scope; this milestone does not replace them with a wrapper.
+
+The current standalone artifact record was enriched with the four application-resource hashes
+for this audit. `tools/package.mjs` does not yet emit those `appResources` fields automatically;
+that automation belongs to the following packaging refinement. The cited hashes are verified
+for this particular artifact, not claimed output from every invocation of the current packager.
