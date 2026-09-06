@@ -21,7 +21,12 @@ import type { Db } from "../db/index.ts";
  * Both are exempt from the rate limiter: a probe that gets 429 during a traffic spike would
  * report exactly the false outage this split exists to prevent.
  *
- * `/api/health` is left untouched for the callers that already use it.
+ * `/api/health` still exists unchanged, but be precise about who calls it: as of 2026-09-06
+ * that is only the test suite — `rate-limit.test.ts` uses it as a cheap endpoint whose throttling
+ * it asserts, and `application-shutdown.test.ts` as an in-flight request. Nothing in production
+ * reaches it: the image probes `/api/live`, the compose file probes `/api/ready`, and the client
+ * never calls it. It is kept because those tests depend on its exact behaviour, including that it
+ * is deliberately NOT exempt from the rate limiter.
  */
 
 /** How long a readiness probe may wait before it reports "not ready" rather than hanging. */

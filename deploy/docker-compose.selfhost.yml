@@ -34,13 +34,25 @@ services:
       DB_CONNECT_TIMEOUT_MS: ${DB_CONNECT_TIMEOUT_MS:-}
       DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-}
       DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-}
-      # All four empty → app runs without the media layer (explicit in /api/health of the media routes).
+      # All four empty → app runs without the media layer, and the media routes say so explicitly.
       LIVEKIT_URL: ${LIVEKIT_URL:-}
       LIVEKIT_API_URL: ${LIVEKIT_API_URL:-}
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     ports:
       - "${CHRONICLE_BIND:-127.0.0.1}:${CHRONICLE_PORT:-3000}:3000"
+    # Readiness here, and that is a different question than the image's own probe. The image
+    # checks /api/live because that decides RESTARTS, and a restart repairs neither a database
+    # that is down nor one that is merely busy. Compose needs to know when the stack is actually
+    # usable, so that `up --wait` returns after the migrations have run instead of as soon as the
+    # process binds its port. Compose does not restart on unhealthy, so this cannot amplify load
+    # the way an orchestrator probe would. See packages/server/src/http/health.ts
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 12
     read_only: true
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
