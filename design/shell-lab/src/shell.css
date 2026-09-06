@@ -2151,3 +2151,186 @@ button {
     font-size: 12.5px;
   }
 }
+
+/* ---------------------------------------------------------- Welt: Import */
+
+.import-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 32px 72px;
+}
+
+.import-lead {
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1.65;
+  max-width: 52ch;
+  margin-bottom: 26px;
+}
+
+.import-field {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.import-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 15px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+}
+
+.import-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.import-field .btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.import-examples {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.import-examples .chip {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.import-examples .chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.import-card {
+  padding: 20px 22px;
+  border-radius: var(--radius-m);
+  border: var(--card-border);
+  background: var(--surface);
+  margin-bottom: 18px;
+}
+
+.import-card.ok {
+  border-color: color-mix(in srgb, var(--ok) 55%, transparent);
+}
+
+.import-card.danger {
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+
+.import-card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.import-card.danger .import-card-head {
+  color: var(--danger);
+}
+
+.import-card.ok .import-card-head {
+  color: var(--ok);
+}
+
+.import-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 7px 16px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.import-facts dt {
+  color: var(--text-faint);
+}
+
+.import-facts dd {
+  color: var(--text);
+}
+
+.import-facts dd.mono {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  word-break: break-all;
+}
+
+.import-terms {
+  padding: 13px 15px;
+  border-radius: var(--radius-s);
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+.import-terms strong {
+  color: var(--text);
+}
+
+.import-hint {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+
+.import-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.import-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--t-state);
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+[data-motion="reduced"] .spin {
+  animation: none;
+}
+
+@media (max-width: 640px) {
+  .import-wrap {
+    padding: 28px 16px 56px;
+  }
+
+  .import-field {
+    flex-direction: column;
+  }
+}

@@ -118,15 +118,18 @@ function build(): Corpus {
       wikitext,
       image: imported?.image ? (mediaByFile.get(imported.image) ?? null) : null,
       lastEdit: edit?.editedAt ?? imported?.lastEdit ?? "",
-      origin: imported
-        ? {
-            source: imported.source,
-            license: imported.license,
-            revision: imported.revision,
-          }
-        : null,
-      edited: Boolean(edit) && Boolean(imported),
-      created: Boolean(edit?.created) || !imported,
+      origin: edit?.origin
+        ? edit.origin
+        : imported
+          ? {
+              source: imported.source,
+              license: imported.license,
+              revision: imported.revision,
+            }
+          : null,
+      /* Live importiert zaehlt nicht als lokal bearbeitet. */
+      edited: Boolean(edit) && !edit.origin && Boolean(imported),
+      created: Boolean(edit?.created) || (!imported && !edit?.origin),
       backlinks: [],
       redLinks: [],
       words: countWords(parsed),

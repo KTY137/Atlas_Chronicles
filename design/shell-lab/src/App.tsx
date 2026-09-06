@@ -14,6 +14,7 @@ import { Kanal } from "./stages/Kanal";
 import { Schmiede } from "./stages/Schmiede";
 import { Netz } from "./stages/Netz";
 import { Palette } from "./shell/Palette";
+import { WeltImport } from "./stages/WeltImport";
 import { DEFAULT_ARTICLE } from "./wiki";
 import { subscribe } from "./wikiStore";
 
@@ -66,6 +67,9 @@ export function App() {
     return value?.trim() ? value : DEFAULT_ARTICLE;
   });
   const [articleHistory, setArticleHistory] = useState<string[]>([]);
+  const [weltImport, setWeltImport] = useState(
+    () => new URLSearchParams(window.location.search).get("welt") === "import",
+  );
   const [weltIndex, setWeltIndex] = useState(
     () => new URLSearchParams(window.location.search).get("welt") === "index",
   );
@@ -100,7 +104,8 @@ export function App() {
     if (voiceDown) params.set("voice", "down");
     if (effectiveStage === "welt") {
       params.set("artikel", article);
-      if (weltIndex) params.set("welt", "index");
+      if (weltImport) params.set("welt", "import");
+      else if (weltIndex) params.set("welt", "index");
     }
     window.history.replaceState(null, "", `?${params.toString()}`);
   }, [
@@ -113,6 +118,7 @@ export function App() {
     voiceDown,
     article,
     weltIndex,
+    weltImport,
   ]);
 
   /* ⌘K / Strg+K öffnet die Omnibox — der Ersatz für eine Artikelspalte. */
@@ -131,6 +137,7 @@ export function App() {
     setArticleHistory((past) => (next === article ? past : [...past, article]));
     setArticle(next);
     setWeltIndex(false);
+    setWeltImport(false);
     setStage("welt");
   };
   const backArticle = () => {
@@ -183,6 +190,17 @@ export function App() {
       case "heute":
         return <Heute role={role} goTo={setStage} />;
       case "welt":
+        if (weltImport) {
+          return (
+            <WeltImport
+              onClose={() => {
+                setWeltImport(false);
+                setWeltIndex(true);
+              }}
+              onOpenArticle={openArticle}
+            />
+          );
+        }
         return (
           <Welt
             title={article}
@@ -192,6 +210,7 @@ export function App() {
             onBack={backArticle}
             showIndex={weltIndex}
             onShowIndex={setWeltIndex}
+            onImport={() => setWeltImport(true)}
           />
         );
       case "tisch":
@@ -206,7 +225,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // revision gehört in die Abhängigkeiten: Ein Schreibvorgang baut den
     // Korpus neu auf, und ohne ihn liefert der Memo die veraltete Bühne.
-  }, [effectiveStage, role, selection, voiceDown, article, articleHistory, weltIndex, revision]);
+  }, [effectiveStage, role, selection, voiceDown, article, articleHistory, weltIndex, weltImport, revision]);
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import {
   ArrowLeft,
   Check,
+  Download,
   LibraryBig,
   Pencil,
   RotateCcw,
@@ -33,6 +34,7 @@ interface Props {
   /** „__index__" zeigt das Verzeichnis statt eines Artikels. */
   showIndex: boolean;
   onShowIndex: (show: boolean) => void;
+  onImport: () => void;
 }
 
 export const WELT_INDEX = "__index__";
@@ -45,6 +47,7 @@ export function Welt({
   onBack,
   showIndex,
   onShowIndex,
+  onImport,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -57,7 +60,13 @@ export function Welt({
   }, [title, showIndex]);
 
   if (showIndex) {
-    return <Index onOpen={onOpen} onClose={() => onShowIndex(false)} />;
+    return (
+      <Index
+        onOpen={onOpen}
+        onClose={() => onShowIndex(false)}
+        onImport={onImport}
+      />
+    );
   }
 
   /* Roter Link: der Artikel existiert noch nicht. */
@@ -301,9 +310,11 @@ export function Welt({
 function Index({
   onOpen,
   onClose,
+  onImport,
 }: {
   onOpen: (title: string) => void;
   onClose: () => void;
+  onImport: () => void;
 }) {
   const articles = allArticles();
   const stats = corpusStats();
@@ -328,10 +339,16 @@ function Index({
             {stats.edited ? ` · ${stats.edited} lokal bearbeitet` : ""}
             {stats.created ? ` · ${stats.created} hier entstanden` : ""}
           </p>
-          <button type="button" className="chip" onClick={onClose}>
-            <ArrowLeft size={11} />
-            Zurück zum Artikel
-          </button>
+          <div className="article-toolbar" style={{ marginTop: 4 }}>
+            <button type="button" className="chip" onClick={onClose}>
+              <ArrowLeft size={11} />
+              Zurück zum Artikel
+            </button>
+            <button type="button" className="chip accent" onClick={onImport}>
+              <Download size={11} />
+              Wiki importieren
+            </button>
+          </div>
         </header>
 
         {[...byKind.entries()]

@@ -305,3 +305,46 @@ sind:
 
 Im Lab liegt der Schreibspeicher in `localStorage`; im Produkt liegt er auf dem
 Server hinter `Sicht`. Die Grenze ist bewusst gezogen und benannt.
+
+### 11.6 Der Live-Import ist gebaut — Adresse einfügen genügt
+
+Nachtrag 2026-09-06. §11.3 hatte den Mechanismus nur *belegt*; jetzt existiert
+die Oberfläche (`?stage=welt&welt=import`, erreichbar aus dem Verzeichnis).
+
+Ablauf: Adresse einfügen → **Wiki prüfen** → Chronicle ermittelt den Endpunkt
+selbst und zeigt, was dort steht (Name, Artikelzahl, Bilder, Sprache, Lizenz)
+→ **importieren** mit Fortschritt und Abbruch.
+
+Die Endpunkt-Erkennung probiert der Reihe nach `<pfad>/api.php`,
+`<pfad>/w/api.php`, `<origin>/w/api.php`, `<origin>/api.php`. Damit trägt
+derselbe Weg Fandom (`/de/api.php`), Wikipedia (`/w/api.php`) und eigene
+Instanzen, ohne dass jemand einen Endpunkt kennen muss.
+
+**Gegen das echte Eron-Wiki nachgewiesen** (`scripts/e2e-import.mjs`, 10/10
+grün, echte Netzanfragen aus dem Browser):
+
+| | |
+|---|---|
+| Erkannt | Eron Wiki · de · 74 Artikel · 38 Bilder |
+| Lizenz aus `rightsinfo` | CC-BY-SA |
+| Endpunkt selbst gefunden | `eron.fandom.com/de/api.php` |
+| Importiert | **73 Artikel, 303 kB Text** |
+| Herkunft je Artikel | Quelle, Lizenz, Revisionsnummer |
+
+**73 statt 74 ist kein Verlust, sondern der Beweis, dass live gelesen wird.**
+„Kaiserliche Flotte" ist seit der Fixture-Ernte am 2026-07-27 zu einer
+Weiterleitung auf „Kaiserliche Marine" geworden; Weiterleitungen werden
+bewusst nicht importiert (`gapfilterredir=nonredirects`). Der Import bildet
+das Wiki von heute ab, nicht das von damals.
+
+Weitere Zusicherungen, alle geprüft:
+
+- Importierte Artikel tragen die Lizenz **sichtbar am Artikel**
+  („Prosa: eron.fandom.com (de) · CC-BY-SA · Revision 1154"), nicht im
+  Kleingedruckten.
+- **Live-Import verwerfen** entfernt ausschließlich Importiertes; selbst
+  Geschriebenes bleibt stehen.
+- Scheitert der Browserspeicher (Kontingent), sagt Chronicle das, statt still
+  zu verlieren — die Sitzung läuft weiter, aber der Nutzer weiß, dass ein
+  Neuladen die Änderungen kostet.
+- Der Importer schreibt nie in fremde Systeme; MediaWiki wird nur gelesen.
