@@ -15,6 +15,8 @@ import { Schmiede } from "./stages/Schmiede";
 import { Netz } from "./stages/Netz";
 import { Palette } from "./shell/Palette";
 import { WeltImport } from "./stages/WeltImport";
+import { Journal } from "./stages/Journal";
+import { Sammlungen } from "./stages/Sammlungen";
 import { DEFAULT_ARTICLE } from "./wiki";
 import { subscribe } from "./wikiStore";
 
@@ -67,8 +69,15 @@ export function App() {
     return value?.trim() ? value : DEFAULT_ARTICLE;
   });
   const [articleHistory, setArticleHistory] = useState<string[]>([]);
-  const [weltImport, setWeltImport] = useState(
-    () => new URLSearchParams(window.location.search).get("welt") === "import",
+  /* Welt traegt vier Zustaende: Artikel, Verzeichnis, Import, Journale,
+     Sammlungen — alle ueber die Flaeche erreichbar, keiner im Rail (07 §12). */
+  const [weltSub, setWeltSub] = useState<"artikel" | "import" | "journal" | "sammlungen">(
+    () => {
+      const value = new URLSearchParams(window.location.search).get("welt");
+      return value === "import" || value === "journal" || value === "sammlungen"
+        ? value
+        : "artikel";
+    },
   );
   const [weltIndex, setWeltIndex] = useState(
     () => new URLSearchParams(window.location.search).get("welt") === "index",
@@ -104,7 +113,7 @@ export function App() {
     if (voiceDown) params.set("voice", "down");
     if (effectiveStage === "welt") {
       params.set("artikel", article);
-      if (weltImport) params.set("welt", "import");
+      if (weltSub !== "artikel") params.set("welt", weltSub);
       else if (weltIndex) params.set("welt", "index");
     }
     window.history.replaceState(null, "", `?${params.toString()}`);
@@ -118,7 +127,7 @@ export function App() {
     voiceDown,
     article,
     weltIndex,
-    weltImport,
+    weltSub,
   ]);
 
   /* ⌘K / Strg+K öffnet die Omnibox — der Ersatz für eine Artikelspalte. */
@@ -137,7 +146,7 @@ export function App() {
     setArticleHistory((past) => (next === article ? past : [...past, article]));
     setArticle(next);
     setWeltIndex(false);
-    setWeltImport(false);
+    setWeltSub("artikel");
     setStage("welt");
   };
   const backArticle = () => {
@@ -190,16 +199,22 @@ export function App() {
       case "heute":
         return <Heute role={role} goTo={setStage} />;
       case "welt":
-        if (weltImport) {
+        if (weltSub === "import") {
           return (
             <WeltImport
               onClose={() => {
-                setWeltImport(false);
+                setWeltSub("artikel");
                 setWeltIndex(true);
               }}
               onOpenArticle={openArticle}
             />
           );
+        }
+        if (weltSub === "journal") {
+          return <Journal role={role} onOpenArticle={openArticle} />;
+        }
+        if (weltSub === "sammlungen") {
+          return <Sammlungen onOpenArticle={openArticle} />;
         }
         return (
           <Welt
@@ -210,7 +225,9 @@ export function App() {
             onBack={backArticle}
             showIndex={weltIndex}
             onShowIndex={setWeltIndex}
-            onImport={() => setWeltImport(true)}
+            onImport={() => setWeltSub("import")}
+            onJournal={() => setWeltSub("journal")}
+            onSammlungen={() => setWeltSub("sammlungen")}
           />
         );
       case "tisch":
@@ -225,7 +242,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // revision gehört in die Abhängigkeiten: Ein Schreibvorgang baut den
     // Korpus neu auf, und ohne ihn liefert der Memo die veraltete Bühne.
-  }, [effectiveStage, role, selection, voiceDown, article, articleHistory, weltIndex, weltImport, revision]);
+  }, [effectiveStage, role, selection, voiceDown, article, articleHistory, weltIndex, weltSub, revision]);
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>

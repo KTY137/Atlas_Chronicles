@@ -3,6 +3,8 @@ import {
   ArrowLeft,
   Check,
   Download,
+  FolderTree,
+  NotebookText,
   LibraryBig,
   Pencil,
   RotateCcw,
@@ -35,6 +37,8 @@ interface Props {
   showIndex: boolean;
   onShowIndex: (show: boolean) => void;
   onImport: () => void;
+  onJournal: () => void;
+  onSammlungen: () => void;
 }
 
 export const WELT_INDEX = "__index__";
@@ -48,6 +52,8 @@ export function Welt({
   showIndex,
   onShowIndex,
   onImport,
+  onJournal,
+  onSammlungen,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -65,6 +71,8 @@ export function Welt({
         onOpen={onOpen}
         onClose={() => onShowIndex(false)}
         onImport={onImport}
+        onJournal={onJournal}
+        onSammlungen={onSammlungen}
       />
     );
   }
@@ -311,10 +319,14 @@ function Index({
   onOpen,
   onClose,
   onImport,
+  onJournal,
+  onSammlungen,
 }: {
   onOpen: (title: string) => void;
   onClose: () => void;
   onImport: () => void;
+  onJournal: () => void;
+  onSammlungen: () => void;
 }) {
   const articles = allArticles();
   const stats = corpusStats();
@@ -343,6 +355,14 @@ function Index({
             <button type="button" className="chip" onClick={onClose}>
               <ArrowLeft size={11} />
               Zurück zum Artikel
+            </button>
+            <button type="button" className="chip" onClick={onJournal}>
+              <NotebookText size={11} />
+              Journale
+            </button>
+            <button type="button" className="chip" onClick={onSammlungen}>
+              <FolderTree size={11} />
+              Sammlungen
             </button>
             <button type="button" className="chip accent" onClick={onImport}>
               <Download size={11} />

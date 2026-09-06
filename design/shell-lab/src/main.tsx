@@ -12,6 +12,8 @@ import "@fontsource/ibm-plex-mono/500.css";
 
 import "./tokens.css";
 import "./shell.css";
+import "./journal.css";
+import "./sammlungen.css";
 
 import { App } from "./App";
 

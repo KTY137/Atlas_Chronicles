@@ -1,0 +1,278 @@
+/* ------------------------------------------------------------ Kompendium */
+/* Nur Variablen aus tokens.css — keine festen Farben, drei Looks tragen
+   dieselbe Bühne. Layoutmuster folgt Schmiede/WeltImport. */
+
+.komp-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 32px 72px;
+}
+
+.komp-lead {
+  color: var(--text-muted);
+  font-size: 15.5px;
+  line-height: 1.65;
+  max-width: 60ch;
+  margin: 8px 0 22px;
+}
+
+.komp-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.komp-filters button.chip {
+  cursor: pointer;
+  transition: border-color var(--t-response), color var(--t-response),
+    background var(--t-response);
+}
+
+.komp-filters button.chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.komp-filters button.chip[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.komp-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.komp-pkg-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  text-align: left;
+  transition: border-color var(--t-response), transform var(--t-response);
+}
+
+.komp-pkg-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.komp-pkg-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.komp-pkg-head .name {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.komp-pkg-head .version {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.komp-pkg-meta {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.komp-badge-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.komp-pin-note {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  word-break: break-all;
+}
+
+.komp-blocked-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--danger);
+  line-height: 1.55;
+}
+
+.komp-blocked-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.komp-detail-head {
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.komp-detail-head h1 {
+  font-size: clamp(24px, 3.6vw, 34px);
+  margin: 6px 0 8px;
+}
+
+.komp-detail-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+}
+
+.komp-section {
+  margin-bottom: 22px;
+}
+
+.komp-section h3 {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 10px;
+}
+
+.komp-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.komp-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 13px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text-faint);
+  margin-bottom: 14px;
+}
+
+.komp-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+}
+
+.komp-search input::placeholder {
+  color: var(--text-faint);
+}
+
+.komp-entry-count {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 12px;
+}
+
+.komp-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.komp-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--radius-m);
+  border: var(--card-border);
+  background: var(--surface);
+  text-align: left;
+  transition: border-color var(--t-response), transform var(--t-response);
+}
+
+.komp-entry-row:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.komp-entry-row .title {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.komp-entry-row .sub {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.komp-empty {
+  padding: 22px 4px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.komp-schaden {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.komp-schaden span {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  color: var(--text-muted);
+}
+
+.komp-attacks {
+  margin: 0 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .komp-wrap {
+    padding: 28px 16px 56px;
+  }
+
+  .komp-shelf {
+    grid-template-columns: 1fr;
+  }
+
+  .komp-entry-row {
+    flex-wrap: wrap;
+  }
+
+  .komp-entry-row .sub {
+    margin-left: 0;
+  }
+}
