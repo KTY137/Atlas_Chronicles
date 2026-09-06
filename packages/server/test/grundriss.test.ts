@@ -6,6 +6,7 @@ import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createTactical } from "../src/domain/tactical.ts";
+import { createGameplay } from "../src/domain/gameplay.ts";
 
 /**
  * The generator, reachable.
@@ -123,5 +124,25 @@ describe("die eigene Erzeugung, an das Produkt angeschlossen", () => {
     expect(response.statusCode).toBeGreaterThanOrEqual(400);
     const maps = await createTactical(db).listMaps(gm, campaign);
     expect(maps.every(map => map.name !== "Heimlich")).toBe(true);
+  });
+  it("tells the play view there is no raster, so the renderer draws the geometry solid", async () => {
+    // The defect this pins: every scene builder set `rasterScope` unconditionally from a content
+    // hash. For a generated map — pure geometry, `background: null` — that made the renderer treat
+    // the cells as an 8 % tint over a photograph that does not exist, and made the canvas request
+    // tiles for it. A generated map would have looked like a blank page: the exact failure mode
+    // "no fake previews" is about, arrived at honestly through a wrong assumption rather than a
+    // shortcut. `rasterDigest` cannot answer the question — it is a hash of the visibility scope
+    // and is always present.
+    const created = (await post("/tactical/generate", body({ name: "Sichtprobe" }))).json();
+    const game = createGameplay(db), tactical = createTactical(db);
+    const scene = await game.createScene(gm, campaign, { name: "Sichtprobe", entryIds: [], fictionDate: "Heute" });
+    await tactical.savePlan(gm, campaign, scene.id, {
+      commandId: randomUUID(), expectedVersion: 0, mapId: created.ack.subjectId, mapRevision: 1, tokens: [],
+    });
+    await game.startScene(gm, campaign, scene.id);
+    const view = await tactical.getActive(gm, campaign);
+    expect(view).not.toBeNull();
+    expect(view!.hatRaster).toBe(false);
+    expect(view!.regions.length).toBeGreaterThan(0);
   });
 });

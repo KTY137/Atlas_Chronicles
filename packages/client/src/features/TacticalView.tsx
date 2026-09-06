@@ -8,10 +8,12 @@ import { useCommand } from "./game-api";
 import { TacticalCanvas } from "./TacticalCanvas";
 import { TacticalPreparation } from "./TacticalPreparation";
 import { TacticalImport } from "./TacticalImport";
+import { TacticalObjectList } from "./TacticalObjectList";
+import { mapObjectWindow, objectKey } from "./tactical-entities";
 import "./tactical.css";
 
 type Page = "live" | "prepare" | "import";
-export function TacticalView({ campaignId, gm, revision, onDirty }: { campaignId: string; gm: boolean; revision: number; onDirty: (value: boolean) => void }) {
+export function TacticalView({ campaignId, gm, revision, onDirty, onOpenEntry }: { campaignId: string; gm: boolean; revision: number; onDirty: (value: boolean) => void; onOpenEntry: (id: string) => void }) {
   const [page, setPage] = useState<Page>("live"), [dirty, setDirty] = useState(false), [local, setLocal] = useState(0);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
   const refresh = useCallback(() => setLocal(v => v + 1), []);
@@ -24,25 +26,32 @@ export function TacticalView({ campaignId, gm, revision, onDirty }: { campaignId
   }}>{label}</Button>)}</div> : null}
     {page === "prepare" && gm ? <TacticalPreparation campaignId={campaignId} revision={revision + local} onChanged={refresh} onDirty={report} />
       : page === "import" && gm ? <TacticalImport campaignId={campaignId} onChanged={refresh} onDirty={report} />
-      : <LiveBoard campaignId={campaignId} revision={revision + local} onChanged={refresh} onDirty={report} />}
+      : <LiveBoard campaignId={campaignId} gm={gm} revision={revision + local} onChanged={refresh} onDirty={report} onOpenEntry={onOpenEntry} />}
   </div>;
 }
 
-function LiveBoard({ campaignId, revision, onChanged, onDirty }: { campaignId: string; revision: number; onChanged: () => void; onDirty: (value: boolean) => void }) {
+function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpenEntry }: { campaignId: string; gm: boolean; revision: number; onChanged: () => void; onDirty: (value: boolean) => void; onOpenEntry: (id: string) => void }) {
   const board = useResource<Board | null>(apiPath(campaignId, "/tactical/active"), revision, 6000);
   const [grid, setGrid] = useState(true), [snap, setSnap] = useState(true), [selected, setSelected] = useState(""), [drafts, setDrafts] = useState<Record<string, boolean>>({});
   const [epochs, setEpochs] = useState<Record<string, number>>({});
+  const [selectedObject, setSelectedObject] = useState("");
+  const [invalidated, setInvalidated] = useState<Board | null>(null);
   const task = useTask(), command = useCommand();
   const report = useCallback((id: string, dirty: boolean) => setDrafts(old => ({ ...old, [id]: dirty })), []);
   useEffect(() => { onDirty(Object.values(drafts).some(Boolean)); }, [drafts, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
-  const data = board.data;
+  const data = board.data === invalidated || board.data?.gm !== gm ? null : board.data;
+  const objects = data?.entities ?? [];
+  const visibleObjects = useMemo(() => data ? mapObjectWindow(data.entities, selectedObject, data.size[0], data.size[1]) : [], [data, selectedObject]);
+  const chosenObject = objects.find(o => objectKey(o) === selectedObject);
+  const focusedObject = visibleObjects.find(o => objectKey(o) === selectedObject);
+  useEffect(() => { if (!chosenObject) setSelectedObject(""); }, [chosenObject]);
   const scene = useMemo<ProjectedMapScene | null>(() => data ? {
-    id: data.sessionId, width: data.size[0], height: data.size[1], rasterScope: data.rasterDigest,
-    cells: data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: [],
+    id: data.sessionId, width: data.size[0], height: data.size[1], ...(data.hatRaster ? { rasterScope: data.rasterDigest } : {}),
+    cells: data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, entryId: o.entryId })),
     tokens: data.tokens.map(t => ({ id: t.id, x: t.x, y: t.y, label: t.name, ...(t.version === null ? {} : { revision: t.version }), radius: Math.min(40, Math.max(7, 11 * t.scale)), movable: data.active && t.canMove && !task.busy, color: t.canMove ? 0xebc887 : 0x81b8d1 })),
     ...(grid ? { grid: data.grid } : {}), lines: data.gm ? data.walls?.map(w => ({ id: w.id, points: w.points })) : [],
-  } : null, [data, grid, task.busy]);
+  } : null, [data, grid, task.busy, visibleObjects]);
   const move = async (token: TacticalToken, values: Omit<TacticalMoveInput, "commandId" | "expectedVersion">) => {
     if (!data || token.version === null) throw new Error("Diese Figur kann gerade nicht bewegt werden.");
     const result = await command<TacticalAck>(apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tokens/${token.id}/move`), { ...values, expectedVersion: token.version });
@@ -56,9 +65,14 @@ function LiveBoard({ campaignId, revision, onChanged, onDirty }: { campaignId: s
   };
   if (board.loading) return <Loading text="Szenenkarte wird geladen …" />;
   return <div className="tactical-live">{board.error || task.error ? <Notice error>{board.error || task.error}</Notice> : null}
+    {invalidated && board.data === invalidated ? <Notice>Die bisherige Kartensicht wurde entzogen. Orte und Figuren werden erst nach einer neuen erlaubten Antwort angezeigt. <Button onClick={onChanged}>Kartensicht erneut laden</Button></Notice> : null}
     {!data || !scene ? <EmptyState title="Noch keine Szenenkarte am Tisch.">Die Spielleitung kann eine Karte importieren, mit einer vorbereiteten Szene verbinden und diese Szene beginnen.</EmptyState> : <>
       <div className="page-heading"><div><h2>{data.map?.name ?? "Eure Szenenkarte"}</h2><p className="field-help">{data.gm ? "Ansicht der Spielleitung" : "Karte nach deinem gewählten Wissensblick"} · Höhe ist ein einzelner Wert, kein Stockwerk.</p></div><div className="button-row"><label className="check-label"><input type="checkbox" checked={grid} onChange={e => setGrid(e.target.checked)} /> Raster anzeigen</label><label className="check-label"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)} /> Beim Ziehen einrasten</label></div></div>
-      <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tiles`)} onMove={drag} onSelect={hit => setSelected(hit?.kind === "token" ? hit.id : "")} onScopeInvalidated={onChanged} />
+      <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tiles`)} onMove={drag} selection={focusedObject ? { kind: "pin", id: selectedObject } : selected ? { kind: "token", id: selected } : null} focusObject={focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : null} onSelect={hit => { setSelected(hit?.kind === "token" ? hit.id : ""); setSelectedObject(hit?.kind === "pin" ? hit.id : ""); }} onScopeInvalidated={() => { setInvalidated(data); setSelectedObject(""); setSelected(""); onChanged(); }} />
+      <section className="panel"><h3>Bekannte Orte & Kartenobjekte</h3><p className="field-help">Wähle einen Marker oder einen Listeneintrag, um seinen Artikel zu öffnen. Jede Verknüpfung verwendet deinen aktuellen Wissensblick.</p>
+        {visibleObjects.length < objects.length ? <Notice>{visibleObjects.length} von {objects.length} bekannten Objekten auf der Karte. Die vollständige Liste bleibt durchsuchbar; ausgewählte Objekte werden in den Kartenausschnitt aufgenommen, sofern sie innerhalb der Karte liegen.</Notice> : null}
+        <TacticalObjectList objects={objects} selected={selectedObject} onSelect={key => { setSelected(""); setSelectedObject(key); }} onOpenEntry={onOpenEntry} />
+      </section>
       <section className="panel"><h3>Figuren auf der Karte</h3><p className="field-help">Diese Liste bietet dieselben Bewegungen wie die Karte. Änderungen gelten nach Bestätigung durch den Server. Bewegung allein gibt kein neues Wissen frei.</p>
         {data.tokens.length ? <div className="tactical-token-list">{data.tokens.map(token => <TokenEditor key={`${data.sessionId}:${token.id}:${epochs[token.id] ?? 0}`} token={token} selected={token.id === selected} active={data.active} busy={task.busy} onMove={move} onDirty={report} />)}</div> : <p>In dieser Ansicht sind noch keine Figuren sichtbar.</p>}
       </section>

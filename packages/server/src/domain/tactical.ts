@@ -147,13 +147,18 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     for (const a of input) {
       const key = `${a.targetKind}:${a.targetId}`;
       if (seen.has(key) || !ids[a.targetKind].has(a.targetId)) throw new TacticalValidationError("Ein Kartenanker benötigt ein eindeutiges vorhandenes Geometrieziel."); seen.add(key);
-      if (!(await tx.query("SELECT 1 FROM entries WHERE id=$1 AND campaign_id=$2", [a.entryId, campaignId])).rowCount) throw new Gone();
-      if (a.passageId !== null && !(await tx.query("SELECT 1 FROM passages WHERE id=$1 AND entry_id=$2 AND campaign_id=$3", [a.passageId, a.entryId, campaignId])).rowCount) throw new Gone();
     }
+    if (!input.length) return [];
+    const entries = new Set((await tx.query<{ id: string }>("SELECT id FROM entries WHERE campaign_id=$1 AND id=ANY($2::text[])", [campaignId, [...new Set(input.map(a => a.entryId))]])).rows.map(e => e.id));
+    const passageIds = [...new Set(input.flatMap(a => a.passageId === null ? [] : [a.passageId]))];
+    const passages = new Map((await tx.query<{ id: string; entry_id: string }>("SELECT id,entry_id FROM passages WHERE campaign_id=$1 AND id=ANY($2::text[])", [campaignId, passageIds])).rows.map(p => [p.id, p.entry_id]));
+    for (const a of input) if (!entries.has(a.entryId) || a.passageId !== null && passages.get(a.passageId) !== a.entryId) throw new Gone();
     return sortedAnchors(input);
   }
   async function storeAnchors(tx: Db, campaignId: string, mapId: string, revision: number, rows: readonly P.TacticalAnchor[]) {
-    for (const a of rows) await tx.query("INSERT INTO tactical_map_anchors(map_id,campaign_id,map_revision,target_kind,target_id,entry_id,passage_id) VALUES($1,$2,$3,$4,$5,$6,$7)", [mapId, campaignId, revision, a.targetKind, a.targetId, a.entryId, a.passageId]);
+    if (rows.length) await tx.query(`INSERT INTO tactical_map_anchors(map_id,campaign_id,map_revision,target_kind,target_id,entry_id,passage_id)
+      SELECT $1,$2,$3,a."targetKind",a."targetId",a."entryId",a."passageId"
+      FROM jsonb_to_recordset($4::jsonb) AS a("targetKind" text,"targetId" text,"entryId" text,"passageId" text)`, [mapId, campaignId, revision, json(rows)]);
   }
   async function importPreview(userId: string, campaignId: string, raw: unknown) {
     await createCampaigns(db).requireMember(userId, campaignId, ["leitung"]);
@@ -243,14 +248,35 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     const controlled = new Set(await listControlledActorIds(tx, member));
     const docs = createDocuments(tx, cfg), held = gm ? new Set<string>() : await docs.held(member.campaignId, member.actorId);
     const known = gm ? new Set<string>() : new Set((await tx.query<{ entry_id: string }>("SELECT DISTINCT entry_id FROM passages WHERE campaign_id=$1 AND id=ANY($2::text[]) AND retired_at_revision IS NULL", [member.campaignId, [...held]])).rows.map(r => r.entry_id));
-    const lineage = gm ? [] : (await tx.query<{ event: LineageEvent }>("SELECT l.event FROM lineage_events l JOIN entries e ON e.id=l.entry_id WHERE e.campaign_id=$1 ORDER BY l.seq", [member.campaignId])).rows.map(r => r.event);
-    const activePassages = gm ? new Set<string>() : new Set((await tx.query<{ id: string }>("SELECT id FROM passages WHERE campaign_id=$1 AND retired_at_revision IS NULL", [member.campaignId])).rows.map(r => r.id));
-    const knownRegions = new Set<string>();
-    for (const a of map.anchors) if (a.targetKind === "region") {
-      const successors = a.passageId === null ? [] : resolvePassage(trustPassageId(a.passageId), lineage);
-      if (gm || (a.passageId === null ? known.has(a.entryId) : successors.length > 0 && successors.every(id => activePassages.has(id) && held.has(id)))) knownRegions.add(a.targetId);
+    const lineage = new Map<string, LineageEvent[]>();
+    if (!gm) for (const r of (await tx.query<{ entry_id: string; event: LineageEvent }>("SELECT l.entry_id,l.event FROM lineage_events l JOIN entries e ON e.id=l.entry_id WHERE e.campaign_id=$1 ORDER BY l.seq", [member.campaignId])).rows) {
+      const events = lineage.get(r.entry_id) ?? []; events.push(r.event); lineage.set(r.entry_id, events);
     }
+    const activePassages = gm ? new Set<string>() : new Set((await tx.query<{ id: string }>("SELECT id FROM passages WHERE campaign_id=$1 AND retired_at_revision IS NULL", [member.campaignId])).rows.map(r => r.id));
+    // One current decision per bound passage, shared by regions and entities.
+    // Scope this cache to the transaction so revocation and reader changes cannot reuse it.
+    const passageKnowledge = new Map<string, boolean>();
+    function knowsAnchor(a: P.TacticalAnchor): boolean {
+      if (gm) return true;
+      if (a.passageId === null) return known.has(a.entryId);
+      if (!passageKnowledge.has(a.passageId)) {
+        const successors = resolvePassage(trustPassageId(a.passageId), lineage.get(a.entryId) ?? []);
+        passageKnowledge.set(a.passageId, successors.length > 0 && successors.every(id => activePassages.has(id) && held.has(id)));
+      }
+      return passageKnowledge.get(a.passageId)!;
+    }
+    const knownRegions = new Set<string>();
+    for (const a of map.anchors) if (a.targetKind === "region" && knowsAnchor(a)) knownRegions.add(a.targetId);
     const regions = map.document.geometry.regions.filter(r => gm || knownRegions.has(r.id)).map(r => ({ id: r.id, points: r.punkte }));
+    const titles = new Map((await tx.query<{ id: string; title: string }>("SELECT id,title FROM entries WHERE campaign_id=$1 AND id=ANY($2::text[])", [member.campaignId, [...new Set(map.anchors.filter(a => a.targetKind !== "region" && knowsAnchor(a)).map(a => a.entryId))]])).rows.map(e => [e.id, e.title]));
+    const geometry = { stamp: new Map(map.document.geometry.stamps.map(s => [s.id, s])), place: new Map(map.document.geometry.places.map(p => [p.id, p])) };
+    const entities: P.TacticalEntity[] = [];
+    for (const a of map.anchors) {
+      if (a.targetKind === "region" || !knowsAnchor(a)) continue;
+      const point = geometry[a.targetKind].get(a.targetId), label = titles.get(a.entryId);
+      if (!point || label === undefined || !gm && !visiblePoint({ size: map.document.geometry.size, regions }, point.x, point.y)) continue;
+      entities.push({ id: point.id, kind: a.targetKind, x: point.x, y: point.y, entryId: a.entryId, label });
+    }
     const party = new Set((await tx.query<{ actor_id: string }>("SELECT actor_id FROM campaign_memberships WHERE campaign_id=$1 AND role='spieler' AND actor_id IS NOT NULL", [member.campaignId])).rows.map(r => r.actor_id));
     const profiles = (await tx.query<{ id: string; name: string; lore_entry_id: string | null; archived_at: string | null }>("SELECT a.id,a.name,p.lore_entry_id,p.archived_at FROM actors a JOIN actor_profiles p ON p.actor_id=a.id AND p.campaign_id=a.campaign_id WHERE a.campaign_id=$1", [member.campaignId])).rows;
     const projected: P.TacticalToken[] = [];
@@ -272,7 +298,8 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     }
     const rasterDigest = tacticalHash({ sessionId: row.session_id, perspectiveActorId: gm ? null : member.actorId, gm, size: map.document.geometry.size, regions });
     const view: Omit<P.TacticalView, "digest"> = { sessionId: row.session_id, sceneId: row.scene_id, active: row.ended_at === null, gm, size: map.document.geometry.size, frame: map.document.frame, grid: map.document.grid, elevation: map.document.elevation,
-      regions, tokens: projected, undoTargets, rasterDigest,
+      regions, entities: sorted(entities), tokens: projected, undoTargets, rasterDigest,
+      hatRaster: map.document.background !== null,
       ...(gm ? { map: { id: map.id, name: map.name, revision: map.revision, version: map.version }, document: map.document, walls: map.document.walls,
         portals: map.document.portals.map(p => ({ ...p, ...state.portals.find(x => x.id === p.id)! })) } : {}) };
     return { ...view, digest: tacticalHash(view) };

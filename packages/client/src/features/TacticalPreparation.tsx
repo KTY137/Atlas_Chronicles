@@ -39,8 +39,8 @@ function MapEditor({ current, campaignId, onChanged, onDirty }: { current: Tacti
   useEffect(() => { if (!dirty && current.version > baseline.version) replace(current); }, [current, dirty, baseline.version]);
   const objects = useMemo(() => preparationObjects(document, anchors, entries.data ?? []), [document, anchors, entries.data]);
   const visibleObjects = useMemo(() => mapObjectWindow(objects, selectedObject, document.geometry.size[0], document.geometry.size[1]), [objects, selectedObject, document.geometry.size]);
-  const focusedObject = objects.find(o => objectKey(o) === selectedObject);
-  const scene = useMemo<ProjectedMapScene>(() => ({ id: baseline.id, width: document.geometry.size[0], height: document.geometry.size[1], rasterScope: baseline.contentHash,
+  const focusedObject = visibleObjects.find(o => objectKey(o) === selectedObject);
+  const scene = useMemo<ProjectedMapScene>(() => ({ id: baseline.id, width: document.geometry.size[0], height: document.geometry.size[1], ...(document.background ? { rasterScope: baseline.contentHash } : {}),
     cells: document.geometry.regions.map(r => ({ id: r.id, polygon: r.punkte, fill: anchors.some(a => a.targetKind === "region" && a.targetId === r.id) ? 0x60bb8d : 0xd98e3b })), pins: visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, ...(o.entryId ? { entryId: o.entryId } : {}) })), grid: document.grid,
     lines: [...document.walls.map(w => ({ id: w.id, points: w.points })), ...(points.length >= 2 ? [{ id: "draft-region", points, color: 0xffffff }] : [])],
   }), [baseline, document, anchors, points, visibleObjects]);
@@ -101,7 +101,7 @@ function PlanForm({ campaignId, scene, map: availableMap, current, actors, onCha
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]); useEffect(() => { mounted.current = true; return () => { mounted.current = false; onDirty(false); }; }, [onDirty]);
   useEffect(() => { if (!dirty && (current?.version ?? 0) > (baseline?.version ?? 0)) replace(current); }, [current, dirty, baseline]);
   useEffect(() => { if (!dirty && availableMap.revision > map.revision) setMap(availableMap); }, [availableMap, dirty, map.revision]);
-  const preview = useMemo<ProjectedMapScene>(() => ({ id: `plan:${scene.id}:${map.id}`, width: map.document.geometry.size[0], height: map.document.geometry.size[1], rasterScope: map.contentHash,
+  const preview = useMemo<ProjectedMapScene>(() => ({ id: `plan:${scene.id}:${map.id}`, width: map.document.geometry.size[0], height: map.document.geometry.size[1], ...(map.document.background ? { rasterScope: map.contentHash } : {}),
     cells: map.document.geometry.regions.map(r => ({ id: r.id, polygon: r.punkte, fill: 0x60bb8d })), pins: [], grid: map.document.grid,
     tokens: tokens.map(t => ({ id: t.id, x: t.x, y: t.y, label: actors.find(a => a.id === t.actorId)?.name ?? "Figur", movable: !task.busy, radius: Math.min(40, Math.max(7, 11 * t.scale)) })),
   }), [scene.id, map, tokens, actors, task.busy]);

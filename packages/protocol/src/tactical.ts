@@ -34,12 +34,16 @@ export interface TacticalMapSummary { id: string; name: string; revision: number
 export interface TacticalMapCard extends TacticalMapSummary { sourceId: string; contentHash: string; document: TacticalMapDocumentV1; anchors: TacticalAnchor[] }
 export interface TacticalPlan { sceneId: string; mapId: string; mapRevision: number; version: number; tokens: TacticalTokenPlan[] }
 export interface TacticalToken extends TacticalTokenPlan { name: string; canMove: boolean; version: number | null }
+/** A knowledge-authorized semantic marker, without its private source geometry or asset. */
+export interface TacticalEntity { id: string; kind: "stamp" | "place"; x: number; y: number; entryId: string; label: string }
 export interface TacticalUndoTarget { commandId: string; subjectKind: "token" | "portal"; subjectId: string; version: number }
 export interface TacticalView {
   sessionId: string; sceneId: string; active: boolean; gm: boolean;
   size: readonly [number, number]; frame: Rahmen; grid: TacticalGrid; elevation: number;
   regions: { id: string; points: readonly TacticalPoint[] }[];
-  tokens: TacticalToken[]; undoTargets: TacticalUndoTarget[]; digest: string; rasterDigest: string;
+  entities: TacticalEntity[]; tokens: TacticalToken[]; undoTargets: TacticalUndoTarget[]; digest: string; rasterDigest: string;
+  /** False for a generated map: it is pure geometry and has no photograph to stream. */
+  hatRaster: boolean;
   /** These properties are completely absent from player responses. */
   map?: TacticalMapSummary; document?: TacticalMapDocumentV1;
   walls?: readonly TacticalWall[]; portals?: (TacticalPortal & { version: number })[];
