@@ -21,6 +21,7 @@ import { registerRealtime } from "./http/realtime.ts";
 import { registerMedia } from "./http/media.ts";
 import type { MediaServerConfig } from "./domain/media.ts";
 import { registerWeek } from "./http/week.ts";
+import { registerHealth } from "./http/health.ts";
 import { registerHttpLifecycle } from "./http/lifecycle.ts";
 import { registerWikiNavigation } from "./http/wiki-navigation.ts";
 import { registerBundles } from "./http/bundles.ts";
@@ -133,6 +134,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerImports(app,db,config);
   registerGameplay(app,db,config);
   registerWeek(app,db,config);
+  registerHealth(app,db);
   registerWikiNavigation(app, db, config);
   registerBundles(app, db, config);
   registerActors(app, db, config);

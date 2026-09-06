@@ -18,6 +18,9 @@ COPY --from=build --chown=chronicle:chronicle /app /app
 USER chronicle
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1
+  # Liveness, not readiness: this decides whether to RESTART the container, and a restart
+  # neither repairs an unreachable database nor helps a merely busy one. Readiness lives at
+  # /api/ready and is what a load balancer or an operator asks. See packages/server/src/http/health.ts
+  CMD wget -qO- http://127.0.0.1:3000/api/live >/dev/null || exit 1
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "node_modules/tsx/dist/cli.mjs", "packages/server/src/main.ts"]

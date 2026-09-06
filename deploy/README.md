@@ -53,7 +53,7 @@ Degradationsleiter, sichtbar und benannt, nie still: **SFU → TURN-Relay → P2
   ist davon unabhängig und gehört dem Nutzer — das Ende einer Hostingzahlung sperrt ihn nie aus (S3).
 - **Update:** `docker compose … up -d --build`; Migrationen (`packages/server/src/db/migrations/*.sql`)
   laufen beim Start, sind additiv und idempotent.
-- **Health:** `GET /api/health` (DB-Roundtrip) ist der Container-Healthcheck.
+- **Health, und die Trennung ist Absicht:** `GET /api/live` beantwortet „läuft der Prozess und bedient er HTTP" **ohne** Datenbank und ist der Container-Healthcheck, also das, was einen Neustart auslöst. `GET /api/ready` macht den Datenbank-Roundtrip mit 2-Sekunden-Budget und ist das, was ein Load Balancer oder ein Betreiber fragt, bevor Verkehr fließt. **Warum getrennt:** hing der Neustart an einem DB-Roundtrip, dann startete ein ausgelasteter Abend den funktionierenden Server neu und der Neustart erhöhte die Last — und eine wirklich ausgefallene Datenbank repariert ein Neustart ohnehin nicht. Beide Sonden sind vom Rate-Limit ausgenommen, damit ein Verkehrsgipfel keinen Scheinausfall meldet. `GET /api/health` bleibt unverändert für seine bisherigen Aufrufer.
 - **Geheimnisse** liegen nur in `deploy/.env` (git-ignored, Modus 600). Nie in Logs, nie in Tickets.
 - **Ports nach außen:** `tls`: 80/443. `media`: 7881/tcp, 50000–50100/udp (SFU), 3478 tcp+udp und
   49160–49200/udp (TURN). Ohne Profile lauscht nur `127.0.0.1:3000`.
