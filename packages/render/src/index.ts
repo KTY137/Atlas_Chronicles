@@ -8,3 +8,5 @@ export { planeStapel } from "./stapel.ts";
 export type { StapelPlan, StapelGrenzen } from "./stapel.ts";
 export { gitterFeld, zelleBei, zellenMitte } from "./gitter-feld.ts";
 export type { GitterFeld } from "./gitter-feld.ts";
+export { pruefeBudget, RENDER_BUDGET } from "./budget.ts";
+export type { BudgetGrenzen, BudgetBericht, Ueberschreitung } from "./budget.ts";
