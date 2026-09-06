@@ -1,6 +1,19 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-07-29** (Daedalus Visual Lab end-to-end trial complete)
+Updated: **2026-09-06** (Claude takeover checkpoint; implementation plan requested)
+
+## Current handoff — start here
+
+- Kaya asked Codex to continue the stopped Claude sessions, then clarified that work must become a real application and requested an implementation plan. The next work is defined in **[docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)**: F01–F04 and P01–P06, through a real campaign/join/persisted-wiki flow with two distinct player projections.
+- The earlier July ledger below is historical. Newer decisions in `design/07-shell-redesign.md` and `design/08-backend-architektur.md` record the shell direction, native LiveKit voice/video and **S4=Yes** for hosted rooms. Self-host transport P11 remains separate and open.
+- `design/shell-lab/` is a working React visual prototype; its typecheck and production build pass. Its fixture data, voice, permissions and network indicators are simulations. There is still **no operational product client or HTTP backend**.
+- The interrupted runtime scaffold is now under `packages/`. Missing wiki `lineage.ts` and map `containment.ts` were implemented with regression tests. The new server scaffold contains pg/PGlite adapters, checksum-tracked migrations and the documented name-guard subset; it has no domain services, auth routes or command bus yet.
+- The SQL schema is a tested scaffold, **not a final published persistence contract**. F02 must complete it against Entry/Revision/Passage/Lineage and provenance requirements before product data is accepted. Live Postgres has not been validated in this checkpoint.
+- Eron/Fandom import, Azgaar import, clickable persistent maps, rules, browser integration and deployment are planned work, not delivered features. The production package manifest does not make its planned start command operational.
+- Checkpoint verification: root `npm.cmd run gate` passes (20 files / 8 boundary rules / no violations, TypeScript, **38 tests in 4 suites**); suites cover core serialization, wiki lineage, containment and SQL/name handling. Vitest was updated from 3.2.4 to 3.2.7; dependency audit after installation reports no vulnerabilities.
+- Work continues on `codex/resume-chronicle-20260906`. Pre-existing Claude design/lab work and local `.semgrep/` state were preserved. Only explicit implementation/documentation paths belong in checkpoint commits.
+
+## Historical ledger — 2026-07-29
 
 ## Where we are
 
