@@ -8,4 +8,8 @@ export { createCampaignBundle, validateCampaignBundle, parseCampaignBundle, seri
 export type { CampaignBundle, CampaignBundleData } from "./campaign-bundle.ts";
 export { CAMPAIGN_TABLES, CAMPAIGN_MODULES, CAMPAIGN_EXCLUSIONS, CAMPAIGN_EXCLUDED_TABLES, CAMPAIGN_BUNDLE_LIMITS, CAMPAIGN_BUNDLE_JSON_SCHEMA, emptyCampaignTables } from "./campaign-schema.ts";
 export type { CampaignTableName, CampaignColumn, CampaignModule, CampaignRow, CampaignTables } from "./campaign-schema.ts";
+export { createCampaignBundleV2, validateCampaignBundleV2, parseCampaignBundleV2, serializeCampaignBundleV2, campaignSemanticDiffV2, upgradeCampaignBundleV1, CAMPAIGN_BUNDLE_V2_VERSION } from "./campaign-bundle-v2.ts";
+export type { CampaignBundleV2, CampaignBundleDataV2, CampaignUpgradeReport } from "./campaign-bundle-v2.ts";
+export { CAMPAIGN_V2_TABLES, CAMPAIGN_V2_ADDITIONAL_TABLES, CAMPAIGN_V2_MODULES, CAMPAIGN_BUNDLE_V2_JSON_SCHEMA, emptyCampaignTablesV2 } from "./campaign-schema-v2.ts";
+export type { CampaignTableNameV2, CampaignTablesV2, CampaignModuleV2 } from "./campaign-schema-v2.ts";
 export type { EronArticle, EronTemplate, EronAttribution, EronImportInput, EronImportResult, ImportProvenance, EronSource, EronReimportPlan, ImportedMediaReference } from "./model.ts";

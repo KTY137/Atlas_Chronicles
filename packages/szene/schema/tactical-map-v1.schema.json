@@ -1,0 +1,600 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:atlas-chronicles:tactical-map:1",
+  "title": "Atlas Chronicles TacticalMapDocumentV1",
+  "description": "MIT-licensed closed tactical map data profile, with unchanged SceneDoc v3 geometry. No authorization, fog, token, article, or rendering capability claims. See README for coordinate and semantic invariants.",
+  "$comment": "The reference parser additionally checks UTF-8 byte count (32 MiB), duplicate/prototype keys, finite IEEE-754 values, depth/nodes, total polygon/polyline/portal vertices (200000), global geometry ID uniqueness, elevation target ownership/uniqueness, pixel area (144000000), and exact background/geometry dimensions. JSON Schema alone is not sufficient validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "coordinates",
+    "frame",
+    "geometry",
+    "grid",
+    "elevation",
+    "geometryElevation",
+    "walls",
+    "portals",
+    "lights",
+    "environment",
+    "background"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "tactical-map"
+    },
+    "coordinates": {
+      "const": "image-pixels"
+    },
+    "frame": {
+      "$ref": "#/$defs/frame"
+    },
+    "geometry": {
+      "$ref": "#/$defs/geometry"
+    },
+    "grid": {
+      "$ref": "#/$defs/grid"
+    },
+    "elevation": {
+      "$ref": "#/$defs/number"
+    },
+    "geometryElevation": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 72048,
+      "items": {
+        "$ref": "#/$defs/geometryElevation"
+      }
+    },
+    "walls": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 20000,
+      "items": {
+        "$ref": "#/$defs/wall"
+      }
+    },
+    "portals": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 20000,
+      "items": {
+        "$ref": "#/$defs/portal"
+      }
+    },
+    "lights": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/light"
+      }
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "background": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/background"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "number": {
+      "type": "number",
+      "minimum": -1000000000,
+      "maximum": 1000000000
+    },
+    "point": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/number"
+        },
+        {
+          "$ref": "#/$defs/number"
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "argb": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}$"
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ursprung",
+        "einheitenProPixel",
+        "ordnung",
+        "hoch"
+      ],
+      "properties": {
+        "ursprung": {
+          "$ref": "#/$defs/point"
+        },
+        "einheitenProPixel": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000
+        },
+        "ordnung": {
+          "enum": [
+            "xy",
+            "yx"
+          ]
+        },
+        "hoch": {
+          "enum": [
+            "oben",
+            "unten"
+          ]
+        }
+      }
+    },
+    "pyramid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basisUrl",
+        "kachelgroesse",
+        "ebenen"
+      ],
+      "properties": {
+        "basisUrl": {
+          "type": "string",
+          "pattern": "^asset:[a-f0-9]{64}$"
+        },
+        "kachelgroesse": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 4096
+        },
+        "ebenen": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        }
+      }
+    },
+    "stamp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "a",
+        "x",
+        "y",
+        "s",
+        "r",
+        "l"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "a": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$"
+        },
+        "x": {
+          "$ref": "#/$defs/number"
+        },
+        "y": {
+          "$ref": "#/$defs/number"
+        },
+        "s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000000
+        },
+        "r": {
+          "$ref": "#/$defs/number"
+        },
+        "l": {
+          "type": "integer",
+          "minimum": -32768,
+          "maximum": 32767
+        },
+        "t": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777215
+        },
+        "f": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        }
+      }
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "punkte"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "punkte": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 200000,
+          "items": {
+            "$ref": "#/$defs/point"
+          }
+        }
+      }
+    },
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "x",
+        "y"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "x": {
+          "$ref": "#/$defs/number"
+        },
+        "y": {
+          "$ref": "#/$defs/number"
+        }
+      }
+    },
+    "geometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "size",
+        "stamps",
+        "regions",
+        "places"
+      ],
+      "properties": {
+        "v": {
+          "const": 3
+        },
+        "size": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 32768
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 32768
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "base": {
+          "$ref": "#/$defs/pyramid"
+        },
+        "stamps": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 50000,
+          "items": {
+            "$ref": "#/$defs/stamp"
+          }
+        },
+        "regions": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 2048,
+          "items": {
+            "$ref": "#/$defs/region"
+          }
+        },
+        "places": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 20000,
+          "items": {
+            "$ref": "#/$defs/place"
+          }
+        }
+      }
+    },
+    "grid": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "size",
+            "origin"
+          ],
+          "properties": {
+            "kind": {
+              "const": "square"
+            },
+            "size": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 32768
+            },
+            "origin": {
+              "$ref": "#/$defs/point"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "size",
+            "origin",
+            "orientation",
+            "offset"
+          ],
+          "properties": {
+            "kind": {
+              "const": "hex"
+            },
+            "size": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 32768
+            },
+            "origin": {
+              "$ref": "#/$defs/point"
+            },
+            "orientation": {
+              "enum": [
+                "pointy",
+                "flat"
+              ]
+            },
+            "offset": {
+              "enum": [
+                "even",
+                "odd"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "none"
+            }
+          }
+        }
+      ]
+    },
+    "geometryElevation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetKind",
+        "targetId",
+        "elevation"
+      ],
+      "properties": {
+        "targetKind": {
+          "enum": [
+            "stamp",
+            "region",
+            "place"
+          ]
+        },
+        "targetId": {
+          "$ref": "#/$defs/id"
+        },
+        "elevation": {
+          "$ref": "#/$defs/number"
+        }
+      }
+    },
+    "wall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "points",
+        "elevation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "wall",
+            "object"
+          ]
+        },
+        "points": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 200000,
+          "items": {
+            "$ref": "#/$defs/point"
+          }
+        },
+        "elevation": {
+          "$ref": "#/$defs/number"
+        }
+      }
+    },
+    "portal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "position",
+        "bounds",
+        "rotationRadians",
+        "closed",
+        "freestanding",
+        "elevation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "position": {
+          "$ref": "#/$defs/point"
+        },
+        "bounds": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/point"
+            },
+            {
+              "$ref": "#/$defs/point"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "rotationRadians": {
+          "$ref": "#/$defs/number"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "freestanding": {
+          "type": "boolean"
+        },
+        "elevation": {
+          "$ref": "#/$defs/number"
+        }
+      }
+    },
+    "light": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "position",
+        "range",
+        "intensity",
+        "colorArgb",
+        "shadows",
+        "elevation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "position": {
+          "$ref": "#/$defs/point"
+        },
+        "range": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000000
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "colorArgb": {
+          "$ref": "#/$defs/argb"
+        },
+        "shadows": {
+          "type": "boolean"
+        },
+        "elevation": {
+          "$ref": "#/$defs/number"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bakedLighting",
+        "ambientLightArgb"
+      ],
+      "properties": {
+        "bakedLighting": {
+          "type": "boolean"
+        },
+        "ambientLightArgb": {
+          "$ref": "#/$defs/argb"
+        }
+      }
+    },
+    "background": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "mimeType",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "mimeType": {
+          "enum": [
+            "image/png",
+            "image/webp"
+          ]
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32768
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32768
+        }
+      }
+    }
+  }
+}

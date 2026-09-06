@@ -1,6 +1,7 @@
 import { Type, type Static } from "@sinclair/typebox";
 export * from "./gameplay.ts";
 export * from "./realtime.ts";
+export * from "./actors.ts";
 
 const closed = { additionalProperties: false } as const;
 export const Id = Type.String({ minLength: 1, maxLength: 256 });

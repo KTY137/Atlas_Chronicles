@@ -43,3 +43,55 @@ Live fingerprints include only the caller's accessible sheets, articles/read sta
 Production room admission binds tokens to the authenticated credential and server-derived role. Periodic reconciliation revalidates credentials, membership, channel, presence generation and private-room participants. Revocation rotates affected provider rooms, with durable cleanup intents, preventing reuse of old room tokens. Local tracks stop when access is lost or campaign/account scope changes.
 
 Independent review found that one failed provider cleanup could starve all later campaigns. The regression failed first; reconciliation now processes every campaign and reports the retained failure after the sweep. A second regression proved that an unmounted component could issue a delayed request after disconnect under a new ambient session; epoch/mount guards now block it. Focused media tests pass24/24. The real three-browser SFU flow verifies audio RTP and playback, decoded camera/screen frames, navigation continuity, whisper outsider denial and capture termination after moderation; it does not claim physical devices, remote NAT or browser outage recovery.
+
+## Actor control, evidence and the next native format
+
+Migration010 adds explicit controller grants and reader perspectives alongside immutable
+actor/item template revisions and independent instances. It leaves the historical core
+membership/actor columns intact. Control permits acting with an actor; the explicitly
+selected perspective determines private knowledge and received letters. Implicit GM
+gameplay control does not expose private correspondence. Existing player bindings are
+backfilled deterministically; no runtime fallback invents authority from a legacy column.
+
+Two red-to-green domain regressions demonstrated hidden lore IDs in Actor/Item responses,
+including command retries. Stored canonical events retain complete evidence, while each
+response reprojects the lore reference against the current reader's knowledge. Player
+ActorCards expose no global profile version; hidden-only lore changes therefore do not
+advance that reader's live sequence. Separate projection tests cover shared control,
+distinct knowledge, revocation, private GM correspondence and archived roll replay.
+
+A real PostgreSQL race across two campaigns reused one global command ID. The unique
+constraint correctly rolled back the losing transaction, but surfaced as500. The regression
+now verifies a409 conflict and exactly one committed object/event. HTTP rate budgets are
+keyed by authenticated user, so three verified readers behind one IP remain usable;
+forged cookies and identity headers still share the unauthenticated IP budget.
+
+Native v2 validates its core through the unchanged v1 parser and adds every migration010
+table. V1 requires an explicit deterministic upgrade with a report, preserving IDs and
+seals. Independent review found incompatible Rule-v1 field bounds in Actor/v2 parsing
+(valid96-character field names and4096-character defaults) and event variants that could
+rewrite supposedly unchanged actor fields. Each finding gained a failing regression
+before its minimal correction. Real PostgreSQL restore tests cover template revision
+cycles and the explicit administrator CLI upgrade.
+
+## Actor drafts and tactical source fidelity
+
+Four new real-PostgreSQL browser regressions first failed against the integrated client.
+Selecting the active tab/item cleared its dirty guard; adding an item displaced unsaved
+notes; a pending save erased subsequently typed text; a lower-sorted newly controlled
+actor silently replaced the active figure; initial perspective hydration remounted an
+editable Wiki; and an old template response closed a newer template draft. Same selections
+are now no-ops, creation respects dirty state, pending forms disable their inputs, the
+initial actor selection is pinned, knowledge-bound views wait for their perspective,
+and template callbacks check their originating editor epoch and mount lifetime. All
+regressions pass without fake server data or relaxed assertions.
+
+The separate TacticalMapDocument-v1 contract preserves SceneDoc-v3 and includes UVTT
+geometry, grid, frame and scalar elevation. Real BSD-licensed source files retain exact
+provenance/hashes. Independent review reproduced two UVTT export failures: binary rounding
+at2560/77 prevented reimport, and deleted/reordered wall points inherited the wrong source
+metadata by array index. The corrected adapter accepts only machine-scale arithmetic
+roundoff, takes authoritative image dimensions, matches unambiguous retained coordinates,
+and reports unknown metadata loss when correspondence is ambiguous. Source bytes remain
+unchanged on an untouched export. Fifty pure contract/adapter tests pass; these are not
+evidence of a delivered tactical renderer, protected raster tiles or hardware load gate.

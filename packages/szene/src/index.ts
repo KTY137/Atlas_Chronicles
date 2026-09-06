@@ -35,3 +35,5 @@ export {
   type ContainmentVerstoss,
   type KnotenIndex,
 } from "./containment.ts";
+export { TACTICAL_MAP_VERSION, TACTICAL_MAP_LIMITS, TacticalMapValidationError, parseBoundedMapJson, parseTacticalMapDocument, serializeTacticalMapDocument } from "./tactical-map.ts";
+export type { TacticalPoint, TacticalGrid, TacticalWall, TacticalPortal, TacticalLight, TacticalImageRef, TacticalGeometryElevation, TacticalMapDocumentV1 } from "./tactical-map.ts";

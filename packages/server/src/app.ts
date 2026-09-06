@@ -24,6 +24,7 @@ import { registerWeek } from "./http/week.ts";
 import { registerHttpLifecycle } from "./http/lifecycle.ts";
 import { registerWikiNavigation } from "./http/wiki-navigation.ts";
 import { registerBundles } from "./http/bundles.ts";
+import { registerActors } from "./http/actors.ts";
 
 export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; livekit?: MediaServerConfig }
 export async function buildApp(db: Db, config: AppConfig) {
@@ -34,7 +35,12 @@ export async function buildApp(db: Db, config: AppConfig) {
   const auth = (req: FastifyRequest) => identity.authenticate(req.headers.cookie);
   const origin = new URL(config.origin).origin;
   const secretEqual = (a: string, b: string) => { const aa=Buffer.from(a), bb=Buffer.from(b); return aa.length === bb.length && timingSafeEqual(aa,bb); };
-  await app.register(rateLimit, { max: 240, timeWindow: "1 minute", keyGenerator: (r) => r.ip });
+  await app.register(rateLimit, { max: 240, timeWindow: "1 minute", keyGenerator: async request => {
+    // A household/table shares an IP, not a request budget. Only an authenticated
+    // identity gets its own bucket; forged cookies and caller headers never do.
+    try { return `user:${(await auth(request)).userId}`; }
+    catch (error) { if (error instanceof Gone) return `ip:${request.ip}`; throw error; }
+  } });
   app.addHook("onRequest", async (req, reply) => {
     reply.header("Cache-Control", "no-store").header("X-Content-Type-Options", "nosniff").header("Referrer-Policy", "no-referrer");
     if (!["GET", "HEAD", "OPTIONS"].includes(req.method) && req.headers.origin !== origin) throw new Gone("origin");
@@ -124,6 +130,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerWeek(app,db,config);
   registerWikiNavigation(app, db, config);
   registerBundles(app, db, config);
+  registerActors(app, db, config);
   registerMedia(app,db,config,config.livekit);
   await registerRealtime(app,db,config);
   if (config.staticRoot) {

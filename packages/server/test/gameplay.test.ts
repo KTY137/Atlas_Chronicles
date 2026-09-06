@@ -1,3 +1,4 @@
+import { seedActorControl } from "./actor-fixtures.ts";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEMO_RULE_PACKAGE, stableJson } from "@chronicle/rules";
@@ -22,6 +23,7 @@ describe("production gameplay with PGlite transactions", () => {
     for (const [user, actor, name] of [[a, actorA, "Sera"], [b, actorB, "Brannt"]]) {
       await db.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,$4)", [actor, campaign.id, user, name]);
       await db.query("INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton,actor_id) VALUES($1,$2,'spieler',$3,$3,$4)", [campaign.id, user, name, actor]);
+      await seedActorControl(db, campaign.id, actor!, user!);
     }
     const documents = createDocuments(db, cfg), game = createGameplay(db, cfg);
     const entry = await documents.saveEntry(gm, campaign.id, { title: "Haus Vharon", passages: [paragraph("Sera experienced the tracks"), paragraph("Brannt heard a rumor"), paragraph("The sealed door opens"), paragraph("The guard is defeated")] });

@@ -28,7 +28,7 @@ The final combined gate passes **279 tests in33 files**, TypeScript and125-file/
 
 Next ownership after checkpoint: live_ui_audit owns new WeekView/week-api/CSS; bundle_contract owns new RuleForge/FormulaBuilder/preview/model/CSS; shutdown_audit owns new MediaPanel/CSS and scoped media lifecycle backend fixes. Root owns App/Reader/Wiki integration, reviewed rule migration API and end-to-end acceptance. Coordinate overlapping server edits before touching shared files. Three external Claude sessions continue; preserve their design/deploy/import-parser changes.
 
-## Current combined UI checkpoint
+## Previous combined UI checkpoint — 9b1a59f
 
 Week, visual RuleForge and persistent MediaPanel are connected and verified together. The final root gate with real PostgreSQL passes **357 tests in40 files**, root TypeScript and **139 files /8 rules /0 boundary violations**. The canonical production client build passes. `ATLAS_MEDIA_E2E=1` with `playwright test --reporter=line --output=test-results/codex-full-ui-final` passes **all7 flows in1.2m**. Actual media evidence is loopback LiveKit with synthetic browser devices; remote HTTPS/TURN, physical hardware and browser SFU-outage recovery are not inferred from it.
 
@@ -37,3 +37,24 @@ The real three-reader Week flow exposed a PostgreSQL foreign-key lock upgrade de
 Reviewed migration activation hashes include exact package documents, pin version and persisted sheet versions. The character form retains its baseline and dirty draft across live package changes or temporary network errors and requires explicit replacement. Reading acknowledgements bind to the exact projected article, including actor perspective. Media reconciliation processes later campaigns despite an earlier provider cleanup failure; scope switches prevent stale post-disconnect requests. Their red-to-green evidence is recorded in the implementation integrity ledger.
 
 Next ownership: live_ui_audit owns new actor protocol/domain/HTTP/tests and migration010 after this checkpoint; root owns existing authorization/projection/client seams, bundle v2 and integration. bundle_contract owns only new tactical-map and UVTT pure contracts/fixtures/tests plus szene/forge exports. shutdown_audit completes MEDIA_UI documentation, then provides independent review. Existing v1 bundle semantics and migrations001–009 remain immutable. Explicitly version durable schema additions alongside export/restore; do not weaken schema coverage to let incomplete archives pass. Full M0–M9 remains active, including remaining actors/inventory/tactical tools/themes/publication/Electron and applicable generation gates.
+
+## Current actor/inventory checkpoint
+
+The actor ownership above is complete. Migration010 and all actor/item endpoints are integrated
+with authorization, knowledge perspective, sheets, rolls, Week and live invalidation. The client
+has real templates, instances, controller grants and inventory. Native export/restore/CLI now use
+v2 with an explicit v1 upgrade; published v1 files remain unchanged.
+
+Final gate: **460 tests in48 files**, root TypeScript, **160 files/8 rules/0 boundary violations**,
+with `TEST_DATABASE_URL` enabled against real PostgreSQL. Canonical client build passes. Final
+browser run with actual loopback media: **12/12 in1.5m**, artifacts `.local/e2e-actors-all-final`.
+Four draft regressions first failed against real APIs and now pass. Scope and review corrections
+are in `docs/ACTORS_UI.md` and the implementation integrity ledger.
+
+Tactical/UVTT pure contracts are reviewed and pass50 tests with a real provenance fixture. Their
+two independent export findings have red-to-green coverage. They do not yet constitute the
+tactical product. Next owners will split new Tactical domain/migration/protocol, protected raster
+delivery, explicit native v3 and root renderer/client/session integration. Freeze v1/v2 contracts
+and migrations001–010 after this checkpoint; new durable objects require another explicit format.
+Keep browser output outside the shared default `test-results/` parent to preserve other runs.
+Three external Claude sessions remain in scope; preserve their files and unrelated `.semgrep/`.

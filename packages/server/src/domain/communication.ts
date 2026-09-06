@@ -8,6 +8,7 @@ import { createDocuments } from "./documents.ts";
 import { createAtlas } from "./atlas.ts";
 import { createGameplay } from "./gameplay.ts";
 import { createWeek } from "./week.ts";
+import { createActors, listControlledActorIds } from "./actors.ts";
 import { Gone, Conflict } from "./errors.ts";
 
 const hash=(v:unknown)=>createHash("sha256").update(stableJson(v)).digest("hex");
@@ -71,9 +72,12 @@ export function createCommunication(db:Db,cfg:DomainConfig={}) {
     const list=await docs.listEntries(userId,campaignId), maps=await atlas.listMaps(userId,campaignId);
     const entries=[]; for(const e of list) entries.push(await week.umbruch(userId,campaignId,e.id));
     const mapViews=[]; for(const m of maps) mapViews.push(await atlas.getMap(userId,campaignId,m.id));
-    const controlled=member.role==="beobachter" ? [] : (await db.query<{id:string}>("SELECT id FROM actors WHERE campaign_id=$1 AND ($2 OR (user_id=$3 AND id=$4)) ORDER BY id COLLATE \"C\"",[campaignId,member.role==="leitung",userId,member.actorId])).rows;
-    const sheets=[]; for(const actor of controlled) sheets.push(await game.getSheet(userId,campaignId,actor.id));
-    return hash({entries,maps:mapViews,sheets,rules:await game.listPackages(userId,campaignId),clock:await week.getClock(userId,campaignId),letters:await week.listLetters(userId,campaignId),scenes:await game.listScenes(userId,campaignId),rolls:await game.listRolls(userId,campaignId),doors:await game.listVollmachten(userId,campaignId),messages:await messages(userId,campaignId),table:await messages(userId,campaignId,"table")});
+    const actors=createActors(db,cfg), controlled=await listControlledActorIds(db,member);
+    const sheets=[]; for(const actorId of controlled) sheets.push(await game.getSheet(userId,campaignId,actorId));
+    const inventory=[]; if(member.role==="leitung") inventory.push(await actors.listItems(userId,campaignId));
+    else for(const actorId of controlled) inventory.push(await actors.listItems(userId,campaignId,actorId));
+    const templates=member.role==="leitung" ? [await actors.listActorTemplates(userId,campaignId),await actors.listItemTemplates(userId,campaignId)] : [];
+    return hash({entries,maps:mapViews,sheets,actors:await actors.listActors(userId,campaignId),perspective:await actors.getReaderPerspective(userId,campaignId),inventory,templates,rules:await game.listPackages(userId,campaignId),clock:await week.getClock(userId,campaignId),letters:await week.listLetters(userId,campaignId),scenes:await game.listScenes(userId,campaignId),rolls:await game.listRolls(userId,campaignId),doors:await game.listVollmachten(userId,campaignId),messages:await messages(userId,campaignId),table:await messages(userId,campaignId,"table")});
   }
   async function sync(userId:string,campaignId:string) {
     return db.transaction(async tx=>{

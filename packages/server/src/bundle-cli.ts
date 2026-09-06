@@ -1,18 +1,23 @@
 import { readFile, stat } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
-import { parseCampaignBundle, CAMPAIGN_BUNDLE_LIMITS } from "@chronicle/io";
+import { parseCampaignBundle, parseCampaignBundleV2, CAMPAIGN_BUNDLE_LIMITS } from "@chronicle/io";
 import { createPgDb } from "./db/index.ts";
 import { initializeCampaignRestoreTarget, inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm, CampaignRestoreError } from "./domain/bundles.ts";
 
 export async function runBundleCli(args: readonly string[], env: NodeJS.ProcessEnv = process.env): Promise<void> {
   const [command, ...flags] = args;
   if (command !== "initialize" && command !== "check" && command !== "restore" && command !== "enroll")
-    throw new CampaignRestoreError("Usage: campaign-bundle initialize|check|restore|enroll [--database-url URL] [--input FILE] [--campaign-id ID --user-id ID]. DATABASE_URL is preferred.");
+    throw new CampaignRestoreError("Usage: campaign-bundle initialize|check|restore|enroll [--database-url URL] [--input FILE] [--upgrade-from-v1] [--campaign-id ID --user-id ID]. DATABASE_URL is preferred.");
   const options = new Map<string, string>();
-  for (let index = 0; index < flags.length; index += 2) {
+  let upgradeFromV1 = false;
+  for (let index = 0; index < flags.length; index++) {
     const key = flags[index], value = flags[index + 1];
+    if (key === "--upgrade-from-v1") {
+      if (upgradeFromV1 || (command !== "check" && command !== "restore")) throw new CampaignRestoreError("--upgrade-from-v1 is a single explicit option for check or restore only.");
+      upgradeFromV1 = true; continue;
+    }
     if ((key !== "--database-url" && key !== "--input" && key !== "--campaign-id" && key !== "--user-id") || !value || options.has(key)) throw new CampaignRestoreError("Invalid or duplicate command-line option.");
-    options.set(key, value);
+    options.set(key, value); index++;
   }
   const databaseUrl = options.get("--database-url") ?? env["DATABASE_URL"];
   if (!databaseUrl) throw new CampaignRestoreError("Set DATABASE_URL for the explicitly selected destination database.");
@@ -24,7 +29,7 @@ export async function runBundleCli(args: readonly string[], env: NodeJS.ProcessE
   if (command === "enroll" && (!origin || !cookieSecret || cookieSecret.length < 32)) throw new CampaignRestoreError("Enrollment requires CHRONICLE_ORIGIN and COOKIE_SECRET from the target application environment.");
   // Parse before connecting or performing any target mutation.
   if (file && (await stat(file)).size > CAMPAIGN_BUNDLE_LIMITS.bytes) throw new CampaignRestoreError("Campaign file exceeds the native bundle size limit.");
-  const bundle = file ? parseCampaignBundle(await readFile(file, "utf8")) : null;
+  const bundle = file ? (upgradeFromV1 ? parseCampaignBundle : parseCampaignBundleV2)(await readFile(file, "utf8")) : null;
   const db = createPgDb(databaseUrl);
   try {
     if (command === "initialize") {
@@ -36,7 +41,7 @@ export async function runBundleCli(args: readonly string[], env: NodeJS.ProcessE
       // one-use enrollment code. No environment secrets or browser credential.
       console.log(JSON.stringify(pairing));
     } else {
-      const result = command === "check" ? await inspectCampaignRestore(db, bundle) : await restoreCampaignBundle(db, bundle);
+      const result = command === "check" ? await inspectCampaignRestore(db, bundle, { upgradeFromV1 }) : await restoreCampaignBundle(db, bundle, { upgradeFromV1 });
       console.log(JSON.stringify(result));
     }
   } finally { await db.close(); }

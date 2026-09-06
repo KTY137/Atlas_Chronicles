@@ -3,7 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAMPAIGN_TABLES, campaignSemanticDiff, parseCampaignBundle, serializeCampaignBundle, type CampaignBundle } from "@chronicle/io";
+import { CAMPAIGN_V2_TABLES as CAMPAIGN_TABLES, campaignSemanticDiffV2 as campaignSemanticDiff,
+  parseCampaignBundleV2 as parseCampaignBundle, serializeCampaignBundleV2 as serializeCampaignBundle, type CampaignBundleV2 as CampaignBundle } from "@chronicle/io";
 import { DEMO_RULE_PACKAGE } from "@chronicle/rules";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -14,6 +15,8 @@ import { createWeek } from "../src/domain/week.ts";
 import { createImports } from "../src/domain/imports.ts";
 import { createAtlas } from "../src/domain/atlas.ts";
 import { createCommunication } from "../src/domain/communication.ts";
+import { createActors } from "../src/domain/actors.ts";
+import { seedBundleActors } from "./bundle-actors-fixture.ts";
 import { exportCampaignBundle, initializeCampaignRestoreTarget, inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm } from "../src/domain/bundles.ts";
 
 const clock = Date.UTC(2026, 8, 6, 12), cfg = { now: () => clock, seed: () => "00000001000000020000000300000004" };
@@ -27,6 +30,7 @@ const mapSource = JSON.stringify({ info: { version: "1.151.2", seed: "bundle-tes
 
 describe("native campaign export and empty-target restore", () => {
   let source: Db, bundle: CampaignBundle, gm: string, player: string, campaign: string, actor: string, entryId: string, originalCookie: string;
+  let actorFixture: Awaited<ReturnType<typeof seedBundleActors>>;
   beforeAll(async () => {
     source = await createTestDb(); await migrate(source);
     const identity = createIdentity(source, authConfig), session = await identity.bootstrap("Kaya");
@@ -80,12 +84,14 @@ describe("native campaign export and empty-target restore", () => {
       await tx.query("INSERT INTO rolls(id,campaign_id,vollmacht_id,seed,expression,result,threshold,package_pin,status,rolled_at,confirmed_at,confirmation) VALUES($1,$2,$3,'legacy-seed','1d20',12,1,'kern@1.0.0','bestaetigt',$4,$4,$5)", [legacyRoll, campaign, door, clock, { legacy: true }]);
       await tx.query("INSERT INTO access_incidents(campaign_id,user_id,vollmacht_id,created_at) VALUES($1,$2,$3,$4)", [campaign, player, door, clock]);
     });
+    actorFixture = await seedBundleActors(source, campaign, gm, player, entryId, cfg);
     bundle = await exportCampaignBundle(source, gm, campaign, cfg);
   }, 45_000);
   afterAll(async () => { await source?.close(); });
 
   it("exports every durable module and excludes credentials, private runtime state and table chat", async () => {
     expect(bundle.manifest.modules.every(module => module.count > 0)).toBe(true);
+    expect(new Set(bundle.tables.actor_inventory_events.map(row => row.operation)).size).toBe(16);
     expect((await source.query("SELECT platform_role FROM users WHERE id=$1", [gm])).rows[0]!.platform_role).toBe("leitung");
     const serialized = serializeCampaignBundle(bundle);
     expect(serialized).not.toContain("EPHEMERAL TABLE SENTINEL"); expect(serialized).not.toContain("PRIVATE PROVIDER SENTINEL");
@@ -97,6 +103,7 @@ describe("native campaign export and empty-target restore", () => {
 
   it.each([
     ["an added durable column", "ALTER TABLE entries ADD COLUMN future_payload jsonb"],
+    ["an added actor column", "ALTER TABLE actor_profiles ADD COLUMN future_payload jsonb"],
     ["an unknown durable table", "CREATE TABLE future_campaign_history (id text PRIMARY KEY, campaign_id text NOT NULL, payload jsonb)"],
   ])("requires a format migration before exporting %s", async (_description, ddl) => {
     const fresh = await createTestDb();
@@ -124,6 +131,10 @@ describe("native campaign export and empty-target restore", () => {
       await target.close(); target = await createTestDb(join(directory, "database"));
       const exported = await exportCampaignBundle(target, gm, campaign, cfg);
       expect(campaignSemanticDiff(bundle, exported)).toEqual([]);
+      expect(await createActors(target, cfg).instantiateItem(gm, campaign, actorFixture.retryInput)).toEqual(actorFixture.historicalItem);
+      expect(campaignSemanticDiff(bundle, await exportCampaignBundle(target, gm, campaign, cfg))).toEqual([]);
+      await expect(target.query("UPDATE actor_template_revisions SET content_hash=repeat('0',64)")).rejects.toThrow(/append-only/i);
+      await expect(target.query("DELETE FROM actor_inventory_events")).rejects.toThrow(/append-only/i);
       expect((await target.query("SELECT 1 FROM users WHERE platform_role<>'gast'")).rowCount).toBe(0);
       expect((await target.query("SELECT 1 FROM credentials")).rowCount).toBe(0);
       await expect(createIdentity(target, authConfig).authenticate(originalCookie)).rejects.toThrow();
@@ -145,7 +156,7 @@ describe("native campaign export and empty-target restore", () => {
   it("rolls back all inserted modules when a later insert fails", async () => {
     const target = await createTestDb(); await migrate(target);
     const failing: Db = { ...target, transaction: fn => target.transaction(tx => fn({ ...tx, query: async <T>(sql: string, params?: readonly unknown[]) => {
-      if (sql.startsWith('INSERT INTO "letters"')) throw new Error("Injected restore failure");
+      if (sql.startsWith('INSERT INTO "actor_inventory_events"')) throw new Error("Injected restore failure");
       return tx.query<T>(sql, params);
     } })) };
     try {

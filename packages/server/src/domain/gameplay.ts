@@ -7,6 +7,7 @@ import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
 import { createDocuments } from "./documents.ts";
 import { Conflict, Gone } from "./errors.ts";
+import { authorizeActor, listControlledActorIds } from "./actors.ts";
 
 export interface GameplayConfig extends DomainConfig { /** Test-only entropy injection; never accepted from an HTTP request. */ seed?: () => string }
 export interface ActorSheet { actorId: string; packageId: string; packageVersion: string; fields: Readonly<Record<string, Scalar>>; version: number; defeatPending: boolean; defeatedAt: number | null }
@@ -45,9 +46,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     return createCampaigns(tx, cfg).requireMember(userId, campaignId, gm ? ["leitung"] : undefined);
   }
   async function controller(tx: Db, member: Membership, actorId: string): Promise<{ name: string }> {
-    const actor = (await tx.query<{ name: string; user_id: string }>("SELECT name,user_id FROM actors WHERE id=$1 AND campaign_id=$2", [actorId, member.campaignId])).rows[0];
-    if (!actor || (member.role !== "leitung" && (member.role !== "spieler" || member.actorId !== actorId || actor.user_id !== member.userId))) throw new Gone();
-    return actor;
+    return authorizeActor(tx, member, actorId);
   }
   async function audit(tx: Db, campaignId: string, userId: string, kind: string, data: unknown) {
     await tx.query("INSERT INTO audit(campaign_id,actor_user_id,kind,data,created_at) VALUES($1,$2,$3,$4,$5)", [campaignId, userId, kind, data, now()]);
@@ -223,12 +222,13 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   async function rollFor(tx: Db, userId: string, campaignId: string, id: string): Promise<RollRow> {
     const member = await createCampaigns(tx, cfg).requireMember(userId, campaignId);
     const row = (await tx.query<RollRow>("SELECT * FROM action_rolls WHERE id=$1 AND campaign_id=$2", [id, campaignId])).rows[0];
-    if (!row) throw new Gone(); await controller(tx, member, row.actor_id); return row;
+    if (!row) throw new Gone(); await authorizeActor(tx, member, row.actor_id, { active: false }); return row;
   }
   async function getRoll(userId: string, campaignId: string, id: string) { return card(await rollFor(db, userId, campaignId, id)); }
   async function listRolls(userId: string, campaignId: string) {
     const member = await campaigns.requireMember(userId, campaignId);
-    const rows = await db.query<RollRow>("SELECT * FROM action_rolls WHERE campaign_id=$1 AND ($2::boolean OR actor_id=$3) ORDER BY prepared_at DESC,id LIMIT 100", [campaignId, member.role === "leitung", member.actorId]);
+    const controlled = await listControlledActorIds(db, member, { active: false });
+    const rows = await db.query<RollRow>("SELECT * FROM action_rolls WHERE campaign_id=$1 AND actor_id=ANY($2::text[]) ORDER BY prepared_at DESC,id LIMIT 100", [campaignId, controlled]);
     return rows.rows.map(card);
   }
   async function replayRoll(userId: string, campaignId: string, id: string) {
@@ -291,6 +291,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     return db.transaction(async tx => {
       await authorize(tx, userId, campaignId, true); const old = await previousMint(tx, userId, campaignId, input.commandId);
       if (old) { if (old.provenance.requestHash !== digest({ kind: "gesprochen", input, replaces: null })) throw new Conflict(); return old; }
+      await controller(tx, await createCampaigns(tx, cfg).requireMember(userId, campaignId), input.actorId);
       const actor = await sheet(tx, campaignId, input.actorId); if (!actor.defeatPending || actor.version !== input.expectedVersion) throw new Conflict();
       const receipt = await mint(tx, userId, campaignId, "gesprochen", input);
       await tx.query("UPDATE actor_sheets SET defeat_pending=false,defeated_at=$3,version=version+1 WHERE actor_id=$1 AND campaign_id=$2", [input.actorId, campaignId, now()]);
@@ -312,6 +313,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       if (!authorization && roll.target_passage_id && member.role !== "leitung") throw new Gone("mint-authority");
       if (authorization?.status === "eingeloest" && authorization.consumed_roll_id !== roll.id) throw new Gone();
       if (roll.confirmation) return roll.confirmation; // authority is checked before idempotent replay
+      await controller(tx, member, roll.actor_id);
       if (roll.status !== "ausstehend" || (authorization && Number(authorization.expires_at) <= now())) throw new Gone();
       const pkg = await packageFor(tx, campaignId, { id: roll.package_id, version: roll.package_version });
       if (digest(roll.receipt) !== roll.receipt_hash || !replayAction(pkg, roll.receipt).valid) throw new Conflict();
@@ -367,7 +369,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const member = await campaigns.requireMember(userId, campaignId);
     await expireVollmachten(userId, campaignId);
     const rows = (await db.query<VollmachtRow & { slug: string }>(`SELECT v.*,e.slug FROM action_vollmachten v JOIN passages p ON p.id=v.passage_id JOIN entries e ON e.id=p.entry_id
-      WHERE v.campaign_id=$1 AND ($2::boolean OR (v.actor_id=$3 AND v.status='offen' AND v.expires_at>$4 AND v.revoked_at IS NULL)) ORDER BY v.issued_at,v.id`, [campaignId, member.role === "leitung", member.actorId, now()])).rows;
+      WHERE v.campaign_id=$1 AND ($2::boolean OR (v.actor_id=ANY($3::text[]) AND v.status='offen' AND v.expires_at>$4 AND v.revoked_at IS NULL)) ORDER BY v.issued_at,v.id`, [campaignId, member.role === "leitung", await listControlledActorIds(db, member), now()])).rows;
     return rows.map(v => ({ id: v.id, actorId: v.actor_id, targetSlug: v.slug, actionId: v.action_id, expiresAt: Number(v.expires_at), status: v.status, repeatable: v.repeatable,
       ...(member.role === "leitung" ? { passageId: v.passage_id, threshold: v.threshold, budgetKind: v.budget_kind } : {}) }));
   }

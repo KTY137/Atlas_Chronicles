@@ -4,6 +4,28 @@ Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
 
 ## Current handoff — start here
 
+- **Current actor/inventory checkpoint:** Versioned actor/item templates, independent instances,
+  explicit shared control, separate reader perspective, sheet/roll/letter integration and inventory
+  are mounted and persistent. Native `.chronicle` v2 covers every migration010 table; unchanged v1
+  inputs require an explicit deterministic upgrade. See [ACTORS_UI](docs/ACTORS_UI.md) and
+  [CAMPAIGN_FORMAT_V2](docs/CAMPAIGN_FORMAT_V2.md). Read-only players receive projected lore
+  references without global profile versions; canonical retry evidence remains complete.
+- **Current verification:** `npm.cmd run gate` with real PostgreSQL enabled passes **460 tests
+  in48 files**, root TypeScript and package boundaries (**160 files,8 rules,0 violations**).
+  Canonical client build passes. All **12 Playwright flows pass in1.5m**, with `ATLAS_MEDIA_E2E=1`,
+  including the new three-reader actor workflow and four draft regressions. Artifacts are ignored
+  under `.local/e2e-actors-all-final`; draft red evidence remains in `.local/e2e-actor-drafts-red-final`
+  and `.local/e2e-template-race-red`. Desktop and390px screenshots were inspected.
+- **Tactical foundation only:** Native TacticalMapDocument-v1, unchanged SceneDoc-v3, UVTT import/
+  export, a real licensed Dungeondraft fixture and machine-rounding/metadata-loss regressions pass
+  **50 focused tests** included above. Persisted tactical scenes, masked raster tiles, token commands,
+  renderer/DOM parity and S-K1/S-T1 hardware acceptance remain next work. Full M0–M9 is still active.
+- **Local runtime refreshed after the green gate:** `start:media` applies migrations001–010;
+  the operative database confirms all10 names. `http://localhost:3000/api/health` returns
+  `200 {"ok":true}` and `/` returns200. App process9052 serves the current client and actor APIs.
+
+### Previous UI checkpoint — 9b1a59f
+
 - **Active full implementation, 2026-09-06:** Codex resumed alongside three external Claude sessions. Preserve their edits. Current ownership and overlap notes are in [docs/CODEX_HANDOFF.md](docs/CODEX_HANDOFF.md); the complete ordered scope remains [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). This is not full-product completion.
 - HTTP shutdown now drains real responses, closes raw TCP preconnections and leaves WebSocket shutdown to the plugin. Real Postgres tests cover concurrent document merge/reveal/retirement. Frozen letters retain their seals and no longer grant changed title/slug/path/order as current knowledge.
 - Native `.chronicle` campaign export and atomic empty-database restore are implemented with a strict versioned reference parser/schema, all present durable modules, unchanged historical IDs/seals, explicit excluded runtime/auth data, migration009 and separate one-use GM enrollment. Export is mounted in the GM's Runde view. Focused restore checks passed **7 PGlite +4 real Postgres tests**, including snapshot consistency, membership locking and rollback. See [docs/CAMPAIGN_RESTORE.md](docs/CAMPAIGN_RESTORE.md).

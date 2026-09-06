@@ -1,3 +1,4 @@
+import { seedActorControl } from "./actor-fixtures.ts";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEMO_RULE_PACKAGE } from "@chronicle/rules";
@@ -20,6 +21,7 @@ describe("reviewed rule activation", () => {
     const campaignId = (await createCampaigns(db).createCampaign(gm, { name: "Regelvorschau" })).id;
     await db.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,'Sera')", [actor, campaignId, player]);
     await db.query("INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton,actor_id) VALUES($1,$2,'spieler','Sera','sera',$3)", [campaignId, player, actor]);
+    await seedActorControl(db, campaignId, actor, player);
     const identity = createIdentity(db, config), game = createGameplay(db);
     const gmCookie = `chronicle_session=${(await identity.issueSession(gm)).value}`, playerCookie = `chronicle_session=${(await identity.issueSession(player)).value}`;
     const post = (suffix: string, body: unknown, cookie = gmCookie) => app.inject({ method: "POST", url: `/api/campaigns/${campaignId}/rules${suffix}`, headers: { cookie, origin: config.origin, "content-type": "application/json" }, payload: JSON.stringify(body) });
@@ -64,6 +66,7 @@ describe("reviewed rule activation", () => {
     const exact = (await f.post("/preview", { package: alternative })).json();
     const actor = randomUUID();
     await db.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,'Zweite Figur')", [actor, f.campaignId, f.gm]);
+    await seedActorControl(db, f.campaignId, actor, f.gm);
     await f.game.updateSheet(f.gm, f.campaignId, { actorId: actor, expectedVersion: 0, fields: { insight: 4 } });
     expect((await f.post("/activate", { packageId: next.id, packageVersion: next.version, expectedVersion: 0, previewHash: exact.previewHash })).statusCode).toBe(409);
     expect((await f.game.getSheet(f.gm, f.campaignId, actor)).fields.insight).toBe(4);

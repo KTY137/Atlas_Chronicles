@@ -10,8 +10,16 @@ export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
   const now = cfg.now ?? Date.now;
   async function requireMember(userId: string, campaignId: string, roles?: readonly string[]): Promise<Membership> {
     const row = (await db.query<Membership>(`SELECT m.campaign_id AS "campaignId", m.user_id AS "userId", m.role,
-      m.display_name AS "displayName", m.actor_id AS "actorId", c.universe_id AS "universeId"
-      FROM campaign_memberships m JOIN campaigns c ON c.id=m.campaign_id WHERE m.user_id=$1 AND m.campaign_id=$2`, [userId, campaignId])).rows[0];
+      m.display_name AS "displayName",
+      CASE WHEN m.role IN ('leitung','spieler') AND p.actor_id IS NOT NULL AND p.archived_at IS NULL
+        AND EXISTS (SELECT 1 FROM actor_controllers g WHERE g.campaign_id=m.campaign_id
+          AND g.actor_id=p.actor_id AND g.user_id=m.user_id AND g.permission='control' AND g.revoked_at IS NULL)
+        THEN p.actor_id ELSE NULL END AS "actorId", c.universe_id AS "universeId"
+      FROM campaign_memberships m JOIN campaigns c ON c.id=m.campaign_id
+      LEFT JOIN reader_perspectives r ON r.campaign_id=m.campaign_id AND r.user_id=m.user_id
+      LEFT JOIN actor_profiles p ON p.campaign_id=m.campaign_id
+        AND p.actor_id=CASE WHEN r.user_id IS NULL THEN m.actor_id ELSE r.actor_id END
+      WHERE m.user_id=$1 AND m.campaign_id=$2`, [userId, campaignId])).rows[0];
     if (!row || (roles && !roles.includes(row.role))) throw new Gone("membership");
     return row;
   }
@@ -26,6 +34,7 @@ export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
       await tx.query("INSERT INTO campaigns(id,universe_id,owner_user_id,name,created_at) VALUES($1,$2,$3,$4,$5)", [id, universeId, userId, name, now()]);
       await tx.query(`INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton)
         VALUES($1,$2,'leitung',$3,$4)`, [id, userId, user.display_name, normalizeName(user.display_name).skeleton]);
+      await tx.query("INSERT INTO reader_perspectives(campaign_id,user_id,actor_id,version,updated_at) VALUES($1,$2,NULL,1,$3)", [id,userId,now()]);
       return { id, universeId, name, version: 1, role: "leitung" as const };
     });
   }
@@ -101,6 +110,11 @@ export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
       await tx.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,$4)", [actorId, campaignId, join.user_id, join.display_name]);
       await tx.query(`INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton,actor_id)
         VALUES($1,$2,'spieler',$3,$4,$5)`, [campaignId, join.user_id, join.display_name, join.name_skeleton, actorId]);
+      await tx.query(`INSERT INTO actor_profiles(actor_id,campaign_id,kind,version,created_by,created_at)
+        VALUES($1,$2,'player_character',1,$3,$4)`, [actorId,campaignId,gmUserId,now()]);
+      await tx.query(`INSERT INTO actor_controllers(actor_id,campaign_id,user_id,permission,version,granted_by,granted_at)
+        VALUES($1,$2,$3,'control',1,$4,$5)`, [actorId,campaignId,join.user_id,gmUserId,now()]);
+      await tx.query("INSERT INTO reader_perspectives(campaign_id,user_id,actor_id,version,updated_at) VALUES($1,$2,$3,1,$4)", [campaignId,join.user_id,actorId,now()]);
       await tx.query("UPDATE join_requests SET status='approved',approved_at=$2 WHERE id=$1", [requestId, now()]);
       return { userId: join.user_id, actorId };
     });

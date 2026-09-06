@@ -1,6 +1,7 @@
+import { seedActorControl } from "./actor-fixtures.ts";
 import { randomUUID } from "node:crypto";
 import { trustEntryId } from "@chronicle/core";
-import { parseCampaignBundle } from "@chronicle/io";
+import { parseCampaignBundleV2 } from "@chronicle/io";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.ts";
@@ -25,6 +26,7 @@ describe("wiki navigation follows the reader's current knowledge", () => {
     campaignId = (await createCampaigns(db).createCampaign(gm, { name: "Navigation" })).id;
     await db.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,'Reader')", [actor, campaignId, player]);
     await db.query("INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton,actor_id) VALUES($1,$2,'spieler','Reader','reader',$3)", [campaignId, player, actor]);
+    await seedActorControl(db, campaignId, actor, player);
     const identity = createIdentity(db, config);
     cookie = `chronicle_session=${(await identity.issueSession(player)).value}`;
     gmCookie = `chronicle_session=${(await identity.issueSession(gm)).value}`;
@@ -85,7 +87,7 @@ describe("wiki navigation follows the reader's current knowledge", () => {
     const response = await get("/export", gmCookie);
     expect(response.statusCode, response.body).toBe(200);
     expect(response.headers["content-disposition"]).toContain("campaign.chronicle");
-    const bundle = parseCampaignBundle(response.body);
+    const bundle = parseCampaignBundleV2(response.body);
     expect(bundle.manifest.campaignId).toBe(campaignId);
     expect(bundle.tables.entries.length).toBeGreaterThan(0);
     expect(bundle.tables).not.toHaveProperty("credentials");

@@ -1,0 +1,21 @@
+.actor-workbench { display: grid; gap: 1.25rem; }
+.actor-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 1.25rem; align-items: start; }
+.actor-columns > * { min-width: 0; }
+.actor-workbench .panel { display: grid; gap: .85rem; margin: 0; }
+.actor-workbench form, .actor-workbench fieldset { display: grid; gap: .8rem; min-width: 0; }
+.actor-workbench fieldset { border: 1px solid var(--line); padding: 1rem; border-radius: 12px; }
+.actor-workbench .actor-command-fields { border: 0; padding: 0; margin: 0; }
+.actor-workbench .view-tabs [aria-pressed="true"] { color: var(--text); border-color: var(--accent); background: var(--surface-2); }
+.actor-workbench legend { padding: 0 .4rem; }
+.actor-object-list { display: grid; gap: .65rem; list-style: none; padding: 0; margin: 1rem 0; }
+.actor-object-list li { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; overflow-wrap: anywhere; }
+.actor-object-list button { text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.inventory-section { display: grid; gap: 1rem; }
+.inventory-create { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+.inventory-create > .actor-command-fields { grid-column: 1 / -1; grid-template-columns: inherit; align-items: end; }
+.reader-perspective { display: flex; gap: .65rem; align-items: center; padding: .7rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.reader-perspective label { display: flex; gap: .65rem; align-items: center; min-width: 0; }
+.reader-perspective select { max-width: min(23rem, 100%); }
+.reader-perspective .field-help { margin: 0; }
+@media (max-width: 800px) { .actor-columns { grid-template-columns: minmax(0, 1fr); } .inventory-create { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 520px) { .reader-perspective label { width: 100%; display: grid; } .reader-perspective select { width: 100%; } }

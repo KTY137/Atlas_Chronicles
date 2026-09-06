@@ -53,8 +53,11 @@ export function createWeek(db: Db, cfg: DomainConfig = {}) {
   }
   async function sender(tx: Db, member: Membership, requested?: string): Promise<string> {
     const actorId = requested ?? member.actorId; if (!actorId || member.role === "beobachter") throw new Gone();
-    const actor = (await tx.query<{ user_id: string }>("SELECT user_id FROM actors WHERE id=$1 AND campaign_id=$2", [actorId, member.campaignId])).rows[0];
-    if (!actor || actor.user_id !== member.userId || (member.role !== "leitung" && member.actorId !== actorId)) throw new Gone();
+    const actor = await tx.query(`SELECT p.actor_id FROM actor_profiles p JOIN actor_controllers g
+      ON g.actor_id=p.actor_id AND g.campaign_id=p.campaign_id
+      WHERE p.actor_id=$1 AND p.campaign_id=$2 AND p.archived_at IS NULL
+        AND g.user_id=$3 AND g.permission='control' AND g.revoked_at IS NULL`, [actorId, member.campaignId, member.userId]);
+    if (!actor.rowCount) throw new Gone();
     return actorId;
   }
   async function history(tx: Db, campaignId: string) {
@@ -89,8 +92,11 @@ export function createWeek(db: Db, cfg: DomainConfig = {}) {
   async function deliverDue(tx: Db, campaignId: string): Promise<void> {
     const current = await clock(tx, campaignId);
     const due = (await tx.query<LetterRow & { recipient_actor_id: string }>(`SELECT l.*,r.actor_id AS recipient_actor_id FROM letters l JOIN letter_recipients r ON r.letter_id=l.id
-      JOIN actors a ON a.id=r.actor_id JOIN campaign_memberships m ON m.campaign_id=r.campaign_id AND m.actor_id=r.actor_id AND m.user_id=a.user_id
-      WHERE l.campaign_id=$1 AND l.arrival_day<=$2 AND r.delivered_at IS NULL ORDER BY l.id,r.actor_id FOR UPDATE OF r`, [campaignId, current.day])).rows;
+      JOIN actor_profiles p ON p.actor_id=r.actor_id AND p.campaign_id=r.campaign_id AND p.archived_at IS NULL
+      WHERE l.campaign_id=$1 AND l.arrival_day<=$2 AND r.delivered_at IS NULL AND EXISTS (
+        SELECT 1 FROM actor_controllers g JOIN campaign_memberships m ON m.campaign_id=g.campaign_id AND m.user_id=g.user_id
+        WHERE g.actor_id=r.actor_id AND g.campaign_id=r.campaign_id AND g.revoked_at IS NULL AND g.permission='control'
+          AND m.role IN ('leitung','spieler')) ORDER BY l.id,r.actor_id FOR UPDATE OF r`, [campaignId, current.day])).rows;
     for (const letter of due) {
       const deliveredAt = now();
       const outcomes: { passageId: string; sourceRevisionId: string; sourceHash: string; quelle: { art: "gehoert"; von: string }; grant: "current" | "historical-only" }[] = [];
@@ -143,8 +149,15 @@ export function createWeek(db: Db, cfg: DomainConfig = {}) {
       const requestHash = hash(input);
       const old = (await tx.query<LetterRow>("SELECT * FROM letters WHERE campaign_id=$1 AND sent_by=$2 AND command_id=$3", [campaignId, userId, input.commandId])).rows[0];
       if (old) { if (old.request_hash !== requestHash) throw new Conflict(); return createWeek(tx, cfg).getLetter(userId, campaignId, old.id); }
-      const recipients = await tx.query(`SELECT a.id FROM actors a JOIN campaign_memberships m ON m.actor_id=a.id AND m.campaign_id=a.campaign_id AND m.user_id=a.user_id
-        WHERE a.campaign_id=$1 AND a.id=ANY($2::text[])`, [campaignId, input.toActorIds]); if (recipients.rowCount !== input.toActorIds.length) throw new Gone();
+      const recipients = await tx.query(`SELECT p.actor_id FROM actor_profiles p WHERE p.campaign_id=$1
+        AND p.actor_id=ANY($2::text[]) AND p.archived_at IS NULL AND EXISTS (
+          SELECT 1 FROM actor_controllers g JOIN campaign_memberships m ON m.campaign_id=g.campaign_id AND m.user_id=g.user_id
+          WHERE g.campaign_id=p.campaign_id AND g.actor_id=p.actor_id AND g.revoked_at IS NULL AND g.permission='control'
+            AND m.role IN ('leitung','spieler')) AND ($3 OR EXISTS (
+          SELECT 1 FROM campaign_memberships m WHERE m.campaign_id=p.campaign_id AND m.actor_id=p.actor_id
+        ) OR EXISTS (SELECT 1 FROM actor_controllers own WHERE own.campaign_id=p.campaign_id
+          AND own.actor_id=p.actor_id AND own.user_id=$4 AND own.revoked_at IS NULL AND own.permission='control'))`,
+        [campaignId, input.toActorIds, member.role === "leitung", userId]); if (recipients.rowCount !== input.toActorIds.length) throw new Gone();
       const snapshots = await sourceSnapshots(tx, campaignId, actorId, input.passageIds); const current = await clock(tx, campaignId);
       const id = randomUUID(), sentAt = now(), arrivalDay = current.day + current.postDays;
       const seal = hash({ schemaVersion: 1, id, fromActorId: actorId, toActorIds: [...input.toActorIds].sort(), note: input.note, snapshots, sentAt, sentDay: current.day, sentLabel: current.label, arrivalDay });

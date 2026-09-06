@@ -1,3 +1,4 @@
+import { seedActorControl } from "./actor-fixtures.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stableJson } from "@chronicle/rules";
@@ -28,6 +29,7 @@ describe("delayed letter snapshot identity", () => {
     for (const [userId, actorId] of [[sender, actorSender], [recipient, actorRecipient]]) {
       await db.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,$4)", [actorId, campaignId, userId, actorId]);
       await db.query("INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton,actor_id) VALUES($1,$2,'spieler',$3,$3,$4)", [campaignId, userId, userId, actorId]);
+      await seedActorControl(db, campaignId, actorId!, userId!);
     }
     const docs = createDocuments(db, config), week = createWeek(db, config);
     const originalPassages = [paragraph("The mailed text"), paragraph("An unmailed secret"), paragraph("The second mailed text")];

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Scalar } from "@chronicle/rules";
+import type { ActorCard } from "@chronicle/protocol";
 import { Dice6, Play, Plus, RefreshCw } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, plainText, type Campaign, type EntryDocument, type EntrySummary, type Member } from "../api";
@@ -7,25 +8,41 @@ import { useResource, useTask } from "../hooks";
 import { CharacterSheet } from "./CharacterSheet";
 import { RollCard } from "./RollCard";
 import { RuleFields } from "./RuleFields";
+import { ActorWorkbench } from "./ActorWorkbench";
 import { defaults, useCommand, type ActionCard, type ActorSheet, type DoorCard, type RulesState, type SceneCard } from "./game-api";
 import "./gameplay.css";
 
-type Tab = "actions" | "sheet" | "scenes" | "canon" | "doors";
+type Tab = "actions" | "sheet" | "scenes" | "canon" | "doors" | "actors";
 export function TableView({ campaign, userId, onOpenEntry, onDirty, openDoor, liveRevision = 0 }: { openDoor?: { id?: string; request: number }; liveRevision?: number; campaign: Campaign; userId: string; onOpenEntry: (id: string) => void; onDirty: (value: boolean) => void }) {
-  const [tab, setTab] = useState<Tab>(() => openDoor || new URLSearchParams(location.search).get("tab") === "doors" ? "doors" : "actions"), [revision, setRevision] = useState(0), [actor, setActor] = useState(""), [dirty, setDirty] = useState(false);
+  const [tab, setTab] = useState<Tab>(() => openDoor || new URLSearchParams(location.search).get("tab") === "doors" ? "doors" : "actions"), [revision, setRevision] = useState(0), [actor, setActor] = useState<string | null>(null), [dirty, setDirty] = useState(false);
   useEffect(() => { if (openDoor) setTab("doors"); }, [openDoor]);
   const gm = campaign.role === "leitung", rules = useResource<RulesState>(apiPath(campaign.id, "/rules"), revision + liveRevision);
   const roster = useResource<Member[]>(apiPath(campaign.id, "/roster"), revision + liveRevision), scenes = useResource<SceneCard[]>(apiPath(campaign.id, "/scenes"), revision + liveRevision, 6000);
-  const controlled = roster.data?.filter((member) => member.actorId && (gm || member.userId === userId)) ?? [];
-  const actorId = controlled.find((member) => member.actorId === actor)?.actorId ?? controlled[0]?.actorId ?? "";
+  const actors = useResource<ActorCard[]>(apiPath(campaign.id, "/actors"), revision + liveRevision);
+  const controlled = actors.data?.filter(a => a.canControl).map(a => ({ actorId: a.id, displayName: a.name })) ?? [];
+  const namedActors: Member[] = actors.data?.map(a => ({ actorId: a.id, displayName: a.name, userId: "", role: "spieler" })) ?? [];
+  // Pin the initial choice once. Later grants must not switch an open draft to a different actor.
+  useEffect(() => { if (actor === null && actors.data) setActor(actors.data.find(a => a.canControl)?.id ?? ""); }, [actor, actors.data]);
+  const actorId = controlled.find((member) => member.actorId === actor)?.actorId ?? "";
   const active = scenes.data?.find((scene) => scene.status === "active");
   const changeDirty = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
   const refresh = () => setRevision((value) => value + 1);
-  const tabs: { id: Tab; label: string }[] = [{ id: "actions", label: "Aktionen" }, { id: "sheet", label: "Figur" }, { id: "scenes", label: "Szenen" }, ...(gm ? [{ id: "canon" as const, label: "Kanon" }] : []), { id: "doors", label: "Vollmachten" }];
+  const tabs: { id: Tab; label: string }[] = [{ id: "actions", label: "Aktionen" }, { id: "sheet", label: "Figur" }, { id: "actors", label: "Figuren & Inventar" }, { id: "scenes", label: "Szenen" }, ...(gm ? [{ id: "canon" as const, label: "Kanon" }] : []), { id: "doors", label: "Vollmachten" }];
+  const chooseTab = (id: Tab) => {
+    if (tab === id) return true;
+    if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return false;
+    setTab(id); changeDirty(false); return true;
+  };
   return <section className="page-content table-page"><div className="page-heading"><div><p className="eyebrow">Der gemeinsame Abend</p><h1>Am Tisch</h1><p className="muted">{active ? `${active.name} · ${active.fictionDate}` : "Noch keine Szene eröffnet."}</p></div><Button aria-label="Tisch aktualisieren" onClick={refresh}><RefreshCw size={16} /></Button></div>
-    <div className="table-controls"><div className="view-tabs" role="tablist" aria-label="Tischansichten">{tabs.map(({ id, label }) => <button key={id} role="tab" aria-selected={tab === id} onClick={() => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setTab(id); changeDirty(false); } }}>{label}</button>)}</div>{controlled.length ? <label className="actor-picker">Handelnde Figur<select value={actorId} onChange={(e) => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setActor(e.target.value); changeDirty(false); } }}>{controlled.map((member) => <option key={member.actorId} value={member.actorId!}>{member.displayName}</option>)}</select></label> : null}</div>
-    {rules.error || roster.error || scenes.error ? <Notice error>{rules.error || roster.error || scenes.error}</Notice> : null}
-    {rules.loading || roster.loading ? <Loading /> : rules.data ? tab === "scenes" ? <Scenes campaignId={campaign.id} gm={gm} scenes={scenes.data ?? []} onChanged={refresh} onOpenEntry={onOpenEntry} /> : tab === "canon" && gm ? <Canon campaignId={campaign.id} roster={roster.data ?? []} actorId={actorId} fictionDate={active?.fictionDate ?? ""} onChanged={refresh} /> : tab === "doors" ? <Doors selectedId={openDoor?.id ?? new URLSearchParams(location.search).get("door") ?? undefined} campaignId={campaign.id} rules={rules.data} roster={roster.data ?? []} actorId={actorId} gm={gm} revision={revision + liveRevision} onChanged={refresh} /> : !actorId ? <EmptyState title="Eine Figur macht den Anfang.">Sobald eine Person deiner Runde beitritt, könnt ihr ihren Charakterbogen öffnen und mit ihr handeln.</EmptyState> : tab === "sheet" ? <CharacterSheet liveRevision={revision + liveRevision} key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} onDirty={changeDirty} onChanged={refresh} /> : <Actions key={`${actorId}-${rules.data.pin.id}-${rules.data.pin.version}`} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} fictionDate={active?.fictionDate ?? ""} roster={roster.data ?? []} revision={revision + liveRevision} onChanged={refresh} /> : null}
+    <div className="table-controls"><div className="view-tabs" role="tablist" aria-label="Tischansichten">{tabs.map(({ id, label }, index) => <button key={id} id={`table-tab-${id}`} role="tab" aria-selected={tab === id} aria-controls="table-tab-panel" tabIndex={tab === id ? 0 : -1} onClick={() => chooseTab(id)} onKeyDown={event => {
+      const next = event.key === "ArrowRight" ? (index + 1) % tabs.length : event.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : null;
+      if (next !== null) { event.preventDefault(); const target = tabs[next]!.id; if (chooseTab(target)) document.getElementById(`table-tab-${target}`)?.focus(); }
+    }}>{label}</button>)}</div>{controlled.length ? <label className="actor-picker">Handelnde Figur<select value={actorId} onChange={(e) => { if (e.target.value === actorId) return; if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setActor(e.target.value); changeDirty(false); } }}>{!actorId ? <option value="">Figur wählen</option> : null}{controlled.map((member) => <option key={member.actorId} value={member.actorId!}>{member.displayName}</option>)}</select></label> : null}</div>
+    {rules.error || roster.error || scenes.error || actors.error ? <Notice error>{rules.error || roster.error || scenes.error || actors.error}</Notice> : null}
+    {actor && !actorId && actors.data ? <Notice>Die bisher ausgewählte Figur steht dir nicht mehr zur Verfügung. Wähle eine andere Figur.</Notice> : null}
+    <div id="table-tab-panel" role="tabpanel" aria-labelledby={`table-tab-${tab}`}>
+    {rules.loading || roster.loading || actors.loading ? <Loading /> : rules.data ? tab === "actors" ? <ActorWorkbench campaignId={campaign.id} gm={gm} actorId={actorId} actors={actors.data ?? []} roster={roster.data ?? []} rules={rules.data} revision={revision + liveRevision} onChanged={refresh} onDirty={changeDirty} /> : tab === "scenes" ? <Scenes campaignId={campaign.id} gm={gm} scenes={scenes.data ?? []} onChanged={refresh} onOpenEntry={onOpenEntry} /> : tab === "canon" && gm ? <Canon campaignId={campaign.id} roster={namedActors} actorId={actorId} fictionDate={active?.fictionDate ?? ""} onChanged={refresh} /> : tab === "doors" ? <Doors selectedId={openDoor?.id ?? new URLSearchParams(location.search).get("door") ?? undefined} campaignId={campaign.id} rules={rules.data} roster={namedActors} actorId={actorId} gm={gm} revision={revision + liveRevision} onChanged={refresh} /> : !actorId ? <EmptyState title="Eine Figur macht den Anfang.">Sobald eine Person deiner Runde beitritt, könnt ihr ihren Charakterbogen öffnen und mit ihr handeln.</EmptyState> : tab === "sheet" ? <CharacterSheet liveRevision={revision + liveRevision} key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} onDirty={changeDirty} onChanged={refresh} /> : <Actions key={`${actorId}-${rules.data.pin.id}-${rules.data.pin.version}`} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} fictionDate={active?.fictionDate ?? ""} roster={namedActors} revision={revision + liveRevision} onChanged={refresh} /> : null}
+    </div>
   </section>;
 }
 

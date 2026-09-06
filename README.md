@@ -50,6 +50,9 @@ Remove-Item Env:\TEST_DATABASE_URL
 Die App enthält Einrichtung und Beitritt, Passkeys, Wiki-Projektionen und
 Bearbeitung, Eron-/Azgaar-Import, Karten, Charakterbögen, Szenen, Würfe,
 Bestätigungen, Kampagnenbeiträge und getrennten Tischchat. Die
+[Figurenverwaltung](docs/ACTORS_UI.md) ergänzt versionierte Vorlagen,
+eigenständige Figuren und Gegenstände, geteilte Kontrolle und einen ausdrücklich
+gewählten Wissensblick. Die
 [Wochenansicht](docs/WEEK_UI.md) verbindet Briefe, Postlaufzeit, Lesestand und
 Wochenunterschiede. Die Schmiede bietet visuellen Regel- und Bogenbau mit
 Testfiguren, Würfel-Trace und ausdrücklich bestätigter Paketmigration. Sprache,
@@ -61,7 +64,7 @@ stehen in [STATUS.md](STATUS.md).
 Die Spielleitung kann die vollständige Kampagne als native `.chronicle`-Datei
 herunterladen. Der [Restore-Leitfaden](docs/CAMPAIGN_RESTORE.md) beschreibt die
 geprüfte Wiederherstellung in eine leere Instanz und die separate Einrichtung
-neuer Zugangsdaten. Der [Formatvertrag](design/iterations/campaign-bundle-v1.md)
+neuer Zugangsdaten. Der [Formatvertrag v2](docs/CAMPAIGN_FORMAT_V2.md)
 benennt auch ausgeschlossene Laufzeitdaten.
 
 Für Self-Hosting und die optionale Medieninfrastruktur siehe

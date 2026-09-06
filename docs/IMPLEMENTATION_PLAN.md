@@ -7,8 +7,11 @@ Der GM-/Zwei-Spieler-Ablauf ist inzwischen implementiert und einschließlich ech
 PostgreSQL-Neustart im Browser geprüft. Produktstart, Build, Passkeys, Wiki,
 Atlas-Import, Tisch, Kanal und native Kampagnensicherung sind vorhanden;
 Wochenansicht, visueller Regelbau und Medienoberfläche sind ebenfalls verbunden
-und gemeinsam in sieben Browserabläufen geprüft. Figuren-/Inventarinstanzen,
-taktische Werkzeuge und die weiteren Lieferpunkte bleiben in Arbeit.
+und gemeinsam im Browser geprüft. Figuren-/Inventarinstanzen mit Vorlagen,
+geteilter Kontrolle, getrenntem Wissensblick und nativem Format v2 sind ebenfalls
+angeschlossen. Taktische Karten-/UVTT-Verträge und eine reale Importfixture sind
+vorhanden; ihre persistierte Spieleransicht, Werkzeuge und die weiteren
+Lieferpunkte bleiben in Arbeit.
 Maßgebliche aktuelle Nachweise stehen in [STATUS.md](../STATUS.md).
 Kaya hat den Auftrag auf die vollständige Umsetzung dieses Plans erweitert;
 das erste Lieferziel begrenzt den laufenden Auftrag nicht.

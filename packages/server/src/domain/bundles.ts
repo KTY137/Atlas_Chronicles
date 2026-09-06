@@ -1,13 +1,16 @@
 import {
-  CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, createCampaignBundle, validateCampaignBundle, campaignSemanticDiff,
-  type CampaignBundle, type CampaignRow, type CampaignTables, type CampaignTableName,
+  CAMPAIGN_V2_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES,
+  createCampaignBundleV2 as createCampaignBundle, validateCampaignBundleV2 as validateCampaignBundle,
+  campaignSemanticDiffV2 as campaignSemanticDiff, upgradeCampaignBundleV1,
+  type CampaignBundleV2 as CampaignBundle, type CampaignRow, type CampaignTablesV2 as CampaignTables,
+  type CampaignTableNameV2 as CampaignTableName, type CampaignUpgradeReport,
 } from "@chronicle/io";
 import { migrate, type Db } from "../db/index.ts";
 import { createCampaigns } from "./campaigns.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { Conflict, Gone } from "./errors.ts";
 
-const MIGRATION = "009_campaign_restore.sql";
+const MIGRATION = "010_actor_instances.sql";
 const identityColumns = new Set(["owner_user_id", "user_id", "created_by", "author_user_id", "issued_by", "granted_by", "prepared_by", "installed_by", "started_by", "updated_by", "sent_by", "reader_user_id", "actor_user_id", "accepted_by"]);
 const destinationTables = [...CAMPAIGN_TABLES.map(table => table.name), ...CAMPAIGN_EXCLUDED_TABLES.filter(name => name !== "schema_migrations")];
 const excludedTables = new Set<string>(CAMPAIGN_EXCLUDED_TABLES);
@@ -23,6 +26,8 @@ const restoreOrder: readonly CampaignTableName[] = [
   "week_baselines", "game_sessions", "action_vollmachten", "action_rolls", "confirmed_mints", "week_clocks",
   "letters", "letter_recipients", "letter_delivery_receipts", "reading_watermarks",
   "atlas_maps", "atlas_nodes", "atlas_revelations", "campaign_messages", "audit", "access_incidents",
+  "actor_templates", "actor_template_revisions", "item_templates", "item_template_revisions",
+  "actor_profiles", "actor_controllers", "reader_perspectives", "item_instances", "actor_inventory_events",
 ];
 
 export class CampaignRestoreError extends Error {
@@ -31,11 +36,23 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
+  formatVersion: 2; migration?: CampaignUpgradeReport;
 }
-function report(bundle: CampaignBundle, dryRun: boolean): CampaignRestoreReport {
+function report(bundle: CampaignBundle, dryRun: boolean, migration?: CampaignUpgradeReport): CampaignRestoreReport {
   return { campaignId: bundle.manifest.campaignId, universeId: bundle.manifest.universeId,
     contentHash: bundle.manifest.contentHash, rows: CAMPAIGN_TABLES.reduce((sum, table) => sum + bundle.tables[table.name].length, 0),
-    identitiesWithoutCredentials: bundle.tables.users.length, enrollmentRequired: true, dryRun };
+    identitiesWithoutCredentials: bundle.tables.users.length, enrollmentRequired: true, dryRun, formatVersion: 2,
+    ...(migration ? { migration } : {}) };
+}
+export interface CampaignRestoreOptions { upgradeFromV1?: boolean }
+function restoreInput(input: unknown, options: CampaignRestoreOptions): { bundle: CampaignBundle; migration?: CampaignUpgradeReport } {
+  if (input && typeof input === "object" && Object.getOwnPropertyDescriptor(input, "version")?.value === 1) {
+    if (!options.upgradeFromV1) throw new CampaignRestoreError("Native campaign v1 requires the explicit --upgrade-from-v1 option for this v2 destination.");
+    const upgraded = upgradeCampaignBundleV1(input);
+    return { bundle: upgraded.bundle, migration: upgraded.report };
+  }
+  if (options.upgradeFromV1) throw new CampaignRestoreError("--upgrade-from-v1 requires a version 1 source file.");
+  return { bundle: validateCampaignBundle(input) };
 }
 
 /** A complete profile must account for every durable column in its source schema. */
@@ -46,7 +63,7 @@ async function requireCoveredSchema(tx: Db): Promise<void> {
     LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped
     WHERE n.nspname=current_schema() AND c.relkind IN ('r','p')`)).rows;
   const present = new Map<string, Set<string>>();
-  const incompatible = () => new CampaignRestoreError("Application schema is not covered by native campaign v1; an explicit format migration is required.");
+  const incompatible = () => new CampaignRestoreError("Application schema is not covered by native campaign v2; an explicit format migration is required.");
   for (const { table_name, column_name } of columns) {
     if (excludedTables.has(table_name)) continue;
     const allowed = coveredColumns.get(table_name);
@@ -105,7 +122,7 @@ export async function exportCampaignBundle(db: Db, userId: string, campaignId: s
 
 async function requireSchema(tx: Db): Promise<void> {
   if (!(await tx.query("SELECT name FROM schema_migrations WHERE name=$1", [MIGRATION])).rowCount)
-    throw new CampaignRestoreError("Destination requires migration 009; initialize the empty destination explicitly first.");
+    throw new CampaignRestoreError("Destination requires migration 010; initialize the empty destination explicitly first.");
   await requireCoveredSchema(tx);
 }
 async function requireEmpty(tx: Db, allowMissing = false): Promise<void> {
@@ -137,18 +154,18 @@ export async function initializeCampaignRestoreTarget(db: Db): Promise<void> {
 }
 
 /** Reads and validates only. No migration, writes, sequence changes or enrollment occur. */
-export async function inspectCampaignRestore(db: Db, input: unknown): Promise<CampaignRestoreReport> {
-  const bundle = validateCampaignBundle(input);
+export async function inspectCampaignRestore(db: Db, input: unknown, options: CampaignRestoreOptions = {}): Promise<CampaignRestoreReport> {
+  const { bundle, migration } = restoreInput(input, options);
   return db.transaction(async tx => {
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
     await requireSchema(tx); await requireEmpty(tx);
-    return report(bundle, true);
+    return report(bundle, true, migration);
   });
 }
 
 /** Administrator-only construction into an empty target. Never expose as an HTTP route. */
-export async function restoreCampaignBundle(db: Db, input: unknown): Promise<CampaignRestoreReport> {
-  const bundle = validateCampaignBundle(input);
+export async function restoreCampaignBundle(db: Db, input: unknown, options: CampaignRestoreOptions = {}): Promise<CampaignRestoreReport> {
+  const { bundle, migration } = restoreInput(input, options);
   return db.transaction(async tx => {
     await tx.query("SELECT pg_advisory_xact_lock(7342619)");
     await requireSchema(tx);
@@ -177,7 +194,7 @@ export async function restoreCampaignBundle(db: Db, input: unknown): Promise<Cam
       if (maximum >= 9223372036854775807n) throw new CampaignRestoreError("An identity sequence is exhausted.");
       await tx.query(`ALTER TABLE ${quoted(name)} ALTER COLUMN ${quoted(column)} RESTART WITH ${maximum + 1n}`);
     }
-    return report(bundle, false);
+    return report(bundle, false, migration);
   });
 }
 

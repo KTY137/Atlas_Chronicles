@@ -1,3 +1,4 @@
+import { seedActorControl } from "./actor-fixtures.ts";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
@@ -19,6 +20,7 @@ describe("live refresh includes the reader's week and rules", () => {
     for (const [user, actor] of [[a, actorA], [b, actorB]]) {
       await db.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,$3)", [actor, campaign, user]);
       await db.query("INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton,actor_id) VALUES($1,$2,'spieler',$2,$2,$3)", [campaign, user, actor]);
+      await seedActorControl(db, campaign, actor!, user!);
     }
     const docs = createDocuments(db), game = createGameplay(db), week = createWeek(db), live = createCommunication(db);
     const entry = await docs.saveEntry(gm, campaign, { title: "Der Weg", passages: [{ inhalt: { kind: "absatz", inhalt: [{ text: "Eine bekannte Spur.", marks: [] }] } }] });

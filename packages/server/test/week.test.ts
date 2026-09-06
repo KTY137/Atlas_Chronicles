@@ -1,3 +1,4 @@
+import { seedActorControl } from "./actor-fixtures.ts";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
@@ -29,6 +30,7 @@ describe("the production week: fictional mail, frozen sources and inline unread 
     for (const [i, user] of [a, b, c].entries()) {
       await db.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,$4)", [actors[i], campaignId, user, `Actor ${i}`]);
       await db.query("INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton,actor_id) VALUES($1,$2,'spieler',$3,$3,$4)", [campaignId, user, `Actor ${i}`, actors[i]]);
+      await seedActorControl(db, campaignId, actors[i]!, user!);
     }
     const docs = createDocuments(db, config), week = createWeek(db, config), game = createGameplay(db, config);
     const entry = await docs.saveEntry(gm, campaignId, { title: "Haus Vharon", passages: [paragraph("A knows the route"), paragraph("B knows the garden"), paragraph("The sealed cellar")] });

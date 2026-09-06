@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ActorCard, ReaderPerspective } from "@chronicle/protocol";
 import { BookOpen, Check, Clock3, Mail, RefreshCw, Send, X } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, ApiError, errorText, plainText, type Campaign, type EntryDocument, type EntrySummary, type Member } from "../api";
@@ -50,13 +51,15 @@ function CampaignWeek({ campaign, userId, liveRevision = 0, onDirty, onOpenEntry
   const revision = liveRevision + localRevision, gm = campaign.role === "leitung";
   const refresh = useCallback(() => setLocalRevision(value => value + 1), []);
   const roster = useWeekResource<Member[]>(apiPath(campaign.id, "/roster"), revision, 10_000);
+  const actors = useWeekResource<ActorCard[]>(apiPath(campaign.id, "/actors"), revision, 10_000);
+  const perspective = useWeekResource<ReaderPerspective>(apiPath(campaign.id, "/reader-perspective"), revision, 10_000);
   const clock = useWeekResource<FictionClock>(apiPath(campaign.id, "/week/clock"), revision, 6000);
   const letters = useWeekResource<LetterEnvelope[]>(apiPath(campaign.id, "/week/letters"), revision, 6000);
   const difference = useWeekResource<WeekDifference>(gm ? apiPath(campaign.id, "/week/difference") : null, revision, 10_000);
   const entries = useWeekResource<EntrySummary[]>(apiPath(campaign.id, "/entries"), revision, 10_000);
-  const own = roster.data?.find(member => member.userId === userId);
-  const actorId = campaign.role !== "beobachter" ? own?.actorId : null;
-  const names = new Map(roster.data?.filter(member => member.actorId).map(member => [member.actorId!, member.displayName]));
+  const actorId = campaign.role !== "beobachter" ? perspective.data?.actorId : null;
+  const recipients: Member[] = [...(roster.data ?? []), ...(actors.data ?? []).filter(a => !roster.data?.some(m => m.actorId === a.id)).map(a => ({ userId: "", actorId: a.id, displayName: a.name, role: "spieler" as const }))];
+  const names = new Map(recipients.filter(member => member.actorId).map(member => [member.actorId!, actors.data?.find(a => a.id === member.actorId)?.name ?? member.displayName]));
   const dirty = letterDirty || clockDirty;
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
@@ -64,13 +67,13 @@ function CampaignWeek({ campaign, userId, liveRevision = 0, onDirty, onOpenEntry
   return <section className="page-content week-page">
     <div className="page-heading"><div><p className="eyebrow">Zwischen den Abenden</p><h1>Die Woche</h1><p className="muted">{campaign.name}</p></div><Button aria-label="Woche aktualisieren" onClick={refresh}><RefreshCw size={17} /></Button></div>
     <div className="week-book-link"><p>Neue Passagen findest du an ihrem Platz in deiner Chronik.</p><div className="button-row">{entries.data?.[0] ? <Button onClick={() => onOpenEntry(entries.data![0]!.id)}><BookOpen size={16} /> Im Buch weiterlesen</Button> : null}<Button onClick={() => onOpenDoors()}>Meine Vollmachten öffnen</Button></div></div>
-    {roster.error || entries.error ? <Notice error>{roster.error || entries.error}<Button onClick={refresh}>Erneut laden</Button></Notice> : null}
+    {roster.error || entries.error || actors.error || perspective.error ? <Notice error>{roster.error || entries.error || actors.error || perspective.error}<Button onClick={refresh}>Erneut laden</Button></Notice> : null}
     <ClockPanel campaignId={campaign.id} current={clock.data} loading={clock.loading} error={clock.error} gm={gm} onDirty={setClockDirty} onChanged={refresh} />
     {notice ? <Notice>{notice}</Notice> : null}
     <div className="week-mail-heading"><h2><Mail size={20} /> Briefe</h2>{actorId ? <Button variant="primary" onClick={() => setComposing(value => !value)} aria-expanded={composing}>{composing ? "Briefentwurf einklappen" : "Brief verfassen"}</Button> : null}</div>
     <p className="field-help">Ein Brief überträgt ausgewählte Passagen als Hörensagen. Sein Begleittext bleibt eine persönliche Notiz. Die Zustellung richtet sich nach eurer Weltzeit.</p>
     {roster.loading ? <Loading text="Figuren werden geladen …" /> : !actorId ? <p className="field-help">Briefe werden von der eigenen Figur versendet. Deinem Zugang ist keine schreibende Figur zugeordnet.</p> : null}
-    {actorId ? <div hidden={!composing}><LetterComposer key={actorId} campaignId={campaign.id} actorId={actorId} roster={roster.data ?? []} entries={entries.data ?? []} entriesError={entries.error} clock={clock.data} revision={revision} seed={composeSeed} onDirty={setLetterDirty} onSent={letter => { setSelected(letter.id); setComposing(false); setNotice("Dein Brief ist gespeichert und versiegelt."); refresh(); }} /></div> : null}
+    {actorId ? <div hidden={!composing}><LetterComposer key={actorId} campaignId={campaign.id} actorId={actorId} roster={recipients} entries={entries.data ?? []} entriesError={entries.error} clock={clock.data} revision={revision} seed={composeSeed} onDirty={setLetterDirty} onSent={letter => { setSelected(letter.id); setComposing(false); setNotice("Dein Brief ist gespeichert und versiegelt."); refresh(); }} /></div> : null}
     <div className="week-mail-layout"><aside className="week-envelopes" aria-label="Deine Briefe">
       {letters.error ? <Notice error>{letters.error}<Button onClick={refresh}>Briefe erneut laden</Button></Notice> : null}
       {letters.loading ? <Loading text="Briefe werden geladen …" /> : letters.data?.length ? <>

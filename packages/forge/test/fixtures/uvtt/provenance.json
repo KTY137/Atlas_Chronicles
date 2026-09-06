@@ -1,0 +1,76 @@
+{
+  "fixtureVersion": 1,
+  "kind": "external-uvtt-fixture",
+  "provenance": {
+    "name": "sampleMap",
+    "creator": "Andre Kostur",
+    "sourceUrl": "https://github.com/Imagix/uvtt2fgu/blob/9d37cb324d842745d3efc8364dfcec6383523999/exampleMaps/sampleMap.dd2vtt",
+    "license": "BSD-3-Clause",
+    "licenseUrl": "https://github.com/Imagix/uvtt2fgu/blob/9d37cb324d842745d3efc8364dfcec6383523999/LICENSE",
+    "retrievedAt": null,
+    "generator": "Dungeondraft",
+    "generatorVersion": "1.0.1.3 awaken dryad (authoring project creation build)"
+  },
+  "retrievedOn": "2026-09-06",
+  "repository": "https://github.com/Imagix/uvtt2fgu",
+  "commit": "9d37cb324d842745d3efc8364dfcec6383523999",
+  "commitDate": "2023-07-17T18:32:39Z",
+  "files": [
+    {
+      "path": "sampleMap.dd2vtt",
+      "upstreamPath": "exampleMaps/sampleMap.dd2vtt",
+      "bytes": 3786608,
+      "sha256": "3384e501dd30c2c978c6d56d8ad7ab75ebcc282accd9580511fef9a776d4dc4a"
+    },
+    {
+      "path": "sampleMap.dungeondraft_map",
+      "upstreamPath": "exampleMaps/sampleMap.dungeondraft_map",
+      "bytes": 42762,
+      "sha256": "f20a6410c09f4fcaea6155046a6f53c3be09cf059102779cc8ca92ce926066fc"
+    },
+    {
+      "path": "upstream-LICENSE.txt",
+      "upstreamPath": "LICENSE",
+      "bytes": 1520,
+      "sha256": "db21f9dcd1efe3b01a64994031756b96e22ba7f9a3389facdda201461c4c2a37"
+    }
+  ],
+  "observed": {
+    "formatVersion": 0.3,
+    "mapOrigin": [
+      2,
+      1
+    ],
+    "mapSizeInGridCells": [
+      10,
+      10
+    ],
+    "pixelsPerGrid": 256,
+    "image": {
+      "mimeType": "image/png",
+      "width": 2560,
+      "height": 2560
+    },
+    "wallPolylines": 4,
+    "objectBlockers": 1,
+    "portals": 2,
+    "lights": 2,
+    "authoringProject": {
+      "creationBuild": "1.0.1.3 awaken dryad",
+      "creationDateLocal": "2021-05-25T15:24:11",
+      "creationTimezone": null,
+      "usesDefaultAssets": true,
+      "assetManifest": []
+    }
+  },
+  "rightsEvidence": {
+    "upstreamLicense": "upstream-LICENSE.txt",
+    "finishedMapPublicationPolicy": "https://dungeondraft.net/",
+    "scope": "Upstream BSD-3-Clause notice is retained. Dungeondraft FAQ permits publication of authored maps; this is not a claim that the underlying default asset library is BSD-licensed. No separate stock assets or proprietary application code are included."
+  },
+  "limits": [
+    "One genuine unchanged external export, not a representative corpus of every UVTT producer.",
+    "Creation build is evidenced by the companion project, not a claim that the export was produced with that exact build.",
+    "No source-native UUIDs, room/article bindings, grants, actor controls or native elevation semantics are evidenced by this export."
+  ]
+}
