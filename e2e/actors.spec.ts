@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { parseCampaignBundleV2 } from "@chronicle/io";
+import { parseCampaignBundleV3 } from "@chronicle/io";
 import { buildApp } from "../packages/server/src/app.ts";
 import { createPgDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { createIdentity } from "../packages/server/src/identity/index.ts";
@@ -125,7 +125,7 @@ test("templates create independent shared actors and inventory; perspective and 
     expect((await player.request.get(`${base}/items/${item.id}`)).status()).toBe(404);
     expect((await player.request.get(`${base}/entries/${entryId}`)).status()).toBe(404);
     const archiveResponse = await gm.request.get(`${base}/export`); expect(archiveResponse.status()).toBe(200);
-    const bundle = parseCampaignBundleV2(await archiveResponse.text());
+    const bundle = parseCampaignBundleV3(await archiveResponse.text());
     expect(bundle.version).toBe(2); expect(bundle.tables.actor_profiles.some(row => row.actor_id === actor.id)).toBe(true);
     expect(bundle.tables.item_instances.find(row => row.id === item.id)?.state).toMatchObject({ quantity: 2, notes: "Am Frosttor gefunden." });
     await gm.setViewportSize({ width: 390, height: 844 });

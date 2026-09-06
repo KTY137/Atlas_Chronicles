@@ -1,0 +1,21 @@
+.tactical-workspace, .tactical-preparation, .tactical-live { display: grid; gap: 1.25rem; }
+.tactical-workspace .panel { margin: 0; display: grid; gap: 1rem; }
+.tactical-workspace .view-tabs [aria-pressed="true"] { color: var(--accent); box-shadow: inset 0 -2px var(--accent); }
+.tactical-command-fields { border: 0; padding: 0; margin: 0; display: grid; gap: 1rem; min-width: 0; }
+.tactical-canvas-frame { min-width: 0; display: grid; gap: .65rem; }
+.tactical-canvas { min-height: 360px; height: min(62vh, 720px); position: relative; overflow: hidden; background: #14212b; border: 1px solid var(--line); border-radius: 10px; }
+.tactical-canvas canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.tactical-token-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 1rem; }
+.tactical-token { display: grid; gap: .8rem; padding: 1rem; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.tactical-token.selected { border-color: var(--accent); }
+.tactical-token h4 { margin: 0; }
+.tactical-token .rule-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tactical-object-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .65rem; }
+.tactical-object-list li { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.tactical-prep-columns { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1.5rem; }
+.tactical-prep-columns > section { display: grid; gap: .85rem; align-content: start; min-width: 0; }
+.tactical-points { max-height: 220px; overflow: auto; margin: 0; padding-left: 1.5rem; }
+.tactical-points li { padding: .35rem 0; }
+.tactical-import { max-width: 960px; }
+.tactical-import-report { padding: 1rem; border: 1px solid var(--line); border-radius: 10px; }
+@media (max-width: 800px) { .tactical-prep-columns { grid-template-columns: minmax(0, 1fr); } .tactical-canvas { height: 50vh; min-height: 280px; } }

@@ -25,6 +25,7 @@ import { registerHttpLifecycle } from "./http/lifecycle.ts";
 import { registerWikiNavigation } from "./http/wiki-navigation.ts";
 import { registerBundles } from "./http/bundles.ts";
 import { registerActors } from "./http/actors.ts";
+import { registerTactical } from "./http/tactical.ts";
 
 export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; livekit?: MediaServerConfig }
 export async function buildApp(db: Db, config: AppConfig) {
@@ -131,6 +132,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerWikiNavigation(app, db, config);
   registerBundles(app, db, config);
   registerActors(app, db, config);
+  registerTactical(app, db, config);
   registerMedia(app,db,config,config.livekit);
   await registerRealtime(app,db,config);
   if (config.staticRoot) {

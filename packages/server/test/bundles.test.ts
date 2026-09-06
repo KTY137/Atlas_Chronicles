@@ -3,8 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAMPAIGN_V2_TABLES as CAMPAIGN_TABLES, campaignSemanticDiffV2 as campaignSemanticDiff,
-  parseCampaignBundleV2 as parseCampaignBundle, serializeCampaignBundleV2 as serializeCampaignBundle, type CampaignBundleV2 as CampaignBundle } from "@chronicle/io";
+import { CAMPAIGN_V3_TABLES as CAMPAIGN_TABLES, campaignSemanticDiffV3 as campaignSemanticDiff,
+  parseCampaignBundleV3 as parseCampaignBundle, serializeCampaignBundleV3 as serializeCampaignBundle, type CampaignBundleV3 as CampaignBundle } from "@chronicle/io";
 import { DEMO_RULE_PACKAGE } from "@chronicle/rules";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -90,7 +90,8 @@ describe("native campaign export and empty-target restore", () => {
   afterAll(async () => { await source?.close(); });
 
   it("exports every durable module and excludes credentials, private runtime state and table chat", async () => {
-    expect(bundle.manifest.modules.every(module => module.count > 0)).toBe(true);
+    expect(bundle.manifest.modules.filter(module => module.name !== "tactical").every(module => module.count > 0)).toBe(true);
+    expect(bundle.manifest.modules.find(module => module.name === "tactical")!.count).toBe(0);
     expect(new Set(bundle.tables.actor_inventory_events.map(row => row.operation)).size).toBe(16);
     expect((await source.query("SELECT platform_role FROM users WHERE id=$1", [gm])).rows[0]!.platform_role).toBe("leitung");
     const serialized = serializeCampaignBundle(bundle);

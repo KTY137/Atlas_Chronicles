@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { serializeCampaignBundleV2 } from "@chronicle/io";
+import { serializeCampaignBundleV3 } from "@chronicle/io";
 import type { Db } from "../db/index.ts";
 import type { AppConfig } from "../app.ts";
 import { createIdentity } from "../identity/index.ts";
@@ -13,7 +13,7 @@ export function registerBundles(app: FastifyInstance, db: Db, config: AppConfig)
       const bundle = await exportCampaignBundle(db, user.userId, request.params.campaignId, config);
       return reply.type("application/vnd.atlas-chronicles+json; charset=utf-8")
         .header("Content-Disposition", 'attachment; filename="campaign.chronicle"')
-        .send(serializeCampaignBundleV2(bundle));
+        .send(serializeCampaignBundleV3(bundle));
     } catch (error) {
       if (error instanceof CampaignRestoreError) return reply.code(409).send({ error: "Für dieses Datenbankschema muss zuerst das Kampagnenformat aktualisiert werden." });
       throw error;

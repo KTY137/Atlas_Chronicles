@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID, createHash } from "node:crypto";
+import { captureTacticalSession } from "./tactical.ts";
 import { resolvePassage, type LineageEvent, type Praegung, type Quelle } from "@chronicle/chronik";
 import { trustPassageId } from "@chronicle/core";
 import { DEMO_RULE_PACKAGE, RulePackageRegistry, defaultActorFields, evaluateAction, parseRulePackage, previewPackageMigration, replayAction, stableJson, validateEntityFields,
@@ -171,6 +172,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       await tx.query("UPDATE game_sessions SET ended_at=$2 WHERE campaign_id=$1 AND ended_at IS NULL", [campaignId, now()]);
       await tx.query("UPDATE scenes SET status='active',version=version+1 WHERE campaign_id=$1 AND id=$2", [campaignId, sceneId]);
       const id = randomUUID(); await tx.query("INSERT INTO game_sessions(id,campaign_id,scene_id,started_at,started_by) VALUES($1,$2,$3,$4,$5)", [id, campaignId, sceneId, now(), userId]);
+      await captureTacticalSession(tx, campaignId, sceneId, id, userId, now());
       return { id, sceneId, startedAt: now() };
     });
   }

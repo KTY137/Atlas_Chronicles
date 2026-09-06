@@ -13,6 +13,8 @@ import { Tisch } from "./stages/Tisch";
 import { Kanal } from "./stages/Kanal";
 import { Schmiede } from "./stages/Schmiede";
 import { Netz } from "./stages/Netz";
+import { Palette } from "./shell/Palette";
+import { DEFAULT_ARTICLE, articleExists } from "./wiki";
 
 const LOOKS: readonly LookId[] = ["obsidian", "vellum", "aurora"];
 const STAGES: readonly StageId[] = [
@@ -55,6 +57,12 @@ export function App() {
     const value = new URLSearchParams(window.location.search).get("whisper");
     return PARTY.some((p) => p.id === value) ? value : null;
   });
+  const [article, setArticle] = useState<string>(() => {
+    const value = new URLSearchParams(window.location.search).get("artikel");
+    return value && articleExists(value) ? value : DEFAULT_ARTICLE;
+  });
+  const [articleHistory, setArticleHistory] = useState<string[]>([]);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [voiceDown, setVoiceDown] = useState(
     () => new URLSearchParams(window.location.search).get("voice") === "down",
   );
@@ -78,6 +86,7 @@ export function App() {
     if (selection) params.set("lens", selection);
     if (whisperTarget) params.set("whisper", whisperTarget);
     if (voiceDown) params.set("voice", "down");
+    if (effectiveStage === "welt") params.set("artikel", article);
     window.history.replaceState(null, "", `?${params.toString()}`);
   }, [
     look,
@@ -87,7 +96,33 @@ export function App() {
     selection,
     whisperTarget,
     voiceDown,
+    article,
   ]);
+
+  /* ⌘K / Strg+K öffnet die Omnibox — der Ersatz für eine Artikelspalte. */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const openArticle = (next: string) => {
+    setArticleHistory((past) => [...past, article]);
+    setArticle(next);
+    setStage("welt");
+  };
+  const backArticle = () => {
+    setArticleHistory((past) => {
+      if (!past.length) return past;
+      setArticle(past[past.length - 1]);
+      return past.slice(0, -1);
+    });
+  };
 
   /* Sprechsimulation: wer gerade spricht, wandert durch die Runde.
      Bei aktivem Flüsterkanal sprechen nur Leitung und Ziel. */
@@ -131,7 +166,15 @@ export function App() {
       case "heute":
         return <Heute role={role} goTo={setStage} />;
       case "welt":
-        return <Welt onSelect={select} />;
+        return (
+          <Welt
+            title={article}
+            onOpen={openArticle}
+            onSelect={select}
+            history={[article, ...articleHistory]}
+            onBack={backArticle}
+          />
+        );
       case "tisch":
         return <Tisch role={role} selection={selection} onSelect={select} />;
       case "kanal":
@@ -141,7 +184,8 @@ export function App() {
       case "netz":
         return <Netz voiceDown={voiceDown} onToggleVoice={setVoiceDown} />;
     }
-  }, [effectiveStage, role, selection, voiceDown]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveStage, role, selection, voiceDown, article, articleHistory]);
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>
@@ -157,6 +201,7 @@ export function App() {
           onRole={setRole}
           reducedMotion={reducedMotion}
           onReducedMotion={setReducedMotion}
+          onSearch={() => setPaletteOpen(true)}
         />
         <div className="main">
           <Rail role={role} stage={effectiveStage} onStage={setStage} />
@@ -180,6 +225,9 @@ export function App() {
           voiceDown={voiceDown}
           goToKanal={() => setStage("kanal")}
         />
+        {paletteOpen ? (
+          <Palette onOpen={openArticle} onClose={() => setPaletteOpen(false)} />
+        ) : null}
         <div
           className="gate"
           data-violated={gateViolated}

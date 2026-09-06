@@ -15,6 +15,7 @@ interface Props {
   onRole: (role: Role) => void;
   reducedMotion: boolean;
   onReducedMotion: (reduced: boolean) => void;
+  onSearch: () => void;
 }
 
 export function ContextBar({
@@ -24,6 +25,7 @@ export function ContextBar({
   onRole,
   reducedMotion,
   onReducedMotion,
+  onSearch,
 }: Props) {
   return (
     <header className="context-bar">
@@ -39,7 +41,7 @@ export function ContextBar({
           {CAMPAIGN.session} · „{CAMPAIGN.sessionTitle}"
         </span>
       </nav>
-      <button className="search-pill" type="button">
+      <button className="search-pill" type="button" onClick={onSearch}>
         <Search size={13} />
         <span>Suchen, springen, würfeln …</span>
         <kbd>⌘K</kbd>

@@ -81,7 +81,17 @@ export function validateMapScene(scene: ProjectedMapScene): void {
     identities.add(key);
   };
   const color = (value: number | undefined): void => { if (value !== undefined && (!Number.isInteger(value) || value < 0 || value > 0xffffff)) throw new Error("invalid color"); };
+  if (scene.rasterScope !== undefined && (typeof scene.rasterScope !== "string" || scene.rasterScope.length > 512)) throw new Error("invalid raster scope");
+  if (scene.grid && scene.grid.kind !== "none") {
+    if (!["square", "hex"].includes(scene.grid.kind) || !Number.isFinite(scene.grid.size) || scene.grid.size <= 0 || scene.grid.origin.length !== 2 || !scene.grid.origin.every(Number.isFinite)) throw new Error("invalid grid");
+    if (scene.grid.kind === "hex" && (!["pointy", "flat"].includes(scene.grid.orientation) || !["even", "odd"].includes(scene.grid.offset))) throw new Error("invalid hex grid");
+  }
+  if (scene.lines && (!Array.isArray(scene.lines) || scene.lines.length > 20_000)) throw new Error("invalid map lines");
   let vertices = 0;
+  for (const line of scene.lines ?? []) {
+    id("line", line.id); color(line.color); vertices += line.points.length;
+    if (line.points.length < 2 || vertices > 1_000_000 || line.points.some((p: MapPoint) => p.length !== 2 || !p.every(Number.isFinite))) throw new Error("invalid map line");
+  }
   for (const cell of scene.cells) {
     id("cell", cell.id);
     if (!Array.isArray(cell.polygon) || cell.polygon.length < 3) throw new Error("polygon needs at least three vertices");

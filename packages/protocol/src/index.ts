@@ -50,3 +50,4 @@ export const Command = Type.Object({ commandId: Id, campaignId: Id,
     Type.Object({ kind: Type.Literal("presence"), state: Type.Union([Type.Literal("online"), Type.Literal("away")]) }, closed),
   ]) }, closed);
 export type CommandBody = Static<typeof Command>;
+export * from "./tactical.ts";

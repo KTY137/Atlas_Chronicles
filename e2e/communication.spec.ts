@@ -2,7 +2,7 @@ import { test, expect, type BrowserContext } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
 import { readFile } from "node:fs/promises";
-import { parseCampaignBundleV2 } from "@chronicle/io";
+import { parseCampaignBundleV3 } from "@chronicle/io";
 import { buildApp } from "../packages/server/src/app.ts";
 import { createTestDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { createIdentity } from "../packages/server/src/identity/index.ts";
@@ -103,7 +103,7 @@ test("two browsers exchange persistent posts, recover a lost acknowledgement, re
     await gm.getByRole("button", { name: "Kampagne exportieren", exact: true }).click();
     const download = await downloading, path = test.info().outputPath("campaign.chronicle");
     await download.saveAs(path);
-    const bundle = parseCampaignBundleV2(await readFile(path, "utf8"));
+    const bundle = parseCampaignBundleV3(await readFile(path, "utf8"));
     expect(bundle.manifest.campaignId).toBe(campaign);
     expect(bundle.tables.campaign_messages).toHaveLength(3); // Includes the authored deletion tombstone.
     expect(bundle.tables.campaign_messages.every(message => message.kind === "letter")).toBe(true);

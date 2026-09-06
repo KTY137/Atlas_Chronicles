@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 
 import { ATTRIBUTION, CAMPAIGN, type Role, type StageId } from "../fixture";
+import { CORPUS_STATS } from "../wiki";
 
 interface Props {
   role: Role;
@@ -60,8 +61,11 @@ export function Heute({ role, goTo }: Props) {
             onClick={() => goTo("welt")}
           >
             <span className="eyebrow">Im Buch weiterlesen</span>
-            <b>Flüsterer</b>
-            <span>zuletzt bearbeitet in Sitzung 14 · 5 Backlinks</span>
+            <b>{CORPUS_STATS.articles} Artikel · Eron</b>
+            <span>
+              {CORPUS_STATS.words.toLocaleString("de")} Wörter ·{" "}
+              {CORPUS_STATS.redLinks} rote Links warten auf einen Keim
+            </span>
           </button>
           {role === "gm" ? (
             <button

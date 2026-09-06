@@ -3,6 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@chronicle/core": "*", "@chronicle/chronik": "*", "@chronicle/rules": "*" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@chronicle/chronik": "*",
+    "@chronicle/core": "*",
+    "@chronicle/forge": "^0.0.0",
+    "@chronicle/rules": "*",
+    "@chronicle/szene": "^0.0.0"
+  }
 }
