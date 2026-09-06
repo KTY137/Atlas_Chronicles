@@ -1,0 +1,70 @@
+.rule-forge { max-width: 1480px; margin: 0 auto; min-width: 0; }
+.rule-forge h1, .rule-forge h2, .rule-forge h3, .rule-forge h4 { overflow-wrap: anywhere; }
+.rule-forge h1, .rf-section-heading h2 { display: flex; align-items: center; gap: 10px; }
+.rule-forge h1 svg, .rf-section-heading h2 svg { color: var(--accent); flex-shrink: 0; }
+.rule-forge p { line-height: 1.65; }
+.rule-forge label { display: flex; flex-direction: column; gap: 7px; min-width: 0; margin: 13px 0; font-size: 12px; }
+.rule-forge input, .rule-forge select, .rule-forge textarea { min-width: 0; max-width: 100%; width: 100%; }
+.rule-forge input[type="checkbox"] { width: 18px; height: 18px; min-height: 18px; flex: 0 0 auto; accent-color: var(--accent); }
+.rule-forge label.rf-check { flex-direction: row; align-items: center; gap: 10px; line-height: 1.6; }
+.rule-forge small, .rf-help { color: var(--text-muted); font-size: 11px; font-weight: normal; line-height: 1.65; overflow-wrap: anywhere; }
+.rule-forge :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.rule-forge fieldset { min-width: 0; }
+.rule-forge fieldset:disabled { opacity: .8; }
+.rule-forge fieldset:disabled fieldset { opacity: 1; }
+.rf-header, .rf-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.rf-header { margin-bottom: 28px; align-items: start; }
+.rf-header h1 { margin: 10px 0; font-family: var(--font-display); font-weight: 500; }
+.rf-header p { margin: 0; max-width: 660px; color: var(--text-muted); font-size: 13px; }
+.rf-section-heading { margin-bottom: 15px; }
+.rf-section-heading h2, .rf-section-heading h3, .rf-section-heading h4 { margin: 0; }
+.rf-section-heading h2 { font-size: 20px; font-family: var(--font-display); font-weight: 500; }
+.rf-section-heading h3 { font-size: 16px; }.rf-section-heading h4 { font-size: 14px; }
+.rf-toolbar, .rf-order { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.rf-toolbar .button { white-space: normal; text-align: left; }
+.rf-order { gap: 0; flex-shrink: 0; }.rf-order .button { padding: 7px; }
+.rf-workspace { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 26px; align-items: start; }
+.rf-catalog { position: sticky; top: 20px; min-width: 0; }
+.rf-catalog-item { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; padding: 17px; margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.rf-catalog-item:hover { border-color: var(--line-strong); }.rf-catalog-item.is-selected { background: var(--accent-soft); border-color: var(--accent); }
+.rf-catalog-item strong { font-size: 13px; font-weight: 500; }.rf-catalog-item span { color: var(--accent); font-size: 11px; }.rf-catalog-item small { font-size: 10px; }
+.rf-catalog-item > * { overflow-wrap: anywhere; }
+.rf-editor { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 24px; min-width: 0; }
+.rf-tabs { display: flex; gap: 2px; margin: 22px 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.rf-tabs button { border: 0; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; padding: 12px 14px; white-space: nowrap; cursor: pointer; }
+.rf-tabs button[aria-selected="true"] { color: var(--accent); box-shadow: inset 0 -2px var(--accent); }
+.rf-editor-fields { margin: 0; padding: 0; border: 0; }
+.rf-editor-fields h3 { margin-top: 0; }.rf-editor-fields p { font-size: 12px; }
+.rf-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; align-items: start; }
+.rf-inline { display: flex; align-items: end; gap: 10px; }.rf-inline label { flex: 1; }.rf-inline > .button { margin-bottom: 13px; }
+.rf-card { padding: 20px; border: 1px solid var(--line); border-radius: 6px; margin: 18px 0; background: var(--bg); }
+.rf-card h4 { margin-top: 0; }.rf-card .rf-card { background: var(--surface); }
+.rf-layout-fields { list-style: none; padding: 0; margin: 16px 0; }.rf-layout-fields li { display: flex; align-items: center; gap: 7px; padding: 8px 0; border-bottom: 1px solid var(--line); }.rf-layout-fields li > span:first-child { flex: 1; font-size: 12px; overflow-wrap: anywhere; }
+.rule-forge details { margin: 14px 0; }.rule-forge summary { cursor: pointer; padding: 9px 0; color: var(--accent); font-size: 12px; }
+.rf-input-editor { padding: 8px 15px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+.rf-formula { margin: 22px 0; }.rf-formula-node { border: 1px solid var(--line-strong); border-left: 2px solid var(--accent); border-radius: 5px; background: var(--surface); padding: 10px 16px 16px; margin: 10px 0; }
+.rf-formula-node legend { padding: 0 7px; font-size: 11px; color: var(--accent); max-width: 100%; overflow-wrap: anywhere; }
+.rf-formula-head { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }.rf-formula-head label { flex: 1; min-width: min(190px, 100%); }
+.rf-node-badge { color: var(--text-muted); border: 1px solid var(--line); font-size: 10px; padding: 5px 8px; border-radius: 20px; white-space: nowrap; }
+.rf-formula-children { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.rf-formula-node .rf-formula-node { margin-left: 4px; background: var(--bg); }.rf-formula-node .rf-formula-node .rf-formula-node { background: var(--surface); }
+.rf-formula-node .rf-formula-node .rf-formula-node .rf-formula-node { padding-left: 0; padding-right: 0; margin-left: 0; border-left: 0; border-right: 0; border-radius: 0; }
+.rf-function-arg { min-width: 0; }.rf-function-arg > .button { margin-top: -3px; }
+.rf-expression { display: block; overflow-wrap: anywhere; white-space: pre-wrap; padding: 14px; line-height: 1.8; font-size: 12px; background: var(--bg); border-radius: 5px; }
+.rf-validation { margin-top: 24px; font-size: 12px; }.rf-validation > p { display: flex; align-items: center; gap: 8px; color: var(--ok); }
+.rf-publish { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 20px; }.rf-publish h3 { font-size: 16px; margin-top: 0; }.rf-publish p { font-size: 12px; }.rf-publish > .button { margin-top: 16px; }
+.rf-migration-step, .rf-sheet-section { border: 1px solid var(--line); padding: 12px 16px; margin: 20px 0; border-radius: 5px; }.rf-migration-step legend, .rf-sheet-section legend { font-size: 12px; color: var(--accent); padding: 0 6px; }.rf-migration-step > .rf-toolbar { display: flex; justify-content: end; }
+.rf-review { background: var(--accent-soft); border-left: 2px solid var(--accent); padding: 16px 20px; margin-top: 20px; }.rf-review h4 { margin: 0; }.rf-review p { overflow-wrap: anywhere; }.rf-review details { border-bottom: 1px solid var(--line); padding-bottom: 10px; }.rf-review summary { overflow-wrap: anywhere; }.rf-review li { font-size: 12px; margin: 5px 0; }
+.rf-table-scroll { overflow-x: auto; }.rf-review table { width: 100%; border-collapse: collapse; font-size: 11px; }.rf-review th, .rf-review td { padding: 9px; text-align: left; vertical-align: top; border: 1px solid var(--line); overflow-wrap: anywhere; max-width: 260px; }.rf-review caption { text-align: left; padding: 8px 0; color: var(--text-muted); }
+.rf-preview { border-top: 1px solid var(--line); padding-top: 28px; margin-top: 32px; }.rf-preview > p { color: var(--text-muted); font-size: 13px; max-width: 880px; }.rf-preview > .rf-form-grid { max-width: 880px; }
+.rf-disclosure { padding: 14px 18px; background: var(--accent-soft); border-left: 2px solid var(--accent); }
+.rf-fixtures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; margin-top: 22px; }
+.rf-fixture { padding: 24px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); min-width: 0; }.rf-fixture h3 { font-family: var(--font-display); font-size: 24px; font-weight: 500; margin: 0 0 20px; }
+.rf-fixture .rule-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }.rf-fixture .rule-field { min-width: 0; }.rf-fixture .rule-field label { margin-top: 5px; }.rf-fixture .rule-field input[type="checkbox"] { margin: 9px 0; }
+.rf-sample-passage { padding: 0 0 16px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.rf-fixture-result { border-top: 1px solid var(--line-strong); margin-top: 22px; padding-top: 18px; }.rf-result-line { display: flex; gap: 16px; align-items: baseline; }.rf-result-line strong { font-family: var(--font-display); font-size: 38px; font-weight: 500; color: var(--accent); }.rf-result-line span { font-size: 12px; color: var(--text-muted); }.rf-dice-line { font-size: 12px; overflow-wrap: anywhere; }
+.rf-trace { list-style: none; padding: 0; }.rf-trace li { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; padding: 9px 0; font-size: 11px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }.rf-trace li small { flex-basis: 100%; }.rf-save-test { padding-top: 12px; }
+.rf-value-list { font-size: 11px; overflow-wrap: anywhere; }.rf-value-list dt { color: var(--text-muted); }.rf-value-list dd { margin: 5px 0 14px; }
+@media (max-width: 1100px) { .rf-workspace { grid-template-columns: 200px minmax(0, 1fr); gap: 18px; }.rf-editor { padding: 18px; }.rf-form-grid { column-gap: 14px; }.rf-fixtures { gap: 18px; }.rf-fixture { padding: 18px; } }
+@media (max-width: 760px) { .rf-workspace, .rf-fixtures { grid-template-columns: minmax(0, 1fr); }.rf-catalog { position: static; display: flex; flex-wrap: wrap; gap: 8px; }.rf-catalog > .rf-section-heading, .rf-catalog > .rf-help { flex-basis: 100%; margin-bottom: 4px; }.rf-catalog-item { flex: 1 1 210px; margin: 0; }.rf-header { gap: 18px; }.rf-editor { padding: 16px; }.rf-tabs button { padding: 12px 10px; }.rf-card { padding: 14px; }.rf-section-heading { gap: 12px; }.rf-formula-node { padding: 8px 10px 12px; }.rf-formula-node .rf-formula-node { margin-left: 0; }.rf-fixture .rule-fields { gap: 10px; } }
+@media (max-width: 440px) { .rf-form-grid, .rf-fixture .rule-fields { grid-template-columns: minmax(0, 1fr); }.rf-review, .rf-fixture { padding: 14px; }.rf-formula-node .rf-formula-node { padding-left: 7px; padding-right: 7px; }.rf-formula-node .rf-formula-node .rf-formula-node .rf-formula-node { padding-left: 0; padding-right: 0; }.rf-toolbar > .button { font-size: 11px; }.rf-formula-head { gap: 0; }.rf-node-badge { margin-bottom: 8px; } }

@@ -49,10 +49,14 @@ Remove-Item Env:\TEST_DATABASE_URL
 
 Die App enthält Einrichtung und Beitritt, Passkeys, Wiki-Projektionen und
 Bearbeitung, Eron-/Azgaar-Import, Karten, Charakterbögen, Szenen, Würfe,
-Bestätigungen, Kampagnenbeiträge und getrennten Tischchat. Die Wochenlogik und
-Medienanbindung sind serverseitig vorhanden; ihre Oberflächen und der visuelle
-Regelbau folgen als nächste Arbeitspakete. Aktuelle Nachweise und offene
-Lieferpunkte stehen in [STATUS.md](STATUS.md).
+Bestätigungen, Kampagnenbeiträge und getrennten Tischchat. Die
+[Wochenansicht](docs/WEEK_UI.md) verbindet Briefe, Postlaufzeit, Lesestand und
+Wochenunterschiede. Die Schmiede bietet visuellen Regel- und Bogenbau mit
+Testfiguren, Würfel-Trace und ausdrücklich bestätigter Paketmigration. Sprache,
+Video, Bildschirmfreigabe und private Flüsterräume bleiben beim Bühnenwechsel
+verbunden; Einrichtung und geprüfte Grenzen stehen in
+[Medien im Client](docs/MEDIA_UI.md). Aktuelle Nachweise und offene Lieferpunkte
+stehen in [STATUS.md](STATUS.md).
 
 Die Spielleitung kann die vollständige Kampagne als native `.chronicle`-Datei
 herunterladen. Der [Restore-Leitfaden](docs/CAMPAIGN_RESTORE.md) beschreibt die

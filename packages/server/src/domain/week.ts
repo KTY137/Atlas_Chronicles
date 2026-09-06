@@ -205,11 +205,13 @@ export function createWeek(db: Db, cfg: DomainConfig = {}) {
     const watermark = (await db.query<{ actor_id: string | null; projected_hashes: Record<string, string> }>("SELECT actor_id,projected_hashes FROM reading_watermarks WHERE campaign_id=$1 AND reader_user_id=$2 AND entry_id=$3", [campaignId, userId, entryId])).rows[0];
     const seen = watermark?.actor_id === member.actorId ? watermark.projected_hashes : {};
     const passagen = article.passagen.map(p => ({ ...p, unread: seen[p.pid] !== hash({ pid: p.pid, pfad: p.pfad, inhalt: p.inhalt }) }));
-    return { entryId: article.entryId, slug: article.slug, titel: article.titel, passagen, unreadCount: passagen.filter(p => p.unread).length };
+    return { entryId: article.entryId, slug: article.slug, titel: article.titel, passagen, unreadCount: passagen.filter(p => p.unread).length,
+      readHash: hash({ userId, campaignId, actorId: member.actorId, article }) };
   }
-  async function markRead(userId: string, campaignId: string, entryId: string) {
+  async function markRead(userId: string, campaignId: string, entryId: string, expectedHash?: string) {
     return db.transaction(async tx => {
       const member = await authorize(tx, userId, campaignId); const article = await createDocuments(tx, cfg).getEntry(userId, campaignId, entryId);
+      if (expectedHash !== undefined && expectedHash !== hash({ userId, campaignId, actorId: member.actorId, article })) throw new Conflict();
       const hashes = Object.fromEntries(article.passagen.map(p => [p.pid, hash({ pid: p.pid, pfad: p.pfad, inhalt: p.inhalt })]));
       await tx.query(`INSERT INTO reading_watermarks(campaign_id,reader_user_id,actor_id,entry_id,projected_hashes,read_at) VALUES($1,$2,$3,$4,$5,$6)
         ON CONFLICT(campaign_id,reader_user_id,entry_id) DO UPDATE SET actor_id=EXCLUDED.actor_id,projected_hashes=EXCLUDED.projected_hashes,read_at=EXCLUDED.read_at`, [campaignId, userId, member.actorId, entryId, hashes, now()]);

@@ -13,6 +13,7 @@ export function registerGameplay(app: FastifyInstance, db: Db, config: AppConfig
   const base="/api/campaigns/:campaignId";
   app.get<{Params:Scope}>(`${base}/rules`,async req=>game.listPackages(await auth(req),req.params.campaignId));
   app.post<{Params:Scope;Body:unknown}>(`${base}/rules`,{schema:{body:Type.Object({},{additionalProperties:true})}},async req=>game.installPackage(await auth(req),req.params.campaignId,req.body));
+  app.post<{Params:Scope;Body:Static<typeof P.PackagePreview>}>(`${base}/rules/preview`,{schema:{body:P.PackagePreview}},async req=>game.previewPackage(await auth(req),req.params.campaignId,req.body.package));
   app.post<{Params:Scope;Body:Static<typeof P.PackageActivation>}>(`${base}/rules/activate`,{schema:{body:P.PackageActivation}},async req=>game.activatePackage(await auth(req),req.params.campaignId,req.body));
   app.get<{Params:Item}>(`${base}/actors/:id/sheet`,async req=>game.getSheet(await auth(req),req.params.campaignId,req.params.id));
   app.put<{Params:Item;Body:Static<typeof P.SheetUpdate>}>(`${base}/actors/:id/sheet`,{schema:{body:P.SheetUpdate}},async req=>game.updateSheet(await auth(req),req.params.campaignId,{...req.body,actorId:req.params.id}));

@@ -110,6 +110,12 @@ test("M4: prepare a scene, save a sheet, roll, confirm explicitly and read the d
       const response = await saved; expect(response.status()).toBe(200);
       expect(await response.json()).toMatchObject({ actorId, fields: { insight: 6, name: "Sera am Nordtor" }, version: 1 });
       await expect(gm.getByLabel("Scharfsinn", { exact: true })).toHaveValue("6");
+      await gm.getByRole("combobox", { name: "Ressource", exact: true }).selectOption("vigour");
+      await gm.getByRole("spinbutton", { name: "Änderung", exact: true }).fill("-1");
+      const adjusted = gm.waitForResponse(r => r.url() === `${base}/actors/${actorId}/resource` && r.request().method() === "POST", { timeout: 5000 });
+      await gm.getByRole("button", { name: "Änderung anwenden", exact: true }).click();
+      expect((await adjusted).status()).toBe(200);
+      await expect(gm.getByLabel("Kraft", { exact: true })).toHaveValue("5");
     });
 
     let roll: ActionCard;

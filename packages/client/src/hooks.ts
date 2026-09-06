@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, errorText } from "./api";
+import { api, ApiError, errorText } from "./api";
 
 export function useResource<T>(path: string | null, revision = 0, interval = 0) {
   const [state, setState] = useState<{ path: string | null; data: T | null; loading: boolean; error: string }>({ path, data: null, loading: !!path, error: "" });
@@ -13,7 +13,11 @@ export function useResource<T>(path: string | null, revision = 0, interval = 0) 
       : { path, data: null, loading: true, error: "" });
     const load = async () => {
       try { const data = await api<T>(path, { signal: controller.signal }); if (!controller.signal.aborted) setState({ path, data, loading: false, error: "" }); }
-      catch (error) { if (!controller.signal.aborted) setState({ path, data: null, loading: false, error: errorText(error) }); }
+      catch (error) {
+        if (!controller.signal.aborted) setState(current => ({ path,
+          data: error instanceof ApiError && error.status < 500 && ![408, 429].includes(error.status) ? null : current.path === path ? current.data : null,
+          loading: false, error: errorText(error) }));
+      }
       if (interval && !controller.signal.aborted) timer = setTimeout(load, interval);
     };
     void load();

@@ -17,6 +17,7 @@ class Control implements MediaControl {
   async deleteRoom(name: string) { this.calls.push(`delete:${name}`); if (this.failDelete) throw new Error("SFU offline"); }
   async removeParticipant(name: string, identity: string) { this.calls.push(`remove:${name}:${identity}`); this.connected.delete(identity); }
   async hasParticipant(_name: string, identity: string) { return this.connected.has(identity); }
+  async listParticipants() { return []; }
 }
 
 describe("membership-bound media with separate whisper rooms", () => {

@@ -19,6 +19,7 @@ export interface MediaControl {
   deleteRoom(name: string): Promise<void>;
   removeParticipant(name: string, identity: string): Promise<void>;
   hasParticipant(name: string, identity: string): Promise<boolean>;
+  listParticipants(name: string): Promise<{ identity: string; metadata: string; active: boolean }[]>;
 }
 export interface MediaConfig extends DomainConfig { livekit?: MediaServerConfig; control?: MediaControl }
 export class MediaUnavailable extends Error {
@@ -30,6 +31,7 @@ export interface MediaStatus {
   configured: boolean; sessionId: string | null; rooms: MediaRoom[];
   presence: { userId: string; roomId: string; state: "joining" | "connected" }[];
   blocked: boolean; cleanupPending: boolean;
+  blockedMemberIds?: string[];
 }
 export const MEDIA_PRESENCE_TTL_MS = 45_000;
 
@@ -41,6 +43,7 @@ function provider(config: MediaServerConfig): MediaControl {
     async deleteRoom(name) { try { await service.deleteRoom(name); } catch (error) { if (!missing(error)) throw error; } },
     async removeParticipant(name, identity) { try { await service.removeParticipant(name, identity); } catch (error) { if (!missing(error)) throw error; } },
     async hasParticipant(name, identity) { try { const p = await service.getParticipant(name, identity); return p.state === ParticipantInfo_State.ACTIVE; } catch (error) { if (missing(error)) return false; throw error; } },
+    async listParticipants(name) { try { return (await service.listParticipants(name)).map(p => ({ identity: p.identity, metadata: p.metadata, active: p.state === ParticipantInfo_State.ACTIVE })); } catch (error) { if (missing(error)) return []; throw error; } },
   };
 }
 
@@ -125,7 +128,7 @@ export function createMedia(db: Db, config: MediaConfig = {}) {
   }
 
   async function status(userId: string, campaignId: string): Promise<MediaStatus> {
-    await campaigns.requireMember(userId, campaignId);
+    const viewer = await campaigns.requireMember(userId, campaignId);
     const active = (await db.query<{ id: string }>("SELECT id FROM game_sessions WHERE campaign_id=$1 AND ended_at IS NULL", [campaignId])).rows[0];
     const rows = (await db.query<RoomRow>(`SELECT r.* FROM media_rooms r JOIN game_sessions s ON s.id=r.session_id
       WHERE r.campaign_id=$1 AND r.closed_at IS NULL AND s.ended_at IS NULL ORDER BY r.created_at,r.id`, [campaignId])).rows;
@@ -136,6 +139,7 @@ export function createMedia(db: Db, config: MediaConfig = {}) {
       ORDER BY p.user_id`, [campaignId, now() - MEDIA_PRESENCE_TTL_MS])).rows;
     return { configured: !!livekit, sessionId: active?.id ?? null, rooms: await Promise.all(rows.map(r => card(db, r))), presence,
       blocked: !!(await db.query("SELECT 1 FROM media_blocks WHERE campaign_id=$1 AND user_id=$2", [campaignId, userId])).rowCount,
+      ...(viewer.role === "leitung" ? { blockedMemberIds: (await db.query<{ user_id: string }>("SELECT user_id FROM media_blocks WHERE campaign_id=$1 ORDER BY user_id", [campaignId])).rows.map(row => row.user_id) } : {}),
       cleanupPending: !!(await db.query("SELECT 1 FROM media_cleanup WHERE campaign_id=$1 LIMIT 1", [campaignId])).rowCount };
   }
   async function createWhisper(userId: string, campaignId: string, memberIds: readonly string[]): Promise<MediaRoom> {
@@ -152,9 +156,10 @@ export function createMedia(db: Db, config: MediaConfig = {}) {
       return card(tx, r);
     });
   }
-  async function token(userId: string, campaignId: string, roomId?: string) {
+  async function token(userId: string, campaignId: string, roomId?: string, credentialId?: string) {
     return db.transaction(async tx => {
       const member = await authorize(tx, userId, campaignId); const { livekit: server, control: service } = enabled();
+      if (credentialId && !await validCredential(tx, userId, credentialId)) throw new Gone("credential-unavailable");
       await allowed(tx, userId, campaignId);
       const r = roomId ? await room(tx, campaignId, roomId) : await table(tx, userId, campaignId);
       await admit(tx, userId, campaignId, r);
@@ -168,7 +173,10 @@ export function createMedia(db: Db, config: MediaConfig = {}) {
       const canPublish = member.role !== "beobachter";
       const sources = !canPublish ? [] : r.kind === "whisper" ? [TrackSource.MICROPHONE]
         : [TrackSource.MICROPHONE, TrackSource.CAMERA, TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO];
-      const access = new AccessToken(server.apiKey, server.apiSecret, { identity: userId, name: member.displayName, ttl });
+      // HTTP supplies the authenticated credential, never a request-body identity.
+      // Metadata survives app restarts and cannot be changed by the participant.
+      const metadata = JSON.stringify({ credentialId: credentialId ?? null, role: member.role });
+      const access = new AccessToken(server.apiKey, server.apiSecret, { identity: userId, name: member.displayName, ttl, metadata });
       access.addGrant({ roomJoin: true, room: r.provider_room, canPublish, canPublishSources: sources,
         canSubscribe: true, canPublishData: false, canUpdateOwnMetadata: false, roomAdmin: false, roomCreate: false, roomList: false, roomRecord: false, hidden: false });
       const jwt = await access.toJwt();
@@ -240,20 +248,54 @@ export function createMedia(db: Db, config: MediaConfig = {}) {
       return { ok: true as const };
     });
   }
-  /** Startup/interval seam: close ended sessions and retry durable provider deletions. */
+  async function validCredential(tx: Db, userId: string, credentialId: string): Promise<boolean> {
+    return !!(await tx.query(`SELECT c.id FROM credentials c LEFT JOIN credentials p ON p.id=c.parent_id
+      WHERE c.id=$1 AND c.user_id=$2 AND c.kind IN ('guest','cookie') AND c.revoked_at IS NULL AND c.expires_at>$3
+      AND (c.parent_id IS NULL OR (p.id IS NOT NULL AND p.revoked_at IS NULL AND p.expires_at>$3))`, [credentialId, userId, now()])).rowCount;
+  }
+  async function stillAdmitted(tx: Db, r: RoomRow, participant: { identity: string; metadata: string }): Promise<boolean> {
+    let binding: { credentialId?: unknown; role?: unknown };
+    try { binding = JSON.parse(participant.metadata) as typeof binding; } catch { return false; }
+    if (!binding || typeof binding.credentialId !== "string" || !await validCredential(tx, participant.identity, binding.credentialId)) return false;
+    const member = (await tx.query<{ role: string }>(`SELECT m.role FROM campaign_memberships m
+      WHERE m.campaign_id=$1 AND m.user_id=$2 AND NOT EXISTS(SELECT 1 FROM media_blocks b WHERE b.campaign_id=m.campaign_id AND b.user_id=m.user_id)`, [r.campaign_id, participant.identity])).rows[0];
+    if (!member || binding.role !== member.role) return false;
+    if (!(await tx.query("SELECT 1 FROM media_presence WHERE campaign_id=$1 AND user_id=$2 AND room_id=$3 AND generation=$4", [r.campaign_id, participant.identity, r.id, r.generation])).rowCount) return false;
+    return r.kind === "table" || !!(await tx.query("SELECT 1 FROM media_whisper_members WHERE room_id=$1 AND user_id=$2", [r.id, participant.identity])).rowCount;
+  }
+  /** Recheck actual SFU participants; admission cannot outlive its credential or membership. */
   async function reconcile() {
     if (!control) return;
     const ids = (await db.query<{ campaign_id: string }>(`SELECT DISTINCT r.campaign_id FROM media_rooms r JOIN game_sessions s ON s.id=r.session_id
-      WHERE r.closed_at IS NULL AND s.ended_at IS NOT NULL UNION SELECT campaign_id FROM media_cleanup`)).rows;
+      WHERE r.closed_at IS NULL UNION SELECT campaign_id FROM media_cleanup`)).rows;
+    const failures: unknown[] = [];
     for (const { campaign_id: campaignId } of ids) {
+      try {
       await db.transaction(async tx => {
         await tx.query("SELECT id FROM campaigns WHERE id=$1 FOR UPDATE", [campaignId]);
-        const rows = (await tx.query<RoomRow>(`SELECT r.* FROM media_rooms r JOIN game_sessions s ON s.id=r.session_id
-          WHERE r.campaign_id=$1 AND r.closed_at IS NULL AND s.ended_at IS NOT NULL`, [campaignId])).rows;
-        for (const r of rows) { await queue(tx, r); await tx.query("UPDATE media_rooms SET closed_at=$2 WHERE id=$1", [r.id, now()]); }
+        const rows = (await tx.query<RoomRow & { ended_at: string | null }>(`SELECT r.*,s.ended_at FROM media_rooms r JOIN game_sessions s ON s.id=r.session_id
+          WHERE r.campaign_id=$1 AND r.closed_at IS NULL`, [campaignId])).rows;
+        for (const r of rows) {
+          if (r.ended_at !== null) { await queue(tx, r); await tx.query("UPDATE media_rooms SET closed_at=$2 WHERE id=$1", [r.id, now()]); continue; }
+          const participants = await transport(() => control.listParticipants(r.provider_room));
+          for (const participant of participants) if (!await stillAdmitted(tx, r, participant)) {
+            // Removing only this participant would leave its cached JWT usable.
+            // Commit a new room generation before trying to destroy the old room.
+            await queue(tx, r);
+            await tx.query("UPDATE media_rooms SET provider_room=$2,generation=generation+1 WHERE id=$1", [r.id, `chronicle-${randomUUID()}`]);
+            break;
+          } else if (participant.active) {
+            await tx.query("UPDATE media_presence SET state='connected',updated_at=$3 WHERE campaign_id=$1 AND user_id=$2 AND room_id=$4", [campaignId, participant.identity, now(), r.id]);
+          }
+          await tx.query("DELETE FROM media_presence WHERE room_id=$1 AND state='connected' AND NOT(user_id=ANY($2::text[]))", [r.id, participants.map(participant => participant.identity)]);
+        }
       });
       await flush(campaignId);
+      } catch (error) { failures.push(error); }
     }
+    // A failing provider room must not starve revocation in unrelated campaigns.
+    // Report failure only after every campaign has had its own reconciliation attempt.
+    if (failures.length) throw failures[0];
   }
   return { status, createWhisper, token, heartbeat, leave, closeWhisper, revokeMember, restoreMember, reconcile };
 }

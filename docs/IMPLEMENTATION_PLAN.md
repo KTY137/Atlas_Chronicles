@@ -2,6 +2,17 @@
 
 Stand: 2026-09-06. Auftrag: Die vorhandenen Entwürfe in eine tatsächlich benutzbare Anwendung überführen.
 
+**Ausführungsstand:** Der ursprüngliche Ausgangspunkt unten bleibt als Planung erhalten.
+Der GM-/Zwei-Spieler-Ablauf ist inzwischen implementiert und einschließlich echtem
+PostgreSQL-Neustart im Browser geprüft. Produktstart, Build, Passkeys, Wiki,
+Atlas-Import, Tisch, Kanal und native Kampagnensicherung sind vorhanden;
+Wochenansicht, visueller Regelbau und Medienoberfläche sind ebenfalls verbunden
+und gemeinsam in sieben Browserabläufen geprüft. Figuren-/Inventarinstanzen,
+taktische Werkzeuge und die weiteren Lieferpunkte bleiben in Arbeit.
+Maßgebliche aktuelle Nachweise stehen in [STATUS.md](../STATUS.md).
+Kaya hat den Auftrag auf die vollständige Umsetzung dieses Plans erweitert;
+das erste Lieferziel begrenzt den laufenden Auftrag nicht.
+
 **Erstes Lieferziel:** Die Spielleitung startet Chronicle, erstellt eine Kampagne, lädt zwei Spieler ein und schreibt einen Wiki-Artikel. Nach einer gezielten Freigabe sehen beide Spieler unterschiedliche Inhalte. Artikel, Mitgliedschaften und Freigaben überleben einen Serverneustart.
 
 Das ist der erste zusammenhängende Produktmeilenstein. Der vollständige Champion „Die Woche“, Karten, Regelbau und Kommunikation folgen in den unten benannten Ausbaustufen. Ein fertiges Fundament allein erfüllt diesen Meilenstein nicht.
@@ -225,6 +236,6 @@ Eine Stufe ist erst fertig, wenn ihr benannter Nutzerablauf in der wirklichen Ap
 5. Boundary-Gate, Typecheck, Tests und Produktbuild sind grün. Vor einer Veröffentlichung werden die zusätzlichen bestehenden Launch-Gates vollständig durchlaufen.
 6. `STATUS.md` nennt implementierte Funktionen, genaue Startbefehle, Testergebnisse und offene Arbeit. Jeder Abschluss hat einen nachvollziehbaren Commit und eine vorführbare Demo.
 
-Aktuell vorhandene Prüfbefehle: `npm.cmd run gate`, `npm.cmd run test`, sowie im Lab `npm.cmd run build`. Produktstart, Produktbuild und Browser-E2E sind **Zielbefehle**, die in P05/P06 implementiert werden; sie existieren heute noch nicht.
+Produktbefehle sind inzwischen implementiert: `npm.cmd run gate`, `npm.cmd run build`, `npm.cmd start` und `npm.cmd run test:e2e`. Einrichtung, lokale Datenbank und optionale PostgreSQL-Konkurrenzprüfungen beschreibt die [README](../README.md).
 
-Die Reihenfolge dieses Plans ist die Arbeitsplanung. Aufwand wird nach F04 und der ersten durchlaufenen M1-Demo aus gemessener Arbeit geschätzt; die alten Architektur-Schätzungen sind keine Liefertermine. Der nächste Implementierungsauftrag umfasst **F01–F04 und P01–P06**, bis die oben beschriebene GM-/Zwei-Spieler-Demo mit dauerhaften Daten läuft.
+Die Reihenfolge dieses Plans bleibt die Arbeitsplanung. Die alten Architektur-Schätzungen sind keine Liefertermine. **F01–F04 und P01–P06** bezeichneten das erste Arbeitspaket; der inzwischen erweiterte Auftrag umfasst auch die folgenden Ausbaustufen und ihre ausdrücklich benannten Abnahmen.

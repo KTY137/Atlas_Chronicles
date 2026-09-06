@@ -62,7 +62,7 @@ test("GM and two players: UI join, private passages, conflict, real server resta
   const entryUrl=`${origin}/?campaign=${campaignId}&entry=${entryId}`;
   const bodies:string[]=[];
   for(const [index,p] of pages.entries()) {
-    const payload=p.waitForResponse(r=>r.url()===`${origin}/api/campaigns/${campaignId}/entries/${entryId}`);
+    const payload=p.waitForResponse(r=>r.url()===`${origin}/api/campaigns/${campaignId}/entries/${entryId}/umbruch`);
     await p.goto(entryUrl); bodies.push(await (await payload).text());
     await expect(p.locator("article")).toContainText(index===0?"SERAS GEHEIMNIS":"DORNS GEHEIMNIS");
     await expect(p.locator("body")).not.toContainText(index===0?"DORNS GEHEIMNIS":"SERAS GEHEIMNIS");

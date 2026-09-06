@@ -7,6 +7,7 @@ import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { createDocuments } from "./documents.ts";
 import { createAtlas } from "./atlas.ts";
 import { createGameplay } from "./gameplay.ts";
+import { createWeek } from "./week.ts";
 import { Gone, Conflict } from "./errors.ts";
 
 const hash=(v:unknown)=>createHash("sha256").update(stableJson(v)).digest("hex");
@@ -65,14 +66,22 @@ export function createCommunication(db:Db,cfg:DomainConfig={}) {
     }
   }
   async function projectedFingerprint(userId:string,campaignId:string) {
-    const docs=createDocuments(db,cfg), atlas=createAtlas(db,cfg),game=createGameplay(db,cfg);
+    const docs=createDocuments(db,cfg), atlas=createAtlas(db,cfg),game=createGameplay(db,cfg),week=createWeek(db,cfg);
+    const member=await campaigns.requireMember(userId,campaignId);
     const list=await docs.listEntries(userId,campaignId), maps=await atlas.listMaps(userId,campaignId);
-    const entries=[]; for(const e of list) entries.push(await docs.getEntry(userId,campaignId,e.id));
+    const entries=[]; for(const e of list) entries.push(await week.umbruch(userId,campaignId,e.id));
     const mapViews=[]; for(const m of maps) mapViews.push(await atlas.getMap(userId,campaignId,m.id));
-    return hash({entries,maps:mapViews,scenes:await game.listScenes(userId,campaignId),rolls:await game.listRolls(userId,campaignId),doors:await game.listVollmachten(userId,campaignId),messages:await messages(userId,campaignId),table:await messages(userId,campaignId,"table")});
+    const controlled=member.role==="beobachter" ? [] : (await db.query<{id:string}>("SELECT id FROM actors WHERE campaign_id=$1 AND ($2 OR (user_id=$3 AND id=$4)) ORDER BY id COLLATE \"C\"",[campaignId,member.role==="leitung",userId,member.actorId])).rows;
+    const sheets=[]; for(const actor of controlled) sheets.push(await game.getSheet(userId,campaignId,actor.id));
+    return hash({entries,maps:mapViews,sheets,rules:await game.listPackages(userId,campaignId),clock:await week.getClock(userId,campaignId),letters:await week.listLetters(userId,campaignId),scenes:await game.listScenes(userId,campaignId),rolls:await game.listRolls(userId,campaignId),doors:await game.listVollmachten(userId,campaignId),messages:await messages(userId,campaignId),table:await messages(userId,campaignId,"table")});
   }
   async function sync(userId:string,campaignId:string) {
     return db.transaction(async tx=>{
+      // Cursor insertion takes a foreign-key KEY SHARE lock on the campaign. Take
+      // the writer lock first: door expiry in the projection needs it later, and
+      // simultaneous first connections must not upgrade each other's FK locks.
+      if(!(await tx.query(`SELECT c.id FROM campaigns c JOIN campaign_memberships m ON m.campaign_id=c.id
+        WHERE c.id=$1 AND m.user_id=$2 FOR UPDATE OF c FOR SHARE OF m`,[campaignId,userId])).rowCount) throw new Gone();
       await createCampaigns(tx,cfg).requireMember(userId,campaignId);
       await tx.query("INSERT INTO event_cursors(user_id,campaign_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[userId,campaignId]);
       const cursor=(await tx.query<{last_seq:string;projection_hash:string|null}>("SELECT last_seq,projection_hash FROM event_cursors WHERE user_id=$1 AND campaign_id=$2 FOR UPDATE",[userId,campaignId])).rows[0]!;

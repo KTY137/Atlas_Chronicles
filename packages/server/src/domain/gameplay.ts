@@ -79,17 +79,36 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   async function installPackage(userId: string, campaignId: string, input: unknown) {
     return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return install(tx, userId, campaignId, input); });
   }
-  async function activatePackage(userId: string, campaignId: string, input: { packageId: string; packageVersion: string; expectedVersion: number }) {
+  async function packageReview(tx: Db, campaignId: string, next: RulePackage, expectedHash?: string) {
+    const from = await currentPin(tx, campaignId), previous = await packageFor(tx, campaignId, from);
+    const pinVersion = (await tx.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0]?.version ?? 0;
+    const sheets = (await tx.query<{ actor_id: string; fields: Record<string, Scalar>; package_id: string; package_version: string; version: number; defeat_pending: boolean; defeated_at: string | null }>("SELECT actor_id,fields,package_id,package_version,version,defeat_pending,defeated_at FROM actor_sheets WHERE campaign_id=$1 ORDER BY actor_id COLLATE \"C\"", [campaignId])).rows;
+    if (sheets.some(s => s.package_id !== from.id || s.package_version !== from.version)) throw new Conflict();
+    const to = { id: next.id, version: next.version };
+    // Bind a human review to the actual documents and complete sheet versions, not only
+    // the campaign pin. Writers take the same campaign lock before changing any sheet.
+    const previewHash = digest({ schemaVersion: 1, campaignId, previous, next, pinVersion, sheets });
+    if (expectedHash !== undefined && expectedHash !== previewHash) throw new Conflict();
+    const migration = sheets.length && (from.id !== to.id || from.version !== to.version)
+      ? previewPackageMigration(previous, next, sheets.map(s => ({ id: s.actor_id, fields: s.fields }))) : null;
+    return { from, to, pinVersion, migration, previewHash };
+  }
+  async function previewPackage(userId: string, campaignId: string, input: unknown) {
+    return db.transaction(async tx => {
+      await authorize(tx, userId, campaignId, true);
+      return packageReview(tx, campaignId, parseRulePackage(input));
+    });
+  }
+  async function activatePackage(userId: string, campaignId: string, input: { packageId: string; packageVersion: string; expectedVersion: number; previewHash?: string }) {
     return db.transaction(async tx => {
       await authorize(tx, userId, campaignId, true);
       const pinRow = (await tx.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0];
       if (input.expectedVersion !== (pinRow?.version ?? 0)) throw new Conflict();
-      const oldPin = await currentPin(tx, campaignId), next = await packageFor(tx, campaignId, { id: input.packageId, version: input.packageVersion });
+      const next = await packageFor(tx, campaignId, { id: input.packageId, version: input.packageVersion });
+      const review = await packageReview(tx, campaignId, next, input.previewHash);
       await install(tx, userId, campaignId, next);
-      const sheets = (await tx.query<{ actor_id: string; fields: Record<string, Scalar>; package_id: string; package_version: string }>("SELECT * FROM actor_sheets WHERE campaign_id=$1", [campaignId])).rows;
-      if (sheets.length && (oldPin.id !== next.id || oldPin.version !== next.version)) {
-        if (sheets.some(s => s.package_id !== oldPin.id || s.package_version !== oldPin.version)) throw new Conflict();
-        const preview = previewPackageMigration(await packageFor(tx, campaignId, oldPin), next, sheets.map(s => ({ id: s.actor_id, fields: s.fields })));
+      if (review.migration) {
+        const preview = review.migration;
         for (const entity of preview.entities) await tx.query("UPDATE actor_sheets SET fields=$3,package_id=$4,package_version=$5,version=version+1,updated_at=$6 WHERE actor_id=$1 AND campaign_id=$2", [entity.id, campaignId, entity.after, next.id, next.version, now()]);
         await audit(tx, campaignId, userId, "rules.migration", preview);
       }
@@ -375,7 +394,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     await target(db, campaignId, passageId);
     return (await db.query("SELECT id,kind,passage_id AS \"passageId\",revision_id AS \"revisionId\",provenance,seal,confirmed_at AS \"confirmedAt\" FROM confirmed_mints WHERE campaign_id=$1 AND passage_id=$2 ORDER BY confirmed_at,id", [campaignId, passageId])).rows;
   }
-  return { listPackages, installPackage, activatePackage, getSheet, updateSheet, adjustResource, listScenes, createScene, startScene,
+  return { listPackages, installPackage, previewPackage, activatePackage, getSheet, updateSheet, adjustResource, listScenes, createScene, startScene,
     prepareAction, confirmAction, getRoll, listRolls, replayRoll, mintGesprochen, mintRatifikation, mintBerichtigung, confirmDefeat, mintProvenance,
     issueVollmacht, prepareVollmacht, confirmVollmacht, listVollmachten, revokeVollmacht, expireVollmachten };
 }

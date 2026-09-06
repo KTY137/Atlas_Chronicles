@@ -25,7 +25,7 @@ export function registerMedia(app: FastifyInstance, db: Db, identityConfig: Iden
   };
   app.get<{ Params: Scope }>(base, async req => media.status(await auth(req), req.params.campaignId));
   app.post<{ Params: Scope; Body: Static<typeof tokenBody> }>(`${base}/token`, { schema: { body: tokenBody }, config: { rateLimit: { max: 20, timeWindow: "1 minute" } } }, async (req, reply) =>
-    call(reply, async () => media.token(await auth(req), req.params.campaignId, req.body.roomId)));
+    call(reply, async () => { const me = await identity.authenticate(req.headers.cookie); return media.token(me.userId, req.params.campaignId, req.body.roomId, me.credentialId); }));
   app.post<{ Params: Scope; Body: Static<typeof whisperBody> }>(`${base}/whispers`, { schema: { body: whisperBody } }, async (req, reply) =>
     call(reply, async () => media.createWhisper(await auth(req), req.params.campaignId, req.body.memberIds)));
   app.delete<{ Params: Item }>(`${base}/whispers/:id`, async (req, reply) => call(reply, async () => media.closeWhisper(await auth(req), req.params.campaignId, req.params.id)));
@@ -42,6 +42,10 @@ export function registerMedia(app: FastifyInstance, db: Db, identityConfig: Iden
   const timer = livekit ? setInterval(() => { void reconcile(); }, 10_000) : undefined;
   timer?.unref();
   app.addHook("onReady", reconcile);
+  app.addHook("onResponse", async (req, reply) => {
+    if (livekit && reply.statusCode < 300 && ((req.method === "POST" && req.url === "/api/logout") ||
+      (req.method === "DELETE" && req.url.startsWith("/api/credentials/")))) void reconcile();
+  });
   app.addHook("onClose", async () => { if (timer) clearInterval(timer); await running; });
   return media;
 }

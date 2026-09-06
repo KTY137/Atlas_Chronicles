@@ -250,3 +250,14 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
   .sidebar-import { padding: 3px 12px; }.sidebar-import .button { font-size: 10px; min-height: 30px; }.import-content { padding: 25px 18px; }.import-content h1 { font-size: 26px; }.import-files { grid-template-columns: 1fr; gap: 0; }.import-metrics { grid-template-columns: 1fr 1fr; }.import-metrics > div { border-bottom: 1px solid var(--line); padding: 12px 15px; }.import-metrics strong { font-size: 22px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+
+.passage-unread { border-left: 2px solid var(--accent); padding-left: 15px; }
+.unread-label { color: var(--accent); font: 500 10px var(--font-body); letter-spacing: .05em; }
+.passage-letter { margin: 4px 0 8px; font-size: 11px; }
+.article-door { text-decoration-style: dotted; }
+.door-card:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
+.document-toolbar { flex-wrap: wrap; gap: 10px; }
+@media (max-width: 760px) {
+  .rail { overflow-x: auto; flex-shrink: 0; }
+  .rail-item { min-width: 74px; flex-shrink: 0; flex-direction: column; gap: 3px; font-size: 9px; }
+}

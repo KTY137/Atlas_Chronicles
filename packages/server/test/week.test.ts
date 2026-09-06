@@ -166,4 +166,15 @@ describe("the production week: fictional mail, frozen sources and inline unread 
     const marked = await app.inject({ method: "POST", url: `/api/campaigns/${f.campaignId}/entries/${f.entry.entryId}/read`, headers: { ...headers, cookie: `chronicle_session=${actorSession.value}` }, payload: {} });
     expect(marked.statusCode).toBe(200); expect(marked.json().unreadCount).toBe(0);
   });
+  it("does not mark unseen concurrent article content as read", async () => {
+    const f = await fixture();
+    const seen = await f.week.umbruch(f.a, f.campaignId, f.entry.entryId);
+    expect(seen.readHash).toMatch(/^[a-f0-9]{64}$/);
+    await f.docs.revealPassage(f.gm, f.campaignId, f.entry.passagen[2]!.pid, f.actorA);
+    await expect(f.week.markRead(f.a, f.campaignId, f.entry.entryId, seen.readHash)).rejects.toBeInstanceOf(Conflict);
+    const fresh = await f.week.umbruch(f.a, f.campaignId, f.entry.entryId);
+    expect(fresh.unreadCount).toBeGreaterThan(0);
+    expect((await f.week.markRead(f.a, f.campaignId, f.entry.entryId, fresh.readHash)).unreadCount).toBe(0);
+  });
+
 });
