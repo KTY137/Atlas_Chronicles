@@ -41,7 +41,15 @@ export interface EronImportInput {
   /** Explicit time is required: the importer never reads the wall clock. */
   readonly importiertAm: string;
   readonly license?: string;
-  readonly attributionByPageId?: Readonly<Record<string, EronAttribution>>;
+  /**
+   * Absent and `undefined` mean the same thing here — attribution could not be resolved, so the
+   * import is marked incomplete either way. `exactOptionalPropertyTypes` is on repo-wide and
+   * earns its keep on fields where the distinction is real (a link's `zielEntryId` is either a
+   * resolved id or an open door, and those are different facts). It buys nothing on an optional
+   * *input* that callers assemble conditionally, so the union is widened deliberately rather
+   * than every call site being forced to omit the key.
+   */
+  readonly attributionByPageId?: Readonly<Record<string, EronAttribution>> | undefined;
   readonly templateTypes?: Readonly<Record<string, EntryArt>>;
   readonly minimumParagraphLength?: number;
   /** Editable corpus-specific policy, evaluated only against unresolved links. */
