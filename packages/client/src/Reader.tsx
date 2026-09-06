@@ -10,7 +10,7 @@ function Text({ parts, onEntry, onDoor }: { parts: readonly Inline[]; onEntry: (
       if (mark.art === "strong") node = <strong key={j}>{node}</strong>;
       else if (mark.art === "em") node = <em key={j}>{node}</em>;
       else if (mark.art === "code") node = <code key={j}>{node}</code>;
-      else if (mark.art === "link") node = mark.tuer && onDoor ? <button key={j} className="article-link article-door" title={`Vollmacht bis ${new Date(mark.tuer.verfallAt).toLocaleString("de-DE")}`} onClick={() => onDoor(mark.tuer!.vollmachtId)}>{node}<span aria-hidden="true"> ↗</span></button> : mark.zielEntryId ? <button key={j} className="article-link" onClick={() => onEntry(mark.zielEntryId!)}>{node}</button> : <span key={j} className="unresolved-link" title={mark.zielSlug}>{node}</span>;
+      else if (mark.art === "link") node = mark.tuer && onDoor ? <button key={j} className="article-link article-door" title={`Vollmacht bis ${new Date(mark.tuer.verfallAt).toLocaleString("de-DE")}`} onClick={() => onDoor(mark.tuer!.vollmachtId)}>{node}<span aria-hidden="true"> ↗</span></button> : mark.zielEntryId ? <button key={j} className="article-link" onClick={() => onEntry(mark.zielEntryId!)}>{node}</button> : <span key={j} className="unresolved-link" title={`„${mark.zielSlug}“ führt für dich noch zu keinem Artikel`}>{node}</span>;
     }
     return <Fragment key={i}>{node}</Fragment>;
   })}</>;
@@ -33,8 +33,10 @@ export function ArticleReader({ document, onEntry, members = [], onReveal, busy 
   campaignId?: string; unreadIds?: ReadonlySet<string>; onSendPassage?: (pid: string) => void; onDoor?: (id: string) => void;
 }) {
   let previousPath = "";
+  const gm = Boolean(onReveal);
   return <article className="article-body"><p className="eyebrow">Chronik · {document.slug}</p><h1>{document.titel}</h1>
-    {document.passagen.length === 0 ? <p className="muted">Dieser Artikel hat noch keinen Inhalt.</p> : null}
+    <p className="field-help">{gm ? "Du liest als Spielleitung — du siehst hier mehr, als deine Spieler in ihrer Chronik zu sehen bekommen." : "Du liest mit dem Wissen deiner Figur — sichtbar ist nur, was sie bereits weiß."}</p>
+    {document.passagen.length === 0 ? <p className="muted">{gm ? "Dieser Artikel hat noch keinen Inhalt." : "Deine Chronik weiß darüber noch nichts."}</p> : null}
     {document.passagen.map((passage) => {
       const path = passage.pfad.join(" › "), changed = path !== previousPath; previousPath = path;
       return <section className={`passage${unreadIds?.has(passage.pid) ? " passage-unread" : ""}`} key={passage.pid} id={`passage-${passage.pid}`}>

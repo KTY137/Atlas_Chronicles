@@ -13,7 +13,11 @@ export const historyEditorSeed = (entryId: string, row: HistoryItem): EditorSeed
 export function Editor({ campaignId, seed, onSaved, onCancel, onDirty }: { campaignId: string; seed: EditorSeed; onSaved: (doc: EntryDocument) => void; onCancel: () => void; onDirty: (dirty: boolean) => void }) {
   const [title, setTitle] = useState(seed.title), [passages, setPassages] = useState(seed.passages);
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [conflict, setConflict] = useState(false);
+  // Last content confirmed saved by the server; tracked separately from seed so status stays correct after a save while still mounted.
+  const [savedAt, setSavedAt] = useState<{ title: string; passages: DraftPassage[] } | null>(() => seed.entryId ? { title: seed.title, passages: seed.passages } : null);
   const dirty = title !== seed.title || JSON.stringify(passages) !== JSON.stringify(seed.passages);
+  const matchesSaved = savedAt !== null && title.trim() === savedAt.title && JSON.stringify(passages) === JSON.stringify(savedAt.passages);
+  const saveLabel = busy ? "Wird gespeichert …" : conflict ? "Konflikt" : matchesSaved ? "Gespeichert" : savedAt ? "Ungespeicherte Änderungen" : "Neuer Entwurf";
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const update = (index: number, patch: Partial<DraftPassage>) => setPassages((current) => current.map((p, i) => i === index ? { ...p, ...patch } : p));
@@ -25,7 +29,7 @@ export function Editor({ campaignId, seed, onSaved, onCancel, onDirty }: { campa
         method: seed.entryId ? "PUT" : "POST", body: { title: title.trim(), ...(seed.slug ? { slug: seed.slug } : {}), ...(seed.expectedVersion ? { expectedVersion: seed.expectedVersion } : {}),
           passages: passages.map(({ localKey: _localKey, ...passage }) => passage) },
       });
-      onDirty(false); onSaved(document);
+      setSavedAt({ title: title.trim(), passages }); onDirty(false); onSaved(document);
     } catch (error) { setError(errorText(error)); setConflict(error instanceof ApiError && error.status === 409); }
     finally { setBusy(false); }
   };
@@ -34,10 +38,10 @@ export function Editor({ campaignId, seed, onSaved, onCancel, onDirty }: { campa
     const href = URL.createObjectURL(blob), anchor = document.createElement("a"); anchor.href = href; anchor.download = "chronicle-entwurf.json"; anchor.click(); setTimeout(() => URL.revokeObjectURL(href), 1000);
   };
   return <form className="editor" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-    <div className="editor-toolbar"><span className="eyebrow">{seed.entryId ? `Revision ${seed.expectedVersion} bearbeiten` : "Neuer Artikel"}</span><span className="save-state">{busy ? "Speichert …" : dirty ? "Ungespeicherte Änderungen" : "Entwurf"}</span><Button disabled={busy} onClick={onCancel}>Abbrechen</Button><Button type="submit" variant="primary" disabled={busy || !title.trim()}><Save size={16} /> Speichern</Button></div>
-    {error ? <Notice error>{conflict ? "Der Artikel wurde inzwischen geändert oder der Titel ist bereits vergeben. Dein Entwurf bleibt erhalten. Sichere ihn, bevor du den aktuellen Stand neu öffnest." : error}{conflict ? <Button onClick={downloadDraft}>Entwurf herunterladen</Button> : null}</Notice> : null}
+    <div className="editor-toolbar"><span className="eyebrow">{seed.entryId ? `Revision ${seed.expectedVersion} bearbeiten` : "Neuer Artikel"}</span><span className="save-state" role="status" aria-live="polite">{saveLabel}</span><Button disabled={busy} onClick={onCancel}>Abbrechen</Button><Button type="submit" variant="primary" disabled={busy || !title.trim()}><Save size={16} /> Speichern</Button></div>
+    {error ? <Notice error>{conflict ? "Nicht gespeichert: Der Artikel wurde inzwischen anderswo geändert — vermutlich in einem zweiten Fenster, oder der Titel ist bereits vergeben. Dein Entwurf bleibt hiervon unberührt und geht nicht verloren. Lade ihn sicherheitshalber herunter, brich dann ab und öffne den Artikel neu, um den aktuellen Stand zu sehen." : error}{conflict ? <Button onClick={downloadDraft}>Entwurf herunterladen</Button> : null}</Notice> : null}
     <label className="title-input">Artikeltitel<input value={title} maxLength={200} required onChange={(e) => setTitle(e.target.value)} placeholder="Gib deiner Geschichte einen Namen" disabled={busy} autoFocus /></label>
-    <p className="field-help">Jede Passage kann einzeln freigegeben werden. Verschieben erhält ihre Identität.</p>
+    <p className="field-help">Der Artikel gliedert sich in Passagen, weil jede einzelne später für bestimmte Figuren freigegeben werden kann — so erfährt eure Runde die Welt Stück für Stück statt auf einen Schlag. Beim Verschieben bleibt diese Freigabe je Passage erhalten.</p>
     {passages.map((passage, i) => {
       const editable = passage.inhalt.kind === "absatz" || passage.inhalt.kind === "zitat";
       return <fieldset className="editor-passage" key={passage.localKey} disabled={busy}><legend>Passage {i + 1}</legend>
