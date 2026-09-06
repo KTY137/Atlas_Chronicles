@@ -58,7 +58,10 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   const geography = new Container();
   const raster = new Container(), rasterBounds = new Graphics(), gridOverlay = new Graphics(), wallsOverlay = new Graphics(), dragPreview = new Graphics();
   const markers = new Container();
-  world.addChild(rasterBounds, raster, geography, gridOverlay, wallsOverlay, markers, dragPreview);
+  // Placements sit above the floor and below walls, grid and markers: furniture is part of the
+  // ground truth of the room, but it must never hide a wall or a token.
+  const stampLayer = new Container();
+  world.addChild(rasterBounds, raster, geography, stampLayer, gridOverlay, wallsOverlay, markers, dragPreview);
   raster.mask = rasterBounds;
   app.stage.addChild(world);
   const selection = new Graphics().circle(0, 0, 15).stroke({ color: 0xffe7a1, width: 2 }); selection.visible = false;
@@ -74,6 +77,11 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   const gridCache = createGridGeometryCache();
   let previousGridLines: readonly (readonly MapPoint[])[] | undefined, previousScale = Number.NaN;
   const rasterResources: { bitmap: ImageBitmap; texture: InstanceType<typeof Texture> }[] = [];
+  const stampTextures = new Map<string, { bitmap: ImageBitmap; texture: InstanceType<typeof Texture> }>();
+  const clearStampTextures = () => {
+    for (const resource of stampTextures.values()) { resource.texture.destroy(true); resource.bitmap.close(); }
+    stampTextures.clear();
+  };
   const clearRaster = () => {
     for (const child of raster.removeChildren()) child.destroy();
     for (const resource of rasterResources.splice(0)) { resource.texture.destroy(true); resource.bitmap.close(); }
@@ -136,8 +144,29 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   const clear = (container: InstanceType<typeof Container>): void => {
     for (const child of container.removeChildren()) child.destroy({ children: true });
   };
+  const drawStamps = (): void => {
+    for (const child of stampLayer.removeChildren()) child.destroy();
+    if (!scene.stamps?.length) return;
+    // Layer order is the author's, not the array's. Sorting here keeps the projection free to
+    // emit placements in whatever order it reads them.
+    for (const stamp of [...scene.stamps].sort((a, b) => a.l - b.l || (a.id < b.id ? -1 : 1))) {
+      const resource = stampTextures.get(stamp.asset);
+      // No artwork, no shape. A placeholder box would be indistinguishable from real furniture at
+      // a glance, which is exactly the kind of picture that lies about what is in the room.
+      if (!resource) continue;
+      const sprite = new Sprite(resource.texture);
+      sprite.anchor.set(.5);
+      sprite.position.set(stamp.x, stamp.y);
+      sprite.rotation = stamp.r;
+      sprite.scale.set(stamp.s);
+      if (stamp.t) sprite.tint = stamp.t;
+      sprite.eventMode = "none";
+      stampLayer.addChild(sprite);
+    }
+  };
   const draw = (): void => {
     rasterBounds.clear().rect(0, 0, scene.width, scene.height).fill(0xffffff);
+    drawStamps();
     clear(geography);
     clear(markers);
     markerGraphics = [];
@@ -190,6 +219,15 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       ensureAlive(); if (patch.sceneId !== scene.id) throw new Error("patch belongs to another scene");
       renderer.update({ ...scene, ...(patch.cells ? { cells: patch.cells } : {}), ...(patch.pins ? { pins: patch.pins } : {}), ...(patch.tokens ? { tokens: patch.tokens } : {}) });
     },
+    setStampImages(images) {
+      for (const { asset, image } of images) {
+        const existing = stampTextures.get(asset);
+        if (existing) { existing.texture.destroy(true); existing.bitmap.close(); }
+        stampTextures.set(asset, { bitmap: image, texture: Texture.from(image) });
+      }
+      drawStamps();
+      render();
+    },
     setRasterTiles(scope, tiles) {
       ensureAlive();
       if (scope !== scene.rasterScope) { for (const tile of tiles) tile.image.close(); return; }
@@ -231,6 +269,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       options.signal?.removeEventListener("abort", renderer.destroy);
       if (scheduled) cancelAnimationFrame(scheduled);
       clearRaster();
+      clearStampTextures();
       app.destroy(true, { children: true });
       markerGraphics = [];
     },
