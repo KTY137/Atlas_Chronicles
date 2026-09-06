@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { sha256Hex } from "./sha256.ts";
 
 /**
  * Canonical JSON — the determinism substrate.
@@ -99,10 +99,10 @@ export function canonicalJson(value: CanonicalValue): string {
 
 /** sha256 over canonical JSON, lowercase hex. */
 export function canonicalHash(value: CanonicalValue): string {
-  return createHash("sha256").update(canonicalJson(value), "utf8").digest("hex");
+  return sha256Hex(canonicalJson(value));
 }
 
 /** sha256 over raw text, lowercase hex. For source bytes we did not author. */
 export function textHash(text: string): string {
-  return createHash("sha256").update(text, "utf8").digest("hex");
+  return sha256Hex(text);
 }

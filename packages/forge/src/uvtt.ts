@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { canonicalJson, textHash, type CanonicalValue } from "@chronicle/core";
+import { sha256Hex } from "@chronicle/core";
 import { TACTICAL_MAP_LIMITS, parseBoundedMapJson, parseTacticalMapDocument, serializeTacticalMapDocument, type TacticalImageRef, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
 
 export const UVTT_ADAPTER_VERSION = 1 as const;
@@ -85,7 +85,7 @@ export function inspectUvttImage(base64: string): UvttImage {
     if (!frames || extended && (extended[0] !== width || extended[1] !== height)) fail("image", "WebP dimension mismatch");
   } else return fail("image", "only static PNG and WebP containers are supported");
   if (!width || !height || width > TACTICAL_MAP_LIMITS.dimension || height > TACTICAL_MAP_LIMITS.dimension || width * height > TACTICAL_MAP_LIMITS.pixels) fail("image", "pixel budget exceeded");
-  return freeze({ base64, bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex"), mimeType, width, height });
+  return freeze({ base64, bytes: bytes.length, sha256: sha256Hex(bytes), mimeType, width, height });
 }
 
 export function importUvtt(json: string, attribution: UvttProvenance): UvttImport {

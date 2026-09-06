@@ -7,6 +7,8 @@
  *
  * `core` depends on nothing inside this repo. `tools/gate-boundaries.mjs` enforces that.
  */
+export { sha256Hex, sha256Bytes } from "./sha256.ts";
+
 export {
   canonicalJson,
   canonicalHash,
