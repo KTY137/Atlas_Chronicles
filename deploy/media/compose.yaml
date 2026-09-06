@@ -1,0 +1,31 @@
+name: chronicle-media
+services:
+  livekit:
+    image: livekit/livekit-server:v1.13.6
+    command: ["--config", "/etc/livekit.yaml"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7880:7880/tcp"
+      - "127.0.0.1:7881:7881/tcp"
+      - "127.0.0.1:7882:7882/udp"
+      - "127.0.0.1:3478:3478/tcp"
+      - "127.0.0.1:3478:3478/udp"
+      - "127.0.0.1:39060-39100:39060-39100/udp"
+    volumes:
+      - ./.runtime/livekit.yaml:/etc/livekit.yaml:ro
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+  coturn:
+    image: coturn/coturn:4.17.2-r0-alpine
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+    # Shared namespace makes the loopback SFU candidate reachable from TURN.
+    # This file deliberately binds host ports to loopback for local development.
+    network_mode: "service:livekit"
+    depends_on: [livekit]
+    restart: unless-stopped
+    volumes:
+      - ./.runtime/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    read_only: true
+    tmpfs: [/tmp, /var/lib/coturn, /var/run]
+    security_opt: ["no-new-privileges:true"]

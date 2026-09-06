@@ -1,0 +1,53 @@
+.table-page, .forge-page, .channel-page { max-width: 1500px; margin: auto; }
+.table-controls { display: flex; justify-content: space-between; gap: 25px; align-items: end; margin: 25px 0; flex-wrap: wrap; }
+.view-tabs { display: flex; gap: 3px; border-bottom: 1px solid var(--line); overflow-x: auto; max-width: 100%; }
+.view-tabs button { border: 0; background: transparent; color: var(--text-muted); padding: 12px 16px; white-space: nowrap; cursor: pointer; font: inherit; font-size: 12px; }
+.view-tabs button[aria-selected="true"] { color: var(--accent); box-shadow: inset 0 -2px var(--accent); }
+.actor-picker { width: 230px; margin: 0; }
+.table-columns { display: grid; grid-template-columns: minmax(300px, .85fr) minmax(350px, 1.15fr); gap: 30px; align-items: start; }
+.table-columns > *, .sheet-content, .rule-builder, .forge-catalog { min-width: 0; }
+.rule-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 18px; margin: 18px 0; }
+.rule-fields > label, .rule-fields .rule-field > label { margin-bottom: 7px; }
+.rule-field input[type="checkbox"], .check-label input { width: 18px; height: 18px; min-height: 18px; accent-color: var(--accent); }
+.check-label { display: flex; flex-direction: row; align-items: center; gap: 12px; }
+.rule-field input { width: 100%; }
+.rule-field label { min-height: 15px; }
+.sheet-section { border: 1px solid var(--line); border-radius: 5px; padding: 12px 20px; margin: 25px 0 0; min-width: 0; }
+.sheet-section legend { color: var(--accent); font-size: 11px; padding: 0 8px; }
+.table-page h2 svg, .forge-page h2 svg { vertical-align: middle; margin-right: 6px; color: var(--accent); }
+.table-page select[multiple], .rule-builder select[multiple] { min-height: 120px; }
+.table-page select, .rule-builder select { text-overflow: ellipsis; }
+.roll-card { border: 1px solid var(--line); background: linear-gradient(140deg, #19201f, #101516); border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+.roll-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.roll-heading h3 { font-family: var(--font-display); font-weight: 500; margin: 8px 0; }
+.roll-total { color: var(--accent); font-family: var(--font-display); font-size: 38px; line-height: 1; }
+.roll-expression { color: var(--text-muted); font-family: monospace; overflow-wrap: anywhere; }
+.roll-card > .muted { font-size: 12px; line-height: 1.7; }
+.dice-results { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.dice-results > span { min-width: 42px; height: 49px; background: #202824; border: 1px solid #4a5340; color: #d3c59e; border-radius: 6px; text-align: center; font-size: 21px; padding: 4px; }
+.dice-results small { display: block; font-size: 8px; color: var(--text-muted); }
+.receipt-meta { display: grid; grid-template-columns: 85px minmax(0, 1fr); gap: 12px; font-size: 11px; }
+.receipt-meta dt { color: var(--text-muted); }.receipt-meta dd { margin: 0; overflow-wrap: anywhere; }
+.trace-list { padding: 0; list-style: none; font-size: 11px; }.trace-list li { display: flex; justify-content: space-between; gap: 15px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.scene-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.scene-card h2, .door-card h2 { overflow-wrap: anywhere; }
+.canon-form { max-width: 780px; }
+.forge-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 30px; margin-top: 28px; align-items: start; }
+.forge-catalog { position: sticky; top: 25px; }.forge-catalog .button { width: 100%; margin-bottom: 8px; }
+.package-card { border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; padding: 17px; background: var(--surface); }
+.package-card.active { border-color: #796b45; }.package-card h3 { font-size: 14px; margin: 8px 0; }.package-card p { font-size: 11px; overflow-wrap: anywhere; }
+.package-card .button { font-size: 10px; margin-top: 8px; }.package-card small { color: var(--accent); font-size: 10px; }
+.forge-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 22px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.forge-toolbar .eyebrow { margin-right: auto; }
+.builder-row { padding: 20px 0; border-top: 1px solid var(--line); }
+.builder-row h3 { margin: 0; font-size: 13px; font-weight: 500; }
+.builder-row .section-heading { margin-bottom: 15px; }.builder-row .section-heading code { overflow-wrap: anywhere; color: var(--accent); font-size: 12px; }
+.builder-row .rule-fields { margin: 0; }.builder-row .rule-fields label { font-size: 10px; }
+.add-field { display: flex; gap: 10px; align-items: end; margin: 15px 0; }.add-field label { flex: 1; margin: 0; min-width: 0; }
+.formula-editor { font-family: monospace; min-height: 85px; }
+.json-editor { font-family: monospace; font-size: 11px; min-height: 250px; tab-size: 2; }
+.schema-status { padding: 14px 18px; border-left: 2px solid var(--accent); background: #1b201b; font-size: 12px; margin-bottom: 20px; }.schema-status.error { border-color: var(--danger); background: #261c1c; }
+.version-warning { font-size: 11px; color: var(--text-muted); line-height: 1.7; }
+.live-status { display: inline-flex; gap: 6px; align-items: center; }.live-dot { width: 5px; height: 5px; border-radius: 50%; background: #a69155; }.live-dot.connected { background: #72a77e; }.live-dot.offline { background: #9b706b; }
+@media (max-width: 1150px) { .table-columns { grid-template-columns: 1fr; gap: 5px; }.forge-grid { grid-template-columns: 220px minmax(0, 1fr); gap: 20px; } }
+@media (max-width: 760px) { .table-controls { gap: 15px; margin: 15px 0 25px; }.view-tabs { width: 100%; }.view-tabs button { padding: 11px 12px; }.actor-picker { width: 100%; }.rule-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }.sheet-section { padding: 10px 12px; }.sheet-content .section-heading { align-items: start; flex-wrap: wrap; gap: 15px; }.roll-card { padding: 19px; }.forge-grid { grid-template-columns: 1fr; }.forge-catalog { position: static; }.forge-packages { display: flex; overflow-x: auto; gap: 10px; }.package-card { min-width: 225px; max-width: 225px; }.forge-toolbar { gap: 6px; }.forge-toolbar .eyebrow { flex-basis: 100%; }.forge-toolbar .button { font-size: 10px; flex: 1; }.rail-item { flex-direction: column; gap: 3px; font-size: 8px; }.rail-item svg { width: 16px; height: 16px; }.band .live-status { max-width: 120px; overflow: hidden; white-space: nowrap; }.add-field { flex-wrap: wrap; }.add-field label { min-width: 130px; }.table-columns { gap: 0; } }

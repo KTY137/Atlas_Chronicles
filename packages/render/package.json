@@ -1,0 +1,8 @@
+{
+  "name": "@chronicle/render",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./geometry": "./src/geometry.ts" },
+  "dependencies": { "pixi.js": "8.20.1" }
+}

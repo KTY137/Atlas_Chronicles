@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?run npm run configure first}
+      POSTGRES_DB: ${POSTGRES_DB:?run npm run configure first}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run npm run configure first}
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - chronicle-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  chronicle-dev:

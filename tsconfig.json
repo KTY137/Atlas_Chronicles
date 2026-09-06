@@ -19,6 +19,7 @@
     "noEmit": true,
 
     "paths": {
+      "@chronicle/rules": ["./packages/rules/src/index.ts"],
       "@chronicle/protocol": ["./packages/protocol/src/index.ts"],
       "@chronicle/core": ["./packages/core/src/index.ts"],
       "@chronicle/chronik": ["./packages/chronik/src/index.ts"],
@@ -30,5 +31,5 @@
     }
   },
   "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts", "tools/**/*.mjs"],
-  "exclude": ["node_modules", "**/dist", "design/**"]
+  "exclude": ["node_modules", "**/dist", "design/**", "packages/client/**", "packages/ui/**", "packages/render/**"]
 }

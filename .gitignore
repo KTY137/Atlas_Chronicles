@@ -1,6 +1,13 @@
 # Dependencies
 node_modules/
 
+# Local application credentials and data
+.local/
+.env
+deploy/.env
+playwright-report/
+test-results/
+
 # Build output
 dist/
 build/

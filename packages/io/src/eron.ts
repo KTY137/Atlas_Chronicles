@@ -1,0 +1,180 @@
+import {
+  canonicalHash, canonicalJson, deriveEntryId, deriveId, derivePassageId, trustImportId, trustRevisionId,
+  type CanonicalValue, type EntryId, type PassageId,
+} from "@chronicle/core";
+import { tuerklasse, type Alias, type Blockinhalt, type Entry, type InlineMark, type InlineText, type Link, type Passage, type Revision, type Verlust } from "@chronicle/chronik";
+import type { EronArticle, EronImportInput, EronImportResult, EronReimportPlan, EronTemplate, ImportProvenance } from "./model.ts";
+import { array, assertJson, integer, object, sourceUrl, string, ImportValidationError } from "./validation.ts";
+import { namespaceLinkTarget, blockPlainText, decomposeWiki, eronNotationTarget, wikiSlug } from "./wikitext.ts";
+
+const canonical = (value: unknown): CanonicalValue => value as CanonicalValue;
+
+function parseArticles(value: unknown): EronArticle[] {
+  const ids = new Set<number>(), titles = new Set<string>();
+  return array(value, "articles", 10_000).map((item, i) => {
+    const row = object(item, `articles[${i}]`);
+    const title = string(row.title, `articles[${i}].title`, 512);
+    const pageid = integer(row.pageid, `articles[${i}].pageid`, 1);
+    if (ids.has(pageid) || titles.has(wikiSlug(title))) throw new ImportValidationError(`articles[${i}]`, "duplicate page identity/title");
+    ids.add(pageid); titles.add(wikiSlug(title));
+    return { title, pageid, ns: integer(row.ns, `articles[${i}].ns`), revid: integer(row.revid, `articles[${i}].revid`, 1), wikitext: string(row.wikitext, `articles[${i}].wikitext`, 1_000_000, true) };
+  });
+}
+
+function parseTemplates(value: unknown): EronTemplate[] {
+  const titles = new Set<string>();
+  return array(value, "templates", 10_000).map((item, i) => {
+    const row = object(item, `templates[${i}]`);
+    const title = string(row.title, `templates[${i}].title`, 512);
+    if (titles.has(wikiSlug(title))) throw new ImportValidationError(`templates[${i}]`, "duplicate template title");
+    titles.add(wikiSlug(title));
+    return { title, source: string(row.source, `templates[${i}].source`, 1_000_000, true) };
+  });
+}
+
+function mapInline(block: Blockinhalt, map: (inline: readonly InlineText[]) => readonly InlineText[]): Blockinhalt {
+  switch (block.kind) {
+    case "absatz": case "zitat": case "bildunterschrift": return { ...block, inhalt: map(block.inhalt) };
+    case "feld": return { ...block, werte: block.werte.map(map) };
+    case "liste": return { ...block, punkte: block.punkte.map(map) };
+    case "rohblock": return block;
+  }
+}
+
+/** Pure, bounded import preview. Server authorization and human acceptance are separate commands. */
+export function importEron(input: EronImportInput): EronImportResult {
+  assertJson(input.articles, "articles"); assertJson(input.templates, "templates");
+  const original = { articles: input.articles, templates: input.templates };
+  if (Buffer.byteLength(canonicalJson(canonical(original)), "utf8") > 20_000_000) throw new ImportValidationError("source", "maximum source size is 20 MB");
+  const articles = parseArticles(input.articles).sort((a, b) => a.pageid - b.pageid);
+  const templates = parseTemplates(input.templates);
+  const wikiUrl = sourceUrl(input.wikiUrl, "wikiUrl");
+  string(input.universeId, "universeId", 128);
+  if (input.campaignId !== undefined) string(input.campaignId, "campaignId", 128);
+  const importiertAm = string(input.importiertAm, "importiertAm", 40);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(importiertAm) || !Number.isFinite(Date.parse(importiertAm))) throw new ImportValidationError("importiertAm", "UTC ISO timestamp required");
+  if (input.minimumParagraphLength !== undefined) integer(input.minimumParagraphLength, "minimumParagraphLength");
+  const sourceHash = canonicalHash(canonical(original));
+  const scope = canonicalHash({ universeId: input.universeId, campaignId: input.campaignId ?? null, wikiUrl });
+  const base = { erzeuger: "eron-json", version: "1", keim: scope };
+  const importId = trustImportId(deriveId({ ...base, kind: "import", pfad: [sourceHash, importiertAm] }));
+  const entries: Entry[] = [], revisions: Revision[] = [], passages: Passage[] = [], aliases: Alias[] = [], links: Link[] = [];
+  const provenance: ImportProvenance[] = [], losses: Verlust[] = [], media: EronImportResult["media"][number][] = [];
+  const targets = new Map<string, EntryId>(), redirects = new Map<string, string>();
+  let droppedCharacters = 0;
+  const entryIdFor = (pageid: number) => deriveEntryId({ ...base, kind: "entry", pfad: [String(pageid)] });
+  for (const article of articles) {
+    if (article.ns !== 0) { losses.push({ art: "nicht-umgewandelt", bezeichnung: article.title, detail: "Non-article namespace preserved in source only" }); continue; }
+    const redirect = /^\s*#(?:WEITERLEITUNG|REDIRECT)\s*\[\[([^\]]+)\]\]\s*$/i.exec(article.wikitext);
+    if (redirect) redirects.set(wikiSlug(article.title), wikiSlug(redirect[1]!.split("|")[0]!));
+    else targets.set(wikiSlug(article.title), entryIdFor(article.pageid));
+  }
+  for (const [from, target] of redirects) {
+    let next = target; const seen = new Set([from]);
+    while (redirects.has(next) && !seen.has(next)) { seen.add(next); next = redirects.get(next)!; }
+    const id = seen.has(next) ? undefined : targets.get(next);
+    if (id) { aliases.push({ universeId: input.universeId, vonSlug: from, nachEntryId: id }); targets.set(from, id); }
+    else losses.push({ art: "nicht-umgewandelt", bezeichnung: from, detail: "Redirect target is missing or cyclic; preserved in source" });
+  }
+  for (const article of articles) {
+    const slug = wikiSlug(article.title);
+    if (article.ns !== 0 || redirects.has(slug)) continue;
+    const document = decomposeWiki(article.wikitext, article.pageid, templates, {
+      ...(input.minimumParagraphLength !== undefined ? { minimumParagraphLength: input.minimumParagraphLength } : {}),
+      ...(input.templateTypes ? { templateTypes: input.templateTypes } : {}),
+    });
+    losses.push(...document.losses); media.push(...document.media); droppedCharacters += document.droppedCharacters;
+    const entryId = entryIdFor(article.pageid);
+    const contentHash = canonicalHash(canonical(document.blocks));
+    const revisionId = trustRevisionId(deriveId({ ...base, kind: "revision", pfad: [String(article.pageid), String(article.revid), contentHash] }));
+    entries.push({ id: entryId, universeId: input.universeId, ...(input.campaignId ? { campaignId: input.campaignId } : {}), slug,
+      titel: article.title, art: document.art, kanonstatus: "kanon", aktuelleRevision: revisionId,
+      ...(document.displayTitle !== undefined ? { anzeigename: document.displayTitle } : {}), ...(document.sortKey !== undefined ? { sortierschluessel: document.sortKey } : {}) });
+    revisions.push({ id: revisionId, entryId, seq: 1, inhaltsHash: contentHash });
+    const occurrence = new Map<string, number>();
+    const attribution = input.attributionByPageId?.[String(article.pageid)];
+    if (attribution) {
+      if (attribution.complete !== true) throw new ImportValidationError("attribution", "complete revision history must be explicitly confirmed");
+      array(attribution.authors, "attribution.authors").forEach((author) => string(author, "attribution.author", 512));
+      integer(attribution.anonymousContributions, "attribution.anonymousContributions");
+      if (!/^[0-9a-z]{1,40}$/i.test(attribution.revisionSha1)) throw new ImportValidationError("attribution.revisionSha1", "MediaWiki SHA1 required");
+      if (!attribution.authors.length && attribution.anonymousContributions === 0) throw new ImportValidationError("attribution", "author history cannot be empty");
+    }
+    document.blocks.forEach((block, ord) => {
+      // Resolution never enters this hash: creating a target later must not re-identify a passage.
+      const hash = canonicalHash(canonical(block.inhalt));
+      const n = occurrence.get(hash) ?? 0; occurrence.set(hash, n + 1);
+      const pid = derivePassageId({ ...base, kind: "passage", pfad: [String(article.pageid), hash, String(n)] });
+      passages.push({ pid, gen: 1, entryId, ord, pfad: block.pfad, inhalt: block.inhalt, geltung: "notiz", praegung: null, erstelltInRevision: revisionId });
+      const common = { passageId: pid, importId, quellWikiUrl: wikiUrl,
+        quellArtikelUrl: `${wikiUrl}wiki/${encodeURIComponent(article.title.replace(/ /g, "_"))}`,
+        quellPageid: article.pageid, quellRevid: article.revid, passageSha256: hash, pfad: block.pfad, ordnung: ord,
+        lizenz: string(input.license ?? "CC-BY-SA-3.0", "license", 200), importiertAm };
+      if (attribution) provenance.push({ status: "complete", value: { ...common, quellSha1: attribution.revisionSha1,
+        autoren: [...new Set(attribution.authors)].sort(), anonymeBeitraege: attribution.anonymousContributions } });
+      else provenance.push({ status: "incomplete", value: common, missing: ["complete-author-history", "revision-sha1"] });
+    });
+  }
+  const missingTargets = new Map<string, Set<EntryId>>();
+  const reject = input.rejectLinkTarget ?? eronNotationTarget;
+  const resolvedPassages = passages.map((passage): Passage => ({ ...passage, inhalt: mapInline(passage.inhalt, (inline) => inline.map((part) => ({
+    ...part, marks: part.marks.flatMap<InlineMark>((mark) => {
+      if (mark.art !== "link") return [mark];
+      // A namespace link is not a missing article. Counting it as a door inflates the one
+      // number this product sells, with demand for a page nobody can ever write.
+      if (namespaceLinkTarget(mark.zielSlug)) {
+        losses.push({ art: "verworfenes-linkziel", bezeichnung: mark.zielSlug,
+          detail: `Namensraum-Link, keine Tür (Passage ${passage.pid})` });
+        return [];
+      }
+      const target = targets.get(mark.zielSlug);
+      if (!target) {
+        const sources = missingTargets.get(mark.zielSlug) ?? new Set<EntryId>(); sources.add(passage.entryId); missingTargets.set(mark.zielSlug, sources);
+        if (reject(mark.zielSlug)) {
+          losses.push({ art: "verworfenes-linkziel", bezeichnung: mark.zielSlug, detail: `Passage ${passage.pid}` }); return [];
+        }
+      }
+      links.push({ quellEntryId: passage.entryId, quellPassageId: passage.pid, zielSlug: mark.zielSlug, ...(target ? { zielEntryId: target } : {}) });
+      return [{ ...mark, ...(target ? { zielEntryId: target } : {}) }];
+    }),
+  }))) }));
+  const redLinks = [...missingTargets].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+    .map(([zielSlug, sources]) => ({ zielSlug, eingehend: sources.size, klasse: tuerklasse(sources.size, reject(zielSlug)) }));
+  const passageCounts = { absatz: 0, feld: 0, liste: 0, zitat: 0, bildunterschrift: 0, rohblock: 0 };
+  passages.forEach((passage) => passageCounts[passage.inhalt.kind]++);
+  const doorCounts = { tuer: 0, spur: 0, notiz: 0, verworfen: 0 }; redLinks.forEach((link) => doorCounts[link.klasse]++);
+  const retainedCharacters = passages.reduce((sum, passage) => sum + blockPlainText(passage.inhalt).length, 0);
+  return { importerVersion: "1", importId, universeId: input.universeId, ...(input.campaignId ? { campaignId: input.campaignId } : {}),
+    entries, revisions, passages: resolvedPassages, aliases, links, redLinks, provenance, media,
+    source: { format: "eron-json", sha256: sourceHash, wikiUrl, ...JSON.parse(JSON.stringify(original)) as typeof original },
+    report: { importId, quelle: wikiUrl, eintraege: entries.length, aliase: aliases.length, passagen: passages.length,
+      passagenNachArt: passageCounts, blaueKanten: links.filter((link) => link.zielEntryId !== undefined).length,
+      roteKanten: links.filter((link) => link.zielEntryId === undefined).length, distinkteRoteZiele: redLinks.length,
+      tuerbilanz: doorCounts, verluste: losses, textErhaltung: retainedCharacters + droppedCharacters === 0 ? 1 : retainedCharacters / (retainedCharacters + droppedCharacters),
+      // No file has been fetched or inspected; references are explicitly separate from Assets.
+      assetsNachLizenz: { frei: 0, zitat: 0, unbekannt: 0 } },
+    reviewRequired: true, attributionComplete: provenance.every((item) => item.status === "complete"),
+  };
+}
+
+/** Reimport cannot revoke a human's historical knowledge or mint upstream edits automatically. */
+export function planEronReimport(previous: EronImportResult, next: EronImportResult): EronReimportPlan {
+  if (previous.universeId !== next.universeId || previous.campaignId !== next.campaignId || previous.source.wikiUrl !== next.source.wikiUrl) {
+    throw new ImportValidationError("reimport", "source and universe/campaign must match");
+  }
+  const key = (row: ImportProvenance) => `${row.value.quellPageid}:${row.value.passageSha256}`;
+  const oldByHash = new Map<string, PassageId[]>();
+  previous.provenance.forEach((row) => { const ids = oldByHash.get(key(row)) ?? []; ids.push(row.value.passageId); oldByHash.set(key(row), ids); });
+  const nextProvenance = new Map(next.provenance.map((row) => [row.value.passageId, row]));
+  const kept = new Set<PassageId>(), additions: Passage[] = [];
+  const unchanged: { existingPassageId: PassageId; candidatePassageId: PassageId }[] = [];
+  for (const candidate of next.passages) {
+    const row = nextProvenance.get(candidate.pid);
+    const old = row ? oldByHash.get(key(row))?.shift() : undefined;
+    if (old) { kept.add(old); unchanged.push({ existingPassageId: old, candidatePassageId: candidate.pid }); }
+    else additions.push(candidate);
+  }
+  const oldEntries = new Map(previous.entries.map((entry) => [entry.id, entry]));
+  return { unchanged, additions, removalCandidates: previous.passages.filter((passage) => !kept.has(passage.pid)),
+    entryChanges: next.entries.filter((entry) => canonicalJson(canonical(entry)) !== canonicalJson(canonical(oldEntries.get(entry.id) ?? null))).map((entry) => entry.id), reviewRequired: true };
+}

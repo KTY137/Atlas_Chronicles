@@ -1,0 +1,8 @@
+{
+  "name": "@chronicle/io",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@chronicle/core": "*", "@chronicle/chronik": "*", "@chronicle/rules": "*" }
+}

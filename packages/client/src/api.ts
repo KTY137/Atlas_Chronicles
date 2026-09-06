@@ -1,0 +1,45 @@
+export class ApiError extends Error {
+  constructor(readonly status: number, message: string) { super(message); this.name = "ApiError"; }
+}
+
+export async function api<T>(path: string, options: { method?: string; body?: unknown; signal?: AbortSignal; authorization?: string } = {}): Promise<T> {
+  const response = await fetch(path, { method: options.method ?? "GET", credentials: "same-origin", cache: "no-store",
+    headers: { ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}), ...(options.authorization ? { Authorization: options.authorization } : {}) },
+    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}), ...(options.signal ? { signal: options.signal } : {}) });
+  const body = await response.json().catch(() => null) as { error?: string } | null;
+  if (!response.ok) throw new ApiError(response.status, body?.error ?? "Die Verbindung konnte nicht abgeschlossen werden.");
+  return body as T;
+}
+
+export const apiPath = (campaignId: string, suffix = "") => `/api/campaigns/${encodeURIComponent(campaignId)}${suffix}`;
+export const errorText = (error: unknown) => error instanceof Error ? error.message : "Etwas ist schiefgegangen. Bitte erneut versuchen.";
+
+export interface Me { userId: string; displayName: string; canCreateCampaign: boolean; credentialId: string }
+export interface Campaign { id: string; universeId: string; name: string; version: number; role: "leitung" | "spieler" | "beobachter" }
+export interface Member { userId: string; displayName: string; role: Campaign["role"]; actorId: string | null }
+export interface EntrySummary { id: string; slug: string; title: string; excerpt: string }
+export type Mark = { art: "em" | "strong" | "code" } | { art: "link"; zielSlug: string; zielEntryId?: string; tuer?: { vollmachtId: string; verfallAt: number } };
+export interface Inline { text: string; marks: readonly Mark[] }
+export type Block =
+  | { kind: "absatz" | "zitat"; inhalt: readonly Inline[] }
+  | { kind: "bildunterschrift"; assetId: string; inhalt: readonly Inline[] }
+  | { kind: "feld"; schluessel: string; label: string; gruppe?: string; werte: readonly (readonly Inline[])[]; mehrwertig: boolean; klauselKandidat?: boolean }
+  | { kind: "liste"; geordnet: boolean; punkte: readonly (readonly Inline[])[] }
+  | { kind: "rohblock"; quelltext: string; grund: string };
+export interface ProjectedPassage { pid: string; ord: number; pfad: readonly string[]; inhalt: Block }
+export interface EntryDocument { entryId: string; slug: string; titel: string; passagen: readonly ProjectedPassage[]; version?: number; revisionId?: string }
+export interface DraftPassage { pid?: string; inhalt: Block; pfad: string[]; tags: string[]; localKey: string }
+export interface HistoryItem { id: string; seq: number; contentHash: string; createdAt: number | string; document: { title: string; slug: string; passagen: (ProjectedPassage & { geltung: string; praegung: unknown })[]; tags?: string[][] } }
+export interface Invitation { id: string; code: string; expiresAt: number }
+export interface PendingJoin { id: string; pollToken: string; expiresAt: number }
+export interface JoinRequest { id: string; displayName: string; createdAt: number | string }
+export interface Credential { id: string; kind: string; label: string; createdAt: number | string; lastUsedAt: number | string | null; expiresAt: number | string }
+
+export function plainText(block: Block): string {
+  switch (block.kind) {
+    case "absatz": case "zitat": case "bildunterschrift": return block.inhalt.map((row) => row.text).join("");
+    case "feld": return block.werte.map((row) => row.map((part) => part.text).join("")).join("\n");
+    case "liste": return block.punkte.map((row) => row.map((part) => part.text).join("")).join("\n");
+    case "rohblock": return block.quelltext;
+  }
+}

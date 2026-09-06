@@ -1,0 +1,24 @@
+{
+  "capturedAt": "2026-09-06T11:32:55.999Z",
+  "sourceUrl": "https://azgaar.github.io/Fantasy-Map-Generator/?seed=chronicle-import-fixture-2026&width=640&height=480",
+  "method": "Unmodified Full JSON download through Azgaar's own export button in headless Microsoft Edge",
+  "originalFilename": "Koria Full 2026-09-06-13-32.json",
+  "sha256": "527727717237d833d40700016bfdb8ffadeb9e78ae3550c53489c8acd7f94686",
+  "bytes": 8148941,
+  "info": {
+    "version": "1.151.2",
+    "description": "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
+    "exportedAt": "2026-09-06T11:32:54.939Z",
+    "mapName": "Koria",
+    "width": 640,
+    "height": 480,
+    "seed": "chronicle-import-fixture-2026",
+    "mapId": 1788694373806
+  },
+  "counts": {
+    "cells": 4733,
+    "burgs": 698
+  },
+  "rightsSource": "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Knowledge-Base#who-owns-the-maps-created",
+  "scope": "Generated output data only; no generator scripts, SVG, fonts, coats-of-arms assets or bundled third-party code."
+}

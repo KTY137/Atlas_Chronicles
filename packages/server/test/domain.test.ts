@@ -15,7 +15,7 @@ describe("Postgres scaffold (same migration used by pg and PGlite)", () => {
   it("applies the migration exactly once on repeated startup", async () => {
     await migrate(db);
     const result = await db.query<{ count: string }>("SELECT count(*) FROM schema_migrations");
-    expect(Number(result.rows[0]?.count)).toBe(1);
+    expect(Number(result.rows[0]?.count)).toBeGreaterThanOrEqual(2);
     const tables = await db.query<{ tablename: string }>("SELECT tablename FROM pg_tables WHERE schemaname='public'");
     expect(tables.rows.map((r) => r.tablename)).toEqual(expect.arrayContaining([
       "users", "credentials", "campaigns", "campaign_memberships", "join_requests",

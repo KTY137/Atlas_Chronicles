@@ -5,8 +5,10 @@ const pkg = (name: string) =>
   fileURLToPath(new URL(`./packages/${name}/src/index.ts`, import.meta.url));
 
 export default defineConfig({
+  esbuild: { jsx: "automatic" },
   resolve: {
     alias: {
+      "@chronicle/rules": pkg("rules"),
       "@chronicle/protocol": pkg("protocol"),
       "@chronicle/core": pkg("core"),
       "@chronicle/chronik": pkg("chronik"),

@@ -1,0 +1,10 @@
+.passage-evidence { margin-top: 12px; font-size: 12px; color: var(--muted); }
+.passage-evidence summary { cursor: pointer; }
+.passage-evidence dl { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); gap: 8px 12px; }
+.passage-evidence dt { font-weight: 600; }.passage-evidence dd { margin: 0; overflow-wrap: anywhere; }
+.passage-evidence h3 { font-size: 14px; }
+.band [aria-label="Live-Verbindung"] { font-size: 11px; white-space: nowrap; }
+@media (max-width: 700px) {
+  .band > span:nth-child(2) { display: none; }
+  .band [aria-label="Live-Verbindung"] { max-width: 55vw; overflow: hidden; text-overflow: ellipsis; }
+}

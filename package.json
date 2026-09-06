@@ -10,13 +10,21 @@
     "packages/*"
   ],
   "scripts": {
+    "configure": "tsx packages/server/src/main.ts --configure",
+    "campaign-bundle": "tsx packages/server/src/bundle-cli.ts",
+    "db:up": "docker compose --env-file .local/postgres.env -f deploy/docker-compose.dev.yml up -d --wait",
+    "start": "tsx packages/server/src/main.ts",
+    "dev": "node tools/dev.mjs",
+    "build": "npm run build --workspace @chronicle/client",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "npm run build && playwright test",
     "gate:boundaries": "node tools/gate-boundaries.mjs",
     "gate": "npm run gate:boundaries && npm run typecheck && npm run test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "22.20.0",
     "typescript": "7.0.2",
     "vitest": "3.2.7"

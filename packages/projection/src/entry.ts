@@ -32,6 +32,10 @@ export interface Tuer {
  */
 export interface BetrachterWissen {
   readonly gehaltenePids: ReadonlySet<PassageId>;
+  /** Only targets whose existence this reader knows may become blue links. */
+  readonly bekannteEntryIds?: ReadonlySet<string>;
+  /** Current names and aliases of known entries; never an unfiltered index. */
+  readonly bekannteSlugs?: ReadonlyMap<string, string>;
   /** zielSlug → Tür. Nur die eigenen offenen Türen — nie die fremden. */
   readonly offeneTueren: ReadonlyMap<string, Tuer>;
 }
@@ -109,8 +113,9 @@ function projiziereMark(m: InlineMark, wissen: BetrachterWissen): ProjMark {
     case "link": {
       // Blauer Link: Ziel existiert. Roter Link: nur der Slug — und NUR für den Halter
       // einer offenen Vollmacht auf diesem Anker zusätzlich die Tür.
-      if (m.zielEntryId !== undefined) {
-        return { art: "link", zielSlug: m.zielSlug, zielEntryId: m.zielEntryId };
+      const target = m.zielEntryId ?? wissen.bekannteSlugs?.get(m.zielSlug);
+      if (target !== undefined && wissen.bekannteEntryIds?.has(target)) {
+        return { art: "link", zielSlug: m.zielSlug, zielEntryId: target };
       }
       const tuer = wissen.offeneTueren.get(m.zielSlug);
       if (tuer !== undefined) {
@@ -201,7 +206,8 @@ export function projiziereEntry(quelle: EntryQuelle, wissen: BetrachterWissen): 
     if (!wissen.gehaltenePids.has(p.pid)) continue;
     passagen.push({
       pid: p.pid,
-      ord: p.ord,
+      // Source ordinals disclose the number/position of concealed passages.
+      ord: passagen.length,
       pfad: p.pfad,
       inhalt: projiziereBlock(p.inhalt, wissen),
     });

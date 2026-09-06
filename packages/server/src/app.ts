@@ -1,0 +1,138 @@
+import Fastify, { type FastifyRequest } from "fastify";
+import rateLimit from "@fastify/rate-limit";
+import staticFiles from "@fastify/static";
+import { timingSafeEqual } from "node:crypto";
+import type { Static } from "@sinclair/typebox";
+import type { RegistrationResponseJSON, AuthenticationResponseJSON } from "@simplewebauthn/server";
+import * as P from "@chronicle/protocol";
+import { canonicalJson, type CanonicalValue } from "@chronicle/core";
+import type { Blockinhalt } from "@chronicle/chronik";
+import type { Db } from "./db/index.ts";
+import { createIdentity, reachability, type IdentityConfig } from "./identity/index.ts";
+import { createCampaigns } from "./domain/campaigns.ts";
+import { createDocuments, type DocumentInput } from "./domain/documents.ts";
+import { Gone, Conflict } from "./domain/errors.ts";
+import { ImportValidationError } from "@chronicle/io";
+import { AzgaarImportError } from "@chronicle/forge";
+import { registerImports } from "./http/imports.ts";
+import { registerGameplay } from "./http/gameplay.ts";
+import { RuleValidationError } from "@chronicle/rules";
+import { registerRealtime } from "./http/realtime.ts";
+import { registerMedia } from "./http/media.ts";
+import type { MediaServerConfig } from "./domain/media.ts";
+import { registerWeek } from "./http/week.ts";
+import { registerHttpLifecycle } from "./http/lifecycle.ts";
+import { registerWikiNavigation } from "./http/wiki-navigation.ts";
+import { registerBundles } from "./http/bundles.ts";
+
+export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; livekit?: MediaServerConfig }
+export async function buildApp(db: Db, config: AppConfig) {
+  const app = Fastify({ logger: config.logger ?? false, bodyLimit: 2 * 1024 * 1024,
+    ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
+  registerHttpLifecycle(app);
+  const identity = createIdentity(db, config), campaigns = createCampaigns(db, config), docs = createDocuments(db, config);
+  const auth = (req: FastifyRequest) => identity.authenticate(req.headers.cookie);
+  const origin = new URL(config.origin).origin;
+  const secretEqual = (a: string, b: string) => { const aa=Buffer.from(a), bb=Buffer.from(b); return aa.length === bb.length && timingSafeEqual(aa,bb); };
+  await app.register(rateLimit, { max: 240, timeWindow: "1 minute", keyGenerator: (r) => r.ip });
+  app.addHook("onRequest", async (req, reply) => {
+    reply.header("Cache-Control", "no-store").header("X-Content-Type-Options", "nosniff").header("Referrer-Policy", "no-referrer");
+    if (!["GET", "HEAD", "OPTIONS"].includes(req.method) && req.headers.origin !== origin) throw new Gone("origin");
+  });
+  app.setErrorHandler((error, _req, reply) => {
+    const fault = error as { validation?: unknown; statusCode?: number };
+    if (error instanceof Gone) return reply.code(404).send({ error: "Nicht verfügbar" });
+    if (error instanceof Conflict) return reply.code(409).send({ error: "Konflikt: Bitte den aktuellen Stand laden." });
+    if (error instanceof ImportValidationError || error instanceof AzgaarImportError || error instanceof RuleValidationError) return reply.code(400).send({error:error.message});
+    if (fault.validation || fault.statusCode === 400) return reply.code(400).send({ error: "Bitte Eingaben prüfen." });
+    if (fault.statusCode === 429) return reply.code(429).send({ error: "Zu viele Anfragen. Bitte kurz warten." });
+    if (fault.statusCode === 413) return reply.code(413).send({ error: "Die Datei ist zu groß." });
+    reqLog(error);
+    return reply.code(500).send({ error: "Speichern fehlgeschlagen. Bitte erneut versuchen." });
+  });
+  function reqLog(error: unknown) { app.log.error(error); }
+  app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: "Nicht verfügbar" }));
+
+  app.get("/api/health", async () => { await db.query("SELECT 1"); return { ok: true }; });
+  app.get("/api/reachability", async () => reachability(origin));
+  app.get("/api/setup", async () => ({ required: !(await db.query("SELECT id FROM users WHERE platform_role='leitung'")).rowCount }));
+  app.post<{ Body: P.NameBodyType }>("/api/setup", { schema: { body: P.NameBody }, config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (req, reply) => {
+    if (config.bootstrapToken.length < 32 || !secretEqual(req.headers.authorization ?? "", `Bearer ${config.bootstrapToken}`)) throw new Gone();
+    const session = await identity.bootstrap(req.body.displayName);
+    reply.header("Set-Cookie", session.setCookie);
+    return { ok: true };
+  });
+  app.get("/api/me", async (req) => {
+    const ctx = await auth(req);
+    return { userId: ctx.userId, displayName: ctx.displayName, canCreateCampaign: ctx.platformRole === "leitung", credentialId: ctx.credentialId };
+  });
+  app.post("/api/logout", async (req, reply) => { const ctx = await auth(req); await identity.revoke(ctx.userId, ctx.credentialId); reply.header("Set-Cookie", identity.clearCookie()); return { ok: true }; });
+  app.post("/api/remember", async (req, reply) => {
+    const ctx = await auth(req);
+    const next = await db.transaction(async (tx) => { const i = createIdentity(tx, config); const session = await i.issueSession(ctx.userId, "cookie"); await i.revoke(ctx.userId, ctx.credentialId); return session; });
+    reply.header("Set-Cookie", next.setCookie); return { ok: true };
+  });
+  app.get("/api/credentials", async (req) => identity.credentials((await auth(req)).userId));
+  app.delete<{ Params: { id: string } }>("/api/credentials/:id", async (req) => { await identity.revoke((await auth(req)).userId, req.params.id); return { ok: true }; });
+  app.post("/api/passkeys/register/options", async (req) => identity.beginRegistration((await auth(req)).userId));
+  app.post<{ Body: Static<typeof P.WebAuthnFinish> }>("/api/passkeys/register", { schema: { body: P.WebAuthnFinish } }, async (req) =>
+    identity.finishRegistration((await auth(req)).userId, req.body.challengeId, req.body.response as unknown as RegistrationResponseJSON, req.body.label ?? "Passkey"));
+  app.post("/api/passkeys/login/options", async () => identity.beginAuthentication());
+  app.post<{ Body: Static<typeof P.WebAuthnFinish> }>("/api/passkeys/login", { schema: { body: P.WebAuthnFinish } }, async (req, reply) => {
+    const session = await identity.finishAuthentication(req.body.challengeId, req.body.response as unknown as AuthenticationResponseJSON);
+    reply.header("Set-Cookie", session.setCookie); return { ok: true };
+  });
+  app.post<{ Body: Static<typeof P.PairRedeem> }>("/api/pairing/redeem", { schema: { body: P.PairRedeem } }, async (req, reply) => {
+    const session = await identity.redeemPairing(req.body.code); reply.header("Set-Cookie", session.setCookie); return { ok: true };
+  });
+
+  app.get("/api/campaigns", async (req) => campaigns.listCampaigns((await auth(req)).userId));
+  app.post<{ Body: P.CreateCampaignBody }>("/api/campaigns", { schema: { body: P.CreateCampaign } }, async (req) => campaigns.createCampaign((await auth(req)).userId, req.body));
+  type CampaignParams = { campaignId: string };
+  app.get<{ Params: CampaignParams }>("/api/campaigns/:campaignId/roster", async (req) => campaigns.roster((await auth(req)).userId, req.params.campaignId));
+  app.get<{ Params: CampaignParams }>("/api/campaigns/:campaignId/invitations", async (req) => campaigns.listInvitations((await auth(req)).userId,req.params.campaignId));
+  app.post<{ Params: CampaignParams; Body: Static<typeof P.InviteBody> }>("/api/campaigns/:campaignId/invitations", { schema: { body: P.InviteBody } }, async (req) => campaigns.issueInvitation((await auth(req)).userId, req.params.campaignId, req.body.ttlMs));
+  app.delete<{ Params: CampaignParams & { id: string } }>("/api/campaigns/:campaignId/invitations/:id", async (req) => { await campaigns.revokeInvitation((await auth(req)).userId, req.params.campaignId, req.params.id); return { ok: true }; });
+  app.post<{ Params: { code: string }; Body: P.NameBodyType }>("/join/:code", { schema: { body: P.NameBody } }, async (req) => campaigns.requestJoin(req.params.code, req.body));
+  app.post<{ Params: { id: string }; Body: Static<typeof P.ClaimJoin> }>("/api/joins/:id/status", { schema: { body: P.ClaimJoin } }, async (req) => campaigns.joinStatus(req.params.id, req.body.pollToken));
+  app.post<{ Params: { id: string }; Body: Static<typeof P.ClaimJoin> }>("/api/joins/:id/claim", { schema: { body: P.ClaimJoin } }, async (req, reply) => {
+    const result = await db.transaction(async (tx) => {
+      const joined = await createCampaigns(tx, config).claimJoin(req.params.id, req.body.pollToken);
+      return { ...joined, session: await createIdentity(tx, config).issueSession(joined.userId) };
+    });
+    reply.header("Set-Cookie", result.session.setCookie);
+    return { campaignId: result.campaignId };
+  });
+  app.get<{ Params: CampaignParams }>("/api/campaigns/:campaignId/joins", async (req) => campaigns.listPendingJoins((await auth(req)).userId, req.params.campaignId));
+  app.post<{ Params: CampaignParams & { id: string } }>("/api/campaigns/:campaignId/joins/:id/approve", async (req) => campaigns.approveJoin((await auth(req)).userId, req.params.campaignId, req.params.id));
+  app.post<{ Params: CampaignParams; Body: Static<typeof P.PairBody> }>("/api/campaigns/:campaignId/pairing", { schema: { body: P.PairBody } }, async (req) => identity.mintPairing((await auth(req)).userId, req.params.campaignId, req.body.userId));
+
+  app.get<{ Params: CampaignParams; Querystring: { q?: string } }>("/api/campaigns/:campaignId/entries", async (req) => docs.listEntries((await auth(req)).userId, req.params.campaignId, req.query.q ?? ""));
+  app.get<{ Params: CampaignParams & { id: string } }>("/api/campaigns/:campaignId/entries/:id", async (req, reply) => {
+    const projected = await docs.getEntry((await auth(req)).userId, req.params.campaignId, req.params.id);
+    return reply.type("application/json").send(canonicalJson(projected as unknown as CanonicalValue));
+  });
+  const documentInput = (body: P.SaveDocumentBody): DocumentInput => ({ ...body, passages: body.passages.map((p) => ({ ...p, inhalt: p.inhalt as Blockinhalt })) });
+  app.post<{ Params: CampaignParams; Body: P.SaveDocumentBody }>("/api/campaigns/:campaignId/entries", { schema: { body: P.SaveDocument } }, async (req) => docs.saveEntry((await auth(req)).userId, req.params.campaignId, documentInput(req.body)));
+  app.put<{ Params: CampaignParams & { id: string }; Body: P.SaveDocumentBody }>("/api/campaigns/:campaignId/entries/:id", { schema: { body: P.SaveDocument } }, async (req) => docs.saveEntry((await auth(req)).userId, req.params.campaignId, documentInput(req.body), req.params.id));
+  app.get<{ Params: CampaignParams & { id: string } }>("/api/campaigns/:campaignId/entries/:id/history", async (req) => docs.history((await auth(req)).userId, req.params.campaignId, req.params.id));
+  app.post<{ Params: CampaignParams; Body: P.RevealBody }>("/api/campaigns/:campaignId/reveal", { schema: { body: P.Reveal } }, async (req) => {
+    await docs.revealPassage((await auth(req)).userId, req.params.campaignId, req.body.passageId, req.body.actorId); return { ok: true };
+  });
+  registerImports(app,db,config);
+  registerGameplay(app,db,config);
+  registerWeek(app,db,config);
+  registerWikiNavigation(app, db, config);
+  registerBundles(app, db, config);
+  registerMedia(app,db,config,config.livekit);
+  await registerRealtime(app,db,config);
+  if (config.staticRoot) {
+    await app.register(staticFiles, { root: config.staticRoot, wildcard: false });
+    app.get("/*", async (req, reply) => {
+      if (req.url.startsWith("/api/") || req.url.startsWith("/join/")) return reply.code(404).send({ error: "Nicht verfügbar" });
+      return reply.sendFile("index.html");
+    });
+  }
+  await app.ready();
+  return app;
+}

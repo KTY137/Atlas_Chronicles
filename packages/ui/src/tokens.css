@@ -1,0 +1,13 @@
+/* Production tokens extracted from the ratified Obsidian shell reference. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0c0d; --bg-deep: #060708; --surface: #121517; --surface-2: #191d20;
+  --line: rgba(216,206,188,.13); --line-strong: rgba(216,206,188,.28);
+  --text: #e8e3d8; --text-muted: #aaa493; --text-faint: #817b6e;
+  --accent: #d98e3b; --accent-strong: #f0a84b; --accent-ink: #14100a; --accent-soft: rgba(217,142,59,.12);
+  --ok: #9abb96; --danger: #ef9387;
+  --font-display: "Cinzel", Georgia, serif;
+  --font-body: "IBM Plex Sans Variable", system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --radius: 8px;
+}
