@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ActorCard, TacticalAck, TacticalAnchor, TacticalMapCard, TacticalMapSummary, TacticalPlan, TacticalTokenPlan } from "@chronicle/protocol";
-import type { TacticalMapDocumentV1, TacticalPoint } from "@chronicle/szene";
+import { TACTICAL_MAP_LIMITS, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
 import { snapMapPoint, type ProjectedMapScene } from "@chronicle/render";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, plainText, type EntryDocument, type EntrySummary } from "../api";
 import { useResource, useTask } from "../hooks";
 import { useCommand, type SceneCard } from "./game-api";
 import { TacticalCanvas } from "./TacticalCanvas";
+import { TacticalGenerate } from "./TacticalGenerate";
+import { TacticalEntitiesEditor } from "./TacticalEntitiesEditor";
+import { mapObjectWindow, objectKey, preparationObjects } from "./tactical-entities";
 
 export function TacticalPreparation({ campaignId, revision, onChanged, onDirty }: { campaignId: string; revision: number; onChanged: () => void; onDirty: (value: boolean) => void }) {
   const maps = useResource<TacticalMapSummary[]>(apiPath(campaignId, "/tactical/maps"), revision);
@@ -16,6 +19,7 @@ export function TacticalPreparation({ campaignId, revision, onChanged, onDirty }
   const mapDirty = useCallback((value: boolean) => setParts(v => ({ ...v, map: value })), []), planDirty = useCallback((value: boolean) => setParts(v => ({ ...v, plan: value })), []);
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]); useEffect(() => () => onDirty(false), [onDirty]);
   return <div className="tactical-preparation"><label>Szenenkarte<select value={selected} onChange={e => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; setSelected(e.target.value); }}><option value="">Karte wählen</option>{maps.data?.map(m => <option key={m.id} value={m.id}>{m.name} · Revision {m.revision}</option>)}</select></label>
+    <TacticalGenerate campaignId={campaignId} onCreated={id => { setSelected(id); onChanged(); }} />
     {maps.error || current.error ? <Notice error>{maps.error || current.error}</Notice> : null}
     {current.loading ? <Loading /> : current.data ? <><MapEditor key={current.data.id} current={current.data} campaignId={campaignId} onChanged={onChanged} onDirty={mapDirty} /><ScenePlan key={current.data.id} map={current.data} campaignId={campaignId} revision={revision} onChanged={onChanged} onDirty={planDirty} /></> : <EmptyState title="Eine Karte für euren nächsten Abend.">Importiere eine Karte und wähle sie hier aus. Regionen verweisen auf vorhandene Artikel; daraus entsteht der Wissensblick auf der Karte.</EmptyState>}
   </div>;
@@ -25,18 +29,26 @@ function MapEditor({ current, campaignId, onChanged, onDirty }: { current: Tacti
   const [baseline, setBaseline] = useState(current), [document, setDocument] = useState(current.document), [anchors, setAnchors] = useState(current.anchors);
   const [drawing, setDrawing] = useState(false), [points, setPoints] = useState<TacticalPoint[]>([]), [regionId, setRegionId] = useState(""), [entryId, setEntryId] = useState(""), [passageId, setPassageId] = useState("");
   const [pointX, setPointX] = useState(0), [pointY, setPointY] = useState(0), [exportInfo, setExportInfo] = useState("");
+  const [selectedObject, setSelectedObject] = useState(""), [marking, setMarking] = useState(false);
   const entries = useResource<EntrySummary[]>(apiPath(campaignId, "/entries"));
   const article = useResource<EntryDocument>(entryId ? apiPath(campaignId, `/entries/${entryId}`) : null);
   const task = useTask(), command = useCommand(), mounted = useRef(true);
   const dirty = JSON.stringify({ document, anchors }) !== JSON.stringify({ document: baseline.document, anchors: baseline.anchors }) || points.length > 0;
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]); useEffect(() => { mounted.current = true; return () => { mounted.current = false; onDirty(false); }; }, [onDirty]);
-  const replace = (map: TacticalMapCard) => { setBaseline(map); setDocument(map.document); setAnchors(map.anchors); setPoints([]); setDrawing(false); };
+  const replace = (map: TacticalMapCard) => { setBaseline(map); setDocument(map.document); setAnchors(map.anchors); setPoints([]); setDrawing(false); setMarking(false); setSelectedObject(""); };
   useEffect(() => { if (!dirty && current.version > baseline.version) replace(current); }, [current, dirty, baseline.version]);
+  const objects = useMemo(() => preparationObjects(document, anchors, entries.data ?? []), [document, anchors, entries.data]);
+  const visibleObjects = useMemo(() => mapObjectWindow(objects, selectedObject, document.geometry.size[0], document.geometry.size[1]), [objects, selectedObject, document.geometry.size]);
+  const focusedObject = objects.find(o => objectKey(o) === selectedObject);
   const scene = useMemo<ProjectedMapScene>(() => ({ id: baseline.id, width: document.geometry.size[0], height: document.geometry.size[1], rasterScope: baseline.contentHash,
-    cells: document.geometry.regions.map(r => ({ id: r.id, polygon: r.punkte, fill: anchors.some(a => a.targetKind === "region" && a.targetId === r.id) ? 0x60bb8d : 0xd98e3b })), pins: [], grid: document.grid,
+    cells: document.geometry.regions.map(r => ({ id: r.id, polygon: r.punkte, fill: anchors.some(a => a.targetKind === "region" && a.targetId === r.id) ? 0x60bb8d : 0xd98e3b })), pins: visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, ...(o.entryId ? { entryId: o.entryId } : {}) })), grid: document.grid,
     lines: [...document.walls.map(w => ({ id: w.id, points: w.points })), ...(points.length >= 2 ? [{ id: "draft-region", points, color: 0xffffff }] : [])],
-  }), [baseline, document, anchors, points]);
-  const addPoint = (p: TacticalPoint) => { if (!task.busy && drawing && p[0] >= 0 && p[1] >= 0 && p[0] <= scene.width && p[1] <= scene.height) setPoints(old => [...old, p]); };
+  }), [baseline, document, anchors, points, visibleObjects]);
+  const addPoint = (p: TacticalPoint) => {
+    if (task.busy || p[0] < 0 || p[1] < 0 || p[0] > scene.width || p[1] > scene.height) return;
+    if (marking && document.geometry.places.length < TACTICAL_MAP_LIMITS.places) { const id = crypto.randomUUID(); setDocument(old => ({ ...old, geometry: { ...old.geometry, places: [...old.geometry.places, { id, x: p[0], y: p[1] }] } })); setSelectedObject(`place:${id}`); setMarking(false); }
+    else if (drawing) setPoints(old => [...old, p]);
+  };
   const bind = () => { if (!regionId || !entryId) return; setAnchors(old => [...old.filter(a => !(a.targetKind === "region" && a.targetId === regionId)), { targetKind: "region", targetId: regionId, entryId, passageId: passageId || null }]); };
   const save = () => void task.run(async () => {
     await command<TacticalAck>(apiPath(campaignId, `/tactical/maps/${baseline.id}/revision`), { expectedVersion: baseline.version, document, anchors }, "PUT");
@@ -44,9 +56,10 @@ function MapEditor({ current, campaignId, onChanged, onDirty }: { current: Tacti
   });
   return <section className="panel"><div className="page-heading"><div><h2>{baseline.name}</h2><p className="field-help">Kartenrevision {baseline.revision}. Grün markiert eine verknüpfte Region. Eine laufende Szene behält ihre bereits begonnene Revision.</p></div><Button disabled={task.busy || !dirty || points.length > 0} variant="primary" onClick={save}>Kartenrevision speichern</Button></div>
     {current.version > baseline.version ? <Notice>Eine neue Revision liegt vor. <Button onClick={() => { if (!dirty || window.confirm("Ungespeicherte Kartenänderungen verwerfen?")) replace(current); }}>Aktuelle Karte übernehmen</Button></Notice> : null}
-    <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/tactical/maps/${baseline.id}/tiles`)} tileQuery={`revision=${baseline.revision}`} onPoint={addPoint} onSelect={hit => { if (hit?.kind === "cell" && !drawing) setRegionId(hit.id); }} />
+    <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/tactical/maps/${baseline.id}/tiles`)} tileQuery={`revision=${baseline.revision}`} onPoint={addPoint} selection={focusedObject ? { kind: "pin", id: selectedObject } : null} focusObject={focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : null} onSelect={hit => { if (task.busy || drawing || marking) return; if (hit?.kind === "cell") setRegionId(hit.id); setSelectedObject(hit?.kind === "pin" ? hit.id : ""); }} />
+    {visibleObjects.length < objects.length ? <Notice>{visibleObjects.length} von {objects.length} Objekten auf der Karte. Die vollständige Liste unten bleibt durchsuchbar; ihre Auswahl wird auf der Karte gezeigt, sofern ihre Position innerhalb der Karte liegt.</Notice> : null}
     <fieldset className="tactical-command-fields" disabled={task.busy}><div className="tactical-prep-columns"><section><h3>Wissensregionen</h3><p className="field-help">Zeichne eine Region, indem du ihre Eckpunkte auf der Karte anklickst, oder trage die Koordinaten ein. Die Liste funktioniert auch ohne Grafikbeschleunigung.</p>
-      <Button aria-pressed={drawing} onClick={() => setDrawing(v => !v)}>{drawing ? "Zeichnen pausieren" : "Region zeichnen"}</Button>
+      <Button aria-pressed={drawing} onClick={() => { setMarking(false); setDrawing(v => !v); }}>{drawing ? "Zeichnen pausieren" : "Region zeichnen"}</Button>
       <div className="rule-fields"><label>Eckpunkt X<input type="number" min={0} max={scene.width} value={pointX} onChange={e => setPointX(e.target.valueAsNumber)} /></label><label>Eckpunkt Y<input type="number" min={0} max={scene.height} value={pointY} onChange={e => setPointY(e.target.valueAsNumber)} /></label></div>
       <Button disabled={!Number.isFinite(pointX) || !Number.isFinite(pointY)} onClick={() => { setDrawing(true); if (pointX >= 0 && pointY >= 0 && pointX <= scene.width && pointY <= scene.height) setPoints(old => [...old, [pointX, pointY]]); }}>Eckpunkt hinzufügen</Button>
       {points.length ? <><p>{points.length} Eckpunkte vorbereitet.</p><ol className="tactical-points">{points.map((p, i) => <li key={i}>{p[0].toFixed(1)}, {p[1].toFixed(1)} <Button aria-label={`Eckpunkt ${i + 1} entfernen`} onClick={() => setPoints(old => old.filter((_, index) => index !== i))}>Entfernen</Button></li>)}</ol><div className="button-row"><Button disabled={points.length < 3} onClick={() => { const id = crypto.randomUUID(); setDocument(old => ({ ...old, geometry: { ...old.geometry, regions: [...old.geometry.regions, { id, punkte: points }] } })); setRegionId(id); setPoints([]); setDrawing(false); }}>Region schließen</Button><Button onClick={() => { setPoints([]); setDrawing(false); }}>Zeichnung verwerfen</Button></div></> : null}
@@ -62,7 +75,7 @@ function MapEditor({ current, campaignId, onChanged, onDirty }: { current: Tacti
       <label>Grundhöhe<input type="number" step="any" value={document.elevation} onChange={e => setDocument(old => ({ ...old, elevation: e.target.valueAsNumber }))} /></label>
       <p className="field-help">Raster und Höhe helfen bei der Platzierung. Wände, Licht und Portale bleiben Daten; daraus wird keine automatische Sicht oder Bewegungssperre berechnet.</p>
       <Button onClick={() => void task.run(async () => { const exported = await api<{ json: string; fidelity: { issues: { message: string }[] } }>(apiPath(campaignId, `/tactical/maps/${baseline.id}/uvtt?revision=${baseline.revision}`)); const blob = new Blob([exported.json], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = window.document.createElement("a"); a.href = url; a.download = "scene.dd2vtt"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); if (mounted.current) setExportInfo(exported.fidelity.issues.map(i => i.message).join(" ") || "Die gespeicherte Karte wurde exportiert."); })}>Gespeicherte Revision als UVTT exportieren</Button>{exportInfo ? <Notice>{exportInfo}</Notice> : null}
-    </section></div></fieldset>{task.error ? <Notice error>{task.error}</Notice> : null}
+    </section></div><TacticalEntitiesEditor campaignId={campaignId} document={document} anchors={anchors} objects={objects} entries={entries.data ?? []} selected={selectedObject} onSelect={setSelectedObject} marking={marking} onMarking={value => { setMarking(value); setDrawing(false); }} onChange={(next, bindings) => { setDocument(next); setAnchors(bindings); }} /></fieldset>{task.error ? <Notice error>{task.error}</Notice> : null}
   </section>;
 }
 
