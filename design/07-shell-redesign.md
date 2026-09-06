@@ -176,3 +176,94 @@ Produktion serverseitig.
   bleibt gültig); Flüsterkanal-Ehrlichkeitsregeln aus §4 sind bindend.
 - **Look-Entscheid** durch Kaya am Prototyp; danach Token-Extraktion in die Registry als
   visueller Boden der Produktrunden (Sequenz aus `05-visual-reset.md` §Sequence gilt).
+
+## 11. Import und Weiterschreiben — die Welt kommt herein und bleibt lebendig
+
+Nachtrag 2026-09-06, ausgelöst durch Kayas Fragen am laufenden Prototyp
+(„wieso ist nicht das ganze Wiki importiert", „kann ich einfach den Link zu
+meinem Fandom-Wiki reinpacken", „können wir unser Wiki auf Chronicle
+erweitern").
+
+### 11.1 Der Korpus ist jetzt vollständig importiert
+
+`design/shell-lab/scripts/import-wiki.mjs` überführt den Fixture-Auszug in
+strukturierte Objekte. Gemessen, nicht geschätzt:
+
+| | |
+|---|---|
+| Artikel | 74 |
+| Wörter | 35.830 |
+| Abschnitte | 429 |
+| Backlinks (aus echtem Linkgraph) | 556 |
+| Rote Links (verlinkt, nicht geschrieben) | 690 |
+| Infoboxen → Registerfelder | 44 Artikel |
+
+Der Parser übersetzt Wikitext in **Daten, nicht in HTML**: Infobox-Parameter
+werden zu Registerfeldern, `[[Links]]` zu Kanten im Graph, Überschriften zu
+Abschnitten. Damit ist ein importierter Artikel dasselbe Objekt wie ein in
+Chronicle geschriebener — kein Zweitformat, keine Einbahnstraße.
+
+**Bewusst verworfen:** Dateiverweise im Fließtext taugen nicht als Artikelbild
+(sie gehören oft zu einer anderen Person im selben Text — Olav trug im ersten
+Lauf Shromus' Portrait). Nur Infobox-`Bild` und Titeltreffer gelten. Lieber
+kein Bild als ein falsches.
+
+### 11.2 Navigation ohne zweite Spalte
+
+74 Artikel brauchen Navigation, das Gate (§2) verbietet aber einen zweiten
+Rail. Antwort: **die Omnibox (⌘K)** aus Doc 06 §6.4, plus die Links im Text
+selbst und die Backlinks am Fuß. Ein transienter Overlay ist **kein
+Instrument** im Sinne des Gates — er schließt sich mit dem ersten Befehl.
+Das ist die einzige zulässige Art, Tiefe zu erschließen, ohne Fläche zu
+verbrauchen.
+
+### 11.3 Fandom-Link einfügen → Import. Verifiziert, nicht behauptet.
+
+Fandom läuft auf MediaWiki mit offener API. Gegen `eron.fandom.com` gemessen
+(2026-09-06):
+
+```
+GET /de/api.php?action=query&generator=allpages&prop=revisions
+    &rvprop=content&rvslots=main&format=json&origin=*
+→ HTTP 200 · Access-Control-Allow-Origin: *
+→ 74 Artikel · 316 Seiten · 38 Bilder · 1153 Edits · Paginierung via continue
+```
+
+`origin=*` heißt: Der Import läuft **direkt aus dem Browser**, ohne Proxy. Der
+Nutzer fügt die Wiki-URL ein, Chronicle liest Titel, Wikitext, Revisionen,
+Links und Medienliste und legt daraus Objekte an.
+
+Was dabei **ehrlich benannt werden muss**, sonst ist der Import eine Falle:
+
+- **Lizenz.** Fandom-Text ist CC BY-SA 3.0. Jeder importierte Artikel trägt
+  Quelle, Autor, Revisions-ID und Lizenz im Herkunft-Tab; abgeleitete Fassungen
+  bleiben share-alike. Kein stiller Rechteübergang.
+- **Bilder ≠ Text.** Uploads in einem Fandom-Wiki tragen häufig fremde Rechte
+  (`STATUS.md` sagt das bereits). Bilder werden einzeln bestätigt, nicht
+  pauschal gezogen.
+- **Templates werden nicht ausgeführt.** Wir importieren die Parameter, nicht
+  die Vorlagenlogik. Das ist kein Verlust, sondern der Gewinn: aus Textbausteinen
+  werden typisierte Felder.
+- **Einwegimport.** Chronicle liest Fandom, schreibt aber nicht zurück. Ein
+  Re-Sync holt Änderungen nach und zeigt Konflikte, statt sie zu überschreiben.
+
+Derselbe Pfad trägt jedes MediaWiki (Wikipedia, eigene Instanz). World Anvil
+und Notion brauchen eigene Adapter — gleiche Zielobjekte, anderer Reader.
+
+### 11.4 Und dann schreibt ihr darin weiter
+
+Das ist der eigentliche Punkt: Der Import ist ein **Anfangszustand**, kein
+Archiv. Nach dem Import ist Chronicle das Wiki.
+
+- Artikel sind bearbeitbare Objekte; Rechte laufen über `Sicht`, nicht über
+  Wiki-Konventionen.
+- **Rote Links sind Keime.** 690 davon stehen schon im Korpus. Ein Klick legt
+  den Artikel an, an genau der Stelle, wo er gebraucht wurde.
+- **Der Tisch schreibt mit.** Das ist die Champion-These („Die Woche"): Ein
+  Wurf am Dienstag prägt einen Absatz, der Absatz steht in der Enzyklopädie,
+  mit Herkunft auf Vollmacht und Wurf. Kein Wiki der Welt tut das, weil kein
+  Wiki weiß, dass gespielt wurde.
+
+Das ist die Trennlinie zu World Anvil: Dort ist das Wiki ein Werk, das man
+pflegt. Hier ist es der **Rückstand des Spielens** — und der Import sorgt nur
+dafür, dass ihr nicht bei null anfangt.

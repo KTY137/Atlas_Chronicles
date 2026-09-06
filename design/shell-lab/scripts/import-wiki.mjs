@@ -284,8 +284,11 @@ function parseArticle(entry) {
     resolveImage(entry.title) ??
     mediaFiles.find((f) => normalise(f).startsWith(normalise(entry.title))) ??
     null;
-  const image =
-    imageName ?? (infoboxImage ? resolveImage(infoboxImage) : null) ?? byTitleImage;
+  /* Dateiverweise IM FLIESSTEXT werden bewusst NICHT als Artikelbild genutzt:
+     sie gehören oft zu einer anderen Person im selben Text (Olav trug so
+     Shromus' Portrait). Nur Infobox und Titel sind verlässliche Quellen. */
+  void imageName;
+  const image = (infoboxImage ? resolveImage(infoboxImage) : null) ?? byTitleImage;
   if (image) stats.imagesResolved += 1;
 
   return {

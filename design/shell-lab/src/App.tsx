@@ -62,7 +62,9 @@ export function App() {
     return value && articleExists(value) ? value : DEFAULT_ARTICLE;
   });
   const [articleHistory, setArticleHistory] = useState<string[]>([]);
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(
+    () => new URLSearchParams(window.location.search).get("palette") === "1",
+  );
   const [voiceDown, setVoiceDown] = useState(
     () => new URLSearchParams(window.location.search).get("voice") === "down",
   );
