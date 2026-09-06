@@ -34,6 +34,7 @@ export function ActorWorkbench({ campaignId, gm, actorId, actors, roster, rules,
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const selected = actors.find(a => a.id === actorId);
+  const createSelect = useRef<HTMLSelectElement>(null);
   return <div className="actor-workbench">
     {gm ? <div className="view-tabs" aria-label="Figurenverwaltung">{([
       ["actors", "Figuren & Besitz"], ["templates", "Figurvorlagen"], ["item-templates", "Gegenstandsvorlagen"],
@@ -45,8 +46,9 @@ export function ActorWorkbench({ campaignId, gm, actorId, actors, roster, rules,
     {view === "templates" && gm ? <ActorTemplates campaignId={campaignId} rules={rules} revision={revision} onChanged={onChanged} onDirty={reportTemplates} />
       : view === "item-templates" && gm ? <ItemTemplates campaignId={campaignId} revision={revision} onChanged={onChanged} onDirty={reportTemplates} />
       : <><div className="actor-columns">{selected ? <ActorDetails key={selected.id} campaignId={campaignId} current={selected} gm={gm} roster={roster} revision={revision} onChanged={onChanged} onDirty={reportDetails} />
-        : <EmptyState title="Noch keine Figur ausgewählt.">Die Spielleitung kann eine Figurvorlage anlegen und daraus eigenständige Figuren erstellen.</EmptyState>}
-        {gm ? <InstantiateActor campaignId={campaignId} revision={revision} onChanged={onChanged} /> : null}</div>
+        : gm ? <EmptyState title="Noch keine Figur ausgewählt." action={<Button variant="primary" onClick={() => createSelect.current?.focus()}>Figur erschaffen</Button>}>Du musst nicht warten, bis jemand beitritt: Als Spielleitung legst du selbst eine Figurvorlage an und erschaffst daraus direkt eine eigenständige Figur.</EmptyState>
+        : <EmptyState title="Noch keine Figur ausgewählt.">Die Spielleitung legt Figurvorlagen an und erschafft daraus eigenständige Figuren.</EmptyState>}
+        {gm ? <InstantiateActor campaignId={campaignId} revision={revision} onChanged={onChanged} selectRef={createSelect} /> : null}</div>
         <Inventory key={`${actorId}:${gm}`} campaignId={campaignId} actorId={actorId} actors={actors} gm={gm} revision={revision} onChanged={onChanged} onDirty={reportInventory} />
       </>}
   </div>;
@@ -61,20 +63,48 @@ function LoreField({ campaignId, value, onChange }: { campaignId: string; value:
 function Reason({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return <label>Grund der Änderung<input required maxLength={500} value={value} onChange={e => onChange(e.target.value)} /></label>;
 }
+function RevisionPicker({ head, value, onChange }: { head: number; value: number; onChange: (value: number) => void }) {
+  return <label>Revision ansehen<select value={value} onChange={e => onChange(Number(e.target.value))}>
+    {Array.from({ length: head }, (_, i) => head - i).map(n => <option key={n} value={n}>{n === head ? `Revision ${n} (aktuell)` : `Revision ${n}`}</option>)}
+  </select></label>;
+}
+function ActorTemplateRevisionView({ campaignId, rules, templateId, revisionNumber }: { campaignId: string; rules: RulesState; templateId: string; revisionNumber: number }) {
+  const shown = useResource<TemplateCard<ActorTemplateData>>(apiPath(campaignId, `/actor-templates/${encodeURIComponent(templateId)}?revision=${revisionNumber}`));
+  const definition = shown.data?.definition;
+  const pkg = definition ? rules.packages.find(p => p.id === definition.package.id && p.version === definition.package.version) : undefined;
+  return <section className="panel"><h2>{definition?.name ?? `Revision ${revisionNumber}`}</h2>
+    <p className="field-help">Frühere Revision, schreibgeschützt. Eine neue Revision entsteht nur, wenn die aktuelle Vorlage überarbeitet wird.</p>
+    {shown.loading ? <Loading /> : null}{shown.error ? <Notice error>{shown.error}</Notice> : null}
+    {definition ? <div className="actor-command-fields">
+      <p>Art der Figur · {kinds[definition.kind]}</p>
+      <fieldset disabled><legend>Verknüpfter Artikel</legend><LoreField campaignId={campaignId} value={definition.loreEntryId} onChange={() => {}} /></fieldset>
+      <p>Regelpaket der Anfangswerte · {definition.package.id} · {definition.package.version}</p>
+      {pkg ? <fieldset><legend>Anfangswerte dieser Revision</legend><RuleFields fields={pkg.fields} values={definition.fields} onChange={() => {}} disabled /></fieldset> : <Notice error>Das Regelpaket dieser Revision ist nicht mehr verfügbar.</Notice>}
+    </div> : null}
+  </section>;
+}
 function ActorTemplates({ campaignId, rules, revision, onChanged, onDirty }: {
   campaignId: string; rules: RulesState; revision: number; onChanged: () => void; onDirty: (dirty: boolean) => void;
 }) {
   const list = useResource<TemplateCard<ActorTemplateData>[]>(apiPath(campaignId, "/actor-templates"), revision);
   const [selected, setSelected] = useState<TemplateCard<ActorTemplateData> | null>(null);
+  const [viewRevision, setViewRevision] = useState<number | null>(null);
   const { epoch, dirty, report, reset, current } = useTemplateDraft(onDirty);
   const choose = (value: TemplateCard<ActorTemplateData> | null) => {
     if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
-    setSelected(value); reset();
+    setSelected(value); setViewRevision(null); reset();
+  };
+  const pickRevision = (n: number) => {
+    if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
+    setViewRevision(n); reset();
   };
   return <div className="actor-columns"><section className="panel"><h2>Figurvorlagen</h2><p className="field-help">Jede Revision behält ihre Anfangswerte. Bereits erschaffene Figuren ändern sich durch eine neue Vorlage nicht.</p>
     <Button onClick={() => choose(null)}>Neue Figurvorlage</Button>{list.error ? <Notice error>{list.error}</Notice> : null}
-    <ul className="actor-object-list">{list.data?.map(t => <li key={t.id}><Button onClick={() => choose(t)}>{t.definition.name} · Revision {t.revision}</Button></li>)}</ul>
-  </section><ActorTemplateForm key={`${selected?.id ?? "new"}:${epoch}`} campaignId={campaignId} rules={rules} original={selected} onDirty={report} onSaved={() => { if (current()) { setSelected(null); reset(); } onChanged(); }} /></div>;
+    <ul className="actor-object-list">{list.data?.map(t => <li key={t.id}><Button aria-pressed={selected?.id === t.id} onClick={() => choose(t)}>{t.definition.name} · Revision {t.revision}</Button></li>)}</ul>
+    {selected ? <RevisionPicker head={selected.revision} value={viewRevision ?? selected.revision} onChange={pickRevision} /> : null}
+  </section>{selected && viewRevision !== null && viewRevision !== selected.revision
+    ? <ActorTemplateRevisionView key={`${selected.id}:${viewRevision}`} campaignId={campaignId} rules={rules} templateId={selected.id} revisionNumber={viewRevision} />
+    : <ActorTemplateForm key={`${selected?.id ?? "new"}:${epoch}`} campaignId={campaignId} rules={rules} original={selected} onDirty={report} onSaved={() => { if (current()) { setSelected(null); setViewRevision(null); reset(); } onChanged(); }} />}</div>;
 }
 function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved }: {
   campaignId: string; rules: RulesState; original: TemplateCard<ActorTemplateData> | null; onDirty: (dirty: boolean) => void; onSaved: () => void;
@@ -109,13 +139,13 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved }: {
     }}>Vorlage archivieren</Button> : null}
   </fieldset></form>;
 }
-function InstantiateActor({ campaignId, revision, onChanged }: { campaignId: string; revision: number; onChanged: () => void }) {
+function InstantiateActor({ campaignId, revision, onChanged, selectRef }: { campaignId: string; revision: number; onChanged: () => void; selectRef?: { current: HTMLSelectElement | null } }) {
   const templates = useResource<TemplateCard<ActorTemplateData>[]>(apiPath(campaignId, "/actor-templates"), revision);
   const [selected, setSelected] = useState(""), [name, setName] = useState(""); const task = useTask(), command = useCommand();
   const template = templates.data?.find(t => t.id === selected);
   return <form className="panel" onSubmit={event => { event.preventDefault(); if (template) void task.run(async () => {
     await command(apiPath(campaignId, "/actors/instantiate"), { templateId: template.id, templateRevision: template.revision, ...(name.trim() ? { name } : {}) }); setName(""); onChanged();
-  }); }}><fieldset className="actor-command-fields" disabled={task.busy}><h2>Figur aus Vorlage erschaffen</h2><label>Figurvorlage<select required value={selected} onChange={e => setSelected(e.target.value)}><option value="">Vorlage wählen</option>{templates.data?.map(t => <option key={t.id} value={t.id}>{t.definition.name} · Revision {t.revision}</option>)}</select></label>
+  }); }}><fieldset className="actor-command-fields" disabled={task.busy}><h2>Figur aus Vorlage erschaffen</h2><label>Figurvorlage<select ref={selectRef} required value={selected} onChange={e => setSelected(e.target.value)}><option value="">Vorlage wählen</option>{templates.data?.map(t => <option key={t.id} value={t.id}>{t.definition.name} · Revision {t.revision}</option>)}</select></label>
     <label>Name dieser Figur<input maxLength={160} value={name} placeholder={template?.definition.name ?? "Name aus der Vorlage"} onChange={e => setName(e.target.value)} /></label>
     <p className="field-help">Die neue Figur erhält einen eigenen Bogen. Die Vorlage muss die aktuell aktiven Kampagnenregeln verwenden.</p>
     {task.error || templates.error ? <Notice error>{task.error || templates.error}</Notice> : null}<Button type="submit" disabled={task.busy || !template}>Figur erschaffen</Button>
@@ -133,7 +163,11 @@ function ActorDetails({ campaignId, current, gm, roster, revision, onChanged, on
   const replace = (a: ActorCard) => { setBaseline(a); setName(a.name); setKind(a.kind === "unspecified" ? "npc" : a.kind); setLore(a.loreEntryId); setReason(""); };
   const newer = current.version !== null && baseline.version !== null && current.version > baseline.version;
   useEffect(() => { if (!gm || (!dirty && newer)) replace(current); }, [current, dirty, newer, gm]);
+  const controlledBy = [...new Set((controllers.data ?? []).filter(c => c.revokedAt === null).map(c => {
+    const m = roster.find(r => r.userId === c.userId); return !m ? "Ehemaliges Mitglied" : m.role === "leitung" ? "Spielleitung" : m.displayName;
+  }))].join(", ") || "Spielleitung";
   return <section className="panel actor-details"><h2>{baseline.name}</h2><p className="field-help">{baseline.kind === "unspecified" ? "Bestehende Figur" : kinds[baseline.kind]}{baseline.template ? ` · Vorlage, Revision ${baseline.template.revision}` : " · Individuelle Figur"}</p>
+    <p className="field-help">{gm ? `Gesteuert von: ${controlledBy}` : "Du steuerst diese Figur."}</p>
     {newer ? <Notice>Die Figur wurde inzwischen geändert. <Button onClick={() => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) replace(current); }}>Aktuelle Figur übernehmen</Button></Notice> : null}
     {gm ? <><form onSubmit={event => { event.preventDefault(); void task.run(async () => {
       const saved = await command<ActorCard>(apiPath(campaignId, `/actors/${baseline.id}`), { expectedVersion: baseline.version, name, kind, loreEntryId: lore, reason }, "PUT"); replace(saved); onChanged();
@@ -158,14 +192,31 @@ function ActorDetails({ campaignId, current, gm, roster, revision, onChanged, on
   </section>;
 }
 
+function ItemTemplateRevisionView({ campaignId, templateId, revisionNumber }: { campaignId: string; templateId: string; revisionNumber: number }) {
+  const shown = useResource<TemplateCard<ItemContract>>(apiPath(campaignId, `/item-templates/${encodeURIComponent(templateId)}?revision=${revisionNumber}`));
+  const definition = shown.data?.definition;
+  return <section className="panel"><h2>{definition?.name ?? `Revision ${revisionNumber}`}</h2>
+    <p className="field-help">Frühere Revision, schreibgeschützt. Eine neue Revision entsteht nur, wenn die aktuelle Vorlage überarbeitet wird.</p>
+    {shown.loading ? <Loading /> : null}{shown.error ? <Notice error>{shown.error}</Notice> : null}
+    {definition ? <div className="actor-command-fields">
+      <p>Etiketten · {definition.tags.length ? definition.tags.join(" · ") : "Keine"}</p>
+      <fieldset disabled><legend>Verknüpfter Artikel</legend><LoreField campaignId={campaignId} value={definition.loreEntryId} onChange={() => {}} /></fieldset>
+    </div> : null}
+  </section>;
+}
 function ItemTemplates({ campaignId, revision, onChanged, onDirty }: { campaignId: string; revision: number; onChanged: () => void; onDirty: (value: boolean) => void }) {
   const templates = useResource<TemplateCard<ItemContract>[]>(apiPath(campaignId, "/item-templates"), revision);
   const [selected, setSelected] = useState<TemplateCard<ItemContract> | null>(null);
+  const [viewRevision, setViewRevision] = useState<number | null>(null);
   const { epoch, dirty, report, reset, current } = useTemplateDraft(onDirty);
-  const choose = (t: TemplateCard<ItemContract> | null) => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; setSelected(t); reset(); };
+  const choose = (t: TemplateCard<ItemContract> | null) => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; setSelected(t); setViewRevision(null); reset(); };
+  const pickRevision = (n: number) => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; setViewRevision(n); reset(); };
   return <div className="actor-columns"><section className="panel"><h2>Gegenstandsvorlagen</h2><p className="field-help">Vorlagen beschreiben einen Gegenstand. Menge, Notizen und Träger gehören jeweils zu einer eigenständigen Instanz.</p><Button onClick={() => choose(null)}>Neue Gegenstandsvorlage</Button>
-    {templates.error ? <Notice error>{templates.error}</Notice> : null}<ul className="actor-object-list">{templates.data?.map(t => <li key={t.id}><Button onClick={() => choose(t)}>{t.definition.name} · Revision {t.revision}</Button></li>)}</ul>
-  </section><ItemTemplateForm key={`${selected?.id ?? "new"}:${epoch}`} campaignId={campaignId} original={selected} onDirty={report} onSaved={() => { if (current()) { setSelected(null); reset(); } onChanged(); }} /></div>;
+    {templates.error ? <Notice error>{templates.error}</Notice> : null}<ul className="actor-object-list">{templates.data?.map(t => <li key={t.id}><Button aria-pressed={selected?.id === t.id} onClick={() => choose(t)}>{t.definition.name} · Revision {t.revision}</Button></li>)}</ul>
+    {selected ? <RevisionPicker head={selected.revision} value={viewRevision ?? selected.revision} onChange={pickRevision} /> : null}
+  </section>{selected && viewRevision !== null && viewRevision !== selected.revision
+    ? <ItemTemplateRevisionView key={`${selected.id}:${viewRevision}`} campaignId={campaignId} templateId={selected.id} revisionNumber={viewRevision} />
+    : <ItemTemplateForm key={`${selected?.id ?? "new"}:${epoch}`} campaignId={campaignId} original={selected} onDirty={report} onSaved={() => { if (current()) { setSelected(null); setViewRevision(null); reset(); } onChanged(); }} />}</div>;
 }
 function ItemTemplateForm({ campaignId, original, onDirty, onSaved }: { campaignId: string; original: TemplateCard<ItemContract> | null; onDirty: (value: boolean) => void; onSaved: () => void }) {
   const [name, setName] = useState(original?.definition.name ?? ""), [tags, setTags] = useState(original?.definition.tags.join(", ") ?? ""), [lore, setLore] = useState(original?.definition.loreEntryId ?? null), [reason, setReason] = useState("");

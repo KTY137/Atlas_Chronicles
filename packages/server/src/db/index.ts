@@ -47,6 +47,7 @@ export function createPgDb(connectionString: string, options: PgOptions = {}): D
     max: options.max ?? envInt("DB_POOL_MAX", 10),
     connectionTimeoutMillis: options.connectionTimeoutMillis ?? envInt("DB_CONNECT_TIMEOUT_MS", 10_000),
     idleTimeoutMillis: options.idleTimeoutMillis ?? envInt("DB_IDLE_TIMEOUT_MS", 30_000),
+    ...(statementTimeout > 0 ? { statement_timeout: statementTimeout } : {}),
   });
 
   // THE CRASH THIS PREVENTS, measured rather than assumed (2026-09-06): terminate a pooled
@@ -57,14 +58,12 @@ export function createPgDb(connectionString: string, options: PgOptions = {}): D
   // listener has to do is exist and say what happened.
   pool.on("error", (error: Error) => { report(error); });
 
-  // Applied per connection rather than through the connection string's `options` parameter,
-  // because that parameter is already carrying `search_path` for isolated test schemas and
+  // Passed as a driver option rather than as a statement on connect. The earlier version fired
+  // `SET statement_timeout` from the pool's 'connect' handler without awaiting it, which overlapped
+  // with the caller's first query on the same client and produced pg's "client is already executing
+  // a query" deprecation warning. It is also not set through the connection string's `options`
+  // parameter, because that already carries `search_path` for isolated test schemas and
   // overwriting it would silently move a test onto the wrong schema.
-  if (statementTimeout > 0) {
-    pool.on("connect", (client) => {
-      client.query(`SET statement_timeout = ${statementTimeout}`).catch(report);
-    });
-  }
 
   /**
    * Nested transactions become SAVEPOINTs.

@@ -1,0 +1,25 @@
+{
+  "//": [
+    "Diese Datei ist nicht Ordnung, sondern ein Fehlerfix. Ohne sie stürzt die ausgelieferte",
+    "Anwendung ab.",
+    "",
+    "esbuild sucht die zutreffende tsconfig, indem es vom Quelltext aus die Verzeichnisse",
+    "aufwärts läuft. Für Dateien in packages/ui/src fand es bisher nichts in packages/ui, nichts",
+    "in packages/ und landete in der Wurzel-tsconfig, die kein \"jsx\" setzt und packages/ui sogar",
+    "ausdrücklich ausschließt. Also fiel der Transformator auf das klassische JSX zurück und",
+    "erzeugte Aufrufe von React.createElement, obwohl niemand React als globale Variable",
+    "bereitstellt. Ergebnis im Browser: ReferenceError: React is not defined, und die gesamte",
+    "Oberfläche stirbt beim ersten Rendern.",
+    "",
+    "Warum es niemandem auffiel: tsc bleibt grün, weil packages/client/tsconfig.json diese Dateien",
+    "über \"include\" mit erfasst und dort react-jsx gilt. Die Typprüfung und der Bündler beantworten",
+    "hier also verschiedene Fragen. Gemessen am 2026-09-06: aus einem einzigen Build gingen drei",
+    "Haupt-Bundles hervor, zwei mit null klassischen Aufrufen und genau das ausgelieferte mit acht.",
+    "Daher schwankte der Fehler und wirkte wie ein Zufall.",
+    "",
+    "Die Datei erbt bewusst von der Client-Konfiguration, damit es weiterhin genau eine Wahrheit",
+    "über die JSX-Einstellung gibt und die beiden nicht auseinanderlaufen können."
+  ],
+  "extends": "../client/tsconfig.json",
+  "include": ["src"]
+}
