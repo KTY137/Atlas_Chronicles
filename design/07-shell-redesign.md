@@ -380,3 +380,58 @@ Was Aurora im Produkt **nicht** mitbringt: Space Grotesk und Manrope stehen in
 `THEME_FONT_IDS` nicht zur Verfügung; das Preset nutzt `system`/`plex`. Die
 Glasmaterialität aus dem Labor ist Sache der Atmosphäre-Regler, nicht des
 Farbpresets. Beides ist bewusst so und keine stille Kürzung.
+
+## 12. Das Journal-Cluster — und warum es keine vier neuen Rail-Einträge gibt
+
+Nachtrag 2026-09-06, nach Kayas Wahl des Clusters „Journale".
+
+Aus dem Feature-Register: Von den 242 Einträgen, die aus World Anvil, Foundry,
+Roll20 und Fandom stammen, sind 127 zum Übernehmen und 17 zum Anbinden
+entschieden — **98 sind ausdrücklich verweigert**, jede mit Begründung. Von den
+zu übernehmenden stehen 133 noch auf „konkurrenz-hat-es". Der dichteste
+Cluster, den Foundry *und* Roll20 gemeinsam haben und für den Chronicle die
+Infrastruktur bereits besitzt, ist: **Journale, Handouts, Ordner,
+Compendium-Pakete** — dazu Fandoms **Infobox-GUI für Nicht-Techniker**.
+
+### 12.1 Die Falle
+
+Vier neue Flächen heißt in jedem der Vorbilder: vier neue Einträge in der
+Navigation. Der Rail hat heute sechs. Zehn wären exakt die Krankheit aus §1 —
+und diesmal selbst verursacht, nicht geerbt.
+
+**Regel: Eine neue Fähigkeit bekommt nur dann einen Rail-Eintrag, wenn sie ein
+eigener Job ist. Ist sie eine Vertiefung eines vorhandenen Jobs, gehört sie
+dorthin.** Das Gate aus §2 ist keine Einmalprüfung beim Redesign, sondern der
+Maßstab für jede Erweiterung danach.
+
+### 12.2 Die Zuordnung
+
+| Fläche | Gehört zu | Warum |
+|---|---|---|
+| **Journale & Handouts** | Welt | Ein Journal ist Wissen mit einer `Sicht`. Es teilt Objektmodell, Backlinks und Freigabe mit dem Artikel — es ist kein zweiter Wissensspeicher, sondern ein anderes Rezept auf demselben. |
+| **Sammlungen** | Welt | Eine Sammlung ist eine gespeicherte Abfrage über den Korpus. Sie erzeugt nichts Neues; sie ordnet Vorhandenes. |
+| **Compendium-Pakete** | Schmiede | Pakete installieren, anheften, Lizenzen prüfen — Creator- und Betriebsarbeit, nicht Spielarbeit. |
+| **Infobox-Vorlagen** | Schmiede | Eine Vorlage ist ein Schema. Schemata gehören dorthin, wo auch Regelkarten entstehen. |
+
+Damit bleibt der Rail bei sechs Einträgen. Welt und Schmiede bekommen je zwei
+weitere Bühnenzustände — erreichbar wie der Wiki-Import (§11.6), also über die
+Fläche selbst statt über die Navigation.
+
+### 12.3 Wo Chronicle sich unterscheidet
+
+Drei bewusste Abweichungen von den Vorbildern, jeweils dort umgesetzt:
+
+- **Handout-Freigabe ist `Sicht`, nicht ein Häkchen.** Foundry kennt „Spieler
+  sehen ja/nein". Bei uns trägt jede Journalseite, *wer* sie kennt, und für wen
+  sie nicht freigegeben ist, existiert sie strukturell nicht — nicht ausgegraut,
+  abwesend. Dieselbe Kante wie beim Flüsterkanal (§4).
+- **Sammlungen sind Abfragen, keine Schubladen.** In Roll20 und Foundry liegt
+  ein Objekt in genau einem Ordner. Ein Ort ist aber gleichzeitig „Nördliche
+  Minenreiche", „Schauplatz Sitzung 15" und „noch nicht freigegeben". Eine
+  gespeicherte Abfrage löst das ohne Kopien; handgepflegte Listen bleiben für
+  die Fälle, wo keine Abfrage passt.
+- **Vorlagen ohne Code.** World Anvil verlangt HTML+TWIG hinter 99 USD/Jahr,
+  Foundry JavaScript, Roll20 Sheetworkers — das Register nennt das „die Wunde,
+  auf die K2 zielt". Eine Infobox entsteht bei uns in einem Formular. Der Preis
+  ist Ausdrucksstärke, der Gewinn sind Vorlagen, die prüfbar und migrierbar
+  sind und keinen fremden Code ausführen.
