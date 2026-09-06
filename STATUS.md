@@ -29,9 +29,20 @@ Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
   edits in shell-lab, Eron parser/fixtures, assetpaket/grundriss and their tests. Do not stage them
   as part of root's authoring checkpoint, except the isolated version-counterfactual test fix
   described above. Coordinate root dependency/build/browser windows.
-- **Operative app is still the previous verified checkpoint:** localhost3000 remains on
-  `7b45296`, PID22164/session29214, `.local/checkouts/tactical-gate`, SQL001–011. The authoring
-  build and SQL012 have been tested in isolated schemas but are not yet the operative demo.
+- **Verified authoring checkpoint and operative app:** `b415f03` passes an independent `npm ci`
+  (0 vulnerabilities), all781 tests in76 files with real PostgreSQL,1 intentional PGlite skip,
+  233 boundary files/8 rules,32 assets, root/client TypeScript and the identical
+  `index-C4bNbIAT.js` (SHA256 `e6fa7f2ac2a337c97ae37246a485be22a5ab133f58d1c8e061ecf555f5c7c09b`).
+  The clean-checkout wrapper initially treated pg's stderr deprecation warning as a terminating
+  PowerShell error; rerunning the unchanged gate with correct native stderr handling passed.
+  No tests or timeouts were relaxed. Evidence: `.local/checkouts/authoring-gate/.local/verification`.
+  Localhost3000 now serves this independent checkout under owned **PID13124/session9596**;
+  health and client return200 and operative migrations001–012 are present. Old PID22164 is
+  stopped. Public delivery remains off. Before migration root created a local pg_dump of
+  `public`, verified its archive listing, and preserved the local config in ignored
+  `.local/backups/pre-authoring-b415f03/`; the227898-byte `public.dump` SHA256 is
+  `dd1535b8886b5e410e911e96a0fe3d39be6a62b48e4045f7429e5c589d531b34`. It is a sensitive local
+  recovery artifact, not a credential-free campaign export or a claimed restore exercise.
 
 ### Previous tactical checkpoint and runtime evidence
 
@@ -73,6 +84,61 @@ Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
   credentials and media environment. Operative SQL confirms migrations001–011; `/api/health`
   and `/` return200 and the expected client hash. This keeps later parallel WIP out of the
   running demo. No migration012 has been applied to the operative database.
+
+## Verschachtelte Karten — Session Claude, 2026-09-06 20:05 (additiv, eigene Fläche)
+
+- **Kaya wollte verschachtelte Karten; RB-21a §3.1 hatte den Satz längst geregelt** — *„a graph of
+  linked artifacts with containment and anchors. It does **not** mean one continuous LOD zoom."*
+  Genau das steht jetzt im Baum. Commit `75ea4fe`.
+- **Gate A-G2 · Die Kette** (`packages/forge/test/kette.test.ts`, 8 Tests): der Anspruch aus
+  RB-21d §2.2 — *„the gap is not the generator, it is the address"* — war über eine Maßstabsgrenze
+  hinweg nirgends belegt. Jetzt gemessen am echten Azgaar-1.151.2-Export: über `Ort.kindKeim`
+  entsteht ein Gewölbe, und der Ahnenlauf läuft
+  `raum → bauwerk → ort(Aharb) → region(Biragz Margrave) → landmasse → welt(Koria)`.
+  24 echte Siedlungen ⇒ 24 kollisionsfreie Bauwerke in einem Graphen aus **1.076 Knoten, 0 Verstöße**.
+- **Gate A-G4 · Die Verschachtelung** (`verschachtelung.test.ts`, 15 Tests): Kette über drei
+  Artefakte, `grundriss:bauwerk › raum:lager › hoehle:ort › raum:schlund › grundriss:bauwerk`,
+  Maßstäbe 0,350 und 0,714, Tiefe 6 unter einer Welt. Jede Ebene entsteht **ausschließlich** aus dem
+  gespeicherten `kindKeim` ihres Elternraums, also ist die ganze Kette aus dem obersten Keim
+  wiederherstellbar. Der **Übergang ist eine Zeile über ein Paar**, kein Feld in einer Karte —
+  dieselbe Form, die §3.3 für `Anker` festlegt — mit der geprüften Folge, dass die **Elternkarte
+  Byte für Byte identisch** bleibt, ob sie ein Kind trägt oder nicht. „Drin" ist geprüft: die
+  Kindkarte wird so skaliert, dass sie in ihren Elternraum passt; ein Sprung jenseits von 32-fach
+  wird abgelehnt, `MAX_TIEFE` unter Einbezug der Elterntiefe ebenfalls.
+- **Ausdrücklich verweigert, weil RB-21a es so entscheidet:** keine Geschwisterebenen. R6 macht Höhe
+  zu einem Skalarband am Knoten, §1.3 Fall 3 macht den Untergrund zum **Geschwister**, nicht zum
+  Kind. `Knoten` trägt noch kein Höhenband, also stapelt hier nichts. Verschachtelt wird nur, was
+  wirklich ineinanderliegt.
+- **Gate A-G3 · Die Höhle** (`hoehle.test.ts`, 20 Tests): zweite Kartenart auf demselben Vertrag,
+  Wurzel `ort` statt `bauwerk` (niemand hat eine Höhle gebaut). Sie bricht eine Annahme, auf der der
+  Grundriss stillschweigend ruhte: dessen Regionen sind Vier-Punkt-Rechtecke, weil seine Räume
+  Rechtecke *sind*. Kammern sind Kleckse ⇒ getrastete Umrisse, **34–80 Ecken**. Keine Portale (ein
+  UVTT-Portal ist eine Tür oder ein Fenster) und der Grund steht im Bericht.
+- **Kartenwerk** (`packages/forge/src/kartenwerk.ts`): Rauschen, Wandläufe, Umriss, Bestückung,
+  Id-Fabrik und Knotenbau liegen jetzt einmal da; die Layouts unterscheiden sich in genau einer
+  Sache — wie Zellen zu Boden werden. `Grundriss.bauwerkId` heißt jetzt `wurzelId`.
+- **pk.grundriss 1.1.0:** neun natürliche Symbole ergänzt (41 Assets, weiterhin CC0, weiterhin als
+  Code erzeugt). Der Versionssprung ist Absicht — die Paketidentität steckt im Optionsvektor.
+- **Zwei Befunde kamen aus dem Hinsehen, nicht aus dem Test:** die Glättung des Zellularautomaten
+  zählte die eigene Zelle nicht mit und halbierte den Fels je Durchgang (P(≥5 von 8) ≈ 0,26 bei
+  45 % Füllung) — das Ergebnis war ein Saal mit Inseln. Und auf kleinen Rastern scheitert der
+  Automat echt; er würfelt jetzt bis zu zwölfmal deterministisch aus demselben Strom.
+- **Verifikation gegen den committeten Baum `75ea4fe`:** `gate:boundaries` GRÜN (268 Dateien),
+  `gate:assets` GRÜN (41 Assets, 41 auflösbare Verweise, aus Quelle reproduziert), Blobprüfung über
+  `git show` (43 Dateien, jeder sha256 deckungsgleich, **0 CR-Bytes**),
+  `vitest run packages/forge packages/szene` **190/190**. Mutationsprobe **9/9 erkannt** — eine
+  überlebte zunächst, weil der Test nur die *Länge* der Maßstabsliste prüfte und der Bericht damit
+  über die Maßstäbe hätte lügen dürfen; Assertion ergänzt, bevor etwas grün genannt wurde.
+- **Baum insgesamt nicht grün, und das ist fremde Fläche:** `tsc` ist rot in
+  `packages/server/test/tactical-entities.test.ts`; die volle Suite lief **828 bestanden /
+  2 fehlgeschlagen**, beide in `packages/server/test/bundles-v3.test.ts`, das **isoliert 6/6** grün
+  läuft — ein Parallellauf-Flake auf der geteilten PostgreSQL. Beides nicht angefasst.
+- **Koordinationshinweis:** `assets/generated/painted-dungeon-v1/` (PNGs einer anderen Session)
+  liegt **außerhalb** von `assets/packs/` und wird deshalb von `gate:assets` nicht geprüft. Dort hat
+  bislang kein Asset eine gegatete Lizenz; wer das Verzeichnis besitzt, sollte es entweder als
+  Assetpaket führen oder die Herkunft anders belegen.
+- **Bilder:** [`design/spikes/grundriss/`](design/spikes/grundriss/) — Grundriss, Höhle und die
+  Dreierkette mit markiertem Übergang und Maßstab.
 
 ## Kartenerzeugung — Session Claude, 2026-09-06 18:20 (additiv, eigene Fläche)
 
@@ -292,3 +358,4 @@ Do not infer a winner. The verdict does not exist.
 - **Nachtrag Wiki-Import (07 §11):** Der Eron-Korpus ist vollständig importiert — 74 Artikel, 35.830 Wörter, 429 Abschnitte, 556 Backlinks, 690 rote Links, 44 Infoboxen als Registerfelder (`design/shell-lab/scripts/import-wiki.mjs`). Welt-Bühne rendert jeden Artikel mit funktionierenden Links, Backlinks, Tabellen und Listen; Navigation über die Omnibox ⌘K statt einer zweiten Spalte. Fandom-Import per Link ist **verifiziert**: die MediaWiki-API von eron.fandom.com liefert HTTP 200 mit `Access-Control-Allow-Origin: *`, 74 Artikel / 316 Seiten / 38 Bilder, Paginierung via continue-Token — Import direkt aus dem Browser, ohne Proxy. Lizenz-, Bildrechte- und Template-Grenzen in 07 §11.3 benannt.
 - **Wiki voll funktionsfaehig (07 §11.5):** Parser in den Browser verlegt (ein Parser fuer Import und Bearbeitung); Bearbeiten, Anlegen aus roten Links, sofortige Backlinks, Persistenz, Einzel-Revert, Verzeichnis nach Objektart, ⌘K-Suche. Nachgewiesen durch design/shell-lab/scripts/e2e-wiki.mjs — 17/17 im echten Browser. Zwei so gefundene Fehler behoben: stiller Rueckfall bei unbekanntem ?artikel= und veraltete Buehne durch fehlende useMemo-Abhaengigkeit.
 - **Live-Import gebaut (07 §11.6):** Wiki-Adresse einfuegen, Endpunkt wird selbst ermittelt (Fandom, Wikipedia, eigene Instanz), Pruefen zeigt Name/Artikel/Bilder/Lizenz, Import mit Fortschritt und Abbruch. Gegen das echte Eron-Wiki nachgewiesen (design/shell-lab/scripts/e2e-import.mjs, 10/10): 73 Artikel, 303 kB, Herkunft mit Quelle/Lizenz/Revision je Artikel, Lizenz sichtbar am Artikel, Live-Import einzeln verwerfbar. 73 statt 74, weil "Kaiserliche Flotte" seit der Fixture-Ernte eine Weiterleitung ist — der Import liest das Wiki von heute.
+- **Aurora im Produkt (07 §7.1):** Der dritte ratifizierte Look fehlte in packages/theme; Obsidian (als Fantasy) und Vellum (als Medieval) waren bereits da. Aurora ergaenzt in THEME_PRESET_IDS + presets.ts — erscheint dadurch ohne Client-Aenderung in AppearanceSettings und ThemeWorkbench. Besteht 135/135 deklarierte Kontrastpaare (tools/aurora-contrast.mjs). Nach der Ergaenzung: tsc gruen, 814 Tests gruen, gate:boundaries gruen (264 Dateien), gate:assets gruen, Client-Build gruen.
