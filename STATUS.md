@@ -359,3 +359,53 @@ Do not infer a winner. The verdict does not exist.
 - **Wiki voll funktionsfaehig (07 §11.5):** Parser in den Browser verlegt (ein Parser fuer Import und Bearbeitung); Bearbeiten, Anlegen aus roten Links, sofortige Backlinks, Persistenz, Einzel-Revert, Verzeichnis nach Objektart, ⌘K-Suche. Nachgewiesen durch design/shell-lab/scripts/e2e-wiki.mjs — 17/17 im echten Browser. Zwei so gefundene Fehler behoben: stiller Rueckfall bei unbekanntem ?artikel= und veraltete Buehne durch fehlende useMemo-Abhaengigkeit.
 - **Live-Import gebaut (07 §11.6):** Wiki-Adresse einfuegen, Endpunkt wird selbst ermittelt (Fandom, Wikipedia, eigene Instanz), Pruefen zeigt Name/Artikel/Bilder/Lizenz, Import mit Fortschritt und Abbruch. Gegen das echte Eron-Wiki nachgewiesen (design/shell-lab/scripts/e2e-import.mjs, 10/10): 73 Artikel, 303 kB, Herkunft mit Quelle/Lizenz/Revision je Artikel, Lizenz sichtbar am Artikel, Live-Import einzeln verwerfbar. 73 statt 74, weil "Kaiserliche Flotte" seit der Fixture-Ernte eine Weiterleitung ist — der Import liest das Wiki von heute.
 - **Aurora im Produkt (07 §7.1):** Der dritte ratifizierte Look fehlte in packages/theme; Obsidian (als Fantasy) und Vellum (als Medieval) waren bereits da. Aurora ergaenzt in THEME_PRESET_IDS + presets.ts — erscheint dadurch ohne Client-Aenderung in AppearanceSettings und ThemeWorkbench. Besteht 135/135 deklarierte Kontrastpaare (tools/aurora-contrast.mjs). Nach der Ergaenzung: tsc gruen, 814 Tests gruen, gate:boundaries gruen (264 Dateien), gate:assets gruen, Client-Build gruen.
+
+## Ledger-Korrektur 2026-09-06 — die taktische Schuld ist bezahlt
+
+Der Abschnitt „Where we are" nennt die ~120-tägige taktische Hälfte als
+**„oldest unpaid debt … unspiked in every dimension for four rounds"** und
+`K5 — may the canvas slip a slice?` als offene Kaya-Entscheidung. Beides ist
+durch den Code überholt. Gegen den Arbeitsbaum geprüft, nicht erinnert:
+
+- `packages/render/` existiert mit `renderer.ts`, `geometry.ts`,
+  `tactical-geometry.ts`, `grid-cache.ts` und `model.ts`.
+- Die Abhängigkeit ist real: **pixi.js 8.20.1**, geladen hinter der
+  `MapRenderer`-Grenze; `model.ts` kennt die Backends `pixi-webgl`,
+  `pixi-webgpu`, `pixi-canvas` und erkennt sie zur Laufzeit — genau der
+  Renderer-Vertrag aus `03-triumph-ui-direction.md`.
+- Der Client hat `TacticalView`, `TacticalCanvas`, `TacticalPreparation` und
+  einen Reiter „Szenenkarte" im Tisch.
+- `e2e/tactical.spec.ts` und `e2e/tactical-performance.spec.ts` existieren.
+
+**K5 ist damit gegenstandslos:** Die Leinwand ist nicht geschlüpft, sie ist
+gebaut. Wer diese Datei kalt liest, darf nicht länger glauben, der Tisch habe
+keine Leinwand.
+
+### Nicht verifiziert — und warum nicht
+
+Die taktischen E2E-Suiten **laufen derzeit nicht**. Sie brechen vor dem ersten
+Test ab:
+
+```
+SyntaxError: The requested module '@chronicle/rules'
+does not provide an export named 'parseSupportedRulePackage'
+```
+
+Der Export existiert (`packages/rules/src/index.ts`, aus `./package-v2.ts`).
+Ursache ist mit hoher Wahrscheinlichkeit **laufende Arbeit einer parallelen
+Session**: `packages/rules/src/package-v2.ts`,
+`packages/io/src/campaign-rules-profile.ts` und
+`packages/client/src/features/TacticalEntitiesEditor.tsx` sind noch ungetrackt,
+`e2e/tactical.spec.ts` und die Tactical-Komponenten geändert. `vitest`
+(814 Tests) und `tsc` sind grün — betroffen ist nur der E2E-Ladepfad.
+
+Deshalb steht hier **UNVERIFIED**, nicht „läuft": Dass die Leinwand existiert,
+ist belegt. Dass sie am laufenden Tisch trägt, ist es nicht. Die Session
+`atlas-chronicels-61` wurde über den Befund informiert; diese Fläche wurde
+bewusst nicht angefasst, um keine fremde In-flight-Arbeit zu beschädigen.
+
+### Betriebsstand nebenbei belegt
+
+`docker ps` zeigt `deploy-postgres-1`, `chronicle-media-livekit-1` und
+`chronicle-media-coturn-1` als laufende Container. Die Medienebene aus
+`07-shell-redesign.md` §5 ist real deployed, nicht nur spezifiziert.
