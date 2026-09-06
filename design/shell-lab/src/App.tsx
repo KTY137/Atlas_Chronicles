@@ -1,0 +1,195 @@
+import { useEffect, useMemo, useState } from "react";
+import { MotionConfig } from "motion/react";
+
+import { PARTY, type LookId, type Role, type StageId } from "./fixture";
+import { PLAYER_SELF } from "./shell/Band";
+import { ContextBar } from "./shell/ContextBar";
+import { Rail } from "./shell/Rail";
+import { Band } from "./shell/Band";
+import { Lens, type LensSelection } from "./shell/Lens";
+import { Heute } from "./stages/Heute";
+import { Welt } from "./stages/Welt";
+import { Tisch } from "./stages/Tisch";
+import { Kanal } from "./stages/Kanal";
+import { Schmiede } from "./stages/Schmiede";
+import { Netz } from "./stages/Netz";
+
+const LOOKS: readonly LookId[] = ["obsidian", "vellum", "aurora"];
+const STAGES: readonly StageId[] = [
+  "heute",
+  "welt",
+  "tisch",
+  "kanal",
+  "schmiede",
+  "netz",
+];
+
+function readParam<T extends string>(
+  key: string,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  const value = new URLSearchParams(window.location.search).get(key);
+  return allowed.includes(value as T) ? (value as T) : fallback;
+}
+
+export function App() {
+  const [look, setLook] = useState<LookId>(() =>
+    readParam("look", LOOKS, "obsidian"),
+  );
+  const [role, setRole] = useState<Role>(() =>
+    readParam("role", ["gm", "player"] as const, "gm"),
+  );
+  const [stage, setStage] = useState<StageId>(() =>
+    readParam("stage", STAGES, "heute"),
+  );
+  const [reducedMotion, setReducedMotion] = useState(
+    () =>
+      new URLSearchParams(window.location.search).get("motion") === "reduced",
+  );
+  const [selection, setSelection] = useState<LensSelection | null>(() => {
+    const value = new URLSearchParams(window.location.search).get("lens");
+    return value === "olav" || value === "passage" ? value : null;
+  });
+  const [whisperTarget, setWhisperTarget] = useState<string | null>(() => {
+    const value = new URLSearchParams(window.location.search).get("whisper");
+    return PARTY.some((p) => p.id === value) ? value : null;
+  });
+  const [voiceDown, setVoiceDown] = useState(
+    () => new URLSearchParams(window.location.search).get("voice") === "down",
+  );
+
+  /* Spieler sehen Schmiede und Netz nicht — Rollenprojektion.
+     Im Produkt filtert der Server; im Lab spiegelt der Client den Vertrag. */
+  const effectiveStage: StageId =
+    role === "player" && (stage === "schmiede" || stage === "netz")
+      ? "heute"
+      : stage;
+  useEffect(() => {
+    if (effectiveStage !== stage) setStage(effectiveStage);
+  }, [effectiveStage, stage]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set("look", look);
+    params.set("role", role);
+    params.set("stage", effectiveStage);
+    if (reducedMotion) params.set("motion", "reduced");
+    if (selection) params.set("lens", selection);
+    if (whisperTarget) params.set("whisper", whisperTarget);
+    if (voiceDown) params.set("voice", "down");
+    window.history.replaceState(null, "", `?${params.toString()}`);
+  }, [
+    look,
+    role,
+    effectiveStage,
+    reducedMotion,
+    selection,
+    whisperTarget,
+    voiceDown,
+  ]);
+
+  /* Sprechsimulation: wer gerade spricht, wandert durch die Runde.
+     Bei aktivem Flüsterkanal sprechen nur Leitung und Ziel. */
+  const [speaker, setSpeaker] = useState<string | null>("kaya");
+  const selfInWhisper =
+    whisperTarget !== null && (role === "gm" || whisperTarget === PLAYER_SELF);
+  useEffect(() => {
+    setSpeaker(null);
+    if (voiceDown) return;
+    /* Wer nicht in der Kapsel ist, hört und sieht den laufenden Tisch. */
+    const order: (string | null)[] = whisperTarget
+      ? selfInWhisper
+        ? ["kaya", whisperTarget, null]
+        : [...PARTY.map((p) => p.id).filter((id) => id !== whisperTarget), null]
+      : ["kaya", "olav", null, "song", "oggugat", null, "yalit"];
+    let index = 0;
+    const timer = window.setInterval(() => {
+      index = (index + 1) % order.length;
+      setSpeaker(order[index] ?? null);
+    }, 2200);
+    return () => window.clearInterval(timer);
+  }, [whisperTarget, voiceDown, selfInWhisper]);
+
+  /* Das Gate: 1 Rail · 1 Bühne · max. 1 Instrument · Band.
+     Gezählt wird im DOM, nicht im Zustand — jedes Werkzeugpanel trägt
+     data-instrument. Anzeigen (Szenentitel, Initiative) sind Bühneninhalt. */
+  const [openInstruments, setOpenInstruments] = useState(0);
+  useEffect(() => {
+    const count = () =>
+      setOpenInstruments(document.querySelectorAll("[data-instrument]").length);
+    count();
+    const observer = new MutationObserver(count);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+  const gateViolated = openInstruments > 1;
+
+  const stageNode = useMemo(() => {
+    const select = (next: LensSelection) => setSelection(next);
+    switch (effectiveStage) {
+      case "heute":
+        return <Heute role={role} goTo={setStage} />;
+      case "welt":
+        return <Welt onSelect={select} />;
+      case "tisch":
+        return <Tisch role={role} selection={selection} onSelect={select} />;
+      case "kanal":
+        return <Kanal role={role} onSelect={select} />;
+      case "schmiede":
+        return <Schmiede />;
+      case "netz":
+        return <Netz voiceDown={voiceDown} onToggleVoice={setVoiceDown} />;
+    }
+  }, [effectiveStage, role, selection, voiceDown]);
+
+  return (
+    <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>
+      <div
+        className="app"
+        data-look={look}
+        data-motion={reducedMotion ? "reduced" : "full"}
+      >
+        <ContextBar
+          look={look}
+          onLook={setLook}
+          role={role}
+          onRole={setRole}
+          reducedMotion={reducedMotion}
+          onReducedMotion={setReducedMotion}
+        />
+        <div className="main">
+          <Rail role={role} stage={effectiveStage} onStage={setStage} />
+          <main className="stage">
+            {stageNode}
+          </main>
+          {selection ? (
+            <Lens
+              selection={selection}
+              onClose={() => setSelection(null)}
+              role={role}
+            />
+          ) : null}
+        </div>
+        <Band
+          role={role}
+          stage={effectiveStage}
+          speaker={speaker}
+          whisperTarget={whisperTarget}
+          onWhisper={setWhisperTarget}
+          voiceDown={voiceDown}
+          goToKanal={() => setStage("kanal")}
+        />
+        <div
+          className="gate"
+          data-violated={gateViolated}
+          title="Anti-Überladungs-Gate: höchstens ein Rail, eine Bühne, ein Instrument und das Band gleichzeitig."
+        >
+          {gateViolated
+            ? "GATE VERLETZT"
+            : `Gate ✓ 1 Rail · 1 Bühne · ${openInstruments} Instrument · Band`}
+        </div>
+      </div>
+    </MotionConfig>
+  );
+}

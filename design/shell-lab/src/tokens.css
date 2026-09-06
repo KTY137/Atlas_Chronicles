@@ -1,0 +1,199 @@
+/* ============================================================
+   Chronicle Shell Lab — Token-System
+   Drei Looks = drei Behauptungen. Gleiche Semantik, gleiche
+   Layouts; nur diese Variablen unterscheiden sich.
+   ============================================================ */
+
+:root {
+  /* geteilte Maße */
+  --rail-w: 60px;
+  --band-h: 64px;
+  --context-h: 52px;
+  --lens-w: 348px;
+
+  --t-response: 150ms;
+  --t-state: 280ms;
+  --t-transition: 700ms;
+
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+/* ------------------------------------------------------------
+   OBSIDIAN — das Präzisionsinstrument.
+   Basalt, Haarlinien, genau ein Akzent: Glut. Kaum Glas.
+   ------------------------------------------------------------ */
+[data-look="obsidian"] {
+  color-scheme: dark;
+
+  --bg: #0a0c0d;
+  --bg-deep: #060708;
+  --surface: #121517;
+  --surface-2: #191d20;
+  --stage-bg: radial-gradient(120% 90% at 50% 0%, #101314 0%, #0a0c0d 60%);
+
+  --line: rgba(216, 206, 188, 0.13);
+  --line-strong: rgba(216, 206, 188, 0.28);
+
+  --text: #e8e3d8;
+  --text-muted: #97917f;
+  --text-faint: #948e82;
+
+  --accent: #d98e3b;
+  --accent-strong: #f0a84b;
+  --accent-ink: #14100a;
+  --accent-soft: rgba(217, 142, 59, 0.12);
+  --accent-2: #d98e3b;
+  --accent-2-soft: rgba(217, 142, 59, 0.12);
+
+  --ok: #7fa07c;
+  --danger: #c4574a;
+
+  --speaking: #f0a84b;
+
+  --font-display: "Cinzel", serif;
+  --font-body: "IBM Plex Sans Variable", system-ui, sans-serif;
+  --font-ui: "IBM Plex Sans Variable", system-ui, sans-serif;
+
+  --radius-s: 4px;
+  --radius-m: 6px;
+  --radius-l: 8px;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 12px 40px rgba(0, 0, 0, 0.55);
+
+  --glass-bg: rgba(14, 16, 17, 0.88);
+  --glass-blur: 8px;
+  --glass-border: rgba(216, 206, 188, 0.16);
+
+  --band-bg: #0d0f10;
+  --card-border: 1px solid var(--line);
+  --display-case: uppercase;
+  --display-tracking: 0.14em;
+  --display-weight: 600;
+}
+
+/* ------------------------------------------------------------
+   VELLUM — der Foliant. Stunden am Text.
+   Knochen, Tinte, Ochsenblut und Grünspan. Stichhaltige
+   Doppel-Haarlinien, fast keine Rundung, kein Glas.
+   ------------------------------------------------------------ */
+[data-look="vellum"] {
+  color-scheme: light;
+
+  --bg: #f2ede2;
+  --bg-deep: #eae4d5;
+  --surface: #faf7ef;
+  --surface-2: #f0ebdd;
+  --stage-bg: linear-gradient(180deg, #f5f1e7 0%, #f2ede2 100%);
+
+  --line: #d9d1bc;
+  --line-strong: #b9ae92;
+
+  --text: #201c14;
+  --text-muted: #6b6455;
+  --text-faint: #676050;
+
+  --accent: #6e2430;
+  --accent-strong: #8a2c3b;
+  --accent-ink: #faf7ef;
+  --accent-soft: rgba(110, 36, 48, 0.09);
+  --accent-2: #3e6b5c;
+  --accent-2-soft: rgba(62, 107, 92, 0.11);
+
+  --ok: #3e6b5c;
+  --danger: #8a2c3b;
+
+  --speaking: #6e2430;
+
+  --font-display: "Fraunces Variable", serif;
+  --font-body: "Source Serif 4 Variable", Georgia, serif;
+  --font-ui: "IBM Plex Sans Variable", system-ui, sans-serif;
+
+  --radius-s: 2px;
+  --radius-m: 2px;
+  --radius-l: 3px;
+
+  --shadow-1: 0 1px 0 rgba(90, 78, 54, 0.12);
+  --shadow-2: 0 10px 32px rgba(90, 78, 54, 0.16);
+
+  --glass-bg: rgba(250, 247, 239, 0.95);
+  --glass-blur: 0px;
+  --glass-border: var(--line-strong);
+
+  --band-bg: #ece6d6;
+  --card-border: 1px solid var(--line-strong);
+  --display-case: none;
+  --display-tracking: -0.01em;
+  --display-weight: 560;
+}
+
+/* ------------------------------------------------------------
+   AURORA — das Spielgerät.
+   Indigo-Tiefe, chromatisches Licht, Glasinstrumente.
+   ------------------------------------------------------------ */
+[data-look="aurora"] {
+  color-scheme: dark;
+
+  --bg: #0d1120;
+  --bg-deep: #090c17;
+  --surface: #161c31;
+  --surface-2: #1d2440;
+  --stage-bg:
+    radial-gradient(90% 70% at 85% -10%, rgba(139, 123, 247, 0.26) 0%, transparent 55%),
+    radial-gradient(80% 60% at 0% 100%, rgba(111, 227, 196, 0.16) 0%, transparent 50%),
+    linear-gradient(180deg, #101529 0%, #0d1120 100%);
+
+  --line: rgba(160, 174, 218, 0.16);
+  --line-strong: rgba(160, 174, 218, 0.32);
+
+  --text: #e6eaf6;
+  --text-muted: #8b93ad;
+  --text-faint: #8f97b3;
+
+  --accent: #6fe3c4;
+  --accent-strong: #93f2d9;
+  --accent-ink: #06231b;
+  --accent-soft: rgba(111, 227, 196, 0.13);
+  --accent-2: #8b7bf7;
+  --accent-2-soft: rgba(139, 123, 247, 0.16);
+
+  --ok: #6fe3c4;
+  --danger: #f2729a;
+
+  --speaking: #6fe3c4;
+
+  --font-display: "Space Grotesk Variable", system-ui, sans-serif;
+  --font-body: "Manrope Variable", system-ui, sans-serif;
+  --font-ui: "Manrope Variable", system-ui, sans-serif;
+
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 18px;
+
+  --shadow-1: 0 2px 8px rgba(4, 6, 14, 0.5);
+  --shadow-2: 0 18px 60px rgba(4, 6, 14, 0.6);
+
+  --glass-bg: rgba(22, 28, 49, 0.66);
+  --glass-blur: 18px;
+  --glass-border: rgba(160, 174, 218, 0.22);
+
+  --band-bg: rgba(13, 17, 32, 0.8);
+  --card-border: 1px solid var(--line);
+  --display-case: none;
+  --display-tracking: -0.02em;
+  --display-weight: 600;
+}
+
+/* Vellum: Stich-Doppellinie als Material statt Schatten */
+[data-look="vellum"] .card,
+[data-look="vellum"] .lens,
+[data-look="vellum"] .instrument {
+  box-shadow: 0 0 0 1px var(--surface), 0 0 0 2px var(--line-strong);
+}
+
+/* Aurora: Glas nur für schwebende Instrumente */
+[data-look="aurora"] .glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+}

@@ -32,7 +32,7 @@ voll). Kein Farbschema rettet das; die Regel muss strukturell sein.
 - **Instrument** — höchstens eines offen (Context Lens *oder* ein Werkzeugpanel).
 - **Band** — Anwesenheit; dauerhaft, dünn, wächst nie.
 
-Das Gate ist im Prototyp als Laufzeitprüfung eingebaut. Ein Screen, der es verletzt, ist ein
+Das Gate ist im Prototyp als Laufzeitprüfung eingebaut: gezählt werden DOM-Elemente mit `data-instrument` (Lens, Werkzeugpanels); reine Anzeigen wie Szenentitel oder Initiativleiste sind Bühneninhalt, keine Instrumente. Öffnet sich die Lens auf dem Tisch, klappt das Werkzeugpanel auf einen Griff zusammen — das Gate wird gelebt, nicht nur gemessen. Ein Screen, der es verletzt, ist ein
 Bug, keine Geschmacksfrage. Damit ist „darf das noch eine Spalte haben?" dauerhaft beantwortet.
 
 Zuordnung der Vorbilder: World Anvils Tiefe → Rail + Bühne. Roll20s Tisch → Bühne. Forges
