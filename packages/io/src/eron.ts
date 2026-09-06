@@ -138,6 +138,43 @@ export function importEron(input: EronImportInput): EronImportResult {
       return [{ ...mark, ...(target ? { zielEntryId: target } : {}) }];
     }),
   }))) }));
+  /**
+   * §2.8 keeps an unconvertible block RAW. That is a statement about STRUCTURE, and it must not
+   * quietly become a statement about DEMAND: a refusal to convert is not a refusal to notice.
+   *
+   * The corpus's single wikitable — `Liste der Häuser von Andaria` — carries **51 distinct link
+   * targets**, the noble houses. Left unharvested they are 7.4 % of the cold-start door
+   * inventory, invisible: a door that is never extracted can never be triaged, ranked or opened.
+   *
+   * Harvesting them breaks neither half of §2.8's rule. Nothing is silently DROPPED (the block
+   * still renders verbatim in its bordered card, "Aus dem Wiki übernommen — nicht umgewandelt")
+   * and nothing is silently PROMOTED (no structure is invented, no passage is created, the table
+   * stays a `rohblock`). Only the demand is registered, anchored on the rohblock passage that
+   * actually contains it.
+   */
+  const harvestRohblockTargets = (quelltext: string): string[] => {
+    const out: string[] = [];
+    const text = quelltext.replace(/<nowiki\b[^>]*>[\s\S]*?<\/nowiki\s*>|<!--[\s\S]*?-->/gi, "");
+    for (const match of text.matchAll(/\[\[([^\]|]+)/g)) {
+      const slug = wikiSlug(match[1]!);
+      if (slug && !namespaceLinkTarget(slug) && !out.includes(slug)) out.push(slug);
+    }
+    return out;
+  };
+  for (const passage of resolvedPassages) {
+    if (passage.inhalt.kind !== "rohblock") continue;
+    for (const slug of harvestRohblockTargets(passage.inhalt.quelltext)) {
+      const target = targets.get(slug);
+      if (!target) {
+        const sources = missingTargets.get(slug) ?? new Set<EntryId>();
+        sources.add(passage.entryId);
+        missingTargets.set(slug, sources);
+        if (reject(slug)) continue;
+      }
+      links.push({ quellEntryId: passage.entryId, quellPassageId: passage.pid, zielSlug: slug,
+        ...(target ? { zielEntryId: target } : {}) });
+    }
+  }
   const redLinks = [...missingTargets].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
     .map(([zielSlug, sources]) => ({ zielSlug, eingehend: sources.size, klasse: tuerklasse(sources.size, reject(zielSlug)) }));
   const passageCounts = { absatz: 0, feld: 0, liste: 0, zitat: 0, bildunterschrift: 0, rohblock: 0 };

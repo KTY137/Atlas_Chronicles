@@ -7,23 +7,31 @@ import type { EronArticle, EronTemplate } from "../src/index.ts";
 /**
  * DIE KANTENERHALTUNG — assertion A9's missing sibling.
  *
- * A9 measures TEXT conservation and it is a good gate, but it has a blind spot that cost us two
- * real defects in one afternoon: **a quarantined block keeps its text.** When `unsupported()`
- * wrongly decided a paragraph was raw HTML, or when an infobox behind a lead sentence fell into
- * the body, nothing was lost as bytes — A9 sat at 99.9 % throughout and said nothing. What was
- * lost was STRUCTURE, and in a product whose headline is *„der rote Link ist eine Tür"* the
- * link graph IS the product. A link inside a `rohblock` is invisible to the door graph, and a
- * door that is never extracted can never be triaged, ranked or opened.
+ * A9 measures TEXT conservation and it is a good gate, but it has a blind spot that cost us
+ * three real defects in one afternoon: **a quarantined block keeps its text.** When
+ * `unsupported()` wrongly decided a paragraph was raw HTML, when an infobox behind a lead
+ * sentence fell into the body, and when a wikitable was refused conversion — nothing was lost
+ * as bytes. A9 sat at 99.9 % throughout and said nothing. What was lost was STRUCTURE, and in a
+ * product whose headline is *„der rote Link ist eine Tür"* the link graph IS the product. A link
+ * inside a `rohblock` is invisible to the door graph, and a door that is never extracted can
+ * never be triaged, ranked or opened.
  *
- * So: we had an anti-loss gate for bytes and none for edges. This is the one for edges.
+ * So: we had an anti-loss gate for bytes and none for edges. This is the one for edges, and it
+ * computes over the same source as A9 so no second notion of truth enters the codebase.
  *
- * The invariant is deliberately not "we extract every link". Some links are *correctly* not
- * extracted, and the gate names each reason instead of tolerating a fudge factor:
- *   - links inside a quarantined block (RB-12 §2.8 — the one wikitable is refused on purpose)
- *   - namespace links (`Kategorie:`, `Map:` …), which are classifications, not missing articles
- * Everything else must be accounted for. **Unexplained shortfall must be zero.**
+ * The invariant: **every article link in the source is either extracted, or refused for a named
+ * reason. Unexplained shortfall must be zero.**
  *
- * It computes over the same source as A9, so no second notion of truth enters the codebase.
+ * What this gate found and forced, in order:
+ *   1. B1 — infoboxes behind a lead sentence, 39 field rows quarantined instead of parsed
+ *   2. `<nowiki/>` — the empty separator read as raw HTML, 4 paragraphs quarantined
+ *   3. namespace links — `Kategorie:` and `Map:` counted as doors, i.e. as demand for pages
+ *      nobody can ever write
+ *   4. the harvest — §2.8 keeps an unconvertible block RAW, which is a statement about
+ *      STRUCTURE and must not quietly become one about DEMAND
+ *
+ * The end state is the one the corpus always claimed and had never once reproduced with running
+ * code: **689 doors, triaged 113 / 100 / 472 / 4**, byte-for-byte RB-12's assertion A8.
  */
 
 const fixture = (name: string) =>
@@ -88,7 +96,6 @@ for (const a of articles) {
 }
 
 const shortfall = [...inSource].filter((t) => !extracted.has(t));
-const unexplained = shortfall.filter((t) => !quarantined.has(t));
 
 describe("die Kantenerhaltung — no link may vanish without a named reason", () => {
   it("accounts for every article link in the source", () => {
@@ -101,13 +108,11 @@ describe("die Kantenerhaltung — no link may vanish without a named reason", ()
         `  Namensraum-Ziele (keine Türen)   ${inNamespace.size}   [${[...inNamespace].join(", ")}]`,
         `  davon extrahiert                 ${extracted.size}`,
         `  Fehlbetrag                       ${shortfall.length}`,
-        `    in Quarantäne (§2.8)           ${shortfall.filter((t) => quarantined.has(t)).length}`,
-        `    unerklärt                      ${unexplained.length}`,
         `  Kantenerhaltung                  ${((extracted.size / inSource.size) * 100).toFixed(2)} %`,
         "",
       ].join("\n"),
     );
-    expect(unexplained, `unexplained missing link targets: ${unexplained.slice(0, 20).join(", ")}`).toHaveLength(0);
+    expect(shortfall, `missing link targets: ${shortfall.slice(0, 20).join(", ")}`).toHaveLength(0);
   });
 
   it("agrees with the fixture's own link census once namespaces are added back", () => {
@@ -120,15 +125,21 @@ describe("die Kantenerhaltung — no link may vanish without a named reason", ()
     expect([...inNamespace]).toEqual(["Map:Andaria"]);
   });
 
-  it("loses exactly the wikitable, and says so", () => {
-    // RB-12 §2.8 refuses to convert a wikitable. That refusal is honest, but it is not free:
-    // the corpus's single table is `Liste der Häuser von Andaria`, and it carries 51 distinct
-    // targets — the noble houses. They are real, wanted doors that the rule keeps closed.
-    // This is a PRODUCT gap, recorded as a measurement rather than discovered later as a
-    // surprise: 51 of graph.json's 689 doors, i.e. 7.4 % of the cold-start inventory.
-    expect(shortfall).toHaveLength(51);
-    expect(shortfall.every((t) => quarantined.has(t))).toBe(true);
-    expect(shortfall).toContain("Haus Hohenstein");
+  it("harvests the refused wikitable's doors without converting it", () => {
+    // Both halves of §2.8 must hold at once, which is the whole point of the harvest:
+    //   - nothing silently DROPPED: the 51 noble houses are real doors and are registered
+    //   - nothing silently PROMOTED: the table itself is still a rohblock, still verbatim,
+    //     still rendered as „Aus dem Wiki übernommen — nicht umgewandelt"
+    const doors = new Set(result.redLinks.map((d) => d.zielSlug));
+    for (const house of ["Haus Hohenstein", "Haus Eisklinge", "Die Schlangenburg", "Burg Hohenstein"]) {
+      expect(doors, `${house} should be an open door`).toContain(house);
+    }
+    const tables = result.passages.filter(
+      (p) => p.inhalt.kind === "rohblock" && p.inhalt.grund === "wikitabelle",
+    );
+    expect(tables, "the corpus's single wikitable must stay unconverted").toHaveLength(1);
+    const table = tables[0]!.inhalt;
+    expect(table.kind === "rohblock" && table.quelltext.startsWith("{|")).toBe(true);
   });
 
   it("never promotes a namespace link to a door", () => {
@@ -140,13 +151,21 @@ describe("die Kantenerhaltung — no link may vanish without a named reason", ()
     expect(doors.has("Map:Andaria")).toBe(false);
   });
 
-  it("reports every door the fixture knows about, except the quarantined table", () => {
+  it("reproduces the fixture's door set exactly", () => {
     const theirs = new Set(graph.redlink_targets_by_incoming.map((row) => wikiSlug(row.title)));
     const ours = new Set(result.redLinks.map((d) => d.zielSlug));
     const missing = [...theirs].filter((t) => !ours.has(t));
     const surplus = [...ours].filter((t) => !theirs.has(t));
     console.log(`  Türen: graph.json ${theirs.size} · unsere ${ours.size} · fehlend ${missing.length} · zusätzlich ${surplus.length}`);
-    expect(surplus, `we invented doors: ${surplus.join(", ")}`).toHaveLength(0);
-    expect(missing.every((t) => quarantined.has(t)), "a door went missing for a reason other than quarantine").toBe(true);
+    expect(missing, `doors we lack: ${missing.slice(0, 20).join(", ")}`).toHaveLength(0);
+    expect(surplus, `doors we invented: ${surplus.slice(0, 20).join(", ")}`).toHaveLength(0);
+  });
+
+  it("reproduces RB-12 assertion A8's door triage, which nothing had ever reproduced", () => {
+    // 113 / 100 / 472 / 4. The corpus asserted these four numbers; no artefact in the lineage
+    // had ever produced them from running code. They were right all along — we were
+    // under-extracting.
+    expect(result.report.tuerbilanz).toEqual({ tuer: 113, spur: 100, notiz: 472, verworfen: 4 });
+    expect(result.report.distinkteRoteZiele).toBe(689);
   });
 });
