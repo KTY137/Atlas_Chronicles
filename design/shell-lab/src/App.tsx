@@ -17,6 +17,7 @@ import { Palette } from "./shell/Palette";
 import { WeltImport } from "./stages/WeltImport";
 import { Journal } from "./stages/Journal";
 import { Sammlungen } from "./stages/Sammlungen";
+import { InfoboxStudio } from "./stages/InfoboxStudio";
 import { DEFAULT_ARTICLE } from "./wiki";
 import { subscribe } from "./wikiStore";
 
@@ -71,6 +72,12 @@ export function App() {
   const [articleHistory, setArticleHistory] = useState<string[]>([]);
   /* Welt traegt vier Zustaende: Artikel, Verzeichnis, Import, Journale,
      Sammlungen — alle ueber die Flaeche erreichbar, keiner im Rail (07 §12). */
+  const [schmiedeSub, setSchmiedeSub] = useState<"paket" | "vorlagen">(
+    () =>
+      new URLSearchParams(window.location.search).get("schmiede") === "vorlagen"
+        ? "vorlagen"
+        : "paket",
+  );
   const [weltSub, setWeltSub] = useState<"artikel" | "import" | "journal" | "sammlungen">(
     () => {
       const value = new URLSearchParams(window.location.search).get("welt");
@@ -111,6 +118,9 @@ export function App() {
     if (selection) params.set("lens", selection);
     if (whisperTarget) params.set("whisper", whisperTarget);
     if (voiceDown) params.set("voice", "down");
+    if (effectiveStage === "schmiede" && schmiedeSub === "vorlagen") {
+      params.set("schmiede", "vorlagen");
+    }
     if (effectiveStage === "welt") {
       params.set("artikel", article);
       if (weltSub !== "artikel") params.set("welt", weltSub);
@@ -128,6 +138,7 @@ export function App() {
     article,
     weltIndex,
     weltSub,
+    schmiedeSub,
   ]);
 
   /* ⌘K / Strg+K öffnet die Omnibox — der Ersatz für eine Artikelspalte. */
@@ -235,14 +246,18 @@ export function App() {
       case "kanal":
         return <Kanal role={role} onSelect={select} />;
       case "schmiede":
-        return <Schmiede />;
+        return schmiedeSub === "vorlagen" ? (
+          <InfoboxStudio role={role} />
+        ) : (
+          <Schmiede role={role} onVorlagen={() => setSchmiedeSub("vorlagen")} />
+        );
       case "netz":
         return <Netz voiceDown={voiceDown} onToggleVoice={setVoiceDown} />;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // revision gehört in die Abhängigkeiten: Ein Schreibvorgang baut den
     // Korpus neu auf, und ohne ihn liefert der Memo die veraltete Bühne.
-  }, [effectiveStage, role, selection, voiceDown, article, articleHistory, weltIndex, weltSub, revision]);
+  }, [effectiveStage, role, selection, voiceDown, article, articleHistory, weltIndex, weltSub, schmiedeSub, revision]);
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>

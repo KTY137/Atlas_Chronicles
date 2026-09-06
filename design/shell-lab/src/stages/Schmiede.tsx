@@ -1,9 +1,14 @@
-import { Check, Hammer, X } from "lucide-react";
+import { Check, Hammer, LayoutTemplate, X } from "lucide-react";
 
 import { FORGE } from "../fixture";
 
+interface Props {
+  role: "gm" | "player";
+  onVorlagen: () => void;
+}
+
 /** Schmiede: maximale Tiefe hinter einer ehrlichen Schwelle — eigener Creator-Kontext. */
-export function Schmiede() {
+export function Schmiede({ role, onVorlagen }: Props) {
   return (
     <div className="stage-scroll">
       <div className="forge-wrap">
@@ -13,6 +18,13 @@ export function Schmiede() {
             {FORGE.package}{" "}
             <span style={{ color: "var(--text-faint)" }}>{FORGE.version}</span>
           </h1>
+        </div>
+
+        <div className="article-toolbar" style={{ marginTop: 4 }}>
+          <button type="button" className="chip accent" onClick={onVorlagen}>
+            <LayoutTemplate size={11} />
+            {role === "gm" ? "Infobox-Vorlagen bearbeiten" : "Infobox-Vorlagen ansehen"}
+          </button>
         </div>
 
         <div className="forge-grid">

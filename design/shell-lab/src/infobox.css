@@ -5,6 +5,18 @@
    .display) um eigene, „studio-" präfigierte Klassen.
    ============================================================ */
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .studio-wrap {
   max-width: 1080px;
   margin: 0 auto;
@@ -80,6 +92,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.studio-template-card:hover {
+  border-color: var(--accent);
 }
 
 .studio-template-source {
