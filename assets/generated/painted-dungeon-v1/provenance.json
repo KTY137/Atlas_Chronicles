@@ -1,0 +1,113 @@
+{
+  "recordType": "generated-art-provenance",
+  "recordVersion": 1,
+  "generatedDate": "2026-09-06",
+  "generationTool": "OpenAI built-in image_gen__imagegen via Codex",
+  "mode": "built-in; one generation call per distinct asset",
+  "model": "not exposed by tool response",
+  "generationCalls": 3,
+  "inputImages": [],
+  "sourceDirectory": "C:\\Users\\Administrator\\.codex\\generated_images\\01a077c4-f1e4-7750-a5d5-c5e841d40a20",
+  "pixelModifications": "none; original PNG files copied verbatim with source files preserved",
+  "promptDirection": "Codex, following the user's Atlas Chronicles asset-generation request",
+  "authorship": "AI-generated images; this record does not assert exclusive human authorship or ownership",
+  "distributionLicense": "pending project licensing decision; no distribution grant made by this record",
+  "assetPackRegistration": "not registered; this is provenance data, not an Assetpaket manifest",
+  "validation": {
+    "date": "2026-09-06",
+    "imageDecode": "Pillow read-only decode of every workspace PNG succeeded",
+    "sourceCopies": "All workspace PNG bytes equal the original generated source bytes",
+    "visualInspection": "All three images inspected with generatedImage; table and rubble additionally inspected with view_image",
+    "alpha": "Actual PNG alpha histogram and edge values inspected, not inferred from preview appearance",
+    "floorSeams": "Opposite edge pixels differ in all 1254 paired samples in each direction. No seamless tiling claim; a complete tiled rendering was not inspected.",
+    "productBuild": "not run by this asset worker",
+    "productBrowser": "not run by this asset worker"
+  },
+  "assets": [
+    {
+      "file": "stone-floor.png",
+      "sourceFile": "exec-6dfb80ff-813f-43a5-afe5-bd6adb9fca22.png",
+      "bytes": 2873150,
+      "sha256": "ead331468004c894199371c4d21af04837a320f6c18d7444887805c73475adc6",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "alpha": {
+        "present": false,
+        "effectiveOpacity": "fully opaque"
+      },
+      "prompt": "Use case: stylized-concept\nAsset type: original raster stone-floor surface for a top-down tabletop RPG dungeon map.\nPrimary request: a square, full-bleed stone flagstone floor texture, camera exactly overhead in orthographic projection.\nStyle/medium: carefully hand-painted fantasy cartography with restrained brush texture, clear forms that remain readable when reduced; realistic material proportions, not photorealistic and not a schematic.\nSubject: worn, irregular rectangular grey stone slabs with fine cool dark mortar joints, subtle chipped edges and restrained weathering. Broadly even midtone values across the entire square.\nColor palette: low-saturation slate grey, warm grey and muted umber; no strongly colored light.\nLighting/mood: soft diffuse overhead ambient light, slight local ambient occlusion inside joints only.\nComposition/framing: square image, ideally 1024 x 1024. Stone floor continues fully to every edge. No frame, border, room outline, walls, floor objects, vegetation, puddles or cast shadows. No vignette and no directional brightness gradient. The slab pattern should extend naturally across boundaries to support potential later tiling assessment; do not add border slabs.\nConstraints: entirely new artwork. No third-party game art, named game style, logos, labels, lettering, watermark, UI or grid overlay. Opaque floor texture with no transparent gaps. Only the floor surface.",
+      "tileable": false
+    },
+    {
+      "file": "wooden-table.png",
+      "sourceFile": "exec-d8fd1a38-28e6-403d-afd8-959314f6e46c.png",
+      "bytes": 2534421,
+      "sha256": "06d26decb0196b8f8aebeda2cfede2c41b7c0724fd406d0c19ede822fb1447cf",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "alpha": {
+        "present": true,
+        "min": 0,
+        "max": 254,
+        "fullyTransparentPixels": 677919,
+        "fullyTransparentPercent": 43.101,
+        "opaquePixels": 0,
+        "partialPixels": 894945,
+        "nearOpaquePixels250To255": 865322,
+        "boundingBoxAbove0": [
+          89,
+          0,
+          1512,
+          1024
+        ],
+        "boundingBoxAbove3": [
+          107,
+          162,
+          1430,
+          852
+        ],
+        "edgeAlphaMax": 1,
+        "edgeNonzeroSamples": 62
+      },
+      "prompt": "Use case: stylized-concept\nAsset type: original transparent prop sprite for a top-down tabletop RPG dungeon map.\nPrimary request: one sturdy rectangular wooden table seen exactly from overhead, orthographic top view, on a genuinely transparent background with an alpha channel.\nStyle/medium: carefully hand-painted fantasy cartography with restrained brush texture and clear readable silhouette; realistic material proportions, not photorealistic and not a schematic.\nSubject: a bare rustic oak table top built from five broad lengthwise planks with a simple thicker rim and small dark wooden pegs. Worn wood grain, gently chipped corners and subtle scratches, no objects on the table. Warm muted oak brown with cool umber in plank seams.\nComposition/framing: square image, ideally 1024 x 1024. One horizontal table centered, table length about 78 percent of canvas width and depth about 42 percent of canvas height. All corners comfortably inside image. Camera perpendicular to tabletop; no perspective, no visible vertical front or side faces, no visible side-facing legs.\nLighting/mood: soft diffuse overhead ambient light, slight painted edge shading and local seam occlusion only, no long or directional cast shadow.\nConstraints: truly transparent empty canvas around the table, not white, grey, black, checkerboard, parchment, floor, studio backdrop, or a rectangular opaque panel. Retain clean antialiased alpha edges. Entirely new artwork. No third-party game art, named game style, text, logos, labels, watermark, UI or grid. Only one bare table, no chairs, tableware, surrounding environment or other objects.",
+      "tileable": false
+    },
+    {
+      "file": "rock-rubble.png",
+      "sourceFile": "exec-ac7ecbc7-edf7-4019-ab51-0d3d49d9ed56.png",
+      "bytes": 1578795,
+      "sha256": "854751b349446e8466986ed09c7304a260fec1873402bc6a3501dd7cd96c9d05",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha": {
+        "present": true,
+        "min": 0,
+        "max": 255,
+        "fullyTransparentPixels": 970502,
+        "fullyTransparentPercent": 61.717,
+        "opaquePixels": 498,
+        "partialPixels": 601516,
+        "nearOpaquePixels250To255": 524249,
+        "boundingBoxAbove0": [
+          97,
+          21,
+          1230,
+          1254
+        ],
+        "boundingBoxAbove3": [
+          133,
+          112,
+          1138,
+          1144
+        ],
+        "edgeAlphaMax": 1,
+        "edgeNonzeroSamples": 24
+      },
+      "prompt": "Use case: stylized-concept\nAsset type: original transparent rock-rubble prop sprite for a top-down tabletop RPG dungeon map.\nPrimary request: one small irregular cluster of broken stone rubble seen exactly from overhead in orthographic projection, isolated on a genuinely transparent background with an alpha channel.\nStyle/medium: carefully hand-painted fantasy cartography with restrained brush texture and clear readable silhouette; realistic material proportions, not photorealistic and not a schematic.\nSubject: a low pile of seven to ten angular chunks of broken slate-grey stone, two larger pieces with chipped bevels, a few smaller fragments close around them. Fine restrained surface fractures, muted warm-grey highlights and cool umber crevices. Clear separations between pieces; substantial empty transparent spaces between the scattered outer fragments.\nComposition/framing: square image, ideally 1024 x 1024. Center the cluster with a natural uneven silhouette occupying about 65 percent of width and height. All fragments entirely within the canvas with generous empty transparent margins. Camera perpendicular to the ground; no horizon and no isometric perspective.\nLighting/mood: soft diffuse overhead ambient light, modest shading on stone facets and subtle local occlusion where stones overlap. No long or directional cast shadow.\nConstraints: truly transparent empty background, including gaps between separate fragments. Do not draw white, grey, black, checkerboard, parchment, a floor, a studio backdrop, an opaque base plate or dust haze. Clean antialiased alpha edges. Entirely new artwork. No third-party game art, named game style, text, logos, labels, watermark, UI or grid. Only rubble, no plants, bones, treasure or other objects.",
+      "tileable": false
+    }
+  ]
+}

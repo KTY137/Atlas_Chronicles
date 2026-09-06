@@ -1,0 +1,21 @@
+{
+  "name": "@chronicle/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "start": "electron dist/main.cjs",
+    "smoke": "node tools/smoke.mjs",
+    "package": "node tools/package.mjs"
+  },
+  "dependencies": {
+    "@chronicle/server": "*"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "44.2.0",
+    "esbuild": "0.25.12"
+  }
+}

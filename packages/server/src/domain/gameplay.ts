@@ -2,8 +2,8 @@ import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { captureTacticalSession } from "./tactical.ts";
 import { resolvePassage, type LineageEvent, type Praegung, type Quelle } from "@chronicle/chronik";
 import { trustPassageId } from "@chronicle/core";
-import { DEMO_RULE_PACKAGE, RulePackageRegistry, defaultActorFields, evaluateAction, parseRulePackage, previewPackageMigration, replayAction, stableJson, validateEntityFields,
-  type ActionResult, type EvaluationContext, type Experience, type PackagePin, type ProjectedKnowledge, type RulePackage, type Scalar } from "@chronicle/rules";
+import { DEMO_RULE_PACKAGE, RuleValidationError, SupportedRulePackageRegistry, defaultSupportedActorFields, evaluateSupportedAction, parseSupportedRulePackage, previewSupportedPackageMigration, replaySupportedAction, stableJson, validateEntityFields, validatePackageFields,
+  type AnyActionResult as ActionResult, type EvaluationContext, type Experience, type PackagePin, type ProjectedKnowledge, type AnyRulePackage as RulePackage, type Scalar } from "@chronicle/rules";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
 import { createDocuments } from "./documents.ts";
@@ -53,9 +53,9 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     await tx.query("INSERT INTO audit(campaign_id,actor_user_id,kind,data,created_at) VALUES($1,$2,$3,$4,$5)", [campaignId, userId, kind, data, now()]);
   }
   async function install(tx: Db, userId: string, campaignId: string, input: unknown): Promise<RulePackage> {
-    const registry = new RulePackageRegistry(); const pkg = registry.install(input); const contentHash = digest(pkg);
+    const registry = new SupportedRulePackageRegistry(); const pkg = registry.install(input); const contentHash = digest(pkg);
     const old = (await tx.query<{ content_hash: string; document: RulePackage }>("SELECT content_hash,document FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3", [campaignId, pkg.id, pkg.version])).rows[0];
-    if (old) { if (old.content_hash !== contentHash || stableJson(old.document) !== stableJson(pkg)) throw new Conflict(); return parseRulePackage(old.document); }
+    if (old) { if (old.content_hash !== contentHash || stableJson(old.document) !== stableJson(pkg)) throw new Conflict(); return parseSupportedRulePackage(old.document); }
     await tx.query("INSERT INTO rule_packages(campaign_id,package_id,version,document,content_hash,installed_by,installed_at) VALUES($1,$2,$3,$4,$5,$6,$7)", [campaignId, pkg.id, pkg.version, pkg, contentHash, userId, now()]);
     return pkg;
   }
@@ -65,7 +65,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   }
   async function packageFor(tx: Db, campaignId: string, pin: PackagePin): Promise<RulePackage> {
     const row = (await tx.query<{ document: RulePackage; content_hash: string }>("SELECT document,content_hash FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3", [campaignId, pin.id, pin.version])).rows[0];
-    if (row) { if (digest(row.document) !== row.content_hash) throw new Gone("corrupt-package"); return parseRulePackage(row.document); }
+    if (row) { if (digest(row.document) !== row.content_hash) throw new Gone("corrupt-package"); return parseSupportedRulePackage(row.document); }
     if (pin.id === DEMO_RULE_PACKAGE.id && pin.version === DEMO_RULE_PACKAGE.version) return DEMO_RULE_PACKAGE;
     throw new Gone("package");
   }
@@ -84,19 +84,21 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const pinVersion = (await tx.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0]?.version ?? 0;
     const sheets = (await tx.query<{ actor_id: string; fields: Record<string, Scalar>; package_id: string; package_version: string; version: number; defeat_pending: boolean; defeated_at: string | null }>("SELECT actor_id,fields,package_id,package_version,version,defeat_pending,defeated_at FROM actor_sheets WHERE campaign_id=$1 ORDER BY actor_id COLLATE \"C\"", [campaignId])).rows;
     if (sheets.some(s => s.package_id !== from.id || s.package_version !== from.version)) throw new Conflict();
+    if (next.schemaVersion === 2) defaultSupportedActorFields(next);
+    if (previous.schemaVersion === 2) for (const actor of sheets) validatePackageFields(previous, actor.fields);
     const to = { id: next.id, version: next.version };
     // Bind a human review to the actual documents and complete sheet versions, not only
     // the campaign pin. Writers take the same campaign lock before changing any sheet.
     const previewHash = digest({ schemaVersion: 1, campaignId, previous, next, pinVersion, sheets });
     if (expectedHash !== undefined && expectedHash !== previewHash) throw new Conflict();
     const migration = sheets.length && (from.id !== to.id || from.version !== to.version)
-      ? previewPackageMigration(previous, next, sheets.map(s => ({ id: s.actor_id, fields: s.fields }))) : null;
+      ? previewSupportedPackageMigration(previous, next, sheets.map(s => ({ id: s.actor_id, fields: s.fields }))) : null;
     return { from, to, pinVersion, migration, previewHash };
   }
   async function previewPackage(userId: string, campaignId: string, input: unknown) {
     return db.transaction(async tx => {
       await authorize(tx, userId, campaignId, true);
-      return packageReview(tx, campaignId, parseRulePackage(input));
+      return packageReview(tx, campaignId, parseSupportedRulePackage(input));
     });
   }
   async function activatePackage(userId: string, campaignId: string, input: { packageId: string; packageVersion: string; expectedVersion: number; previewHash?: string }) {
@@ -122,7 +124,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const row = (await tx.query<{ fields: Record<string, Scalar>; package_id: string; package_version: string; version: number; defeat_pending: boolean; defeated_at: string | null }>("SELECT * FROM actor_sheets WHERE actor_id=$1 AND campaign_id=$2", [actorId, campaignId])).rows[0];
     if (row) return { actorId, fields: row.fields, packageId: row.package_id, packageVersion: row.package_version, version: row.version, defeatPending: row.defeat_pending, defeatedAt: row.defeated_at === null ? null : Number(row.defeated_at) };
     const pin = await currentPin(tx, campaignId), pkg = await packageFor(tx, campaignId, pin);
-    return { actorId, packageId: pin.id, packageVersion: pin.version, fields: defaultActorFields(pkg), version: 0, defeatPending: false, defeatedAt: null };
+    return { actorId, packageId: pin.id, packageVersion: pin.version, fields: defaultSupportedActorFields(pkg), version: 0, defeatPending: false, defeatedAt: null };
   }
   async function getSheet(userId: string, campaignId: string, actorId: string) {
     const member = await campaigns.requireMember(userId, campaignId); await controller(db, member, actorId); return sheet(db, campaignId, actorId);
@@ -132,7 +134,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       const member = await authorize(tx, userId, campaignId); await controller(tx, member, input.actorId);
       const old = await sheet(tx, campaignId, input.actorId); if (old.version !== input.expectedVersion) throw new Conflict();
       const pkg = await packageFor(tx, campaignId, { id: old.packageId, version: old.packageVersion }); await install(tx, userId, campaignId, pkg);
-      const fields = validateEntityFields(pkg.fields, input.fields);
+      const fields = validatePackageFields(pkg, input.fields);
       await tx.query(`INSERT INTO actor_sheets(actor_id,campaign_id,package_id,package_version,fields,version,updated_at) VALUES($1,$2,$3,$4,$5,1,$6)
         ON CONFLICT(actor_id,campaign_id) DO UPDATE SET fields=EXCLUDED.fields,version=actor_sheets.version+1,updated_at=EXCLUDED.updated_at`, [input.actorId, campaignId, pkg.id, pkg.version, fields, now()]);
       return sheet(tx, campaignId, input.actorId);
@@ -141,6 +143,9 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   async function adjustResource(userId: string, campaignId: string, input: { actorId: string; expectedVersion: number; field: string; delta: number }) {
     return db.transaction(async tx => {
       await authorize(tx, userId, campaignId, true); const old = await sheet(tx, campaignId, input.actorId);
+      const pkg = await packageFor(tx, campaignId, { id: old.packageId, version: old.packageVersion });
+      // Schema policy also follows forks: luck and HP use explicit versioned sheet edits.
+      if (pkg.schemaVersion === 2) throw new RuleValidationError("Schema-v2 resources require a versioned sheet update; defeat state is confirmed separately.");
       const current = old.fields[input.field]; if (typeof current !== "number") throw new Gone("resource");
       const value = current + number(input.delta);
       await createGameplay(tx, cfg).updateSheet(userId, campaignId, { actorId: input.actorId, expectedVersion: input.expectedVersion, fields: { ...old.fields, [input.field]: value } });
@@ -203,7 +208,11 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const member = await authorize(tx, userId, campaignId); await controller(tx, member, input.actorId); text(input.commandId); text(input.actionId);
     const reqHash = digest({ ...input, delegated: delegated?.id ?? null });
     const previous = (await tx.query<RollRow>("SELECT * FROM action_rolls WHERE campaign_id=$1 AND prepared_by=$2 AND command_id=$3", [campaignId, userId, input.commandId])).rows[0];
-    if (previous) { if (previous.request_hash !== reqHash) throw new Conflict(); return card(previous); }
+    if (previous) {
+      const previousPackage = await packageFor(tx, campaignId, { id: previous.package_id, version: previous.package_version });
+      if (previous.request_hash !== reqHash || !validRollEvidence(previousPackage, previous)) throw new Conflict();
+      return card(previous);
+    }
     const old = await sheet(tx, campaignId, input.actorId);
     const pin = { id: input.packageId ?? old.packageId, version: input.packageVersion ?? old.packageVersion };
     if (pin.id !== old.packageId || pin.version !== old.packageVersion) throw new Gone("sheet-package-mismatch");
@@ -217,7 +226,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     if (delegated && passage?.hash !== delegated.passage_hash) throw new Conflict();
     const session = (await tx.query<{ id: string; scene_id: string; fiction_date: string }>("SELECT g.id,g.scene_id,s.fiction_date FROM game_sessions g JOIN scenes s ON s.id=g.scene_id WHERE g.campaign_id=$1 AND g.ended_at IS NULL", [campaignId])).rows[0];
     const fictionDate = text(input.fictionDate ?? session?.fiction_date ?? new Date(now()).toISOString().slice(0, 10), 120);
-    const receipt = evaluateAction(pkg, input.actionId, { seed: seed(), actor: old.fields, input: input.input ?? {}, knowledge: await projectedActorKnowledge(tx, campaignId, input.actorId) });
+    const receipt = evaluateSupportedAction(pkg, input.actionId, { seed: seed(), actor: old.fields, input: input.input ?? {}, knowledge: await projectedActorKnowledge(tx, campaignId, input.actorId) });
     const id = randomUUID();
     await tx.query(`INSERT INTO action_rolls(id,campaign_id,actor_id,prepared_by,command_id,request_hash,package_id,package_version,action_id,receipt,receipt_hash,target_passage_id,target_passage_hash,vollmacht_id,fiction_date,prepared_at,scene_id,session_id)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
@@ -241,7 +250,15 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   }
   async function replayRoll(userId: string, campaignId: string, id: string) {
     const roll = await rollFor(db, userId, campaignId, id); const pkg = await packageFor(db, campaignId, { id: roll.package_id, version: roll.package_version });
-    return { valid: digest(roll.receipt) === roll.receipt_hash && replayAction(pkg, roll.receipt).valid, receiptHash: roll.receipt_hash, receipt: roll.receipt };
+    return { valid: validRollEvidence(pkg, roll), receiptHash: roll.receipt_hash, receipt: roll.receipt };
+  }
+  function validRollEvidence(pkg: RulePackage, roll: RollRow): boolean {
+    try {
+      return pkg.id === roll.package_id && pkg.version === roll.package_version
+        && roll.receipt.package?.id === roll.package_id && roll.receipt.package?.version === roll.package_version
+        && roll.receipt.action?.id === roll.action_id && roll.receipt.context?.knowledge?.actorId === roll.actor_id
+        && digest(roll.receipt) === roll.receipt_hash && replaySupportedAction(pkg, roll.receipt).valid;
+    } catch { return false; }
   }
 
   async function mint(tx: Db, userId: string, campaignId: string, kind: Praegung["art"], input: MintInput,
@@ -311,20 +328,30 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const row = (await tx.query<VollmachtRow>("SELECT * FROM action_vollmachten WHERE id=$1 AND campaign_id=$2", [id, campaignId])).rows[0];
     if (!row) throw new Gone(); await controller(tx, member, row.actor_id);
     if (row.revoked_at !== null || row.status === "widerrufen" || row.status === "verfallen" || (!allowConsumed && row.status !== "offen") || (row.status === "offen" && Number(row.expires_at) <= now())) throw new Gone();
+    assertVollmachtAction(await packageFor(tx, campaignId, { id: row.package_id, version: row.package_version }), row.action_id);
     return row;
+  }
+  function assertVollmachtAction(pkg: RulePackage, actionId: string) {
+    if (pkg.schemaVersion === 2 && pkg.actions.find(action => action.id === actionId)?.outcome)
+      throw new RuleValidationError("A classified outcome action cannot use a threshold-only Vollmacht.");
   }
   async function confirm(userId: string, campaignId: string, rollId: string, delegated: boolean): Promise<ActionConfirmation> {
     return db.transaction(async tx => {
       const member = await authorize(tx, userId, campaignId); const roll = await rollFor(tx, userId, campaignId, rollId);
       if (Boolean(roll.vollmacht_id) !== delegated) throw new Gone();
       const authorization = roll.vollmacht_id ? await getVollmacht(tx, userId, campaignId, roll.vollmacht_id, true) : null;
+      if (authorization) {
+        const delegatedPackage = await packageFor(tx, campaignId, { id: roll.package_id, version: roll.package_version });
+        assertVollmachtAction(delegatedPackage, roll.action_id);
+        assertVollmachtAction(delegatedPackage, roll.receipt.action.id);
+      }
       if (!authorization && roll.target_passage_id && member.role !== "leitung") throw new Gone("mint-authority");
       if (authorization?.status === "eingeloest" && authorization.consumed_roll_id !== roll.id) throw new Gone();
+      const pkg = await packageFor(tx, campaignId, { id: roll.package_id, version: roll.package_version });
+      if (!validRollEvidence(pkg, roll)) throw new Conflict();
       if (roll.confirmation) return roll.confirmation; // authority is checked before idempotent replay
       await controller(tx, member, roll.actor_id);
       if (roll.status !== "ausstehend" || (authorization && Number(authorization.expires_at) <= now())) throw new Gone();
-      const pkg = await packageFor(tx, campaignId, { id: roll.package_id, version: roll.package_version });
-      if (digest(roll.receipt) !== roll.receipt_hash || !replayAction(pkg, roll.receipt).valid) throw new Conflict();
       const success = authorization ? roll.receipt.total >= authorization.threshold : roll.receipt.success ?? true;
       let minted: MintReceipt | null = null;
       if (success && roll.target_passage_id) {
@@ -349,7 +376,11 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       if (!Number.isSafeInteger(input.expiresAt) || input.expiresAt <= now() || input.expiresAt > now() + WEEK || !["player", "floating"].includes(input.budgetKind)) throw new Gone("vollmacht-input");
       const requestHash = digest(input);
       const old = (await tx.query<VollmachtRow>("SELECT * FROM action_vollmachten WHERE campaign_id=$1 AND issued_by=$2 AND command_id=$3", [campaignId, userId, input.commandId])).rows[0];
-      if (old) { if (old.request_hash !== requestHash) throw new Conflict(); return { id: old.id, expiresAt: Number(old.expires_at), status: old.status }; }
+      if (old) {
+        if (old.request_hash !== requestHash) throw new Conflict();
+        assertVollmachtAction(await packageFor(tx, campaignId, { id: old.package_id, version: old.package_version }), old.action_id);
+        return { id: old.id, expiresAt: Number(old.expires_at), status: old.status };
+      }
       const count = (await tx.query<{ count: string }>(`SELECT count(*) FROM action_vollmachten WHERE campaign_id=$1 AND issued_at>$2 AND budget_kind=$3
         AND ($3='floating' OR actor_id=$4)`, [campaignId, now() - WEEK, input.budgetKind, input.actorId])).rows[0]!;
       if (Number(count.count) >= (input.budgetKind === "player" ? 1 : 2)) throw new Conflict();
@@ -357,6 +388,8 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       if (pin.id !== actor.packageId || pin.version !== actor.packageVersion) throw new Gone();
       const pkg = await packageFor(tx, campaignId, pin); await install(tx, userId, campaignId, pkg);
       const action = pkg.actions.find(a => a.id === input.actionId); if (!action) throw new Gone();
+      assertVollmachtAction(pkg, action.id);
+      if (pkg.schemaVersion === 2) validatePackageFields(pkg, actor.fields);
       const fixedInput = validateEntityFields(action.inputs, input.input ?? {}), passage = await target(tx, campaignId, input.passageId), id = randomUUID();
       await tx.query(`INSERT INTO action_vollmachten(id,campaign_id,actor_id,passage_id,passage_hash,package_id,package_version,action_id,threshold,fixed_input,fiction_date,issued_by,issued_at,expires_at,repeatable,budget_kind,command_id,request_hash)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,

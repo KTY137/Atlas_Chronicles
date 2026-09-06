@@ -81,7 +81,8 @@ test("GM and two players: UI join, private passages, conflict, real server resta
   await gm.getByRole("button",{name:"Speichern",exact:true}).click(); await expect(gm.getByText("Artikel gespeichert.")).toBeVisible();
   await gm2.getByLabel("Text der Passage 1",{exact:true}).fill("Mein noch nicht gespeicherter Entwurf");
   await gm2.getByRole("button",{name:"Speichern",exact:true}).click();
-  await expect(gm2.getByText(/Dein Entwurf bleibt erhalten/)).toBeVisible();
+  await expect(gm2.getByRole("alert")).toContainText("Dein Entwurf bleibt hiervon unberührt und geht nicht verloren.");
+  await expect(gm2.getByRole("button", { name: "Entwurf herunterladen", exact: true })).toBeVisible();
   await expect(gm2.getByLabel("Text der Passage 1",{exact:true})).toHaveValue("Mein noch nicht gespeicherter Entwurf"); await gm2.close();
 
   // Close all app connections and the DB pool, then reopen the same persisted Postgres schema.

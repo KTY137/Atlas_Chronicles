@@ -38,7 +38,7 @@ test("local appearance persists, OS restrictions win and a theme revision reache
   const errors: string[] = []; for (const page of [editor!, reader!]) page.on("pageerror", error => errors.push(error.message));
   try {
     await login(editor!); await login(reader!, player, "account");
-    await editor!.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: "Themes", exact: true }).click();
+    await editor!.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
     await editor!.getByRole("button", { name: "Vorlage Cyberpunk", exact: true }).click();
     await editor!.getByLabel("Name", { exact: true }).fill("");
     await expect(editor!.getByLabel("Name", { exact: true })).toBeVisible();
@@ -70,7 +70,7 @@ test("local appearance persists, OS restrictions win and a theme revision reache
 test("publication preview matches anonymous bytes and private later edits stay private until an explicit republish", async ({ browser }) => {
   const member = await browser.newContext(), anonymous = await browser.newContext(); const page = await member.newPage(), publicPage = await anonymous.newPage();
   try {
-    await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: "Veröffentlichung", exact: true }).click();
+    await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Veröffentlichung(?:\s|$)/ }).click();
     await page.getByLabel("Welt ausdrücklich freigeben.", { exact: false }).check();
     await page.getByRole("button", { name: "Welt-Einstellungen speichern", exact: true }).click();
     await expect(page.getByText("Welt-Einstellungen gespeichert.", { exact: true })).toBeVisible();
@@ -91,14 +91,14 @@ test("publication preview matches anonymous bytes and private later edits stay p
     await createDocuments(db).saveEntry(gm.userId, campaignId, { title: "Privat umbenannter Hafen", expectedVersion: doc.version!, passages: doc.passagen.map((passage, index) => ({ pid: passage.pid, inhalt: { kind: "absatz", inhalt: [{ text: index ? "GEHEIM: Neue Verschwörung." : "PRIVATER ENTWURF: Ein anderer Hafen.", marks: [] }] } })) }, entryId);
     const unchanged = await anonymous.request.get(origin + link); expect(await unchanged.text()).toBe(previewHtml); expect(unchanged.headers()["etag"]).toBe(previousEtag);
     const withGmCookie = await member.request.get(origin + link); expect(await withGmCookie.text()).toBe(previewHtml);
-    await page.reload(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: "Veröffentlichung", exact: true }).click(); await page.getByRole("navigation", { name: "Veröffentlichung bearbeiten" }).getByRole("button", { name: "Artikel", exact: true }).click(); await page.getByLabel("Artikel auswählen", { exact: true }).selectOption(entryId);
+    await page.reload(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Veröffentlichung(?:\s|$)/ }).click(); await page.getByRole("navigation", { name: "Veröffentlichung bearbeiten" }).getByRole("button", { name: "Artikel", exact: true }).click(); await page.getByLabel("Artikel auswählen", { exact: true }).selectOption(entryId);
     await page.getByRole("button", { name: "Artikel zurücknehmen", exact: true }).click(); await expect(page.getByText("Artikel zurückgenommen.", { exact: false })).toBeVisible();
     expect((await anonymous.request.get(origin + link)).status()).toBe(404);
   } finally { await member.close(); await anonymous.close(); }
 });
 
 test("theme retries retain a lost write acknowledgement and a failed revision read without creating duplicate themes", async ({ page }) => {
-  await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: "Themes", exact: true }).click();
+  await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
   await page.getByLabel("Name", { exact: true }).fill("Einmal trotz Netzfehler");
   const commands: string[] = []; let failWrite = true, failRead = true;
   await page.route(`**/api/campaigns/${campaignId}/themes`, async route => {
@@ -142,6 +142,8 @@ test("all four local skins keep actual account text and primary hover controls l
 
 test("a proven Wiki import can be published with attribution and an explicitly confirmed legacy address", async ({ page }) => {
   await login(page, gm, "wiki"); await page.getByRole("button", { name: "Wiki importieren", exact: true }).click();
+  await page.getByLabel(/^Adresse des Quell-Wikis/).fill("https://example.org/wiki");
+  await page.getByRole("button", { name: "Bereits exportierte Dateien hochladen", exact: true }).click();
   const upload = (name: string, data: unknown) => ({ name, mimeType: "application/json", buffer: Buffer.from(JSON.stringify(data)) });
   await page.locator(".import-files input[type=file]").nth(0).setInputFiles(upload("articles.json", [{ title: "Die belegte Brücke", pageid: 9001, ns: 0, revid: 42, wikitext: "Die belegte Brücke führt über den breiten Fluss und verbindet die beiden alten Städte." }]));
   await page.locator(".import-files input[type=file]").nth(1).setInputFiles(upload("templates.json", []));
@@ -152,8 +154,8 @@ test("a proven Wiki import can be published with attribution and an explicitly c
   await page.getByRole("button", { name: "Importvorschau erstellen", exact: true }).click();
   const imported = await (await previewResponse).json(); expect(imported.attributionComplete).toBe(true); const importedId = imported.entries[0].id;
   await page.getByRole("button", { name: "Alle neuen Artikel auswählen", exact: true }).click(); await page.getByRole("button", { name: "Auswahl übernehmen", exact: true }).click();
-  await expect(page.getByText("1 Artikel wurden übernommen.", { exact: false })).toBeVisible();
-  await page.getByRole("navigation", { name: "Bereiche" }).getByRole("button", { name: "Schmiede", exact: true }).click(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: "Veröffentlichung", exact: true }).click();
+  await expect(page.getByText("1 von 1 ausgewählten Artikeln wurde jetzt gespeichert", { exact: false })).toBeVisible();
+  await page.getByRole("navigation", { name: "Bereiche" }).getByRole("button", { name: "Schmiede", exact: true }).click(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Veröffentlichung(?:\s|$)/ }).click();
   await page.getByLabel("Welt ausdrücklich freigeben.", { exact: false }).check(); await page.getByRole("button", { name: "Welt-Einstellungen speichern", exact: true }).click(); await expect(page.getByText("Welt-Einstellungen gespeichert.", { exact: true })).toBeVisible();
   const navigation = page.getByRole("navigation", { name: "Veröffentlichung bearbeiten" }); await navigation.getByRole("button", { name: "Artikel", exact: true }).click(); await page.getByLabel("Artikel auswählen", { exact: true }).selectOption(importedId);
   await page.locator(".publication-passage").first().getByRole("checkbox").first().check(); await page.getByRole("button", { name: "Öffentliche Vorschau prüfen", exact: true }).click();
@@ -168,7 +170,7 @@ test("a proven Wiki import can be published with attribution and an explicitly c
 
 test("draft recipe preview overrides the surrounding local skin in actual CSS", async ({ page }) => {
   await login(page, gm, "account"); await page.getByLabel("Lokaler Look", { exact: true }).selectOption("PixelArt");
-  await page.getByRole("navigation", { name: "Bereiche" }).getByRole("button", { name: "Schmiede", exact: true }).click(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: "Themes", exact: true }).click();
+  await page.getByRole("navigation", { name: "Bereiche" }).getByRole("button", { name: "Schmiede", exact: true }).click(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
   await page.getByRole("button", { name: "Vorlage Medieval", exact: true }).click();
   const preview = page.getByRole("region", { name: "Theme-Vorschau", exact: true });
   await expect(page.locator("html")).toHaveAttribute("data-appearance-edges", "pixel");
@@ -188,7 +190,7 @@ test("a removed GM role clears the private theme editor and navigation after liv
   const created = await app.inject({ method: "POST", url: `/api/campaigns/${campaignId}/themes`, headers: { origin, cookie: `chronicle_session=${authorSession.value}` }, payload: { commandId: randomUUID(), manifest: { ...getThemePreset("Fantasy"), name: "Privater unveröffentlichter Look" } } }); expect(created.statusCode).toBe(200);
   try {
     await db.query("UPDATE campaign_memberships SET role='leitung' WHERE campaign_id=$1 AND user_id=$2", [campaignId, player.userId]);
-    await login(page, player); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: "Themes", exact: true }).click();
+    await login(page, player); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
     await page.getByRole("button", { name: "Privater unveröffentlichter Look · Revision 1", exact: true }).click();
     await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Privater unveröffentlichter Look");
     await page.getByLabel("Name", { exact: true }).fill("Privater Entwurf im Editor");
@@ -200,7 +202,7 @@ test("a removed GM role clears the private theme editor and navigation after liv
 });
 
 for (const status of [503, 429]) test(`a transient ${status} membership refresh keeps the mounted authoring draft`, async ({ page }) => {
-  await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: "Themes", exact: true }).click();
+  await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
   await page.getByLabel("Name", { exact: true }).fill("Dieser Entwurf bleibt erhalten");
   await expect(page.getByRole("status", { name: "Live-Verbindung", exact: true })).toHaveAttribute("data-live-state", "connected");
   await page.route("**/api/campaigns", route => route.fulfill({ status, contentType: "application/json", body: JSON.stringify({ error: "Temporärer Mitgliedschaftsabruf" }) }));

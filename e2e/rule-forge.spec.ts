@@ -54,18 +54,18 @@ test("visual package authoring, live play and reviewed migration preserve player
     await signIn(gm.context(), gmSession); await signIn(context, playerSession);
     await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede`);
     await gm.getByRole("button", { name: "Neues Paket", exact: true }).click();
-    await editor.getByRole("textbox", { name: "Name", exact: true }).fill("Nordlicht");
+    await editor.getByRole("textbox", { name: /^Name(?:\s|$)/ }).fill("Nordlicht");
     await editor.getByRole("textbox", { name: /Paketkennung/ }).fill(packageId);
     await gm.getByRole("tab", { name: "Felder", exact: true }).click();
     const insight = editor.locator(".rf-card").filter({ has: gm.getByRole("heading", { name: "Scharfsinn", exact: true }) });
-    await insight.getByLabel("Vorgabewert", { exact: true }).fill("3");
+    await insight.getByLabel(/^Vorgabewert/).fill("3");
     await insight.getByLabel("Bezeichnung", { exact: true }).fill("Wachsamkeit");
     await gm.getByRole("tab", { name: "Bogen", exact: true }).click();
     await editor.getByLabel("Titel", { exact: true }).fill("Erkundung");
     await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
     await editor.getByRole("button", { name: "Aktion", exact: true }).click();
-    await editor.getByLabel("Name", { exact: true }).fill("Nordlichtprobe");
-    await editor.getByLabel("Aktionskennung", { exact: true }).fill("explore");
+    await editor.getByLabel(/^Name/).fill("Nordlichtprobe");
+    await editor.getByLabel(/^Aktionskennung/).fill("explore");
     await editor.getByLabel("Feste Erfolgsschwelle verwenden").check();
     await editor.getByLabel("Erfolg ab Ergebnis").fill("1");
     const formula = editor.locator(".rf-formula");
@@ -104,9 +104,9 @@ test("visual package authoring, live play and reviewed migration preserve player
     expect(roll.receipt.dice).toHaveLength(1);
 
     await gm.getByRole("button", { name: "Neue Version erstellen", exact: true }).click();
-    await editor.getByLabel("Version", { exact: true }).fill("1.1.0");
+    await editor.getByLabel(/^Version/).fill("1.1.0");
     await gm.getByRole("tab", { name: "Migration", exact: true }).click();
-    await expect(editor.getByRole("combobox", { name: "Ausgangsversion", exact: true })).toHaveValue("1.0.0");
+    await expect(editor.getByRole("combobox", { name: /^Ausgangsversion(?:\s|$)/ })).toHaveValue("1.0.0");
     await preview(); await install();
     await gm.getByRole("checkbox", { name: "Ich habe die Feldänderungen und archivierten Werte geprüft.", exact: true }).check();
     await player.getByRole("tab", { name: "Figur", exact: true }).click();

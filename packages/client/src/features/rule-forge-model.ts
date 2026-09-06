@@ -1,7 +1,7 @@
 import {
-  DEMO_RULE_PACKAGE, ENGINE_VERSION, evaluateAction, parseFormula, parseFormulaAst, parseRulePackage,
+  DEMO_RULE_PACKAGE, ENGINE_VERSION, evaluateSupportedAction, parseFormula, parseFormulaAst, parseSupportedRulePackage,
   stableJson, type FieldSchema, type Formula, type FormulaType, type MigrationStep,
-  type RulePackage, type Scalar,
+  type AnyRulePackage, type RulePackageV2, type RuleOutcome, type RuleAssertion, type Scalar,
 } from "@chronicle/rules";
 
 export type FormulaDraft =
@@ -22,6 +22,7 @@ export interface DraftAction {
   localId: string; id: string; name: string; version: string; disclosure: string;
   inputs: DraftField[]; thresholdEnabled: boolean; threshold: string; formula: FormulaDraft;
   originalExpression?: string; originalFormula?: FormulaDraft;
+  outcome?: RuleOutcome; preconditions?: readonly RuleAssertion[];
 }
 export type DraftMigrationStep =
   | { localId: string; kind: "rename"; from: string; to: string }
@@ -29,11 +30,13 @@ export type DraftMigrationStep =
   | { localId: string; kind: "archive"; field: string }
   | { localId: string; kind: "numeric"; field: string; formula: FormulaDraft; originalExpression?: string; originalFormula?: FormulaDraft };
 export interface DraftMigration { localId: string; from: string; steps: DraftMigrationStep[] }
-export type PackageSelfTest = NonNullable<RulePackage["selfTests"]>[number];
+export type PackageSelfTest = NonNullable<RulePackageV2["selfTests"]>[number];
 export interface RuleDraft {
+  schemaVersion: 1 | 2;
   id: string; name: string; version: string; license: string; authors: string[];
   fields: DraftField[]; sections: DraftSection[]; actions: DraftAction[];
   migrations: DraftMigration[]; selfTests: PackageSelfTest[]; includeSelfTests: boolean;
+  computed?: RulePackageV2["computed"]; constraints?: RulePackageV2["constraints"]; attribution?: RulePackageV2["attribution"];
 }
 export type Validation<T> = { valid: true; value: T } | { valid: false; error: string };
 let localSequence = 0;
@@ -146,37 +149,40 @@ function migrationStep(step: DraftMigrationStep): MigrationStep {
   if (step.kind === "numeric") return { kind: "numeric", field: step.field, expression: draftExpression(step) };
   return { kind: "add", field: step.field, value: scalarValue(step.type, step.value, "Neuer Feldwert") };
 }
-export function packageDraft(input: RulePackage): RuleDraft {
-  const pkg = parseRulePackage(input), fields = Object.entries(pkg.fields).map(([id, field]) => fieldDraft(id, field));
-  return { id: pkg.id, name: pkg.name, version: pkg.version, license: pkg.license, authors: [...pkg.authors], fields,
+export function packageDraft(input: AnyRulePackage): RuleDraft {
+  const pkg = parseSupportedRulePackage(input), fields = Object.entries(pkg.fields).map(([id, field]) => fieldDraft(id, field));
+  return { schemaVersion: pkg.schemaVersion, id: pkg.id, name: pkg.name, version: pkg.version, license: pkg.license, authors: [...pkg.authors], fields,
     sections: pkg.layout.sections.map(s => ({ localId: localKey(), id: s.id, label: s.label, fieldKeys: s.fields.map(id => fields.find(f => f.id === id)!.localId) })),
-    actions: pkg.actions.map(a => { const formula = formulaDraft(parseFormula(a.expression)); return { localId: localKey(), id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, inputs: Object.entries(a.inputs).map(([id, f]) => fieldDraft(id, f)), thresholdEnabled: a.threshold !== undefined, threshold: String(a.threshold ?? 0), formula, originalFormula: copyJson(formula), originalExpression: a.expression }; }),
+    actions: pkg.actions.map(a => { const formula = formulaDraft(parseFormula(a.expression)); return { localId: localKey(), id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, inputs: Object.entries(a.inputs).map(([id, f]) => fieldDraft(id, f)), thresholdEnabled: a.threshold !== undefined, threshold: String(a.threshold ?? 0), formula, originalFormula: copyJson(formula), originalExpression: a.expression,
+      ...("outcome" in a && a.outcome ? { outcome: copyJson(a.outcome as RuleOutcome) } : {}), ...("preconditions" in a ? { preconditions: copyJson(a.preconditions as readonly RuleAssertion[]) } : {}) }; }),
     migrations: pkg.migrations.map(m => ({ localId: localKey(), from: m.from, steps: m.steps.map(migrationStepDraft) })),
-    selfTests: copyJson([...(pkg.selfTests ?? [])]), includeSelfTests: pkg.selfTests !== undefined };
+    selfTests: copyJson([...(pkg.selfTests ?? [])]), includeSelfTests: pkg.selfTests !== undefined,
+    ...(pkg.schemaVersion === 2 ? { ...(pkg.computed !== undefined ? { computed: copyJson(pkg.computed) } : {}), ...(pkg.constraints !== undefined ? { constraints: copyJson(pkg.constraints) } : {}), ...(pkg.attribution !== undefined ? { attribution: copyJson(pkg.attribution) } : {}) } : {}) };
 }
-export function compilePackage(draft: RuleDraft): RulePackage {
+export function compilePackage(draft: RuleDraft): AnyRulePackage {
   const fields = fieldsMap(draft.fields);
-  return parseRulePackage({ schemaVersion: 1, engineVersion: ENGINE_VERSION, id: draft.id, name: draft.name, version: draft.version, license: draft.license, authors: [...draft.authors], fields,
+  return parseSupportedRulePackage({ schemaVersion: draft.schemaVersion, engineVersion: ENGINE_VERSION, id: draft.id, name: draft.name, version: draft.version, license: draft.license, authors: [...draft.authors], fields,
     layout: { sections: draft.sections.map(s => ({ id: s.id, label: s.label, fields: s.fieldKeys.map(key => { const field = draft.fields.find(f => f.localId === key); if (!field) throw new Error(`Der Bogenabschnitt „${s.label}“ verweist auf ein entferntes Feld.`); return field.id; }) })) },
-    actions: draft.actions.map(a => ({ id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, requiresConfirmation: true, inputs: fieldsMap(a.inputs), expression: draftExpression(a), ...(a.thresholdEnabled ? { threshold: numberValue(a.threshold, `${a.name}: Erfolgsschwelle`) } : {}) })),
+    actions: draft.actions.map(a => ({ id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, requiresConfirmation: true, inputs: fieldsMap(a.inputs), expression: draftExpression(a), ...(a.thresholdEnabled ? { threshold: numberValue(a.threshold, `${a.name}: Erfolgsschwelle`) } : {}), ...(a.outcome ? { outcome: copyJson(a.outcome) } : {}), ...(a.preconditions !== undefined ? { preconditions: copyJson(a.preconditions) } : {}) })),
     migrations: draft.migrations.map(m => ({ from: m.from, to: draft.version, steps: m.steps.map(migrationStep) })),
-    ...(draft.includeSelfTests || draft.selfTests.length ? { selfTests: copyJson(draft.selfTests) } : {}) });
+    ...(draft.includeSelfTests || draft.selfTests.length ? { selfTests: copyJson(draft.selfTests) } : {}),
+    ...(draft.computed !== undefined ? { computed: copyJson(draft.computed) } : {}), ...(draft.constraints !== undefined ? { constraints: copyJson(draft.constraints) } : {}), ...(draft.attribution !== undefined ? { attribution: copyJson(draft.attribution) } : {}) });
 }
-export function validateDraft(draft: RuleDraft): Validation<RulePackage> {
+export function validateDraft(draft: RuleDraft): Validation<AnyRulePackage> {
   try { return { valid: true, value: compilePackage(draft) }; } catch (e) { return { valid: false, error: e instanceof Error ? e.message : "Das Paket konnte nicht geprüft werden." }; }
 }
-export function nextVersion(pkg: RulePackage, installed: readonly RulePackage[]): string {
+export function nextVersion(pkg: AnyRulePackage, installed: readonly AnyRulePackage[]): string {
   const [major, minor, patch] = pkg.version.split(".").map(Number); let next = patch! + 1;
   while (installed.some(p => p.id === pkg.id && p.version === `${major}.${minor}.${next}`)) next++;
   if (next > 999999) throw new Error("Bitte die nächste Paketversion selbst festlegen.");
   return `${major}.${minor}.${next}`;
 }
-export function forkPackage(pkg: RulePackage, installed: readonly RulePackage[]): RuleDraft {
+export function forkPackage(pkg: AnyRulePackage, installed: readonly AnyRulePackage[]): RuleDraft {
   const draft = packageDraft(pkg); draft.version = nextVersion(pkg, installed);
   draft.migrations = [{ localId: localKey(), from: pkg.version, steps: [] }];
   return draft;
 }
-export function newPackage(author: string, installed: readonly RulePackage[] = []): RuleDraft {
+export function newPackage(author: string, installed: readonly AnyRulePackage[] = []): RuleDraft {
   const draft = packageDraft(DEMO_RULE_PACKAGE); let id = "de.meine-runde.regelwerk", suffix = 2;
   while (installed.some(p => p.id === id)) id = `de.meine-runde.regelwerk-${suffix++}`;
   draft.id = id; draft.name = "Mein Regelwerk"; draft.authors = [author || "Spielleitung"]; draft.version = "1.0.0"; draft.migrations = []; draft.selfTests = []; draft.includeSelfTests = false;
@@ -190,9 +196,11 @@ export function fieldTypes(fields: readonly DraftField[]): Record<string, Formul
 export function fixtureValues(fields: Readonly<Record<string, FieldSchema>>, values: Readonly<Record<string, Scalar>>): Record<string, Scalar> {
   return Object.fromEntries(Object.entries(fields).map(([id, field]) => [id, Object.hasOwn(values, id) ? values[id] : field.default]));
 }
-export function packageTestResults(pkg: RulePackage): { name: string; expected: number; actual?: number; passed: boolean; error?: string }[] {
+export function packageTestResults(pkg: AnyRulePackage): { name: string; expected: number; actual?: number; passed: boolean; error?: string }[] {
   return (pkg.selfTests ?? []).map(test => {
-    try { const actual = evaluateAction(pkg, test.actionId, test.context).total; return { name: test.name, expected: test.expectedTotal, actual, passed: actual === test.expectedTotal }; }
+    try { const result = evaluateSupportedAction(pkg, test.actionId, test.context), actual = result.total;
+      const passed = actual === test.expectedTotal && (!("expectedSuccess" in test) || result.success === test.expectedSuccess) && (!("expectedOutcomeId" in test) || result.schemaVersion === 2 && result.outcome?.id === test.expectedOutcomeId);
+      return { name: test.name, expected: test.expectedTotal, actual, passed }; }
     catch (error) { return { name: test.name, expected: test.expectedTotal, passed: false, error: error instanceof Error ? error.message : "Test fehlgeschlagen." }; }
   });
 }

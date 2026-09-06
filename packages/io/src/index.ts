@@ -18,4 +18,5 @@ export { CAMPAIGN_V3_TABLES, CAMPAIGN_V3_ADDITIONAL_TABLES, CAMPAIGN_V3_MODULES,
 export type { CampaignTableNameV3, CampaignTablesV3, CampaignModuleV3 } from "./campaign-schema-v3.ts";
 export { CAMPAIGN_BUNDLE_V3_LIMITS } from "./campaign-v3-limits.ts";
 export * from "./native-v4/index.ts";
+export * from "./native-v5/index.ts";
 export type { EronArticle, EronTemplate, EronAttribution, EronImportInput, EronImportResult, ImportProvenance, EronSource, EronReimportPlan, ImportedMediaReference } from "./model.ts";

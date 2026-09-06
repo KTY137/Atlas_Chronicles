@@ -28,6 +28,7 @@
       "@chronicle/szene": ["./packages/szene/src/index.ts"],
       "@chronicle/forge": ["./packages/forge/src/index.ts"],
       "@chronicle/io": ["./packages/io/src/index.ts"],
+      "@chronicle/server/host": ["./packages/server/src/host.ts"],
       "@chronicle/server": ["./packages/server/src/index.ts"]
     }
   },

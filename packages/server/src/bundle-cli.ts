@@ -1,20 +1,20 @@
 import { readFile, stat } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
-import { parseCampaignBundle, parseCampaignBundleV2, parseCampaignBundleV3, parseCampaignBundleV4, CAMPAIGN_BUNDLE_LIMITS, CAMPAIGN_BUNDLE_V3_LIMITS, CAMPAIGN_BUNDLE_V4_LIMITS } from "@chronicle/io";
+import { parseCampaignBundle, parseCampaignBundleV2, parseCampaignBundleV3, parseCampaignBundleV4, parseCurrentCampaignBundle, CAMPAIGN_BUNDLE_LIMITS, CAMPAIGN_BUNDLE_V3_LIMITS, CAMPAIGN_BUNDLE_V4_LIMITS } from "@chronicle/io";
 import { createPgDb } from "./db/index.ts";
 import { initializeCampaignRestoreTarget, inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm, CampaignRestoreError } from "./domain/bundles.ts";
 
 export async function runBundleCli(args: readonly string[], env: NodeJS.ProcessEnv = process.env): Promise<void> {
   const [command, ...flags] = args;
   if (command !== "initialize" && command !== "check" && command !== "restore" && command !== "enroll")
-    throw new CampaignRestoreError("Usage: campaign-bundle initialize|check|restore|enroll [--database-url URL] [--input FILE] [--upgrade-from-v1|--upgrade-from-v2|--upgrade-from-v3] [--campaign-id ID --user-id ID]. DATABASE_URL is preferred.");
+    throw new CampaignRestoreError("Usage: campaign-bundle initialize|check|restore|enroll [--database-url URL] [--input FILE] [--upgrade-from-v1|--upgrade-from-v2|--upgrade-from-v3|--upgrade-from-v4] [--campaign-id ID --user-id ID]. DATABASE_URL is preferred.");
   const options = new Map<string, string>();
-  let upgradeFromV1 = false, upgradeFromV2 = false, upgradeFromV3 = false;
+  let upgradeFromV1 = false, upgradeFromV2 = false, upgradeFromV3 = false, upgradeFromV4 = false;
   for (let index = 0; index < flags.length; index++) {
     const key = flags[index], value = flags[index + 1];
-    if (key === "--upgrade-from-v1" || key === "--upgrade-from-v2" || key === "--upgrade-from-v3") {
-      if (upgradeFromV1 || upgradeFromV2 || upgradeFromV3 || (command !== "check" && command !== "restore")) throw new CampaignRestoreError("A source upgrade flag is a single explicit option for check or restore only.");
-      upgradeFromV1 = key === "--upgrade-from-v1"; upgradeFromV2 = key === "--upgrade-from-v2"; upgradeFromV3 = key === "--upgrade-from-v3"; continue;
+    if (key === "--upgrade-from-v1" || key === "--upgrade-from-v2" || key === "--upgrade-from-v3" || key === "--upgrade-from-v4") {
+      if (upgradeFromV1 || upgradeFromV2 || upgradeFromV3 || upgradeFromV4 || (command !== "check" && command !== "restore")) throw new CampaignRestoreError("A source upgrade flag is a single explicit option for check or restore only.");
+      upgradeFromV1 = key === "--upgrade-from-v1"; upgradeFromV2 = key === "--upgrade-from-v2"; upgradeFromV3 = key === "--upgrade-from-v3"; upgradeFromV4 = key === "--upgrade-from-v4"; continue;
     }
     if ((key !== "--database-url" && key !== "--input" && key !== "--campaign-id" && key !== "--user-id") || !value || options.has(key)) throw new CampaignRestoreError("Invalid or duplicate command-line option.");
     options.set(key, value); index++;
@@ -29,7 +29,7 @@ export async function runBundleCli(args: readonly string[], env: NodeJS.ProcessE
   if (command === "enroll" && (!origin || !cookieSecret || cookieSecret.length < 32)) throw new CampaignRestoreError("Enrollment requires CHRONICLE_ORIGIN and COOKIE_SECRET from the target application environment.");
   // Parse before connecting or performing any target mutation.
   if (file && (await stat(file)).size > (upgradeFromV1 || upgradeFromV2 ? CAMPAIGN_BUNDLE_LIMITS.bytes : upgradeFromV3 ? CAMPAIGN_BUNDLE_V3_LIMITS.bytes : CAMPAIGN_BUNDLE_V4_LIMITS.bytes)) throw new CampaignRestoreError("Campaign file exceeds the native bundle size limit.");
-  const bundle = file ? (upgradeFromV1 ? parseCampaignBundle : upgradeFromV2 ? parseCampaignBundleV2 : upgradeFromV3 ? parseCampaignBundleV3 : parseCampaignBundleV4)(await readFile(file, "utf8")) : null;
+  const bundle = file ? (upgradeFromV1 ? parseCampaignBundle : upgradeFromV2 ? parseCampaignBundleV2 : upgradeFromV3 ? parseCampaignBundleV3 : upgradeFromV4 ? parseCampaignBundleV4 : parseCurrentCampaignBundle)(await readFile(file, "utf8")) : null;
   const db = createPgDb(databaseUrl);
   try {
     if (command === "initialize") {
@@ -41,7 +41,7 @@ export async function runBundleCli(args: readonly string[], env: NodeJS.ProcessE
       // one-use enrollment code. No environment secrets or browser credential.
       console.log(JSON.stringify(pairing));
     } else {
-      const result = command === "check" ? await inspectCampaignRestore(db, bundle, { upgradeFromV1, upgradeFromV2, upgradeFromV3 }) : await restoreCampaignBundle(db, bundle, { upgradeFromV1, upgradeFromV2, upgradeFromV3 });
+      const result = command === "check" ? await inspectCampaignRestore(db, bundle, { upgradeFromV1, upgradeFromV2, upgradeFromV3, upgradeFromV4 }) : await restoreCampaignBundle(db, bundle, { upgradeFromV1, upgradeFromV2, upgradeFromV3, upgradeFromV4 });
       console.log(JSON.stringify(result));
     }
   } finally { await db.close(); }

@@ -1,0 +1,12 @@
+import { build } from "esbuild";
+import { mkdir, cp } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+const root=fileURLToPath(new URL("../../../",import.meta.url)),run=join(root,".local/desktop-profiles",`recovery-${Date.now()}`),resources=join(root,"packages/desktop/dist");
+await mkdir(run,{recursive:true});
+await cp(join(resources,"migrations"),join(run,"migrations"),{recursive:true});
+await build({entryPoints:[join(root,"packages/desktop/test/recovery-electron.ts")],outfile:join(run,"main.cjs"),bundle:true,platform:"node",format:"cjs",target:"node24",external:["electron","sharp","@electric-sql/pglite","pg-native"],define:{"import.meta.url":"__moduleUrl"},banner:{js:"const __moduleUrl = require('node:url').pathToFileURL(__filename).href;"},tsconfig:join(root,"tsconfig.json")});
+const env={...process.env};for(const key of["ELECTRON_RUN_AS_NODE","NODE_OPTIONS","NODE_PATH","DATABASE_URL","COOKIE_SECRET"])delete env[key];
+const child=spawn(join(root,"node_modules/electron/dist/electron.exe"),[join(run,"main.cjs"),resources],{env,windowsHide:true,stdio:"inherit"});
+child.on("exit",code=>{process.exitCode=code??1;});

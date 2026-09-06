@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Atlas Chronicles contributors. SPDX-License-Identifier: MIT
 import { canonicalJson, textHash, type CanonicalValue } from "@chronicle/core";
-import { stableJson, parseRulePackage, validateEntityFields } from "@chronicle/rules";
+import { stableJson, type AnyRulePackage } from "@chronicle/rules";
+import { LEGACY_CAMPAIGN_RULES, type CampaignRulesProfile } from "./campaign-rules-profile.ts";
 import { createCampaignBundle, validateCampaignBundle, type CampaignBundle } from "./campaign-bundle.ts";
 import { CAMPAIGN_TABLES, CAMPAIGN_EXCLUSIONS, CAMPAIGN_BUNDLE_LIMITS, type CampaignRow, type CampaignTables } from "./campaign-schema.ts";
 import { CAMPAIGN_V2_TABLES, CAMPAIGN_V2_ADDITIONAL_TABLES, CAMPAIGN_V2_MODULES, CAMPAIGN_ACTOR_KINDS, type CampaignTablesV2, type CampaignTableNameV2, type CampaignModuleV2 } from "./campaign-schema-v2.ts";
@@ -41,16 +42,16 @@ function normalizeAdditional(value: unknown): Pick<CampaignTablesV2, typeof CAMP
 }
 class Graph {
   private readonly indexes = new Map<string, Map<string, CampaignRow>>();
-  constructor(readonly tables: CampaignTablesV2, readonly campaignId: string) {}
+  constructor(readonly tables: CampaignTablesV2, readonly campaignId: string, readonly rules: CampaignRulesProfile) {}
   ref(table: CampaignTableNameV2, values: readonly unknown[], columns: readonly string[] = ["id"]): CampaignRow {
     const key = `${table}:${columns.join(",")}`; let index = this.indexes.get(key);
     if (!index) { index = new Map(this.tables[table].map(row => [pk(row, columns), row])); this.indexes.set(key, index); }
     const row = index.get(canonicalJson(values as CanonicalValue)); if (!row) fail(table, "missing same-campaign reference"); return row!;
   }
   nullable(table: CampaignTableNameV2, value: CanonicalValue | undefined, columns: readonly string[] = ["id"]): void { if (value !== null) this.ref(table, [value], columns); }
-  package(value: unknown): ReturnType<typeof parseRulePackage> {
+  package(value: unknown): AnyRulePackage {
     const pin = object(value, "definition.package"); keys(pin, ["id", "version"], "definition.package"); string(pin.id, "definition.package.id"); string(pin.version, "definition.package.version");
-    return parseRulePackage(this.ref("rule_packages", [this.campaignId, pin.id, pin.version], ["campaign_id", "package_id", "version"]).document);
+    return this.rules.parse(this.ref("rule_packages", [this.campaignId, pin.id, pin.version], ["campaign_id", "package_id", "version"]).document);
   }
 }
 const pair = (row: CampaignRow, left: string, right: string, path: string) => { if ((row[left] === null) !== (row[right] === null)) fail(path, `${left}/${right} must both be present or both absent`); };
@@ -75,7 +76,7 @@ function definition(value: unknown, actor: boolean, g: Graph): void {
       else if (typeof value === "number") { if (!Number.isFinite(value) || Math.abs(value) > 1e12) fail("definition.fields", "invalid scalar"); }
       else if (typeof value !== "boolean") fail("definition.fields", "scalar required");
     }
-    try { validateEntityFields(g.package(row.package).fields, fields); } catch { fail("definition.fields", "fields do not match pinned rule package"); }
+    try { g.rules.fields(g.package(row.package), fields); } catch { fail("definition.fields", "fields do not match pinned rule package"); }
   } else {
     const tags = list(row.tags, "definition.tags", 32); for (const tag of tags) boundedText(tag, "definition.tags", 80);
     if (new Set(tags).size !== tags.length) fail("definition.tags", "duplicate tags");
@@ -149,7 +150,7 @@ function eventRequest(row: CampaignRow, g: Graph): void {
   if (creates ? before !== null || after.version !== 1 : after.version !== Number(input.expectedVersion) + 1 || (before?.version ?? 0) !== input.expectedVersion) fail(path, "historical versions do not match command");
   if (input.definition !== undefined) {
     let expected = input.definition;
-    if (operation.startsWith("actor.")) { const original = object(expected, path); expected = { ...original, fields: validateEntityFields(g.package(original.package).fields, original.fields) } as CanonicalValue; }
+    if (operation.startsWith("actor.")) { const original = object(expected, path); expected = { ...original, fields: g.rules.fields(g.package(original.package), original.fields) } as CanonicalValue; }
     if (hash(expected) !== hash(after.definition)) fail(path, "result differs from normalized template request");
   }
   if (operation.endsWith(".instantiate") && hash(after.template) !== hash({ id: input.templateId, revision: input.templateRevision })) fail(path, "instance pin differs from request");
@@ -176,8 +177,9 @@ function eventRequest(row: CampaignRow, g: Graph): void {
     if (hash(fixed(before)) !== hash(fixed(after))) fail(path, "command changes fields outside its declared operation");
   }
 }
-function checkAdditional(t: CampaignTablesV2, campaignId: string): void {
-  const g = new Graph(t, campaignId);
+/** Internal semantic seam shared by the explicit native-v5 profile. */
+export function checkActorInventoryTables(t: CampaignTablesV2, campaignId: string, rules: CampaignRulesProfile): void {
+  const g = new Graph(t, campaignId, rules);
   for (const table of CAMPAIGN_V2_ADDITIONAL_TABLES) for (const row of t[table.name]) {
     if (row.campaign_id !== campaignId) fail(table.name, "cross-campaign row");
     for (const key of ["created_by", "granted_by", "user_id", "actor_user_id"]) if (row[key] !== undefined && row[key] !== null) g.ref("users", [row[key]]);
@@ -224,7 +226,7 @@ export function createCampaignBundleV2(data: CampaignBundleDataV2): CampaignBund
     tables: Object.fromEntries(CAMPAIGN_TABLES.map(table => [table.name, data.tables[table.name]])) as unknown as CampaignTables }));
   const tables: CampaignTablesV2 = { ...core.tables, ...normalizeAdditional(data.tables) };
   if (CAMPAIGN_V2_TABLES.reduce((count, table) => count + tables[table.name].length, 0) > CAMPAIGN_BUNDLE_LIMITS.rows) fail("tables", "total row limit exceeded");
-  checkAdditional(tables, data.campaignId);
+  checkActorInventoryTables(tables, data.campaignId, LEGACY_CAMPAIGN_RULES);
   const modules = CAMPAIGN_V2_MODULES.map(name => {
     const specs = CAMPAIGN_V2_TABLES.filter(table => table.module === name);
     return { name, version: 1 as const, count: specs.reduce((count, table) => count + tables[table.name].length, 0), sha256: hash(Object.fromEntries(specs.map(table => [table.name, tables[table.name]]))) };

@@ -1,6 +1,64 @@
 # Codex work alongside Claude — 2026-09-06
 
-## Latest handoff — authoring checkpoint in progress
+## Latest handoff — HTBAH, tactical entities and desktop recovery
+
+This section supersedes the older ownership and delivery notes below. Root now participates
+in `coord/PROTOCOL.md` as `codex-root`; read its chat and actual path claims before editing.
+Do not stage external Claude's ActorWorkbench/Week/Channel/AtlasView/ImportView/styles work
+or broad source globs. Several earlier external commits included root integration seams
+before their new dependencies; the next root checkpoint must include those dependencies.
+
+The working tree contains the complete configurable HTBAH template, generic package-v2 editor,
+computed/validated character sheets, classified receipts and native campaign-v5 dispatch.
+All eight contract/implementation review corrections are recorded in the HTBAH design lineage.
+See [HTBAH](HTBAH.md) and [native v5](CAMPAIGN_FORMAT_V5.md). Root's tactical-entity UI/projection
+also has independent red-to-green review and actual three-reader browser/revocation evidence.
+
+Latest complete working-tree gate: **1,178 passed / 115 files**, one intentional PGlite
+concurrency skip, root TypeScript, **324 boundary files / 8 rules / 0 violations**, and the
+41-asset gate including the new binary identity regression. Evidence is
+`.local/verification-htbah-desktop/gate-four-workers.log`. The first wrapper accidentally
+inherited a placeholder DATABASE_URL; the corrected wrapper explicitly loads the existing
+local config and performs a real PostgreSQL preflight. Default parallelism then exceeded three
+old five-second restore-test budgets; all eight affected-file tests pass unchanged in isolation,
+and the complete gate passes with four workers. No test timeout or assertion was relaxed.
+Root's recorded client build is `index-DCMgOe37.js`. The independent checkpoint audit subsequently
+found shared dist changed to `index-BCyHsh0p.js` by another writer despite the held build/browser
+lease. All24 functional browser flows are verified across these working-tree snapshots,
+including real loopback media; this is not exact single-build evidence. The full run passed13; eleven old selectors/copy
+expectations needed to follow Claude's expanded labels, character-name heading, conflict text
+and explicit file-upload mode. Its focused twelve-case rerun passed ten; the remaining two
+then passed in10.7s. Root changed only tests between these runs, with downstream persistence,
+authorization and replay assertions retained. See `e2e-all.log`, `e2e-labels.log` and
+`e2e-final-two.log` in the verification directory and their separate `.local/e2e-*` artifacts.
+The next committed-tree check must use its own npm ci and browser output, without shared
+node_modules or dist, to prove one exact source/build snapshot.
+The four opt-in performance cases were skipped; previous measurements are not new acceptance.
+
+The desktop host uses its own verified PostgreSQL17 cluster and DPAPI profile, unprivileged
+game windows, private management IPC, durable setup receipt reconciliation, verified drain,
+mandatory recovery before pending migrations and device-bound recovery into a new profile.
+Both fresh dev and standalone smoke pass **10/10**, including actual HTBAH through the shared
+client, native-v5 roundtrip and the original credential authenticating after full recovery.
+See [DESKTOP](DESKTOP.md) for exact artifact/resource hashes and scoped evidence. This executable
+was tested before the latest Core/UI source checkpoint and is not claimed byte-identical to it.
+The installer, updates, ASAR/fuses and process-death refinement at `desktop-shell-20260906.md:228`
+are now adopted with independent F1–F8 corrections; their implementation follows this checkpoint
+and their dependencies have not been installed yet.
+
+Three generated PNG originals are preserved byte-for-byte under `assets/generated/painted-dungeon-v1`.
+The asset gate now uses raw binary identity; registration, selected generator pack, per-Sicht
+sprite delivery and self-contained pack portability are the next independent design review,
+`painted-pack-20260906.md` / `painted-pack-review-20260906.md`. Do not infer public distribution
+permission or CC0 from the generated images, and do not repeat the non-seamless stone patch.
+
+**Operative app remains the independently verified b415f03 checkout below.** Do not report the
+new uncommitted work as already served on localhost3000. Complete the coherent checkpoint and
+its independent checkout gate before updating that owned process. Full M0–M9 scope persists;
+reference hardware, real play-week measurements, NVDA and external HTTPS/media remain scoped
+acceptance evidence to obtain, not silently closed by functional tests.
+
+## Prior verified authoring checkpoint
 
 This section supersedes the historical ownership/runtime notes below. Root completed M8 theme,
 local appearance, publication/source, native-v4 and reviewed renderer integration. The working
@@ -11,9 +69,13 @@ performance harness cases also pass separately; read TACTICAL_PERFORMANCE for me
 not a blanket performance acceptance. AUTHORING records the nine new browser flows and
 independent red-to-green regressions. Checkpoint and clean-tree validation follow next.
 
-The operative app still serves verified7b45296 from `.local/checkouts/tactical-gate` on
-localhost3000, owned PID22164/session29214, SQL001–011. Do not confuse test schemas with an
-operative migration. Preserve ignored local credentials/media env and the existing demo data.
+The exact authoring checkpoint is now **b415f03**, independently verified in
+`.local/checkouts/authoring-gate` with its own npm ci:781 tests in76files,1 intentional skip,
+233 boundaries/8rules,32assets and identical client artifact. Localhost3000 now serves that
+checkout, owned **PID13124/session9596**, actual SQL001–012. Health/client200 and artifact verified.
+Old PID22164 stopped. Ignored `.local/backups/pre-authoring-b415f03/public.dump` and config are
+the pre-migration local recovery point; no successful restore exercise is inferred from its
+valid archive listing. Preserve credentials/media env/demo data; public delivery stays off.
 
 The user's expanded goal retains the whole implementation plan, asks us to complement Claude,
 generate map assets in parallel, and provide a How to be a Hero rules template. External Claude

@@ -12,6 +12,10 @@
 .tactical-token .rule-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tactical-object-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .65rem; }
 .tactical-object-list li { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.tactical-objects, .tactical-entity-editor, .tactical-object-selected { display: grid; gap: .8rem; min-width: 0; }
+.tactical-entity-editor { padding-top: 1rem; border-top: 1px solid var(--line); }
+.tactical-object-selected { padding: .8rem; border: 1px solid var(--accent); border-radius: var(--radius-md, 8px); overflow-wrap: anywhere; }
+.tactical-objects button, .tactical-entity-editor .button-row button { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
 .tactical-prep-columns { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1.5rem; }
 .tactical-prep-columns > section { display: grid; gap: .85rem; align-content: start; min-width: 0; }
 .tactical-points { max-height: 220px; overflow: auto; margin: 0; padding-left: 1.5rem; }

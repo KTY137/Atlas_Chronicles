@@ -462,3 +462,52 @@ Offen bleibt ausdrücklich: Die Perf-Zahlen stammen von dieser Maschine, nicht
 von der in `03` genannten Referenzhardware (`referenceHardware.qualified` ist
 `false`, der Test nennt `S-K1/S-T1/G-PERF1` weiterhin als nicht geschlossen).
 Belegt ist „es trägt hier", nicht „es trägt auf dem Zielgerät".
+
+## Codex integration checkpoint — codex-root, 2026-09-06 21:10
+
+- HTBAH is now a playable configurable template with generic rules-v2 authoring, computed and
+  validated character fields, explicit HP/Geistesblitz saves, classified/replayable receipts,
+  source/license attribution and native-v5 HTTP/CLI/host dispatch. Frozen v1 rules and legacy
+  public archive parsers retain their semantics. Read docs/HTBAH.md and CAMPAIGN_FORMAT_V5.md.
+- Tactical entity preparation/outline/selection is integrated with per-reader server projection,
+  full native-v4 roundtrip, and immediate scope revocation even when projection polling fails.
+  Three independent UI findings are corrected with failing-before-fix regressions.
+- Complete current working-tree gate: **1178 passed in115 files**, one intentional PGlite race
+  skip; root TypeScript; **324 boundary files /8 rules /0 violations**; **41 assets** and binary
+  asset identity regression. Four test workers prevent unrelated heavy test files exhausting
+  unchanged five-second legacy restore budgets. Eight affected tests also pass independently.
+  Wrapper initially inherited a placeholder DATABASE_URL; it now explicitly loads the existing
+  local config and performs a PostgreSQL preflight. Logs are .local/verification-htbah-desktop.
+- Canonical client **index-DCMgOe37.js** builds. All **24 functional browser flows** verified,
+  including actual loopback media. Full run13 passed;11 old label/copy expectations were updated
+  for parallel Claude UI changes. Focused retry10/12, final two2/2 in10.7s; no product changes or
+  persistence/authorization assertions were removed between these runs. Four opt-in performance
+  cases skipped, with no new reference-hardware claim. Individual logs retain initial failures.
+- Desktop own-PG17/DPAPI/isolated-window host plus device-bound recovery is implemented; failed
+  drain and delayed setup receipts are reviewed. Both fresh dev and standalone tests pass10/10,
+  including the shared HTBAH UI, v5 transfer and identical-credential recovery into a new profile.
+  Artifact .local/desktop-artifacts/2026-09-06T18-53-43-212Z/Atlas Chronicles-win32-x64 is563751412
+  bytes unpacked. DESKTOP.md pins EXE and separate application-resource hashes and states this
+  artifact predates the latest Core/UI source changes. No own desktop PG process remained.
+- Generated PNG originals are retained under assets/generated/painted-dungeon-v1. Raw-Buffer
+  asset hashing is corrected; actual pack selection, authorized sprite delivery and native
+  asset-byte portability are still next implementation scope. Painted-pack review requires
+  immutable revision locks, explicit visibility and correct original dimensions/anchors.
+- The installer/update/ASAR/fuse plus process-death refinement is adopted with independent
+  F1-F8 corrections. It is not yet implemented. Linux's external patch remains unapplied.
+- Root participates in coord as codex-root, narrowed client claims to actual integration paths,
+  and preserves unrelated Claude work. Exact checkpoint path list is retained in ignored
+  .local/verification-htbah-desktop/checkpoint-paths.json. Coherent commit and fresh-checkout
+  verification follow; this working-tree evidence is not yet an exact committed-tree claim.
+- **Operative localhost3000 remains b415f03**, ownedPID13124 from .local/checkouts/authoring-gate,
+  with original local configuration and SQL001-012. Bootstrap token is the bootstrapToken field
+  in that checkout's ignored .local/config.json. No credential is copied into tracked docs.
+  Full M0-M9 scope and separate real-play, NVDA, hardware, signing and external topology gates
+  remain; this checkpoint is not a full-product completion claim.
+### Codex correction to the checkpoint browser scope — 21:12
+
+Independent audit found shared dist changed from Root's recorded index-DCMgOe37.js to
+index-BCyHsh0p.js while the build/browser lease was held. Root did not run that second build.
+Thus the24 completed functional flows above cover working-tree snapshots, not one exact
+artifact. The next checkpoint verification will use its own npm ci, dist and browser output;
+no shared node_modules junction and no operative update before exact-source verification.

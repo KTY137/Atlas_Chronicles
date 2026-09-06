@@ -9,7 +9,8 @@ import { createDocuments } from "../src/domain/documents.ts";
 import { createGameplay } from "../src/domain/gameplay.ts";
 import { seedBundleActors } from "./bundle-actors-fixture.ts";
 import { runBundleCli } from "../src/bundle-cli.ts";
-import { exportCampaignBundle, initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { exportCampaignBundle } from "./export-v4-fixture.ts";
 
 const connection = process.env["TEST_DATABASE_URL"];
 const schemas = [0, 1, 2, 3].map(() => `chronicle_bundle_${randomUUID().replaceAll("-", "")}`);

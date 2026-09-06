@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { ActionResult, FieldSchema, PackagePin, RulePackage, Scalar } from "@chronicle/rules";
+import type { AnyActionResult as ActionResult, FieldSchema, PackagePin, AnyRulePackage as RulePackage, Scalar } from "@chronicle/rules";
 import { api } from "../api";
 
 export interface RulesState { packages: RulePackage[]; pin: PackagePin; version: number }

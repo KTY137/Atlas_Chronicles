@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Atlas Chronicles contributors. SPDX-License-Identifier: MIT
 import { canonicalHash, canonicalJson, textHash, type CanonicalValue } from "@chronicle/core";
-import { parseRulePackage, replayAction, stableJson, validateEntityFields, type ActionResult } from "@chronicle/rules";
+import { stableJson } from "@chronicle/rules";
+import { LEGACY_CAMPAIGN_RULES, type CampaignRulesProfile } from "./campaign-rules-profile.ts";
+import { requireReciprocalMintEvidence } from "./campaign-current-evidence.ts";
 import { CAMPAIGN_TABLES, CAMPAIGN_MODULES, CAMPAIGN_EXCLUSIONS, CAMPAIGN_BUNDLE_LIMITS, type CampaignColumn, type CampaignModule, type CampaignRow, type CampaignTableName, type CampaignTables } from "./campaign-schema.ts";
 import { ImportValidationError } from "./validation.ts";
 import { createWikiBundle, type WikiBundleData } from "./bundle.ts";
@@ -161,7 +163,7 @@ class Graph {
   package(row: CampaignRow, path: string): CampaignRow { return this.composite("rule_packages", ["campaign_id", "package_id", "version"], [row.campaign_id, row.package_id, row.package_version], path); }
 }
 
-function checkGraph(t: CampaignTables, campaignId: string, universeId: string): void {
+function checkGraph(t: CampaignTables, campaignId: string, universeId: string, rules: CampaignRulesProfile): void {
   const g = new Graph(t);
   if (t.campaigns.length !== 1 || t.campaigns[0]!.id !== campaignId || t.universes.length !== 1 || t.universes[0]!.id !== universeId) fail("identities", "exactly the declared campaign and universe are required");
   const userKeys = ["owner_user_id", "user_id", "created_by", "author_user_id", "granted_by", "accepted_by", "installed_by", "started_by", "issued_by", "prepared_by", "updated_by", "sent_by", "reader_user_id", "actor_user_id"];
@@ -258,7 +260,7 @@ function checkGraph(t: CampaignTables, campaignId: string, universeId: string): 
   for (const r of t.access_incidents) g.ref("vollmachten", r.vollmacht_id, "access_incidents.vollmacht_id");
   for (const r of t.reading_watermarks) for (const [pid, savedHash] of Object.entries(object(r.projected_hashes, "watermark.projected_hashes"))) { if (g.ref("passages", pid, "watermark.passage").entry_id !== r.entry_id) fail("watermark", "saved passage belongs to another entry"); digest(savedHash, "watermark.hash"); }
   for (const r of t.audit) audit(r, g);
-  checkEvidence(t, g);
+  checkEvidence(t, g, rules);
 }
 
 function acyclic(edges: ReadonlyMap<string, readonly string[]>, path: string): void {
@@ -302,7 +304,7 @@ function block(value: unknown, path: string): void {
   else fail(path, "unknown block AST version or kind");
 }
 
-function checkEvidence(t: CampaignTables, g: Graph): void {
+function checkEvidence(t: CampaignTables, g: Graph, rules: CampaignRulesProfile): void {
   const importSources = new Set<string>();
   for (const a of t.artifacts) if (a.kind === "eron-preview") {
     const s = object(object(object(a.source, "artifact.source").result, "artifact.result").source, "artifact.originalSource");
@@ -331,16 +333,25 @@ function checkEvidence(t: CampaignTables, g: Graph): void {
     if (document.mint !== undefined) provenance(document.mint, "revision.mint", g);
   }
   for (const r of t.rule_packages) {
-    try { const pkg = parseRulePackage(r.document); if (pkg.id !== r.package_id || pkg.version !== r.version || sealHash(pkg) !== r.content_hash) fail("rule_packages", "package identity or digest mismatch"); }
+    try { const pkg = rules.parse(r.document); if (pkg.id !== r.package_id || pkg.version !== r.version || sealHash(pkg) !== r.content_hash) fail("rule_packages", "package identity or digest mismatch"); }
     catch (e) { if (e instanceof ImportValidationError) throw e; fail("rule_packages.document", `invalid rule package: ${e instanceof Error ? e.message : "validation failed"}`); }
   }
   for (const r of t.actor_sheets) {
-    try { validateEntityFields(parseRulePackage(g.package(r, "sheet.package").document).fields, r.fields); }
+    try { rules.fields(rules.parse(g.package(r, "sheet.package").document), r.fields); }
     catch (e) { fail("actor_sheets.fields", `invalid fields: ${e instanceof Error ? e.message : "validation failed"}`); }
   }
+  // Classified outcomes cannot be reinterpreted by a threshold-only authorization,
+  // including authorizations that have never been consumed by a roll.
+  if (rules.name === "rules-v1-v2@1") for (const r of t.action_vollmachten) {
+    const pkg = rules.parse(g.package(r, "authorization.package").document);
+    if (pkg.schemaVersion === 2) {
+      const action = pkg.actions.find(action => action.id === r.action_id);
+      if (!action || action.outcome) fail("action_vollmachten", "classified or missing action cannot use threshold authorization");
+    }
+  }
   for (const r of t.action_rolls) {
-    const receipt = object(r.receipt, "roll.receipt"), pkg = parseRulePackage(g.package(r, "roll.package").document);
-    if (sealHash(receipt) !== r.receipt_hash || !replayAction(pkg, receipt as unknown as ActionResult).valid || object(receipt.action, "receipt.action").id !== r.action_id) fail("action_rolls.receipt", "receipt digest, action or deterministic replay mismatch");
+    const receipt = object(r.receipt, "roll.receipt"), pkg = rules.parse(g.package(r, "roll.package").document);
+    if (sealHash(receipt) !== r.receipt_hash || !rules.replay(pkg, receipt).valid || object(receipt.action, "receipt.action").id !== r.action_id) fail("action_rolls.receipt", "receipt digest, action or deterministic replay mismatch");
     const knowledge = object(object(receipt.context, "receipt.context").knowledge, "receipt.knowledge");
     if (knowledge.actorId !== r.actor_id) fail("receipt.knowledge", "knowledge actor differs from roll");
     for (const item of list(knowledge.passages, "receipt.knowledge.passages")) g.ref("passages", object(item, "receipt.knowledge.passage").passageId, "receipt.knowledge.passageId");
@@ -366,6 +377,7 @@ function checkEvidence(t: CampaignTables, g: Graph): void {
   for (const r of t.artifacts) artifact(r, g);
   for (const r of t.letters) letter(r, g);
   for (const r of t.letter_delivery_receipts) delivery(r, g);
+  if (rules.name === "rules-v1-v2@1") requireReciprocalMintEvidence(t);
 }
 
 function provenance(value: unknown, path: string, g: Graph): void {
@@ -479,10 +491,15 @@ function delivery(r: CampaignRow, g: Graph): void {
     if (o.passageId !== s.passageId || o.sourceRevisionId !== s.sourceRevisionId || o.sourceHash !== s.sourceHash || !["current", "historical-only"].includes(String(o.grant)) || hash(o.quelle) !== hash({ art: "gehoert", von: letter.from_actor_id })) fail("delivery.outcome", "outcome differs from sealed snapshot"); }
 }
 
-export function createCampaignBundle(data: CampaignBundleData): CampaignBundle {
+/** Internal normalized data seam; it never creates a legacy envelope for new rule data. */
+export function normalizeCampaignCore(data: CampaignBundleData, rules: CampaignRulesProfile): CampaignTables {
   assertJson(data); keys(object(data, "data"), ["campaignId", "universeId", "exportedAt", "tables"], "data"); const tables = normalizeTables(data.tables); string(data.campaignId, "campaignId"); string(data.universeId, "universeId");
   if (typeof data.exportedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(data.exportedAt) || !Number.isFinite(Date.parse(data.exportedAt)) || new Date(data.exportedAt).toISOString() !== data.exportedAt) fail("exportedAt", "canonical UTC ISO timestamp required");
-  checkGraph(tables, data.campaignId, data.universeId);
+  checkGraph(tables, data.campaignId, data.universeId, rules);
+  return tables;
+}
+export function createCampaignBundle(data: CampaignBundleData): CampaignBundle {
+  const tables = normalizeCampaignCore(data, LEGACY_CAMPAIGN_RULES);
   const bundle: CampaignBundle = { format: "atlas-chronicles/campaign", version: 1, manifest: { profile: "complete-campaign", projection: "gm", campaignId: data.campaignId, universeId: data.universeId, exportedAt: data.exportedAt, blockAstVersion: 1, rulePackageSchemaVersion: 1, contentHash: hash(tables), modules: moduleManifest(tables), excluded: CAMPAIGN_EXCLUSIONS, assetMode: "source-artifacts-only" }, tables };
   if (Buffer.byteLength(canonicalJson(bundle as unknown as CanonicalValue), "utf8") > CAMPAIGN_BUNDLE_LIMITS.bytes) fail("$", "maximum campaign bundle size exceeded");
   return bundle;

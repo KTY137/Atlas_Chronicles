@@ -52,7 +52,7 @@ const SVG_VERBOTEN = [
   { muster: /<!DOCTYPE/i, warum: "doctype" },
 ];
 
-const sha256 = (text) => createHash("sha256").update(text, "utf8").digest("hex");
+const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 async function dateienUnter(dir) {
   const gefunden = [];
@@ -96,14 +96,15 @@ async function pruefePaket(paketDir, id, fehler) {
   for (const asset of paket.assets) {
     beansprucht.add(asset.datei);
     let inhalt;
-    try { inhalt = await readFile(join(paketDir, asset.datei), "utf8"); }
+    try { inhalt = await readFile(join(paketDir, asset.datei)); }
     catch { melde(asset.datei, `declared by asset "${asset.name}" but missing`); continue; }
     if (sha256(inhalt) !== asset.sha256) melde(asset.datei, `sha256 mismatch for asset "${asset.name}"`);
-    if (Buffer.byteLength(inhalt, "utf8") !== asset.bytes) melde(asset.datei, `byte count mismatch for asset "${asset.name}"`);
+    if (inhalt.length !== asset.bytes) melde(asset.datei, `byte count mismatch for asset "${asset.name}"`);
     if (asset.mimeType === "image/svg+xml") {
-      for (const { muster, warum } of SVG_VERBOTEN) if (muster.test(inhalt)) melde(asset.datei, `SVG contains ${warum}; a pack asset is a drawing, never a program or a fetch`);
+      const svg = inhalt.toString("utf8");
+      for (const { muster, warum } of SVG_VERBOTEN) if (muster.test(svg)) melde(asset.datei, `SVG contains ${warum}; a pack asset is a drawing, never a program or a fetch`);
       const viewBox = `viewBox="0 0 ${asset.groesse[0]} ${asset.groesse[1]}"`;
-      if (!inhalt.includes(viewBox)) melde(asset.datei, `declared groesse ${asset.groesse.join("x")} is not the authored ${viewBox}`);
+      if (!svg.includes(viewBox)) melde(asset.datei, `declared groesse ${asset.groesse.join("x")} is not the authored ${viewBox}`);
     }
   }
 

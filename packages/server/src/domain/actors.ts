@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Value } from "@sinclair/typebox/value";
 import type { Static, TSchema } from "@sinclair/typebox";
-import { DEMO_RULE_PACKAGE, parseRulePackage, stableJson, validateEntityFields, type RulePackage } from "@chronicle/rules";
+import { DEMO_RULE_PACKAGE, parseSupportedRulePackage, stableJson, validatePackageFields, type AnyRulePackage as RulePackage } from "@chronicle/rules";
 import * as P from "../../../protocol/src/actors.ts";
 import type { Db } from "../db/index.ts";
 import type { DomainConfig, Membership } from "./campaigns.ts";
@@ -123,7 +123,7 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
   }
   async function rulePackage(tx: Db, campaignId: string, pin: { id: string; version: string }): Promise<RulePackage> {
     const row = (await tx.query<{ document: unknown; content_hash: string }>("SELECT document,content_hash FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3", [campaignId, pin.id, pin.version])).rows[0];
-    if (row) { if (hash(row.document) !== row.content_hash) throw new Gone(); return parseRulePackage(row.document); }
+    if (row) { if (hash(row.document) !== row.content_hash) throw new Gone(); return parseSupportedRulePackage(row.document); }
     if (pin.id === DEMO_RULE_PACKAGE.id && pin.version === DEMO_RULE_PACKAGE.version) return DEMO_RULE_PACKAGE;
     throw new Gone();
   }
@@ -135,7 +135,7 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
     await lore(tx, current.campaignId, value.loreEntryId);
     if (kind === "item") return value as P.ItemContract;
     const actor = value as P.ActorTemplateData, pkg = await rulePackage(tx, current.campaignId, actor.package);
-    const resolved = { ...actor, fields: { ...validateEntityFields(pkg.fields, actor.fields) } };
+    const resolved = { ...actor, fields: { ...validatePackageFields(pkg, actor.fields) } };
     await installDemo(tx, current.campaignId, current.userId, pkg);
     return resolved;
   }
@@ -209,7 +209,7 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
       if (source.archivedAt !== null) throw new Gone();
       const pin = (await tx.query<{ package_id: string; package_version: string }>("SELECT package_id,package_version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0];
       if (source.definition.package.id !== (pin?.package_id ?? DEMO_RULE_PACKAGE.id) || source.definition.package.version !== (pin?.package_version ?? DEMO_RULE_PACKAGE.version)) throw new Conflict();
-      const pkg = await rulePackage(tx, campaignId, source.definition.package), fields = validateEntityFields(pkg.fields, source.definition.fields);
+      const pkg = await rulePackage(tx, campaignId, source.definition.package), fields = validatePackageFields(pkg, source.definition.fields);
       await installDemo(tx, campaignId, userId, pkg);
       const id = randomUUID(), at = now();
       await tx.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,$4)", [id, campaignId, userId, input.name ?? source.definition.name]);

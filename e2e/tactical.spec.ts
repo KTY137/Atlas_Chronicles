@@ -148,6 +148,21 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       expect(map.revision).toBe(2); expect(map.document.geometry.regions).toHaveLength(2); expect(map.anchors.map(anchor => anchor.passageId).sort()).toEqual([...passages].sort());
     });
 
+    await test.step("mark two places and bind their separate passage knowledge through the real editor", async () => {
+      for (const [i, x] of [512, 2048].entries()) {
+        await gm.getByLabel("Ort X", { exact: true }).fill(String(x)); await gm.getByLabel("Ort Y", { exact: true }).fill("700");
+        await gm.getByRole("button", { name: "Ort an diesen Koordinaten markieren", exact: true }).click();
+        await gm.getByLabel("Objektwissen aus Artikel", { exact: true }).selectOption(entryId);
+        await gm.getByLabel("Objekt benötigt Passage", { exact: true }).selectOption(passages[i]!);
+        await gm.getByRole("button", { name: "Objekt mit Wissen verknüpfen", exact: true }).click();
+      }
+      const saved = gm.waitForResponse(r => r.url() === `${base()}/tactical/maps/${mapId}/revision` && r.request().method() === "PUT");
+      await gm.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click(); expect((await saved).status()).toBe(200);
+      const map: TacticalMapCard = await (await gm.request.get(`${base()}/tactical/maps/${mapId}`)).json();
+      expect(map.revision).toBe(3); expect(map.document.geometry.places).toHaveLength(2); expect(map.anchors.filter(a => a.targetKind === "place")).toHaveLength(2);
+      expect((await db.query("SELECT id FROM entries WHERE campaign_id=$1", [campaignId])).rows).toHaveLength(1);
+    });
+
     await test.step("place both players in an explicit scene plan and begin it", async () => {
       await gm.getByRole("combobox", { name: "Szene", exact: true }).selectOption(sceneId);
       for (const [index, name, x] of [[1, "Sera", 512], [2, "Dorn", 2048]] as const) {
@@ -167,6 +182,8 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       expect(gmView.tokens.map(token => token.name).sort()).toEqual(["Dorn", "Sera"]);
       expect(aView.tokens.map(token => token.name)).toEqual(["Sera"]); expect(bView.tokens.map(token => token.name)).toEqual(["Dorn"]);
       expect(aView.regions).toHaveLength(1); expect(bView.regions).toHaveLength(1); expect(aView.regions[0]!.id).not.toBe(bView.regions[0]!.id);
+      expect(gmView.entities).toHaveLength(2); expect(aView.entities.map(o => o.x)).toEqual([512]); expect(bView.entities.map(o => o.x)).toEqual([2048]);
+      for (const page of [a, b]) await expect(page.locator(".tactical-objects .tactical-object-list li")).toHaveCount(1);
       for (const projected of [aView, bView]) for (const key of ["map", "document", "walls", "portals"]) expect(Object.hasOwn(projected, key)).toBe(false);
       await expect(editor(a, "Sera")).toBeVisible(); await expect(editor(a, "Dorn")).toHaveCount(0);
       await expect(editor(b, "Dorn")).toBeVisible(); await expect(editor(b, "Sera")).toHaveCount(0);
@@ -210,7 +227,7 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       expect((await dragged).status()).toBe(200);
       const position = (await view(a)).tokens[0]!; expect(position.x).toBeGreaterThan(620); expect(position.x).toBeLessThan(660); expect(position.y).toBeGreaterThan(620);
       await a.getByRole("button", { name: "Rücknahme: Sera", exact: true }).click(); await expect.poll(async () => (await view(a)).tokens[0]!.x).toBe(512);
-      const portal = gm.locator(".tactical-object-list li").first();
+      const portal = gm.locator("section.panel").filter({ has: gm.getByRole("heading", { name: "Portale", exact: true }) }).locator(".tactical-object-list li").first();
       const changed = gm.waitForResponse(r => r.url().includes(`/sessions/${sessionId}/tactical/portals/`) && r.request().method() === "POST");
       await portal.getByRole("button").click(); expect((await changed).status()).toBe(200);
       await gm.getByRole("button", { name: "Rücknahme: Portal", exact: true }).click();
@@ -218,7 +235,8 @@ test("real UVTT import, region knowledge, preparation, three live views, command
 
     await test.step("the Wiki has the same knowledge and preparations never move the active scene", async () => {
       for (const [page, known, hidden] of [[a, "Bernsteinzimmer", "Silberkammer"], [b, "Silberkammer", "Bernsteinzimmer"]] as const) {
-        await stage(page, "Chronik").click(); await page.getByRole("button", { name: /Zwei Wege durch das Frosttor/ }).click();
+        await page.locator(".tactical-objects .tactical-object-list").getByRole("button", { name: "Ort: Zwei Wege durch das Frosttor", exact: true }).click();
+        await page.locator(".tactical-object-selected").getByRole("button", { name: "Artikel öffnen", exact: true }).click();
         await expect(page.locator("article.article-body")).toContainText(known); await expect(page.locator("article.article-body")).not.toContainText(hidden);
       }
       await gm.getByRole("button", { name: "Karte & Vorbereitung", exact: true }).click(); await gm.getByRole("combobox", { name: "Szenenkarte", exact: true }).selectOption(mapId);
@@ -235,6 +253,7 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       const bundle = parseCampaignBundleV4(archive); expect(bundle.version).toBe(4);
       expect(bundle.tables.tactical_sources[0]!.source_text).toBe(sourceText); expect(bundle.tables.session_tactical_states).toHaveLength(1);
       expect(bundle.tables.tactical_token_states.find(t => t.actor_id === sessions[1]!.actorId)!.x).toBe(512);
+      expect(bundle.tables.tactical_map_anchors.filter(a => a.target_kind === "place")).toHaveLength(2);
       await test.info().attach("native-tactical-campaign.chronicle", { body: Buffer.from(archive), contentType: "application/json" });
     });
 
@@ -265,8 +284,8 @@ test("a real stale-scope tile denial disposes the old authorized image even whil
   const imported = await tactical.importMap(gm.userId, campaignId, { commandId: randomUUID(), name: "Scope lifecycle map", format: "uvtt", sourceText, provenance });
   const map = await tactical.getMap(gm.userId, campaignId, imported.subjectId);
   await tactical.reviseMap(gm.userId, campaignId, map.id, { commandId: randomUUID(), expectedVersion: 1,
-    document: { ...map.document, geometry: { ...map.document.geometry, regions: [{ id: "left", punkte: [[0, 0], [1280, 0], [1280, 2560], [0, 2560]] }] } },
-    anchors: [{ targetKind: "region", targetId: "left", entryId, passageId: passages[0]! }] });
+    document: { ...map.document, geometry: { ...map.document.geometry, places: [{ id: "known-place", x: 600, y: 700 }], regions: [{ id: "left", punkte: [[0, 0], [1280, 0], [1280, 2560], [0, 2560]] }] } },
+    anchors: [{ targetKind: "region", targetId: "left", entryId, passageId: passages[0]! }, { targetKind: "place", targetId: "known-place", entryId, passageId: passages[0]! }] });
   await tactical.savePlan(gm.userId, campaignId, sceneId, { commandId: randomUUID(), expectedVersion: 0, mapId: map.id, mapRevision: 2,
     tokens: [{ id: randomUUID(), actorId: actor, x: 512, y: 512, elevation: 0, rotation: 0, scale: 1 }] });
   await createDocuments(db).revealPassage(gm.userId, campaignId, passages[0]!, actor);
@@ -278,6 +297,8 @@ test("a real stale-scope tile denial disposes the old authorized image even whil
     const bounds = (await page.locator('canvas[data-map-backend="pixi-webgl"]').boundingBox())!;
     const viewport = [bounds.width, bounds.height] as const, expectedTiles = visibleMapTiles([2560, 2560], viewport, fitCamera([2560, 2560], viewport), await page.evaluate(() => devicePixelRatio)).length;
     await expect.poll(bitmapCount).toBe(expectedTiles);
+    await page.locator(".tactical-objects .tactical-object-list").getByRole("button", { name: "Ort: Zwei Wege durch das Frosttor", exact: true }).click();
+    await expect(page.locator(".tactical-object-selected").getByRole("button", { name: "Artikel öffnen", exact: true })).toBeVisible();
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     await page.locator(".tactical-canvas-frame").scrollIntoViewIfNeeded();
     await page.screenshot({ path: test.info().outputPath("scope-before-denial.png"), fullPage: true });
@@ -288,14 +309,17 @@ test("a real stale-scope tile denial disposes the old authorized image even whil
     await page.getByRole("button", { name: "Karte vergrößern", exact: true }).click();
     await page.getByRole("button", { name: "Karte vergrößern", exact: true }).click();
     expect((await denied).status()).toBe(409);
-    await expect(page.getByRole("button", { name: "Kacheln erneut laden", exact: true })).toBeVisible();
-    await page.locator(".tactical-canvas-frame").scrollIntoViewIfNeeded();
+    await expect(page.getByRole("button", { name: "Kartensicht erneut laden", exact: true })).toBeVisible();
+    await expect(page.locator(".tactical-objects")).toHaveCount(0); await expect(page.locator(".tactical-object-selected")).toHaveCount(0);
     await page.screenshot({ path: test.info().outputPath("stale-scope-denial.png"), fullPage: true });
     await expect.poll(bitmapCount, { message: "A server-denied scope must close all old image bitmaps immediately", timeout: 3000 }).toBe(0);
-    await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
-    const retryDenied = page.waitForResponse(response => response.url().includes("/tactical/tiles/") && response.status() === 409);
-    await page.getByRole("button", { name: "Kacheln erneut laden", exact: true }).click();
-    expect((await retryDenied).status()).toBe(409); // A fresh server request, never the old cached full-view blobs.
+    const retry = page.waitForRequest(request => request.url() === `${base()}/tactical/active`);
+    await page.getByRole("button", { name: "Kartensicht erneut laden", exact: true }).click(); await retry;
     await expect.poll(bitmapCount).toBe(0);
+    await expect(page.locator(".tactical-canvas")).toHaveCount(0);
+    await page.unroute(`${base()}/tactical/active`);
+    await page.getByRole("button", { name: "Kartensicht erneut laden", exact: true }).click();
+    await expect(page.locator(".tactical-objects .tactical-object-list li")).toHaveCount(0);
+    await expect(page.locator(".tactical-object-selected")).toHaveCount(0);
   } finally { await context.close(); }
 });

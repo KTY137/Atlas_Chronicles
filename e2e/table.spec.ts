@@ -102,13 +102,14 @@ test("M4: prepare a scene, save a sheet, roll, confirm explicitly and read the d
     await test.step("Save the controlled character sheet through the UI", async () => {
       await gm.getByRole("combobox", { name: "Handelnde Figur", exact: true }).selectOption(actorId);
       await gm.getByRole("tab", { name: "Figur", exact: true }).click();
-      await expect(gm.getByRole("heading", { name: "Dein Charakterbogen", exact: true })).toBeVisible();
+      await expect(gm.getByRole("heading", { name: String(rules.fields.name!.default), exact: true })).toBeVisible();
       await gm.getByLabel("Name", { exact: true }).fill("Sera am Nordtor");
       await gm.getByLabel("Scharfsinn", { exact: true }).fill("6");
       const saved = gm.waitForResponse(response => response.url() === `${base}/actors/${actorId}/sheet` && response.request().method() === "PUT");
       await gm.getByRole("button", { name: "Bogen speichern", exact: true }).click();
       const response = await saved; expect(response.status()).toBe(200);
       expect(await response.json()).toMatchObject({ actorId, fields: { insight: 6, name: "Sera am Nordtor" }, version: 1 });
+      await expect(gm.getByRole("heading", { name: "Sera am Nordtor", exact: true })).toBeVisible();
       await expect(gm.getByLabel("Scharfsinn", { exact: true })).toHaveValue("6");
       await gm.getByRole("combobox", { name: "Ressource", exact: true }).selectOption("vigour");
       await gm.getByRole("spinbutton", { name: "Änderung", exact: true }).fill("-1");

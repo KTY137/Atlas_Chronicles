@@ -9,7 +9,8 @@ import { campaignFixtureV3 } from "../../io/test/campaign-v3-fixture.ts";
 import { createPgDb, type Db } from "../src/db/index.ts";
 import { createAuthoring } from "../src/domain/authoring.ts";
 import { createPublication } from "../src/domain/public-projection.ts";
-import { exportCampaignBundle, initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { exportCampaignBundle } from "./export-v4-fixture.ts";
 import { runBundleCli } from "../src/bundle-cli.ts";
 
 const connection = process.env["TEST_DATABASE_URL"], schemas = [0, 1, 2, 3].map(() => `chronicle_bundle_v4_${randomUUID().replaceAll("-", "")}`);

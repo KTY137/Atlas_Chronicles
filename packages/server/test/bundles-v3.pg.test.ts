@@ -4,7 +4,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createCampaignBundleV3, campaignSemanticDiffV4, upgradeCampaignBundleV3 } from "@chronicle/io";
 import { campaignFixtureV3 } from "../../io/test/campaign-v3-fixture.ts";
 import { createPgDb, type Db } from "../src/db/index.ts";
-import { exportCampaignBundle, initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { exportCampaignBundle } from "./export-v4-fixture.ts";
 import { createTactical } from "../src/domain/tactical.ts";
 import { runBundleCli } from "../src/bundle-cli.ts";
 

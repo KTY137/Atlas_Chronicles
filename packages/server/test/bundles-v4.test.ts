@@ -12,7 +12,8 @@ import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createDocuments } from "../src/domain/documents.ts";
 import { createAuthoring } from "../src/domain/authoring.ts";
 import { createPublication } from "../src/domain/public-projection.ts";
-import { exportCampaignBundle, initializeCampaignRestoreTarget, inspectCampaignRestore, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { initializeCampaignRestoreTarget, inspectCampaignRestore, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { exportCampaignBundle } from "./export-v4-fixture.ts";
 import { runBundleCli } from "../src/bundle-cli.ts";
 
 const cfg = { origin: "https://bundle-authoring.test", cookieSecret: "bundle-authoring-test-secret-over-thirty-two-characters", now: () => 1788696000000 };

@@ -3,7 +3,8 @@ import { readFile, readdir } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { createCampaignBundle, emptyCampaignTables, parseCampaignBundle, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, campaignSemanticDiffV4, CAMPAIGN_TABLES, type CampaignTables, type CampaignRow } from "@chronicle/io";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
-import { exportCampaignBundle, inspectCampaignRestore, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { inspectCampaignRestore, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { exportCampaignBundle } from "./export-v4-fixture.ts";
 import { runBundleCli } from "../src/bundle-cli.ts";
 
 describe("unchanged explicit v1 to v2 upgrade inside the v4 restore chain", () => {

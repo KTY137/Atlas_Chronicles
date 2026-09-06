@@ -30,11 +30,11 @@ export function RuleFields({ fields, values, onChange, disabled = false }: { fie
   return <div className="rule-fields">{Object.entries(fields).map(([key, field]) => {
     const value = values[key] ?? field.default, id = `${prefix}-${key}`;
     const update = (value: Scalar) => onChange({ ...values, [key]: value });
-    const required = field.type !== "boolean" && !field.enum;
-    const hint = fieldHint(field), error = fieldError(field, value), hintId = `${id}-hint`, errorId = `${id}-error`;
-    const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined;
-    return <div className="rule-field" key={key}><label htmlFor={id}>{field.label} <small>({required ? "Pflichtfeld" : "optional"})</small></label>
-      {field.type === "boolean" ? <input id={id} type="checkbox" checked={value === true} onChange={(e) => update(e.target.checked)} disabled={disabled} aria-describedby={describedBy} aria-invalid={error ? true : undefined} /> : field.enum ? <select id={id} value={String(value)} onChange={(e) => update(e.target.value)} disabled={disabled} aria-describedby={describedBy} aria-invalid={error ? true : undefined}>{field.enum.map((option) => <option key={option}>{option}</option>)}</select> : <input id={id} type={field.type === "string" ? "text" : "number"} value={typeof value === "boolean" ? String(value) : value} min={field.minimum} max={field.maximum} maxLength={field.maxLength} step={field.type === "integer" ? 1 : "any"} required disabled={disabled} aria-describedby={describedBy} aria-invalid={error ? true : undefined} onChange={(e) => update(field.type === "string" || e.target.value === "" ? e.target.value : e.target.valueAsNumber)} />}
+    const required = (field.type === "integer" || field.type === "number") && !field.enum;
+    const hint = fieldHint(field), error = fieldError(field, value), hintId = `${id}-hint`, errorId = `${id}-error`, requirementId = `${id}-requirement`;
+    const describedBy = [requirementId, hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ");
+    return <div className="rule-field" key={key}><label htmlFor={id}>{field.label}</label><small id={requirementId}>{required ? "Pflichtfeld" : "optional"}</small>
+      {field.type === "boolean" ? <input id={id} type="checkbox" checked={value === true} onChange={(e) => update(e.target.checked)} disabled={disabled} aria-describedby={describedBy} aria-invalid={error ? true : undefined} /> : field.enum ? <select id={id} value={String(value)} onChange={(e) => update(e.target.value)} disabled={disabled} aria-describedby={describedBy} aria-invalid={error ? true : undefined}>{field.enum.map((option) => <option key={option}>{option}</option>)}</select> : <input id={id} type={field.type === "string" ? "text" : "number"} value={typeof value === "boolean" ? String(value) : value} min={field.minimum} max={field.maximum} maxLength={field.maxLength} step={field.type === "integer" ? 1 : "any"} required={required} disabled={disabled} aria-describedby={describedBy} aria-invalid={error ? true : undefined} onChange={(e) => update(field.type === "string" || e.target.value === "" ? e.target.value : e.target.valueAsNumber)} />}
       {hint ? <p id={hintId} className="field-help">{hint}</p> : null}
       {error ? <span id={errorId} role="alert">{error}</span> : null}
     </div>;

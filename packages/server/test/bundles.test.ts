@@ -17,7 +17,8 @@ import { createAtlas } from "../src/domain/atlas.ts";
 import { createCommunication } from "../src/domain/communication.ts";
 import { createActors } from "../src/domain/actors.ts";
 import { seedBundleActors } from "./bundle-actors-fixture.ts";
-import { exportCampaignBundle, initializeCampaignRestoreTarget, inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm } from "../src/domain/bundles.ts";
+import { initializeCampaignRestoreTarget, inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm } from "../src/domain/bundles.ts";
+import { exportCampaignBundle } from "./export-v4-fixture.ts";
 
 const clock = Date.UTC(2026, 8, 6, 12), cfg = { now: () => clock, seed: () => "00000001000000020000000300000004" };
 const authConfig = { ...cfg, origin: "https://bundle.test", cookieSecret: "credential-secret-never-exported".repeat(2) };

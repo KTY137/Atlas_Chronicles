@@ -5,13 +5,22 @@ import { errorText } from "../api";
 import { useAppearance } from "./Appearance";
 
 /** The renderer never fetches private images. This scoped host owns requests and their lifetime. */
-export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated }: {
+export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated, selection, focusObject }: {
   scene: ProjectedMapScene; tileBase: string; tileQuery?: string; onMove?: (id: string, to: MapPoint) => void; onSelect?: (hit: MapHit | null) => void; onPoint?: (point: MapPoint) => void; onScopeInvalidated?: () => void;
+  selection?: MapHit | null; focusObject?: { id: string; x: number; y: number } | null;
 }) {
   const { resolved } = useAppearance();
   const scene = useMemo(() => ({ ...projectedScene, rasterSampling: resolved.sampling }), [projectedScene, resolved.sampling]);
   const host = useRef<HTMLDivElement>(null), renderer = useRef<MapRenderer | null>(null);
-  const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated };
+  const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection };
+  const synchronizing = useRef(0);
+  // Renderer callbacks report user choices. Applying a controlled projection/selection
+  // must not feed its temporary null selection back into the complete object outline.
+  const synchronize = (apply: () => void) => {
+    const controlled = latest.current.selection !== undefined;
+    if (controlled) synchronizing.current++;
+    try { apply(); } finally { if (controlled) synchronizing.current--; }
+  };
   const schedule = useRef<() => void>(() => {}), clearScope = useRef<() => void>(() => {}), retryTiles = useRef<() => void>(() => {});
   const [error, setError] = useState(""), [tileError, setTileError] = useState(""), [ready, setReady] = useState(false);
   useEffect(() => {
@@ -76,16 +85,23 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
     retryTiles.current = () => { deniedScope = ""; clear(); latest.current.onScopeInvalidated?.(); queue(); };
     setError(""); setReady(false);
     void createMapRenderer(host.current, latest.current.scene, { signal: mount.signal, onCameraChange: queue,
-      onSelect: hit => latest.current.onSelect?.(hit), onMoveToken: (id, to) => latest.current.onMove?.(id, to),
+      onSelect: hit => { if (!synchronizing.current) latest.current.onSelect?.(hit); }, onMoveToken: (id, to) => latest.current.onMove?.(id, to),
       onPoint: point => latest.current.onPoint?.(point),
-    }).then(map => { if (mount.signal.aborted) { map.destroy(); return; } renderer.current = map; map.update(latest.current.scene); setReady(true); queue(); })
+    }).then(map => { if (mount.signal.aborted) { map.destroy(); return; } renderer.current = map; synchronize(() => map.update(latest.current.scene)); setReady(true); queue(); })
       .catch(reason => { if (!mount.signal.aborted) setError(errorText(reason)); });
     return () => { mount.abort(); clearTimeout(timer); clear(); renderer.current?.destroy(); renderer.current = null; schedule.current = () => {}; clearScope.current = () => {}; retryTiles.current = () => {}; };
   }, [scene.id]);
   useLayoutEffect(() => {
-    renderer.current?.update(scene); schedule.current();
+    synchronize(() => renderer.current?.update(scene)); schedule.current();
   }, [scene]);
   useLayoutEffect(() => { clearScope.current(); schedule.current(); }, [scene.rasterScope, tileBase, tileQuery]);
+  useLayoutEffect(() => { if (selection !== undefined) synchronize(() => renderer.current?.select(selection)); }, [selection?.kind, selection?.id, ready]);
+  useLayoutEffect(() => {
+    const map = renderer.current, element = host.current;
+    if (!map || !element || !focusObject || !Number.isFinite(focusObject.x) || !Number.isFinite(focusObject.y)) return;
+    const camera = map.getCamera();
+    map.setCamera({ ...camera, x: element.clientWidth / 2 - focusObject.x * camera.scale, y: element.clientHeight / 2 - focusObject.y * camera.scale });
+  }, [focusObject?.id, focusObject?.x, focusObject?.y, ready]);
   return <div className="tactical-canvas-frame">
     <div className="button-row"><Button disabled={!ready} onClick={() => renderer.current?.fit()}>Ganze Karte</Button><Button disabled={!ready} aria-label="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.5)}>+</Button><Button disabled={!ready} aria-label="Karte verkleinern" onClick={() => renderer.current?.zoomAt(1 / 1.5)}>−</Button></div>
     {error ? <Notice error>{error} Die Liste darunter bietet dieselben Figurenbefehle.</Notice> : null}

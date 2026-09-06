@@ -17,6 +17,7 @@ export default defineConfig({
       "@chronicle/szene": pkg("szene"),
       "@chronicle/forge": pkg("forge"),
       "@chronicle/io": pkg("io"),
+      "@chronicle/server/host": fileURLToPath(new URL("./packages/server/src/host.ts", import.meta.url)),
       "@chronicle/server": pkg("server"),
     },
   },
