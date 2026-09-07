@@ -114,14 +114,15 @@ interface Thema {
   readonly stuecke: readonly (readonly [string, string])[];
 }
 const THEMEN: readonly Thema[] = Object.freeze([
-  { schluessel: "halle", boden: "halle", stuecke: [["moebel", "mahl"], ["moebel", "sitz"], ["moebel", "sitz"], ["aufbau", "traeger"], ["licht", "warm"]] },
+  { schluessel: "halle", boden: "halle", stuecke: [["moebel", "mahl"], ["moebel", "sitz"], ["moebel", "sitz"], ["aufbau", "traeger"], ["moebel", "schild"], ["licht", "warm"]] },
   { schluessel: "kammer", boden: "wohnraum", stuecke: [["moebel", "rast"], ["gefaess", "schatz"], ["moebel", "sitz"], ["licht", "kerze"]] },
-  { schluessel: "lager", boden: "keller", stuecke: [["moebel", "lager"], ["gefaess", "behaelter"], ["gefaess", "behaelter"], ["gefaess", "vorrat"]] },
+  { schluessel: "lager", boden: "keller", stuecke: [["moebel", "lager"], ["gefaess", "behaelter"], ["gefaess", "behaelter"], ["gefaess", "vorrat"], ["moebel", "schatz"]] },
   { schluessel: "krypta", boden: "krypta", stuecke: [["moebel", "grab"], ["moebel", "grab"], ["aufbau", "geroell"], ["licht", "kerze"]] },
-  { schluessel: "bibliothek", boden: "wohnraum", stuecke: [["moebel", "buecher"], ["moebel", "buecher"], ["moebel", "kammer"], ["moebel", "sitz"], ["licht", "kerze"]] },
-  { schluessel: "schmiede", boden: "keller", stuecke: [["moebel", "handwerk"], ["moebel", "handwerk"], ["gefaess", "behaelter"], ["licht", "warm"]] },
-  { schluessel: "tempel", boden: "gehoben", stuecke: [["moebel", "kult"], ["aufbau", "thron"], ["aufbau", "traeger"], ["aufbau", "traeger"], ["licht", "warm"]] },
+  { schluessel: "bibliothek", boden: "wohnraum", stuecke: [["moebel", "buecher"], ["moebel", "buecher"], ["moebel", "wissen"], ["moebel", "kammer"], ["moebel", "sitz"], ["licht", "kerze"]] },
+  { schluessel: "schmiede", boden: "keller", stuecke: [["moebel", "handwerk"], ["moebel", "handwerk"], ["moebel", "waffe"], ["gefaess", "behaelter"], ["licht", "warm"]] },
+  { schluessel: "tempel", boden: "gehoben", stuecke: [["moebel", "kult"], ["gefaess", "kult"], ["aufbau", "thron"], ["aufbau", "traeger"], ["aufbau", "traeger"], ["licht", "warm"]] },
   { schluessel: "zisterne", boden: "flach", stuecke: [["gefaess", "vorrat"], ["aufbau", "geroell"], ["licht", "kerze"]] },
+  { schluessel: "waffenkammer", boden: "keller", stuecke: [["moebel", "waffe"], ["moebel", "ruestung"], ["moebel", "schild"], ["gefaess", "behaelter"], ["licht", "wache"]] },
 ]);
 
 const AUSGELASSEN: readonly string[] = Object.freeze([

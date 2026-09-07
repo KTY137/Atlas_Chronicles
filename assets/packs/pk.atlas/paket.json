@@ -1,0 +1,883 @@
+{
+  "assets": [
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 4991,
+      "datei": "boden/gelaende_gras.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gelaende_gras",
+      "schlagworte": [
+        "gras",
+        "ebene",
+        "gemaessigt"
+      ],
+      "sha256": "8f7d08646e2533412378b247ca7ce2e6b9c103a0a8ddf6ea260af3b75146002c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2821,
+      "datei": "boden/gelaende_wald.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gelaende_wald",
+      "schlagworte": [
+        "wald",
+        "dicht",
+        "gemaessigt"
+      ],
+      "sha256": "04c27b172e5167437a8e2a0b9d42d224e7de64a3c450434f9f393b29a8d7b89f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 1709,
+      "datei": "boden/gelaende_huegel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gelaende_huegel",
+      "schlagworte": [
+        "huegel",
+        "erde",
+        "gemaessigt"
+      ],
+      "sha256": "b5f3f85ddb5f0d65b463dc13a5eb14611a06ece496616792cb01964c0abc4cf6"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 1967,
+      "datei": "boden/gelaende_berg.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gelaende_berg",
+      "schlagworte": [
+        "berg",
+        "fels",
+        "unwegsam"
+      ],
+      "sha256": "a4dea4c1ef02f19842ba38318524cb07a0c8233345da3374e74402875df362af"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2765,
+      "datei": "boden/gelaende_sumpf.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gelaende_sumpf",
+      "schlagworte": [
+        "sumpf",
+        "feucht",
+        "unwegsam"
+      ],
+      "sha256": "fc93876b0262de29ef57c512110f828d29ba2ef064bb421b8044692e45fe7fe6"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 1395,
+      "datei": "boden/gelaende_sand.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gelaende_sand",
+      "schlagworte": [
+        "sand",
+        "wueste",
+        "trocken"
+      ],
+      "sha256": "afbdc421fbe6ce5a2476866640929435cac6c69510d0314f311121bbc29aa541"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 630,
+      "datei": "boden/gelaende_wasser.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gelaende_wasser",
+      "schlagworte": [
+        "wasser",
+        "see",
+        "meer"
+      ],
+      "sha256": "3822e76e7d33a1d55154c7b142002758ed1d52e682048691bf3972c8b37bf1c1"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 4333,
+      "datei": "boden/gelaende_schnee.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gelaende_schnee",
+      "schlagworte": [
+        "schnee",
+        "kalt",
+        "unwegsam"
+      ],
+      "sha256": "781ff4748905c635dcb88ade5400a1cfdc19f1c05e8a318596c09f0f91f2c6b7"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 1450,
+      "datei": "aufbau/berg.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "berg",
+      "schlagworte": [
+        "berg",
+        "fels",
+        "unwegsam"
+      ],
+      "sha256": "7a18ab88897d8059bb25ab8e7f226141c826fd4cab062608c5d0c4ff30e27d9c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 588,
+      "datei": "aufbau/huegel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "huegel",
+      "schlagworte": [
+        "huegel",
+        "erde",
+        "gemaessigt"
+      ],
+      "sha256": "e1903c2b965294567d469c445878051db7fd660a986ca8c28b0d9022bc35ad3c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 752,
+      "datei": "aufbau/vulkan.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "vulkan",
+      "schlagworte": [
+        "vulkan",
+        "feuer",
+        "gefahr"
+      ],
+      "sha256": "08ab8dbfbe05a77b34fea02fc0f85fef324b8f13878c71cf2cedf0f60ce40279"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1156,
+      "datei": "aufbau/wald_laub.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wald_laub",
+      "schlagworte": [
+        "wald",
+        "laub",
+        "gemaessigt"
+      ],
+      "sha256": "dc3dbad8253624b724d265b32a84e1612cd3a2f74cc298e5c77e14cc8564d47e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1815,
+      "datei": "aufbau/wald_nadel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wald_nadel",
+      "schlagworte": [
+        "wald",
+        "nadel",
+        "kalt"
+      ],
+      "sha256": "d89d06cb2585e2f81b01c4ecb275fc864eba32c9c1e69dd3e7032edf6d9f773c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1476,
+      "datei": "aufbau/sumpf.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "sumpf",
+      "schlagworte": [
+        "sumpf",
+        "feucht",
+        "unwegsam"
+      ],
+      "sha256": "51e95a2f13b333a8be648285f259d569bd3780f471758b9716595844067a403e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 713,
+      "datei": "aufbau/duene.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "duene",
+      "schlagworte": [
+        "sand",
+        "wueste",
+        "trocken"
+      ],
+      "sha256": "30b4854e874a85847f990b60fe1c795bcdca88f0d8dae5698c27037d42b04302"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 615,
+      "datei": "aufbau/ruine.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "ruine",
+      "schlagworte": [
+        "ruine",
+        "verfall",
+        "abenteuer"
+      ],
+      "sha256": "2373d0c39b2b2c14a7bc90aaadc8781e8c41ddfee43aa676afb17698f37e917f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1481,
+      "datei": "aufbau/steinkreis.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steinkreis",
+      "schlagworte": [
+        "kult",
+        "alt",
+        "abenteuer"
+      ],
+      "sha256": "5537c1e0981ec9863954c4b6d0ed41a27f75ec439ab4e13abc237b4900ff23d6"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 623,
+      "datei": "aufbau/grabhuegel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "grabhuegel",
+      "schlagworte": [
+        "grab",
+        "alt",
+        "abenteuer"
+      ],
+      "sha256": "f09a70d333d1dd049ff47e5ce4630fb0935a7d753a282cabe0013e07689df485"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1030,
+      "datei": "aufbau/bruecke.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "bruecke",
+      "schlagworte": [
+        "bruecke",
+        "weg",
+        "fluss"
+      ],
+      "sha256": "dd5154d0d6785e48a013b9cd9d5f03be14392186604c4d4afc56824e064a3ddd"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 673,
+      "datei": "aufbau/mine.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "mine",
+      "schlagworte": [
+        "mine",
+        "handwerk",
+        "fels"
+      ],
+      "sha256": "28600157a3e0a179b4b21568bcf8223417cd70b217ec8845295b4431cf9b76df"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3963,
+      "datei": "aufbau/stadt.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "stadt",
+      "schlagworte": [
+        "stadt",
+        "siedlung",
+        "gross"
+      ],
+      "sha256": "c0cfa54d513400dfbf1e3384b90f9344bc2f52ad123b8d6aea85a440f85ee55f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 996,
+      "datei": "aufbau/dorf.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "dorf",
+      "schlagworte": [
+        "dorf",
+        "siedlung",
+        "klein"
+      ],
+      "sha256": "ab96a8fb4167a4b39d8e0291b229c4bc2800491a2abf51f7867721231f5490f2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1530,
+      "datei": "aufbau/burg.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "burg",
+      "schlagworte": [
+        "burg",
+        "wehr",
+        "siedlung"
+      ],
+      "sha256": "76bdc2ea61103a6a9d523e3a2b84ad11279fa33ca643ac4d244b7d5dcc85b31d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 901,
+      "datei": "aufbau/turm.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "turm",
+      "schlagworte": [
+        "turm",
+        "wehr",
+        "klein"
+      ],
+      "sha256": "eea0edfd23095487a3291dd930f185f67eddef344ddfdc63fbbf9d8de0ce0301"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1178,
+      "datei": "aufbau/hafen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "hafen",
+      "schlagworte": [
+        "hafen",
+        "siedlung",
+        "meer"
+      ],
+      "sha256": "e89913579dc116e4cdefcdb50264686c2eb618f97f3ba0022fd7e814d779d697"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1289,
+      "datei": "aufbau/lager.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "lager",
+      "schlagworte": [
+        "lager",
+        "rast",
+        "klein"
+      ],
+      "sha256": "e4229e9da39cd2d16830da05c3848491eca791cdfeb72c34a8c92d9dcdd6559b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1018,
+      "datei": "aufbau/hoehle.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "hoehle",
+      "schlagworte": [
+        "hoehle",
+        "fels",
+        "abenteuer"
+      ],
+      "sha256": "0c0496703a188978d1815deb9fa376f62bae0f99f8ab3dddd93d0bb512b7b16c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 895,
+      "datei": "marke/portal.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "portal",
+      "schlagworte": [
+        "portal",
+        "uebergang",
+        "hinweis"
+      ],
+      "sha256": "35a6414a9565c267f242b6486b3d8583f1227c5a16658b5866148100b39a6842"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 636,
+      "datei": "marke/marke_norden.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "marke_norden",
+      "schlagworte": [
+        "norden",
+        "kompass",
+        "hinweis"
+      ],
+      "sha256": "a69bb283d75aaad95416c42d02fa9c460bfcd1e57790c1d47cbe3e566090b638"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 482,
+      "datei": "marke/marke_weg.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "marke_weg",
+      "schlagworte": [
+        "weg",
+        "leitung",
+        "hinweis"
+      ],
+      "sha256": "3da4a1a0aa0cccc4e8d213a10a27cde7abed8ef0a2c8041b6453f31bbfae2219"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 431,
+      "datei": "marke/marke_grenze.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "marke_grenze",
+      "schlagworte": [
+        "grenze",
+        "leitung",
+        "hinweis"
+      ],
+      "sha256": "3b4364abbb6a6c520d3e67344e4b5f354821403ed4e32a38f8e2d969f0cfffc2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 941,
+      "datei": "marke/marke_gefahr.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "marke_gefahr",
+      "schlagworte": [
+        "gefahr",
+        "warnung",
+        "hinweis"
+      ],
+      "sha256": "69e90f58744352b69d29eb46468d0941806c80aecb366ed0920fe7c04abbce62"
+    }
+  ],
+  "id": "pk.atlas",
+  "kind": "asset-pack",
+  "lizenz": {
+    "datei": "lizenz.txt",
+    "herkunft": "eigen",
+    "inhaber": "Chronicle 2026",
+    "quelle": null,
+    "spdx": "CC0-1.0",
+    "textSha256": "a86d13ad82c3ac27d5e732fce21de9a962b275a2bdd730f691e98ea221bc3e61"
+  },
+  "schemaVersion": 1,
+  "titel": "Atlas — Tuschepictogramme für die Übersichtskarte: Gelände, Landmarken, Siedlungen",
+  "urheber": "Chronicle",
+  "version": "1.1.0",
+  "zellgroesse": 64
+}

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -38,6 +39,15 @@ describe("packs: serving asset-pack artwork against the real pk.grundriss pack",
 
   const get = (url: string, withCookie = true) => app.inject({ method: "GET", url, headers: withCookie ? { cookie } : {} });
 
+  // Die Assetzahl wird aus dem tatsaechlichen Paket gelesen, nicht als Zahl in den Test getippt.
+  // Eine feste 41 prueft nicht die Route, sondern erinnert nur daran, wie gross das Paket am Tag
+  // des Schreibens war — und wird rot, sobald jemand das Paket erweitert, was erlaubt ist. Der
+  // Satz, der zaehlt, ist: was die Route meldet, ist genau das, was auf der Platte liegt.
+  const paketAufPlatte = JSON.parse(
+    readFileSync(new URL("../../../assets/packs/pk.grundriss/paket.json", import.meta.url), "utf8"),
+  ) as { assets: unknown[] };
+  const ASSETS_AUF_PLATTE = paketAufPlatte.assets.length;
+
   it("lists the real installed pack with id, version, asset count and licence", async () => {
     const response = await get("/api/packs");
     expect(response.statusCode).toBe(200);
@@ -45,17 +55,17 @@ describe("packs: serving asset-pack artwork against the real pk.grundriss pack",
     const entry = list.find((p) => p.id === "pk.grundriss");
     expect(entry).toBeTruthy();
     expect(entry!.version).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(entry!.assetCount).toBe(41);
+    expect(entry!.assetCount).toBe(ASSETS_AUF_PLATTE);
     expect(entry!.lizenz.spdx).toBe("CC0-1.0");
   });
 
-  it("parses the manifest and reports all 41 assets", async () => {
+  it("parses the manifest and reports every asset the pack actually contains", async () => {
     const response = await get("/api/packs/pk.grundriss/manifest");
     expect(response.statusCode).toBe(200);
     const manifest = response.json();
     expect(manifest.id).toBe("pk.grundriss");
     expect(manifest.schemaVersion).toBe(1);
-    expect(manifest.assets).toHaveLength(41);
+    expect(manifest.assets).toHaveLength(ASSETS_AUF_PLATTE);
   });
 
   it("serves a known asset with its declared mime type, and its bytes hash to the manifest value", async () => {

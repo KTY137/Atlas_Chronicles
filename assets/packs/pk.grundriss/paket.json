@@ -1100,6 +1100,1167 @@
         "leitung"
       ],
       "sha256": "206cd0259daa62b513226d5dc92f2e6bd365686b388ef3c3f335ae5ad0da5e16"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 601,
+      "datei": "gefaess/flasche.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "flasche",
+      "schlagworte": [
+        "glas",
+        "vorrat",
+        "behaelter"
+      ],
+      "sha256": "0c267a189fc706a729aeb68271a3267f7d6fde0e7e14518ca65ba925ccfcac3a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 1144,
+      "datei": "gefaess/phiole.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "phiole",
+      "schlagworte": [
+        "alchemie",
+        "schatz",
+        "behaelter"
+      ],
+      "sha256": "03690a9174114dde190565a96b8e88c381a7da8d3a2d79bd765e346299975e18"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 809,
+      "datei": "gefaess/amphore.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "amphore",
+      "schlagworte": [
+        "ton",
+        "vorrat",
+        "behaelter"
+      ],
+      "sha256": "bd47df280e41f3c7054c1ba83be10c9b11dce66961e3907e626333ac4cbfb02e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 808,
+      "datei": "gefaess/kessel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kessel",
+      "schlagworte": [
+        "metall",
+        "handwerk",
+        "behaelter"
+      ],
+      "sha256": "4c1088530cc8e606c97a9be40d6689cc806c5bd4319210b195c263cc74d26eb6"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 642,
+      "datei": "gefaess/weinschlauch.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weinschlauch",
+      "schlagworte": [
+        "leder",
+        "vorrat",
+        "behaelter"
+      ],
+      "sha256": "0083967f38fb260f5c9222feb93341853c4748b97791bdd243d30612f6d3d605"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 692,
+      "datei": "gefaess/kelch.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kelch",
+      "schlagworte": [
+        "metall",
+        "kult",
+        "schatz"
+      ],
+      "sha256": "20dc30cf01513d023b329720b650898bbc13f9b6c08f72b822e772bb4be2923b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1110,
+      "datei": "moebel/waffenstaender.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "waffenstaender",
+      "schlagworte": [
+        "waffe",
+        "handwerk",
+        "wache"
+      ],
+      "sha256": "7e466caff0bc239c3d73f67afb905a6e05fa43876e5d286a5eb809a070cf2b4b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1030,
+      "datei": "moebel/ruestungsstaender.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "ruestungsstaender",
+      "schlagworte": [
+        "ruestung",
+        "wache",
+        "handwerk"
+      ],
+      "sha256": "b86533d77e8b6c862bc18a2688fca4574624525cabce7946eb4a1b5c728c6811"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1266,
+      "datei": "moebel/schildwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schildwand",
+      "schlagworte": [
+        "schild",
+        "wache",
+        "handwerk"
+      ],
+      "sha256": "e3d9d8b91036481e7d1381b48adabd78e4cfe256d8336b5048cf83f343a1b24b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1150,
+      "datei": "moebel/waffenhaufen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "waffenhaufen",
+      "schlagworte": [
+        "waffe",
+        "geroell",
+        "lager"
+      ],
+      "sha256": "d483c92c9bb2688b189076732d2dec54a0d38edb0cf4373efc855139e1e86042"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 701,
+      "datei": "moebel/schleifstein.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schleifstein",
+      "schlagworte": [
+        "handwerk",
+        "stein",
+        "waffe"
+      ],
+      "sha256": "b83ed56e7d1b6192f868e960ce0a826c30ecf905ffba4b01b5fd067212725d53"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1821,
+      "datei": "moebel/muenzhaufen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "muenzhaufen",
+      "schlagworte": [
+        "schatz",
+        "gold",
+        "lager"
+      ],
+      "sha256": "08080f4f010c9a6c55cec40be5808f7c80b8aecc607d036a8722486f739397a2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1217,
+      "datei": "moebel/buecherstapel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "buecherstapel",
+      "schlagworte": [
+        "buecher",
+        "wissen",
+        "kammer"
+      ],
+      "sha256": "dccb16bf72627196689435359e4157ede8f106b19c165296528e6b25161d493a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2421,
+      "datei": "moebel/schriftrollen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schriftrollen",
+      "schlagworte": [
+        "buecher",
+        "wissen",
+        "kult"
+      ],
+      "sha256": "6da5ae55b08d56d884a69a37b0a188c2e0acffbb517d30e08b13d552398b0c40"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2103,
+      "datei": "boden/boden_ziegel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_ziegel",
+      "schlagworte": [
+        "ziegel",
+        "halle",
+        "gehoben"
+      ],
+      "sha256": "325f8eb9a34590a8e3ed270b55633ddc7989b2efac86980405d96f190c46a173"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 5520,
+      "datei": "boden/boden_mosaik.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_mosaik",
+      "schlagworte": [
+        "mosaik",
+        "gehoben",
+        "kult"
+      ],
+      "sha256": "62b1eaf616e1c9daa8948882113ae8024e75b90175b4df3c15605ac449eae08c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 1446,
+      "datei": "boden/boden_dielen_alt.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_dielen_alt",
+      "schlagworte": [
+        "holz",
+        "wohnraum",
+        "verfall"
+      ],
+      "sha256": "a3bc1add01aeaf556ce3d4b2449cdd60ba4ae24b16d4dbadc0549f424d9d1deb"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 1533,
+      "datei": "boden/boden_sand.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_sand",
+      "schlagworte": [
+        "sand",
+        "keller",
+        "trocken"
+      ],
+      "sha256": "019d10930bdcd843bef0342e3b87e881c7d713d92706afecc4b0684777c946c7"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 688,
+      "datei": "tuer/tuer_stein.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tuer_stein",
+      "schlagworte": [
+        "stein",
+        "drehbar",
+        "schwer"
+      ],
+      "sha256": "aae3b3266834aaaae7cc0e5b2b8f4ffcf2683820c215260f84c9b73cdea1e94a"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 1200,
+      "datei": "tuer/tuer_doppel.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tuer_doppel",
+      "schlagworte": [
+        "holz",
+        "halle",
+        "doppel"
+      ],
+      "sha256": "fde8a279c57bc33641e90e02c03a75e9b102f7fc9d388fdfab5d99a30294e34a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 623,
+      "datei": "tuer/tuer_geheim.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tuer_geheim",
+      "schlagworte": [
+        "stein",
+        "verborgen",
+        "geheim"
+      ],
+      "sha256": "344da3b6281eadec49bdf2f67563ce046fbfae49f6520e3acd6974426ea74179"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1418,
+      "datei": "aufbau/wendeltreppe.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wendeltreppe",
+      "schlagworte": [
+        "treppe",
+        "aufwaerts",
+        "abwaerts"
+      ],
+      "sha256": "14a2b7ad1693f63ecfcba8521e90af0d4600f0ada9b0427abc0d3ecc2a8a14e9"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1123,
+      "datei": "aufbau/saeule_bruch.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "saeule_bruch",
+      "schlagworte": [
+        "stein",
+        "traeger",
+        "verfall"
+      ],
+      "sha256": "2d24358668123d18f5f27b309860c3a88ca5d5a24914730f500169bd3eee712f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 783,
+      "datei": "aufbau/brunnen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "brunnen",
+      "schlagworte": [
+        "wasser",
+        "kammer",
+        "tief"
+      ],
+      "sha256": "d3708c92edce8878570cdee9ad96f0a3d507062e966203935d833a28fe1e7322"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 933,
+      "datei": "aufbau/statue.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "statue",
+      "schlagworte": [
+        "stein",
+        "thron",
+        "kult"
+      ],
+      "sha256": "ccc0221586c89b0c952d535028fd2f7340b5595f6c6faf279de45284533afde4"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 856,
+      "datei": "aufbau/kette_ring.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kette_ring",
+      "schlagworte": [
+        "metall",
+        "kerker",
+        "gefahr"
+      ],
+      "sha256": "38c7d67af6501ca6135fb78e454b8734735e84b57b27fd038c5f399c458229a5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 565,
+      "datei": "licht/wandfackel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wandfackel",
+      "schlagworte": [
+        "feuer",
+        "warm",
+        "wache"
+      ],
+      "sha256": "ce44d6a996e91d4326e0791c5367f1d5125b9d76fd1ec728ed8c5105598f624d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 886,
+      "datei": "licht/laterne.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "laterne",
+      "schlagworte": [
+        "kerze",
+        "schwach",
+        "lager"
+      ],
+      "sha256": "2f5b0b5314fb72f637617e12a8d3ea7db3fc68547819461610f59c3a495b5b74"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 1160,
+      "datei": "licht/kandelaber.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kandelaber",
+      "schlagworte": [
+        "kerze",
+        "gehoben",
+        "kult"
+      ],
+      "sha256": "896073833a7954bfda311da4616b9505b8fac244a2fe02d309e364f6425075ff"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 553,
+      "datei": "marke/marke_falle.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "marke_falle",
+      "schlagworte": [
+        "falle",
+        "gefahr",
+        "hinweis"
+      ],
+      "sha256": "69f3dae7c0c724ce1aa10b1452e33964f125716c1eacd747d3bf1f6fd08c41f1"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 445,
+      "datei": "marke/marke_ziel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "marke_ziel",
+      "schlagworte": [
+        "ziel",
+        "hinweis",
+        "leitung"
+      ],
+      "sha256": "5a0094dfd112d19b5e243c4174c60df4050b7f6f1956f87fbc8783cd06cda421"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 453,
+      "datei": "marke/marke_frage.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "marke_frage",
+      "schlagworte": [
+        "frage",
+        "hinweis",
+        "wissen"
+      ],
+      "sha256": "466c1a206deb7f0619f906851fcd348929da72d6291b6f10b928392bed071333"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "wand",
+      "bytes": 1337,
+      "datei": "wand/wand_stein.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wand_stein",
+      "schlagworte": [
+        "stein",
+        "mauer",
+        "halle"
+      ],
+      "sha256": "3d471dd3261beea1bd7d4a245383d2f6f74659f28ae2a9d1483ecfccd2301a8b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "wand",
+      "bytes": 2538,
+      "datei": "wand/wand_ziegel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wand_ziegel",
+      "schlagworte": [
+        "ziegel",
+        "mauer",
+        "gehoben"
+      ],
+      "sha256": "b266ad88ca33af65cb76f5fa82d67ba14ef1edb7623170068b27fcf86f31de5c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "wand",
+      "bytes": 1329,
+      "datei": "wand/wand_bruch.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wand_bruch",
+      "schlagworte": [
+        "stein",
+        "mauer",
+        "verfall"
+      ],
+      "sha256": "3aeb3f2addae33f3f8fddad093730cf7310330fee1804857f17860eaed10a428"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "wand",
+      "bytes": 1320,
+      "datei": "wand/wand_holz.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wand_holz",
+      "schlagworte": [
+        "holz",
+        "mauer",
+        "wohnraum"
+      ],
+      "sha256": "8930c19030a2b28985db4e8a7d05192bc0803f0675610105cae2dfc7f9b62479"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "wand",
+      "bytes": 1059,
+      "datei": "wand/wand_fels.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wand_fels",
+      "schlagworte": [
+        "fels",
+        "mauer",
+        "hoehle"
+      ],
+      "sha256": "a0b1dfb74d4ce0a70ace1d4e48f61568496a2c62c1d8504031ee10ac1576b471"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "figur",
+      "bytes": 585,
+      "datei": "figur/figur_held.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "figur_held",
+      "schlagworte": [
+        "held",
+        "spieler",
+        "klein"
+      ],
+      "sha256": "f1d436227da522950c373dbd67e7dab2ef27b41e83a3bcad8ba9f27063daa129"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "figur",
+      "bytes": 730,
+      "datei": "figur/figur_wache.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "figur_wache",
+      "schlagworte": [
+        "wache",
+        "mensch",
+        "klein"
+      ],
+      "sha256": "1db41c7e7748a6d7865bef9638ef8e5d333d4cef8f321d10cff0f78a8ec478c5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "figur",
+      "bytes": 760,
+      "datei": "figur/figur_untot.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "figur_untot",
+      "schlagworte": [
+        "untot",
+        "verfall",
+        "klein"
+      ],
+      "sha256": "967b2f7928276dff03652c68d1dda4b4f568a902b8a2b1fb79b38bb9c6dcfa8d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "figur",
+      "bytes": 1725,
+      "datei": "figur/figur_schwarm.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "figur_schwarm",
+      "schlagworte": [
+        "schwarm",
+        "viele",
+        "klein"
+      ],
+      "sha256": "cff92ddd16288827cee99834c88a754fbdf6e0f5cba97c112a8a7de462b57aa2"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "figur",
+      "bytes": 1721,
+      "datei": "figur/figur_bestie.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "figur_bestie",
+      "schlagworte": [
+        "bestie",
+        "tier",
+        "gross"
+      ],
+      "sha256": "0be0be3da1f0585c05c395c9b083a1cde3b2ffee5bc0705f839001985bc57d0b"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "figur",
+      "bytes": 884,
+      "datei": "figur/figur_riese.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "figur_riese",
+      "schlagworte": [
+        "riese",
+        "gross",
+        "bestie"
+      ],
+      "sha256": "d590c6d3dc0601f117fe24544f7a2ef87be6c5abf2a4015bf25d8d536f4e1960"
     }
   ],
   "id": "pk.grundriss",
@@ -1113,8 +2274,8 @@
     "textSha256": "4bd9a76fcbc7302ee91c0f12a5ddf71b85ea9c1b8f23ba91f4cede6bf6980560"
   },
   "schemaVersion": 1,
-  "titel": "Grundriss — schematische Tuschesymbole für taktische Karten, gebaute und natürliche",
+  "titel": "Grundriss — schematische Tuschesymbole für taktische Karten: Bau, Natur, Ausrüstung, Wand und Figur",
   "urheber": "Chronicle",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "zellgroesse": 64
 }

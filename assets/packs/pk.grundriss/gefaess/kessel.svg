@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<title>Kessel</title>
+<path d="M15 30 Q15 48 32 50 Q49 48 49 30 Z" fill="#7b828b" stroke="#2f2a22" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><ellipse cx="32" cy="30" rx="17" ry="5" fill="#2f2a22" stroke="#2f2a22" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" fill-opacity="0.7"/><path d="M16 27 Q32 14 48 27" fill="none" stroke="#2f2a22" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><line x1="24" y1="51" x2="21" y2="56" fill="none" stroke="#2f2a22" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><line x1="40" y1="51" x2="43" y2="56" fill="none" stroke="#2f2a22" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

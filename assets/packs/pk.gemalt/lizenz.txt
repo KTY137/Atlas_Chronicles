@@ -1,0 +1,17 @@
+Chronicle — Assetpaket "pk.gemalt"
+
+Copyright (c) 2026 Chronicle
+
+Zu diesem Werk gehoerende Grafiken wurden vollstaendig in diesem Repository erzeugt
+(tools/assets/erzeuge-gemaltpaket.mjs). Es wurde kein fremdes Bild-, Textur-, Schrift-
+oder Vorlagenmaterial verwendet, eingebettet, abgepaust oder abgeleitet.
+
+Der Urheber gibt dieses Werk unter CC0 1.0 Universal (Public Domain Dedication) frei:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Soweit nach Gesetz moeglich, verzichtet der Urheber weltweit auf alle Urheber- und
+verwandten Schutzrechte an diesem Werk. Das Werk darf ohne Genehmigung und ohne
+Namensnennung kopiert, veraendert, verbreitet und auch kommerziell genutzt werden.
+
+Diese Datei ist die Lizenzquelle des Pakets. Ihr SHA-256 steht als "textSha256" im
+Manifest paket.json; die Pruefung erfolgt in tools/gate-assets.mjs.

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<title>Ruine</title>
+<polygon points="14,50 14,24 20,24 20,32 26,32 26,20 32,20 32,38 40,38 40,26 46,26 46,50" fill="#d5cbb4" stroke="#2f2a22" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><line x1="14" y1="50" x2="50" y2="50" fill="none" stroke="#2f2a22" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><rect x="28" y="42" width="7" height="8" fill="#2f2a22" fill-opacity="0.65" stroke="none"/><polygon points="48,50 52,44 56,50" fill="#c4b99f" stroke="#2f2a22" stroke-width="1.4"/>
+</svg>

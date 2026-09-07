@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<title>Figur: Riese</title>
+<circle cx="64" cy="64" r="59" fill="#9d968a" stroke="#2f2a22" stroke-width="3.2"/><circle cx="64" cy="64" r="55" fill="none" stroke="#e9e0cb" stroke-width="1.4" stroke-opacity="0.55"/><g><circle cx="64" cy="43.94" r="11.8" fill="#e9e0cb" stroke="#2f2a22" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M36.86 95.86 Q64 54.56 91.14 95.86 Z" fill="#e9e0cb" stroke="#2f2a22" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><line x1="28.6" y1="99.4" x2="28.6" y2="34.5" fill="none" stroke="#2f2a22" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/><line x1="98.22" y1="34.5" x2="106.48" y2="75.8" fill="none" stroke="#2f2a22" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/></g>
+</svg>

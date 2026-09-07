@@ -45,16 +45,98 @@ keinen zweiten Validator in einer zweiten Sprache.
 
 | Id | Assets | Lizenz | Herkunft |
 |---|---:|---|---|
-| `pk.grundriss` 1.1.0 | 41 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-grundrisspaket.mjs`](../tools/assets/erzeuge-grundrisspaket.mjs) |
+| `pk.grundriss` 1.2.0 | 84 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-grundrisspaket.mjs`](../tools/assets/erzeuge-grundrisspaket.mjs) |
+| `pk.atlas` 1.1.0 | 32 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-atlaspaket.mjs`](../tools/assets/erzeuge-atlaspaket.mjs) |
+| `pk.gemalt` 1.1.0 | 55 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-gemaltpaket.mjs`](../tools/assets/erzeuge-gemaltpaket.mjs) |
 
 `pk.grundriss` sind **schematische Grundriss-Symbole in einer Tuschesprache**, lesbar bei 64 px.
 Es ist ausdrücklich keine gemalte Battlemap-Kunst; das steht so im Pakettitel, damit niemand es am
-Tisch herausfinden muss. Version 1.1.0 ergänzt neun natürliche Symbole (Felsboden, Stalagmit,
-Tropfsteinsäule, Felsblock, Pilzgruppe, Wasserlache, Knochenhaufen, Spalte, Lagerfeuer), damit
-neben dem gebauten auch der gefundene Ort bedient ist.
+Tisch herausfinden muss. 1.1.0 ergänzte neun natürliche Symbole, damit neben dem gebauten auch der
+gefundene Ort bedient ist.
+
+**1.2.0 legt 43 Assets nach (41 → 84), und der Anlass war eine Messung, kein Geschmack.** Von den
+40 `(art, schlagwort)`-Anfragen, die `grundriss`, `hoehle` und `siedlung` tatsächlich an das Paket
+stellen, hatten **26 genau einen** Kandidaten. `r.waehle` über eine einelementige Liste ist eine
+Konstante und keine Wahl: jede Halle bekam denselben Tisch, jede Kammer dasselbe Bett, jede Tür
+dasselbe Blatt. Nachgelegt sind darum
+
+- **Gegenstände** — Waffenständer, Rüstungsständer, Schildwand, Waffenhaufen, Schleifstein,
+  Münzhaufen, Bücherstapel, Schriftrollen sowie Flasche, Phiole, Amphore, Kessel, Weinschlauch und
+  Kelch. Ohne Schemamigration: `gefaess` heisst wörtlich Gefäss, und `moebel` heisst in diesem
+  Paket seit `amboss` „Ding, das im Raum steht". Eine zehnte `art` zu erfinden hiesse die
+  irreversible Schicht für eine Frage der Ablage anzufassen.
+- **Zweite Antworten** auf die dünnsten Anfragen — Ziegel-, Mosaik-, Sand- und Altdielenboden,
+  Steintür, Wendeltreppe, Säulenstumpf, Brunnen, Statue, Wandkette, Wandfackel, Laterne,
+  Kandelaber. Nicht auf `marke/eingang`: eine Eingangsmarke ist eine Aussage, keine
+  Geschmacksfrage, und Vielfalt gehört auf Möbel und Böden, nicht auf ein Symbol, das etwas
+  Bestimmtes behauptet.
+- **Die beiden leeren Arten.** `ASSET_ARTEN` deklarierte `wand` und `figur` seit dem ersten Tag,
+  `EBENE` in `kartenwerk.ts` hielt ihnen die Ebenen 25 und 5 frei, und das Paket hatte von
+  beiden **null**. Jetzt fünf Wandsegmente und sechs Figurenmarken. Die Wände sind Handsatz: der
+  Erzeuger liefert Wände weiter als Geometrie, wie `AUSGELASSEN_BASIS` es zusagt.
+
+Jedes neue Stück trägt mindestens ein Schlagwort, das ohnehin abgefragt wird — ein Asset, das keine
+Anfrage erreicht, ist totes Gewicht. Waffen, Rüstung und Schilde bekamen zusätzlich einen Ort:
+das Thema `waffenkammer` in [`packages/forge/src/grundriss.ts`](../packages/forge/src/grundriss.ts).
+
+`pk.atlas` ist das erste Paket für die Karte, auf die man **hinunter**sieht statt auf ihr zu
+stehen: Gelände, Landmarken, Siedlungen und Kartenmarken als Pictogramme im Massstab eines
+Tagesmarschs. Es füllt eine gemessene Lücke — `forge/src/azgaar.ts` und `forge/src/eron-map.ts`
+liefern beide `stamps: []`, die Weltkarte hatte Regionen, Orte und **kein einziges Symbol**. Ein
+eigenes Paket statt weiterer Zeilen in `pk.grundriss`, weil die beiden verschiedene Fragen
+beantworten: ein Grundrisssymbol ist im Massstab eines Menschen gezeichnet, ein Atlassymbol im
+Massstab einer Landschaft. Unter einer Id wäre `Stamp.a` mehrdeutig über den Massstab, und
+`zellgroesse` löge eines von beiden an.
+
+`pk.gemalt` ist die **gemalte Schwester von `pk.grundriss`**: gleiche Namen, gleiche Footprints,
+andere Hand. Weil `Stamp.a` paketqualifiziert ist, ist der Stilwechsel ein Tausch der Paket-Id und
+sonst nichts — `pk.grundriss/truhe` und `pk.gemalt/truhe` sind dieselbe Truhe an derselben Stelle.
+Die Tusche bleibt richtig, wo ein Symbol bei 16 px lesbar sein muss (Übersichtskarte, Legende,
+Auswahlliste); gemalt ist richtig, wo man auf den Tisch zoomt.
+
+Der Look kommt aus drei Mitteln, die das Assetgate ausdrücklich erlaubt — verboten ist `url(`
+**ohne** `#`, also jeder Abruf nach draussen, nicht der Verweis in dieselbe Datei:
+
+- **Verlauf** für die Form (Wölbung eines Fasses, Tiefe einer Grube),
+- **`feTurbulence`** für das Korn — das ist der ganze Unterschied zwischen „Fläche in Steinfarbe"
+  und „gemalter Stein",
+- **weiche dunkle Fugen plus Lichtkante oben links** für Dicke.
+
+Die Malgriffe stehen in [`tools/assets/pinsel.mjs`](../tools/assets/pinsel.mjs).
+
+**Ein Stilpaket ist ein Paket oder es ist Dekoration.** Die Generatoren nennen nie ein Asset beim
+Namen; sie fragen nach einer `art` mit einem `schlagwort`. Ein Stilpaket, das eine dieser
+Anfragen nicht beantwortet, erzeugt leise eine Karte mit Löchern. `pk.gemalt` 1.0.0 bediente
+gemessen **34 von 47** Anfragen; 1.1.0 bedient alle. Bewiesen wird das nicht durch Zählen, sondern
+indem [`packages/forge/test/stiltausch.test.ts`](../packages/forge/test/stiltausch.test.ts) mit
+jedem Stilpaket **echte Karten erzeugt** und `bericht.nichtBedient` gegen `[]` prüft.
+
+Ein Nachtrag, den derselbe Test erzwungen hat: der Stiltausch ist **keine Umlackierung**. Die
+Paketidentität geht in den `Weltkeim` ein, der Keim sät den Zufall — dieselbe Anfrage gegen ein
+anderes Stilpaket ergibt also ein anderes *Layout*, nicht dieselbe Karte in anderer Farbe. Der
+Stil ist eine Entscheidung beim Erzeugen, nicht danach.
+
+**Warum Vektor und nicht gemalte Rasterbilder.** Unter [`assets/generated/painted-dungeon-v1/`](generated/painted-dungeon-v1/)
+liegen drei sehr gute, mit einem Bildmodell erzeugte PNGs. Ihr eigenes README nennt den Grund,
+warum sie nicht als Paket registriert sind: *"Distribution grant: pending the project's licensing
+decision."* Der Paketvertrag verlangt pro Asset eine auflösbare Lizenz mit **gehashtem Text**
+(RB-21d §6.1), und `herkunft: "eigen"` heisst „in diesem Repository erzeugt". Ein Paket aus einem
+Fremdwerkzeug mit offener Rechtelage kann beides nicht behaupten. `pk.gemalt` erzeugt denselben
+Eindruck aus Funktionen, die hier stehen: reproduzierbar unter `--pruefe`, CC0 ohne Vorbehalt,
+auflösungsfrei statt auf 1254 px festgenagelt — und über alle Assets hinweg **konsistent**, was
+bei einzeln erzeugten Bildern die eigentliche Schwierigkeit ist.
+
+Die drei PNGs bleiben, wo sie sind, und dienen als Stilvorlage. Sobald die Lizenzfrage entschieden
+ist, ist ihre Registrierung eine eigene Entscheidung, kein Nebeneffekt dieses Pakets.
+
+Alle drei Pakete zeichnen mit derselben Feder: Palette, Rauschen, Striche und die Baumaschinerie
+stehen in [`tools/assets/tusche.mjs`](../tools/assets/tusche.mjs). Extrahiert wurde sie, als das
+zweite Paket kam, und keinen Tag früher — eine Abstraktion mit einem Nutzer ist Spekulation. Dass
+die Extraktion nichts an der Kunst verändert hat, ist kein Versprechen, sondern eine Gate-Zeile:
+`pk.grundriss` reproduziert aus der neuen Struktur **bytegleich**.
 
 Der Versionssprung ist kein Formalismus: die Paketidentität steckt im `Weltkeim`-Optionsvektor,
-also ist jede aus 1.1.0 erzeugte Karte eine **andere** Karte als dieselbe Anfrage gegen 1.0.0. Genau
+also ist jede aus 1.2.0 erzeugte Karte eine **andere** Karte als dieselbe Anfrage gegen 1.1.0. Genau
 das soll passieren — eine andere Assetbasis ist eine andere Karte, kein stiller Austausch.
 
 ## Ein Paket ändern
@@ -62,9 +144,17 @@ das soll passieren — eine andere Assetbasis ist eine andere Karte, kein stille
 Generierte Pakete werden nie von Hand editiert:
 
 ```
-npm run assets:erzeugen     # schreibt SVGs und Manifest neu
+npm run assets:erzeugen     # schreibt SVGs und Manifeste aller Pakete neu
 npm run gate:assets         # prüft Bytes, Lizenzen, SVG-Sicherheit und Reproduzierbarkeit
 ```
+
+**Ein neues Asset wird angeschaut, bevor es als fertig gilt** — gerendert, nicht im Quelltext
+gelesen, und kachelbare Böden zusätzlich 4×4 nebeneinander. Das ist keine Kür: dieser Durchgang
+hat so drei Fehler gefunden, die alle Gates passiert hatten. Ein `<rect width="-1">`, das der
+Browser wortlos verwirft; ein `baseFrequency="NaN"`, das den ganzen Filter fallen liess, sodass
+fünf Holz-Assets flach aussahen statt zu fehlen; und zwei Assets mit derselben `id="woelbung"`,
+von denen das zweite in einem gemeinsamen Dokument die Maserung des ersten bekam. Die ersten
+beiden fängt das Gate jetzt ab, die dritte ist durch ein Namenspräfix je Asset ausgeschlossen.
 
 Ein geändertes Asset ändert seinen sha256, damit die Paketversion und damit — weil die
 Paketidentität Teil des `Weltkeim`-Optionsvektors ist — **jede daraus erzeugte Karte**. Das ist

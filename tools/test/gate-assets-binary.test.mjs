@@ -50,8 +50,11 @@ test("asset gate checks raw binary identity and preserves SVG-only validation", 
   // Execute the actual gate unchanged, including its real parser and author-script check.
   // No repository asset, dependency, gate source, shared cache, database or port is mutated.
   await cp(join(root, "tools/gate-assets.mjs"), join(fixture, "tools/gate-assets.mjs"));
-  await cp(join(root, "tools/assets/erzeuge-grundrisspaket.mjs"), join(fixture, "tools/assets/erzeuge-grundrisspaket.mjs"));
-  await cp(join(root, "assets/packs/pk.grundriss"), join(fixture, "assets/packs/pk.grundriss"), { recursive: true });
+  // Whole directories, not named files: the gate reproduces every pack in its ERZEUGER list from
+  // source, and those scripts share tools/assets/tusche.mjs. Staging by name meant a second pack
+  // (or a shared module) silently broke this fixture instead of the thing it is meant to guard.
+  await cp(join(root, "tools/assets"), join(fixture, "tools/assets"), { recursive: true });
+  await cp(join(root, "assets/packs"), join(fixture, "assets/packs"), { recursive: true });
   await symlink(join(root, "node_modules"), modules, process.platform === "win32" ? "junction" : "dir");
   linked = true;
   const licenceText = "Synthetic regression fixture only; no project artwork or distribution grant.\n";

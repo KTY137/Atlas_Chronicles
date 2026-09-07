@@ -37,7 +37,11 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const PACKS = join(ROOT, "assets", "packs");
 
 /** Every author script whose `--pruefe` must be green. One row per pack that is generated. */
-const ERZEUGER = [{ paket: "pk.grundriss", skript: "tools/assets/erzeuge-grundrisspaket.mjs" }];
+const ERZEUGER = [
+  { paket: "pk.grundriss", skript: "tools/assets/erzeuge-grundrisspaket.mjs" },
+  { paket: "pk.atlas", skript: "tools/assets/erzeuge-atlaspaket.mjs" },
+  { paket: "pk.gemalt", skript: "tools/assets/erzeuge-gemaltpaket.mjs" },
+];
 
 /** Anything that turns a drawing into an execution or a fetch. Case-insensitive, source-level. */
 const SVG_VERBOTEN = [
@@ -103,6 +107,15 @@ async function pruefePaket(paketDir, id, fehler) {
     if (asset.mimeType === "image/svg+xml") {
       const svg = inhalt.toString("utf8");
       for (const { muster, warum } of SVG_VERBOTEN) if (muster.test(svg)) melde(asset.datei, `SVG contains ${warum}; a pack asset is a drawing, never a program or a fetch`);
+      // Eine negative Länge ist syntaktisch gültiges XML und trotzdem kaputt: der Browser
+      // verwirft das Element wortlos, und im Diff sieht ein "-1" aus wie eine Koordinate. Genau
+      // die Sorte Fehler, die eine Zeichnung still um ein Element ärmer macht.
+      const negativ = svg.match(/s(?:width|height|r|rx|ry)="-[d.]+"/i);
+      if (negativ) melde(asset.datei, `SVG carries ${negativ[0].trim()}; a negative length is silently dropped by the renderer`);
+      // Dieselbe Klasse: syntaktisch heil, semantisch kaputt. Ein NaN in baseFrequency laesst den
+      // Browser den ganzen Filter verwerfen, und das Asset sieht nur flach aus statt zu fehlen.
+      const unzahl = svg.match(/="[^"]*(?:NaN|Infinity|undefined|null)[^"]*"/);
+      if (unzahl) melde(asset.datei, `SVG carries ${unzahl[0].slice(0, 40)}; a non-numeric value makes the renderer drop the element or filter`);
       const viewBox = `viewBox="0 0 ${asset.groesse[0]} ${asset.groesse[1]}"`;
       if (!svg.includes(viewBox)) melde(asset.datei, `declared groesse ${asset.groesse.join("x")} is not the authored ${viewBox}`);
     }

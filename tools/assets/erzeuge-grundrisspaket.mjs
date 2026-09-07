@@ -17,100 +17,25 @@
 // Run: node tools/assets/erzeuge-grundrisspaket.mjs [--pruefe]
 //   --pruefe writes nothing and exits non-zero if the tree differs from what this file produces.
 
-import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { dirname, join, relative, sep } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+// Die Feder ist geteilt, damit Grundriss und Atlas erkennbar dieselbe Hand sind.
+import {
+  C, zufallFabrik, n, rect, circle, ellipse, line, path, poly, polyline, group, kontur, feder, svg,
+  klumpen, erzeugePaket, cc0Text,
+} from "./tusche.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const PAKET_ID = "pk.grundriss";
-const PAKET_VERSION = "1.1.0";
+const PAKET_VERSION = "1.2.0";
 const PAKET_DIR = join(ROOT, "assets", "packs", PAKET_ID);
 const ZELLE = 64; // authoring pixels per grid cell — mirrored into `paket.zellgroesse`
 const URHEBER = "Chronicle";
 
-// ---------------------------------------------------------------------------------------------
-// Palette — one ink language, so a generated floorplan reads as one drawing
-// ---------------------------------------------------------------------------------------------
-
-const C = {
-  tinte: "#2f2a22",
-  tinteHell: "#7a6f5f",
-  pergament: "#e9e0cb",
-  pergamentTief: "#ded2b8",
-  stein: "#d5cbb4",
-  steinTief: "#c4b99f",
-  holz: "#c39b6d",
-  holzTief: "#a97f52",
-  metall: "#9aa0a8",
-  metallTief: "#7b828b",
-  wasser: "#93b0bd",
-  wasserTief: "#6f95a6",
-  flamme: "#dd8a33",
-  tuch: "#b26b5e",
-  erde: "#cdbb9c",
-  fels: "#b9b2a4",
-  felsTief: "#9d968a",
-  knochen: "#e3ddcc",
-  pilz: "#a98fb0",
-};
-
-// ---------------------------------------------------------------------------------------------
-// Deterministic noise. Seeded per asset name, never per run.
-// ---------------------------------------------------------------------------------------------
-
-function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function zufall(name) {
-  const digest = createHash("sha256").update(`pk.grundriss/${name}`, "utf8").digest();
-  const rnd = mulberry32(digest.readUInt32BE(0));
-  return {
-    // Quantised on purpose: `toFixed` in the drawing helpers would still round, but rounding here
-    // means the *geometry* is integral tenths, so no platform's float printer can diverge.
-    zahl: (min, max) => Math.round((min + rnd() * (max - min)) * 10) / 10,
-    ganz: (min, max) => min + Math.floor(rnd() * (max - min + 1)),
-    waehle: (list) => list[Math.floor(rnd() * list.length)],
-  };
-}
-
-// ---------------------------------------------------------------------------------------------
-// SVG helpers. No script, no external reference, no raster — the asset gate enforces all three.
-// ---------------------------------------------------------------------------------------------
-
-const n = (value) => {
-  const rounded = Math.round(value * 100) / 100;
-  return Object.is(rounded, -0) ? "0" : String(rounded);
-};
-const attrs = (row) => Object.entries(row).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => ` ${k}="${typeof v === "number" ? n(v) : v}"`).join("");
-const rect = (x, y, w, h, o = {}) => `<rect${attrs({ x, y, width: w, height: h, ...o })}/>`;
-const circle = (cx, cy, r, o = {}) => `<circle${attrs({ cx, cy, r, ...o })}/>`;
-const ellipse = (cx, cy, rx, ry, o = {}) => `<ellipse${attrs({ cx, cy, rx, ry, ...o })}/>`;
-const line = (x1, y1, x2, y2, o = {}) => `<line${attrs({ x1, y1, x2, y2, ...o })}/>`;
-const path = (d, o = {}) => `<path${attrs({ d, ...o })}/>`;
-const poly = (points, o = {}) => `<polygon${attrs({ points: points.map(([x, y]) => `${n(x)},${n(y)}`).join(" "), ...o })}/>`;
-const polyline = (points, o = {}) => `<polyline${attrs({ points: points.map(([x, y]) => `${n(x)},${n(y)}`).join(" "), fill: "none", ...o })}/>`;
-const group = (o, ...kinder) => `<g${attrs(o)}>${kinder.join("")}</g>`;
-
-const kontur = (extra = {}) => ({ fill: "none", stroke: C.tinte, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", ...extra });
-const feder = (extra = {}) => ({ fill: "none", stroke: C.tinteHell, "stroke-width": 1.2, "stroke-linecap": "round", ...extra });
-
-function svg(titel, breite, hoehe, inhalt) {
-  return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n(breite)} ${n(hoehe)}" width="${n(breite)}" height="${n(hoehe)}">`,
-    `<title>${titel}</title>`,
-    inhalt,
-    `</svg>`,
-    "",
-  ].join("\n");
-}
+// Palette, Rauschen und Zeichenhelfer stehen in `tusche.mjs`. Die Saat trägt die Paket-Id, also
+// bekommt ein gleichnamiges Asset in einem anderen Paket eine andere Zeichnung.
+const zufall = zufallFabrik(PAKET_ID);
 
 // ---------------------------------------------------------------------------------------------
 // Böden — tileable. Interior detail may be jittered; the four edges may not, or the tiles seam.
@@ -463,15 +388,6 @@ function bodenFels(name) {
   return svg("Felsboden", ZELLE, ZELLE, teile.join(""));
 }
 
-/** A rough, closed blob. Used for boulders, puddles and bone piles alike. */
-function klumpen(r, cx, cy, radius, ecken, rauheit) {
-  return Array.from({ length: ecken }, (_, k) => {
-    const a = (k / ecken) * Math.PI * 2;
-    const rr = radius * r.zahl(1 - rauheit, 1 + rauheit);
-    return [cx + Math.cos(a) * rr, cy + Math.sin(a) * rr];
-  });
-}
-
 function stalagmit(name) {
   const r = zufall(name);
   const teile = [poly(klumpen(r, 32, 34, 17, 9, 0.22), { ...kontur({ "stroke-width": 1.8 }), fill: C.fels })];
@@ -561,6 +477,542 @@ function lagerfeuer(name) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Gegenstände — Waffen, Rüstung, Schilde, Flaschen
+//
+// Bewusst **ohne** Schemamigration. `ASSET_ARTEN` ist geschlossen ("eine neue Art ist ein
+// ausdrücklicher Schema-Akt"), und dieser Block braucht den Akt nicht: seit `amboss` in 1.0.0
+// heisst `moebel` in diesem Paket "Ding, das im Raum steht", nicht "Möbel im Wortsinn", und eine
+// Flasche ist wörtlich ein `gefaess`. Eine zehnte Art zu erfinden, nur um Fundstücke einzusortieren,
+// hiesse die irreversible Schicht für eine Frage der Ablage anzufassen.
+// ---------------------------------------------------------------------------------------------
+
+function flasche() {
+  return svg("Flasche", ZELLE, ZELLE, [
+    path("M28 22 L28 29 Q21 35 21 43 L21 47 Q21 51 25 51 L39 51 Q43 51 43 47 L43 43 Q43 35 36 29 L36 22 Z", { ...kontur({ "stroke-width": 1.8 }), fill: C.wasser, "fill-opacity": 0.8 }),
+    rect(26.5, 15, 11, 7, { ...kontur({ "stroke-width": 1.4 }), rx: 1.5, fill: C.holzTief }),
+    line(23, 43, 41, 43, feder({ stroke: C.wasserTief, "stroke-width": 1.4 })),
+  ].join(""));
+}
+
+function phiole() {
+  const teile = [];
+  // Drei Fläschchen statt einem: eine einzelne Phiole verschwindet bei 64 px.
+  for (const [x, hoch] of [[20, 0], [32, -3], [44, 1]]) {
+    teile.push(path(`M${n(x - 4)} ${n(28 + hoch)} L${n(x - 4)} ${n(34 + hoch)} Q${n(x - 7)} ${n(38 + hoch)} ${n(x - 7)} ${n(43 + hoch)} Q${n(x - 7)} ${n(47 + hoch)} ${n(x)} ${n(47 + hoch)} Q${n(x + 7)} ${n(47 + hoch)} ${n(x + 7)} ${n(43 + hoch)} Q${n(x + 7)} ${n(38 + hoch)} ${n(x + 4)} ${n(34 + hoch)} L${n(x + 4)} ${n(28 + hoch)} Z`,
+      { ...kontur({ "stroke-width": 1.4 }), fill: C.pilz, "fill-opacity": 0.7 }));
+    teile.push(rect(x - 3, 24 + hoch, 6, 4, { ...kontur({ "stroke-width": 1.2 }), fill: C.holzTief }));
+  }
+  return svg("Phiolen", ZELLE, ZELLE, teile.join(""));
+}
+
+function amphore() {
+  return svg("Amphore", ZELLE, ZELLE, [
+    path("M26 22 Q18 30 19 38 Q20 48 32 52 Q44 48 45 38 Q46 30 38 22 Z", { ...kontur({ "stroke-width": 1.8 }), fill: C.erde }),
+    path("M26 25 Q19 27 21 34", kontur({ "stroke-width": 1.6 })),
+    path("M38 25 Q45 27 43 34", kontur({ "stroke-width": 1.6 })),
+    ellipse(32, 21, 7, 3.2, { ...kontur({ "stroke-width": 1.4 }), fill: C.pergamentTief }),
+    line(22, 38, 42, 38, feder({ stroke: C.tinte, "stroke-opacity": 0.35 })),
+  ].join(""));
+}
+
+function kessel() {
+  return svg("Kessel", ZELLE, ZELLE, [
+    path("M15 30 Q15 48 32 50 Q49 48 49 30 Z", { ...kontur({ "stroke-width": 2 }), fill: C.metallTief }),
+    ellipse(32, 30, 17, 5, { ...kontur({ "stroke-width": 1.8 }), fill: C.tinte, "fill-opacity": 0.7 }),
+    path("M16 27 Q32 14 48 27", kontur({ "stroke-width": 1.8 })),
+    line(24, 51, 21, 56, kontur({ "stroke-width": 1.6 })),
+    line(40, 51, 43, 56, kontur({ "stroke-width": 1.6 })),
+  ].join(""));
+}
+
+function weinschlauch() {
+  return svg("Weinschlauch", ZELLE, ZELLE, [
+    path("M24 24 Q14 32 17 42 Q21 52 32 52 Q43 52 47 42 Q50 32 40 24 Q32 20 24 24 Z", { ...kontur({ "stroke-width": 1.8 }), fill: C.tuch }),
+    rect(29, 14, 6, 10, { ...kontur({ "stroke-width": 1.4 }), rx: 1.5, fill: C.holzTief }),
+    path("M23 34 Q32 40 41 34", feder({ stroke: C.tinte, "stroke-width": 1.2, "stroke-opacity": 0.45 })),
+    circle(24, 27, 2, { fill: C.tinte, "fill-opacity": 0.4 }),
+  ].join(""));
+}
+
+function kelch() {
+  return svg("Kelch", ZELLE, ZELLE, [
+    path("M22 20 Q22 34 32 38 Q42 34 42 20 Z", { ...kontur({ "stroke-width": 1.8 }), fill: C.metall }),
+    line(32, 38, 32, 46, kontur({ "stroke-width": 2.4 })),
+    ellipse(32, 47, 9, 3.4, { ...kontur({ "stroke-width": 1.8 }), fill: C.metallTief }),
+    ellipse(32, 20, 10, 3.2, { ...kontur({ "stroke-width": 1.4 }), fill: C.flamme, "fill-opacity": 0.55 }),
+  ].join(""));
+}
+
+function waffenstaender() {
+  const teile = [rect(10, 40, 44, 10, { ...kontur({ "stroke-width": 1.8 }), rx: 2, fill: C.holzTief })];
+  teile.push(rect(10, 14, 44, 5, { ...kontur({ "stroke-width": 1.6 }), rx: 1.5, fill: C.holzTief }));
+  // Speer, Schwert, Axt. Bei 64 px liest die Silhouette, nie das Detail.
+  teile.push(line(20, 16, 20, 44, { stroke: C.holz, "stroke-width": 3, "stroke-linecap": "round" }));
+  teile.push(poly([[20, 7], [23.5, 16], [16.5, 16]], { ...kontur({ "stroke-width": 1.2 }), fill: C.metall }));
+  teile.push(line(32, 18, 32, 44, { stroke: C.metall, "stroke-width": 4, "stroke-linecap": "round" }));
+  teile.push(line(26, 21, 38, 21, kontur({ "stroke-width": 2 })));
+  teile.push(line(44, 14, 44, 44, { stroke: C.holz, "stroke-width": 3, "stroke-linecap": "round" }));
+  teile.push(path("M44 13 Q53 18 44 24 Z", { ...kontur({ "stroke-width": 1.4 }), fill: C.metallTief }));
+  return svg("Waffenständer", ZELLE, ZELLE, teile.join(""));
+}
+
+function ruestungsstaender() {
+  return svg("Rüstungsständer", ZELLE, ZELLE, [
+    path("M24 12 Q32 6 40 12 L40 20 L24 20 Z", { ...kontur({ "stroke-width": 1.8 }), fill: C.metallTief }),
+    line(26, 17, 38, 17, feder({ stroke: C.tinte, "stroke-opacity": 0.5 })),
+    path("M20 23 L44 23 L41 42 Q32 46 23 42 Z", { ...kontur({ "stroke-width": 2 }), fill: C.metall }),
+    line(32, 24, 32, 43, feder({ stroke: C.metallTief, "stroke-width": 1.4 })),
+    path("M27 28 Q32 32 37 28", feder({ stroke: C.metallTief, "stroke-width": 1.2 })),
+    line(32, 46, 32, 52, kontur({ "stroke-width": 2.4 })),
+    ellipse(32, 53, 11, 3.4, { ...kontur({ "stroke-width": 1.6 }), fill: C.holzTief }),
+  ].join(""));
+}
+
+function schildwand() {
+  const w = ZELLE * 2;
+  const teile = [rect(6, 18, w - 12, 30, { ...kontur({ "stroke-width": 1.8 }), fill: C.holzTief })];
+  teile.push(circle(28, 33, 12, { ...kontur({ "stroke-width": 2 }), fill: C.metall }));
+  teile.push(circle(28, 33, 4, { ...kontur({ "stroke-width": 1.4 }), fill: C.metallTief }));
+  teile.push(path("M64 21 L76 25 L76 36 Q70 45 64 47 Q58 45 52 36 L52 25 Z", { ...kontur({ "stroke-width": 2 }), fill: C.tuch }));
+  teile.push(line(64, 22, 64, 46, feder({ stroke: C.pergament, "stroke-width": 1.4 })));
+  teile.push(circle(100, 33, 12, { ...kontur({ "stroke-width": 2 }), fill: C.metall }));
+  for (const deg of [0, 60, 120]) {
+    const rad = (deg * Math.PI) / 180;
+    teile.push(line(100 - Math.cos(rad) * 10, 33 - Math.sin(rad) * 10, 100 + Math.cos(rad) * 10, 33 + Math.sin(rad) * 10, feder({ stroke: C.metallTief, "stroke-width": 1.4 })));
+  }
+  return svg("Schildwand", w, ZELLE, teile.join(""));
+}
+
+function waffenhaufen(name) {
+  const r = zufall(name);
+  const teile = [ellipse(32, 36, 23, 15, { fill: C.tinteHell, "fill-opacity": 0.16 })];
+  for (let i = 0; i < 5; i++) {
+    const dreh = r.zahl(-75, 75), x = r.zahl(16, 46), y = r.zahl(26, 44), l = r.zahl(20, 30);
+    teile.push(group({ transform: `translate(${n(x)} ${n(y)}) rotate(${n(dreh)})` },
+      line(-l / 2, 0, l / 2, 0, { stroke: r.waehle([C.holz, C.metallTief, C.metall]), "stroke-width": r.zahl(2.4, 3.6), "stroke-linecap": "round" })));
+  }
+  teile.push(circle(38, 40, 9, { ...kontur({ "stroke-width": 1.6 }), fill: C.metall }));
+  teile.push(circle(38, 40, 3, { fill: C.metallTief }));
+  return svg("Waffenhaufen", ZELLE, ZELLE, teile.join(""));
+}
+
+function schleifstein() {
+  return svg("Schleifstein", ZELLE, ZELLE, [
+    rect(14, 40, 36, 8, { ...kontur({ "stroke-width": 1.6 }), rx: 2, fill: C.holzTief }),
+    circle(32, 30, 15, { ...kontur({ "stroke-width": 2.2 }), fill: C.steinTief }),
+    circle(32, 30, 9, feder({ stroke: C.tinte, "stroke-width": 1.2, "stroke-opacity": 0.5 })),
+    circle(32, 30, 2.6, { fill: C.metallTief }),
+    line(47, 30, 53, 30, kontur({ "stroke-width": 2 })),
+  ].join(""));
+}
+
+function muenzhaufen(name) {
+  const r = zufall(name);
+  const teile = [ellipse(32, 38, 20, 12, { fill: C.tinteHell, "fill-opacity": 0.16 })];
+  for (let i = 0; i < 14; i++) {
+    teile.push(ellipse(r.zahl(18, 46), r.zahl(30, 44), r.zahl(3.4, 5), r.zahl(2, 3), { fill: C.flamme, stroke: C.tinte, "stroke-width": 1 }));
+  }
+  // Ein kleiner Stapel obendrauf, sonst liest der Fleck als Kies statt als Geld.
+  for (let i = 0; i < 3; i++) teile.push(ellipse(38, 34 - i * 3.4, 5, 3, { fill: C.flamme, stroke: C.tinte, "stroke-width": 1.2 }));
+  return svg("Münzhaufen", ZELLE, ZELLE, teile.join(""));
+}
+
+function buecherstapel(name) {
+  const r = zufall(name);
+  const teile = [];
+  let y = 46;
+  for (let i = 0; i < 4; i++) {
+    const b = r.zahl(24, 34), h = r.zahl(5, 7.5), x = 32 - b / 2 + r.zahl(-3, 3);
+    teile.push(rect(x, y - h, b, h, { ...kontur({ "stroke-width": 1.4 }), rx: 1, fill: r.waehle([C.tuch, C.holzTief, C.pilz, C.wasserTief]) }));
+    teile.push(line(x + 2.5, y - h + 1.5, x + 2.5, y - 1.5, feder({ stroke: C.pergament, "stroke-width": 1.4 })));
+    y -= h + 0.8;
+  }
+  return svg("Bücherstapel", ZELLE, ZELLE, teile.join(""));
+}
+
+function schriftrollen(name) {
+  const r = zufall(name);
+  const teile = [];
+  for (const [x, y, dreh] of [[24, 38, -18], [38, 32, 24], [31, 45, 6]]) {
+    const l = r.zahl(22, 28);
+    teile.push(group({ transform: `translate(${n(x)} ${n(y)}) rotate(${n(dreh)})` },
+      rect(-l / 2, -5, l, 10, { ...kontur({ "stroke-width": 1.4 }), rx: 1, fill: C.pergament }),
+      ellipse(-l / 2, 0, 2.6, 5.4, { ...kontur({ "stroke-width": 1.4 }), fill: C.pergamentTief }),
+      ellipse(l / 2, 0, 2.6, 5.4, { ...kontur({ "stroke-width": 1.4 }), fill: C.pergamentTief }),
+      line(-l / 2 + 5, -1.5, l / 2 - 5, -1.5, feder({ "stroke-width": 0.9, "stroke-opacity": 0.6 })),
+      line(-l / 2 + 5, 1.8, l / 2 - 6, 1.8, feder({ "stroke-width": 0.9, "stroke-opacity": 0.6 }))));
+  }
+  return svg("Schriftrollen", ZELLE, ZELLE, teile.join(""));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Vielfalt — zweite und dritte Antworten auf die Fragen, die der Generator ohnehin stellt
+//
+// Gemessen vor 1.2.0: von 40 `(art, schlagwort)`-Anfragen, die `grundriss`, `hoehle` und
+// `siedlung` tatsächlich stellen, hatten **26 genau einen** Kandidaten. `r.waehle` über eine
+// einelementige Liste ist eine Konstante, keine Wahl — jede Halle bekam denselben Tisch, jede
+// Kammer dasselbe Bett, jede Tür dasselbe Türblatt. Jedes Stück hier trägt darum mindestens ein
+// bereits abgefragtes Schlagwort; ein Asset, das keine Anfrage erreicht, ist totes Gewicht.
+// ---------------------------------------------------------------------------------------------
+
+function bodenZiegel(name) {
+  const r = zufall(name);
+  const teile = [rect(0, 0, ZELLE, ZELLE, { fill: C.steinTief })];
+  // Läuferverband: jede zweite Lage um eine halbe Ziegellänge versetzt. Die Lagenhöhe teilt 64
+  // glatt und der Versatz ist fest, sonst verspringt der Verband über die Kachelgrenze.
+  for (let lage = 0; lage < 4; lage++) {
+    const y = lage * 16, versatz = lage % 2 === 0 ? 0 : 16;
+    teile.push(line(0, y, ZELLE, y, feder({ stroke: C.tinte, "stroke-width": 1.3, "stroke-opacity": 0.45 })));
+    for (let x = versatz; x < ZELLE; x += 32) {
+      if (x > 0) teile.push(line(x, y, x, y + 16, feder({ stroke: C.tinte, "stroke-width": 1.1, "stroke-opacity": 0.4 })));
+      teile.push(rect(x + 1, y + 1, 30, 14, { fill: C.stein, "fill-opacity": r.zahl(0.25, 0.6) }));
+    }
+  }
+  return svg("Ziegelboden", ZELLE, ZELLE, teile.join(""));
+}
+
+function bodenMosaik(name) {
+  const r = zufall(name);
+  const teile = [rect(0, 0, ZELLE, ZELLE, { fill: C.pergamentTief })];
+  // Achtes Raster, damit die Tesserae bei 64 px noch als Steinchen und nicht als Rauschen lesen.
+  for (let gx = 0; gx < 8; gx++) for (let gy = 0; gy < 8; gy++) {
+    const ring = Math.max(Math.abs(gx - 3.5), Math.abs(gy - 3.5));
+    const farbe = ring < 1.5 ? C.flamme : ring < 2.5 ? C.tuch : r.waehle([C.stein, C.pergament, C.steinTief]);
+    teile.push(rect(gx * 8 + 0.7, gy * 8 + 0.7, 6.6, 6.6, { fill: farbe, "fill-opacity": r.zahl(0.6, 0.95) }));
+  }
+  return svg("Mosaikboden", ZELLE, ZELLE, teile.join(""));
+}
+
+function bodenDielenAlt(name) {
+  const r = zufall(name);
+  const teile = [rect(0, 0, ZELLE, ZELLE, { fill: C.holzTief })];
+  for (let i = 1; i < 4; i++) teile.push(line(0, i * 16, ZELLE, i * 16, feder({ "stroke-width": 1.6, stroke: C.tinte, "stroke-opacity": 0.5 })));
+  for (let i = 0; i < 4; i++) {
+    // Ausgeschlagene Dielen: eine Lücke pro Reihe zeigt den Grund darunter.
+    const x = r.zahl(6, 40), b = r.zahl(8, 18);
+    teile.push(rect(x, i * 16 + 2, b, 12, { fill: C.tinte, "fill-opacity": r.zahl(0.3, 0.55) }));
+    teile.push(line(r.zahl(2, 30), i * 16 + 8, r.zahl(34, 62), i * 16 + 8, feder({ "stroke-width": 0.9, stroke: C.tinte, "stroke-opacity": 0.35 })));
+  }
+  return svg("Dielenboden, ausgeschlagen", ZELLE, ZELLE, teile.join(""));
+}
+
+function bodenSand(name) {
+  const r = zufall(name);
+  const teile = [rect(0, 0, ZELLE, ZELLE, { fill: C.pergamentTief })];
+  // Rippel laufen durch die Kachel hindurch: Anfang und Ende liegen exakt auf den Rändern.
+  for (let i = 0; i < 5; i++) {
+    const y = 6 + i * 13;
+    teile.push(path(`M0 ${n(y)} Q16 ${n(y + r.zahl(-4, 4))} 32 ${n(y)} T64 ${n(y)}`, feder({ stroke: C.erde, "stroke-width": 1.4, "stroke-opacity": 0.75 })));
+  }
+  for (let i = 0; i < 10; i++) teile.push(circle(r.zahl(3, 61), r.zahl(3, 61), r.zahl(0.8, 1.7), { fill: C.tinteHell, "fill-opacity": r.zahl(0.25, 0.5) }));
+  return svg("Sandboden", ZELLE, ZELLE, teile.join(""));
+}
+
+function tuerStein() {
+  return svg("Steintür", ZELLE, ZELLE, [
+    path("M10 54 A44 44 0 0 1 54 10", feder({ "stroke-width": 1.4, "stroke-dasharray": "4 4" })),
+    rect(8, 24, 48, 16, { ...kontur({ "stroke-width": 2.4 }), fill: C.stein }),
+    line(24, 24, 24, 40, feder({ stroke: C.steinTief, "stroke-width": 1.6 })),
+    line(40, 24, 40, 40, feder({ stroke: C.steinTief, "stroke-width": 1.6 })),
+    circle(32, 32, 4.5, { fill: "none", stroke: C.tinte, "stroke-width": 2 }),
+  ].join(""));
+}
+
+function tuerDoppel() {
+  const w = ZELLE * 2;
+  return svg("Doppeltür", w, ZELLE, [
+    path("M20 54 A44 44 0 0 1 64 10", feder({ "stroke-width": 1.4, "stroke-dasharray": "4 4" })),
+    path("M108 54 A44 44 0 0 0 64 10", feder({ "stroke-width": 1.4, "stroke-dasharray": "4 4" })),
+    rect(8, 26, 56, 12, { ...kontur(), fill: C.holz }),
+    rect(64, 26, 56, 12, { ...kontur(), fill: C.holz }),
+    line(26, 26, 26, 38, feder({ stroke: C.holzTief })),
+    line(45, 26, 45, 38, feder({ stroke: C.holzTief })),
+    line(83, 26, 83, 38, feder({ stroke: C.holzTief })),
+    line(102, 26, 102, 38, feder({ stroke: C.holzTief })),
+    circle(59, 32, 2.4, { fill: C.metallTief }),
+    circle(69, 32, 2.4, { fill: C.metallTief }),
+  ].join(""));
+}
+
+function tuerGeheim() {
+  return svg("Geheimtür", ZELLE, ZELLE, [
+    rect(8, 26, 48, 12, { fill: C.stein, stroke: C.tinte, "stroke-width": 2, "stroke-dasharray": "5 3" }),
+    line(20, 26, 20, 38, feder({ stroke: C.steinTief, "stroke-width": 1.2 })),
+    line(44, 26, 44, 38, feder({ stroke: C.steinTief, "stroke-width": 1.2 })),
+    // Der Angelpunkt, an dem die Wand sich dreht — das ist die ganze Aussage des Symbols.
+    circle(8, 32, 3, { fill: C.tinte }),
+    path("M14 44 Q26 48 38 44", feder({ "stroke-width": 1.4, "stroke-dasharray": "3 3" })),
+  ].join(""));
+}
+
+function wendeltreppe() {
+  const teile = [circle(32, 32, 26, { ...kontur({ "stroke-width": 2.2 }), fill: C.stein })];
+  // Acht Keilstufen um eine Spindel: dieselbe Aussage wie `treppe_*`, auf einer Zelle statt zwei.
+  for (let i = 0; i < 8; i++) {
+    const a0 = (i / 8) * Math.PI * 2, a1 = ((i + 1) / 8) * Math.PI * 2;
+    teile.push(poly([[32, 32], [32 + Math.cos(a0) * 25, 32 + Math.sin(a0) * 25], [32 + Math.cos(a1) * 25, 32 + Math.sin(a1) * 25]],
+      { fill: C.tinte, "fill-opacity": 0.05 + (i / 8) * 0.16, stroke: C.tinteHell, "stroke-width": 1.2 }));
+  }
+  teile.push(circle(32, 32, 7, { ...kontur({ "stroke-width": 2 }), fill: C.steinTief }));
+  teile.push(polyline([[44, 20], [50, 26], [44, 30]], kontur({ "stroke-width": 2.4 })));
+  return svg("Wendeltreppe", ZELLE, ZELLE, teile.join(""));
+}
+
+function saeuleBruch(name) {
+  const r = zufall(name);
+  const teile = [circle(32, 32, 21, { fill: C.steinTief, stroke: C.tinte, "stroke-width": 2.2, "stroke-dasharray": "9 4" })];
+  teile.push(poly(klumpen(r, 32, 32, 14, 7, 0.24), { ...kontur({ "stroke-width": 1.6 }), fill: C.stein }));
+  // Abgeschlagene Brocken im Ring: eine Säule, die nicht mehr trägt, muss man sehen können.
+  for (let i = 0; i < 4; i++) {
+    const a = r.zahl(0, 6.28);
+    teile.push(poly(klumpen(r, 32 + Math.cos(a) * 24, 32 + Math.sin(a) * 24, r.zahl(3.5, 6), 5, 0.3), { ...kontur({ "stroke-width": 1.2 }), fill: C.steinTief }));
+  }
+  return svg("Säulenstumpf", ZELLE, ZELLE, teile.join(""));
+}
+
+function brunnen() {
+  return svg("Brunnen", ZELLE, ZELLE, [
+    circle(32, 32, 23, { ...kontur({ "stroke-width": 2.4 }), fill: C.stein }),
+    circle(32, 32, 16, { ...kontur({ "stroke-width": 1.8 }), fill: C.wasserTief }),
+    circle(32, 32, 16, { fill: C.wasser, "fill-opacity": 0.55 }),
+    circle(32, 32, 9, feder({ stroke: C.pergament, "stroke-width": 1.4, "stroke-opacity": 0.7 })),
+    circle(32, 32, 4, feder({ stroke: C.pergament, "stroke-width": 1.2, "stroke-opacity": 0.5 })),
+    line(9, 32, 55, 32, { stroke: C.holzTief, "stroke-width": 3, "stroke-linecap": "round" }),
+  ].join(""));
+}
+
+function statue() {
+  return svg("Statue", ZELLE, ZELLE, [
+    circle(32, 32, 22, { ...kontur({ "stroke-width": 2 }), fill: C.steinTief }),
+    circle(32, 32, 22, feder({ "stroke-dasharray": "3 4", "stroke-opacity": 0.7 })),
+    // Von oben: Kopf, Schultern, ein vorgestreckter Arm. Genug Richtung für eine Blickachse.
+    path("M22 40 Q22 26 32 26 Q42 26 42 40 Z", { ...kontur({ "stroke-width": 1.8 }), fill: C.stein }),
+    circle(32, 24, 7, { ...kontur({ "stroke-width": 1.8 }), fill: C.stein }),
+    line(32, 26, 32, 18, kontur({ "stroke-width": 2 })),
+    ellipse(32, 42, 12, 4, { ...kontur({ "stroke-width": 1.4 }), fill: C.stein }),
+  ].join(""));
+}
+
+function ketteRing() {
+  const teile = [circle(32, 20, 5, { ...kontur({ "stroke-width": 2.2 }), fill: "none" })];
+  // Ein Ring in der Wand und die Kette daran. Kerkerinventar, kein Schmuck.
+  for (let i = 0; i < 5; i++) {
+    const y = 27 + i * 6.2;
+    teile.push(ellipse(32 + (i % 2 === 0 ? -2.5 : 2.5), y, 3.6, 2.6, { fill: "none", stroke: C.metallTief, "stroke-width": 1.8 }));
+  }
+  teile.push(ellipse(32, 55, 7, 4.5, { ...kontur({ "stroke-width": 2 }), fill: "none" }));
+  return svg("Wandkette", ZELLE, ZELLE, teile.join(""));
+}
+
+function wandfackel() {
+  return svg("Wandfackel", ZELLE, ZELLE, [
+    rect(26, 40, 12, 12, { ...kontur({ "stroke-width": 1.6 }), rx: 2, fill: C.metallTief }),
+    line(32, 40, 32, 28, { stroke: C.holzTief, "stroke-width": 4, "stroke-linecap": "round" }),
+    path("M32 12 Q37 20 34 27 Q40 23 38 17 Q44 24 38 32 L26 32 Q20 24 26 17 Q24 23 30 27 Q27 20 32 12 Z", { fill: C.flamme, stroke: "none" }),
+    circle(32, 27, 3.5, { fill: C.pergament, "fill-opacity": 0.55 }),
+  ].join(""));
+}
+
+function laterne() {
+  return svg("Laterne", ZELLE, ZELLE, [
+    path("M22 18 Q32 10 42 18", kontur({ "stroke-width": 1.8 })),
+    rect(21, 20, 22, 6, { ...kontur({ "stroke-width": 1.6 }), rx: 1.5, fill: C.metallTief }),
+    path("M23 26 L41 26 L44 46 L20 46 Z", { ...kontur({ "stroke-width": 1.8 }), fill: C.pergament, "fill-opacity": 0.8 }),
+    line(32, 26, 32, 46, feder({ stroke: C.metallTief, "stroke-width": 1.2 })),
+    ellipse(32, 38, 4.5, 6, { fill: C.flamme, "fill-opacity": 0.85 }),
+    rect(18, 46, 28, 5, { ...kontur({ "stroke-width": 1.6 }), rx: 1.5, fill: C.metallTief }),
+  ].join(""));
+}
+
+function kandelaber() {
+  const teile = [ellipse(32, 50, 13, 4.5, { ...kontur({ "stroke-width": 1.8 }), fill: C.metallTief })];
+  teile.push(line(32, 50, 32, 26, kontur({ "stroke-width": 2.8 })));
+  teile.push(path("M14 30 Q14 22 32 26 Q50 22 50 30", kontur({ "stroke-width": 2 })));
+  for (const [x, y] of [[14, 30], [32, 24], [50, 30]]) {
+    teile.push(rect(x - 2.4, y - 9, 4.8, 9, { ...kontur({ "stroke-width": 1.2 }), rx: 1, fill: C.pergament }));
+    teile.push(ellipse(x, y - 12, 2.2, 3.4, { fill: C.flamme }));
+  }
+  return svg("Kandelaber", ZELLE, ZELLE, teile.join(""));
+}
+
+function markeFalle() {
+  return svg("Marke: Falle", ZELLE, ZELLE, [
+    circle(32, 32, 21, { fill: C.pergament, "fill-opacity": 0.7, stroke: C.tinte, "stroke-width": 2, "stroke-dasharray": "2 4" }),
+    poly([[32, 16], [47, 44], [17, 44]], { ...kontur({ "stroke-width": 2.6 }), fill: "none" }),
+    line(32, 26, 32, 36, kontur({ "stroke-width": 3 })),
+    circle(32, 40, 2, { fill: C.tinte }),
+  ].join(""));
+}
+
+function markeZiel() {
+  return svg("Marke: Ziel", ZELLE, ZELLE, [
+    circle(32, 32, 21, { fill: C.pergament, "fill-opacity": 0.7, stroke: C.tinte, "stroke-width": 2, "stroke-dasharray": "6 4" }),
+    circle(32, 32, 13, { fill: "none", stroke: C.tinte, "stroke-width": 2.2 }),
+    circle(32, 32, 6, { fill: "none", stroke: C.tinte, "stroke-width": 2 }),
+    circle(32, 32, 2, { fill: C.tinte }),
+  ].join(""));
+}
+
+function markeFrage() {
+  return svg("Marke: Ungeklärt", ZELLE, ZELLE, [
+    circle(32, 32, 21, { fill: C.pergament, "fill-opacity": 0.7, stroke: C.tinte, "stroke-width": 2, "stroke-dasharray": "4 4" }),
+    path("M25 26 Q25 18 32 18 Q39 18 39 25 Q39 31 32 33 L32 38", kontur({ "stroke-width": 3 })),
+    circle(32, 45, 2.4, { fill: C.tinte }),
+  ].join(""));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Wände — die erste besetzte `wand`-Art des Pakets
+//
+// Der Generator liefert Wände als **Geometrie** (`karte.walls`) und wird das weiter tun; das steht
+// so in `AUSGELASSEN_BASIS`. Diese Stempel sind für die Hand am Editor, nicht für den Erzeuger:
+// ein Segment füllt genau eine Zelle, die Lagen sind an den Zellrändern gepinnt, also reihen sich
+// gedrehte Kopien ohne Versprung. `EBENE.wand` (25) lag längst in `kartenwerk.ts` bereit.
+// ---------------------------------------------------------------------------------------------
+
+/** Wandband über die volle Zellbreite. Die Ränder liegen fest, damit Segmente stossen. */
+function wandband(inhalt) {
+  return [rect(0, 20, ZELLE, 24, { fill: C.stein, stroke: C.tinte, "stroke-width": 2 }), ...inhalt].join("");
+}
+
+function wandStein(name) {
+  const r = zufall(name);
+  const teile = [line(0, 32, ZELLE, 32, feder({ stroke: C.steinTief, "stroke-width": 1.5 }))];
+  for (const [y0, versatz] of [[20, 0], [32, 10]]) {
+    // Bis ZELLE - 2, nicht bis ZELLE: der letzte Schritt liesse einen entarteten Ziegel übrig,
+    // und `Math.min(19, ZELLE - x - 2)` wurde dort negativ — ein <rect width="-1">, das der
+    // Browser verwirft. Vom Assetgate ab 1.2.0 als eigene Regel abgefangen.
+    for (let x = versatz; x < ZELLE - 2; x += 21) {
+      if (x > 0.5) teile.push(line(x, y0, x, y0 + 12, feder({ stroke: C.steinTief, "stroke-width": 1.3 })));
+      teile.push(rect(x + 1, y0 + 1, Math.min(19, ZELLE - x - 2), 10, { fill: C.steinTief, "fill-opacity": r.zahl(0.15, 0.4) }));
+    }
+  }
+  return svg("Wand, Stein", ZELLE, ZELLE, wandband(teile));
+}
+
+function wandZiegel() {
+  const teile = [];
+  for (const [y0, versatz] of [[20, 0], [28, 6], [36, 0]]) {
+    teile.push(line(0, y0, ZELLE, y0, feder({ stroke: C.tinte, "stroke-width": 1.1, "stroke-opacity": 0.45 })));
+    for (let x = versatz; x < ZELLE; x += 12) if (x > 0.5) teile.push(line(x, y0, x, y0 + 8, feder({ stroke: C.tinte, "stroke-width": 1, "stroke-opacity": 0.4 })));
+  }
+  return svg("Wand, Ziegel", ZELLE, ZELLE, wandband(teile));
+}
+
+function wandBruch(name) {
+  const r = zufall(name);
+  const teile = [];
+  // Bruchsteinmauer: unregelmässige Steine, aber die Zellkanten bleiben unangetastet.
+  let x = 0;
+  while (x < ZELLE) {
+    const b = r.zahl(9, 17), h = r.zahl(9, 14), y = 20 + r.zahl(0, 24 - h);
+    teile.push(poly(klumpen(r, Math.min(x + b / 2, ZELLE - 2), y + h / 2, Math.min(b, h) / 2 + 1.5, 6, 0.2), { fill: C.steinTief, stroke: C.tinte, "stroke-width": 1.2, "stroke-linejoin": "round" }));
+    x += b * 0.85;
+  }
+  teile.push(rect(0, 20, ZELLE, 24, kontur({ "stroke-width": 2 })));
+  return svg("Wand, Bruchstein", ZELLE, ZELLE, wandband(teile));
+}
+
+function wandHolz() {
+  const teile = [rect(0, 20, ZELLE, 24, { fill: C.holz })];
+  for (let x = 4; x < ZELLE; x += 9) teile.push(line(x, 20, x, 44, feder({ stroke: C.holzTief, "stroke-width": 1.4 })));
+  teile.push(line(0, 25, ZELLE, 25, { stroke: C.holzTief, "stroke-width": 2.4 }));
+  teile.push(line(0, 39, ZELLE, 39, { stroke: C.holzTief, "stroke-width": 2.4 }));
+  teile.push(rect(0, 20, ZELLE, 24, kontur({ "stroke-width": 2 })));
+  return svg("Wand, Holz", ZELLE, ZELLE, wandband(teile));
+}
+
+function wandFels(name) {
+  const r = zufall(name);
+  const teile = [rect(0, 20, ZELLE, 24, { fill: C.fels })];
+  // Gewachsener Fels statt Mauerwerk: die Kanten des Bandes franst die Kontur, nicht die Zellkante.
+  const oben = [], unten = [];
+  for (let i = 0; i <= 8; i++) {
+    const x = (i / 8) * ZELLE;
+    oben.push([x, 20 + r.zahl(-3, 3)]);
+    unten.push([x, 44 + r.zahl(-3, 3)]);
+  }
+  teile.push(poly([...oben, ...unten.reverse()], { fill: C.fels, stroke: C.tinte, "stroke-width": 2, "stroke-linejoin": "round" }));
+  for (let i = 0; i < 6; i++) teile.push(polyline([[r.zahl(2, 60), r.zahl(22, 30)], [r.zahl(2, 60), r.zahl(34, 42)]], feder({ stroke: C.felsTief, "stroke-width": 1.2 })));
+  return svg("Wand, Fels", ZELLE, ZELLE, teile.join(""));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Figuren — die erste besetzte `figur`-Art
+//
+// Marken, keine Porträts: ein Token ist von oben ein Ring mit einem Zeichen darin, und genau so
+// wird es am Tisch gelesen. Die Silhouette trägt die Aussage, die Farbe trägt die Fraktion.
+// `EBENE.figur` (5) liegt zwischen Möbel und Licht — eine Figur steht auf dem Tisch, nicht darin.
+// ---------------------------------------------------------------------------------------------
+
+/** Ringtoken. `gross` belegt 2x2 Zellen — das Mass, an dem eine Bestie als Bestie liest. */
+function token(titel, fuellung, zeichen, gross = false) {
+  const s = gross ? ZELLE * 2 : ZELLE;
+  const m = s / 2, rad = m - 5;
+  return svg(titel, s, s, [
+    circle(m, m, rad, { fill: fuellung, stroke: C.tinte, "stroke-width": gross ? 3.2 : 2.6 }),
+    circle(m, m, rad - 4, { fill: "none", stroke: C.pergament, "stroke-width": 1.4, "stroke-opacity": 0.55 }),
+    zeichen(m, rad),
+  ].join(""));
+}
+
+function figurHeld() {
+  return token("Figur: Held", C.wasserTief, (m, rad) => group({},
+    circle(m, m - rad * 0.3, rad * 0.22, { ...kontur({ "stroke-width": 2 }), fill: C.pergament }),
+    path(`M${n(m - rad * 0.42)} ${n(m + rad * 0.5)} Q${n(m)} ${n(m - rad * 0.12)} ${n(m + rad * 0.42)} ${n(m + rad * 0.5)} Z`, { ...kontur({ "stroke-width": 2 }), fill: C.pergament })));
+}
+
+function figurWache() {
+  return token("Figur: Wache", C.metallTief, (m, rad) => group({},
+    circle(m, m - rad * 0.3, rad * 0.2, { ...kontur({ "stroke-width": 1.8 }), fill: C.pergament }),
+    path(`M${n(m - rad * 0.4)} ${n(m + rad * 0.5)} Q${n(m)} ${n(m - rad * 0.1)} ${n(m + rad * 0.4)} ${n(m + rad * 0.5)} Z`, { ...kontur({ "stroke-width": 1.8 }), fill: C.pergament }),
+    // Der Speer ist der Unterschied zwischen Wache und Zivilist.
+    line(m + rad * 0.58, m - rad * 0.6, m + rad * 0.58, m + rad * 0.6, kontur({ "stroke-width": 2.4 }))));
+}
+
+function figurUntot() {
+  return token("Figur: Untot", C.knochen, (m, rad) => group({},
+    circle(m, m - rad * 0.16, rad * 0.34, { ...kontur({ "stroke-width": 2 }), fill: C.pergament }),
+    circle(m - rad * 0.14, m - rad * 0.2, rad * 0.09, { fill: C.tinte }),
+    circle(m + rad * 0.14, m - rad * 0.2, rad * 0.09, { fill: C.tinte }),
+    poly([[m, m - rad * 0.02], [m + rad * 0.07, m + rad * 0.12], [m - rad * 0.07, m + rad * 0.12]], { fill: C.tinte }),
+    line(m - rad * 0.2, m + rad * 0.3, m + rad * 0.2, m + rad * 0.3, kontur({ "stroke-width": 2 }))));
+}
+
+function figurSchwarm(name) {
+  const r = zufall(name);
+  return token("Figur: Schwarm", C.pilz, (m, rad) => group({},
+    ...Array.from({ length: 9 }, () => {
+      const a = r.zahl(0, 6.28), d = r.zahl(0, rad * 0.62);
+      return circle(m + Math.cos(a) * d, m + Math.sin(a) * d, r.zahl(rad * 0.1, rad * 0.19), { ...kontur({ "stroke-width": 1.4 }), fill: C.tinte, "fill-opacity": 0.55 });
+    })));
+}
+
+function figurBestie() {
+  // Von oben gelesen setzt ein Betrachter ein Tier aus Rumpf, gesenktem Kopf, Ohren, vier Läufen
+  // und Schweif zusammen. Ein einzelner geschwungener Umriss war dafür zu symmetrisch — er las
+  // als Glocke. Die Teile einzeln zu zeichnen ist mehr Code und die einzige Fassung, die trägt.
+  return token("Figur: Bestie", C.tuch, (m, rad) => group({},
+    ...[[-1, -0.3], [1, -0.3], [-1, 0.3], [1, 0.3]].map(([sx, sy]) =>
+      line(m + sx * rad * 0.26, m + sy * rad, m + sx * rad * 0.6, m + sy * rad + rad * 0.14, kontur({ "stroke-width": 3 }))),
+    path(`M${n(m)} ${n(m + rad * 0.5)} Q${n(m + rad * 0.34)} ${n(m + rad * 0.82)} ${n(m + rad * 0.56)} ${n(m + rad * 0.56)}`, kontur({ "stroke-width": 2.6 })),
+    ellipse(m, m + rad * 0.06, rad * 0.33, rad * 0.48, { ...kontur({ "stroke-width": 2.6 }), fill: C.pergament }),
+    poly([[m - rad * 0.32, m - rad * 0.78], [m - rad * 0.14, m - rad * 0.6], [m - rad * 0.3, m - rad * 0.54]], { ...kontur({ "stroke-width": 1.8 }), fill: C.pergament }),
+    poly([[m + rad * 0.32, m - rad * 0.78], [m + rad * 0.14, m - rad * 0.6], [m + rad * 0.3, m - rad * 0.54]], { ...kontur({ "stroke-width": 1.8 }), fill: C.pergament }),
+    circle(m, m - rad * 0.48, rad * 0.25, { ...kontur({ "stroke-width": 2.6 }), fill: C.pergament }),
+    circle(m - rad * 0.1, m - rad * 0.52, rad * 0.05, { fill: C.tinte }),
+    circle(m + rad * 0.1, m - rad * 0.52, rad * 0.05, { fill: C.tinte })), true);
+}
+
+function figurRiese() {
+  return token("Figur: Riese", C.felsTief, (m, rad) => group({},
+    circle(m, m - rad * 0.34, rad * 0.2, { ...kontur({ "stroke-width": 2.6 }), fill: C.pergament }),
+    path(`M${n(m - rad * 0.46)} ${n(m + rad * 0.54)} Q${n(m)} ${n(m - rad * 0.16)} ${n(m + rad * 0.46)} ${n(m + rad * 0.54)} Z`, { ...kontur({ "stroke-width": 2.6 }), fill: C.pergament }),
+    line(m - rad * 0.6, m + rad * 0.6, m - rad * 0.6, m - rad * 0.5, kontur({ "stroke-width": 3.2 })),
+    line(m + rad * 0.58, m - rad * 0.5, m + rad * 0.72, m + rad * 0.2, kontur({ "stroke-width": 3.2 }))), true);
+}
+
+// ---------------------------------------------------------------------------------------------
 // The catalogue. `einheiten` is the placement footprint in grid cells, not a drawing hint.
 // ---------------------------------------------------------------------------------------------
 
@@ -614,140 +1066,76 @@ const KATALOG = [
 
   { name: "marke_eingang", art: "marke", einheiten: [1, 1], schlagworte: ["eingang", "hinweis"], zeichne: markeEingang },
   { name: "marke_geheim", art: "marke", einheiten: [1, 1], schlagworte: ["geheim", "hinweis", "leitung"], zeichne: markeGeheim },
+
+  // -- 1.2.0 Gegenstände: was in einem Raum liegt, steht und gefunden wird --------------------
+  { name: "flasche", art: "gefaess", einheiten: [1, 1], schlagworte: ["glas", "vorrat", "behaelter"], zeichne: flasche },
+  { name: "phiole", art: "gefaess", einheiten: [1, 1], schlagworte: ["alchemie", "schatz", "behaelter"], zeichne: phiole },
+  { name: "amphore", art: "gefaess", einheiten: [1, 1], schlagworte: ["ton", "vorrat", "behaelter"], zeichne: amphore },
+  { name: "kessel", art: "gefaess", einheiten: [1, 1], schlagworte: ["metall", "handwerk", "behaelter"], zeichne: kessel },
+  { name: "weinschlauch", art: "gefaess", einheiten: [1, 1], schlagworte: ["leder", "vorrat", "behaelter"], zeichne: weinschlauch },
+  { name: "kelch", art: "gefaess", einheiten: [1, 1], schlagworte: ["metall", "kult", "schatz"], zeichne: kelch },
+  { name: "waffenstaender", art: "moebel", einheiten: [1, 1], schlagworte: ["waffe", "handwerk", "wache"], zeichne: waffenstaender },
+  { name: "ruestungsstaender", art: "moebel", einheiten: [1, 1], schlagworte: ["ruestung", "wache", "handwerk"], zeichne: ruestungsstaender },
+  { name: "schildwand", art: "moebel", einheiten: [2, 1], schlagworte: ["schild", "wache", "handwerk"], zeichne: schildwand },
+  { name: "waffenhaufen", art: "moebel", einheiten: [1, 1], schlagworte: ["waffe", "geroell", "lager"], zeichne: () => waffenhaufen("waffenhaufen") },
+  { name: "schleifstein", art: "moebel", einheiten: [1, 1], schlagworte: ["handwerk", "stein", "waffe"], zeichne: schleifstein },
+  { name: "muenzhaufen", art: "moebel", einheiten: [1, 1], schlagworte: ["schatz", "gold", "lager"], zeichne: () => muenzhaufen("muenzhaufen") },
+  { name: "buecherstapel", art: "moebel", einheiten: [1, 1], schlagworte: ["buecher", "wissen", "kammer"], zeichne: () => buecherstapel("buecherstapel") },
+  { name: "schriftrollen", art: "moebel", einheiten: [1, 1], schlagworte: ["buecher", "wissen", "kult"], zeichne: () => schriftrollen("schriftrollen") },
+
+  // -- 1.2.0 Vielfalt: zweite Antworten auf einantwortige Fragen ------------------------------
+  { name: "boden_ziegel", art: "boden", einheiten: [1, 1], kachelbar: true, schlagworte: ["ziegel", "halle", "gehoben"], zeichne: () => bodenZiegel("boden_ziegel") },
+  { name: "boden_mosaik", art: "boden", einheiten: [1, 1], kachelbar: true, schlagworte: ["mosaik", "gehoben", "kult"], zeichne: () => bodenMosaik("boden_mosaik") },
+  { name: "boden_dielen_alt", art: "boden", einheiten: [1, 1], kachelbar: true, schlagworte: ["holz", "wohnraum", "verfall"], zeichne: () => bodenDielenAlt("boden_dielen_alt") },
+  { name: "boden_sand", art: "boden", einheiten: [1, 1], kachelbar: true, schlagworte: ["sand", "keller", "trocken"], zeichne: () => bodenSand("boden_sand") },
+  { name: "tuer_stein", art: "tuer", einheiten: [1, 1], schlagworte: ["stein", "drehbar", "schwer"], zeichne: tuerStein },
+  // Absichtlich NICHT "drehbar": `grundriss` wählt ein Türblatt für die ganze Karte, und ein
+  // zweizelliges Blatt auf einer einzelligen Öffnung wäre eine falsch gezeichnete Tür. Von Hand
+  // gesetzt ist sie richtig — der Erzeuger darf sie nur nicht ziehen.
+  { name: "tuer_doppel", art: "tuer", einheiten: [2, 1], schlagworte: ["holz", "halle", "doppel"], zeichne: tuerDoppel },
+  { name: "tuer_geheim", art: "tuer", einheiten: [1, 1], schlagworte: ["stein", "verborgen", "geheim"], zeichne: tuerGeheim },
+  { name: "wendeltreppe", art: "aufbau", einheiten: [1, 1], schlagworte: ["treppe", "aufwaerts", "abwaerts"], zeichne: wendeltreppe },
+  { name: "saeule_bruch", art: "aufbau", einheiten: [1, 1], schlagworte: ["stein", "traeger", "verfall"], zeichne: () => saeuleBruch("saeule_bruch") },
+  { name: "brunnen", art: "aufbau", einheiten: [1, 1], schlagworte: ["wasser", "kammer", "tief"], zeichne: brunnen },
+  { name: "statue", art: "aufbau", einheiten: [1, 1], schlagworte: ["stein", "thron", "kult"], zeichne: statue },
+  { name: "kette_ring", art: "aufbau", einheiten: [1, 1], schlagworte: ["metall", "kerker", "gefahr"], zeichne: ketteRing },
+  { name: "wandfackel", art: "licht", einheiten: [1, 1], schlagworte: ["feuer", "warm", "wache"], zeichne: wandfackel },
+  { name: "laterne", art: "licht", einheiten: [1, 1], schlagworte: ["kerze", "schwach", "lager"], zeichne: laterne },
+  { name: "kandelaber", art: "licht", einheiten: [1, 1], schlagworte: ["kerze", "gehoben", "kult"], zeichne: kandelaber },
+  { name: "marke_falle", art: "marke", einheiten: [1, 1], schlagworte: ["falle", "gefahr", "hinweis"], zeichne: markeFalle },
+  // "eingang" fehlt hier bewusst: die Eingangsmarke ist eine Aussage, keine Geschmacksfrage.
+  // Vielfalt gehört auf Möbel und Böden, nicht auf ein Symbol, das etwas Bestimmtes behauptet.
+  { name: "marke_ziel", art: "marke", einheiten: [1, 1], schlagworte: ["ziel", "hinweis", "leitung"], zeichne: markeZiel },
+  { name: "marke_frage", art: "marke", einheiten: [1, 1], schlagworte: ["frage", "hinweis", "wissen"], zeichne: markeFrage },
+
+  // -- 1.2.0 Wände: Handsatz, kein Erzeugnis. Der Generator liefert Wandgeometrie. ------------
+  { name: "wand_stein", art: "wand", einheiten: [1, 1], schlagworte: ["stein", "mauer", "halle"], zeichne: () => wandStein("wand_stein") },
+  { name: "wand_ziegel", art: "wand", einheiten: [1, 1], schlagworte: ["ziegel", "mauer", "gehoben"], zeichne: wandZiegel },
+  { name: "wand_bruch", art: "wand", einheiten: [1, 1], schlagworte: ["stein", "mauer", "verfall"], zeichne: () => wandBruch("wand_bruch") },
+  { name: "wand_holz", art: "wand", einheiten: [1, 1], schlagworte: ["holz", "mauer", "wohnraum"], zeichne: wandHolz },
+  { name: "wand_fels", art: "wand", einheiten: [1, 1], schlagworte: ["fels", "mauer", "hoehle"], zeichne: () => wandFels("wand_fels") },
+
+  // -- 1.2.0 Figuren: Marken für den Tisch, keine Porträts ------------------------------------
+  { name: "figur_held", art: "figur", einheiten: [1, 1], schlagworte: ["held", "spieler", "klein"], zeichne: figurHeld },
+  { name: "figur_wache", art: "figur", einheiten: [1, 1], schlagworte: ["wache", "mensch", "klein"], zeichne: figurWache },
+  { name: "figur_untot", art: "figur", einheiten: [1, 1], schlagworte: ["untot", "verfall", "klein"], zeichne: figurUntot },
+  { name: "figur_schwarm", art: "figur", einheiten: [1, 1], schlagworte: ["schwarm", "viele", "klein"], zeichne: () => figurSchwarm("figur_schwarm") },
+  { name: "figur_bestie", art: "figur", einheiten: [2, 2], schlagworte: ["bestie", "tier", "gross"], zeichne: figurBestie },
+  { name: "figur_riese", art: "figur", einheiten: [2, 2], schlagworte: ["riese", "gross", "bestie"], zeichne: figurRiese },
 ];
 
 // Lowercase by contract: `assetpaket.ts` rejects mixed-case paths so that a pack authored on
 // Windows cannot break on a case-sensitive server.
 const LIZENZ_DATEI = "lizenz.txt";
-const LIZENZ_TEXT = `Chronicle — Assetpaket "${PAKET_ID}"
 
-Copyright (c) 2026 ${URHEBER}
-
-Zu diesem Werk gehoerende Grafiken wurden vollstaendig in diesem Repository erzeugt
-(tools/assets/erzeuge-grundrisspaket.mjs). Es wurde kein fremdes Bild-, Textur-, Schrift-
-oder Vorlagenmaterial verwendet, eingebettet, abgepaust oder abgeleitet.
-
-Der Urheber gibt dieses Werk unter CC0 1.0 Universal (Public Domain Dedication) frei:
-https://creativecommons.org/publicdomain/zero/1.0/
-
-Soweit nach Gesetz moeglich, verzichtet der Urheber weltweit auf alle Urheber- und
-verwandten Schutzrechte an diesem Werk. Das Werk darf ohne Genehmigung und ohne
-Namensnennung kopiert, veraendert, verbreitet und auch kommerziell genutzt werden.
-
-Diese Datei ist die Lizenzquelle des Pakets. Ihr SHA-256 steht als "textSha256" im
-Manifest paket.json; die Pruefung erfolgt in tools/gate-assets.mjs.
-`;
-
-// ---------------------------------------------------------------------------------------------
-
-const sha256 = (text) => createHash("sha256").update(text, "utf8").digest("hex");
-const bytes = (text) => Buffer.byteLength(text, "utf8");
-
-/** viewBox is authored, never parsed back out of the string by a consumer. */
-function abmessung(eintrag) {
-  return [eintrag.einheiten[0] * ZELLE, eintrag.einheiten[1] * ZELLE];
-}
-
-function baue() {
-  const dateien = new Map();
-  dateien.set(LIZENZ_DATEI, LIZENZ_TEXT);
-  const assets = [];
-  for (const eintrag of KATALOG) {
-    const inhalt = eintrag.zeichne();
-    const datei = `${eintrag.art}/${eintrag.name}.svg`;
-    if (dateien.has(datei)) throw new Error(`doppelte Datei ${datei}`);
-    dateien.set(datei, inhalt);
-    const [breite, hoehe] = abmessung(eintrag);
-    assets.push({
-      name: eintrag.name,
-      art: eintrag.art,
-      datei,
-      mimeType: "image/svg+xml",
-      sha256: sha256(inhalt),
-      bytes: bytes(inhalt),
-      groesse: [breite, hoehe],
-      // Centre anchor for everything in this pack, declared rather than assumed: the field exists
-      // precisely so a later pack may anchor a door leaf on its hinge.
-      anker: [Math.round(breite / 2), Math.round(hoehe / 2)],
-      einheiten: eintrag.einheiten,
-      kachelbar: eintrag.kachelbar === true,
-      schlagworte: eintrag.schlagworte,
-      lizenz: null,
-    });
-  }
-  const paket = {
-    schemaVersion: 1,
-    kind: "asset-pack",
-    id: PAKET_ID,
-    titel: "Grundriss — schematische Tuschesymbole für taktische Karten, gebaute und natürliche",
-    version: PAKET_VERSION,
-    urheber: URHEBER,
-    zellgroesse: ZELLE,
-    lizenz: {
-      spdx: "CC0-1.0",
-      inhaber: `${URHEBER} 2026`,
-      herkunft: "eigen",
-      quelle: null,
-      datei: LIZENZ_DATEI,
-      textSha256: sha256(LIZENZ_TEXT),
-    },
-    assets,
-  };
-  const sortiere = (value) =>
-    Array.isArray(value) ? value.map(sortiere)
-      : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([k, v]) => [k, sortiere(v)]))
-        : value;
-  dateien.set("paket.json", `${JSON.stringify(sortiere(paket), null, 2)}\n`);
-  return dateien;
-}
-
-async function vorhandeneDateien(dir) {
-  const gefunden = [];
-  const walk = async (aktuell) => {
-    let eintraege;
-    try { eintraege = await readdir(aktuell, { withFileTypes: true }); } catch { return; }
-    for (const eintrag of eintraege) {
-      const p = join(aktuell, eintrag.name);
-      if (eintrag.isDirectory()) await walk(p);
-      else gefunden.push(relative(dir, p).split(sep).join("/"));
-    }
-  };
-  await walk(dir);
-  return gefunden.sort();
-}
-
-async function main() {
-  const pruefe = process.argv.includes("--pruefe");
-  const dateien = baue();
-  const vorhanden = await vorhandeneDateien(PAKET_DIR);
-  const abweichungen = [];
-
-  for (const [pfad, inhalt] of dateien) {
-    const ziel = join(PAKET_DIR, pfad);
-    let alt = null;
-    try { alt = await readFile(ziel, "utf8"); } catch { /* neu */ }
-    if (alt === inhalt) continue;
-    abweichungen.push(alt === null ? `fehlt: ${pfad}` : `abweichend: ${pfad}`);
-    if (!pruefe) { await mkdir(dirname(ziel), { recursive: true }); await writeFile(ziel, inhalt, "utf8"); }
-  }
-  for (const pfad of vorhanden) {
-    if (dateien.has(pfad)) continue;
-    abweichungen.push(`verwaist: ${pfad}`);
-    if (!pruefe) await rm(join(PAKET_DIR, pfad), { force: true });
-  }
-
-  if (pruefe) {
-    if (abweichungen.length) {
-      console.error(`assets:erzeugen --pruefe ROT — ${abweichungen.length} Abweichung(en):`);
-      for (const zeile of abweichungen) console.error(`  ${zeile}`);
-      process.exit(1);
-    }
-    console.log(`assets:erzeugen --pruefe GRÜN — ${dateien.size} Dateien identisch reproduziert`);
-    return;
-  }
-  console.log(`assets:erzeugen — ${KATALOG.length} Assets, ${dateien.size} Dateien in assets/packs/${PAKET_ID}`);
-  for (const zeile of abweichungen) console.log(`  ${zeile}`);
-  if (!abweichungen.length) console.log("  (unverändert)");
-}
-
-await main();
+await erzeugePaket({
+  paketId: PAKET_ID,
+  version: PAKET_VERSION,
+  titel: "Grundriss — schematische Tuschesymbole für taktische Karten: Bau, Natur, Ausrüstung, Wand und Figur",
+  urheber: URHEBER,
+  zelle: ZELLE,
+  lizenzDatei: LIZENZ_DATEI,
+  lizenzText: cc0Text(PAKET_ID, URHEBER, "tools/assets/erzeuge-grundrisspaket.mjs"),
+  lizenz: { spdx: "CC0-1.0", inhaber: `${URHEBER} 2026`, herkunft: "eigen", quelle: null },
+  katalog: KATALOG,
+}, PAKET_DIR);
