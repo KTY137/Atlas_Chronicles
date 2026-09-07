@@ -40,7 +40,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 3 | Würfel animiert | ☑ | fallen beim Eintreffen, Historie bleibt ruhig |
 | 4 | Wiki-Export | ☑ | Chronik als Markdown, im Blick der exportierenden Person |
 | 5 | Lootkarten (Karte wie YuGiOh) | ☑ | Kartenfassung des Gegenstandsvertrags + Karte |
-| 6 | Admininventar (Admin erstellt Lootkarten) | ☐ | Vorlagenwerkstatt + Vorrat existieren — prüfen, nicht neu bauen |
+| 6 | Admininventar (Admin erstellt Lootkarten) | ☑ | war gebaut; geprüft und belegt, ein Regress dabei gefunden |
 | 7 | Spielleiter kann Würfe erleichtern | ☐ | |
 | 8 | Alles als **eine** Datei exportierbar (JSON) | ☐ | `.chronicle` v6 existiert — prüfen, nicht neu bauen |
 | 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☐ | „Vorrat der Spielleitung" existiert — prüfen |
@@ -443,3 +443,54 @@ Vertrag es seit jeher sagt. Es gibt **keine Kartenrückseite, keinen Druckbogen 
 Animation** beim Ziehen. Und eine Vorlage der Fassung 1 bekommt ihr Gesicht erst, wenn die
 Spielleitung sie das nächste Mal überarbeitet — automatisch umschreiben käme nicht in Frage,
 denn ihre Revision ist unveränderlich und inhaltsgehasht.
+
+## Feature 6 — Admininventar: geprüft, nicht gebaut. Und dabei einen Regress gefunden.
+
+**Gemessen zuerst, 2026-09-07 17:55.** Der Ledger hatte für #6 „prüfen, nicht neu bauen"
+vermerkt, und das war richtig. Der ganze Pfad steht:
+
+- **Nur die Spielleitung entwirft Lootkarten.** `saveTemplate` verlangt `role === "leitung"`;
+  über HTTP bekommt eine Spielerin **404**, nicht 403 — dieselbe Antwort wie überall im Haus.
+- **Der Vorrat ist das Admininventar, und zwar ohne zweite Tabelle:** ein Gegenstand ohne Träger
+  (`holder_actor_id IS NULL`) liegt bei der Spielleitung. Lesen und Anlegen sind an
+  `role === "leitung"` gebunden.
+- **Ausgeben ist gebaut und bedienbar:** im Gegenstandseditor wählt die Spielleitung den Träger,
+  inklusive „Vorrat der Spielleitung" als Rückweg.
+
+**Die Arbeit dieses Durchgangs war deshalb die Beweisführung**, nicht der Bau. Vier Fälle in
+`admininventar.test.ts` halten die ganze Geschichte: entwerfen → in den Vorrat legen → ausgeben,
+und daneben die drei Verweigerungen (Vorrat nicht einsehbar, keine Gegenstände durch Spielende,
+keine Vorlagenpflege durch Spielende). Sechs weitere in `item-contract.test.ts` prüfen den
+Vertrag selbst.
+
+### Der Fund, der diesen Durchgang gerechtfertigt hat
+
+`item-contract.test.ts` wurde beim ersten Lauf **rot** — und zwar an meiner eigenen Arbeit von
+Feature 5. Die drei neuen Muster im Gegenstandsvertrag standen als `pattern: "\S"` statt
+`pattern: "\\S"`. In TypeScript ist `"\S"` schlicht `S`: **das Muster verlangte den Buchstaben S.**
+Jedes Etikett, jede Kartenzeile ohne „S" wäre an der Tür abgewiesen worden — „licht", „Gewicht",
+„1 Pfund".
+
+Warum es niemandem auffiel: die io-Tests prüfen über `boundedText` im Paketprofil, nicht über
+das TypeBox-Schema; der Client-Test rendert nur. **Kein einziger vorhandener Test führte durch
+diese Tür.** Erst der Vertragstest im Protokollpaket tat es. Behoben; die alte Fassung 1 war nie
+betroffen, ihr Muster stand seit jeher richtig da.
+
+### Belege
+
+- `admininventar.test.ts` **4/4 grün** — die volle Geschichte samt Weitergabe (die Karte behält
+  ihr Gesicht auf dem Weg zur Figur) und den drei Verweigerungen.
+- `item-contract.test.ts` **6/6 grün** — beide Fassungen durch dieselbe Tür, erfundene Seltenheit
+  und Zusatzfelder abgewiesen, Grenzen für Spruch/Art/Zeilen, Fassung 1 unverändert.
+- **Gegenprobe gefahren:** `instantiateItem` ohne die `leitung`-Bedingung → der Fall „nur die
+  Spielleitung setzt Gegenstände in die Welt" wird rot („promise resolved instead of rejecting").
+  Danach zurückgesetzt.
+- Kein Regress: `protocol` + `io` + `client` + vier Server-Suiten **414/414 grün**, `typecheck`
+  0 Fehler, `gate:boundaries` **426/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Der Vorrat kennt **keine Ordnung**: keine Kisten, keine Sortierung, keine Suche, keine Stapel.
+Für zwanzig Karten reicht das, für zweihundert nicht — aber Behälter sind **#10**, und dort ist
+auch die echte Lücke benannt (`holder_actor_id` trägt nur Figuren). Und ein Massenanlegen gibt es
+nicht: jede Karte wird einzeln in die Welt gesetzt.

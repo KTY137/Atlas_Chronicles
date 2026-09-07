@@ -58,15 +58,15 @@ export const LootRarity = Type.Union(LOOT_RARITIES.map(value => Type.Literal(val
  */
 export const ItemContractV2 = Type.Object({
   schemaVersion: Type.Literal(2), name, loreEntryId: nullableId,
-  tags: Type.Array(Type.String({ minLength: 1, maxLength: 80, pattern: "\S" }), { maxItems: 32, uniqueItems: true }),
+  tags: Type.Array(Type.String({ minLength: 1, maxLength: 80, pattern: "\\S" }), { maxItems: 32, uniqueItems: true }),
   seltenheit: LootRarity,
   kategorie: Type.String({ maxLength: 80 }),
   /** Ein Bild aus dem Bildbestand der Kampagne. Fehlen die Bytes, zeigt die Karte den Platzhalter. */
   bildAssetId: nullableId,
   spruch: Type.String({ maxLength: 600 }),
   zeilen: Type.Array(Type.Object({
-    label: Type.String({ minLength: 1, maxLength: 40, pattern: "\S" }),
-    wert: Type.String({ minLength: 1, maxLength: 120, pattern: "\S" }),
+    label: Type.String({ minLength: 1, maxLength: 40, pattern: "\\S" }),
+    wert: Type.String({ minLength: 1, maxLength: 120, pattern: "\\S" }),
   }, closed), { maxItems: 8 }),
 }, closed);
 /** Beide Fassungen werden angenommen; die Karte entscheidet anhand von `schemaVersion`. */
