@@ -51,9 +51,17 @@ export function createDocuments(db: Db, cfg: DomainConfig = {}) {
   }
   async function knowledge(userId: string, campaignId: string): Promise<BetrachterWissen> {
     const membership = await campaigns.requireMember(userId, campaignId);
-    const ids = membership.role === "leitung"
+    return wissenFor(campaignId, membership.role, membership.actorId);
+  }
+  /**
+   * Das hergeleitete Wissen GENAU EINER Rolle/Figur — dieselbe Ableitung, die `knowledge`
+   * für den eigenen Betrachter fährt. Die Gegenüberstellung ruft sie zweimal; wer sie
+   * ruft, hat die Berechtigung vorher entschieden (Grenze B9: der Projektor ist der Server).
+   */
+  async function wissenFor(campaignId: string, role: string, actorId: string | null): Promise<BetrachterWissen> {
+    const ids = role === "leitung"
       ? new Set((await db.query<{ id: string }>("SELECT id FROM passages WHERE campaign_id=$1 AND retired_at_revision IS NULL", [campaignId])).rows.map((r) => trustPassageId(r.id)))
-      : await held(campaignId, membership.actorId);
+      : await held(campaignId, actorId);
     const known = (await db.query<{ entry_id: string }>("SELECT DISTINCT entry_id FROM passages WHERE campaign_id=$1 AND id=ANY($2::text[]) AND retired_at_revision IS NULL", [campaignId, [...ids]])).rows;
     const knownIds = known.map(row => row.entry_id);
     const names = (await db.query<{ slug: string; id: string }>(`SELECT slug,id FROM entries WHERE campaign_id=$1 AND id=ANY($2::text[])
@@ -64,13 +72,13 @@ export function createDocuments(db: Db, cfg: DomainConfig = {}) {
       knownSlugs.set(row.slug, row.id);
     }
     for (const name of ambiguous) knownSlugs.delete(name);
-    const doors = membership.actorId ? (await db.query<{ id: string; target_slug: string; expires_at: string }>(
+    const doors = actorId ? (await db.query<{ id: string; target_slug: string; expires_at: string }>(
       `SELECT id,target_slug,expires_at FROM (
         SELECT id,target_slug,expires_at,issued_at FROM vollmachten WHERE campaign_id=$1 AND actor_id=$2 AND status='offen' AND expires_at>$3
         UNION ALL SELECT v.id,e.slug AS target_slug,v.expires_at,v.issued_at FROM action_vollmachten v
           JOIN passages p ON p.id=v.passage_id JOIN entries e ON e.id=p.entry_id
           WHERE v.campaign_id=$1 AND v.actor_id=$2 AND v.status='offen' AND v.expires_at>$3 AND v.revoked_at IS NULL
-      ) doors ORDER BY issued_at,id`, [campaignId, membership.actorId, now()])).rows : [];
+      ) doors ORDER BY issued_at,id`, [campaignId, actorId, now()])).rows : [];
     return { gehaltenePids: ids, bekannteEntryIds: new Set(knownIds), bekannteSlugs: knownSlugs,
       offeneTueren: new Map(doors.map((v) => [v.target_slug, { vollmachtId: v.id, verfallAt: Number(v.expires_at) }])) };
   }
@@ -162,5 +170,5 @@ export function createDocuments(db: Db, cfg: DomainConfig = {}) {
     return (await db.query(`SELECT id,seq,content_hash AS "contentHash",created_at AS "createdAt",document
       FROM revisions WHERE entry_id=$1 ORDER BY seq DESC`, [entryId])).rows;
   }
-  return { source, held, knowledge, listEntries, getEntry, saveEntry, revealPassage, history };
+  return { source, held, knowledge, wissenFor, listEntries, getEntry, saveEntry, revealPassage, history };
 }

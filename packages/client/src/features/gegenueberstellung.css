@@ -1,0 +1,12 @@
+.gegenueberstellung .figurenwahl { display: flex; flex-wrap: wrap; gap: 1rem; }
+.gegenueberstellung .figurenwahl label { flex: 1 1 14rem; }
+.gegenueberstellung .vergleich-spalten { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
+.gegenueberstellung .spalte { min-width: 0; }
+.gegenueberstellung .spalte h3 { position: sticky; top: 0; margin: 0 0 .5rem; padding: .35rem 0; background: var(--surface, transparent); }
+.gegenueberstellung .vergleichs-passage { border-inline-start: 3px solid transparent; padding: .35rem 0 .35rem .75rem; margin-block-end: .5rem; overflow-wrap: anywhere; }
+.gegenueberstellung .vergleichs-passage.beide { border-inline-start-color: var(--border, #d8d2c6); }
+.gegenueberstellung .vergleichs-passage.nur-links,
+.gegenueberstellung .vergleichs-passage.nur-rechts { border-inline-start-color: var(--accent, #a8791f); background: color-mix(in srgb, var(--accent, #a8791f) 8%, transparent); }
+.gegenueberstellung .seiten-marke { display: block; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; opacity: .72; }
+.gegenueberstellung .vergleichs-passage p { margin: .2rem 0 0; }
+@media (max-width: 900px) { .gegenueberstellung .vergleich-spalten { grid-template-columns: minmax(0, 1fr); } }

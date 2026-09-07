@@ -31,6 +31,9 @@ test("GM and two players: UI join, private passages, conflict, real server resta
   await gm.getByRole("button",{name:"Chronik einrichten"}).click();
   await gm.getByLabel("Name der Kampagne").fill("Die drei Bücher");
   await gm.getByRole("button",{name:"Kampagne anlegen"}).click();
+  // Seit dem Heute-Startbild oeffnet eine neue Kampagne auf "Heute", nicht in der Chronik.
+  await expect(gm.getByRole("heading",{name:"Die drei Bücher"})).toBeVisible();
+  await gm.getByRole("button",{name:"Chronik",exact:true}).click();
   await expect(gm.getByRole("heading",{name:"Die Chronik"})).toBeVisible();
   const campaignId=new URL(gm.url()).searchParams.get("campaign")!;
   await gm.getByRole("button",{name:"Runde",exact:true}).click();
@@ -42,6 +45,7 @@ test("GM and two players: UI join, private passages, conflict, real server resta
     await p.goto(invite); await p.getByLabel("Dein Name in der Runde").fill(name); await p.getByRole("button",{name:"Beitritt anfragen"}).click();
     await gm.locator(".requests-panel li").filter({hasText:name}).getByRole("button",{name:"Freigeben"}).click();
     await p.getByRole("button",{name:"Die Runde betreten"}).click();
+    await p.getByRole("button",{name:"Chronik",exact:true}).click();
     await expect(p.getByRole("heading",{name:"Die Chronik"})).toBeVisible();
   }
   await gm.getByRole("button",{name:"Chronik",exact:true}).click();

@@ -24,6 +24,7 @@ import { registerWeek } from "./http/week.ts";
 import { registerHealth } from "./http/health.ts";
 import { registerHttpLifecycle } from "./http/lifecycle.ts";
 import { registerWikiNavigation } from "./http/wiki-navigation.ts";
+import { registerGegenueberstellung } from "./http/gegenueberstellung.ts";
 import { registerWikiMedien } from "./http/wiki-medien.ts";
 import { registerBundles } from "./http/bundles.ts";
 import { registerActors } from "./http/actors.ts";
@@ -140,6 +141,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerWeek(app,db,config);
   registerHealth(app,db);
   registerWikiNavigation(app, db, config);
+  registerGegenueberstellung(app, db, config);
   registerWikiMedien(app, db, config);
   registerBundles(app, db, config);
   registerActors(app, db, config);

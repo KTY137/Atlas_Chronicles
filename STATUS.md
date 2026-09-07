@@ -125,6 +125,46 @@ nach einer Liste — die Liste ist beim Staging schon veraltet. Aktuell fremd un
 Forge-Refactor (`polygon`, `kartenwerk`, `siedlung`), Desktop-Installer samt Wurzelmanifesten,
 und der Loeschpfad (017, `deletion.ts`).
 
+## Die Gegenüberstellung — Session Claude, 2026-09-07 11:40 (additiv, eigene Fläche)
+
+- **Register-Zeile `Die Gegenüberstellung` (Kategorie `wissen`, `unser-champion`) ist gebaut.**
+  Derselbe Artikel nebeneinander für zwei Figuren, jede Passage mit ihrer Seite (`beide`,
+  `nur-links`, `nur-rechts`). Chronik → Artikel → Werkzeugleiste der Spielleitung. Siehe
+  [GEGENUEBERSTELLUNG](docs/GEGENUEBERSTELLUNG.md).
+- **Zwei Aufrufe derselben Projektion, kein zweiter Filter.** `wissenFor` wurde aus `knowledge`
+  in `domain/documents.ts` herausgezogen und exportiert; die neue Route ruft `projiziereEntry`
+  zweimal. Grenze B9 hält: der Client bekommt zwei fertige Projektionen und keine
+  Sichtbarkeitsmarke über eine dritte.
+- **Kein 403.** Falsche Rolle, fremde Figur, fehlender Parameter und nicht vorhandener Eintrag
+  liefern dieselbe 404-Antwort, byte-identisch geprüft. Ein 403 hätte einem Spieler die Existenz
+  der Fläche bestätigt.
+- **`Erfahrungsgrad` ist bewusst NICHT geliefert.** `revelations` speichert keine `quelle`
+  (001_initial.sql), und `Erfahrungsgrad` wird laut `chronik/src/model.ts` genau daraus
+  abgeleitet. Das ist die eigene Register-Zeile `Die Quelle und der Erfahrungsgrad` samt eigener
+  Migration; sie wurde hier nicht stillschweigend miterfunden.
+- **Nachgewiesen, nicht angenommen:** `gegenueberstellung.test.ts` 4/4 grün; der echte
+  Browserpfad `e2e/gegenueberstellung.spec.ts` grün in 2,2 min (vier Passagen, zwei Freigaben,
+  beide Spalten gelesen, Panel geschlossen) — er prüft im selben Lauf, dass `Historie` und
+  `Bearbeiten` weiterhin sichtbar sind. `gate:boundaries` GRÜN (377 Dateien, 8 Regeln, 0
+  Verstöße), `gate:assets` GRÜN (3 Pakete, 171 Assets), `gate:version` GRÜN, Typecheck grün.
+  Gesamtsuite **1288 grün, 58 übersprungen, 1 rot**: `bundles-v3` lief in ein 30-s-Budget unter
+  Last und ist isoliert **6/6 grün in 52 s** — Last, kein Defekt, kein Budget angehoben, keine
+  meiner Dateien.
+
+### `e2e/campaign.spec.ts` war schon blind, und ist es zum Teil noch
+
+`campaign.spec.ts` erwartete direkt nach `Kampagne anlegen` die Überschrift „Die Chronik".
+Seit `cc4f826` (Heute-Startbild) landet die App dort nicht mehr; die Spezifikation ist älter als
+dieser Commit (`git merge-base --is-ancestor` geprüft). Sie brach also seit Tagen in Zeile 34 ab
+und bewachte den gesamten Wissenspfad nicht mehr. Korrigiert: sie klickt jetzt ausdrücklich in
+die Chronik und läuft bis Zeile 103.
+
+**Dort ist sie weiterhin rot** — `page.goto: net::ERR_ABORTED` für einen frischen Kontext aus
+`storageState` nach dem Serverneustart, zweimal reproduziert. **Nicht meine Arbeit, gemessen
+statt behauptet:** derselbe Lauf gegen einen Build **ohne** meine Wiki-Änderung fällt ebenfalls
+aus (dort schon in Zeile 82, `browserContext.newPage: … has been closed`). Wer diesen Pfad
+besitzt, erbt einen echten offenen Befund; er wurde nicht durch Abschwächen zugedeckt.
+
 ## Current handoff — start here
 
 
