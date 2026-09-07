@@ -152,6 +152,18 @@ export async function buildApp(db: Db, config: AppConfig) {
     const projected = await docs.getEntry((await auth(req)).userId, req.params.campaignId, req.params.id);
     return reply.type("application/json").send(canonicalJson(projected as unknown as CanonicalValue));
   });
+  // Der Wiki-Export ist eine Geste am Ende eines Abends, kein Renderpfad: er liest jeden
+  // sichtbaren Artikel einzeln und ist deshalb bewusst begrenzt, wie der Kampagnenexport auch.
+  app.get<{ Params: CampaignParams }>("/api/campaigns/:campaignId/wiki-export", { config: { rateLimit: { max: 4, timeWindow: "1 minute" } } }, async (req, reply) => {
+    const { dateiname, markdown } = await docs.exportWiki((await auth(req)).userId, req.params.campaignId);
+    // Der Kampagnenname steht im Dateinamen. `slugify` laesst Buchstaben aller Schriften stehen,
+    // deshalb der ASCII-Rueckfall NEBEN der kodierten Fassung (RFC 5987) — und niemals roh:
+    // ein Name mit Anfuehrungszeichen oder Zeilenumbruch waere sonst eine Kopfzeilen-Injektion.
+    const ascii = dateiname.replace(/[^ -~]/g, "_").replaceAll('"', "");
+    return reply.type("text/markdown; charset=utf-8")
+      .header("Content-Disposition", `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(dateiname)}`)
+      .send(markdown);
+  });
   const documentInput = (body: P.SaveDocumentBody): DocumentInput => ({ ...body, passages: body.passages.map((p) => ({ ...p, inhalt: p.inhalt as Blockinhalt })) });
   app.post<{ Params: CampaignParams; Body: P.SaveDocumentBody }>("/api/campaigns/:campaignId/entries", { schema: { body: P.SaveDocument } }, async (req) => docs.saveEntry((await auth(req)).userId, req.params.campaignId, documentInput(req.body)));
   app.put<{ Params: CampaignParams & { id: string }; Body: P.SaveDocumentBody }>("/api/campaigns/:campaignId/entries/:id", { schema: { body: P.SaveDocument } }, async (req) => docs.saveEntry((await auth(req)).userId, req.params.campaignId, documentInput(req.body), req.params.id));

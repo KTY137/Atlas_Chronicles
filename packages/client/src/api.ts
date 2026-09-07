@@ -58,3 +58,29 @@ export function plainText(block: Block): string {
     case "rohblock": return block.quelltext;
   }
 }
+
+/**
+ * Eine Antwort des Servers als Datei speichern.
+ *
+ * Einmal geschrieben, zweimal benutzt — Kampagnenpaket und Wiki-Export. Der Dateiname kommt
+ * bevorzugt aus dem `Content-Disposition` der Antwort: der Server weiss besser als der Browser,
+ * wie die Datei heissen soll, und bei einem Namen aus der Welt der Runde ist genau das der
+ * Unterschied zwischen `chronik.md` und `download`.
+ */
+export async function ladeAlsDatei(pfad: string, rueckfallName: string, fehler: (status: number) => string): Promise<void> {
+  const antwort = await fetch(pfad, { credentials: "same-origin", cache: "no-store" });
+  if (!antwort.ok) throw new ApiError(antwort.status, fehler(antwort.status));
+  const url = URL.createObjectURL(await antwort.blob()), link = document.createElement("a");
+  link.href = url; link.download = dateinameAus(antwort.headers.get("Content-Disposition")) ?? rueckfallName;
+  document.body.append(link); link.click(); link.remove();
+  // Erst freigeben, wenn der Browser die Daten sicher uebernommen hat.
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
+/** Der Dateiname aus `Content-Disposition`; die kodierte Fassung (RFC 5987) hat Vorrang. */
+export function dateinameAus(kopfzeile: string | null): string | null {
+  if (!kopfzeile) return null;
+  const kodiert = /filename\*=UTF-8''([^;]+)/i.exec(kopfzeile);
+  if (kodiert) { try { return decodeURIComponent(kodiert[1]!); } catch { /* unbrauchbar kodiert */ } }
+  return /filename="([^"]*)"/i.exec(kopfzeile)?.[1] || null;
+}

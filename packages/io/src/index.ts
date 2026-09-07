@@ -1,5 +1,6 @@
 /** File adapters only. Import results are GM review material, never reader projections. */
 export { importEron, planEronReimport } from "./eron.ts";
+export { wikiAlsMarkdown, artikelAlsMarkdown, schuetzeMarkdown, ankerVon, type WikiExport } from "./wiki-markdown.ts";
 export { decomposeWiki, parseWikiInline, splitWikiTopLevel, balancedEnd, wikiSlug, blockPlainText, inlinePlainText, dateiSlug, parseBildAufruf, ERON_TEMPLATE_TYPES, eronNotationTarget, namespaceLinkTarget, MEDIAWIKI_NAMESPACES } from "./wikitext.ts";
 export type { BildAufruf } from "./wikitext.ts";
 export { leseLizenz, parseMediaInventory } from "./medien.ts";

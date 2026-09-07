@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { canonicalHash, trustEntryId, trustPassageId, trustRevisionId, trustUserId, trustActorId, type PassageId, type CanonicalValue } from "@chronicle/core";
 import { lineage, resolvePassage, mergeGuard, type Blockinhalt, type Passage, type LineageEvent } from "@chronicle/chronik";
 import { projiziereEntry, type BetrachterWissen, type EntryProjektion } from "@chronicle/projection";
+import { wikiAlsMarkdown } from "@chronicle/io";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { Gone, Conflict } from "./errors.ts";
@@ -170,5 +171,25 @@ export function createDocuments(db: Db, cfg: DomainConfig = {}) {
     return (await db.query(`SELECT id,seq,content_hash AS "contentHash",created_at AS "createdAt",document
       FROM revisions WHERE entry_id=$1 ORDER BY seq DESC`, [entryId])).rows;
   }
-  return { source, held, knowledge, wissenFor, listEntries, getEntry, saveEntry, revealPassage, history };
+  /**
+   * Die sichtbare Chronik als ein Markdown-Dokument.
+   *
+   * Ausdrücklich über `listEntries` und `getEntry` gebaut statt über eigene Abfragen: die
+   * Sichtbarkeit behält damit GENAU EINE Herleitung. Eine zweite, schnellere hier wäre der Ort,
+   * an dem der Export eines Tages mehr zeigt als der Artikel — still, und zugunsten des Lecks.
+   * Der Preis ist bekannt und wird bewusst gezahlt: zwei Lesungen je Artikel. Ein Export ist
+   * eine Geste am Ende eines Abends, kein Renderpfad.
+   */
+  async function exportWiki(userId: string, campaignId: string): Promise<{ dateiname: string; markdown: string }> {
+    const member = await campaigns.requireMember(userId, campaignId);
+    const kopf = (await db.query<{ name: string }>("SELECT name FROM campaigns WHERE id=$1", [campaignId])).rows[0];
+    if (!kopf) throw new Gone("campaign");
+    const artikel: EntryProjektion[] = [];
+    for (const eintrag of await listEntries(userId, campaignId)) artikel.push(await getEntry(userId, campaignId, eintrag.id));
+    const markdown = wikiAlsMarkdown({ titel: kopf.name, artikel, vollstaendig: member.role === "leitung",
+      erzeugtAm: new Date(now()).toISOString().slice(0, 10) });
+    return { dateiname: `${slugify(kopf.name) || "chronik"}.md`, markdown };
+  }
+
+  return { source, held, knowledge, wissenFor, listEntries, getEntry, saveEntry, revealPassage, history, exportWiki };
 }

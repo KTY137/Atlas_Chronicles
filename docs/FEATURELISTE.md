@@ -35,7 +35,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 1 | Kampfsystem (testen) | ☑ | grün und belegt, siehe unten |
 | 2 | Kampfbühne (wie bei Card Games) | ☑ | bedienbar am Tisch, Reiter „Kampf“ |
 | 3 | Würfel animiert | ☑ | fallen beim Eintreffen, Historie bleibt ruhig |
-| 4 | Wiki-Export | ☐ | |
+| 4 | Wiki-Export | ☑ | Chronik als Markdown, im Blick der exportierenden Person |
 | 5 | Lootkarten (Karte wie YuGiOh) | ☐ | |
 | 6 | Admininventar (Admin erstellt Lootkarten) | ☐ | |
 | 7 | Spielleiter kann Würfe erleichtern | ☐ | |
@@ -290,3 +290,77 @@ sagen, was gefallen ist. Echte Würfelaugen gingen nur beim W6 auf, und ein Syst
 Würfelart anders aussieht als bei allen anderen, wäre schlechter als eines, das überall gleich
 liest. Der e2e-Lauf im Browser hat die Bewegung nicht gesehen; geprüft ist sie am gerenderten
 Aufbau, nicht an einem laufenden Bild.
+
+## Feature 4 — Wiki-Export: die Chronik als lesbare Datei
+
+**Gemessen zuerst, 2026-09-07 17:35 — und es gab drei Dinge, die wie dieses Feature aussehen.**
+`wikitext.ts` ist der **Import** aus MediaWiki (die Gegenrichtung). `CampaignExport` ist das
+**Kampagnenpaket** `.chronicle`, ein Wiederherstellungsformat — das gehört zu #8, nicht hierher.
+Und **Veröffentlichung** (`012_authoring.sql`) ist eine *gehostete* öffentliche Leseseite, keine
+Datei zum Mitnehmen. Feature 4 ist das vierte: den Wiki-**Inhalt** als lesbares Dokument
+herausnehmen. Keines der drei wurde angefasst (Regel 6).
+
+### Die eine Frage, an der alles hängt
+
+Wer exportiert, sieht was? Die Chronik hat Passagen-Wissen, Türen und Geltungsstufen. Ein Export,
+der das falsch macht, ist kein Schönheitsfehler, sondern ein Leck.
+
+**Deshalb leitet der Export nichts selbst her.** `exportWiki` ruft `listEntries` und `getEntry`
+auf — dieselben Funktionen, die der Artikel im Browser benutzt. Die Sichtbarkeit hat damit **genau
+eine Herleitung**, und der Serialisierer bekommt bereits Projiziertes und trifft keine einzige
+Sichtbarkeitsentscheidung. Der Preis ist bekannt und wird bewusst gezahlt: zwei Lesungen je
+Artikel. Ein Export ist eine Geste am Ende eines Abends, kein Renderpfad — und die Route ist wie
+der Kampagnenexport auf 4 Aufrufe je Minute begrenzt.
+
+**Der Kopf des Dokuments sagt, wessen Blick es ist.** Ein Spielerexport trägt „Dies ist **dein**
+Blick auf die Chronik"; der Knopf heißt für sie „Mein Wissen exportieren", für die Spielleitung
+„Chronik exportieren". Bliebe das ungesagt, hielte jemand seinen Ausschnitt für die Welt und
+merkte es nie.
+
+### Der Serialisierer
+
+`packages/io/src/wiki-markdown.ts`, die Gegenrichtung zu `wikitext.ts` im selben Paket. Er hält
+die Struktur: Überschriften erst dort, wo der Passagen-Pfad sich ändert; Listen, Zitate,
+Auszeichnungen; mehrwertige Infobox-Zeilen bleiben Aufzählung, statt zu einer Komma-Zeile zu
+verschmelzen. Verweise zeigen als Sprungmarken in dasselbe Dokument — der Export ist **eine**
+Datei.
+
+Zwei Ehrlichkeiten stecken darin:
+
+- **Markdown-Zeichen im Fließtext werden geschützt.** Ohne das formatierte sich ein Artikel, der
+  über Sterne und Klammern spricht, beim Export selbst um — der Export wäre keine Kopie mehr,
+  sondern eine Interpretation.
+- **Abbildungen werden benannt, nicht behauptet.** Die Bytes liegen nicht bei; ein `![…](…)`
+  zeigte auf nichts. Stattdessen steht dort *Abbildung: burg.png* samt Bildunterschrift.
+- Ein unverwandelter **Rohblock** wird gezeigt, nicht stillschweigend fallengelassen — dieselbe
+  Regel wie im Leser.
+
+### Keine Doppelung beim Herunterladen
+
+Der Blob-Download stand schon in `CampaignExport`. Statt ihn ein zweites Mal zu schreiben, ist er
+als `ladeAlsDatei` nach `api.ts` gewandert und wird jetzt von beiden benutzt. Er liest den
+Dateinamen aus `Content-Disposition` — der Server weiß besser als der Browser, wie die Datei
+heißen soll.
+
+### Belege
+
+- `wiki-markdown.test.ts` **10/10 grün**: Schutzzeichen, Überschriften nur bei Pfadwechsel,
+  Sortierung nach `ord`, Listen/Zitate/Verweise, Abbildung ohne Bildbehauptung, Rohblock,
+  mehrwertige Felder, Inhaltsverzeichnis, leere Chronik.
+- `wiki-export.test.ts` **4/4 grün** gegen die echte Anwendung: die Spielleitung bekommt alles,
+  **die Spielerin nur ihre gehaltene Passage** — weder die verborgene Passage desselben Artikels
+  noch der Artikel, den sie gar nicht kennt. Dazu Kopfzeilen (Umlaut kodiert nach RFC 5987 neben
+  ASCII-Rückfall, keine Zeilenumbrüche) und 404 für Fremde.
+- **Gegenprobe gefahren:** der Export nimmt die Abkürzung und leitet die Sichtbarkeit selbst her
+  → der Spielerfall wird rot und leckt genau `Unter der Mauer liegt ein Tunnel`. Danach
+  zurückgesetzt.
+- Kein Regress: `packages/io` + `packages/client` + vier Wiki-Serversuiten **394/394 grün**,
+  `typecheck` 0 Fehler, `gate:boundaries` **421/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Der Export ist **eine Markdown-Datei ohne Bilder** — Abbildungen werden benannt. Es gibt keinen
+Export einzelner Artikel und kein zweites Format (HTML, PDF, Wikitext-Rückweg); die Wahl fiel auf
+das eine Format, das sich überall öffnen, drucken und weiterverarbeiten lässt. Und der Export
+liest je Artikel zweimal — für eine sehr große Chronik ist das langsam, aber es ist der Preis
+dafür, dass die Sichtbarkeit nur eine Quelle hat.
