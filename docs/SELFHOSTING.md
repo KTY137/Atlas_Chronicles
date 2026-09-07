@@ -231,8 +231,16 @@ docker compose --env-file deploy/.env -f deploy/docker-compose.selfhost.yml \
   --profile tls up -d --build
 ```
 
-Migrationen laufen beim Start, sind additiv und idempotent. Ein Neustart auf einer bereits
-migrierten Datenbank ist gefahrlos.
+Migrationen laufen beim Start. Der Migrator sperrt gegen gleichzeitig startende Container
+und prüft bei jedem Start die Prüfsumme jeder bereits angewandten Datei — ein Neustart auf
+einer bereits migrierten Datenbank ist gefahrlos.
+
+**Ein Update ist trotzdem ein kurzes Wartungsfenster, kein nahtloser Wechsel.** Die meisten
+Migrationen sind erweiternd; danach läuft auch alter Code weiter. Einzelne sind verengend
+(eine Spalte wird `NOT NULL`, ein Primärschlüssel wechselt), und ab einer solchen Migration
+können alte und neue Programmversion nicht mehr gleichzeitig gegen dieselbe Datenbank laufen.
+Das Zurückrollen der Anwendung ist dann **kein** Zurückrollen des Schemas. Sichere vor einem
+Update, und lies die Migrationsdateien, wenn du einen größeren Sprung machst.
 
 **Läuft es?** Drei Endpunkte mit drei verschiedenen Fragen:
 

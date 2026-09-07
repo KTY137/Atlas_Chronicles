@@ -1,6 +1,28 @@
 # 08 — Backend-Architektur: Ein Server, zwei Betriebsarten
 
 Status: **beschlossen und im Bau**, 2026-09-06.
+**Teilweise überholt, 2026-09-07** — siehe Nachtrag.
+
+> **Nachtrag 2026-09-07.** Dieses Dokument bleibt als Entscheidungsstand vom 2026-09-06
+> unverändert stehen. Eine belegte Bestandsaufnahme hat seither drei Abweichungen gefunden;
+> Einzelheiten und Fundstellen in
+> [`10-hosted-betrieb-und-auslieferung.md`](10-hosted-betrieb-und-auslieferung.md).
+>
+> - **§5 ist überholt.** Alle drei dort als „bewusst NICHT in diesem Slice" geführten Punkte
+>   existieren inzwischen: Brief/Umbruch/Lesestand (`domain/week.ts`), Export/Import
+>   (`domain/bundles.ts`, `bundle-cli.ts`) und `Sicht` als volle Komposition
+>   (`domain/public-projection.ts`, `http/publication.ts`).
+> - **§2 ist unvollständig.** Es kennt `protocol` und `server`; es gibt vierzehn Pakete.
+>   Maßgeblich für die tatsächlich erzwungenen Schichtgrenzen ist
+>   [`tools/gate-boundaries.mjs`](../tools/gate-boundaries.mjs), nicht dieses Layout.
+> - **§3 nennt zwei Invarianten, die der Code nicht trägt.** Der *Zugangsvorfall* hat Schema
+>   (`001_initial.sql:150-154`), aber keinen Schreibpfad im Produktionscode. Der als
+>   B9-Beleg genannte *Zwillingsbeweis* existiert nicht: `entryBytes`
+>   (`packages/projection/src/entry.ts:237`) wird nirgends aufgerufen, das Paket enthält
+>   keine Testdatei. **S-P1 existiert und hält.** Außerdem gilt die absolute Formulierung
+>   „kein Spieler-Payload trägt Rechtefelder" außerhalb der Dokument-/Tür-Fläche nicht mehr
+>   (`domain/tactical.ts`, `domain/actors.ts` führen `gm`/`canMove`); die
+>   Sicherheitseigenschaft bleibt intakt, der Wortlaut braucht eine benannte Ausnahmefläche.
 
 **Implementierungsstand (2026-09-06, 14:35):** `packages/server/` trägt Identität (echte
 WebAuthn-Zeremonien, Cookie-Wiederkehr, Kopplung, Ausweis), Kampagne/Einladung/Gast-Join/GM-Freigabe,
@@ -84,6 +106,10 @@ deploy/
    bis zur Ratifizierung verspricht keine Copy den unveränderten Hosted-Join auf LAN.
 
 ## 5. Bewusst NICHT in diesem Slice
+
+> **Überholt seit 2026-09-07** — siehe Nachtrag oben. Brief/Umbruch/Lesestand, Export/Import
+> und `Sicht` als volle Komposition sind gebaut. Der Abschnitt bleibt als Beleg des damaligen
+> Zuschnitts stehen. Weiterhin ungebaut: Raumuhr-Metering/Billing.
 
 LiveKit-Token-Minting (Ebene existiert nur als Compose-Eintrag) · Raumuhr-Metering/Billing ·
 Brief/Umbruch/Lesestand · Export/Import · `Sicht` als volle Komposition (die Projektion hier
