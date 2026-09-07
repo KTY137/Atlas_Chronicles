@@ -9,6 +9,7 @@ import {
   type GrundrissBericht, type GrundrissEltern, type GrundrissRaum, type Rauschen,
 } from "./kartenwerk.ts";
 import { delaunayKanten, spannbaumMitSchleifen, type Polygon, type Punkt } from "./polygon.ts";
+import { loeseWfc, type WfcKachel } from "./wfc.ts";
 
 /**
  * **The first generation Chronicle performs itself**, rather than importing: rooms, corridors and
@@ -44,7 +45,7 @@ import { delaunayKanten, spannbaumMitSchleifen, type Polygon, type Punkt } from 
 
 export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const GRUNDRISS_VERSION = "3";
+export const GRUNDRISS_VERSION = "4";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
@@ -70,6 +71,11 @@ export interface GrundrissOptionen {
    * - `raster` — rekursive Binärteilung (BSP). Räume füllen die Blätter eines Teilungsbaums,
    *   liegen also auf einem impliziten Gitter. Richtig für Gebautes mit Plan: ein Kellergewölbe,
    *   eine Kaserne, ein Turm.
+   * - `kachelwerk` — **Wave Function Collapse** legt auf einem groben Feldraster fest, welches
+   *   Feld überhaupt ein Raum wird und wohin es Durchgänge öffnet. Weil ein offener Sockel nur an
+   *   einen offenen passt, muss ein Nachbar jeden Durchgang erwidern; das Muster entsteht aus
+   *   Propagation statt aus Ziehung. Richtig für Anlagen, die nach einem System gebaut wurden und
+   *   trotzdem keinen Plan mehr erkennen lassen: Katakomben, Minen, Kerkerflügel.
    * - `streuung` — Räume werden in eine Ellipse gestreut, per Trennkraft auseinandergeschoben,
    *   dann über den **minimalen Spannbaum ihrer Delaunay-Triangulierung** verbunden, plus einige
    *   zurückgelegte Kanten. Das ist das Verfahren, das TinyKeep beschrieben hat; es liefert
@@ -80,7 +86,7 @@ export interface GrundrissOptionen {
    * zugleich, dass es genau **einen** Weg dorthin gibt. Erst die zurückgelegten Kanten machen aus
    * dem Baum einen Grundriss, in dem der Spieler eine Wahl hat.
    */
-  readonly anordnung: "raster" | "streuung";
+  readonly anordnung: "raster" | "streuung" | "kachelwerk";
 }
 
 export const GRUNDRISS_STANDARD: GrundrissOptionen = Object.freeze({
@@ -192,6 +198,61 @@ const RAUM = 1, GANG = 2;
 
 interface RohRaum { x: number; y: number; w: number; h: number; pfad: string; thema: Thema }
 
+// ---------------------------------------------------------------------------------------------
+// Kachelwerk — der Kachelsatz, mit dem Wave Function Collapse das Verbindungsmuster legt
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * **Warum die Kacheln Struktur tragen und nicht Kunst.**
+ *
+ * `wfc.ts` löst ein Gitter über **Kantensockel**: zwei Kacheln dürfen sich berühren, wenn die
+ * einander zugewandten Sockel gleich sind. Dieser Satz lebt also davon, dass die Kanten einer
+ * Kachel etwas *bedeuten*.
+ *
+ * Die Bodenassets des Pakets bedeuten an ihren Kanten nichts — sie füllen die ganze Zelle. WFC
+ * darauf anzuwenden ergibt entweder „alles dieselbe Kachel" (wenn Sockel gleich Material) oder
+ * gewichtetes Rauschen (wenn alle Sockel gleich sind); in beiden Fällen entscheidet der Solver
+ * nichts, was `waehle` nicht billiger entschieden hätte. Ein Solver, der nichts entscheidet, ist
+ * kein Einsatz, sondern Dekoration.
+ *
+ * Also entscheidet er hier, wo er nicht entartet: über **Durchgängen**. Jede Kachel ist eine
+ * Teilmenge der vier Himmelsrichtungen — `o` heisst „hier geht es weiter", `z` heisst „hier ist
+ * Fels". Weil ein offener Sockel nur an einen offenen passt, muss ein Nachbar den Durchgang
+ * *erwidern*; daraus wächst ein Muster, in dem Sackgassen, Ecken, Kreuzungen und leere Felder
+ * einander bedingen. Das ist echte Propagation, keine Ziehung.
+ *
+ * Der Satz ist **vollständig** — alle 16 Teilmengen von {N,O,S,W}. Vollständigkeit ist kein
+ * Ehrgeiz, sondern die Absicherung gegen den einen Fall, den Gumin selbst als unentscheidbar
+ * benennt: ob ein Satz ein WxH-Rechteck überhaupt kachelt. Zu jedem Sockel existiert hier eine
+ * Gegenkachel, also kann kein Widerspruch aus dem Satz selbst entstehen.
+ *
+ * **Die Gewichte sind nicht Geschmack, sondern Perkolation.** Ein Feld ist genau dann mit seinem
+ * Nachbarn verbunden, wenn die gemeinsame Kante offen ist — und ob aus diesen Kanten *ein*
+ * Kerker wird oder ein Dutzend Inseln, entscheidet der Anteil offener Kanten. Für das
+ * Quadratgitter liegt die Perkolationsschwelle bei **50 %**: darunter zerfällt der Graph, darüber
+ * wächst eine Riesenkomponente.
+ *
+ * Der erste Satz Gewichte lag bei 1,91 offenen Kanten je Kachel, also 48 % — knapp *unter* der
+ * Schwelle. Gemessen: von zwanzig Feldern trug die grösste Insel im Mittel 9,3, und die Karte
+ * lieferte 8,6 statt der angeforderten 11 Räume. Der jetzige Satz liegt bei 2,43 (61 %) und damit
+ * bei einer mittleren Insel von 13,9 bei Minimum 10 — genug Reserve über dem Budget, ohne die
+ * Anlage zum Schwamm zu machen, in dem jede Kachel eine Kreuzung ist.
+ *
+ * Die Zahlen stehen hier, weil die Grösse dieser Werte sonst wie Willkür aussieht: sie sind an
+ * einer Schwelle bemessen, und wer sie verschiebt, verschiebt den Zusammenhang der Karte.
+ */
+const KACHELWERK_GEWICHT: readonly number[] = [0.12, 0.35, 1.8, 2.4, 1.0];
+const KACHELWERK: readonly WfcKachel[] = Object.freeze(
+  Array.from({ length: 16 }, (_, maske) => {
+    const kanten = [0, 1, 2, 3].map((richtung) => ((maske >> richtung) & 1) === 1 ? "o" : "z") as unknown as readonly [string, string, string, string];
+    const offen = kanten.filter((k) => k === "o").length;
+    return Object.freeze({ id: `k${maske.toString(16)}`, gewicht: KACHELWERK_GEWICHT[offen]!, kanten });
+  }),
+);
+/** Öffnet die Kachel nach `richtung`? Richtungen im Uhrzeigersinn ab Norden, wie in `wfc.ts`. */
+const kachelOffen = (id: string | null, richtung: number): boolean =>
+  id !== null && ((Number.parseInt(id.slice(1), 16) >> richtung) & 1) === 1;
+
 export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1): Grundriss {
   if (typeof auftrag?.keim !== "string" || !auftrag.keim.trim() || auftrag.keim.length > 256) fail("option", "auftrag.keim", "nichtleerer Keim mit höchstens 256 Zeichen erwartet");
   const optionen: GrundrissOptionen = { ...GRUNDRISS_STANDARD, ...auftrag.optionen };
@@ -208,7 +269,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   if (typeof optionen.moeblierung !== "number" || !(optionen.moeblierung >= 0 && optionen.moeblierung <= 1)) fail("option", "optionen.moeblierung", "Zahl in 0..1 erwartet");
   if (typeof optionen.licht !== "boolean") fail("option", "optionen.licht", "Boolean erwartet");
   if (typeof optionen.gangboden !== "string" || !optionen.gangboden.trim()) fail("option", "optionen.gangboden", "Schlagwort erwartet");
-  if (optionen.anordnung !== "raster" && optionen.anordnung !== "streuung") fail("option", "optionen.anordnung", "raster oder streuung erwartet");
+  if (optionen.anordnung !== "raster" && optionen.anordnung !== "streuung" && optionen.anordnung !== "kachelwerk") fail("option", "optionen.anordnung", "raster, streuung oder kachelwerk erwartet");
   if (breite * hoehe > L.zellenGesamt) fail("budget", "optionen.zellen", `höchstens ${L.zellenGesamt} Zellen`);
   if (breite * optionen.zellgroesse > L.kantePixelMax || hoehe * optionen.zellgroesse > L.kantePixelMax) fail("budget", "optionen.zellgroesse", `höchstens ${L.kantePixelMax} Pixel Kantenlänge`);
   if (optionen.minRaum + 2 > Math.min(breite, hoehe)) fail("option", "optionen.minRaum", "Raummindestmaß passt nicht in das Raster");
@@ -234,7 +295,130 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   // -- partition and rooms ---------------------------------------------------------------------
   const rohRaeume: RohRaum[] = [];
   let wurzel: Blatt | null = null;
-  if (optionen.anordnung === "streuung") {
+  /** Von `kachelwerk` gelegte Verbindungen, als Indexpaare in `rohRaeume`. */
+  const kachelKanten: [number, number][] = [];
+  if (optionen.anordnung === "kachelwerk") {
+    // **Das Raster wird am Budget bemessen, nicht am Mindestmass.** Erst stand hier
+    // `minRaum + 2` als Feldgrösse; auf 40x30 ergab das ein 8x6-Raster mit 3x3 nutzbarer Fläche
+    // je Feld — winzige Kammern, und von 48 Feldern trugen elf einen Raum. Sinnvoll ist der
+    // umgekehrte Weg: so viele Felder, wie das Budget etwa braucht, dann sind sie so gross wie
+    // die Karte hergibt.
+    const zielFelder = Math.max(4, Math.round(optionen.raeume * 1.7));
+    const feldMin = optionen.minRaum + 2;
+    const spalten = Math.max(2, Math.min(Math.floor(breite / feldMin), Math.round(Math.sqrt((zielFelder * breite) / hoehe))));
+    const reihen = Math.max(2, Math.min(Math.floor(hoehe / feldMin), Math.round(zielFelder / spalten)));
+    // **Bester aus drei Läufen.** WFC sagt lokale Regeln zu und sonst nichts — wie gross die
+    // grösste zusammenhängende Insel ausfällt, ist Ergebnis, nicht Zusage. Bei einer Saat kamen
+    // so sechs Räume statt der elf angeforderten heraus. Drei Läufe mit abgeleiteten Saaten
+    // kosten nichts Nennenswertes und nehmen den Ausreisser heraus, ohne den Solver zu belügen:
+    // gewählt wird nach der Zahl belegter Felder, und die Wahl ist reproduzierbar, weil die
+    // Saaten es sind.
+    let loesung = loeseWfc({ keim: `${keim.keimHash}:kachelwerk:0`, breite: spalten, hoehe: reihen, kacheln: KACHELWERK });
+    let belegtZahl = loesung.raster.filter((id) => id !== null && id !== "k0").length;
+    for (let versuch = 1; versuch < 3; versuch++) {
+      const kandidat = loeseWfc({ keim: `${keim.keimHash}:kachelwerk:${versuch}`, breite: spalten, hoehe: reihen, kacheln: KACHELWERK });
+      const zahl = kandidat.raster.filter((id) => id !== null && id !== "k0").length;
+      if (zahl > belegtZahl) { loesung = kandidat; belegtZahl = zahl; }
+    }
+    const feldBreite = Math.floor(breite / spalten), feldHoehe = Math.floor(hoehe / reihen);
+    const feldIdx = (sx: number, sy: number) => sy * spalten + sx;
+
+    // Nur Felder mit mindestens einem Durchgang werden Räume. Ein völlig geschlossenes Feld ist
+    // Fels — genau dafür ist die leere Kachel da, und ohne sie wäre die Karte ein Vollraster.
+    const besetzt: boolean[] = loesung.raster.map((id) => id !== null && id !== "k0");
+    // Der Graph: eine Kante nur, wenn **beide** Seiten den Durchgang erwidern. Das ist die
+    // Zusage des Kachelsatzes, und sie hier noch einmal zu prüfen kostet nichts.
+    const graph: number[][] = Array.from({ length: spalten * reihen }, () => []);
+    for (let sy = 0; sy < reihen; sy++) {
+      for (let sx = 0; sx < spalten; sx++) {
+        const hier = feldIdx(sx, sy);
+        if (!besetzt[hier]) continue;
+        for (const [richtung, dx, dy, gegen] of [[1, 1, 0, 3], [2, 0, 1, 0]] as const) {
+          const nx = sx + dx, ny = sy + dy;
+          if (nx >= spalten || ny >= reihen) continue;
+          const dort = feldIdx(nx, ny);
+          if (!besetzt[dort]) continue;
+          if (!kachelOffen(loesung.raster[hier]!, richtung) || !kachelOffen(loesung.raster[dort]!, gegen)) continue;
+          graph[hier]!.push(dort); graph[dort]!.push(hier);
+        }
+      }
+    }
+    // **Die grösste zusammenhängende Insel gewinnt.** WFC kennt keine globale Erreichbarkeit; es
+    // erfüllt lokale Regeln und darf deshalb zwei getrennte Höhlensysteme legen. Eine Karte mit
+    // zwei Hälften, zwischen denen es keinen Weg gibt, verwirft der Erreichbarkeitstest weiter
+    // unten ohnehin — hier wird die kleinere Hälfte still fallen gelassen, statt die ganze
+    // Erzeugung an einer Eigenschaft scheitern zu lassen, die der Solver nicht zusagt.
+    let beste: number[] = [];
+    const gesehen = new Set<number>();
+    for (let start = 0; start < besetzt.length; start++) {
+      if (!besetzt[start] || gesehen.has(start)) continue;
+      const insel: number[] = [start];
+      gesehen.add(start);
+      for (let kopf = 0; kopf < insel.length; kopf++) {
+        for (const nachbar of graph[insel[kopf]!]!) {
+          if (gesehen.has(nachbar)) continue;
+          gesehen.add(nachbar); insel.push(nachbar);
+        }
+      }
+      if (insel.length > beste.length) beste = insel;
+    }
+    // **Auf das Budget stutzen, indem Blätter fallen — nicht, indem eine Blase wächst.**
+    // Erst wuchs hier eine Breitensuche von einem Feld aus, und die Karte klumpte in eine Ecke,
+    // während der Rest Fels blieb. Umgekehrt ist es richtig: die ganze Insel behalten und so
+    // lange das am schwächsten verbundene Feld entfernen, wie das Budget überschritten ist —
+    // aber nur, wenn der Rest zusammenhängend bleibt. So schrumpft die Anlage von den Rändern
+    // her und bleibt über die Karte verteilt.
+    const drin = new Set<number>(beste);
+    const zusammenhaengend = (menge: Set<number>): boolean => {
+      if (menge.size <= 1) return true;
+      const [erster] = menge;
+      const gesehen2 = new Set<number>([erster!]);
+      const schlange2 = [erster!];
+      for (let kopf = 0; kopf < schlange2.length; kopf++) {
+        for (const nachbar of graph[schlange2[kopf]!]!) {
+          if (!menge.has(nachbar) || gesehen2.has(nachbar)) continue;
+          gesehen2.add(nachbar); schlange2.push(nachbar);
+        }
+      }
+      return gesehen2.size === menge.size;
+    };
+    while (drin.size > optionen.raeume) {
+      const nachGrad = [...drin].sort((a, b) =>
+        (graph[a]!.filter((n) => drin.has(n)).length - graph[b]!.filter((n) => drin.has(n)).length) || a - b);
+      let entfernt = false;
+      for (const kandidat of nachGrad) {
+        drin.delete(kandidat);
+        if (zusammenhaengend(drin)) { entfernt = true; break; }
+        drin.add(kandidat);
+      }
+      if (!entfernt) break; // ein reiner Ring lässt sich nicht weiter stutzen
+    }
+    const behalten = [...drin].sort((a, b) => a - b);
+    if (behalten.length < L.raeumeMin) fail("geometrie", "raeume", "das Kachelwerk legte keine zwei verbundenen Felder");
+
+    const raumVonFeld = new Map<number, number>();
+    for (const feldNr of behalten) {
+      const sx = feldNr % spalten, sy = (feldNr - (feldNr % spalten)) / spalten;
+      const x0 = sx * feldBreite + 1, y0 = sy * feldHoehe + 1;
+      const freiW = feldBreite - 2, freiH = feldHoehe - 2;
+      if (freiW < optionen.minRaum || freiH < optionen.minRaum) continue;
+      const mindestens = (frei: number) => Math.max(optionen.minRaum, Math.ceil(frei * 0.6));
+      const w = r.ganz(mindestens(freiW), freiW), h = r.ganz(mindestens(freiH), freiH);
+      const x = x0 + r.ganz(0, freiW - w), y = y0 + r.ganz(0, freiH - h);
+      raumVonFeld.set(feldNr, rohRaeume.length);
+      rohRaeume.push({ x, y, w, h, pfad: `k${sx}_${sy}`, thema: r.waehle(THEMEN) ?? THEMEN[0]! });
+    }
+    for (const feldNr of behalten) {
+      const a = raumVonFeld.get(feldNr);
+      if (a === undefined) continue;
+      for (const nachbar of graph[feldNr]!) {
+        const b = raumVonFeld.get(nachbar);
+        if (b === undefined || b <= a) continue;
+        kachelKanten.push([a, b]);
+      }
+    }
+    if (rohRaeume.length < L.raeumeMin) fail("geometrie", "raeume", "nach dem Zuschnitt trug das Kachelwerk weniger als zwei Räume");
+  } else if (optionen.anordnung === "streuung") {
     // **Streuen, auseinanderschieben, das Grösste behalten.**
     //
     // Kandidaten fallen in eine Ellipse statt in das ganze Rechteck: ein Kerker, der bis in jede
@@ -367,7 +551,14 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     if (a && b) gang(a, b, r.chance(0.5), r.chance(0.28));
     return a ?? b;
   };
-  if (optionen.anordnung === "streuung") {
+  if (optionen.anordnung === "kachelwerk") {
+    // Die Verbindungen stehen schon fest — sie sind das, was WFC entschieden hat. Hier wird nur
+    // noch gegraben. Keine Schleifen nachträglich: ein Muster, in dem beide Seiten den Durchgang
+    // erwidern mussten, trägt seine Kreuzungen bereits.
+    for (const [a, b] of kachelKanten) {
+      gang(mitteZelle(rohRaeume[a]!), mitteZelle(rohRaeume[b]!), r.chance(0.5), r.chance(0.28));
+    }
+  } else if (optionen.anordnung === "streuung") {
     // Delaunay über die Raummitten, minimaler Spannbaum darüber, dann `schleifen` Kanten zurück.
     // Der Spannbaum verbindet alles und nichts doppelt; die Rückgaben sind die Abkürzungen.
     const mitten: Punkt[] = rohRaeume.map((raum) => {

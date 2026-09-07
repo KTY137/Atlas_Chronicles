@@ -305,6 +305,33 @@ describe("A-G1 · Grundriss — Eigenschaften über den Optionsraum, nicht über
     },
   }));
 
+  it("hält jede Anordnung an dieselben Zusagen — nur der Weg dorthin ist ein anderer", () => {
+    // Drei Verfahren, eine Zusage: begehbar, jeder Raum mit Tür, jedes Asset auflösbar, jede
+    // Anfrage bedient. Die Anordnung darf die *Form* der Karte ändern und nichts sonst — genau
+    // deshalb steht sie im Optionsvektor und nicht in einer Abzweigung, die niemand prüft.
+    for (const anordnung of ["raster", "streuung", "kachelwerk"] as const) {
+      for (const keim of SAATEN) {
+        const g = bauen(keim, { anordnung });
+        const wo = `${anordnung} · ${keim}`;
+        expect(g.raeume.length, wo).toBeGreaterThanOrEqual(2);
+        for (const raum of g.raeume) expect(raum.tueren.length, `${wo} · ${raum.pfad}`).toBeGreaterThanOrEqual(1);
+        expect(pruefeStampVerweise(g.karte.geometry, index), wo).toStrictEqual([]);
+        expect(g.bericht.nichtBedient, wo).toStrictEqual([]);
+        // Zwei Läufe, ein Dokument: die Anordnung darf den Determinismus nicht antasten.
+        expect(serializeTacticalMapDocument(bauen(keim, { anordnung }).karte), wo)
+          .toBe(serializeTacticalMapDocument(g.karte));
+      }
+    }
+  });
+
+  it("behandelt jede Anordnung als eigene Welt", () => {
+    // Sonst waere die Option Dekoration: derselbe Keim muesste bei anderer Anordnung dieselbe
+    // Karte liefern, und die Wahl haette nichts entschieden.
+    const hashes = (["raster", "streuung", "kachelwerk"] as const)
+      .map((anordnung) => bauen("eron:kellergewoelbe:1", { anordnung }).keim.keimHash);
+    expect(new Set(hashes).size).toBe(3);
+  });
+
   it("liefert für jede Konfiguration eine begehbare Karte mit auflösbaren Assets", () => {
     for (const fall of faelle) {
       const g = erzeugeGrundriss(fall, paket);
