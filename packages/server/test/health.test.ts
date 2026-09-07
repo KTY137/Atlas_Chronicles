@@ -20,11 +20,15 @@ describe("liveness and readiness are different questions", () => {
     bootstrapToken: randomBytes(32).toString("hex"),
   };
 
+  // Dieselbe ausdrückliche Frist, die 40 der 41 Dateien mit `createTestDb` setzen. Ohne sie
+  // lief dieser Aufbau gegen vitests Vorgabe von 5000 ms, während PGlites Start unter der
+  // Parallellast der vollen Menge allein mehrere Sekunden misst — die Datei fiel dann
+  // vollständig aus und war einzeln trotzdem grün.
   beforeAll(async () => {
     db = await createTestDb();
     await migrate(db);
     app = await buildApp(db, config);
-  });
+  }, 30_000);
   afterAll(async () => { await app?.close(); await db?.close(); });
 
   it("reports liveness without touching the database", async () => {
@@ -56,7 +60,7 @@ describe("liveness and readiness are different questions", () => {
     expect(live.statusCode).toBe(200);
 
     await app2.close();
-  });
+  }, 30_000);
 
   it("never lets a probe be rate limited into a false outage", async () => {
     // The global limiter is 240/minute per IP. A probe that gets 429 during a traffic spike
@@ -81,5 +85,5 @@ describe("liveness and readiness are different questions", () => {
     const body = (await app2.inject({ url: "/api/ready" })).body;
     expect(body).not.toMatch(/postgres|password|connection string|ECONNREFUSED|127\.0\.0\.1/i);
     await app2.close();
-  });
+  }, 30_000);
 });

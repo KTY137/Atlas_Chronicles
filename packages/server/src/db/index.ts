@@ -175,25 +175,46 @@ export async function createTestDb(dataDir?: string): Promise<Db> {
   };
 }
 
-export async function migrate(db: Db): Promise<void> {
+/**
+ * Wendet ausstehende Migrationen an — **je Datei eine Transaktion**.
+ *
+ * Vorher lief der ganze Lauf in einer gemeinsamen Transaktion. Das war atomar, nahm aber bei
+ * einem Fehler in der fünfzehnten Datei auch die vierzehn erfolgreichen desselben Laufs zurück
+ * und hielt bei einem großen Rückstand einen entsprechend langen Lock. Ein teilweise
+ * angewandter Stand ist kein kaputter Zustand — genau den führt `schema_migrations` mit, und
+ * genau in ihm steht jede etwas ältere Installation ohnehin.
+ *
+ * Der Advisory-Lock wird je Datei neu genommen, nicht über den ganzen Lauf gehalten. Zwei
+ * gleichzeitig startende Container können sich dabei abwechseln, und das ist harmlos: Die
+ * Prüfung auf „schon angewandt" liegt in derselben Transaktion wie das Anwenden, der zweite
+ * sieht die Datei also als erledigt und überspringt sie.
+ *
+ * Die Prüfsumme jeder bereits angewandten Datei wird weiterhin bei jedem Start nachgerechnet.
+ *
+ * `dir` ist nur für Tests da: Nur so lässt sich ein Fehlschlag mitten im Lauf überhaupt
+ * herbeiführen und damit belegen, dass die früheren Dateien stehen bleiben.
+ */
+export async function migrate(db: Db, dir: URL = new URL("./migrations/", import.meta.url)): Promise<void> {
   await db.transaction(async (tx) => {
-    // Serializes startup of two app containers against the same Postgres database.
     await tx.query("SELECT pg_advisory_xact_lock(7342619)");
     await tx.query("CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, sha256 text NOT NULL)");
-    const dir = new URL("./migrations/", import.meta.url);
-    for (const name of (await readdir(dir)).filter((n) => n.endsWith(".sql")).sort()) {
-      const sql = await readFile(new URL(name, dir), "utf8");
-      const hash = createHash("sha256").update(sql).digest("hex");
+  });
+  for (const name of (await readdir(dir)).filter((n) => n.endsWith(".sql")).sort()) {
+    const sql = await readFile(new URL(name, dir), "utf8");
+    const hash = createHash("sha256").update(sql).digest("hex");
+    await db.transaction(async (tx) => {
+      // Serializes startup of two app containers against the same Postgres database.
+      await tx.query("SELECT pg_advisory_xact_lock(7342619)");
       const old = await tx.query<{ sha256: string }>("SELECT sha256 FROM schema_migrations WHERE name=$1", [name]);
       if (old.rows[0]) {
         if (old.rows[0].sha256 !== hash) throw new Error(`Applied migration changed: ${name}`);
-        continue;
+        return;
       }
       // Each migration statement is explicitly separated; never split SQL on raw semicolons.
       for (const statement of sql.split(/^-- statement\s*$/m).map((s) => s.trim()).filter(Boolean)) {
         await tx.query(statement);
       }
       await tx.query("INSERT INTO schema_migrations(name,sha256) VALUES($1,$2)", [name, hash]);
-    }
-  });
+    });
+  }
 }
