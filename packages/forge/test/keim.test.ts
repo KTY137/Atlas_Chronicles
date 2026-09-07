@@ -66,6 +66,8 @@ describe("S-G1 · Der Keim — identity across real regeneration", () => {
 
   it("keeps EVERY node id across two independent generator runs", () => {
     const [A, B] = [idSet(a), idSet(b)];
+    // Beide Digests stammen aus der Zeit vor der Markeraufnahme; sie werden nur miteinander
+    // verglichen, nicht mit einem heutigen Import. Die Zahl bleibt deshalb, was aufgezeichnet wurde.
     expect(A.size).toBe(908);
     expect(shared(A, B)).toBe(A.size);
 
@@ -101,7 +103,15 @@ describe("S-G1 · Der Keim — identity across real regeneration", () => {
     ).toString("utf8");
     const imported = importiereAzgaar(source);
     expect(imported.keim.keimHash).toBe(a.keimHash);
-    expect(new Set(imported.knoten.map((n) => n.id as string))).toEqual(idSet(a));
+    // Der Digest wurde aufgezeichnet, bevor Marker als Orte hereinkamen, und die 8-MB-Quelle
+    // dahinter wurde bewusst nicht aufbewahrt — neu aufzeichnen hiesse, den Generator in
+    // Version 1.151.2 erneut laufen zu lassen. Geprüft wird deshalb genau das, was die
+    // Aufzeichnung noch aussagen kann, und das ist mehr als vorher: JEDE aufgezeichnete Id ist
+    // weiterhin da, und was hinzukam, sind ausschliesslich die Marker — nichts sonst hat sich
+    // verschoben.
+    const markerIds = new Set(imported.orte.filter((ort) => ort.merkmale["sourceMarkerId"] !== undefined).map((ort) => ort.id as string));
+    expect(markerIds.size).toBe(73);
+    expect(new Set(imported.knoten.map((n) => n.id as string).filter((id) => !markerIds.has(id)))).toEqual(idSet(a));
   });
 
   it("does not collide with the hand-written corpus it must live beside", () => {

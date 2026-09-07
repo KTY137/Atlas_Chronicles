@@ -111,3 +111,61 @@ describe("Azgaar import boundary", () => {
     await expect(adapter.erzeuge({ ...imported.keim, keimHash: "forged" })).rejects.toThrow("Keim passt nicht");
   });
 });
+
+describe("Azgaar-Marker und ihre Notizen", () => {
+  const mitMarker = (markers: unknown[], notes: unknown[]) => {
+    const base = fixture();
+    return run({ ...base, pack: { ...base.pack, markers }, notes });
+  };
+
+  it("nimmt den Marker samt seiner Notiz auf und lässt Generator-Markup nicht in die Struktur", () => {
+    const imported = mitMarker(
+      [{ i: 1, type: "ruin", x: 20, y: 20, cell: 7 }],
+      [{ id: "marker1", name: "Die Bruchwarte", legend: "Eine Ruine. <script>alert(1)</script> Seit dem Krieg leer." }],
+    );
+    const marker = imported.orte.find((ort) => ort.merkmale["sourceMarkerId"] === 1);
+    expect(marker).toBeDefined();
+    // Der Name steckt in der NOTIZ, nicht im Marker — ohne sie wäre der Ort namenlos.
+    expect(marker!.name).toBe("Die Bruchwarte");
+    expect(marker!.merkmale["description"]).toBe("Eine Ruine. Seit dem Krieg leer.");
+    expect(marker!.merkmale["markerTyp"]).toBe("ruin");
+    // Die Sicherheitszusage bleibt: kein Markup und kein Skriptinhalt in der Struktur.
+    expect(JSON.stringify({ ...imported, quelle: null })).not.toMatch(/<script|alert\(1\)/);
+    expect(imported.bericht.unterdrueckteNotizen).toBe(0);
+    expect(imported.bericht.ausgelasseneDatensaetze["markers"]).toBeUndefined();
+    expect(pruefeContainment(imported.knoten)).toEqual([]);
+  });
+
+  it("überspringt einen Marker ohne Notiz und einen ohne Koordinaten, statt sie namenlos aufzunehmen", () => {
+    const imported = mitMarker(
+      [{ i: 1, type: "ruin", x: 20, y: 20, cell: 7 }, { i: 2, type: "cave", x: 21, y: 21, cell: 7 }, { i: 3, type: "cave" }],
+      [{ id: "marker1", name: "Die Bruchwarte", legend: "Eine Ruine." }, { id: "marker3", name: "Ohne Ort", legend: "Nirgends." }],
+    );
+    expect(imported.orte.filter((ort) => ort.merkmale["sourceMarkerId"] !== undefined)).toHaveLength(1);
+    expect(imported.bericht.ausgelasseneMarker).toBe(2);
+    // Die Notiz des übersprungenen Markers bleibt unterdrückt und wird gezählt.
+    expect(imported.bericht.unterdrueckteNotizen).toBe(1);
+  });
+
+  it("entfernt Zeichen, die keine Datenbank tragen kann, und behält das gültige Zeichenpaar", () => {
+    // Aus dem echten Korpus: die Notiz zu Nalarlethkas Monolith trägt eine erfundene Inschrift
+    // aus rohen Codeeinheiten. Einzelne Surrogathälften sind kein Text, den Postgres in jsonb
+    // annimmt — der Import darf daran nicht scheitern, und das echte Zeichen muss bleiben.
+    const imported = mitMarker(
+      [{ i: 1, type: "ruin", x: 20, y: 20, cell: 7 }],
+      [{ id: "marker1", name: "Der Monolith", legend: "Inschrift: \uD802\uDC22 dann \uDC08 und \uD802 Ende." }],
+    );
+    const beschreibung = String(imported.orte.find((ort) => ort.merkmale["sourceMarkerId"] === 1)!.merkmale["description"]);
+    expect(beschreibung).toContain("\uD802\uDC22");
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(beschreibung)).toBe(false);
+    expect(beschreibung).toContain("Ende.");
+  });
+
+  it("leitet dieselbe Kennung aus derselben Markernummer ab, damit ein zweiter Import nichts verdoppelt", () => {
+    const eins = mitMarker([{ i: 1, type: "ruin", x: 20, y: 20, cell: 7 }], [{ id: "marker1", name: "Die Bruchwarte", legend: "Eine Ruine." }]);
+    const zwei = mitMarker([{ i: 1, type: "ruin", x: 20, y: 20, cell: 7 }], [{ id: "marker1", name: "Die Bruchwarte", legend: "Eine Ruine." }]);
+    const kennung = (i: typeof eins) => i.orte.find((ort) => ort.merkmale["sourceMarkerId"] === 1)!.id;
+    expect(kennung(eins)).toBe(kennung(zwei));
+    expect(kennung(eins)).not.toBe(eins.orte.find((ort) => ort.merkmale["sourceMarkerId"] === undefined)!.id);
+  });
+});

@@ -1,7 +1,9 @@
 import { canonicalHash, canonicalJson, deriveKnotenId, textHash, type CanonicalValue, type KnotenId } from "@chronicle/core";
 import { pruefeContainment, weltkeim, type ErzeugerAdapter, type Herkunft, type Kante, type Knoten, type KnotenArt, type Ort, type Rahmen, type SceneDoc, type Weltkeim } from "@chronicle/szene";
 
-export const AZGAAR_IMPORT_VERSION = "1";
+export const AZGAAR_IMPORT_VERSION = "2";
+/** Eine Markerbeschreibung ist ein Hinweis, kein Artikel. */
+const MAX_NOTIZ_ZEICHEN = 2000;
 export const MAX_AZGAAR_BYTES = 32 * 1024 * 1024;
 const MAX_RECORDS = 200_000;
 type RecordValue = Record<string, unknown>;
@@ -39,6 +41,8 @@ export interface AzgaarImport {
     readonly orte: number;
     readonly zellen: number;
     readonly unterdrueckteNotizen: number;
+    /** Marker ohne Notiz, ohne Koordinate oder als entfernt markiert. */
+    readonly ausgelasseneMarker: number;
     readonly ausgelasseneDatensaetze: Readonly<Record<string, number>>;
     readonly hinweise: readonly string[];
   };
@@ -66,6 +70,28 @@ function integer(value: unknown, path: string): number {
 function text(value: unknown, path: string, empty = false): string {
   if (typeof value !== "string" || value.length > 4096 || (!empty && !value.trim())) error(path, "Text mit höchstens 4096 Zeichen erwartet");
   return value;
+}
+/**
+ * Generatorprosa als reiner Text.
+ *
+ * Die Notiz einer Karte ist fremdes HTML aus einer Datei, die jemand hochlädt. Sie darf als
+ * Aussage über die Welt hereinkommen, aber nicht als Auszeichnung: `<script>` und `<style>`
+ * fallen samt Inhalt weg, alle übrigen Marken werden abgestreift. Das unveränderte Original
+ * bleibt in `quelle.json` erhalten — hier steht die Fassung, die weitergereicht wird.
+ */
+function klartext(value: unknown, path: string): string {
+  const roh = text(value, path, true);
+  const ohneSkript = roh.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ");
+  const ohneMarken = ohneSkript.replace(/<[^>]*>/g, " ");
+  // Gemessen am echten Korpus: die Notiz zu „Nalarlethkas Monolith" trägt eine erfundene
+  // Inschrift aus rohen Codeeinheiten — einzelne Surrogathälften ohne Partner. Das ist kein
+  // Text, den Postgres in `jsonb` annimmt, und der Import scheiterte daran. Entfernt werden
+  // nur die HALBEN Paare; ein vollständiges astrales Zeichen ist gültige Schrift und bleibt.
+  const tragbar = ohneMarken
+    .replace(/\u0000/g, "")
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "");
+  const gestrafft = tragbar.replace(/\s+/g, " ").trim();
+  return gestrafft.length > MAX_NOTIZ_ZEICHEN ? `${gestrafft.slice(0, MAX_NOTIZ_ZEICHEN)}…` : gestrafft;
 }
 function point(value: unknown, path: string): Point {
   const values = list(value, path);
@@ -246,6 +272,49 @@ export function importiereAzgaar(json: string): AzgaarImport {
     places.push(place);
     addNode(id, "ort", name, parents, path, p, child);
   }
+  // Marker und ihre Notiz gehören zusammen: der Marker trägt Symbol und Koordinate, die Notiz
+  // trägt Namen UND Beschreibung. Ein Marker ohne Notiz wäre ein namenloses Symbol auf einer
+  // Koordinate — deshalb wurden beide bis hierher gemeinsam weggelassen. Sie kommen gemeinsam
+  // zurück. `alive` ist hier bewusst NICHT benutzt: `marker0` ist ein echter Marker, kein
+  // Index-Null-Platzhalter wie bei Burgen und Provinzen.
+  const notizen = new Map<string, RecordValue>();
+  for (const [offset, value] of list(source.notes ?? [], "notes").entries()) {
+    const row = record(value, `notes[${offset}]`);
+    notizen.set(text(row.id, `notes[${offset}].id`), row);
+  }
+  const benutzteNotizen = new Set<string>();
+  let ausgelasseneMarker = 0;
+  for (const [i, row] of sourceRecords(pack.markers ?? [], "pack.markers")) {
+    if (row.removed) { ausgelasseneMarker += 1; continue; }
+    const notizId = `marker${i}`, notiz = notizen.get(notizId);
+    // Ohne Notiz kein Name, ohne Koordinate kein Ort. Beides wird gezählt, nicht geraten.
+    if (!notiz || row.x === undefined || row.y === undefined || row.cell === undefined) { ausgelasseneMarker += 1; continue; }
+    const name = text(notiz.name, `notes.${notizId}.name`);
+    const p = within([number(row.x, `marker ${i}.x`), number(row.y, `marker ${i}.y`)], size, `marker ${i}`);
+    const cellId = integer(row.cell, `marker ${i}.cell`);
+    const cell = cells.get(cellId);
+    if (!cell) throw new AzgaarImportError("reference", `marker ${i}.cell`, `unbekannte Zelle ${cellId}`);
+    // Ein Marker darf liegen, wo keine Siedlung stehen kann: auf dem Wasser, in einer Zelle
+    // ohne Provinz, auf einer Landmasse, die als entfernt markiert ist. Ein Vulkan im Meer ist
+    // eine gültige Aussage über die Welt und kein Grund, den Import abzubrechen — er hängt dann
+    // an der Welt selbst. Burgen bleiben streng: eine Siedlung ohne Land IST ein Formatfehler.
+    const parent = (cell.province ? provinceIds.get(cell.province) : undefined)
+      ?? (cell.h >= 20 ? featureIds.get(cell.f) : undefined)
+      ?? weltId;
+    const path = ["marker", String(i), name];
+    const id = mint(path);
+    const parents = [edge(id, parent, "liegt_in_geografie")];
+    const macht = cell.state ? stateIds.get(cell.state) : undefined;
+    if (macht) parents.push(edge(id, macht, "gehoert_zu_herrschaft"));
+    const child = `${keim.seed}m${String(i).padStart(4, "0")}`;
+    const merkmale: Record<string, CanonicalValue> = { sourceMarkerId: i, description: klartext(notiz.legend, `notes.${notizId}.legend`) };
+    if (typeof row.type === "string") merkmale["markerTyp"] = text(row.type, `marker ${i}.type`, true);
+    if (typeof row.icon === "string") merkmale["icon"] = text(row.icon, `marker ${i}.icon`, true);
+    places.push({ id, name, x: p[0], y: p[1], typ: "marker", eltern: parents, herkunft: provenance(path, child), merkmale, kindKeim: child });
+    addNode(id, "ort", name, parents, path, p, child);
+    benutzteNotizen.add(notizId);
+  }
+
   const zellen: AzgaarZelle[] = [];
   const cellIdentities = new Set<string>();
   for (const cell of cells.values()) {
@@ -271,15 +340,15 @@ export function importiereAzgaar(json: string): AzgaarImport {
   const counts: Partial<Record<KnotenArt, number>> = {};
   for (const node of nodes) counts[node.art] = (counts[node.art] ?? 0) + 1;
   const ignored: Record<string, number> = {};
-  for (const key of ["markers", "rivers", "routes", "cultures", "religions", "zones", "goods", "markets", "deals"]) {
+  for (const key of ["rivers", "routes", "cultures", "religions", "zones", "goods", "markets", "deals"]) {
     if (pack[key] !== undefined) ignored[key] = list(pack[key], `pack.${key}`).length;
   }
   return {
     adapterVersion: AZGAAR_IMPORT_VERSION, titel, keim, weltId, knoten: nodes, orte: places, zellen,
     szene: { v: 3, size, stamps: [], regions: zellen.filter((c) => c.land).map((c) => ({ id: c.id, punkte: c.polygon })), places: places.map((p) => ({ id: p.id, x: p.x, y: p.y })) },
     quelle: { format: "azgaar-full-json", sha256: textHash(json), bytes, json },
-    bericht: { knotenNachArt: counts, orte: places.length, zellen: cells.size, unterdrueckteNotizen: source.notes === undefined ? 0 : list(source.notes, "notes").length,
-      ausgelasseneDatensaetze: ignored, hinweise: ["Strukturimport: Generatornotizen werden nicht veröffentlicht; die unveränderte Quelldatei bleibt erhalten.", "Weltkeim dokumentiert die Herkunft und verspricht keine Wiedererzeugung über Generatorversionen hinweg."] },
+    bericht: { knotenNachArt: counts, orte: places.length, zellen: cells.size, unterdrueckteNotizen: notizen.size - benutzteNotizen.size, ausgelasseneMarker,
+      ausgelasseneDatensaetze: ignored, hinweise: ["Marker werden samt ihrer Notiz als Orte übernommen; deren Text kommt als reiner Text herein, die unveränderte Quelldatei bleibt erhalten.", "Weltkeim dokumentiert die Herkunft und verspricht keine Wiedererzeugung über Generatorversionen hinweg."] },
   };
 }
 

@@ -14,8 +14,9 @@ including commercial use, in its [Knowledge Base](https://github.com/Azgaar/Fant
 No generator code, font, raster/SVG asset, TinyMCE, jQuery or charge artwork is
 included. Heraldry **data** may remain inside the exact source artifact; the adapter
 does not turn it into bundled artwork. The artifact is a test input, never an
-automatically published wiki. Generated prose stays in retained source and is
-counted as suppressed in the import report.
+automatically published wiki. Marker notes are imported as plain text — markup is stripped, the unchanged
+source is retained. Generated prose that belongs to no marker stays in retained
+source and is counted as suppressed in the import report.
 
 The source exporter implementation is
 [export-json.ts](https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/src/services/io/export-json.ts).

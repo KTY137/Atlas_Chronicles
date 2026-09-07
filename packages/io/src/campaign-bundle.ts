@@ -459,7 +459,11 @@ function artifact(r: CampaignRow, g: Graph): void {
       try { restored = importiereEronKarte(source.json as string); } catch { fail("artifact.quelle", "Invalid Fandom map source"); }
       if (hash(restored) !== hash(s)) fail("artifact.source", "Fandom map differs from its preserved source");
     }
-    if (s.adapterVersion !== "1") fail("artifact.adapterVersion", "unsupported Azgaar adapter version");
+    // "1" ist der Stand vor der Markeraufnahme, "2" der danach. Beide bleiben gültig: ein
+    // Archiv, das vor dieser Änderung geschrieben wurde, muss wiederherstellbar bleiben, und
+    // eine Liste ist hier ehrlicher als ein Vergleich auf "mindestens", weil jede Generation
+    // eine eigene Struktur bezeichnet und keine Rangfolge.
+    if (s.adapterVersion !== "1" && s.adapterVersion !== "2") fail("artifact.adapterVersion", "unsupported Azgaar adapter version");
     if (hash(s.bericht) !== hash(r.report)) fail("artifact.report", "stored report differs from source artifact");
     const seed = object(s.keim, "artifact.keim"); keys(seed, ["generator", "version", "seed", "optionen", "keimHash"], "artifact.keim");
     const { keimHash, ...seedInput } = seed; if (keimHash !== hash(seedInput)) fail("artifact.keim", "seed provenance digest mismatch");

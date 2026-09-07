@@ -53,7 +53,8 @@ describe("Imports become persisted application objects with explicit visibility"
     expect((await service.importMap(gm,campaign,data)).id).toBe(imported.id);
     expect(await service.listMaps(player,campaign)).toEqual([]);
     const world = await service.getMap(gm,campaign,imported.id);
-    expect(world.pins).toHaveLength(698);
+    // 698 Burgen + 73 Marker, die eine Notiz mit Namen tragen.
+    expect(world.pins).toHaveLength(771);
     expect(JSON.stringify(world)).not.toContain("quelle");
     const place = world.pins[0]!;
     await service.revealNode(gm,campaign,world.id,place.id,actor);

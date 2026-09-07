@@ -5,7 +5,14 @@ import { AzgaarImportError, type AzgaarImport } from "./azgaar.ts";
 export const ERON_MAP_IMPORT_VERSION = "1";
 export const MAX_ERON_MAP_BYTES = 8 * 1024 * 1024;
 export type AtlasMarkerIcon = "place" | "city" | "castle" | "cave" | "ruin" | "portal";
-export interface EronMapImport extends Omit<AzgaarImport, "quelle"> {
+/**
+ * Die Fandom-Karte teilt die Gestalt des Azgaar-Imports, aber nicht seine Fassung: sie zählt
+ * ihre eigene Adapterversion und war bis hierher stillschweigend an die des anderen Importers
+ * gebunden. Der Versionssprung des Azgaar-Adapters hat das sichtbar gemacht — beide Zahlen
+ * bezeichnen verschiedene Strukturen und dürfen sich nicht gegenseitig fortschreiben.
+ */
+export interface EronMapImport extends Omit<AzgaarImport, "quelle" | "adapterVersion"> {
+  readonly adapterVersion: typeof ERON_MAP_IMPORT_VERSION;
   readonly quelle: { readonly format: "fandom-interactivemap"; readonly sha256: string; readonly bytes: number; readonly json: string };
 }
 export class EronMapImportError extends AzgaarImportError {
@@ -114,6 +121,8 @@ export function importiereEronKarte(json: string): EronMapImport {
     szene: { v: 3, size, stamps: [], regions: [], places: places.map(p => ({ id: p.id, x: p.x, y: p.y })) },
     quelle: { format: "fandom-interactivemap", sha256: textHash(json), bytes: Buffer.byteLength(json, "utf8"), json },
     bericht: { knotenNachArt: { welt: 1, ort: places.length }, orte: places.length, zellen: 0, unterdrueckteNotizen: notes,
-      ausgelasseneDatensaetze: {}, hinweise: ["Originale Marker, Koordinaten und Kategorie-Symbole übernommen. Politische Kategorien sind keine räumlichen Eltern.",
+      // Dieser Importer lässt keinen Marker aus: die Fandom-Karte trägt Name und Koordinate im
+      // Marker selbst, es gibt hier also keinen Fall „Marker ohne Notiz".
+      ausgelasseneMarker: 0, ausgelasseneDatensaetze: {}, hinweise: ["Originale Marker, Koordinaten und Kategorie-Symbole übernommen. Politische Kategorien sind keine räumlichen Eltern.",
         "Markertexte bleiben als Quelle erhalten; Artikel und Freigaben werden separat gepflegt.", "Die Kindkeime sind von Chronicle aus den stabilen Marker-IDs abgeleitet."] } };
 }
