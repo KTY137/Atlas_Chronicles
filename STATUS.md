@@ -1,8 +1,62 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
+Updated: **2026-09-07 09:55** (Arbeitsbaum gesiegelt: `c3fcb08`; zwei Sessions arbeiten parallel weiter)
+
+## Versiegelung — Session Apollon, 2026-09-07 09:55
+
+- **Der Arbeitsbaum ist versiegelt. `c3fcb08`, 85 Dateien, 7.487 Zeilen.** Verschachtelte Karten
+  und Wiki-Bilder lagen seit 06:30 unversioniert im Baum, weil beide Sessions vier Dateien teilten
+  und keine die Hälfte der anderen mitcommitten wollte. Beide Sessions sind beendet; die Arbeit war
+  verifiziert und hing an einer einzigen Platte. Jetzt nicht mehr.
+- **Ein Commit, nicht zwei — mit Absicht.** `app.ts`, `domain/bundles.ts`, `http/imports.ts` und
+  `io/campaign-bundle.ts` tragen Hunks beider Seiten. Sie ohne ihre Autoren zu trennen hätte zwei
+  Zwischenstände erfunden, die nie existiert haben und nie getestet wurden.
+- **Nachgewiesen vor dem Siegeln:** `gate:boundaries` GRÜN (361 Dateien, 8 Regeln, 0 Verstöße);
+  `gate:assets` GRÜN (3 Pakete, 171 Assets, 171 auflösbare Verweise);
+  io/chronik/core/projection/protocol **262 grün, 10 übersprungen**. Der eine Ausfall
+  (`campaign-bundle-v3`, 5293 ms gegen 5000 ms) läuft isoliert **25/25 grün in 2394 ms** — Last,
+  kein Defekt, kein Timeout angehoben.
+- **Fremde Arbeit nachweislich nicht mitgenommen:** der Commit enthält keine Datei der beiden
+  laufenden Threads (Forge-Refactor `polygon`/`kartenwerk`/`siedlung`, Desktop-Installer und die
+  Wurzelmanifeste, die er bewegt). Geprüft über `git show --name-only`, nicht angenommen.
+
+### Offen und benannt: das 5-Sekunden-Budget der Migrationen
+
+`packages/server/test/db-resilience.test.ts` fährt `createTestDb()` plus `migrate()` **zweimal**
+in einem 5000-ms-Budget. Die Migrationen sind heute von 013 auf 016 gewachsen, und PGlite fährt
+Postgres in WASM: **ein einzelnes `createTestDb()` + `migrate()` misst 11,8 s.** Der Test fällt
+**isoliert** aus (2 von 6), also ist es keine Last.
+
+**Das ist nicht die Regression einer fremden Session.** 014 (verschachtelte Karten) und 015
+(Wiki-Bilder) sind zwei der drei neuen Migrationen und stecken in `c3fcb08`.
+
+Die Behebung ist eine Entscheidung, keine Zahl: **eine migrierte PGlite-Instanz für die ganze
+Suite teilen** (schnell, aber Tests sehen fremden Zustand) **oder das Budget ehrlich anheben**
+(einfach, aber genau die Testabschwächung, die dieses Projekt verbietet). Wer das anfasst,
+entscheidet zuerst — und misst danach.
 
 ## Current handoff — start here
+
+
+- **Nested Atlas maps:** ERON's bundled Andaria source now imports its190 real markers,
+  original coordinates/category metadata and matching local raster. Linked entrance icons open
+  persistent tactical maps; their rooms can recursively generate or attach further maps.
+  Breadcrumbs, correct-world return, history/reload, mobile navigation and the existing map/scene
+  editor are integrated. Server014 scopes each entrance to campaign/parent kind/parent map/node,
+  prevents cycles and double parenting, retains generator seeds, checks parent versions and
+  stores generation/link/command receipts atomically. Native v6 explicitly preserves/restores
+  those tables and validates their references; v4/v5 readers remain compatible. See
+  [NESTED_MAPS](docs/NESTED_MAPS.md) and [CAMPAIGN_FORMAT_V6](docs/CAMPAIGN_FORMAT_V6.md).
+  Build and focused backend/render/import/archive checks pass. Final isolated full gate and
+  expanded browser regression evidence will be recorded before this checkpoint is committed.
+- **Concurrent working-tree boundary:** independent Wiki image import (`wiki_assets` migration015,
+  `chronik`, Wiki/Reader/import/media UI, image adapters and projection) and hand-drawn asset/
+  generator changes are ongoing and are not part of the nested-map checkpoint. The strict native
+  schema coverage check rejects those new Wiki tables until their archive adapter is completed;
+  do not bypass the guard or drop them from exports. `.local/nested-maps-check` verifies only the
+  nested-map changes over9149118 through migration014, with the baseline41-asset pack. Root's
+  functional browser run also exercises integration with the concurrent source tree. No existing
+  live campaign, local configuration or operative localhost3000 process was changed by this task.
 
 - **Authoring integration — verified working tree, checkpoint pending:** Themes and local
   accessibility preferences, explicit immutable article publication, source-confirmed legacy
@@ -84,6 +138,102 @@ Updated: **2026-09-06** (implementation resumed alongside three Claude sessions)
   credentials and media environment. Operative SQL confirms migrations001–011; `/api/health`
   and `/` return200 and the expected client hash. This keeps later parallel WIP out of the
   running demo. No migration012 has been applied to the operative database.
+
+## Wiki-Bilder — Session Claude, 2026-09-07 06:30 (additiv, eigene Fläche)
+
+- **Kayas Frage war „ich will das Bilder mit importiert werden — oder ist das schon der Fall?"
+  Die ehrliche Antwort war: nein.** Der Importer erkannte `[[Datei:…]]`, warf es als `rohblock`
+  in die Quarantäne und zählte es als Verlust. Im Artikel stand Wikitext in einem Kasten
+  „nicht umgewandelt" — an der Stelle des Portraits jeder benannten Figur. `media.json` lag
+  seit dem Harvest als reine Bestandsaufnahme herum; kein Byte war je geholt worden.
+- **Jetzt kommen Bilder mit.** Ein `[[Datei:…]]` wird zur Bildpassage `bildunterschrift` mit
+  Unterschrift, Alt-Text, Ausrichtung und stabiler Asset-Kennung. Der Dateibestand des Quell-Wikis
+  wird beim Live-Import mitgeladen (`prop=imageinfo|categories|fileusage|revisions`) und liefert
+  Uploader, Quelladresse, Lizenzkategorie und Beschreibungsseite. Die **Bytes** holt der Browser
+  in einem zweiten, abbrechbaren Schritt direkt beim Wiki (das Bild-CDN erlaubt es per CORS) und
+  lädt sie hoch; der Server misst sie selbst. Vollständige Beschreibung: [WIKI_MEDIEN](docs/WIKI_MEDIEN.md).
+- **Drei Regeln, jede an echtem Material geprüft.** (1) Format und Maße aus den Magic Bytes, nie
+  aus dem Dateinamen — auf diesem Korpus widersprechen sich Name und Inhalt bei **allen zwölf**
+  geernteten Dateien, weil Fandom still nach WebP transkodiert. (2) Eine unbekannte Lizenz wird
+  importiert, sichtbar markiert und **nie** als frei behandelt; gemessen: von 41 Dateien nennen
+  **38 keine Lizenz**, zwei nennen eine, eine ist laut Wiki ein Bildzitat. `{{Selbst erstellt}}`
+  gilt ausdrücklich nicht als Lizenz. (3) Ein Bild ist so verborgen wie seine Passage —
+  `wiki_asset_uses` bindet Auslieferung an dieselbe Freigabe wie den Absatz.
+- **Format v7 (`native-v7`, Modul `wiki-medien`).** Migration `015_wiki_assets.sql` bringt
+  `wiki_assets` und `wiki_asset_uses`; die Abdeckungsprüfung in `domain/bundles.ts` verlangte
+  daraufhin eine Generation. Eine Kampagne ohne Bilder behält ihren v4/v5/v6-Umschlag. Die
+  Referenzprüfung misst beim Öffnen jede gespeicherte Datei erneut und rechnet ihren Digest nach.
+- **Belege.** Root-TypeScript grün; `gate:boundaries` 356 Dateien/8 Regeln/0 Verstöße;
+  `gate:assets` grün (114 Assets). Tests in Abschnitten gefahren, weil die Maschine unter
+  Parallelbetrieb bei einem Gesamtlauf den Speicher verlor: io/chronik/core/projection/protocol
+  **269 grün**, server **293 grün** (der einzige Ausfall, `health.test.ts`, ist ein 5-Sekunden-
+  Timeout unter Last und läuft mit 30 s grün), client/forge/szene/render/rules/theme/ui
+  **647 grün**. Neu: `bild.test.ts` (6), `bilder-import.test.ts` (9), `wiki-medien.test.ts` (8,
+  inkl. Export→Restore byteidentisch und Zurückweisung manipulierter Bytes).
+- **Beide Einstiege tragen den Bestand.** Der Live-Import lädt das Dateiverzeichnis selbst; der
+  Datei-Upload nimmt jetzt eine dritte, freiwillige `media.json` entgegen. Ohne sie importieren die
+  Artikel vollständig, die Bilder heißen dann nur beim Namen. Der volle Korpus über den Upload-Weg:
+  73 Artikel, 1 149 Passagen, 99,94 % Texterhaltung, 41 Dateien, davon 38 ohne dokumentierte Lizenz.
+- **Browser-Beweis:** `e2e/wiki-medien.spec.ts` läuft grün gegen den echten Client-Build. Das
+  Quell-CDN wird durch die geernteten Fixture-Bytes ersetzt, sonst ist der Weg der echte.
+  Aufnahmen unter `test-results/wiki-medien-1..5-*.png`: Platzhalter mit Dateinamen → Bestand mit
+  Herkunft und Lizenzstand → „3 von 3 Dateien geholt" samt Formatwiderspruch → Portrait im Artikel
+  → Bildbilanz des Upload-Wegs. Ein zweiter Test deckt den Datei-Upload ab.
+- **Zwei Befunde aus dem Lauf, beide behoben:** die Erfolgsmeldung verschwand mit dem Abschnitt,
+  den sie leer gemacht hatte; und ein 512-px-Portrait wurde auf Spaltenbreite hochskaliert.
+- **Server läuft lokal unter <http://localhost:3000>** — mit den Vorgabewerten, ohne
+  `CHRONICLE_ORIGIN`. Docker Desktop gestartet, `npm run db:up` (Container `deploy-postgres-1`,
+  gesund), `.local/config.json` neu erzeugt, Migrationen 001–015 angewandt, `wiki_assets` und
+  `wiki_asset_uses` stehen in der Datenbank. Die Datenbank ist frisch und leer; der
+  Einrichtungsschlüssel steht als `bootstrapToken` in `.local/config.json`.
+- **Die Einrichtung ist Ende zu Ende geprüft, nicht behauptet.** Falscher Schlüssel → 404,
+  richtiger Schlüssel → 200 und ein angelegtes Konto. Das Probekonto wurde anschließend samt
+  seiner Zugangsdaten wieder gelöscht (`identity.bootstrap` verweigert jedes weitere Konto,
+  sobald eine Spielleitung existiert — der Schlüssel ist faktisch einmalig), und
+  `GET /api/setup` antwortet wieder `{"required":true}`.
+
+### Zwei Betriebsfallen, an einem echten Blackscreen gefunden
+
+Kaya meldete einen schwarzen Bildschirm. Zwei voneinander unabhängige Ursachen, beide echt:
+
+- **Der statische Auslieferer kennt nur die Dateien vom Start.** `app.ts:154` registriert
+  `@fastify/static` mit `wildcard: false`; die Routen entstehen einmalig beim Start aus dem
+  damaligen Inhalt von `packages/client/dist`. Wird der Client danach neu gebaut, hat das neue
+  Bündel keine Route mehr, der SPA-Auffangpfad antwortet mit `index.html` — und der Browser
+  bekommt HTML, wo er ein ES-Modul erwartet. Ergebnis: schwarzer Bildschirm ohne Fehlermeldung.
+  Messbar daran, dass **jede `.css` und jede `.woff2` ausgeliefert wurde und jede `.js` nicht**.
+  **Regel: nach jedem `vite build` den Server neu starten.** Ein Auffangpfad, der für
+  `/assets/*` lieber 404 sagt als `index.html`, würde diese Falle abschaffen — offen.
+- **Die zweite „Ursache" war keine — und die Fehlkorrektur hat echten Schaden angerichtet.**
+  Mein headless Edge lief über `localhost` in den Timeout und über `127.0.0.1` nicht; daraus
+  wurde die Diagnose „`localhost` löst auf `::1` auf, dort hört niemand". Der DNS-Befund stimmt
+  (`Resolve-DnsName localhost` liefert AAAA vor A, `::1:3000` ist tot), **die Schlussfolgerung
+  nicht**: Kayas echter Browser erreicht den Server problemlos als `localhost` — das
+  Serverprotokoll zeigt für jede seiner Anfragen `host: localhost:3000`. Der Hänger war ein
+  Artefakt des Testbrowsers auf einer ausgelasteten Maschine.
+  Der daraufhin gesetzte `CHRONICLE_ORIGIN=http://127.0.0.1:3000` machte dann die Einrichtung
+  unbenutzbar: `app.ts:55` verlangt exakte Übereinstimmung, der Browser sendet
+  `Origin: http://localhost:3000`, also **404 „Nicht verfügbar" bei jedem Absenden** des
+  Einrichtungsschlüssels. Rückgängig gemacht; der Server läuft wieder mit der Vorgabe.
+  **Lehre für die Fehlersuche hier: das Serverprotokoll nennt Host und Statuscode jeder echten
+  Anfrage. Es zuerst zu lesen hätte beide Fehlschlüsse in einer Minute erledigt** — und es zeigte
+  auch, dass die vermeintlichen `200`-Erfolge der Einrichtung GET-Abfragen waren, nicht das
+  Absenden.
+
+**Korrektur einer früheren Meldung dieser Sitzung:** Der erste gemeldete „Neustart" hat den
+Prozess nicht getroffen. `pkill -f` greift unter Git Bash nicht auf Windows-Kommandozeilen zu,
+und die anschließende Portprüfung war ebenfalls falsch — sie suchte nach dem englischen
+`LISTEN`, während `netstat` hier deutsch antwortet. Der alte Prozess lief weiter und beantwortete
+den Health-Check, weshalb die Meldung grün aussah. Prozesse auf dieser Maschine werden über
+`Get-CimInstance Win32_Process` samt Kommandozeile beendet und über `Get-NetTCPConnection`
+verifiziert.
+- **NICHT committet, mit Absicht.** Der Arbeitsbaum wird gerade von einer zweiten Sitzung
+  (verschachtelte Karten, `native-v6`, Renderer) benutzt. Vier Dateien tragen Änderungen beider
+  Seiten: `packages/server/src/app.ts`, `domain/bundles.ts`, `http/imports.ts` und
+  `packages/io/src/campaign-bundle.ts`. Ein Commit hätte entweder fremde, teils unfertige Arbeit
+  mitgenommen oder einen unvollständigen Stand erzeugt. Der Baum ist verifiziert, nicht gesiegelt.
+- **Offen:** keine öffentliche Bildauslieferung (die Publikation zeigt die Unterschrift, nicht die
+  Datei); keine Autorenhistorie für Dateien; keine Duplikaterkennung über gleiche Bytes.
 
 ## Verschachtelte Karten — Session Claude, 2026-09-06 20:05 (additiv, eigene Fläche)
 
