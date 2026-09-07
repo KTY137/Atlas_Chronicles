@@ -74,6 +74,14 @@ export function rauschen(keimHash: string) {
   };
   return {
     ganz: (min: number, max: number): number => (max <= min ? min : min + Math.floor(next() * (max - min + 1))),
+    /**
+     * Gleitkomma in [min, max), auf Tausendstel quantisiert.
+     *
+     * Die Quantisierung ist kein Schoenheitsfehler, sondern der Grund, warum das Ergebnis
+     * ueberhaupt reproduzierbar bleibt: die Zahl geht in Polygongeometrie ein, die kanonisch
+     * serialisiert und gehasht wird. Ganzzahlige Tausendstel ueberstehen jeden Float-Drucker.
+     */
+    zahl: (min: number, max: number): number => Math.round((min + next() * (max - min)) * 1000) / 1000,
     chance: (p: number): boolean => next() < p,
     waehle: <T,>(list: readonly T[]): T | null => (list.length ? list[Math.floor(next() * list.length)]! : null),
   };

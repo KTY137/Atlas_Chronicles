@@ -39,19 +39,59 @@ const bauen = (keim: string, optionen: Partial<typeof SIEDLUNG_STANDARD> = {}): 
 
 const SAATEN = ["eron:marktflecken:1", "eron:aussenposten:2", "andaria/furt-3", "0", "ß-umlaut-keim", "x".repeat(200)];
 
-/** Two axis-aligned cell rectangles share a real edge (not merely a corner, not an overlap). */
-function beruehrenSich(a: SiedlungBauwerk["zellen"], b: SiedlungStrasse["zellen"]): boolean {
-  const [ax, ay, aw, ah] = a, [bx, by, bw, bh] = b;
-  const xUeberlappt = ax < bx + bw && bx < ax + aw;
-  const yUeberlappt = ay < by + bh && by < ay + ah;
-  const senkrechteBeruehrung = (ax + aw === bx || bx + bw === ax) && yUeberlappt;
-  const waagrechteBeruehrung = (ay + ah === by || by + bh === ay) && xUeberlappt;
-  return senkrechteBeruehrung || waagrechteBeruehrung;
+/**
+ * Geometrie **eigenständig** nachgerechnet, nicht aus `src/polygon.ts` importiert.
+ *
+ * Seit Fassung 2 sind Bauwerke Polygone, und die Versuchung wäre, hier dieselben Helfer zu
+ * benutzen, die der Erzeuger benutzt. Dann prüfte der Test aber nur, dass eine Funktion mit sich
+ * selbst übereinstimmt: ein Vorzeichenfehler im Abstandsmass wäre auf beiden Seiten derselbe und
+ * bliebe unsichtbar. Zwei Zeilen doppelt sind billiger als ein Test, der nichts behauptet.
+ */
+type Umriss = readonly (readonly [number, number])[];
+
+function punktStreckeAbstand(p: readonly [number, number], a: readonly [number, number], b: readonly [number, number]): number {
+  const vx = b[0] - a[0], vy = b[1] - a[1];
+  const qq = vx * vx + vy * vy;
+  const t = qq < 1e-12 ? 0 : Math.max(0, Math.min(1, ((p[0] - a[0]) * vx + (p[1] - a[1]) * vy) / qq));
+  return Math.hypot(a[0] + vx * t - p[0], a[1] + vy * t - p[1]);
 }
 
-/** Two axis-aligned building footprints are disjoint (share no cell). */
-function getrennt(a: SiedlungBauwerk["zellen"], b: SiedlungBauwerk["zellen"]): boolean {
-  return a[0] + a[2] <= b[0] || b[0] + b[2] <= a[0] || a[1] + a[3] <= b[1] || b[1] + b[3] <= a[1];
+/** Kleinster Abstand zweier Polygone, stumpf über alle Ecken-Kanten-Paare beider Richtungen. */
+function polygonAbstand(a: Umriss, b: Umriss): number {
+  let klein = Infinity;
+  for (const [von, nach] of [[a, b], [b, a]] as const) {
+    for (const p of von) {
+      for (let i = 0, j = nach.length - 1; i < nach.length; j = i++) {
+        klein = Math.min(klein, punktStreckeAbstand(p, nach[j]!, nach[i]!));
+      }
+    }
+  }
+  return klein;
+}
+
+/**
+ * Ein Bauwerk liegt an einer Straße, wenn es höchstens eine Hoftiefe davon entfernt ist.
+ *
+ * Nicht „berührt" wie beim Rechteckraster: ein Haus steht seit Fassung 2 auf einer Parzelle und
+ * hat einen Vorgarten davor. Die Aussage bleibt dieselbe — kein Haus ist eingemauert — nur das
+ * Mass passt jetzt zur Geometrie. Die Schwelle ist grosszügiger als die des Erzeugers
+ * (halbe Gassenbreite plus eins), damit der Test die Zusage prüft und nicht die Rechnung.
+ */
+const HOFTIEFE_MAX = 2;
+const liegtAnStrasse = (bau: Umriss, strasse: Umriss): boolean => polygonAbstand(bau, strasse) <= HOFTIEFE_MAX;
+
+/** Zwei konvexe Polygone sind disjunkt: Separating-Axis über die Kantennormalen beider. */
+function getrennt(a: Umriss, b: Umriss): boolean {
+  for (const [eins, zwei] of [[a, b], [b, a]] as const) {
+    for (let i = 0, j = eins.length - 1; i < eins.length; j = i++) {
+      const nx = eins[i]![1] - eins[j]![1], ny = eins[j]![0] - eins[i]![0];
+      let aMin = Infinity, aMax = -Infinity, bMin = Infinity, bMax = -Infinity;
+      for (const p of eins) { const d = nx * p[0] + ny * p[1]; aMin = Math.min(aMin, d); aMax = Math.max(aMax, d); }
+      for (const p of zwei) { const d = nx * p[0] + ny * p[1]; bMin = Math.min(bMin, d); bMax = Math.max(bMax, d); }
+      if (aMax <= bMin + 1e-7 || bMax <= aMin + 1e-7) return true;
+    }
+  }
+  return false;
 }
 
 describe("A-G5 · Siedlung — Determinismus über den vollständigen Optionsvektor", () => {
@@ -200,7 +240,13 @@ describe("A-G5 · Siedlung — jedes Bauwerk bekommt eine Adresse", () => {
     for (const b of g.bauwerke) {
       expect(regionIds.has(b.id)).toBe(true);
       const region = g.karte.geometry.regions.find((r) => r.id === b.id)!;
-      expect(region.punkte).toHaveLength(4);
+      // Schärfer als die alte Zusage „vier Ecken": die Region ist Punkt für Punkt der Umriss des
+      // Bauwerks, in Pixeln. Ein Polygon hat keine feste Eckenzahl, aber es hat eine Identität.
+      expect(region.punkte.length).toBeGreaterThanOrEqual(3);
+      expect(region.punkte.length).toBe(b.umriss.length);
+      const z = g.karte.grid.kind === "square" ? g.karte.grid.size : 0;
+      expect(region.punkte.map((p) => p.join(":"))).toStrictEqual(
+        b.umriss.map((p) => [Math.round(p[0] * z * 1000) / 1000, Math.round(p[1] * z * 1000) / 1000].join(":")));
     }
   });
 
@@ -226,8 +272,11 @@ describe("A-G5 · Siedlung — niemand ist eingemauert", () => {
     for (const { keim, g } of laeufe) {
       expect(g.bauwerke.length, keim).toBeGreaterThan(0);
       for (const b of g.bauwerke) {
-        const beruehrtIrgendeine = g.strassen.some((s) => beruehrenSich(b.zellen, s.zellen));
-        expect(beruehrtIrgendeine, `${keim}: Bauwerk ${b.pfad} bei ${b.zellen.join(":")} berührt keine Straße`).toBe(true);
+        // Zusätzlich zur blossen Nähe: die Straße, die das Bauwerk **nennt**, muss es auch sein.
+        // Eine Adresse, die auf eine andere Gasse zeigt als die vor der Tür, ist eine falsche Adresse.
+        const genannte = g.strassen.find((s) => s.id === b.strasse);
+        expect(genannte, `${keim}: ${b.pfad} nennt Straße ${b.strasse}, die es nicht gibt`).toBeTruthy();
+        expect(liegtAnStrasse(b.umriss, genannte!.umriss), `${keim}: ${b.pfad} liegt ${polygonAbstand(b.umriss, genannte!.umriss).toFixed(2)} Zellen von seiner Straße`).toBe(true);
       }
     }
   });
@@ -236,7 +285,7 @@ describe("A-G5 · Siedlung — niemand ist eingemauert", () => {
     for (const { keim, g } of laeufe) {
       for (const a of g.bauwerke) for (const b of g.bauwerke) {
         if (a.id === b.id) continue;
-        expect(getrennt(a.zellen, b.zellen), `${keim}: ${a.pfad} vs ${b.pfad}`).toBe(true);
+        expect(getrennt(a.umriss, b.umriss), `${keim}: ${a.pfad} vs ${b.pfad}`).toBe(true);
       }
     }
   });
@@ -302,7 +351,7 @@ describe("A-G5 · Siedlung — Eigenschaften über den Optionsraum, nicht über 
       const wo = `${fall.keim} ${JSON.stringify(fall.optionen)}`;
       expect(g.bauwerke.length, wo).toBeGreaterThan(0);
       for (const b of g.bauwerke) {
-        expect(g.strassen.some((s) => beruehrenSich(b.zellen, s.zellen)), `${wo} · ${b.pfad}`).toBe(true);
+        expect(g.strassen.some((s) => liegtAnStrasse(b.umriss, s.umriss)), `${wo} · ${b.pfad}`).toBe(true);
       }
       expect(serializeTacticalMapDocument(g.karte).length, wo).toBeGreaterThan(0);
     }
