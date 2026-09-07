@@ -223,6 +223,19 @@ ausdrücklich, welche Laufzeitdaten *nicht* enthalten sind — siehe
 [CAMPAIGN_FORMAT_V4.md](CAMPAIGN_FORMAT_V4.md). Für den geprüften Wiederherstellungsweg:
 [CAMPAIGN_RESTORE.md](CAMPAIGN_RESTORE.md).
 
+**Ein Paket endet bei 256 MiB, und das musst du wissen, bevor es dich trifft.** Seit
+Formatversion 7 reisen die Bilder deines Wikis als base64 **im Paket** mit — mit dem üblichen
+Drittel Aufschlag, und ein einzelnes Bild darf höchstens rund 64 MiB binär groß sein.
+Überschreitet eine Kampagne die Grenze, bricht der Export mit „maximum campaign bundle size
+exceeded" ab, statt ein unvollständiges Paket zu schreiben. Das ist die richtige Entscheidung
+des Formats — ein Paket, das sich für vollständig ausgibt und es nicht ist, wäre schlimmer.
+
+Für dich heißt es: **Der `.chronicle`-Export ist dein Umzugsweg, nicht deine Sicherung.**
+Sichere die Datenbank mit `pg_dump` wie oben, und prüfe früh, ob deine Kampagne noch unter der
+Grenze liegt — nicht erst an dem Tag, an dem du umziehen willst. Bilder füllen sie schnell.
+Der Widerspruch zwischen dieser Grenze und dem, was an Speicher versprochen wird, ist als
+offener Punkt festgehalten: [design/10](../design/10-hosted-betrieb-und-auslieferung.md) §1.10.
+
 **Aktualisieren.**
 
 ```bash
