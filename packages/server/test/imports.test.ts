@@ -36,6 +36,16 @@ describe("Imports become persisted application objects with explicit visibility"
     const source = await db.query("SELECT provenance FROM passages WHERE campaign_id=$1 AND provenance IS NOT NULL",[campaign]);
     expect(source.rowCount).toBeGreaterThan(73);
   },30_000);
+
+  it("legt die Kategorien des Quellwikis an, statt sie beim Import zu verlieren", async () => {
+    const kategorien = await db.query<{ slug: string; title: string }>("SELECT slug,title FROM categories WHERE campaign_id=$1 ORDER BY slug",[campaign]);
+    expect(kategorien.rows).toContainEqual({ slug: "Charaktere", title: "Charaktere" });
+    const zuordnungen = await db.query("SELECT 1 FROM entry_categories WHERE campaign_id=$1",[campaign]);
+    expect(zuordnungen.rowCount).toBeGreaterThan(0);
+    // Zweimal importieren darf die Kategorie nicht verdoppeln.
+    const doppelt = await db.query<{ anzahl: string }>("SELECT count(*) AS anzahl FROM categories WHERE campaign_id=$1 AND slug='Charaktere'",[campaign]);
+    expect(Number(doppelt.rows[0]!.anzahl)).toBe(1);
+  },30_000);
   it("imports a real generated world, survives re-open, and projects individually granted places", async () => {
     const data = gunzipSync(await readFile(new URL("../../forge/test/fixtures/azgaar-full.json.gz",import.meta.url))).toString("utf8");
     const service = createAtlas(db);

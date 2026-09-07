@@ -130,3 +130,22 @@ describe("review-only reimport and input validation", () => {
     expect(() => run([page(1, "A", "{{".repeat(65) + "}}".repeat(65))])).toThrow(/depth/);
   });
 });
+
+describe("Kategorien des Quellwikis", () => {
+  it("hebt die Kategorie auf, statt sie nur als Namensraum-Link zu verwerfen", () => {
+    const result = run([page(9001, "Sethra die Stumme", "Eine Göttin, die niemand nennt, und die deshalb in keiner Chronik steht. [[Kategorie:Charaktere]]")]);
+    const entry = result.entries[0]!;
+    expect(result.kategorien).toEqual([{ entryId: entry.id, name: "Charaktere", slug: wikiSlug("Charaktere") }]);
+    // Sie bleibt dabei, was sie war: keine Tür und kein Rotlink.
+    expect(result.redLinks.some((row) => /Kategorie/i.test(String(row.zielSlug)))).toBe(false);
+    expect(result.links.some((row) => /Kategorie/i.test(row.zielSlug))).toBe(false);
+  });
+
+  it("nennt jede Kategorie des echten Korpus genau einmal je Artikel", () => {
+    const result = run(articles);
+    const doppelt = result.kategorien.filter((row, index) =>
+      result.kategorien.findIndex((other) => other.entryId === row.entryId && other.slug === row.slug) !== index);
+    expect(doppelt).toEqual([]);
+    expect(result.kategorien.length).toBeGreaterThan(0);
+  });
+});

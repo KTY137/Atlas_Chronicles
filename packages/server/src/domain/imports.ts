@@ -51,6 +51,15 @@ export function createImports(db: Db, cfg: DomainConfig = {}) {
         const revisionId = current ? randomUUID() : entry.aktuelleRevision, version = (current?.version ?? 0) + 1;
         if (!current) await tx.query(`INSERT INTO entries(id,universe_id,campaign_id,slug,title,art,kanonstatus,current_revision_id,created_by)
           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [entry.id,entry.universeId,campaignId,entry.slug,entry.titel,entry.art,entry.kanonstatus,revisionId,userId]);
+        // Die Kategorien des Quellwikis, die der Importer aufgehoben hat. Der Slug ist je
+        // Kampagne eindeutig, deshalb entscheidet er, ob eine Kategorie neu ist — ein zweiter
+        // Import derselben Kategorie legt sie nicht erneut an.
+        for (const kategorie of result.kategorien?.filter((k) => k.entryId === entry.id) ?? []) {
+          const vorhanden = (await tx.query<{ id: string }>("SELECT id FROM categories WHERE campaign_id=$1 AND slug=$2", [campaignId, kategorie.slug])).rows[0];
+          const categoryId = vorhanden?.id ?? randomUUID();
+          if (!vorhanden) await tx.query("INSERT INTO categories(id,campaign_id,slug,title) VALUES($1,$2,$3,$4)", [categoryId, campaignId, kategorie.slug, kategorie.name]);
+          await tx.query("INSERT INTO entry_categories(campaign_id,entry_id,category_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [campaignId, entry.id, categoryId]);
+        }
         const incoming = result.passages.filter((p) => p.entryId === entry.id);
         const oldPassages = (await tx.query<{id:string;revision_id:string}>("SELECT id,revision_id FROM passages WHERE entry_id=$1", [entry.id])).rows;
         const created = new Map(oldPassages.map((p) => [p.id,p.revision_id]));

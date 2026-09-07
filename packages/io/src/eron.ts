@@ -187,6 +187,20 @@ export function importEron(input: EronImportInput): EronImportResult {
       ...(file?.mime ? { behaupteterMime: file.mime } : {}) };
   });
   const missingTargets = new Map<string, Set<EntryId>>();
+  /** Der Name hinter dem Namensraum, oder `null`, wenn der Link keine Kategorie ist. */
+  const kategorieName = (ziel: string): string | null => {
+    const doppelpunkt = ziel.indexOf(":");
+    if (doppelpunkt <= 0) return null;
+    const raum = ziel.slice(0, doppelpunkt).trim().toLowerCase();
+    if (raum !== "kategorie" && raum !== "category") return null;
+    const name = ziel.slice(doppelpunkt + 1).replace(/_/g, " ").trim();
+    return name === "" ? null : name;
+  };
+  const kategorienJeEintrag = new Map<EntryId, Map<string, string>>();
+  const merkeKategorie = (entryId: EntryId, name: string) => {
+    const bekannt = kategorienJeEintrag.get(entryId) ?? new Map<string, string>();
+    bekannt.set(wikiSlug(name), name); kategorienJeEintrag.set(entryId, bekannt);
+  };
   const reject = input.rejectLinkTarget ?? eronNotationTarget;
   const linkedPassages = passages.map((passage): Passage => ({ ...passage, inhalt: mapInline(passage.inhalt, (inline) => inline.map((part) => ({
     ...part, marks: part.marks.flatMap<InlineMark>((mark) => {
@@ -194,7 +208,12 @@ export function importEron(input: EronImportInput): EronImportResult {
       // A namespace link is not a missing article. Counting it as a door inflates the one
       // number this product sells, with demand for a page nobody can ever write.
       if (namespaceLinkTarget(mark.zielSlug)) {
-        losses.push({ art: "verworfenes-linkziel", bezeichnung: mark.zielSlug,
+        // Eine Kategorie ist keine Tür — aber sie ist auch kein Müll. Sie bleibt aus dem
+        // Fließtext und aus der Rotlink-Zählung heraus (die Begründung oben gilt unverändert)
+        // und wird hier als Klassifikation aufgehoben, statt verloren zu gehen.
+        const kategorie = kategorieName(mark.zielSlug);
+        if (kategorie !== null) merkeKategorie(passage.entryId, kategorie);
+        else losses.push({ art: "verworfenes-linkziel", bezeichnung: mark.zielSlug,
           detail: `Namensraum-Link, keine Tür (Passage ${passage.pid})` });
         return [];
       }
@@ -264,6 +283,7 @@ export function importEron(input: EronImportInput): EronImportResult {
   const retainedCharacters = passages.reduce((sum, passage) => sum + blockPlainText(passage.inhalt).length, 0);
   return { importerVersion: "1", importId, universeId: input.universeId, ...(input.campaignId ? { campaignId: input.campaignId } : {}),
     entries, revisions, passages: resolvedPassages, aliases, links, redLinks, provenance, media: enrichedMedia, assets,
+    kategorien: [...kategorienJeEintrag].flatMap(([entryId, namen]) => [...namen].map(([slug, name]) => ({ entryId, name, slug }))),
     source: { format: "eron-json", sha256: sourceHash, wikiUrl, ...JSON.parse(JSON.stringify(original)) as typeof original },
     report: { importId, quelle: wikiUrl, eintraege: entries.length, aliase: aliases.length, passagen: passages.length,
       passagenNachArt: passageCounts, blaueKanten: links.filter((link) => link.zielEntryId !== undefined).length,
