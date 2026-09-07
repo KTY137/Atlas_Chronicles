@@ -72,6 +72,8 @@ geprüfte Wiederherstellung in eine leere Instanz und die separate Einrichtung
 neuer Zugangsdaten. Der [Formatvertrag v4](docs/CAMPAIGN_FORMAT_V4.md)
 benennt auch ausgeschlossene Laufzeitdaten.
 
-Für Self-Hosting und die optionale Medieninfrastruktur siehe
+Wer selbst hosten will, beginnt beim [Self-Hosting-Guide](docs/SELFHOSTING.md): er
+stellt die drei Betriebsformen gegenüber, benennt die benötigten Dateien und sagt
+für jede, was geprüft ist. Die Betriebs- und Architekturdetails dahinter stehen in
 [deploy/README.md](deploy/README.md). Öffentliche Domain/TLS und Medien hinter
 NAT benötigen weiterhin eine Prüfung in der tatsächlichen Betriebsumgebung.
