@@ -1,0 +1,24 @@
+.zeit-liste { list-style: none; margin: 0; padding: 0; }
+.zeit-ereignis { display: grid; grid-template-columns: 6.5rem 1.25rem 1fr; align-items: baseline; gap: .5rem;
+  padding: .3rem 0; border-inline-start: 0; overflow-wrap: anywhere; }
+.zeit-jahr { font-variant-numeric: tabular-nums; text-align: end; font-weight: 600; }
+.zeit-jahr-ungefaehr { opacity: .8; font-weight: 500; }
+.zeit-jahr-offen { opacity: .6; font-style: italic; font-weight: 500; font-size: .85em; }
+/* Die Achse: eine durchgehende Linie mit einem Punkt je Ereignis. */
+.zeit-marke { position: relative; align-self: stretch; }
+.zeit-marke::before { content: ""; position: absolute; inset-block: -.3rem; inset-inline-start: 50%;
+  width: 1px; background: var(--border, #d8d2c6); }
+.zeit-marke::after { content: ""; position: absolute; inset-block-start: .45em; inset-inline-start: 50%;
+  width: 7px; height: 7px; margin-inline-start: -3px; border-radius: 50%;
+  background: var(--surface, #fdfaf4); border: 1.5px solid var(--ink, #4a4034); }
+.zeit-ereignis[data-art="tod"] .zeit-marke::after { background: var(--ink, #4a4034); }
+.zeit-ereignis[data-art="praegung"] .zeit-marke::after { border-color: var(--accent, #a8791f); background: var(--accent, #a8791f); }
+.zeit-inhalt { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; min-width: 0; }
+.zeit-titel { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: inherit;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.zeit-art { font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; opacity: .7; }
+.zeit-roh { opacity: .75; font-style: italic; }
+.zeit-spieltag { font-size: .78rem; opacity: .7; }
+.zeit-ohne-jahr { margin-block-start: 1rem; }
+.zeit-ohne-jahr summary { cursor: pointer; opacity: .8; }
+@media (max-width: 640px) { .zeit-ereignis { grid-template-columns: 4.5rem 1rem 1fr; } }
