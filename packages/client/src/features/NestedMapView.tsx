@@ -101,18 +101,31 @@ export function MapEntrance({ campaignId, parentKind, parentMapId, nodeId, title
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [linking, setLinking] = useState(false), [targetId, setTargetId] = useState("");
+  // Was hinter der Tuer entsteht. Vorher gab es die Wahl nur beim freien Erzeugen — hinter jedem
+  // Hoehleneingang lagen deshalb Raeume und Gaenge.
+  const [art, setArt] = useState<"grundriss" | "hoehle">("grundriss");
   const maps = useResource<TacticalMapSummary[]>(linking ? apiPath(campaignId, "/tactical/maps") : null);
   const enter = (targetMapId?: string) => void task.run(async () => {
     try {
       const result = await command<{ mapId: string }>(apiPath(campaignId, "/betreten"), {
-        parentKind, parentMapId, knotenId: nodeId, expectedVersion: version, name: title.slice(0, 160), ...(targetMapId ? { targetMapId } : {}),
+        // Entweder anhaengen ODER erzeugen: eine Kartenart neben einer fertigen Karte weist der
+        // Server ab, statt sie wirkungslos zu schlucken.
+        parentKind, parentMapId, knotenId: nodeId, expectedVersion: version, name: title.slice(0, 160),
+        ...(targetMapId ? { targetMapId } : { art }),
       });
       if (mounted.current) { onChanged(); onOpen(result.mapId); }
     } catch (error) { if (mounted.current) onChanged(); throw error; }
   });
   return <section className="atlas-inspector-section atlas-entrance"><h3><DoorOpen size={17} /> Unterkarte</h3>
     {childMapId ? <Button variant="primary" onClick={() => onOpen(childMapId)}><DoorOpen size={16} /> Unterkarte öffnen</Button> : <>
-      <p>Erzeuge einen Grundriss für diesen Ort oder verbinde eine vorhandene Szenenkarte.</p>
+      <p>Erzeuge eine Karte für diesen Ort oder verbinde eine vorhandene Szenenkarte.</p>
+      <label className="atlas-entrance-art">Was liegt hinter dieser Tür?
+        <select value={art} disabled={task.busy} onChange={event => setArt(event.target.value as "grundriss" | "hoehle")}>
+          <option value="grundriss">Grundriss — Räume und Gänge</option>
+          <option value="hoehle">Höhle — gewachsener Fels</option>
+        </select>
+      </label>
+      <p className="field-help">Die Wahl gilt beim ersten Betreten. Danach ist der Ort da: wer noch einmal hindurchgeht, kommt an denselben Ort — er wird nicht neu gewürfelt.</p>
       <Button variant="primary" disabled={task.busy || !canEnter} onClick={() => enter()}><WandSparkles size={16} /> {task.busy ? "Karte wird verbunden …" : "Unterkarte erzeugen"}</Button>
       <Button variant="quiet" disabled={task.busy} onClick={() => setLinking(value => !value)}><Link size={16} /> Vorhandene Karte verbinden</Button>
       {linking ? <form onSubmit={event => { event.preventDefault(); if (targetId) enter(targetId); }}>

@@ -55,7 +55,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 15 | KI-vorgeschlagene Änderungen | ◐ | Chronist-Regelwerk grün; Modellknoten bewusst offen (Egress-Entscheidung) |
 | 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☑ | Beutetabelle an der Vorlage; Kartenart wählbar (Siedlung offen) |
 | 17 | PNGs hochladbar | ☑ | eigener Eingang in den Bildbestand; Kartengesicht für Haltende sichtbar |
-| 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☐ | verschachtelte Karten (014) existieren — prüfen |
+| 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☑ | frei und hinter der Tür erzeugbar; die Kartenart reicht jetzt durch |
 
 ## Feature 1 — Kampfsystem: gemessen, nicht vermutet
 
@@ -1282,3 +1282,56 @@ Pfadtrenner und Zeilenumbruch werden abgewiesen, „Bärenhöhle groß.png" wird
 wiederverwendbar, eine belegte bleibt liegen; wer ein Bild wirklich loswerden will, hat dafür
 heute keine Fläche. Und **nichts prüft, ob ein `bildAssetId` auf ein existierendes Bild zeigt**:
 eine Karte mit gelöschter Vorlage zeigt den Platzhalter, statt die Erstellung zu verhindern.
+
+### Abschluss Feature 18 — 2026-09-07 21:12
+
+**Gemessen zuerst, und der Befund halbiert das Feature.** „Außerhalb der Hauptkarte erzeugbare
+Karten" gab es bereits zweimal:
+
+- **Frei erzeugen**, ohne jeden Bezug zur Weltkarte: `TacticalPreparation` → `TacticalGenerate`
+  → `POST /tactical/generate`. Eine Szenenkarte, die nirgends hängt, war immer möglich.
+- **Hinter einer Tür erzeugen**: `betrete` erzeugt beim ERSTEN Betreten eines Knotens eine
+  Unterkarte aus dem serverseitigen Kindkeim (`betreten.ts`, Migration 014 trägt dafür
+  `parent_kind IN ('atlas','tactical')` — eine Karte darf in einer Karte liegen).
+
+**Was fehlte, war die Kartenart an genau dieser Stelle.** `betrete` rief `generate` ohne `art`
+auf — und `art` hat die Voreinstellung `grundriss`. Hinter jedem Höhleneingang lagen damit Räume
+und Gänge: die Wahl aus Feature 16 endete an der Tür. Das ist keine neue Fähigkeit, sondern eine
+**Doppelung, die nie zusammengeführt wurde** — genau der Fall, den die Regel „keine Doppelungen"
+meint.
+
+### Drei Entscheidungen
+
+**Die Wahl gilt nur beim ersten Betreten.** Ein zweiter Gang durch dieselbe Tür führt an denselben
+Ort zurück, auch wenn diesmal ausdrücklich die andere Art genannt wird. Eine Adresse, die bei
+jedem Besuch einen neuen Ort prägt, wäre ein Spielautomat und kein Ort — das steht schon so über
+`betrete` und gilt weiter.
+
+**Ohne Angabe bleibt es beim Grundriss.** Nicht-Rückwirkung: eine Tür, die gestern Räume ergab,
+führt heute nicht plötzlich in Fels, und jeder Aufrufer von gestern kennt das Feld gar nicht.
+
+**Art und angehängte Karte schließen sich aus.** Wer eine fertige Karte anhängt, erzeugt nichts;
+eine Kartenart wäre dort wirkungslos. Sie wird **abgewiesen statt geschluckt** — eine wirkungslos
+verschluckte Eingabe ist schlimmer als eine abgelehnte, weil niemand erfährt, dass seine Wahl
+nicht galt.
+
+### Belege
+
+- `betreten.test.ts` **26/26 grün** (vorher 21): eine bestellte Höhle entsteht auch als Höhle
+  (`chronicle-hoehle` in der Herkunft); ohne Angabe bleibt es `chronicle-grundriss`; die Wahl
+  greift nur beim ersten Betreten; Art neben angehängter Karte wird abgewiesen **und legt nichts
+  an**; und dieselbe Wahl trägt durch die echte Anwendung, während eine erfundene Art 400 bekommt.
+- **Zwei Gegenproben gefahren:** Durchreichung entfernt und die Ausschlussregel abgeschaltet →
+  **vier rote Fälle**, und der Grundriss-Fall blieb korrekt grün. Zurückgesetzt.
+- **Ein Fehler, den nur der Typecheck fand:** `createTactical(db, config)` — die Tests liefen
+  grün, `tsc` nicht (`DomainConfig` hat keine gemeinsamen Eigenschaften). Genau der Fall, für den
+  Regel 8 existiert: vier Stellen korrigiert.
+- Kein Regress: `betreten` + `grundriss` **39/39**, `packages/client` **150/150**, `typecheck`
+  0 Fehler, `gate:boundaries` **460/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+**Die Regler bleiben der freien Erzeugung vorbehalten.** Hinter der Tür wird die *Art* gewählt,
+nicht die Kammerzahl — der Keim gehört dem Knoten, und wer hinter einer Tür an zwölf Schaltern
+dreht, baut keinen Ort mehr, sondern konfiguriert einen. **Die Siedlung** ist weiterhin nicht
+angeschlossen (andere Ergebnisform, eigene Entscheidung — siehe Feature 16).

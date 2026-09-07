@@ -35,6 +35,8 @@ export const BetretenSchema = Type.Object({
   expectedVersion: Type.Optional(Type.Integer({ minimum: 1 })),
   targetMapId: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" })),
+  /** Welche Art Karte hinter der Tuer entsteht. Gilt nur beim ersten Betreten. */
+  art: Type.Optional(Type.Union([Type.Literal("grundriss"), Type.Literal("hoehle")])),
 }, closed);
 
 export type BetretenBody = Static<typeof BetretenSchema>;

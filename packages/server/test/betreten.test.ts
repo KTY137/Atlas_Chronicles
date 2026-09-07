@@ -321,4 +321,74 @@ describe("Der Zugang — die Adresse, die man begehen kann", () => {
     expect(children.json().nodes[0]).not.toHaveProperty("kindKeim");
     expect((await app.inject({ method: "GET", url: `${base}/maps/tactical/${created.json().mapId}/children`, headers: { cookie: playerCookie } })).statusCode).toBe(404);
   });
+
+  /**
+   * DIE KARTENART HINTER DER TUER.
+   *
+   * Unterkarten entstehen beim Betreten — und entstanden bis hierher IMMER als Grundriss. Hinter
+   * einem Hoehleneingang lagen damit Raeume und Gaenge: die Wahl aus Feature 16 endete an der
+   * Tuer. Sie reicht jetzt hindurch, und zwar genau bis zur ersten Erzeugung.
+   */
+  it("erzeugt hinter der Tuer eine Hoehle, wenn eine Hoehle bestellt ist", async () => {
+    const betreten = createBetreten(db, config);
+    const knotenId = await seedKnoten({ titel: "Der Schlund", kindKeim: "seed-hoehle-0001" });
+    const result = await betreten.betrete(gm, campaign, { ...input(knotenId), art: "hoehle" });
+    expect(result.erzeugt).toBe(true);
+    const quelle = await createTactical(db).getSource(gm, campaign, result.mapId);
+    expect(quelle.provenance.generator).toBe("chronicle-hoehle");
+    expect(quelle.provenance.creator).toBe("chronicle-hoehle");
+  });
+
+  it("bleibt ohne Angabe beim Grundriss", async () => {
+    // Nicht-Rueckwirkung: eine Tuer, die gestern Raeume und Gaenge ergab, fuehrt heute nicht
+    // ploetzlich in Fels — und jeder Aufrufer von gestern kennt das Feld gar nicht.
+    const betreten = createBetreten(db, config);
+    const knotenId = await seedKnoten({ titel: "Die stille Kammer", kindKeim: "seed-grundriss-0001" });
+    const result = await betreten.betrete(gm, campaign, input(knotenId));
+    const quelle = await createTactical(db).getSource(gm, campaign, result.mapId);
+    expect(quelle.provenance.generator).toBe("chronicle-grundriss");
+  });
+
+  it("waehlt die Art nur beim ERSTEN Betreten — danach ist der Ort da", async () => {
+    const betreten = createBetreten(db, config);
+    const knotenId = await seedKnoten({ titel: "Die zweimal betretene Hoehle", kindKeim: "seed-hoehle-0002" });
+    const erst = await betreten.betrete(gm, campaign, { ...input(knotenId), art: "hoehle" });
+    // Zweiter Gang durch dieselbe Tuer, diesmal ausdruecklich mit der anderen Art: der Ort wird
+    // NICHT neu gewuerfelt. Eine Adresse, die bei jedem Besuch einen neuen Ort praegt, waere ein
+    // Spielautomat und kein Ort.
+    const zweit = await betreten.betrete(gm, campaign, { ...input(knotenId), art: "grundriss" });
+    expect(zweit.mapId).toBe(erst.mapId);
+    expect(zweit.erzeugt).toBe(false);
+    const quelle = await createTactical(db).getSource(gm, campaign, erst.mapId);
+    expect(quelle.provenance.generator).toBe("chronicle-hoehle");
+  });
+
+  it("weist eine Kartenart neben einer angehaengten Karte ab, statt sie zu schlucken", async () => {
+    // Zwei verschiedene Auftraege: anhaengen ODER erzeugen. Die Art waere hier wirkungslos, und
+    // eine wirkungslos geschluckte Eingabe ist schlimmer als eine abgelehnte.
+    const betreten = createBetreten(db, config);
+    const knotenId = await seedKnoten({ titel: "Die verbundene Halle", kindKeim: "seed-anhang-0001" });
+    const fertige = await generateMap("Vorhandene Halle");
+    await expect(betreten.betrete(gm, campaign, { ...input(knotenId), targetMapId: fertige, art: "hoehle" }))
+      .rejects.toThrow(TacticalValidationError);
+    // Und die Tuer steht danach immer noch offen: der abgewiesene Versuch hat nichts angelegt.
+    expect((await betreten.betretbar(gm, campaign, knotenId)).vorhandeneKarteId).toBeNull();
+  });
+
+  it("traegt die Wahl durch die echte Anwendung — und weist eine erfundene Art ab", async () => {
+    const knotenId = await seedKnoten({ titel: "Die Route zur Hoehle", kindKeim: "seed-http-0001" });
+    const scope = await scopeFor(knotenId);
+    const antwort = await app.inject({ method: "POST", url: `/api/campaigns/${campaign}/betreten`,
+      headers: { cookie, "content-type": "application/json", origin: config.origin },
+      payload: JSON.stringify({ ...input(knotenId), ...scope, art: "hoehle" }) });
+    expect(antwort.statusCode).toBe(200);
+    const quelle = await createTactical(db).getSource(gm, campaign, antwort.json().mapId as string);
+    expect(quelle.provenance.generator).toBe("chronicle-hoehle");
+
+    const erfunden = await seedKnoten({ titel: "Der Irrgang", kindKeim: "seed-http-0002" });
+    const abgewiesen = await app.inject({ method: "POST", url: `/api/campaigns/${campaign}/betreten`,
+      headers: { cookie, "content-type": "application/json", origin: config.origin },
+      payload: JSON.stringify({ ...input(erfunden), ...(await scopeFor(erfunden)), art: "labyrinth" }) });
+    expect(abgewiesen.statusCode).toBe(400);
+  });
 });

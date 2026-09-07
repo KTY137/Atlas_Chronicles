@@ -25,6 +25,14 @@ export interface BetretenInput {
   readonly name?: string;
   /** Explicitly attach an existing map; omission generates from the server-owned child seed. */
   readonly targetMapId?: string;
+  /**
+   * Welche Art Karte hinter dieser Tuer entsteht — dieselbe Wahl wie beim freien Erzeugen.
+   *
+   * Ohne sie war jede Unterkarte ein Grundriss: hinter dem Hoehleneingang lagen Raeume und
+   * Gaenge. Die Wahl gilt nur beim ERSTEN Betreten; danach ist der Ort da, und ein zweites
+   * Betreten fuehrt dorthin zurueck, statt ihn neu zu wuerfeln.
+   */
+  readonly art?: "grundriss" | "hoehle";
 }
 export interface BetretenResult { mapId: string; erzeugt: boolean; keimHash: string | null }
 interface AdresseRow { map_id: string; keim_hash: string | null; parent_kind: ParentKind; parent_map_id: string; knoten_id: string }
@@ -38,13 +46,19 @@ function validateScope(scope: BetretenScope): void {
     throw new TacticalValidationError("Bitte eine vorhandene übergeordnete Karte auswählen.");
 }
 function validateInput(input: BetretenInput): void {
-  const allowed = new Set(["commandId", "knotenId", "parentKind", "parentMapId", "expectedVersion", "name", "targetMapId"]);
+  const allowed = new Set(["commandId", "knotenId", "parentKind", "parentMapId", "expectedVersion", "name", "targetMapId", "art"]);
   if (!input || typeof input !== "object" || Object.keys(input).some(key => !allowed.has(key))
     || !validId(input.commandId) || !validId(input.knotenId)
     || input.name !== undefined && (typeof input.name !== "string" || !input.name.trim() || input.name.length > 160)
     || input.targetMapId !== undefined && !validId(input.targetMapId)
+    || input.art !== undefined && input.art !== "grundriss" && input.art !== "hoehle"
     || input.expectedVersion !== undefined && (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 1))
     throw new TacticalValidationError("Bitte Kartenadresse, Namen und erwartete Version prüfen.");
+  // Eine Kartenart zu nennen und zugleich eine fertige Karte anzuhaengen sind zwei verschiedene
+  // Auftraege. Die Art waere hier wirkungslos — und eine wirkungslos geschluckte Eingabe ist
+  // schlimmer als eine abgelehnte: niemand erfaehrt, dass seine Wahl nicht galt.
+  if (input.art !== undefined && input.targetMapId !== undefined)
+    throw new TacticalValidationError("Eine bereits vorhandene Karte wird angehängt, nicht erzeugt — eine Kartenart lässt sich dabei nicht wählen.");
   if (input.parentKind !== undefined || input.parentMapId !== undefined)
     validateScope({ parentKind: input.parentKind!, parentMapId: input.parentMapId! });
 }
@@ -197,7 +211,12 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
         } else {
           if (node.kindKeim === null) throw new Gone("kein-kindkeim");
           const commandId = createHash("sha256").update(`betreten-import:${input.commandId}`).digest("hex");
-          const generated = await createGrundriss(tx, cfg).generate(userId, campaignId, { commandId, name: input.name?.trim() || node.titel, keim: node.kindKeim });
+          const generated = await createGrundriss(tx, cfg).generate(userId, campaignId, {
+            commandId, name: input.name?.trim() || node.titel, keim: node.kindKeim,
+            // Ohne Angabe bleibt es beim Grundriss: eine Tuer, die gestern Raeume und Gaenge
+            // ergab, soll heute nicht ploetzlich in Fels fuehren.
+            ...(input.art ? { art: input.art } : {}),
+          });
           mapId = generated.ack.subjectId; keimHash = generated.keimHash; erzeugt = true;
         }
         await tx.query(`INSERT INTO betreten_karten(campaign_id,parent_kind,parent_map_id,knoten_id,map_id,keim_hash,created_by,created_at)
