@@ -70,7 +70,26 @@ export async function buildApp(db: Db, config: AppConfig) {
     return reply.code(500).send({ error: "Speichern fehlgeschlagen. Bitte erneut versuchen." });
   });
   function reqLog(error: unknown) { app.log.error(error); }
-  app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: "Nicht verfügbar" }));
+  /**
+   * Der Rückfall der Einzelseiten-Anwendung — und die Stelle, an der er NICHT greifen darf.
+   *
+   * Ein unbekannter Pfad ist eine Route der Oberfläche und bekommt `index.html`. Ein
+   * unbekannter Pfad **mit Dateiendung** ist dagegen eine fehlende Datei, und darauf mit HTML
+   * zu antworten ist der stille Ausfall, den `static-assets.test.ts` festhält: der Browser
+   * verweigert das Modul wegen des MIME-Typs und zeigt eine weiße Seite, ohne Fehlerstatus
+   * und ohne Logzeile.
+   *
+   * Geprüft wird nur der **Pfad**, nie die Query: `/?campaign=haus.vharon` ist die Startseite.
+   */
+  const dateiartig = /\.[a-z0-9]{1,8}$/i;
+  const fremdePraefixe = ["/api/", "/join/", "/public/", "/w/", "/wiki/"];
+  app.setNotFoundHandler((req, reply) => {
+    const pfad = req.url.split("?")[0] ?? "/";
+    const lesend = req.method === "GET" || req.method === "HEAD";
+    if (config.staticRoot && lesend && !dateiartig.test(pfad) && !fremdePraefixe.some(prefix => pfad.startsWith(prefix)))
+      return reply.sendFile("index.html");
+    return reply.code(404).send({ error: "Nicht verfügbar" });
+  });
 
   app.get("/api/health", async () => { await db.query("SELECT 1"); return { ok: true }; });
   app.get("/api/reachability", async () => reachability(origin));
@@ -159,11 +178,11 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerMedia(app,db,config,config.livekit);
   await registerRealtime(app,db,config);
   if (config.staticRoot) {
-    await app.register(staticFiles, { root: config.staticRoot, wildcard: false });
-    app.get("/*", async (req, reply) => {
-      if (["/api/", "/join/", "/public/", "/w/", "/wiki/"].some(prefix => req.url.startsWith(prefix))) return reply.code(404).send({ error: "Nicht verfügbar" });
-      return reply.sendFile("index.html");
-    });
+    // `wildcard: false` hat die Routentabelle EINMAL beim Start aus einem Glob gebaut
+    // (@fastify/static index.js, else-Zweig). Jeder danach gebaute Client-Chunk hatte damit
+    // keine Route mehr und fiel auf `index.html` zurück — siehe `static-assets.test.ts`.
+    // Der Wildcard löst pro Anfrage auf und überlebt einen Neubau ohne Serverneustart.
+    await app.register(staticFiles, { root: config.staticRoot });
   }
   await app.ready();
   return app;
