@@ -156,6 +156,54 @@ nach einer Liste — die Liste ist beim Staging schon veraltet. Aktuell fremd un
 Forge-Refactor (`polygon`, `kartenwerk`, `siedlung`), Desktop-Installer samt Wurzelmanifesten,
 und der Loeschpfad (017, `deletion.ts`).
 
+## Der stille Ausfall: jeder Client-Build hat den Server blind gemacht — 2026-09-07 15:30
+
+**Kaya meldete zweimal „localhost öffnet sich nicht" und „Gefüge finde ich nicht". Beides war
+derselbe Fehler, und er war meiner Prüfmethode entgangen.**
+
+`@fastify/static` mit `wildcard: false` baut seine Routentabelle **einmal beim Start** aus einem
+Glob (`index.js`, else-Zweig bei `opts.wildcard` — im Quelltext des Pakets nachgelesen, nicht
+vermutet). `index.html` behält seinen Namen und damit seine Route; sein **Inhalt** wird von
+jedem Client-Build neu geschrieben und zeigt dann auf neue Hashes. Für die gibt es keine Route.
+
+Der Browser holt also ein frisches `index.html`, fordert `index-NEU.js` an, bekommt vom
+SPA-Rückfall wieder `index.html` mit `text/html`, verweigert das Modul nach der MIME-Regel und
+zeigt **eine weiße Seite — ohne Fehlerstatus, ohne Logzeile.** `curl` meldet 200.
+
+**Mein erster Prüflauf hat genau deshalb „alles da" gemeldet: er hat Statuscodes geprüft, keine
+Inhaltstypen.** Erst ein echter Browser (`playwright`, `.local/diag/schau.mjs`) hat es gezeigt.
+Das ist die Lehre: für eine Auslieferungsfrage ist `curl` kein Zeuge.
+
+**Behoben in `4477300`, mit Test zuerst** (`packages/server/test/static-assets.test.ts`, 6/6):
+der Wildcard löst pro Anfrage auf und überlebt einen Neubau ohne Serverneustart; und der
+Rückfall antwortet auf einen Pfad **mit Dateiendung** nie mehr mit HTML, sondern mit 404 — aus
+einem stillen Ausfall wird ein lauter. Geprüft wird nur der Pfad, nie die Query:
+`/?campaign=haus.vharon` ist die Startseite, keine fehlende Datei.
+
+**Betrieb:** der Prozess von 08:54 wurde gestoppt, `localhost:3000` läuft neu gebaut und
+geprüft (`asset type=application/javascript`, Anmeldebildschirm lädt, keine Konsolenfehler).
+
+## Zeitstrahl und Kopfleiste der Chronik — 2026-09-07 15:45
+
+- **`Berechnete Zeitleiste aus Prägedaten` ist gebaut, ohne neue Tabelle.** Ereignisse aus den
+  Datumsfeldern der Passagen und aus `confirmed_mints`, beides durch dasselbe Wissen gefiltert.
+  Siehe [ZEITSTRAHL](docs/ZEITSTRAHL.md).
+- **Der Kalender wird gelesen, nicht verstanden.** `leseWeltjahr` liest eine Zahl und ein
+  Vorzeichen und meldet `genau: false`, wo daneben noch etwas stand. Der Rohtext der Quelle
+  steht immer dabei. Ein Wert mit Einheit ist eine Messung: `Größe: 180 cm` wird nicht zu
+  Jahr 180. Ohne lesbares Jahr → eigener Abschnitt, nie eine erfundene Null.
+- **Kopfleiste oben in der Chronik:** Übersicht · oberste Gruppen · Zeitstrahl. Sie nimmt die
+  Gruppen aus `baueNavigation` — Kategorien, sobald importiert, sonst die Arten. Für Kayas
+  Bestand heißt das sofort: Figuren 22, Sonstiges 23, Organisationen 9, Völker 8.
+- **Gemessen an der laufenden Datenbank:** 73 Artikel, **0 Kategorien**, **0 confirmed_mints**.
+  Der Kategorien-Importer (`1601895`) ist korrekt und getestet — der Bestand ist nur **älter als
+  die Funktion**. Für echte Eron-Kategorien muss einmal neu importiert werden; das ist eine
+  Entscheidung über Kayas Daten und wurde nicht ohne ihn getroffen.
+- **Nachgewiesen:** `zeitleiste.test.ts` 7/7, `static-assets.test.ts` 6/6,
+  `e2e/wiki-kopf.spec.ts` grün in 50 s, `e2e/gefuege.spec.ts` + `e2e/gegenueberstellung.spec.ts`
+  grün in 2,4 min (Regressionswache über die Werkzeugleiste), Typecheck grün,
+  `gate:boundaries` GRÜN (407 Dateien).
+
 ## Das Gefüge — Stammbaum und Politogramm, 2026-09-07 13:05 (additiv, eigene Fläche)
 
 - **Kayas Wunsch, in der Bauform, die dieses Produkt verlangt.** Verwandtschaft und Politik
