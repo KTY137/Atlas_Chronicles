@@ -417,7 +417,7 @@ function artifact(r: CampaignRow, g: Graph): void {
   const s = object(r.source, "artifact.source");
   if (r.kind === "eron-preview") {
     keys(s, ["result", "versions"], "artifact.source"); const result = object(s.result, "artifact.result"), source = object(result.source, "artifact.originalSource");
-    keys(result, ["importerVersion", "importId", "universeId", "campaignId", "entries", "revisions", "passages", "aliases", "links", "redLinks", "provenance", "media", "assets", "source", "report", "reviewRequired", "attributionComplete"], "artifact.result");
+    keys(result, ["importerVersion", "importId", "universeId", "campaignId", "entries", "revisions", "passages", "aliases", "links", "redLinks", "provenance", "media", "assets", "source", "report", "reviewRequired", "attributionComplete"], "artifact.result", ["kategorien"]);
     if (result.importerVersion !== "1" || result.universeId !== g.tables.universes[0]!.id || result.campaignId !== r.campaign_id || result.reviewRequired !== true || typeof result.attributionComplete !== "boolean") fail("artifact.result", "preview version, scope or review state mismatch");
     keys(source, ["format", "sha256", "wikiUrl", "articles", "templates"], "artifact.originalSource");
     if (source.format !== "eron-json" || source.sha256 !== hash({ articles: source.articles, templates: source.templates }) || r.source_hash !== hash({ source: source.sha256, preview: r.id })) fail("artifact.source_hash", "Eron source digest mismatch");
@@ -426,6 +426,14 @@ function artifact(r: CampaignRow, g: Graph): void {
     // mit einer leeren Liste wäre genau dieser Verweis unauflösbar.
     createWikiBundle({ universeId: result.universeId, campaignId: result.campaignId, entries: result.entries, revisions: result.revisions, passages: result.passages, aliases: result.aliases, links: result.links, revelations: [], lineage: [], assets: result.assets ?? [], provenance: result.provenance, sources: [source], importReports: [result.report] } as unknown as WikiBundleData);
     for (const [entryId, version] of Object.entries(object(s.versions, "artifact.versions"))) { g.ref("entries", entryId, "artifact.versions.entry"); numeric(version, "artifact.versions.version", 1); }
+    // `kategorien` fehlt in Artefakten aus der Zeit vor Migration 020 — sein Fehlen ist kein
+    // Fehler, eine kaputte Zeile darin schon: sie muss auf einen Eintrag desselben Pakets zeigen.
+    for (const value of list(result.kategorien ?? [], "artifact.kategorien")) {
+      const kategorie = object(value, "artifact.kategorien");
+      keys(kategorie, ["entryId", "name", "slug"], "artifact.kategorien");
+      g.ref("entries", kategorie.entryId, "artifact.kategorien.entryId");
+      string(kategorie.name, "artifact.kategorien.name", 512); string(kategorie.slug, "artifact.kategorien.slug", 512);
+    }
     for (const value of list(result.media, "artifact.media")) { const media = object(value, "artifact.media");
       keys(media, ["pageid", "fileName", "source", "licenseStatus", "state"], "artifact.media", ["assetId", "beschreibungsseiteUrl", "quellUrl", "urheber", "behaupteterMime"]);
       if (!["frei", "zitat", "unbekannt"].includes(String(media.licenseStatus)) || !["referenziert", "beschrieben"].includes(String(media.state))) fail("artifact.media", "unsupported media licensing/state");
