@@ -51,7 +51,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☑ | trug das Modell schon; die handelnde Figur folgt jetzt dem Wissensblick |
 | 12 | Gesonderter Geldcounter | ☑ | im Inventar und beim Bogen — eine Komponente, zwei Orte |
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☑ | Balken am Bogen, gelesen aus der `vitals`-Deklaration |
-| 14 | Dynamisch setzbare Bars | ☐ | hängt an #13 |
+| 14 | Dynamisch setzbare Bars | ☑ | Balken-Editor in der Schmiede: Feld, Höchststand, Erschöpfung |
 | 15 | KI-vorgeschlagene Änderungen | ☐ | |
 | 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☐ | |
 | 17 | PNGs hochladbar | ☐ | `wiki_assets` (015) existiert — prüfen |
@@ -986,3 +986,53 @@ seines Bereichs.
 nebenbei zu treffen wäre genau die Sorte stiller Preisgabe, gegen die dieses Haus sonst überall
 steht. Sie gehört auf die Liste, nicht in einen Commit. Und die Anzeige **verändert nichts**: sie
 liest, sie schreibt nicht — Werte ändert man weiterhin auf dem Bogen.
+
+## Feature 14 — Dynamisch setzbare Bars: der fehlende Editor
+
+**Gemessen.** `vitals` lief seit Feature 1 durch das Entwurfsmodell der Schmiede — beim Abzweigen
+und Übersetzen blieb die Deklaration erhalten —, aber **es gab keinen Editor dafür.** Eine
+Spielleitung konnte Mana oder Ausdauer also gar nicht erst erklären; die Balken aus Feature 13
+waren auf das festgenagelt, was ein Paket mitbrachte. Genau das war die Lücke.
+
+### Der Editor
+
+In der Schmiede, unter „Berechnete Werte und Bedingungen", steht jetzt **„Balken der Figur"**:
+Feld, Beschriftung, Höchststand, und was Erschöpfung bedeutet.
+
+**Das Feld wird gewählt, nicht getippt.** Ein Vitalwert zeigt auf ein vorhandenes Zahlenfeld; ein
+Textfeld hätte keinen Stand und ein erfundener Name keinen Wert. Was der Parser ohnehin ablehnt,
+soll gar nicht erst eingebbar sein — und jedes Zahlenfeld trägt höchstens einen Balken, weil zwei
+zwei Wahrheiten wären.
+
+**Der Höchststand ist ein Ausdruck**, kein festgenagelter Wert, und bekommt denselben
+Formelbaukasten wie berechnete Werte. `actor.leben / 2` ist damit ein zulässiger Manavorrat.
+
+**Erschöpfung ist eine Entscheidung, keine Voreinstellung.** Nur wer ausdrücklich „Niederlage"
+wählt, macht aus einer leeren Leiste einen Zustand am Tisch — genau die Verwechslung, die das
+Regelpaket einst zum Sperren gezwungen hat (ein leergespielter Zähler ist kein Tod).
+
+### Ein Fehler im eigenen Code, sofort gefunden
+
+`{zahlenfelder.length && …}` hätte bei **null** Zahlenfeldern die Ziffer **„0"** auf die Seite
+gerendert — der klassische React-Stolperstein. Ersetzt durch einen echten Wahrheitswert.
+
+### Belege
+
+- `balken-entwurf.test.ts` **6/6 grün**: drei erklärte Balken werden ein gültiges Paket, **und die
+  Anzeige liest daraus wirklich drei** (Leben 40/100, Mana 5/50, Ausdauer 30/30); sie überleben
+  den Weg zurück in den Entwurf; ein Balken auf einem Textfeld wird abgewiesen; zwei Balken auf
+  demselben Feld ebenso; ein Höchststand aus Würfeln, unbekanntem Feld oder Wahrheitswert wird
+  abgelehnt, `actor.leben / 2` dagegen angenommen; und ein Paket ohne Balken bleibt eines ohne.
+- **Gegenprobe gefahren:** die Balken beim Übersetzen fallengelassen → **sechs** Fälle rot, quer
+  über zwei Dateien (auch der bestehende Abzweig-Test aus Feature 1 schlägt an). Danach
+  zurückgesetzt.
+- Kein Regress: `packages/client` + `packages/rules` **268/268 grün**, `typecheck` 0 Fehler,
+  `gate:boundaries` **453/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Ein Balken **ordnet sich nicht ein**: die Reihenfolge ist die des Anlegens, es gibt kein
+Verschieben wie bei den Ergebnisbereichen. Es gibt **keine Farbe je Balken** — Leben und Mana
+sehen gleich aus und werden durch ihre Beschriftung unterschieden; eine Farbwahl wäre eine
+Gestaltungsentscheidung, die niemand bestellt hat. Und ein geänderter Balken wird erst wirksam,
+wenn die Spielleitung die neue Paketfassung **aktiviert** — wie jede Regeländerung.

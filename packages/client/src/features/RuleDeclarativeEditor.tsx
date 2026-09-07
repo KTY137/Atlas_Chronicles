@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { parseFormula, type ComputedField, type FormulaFieldTypes, type RuleAssertion, type RuleAttribution, type RuleOutcome, type OutcomeComparison } from "@chronicle/rules";
+import { parseFormula, type ComputedField, type FormulaFieldTypes, type RuleAssertion, type RuleAttribution, type RuleOutcome, type OutcomeComparison, type RuleVital } from "@chronicle/rules";
 import { Button, Notice } from "@chronicle/ui";
 import { FormulaBuilder } from "./FormulaBuilder";
 import { fieldTypes, formulaDraft, formulaSource, compileFormula, moveItem, uniqueId, type FormulaDraft, type RuleDraft, type DraftAction } from "./rule-forge-model";
@@ -35,6 +35,47 @@ function AssertionEditor({ values, fields, onChange, limit, title }: { values: r
     </fieldset>)}<Button disabled={values.length >= limit} onClick={() => onChange([...values, { id: uniqueId("bedingung", values.map(v => v.id)), message: "Diese Werte sind noch nicht gültig.", expression: "true" }])}>Bedingung hinzufügen</Button>
   </section>;
 }
+/**
+ * Die Balken der Runde: welche Zahlen auf dem Bogen steigen und fallen — Leben, Mana, Ausdauer.
+ *
+ * **Das Feld wird gewählt, nicht getippt.** Ein Vitalwert zeigt auf ein vorhandenes Zahlenfeld;
+ * ein Textfeld hätte keinen Stand, und ein erfundener Name keinen Wert. Was der Parser ohnehin
+ * ablehnt, soll hier gar nicht erst eingebbar sein.
+ *
+ * **Erschöpfung ist eine Entscheidung, keine Voreinstellung.** Nur wer „Niederlage" wählt, macht
+ * aus einer leeren Leiste einen Zustand am Tisch — genau die Verwechslung, die das Regelpaket
+ * einst zum Sperren gezwungen hat (ein leergespielter Zähler ist kein Tod).
+ */
+function VitalEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: RuleDraft): void }) {
+  const vitals = draft.vitals ?? [], fields = { actor: fieldTypes(draft.fields), input: {} };
+  const zahlenfelder = draft.fields.filter(field => field.type === "integer" || field.type === "number");
+  const update = (index: number, patch: Partial<RuleVital>) =>
+    onChange({ ...draft, vitals: vitals.map((value, i) => i === index ? { ...value, ...patch } : value) });
+  const frei = zahlenfelder.filter(field => !vitals.some(vital => vital.id === field.id));
+  return <section><h3>Balken der Figur</h3>
+    <p className="rf-help">Leben, Mana, Ausdauer: eine Zahl auf dem Bogen, ein Höchststand und die Frage, was Erschöpfung bedeutet. Nur Zahlenfelder können Balken tragen.</p>
+    {!zahlenfelder.length ? <Notice>Dieses Regelwerk hat noch kein Zahlenfeld. Lege zuerst eines an — ein Balken braucht eine Zahl, die steigt und fällt.</Notice> : null}
+    {vitals.map((vital, i) => <fieldset className="rf-card" key={i}><legend>{vital.label || `Balken ${i + 1}`}</legend>
+      <div className="rf-form-grid">
+        <label>Feld auf dem Bogen<select value={vital.id} onChange={e => update(i, { id: e.target.value })}>
+          {zahlenfelder.map(field => <option key={field.id} value={field.id}>{field.label || field.id}</option>)}
+        </select></label>
+        <label>Beschriftung<input value={vital.label} maxLength={120} onChange={e => update(i, { label: e.target.value })} /></label>
+      </div>
+      <ExpressionInput label="Höchststand" value={vital.max} onChange={max => update(i, { max })} fields={fields} />
+      <label>Wenn der Wert 0 erreicht<select value={vital.depletion} onChange={e => update(i, { depletion: e.target.value as RuleVital["depletion"] })}>
+        <option value="none">Nur die Leiste ist leer</option>
+        <option value="defeat">Die Niederlage steht zur Bestätigung an</option>
+      </select></label>
+      <Button onClick={() => onChange({ ...draft, vitals: vitals.filter((_, index) => index !== i) })}>Balken entfernen</Button>
+    </fieldset>)}
+    <Button disabled={vitals.length >= 8 || !frei.length} onClick={() => onChange({ ...draft, vitals: [...vitals, {
+      id: frei[0]!.id, label: frei[0]!.label || frei[0]!.id, max: String(frei[0]!.maximum || "100"), depletion: "none",
+    }] })}>Balken hinzufügen</Button>
+    {/* `zahlenfelder.length && …` haette bei null Feldern die Ziffer 0 auf die Seite gerendert. */}
+    {zahlenfelder.length > 0 && !frei.length && vitals.length < 8 ? <p className="rf-help">Jedes Zahlenfeld trägt höchstens einen Balken; für einen weiteren braucht es ein weiteres Feld.</p> : null}
+  </section>;
+}
 export function RuleDeclarativeEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: RuleDraft): void }) {
   if (draft.schemaVersion === 1) return <section><h3>Berechnete Werte und Bedingungen</h3><p>Diese Ergänzungen verwenden das erweiterte Paketformat. Bereits gespeicherte Würfelbelege behalten ihre ursprünglichen Regeln.</p><Button onClick={() => onChange({ ...draft, schemaVersion: 2 })}>Erweiterte Regeln im Entwurf aktivieren</Button></section>;
   const computed = draft.computed ?? [], fields = { actor: fieldTypes(draft.fields), input: {} };
@@ -45,6 +86,7 @@ export function RuleDeclarativeEditor({ draft, onChange }: { draft: RuleDraft; o
       <Button onClick={() => onChange({ ...draft, computed: computed.filter((_, index) => i !== index) })}>Berechneten Wert entfernen</Button>
     </fieldset>)}<Button disabled={computed.length >= 64} onClick={() => onChange({ ...draft, computed: [...computed, { id: uniqueId("berechnet", [...draft.fields.map(f => f.id), ...computed.map(v => v.id)]), label: "Neuer berechneter Wert", expression: "0" }] })}>Berechneten Wert hinzufügen</Button>
     <AssertionEditor title="Gültigkeit des Bogens" values={draft.constraints ?? []} limit={64} fields={fields} onChange={constraints => onChange({ ...draft, constraints })} />
+    <VitalEditor draft={draft} onChange={onChange} />
   </>;
 }
 export function RuleActionExtensions({ draft, action, onChange }: { draft: RuleDraft; action: DraftAction; onChange(action: DraftAction): void }) {
