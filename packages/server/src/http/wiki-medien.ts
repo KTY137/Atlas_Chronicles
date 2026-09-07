@@ -57,6 +57,14 @@ export function registerWikiMedien(app: FastifyInstance, db: Db, config: AppConf
       return medien.bytesAnnehmen(await user(req.headers.cookie), req.params.campaignId, req.params.id, body);
     });
 
+  /**
+   * Ein Bild loswerden. `DELETE`, weil es genau das ist — und weil ein `POST .../loeschen` einen
+   * Vorgang erfunden haette, den das Protokoll schon kennt.
+   */
+  app.delete<{ Params: Item }>("/api/campaigns/:campaignId/wiki-medien/:id",
+    { schema: { params: Type.Object({ campaignId: Type.String(), id: Id }, closed) } }, async (req) =>
+      medien.loeschen(await user(req.headers.cookie), req.params.campaignId, req.params.id));
+
   app.get<{ Params: Item }>("/api/campaigns/:campaignId/wiki-medien/:id/datei", async (req, reply) => {
     const datei = await medien.ausliefern(await user(req.headers.cookie), req.params.campaignId, req.params.id);
     return reply

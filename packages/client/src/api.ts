@@ -40,6 +40,8 @@ export interface WikiAsset {
   verwendetVon: readonly string[]; verwaist: boolean; imBestand: boolean; vorhanden: boolean; formatWiderspruch: boolean;
   /** Selbst hochgeladen statt aus einem Wiki geholt — „im Quell-Wiki nicht vorhanden“ wäre hier falsch. */
   selbstHochgeladen: boolean;
+  /** Falsch, sobald ein Artikel oder eine Lootkarte dieses Bild zeigt. Der Server prüft es erneut. */
+  loeschbar: boolean;
 }
 export interface WikiMedienBestand {
   assets: readonly WikiAsset[];

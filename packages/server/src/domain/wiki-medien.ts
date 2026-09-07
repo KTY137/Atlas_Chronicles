@@ -162,8 +162,12 @@ export function createWikiMedien(db: Db, cfg: DomainConfig = {}) {
   /** Der Bestand. Nur die Spielleitung sieht ihn — er nennt Dateien, die noch niemand sehen darf. */
   async function bestand(userId: string, campaignId: string) {
     await campaigns.requireMember(userId, campaignId, ["leitung"]);
+    // Die Bindung wird EINMAL je Bestand geholt und auf die Zeilen verteilt: eine Abfrage je Bild
+    // waere bei 5.000 Bildern derselbe Befund zu einem tausendfachen Preis.
+    const gebunden = await gebundeneBilder(db, campaignId);
     const rows = (await db.query<Row>(`SELECT ${SPALTEN} FROM wiki_assets WHERE campaign_id=$1
-      ORDER BY verwaist, dateiname COLLATE "C"`, [campaignId])).rows.map(zeile);
+      ORDER BY verwaist, dateiname COLLATE "C"`, [campaignId])).rows
+      .map((row) => ({ ...zeile(row), loeschbar: !gebunden.has(row.id) }));
     const offen = rows.filter((row) => !row.vorhanden && !row.verwaist && row.quellUrl);
     return {
       assets: rows,
@@ -220,6 +224,51 @@ export function createWikiMedien(db: Db, cfg: DomainConfig = {}) {
       if (!belegt || belegt.sha256 !== null || belegt.import_id !== null)
         throw new ImportValidationError("dateiname", "a picture with this name already exists in this campaign");
       return { id: belegt.id, dateiname, angelegt: false as const };
+    });
+  }
+
+  /**
+   * Wer zeigt dieses Bild? Beide Bindungen in EINER Abfrage je Kampagne, nicht je Zeile:
+   *
+   * - eine Passage, die es einbindet (`wiki_asset_uses`), und
+   * - ein Kartengesicht einer Gegenstandsvorlage (`definition->>'bildAssetId'`).
+   *
+   * Dieselben zwei Gründe, aus denen ein Bild überhaupt ausgeliefert wird — die Liste der
+   * Sichtbarkeitsgründe und die Liste der Löschsperren dürfen nicht auseinanderlaufen.
+   */
+  async function gebundeneBilder(tx: Db, campaignId: string): Promise<ReadonlySet<string>> {
+    const [passagen, gesichter] = await Promise.all([
+      tx.query<{ asset_id: string }>("SELECT DISTINCT asset_id FROM wiki_asset_uses WHERE campaign_id=$1", [campaignId]),
+      tx.query<{ id: string }>(`SELECT DISTINCT definition->>'bildAssetId' AS id FROM item_template_revisions
+        WHERE campaign_id=$1 AND definition->>'bildAssetId' IS NOT NULL`, [campaignId]),
+    ]);
+    return new Set([...passagen.rows.map(row => row.asset_id), ...gesichter.rows.map(row => row.id)]);
+  }
+
+  /**
+   * Ein Bild wieder loswerden — aber nur eines, das niemand zeigt.
+   *
+   * Ohne diesen Weg war ein Vertipper endgültig: der Name blieb je Kampagne für immer belegt, und
+   * eine falsch hochgeladene Datei lag bis zum Ende der Runde im Bestand. Das ist die Lücke, die
+   * beim Bau des Uploads offen blieb, und sie gehört zum selben Feature.
+   *
+   * **Die Sperre ist der eigentliche Inhalt.** `wiki_asset_uses` hängt per `ON DELETE CASCADE` an
+   * der Bildzeile: ein unbedachtes Löschen nähme die Verwendungen stillschweigend mit und ließe
+   * Artikel mit leeren Bildrahmen zurück. Und eine Gegenstandsvorlage ist unveränderlich und
+   * inhaltsgehasht — ihr Gesicht nachträglich ins Leere zeigen zu lassen wäre eine Karte, die
+   * ihre eigene Vergangenheit verliert. Deshalb: kein Kaskadenlöschen, sondern eine Absage, die
+   * sagt, wer das Bild noch hält.
+   */
+  async function loeschen(userId: string, campaignId: string, assetId: string) {
+    await campaigns.requireMember(userId, campaignId, ["leitung"]);
+    return db.transaction(async (tx) => {
+      const row = (await tx.query<{ dateiname: string }>(
+        "SELECT dateiname FROM wiki_assets WHERE id=$1 AND campaign_id=$2 FOR UPDATE", [assetId, campaignId])).rows[0];
+      if (!row) throw new Gone("asset");
+      if ((await gebundeneBilder(tx, campaignId)).has(assetId))
+        throw new ImportValidationError("bild", "this picture is shown by an article or an item card and cannot be deleted");
+      await tx.query("DELETE FROM wiki_assets WHERE id=$1 AND campaign_id=$2", [assetId, campaignId]);
+      return { geloescht: true as const, dateiname: row.dateiname };
     });
   }
 
@@ -296,5 +345,5 @@ export function createWikiMedien(db: Db, cfg: DomainConfig = {}) {
     return { ok: true as const };
   }
 
-  return { bestand, anlegen, bytesAnnehmen, ausliefern, lizenzSetzen };
+  return { bestand, anlegen, loeschen, bytesAnnehmen, ausliefern, lizenzSetzen };
 }

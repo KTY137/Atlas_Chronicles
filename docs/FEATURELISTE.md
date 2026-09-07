@@ -54,7 +54,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 14 | Dynamisch setzbare Bars | ☑ | Balken-Editor in der Schmiede: Feld, Höchststand, Erschöpfung |
 | 15 | KI-vorgeschlagene Änderungen | ◐ | Chronist-Regelwerk grün; Modellknoten bewusst offen (Egress-Entscheidung) |
 | 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☑ | Beutetabelle an der Vorlage; Kartenart wählbar (Siedlung offen) |
-| 17 | PNGs hochladbar | ☑ | eigener Eingang in den Bildbestand; Kartengesicht für Haltende sichtbar |
+| 17 | PNGs hochladbar | ☑ | eigener Eingang in den Bildbestand; Kartengesicht für Haltende sichtbar; Löschweg mit Sperre |
 | 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☑ | frei und hinter der Tür erzeugbar; die Kartenart reicht jetzt durch |
 
 ## Feature 1 — Kampfsystem: gemessen, nicht vermutet
@@ -1335,3 +1335,40 @@ nicht galt.
 nicht die Kammerzahl — der Keim gehört dem Knoten, und wer hinter einer Tür an zwölf Schaltern
 dreht, baut keinen Ort mehr, sondern konfiguriert einen. **Die Siedlung** ist weiterhin nicht
 angeschlossen (andere Ergebnisform, eigene Entscheidung — siehe Feature 16).
+
+### Nachtrag Feature 17 — der Löschweg, 2026-09-07 21:20
+
+Die Liste war durch; offen blieb die Lücke, die ich beim Upload selbst protokolliert hatte:
+**es gab keinen Weg, ein Bild wieder loszuwerden.** Ein Vertipper war endgültig — der Name blieb
+je Kampagne für immer belegt, und eine falsch hochgeladene Datei lag bis zum Ende der Runde im
+Bestand. Das ist kein neues Feature, sondern die Vollständigkeit von #17.
+
+**Die Sperre ist der eigentliche Inhalt, nicht der Knopf.** `wiki_asset_uses` hängt per
+`ON DELETE CASCADE` an der Bildzeile: ein unbedachtes Löschen nähme die Verwendungen
+stillschweigend mit und ließe Artikel mit leeren Bildrahmen zurück. Und eine Gegenstandsvorlage
+ist unveränderlich und inhaltsgehasht — ihr Gesicht nachträglich ins Leere zeigen zu lassen wäre
+eine Karte, die ihre eigene Vergangenheit verliert. Also: **kein Kaskadenlöschen, sondern eine
+Absage**, und die Liste sagt es schon vor dem Klick (`loeschbar`).
+
+**Eine Quelle für zwei Fragen.** Die Bindungen, die das Löschen sperren, sind genau die beiden
+Gründe, aus denen ein Bild überhaupt ausgeliefert wird — eine Passage, die es zeigt, und ein
+Kartengesicht. Beides steht in **einer** Abfrage (`gebundeneBilder`), einmal je Bestand statt
+einmal je Zeile: bei 5.000 Bildern wäre derselbe Befund sonst tausendfach bezahlt.
+
+### Belege
+
+- `bild-hochladen.test.ts` **12/12 grün** (vorher 8): ein ungenutztes Bild verschwindet **und der
+  Name ist danach wieder frei** (nachgewiesen, nicht behauptet: derselbe Name trägt ein neues
+  Bild mit neuer Kennung); ein Bild hinter einer Lootkarte wird **nicht** entfernt und ist danach
+  noch byteidentisch abrufbar; eine Spielerin darf nicht löschen und ein fremdes Bild gibt es
+  nicht; und über die echte Anwendung entfernt `DELETE` — **ohne passenden `Origin` mit 404**.
+- **Gegenprobe gefahren:** Sperre entfernt → der Lootkartenfall rot, sonst nichts. Zurückgesetzt.
+- Kein Regress: `bild-hochladen` + `wiki-medien` + `alles-in-einer-datei` **24/24**,
+  `packages/client` **150/150**, `typecheck` 0 Fehler, `gate:boundaries` **460/8/0**, Build grün.
+
+### Weiterhin offen
+
+**Ein gebundenes Bild lässt sich nicht freigeben.** Wer es wirklich loswerden will, muss erst die
+Passage ändern oder die Vorlage archivieren — es gibt keinen Weg „Bild aus allen Karten lösen".
+Das ist Absicht: eine unveränderliche Vorlage nachträglich zu entkernen wäre schlimmer als ein
+Bild, das bleibt.

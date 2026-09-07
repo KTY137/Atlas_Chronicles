@@ -252,7 +252,8 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
 .medien-upload { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
 .medien-upload label { display: grid; gap: 5px; font-size: 12px; color: var(--text-muted); }
 .medien-upload input, .medien-upload select { min-height: 34px; font-size: 12px; }
-.medien-text button { margin-top: 8px; }
+.medien-text .button-row { margin-top: 8px; gap: 8px; flex-wrap: wrap; }
+.medien-gebunden { font-size: 11px; align-self: center; }
 .medien-lizenz { display: grid; gap: 6px; justify-items: start; }
 .medien-lizenz small { color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; }
 .medien-lizenz select { min-height: 34px; padding: 5px 8px; font-size: 11px; }

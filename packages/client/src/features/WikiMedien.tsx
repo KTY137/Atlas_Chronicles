@@ -125,6 +125,19 @@ export function WikiMedien({ campaignId, onClose }: { campaignId: string; onClos
     }
   });
 
+  /**
+   * Ein Bild wieder loswerden. Der Knopf steht nur an Zeilen, die niemand zeigt — und der Server
+   * prüft es trotzdem noch einmal: was die Liste beim Laden wusste, kann inzwischen veraltet sein.
+   */
+  const loesche = (asset: WikiAsset) => {
+    if (!window.confirm(`„${asset.dateiname}“ endgültig aus dem Bestand entfernen? Das lässt sich nicht rückgängig machen.`)) return;
+    void task.run(async () => {
+      await api(apiPath(campaignId, `/wiki-medien/${encodeURIComponent(asset.id)}`), { method: "DELETE" });
+      setAngekommen(null);
+      setRevision((value) => value + 1);
+    });
+  };
+
   const setzeLizenz = (asset: WikiAsset, status: WikiAsset["lizenzStatus"]) => task.run(async () => {
     await api(apiPath(campaignId, `/wiki-medien/${encodeURIComponent(asset.id)}/lizenz`), { method: "POST", body: { status } });
     setRevision((value) => value + 1);
@@ -235,9 +248,16 @@ export function WikiMedien({ campaignId, onClose }: { campaignId: string; onClos
               </p>
               {/* Auch für eine Wiki-Zeile: was das CDN nicht mehr hergibt, kann von Hand kommen —
                   dieselbe Zeile, dieselbe Route, keine zweite Geschichte über dieselbe Datei. */}
-              {!asset.vorhanden ? <Button variant="quiet" disabled={task.busy}
-                onClick={() => { nachreichungZiel.current = asset; nachreichung.current?.click(); }}>
-                <Upload size={14} /> Datei wählen</Button> : null}
+              <div className="button-row">
+                {!asset.vorhanden ? <Button variant="quiet" disabled={task.busy}
+                  onClick={() => { nachreichungZiel.current = asset; nachreichung.current?.click(); }}>
+                  <Upload size={14} /> Datei wählen</Button> : null}
+                {/* Kein Kaskadenlöschen: ein Bild, das ein Artikel oder eine Lootkarte zeigt,
+                    ließe leere Rahmen zurück. Der Knopf sagt das, statt ihn wortlos zu sperren. */}
+                {asset.loeschbar
+                  ? <Button variant="quiet" disabled={task.busy} onClick={() => loesche(asset)}><Trash2 size={14} /> Entfernen</Button>
+                  : <span className="muted medien-gebunden" title="Solange ein Artikel oder eine Lootkarte dieses Bild zeigt, bleibt es im Bestand.">Wird gezeigt — nicht entfernbar</span>}
+              </div>
               {asset.formatWiderspruch ? <p className="medien-warnung"><CircleAlert size={14} aria-hidden="true" /> Der Name im Wiki sagt {asset.behaupteterMime?.replace("image/", "")}, geliefert wurde {asset.mime?.replace("image/", "")}.</p> : null}
             </div>
             <div className="medien-lizenz">

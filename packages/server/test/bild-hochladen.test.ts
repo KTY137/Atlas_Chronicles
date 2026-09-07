@@ -176,4 +176,59 @@ describe("Ein eigenes Bild hochladen", () => {
     const { assets } = await medien.bestand(gm, campaign);
     expect(assets.filter((asset) => asset.dateiname.includes("herkunft") || asset.dateiname.includes("heimlich") || asset.dateiname.includes("erfunden"))).toHaveLength(0);
   });
+
+  /**
+   * EIN BILD WIEDER LOSWERDEN — und die Sperre, die den eigentlichen Inhalt ausmacht.
+   *
+   * Ohne Loeschweg war ein Vertipper endgueltig: der Name blieb je Kampagne fuer immer belegt.
+   * Mit einem unbedachten Loeschweg waere es schlimmer — `wiki_asset_uses` haengt per
+   * ON DELETE CASCADE an der Bildzeile, ein Loeschen naehme die Verwendungen stillschweigend mit
+   * und liesse Artikel mit leeren Rahmen zurueck.
+   */
+  it("entfernt ein Bild, das niemand zeigt — und der Name ist danach wieder frei", async () => {
+    const bild = await medien.anlegen(gm, campaign, { dateiname: "vertippt.png" });
+    await medien.bytesAnnehmen(gm, campaign, bild.id, png());
+    expect((await medien.bestand(gm, campaign)).assets.find((a) => a.id === bild.id)!.loeschbar).toBe(true);
+
+    expect(await medien.loeschen(gm, campaign, bild.id)).toMatchObject({ geloescht: true, dateiname: "vertippt.png" });
+    expect((await medien.bestand(gm, campaign)).assets.some((a) => a.id === bild.id)).toBe(false);
+    // Der Beleg, dass wirklich Platz entstanden ist: derselbe Name traegt wieder ein neues Bild.
+    const neu = await medien.anlegen(gm, campaign, { dateiname: "vertippt.png" });
+    expect(neu.angelegt).toBe(true);
+    expect(neu.id).not.toBe(bild.id);
+  });
+
+  it("weigert sich, ein Bild zu entfernen, das eine Lootkarte zeigt", async () => {
+    const bild = await medien.anlegen(gm, campaign, { dateiname: "gebunden.png" });
+    await medien.bytesAnnehmen(gm, campaign, bild.id, png());
+    await actors.createItemTemplate(gm, campaign, { ...befehl(), definition: {
+      schemaVersion: 2, name: "Gebundener Kelch", loreEntryId: null, tags: [], seltenheit: "selten",
+      kategorie: "Gefaess", bildAssetId: bild.id, spruch: "", zeilen: [],
+    } });
+    // Die Liste sagt es vor dem Klick, der Server sagt es nochmal danach.
+    expect((await medien.bestand(gm, campaign)).assets.find((a) => a.id === bild.id)!.loeschbar).toBe(false);
+    await expect(medien.loeschen(gm, campaign, bild.id)).rejects.toThrow(ImportValidationError);
+    // Und das Bild ist noch da: eine Absage darf nichts halb erledigen.
+    expect((await medien.ausliefern(gm, campaign, bild.id)).daten.toString("base64")).toBe(PNG_BASE64);
+  });
+
+  it("laesst nur die Spielleitung entfernen und kennt kein fremdes Bild", async () => {
+    const bild = await medien.anlegen(gm, campaign, { dateiname: "fremd.png" });
+    await expect(medien.loeschen(spielerin, campaign, bild.id)).rejects.toThrow(Gone);
+    await expect(medien.loeschen(gm, campaign, randomUUID())).rejects.toThrow(Gone);
+    // Der abgewiesene Versuch hat die Zeile nicht angeruehrt.
+    expect((await medien.bestand(gm, campaign)).assets.some((a) => a.id === bild.id)).toBe(true);
+  });
+
+  it("entfernt ueber die echte Anwendung mit DELETE — und nicht ohne Herkunft", async () => {
+    const angelegt = await post("/wiki-medien", { dateiname: "per-route.png" }, gmCookie);
+    const id = angelegt.json().id as string;
+    const entfernen = (origin: string | null) => app.inject({ method: "DELETE",
+      url: `/api/campaigns/${campaign}/wiki-medien/${id}`,
+      headers: { cookie: gmCookie, ...(origin === null ? {} : { origin }) } });
+    // Auch ein Loeschen ist ein Schreibzugriff: ohne passenden Origin antwortet die Anwendung 404.
+    expect((await entfernen(null)).statusCode).toBe(404);
+    expect((await entfernen(config.origin)).statusCode).toBe(200);
+    expect((await medien.bestand(gm, campaign)).assets.some((a) => a.id === id)).toBe(false);
+  });
 });
