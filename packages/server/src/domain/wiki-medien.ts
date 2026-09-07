@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { vermisseBild, formatWiderspruch, ImportValidationError, type EronImportResult } from "@chronicle/io";
 import type { LizenzStatus } from "@chronicle/chronik";
 import type { Db } from "../db/index.ts";
-import { createCampaigns, type DomainConfig } from "./campaigns.ts";
+import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
+import { listControlledActorIds } from "./actors.ts";
 import { Conflict, Gone } from "./errors.ts";
 
 /**
@@ -21,6 +23,15 @@ export const WIKI_ASSET_GRENZEN = Object.freeze({
   /** Bilder je Kampagne. Ein Wiki mit mehr Dateien importiert Artikel trotzdem vollständig. */
   proKampagne: 5_000,
 });
+
+/**
+ * Steuerzeichen und Pfadtrenner im Dateinamen. Der Name ist hier reiner Anzeigetext — er wird nie
+ * zu einem Pfad und nie zu einer Adresse, die Bytes liegen in der Zeile. Genau deshalb soll er
+ * auch nicht so aussehen: „karten/burg.png" verspricht einen Ordner, den es nicht gibt.
+ */
+const PFADTRENNER = ["/", String.fromCharCode(92)];
+const unerlaubterName = (name: string): boolean =>
+  [...name].some(zeichen => zeichen < " " || zeichen === String.fromCharCode(127) || PFADTRENNER.includes(zeichen));
 
 export interface WikiAssetZeile {
   readonly id: string;
@@ -42,6 +53,12 @@ export interface WikiAssetZeile {
   readonly imBestand: boolean;
   readonly vorhanden: boolean;
   readonly formatWiderspruch: boolean;
+  /**
+   * Selbst hochgeladen statt aus einem Wiki geholt. Abgeleitet aus `import_id IS NULL`, also aus
+   * dem, was ohnehin in der Zeile steht — keine zweite Wahrheit daneben. Die Anzeige braucht den
+   * Unterschied: „im Quell-Wiki nicht vorhanden" ist über ein eigenes Bild schlicht falsch.
+   */
+  readonly selbstHochgeladen: boolean;
 }
 
 interface Row {
@@ -49,7 +66,7 @@ interface Row {
   breite: number | null; hoehe: number | null; behaupteter_mime: string | null;
   lizenz_status: LizenzStatus; lizenz_quelle: string | null; beschreibungsseite_url: string | null;
   quell_url: string | null; urheber: string | null; hochgeladen_am: string | null;
-  verwendet_von: string[]; verwaist: boolean; im_bestand: boolean;
+  verwendet_von: string[]; verwaist: boolean; im_bestand: boolean; import_id: string | null;
 }
 
 const zeile = (row: Row): WikiAssetZeile => ({
@@ -60,10 +77,11 @@ const zeile = (row: Row): WikiAssetZeile => ({
   hochgeladenAm: row.hochgeladen_am, verwendetVon: row.verwendet_von ?? [], verwaist: row.verwaist,
   imBestand: row.im_bestand, vorhanden: row.mime !== null,
   formatWiderspruch: row.mime !== null && formatWiderspruch(row.behaupteter_mime ?? undefined, row.mime),
+  selbstHochgeladen: row.import_id === null,
 });
 
 const SPALTEN = `id,dateiname,mime,sha256,bytes,breite,hoehe,behaupteter_mime,lizenz_status,lizenz_quelle,
-  beschreibungsseite_url,quell_url,urheber,hochgeladen_am,verwendet_von,verwaist,im_bestand`;
+  beschreibungsseite_url,quell_url,urheber,hochgeladen_am,verwendet_von,verwaist,im_bestand,import_id`;
 
 /**
  * Schreibt die Entwürfe eines angenommenen Imports. Läuft INNERHALB der Import-Transaktion:
@@ -160,6 +178,50 @@ export function createWikiMedien(db: Db, cfg: DomainConfig = {}) {
   }
 
   /**
+   * Ein Bild, das kein Wiki mitgebracht hat.
+   *
+   * Der Bestand war die zweite Hälfte des Imports — und damit für jede Spielleitung verschlossen,
+   * die nie ein Wiki importiert hat: Bytes ließen sich nur in eine Zeile schieben, die der Import
+   * angelegt hatte. Wer eigene Bilder hat, bekommt hier dieselbe Zeile von Hand. Kein zweiter
+   * Bilderweg, sondern ein zweiter Eingang in denselben: die Zeile entsteht OHNE Bytes, die Bytes
+   * kommen danach durch `bytesAnnehmen` und damit durch dieselbe Vermessung wie jede andere Datei.
+   *
+   * **Wiederholbar.** Ein zweiter Versuch mit demselben Namen greift auf die eigene, noch leere
+   * Zeile zurück, statt einen Namen für immer zu verbrennen: der erste Versuch kann an den Bytes
+   * gescheitert sein, der Name ist je Kampagne eindeutig, und eine Zeile ohne Bytes zeigt nichts
+   * an, was verlorengehen könnte. Eine Zeile MIT Bytes und jede Zeile aus einem Import bleiben
+   * unangetastet — ein Upload überschreibt kein fremdes Bild.
+   *
+   * Der Lizenzstand kommt von einem Menschen und wird als solcher notiert (`mensch`): niemand hat
+   * hier ein Wiki befragt, und ein späterer Reimport darf die Angabe nicht still zurücknehmen.
+   */
+  async function anlegen(userId: string, campaignId: string, input: { dateiname: string; lizenz?: LizenzStatus; quelle?: string | null }) {
+    const member = await campaigns.requireMember(userId, campaignId, ["leitung"]);
+    const dateiname = input.dateiname.trim();
+    if (!dateiname || dateiname.length > 512) throw new ImportValidationError("dateiname", "a name between 1 and 512 characters is required");
+    if (unerlaubterName(dateiname)) throw new ImportValidationError("dateiname", "the name must not contain path separators or control characters");
+    return db.transaction(async (tx) => {
+      const bestand = (await tx.query<{ count: string }>("SELECT count(*) FROM wiki_assets WHERE campaign_id=$1", [campaignId])).rows[0];
+      if (Number(bestand?.count ?? 0) >= WIKI_ASSET_GRENZEN.proKampagne)
+        throw new ImportValidationError("bild", `this campaign already holds ${WIKI_ASSET_GRENZEN.proKampagne} pictures`);
+      const id = randomUUID();
+      // `ON CONFLICT` statt „vorher nachsehen": zwei gleichzeitige Uploads desselben Namens sind
+      // sonst ein Rennen, das die Eindeutigkeit als 500 sichtbar macht statt als Antwort.
+      const angelegt = await tx.query<{ id: string }>(`INSERT INTO wiki_assets(id,campaign_id,universe_id,dateiname,
+        lizenz_status,lizenz_quelle,lizenz_gesetzt_von,verwendet_von,verwaist,im_bestand,created_by,created_at)
+        VALUES($1,$2,$3,$4,$5,$6,'mensch','[]'::jsonb,false,false,$7,$8)
+        ON CONFLICT (campaign_id,dateiname) DO NOTHING RETURNING id`,
+        [id, campaignId, member.universeId, dateiname, input.lizenz ?? "unbekannt", input.quelle ?? null, userId, now()]);
+      if (angelegt.rowCount) return { id, dateiname, angelegt: true as const };
+      const belegt = (await tx.query<{ id: string; sha256: string | null; import_id: string | null }>(
+        "SELECT id,sha256,import_id FROM wiki_assets WHERE campaign_id=$1 AND dateiname=$2", [campaignId, dateiname])).rows[0];
+      if (!belegt || belegt.sha256 !== null || belegt.import_id !== null)
+        throw new ImportValidationError("dateiname", "a picture with this name already exists in this campaign");
+      return { id: belegt.id, dateiname, angelegt: false as const };
+    });
+  }
+
+  /**
    * Bytes annehmen. Die Prüfung entscheidet über Typ und Maße; der Dateiname des Wikis wird
    * dabei nur noch als Behauptung mitgeführt. Idempotent: dieselben Bytes zweimal sind kein
    * Fehler, andere Bytes für dieselbe Datei sind einer.
@@ -183,26 +245,44 @@ export function createWikiMedien(db: Db, cfg: DomainConfig = {}) {
   }
 
   /**
-   * Auslieferung. Die einzige Frage vor einem Bild ist dieselbe wie vor einem Absatz: hält diese
-   * Leserin eine Passage, die es zeigt? Die Spielleitung sieht alles; alle anderen sehen ein
-   * Bild genau dann, wenn ihnen eine Passage damit freigegeben wurde. Ein Bild, das an einer
-   * verborgenen Passage hängt, ist verborgen — sonst wäre die Freigabe von Wissen umgehbar,
-   * indem man die Bilder direkt abruft.
+   * Auslieferung. Die Spielleitung sieht alles; für alle anderen gibt es genau zwei Gründe, ein
+   * Bild zu sehen — und beide sind Gründe, die sie schon haben, bevor sie das Bild abrufen:
+   *
+   * 1. **Eine Passage, die es zeigt, ist ihnen freigegeben.** Ein Bild, das an einer verborgenen
+   *    Passage hängt, ist verborgen — sonst wäre die Freigabe von Wissen umgehbar, indem man die
+   *    Bilder direkt abruft.
+   * 2. **Sie halten einen Gegenstand, der es als Kartengesicht trägt.** Das Bild einer Lootkarte
+   *    IST die Karte; wer den Gegenstand im Inventar hat, sieht sein Bild. Ohne diesen Fall wäre
+   *    jede Karte in der Hand einer Spielerin ein leerer Rahmen — und genau das war sie, solange
+   *    nur der erste Grund zählte.
+   *
+   * Welche Figuren jemand öffnen darf, entscheidet weiterhin `listControlledActorIds`: dieselbe
+   * Regel wie im Inventar selbst, nicht eine zweite daneben, die eines Tages auseinanderläuft.
    */
   async function ausliefern(userId: string, campaignId: string, assetId: string) {
     const member = await campaigns.requireMember(userId, campaignId);
     const row = (await db.query<{ mime: string | null; daten: string | null; sha256: string | null }>(
       "SELECT mime,daten,sha256 FROM wiki_assets WHERE id=$1 AND campaign_id=$2", [assetId, campaignId])).rows[0];
     if (!row?.daten || !row.mime) throw new Gone("asset");
-    if (member.role !== "leitung") {
-      if (!member.actorId) throw new Gone("asset");
-      const erlaubt = await db.query(`SELECT 1 FROM wiki_asset_uses u
+    if (member.role !== "leitung" && !(await darfSehen(member, assetId))) throw new Gone("asset");
+    return { mime: row.mime, sha256: row.sha256!, daten: Buffer.from(row.daten, "base64") };
+  }
+
+  async function darfSehen(member: Membership, assetId: string): Promise<boolean> {
+    if (member.actorId) {
+      const ausPassage = await db.query(`SELECT 1 FROM wiki_asset_uses u
         JOIN revelations r ON r.passage_id=u.passage_id AND r.campaign_id=u.campaign_id
         WHERE u.asset_id=$1 AND u.campaign_id=$2 AND r.actor_id=$3 AND r.revoked_at IS NULL LIMIT 1`,
-        [assetId, campaignId, member.actorId]);
-      if (!erlaubt.rowCount) throw new Gone("asset");
+        [assetId, member.campaignId, member.actorId]);
+      if (ausPassage.rowCount) return true;
     }
-    return { mime: row.mime, sha256: row.sha256!, daten: Buffer.from(row.daten, "base64") };
+    const meine = await listControlledActorIds(db, member);
+    if (!meine.length) return false;
+    const ausInventar = await db.query(`SELECT 1 FROM item_instances i
+      JOIN item_template_revisions r ON r.template_id=i.template_id AND r.campaign_id=i.campaign_id AND r.revision=i.template_revision
+      WHERE i.campaign_id=$1 AND i.archived_at IS NULL AND i.holder_actor_id=ANY($2::text[])
+        AND r.definition->>'bildAssetId'=$3 LIMIT 1`, [member.campaignId, meine, assetId]);
+    return ausInventar.rowCount > 0;
   }
 
   /** Ein Mensch überstimmt das Importurteil. Das ist eine Entscheidung und wird als solche notiert. */
@@ -214,5 +294,5 @@ export function createWikiMedien(db: Db, cfg: DomainConfig = {}) {
     return { ok: true as const };
   }
 
-  return { bestand, bytesAnnehmen, ausliefern, lizenzSetzen };
+  return { bestand, anlegen, bytesAnnehmen, ausliefern, lizenzSetzen };
 }

@@ -36,6 +36,8 @@ export interface WikiAsset {
   lizenzStatus: "frei" | "zitat" | "unbekannt"; lizenzQuelle: string | null;
   beschreibungsseiteUrl: string | null; quellUrl: string | null; urheber: string | null; hochgeladenAm: string | null;
   verwendetVon: readonly string[]; verwaist: boolean; imBestand: boolean; vorhanden: boolean; formatWiderspruch: boolean;
+  /** Selbst hochgeladen statt aus einem Wiki geholt — „im Quell-Wiki nicht vorhanden“ wäre hier falsch. */
+  selbstHochgeladen: boolean;
 }
 export interface WikiMedienBestand {
   assets: readonly WikiAsset[];

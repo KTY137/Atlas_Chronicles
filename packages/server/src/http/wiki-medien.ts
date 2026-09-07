@@ -17,8 +17,11 @@ import { createWikiMedien, WIKI_ASSET_GRENZEN } from "../domain/wiki-medien.ts";
 export function registerWikiMedien(app: FastifyInstance, db: Db, config: AppConfig) {
   const identity = createIdentity(db, config), medien = createWikiMedien(db, config);
   const closed = { additionalProperties: false };
-  const lizenz = Type.Object({
-    status: Type.Union([Type.Literal("frei"), Type.Literal("zitat"), Type.Literal("unbekannt")]),
+  const status = Type.Union([Type.Literal("frei"), Type.Literal("zitat"), Type.Literal("unbekannt")]);
+  const lizenz = Type.Object({ status, quelle: Type.Optional(Type.String({ maxLength: 2000 })) }, closed);
+  const anlage = Type.Object({
+    dateiname: Type.String({ minLength: 1, maxLength: 512 }),
+    lizenz: Type.Optional(status),
     quelle: Type.Optional(Type.String({ maxLength: 2000 })),
   }, closed);
   type Scope = { campaignId: string };
@@ -27,6 +30,14 @@ export function registerWikiMedien(app: FastifyInstance, db: Db, config: AppConf
 
   app.get<{ Params: Scope }>("/api/campaigns/:campaignId/wiki-medien", async (req) =>
     medien.bestand(await user(req.headers.cookie), req.params.campaignId));
+
+  /**
+   * Eine Zeile für ein eigenes Bild. Zwei Aufrufe statt einem: erst die Zeile, dann dieselben
+   * Bytes durch dieselbe Vermessung wie bei jeder Wiki-Datei. Ein Weg für Bilder, zwei Eingänge.
+   */
+  app.post<{ Params: Scope; Body: Static<typeof anlage> }>("/api/campaigns/:campaignId/wiki-medien",
+    { schema: { body: anlage, params: Type.Object({ campaignId: Type.String() }, closed) } }, async (req) =>
+      medien.anlegen(await user(req.headers.cookie), req.params.campaignId, req.body));
 
   /**
    * Jeder Bildtyp landet im selben Rohpuffer. Der `Content-Type` des Uploads ist eine Behauptung

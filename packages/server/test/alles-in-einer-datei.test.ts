@@ -47,12 +47,13 @@ describe("Alles in einer Datei", () => {
     const docs = createDocuments(quelle, cfg);
     await docs.saveEntry(gm, campaign, { title: "Der Hafen", passages: [{ inhalt: { kind: "absatz", inhalt: [{ text: "Die Kaimauer trägt.", marks: [] }] } }] });
 
-    // Ein Bild MIT Bytes — der Kern der Frage, ob „eine Datei" wirklich eine ist.
-    assetId = randomUUID();
-    const universeId = (await quelle.query<{ universe_id: string }>("SELECT universe_id FROM campaigns WHERE id=$1", [campaign])).rows[0]!.universe_id;
-    await quelle.query(`INSERT INTO wiki_assets(id,campaign_id,universe_id,dateiname,lizenz_status,lizenz_gesetzt_von,created_by,created_at)
-      VALUES($1,$2,$3,'hafen.png','frei','mensch',$4,$5)`, [assetId, campaign, universeId, gm, cfg.now()]);
-    await createWikiMedien(quelle, cfg).bytesAnnehmen(gm, campaign, assetId, Buffer.from(PNG_BASE64, "base64"));
+    // Ein Bild MIT Bytes — der Kern der Frage, ob „eine Datei" wirklich eine ist. Es entsteht
+    // auf demselben Weg wie am Tisch: die Zeile von Hand angelegt, die Bytes im zweiten Schritt.
+    // (Bis dieser Weg existierte, musste hier eine Zeile an der Fachlichkeit vorbei in die
+    // Datenbank geschrieben werden — ein Test, der etwas herstellt, was das Produkt nicht kann.)
+    const medien = createWikiMedien(quelle, cfg);
+    assetId = (await medien.anlegen(gm, campaign, { dateiname: "hafen.png", lizenz: "frei" })).id;
+    await medien.bytesAnnehmen(gm, campaign, assetId, Buffer.from(PNG_BASE64, "base64"));
 
     // Regelwerk und Bogen — Voraussetzung für Wurf und Erleichterung.
     const game = createGameplay(quelle, cfg);

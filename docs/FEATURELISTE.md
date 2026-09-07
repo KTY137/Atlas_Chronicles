@@ -54,7 +54,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 14 | Dynamisch setzbare Bars | ☑ | Balken-Editor in der Schmiede: Feld, Höchststand, Erschöpfung |
 | 15 | KI-vorgeschlagene Änderungen | ◐ | Chronist-Regelwerk grün; Modellknoten bewusst offen (Egress-Entscheidung) |
 | 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☑ | Beutetabelle an der Vorlage; Kartenart wählbar (Siedlung offen) |
-| 17 | PNGs hochladbar | ☐ | `wiki_assets` (015) existiert — prüfen |
+| 17 | PNGs hochladbar | ☑ | eigener Eingang in den Bildbestand; Kartengesicht für Haltende sichtbar |
 | 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☐ | verschachtelte Karten (014) existieren — prüfen |
 
 ## Feature 1 — Kampfsystem: gemessen, nicht vermutet
@@ -1220,3 +1220,65 @@ findet, was schon in ihrem Inventar liegt — es gibt keinen „Loot-Wurf bei Ni
 **Die Siedlung** bleibt unangeschlossen (andere Ergebnisform, eigene Entscheidung). Und ein
 NPC-*Generator*, der ohne Vorlage aus dem Nichts eine Figur erfindet, existiert nicht: erschaffen
 wird aus einer Vorlage, wie alles andere auch.
+
+### Abschluss Feature 17 — 2026-09-07 20:40
+
+**Der Befund vor der ersten Zeile Code: es gab keinen Weg, ein Bild anzulegen.** Der Bildbestand
+war die zweite Hälfte des Wiki-Imports — Bytes ließen sich nur in eine Zeile schieben, die
+`schreibeAssetEntwuerfe` erzeugt hatte. Wer nie ein Wiki importiert hat (also die meisten Runden),
+konnte kein einziges Bild hochladen und damit auch **keine Lootkarte bebildern**. Dass das ein
+Loch war und kein Modellfehler, sagt die Migration selbst:
+
+> die Zeile entsteht beim Artikelimport OHNE Bytes … und die Bytes kommen in einem zweiten,
+> wiederholbaren Schritt dazu
+
+Gebaut ist deshalb **nur der fehlende Eingang**, nicht ein zweiter Bilderweg: `anlegen()` erzeugt
+dieselbe leere Zeile, die Bytes gehen durch das bereits geprüfte `bytesAnnehmen` und damit durch
+dieselbe Vermessung aus den Magic Bytes. Keine Migration, keine neue Generation, kein neues
+Exportfeld — `import_id` war schon nullable, `selbstHochgeladen` ist daraus **abgeleitet**.
+
+**Wiederholbar statt endgültig.** Scheitert der zweite Schritt, greift ein neuer Versuch mit
+demselben Namen auf die eigene leere Zeile zurück. Ein Fehlschlag beim Hochladen darf keinen
+Namen für immer verbrennen — eine Zeile MIT Bytes und jede Zeile aus einem Import bleiben dagegen
+unangetastet.
+
+### Der eigentliche Fund: die Lootkarte war für Spielerinnen ein leerer Rahmen
+
+`ausliefern` kannte genau einen Grund, ein Bild zu zeigen: eine freigegebene Passage. Ein
+Kartengesicht hängt an keiner Passage. Also sah **jede Spielerin** in ihrem Inventar (`MeineFigur`
+→ `Inventory` → `Lootkarte`) den Platzhalter statt des Bildes — ein Defekt in Feature 5/6, den
+erst dieses Feature sichtbar gemacht hat. Der zweite Grund ist jetzt: **wer den Gegenstand hält,
+sieht sein Bild.** Welche Figuren jemand öffnen darf, entscheidet weiterhin
+`listControlledActorIds` — dieselbe Regel wie im Inventar, keine zweite daneben.
+
+### Eine Falle, in die ich wieder getappt bin
+
+Der Namensprüfer war als Zeichenklasse mit Unicode-Escapes geschrieben — und kam als **rohe
+Steuerzeichen** in der Datei an; `grep` meldete die Quelldatei danach als binär. Dieselbe
+Escaping-Klasse wie in Feature 5, 7 und 16a. Die Prüfung kommt jetzt **ganz ohne Escapes** aus
+(Vergleich gegen das Leerzeichen, `String.fromCharCode`), und ein Verhaltenstest hält sie fest:
+Pfadtrenner und Zeilenumbruch werden abgewiesen, „Bärenhöhle groß.png" wird angenommen.
+
+### Belege
+
+- `bild-hochladen.test.ts` **8/8 grün**: ein PNG in einer Kampagne **ohne jeden Wiki-Import**;
+  derselbe Name wiederholbar, solange die Zeile leer ist, und danach nicht mehr; ein Nicht-Bild
+  wird abgewiesen und lässt die Zeile leer statt halb gefüllt; Pfadtrenner und Steuerzeichen nein,
+  Umlaute ja; nur die Spielleitung legt an; **die Spielerin sieht das Kartengesicht erst, als sie
+  den Gegenstand hält**; und derselbe Weg durch die echte Anwendung samt fremder Herkunft (404),
+  Spielerin (404) und erfundenem Feld (400).
+- **Drei Gegenproben gefahren:** Kartengesicht-Regel entfernt, Namensschutz entfernt,
+  Wiederhol-Regel aufgeweicht → **drei rote Fälle, jeder in seinem eigenen Test.** Zurückgesetzt.
+- `alles-in-einer-datei.test.ts` schreibt seine Bildzeile **nicht mehr von Hand in die Datenbank**,
+  sondern legt sie über den neuen Weg an — der Test stellt nichts mehr her, was das Produkt nicht
+  kann. Weiter 4/4 grün.
+- Kein Regress: `bild-hochladen` + `wiki-medien` + `alles-in-einer-datei` **18/18**,
+  `packages/client` **150/150**, `typecheck` 0 Fehler, `gate:boundaries` **460/8/0**,
+  Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+**Es gibt keinen Löschknopf für Bilder** — es gab vorher auch keinen. Eine leere Zeile ist
+wiederverwendbar, eine belegte bleibt liegen; wer ein Bild wirklich loswerden will, hat dafür
+heute keine Fläche. Und **nichts prüft, ob ein `bildAssetId` auf ein existierendes Bild zeigt**:
+eine Karte mit gelöschter Vorlage zeigt den Platzhalter, statt die Erstellung zu verhindern.
