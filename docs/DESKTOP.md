@@ -208,12 +208,20 @@ supplies that file explicitly; without it the installed application ships no Chr
 Electron's `version` marker stays absent on purpose: the application reads its own `build.json`,
 and a second version source inside the package is the drift `gate:version` exists to prevent.
 
-On 2026-09-07 the setup was built and installed on this machine: **214,621,184 bytes**, setup
-SHA256 `dea9bae964f36ba7bb463c1c5d2326ed5a070021b5db0f49f49e0bb25f35ad62`, over the
-564,846,507-byte artifact whose executable SHA256 is unchanged at `774a608e…`. The silent
+On 2026-09-07 the setup was built and installed on this machine: **214,446,592 bytes**, setup
+SHA256 `976fed38de2f080d377d4d25a647ef526e316a2a4cdb64a688804cf3cd8cb0fd`, over the
+564,494,760-byte artifact whose executable SHA256 is unchanged at `774a608e…`. The silent
 installation produced `%LOCALAPPDATA%\AtlasChronicles\app-0.1.0` carrying that recorded executable
 hash, both the start menu and the desktop shortcut, and the Chromium notices. Uninstallation
 removed both shortcuts and left Squirrel's usual locked remainder behind a `.dead` marker.
+
+Run the setup from an ordinary shell or Explorer. Squirrel passes its own environment to the
+lifecycle invocation, so an inherited `ELECTRON_RUN_AS_NODE=1` — which Electron-based terminals
+such as VS Code export — makes the application start as plain Node, reject `--squirrel-install`
+as a bad option and exit 9. Installation itself still succeeds, but silently without shortcuts.
+The launcher and the smoke already strip that variable; the installer path cannot, because the
+process is Node before any of our code runs. Measured, not assumed: the same setup installed
+without shortcuts under that variable and with both shortcuts once it was cleared.
 
 Against that installed executable the smoke passed its own PG17/migration/sharp check and the real
 licensed Grundriss generator route, then failed on two properties of the current working tree

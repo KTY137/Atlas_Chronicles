@@ -1,6 +1,37 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-07 10:45** (Desktop-Installer gelandet; mehrere Sessions arbeiten parallel weiter)
+Updated: **2026-09-07 12:30** (Desktop-Installer gelandet, Token-Sackgasse geschlossen; mehrere Sessions arbeiten parallel weiter)
+
+## Die Token-Sackgasse im Desktop ist geschlossen — Session Desktop-Installer, 2026-09-07 12:30
+
+**Gemeldet aus der Benutzung, nicht aus einem Test:** die Electron-App verlangte einen Token. Sie
+tat es zu Recht — und das war der Fehler. Wer nach „Welt anlegen" den Knopf **„Welt öffnen"** statt
+„Spielleitung einrichten" traf, landete im Spielfenster vor dem Feld „Einrichtungsschlüssel". Dieses
+Feld ist im Desktop **prinzipiell unerfüllbar**: `GET /api/setup` meldet `required: true`, sobald
+keine Leitung existiert, weiß aber nichts davon, ob die Token-Route überhaupt benutzbar ist; der
+eingebettete Host baut die Anwendung mit leerem `bootstrapToken` (`host.ts`), und `POST /api/setup`
+verwirft alles unter 32 Zeichen mit 410 (`app.ts`). Der Hinweistext schickte den Nutzer obendrein in
+eine lokale Konfiguration, die der Desktop gar nicht führt.
+
+**Behoben in `f2d7bb4`, mit einer Zeile.** Der Manager blendete den Knopf allein nach
+`state!=="ready"` aus und bot ihn damit genau im Zustand an, hinter dem nichts Bedienbares liegt.
+Er verschwindet jetzt zusätzlich, solange `setupRequired` gilt. Das nimmt nichts weg: `setup` öffnet
+die Welt selbst, und `restore-confirm` setzt `setupRequired` ausdrücklich zurück, damit der
+Kopplungscode einer wiederhergestellten Welt weiter eingelöst werden kann. Der Smoke prüfte an
+dieser Stelle schon, dass die Einrichtung sichtbar ist; die Gegenprobe steht jetzt daneben und ist
+**an der ausgelieferten, installierten EXE grün**.
+
+**Zweiter Befund, und er kostet fast eine Stunde Fehlersuche wert:** eine Installation aus einem
+Electron-basierten Terminal (VS Code) legt **stillschweigend keine Verknüpfungen** an. Squirrel
+vererbt seine Umgebung an den Lifecycle-Aufruf; ein geerbtes `ELECTRON_RUN_AS_NODE=1` lässt die
+Anwendung als reines Node starten, das `--squirrel-install` als „bad option" verwirft und mit Code 9
+endet. Die Installation gelingt trotzdem — nur ohne Startmenü- und Desktopeintrag. Launcher und
+Smoke entfernen die Variable bereits; der Installerpfad **kann es nicht**, weil der Prozess Node ist,
+bevor eigener Code läuft. Gemessen, nicht vermutet: dasselbe Setup einmal ohne Verknüpfungen unter
+der Variable, einmal mit beiden nach ihrer Entfernung. In DESKTOP.md als Betriebshinweis vermerkt.
+
+**Aktuelles Setup:** `.local/desktop-artifacts/2026-09-07T09-45-54-750Z/installer/Atlas-Chronicles-Setup.exe`,
+**214.446.592 Bytes**, SHA256 `976fed38de2f080d377d4d25a647ef526e316a2a4cdb64a688804cf3cd8cb0fd`.
 
 ## Der Desktop hat einen Installer — Session Desktop-Installer, 2026-09-07 10:45
 
