@@ -81,6 +81,19 @@ erzählt hat.
 **Kein bestehendes Paket wird neu, nur weil v9 existiert.** Erst die erste Kante hebt den
 Umschlag von v8 auf v9 — dieselbe Zurückhaltung wie bei den Bildern und dem Zugangsvorfall.
 
+### Der Fund beim Einbauen: `restoreOrder` hat keinen Wächter gehabt
+
+`deletion.test.ts` leitet seine Erwartung aus dem laufenden Schema her und meldete `beziehungen`
+sofort. Für den **Restore** gab es diesen Zwilling nicht: eine Tabelle, die im Profil steht, aber
+nicht in `restoreOrder`, wird beim Wiederherstellen **stillschweigend übersprungen** — kein
+Fehler, keine Warnung, die Zeilen sind weg, und zwar genau dann, wenn jemand ein Backup
+zurückspielt. `bundles.test.ts` blieb grün, weil seine Fixtures keine Kanten enthalten.
+
+Behoben in derselben Änderung: `beziehungen` steht in beiden Reihenfolgen, und
+`packages/server/test/restore-order.test.ts` macht die Lücke ab jetzt zu einem roten Test.
+Zusätzlich prüft `gefuege.test.ts` den echten Rundlauf — exportieren, in eine frische Datenbank
+wiederherstellen, Kanten Zeile für Zeile vergleichen.
+
 ## Wo es in der GUI sitzt
 
 Chronik → Artikel → Werkzeugleiste → **Gefüge**. Zwei Reiter, `Stammbaum` und `Politogramm`,
@@ -107,5 +120,6 @@ steht dieselbe Information als Liste, damit die Fläche ohne Grafik benutzbar bl
 - `e2e/gefuege.spec.ts` — der echte Browserpfad: Spielleitung sieht beide Graphen, Sera sieht
   nur ihre Verwandtschaftskante und nirgends `Haus Ker`, und sie bekommt keine Autorenfläche.
   Prüft im selben Lauf, dass `Historie`, `Gegenüberstellung` und `Bearbeiten` sichtbar bleiben.
+- `packages/server/test/restore-order.test.ts` — jede Profiltabelle steht in `restoreOrder`.
 - `packages/server/test/bundles.test.ts` 8/8 grün nach v9 — Export und Restore tragen die neue
   Tabelle, der Abdeckungswächter wurde nicht umgangen.

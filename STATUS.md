@@ -187,6 +187,21 @@ und der Loeschpfad (017, `deletion.ts`).
   `Haus Ker`, und bekommt keine Autorenfläche. `packages/client` + `packages/chronik` +
   beide neuen Serversuiten **140/140**, Typecheck grün, `gate:boundaries` GRÜN (391 Dateien).
 
+### Beim Einbauen gefunden: `restoreOrder` hatte keinen Wächter — stiller Datenverlust
+
+`deletion.test.ts` leitet aus dem laufenden Schema her und meldete `beziehungen` sofort. Für den
+**Restore** gab es diesen Zwilling nicht: eine Tabelle im Profil, die nicht in `restoreOrder`
+steht, wird beim Wiederherstellen **stillschweigend übersprungen**. Kein Fehler, keine Warnung —
+die Zeilen sind weg, und zwar genau beim Zurückspielen eines Backups. `bundles.test.ts` blieb
+grün, weil seine Fixtures keine Kanten haben.
+
+Behoben und abgesichert: `beziehungen` steht in beiden Reihenfolgen,
+`packages/server/test/restore-order.test.ts` macht die Lücke zu einem roten Test, und
+`gefuege.test.ts` prüft den echten Rundlauf über eine frische Zieldatenbank (**10/10**).
+
+**Gesamtsuite danach: 1319 grün, 52 übersprungen, 1 rot** — `bundles-v3` unter Last, isoliert in
+dieser Sitzung **6/6 grün in 52 s** gemessen. Kein Budget angehoben, keine meiner Dateien.
+
 ## Ich — die eigene Figur, 2026-09-07 12:15 (additiv, eigene Fläche)
 
 - **Bogen und Inventar bekommen eine eigene Adresse.** Neuer Bereich `Ich` in der linken Leiste

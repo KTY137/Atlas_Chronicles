@@ -7,6 +7,8 @@ import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createDocuments, type PassageInput } from "../src/domain/documents.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { seedActorControl } from "./actor-fixtures.ts";
+import { exportCampaignBundle, initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { currentCampaignTables } from "@chronicle/io";
 
 const config = { origin: "https://chronicle.test", cookieSecret: "gefuege-cookie-secret-long-enough-x", bootstrapToken: "gefuege-bootstrap-secret-long-enough-x" };
 const absatz = (text: string): PassageInput => ({ inhalt: { kind: "absatz", inhalt: [{ text, marks: [] }] } });
@@ -103,6 +105,22 @@ describe("Das Gefüge — Stammbaum und Politogramm durch das Wissen der Figur",
     expect(forged.statusCode).toBe(404);
     expect(forged.body).toBe(missing.body);
   });
+
+  it("trägt jede Kante durch Export und Wiederherstellung — auch die zurückgezogene", async () => {
+    const bundle = await exportCampaignBundle(db, gm, campaignId);
+    const exportiert = currentCampaignTables(bundle).beziehungen;
+    expect(exportiert.length).toBeGreaterThan(0);
+    const ziel = await createTestDb(); await migrate(ziel);
+    try {
+      await initializeCampaignRestoreTarget(ziel);
+      await restoreCampaignBundle(ziel, bundle);
+      const zurueck = (await ziel.query<{ id: string; art: string; passage_id: string }>(
+        "SELECT id,art,passage_id FROM beziehungen ORDER BY id")).rows;
+      const erwartet = [...exportiert].map(row => ({ id: String(row.id), art: String(row.art), passage_id: String(row.passage_id) }))
+        .sort((a, b) => a.id < b.id ? -1 : 1);
+      expect(zurueck).toEqual(erwartet);
+    } finally { await ziel.close(); }
+  }, 60_000);
 
   it("nimmt eine zurückgezogene Kante aus jedem Gefüge, ohne die Passage anzutasten", async () => {
     const kanten = (await get("/gefuege")).json().kanten as { id: string; art: string }[];

@@ -20,7 +20,7 @@ const coveredColumns = new Map<string, ReadonlySet<string>>(CAMPAIGN_TABLES.map(
 ]));
 // These identifiers come exclusively from the compiled format metadata above.
 const quoted = (name: string) => `"${name}"`;
-const restoreOrder: readonly CampaignTableName[] = [
+export const restoreOrder: readonly CampaignTableName[] = [
   "users", "universes", "campaigns", "actors", "campaign_memberships", "universe_memberships",
   "entries", "revisions", "passages", "artifacts", "lineage_events", "entry_aliases", "import_acceptances",
   "vollmachten", "rolls", "revelations", "rule_packages", "campaign_rule_pins", "actor_sheets", "scenes",
@@ -40,6 +40,8 @@ const restoreOrder: readonly CampaignTableName[] = [
   // Zuletzt der Zugangsvorfall: er zeigt auf eine der beiden Vollmacht-Tabellen und auf ein
   // Mitglied, alle drei stehen weiter oben.
   "zugangsvorfaelle",
+  // Die Beziehungskante zeigt auf ihre Passage und auf beide Eintraege; alle drei stehen oben.
+  "beziehungen",
 ];
 
 export class CampaignRestoreError extends Error {
