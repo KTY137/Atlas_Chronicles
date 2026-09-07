@@ -1,9 +1,9 @@
 import {
-  CAMPAIGN_V10_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables,
+  CAMPAIGN_V11_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables,
   createCurrentCampaignBundle as createCampaignBundle, validateCurrentCampaignBundle as validateCampaignBundle,
   currentCampaignSemanticDiff as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, upgradeCampaignBundleV4,
-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV10 as CampaignTables,
-  type CampaignTableNameV10 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV11 as CampaignTables,
+  type CampaignTableNameV11 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -42,6 +42,9 @@ export const restoreOrder: readonly CampaignTableName[] = [
   "zugangsvorfaelle",
   // Die Beziehungskante zeigt auf ihre Passage und auf beide Eintraege; alle drei stehen oben.
   "beziehungen",
+  // Zuletzt die Kampfbuehne: erst die Buehne, dann die Karten darauf. Ein Teilnehmer zeigt auf
+  // seinen Kampf, auf eine Figur und auf seinen Initiativwurf — alle drei stehen weiter oben.
+  "kaempfe", "kampf_teilnehmer",
 ];
 
 export class CampaignRestoreError extends Error {
@@ -50,7 +53,7 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10; migration?: CampaignMigrationChain;
+  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
   sourceVersion: 1 | 2 | 3 | 4; targetVersion: 4 | 5; sourceContentHash: string; targetContentHash: string;

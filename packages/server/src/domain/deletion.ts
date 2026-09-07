@@ -57,6 +57,9 @@ export const LOESCHREIHENFOLGE: readonly string[] = [
   "zugangsvorfaelle",
   // Ebenfalls Blatt: die Beziehungskante zeigt auf Passage und Einträge, niemand zeigt auf sie.
   "beziehungen",
+  // Die Kampfbühne, Karten vor Bühne: ein Teilnehmer zeigt auf seinen Kampf, auf eine Figur und
+  // auf seinen Initiativwurf. Beide müssen deshalb vor `action_rolls` und `actors` fallen.
+  "kampf_teilnehmer", "kaempfe",
   // Laufzeit und Beitritt — vom Export nicht erfasst.
   "media_cleanup", "media_blocks", "media_presence", "media_whisper_members", "media_rooms",
   "events", "event_cursors", "commands",

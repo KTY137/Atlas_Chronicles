@@ -16,6 +16,15 @@ nichts.
 3. **Kein Regress.** Vor jedem Abschluss läuft die betroffene Suite; der Baseline-Stand steht unten.
 4. **Kayas Migrationsregel gilt:** Datenmodell, Berechtigungen, Export-/Paketformat werden sofort in
    ihrer endgültigen Form gebaut. Layout, Text, Bewegung dürfen billig sein.
+5. **Ein Feature ist erst fertig, wenn man es benutzen kann** (Kaya, 2026-09-07). Die Datenschicht
+   allein ist kein Feature. Zu jedem Punkt gehört die Bedienoberfläche, und zwar eine, die jemand
+   ohne Erklärung versteht. Erst dann steht hier ☑.
+6. **Keine Doppelungen** (Kaya, 2026-09-07). Vor jeder Zeile Code wird gesucht, ob es die Sache
+   schon gibt. Zweimal dasselbe unter zwei Namen ist teurer als gar nichts — und es ist der
+   Fehler, den eine lange Liste am leichtesten erzeugt.
+7. **Nicht die volle Suite laufen lassen** — sie braucht ~4 Minuten und blockiert. Gezielt die
+   Suiten fahren, die die Änderung berühren, und die Konsumenten der geänderten Schnittstelle
+   dazu (`grep -rln` auf den geänderten Export).
 
 ## Stand der Liste
 
@@ -24,7 +33,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | # | Feature | Stand | Notiz |
 | --- | --- | --- | --- |
 | 1 | Kampfsystem (testen) | ☑ | grün und belegt, siehe unten |
-| 2 | Kampfbühne (wie bei Card Games) | ☐ | |
+| 2 | Kampfbühne (wie bei Card Games) | ◐ | Entwurf steht, senkrechter Schnitt begonnen |
 | 3 | Würfel animiert | ☐ | |
 | 4 | Wiki-Export | ☐ | |
 | 5 | Lootkarten (Karte wie YuGiOh) | ☐ | |
@@ -140,3 +149,51 @@ unter einer laufenden Runde hinweg), aber es ist ein Schritt, den jemand tun mus
 **Anzeige** der Vitalwerte gibt es noch nicht: `evaluateVitals` ist der Leser, auf dem #13 und
 #14 aufsetzen, und gehört dort hin, nicht hierher. Es gibt weiterhin **keinen
 Kampf-Scheduler** — Initiative ist ein Wurf, die Reihenfolge am Tisch ist #2.
+
+## Feature 2 — Kampfbühne: der Befund und der Entwurf
+
+**Gemessen, 2026-09-07 17:05.** Es gibt **keine Initiativreihenfolge** — nirgends. `initiative`
+kommt im ganzen Baum nur als Würfelaktion des Regelpakets vor (`how-to-be-a-hero.ts`) und in
+Tests. `Round.tsx` heißt „Runde", meint aber die Spielrunde am Tisch (Mitglieder, Einladungen),
+nicht die Kampfrunde. Die taktische Fläche kennt Marken auf einer Karte, aber keine Ordnung
+darüber, **wer wann dran ist**. Der Ledger hatte das für #2 vorgemerkt; es stimmt.
+
+### Was eine Kampfbühne ist — und was sie nicht ist
+
+„Wie bei Card Games" ist keine Verzierung, sondern die Aussage über das Modell: die Bühne ist die
+**abstrakte** Alternative zur taktischen Karte. Kein Gelände, keine Koordinaten — zwei
+gegenüberliegende Reihen, jeder Kämpfende eine Karte, eine Reihenfolge, eine Runde. Die
+taktische Karte bleibt unangetastet; wer Gelände braucht, nimmt sie. Beides nebeneinander ist
+richtig, eines in das andere zu pressen wäre der billige Weg.
+
+Daraus folgt: **`seite` ist ein Modellwert, kein Layout.** Die zwei Reihen sind die Aussage.
+
+### Das Datenmodell, in endgültiger Form (Kayas Migrationsregel)
+
+- **`kaempfe`** — der Kampf: Kampagne, Name, Rundenzähler, Zustand
+  (`vorbereitet` → `laufend` → `beendet`), Zeiger auf den Teilnehmer, der am Zug ist.
+- **`kampf_teilnehmer`** — die Karte auf der Bühne: Kampf, Seite, Initiativwert, stabile
+  Ordnungszahl für Gleichstände, optional an einen `actor` gebunden, sonst freier Name (Gegner).
+
+**Die Initiative trägt ihren Beleg mit.** Der Wert ordnet, aber wo er aus einem Wurf stammt,
+steht die `roll_id` daneben. Das ist keine Zierde, sondern die Hausregel dieser Anwendung:
+nichts Wirksames ohne Quittung. Von Hand gesetzte Werte (Gegner) haben keine — und sagen das,
+statt es zu verschweigen.
+
+### Warum das kein UI-Stück ist
+
+`requireCoveredSchema` in `domain/bundles.ts` prüft in **beide** Richtungen: jede dauerhafte
+Spalte des laufenden Schemas muss in einem Exportprofil vorkommen, und jede Profilspalte muss
+existieren. Eine neue Tabelle ohne Profil bringt **jeden Export zum Stehen** — so wurden schon
+die Bilder in v7, der Zugangsvorfall in v8, die Gefüge-Kanten in v9 und die Kategorien in v10
+gefunden. Die Bühne ist deshalb ein senkrechter Schnitt durch fünf Orte, die zusammen landen
+müssen:
+
+1. Migration `021_kampfbuehne.sql`
+2. `packages/io/src/native-v11/**` (Generation 11, additiv — kein eingefrorenes Profil anfassen)
+3. `restoreOrder` und die Formatversion-Union in `domain/bundles.ts`
+4. Löschabdeckung (`deletion.test.ts` leitet sie aus dem laufenden Schema her)
+5. Domäne samt Berechtigungen + HTTP, dann erst die Bühne selbst
+
+Punkt 5 ist die sichtbare Hälfte und kommt zuletzt. Wer hier kalt startet: die Reihenfolge ist
+nicht verhandelbar, weil der Baum zwischen 1 und 3 **rot** ist.
