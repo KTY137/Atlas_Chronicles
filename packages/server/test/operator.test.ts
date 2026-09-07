@@ -46,4 +46,15 @@ describe("Betreiberauskunft über den Rasterdienst", () => {
       expect((await app.inject({ url: "/api/operator/raster" })).statusCode).toBe(404);
     } finally { await app.close(); }
   });
+
+  it("nennt dem Betreiber den Verbrauch aller Kampagnen, dem Spieler nicht", async () => {
+    const app = await buildApp(db, config);
+    try {
+      const erlaubt = await app.inject({ url: "/api/operator/usage", headers: { cookie: await sitzung("leitung") } });
+      expect(erlaubt.statusCode).toBe(200);
+      expect(erlaubt.json()).toHaveProperty("campaigns");
+      expect((await app.inject({ url: "/api/operator/usage", headers: { cookie: await sitzung("gast") } })).statusCode).toBe(404);
+      expect((await app.inject({ url: "/api/operator/usage" })).statusCode).toBe(404);
+    } finally { await app.close(); }
+  });
 });
