@@ -125,6 +125,32 @@ nach einer Liste — die Liste ist beim Staging schon veraltet. Aktuell fremd un
 Forge-Refactor (`polygon`, `kartenwerk`, `siedlung`), Desktop-Installer samt Wurzelmanifesten,
 und der Loeschpfad (017, `deletion.ts`).
 
+## Ich — die eigene Figur, 2026-09-07 12:15 (additiv, eigene Fläche)
+
+- **Bogen und Inventar bekommen eine eigene Adresse.** Neuer Bereich `Ich` in der linken Leiste
+  zwischen `Heute` und `Chronik`. Siehe [ICH](docs/ICH.md).
+- **Der Befund, der ihn ausgelöst hat:** `CharacterSheet` und `Inventory` gab es vollständig,
+  aber ausschließlich unter `Tisch → Figur` bzw. `Tisch → Figuren & Inventar`. Wer unter der
+  Woche auf dem Telefon nachsehen wollte, was seine Figur trägt, musste den gemeinsamen
+  Spielabend öffnen. Das ist die Fläche eines Abends, nicht die einer Person.
+- **Keine zweite Fassung.** `Inventory` wurde aus `ActorWorkbench.tsx` lediglich exportiert;
+  Verhalten unverändert. `Ich` läuft gegen dieselben Routen. Der `Vorrat der Spielleitung`
+  erscheint dort ausdrücklich nicht (`gm={false}`).
+- **Nachgewiesen:** `e2e/meine-figur.spec.ts` grün — die Leiste zeigt weiterhin `Heute`,
+  `Chronik`, `Atlas`, `Tisch`, `Kanal`, `Woche`, `Runde`, `Schmiede` bleibt der Spielleitung
+  vorbehalten, `?stage=ich` überlebt einen Neuladevorgang, und der Tisch behält seine Reiter
+  `Figur` und `Figuren & Inventar`. `packages/client` 114/114 grün, Typecheck grün,
+  `gate:boundaries` GRÜN (379 Dateien).
+
+### Korrigiert: mein eigener Gegenüberstellungs-Test war zu lang, nicht die Maschine
+
+Er legte vier Passagen und vier Freigaben über die Oberfläche an und brauchte dafür ~2,1 min
+gegen Playwrights 120-s-Testbudget. Er fiel danach dreimal aus, jedes Mal an einer anderen
+Zeile der Artikeleingabe — ich hielt das zuerst für Parallellast. Es war die Bauform des Tests.
+**Kein Budget angehoben:** der Aufbau läuft jetzt über die Domänen-API (wie `actors.spec.ts`),
+der Browserpfad prüft nur noch die Gegenüberstellung selbst. Lauf **1,5 min statt 2,1**, und er
+prüft zusätzlich, dass eine Spielerin den Knopf nicht sieht und die Route ihr 404 gibt.
+
 ## Die Gegenüberstellung — Session Claude, 2026-09-07 11:40 (additiv, eigene Fläche)
 
 - **Register-Zeile `Die Gegenüberstellung` (Kategorie `wissen`, `unser-champion`) ist gebaut.**

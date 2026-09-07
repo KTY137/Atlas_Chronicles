@@ -235,7 +235,7 @@ function ItemTemplateForm({ campaignId, original, onDirty, onSaved }: { campaign
   </fieldset></form>;
 }
 
-function Inventory({ campaignId, actorId, actors, gm, revision, onChanged, onDirty }: { campaignId: string; actorId: string; actors: ActorCard[]; gm: boolean; revision: number; onChanged: () => void; onDirty: (value: boolean) => void }) {
+export function Inventory({ campaignId, actorId, actors, gm, revision, onChanged, onDirty }: { campaignId: string; actorId: string; actors: ActorCard[]; gm: boolean; revision: number; onChanged: () => void; onDirty: (value: boolean) => void }) {
   const [stock, setStock] = useState(false), [selected, setSelected] = useState(""), [dirty, setDirty] = useState(false);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
   const holder = stock && gm ? null : actorId || null;
