@@ -24,6 +24,7 @@
       "@chronicle/protocol": ["./packages/protocol/src/index.ts"],
       "@chronicle/core": ["./packages/core/src/index.ts"],
       "@chronicle/chronik": ["./packages/chronik/src/index.ts"],
+      "@chronicle/chronist": ["./packages/chronist/src/index.ts"],
       "@chronicle/projection": ["./packages/projection/src/index.ts"],
       "@chronicle/szene": ["./packages/szene/src/index.ts"],
       "@chronicle/forge": ["./packages/forge/src/index.ts"],

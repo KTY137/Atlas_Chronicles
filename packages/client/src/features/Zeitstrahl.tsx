@@ -9,6 +9,11 @@ interface Ereignis {
   entryId: string; titel: string; passageId: string; spieltag?: string; siegel?: string;
 }
 interface Zeitleistendaten { ereignisse: readonly Ereignis[]; ohneJahr: readonly Ereignis[] }
+/** Ein Vorschlag des Chronisten: was gefunden wurde, und die Passagen, die es belegen. */
+interface Befund { art: "tod_vor_geburt" | "widerspruechliche_jahre" | "unlesbares_datum"; entryId: string; titel: string; text: string; passagen: readonly string[] }
+const befundLabel: Record<Befund["art"], string> = {
+  tod_vor_geburt: "Widerspruch", widerspruechliche_jahre: "Widerspruch", unlesbares_datum: "Lücke",
+};
 
 const artLabel: Record<Art, string> = {
   geburt: "Geboren", tod: "Gestorben", gruendung: "Gegründet", datum: "Datiert", praegung: "Am Tisch geprägt",
@@ -55,6 +60,7 @@ export function Zeitstrahl({ campaignId, onOpenEntry, onClose }: {
       <p className="eyebrow">Errechnet, nicht gepflegt</p><h2>Zeitstrahl</h2>
     </div><Button onClick={onClose}>Schließen</Button></div>
     {daten.error ? <Notice error>{daten.error}</Notice> : null}
+    <Chronist campaignId={campaignId} onOpenEntry={onOpenEntry} />
     {daten.loading ? <Loading text="Die Zeitleiste wird errechnet …" />
       : !ereignisse.length && !ohneJahr.length
         ? <EmptyState title="Noch hat eure Welt keine Daten.">Der Zeitstrahl rechnet sich aus zwei Quellen: den Datumsfeldern eurer Artikel (Geburt, Tod, Gründung) und den Würfen und Aussagen, die ihr am Tisch zu Kanon macht. Sobald eines davon vorliegt, steht es hier.</EmptyState>
@@ -65,5 +71,32 @@ export function Zeitstrahl({ campaignId, onOpenEntry, onClose }: {
             <ol className="zeit-liste">{ohneJahr.map(zeile)}</ol>
           </details> : null}
         </>}
+  </section>;
+}
+
+/**
+ * Was der Chronist vorschlägt.
+ *
+ * **Er schreibt nichts.** Was hier steht, ist ein Vorschlag; entschieden wird am Tisch — nichts
+ * wird automatisch Kanon. Jeder Fund nennt den Artikel, in dem er steckt, damit man ihn
+ * unmittelbar öffnen und beheben kann.
+ *
+ * **Und er rät nicht.** Gemeldet wird nur, was sicher falsch ist: ein Tod vor der Geburt, zwei
+ * verschiedene Jahre für dieselbe Aussage, ein Datumsfeld ohne lesbares Jahr. „Ein Jahrhundert
+ * ohne Ereignis" wäre ein Urteil über eine erfundene Welt — und ein Prüfwerkzeug, das Urteile
+ * fällt, wird abgeschaltet.
+ */
+function Chronist({ campaignId, onOpenEntry }: { campaignId: string; onOpenEntry: (entryId: string) => void }) {
+  const befunde = useResource<Befund[]>(apiPath(campaignId, "/chronist"));
+  if (befunde.error) return <Notice error>{befunde.error}</Notice>;
+  if (!befunde.data?.length) return null;
+  return <section className="chronist" aria-label="Vorschläge des Chronisten">
+    <h3>Der Chronist schlägt vor</h3>
+    <p className="field-help">Gefunden im Bestand, nicht geraten: {befunde.data.length === 1 ? "ein Punkt" : `${befunde.data.length} Punkte`}, die einander widersprechen oder unlesbar sind. Entschieden wird am Tisch.</p>
+    <ul>{befunde.data.map((befund, i) => <li key={`${befund.entryId}-${befund.art}-${i}`}>
+      <span className={befund.art === "unlesbares_datum" ? "chronist-marke luecke" : "chronist-marke"}>{befundLabel[befund.art]}</span>
+      <div><strong>{befund.titel}</strong><p>{befund.text}</p></div>
+      <Button onClick={() => onOpenEntry(befund.entryId)}>Artikel öffnen</Button>
+    </li>)}</ul>
   </section>;
 }

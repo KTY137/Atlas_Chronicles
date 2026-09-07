@@ -86,7 +86,9 @@ describe("wiki navigation follows the reader's current knowledge", () => {
   it("downloads the complete native campaign only for its GM, excluding credentials", async () => {
     const response = await get("/export", gmCookie);
     expect(response.statusCode, response.body).toBe(200);
-    expect(response.headers["content-disposition"]).toContain("campaign.chronicle");
+    // Der Dateiname traegt den Namen der Welt, seit Feature 8: wer drei Kampagnen sichert, hatte
+    // vorher dreimal `campaign.chronicle` im Ordner. Diese Runde heisst "Navigation".
+    expect(response.headers["content-disposition"]).toContain("navigation.chronicle");
     const bundle = parseCampaignBundleV4(response.body);
     expect(bundle.manifest.campaignId).toBe(campaignId);
     expect(bundle.tables.entries.length).toBeGreaterThan(0);

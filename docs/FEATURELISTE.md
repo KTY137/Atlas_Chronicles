@@ -52,7 +52,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 12 | Gesonderter Geldcounter | ☑ | im Inventar und beim Bogen — eine Komponente, zwei Orte |
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☑ | Balken am Bogen, gelesen aus der `vitals`-Deklaration |
 | 14 | Dynamisch setzbare Bars | ☑ | Balken-Editor in der Schmiede: Feld, Höchststand, Erschöpfung |
-| 15 | KI-vorgeschlagene Änderungen | ☐ | |
+| 15 | KI-vorgeschlagene Änderungen | ◐ | Chronist-Regelwerk grün; Modellknoten bewusst offen (Egress-Entscheidung) |
 | 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☐ | |
 | 17 | PNGs hochladbar | ☐ | `wiki_assets` (015) existiert — prüfen |
 | 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☐ | verschachtelte Karten (014) existieren — prüfen |
@@ -1036,3 +1036,71 @@ Verschieben wie bei den Ergebnisbereichen. Es gibt **keine Farbe je Balken** —
 sehen gleich aus und werden durch ihre Beschriftung unterschieden; eine Farbwahl wäre eine
 Gestaltungsentscheidung, die niemand bestellt hat. Und ein geänderter Balken wird erst wirksam,
 wenn die Spielleitung die neue Paketfassung **aktiviert** — wie jede Regeländerung.
+
+## Feature 15 — KI-vorgeschlagene Änderungen: der Teil, der kein Modell braucht
+
+**Es gab schon einen Entwurf**, und er hat den Zuschnitt entschieden:
+`docs/superpowers/specs/2026-09-07-chronist-agent-design.md` — *„Der Chronist: ein Agent, der
+Anträge stellt und niemals Kanon schreibt."* Zwei Sätze daraus tragen dieses Feature:
+
+> Das Regelwerk läuft **immer zuerst** und ist der Prüfstein für das Modell.
+
+> Widersprüche und Lücken: **nur Regelwerk**. Ein Modell wäre hier schlechter — nicht
+> reproduzierbar, kostenpflichtig, und es kann einen Widerspruch **erfinden**. Bei einem
+> Prüfwerkzeug ist ein Fehlalarm teurer als ein übersehener Fall.
+
+Gebaut ist deshalb genau dieser Knoten: **`packages/chronist`**, rein — keine Datenbank, kein
+Netz, kein Modell. Er bekommt die Ereignisse der Zeitleiste herein und gibt Befunde heraus.
+
+### Was gemeldet wird — und was ausdrücklich nicht
+
+Gemeldet wird nur, was **sicher** falsch ist: ein Tod vor der Geburt, zwei verschiedene Jahre für
+dieselbe Aussage, ein Datumsfeld ohne lesbares Jahr (samt Rohtext, damit man einen Tippfehler
+sofort sieht).
+
+**Ungenaue Lesungen widersprechen sich nicht.** „um 812" und „812" sind dieselbe Aussage in zwei
+Schärfen; ein ungefährer Vergleich wäre selbst ungefähr, und ein ungefährer Widerspruch ist
+keiner. **„Ein Jahrhundert ohne Ereignis" fehlt mit Absicht** — das ist ein Urteil über eine
+erfundene Welt, kein Widerspruch, und ein Prüfwerkzeug, das Urteile fällt, wird abgeschaltet.
+
+### Die Frage, die über allem steht
+
+Nicht „findet er den Widerspruch?", sondern **„zeigt er ihn dem Richtigen?"**. Der Chronist
+leitet **keine** Sichtbarkeit her: er liest die Zeitleiste, und die filtert bereits durch
+dieselbe Wissensgrenze wie der Artikel. Wer nur die Geburt kennt, bekommt keinen Widerspruch
+gemeldet — die Meldung würde das Todesjahr verraten.
+
+Und er **schreibt nichts**. Was er findet, ist ein Vorschlag; entschieden wird am Tisch. Das ist
+die Grundarchitektur, nicht Vorsicht: `Geltung` kennt `notiz | antrag | kanon`.
+
+### Ein Regress aus Feature 8, hier gefunden
+
+`wiki-navigation.test.ts` erwartete den alten Exportdateinamen `campaign.chronicle`. Mein
+Namenswechsel aus Feature 8 (der Dateiname trägt jetzt den Namen der Welt) hat ihn gebrochen —
+**und ich hatte diese Suite damals nicht mitgeprüft.** Das Verhalten ist gewollt, die Erwartung
+war veraltet; sie prüft jetzt den neuen Namen samt Begründung.
+
+### Belege
+
+- `packages/chronist` **8/8 grün**: Tod vor Geburt samt beider Belege; zwei verschiedene Jahre;
+  ungenaue Lesungen erzeugen **keinen** Befund; unlesbares Datum mit Rohtext; kein Urteil über
+  eine leere Zeitspanne; eine saubere Chronik bleibt still; feste Reihenfolge; leere Chronik.
+- `chronist.test.ts` **4/4 grün** gegen die echte Datenbank, darunter der Kern: **die Spielerin
+  sieht den Widerspruch erst, wenn sie beide Hälften hält.**
+- **Zwei Gegenproben gefahren:** die Zurückhaltung bei ungenauen Jahren entfernt → Fehlalarm, Fall
+  rot. Die Wissensgrenze in der Zeitleiste geöffnet → der Spielerfall rot. Beide zurückgesetzt.
+- Kein Regress: `chronist` + `client` + vier Serversuiten **177/177 grün**, `typecheck` 0 Fehler,
+  `gate:boundaries` **458/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+**Es ist kein Sprachmodell im Spiel.** Die Modellknoten des Entwurfs — Daten aus Prosa,
+Mitschreiben aus der Sitzung, erzählerischer Abriss — sind **nicht gebaut**, und das ist eine
+Entscheidung, keine Auslassung: sie verlangen laut Entwurf eine ausdrückliche Egress-Freigabe je
+Lauf, eine Anbieterwahl (lokal/fremd), einen hinterlegten Schlüssel und eine Kostenanzeige. Das
+ist Kayas Entscheidung, nicht meine, und ich baue keine Verbindung nach draußen, die niemand
+bestellt hat. Der Weg dorthin steht im Entwurf und ist durch dieses Paket **vorbereitet**: das
+Regelwerk ist der Prüfstein, gegen den ein Modell später verifiziert wird.
+
+Und der Chronist **legt keine Anträge an**: er zeigt seine Funde und öffnet den Artikel. Aus
+einem Fund einen `antrag`-Passus zu machen wäre der nächste Schritt.

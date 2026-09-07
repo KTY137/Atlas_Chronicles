@@ -13,6 +13,7 @@ export default defineConfig({
       "@chronicle/protocol": pkg("protocol"),
       "@chronicle/core": pkg("core"),
       "@chronicle/chronik": pkg("chronik"),
+      "@chronicle/chronist": pkg("chronist"),
       "@chronicle/projection": pkg("projection"),
       "@chronicle/szene": pkg("szene"),
       "@chronicle/forge": pkg("forge"),
