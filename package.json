@@ -1,7 +1,7 @@
 {
   "name": "chronicle",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "engines": {
     "node": ">=22.12"
@@ -28,10 +28,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "npm run build && playwright test",
+    "gate:version": "node --test tools/test/gate-version.test.mjs && node tools/gate-version.mjs",
     "gate:boundaries": "node tools/gate-boundaries.mjs",
     "gate:assets": "node --test tools/test/gate-assets-binary.test.mjs && node --import tsx tools/gate-assets.mjs",
     "assets:erzeugen": "node tools/assets/erzeuge-grundrisspaket.mjs",
-    "gate": "npm run gate:boundaries && npm run gate:assets && npm run typecheck && npm run test"
+    "gate": "npm run gate:version && npm run gate:boundaries && npm run gate:assets && npm run typecheck && npm run test"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
