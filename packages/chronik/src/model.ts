@@ -139,7 +139,30 @@ export type Blockinhalt =
     }
   | { readonly kind: "liste"; readonly geordnet: boolean; readonly punkte: readonly (readonly InlineText[])[] }
   | { readonly kind: "zitat"; readonly inhalt: readonly InlineText[] }
-  | { readonly kind: "bildunterschrift"; readonly assetId: AssetId; readonly inhalt: readonly InlineText[] }
+  /**
+   * A figure — the asset and the words under it are ONE passage, because a caption without its
+   * image is not a citable statement about the world.
+   *
+   * Every added field is optional on purpose: a bundle written before images were imported
+   * carries `{kind, assetId, inhalt}` and stays valid (the non-retroactivity promise,
+   * design/06-giga-product-architecture.md §11.10).
+   *
+   * `dateiname` is carried IN the block, not only on the `Asset`, so that a reference whose
+   * bytes were never fetched can still name itself honestly instead of rendering as a hole.
+   * That is the normal state: article text and image bytes arrive in two separate steps.
+   */
+  | {
+      readonly kind: "bildunterschrift";
+      readonly assetId: AssetId;
+      readonly inhalt: readonly InlineText[];
+      readonly dateiname?: string;
+      readonly alt?: string;
+      readonly ausrichtung?: Bildausrichtung;
+      /** Author-requested display width in px. A wish from the source, never a layout command. */
+      readonly breite?: number;
+      /** True when the reference came from an infobox `<image>` field — the portrait, not a body figure. */
+      readonly ausInfobox?: boolean;
+    }
   /**
    * Quarantine. RB-12 §2.8: rendered as monospaced source in a bordered card headed
    * „Aus dem Wiki übernommen — nicht umgewandelt", with a link to the source article.
@@ -148,6 +171,9 @@ export type Blockinhalt =
    * about authorship.
    */
   | { readonly kind: "rohblock"; readonly quelltext: string; readonly grund: RohblockGrund };
+
+/** How the source asked for the figure to sit. Presentation, deliberately not layout authority. */
+export type Bildausrichtung = "links" | "rechts" | "zentriert" | "ohne";
 
 export type RohblockGrund =
   | "wikitabelle"
@@ -310,14 +336,44 @@ export interface Asset {
   readonly id: AssetId;
   readonly universeId: UniverseId;
   readonly dateiname: string;
-  /** Determined from MAGIC BYTES, never from the filename — Fandom's CDN transcodes to WebP
-   *  and serves it under the original `.jpg` name (fixtures/eron/media/LIESMICH.md). */
-  readonly mime: string;
-  readonly sha256: string;
+  /**
+   * Determined from MAGIC BYTES, never from the filename — Fandom's CDN transcodes to WebP
+   * and serves it under the original `.jpg` name (fixtures/eron/media/LIESMICH.md).
+   *
+   * Present exactly when the bytes are: `mime` and `sha256` describe a file we hold, and an
+   * asset whose bytes were never fetched must be able to exist without them. The alternative —
+   * requiring them — would mean an article cannot be exported until every picture in it has been
+   * downloaded, and would force a record to name a type nobody measured. Both fields are set or
+   * neither is; the validators and the `wiki_assets` table both enforce that pairing.
+   */
+  readonly mime?: string;
+  readonly sha256?: string;
   readonly lizenzStatus: LizenzStatus;
   readonly lizenzQuelle?: string;
   readonly lizenzGesetztVon: "import" | "mensch";
   readonly beschreibungsseiteUrl?: string;
+  /** Measured from the decoded container, never copied from the source wiki's claim. */
+  readonly breite?: number;
+  readonly hoehe?: number;
+  readonly bytes?: number;
+  /** Who uploaded the file to the source wiki, when the source reported it. */
+  readonly urheber?: string;
+  readonly hochgeladenAm?: string;
+  /** The delivered URL the bytes actually came from. Provenance, not a live dependency. */
+  readonly quellUrl?: string;
+  /**
+   * What the source claimed the type was, kept beside the measured `mime` so the contradiction
+   * stays visible. On the Eron corpus this differs for nearly every file: the wiki names them
+   * `.jpg`, the CDN delivers WebP.
+   */
+  readonly behaupteterMime?: string;
+  /** Titles in the source that use this file. Empty is not the same as unknown — see `verwaist`. */
+  readonly verwendetVon?: readonly string[];
+  /** The source says nothing uses it. Kept anyway; deleting someone's file is not ours to decide. */
+  readonly verwaist?: boolean;
+  /** The source's file inventory knows it. False means an article points at a picture that
+   *  was never uploaded — a red link with an image tag. */
+  readonly imBestand?: boolean;
 }
 
 /**

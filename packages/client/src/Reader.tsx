@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from "react";
 import { Button } from "@chronicle/ui";
 import type { Block, EntryDocument, Inline, Member } from "./api";
 import { PassageProvenance } from "./features/PassageProvenance";
+import { ArticleFigure } from "./features/ArticleFigure";
 
 function Text({ parts, onEntry, onDoor }: { parts: readonly Inline[]; onEntry: (id: string) => void; onDoor?: (id: string) => void }) {
   return <>{parts.map((part, i) => {
@@ -16,11 +17,15 @@ function Text({ parts, onEntry, onDoor }: { parts: readonly Inline[]; onEntry: (
   })}</>;
 }
 
-export function BlockReader({ block, onEntry = () => {}, onDoor }: { block: Block; onEntry?: (id: string) => void; onDoor?: (id: string) => void }) {
+export function BlockReader({ block, onEntry = () => {}, onDoor, campaignId }: { block: Block; onEntry?: (id: string) => void; onDoor?: (id: string) => void; campaignId?: string }) {
   switch (block.kind) {
     case "absatz": return <p><Text parts={block.inhalt} onEntry={onEntry} onDoor={onDoor} /></p>;
     case "zitat": return <blockquote><Text parts={block.inhalt} onEntry={onEntry} onDoor={onDoor} /></blockquote>;
-    case "bildunterschrift": return <figcaption><Text parts={block.inhalt} onEntry={onEntry} onDoor={onDoor} /></figcaption>;
+    // Ein Bild ist eine Passage aus Bild UND Unterschrift; ein `figcaption` allein war eine
+    // Unterschrift ohne Bild, also eine Aussage ohne ihren Gegenstand.
+    case "bildunterschrift": return <ArticleFigure block={block} {...(campaignId ? { campaignId } : {})}>
+      {block.inhalt.length ? <Text parts={block.inhalt} onEntry={onEntry} onDoor={onDoor} /> : null}
+    </ArticleFigure>;
     case "feld": return <dl className="article-field"><dt>{block.label}</dt><dd>{block.werte.map((value, i) => <div key={i}><Text parts={value} onEntry={onEntry} onDoor={onDoor} /></div>)}</dd></dl>;
     case "liste": { const List = block.geordnet ? "ol" : "ul"; return <List>{block.punkte.map((point, i) => <li key={i}><Text parts={point} onEntry={onEntry} onDoor={onDoor} /></li>)}</List>; }
     case "rohblock": return <div className="raw-block"><span>Aus der Quelle übernommen · nicht umgewandelt</span><pre>{block.quelltext}</pre></div>;
@@ -41,7 +46,7 @@ export function ArticleReader({ document, onEntry, members = [], onReveal, busy 
       const path = passage.pfad.join(" › "), changed = path !== previousPath; previousPath = path;
       return <section className={`passage${unreadIds?.has(passage.pid) ? " passage-unread" : ""}`} key={passage.pid} id={`passage-${passage.pid}`}>
         {unreadIds?.has(passage.pid) ? <span className="unread-label">Neu für dich</span> : null}
-        {changed && path ? <h2 className="heading-path">{path}</h2> : null}<BlockReader block={passage.inhalt} onEntry={onEntry} onDoor={onDoor} />
+        {changed && path ? <h2 className="heading-path">{path}</h2> : null}<BlockReader block={passage.inhalt} onEntry={onEntry} onDoor={onDoor} {...(campaignId ? { campaignId } : {})} />
         {onReveal ? <form className="reveal-control" onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const actor = data.get("actor"); if (typeof actor === "string" && actor) onReveal(passage.pid, actor); }}>
           <label className="sr-only" htmlFor={`reveal-${passage.pid}`}>Diese Passage für eine Figur freigeben</label>
           <select id={`reveal-${passage.pid}`} name="actor" required defaultValue="" disabled={busy || members.filter((m) => m.actorId).length === 0}><option value="" disabled>Für eine Figur freigeben …</option>{members.filter((m) => m.actorId).map((m) => <option value={m.actorId!} key={m.userId}>{m.displayName}</option>)}</select>

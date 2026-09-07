@@ -16,7 +16,12 @@ const inlines = Type.Array(Inline, { maxItems: 2000 });
 export const Block = Type.Union([
   Type.Object({ kind: Type.Literal("absatz"), inhalt: inlines }, closed),
   Type.Object({ kind: Type.Literal("zitat"), inhalt: inlines }, closed),
-  Type.Object({ kind: Type.Literal("bildunterschrift"), assetId: Id, inhalt: inlines }, closed),
+  // A figure. Everything past `assetId`/`inhalt` is optional so that a document written before
+  // images were imported still validates — the schema grew, it was not redefined.
+  Type.Object({ kind: Type.Literal("bildunterschrift"), assetId: Id, inhalt: inlines,
+    dateiname: Type.Optional(Type.String({ maxLength: 512 })), alt: Type.Optional(Type.String({ maxLength: 2000 })),
+    ausrichtung: Type.Optional(Type.Union([Type.Literal("links"), Type.Literal("rechts"), Type.Literal("zentriert"), Type.Literal("ohne")])),
+    breite: Type.Optional(Type.Integer({ minimum: 1, maximum: 20_000 })), ausInfobox: Type.Optional(Type.Boolean()) }, closed),
   Type.Object({ kind: Type.Literal("liste"), geordnet: Type.Boolean(), punkte: Type.Array(inlines, { maxItems: 1000 }) }, closed),
   Type.Object({ kind: Type.Literal("feld"), schluessel: Id, label: Type.String({ maxLength: 200 }), gruppe: Type.Optional(Type.String({ maxLength: 200 })),
     werte: Type.Array(inlines, { maxItems: 1000 }), mehrwertig: Type.Boolean(), klauselKandidat: Type.Boolean() }, closed),

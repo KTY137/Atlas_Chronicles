@@ -24,7 +24,7 @@ function harness(file: string, component: string, initial: Record<string, any>, 
   };
   const element = (type: unknown, props: any) => { if (type === "div" && props.ref) props.ref.current = { clientWidth: 100, clientHeight: 100 }; return { type, props }; }, mod = { exports: {} as any };
   const actual = readFileSync(new URL(`../src/features/${file}.tsx`, import.meta.url), "utf8");
-  const extra = component === file ? "" : `\nexport { ${component} };`;
+  const extra = component === file || actual.includes(`export function ${component}(`) ? "" : `\nexport { ${component} };`;
   runInNewContext(transformSync(actual + extra, { loader: "tsx", format: "cjs", jsx: "automatic" }).code, {
     module: mod, exports: mod.exports, AbortController, setTimeout: () => 1, clearTimeout: () => {}, crypto: { randomUUID: () => "new-place" }, window: { confirm: () => true, devicePixelRatio: 1 },
     require: (name: string) => {

@@ -1,17 +1,23 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, Check, Download, FileJson, Globe, Search, Upload } from "lucide-react";
+import { ArrowLeft, Check, Download, FileJson, Globe, Image as ImageIcon, Search, Upload } from "lucide-react";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, errorText } from "../api";
 import { useTask } from "../hooks";
 
 interface Report { eintraege: number; aliase: number; passagen: number; passagenNachArt: Record<string, number>; blaueKanten: number; roteKanten: number; textErhaltung: number; verluste: { art: string; bezeichnung: string; detail?: string }[] }
-interface Preview { artifactId: string; report: Report; attributionComplete: boolean; entries: { id: string; title: string; existing: boolean }[]; notice: string }
+interface Preview { artifactId: string; report: Report; attributionComplete: boolean; entries: { id: string; title: string; existing: boolean }[]; notice: string; medien?: MediaBalance }
 interface Artifact { source: { result: { entries: { id: string; titel: string }[]; report: Report; attributionComplete: boolean; source: { articles: { pageid: number; title: string }[] } }; versions: Record<string, number> }; report: Report }
 
 interface WikiProbe { endpoint: string; siteName: string; language: string; articlesCount: number; license: { text: string; url: string } | null }
 interface WikiFetchProgress { fetched: number; total: number; batch: number }
 interface LiveArticle { title: string; pageid: number; ns: number; revid: number; wikitext: string }
 interface LiveTemplate { title: string; source: string }
+interface LiveMediaFile {
+  title: string; url?: string; descriptionurl?: string; mime?: string; size?: number; width?: number; height?: number;
+  uploader?: string; uploaded_at?: string; categories: string[]; used_by_articles: string[];
+  licence?: Record<string, string | null>; description_page_wikitext?: string;
+}
+interface MediaBalance { dateien: number; verwendet: number; verwaist: number; fehlend: number; abrufbar: number; nachLizenz: { frei: number; zitat: number; unbekannt: number } }
 
 /**
  * Live-Wiki-Import direkt aus dem Browser, ohne Server-Umweg: MediaWiki-APIs beantworten
@@ -120,6 +126,57 @@ async function fetchWikiTemplates(probe: WikiProbe, onProgress: (p: WikiFetchPro
 }
 
 /**
+ * Der Dateibestand des Wikis — Metadaten, keine Bytes.
+ *
+ * Er wird mitgeladen, weil ohne ihn zu jedem Bild nur der Name bekannt ist: kein Uploader, keine
+ * Lizenzkategorie, keine Adresse, unter der die Bytes später zu holen wären. Genau diese vier
+ * Angaben sind der Unterschied zwischen „ein Bild ist im Artikel erwähnt" und „das Bild hat eine
+ * belegte Herkunft". Ein Wiki, das `imageinfo` verweigert, importiert trotzdem — dann bleibt es
+ * eben bei den Namen, und das steht dann auch so im Bericht.
+ */
+async function fetchWikiMedia(probe: WikiProbe, onProgress: (p: WikiFetchProgress) => void, signal?: AbortSignal): Promise<LiveMediaFile[]> {
+  const rows = new Map<string, LiveMediaFile>();
+  let cont: Record<string, string> | null = null, batch = 0;
+  do {
+    const data = await wikiApiGet(probe.endpoint, {
+      action: "query", generator: "allpages", gapnamespace: "6", gaplimit: "50", gapfilterredir: "nonredirects",
+      prop: "imageinfo|categories|fileusage|revisions",
+      iiprop: "url|mime|size|user|timestamp|extmetadata", cllimit: "max", fulimit: "max", funamespace: "0",
+      rvprop: "content", rvslots: "main", ...(cont ?? {}),
+    }, signal) as {
+      continue?: Record<string, string>;
+      query?: { pages?: { title: string; imageinfo?: { url?: string; descriptionurl?: string; mime?: string; size?: number; width?: number; height?: number; user?: string; timestamp?: string; extmetadata?: Record<string, { value?: unknown }> }[];
+        categories?: { title: string }[]; fileusage?: { title: string }[]; revisions?: { slots?: { main?: { content?: string } } }[] }[] };
+    };
+    batch += 1;
+    for (const page of data.query?.pages ?? []) {
+      const info = page.imageinfo?.[0];
+      // `continue` liefert dieselbe Seite mehrfach, jedes Mal mit einem weiteren Teil ihrer
+      // Kategorien oder Verwendungen. Zusammenführen statt überschreiben, sonst verliert eine
+      // vielgenutzte Datei genau die Liste, die sie vor der Verwaisung bewahrt.
+      const bisher = rows.get(page.title);
+      const kategorien = [...new Set([...(bisher?.categories ?? []), ...(page.categories ?? []).map((c) => c.title)])];
+      const genutzt = [...new Set([...(bisher?.used_by_articles ?? []), ...(page.fileusage ?? []).map((c) => c.title)])];
+      const extmetadata = info?.extmetadata ?? {};
+      const licence: Record<string, string | null> = {};
+      for (const key of ["LicenseShortName", "License", "UsageTerms", "Artist", "Credit", "Copyrighted", "Attribution", "LicenseUrl"]) {
+        const value = extmetadata[key]?.value;
+        licence[key] = typeof value === "string" ? value : null;
+      }
+      rows.set(page.title, { ...bisher, title: page.title, categories: kategorien, used_by_articles: genutzt, licence,
+        ...(info?.url ? { url: info.url } : {}), ...(info?.descriptionurl ? { descriptionurl: info.descriptionurl } : {}),
+        ...(info?.mime ? { mime: info.mime } : {}), ...(typeof info?.size === "number" ? { size: info.size } : {}),
+        ...(typeof info?.width === "number" ? { width: info.width } : {}), ...(typeof info?.height === "number" ? { height: info.height } : {}),
+        ...(info?.user ? { uploader: info.user } : {}), ...(info?.timestamp ? { uploaded_at: info.timestamp } : {}),
+        ...(page.revisions?.[0]?.slots?.main?.content ? { description_page_wikitext: page.revisions[0]!.slots!.main!.content! } : {}) });
+    }
+    onProgress({ fetched: rows.size, total: 0, batch });
+    cont = data.continue ?? null;
+  } while (cont && !signal?.aborted);
+  return [...rows.values()];
+}
+
+/**
  * Übersetzt die technischen "pfad: grund"-Meldungen des Servers (packages/io/src/validation.ts,
  * eron.ts) in verständliches Deutsch mit einer konkreten nächsten Handlung. Unbekannte Meldungen
  * (z. B. die bereits deutschen Texte aus app.ts wie "Konflikt: …") bleiben unverändert — nichts
@@ -191,12 +248,13 @@ function groupLosses(verluste: Report["verluste"]): [string, Report["verluste"]]
 
 export function ImportView({ campaignId, onClose, onImported }: { campaignId: string; onClose: () => void; onImported: () => void }) {
   const task = useTask(), [mode, setMode] = useState<"live" | "upload">("live");
-  const [articles, setArticles] = useState<File | null>(null), [templates, setTemplates] = useState<File | null>(null);
+  const [articles, setArticles] = useState<File | null>(null), [templates, setTemplates] = useState<File | null>(null), [mediaFile, setMediaFile] = useState<File | null>(null);
   const [attributionFile, setAttributionFile] = useState<File | null>(null), [attributionConfirmed, setAttributionConfirmed] = useState(false), [license, setLicense] = useState("CC-BY-SA-3.0");
   const [wikiUrl, setWikiUrl] = useState(""), [preview, setPreview] = useState<Preview | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set()), [applied, setApplied] = useState<number | null>(null), [resuming, setResuming] = useState(false), [resumeError, setResumeError] = useState("");
   const [probe, setProbe] = useState<WikiProbe | null>(null), [phase, setPhase] = useState(""), [cancelable, setCancelable] = useState(false);
   const [pageTitles, setPageTitles] = useState<Record<number, string>>({});
+  const [mediaWarning, setMediaWarning] = useState("");
   const liveAbort = useRef<AbortController | null>(null), successRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -222,7 +280,7 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
   const changeWikiUrl = (value: string) => { setWikiUrl(value); setProbe(null); };
   const normalizeWikiUrl = () => { const base = wikiBaseUrl(wikiUrl); if (base && base !== wikiUrl) setWikiUrl(base); };
 
-  const sendToServer = async (articleJson: unknown[], templateJson: unknown[], effectiveWikiUrl: string) => {
+  const sendToServer = async (articleJson: unknown[], templateJson: unknown[], effectiveWikiUrl: string, mediaJson?: unknown[]) => {
     let attributionByPageId: unknown;
     if (attributionFile) {
       if (!attributionConfirmed) throw new Error("Bestätige die vollständige Autorenhistorie der mitgelieferten Nachweise.");
@@ -232,7 +290,8 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
     }
     setPhase("Wird an den Server gesendet und ausgewertet – bei größeren Wikis kann das etwas dauern …");
     const result = await api<Preview>(apiPath(campaignId, "/imports/eron"), { method: "POST",
-      body: { articles: articleJson, templates: templateJson, wikiUrl: effectiveWikiUrl, license, ...(attributionByPageId ? { attributionByPageId } : {}) } });
+      body: { articles: articleJson, templates: templateJson, wikiUrl: effectiveWikiUrl, license,
+        ...(mediaJson?.length ? { media: mediaJson } : {}), ...(attributionByPageId ? { attributionByPageId } : {}) } });
     setPreview(result); setSelected(new Set()); setApplied(null); setPhase("");
     const url = new URL(location.href); url.searchParams.set("import", result.artifactId); window.history.replaceState(null, "", url);
   };
@@ -257,7 +316,14 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
       if (typeof pageid === "number" && typeof title === "string") titles[pageid] = title;
     }
     setPageTitles(titles);
-    await sendToServer(articleJson, templateJson, base);
+    let mediaJson: unknown[] | undefined;
+    if (mediaFile) {
+      let parsed: unknown;
+      try { parsed = JSON.parse(await mediaFile.text()); } catch { throw new Error(`„${mediaFile.name}" enthält kein gültiges JSON. Das Dateiverzeichnis ist freiwillig — du kannst den Import auch ohne es starten.`); }
+      if (!Array.isArray(parsed)) throw new Error(`„${mediaFile.name}" ist keine JSON-Liste. Das Dateiverzeichnis muss ein Array von Dateien sein.`);
+      mediaJson = parsed;
+    }
+    await sendToServer(articleJson, templateJson, base, mediaJson);
   });
 
   const runProbe = () => task.run(async () => {
@@ -277,8 +343,13 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
       const liveArticles = await fetchWikiArticles(probe, (p) => setPhase(`Lädt Artikel … ${p.fetched}${p.total ? ` von ca. ${p.total}` : ""} (Stapel ${p.batch})`), controller.signal);
       setPageTitles(Object.fromEntries(liveArticles.map((a) => [a.pageid, a.title])));
       const liveTemplates = await fetchWikiTemplates(probe, (p) => setPhase(`Lädt Vorlagen … ${p.fetched} geladen (Stapel ${p.batch})`), controller.signal);
+      // Ein Wiki, dessen Dateiliste nicht antwortet, ist kein gescheiterter Import: die Artikel
+      // sind da, die Bilder heißen dann eben nur beim Namen. Deshalb wird hier gefangen.
+      let liveMedia: LiveMediaFile[] = [];
+      try { liveMedia = await fetchWikiMedia(probe, (p) => setPhase(`Lädt Dateiverzeichnis … ${p.fetched} Dateien (Stapel ${p.batch})`), controller.signal); }
+      catch (error) { if (controller.signal.aborted) throw error; setMediaWarning("Das Dateiverzeichnis dieses Wikis war nicht abrufbar. Die Artikel werden vollständig importiert; die Bilder bleiben zunächst nur als Namen vermerkt."); }
       const base = wikiBaseUrl(wikiUrl) ?? probe.endpoint;
-      await sendToServer(liveArticles, liveTemplates, base);
+      await sendToServer(liveArticles, liveTemplates, base, liveMedia);
     } finally { liveAbort.current = null; setCancelable(false); }
   });
   const cancelLive = () => liveAbort.current?.abort();
@@ -333,13 +404,17 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
           </div>
         </>}
       </div> : <div className="panel">
-        <p>Zwei JSON-Dateien aus einem MediaWiki-API-Export dieses Wikis: <strong>articles.json</strong> (ein Eintrag je Artikel mit Titel, Seiten-ID, Namensraum, Revisions-ID und dem vollständigen Wikitext) und <strong>templates.json</strong> (ein Eintrag je Infobox-Vorlage mit Titel und Quelltext). Das ist NICHT die Datei aus „Spezial:Exportieren" des Wikis — die liefert XML ohne Vorlagen und ohne Seiten-ID. Ohne eigenen JSON-Export lieber oben „Direkt aus dem Wiki laden" verwenden.</p>
-        <details><summary>Genaues Format der beiden Dateien</summary>
-          <pre>{"articles.json:  [{ \"title\": \"Erismus\", \"pageid\": 305, \"ns\": 0, \"revid\": 1023, \"wikitext\": \"…\" }, …]\ntemplates.json: [{ \"title\": \"Vorlage:Person\", \"source\": \"…\" }, …]"}</pre>
+        <p>Zwei JSON-Dateien aus einem MediaWiki-API-Export dieses Wikis, optional eine dritte für die Bilder: <strong>articles.json</strong> (ein Eintrag je Artikel mit Titel, Seiten-ID, Namensraum, Revisions-ID und dem vollständigen Wikitext) und <strong>templates.json</strong> (ein Eintrag je Infobox-Vorlage mit Titel und Quelltext). Das ist NICHT die Datei aus „Spezial:Exportieren" des Wikis — die liefert XML ohne Vorlagen und ohne Seiten-ID. Ohne eigenen JSON-Export lieber oben „Direkt aus dem Wiki laden" verwenden.</p>
+        <details><summary>Genaues Format der Dateien</summary>
+          <pre>{"articles.json:  [{ \"title\": \"Erismus\", \"pageid\": 305, \"ns\": 0, \"revid\": 1023, \"wikitext\": \"…\" }, …]\ntemplates.json: [{ \"title\": \"Vorlage:Person\", \"source\": \"…\" }, …]\nmedia.json:     [{ \"title\": \"Datei:Bodin.jpg\", \"url\": \"https://…\", \"uploader\": \"…\", \"used_by_articles\": [\"Bodin\"] }, …]"}</pre>
         </details>
         <div className="import-files">
           <label><FileJson size={20} /> Artikeldatei<input type="file" accept=".json,application/json" required disabled={task.busy} onChange={(event) => setArticles(event.target.files?.[0] ?? null)} /><span className="field-help">articles.json mit vollständigem Wikitext</span></label>
           <label><FileJson size={20} /> Vorlagendatei<input type="file" accept=".json,application/json" required disabled={task.busy} onChange={(event) => setTemplates(event.target.files?.[0] ?? null)} /><span className="field-help">templates.json mit Infobox-Definitionen</span></label>
+          {/* Freiwillig, und deshalb ohne `required`: ohne diese Datei importieren die Artikel
+              vollstaendig, die Bilder heissen dann eben nur beim Namen. Mit ihr kommen Uploader,
+              Lizenzstand und die Adresse mit, unter der die Bilddateien zu holen sind. */}
+          <label><ImageIcon size={20} /> Dateiverzeichnis <small>(freiwillig)</small><input type="file" accept=".json,application/json" disabled={task.busy} onChange={(event) => setMediaFile(event.target.files?.[0] ?? null)} /><span className="field-help">media.json mit Herkunft und Lizenzstand der Bilder</span></label>
         </div>
         <Button type="submit" variant="primary" disabled={task.busy || !articles || !templates || !wikiUrl.trim()}><Upload size={16} /> Importvorschau erstellen</Button>
         {!task.busy && (!wikiUrl.trim() || !articles || !templates) ? <p className="field-help">
@@ -361,6 +436,18 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
         <div className="button-row"><Button variant="primary" onClick={onClose}><ArrowLeft size={16} /> Zur Chronik — importierte Artikel ansehen</Button></div>
       </div> : null}
       {!preview.attributionComplete ? <Notice>Die vollständige Autorenhistorie und Revisionsnachweise fehlen in diesem Export. Diese Lücke bleibt in jeder Quellenangabe vermerkt. Importierte Texte bleiben Notizen; Medien sind nicht als lizenzgeprüft freigegeben.</Notice> : null}
+      {mediaWarning ? <Notice>{mediaWarning}</Notice> : null}
+      {preview.medien && preview.medien.dateien > 0 ? <section className="panel"><div className="section-heading"><h2><ImageIcon size={18} /> Die Bilder</h2><span className="muted">{preview.medien.dateien} Dateien</span></div>
+        <p className="field-help">Bilder werden mit importiert: Herkunft, Uploader und Lizenzstand kommen jetzt mit, die Bilddateien selbst holst du danach in der Chronik unter „Bilder“ — in einem eigenen Schritt, damit ein langsames Bild nie den Text aufhält.</p>
+        <div className="import-metrics">
+          <div><strong>{preview.medien.verwendet}</strong><span>in Artikeln verwendet</span></div>
+          <div><strong>{preview.medien.abrufbar}</strong><span>mit abrufbarer Datei</span></div>
+          <div><strong>{preview.medien.verwaist}</strong><span>von keinem Artikel benutzt</span></div>
+          <div><strong>{preview.medien.nachLizenz.unbekannt}</strong><span>ohne dokumentierte Lizenz</span></div>
+        </div>
+        {preview.medien.nachLizenz.unbekannt > 0 ? <p className="field-help">Bei {preview.medien.nachLizenz.unbekannt} von {preview.medien.dateien} Dateien nennt das Quell-Wiki keine Lizenz. Sie werden importiert und sichtbar als „Lizenz unbekannt“ geführt — nicht stillschweigend als frei behandelt. Du kannst den Status je Datei selbst setzen.</p> : null}
+        {preview.medien.fehlend > 0 ? <p className="field-help">{preview.medien.fehlend} {preview.medien.fehlend === 1 ? "Datei wird" : "Dateien werden"} in Artikeln erwähnt, {preview.medien.fehlend === 1 ? "existiert" : "existieren"} im Quell-Wiki aber nicht.</p> : null}
+      </section> : null}
       <div className="import-metrics"><div><strong>{preview.report.eintraege}</strong><span>Artikel</span></div><div><strong>{preview.report.passagen}</strong><span>Passagen</span></div><div><strong>{preview.report.aliase}</strong><span>Weiterleitungen</span></div><div><strong>{formatPercent(preview.report.textErhaltung)}</strong><span>Texterhaltung</span></div><div><strong>{preview.report.verluste.length}</strong><span>Hinweise zur Übernahme</span></div></div>
       <div className="button-row import-actions"><Button disabled={task.busy} onClick={() => void download()}><Download size={16} /> Quelle und Bericht sichern</Button><Button onClick={() => { navigator.clipboard?.writeText(location.href).catch(() => task.setError("Der Link konnte nicht kopiert werden. Kopiere die Adresse aus der Browserzeile.")); }}>Bericht-Link kopieren</Button></div>
       <section className="panel"><div className="section-heading"><h2>Was möchtest du übernehmen?</h2><span className="muted">{selected.size} ausgewählt</span></div><p className="field-help">{preview.notice}</p>

@@ -76,7 +76,13 @@ function block(value: unknown, path: string, entries: Map<string, Row>, assets: 
     case "absatz": case "zitat":
       keys(row, ["kind", "inhalt"], path); inline(row.inhalt, `${path}.inhalt`, entries); break;
     case "bildunterschrift":
-      keys(row, ["kind", "assetId", "inhalt"], path); reference(row.assetId, assets, `${path}.assetId`); inline(row.inhalt, `${path}.inhalt`, entries); break;
+      keys(row, ["kind", "assetId", "inhalt", "dateiname", "alt", "ausrichtung", "breite", "ausInfobox"], path);
+      reference(row.assetId, assets, `${path}.assetId`); inline(row.inhalt, `${path}.inhalt`, entries);
+      optional(row, "dateiname", path); optional(row, "alt", path);
+      if (row.ausrichtung !== undefined) choice(row.ausrichtung, ["links", "rechts", "zentriert", "ohne"], `${path}.ausrichtung`);
+      if (row.breite !== undefined) integer(row.breite, `${path}.breite`, 1);
+      if (row.ausInfobox !== undefined) boolean(row.ausInfobox, `${path}.ausInfobox`);
+      break;
     case "feld":
       keys(row, ["kind", "schluessel", "label", "gruppe", "werte", "mehrwertig", "klauselKandidat"], path);
       string(row.schluessel, `${path}.schluessel`, 512); string(row.label, `${path}.label`, 1000); optional(row, "gruppe", path);
@@ -132,11 +138,21 @@ export function validateWikiBundle(value: unknown): WikiBundle {
     if (sequences.has(seq)) throw new ImportValidationError(path, "duplicate revision sequence"); sequences.add(seq);
   }
   for (const asset of assets.values()) {
-    const path = `assets.${String(asset.id)}`; keys(asset, ["id", "universeId", "dateiname", "mime", "sha256", "lizenzStatus", "lizenzQuelle", "lizenzGesetztVon", "beschreibungsseiteUrl"], path);
+    const path = `assets.${String(asset.id)}`; keys(asset, ["id", "universeId", "dateiname", "mime", "sha256", "lizenzStatus", "lizenzQuelle", "lizenzGesetztVon", "beschreibungsseiteUrl", "breite", "hoehe", "bytes", "urheber", "hochgeladenAm", "quellUrl", "behaupteterMime", "verwendetVon", "verwaist", "imBestand"], path);
     if (asset.universeId !== row.universeId) throw new ImportValidationError(path, "asset universe differs from bundle");
-    string(asset.dateiname, `${path}.dateiname`, 512); string(asset.mime, `${path}.mime`, 200); hash(asset.sha256, `${path}.sha256`);
+    string(asset.dateiname, `${path}.dateiname`, 512);
+    // Beide oder keins: `mime` und `sha256` beschreiben Bytes. Ein Bündel darf eine Datei
+    // führen, deren Bytes nie geholt wurden — sonst wäre ein Artikel erst exportierbar, wenn
+    // jedes Bild darin heruntergeladen ist. Es darf nur nie einen Typ ohne Messung behaupten.
+    if ((asset.mime === undefined) !== (asset.sha256 === undefined)) throw new ImportValidationError(path, "asset mime and sha256 are set together or not at all");
+    if (asset.mime !== undefined) { string(asset.mime, `${path}.mime`, 200); hash(asset.sha256, `${path}.sha256`); }
     choice(asset.lizenzStatus, ["frei", "zitat", "unbekannt"], `${path}.lizenzStatus`); choice(asset.lizenzGesetztVon, ["import", "mensch"], `${path}.lizenzGesetztVon`);
     optional(asset, "lizenzQuelle", path); optional(asset, "beschreibungsseiteUrl", path);
+    optional(asset, "urheber", path); optional(asset, "hochgeladenAm", path); optional(asset, "quellUrl", path);
+    optional(asset, "behaupteterMime", path);
+    for (const key of ["verwaist", "imBestand"]) if (asset[key] !== undefined) boolean(asset[key], `${path}.${key}`);
+    if (asset.verwendetVon !== undefined) array(asset.verwendetVon, `${path}.verwendetVon`, 10_000).forEach((title, i) => string(title, `${path}.verwendetVon[${i}]`, 512));
+    for (const key of ["breite", "hoehe", "bytes"]) if (asset[key] !== undefined) integer(asset[key], `${path}.${key}`, 1);
   }
   const ordinals = new Set<string>();
   for (const passage of passages.values()) {

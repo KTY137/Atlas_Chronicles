@@ -1,9 +1,9 @@
 import {
-  CAMPAIGN_V4_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES,
+  CAMPAIGN_V7_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables,
   createCurrentCampaignBundle as createCampaignBundle, validateCurrentCampaignBundle as validateCampaignBundle,
   currentCampaignSemanticDiff as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, upgradeCampaignBundleV4,
-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV4 as CampaignTables,
-  type CampaignTableNameV4 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV7 as CampaignTables,
+  type CampaignTableNameV7 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -11,8 +11,8 @@ import { createCampaigns } from "./campaigns.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { Conflict, Gone } from "./errors.ts";
 
-const MIGRATION = "012_authoring.sql";
-const identityColumns = new Set(["owner_user_id", "user_id", "created_by", "author_user_id", "issued_by", "granted_by", "prepared_by", "installed_by", "started_by", "updated_by", "sent_by", "reader_user_id", "actor_user_id", "accepted_by", "captured_by", "published_by"]);
+const MIGRATION = "015_wiki_assets.sql";
+const identityColumns = new Set(["owner_user_id", "user_id", "created_by", "author_user_id", "issued_by", "granted_by", "prepared_by", "installed_by", "started_by", "updated_by", "sent_by", "reader_user_id", "actor_user_id", "accepted_by", "captured_by", "published_by", "geholt_von"]);
 const destinationTables = [...CAMPAIGN_TABLES.map(table => table.name), ...CAMPAIGN_EXCLUDED_TABLES.filter(name => name !== "schema_migrations")];
 const excludedTables = new Set<string>(CAMPAIGN_EXCLUDED_TABLES);
 const coveredColumns = new Map<string, ReadonlySet<string>>(CAMPAIGN_TABLES.map(table => [table.name,
@@ -34,6 +34,9 @@ const restoreOrder: readonly CampaignTableName[] = [
   "tactical_command_receipts", "tactical_transitions",
   "theme_presets", "theme_preset_revisions", "campaign_theme_pins", "campaign_publications",
   "entry_publications", "publication_routes", "authoring_events",
+  "tactical_map_nodes", "betreten_karten", "betreten_command_receipts",
+  // Erst die Assets, dann ihre Verwendungen: eine Verwendung zeigt auf Asset UND Passage.
+  "wiki_assets", "wiki_asset_uses",
 ];
 
 export class CampaignRestoreError extends Error {
@@ -42,7 +45,7 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 4 | 5; migration?: CampaignMigrationChain;
+  formatVersion: 4 | 5 | 6 | 7; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
   sourceVersion: 1 | 2 | 3 | 4; targetVersion: 4 | 5; sourceContentHash: string; targetContentHash: string;
@@ -54,8 +57,9 @@ function migrationChain(steps: CampaignMigrationChain["steps"]): CampaignMigrati
   return { ...value, reportHash: canonicalHash(value as unknown as CanonicalValue) };
 }
 function report(bundle: CampaignBundle, dryRun: boolean, migration?: CampaignMigrationChain): CampaignRestoreReport {
+  const tables = currentCampaignTables(bundle);
   return { campaignId: bundle.manifest.campaignId, universeId: bundle.manifest.universeId,
-    contentHash: bundle.manifest.contentHash, rows: CAMPAIGN_TABLES.reduce((sum, table) => sum + bundle.tables[table.name].length, 0),
+    contentHash: bundle.manifest.contentHash, rows: CAMPAIGN_TABLES.reduce((sum, table) => sum + tables[table.name].length, 0),
     identitiesWithoutCredentials: bundle.tables.users.length, enrollmentRequired: true, dryRun, formatVersion: bundle.version,
     ...(migration ? { migration } : {}) };
 }
@@ -97,7 +101,7 @@ async function requireCoveredSchema(tx: Db): Promise<void> {
     LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped
     WHERE n.nspname=current_schema() AND c.relkind IN ('r','p')`)).rows;
   const present = new Map<string, Set<string>>();
-  const incompatible = () => new CampaignRestoreError("Application schema is not covered by native campaign v4/v5; an explicit format migration is required.");
+  const incompatible = () => new CampaignRestoreError("Application schema is not covered by native campaign v4/v5/v6/v7; an explicit format migration is required.");
   for (const { table_name, column_name } of columns) {
     if (excludedTables.has(table_name)) continue;
     const allowed = coveredColumns.get(table_name);
@@ -156,7 +160,7 @@ export async function exportCampaignBundle(db: Db, userId: string, campaignId: s
 
 async function requireSchema(tx: Db): Promise<void> {
   if (!(await tx.query("SELECT name FROM schema_migrations WHERE name=$1", [MIGRATION])).rowCount)
-    throw new CampaignRestoreError("Destination requires migration 012; initialize the empty destination explicitly first.");
+    throw new CampaignRestoreError("Destination requires migration 014; initialize the empty destination explicitly first.");
   await requireCoveredSchema(tx);
 }
 async function requireEmpty(tx: Db, allowMissing = false): Promise<void> {
@@ -200,6 +204,7 @@ export async function inspectCampaignRestore(db: Db, input: unknown, options: Ca
 /** Administrator-only construction into an empty target. Never expose as an HTTP route. */
 export async function restoreCampaignBundle(db: Db, input: unknown, options: CampaignRestoreOptions = {}): Promise<CampaignRestoreReport> {
   const { bundle, migration } = restoreInput(input, options);
+  const tables = currentCampaignTables(bundle);
   return db.transaction(async tx => {
     await tx.query("SELECT pg_advisory_xact_lock(7342619)");
     await requireSchema(tx);
@@ -210,7 +215,7 @@ export async function restoreCampaignBundle(db: Db, input: unknown, options: Cam
     await tx.query("SET LOCAL chronicle.restore = 'on'");
     for (const name of restoreOrder) {
       const table = CAMPAIGN_TABLES.find(item => item.name === name)!;
-      const rows = bundle.tables[name];
+      const rows = tables[name];
       if (!rows.length) continue;
       const columns = table.columns.map(quoted).join(",");
       // A single typed recordset supports intra-table parent references without unsafe

@@ -28,6 +28,10 @@ const closed = { additionalProperties: false } as const;
 export const BetretenSchema = Type.Object({
   commandId: Type.String({ minLength: 1, maxLength: 128 }),
   knotenId: Type.String({ minLength: 1, maxLength: 128 }),
+  parentKind: Type.Optional(Type.Union([Type.Literal("atlas"), Type.Literal("tactical")])),
+  parentMapId: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
+  expectedVersion: Type.Optional(Type.Integer({ minimum: 1 })),
+  targetMapId: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" })),
 }, closed);
 
@@ -39,6 +43,7 @@ export function registerBetreten(app: FastifyInstance, db: Db, config: IdentityC
   const base = "/api/campaigns/:campaignId";
   type Knoten = { campaignId: string; knotenId: string };
   type Scope = { campaignId: string };
+  type Parent = Scope & { parentKind: "atlas" | "tactical"; parentMapId: string };
 
   async function run<T>(work: () => Promise<T>): Promise<T> {
     try { return await work(); } catch (error) {
@@ -51,11 +56,22 @@ export function registerBetreten(app: FastifyInstance, db: Db, config: IdentityC
     }
   }
 
-  // Read-only: may I go in, and is there already something behind this door? Answering needs no
-  // leitung, because a member has to be able to see a door to decide whether to knock.
+  // Legacy descriptor uses the same atlas visibility projection as the scoped route.
+  // Player responses never include generator seeds or the ids of private tactical drafts.
   app.get<{ Params: Knoten }>(
     `${base}/knoten/:knotenId/betretbar`,
     req => run(async () => betreten.betretbar(await auth(req.headers.cookie), req.params.campaignId, req.params.knotenId)),
+  );
+
+  app.get<{ Params: Parent & { knotenId: string } }>(
+    `${base}/maps/:parentKind/:parentMapId/knoten/:knotenId/betretbar`,
+    req => run(async () => betreten.betretbar(await auth(req.headers.cookie), req.params.campaignId, req.params.knotenId,
+      { parentKind: req.params.parentKind, parentMapId: req.params.parentMapId })),
+  );
+  app.get<{ Params: Parent }>(
+    `${base}/maps/:parentKind/:parentMapId/children`,
+    req => run(async () => betreten.children(await auth(req.headers.cookie), req.params.campaignId,
+      { parentKind: req.params.parentKind, parentMapId: req.params.parentMapId })),
   );
 
   // Entering twice returns the first map, never a second one: an address that mints a new place

@@ -1,0 +1,26 @@
+.atlas-breadcrumbs{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:20px;color:var(--text-muted)}
+.atlas-breadcrumbs>span{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.atlas-breadcrumbs button{border:0;border-radius:6px;padding:8px;background:transparent;color:var(--text);font:inherit;cursor:pointer;overflow-wrap:anywhere}
+.atlas-breadcrumbs button:disabled{color:var(--text-muted);cursor:default}
+.atlas-breadcrumbs button:hover:not(:disabled){background:var(--surface-2)}
+.nested-map-workspace{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+.nested-map-rooms{min-width:0;max-height:740px;overflow:auto}
+.nested-map-rooms h2{font-size:18px;margin-top:0}
+.nested-map-rooms ul{list-style:none;padding:0;margin:14px 0}
+.nested-map-rooms li>button{width:100%;display:flex;gap:12px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;color:inherit;padding:12px 8px;border-radius:8px;cursor:pointer;font:inherit}
+.nested-map-rooms li>button:hover,.nested-map-rooms li>button[aria-pressed=true]{background:var(--surface-2);border-color:var(--line)}
+.nested-map-rooms li>button>svg{flex-shrink:0;color:var(--accent-strong)}
+.nested-map-rooms li>button span{overflow-wrap:anywhere}
+.nested-map-rooms small{display:block;font-size:11px;margin-top:3px;color:var(--text-muted)}
+.atlas-entrance{display:flex;flex-direction:column;align-items:stretch;gap:10px;border-top:1px solid var(--line);padding-top:18px;margin-top:18px}
+.atlas-entrance h3{display:flex;align-items:center;gap:8px;margin:0}
+.atlas-entrance p{font-size:12px;line-height:1.6;margin:0}
+.atlas-entrance form{display:grid;gap:12px;min-width:0}
+.atlas-entrance select{width:100%;min-width:0}
+.atlas-entrance .button{white-space:normal;text-align:left}
+.nested-map-view>.atlas-heading{gap:16px;flex-wrap:wrap}
+.nested-map-view>.atlas-heading h1{overflow-wrap:anywhere}
+.nested-map-view .tactical-map-editor{margin-top:20px}
+.nested-map-view .tactical-canvas{min-height:480px}
+@media(max-width:1050px){.nested-map-workspace{grid-template-columns:minmax(0,1fr)}.nested-map-rooms{max-height:none}.nested-map-rooms ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.nested-map-view .tactical-canvas{min-height:360px}}
+@media(max-width:600px){.atlas-breadcrumbs{font-size:12px;gap:2px}.atlas-breadcrumbs button{padding:6px}.nested-map-view .tactical-canvas{min-height:300px}.nested-map-view .atlas-heading .button-row{width:100%;flex-wrap:wrap}.atlas-entrance{width:100%;display:flex}.nested-map-rooms ul{grid-template-columns:minmax(0,1fr)}}

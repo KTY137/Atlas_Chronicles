@@ -83,7 +83,19 @@ export type ProjBlock =
       readonly punkte: readonly (readonly ProjInline[])[];
     }
   | { readonly kind: "zitat"; readonly inhalt: readonly ProjInline[] }
-  | { readonly kind: "bildunterschrift"; readonly assetId: string; readonly inhalt: readonly ProjInline[] }
+  | {
+      readonly kind: "bildunterschrift";
+      readonly assetId: string;
+      readonly inhalt: readonly ProjInline[];
+      // Der Dateiname wird mitprojiziert, damit ein Bild, dessen Bytes noch nicht geholt sind,
+      // sich benennen kann statt als Loch zu erscheinen. Er ist Quelltext des Wikis, kein Wissen.
+      readonly dateiname?: string;
+      readonly alt?: string;
+      readonly ausrichtung?: "links" | "rechts" | "zentriert" | "ohne";
+      readonly breite?: number;
+      /** Das Portrait aus der Infobox. Eine Aussage über die Darstellung, nicht über Herkunft. */
+      readonly ausInfobox?: boolean;
+    }
   | { readonly kind: "rohblock"; readonly quelltext: string; readonly grund: string };
 
 export interface ProjiziertePassage {
@@ -181,6 +193,11 @@ function projiziereBlock(b: Blockinhalt, wissen: BetrachterWissen): ProjBlock {
         kind: "bildunterschrift",
         assetId: b.assetId,
         inhalt: projiziereInline(b.inhalt, wissen),
+        ...(b.dateiname !== undefined ? { dateiname: b.dateiname } : {}),
+        ...(b.alt !== undefined ? { alt: b.alt } : {}),
+        ...(b.ausrichtung !== undefined ? { ausrichtung: b.ausrichtung } : {}),
+        ...(b.breite !== undefined ? { breite: b.breite } : {}),
+        ...(b.ausInfobox !== undefined ? { ausInfobox: b.ausInfobox } : {}),
       };
     case "rohblock":
       return { kind: "rohblock", quelltext: b.quelltext, grund: b.grund };

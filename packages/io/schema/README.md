@@ -9,6 +9,15 @@ historical revision digests, source artifacts, declarative rule packages, roll
 replay and immutable mint/letter/delivery evidence. A JSON Schema-only pass does
 not certify those semantic constraints or grant authentication.
 
+Atlas source artifacts additionally accept `eron-map` alongside `azgaar`.
+The artifact retains the existing normalized atlas fields, with
+`quelle.format: "fandom-interactivemap"`, the complete original JSON, source
+hash and stable marker identities. The reference parser re-derives the bounded
+Fandom adapter output and rejects changed coordinates, metadata or identities.
+The published structural schemas v1–v5 include this source discriminator; all
+other table/field and evidence checks remain in force. Background image bytes
+are not embedded in this source-artifact profile.
+
 Use the database-free reader:
 
 ```powershell

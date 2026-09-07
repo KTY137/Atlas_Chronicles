@@ -1,11 +1,12 @@
 import {
-  canonicalHash, canonicalJson, deriveEntryId, deriveId, derivePassageId, trustImportId, trustRevisionId,
-  type CanonicalValue, type EntryId, type PassageId,
+  canonicalHash, canonicalJson, deriveAssetId, deriveEntryId, deriveId, derivePassageId, trustImportId, trustRevisionId,
+  type AssetId, type CanonicalValue, type EntryId, type PassageId,
 } from "@chronicle/core";
 import { tuerklasse, type Alias, type Blockinhalt, type Entry, type InlineMark, type InlineText, type Link, type Passage, type Revision, type Verlust } from "@chronicle/chronik";
-import type { EronArticle, EronImportInput, EronImportResult, EronReimportPlan, EronTemplate, ImportProvenance } from "./model.ts";
+import type { EronArticle, EronAssetEntwurf, EronImportInput, EronImportResult, EronMediaFile, EronReimportPlan, EronTemplate, ImportedMediaReference, ImportProvenance } from "./model.ts";
 import { array, assertJson, integer, object, sourceUrl, string, ImportValidationError } from "./validation.ts";
-import { namespaceLinkTarget, blockPlainText, decomposeWiki, eronNotationTarget, wikiSlug } from "./wikitext.ts";
+import { namespaceLinkTarget, blockPlainText, dateiSlug, decomposeWiki, eronNotationTarget, wikiSlug } from "./wikitext.ts";
+import { brauchbareQuelle, leseLizenz, parseMediaInventory } from "./medien.ts";
 
 const canonical = (value: unknown): CanonicalValue => value as CanonicalValue;
 
@@ -48,6 +49,7 @@ export function importEron(input: EronImportInput): EronImportResult {
   if (Buffer.byteLength(canonicalJson(canonical(original)), "utf8") > 20_000_000) throw new ImportValidationError("source", "maximum source size is 20 MB");
   const articles = parseArticles(input.articles).sort((a, b) => a.pageid - b.pageid);
   const templates = parseTemplates(input.templates);
+  const inventory = parseMediaInventory(input.media);
   const wikiUrl = sourceUrl(input.wikiUrl, "wikiUrl");
   string(input.universeId, "universeId", 128);
   if (input.campaignId !== undefined) string(input.campaignId, "campaignId", 128);
@@ -59,7 +61,7 @@ export function importEron(input: EronImportInput): EronImportResult {
   const base = { erzeuger: "eron-json", version: "1", keim: scope };
   const importId = trustImportId(deriveId({ ...base, kind: "import", pfad: [sourceHash, importiertAm] }));
   const entries: Entry[] = [], revisions: Revision[] = [], passages: Passage[] = [], aliases: Alias[] = [], links: Link[] = [];
-  const provenance: ImportProvenance[] = [], losses: Verlust[] = [], media: EronImportResult["media"][number][] = [];
+  const provenance: ImportProvenance[] = [], losses: Verlust[] = [], media: ImportedMediaReference[] = [];
   const targets = new Map<string, EntryId>(), redirects = new Map<string, string>();
   let droppedCharacters = 0;
   const entryIdFor = (pageid: number) => deriveEntryId({ ...base, kind: "entry", pfad: [String(pageid)] });
@@ -115,9 +117,78 @@ export function importEron(input: EronImportInput): EronImportResult {
       else provenance.push({ status: "incomplete", value: common, missing: ["complete-author-history", "revision-sha1"] });
     });
   }
+  /**
+   * DIE BILDER — from "a reference we chose not to convert" to an addressable asset.
+   *
+   * Two records, on purpose. A `ImportedMediaReference` is one article pointing at one file;
+   * an `EronAssetEntwurf` is the file itself. They are not the same thing and merging them was
+   * the first thing that broke: `Erismus` alone points at seven plates, `Valor Saron 3.jpg` is
+   * pointed at twice, and 14 files in the inventory are pointed at by nobody.
+   *
+   * The asset id is derived from the NORMALISED file name and the import scope, so the same
+   * picture keeps one identity across `[[Datei:Bodin.jpg|mini]]` in the body and
+   * `|Bild=Datei:Bodin.jpg` in an infobox — and keeps it across a reimport, which is what makes
+   * fetching the bytes a separate, resumable step rather than a second import.
+   */
+  const assetIdFor = (dateiname: string): AssetId => deriveAssetId({ ...base, kind: "asset", pfad: [dateiname] });
+  const inventoryBySlug = new Map<string, EronMediaFile>(inventory.map((file) => [dateiSlug(file.title), file]));
+  const referenced = [...new Set(media.map((row) => row.fileName))].sort();
+  const entwurf = (dateiname: string, file: EronMediaFile | undefined, verwaist: boolean): EronAssetEntwurf => {
+    const lizenz = file ? leseLizenz(file) : { status: "unbekannt" as const };
+    const quellUrl = brauchbareQuelle(file?.url);
+    const beschreibung = brauchbareQuelle(file?.descriptionurl);
+    return {
+      id: assetIdFor(dateiname), universeId: input.universeId, dateiname,
+      lizenzStatus: lizenz.status, lizenzGesetztVon: "import",
+      ...(lizenz.quelle ? { lizenzQuelle: lizenz.quelle } : {}),
+      ...(beschreibung ? { beschreibungsseiteUrl: beschreibung } : {}),
+      ...(quellUrl ? { quellUrl } : {}),
+      // Dimensions and byte count from the inventory are the source's CLAIM. They are useful for
+      // deciding what to fetch and are overwritten by measurement the moment bytes arrive.
+      ...(file?.width ? { breite: file.width } : {}), ...(file?.height ? { hoehe: file.height } : {}),
+      ...(file?.size ? { bytes: file.size } : {}), ...(file?.uploader ? { urheber: file.uploader } : {}),
+      ...(file?.uploaded_at ? { hochgeladenAm: file.uploaded_at } : {}),
+      ...(file?.mime ? { behaupteterMime: file.mime } : {}),
+      verwendetVon: [...(file?.used_by_articles ?? [])].sort(), verwaist, imBestand: file !== undefined,
+    };
+  };
+  const assets: EronAssetEntwurf[] = referenced.map((dateiname) => entwurf(dateiname, inventoryBySlug.get(dateiname), false));
+  for (const file of inventory) {
+    const dateiname = dateiSlug(file.title);
+    if (referenced.includes(dateiname)) continue;
+    /**
+     * „Verwaist" heißt: **das Quell-Wiki selbst** benutzt die Datei nirgends — nicht bloß, dass
+     * sie in den gerade übergebenen Artikeln nicht vorkommt. Der Unterschied ist keine Feinheit:
+     * wer zwei von 74 Artikeln importiert, hätte sonst 39 Dateien als verwaist gemeldet
+     * bekommen, die in Wahrheit zu den 72 anderen gehören. Eine verwaiste Datei ist ein Fund
+     * (fünf Andaria-Karten, die kein Artikel einbindet), eine außerhalb der Auswahl liegende
+     * ist schlicht nicht gemeint.
+     */
+    const verwaist = (file.used_by_articles?.length ?? 0) === 0;
+    assets.push(entwurf(dateiname, file, verwaist));
+    if (verwaist) losses.push({ art: "verwaiste-datei", bezeichnung: dateiname, detail: "Keine Seite dieses Wikis benutzt die Datei" });
+  }
+  assets.sort((a, b) => a.dateiname < b.dateiname ? -1 : a.dateiname > b.dateiname ? 1 : 0);
+  const assetsBySlug = new Map(assets.map((asset) => [asset.dateiname, asset]));
+  for (const dateiname of referenced) {
+    if (inventoryBySlug.has(dateiname) || inventory.length === 0) continue;
+    // The inventory answered, and this file is not in it: the article points at a picture that
+    // was never uploaded. That is a red link with an image tag, and it is worth saying so.
+    losses.push({ art: "nicht-umgewandelt", bezeichnung: dateiname, detail: "Die Datei ist im Quell-Wiki nicht vorhanden" });
+  }
+  const enrichedMedia: ImportedMediaReference[] = media.map((row) => {
+    const asset = assetsBySlug.get(row.fileName);
+    const file = inventoryBySlug.get(row.fileName);
+    return { ...row, licenseStatus: asset?.lizenzStatus ?? "unbekannt", state: file ? "beschrieben" : "referenziert",
+      ...(asset ? { assetId: asset.id } : {}),
+      ...(asset?.beschreibungsseiteUrl ? { beschreibungsseiteUrl: asset.beschreibungsseiteUrl } : {}),
+      ...(asset?.quellUrl ? { quellUrl: asset.quellUrl } : {}),
+      ...(asset?.urheber ? { urheber: asset.urheber } : {}),
+      ...(file?.mime ? { behaupteterMime: file.mime } : {}) };
+  });
   const missingTargets = new Map<string, Set<EntryId>>();
   const reject = input.rejectLinkTarget ?? eronNotationTarget;
-  const resolvedPassages = passages.map((passage): Passage => ({ ...passage, inhalt: mapInline(passage.inhalt, (inline) => inline.map((part) => ({
+  const linkedPassages = passages.map((passage): Passage => ({ ...passage, inhalt: mapInline(passage.inhalt, (inline) => inline.map((part) => ({
     ...part, marks: part.marks.flatMap<InlineMark>((mark) => {
       if (mark.art !== "link") return [mark];
       // A namespace link is not a missing article. Counting it as a door inflates the one
@@ -138,6 +209,15 @@ export function importEron(input: EronImportInput): EronImportResult {
       return [{ ...mark, ...(target ? { zielEntryId: target } : {}) }];
     }),
   }))) }));
+  /**
+   * The figure's asset id is resolved here and NOT before, for the same reason a link target is:
+   * `derivePassageId` hashes the block as the source wrote it, so a passage may not change
+   * identity because a file was later found, licensed or fetched.
+   */
+  const resolvedPassages = linkedPassages.map((passage): Passage => passage.inhalt.kind === "bildunterschrift"
+    ? { ...passage, inhalt: { ...passage.inhalt, assetId: assetIdFor(passage.inhalt.dateiname ?? String(passage.inhalt.assetId)) } }
+    : passage);
+
   /**
    * §2.8 keeps an unconvertible block RAW. That is a statement about STRUCTURE, and it must not
    * quietly become a statement about DEMAND: a refusal to convert is not a refusal to notice.
@@ -180,16 +260,20 @@ export function importEron(input: EronImportInput): EronImportResult {
   const passageCounts = { absatz: 0, feld: 0, liste: 0, zitat: 0, bildunterschrift: 0, rohblock: 0 };
   passages.forEach((passage) => passageCounts[passage.inhalt.kind]++);
   const doorCounts = { tuer: 0, spur: 0, notiz: 0, verworfen: 0 }; redLinks.forEach((link) => doorCounts[link.klasse]++);
+  const assetLicenceCounts = { frei: 0, zitat: 0, unbekannt: 0 }; assets.forEach((asset) => assetLicenceCounts[asset.lizenzStatus]++);
   const retainedCharacters = passages.reduce((sum, passage) => sum + blockPlainText(passage.inhalt).length, 0);
   return { importerVersion: "1", importId, universeId: input.universeId, ...(input.campaignId ? { campaignId: input.campaignId } : {}),
-    entries, revisions, passages: resolvedPassages, aliases, links, redLinks, provenance, media,
+    entries, revisions, passages: resolvedPassages, aliases, links, redLinks, provenance, media: enrichedMedia, assets,
     source: { format: "eron-json", sha256: sourceHash, wikiUrl, ...JSON.parse(JSON.stringify(original)) as typeof original },
     report: { importId, quelle: wikiUrl, eintraege: entries.length, aliase: aliases.length, passagen: passages.length,
       passagenNachArt: passageCounts, blaueKanten: links.filter((link) => link.zielEntryId !== undefined).length,
       roteKanten: links.filter((link) => link.zielEntryId === undefined).length, distinkteRoteZiele: redLinks.length,
       tuerbilanz: doorCounts, verluste: losses, textErhaltung: retainedCharacters + droppedCharacters === 0 ? 1 : retainedCharacters / (retainedCharacters + droppedCharacters),
-      // No file has been fetched or inspected; references are explicitly separate from Assets.
-      assetsNachLizenz: { frei: 0, zitat: 0, unbekannt: 0 } },
+      // Counted over FILES, not over references: seven plates in one article are seven files,
+      // and the same portrait used twice is one. No byte has been fetched at this point — the
+      // count says what the source wiki claims about its own pictures, which for this corpus is
+      // "nothing at all" for 37 of 41 of them.
+      assetsNachLizenz: assetLicenceCounts },
     reviewRequired: true, attributionComplete: provenance.every((item) => item.status === "complete"),
   };
 }

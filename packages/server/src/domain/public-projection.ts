@@ -132,7 +132,11 @@ function blockHtml(block: P.PublicBlock): string {
   switch (block.kind) {
     case "absatz": return `<p>${inlineHtml(block.inhalt)}</p>`;
     case "zitat": return `<blockquote>${inlineHtml(block.inhalt)}</blockquote>`;
-    case "bildunterschrift": return `<p class="caption">${inlineHtml(block.inhalt)}</p>`;
+    // Die öffentliche Auslieferung zeigt die Bilddatei NICHT: dafür bräuchte es eine anonyme
+    // Bildroute, und die ist eine eigene Entscheidung über Lizenz und Reichweite. Bis dahin steht
+    // hier die Unterschrift — und wo es keine gibt (jedes Infobox-Portrait), gar nichts, statt
+    // eines leeren Absatzes, der so tut, als fehle nur der Text.
+    case "bildunterschrift": return block.inhalt.length ? `<p class="caption">${inlineHtml(block.inhalt)}</p>` : "";
     case "feld": return `<dl><dt>${escape(block.label)}</dt>${block.werte.map(value => `<dd>${inlineHtml(value)}</dd>`).join("")}</dl>`;
     case "liste": { const tag = block.geordnet ? "ol" : "ul"; return `<${tag}>${block.punkte.map(value => `<li>${inlineHtml(value)}</li>`).join("")}</${tag}>`; }
     case "rohblock": return `<pre>${escape(block.quelltext)}</pre>`;

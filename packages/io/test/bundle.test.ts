@@ -10,7 +10,9 @@ const imported = importEron({
 });
 const data = { universeId: imported.universeId, entries: imported.entries, revisions: imported.revisions, passages: imported.passages,
   aliases: imported.aliases, links: imported.links, provenance: imported.provenance, sources: [imported.source], importReports: [imported.report],
-  revelations: [], lineage: [], assets: [] };
+  // Die Bildpassagen des Korpus verweisen auf Asset-Ids; ein Bündel ohne diese Assets wäre ein
+  // Bündel mit unauflösbaren Verweisen, und genau das lehnt der Validator zu Recht ab.
+  revelations: [], lineage: [], assets: imported.assets };
 const snapshot = () => JSON.parse(JSON.stringify(createWikiBundle(data)));
 
 describe("versioned wiki bundles", () => {

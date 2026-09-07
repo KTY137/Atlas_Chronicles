@@ -15,6 +15,7 @@ export {
   type InlineText,
   type Blockinhalt,
   type RohblockGrund,
+  type Bildausrichtung,
   type Geltung,
   type Praegung,
   type Passage,

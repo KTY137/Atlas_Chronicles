@@ -1,0 +1,3192 @@
+{
+    "mapImage": "Andaria 03.02.2024.jpg",
+    "pageCategories": [],
+    "defaultSort": "",
+    "description": "",
+    "coordinateOrder": "xy",
+    "mapBounds": [
+        [
+            0,
+            0
+        ],
+        [
+            8192,
+            8192
+        ]
+    ],
+    "origin": "bottom-left",
+    "useMarkerClustering": false,
+    "categories": [
+        {
+            "id": "2",
+            "listId": 1,
+            "name": "Elfenunion",
+            "color": "#009a02",
+            "symbol": "U",
+            "symbolColor": "#fff"
+        },
+        {
+            "id": "3",
+            "listId": 2,
+            "name": "Terabur",
+            "color": "#007afa",
+            "symbol": "T",
+            "symbolColor": "#fff"
+        },
+        {
+            "id": "4",
+            "listId": 3,
+            "name": "N\u00f6rdliche Minenreiche",
+            "color": "#007afa",
+            "symbol": "M",
+            "symbolColor": "#fff"
+        },
+        {
+            "id": "5",
+            "listId": 4,
+            "name": "S\u00fcdliche Minenreiche",
+            "color": "#ff9100",
+            "symbol": "S",
+            "symbolColor": "#000"
+        },
+        {
+            "id": "6",
+            "listId": 5,
+            "name": "Oslavisches Sheikat",
+            "color": "#d7da0f",
+            "symbol": "O",
+            "symbolColor": "#000"
+        },
+        {
+            "id": "7",
+            "listId": 6,
+            "name": "Eromir",
+            "color": "#007afa",
+            "symbol": "E",
+            "symbolColor": "#fff"
+        },
+        {
+            "id": "8",
+            "listId": 7,
+            "name": "Grau Demmaros",
+            "color": "#ff9100",
+            "symbol": "G",
+            "symbolColor": "#000"
+        },
+        {
+            "id": "9",
+            "listId": 8,
+            "name": "Freie St\u00e4dte",
+            "color": "#ecd3be",
+            "symbol": "",
+            "symbolColor": ""
+        },
+        {
+            "id": "10",
+            "listId": 9,
+            "name": "Varen",
+            "color": "#007afa",
+            "symbol": "V",
+            "symbolColor": "#fff"
+        },
+        {
+            "id": "11",
+            "listId": 10,
+            "name": "Magische Akademien",
+            "color": "#ffbdfc",
+            "symbol": "",
+            "symbolColor": ""
+        },
+        {
+            "id": "12",
+            "listId": 11,
+            "name": "Atlanische Ruinen",
+            "color": "#000000",
+            "symbol": "",
+            "symbolColor": ""
+        },
+        {
+            "id": "13",
+            "listId": 12,
+            "name": "D\u00fcnenmeer",
+            "color": "#007afa",
+            "symbol": "D",
+            "symbolColor": "#fff"
+        },
+        {
+            "id": "14",
+            "listId": 13,
+            "name": "Resif",
+            "color": "#007afa",
+            "symbol": "R",
+            "symbolColor": "#fff"
+        },
+        {
+            "id": "15",
+            "listId": 14,
+            "name": "Klipplande",
+            "color": "#6f6f6f",
+            "symbol": "K",
+            "symbolColor": "#fff"
+        },
+        {
+            "id": "16",
+            "listId": 15,
+            "name": "Numerien",
+            "color": "#ff9100",
+            "symbol": "N",
+            "symbolColor": "#000"
+        },
+        {
+            "id": "17",
+            "listId": 16,
+            "name": "Dal Ork",
+            "color": "#ff0000",
+            "symbol": "D",
+            "symbolColor": "#fff"
+        }
+    ],
+    "markers": [
+        {
+            "categoryId": "3",
+            "position": [
+                3086.2545931518985,
+                5093.75
+            ],
+            "popup": {
+                "title": "Akkator",
+                "description": "Akkator ist die Hauptstadt von [[K\u00f6nigreich Terabur|Terabur]] und die gr\u00f6\u00dfte Stadt der Welt.",
+                "link": {
+                    "url": "Akkator",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Akkator"
+                }
+            },
+            "id": "1"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2101.5202480357457,
+                5501.29075763134
+            ],
+            "popup": {
+                "title": "Kukiria",
+                "description": "Kukiria ist eine [[Grafschaft]] und Hafenstadt. Sie ist bekannt f\u00fcr allerlei kriminelles Treiben. [[Haus Calvin]] regiert hier offiziell, dabei liegt die wahre Macht bei Kriminellen, wie einst dem [[Der Falsche Zwerg|Falschen Zwergen]]. Die [[Akademie der Illusion]] war lang in Kukiria beheimatet.",
+                "link": {
+                    "url": "Kukiria",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kukiria"
+                }
+            },
+            "id": "2"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                2960.704134058421,
+                4477.400138473219
+            ],
+            "popup": {
+                "title": "G\u00f6tterschrein",
+                "description": "G\u00f6tterschrein ist die Heiligste Stadt des [[Erismus]]. Hier soll die [[Gotteserh\u00f6hung]] stattgefunden haben. Sie ist auch der Sitz der [[Diakonie]].",
+                "link": {
+                    "url": "G\u00f6tterschrein",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/G\u00f6tterschrein"
+                }
+            },
+            "id": "3"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                2979.7463174441004,
+                7588.669975694029
+            ],
+            "popup": {
+                "title": "Nordwacht",
+                "description": "Nordwacht ist die n\u00f6rdlichste Gemeinde der uns bekannten Welt. Nordwacht lebt vom Abbau vom [[Ewigeis]].",
+                "link": {
+                    "url": "Nordwacht",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Nordwacht"
+                }
+            },
+            "id": "4"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3439.362961088672,
+                5852.015721099868
+            ],
+            "popup": {
+                "title": "K\u00f6nigsburg",
+                "description": "K\u00f6nigsburg ist die verschneite Hauptstadt der [[Die Kaltlande|Kaltlande]] und seit der [[Zweite Numerion Rebellion|Zweiten Numerion Rebellion]] auch die Hauptstadt vom [[K\u00f6nigreich Numerien]]. Die Stadt gilt als die Uneinnehmbare Feste der Wolken, da sie auf dem Berg [[Nondor]] liegt.",
+                "link": {
+                    "url": "K\u00f6nigsburg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/K\u00f6nigsburg"
+                }
+            },
+            "id": "5"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3744.837513163956,
+                6078.289891079563
+            ],
+            "popup": {
+                "title": "Frosthaven",
+                "description": "Frosthaven ist die Hauptstadt des [[Fr\u00e4stenreich|Fr\u00e4stenreiches]]. Das Hauptquartier der [[Eismeerflotte]] ist hier. [[Haus Eisklinge]] herrscht in Frosthaven.",
+                "link": {
+                    "url": "Frosthaven",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Frosthaven"
+                }
+            },
+            "id": "6"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4129.499179526742,
+                4491.542274096951
+            ],
+            "popup": {
+                "title": "Schwarzweide",
+                "description": "Schwarzweide ist die Hauptstadt [[Die Steppe|der Steppe]]. Sie gilt als wichtiges Handelszentrum. Zudem liegt in in ihr das [[Haus der M\u00fcnze]]. Schwarzweide wird regiert von [[Haus Davolo]].",
+                "link": {
+                    "url": "Schwarzweide",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Schwarzweide"
+                }
+            },
+            "id": "7"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3840.0023454392676,
+                3454
+            ],
+            "popup": {
+                "title": "Mowach",
+                "description": "Mowach ist die einwohnerm\u00e4\u00dfig kleinste [[Grafschaft]] in [[K\u00f6nigreich Terabur|Terabur]]. Dennoch lieferte sie lange Zeit den wertvollen Rohstoff [[Estril]] in die Welt. Mowach wird regiert von [[Haus Nathanael]].",
+                "link": {
+                    "url": "Mowach",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Mowach"
+                }
+            },
+            "id": "8"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1185.1109652687,
+                5518.2613203798
+            ],
+            "popup": {
+                "title": "Blattheim",
+                "description": "In Blattheim befindet sich der [[Hochelfenrat]]. Die verschneite Stadt ist unter direkter Kontrolle des Rates.",
+                "link": {
+                    "url": "Blattheim",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Blattheim"
+                }
+            },
+            "id": "9"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1344,
+                3842
+            ],
+            "popup": {
+                "title": "Baumgard",
+                "description": "Baumgard ist die Hauptstadt von [[Geeintes Elfenreich Demmaros|Demmaros]]. Sie wurde erbaut auf dem Weltenbaum [[Excelsior]].",
+                "link": {
+                    "url": "Baumgard",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Baumgard"
+                }
+            },
+            "id": "10"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                252,
+                3976
+            ],
+            "popup": {
+                "title": "Giftwasserhafen",
+                "description": "Giftwasserhafen ist bekannt f\u00fcr die [[Akademie der Alchemie]].",
+                "link": {
+                    "url": "Giftwasserhafen",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Giftwasserhafen"
+                }
+            },
+            "id": "11"
+        },
+        {
+            "categoryId": "9",
+            "position": [
+                2062.0991723971188,
+                6595.892054908116
+            ],
+            "popup": {
+                "title": "Die Schlundinsel",
+                "description": "Die Schlundinsel ist das gr\u00f6\u00dfte Gef\u00e4ngnis der Welt. Sie ist im Besitz [[Die Reinrassigen|der Reinrassigen]]. Die Insel f\u00e4llt nicht unter [[Kaiserreich|Kaiserliche Autorit\u00e4t]], aus dem einfachen Grund, dass hier kein Einwohner irgendwelche Rechte hat, die ihm zustehen.",
+                "link": {
+                    "url": "Die Schlundinsel",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Schlundinsel"
+                }
+            },
+            "id": "12"
+        },
+        {
+            "categoryId": "9",
+            "position": [
+                3337.5440072005,
+                3790.0923471599
+            ],
+            "popup": {
+                "title": "Atlantis",
+                "description": "Atlantis ist eine sehr mysteri\u00f6se Stadt. Es ist einzig und allein den [[Gnom|Gnomen]] gestattet sie zu betreten. Es gibt kaum authentische Aufzeichnungen \u00fcber die Stadt. Ger\u00fcchten zufolge halten die Gnome dort etwas sehr M\u00e4chtiges hinter geschlossenen T\u00fcren.",
+                "link": {
+                    "url": "Atlantis",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Atlantis"
+                }
+            },
+            "id": "13"
+        },
+        {
+            "categoryId": "8",
+            "position": [
+                2048,
+                2964
+            ],
+            "popup": {
+                "title": "Schattenturm",
+                "description": "Schattenturm ist die Hauptstadt von [[Grau Demmaros]]",
+                "link": {
+                    "url": "Schattenturm",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Schattenturm"
+                }
+            },
+            "id": "14"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6165.9711319467,
+                4972.3748853038
+            ],
+            "popup": {
+                "title": "Nord Tal",
+                "description": "Nord Tal ist die Hauptstadt der [[N\u00f6rdliche Minenreiche|N\u00f6rdlichen Minenreiche]].",
+                "link": {
+                    "url": "Nord Tal",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Nord_Tal"
+                }
+            },
+            "id": "15"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6171.6279861962,
+                4893.1789258109
+            ],
+            "popup": {
+                "title": "S\u00fcd Tal",
+                "description": "S\u00fcd Tal ist die Hauptstadt der [[S\u00fcdliche Minenreiche|S\u00fcdlichen Minenreiche]].",
+                "link": {
+                    "url": "S\u00fcd Tal",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/S\u00fcd_Tal"
+                }
+            },
+            "id": "16"
+        },
+        {
+            "categoryId": "6",
+            "position": [
+                5616.215780412597,
+                1692
+            ],
+            "popup": {
+                "title": "Oslavan",
+                "description": "Oslavan ist die Hauptstadt des [[Oslavisches Sheikat|Oslavischen Sheikats]]. Sie gilt als die gr\u00f6\u00dfte Anlaufstation f\u00fcr Piraten, die es auf der Welt gibt.",
+                "link": {
+                    "url": "Oslavan",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Oslavan"
+                }
+            },
+            "id": "17"
+        },
+        {
+            "categoryId": "7",
+            "position": [
+                3098,
+                3073
+            ],
+            "popup": {
+                "title": "Gluthafen",
+                "description": "Gluthafen ist die die wichtigste Hafenstadt der [[Kaiserliches Mandat Eromir|Kaiserlichen Besatzungsmacht in Eromir]]. Von hier operiert die [[Kaiserreich|Kaiserliche Besatzung]]. ",
+                "link": {
+                    "url": "Gluthafen",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Gluthafen"
+                }
+            },
+            "id": "18"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3648,
+                2808
+            ],
+            "popup": {
+                "title": "Vulkan",
+                "description": "Vulkan war die ehemalige Hauptstadt von [[Dal Ork]].",
+                "link": {
+                    "url": "Vulkan",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Vulkan"
+                }
+            },
+            "id": "19"
+        },
+        {
+            "categoryId": "10",
+            "position": [
+                5648.3689681181,
+                2542.7559851468
+            ],
+            "popup": {
+                "title": "Lith",
+                "description": "Lith dient vor allem als Operationsbasis der [[Kaiserliche Marine|Kaiserlichen Marine]], um gegen die [[Oslavisches Sheikat|Oslavischen Piraten]] der Region zu bestehen.",
+                "link": {
+                    "url": "Lith",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Lith"
+                }
+            },
+            "id": "20"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                3993,
+                5275
+            ],
+            "popup": {
+                "title": "Rekastett",
+                "description": "Rekastett ist die Hauptstadt von [[Rekanien]]. Sie sind f\u00fcr ihren Export von hochwertigen Textilien und Fellen zu einer einflussreichen Handelsstadt geworden. [[Haus Rekanion]] herrscht in Rekastett.",
+                "link": {
+                    "url": "Rekastett",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Rekastett"
+                }
+            },
+            "id": "21"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3371.4851326975,
+                5407.9526625147
+            ],
+            "popup": {
+                "title": "Seeblick",
+                "description": "",
+                "link": {
+                    "url": "Seeblick",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Seeblick"
+                }
+            },
+            "id": "22"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                2180,
+                4576
+            ],
+            "popup": {
+                "title": "Arenhain",
+                "description": "",
+                "link": {
+                    "url": "Arenhain",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Arenhain"
+                }
+            },
+            "id": "23"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                2304.4604470616214,
+                3698.7542520432703
+            ],
+            "popup": {
+                "title": "Quellgard",
+                "description": "",
+                "link": {
+                    "url": "Quellgard",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Quellgard"
+                }
+            },
+            "id": "24"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1606,
+                5340
+            ],
+            "popup": {
+                "title": "Hornheim",
+                "description": "",
+                "link": {
+                    "url": "Hornheim",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Hornheim"
+                }
+            },
+            "id": "25"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1979.89235341829,
+                4808.326112068524
+            ],
+            "popup": {
+                "title": "Winden",
+                "description": "",
+                "link": {
+                    "url": "Winden",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Winden"
+                }
+            },
+            "id": "26"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2327.7955236661,
+                4558.0103115285
+            ],
+            "popup": {
+                "title": "Radfurt",
+                "description": "",
+                "link": {
+                    "url": "Radfurt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Radfurt"
+                }
+            },
+            "id": "27"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3616.8511857692,
+                5540.1816305966
+            ],
+            "popup": {
+                "title": "Hohenstukkern",
+                "description": "",
+                "link": {
+                    "url": "Hohenstukkern",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Hohenstukkern"
+                }
+            },
+            "id": "28"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                3500.1785668734,
+                4838.0956646902
+            ],
+            "popup": {
+                "title": "Krautfurt",
+                "description": "",
+                "link": {
+                    "url": "Krautfurt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Krautfurt"
+                }
+            },
+            "id": "29"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3518.5633431843,
+                4290.72394824
+            ],
+            "popup": {
+                "title": "Ranenfurt",
+                "description": "Ranenfurt ist eine reiche [[Grafschaft]], die durch Handel, Zoll und Minen Einfluss erlangte. Die Grafenfamilie [[Haus Adarid]] ist eine der reichsten im [[Kaiserreich]]. Die Leute dort sind vergleichsweise gebildet, durch die \u00f6ffentlichen Schulen, die von den Adarids finanziert werden.",
+                "link": {
+                    "url": "Ranenfurt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ranenfurt"
+                }
+            },
+            "id": "30"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                2494.9984363738217,
+                3968
+            ],
+            "popup": {
+                "title": "Halgenpass",
+                "description": "",
+                "link": {
+                    "url": "Halgenpass",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Halgenpass"
+                }
+            },
+            "id": "31"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4777,
+                3830
+            ],
+            "popup": {
+                "title": "Bruchbr\u00fcgge",
+                "description": "Bruchbr\u00fcgge ist eine Burg, die aktuell Herrenlos ist. Niemand m\u00f6chte sie haben, da sie nichts als ein einziger Tr\u00fcmmerhaufen ist.",
+                "link": {
+                    "url": "Bruchbr\u00fcgge",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Bruchbr\u00fcgge"
+                }
+            },
+            "id": "32"
+        },
+        {
+            "categoryId": "9",
+            "position": [
+                5774,
+                4851
+            ],
+            "popup": {
+                "title": "Bjoldiri",
+                "description": "Bjoldiri wurde in Folge des [[Zwergischer Eingliederungskrieg|Zwergischen Eingliederungskrieges]] als Transitzone zwischen den [[N\u00f6rdliche Minenreiche|N\u00f6rdlichen]] und [[S\u00fcdliche Minenreiche|S\u00fcdlichen Minenreichen]] gegr\u00fcndet. Sie gilt als Angelpunkt f\u00fcr Kriminalit\u00e4t.",
+                "link": {
+                    "url": "Bjoldiri",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Bjoldiri"
+                }
+            },
+            "id": "33"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1742.9980454672773,
+                3604
+            ],
+            "popup": {
+                "title": "Sahin",
+                "description": "",
+                "link": {
+                    "url": "Sahin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Sahin"
+                }
+            },
+            "id": "34"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                7269.0577105977,
+                4395.3757518556
+            ],
+            "popup": {
+                "title": "Skarr Jolde",
+                "description": "",
+                "link": {
+                    "url": "Skarr Jolde",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Skarr_Jolde"
+                }
+            },
+            "id": "35"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                7365.2242328391,
+                3948.4842661457
+            ],
+            "popup": {
+                "title": "Skarr Kjalde",
+                "description": "Skarr Kjalde ist die Hauptstadt der [[Salzflussinseln]].",
+                "link": {
+                    "url": "Skarr kjalde",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Skarr_Kjalde"
+                }
+            },
+            "id": "36"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4680.3397846738,
+                4029.0944392009
+            ],
+            "popup": {
+                "title": "Burg Ewalt",
+                "description": "Burg Ewalt ist im Besitz von [[Baron]] [[Ekmont von Radfurt]]. Von dort aus plante er lange Zeit seine Kopfgeldjagden.",
+                "link": {
+                    "url": "Burg Ewalt",
+                    "label": "Burg Ewalt"
+                }
+            },
+            "id": "37"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5018,
+                3391
+            ],
+            "popup": {
+                "title": "Goba",
+                "description": "Goba ist zwar keine wirkliche Stadt. Aber sie ist ein riesiges Zeltlager und widerkehrender Treffpunkt der nomadischen [[Kobold|Kobolde]] der Region. Sie ist de jure unter der Herrschaft der [[S\u00fcdliche Minenreiche|S\u00fcdlichen Minenreiche]], de facto ist das den Kobolden egal.",
+                "link": {
+                    "url": "Goba",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Goba"
+                }
+            },
+            "id": "38"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                7942.2233662873,
+                4593.3656505878
+            ],
+            "popup": {
+                "title": "Kleinaven",
+                "description": "Kleinaven ist die Heimat des [[Stjallfut Clans|Clan Stjallfut]].",
+                "link": {
+                    "url": "Kleinaven",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kleinaven"
+                }
+            },
+            "id": "39"
+        },
+        {
+            "categoryId": "12",
+            "position": [
+                5828,
+                4828
+            ],
+            "popup": {
+                "title": "Mneseantis",
+                "description": "Mneseantis ist eine alte Ruine der [[Atlaner]].",
+                "link": {
+                    "url": "Mneseantis",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Mneseantis"
+                }
+            },
+            "id": "40"
+        },
+        {
+            "categoryId": "12",
+            "position": [
+                2979,
+                7640
+            ],
+            "popup": {
+                "title": "Ampheretis",
+                "description": "Ampheretis ist eine alte Ruine der [[Atlaner]].",
+                "link": {
+                    "url": "Ampheretis",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ampheretis"
+                }
+            },
+            "id": "41"
+        },
+        {
+            "categoryId": "12",
+            "position": [
+                6033.035057083584,
+                2725.4468940058
+            ],
+            "popup": {
+                "title": "Gadeitis",
+                "description": "Gadeitis ist eine alte Ruine der [[Atlaner]].",
+                "link": {
+                    "url": "Gadeitis",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Gadeitis"
+                }
+            },
+            "id": "42"
+        },
+        {
+            "categoryId": "10",
+            "position": [
+                6216.1757134109,
+                2888.531201147
+            ],
+            "popup": {
+                "title": "Balyr",
+                "description": "Balyr ist der Haupsitz der Herrscherfamilie von [[Varen]].",
+                "link": {
+                    "url": "Balyr",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Balyr"
+                }
+            },
+            "id": "43"
+        },
+        {
+            "categoryId": "10",
+            "position": [
+                6436.08592236,
+                2975.505335233
+            ],
+            "popup": {
+                "title": "Barith",
+                "description": "",
+                "link": {
+                    "url": "Barith",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Barith"
+                }
+            },
+            "id": "44"
+        },
+        {
+            "categoryId": "10",
+            "position": [
+                6668.0169465891,
+                3109.8556236584
+            ],
+            "popup": {
+                "title": "Milir",
+                "description": "",
+                "link": {
+                    "url": "Milir",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Milir"
+                }
+            },
+            "id": "45"
+        },
+        {
+            "categoryId": "6",
+            "position": [
+                6068.007818130891,
+                1628
+            ],
+            "popup": {
+                "title": "Aldorvan",
+                "description": "",
+                "link": {
+                    "url": "Aldorvan",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Aldorvan"
+                }
+            },
+            "id": "46"
+        },
+        {
+            "categoryId": "6",
+            "position": [
+                6375.681618625898,
+                1493.4095218659886
+            ],
+            "popup": {
+                "title": "Dogavan",
+                "description": "",
+                "link": {
+                    "url": "Dogavan",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Dogavan"
+                }
+            },
+            "id": "47"
+        },
+        {
+            "categoryId": "6",
+            "position": [
+                5573.202578227465,
+                1292.4144193137122
+            ],
+            "popup": {
+                "title": "Melvan",
+                "description": "",
+                "link": {
+                    "url": "Melvan",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Melvan"
+                }
+            },
+            "id": "48"
+        },
+        {
+            "categoryId": "6",
+            "position": [
+                5044.007818130891,
+                1644
+            ],
+            "popup": {
+                "title": "Dovak",
+                "description": "",
+                "link": {
+                    "url": "Dovak",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Dovak"
+                }
+            },
+            "id": "49"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2247.1853506108,
+                4859.237800314
+            ],
+            "popup": {
+                "title": "Dalderveg",
+                "description": "Dalderweg ist ein kleines unscheinbares Dorf am Wegesrand, nahe einer Ruine eines [[Zabesh]] Tempel. Immer wieder verschwanden hier jedoch Kinder im Wald.",
+                "link": {
+                    "url": "Dalderveg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Dalderveg"
+                }
+            },
+            "id": "50"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4033,
+                4941
+            ],
+            "popup": {
+                "title": "Drucrode",
+                "description": "Drucrode ist die Heimat des [[Wolframbaum|Wolframbaums]]. Das Holz des Baumes wird in Drucrode zu extra harten Schilden verarbeitet oder f\u00fcr den Schiffsbau verkauft. [[Haus Druc]] regiert in Drucrode.",
+                "link": {
+                    "url": "Drucrode",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Drucrode"
+                }
+            },
+            "id": "51"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2596.496100517,
+                4847.924091815
+            ],
+            "popup": {
+                "title": "Schloss Calvin",
+                "description": "",
+                "link": {
+                    "url": "Schloss Calvin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Schloss_Calvin"
+                }
+            },
+            "id": "52"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                2687.0057685089,
+                4075.7634867593
+            ],
+            "popup": {
+                "title": "Schloss Neumond",
+                "description": "",
+                "link": {
+                    "url": "Schloss Neumond",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Schloss_Neumond"
+                }
+            },
+            "id": "53"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4622.6499218353,
+                5078.5414075452
+            ],
+            "popup": {
+                "title": "Stromholt",
+                "description": "Stromholt wird auch die [[Grafschaft]] der Wasserf\u00e4lle genannt. Die Herrscherfamilie von [[Haus Ader]] k\u00fcmmert sich durch das Bauen von D\u00e4mmen um die Eind\u00e4mmungen von \u00dcberschwemmungen im [[Strom]].",
+                "link": {
+                    "url": "Stromholt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Stromholt"
+                }
+            },
+            "id": "54"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4362,
+                5150
+            ],
+            "popup": {
+                "title": "Neustedt",
+                "description": "Neustedt ist eine [[Grafschaft]] die \u00fcberwiegend von Zoll und Handel lebt. [[Haus Rotwild]] herrscht in in Neustedt.",
+                "link": {
+                    "url": "Neustedt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Neustedt"
+                }
+            },
+            "id": "55"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3038.25,
+                4040.25
+            ],
+            "popup": {
+                "title": "Kalthall",
+                "description": "Kalthall ist eine [[Grafschaft]] kontrolliert von [[Haus Sal]]. Die Grafschaft ist dank des Bergwerks, der gr\u00f6\u00dfte Exporteur f\u00fcr Salz in ganz [[Andaria]].",
+                "link": {
+                    "url": "Kalthall",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kalthall"
+                }
+            },
+            "id": "56"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3299.999218186911,
+                5588
+            ],
+            "popup": {
+                "title": "Burg Hohenstein",
+                "description": "",
+                "link": {
+                    "url": "Burg Hohenstein",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_Hohenstein"
+                }
+            },
+            "id": "57"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3832,
+                5852
+            ],
+            "popup": {
+                "title": "Frey",
+                "description": "Die [[Grafschaft]] Frey wird regiert von [[Haus Brandt]]. Einem Haus, um das sich viele Mythen ranken. Die Brandts schicken ihre Kinder, wenn sie vollj\u00e4hrig werden, in die eisigen W\u00e4lder, um die Waldgeister zu bes\u00e4nftigen. Manchmal kehren sie nicht zur\u00fcck. Ein Risiko, das Haus Brandt in Kauf nimmt.",
+                "link": {
+                    "url": "Frey",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Frey"
+                }
+            },
+            "id": "58"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2724,
+                4606
+            ],
+            "popup": {
+                "title": "Hohenberg",
+                "description": "",
+                "link": {
+                    "url": "Hohenberg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Hohenberg"
+                }
+            },
+            "id": "59"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3144,
+                4271
+            ],
+            "popup": {
+                "title": "Adaburgh",
+                "description": "",
+                "link": {
+                    "url": "Adaburgh",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Adaburgh"
+                }
+            },
+            "id": "60"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                3583.6171670534,
+                4426.4884502278
+            ],
+            "popup": {
+                "title": "Klipp",
+                "description": "",
+                "link": {
+                    "url": "Klipp",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Klipp"
+                }
+            },
+            "id": "61"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4401.866720747238,
+                3649.192388155425
+            ],
+            "popup": {
+                "title": "Bruggwach",
+                "description": "Bruggwach ist eine kleine [[Grafschaft]]. Der Ort ist bekannt f\u00fcr seine Fischerkultur. [[Haus Krell]] herrscht \u00fcber Bruggwach.",
+                "link": {
+                    "url": "Bruggwach",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Bruggwach"
+                }
+            },
+            "id": "62"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4291.6078317165,
+                4072.9350596345
+            ],
+            "popup": {
+                "title": "Weldaschmidt",
+                "description": "Die recht kleine [[Grafschaft]] ist im gesamten [[Kaiserreich]] gefragt, da dort einzigartige leichte R\u00fcstungsteile sowohl f\u00fcr Personen und Tiere hergestellt werden. Nicht einmal in den Hoch\u00f6fen der [[Zwerg|Zwerge]] werden vergleichbare Teile hergestellt. [[Haus Vigo]] herrscht \u00fcber Weldaschmidt.",
+                "link": {
+                    "url": "Weldaschmidt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Weldaschmidt"
+                }
+            },
+            "id": "63"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2617.7093039526,
+                4997.8307294265
+            ],
+            "popup": {
+                "title": "Eberhau",
+                "description": "[[Haus J\u00e4ger]] herrscht in Eberhau. Wie der Name der Herrscherfamilie vermuten l\u00e4sst finden in Eberhau gro\u00dfe Jagden statt. Haus J\u00e4ger veranstaltet Jagdgesellschaften, an denen andere H\u00e4user gern teilnehmen und von weither anreisen.",
+                "link": {
+                    "url": "Eberhau",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Eberhau"
+                }
+            },
+            "id": "64"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                3723.9976545607324,
+                4588
+            ],
+            "popup": {
+                "title": "Unsborn",
+                "description": "Unsborn ist f\u00fcr seine Pferdezucht und ihren Kr\u00e4uterschnaps gesch\u00e4tzt. Bekannt ist ist Unsborn auch f\u00fcr die [[Steppentitan|Steppentitane]], die von den Unsbornen gejagt werden. [[Haus Hofer]] regiert eigentlich \u00fcber Unsborn, da es aber keinen Erben gibt, wird es von [[Haus Davolo]] verwaltet.",
+                "link": {
+                    "url": "Unsborn",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Unsborn"
+                }
+            },
+            "id": "65"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4710.745376264774,
+                4477.4001384732455
+            ],
+            "popup": {
+                "title": "Irrbek",
+                "description": "Irrbek hat im Verh\u00e4ltnis zur Population die meisten [[Die Zeugen von Al Masin|Zeugen von Al Masin]]. Auch das regierende [[Haus Brock]] geh\u00f6rt den Zeugen an. Dem [[Erismus|Eristischen]] Tempel der Stadt, ist es aufgrund des G\u00f6tzenverbotes der Zeugen nicht erlaubt Statuen auszustellen.",
+                "link": {
+                    "url": "Irrbek",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Irrbek"
+                }
+            },
+            "id": "66"
+        },
+        {
+            "categoryId": "7",
+            "position": [
+                3756,
+                2276
+            ],
+            "popup": {
+                "title": "Rak",
+                "description": "",
+                "link": {
+                    "url": "Rak",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Rak"
+                }
+            },
+            "id": "67"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                4081.642576794201,
+                7266.229283472963
+            ],
+            "popup": {
+                "title": "Glasbruch",
+                "description": "",
+                "link": {
+                    "url": "Glasbruch",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Glasbruch"
+                }
+            },
+            "id": "68"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                2869.998436373822,
+                4256
+            ],
+            "popup": {
+                "title": "Hochsitz",
+                "description": "",
+                "link": {
+                    "url": "Hochsitz",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Hochsitz"
+                }
+            },
+            "id": "69"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3592.1024484277,
+                3717.9674554789
+            ],
+            "popup": {
+                "title": "Huberfehn",
+                "description": "Huberfehn ist eine [[Grafschaft]], die von seinem Export an [[Mondkraut]] lebt. Aufgrund der Verwendung von Mondkraut in Medizin f\u00fchren die Bauern dort ein recht wohlhabendes Leben.  Der Ort wird regiert von [[Haus Huber]].",
+                "link": {
+                    "url": "Huberfehn",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Huberfehn"
+                }
+            },
+            "id": "70"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3196.1226509632,
+                3818.3766184074
+            ],
+            "popup": {
+                "title": "Die Schlangenburg",
+                "description": "Die Schlangenburg ist Sitz von [[Haus Gentscher]], welches daf\u00fcr bekannt ist kurzen Prozess mit [[Mondkraut|Mondkrautschmugglern]] zu machen und diese zu pf\u00e4hlen. \u00dcberall in der Gegend sieht man gepf\u00e4hlte Schmuggler, die Weiteren eine Warnung sein sollen.",
+                "link": {
+                    "url": "Die Schlangenburg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Die_Schlangenburg"
+                }
+            },
+            "id": "71"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2368.811586752293,
+                5118.038882228231
+            ],
+            "popup": {
+                "title": "Westerweg",
+                "description": "Die [[Grafschaft]] Westerweg ist f\u00fcr prunktvolle Rittertuniere bekannt. [[Haus Klinger]], die Herren der Grafschaft, sind zwar stark verschuldet, scheuen sich aber niemals vor hohen Ausgaben. Einst stellten sie die st\u00e4rksten Krieger der [[Mensch|Menschen]], doch davon ist wohl nicht mehr viel \u00fcbrig.",
+                "link": {
+                    "url": "Westerweg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Westerweg"
+                }
+            },
+            "id": "72"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4731.9585797004,
+                4698.0174542034
+            ],
+            "popup": {
+                "title": "Krontal",
+                "description": "",
+                "link": {
+                    "url": "Krontal",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Krontal"
+                }
+            },
+            "id": "73"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4010.5,
+                4227
+            ],
+            "popup": {
+                "title": "Graumeid",
+                "description": "Graumeid ist eine [[Grafschaft]],  die Haupts\u00e4chlich von Ackerbau lebt. Eine Volksage dort lautet, dass die [[Graue Meid]], jeden heimsucht, der plant jemanden zu t\u00f6ten. Graumeid wird regiert von [[Haus Graumeid]].",
+                "link": {
+                    "url": "Graumeid",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Graumeid"
+                }
+            },
+            "id": "74"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                5518.2613203798,
+                4743.2722881994
+            ],
+            "popup": {
+                "title": "Burg Arvex",
+                "description": "",
+                "link": {
+                    "url": "Burg Arvex",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_Arvex"
+                }
+            },
+            "id": "75"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6468.6128342945,
+                4887.5220715614
+            ],
+            "popup": {
+                "title": "Pyriters Halt",
+                "description": "",
+                "link": {
+                    "url": "Pyriters Halt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Pyriters_Halt"
+                }
+            },
+            "id": "76"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                5200,
+                4632
+            ],
+            "popup": {
+                "title": "Burg Adalgis",
+                "description": "",
+                "link": {
+                    "url": "Burg Adalgis",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_Adalgis"
+                }
+            },
+            "id": "77"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6839.1367876363,
+                4635.792057459
+            ],
+            "popup": {
+                "title": "Burg Gomri",
+                "description": "",
+                "link": {
+                    "url": "Burg Gomri",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_Gomri"
+                }
+            },
+            "id": "78"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6686.4017229,
+                4751.7575695736
+            ],
+            "popup": {
+                "title": "Burg Drillin",
+                "description": "",
+                "link": {
+                    "url": "Burg Drillin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_Drillin"
+                }
+            },
+            "id": "79"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6113.6452301389,
+                4623.0641353976
+            ],
+            "popup": {
+                "title": "Ubiq",
+                "description": "",
+                "link": {
+                    "url": "Ubiq",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ubiq"
+                }
+            },
+            "id": "80"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6339.2122933374,
+                5217.0338315943
+            ],
+            "popup": {
+                "title": "Ror",
+                "description": "",
+                "link": {
+                    "url": "Ror",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ror"
+                }
+            },
+            "id": "81"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                5435.529826981,
+                5038.8429227353
+            ],
+            "popup": {
+                "title": "Rodin",
+                "description": "",
+                "link": {
+                    "url": "Rodin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Rodin"
+                }
+            },
+            "id": "82"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                5668,
+                5264
+            ],
+            "popup": {
+                "title": "Rem",
+                "description": "",
+                "link": {
+                    "url": "Rem",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Rem"
+                }
+            },
+            "id": "83"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6144,
+                5572
+            ],
+            "popup": {
+                "title": "Lodwins Anker",
+                "description": "",
+                "link": {
+                    "url": "Lodwins Anker",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Lodwins_Anker"
+                }
+            },
+            "id": "84"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6076.972271824132,
+                5487.911611652351
+            ],
+            "popup": {
+                "title": "Lodwins Schein",
+                "description": "",
+                "link": {
+                    "url": "Lodwins Schein",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Lodwins_Schein"
+                }
+            },
+            "id": "85"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4821,
+                4302
+            ],
+            "popup": {
+                "title": "Burg L\u00fcst",
+                "description": "",
+                "link": {
+                    "url": "Burg L\u00fcst",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_L\u00fcst"
+                }
+            },
+            "id": "86"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6676.5022279634,
+                5117.331775447
+            ],
+            "popup": {
+                "title": "Guson",
+                "description": "",
+                "link": {
+                    "url": "Guson",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Guson"
+                }
+            },
+            "id": "87"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6912.6758928797,
+                5139.2520856638
+            ],
+            "popup": {
+                "title": "Brolk",
+                "description": "",
+                "link": {
+                    "url": "Brolk",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Brolk"
+                }
+            },
+            "id": "88"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                5240,
+                5308
+            ],
+            "popup": {
+                "title": "Die Widderburg",
+                "description": "",
+                "link": {
+                    "url": "Die Widderburg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Die_Widderburg"
+                }
+            },
+            "id": "89"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                4806.9118985062,
+                5115.4530957906
+            ],
+            "popup": {
+                "title": "Wassersturz",
+                "description": "",
+                "link": {
+                    "url": "Wassersturz",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Wassersturz"
+                }
+            },
+            "id": "90"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3447.8526650656,
+                4092.7340495077
+            ],
+            "popup": {
+                "title": "Die Schurkenfeste",
+                "description": "",
+                "link": {
+                    "url": "Die Schurkenfeste",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Die_Schurkenfeste"
+                }
+            },
+            "id": "91"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4908.736933473024,
+                4572.152447152217
+            ],
+            "popup": {
+                "title": "Kaiserfirst",
+                "description": "",
+                "link": {
+                    "url": "Kaiserfirst",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kaiserfirst"
+                }
+            },
+            "id": "92"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5774,
+                4734
+            ],
+            "popup": {
+                "title": "Treidiri",
+                "description": "",
+                "link": {
+                    "url": "Treidiri",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Treidiri"
+                }
+            },
+            "id": "93"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6126.3731522002,
+                4304.8660838637
+            ],
+            "popup": {
+                "title": "Kroll",
+                "description": "",
+                "link": {
+                    "url": "Kroll",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kroll"
+                }
+            },
+            "id": "94"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6412.0442917996,
+                4642.8631252709
+            ],
+            "popup": {
+                "title": "Wrath",
+                "description": "",
+                "link": {
+                    "url": "Wrath",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Wrath"
+                }
+            },
+            "id": "95"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6126.3731522002,
+                3897.5725779003
+            ],
+            "popup": {
+                "title": "Zelot",
+                "description": "",
+                "link": {
+                    "url": "Zelot",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Zelot"
+                }
+            },
+            "id": "96"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5566.344581500485,
+                3976.7685373931
+            ],
+            "popup": {
+                "title": "Kyrilot",
+                "description": "",
+                "link": {
+                    "url": "Kyrilot",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kyrilot"
+                }
+            },
+            "id": "97"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4558,
+                4752
+            ],
+            "popup": {
+                "title": "Niemahalt",
+                "description": "",
+                "link": {
+                    "url": "Niemahalt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Niemahalt"
+                }
+            },
+            "id": "98"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                3301.7744545788,
+                4969.2033124285
+            ],
+            "popup": {
+                "title": "Schloss Gwendolyn",
+                "description": "",
+                "link": {
+                    "url": "Schloss Gwendolyn",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Schloss_Gwendolyn"
+                }
+            },
+            "id": "99"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6561.9509294112,
+                3959.7979746447
+            ],
+            "popup": {
+                "title": "Gjolmar",
+                "description": "",
+                "link": {
+                    "url": "Gjolmar",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Gjolmar"
+                }
+            },
+            "id": "100"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6452,
+                3664
+            ],
+            "popup": {
+                "title": "Stoj Madjamar",
+                "description": "",
+                "link": {
+                    "url": "Stoj Madjamar",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Stoj_Madjamar"
+                }
+            },
+            "id": "101"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6437.5001359223,
+                4095.5624766325
+            ],
+            "popup": {
+                "title": "B\u00fchlfeste",
+                "description": "",
+                "link": {
+                    "url": "B\u00fchlfeste",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Buehlfeste"
+                }
+            },
+            "id": "102"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5911.4126907195,
+                4106.8761851315
+            ],
+            "popup": {
+                "title": "Kleines Tal",
+                "description": "",
+                "link": {
+                    "url": "Kleines Tal",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kleines_Tal"
+                }
+            },
+            "id": "103"
+        },
+        {
+            "categoryId": "11",
+            "position": [
+                2047.7812383162,
+                2916.1083656133
+            ],
+            "popup": {
+                "title": "Das Okkultatum",
+                "description": "",
+                "link": {
+                    "url": "Okkultatum",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Okkultatum"
+                }
+            },
+            "id": "104"
+        },
+        {
+            "categoryId": "11",
+            "position": [
+                268.70057685089,
+                3997.9817408287
+            ],
+            "popup": {
+                "title": "Akademie der Alchemie",
+                "description": "",
+                "link": {
+                    "url": "Akademie der Alchemie",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Akademie_der_Alchemie"
+                }
+            },
+            "id": "105"
+        },
+        {
+            "categoryId": "11",
+            "position": [
+                33.983623743988566,
+                8055.34770752381
+            ],
+            "popup": {
+                "title": "Akademie der Illusion",
+                "description": "",
+                "link": {
+                    "url": "Akademie der Illusion",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Akademie_der_Illusion"
+                }
+            },
+            "id": "106"
+        },
+        {
+            "categoryId": "11",
+            "position": [
+                6341.333613681,
+                5255.2175977784
+            ],
+            "popup": {
+                "title": "Akademie der Elemente",
+                "description": "",
+                "link": {
+                    "url": "Akademie der Elemente",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Akademie_der_Elemente"
+                }
+            },
+            "id": "107"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1312.2426406871193,
+                3204
+            ],
+            "popup": {
+                "title": "Gesin",
+                "description": "",
+                "link": {
+                    "url": "Gesin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Gesin"
+                }
+            },
+            "id": "108"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                4200.2142802481,
+                3080.1571388486
+            ],
+            "popup": {
+                "title": "S\u00fcdwacht",
+                "description": "",
+                "link": {
+                    "url": "S\u00fcdwacht",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Suedwacht"
+                }
+            },
+            "id": "109"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4492,
+                3240
+            ],
+            "popup": {
+                "title": "Burg Gr\u00fcntod",
+                "description": "",
+                "link": {
+                    "url": "Burg Gr\u00fcntod",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_Gruentod"
+                }
+            },
+            "id": "110"
+        },
+        {
+            "categoryId": "7",
+            "position": [
+                2800,
+                3056
+            ],
+            "popup": {
+                "title": "Orkenstein",
+                "description": "",
+                "link": {
+                    "url": "Orkenstein",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Orkenstein"
+                }
+            },
+            "id": "111"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4600,
+                3432
+            ],
+            "popup": {
+                "title": "Kraft",
+                "description": "",
+                "link": {
+                    "url": "Kraft",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kraft"
+                }
+            },
+            "id": "112"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                3830.5,
+                4044
+            ],
+            "popup": {
+                "title": "Burg Eugen",
+                "description": "",
+                "link": {
+                    "url": "Burg Eugen",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_Eugen"
+                }
+            },
+            "id": "113"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                3833,
+                5153.5
+            ],
+            "popup": {
+                "title": "Drachenzahn",
+                "description": "",
+                "link": {
+                    "url": "Drachenzahn",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Drachenzahn"
+                }
+            },
+            "id": "114"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4853,
+                3608.5
+            ],
+            "popup": {
+                "title": "Rote Jagd",
+                "description": "",
+                "link": {
+                    "url": "Rote Jagd",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Rote_Jagd"
+                }
+            },
+            "id": "115"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4204,
+                5092.5
+            ],
+            "popup": {
+                "title": "Zollern",
+                "description": "",
+                "link": {
+                    "url": "Zollern",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Zollern"
+                }
+            },
+            "id": "116"
+        },
+        {
+            "categoryId": "8",
+            "position": [
+                2292,
+                2880
+            ],
+            "popup": {
+                "title": "Drarcon",
+                "description": "",
+                "link": {
+                    "url": "Drarcon",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Drarcon"
+                }
+            },
+            "id": "117"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3428.5,
+                2821.5
+            ],
+            "popup": {
+                "title": "Aurelius",
+                "description": "",
+                "link": {
+                    "url": "Aurelius",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Aurelius"
+                }
+            },
+            "id": "118"
+        },
+        {
+            "categoryId": "7",
+            "position": [
+                3907.8256262275,
+                2564.6762953636
+            ],
+            "popup": {
+                "title": "Nimburgh",
+                "description": "",
+                "link": {
+                    "url": "Nimburgh",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Nimburgh"
+                }
+            },
+            "id": "119"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3879,
+                2829
+            ],
+            "popup": {
+                "title": "Der Eisenturm",
+                "description": "",
+                "link": {
+                    "url": "Der Eisenturm",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Der_Eisenturm"
+                }
+            },
+            "id": "120"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4237,
+                2720
+            ],
+            "popup": {
+                "title": "Die Zitadelle von Eromir",
+                "description": "",
+                "link": {
+                    "url": "Die Zitadelle von Eromir",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Die Zitadelle_von_Eromir"
+                }
+            },
+            "id": "121"
+        },
+        {
+            "categoryId": "17",
+            "position": [
+                3318,
+                2434
+            ],
+            "popup": {
+                "title": "Valrok",
+                "description": "",
+                "link": {
+                    "url": "Valrok",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Valrok"
+                }
+            },
+            "id": "122"
+        },
+        {
+            "categoryId": "17",
+            "position": [
+                3235.7206307096,
+                2064.7518010647
+            ],
+            "popup": {
+                "title": "Ktuvuk",
+                "description": "",
+                "link": {
+                    "url": "Ktuvuk",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ktuvuk"
+                }
+            },
+            "id": "123"
+        },
+        {
+            "categoryId": "8",
+            "position": [
+                2326,
+                2652
+            ],
+            "popup": {
+                "title": "Zhitin",
+                "description": "",
+                "link": {
+                    "url": "Zhitin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Zhitin"
+                }
+            },
+            "id": "124"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                7484.0181720784,
+                3512.9064889348
+            ],
+            "popup": {
+                "title": "Skarr Fjom",
+                "description": "",
+                "link": {
+                    "url": "Skarr Fjom",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Skarr_Fjom"
+                }
+            },
+            "id": "125"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                7071.0678118655,
+                4050.3076426365
+            ],
+            "popup": {
+                "title": "Skarr Djolje",
+                "description": "",
+                "link": {
+                    "url": "Skarr Djolje",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Skarr_Djolje"
+                }
+            },
+            "id": "126"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                7319.9693988431,
+                4576.3950878393
+            ],
+            "popup": {
+                "title": "Skarr Gom",
+                "description": "",
+                "link": {
+                    "url": "Skarr Gom",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Skarr_Gom"
+                }
+            },
+            "id": "127"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                7098,
+                3528
+            ],
+            "popup": {
+                "title": "Salt",
+                "description": "",
+                "link": {
+                    "url": "Salt",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Salt"
+                }
+            },
+            "id": "128"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6884,
+                3752
+            ],
+            "popup": {
+                "title": "Fartyge",
+                "description": "",
+                "link": {
+                    "url": "Fartyge",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Fartyge"
+                }
+            },
+            "id": "129"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                6850.4504961353,
+                4106.8761851315
+            ],
+            "popup": {
+                "title": "Skarr Barin",
+                "description": "",
+                "link": {
+                    "url": "Skarr Barin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Skarr_Barin"
+                }
+            },
+            "id": "130"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                7789.488301551,
+                4055.964496886
+            ],
+            "popup": {
+                "title": "Krig",
+                "description": "",
+                "link": {
+                    "url": "Krig",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Krig"
+                }
+            },
+            "id": "131"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                7998.7919087822,
+                3710.896387667
+            ],
+            "popup": {
+                "title": "Meri",
+                "description": "",
+                "link": {
+                    "url": "Meri",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Meri"
+                }
+            },
+            "id": "132"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                7102,
+                3144
+            ],
+            "popup": {
+                "title": "Lorb",
+                "description": "",
+                "link": {
+                    "url": "Lorb",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Lorb"
+                }
+            },
+            "id": "133"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5173.900317942,
+                3106.3200897525
+            ],
+            "popup": {
+                "title": "Noxrith",
+                "description": "",
+                "link": {
+                    "url": "Noxrith",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Noxrith"
+                }
+            },
+            "id": "134"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5622.9131239954,
+                3258.3480477076
+            ],
+            "popup": {
+                "title": "Tore",
+                "description": "",
+                "link": {
+                    "url": "Tore",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Tore"
+                }
+            },
+            "id": "135"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                4986.5170209275,
+                4084.2487681335
+            ],
+            "popup": {
+                "title": "Blutsturm",
+                "description": "",
+                "link": {
+                    "url": "Blutsturm",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Blutsturm"
+                }
+            },
+            "id": "136"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5436.2369337622,
+                3524.2201974338
+            ],
+            "popup": {
+                "title": "Baurinstet",
+                "description": "",
+                "link": {
+                    "url": "Baurinstet",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Baurinstet"
+                }
+            },
+            "id": "137"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5243.9038892794,
+                3512.9064889348
+            ],
+            "popup": {
+                "title": "Burg Riesenschreck",
+                "description": "",
+                "link": {
+                    "url": "Burg Riesenschreck",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Burg_Riesenschreck"
+                }
+            },
+            "id": "138"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                5411,
+                3872
+            ],
+            "popup": {
+                "title": "Qylot",
+                "description": "",
+                "link": {
+                    "url": "Qylot",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Qylot"
+                }
+            },
+            "id": "139"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6098.0888809528,
+                3224.4069222107
+            ],
+            "popup": {
+                "title": "Korbin",
+                "description": "",
+                "link": {
+                    "url": "Korbin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Korbin"
+                }
+            },
+            "id": "140"
+        },
+        {
+            "categoryId": "5",
+            "position": [
+                6262,
+                3233
+            ],
+            "popup": {
+                "title": "Silir",
+                "description": "",
+                "link": {
+                    "url": "Silir",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Silir"
+                }
+            },
+            "id": "141"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1465.1252506185,
+                5215.619618032
+            ],
+            "popup": {
+                "title": "Nadelheim",
+                "description": "",
+                "link": {
+                    "url": "Nadelheim",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Nadelheim"
+                }
+            },
+            "id": "142"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                808,
+                5072
+            ],
+            "popup": {
+                "title": "Nimor",
+                "description": "",
+                "link": {
+                    "url": "Nimor",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Nimor"
+                }
+            },
+            "id": "143"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1820,
+                2952
+            ],
+            "popup": {
+                "title": "Ter Valor",
+                "description": "",
+                "link": {
+                    "url": "Ter Valor",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ter_Valor"
+                }
+            },
+            "id": "144"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                802,
+                3902
+            ],
+            "popup": {
+                "title": "Saron",
+                "description": "",
+                "link": {
+                    "url": "Saron",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Saron"
+                }
+            },
+            "id": "145"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1688,
+                2830
+            ],
+            "popup": {
+                "title": "Ter Albros",
+                "description": "",
+                "link": {
+                    "url": "Ter Albros",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ter_Albros"
+                }
+            },
+            "id": "146"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1592,
+                2640
+            ],
+            "popup": {
+                "title": "Ter Avon",
+                "description": "",
+                "link": {
+                    "url": "Ter Avon",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ter Avon"
+                }
+            },
+            "id": "147"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                2190.6168081159735,
+                3125.4119728445153
+            ],
+            "popup": {
+                "title": "Ter Caridil",
+                "description": "",
+                "link": {
+                    "url": "Ter Caridil",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ter_Caridil"
+                }
+            },
+            "id": "148"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1512,
+                2312
+            ],
+            "popup": {
+                "title": "Ter Sandor",
+                "description": "",
+                "link": {
+                    "url": "Ter Sandor",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ter_Sandor"
+                }
+            },
+            "id": "149"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                4212,
+                6122
+            ],
+            "popup": {
+                "title": "Schneefall",
+                "description": "Schneefall ist eine [[Grafschaft]], die haupts\u00e4chlich vom Fischfang lebt. Man sagt den Bewohnern einen gewissen Hang zum \u00dcbertreiben nach. Gerne erz\u00e4hlen sie Seemannsgarn. Regiert wird Schneefall von [[Haus Rosch]].",
+                "link": {
+                    "url": "Schneefall",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Schneefall"
+                }
+            },
+            "id": "150"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1882,
+                4047
+            ],
+            "popup": {
+                "title": "Neugard",
+                "description": "",
+                "link": {
+                    "url": "Neugard",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Neugard"
+                }
+            },
+            "id": "151"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1904.9434572152113,
+                3781.6070657856567
+            ],
+            "popup": {
+                "title": "Mas'i",
+                "description": "",
+                "link": {
+                    "url": "Mas'i",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Masi"
+                }
+            },
+            "id": "152"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1870.0023454392676,
+                3547
+            ],
+            "popup": {
+                "title": "Ter Myr",
+                "description": "",
+                "link": {
+                    "url": "Ter Myr",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ter_Myr"
+                }
+            },
+            "id": "153"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1807.363827062142,
+                3852.317743904311
+            ],
+            "popup": {
+                "title": "Riffspecht",
+                "description": "",
+                "link": {
+                    "url": "Riffspecht",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Riffspecht"
+                }
+            },
+            "id": "154"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1486.033617962832,
+                3816
+            ],
+            "popup": {
+                "title": "Wurzelbr\u00fcck",
+                "description": "",
+                "link": {
+                    "url": "Wurzelbr\u00fcck",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Wurzelbrueck"
+                }
+            },
+            "id": "155"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1978.48477376,
+                3237.134844272
+            ],
+            "popup": {
+                "title": "Ter Zilor",
+                "description": "",
+                "link": {
+                    "url": "Ter Zilor",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ter_Zilor"
+                }
+            },
+            "id": "156"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                2312,
+                4068
+            ],
+            "popup": {
+                "title": "Ter Vyr",
+                "description": "",
+                "link": {
+                    "url": "Ter Vyr",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ter_Vyr"
+                }
+            },
+            "id": "157"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3387.0414818836,
+                4471.7432842237
+            ],
+            "popup": {
+                "title": "Teraburs Segen",
+                "description": "",
+                "link": {
+                    "url": "Teraburs Segen",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Teraburs_Segen"
+                }
+            },
+            "id": "158"
+        },
+        {
+            "categoryId": "13",
+            "position": [
+                5262.9957723715,
+                823.31493398826
+            ],
+            "popup": {
+                "title": "Vanaku",
+                "description": "Vanaku ist neben Resif eine der \u00e4ltesten St\u00e4dte Welt.",
+                "link": {
+                    "url": "Vanaku",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Vanaku"
+                }
+            },
+            "id": "159"
+        },
+        {
+            "categoryId": "14",
+            "position": [
+                1787.747811737912,
+                1331.3607486307094
+            ],
+            "popup": {
+                "title": "Resif",
+                "description": "Resif ist ist die Wiege der [[Elf|Elfischen]] Zivilisation. Das [[K\u00f6nigreich Resif]] war vor dem [[Kaiserreich]] das gr\u00f6\u00dfte Reich der Welt. Die Stadt hat Bedeutung f\u00fcr mehrere [[Liste an Religionen der Welt von Eron|Religionen]] und ist der Ursprung der [[Andaria|Andarischen Kultur]]",
+                "link": {
+                    "url": "Resif",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Resif"
+                }
+            },
+            "id": "160"
+        },
+        {
+            "categoryId": "14",
+            "position": [
+                267.6399166791063,
+                545.1793282948234
+            ],
+            "popup": {
+                "title": "Mortif",
+                "description": "",
+                "link": {
+                    "url": "Mortif",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Mortif"
+                }
+            },
+            "id": "161"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2013.8401128192875,
+                5260.874452027914
+            ],
+            "popup": {
+                "title": "Westheim",
+                "description": "",
+                "link": {
+                    "url": "Westheim",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Westheim"
+                }
+            },
+            "id": "162"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3063.9968727476435,
+                5536
+            ],
+            "popup": {
+                "title": "Haylgenstett",
+                "description": "",
+                "link": {
+                    "url": "Haylgenstett",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Haylgenstett"
+                }
+            },
+            "id": "163"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2743.572099702457,
+                5238.2470350299445
+            ],
+            "popup": {
+                "title": "Moringen",
+                "description": "",
+                "link": {
+                    "url": "Moringen",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Moringen"
+                }
+            },
+            "id": "164"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                3461.4101199023835,
+                5124.52416360247
+            ],
+            "popup": {
+                "title": "Friedburg",
+                "description": "",
+                "link": {
+                    "url": "Friedburg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Friedburg"
+                }
+            },
+            "id": "165"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                2698,
+                5490
+            ],
+            "popup": {
+                "title": "Heilbad",
+                "description": "Heilbad ist eine [[Grafschaft]], die durch den Fischfang gro\u00df wurde. Die Bewohner endeckten vor langer Zeit hei\u00dfe Quellen, die die Stadt f\u00fcr das umliegende Klima sehr warm machen. Zudem befindet sich in Heilbad die gr\u00f6\u00dfte Niederlassung des [[Weiberorden]]. [[Haus Tromm]] herrscht in Heilbad. ",
+                "link": {
+                    "url": "Heilbad",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Heilbad"
+                }
+            },
+            "id": "166"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1799,
+                4959
+            ],
+            "popup": {
+                "title": "Mosheim",
+                "description": "",
+                "link": {
+                    "url": "Mosheim",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Mosheim"
+                }
+            },
+            "id": "167"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                4442.044799413927,
+                4502.855982595955
+            ],
+            "popup": {
+                "title": "D\u00fcrrenburg",
+                "description": "",
+                "link": {
+                    "url": "D\u00fcrrenburg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/D\u00fcrrenburg"
+                }
+            },
+            "id": "168"
+        },
+        {
+            "categoryId": "7",
+            "position": [
+                4239.998436373822,
+                2388
+            ],
+            "popup": {
+                "title": "Ulrak",
+                "description": "",
+                "link": {
+                    "url": "Ulrak",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Ulrak"
+                }
+            },
+            "id": "169"
+        },
+        {
+            "categoryId": "7",
+            "position": [
+                2714,
+                2454
+            ],
+            "popup": {
+                "title": "Kyr Vithrin",
+                "description": "",
+                "link": {
+                    "url": "Kyr Vithrin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kyr-Vithrin"
+                }
+            },
+            "id": "170"
+        },
+        {
+            "categoryId": "17",
+            "position": [
+                2629.0230124516,
+                1930.4015126393076
+            ],
+            "popup": {
+                "title": "Kyr Ork",
+                "description": "",
+                "link": {
+                    "url": "Kyr Ork",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kyr-Ork"
+                }
+            },
+            "id": "171"
+        },
+        {
+            "categoryId": "17",
+            "position": [
+                2879.3388129916,
+                1688.5709934735
+            ],
+            "popup": {
+                "title": "Lyruk",
+                "description": "",
+                "link": {
+                    "url": "Lyrok",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Lyrok"
+                }
+            },
+            "id": "172"
+        },
+        {
+            "categoryId": "17",
+            "position": [
+                3127.7085457198,
+                1836.1957768355
+            ],
+            "popup": {
+                "title": "Turuk",
+                "description": "",
+                "link": {
+                    "url": "Turuk",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Turuk"
+                }
+            },
+            "id": "173"
+        },
+        {
+            "categoryId": "3",
+            "position": [
+                2463.5633426059535,
+                5357.040974269285
+            ],
+            "popup": {
+                "title": "Aygeria",
+                "description": "",
+                "link": {
+                    "url": "Aygeria",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Aygeria"
+                }
+            },
+            "id": "174"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                2873.999218186911,
+                5462
+            ],
+            "popup": {
+                "title": "Fort Numerion",
+                "description": "",
+                "link": {
+                    "url": "Fort Numerion",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Fort-Numerion"
+                }
+            },
+            "id": "175"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3556,
+                5292
+            ],
+            "popup": {
+                "title": "Westturm",
+                "description": "",
+                "link": {
+                    "url": "Westturm",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Westturm"
+                }
+            },
+            "id": "176"
+        },
+        {
+            "categoryId": "15",
+            "position": [
+                416,
+                2780.3431457505076
+            ],
+            "popup": {
+                "title": "Myr",
+                "description": "",
+                "link": {
+                    "url": "Myr",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Myr"
+                }
+            },
+            "id": "177"
+        },
+        {
+            "categoryId": "15",
+            "position": [
+                340.34314575050763,
+                3236.3431457505076
+            ],
+            "popup": {
+                "title": "Gyma",
+                "description": "",
+                "link": {
+                    "url": "Gyma",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Gyma"
+                }
+            },
+            "id": "178"
+        },
+        {
+            "categoryId": "15",
+            "position": [
+                208,
+                3398
+            ],
+            "popup": {
+                "title": "Die Hohe Feste",
+                "description": "",
+                "link": {
+                    "url": "Die Hohe Feste",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Die-Hohe-Feste"
+                }
+            },
+            "id": "179"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3374.3124541715315,
+                6103.745735202278
+            ],
+            "popup": {
+                "title": "Letztes Licht",
+                "description": "",
+                "link": {
+                    "url": "Letztes Licht",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Letztes Licht"
+                }
+            },
+            "id": "180"
+        },
+        {
+            "categoryId": "4",
+            "position": [
+                5971.982800112039,
+                6020
+            ],
+            "popup": {
+                "title": "Skarr Nolja",
+                "description": "",
+                "link": {
+                    "url": "Skarr Nolja",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Skarr-Nolja"
+                }
+            },
+            "id": "181"
+        },
+        {
+            "categoryId": "8",
+            "position": [
+                2105.7639943735,
+                2284.6620100137
+            ],
+            "popup": {
+                "title": "Mithrin",
+                "description": "",
+                "link": {
+                    "url": "Mithrin",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Mithrin"
+                }
+            },
+            "id": "182"
+        },
+        {
+            "categoryId": "13",
+            "position": [
+                5408,
+                1058
+            ],
+            "popup": {
+                "title": "Valoria",
+                "description": "",
+                "link": {
+                    "url": "Valoria",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Valoria"
+                }
+            },
+            "id": "183"
+        },
+        {
+            "categoryId": "17",
+            "position": [
+                3358,
+                1628
+            ],
+            "popup": {
+                "title": "Kyr Arvak",
+                "description": "",
+                "link": {
+                    "url": "Kyr Arvak",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kyr-Arvak"
+                }
+            },
+            "id": "184"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1483,
+                2076
+            ],
+            "popup": {
+                "title": "Assyr",
+                "description": "",
+                "link": {
+                    "url": "Assyr",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Assyr"
+                }
+            },
+            "id": "185"
+        },
+        {
+            "categoryId": "9",
+            "position": [
+                7426.7425228023,
+                1501.8948032402
+            ],
+            "popup": {
+                "title": "Edesh",
+                "description": "Edesh ist ein unabh\u00e4ngiger Inselstaat, der von abtr\u00fcnnigen [[Zwerg|Zwergen]] aus den [[Minenreichen]] und [[Mensch|Menschen]] des [[Oslavisches Sheikat|Oslavischen Sheikats]] gegr\u00fcndet wurde. Besonders ist, dass die Regierung der Insel demokratisch gew\u00e4hlt wird.",
+                "link": {
+                    "url": "Edesh",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Edesh"
+                }
+            },
+            "id": "186"
+        },
+        {
+            "categoryId": "16",
+            "position": [
+                3111.995309121465,
+                6148
+            ],
+            "popup": {
+                "title": "Fr\u00e4stenburg",
+                "description": "Die [[Grafschaft]] Fr\u00e4stenburg lebt vom Walfang und \u00d6lexport. Die Grafschaft wird regiert von [[Haus Nordwind]].",
+                "link": {
+                    "url": "Fr\u00e4stenburg",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Fr\u00e4stenburg"
+                }
+            },
+            "id": "187"
+        },
+        {
+            "categoryId": "8",
+            "position": [
+                2334.1594846968,
+                2300.2183591998
+            ],
+            "popup": {
+                "title": "Mithra",
+                "description": "",
+                "link": {
+                    "url": "Mithra",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Mithra"
+                }
+            },
+            "id": "188"
+        },
+        {
+            "categoryId": "7",
+            "position": [
+                2365.272183069,
+                2102.2284604676
+            ],
+            "popup": {
+                "title": "Kyr Valror",
+                "description": "",
+                "link": {
+                    "url": "Kyr Valror",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Kyr-Valror"
+                }
+            },
+            "id": "189"
+        },
+        {
+            "categoryId": "2",
+            "position": [
+                1603.723707984459,
+                6267.794508437558
+            ],
+            "popup": {
+                "title": "Geisterinsel",
+                "description": "Die Geisterinsel ist eine mythenumwobene Insel. Die [[Schneeelf|Schneeelfen]] lebten einst hier, bis sie von [[Kaiser]] [[Sandor Nimored]] im Jahr 300 vernichtet wurden. Viele glauben, dass die Schneeelfen zu Geistern wurden und bis heute ihre Rache planen. Die Insel ist verlassen.",
+                "link": {
+                    "url": "Geisterinsel",
+                    "label": "https:\/\/eron.fandom.com\/de\/wiki\/Geisterinsel"
+                }
+            },
+            "id": "190"
+        }
+    ],
+    "markerProgress": false
+}

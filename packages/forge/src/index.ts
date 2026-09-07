@@ -2,6 +2,8 @@ export {
   AZGAAR_IMPORT_VERSION, MAX_AZGAAR_BYTES, AzgaarImportError, importiereAzgaar, azgaarImportAdapter,
   type AzgaarImport, type AzgaarZelle,
 } from "./azgaar.ts";
+export { ERON_MAP_IMPORT_VERSION, MAX_ERON_MAP_BYTES, EronMapImportError, importiereEronKarte } from "./eron-map.ts";
+export type { EronMapImport, AtlasMarkerIcon } from "./eron-map.ts";
 export { UVTT_ADAPTER_VERSION, UvttValidationError, importUvtt, exportUvtt, exportTacticalUvtt, inspectUvttImage } from "./uvtt.ts";
 export type { UvttProvenance, FidelityIssue, FidelityReport, UvttImage, UvttImport, UvttExport } from "./uvtt.ts";
 export {

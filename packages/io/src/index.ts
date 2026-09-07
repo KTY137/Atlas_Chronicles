@@ -1,7 +1,11 @@
 /** File adapters only. Import results are GM review material, never reader projections. */
 export { importEron, planEronReimport } from "./eron.ts";
-export { decomposeWiki, parseWikiInline, splitWikiTopLevel, balancedEnd, wikiSlug, blockPlainText, inlinePlainText, ERON_TEMPLATE_TYPES, eronNotationTarget, namespaceLinkTarget, MEDIAWIKI_NAMESPACES } from "./wikitext.ts";
+export { decomposeWiki, parseWikiInline, splitWikiTopLevel, balancedEnd, wikiSlug, blockPlainText, inlinePlainText, dateiSlug, parseBildAufruf, ERON_TEMPLATE_TYPES, eronNotationTarget, namespaceLinkTarget, MEDIAWIKI_NAMESPACES } from "./wikitext.ts";
+export type { BildAufruf } from "./wikitext.ts";
+export { leseLizenz, parseMediaInventory } from "./medien.ts";
 export { ImportValidationError } from "./validation.ts";
+export { vermisseBild, formatWiderspruch, BILD_GRENZEN } from "./bild.ts";
+export type { BildBefund, BildFormat } from "./bild.ts";
 export { createWikiBundle, serializeWikiBundle, parseWikiBundle, validateWikiBundle, WIKI_BUNDLE_VERSION } from "./bundle.ts";
 export type { WikiBundle, WikiBundleData } from "./bundle.ts";
 export { createCampaignBundle, validateCampaignBundle, parseCampaignBundle, serializeCampaignBundle, campaignSemanticDiff, CAMPAIGN_BUNDLE_VERSION } from "./campaign-bundle.ts";
@@ -19,4 +23,7 @@ export type { CampaignTableNameV3, CampaignTablesV3, CampaignModuleV3 } from "./
 export { CAMPAIGN_BUNDLE_V3_LIMITS } from "./campaign-v3-limits.ts";
 export * from "./native-v4/index.ts";
 export * from "./native-v5/index.ts";
-export type { EronArticle, EronTemplate, EronAttribution, EronImportInput, EronImportResult, ImportProvenance, EronSource, EronReimportPlan, ImportedMediaReference } from "./model.ts";
+export * from "./native-v6/index.ts";
+export * from "./native-v7/index.ts";
+export { createCurrentCampaignBundle, validateCurrentCampaignBundle, parseCurrentCampaignBundle, serializeCurrentCampaignBundle, currentCampaignSemanticDiff, currentCampaignTables, type CurrentCampaignBundle } from "./native-v7/current.ts";
+export type { EronArticle, EronTemplate, EronAttribution, EronImportInput, EronImportResult, ImportProvenance, EronSource, EronReimportPlan, ImportedMediaReference, EronMediaFile, EronAssetEntwurf } from "./model.ts";

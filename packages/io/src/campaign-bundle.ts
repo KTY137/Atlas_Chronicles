@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Atlas Chronicles contributors. SPDX-License-Identifier: MIT
 import { canonicalHash, canonicalJson, textHash, type CanonicalValue } from "@chronicle/core";
+import { importiereEronKarte } from "@chronicle/forge";
 import { stableJson } from "@chronicle/rules";
 import { LEGACY_CAMPAIGN_RULES, type CampaignRulesProfile } from "./campaign-rules-profile.ts";
 import { requireReciprocalMintEvidence } from "./campaign-current-evidence.ts";
@@ -218,7 +219,7 @@ function checkGraph(t: CampaignTables, campaignId: string, universeId: string, r
   }
   acyclic(lineage, "lineage");
   for (const r of t.import_acceptances) { g.ref("artifacts", r.artifact_id, "acceptances.artifact_id"); g.revision(r.revision_id, r.entry_id, "acceptances.revision_id"); }
-  for (const r of t.atlas_maps) { const a = g.ref("artifacts", r.artifact_id, "maps.artifact_id"); if (a.kind !== "azgaar") fail("maps", "map needs an Azgaar artifact"); }
+  for (const r of t.atlas_maps) { const a = g.ref("artifacts", r.artifact_id, "maps.artifact_id"); if (a.kind !== "azgaar" && a.kind !== "eron-map") fail("maps", "map needs an Azgaar or Fandom map artifact"); }
   for (const r of t.atlas_nodes) { g.ref("atlas_maps", r.map_id, "nodes.map_id"); const node = object(r.data, "nodes.data"); if (node.id !== r.id) fail("nodes", "node identity differs from data"); }
   for (const r of t.atlas_revelations) g.composite("atlas_nodes", ["map_id", "id"], [r.map_id, r.node_id], "atlas_revelations.node_id");
   for (const map of t.atlas_maps) atlasNodes(g.group("atlas_nodes", "map_id", map.id!).map(r => r.data), "atlas_nodes", g);
@@ -297,7 +298,16 @@ function inline(value: unknown, path: string): void {
 }
 function block(value: unknown, path: string): void {
   const r = object(value, path), kind = String(r.kind);
-  if (["absatz", "zitat", "bildunterschrift"].includes(kind)) { keys(r, kind === "bildunterschrift" ? ["kind", "assetId", "inhalt"] : ["kind", "inhalt"], path); if (kind === "bildunterschrift") string(r.assetId, path); inline(r.inhalt, path); }
+  // A figure grew optional fields (file name, alt text, alignment, width). They are OPTIONAL
+  // here on purpose: a bundle written before images were imported carries none of them and must
+  // keep validating — a published meaning is never silently redefined.
+  if (["absatz", "zitat", "bildunterschrift"].includes(kind)) { keys(r, kind === "bildunterschrift" ? ["kind", "assetId", "inhalt"] : ["kind", "inhalt"], path, kind === "bildunterschrift" ? ["dateiname", "alt", "ausrichtung", "breite", "ausInfobox"] : []);
+    if (kind === "bildunterschrift") { string(r.assetId, path);
+      for (const key of ["dateiname", "alt"]) if (r[key] !== undefined) string(r[key], path, 2000);
+      if (r.ausrichtung !== undefined && !["links", "rechts", "zentriert", "ohne"].includes(String(r.ausrichtung))) fail(path, "invalid image alignment");
+      if (r.breite !== undefined && (typeof r.breite !== "number" || !Number.isSafeInteger(r.breite) || r.breite < 1)) fail(path, "invalid image width");
+      if (r.ausInfobox !== undefined && typeof r.ausInfobox !== "boolean") fail(path, "invalid infobox flag"); }
+    inline(r.inhalt, path); }
   else if (kind === "feld") { keys(r, ["kind", "schluessel", "label", "werte", "mehrwertig", "klauselKandidat"], path, ["gruppe"]); string(r.schluessel, path, 512); string(r.label, path, 1000); if (r.gruppe !== undefined) string(r.gruppe, path, 1000); if (typeof r.mehrwertig !== "boolean" || typeof r.klauselKandidat !== "boolean") fail(path, "field flags required"); const values = list(r.werte, path); if (!r.mehrwertig && values.length !== 1) fail(path, "single field needs exactly one value"); for (const v of values) inline(v, path); }
   else if (kind === "liste") { keys(r, ["kind", "geordnet", "punkte"], path); if (typeof r.geordnet !== "boolean") fail(path, "list ordering required"); for (const v of list(r.punkte, path)) inline(v, path); }
   else if (kind === "rohblock") { keys(r, ["kind", "quelltext", "grund"], path); if (typeof r.quelltext !== "string" || !["wikitabelle", "unbekannte-vorlage", "generator-prosa", "sonstiges"].includes(String(r.grund))) fail(path, "invalid raw block"); }
@@ -407,18 +417,40 @@ function artifact(r: CampaignRow, g: Graph): void {
   const s = object(r.source, "artifact.source");
   if (r.kind === "eron-preview") {
     keys(s, ["result", "versions"], "artifact.source"); const result = object(s.result, "artifact.result"), source = object(result.source, "artifact.originalSource");
-    keys(result, ["importerVersion", "importId", "universeId", "campaignId", "entries", "revisions", "passages", "aliases", "links", "redLinks", "provenance", "media", "source", "report", "reviewRequired", "attributionComplete"], "artifact.result");
+    keys(result, ["importerVersion", "importId", "universeId", "campaignId", "entries", "revisions", "passages", "aliases", "links", "redLinks", "provenance", "media", "assets", "source", "report", "reviewRequired", "attributionComplete"], "artifact.result");
     if (result.importerVersion !== "1" || result.universeId !== g.tables.universes[0]!.id || result.campaignId !== r.campaign_id || result.reviewRequired !== true || typeof result.attributionComplete !== "boolean") fail("artifact.result", "preview version, scope or review state mismatch");
     keys(source, ["format", "sha256", "wikiUrl", "articles", "templates"], "artifact.originalSource");
     if (source.format !== "eron-json" || source.sha256 !== hash({ articles: source.articles, templates: source.templates }) || r.source_hash !== hash({ source: source.sha256, preview: r.id })) fail("artifact.source_hash", "Eron source digest mismatch");
     if (hash(result.report) !== hash(r.report)) fail("artifact.report", "stored report differs from preview");
-    createWikiBundle({ universeId: result.universeId, campaignId: result.campaignId, entries: result.entries, revisions: result.revisions, passages: result.passages, aliases: result.aliases, links: result.links, revelations: [], lineage: [], assets: [], provenance: result.provenance, sources: [source], importReports: [result.report] } as unknown as WikiBundleData);
+    // Die Assets gehören in die Selbstprüfung: eine Bildpassage verweist auf eine Asset-Id, und
+    // mit einer leeren Liste wäre genau dieser Verweis unauflösbar.
+    createWikiBundle({ universeId: result.universeId, campaignId: result.campaignId, entries: result.entries, revisions: result.revisions, passages: result.passages, aliases: result.aliases, links: result.links, revelations: [], lineage: [], assets: result.assets ?? [], provenance: result.provenance, sources: [source], importReports: [result.report] } as unknown as WikiBundleData);
     for (const [entryId, version] of Object.entries(object(s.versions, "artifact.versions"))) { g.ref("entries", entryId, "artifact.versions.entry"); numeric(version, "artifact.versions.version", 1); }
-    for (const value of list(result.media, "artifact.media")) { const media = object(value, "artifact.media"); keys(media, ["pageid", "fileName", "source", "licenseStatus", "state"], "artifact.media"); if (media.licenseStatus !== "unbekannt" || media.state !== "source-only") fail("artifact.media", "unsupported media licensing/state"); numeric(media.pageid, "artifact.media.pageid", 1); string(media.fileName, "artifact.media.fileName", 1000); string(media.source, "artifact.media.source", 100_000); }
+    for (const value of list(result.media, "artifact.media")) { const media = object(value, "artifact.media");
+      keys(media, ["pageid", "fileName", "source", "licenseStatus", "state"], "artifact.media", ["assetId", "beschreibungsseiteUrl", "quellUrl", "urheber", "behaupteterMime"]);
+      if (!["frei", "zitat", "unbekannt"].includes(String(media.licenseStatus)) || !["referenziert", "beschrieben"].includes(String(media.state))) fail("artifact.media", "unsupported media licensing/state");
+      numeric(media.pageid, "artifact.media.pageid", 1); string(media.fileName, "artifact.media.fileName", 1000); string(media.source, "artifact.media.source", 100_000);
+      for (const key of ["assetId", "beschreibungsseiteUrl", "quellUrl", "urheber", "behaupteterMime"]) if (media[key] !== undefined) string(media[key], `artifact.media.${key}`, 4096); }
+    // Die Asset-Entwürfe: Herkunft und Lizenzurteil, Bytes ausdrücklich noch nicht.
+    for (const value of list(result.assets ?? [], "artifact.assets")) { const asset = object(value, "artifact.assets");
+      keys(asset, ["id", "universeId", "dateiname", "lizenzStatus", "lizenzGesetztVon", "verwendetVon", "verwaist", "imBestand"], "artifact.assets",
+        ["mime", "sha256", "lizenzQuelle", "beschreibungsseiteUrl", "quellUrl", "urheber", "hochgeladenAm", "behaupteterMime", "breite", "hoehe", "bytes"]);
+      if (!["frei", "zitat", "unbekannt"].includes(String(asset.lizenzStatus))) fail("artifact.assets", "unsupported asset licence state");
+      if (asset.lizenzGesetztVon !== "import") fail("artifact.assets", "an import artifact records the importer's verdict, not a human's");
+      if (typeof asset.verwaist !== "boolean" || typeof asset.imBestand !== "boolean") fail("artifact.assets", "asset usage flags required");
+      string(asset.dateiname, "artifact.assets.dateiname", 512); textArray(asset.verwendetVon, "artifact.assets.verwendetVon"); }
   } else {
     keys(s, ["adapterVersion", "titel", "keim", "weltId", "knoten", "orte", "szene", "zellen", "quelle", "bericht"], "artifact.source");
     const source = object(s.quelle, "artifact.quelle"); keys(source, ["format", "sha256", "bytes", "json"], "artifact.quelle");
-    if (source.format !== "azgaar-full-json" || typeof source.json !== "string" || textHash(source.json as string) !== source.sha256 || source.sha256 !== r.source_hash || Buffer.byteLength(source.json as string, "utf8") !== source.bytes) fail("artifact.quelle", "Azgaar original bytes/hash mismatch");
+    const expectedFormat = r.kind === "eron-map" ? "fandom-interactivemap" : "azgaar-full-json";
+    if (source.format !== expectedFormat || typeof source.json !== "string" || textHash(source.json as string) !== source.sha256 || source.sha256 !== r.source_hash || Buffer.byteLength(source.json as string, "utf8") !== source.bytes) fail("artifact.quelle", "Map original bytes/hash mismatch");
+    if (r.kind === "eron-map") {
+      // Re-derive the bounded adapter output: altered pins, colors or child identities cannot be
+      // smuggled into an archive while retaining an unrelated, correctly hashed source document.
+      let restored: unknown;
+      try { restored = importiereEronKarte(source.json as string); } catch { fail("artifact.quelle", "Invalid Fandom map source"); }
+      if (hash(restored) !== hash(s)) fail("artifact.source", "Fandom map differs from its preserved source");
+    }
     if (s.adapterVersion !== "1") fail("artifact.adapterVersion", "unsupported Azgaar adapter version");
     if (hash(s.bericht) !== hash(r.report)) fail("artifact.report", "stored report differs from source artifact");
     const seed = object(s.keim, "artifact.keim"); keys(seed, ["generator", "version", "seed", "optionen", "keimHash"], "artifact.keim");

@@ -21,7 +21,8 @@ function harness(file: "TacticalView" | "TacticalPreparation", component: string
   };
   const element = (type: unknown, props: unknown) => ({ type, props }), mod = { exports: {} as any };
   const actual = readFileSync(new URL(`../src/features/${file}.tsx`, import.meta.url), "utf8");
-  const extra = file === "TacticalView" ? "TokenEditor, LiveBoard" : "ScenePlan, PlanForm";
+  const extra = (file === "TacticalView" ? ["TokenEditor", "LiveBoard"] : ["ScenePlan", "PlanForm"])
+    .filter(name => !actual.includes(`export function ${name}(`)).join(", ");
   const code = transformSync(`${actual}\nexport { ${extra} };`, { loader: "tsx", format: "cjs", jsx: "automatic" }).code;
   runInNewContext(code, { module: mod, exports: mod.exports, crypto: { randomUUID: () => "review-command" }, window: { confirm: (message: string) => { confirmations.push(message); return true; } },
     require: (name: string) => {

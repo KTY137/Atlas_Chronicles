@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { createMapRenderer, visibleMapTiles, type MapHit, type MapPoint, type MapRasterTile, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
+import { createMapRenderer, visibleMapTiles, type MapHit, type MapPoint, type MapRasterTile, type MapStampImage, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
 import { Button, Notice } from "@chronicle/ui";
+import { parseAssetpaket } from "@chronicle/szene";
 import { errorText } from "../api";
 import { useAppearance } from "./Appearance";
 
@@ -23,6 +24,8 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
   };
   const schedule = useRef<() => void>(() => {}), clearScope = useRef<() => void>(() => {}), retryTiles = useRef<() => void>(() => {});
   const [error, setError] = useState(""), [tileError, setTileError] = useState(""), [ready, setReady] = useState(false);
+  const [artError, setArtError] = useState("");
+  const stampAssets = JSON.stringify([...new Set(scene.stamps?.map(stamp => stamp.asset) ?? [])].sort());
   useEffect(() => {
     if (!host.current) return;
     const mount = new AbortController(); let tilesRequest: AbortController | null = null, timer: ReturnType<typeof setTimeout> | undefined;
@@ -91,6 +94,39 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
       .catch(reason => { if (!mount.signal.aborted) setError(errorText(reason)); });
     return () => { mount.abort(); clearTimeout(timer); clear(); renderer.current?.destroy(); renderer.current = null; schedule.current = () => {}; clearScope.current = () => {}; retryTiles.current = () => {}; };
   }, [scene.id]);
+  useEffect(() => {
+    const instance = renderer.current;
+    if (!ready || !instance) return;
+    const controller = new AbortController();
+    const assets = JSON.parse(stampAssets) as string[];
+    setArtError("");
+    void (async () => {
+      const packIds = [...new Set(assets.map(asset => asset.split("/")[0]!))];
+      const manifests = new Map(await Promise.all(packIds.map(async pack => {
+        if (!/^[a-z0-9._-]+$/.test(pack)) throw new Error("Ungültiger Karten-Assetverweis.");
+        const response = await fetch(`/api/packs/${encodeURIComponent(pack)}/manifest`, { credentials: "same-origin", signal: controller.signal });
+        if (!response.ok) throw new Error("Das Karten-Assetpaket konnte nicht geladen werden.");
+        return [pack, parseAssetpaket(await response.text())] as const;
+      })));
+      const results = await Promise.allSettled(assets.map(async (asset): Promise<MapStampImage> => {
+        const [pack, name, extra] = asset.split("/");
+        const entry = pack && !extra ? manifests.get(pack)?.assets.find(item => item.name === name) : undefined;
+        if (!pack || !entry) throw new Error("Das Karten-Asset ist im Paket nicht enthalten.");
+        const response = await fetch(`/api/packs/${encodeURIComponent(pack)}/asset/${entry.datei.split("/").map(encodeURIComponent).join("/")}`, { credentials: "same-origin", signal: controller.signal });
+        if (!response.ok) throw new Error("Ein Karten-Asset konnte nicht geladen werden.");
+        const blob = await response.blob(), url = URL.createObjectURL(blob);
+        try {
+          const image = new Image(); image.src = url; await image.decode();
+          return { asset, image: await createImageBitmap(image) };
+        } finally { URL.revokeObjectURL(url); }
+      }));
+      const images = results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
+      if (controller.signal.aborted || renderer.current !== instance) { for (const item of images) item.image.close(); return; }
+      instance.setStampImages(images);
+      if (results.some(result => result.status === "rejected")) setArtError("Ein Teil der Kartenobjekte konnte nicht gezeichnet werden. Räume und Eingänge bleiben bedienbar.");
+    })().catch(failure => { if (!controller.signal.aborted) setArtError(errorText(failure)); });
+    return () => controller.abort();
+  }, [stampAssets, ready, scene.id]);
   useLayoutEffect(() => {
     synchronize(() => renderer.current?.update(scene)); schedule.current();
   }, [scene]);
@@ -105,6 +141,7 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
   return <div className="tactical-canvas-frame">
     <div className="button-row"><Button disabled={!ready} onClick={() => renderer.current?.fit()}>Ganze Karte</Button><Button disabled={!ready} aria-label="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.5)}>+</Button><Button disabled={!ready} aria-label="Karte verkleinern" onClick={() => renderer.current?.zoomAt(1 / 1.5)}>−</Button></div>
     {error ? <Notice error>{error} Die Liste darunter bietet dieselben Figurenbefehle.</Notice> : null}
+    {artError ? <Notice error>{artError}</Notice> : null}
     {tileError ? <Notice error>{tileError} <Button onClick={() => retryTiles.current()}>Kacheln erneut laden</Button></Notice> : null}
     <div className="tactical-canvas" ref={host} data-canvas-ready={ready} />
     <p className="field-help">Karte ziehen oder mit Pfeiltasten verschieben. Mit dem Mausrad zoomen. Bewegliche Figuren lassen sich ziehen; genaue Werte stehen auch in der Figurenliste.</p>

@@ -1,4 +1,10 @@
-import type { MapCamera, MapHit, MapPoint, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
+import type { MapCamera, MapHit, MapPoint, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
+
+const PIN_ICONS = new Set(["place", "city", "castle", "cave", "ruin", "portal"]);
+/** CSS-pixel envelope shared by vector badges and picking, independent of map scale. */
+export function mapPinHitRadius(pin: Pick<ProjectedMapPin, "icon">): number {
+  return pin.icon === undefined ? 7 : 12;
+}
 
 export function retainsTokenDrag(initial: ProjectedMapToken, current: ProjectedMapToken | undefined): boolean {
   return !!current?.movable && current.id === initial.id && current.revision === initial.revision
@@ -61,7 +67,7 @@ export function hitTestMap(scene: ProjectedMapScene, camera: MapCamera, screen: 
   }
   for (let i = scene.pins.length - 1; i >= 0; i--) {
     const p = scene.pins[i]!;
-    if (near(p.x, p.y, 7)) return { kind: "pin", id: p.id };
+    if (near(p.x, p.y, mapPinHitRadius(p))) return { kind: "pin", id: p.id };
   }
   const point = screenToMap(screen, camera);
   if (point[0] < 0 || point[1] < 0 || point[0] > scene.width || point[1] > scene.height) return null;
@@ -113,4 +119,5 @@ export function validateMapScene(scene: ProjectedMapScene): void {
     if ("radius" in item && item.radius !== undefined && (!Number.isFinite(item.radius) || item.radius <= 0 || item.radius > 100)) throw new Error("invalid token radius");
     if ("revision" in item && item.revision !== undefined && (!Number.isSafeInteger(item.revision) || item.revision < 1)) throw new Error("invalid token revision");
   }
+  for (const pin of scene.pins) if (pin.icon !== undefined && !PIN_ICONS.has(pin.icon)) throw new Error("invalid map pin icon");
 }

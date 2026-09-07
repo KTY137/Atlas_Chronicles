@@ -4,10 +4,11 @@ import { importEron, ImportValidationError, type EronImportInput, type EronImpor
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { Gone, Conflict } from "./errors.ts";
+import { schreibeAssetEntwuerfe } from "./wiki-medien.ts";
 
 export function createImports(db: Db, cfg: DomainConfig = {}) {
   const now = cfg.now ?? Date.now, campaigns = createCampaigns(db, cfg);
-  async function previewEron(userId: string, campaignId: string, input: Pick<EronImportInput, "articles" | "templates" | "wikiUrl" | "license" | "attributionByPageId">) {
+  async function previewEron(userId: string, campaignId: string, input: Pick<EronImportInput, "articles" | "templates" | "wikiUrl" | "license" | "attributionByPageId" | "media">) {
     const member = await campaigns.requireMember(userId, campaignId, ["leitung"]);
     // The optional assertion file is normalized into the existing provenance rows;
     // it never supplies a fictional author history when no evidence was uploaded.
@@ -21,6 +22,13 @@ export function createImports(db: Db, cfg: DomainConfig = {}) {
       [id,campaignId,canonicalHash({ source: result.source.sha256, preview: id }), { result, versions },result.report,userId,now()]);
     return { artifactId: id, report: result.report, attributionComplete: result.attributionComplete,
       entries: result.entries.map((e) => ({ id: e.id, title: e.titel, existing: versions[e.id] !== undefined })),
+      // Die Bildbilanz gehört VOR die Annahme: wer importiert, soll vorher wissen, wie viele
+      // Dateien mitkommen und bei wie vielen davon niemand die Lizenz kennt.
+      medien: { dateien: result.assets.length, verwendet: result.assets.filter((a) => !a.verwaist).length,
+        verwaist: result.assets.filter((a) => a.verwaist).length,
+        fehlend: result.assets.filter((a) => !a.imBestand).length,
+        nachLizenz: result.report.assetsNachLizenz,
+        abrufbar: result.assets.filter((a) => !a.verwaist && a.quellUrl).length },
       notice: "Importierte Inhalte bleiben Notizen. Bestehende Artikel werden nur nach einzelner Auswahl ersetzt; historische Passagen bleiben erhalten." };
   }
   async function acceptEron(userId: string, campaignId: string, artifactId: string, selectedEntryIds: string[]) {
@@ -74,7 +82,10 @@ export function createImports(db: Db, cfg: DomainConfig = {}) {
           UNION SELECT entry_id AS id FROM entry_aliases WHERE campaign_id=$1 AND slug=$2 AND entry_id<>$3`, [campaignId,alias.vonSlug,alias.nachEntryId])).rowCount) throw new Conflict();
         await tx.query("INSERT INTO entry_aliases(campaign_id,slug,entry_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [campaignId,alias.vonSlug,alias.nachEntryId]);
       }
-      return { applied, attributionComplete: result.attributionComplete, report: result.report };
+      // Bilder landen in derselben Transaktion wie ihre Artikel: ein Bild ohne seinen Absatz
+      // wäre eine Datei ohne Kontext, ein Absatz ohne sein Bild eine sichtbare Lücke.
+      const medien = await schreibeAssetEntwuerfe(tx, campaignId, userId, now(), result, selected);
+      return { applied, medien, attributionComplete: result.attributionComplete, report: result.report };
     });
   }
   async function artifact(userId: string,campaignId: string,id: string) {

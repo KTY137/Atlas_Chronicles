@@ -801,7 +801,8 @@
                 "type": "string",
                 "enum": [
                   "eron-preview",
-                  "azgaar"
+                  "azgaar",
+                  "eron-map"
                 ]
               },
               "source_hash": {

@@ -14,7 +14,10 @@ export function registerImports(app: FastifyInstance,db: Db,config: AppConfig) {
     anonymousContributions: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }), revisionSha1: Type.String({ pattern: "^[0-9a-zA-Z]{1,40}$" }) }, closed);
   const eron = Type.Object({articles:Type.Array(Type.Unknown(),{maxItems:10_000}),templates:Type.Array(Type.Unknown(),{maxItems:10_000}),wikiUrl:Type.String({maxLength:1000}),
     license: Type.Optional(Type.String({ minLength: 1, maxLength: 200, pattern: "\\S" })),
-    attributionByPageId: Type.Optional(Type.Record(Type.String({ pattern: "^[1-9][0-9]{0,15}$" }), attribution, { ...closed, maxProperties: 10_000 })) },closed);
+    attributionByPageId: Type.Optional(Type.Record(Type.String({ pattern: "^[1-9][0-9]{0,15}$" }), attribution, { ...closed, maxProperties: 10_000 })),
+    // Der Dateibestand des Quell-Wikis: Metadaten, keine Bytes. Die Bytes kommen einzeln über
+    // /wiki-medien/:id/bytes, damit ein Artikelimport nicht auf hundert CDN-Antworten wartet.
+    media: Type.Optional(Type.Array(Type.Unknown(), { maxItems: 20_000 })) },closed);
   const selection = Type.Object({entryIds:Type.Array(Id,{maxItems:10_000})},closed);
   const link = Type.Object({entryId:Id,expectedVersion:Type.Integer({minimum:1})},closed), reveal = Type.Object({actorId:Id},closed);
   type Scope = {campaignId:string}; type Item = Scope & {id:string}; type Node = Item & {nodeId:string};
@@ -23,6 +26,12 @@ export function registerImports(app: FastifyInstance,db: Db,config: AppConfig) {
   const importLimit = {rateLimit:{max:8,timeWindow:"1 minute"}};
   app.post<{Params:Scope;Body:Static<typeof jsonBody>}>("/api/campaigns/:campaignId/maps/import", {schema:{body:jsonBody},bodyLimit:64*1024*1024,config:importLimit}, async req =>
     atlas.importMap((await identity.authenticate(req.headers.cookie)).userId,req.params.campaignId,req.body.json));
+  app.post<{Params:Scope}>("/api/campaigns/:campaignId/maps/eron", async req =>
+    atlas.importEronMap((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId));
+  app.get<{Params:Item}>("/api/campaigns/:campaignId/maps/:id/image", async (req, reply) => {
+    const bytes = await atlas.mapImage((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.params.id);
+    return reply.header("Cache-Control", "private, no-store").header("X-Content-Type-Options", "nosniff").type("image/webp").send(bytes);
+  });
   app.get<{Params:Scope}>("/api/campaigns/:campaignId/maps", async req => atlas.listMaps((await identity.authenticate(req.headers.cookie)).userId,req.params.campaignId));
   app.get<{Params:Item}>("/api/campaigns/:campaignId/maps/:id", async req => atlas.getMap((await identity.authenticate(req.headers.cookie)).userId,req.params.campaignId,req.params.id));
   app.post<{Params:Node;Body:Static<typeof link>}>("/api/campaigns/:campaignId/maps/:id/nodes/:nodeId/link", {schema:{body:link}}, async req =>

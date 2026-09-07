@@ -1,0 +1,166 @@
+import { useRef, useState } from "react";
+import { ArrowLeft, CircleAlert, Download, ImageOff, ShieldQuestion, Trash2 } from "lucide-react";
+import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
+import { api, apiPath, assetPath, errorText, type WikiAsset, type WikiMedienBestand } from "../api";
+import { useResource, useTask } from "../hooks";
+
+/**
+ * DIE BILDER — Bestand, Herkunft und der Knopf, der die Dateien wirklich holt.
+ *
+ * Die Bytes werden hier im BROWSER geholt, nicht auf dem Server. Das ist kein Umweg, sondern die
+ * sichere Richtung: ein Server, der eine vom Nutzer genannte Adresse abruft, ist ein Werkzeug zum
+ * Abtasten fremder Netze (SSRF). Der Browser darf das ohnehin, das Bild-CDN erlaubt es per CORS,
+ * und was hier hochgeladen wird, hat der Server danach selbst vermessen.
+ *
+ * Ein Fehlschlag pro Datei ist kein Fehlschlag des Laufs: jede Datei zählt einzeln, und was nicht
+ * ankommt, steht danach mit Grund in der Liste.
+ */
+
+const LIZENZ_TEXT: Record<WikiAsset["lizenzStatus"], string> = {
+  frei: "Freie Lizenz",
+  zitat: "Bildzitat — nicht vom Wiki selbst erstellt",
+  unbekannt: "Lizenz unbekannt",
+};
+
+const groesse = (bytes: number | null): string =>
+  bytes === null ? "—" : bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+interface Fortschritt { geholt: number; gesamt: number; fehler: number; laeuft: boolean; aktuell: string }
+
+export function WikiMedien({ campaignId, onClose }: { campaignId: string; onClose: () => void }) {
+  const task = useTask();
+  const [revision, setRevision] = useState(0);
+  const [fortschritt, setFortschritt] = useState<Fortschritt | null>(null);
+  const [fehlgeschlagen, setFehlgeschlagen] = useState<{ dateiname: string; grund: string }[]>([]);
+  const [nurOffene, setNurOffene] = useState(false);
+  const abbruch = useRef<AbortController | null>(null);
+  const bestand = useResource<WikiMedienBestand>(apiPath(campaignId, "/wiki-medien"), revision);
+
+  const holen = (auswahl: readonly WikiAsset[]) => task.run(async () => {
+    const controller = new AbortController();
+    abbruch.current = controller;
+    const fehler: { dateiname: string; grund: string }[] = [];
+    setFehlgeschlagen([]);
+    setFortschritt({ geholt: 0, gesamt: auswahl.length, fehler: 0, laeuft: true, aktuell: "" });
+    try {
+      for (const [index, asset] of auswahl.entries()) {
+        if (controller.signal.aborted) break;
+        setFortschritt({ geholt: index, gesamt: auswahl.length, fehler: fehler.length, laeuft: true, aktuell: asset.dateiname });
+        try {
+          const antwort = await fetch(asset.quellUrl!, { signal: controller.signal, credentials: "omit", referrerPolicy: "no-referrer" });
+          if (!antwort.ok) throw new Error(`Das Wiki antwortete mit Status ${antwort.status}.`);
+          const daten = await antwort.arrayBuffer();
+          const hoch = await fetch(apiPath(campaignId, `/wiki-medien/${encodeURIComponent(asset.id)}/bytes`), {
+            method: "PUT", credentials: "same-origin", body: daten,
+            headers: { "Content-Type": "application/octet-stream" }, signal: controller.signal,
+          });
+          if (!hoch.ok) {
+            const körper = await hoch.json().catch(() => null) as { error?: string } | null;
+            throw new Error(körper?.error ?? `Der Server lehnte die Datei ab (Status ${hoch.status}).`);
+          }
+        } catch (error) {
+          if (controller.signal.aborted) break;
+          fehler.push({ dateiname: asset.dateiname, grund: errorText(error) });
+        }
+      }
+      setFortschritt((current) => current ? { ...current, geholt: auswahl.length - fehler.length, fehler: fehler.length, laeuft: false, aktuell: "" } : null);
+      setFehlgeschlagen(fehler);
+    } finally {
+      abbruch.current = null;
+      setRevision((value) => value + 1);
+    }
+  });
+
+  const setzeLizenz = (asset: WikiAsset, status: WikiAsset["lizenzStatus"]) => task.run(async () => {
+    await api(apiPath(campaignId, `/wiki-medien/${encodeURIComponent(asset.id)}/lizenz`), { method: "POST", body: { status } });
+    setRevision((value) => value + 1);
+  });
+
+  const alle = bestand.data?.assets ?? [];
+  const offen = alle.filter((asset) => !asset.vorhanden && !asset.verwaist && asset.quellUrl);
+  const sichtbar = nurOffene ? alle.filter((asset) => !asset.vorhanden) : alle;
+  const bilanz = bestand.data?.bilanz;
+
+  return <section className="import-view">
+    <div className="document-toolbar"><Button variant="quiet" onClick={onClose}><ArrowLeft size={16} /> Zur Chronik</Button><span>Bilder der Chronik</span></div>
+    <div className="import-content">
+      <p className="eyebrow">Was eure Welt zeigt</p><h1>Bilder mit belegter Herkunft.</h1>
+      <p className="muted">Jede Datei, die eure Artikel zeigen, mit Uploader, Quelladresse und Lizenzstand. Was das Quell-Wiki über eine Lizenz nicht weiß, steht hier als „unbekannt“ — und nicht als frei.</p>
+      {task.error ? <Notice error>{task.error}</Notice> : null}
+      {bestand.error ? <Notice error>{bestand.error} <Button variant="quiet" onClick={() => setRevision((v) => v + 1)}>Erneut versuchen</Button></Notice> : null}
+      {bestand.loading && !bestand.data ? <Loading text="Bildbestand wird geladen …" /> : !alle.length ? (
+        <EmptyState title="Noch keine Bilder in dieser Chronik.">Bilder entstehen beim Wiki-Import: Sobald ein importierter Artikel eine Datei zeigt, erscheint sie hier mit ihrer Herkunft.</EmptyState>
+      ) : <>
+        {bilanz ? <div className="import-metrics">
+          <div><strong>{bilanz.vorhanden}</strong><span>Dateien geholt</span></div>
+          <div><strong>{bilanz.offen}</strong><span>noch abzuholen</span></div>
+          <div><strong>{bilanz.nachLizenz.unbekannt}</strong><span>ohne dokumentierte Lizenz</span></div>
+          <div><strong>{bilanz.verwaist}</strong><span>von keinem Artikel benutzt</span></div>
+        </div> : null}
+
+        {bilanz && bilanz.formatwidersprueche > 0 ? <Notice>
+          Bei {bilanz.formatwidersprueche} {bilanz.formatwidersprueche === 1 ? "Datei" : "Dateien"} widerspricht der tatsächliche Inhalt der Dateiendung des Quell-Wikis — dort heißt sie etwa <code>.jpg</code>, geliefert wurde WebP. Wir speichern den gemessenen Typ, nicht den behaupteten.
+        </Notice> : null}
+
+        {offen.length ? <section className="panel">
+          <div className="section-heading"><h2><Download size={18} /> Bilddateien holen</h2><span className="muted">{offen.length} offen</span></div>
+          <p className="field-help">Die Dateien werden aus deinem Browser direkt beim Quell-Wiki geholt und hier gespeichert. Das dauert bei vielen Bildern einen Moment; du kannst jederzeit abbrechen und später fortsetzen — bereits geholte Dateien werden nicht erneut geladen.</p>
+          {fortschritt?.laeuft ? <>
+            <p role="status">Holt {fortschritt.geholt + 1} von {fortschritt.gesamt}{fortschritt.aktuell ? ` — ${fortschritt.aktuell}` : ""}{fortschritt.fehler ? ` · ${fortschritt.fehler} fehlgeschlagen` : ""}</p>
+            <Button onClick={() => abbruch.current?.abort()}>Abbrechen</Button>
+          </> : <div className="button-row">
+            <Button variant="primary" disabled={task.busy} onClick={() => void holen(offen)}><Download size={16} /> {offen.length} {offen.length === 1 ? "Datei" : "Dateien"} holen</Button>
+          </div>}
+        </section> : null}
+
+        {/* Das Ergebnis steht ABSICHTLICH außerhalb des Abschnitts „Bilder holen": sobald nichts
+            mehr offen ist, verschwindet jener Abschnitt — und mit ihm verschwand die Bestätigung
+            für genau den Klick, der ihn leer gemacht hat. Wer holt, soll lesen, dass es geklappt
+            hat, und nicht aus einem Zähler schließen müssen. */}
+        {fortschritt && !fortschritt.laeuft ? <Notice error={fortschritt.fehler > 0}>
+          {fortschritt.geholt} von {fortschritt.gesamt} {fortschritt.gesamt === 1 ? "Datei" : "Dateien"} geholt{fortschritt.fehler ? `, ${fortschritt.fehler} fehlgeschlagen` : ""}.
+        </Notice> : null}
+        {fehlgeschlagen.length ? <details><summary>{fehlgeschlagen.length} {fehlgeschlagen.length === 1 ? "Datei kam nicht an" : "Dateien kamen nicht an"}</summary>
+          <div className="import-losses">{fehlgeschlagen.map((row) => <details key={row.dateiname}><summary>{row.dateiname}</summary><pre>{row.grund}</pre></details>)}</div>
+        </details> : null}
+
+        <section className="panel">
+          <div className="section-heading"><h2>Der Bestand</h2>
+            <label className="check-label"><input type="checkbox" checked={nurOffene} onChange={(event) => setNurOffene(event.target.checked)} /> Nur Dateien ohne Bild</label>
+          </div>
+          <ul className="medien-liste">{sichtbar.map((asset) => <li key={asset.id} className={asset.vorhanden ? "medien-zeile" : "medien-zeile medien-zeile-offen"}>
+            <div className="medien-vorschau">{asset.vorhanden
+              ? <img src={assetPath(campaignId, asset.id)} alt="" loading="lazy" decoding="async" />
+              : <span className="medien-leer" aria-hidden="true"><ImageOff size={18} /></span>}</div>
+            <div className="medien-text">
+              <strong>{asset.dateiname}</strong>
+              <p className="muted">
+                {asset.vorhanden ? `${asset.mime?.replace("image/", "").toUpperCase()} · ${asset.breite}×${asset.hoehe} · ${groesse(asset.bytes)}` : asset.imBestand ? "Datei noch nicht geholt" : "Im Quell-Wiki nicht vorhanden"}
+                {asset.urheber ? ` · hochgeladen von ${asset.urheber}` : ""}
+              </p>
+              <p className="muted">
+                {asset.verwaist ? "Von keinem Artikel benutzt" : asset.verwendetVon.length ? `Benutzt von ${asset.verwendetVon.slice(0, 3).join(", ")}${asset.verwendetVon.length > 3 ? " …" : ""}` : "Verwendung nicht bekannt"}
+                {asset.beschreibungsseiteUrl ? <> · <a href={asset.beschreibungsseiteUrl} target="_blank" rel="noreferrer noopener">Dateiseite im Wiki</a></> : null}
+              </p>
+              {asset.formatWiderspruch ? <p className="medien-warnung"><CircleAlert size={14} aria-hidden="true" /> Der Name im Wiki sagt {asset.behaupteterMime?.replace("image/", "")}, geliefert wurde {asset.mime?.replace("image/", "")}.</p> : null}
+            </div>
+            <div className="medien-lizenz">
+              <span className={`medien-marke medien-marke-${asset.lizenzStatus}`}>
+                {asset.lizenzStatus === "unbekannt" ? <ShieldQuestion size={13} aria-hidden="true" /> : null}{LIZENZ_TEXT[asset.lizenzStatus]}
+              </span>
+              {asset.lizenzQuelle ? <small title={`Grundlage der Einstufung: ${asset.lizenzQuelle}`}>laut „{asset.lizenzQuelle}“</small> : null}
+              <label className="sr-only" htmlFor={`lizenz-${asset.id}`}>Lizenzstatus von {asset.dateiname}</label>
+              <select id={`lizenz-${asset.id}`} value={asset.lizenzStatus} disabled={task.busy}
+                onChange={(event) => void setzeLizenz(asset, event.target.value as WikiAsset["lizenzStatus"])}>
+                <option value="unbekannt">Lizenz unbekannt</option>
+                <option value="frei">Freie Lizenz</option>
+                <option value="zitat">Bildzitat</option>
+              </select>
+            </div>
+          </li>)}</ul>
+          {!sichtbar.length ? <p className="muted"><Trash2 size={14} aria-hidden="true" /> Für diese Auswahl gibt es keine Dateien.</p> : null}
+        </section>
+      </>}
+    </div>
+  </section>;
+}

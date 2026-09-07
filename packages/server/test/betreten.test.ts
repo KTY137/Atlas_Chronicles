@@ -1,12 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { FastifyInstance } from "fastify";
 import type { Knoten } from "@chronicle/szene";
+import { buildApp } from "../src/app.ts";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
-import { createTactical } from "../src/domain/tactical.ts";
+import { createTactical, TacticalValidationError } from "../src/domain/tactical.ts";
+import { createGrundriss } from "../src/domain/grundriss.ts";
 import { createBetreten } from "../src/domain/betreten.ts";
-import { Gone } from "../src/domain/errors.ts";
+import { Conflict, Gone } from "../src/domain/errors.ts";
+import { tacticalPointInside } from "../src/domain/tactical-state.ts";
 
 /**
  * A-G2's missing half: not "does the chain exist in data" (that is `kette.test.ts`, in
@@ -21,8 +25,8 @@ import { Gone } from "../src/domain/errors.ts";
  * with a `Knoten` row once one exists, so a minimal hand-built row is the more honest fixture.
  */
 describe("Der Zugang — die Adresse, die man begehen kann", () => {
-  let db: Db, gm: string, spieler: string, campaign: string;
-  const config = { origin: "https://betreten.test", cookieSecret: "betreten-test-cookie-secret-more-than-32-characters" };
+  let db: Db, gm: string, spieler: string, campaign: string, app: FastifyInstance, cookie: string, playerCookie: string;
+  const config = { origin: "https://betreten.test", cookieSecret: "betreten-test-cookie-secret-more-than-32-characters", bootstrapToken: "betreten-bootstrap-secret-more-than-32-characters" };
 
   beforeAll(async () => {
     db = await createTestDb();
@@ -34,8 +38,11 @@ describe("Der Zugang — die Adresse, die man begehen kann", () => {
     const invite = await campaigns.issueInvitation(gm, campaign);
     const join = await campaigns.requestJoin(invite.code, { displayName: "Spieler" });
     spieler = (await campaigns.approveJoin(gm, campaign, join.id)).userId;
+    cookie = `chronicle_session=${(await identity.issueSession(gm)).value}`;
+    playerCookie = `chronicle_session=${(await identity.issueSession(spieler)).value}`;
+    app = await buildApp(db, config);
   }, 30_000);
-  afterAll(async () => { await db?.close(); });
+  afterAll(async () => { await app?.close(); await db?.close(); });
 
   /**
    * Hand-built node row. `herkunft.kindKeim` mirrors exactly what `azgaar.ts:245,247` writes
@@ -45,7 +52,7 @@ describe("Der Zugang — die Adresse, die man begehen kann", () => {
   async function seedKnoten(opts: { titel: string | null; kindKeim?: string }): Promise<string> {
     const id = randomUUID(), artifactId = randomUUID(), mapId = randomUUID(), at = Date.now();
     await db.query(
-      "INSERT INTO artifacts(id,campaign_id,kind,source_hash,source,report,created_by,created_at) VALUES($1,$2,'test',$3,'{}','{}',$4,$5)",
+      "INSERT INTO artifacts(id,campaign_id,kind,source_hash,source,report,created_by,created_at) VALUES($1,$2,'test',$3,'{\"orte\":[],\"zellen\":[],\"bericht\":{},\"quelle\":{\"format\":\"test\"}}','{}',$4,$5)",
       [artifactId, campaign, randomUUID(), gm, at],
     );
     await db.query(
@@ -65,7 +72,10 @@ describe("Der Zugang — die Adresse, die man begehen kann", () => {
     return id;
   }
 
-  const input = (knotenId: string, over: Partial<{ commandId: string; name: string }> = {}) => ({ commandId: randomUUID(), knotenId, ...over });
+  const input = (knotenId: string, over: Partial<{ commandId: string; name: string }> = {}) => ({ commandId: randomUUID(), knotenId, expectedVersion: 1, ...over });
+  const scopeFor = async (knotenId: string) => ({ parentKind: "atlas" as const,
+    parentMapId: (await db.query<{ map_id: string }>("SELECT map_id FROM atlas_nodes WHERE campaign_id=$1 AND id=$2", [campaign, knotenId])).rows[0]!.map_id });
+  const generateMap = async (name: string) => (await createGrundriss(db, config).generate(gm, campaign, { commandId: randomUUID(), name, keim: name })).ack.subjectId;
 
   it("meldet einen Knoten mit Kindkeim als begehbar", async () => {
     const betreten = createBetreten(db, config);
@@ -146,5 +156,167 @@ describe("Der Zugang — die Adresse, die man begehen kann", () => {
     expect(map.document.geometry.regions.length).toBeGreaterThan(0);
     // A generated map has no photograph — same invariant `grundriss.test.ts` guards.
     expect(map.document.background).toBeNull();
+  });
+
+  it("verweigert nicht enthüllte Atlas-Knoten auch über den alten Descriptor", async () => {
+    const id = await seedKnoten({ titel: "Privater Zugang", kindKeim: "privater-seed" });
+    const betreten = createBetreten(db, config), scope = await scopeFor(id);
+    await expect(betreten.betretbar(spieler, campaign, id)).rejects.toBeInstanceOf(Gone);
+    await expect(betreten.betretbar(spieler, campaign, id, scope)).rejects.toBeInstanceOf(Gone);
+    await expect(betreten.children(spieler, campaign, scope)).rejects.toBeInstanceOf(Gone);
+  });
+
+  it("enthüllt Spielern weder Kindkeim noch private Kindkarten hinter einem sichtbaren Ort", async () => {
+    const id = await seedKnoten({ titel: "Sichtbarer Ort", kindKeim: "geheime-unterkarte" });
+    const betreten = createBetreten(db, config), scope = await scopeFor(id);
+    const child = await betreten.betrete(gm, campaign, { ...input(id), ...scope });
+    const player = await createCampaigns(db).requireMember(spieler, campaign);
+    await db.query(`INSERT INTO atlas_revelations(map_id,node_id,campaign_id,actor_id,knowledge,granted_by,granted_at)
+      VALUES($1,$2,$3,$4,'benannt',$5,$6)`, [scope.parentMapId, id, campaign, player.actorId, gm, Date.now()]);
+    expect(await betreten.betretbar(spieler, campaign, id, scope)).toMatchObject({ titel: "Sichtbarer Ort", kindKeim: null, vorhandeneKarteId: null });
+    await expect(createTactical(db).getMap(spieler, campaign, child.mapId)).rejects.toBeInstanceOf(Gone);
+    await expect(betreten.children(spieler, campaign, { parentKind: "tactical", parentMapId: child.mapId })).rejects.toBeInstanceOf(Gone);
+  });
+
+  it("persistiert rekursive Räume, ihre ursprünglichen Kindkeime und einen vollständigen Rückweg", async () => {
+    const id = await seedKnoten({ titel: "Oberwelt", kindKeim: "rekursive-oberwelt" });
+    const betreten = createBetreten(db, config), root = await scopeFor(id);
+    const first = await betreten.betrete(gm, campaign, { ...input(id), ...root });
+    const scope = { parentKind: "tactical" as const, parentMapId: first.mapId };
+    const rooms = await betreten.children(gm, campaign, scope), room = rooms.nodes[0]!;
+    const metadata = (await db.query<{ data: Knoten }>("SELECT data FROM tactical_map_nodes WHERE map_id=$1 AND knoten_id=$2", [first.mapId, room.knotenId])).rows[0]!.data;
+    expect((await betreten.betretbar(gm, campaign, room.knotenId, scope)).kindKeim).toBe(metadata.herkunft!.kindKeim);
+    const second = await betreten.betrete(gm, campaign, { ...input(room.knotenId), ...scope, expectedVersion: rooms.version });
+    const grandchildren = await createBetreten(db, config).children(gm, campaign, { parentKind: "tactical", parentMapId: second.mapId });
+    expect(grandchildren.ancestors.map(ancestor => ancestor.id)).toEqual([root.parentMapId, first.mapId, second.mapId]);
+    expect(grandchildren.nodes.length).toBeGreaterThan(0);
+    expect((await betreten.betrete(gm, campaign, { ...input(room.knotenId), ...scope })).mapId).toBe(second.mapId);
+    expect((await betreten.children(gm, campaign, scope)).nodes.find(node => node.knotenId === room.knotenId)?.vorhandeneKarteId).toBe(second.mapId);
+  });
+
+  it("zwei gleichzeitige erste Besuche erzeugen genau eine Karte und keine verwaisten Entwürfe", async () => {
+    const id = await seedKnoten({ titel: "Gemeinsame Tür", kindKeim: "konkurrierende-tuer" });
+    const betreten = createBetreten(db, config), scope = await scopeFor(id);
+    const before = await createTactical(db).listMaps(gm, campaign);
+    const visits = await Promise.all([betreten.betrete(gm, campaign, { ...input(id), ...scope }), betreten.betrete(gm, campaign, { ...input(id), ...scope })]);
+    expect(visits[0]!.mapId).toBe(visits[1]!.mapId);
+    expect(visits.filter(result => result.erzeugt)).toHaveLength(1);
+    expect(await createTactical(db).listMaps(gm, campaign)).toHaveLength(before.length + 1);
+  });
+
+  it("replayed dieselbe Command-Antwort und verweigert geänderte Payloads derselben Command-ID", async () => {
+    const id = await seedKnoten({ titel: "Beleg", kindKeim: "command-beleg" });
+    const betreten = createBetreten(db, config), request = { ...input(id), ...await scopeFor(id) };
+    const first = await betreten.betrete(gm, campaign, request);
+    expect(await betreten.betrete(gm, campaign, request)).toEqual(first);
+    await expect(betreten.betrete(gm, campaign, { ...request, name: "Andere Payload" })).rejects.toBeInstanceOf(Conflict);
+    const other = await seedKnoten({ titel: "Anderer Ort", kindKeim: "anderer-beleg" });
+    await expect(betreten.betrete(gm, campaign, { ...request, ...await scopeFor(other), knotenId: other })).rejects.toBeInstanceOf(Conflict);
+    expect((await betreten.betretbar(gm, campaign, other)).vorhandeneKarteId).toBeNull();
+  });
+
+  it("rollt Kartengenerierung, Knoten und Belege zurück wenn die Adresse nicht gespeichert werden kann", async () => {
+    const id = await seedKnoten({ titel: "Atomare Tür", kindKeim: "atomare-tuer" }), scope = await scopeFor(id);
+    const failAtEdge = (inner: Db): Db => ({
+      query: (sql, params) => sql.startsWith("INSERT INTO betreten_karten") ? Promise.reject(new Error("edge-write-failed")) : inner.query(sql, params),
+      transaction: work => inner.transaction(tx => work(failAtEdge(tx))),
+      close: () => inner.close(),
+    });
+    const before = await createTactical(db).listMaps(gm, campaign), request = { ...input(id), ...scope };
+    await expect(createBetreten(failAtEdge(db), config).betrete(gm, campaign, request)).rejects.toThrow("edge-write-failed");
+    expect(await createTactical(db).listMaps(gm, campaign)).toHaveLength(before.length);
+    expect((await db.query("SELECT 1 FROM betreten_command_receipts WHERE command_id=$1", [request.commandId])).rowCount).toBe(0);
+    expect((await createBetreten(db, config).betretbar(gm, campaign, id, scope)).version).toBe(1);
+    expect((await createBetreten(db, config).betrete(gm, campaign, request)).erzeugt).toBe(true);
+  });
+
+  it("verweigert fehlende/veraltete Quellversionen bevor eine Karte entsteht", async () => {
+    const id = await seedKnoten({ titel: "Version", kindKeim: "version-pruefen" });
+    const betreten = createBetreten(db, config), scope = await scopeFor(id), before = await createTactical(db).listMaps(gm, campaign);
+    await expect(betreten.betrete(gm, campaign, { commandId: randomUUID(), knotenId: id, ...scope })).rejects.toBeInstanceOf(TacticalValidationError);
+    await expect(betreten.betrete(gm, campaign, { ...input(id), ...scope, expectedVersion: 9 })).rejects.toBeInstanceOf(Conflict);
+    expect(await createTactical(db).listMaps(gm, campaign)).toHaveLength(before.length);
+  });
+
+  it("verknüpft eine vorhandene Karte auch mit einem Ort ohne Kindkeim, ohne Kopie", async () => {
+    const id = await seedKnoten({ titel: "Vorhandenes Gebäude" }), mapId = await generateMap("Vorhandenes Gebäude");
+    const betreten = createBetreten(db, config), scope = await scopeFor(id), before = await createTactical(db).listMaps(gm, campaign);
+    expect(await betreten.betrete(gm, campaign, { ...input(id), ...scope, targetMapId: mapId })).toEqual({ mapId, erzeugt: false, keimHash: null });
+    expect(await createTactical(db).listMaps(gm, campaign)).toHaveLength(before.length);
+    expect((await betreten.children(gm, campaign, scope)).version).toBe(2);
+    const otherMap = await generateMap("Anderes Gebäude");
+    await expect(betreten.betrete(gm, campaign, { ...input(id), ...scope, targetMapId: otherMap })).rejects.toBeInstanceOf(Conflict);
+  });
+
+  it("verweigert Selbstbezüge, Kreise, mehrere Eltern und fremde Kampagnen", async () => {
+    const betreten = createBetreten(db, config), a = await generateMap("Kreis A"), b = await generateMap("Kreis B");
+    const scopeA = { parentKind: "tactical" as const, parentMapId: a }, scopeB = { parentKind: "tactical" as const, parentMapId: b };
+    const roomA = (await betreten.children(gm, campaign, scopeA)).nodes[0]!, roomB = (await betreten.children(gm, campaign, scopeB)).nodes[0]!;
+    await expect(betreten.betrete(gm, campaign, { ...input(roomA.knotenId), ...scopeA, targetMapId: a })).rejects.toBeInstanceOf(TacticalValidationError);
+    await betreten.betrete(gm, campaign, { ...input(roomA.knotenId), ...scopeA, targetMapId: b });
+    await expect(betreten.betrete(gm, campaign, { ...input(roomB.knotenId), ...scopeB, targetMapId: a })).rejects.toBeInstanceOf(TacticalValidationError);
+    const extra = await seedKnoten({ titel: "Zweite Platzierung" });
+    await expect(betreten.betrete(gm, campaign, { ...input(extra), ...await scopeFor(extra), targetMapId: b })).rejects.toBeInstanceOf(TacticalValidationError);
+    const foreign = (await createCampaigns(db).createCampaign(gm, { name: "Andere Kampagne" })).id;
+    const target = await createGrundriss(db, config).generate(gm, foreign, { commandId: randomUUID(), name: "Fremd", keim: "fremder-raum" });
+    await expect(betreten.betrete(gm, campaign, { ...input(extra), ...await scopeFor(extra), targetMapId: target.ack.subjectId })).rejects.toBeInstanceOf(Gone);
+  });
+
+  it("trennt gleiche Knoten-IDs in verschiedenen Quellkarten und verweigert mehrdeutige Altadressen", async () => {
+    const id = await seedKnoten({ titel: "Erste Kopie", kindKeim: "gleiche-kopie" });
+    const other = await seedKnoten({ titel: "Zweite Kopie", kindKeim: "gleiche-kopie" });
+    const betreten = createBetreten(db, config), firstScope = await scopeFor(id), secondScope = await scopeFor(other);
+    await db.query("UPDATE atlas_nodes SET id=$1,data=jsonb_set(data,'{id}',to_jsonb($1::text)) WHERE map_id=$2", [id, secondScope.parentMapId]);
+    await expect(betreten.betretbar(gm, campaign, id)).rejects.toBeInstanceOf(Gone);
+    const a = await betreten.betrete(gm, campaign, { ...input(id), ...firstScope }), b = await betreten.betrete(gm, campaign, { ...input(id), ...secondScope });
+    expect(a.mapId).not.toBe(b.mapId);
+  });
+
+  it("hält verknüpfte Räume beim Bearbeiten erreichbar und speichert weitere Änderungen regulär", async () => {
+    const parentMapId = await generateMap("Bearbeitbarer Zugang"), scope = { parentKind: "tactical" as const, parentMapId };
+    const betreten = createBetreten(db, config), room = (await betreten.children(gm, campaign, scope)).nodes[0]!;
+    const child = await betreten.betrete(gm, campaign, { ...input(room.knotenId), ...scope });
+    const tactical = createTactical(db), map = await tactical.getMap(gm, campaign, parentMapId);
+    const removed = { ...map.document, geometry: { ...map.document.geometry, regions: map.document.geometry.regions.filter(region => region.id !== room.knotenId) } };
+    await expect(tactical.reviseMap(gm, campaign, parentMapId, { commandId: randomUUID(), expectedVersion: map.version, document: removed, anchors: map.anchors })).rejects.toBeInstanceOf(TacticalValidationError);
+    const document = { ...map.document, environment: { ...map.document.environment, ambientLightArgb: "ff333333" } };
+    await tactical.reviseMap(gm, campaign, parentMapId, { commandId: randomUUID(), expectedVersion: map.version, document, anchors: map.anchors });
+    expect((await tactical.getMap(gm, campaign, parentMapId)).document.environment.ambientLightArgb).toBe("ff333333");
+    expect((await betreten.betretbar(gm, campaign, room.knotenId, scope)).vorhandeneKarteId).toBe(child.mapId);
+  });
+
+  it("platziert Zugänge innerhalb konkaver handgezeichneter Räume und behält deren Keim beim Editieren", async () => {
+    const parentMapId = await generateMap("Handgezeichneter Raum"), tactical = createTactical(db), map = await tactical.getMap(gm, campaign, parentMapId);
+    const polygon = [[0,0],[120,0],[120,30],[30,30],[30,120],[0,120]] as const;
+    const room = { id: "hand-drawn-region", punkte: polygon };
+    const document = { ...map.document, geometry: { ...map.document.geometry, regions: [...map.document.geometry.regions, room] } };
+    await tactical.reviseMap(gm, campaign, parentMapId, { commandId: randomUUID(), expectedVersion: map.version, document, anchors: [] });
+    const betreten = createBetreten(db, config), scope = { parentKind: "tactical" as const, parentMapId };
+    const list = await betreten.children(gm, campaign, scope), anchor = list.nodes.find(node => node.knotenId === room.id)!;
+    expect(tacticalPointInside([anchor.x, anchor.y], polygon)).toBe(true);
+    const seed = (await betreten.betretbar(gm, campaign, room.id, scope)).kindKeim;
+    expect(seed).toMatch(/^[a-f0-9]{64}$/);
+    const updated = { ...document, environment: { ...document.environment, ambientLightArgb: "ff222222" } };
+    await tactical.reviseMap(gm, campaign, parentMapId, { commandId: randomUUID(), expectedVersion: list.version, document: updated, anchors: [] });
+    expect((await betreten.betretbar(gm, campaign, room.id, scope)).kindKeim).toBe(seed);
+    expect((await betreten.betrete(gm, campaign, { ...input(room.id), ...scope, expectedVersion: list.version + 1 })).mapId).toBeTruthy();
+  });
+
+  it("liefert die geschlossenen HTTP-Verträge für Öffnen, Kinder und Rückweg", async () => {
+    const id = await seedKnoten({ titel: "HTTP-Tür", kindKeim: "http-tuer" }), scope = await scopeFor(id);
+    const base = `/api/campaigns/${campaign}`, path = `${base}/maps/atlas/${scope.parentMapId}`;
+    const status = await app.inject({ method: "GET", url: `${path}/knoten/${id}/betretbar`, headers: { cookie } });
+    expect(status.statusCode).toBe(200); expect(status.json().version).toBe(1);
+    const denied = await app.inject({ method: "GET", url: `${path}/knoten/${id}/betretbar`, headers: { cookie: playerCookie } });
+    expect(denied.statusCode).toBe(404);
+    const forged = await app.inject({ method: "POST", url: `${base}/betreten`, headers: { cookie, origin: config.origin }, payload: { ...input(id), ...scope, keim: "caller-controlled" } });
+    expect(forged.statusCode).toBe(400);
+    const created = await app.inject({ method: "POST", url: `${base}/betreten`, headers: { cookie, origin: config.origin }, payload: { ...input(id), ...scope } });
+    expect(created.statusCode).toBe(200);
+    const children = await app.inject({ method: "GET", url: `${base}/maps/tactical/${created.json().mapId}/children`, headers: { cookie } });
+    expect(children.statusCode).toBe(200); expect(children.json().ancestors).toHaveLength(2);
+    expect(children.json().nodes[0]).toMatchObject({ canEnter: true, vorhandeneKarteId: null });
+    expect(children.json().nodes[0]).not.toHaveProperty("kindKeim");
+    expect((await app.inject({ method: "GET", url: `${base}/maps/tactical/${created.json().mapId}/children`, headers: { cookie: playerCookie } })).statusCode).toBe(404);
   });
 });

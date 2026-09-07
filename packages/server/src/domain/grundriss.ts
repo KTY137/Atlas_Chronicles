@@ -58,7 +58,6 @@ export interface GrundrissRequest {
 }
 
 export function createGrundriss(db: Db, cfg: IdentityConfig) {
-  const tactical = createTactical(db, cfg);
   const campaigns = createCampaigns(db);
 
   const erzeuge = (input: GrundrissRequest) =>
@@ -114,20 +113,29 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
      * yielding the same one differently.
      */
     async generate(userId: string, campaignId: string, input: GrundrissRequest) {
+      await campaigns.requireMember(userId, campaignId, ["leitung"]);
       const grundriss = erzeuge(input);
-      const ack = await tactical.importMap(userId, campaignId, {
-        commandId: input.commandId,
-        name: input.name,
-        format: "native",
-        sourceText: serializeTacticalMapDocument(grundriss.karte),
-        provenance: herkunft(grundriss.keim.keimHash),
+      return db.transaction(async tx => {
+        const ack = await createTactical(tx, cfg).importMap(userId, campaignId, {
+          commandId: input.commandId,
+          name: input.name,
+          format: "native",
+          sourceText: serializeTacticalMapDocument(grundriss.karte),
+          provenance: herkunft(grundriss.keim.keimHash),
+        });
+        // Region ids are Knoten ids. Retain their derived child seeds with the persisted map,
+        // so opening an edited room tomorrow reaches the same address as opening it today.
+        await tx.query(`INSERT INTO tactical_map_nodes(map_id,knoten_id,campaign_id,data)
+          SELECT $1,n.id,$2,n.data FROM jsonb_to_recordset($3::jsonb) AS n(id text,data jsonb)
+          ON CONFLICT(map_id,knoten_id) DO NOTHING`,
+        [ack.subjectId, campaignId, JSON.stringify(grundriss.knoten.map(data => ({ id: data.id, data })))]);
+        return {
+          ack,
+          keimHash: grundriss.keim.keimHash,
+          wurzelId: grundriss.wurzelId as string,
+          bericht: grundriss.bericht,
+        };
       });
-      return {
-        ack,
-        keimHash: grundriss.keim.keimHash,
-        wurzelId: grundriss.wurzelId as string,
-        bericht: grundriss.bericht,
-      };
     },
   };
 }

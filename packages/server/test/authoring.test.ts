@@ -152,11 +152,15 @@ describe("explicit native authoring", () => {
     const preview = await imports.previewEron(gm, f.campaign, input); expect(preview.attributionComplete).toBe(true);
     await imports.acceptEron(gm, f.campaign, preview.artifactId, preview.entries.map(e => e.id));
     const entry = await f.docs.getEntry(gm, f.campaign, preview.entries[0]!.id);
-    expect(entry.passagen.some(p => p.inhalt.kind === "rohblock")).toBe(true);
+    // Das Bild ist jetzt eine Figur statt Quarantäne — die Aussage dieses Tests bleibt davon
+    // unberührt und wird schärfer: die Passage weiß, welche Datei gemeint ist, und trotzdem
+    // verlässt weder Kennung noch Bild die öffentliche Auslieferung.
+    expect(entry.passagen.some(p => p.inhalt.kind === "bildunterschrift")).toBe(true);
+    expect(entry.passagen.some(p => p.inhalt.kind === "bildunterschrift" && p.inhalt.dateiname === "Unlicensed-secret-image.png")).toBe(true);
     await f.domain.publishEntry(gm, f.campaign, entry.entryId, { ...f.command, expectedArticleRevisionId: entry.revisionId!, passageIds: entry.passagen.map(p => p.pid) });
     const policy = (await f.domain.getPublication(gm, f.campaign))!, world = await f.delivery.getWorld(policy.publicKey);
     expect(world.entries[0]!.attributions).toEqual([{ sourceUrl: "https://source.example/wiki/Credited_source", license: "CC-BY-SA-3.0", authors: ["Ada", "Zora"], anonymousContributions: 2 }]);
-    expect(JSON.stringify(world)).toContain("This caption is licensed text."); expect(JSON.stringify(world)).not.toContain("assetId");
+    expect(JSON.stringify(world)).toContain("This caption is licensed text."); expect(JSON.stringify(world)).not.toContain("assetId"); expect(JSON.stringify(world)).not.toContain("Unlicensed-secret-image");
     expect(publicHtml(world, config.origin, world.entries[0]!)).not.toContain("<img");
   });
   it("uses the latest explicitly accepted source assertion at the selected revision without rewriting older artifacts", async () => {

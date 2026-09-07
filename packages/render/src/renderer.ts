@@ -1,9 +1,9 @@
 /// <reference lib="dom" />
-import { fitCamera, hitTestMap, mapToScreen, normalizeCamera, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
+import { fitCamera, hitTestMap, mapPinHitRadius, mapToScreen, normalizeCamera, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
 import { rasterTileDisplaySize } from "./tactical-geometry.ts";
 import { createGridGeometryCache } from "./grid-cache.ts";
 import { planeStapel } from "./stapel.ts";
-import type { MapCamera, MapHit, MapPoint, MapRenderer, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
+import type { MapCamera, MapHit, MapPoint, MapRenderer, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
 export interface MapRendererOptions {
   readonly onSelect?: (hit: MapHit | null) => void;
@@ -192,6 +192,45 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       stampLayer.addChild(sprite);
     }
   };
+  const drawPin = (pin: ProjectedMapPin): InstanceType<typeof Graphics> => {
+    const shape = new Graphics();
+    if (!pin.icon) return shape.circle(0, 0, 5).fill(pin.color ?? 0xebc887).stroke({ color: 0x13202a, width: 1.5 });
+    const color = pin.color ?? (pin.icon === "portal" ? 0x80d9c9 : 0xebc887);
+    // One Graphics per pin, with no textures or extra display objects. Both the outline
+    // and glyph are authored in CSS pixels; applyCamera cancels their world zoom.
+    shape.circle(0, 0, mapPinHitRadius(pin) - 1).fill(0x14212b).stroke({ color, width: 1.5 });
+    switch (pin.icon) {
+      case "place":
+        shape.poly([-5, -2, -4, -5, 0, -7, 4, -5, 5, -2, 4, 1, 0, 7, -4, 1], true).stroke({ color, width: 1.5 });
+        shape.circle(0, -2, 1.6).fill(color);
+        break;
+      case "city":
+        shape.moveTo(-7, 6).lineTo(-7, -2).lineTo(-2, -2).lineTo(-2, 6)
+          .moveTo(-2, -2).lineTo(-2, -6).lineTo(3, -6).lineTo(3, 6)
+          .moveTo(3, 0).lineTo(7, 0).lineTo(7, 6).lineTo(-7, 6)
+          .moveTo(0.5, -3.5).lineTo(0.5, -1.5).moveTo(-4.5, 1).lineTo(-4.5, 3).stroke({ color, width: 1.5 });
+        break;
+      case "castle":
+        shape.poly([-7, 6, -7, -6, -4, -6, -4, -3, -1.5, -3, -1.5, -6, 1.5, -6, 1.5, -3, 4, -3, 4, -6, 7, -6, 7, 6], true)
+          .moveTo(-2, 6).lineTo(-2, 1).lineTo(2, 1).lineTo(2, 6).stroke({ color, width: 1.5 });
+        break;
+      case "cave":
+        shape.poly([-7, 6, -6, -1, -2, -6, 3, -5, 7, 0, 7, 6], true)
+          .moveTo(-3, 6).lineTo(-3, 1).lineTo(0, -2).lineTo(3, 1).lineTo(3, 6).stroke({ color, width: 1.5 });
+        break;
+      case "ruin":
+        shape.moveTo(-7, 6).lineTo(7, 6).moveTo(-5, 6).lineTo(-5, -3).lineTo(-2, -3).lineTo(-2, 6)
+          .moveTo(2, 6).lineTo(2, -1).lineTo(5, -4).lineTo(5, 6)
+          .moveTo(-7, -4).lineTo(-3, -7).lineTo(0, -5).moveTo(3, -5).lineTo(7, -3).stroke({ color, width: 1.5 });
+        break;
+      case "portal":
+        shape.moveTo(-6, 6).lineTo(-6, -6).lineTo(3, -6).lineTo(3, 6)
+          .moveTo(-6, -6).lineTo(0, -3).lineTo(0, 8).lineTo(-6, 6)
+          .moveTo(2, 1).lineTo(7, 1).moveTo(5, -1).lineTo(7, 1).lineTo(5, 3).stroke({ color, width: 1.5 });
+        break;
+    }
+    return shape;
+  };
   const draw = (): void => {
     rasterBounds.clear().rect(0, 0, scene.width, scene.height).fill(0xffffff);
     drawStamps();
@@ -205,7 +244,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       geography.addChild(shape);
     }
     for (const pin of scene.pins) {
-      const shape = new Graphics().circle(0, 0, 5).fill(pin.color ?? 0xebc887).stroke({ color: 0x13202a, width: 1.5 });
+      const shape = drawPin(pin);
       shape.position.set(pin.x, pin.y);
       shape.eventMode = "none";
       markers.addChild(shape);

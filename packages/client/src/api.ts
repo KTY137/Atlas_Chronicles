@@ -22,7 +22,7 @@ export type Mark = { art: "em" | "strong" | "code" } | { art: "link"; zielSlug: 
 export interface Inline { text: string; marks: readonly Mark[] }
 export type Block =
   | { kind: "absatz" | "zitat"; inhalt: readonly Inline[] }
-  | { kind: "bildunterschrift"; assetId: string; inhalt: readonly Inline[] }
+  | { kind: "bildunterschrift"; assetId: string; inhalt: readonly Inline[]; dateiname?: string; alt?: string; ausrichtung?: "links" | "rechts" | "zentriert" | "ohne"; breite?: number; ausInfobox?: boolean }
   | { kind: "feld"; schluessel: string; label: string; gruppe?: string; werte: readonly (readonly Inline[])[]; mehrwertig: boolean; klauselKandidat?: boolean }
   | { kind: "liste"; geordnet: boolean; punkte: readonly (readonly Inline[])[] }
   | { kind: "rohblock"; quelltext: string; grund: string };
@@ -30,6 +30,21 @@ export interface ProjectedPassage { pid: string; ord: number; pfad: readonly str
 export interface EntryDocument { entryId: string; slug: string; titel: string; passagen: readonly ProjectedPassage[]; version?: number; revisionId?: string }
 export interface DraftPassage { pid?: string; inhalt: Block; pfad: string[]; tags: string[]; localKey: string }
 export interface HistoryItem { id: string; seq: number; contentHash: string; createdAt: number | string; document: { title: string; slug: string; passagen: (ProjectedPassage & { geltung: string; praegung: unknown })[]; tags?: string[][] } }
+export interface WikiAsset {
+  id: string; dateiname: string; mime: string | null; sha256: string | null; bytes: number | null;
+  breite: number | null; hoehe: number | null; behaupteterMime: string | null;
+  lizenzStatus: "frei" | "zitat" | "unbekannt"; lizenzQuelle: string | null;
+  beschreibungsseiteUrl: string | null; quellUrl: string | null; urheber: string | null; hochgeladenAm: string | null;
+  verwendetVon: readonly string[]; verwaist: boolean; imBestand: boolean; vorhanden: boolean; formatWiderspruch: boolean;
+}
+export interface WikiMedienBestand {
+  assets: readonly WikiAsset[];
+  bilanz: { gesamt: number; vorhanden: number; offen: number; verwaist: number; ohneQuelle: number;
+    nachLizenz: { frei: number; zitat: number; unbekannt: number }; formatwidersprueche: number };
+}
+/** Das Bild einer Passage. Fehlen die Bytes, antwortet der Server 404 und der Leser sieht den Platzhalter. */
+export const assetPath = (campaignId: string, assetId: string) =>
+  `${apiPath(campaignId, `/wiki-medien/${encodeURIComponent(assetId)}/datei`)}`;
 export interface Invitation { id: string; code: string; expiresAt: number }
 export interface PendingJoin { id: string; pollToken: string; expiresAt: number }
 export interface JoinRequest { id: string; displayName: string; createdAt: number | string }

@@ -4,6 +4,8 @@ import type { TacticalGrid } from "@chronicle/szene";
 export type MapPoint = readonly [number, number];
 export type MapRasterSampling = "nearest" | "linear";
 export type MapRendererBackend = "pixi-webgl" | "pixi-webgpu" | "pixi-canvas";
+/** Closed, local vector artwork; an icon never names an image or network resource. */
+export type MapPinIcon = "place" | "city" | "castle" | "cave" | "ruin" | "portal";
 export interface ProjectedMapCell {
   readonly id: string;
   readonly polygon: readonly MapPoint[];
@@ -16,6 +18,8 @@ export interface ProjectedMapPin {
   readonly label: string;
   readonly entryId?: string;
   readonly color?: number;
+  /** Optional 24-CSS-pixel badge. Omitted icons retain the original point marker. */
+  readonly icon?: MapPinIcon;
 }
 export interface ProjectedMapToken {
   readonly id: string;

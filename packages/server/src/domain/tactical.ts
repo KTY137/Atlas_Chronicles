@@ -202,6 +202,10 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     return command(userId, campaignId, "map", mapId, "map.revise", input, true, async () => {}, async tx => {
       const before = await mapCard(tx, campaignId, mapId); if (input.expectedVersion !== before.version) throw new Conflict();
       if (tacticalHash(input.document.background) !== tacticalHash(before.document.background)) throw new TacticalValidationError("Ein anderes Hintergrundbild bitte als neue Karte importieren.");
+      const regions = new Set(input.document.geometry.regions.map(region => region.id));
+      const entrances = (await tx.query<{ knoten_id: string }>("SELECT knoten_id FROM betreten_karten WHERE campaign_id=$1 AND parent_kind='tactical' AND parent_map_id=$2", [campaignId, mapId])).rows;
+      if (entrances.some(entrance => !regions.has(entrance.knoten_id)))
+        throw new TacticalValidationError("Ein Raum mit verknüpfter Unterkarte muss als Zugang auf dieser Karte erhalten bleiben.");
       const bindings = await validateAnchors(tx, campaignId, input.document, input.anchors), next = before.revision + 1;
       await tx.query("INSERT INTO tactical_map_revisions(map_id,campaign_id,revision,source_id,document,content_hash,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)", [mapId, campaignId, next, before.sourceId, json(input.document), tacticalHash({ document: input.document, anchors: bindings }), userId, now()]);
       await storeAnchors(tx, campaignId, mapId, next, bindings); await tx.query("UPDATE tactical_maps SET head_revision=$2,version=version+1 WHERE id=$1", [mapId, next]);

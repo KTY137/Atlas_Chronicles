@@ -175,6 +175,32 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
 .raw-block { padding: 16px; border: 1px solid var(--line-strong); background: #171815; border-radius: 4px; }
 .raw-block > span { color: var(--accent); font-size: 11px; }
 .raw-block pre { font-family: var(--font-mono); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Bilder im Artikel. Die Tafel ist dunkel und schmal gerahmt, damit das Bild leuchtet und der
+   Rahmen nicht mitspricht; die Unterschrift bleibt Text und wird nie zur Bildbeschriftung im Bild. */
+.article-figure { margin: 24px 0; }
+.article-figure figcaption { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-top: 9px; overflow-wrap: anywhere; }
+.figure-frame { display: block; width: fit-content; max-width: 100%; padding: 0; border: 1px solid var(--line-strong); border-radius: 5px; background: #0d1011; overflow: hidden; position: relative; }
+.figure-frame:hover { border-color: #a79b8366; }
+/* `width: auto` statt `100%`: ein Bild wird nie über seine eigene Auflösung hinaus gestreckt. */
+.figure-image { display: block; width: auto; max-width: 100%; height: auto; }
+.figure-image-gross { width: 100%; max-width: none; }
+/* Das Portrait aus der Infobox: eine Tafel, kein Titelbild. */
+.figure-portrait { max-width: 340px; }
+.figure-zoom { position: absolute; right: 8px; bottom: 8px; display: inline-flex; padding: 5px; border-radius: 4px; background: #0b0f10cc; color: var(--accent); opacity: 0; transition: opacity .15s; }
+.figure-frame:hover .figure-zoom, .figure-frame:focus-visible .figure-zoom { opacity: 1; }
+/* Fehlende Bytes sind ein benannter Zustand, kein Loch: Dateiname und Grund stehen da. */
+.figure-missing .figure-placeholder { display: grid; gap: 6px; justify-items: center; text-align: center; padding: 30px 22px; border: 1px dashed var(--line-strong); border-radius: 5px; background: #12161780; color: var(--text-muted); }
+.figure-missing .figure-placeholder p { margin: 0; font-size: 13px; max-width: 44ch; }
+.figure-missing .figure-placeholder svg { color: var(--accent); opacity: .7; }
+/* Kein `float`: jede Passage ist ein eigenes <section>, ein Float endete an dessen Rand und
+   umflösse nie den nächsten Absatz. Die Ausrichtung aus dem Wiki wird deshalb als Breite und
+   Position der Tafel gelesen — eine ehrliche Übersetzung statt einer halb funktionierenden. */
+@media (min-width: 760px) {
+  .figure-links, .figure-rechts { max-width: 360px; }
+  .figure-links { margin-right: auto; }
+  .figure-rechts { margin-left: auto; }
+  .figure-zentriert { max-width: 640px; margin-inline: auto; }
+}
 .reveal-control { display: flex; justify-content: flex-end; align-items: center; gap: 7px; border-top: 1px dashed var(--line); margin-top: 17px; padding-top: 10px; }
 .reveal-control select { max-width: 245px; min-height: 32px; padding: 6px 9px; font-size: 10px; border-color: var(--line); }
 .reveal-control .button { min-height: 32px; padding: 6px 10px; font-size: 10px; }
@@ -197,6 +223,35 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
 .editor-passage textarea { font-size: 14px; border-color: var(--line); background: #0d1112; }
 .editor-passage label:last-child { margin-bottom: 0; }
 .preserved-block { padding: 15px; border: 1px solid var(--line); border-radius: 4px; }
+/* Ankreuzfelder global: ohne diese Regel erbt eine Checkbox `input { width: 100% }` und wird zu
+   einem handtellergroßen weißen Kasten. Die Feature-Stile setzen dieselben Werte; wo sie geladen
+   sind, ändert sich nichts, und wo nicht, sieht das Feld trotzdem aus wie ein Feld. */
+.check-label { display: flex; flex-direction: row; align-items: center; gap: 10px; margin-bottom: 0; }
+.check-label input[type="checkbox"] { width: 18px; height: 18px; min-height: 18px; flex: 0 0 auto; accent-color: var(--accent); }
+/* Der Bildbestand. Eine Zeile je Datei: Vorschau, Herkunft, Lizenzstand — in dieser Reihenfolge,
+   weil die Lizenz die Entscheidung ist, die hier getroffen wird. */
+.medien-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.medien-zeile { display: grid; grid-template-columns: 84px minmax(0, 1fr) minmax(0, 210px); gap: 16px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: #12161780; }
+.medien-zeile-offen { border-style: dashed; }
+.medien-vorschau { width: 84px; height: 84px; display: grid; place-items: center; overflow: hidden; border-radius: 4px; background: #0d1011; border: 1px solid var(--line); }
+.medien-vorschau img { width: 100%; height: 100%; object-fit: cover; }
+.medien-leer { color: var(--text-faint); }
+.medien-text { min-width: 0; }
+.medien-text strong { display: block; font-size: 14px; overflow-wrap: anywhere; }
+.medien-text p { margin: 4px 0 0; font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+.medien-warnung { display: flex; gap: 6px; align-items: center; color: var(--accent); }
+.medien-lizenz { display: grid; gap: 6px; justify-items: start; }
+.medien-lizenz small { color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; }
+.medien-lizenz select { min-height: 34px; padding: 5px 8px; font-size: 11px; }
+.medien-marke { display: inline-flex; gap: 5px; align-items: center; padding: 3px 8px; border-radius: 999px; font-size: 11px; border: 1px solid var(--line-strong); }
+.medien-marke-unbekannt { color: var(--accent); border-color: #d98e3b55; background: #d98e3b12; }
+.medien-marke-zitat { color: #efb0a8; border-color: #ef938744; background: #ef93870f; }
+.medien-marke-frei { color: #bdd5b8; border-color: #94b68c44; background: #9dbd7f0f; }
+@media (max-width: 720px) {
+  .medien-zeile { grid-template-columns: 60px minmax(0, 1fr); }
+  .medien-vorschau { width: 60px; height: 60px; }
+  .medien-lizenz { grid-column: 1 / -1; }
+}
 .sidebar-import { padding: 10px 15px; border-top: 1px solid var(--line); }
 .sidebar-import .button { width: 100%; justify-content: flex-start; color: var(--accent); font-size: 11px; }
 .import-content { padding: 35px; max-width: 950px; margin: auto; }

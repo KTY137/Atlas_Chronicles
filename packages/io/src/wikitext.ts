@@ -1,3 +1,4 @@
+import { trustAssetId } from "@chronicle/core";
 import type { Blockinhalt, EntryArt, InlineMark, InlineText, Verlust } from "@chronicle/chronik";
 import type { EronTemplate, ImportedMediaReference } from "./model.ts";
 import { ImportValidationError } from "./validation.ts";
@@ -38,6 +39,76 @@ export const namespaceLinkTarget = (slug: string): boolean => {
 };
 
 export const eronNotationTarget = (slug: string): boolean => /^(?:[NV]\.\s?K\.?|\d{1,4}|[A-Za-zÄÖÜäöüß])$/.test(slug);
+
+/**
+ * One identity per file, whatever syntax pointed at it.
+ *
+ * This matters more than it looks. The body writes `[[Datei:Bodin.jpg|mini|Bodin]]` and the
+ * infobox writes `|Bild=Datei:Bodin.jpg`, while `Olav der Ehrliche` writes
+ * `Bild=Datei:Olav_der_herrliche.png#filelinks` — three spellings of one picture. Normalising
+ * only some of them gives the same image two asset identities, which is how a corpus ends up
+ * storing the same bytes twice and revealing them under two different permissions.
+ */
+export const dateiSlug = (raw: string): string => wikiSlug(raw.replace(/^\s*:?\s*(?:Datei|File|Bild|Image)\s*:/i, ""));
+
+/**
+ * MediaWiki image options, German and English. Everything that is NOT an option is the caption —
+ * that is MediaWiki's own rule, and it is why the list has to be complete rather than clever:
+ * an unrecognised option silently becomes the words printed under the picture.
+ */
+const BILD_OPTIONEN = {
+  rahmen: /^(?:thumb|thumbnail|mini|miniatur|frame|framed|gerahmt|frameless|rahmenlos|border|rand)$/i,
+  ausrichtung: /^(?:left|links|right|rechts|cent(?:er|re)|zentriert|none|ohne)$/i,
+  vertikal: /^(?:baseline|sub|super|top|text-top|middle|bottom|text-bottom|oben|unten|mitte|zeilenmitte)$/i,
+  groesse: /^(?:\d{1,5}|x\d{1,5}|\d{1,5}x\d{1,5})px$/i,
+  hochkant: /^(?:upright|hochkant)(?:=[\d.]*)?$/i,
+  benannt: /^(?:alt|link|page|class|lang|thumbtime|start|end)\s*=/i,
+} as const;
+
+const AUSRICHTUNGEN: Readonly<Record<string, "links" | "rechts" | "zentriert" | "ohne">> = {
+  left: "links", links: "links", right: "rechts", rechts: "rechts",
+  center: "zentriert", centre: "zentriert", zentriert: "zentriert", none: "ohne", ohne: "ohne",
+};
+
+export interface BildAufruf {
+  readonly dateiname: string;
+  readonly beschriftung: string;
+  readonly alt?: string;
+  readonly ausrichtung?: "links" | "rechts" | "zentriert" | "ohne";
+  readonly breite?: number;
+}
+
+/**
+ * Read one `[[Datei:…|…]]` call. Returns null when there is no file name at all, which is the
+ * only case the caller must quarantine; everything else is readable even when unusual.
+ */
+export function parseBildAufruf(inner: string): BildAufruf | null {
+  let parts: string[];
+  try { parts = splitWikiTopLevel(inner); } catch { return null; }
+  const dateiname = dateiSlug(parts.shift() ?? "");
+  if (!dateiname) return null;
+  let beschriftung = "", alt: string | undefined, ausrichtung: BildAufruf["ausrichtung"], breite: number | undefined;
+  for (const part of parts) {
+    const option = part.trim();
+    if (BILD_OPTIONEN.ausrichtung.test(option)) { ausrichtung = AUSRICHTUNGEN[option.toLowerCase()]; continue; }
+    if (BILD_OPTIONEN.groesse.test(option)) {
+      // `x120px` constrains the height only; there is no width to record, and inventing one
+      // would turn a source hint into a false measurement.
+      const width = /^(\d{1,5})(?:x\d{1,5})?px$/i.exec(option)?.[1];
+      if (width) breite = Number(width);
+      continue;
+    }
+    if (BILD_OPTIONEN.rahmen.test(option) || BILD_OPTIONEN.vertikal.test(option) || BILD_OPTIONEN.hochkant.test(option)) continue;
+    if (BILD_OPTIONEN.benannt.test(option)) {
+      const [name, ...rest] = option.split("=");
+      if (name!.trim().toLowerCase() === "alt") alt = inlinePlainText(parseWikiInline(rest.join("=").trim()));
+      continue;
+    }
+    // MediaWiki keeps the LAST caption when several are given.
+    if (option) beschriftung = part.trim();
+  }
+  return { dateiname, beschriftung, ...(alt ? { alt } : {}), ...(ausrichtung ? { ausrichtung } : {}), ...(breite ? { breite } : {}) };
+}
 
 /** MediaWiki first-letter matching is locale-free; fragments do not identify an entry. */
 export function wikiSlug(title: string): string {
@@ -219,9 +290,29 @@ export function decomposeWiki(
     if (match[1]!.toUpperCase() === "DISPLAYTITLE") displayTitle = value; else sortKey = value;
     return true;
   };
-  const image = (text: string, fileName: string) => {
-    media.push({ pageid, fileName: wikiSlug(fileName), source: text, licenseStatus: "unbekannt", state: "source-only" });
-    raw(text);
+  /**
+   * A picture becomes a passage — `bildunterschrift` — instead of quarantine.
+   *
+   * It used to become a `rohblock`: the reader saw the wikitext of the portrait in a bordered
+   * "not converted" card, and the import report counted every figure as a loss. On this corpus
+   * that is the portrait of every named character, the coat of arms of the Kaiserreich and all
+   * seven plates of `Erismus`. The bytes are still a separate step — an article import must not
+   * wait on a CDN — but the FIGURE is now structure the product owns, and an asset that has not
+   * been fetched renders as a named placeholder rather than as source code.
+   *
+   * `assetId` carries the normalised file name here and is rewritten to the derived id by
+   * `importEron`, exactly like a link target: resolution must not enter the passage's identity.
+   */
+  const image = (text: string, inner: string, ausInfobox: boolean) => {
+    const call = parseBildAufruf(inner);
+    if (!call) { raw(text); return; }
+    media.push({ pageid, fileName: call.dateiname, source: text, licenseStatus: "unbekannt", state: "referenziert" });
+    emit({
+      kind: "bildunterschrift", assetId: trustAssetId(call.dateiname), dateiname: call.dateiname,
+      inhalt: call.beschriftung ? parseWikiInline(call.beschriftung) : [],
+      ...(call.alt ? { alt: call.alt } : {}), ...(call.ausrichtung ? { ausrichtung: call.ausrichtung } : {}),
+      ...(call.breite ? { breite: call.breite } : {}), ...(ausInfobox ? { ausInfobox: true } : {}),
+    });
   };
 
   /**
@@ -252,7 +343,8 @@ export function decomposeWiki(
     for (const field of definitions) {
       const value = values.get(field.key);
       if (!value) continue;
-      if (field.image) { image(`{{${name}|${field.key}=${value}}}`, value); continue; }
+      // An infobox image field may hold a bare name, a `Datei:` name, or full `[[…]]` markup.
+      if (field.image) { image(`{{${name}|${field.key}=${value}}}`, /^\[\[[\s\S]*\]\]$/.test(value.trim()) ? value.trim().slice(2, -2) : value, true); continue; }
       if (unsupported(value)) { raw(`{{${name}|${field.key}=${value}}}`, "unbekannte-vorlage"); continue; }
       const many = /^\s*[*#]/.test(value);
       emit({ kind: "feld", schluessel: field.key, label: field.label, ...(field.group ? { gruppe: field.group } : {}),
@@ -363,7 +455,7 @@ export function decomposeWiki(
       if (prefix.trim()) pending.push(prefix);
       flush();
       const text = line.slice(file.index, end);
-      image(text, splitWikiTopLevel(text.slice(2, -2))[0]!.replace(/^[^:]+:/, ""));
+      image(text, text.slice(2, -2), false);
       line = line.slice(end); file = /\[\[(?:Datei|File|Bild|Image):/i.exec(line);
     }
     if (!line.trim()) { flush(); continue; }

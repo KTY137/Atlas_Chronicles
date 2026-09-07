@@ -44,7 +44,7 @@ export const CAMPAIGN_TABLES = Object.freeze([
   table("revelations", "wiki", { campaign_id: id(), actor_id: id(), passage_id: id(), granted_at: bigint(), granted_by: id(), vollmacht_id: nullable(id()), quelle: json(), revoked_at: nullable(bigint()) }, ["actor_id", "passage_id"]),
   table("lineage_events", "wiki", { seq: bigint(), entry_id: id(), revision_id: id(), event: json(), created_at: bigint() }, ["seq"]),
   table("entry_aliases", "wiki", { campaign_id: id(), slug: text(512), entry_id: id() }, ["campaign_id", "slug"]),
-  table("artifacts", "wiki", { id: id(), campaign_id: id(), kind: choice("eron-preview", "azgaar"), source_hash: hash(), source: json(), report: json(), created_by: id(), created_at: bigint() }, ["id"]),
+  table("artifacts", "wiki", { id: id(), campaign_id: id(), kind: choice("eron-preview", "azgaar", "eron-map"), source_hash: hash(), source: json(), report: json(), created_by: id(), created_at: bigint() }, ["id"]),
   table("import_acceptances", "wiki", { artifact_id: id(), entry_id: id(), revision_id: id(), accepted_by: id(), accepted_at: bigint() }, ["artifact_id", "entry_id"]),
   table("atlas_maps", "atlas", { id: id(), campaign_id: id(), artifact_id: id(), title: text(512), width: number(Number.MIN_VALUE), height: number(Number.MIN_VALUE), version: integer(1), created_at: bigint() }, ["id"]),
   table("atlas_nodes", "atlas", { map_id: id(), id: id(), campaign_id: id(), data: json(), entry_id: nullable(id()) }, ["map_id", "id"]),

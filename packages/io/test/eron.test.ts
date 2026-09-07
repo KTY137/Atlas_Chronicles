@@ -39,7 +39,10 @@ describe("real Eron import", () => {
     expect(first.attributionComplete).toBe(false);
     expect(first.provenance.every((row) => row.status === "incomplete" && !("autoren" in row.value))).toBe(true);
     expect(first.media.length).toBeGreaterThan(0);
-    expect(first.media.every((row) => row.licenseStatus === "unbekannt" && row.state === "source-only")).toBe(true);
+    // Without a file inventory nothing is known beyond the reference itself — and that is stated,
+    // not guessed. Every figure still gets a stable asset identity so the bytes can arrive later.
+    expect(first.media.every((row) => row.licenseStatus === "unbekannt" && row.state === "referenziert")).toBe(true);
+    expect(first.media.every((row) => typeof row.assetId === "string" && row.assetId.length === 32)).toBe(true);
   });
   it("accepts explicit author history and preserves attribution instead of attributing it to the importer", () => {
     const result = run([page(1, "Article", "A sufficiently long article paragraph about the source world.")], {
@@ -77,11 +80,16 @@ describe("wikitext boundary and losses", () => {
   it("separates heading addresses, quote/list atoms, short losses and file markup from prose", () => {
     const source = "== History ==\n=== Empty ===\n== People ==\n* A\n* B\n\n<blockquote>A quoted statement.</blockquote>\n\nShort\n\n[[Datei:Portrait.jpg|mini|Caption]]\nThis is a sufficiently long paragraph about the portrait's subject.";
     const result = run([page(1, "Portrait", source)]);
-    expect(result.report.passagenNachArt).toMatchObject({ liste: 1, zitat: 1, absatz: 1, rohblock: 1 });
+    // The file markup is still lifted out of the paragraph before its identity is calculated —
+    // but it now lands as a figure with its caption, not in the quarantine card it used to get.
+    expect(result.report.passagenNachArt).toMatchObject({ liste: 1, zitat: 1, absatz: 1, bildunterschrift: 1, rohblock: 0 });
     expect(result.passages.every((p) => p.pfad.join("/") === "People")).toBe(true);
     expect(result.report.verluste.some((loss) => loss.art === "kurzer-absatz" && loss.detail === "Short")).toBe(true);
     const paragraph = result.passages.find((p) => p.inhalt.kind === "absatz")!;
     expect(blockPlainText(paragraph.inhalt)).not.toContain("Portrait.jpg");
+    const figure = result.passages.find((p) => p.inhalt.kind === "bildunterschrift")!;
+    expect(blockPlainText(figure.inhalt)).toBe("Caption");
+    expect(figure.inhalt).toMatchObject({ dateiname: "Portrait.jpg" });
     expect(result.media[0]?.fileName).toBe("Portrait.jpg");
   });
   it("counts missing target demand once per article and rejects notation links", () => {
