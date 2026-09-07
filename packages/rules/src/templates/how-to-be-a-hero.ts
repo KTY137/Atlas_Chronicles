@@ -11,6 +11,13 @@ export interface HtbahPackageOptions { readonly skills?: readonly HtbahSkill[]; 
 export const HTBAH_GROUPS: readonly HtbahGroup[] = Object.freeze(["handeln", "wissen", "soziales"]);
 export const HTBAH_GROUP_LABELS: Readonly<Record<HtbahGroup, string>> = Object.freeze({ handeln: "Handeln", wissen: "Wissen", soziales: "Soziales" });
 export const HTBAH_EDITION = "How to be a Hero · Grundregelwerk (PDF 2018, bestätigte Wikifassung 2021)";
+/**
+ * Die ausgelieferte Fassung der Adaption. **1.1.0** trägt die Vitalwert-Deklaration: dasselbe
+ * Regelwerk, aber Tod bei 0 Lebenspunkten steht jetzt im Paket statt nur im Erläuterungstext.
+ * Das ändert den Inhalts-Hash, also muss die Version es sagen — ein geändertes Dokument unter
+ * unveränderter Version wäre genau die stille Drift, gegen die die Installationsprüfung steht.
+ */
+export const HTBAH_VERSION = "1.1.0";
 export const HTBAH_DEFAULT_SKILLS: readonly HtbahSkill[] = deepFreeze([
   { id: "klettern", label: "Klettern", group: "handeln" }, { id: "feinmechanik", label: "Feinmechanik", group: "handeln" }, { id: "spurenlesen", label: "Spurenlesen", group: "handeln" },
   { id: "naturkunde", label: "Naturkunde", group: "wissen" }, { id: "heilkunde", label: "Heilkunde", group: "wissen" }, { id: "geschichte", label: "Geschichte", group: "wissen" },
@@ -94,11 +101,17 @@ export function createHowToBeAHeroPackage(options: HtbahPackageOptions = {}): Ru
     { id: "critical_success", label: "Kritisch gelungen", comparison: "lte", expression: "if(input.skill_check, max(1, input.critical_success_max), 0)", success: true },
     { id: "success", label: "Gelungen", comparison: "lte", expression: "input.target", success: true },
   ], fallback: { id: "failure", label: "Misslungen", success: false } } });
-  return parseRulePackageV2({ schemaVersion: 2, id: options.id ?? "de.howtobeahero.core", name: "How to be a Hero", version: options.version ?? "1.0.0", engineVersion: "1.0.0", license: "CC-BY-NC-SA-4.0", authors: ["How to be a Hero-Team und Wiki-Beitragende", "Atlas Chronicles: deklarative Adaption und eigene Beispiele"], fields, layout: { sections: [
+  return parseRulePackageV2({ schemaVersion: 2, id: options.id ?? "de.howtobeahero.core", name: "How to be a Hero", version: options.version ?? HTBAH_VERSION, engineVersion: "1.0.0", license: "CC-BY-NC-SA-4.0", authors: ["How to be a Hero-Team und Wiki-Beitragende", "Atlas Chronicles: deklarative Adaption und eigene Beispiele"], fields, layout: { sections: [
     { id: "character", label: "Figur und Absprachen", fields: ["name", "profession", "notes", "hp", "budget_adjustment"] },
     ...HTBAH_GROUPS.map(group => ({ id: group, label: HTBAH_GROUP_LABELS[group], fields: skills.filter(skill => skill.group === group).flatMap(skill => [htbahSkillField(skill.id), htbahBonusField(skill.id)]) })),
     { id: "geistesblitz", label: "Geistesblitze · ausgegebene Punkte", fields: HTBAH_GROUPS.map(htbahSpentField) },
-  ] }, actions, computed, constraints, attribution: HTBAH_ATTRIBUTION, migrations: options.migrations ?? [], selfTests: [
+  ] }, actions, computed, constraints, vitals: [
+    // Tod bei 0 Lebenspunkten ist die Regel des Systems (Grundregelwerk, Bewusstlosigkeit unter 10).
+    // Bis 1.1.0 stand sie nur als Erläuterung daneben; jetzt trägt sie das Paket selbst.
+    // Die drei Geistesblitz-Zähler sind ausdrücklich KEINE Vitalwerte: ein leerer Vorrat ist
+    // kein Tod. Genau diese Verwechslung hat das v2-Verbot in `adjustResource` erzwungen.
+    { id: "hp", label: "Lebenspunkte", max: "100", depletion: "defeat" as const },
+  ], attribution: HTBAH_ATTRIBUTION, migrations: options.migrations ?? [], selfTests: [
     { name: "Begabung 0: W100 21 misslingt", actionId: "aptitude_handeln", context: { seed: "00000001000000020000000300000004", actor: {}, input: {}, knowledge: { actorId: "selftest", passages: [] } }, expectedTotal: 21, expectedSuccess: false, expectedOutcomeId: "failure" },
     { name: "Initiative ohne Handeln: W10 1", actionId: "initiative", context: { seed: "00000001000000020000000300000004", actor: {}, input: {}, knowledge: { actorId: "selftest", passages: [] } }, expectedTotal: 1 },
     { name: "Kritischer Schaden verdoppelt Bonus: (1 + 3) mal 2", actionId: "damage", context: { seed: "00000001000000020000000300000004", actor: {}, input: { dice_count: 1, bonus: 3, critical: true }, knowledge: { actorId: "selftest", passages: [] } }, expectedTotal: 8 },

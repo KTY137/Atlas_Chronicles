@@ -36,7 +36,7 @@ export interface RuleDraft {
   id: string; name: string; version: string; license: string; authors: string[];
   fields: DraftField[]; sections: DraftSection[]; actions: DraftAction[];
   migrations: DraftMigration[]; selfTests: PackageSelfTest[]; includeSelfTests: boolean;
-  computed?: RulePackageV2["computed"]; constraints?: RulePackageV2["constraints"]; attribution?: RulePackageV2["attribution"];
+  computed?: RulePackageV2["computed"]; constraints?: RulePackageV2["constraints"]; vitals?: RulePackageV2["vitals"]; attribution?: RulePackageV2["attribution"];
 }
 export type Validation<T> = { valid: true; value: T } | { valid: false; error: string };
 let localSequence = 0;
@@ -157,7 +157,7 @@ export function packageDraft(input: AnyRulePackage): RuleDraft {
       ...("outcome" in a && a.outcome ? { outcome: copyJson(a.outcome as RuleOutcome) } : {}), ...("preconditions" in a ? { preconditions: copyJson(a.preconditions as readonly RuleAssertion[]) } : {}) }; }),
     migrations: pkg.migrations.map(m => ({ localId: localKey(), from: m.from, steps: m.steps.map(migrationStepDraft) })),
     selfTests: copyJson([...(pkg.selfTests ?? [])]), includeSelfTests: pkg.selfTests !== undefined,
-    ...(pkg.schemaVersion === 2 ? { ...(pkg.computed !== undefined ? { computed: copyJson(pkg.computed) } : {}), ...(pkg.constraints !== undefined ? { constraints: copyJson(pkg.constraints) } : {}), ...(pkg.attribution !== undefined ? { attribution: copyJson(pkg.attribution) } : {}) } : {}) };
+    ...(pkg.schemaVersion === 2 ? { ...(pkg.computed !== undefined ? { computed: copyJson(pkg.computed) } : {}), ...(pkg.constraints !== undefined ? { constraints: copyJson(pkg.constraints) } : {}), ...(pkg.vitals !== undefined ? { vitals: copyJson(pkg.vitals) } : {}), ...(pkg.attribution !== undefined ? { attribution: copyJson(pkg.attribution) } : {}) } : {}) };
 }
 export function compilePackage(draft: RuleDraft): AnyRulePackage {
   const fields = fieldsMap(draft.fields);
@@ -166,7 +166,7 @@ export function compilePackage(draft: RuleDraft): AnyRulePackage {
     actions: draft.actions.map(a => ({ id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, requiresConfirmation: true, inputs: fieldsMap(a.inputs), expression: draftExpression(a), ...(a.thresholdEnabled ? { threshold: numberValue(a.threshold, `${a.name}: Erfolgsschwelle`) } : {}), ...(a.outcome ? { outcome: copyJson(a.outcome) } : {}), ...(a.preconditions !== undefined ? { preconditions: copyJson(a.preconditions) } : {}) })),
     migrations: draft.migrations.map(m => ({ from: m.from, to: draft.version, steps: m.steps.map(migrationStep) })),
     ...(draft.includeSelfTests || draft.selfTests.length ? { selfTests: copyJson(draft.selfTests) } : {}),
-    ...(draft.computed !== undefined ? { computed: copyJson(draft.computed) } : {}), ...(draft.constraints !== undefined ? { constraints: copyJson(draft.constraints) } : {}), ...(draft.attribution !== undefined ? { attribution: copyJson(draft.attribution) } : {}) });
+    ...(draft.computed !== undefined ? { computed: copyJson(draft.computed) } : {}), ...(draft.constraints !== undefined ? { constraints: copyJson(draft.constraints) } : {}), ...(draft.vitals !== undefined ? { vitals: copyJson(draft.vitals) } : {}), ...(draft.attribution !== undefined ? { attribution: copyJson(draft.attribution) } : {}) });
 }
 export function validateDraft(draft: RuleDraft): Validation<AnyRulePackage> {
   try { return { valid: true, value: compilePackage(draft) }; } catch (e) { return { valid: false, error: e instanceof Error ? e.message : "Das Paket konnte nicht geprüft werden." }; }

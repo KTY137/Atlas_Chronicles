@@ -2,7 +2,7 @@ import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { captureTacticalSession } from "./tactical.ts";
 import { resolvePassage, type LineageEvent, type Praegung, type Quelle } from "@chronicle/chronik";
 import { trustPassageId } from "@chronicle/core";
-import { DEMO_RULE_PACKAGE, RuleValidationError, SupportedRulePackageRegistry, defaultSupportedActorFields, evaluateSupportedAction, parseSupportedRulePackage, previewSupportedPackageMigration, replaySupportedAction, stableJson, validateEntityFields, validatePackageFields,
+import { DEMO_RULE_PACKAGE, RuleValidationError, SupportedRulePackageRegistry, defaultSupportedActorFields, depletedDefeatVitals, evaluateSupportedAction, parseSupportedRulePackage, previewSupportedPackageMigration, replaySupportedAction, stableJson, validateEntityFields, validatePackageFields,
   type AnyActionResult as ActionResult, type EvaluationContext, type Experience, type PackagePin, type ProjectedKnowledge, type AnyRulePackage as RulePackage, type Scalar } from "@chronicle/rules";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
@@ -137,6 +137,12 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       const fields = validatePackageFields(pkg, input.fields);
       await tx.query(`INSERT INTO actor_sheets(actor_id,campaign_id,package_id,package_version,fields,version,updated_at) VALUES($1,$2,$3,$4,$5,1,$6)
         ON CONFLICT(actor_id,campaign_id) DO UPDATE SET fields=EXCLUDED.fields,version=actor_sheets.version+1,updated_at=EXCLUDED.updated_at`, [input.actorId, campaignId, pkg.id, pkg.version, fields, now()]);
+      // Erschöpfung folgt aus dem, was das Regelpaket als Vitalwert AUSGEWIESEN hat — nicht daraus,
+      // dass irgendeine Zahl 0 erreicht (die v1-Grobheit, die für Schema v2 zu Recht gesperrt ist),
+      // und nicht aus einem fest verdrahteten Feldnamen. Pakete ohne Deklaration ändern nichts;
+      // eine bereits bestätigte Niederlage wird nicht erneut angestellt.
+      if (depletedDefeatVitals(pkg, fields).length)
+        await tx.query("UPDATE actor_sheets SET defeat_pending=true WHERE actor_id=$1 AND campaign_id=$2 AND defeated_at IS NULL", [input.actorId, campaignId]);
       return sheet(tx, campaignId, input.actorId);
     });
   }

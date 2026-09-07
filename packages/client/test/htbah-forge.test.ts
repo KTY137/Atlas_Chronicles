@@ -13,8 +13,14 @@ describe("lossless supported rule workshop", () => {
   it("retains ordered outcomes, source notes, empty declarations and classification tests in forks", () => {
     const pkg = parseSupportedRulePackage({ ...HOW_TO_BE_A_HERO_PACKAGE, computed: [], constraints: [], actions: HOW_TO_BE_A_HERO_PACKAGE.actions.map(action => ({ ...action, preconditions: [] })) });
     const draft = forkPackage(pkg, [pkg]), compiled = compilePackage(draft) as RulePackageV2;
-    expect(compiled.version).toBe("1.0.1"); expect(compiled.attribution).toEqual(pkg.schemaVersion === 2 ? pkg.attribution : null);
+    // Die Abzweigung erhöht die Patch-Stelle der Vorlage. Aus der Vorlage abgeleitet, nicht
+    // festgeschrieben: sonst prüft der Fall die ausgelieferte Version statt die Abzweigung.
+    const [major, minor, patch] = pkg.version.split(".").map(Number) as [number, number, number];
+    expect(compiled.version).toBe(`${major}.${minor}.${patch + 1}`);
+    expect(compiled.attribution).toEqual(pkg.schemaVersion === 2 ? pkg.attribution : null);
     expect(compiled.actions).toEqual(pkg.actions); expect(compiled.computed).toEqual([]); expect(compiled.constraints).toEqual([]);
+    // Vitalwerte überleben die Abzweigung unverändert — eine Kopie ohne sie hätte keine Niederlage.
+    expect(compiled.vitals).toEqual(pkg.schemaVersion === 2 ? pkg.vitals : undefined);
     expect(compiled.selfTests).toEqual(pkg.selfTests);
   });
   it("blocks conflicting fixed thresholds and classification without discarding either draft value", () => {

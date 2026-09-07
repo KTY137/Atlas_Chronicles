@@ -87,7 +87,7 @@ describe("character arithmetic, configurable catalogue and resources", () => {
     const result = evaluateSupportedAction(pkg, `skill_${skills[0]!.id}`, context(actor)) as ActionResultV2;
     expect(result.evaluationOperations).toBeLessThanOrEqual(4096); expect(evaluateComputedFields(pkg, actor).aptitude_handeln).toBe(24);
     expect(replaySupportedAction(pkg, result).valid).toBe(true);
-    const revision = createHowToBeAHeroPackage({ skills, version: "1.1.0", migrations: [{ from: pkg.version, to: "1.1.0", steps: [] }] });
+    const revision = createHowToBeAHeroPackage({ skills, version: "1.2.0", migrations: [{ from: pkg.version, to: "1.2.0", steps: [] }] });
     const migration = previewSupportedPackageMigration(pkg, revision, [{ id: "maximum_catalogue", fields: actor }]);
     expect(migration.entities[0]!.after).toEqual(validatePackageFields(pkg, actor));
   });
@@ -96,7 +96,7 @@ describe("character arithmetic, configurable catalogue and resources", () => {
   });
   it("makes catalogue migration explicit and rejects migrated effective skills over 100", () => {
     const extra = { id: "segeln", label: "Segeln", group: "handeln" as const };
-    const make = (steps: readonly import("../src/index.ts").MigrationStep[]) => createHowToBeAHeroPackage({ skills: [...HTBAH_DEFAULT_SKILLS, extra], version: "1.1.0", migrations: [{ from: template.version, to: "1.1.0", steps }] });
+    const make = (steps: readonly import("../src/index.ts").MigrationStep[]) => createHowToBeAHeroPackage({ skills: [...HTBAH_DEFAULT_SKILLS, extra], version: "1.2.0", migrations: [{ from: template.version, to: "1.2.0", steps }] });
     const rows = HTBAH_EXAMPLE_CHARACTERS.map(example => ({ id: example.id, fields: example.fields }));
     expect(() => previewSupportedPackageMigration(template, make([]), rows)).toThrow(/explicit add\/archive/);
     const steps = [{ kind: "add" as const, field: "skill_segeln", value: 0 }, { kind: "add" as const, field: "bonus_segeln", value: true }];

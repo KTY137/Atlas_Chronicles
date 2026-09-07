@@ -7,7 +7,7 @@ export const RULE_LIMITS = Object.freeze({
   packageBytes: 1_048_576, jsonDepth: 48, jsonNodes: 50_000,
   formulaLength: 4096, formulaDepth: 32, formulaNodes: 512,
   operations: 4096, dice: 100, sides: 100_000, explosions: 20,
-  fields: 64, actions: 64, knowledgePassages: 2048,
+  fields: 64, actions: 64, knowledgePassages: 2048, vitals: 8,
 });
 
 export function fail(message: string): never { throw new RuleValidationError(message); }

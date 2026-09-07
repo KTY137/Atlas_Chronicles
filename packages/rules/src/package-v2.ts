@@ -15,12 +15,36 @@ export interface RuleAttribution {
   readonly sources: readonly { readonly title: string; readonly url: string; readonly revision: string; readonly authors: readonly string[] }[];
   readonly licenseUrl: string; readonly notice: string; readonly changes: string;
 }
+/**
+ * Ein Vitalwert ist ein Bogenfeld, das im Spiel steigt und fällt und dessen Erschöpfung eine
+ * erklärte Folge hat — Leben, Mana, Ausdauer. Er ist ausdrücklich NICHT jede Zahl auf dem Bogen:
+ * ein leergespielter Geistesblitz-Zähler ist kein Vitalwert und darf keine Niederlage auslösen.
+ * Genau diese Verwechslung hat das Schema-v2-Verbot in `adjustResource` erzwungen
+ * (`design/iterations/how-to-be-a-hero-20260906.md` §H1); die Deklaration hebt sie auf.
+ */
+export interface RuleVital {
+  /** Kennung eines vorhandenen Zahlenfelds dieses Pakets. */
+  readonly id: string;
+  readonly label: string;
+  /** Deterministischer Zahlenausdruck über Bogenfelder — der Höchststand der Anzeige. */
+  readonly max: string;
+  /** Was Erreichen von 0 bedeutet. `defeat` stellt die Niederlage zur Bestätigung an. */
+  readonly depletion: "defeat" | "none";
+}
 export interface RuleActionV2 extends RuleAction { readonly outcome?: RuleOutcome; readonly preconditions?: readonly RuleAssertion[] }
 export interface RuleSelfTestV2 { readonly name: string; readonly actionId: string; readonly context: EvaluationContext; readonly expectedTotal: number; readonly expectedSuccess?: boolean; readonly expectedOutcomeId?: string }
 export interface RulePackageV2 extends Omit<RulePackage, "schemaVersion" | "actions" | "selfTests"> {
   readonly schemaVersion: 2; readonly actions: readonly RuleActionV2[];
   readonly computed?: readonly ComputedField[]; readonly constraints?: readonly RuleAssertion[];
+  readonly vitals?: readonly RuleVital[];
   readonly attribution?: RuleAttribution; readonly selfTests?: readonly RuleSelfTestV2[];
+}
+/** Ein Vitalwert samt gemessenem Stand — die Zahlen, aus denen eine Anzeige entsteht. */
+export interface VitalReading extends RuleVital {
+  readonly value: number;
+  readonly maximum: number;
+  /** Der Vorrat ist aufgebraucht: `value <= 0`. */
+  readonly depleted: boolean;
 }
 export interface ClassifiedOutcome extends OutcomeLabel {
   readonly matchedBand: number | null;
@@ -81,7 +105,7 @@ function httpUrl(value: unknown): void {
  * All v2 additions are closed and checked independently; nothing is silently discarded. */
 export function parseRulePackageV2(input: unknown): RulePackageV2 {
   const data = record(typeof input === "string" ? parseBoundedJson(input) : snapshotJson(input), "package");
-  keys(data, ["schemaVersion", "id", "name", "version", "engineVersion", "license", "authors", "fields", "layout", "actions", "migrations", "selfTests", "computed", "constraints", "attribution"], "package");
+  keys(data, ["schemaVersion", "id", "name", "version", "engineVersion", "license", "authors", "fields", "layout", "actions", "migrations", "selfTests", "computed", "constraints", "vitals", "attribution"], "package");
   if (data.schemaVersion !== 2) fail("package: expected schemaVersion 2");
   const actionRows = array(data.actions, "actions", RULE_LIMITS.actions).map(item => record(item, "action"));
   const projectedActions = actionRows.map(action => {
@@ -94,7 +118,7 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
     if (test.expectedOutcomeId !== undefined) identifier(test.expectedOutcomeId, "expectedOutcomeId");
     const { expectedSuccess: _success, expectedOutcomeId: _outcome, ...legacy } = test; return legacy;
   });
-  const { computed: _computed, constraints: _constraints, attribution: _attribution, selfTests: _tests, ...common } = data;
+  const { computed: _computed, constraints: _constraints, vitals: _vitals, attribution: _attribution, selfTests: _tests, ...common } = data;
   const base = parseRulePackage({ ...common, schemaVersion: 1, actions: projectedActions, ...(projectedTests === undefined ? {} : { selfTests: projectedTests }) });
   const actorTypes = types(base.fields); const actorOnly = { actor: actorTypes, input: {} };
   if (data.computed !== undefined) {
@@ -105,6 +129,20 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
     }
   }
   if (data.constraints !== undefined) assertions(data.constraints, 64, actorOnly);
+  if (data.vitals !== undefined) {
+    const seen = new Set<string>();
+    for (const item of array(data.vitals, "vitals", RULE_LIMITS.vitals)) {
+      const row = record(item, "vital"); keys(row, ["id", "label", "max", "depletion"], "vital");
+      // Die Kennung zeigt auf ein echtes Zahlenfeld — ein Vitalwert ohne Feld hätte keinen Stand,
+      // und ein Text- oder Wahrheitsfeld hätte keine Erschöpfung.
+      const id = identifier(row.id, "vital.id");
+      if (seen.has(id)) fail("vitals: duplicate id"); seen.add(id);
+      if (actorTypes[id] !== "number") fail(`vital ${id}: expected a number or integer field of this package`);
+      string(row.label, "vital.label", 120);
+      expression(row.max, "number", actorOnly);
+      if (row.depletion !== "defeat" && row.depletion !== "none") fail("vital: depletion must be \"defeat\" or \"none\"");
+    }
+  }
   for (const [index, action] of actionRows.entries()) {
     const fields = { actor: actorTypes, input: types(base.actions[index]!.inputs) };
     if (action.preconditions !== undefined) assertions(action.preconditions, 8, fields);
@@ -162,6 +200,24 @@ export function validatePackageFields(rawPackage: AnyRulePackage, input: unknown
 export function defaultSupportedActorFields(pkg: AnyRulePackage): Readonly<Record<string, Scalar>> { return validatePackageFields(pkg, {}); }
 export function evaluateComputedFields(rawPackage: AnyRulePackage, input: unknown): Readonly<Record<string, number>> {
   return resolveFields(parseSupportedRulePackage(rawPackage), input, new Budget()).computed;
+}
+/**
+ * Die Vitalwerte eines Bogens samt Stand und Höchststand. Ein Paket ohne Deklaration liefert
+ * eine leere Liste — kein Vitalwert ist ein zulässiger Zustand, kein Fehler. Die Bogenwerte
+ * laufen durch dieselbe Prüfung wie überall; ein ungültiger Bogen hat auch keine gültige Anzeige.
+ */
+export function evaluateVitals(rawPackage: AnyRulePackage, input: unknown): readonly VitalReading[] {
+  const pkg = parseSupportedRulePackage(rawPackage);
+  if (pkg.schemaVersion !== 2 || !pkg.vitals?.length) return deepFreeze([] as VitalReading[]);
+  const budget = new Budget(), { fields } = resolveFields(pkg, input, budget), context = fieldContext(fields);
+  return deepFreeze(pkg.vitals.map(vital => {
+    const value = finite(fields[vital.id], `vital ${vital.id}`);
+    return { ...vital, value, maximum: finite(budget.evaluate(vital.max, context).value, `vital ${vital.id}: maximum`), depleted: value <= 0 };
+  }));
+}
+/** Die Vitalwerte, deren Erschöpfung eine Niederlage bedeutet — die einzige Quelle dafür. */
+export function depletedDefeatVitals(rawPackage: AnyRulePackage, input: unknown): readonly VitalReading[] {
+  return evaluateVitals(rawPackage, input).filter(vital => vital.depletion === "defeat" && vital.depleted);
 }
 function matches(comparison: OutcomeComparison, value: number, threshold: number): boolean {
   switch (comparison) { case "eq": return value === threshold; case "lt": return value < threshold; case "lte": return value <= threshold; case "gt": return value > threshold; case "gte": return value >= threshold; }

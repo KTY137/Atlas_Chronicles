@@ -43,7 +43,7 @@ describe("closed v2 vocabulary and deterministic limits", () => {
     expect(rules.stableJson(rules.evaluateSupportedAction(rules.DEMO_RULE_PACKAGE, "investigate", legacyContext))).toBe(rules.stableJson(rules.evaluateAction(rules.DEMO_RULE_PACKAGE, "investigate", legacyContext)));
     expect(rules.defaultSupportedActorFields(rules.DEMO_RULE_PACKAGE)).toEqual(rules.defaultActorFields(rules.DEMO_RULE_PACKAGE));
     expect(() => rules.parseRulePackage(pkg())).toThrow();
-    for (const key of ["computed", "constraints", "attribution"]) expect(() => rules.parseSupportedRulePackage({ ...rules.DEMO_RULE_PACKAGE, [key]: [] })).toThrow(/unsupported/);
+    for (const key of ["computed", "constraints", "vitals", "attribution"]) expect(() => rules.parseSupportedRulePackage({ ...rules.DEMO_RULE_PACKAGE, [key]: [] })).toThrow(/unsupported/);
     expect(() => rules.parseSupportedRulePackage({ ...pkg(), schemaVersion: 3 })).toThrow(/unsupported/);
   });
   it.each(["1d6", 'if(false, 1d6, 0)', 'haelt_etikett("secret")', 'if(haelt("secret"), 1, 0)', "actor.absent", "input.missing", "actor.unused", '"string"', "true"])("rejects nonportable computed expression %s", expression => {
@@ -57,6 +57,53 @@ describe("closed v2 vocabulary and deterministic limits", () => {
     expect(() => changed({ attribution: { ...fixture().attribution, licenseUrl: "javascript:alert(1)" } })).toThrow(/HTTP/);
     expect(() => changed({ attribution: { ...fixture().attribution, sources: [{ ...fixture().attribution.sources[0], url: "https://user:password@example.org" }] } })).toThrow(/HTTP/);
     expect(() => changed({ actions: [{ ...pkg().actions[0], preconditions: [{ id: "bad", message: "Bad", expression: 'haelt("secret")' }] }] })).toThrow(/knowledge/);
+  });
+  // Ein Vitalwert ist die einzige Quelle der Niederlage. Was er annehmen darf, entscheidet hier
+  // der Parser — nicht die Anzeige und nicht der Server, die beide nur lesen, was hier durchkam.
+  it("rejects vitals without a numeric field, a portable maximum or a declared depletion", () => {
+    const vital = { id: "vigour", label: "Kraft", max: "12", depletion: "defeat" };
+    expect(() => changed({ vitals: [vital, vital] })).toThrow(/duplicate/);
+    // Ein Vitalwert ohne Zahlenfeld haette keinen Stand: weder ein Textfeld noch ein fehlendes.
+    for (const id of ["name", "absent"]) expect(() => changed({ vitals: [{ ...vital, id }] })).toThrow(/number or integer/);
+    // Eine unbekannte oder fehlende Erschoepfung ist keine Voreinstellung, sondern ein Fehler.
+    for (const depletion of ["death", "", 0, true]) expect(() => changed({ vitals: [{ ...vital, depletion }] })).toThrow(/depletion/);
+    expect(() => changed({ vitals: [{ id: vital.id, label: vital.label, max: vital.max }] })).toThrow(/depletion/);
+    // `null` ist gueltiges JSON und faellt deshalb erst der Erschoepfungspruefung zum Opfer;
+    // `undefined` ist keins und scheitert schon am Transportvertrag. Beide Wege enden in einer
+    // Ablehnung — keiner in einer stillen Voreinstellung.
+    expect(() => changed({ vitals: [{ ...vital, depletion: null }] })).toThrow(/depletion/);
+    expect(() => changed({ vitals: [{ ...vital, depletion: undefined }] })).toThrow(/JSON value/);
+    expect(() => changed({ vitals: [{ ...vital, ruin: true }] })).toThrow(/unsupported property ruin/);
+    expect(() => changed({ vitals: [{ ...vital, label: "" }] })).toThrow(/vital.label/);
+    expect(() => changed({ vitals: Array.from({ length: 9 }, () => vital) })).toThrow(/max 8/);
+  });
+  // Der Hoechststand wird gegen GESPEICHERTE Felder geprueft und spaeter gegen dieselben
+  // ausgewertet. Faenden die beiden Namensraeume auseinander, ergaebe ein gueltiges Paket eine
+  // Anzeige, die erst beim Anschauen bricht — deshalb steht jede dieser Ablehnungen hier.
+  it.each(["1d6", "actor.absent", "actor.name", "actor.unused", "input.topic", "true", '"string"'])("rejects nonportable vital maximum %s", max => {
+    expect(() => changed({ vitals: [{ id: "vigour", label: "Kraft", max, depletion: "defeat" }] })).toThrow();
+  });
+  it("reads declared vitals with an evaluated maximum and reports defeat only where it is declared", () => {
+    // Kein Vitalwert ist ein zulaessiger Zustand: weder ein v1-Paket noch ein v2-Paket ohne
+    // Deklaration hat eine Anzeige, und beide duerfen deswegen nicht werfen.
+    expect(rules.evaluateVitals(rules.DEMO_RULE_PACKAGE, {})).toEqual([]);
+    expect(rules.evaluateVitals(pkg(), {})).toEqual([]);
+    expect(rules.depletedDefeatVitals(pkg(), {})).toEqual([]);
+    const declared = changed({ vitals: [
+      { id: "vigour", label: "Kraft", max: "actor.insight * 2", depletion: "defeat" },
+      { id: "insight", label: "Scharfsinn", max: "6", depletion: "none" },
+    ] });
+    expect(rules.evaluateVitals(declared, { insight: 3, vigour: 6 })).toEqual([
+      { id: "vigour", label: "Kraft", max: "actor.insight * 2", depletion: "defeat", value: 6, maximum: 6, depleted: false },
+      { id: "insight", label: "Scharfsinn", max: "6", depletion: "none", value: 3, maximum: 6, depleted: false },
+    ]);
+    expect(rules.depletedDefeatVitals(declared, { insight: 3, vigour: 6 })).toEqual([]);
+    // Beide Vorraete sind leer — aber nur der ausgewiesene bedeutet Niederlage. Das ist der
+    // ganze Unterschied zur v1-Grobheit "irgendeine Zahl ist 0", die H1 zu Recht gesperrt hat.
+    expect(rules.evaluateVitals(declared, { insight: 0, vigour: 0 }).map(v => v.depleted)).toEqual([true, true]);
+    expect(rules.depletedDefeatVitals(declared, { insight: 0, vigour: 0 }).map(v => v.id)).toEqual(["vigour"]);
+    // Ein ungueltiger Bogen hat auch keine gueltige Anzeige: die Vertragspruefung laeuft zuerst.
+    expect(() => rules.evaluateVitals(declared, { insight: 0, vigour: 6 })).toThrow(/Vigour/);
   });
   it("rejects malformed and ambiguous outcome records", () => {
     const action = fixture().actions[0]!; const original = JSON.parse(JSON.stringify(action)) as Record<string, unknown>;
