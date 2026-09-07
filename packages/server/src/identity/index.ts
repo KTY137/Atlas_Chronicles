@@ -41,6 +41,45 @@ export function createIdentity(db: Db, cfg: IdentityConfig) {
     return { credentialId, expiresAt, value, setCookie: cookie(value, seconds) };
   }
 
+  /**
+   * Der Zugangsvorfall — `CHAMPION.md:372-376`: „the server logs an event whenever a device
+   * presents no/expired credential against a character holding an open Vollmacht."
+   *
+   * Er läuft, BEVOR die 404 fällt (design/08 §3), und er hält drei Bedingungen ein:
+   *
+   *  - **Nur für ein echtes, totes Credential.** Der MAC ist an dieser Stelle bereits geprüft,
+   *    das Cookie stammt also von uns; zusätzlich muss die Id existieren UND ihr Geheimnis
+   *    stimmen. Ohne diese zweite Prüfung wäre jede geratene Id ein Schreibzugriff, und das
+   *    Beweismittel selbst würde zum Aufklärungswerkzeug.
+   *  - **Höchstens ein Vorfall je Tür und Nutzer.** Ein Gerät mit totem Credential fragt in
+   *    Schleife; Gate W1 braucht „hatte einen offenen Vorfall", nicht deren Anzahl. Die
+   *    Eindeutigkeitsindizes aus Migration 018 verwerfen die Wiederholung.
+   *  - **Ein Fehler hier darf die 404 nicht verfärben.** Jede Verweigerung sieht gleich aus;
+   *    würde ein gescheiterter Schreibvorgang daraus eine 500 machen, wäre genau das ein
+   *    Orakel. Deshalb wird geschluckt — die Alternative wäre, die Invariante zu brechen,
+   *    die dieses Protokoll schützen soll.
+   */
+  async function protokolliereZugangsvorfall(credentialId: string, hash: string): Promise<void> {
+    try {
+      const owner = (await db.query<{ user_id: string }>(
+        "SELECT user_id FROM credentials WHERE id=$1 AND token_hash=$2", [credentialId, hash])).rows[0];
+      if (!owner) return;
+      const jetzt = now();
+      // Die echten Türen von heute: `action_vollmachten` (domain/gameplay.ts:394).
+      await db.query(`INSERT INTO zugangsvorfaelle(campaign_id,user_id,aktions_vollmacht_id,created_at)
+        SELECT v.campaign_id,$1,v.id,$2 FROM action_vollmachten v
+        JOIN actors a ON a.id=v.actor_id AND a.campaign_id=v.campaign_id
+        WHERE a.user_id=$1 AND v.status='offen' AND v.revoked_at IS NULL AND v.expires_at>$2
+        ON CONFLICT DO NOTHING`, [owner.user_id, jetzt]);
+      // Und die Dokumenttür aus 001, damit der Pfad vollständig ist, falls sie je wieder trägt.
+      await db.query(`INSERT INTO zugangsvorfaelle(campaign_id,user_id,dokument_vollmacht_id,created_at)
+        SELECT v.campaign_id,$1,v.id,$2 FROM vollmachten v
+        JOIN actors a ON a.id=v.actor_id AND a.campaign_id=v.campaign_id
+        WHERE a.user_id=$1 AND v.status='offen' AND v.expires_at>$2
+        ON CONFLICT DO NOTHING`, [owner.user_id, jetzt]);
+    } catch { /* siehe oben: die 404 bleibt eine 404 */ }
+  }
+
   async function authenticate(header: string | undefined): Promise<AuthContext> {
     const value = header?.split(";").map((s) => s.trim()).find((s) => s.startsWith("chronicle_session="))?.slice(18);
     if (!value || value.length > 512) throw new Gone("credential-missing");
@@ -54,7 +93,7 @@ export function createIdentity(db: Db, cfg: IdentityConfig) {
       WHERE c.id=$1 AND c.token_hash=$2 AND c.kind IN ('guest','cookie') AND c.revoked_at IS NULL AND c.expires_at>$3
       AND (c.parent_id IS NULL OR (p.revoked_at IS NULL AND p.expires_at>$3))`, [id, tokenHash(secret), now()]);
     const context = result.rows[0];
-    if (!context) throw new Gone("credential-unavailable");
+    if (!context) { await protokolliereZugangsvorfall(id, tokenHash(secret)); throw new Gone("credential-unavailable"); }
     await db.query("UPDATE credentials SET last_used_at=$2 WHERE id=$1", [id, now()]);
     return context;
   }

@@ -53,6 +53,8 @@ export const UMWEG: Readonly<Record<string, string>> = {
  * Kampagnenzugehörigkeit über `entry_id -> entries`, dieser Umweg muss also noch tragen.
  */
 export const LOESCHREIHENFOLGE: readonly string[] = [
+  // Blatt: zeigt auf beide Vollmacht-Tabellen, auf die niemand zurückzeigt.
+  "zugangsvorfaelle",
   // Laufzeit und Beitritt — vom Export nicht erfasst.
   "media_cleanup", "media_blocks", "media_presence", "media_whisper_members", "media_rooms",
   "events", "event_cursors", "commands",
