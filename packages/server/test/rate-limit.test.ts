@@ -30,4 +30,18 @@ describe("authenticated rate budgets behind a shared network", () => {
       expect((await app.inject({ url: "/api/health" })).statusCode).toBe(429);
     } finally { await app.close(); }
   });
+  it("drosselt den Kartenimport härter als den allgemeinen Verkehr", async () => {
+    const app = await buildApp(db, config);
+    try {
+      const url = `/api/campaigns/${randomUUID()}/maps/import`;
+      const headers = { origin: config.origin, "content-type": "application/json" };
+      // Ohne Anmeldung antwortet die Route 400 oder 404 — das genügt: gezählt wird die Anfrage,
+      // nicht ihr Erfolg. Entscheidend ist allein, dass die Drosselung weit vor 240 greift, denn
+      // diese Route trägt bis zu 64 MiB Body, während der billige Export auf 4/Minute steht.
+      for (let i = 0; i < 8; i++) {
+        expect((await app.inject({ method: "POST", url, headers, payload: {} })).statusCode).not.toBe(429);
+      }
+      expect((await app.inject({ method: "POST", url, headers, payload: {} })).statusCode).toBe(429);
+    } finally { await app.close(); }
+  });
 });
