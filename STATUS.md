@@ -156,6 +156,37 @@ nach einer Liste — die Liste ist beim Staging schon veraltet. Aktuell fremd un
 Forge-Refactor (`polygon`, `kartenwerk`, `siedlung`), Desktop-Installer samt Wurzelmanifesten,
 und der Loeschpfad (017, `deletion.ts`).
 
+## Das Gefüge — Stammbaum und Politogramm, 2026-09-07 13:05 (additiv, eigene Fläche)
+
+- **Kayas Wunsch, in der Bauform, die dieses Produkt verlangt.** Verwandtschaft und Politik
+  sind zwei Darstellungen EINES Modells. Siehe [GEFUEGE](docs/GEFUEGE.md).
+- **Die eine Entscheidung: die Kante hängt an einer Passage, nicht am Eintrag.** Ein
+  Beziehungsnetz als Weltwahrheit hätte jeder Spielerin beim ersten Öffnen den halben
+  Stammbaum verraten, den ihre Figur nie erfahren hat — der Bruch, den `Niemand projiziert
+  dieselbe Seite für zwei Leser verschieden` verbietet. Die Sichtbarkeitsregel ist geliehen,
+  nicht erfunden: dieselbe `held`-Herleitung, die den Artikel trägt. Keine zweite
+  Rechtepolitik. Nach Kayas Migrationsregel ist die Kante irreversible Schicht und wurde
+  maximal gebaut.
+- **`graph` und `gerichtet` werden abgeleitet und nie gespeichert.** `graphVon` und
+  `istGerichtet` sind total über `Beziehungsart`; eine neue Art ohne Zuordnung ist ein
+  Compile-Fehler. Zwei Spalten, die dasselbe sagen, können sich widersprechen — im Archiv
+  überdauert so ein Widerspruch Jahre unbemerkt.
+- **Native v9 liegt in derselben Änderung bei, nicht in einer späteren.** Migration 019 bringt
+  `beziehungen`; eine neue Tabelle ohne Profil bringt jeden Export zum Stehen. Genau das ist
+  017 passiert. `bundles.test.ts` ist nach v9 wieder **8/8 grün**; der Abdeckungswächter wurde
+  nicht umgangen. Kein bestehendes Paket wird neu, nur weil v9 existiert — erst die erste
+  Kante hebt den Umschlag.
+- **Verankert, wie Kaya es verlangt hat: in der Chronik am Artikel**, dritter Knopf neben
+  `Historie`, `Gegenüberstellung` und `Bearbeiten`, mit Reitern `Stammbaum`/`Politogramm` und
+  einem Schalter auf die ganze Kampagne. Die linke Leiste bleibt bei neun Einträgen. Gezeichnet
+  als Inline-SVG ohne Fremdbibliothek, mit derselben Information darunter als Liste (K3).
+- **Nachgewiesen:** `gefuege.test.ts` **9/9** (darunter: der genannte, aber nicht begehbare
+  Knoten; 404 für einen nicht gehaltenen Eintrag, byte-identisch mit einem, den es nicht gibt;
+  400 statt 404 für die Schleife, weil sie für die Spielleitung eine Eingabefehler ist).
+  `e2e/gefuege.spec.ts` grün in 1,2 min — Sera sieht ihre Verwandtschaftskante und nirgends
+  `Haus Ker`, und bekommt keine Autorenfläche. `packages/client` + `packages/chronik` +
+  beide neuen Serversuiten **140/140**, Typecheck grün, `gate:boundaries` GRÜN (391 Dateien).
+
 ## Ich — die eigene Figur, 2026-09-07 12:15 (additiv, eigene Fläche)
 
 - **Bogen und Inventar bekommen eine eigene Adresse.** Neuer Bereich `Ich` in der linken Leiste

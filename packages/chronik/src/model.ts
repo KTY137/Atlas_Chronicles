@@ -272,6 +272,59 @@ export interface Revelation {
  * An unresolved row is a red link, and **a red link is a first-class prep artefact, not an
  * error** (round-01/product-A.md:403-405).
  */
+/**
+ * Die Beziehungskante — `Stammbaum` und `Politogramm` als EIN Modell.
+ *
+ * **Sie haengt an einer Passage, nicht an einem Eintrag.** Das ist die ganze Entscheidung:
+ * eine Kante existiert, weil eine Passage sie behauptet, und sie ist deshalb genau fuer die
+ * Leserin sichtbar, die diese Passage haelt. Eine Kante als Metadatum am Eintrag waere
+ * Weltwahrheit und wuerde jeder Spielerin den halben Stammbaum verraten, den ihre Figur nie
+ * erfahren hat — genau der Bruch, den `Niemand projiziert dieselbe Seite fuer zwei Leser
+ * verschieden` verbietet.
+ *
+ * `art` ist eine **geschlossene Menge ohne default-Zweig**. Welchem Graphen eine Kante
+ * angehoert und ob sie gerichtet ist, wird daraus ABGELEITET und nie eigens gespeichert:
+ * zwei Spalten, die dasselbe sagen, koennen sich widersprechen.
+ */
+export type Beziehungsart =
+  | "elternteil_von"
+  | "verheiratet_mit"
+  | "geschwister_von"
+  | "buendnis_mit"
+  | "feindschaft_mit"
+  | "lehen_von"
+  | "mitglied_von";
+
+export type Gefuegegraph = "stammbaum" | "politogramm";
+
+/** Total ueber `Beziehungsart` — eine neue Art ohne Zuordnung ist ein Compile-Fehler. */
+export function graphVon(art: Beziehungsart): Gefuegegraph {
+  switch (art) {
+    case "elternteil_von": case "verheiratet_mit": case "geschwister_von": return "stammbaum";
+    case "buendnis_mit": case "feindschaft_mit": case "lehen_von": case "mitglied_von": return "politogramm";
+  }
+}
+
+/** Ebenfalls total. Ungerichtet heisst: `von` und `nach` sind austauschbar. */
+export function istGerichtet(art: Beziehungsart): boolean {
+  switch (art) {
+    case "elternteil_von": case "lehen_von": case "mitglied_von": return true;
+    case "verheiratet_mit": case "geschwister_von": case "feindschaft_mit": case "buendnis_mit": return false;
+  }
+}
+
+export interface Beziehung {
+  readonly id: string;
+  /** Der Anker. Wer diese Passage nicht haelt, fuer den gibt es diese Kante nicht. */
+  readonly passageId: PassageId;
+  readonly vonEntryId: EntryId;
+  readonly nachEntryId: EntryId;
+  readonly art: Beziehungsart;
+  /** Freie Beschriftung der Kante ("Mutter", "Vasall seit dem Frostjahr"). Nie ein Recht. */
+  readonly rolle?: string;
+  readonly zurueckgezogenAm?: number;
+}
+
 export interface Link {
   readonly quellEntryId: EntryId;
   readonly quellPassageId: PassageId;
