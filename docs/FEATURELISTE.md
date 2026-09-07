@@ -25,6 +25,9 @@ nichts.
 7. **Nicht die volle Suite laufen lassen** — sie braucht ~4 Minuten und blockiert. Gezielt die
    Suiten fahren, die die Änderung berühren, und die Konsumenten der geänderten Schnittstelle
    dazu (`grep -rln` auf den geänderten Export).
+8. **`npm run typecheck` prüft den Client NICHT** (gefunden 2026-09-07 bei Feature 5). Die
+   Wurzel-`tsconfig.json` schließt `packages/client/**` aus; geprüft wird er von `npm run build`
+   (`tsc --noEmit && vite build`). Wer Client-Code anfasst, **baut**, statt nur zu typechecken.
 
 ## Stand der Liste
 
@@ -36,12 +39,12 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 2 | Kampfbühne (wie bei Card Games) | ☑ | bedienbar am Tisch, Reiter „Kampf“ |
 | 3 | Würfel animiert | ☑ | fallen beim Eintreffen, Historie bleibt ruhig |
 | 4 | Wiki-Export | ☑ | Chronik als Markdown, im Blick der exportierenden Person |
-| 5 | Lootkarten (Karte wie YuGiOh) | ☐ | |
-| 6 | Admininventar (Admin erstellt Lootkarten) | ☐ | |
+| 5 | Lootkarten (Karte wie YuGiOh) | ☑ | Kartenfassung des Gegenstandsvertrags + Karte |
+| 6 | Admininventar (Admin erstellt Lootkarten) | ☐ | Vorlagenwerkstatt + Vorrat existieren — prüfen, nicht neu bauen |
 | 7 | Spielleiter kann Würfe erleichtern | ☐ | |
 | 8 | Alles als **eine** Datei exportierbar (JSON) | ☐ | `.chronicle` v6 existiert — prüfen, nicht neu bauen |
-| 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☐ | |
-| 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☐ | |
+| 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☐ | „Vorrat der Spielleitung" existiert — prüfen |
+| 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☐ | `holder_actor_id` trägt heute nur Figuren — hier liegt die echte Lücke |
 | 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☐ | |
 | 12 | Gesonderter Geldcounter | ☐ | |
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☐ | hängt an #1 |
@@ -364,3 +367,79 @@ Export einzelner Artikel und kein zweites Format (HTML, PDF, Wikitext-Rückweg);
 das eine Format, das sich überall öffnen, drucken und weiterverarbeiten lässt. Und der Export
 liest je Artikel zweimal — für eine sehr große Chronik ist das langsam, aber es ist der Preis
 dafür, dass die Sichtbarkeit nur eine Quelle hat.
+
+## Feature 5 — Lootkarten: das Gesicht zu einem System, das schon da war
+
+**Gemessen zuerst, 2026-09-07 17:46 — und der Befund hat das Feature halbiert.** Migration 010
+führt längst `item_templates` mit **unveränderlichen, inhaltsgehashten Revisionen**,
+`item_instances` mit Besitzer und Zustand, und ein Ereignisprotokoll mit `item.transfer`. Die
+Oberfläche hat bereits „Gegenstandsvorlagen" (anlegen, überarbeiten, archivieren) und einen
+„Vorrat der Spielleitung". **Feature 5 war also nie das Datenmodell — es war die Karte.** Nichts
+davon wurde nachgebaut (Regel 6).
+
+Was fehlte: `ItemContractV1` trug nur Name, Lore-Verweis und Etiketten. Genug für eine Zeile in
+einer Liste, zu wenig für eine Karte.
+
+### Die Naht, an der die Kartenfassung durchkommt — und die, an der sie es nicht darf
+
+`ItemContractV2` fügt Seltenheit, Art, Bild, Spruch und bis zu acht freie Zeilen hinzu. **Die
+Seltenheit ist eine geschlossene Menge, die Art nicht:** was die Darstellung trägt (der Rahmen),
+wird geschlossen; was die Welt beschreibt, bleibt offen. Kein Rollenspiel kennt dieselben
+Gegenstandsarten, aber jede Karte braucht einen Rahmen.
+
+Der Haken saß im Export: `campaign-bundle-v2.ts` erzwingt `schemaVersion === 1` und eine
+geschlossene Schlüsselmenge — eine Kartenfassung hätte **jeden Export zum Stehen gebracht**. Und
+dieser Prüfer ist zugleich der des **eingefrorenen** v2-Umschlags. Ihn einfach zu öffnen wäre
+falsch: ein altes Paket, das eine Fassung enthielte, die sein eigener Leser nicht kennt, wäre
+kein altes Paket mehr.
+
+**Die Lösung stand schon im Haus:** `checkActorInventoryTables` bekommt ein
+`CampaignRulesProfile` — der eingefrorene Pfad übergibt `LEGACY_CAMPAIGN_RULES`, der aktuelle
+`SUPPORTED_CAMPAIGN_RULES`. Genau die Naht, die schon die Regelpaket-Fassungen trennt. Sie trägt
+jetzt zusätzlich `itemCardFaces`. **Keine neue Formatgeneration** — es kommt keine Tabelle dazu,
+nur ein Inhalt in einer bereits exportierten `jsonb`-Spalte.
+
+### Die Karte
+
+`Lootkarte.tsx` ist rein darstellend und steht an **einer** Stelle — deshalb erscheint sie
+überall gleich: in der Vorlagenwerkstatt als **lebende Vorschau** (wer eine Karte baut, soll die
+Karte sehen, nicht ein Formular erraten), im Bestand als Kartenblatt, beim Bearbeiten neben dem
+Formular, und in der Ansicht einer früheren Revision.
+
+Zwei Ehrlichkeiten:
+
+- **Die Seltenheit steht als WORT auf der Karte**, nicht nur als Rahmenfarbe — eine Aussage, die
+  allein in einer Farbe steckt, kommt bei Farbenblindheit nicht an.
+- **Eine Vorlage der Fassung 1 bekommt kein erfundenes Gesicht.** Sie zeigt, was sie hat, und
+  sagt, dass das Gesicht fehlt. Sie mit „Gewöhnlich" aufzufüllen wäre eine Aussage über einen
+  Gegenstand, die niemand getroffen hat.
+- Das Bild kommt aus dem **vorhandenen** Bildbestand der Chronik (`wiki_assets`) — kein zweiter
+  Bilderspeicher.
+
+### Ein Fund, der über dieses Feature hinausgeht
+
+**`npm run typecheck` prüft den Client NICHT.** Die Wurzel-`tsconfig.json` schließt
+`packages/client/**` ausdrücklich aus. Geprüft wird der Client von `npm run build`
+(`tsc --noEmit && vite build`) — genau dort fielen dann auch zwei echte Fehler dieses Features
+auf (fehlender Import, impliziertes `any`). **Regel 7 im Kopf dieses Dokuments ist entsprechend
+ergänzt:** wer Client-Code anfasst, muss bauen, nicht nur typechecken.
+
+### Belege
+
+- `lootkarte.test.ts` (io) **6/6 grün**: die Karte kommt durch den aktuellen Umschlag, **wird vom
+  eingefrorenen abgewiesen**, Fassung 1 gilt unverändert weiter, erfundene Seltenheit,
+  zusätzliche Eigenschaften, zu lange Angaben und zu viele Zeilen werden abgelehnt.
+- `lootkarte.test.ts` (client) **5/5 grün**: Seltenheit als Wort, Art/Spruch/Zeilen/Etiketten,
+  **kein erfundenes Gesicht für Fassung 1**, Platzhalter ohne Bild, karge Karte bleibt lesbar.
+- **Gegenprobe gefahren:** das eingefrorene Profil auf `itemCardFaces: true` gestellt → der Fall
+  „wird vom eingefrorenen Umschlag abgewiesen" wird rot. Danach zurückgesetzt.
+- Kein Regress: `packages/io` + `packages/client` + vier Server-Suiten **406/406 grün**,
+  `typecheck` 0 Fehler, `gate:boundaries` **424/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Die Karte ist **beschreibend**: keine Regelwirkung, kein Würfelmodifikator — genau wie der
+Vertrag es seit jeher sagt. Es gibt **keine Kartenrückseite, keinen Druckbogen und keine
+Animation** beim Ziehen. Und eine Vorlage der Fassung 1 bekommt ihr Gesicht erst, wenn die
+Spielleitung sie das nächste Mal überarbeitet — automatisch umschreiben käme nicht in Frage,
+denn ihre Revision ist unveränderlich und inhaltsgehasht.

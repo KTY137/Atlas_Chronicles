@@ -36,8 +36,43 @@ export const ItemStateV1 = Type.Object({
   quantity: Type.Integer({ minimum: 1, maximum: 1_000_000 }),
   notes: Type.String({ maxLength: 4000 }), equipped: Type.Boolean(),
 }, closed);
-export const ItemTemplateCreate = Type.Object({ ...command, definition: ItemContractV1 }, closed);
-export const ItemTemplateRevise = Type.Object({ ...change, definition: ItemContractV1 }, closed);
+/**
+ * Die Seltenheit ist eine GESCHLOSSENE Menge, weil sie den Rahmen der Karte bestimmt: eine
+ * erfundene Stufe hätte keine Darstellung und wäre damit eine Angabe, die nirgends ankommt.
+ */
+export const LOOT_RARITIES = ["gewoehnlich", "ungewoehnlich", "selten", "episch", "legendaer"] as const;
+export const LootRarity = Type.Union(LOOT_RARITIES.map(value => Type.Literal(value)));
+/**
+ * Die Kartenfassung eines Gegenstands — Fassung 2 des Vertrags.
+ *
+ * Sie beschreibt weiterhin NUR: keine Regelwirkung, kein Würfelmodifikator. Was dazukommt, ist
+ * das Gesicht der Karte — Bild, Art, Seltenheit, Spruch und ein paar freie Zeilen.
+ *
+ * **Die Kategorie ist freier Text, die Seltenheit nicht.** Kein Rollenspiel kennt dieselben
+ * Gegenstandsarten, aber jede Karte braucht einen Rahmen. Was die Darstellung trägt, wird
+ * geschlossen; was die Welt beschreibt, bleibt offen.
+ *
+ * **Fassung 1 bleibt gültig.** Eine Vorlage, die vor dieser Zeile gespeichert wurde, trägt
+ * weiter `schemaVersion: 1` und wird weiter gelesen — ihre Revision ist unveränderlich und
+ * inhaltsgehasht; sie nachträglich umzudeuten wäre eine Fälschung.
+ */
+export const ItemContractV2 = Type.Object({
+  schemaVersion: Type.Literal(2), name, loreEntryId: nullableId,
+  tags: Type.Array(Type.String({ minLength: 1, maxLength: 80, pattern: "\S" }), { maxItems: 32, uniqueItems: true }),
+  seltenheit: LootRarity,
+  kategorie: Type.String({ maxLength: 80 }),
+  /** Ein Bild aus dem Bildbestand der Kampagne. Fehlen die Bytes, zeigt die Karte den Platzhalter. */
+  bildAssetId: nullableId,
+  spruch: Type.String({ maxLength: 600 }),
+  zeilen: Type.Array(Type.Object({
+    label: Type.String({ minLength: 1, maxLength: 40, pattern: "\S" }),
+    wert: Type.String({ minLength: 1, maxLength: 120, pattern: "\S" }),
+  }, closed), { maxItems: 8 }),
+}, closed);
+/** Beide Fassungen werden angenommen; die Karte entscheidet anhand von `schemaVersion`. */
+export const ItemContractAny = Type.Union([ItemContractV1, ItemContractV2]);
+export const ItemTemplateCreate = Type.Object({ ...command, definition: ItemContractAny }, closed);
+export const ItemTemplateRevise = Type.Object({ ...change, definition: ItemContractAny }, closed);
 export const ItemInstantiate = Type.Object({ ...command, templateId: id, templateRevision: version, holderActorId: nullableId, state: Type.Optional(ItemStateV1) }, closed);
 export const ItemUpdate = Type.Object({ ...change, state: ItemStateV1 }, closed);
 export const ItemCustodyChange = Type.Object({ ...change, holderActorId: nullableId }, closed);
@@ -50,7 +85,10 @@ export const ACTOR_INVENTORY_OPERATIONS = [
 
 export type ActorKindValue = Static<typeof ActorKind>;
 export type ActorTemplateData = Static<typeof ActorTemplateDefinition>;
-export type ItemContract = Static<typeof ItemContractV1>;
+export type ItemContractV1Data = Static<typeof ItemContractV1>;
+export type ItemContractV2Data = Static<typeof ItemContractV2>;
+export type ItemContract = ItemContractV1Data | ItemContractV2Data;
+export type LootRarityValue = Static<typeof LootRarity>;
 export type ItemState = Static<typeof ItemStateV1>;
 export interface ActorCard {
   id: string; campaignId: string; name: string; kind: ActorKindValue | "unspecified";

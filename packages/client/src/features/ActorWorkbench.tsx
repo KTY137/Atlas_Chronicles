@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ActorCard, ActorKindValue, ActorTemplateData, ControllerCard, ItemCard, ItemContract, ItemState, TemplateCard } from "@chronicle/protocol";
+import type { ActorCard, ActorKindValue, ActorTemplateData, ControllerCard, ItemCard, ItemContract, ItemState, LootRarityValue, TemplateCard } from "@chronicle/protocol";
+import { LOOT_RARITIES } from "@chronicle/protocol";
+import { Lootkarte, SELTENHEIT_TEXT } from "./Lootkarte";
 import type { Scalar } from "@chronicle/rules";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
-import { apiPath, type EntrySummary, type Member } from "../api";
+import { apiPath, type EntrySummary, type Member, type WikiMedienBestand } from "../api";
 import { useResource, useTask } from "../hooks";
 import { defaults, useCommand, type RulesState } from "./game-api";
 import { RuleFields } from "./RuleFields";
@@ -199,6 +201,7 @@ function ItemTemplateRevisionView({ campaignId, templateId, revisionNumber }: { 
     <p className="field-help">Frühere Revision, schreibgeschützt. Eine neue Revision entsteht nur, wenn die aktuelle Vorlage überarbeitet wird.</p>
     {shown.loading ? <Loading /> : null}{shown.error ? <Notice error>{shown.error}</Notice> : null}
     {definition ? <div className="actor-command-fields">
+      <Lootkarte definition={definition} campaignId={campaignId} />
       <p>Etiketten · {definition.tags.length ? definition.tags.join(" · ") : "Keine"}</p>
       <fieldset disabled><legend>Verknüpfter Artikel</legend><LoreField campaignId={campaignId} value={definition.loreEntryId} onChange={() => {}} /></fieldset>
     </div> : null}
@@ -219,14 +222,47 @@ function ItemTemplates({ campaignId, revision, onChanged, onDirty }: { campaignI
     : <ItemTemplateForm key={`${selected?.id ?? "new"}:${epoch}`} campaignId={campaignId} original={selected} onDirty={report} onSaved={() => { if (current()) { setSelected(null); setViewRevision(null); reset(); } onChanged(); }} />}</div>;
 }
 function ItemTemplateForm({ campaignId, original, onDirty, onSaved }: { campaignId: string; original: TemplateCard<ItemContract> | null; onDirty: (value: boolean) => void; onSaved: () => void }) {
-  const [name, setName] = useState(original?.definition.name ?? ""), [tags, setTags] = useState(original?.definition.tags.join(", ") ?? ""), [lore, setLore] = useState(original?.definition.loreEntryId ?? null), [reason, setReason] = useState("");
+  const vorher = original?.definition, gesicht = vorher?.schemaVersion === 2 ? vorher : null;
+  const [name, setName] = useState(vorher?.name ?? ""), [tags, setTags] = useState(vorher?.tags.join(", ") ?? ""), [lore, setLore] = useState(vorher?.loreEntryId ?? null), [reason, setReason] = useState("");
+  const [seltenheit, setSeltenheit] = useState<LootRarityValue>(gesicht?.seltenheit ?? "gewoehnlich");
+  const [kategorie, setKategorie] = useState(gesicht?.kategorie ?? ""), [spruch, setSpruch] = useState(gesicht?.spruch ?? "");
+  const [bild, setBild] = useState<string | null>(gesicht?.bildAssetId ?? null);
+  const [zeilen, setZeilen] = useState<{ label: string; wert: string }[]>(gesicht ? gesicht.zeilen.map(z => ({ ...z })) : []);
+  const bestand = useResource<WikiMedienBestand>(apiPath(campaignId, "/wiki-medien"));
   const task = useTask(), command = useCommand(); useEffect(() => () => onDirty(false), [onDirty]);
+  // Nur vollstaendige Zeilen werden geschickt: eine halb ausgefuellte Zeile ist keine Aussage.
+  const fertigeZeilen = zeilen.filter(z => z.label.trim() && z.wert.trim()).map(z => ({ label: z.label.trim(), wert: z.wert.trim() }));
+  const entwurf: ItemContract = { schemaVersion: 2, name: name || "Ohne Namen", loreEntryId: lore,
+    tags: [...new Set(tags.split(",").map(t => t.trim()).filter(Boolean))],
+    seltenheit, kategorie: kategorie.trim(), bildAssetId: bild, spruch: spruch.trim(), zeilen: fertigeZeilen };
+  const setzeZeile = (i: number, teil: Partial<{ label: string; wert: string }>) => { setZeilen(alt => alt.map((z, n) => n === i ? { ...z, ...teil } : z)); onDirty(true); };
   return <form className="panel" onChange={() => onDirty(true)} onSubmit={event => { event.preventDefault(); void task.run(async () => {
-    await command(apiPath(campaignId, `/item-templates${original ? `/${original.id}` : ""}`), { definition: { schemaVersion: 1, name, loreEntryId: lore, tags: [...new Set(tags.split(",").map(t => t.trim()).filter(Boolean))] }, ...(original ? { expectedVersion: original.version, reason } : {}) }, original ? "PUT" : "POST"); onDirty(false); onSaved();
+    await command(apiPath(campaignId, `/item-templates${original ? `/${original.id}` : ""}`), { definition: entwurf, ...(original ? { expectedVersion: original.version, reason } : {}) }, original ? "PUT" : "POST"); onDirty(false); onSaved();
   }); }}><fieldset className="actor-command-fields" disabled={task.busy}><h2>{original ? "Neue Gegenstandsrevision" : "Gegenstandsvorlage anlegen"}</h2>
     <label>Gegenstandsname<input required maxLength={160} value={name} onChange={e => setName(e.target.value)} /></label>
     <label>Etiketten, durch Komma getrennt<input value={tags} maxLength={2592} onChange={e => setTags(e.target.value)} /></label><LoreField campaignId={campaignId} value={lore} onChange={setLore} />
     <p className="field-help">Diese Angaben beschreiben den Gegenstand; sie lösen keine automatischen Würfelmodifikatoren aus.</p>
+    <h3>Das Kartengesicht</h3>
+    <div className="rule-fields">
+      <label>Seltenheit<select value={seltenheit} onChange={e => setSeltenheit(e.target.value as LootRarityValue)}>
+        {LOOT_RARITIES.map(stufe => <option key={stufe} value={stufe}>{SELTENHEIT_TEXT[stufe]}</option>)}</select></label>
+      <label>Art<input value={kategorie} maxLength={80} placeholder="z. B. Werkzeug, Waffe, Trank" onChange={e => setKategorie(e.target.value)} /></label>
+    </div>
+    {/* Das Bild kommt aus dem vorhandenen Bildbestand der Chronik — kein zweiter Bilderspeicher. */}
+    <label>Bild aus dem Bildbestand<select value={bild ?? ""} onChange={e => setBild(e.target.value || null)}>
+      <option value="">Ohne Bild</option>
+      {bestand.data?.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.dateiname}</option>)}</select></label>
+    <label>Spruch auf der Karte<textarea value={spruch} maxLength={600} rows={2} onChange={e => setSpruch(e.target.value)} /></label>
+    <fieldset className="sheet-section"><legend>Zeilen auf der Karte</legend>
+      {zeilen.map((zeile, i) => <div className="rule-fields" key={i}>
+        <label>Bezeichnung<input value={zeile.label} maxLength={40} onChange={e => setzeZeile(i, { label: e.target.value })} /></label>
+        <label>Wert<input value={zeile.wert} maxLength={120} onChange={e => setzeZeile(i, { wert: e.target.value })} /></label>
+        <Button onClick={() => { setZeilen(alt => alt.filter((_, n) => n !== i)); onDirty(true); }}>Zeile entfernen</Button>
+      </div>)}
+      {zeilen.length < 8 ? <Button onClick={() => { setZeilen(alt => [...alt, { label: "", wert: "" }]); onDirty(true); }}>Zeile hinzufügen</Button> : <p className="field-help">Mehr als acht Zeilen trägt die Karte nicht.</p>}
+    </fieldset>
+    {/* Lebende Vorschau: wer eine Karte baut, soll die Karte sehen, nicht ein Formular erraten. */}
+    <div className="lootkarte-vorschau"><p className="field-help">So sieht die Karte aus:</p><Lootkarte definition={entwurf} campaignId={campaignId} /></div>
     {original ? <Reason value={reason} onChange={setReason} /> : null}{task.error ? <Notice error>{task.error}</Notice> : null}
     <Button type="submit" variant="primary" disabled={task.busy}>{original ? "Gegenstandsrevision speichern" : "Gegenstandsvorlage speichern"}</Button>
     {original ? <Button variant="danger" disabled={task.busy || !reason.trim()} onClick={() => { if (window.confirm("Gegenstandsvorlage archivieren? Vorhandene Gegenstände bleiben erhalten.")) void task.run(async () => {
@@ -249,7 +285,14 @@ export function Inventory({ campaignId, actorId, actors, gm, revision, onChanged
     {gm ? <form className="panel inventory-create" onSubmit={event => { event.preventDefault(); if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; const t = templates.data?.find(t => t.id === templateId); if (t) void task.run(async () => {
       const item = await command<ItemCard>(apiPath(campaignId, "/items/instantiate"), { templateId: t.id, templateRevision: t.revision, holderActorId: holder }); setSelected(item.id); onChanged();
     }); }}><fieldset className="actor-command-fields" disabled={task.busy}><label>Gegenstand aus Vorlage<select required value={templateId} onChange={e => setTemplateId(e.target.value)}><option value="">Gegenstandsvorlage wählen</option>{templates.data?.map(t => <option key={t.id} value={t.id}>{t.definition.name} · Revision {t.revision}</option>)}</select></label><Button type="submit" disabled={task.busy || !templateId || (!stock && !actorId)}>Gegenstand hinzufügen</Button>{templates.error ? <Notice error>{templates.error}</Notice> : null}</fieldset></form> : null}
-    <div className="actor-columns"><div>{items.loading ? <Loading /> : filtered.length ? <ul className="actor-object-list">{filtered.map(i => <li key={i.id}><Button onClick={() => { if (selected === i.id) return; if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setSelected(i.id); report(false); } }}>{i.definition.name} · {i.state.quantity}{i.state.equipped ? " · Ausgerüstet" : ""}</Button></li>)}</ul> : <p className="muted">Hier liegen noch keine Gegenstände.</p>}</div>
+    <div className="actor-columns"><div>{items.loading ? <Loading /> : filtered.length ? <ul className="lootkarten-reihe lootkarten-wahl">{filtered.map(i => <li key={i.id}>
+      {/* Der Bestand liest sich als Kartenblatt. Menge und Ausruestung stehen daneben: sie
+          gehoeren zur INSTANZ, nicht zum Kartengesicht der Vorlage. */}
+      <button type="button" aria-pressed={selected === i.id} className={selected === i.id ? "lootkarte-wahl gewaehlt" : "lootkarte-wahl"}
+        onClick={() => { if (selected === i.id) return; if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setSelected(i.id); report(false); } }}>
+        <Lootkarte definition={i.definition} campaignId={campaignId} klein />
+        <span className="lootkarte-instanz">{i.state.quantity}×{i.state.equipped ? " · Ausgerüstet" : ""}</span>
+      </button></li>)}</ul> : <p className="muted">Hier liegen noch keine Gegenstände.</p>}</div>
       {chosen ? <fieldset className="actor-command-fields" disabled={task.busy}><ItemEditor key={chosen.id} campaignId={campaignId} current={chosen} actors={actors} gm={gm} onDirty={report} onChanged={onChanged} /></fieldset> : null}</div>
   </section>;
 }
@@ -263,6 +306,7 @@ function ItemEditor({ campaignId, current, actors, gm, onDirty, onChanged }: { c
   return <form className="panel" onSubmit={event => { event.preventDefault(); void task.run(async () => {
     const saved = await command<ItemCard>(apiPath(campaignId, `/items/${baseline.id}`), { expectedVersion: baseline.version, state, reason }, "PUT"); replace(saved); onChanged();
   }); }}><fieldset className="actor-command-fields" disabled={task.busy}><h3>{baseline.definition.name}</h3><p className="field-help">Vorlagenrevision {baseline.template.revision} · {baseline.definition.tags.join(" · ")}</p>
+    <Lootkarte definition={baseline.definition} campaignId={campaignId} />
     {current.version > baseline.version ? <Notice>Der Gegenstand wurde inzwischen geändert. <Button onClick={() => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) replace(current); }}>Aktuellen Gegenstand übernehmen</Button></Notice> : null}
     <label>Menge<input type="number" min={1} max={1_000_000} step={1} required value={state.quantity} onChange={e => setState(s => ({ ...s, quantity: e.target.valueAsNumber }))} /></label>
     <label>Notizen<textarea maxLength={4000} value={state.notes} onChange={e => setState(s => ({ ...s, notes: e.target.value }))} /></label>

@@ -63,9 +63,29 @@ function itemState(value: unknown): void {
   if (numeric(row.quantity, "item.quantity", 1) > 1_000_000) fail("item.quantity", "quantity limit exceeded");
   boundedText(row.notes, "item.notes", 4000, false); if (typeof row.equipped !== "boolean") fail("item.equipped", "boolean required");
 }
+/** Die geschlossene Menge der Seltenheiten — sie traegt den Rahmen der Karte. */
+const LOOT_RARITIES = ["gewoehnlich", "ungewoehnlich", "selten", "episch", "legendaer"];
+/** Das Gesicht einer Lootkarte. Rein beschreibend: keine Regelwirkung, kein Modifikator. */
+function kartengesicht(row: Record<string, unknown>): void {
+  if (!LOOT_RARITIES.includes(String(row.seltenheit))) fail("definition.seltenheit", "unknown rarity");
+  boundedText(row.kategorie, "definition.kategorie", 80, false);
+  boundedText(row.spruch, "definition.spruch", 600, false);
+  // Der Bildverweis bleibt ununterworfen wie jede Bildreferenz im Haus: fehlen die Bytes, zeigt
+  // die Karte den Platzhalter statt eines Lochs. Er wird begrenzt, nicht aufgeloest.
+  if (row.bildAssetId !== null) boundedText(row.bildAssetId, "definition.bildAssetId", 128);
+  for (const eintrag of list(row.zeilen, "definition.zeilen", 8)) {
+    const zeile = object(eintrag, "definition.zeilen"); keys(zeile, ["label", "wert"], "definition.zeilen");
+    boundedText(zeile.label, "definition.zeilen.label", 40); boundedText(zeile.wert, "definition.zeilen.wert", 120);
+  }
+}
 function definition(value: unknown, actor: boolean, g: Graph): void {
-  const row = object(value, "definition"); keys(row, actor ? ["schemaVersion", "name", "kind", "loreEntryId", "package", "fields"] : ["schemaVersion", "name", "loreEntryId", "tags"], "definition");
-  if (row.schemaVersion !== 1) fail("definition", "unknown definition version; explicit migration required");
+  const row = object(value, "definition");
+  // Fassung 2 ist die Kartenfassung eines Gegenstands — und nur dort, wo das Profil sie kennt.
+  const karte = !actor && row.schemaVersion === 2 && g.rules.itemCardFaces;
+  keys(row, actor ? ["schemaVersion", "name", "kind", "loreEntryId", "package", "fields"]
+    : karte ? ["schemaVersion", "name", "loreEntryId", "tags", "seltenheit", "kategorie", "bildAssetId", "spruch", "zeilen"]
+    : ["schemaVersion", "name", "loreEntryId", "tags"], "definition");
+  if (row.schemaVersion !== 1 && !karte) fail("definition", "unknown definition version; explicit migration required");
   boundedText(row.name, "definition.name", 160); g.nullable("entries", row.loreEntryId);
   if (actor) {
     if (!CAMPAIGN_ACTOR_KINDS.filter(kind => kind !== "unspecified").includes(row.kind as never)) fail("definition.kind", "unknown actor kind");
@@ -80,6 +100,7 @@ function definition(value: unknown, actor: boolean, g: Graph): void {
   } else {
     const tags = list(row.tags, "definition.tags", 32); for (const tag of tags) boundedText(tag, "definition.tags", 80);
     if (new Set(tags).size !== tags.length) fail("definition.tags", "duplicate tags");
+    if (karte) kartengesicht(row);
   }
 }
 function timestamp(value: unknown, path: string): void { if (value !== null) numeric(value, path); }

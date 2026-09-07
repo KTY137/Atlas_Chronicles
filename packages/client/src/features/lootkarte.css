@@ -1,0 +1,65 @@
+/* Die Lootkarte: ein Gegenstand als Sammelkarte. Der Rahmen traegt die Seltenheit — deshalb ist
+   sie im Vertrag eine geschlossene Menge und hier eine Farbe. Die Stufe steht zusaetzlich als
+   WORT auf der Karte: eine Aussage, die nur als Farbe existiert, kommt nicht bei allen an. */
+.lootkarte {
+  --karte-rand: var(--line-strong, #b9b0a0);
+  --karte-glanz: transparent;
+  display: grid; gap: .5rem; width: 15.5rem; padding: .55rem;
+  border: 2px solid var(--karte-rand); border-radius: 10px;
+  background: linear-gradient(168deg, var(--surface-2, #1b2220), var(--surface, #121716));
+  box-shadow: 0 0 0 1px #0004, 0 2px 6px #0006, inset 0 0 22px var(--karte-glanz);
+}
+.lootkarte.klein { width: 11rem; gap: .35rem; padding: .4rem; }
+
+.lootkarte[data-seltenheit="gewoehnlich"] { --karte-rand: #8b8578; }
+.lootkarte[data-seltenheit="ungewoehnlich"] { --karte-rand: #5f8f62; --karte-glanz: #5f8f6218; }
+.lootkarte[data-seltenheit="selten"] { --karte-rand: #4d7fa8; --karte-glanz: #4d7fa820; }
+.lootkarte[data-seltenheit="episch"] { --karte-rand: #8a5fa8; --karte-glanz: #8a5fa826; }
+.lootkarte[data-seltenheit="legendaer"] { --karte-rand: var(--accent, #a8791f); --karte-glanz: #a8791f30; }
+
+.lootkarte-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: .4rem; }
+.lootkarte-kopf h4 { margin: 0; font-family: var(--font-display, inherit); font-size: 1rem; line-height: 1.2; overflow-wrap: anywhere; }
+.lootkarte-seltenheit {
+  flex: none; font-size: .6rem; letter-spacing: .07em; text-transform: uppercase;
+  padding: .1rem .4rem; border-radius: 999px; border: 1px solid var(--karte-rand); color: var(--karte-rand);
+}
+
+/* Das Bildfeld behaelt seine Hoehe auch ohne Bild — sonst springt die Karte, sobald eines kommt. */
+.lootkarte-bild {
+  aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden;
+  border: 1px solid var(--line, #2a3230); border-radius: 6px; background: #0d1211;
+}
+.lootkarte.klein .lootkarte-bild { aspect-ratio: 3 / 2; }
+.lootkarte-bild img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lootkarte-ohne-bild { color: var(--text-faint, #6b7370); }
+
+.lootkarte-art {
+  margin: 0; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-muted, #9aa3a0); border-block: 1px solid var(--line, #2a3230); padding-block: .25rem;
+}
+.lootkarte-text { display: grid; gap: .35rem; font-size: .8rem; }
+.lootkarte-spruch { margin: 0; font-style: italic; color: var(--text-muted, #9aa3a0); overflow-wrap: anywhere; }
+.lootkarte-ohne-gesicht { margin: 0; font-size: .72rem; color: var(--text-faint, #6b7370); }
+
+.lootkarte-zeilen { display: grid; gap: .15rem; margin: 0; }
+.lootkarte-zeilen > div { display: flex; justify-content: space-between; gap: .5rem; border-bottom: 1px dotted var(--line, #2a3230); }
+.lootkarte-zeilen dt { color: var(--text-muted, #9aa3a0); font-size: .72rem; }
+.lootkarte-zeilen dd { margin: 0; font-family: var(--font-mono, monospace); font-size: .75rem; overflow-wrap: anywhere; }
+
+.lootkarte-etiketten { display: flex; flex-wrap: wrap; gap: .25rem; }
+.lootkarte-etiketten span {
+  font-size: .64rem; padding: .05rem .35rem; border-radius: 4px;
+  background: #ffffff0d; color: var(--text-muted, #9aa3a0);
+}
+
+/* Eine Reihe Karten nebeneinander — der Bestand liest sich dann wie ein Kartenblatt. */
+.lootkarten-reihe { display: flex; flex-wrap: wrap; gap: .7rem; }
+@media (max-width: 520px) { .lootkarte, .lootkarte.klein { width: 100%; } }
+
+/* Eine Karte als Auswahlknopf: der Rahmen der Karte traegt die Seltenheit, der Fokusring die Wahl. */
+.lootkarten-wahl { list-style: none; margin: 0; padding: 0; }
+.lootkarte-wahl { display: grid; gap: .25rem; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; border-radius: 12px; }
+.lootkarte-wahl:focus-visible { outline: 2px solid var(--accent, #a8791f); outline-offset: 3px; }
+.lootkarte-wahl.gewaehlt .lootkarte { box-shadow: 0 0 0 2px var(--accent, #a8791f), 0 2px 6px #0006; }
+.lootkarte-instanz { font-size: .72rem; color: var(--text-muted, #9aa3a0); }
+.lootkarte-vorschau { display: grid; gap: .35rem; justify-items: start; margin-block-start: .8rem; }
