@@ -41,7 +41,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 4 | Wiki-Export | ☑ | Chronik als Markdown, im Blick der exportierenden Person |
 | 5 | Lootkarten (Karte wie YuGiOh) | ☑ | Kartenfassung des Gegenstandsvertrags + Karte |
 | 6 | Admininventar (Admin erstellt Lootkarten) | ☑ | war gebaut; geprüft und belegt, ein Regress dabei gefunden |
-| 7 | Spielleiter kann Würfe erleichtern | ☐ | |
+| 7 | Spielleiter kann Würfe erleichtern | ◐ | Datenschicht + Einlösung grün; Oberfläche fehlt |
 | 8 | Alles als **eine** Datei exportierbar (JSON) | ☐ | `.chronicle` v6 existiert — prüfen, nicht neu bauen |
 | 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☐ | „Vorrat der Spielleitung" existiert — prüfen |
 | 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☐ | `holder_actor_id` trägt heute nur Figuren — hier liegt die echte Lücke |
@@ -494,3 +494,97 @@ Der Vorrat kennt **keine Ordnung**: keine Kisten, keine Sortierung, keine Suche,
 Für zwanzig Karten reicht das, für zweihundert nicht — aber Behälter sind **#10**, und dort ist
 auch die echte Lücke benannt (`holder_actor_id` trägt nur Figuren). Und ein Massenanlegen gibt es
 nicht: jede Karte wird einzeln in die Welt gesetzt.
+
+## Feature 7 — Würfe erleichtern: der Befund und der Entwurf
+
+**Gemessen, 2026-09-07 18:05.** Drei Dinge, die zuerst geklärt werden mussten:
+
+**1. Das Regelwerk lehnt eine allgemeine Modifikatorformel ausdrücklich ab.** Jede
+Fertigkeitsprobe trägt in ihrer Offenlegung den Satz „Ohne Modifikator", und die Adaption sagt
+in `manual_ruling` warum: *„keine offizielle allgemeine Modifikatorformel"*. Eine Erleichterung
+darf also **keine Regel erfinden** — sonst schreibt die App dem lizenzierten System etwas zu,
+das es nicht hat. Was die Adaption stattdessen anbietet, ist die **„Abgesprochene Probe"**:
+Endwert und kritische Grenzen werden ausdrücklich festgelegt, und *„Eingaben bleiben im Beleg"*.
+Das ist der sanktionierte Weg, und darauf muss eine Erleichterung aufsetzen.
+
+**2. Die Spielleitung kann heute schon jeden Wurf machen.** `listControlledActorIds` gibt der
+Leitung alle Figuren; `prepare` prüft nur die Kontrolle über die Figur, nicht die Aktion. Sie
+kann also für jede Figur eine „Abgesprochene Probe" mit jedem Endwert würfeln, und
+`prepared_by` schreibt mit, **wer** die Zahlen gesetzt hat. Das ist keine Lücke — aber es ist
+auch nicht das Feature: **es nimmt der Spielerin die Würfel aus der Hand.**
+
+**3. Auch eine Spielerin kann `manual_ruling` mit Endwert 99 würfeln.** Das ist bewusst kein
+Loch: der Wurf allein wirkt nichts (Prägung verlangt die Leitung), und alle Eingaben stehen im
+Beleg. Aber es zeigt die eigentliche Lücke scharf: **dass die Spielleitung zugestimmt hat,
+steht nirgends.** Eine erleichterte Probe ist heute von einer selbst gesetzten nicht zu
+unterscheiden.
+
+### Was Feature 7 also ist
+
+**Die Spielleitung gewährt eine Erleichterung; die Spielerin würfelt sie selbst.** Der Beleg
+zeigt danach, wer sie gewährt hat und warum. Kein erfundener Modifikator, keine weggenommenen
+Würfel, keine Absprache, die nur mündlich existiert.
+
+### Warum das keine Vollmacht ist (Regel 6)
+
+Eine Vollmacht ist die naheliegende Doppelung — und sie passt nicht:
+
+- **Andere Lebensdauer.** Eine Vollmacht ist „eine Tür für später", mit Ablauf und
+  Wochenkontingent. Eine Erleichterung gilt für diesen Moment am Tisch.
+- **Anderes Urteil.** Eine Vollmacht urteilt über eine **Schwelle**; deshalb weist
+  `assertVollmachtAction` Aktionen mit Ergebnisbändern ausdrücklich ab — eine Schwelle wäre für
+  sie bedeutungslos. Eine erleichterte Probe wird von den **Bändern des Pakets** beurteilt.
+- **Andere Buchführung.** Eine Vollmacht zählt gegen ein Kontingent, eine Erleichterung nicht.
+
+Beides in eine Tabelle zu zwingen hieße, einen Begriff mit zwei Bedeutungen zu beladen. Das ist
+seine eigene Art von Doppelung.
+
+### Das Datenmodell, in endgültiger Form
+
+**`erleichterungen`** — ein einmal einlösbares Zugeständnis:
+
+- Kampagne, Figur, **gemeinte Aktion** (`skill_klettern` — wofür die Erleichterung gilt, für die
+  Erzählung), **gewürfelte Aktion** (die sanktionierte `manual_ruling`), und die **abgesprochenen
+  Eingaben** als JSON.
+- **Grund** — Pflicht. Eine Erleichterung ohne Begründung ist eine Zahl ohne Absprache; genau
+  das soll sie ja ersetzen.
+- gewährt von / am, eingelöst durch welchen Wurf / wann, widerrufen am.
+
+**Einmalig und ausdrücklich eingelöst:** eine Erleichterung, die zweimal gilt, ist ein
+Dauerbonus — und ein Dauerbonus wäre wieder der Modifikator, den das Regelwerk nicht hat.
+
+### Der senkrechte Schnitt
+
+Eine neue Tabelle heißt wieder: Migration, **native Generation 12**, `restoreOrder`,
+Löschabdeckung, Domäne samt Berechtigungen, HTTP, dann die Oberfläche. Dieselbe Reihenfolge wie
+bei der Kampfbühne, und zwischen Schritt 1 und 3 ist der Baum rot.
+
+### Feature 7 — Stand: Datenschicht steht, Oberfläche fehlt (2026-09-07 18:20)
+
+**Gebaut:** Migration `022_erleichterungen.sql`, native Generation **12** samt Prüfung,
+`restoreOrder`, Löschabdeckung, die Domäne `erleichterungen.ts` und — der wichtigste Teil — die
+**Einlösung im vorhandenen Wurfpfad**.
+
+**Die Einlösung wurde bewusst nicht als zweiter Wurfweg gebaut.** `prepareAction` bekommt ein
+optionales `erleichterungId`; ist es gesetzt, kommen **Aktion und Eingaben aus der Zeile**, nicht
+aus der Anfrage. Ein eigener Wurfpfad daneben hätte eine zweite Beleg-, Sitzungs- und
+Paketlogik — und die wäre eines Tages auseinandergelaufen.
+
+**Ein Fehler, den nur das Messen gefunden hat.** Alle sechs Tests liefen zunächst in ein
+Zeitbudget. Statt es anzuheben, habe ich mit einer Schrittmessung nachgesehen: `gewaehren` hing
+**60 Sekunden**, alles davor lief in Millisekunden. Der Grund stand im eigenen Code — innerhalb
+der Transaktion fragte ich über `db` statt über `tx`, und bei einer Einzelverbindung wartet eine
+Abfrage daneben auf die offene Transaktion, also auf sich selbst. Behoben; danach **7 ms**. Ein
+angehobenes Budget hätte den Hänger für immer zugedeckt.
+
+**Belege.** `erleichterungen.test.ts` **6/6 grün**: gewähren und selbst würfeln, die Zahlen aus
+der Zeile, einmalige Einlösung, höchstens ein offenes Zugeständnis je Figur und Probe,
+Berechtigungen (gewähren/widerrufen/überblicken gehören der Leitung), und die Bindung an die
+Figur. **Gegenprobe gefahren:** die Eingaben aus der Anfrage bevorzugen und die Einlösung nicht
+festhalten → `target: 99` statt 70, und das Zugeständnis bleibt ewig offen. Danach
+zurückgesetzt. Kein Regress: Gameplay-, Export- und Löschsuiten **301/301 grün**, `typecheck`
+0 Fehler, `gate:boundaries` **433/8/0**, Client-Build grün. `bundles-v3` fiel unter Parallel-Last
+ins Budget und ist **isoliert 6/6 grün** — Last, kein Defekt, kein Budget angehoben.
+
+**Noch nicht da:** HTTP-Route und Oberfläche. Nach Regel 5 bleibt #7 auf „in Arbeit", bis die
+Spielleitung eine Erleichterung im Browser gewähren und die Spielerin sie dort einlösen kann.

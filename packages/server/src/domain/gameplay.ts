@@ -6,6 +6,7 @@ import { DEMO_RULE_PACKAGE, RuleValidationError, SupportedRulePackageRegistry, d
   type AnyActionResult as ActionResult, type EvaluationContext, type Experience, type PackagePin, type ProjectedKnowledge, type AnyRulePackage as RulePackage, type Scalar } from "@chronicle/rules";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
+import { loeseErleichterungEin, sperreOffeneErleichterung } from "./erleichterungen.ts";
 import { createDocuments } from "./documents.ts";
 import { Conflict, Gone } from "./errors.ts";
 import { authorizeActor, listControlledActorIds } from "./actors.ts";
@@ -15,6 +16,12 @@ export interface ActorSheet { actorId: string; packageId: string; packageVersion
 export interface PrepareActionInput {
   commandId: string; actorId: string; packageId?: string; packageVersion?: string; actionId: string;
   input?: Readonly<Record<string, Scalar>>; targetPassageId?: string; fictionDate?: string;
+  /**
+   * Eine offene Erleichterung dieser Figur einlösen. Aktion UND Eingaben kommen dann aus der
+   * Zeile, nicht aus dieser Anfrage — sonst wäre das Zugeständnis nur ein Vorwand, eigene
+   * Zahlen zu setzen.
+   */
+  erleichterungId?: string;
 }
 export interface IssueVollmachtInput {
   commandId: string; actorId: string; passageId: string; actionId: string; packageId?: string; packageVersion?: string;
@@ -226,18 +233,27 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       const pending = (await tx.query<RollRow>("SELECT * FROM action_rolls WHERE vollmacht_id=$1 AND status='ausstehend'", [delegated.id])).rows[0];
       if (pending) throw new Conflict();
     }
+    // Eine Erleichterung und eine Vollmacht zugleich waeren zwei Autoritaeten ueber einen Wurf.
+    if (input.erleichterungId && delegated) throw new Conflict();
+    const zugestaendnis = input.erleichterungId
+      ? await sperreOffeneErleichterung(tx, campaignId, input.actorId, input.erleichterungId) : null;
+    const aktion = zugestaendnis?.gewuerfelteAktion ?? input.actionId;
+    const eingaben = zugestaendnis?.eingaben ?? input.input ?? {};
     const pkg = await packageFor(tx, campaignId, pin); await install(tx, userId, campaignId, pkg);
     const passage = input.targetPassageId ? await target(tx, campaignId, input.targetPassageId) : null;
     if (passage && !delegated && member.role !== "leitung" && !(await createDocuments(tx, cfg).held(campaignId, input.actorId)).has(trustPassageId(passage.id))) throw new Gone();
     if (delegated && passage?.hash !== delegated.passage_hash) throw new Conflict();
     const session = (await tx.query<{ id: string; scene_id: string; fiction_date: string }>("SELECT g.id,g.scene_id,s.fiction_date FROM game_sessions g JOIN scenes s ON s.id=g.scene_id WHERE g.campaign_id=$1 AND g.ended_at IS NULL", [campaignId])).rows[0];
     const fictionDate = text(input.fictionDate ?? session?.fiction_date ?? new Date(now()).toISOString().slice(0, 10), 120);
-    const receipt = evaluateSupportedAction(pkg, input.actionId, { seed: seed(), actor: old.fields, input: input.input ?? {}, knowledge: await projectedActorKnowledge(tx, campaignId, input.actorId) });
+    const receipt = evaluateSupportedAction(pkg, aktion, { seed: seed(), actor: old.fields, input: eingaben, knowledge: await projectedActorKnowledge(tx, campaignId, input.actorId) });
     const id = randomUUID();
     await tx.query(`INSERT INTO action_rolls(id,campaign_id,actor_id,prepared_by,command_id,request_hash,package_id,package_version,action_id,receipt,receipt_hash,target_passage_id,target_passage_hash,vollmacht_id,fiction_date,prepared_at,scene_id,session_id)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
-      [id, campaignId, input.actorId, userId, input.commandId, reqHash, pkg.id, pkg.version, input.actionId, receipt, digest(receipt), passage?.id ?? null, passage?.hash ?? null, delegated?.id ?? null, fictionDate, now(), session?.scene_id ?? null, session?.id ?? null]);
-    await audit(tx, campaignId, userId, "action.prepared", { rollId: id, actorId: input.actorId, vollmachtId: delegated?.id ?? null });
+      [id, campaignId, input.actorId, userId, input.commandId, reqHash, pkg.id, pkg.version, aktion, receipt, digest(receipt), passage?.id ?? null, passage?.hash ?? null, delegated?.id ?? null, fictionDate, now(), session?.scene_id ?? null, session?.id ?? null]);
+    // Die Einloesung haengt untrennbar an DIESEM Wurf: sie zeigt auf ihn, in derselben
+    // Transaktion. Ein Zugestaendnis ohne einloesenden Wurf waere ein Versprechen ohne Beleg.
+    if (zugestaendnis) await loeseErleichterungEin(tx, campaignId, zugestaendnis.id, id, now());
+    await audit(tx, campaignId, userId, "action.prepared", { rollId: id, actorId: input.actorId, vollmachtId: delegated?.id ?? null, erleichterungId: zugestaendnis?.id ?? null });
     return card((await tx.query<RollRow>("SELECT * FROM action_rolls WHERE id=$1", [id])).rows[0]!);
   }
   async function prepareAction(userId: string, campaignId: string, input: PrepareActionInput) { return db.transaction(tx => prepare(tx, userId, campaignId, input)); }
