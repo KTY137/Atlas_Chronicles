@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ActorCard, ActorKindValue, ActorTemplateData, ControllerCard, ItemCard, ItemContract, ItemState, LootRarityValue, TemplateCard } from "@chronicle/protocol";
 import { LOOT_RARITIES } from "@chronicle/protocol";
 import { Lootkarte, SELTENHEIT_TEXT } from "./Lootkarte";
+import { speicherstats } from "./speicherstats";
 import type { Scalar } from "@chronicle/rules";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type EntrySummary, type Member, type WikiMedienBestand } from "../api";
@@ -282,6 +283,9 @@ export function Inventory({ campaignId, actorId, actors, gm, revision, onChanged
   const [templateId, setTemplateId] = useState(""); const task = useTask(), command = useCommand();
   return <section className="inventory-section"><div className="page-heading"><h2>{stock && gm ? "Vorrat der Spielleitung" : "Inventar der Figur"}</h2>{gm ? <Button aria-pressed={stock} onClick={() => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setStock(v => !v); setSelected(""); report(false); } }}>{stock ? "Zur Figur" : "Vorrat öffnen"}</Button> : null}</div>
     {items.error || task.error ? <Notice error>{items.error || task.error}</Notice> : null}
+    {/* Der Vorrat allein zeigt nur den Tresor. Der Speicherstand beantwortet die andere Frage:
+        wo ist der Loot? Er rechnet aus der Liste, die hier ohnehin schon geholt wurde. */}
+    {gm && stock ? <Speicherstand items={items.data ?? []} actors={actors} /> : null}
     {gm ? <form className="panel inventory-create" onSubmit={event => { event.preventDefault(); if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; const t = templates.data?.find(t => t.id === templateId); if (t) void task.run(async () => {
       const item = await command<ItemCard>(apiPath(campaignId, "/items/instantiate"), { templateId: t.id, templateRevision: t.revision, holderActorId: holder }); setSelected(item.id); onChanged();
     }); }}><fieldset className="actor-command-fields" disabled={task.busy}><label>Gegenstand aus Vorlage<select required value={templateId} onChange={e => setTemplateId(e.target.value)}><option value="">Gegenstandsvorlage wählen</option>{templates.data?.map(t => <option key={t.id} value={t.id}>{t.definition.name} · Revision {t.revision}</option>)}</select></label><Button type="submit" disabled={task.busy || !templateId || (!stock && !actorId)}>Gegenstand hinzufügen</Button>{templates.error ? <Notice error>{templates.error}</Notice> : null}</fieldset></form> : null}
@@ -296,6 +300,28 @@ export function Inventory({ campaignId, actorId, actors, gm, revision, onChanged
       {chosen ? <fieldset className="actor-command-fields" disabled={task.busy}><ItemEditor key={chosen.id} campaignId={campaignId} current={chosen} actors={actors} gm={gm} onDirty={report} onChanged={onChanged} /></fieldset> : null}</div>
   </section>;
 }
+/** Der Speicherstand als Tafel: erst die Summen, dann jede Karte mit ihrem Verbleib. */
+function Speicherstand({ items, actors }: { items: ItemCard[]; actors: ActorCard[] }) {
+  const stand = speicherstats(items, actors);
+  if (!stand.vorlagen) return <p className="muted">Noch ist nichts im Bestand.</p>;
+  return <section className="panel speicherstand">
+    <h3>Speicherstand</h3>
+    <p className="field-help">{stand.vorlagen} Vorlagen · {stand.karten} Karten · {stand.stuecke} Stücke —
+      davon {stand.imVorratStuecke} im Vorrat und {stand.vergebeneStuecke} vergeben.</p>
+    <div className="speicherstand-tafel"><table>
+      <thead><tr><th scope="col">Karte</th><th scope="col">Im Vorrat</th><th scope="col">Vergeben an</th><th scope="col">Gesamt</th></tr></thead>
+      <tbody>{stand.zeilen.map(zeile => <tr key={zeile.templateId}>
+        <th scope="row">{zeile.name}{zeile.seltenheit ? <small> · {SELTENHEIT_TEXT[zeile.seltenheit]}</small> : null}</th>
+        <td>{zeile.imVorratStuecke}</td>
+        <td>{zeile.vergeben.length
+          ? zeile.vergeben.map(v => `${v.name} (${v.stuecke})`).join(", ")
+          : <span className="muted">niemandem</span>}</td>
+        <td>{zeile.stuecke}{zeile.karten !== zeile.stuecke ? <small> in {zeile.karten} Karten</small> : null}</td>
+      </tr>)}</tbody>
+    </table></div>
+  </section>;
+}
+
 function ItemEditor({ campaignId, current, actors, gm, onDirty, onChanged }: { campaignId: string; current: ItemCard; actors: ActorCard[]; gm: boolean; onDirty: (value: boolean) => void; onChanged: () => void }) {
   const [baseline, setBaseline] = useState(current), [state, setState] = useState<ItemState>(current.state), [holder, setHolder] = useState(current.holderActorId ?? ""), [reason, setReason] = useState("");
   const task = useTask(), command = useCommand();

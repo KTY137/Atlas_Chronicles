@@ -25,9 +25,12 @@ nichts.
 7. **Nicht die volle Suite laufen lassen** — sie braucht ~4 Minuten und blockiert. Gezielt die
    Suiten fahren, die die Änderung berühren, und die Konsumenten der geänderten Schnittstelle
    dazu (`grep -rln` auf den geänderten Export).
-8. **`npm run typecheck` prüft den Client NICHT** (gefunden 2026-09-07 bei Feature 5). Die
-   Wurzel-`tsconfig.json` schließt `packages/client/**` aus; geprüft wird er von `npm run build`
-   (`tsc --noEmit && vite build`). Wer Client-Code anfasst, **baut**, statt nur zu typechecken.
+8. **Beide Gates laufen, immer.** `npm run typecheck` prüft den Client **nicht** (die
+   Wurzel-`tsconfig.json` schließt `packages/client/**` aus); ihn prüft `npm run build`
+   (`tsc --noEmit && vite build`). Umgekehrt prüft der Build die **Server-Tests** nicht — ein
+   Typfehler dort fällt nur `typecheck` auf. Vor jedem Abschluss laufen deshalb **beide**
+   (gefunden 2026-09-07 bei Feature 5, verschärft bei Feature 9, nachdem ein Typfehler in einem
+   Servertest einen Commit überlebt hatte).
 
 ## Stand der Liste
 
@@ -43,7 +46,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 6 | Admininventar (Admin erstellt Lootkarten) | ☑ | war gebaut; geprüft und belegt, ein Regress dabei gefunden |
 | 7 | Spielleiter kann Würfe erleichtern | ☑ | bedienbar im Reiter „Aktionen" |
 | 8 | Alles als **eine** Datei exportierbar (JSON) | ☑ | Rundlauf belegt, Bilder inklusive; ein Regress dabei gefunden |
-| 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☐ | „Vorrat der Spielleitung" existiert — prüfen |
+| 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☑ | Speicherstand im Vorrat: was es gibt und wo es liegt |
 | 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☐ | `holder_actor_id` trägt heute nur Figuren — hier liegt die echte Lücke |
 | 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☐ | |
 | 12 | Gesonderter Geldcounter | ☐ | |
@@ -700,3 +703,56 @@ Der Export ist **die Sicht der Spielleitung auf ihre Kampagne** — Zugangsdaten
 nicht mit (`credentials` bleibt beim Wiederherstellen leer, das prüft `bundles-v6` seit jeher).
 Es gibt **keine Wiederherstellung über die Oberfläche**: zurückgespielt wird mit Serverwerkzeug,
 nicht per Knopf. Und exportiert wird **eine Kampagne**, nicht mehrere auf einmal.
+
+## Feature 9 — Speicherstats: die Frage, die der Vorrat nicht beantwortet
+
+**Zuerst die Abgrenzung zu #6, sonst wäre es eine Doppelung.** Feature 6 ist das *Erstellen und
+Halten* von Lootkarten — geprüft und belegt. Feature 9 ist etwas anderes, und die Lücke steht
+wörtlich im Code: wenn die Spielleitung den Vorrat öffnet, holt die Oberfläche **alle**
+Gegenstände der Kampagne (`/items`) und **wirft dann alles weg, was schon vergeben ist**
+(`filter(i => i.holderActorId === holder)`). Die Spielleitung sieht den Tresor oder eine einzelne
+Figur — **nie, wo der Loot eigentlich ist.**
+
+### Eine Ableitung, keine zweite Quelle
+
+Der Speicherstand rechnet aus genau der Liste, die ohnehin schon geholt wurde. **Bewusst keine
+zweite Abfrage und keine Aggregation auf dem Server:** dieselben Zahlen an zwei Orten
+auszurechnen heißt, sie irgendwann verschieden auszurechnen. `speicherstats()` ist deshalb eine
+reine Funktion — und genau deshalb prüfbar.
+
+**Karten und Stücke sind zwei Zahlen.** Zwanzig Pfeile sind *ein* Eintrag im Inventar und
+*zwanzig* Stücke im Bestand; beides zusammenzuwerfen macht die Übersicht falsch, sobald jemand
+Verbrauchsgut führt. **Archiviertes zählt nicht mit** — es im Bestand zu führen hieße, Vorrat zu
+versprechen, den es nicht mehr gibt. Und die Beschriftung kommt aus der **jüngsten** Revision,
+während ältere Stücke trotzdem unter derselben Vorlage mitzählen.
+
+### Was man jetzt sieht
+
+Im „Vorrat der Spielleitung" steht über den Karten eine Tafel: Summen oben (Vorlagen, Karten,
+Stücke, davon im Vorrat und vergeben), darunter je Karte, wie viel im Tresor liegt und **bei wem
+der Rest ist** — nach Namen sortiert, damit dieselbe Runde immer dieselbe Reihenfolge sieht.
+
+### Ein Versäumnis aus dem vorigen Durchgang, hier gefunden
+
+`alles-in-einer-datei.test.ts` hatte einen **Typfehler**: die Testkonfiguration ohne
+`bootstrapToken` genügte `AppConfig` nicht. Zur Laufzeit lief der Test, der Typecheck nicht — und
+ich hatte nach der letzten Ergänzung nur Build und Grenzen laufen lassen, **nicht** `typecheck`.
+Behoben. Regel 8 im Kopf dieses Dokuments nennt jetzt beide Befehle ausdrücklich.
+
+### Belege
+
+- `speicherstats.test.ts` **7/7 grün**: Karten und Stücke getrennt, Verbleib je Figur samt
+  Sortierung, Archiviertes außen vor, Vorlagen nach Namen und nur einmal, Beschriftung aus der
+  jüngsten Revision, unbekannte Figur wird benannt statt verschwiegen, leerer Bestand.
+- **Gegenprobe gefahren:** Archivfilter entfernt und Menge auf 1 festgenagelt → genau die
+  zugehörigen Fälle rot. Danach zurückgesetzt.
+- Kein Regress: `packages/client` **137/137**, `admininventar` + `actors` **17/17**,
+  `alles-in-einer-datei` **4/4**, `typecheck` 0 Fehler, `gate:boundaries` **439/8/0**,
+  Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Der Speicherstand ist eine **Übersicht, kein Werkzeug**: man kann darin nichts anklicken, nichts
+verschieben und nichts filtern. Wer etwas umverteilen will, nimmt die Karte darunter. Und er
+zählt, was **in der Kampagne existiert** — nicht, was einmal existiert hat: archivierte Stücke
+und die Geschichte ihrer Übergaben stehen im Ereignisprotokoll, nicht hier.

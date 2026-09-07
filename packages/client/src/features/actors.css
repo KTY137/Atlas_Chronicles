@@ -19,3 +19,14 @@
 .reader-perspective .field-help { margin: 0; }
 @media (max-width: 800px) { .actor-columns { grid-template-columns: minmax(0, 1fr); } .inventory-create { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 520px) { .reader-perspective label { width: 100%; display: grid; } .reader-perspective select { width: 100%; } }
+
+/* Der Speicherstand: eine Tafel, keine Kartenwand. Zahlen liest man in Spalten. */
+.speicherstand { margin-block-end: 1rem; }
+.speicherstand h3 { margin: 0 0 .3rem; }
+.speicherstand-tafel { overflow-x: auto; }
+.speicherstand table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.speicherstand th, .speicherstand td { text-align: start; padding: .3rem .5rem; border-bottom: 1px solid var(--line, #2a3230); }
+.speicherstand thead th { font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted, #9aa3a0); }
+.speicherstand tbody th { font-weight: 500; }
+.speicherstand small { display: block; color: var(--text-muted, #9aa3a0); font-size: .68rem; }
+.speicherstand td:nth-child(2), .speicherstand td:nth-child(4) { font-family: var(--font-mono, monospace); }

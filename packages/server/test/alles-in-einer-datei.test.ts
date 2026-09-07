@@ -25,7 +25,7 @@ import { seedActorControl } from "./actor-fixtures.ts";
  *
  * Dann: ein einziger JSON-Text, eine leere Datenbank, und danach derselbe Inhalt.
  */
-const cfg = { origin: "https://alles.test", cookieSecret: "alles-in-einer-datei-secret-over-thirty-two-chars", now: () => 1788696000000, seed: () => "00000001000000020000000300000004" };
+const cfg = { origin: "https://alles.test", cookieSecret: "alles-in-einer-datei-secret-over-thirty-two-chars", bootstrapToken: "alles-in-einer-datei-bootstrap-over-thirty-two-ch", now: () => 1788696000000, seed: () => "00000001000000020000000300000004" };
 /** Ein echtes 1×1-PNG. Der Server bestimmt den Typ aus den Magic Bytes, nicht aus dem Namen. */
 const PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
