@@ -145,7 +145,13 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
     {error ? <Notice error>{error} Die Liste darunter bietet dieselben Figurenbefehle.</Notice> : null}
     {artError ? <Notice error>{artError}</Notice> : null}
     {tileError ? <Notice error>{tileError} <Button onClick={() => retryTiles.current()}>Kacheln erneut laden</Button></Notice> : null}
-    <div className="tactical-canvas" ref={host} data-canvas-ready={ready} />
+    {/* Die Signatur liegt NEBEN dem Renderziel, nicht darin: `createMapRenderer` besitzt das
+        Wirtselement und raeumt es aus. Ein Kind darin waere beim ersten Neuaufbau verschwunden —
+        und `pointer-events: none` sorgt dafuer, dass sie keinen Klick auf die Karte schluckt. */}
+    <div className="tactical-canvas-wrap">
+      <div className="tactical-canvas" ref={host} data-canvas-ready={ready} />
+      <span className="karten-signatur" aria-hidden="true">Atlas Chronicles</span>
+    </div>
     <p className="field-help">Karte ziehen oder mit Pfeiltasten verschieben. Mit dem Mausrad zoomen. Bewegliche Figuren lassen sich ziehen; genaue Werte stehen auch in der Figurenliste.</p>
   </div>;
 }

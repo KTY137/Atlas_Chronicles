@@ -97,6 +97,11 @@ details[open] summary { margin-bottom: 20px; color: var(--text); }
 .main-stage { flex: 1; min-width: 0; overflow: auto; outline: none; background: radial-gradient(100% 80% at 60% 0%, #111516, var(--bg)); }
 .band { display: flex; align-items: center; gap: 15px; height: 45px; min-height: 45px; padding: 0 25px; border-top: 1px solid var(--line); background: #0d1011; font-size: 11px; color: var(--text-muted); }
 .band-mark { color: var(--accent); font-size: 22px; }
+/* Die Marke steht immer da, der Name der Runde daneben. Vorher ERSETZTE der Kampagnenname das
+   Produkt — wer eine Runde offen hatte, sah nirgends mehr, womit er eigentlich spielt. */
+.band-marke { letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-faint); white-space: nowrap; }
+.band-runde { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.band-runde::before { content: "·"; margin-right: 9px; color: var(--text-faint); }
 .band-status { margin-left: auto; }
 .role-chip { text-transform: uppercase; color: var(--accent); border: 1px solid #d98e3b3d; border-radius: 3px; padding: 3px 7px; font-size: 8px; letter-spacing: .12em; }
 .page-content { padding: 48px 6%; max-width: 1200px; margin: 0 auto; }

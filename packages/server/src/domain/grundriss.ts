@@ -89,7 +89,10 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
    * Feld, ueber dem der Absatz daueber steht.
    */
   const herkunft = (ergebnis: { keim: { keimHash: string }; erzeuger: string; version: string }) => ({
-    name: `Erzeugt · ${ergebnis.keim.keimHash.slice(0, 12)}`,
+    // Der Name der Quelle nennt das Werkzeug. Das ist die Signatur, die mit der Karte in jeden
+    // Export wandert — und es bleibt eine Aussage ueber die ERZEUGUNG, nicht ueber das Werk:
+    // was auf der Karte steht, hat sich die Runde ausgedacht.
+    name: `Erzeugt mit Atlas Chronicles · ${ergebnis.keim.keimHash.slice(0, 12)}`,
     creator: ergebnis.erzeuger,
     sourceUrl: null,
     license: paket().lizenz.spdx,

@@ -47,5 +47,9 @@ export function Lootkarte({ definition, campaignId, klein = false }: { definitio
       {!gesicht ? <p className="lootkarte-ohne-gesicht">Diese Vorlage hat noch kein Kartengesicht. Beim nächsten Überarbeiten lässt sich eines anlegen.</p> : null}
     </div>
     {definition.tags.length ? <footer className="lootkarte-etiketten">{definition.tags.map(tag => <span key={tag}>{tag}</span>)}</footer> : null}
+    {/* Die Signatur am Kartenrand. `aria-hidden`, weil sie zur Karte NICHTS aussagt: eine
+        Vorleserin soll den Gegenstand vorlesen, nicht den Namen des Programms. Und sie steht
+        auf der KLEINEN Karte nicht — dort ist jeder Millimeter der Karte selbst geschuldet. */}
+    {klein ? null : <span className="lootkarte-signatur" aria-hidden="true">Atlas Chronicles</span>}
   </article>;
 }

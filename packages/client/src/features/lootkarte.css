@@ -13,6 +13,13 @@
 }
 .lootkarte.klein { width: 11rem; gap: .35rem; padding: .4rem; }
 
+/* Die Signatur: leise genug, dass die Karte ihr gehoert, deutlich genug, dass ein Bildschirmfoto
+   sie mitnimmt. Kein Rechtevermerk ueber den Gegenstand — den hat sich die Runde ausgedacht. */
+.lootkarte-signatur {
+  justify-self: end; font-size: .5rem; letter-spacing: .11em; text-transform: uppercase;
+  color: var(--text-faint, #7d786c); opacity: .7; line-height: 1;
+}
+
 .lootkarte[data-seltenheit="gewoehnlich"] { --karte-rand: #8b8578; }
 .lootkarte[data-seltenheit="ungewoehnlich"] { --karte-rand: #5f8f62; --karte-glanz: #5f8f6218; }
 .lootkarte[data-seltenheit="selten"] { --karte-rand: #4d7fa8; --karte-glanz: #4d7fa820; }

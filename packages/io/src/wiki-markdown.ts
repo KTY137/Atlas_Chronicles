@@ -124,7 +124,18 @@ export function wikiAlsMarkdown(daten: WikiExport): string {
     "",
   ];
   if (!daten.artikel.length)
-    return [...kopf, "_Noch ist nichts zu lesen._", ""].join("\n");
+    return [...kopf, "_Noch ist nichts zu lesen._", "", ...FUSS].join("\n");
   const verzeichnis = ["## Inhalt", "", ...daten.artikel.map(a => `- [${schuetzeMarkdown(a.titel)}](#${ankerVon(a.slug)})`), ""];
-  return [...kopf, ...verzeichnis, ...daten.artikel.map(a => `${artikelAlsMarkdown(a)}\n`)].join("\n").replace(/\n{3,}/g, "\n\n") + "\n";
+  return [...kopf, ...verzeichnis, ...daten.artikel.map(a => `${artikelAlsMarkdown(a)}\n`), ...FUSS]
+    .join("\n").replace(/\n{3,}/g, "\n\n") + "\n";
 }
+
+/**
+ * Die Herkunftszeile am Fuß des Dokuments.
+ *
+ * Sie sagt, **womit** die Datei erzeugt wurde — nicht, wem der Inhalt gehört. Die Chronik gehört
+ * der Runde, die sie geschrieben hat; das Werkzeug beansprucht daran nichts. Genau deshalb steht
+ * hier kein Rechtevermerk über den Text, sondern nur die Signatur des Werkzeugs. Sie steht am
+ * Ende und nicht im Kopf: der erste Satz eines Exports gehört der Welt, nicht dem Programm.
+ */
+const FUSS = ["", "---", "", "*Erzeugt mit Atlas Chronicles.*"];
