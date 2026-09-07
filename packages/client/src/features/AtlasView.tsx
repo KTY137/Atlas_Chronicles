@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Compass, DoorOpen, Eye, Link, Map, Maximize, Minus, Plus, RefreshCw, Search, Upload, X } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";

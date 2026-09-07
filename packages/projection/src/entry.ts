@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { canonicalJson, type CanonicalValue, type PassageId } from "@chronicle/core";
 import type { Blockinhalt, InlineMark, InlineText, Passage } from "@chronicle/chronik";
 

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 /* Vitalwerte als Balken. Die Zahl steht immer daneben — der Balken illustriert, er behauptet
    nicht. Wer ihn nicht sieht, liest trotzdem "37 / 100". */
 .vitalanzeige { display: grid; gap: .55rem; margin-block: .8rem; }

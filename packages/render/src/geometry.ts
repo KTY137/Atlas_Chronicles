@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { MapCamera, MapHit, MapPoint, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
 const PIN_ICONS = new Set(["place", "city", "castle", "cave", "ruin", "portal"]);

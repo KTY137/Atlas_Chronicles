@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 .gefuege .view-tabs { margin-block: .75rem; }
 .gefuege-leinwand { width: 100%; height: auto; max-height: 60vh; display: block; margin-block: .5rem 1rem; }
 .gefuege-kante line { stroke: var(--border, #b9b0a0); stroke-width: 1.6; }

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 const cwd = fileURLToPath(new URL("..", import.meta.url));

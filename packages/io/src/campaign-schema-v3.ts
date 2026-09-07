@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** Native campaign v3: additive tactical storage from migration 011.
  * Copyright (c) 2026 Atlas Chronicles contributors. SPDX-License-Identifier: MIT
  * This fixed archive contract does not import mutable HTTP schemas. */

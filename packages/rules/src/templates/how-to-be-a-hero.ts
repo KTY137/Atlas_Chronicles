@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** Template data/adaptation: CC BY-NC-SA-4.0. See the colocated license notice.
  * Engine implementation remains separately licensed under packages/rules/LICENSE. */
 import { type Scalar } from "../formula.ts";

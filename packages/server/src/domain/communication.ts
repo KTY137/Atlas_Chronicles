@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createTactical } from "./tactical.ts";
 import { randomUUID, createHash } from "node:crypto";
 import { stableJson } from "@chronicle/rules";

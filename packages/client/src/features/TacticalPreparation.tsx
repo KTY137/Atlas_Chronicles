@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ActorCard, TacticalAck, TacticalAnchor, TacticalMapCard, TacticalMapSummary, TacticalPlan, TacticalTokenPlan } from "@chronicle/protocol";
 import { TACTICAL_MAP_LIMITS, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";

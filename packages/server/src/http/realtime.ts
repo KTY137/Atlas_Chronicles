@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import websocket from "@fastify/websocket";
 import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "ws";

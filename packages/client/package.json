@@ -2,6 +2,8 @@
   "name": "@chronicle/client",
   "private": true,
   "version": "0.0.0",
+  "license": "BUSL-1.1",
+  "author": "Kaya Yesilyurt",
   "type": "module",
   "scripts": {
     "dev": "vite --host localhost",

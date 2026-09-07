@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /**
  * Prueft eine Preset-Palette gegen dieselben Paare wie packages/theme/src/contrast.ts.
  * Wegwerf-Werkzeug fuer den Entwurf von Aurora: sagt, welche Paarung fehlt und um wie viel.

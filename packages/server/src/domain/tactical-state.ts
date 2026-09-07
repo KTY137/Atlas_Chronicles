@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { TacticalTokenPlan } from "../../../protocol/src/tactical.ts";
 import { parseBoundedMapJson, type TacticalPoint } from "@chronicle/szene";
 

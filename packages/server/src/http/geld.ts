@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { Static } from "@sinclair/typebox";
 import type { FastifyInstance } from "fastify";
 import * as P from "@chronicle/protocol";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /**
  * Native v9 nimmt das Gefüge in das Kampagnenpaket auf (Migration 019).
  *

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { EventEmitter } from "node:events";
 import { afterEach, expect, it, vi } from "vitest";
 import type { ProfileStore, OwnedProfile } from "../src/profiles.ts";

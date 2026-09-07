@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** Native v6 preserves immutable, map-scoped entrances from migrations 013/014. */
 import { CAMPAIGN_V4_TABLES, CAMPAIGN_V4_MODULES, CAMPAIGN_BUNDLE_V4_LIMITS, type CampaignTablesV4 } from "../native-v4/schema.ts";
 import { CAMPAIGN_BUNDLE_V5_JSON_SCHEMA } from "../native-v5/schema.ts";

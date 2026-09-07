@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ActorCard, ReaderPerspective } from "@chronicle/protocol";
 import { BookOpen, Check, Clock3, Mail, RefreshCw, Send, X } from "lucide-react";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** Device-bound operating recovery. This is deliberately separate from native
  * campaign interchange, and accepts only IDs in this application's own store. */
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";

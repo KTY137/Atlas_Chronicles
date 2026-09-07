@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { canonicalHash, canonicalJson, type CanonicalValue, type KnotenId, type Ortswissen } from "@chronicle/core";
 import { MAX_TIEFE, RAUM_KANTEN, type Knoten, type Weltkeim } from "./model.ts";
 

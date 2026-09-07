@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { evaluateFormula, type Scalar } from "./formula.ts";
 import { previewPackageMigration, type MigrationEntity, type MigrationPreview } from "./migration.ts";
 import { parseSupportedRulePackage, validatePackageFields, type AnyRulePackage } from "./package-v2.ts";

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 .rule-forge { max-width: 1480px; margin: 0 auto; min-width: 0; }
 .rule-forge h1, .rule-forge h2, .rule-forge h3, .rule-forge h4 { overflow-wrap: anywhere; }
 .rule-forge h1, .rf-section-heading h2 { display: flex; align-items: center; gap: 10px; }

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFile, stat } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { parseCampaignBundle, parseCampaignBundleV2, parseCampaignBundleV3, parseCampaignBundleV4, parseCurrentCampaignBundle, CAMPAIGN_BUNDLE_LIMITS, CAMPAIGN_BUNDLE_V3_LIMITS, CAMPAIGN_BUNDLE_V4_LIMITS } from "@chronicle/io";

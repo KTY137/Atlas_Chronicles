@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 /* Die Lootkarte: ein Gegenstand als Sammelkarte. Der Rahmen traegt die Seltenheit — deshalb ist
    sie im Vertrag eine geschlossene Menge und hier eine Farbe. Die Stufe steht zusaetzlich als
    WORT auf der Karte: eine Aussage, die nur als Farbe existiert, kommt nicht bei allen an. */

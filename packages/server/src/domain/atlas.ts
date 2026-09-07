@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { AzgaarImportError, MAX_AZGAAR_BYTES, importiereAzgaar, importiereEronKarte, type AzgaarImport, type EronMapImport, type AtlasMarkerIcon } from "@chronicle/forge";

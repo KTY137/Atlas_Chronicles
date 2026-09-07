@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 export { RuleValidationError, RULE_LIMITS, stableJson } from "./validation.ts";
 export { haelt, haelt_etikett, erfahrungsgrad, parseProjectedKnowledge, type Experience, type HeldPassage, type ProjectedKnowledge } from "./knowledge.ts";
 export { ENGINE_VERSION, RNG_ALGORITHM, parseDice, parseFormula, parseFormulaAst, inferFormulaType, evaluateFormula, parseEvaluationContext, type Scalar, type FormulaType, type Formula, type FormulaFieldTypes, type EvaluationContext, type DiceTrace, type TraceStep, type FormulaResult } from "./formula.ts";

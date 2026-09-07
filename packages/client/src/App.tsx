@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 ﻿import type { ReaderPerspective as Perspective } from "@chronicle/protocol";
 import { ReaderPerspective } from "./features/ReaderPerspective";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, DoorOpen, Link, Map, Pencil, RefreshCw, WandSparkles } from "lucide-react";
 import type { TacticalMapCard, TacticalMapSummary } from "@chronicle/protocol";

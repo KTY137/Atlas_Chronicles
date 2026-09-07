@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 export {
   AZGAAR_IMPORT_VERSION, MAX_AZGAAR_BYTES, AzgaarImportError, importiereAzgaar, azgaarImportAdapter,
   type AzgaarImport, type AzgaarZelle,

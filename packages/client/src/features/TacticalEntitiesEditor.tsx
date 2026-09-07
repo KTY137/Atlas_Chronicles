@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useId, useState } from "react";
 import type { TacticalAnchor } from "@chronicle/protocol";
 import { TACTICAL_MAP_LIMITS, type TacticalMapDocumentV1 } from "@chronicle/szene";

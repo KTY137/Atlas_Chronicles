@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { erfahrungsgrad, haelt, haelt_etikett, parseProjectedKnowledge, type ProjectedKnowledge } from "./knowledge.ts";
 import { fail, finite, integer, record, keys, identifier, string, snapshotJson, deepFreeze, RULE_LIMITS } from "./validation.ts";
 

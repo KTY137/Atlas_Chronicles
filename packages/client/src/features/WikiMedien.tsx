@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useRef, useState } from "react";
 import { ArrowLeft, CircleAlert, Download, ImageOff, ShieldQuestion, Trash2, Upload } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";

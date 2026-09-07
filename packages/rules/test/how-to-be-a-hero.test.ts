@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { HOW_TO_BE_A_HERO_PACKAGE as template, HTBAH_DEFAULT_SKILLS, HTBAH_EXAMPLE_CHARACTERS, HTBAH_ATTRIBUTION, HTBAH_RULE_GUIDANCE, createHowToBeAHeroPackage, defaultSupportedActorFields, evaluateComputedFields, evaluateFormula, evaluateSupportedAction, parseSupportedRulePackage, previewSupportedPackageMigration, replaySupportedAction, stableJson, SupportedRulePackageRegistry, validatePackageFields, type ActionResultV2, type EvaluationContext, type HtbahSkill, type Scalar } from "../src/index.ts";
 

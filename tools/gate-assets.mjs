@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Gate A-P1 — "Das Paket".
 //
 // `SceneDoc.stamps[].a` is a pack-qualified reference and `packages/szene/src/assetpaket.ts` is

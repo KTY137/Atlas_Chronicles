@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useMemo, useState } from "react";
 import { createHowToBeAHeroPackage, HTBAH_DEFAULT_SKILLS, HTBAH_EDITION, HTBAH_GROUPS, HTBAH_GROUP_LABELS, HOW_TO_BE_A_HERO_PACKAGE, type HtbahSkill, type RulePackageV2 } from "@chronicle/rules";
 import { Button, Notice } from "@chronicle/ui";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Vitalanzeige } from "./Vitalanzeige";
 import { Geldzaehler } from "./Geldzaehler";

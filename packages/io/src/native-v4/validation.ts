@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Frozen V4 replay, not an authorization decision. Current membership cannot prove
 // historic GM authority, so durable identities are required without reviving grants.
 import { parseThemeManifest, evaluateThemeAccessibility } from "@chronicle/theme";

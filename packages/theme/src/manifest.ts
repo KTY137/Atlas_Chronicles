@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { THEME_COLOR_TOKENS, THEME_FONT_IDS, THEME_LICENSE_IDS, THEME_LIMITS, THEME_MOTION_IDS, THEME_PRESET_IDS, type ThemeManifestV1 } from "./model.ts";
 import { choice, deepFreeze, fail, object, plainText, readThemeJson, themeCanonicalJson } from "./json.ts";
 

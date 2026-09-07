@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Explicit developer helper. Regenerates only the two published v3 artifacts.
 import { writeFile } from "node:fs/promises";
 import { createCampaignBundleV3, serializeCampaignBundleV3 } from "../src/campaign-bundle-v3.ts";

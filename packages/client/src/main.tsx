@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource/cinzel/600.css";

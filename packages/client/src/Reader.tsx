@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Fragment, type ReactNode } from "react";
 import { Button } from "@chronicle/ui";
 import type { Block, EntryDocument, Inline, Member } from "./api";

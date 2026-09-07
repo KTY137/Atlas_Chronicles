@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useRef } from "react";
 import type { AnyActionResult as ActionResult, FieldSchema, PackagePin, AnyRulePackage as RulePackage, Scalar } from "@chronicle/rules";
 import { api } from "../api";

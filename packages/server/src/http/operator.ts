@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /**
  * Betreiberauskünfte — Zahlen über die Maschine, nicht über eine Kampagne.
  *

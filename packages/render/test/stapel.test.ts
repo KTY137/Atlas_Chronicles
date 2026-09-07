@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { performance } from "node:perf_hooks";
 import { describe, expect, it } from "vitest";
 import { planeStapel } from "../src/stapel.ts";

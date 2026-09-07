@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Der Pinsel — gemalte Materialien für `pk.gemalt`.
 //
 // `tusche.mjs` zeichnet Symbole: flache Flächen, eine Konturstärke, lesbar bei 64 px. Das ist die

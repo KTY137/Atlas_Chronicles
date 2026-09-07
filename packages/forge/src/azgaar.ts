@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { canonicalHash, canonicalJson, deriveKnotenId, textHash, type CanonicalValue, type KnotenId } from "@chronicle/core";
 import { pruefeContainment, weltkeim, type ErzeugerAdapter, type Herkunft, type Kante, type Knoten, type KnotenArt, type Ort, type Rahmen, type SceneDoc, type Weltkeim } from "@chronicle/szene";
 

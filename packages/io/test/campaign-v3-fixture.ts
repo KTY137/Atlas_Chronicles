@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { textHash, type CanonicalValue } from "@chronicle/core";
 import type { TacticalMapDocumentV1 } from "@chronicle/szene";
 import { createCampaignBundleV2 } from "../src/campaign-bundle-v2.ts";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import {
   DEMO_RULE_PACKAGE, ENGINE_VERSION, evaluateSupportedAction, parseFormula, parseFormulaAst, parseSupportedRulePackage,
   stableJson, type FieldSchema, type Formula, type FormulaType, type MigrationStep,

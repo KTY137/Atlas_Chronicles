@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Ohne Produktversion ist nichts taggbar, und ohne Tag gibt es kein Registry-Release und
 // keinen Update-Feed (design/10-hosted-betrieb-und-auslieferung.md §1.9, §4.1).
 //

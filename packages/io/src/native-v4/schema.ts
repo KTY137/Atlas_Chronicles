@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** Native V4 additive migration-012 contract. Published V1/V2/V3 stay unchanged.
  * Copyright (c) 2026 Atlas Chronicles contributors. SPDX-License-Identifier: MIT */
 import { CAMPAIGN_V3_TABLES, CAMPAIGN_V3_MODULES, CAMPAIGN_BUNDLE_V3_JSON_SCHEMA, type CampaignTablesV3 } from "../campaign-schema-v3.ts";

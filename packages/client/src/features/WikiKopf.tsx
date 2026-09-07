@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { BookOpen, CalendarRange, Home } from "lucide-react";
 import { EmptyState } from "@chronicle/ui";
 import { baueNavigation, type Gruppe, type NavigationDaten } from "./wiki-navigation-model";

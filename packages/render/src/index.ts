@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 export { createMapRenderer, MapRendererUnavailableError, type MapRendererOptions } from "./renderer.ts";
 export { snapMapPoint, visibleMapTiles, visibleGridLines } from "./tactical-geometry.ts";
 export type { VisibleTile } from "./tactical-geometry.ts";

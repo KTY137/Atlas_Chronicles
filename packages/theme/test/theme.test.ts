@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ACCESSIBILITY_PREFERENCES, HIGH_CONTRAST_COLORS, PUBLIC_DEFAULT_THEME, THEME_COLOR_TOKENS,

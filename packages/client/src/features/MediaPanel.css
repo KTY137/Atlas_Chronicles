@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 .media-band { display: flex; align-items: center; gap: 3px; min-width: 0; }
 .media-band .button { min-height: 30px; padding: 4px 7px; }
 .media-open { gap: 7px; }

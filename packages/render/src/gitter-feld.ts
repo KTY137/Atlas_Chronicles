@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { TacticalGrid } from "@chronicle/szene";
 import { mapToScreen, screenToMap } from "./geometry.ts";
 import type { MapCamera } from "./model.ts";

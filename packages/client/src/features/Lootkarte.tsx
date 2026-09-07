@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { ImageOff } from "lucide-react";
 import type { ItemContract, LootRarityValue } from "@chronicle/protocol";
 import { assetPath } from "../api";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { CampaignId, EntryId, ImportId, PassageId, UniverseId } from "@chronicle/core";
 import type { Alias, Asset, Entry, EntryArt, ImportBericht, ImportHerkunft, Link, LizenzStatus, Passage, Revision, RoterLink } from "@chronicle/chronik";
 

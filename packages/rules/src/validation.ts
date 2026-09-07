@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 export class RuleValidationError extends Error {
   override readonly name = "RuleValidationError";
   constructor(message: string) { super(message); }

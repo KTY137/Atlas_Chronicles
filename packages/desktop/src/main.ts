@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { app, BrowserWindow, dialog, ipcMain, protocol, safeStorage, session, shell, desktopCapturer, Tray, Menu, nativeImage, type IpcMainInvokeEvent } from "electron";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";

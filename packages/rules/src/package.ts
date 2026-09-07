@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { ENGINE_VERSION, RNG_ALGORITHM, evaluateFormula, inferFormulaType, parseEvaluationContext, parseFormula, type EvaluationContext, type Formula, type FormulaResult, type FormulaType, type Scalar } from "./formula.ts";
 import { array, deepFreeze, fail, finite, identifier, integer, keys, parseBoundedJson, record, semver, snapshotJson, stableJson, string, RULE_LIMITS } from "./validation.ts";
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { AccessToken, ParticipantInfo_State, RoomServiceClient, TrackSource } from "livekit-server-sdk";
 import type { Db } from "../db/index.ts";

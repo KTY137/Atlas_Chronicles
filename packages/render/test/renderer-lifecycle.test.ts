@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMapRenderer } from "../src/renderer.ts";
 import { mapToScreen } from "../src/geometry.ts";

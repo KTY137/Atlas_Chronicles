@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Type } from "@sinclair/typebox";
 const closed = { additionalProperties: false } as const;
 const id = Type.String({ minLength: 1, maxLength: 256 });

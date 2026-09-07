@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useMemo, useState } from "react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath } from "../api";

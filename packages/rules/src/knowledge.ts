@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { array, fail, keys, record, snapshotJson, string, deepFreeze, RULE_LIMITS } from "./validation.ts";
 
 export type Experience = "erfahren" | "gesprochen" | "gehoert";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** Explicit operating boundary. Importing this module never reads checkout settings,
  * starts a listener, registers process handlers, or opens a database. */
 import { buildApp } from "./app.ts";

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 /* Themes supply closed token values; local access preferences are applied last. */
 html[data-appearance-theme] { color-scheme: dark light; }
 html[data-appearance-theme] body { background: var(--bg); color: var(--text); }

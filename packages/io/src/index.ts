@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** File adapters only. Import results are GM review material, never reader projections. */
 export { importEron, planEronReimport } from "./eron.ts";
 export { wikiAlsMarkdown, artikelAlsMarkdown, schuetzeMarkdown, ankerVon, type WikiExport } from "./wiki-markdown.ts";

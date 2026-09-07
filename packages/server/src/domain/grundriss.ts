@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFileSync } from "node:fs";
 import { erzeugeGrundriss, erzeugeHoehle, GRUNDRISS_ERZEUGER, GRUNDRISS_VERSION, GRUNDRISS_STANDARD, HOEHLE_STANDARD, type GrundrissOptionen, type HoehleOptionen } from "@chronicle/forge";
 import { parseAssetpaket, serializeTacticalMapDocument, type AssetpaketV1 } from "@chronicle/szene";

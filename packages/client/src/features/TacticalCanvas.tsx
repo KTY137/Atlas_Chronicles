@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createMapRenderer, visibleMapTiles, type MapHit, type MapPoint, type MapRasterTile, type MapStampImage, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
 import { Button, Notice } from "@chronicle/ui";

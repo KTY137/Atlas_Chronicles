@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { fitCamera } from "../src/geometry.ts";
 import { snapMapPoint, visibleGridLines, visibleMapTiles } from "../src/tactical-geometry.ts";

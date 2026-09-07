@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID, createHash } from "node:crypto";
 import { resolvePassage, type Blockinhalt, type LineageEvent, type Passage, type Quelle } from "@chronicle/chronik";
 import { trustActorId, trustEntryId, trustPassageId, trustRevisionId } from "@chronicle/core";

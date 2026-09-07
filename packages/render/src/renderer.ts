@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /// <reference lib="dom" />
 import { fitCamera, hitTestMap, mapPinHitRadius, mapToScreen, normalizeCamera, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
 import { rasterTileDisplaySize } from "./tactical-geometry.ts";

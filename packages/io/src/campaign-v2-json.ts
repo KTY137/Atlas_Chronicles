@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Copyright (c) 2026 Atlas Chronicles contributors. SPDX-License-Identifier: MIT
 // v2-local structural primitives; the published v1 implementation remains unchanged.
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";

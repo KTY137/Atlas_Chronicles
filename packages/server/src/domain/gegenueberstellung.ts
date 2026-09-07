@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { projiziereEntry, type EntryProjektion } from "@chronicle/projection";
 import type { Db } from "../db/index.ts";
 import { createDocuments } from "./documents.ts";

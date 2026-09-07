@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Electron's packaged executable carries Squirrel's `SquirrelAwareVersion` resource, verified
 // on the actual artifact. Squirrel therefore hands the shortcut to us and creates none itself,
 // so a lifecycle branch that only quits installs an application nobody can find. These cases

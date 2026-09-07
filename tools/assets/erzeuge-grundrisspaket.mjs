@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Authors `assets/packs/pk.grundriss` — the first Chronicle asset pack.
 //
 // The assets are **source code, not binaries.** Three reasons, and the third is the one that

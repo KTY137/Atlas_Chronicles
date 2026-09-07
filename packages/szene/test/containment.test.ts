@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { deriveKnotenId, trustKnotenId } from "@chronicle/core";
 import { MAX_TIEFE, ortswissenFuer, pruefeContainment, raumEltern, tiefe, weltkeim, type Knoten, type KantenArt } from "../src/index.ts";

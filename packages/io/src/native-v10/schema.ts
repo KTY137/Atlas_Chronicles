@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /**
  * Native v10 nimmt die Wiki-Kategorien in das Kampagnenpaket auf (Migration 020).
  *

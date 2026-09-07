@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 // Frozen V4 source/provenance rules; no mutable server or protocol import.
 import { canonicalJson, type CanonicalValue } from "@chronicle/core";
 import { fail, object, list, string } from "../campaign-v3-json.ts";

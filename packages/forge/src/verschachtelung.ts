@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { MAX_TIEFE, type AssetpaketV1, type Knoten, type KnotenId } from "@chronicle/szene";
 import { fail, type GrundrissEltern, type GrundrissRaum } from "./kartenwerk.ts";
 import { GRUNDRISS_STANDARD, erzeugeGrundriss, type Grundriss, type GrundrissOptionen } from "./grundriss.ts";

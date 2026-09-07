@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { DEMO_RULE_PACKAGE, RulePackageRegistry, evaluateFormula, parseFormula, parseRulePackage, previewPackageMigration, stableJson, type EvaluationContext } from "@chronicle/rules";
 import { changeFieldType, compileFormula, compilePackage, copyJson, decimalSource, fieldDraft, fixtureValues, forkPackage, formulaDraft, formulaSource, migrationStepDraft, newAction, newField, newPackage, numberValue, packageDraft, packageTestResults, validateDraft } from "../src/features/rule-forge-model";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { pruefeBudget, RENDER_BUDGET } from "../src/budget.ts";
 import type { ProjectedMapScene, ProjectedMapStamp, ProjectedMapToken, MapPoint } from "../src/model.ts";

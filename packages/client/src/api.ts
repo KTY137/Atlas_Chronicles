@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 export class ApiError extends Error {
   constructor(readonly status: number, message: string) { super(message); this.name = "ApiError"; }
 }

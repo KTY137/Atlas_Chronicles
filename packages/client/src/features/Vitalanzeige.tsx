@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useMemo } from "react";
 import { evaluateVitals, type AnyRulePackage, type Scalar, type VitalReading } from "@chronicle/rules";
 import "./vitalanzeige.css";

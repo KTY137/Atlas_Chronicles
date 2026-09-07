@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /**
  * Native campaign storage profile v1. This file contains no database implementation.
  * Names are a fixed serialization contract, never identifiers supplied by a bundle.

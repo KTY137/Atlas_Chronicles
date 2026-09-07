@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { DEFAULT_ACCESSIBILITY_PREFERENCES, getThemePreset, parseAccessibilityPreferences, resolveTheme, serializeAccessibilityPreferences,
   type AccessibilityPreferencesV1, type ResolvedThemeV1, type SystemAccessibility, type ThemeManifestV1 } from "@chronicle/theme";

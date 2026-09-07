@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** Published V1 is closed data. Adding fields requires an explicit new version. */
 export const THEME_VERSION = 1 as const;
 export const THEME_LIMITS = Object.freeze({ bytes: 64 * 1024, depth: 12, nodes: 4096, name: 100, creator: 200, notice: 2000 });

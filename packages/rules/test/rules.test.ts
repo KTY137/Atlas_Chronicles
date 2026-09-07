@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DEMO_RULE_PACKAGE, ENGINE_VERSION, RNG_ALGORITHM, RULE_LIMITS, RulePackageRegistry, RuleValidationError, defaultActorFields, erfahrungsgrad, evaluateAction, evaluateFormula, haelt, haelt_etikett, parseDice, parseFormula, parseFormulaAst, parseProjectedKnowledge, parseRulePackage, previewPackageMigration, replayAction, stableJson, type EvaluationContext, type Formula, type RulePackage } from "../src/index.ts";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { pruefeVersionen } from "../gate-version.mjs";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 // Immer das neueste Profil: der Wächter ist nur so viel wert, wie er aktuell ist.
 import { CAMPAIGN_V13_TABLES } from "@chronicle/io";

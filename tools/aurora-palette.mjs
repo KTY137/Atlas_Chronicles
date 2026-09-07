@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /**
  * Aurora — der dritte ratifizierte Look (07 §7): tiefes Indigo mit chromatischer
  * Tiefe, Teal als Akzent, Violett als zweite Stimme. Entwurf, der gegen die

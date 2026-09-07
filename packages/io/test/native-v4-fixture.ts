@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createTestDb, migrate, type Db } from "../../server/src/db/index.ts";
 import { createIdentity } from "../../server/src/identity/index.ts";
 import { createCampaigns } from "../../server/src/domain/campaigns.ts";
