@@ -273,22 +273,44 @@ function ItemTemplateForm({ campaignId, original, onDirty, onSaved }: { campaign
 }
 
 export function Inventory({ campaignId, actorId, actors, gm, revision, onChanged, onDirty }: { campaignId: string; actorId: string; actors: ActorCard[]; gm: boolean; revision: number; onChanged: () => void; onDirty: (value: boolean) => void }) {
-  const [stock, setStock] = useState(false), [selected, setSelected] = useState(""), [dirty, setDirty] = useState(false);
+  // Welches Inventar gerade offen ist: "" ist der Vorrat der Spielleitung, sonst eine Figur —
+  // und eine Figur kann auch ein Behaelter sein. Eine Kutsche haelt Dinge wie jede andere Figur;
+  // eine eigene Behaeltertabelle waere eine Doppelung, und die Figurenarten stehen ohnehin im
+  // eingefrorenen Exportprofil.
+  const [gewaehlt, setGewaehlt] = useState(actorId), [selected, setSelected] = useState(""), [dirty, setDirty] = useState(false);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
-  const holder = stock && gm ? null : actorId || null;
-  const items = useResource<ItemCard[]>(gm && stock ? apiPath(campaignId, "/items") : actorId ? apiPath(campaignId, `/actors/${actorId}/items`) : null, revision);
+  // Wechselt die handelnde Figur am Tisch, folgt das Inventar — danach darf man frei blaettern.
+  useEffect(() => { setGewaehlt(actorId); setSelected(""); }, [actorId]);
+  const stock = gewaehlt === "";
+  const holder = stock ? null : gewaehlt;
+  const items = useResource<ItemCard[]>(stock ? (gm ? apiPath(campaignId, "/items") : null) : apiPath(campaignId, `/actors/${encodeURIComponent(gewaehlt)}/items`), revision);
   const filtered = items.data?.filter(i => i.holderActorId === holder) ?? [];
   const chosen = filtered.find(i => i.id === selected);
   const templates = useResource<TemplateCard<ItemContract>[]>(gm ? apiPath(campaignId, "/item-templates") : null, revision);
   const [templateId, setTemplateId] = useState(""); const task = useTask(), command = useCommand();
-  return <section className="inventory-section"><div className="page-heading"><h2>{stock && gm ? "Vorrat der Spielleitung" : "Inventar der Figur"}</h2>{gm ? <Button aria-pressed={stock} onClick={() => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setStock(v => !v); setSelected(""); report(false); } }}>{stock ? "Zur Figur" : "Vorrat öffnen"}</Button> : null}</div>
+  const offen = actors.find(a => a.id === gewaehlt);
+  const figuren = actors.filter(a => a.kind === "player_character");
+  const weitere = actors.filter(a => a.kind !== "player_character");
+  const waehle = (wert: string) => { if (wert === gewaehlt) return; if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; setGewaehlt(wert); setSelected(""); report(false); };
+  return <section className="inventory-section"><div className="page-heading"><h2>{stock ? "Vorrat der Spielleitung" : offen ? `Inventar · ${offen.name}` : "Inventar"}</h2>
+      {/* Verschiedene Inventare an einer Stelle: der Vorrat, die Figuren, und alles andere, das
+          Dinge traegt — Begleitung, Kreatur, Fahrzeug. Wer die Kutsche nicht fuehrt, sieht sie
+          hier gar nicht erst, denn die Liste zeigt nur, was der Zugang ohnehin hergibt. */}
+      <label className="inventar-wahl">Inventar<select value={gewaehlt} onChange={e => waehle(e.target.value)}>
+        {gm ? <option value="">Vorrat der Spielleitung</option> : null}
+        {figuren.length ? <optgroup label="Figuren">{figuren.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</optgroup> : null}
+        {weitere.length ? <optgroup label="Behälter und Begleitung">{weitere.map(a => <option key={a.id} value={a.id}>{a.name}{a.kind === "vehicle" ? " · Fahrzeug" : ""}</option>)}</optgroup> : null}
+      </select></label></div>
     {items.error || task.error ? <Notice error>{items.error || task.error}</Notice> : null}
     {/* Der Vorrat allein zeigt nur den Tresor. Der Speicherstand beantwortet die andere Frage:
         wo ist der Loot? Er rechnet aus der Liste, die hier ohnehin schon geholt wurde. */}
     {gm && stock ? <Speicherstand items={items.data ?? []} actors={actors} /> : null}
     {gm ? <form className="panel inventory-create" onSubmit={event => { event.preventDefault(); if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; const t = templates.data?.find(t => t.id === templateId); if (t) void task.run(async () => {
       const item = await command<ItemCard>(apiPath(campaignId, "/items/instantiate"), { templateId: t.id, templateRevision: t.revision, holderActorId: holder }); setSelected(item.id); onChanged();
-    }); }}><fieldset className="actor-command-fields" disabled={task.busy}><label>Gegenstand aus Vorlage<select required value={templateId} onChange={e => setTemplateId(e.target.value)}><option value="">Gegenstandsvorlage wählen</option>{templates.data?.map(t => <option key={t.id} value={t.id}>{t.definition.name} · Revision {t.revision}</option>)}</select></label><Button type="submit" disabled={task.busy || !templateId || (!stock && !actorId)}>Gegenstand hinzufügen</Button>{templates.error ? <Notice error>{templates.error}</Notice> : null}</fieldset></form> : null}
+    }); }}><fieldset className="actor-command-fields" disabled={task.busy}><label>Gegenstand aus Vorlage<select required value={templateId} onChange={e => setTemplateId(e.target.value)}><option value="">Gegenstandsvorlage wählen</option>{templates.data?.map(t => <option key={t.id} value={t.id}>{t.definition.name} · Revision {t.revision}</option>)}</select></label>{/* Gelegt wird in das Inventar, das gerade offen ist — Vorrat, Figur oder Behälter. Die
+          alte Sperre fragte noch die handelnde Figur ab und haette beim Blaettern in einer
+          Kutsche fälschlich blockiert. */}
+      <Button type="submit" disabled={task.busy || !templateId}>Gegenstand hinzufügen</Button>{templates.error ? <Notice error>{templates.error}</Notice> : null}</fieldset></form> : null}
     <div className="actor-columns"><div>{items.loading ? <Loading /> : filtered.length ? <ul className="lootkarten-reihe lootkarten-wahl">{filtered.map(i => <li key={i.id}>
       {/* Der Bestand liest sich als Kartenblatt. Menge und Ausruestung stehen daneben: sie
           gehoeren zur INSTANZ, nicht zum Kartengesicht der Vorlage. */}

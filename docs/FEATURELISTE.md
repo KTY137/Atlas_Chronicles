@@ -47,7 +47,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 7 | Spielleiter kann Würfe erleichtern | ☑ | bedienbar im Reiter „Aktionen" |
 | 8 | Alles als **eine** Datei exportierbar (JSON) | ☑ | Rundlauf belegt, Bilder inklusive; ein Regress dabei gefunden |
 | 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☑ | Speicherstand im Vorrat: was es gibt und wo es liegt |
-| 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☐ | `holder_actor_id` trägt heute nur Figuren — hier liegt die echte Lücke |
+| 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☑ | Inventarauswahl; ein Behälter ist eine Figur der Art Fahrzeug |
 | 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☐ | |
 | 12 | Gesonderter Geldcounter | ☐ | |
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☐ | hängt an #1 |
@@ -756,3 +756,53 @@ Der Speicherstand ist eine **Übersicht, kein Werkzeug**: man kann darin nichts 
 verschieben und nichts filtern. Wer etwas umverteilen will, nimmt die Karte darunter. Und er
 zählt, was **in der Kampagne existiert** — nicht, was einmal existiert hat: archivierte Stücke
 und die Geschichte ihrer Übergaben stehen im Ereignisprotokoll, nicht hier.
+
+## Feature 10 — Containerinventare: meine eigene Notiz war falsch
+
+**Korrektur.** Im Ledger stand bei #10: *„`holder_actor_id` trägt heute nur Figuren — hier liegt
+die echte Lücke."* Das war zu pessimistisch. `actor_profiles.kind` kennt seit Migration 010 die
+Art **`vehicle`** — in der Oberfläche „Fahrzeug" —, und `holder_actor_id` trägt sie wie jede
+andere Figur. **Eine Kutsche ist in diesem Modell längst möglich.**
+
+Und das ist keine Notlösung, sondern richtig: ein Behälter *ist* ein Ding in der Welt, das Dinge
+hält, genau wie eine Kreatur oder eine Begleitung. Eine eigene Behältertabelle wäre eine
+Doppelung — und die Figurenarten stehen im **eingefrorenen** Exportprofil
+(`campaign-bundle-v2.ts`), eine neue Art bräche jeden Export. Dieselbe Lehre wie bei Feature 5
+und 8.
+
+### Was also fehlte
+
+Nicht das Modell, sondern der **Weg dorthin**. Ein Behälterinventar erreichte man nur über die
+Auswahl **„Handelnde Figur"** am Tisch — und eine Kutsche handelt nicht. Dazu kam eine stille
+Sperre: der Knopf „Gegenstand hinzufügen" fragte die *handelnde* Figur ab und hätte beim Blättern
+in einem Behälter fälschlich blockiert.
+
+### Was jetzt da ist
+
+Eine **Inventarauswahl** in der Kopfzeile des Inventars, mit drei Gruppen: *Vorrat der
+Spielleitung*, *Figuren*, und *Behälter und Begleitung* (Fahrzeuge sind als solche gekennzeichnet).
+Wer die Kutsche nicht führt, sieht sie dort **gar nicht erst** — die Liste zeigt nur, was der
+Zugang ohnehin hergibt. Gelegt wird in das Inventar, das gerade offen ist; die Spielleitung kann
+Beute also direkt in die Kutsche legen.
+
+Wechselt die handelnde Figur am Tisch, folgt das Inventar — danach darf man frei blättern.
+
+### Belege
+
+- `containerinventar.test.ts` **4/4 grün**: der Behälter trägt Loot, den **nur die Spielleitung
+  sieht, solange niemand die Kutsche führt**; er öffnet sich, sobald sie freigegeben wird (und
+  die Runde kann darin wirtschaften); der Loot kommt wieder heraus und die Karte behält ihr
+  Gesicht; und **mehrere Behälter vermischen sich nicht** — das ist „verschiedene Inventare".
+- **Gegenprobe gefahren:** die Zugangsprüfung in `listItems` entfernt → der Fall „nur die
+  Spielleitung sieht hinein" wird rot („promise resolved instead of rejecting"). Danach
+  zurückgesetzt.
+- Kein Regress: `packages/client` + `containerinventar` + `admininventar` + `actors`
+  **158/158 grün**, `typecheck` 0 Fehler, `gate:boundaries` **440/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Ein Behälter hat **keine Kapazität** — kein Gewicht, kein Platzlimit, kein „die Kutsche ist voll".
+Behälter **liegen nicht ineinander**: eine Truhe in der Kutsche ist heute zwei Inventare
+nebeneinander, keine Schachtelung. Und ein Behälter wird wie jede Figur angelegt, also über eine
+Figurvorlage mit Regelpaket-Bindung — für eine Kutsche ist das mehr Zeremonie als nötig, aber es
+ist derselbe Weg, den alles andere geht, und ein zweiter wäre die Doppelung.

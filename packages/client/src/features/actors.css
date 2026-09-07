@@ -30,3 +30,6 @@
 .speicherstand tbody th { font-weight: 500; }
 .speicherstand small { display: block; color: var(--text-muted, #9aa3a0); font-size: .68rem; }
 .speicherstand td:nth-child(2), .speicherstand td:nth-child(4) { font-family: var(--font-mono, monospace); }
+
+/* Die Inventarauswahl steht in der Kopfzeile, nicht als Knopfpaar: es sind mehr als zwei. */
+.inventar-wahl { width: 15rem; max-width: 100%; margin: 0; }
