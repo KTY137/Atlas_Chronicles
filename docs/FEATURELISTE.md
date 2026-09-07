@@ -33,7 +33,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | # | Feature | Stand | Notiz |
 | --- | --- | --- | --- |
 | 1 | Kampfsystem (testen) | ☑ | grün und belegt, siehe unten |
-| 2 | Kampfbühne (wie bei Card Games) | ◐ | Entwurf steht, senkrechter Schnitt begonnen |
+| 2 | Kampfbühne (wie bei Card Games) | ☑ | bedienbar am Tisch, Reiter „Kampf“ |
 | 3 | Würfel animiert | ☐ | |
 | 4 | Wiki-Export | ☐ | |
 | 5 | Lootkarten (Karte wie YuGiOh) | ☐ | |
@@ -197,3 +197,39 @@ müssen:
 
 Punkt 5 ist die sichtbare Hälfte und kommt zuletzt. Wer hier kalt startet: die Reihenfolge ist
 nicht verhandelbar, weil der Baum zwischen 1 und 3 **rot** ist.
+
+### Abschluss Feature 2 — 2026-09-07 17:40
+
+**Die Bühne steht und man kann sie bedienen.** Reiter **„Kampf“** am Tisch, direkt neben der
+Szenenkarte — dort, wo die abstrakte Schwester hingehört. Keine zehnte Leiste daneben (Regel 6).
+
+**Was die Spielleitung tun kann:** eine Bühne aufstellen, Kämpfende daraufsetzen (mit oder ohne
+Figur am Tisch, mit oder ohne Wurfbeleg), eröffnen, reihum weiterschieben, jemanden herunternehmen,
+beenden. **Was die Runde sieht:** dieselbe Bühne, ohne Knöpfe — sie muss wissen, wann sie dran ist.
+
+**Die Karte trägt ihren Beleg.** Wählt die Spielleitung eine Figur, für die ein Initiativwurf
+vorliegt, bietet das Formular an, dessen Wert zu übernehmen; die `roll_id` wandert mit und die
+Karte zeigt „gewürfelt“ statt „gesetzt“. **Wer die Zahl danach von Hand ändert, verliert den
+Beleg** — eine Karte, die einen Wurf behauptet, den sie nicht zeigt, wäre schlimmer als eine ohne.
+Ein erfundener Beleg wird vom Fremdschlüssel abgewiesen, nicht gespeichert; beides ist geprüft.
+
+**Ein echter Fehler unterwegs, gefunden und behoben:** das Herunternehmen einer Karte rief `POST`
+gegen eine `DELETE`-Route. Der Knopf hätte nichts getan.
+
+**Belege.**
+
+- `kampfbuehne.test.ts` **9/9 grün** — Reihenfolge samt Gleichstand, Runde beim Rücksprung,
+  Doppelklick-Abwehr, Zugweitergabe beim Entfernen, Beenden, Berechtigungen, leere Bühne, und
+  die zwei Belegfälle gegen die echte Würfelmaschinerie.
+- Gegenprobe: Nebenläufigkeitssicherung und Rundenzähler ausgehängt → genau die zwei zugehörigen
+  Fälle rot. Danach zurückgesetzt.
+- Berührte Konsumenten: `restore-order` + `deletion` + `packages/io` **249/249 grün**;
+  Formatkonsumenten am Server **32 bestanden, 4 übersprungen**; `health` bootet mit der neuen
+  Route. `typecheck` 0 Fehler, `gate:boundaries` **417/8/0**, Client-Build grün.
+
+**Offen und ausdrücklich nicht behauptet.** Eine bereits gesetzte Initiative lässt sich nicht
+nachträglich ändern — nur herunternehmen und neu aufstellen, was die Aufnahmereihenfolge
+verschiebt. Das ist die eine raue Kante, die ich sehe; sie gehört auf die Liste, nicht in eine
+Behauptung. Die Bühne aktualisiert sich alle 4 Sekunden per Abfrage wie die übrigen Flächen, es
+gibt keinen eigenen Live-Kanal. Und die Vitalwerte aus #1 werden auf der Karte **noch nicht**
+angezeigt — das ist #13, und es ist bewusst dort und nicht hier.
