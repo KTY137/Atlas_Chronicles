@@ -253,7 +253,11 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     // Die Einloesung haengt untrennbar an DIESEM Wurf: sie zeigt auf ihn, in derselben
     // Transaktion. Ein Zugestaendnis ohne einloesenden Wurf waere ein Versprechen ohne Beleg.
     if (zugestaendnis) await loeseErleichterungEin(tx, campaignId, zugestaendnis.id, id, now());
-    await audit(tx, campaignId, userId, "action.prepared", { rollId: id, actorId: input.actorId, vollmachtId: delegated?.id ?? null, erleichterungId: zugestaendnis?.id ?? null });
+    // Die Verbindung zwischen Wurf und Erleichterung steht in `erleichterungen.eingeloest_roll_id`
+    // und NICHT hier: die Nutzlast von `action.prepared` ist im eingefrorenen v1-Profil auf drei
+    // Felder festgelegt. Ein viertes brach jeden Export, sobald ein Zugestaendnis eingeloest war —
+    // und es waere ohnehin dieselbe Aussage ein zweites Mal gewesen.
+    await audit(tx, campaignId, userId, "action.prepared", { rollId: id, actorId: input.actorId, vollmachtId: delegated?.id ?? null });
     return card((await tx.query<RollRow>("SELECT * FROM action_rolls WHERE id=$1", [id])).rows[0]!);
   }
   async function prepareAction(userId: string, campaignId: string, input: PrepareActionInput) { return db.transaction(tx => prepare(tx, userId, campaignId, input)); }

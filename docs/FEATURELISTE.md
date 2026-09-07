@@ -42,7 +42,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 5 | Lootkarten (Karte wie YuGiOh) | ☑ | Kartenfassung des Gegenstandsvertrags + Karte |
 | 6 | Admininventar (Admin erstellt Lootkarten) | ☑ | war gebaut; geprüft und belegt, ein Regress dabei gefunden |
 | 7 | Spielleiter kann Würfe erleichtern | ☑ | bedienbar im Reiter „Aktionen" |
-| 8 | Alles als **eine** Datei exportierbar (JSON) | ☐ | `.chronicle` v6 existiert — prüfen, nicht neu bauen |
+| 8 | Alles als **eine** Datei exportierbar (JSON) | ☑ | Rundlauf belegt, Bilder inklusive; ein Regress dabei gefunden |
 | 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☐ | „Vorrat der Spielleitung" existiert — prüfen |
 | 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☐ | `holder_actor_id` trägt heute nur Figuren — hier liegt die echte Lücke |
 | 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☐ | |
@@ -641,3 +641,62 @@ Es gibt **keine Erschwernis** — die Liste verlangt Erleichtern, und das Gegent
 wäre Regelarbeit, die niemand bestellt hat. Eine Erleichterung **läuft nicht ab**: sie gilt, bis
 sie eingelöst oder zurückgenommen wird. Und sie erscheint **nicht in der Kampfbühne** — wer
 gerade dran ist, sieht sie im Aktionen-Reiter, nicht auf seiner Karte.
+
+## Feature 8 — Alles als eine Datei: geprüft, und dabei einen Regress von mir gefunden
+
+**Der Ledger sagte „prüfen, nicht neu bauen", und das stimmte** — das `.chronicle`-Format steht
+inzwischen bei Generation **12**, weil jedes Feature dieser Sitzung seine Tabellen mitgebracht
+hat. Zu prüfen war das Wort **„alles"**.
+
+### Was wirklich mitgeht — einschließlich der Bilder
+
+Migration 015 sagt es selbst: *„die Bytes liegen als base64 in der Zeile … ein Dateisystempfad
+daneben ist genau die Stelle, an der ein solches Paket unvollständig wird."* Ein Bild liegt also
+**im** Paket. Der Test legt ein echtes 1×1-PNG an, exportiert, und findet dessen Base64 im
+JSON-Text wieder — und nach der Wiederherstellung liefert der Server exakt dieselben Bytes aus.
+
+### Der Regress, den nur dieser Test gefunden hat
+
+Beim ersten Lauf war er **rot**, und zwar an meiner eigenen Arbeit von Feature 7:
+
+```
+audit.action.prepared.erleichterungId: unknown field; explicit migration required
+```
+
+Ich hatte die Kennung der Erleichterung in die Nutzlast des Prüfprotokolls geschrieben. Deren
+Feldliste ist im **ältesten, eingefrorenen v1-Profil** auf drei Felder festgelegt — mein viertes
+Feld hat damit **jeden Export gebrochen, sobald eine Erleichterung eingelöst war.**
+
+Der Fix war nicht, das Profil aufzuweichen, sondern die **Doppelung zu entfernen**: die Verbindung
+zwischen Wurf und Zugeständnis steht längst in `erleichterungen.eingeloest_roll_id`. Sie ein
+zweites Mal ins Protokoll zu schreiben war überflüssig — und teuer.
+
+**Das ist die Lehre dieses Durchgangs:** die Nutzlast des Prüfprotokolls ist ein eingefrorener
+Vertrag. Eine neue Tatsache gehört in ihre eigene Tabelle, nicht nebenbei ins Protokoll.
+
+### Eine echte Bedienlücke, nebenbei geschlossen
+
+Jeder Kampagnenexport hieß `campaign.chronicle`. Wer drei Welten sichert, hatte dreimal denselben
+Namen im Ordner und musste sie öffnen, um sie zu unterscheiden. Der Dateiname trägt jetzt den
+Namen der Welt — kodiert nach RFC 5987 neben einem ASCII-Rückfall, wie beim Wiki-Export.
+
+### Belege
+
+- `alles-in-einer-datei.test.ts` **4/4 grün**: eine Kampagne mit **allem aus dieser Sitzung** —
+  Kampfbühne (eröffnet), Lootkarte mit Kartengesicht im Vorrat, zwei Erleichterungen (eine offen,
+  eine eingelöst samt Wurfbeleg), ein Artikel und ein Bild mit Bytes.
+  1. Das Paket enthält all diese Zeilen und die Bildbytes.
+  2. Es ist **ein** gültiger JSON-Text, der das Base64 des Bildes enthält.
+  3. In eine **leere** Datenbank zurückgespielt ergibt der erneute Export **keinen einzigen
+     inhaltlichen Unterschied** — und die Welt ist danach benutzbar: die Bühne läuft in Runde 1,
+     das offene Zugeständnis steht mit seiner Begründung da, das Bild kommt Byte für Byte zurück.
+  4. Die Datei heißt nach der Welt.
+- Kein Regress: Gameplay-, Bündel-, `io`- und Löschsuiten **48 + 269 + 24 grün**, `typecheck`
+  0 Fehler, `gate:boundaries` **437/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Der Export ist **die Sicht der Spielleitung auf ihre Kampagne** — Zugangsdaten gehen bewusst
+nicht mit (`credentials` bleibt beim Wiederherstellen leer, das prüft `bundles-v6` seit jeher).
+Es gibt **keine Wiederherstellung über die Oberfläche**: zurückgespielt wird mit Serverwerkzeug,
+nicht per Knopf. Und exportiert wird **eine Kampagne**, nicht mehrere auf einmal.
