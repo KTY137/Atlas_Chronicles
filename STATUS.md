@@ -20,20 +20,63 @@ Updated: **2026-09-07 09:55** (Arbeitsbaum gesiegelt: `c3fcb08`; zwei Sessions a
   laufenden Threads (Forge-Refactor `polygon`/`kartenwerk`/`siedlung`, Desktop-Installer und die
   Wurzelmanifeste, die er bewegt). Geprüft über `git show --name-only`, nicht angenommen.
 
-### Offen und benannt: das 5-Sekunden-Budget der Migrationen
+### Korrigiert: das 5-Sekunden-Budget war nicht die Migration, sondern PGlite
 
-`packages/server/test/db-resilience.test.ts` fährt `createTestDb()` plus `migrate()` **zweimal**
-in einem 5000-ms-Budget. Die Migrationen sind heute von 013 auf 016 gewachsen, und PGlite fährt
-Postgres in WASM: **ein einzelnes `createTestDb()` + `migrate()` misst 11,8 s.** Der Test fällt
-**isoliert** aus (2 von 6), also ist es keine Last.
+**Meine erste Eintragung hier war falsch, und die Messung ist der Grund.** Ich schrieb, das
+Wachstum der Migrationen von 013 auf 016 habe das 5000-ms-Budget von
+`packages/server/test/db-resilience.test.ts` gesprengt. Gemessen auf dieser Maschine:
 
-**Das ist nicht die Regression einer fremden Session.** 014 (verschachtelte Karten) und 015
-(Wiki-Bilder) sind zwei der drei neuen Migrationen und stecken in `c3fcb08`.
+| Anteil | Kosten |
+|---|---|
+| `createTestDb()` — PGlite-Start in WASM | **3.602 ms (79 %)** |
+| `migrate()` erster Lauf | 948 ms |
+| `migrate()` zweiter Lauf (idempotent) | 38 ms |
+| **Testkoerper gesamt** | **4.588 ms** gegen Budget 5.000 |
 
-Die Behebung ist eine Entscheidung, keine Zahl: **eine migrierte PGlite-Instanz für die ganze
-Suite teilen** (schnell, aber Tests sehen fremden Zustand) **oder das Budget ehrlich anheben**
-(einfach, aber genau die Testabschwächung, die dieses Projekt verbietet). Wer das anfasst,
-entscheidet zuerst — und misst danach.
+Die Migrationen sind ein Fuenftel der Kosten, nicht die Ursache. Der Koerper **passt** auf einer
+ruhigen Maschine — mit 412 ms Luft. Genau deshalb fiel er aus, sobald drei Sessions gleichzeitig
+in diesem Baum schrieben.
+
+**Behoben in `e3aa6cf`, und es ist keine Testabschwaechung.** Alle sechs Faelle booten ihr eigenes
+PGlite und liefen auf Vitests 5000-ms-Vorgabe, waehrend die Geschwister im selben Verzeichnis
+`30_000` **53-mal**, `20_000` 14-mal, `15_000` 6-mal und `60_000` 4-mal ausdruecklich deklarieren.
+Diese Datei war die einzige ohne eigenes Budget. Danach: **6/6 gruen**; der langsamste Fall meldet
+8,7 s fuer einen Test, dessen ganzer Koerper prueft, dass das Schliessen eines Transaktionsgriffs
+wirft. Das ist Startzeit, nicht Arbeit.
+
+**Der eigentliche Befund liegt tiefer und ist nicht behoben:** `createTestDb()` wird in
+`packages/server/test` an **72 Stellen in 41 Dateien** gerufen, jede zahlt ~3,6 s WASM-Start. Das
+ist der Grund, warum die Server-Suite ~200 s braucht. Wer sie schneller haben will, muss die Zahl
+der PGlite-Instanzen senken (eine migrierte Instanz je Datei statt je Test), nicht die Budgets
+weiter anheben. PGlite 0.5.8 kann `dumpDataDir()`/`loadDataDir` — das spart aber nur die 948 ms
+Migration, nicht die 3,6 s Start. Eigener Plan, eigene Entscheidung.
+
+### Die 20 roten Bundle-Tests gehoeren Migration 017, nicht der Versiegelung
+
+`bundles.test.ts`, `bundles-v2/v3/v4` und drei weitere melden
+`CampaignRestoreError: Application schema is not covered by native campaign v4/v5/v6/v7`.
+Die Ursache ist **genau eine Tabelle**: `campaign_deletions`. Sie steht seit **10:03** in
+`packages/server/src/db/migrations/017_campaign_deletion.sql` — unversioniert, zusammen mit
+`domain/deletion.ts` und `test/deletion.test.ts`, geschrieben von einer weiteren laufenden Session
+waehrend dieser Sitzung. Gemessen, nicht vermutet: gegen `CAMPAIGN_V7_TABLES` plus
+`CAMPAIGN_EXCLUDED_TABLES` ist `campaign_deletions` die einzige nicht abgedeckte Tabelle, es fehlt
+keine Spalte und keine erwartete Spalte fehlt in der Datenbank.
+
+**Das ist nicht die Folge der Versiegelung.** `c3fcb08` enthaelt keine dieser drei Dateien; geprueft
+ueber `git show --name-only`. Wer 017 besitzt, schuldet dem Archivadapter seine Tabelle — die
+Abdeckungspruefung ist der Waechter, der genau das erzwingt, und darf nicht umgangen werden.
+Nebenbei: der Loeschpfad ist derselbe, den
+`docs/superpowers/plans/2026-09-07-server-haertung-vier-pakete.md` ausdruecklich als **nicht
+entscheidungsfrei** aus dem Plan genommen hat (`deny_history_mutation()` muss kontrolliert passiert
+werden). Wer ihn baut, faellt zuerst diese Sicherheitsentscheidung.
+
+### Drei Sessions schreiben gleichzeitig in diesem Baum
+
+Beobachtet, nicht angenommen: Dateien erschienen und verschwanden zwischen zwei Kommandos, weil
+eine Session ihren TDD-Zyklus fuhr. Wer hier arbeitet, waehlt seine Flaeche nach **mtime**, nicht
+nach einer Liste — die Liste ist beim Staging schon veraltet. Aktuell fremd und in Arbeit:
+Forge-Refactor (`polygon`, `kartenwerk`, `siedlung`), Desktop-Installer samt Wurzelmanifesten,
+und der Loeschpfad (017, `deletion.ts`).
 
 ## Current handoff — start here
 
