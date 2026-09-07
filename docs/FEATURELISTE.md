@@ -48,7 +48,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 8 | Alles als **eine** Datei exportierbar (JSON) | ☑ | Rundlauf belegt, Bilder inklusive; ein Regress dabei gefunden |
 | 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☑ | Speicherstand im Vorrat: was es gibt und wo es liegt |
 | 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☑ | Inventarauswahl; ein Behälter ist eine Figur der Art Fahrzeug |
-| 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☐ | |
+| 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☑ | trug das Modell schon; die handelnde Figur folgt jetzt dem Wissensblick |
 | 12 | Gesonderter Geldcounter | ☐ | |
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☐ | hängt an #1 |
 | 14 | Dynamisch setzbare Bars | ☐ | hängt an #13 |
@@ -806,3 +806,47 @@ Behälter **liegen nicht ineinander**: eine Truhe in der Kutsche ist heute zwei 
 nebeneinander, keine Schachtelung. Und ein Behälter wird wie jede Figur angelegt, also über eine
 Figurvorlage mit Regelpaket-Bindung — für eine Kutsche ist das mehr Zeremonie als nötig, aber es
 ist derselbe Weg, den alles andere geht, und ein zweiter wäre die Doppelung.
+
+## Feature 11 — Permanente Spielerprofile: das Modell trug es, die Vorauswahl nicht
+
+**Gemessen zuerst.** Mehrere Figuren je Account gibt es längst, und zwar an einer Stelle, die man
+leicht übersieht: `requireMember` leitet die handelnde Figur aus dem **Wissensblick** ab
+(`reader_perspectives`) und fällt nur ersatzweise auf die Hauptfigur der Mitgliedschaft zurück —
+und `actor_controllers` ist eine **Viele-zu-viele**-Beziehung. Wer zwei Figuren geführt bekommt,
+wechselt zwischen ihnen, und Chronik, Atlas und Briefe folgen mit.
+
+Auch die drei Namensebenen sind längst getrennt: **Accountname** (`users.display_name`), **Name
+in dieser Runde** (`campaign_memberships.display_name`) und **Namen der Figuren** (`actors.name`).
+Genau das meint „Accountname: Spielernamen".
+
+### Die Lücke, und sie war echt
+
+Die **„Handelnde Figur"** am Tisch wurde unabhängig vom Wissensblick vorbelegt — mit der ersten
+führbaren Figur, sortiert nach Kennung, also **nach nichts**. Wer als Sera las, handelte am Tisch
+womöglich still als Bruder Halm. Bei einem Account mit einer Figur fällt das nie auf; bei zweien
+ist es genau der Fehler, den ein Spielerprofil verhindern soll.
+
+**Jetzt folgt die handelnde Figur dem Wissensblick**, solange niemand ausdrücklich etwas anderes
+wählt. Und wenn beide auseinanderlaufen — was erlaubt und manchmal gewollt ist —, **steht es
+da**: „Du handelst als X, liest die Chronik aber mit dem Wissen von Y." Gesagt, nicht verhindert.
+
+### Belege
+
+- `spielerprofile.test.ts` **5/5 grün**: zwei Figuren unter einem Account; **Chronik und Wissen
+  folgen der gewählten Figur** (dieselbe Person sieht denselben Artikel als Sera und sieht ihn
+  als Halm nicht); die drei Namensebenen sind drei verschiedene Werte; niemand liest mit fremden
+  Augen ohne Freigabe; und dasselbe Konto hat in einer zweiten Runde einen eigenen Namen und
+  eigene Figuren.
+- **Gegenprobe gefahren:** den Wissensblick aus `requireMember` ausgehängt und die Freigabeprüfung
+  entfernt → genau die zwei zugehörigen Fälle rot. Danach zurückgesetzt.
+- Kein Regress: `packages/client` + drei Figuren-Suiten **159/159 grün**, `typecheck` 0 Fehler,
+  `gate:boundaries` **441/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+**Figuren legt die Spielleitung an, nicht der Account.** `instantiateActor` verlangt die Leitung,
+und das ist die durchgehende Autoritätslinie dieses Hauses — eine Spielerin, die sich selbst
+Figuren erzeugt, wäre ein anderer Vertrag, kein Feature. Ein Konto sieht seine Figuren immer
+**innerhalb einer Runde**; eine Übersicht „alle meine Figuren über alle Runden" gibt es nicht.
+Und die Hauptfigur der Mitgliedschaft bleibt der Rückfall, wenn noch kein Wissensblick gewählt
+wurde.

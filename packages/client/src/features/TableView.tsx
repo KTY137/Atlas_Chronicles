@@ -16,7 +16,7 @@ import { defaults, useCommand, type ActionCard, type ActorSheet, type DoorCard, 
 import "./gameplay.css";
 
 type Tab = "actions" | "sheet" | "scenes" | "canon" | "doors" | "actors" | "tactical" | "kampf";
-export function TableView({ campaign, userId, onOpenEntry, onDirty, openDoor, liveRevision = 0, readerScope = "" }: { readerScope?: string; openDoor?: { id?: string; request: number }; liveRevision?: number; campaign: Campaign; userId: string; onOpenEntry: (id: string) => void; onDirty: (value: boolean) => void }) {
+export function TableView({ campaign, userId, onOpenEntry, onDirty, openDoor, liveRevision = 0, readerScope = "", blickActorId = null }: { readerScope?: string; blickActorId?: string | null; openDoor?: { id?: string; request: number }; liveRevision?: number; campaign: Campaign; userId: string; onOpenEntry: (id: string) => void; onDirty: (value: boolean) => void }) {
   const [tab, setTab] = useState<Tab>(() => openDoor || new URLSearchParams(location.search).get("tab") === "doors" ? "doors" : "actions"), [revision, setRevision] = useState(0), [actor, setActor] = useState<string | null>(null), [dirty, setDirty] = useState(false);
   useEffect(() => { if (openDoor) setTab("doors"); }, [openDoor]);
   const gm = campaign.role === "leitung", rules = useResource<RulesState>(apiPath(campaign.id, "/rules"), revision + liveRevision);
@@ -25,7 +25,14 @@ export function TableView({ campaign, userId, onOpenEntry, onDirty, openDoor, li
   const controlled = actors.data?.filter(a => a.canControl).map(a => ({ actorId: a.id, displayName: a.name })) ?? [];
   const namedActors: Member[] = actors.data?.map(a => ({ actorId: a.id, displayName: a.name, userId: "", role: "spieler" })) ?? [];
   // Pin the initial choice once. Later grants must not switch an open draft to a different actor.
-  useEffect(() => { if (actor === null && actors.data) setActor(actors.data.find(a => a.canControl)?.id ?? ""); }, [actor, actors.data]);
+  // Die handelnde Figur folgt dem Wissensblick, solange niemand ausdruecklich etwas anderes
+  // gewaehlt hat. Vorher nahm sie die ERSTE fuehrbare Figur — sortiert nach Kennung, also nach
+  // nichts: wer als Sera las, handelte am Tisch womoeglich still als Bruder Halm.
+  useEffect(() => {
+    if (actor !== null || !actors.data) return;
+    const blick = blickActorId && actors.data.find(a => a.id === blickActorId && a.canControl);
+    setActor((blick || actors.data.find(a => a.canControl))?.id ?? "");
+  }, [actor, actors.data, blickActorId]);
   const actorId = controlled.find((member) => member.actorId === actor)?.actorId ?? "";
   const active = scenes.data?.find((scene) => scene.status === "active");
   const changeDirty = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
@@ -43,6 +50,9 @@ export function TableView({ campaign, userId, onOpenEntry, onDirty, openDoor, li
     }}>{label}</button>)}</div>{controlled.length ? <label className="actor-picker">Handelnde Figur<select value={actorId} onChange={(e) => { if (e.target.value === actorId) return; if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setActor(e.target.value); changeDirty(false); } }}>{!actorId ? <option value="">Figur wählen</option> : null}{controlled.map((member) => <option key={member.actorId} value={member.actorId!}>{member.displayName}</option>)}</select></label> : null}</div>
     {rules.error || roster.error || scenes.error || actors.error ? <Notice error>{rules.error || roster.error || scenes.error || actors.error}</Notice> : null}
     {actor && !actorId && actors.data ? <Notice>Die bisher ausgewählte Figur steht dir nicht mehr zur Verfügung. Wähle eine andere Figur.</Notice> : null}
+    {/* Als eine Figur lesen und als eine andere handeln ist erlaubt — aber niemand soll es
+        versehentlich tun. Deshalb wird es gesagt, nicht verhindert. */}
+    {actorId && blickActorId && actorId !== blickActorId ? <Notice>Du handelst als {actors.data?.find(a => a.id === actorId)?.name ?? "dieser Figur"}, liest die Chronik aber mit dem Wissen von {actors.data?.find(a => a.id === blickActorId)?.name ?? "einer anderen Figur"}.</Notice> : null}
     <div id="table-tab-panel" role="tabpanel" aria-labelledby={`table-tab-${tab}`}>
     {rules.loading || roster.loading || actors.loading ? <Loading /> : rules.data ? tab === "tactical" ? <TacticalView key={readerScope} onOpenEntry={onOpenEntry} campaignId={campaign.id} gm={gm} revision={revision + liveRevision} onDirty={changeDirty} /> : tab === "kampf" ? <Kampfbuehne campaignId={campaign.id} gm={gm} actors={actors.data ?? []} revision={revision + liveRevision} onChanged={refresh} /> : tab === "actors" ? <ActorWorkbench campaignId={campaign.id} gm={gm} actorId={actorId} actors={actors.data ?? []} roster={roster.data ?? []} rules={rules.data} revision={revision + liveRevision} onChanged={refresh} onDirty={changeDirty} /> : tab === "scenes" ? <Scenes campaignId={campaign.id} gm={gm} scenes={scenes.data ?? []} onChanged={refresh} onOpenEntry={onOpenEntry} /> : tab === "canon" && gm ? <Canon campaignId={campaign.id} roster={namedActors} actorId={actorId} fictionDate={active?.fictionDate ?? ""} onChanged={refresh} /> : tab === "doors" ? <Doors selectedId={openDoor?.id ?? new URLSearchParams(location.search).get("door") ?? undefined} campaignId={campaign.id} rules={rules.data} roster={namedActors} actorId={actorId} gm={gm} revision={revision + liveRevision} onChanged={refresh} /> : !actorId ? <EmptyState title="Eine Figur macht den Anfang.">Sobald eine Person deiner Runde beitritt, könnt ihr ihren Charakterbogen öffnen und mit ihr handeln.</EmptyState> : tab === "sheet" ? <CharacterSheet liveRevision={revision + liveRevision} key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} onDirty={changeDirty} onChanged={refresh} /> : <Actions key={`${actorId}-${rules.data.pin.id}-${rules.data.pin.version}`} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} fictionDate={active?.fictionDate ?? ""} roster={namedActors} revision={revision + liveRevision} onChanged={refresh} /> : null}
     </div>
