@@ -1,0 +1,11 @@
+/* Der Geldzaehler steht an zwei Orten und sieht an beiden gleich aus — er ist EINE Komponente.
+   Kompakt heisst: neben dem Bogen, ohne Verwaltung; ausfuehrlich heisst: im Inventar. */
+.geldzaehler { display: grid; gap: .4rem; padding: .6rem .7rem; border: 1px solid var(--line, #2a3230);
+  border-inline-start: 3px solid var(--accent, #a8791f); border-radius: var(--radius, 6px); margin-block: .8rem; }
+.geldzaehler h3 { display: flex; align-items: center; gap: .4rem; margin: 0; font-size: .9rem; }
+.geldzaehler.kompakt { margin-block: .5rem; padding: .45rem .6rem; }
+.geldzaehler.kompakt h3 { font-size: .8rem; }
+.geld-zeile { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem; }
+.geld-zeile label { margin: 0; }
+.geld-zeile input[type="number"] { width: 9rem; font-family: var(--font-mono, monospace); }
+.geldzaehler .field-help { margin: 0; }

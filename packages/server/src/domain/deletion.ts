@@ -62,6 +62,8 @@ export const LOESCHREIHENFOLGE: readonly string[] = [
   "kampf_teilnehmer", "kaempfe",
   // Blatt: die Erleichterung zeigt auf Figur, Nutzer und Wurf; niemand zeigt auf sie.
   "erleichterungen",
+  // Blatt: Boerse und Einheit zeigen auf Figur und Kampagne; niemand zeigt auf sie.
+  "geldbestand", "geld_einheit",
   // Laufzeit und Beitritt — vom Export nicht erfasst.
   "media_cleanup", "media_blocks", "media_presence", "media_whisper_members", "media_rooms",
   "events", "event_cursors", "commands",

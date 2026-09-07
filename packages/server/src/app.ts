@@ -28,6 +28,7 @@ import { registerGegenueberstellung } from "./http/gegenueberstellung.ts";
 import { registerGefuege } from "./http/gefuege.ts";
 import { registerKampfbuehne } from "./http/kampfbuehne.ts";
 import { registerErleichterungen } from "./http/erleichterungen.ts";
+import { registerGeld } from "./http/geld.ts";
 import { registerZeitleiste } from "./http/zeitleiste.ts";
 import { registerWikiMedien } from "./http/wiki-medien.ts";
 import { registerBundles } from "./http/bundles.ts";
@@ -181,6 +182,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerGefuege(app, db, config);
   registerKampfbuehne(app, db, config);
   registerErleichterungen(app, db, config);
+  registerGeld(app, db, config);
   registerZeitleiste(app, db, config);
   registerWikiMedien(app, db, config);
   registerBundles(app, db, config);

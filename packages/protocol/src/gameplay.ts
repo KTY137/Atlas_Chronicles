@@ -18,6 +18,13 @@ export const SceneStart = Type.Object({expectedSceneVersion:Type.Optional(Type.I
 export const ActionDraft = Type.Object({commandId:id,actorId:id,actionId:id,packageId:Type.Optional(id),packageVersion:Type.Optional(id),input:Type.Optional(values),targetPassageId:Type.Optional(id),fictionDate:Type.Optional(date),erleichterungId:Type.Optional(id)},closed);
 /** Ein Zugestaendnis der Spielleitung: welche Probe, was abgesprochen ist, und warum. */
 export const ErleichterungDraft = Type.Object({actorId:id,gemeinteAktion:id,gewuerfelteAktion:id,eingaben:values,grund:Type.String({minLength:1,maxLength:500,pattern:"\\S"})},closed);
+/**
+ * Der Geldzaehler. Kein `pattern` auf dem Namen: die Domaene schneidet Leerraum ab und
+ * weist einen leeren Namen zurueck — eine Regel an zwei Orten waere eine Regel zu viel.
+ */
+export const GeldEinheitDraft = Type.Object({name:Type.String({minLength:1,maxLength:40}),expectedVersion:Type.Integer({minimum:0})},closed);
+/** Ein gesetzter Stand, keine Verrechnung: die erwartete Fassung macht Verluste sichtbar. */
+export const GeldstandDraft = Type.Object({betrag:Type.Integer({minimum:0,maximum:Number.MAX_SAFE_INTEGER}),expectedVersion:Type.Integer({minimum:0})},closed);
 export const MintDraft = Type.Object({commandId:id,passageId:id,fictionDate:date,actorIds:Type.Optional(Type.Array(id,{maxItems:128,uniqueItems:true})),expectedPassageHash:Type.Optional(Type.String({pattern:"^[a-f0-9]{64}$"}))},closed);
 export const CorrectionDraft = Type.Object({...MintDraft.properties,replaces:id},closed);
 export const DefeatDraft = Type.Object({...MintDraft.properties,actorId:id,expectedVersion:Type.Integer({minimum:1})},closed);

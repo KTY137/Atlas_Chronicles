@@ -49,7 +49,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☑ | Speicherstand im Vorrat: was es gibt und wo es liegt |
 | 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☑ | Inventarauswahl; ein Behälter ist eine Figur der Art Fahrzeug |
 | 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☑ | trug das Modell schon; die handelnde Figur folgt jetzt dem Wissensblick |
-| 12 | Gesonderter Geldcounter | ☐ | |
+| 12 | Gesonderter Geldcounter | ☑ | im Inventar und beim Bogen — eine Komponente, zwei Orte |
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☐ | hängt an #1 |
 | 14 | Dynamisch setzbare Bars | ☐ | hängt an #13 |
 | 15 | KI-vorgeschlagene Änderungen | ☐ | |
@@ -850,3 +850,84 @@ Figuren erzeugt, wäre ein anderer Vertrag, kein Feature. Ein Konto sieht seine 
 **innerhalb einer Runde**; eine Übersicht „alle meine Figuren über alle Runden" gibt es nicht.
 Und die Hauptfigur der Mitgliedschaft bleibt der Rückfall, wenn noch kein Wissensblick gewählt
 wurde.
+
+## Feature 12 — Gesonderter Geldcounter: der Entwurf
+
+**Gemessen, 2026-09-07 19:05.** Im ganzen Baum gibt es **keinen Geldbegriff** — keine Währung,
+keine Münze, kein Konto. Feature 12 ist wirklich neu.
+
+### Drei Wege, und warum zwei davon falsch sind
+
+**Geld als Gegenstand** (ein Beutel mit `quantity: 40`) wäre der billigste Weg und genau das, was
+das Wort **„gesondert"** ausschließt. Es hätte auch echte Nachteile: ein Beutel liegt in *einem*
+Inventar, Geld aber gehört der Figur; und jede Ausgabe wäre eine Mengenänderung an einer Karte
+statt einer Zahl, die man ablesen kann.
+
+**Geld als Bogenfeld** wäre möglich — die Schmiede lässt die Spielleitung Felder definieren —,
+aber es hinge dann am Regelpaket. How to be a Hero kennt kein Geld; es dort einzuführen hieße,
+dem lizenzierten System eine Regel zuzuschreiben, die es nicht hat (dieselbe Grenze wie bei
+Feature 7). Und es stünde dann **nur** auf dem Bogen, nicht im Inventar.
+
+**Also ein eigener Zähler**, neben Bogen und Inventar — genau das, was „gesondert" sagt.
+
+### Das Datenmodell, in endgültiger Form
+
+- **`geld_einheit`** — wie diese Runde ihr Geld nennt (eine Zeile je Kampagne: „Silber",
+  „Credits", „Taler"). Ohne Namen wäre die Zahl bedeutungslos, und ein fest verdrahtetes „Gold"
+  wäre eine Aussage über eine Welt, die uns nicht gehört.
+- **`geldbestand`** — was eine Figur hat: Kampagne, Figur, Betrag, Fassung, Zeitpunkt.
+
+**Der Betrag ist eine ganze Zahl und darf nicht negativ sein.** Schulden sind eine Erzählung, kein
+Kontostand; wer sie führen will, schreibt sie in die Notizen. Eine Zahl, die unter null rutschen
+kann, lädt außerdem zu genau dem stillen Rechenfehler ein, den ein Zähler verhindern soll.
+
+**Wer ändern darf, ändert auch das Inventar.** Kein neuer Rechteweg: es gilt dieselbe Prüfung wie
+bei `updateItem` — wer die Figur führt, führt auch ihre Börse. Die Spielleitung ohnehin.
+
+**Fassungen, keine Deltas.** Jede Änderung nennt die erwartete Fassung. Zwei Leute, die
+gleichzeitig kaufen, bekommen einen Konflikt statt eines stillen Verlusts — dieselbe Regel wie
+beim Bogen.
+
+### Der senkrechte Schnitt
+
+Zwei neue Tabellen heißen wieder: Migration, **native Generation 13**, `restoreOrder`,
+Löschabdeckung, Domäne, HTTP, dann die Oberfläche — im Inventar **und** beim Charakterbogen,
+denn genau das verlangt der Auftrag: „im Inventar, aber noch beim Char stehen".
+
+### Abschluss Feature 12 — 2026-09-07 19:35
+
+**Der Zähler steht, und zwar an beiden Orten.** Im **Inventar** ausführlich (dort benennt die
+Spielleitung auch die Währung) und **beim Charakterbogen** kompakt — genau das verlangt der
+Auftrag: „im Inventar, aber noch beim Char stehen". Es ist **eine** Komponente, zweimal
+gerendert; sie zweimal zu schreiben wäre die Doppelung, die beim ersten Umbau auseinanderliefe.
+
+**Gesetzt wird ein Stand, nicht verrechnet.** Das Feld schickt den Betrag mit der erwarteten
+Fassung. Ein „+5"-Knopf wäre bequemer und würde genau den stillen Verlust verstecken, den zwei
+gleichzeitige Käufe erzeugen — so bekommt der zweite einen Konflikt.
+
+**Geld gehört der Figur, nicht dem Behälter.** Im Vorrat der Spielleitung steht deshalb keiner:
+eine Kutsche hat Fracht, keine Börse.
+
+### Belege
+
+- `geld.test.ts` **6/6 grün**: beginnt bei null und ohne Namen (Fassung 0 heißt „noch keine
+  Zeile"); die Spielleitung benennt und benennt um, die Runde nicht; **wer die Figur führt, führt
+  ihre Börse** und eine fremde bleibt zu; der zweite Kauf mit veraltetem Stand wird abgewiesen
+  statt verschluckt; keine Schulden und keine krummen Beträge (null ist erlaubt); und der
+  Überblick über alle Börsen gehört der Spielleitung.
+- **Gegenprobe gefahren:** Fassungsprüfung und Betragsregel entfernt → genau die zwei zugehörigen
+  Fälle rot. Der zweite zeigte dabei, dass auch der CHECK der Datenbank greift („violates check
+  constraint"). Danach zurückgesetzt.
+- Export: **native Generation 13**, `restoreOrder` und Löschabdeckung mit; `packages/io`
+  **254/254**, `restore-order` + `deletion` + `alles-in-einer-datei` grün. Ein Fehlschlag in
+  `campaign-bundle-v3` unter Parallel-Last war **isoliert 25/25 grün** — Last, kein Defekt.
+- Kein Regress: `packages/client` und Serversuiten **164/164**, `typecheck` 0 Fehler,
+  `gate:boundaries` **450/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+**Eine Währung, keine Stückelung.** Gold/Silber/Kupfer mit Umrechnung wäre ein eigenes System;
+wer es braucht, führt die kleinste Einheit. **Keine Buchungen:** der Zähler zeigt den Stand, nicht
+die Geschichte — wer Ausgaben nachhalten will, schreibt sie in die Notizen. Und Geld **wandert
+nicht automatisch** mit verkauften Gegenständen; es gibt keine Preise an den Lootkarten, nur die
+freie Zeile „Wert", die niemand verrechnet.

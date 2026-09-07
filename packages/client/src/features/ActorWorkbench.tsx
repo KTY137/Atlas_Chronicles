@@ -3,6 +3,7 @@ import type { ActorCard, ActorKindValue, ActorTemplateData, ControllerCard, Item
 import { LOOT_RARITIES } from "@chronicle/protocol";
 import { Lootkarte, SELTENHEIT_TEXT } from "./Lootkarte";
 import { speicherstats } from "./speicherstats";
+import { Geldzaehler } from "./Geldzaehler";
 import type { Scalar } from "@chronicle/rules";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type EntrySummary, type Member, type WikiMedienBestand } from "../api";
@@ -305,6 +306,8 @@ export function Inventory({ campaignId, actorId, actors, gm, revision, onChanged
     {/* Der Vorrat allein zeigt nur den Tresor. Der Speicherstand beantwortet die andere Frage:
         wo ist der Loot? Er rechnet aus der Liste, die hier ohnehin schon geholt wurde. */}
     {gm && stock ? <Speicherstand items={items.data ?? []} actors={actors} /> : null}
+    {/* Geld gehoert der Figur, nicht dem Behaelter: im Vorrat der Spielleitung steht keins. */}
+    {!stock ? <Geldzaehler campaignId={campaignId} actorId={gewaehlt} gm={gm} revision={revision} onChanged={onChanged} /> : null}
     {gm ? <form className="panel inventory-create" onSubmit={event => { event.preventDefault(); if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; const t = templates.data?.find(t => t.id === templateId); if (t) void task.run(async () => {
       const item = await command<ItemCard>(apiPath(campaignId, "/items/instantiate"), { templateId: t.id, templateRevision: t.revision, holderActorId: holder }); setSelected(item.id); onChanged();
     }); }}><fieldset className="actor-command-fields" disabled={task.busy}><label>Gegenstand aus Vorlage<select required value={templateId} onChange={e => setTemplateId(e.target.value)}><option value="">Gegenstandsvorlage wählen</option>{templates.data?.map(t => <option key={t.id} value={t.id}>{t.definition.name} · Revision {t.revision}</option>)}</select></label>{/* Gelegt wird in das Inventar, das gerade offen ist — Vorrat, Figur oder Behälter. Die
