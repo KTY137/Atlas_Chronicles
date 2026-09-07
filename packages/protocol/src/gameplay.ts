@@ -10,7 +10,14 @@ export const SheetUpdate = Type.Object({expectedVersion:Type.Integer({minimum:0}
 export const ResourceAdjustment = Type.Object({expectedVersion:Type.Integer({minimum:0}),field:id,delta:Type.Number({minimum:-1e12,maximum:1e12})},closed);
 export const SceneDraft = Type.Object({name:Type.String({minLength:1,maxLength:160}),entryIds:Type.Array(id,{maxItems:128,uniqueItems:true}),fictionDate:date},closed);
 export const SceneStart = Type.Object({expectedSceneVersion:Type.Optional(Type.Integer({minimum:1})),expectedPlanVersion:Type.Optional(Type.Integer({minimum:0}))},closed);
-export const ActionDraft = Type.Object({commandId:id,actorId:id,actionId:id,packageId:Type.Optional(id),packageVersion:Type.Optional(id),input:Type.Optional(values),targetPassageId:Type.Optional(id),fictionDate:Type.Optional(date)},closed);
+/**
+ * `erleichterungId` loest ein offenes Zugestaendnis der Spielleitung ein. Aktion UND
+ * Eingaben kommen dann aus der gespeicherten Zeile, nicht aus diesem Entwurf — die Felder
+ * hier bleiben zulaessig, wirken aber nicht.
+ */
+export const ActionDraft = Type.Object({commandId:id,actorId:id,actionId:id,packageId:Type.Optional(id),packageVersion:Type.Optional(id),input:Type.Optional(values),targetPassageId:Type.Optional(id),fictionDate:Type.Optional(date),erleichterungId:Type.Optional(id)},closed);
+/** Ein Zugestaendnis der Spielleitung: welche Probe, was abgesprochen ist, und warum. */
+export const ErleichterungDraft = Type.Object({actorId:id,gemeinteAktion:id,gewuerfelteAktion:id,eingaben:values,grund:Type.String({minLength:1,maxLength:500,pattern:"\\S"})},closed);
 export const MintDraft = Type.Object({commandId:id,passageId:id,fictionDate:date,actorIds:Type.Optional(Type.Array(id,{maxItems:128,uniqueItems:true})),expectedPassageHash:Type.Optional(Type.String({pattern:"^[a-f0-9]{64}$"}))},closed);
 export const CorrectionDraft = Type.Object({...MintDraft.properties,replaces:id},closed);
 export const DefeatDraft = Type.Object({...MintDraft.properties,actorId:id,expectedVersion:Type.Integer({minimum:1})},closed);

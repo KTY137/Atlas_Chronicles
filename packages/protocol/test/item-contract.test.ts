@@ -1,6 +1,6 @@
 import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
-import { ItemContractV1, ItemContractV2, ItemContractAny, ItemTemplateCreate, LOOT_RARITIES } from "../src/index.ts";
+import { ItemContractV1, ItemContractV2, ItemContractAny, ItemTemplateCreate, LOOT_RARITIES, ErleichterungDraft } from "../src/index.ts";
 
 // Der Gegenstandsvertrag ist die Tuer, durch die eine Lootkarte in die Welt kommt. Beide
 // Fassungen muessen durch dieselbe Tuer passen — und nichts sonst.
@@ -55,5 +55,18 @@ describe("Der Gegenstandsvertrag", () => {
     // Die alte Fassung darf durch die Erweiterung nicht strenger oder lockerer geworden sein.
     expect(Value.Check(ItemContractV1, alt)).toBe(true);
     expect(Value.Check(ItemContractV1, { ...alt, seltenheit: "selten" })).toBe(false);
+  });
+
+  it("verlangt für eine Erleichterung eine echte Begründung", () => {
+    // Zweimal ist beim Schreiben ein Backslash im Muster verlorengegangen — und ein einfach
+    // maskiertes S ist in TypeScript schlicht der Buchstabe S. Dieser Fall prüft deshalb die
+    // WIRKUNG statt der Schreibweise: eine
+    // Begründung aus Leerzeichen ist keine, und „Seil gesichert" muss durchkommen, obwohl kein
+    // grosses S darin vorkommt.
+    const entwurf = (grund: string) => ({ actorId: "a", gemeinteAktion: "skill_klettern", gewuerfelteAktion: "manual_ruling", eingaben: { target: 70 }, grund });
+    expect(Value.Check(ErleichterungDraft, entwurf("Du hast das Seil vorher gesichert."))).toBe(true);
+    expect(Value.Check(ErleichterungDraft, entwurf("weil"))).toBe(true);
+    expect(Value.Check(ErleichterungDraft, entwurf("   "))).toBe(false);
+    expect(Value.Check(ErleichterungDraft, entwurf(""))).toBe(false);
   });
 });

@@ -41,7 +41,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 4 | Wiki-Export | ☑ | Chronik als Markdown, im Blick der exportierenden Person |
 | 5 | Lootkarten (Karte wie YuGiOh) | ☑ | Kartenfassung des Gegenstandsvertrags + Karte |
 | 6 | Admininventar (Admin erstellt Lootkarten) | ☑ | war gebaut; geprüft und belegt, ein Regress dabei gefunden |
-| 7 | Spielleiter kann Würfe erleichtern | ◐ | Datenschicht + Einlösung grün; Oberfläche fehlt |
+| 7 | Spielleiter kann Würfe erleichtern | ☑ | bedienbar im Reiter „Aktionen" |
 | 8 | Alles als **eine** Datei exportierbar (JSON) | ☐ | `.chronicle` v6 existiert — prüfen, nicht neu bauen |
 | 9 | Speicherstats (Lootkarten-Inventar der Spielleitung) | ☐ | „Vorrat der Spielleitung" existiert — prüfen |
 | 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☐ | `holder_actor_id` trägt heute nur Figuren — hier liegt die echte Lücke |
@@ -588,3 +588,56 @@ ins Budget und ist **isoliert 6/6 grün** — Last, kein Defekt, kein Budget ang
 
 **Noch nicht da:** HTTP-Route und Oberfläche. Nach Regel 5 bleibt #7 auf „in Arbeit", bis die
 Spielleitung eine Erleichterung im Browser gewähren und die Spielerin sie dort einlösen kann.
+
+### Abschluss Feature 7 — 2026-09-07 18:40
+
+**Man kann es jetzt benutzen.** Am Tisch, im Reiter **Aktionen**: die Spielleitung füllt „Eine
+Probe erleichtern" aus — Figur, gemeinte Probe, die abgesprochenen Werte und eine **Begründung**
+—, und die Spielerin sieht darüber ihrem Wurfformular ein Feld „Dir wurde entgegengekommen" mit
+dem Knopf **„Erleichterte Probe würfeln"**.
+
+**Die Eingabefelder zeichnet `RuleFields`** — dieselbe Komponente wie überall sonst. Ein eigenes
+Formular für dieselben Felder wäre eine Doppelung, die beim nächsten Feldtyp auseinanderliefe.
+Und die Fläche steht bei den **Aktionen**, nicht bei den Vollmachten: eine Vollmacht ist eine Tür
+für später, eine Erleichterung gilt für diesen Moment.
+
+**Was abgesprochen ist, steht offen auf der Karte.** Eine Erleichterung ist keine Überraschung;
+die Spielerin sieht die Zahlen, bevor sie würfelt, und den Grund dazu.
+
+### Zwei Dinge, die erst der HTTP-Test gezeigt hat
+
+**Die CSRF-Abwehr.** Alle schreibenden Zugriffe antworteten zunächst mit 404. Der Grund steht in
+`app.ts` Zeile 62: jeder Nicht-GET braucht einen passenden `Origin`. Das ist kein Fehler, sondern
+eine Zusicherung — die vorhandenen HTTP-Tests im Haus machen bezeichnenderweise nur GETs oder
+bauen eine eigene, nackte Anwendung. Der Fall steht jetzt ausdrücklich im Test: **eine fremde
+Seite darf keine Erleichterung gewähren, auch nicht mit gültigem Sitzungsplätzchen.**
+
+**Ein Stolperstein im eigenen Test.** Der Fall „ohne Herkunft" bestand zunächst nicht, weil
+`undefined` als Argument den **Vorgabewert aktiviert** — die Herkunft wurde also doch
+mitgeschickt. Jetzt heißt `null` ausdrücklich „ohne Kopf".
+
+### Und der Musterfehler wäre beinahe wieder passiert
+
+Beim Schreiben von `ErleichterungDraft` fiel `\\S` erneut zu `\S` zusammen — genau der Fehler aus
+Feature 5. Diesmal sofort an den Zeichen geprüft und korrigiert, **und** in
+`item-contract.test.ts` durch einen Fall abgesichert, der die **Wirkung** prüft statt der
+Schreibweise: „Seil gesichert" muss durchkommen, obwohl kein großes S darin vorkommt.
+
+### Belege
+
+- `erleichterungen-http.test.ts` **4/4 grün**: die ganze Geste durch die echte Anwendung — die
+  Spielerin würfelt selbst, und die **mitgeschickten eigenen Zahlen gelten nicht** (`target 99`
+  wird zu 70); Berechtigungen; Zurücknehmen; die Herkunftsprüfung; und eine Begründung aus
+  Leerzeichen scheitert schon am Schema.
+- `erleichterungen.test.ts` **6/6**, `item-contract.test.ts` **7/7**.
+- Kein Regress: `protocol` + `client` + fünf Server-Suiten **182/183**, wobei der eine Fehlschlag
+  (`browser-entrypoints-review`) **isoliert 6/6** und das ganze Client-Paket allein **130/130**
+  grün ist — Last, kein Defekt. `typecheck` 0 Fehler, `gate:boundaries` **436/8/0**,
+  Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Es gibt **keine Erschwernis** — die Liste verlangt Erleichtern, und das Gegenteil zu erfinden
+wäre Regelarbeit, die niemand bestellt hat. Eine Erleichterung **läuft nicht ab**: sie gilt, bis
+sie eingelöst oder zurückgenommen wird. Und sie erscheint **nicht in der Kampfbühne** — wer
+gerade dran ist, sieht sie im Aktionen-Reiter, nicht auf seiner Karte.

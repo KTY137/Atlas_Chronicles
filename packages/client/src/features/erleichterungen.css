@@ -1,0 +1,16 @@
+/* Ein Zugestaendnis ist eine Zuwendung, keine Warnung: es steht freundlich da, nicht alarmiert. */
+.erleichterungen h2 { display: flex; align-items: center; gap: .4rem; }
+.erleichterung-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.erleichterung-liste article {
+  display: grid; gap: .4rem; padding: .6rem .7rem;
+  border: 1px solid var(--line, #2a3230); border-inline-start: 3px solid var(--ok, #5f8f62);
+  border-radius: var(--radius, 6px); background: var(--surface, #121716);
+}
+.erleichterung-grund { margin: 0; font-style: italic; color: var(--text-muted, #9aa3a0); overflow-wrap: anywhere; }
+/* Was abgesprochen ist, steht offen da — eine Erleichterung ist keine Ueberraschung. */
+.erleichterung-werte { display: flex; flex-wrap: wrap; gap: .15rem .9rem; margin: 0; font-size: .78rem; }
+.erleichterung-werte > div { display: flex; gap: .35rem; }
+.erleichterung-werte dt { color: var(--text-muted, #9aa3a0); }
+.erleichterung-werte dd { margin: 0; font-family: var(--font-mono, monospace); }
+.erleichterung-offen { margin-block-start: .8rem; font-size: .8rem; }
+.erleichterung-offen ul { margin: .4rem 0 0; padding-inline-start: 1.1rem; display: grid; gap: .2rem; }

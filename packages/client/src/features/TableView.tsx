@@ -11,6 +11,7 @@ import { RuleFields } from "./RuleFields";
 import { ActorWorkbench } from "./ActorWorkbench";
 import { TacticalView } from "./TacticalView";
 import { Kampfbuehne } from "./Kampfbuehne";
+import { ErleichterungGewaehren, OffeneErleichterungen } from "./Erleichterungen";
 import { defaults, useCommand, type ActionCard, type ActorSheet, type DoorCard, type RulesState, type SceneCard } from "./game-api";
 import "./gameplay.css";
 
@@ -61,9 +62,16 @@ function Actions({ campaignId, actorId, rules, gm, fictionDate, roster, revision
   const action = pkg?.actions.find((action) => action.id === actionId) ?? pkg?.actions[0];
   const rolls = useResource<ActionCard[]>(apiPath(campaignId, "/rolls"), revision, 6000), task = useTask(), command = useCommand();
   const frisch = useFrischeKarten(rolls.data?.map(karte => karte.id) ?? []);
-  return <div className="table-columns"><form className="panel action-form" onSubmit={(event) => { event.preventDefault(); if (action) void task.run(async () => { await command(apiPath(campaignId, "/rolls"), { actorId, actionId: action.id, input: { ...defaults(action.inputs), ...input }, ...(passageId && gm ? { targetPassageId: passageId } : {}), ...(fictionDate ? { fictionDate } : {}) }); onChanged(); }); }}><h2><Dice6 size={20} /> Eine Handlung wagen</h2>
+  return <div className="table-columns"><div className="action-column">
+    {/* Erst das Zugestaendnis, dann der eigene Wurf: was einem entgegengekommen wird, soll man
+        sehen, BEVOR man die Probe von Hand zusammenstellt. */}
+    <OffeneErleichterungen campaignId={campaignId} actorId={actorId} rules={rules} gm={gm} revision={revision}
+      onChanged={onChanged} onGewuerfelt={() => onChanged()} />
+    <form className="panel action-form" onSubmit={(event) => { event.preventDefault(); if (action) void task.run(async () => { await command(apiPath(campaignId, "/rolls"), { actorId, actionId: action.id, input: { ...defaults(action.inputs), ...input }, ...(passageId && gm ? { targetPassageId: passageId } : {}), ...(fictionDate ? { fictionDate } : {}) }); onChanged(); }); }}><h2><Dice6 size={20} /> Eine Handlung wagen</h2>
     {task.error || sheet.error ? <Notice error>{task.error || sheet.error}</Notice> : null}{sheet.loading ? <Loading /> : action ? <><label>Aktion<select value={action.id} onChange={(e) => { setActionId(e.target.value); setInput({}); }}>{pkg?.actions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><p className="field-help">{action.disclosure}</p><RuleFields fields={action.inputs} values={{ ...defaults(action.inputs), ...input }} onChange={setInput} disabled={task.busy} />{gm ? <details><summary>Erfolg mit einer Passage verbinden</summary><p className="field-help">Bei Erfolg und deiner Bestätigung wird diese Passage am Tisch geprägt.</p><TargetPassage campaignId={campaignId} entryId={entryId} passageId={passageId} onEntry={setEntryId} onPassage={setPassageId} /></details> : null}<Button type="submit" variant="primary" disabled={task.busy}>{task.busy ? <><span className="wuerfel-rollt" aria-hidden="true"><Dice6 size={17} /></span> Würfelt …</> : <><Dice6 size={17} /> Würfeln</>}</Button></> : <Notice error>Keine Aktion für diesen Bogen verfügbar.</Notice>}
-  </form><section className="roll-feed"><h2>Ergebnisse und Belege</h2>{rolls.loading ? <Loading /> : rolls.error ? <Notice error>{rolls.error}</Notice> : rolls.data?.length ? rolls.data.map((card) => <RollCard key={card.id} card={card} frisch={frisch.has(card.id)} campaignId={campaignId} actorName={roster.find((member) => member.actorId === card.actorId)?.displayName ?? "Figur"} onChanged={onChanged} />) : <EmptyState title="Der erste Wurf wartet.">Ein echter Wurf kommt vom Server. Sein Rechenweg bleibt nachvollziehbar.</EmptyState>}</section></div>;
+  </form>
+    {gm ? <ErleichterungGewaehren campaignId={campaignId} rules={rules} roster={roster} revision={revision} onChanged={onChanged} /> : null}
+  </div><section className="roll-feed"><h2>Ergebnisse und Belege</h2>{rolls.loading ? <Loading /> : rolls.error ? <Notice error>{rolls.error}</Notice> : rolls.data?.length ? rolls.data.map((card) => <RollCard key={card.id} card={card} frisch={frisch.has(card.id)} campaignId={campaignId} actorName={roster.find((member) => member.actorId === card.actorId)?.displayName ?? "Figur"} onChanged={onChanged} />) : <EmptyState title="Der erste Wurf wartet.">Ein echter Wurf kommt vom Server. Sein Rechenweg bleibt nachvollziehbar.</EmptyState>}</section></div>;
 }
 
 function Scenes({ campaignId, gm, scenes, onChanged, onOpenEntry }: { campaignId: string; gm: boolean; scenes: SceneCard[]; onChanged: () => void; onOpenEntry: (id: string) => void }) {
