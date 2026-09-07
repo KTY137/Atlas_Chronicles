@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPgDb, createTestDb, migrate, type Db } from "../src/db/index.ts";
+import { HOW_TO_BE_A_HERO_PACKAGE, HTBAH_EXAMPLE_CHARACTERS } from "@chronicle/rules";
 import { createCampaigns } from "../src/domain/campaigns.ts";
+import { seedActorControl } from "./actor-fixtures.ts";
+import { createGameplay } from "../src/domain/gameplay.ts";
 import { createKampfbuehne, type Seite } from "../src/domain/kampfbuehne.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 
@@ -148,6 +151,36 @@ describe("Die Kampfbühne", () => {
       () => f.buehne.eroeffnen(f.spieler, f.campaignId, kampf.id),
       () => f.buehne.beenden(f.spieler, f.campaignId, kampf.id),
     ]) await expect(versuch()).rejects.toBeInstanceOf(Gone);
+  });
+
+  it("haengt einen echten Initiativwurf als Beleg an die Karte", async () => {
+    const f = await fixture();
+    // Die Wuerfelmaschinerie ist dieselbe wie am Tisch — ein erfundener Beleg waere keiner.
+    const game = createGameplay(db, { now: () => time, seed: () => "00000001000000020000000300000004" });
+    await seedActorControl(db, f.campaignId, f.actorId, f.spieler);
+    await game.installPackage(f.gm, f.campaignId, HOW_TO_BE_A_HERO_PACKAGE);
+    const review = await game.previewPackage(f.gm, f.campaignId, HOW_TO_BE_A_HERO_PACKAGE);
+    await game.activatePackage(f.gm, f.campaignId, { packageId: HOW_TO_BE_A_HERO_PACKAGE.id, packageVersion: HOW_TO_BE_A_HERO_PACKAGE.version, expectedVersion: 0, previewHash: review.previewHash });
+    await game.updateSheet(f.spieler, f.campaignId, { actorId: f.actorId, expectedVersion: 0, fields: { ...HTBAH_EXAMPLE_CHARACTERS[0]!.fields } });
+    const wurf = await game.prepareAction(f.spieler, f.campaignId, { commandId: randomUUID(), actorId: f.actorId, actionId: "initiative" });
+
+    const kampf = await f.buehne.anlegen(f.gm, f.campaignId, { name: "Mit Beleg" });
+    const stand = await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaignId, kampf.id,
+      { name: "Held", seite: "gefaehrten", initiative: Math.trunc(wurf.receipt.total), actorId: f.actorId, initiativeRollId: wurf.id });
+    const karte = stand.teilnehmer[0]!;
+    expect(karte.initiativeRollId).toBe(wurf.id);
+    expect(karte.initiative).toBe(Math.trunc(wurf.receipt.total));
+
+    // Und der Beleg ist einloesbar: der genannte Wurf laesst sich nachrechnen.
+    expect((await game.replayRoll(f.spieler, f.campaignId, karte.initiativeRollId!)).valid).toBe(true);
+  });
+
+  it("weist einen erfundenen Beleg ab, statt ihn zu speichern", async () => {
+    const f = await fixture();
+    const kampf = await f.buehne.anlegen(f.gm, f.campaignId, { name: "Erfunden" });
+    await expect(f.buehne.teilnehmerHinzufuegen(f.gm, f.campaignId, kampf.id,
+      { name: "Schwindler", seite: "gegner", initiative: 99, initiativeRollId: randomUUID() })).rejects.toThrow();
+    expect((await f.buehne.buehne(f.gm, f.campaignId, kampf.id)).teilnehmer).toEqual([]);
   });
 
   it("eröffnet keine leere Bühne und kein zweites Mal", async () => {
