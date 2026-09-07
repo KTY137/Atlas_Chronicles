@@ -139,6 +139,50 @@ Der Versionssprung ist kein Formalismus: die Paketidentität steckt im `Weltkeim
 also ist jede aus 1.2.0 erzeugte Karte eine **andere** Karte als dieselbe Anfrage gegen 1.1.0. Genau
 das soll passieren — eine andere Assetbasis ist eine andere Karte, kein stiller Austausch.
 
+## Ein fremdes Paket einbinden
+
+Der Vertrag kennt `herkunft: "extern"` seit dem ersten Tag — aber bis hierher konnte nichts so
+ein Paket **bauen**, und damit war jede freie Sammlung im Netz praktisch unerreichbar, egal wie
+klar ihre Lizenz war. [`tools/assets/importiere-fremdpaket.mjs`](../tools/assets/importiere-fremdpaket.mjs)
+ist der fehlende Weg:
+
+```
+node tools/assets/importiere-fremdpaket.mjs \
+  --quelle .local/kenney-scribble-dungeon \
+  --id pk.kenney.kritzel --titel "Scribble Dungeon" --urheber "Kenney" \
+  --spdx CC0-1.0 --herkunft-url https://kenney.nl/assets/scribble-dungeons \
+  --lizenz .local/kenney-scribble-dungeon/License.txt --art aufbau
+npm run gate:assets
+```
+
+Es **weigert sich** ohne mitgelieferten Lizenztext, ohne benannte Quelle und bei einer Quelladresse
+mit Zugangsdaten — das sind die drei Zusagen, die fremde Herkunft überhaupt tragbar machen, und
+[`tools/test/importiere-fremdpaket.test.mjs`](../tools/test/importiere-fremdpaket.test.mjs) prüft
+jede einzeln. Abmessungen werden **gemessen**, nicht geglaubt: aus dem PNG-Kopf und aus der
+SVG-`viewBox`. Seit 1.2.0 rechnet auch das Gate die PNG-Abmessungen gegen das Manifest nach; ein
+Paket, das seine eigene Grösse falsch angibt, zeichnet der Renderer falsch skaliert, und das fällt
+am Tisch auf statt im Diff.
+
+Was das Skript ausdrücklich **nicht** tut: es lädt nichts herunter und es prüft keine Rechte. Die
+Rechteprüfung bleibt eine menschliche Entscheidung; das Werkzeug hält nur fest, was entschieden
+wurde, und macht die Entscheidung nachrechenbar.
+
+### Quellen, die den Vertrag erfüllen
+
+Geprüft im September 2026. **CC0 ist der einfache Fall**: keine Namensnennung, keine Bedingung, der
+Lizenztext ist die CC0-Urkunde selbst.
+
+| Quelle | Lizenz | Namensnennung | Anmerkung |
+|---|---|---|---|
+| [Kenney](https://kenney.nl/assets) | CC0 1.0 | nicht nötig | Eigene Aussage: *"all game assets on the asset pages are public domain licensed (CC0). You're free to use them, even in commercial projects."* Über 60 000 Assets, darunter Top-down-Kacheln. |
+| [OpenGameArt, CC0-Sammlungen](https://opengameart.org/content/cc0-tiles-tilesets) | CC0 1.0 | nicht nötig | **Pro Einreichung prüfen.** OGA mischt Lizenzen; die Sammelseiten führen nur CC0-Einträge, aber die Lizenz steht am einzelnen Werk. |
+| [game-icons.net](https://game-icons.net/) | CC BY 3.0 | **erforderlich** | Über 4 100 SVG-Symbole. Die Namensnennung ist im Format darstellbar (`lizenz.inhaber`, `lizenz.quelle`) — aber es gibt in der Anwendung **noch keine Stelle, die Credits anzeigt**. Bis es sie gibt, ist CC-BY hier nicht erfüllbar. |
+
+Die dritte Zeile ist der Grund, warum diese Tabelle in dieser Datei steht und nicht in einem Ticket:
+ein Paket einzubinden, dessen Bedingung die Anwendung nicht erfüllen kann, ist genau die RB-21c-Lage
+in klein. Der Importeur kann CC-BY-Pakete bauen; ausliefern darf man sie erst, wenn die Credits
+irgendwo stehen.
+
 ## Ein Paket ändern
 
 Generierte Pakete werden nie von Hand editiert:

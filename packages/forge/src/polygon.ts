@@ -175,6 +175,85 @@ export function imPolygon(p: Punkt, poly: Polygon): boolean {
   return drin;
 }
 
+/**
+ * Die Delaunay-Kanten einer Punktmenge, als Indexpaare.
+ *
+ * **Geschenkt, weil Delaunay das Duale des Voronoi ist:** zwei Punkte sind genau dann
+ * Delaunay-benachbart, wenn ihre Voronoizellen eine Kante teilen. Wir schneiden die Zellen
+ * ohnehin, also fällt die Triangulierung als Nebenprodukt an — kein zweiter Algorithmus, keine
+ * Umkreisprüfung, keine Entartungsfälle.
+ *
+ * Verglichen wird über den **Kantenmittelpunkt** auf Hundertstel: beide Nachbarn schneiden
+ * dieselbe Bisektrice, aber in anderer Reihenfolge, und die Endpunkte können im letzten Bit
+ * abweichen. Der Mittelpunkt ist der stabilere Schlüssel (dieselbe Überlegung wie in
+ * `siedlung.ts` bei den Gassen).
+ *
+ * Ergebnis ist nach `(a, b)` sortiert, damit ein Aufrufer daraus reproduzierbar einen
+ * Spannbaum bauen kann.
+ */
+export function delaunayKanten(punkte: readonly Punkt[], rahmen: Polygon): { a: number; b: number }[] {
+  const zellen = voronoi(punkte, rahmen);
+  const treffer = new Map<string, number[]>();
+  for (let i = 0; i < zellen.length; i++) {
+    const zelle = zellen[i]!;
+    for (let k = 0, j = zelle.length - 1; k < zelle.length; j = k++) {
+      const a = zelle[j]!, b = zelle[k]!;
+      const key = `${Math.round(((a[0] + b[0]) / 2) * 100)}:${Math.round(((a[1] + b[1]) / 2) * 100)}`;
+      const liste = treffer.get(key);
+      if (liste) { if (!liste.includes(i)) liste.push(i); }
+      else treffer.set(key, [i]);
+    }
+  }
+  const gesehen = new Set<string>();
+  const kanten: { a: number; b: number }[] = [];
+  for (const liste of treffer.values()) {
+    if (liste.length !== 2) continue;
+    const a = Math.min(liste[0]!, liste[1]!), b = Math.max(liste[0]!, liste[1]!);
+    const key = `${a}:${b}`;
+    if (gesehen.has(key)) continue;
+    gesehen.add(key);
+    kanten.push({ a, b });
+  }
+  return kanten.sort((x, y) => x.a - y.a || x.b - y.b);
+}
+
+/**
+ * Der minimale Spannbaum über gewichtete Kanten (Kruskal mit Union-Find), plus eine feste Zahl
+ * zusätzlicher Kanten, die den Baum wieder zum Netz machen.
+ *
+ * Das ist der Kern des TinyKeep-Verfahrens und der Grund, warum es sich lohnt: **der Spannbaum
+ * allein ist ein langweiliger Kerker.** Er garantiert, dass jeder Raum erreichbar ist, und
+ * garantiert zugleich, dass es genau einen Weg dorthin gibt — keine Abkürzung, keine Schleife,
+ * keine Entscheidung für den Spieler. Ein paar zurückgelegte Kanten sind der ganze Unterschied
+ * zwischen einem Baum und einem Grundriss.
+ *
+ * Die Zusatzkanten werden **gleichmässig über die sortierte Restliste verteilt** statt zufällig
+ * gezogen: so liegen sie über den Kerker gestreut statt geklumpt, und die Auswahl bleibt ohne
+ * weiteren Zufallsverbrauch reproduzierbar.
+ */
+export function spannbaumMitSchleifen(
+  kanten: readonly { a: number; b: number }[],
+  gewicht: (kante: { a: number; b: number }) => number,
+  knoten: number,
+  schleifen: number,
+): { a: number; b: number }[] {
+  const sortiert = [...kanten].map((k) => ({ ...k, w: gewicht(k) }))
+    .sort((x, y) => x.w - y.w || x.a - y.a || x.b - y.b);
+  const eltern = Array.from({ length: knoten }, (_, i) => i);
+  const finde = (i: number): number => { while (eltern[i] !== i) { eltern[i] = eltern[eltern[i]!]!; i = eltern[i]!; } return i; };
+  const baum: { a: number; b: number }[] = [];
+  const rest: { a: number; b: number }[] = [];
+  for (const kante of sortiert) {
+    const wa = finde(kante.a), wb = finde(kante.b);
+    if (wa === wb) { rest.push({ a: kante.a, b: kante.b }); continue; }
+    eltern[wa] = wb;
+    baum.push({ a: kante.a, b: kante.b });
+  }
+  const zusatz = Math.max(0, Math.min(schleifen, rest.length));
+  for (let i = 0; i < zusatz; i++) baum.push(rest[Math.floor((i * rest.length) / zusatz)]!);
+  return baum;
+}
+
 /** Kürzester Abstand eines Punktes zu einer Strecke. */
 export function abstandPunktStrecke(p: Punkt, a: Punkt, b: Punkt): number {
   const vx = b[0] - a[0], vy = b[1] - a[1];

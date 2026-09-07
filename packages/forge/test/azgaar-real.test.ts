@@ -21,7 +21,13 @@ describe("real Azgaar v1.151.2 Full export", () => {
     expect(imported.bericht.unterdrueckteNotizen).toBeGreaterThan(0);
     expect(imported.knoten.every((n) => n.sichtAnker === null)).toBe(true);
   });
-  it("repeats the production import with stable node IDs and geometry", () => {
+  // 20 s statt der voreingestellten 5. Dieser Test importiert das echte 2-MB-Artefakt **zweimal**,
+  // und ein Import misst auf einer belasteten Maschine 1,2 bis 2,5 Sekunden — das Budget war nie
+  // eines, es lief auf Glück. Gemessen, nachdem der Test an einer Änderung kippte, die
+  // `importiereAzgaar` nicht berührt: derselbe Import lief mit der Änderung sogar schneller als
+  // ohne. Ein Zeitbudget, das an fremdem Rauschen kippt, prüft nicht die Zusage dieses Tests
+  // (stabile Ids und Geometrie über zwei Läufe), sondern die Tagesform des Rechners.
+  it("repeats the production import with stable node IDs and geometry", { timeout: 20_000 }, () => {
     const first = importiereAzgaar(source);
     const second = importiereAzgaar(source);
     expect(first.knoten).toEqual(second.knoten);

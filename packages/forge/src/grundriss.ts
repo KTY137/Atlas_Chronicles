@@ -8,6 +8,7 @@ import {
   rauschen, sortiereNachId, wandLaeufe,
   type GrundrissBericht, type GrundrissEltern, type GrundrissRaum, type Rauschen,
 } from "./kartenwerk.ts";
+import { delaunayKanten, spannbaumMitSchleifen, type Polygon, type Punkt } from "./polygon.ts";
 
 /**
  * **The first generation Chronicle performs itself**, rather than importing: rooms, corridors and
@@ -43,7 +44,7 @@ import {
 
 export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const GRUNDRISS_VERSION = "2";
+export const GRUNDRISS_VERSION = "3";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
@@ -63,11 +64,28 @@ export interface GrundrissOptionen {
   readonly licht: boolean;
   /** Floor tag for corridors. Rooms take theirs from their theme. */
   readonly gangboden: string;
+  /**
+   * Wie die Räume auf die Karte kommen.
+   *
+   * - `raster` — rekursive Binärteilung (BSP). Räume füllen die Blätter eines Teilungsbaums,
+   *   liegen also auf einem impliziten Gitter. Richtig für Gebautes mit Plan: ein Kellergewölbe,
+   *   eine Kaserne, ein Turm.
+   * - `streuung` — Räume werden in eine Ellipse gestreut, per Trennkraft auseinandergeschoben,
+   *   dann über den **minimalen Spannbaum ihrer Delaunay-Triangulierung** verbunden, plus einige
+   *   zurückgelegte Kanten. Das ist das Verfahren, das TinyKeep beschrieben hat; es liefert
+   *   verschieden grosse Räume in unregelmässiger Lage und einen Kerker, der Schleifen hat statt
+   *   nur eines Wegs. Richtig für Gewachsenes und Gegrabenes.
+   *
+   * Der Spannbaum ist der Kern: er garantiert, dass jeder Raum erreichbar ist — und garantiert
+   * zugleich, dass es genau **einen** Weg dorthin gibt. Erst die zurückgelegten Kanten machen aus
+   * dem Baum einen Grundriss, in dem der Spieler eine Wahl hat.
+   */
+  readonly anordnung: "raster" | "streuung";
 }
 
 export const GRUNDRISS_STANDARD: GrundrissOptionen = Object.freeze({
   zellen: [40, 30] as const, zellgroesse: 64, raeume: 11, minRaum: 3, schleifen: 3,
-  moeblierung: 1, licht: true, gangboden: "trocken",
+  moeblierung: 1, licht: true, gangboden: "trocken", anordnung: "streuung",
 });
 
 export interface GrundrissAuftrag {
@@ -190,6 +208,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   if (typeof optionen.moeblierung !== "number" || !(optionen.moeblierung >= 0 && optionen.moeblierung <= 1)) fail("option", "optionen.moeblierung", "Zahl in 0..1 erwartet");
   if (typeof optionen.licht !== "boolean") fail("option", "optionen.licht", "Boolean erwartet");
   if (typeof optionen.gangboden !== "string" || !optionen.gangboden.trim()) fail("option", "optionen.gangboden", "Schlagwort erwartet");
+  if (optionen.anordnung !== "raster" && optionen.anordnung !== "streuung") fail("option", "optionen.anordnung", "raster oder streuung erwartet");
   if (breite * hoehe > L.zellenGesamt) fail("budget", "optionen.zellen", `höchstens ${L.zellenGesamt} Zellen`);
   if (breite * optionen.zellgroesse > L.kantePixelMax || hoehe * optionen.zellgroesse > L.kantePixelMax) fail("budget", "optionen.zellgroesse", `höchstens ${L.kantePixelMax} Pixel Kantenlänge`);
   if (optionen.minRaum + 2 > Math.min(breite, hoehe)) fail("option", "optionen.minRaum", "Raummindestmaß passt nicht in das Raster");
@@ -204,7 +223,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     optionen: {
       zellen: [breite, hoehe], zellgroesse: optionen.zellgroesse, raeume: optionen.raeume,
       minRaum: optionen.minRaum, schleifen: optionen.schleifen, moeblierung: optionen.moeblierung,
-      licht: optionen.licht, gangboden: optionen.gangboden,
+      licht: optionen.licht, gangboden: optionen.gangboden, anordnung: optionen.anordnung,
       paket: { id: paket.id, version: paket.version, zellgroesse: paket.zellgroesse },
     } as Readonly<Record<string, CanonicalValue>>,
   });
@@ -213,9 +232,85 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   const ids = idFabrik(GRUNDRISS_ERZEUGER, GRUNDRISS_VERSION, keim.keimHash);
 
   // -- partition and rooms ---------------------------------------------------------------------
-  const { wurzel, blaetter } = partitioniere(breite, hoehe, optionen, r);
-  if (blaetter.length < L.raeumeMin) fail("geometrie", "raeume", "das Raster trägt keine zwei Räume");
   const rohRaeume: RohRaum[] = [];
+  let wurzel: Blatt | null = null;
+  if (optionen.anordnung === "streuung") {
+    // **Streuen, auseinanderschieben, das Grösste behalten.**
+    //
+    // Kandidaten fallen in eine Ellipse statt in das ganze Rechteck: ein Kerker, der bis in jede
+    // Ecke reicht, sieht aus wie ein Grundriss, der die Leinwand ausfüllen musste. Die Ellipse
+    // gibt ihm einen Umriss. Danach schiebt eine Trennkraft überlappende Räume auseinander —
+    // immer entlang der Achse mit der *kleineren* Überlappung, weil das der kürzeste Weg aus der
+    // Überschneidung ist und die gestreute Anordnung am wenigsten stört.
+    // **Am Raster gedeckelt.** Ohne Deckel zog die Streuung auf einem 16x14-Raster Räume bis
+    // 13x13 — davon passt genau einer, und der Erzeuger scheiterte an einem völlig legalen
+    // Optionsvektor. Die längere Seite darf höchstens die halbe kürzere Kartenseite messen,
+    // damit zwei Räume nebeneinander immer Platz haben.
+    const maxSeite = Math.max(optionen.minRaum, Math.floor(Math.min(breite, hoehe) / 2) - 1);
+    const spanne = Math.max(0, Math.min(10, Math.round(optionen.minRaum * 1.6), maxSeite - optionen.minRaum));
+    const kandidatenZahl = Math.max(optionen.raeume, Math.min(L.raeumeMax * 2, Math.round(optionen.raeume * 2.2)));
+    const mx = breite / 2, my = hoehe / 2;
+    const kandidaten: { x: number; y: number; w: number; h: number }[] = [];
+    for (let i = 0; i < kandidatenZahl; i++) {
+      const w = optionen.minRaum + r.ganz(0, spanne), h = optionen.minRaum + r.ganz(0, spanne);
+      // Ablehnungsstichprobe in der Ellipse — aber ein Kandidat wird nie **verworfen**, nur
+      // schlechter platziert. Ein verworfener Kandidat war auf engen Rastern der zweite Grund,
+      // warum am Ende zu wenige Räume übrig blieben; die Trennkraft räumt ohnehin auf.
+      let x = r.ganz(1, Math.max(1, breite - w - 1)), y = r.ganz(1, Math.max(1, hoehe - h - 1));
+      for (let versuch = 0; versuch < 10; versuch++) {
+        const nx = (x + w / 2 - mx) / (breite / 2), ny = (y + h / 2 - my) / (hoehe / 2);
+        if (nx * nx + ny * ny <= 0.92) break;
+        x = r.ganz(1, Math.max(1, breite - w - 1));
+        y = r.ganz(1, Math.max(1, hoehe - h - 1));
+      }
+      kandidaten.push({ x, y, w, h });
+    }
+    for (let runde = 0; runde < 24; runde++) {
+      let bewegt = false;
+      for (let i = 0; i < kandidaten.length; i++) {
+        for (let j = i + 1; j < kandidaten.length; j++) {
+          const a = kandidaten[i]!, b = kandidaten[j]!;
+          // Ein Zellrand Luft zwischen zwei Räumen: sonst teilen sie sich eine Wand und die
+          // Türerkennung sieht eine Öffnung, wo keine ist.
+          const uebX = Math.min(a.x + a.w + 1, b.x + b.w + 1) - Math.max(a.x - 1, b.x - 1);
+          const uebY = Math.min(a.y + a.h + 1, b.y + b.h + 1) - Math.max(a.y - 1, b.y - 1);
+          if (uebX <= 0 || uebY <= 0) continue;
+          bewegt = true;
+          if (uebX <= uebY) {
+            const schub = Math.ceil(uebX / 2);
+            if (a.x + a.w / 2 <= b.x + b.w / 2) { a.x -= schub; b.x += schub; } else { a.x += schub; b.x -= schub; }
+          } else {
+            const schub = Math.ceil(uebY / 2);
+            if (a.y + a.h / 2 <= b.y + b.h / 2) { a.y -= schub; b.y += schub; } else { a.y += schub; b.y -= schub; }
+          }
+          a.x = Math.max(1, Math.min(breite - a.w - 1, a.x)); a.y = Math.max(1, Math.min(hoehe - a.h - 1, a.y));
+          b.x = Math.max(1, Math.min(breite - b.w - 1, b.x)); b.y = Math.max(1, Math.min(hoehe - b.h - 1, b.y));
+        }
+      }
+      if (!bewegt) break;
+    }
+    // Wer nach der Trennung noch überlappt, fällt raus — die Karte darf keine zwei Räume in
+    // derselben Zelle behaupten, und ein Reparaturlauf wäre hier teurer als ein Verzicht.
+    // Nach Fläche absteigend packen, **bevor** überlappende verworfen werden: in
+    // Erzeugungsreihenfolge blockierte ein zufällig früher Splitter den Platz eines grossen
+    // Raums, und die Karte verlor genau die Räume, die sie tragen sollten.
+    const nachGroesse = [...kandidaten].sort((a, b) => (b.w * b.h) - (a.w * a.h) || a.y - b.y || a.x - b.x);
+    const frei: typeof kandidaten = [];
+    for (const k of nachGroesse) {
+      if (k.x < 1 || k.y < 1 || k.x + k.w > breite - 1 || k.y + k.h > hoehe - 1) continue;
+      if (frei.some((f) => k.x - 1 < f.x + f.w + 1 && f.x - 1 < k.x + k.w + 1 && k.y - 1 < f.y + f.h + 1 && f.y - 1 < k.y + k.h + 1)) continue;
+      frei.push(k);
+    }
+    for (const k of frei.slice(0, optionen.raeume)) {
+      rohRaeume.push({ x: k.x, y: k.y, w: k.w, h: k.h, pfad: `s${k.x}_${k.y}`, thema: r.waehle(THEMEN) ?? THEMEN[0]! });
+    }
+    rohRaeume.sort((a, b) => a.y - b.y || a.x - b.x);
+    if (rohRaeume.length < L.raeumeMin) fail("geometrie", "raeume", "die Streuung trug auf diesem Raster keine zwei überschneidungsfreien Räume");
+  } else {
+  const teilung = partitioniere(breite, hoehe, optionen, r);
+  wurzel = teilung.wurzel;
+  const blaetter = teilung.blaetter;
+  if (blaetter.length < L.raeumeMin) fail("geometrie", "raeume", "das Raster trägt keine zwei Räume");
   for (const blatt of blaetter) {
     const freiW = blatt.w - 2, freiH = blatt.h - 2;
     if (freiW < optionen.minRaum || freiH < optionen.minRaum) continue;
@@ -232,6 +327,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     rohRaeume.push({ x, y, w, h, pfad: blatt.pfad || "wurzel", thema: r.waehle(THEMEN) ?? THEMEN[0]! });
   }
   if (rohRaeume.length < L.raeumeMin) fail("geometrie", "raeume", "nach dem Zuschnitt bleiben weniger als zwei Räume");
+  }
 
   // -- carve -----------------------------------------------------------------------------------
   const gitter = new Uint8Array(breite * hoehe);
@@ -271,12 +367,50 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     if (a && b) gang(a, b, r.chance(0.5), r.chance(0.28));
     return a ?? b;
   };
-  verbinde(wurzel);
-  for (let i = 0; i < optionen.schleifen && rohRaeume.length > 2; i++) {
-    const a = r.ganz(0, rohRaeume.length - 1);
-    let b = r.ganz(0, rohRaeume.length - 1);
-    if (b === a) b = (b + 1) % rohRaeume.length;
-    gang(mitteZelle(rohRaeume[a]!), mitteZelle(rohRaeume[b]!), r.chance(0.5));
+  if (optionen.anordnung === "streuung") {
+    // Delaunay über die Raummitten, minimaler Spannbaum darüber, dann `schleifen` Kanten zurück.
+    // Der Spannbaum verbindet alles und nichts doppelt; die Rückgaben sind die Abkürzungen.
+    const mitten: Punkt[] = rohRaeume.map((raum) => {
+      const [cx, cy] = mitteZelle(raum);
+      return [cx + 0.5, cy + 0.5];
+    });
+    const rahmen: Polygon = [[0, 0], [breite, 0], [breite, hoehe], [0, hoehe]];
+    const kanten = mitten.length >= 2
+      ? delaunayKanten(mitten, rahmen)
+      : [];
+    const gewaehlt = kanten.length
+      ? spannbaumMitSchleifen(kanten, (k) => {
+        const a = mitten[k.a]!, b = mitten[k.b]!;
+        return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+      }, mitten.length, optionen.schleifen)
+      : [];
+    for (const kante of gewaehlt) {
+      gang(mitteZelle(rohRaeume[kante.a]!), mitteZelle(rohRaeume[kante.b]!), r.chance(0.5), r.chance(0.28));
+    }
+    // Sicherheitsnetz: entartete Punktlagen können eine Zelle ohne geteilte Kante hinterlassen.
+    // Dann bleibt ein Raum ohne Delaunay-Nachbarn, und der Erreichbarkeitstest weiter unten
+    // würde die ganze Karte verwerfen. Ein Strang zum nächstgelegenen Raum ist billiger.
+    const verbunden = new Set<number>();
+    for (const kante of gewaehlt) { verbunden.add(kante.a); verbunden.add(kante.b); }
+    for (let i = 0; i < rohRaeume.length; i++) {
+      if (verbunden.has(i) || rohRaeume.length < 2) continue;
+      let naechster = i === 0 ? 1 : 0;
+      for (let j = 0; j < rohRaeume.length; j++) {
+        if (j === i) continue;
+        const d = (mitten[j]![0] - mitten[i]![0]) ** 2 + (mitten[j]![1] - mitten[i]![1]) ** 2;
+        const best = (mitten[naechster]![0] - mitten[i]![0]) ** 2 + (mitten[naechster]![1] - mitten[i]![1]) ** 2;
+        if (d < best) naechster = j;
+      }
+      gang(mitteZelle(rohRaeume[i]!), mitteZelle(rohRaeume[naechster]!), r.chance(0.5));
+    }
+  } else {
+    if (wurzel) verbinde(wurzel);
+    for (let i = 0; i < optionen.schleifen && rohRaeume.length > 2; i++) {
+      const a = r.ganz(0, rohRaeume.length - 1);
+      let b = r.ganz(0, rohRaeume.length - 1);
+      if (b === a) b = (b + 1) % rohRaeume.length;
+      gang(mitteZelle(rohRaeume[a]!), mitteZelle(rohRaeume[b]!), r.chance(0.5));
+    }
   }
 
   // -- connectivity: fail loudly rather than emit an unplayable map -----------------------------

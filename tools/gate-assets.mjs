@@ -104,6 +104,21 @@ async function pruefePaket(paketDir, id, fehler) {
     catch { melde(asset.datei, `declared by asset "${asset.name}" but missing`); continue; }
     if (sha256(inhalt) !== asset.sha256) melde(asset.datei, `sha256 mismatch for asset "${asset.name}"`);
     if (inhalt.length !== asset.bytes) melde(asset.datei, `byte count mismatch for asset "${asset.name}"`);
+    // Raster: die Abmessungen stehen im PNG-Kopf und werden gemessen, nicht geglaubt. Ein
+    // importiertes Fremdpaket, das seine eigene Grösse falsch angibt, zeichnet der Renderer
+    // falsch skaliert — und das faellt am Tisch auf, nicht im Diff. Fuer SVG leistet das die
+    // viewBox-Pruefung weiter unten; fuer PNG gab es bis hierher gar keine.
+    if (asset.mimeType === "image/png") {
+      const signatur = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+      if (inhalt.length < 24 || !inhalt.subarray(0, 8).equals(signatur) || inhalt.subarray(12, 16).toString("ascii") !== "IHDR") {
+        melde(asset.datei, "declared image/png but the PNG signature or IHDR header is missing");
+      } else {
+        const breite = inhalt.readUInt32BE(16), hoehe = inhalt.readUInt32BE(20);
+        if (breite !== asset.groesse[0] || hoehe !== asset.groesse[1]) {
+          melde(asset.datei, `declared groesse ${asset.groesse.join("x")} is not the actual ${breite}x${hoehe}`);
+        }
+      }
+    }
     if (asset.mimeType === "image/svg+xml") {
       const svg = inhalt.toString("utf8");
       for (const { muster, warum } of SVG_VERBOTEN) if (muster.test(svg)) melde(asset.datei, `SVG contains ${warum}; a pack asset is a drawing, never a program or a fetch`);
