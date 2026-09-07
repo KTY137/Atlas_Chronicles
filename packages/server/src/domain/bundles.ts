@@ -1,9 +1,9 @@
 import {
-  CAMPAIGN_V8_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables,
+  CAMPAIGN_V9_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables,
   createCurrentCampaignBundle as createCampaignBundle, validateCurrentCampaignBundle as validateCampaignBundle,
   currentCampaignSemanticDiff as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, upgradeCampaignBundleV4,
-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV8 as CampaignTables,
-  type CampaignTableNameV8 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV9 as CampaignTables,
+  type CampaignTableNameV9 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -22,7 +22,7 @@ const coveredColumns = new Map<string, ReadonlySet<string>>(CAMPAIGN_TABLES.map(
 const quoted = (name: string) => `"${name}"`;
 const restoreOrder: readonly CampaignTableName[] = [
   "users", "universes", "campaigns", "actors", "campaign_memberships", "universe_memberships",
-  "entries", "revisions", "passages", "artifacts", "lineage_events", "entry_aliases", "import_acceptances",
+  "entries", "revisions", "passages", "artifacts", "lineage_events", "entry_aliases", "categories", "entry_categories", "import_acceptances",
   "vollmachten", "rolls", "revelations", "rule_packages", "campaign_rule_pins", "actor_sheets", "scenes",
   "week_baselines", "game_sessions", "action_vollmachten", "action_rolls", "confirmed_mints", "week_clocks",
   "letters", "letter_recipients", "letter_delivery_receipts", "reading_watermarks",
@@ -48,7 +48,7 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 4 | 5 | 6 | 7 | 8; migration?: CampaignMigrationChain;
+  formatVersion: 4 | 5 | 6 | 7 | 8 | 9; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
   sourceVersion: 1 | 2 | 3 | 4; targetVersion: 4 | 5; sourceContentHash: string; targetContentHash: string;

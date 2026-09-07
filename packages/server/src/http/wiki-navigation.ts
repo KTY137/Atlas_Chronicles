@@ -8,6 +8,8 @@ export function registerWikiNavigation(app: FastifyInstance, db: Db, config: App
   const identity = createIdentity(db, config), wiki = createWikiNavigation(db, config);
   app.get<{ Params: { campaignId: string; slug: string } }>("/api/campaigns/:campaignId/wiki/:slug", async req =>
     wiki.resolveSlug((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.params.slug));
+  app.get<{ Params: { campaignId: string } }>("/api/campaigns/:campaignId/navigation", async req =>
+    wiki.uebersicht((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId));
   app.get<{ Params: { campaignId: string; id: string } }>("/api/campaigns/:campaignId/entries/:id/backlinks", async req =>
     wiki.backlinks((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.params.id));
 }
