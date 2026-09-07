@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
-import { GrundrissError, GRUNDRISS_LIMITS } from "@chronicle/forge";
+import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS } from "@chronicle/forge";
 import { TacticalMapValidationError } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
@@ -35,12 +35,37 @@ const OptionenSchema = Type.Object({
   gangboden: Type.Optional(Type.String({ minLength: 1, maxLength: 64 })),
 }, closed);
 
-export const GrundrissSchema = Type.Object({
+/**
+ * Die Höhle hat eigene Regler: Kammern statt Räume, eine Füllung und eine Glättung. Sie
+ * ergibt dieselbe Art Ergebnis wie der Grundriss (`Grundriss` mit `art: "hoehle"`) und geht
+ * deshalb denselben Persistenzweg — ein zweiter waere die Doppelung, die dieses Modul meidet.
+ */
+const HoehleOptionenSchema = Type.Object({
+  zellen: Type.Optional(Type.Tuple([zelle, zelle])),
+  zellgroesse: Type.Optional(Type.Integer({ minimum: GRUNDRISS_LIMITS.zellgroesseMin, maximum: GRUNDRISS_LIMITS.zellgroesseMax })),
+  kammern: Type.Optional(Type.Integer({ minimum: HOEHLE_LIMITS.kammernMin, maximum: HOEHLE_LIMITS.kammernMax })),
+  fuellung: Type.Optional(Type.Number({ minimum: 0.2, maximum: 0.7 })),
+  glaettung: Type.Optional(Type.Integer({ minimum: 0, maximum: HOEHLE_LIMITS.glaettungMax })),
+  mindestFlaeche: Type.Optional(Type.Integer({ minimum: HOEHLE_LIMITS.mindestFlaecheMin, maximum: 4096 })),
+  moeblierung: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
+  licht: Type.Optional(Type.Boolean()),
+}, closed);
+
+const gemeinsam = {
   commandId: Type.String({ minLength: 1, maxLength: 128 }),
   name: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }),
   keim: Type.String({ minLength: 1, maxLength: 512 }),
-  optionen: Type.Optional(OptionenSchema),
-}, closed);
+};
+/**
+ * Zwei Arten, eine Tuer. Die Union ist nach `art` unterschieden, damit die Regler der einen
+ * Art nicht bei der anderen durchrutschen: eine „Fuellung" an einem Grundriss waere eine
+ * Angabe, die niemand liest, und stillschweigend ignorierte Eingaben sind schlimmer als
+ * abgewiesene.
+ */
+export const GrundrissSchema = Type.Union([
+  Type.Object({ ...gemeinsam, art: Type.Optional(Type.Literal("grundriss")), optionen: Type.Optional(OptionenSchema) }, closed),
+  Type.Object({ ...gemeinsam, art: Type.Literal("hoehle"), optionen: Type.Optional(HoehleOptionenSchema) }, closed),
+]);
 
 export type GrundrissBody = Static<typeof GrundrissSchema>;
 

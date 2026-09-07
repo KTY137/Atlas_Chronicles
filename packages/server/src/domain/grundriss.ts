@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { erzeugeGrundriss, GRUNDRISS_ERZEUGER, GRUNDRISS_VERSION, GRUNDRISS_STANDARD, type GrundrissOptionen } from "@chronicle/forge";
+import { erzeugeGrundriss, erzeugeHoehle, GRUNDRISS_ERZEUGER, GRUNDRISS_VERSION, GRUNDRISS_STANDARD, HOEHLE_STANDARD, type GrundrissOptionen, type HoehleOptionen } from "@chronicle/forge";
 import { parseAssetpaket, serializeTacticalMapDocument, type AssetpaketV1 } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
@@ -54,38 +54,53 @@ export interface GrundrissRequest {
    * well is what lets a GM generate a room without first owning a continent.
    */
   readonly keim: string;
-  readonly optionen?: Partial<GrundrissOptionen>;
+  /**
+   * Welche Art Karte entsteht. `grundriss` sind Räume und Gänge (Schloss, Krypta, Haus),
+   * `hoehle` ist gewachsener Fels. Beide liefern dasselbe Ergebnis (`Grundriss`) und gehen
+   * denselben Weg in die Datenbank; nur der Erzeuger dahinter ist ein anderer.
+   */
+  readonly art?: "grundriss" | "hoehle";
+  readonly optionen?: Partial<GrundrissOptionen> | Partial<HoehleOptionen>;
 }
 
 export function createGrundriss(db: Db, cfg: IdentityConfig) {
   const campaigns = createCampaigns(db);
 
-  const erzeuge = (input: GrundrissRequest) =>
-    erzeugeGrundriss(
-      { keim: input.keim, titel: input.name, ...(input.optionen ? { optionen: input.optionen } : {}) },
-      paket(),
-    );
+  const erzeuge = (input: GrundrissRequest) => {
+    // Die Verzweigung ist die ganze Erweiterung: `erzeugeHoehle` war gebaut, geprueft und aus dem
+    // Fass exportiert — und unerreichbar, genau wie `erzeugeGrundriss` es einmal war.
+    const auftrag = { keim: input.keim, titel: input.name };
+    return input.art === "hoehle"
+      ? erzeugeHoehle({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<HoehleOptionen> } : {}) }, paket())
+      : erzeugeGrundriss({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<GrundrissOptionen> } : {}) }, paket());
+  };
 
   /**
    * Provenance for a map nobody photographed. `generator`/`generatorVersion` carry the engine, and
    * the licence is the pack's own — we generated the geometry, but the pack owns the art it
    * references, and saying otherwise in an export would make our user the infringer.
    */
-  const herkunft = (keimHash: string) => ({
-    name: `Erzeugt · ${keimHash.slice(0, 12)}`,
-    creator: GRUNDRISS_ERZEUGER,
+  /**
+   * Der Erzeuger kommt aus dem ERGEBNIS, nicht aus einer Konstante. Vorher stand hier fest
+   * `GRUNDRISS_ERZEUGER`; seit die Kartenart waehlbar ist, haette eine erzeugte Hoehle damit den
+   * Grundriss-Generator als ihren Urheber genannt — eine falsche Herkunftsangabe in genau dem
+   * Feld, ueber dem der Absatz daueber steht.
+   */
+  const herkunft = (ergebnis: { keim: { keimHash: string }; erzeuger: string; version: string }) => ({
+    name: `Erzeugt · ${ergebnis.keim.keimHash.slice(0, 12)}`,
+    creator: ergebnis.erzeuger,
     sourceUrl: null,
     license: paket().lizenz.spdx,
     licenseUrl: null,
     retrievedAt: null,
-    generator: GRUNDRISS_ERZEUGER,
-    generatorVersion: GRUNDRISS_VERSION,
+    generator: ergebnis.erzeuger,
+    generatorVersion: ergebnis.version,
   });
 
   return {
-    /** Optionen the client offers, so the surface cannot drift from the generator's own defaults. */
-    defaults(): GrundrissOptionen {
-      return GRUNDRISS_STANDARD;
+    /** Die Voreinstellungen beider Arten — die Oberflaeche soll nicht raten, was ueblich ist. */
+    defaults(): { grundriss: GrundrissOptionen; hoehle: HoehleOptionen } {
+      return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD };
     },
 
     /** Generate without persisting: the GM sees the room count and the seed before committing. */
@@ -121,7 +136,7 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
           name: input.name,
           format: "native",
           sourceText: serializeTacticalMapDocument(grundriss.karte),
-          provenance: herkunft(grundriss.keim.keimHash),
+          provenance: herkunft(grundriss),
         });
         // Region ids are Knoten ids. Retain their derived child seeds with the persisted map,
         // so opening an edited room tomorrow reaches the same address as opening it today.

@@ -53,7 +53,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☑ | Balken am Bogen, gelesen aus der `vitals`-Deklaration |
 | 14 | Dynamisch setzbare Bars | ☑ | Balken-Editor in der Schmiede: Feld, Höchststand, Erschöpfung |
 | 15 | KI-vorgeschlagene Änderungen | ◐ | Chronist-Regelwerk grün; Modellknoten bewusst offen (Egress-Entscheidung) |
-| 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☐ | |
+| 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ◐ | Kartenart wählbar (Höhle angeschlossen); Loot-Tabelle offen |
 | 17 | PNGs hochladbar | ☐ | `wiki_assets` (015) existiert — prüfen |
 | 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☐ | verschachtelte Karten (014) existieren — prüfen |
 
@@ -1104,3 +1104,59 @@ Regelwerk ist der Prüfstein, gegen den ein Modell später verifiziert wird.
 
 Und der Chronist **legt keine Anträge an**: er zeigt seine Funde und öffnet den Artikel. Aus
 einem Fund einen `antrag`-Passus zu machen wäre der nächste Schritt.
+
+## Feature 16 — zwei Hälften, und die erste ist grün
+
+**Ein Wort im Auftrag entscheidet den Zuschnitt:** „auswählbar machen, welchen Typus die
+generierte **Karte** hat (Schloss/Dorf/Höhle)". Das sind **Kartenarten**, keine NPC-Arten. #16
+zerfällt damit in zwei Hälften, die nichts miteinander zu tun haben:
+
+- **(a) NPC-Vorlagen mit Loot nach Wahrscheinlichkeit** — Figurvorlagen gibt es (Feature 6), eine
+  Beutetabelle daran nicht. **Noch offen.**
+- **(b) Die Kartenart wird wählbar** — **gebaut, unten belegt.**
+
+### Der Befund zu (b): drei Generatoren, einer erreichbar
+
+`packages/forge` führt **`erzeugeGrundriss`, `erzeugeHoehle` und `erzeugeSiedlung`** — Schloss,
+Höhle, Dorf. Angeschlossen war nur der erste. Die Datei sagt es über sich selbst:
+
+> `erzeugeGrundriss` was complete, tested against a real asset pack, and exported from the barrel
+> — and **unreachable**: no server route, no client surface. A generator nobody can invoke is the
+> inverse of a fake preview, and just as far from a product.
+
+Genau das galt weiterhin für die Höhle. Sie ist jetzt angeschlossen — und zwar **ohne zweiten
+Persistenzweg**: `erzeugeHoehle` liefert dieselbe Form (`Grundriss` mit `art: "hoehle"`) und geht
+denselben Weg in die Datenbank.
+
+**Die Regler sind nach Art getrennt.** Eine Höhle hat Kammern, Füllung und Glättung; ein Grundriss
+Räume und Gänge. Die Anfrage ist eine nach `art` unterschiedene Union, damit die Regler der einen
+Art bei der anderen **abgewiesen** statt stillschweigend ignoriert werden — ignorierte Eingaben
+sind schlimmer als abgelehnte.
+
+### Ein Fehler, den ich fast eingebaut hätte
+
+Die Herkunft schrieb fest `GRUNDRISS_ERZEUGER`. Eine erzeugte Höhle hätte damit den
+**Grundriss-Generator als ihren Urheber genannt** — eine falsche Herkunftsangabe in genau dem
+Feld, über dem im Code steht, dass eine solche Angabe „would make our user the infringer". Der
+Erzeuger kommt jetzt aus dem **Ergebnis**, nicht aus einer Konstante: eine Quelle, kein Drift.
+
+### Belege
+
+- `grundriss.test.ts` **13/13 grün** (vorher 9): der Generator meldet die Vorgaben **beider**
+  Arten; eine Höhle wird erzeugt und liegt als gewöhnliche taktische Karte; die Regler der einen
+  Art werden bei der anderen mit **400** abgewiesen; die Herkunft nennt `chronicle-hoehle`; und
+  die Erzeugung bleibt reproduzierbar — dieselbe Eingabe unter anderer Art ist **ehrlich eine
+  andere Karte**, weil der Erzeuger selbst in den Keim eingeht (nachgeprüft, nicht angenommen).
+- **Gegenprobe gefahren:** die Herkunft wieder festgenagelt → der Herkunftsfall wird rot
+  (`'chronicle-grundriss'` statt `'chronicle-hoehle'`). Danach zurückgesetzt.
+- Kein Regress: `grundriss` + `forge` + `client` + `betreten` **410/410 grün**, `typecheck`
+  0 Fehler, `gate:boundaries` **458/8/0**, Client-Build grün.
+
+### Offen
+
+**(a) NPC-Vorlagen mit Loot nach Wahrscheinlichkeit** — der nächste Durchgang.
+
+**Die Siedlung** ist weiterhin nicht angeschlossen, und das mit Grund: `erzeugeSiedlung` liefert
+eine **andere Form** (`Siedlung` mit `bauwerke` und `strassen` statt `raeume`, eigener Bericht).
+Sie anzuschließen heißt, den Ergebnisweg zu verzweigen — machbar, aber eine eigene Entscheidung,
+kein Anhängsel an diesen Commit.

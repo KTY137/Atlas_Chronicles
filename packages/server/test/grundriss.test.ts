@@ -45,9 +45,55 @@ describe("die eigene Erzeugung, an das Produkt angeschlossen", () => {
   it("offers the generator's own defaults, so the surface cannot invent its own", async () => {
     const response = await app.inject({ method: "GET", url: `/api/campaigns/${campaign}/tactical/generate/defaults`, headers: { cookie, origin: config.origin } });
     expect(response.statusCode).toBe(200);
+    // Seit die Kartenart waehlbar ist, meldet der Generator BEIDE Vorgaben: die Oberflaeche soll
+    // nicht raten, was bei einer Hoehle ueblich ist, nur weil sie den Grundriss kennt.
     const defaults = response.json();
-    expect(defaults.zellen).toHaveLength(2);
-    expect(defaults.raeume).toBeGreaterThan(0);
+    expect(defaults.grundriss.zellen).toHaveLength(2);
+    expect(defaults.grundriss.raeume).toBeGreaterThan(0);
+    expect(defaults.hoehle.zellen).toHaveLength(2);
+    expect(defaults.hoehle.kammern).toBeGreaterThan(0);
+  });
+
+  it("erzeugt auf Wunsch eine Hoehle statt eines Grundrisses", async () => {
+    // `erzeugeHoehle` war gebaut, geprueft und aus dem Fass exportiert — und unerreichbar, genau
+    // wie `erzeugeGrundriss` es einmal war. Ein Generator, den niemand aufrufen kann, ist keiner.
+    const vorschau = await post("/tactical/generate/preview", body({ art: "hoehle", keim: "kaya-hoehle-1" }));
+    expect(vorschau.statusCode).toBe(200);
+    expect(vorschau.json().art).toBe("hoehle");
+
+    const erzeugt = await post("/tactical/generate", body({ art: "hoehle", name: "Die Tropfsteinhalle", keim: "kaya-hoehle-1" }));
+    expect(erzeugt.statusCode).toBe(200);
+    // Und sie geht denselben Weg: eine gewoehnliche taktische Karte, kein zweiter Persistenzpfad.
+    const karten = await createTactical(db).listMaps(gm, campaign);
+    expect(karten.some(karte => karte.name === "Die Tropfsteinhalle")).toBe(true);
+  });
+
+  it("weist die Regler der einen Art bei der anderen ab", async () => {
+    // Stillschweigend ignorierte Eingaben sind schlimmer als abgewiesene: wer einer Hoehle
+    // "Zusaetzliche Gaenge" mitgibt, soll es erfahren, statt sich zu wundern.
+    expect((await post("/tactical/generate/preview", body({ art: "hoehle", optionen: { schleifen: 3 } }))).statusCode).toBe(400);
+    expect((await post("/tactical/generate/preview", body({ optionen: { kammern: 5 } }))).statusCode).toBe(400);
+    // Die jeweils eigenen Regler gehen durch.
+    expect((await post("/tactical/generate/preview", body({ art: "hoehle", optionen: { kammern: 5 } }))).statusCode).toBe(200);
+  });
+
+  it("nennt in der Herkunft den Erzeuger, der wirklich gelaufen ist", async () => {
+    // Vorher stand dort eine Konstante. Eine erzeugte Hoehle haette damit den
+    // Grundriss-Generator als ihren Urheber genannt — eine falsche Herkunftsangabe in genau dem
+    // Feld, ueber dem im Code steht, dass sie den Nutzer zum Rechtsverletzer machen wuerde.
+    const erzeugt = (await post("/tactical/generate", body({ art: "hoehle", name: "Herkunftshoehle", keim: "kaya-herkunft" }))).json();
+    const quelle = await createTactical(db).getSource(gm, campaign, erzeugt.ack.subjectId);
+    expect(quelle.provenance.generator).toBe("chronicle-hoehle");
+    expect(quelle.provenance.creator).toBe("chronicle-hoehle");
+  });
+
+  it("bleibt reproduzierbar, auch als Hoehle", async () => {
+    const einmal = await post("/tactical/generate/preview", body({ art: "hoehle", keim: "kaya-hoehle-2" }));
+    const nochmal = await post("/tactical/generate/preview", body({ art: "hoehle", keim: "kaya-hoehle-2" }));
+    expect(einmal.json().keimHash).toBe(nochmal.json().keimHash);
+    // Dieselbe Eingabe unter anderer Art ist ehrlich eine andere Karte.
+    const anders = await post("/tactical/generate/preview", body({ keim: "kaya-hoehle-2" }));
+    expect(anders.json().keimHash).not.toBe(einmal.json().keimHash);
   });
 
   it("previews without persisting anything", async () => {

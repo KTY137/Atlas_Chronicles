@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GrundrissBericht, GrundrissOptionen } from "@chronicle/forge";
+import type { GrundrissBericht, GrundrissOptionen, HoehleOptionen } from "@chronicle/forge";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
@@ -35,8 +35,11 @@ interface Erzeugt {
 }
 
 export function TacticalGenerate({ campaignId, onCreated }: { campaignId: string; onCreated: (mapId: string) => void }) {
-  const defaults = useResource<GrundrissOptionen>(apiPath(campaignId, "/tactical/generate/defaults"), 0);
+  const defaults = useResource<{ grundriss: GrundrissOptionen; hoehle: HoehleOptionen }>(apiPath(campaignId, "/tactical/generate/defaults"), 0);
   const command = useCommand(), task = useTask();
+  // Was fuer eine Karte entsteht. Raeume und Gaenge oder gewachsener Fels — zwei Erzeuger, ein
+  // Ergebnis, ein Weg in die Datenbank.
+  const [art, setArt] = useState<"grundriss" | "hoehle">("grundriss");
   const [name, setName] = useState(""), [keim, setKeim] = useState("");
   const [raeume, setRaeume] = useState<number | "">("");
   const [breite, setBreite] = useState<number | "">(""), [hoehe, setHoehe] = useState<number | "">("");
@@ -47,16 +50,19 @@ export function TacticalGenerate({ campaignId, onCreated }: { campaignId: string
   if (defaults.loading) return <Loading text="Der Generator meldet seine Vorgaben …" />;
   if (defaults.error || !defaults.data) return <Notice error>{defaults.error || "Der Generator ist auf diesem Server nicht verfügbar."}</Notice>;
 
-  const std = defaults.data;
+  const std = art === "hoehle" ? defaults.data.hoehle : defaults.data.grundriss;
+  const hoehle = art === "hoehle";
   // An untouched field means "whatever the generator considers ordinary" and is left out entirely,
   // rather than sent as a copy of the default that would silently freeze today's value.
   const optionen = () => ({
-    ...(raeume === "" ? {} : { raeume }),
+    // Die Regler heissen bei beiden Arten verschieden. Sie zu vermischen waere genau das, was
+    // die Union an der Tuer abweist — also schickt jede Art nur ihre eigenen.
+    ...(raeume === "" ? {} : hoehle ? { kammern: raeume } : { raeume }),
     ...(breite === "" || hoehe === "" ? {} : { zellen: [breite, hoehe] as [number, number] }),
-    ...(schleifen === "" ? {} : { schleifen }),
+    ...(schleifen === "" || hoehle ? {} : { schleifen }),
     ...(licht === std.licht ? {} : { licht }),
   });
-  const anfrage = () => ({ name: name.trim(), keim: keim.trim(), optionen: optionen() });
+  const anfrage = () => ({ art, name: name.trim(), keim: keim.trim(), optionen: optionen() });
   const bereit = name.trim().length > 0 && keim.trim().length > 0;
 
   const zahl = (value: number | "", set: (v: number | "") => void, label: string, min: number, max: number, hint: string) =>
@@ -78,9 +84,18 @@ export function TacticalGenerate({ campaignId, onCreated }: { campaignId: string
       <small>Aus einer erzeugten Welt kannst du den Keim eines Ortes übernehmen — dann hängt der Grundriss an diesem Ort.</small>
     </label>
 
+    <label>Art der Karte<select value={art} onChange={event => {
+      setArt(event.target.value as "grundriss" | "hoehle"); setRaeume(""); setSchleifen(""); setVorschau(null);
+    }}>
+      <option value="grundriss">Gebaut — Räume und Gänge (Schloss, Haus, Krypta)</option>
+      <option value="hoehle">Gewachsen — Höhle aus Fels</option>
+    </select></label>
+
     <div className="rf-form-grid">
-      {zahl(raeume, v => { setRaeume(v); setVorschau(null); }, "Räume", 2, 64, String(std.raeume))}
-      {zahl(schleifen, v => { setSchleifen(v); setVorschau(null); }, "Zusätzliche Gänge", 0, 16, String(std.schleifen))}
+      {hoehle
+        ? zahl(raeume, v => { setRaeume(v); setVorschau(null); }, "Kammern", 2, 32, String((std as HoehleOptionen).kammern))
+        : zahl(raeume, v => { setRaeume(v); setVorschau(null); }, "Räume", 2, 64, String((std as GrundrissOptionen).raeume))}
+      {hoehle ? null : zahl(schleifen, v => { setSchleifen(v); setVorschau(null); }, "Zusätzliche Gänge", 0, 16, String((std as GrundrissOptionen).schleifen))}
       {zahl(breite, v => { setBreite(v); setVorschau(null); }, "Zellen breit", 12, 192, String(std.zellen[0]))}
       {zahl(hoehe, v => { setHoehe(v); setVorschau(null); }, "Zellen hoch", 12, 192, String(std.zellen[1]))}
     </div>
