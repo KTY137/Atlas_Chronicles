@@ -282,10 +282,18 @@ function ItemTemplateForm({ campaignId, original, onDirty, onSaved }: { campaign
         {LOOT_RARITIES.map(stufe => <option key={stufe} value={stufe}>{SELTENHEIT_TEXT[stufe]}</option>)}</select></label>
       <label>Art<input value={kategorie} maxLength={80} placeholder="z. B. Werkzeug, Waffe, Trank" onChange={e => setKategorie(e.target.value)} /></label>
     </div>
-    {/* Das Bild kommt aus dem vorhandenen Bildbestand der Chronik — kein zweiter Bilderspeicher. */}
+    {/* Das Bild kommt aus dem vorhandenen Bildbestand der Chronik — kein zweiter Bilderspeicher.
+        Angeboten wird nur, was WIRKLICH ein Bild ist: eine Zeile ohne Bytes zeigt auf der Karte
+        den Platzhalter, und die Revision ist unveraenderlich — der Griff daneben waere dauerhaft.
+        Der bereits gewaehlte Wert bleibt trotzdem in der Liste, damit eine aeltere Vorlage beim
+        Ueberarbeiten nicht stillschweigend ihr Bild verliert. */}
     <label>Bild aus dem Bildbestand<select value={bild ?? ""} onChange={e => setBild(e.target.value || null)}>
       <option value="">Ohne Bild</option>
-      {bestand.data?.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.dateiname}</option>)}</select></label>
+      {bestand.data?.assets.filter(asset => asset.vorhanden || asset.id === gesicht?.bildAssetId)
+        .map(asset => <option key={asset.id} value={asset.id}>{asset.dateiname}{asset.vorhanden ? "" : " — Datei fehlt"}</option>)}</select></label>
+    {bestand.data && !bestand.data.assets.some(asset => asset.vorhanden)
+      ? <p className="field-help">Noch liegt kein Bild im Bestand. Unter „Bilder der Chronik“ lässt sich eins hochladen — danach steht es hier zur Wahl.</p>
+      : null}
     <label>Spruch auf der Karte<textarea value={spruch} maxLength={600} rows={2} onChange={e => setSpruch(e.target.value)} /></label>
     <fieldset className="sheet-section"><legend>Zeilen auf der Karte</legend>
       {zeilen.map((zeile, i) => <div className="rule-fields" key={i}>

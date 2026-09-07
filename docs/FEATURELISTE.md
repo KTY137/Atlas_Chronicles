@@ -1372,3 +1372,44 @@ einmal je Zeile: bei 5.000 Bildern wäre derselbe Befund sonst tausendfach bezah
 Passage ändern oder die Vorlage archivieren — es gibt keinen Weg „Bild aus allen Karten lösen".
 Das ist Absicht: eine unveränderliche Vorlage nachträglich zu entkernen wäre schlimmer als ein
 Bild, das bleibt.
+
+### Nachtrag Feature 5/6 — das Kartengesicht muss ein Bild sein, 2026-09-07 21:30
+
+Die zweite protokollierte Lücke: **`bildAssetId` wurde nie geprüft.** Gemessen an der Oberfläche
+war das kein theoretischer Fall — die Auswahl im Vorlagenformular bot **jede Zeile des
+Bildbestands** an, auch die ohne Bytes. Wer „Bodin.jpg" wählte, das nie geholt wurde, bekam eine
+Karte mit Platzhalter, ohne ein Wort der Erklärung.
+
+**Und das war dauerhaft.** Eine Vorlagenrevision ist unveränderlich und inhaltsgehasht: ein
+Bildverweis ins Leere ist ein Versprechen, das niemand mehr einlösen kann — korrigierbar nur
+durch eine neue Revision. Also wird gefragt, **bevor** geschrieben wird, an genau der Stelle, an
+der schon `loreEntryId` geprüft wird. Kein zweiter Prüfort, keine zweite Regel.
+
+**Zwei getrennte Antworten, weil es zwei getrennte Abhilfen sind.** Ein Bild, das diese Kampagne
+nicht kennt, ist schlicht nicht da (404, wie jeder unbekannte Verweis — und ohne zu verraten, ob
+es anderswo existiert). Ein Bild, dessen Zeile steht, dem aber die Bytes fehlen, ist ein Bild in
+Arbeit: dafür gibt es 400 mit einem Satz, der die Abhilfe nennt.
+
+**Die Auswahl bietet jetzt nur noch an, was wirklich ein Bild ist** — mit einer Ausnahme: der
+bereits gewählte Wert bleibt in der Liste, sonst verlöre eine ältere Vorlage beim Überarbeiten
+stillschweigend ihr Bild. Und wenn noch gar kein Bild im Bestand liegt, sagt das Formular, wo
+eines herkommt, statt eine leere Liste zu zeigen.
+
+### Belege
+
+- `bild-hochladen.test.ts` **15/15 grün** (vorher 12): ein erfundenes Kartenbild wird abgewiesen;
+  ein Bild ohne Datei wird abgewiesen **und die Absage nennt die Abhilfe**; dieselbe Vorlage geht
+  durch, **sobald die Datei da ist** (die Absage galt dem Zustand, nicht dem Bild); und eine
+  Vorlage ohne Bild sowie eine der Fassung 1 bleiben unberührt.
+- **Gegenprobe gefahren:** Prüfung entfernt → beide Abweisungsfälle rot, sonst nichts.
+  Zurückgesetzt.
+- Kein Regress in den Suiten, die Kartengesichter benutzen: `admininventar` + `containerinventar`
+  + `alles-in-einer-datei` + `bild-hochladen` **27/27**, `actors` + `npc-beute` **19/19**,
+  `packages/client` **150/150**, `typecheck` 0 Fehler, `gate:boundaries` **460/8/0**, Build grün.
+
+### Was die Prüfung ausdrücklich NICHT tut
+
+Sie greift nur auf dem Befehlsweg. Eine **Wiederherstellung aus einem Kampagnenpaket** schreibt
+Zeilen direkt und geht nicht durch `definition()` — das ist richtig so: ein Paket ist bereits
+gültig gewesen, und ein Wiederherstellungslauf, der an einer alten Vorlage scheitert, wäre ein
+Backup, das man nicht zurückspielen kann.

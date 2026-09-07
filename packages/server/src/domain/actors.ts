@@ -4,6 +4,7 @@ import { createHash, randomInt, randomUUID } from "node:crypto";
 import { Value } from "@sinclair/typebox/value";
 import type { Static, TSchema } from "@sinclair/typebox";
 import { DEMO_RULE_PACKAGE, parseSupportedRulePackage, stableJson, validatePackageFields, type AnyRulePackage as RulePackage } from "@chronicle/rules";
+import { ImportValidationError } from "@chronicle/io";
 import * as P from "../../../protocol/src/actors.ts";
 import type { Db } from "../db/index.ts";
 import type { DomainConfig, Membership } from "./campaigns.ts";
@@ -123,6 +124,25 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
   async function lore(tx: Db, campaignId: string, entryId: string | null) {
     if (entryId !== null && !(await tx.query("SELECT 1 FROM entries WHERE id=$1 AND campaign_id=$2", [entryId, campaignId])).rowCount) throw new Gone();
   }
+  /**
+   * Das Kartengesicht muss ein Bild sein, das es GIBT — und das eine Datei hat.
+   *
+   * Eine Vorlagenrevision ist unveraenderlich und inhaltsgehasht. Ein Bildverweis, der ins Leere
+   * zeigt, waere damit ein dauerhaftes Versprechen auf ein Bild, das niemand mehr einloesen kann:
+   * die Karte zeigt bis in alle Ewigkeit den Platzhalter, und korrigieren laesst sich das nur
+   * durch eine neue Revision. Deshalb wird hier gefragt, bevor geschrieben wird.
+   *
+   * Zwei getrennte Antworten, weil es zwei getrennte Abhilfen sind: ein Bild, das diese Kampagne
+   * gar nicht kennt, ist schlicht nicht da (404, wie jeder unbekannte Verweis). Ein Bild, dessen
+   * Zeile steht, dem aber die Bytes fehlen, ist ein Bild in Arbeit — und wer es waehlt, soll
+   * lesen, dass er es erst holen oder hochladen muss.
+   */
+  async function kartenbild(tx: Db, campaignId: string, assetId: string) {
+    const row = (await tx.query<{ mime: string | null }>(
+      "SELECT mime FROM wiki_assets WHERE id=$1 AND campaign_id=$2", [assetId, campaignId])).rows[0];
+    if (!row) throw new Gone("kartenbild");
+    if (row.mime === null) throw new ImportValidationError("bildAssetId", "the chosen picture has no file yet: fetch or upload it before putting it on a card");
+  }
   async function rulePackage(tx: Db, campaignId: string, pin: { id: string; version: string }): Promise<RulePackage> {
     const row = (await tx.query<{ document: unknown; content_hash: string }>("SELECT document,content_hash FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3", [campaignId, pin.id, pin.version])).rows[0];
     if (row) { if (hash(row.document) !== row.content_hash) throw new Gone(); return parseSupportedRulePackage(row.document); }
@@ -135,7 +155,11 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
   }
   async function definition(tx: Db, current: Membership, kind: TemplateKind, value: P.ActorTemplateData | P.ItemContract) {
     await lore(tx, current.campaignId, value.loreEntryId);
-    if (kind === "item") return value as P.ItemContract;
+    if (kind === "item") {
+      const item = value as P.ItemContract;
+      if (item.schemaVersion === 2 && item.bildAssetId !== null) await kartenbild(tx, current.campaignId, item.bildAssetId);
+      return item;
+    }
     const actor = value as P.ActorTemplateData, pkg = await rulePackage(tx, current.campaignId, actor.package);
     const resolved = { ...actor, fields: { ...validatePackageFields(pkg, actor.fields) } };
     await installDemo(tx, current.campaignId, current.userId, pkg);

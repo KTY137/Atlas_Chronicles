@@ -231,4 +231,53 @@ describe("Ein eigenes Bild hochladen", () => {
     expect((await entfernen(config.origin)).statusCode).toBe(200);
     expect((await medien.bestand(gm, campaign)).assets.some((a) => a.id === id)).toBe(false);
   });
+
+  /**
+   * DAS KARTENGESICHT MUSS EIN BILD SEIN, DAS ES GIBT.
+   *
+   * Eine Vorlagenrevision ist unveraenderlich und inhaltsgehasht. Ein Bildverweis ins Leere waere
+   * ein dauerhaftes Versprechen auf ein Bild, das niemand einloesen kann — die Karte zeigt fuer
+   * immer den Platzhalter, korrigierbar nur durch eine neue Revision. Deshalb wird gefragt,
+   * BEVOR geschrieben wird.
+   */
+  it("weist ein Kartenbild ab, das es nicht gibt", async () => {
+    const kaputt = () => actors.createItemTemplate(gm, campaign, { ...befehl(), definition: {
+      schemaVersion: 2, name: "Karte ins Leere", loreEntryId: null, tags: [], seltenheit: "gewoehnlich",
+      kategorie: "", bildAssetId: randomUUID(), spruch: "", zeilen: [],
+    } });
+    await expect(kaputt()).rejects.toThrow(Gone);
+  });
+
+  it("weist ein Bild ab, dessen Datei noch fehlt — mit einem Satz, der die Abhilfe nennt", async () => {
+    // Die Zeile steht, die Bytes fehlen: genau der Fall, den die Auswahl frueher angeboten hat.
+    const ohneBytes = await medien.anlegen(gm, campaign, { dateiname: "noch-ohne-datei.png" });
+    const versuch = actors.createItemTemplate(gm, campaign, { ...befehl(), definition: {
+      schemaVersion: 2, name: "Karte ohne Datei", loreEntryId: null, tags: [], seltenheit: "gewoehnlich",
+      kategorie: "", bildAssetId: ohneBytes.id, spruch: "", zeilen: [],
+    } });
+    await expect(versuch).rejects.toThrow(ImportValidationError);
+    await expect(versuch).rejects.toThrow(/no file yet/);
+
+    // Und sobald die Datei da ist, geht dieselbe Vorlage durch: die Absage war ueber den Zustand,
+    // nicht ueber das Bild.
+    await medien.bytesAnnehmen(gm, campaign, ohneBytes.id, png());
+    const vorlage = await actors.createItemTemplate(gm, campaign, { ...befehl(), definition: {
+      schemaVersion: 2, name: "Karte mit Datei", loreEntryId: null, tags: [], seltenheit: "gewoehnlich",
+      kategorie: "", bildAssetId: ohneBytes.id, spruch: "", zeilen: [],
+    } });
+    expect(vorlage.definition).toMatchObject({ bildAssetId: ohneBytes.id });
+  });
+
+  it("laesst eine Vorlage ohne Bild und eine der Fassung 1 unberuehrt", async () => {
+    // Nicht-Rueckwirkung: die Pruefung gilt dem Kartengesicht, nicht jeder Vorlage.
+    const ohneBild = await actors.createItemTemplate(gm, campaign, { ...befehl(), definition: {
+      schemaVersion: 2, name: "Schlichter Stein", loreEntryId: null, tags: [], seltenheit: "gewoehnlich",
+      kategorie: "", bildAssetId: null, spruch: "", zeilen: [],
+    } });
+    expect(ohneBild.id).toBeTruthy();
+    const alt = await actors.createItemTemplate(gm, campaign, { ...befehl(), definition: {
+      schemaVersion: 1, name: "Alter Stein", loreEntryId: null, tags: [],
+    } });
+    expect(alt.id).toBeTruthy();
+  });
 });
