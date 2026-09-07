@@ -44,8 +44,15 @@ Retention; der Resume-Puffer ist zeitlich unbegrenzt und nur pro Anfrage auf 256
 gedeckelt (`communication.ts:105`).
 
 Und der Export deckt die Lücke nicht: `CAMPAIGN_EXCLUDED_TABLES`
-(`packages/io/src/campaign-schema.ts:78`) schließt `credentials` und `access_incidents`
-ausdrücklich aus. Der Kampagnen-Export ist also kein Auskunftsersatz für eine Einzelperson.
+(`packages/io/src/campaign-schema.ts:78`) schließt `credentials`, `auth_challenges`, die drei
+Beitrittstabellen, den Befehlsbus und die Medienebene aus. Der Kampagnen-Export ist ein Export
+der Kampagne, kein Auskunftsersatz für eine Einzelperson.
+
+> **Korrektur 2026-09-07.** Eine frühere Fassung dieses Absatzes zählte `access_incidents` zu
+> den ausgeschlossenen Tabellen. Das ist falsch: Sie steht in `CAMPAIGN_TABLES` im Modul
+> `evidence` (`campaign-schema.ts:70`) und wird exportiert. Der Irrtum stammt aus einem
+> Prüfbericht und wurde ungeprüft übernommen. Er ist folgenreich — siehe §7.1: Weil die
+> Tabelle im Format steht, ist jede Änderung ihrer Spalten ein Formatversionssprung.
 
 **Warum das zusammen zählt:** S4 verspricht bezahlte Räume. Ein bezahlter Dienst in
 Deutschland braucht eine Löschzusage, die technisch einlösbar ist, und einen Speicher, der
@@ -471,7 +478,27 @@ Migration bleibt damit rolling-update-fähig (§1.4).
 *Ort des Schreibpfads:* nicht am Dokumentzugriff, sondern am Authentifizierungsfehler.
 `CHAMPION.md:372-376` ist wörtlich: *„the server logs an event whenever a device presents
 no/expired credential against a character holding an open Vollmacht."* Der Vorfall ist das
-Aussperrungssignal, nicht ein Türklinkenversuch.
+Aussperrungssignal, nicht ein Türklinkenversuch. Konkret gehört er an
+`identity/index.ts:57` — dort ist der MAC bereits geprüft, das Cookie stammt also nachweislich
+von uns und nur das Credential ist tot.
+
+> **Nicht umgesetzt — blockiert, mit Nachweis.** Zwei Funde beim Bauen halten dieses Paket auf,
+> und keiner davon ist Zaghaftigkeit:
+>
+> 1. **Der Fremdschlüssel zeigt auf eine Tabelle, die die Produktion nie füllt.**
+>    `INSERT INTO vollmachten` kommt im gesamten Repo genau einmal vor, in einem
+>    Legacy-Fixture (`packages/server/test/bundles.test.ts:84`). Echte Türen entstehen
+>    ausschließlich in `action_vollmachten` (`domain/gameplay.ts:394`); `documents.ts:67-73`
+>    vereinigt beide nur beim Lesen. Ein Schreibpfad, der das heutige Schema respektiert,
+>    könnte im Betrieb **nie feuern**. Ihn so zu bauen wäre schlimmer als ihn nicht zu bauen:
+>    Die Invariante sähe erfüllt aus und wäre es nicht.
+> 2. **Die Erweiterung ist ein Formatversionssprung.** `access_incidents` steht in
+>    `CAMPAIGN_TABLES` (`campaign-schema.ts:70`) mit `vollmacht_id` als **nicht** nullbarer
+>    Spalte. Sie nullbar zu machen und eine zweite Türspalte zu ergänzen, ändert den
+>    Formatvertrag — und `packages/io/src/native-v6/` ist gerade in Arbeit.
+>
+> Das Paket gehört deshalb in die laufende v6-Arbeit, nicht daneben. Es ist eine
+> Abstimmungsfrage geworden, keine Mechanismusfrage mehr.
 
 **`TacticalRasterStats`: Betreiberfläche, nicht offene Route.**
 Die Zahlen gehen in den strukturierten Log und an einen Endpunkt, der dieselbe Berechtigung

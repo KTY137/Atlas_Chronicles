@@ -33,6 +33,7 @@ import { registerPacks } from "./http/packs.ts";
 import { registerBetreten } from "./http/betreten.ts";
 import { registerAuthoring } from "./http/authoring.ts";
 import { registerPublication } from "./http/publication.ts";
+import { registerOperator } from "./http/operator.ts";
 import { AuthoringValidationError } from "./domain/authoring.ts";
 
 export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; livekit?: MediaServerConfig; publicDeliveryEnabled?: boolean }
@@ -148,6 +149,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerBetreten(app, db, config);
   registerAuthoring(app, db, config);
   registerPublication(app, db, config);
+  registerOperator(app, db, config);
   registerMedia(app,db,config,config.livekit);
   await registerRealtime(app,db,config);
   if (config.staticRoot) {

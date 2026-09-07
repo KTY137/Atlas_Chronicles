@@ -281,3 +281,10 @@ export function createTacticalRasterService(options: TacticalRasterOptions = {})
 const defaultService = createTacticalRasterService();
 export const validateImage: TacticalRasterService["validateImage"] = (image, expected) => defaultService.validateImage(image, expected);
 export const renderTacticalTile: TacticalRasterService["renderTacticalTile"] = request => defaultService.renderTacticalTile(request);
+/**
+ * Der Zustand des einen prozessweiten Rasterdienstes. Bis hier wurde er gemessen und nirgends
+ * ausgegeben (design/10-hosted-betrieb-und-auslieferung.md §3.5). Er gehört hinter eine
+ * Betreiberberechtigung, nicht auf eine offene Route: Warteschlangentiefe und Cache-Zustand
+ * sagen einem Angreifer, wie nah die Maschine an ihrer Grenze läuft.
+ */
+export const rasterStats: TacticalRasterService["stats"] = () => defaultService.stats();
