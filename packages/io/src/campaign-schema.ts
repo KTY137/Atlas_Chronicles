@@ -75,7 +75,11 @@ export type CampaignRow = Readonly<Record<string, import("@chronicle/core").Cano
 export type CampaignTables = { readonly [N in CampaignTableName]: readonly CampaignRow[] };
 export const CAMPAIGN_MODULES = Object.freeze(["identities", "wiki", "atlas", "rules", "play", "week", "communication", "evidence"] as const);
 export const CAMPAIGN_EXCLUSIONS = Object.freeze(["authentication", "delivery-cache", "table-chat", "media-runtime"] as const);
-export const CAMPAIGN_EXCLUDED_TABLES = Object.freeze(["credentials", "auth_challenges", "invitations", "join_requests", "pairing_codes", "commands", "events", "event_cursors", "media_rooms", "media_whisper_members", "media_presence", "media_blocks", "media_cleanup", "schema_migrations"] as const);
+export const CAMPAIGN_EXCLUDED_TABLES = Object.freeze(["credentials", "auth_challenges", "invitations", "join_requests", "pairing_codes", "commands", "events", "event_cursors", "media_rooms", "media_whisper_members", "media_presence", "media_blocks", "media_cleanup", "schema_migrations",
+  // Die Löschquittung ist Betreiberbeleg über eine Kampagne, die es nicht mehr gibt — sie
+  // gehört in kein Kampagnenpaket. Ohne diesen Eintrag verweigert requireCoveredSchema
+  // jeden Export, weil eine Tabelle im Anwendungsschema stünde, die das Format nicht kennt.
+  "campaign_deletions"] as const);
 export const CAMPAIGN_BUNDLE_LIMITS = Object.freeze({ bytes: 128 * 1024 * 1024, rows: 1_000_000, rowsPerTable: 200_000, depth: 64, nodes: 5_000_000, stringLength: 64 * 1024 * 1024 });
 
 /** A fresh complete empty table collection, useful to database adapters and fixtures. */
