@@ -148,6 +148,12 @@ export interface EronImportResult {
   readonly provenance: readonly ImportProvenance[];
   readonly media: readonly ImportedMediaReference[];
   /**
+   * Die Kategorien, die das Quellwiki über `[[Kategorie:X]]` behauptet — je Eintrag entfaltet
+   * und je Eintrag entdoppelt. Sie sind bewusst KEINE Links: ein Kategorie-Link ist keine Tür
+   * und kein Rotlink (siehe `namespaceLinkTarget`), sondern eine Klassifikation.
+   */
+  readonly kategorien: readonly { readonly entryId: EntryId; readonly name: string; readonly slug: string }[];
+  /**
    * Files the source inventory describes, as asset records WITHOUT bytes. The bytes arrive
    * through a separate, resumable upload; until then `Asset.sha256` is absent and every reader
    * shows a named placeholder rather than a hole.
