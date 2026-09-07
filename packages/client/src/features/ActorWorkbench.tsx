@@ -5,10 +5,12 @@ import type { ActorCard, ActorKindValue, ActorTemplateData, Beutezeile, Controll
 import { LOOT_RARITIES } from "@chronicle/protocol";
 import { Lootkarte, SELTENHEIT_TEXT } from "./Lootkarte";
 import { speicherstats } from "./speicherstats";
+import { uebergabeplan } from "./beute";
 import { Geldzaehler } from "./Geldzaehler";
 import type { Scalar } from "@chronicle/rules";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
-import { apiPath, type EntrySummary, type Member, type WikiMedienBestand } from "../api";
+import { PackageOpen } from "lucide-react";
+import { apiPath, errorText, type EntrySummary, type Member, type WikiMedienBestand } from "../api";
 import { useResource, useTask } from "../hooks";
 import { defaults, useCommand, type RulesState } from "./game-api";
 import { RuleFields } from "./RuleFields";
@@ -348,6 +350,11 @@ export function Inventory({ campaignId, actorId, actors, gm, revision, onChanged
     {gm && stock ? <Speicherstand items={items.data ?? []} actors={actors} /> : null}
     {/* Geld gehoert der Figur, nicht dem Behaelter: im Vorrat der Spielleitung steht keins. */}
     {!stock ? <Geldzaehler campaignId={campaignId} actorId={gewaehlt} gm={gm} revision={revision} onChanged={onChanged} /> : null}
+    {/* Beute uebernehmen. Der Wolf traegt sein Fell, seit er erschaffen wurde — am Tisch fehlte
+        der kurze Weg dorthin: jeder Gegenstand musste einzeln umgehaengt werden. Hier steht kein
+        zweiter Besitzweg, sondern derselbe `custody`-Befehl, nur mehrfach. */}
+    {gm && filtered.length ? <Beuteuebergabe campaignId={campaignId} items={filtered} quelle={holder} actors={actors}
+      busy={task.busy} onChanged={() => { setSelected(""); onChanged(); }} /> : null}
     {gm ? <form className="panel inventory-create" onSubmit={event => { event.preventDefault(); if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; const t = templates.data?.find(t => t.id === templateId); if (t) void task.run(async () => {
       const item = await command<ItemCard>(apiPath(campaignId, "/items/instantiate"), { templateId: t.id, templateRevision: t.revision, holderActorId: holder }); setSelected(item.id); onChanged();
     }); }}><fieldset className="actor-command-fields" disabled={task.busy}><label>Gegenstand aus Vorlage<select required value={templateId} onChange={e => setTemplateId(e.target.value)}><option value="">Gegenstandsvorlage wählen</option>{templates.data?.map(t => <option key={t.id} value={t.id}>{t.definition.name} · Revision {t.revision}</option>)}</select></label>{/* Gelegt wird in das Inventar, das gerade offen ist — Vorrat, Figur oder Behälter. Die
@@ -365,6 +372,64 @@ export function Inventory({ campaignId, actorId, actors, gm, revision, onChanged
       {chosen ? <fieldset className="actor-command-fields" disabled={task.busy}><ItemEditor key={chosen.id} campaignId={campaignId} current={chosen} actors={actors} gm={gm} onDirty={report} onChanged={onChanged} /></fieldset> : null}</div>
   </section>;
 }
+/**
+ * Beute übernehmen — ein Ziel, ein Klick, und ein ehrlicher Bericht.
+ *
+ * Jeder Posten geht einzeln durch denselben `custody`-Befehl wie eine Einzelübergabe: dieselbe
+ * erwartete Version, derselbe Beleg im Prüfprotokoll. Ein eigener Sammelbefehl hätte eine neue
+ * Vorgangsart gebraucht — die steht als `CHECK` in der Datenbank und im eingefrorenen
+ * Exportprofil, und ein Wort mehr dort bricht jeden Export (Feature 8).
+ *
+ * **Ein Fehlschlag pro Stück ist kein Fehlschlag des Zuges.** Wird ein Gegenstand nebenher
+ * verändert, scheitert genau er — der Rest kommt an, und was nicht ankam, steht mit Grund da.
+ */
+function Beuteuebergabe({ campaignId, items, quelle, actors, busy, onChanged }: {
+  campaignId: string; items: ItemCard[]; quelle: string | null; actors: ActorCard[]; busy: boolean; onChanged: () => void;
+}) {
+  const VORRAT = "__vorrat";
+  const [wahl, setWahl] = useState("");
+  const [bericht, setBericht] = useState<{ uebergeben: number; fehler: { name: string; grund: string }[] } | null>(null);
+  const task = useTask(), command = useCommand();
+  const ziel = wahl === VORRAT ? null : wahl || "";
+  const plan = wahl ? uebergabeplan(items, ziel) : [];
+  const zielName = wahl === VORRAT ? "den Vorrat der Spielleitung" : actors.find(a => a.id === wahl)?.name ?? "";
+
+  const uebergib = () => task.run(async () => {
+    const fehler: { name: string; grund: string }[] = [];
+    let uebergeben = 0;
+    for (const posten of plan) {
+      try {
+        await command(apiPath(campaignId, `/items/${encodeURIComponent(posten.id)}/custody`),
+          { expectedVersion: posten.expectedVersion, holderActorId: ziel, reason: "Beute übernommen" });
+        uebergeben += 1;
+      } catch (error) { fehler.push({ name: posten.name, grund: errorText(error) }); }
+    }
+    setBericht({ uebergeben, fehler });
+    setWahl("");
+    onChanged();
+  });
+
+  return <section className="panel beute-uebergabe">
+    <div className="section-heading"><h3><PackageOpen size={17} /> Beute übernehmen</h3></div>
+    <p className="field-help">Übergibt alles aus diesem Inventar auf einmal — was am Ziel schon liegt, bleibt unangetastet.</p>
+    <div className="button-row">
+      <label className="inventar-wahl">Ziel<select value={wahl} disabled={busy || task.busy} onChange={event => { setWahl(event.target.value); setBericht(null); }}>
+        <option value="">Wohin?</option>
+        {quelle !== null ? <option value={VORRAT}>Vorrat der Spielleitung</option> : null}
+        {actors.filter(actor => actor.id !== quelle).map(actor => <option key={actor.id} value={actor.id}>{actor.name}</option>)}
+      </select></label>
+      <Button variant="primary" disabled={busy || task.busy || !plan.length} onClick={() => void uebergib()}>
+        {plan.length ? `${plan.length} ${plan.length === 1 ? "Stück" : "Stücke"} an ${zielName} übergeben` : "Nichts zu übergeben"}
+      </Button>
+    </div>
+    {task.error ? <Notice error>{task.error}</Notice> : null}
+    {bericht ? <Notice error={bericht.fehler.length > 0}>
+      {bericht.uebergeben} {bericht.uebergeben === 1 ? "Stück" : "Stücke"} übergeben{bericht.fehler.length ? `, ${bericht.fehler.length} nicht:` : "."}
+      {bericht.fehler.length ? <ul>{bericht.fehler.map(zeile => <li key={zeile.name}>{zeile.name} — {zeile.grund}</li>)}</ul> : null}
+    </Notice> : null}
+  </section>;
+}
+
 /** Der Speicherstand als Tafel: erst die Summen, dann jede Karte mit ihrem Verbleib. */
 function Speicherstand({ items, actors }: { items: ItemCard[]; actors: ActorCard[] }) {
   const stand = speicherstats(items, actors);

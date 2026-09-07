@@ -1413,3 +1413,53 @@ Sie greift nur auf dem Befehlsweg. Eine **Wiederherstellung aus einem Kampagnenp
 Zeilen direkt und geht nicht durch `definition()` — das ist richtig so: ein Paket ist bereits
 gültig gewesen, und ein Wiederherstellungslauf, der an einer alten Vorlage scheitert, wäre ein
 Backup, das man nicht zurückspielen kann.
+
+### Nachtrag Feature 16/10 — die Beute kommt bei der Gruppe an, 2026-09-07 21:45
+
+**Die angekündigte Frage hat sich beim Messen gedreht.** Ich wollte prüfen, ob Beute beim
+Erschaffen oder beim Besiegen ausgewürfelt werden soll. Antwort: **beim Erschaffen bleibt
+richtig** — der Wolf trägt sein Fell auch lebend, wer ihn bestiehlt, findet es, und die
+Spielleitung kann vor dem Kampf hineinsehen. Ein Wurf im Moment der Niederlage würde den Inhalt
+der Welt davon abhängig machen, wann jemand hinsieht.
+
+**Die echte Lücke lag dahinter: die Beute kam nirgends an.** `item.transfer` ist ausdrücklich
+GM-only („custody is an explicit GM action") und bewegt **einen** Gegenstand. Nach einem Kampf
+hieß das: Reiter verlassen, Kreatur im Figurenreiter suchen, jedes Stück einzeln umhängen. Die
+Kampfbühne kennt gar kein Inventar. Feature 16 legte die Beute an — und ließ sie liegen.
+
+### Warum der Knopf im Inventar steht und nicht in der Kampfbühne
+
+Ein zweites Inventar in der Kampfbühne wäre genau die Doppelung, die hier verboten ist. Die
+Übergabe gehört dorthin, wo Inventare ohnehin leben — und dort dient sie **allen** Fällen: der
+besiegten Kreatur, der Kutsche, die ausgeladen wird, dem Vorrat, der verteilt wird.
+
+**Kein Sammelbefehl im Server.** Jeder Posten geht einzeln durch denselben `custody`-Befehl wie
+eine Einzelübergabe: dieselbe erwartete Version, derselbe Beleg. Ein echter Sammelvorgang hätte
+eine neue Vorgangsart gebraucht — die steht als `CHECK` in Migration 010 **und** im eingefrorenen
+Exportprofil, und ein Wort mehr dort bricht jeden Export (das ist in Feature 8 passiert). Ein
+Fehlschlag pro Stück ist deshalb auch kein Fehlschlag des Zuges: der Rest kommt an, und was nicht
+ankam, steht mit Grund da.
+
+### Die Regel steht als reine Funktion
+
+`uebergabeplan(items, ziel)` — weil eine Schleife über Befehle sich schlecht prüfen lässt, eine
+Liste dagegen sehr gut. Drei Auslassungen, jede mit Grund: **was schon am Ziel liegt** (ein
+Befehl, der nichts ändert, verbraucht eine Version, schreibt einen Beleg und macht aus „3 von 3"
+ein „0 von 3" — er lügt über Arbeit), **Archiviertes** (ein weggelegter Gegenstand ist keine
+Beute) und eine **feste Reihenfolge**, damit ein Abbruch reproduzierbar bleibt.
+
+### Belege
+
+- `beute.test.ts` **5/5 grün**: jede Karte reist mit ihrer erwarteten Version; Archiviertes bleibt
+  liegen; was am Ziel liegt, wird nicht bewegt; der Vorrat der Spielleitung ist ein eigenes Ziel
+  in beide Richtungen; feste, deutsch sortierte Reihenfolge; leeres Inventar ergibt nichts.
+- **Gegenprobe gefahren:** Filter entfernt → drei rote Fälle. Zurückgesetzt.
+- Kein Regress: `packages/client` **155/155** (vorher 150), `actors` + `containerinventar` +
+  `admininventar` **21/21**, `typecheck` 0 Fehler, `gate:boundaries` **462/8/0**, Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+**Spielerinnen plündern weiterhin nicht selbst.** Die Übergabe bleibt eine Handlung der
+Spielleitung — das ist die bestehende Regel, und sie zu lockern hieße, dass eine Spielerin in
+fremde Inventare greifen darf, auch in die anderer Spielerinnen. Und die **Kampfbühne verlinkt
+nicht** ins Inventar: der Weg dorthin ist der Reiterwechsel.
