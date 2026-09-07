@@ -1,5 +1,18 @@
 # Server-Härtung: vier entscheidungsfreie Pakete — Implementierungsplan
 
+> **Abgearbeitet, 2026-09-07.** Alle vier Aufgaben sind umgesetzt und einzeln committet:
+> Zwillingsbeweis `a71aa85`, Produktversion und Gate `ae6283f`, lineage_events-Index
+> `099c1f3`, Import-Rate-Limit `65df4f9`.
+>
+> Auch die drei Punkte aus „Ausdrücklich NICHT in diesem Plan" sind inzwischen gebaut, nachdem
+> Kaya die Mechanismusentscheidungen delegiert hat (design/10 §7.1): Löschpfad `c52f3d4`,
+> Rasterzahlen für den Betreiber `d110050`, Zugangsvorfall als native v8 `4621231`. Die
+> Begründungen dort bleiben als Beleg stehen, warum sie zum Zeitpunkt des Plans offen waren —
+> beim Zugangsvorfall war der Blocker echt und ist erst durch das Landen von v6/v7 gefallen.
+>
+> Eine Regression aus dieser Arbeit ist benannt und behoben: `c52f3d4` brach jeden Export,
+> `0e4677f` stellt ihn wieder her.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Vier abgegrenzte Befunde aus `design/10` schließen, die von keiner offenen Entscheidung abhängen: der fehlende Zwillingsbeweis, die fehlende Produktversion, der fehlende Index auf `lineage_events` und das fehlende Rate-Limit auf den teuren Import-Routen.
@@ -48,7 +61,7 @@
 - Consumes: `projiziereEntry(quelle: EntryQuelle, wissen: BetrachterWissen): EntryProjektion`, `entryBytes(p: EntryProjektion): string`, `LEERES_WISSEN: BetrachterWissen` — alle aus `packages/projection/src/index.ts`. `trustEntryId`, `trustPassageId` aus `@chronicle/core`. Typ `Passage` aus `@chronicle/chronik`.
 - Produces: nichts. Reine Testdatei, kein Produktionscode.
 
-- [ ] **Step 1: Testdatei mit den drei Fällen schreiben**
+- [x] **Step 1: Testdatei mit den drei Fällen schreiben**
 
 Erstelle `packages/projection/test/entry.test.ts`:
 
@@ -130,23 +143,23 @@ describe("Zwillingsbeweis — zwei Welten, eine gehaltene Hälfte", () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen und Fehler prüfen**
+- [x] **Step 2: Test laufen lassen und Fehler prüfen**
 
 Run: `npm.cmd exec -- vitest run packages/projection/test/entry.test.ts`
 
 Erwartung: Die Datei wird gefunden, alle vier Fälle laufen und bestehen. Sie prüfen vorhandenes Verhalten, das bisher nur unbelegt behauptet war — ein Fehlschlag hier wäre kein fehlendes Feature, sondern ein echtes Leck in Grenze B9. Tritt einer auf: nicht den Test anpassen, sondern melden.
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck**
 
 Run: `npm.cmd run typecheck`
 Erwartung: PASS, keine neuen Fehler.
 
-- [ ] **Step 4: Grenzen-Gate**
+- [x] **Step 4: Grenzen-Gate**
 
 Run: `npm.cmd run gate:boundaries`
 Erwartung: PASS. `@chronicle/projection` darf `@chronicle/core` und `@chronicle/chronik` konsumieren; der Test führt keine neue Richtung ein.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/projection/test/entry.test.ts
@@ -167,7 +180,7 @@ git commit -m "test: write the Zwillingsbeweis that entry.ts and design/08 both 
 **Interfaces:**
 - Produces: `pruefeVersionen(manifeste: {name: string, version: string}[]): string[]` aus `tools/gate-version.mjs` — gibt die Liste der Verstöße zurück, leer bedeutet in Ordnung. Wird von `tools/test/gate-version.test.mjs` konsumiert.
 
-- [ ] **Step 1: Den fehlschlagenden Test schreiben**
+- [x] **Step 1: Den fehlschlagenden Test schreiben**
 
 Erstelle `tools/test/gate-version.test.mjs`:
 
@@ -210,12 +223,12 @@ test("ignoriert Bibliothekspakete ohne eigene Auslieferung", () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen, Fehlschlag bestätigen**
+- [x] **Step 2: Test laufen lassen, Fehlschlag bestätigen**
 
 Run: `node --test tools/test/gate-version.test.mjs`
 Erwartung: FAIL mit `Cannot find module` für `../gate-version.mjs`.
 
-- [ ] **Step 3: Die Prüffunktion samt CLI schreiben**
+- [x] **Step 3: Die Prüffunktion samt CLI schreiben**
 
 Erstelle `tools/gate-version.mjs`:
 
@@ -269,18 +282,18 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 ```
 
-- [ ] **Step 4: Test laufen lassen, Erfolg bestätigen**
+- [x] **Step 4: Test laufen lassen, Erfolg bestätigen**
 
 Run: `node --test tools/test/gate-version.test.mjs`
 Erwartung: PASS, vier Tests.
 
-- [ ] **Step 5: Die Wurzelversion setzen**
+- [x] **Step 5: Die Wurzelversion setzen**
 
 Ändere in `package.json` Zeile 4 `"version": "0.0.0",` zu `"version": "0.1.0",`.
 
 `0.1.0` und nicht `1.0.0`: Der Desktop steht bereits auf `0.1.0`, und `docs/DESKTOP.md` führt offene Release-Gates. Eine 1.0 wäre eine Aussage, die die Nachweislage nicht deckt.
 
-- [ ] **Step 6: Das Gate verdrahten**
+- [x] **Step 6: Das Gate verdrahten**
 
 Ändere in `package.json` das Skript `gate`:
 
@@ -289,12 +302,12 @@ Erwartung: PASS, vier Tests.
 "gate": "npm run gate:version && npm run gate:boundaries && npm run gate:assets && npm run typecheck && npm run test",
 ```
 
-- [ ] **Step 7: Das Gate-Skript laufen lassen**
+- [x] **Step 7: Das Gate-Skript laufen lassen**
 
 Run: `npm.cmd run gate:version`
 Erwartung: PASS, Ausgabe `Versions-Gate: chronicle@0.1.0, @chronicle/desktop@0.1.0`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add package.json tools/gate-version.mjs tools/test/gate-version.test.mjs
@@ -315,13 +328,13 @@ git commit -m "build: give the product a version and a gate against drift"
 - Consumes: `createTestDb()`, `migrate(db)`, Typ `Db` aus `packages/server/src/db/index.ts`.
 - Produces: zwei Indizes `lineage_events_entry_id_idx` und `lineage_events_revision_id_idx`.
 
-- [ ] **Step 1: Freie Migrationsnummer bestätigen**
+- [x] **Step 1: Freie Migrationsnummer bestätigen**
 
 Run: `ls packages/server/src/db/migrations/`
 
 Erwartung: höchste vorhandene Nummer ist `015`. **Ist bereits eine `016` vorhanden** — andere Sessions legen laufend Migrationen an —, nimm die nächste freie Nummer und benutze sie in allen folgenden Schritten statt `016`.
 
-- [ ] **Step 2: Den fehlschlagenden Test schreiben**
+- [x] **Step 2: Den fehlschlagenden Test schreiben**
 
 Erstelle `packages/server/test/lineage-index.test.ts`:
 
@@ -344,12 +357,12 @@ describe("lineage_events trägt Indizes auf seinen Fremdschlüsseln", () => {
 });
 ```
 
-- [ ] **Step 3: Test laufen lassen, Fehlschlag bestätigen**
+- [x] **Step 3: Test laufen lassen, Fehlschlag bestätigen**
 
 Run: `npm.cmd exec -- vitest run packages/server/test/lineage-index.test.ts`
 Erwartung: FAIL — die erwarteten Indexnamen fehlen in der Liste.
 
-- [ ] **Step 4: Die Migration schreiben**
+- [x] **Step 4: Die Migration schreiben**
 
 Erstelle `packages/server/src/db/migrations/016_lineage_index.sql`:
 
@@ -363,17 +376,17 @@ CREATE INDEX lineage_events_entry_id_idx ON lineage_events(entry_id);
 CREATE INDEX lineage_events_revision_id_idx ON lineage_events(revision_id);
 ```
 
-- [ ] **Step 5: Test laufen lassen, Erfolg bestätigen**
+- [x] **Step 5: Test laufen lassen, Erfolg bestätigen**
 
 Run: `npm.cmd exec -- vitest run packages/server/test/lineage-index.test.ts`
 Erwartung: PASS.
 
-- [ ] **Step 6: Die übrige Server-Testmenge laufen lassen**
+- [x] **Step 6: Die übrige Server-Testmenge laufen lassen**
 
 Run: `npm.cmd exec -- vitest run packages/server/test`
 Erwartung: PASS. Ein neuer Index darf kein Verhalten ändern; schlägt hier etwas fehl, hing ein Test an einer Zeilenreihenfolge ohne `ORDER BY` — melde das, statt den Test anzupassen.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add packages/server/src/db/migrations/016_lineage_index.sql packages/server/test/lineage-index.test.ts
@@ -397,13 +410,13 @@ Diese Aufgabe kommt zuletzt, weil sie als einzige Dateien anfasst, in denen ande
 - Consumes: die Routen-Option `config: { rateLimit: { max, timeWindow } }` von `@fastify/rate-limit`, exakt wie in `http/bundles.ts:10` verwendet.
 - Produces: nichts, was eine spätere Aufgabe konsumiert.
 
-- [ ] **Step 1: Vor der Änderung den aktuellen Stand der beiden Dateien lesen**
+- [x] **Step 1: Vor der Änderung den aktuellen Stand der beiden Dateien lesen**
 
 Run: `git diff packages/server/src/http/imports.ts packages/server/src/http/tactical.ts`
 
 Andere Sessions ändern diese Dateien. Lies den aktuellen Inhalt, bevor du editierst, und übernimm die vorgefundene Formatierung.
 
-- [ ] **Step 2: Den fehlschlagenden Test schreiben**
+- [x] **Step 2: Den fehlschlagenden Test schreiben**
 
 Füge in `packages/server/test/rate-limit.test.ts` innerhalb der bestehenden `describe`-Klammer, nach dem letzten `it`, ein:
 
@@ -423,12 +436,12 @@ Füge in `packages/server/test/rate-limit.test.ts` innerhalb der bestehenden `de
   });
 ```
 
-- [ ] **Step 3: Test laufen lassen, Fehlschlag bestätigen**
+- [x] **Step 3: Test laufen lassen, Fehlschlag bestätigen**
 
 Run: `npm.cmd exec -- vitest run packages/server/test/rate-limit.test.ts`
 Erwartung: FAIL — die neunte Anfrage kommt durch, weil die Route noch unter dem allgemeinen Limit von 240 läuft.
 
-- [ ] **Step 4: Das Limit auf die Import-Routen setzen**
+- [x] **Step 4: Das Limit auf die Import-Routen setzen**
 
 In `packages/server/src/http/imports.ts`, Route `/api/campaigns/:campaignId/maps/import` (Zeile 24): ergänze `config` im Optionsobjekt, sodass es lautet
 
@@ -450,23 +463,23 @@ In `packages/server/src/http/tactical.ts` ergänze dasselbe `config`-Feld in den
 
 Acht je Minute und nicht vier wie beim Export: Ein Import wird beim Einrichten einer Kampagne mehrfach hintereinander versucht, ein Export nicht. Acht lässt ein ungeduldiges Nacheinander zu und stoppt trotzdem weit vor der Stelle, an der 64-MiB-Bodies die Maschine tragen müssten.
 
-- [ ] **Step 5: Test laufen lassen, Erfolg bestätigen**
+- [x] **Step 5: Test laufen lassen, Erfolg bestätigen**
 
 Run: `npm.cmd exec -- vitest run packages/server/test/rate-limit.test.ts`
 Erwartung: PASS, drei Tests.
 
-- [ ] **Step 6: Die Import- und Tactical-Tests laufen lassen**
+- [x] **Step 6: Die Import- und Tactical-Tests laufen lassen**
 
 Run: `npm.cmd exec -- vitest run packages/server/test/imports.test.ts packages/server/test/tactical.test.ts packages/server/test/tactical-integration.test.ts`
 
 Erwartung: PASS. Schlägt ein Test mit 429 fehl, feuert er mehr als acht Importe gegen dieselbe App-Instanz. Dann baue in **diesem Test** eine frische App pro Fall, statt das Limit anzuheben.
 
-- [ ] **Step 7: Typecheck**
+- [x] **Step 7: Typecheck**
 
 Run: `npm.cmd run typecheck`
 Erwartung: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add packages/server/src/http/imports.ts packages/server/src/http/tactical.ts packages/server/test/rate-limit.test.ts
@@ -477,12 +490,12 @@ git commit -m "fix: rate-limit the expensive import routes, not just the cheap e
 
 ## Abschluss
 
-- [ ] **Vollständiges Gate**
+- [x] **Vollständiges Gate**
 
 Run: `npm.cmd run gate`
 Erwartung: PASS in allen fünf Stufen (`gate:version`, `gate:boundaries`, `gate:assets`, `typecheck`, `test`).
 
-- [ ] **Nachweis, dass keine fremde Arbeit mitgenommen wurde**
+- [x] **Nachweis, dass keine fremde Arbeit mitgenommen wurde**
 
 Run: `git status --short`
 
