@@ -34,7 +34,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | --- | --- | --- | --- |
 | 1 | Kampfsystem (testen) | ☑ | grün und belegt, siehe unten |
 | 2 | Kampfbühne (wie bei Card Games) | ☑ | bedienbar am Tisch, Reiter „Kampf“ |
-| 3 | Würfel animiert | ☐ | |
+| 3 | Würfel animiert | ☑ | fallen beim Eintreffen, Historie bleibt ruhig |
 | 4 | Wiki-Export | ☐ | |
 | 5 | Lootkarten (Karte wie YuGiOh) | ☐ | |
 | 6 | Admininventar (Admin erstellt Lootkarten) | ☐ | |
@@ -233,3 +233,60 @@ verschiebt. Das ist die eine raue Kante, die ich sehe; sie gehört auf die Liste
 Behauptung. Die Bühne aktualisiert sich alle 4 Sekunden per Abfrage wie die übrigen Flächen, es
 gibt keinen eigenen Live-Kanal. Und die Vitalwerte aus #1 werden auf der Karte **noch nicht**
 angezeigt — das ist #13, und es ist bewusst dort und nicht hier.
+
+## Feature 3 — Würfel animiert: die Bewegung darf den Wert nicht tragen
+
+**Gemessen, 2026-09-07 17:30.** Die Würfel eines Wurfs standen als schlichte Zahlen-Kacheln in
+`.dice-results`. Keine Bewegung — aber auch keine Lücke im Modell: der Wurf entsteht auf dem
+Server, mit Beleg, und die Anzeige liest ihn nur. Feature 3 ist deshalb **reine Oberfläche**, und
+das ist die richtige Größe.
+
+### Zwei Fallen, die zuerst gefunden werden mussten
+
+**Erstens: zwei Tests pinnen die Würfel-DOM.** `roll-card.test.ts` schneidet
+`<div class="dice-results">…</div>` per Regex heraus und vergleicht den reinen Text; `e2e/table.spec.ts`
+erwartet `.dice-results > span` mit exakt `{Augen}W12`. Ein zusätzliches Textzeichen oder ein
+verschachteltes `<div>` hätte beides gebrochen. **Aufbau und Text sind deshalb unverändert
+geblieben** — dazugekommen sind nur eine Klasse und eine laufende Nummer je Würfel.
+
+**Zweitens: `styles.css` Zeile 307 hat längst eine globale `prefers-reduced-motion`-Regel.** Sie
+kürzt `animation-duration` und `animation-iteration-count` — **aber nicht `animation-delay`.**
+Eine über Verzögerungen gestaffelte Animation bliebe für diese Nutzer also stehen und zeigte die
+Würfel in ihrer Anfangslage. Gestaffelt wird hier deshalb über die **Dauer**
+(`calc(360ms + var(--wuerfel-nr) * 95ms)`), und die Kurve läuft von *verdreht* nach *neutral*:
+der Ruhezustand des Elements IST der Endzustand. Fällt die Bewegung ganz aus, steht der Wert
+trotzdem richtig da. Keine zweite Reduced-Motion-Regel (Regel 6).
+
+### Was dazugekommen ist
+
+- **Die Würfel fallen, wenn ein Wurf eintrifft** — gestaffelt, sodass sie nacheinander landen.
+- **Ein Würfel dreht sich, solange der Wurf unterwegs ist.** Er zeigt keinen Wert: der entsteht
+  auf dem Server, und hier eine Zahl vorzugaukeln wäre eine Behauptung.
+- **Die Historie fällt nicht.** Die Wurfliste wird alle 6 Sekunden neu geholt; ohne diese
+  Unterscheidung fiele bei jeder Abfrage alles erneut. `frischeAuswahl` hält die Regel: der erste
+  Datenstand zählt vollständig als Bestand, nur was danach dazukommt, ist frisch. Eine
+  verschwundene und wiederkehrende Karte ist kein neues Ereignis.
+
+### Ein Fehler unterwegs
+
+Beim Schreiben des Hooks geriet ein **echtes NUL-Byte** als Trennzeichen in `hooks.ts`. Es hätte
+funktioniert, aber Werkzeuge halten NUL-haltige Dateien für binär. Ersetzt durch ein Komma —
+Wurfkennungen sind UUIDs, das Komma kommt darin nicht vor.
+
+### Belege
+
+- `wuerfel-animation.test.ts` **7/7 grün**: was als frisch gilt (drei Fälle), und dass die
+  Bewegung den Wert nicht trägt — gleicher Text mit und ohne Animation, Ruhe als Voreinstellung,
+  eigene laufende Nummer je gewertetem Würfel.
+- **Gegenprobe gefahren:** erster Datenstand fälschlich als frisch, und Bewegung als
+  Voreinstellung → genau die zwei zugehörigen Fälle rot. Danach zurückgesetzt.
+- Kein Regress: `packages/client` **125/125 grün** (darunter die beiden DOM-pinnenden Dateien),
+  `typecheck` 0 Fehler, `gate:boundaries` **418/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+Die Würfel sind **beschriftete Kacheln, keine Augenbilder** — die Zahl und das `W12` daneben
+sagen, was gefallen ist. Echte Würfelaugen gingen nur beim W6 auf, und ein System, das bei einer
+Würfelart anders aussieht als bei allen anderen, wäre schlechter als eines, das überall gleich
+liest. Der e2e-Lauf im Browser hat die Bewegung nicht gesehen; geprüft ist sie am gerenderten
+Aufbau, nicht an einem laufenden Bild.

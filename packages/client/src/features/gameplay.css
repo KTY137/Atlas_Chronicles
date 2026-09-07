@@ -24,7 +24,24 @@
 .roll-expression { color: var(--text-muted); font-family: monospace; overflow-wrap: anywhere; }
 .roll-card > .muted { font-size: 12px; line-height: 1.7; }
 .dice-results { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
-.dice-results > span { min-width: 42px; height: 49px; background: #202824; border: 1px solid #4a5340; color: #d3c59e; border-radius: 6px; text-align: center; font-size: 21px; padding: 4px; }
+.dice-results > span { min-width: 42px; height: 49px; background: linear-gradient(158deg, #273029, #1b2220); border: 1px solid #4a5340; color: #d3c59e; border-radius: 7px; text-align: center; font-size: 21px; padding: 4px; box-shadow: inset 0 1px 0 #ffffff14, 0 1px 2px #0006; }
+/* Ein frisch eingetroffener Wurf laesst seine Wuerfel fallen. Zwei Dinge sind Absicht:
+   der Endzustand IST der Ruhezustand des Elements (die Kurve laeuft von verdreht nach
+   neutral), und gestaffelt wird ueber die DAUER statt ueber animation-delay. Die globale
+   Reduced-Motion-Regel in styles.css kuerzt nur die Dauer — eine Verzoegerung wuerde sie
+   stehen lassen und die Wuerfel dort haengend zeigen. So ist der Wert in jedem Fall sofort
+   richtig, auch wenn gar keine Bewegung stattfindet. */
+@keyframes wuerfel-faellt {
+  0%   { transform: translateY(-45%) rotate(-32deg) scale(.72); border-color: var(--accent); }
+  60%  { transform: translateY(6%) rotate(5deg) scale(1.04); }
+  80%  { transform: translateY(0) rotate(-2deg) scale(.99); }
+  100% { transform: none; }
+}
+.dice-results.faellt > span { animation: wuerfel-faellt calc(360ms + var(--wuerfel-nr, 0) * 95ms) cubic-bezier(.22, .85, .3, 1) 1; }
+/* Waehrend der Wurf noch unterwegs ist: ein Wuerfel, der sich dreht. Er zeigt keinen Wert —
+   der Wert entsteht auf dem Server, und hier etwas vorzugaukeln waere eine Behauptung. */
+@keyframes wuerfel-rollt { to { transform: rotate(360deg); } }
+.wuerfel-rollt { display: inline-flex; animation: wuerfel-rollt 700ms linear infinite; }
 .dice-results small { display: block; font-size: 8px; color: var(--text-muted); }
 .receipt-meta { display: grid; grid-template-columns: 85px minmax(0, 1fr); gap: 12px; font-size: 11px; }
 .receipt-meta dt { color: var(--text-muted); }.receipt-meta dd { margin: 0; overflow-wrap: anywhere; }

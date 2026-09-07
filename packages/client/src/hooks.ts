@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, errorText } from "./api";
 
 export function useResource<T>(path: string | null, revision = 0, interval = 0) {
@@ -34,4 +34,35 @@ export function useTask() {
     try { await work(); } catch (error) { setError(errorText(error)); } finally { setBusy(false); }
   }, []);
   return { busy, error, setError, run };
+}
+
+/**
+ * Die Regel hinter der Wuerfelbewegung, als reine Funktion — und deshalb pruefbar.
+ *
+ * `bekannt === null` ist der ERSTE Datenstand: er zaehlt vollstaendig als Bestand, nichts daran
+ * ist frisch. Wer den Reiter oeffnet, sieht die alten Wuerfe LIEGEN, nicht fallen. Erst was
+ * danach dazukommt, faellt. Ohne diese Unterscheidung liesse jede Abfrage — alle paar Sekunden —
+ * die ganze Historie erneut fallen, und Bewegung, die nichts mitteilt, ist Unruhe.
+ *
+ * Verschwundene Kennungen bleiben bekannt: taucht ein Wurf wieder auf, ist er kein neues
+ * Ereignis, sondern dieselbe Karte.
+ */
+export function frischeAuswahl(bekannt: ReadonlySet<string> | null, ids: readonly string[]): { bekannt: Set<string>; frisch: readonly string[] } {
+  if (bekannt === null) return { bekannt: new Set(ids), frisch: [] };
+  const frisch = ids.filter(id => !bekannt.has(id));
+  return { bekannt: new Set([...bekannt, ...ids]), frisch };
+}
+
+/** Welche dieser Karten sind gerade neu dazugekommen? Siehe {@link frischeAuswahl}. */
+export function useFrischeKarten(ids: readonly string[]): ReadonlySet<string> {
+  const [frisch, setFrisch] = useState<ReadonlySet<string>>(() => new Set<string>());
+  const bekannt = useRef<ReadonlySet<string> | null>(null);
+  // Wurfkennungen sind UUIDs; das Komma kommt darin nicht vor und trennt daher eindeutig.
+  const schluessel = ids.join(",");
+  useEffect(() => {
+    const stand = frischeAuswahl(bekannt.current, schluessel ? schluessel.split(",") : []);
+    bekannt.current = stand.bekannt;
+    if (stand.frisch.length) setFrisch(new Set(stand.frisch));
+  }, [schluessel]);
+  return frisch;
 }
