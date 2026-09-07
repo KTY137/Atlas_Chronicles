@@ -8,7 +8,8 @@
     "build": "node tools/build.mjs",
     "start": "electron dist/main.cjs",
     "smoke": "node tools/smoke.mjs",
-    "package": "node tools/package.mjs"
+    "package": "node tools/package.mjs",
+    "installer": "node tools/installer.mjs"
   },
   "dependencies": {
     "@chronicle/server": "*"
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@electron/packager": "20.3.0",
     "electron": "44.2.0",
+    "electron-winstaller": "5.4.4",
     "esbuild": "0.25.12"
   }
 }

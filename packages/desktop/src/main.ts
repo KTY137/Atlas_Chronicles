@@ -1,7 +1,9 @@
 import { app, BrowserWindow, dialog, ipcMain, protocol, safeStorage, session, shell, desktopCapturer, Tray, Menu, nativeImage, type IpcMainInvokeEvent } from "electron";
+import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile, copyFile, mkdir, rm, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Authority, DesktopError, SHELL_URL, command, fail, object, partitionFor } from "./policy.ts";
 import { ProfileStore } from "./profiles.ts";
@@ -18,8 +20,18 @@ if (userDataFlag) {
   if (!path.toLowerCase().includes(`${join(".local", "desktop-profiles").toLowerCase()}${process.platform === "win32" ? "\\" : "/"}`)) throw new Error("Development userData must use an isolated desktop-profiles child.");
   app.setPath("userData", path);
 }
-// Installer events are handled before opening any profile.
-if (process.argv.some(value => /^--squirrel-(install|updated|uninstall|obsolete)$/.test(value))) app.quit();
+// Installer events are handled before opening any profile. Electron's executable carries
+// Squirrel's `SquirrelAwareVersion` resource, so Squirrel delegates the shortcut to the
+// application and creates none itself: without this branch an installed world has no start
+// menu entry at all. The update binary is resolved from our own installed layout, never from
+// an argument, and a missing or failing one costs a shortcut, never the installation.
+const lifecycle = process.argv.find(value => /^--squirrel-(install|updated|uninstall|obsolete)$/.test(value));
+if (lifecycle) {
+  const shortcut = lifecycle === "--squirrel-uninstall" ? "--removeShortcut" : lifecycle === "--squirrel-obsolete" ? undefined : "--createShortcut";
+  const updater = join(process.execPath, "..", "..", "Update.exe");
+  if (shortcut && existsSync(updater)) try { spawnSync(updater, [`${shortcut}=${basename(process.execPath)}`], { windowsHide: true, timeout: 10_000 }); } catch { /* the installation stands; only its shortcut is lost */ }
+  app.quit();
+}
 else if (!app.requestSingleInstanceLock()) app.quit();
 else void app.whenReady().then(run);
 

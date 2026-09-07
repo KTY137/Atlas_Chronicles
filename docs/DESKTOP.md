@@ -74,6 +74,7 @@ separate historical-GM enrollment. A portable encrypted full-host format is not 
 | Native decoder | existing sharp 0.35.4 |
 | Desktop compiler | esbuild 0.25.12 |
 | Local packager | @electron/packager 20.3.0 |
+| Local installer | electron-winstaller 5.4.4 (Squirrel.Windows) |
 
 PostgreSQL's [Windows download page](https://www.postgresql.org/download/windows/) links the
 EDB binary distribution intended for embedding. The explicitly selected archive is
@@ -141,6 +142,7 @@ device, screen-picker and NVDA acceptance. An automated browser cannot supply th
 npm.cmd exec -- vitest run packages/desktop/test packages/server/test/host.test.ts
 node packages/desktop/tools/smoke.mjs
 node packages/desktop/tools/package.mjs
+node packages/desktop/tools/installer.mjs
 ```
 
 The isolated smoke allocates a unique child of `.local/desktop-profiles`, leaves development
@@ -186,9 +188,45 @@ publish a release, or claim a tested updater. A packaged smoke can select that e
 `--executable=<absolute AtlasChronicles.exe path>`; its CLI test profile override remains confined
 to a child of `.local/desktop-profiles`.
 
+## The local unsigned setup
+
+`node packages/desktop/tools/installer.mjs` (`npm run desktop:installer`) wraps an already packaged
+and recorded artifact, without rebuilding it, into an explicitly **unsigned, per-user Squirrel
+setup** under `.local/desktop-artifacts/<stamp>/installer/`. It refuses to run when the packaged
+executable no longer matches its artifact record. Squirrel remains the adopted Windows packaging
+base; the pinned build tool is `electron-winstaller@5.4.4`. This step delivers only the local,
+unsigned form: it configures no update feed, claims no tested updater, and sets no release fuses.
+`installer.json` beside the setup records the tool pin, both hashes, the size and the open gates.
+
+Electron's executable carries Squirrel's `SquirrelAwareVersion` resource, so Squirrel delegates
+shortcut handling to the application and creates none itself. Answering the lifecycle argument by
+quitting alone therefore installed an application with no start menu entry at all. `main.ts` now
+hands `--createShortcut` / `--removeShortcut` to the update binary resolved from its own installed
+layout, still before any profile work, and `test/squirrel-lifecycle.test.ts` pins both directions.
+The tool's nuspec template is an allow-list that omits `LICENSES.chromium.html`, so the installer
+supplies that file explicitly; without it the installed application ships no Chromium notices.
+Electron's `version` marker stays absent on purpose: the application reads its own `build.json`,
+and a second version source inside the package is the drift `gate:version` exists to prevent.
+
+On 2026-09-07 the setup was built and installed on this machine: **214,621,184 bytes**, setup
+SHA256 `dea9bae964f36ba7bb463c1c5d2326ed5a070021b5db0f49f49e0bb25f35ad62`, over the
+564,846,507-byte artifact whose executable SHA256 is unchanged at `774a608e…`. The silent
+installation produced `%LOCALAPPDATA%\AtlasChronicles\app-0.1.0` carrying that recorded executable
+hash, both the start menu and the desktop shortcut, and the Chromium notices. Uninstallation
+removed both shortcuts and left Squirrel's usual locked remainder behind a `.dead` marker.
+
+Against that installed executable the smoke passed its own PG17/migration/sharp check and the real
+licensed Grundriss generator route, then failed on two properties of the current working tree
+rather than of packaging: its 30-second window wait is too short for first GM setup on this
+machine, and its `bundle.version` assertion still expects 5 while the tree exports 6. The
+development Electron fails identically, which is what separates the two causes. This is expressly
+not a 10/10 result, and the setup is not a signed release.
+
 ## Remaining M8 work
 
-The installer/update state machine, signed Windows installer and configured update feed,
+A local unsigned per-user setup now exists and is described above; it is a first-install path and
+performs no drain, recovery point or migration admission before replacing files. The installer and
+update state machine around it, the signed Windows installer and configured update feed,
 release ASAR/fuses, process-death bootstrap reconciliation, real pre-migration failure
 injection, and full failure-injection/independent review remain to be delivered. Device-bound
 recovery and the mandatory pre-migration guard are implemented; their normal live recovery

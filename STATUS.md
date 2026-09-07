@@ -1,6 +1,53 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-07 09:55** (Arbeitsbaum gesiegelt: `c3fcb08`; zwei Sessions arbeiten parallel weiter)
+Updated: **2026-09-07 10:45** (Desktop-Installer gelandet; mehrere Sessions arbeiten parallel weiter)
+
+## Der Desktop hat einen Installer — Session Desktop-Installer, 2026-09-07 10:45
+
+**Aus dem 564-MB-Ordner ist eine Datei geworden.** `npm run desktop:installer` hüllt ein bereits
+gepacktes, aufgezeichnetes Artefakt in ein **unsigniertes per-user Squirrel-Setup**:
+`Atlas-Chronicles-Setup.exe`, **214.621.184 Bytes**, SHA256
+`dea9bae964f36ba7bb463c1c5d2326ed5a070021b5db0f49f49e0bb25f35ad62`. Installation ohne Adminrechte
+nach `%LOCALAPPDATA%\AtlasChronicles`. Werkzeug ist der in `design/iterations/desktop-shell-20260906.md`
+§B adoptierte Pin `electron-winstaller@5.4.4` — kein NSIS, kein zweiter Packager: der bestehende
+`@electron/packager`-Pfad bleibt unangetastet, der Installer prüft dessen aufgezeichneten EXE-Hash
+und verweigert die Arbeit bei Abweichung.
+
+**Nemesis-Befund, am echten Binary belegt und behoben.** Electrons EXE trägt die Ressource
+`SquirrelAwareVersion`. Squirrel überlässt die Verknüpfung deshalb der Anwendung und legt selbst
+keine an — `main.ts` beendete sich an dieser Stelle kommentarlos. Jede Installation wäre **ohne
+Startmenü-Eintrag** gelandet, auffindbar nur über `%LOCALAPPDATA%`. `main.ts` reicht jetzt
+`--createShortcut` / `--removeShortcut` an das aus der eigenen Installationslage aufgelöste
+Update-Binary weiter, weiterhin vor jeder Profilarbeit. `test/squirrel-lifecycle.test.ts` pinnt das
+mit vier Fällen; **zwei davon fallen nachweislich gegen den Stand vor dem Fix** (per `git stash`
+gegengeprüft, nicht behauptet). Real verifiziert: Installation legt beide Verknüpfungen an,
+Deinstallation entfernt beide.
+
+**Zweiter Befund: das nuspec-Template des Werkzeugs ist eine Allow-List** und lässt
+`LICENSES.chromium.html` weg. Die erste gebaute Installation trug Chromiums Fremdlizenzen nicht
+mit. Der Installer reicht die Datei jetzt ausdrücklich nach; im Baum der Installation nachgewiesen
+(20,4 MB). Electrons `version`-Marker fehlt weiter mit Absicht — die Anwendung liest ihren eigenen
+`build.json`, eine zweite Versionsquelle im Paket wäre genau die Drift, gegen die `gate:version`
+steht.
+
+**Nachgewiesen, nicht behauptet:** PostgreSQL-17.11-Archiv gegen den gepinnten SHA256 geprüft,
+1.565 Dateien, Manifest erzeugt. Desktop-Suite **32/32 grün in 8 Dateien** (28 bestehende plus 4
+neue), `gate:version` und `gate:boundaries` grün, **0** TypeScript-Fehler im Desktop-Paket. Der
+Smoke gegen die **installierte** EXE besteht eigenen PG17/Migrationen/sharp und die reale
+lizenzierte Grundriss-Generatorroute.
+
+**Offen, und ausdrücklich kein 10/10:** Der Smoke fällt danach an zwei Eigenschaften des
+Arbeitsbaums, nicht des Packagings — sein 30-Sekunden-Fenster ist für die erste GM-Einrichtung auf
+dieser Maschine zu knapp (mit 180 s läuft der Schritt durch), und `assert.equal(bundle.version, 5)`
+ist gegenüber der laufenden V6-Arbeit veraltet (`docs/CAMPAIGN_FORMAT_V6.md` existiert, das Schema
+noch nicht). **Das Entwicklungs-Electron fällt identisch** — das trennt die Ursachen. Beides gehört
+den jeweiligen Threads, nicht diesem; nichts davon wurde von hier aus angefasst.
+
+**Weiterhin offen am Setup selbst:** Signierung, Timestamping und erwarteter Publisher; ein
+konfigurierter Update-Feed und ein geprüfter Updater; Release-ASAR und Fuses. Das Setup ist ein
+**Erstinstallationspfad**, kein Updatepfad: es drainiert nicht, erzeugt keinen Recovery-Punkt und
+prüft keine Migrationszulassung, bevor es Dateien ersetzt. Ohne Signatur zeigt SmartScreen beim
+Empfänger die übliche Warnung.
 
 ## Versiegelung — Session Apollon, 2026-09-07 09:55
 

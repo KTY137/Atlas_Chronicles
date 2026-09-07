@@ -24,6 +24,7 @@
     "desktop:build": "node packages/desktop/tools/build.mjs",
     "desktop": "npm run desktop:build && node packages/desktop/tools/launch.mjs",
     "desktop:smoke": "npm run desktop:build && node packages/desktop/tools/smoke.mjs",
+    "desktop:installer": "node packages/desktop/tools/installer.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
