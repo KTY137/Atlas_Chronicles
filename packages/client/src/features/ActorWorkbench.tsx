@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ActorCard, ActorKindValue, ActorTemplateData, ControllerCard, ItemCard, ItemContract, ItemState, LootRarityValue, TemplateCard } from "@chronicle/protocol";
+import type { ActorCard, ActorKindValue, ActorTemplateData, Beutezeile, ControllerCard, ItemCard, ItemContract, ItemState, LootRarityValue, TemplateCard } from "@chronicle/protocol";
 import { LOOT_RARITIES } from "@chronicle/protocol";
 import { Lootkarte, SELTENHEIT_TEXT } from "./Lootkarte";
 import { speicherstats } from "./speicherstats";
@@ -118,9 +118,16 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved }: {
   const [pin, setPin] = useState(original?.definition.package ?? rules.pin);
   const pkg = rules.packages.find(p => p.id === pin.id && p.version === pin.version);
   const [fields, setFields] = useState<Record<string, Scalar>>(original?.definition.fields ?? (pkg ? defaults(pkg.fields) : {}));
+  const [beute, setBeute] = useState<Beutezeile[]>(original?.definition.schemaVersion === 2 ? original.definition.beute.map(z => ({ ...z })) : []);
+  const gegenstaende = useResource<TemplateCard<ItemContract>[]>(apiPath(campaignId, "/item-templates"), 0);
   const task = useTask(), command = useCommand();
   useEffect(() => () => onDirty(false), [onDirty]);
-  const definition: ActorTemplateData = { schemaVersion: 1, name, kind, loreEntryId: lore, package: pin, fields };
+  // Ohne Beute bleibt die Vorlage Fassung 1. Dieselbe Zurueckhaltung wie beim Kampagnenpaket:
+  // nichts wird allein dadurch neu, dass es eine neuere Fassung gibt.
+  const definition: ActorTemplateData = beute.length
+    ? { schemaVersion: 2, name, kind, loreEntryId: lore, package: pin, fields, beute }
+    : { schemaVersion: 1, name, kind, loreEntryId: lore, package: pin, fields };
+  const setzeZeile = (i: number, patch: Partial<Beutezeile>) => { setBeute(alt => alt.map((z, n) => n === i ? { ...z, ...patch } : z)); onDirty(true); };
   return <form className="panel" onChange={() => onDirty(true)} onSubmit={event => { event.preventDefault(); void task.run(async () => {
     await command(apiPath(campaignId, `/actor-templates${original ? `/${encodeURIComponent(original.id)}` : ""}`),
       { definition, ...(original ? { expectedVersion: original.version, reason } : {}) }, original ? "PUT" : "POST");
@@ -129,6 +136,29 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved }: {
     <label>Vorlagenname<input required maxLength={160} value={name} onChange={e => setName(e.target.value)} /></label>
     <label>Art der Figur<select value={kind} onChange={e => setKind(e.target.value as ActorKindValue)}>{Object.entries(kinds).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
     <LoreField campaignId={campaignId} value={lore} onChange={setLore} />
+    {/* Die Beutetabelle: was diese Art Figur bei sich traegt, und wie wahrscheinlich. Jede Zeile
+        wird einzeln entschieden — der Wolf traegt vielleicht das Fell UND vielleicht den Zahn. */}
+    <fieldset className="sheet-section"><legend>Beute dieser Figur</legend>
+      {!gegenstaende.data?.length
+        ? <p className="field-help">Lege zuerst Gegenstandsvorlagen an — eine Beutezeile zeigt auf eine davon.</p>
+        : <>{(() => { const vorlagen = gegenstaende.data; return <>{beute.map((zeile, i) => <div className="rule-fields" key={i}>
+            <label>Gegenstand<select value={`${zeile.templateId}@${zeile.templateRevision}`} onChange={e => {
+              const [id, rev] = e.target.value.split("@");
+              setzeZeile(i, { templateId: id!, templateRevision: Number(rev) });
+            }}>{vorlagen.map(t => <option key={t.id} value={`${t.id}@${t.revision}`}>{t.definition.name} · Revision {t.revision}</option>)}</select></label>
+            <label>Wahrscheinlichkeit in Prozent<input type="number" min={1} max={100} value={zeile.wahrscheinlichkeit}
+              onChange={e => setzeZeile(i, { wahrscheinlichkeit: Math.min(100, Math.max(1, Math.trunc(e.target.valueAsNumber) || 1)) })} /></label>
+            <label>Menge von<input type="number" min={1} max={1000} value={zeile.menge[0]}
+              onChange={e => setzeZeile(i, { menge: [Math.max(1, Math.trunc(e.target.valueAsNumber) || 1), zeile.menge[1]] })} /></label>
+            <label>bis<input type="number" min={zeile.menge[0]} max={1000} value={zeile.menge[1]}
+              onChange={e => setzeZeile(i, { menge: [zeile.menge[0], Math.max(zeile.menge[0], Math.trunc(e.target.valueAsNumber) || zeile.menge[0])] })} /></label>
+            <Button onClick={() => { setBeute(alt => alt.filter((_, n) => n !== i)); onDirty(true); }}>Zeile entfernen</Button>
+          </div>)}
+          <Button disabled={beute.length >= 32} onClick={() => { const erste = vorlagen[0]!;
+            setBeute(alt => [...alt, { templateId: erste.id, templateRevision: erste.revision, wahrscheinlichkeit: 50, menge: [1, 1] }]); onDirty(true); }}>Beutezeile hinzufügen</Button>
+          <p className="field-help">Die Beute wird beim Erschaffen einer Figur aus dieser Vorlage ausgewürfelt und liegt dann in ihrem Inventar. Jede Zeile nennt die Gegenstandsvorlage mit ihrer Revision — eine spätere Überarbeitung ändert diese Tabelle also nicht von selbst.</p>
+        </>; })()}</>}
+    </fieldset>
     <label>Regelpaket für die Anfangswerte<select value={`${pin.id}@${pin.version}`} onChange={e => {
       const p = rules.packages.find(p => `${p.id}@${p.version}` === e.target.value)!; setPin({ id: p.id, version: p.version }); setFields(defaults(p.fields));
     }}>{rules.packages.map(p => <option key={`${p.id}@${p.version}`} value={`${p.id}@${p.version}`}>{p.name} · {p.version}</option>)}</select></label>

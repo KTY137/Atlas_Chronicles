@@ -78,14 +78,35 @@ function kartengesicht(row: Record<string, unknown>): void {
     boundedText(zeile.label, "definition.zeilen.label", 40); boundedText(zeile.wert, "definition.zeilen.wert", 120);
   }
 }
+/**
+ * Die Beutetabelle einer Figurvorlage. Jede Zeile nennt eine Gegenstandsvorlage **mit ihrer
+ * Revision** — eine Tabelle, die auf „die jeweils neueste Fassung" zeigte, änderte sich, ohne
+ * dass jemand sie anfasst.
+ */
+function beutetabelle(value: unknown, g: Graph): void {
+  const zeilen = list(value, "definition.beute", 32);
+  for (const eintrag of zeilen) {
+    const zeile = object(eintrag, "definition.beute");
+    keys(zeile, ["templateId", "templateRevision", "wahrscheinlichkeit", "menge"], "definition.beute");
+    g.ref("item_template_revisions", [zeile.templateId, zeile.templateRevision], ["template_id", "revision"]);
+    const prozent = numeric(zeile.wahrscheinlichkeit, "definition.beute.wahrscheinlichkeit", 1);
+    if (prozent > 100) fail("definition.beute.wahrscheinlichkeit", "a probability is at most 100 percent");
+    const menge = list(zeile.menge, "definition.beute.menge", 2);
+    if (menge.length !== 2) fail("definition.beute.menge", "a quantity range has a lower and an upper bound");
+    const von = numeric(menge[0], "definition.beute.menge[0]", 1), bis = numeric(menge[1], "definition.beute.menge[1]", 1);
+    if (von > bis) fail("definition.beute.menge", "the lower bound of a quantity range cannot exceed its upper bound");
+  }
+}
 function definition(value: unknown, actor: boolean, g: Graph): void {
   const row = object(value, "definition");
   // Fassung 2 ist die Kartenfassung eines Gegenstands — und nur dort, wo das Profil sie kennt.
   const karte = !actor && row.schemaVersion === 2 && g.rules.itemCardFaces;
-  keys(row, actor ? ["schemaVersion", "name", "kind", "loreEntryId", "package", "fields"]
+  // Fassung 2 einer FIGURvorlage ist ihre Beutetabelle. Zwei Aussagen, zwei Faehigkeiten.
+  const beute = actor && row.schemaVersion === 2 && g.rules.npcLoot;
+  keys(row, actor ? (beute ? ["schemaVersion", "name", "kind", "loreEntryId", "package", "fields", "beute"] : ["schemaVersion", "name", "kind", "loreEntryId", "package", "fields"])
     : karte ? ["schemaVersion", "name", "loreEntryId", "tags", "seltenheit", "kategorie", "bildAssetId", "spruch", "zeilen"]
     : ["schemaVersion", "name", "loreEntryId", "tags"], "definition");
-  if (row.schemaVersion !== 1 && !karte) fail("definition", "unknown definition version; explicit migration required");
+  if (row.schemaVersion !== 1 && !karte && !beute) fail("definition", "unknown definition version; explicit migration required");
   boundedText(row.name, "definition.name", 160); g.nullable("entries", row.loreEntryId);
   if (actor) {
     if (!CAMPAIGN_ACTOR_KINDS.filter(kind => kind !== "unspecified").includes(row.kind as never)) fail("definition.kind", "unknown actor kind");
@@ -97,6 +118,7 @@ function definition(value: unknown, actor: boolean, g: Graph): void {
       else if (typeof value !== "boolean") fail("definition.fields", "scalar required");
     }
     try { g.rules.fields(g.package(row.package), fields); } catch { fail("definition.fields", "fields do not match pinned rule package"); }
+    if (beute) beutetabelle(row.beute, g);
   } else {
     const tags = list(row.tags, "definition.tags", 32); for (const tag of tags) boundedText(tag, "definition.tags", 80);
     if (new Set(tags).size !== tags.length) fail("definition.tags", "duplicate tags");

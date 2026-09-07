@@ -53,7 +53,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☑ | Balken am Bogen, gelesen aus der `vitals`-Deklaration |
 | 14 | Dynamisch setzbare Bars | ☑ | Balken-Editor in der Schmiede: Feld, Höchststand, Erschöpfung |
 | 15 | KI-vorgeschlagene Änderungen | ◐ | Chronist-Regelwerk grün; Modellknoten bewusst offen (Egress-Entscheidung) |
-| 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ◐ | Kartenart wählbar (Höhle angeschlossen); Loot-Tabelle offen |
+| 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☑ | Beutetabelle an der Vorlage; Kartenart wählbar (Siedlung offen) |
 | 17 | PNGs hochladbar | ☐ | `wiki_assets` (015) existiert — prüfen |
 | 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☐ | verschachtelte Karten (014) existieren — prüfen |
 
@@ -1160,3 +1160,63 @@ Erzeuger kommt jetzt aus dem **Ergebnis**, nicht aus einer Konstante: eine Quell
 eine **andere Form** (`Siedlung` mit `bauwerke` und `strassen` statt `raeume`, eigener Bericht).
 Sie anzuschließen heißt, den Ergebnisweg zu verzweigen — machbar, aber eine eigene Entscheidung,
 kein Anhängsel an diesen Commit.
+
+### Abschluss Feature 16 — 2026-09-07 20:15
+
+**Die zweite Hälfte: NPC-Vorlagen mit Beute nach Wahrscheinlichkeit.**
+
+Die Beutetabelle gehört **in die Vorlagendefinition**, nicht in eine eigene Tabelle: sie sagt
+aus, was *diese Art* Figur bei sich trägt, und die Revision einer Vorlage ist unveränderlich und
+inhaltsgehasht — eine überarbeitete Beute ist damit von selbst eine neue Revision.
+
+Also `ActorTemplateDefinitionV2`, und dieselbe Naht wie bei der Lootkarte: eine eigene Fähigkeit
+`npcLoot` am Profil. **Eigene Fähigkeit statt Mitfahren bei `itemCardFaces`** — es sind zwei
+Aussagen über zwei verschiedene Vorlagenarten, und wer eine zurücknehmen müsste, soll nicht die
+andere mitnehmen. Der eingefrorene v2-Umschlag sagt zu beiden nein.
+
+**Prozent, keine Bruchzahl.** „35" liest eine Spielleitung am Tisch; „0.35" ist eine
+Programmiereraussage. **Und jede Zeile nennt die Revision** der Gegenstandsvorlage: eine Tabelle,
+die auf „die jeweils neueste Fassung" zeigte, änderte sich, ohne dass jemand sie anfasst.
+
+**Jede Zeile wird einzeln entschieden.** Eine Beutetabelle ist keine Auswahl von einem aus
+vielen, sondern eine Liste von Möglichkeiten: der Wolf trägt vielleicht das Fell *und* vielleicht
+den Zahn.
+
+### Wo die Beute NICHT hingeschrieben wird
+
+Nicht in die Nutzlast des `actor.instantiate`-Ereignisses: deren Feldliste steht im eingefrorenen
+v1-Profil, und ein zusätzliches Feld dort bricht jeden Export — **das ist in dieser Sitzung schon
+einmal passiert** (Feature 8). Und nicht über einen eigenen `item.instantiate`-Befehl je Stück:
+der öffnete eine zweite Transaktion auf derselben Verbindung und wartete damit auf sich selbst —
+**auch das ist in dieser Sitzung schon einmal passiert** (Feature 7). Die Gegenstände entstehen in
+derselben Transaktion und sind ihr eigener Beleg.
+
+### Zwei gemessene Eigenheiten
+
+`createActorTemplate` prüft den Entwurf **synchron** im Arrow-Rumpf: ein ungültiger Entwurf wirft
+sofort und wird nicht als Versprechen abgelehnt. Der Test prüft entsprechend `toThrow`, nicht
+`rejects`.
+
+Und der Beutetest ist **rechenintensiv** (52 Figurerschaffungen). Er ließ die Nachbarsuite
+`actors.test.ts` unter Parallel-Last in ihr Budget laufen; **isoliert 13/13 grün**. Last, kein
+Defekt.
+
+### Belege
+
+- `npc-beute.test.ts` **6/6 grün**: sichere Beute landet wirklich im Inventar (**beide** Zeilen);
+  die Mengenspanne wird eingehalten (12 Durchläufe); die Wahrscheinlichkeit wird beachtet (bei
+  1 % tragen nicht alle 40); eine Vorlage der Fassung 1 erschafft weiter leere Hände; sechs
+  fehlerhafte Beutezeilen werden abgewiesen; und eine Zeile auf eine Vorlage, die es nicht gibt,
+  scheitert.
+- **Gegenprobe gefahren:** Wahrscheinlichkeit und Mengenspanne ignoriert → drei Fälle rot.
+  Zurückgesetzt.
+- Kein Regress: `io` + `client` + `protocol` + Figuren-Suiten **280/281** bzw. **163/163**
+  isoliert grün, `typecheck` 0 Fehler, `gate:boundaries` **459/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+**Die Beute wird beim Erschaffen ausgewürfelt, nicht beim Sterben.** Wer eine Kreatur besiegt,
+findet, was schon in ihrem Inventar liegt — es gibt keinen „Loot-Wurf bei Niederlage".
+**Die Siedlung** bleibt unangeschlossen (andere Ergebnisform, eigene Entscheidung). Und ein
+NPC-*Generator*, der ohne Vorlage aus dem Nichts eine Figur erfindet, existiert nicht: erschaffen
+wird aus einer Vorlage, wie alles andere auch.

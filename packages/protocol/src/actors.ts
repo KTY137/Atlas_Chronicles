@@ -18,8 +18,37 @@ export const ActorTemplateDefinition = Type.Object({
   schemaVersion: Type.Literal(1), name, kind: ActorKind, loreEntryId: nullableId,
   package: Type.Object({ id, version: Type.String({ minLength: 1, maxLength: 128 }) }, closed), fields,
 }, closed);
-export const ActorTemplateCreate = Type.Object({ ...command, definition: ActorTemplateDefinition }, closed);
-export const ActorTemplateRevise = Type.Object({ ...change, definition: ActorTemplateDefinition }, closed);
+/**
+ * Eine Beutezeile: welche Gegenstandsvorlage, mit welcher Wahrscheinlichkeit, wie viel davon.
+ *
+ * **Prozent, keine Bruchzahl.** „35" liest eine Spielleitung am Tisch; „0.35" ist eine
+ * Programmiereraussage. Und ganze Prozente ersparen den Vergleich zweier Fliesskommazahlen an
+ * einer Stelle, an der Genauigkeit nichts gewinnt.
+ *
+ * **Die Vorlage wird mit ihrer Revision genannt.** Eine Beutetabelle, die auf „die jeweils
+ * neueste Fassung" zeigte, aenderte sich, ohne dass jemand sie anfasst — und die Vorlage, in der
+ * sie steht, ist unveraenderlich und inhaltsgehasht.
+ */
+export const BeutezeileV1 = Type.Object({
+  templateId: id, templateRevision: version,
+  wahrscheinlichkeit: Type.Integer({ minimum: 1, maximum: 100 }),
+  menge: Type.Tuple([Type.Integer({ minimum: 1, maximum: 1000 }), Type.Integer({ minimum: 1, maximum: 1000 })]),
+}, closed);
+/**
+ * Fassung 2 der Figurvorlage: dieselbe Vorlage, dazu eine **Beutetabelle**.
+ *
+ * Fassung 1 bleibt gueltig. Eine Vorlage, die vor dieser Zeile gespeichert wurde, traegt weiter
+ * `schemaVersion: 1` und wird weiter gelesen — ihre Revision ist unveraenderlich, sie
+ * nachtraeglich umzudeuten waere eine Faelschung. Dieselbe Entscheidung wie bei der Lootkarte.
+ */
+export const ActorTemplateDefinitionV2 = Type.Object({
+  schemaVersion: Type.Literal(2), name, kind: ActorKind, loreEntryId: nullableId,
+  package: Type.Object({ id, version: Type.String({ minLength: 1, maxLength: 128 }) }, closed), fields,
+  beute: Type.Array(BeutezeileV1, { maxItems: 32 }),
+}, closed);
+export const ActorTemplateDefinitionAny = Type.Union([ActorTemplateDefinition, ActorTemplateDefinitionV2]);
+export const ActorTemplateCreate = Type.Object({ ...command, definition: ActorTemplateDefinitionAny }, closed);
+export const ActorTemplateRevise = Type.Object({ ...change, definition: ActorTemplateDefinitionAny }, closed);
 export const ArchiveObject = Type.Object(change, closed);
 export const ActorInstantiate = Type.Object({ ...command, templateId: id, templateRevision: version, name: Type.Optional(name) }, closed);
 export const ActorProfileUpdate = Type.Object({ ...change, name, kind: ActorKind, loreEntryId: nullableId }, closed);
@@ -84,7 +113,10 @@ export const ACTOR_INVENTORY_OPERATIONS = [
 ] as const;
 
 export type ActorKindValue = Static<typeof ActorKind>;
-export type ActorTemplateData = Static<typeof ActorTemplateDefinition>;
+export type ActorTemplateDataV1 = Static<typeof ActorTemplateDefinition>;
+export type ActorTemplateDataV2 = Static<typeof ActorTemplateDefinitionV2>;
+export type ActorTemplateData = ActorTemplateDataV1 | ActorTemplateDataV2;
+export type Beutezeile = Static<typeof BeutezeileV1>;
 export type ItemContractV1Data = Static<typeof ItemContractV1>;
 export type ItemContractV2Data = Static<typeof ItemContractV2>;
 export type ItemContract = ItemContractV1Data | ItemContractV2Data;

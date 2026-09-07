@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
 import { Value } from "@sinclair/typebox/value";
 import type { Static, TSchema } from "@sinclair/typebox";
 import { DEMO_RULE_PACKAGE, parseSupportedRulePackage, stableJson, validatePackageFields, type AnyRulePackage as RulePackage } from "@chronicle/rules";
@@ -202,6 +202,37 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
     await authorizeActor(db, current, actorId, { active: false });
     return projectActor(await actorCard(db, current, actorId), await knownLore(db, current));
   }
+/**
+ * Die Beute einer Figurvorlage auswürfeln — beim Erschaffen, in derselben Transaktion.
+ *
+ * **Jede Zeile wird einzeln entschieden.** Eine Beutetabelle ist keine Auswahl von einem aus
+ * vielen, sondern eine Liste von Möglichkeiten: der Wolf trägt vielleicht das Fell und vielleicht
+ * den Zahn, unabhängig voneinander.
+ *
+ * **Die Gegenstände sind ihr eigener Beleg.** Sie in die Nutzlast des `actor.instantiate`-Ereignisses
+ * zu schreiben käme nicht in Frage: deren Feldliste ist im eingefrorenen v1-Profil festgelegt, und
+ * ein zusätzliches Feld dort bricht jeden Export — das ist in dieser Sitzung schon einmal passiert.
+ * Ein eigener `item.instantiate`-Befehl je Stück wäre der andere Weg und ginge auch nicht: er
+ * öffnete eine zweite Transaktion auf derselben Verbindung und wartete damit auf sich selbst.
+ */
+async function wuerfleBeute(tx: Db, campaignId: string, userId: string, actorId: string,
+  definition: P.ActorTemplateData, at: number): Promise<void> {
+  if (definition.schemaVersion !== 2 || !definition.beute.length) return;
+  for (const zeile of definition.beute) {
+    if (zufallsProzent() > zeile.wahrscheinlichkeit) continue;
+    const [von, bis] = zeile.menge;
+    const menge = von + Math.floor(zufall() * (bis - von + 1));
+    await tx.query(`INSERT INTO item_instances(id,campaign_id,template_id,template_revision,holder_actor_id,state,created_by,created_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [randomUUID(), campaignId, zeile.templateId, zeile.templateRevision, actorId,
+        JSON.stringify({ quantity: menge, notes: "", equipped: false }), userId, at]);
+  }
+}
+/** Gleichverteilt in [0,1). Aus `crypto`, damit die Beute nicht an einem schwachen Zufall haengt. */
+const zufall = (): number => randomInt(0, 2 ** 30) / 2 ** 30;
+/** 1..100 — dieselbe Skala wie die Wahrscheinlichkeit, damit der Vergleich keine Umrechnung braucht. */
+const zufallsProzent = (): number => randomInt(1, 101);
+
   async function instantiateActor(userId: string, campaignId: string, raw: unknown): Promise<P.ActorCard> {
     const input = parse(P.ActorInstantiate, raw);
     return command(userId, campaignId, "actor.instantiate", null, input, true, async (tx, current) => {
@@ -217,6 +248,7 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [id, campaignId, source.definition.kind, input.templateId, input.templateRevision, source.definition.loreEntryId, userId, at]);
       await tx.query("INSERT INTO actor_controllers(actor_id,campaign_id,user_id,granted_by,granted_at) VALUES($1,$2,$3,$3,$4)", [id, campaignId, userId, at]);
       await tx.query("INSERT INTO actor_sheets(actor_id,campaign_id,package_id,package_version,fields,updated_at) VALUES($1,$2,$3,$4,$5,$6)", [id, campaignId, pkg.id, pkg.version, JSON.stringify(fields), at]);
+      await wuerfleBeute(tx, campaignId, userId, id, source.definition, at);
       const after = await actorCard(tx, current, id);
       return { subjectId: id, before: null, after, result: after };
     });
