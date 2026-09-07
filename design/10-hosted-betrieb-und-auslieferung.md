@@ -402,26 +402,47 @@ verhindert, dass ein fehlgeschlagenes Update eine Welt verliert.
 ## 5. Reihenfolge
 
 Nach Verhältnis von Risiko zu Aufwand, nicht nach Bequemlichkeit.
+Stand 2026-09-07: **erledigt ✓, offen ✗**.
 
 **Vor jeder Preisveröffentlichung** (Reversal cost ist hoch, sobald der Preis öffentlich ist):
 
-1. Kampagnen pro Instanz messen — die Zahl, auf der die ganze Kalkulation ruht (§1.5).
-2. Löschpfad und Retention bauen (§1.1). Ohne beides ist der Dienst nicht betreibbar.
-3. Metering-Ledger auf `game_sessions` (§3.4).
+1. ✗ **Kampagnen pro Instanz messen** (§1.5) — die Zahl, auf der die ganze Kalkulation ruht.
+   Sie ist jetzt *abfragbar*: `GET /api/operator/usage` liefert Raumzeit je Kampagne. Gemessen
+   ist sie damit nicht — dafür braucht es echten Betrieb über einen echten Zeitraum.
+2. ✓/✗ **Löschpfad und Retention** (§1.1). Der Löschpfad steht (`c52f3d4`, Migration 017).
+   **Retention fehlt weiter:** `events`, `commands`, `audit`, `lineage_events` und
+   `revisions` räumt niemand; das einzige `purge()` im Repo betrifft flüchtigen Tischchat
+   (`communication.ts:55`). Automatisches Löschen von Daten, um die niemand gebeten hat,
+   braucht zuerst eine Frist — und die entscheidet, wie lange ein abwesender Spieler noch
+   lückenlos fortsetzen kann.
+3. ✓ **Raumuhr** (§3.4) — als Bericht, nicht als Ledger (`a086d04`). Begründung dort: Die Zahlen
+   sind aus `game_sessions` ableitbar, ein Ledger friert nur eine Abrechnungsperiode ein, und
+   eine Abrechnung gibt es ohne §7.2 nicht. Nicht ableitbar und benannt: Teilnehmerminuten,
+   weil `media_presence` nur den Ist-Zustand führt.
 
 **Vor dem Mehrinstanzbetrieb:**
 
-4. Migrationsdisziplin festschreiben, Transaktion je Datei (§3.5).
-5. `*.pg.test.ts` in ein regelmäßig laufendes Gate (§1.7).
-6. Sticky-Session-Routing (§3.2).
+4. ✓ **Migrationsdisziplin** (§3.5) — Transaktion je Datei (`d22eceb`), gemessen schneller als
+   die gemeinsame. Expand/contract bleibt als Regel in §1.4 und in den Global Constraints des
+   Plans; erzwungen wird sie von keinem Gate.
+5. ✗ **`*.pg.test.ts` in ein regelmäßig laufendes Gate** (§1.7). Zehn Dateien hängen weiter an
+   `TEST_DATABASE_URL`. Braucht eine Entscheidung: jedem Entwickler lokal ein Postgres
+   abverlangen, oder nur in einer CI, die es im Repo noch nicht gibt.
+6. ✗ **Sticky-Session-Routing** (§3.2) — der einzige echte Blocker für N Instanzen.
 
-**Unabhängig davon, billig und wertvoll:**
+**Unabhängig davon, billig und wertvoll — alle erledigt:**
 
-7. Zugangsvorfall-Schreibpfad bauen — die Invariante steht im Schema und in der Doku (§1.2).
-8. `design/08` §3 und §5 der Wirklichkeit nachführen; B9-Ausnahmefläche benennen (§1.3, §1.8).
-9. Zwillingsbeweis als Test schreiben oder aus §3 streichen (§1.3).
-10. Import-Rate-Limit, `lineage_events`-Index, `TacticalRasterStats` ausgeben (§1.9, §3.5).
-11. Produktversion festlegen — ohne sie ist nichts taggbar (§1.9).
+7. ✓ Zugangsvorfall als native v8 (`4621231`).
+8. ✓ `design/08` §3 und §5 nachgeführt, B9-Ausnahmefläche benannt.
+9. ✓ Zwillingsbeweis (`a71aa85`).
+10. ✓ Import-Rate-Limit (`65df4f9`), `lineage_events`-Index (`099c1f3`), `TacticalRasterStats`
+    hinter der Betreiberrolle (`d110050`).
+11. ✓ Produktversion und Gate gegen Drift (`ae6283f`).
+
+**Dazugekommen beim Bauen:** `health.test.ts` hatte als letzte von 41 Dateien mit
+`createTestDb` keine ausdrückliche Frist — behoben in `d22eceb`. Und jede Formatgeneration
+hasht die gesamte Tabellenmenge neu; mit v8 sind es fünf Ebenen. Heute Millisekunden, aber es
+wächst mit jeder Version.
 
 ---
 
