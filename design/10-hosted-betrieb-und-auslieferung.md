@@ -432,9 +432,57 @@ Nach Verhältnis von Risiko zu Aufwand, nicht nach Bequemlichkeit.
 
 ---
 
-## 7. Entscheidungen, die Kaya gehören
+## 7. Entscheidungen
 
-Hier bewusst nicht getroffen:
+### 7.1 Auf Weisung getroffen, 2026-09-07
+
+Kaya hat die drei Mechanismusfragen, die dieses Dokument offen gelassen hatte, ausdrücklich
+delegiert („entscheide du alles, nimm die most general advanced option"). Gewählt ist jeweils
+die Variante, die sich sauber verallgemeinert — nicht die größte.
+
+**Löschriegel: kampagnengebundener Sitzungsschlüssel, transaktionslokal.**
+`deny_history_mutation()` weist UPDATE weiterhin ausnahmslos ab. DELETE wird abgewiesen,
+außer `current_setting('chronicle.deleting_campaign', true)` trägt genau die Kampagne der
+betroffenen Zeile. Der Schlüssel wird nur per `SET LOCAL` innerhalb der Löschtransaktion
+gesetzt und endet mit ihr.
+
+*Warum diese und nicht die anderen:* `ALTER TABLE … DISABLE TRIGGER` wirkt global und
+träfe gleichzeitige Sitzungen anderer Kampagnen — in einem Mehrinstanzbetrieb ist das
+disqualifizierend. Eine `SECURITY DEFINER`-Kapsel wäre gleichwertig sicher, aber sie
+verlagert die Bedingung in eine zweite Rechteebene, die dieses Repo sonst nirgends führt.
+Der bloße Ja/Nein-Schalter, den ich in §5 als „am leichtesten zu missbrauchen" notiert
+hatte, ist hier gerade **nicht** gewählt: Die Bindung an die konkrete `campaign_id` macht
+das Löschen einer einzelnen Zeile weiterhin unmöglich. Man kann nur eine ganze Kampagne
+löschen, und nur die, für die der Schlüssel gesetzt ist. Das ist die Verallgemeinerung, die
+zählt. 22 der 24 Tabellen tragen `campaign_id` direkt; `lineage_events` und `revisions`
+erreichen sie über `entry_id → entries` und bekommen dieselbe Bedingung mit einem Umweg.
+
+**Zugangsvorfall: beide Türarten, Integrität erhalten.**
+`access_incidents.vollmacht_id` wird nullbar, eine nullbare `action_vollmacht_id` kommt
+hinzu, beide mit echtem Fremdschlüssel (beide Zieltabellen führen `UNIQUE(id, campaign_id)`),
+dazu ein CHECK, dass genau eine der beiden gesetzt ist. Die Alternative — Fremdschlüssel
+fallen lassen und einen Textdiskriminator führen — wäre einfacher und gäbe die
+referenzielle Integrität auf; das widerspricht der Belegkultur des Projekts.
+
+Alle vier Schritte sind erweiternd: `DROP NOT NULL` und `ADD COLUMN` nullbar sind es
+ohnehin, und der CHECK ist von jedem Schreibvorgang alter Codeversionen erfüllt. Die
+Migration bleibt damit rolling-update-fähig (§1.4).
+
+*Ort des Schreibpfads:* nicht am Dokumentzugriff, sondern am Authentifizierungsfehler.
+`CHAMPION.md:372-376` ist wörtlich: *„the server logs an event whenever a device presents
+no/expired credential against a character holding an open Vollmacht."* Der Vorfall ist das
+Aussperrungssignal, nicht ein Türklinkenversuch.
+
+**`TacticalRasterStats`: Betreiberfläche, nicht offene Route.**
+Die Zahlen gehen in den strukturierten Log und an einen Endpunkt, der dieselbe Berechtigung
+verlangt wie andere Betreiberauskünfte. Queue-Tiefe und Cache-Zustand auf einer offenen
+Route wären ein Aufklärungssignal für gezielte Überlastung; das ist der einzige Grund,
+warum dieser Punkt überhaupt offen war.
+
+### 7.2 Weiterhin Kayas
+
+Diese bleiben ausdrücklich offen — sie sind Geld-, Produkt- oder Rechtsentscheidungen, keine
+Mechanismusfragen:
 
 - **Isolationsstufe:** RLS zuerst (Empfehlung) gegen Datenbank-pro-Mandant sofort.
   Kostenunterschied ist Betriebsautomation.
