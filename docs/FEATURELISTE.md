@@ -50,7 +50,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 10 | Verschiedene Inventare · Containerinventare (Kutschloot) | ☑ | Inventarauswahl; ein Behälter ist eine Figur der Art Fahrzeug |
 | 11 | Permanente Spielerprofile (mehrere Figuren je Account) | ☑ | trug das Modell schon; die handelnde Figur folgt jetzt dem Wissensblick |
 | 12 | Gesonderter Geldcounter | ☑ | im Inventar und beim Bogen — eine Komponente, zwei Orte |
-| 13 | Leben/Mana/Ausdauer-Anzeige | ☐ | hängt an #1 |
+| 13 | Leben/Mana/Ausdauer-Anzeige | ☑ | Balken am Bogen, gelesen aus der `vitals`-Deklaration |
 | 14 | Dynamisch setzbare Bars | ☐ | hängt an #13 |
 | 15 | KI-vorgeschlagene Änderungen | ☐ | |
 | 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☐ | |
@@ -931,3 +931,58 @@ wer es braucht, führt die kleinste Einheit. **Keine Buchungen:** der Zähler ze
 die Geschichte — wer Ausgaben nachhalten will, schreibt sie in die Notizen. Und Geld **wandert
 nicht automatisch** mit verkauften Gegenständen; es gibt keine Preise an den Lootkarten, nur die
 freie Zeile „Wert", die niemand verrechnet.
+
+## Feature 13 — Leben, Mana, Ausdauer: die Ernte von Feature 1
+
+**Die Deklaration war schon da.** Feature 1 hat `vitals` in das Regelpaket gebracht — Feld,
+Beschriftung, Höchstwert-**Ausdruck**, Bedeutung der Erschöpfung — samt dem reinen Leser
+`evaluateVitals`. Feature 13 ist deshalb kein neues Modell, sondern seine Anzeige.
+
+**Gerechnet wird mit derselben Funktion wie auf dem Server.** `evaluateVitals` liegt in
+`@chronicle/rules` und ist rein; der Bogen ruft sie lokal auf, genau wie er schon
+`evaluateComputedFields` aufruft. **Keine neue Route, keine zweite Wahrheit** — eine eigene
+Rechnung in der Oberfläche liefe beim ersten Höchstwert mit Klammern auseinander.
+
+**Angezeigt wird, was das Paket ausweist.** Ein Paket ohne Vitalwerte zeigt keine Balken; das ist
+ein zulässiger Zustand, kein leeres Gerüst. How to be a Hero weist genau einen aus (`hp`) — Mana
+und Ausdauer erscheinen, sobald ein Regelpaket sie deklariert, und **das ist Feature 14**.
+
+**Die Balken lesen den Entwurf, nicht den gespeicherten Stand:** wer Lebenspunkte einträgt, sieht
+den Balken wandern, bevor er speichert.
+
+### Zwei Dinge, die die Anzeige ehrlich halten
+
+**Die Zahl steht immer da.** Der Balken illustriert, er behauptet nicht: wer ihn nicht sieht —
+Farbenblindheit, schmales Fenster, abgeschaltete Stile —, liest trotzdem „37 / 100". Der Balken
+trägt `role="meter"` mit den zugehörigen Werten.
+
+**Erschöpfung wird benannt, nicht nur geleert.** Ein leerer Balken sähe bei Mana und bei
+Lebenspunkten gleich aus; was Niederlage bedeutet, hat das Paket erklärt (`depletion: "defeat"`),
+und wer es liest, soll es lesen können.
+
+### Ein gemessener Irrtum von mir
+
+Ich hatte angenommen, ein Bogen ohne Werte lasse `evaluateVitals` scheitern. **Er tut es nicht** —
+die Feldprüfung setzt die Voreinstellungen des Pakets ein, und die Balken stehen auf voll. Der
+Test hält jetzt das fest, was wirklich passiert, und prüft das Scheitern an einem Wert außerhalb
+seines Bereichs.
+
+### Belege
+
+- `vitalanzeige.test.ts` **7/7 grün** gegen ein Paket, das **Leben, Mana und Ausdauer** deklariert:
+  die Werte kommen aus dem Paket; der Höchststand wird aus dem **Ausdruck** gerechnet
+  (`actor.vigour * 5` ergibt bei 6 dreißig und bei 4 zwanzig); ohne Deklaration gibt es nichts;
+  Erschöpfung wird benannt und ihre Folge unterschieden; über dem Höchststand bleibt die Zahl
+  ehrlich; fehlende Felder bekommen Voreinstellungen; ein ungültiger Wert bricht nichts.
+- **Gegenprobe gefahren:** Höchststand festgenagelt und den Leerfall entfernt → **fünf** Fälle
+  rot, darunter beide Zusicherungen. Danach zurückgesetzt.
+- Kein Regress: `packages/client` + `packages/rules` **262/262 grün**, `typecheck` 0 Fehler,
+  `gate:boundaries` **452/8/0**, Client-Build grün.
+
+### Offen und ausdrücklich nicht behauptet
+
+**Die Balken stehen nicht auf der Kampfbühne.** Dort sähe eine Spielerin die Lebenspunkte
+**fremder** Figuren — das ist eine Offenlegungsentscheidung, keine Anzeigefrage, und sie
+nebenbei zu treffen wäre genau die Sorte stiller Preisgabe, gegen die dieses Haus sonst überall
+steht. Sie gehört auf die Liste, nicht in einen Commit. Und die Anzeige **verändert nichts**: sie
+liest, sie schreibt nicht — Werte ändert man weiterhin auf dem Bogen.

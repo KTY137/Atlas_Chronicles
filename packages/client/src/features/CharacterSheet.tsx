@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Vitalanzeige } from "./Vitalanzeige";
 import { Geldzaehler } from "./Geldzaehler";
 import { validatePackageFields, evaluateComputedFields, HTBAH_GROUPS, HTBAH_GROUP_LABELS, HTBAH_EXAMPLE_CHARACTERS, htbahSpentField, type Scalar } from "@chronicle/rules";
 import { PenLine, Save, Sparkles } from "lucide-react";
@@ -44,6 +45,10 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
   return <div className="sheet-content"><form className="panel" onSubmit={(event) => { event.preventDefault(); void task.run(async () => { const saved = await api<ActorSheet>(apiPath(campaignId, `/actors/${encodeURIComponent(sheet.actorId)}/sheet`), { method: "PUT", body: { fields, expectedVersion: sheet.version } }); setSheet(saved); setFields({ ...saved.fields }); onDirty(false); onSaved(); }); }}>
     <div className="section-heading"><div><p className="eyebrow">{pkg.name} · {pkg.version}</p><h2>{characterName || "Dein Charakterbogen"}</h2></div><Button type="submit" variant="primary" disabled={task.busy || !!validation}><Save size={16} /> Bogen speichern</Button></div>
     <p className="field-help" role="status">{saveState}</p>
+    {/* Die Balken lesen den ENTWURF, nicht den gespeicherten Stand: wer Lebenspunkte
+        eintraegt, sieht den Balken wandern, bevor er speichert. Gerechnet wird mit
+        derselben reinen Funktion wie auf dem Server. */}
+    <Vitalanzeige pkg={pkg} fields={fields} />
     {task.error ? <Notice error>{task.error} Deine Änderungen bleiben im Formular.</Notice> : null}
     {newer && dirty ? <Notice>Der Bogen wurde inzwischen geändert. Dein Entwurf bleibt erhalten. <Button onClick={() => { if (window.confirm("Entwurf verwerfen und den aktuellen Bogen übernehmen?")) { setSheet(latest); setFields({ ...latest.fields }); setResource(""); task.setError(""); } }}>Aktuellen Bogen übernehmen</Button></Notice> : null}
     {sheet.defeatPending ? <Notice>Eine Ressource ist aufgebraucht. Die Niederlage wartet auf eine ausdrückliche Bestätigung der Spielleitung.</Notice> : null}{sheet.defeatedAt ? <Notice>Niederlage bestätigt am {new Date(sheet.defeatedAt).toLocaleString("de-DE")}.</Notice> : null}

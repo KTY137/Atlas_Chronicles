@@ -1,0 +1,20 @@
+/* Vitalwerte als Balken. Die Zahl steht immer daneben — der Balken illustriert, er behauptet
+   nicht. Wer ihn nicht sieht, liest trotzdem "37 / 100". */
+.vitalanzeige { display: grid; gap: .55rem; margin-block: .8rem; }
+.vitalanzeige.kompakt { gap: .35rem; margin-block: .5rem; }
+
+.vitalwert-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; }
+.vitalwert-name { font-size: .8rem; }
+.vitalwert-stand { font-family: var(--font-mono, monospace); font-size: .8rem; color: var(--text-muted, #9aa3a0); }
+
+.vitalwert-balken {
+  block-size: .55rem; margin-block-start: .2rem; overflow: hidden;
+  border: 1px solid var(--line, #2a3230); border-radius: 999px; background: #0d1211;
+}
+.vitalanzeige.kompakt .vitalwert-balken { block-size: .4rem; }
+/* Der Fuellstand traegt eine eigene Farbe je Vitalwert wuerde raten, welcher welcher ist. Also
+   eine Farbe fuer alle, und die Beschriftung sagt, worum es geht. */
+.vitalwert-balken > span { display: block; block-size: 100%; background: var(--accent, #a8791f); transition: inline-size 180ms ease-out; }
+.vitalwert.erschoepft .vitalwert-balken { border-color: var(--danger, #a33); }
+.vitalwert.erschoepft .vitalwert-stand { color: var(--danger, #a33); }
+.vitalwert-hinweis { margin: .2rem 0 0; font-size: .72rem; color: var(--danger, #a33); }
