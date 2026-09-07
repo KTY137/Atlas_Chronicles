@@ -4,13 +4,13 @@ import { CAMPAIGN_V8_TABLES, type CampaignTablesV8 } from "../native-v8/schema.t
 import type { CampaignRow } from "../campaign-schema.ts";
 import { assertJson, fail, hash, object, list, string, keys, validateColumn, rejectDuplicateKeys } from "../campaign-v3-json.ts";
 import { CAMPAIGN_V9_TABLES, CAMPAIGN_V9_ADDITIONAL_TABLES, CAMPAIGN_V9_MODULES, CAMPAIGN_BUNDLE_V9_LIMITS as LIMITS, type CampaignTablesV9, type CampaignModuleV9, type CampaignTableNameV9 } from "./schema.ts";
-import { checkKategorienTables } from "./validation.ts";
+import { checkGefuegeTables } from "./validation.ts";
 
 export const CAMPAIGN_BUNDLE_V9_VERSION = 9 as const;
 export interface CampaignBundleDataV9 { readonly campaignId: string; readonly universeId: string; readonly exportedAt: string; readonly tables: CampaignTablesV9 }
 export interface CampaignBundleV9 {
   readonly format: "atlas-chronicles/campaign"; readonly version: 9;
-  readonly manifest: Omit<CampaignBundleV8["manifest"], "modules"> & { readonly kategorienSchemaVersion: 1;
+  readonly manifest: Omit<CampaignBundleV8["manifest"], "modules"> & { readonly gefuegeSchemaVersion: 1;
     readonly modules: readonly { readonly name: CampaignModuleV9; readonly version: 1; readonly count: number; readonly sha256: string }[] };
   readonly tables: CampaignTablesV9;
 }
@@ -36,19 +36,19 @@ export function createCampaignBundleV9(data: CampaignBundleDataV9): CampaignBund
   }
   const tables = { ...core.tables, ...additional } as CampaignTablesV9;
   if (CAMPAIGN_V9_TABLES.reduce((count, table) => count + tables[table.name].length, 0) > LIMITS.rows) fail("tables", "total row limit exceeded");
-  checkKategorienTables(tables, data.campaignId);
+  checkGefuegeTables(tables, data.campaignId);
   const modules = CAMPAIGN_V9_MODULES.map(name => {
     const specs = CAMPAIGN_V9_TABLES.filter(table => table.module === name);
     return { name, version: 1 as const, count: specs.reduce((count, table) => count + tables[table.name].length, 0), sha256: hash(Object.fromEntries(specs.map(table => [table.name, tables[table.name]]))) };
   });
   const bundle: CampaignBundleV9 = { format: "atlas-chronicles/campaign", version: 9,
-    manifest: { ...core.manifest, kategorienSchemaVersion: 1, contentHash: hash(tables), modules }, tables };
+    manifest: { ...core.manifest, gefuegeSchemaVersion: 1, contentHash: hash(tables), modules }, tables };
   if (Buffer.byteLength(canonicalJson(bundle as unknown as CanonicalValue), "utf8") > LIMITS.bytes) fail("$", "maximum campaign bundle size exceeded");
   return bundle;
 }
 export function validateCampaignBundleV9(value: unknown): CampaignBundleV9 {
   assertJson(value); const row = object(value, "$"), manifest = object(row.manifest, "manifest"); keys(row, ["format", "version", "manifest", "tables"], "$");
-  if (row.format !== "atlas-chronicles/campaign" || row.version !== 9 || manifest.kategorienSchemaVersion !== 1) fail("manifest", "unsupported campaign profile/version; explicit migration required");
+  if (row.format !== "atlas-chronicles/campaign" || row.version !== 9 || manifest.gefuegeSchemaVersion !== 1) fail("manifest", "unsupported campaign profile/version; explicit migration required");
   const bundle = createCampaignBundleV9({ campaignId: string(manifest.campaignId, "manifest.campaignId"), universeId: string(manifest.universeId, "manifest.universeId"), exportedAt: string(manifest.exportedAt, "manifest.exportedAt", 40), tables: row.tables as unknown as CampaignTablesV9 });
   keys(manifest, Object.keys(bundle.manifest), "manifest");
   if (hash(manifest) !== hash(bundle.manifest)) fail("manifest", "payload/core/module checksum or count mismatch");

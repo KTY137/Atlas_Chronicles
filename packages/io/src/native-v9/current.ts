@@ -10,15 +10,16 @@ export type CurrentCampaignBundle = PreviousBundle | CampaignBundleV9;
 /** Normalized in-memory table view only; legacy source envelopes and hashes stay intact. */
 export function currentCampaignTables(bundle: CurrentCampaignBundle): CampaignTablesV9 { return { ...emptyCampaignTablesV9(), ...bundle.tables }; }
 /**
- * Eine Chronik ohne eine einzige Kategorie behält ihren v4…v8-Umschlag. Erst die erste Kategorie
- * verlangt v9 — dieselbe Zurückhaltung wie bei den Bildern in v7 und dem Zugangsvorfall in v8:
- * kein bestehendes Paket wird allein dadurch neu, dass diese Funktion existiert.
+ * Eine Kampagne, in der niemand je eine Beziehung eingetragen hat, behält ihren
+ * v4/v5/v6/v7/v8-Umschlag. Erst die erste Kante verlangt v9 — dieselbe Zurückhaltung wie bei
+ * den Bildern in v7 und dem Zugangsvorfall in v8: kein bestehendes Paket wird allein dadurch
+ * neu, dass diese Funktion existiert.
  */
 export function createCurrentCampaignBundle(data: CampaignBundleDataV8 | CampaignBundleDataV9): CurrentCampaignBundle {
   assertJson(data); const tables = object(data.tables, "tables");
   keys(tables, CAMPAIGN_V8_TABLES.map(table => table.name), "tables", CAMPAIGN_V9_ADDITIONAL_TABLES.map(table => table.name));
-  const kategorien = CAMPAIGN_V9_ADDITIONAL_TABLES.some(table => Object.hasOwn(tables, table.name) && list(tables[table.name], `tables.${table.name}`).length > 0);
-  if (kategorien) return createCampaignBundleV9(data as CampaignBundleDataV9);
+  const kanten = CAMPAIGN_V9_ADDITIONAL_TABLES.some(table => Object.hasOwn(tables, table.name) && list(tables[table.name], `tables.${table.name}`).length > 0);
+  if (kanten) return createCampaignBundleV9(data as CampaignBundleDataV9);
   return createPrevious({ ...data, tables: Object.fromEntries(CAMPAIGN_V8_TABLES.map(table => [table.name, data.tables[table.name]])) as unknown as CampaignBundleDataV8["tables"] });
 }
 export function validateCurrentCampaignBundle(value: unknown): CurrentCampaignBundle {

@@ -25,6 +25,7 @@ import { registerHealth } from "./http/health.ts";
 import { registerHttpLifecycle } from "./http/lifecycle.ts";
 import { registerWikiNavigation } from "./http/wiki-navigation.ts";
 import { registerGegenueberstellung } from "./http/gegenueberstellung.ts";
+import { registerGefuege } from "./http/gefuege.ts";
 import { registerWikiMedien } from "./http/wiki-medien.ts";
 import { registerBundles } from "./http/bundles.ts";
 import { registerActors } from "./http/actors.ts";
@@ -143,6 +144,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerHealth(app,db);
   registerWikiNavigation(app, db, config);
   registerGegenueberstellung(app, db, config);
+  registerGefuege(app, db, config);
   registerWikiMedien(app, db, config);
   registerBundles(app, db, config);
   registerActors(app, db, config);

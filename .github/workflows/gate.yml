@@ -1,0 +1,88 @@
+# Das Gate, das bisher niemand ausgeführt hat, außer von Hand.
+#
+# Bis hier gab es kein .github. Jede Prüfung — Grenzen, Assets, Typecheck, Tests, Version —
+# lief nur, wenn eine Person sie startete, auf ihrer Maschine, mit ihrem Stand. Damit ist
+# "das Gate ist grün" eine Aussage über einen Rechner gewesen, nicht über den Branch.
+#
+# Der zweite Grund ist konkreter: Zehn `*.pg.test.ts` hängen an `describe.skipIf(!connection)`
+# gegen `TEST_DATABASE_URL` und laufen im Alltag deshalb NICHT. Genau die Eigenschaften, die
+# im Mehrinstanzbetrieb tragen müssen — Pool-Fehlerverhalten, Advisory-Locks, echte
+# Nebenläufigkeit, Restore gegen deferrable Zyklen — sind dadurch ungetestet, obwohl die
+# Tests existieren. Ein Postgres-Dienst hier gibt ihnen einen Ort, ohne jeder Entwicklerin
+# lokal ein Postgres abzuverlangen (design/10-hosted-betrieb-und-auslieferung.md §1.7, §5.5).
+name: gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        # Dieselbe Hauptversion wie deploy/docker-compose.selfhost.yml. Eine andere hier zu
+        # fahren hieße, etwas anderes zu prüfen als das, was betrieben wird.
+        image: postgres:17
+        env:
+          POSTGRES_USER: chronicle
+          POSTGRES_PASSWORD: chronicle
+          POSTGRES_DB: chronicle
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chronicle -d chronicle"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # package.json engines verlangt >=22.12.
+          node-version: '22'
+          cache: npm
+
+      - name: Abhängigkeiten aus dem Lockfile
+        run: npm ci --no-audit --no-fund
+
+      - name: Der Web-Client, den die Tests erwarten
+        run: npm run build
+
+      # `npm run gate` ist die eine Wahrheit: gate:version, gate:boundaries, gate:assets,
+      # typecheck, test. Hier mit gesetzter TEST_DATABASE_URL, damit die pg-Tests mitlaufen
+      # statt sich zu überspringen.
+      - name: Gate
+        run: npm run gate
+        env:
+          TEST_DATABASE_URL: postgresql://chronicle:chronicle@127.0.0.1:5432/chronicle
+
+      # Ohne diesen Schritt bliebe unbemerkt, wenn `describe.skipIf` künftig doch greift und
+      # die pg-Tests wieder stumm werden — das Gate wäre dann grün und sagte nichts mehr.
+      - name: Belegen, dass die pg-Tests wirklich gelaufen sind
+        run: npx vitest run packages/server/test --reporter=json --outputFile=.local/ci-results.json
+        env:
+          TEST_DATABASE_URL: postgresql://chronicle:chronicle@127.0.0.1:5432/chronicle
+
+      - name: pg-Tests gezählt
+        run: |
+          node -e '
+            const r = require("./.local/ci-results.json");
+            const pg = r.testResults.filter(t => t.name.includes(".pg.test.ts"));
+            const faelle = pg.flatMap(t => t.assertionResults ?? []);
+            const gelaufen = faelle.filter(f => f.status !== "pending" && f.status !== "skipped");
+            console.log(`pg-Dateien: ${pg.length}, Faelle: ${faelle.length}, davon gelaufen: ${gelaufen.length}`);
+            if (gelaufen.length === 0) {
+              console.error("Kein einziger pg-Fall lief — TEST_DATABASE_URL greift nicht, das Gate sagt hier nichts aus.");
+              process.exit(1);
+            }
+          '

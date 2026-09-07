@@ -208,6 +208,42 @@ erzwungenen Schichtgrenzen ist `tools/gate-boundaries.mjs`, nicht `design/08` §
 
 ---
 
+### 1.10 Das Speicherversprechen ist größer als das, was der Export tragen kann
+
+Nachgetragen am 2026-09-07, und es gehört der Sache nach vor die Dichtemessung.
+
+`CHAMPION.md:811` verkauft **5 GB** je Kampagne (neben ~30 € einmalig und 300 Raumstunden im
+Jahr). Die Obergrenze eines `.chronicle`-Pakets ist aufgelöst **256 MiB**
+(`CAMPAIGN_BUNDLE_V3_LIMITS`, durch v4–v8 unverändert durchgereicht); ein einzelnes Bild darf
+höchstens 85 MiB base64 tragen, also rund 64 MiB binär. Und seit v7 liegen die Wiki-Bilder als
+base64 **im Paket** (`native-v7/schema.ts:36`) — mit dem üblichen Drittel Aufschlag.
+
+Damit gilt: Eine Kampagne, die auch nur ein Zwanzigstel ihres verkauften Speichers nutzt,
+lässt sich **nicht mehr exportieren**. Der Export bricht mit „maximum campaign bundle size
+exceeded" ab.
+
+**Warum das schwerer wiegt als eine Zahl:** S3 sagt wörtlich, dass eine ausbleibende
+Hostingzahlung die eigene Arbeit nie „unreadable, **unexportable** or uneditable" machen darf
+(`04-die-eine-plattform.md:1378`). Genau darauf ruht die Zusage, mit der Self-Hosting optional
+sein kann: Wer gehen will, nimmt seine Welt mit. Ein Speicherversprechen, das zwanzigmal
+größer ist als das, was der Ausgang trägt, hebt diese Zusage für jede Kampagne auf, die ihr
+Kontingent tatsächlich nutzt — und Bilder füllen es schnell.
+
+Drei Wege, und die Wahl ist eine Produktentscheidung:
+
+1. **Das Speicherversprechen auf das senken, was der Export trägt.** Ehrlich, sofort machbar,
+   und es macht ein verkauftes Merkmal kleiner.
+2. **Den Export in Teile zerlegen** — ein Paket mit Manifest plus Anhängen statt einer Datei.
+   Das ist eine neue Formatgeneration und berührt die Wiederherstellung.
+3. **Bilder aus dem Paket herausnehmen** und getrennt ausliefern. Genau das hat v7 bewusst
+   verworfen: „Ein Dateipfad neben dem Paket wäre die Stelle, an der ein Paket beim Umzug
+   unvollständig wird."
+
+Ich empfehle 1 als Sofortmaßnahme und 2 als Ziel: Erst darf der Verkauf nichts versprechen,
+was der Ausgang nicht trägt; dann wächst der Ausgang.
+
+---
+
 ## 2. Was trägt
 
 Der Rest dieses Dokuments wäre irreführend ohne diesen Abschnitt. Vieles ist besser gebaut,
@@ -406,6 +442,10 @@ Stand 2026-09-07: **erledigt ✓, offen ✗**.
 
 **Vor jeder Preisveröffentlichung** (Reversal cost ist hoch, sobald der Preis öffentlich ist):
 
+0. ✗ **Das Speicherversprechen mit dem Export in Einklang bringen** (§1.10). Verkauft sind
+   5 GB, exportierbar sind 256 MiB. Das steht hier an nullter Stelle, weil es das einzige
+   Versprechen ist, das bereits formuliert wurde und das der Code heute nicht halten kann —
+   und weil es S3 betrifft, also die Zusage, auf der Self-Hosting als Option ruht.
 1. ✗ **Kampagnen pro Instanz messen** (§1.5) — die Zahl, auf der die ganze Kalkulation ruht.
    Sie ist jetzt *abfragbar*: `GET /api/operator/usage` liefert Raumzeit je Kampagne. Gemessen
    ist sie damit nicht — dafür braucht es echten Betrieb über einen echten Zeitraum.
@@ -425,9 +465,14 @@ Stand 2026-09-07: **erledigt ✓, offen ✗**.
 4. ✓ **Migrationsdisziplin** (§3.5) — Transaktion je Datei (`d22eceb`), gemessen schneller als
    die gemeinsame. Expand/contract bleibt als Regel in §1.4 und in den Global Constraints des
    Plans; erzwungen wird sie von keinem Gate.
-5. ✗ **`*.pg.test.ts` in ein regelmäßig laufendes Gate** (§1.7). Zehn Dateien hängen weiter an
-   `TEST_DATABASE_URL`. Braucht eine Entscheidung: jedem Entwickler lokal ein Postgres
-   abverlangen, oder nur in einer CI, die es im Repo noch nicht gibt.
+5. ✓ **`*.pg.test.ts` in ein regelmäßig laufendes Gate** (§1.7) — `.github/workflows/gate.yml`.
+   Es gab bis dahin **kein** `.github`: Jede Prüfung lief nur von Hand, auf einer Maschine,
+   „das Gate ist grün" war also nie eine Aussage über den Branch. Die Entscheidung, die hier
+   offen stand, löst sich damit von selbst — ein Postgres-Dienst in der CI verlangt niemandem
+   lokal eines ab. Ein eigener Schritt zählt die tatsächlich gelaufenen pg-Fälle und schlägt
+   fehl, wenn es null sind: Sonst wäre das Gate grün und sagte über Nebenläufigkeit nichts.
+   Belegt: die zehn Dateien gegen ein echtes Postgres 17 im Container; die fünf ohne
+   Formatbezug liefen 13/13 grün.
 6. ✗ **Sticky-Session-Routing** (§3.2) — der einzige echte Blocker für N Instanzen.
 
 **Unabhängig davon, billig und wertvoll — alle erledigt:**

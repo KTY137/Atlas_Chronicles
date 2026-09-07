@@ -2,47 +2,30 @@ import { fail, object } from "../campaign-v3-json.ts";
 import type { CampaignTablesV9 } from "./schema.ts";
 
 /**
- * Was eine wiederhergestellte Kategorie beweisen muss.
+ * Was eine wiederhergestellte Beziehungskante beweisen muss.
  *
- * Die Datenbank hält diese Aussagen über Fremdschlüssel und einen CHECK. Ein von Hand gebautes
- * Paket geht an der Datenbank vorbei, deshalb hält das Paket sie hier noch einmal:
+ * Die Kante ist eine Aussage, die an einer Passage hängt. Eine Kante ohne ihre Passage ist
+ * keine schwächere Kante, sondern eine Aussage ohne Sprecher — und im Archiv wäre sie genau
+ * die Zeile, die einer Leserin später etwas zeigt, das ihr niemand erzählt hat. Deshalb prüft
+ * dieser Lauf drei Dinge, die das JSON-Schema allein nicht ausdrücken kann:
  *
- *  1. **Alles gehört derselben Kampagne.** Eine Kategorie oder Zuordnung aus einer fremden Welt
- *     ist keine Ordnung, sondern ein Leck.
- *  2. **Zuordnungen zeigen auf Vorhandenes.** Eine Zuordnung auf einen Eintrag oder eine
- *     Kategorie, die das Paket nicht enthält, wäre eine Ordnung über Nichts.
- *  3. **Die Unterkategorien bilden keinen Kreis.** Ein Kreis in `parent_category_id` lässt jeden
- *     Leser, der den Baum aufbaut, endlos laufen — derselbe Grund, aus dem `entries.parent_entry_id`
- *     schon azyklisch geprüft wird.
+ *  1. **Die Kante gehört dieser Kampagne.**
+ *  2. **Ihre Passage und beide Einträge liegen im selben Paket.** Sonst könnte die Sicht nach
+ *     einer Wiederherstellung nicht mehr entschieden werden.
+ *  3. **Sie verbindet zwei verschiedene Einträge.** Eine Schleife ist im Stammbaum wie im
+ *     Politogramm keine Aussage.
  */
-export function checkKategorienTables(tables: CampaignTablesV9, campaignId: string): void {
-  const eltern = new Map<string, string | null>();
-
-  for (const [index, value] of tables.categories.entries()) {
-    const path = `tables.categories[${index}]`, row = object(value, path);
-    if (row.campaign_id !== campaignId) fail(path, "category belongs to another campaign");
-    const parent = row.parent_category_id;
-    eltern.set(String(row.id), parent === null || parent === undefined ? null : String(parent));
-  }
-  for (const [kind, elternteil] of eltern) {
-    if (elternteil !== null && !eltern.has(elternteil))
-      fail("tables.categories", "a category names a parent this bundle does not contain");
-    // Kreise: der Kette folgen, begrenzt durch die Zahl der Kategorien.
-    let laeufer = elternteil, schritte = 0;
-    while (laeufer !== null && laeufer !== undefined) {
-      if (laeufer === kind) fail("tables.categories", "category parent cycle");
-      if (++schritte > eltern.size) fail("tables.categories", "category parent cycle");
-      laeufer = eltern.get(laeufer) ?? null;
-    }
-  }
-
+export function checkGefuegeTables(tables: CampaignTablesV9, campaignId: string): void {
+  const passagen = new Set(tables.passages.map(row => String(object(row, "tables.passages").id)));
   const eintraege = new Set(tables.entries.map(row => String(object(row, "tables.entries").id)));
-  for (const [index, value] of tables.entry_categories.entries()) {
-    const path = `tables.entry_categories[${index}]`, row = object(value, path);
-    if (row.campaign_id !== campaignId) fail(path, "category assignment belongs to another campaign");
-    if (!eintraege.has(String(row.entry_id)))
-      fail(`${path}.entry_id`, "category assignment names an entry this bundle does not contain");
-    if (!eltern.has(String(row.category_id)))
-      fail(`${path}.category_id`, "category assignment names a category this bundle does not contain");
+
+  for (const [index, value] of tables.beziehungen.entries()) {
+    const path = `tables.beziehungen[${index}]`, row = object(value, path);
+    if (row.campaign_id !== campaignId) fail(path, "relationship belongs to another campaign");
+    if (!passagen.has(String(row.passage_id)))
+      fail(`${path}.passage_id`, "relationship is anchored on a passage this bundle does not contain");
+    for (const column of ["von_entry_id", "nach_entry_id"] as const)
+      if (!eintraege.has(String(row[column]))) fail(`${path}.${column}`, "relationship points at an entry this bundle does not contain");
+    if (row.von_entry_id === row.nach_entry_id) fail(path, "a relationship connects two different entries");
   }
 }

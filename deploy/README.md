@@ -46,13 +46,30 @@ exakt übereinstimmen.
 Degradationsleiter, sichtbar und benannt, nie still: **SFU → TURN-Relay → P2P (≤4) → „Sprache liegt
 — der Tisch läuft"**. Das Abschalten von `livekit` darf keinen Tischbefehl anhalten.
 
+> **Stand 2026-09-07: die Leiter ist Absicht, nicht Zustand.** Gebaut ist die *Trennung* der
+> Ebenen — der Befehlsbus importiert `domain/media.ts` nirgends, fehlende `LIVEKIT_*` sind ein
+> regulärer Zustand, und ein Medienausfall wird zu einem 503, der keinen Tischbefehl anhält.
+> Gebaut ist **nicht** die Umschaltung: Der Client verbindet ausschließlich über LiveKits
+> `Room.connect()`, einen P2P-Fallback gibt es nicht (`docs/MEDIA_UI.md:75` sagt das selbst).
+> Erwarte also SFU oder „Sprache liegt", nicht die vier Stufen.
+
 ## Betrieb
 
 - **Backup:** `docker compose … exec postgres pg_dump -U chronicle -Fc chronicle > chronicle-$(date +%F).dump`.
   Restore mit `pg_restore -U chronicle -d chronicle --clean`. Der Export der Kampagne (`.chronicle`-Bundle)
   ist davon unabhängig und gehört dem Nutzer — das Ende einer Hostingzahlung sperrt ihn nie aus (S3).
-- **Update:** `docker compose … up -d --build`; Migrationen (`packages/server/src/db/migrations/*.sql`)
-  laufen beim Start, sind additiv und idempotent.
+- **Update:** `docker compose … up -d --build`. Migrationen (`packages/server/src/db/migrations/*.sql`)
+  laufen beim Start, **je Datei in einer eigenen Transaktion**: Scheitert eine, bleiben die
+  vorher erfolgreichen stehen, und der nächste Start setzt dort fort. Jede bereits angewandte
+  Datei wird bei jedem Start über SHA-256 nachgerechnet; ein Advisory-Lock serialisiert
+  gleichzeitig startende Container. Ein Neustart auf einer bereits migrierten Datenbank ist
+  gefahrlos.
+  **Aber:** „additiv" gilt nicht durchgängig — das stand hier früher und war zu bequem.
+  Die meisten Migrationen sind erweiternd, alter Code läuft danach weiter. Einzelne sind
+  verengend (`014_nested_maps.sql` setzt `NOT NULL` und wechselt einen Primärschlüssel), und ab
+  einer solchen können alte und neue Programmversion nicht mehr gleichzeitig gegen dieselbe
+  Datenbank laufen. Ein Update ist deshalb ein kurzes Wartungsfenster, kein nahtloser Wechsel,
+  und das Zurückrollen der Anwendung ist **kein** Zurückrollen des Schemas. Vorher sichern.
 - **Health, und die Trennung ist Absicht:** `GET /api/live` beantwortet „läuft der Prozess und bedient er HTTP" **ohne** Datenbank und ist der Container-Healthcheck, also das, was einen Neustart auslöst. `GET /api/ready` macht den Datenbank-Roundtrip mit 2-Sekunden-Budget und ist das, was ein Load Balancer oder ein Betreiber fragt, bevor Verkehr fließt. **Warum getrennt:** hing der Neustart an einem DB-Roundtrip, dann startete ein ausgelasteter Abend den funktionierenden Server neu und der Neustart erhöhte die Last — und eine wirklich ausgefallene Datenbank repariert ein Neustart ohnehin nicht. Beide Sonden sind vom Rate-Limit ausgenommen, damit ein Verkehrsgipfel keinen Scheinausfall meldet. `GET /api/health` bleibt unverändert für seine bisherigen Aufrufer.
 - **Geheimnisse** liegen nur in `deploy/.env` (git-ignored, Modus 600). Nie in Logs, nie in Tickets.
 - **Ports nach außen:** `tls`: 80/443. `media`: 7881/tcp, 50000–50100/udp (SFU), 3478 tcp+udp und
