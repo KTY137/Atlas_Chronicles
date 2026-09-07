@@ -43,7 +43,7 @@ import {
 
 export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const GRUNDRISS_VERSION = "1";
+export const GRUNDRISS_VERSION = "2";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
@@ -66,7 +66,7 @@ export interface GrundrissOptionen {
 }
 
 export const GRUNDRISS_STANDARD: GrundrissOptionen = Object.freeze({
-  zellen: [40, 30] as const, zellgroesse: 64, raeume: 8, minRaum: 3, schleifen: 2,
+  zellen: [40, 30] as const, zellgroesse: 64, raeume: 11, minRaum: 3, schleifen: 3,
   moeblierung: 1, licht: true, gangboden: "trocken",
 });
 
@@ -219,7 +219,14 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   for (const blatt of blaetter) {
     const freiW = blatt.w - 2, freiH = blatt.h - 2;
     if (freiW < optionen.minRaum || freiH < optionen.minRaum) continue;
-    const w = r.ganz(optionen.minRaum, freiW), h = r.ganz(optionen.minRaum, freiH);
+    // **Gross gezogen, nicht gleichverteilt.** Bis Fassung 1 lief die Ziehung über die ganze
+    // Spanne `[minRaum, freiW]`, ein Raum schöpfte sein Blatt also im Mittel zur Hälfte aus — bei
+    // 40x30 Zellen und acht Räumen waren rund elf Prozent der Karte begehbar und der Rest Fels.
+    // Gerendert las das als Kisten an Drähten, nicht als Gewölbe. Die Untergrenze liegt jetzt bei
+    // 60 % des Blattes, die Streuung bleibt: Räume dürfen verschieden gross sein, aber keiner
+    // darf mehr in seiner Ecke verschwinden.
+    const mindestens = (frei: number) => Math.max(optionen.minRaum, Math.ceil(frei * 0.6));
+    const w = r.ganz(mindestens(freiW), freiW), h = r.ganz(mindestens(freiH), freiH);
     const x = blatt.x + 1 + r.ganz(0, freiW - w), y = blatt.y + 1 + r.ganz(0, freiH - h);
     blatt.raum = rohRaeume.length;
     rohRaeume.push({ x, y, w, h, pfad: blatt.pfad || "wurzel", thema: r.waehle(THEMEN) ?? THEMEN[0]! });
@@ -236,20 +243,32 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   });
   const mitteZelle = (raum: RohRaum): [number, number] => [raum.x + (raum.w >> 1), raum.y + (raum.h >> 1)];
   const grabe = (x: number, y: number) => { if (drin(x, y) && gitter[idx(x, y)] === FELS) gitter[idx(x, y)] = GANG; };
-  const gang = (a: readonly [number, number], b: readonly [number, number], zuerstWaagrecht: boolean) => {
+  /**
+   * Ein Gangstück, wahlweise als Halle zwei Zellen breit.
+   *
+   * Die Verbreiterung geht immer zur **gleichen** Seite (+1 in der Querachse) statt symmetrisch:
+   * so bleibt die gegrabene Achse selbst unverändert, und die Anschlussstelle an einem Raum
+   * verschiebt sich nicht. Eine symmetrische Verbreiterung hätte die Türerkennung verschoben,
+   * die auf zusammenhängenden Öffnungsläufen an der Raumkante beruht.
+   */
+  const grabeQuer = (x: number, y: number, waagrecht: boolean, breit: boolean) => {
+    grabe(x, y);
+    if (breit) grabe(waagrecht ? x : x + 1, waagrecht ? y + 1 : y);
+  };
+  const gang = (a: readonly [number, number], b: readonly [number, number], zuerstWaagrecht: boolean, breit = false) => {
     const [ax, ay] = a, [bx, by] = b;
     if (zuerstWaagrecht) {
-      for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) grabe(x, ay);
-      for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) grabe(bx, y);
+      for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) grabeQuer(x, ay, true, breit);
+      for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) grabeQuer(bx, y, false, breit);
     } else {
-      for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) grabe(ax, y);
-      for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) grabe(x, by);
+      for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) grabeQuer(ax, y, false, breit);
+      for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) grabeQuer(x, by, true, breit);
     }
   };
   const verbinde = (blatt: Blatt): [number, number] | null => {
     if (!blatt.links || !blatt.rechts) return blatt.raum >= 0 ? mitteZelle(rohRaeume[blatt.raum]!) : null;
     const a = verbinde(blatt.links), b = verbinde(blatt.rechts);
-    if (a && b) gang(a, b, r.chance(0.5));
+    if (a && b) gang(a, b, r.chance(0.5), r.chance(0.28));
     return a ?? b;
   };
   verbinde(wurzel);

@@ -6,7 +6,7 @@ import {
   serializeTacticalMapDocument, type AssetpaketV1, type Knoten, type TacticalMapDocumentV1,
 } from "@chronicle/szene";
 import { trustKnotenId } from "@chronicle/core";
-import { GRUNDRISS_STANDARD, GrundrissError, erzeugeGrundriss, exportTacticalUvtt, type Grundriss } from "../src/index.ts";
+import { GRUNDRISS_LIMITS, GRUNDRISS_STANDARD, GrundrissError, erzeugeGrundriss, exportTacticalUvtt, type Grundriss } from "../src/index.ts";
 
 /**
  * Gate **A-G1 · Der Grundriss** — the first map Chronicle generates rather than imports.
@@ -49,6 +49,10 @@ function wandkanten(karte: TacticalMapDocumentV1): Set<string> {
   return kanten;
 }
 
+/** Ein Wert, der garantiert nicht der Standard ist — die Zusage lautet „geändert", nicht „drei". */
+const andersAls = (wert: number, min: number, max: number): number => (wert === min ? min + 1 : Math.max(min, Math.min(max, wert - 1)));
+const ANDERE_SCHLEIFEN = andersAls(GRUNDRISS_STANDARD.schleifen, 0, GRUNDRISS_LIMITS.schleifenMax);
+
 const SAATEN = ["eron:kellergewoelbe:1", "eron:turm:2", "andaria/burg-3", "0", "ß-umlaut-keim", "x".repeat(200)];
 
 describe("A-G1 · Grundriss — Determinismus über den vollständigen Optionsvektor", () => {
@@ -75,7 +79,7 @@ describe("A-G1 · Grundriss — Determinismus über den vollständigen Optionsve
     ["Zellgröße", { zellgroesse: 128 }],
     ["Raumzahl", { raeume: 7 }],
     ["Mindestraum", { minRaum: 4 }],
-    ["Schleifen", { schleifen: 3 }],
+    ["Schleifen", { schleifen: ANDERE_SCHLEIFEN }],
     ["Möblierung", { moeblierung: 0.5 }],
     ["Licht", { licht: false }],
     ["Gangboden", { gangboden: "verfall" }],
@@ -95,7 +99,7 @@ describe("A-G1 · Grundriss — Determinismus über den vollständigen Optionsve
     // a statement about the artefact, not about its labels.
     const a = bauen("eron:kellergewoelbe:1");
     const grundriss = (g: Grundriss) => g.raeume.map((r) => r.zellen.join(":")).join("|");
-    for (const optionen of [{ gangboden: "verfall" }, { licht: false }, { moeblierung: 0.5 }, { schleifen: 3 }] as const) {
+    for (const optionen of [{ gangboden: "verfall" }, { licht: false }, { moeblierung: 0.5 }, { schleifen: ANDERE_SCHLEIFEN }] as const) {
       const b = bauen("eron:kellergewoelbe:1", optionen);
       expect(grundriss(b), JSON.stringify(optionen)).not.toBe(grundriss(a));
       expect(serializeTacticalMapDocument(b.karte)).not.toBe(serializeTacticalMapDocument(a.karte));
