@@ -64,8 +64,10 @@ export function WikiUebersicht({ daten, onEntry }: { daten: NavigationDaten; onE
   const bekannt = daten.artikel.filter(artikel => artikel.bekannt).length;
   return <section className="uebersicht" aria-label="Übersicht der Chronik">
     <header className="uebersicht-kopf">
-      <p className="eyebrow">Deine Welt</p>
-      <h1>Die Chronik</h1>
+      {/* Nicht noch einmal „Die Chronik": so heißt schon die Seitenleiste, und zwei gleiche
+          Überschriften auf einer Seite lassen den Leser raten, welche gemeint ist. */}
+      <p className="eyebrow">Übersicht</p>
+      <h1>Die Ordnung der Welt</h1>
       <p className="muted">{bekannt === daten.artikel.length
         ? `${bekannt} Artikel in ${baum.length} Bereichen.`
         : `${bekannt} von ${daten.artikel.length} Artikeln sind dir bekannt, verteilt auf ${baum.length} Bereiche.`}</p>

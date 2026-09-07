@@ -82,3 +82,10 @@
   font-size: 10px; text-transform: uppercase; letter-spacing: .11em; color: var(--text-muted);
 }
 .kategorie-chip svg { color: var(--text-faint); }
+
+/* Pfad und Chips sitzen in einem eigenen Block über dem Artikel. Ohne diese Regel addieren
+   sich zwei article-body-Polsterungen zu einem Loch von gut hundert Pixeln. */
+.article-kopfzeile { padding-top: 40px; padding-bottom: 0; }
+.article-kopfzeile:empty { display: none; }
+.article-kopfzeile .kategorie-chips { margin-bottom: 0; }
+.article-kopfzeile + .article-body { padding-top: 18px; }
