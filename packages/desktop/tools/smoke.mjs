@@ -24,6 +24,10 @@ try{
   await manager.locator("#profile-name").fill("Desktop smoke world");await manager.getByRole("button",{name:"Welt anlegen",exact:true}).click();
   await manager.waitForFunction(()=>!document.getElementById("setup").hidden||document.getElementById("message").classList.contains("error"),{},{timeout:90000});
   assert.equal(await manager.locator("#setup").isVisible(),true,await manager.locator("#message").innerText());
+  // Der Einrichtungsschluessel des Clients ist im Desktop unerfuellbar: der Host baut die
+  // Anwendung mit leerem bootstrapToken, und POST /api/setup verwirft alles unter 32 Zeichen.
+  // Ein sichtbarer "Welt oeffnen"-Knopf vor der Einrichtung fuehrt also in eine Sackgasse.
+  assert.equal(await manager.locator("#open").isHidden(),true,"Welt oeffnen darf vor der ersten Einrichtung nicht angeboten werden.");
   const state=await invoke({kind:"status"});profileId=state.profileId;origin=state.origin;
   assert.match(state.runtime.node,/^24\./);assert.ok(state.runtime.decoder);assert.notEqual(new URL(origin).port,"3000");evidence.runtime=state.runtime;
   record("own PG17 starts, migrations and native sharp decode under Electron Node24");
