@@ -58,9 +58,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const children = useResource<{ nodes: (MapNode & { vorhandeneKarteId?: string | null })[]; version: number; art?: string; setting?: KartenSetting }>(apiPath(campaignId, `/maps/tactical/${current.id}/children`), baseline.version + childrenRefresh);
   const article = useResource<EntryDocument>(entryId ? apiPath(campaignId, `/entries/${entryId}`) : null);
   const task = useTask(), command = useCommand(), mounted = useRef(true);
-  // Two fingerprints of the whole snapshot per render cost ~0.4 s on a 20,000-stamp map; history only changes by state.
-  const historyDirty = useMemo(() => editDirty(history), [history]);
-  const dirty = historyDirty || points.length > 0 || !!pendingSave || task.busy;
+  const dirty = editDirty(history) || points.length > 0 || !!pendingSave || task.busy;
   const childrenConfirmed = children.loaded && !!children.data && !children.error && children.data.version === baseline.version;
   const editingDisabled = revoked || task.busy && !pendingSave;
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]); useEffect(() => { mounted.current = true; return () => { mounted.current = false; if (scheduled.current !== null) cancelAnimationFrame(scheduled.current); gesture.current = null; onDirty(false); }; }, [onDirty]);
@@ -213,7 +211,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   })}>Kartensicht erneut laden</Button>{task.error ? <Notice error>{task.error}</Notice> : null}</section>;
   return <section className={`panel map-editor${sheet ? " map-editor-sheet" : ""}`}><div className="page-heading"><div><h2>{baseline.name}</h2><p className="field-help">Kartenrevision {baseline.revision}. Die Regionsauswahl zeigt eure Wissensverknüpfungen. Eine laufende Szene behält ihre bereits begonnene Revision.</p></div><div className="button-row map-editor-actions"><Button disabled={!history.past.length && !history.gesture || editingDisabled} onClick={() => { gesture.current = null; changeHistory(undoEdit); }}>Rückgängig</Button><Button disabled={!history.future.length || editingDisabled || !!history.gesture} onClick={() => changeHistory(redoEdit)}>Wiederholen</Button><Button disabled={task.busy || !dirty || !!pendingSave} onClick={() => { if (window.confirm("Alle ungespeicherten Kartenänderungen und gezeichneten Eckpunkte verwerfen?")) replace(baseline); }}>Entwurf zurücksetzen</Button><Button disabled={task.busy || revoked || !dirty || points.length > 0 || !!history.gesture} variant="primary" onClick={save}>{pendingSave ? "Gespeicherte Karte nachladen" : "Kartenrevision speichern"}</Button></div></div>
     {current.version > baseline.version ? <Notice>Eine neue Revision liegt vor. <Button onClick={() => { if (!dirty || window.confirm("Ungespeicherte Kartenänderungen verwerfen?")) replace(current); }}>Aktuelle Karte übernehmen</Button></Notice> : null}
-    <p className="map-editor-status" role="status">{pendingSave ? "Gespeichert, Nachladen ausstehend. Weitere Eingaben bleiben erhalten." : history.gesture ? "Vorschau · noch nicht übernommen" : historyDirty ? "Ungespeicherter Entwurf" : "Alle Änderungen gespeichert"}</p>
+    <p className="map-editor-status" role="status">{pendingSave ? "Gespeichert, Nachladen ausstehend. Weitere Eingaben bleiben erhalten." : history.gesture ? "Vorschau · noch nicht übernommen" : editDirty(history) ? "Ungespeicherter Entwurf" : "Alle Änderungen gespeichert"}</p>
     <div className="map-editor-mobile-tabs"><Button aria-pressed={!sheet} onClick={() => setSheet(false)}>Karte</Button><Button aria-pressed={sheet} onClick={() => setSheet(true)}>Werkzeuge & Details</Button></div>
     {editError ? <Notice error>{editError}</Notice> : null}
     {revoked ? <Notice error>Die Kartenberechtigung wurde entzogen. Der Entwurf wird nicht weiter angezeigt.</Notice> : null}
