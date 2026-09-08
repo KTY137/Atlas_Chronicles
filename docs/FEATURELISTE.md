@@ -52,7 +52,7 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 12 | Gesonderter Geldcounter | ☑ | im Inventar und beim Bogen — eine Komponente, zwei Orte |
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☑ | Balken am Bogen, gelesen aus der `vitals`-Deklaration |
 | 14 | Dynamisch setzbare Bars | ☑ | Balken-Editor in der Schmiede: Feld, Höchststand, Erschöpfung |
-| 15 | KI-vorgeschlagene Änderungen | ◐ | Chronist-Regelwerk grün; Modellknoten bewusst offen (Egress-Entscheidung) |
+| 15 | KI-vorgeschlagene Änderungen | ☑ | Chronist mit Anbieterwahl lokal/Anthropic, Freigabe je Lauf als Einmal-Token, Kostenanzeige; fünf Browserabläufe grün |
 | 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ◐ | Vorlagen/Beutetabellen in Schmiede → Figuren & NPCs; Siedlungsauswahl weiterhin offen |
 | 17 | PNGs hochladbar | ☑ | eigener Eingang in den Bildbestand; Kartengesicht für Haltende sichtbar; Löschweg mit Sperre |
 | 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☑ | frei und hinter der Tür erzeugbar; die Kartenart reicht jetzt durch |
@@ -74,8 +74,11 @@ mit Befunden, Prüfumfang und Nachweisen; [Designiteration](../design/iterations
 
 Export-, Beute-, Geld-, Bildberechtigungs-, Kampfrunden- und Clientregressionen sind repariert.
 Der reale Browserweg PNG → Lootvorlage → Exemplar → Übergabe → Spielerinventar ist geprüft.
-Die Chronisten-Modellanbindung (#15) und Siedlungsauswahl (#16) sind weiterhin offen;
-das zuvor trotz dieser Einschränkung gesetzte Häkchen bei #16 ist korrigiert.
+Die Chronisten-Modellanbindung (#15) ist seit dem 2026-09-08 geliefert: Anbieter lokal
+(Ollama) oder Anthropic, Freigabe je Lauf als serverseitig signiertes Einmal-Token,
+Kostenschätzung vor dem Lauf und Ist-Verbrauch danach, Schlüssel im Desktop unter DPAPI.
+Die Siedlungsauswahl (#16) bleibt offen; das zuvor trotz dieser Einschränkung gesetzte
+Häkchen bei #16 ist korrigiert.
 
 ## Feature 1 — Kampfsystem: gemessen, nicht vermutet
 

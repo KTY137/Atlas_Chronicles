@@ -1,6 +1,64 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-08, 17:00** (Kartenstudio: freies Bauen, Innenräume, Standortwahl)
+Updated: **2026-09-08, 23:30** (Chronist fertig, englisches Sprachpaket, Figurenantrag)
+
+## Drei Lieferungen auf `experimental/featureliste-20260907` — 2026-09-08
+
+**Der Chronist ist abnahmefähig.** Der abgebrochene Codex-Stand vom 15:19 wurde übernommen
+(`eebd27a`) und fertiggestellt: Migration 027, Native V16, dreizehn Routen, Client-Werkbank.
+Die Egress-Freigabe war eine Client-Behauptung und ist jetzt ein serverseitig signiertes
+Einmal-Token — HMAC mit dem Anwendungsgeheimnis, Nonce, fünf Minuten, nur in kanonischer
+Schreibweise gültig, Abdruck über die dekodierten Bytes. Der Verbrauch ist dauerhaft: geprüft
+in derselben Transaktion unter der Dispatch-Sperre, Migration 029 ergänzt nur Indizes über den
+vorhandenen Beleg, 027 bleibt unverändert. Ohne Anwendungsgeheimnis läuft der Dienst lokal und
+weist jede externe Nutzung ab. Anbieter sind lokal (Ollama, Erkennung über `/api/tags`) und
+Anthropic (neues eingefrorenes Profil `anthropic-messages-2` ohne Thinking, `claude-sonnet-5`
+als Standard, `claude-haiku-4-5` als Sparmodus, Preise als eine Wahrheitsquelle in der
+Registry). Der Schlüssel liegt im Desktop je Profil unter DPAPI, wird beim Weltstart einmal
+entschlüsselt und nur in den privaten Worker gereicht — nie in Deskriptor, Fingerprint,
+Fehlertext, Export oder Verwaltungsfenster. Der Desktop schreibt dazu einmalig eine
+Betreiberdatei je Profil. Die CLI-Schiene tötet ihr Kind jetzt zuverlässig: das Job-Object ist
+Teil des Erzeugungsaufrufs statt eines zweiten Schritts danach.
+
+**Die Oberfläche spricht Englisch.** Nachricht als Schlüssel: der deutsche Quelltext bleibt im
+Code, `t("…")` schlägt in einem nachgeladenen Wörterbuch nach und fällt auf Deutsch zurück.
+Acht Pakete, 2850 Schlüssel, Sprachwahl unter „Deine Darstellung" mit Rückfrage vor dem
+Wechsel. `gate:sprache` prüft per TypeScript-Lexer: kein fehlender, kein verwaister, kein
+nicht-literaler Eintrag, kein Datenschlüssel der eingefrorenen Pakete im Wörterbuch, kein neues
+hartes `de-DE`, und dass jede Paketdatei im Verzeichnis von `i18n.ts` steht. Nicht übersetzt
+werden Datenschlüssel, gespeicherte Titel, das HTBAH-Paket, Assetnamen und Exportformate.
+
+**Spieler legen Figuren selbst an.** Die Spielleitung gibt Vorlagen frei, Spieler beantragen
+eine Figur unter „Ich"; die Figur entsteht erst bei der Bestätigung über denselben Weg wie
+bisher, mit dem Antragsteller als Erzeuger und genau einem Kontrollgrant. Es gibt nie eine
+unbestätigte Figur, deshalb bleibt der Rechtepfad unverändert. Migration 028 und Native V17
+additiv über V16; Anfangswerte sind eine Abweichung über den Vorlagenfeldern, sichtbar auf der
+Karte, geprüft beim Antrag und als Merge in den Bogen geschrieben.
+
+### Nachweise und was offen bleibt
+
+`gate:version`, `gate:boundaries`, `gate:sprache`, `gate:assets` und der Typecheck sind grün.
+Die volle Vitest-Suite meldet **35 rote Fälle in 22 Dateien, ausnahmslos Zeitüberschreitungen** —
+keine einzige Zusicherung schlägt fehl. Das ist Laufzeit, nicht Inhalt, und zwar belegt:
+`bundles.test.ts` läuft allein 8/8 grün (109 Sekunden) und war nur in der vollen Suite rot; die
+betroffenen Testdateien und ihr Produktcode sind seit dem Beginn dieser Arbeit unverändert.
+**Echte Grenzfälle bleiben zwei Fälle in `forge/test/siedlung.test.ts`**, die auch allein mit
+6,0 und 5,5 Sekunden über ihrem Fünf-Sekunden-Limit liegen; `packages/forge` gehört einer
+parallel arbeitenden Sitzung, und ein blind angehobenes Limit verdeckt echte Regressionen.
+
+Drei Fehler fand erst der volle Lauf, zwei davon Regressionen dieser Arbeit. `import.meta.glob`
+ist eine Vite-Eigenheit und ließ jeden esbuild-gehosteten Browsertest gar nicht mounten; die
+Sprachdateien stehen jetzt ausdrücklich in `i18n.ts`. Playwright startet mit englischer
+Browsersprache, und seit die Oberfläche das korrekt befolgt, gingen alle deutschen Text-Locator
+ins Leere; die Konfiguration pinnt jetzt `de-DE`. Der Abschalt-Prüfstand mockte die Anwendung
+ohne `drainAppChronist`.
+
+Browserabläufe nach den Korrekturen: `map-editor-cartography` und `map-studio` 5/5,
+`sprache` und `meine-figur` 4/4. Nicht geprüft: ein neues Desktop-Paket mit diesem Stand,
+NVDA, Windows Hello und gemessene Budgets. `packages/client/src/features/formula-sugar.ts`
+kam mit dem Merge von `main` und ist noch nicht an die Oberfläche angeschlossen; ihre
+vierzehn deutschen Klartextfehler übersetzt die Sitzung, die sie einbaut.
+
 
 ## Kartenstudio: freies Bauen und Standortwahl — 2026-09-08
 
