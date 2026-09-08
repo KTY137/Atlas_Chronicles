@@ -65,6 +65,17 @@ export function clearChronistDrafts(storage: Storage, campaignId: string) {
   const keys = Array.from({ length: storage.length }, (_, i) => storage.key(i)).filter((key): key is string => key !== null && key.startsWith(prefix));
   for (const key of keys) storage.removeItem(key);
 }
+/** Die Schätzung rechnet grob mit vier Zeichen je Token; die Oberfläche nennt diese Annahme. */
+export const CHRONIST_ZEICHEN_JE_TOKEN = 4;
+/**
+ * Restzeit der serverseitigen Freigabe. Sie ist ein Einmal-Token mit Ablauf, deshalb steht
+ * die verbleibende Zeit im Formular und nicht erst in einer Fehlermeldung nach dem Klick.
+ */
+export function chronistFreigabeRest(ablaufAt: number, now: number): string {
+  const seconds = Math.ceil((ablaufAt - now) / 1000);
+  if (seconds <= 0) return "Diese Freigabe ist abgelaufen. Bitte den Umfang erneut vorschauen.";
+  return `Diese Freigabe gilt noch ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} Minuten.`;
+}
 export const chronistNumber = (value: number) => value.toLocaleString("de-DE");
 export function chronistCost(micros: number | null | undefined, currency: string | null | undefined): string {
   if (micros == null || !currency) return "Kosten unbekannt";

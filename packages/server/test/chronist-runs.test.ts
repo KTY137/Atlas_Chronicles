@@ -13,7 +13,8 @@ import { createIdentity } from "../src/identity/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createDocuments,type PassageInput } from "../src/domain/documents.ts";
 import { createChronist } from "../src/domain/chronist.ts";
-import type { ChronistProviderBinding } from "../src/domain/chronist/runtime.ts";
+import type { ChronistProviderBinding,ChronistServiceConfig } from "../src/domain/chronist/runtime.ts";
+import type { ChronistFreigabeConfig } from "../src/domain/chronist/freigabe.ts";
 import { exportCampaignBundle,restoreCampaignBundle } from "../src/domain/bundles.ts";
 import { seedActorControl } from "./actor-fixtures.ts";
 import { buildApp } from "../src/app.ts";
@@ -34,7 +35,8 @@ describe("durable Chronist through real database and graph",()=>{
       bind:consume=>async(unit,permit)=>{expect(await consume(permit,unit)).toBe(true);expect(await consume(permit,unit)).toBe(false);calls++;
         const citation=unit.sourceSpans[0]!,text=JSON.stringify({schemaVersion:1,candidates:[{kind:"abriss",text:"Mara brach auf.",citations:[citation],date:null}]});
         return {kind:"returned",reply:{text},usage:{inputChars:unit.dispatch.inputChars,outputChars:text.length,outputComplete:true,inputTokens:13,outputTokens:17,tokensComplete:true,durationMs:1,costMicros:null,currency:null,costKind:"unknown",costComplete:false}} as ChronistCallOutcome;}};
-    const service=createChronist(database,{chronist:{providers:[binding.description],resolveProvider:()=>binding}});services.push(service);
+    const serviceConfig:ChronistServiceConfig&ChronistFreigabeConfig={cookieSecret:identityConfig.cookieSecret,chronist:{providers:[binding.description],resolveProvider:()=>binding}};
+    const service=createChronist(database,serviceConfig);services.push(service);
     const sourcePage=await service.sources(gm,campaignId,{entryId:entry.entryId}),sourceRefs=sourcePage.sources.map(s=>s.ref);
     return {campaignId,docs,entry,service,binding,sourceRefs,calls:()=>calls};
   }
@@ -105,9 +107,9 @@ describe("durable Chronist through real database and graph",()=>{
   },25000);
   it("requires exact external consent and a fresh source preview",async()=>{
     const f=await fixture([paragraph("Mara brach auf.")],true),input={mode:"abriss" as const,sourceRefs:f.sourceRefs,providerId:"recorded",model:"recorded"},preview=await f.service.preview(gm,f.campaignId,input);
-    await expect(f.service.start(gm,f.campaignId,{...input,scopeHash:preview.scopeHash,commandId:randomUUID()})).rejects.toMatchObject({reason:"scope-changed"});expect(f.calls()).toBe(0);
+    await expect(f.service.start(gm,f.campaignId,{...input,scopeHash:preview.scopeHash,commandId:randomUUID()})).rejects.toMatchObject({reason:"freigabe-missing"});expect(f.calls()).toBe(0);
     await f.docs.saveEntry(gm,f.campaignId,{title:"Mara",expectedVersion:f.entry.version!,passages:[{pid:f.entry.passagen[0]!.pid,...paragraph("Mara blieb hier.")}]},f.entry.entryId);
-    await expect(f.service.start(gm,f.campaignId,{...input,scopeHash:preview.scopeHash,commandId:randomUUID(),externalConsent:{scopeHash:preview.scopeHash}})).rejects.toMatchObject({reason:"source-stale"});expect(f.calls()).toBe(0);
+    await expect(f.service.start(gm,f.campaignId,{...input,scopeHash:preview.scopeHash,commandId:randomUUID(),externalConsent:{scopeHash:preview.scopeHash,token:preview.freigabe!.token}})).rejects.toMatchObject({reason:"source-stale"});expect(f.calls()).toBe(0);
   });
   it("paginates confirmed session context and requires saved notes for the selected real session",async()=>{
     const f=await fixture([paragraph("PRIVATE-SOURCE-BODY")]),game=createGameplay(db,{seed:()=>"00000001000000020000000300000004"}),actor=randomUUID();
@@ -219,8 +221,8 @@ describe("durable Chronist through real database and graph",()=>{
       const binding:ChronistProviderBinding={...f.binding,bind:consume=>async(unit,permit)=>{expect(await consume(permit,unit)).toBe(true);calls++;
         if(calls===2)return {kind:"failed",code:"timeout",mayHaveExecuted:true,usage:{inputChars:unit.dispatch.inputChars,outputChars:3,outputComplete:false,inputTokens:null,outputTokens:null,tokensComplete:false,durationMs:1,costMicros:null,currency:null,costKind:"unknown",costComplete:false}};
         const text='{"schemaVersion":1,"candidates":[]}';return {kind:"returned",reply:{text},usage:{inputChars:unit.dispatch.inputChars,outputChars:text.length,outputComplete:true,inputTokens:null,outputTokens:null,tokensComplete:false,durationMs:1,costMicros:null,currency:null,costKind:"unknown",costComplete:false}};}};
-      const config={chronist:{providers:[binding.description],resolveProvider:()=>binding}},first=createChronist(local,config),input={mode:"abriss" as const,sourceRefs:f.sourceRefs,providerId:"recorded",model:"recorded"};
-      const preview=await first.preview(gm,f.campaignId,input);expect(preview.modelUnits).toBe(3);const externalConsent={scopeHash:preview.scopeHash},ack=await first.start(gm,f.campaignId,{...input,commandId:randomUUID(),scopeHash:preview.scopeHash,externalConsent});
+      const config={cookieSecret:identityConfig.cookieSecret,chronist:{providers:[binding.description],resolveProvider:()=>binding}},first=createChronist(local,config),input={mode:"abriss" as const,sourceRefs:f.sourceRefs,providerId:"recorded",model:"recorded"};
+      const preview=await first.preview(gm,f.campaignId,input);expect(preview.modelUnits).toBe(3);const externalConsent={scopeHash:preview.scopeHash,token:preview.freigabe!.token},ack=await first.start(gm,f.campaignId,{...input,commandId:randomUUID(),scopeHash:preview.scopeHash,externalConsent});
       await expect.poll(async()=>(await first.getRun(gm,f.campaignId,ack.runId)).state,{timeout:10000}).toBe("paused");const paused=await first.getRun(gm,f.campaignId,ack.runId);expect(paused.unknownCalls).toBe(1);expect(calls).toBe(2);
       const exported=await exportCampaignBundle(local,gm,f.campaignId);expect(exported.version).toBe(16);
       const forged=structuredClone(currentCampaignTables(exported)) as any,forgedRun=forged.chronist_laeufe[0],last=forgedRun.checkpoints.checkpoints.findLast((c:any)=>c.namespace===""),checkpoint=decodeChronistCheckpoint(last.checkpoint,{validateSend:s=>validateChronistSend(forgedRun,s)}) as any;
@@ -229,10 +231,13 @@ describe("durable Chronist through real database and graph",()=>{
       expect(()=>createCurrentCampaignBundle({campaignId:f.campaignId,universeId:exported.manifest.universeId,exportedAt:exported.manifest.exportedAt,tables:forged})).toThrow();
       await first.close();await local.close();local=await createTestDb(path);resumed=createChronist(local,config);
       expect((await resumed.getRun(gm,f.campaignId,ack.runId)).usage).toEqual(paused.usage);expect(calls).toBe(2);
-      await expect(resumed.resume(gm,f.campaignId,ack.runId,{expectedVersion:paused.version,scopeHash:paused.scopeHash,externalConsent})).rejects.toMatchObject({reason:"outcome-unknown"});
+      // Jede Fortsetzung nach aussen verlangt eine frische, serverseitig ausgestellte Freigabe.
+      const wieder={scopeHash:paused.scopeHash,token:(await resumed.preview(gm,f.campaignId,input)).freigabe!.token};
+      await expect(resumed.resume(gm,f.campaignId,ack.runId,{expectedVersion:paused.version,scopeHash:paused.scopeHash,externalConsent:wieder})).rejects.toMatchObject({reason:"outcome-unknown"});
       const otherGm=randomUUID();await local.query("INSERT INTO users(id,display_name,created_at) VALUES($1,'Historische Leitung',0)",[otherGm]);
       await local.query("INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton) VALUES($1,$2,'leitung','Historische Leitung','historischeleitung')",[f.campaignId,otherGm]);
-      await resumed.resume(otherGm,f.campaignId,ack.runId,{expectedVersion:paused.version,scopeHash:paused.scopeHash,acknowledgeUnknownOutcome:true,externalConsent});
+      const fuerAndere={scopeHash:paused.scopeHash,token:(await resumed.preview(otherGm,f.campaignId,input)).freigabe!.token};
+      await resumed.resume(otherGm,f.campaignId,ack.runId,{expectedVersion:paused.version,scopeHash:paused.scopeHash,acknowledgeUnknownOutcome:true,externalConsent:fuerAndere});
       await expect.poll(async()=>(await resumed!.getRun(gm,f.campaignId,ack.runId)).state,{timeout:10000}).toBe("completed");const finished=await resumed.getRun(gm,f.campaignId,ack.runId);
       expect(calls).toBe(4);expect(finished.usage.calls).toBe(4);expect(finished.usage.outputChars).toBeGreaterThan(paused.usage.outputChars);expect(finished.usage.reservedOutputChars).toBe(paused.usage.reservedOutputChars);
       await local.query("DELETE FROM campaign_memberships WHERE campaign_id=$1 AND user_id=$2",[f.campaignId,otherGm]);

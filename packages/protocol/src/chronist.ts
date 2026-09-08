@@ -15,11 +15,16 @@ export const ChronistBudgetSchema = Type.Object({
 export const ChronistPreview = Type.Object({ mode: Type.Union([Type.Literal("prosa"),Type.Literal("sitzung"),Type.Literal("abriss")]),
   sessionId: Type.Optional(Id), sourceRefs: Type.Array(ChronistSourceRefSchema,{minItems:1,maxItems:512}),
   providerId: Id, model: Type.String({minLength:1,maxLength:256}), budget: Type.Optional(Type.Partial(ChronistBudgetSchema)) },closed);
+/** Die Freigabe ist ein serverseitig signiertes Einmal-Token, keine Behauptung der Oberflaeche. */
+export const ChronistFreigabeToken = Type.String({ pattern: "^[A-Za-z0-9_-]{16,512}$", minLength: 16, maxLength: 512 });
+export const ChronistExternalConsentSchema = Type.Object({ scopeHash: ChronistHash, token: ChronistFreigabeToken }, closed);
+export interface ChronistFreigabe { token: string; ablaufAt: number }
+export type ChronistExternalConsent = { scopeHash: string; token: string };
 export const StartChronistRun = Type.Composite([ChronistPreview,Type.Object({commandId:Id,scopeHash:ChronistHash,
-  externalConsent:Type.Optional(Type.Object({scopeHash:ChronistHash},closed))})],closed);
+  externalConsent:Type.Optional(ChronistExternalConsentSchema)})],closed);
 export const ChronistControl = Type.Object({expectedVersion:Type.Integer({minimum:1})},closed);
 export const ResumeChronistRun = Type.Object({expectedVersion:Type.Integer({minimum:1}),scopeHash:ChronistHash,
-  externalConsent:Type.Optional(Type.Object({scopeHash:ChronistHash},closed)),acknowledgeUnknownOutcome:Type.Optional(Type.Boolean())},closed);
+  externalConsent:Type.Optional(ChronistExternalConsentSchema),acknowledgeUnknownOutcome:Type.Optional(Type.Boolean())},closed);
 export const EditChronistProposal = Type.Object({expectedVersion:Type.Integer({minimum:1}),blocks:Type.Array(Block,{minItems:1,maxItems:1000})},closed);
 export const SubmitChronistProposal = Type.Object({commandId:Id,expectedVersion:Type.Integer({minimum:1}),expectedDraftHash:ChronistHash,
   target:Type.Union([Type.Object({kind:Type.Literal("existing"),entryId:Id,expectedVersion:Type.Integer({minimum:1})},closed),
@@ -42,8 +47,9 @@ export interface ChronistPreviewResult {readonly scopeHash:string;readonly mode:
   readonly sources:readonly ChronistSourceDescriptor[];readonly sourceChars:number;readonly budget:Static<typeof ChronistBudgetSchema>;
   readonly provider:ChronistProviderDescription;readonly model:string;readonly modelUnits:number;readonly maxCalls:number;
   readonly ruleFindings:readonly {readonly art:string;readonly titel:string;readonly text:string}[];
-  readonly estimate:{readonly inputChars:number;readonly outputChars:number;readonly costMicros:number|null;readonly currency:string|null};
-  readonly warnings:readonly string[]}
+  readonly estimate:{readonly inputChars:number;readonly outputChars:number;readonly costMicros:number|null;
+    readonly costKind:"estimated"|"unknown";readonly currency:string|null};
+  readonly freigabe:ChronistFreigabe|null;readonly warnings:readonly string[]}
 export interface ChronistUsageView {readonly calls:number;readonly inputChars:number;readonly outputChars:number;readonly reservedOutputChars:number;
   readonly knownCalls:number;readonly reservedCalls:number;readonly knownInputChars:number;readonly reservedInputChars:number;
   readonly activeMs:number;readonly inputTokens:number|null;readonly outputTokens:number|null;readonly tokensComplete:boolean;

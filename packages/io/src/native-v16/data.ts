@@ -6,8 +6,14 @@ import type { CanonicalValue } from "@chronicle/core";
 import type { Blockinhalt } from "@chronicle/chronik";
 import type { ChronistProviderDescription, ChronistStartAck, ChronistSubmissionAck } from "@chronicle/protocol";
 export interface ChronistProviderRecord {schemaVersion:1;description:ChronistProviderDescription;model:string;fingerprint:string;profileId:string}
+/**
+ * Der Freigabebeleg: Ablauf und SHA-256 des verbrauchten Einmal-Tokens, niemals das Token.
+ * Beide Felder fehlen in Belegen, die vor ihrer Einführung geschrieben wurden; sie gelten
+ * dann als `null` (Altbestand). Neu geschriebene Belege setzen sie immer, bei `fremd` nie null.
+ */
 export interface ChronistControlEvidence {schemaVersion:1;executionId:string;kind:"start"|"resume";actorUserId:string;decidedAt:number;
-  scopeHash:string;providerFingerprint:string;externalConsent:{scopeHash:string}|null;acknowledgeUnknownOutcome:boolean}
+  scopeHash:string;providerFingerprint:string;externalConsent:{scopeHash:string}|null;freigabeAblaufAt?:number|null;freigabeHash?:string|null;
+  acknowledgeUnknownOutcome:boolean}
 export interface ChronistExecution {executionId:string;actorUserId:string;fence:number;startedAt:number;accountedThrough:number;
   reservedUntil:number;closedAt:number|null;closeKind:"completed"|"partial"|"paused"|"crash"|null}
 export interface ChronistCallHistory {state:"reserved"|"dispatched"|"returned"|"failed"|"unknown";at:number;actorUserId:string;

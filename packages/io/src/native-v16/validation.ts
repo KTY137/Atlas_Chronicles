@@ -11,7 +11,7 @@ import { chronistScopeHash,collectChronistIdentityIds,type ChronistRunRow,type C
 import { decodeChronistCheckpoint,type ChronistSendData } from "./checkpoint-codec.ts";
 import { chronistGraphEvidence } from "./graph-evidence.ts";
 function require(v:unknown,message:string):asserts v{if(!v)fail("chronist",message);}
-const closed=(v:unknown,names:readonly string[])=>keys(object(v,"chronist"),names,"chronist");
+const closed=(v:unknown,names:readonly string[],optional:readonly string[]=[])=>keys(object(v,"chronist"),names,"chronist",optional);
 const hash=(kind:string,v:unknown)=>chronistHash(kind,v as CanonicalValue);
 const same=(a:unknown,b:unknown)=>hash("run-evidence",a)===hash("run-evidence",b);
 const integer=(v:unknown,min=0)=>Number.isSafeInteger(v)&&Number(v)>=min;
@@ -149,10 +149,17 @@ export function validateChronistTables(tables:CampaignTablesV16,campaignId:strin
       if(e.closedAt===null)require(index===ev.executions.length-1&&e.closeKind===null,"open execution");else require(["completed","partial","paused","crash"].includes(String(e.closeKind)),"execution close");
       previousEnd=e.closedAt??e.reservedUntil;active+=previousEnd-e.startedAt;}
     require(active<=snapshot.budget.maxActiveMs,"active budget");
-    for(const [index,c] of ev.controlEvidence.entries()){closed(c,["schemaVersion","executionId","kind","actorUserId","decidedAt","scopeHash","providerFingerprint","externalConsent","acknowledgeUnknownOutcome"]);
+    for(const [index,c] of ev.controlEvidence.entries()){closed(c,["schemaVersion","executionId","kind","actorUserId","decidedAt","scopeHash","providerFingerprint","externalConsent","acknowledgeUnknownOutcome"],["freigabeAblaufAt","freigabeHash"]);
       require(c.schemaVersion===1&&c.kind===(index===0?"start":"resume")&&integer(c.decidedAt)&&c.scopeHash===snapshot.scopeHash&&c.providerFingerprint===run.provider.fingerprint&&typeof c.acknowledgeUnknownOutcome==="boolean","control evidence");
       require(ev.executions.some(e=>e.executionId===c.executionId&&e.actorUserId===c.actorUserId&&e.startedAt===c.decidedAt),"control interval");
-      require(desc.location==="lokal"?c.externalConsent===null:same(c.externalConsent,{scopeHash:snapshot.scopeHash}),"external consent");}
+      require(desc.location==="lokal"?c.externalConsent===null:same(c.externalConsent,{scopeHash:snapshot.scopeHash}),"external consent");
+      // Der Beleg trägt den Abdruck der Freigabe und ihren Ablauf; ein lesbares Token wäre ein Leck.
+      // Vor der Einführung geschriebene Belege führen beide Felder gar nicht; sie bleiben lesbar.
+      // Ein neuer fremder Beleg, der sie führt, darf sie nicht auf null setzen.
+      const altbestand=!Object.hasOwn(c,"freigabeAblaufAt")&&!Object.hasOwn(c,"freigabeHash");
+      require(desc.location==="lokal"?(c.freigabeAblaufAt??null)===null&&(c.freigabeHash??null)===null
+        :altbestand||(c.freigabeAblaufAt!==null&&c.freigabeAblaufAt!==undefined&&integer(c.freigabeAblaufAt)&&c.freigabeAblaufAt>=c.decidedAt
+          &&typeof c.freigabeHash==="string"&&/^[a-f0-9]{64}$/.test(c.freigabeHash)),"external release evidence");}
     require(same(req.externalConsent,ev.controlEvidence[0]!.externalConsent),"original consent");
     for(const unit of ev.units){parseChronistModelUnit(unit);const plan=ev.plans.find(p=>p.unitId===unit.unitId);require(plan,"unknown dispatch unit");
       const parents=plan.parentUnitIds.map(unitId=>({unitId,candidates:proposals.filter(p=>p.run_id===run.id&&p.unit_id===unitId).sort((a,b)=>a.candidate_key<b.candidate_key?-1:1).map(p=>parseChronistCandidate(p.original))}));

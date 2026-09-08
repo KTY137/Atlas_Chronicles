@@ -6,6 +6,9 @@ export const chronistPath = (campaignId: string, suffix = "") => apiPath(campaig
 export const CHRONIST_REASONS: Record<string, string> = {
   "source-stale": "Eine Quelle wurde inzwischen geändert. Wähle den aktuellen Artikelstand und prüfe den Umfang erneut. Der bisherige Vorschlag bleibt als ältere Fassung erhalten.",
   "scope-changed": "Umfang oder Anbieter haben sich geändert. Bitte zuerst eine neue Vorschau erstellen.",
+  "freigabe-missing": "Für diesen Lauf liegt keine gültige Freigabe vor. Erstelle die Vorschau und gib den angezeigten Umfang ausdrücklich frei.",
+  "freigabe-expired": "Deine Freigabe für die externe Verarbeitung ist abgelaufen. Erstelle die Vorschau erneut und gib den angezeigten Umfang noch einmal frei.",
+  "freigabe-used": "Diese Freigabe wurde bereits verwendet. Jeder Lauf und jede Fortsetzung verlangt eine eigene, frisch erstellte Vorschau.",
   "run-active": "Für diese Kampagne läuft bereits eine Auswertung. Öffne sie unter „Läufe“.",
   "provider-unavailable": "Dieser Anbieter ist noch nicht bereit. Die Regelbefunde kannst du weiterhin durchsehen.",
   "budget": "Die gewählte Grenze ist erreicht. Die bisherigen Ergebnisse bleiben zur Durchsicht erhalten.",

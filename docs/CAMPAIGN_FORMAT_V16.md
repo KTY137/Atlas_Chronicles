@@ -35,6 +35,33 @@ Jeder externe Start und jedes externe Resume benötigt die Zustimmung zum exakte
 Scopehash. Alle dabei beteiligten menschlichen Identitäten werden auch nach dem
 Austritt aus der Kampagne exportiert.
 
+### Freigabebeleg
+
+Die Zustimmung zu externer Verarbeitung ist keine Behauptung der Oberfläche. Die
+Vorschau stellt serverseitig eine Freigabe aus: ein mit dem Anwendungsgeheimnis
+signiertes Einmal-Token über Kampagne, Person, Scopehash, Providerfingerprint,
+Modell und Ablauf, gültig fünf Minuten. Start und Resume verlangen je ein eigenes,
+frisches Token; nur die kanonische base64url-Schreibweise gilt.
+
+Der Beleg in `controlEvidence` enthält **niemals das Token**, sondern zwei Felder:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `freigabeAblaufAt` | Ablaufzeitpunkt der verbrauchten Freigabe in Millisekunden, nie kleiner als `decidedAt` |
+| `freigabeHash` | SHA-256 über die dekodierten Tokenbytes, 64 Hexzeichen |
+
+Bei `location: "lokal"` sind beide `null`; ein Token ist dort verboten. Bei
+`location: "fremd"` sind beide gesetzt und nie `null`. **Altbestand:** Belege, die
+vor Einführung dieser Felder geschrieben wurden, führen sie gar nicht; sie gelten
+dann als `null` und bleiben importierbar. Fehlt nur eines der beiden Felder, oder
+steht in einem fremden Beleg ausdrücklich `null`, wird der Export abgewiesen.
+
+Der Verbrauch ist dauerhaft, nicht prozesslokal: Start und Resume prüfen unter der
+globalen Dispatch-Sperre, ob irgendein Lauf diesen Abdruck bereits trägt. Migration
+`029_chronist_freigabe.sql` trägt dafür einen GIN-Index über `controlEvidence` und
+einen partiellen Unique-Index über den Startabdruck als strukturellen Rückhalt; sie
+ändert weder Tabellen noch Spalten und lässt `027_chronist.sql` unberührt.
+
 Callbelege folgen `reserved → dispatched → returned/failed/unknown`. Der
 Transport verbraucht das Permit unmittelbar vor I/O einmalig per CAS. Ein CLI-
 Bridgepfad prüft denselben bereits verbrauchten Dispatch unmittelbar vor seinem

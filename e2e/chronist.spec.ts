@@ -141,11 +141,25 @@ test("Telefon: Sitzungsnotiz ausdrücklich speichern, Kontext übernehmen und ex
   await page.getByRole("combobox", { name: "Anbieter", exact: true }).selectOption("recorded-external");
   await preview(page);
   await expect(page.getByRole("button", { name: "Auswertung starten", exact: true })).toBeDisabled();
+  // Die Freigabe kommt vom Server, gilt fünf Minuten und steht sichtbar im Formular.
+  const vorschau = page.getByRole("region", { name: "Vorschau der Auswertung" });
+  await expect(vorschau).toContainText("Diese Freigabe gilt noch");
+  await expect(vorschau).toContainText("Zeichen je Token");
   const beforeExternal = calls.length;
   await page.getByRole("checkbox", { name: /Ich gebe diese 1 Passagen/ }).check();
+  const started = page.waitForRequest(request => request.url().endsWith("/chronist/runs") && request.method() === "POST");
   await start(page);
+  const gesendet = JSON.parse((await started).postData() ?? "{}") as { externalConsent?: { token?: string } };
+  expect(typeof gesendet.externalConsent?.token).toBe("string");
   await expect(page.getByRole("heading", { name: "Bereit zur Durchsicht", exact: true })).toBeVisible();
   expect(calls.length).toBeGreaterThan(beforeExternal); expect(calls.at(-1)?.model).toBe("recorded-external-model");
+  // Der dauerhafte Beleg trägt Ablauf und Abdruck der Freigabe, niemals das Token selbst.
+  const beleg = await db.query<{ evidence: { controlEvidence: { freigabeHash: string | null; freigabeAblaufAt: number | null }[] } }>(
+    "SELECT evidence FROM chronist_laeufe WHERE campaign_id=$1 ORDER BY created_at DESC LIMIT 1", [campaign.id]);
+  const control = beleg.rows[0]!.evidence.controlEvidence[0]!;
+  expect(control.freigabeHash).toMatch(/^[a-f0-9]{64}$/);
+  expect(control.freigabeAblaufAt).toBeGreaterThan(0);
+  expect(JSON.stringify(beleg.rows[0])).not.toContain(gesendet.externalConsent!.token!);
   await page.locator(".chronist-suggestion").last().click();
   await expect(page.getByRole("heading", { name: "Erzählerischer Abriss", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
