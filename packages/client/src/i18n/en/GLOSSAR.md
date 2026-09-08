@@ -82,3 +82,19 @@ klar, knapp, freundlich, wie die deutsche Vorlage.
 | Ungespeicherte Änderungen verwerfen? | Discard unsaved changes? | |
 | Erneut laden | Reload | |
 | Wird geladen … | Loading … | Auslassungszeichen bleibt |
+
+## Feste Regeln über die Tabelle hinaus
+
+- **Eingabezeichen bleiben in jeder Sprache gleich.** `@` steht für ein Attribut, `?` für
+  einen Parameter; beide stehen in gespeicherten Formeln. Ein sprachabhängiges Zeichen
+  würde eine deutsche Formel im englischen Kontext unlesbar machen. Übersetzt wird nur der
+  Satz drumherum: „Tippe @ für Attribute, ? für Parameter" → „Type @ for attributes,
+  ? for parameters".
+- **Würfelnotation bleibt `W`**, nicht `d`: sie gehört zum Regelpaket, nicht zur Oberfläche.
+- **Keine zusammengesetzten Fragmente.** Typwörter wie „Zahl", „Ja/Nein", „Text" werden nicht
+  mit umgebendem Text verkettet; jede Stelle bekommt einen vollständigen Satz mit Platzhalter,
+  weil sich englische Sätze anders fügen.
+- **Der deutsche Satz bleibt der Schlüssel.** Es gibt keine Kunstschlüssel wie
+  `forge.formula.error.unknownField`. Nur so sehen der Jargon-Wächter
+  (`packages/client/test/rule-forge-klartext.test.ts`), die Browserabläufe und die Prüfstände
+  weiterhin die echten deutschen Sätze.
