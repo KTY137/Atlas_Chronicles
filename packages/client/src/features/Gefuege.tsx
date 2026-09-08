@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
+import { t } from "../i18n";
 import "./gefuege.css";
 
 type Art = "elternteil_von" | "verheiratet_mit" | "geschwister_von" | "buendnis_mit" | "feindschaft_mit" | "lehen_von" | "mitglied_von";
@@ -12,7 +13,9 @@ interface Knoten { entryId: string; titel: string; slug: string; bekannt: boolea
 interface Kante { id: string; passageId: string; vonEntryId: string; nachEntryId: string; art: Art; rolle: string | null; graph: Graph; gerichtet: boolean }
 interface Gefuegedaten { knoten: readonly Knoten[]; kanten: readonly Kante[] }
 
-const artLabel: Record<Art, string> = {
+// Anzeigetabellen: der Client übersetzt sie an der Anzeigestelle mit `t(GEFUEGE_ART_LABEL[art])` und
+// filtert weiter über die gespeicherten Kantenarten.
+const GEFUEGE_ART_LABEL: Record<Art, string> = {
   elternteil_von: "Elternteil von", verheiratet_mit: "Verheiratet mit", geschwister_von: "Geschwister von",
   buendnis_mit: "Bündnis mit", feindschaft_mit: "Feindschaft mit", lehen_von: "Lehen von", mitglied_von: "Mitglied von",
 };
@@ -20,7 +23,7 @@ const arten: { graph: Graph; werte: Art[] }[] = [
   { graph: "stammbaum", werte: ["elternteil_von", "verheiratet_mit", "geschwister_von"] },
   { graph: "politogramm", werte: ["buendnis_mit", "feindschaft_mit", "lehen_von", "mitglied_von"] },
 ];
-const graphLabel: Record<Graph, string> = { stammbaum: "Stammbaum", politogramm: "Politogramm" };
+const GEFUEGE_GRAPH_LABEL: Record<Graph, string> = { stammbaum: "Stammbaum", politogramm: "Politogramm" };
 
 const BREITE = 760, KNOTENBREITE = 158, KNOTENHOEHE = 42, ZEILE = 108;
 
@@ -88,23 +91,23 @@ export function Gefuege({ campaignId, entryId, gm, onOpenEntry, onClose }: {
   const hoehe = Math.max(240, ...[...platz.values()].map(punkt => punkt.y + KNOTENHOEHE * 2));
   const titel = (id: string) => daten.data?.knoten.find(item => item.entryId === id)?.titel ?? "";
 
-  return <section className="gefuege panel" aria-label="Das Gefüge">
+  return <section className="gefuege panel" aria-label={t("Das Gefüge")}>
     <div className="section-heading"><div>
-      <p className="eyebrow">Wer mit wem, und woher du das weißt</p><h2>Das Gefüge</h2>
+      <p className="eyebrow">{t("Wer mit wem, und woher du das weißt")}</p><h2>{t("Das Gefüge")}</h2>
     </div><div className="button-row">
-      <Button aria-pressed={ganz} onClick={() => setGanz(value => !value)}>{ganz ? "Nur dieser Eintrag" : "Ganze Kampagne"}</Button>
-      <Button onClick={onClose}>Schließen</Button>
+      <Button aria-pressed={ganz} onClick={() => setGanz(value => !value)}>{ganz ? t("Nur dieser Eintrag") : t("Ganze Kampagne")}</Button>
+      <Button onClick={onClose}>{t("Schließen")}</Button>
     </div></div>
-    <div className="view-tabs" role="tablist" aria-label="Graphen">{(["stammbaum", "politogramm"] as const).map(id =>
-      <button key={id} role="tab" aria-selected={graph === id} tabIndex={graph === id ? 0 : -1} onClick={() => setGraph(id)}>{graphLabel[id]}</button>)}</div>
+    <div className="view-tabs" role="tablist" aria-label={t("Graphen")}>{(["stammbaum", "politogramm"] as const).map(id =>
+      <button key={id} role="tab" aria-selected={graph === id} tabIndex={graph === id ? 0 : -1} onClick={() => setGraph(id)}>{t(GEFUEGE_GRAPH_LABEL[id])}</button>)}</div>
     {daten.error ? <Notice error>{daten.error}</Notice> : null}
-    {daten.loading ? <Loading text="Das Gefüge wird hergeleitet …" />
-      : !kanten.length ? <EmptyState title={`Hier ist noch kein ${graphLabel[graph]}.`}>{gm
-        ? "Trag unten eine Beziehung ein. Sie hängt an einer Passage — wer die Passage nicht hält, für den gibt es die Beziehung nicht."
-        : "Sobald du erfährst, wie diese Namen zusammenhängen, erscheinen ihre Verbindungen hier."}</EmptyState>
+    {daten.loading ? <Loading text={t("Das Gefüge wird hergeleitet …")} />
+      : !kanten.length ? <EmptyState title={t("Hier ist noch kein {graph}.", { graph: t(GEFUEGE_GRAPH_LABEL[graph]) })}>{gm
+        ? t("Trag unten eine Beziehung ein. Sie hängt an einer Passage — wer die Passage nicht hält, für den gibt es die Beziehung nicht.")
+        : t("Sobald du erfährst, wie diese Namen zusammenhängen, erscheinen ihre Verbindungen hier.")}</EmptyState>
       : <>
         <svg className="gefuege-leinwand" viewBox={`0 0 ${BREITE} ${hoehe}`} role="img"
-          aria-label={`${graphLabel[graph]} mit ${knoten.length} Namen und ${kanten.length} Verbindungen`}>
+          aria-label={t("{graph} mit {namen} Namen und {verbindungen} Verbindungen", { graph: t(GEFUEGE_GRAPH_LABEL[graph]), namen: knoten.length, verbindungen: kanten.length })}>
           <defs><marker id="gefuege-pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
           {kanten.map(kante => {
@@ -112,7 +115,7 @@ export function Gefuege({ campaignId, entryId, gm, onOpenEntry, onClose }: {
             if (!von || !nach) return null;
             return <g key={kante.id} className={`gefuege-kante ${kante.art}`} data-art={kante.art}>
               <line x1={von.x} y1={von.y} x2={nach.x} y2={nach.y} markerEnd={kante.gerichtet ? "url(#gefuege-pfeil)" : undefined} />
-              <title>{`${titel(kante.vonEntryId)} — ${kante.rolle || artLabel[kante.art]} — ${titel(kante.nachEntryId)}`}</title>
+              <title>{`${titel(kante.vonEntryId)} — ${kante.rolle || t(GEFUEGE_ART_LABEL[kante.art])} — ${titel(kante.nachEntryId)}`}</title>
             </g>;
           })}
           {knoten.map(item => {
@@ -120,14 +123,14 @@ export function Gefuege({ campaignId, entryId, gm, onOpenEntry, onClose }: {
             return <g key={item.entryId} className={item.bekannt ? "gefuege-knoten bekannt" : "gefuege-knoten fremd"}>
               <rect x={punkt.x - KNOTENBREITE / 2} y={punkt.y - KNOTENHOEHE / 2} width={KNOTENBREITE} height={KNOTENHOEHE} rx={8} />
               <text x={punkt.x} y={punkt.y + 4} textAnchor="middle">{item.titel}</text>
-              <title>{item.bekannt ? item.titel : `${item.titel} — diesen Eintrag kennst du noch nicht`}</title>
+              <title>{item.bekannt ? item.titel : t("{titel} — diesen Eintrag kennst du noch nicht", { titel: item.titel })}</title>
             </g>;
           })}
         </svg>
         <ul className="gefuege-liste">{kanten.map(kante => <li key={kante.id} data-art={kante.art}>
-          <strong>{titel(kante.vonEntryId)}</strong> <span className="kanten-art">{kante.rolle || artLabel[kante.art]}</span> <strong>{titel(kante.nachEntryId)}</strong>
+          <strong>{titel(kante.vonEntryId)}</strong> <span className="kanten-art">{kante.rolle || t(GEFUEGE_ART_LABEL[kante.art])}</span> <strong>{titel(kante.nachEntryId)}</strong>
           {daten.data?.knoten.filter(item => [kante.vonEntryId, kante.nachEntryId].includes(item.entryId) && item.bekannt)
-            .map(item => <Button key={item.entryId} variant="quiet" onClick={() => onOpenEntry(item.entryId)}>{item.titel} öffnen</Button>)}
+            .map(item => <Button key={item.entryId} variant="quiet" onClick={() => onOpenEntry(item.entryId)}>{t("{titel} öffnen", { titel: item.titel })}</Button>)}
         </li>)}</ul>
       </>}
     {gm ? <Eintragen campaignId={campaignId} entryId={entryId} graph={graph} onGespeichert={() => setRevision(value => value + 1)} /> : null}
@@ -148,23 +151,23 @@ function Eintragen({ campaignId, entryId, graph, onGespeichert }: { campaignId: 
     await api(apiPath(campaignId, "/beziehungen"), { method: "POST", body: { passageId, vonEntryId: entryId, nachEntryId, art: aktuelleArt, ...(rolle.trim() ? { rolle: rolle.trim() } : {}) } });
     setRolle(""); setNachEntryId(""); onGespeichert();
   }); }}>
-    <h3>Beziehung eintragen</h3>
-    <p className="field-help">Jede Beziehung hängt an der Passage, die sie behauptet. Wer diese Passage nicht hält, sieht die Beziehung nicht — auch nicht als Lücke.</p>
+    <h3>{t("Beziehung eintragen")}</h3>
+    <p className="field-help">{t("Jede Beziehung hängt an der Passage, die sie behauptet. Wer diese Passage nicht hält, sieht die Beziehung nicht — auch nicht als Lücke.")}</p>
     {task.error ? <Notice error>{task.error}</Notice> : null}
     <div className="rule-fields">
-      <label>Passage, die es sagt<select required value={passageId} onChange={event => setPassageId(event.target.value)}>
-        <option value="">Passage wählen</option>
-        {artikel.data?.passagen.map((passage, index) => <option key={passage.pid} value={passage.pid}>Passage {index + 1}</option>)}
+      <label>{t("Passage, die es sagt")}<select required value={passageId} onChange={event => setPassageId(event.target.value)}>
+        <option value="">{t("Passage wählen")}</option>
+        {artikel.data?.passagen.map((passage, index) => <option key={passage.pid} value={passage.pid}>{t("Passage {nummer}", { nummer: index + 1 })}</option>)}
       </select></label>
-      <label>Art<select value={aktuelleArt} onChange={event => setArt(event.target.value as Art)}>
-        {werte.map(wert => <option key={wert} value={wert}>{artLabel[wert]}</option>)}
+      <label>{t("Art")}<select value={aktuelleArt} onChange={event => setArt(event.target.value as Art)}>
+        {werte.map(wert => <option key={wert} value={wert}>{t(GEFUEGE_ART_LABEL[wert])}</option>)}
       </select></label>
-      <label>Verbunden mit<select required value={nachEntryId} onChange={event => setNachEntryId(event.target.value)}>
-        <option value="">Eintrag wählen</option>
+      <label>{t("Verbunden mit")}<select required value={nachEntryId} onChange={event => setNachEntryId(event.target.value)}>
+        <option value="">{t("Eintrag wählen")}</option>
         {eintraege.data?.filter(eintrag => eintrag.id !== entryId).map(eintrag => <option key={eintrag.id} value={eintrag.id}>{eintrag.title}</option>)}
       </select></label>
-      <label>Beschriftung <small>(freiwillig)</small><input value={rolle} maxLength={160} onChange={event => setRolle(event.target.value)} placeholder="Mutter, Vasall seit dem Frostjahr …" /></label>
+      <label>{t("Beschriftung")} <small>{t("(freiwillig)")}</small><input value={rolle} maxLength={160} onChange={event => setRolle(event.target.value)} placeholder={t("Mutter, Vasall seit dem Frostjahr …")} /></label>
     </div>
-    <Button type="submit" variant="primary" disabled={task.busy || !passageId || !nachEntryId}>Beziehung eintragen</Button>
+    <Button type="submit" variant="primary" disabled={task.busy || !passageId || !nachEntryId}>{t("Beziehung eintragen")}</Button>
   </form>;
 }

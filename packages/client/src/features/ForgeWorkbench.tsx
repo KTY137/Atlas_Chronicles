@@ -6,6 +6,7 @@ import type { ActorCard } from "@chronicle/protocol";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type Campaign } from "../api";
 import { useResource } from "../hooks";
+import { t } from "../i18n";
 import { ActorTemplates, InstantiateActor, Inventory, ItemTemplates } from "./ActorWorkbench";
 import type { RulesState } from "./game-api";
 import type { ForgeSection } from "./forge-navigation";
@@ -19,15 +20,27 @@ const PublicationWorkbench = lazy(() => import("./PublicationWorkbench").then(mo
 const TacticalPreparation = lazy(() => import("./TacticalPreparation").then(module => ({ default: module.TacticalPreparation })));
 const WikiMedien = lazy(() => import("./WikiMedien").then(module => ({ default: module.WikiMedien })));
 
-const TOOLS: { id: Exclude<ForgeSection, "overview">; label: string; icon: typeof Hammer; summary: string; action: string }[] = [
-  { id: "loot", label: "Lootkarten", icon: Layers, summary: "Gegenstände als Karten gestalten, Exemplare erzeugen und Beute verteilen.", action: "Lootkarte erstellen" },
-  { id: "actors", label: "Figuren & NPCs", icon: Users, summary: "Vorlagen mit Werten und Beute anlegen. Daraus entstehen Figuren für eure Runde.", action: "Figuren vorbereiten" },
-  { id: "maps", label: "Karten", icon: Map, summary: "Grundrisse und Orte erzeugen, bearbeiten und für eine Szene vorbereiten.", action: "Karte erstellen" },
-  { id: "media", label: "Bilder", icon: Image, summary: "Eigene Bilder hochladen und in Lootkarten oder Artikeln verwenden.", action: "Bild hochladen" },
-  { id: "rules", label: "Regeln", icon: Hammer, summary: "Figurenwerte, Fähigkeiten, Proben und Lebensbalken gestalten.", action: "Regeln bearbeiten" },
-  { id: "themes", label: "Aussehen", icon: Palette, summary: "Farben, Schrift und Lesbarkeit eurer Runde abstimmen.", action: "Aussehen gestalten" },
-  { id: "publication", label: "Veröffentlichung", icon: Globe, summary: "Ausgewählte Artikel mit Menschen außerhalb eurer Runde teilen.", action: "Veröffentlichung öffnen" },
+const TOOLS: { id: Exclude<ForgeSection, "overview">; icon: typeof Hammer }[] = [
+  { id: "loot", icon: Layers }, { id: "actors", icon: Users }, { id: "maps", icon: Map }, { id: "media", icon: Image },
+  { id: "rules", icon: Hammer }, { id: "themes", icon: Palette }, { id: "publication", icon: Globe },
 ];
+
+/**
+ * Die Beschriftungen der Werkbänke als Zeichenkettenliterale. Eine Tabelle am Modulkopf hätte
+ * `t(TOOLS[i].label)` gebraucht — kein Literal, und einmal beim Import übersetzt bliebe sie
+ * beim Sprachwechsel stehen. Die Reihenfolge steht weiter in `TOOLS`.
+ */
+function werkzeug(id: Exclude<ForgeSection, "overview">): { label: string; summary: string; action: string } {
+  switch (id) {
+    case "loot": return { label: t("Lootkarten"), summary: t("Gegenstände als Karten gestalten, Exemplare erzeugen und Beute verteilen."), action: t("Lootkarte erstellen") };
+    case "actors": return { label: t("Figuren & NPCs"), summary: t("Vorlagen mit Werten und Beute anlegen. Daraus entstehen Figuren für eure Runde."), action: t("Figuren vorbereiten") };
+    case "maps": return { label: t("Karten"), summary: t("Grundrisse und Orte erzeugen, bearbeiten und für eine Szene vorbereiten."), action: t("Karte erstellen") };
+    case "media": return { label: t("Bilder"), summary: t("Eigene Bilder hochladen und in Lootkarten oder Artikeln verwenden."), action: t("Bild hochladen") };
+    case "rules": return { label: t("Regeln"), summary: t("Figurenwerte, Fähigkeiten, Proben und Lebensbalken gestalten."), action: t("Regeln bearbeiten") };
+    case "themes": return { label: t("Aussehen"), summary: t("Farben, Schrift und Lesbarkeit eurer Runde abstimmen."), action: t("Aussehen gestalten") };
+    default: return { label: t("Veröffentlichung"), summary: t("Ausgewählte Artikel mit Menschen außerhalb eurer Runde teilen."), action: t("Veröffentlichung öffnen") };
+  }
+}
 
 export function ForgeWorkbench({ campaign, authorName, liveRevision, section, onSectionChange, onOpenMaps, onOpenTable, onDirty, onChanged }: {
   campaign: Campaign; authorName: string; liveRevision: number; section?: ForgeSection;
@@ -41,31 +54,31 @@ export function ForgeWorkbench({ campaign, authorName, liveRevision, section, on
   const changed = useCallback((value: boolean) => { setDraft({ section: active, dirty: value }); onDirty(value); }, [active, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const navigate = (next: ForgeSection) => {
-    if (next === active || (dirty && !window.confirm("Ungespeicherten Werkstatt-Entwurf verwerfen?"))) return;
+    if (next === active || (dirty && !window.confirm(t("Ungespeicherten Werkstatt-Entwurf verwerfen?")))) return;
     changed(false); setLocalSection(next); onSectionChange?.(next);
   };
-  if (campaign.role !== "leitung") return <EmptyState title="Die Schmiede gehört der Spielleitung.">Hier entstehen Lootkarten, Figuren, Karten und die Regeln eurer Runde. Deine Figuren und ihren Besitz findest du am Tisch.</EmptyState>;
-  const current = TOOLS.find(tool => tool.id === active);
+  if (campaign.role !== "leitung") return <EmptyState title={t("Die Schmiede gehört der Spielleitung.")}>{t("Hier entstehen Lootkarten, Figuren, Karten und die Regeln eurer Runde. Deine Figuren und ihren Besitz findest du am Tisch.")}</EmptyState>;
+  const current = active === "overview" ? null : werkzeug(active);
   return <div className="forge-workbench">
-    <header className="forge-header"><div><p className="eyebrow">Werkstatt · {campaign.name}</p><h1>Schmiede</h1><p>Alles für euren nächsten Spielabend. Wähle, was du erschaffen möchtest.</p></div>{dirty ? <span className="forge-draft-state" role="status">Ungespeicherter Entwurf</span> : null}</header>
-    <nav className="forge-navigation" aria-label="Werkstätten">
-      <Button aria-current={active === "overview" ? "page" : undefined} onClick={() => navigate("overview")}><LayoutDashboard size={16} aria-hidden="true" />Übersicht</Button>
-      {TOOLS.map(({ id, label, icon: Icon }) => <Button key={id} aria-current={active === id ? "page" : undefined} onClick={() => navigate(id)}><Icon size={16} aria-hidden="true" />{label}</Button>)}
+    <header className="forge-header"><div><p className="eyebrow">{t("Werkstatt · {kampagne}", { kampagne: campaign.name })}</p><h1>{t("Schmiede")}</h1><p>{t("Alles für euren nächsten Spielabend. Wähle, was du erschaffen möchtest.")}</p></div>{dirty ? <span className="forge-draft-state" role="status">{t("Ungespeicherter Entwurf")}</span> : null}</header>
+    <nav className="forge-navigation" aria-label={t("Werkstätten")}>
+      <Button aria-current={active === "overview" ? "page" : undefined} onClick={() => navigate("overview")}><LayoutDashboard size={16} aria-hidden="true" />{t("Übersicht")}</Button>
+      {TOOLS.map(({ id, icon: Icon }) => <Button key={id} aria-current={active === id ? "page" : undefined} onClick={() => navigate(id)}><Icon size={16} aria-hidden="true" />{werkzeug(id).label}</Button>)}
     </nav>
     {active === "overview" ? <>
-      <section className="forge-overview" aria-labelledby="forge-start"><div className="forge-section-heading"><h2 id="forge-start">Was möchtest du vorbereiten?</h2><p>Erstellen, gestalten und direkt in der Runde verwenden.</p></div>
-        <div className="forge-tool-grid">{TOOLS.map(({ id, label, icon: Icon, summary, action }, index) => <button type="button" key={id} className={`forge-tool${index < 3 ? " forge-tool-featured" : ""}`} onClick={() => navigate(id)}>
+      <section className="forge-overview" aria-labelledby="forge-start"><div className="forge-section-heading"><h2 id="forge-start">{t("Was möchtest du vorbereiten?")}</h2><p>{t("Erstellen, gestalten und direkt in der Runde verwenden.")}</p></div>
+        <div className="forge-tool-grid">{TOOLS.map(({ id, icon: Icon }, index) => { const { label, summary, action } = werkzeug(id); return <button type="button" key={id} className={`forge-tool${index < 3 ? " forge-tool-featured" : ""}`} onClick={() => navigate(id)}>
           <Icon className="forge-tool-icon" size={24} aria-hidden="true" /><strong>{label}</strong><span>{summary}</span><span className="forge-tool-action">{action}<ArrowRight size={16} aria-hidden="true" /></span>
-        </button>)}</div>
+        </button>; })}</div>
       </section>
-      <aside className="forge-orientation"><PackageOpen size={22} aria-hidden="true" /><div><h2>Von der Vorlage ins Spiel</h2><p>Eine Lootkarte beschreibt den Gegenstand. Erzeuge daraus ein Exemplar im Vorrat und gib es einer Figur. Figuren funktionieren genauso: Vorlage anlegen, Figur erschaffen, am Tisch spielen.</p></div></aside>
+      <aside className="forge-orientation"><PackageOpen size={22} aria-hidden="true" /><div><h2>{t("Von der Vorlage ins Spiel")}</h2><p>{t("Eine Lootkarte beschreibt den Gegenstand. Erzeuge daraus ein Exemplar im Vorrat und gib es einer Figur. Figuren funktionieren genauso: Vorlage anlegen, Figur erschaffen, am Tisch spielen.")}</p></div></aside>
     </> : <section className="forge-content" aria-label={current?.label}>
       {current ? <header className="forge-section-heading"><h2>{current.label}</h2><p>{current.summary}</p></header> : null}
-      <Suspense fallback={<Loading text="Werkstatt wird geladen …" />}>
+      <Suspense fallback={<Loading text={t("Werkstatt wird geladen …")} />}>
         {active === "loot" ? <LootWorkshop key={campaign.id} campaignId={campaign.id} revision={liveRevision} onChanged={onChanged} onDirty={changed} /> : null}
         {active === "actors" ? <FigureWorkshop key={campaign.id} campaignId={campaign.id} revision={liveRevision} onChanged={onChanged} onDirty={changed} onOpenLoot={() => navigate("loot")} onOpenTable={onOpenTable} /> : null}
-        {active === "maps" ? <div className="tactical-workspace">{onOpenMaps ? <p className="forge-context-link">Eine fertige Karte spielen? <Button variant="quiet" onClick={onOpenMaps}>Szenenkarten am Tisch öffnen<ArrowRight size={14} aria-hidden="true" /></Button></p> : null}<TacticalPreparation campaignId={campaign.id} revision={liveRevision} onChanged={onChanged} onDirty={changed} /></div> : null}
-        {active === "media" ? <WikiMedien campaignId={campaign.id} onClose={() => navigate("overview")} closeLabel="Zur Schmiede" embedded onDirty={changed} /> : null}
+        {active === "maps" ? <div className="tactical-workspace">{onOpenMaps ? <p className="forge-context-link">{t("Eine fertige Karte spielen?")} <Button variant="quiet" onClick={onOpenMaps}>{t("Szenenkarten am Tisch öffnen")}<ArrowRight size={14} aria-hidden="true" /></Button></p> : null}<TacticalPreparation campaignId={campaign.id} revision={liveRevision} onChanged={onChanged} onDirty={changed} /></div> : null}
+        {active === "media" ? <WikiMedien campaignId={campaign.id} onClose={() => navigate("overview")} closeLabel={t("Zur Schmiede")} embedded onDirty={changed} /> : null}
         {active === "rules" ? <RuleForge campaign={campaign} authorName={authorName} onDirty={changed} onActivated={onChanged} /> : null}
         {active === "themes" ? <ThemeWorkbench campaign={campaign} liveRevision={liveRevision} onDirty={changed} onChanged={onChanged} /> : null}
         {active === "publication" ? <PublicationWorkbench campaign={campaign} liveRevision={liveRevision} onDirty={changed} /> : null}
@@ -79,10 +92,10 @@ function LootWorkshop({ campaignId, revision, onChanged, onDirty }: { campaignId
   const actors = useResource<ActorCard[]>(tab === "inventory" ? apiPath(campaignId, "/actors") : null, revision + localRevision);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
   const refresh = () => { setLocalRevision(value => value + 1); onChanged(); };
-  const choose = (next: typeof tab) => { if (next === tab || (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?"))) return; report(false); setTab(next); };
-  return <div className="actor-workbench"><div className="forge-task-tabs" aria-label="Lootkarten bearbeiten"><Button aria-pressed={tab === "templates"} onClick={() => choose("templates")}>1 · Kartenvorlagen gestalten</Button><Button aria-pressed={tab === "inventory"} onClick={() => choose("inventory")}>2 · Exemplare & Vorrat</Button></div>
+  const choose = (next: typeof tab) => { if (next === tab || (dirty && !window.confirm(t("Ungespeicherte Änderungen verwerfen?")))) return; report(false); setTab(next); };
+  return <div className="actor-workbench"><div className="forge-task-tabs" aria-label={t("Lootkarten bearbeiten")}><Button aria-pressed={tab === "templates"} onClick={() => choose("templates")}>{t("1 · Kartenvorlagen gestalten")}</Button><Button aria-pressed={tab === "inventory"} onClick={() => choose("inventory")}>{t("2 · Exemplare & Vorrat")}</Button></div>
     {tab === "templates" ? <ItemTemplates campaignId={campaignId} revision={revision + localRevision} onDirty={report} onChanged={refresh} onOpenInventory={() => choose("inventory")} /> : <>
-      <p className="field-help">Hier erzeugst du Exemplare deiner gespeicherten Karten. Menge, Notizen und Besitz gehören zu jedem Exemplar; die Vorlage bleibt erhalten.</p>
+      <p className="field-help">{t("Hier erzeugst du Exemplare deiner gespeicherten Karten. Menge, Notizen und Besitz gehören zu jedem Exemplar; die Vorlage bleibt erhalten.")}</p>
       {actors.error ? <Notice error>{actors.error}</Notice> : actors.loading ? <Loading /> : <Inventory campaignId={campaignId} actorId="" actors={actors.data ?? []} gm revision={revision + localRevision} onChanged={refresh} onDirty={report} onCreateTemplate={() => choose("templates")} />}
     </>}
   </div>;
@@ -93,9 +106,9 @@ function FigureWorkshop({ campaignId, revision, onChanged, onDirty, onOpenLoot, 
   const rules = useResource<RulesState>(apiPath(campaignId, "/rules"), revision + localRevision);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
   const refresh = () => { setLocalRevision(value => value + 1); onChanged(); };
-  const choose = (next: typeof tab) => { if (next === tab || (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?"))) return; report(false); setTab(next); };
-  return <div className="actor-workbench"><div className="forge-task-tabs" aria-label="Figuren vorbereiten"><Button aria-pressed={tab === "templates"} onClick={() => choose("templates")}>1 · Figurvorlagen</Button><Button aria-pressed={tab === "create"} onClick={() => choose("create")}>2 · Figur erschaffen</Button></div>
+  const choose = (next: typeof tab) => { if (next === tab || (dirty && !window.confirm(t("Ungespeicherte Änderungen verwerfen?")))) return; report(false); setTab(next); };
+  return <div className="actor-workbench"><div className="forge-task-tabs" aria-label={t("Figuren vorbereiten")}><Button aria-pressed={tab === "templates"} onClick={() => choose("templates")}>{t("1 · Figurvorlagen")}</Button><Button aria-pressed={tab === "create"} onClick={() => choose("create")}>{t("2 · Figur erschaffen")}</Button></div>
     {rules.error ? <Notice error>{rules.error}</Notice> : rules.loading ? <Loading /> : rules.data ? tab === "templates" ? <ActorTemplates campaignId={campaignId} rules={rules.data} revision={revision + localRevision} onChanged={refresh} onDirty={report} onOpenLoot={onOpenLoot} onInstantiate={() => choose("create")} /> : <InstantiateActor campaignId={campaignId} revision={revision + localRevision} onChanged={refresh} onDirty={report} onCreateTemplate={() => choose("templates")} /> : null}
-    {onOpenTable ? <p className="forge-context-link">Vorhandene Figuren steuern, Bögen bearbeiten und Besitz verwalten: <Button variant="quiet" onClick={onOpenTable}>Figuren am Tisch öffnen<ArrowRight size={14} aria-hidden="true" /></Button></p> : null}
+    {onOpenTable ? <p className="forge-context-link">{t("Vorhandene Figuren steuern, Bögen bearbeiten und Besitz verwalten:")} <Button variant="quiet" onClick={onOpenTable}>{t("Figuren am Tisch öffnen")}<ArrowRight size={14} aria-hidden="true" /></Button></p> : null}
   </div>;
 }

@@ -55,6 +55,14 @@
     "eins": "{n} passage selected",
     "viele": "{n} passages selected"
   },
+  "{n} Stück an {ziel} übergeben": {
+    "eins": "Hand {n} item to {ziel}",
+    "viele": "Hand {n} items to {ziel}"
+  },
+  "{n} Stück übergeben": {
+    "eins": "{n} item handed over",
+    "viele": "{n} items handed over"
+  },
   "{n} Tag": {
     "eins": "{n} day",
     "viele": "{n} days"

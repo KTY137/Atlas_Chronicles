@@ -6,6 +6,7 @@ import { PackageOpen, RefreshCw } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type Campaign } from "../api";
 import { useResource } from "../hooks";
+import { t } from "../i18n";
 import { CharacterSheet } from "./CharacterSheet";
 import { FigurAntrag } from "./FigurAntrag";
 import { Inventory } from "./ActorWorkbench";
@@ -48,13 +49,13 @@ export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: 
     target.focus({ preventScroll: true });
   };
   return <section className="page-content table-page"><div className="page-heading"><div>
-      <p className="eyebrow">Was du hältst und was du kannst</p><h1>Deine Figur</h1>
-      <p className="muted">Bogen und Inventar — dieselben, die am Tisch gelten.</p>
-    </div><div className="button-row">{actorId ? <Button onClick={openInventory}><PackageOpen size={17} /> Zum Inventar</Button> : null}<Button aria-label="Figur aktualisieren" onClick={refresh}><RefreshCw size={16} /></Button></div></div>
+      <p className="eyebrow">{t("Was du hältst und was du kannst")}</p><h1>{t("Deine Figur")}</h1>
+      <p className="muted">{t("Bogen und Inventar — dieselben, die am Tisch gelten.")}</p>
+    </div><div className="button-row">{actorId ? <Button onClick={openInventory}><PackageOpen size={17} /> {t("Zum Inventar")}</Button> : null}<Button aria-label={t("Figur aktualisieren")} onClick={refresh}><RefreshCw size={16} /></Button></div></div>
     {rules.error || actors.error ? <Notice error>{rules.error || actors.error}</Notice> : null}
-    {meine.length > 1 ? <div className="table-controls"><label className="actor-picker">Deine Figur
+    {meine.length > 1 ? <div className="table-controls"><label className="actor-picker">{t("Deine Figur")}
       <select value={actorId} onChange={event => {
-        if (event.target.value === actorId || (dirty && !window.confirm("Ungespeicherte Änderungen dieser Figur verwerfen?"))) return;
+        if (event.target.value === actorId || (dirty && !window.confirm(t("Ungespeicherte Änderungen dieser Figur verwerfen?")))) return;
         setDrafts({ sheet: false, inventory: false }); setChosen(event.target.value);
       }}>
         {meine.map(actor => <option key={actor.id} value={actor.id}>{actor.name}</option>)}
@@ -64,7 +65,7 @@ export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: 
         // Die leere Fläche einer Spielerin ist keine Sackgasse mehr: sie kann hier selbst eine
         // Figur beantragen. Für die Spielleitung bleibt sie, was sie war — sie erschafft Figuren
         // in der Schmiede, nicht über einen Antrag an sich selbst.
-        ? <EmptyState title="Noch führst du keine Figur.">Sobald deine Spielleitung dir eine Figur anvertraut, findest du hier ihren Bogen und alles, was sie trägt.</EmptyState>
+        ? <EmptyState title={t("Noch führst du keine Figur.")}>{t("Sobald deine Spielleitung dir eine Figur anvertraut, findest du hier ihren Bogen und alles, was sie trägt.")}</EmptyState>
         : <FigurAntrag campaignId={campaign.id} rules={rules.data} revision={takt} onChanged={refresh} />)
       : rules.data ? <>
         <CharacterSheet key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} liveRevision={takt} onDirty={reportSheet} onChanged={refresh} />
