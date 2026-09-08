@@ -7,14 +7,18 @@ import { describe, expect, it } from "vitest";
 import * as rules from "@chronicle/rules";
 import * as model from "../src/features/rule-forge-model";
 import * as computed from "../src/features/RuleComputedFields";
+import * as FormulaSugar from "../src/features/formula-sugar";
+import * as FormulaExample from "../src/features/formula-example";
 
 /** Actual component handlers with controlled hooks, without a browser/build/server. */
-function harness(file: string, component: string, initial: Record<string, any>, extraExports = "") {
+function harness(file: string, component: string, initial: Record<string, any>, extraExports = "", mocks: Record<string, any> = {}) {
   const slots: any[] = [], requests: { path: string; request: any }[] = [], jobs: Promise<unknown>[] = [];
   let props = initial, cursor = 0, changed = false, effects: { i: number; fn: () => any }[] = [], tree: any;
   const same = (a: unknown[] | undefined, b: unknown[]) => a?.length === b.length && a.every((v, i) => Object.is(v, b[i]));
   const react = {
     useId: () => `review-${cursor++}`,
+    createContext: (defaultValue: unknown) => ({ _defaultValue: defaultValue }),
+    useContext: (context: { _defaultValue: unknown }) => context._defaultValue,
     useState(initial: any) {
       const i = cursor++; slots[i] ??= { value: typeof initial === "function" ? initial() : initial };
       return [slots[i].value, (next: any) => { const value = typeof next === "function" ? next(slots[i].value) : next; if (!Object.is(value, slots[i].value)) { slots[i].value = value; changed = true; } }];
@@ -39,8 +43,11 @@ function harness(file: string, component: string, initial: Record<string, any>, 
       };
       if (name === "./rule-forge-model") return model;
       if (name === "./RuleComputedFields") return computed;
+      if (name === "./formula-sugar") return FormulaSugar;
+      if (name === "./formula-example") return FormulaExample;
       if (name === "../hooks") return { useResource: (path: string) => props.resource?.(path) ?? { data: null, loading: false, error: "" }, useTask: () => ({ busy: false, error: "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, api: async (path: string, request: unknown) => { requests.push({ path, request }); return props.transport?.(path, request); } };
+      if (Object.hasOwn(mocks, name)) return mocks[name];
       return new Proxy({}, { get: (_target, key) => String(key) });
     },
   });
@@ -61,29 +68,28 @@ function harness(file: string, component: string, initial: Record<string, any>, 
 }
 
 describe("independent HTBAH client review", () => {
-  it("keeps an incomplete numeric visual expression editable without throwing or losing it", () => {
+  it("keeps an incomplete visual expression editable without throwing or losing it", () => {
     const updates: string[] = [], draft = model.packageDraft(rules.HOW_TO_BE_A_HERO_PACKAGE);
     draft.computed = [{ id: "review_value", label: "Review value", expression: "0" }];
-    const h = harness("RuleDeclarativeEditor.tsx", "ExpressionInput", { value: "0", label: "Berechnung", fields: { actor: {}, input: {} }, onChange: (value: string) => {
+    const h = harness("FormulaField.tsx", "FormulaField", { label: "Berechnung", value: "0", sources: { actor: [], input: [] }, allowDice: false, allowKnowledge: false, fields: [], onChange: (value: string) => {
       updates.push(value); draft.computed = [{ ...draft.computed![0]!, expression: value }];
-    } }, "ExpressionInput");
-    h.nodes(node => node.type === "Button")[0]!.props.onClick();
-    const builder = () => h.nodes(node => node.type === "FormulaBuilder")[0]!;
-    expect(() => builder().props.onChange({ kind: "literal", type: "number", value: "" })).not.toThrow();
+    } }, "", { "./FormulaLine": { FormulaLine: "FormulaLine" }, "./FormulaGraph": { FormulaGraph: "FormulaGraph" } });
+    h.nodes(node => node.type === "button" && h.text(node) === "Bausteine")[0]!.props.onClick();
+    const blocks = () => h.nodes(node => node.type === "FormulaBlocks")[0]!;
+    expect(() => blocks().props.onChange({ kind: "literal", type: "number", value: "" })).not.toThrow();
     expect(updates.at(-1)).toBe("");
     expect(model.validateDraft(draft).valid).toBe(false);
-    // The parent rerender must keep the incomplete visual input while its
-    // published source is invalid; installation cannot reuse the old zero.
+    // The parent rerender must keep the incomplete visual input while its published source is invalid; installation cannot reuse the old zero.
     h.replace({ value: updates.at(-1) });
-    expect(builder().props.value).toMatchObject({ kind: "literal", value: "" });
-    expect(h.nodes(node => node.type === "Notice" && node.props.error)).toHaveLength(1);
-    builder().props.onChange({ kind: "literal", type: "number", value: "25" });
+    expect(blocks().props.value).toMatchObject({ kind: "literal", value: "" });
+    expect(h.nodes(node => node.type === "FormulaLine")[0]!.props.analysis.ok).toBe(false);
+    blocks().props.onChange({ kind: "literal", type: "number", value: "25" });
     expect(updates.at(-1)).toBe("25");
     expect(model.validateDraft(draft).valid).toBe(true);
     h.replace({ value: updates.at(-1) });
-    expect(h.nodes(node => node.type === "Notice" && node.props.error)).toHaveLength(0);
+    expect(h.nodes(node => node.type === "FormulaLine")[0]!.props.analysis.ok).toBe(true);
     h.replace({ value: "50" });
-    expect(builder().props.value).toMatchObject({ kind: "literal", value: "50" });
+    expect(blocks().props.value).toMatchObject({ kind: "literal", value: "50" });
   });
 
   it("allows a valid HTBAH sheet to save without invented mandatory notes", () => {

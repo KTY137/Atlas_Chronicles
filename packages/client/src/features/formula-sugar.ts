@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { parseFormulaDetailed, tokenizeFormula, type Formula, type FormulaErrorCode, type FormulaFieldTypes, type FormulaType } from "@chronicle/rules";
+import type { DraftField } from "./rule-forge-model";
 
 export interface FormulaMember { readonly id: string; readonly label: string; readonly type: FormulaType }
 export interface FormulaSources { readonly actor: readonly FormulaMember[]; readonly input: readonly FormulaMember[] }
@@ -152,4 +153,9 @@ export function completionsAt(text: string, caret: number, sources: FormulaSourc
   const typed = fold(match[0]), start = caret - match[0].length;
   const items = DICE_SUGGESTIONS.filter(d => typed.endsWith("d") || d.insert.startsWith(typed)).map(d => ({ kind: "dice" as const, insert: d.insert, title: d.insert, detail: d.title }));
   return items.length ? { start, end: caret, items } : null;
+}
+/** Draft fields as formula sources: Kennung, Bezeichnung (Fallback Kennung) und Typ; ungültige Kennungen entfallen. */
+export function sourcesFromDraft(fields: readonly DraftField[], inputs: readonly DraftField[] = []): FormulaSources {
+  const members = (list: readonly DraftField[]): FormulaMember[] => list.filter(f => /^[a-z][a-z0-9_-]*$/.test(f.id)).map(f => ({ id: f.id, label: f.label.trim() || f.id, type: f.type === "integer" ? "number" : f.type }));
+  return { actor: members(fields), input: members(inputs) };
 }

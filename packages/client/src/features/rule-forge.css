@@ -44,14 +44,7 @@
 .rf-layout-fields { list-style: none; padding: 0; margin: 16px 0; }.rf-layout-fields li { display: flex; align-items: center; gap: 7px; padding: 8px 0; border-bottom: 1px solid var(--line); }.rf-layout-fields li > span:first-child { flex: 1; font-size: 12px; overflow-wrap: anywhere; }
 .rule-forge details { margin: 14px 0; }.rule-forge summary { cursor: pointer; padding: 9px 0; color: var(--accent); font-size: 12px; }
 .rf-input-editor { padding: 8px 15px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
-.rf-formula { margin: 22px 0; }.rf-formula-node { border: 1px solid var(--line-strong); border-left: 2px solid var(--accent); border-radius: 5px; background: var(--surface); padding: 10px 16px 16px; margin: 10px 0; }
-.rf-formula-node legend { padding: 0 7px; font-size: 11px; color: var(--accent); max-width: 100%; overflow-wrap: anywhere; }
-.rf-formula-head { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }.rf-formula-head label { flex: 1; min-width: min(190px, 100%); }
 .rf-node-badge { color: var(--text-muted); border: 1px solid var(--line); font-size: 10px; padding: 5px 8px; border-radius: 20px; white-space: nowrap; }
-.rf-formula-children { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
-.rf-formula-node .rf-formula-node { margin-left: 4px; background: var(--bg); }.rf-formula-node .rf-formula-node .rf-formula-node { background: var(--surface); }
-.rf-formula-node .rf-formula-node .rf-formula-node .rf-formula-node { padding-left: 0; padding-right: 0; margin-left: 0; border-left: 0; border-right: 0; border-radius: 0; }
-.rf-function-arg { min-width: 0; }.rf-function-arg > .button { margin-top: -3px; }
 .rf-expression { display: block; overflow-wrap: anywhere; white-space: pre-wrap; padding: 14px; line-height: 1.8; font-size: 12px; background: var(--bg); border-radius: 5px; }
 .rf-validation { margin-top: 24px; font-size: 12px; }.rf-validation > p { display: flex; align-items: center; gap: 8px; color: var(--ok); }
 .rf-publish { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 20px; }.rf-publish h3 { font-size: 16px; margin-top: 0; }.rf-publish p { font-size: 12px; }.rf-publish > .button { margin-top: 16px; }
@@ -68,8 +61,8 @@
 .rf-trace { list-style: none; padding: 0; }.rf-trace li { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; padding: 9px 0; font-size: 11px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }.rf-trace li small { flex-basis: 100%; }.rf-save-test { padding-top: 12px; }
 .rf-value-list { font-size: 11px; overflow-wrap: anywhere; }.rf-value-list dt { color: var(--text-muted); }.rf-value-list dd { margin: 5px 0 14px; }
 @media (max-width: 1100px) { .rf-workspace { grid-template-columns: 200px minmax(0, 1fr); gap: 18px; }.rf-editor { padding: 18px; }.rf-form-grid { column-gap: 14px; }.rf-fixtures { gap: 18px; }.rf-fixture { padding: 18px; } }
-@media (max-width: 760px) { .rf-workspace, .rf-fixtures { grid-template-columns: minmax(0, 1fr); }.rf-catalog { position: static; display: flex; flex-wrap: wrap; gap: 8px; }.rf-catalog > .rf-section-heading, .rf-catalog > .rf-help { flex-basis: 100%; margin-bottom: 4px; }.rf-catalog-item { flex: 1 1 210px; margin: 0; }.rf-header { gap: 18px; }.rf-editor { padding: 16px; }.rf-tabs button { padding: 12px 10px; }.rf-card { padding: 14px; }.rf-section-heading { gap: 12px; }.rf-formula-node { padding: 8px 10px 12px; }.rf-formula-node .rf-formula-node { margin-left: 0; }.rf-fixture .rule-fields { gap: 10px; } }
-@media (max-width: 440px) { .rf-form-grid, .rf-fixture .rule-fields { grid-template-columns: minmax(0, 1fr); }.rf-review, .rf-fixture { padding: 14px; }.rf-formula-node .rf-formula-node { padding-left: 7px; padding-right: 7px; }.rf-formula-node .rf-formula-node .rf-formula-node .rf-formula-node { padding-left: 0; padding-right: 0; }.rf-toolbar > .button { font-size: 11px; }.rf-formula-head { gap: 0; }.rf-node-badge { margin-bottom: 8px; } }
+@media (max-width: 760px) { .rf-workspace, .rf-fixtures { grid-template-columns: minmax(0, 1fr); }.rf-catalog { position: static; display: flex; flex-wrap: wrap; gap: 8px; }.rf-catalog > .rf-section-heading, .rf-catalog > .rf-help { flex-basis: 100%; margin-bottom: 4px; }.rf-catalog-item { flex: 1 1 210px; margin: 0; }.rf-header { gap: 18px; }.rf-editor { padding: 16px; }.rf-tabs button { padding: 12px 10px; }.rf-card { padding: 14px; }.rf-section-heading { gap: 12px; }.rf-fixture .rule-fields { gap: 10px; } }
+@media (max-width: 440px) { .rf-form-grid, .rf-fixture .rule-fields { grid-template-columns: minmax(0, 1fr); }.rf-review, .rf-fixture { padding: 14px; }.rf-toolbar > .button { font-size: 11px; }.rf-node-badge { margin-bottom: 8px; } }
 
 /* Schmiede: Aufgaben zuerst, die vorhandenen Werkzeuge dahinter. */
 .forge-workbench { max-width: 1560px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 36px) 44px; min-width: 0; }
