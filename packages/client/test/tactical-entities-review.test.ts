@@ -8,6 +8,12 @@ import * as Entities from "../src/features/tactical-entities.ts";
 import * as MapGeneration from "../src/features/map-generation.ts";
 import * as MapArtwork from "../src/features/map-artwork.ts";
 import { I18nStub } from "../src/i18n.ts";
+import * as MapStudio from "../src/features/map-studio.ts";
+import * as MapEditHistory from "../src/features/map-edit-history.ts";
+import { mapToolSettings } from "../src/features/MapEditTools.tsx";
+import * as Szene from "@chronicle/szene";
+import * as Render from "@chronicle/render";
+import * as Forge from "@chronicle/forge";
 
 /** Runs the actual component handlers/effects with controlled resource responses.
  * No DOM/WebGL emulation: canvas assertions concern the real renderer input contract. */
@@ -23,7 +29,7 @@ function harness(file: string, component: string, initial: Record<string, any>, 
       return [slots[i].value, (next: any) => { const value = typeof next === "function" ? next(slots[i].value) : next; if (!Object.is(value, slots[i].value)) { slots[i].value = value; changed = true; } }];
     },
     useCallback(fn: unknown, deps: unknown[]) { const i = cursor++; if (!slots[i] || !same(slots[i].deps, deps)) slots[i] = { fn, deps }; return slots[i].fn; },
-    useMemo(fn: () => unknown) { return fn(); },
+    useMemo(fn: () => unknown, deps: unknown[]) { const i = cursor++; if (!slots[i] || !same(slots[i].deps, deps)) slots[i] = { value: fn(), deps }; return slots[i].value; },
     useEffect(fn: () => unknown, deps: unknown[]) { const i = cursor++; if (!slots[i] || !same(slots[i].deps, deps)) { slots[i] = { deps, cleanup: slots[i]?.cleanup }; effects.push({ i, fn }); } },
     useLayoutEffect(fn: () => unknown, deps: unknown[]) { const i = cursor++; if (!slots[i] || !same(slots[i].deps, deps)) { slots[i] = { deps, cleanup: slots[i]?.cleanup }; effects.push({ i, fn }); } },
   };
@@ -41,10 +47,15 @@ function harness(file: string, component: string, initial: Record<string, any>, 
       if (name === "./tactical-entities") return Entities;
       if (name === "./map-generation") return MapGeneration;
       if (name === "./map-artwork") return MapArtwork;
+      if (name === "./map-studio") return MapStudio;
+      if (name === "./map-edit-history") return MapEditHistory;
+      if (name === "./MapEditTools") return { MapEditTools: "MapEditTools", mapToolSettings };
+      if (name === "@chronicle/render") return Render;
+      if (name === "@chronicle/forge") return Forge;
       if (name === "../hooks") return { useResource: resource, useTask: () => ({ busy: false, error: "", run: (fn: () => unknown) => fn() }) };
       if (name === "./game-api") return { useCommand: () => async () => ({ subjectId: "subject", version: 2 }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, plainText: () => "Passage" };
-      if (name === "@chronicle/szene") return { TACTICAL_MAP_LIMITS: { places: 20_000, stamps: 50_000 } };
+      if (name === "@chronicle/szene") return { ...Szene, TACTICAL_MAP_LIMITS: { places: 20_000, stamps: 50_000 } };
       return new Proxy({}, { get: (_target, key) => String(key) });
     },
   });
@@ -71,7 +82,11 @@ const objects: Entities.MapObject[] = [
   { kind: "place", id: "outside", x: -1, y: 10, label: "An imported point outside the map", entryId: "entry" },
   { kind: "stamp", id: "inside", x: 20, y: 20, label: "A visible stamp", entryId: "entry" },
 ];
-const document = { geometry: { size: [100, 100], places: [{ id: "outside", x: -1, y: 10 }], stamps: [{ id: "inside", a: "pk.private/chest", x: 20, y: 20, s: 1, r: 0, l: 0 }], regions: [] }, grid: { kind: "none" }, frame: { einheitenProPixel: 1 }, elevation: 0, walls: [], geometryElevation: [] };
+// The editor now validates every opened document (inferLegacyCartography → parseTacticalMapDocument),
+// so the fixture must be a complete, closed tactical map rather than a partial shape.
+const document = Szene.parseTacticalMapDocument({ schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels", frame: { ursprung: [0, 0], einheitenProPixel: 1, ordnung: "xy", hoch: "unten" },
+  geometry: { v: 3, size: [100, 100], places: [{ id: "outside", x: -1, y: 10 }], stamps: [{ id: "inside", a: "pk.private/chest", x: 20, y: 20, s: 1, r: 0, l: 0 }], regions: [] },
+  grid: { kind: "none" }, elevation: 0, geometryElevation: [], walls: [], portals: [], lights: [], environment: { bakedLighting: false, ambientLightArgb: "ffffffff" }, background: null });
 const map = { id: "map", name: "Map", revision: 1, version: 1, contentHash: "map-one", document, anchors: [] };
 const board = { gm: true, sessionId: "session", size: [100, 100], entities: objects, regions: [], tokens: [], grid: { kind: "none" }, rasterDigest: "raster", undoTargets: [], portals: [], elevation: 0, active: true };
 
@@ -87,7 +102,7 @@ describe("independent tactical entity client review", () => {
     try {
       const rendered = h.nodes(node => node.type === "TacticalCanvas")[0]!.props.scene;
       expect(paths).toContain("/api/campaigns/campaign/maps/tactical/city/children");
-      expect(rendered.cells).toEqual([{ id: "church", polygon: pinned.geometry.regions[0]!.punkte, surface: "building", roof: "pitched", fill: MapGeneration.BUILDING_COLORS.kirche }]);
+      expect(rendered.cells).toEqual([{ id: "church", polygon: pinned.geometry.regions[0]!.punkte, surface: "building", roof: "pitched", fill: MapGeneration.BUILDING_COLORS.kirche, label: church.titel }]);
       expect(rendered.stamps).toEqual([{ id: "inside", asset: "pk.private/chest", x: 20, y: 20, s: 1, r: 0, l: 0 }]);
       expect(rendered.pins).toEqual([{ id: "stamp:inside", x: 20, y: 20, label: objects[1]!.label, entryId: "entry" }]);
       expect(rendered.id).toBe(board.sessionId);
@@ -132,15 +147,18 @@ describe("independent tactical entity client review", () => {
 
   it("selects a named city building from its footprint and preserves its region knowledge binding", () => {
     const church = { knotenId: "church", titel: "Kapelle am Markt", art: "bauwerk", x: 50, y: 50, bauwerk: { typ: "kirche", beschreibung: "Ein stiller Ort." } };
-    const current = { ...map, document: { ...document, geometry: { ...document.geometry, regions: [{ id: church.knotenId, punkte: [[20, 20], [80, 20], [80, 80], [20, 80]] }] } },
+    const cityDocument = { ...document, geometry: { ...document.geometry, regions: [{ id: church.knotenId, punkte: [[20, 20], [80, 20], [80, 80], [20, 80]] }] } };
+    // The server always ships legacy cartography inferred with the stored nodes (tactical.ts); the editor trusts it over node evidence.
+    const current = { ...map, document: cityDocument, legacyCartography: Szene.inferLegacyCartography(cityDocument, { nodes: [{ id: church.knotenId, art: "bauwerk" }] }),
       anchors: [{ targetKind: "region", targetId: church.knotenId, entryId: "entry", passageId: "passage" }] };
-    const h = harness("TacticalPreparation", "MapEditor", { current, campaignId: "campaign", ...callbacks }, path => ({
+    const h = harness("MapEditor", "MapEditor", { current, campaignId: "campaign", ...callbacks }, path => ({
       data: !path ? null : path.endsWith("/children") ? { nodes: [church], art: "siedlung" } : path.endsWith("/entries/entry") ? { passagen: [] } : [], loading: false, error: "",
     }));
     try {
       h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onSelect({ kind: "cell", id: church.knotenId });
       const canvas = h.nodes(node => node.type === "TacticalCanvas")[0]!;
-      expect(canvas.props.selection).toEqual({ kind: "pin", id: "node:church" });
+      // The studio highlights the selected footprint itself; the node pin stays in the scene for the label.
+      expect(canvas.props.selection).toEqual({ kind: "cell", id: church.knotenId });
       expect(canvas.props.scene.cells[0]).toMatchObject({ id: "church", surface: "building" });
       expect(canvas.props.scene.pins.find((pin: any) => pin.id === "node:church")).toMatchObject({ label: church.titel });
       expect(h.nodes(node => node.type === "select").slice(0, 3).map(node => node.props.value)).toEqual(["church", "entry", "passage"]);
@@ -149,7 +167,7 @@ describe("independent tactical entity client review", () => {
   });
 
   it("resets an unsaved grid change and unfinished region to the saved document", () => {
-    const h = harness("TacticalPreparation", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
+    const h = harness("MapEditor", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
     try {
       h.nodes(node => node.type === "select" && node.props["aria-label"] === "Kartenraster")[0]!.props.onChange({ target: { value: "square" } });
       h.nodes(node => node.type === "Button" && h.text(node) === "Region zeichnen")[0]!.props.onClick();
@@ -165,9 +183,13 @@ describe("independent tactical entity client review", () => {
   it("places real catalogue artwork and removes only that stamp's knowledge and elevation references", () => {
     const current = { ...map, document: { ...document, geometryElevation: [{ targetKind: "stamp", targetId: "inside", elevation: 2 }, { targetKind: "place", targetId: "outside", elevation: 3 }] },
       anchors: [{ targetKind: "stamp", targetId: "inside", entryId: "entry", passageId: null }, { targetKind: "place", targetId: "outside", entryId: "entry", passageId: null }] };
-    const h = harness("TacticalPreparation", "MapEditor", { current, campaignId: "campaign", ...callbacks });
+    const h = harness("MapEditor", "MapEditor", { current, campaignId: "campaign", ...callbacks });
     const palette = () => h.nodes(node => node.type === "MapArtworkPalette")[0]!.props;
+    const tools = () => h.nodes(node => node.type === "MapEditTools")[0]!.props;
     try {
+      // A grid-less legacy map gets a 100 px construction cell, so a snapped click on this
+      // 100 × 100 fixture would land on the corner. Placement position is not what this case checks.
+      tools().onChange({ ...tools().value, snap: false });
       palette().onBrush({ packId: "pk.zeitwelten", cellSize: 64, asset: { name: "schreibtisch", groesse: [20, 20], art: "moebel", schlagworte: ["schreibtisch"] } });
       h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onPoint([40, 40]);
       expect(palette().document.geometry.stamps).toHaveLength(2);
@@ -182,7 +204,7 @@ describe("independent tactical entity client review", () => {
   });
 
   it("switches from an artwork brush to region drawing when adding a numeric corner", () => {
-    const h = harness("TacticalPreparation", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
+    const h = harness("MapEditor", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
     const palette = () => h.nodes(node => node.type === "MapArtworkPalette")[0]!.props;
     try {
       palette().onBrush({ packId: "pk.zeitwelten", cellSize: 64, asset: { name: "schreibtisch", groesse: [20, 20], art: "moebel", schlagworte: ["schreibtisch"] } });
@@ -203,15 +225,15 @@ describe("independent tactical entity client review", () => {
       expect(h.nodes(node => node.type === "TacticalGenerate")).toHaveLength(1);
       h.nodes(node => node.type === "TacticalGenerate")[0]!.props.onCreated("map");
       expect(h.nodes(node => node.type === "TacticalGenerate")).toHaveLength(0);
-      expect(h.nodes(node => node.type === "select")[0]!.props.value).toBe("map");
-      h.nodes(node => node.type?.name === "MapEditor")[0]!.props.onDirty(true);
+      expect(h.nodes(node => node.type === "MapLibrary")[0]!.props.selected).toEqual({ kind: "tactical", id: "map" });
+      h.nodes(node => node.type === "MapEditor")[0]!.props.onDirty(true);
       h.nodes(node => node.type === "Button" && h.text(node) === "Neue Karte erzeugen")[0]!.props.onClick();
       expect(h.nodes(node => node.type === "TacticalGenerate")).toHaveLength(0);
-      expect(h.nodes(node => node.type?.name === "MapEditor")).toHaveLength(1);
+      expect(h.nodes(node => node.type === "MapEditor")).toHaveLength(1);
       allowDiscard = true;
       h.nodes(node => node.type === "Button" && h.text(node) === "Neue Karte erzeugen")[0]!.props.onClick();
       expect(h.nodes(node => node.type === "TacticalGenerate")).toHaveLength(1);
-      expect(h.nodes(node => node.type?.name === "MapEditor")).toHaveLength(0);
+      expect(h.nodes(node => node.type === "MapEditor")).toHaveLength(0);
     } finally { h.cleanup(); }
   });
 
@@ -244,7 +266,7 @@ describe("independent tactical entity client review", () => {
   it.each(["live", "preparation"])("selects an out-of-map %s outline object without sending an invalid renderer selection", mode => {
     const h = mode === "live"
       ? harness("TacticalView", "LiveBoard", { campaignId: "campaign", gm: true, revision: 1, ...callbacks }, () => ({ data: board, loading: false, error: "" }))
-      : harness("TacticalPreparation", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
+      : harness("MapEditor", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
     try {
       const outline = h.nodes(n => n.type === (mode === "live" ? "TacticalObjectList" : "TacticalEntitiesEditor"))[0]!;
       outline.props.onSelect("place:outside");
@@ -274,7 +296,7 @@ describe("independent tactical entity client review", () => {
     const priorKey = overflow ? "stamp:zz-overflow" : "stamp:inside";
     const h = mode === "live"
       ? harness("TacticalView", "LiveBoard", { campaignId: "campaign", gm: true, revision: 1, ...callbacks }, () => ({ data: currentBoard, loading: false, error: "" }))
-      : harness("TacticalPreparation", "MapEditor", { current: currentMap, campaignId: "campaign", ...callbacks });
+      : harness("MapEditor", "MapEditor", { current: currentMap, campaignId: "campaign", ...callbacks });
     const outline = () => h.nodes(n => n.type === (mode === "live" ? "TacticalObjectList" : "TacticalEntitiesEditor"))[0]!;
     const canvasProps = () => h.nodes(n => n.type === "TacticalCanvas")[0]!.props;
     let onSelect: (hit: unknown) => void = () => {};
