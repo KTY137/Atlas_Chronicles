@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
+import { t } from "./i18n";
 export class ApiError extends Error {
   constructor(readonly status: number, message: string) { super(message); this.name = "ApiError"; }
 }
@@ -14,7 +15,9 @@ export async function api<T>(path: string, options: { method?: string; body?: un
 }
 
 export const apiPath = (campaignId: string, suffix = "") => `/api/campaigns/${encodeURIComponent(campaignId)}${suffix}`;
-export const errorText = (error: unknown) => error instanceof Error ? error.message : "Etwas ist schiefgegangen. Bitte erneut versuchen.";
+// Serverfehler bleiben deutsche Saetze; `t` uebersetzt die statischen darunter, sobald sie
+// im Katalog stehen, und laesst dynamische Texte unveraendert deutsch.
+export const errorText = (error: unknown) => error instanceof Error ? t(error.message) : t("Etwas ist schiefgegangen. Bitte erneut versuchen.");
 
 export interface Me { userId: string; displayName: string; canCreateCampaign: boolean; credentialId: string }
 export interface Campaign { id: string; universeId: string; name: string; version: number; role: "leitung" | "spieler" | "beobachter" }

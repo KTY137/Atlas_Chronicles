@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import * as rules from "@chronicle/rules";
 import * as model from "../src/features/rule-forge-model";
 import * as computed from "../src/features/RuleComputedFields";
+import { I18nStub } from "../src/i18n.ts";
 
 /** Actual component handlers with controlled hooks, without a browser/build/server. */
 function harness(file: string, component: string, initial: Record<string, any>, extraExports = "") {
@@ -29,6 +30,7 @@ function harness(file: string, component: string, initial: Record<string, any>, 
   const code = transformSync(`${actual}\n${extraExports ? `export { ${extraExports} };` : ""}`, { loader: "tsx", format: "cjs", jsx: "automatic" }).code;
   runInNewContext(code, { module: mod, exports: mod.exports, window: { confirm: () => true },
     require: (name: string) => {
+      if (name === "../i18n" || name === "./i18n" || name === "../../i18n") return I18nStub;
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       // The VM creates a separate Object prototype; JSON transport normalizes

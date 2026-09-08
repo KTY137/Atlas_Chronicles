@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
 import * as MapGeneration from "../src/features/map-generation.ts";
+import { I18nStub } from "../src/i18n.ts";
 
 /** Runs the actual component handlers/effects with controlled props and transport;
  * no browser, server, or production exports are changed by this review harness. */
@@ -29,6 +30,7 @@ function harness(file: "TacticalView" | "TacticalPreparation", component: string
   const code = transformSync(`${actual}\nexport { ${extra} };`, { loader: "tsx", format: "cjs", jsx: "automatic" }).code;
   runInNewContext(code, { module: mod, exports: mod.exports, crypto: { randomUUID: () => "review-command" }, window: { confirm: (message: string) => { confirmations.push(message); return true; } },
     require: (name: string) => {
+      if (name === "../i18n" || name === "./i18n" || name === "../../i18n") return I18nStub;
       if (name === "react") return react;
       if (name === "./map-generation") return MapGeneration;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };

@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
 import * as Theme from "../../theme/src/index.ts";
+import { I18nStub } from "../src/i18n.ts";
 
 /** Actual ThemeWorkbench handlers/effects, with controlled transport and hook scheduling.
  * The isolated VM's plain objects are bridged into the pure parser's own realm; its
@@ -35,6 +36,7 @@ function themeHarness() {
   runInNewContext(source, {
     module: mod, exports: mod.exports, window: { confirm: () => true },
     require: (name: string) => {
+      if (name === "../i18n" || name === "./i18n" || name === "../../i18n") return I18nStub;
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "@chronicle/theme") return { ...Theme,

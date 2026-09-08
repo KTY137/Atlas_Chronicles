@@ -28,9 +28,10 @@
     "test:e2e": "npm run build && playwright test",
     "gate:version": "node --test tools/test/gate-version.test.mjs && node tools/gate-version.mjs",
     "gate:boundaries": "node tools/gate-boundaries.mjs",
+    "gate:sprache": "node --test tools/test/gate-sprache.test.mjs && node tools/gate-sprache.mjs",
     "gate:assets": "node --import tsx --test tools/test/gate-assets-binary.test.mjs tools/test/importiere-fremdpaket.test.mjs tools/test/zeitwelten-assets.test.mjs tools/test/genre-assets.test.mjs tools/test/genre-tiling.test.mjs && node --import tsx tools/gate-assets.mjs",
     "assets:erzeugen": "node tools/assets/erzeuge-grundrisspaket.mjs && node tools/assets/erzeuge-atlaspaket.mjs && node tools/assets/erzeuge-gemaltpaket.mjs && node tools/assets/erzeuge-zeitweltenpaket.mjs && node tools/assets/erzeuge-genrepaket.mjs",
-    "gate": "npm run gate:version && npm run gate:boundaries && npm run gate:assets && npm run typecheck && npm run test"
+    "gate": "npm run gate:version && npm run gate:boundaries && npm run gate:sprache && npm run gate:assets && npm run typecheck && npm run test"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

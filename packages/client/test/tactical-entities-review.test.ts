@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import * as Entities from "../src/features/tactical-entities.ts";
 import * as MapGeneration from "../src/features/map-generation.ts";
 import * as MapArtwork from "../src/features/map-artwork.ts";
+import { I18nStub } from "../src/i18n.ts";
 
 /** Runs the actual component handlers/effects with controlled resource responses.
  * No DOM/WebGL emulation: canvas assertions concern the real renderer input contract. */
@@ -34,6 +35,7 @@ function harness(file: string, component: string, initial: Record<string, any>, 
     document: { fullscreenElement: null, fullscreenEnabled: false, addEventListener() {}, removeEventListener() {} },
     require: (name: string) => {
       if (name in mocks) return mocks[name];
+      if (name === "../i18n" || name === "./i18n" || name === "../../i18n") return I18nStub;
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "./tactical-entities") return Entities;

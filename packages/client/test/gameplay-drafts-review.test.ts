@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
 import * as MapGeneration from "../src/features/map-generation.ts";
+import { I18nStub } from "../src/i18n.ts";
 
 /** Executes production component handlers/effects with controlled resources and transport. */
 function harness(file: string, initial: Record<string, any>, component = file, extraExports = "") {
@@ -26,6 +27,7 @@ function harness(file: string, initial: Record<string, any>, component = file, e
   runInNewContext(transformSync(`${actual}\n${extraExports ? `export { ${extraExports} };` : ""}`, { loader: "tsx", format: "cjs", jsx: "automatic" }).code, {
     module: mod, exports: mod.exports, crypto: { randomUUID: () => "test-seed-123456" }, window: { confirm: (message: string) => { confirmations.push(message); return props.confirm ?? true; } },
     require: (name: string) => {
+      if (name === "../i18n" || name === "./i18n" || name === "../../i18n") return I18nStub;
       if (name === "react") return react;
       if (name === "./map-generation") return MapGeneration;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
