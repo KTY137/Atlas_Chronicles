@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { ApiError, type Block } from "../api";
+import { locale, t } from "../i18n";
 
-export const CHRONIST_TASKS = [
-  { id: "prosa", title: "Wiki durchsehen", description: "Ereignisse und offene Fragen in euren Artikeln finden." },
-  { id: "sitzung", title: "Sitzung auswerten", description: "Gespeicherte Notizen zum Spielabend durchsehen." },
-  { id: "abriss", title: "Zusammenfassung erstellen", description: "Aus gewählten Quellen einen erzählerischen Abriss entwerfen." },
-] as const;
-export type ChronistMode = typeof CHRONIST_TASKS[number]["id"];
+export const CHRONIST_TASKS = ["prosa", "sitzung", "abriss"] as const;
+export type ChronistMode = typeof CHRONIST_TASKS[number];
+export interface ChronistTaskLabel { titel: string; beschreibung: string }
+/** Die Kennungen oben sind Daten, die Beschriftungen hier sind Oberfläche: die Anzeigestelle
+ * übersetzt sie mit `t(CHRONIST_TASK_LABEL[mode].titel)`. */
+export const CHRONIST_TASK_LABEL: Record<ChronistMode, ChronistTaskLabel> = {
+  prosa: { titel: "Wiki durchsehen", beschreibung: "Ereignisse und offene Fragen in euren Artikeln finden." },
+  sitzung: { titel: "Sitzung auswerten", beschreibung: "Gespeicherte Notizen zum Spielabend durchsehen." },
+  abriss: { titel: "Zusammenfassung erstellen", beschreibung: "Aus gewählten Quellen einen erzählerischen Abriss entwerfen." },
+};
+/** Die Art eines Vorschlags: Stapel und Durchsicht beschriften sie gleich. */
+export const VORSCHLAG_ART_LABEL: Record<"ereignis" | "widerspruch" | "luecke" | "abriss", string> = {
+  ereignis: "Ereignis", widerspruch: "Widerspruch", luecke: "Offene Datierung", abriss: "Erzählerischer Abriss",
+};
 export const DEFAULT_CHRONIST_BUDGET = Object.freeze({ maxCalls: 8, maxInputChars: 160_000, maxOutputChars: 32_000,
   maxInputCharsPerCall: 24_000, maxOutputCharsPerCall: 8_000, callTimeoutMs: 60_000, maxActiveMs: 300_000, concurrency: 1 });
 
@@ -19,7 +28,7 @@ export function createChronistCommand<T extends object, R>(transport: (body: T &
     get pending() { return pending?.body ?? null; },
     send(body: T): Promise<R> {
       const fingerprint = JSON.stringify(body);
-      if (pending && fingerprint !== pending.fingerprint) return Promise.reject(new Error("Der letzte Vorgang ist noch ungeklärt. Bitte zuerst unverändert erneut versuchen."));
+      if (pending && fingerprint !== pending.fingerprint) return Promise.reject(new Error(t("Der letzte Vorgang ist noch ungeklärt. Bitte zuerst unverändert erneut versuchen.")));
       if (inFlight) return inFlight;
       pending ??= { fingerprint, body: { ...structuredClone(body), commandId: makeId() } };
       const attempt = pending;
@@ -73,12 +82,12 @@ export const CHRONIST_ZEICHEN_JE_TOKEN = 4;
  */
 export function chronistFreigabeRest(ablaufAt: number, now: number): string {
   const seconds = Math.ceil((ablaufAt - now) / 1000);
-  if (seconds <= 0) return "Diese Freigabe ist abgelaufen. Bitte den Umfang erneut vorschauen.";
-  return `Diese Freigabe gilt noch ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} Minuten.`;
+  if (seconds <= 0) return t("Diese Freigabe ist abgelaufen. Bitte den Umfang erneut vorschauen.");
+  return t("Diese Freigabe gilt noch {rest} Minuten.", { rest: `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` });
 }
-export const chronistNumber = (value: number) => value.toLocaleString("de-DE");
+export const chronistNumber = (value: number) => value.toLocaleString(locale());
 export function chronistCost(micros: number | null | undefined, currency: string | null | undefined): string {
-  if (micros == null || !currency) return "Kosten unbekannt";
-  try { return new Intl.NumberFormat("de-DE", { style: "currency", currency, maximumFractionDigits: 4 }).format(micros / 1_000_000); }
-  catch { return `${(micros / 1_000_000).toLocaleString("de-DE")} ${currency}`; }
+  if (micros == null || !currency) return t("Kosten unbekannt");
+  try { return new Intl.NumberFormat(locale(), { style: "currency", currency, maximumFractionDigits: 4 }).format(micros / 1_000_000); }
+  catch { return `${(micros / 1_000_000).toLocaleString(locale())} ${currency}`; }
 }

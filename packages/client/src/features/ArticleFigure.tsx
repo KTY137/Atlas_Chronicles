@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ImageOff, ScanSearch } from "lucide-react";
 import { assetPath, type Block } from "../api";
+import { t } from "../i18n";
 
 type Figure = Extract<Block, { kind: "bildunterschrift" }>;
 
@@ -25,7 +26,7 @@ export function ArticleFigure({ block, campaignId, children }: {
   const beschriftung = block.inhalt.map((part) => part.text).join("").trim();
   const alt = block.alt ?? (beschriftung || "");
   const quelle = campaignId ? assetPath(campaignId, block.assetId) : null;
-  const name = block.dateiname ?? "Unbenannte Datei";
+  const name = block.dateiname ?? t("Unbenannte Datei");
   // Das Infobox-Portrait ist eine Tafel neben dem Text, kein Titelbild. Ohne diese Unterscheidung
   // füllt ein 512-px-Porträt die ganze Spalte — hochskaliert, weich, und lauter als der Artikel.
   const klasse = ["article-figure", `figure-${block.ausrichtung ?? "standard"}`, block.ausInfobox ? "figure-portrait" : ""].filter(Boolean).join(" ");
@@ -35,14 +36,14 @@ export function ArticleFigure({ block, campaignId, children }: {
       <div className="figure-placeholder">
         <ImageOff size={20} aria-hidden="true" />
         <p><strong>{name}</strong></p>
-        <p className="muted">Diese Datei ist noch nicht geholt. Der Artikel nennt sie, die Bilddatei liegt aber noch im Quell-Wiki.</p>
+        <p className="muted">{t("Diese Datei ist noch nicht geholt. Der Artikel nennt sie, die Bilddatei liegt aber noch im Quell-Wiki.")}</p>
       </div>
       {children ? <figcaption>{children}</figcaption> : null}
     </figure>;
   }
   return <figure className={klasse}>
     <button type="button" className="figure-frame" onClick={() => setGross((value) => !value)}
-      aria-label={gross ? `${name} verkleinern` : `${name} vergrößern`} aria-pressed={gross}>
+      aria-label={gross ? t("{name} verkleinern", { name }) : t("{name} vergrößern", { name })} aria-pressed={gross}>
       {/* Ohne `width: auto` streckt der Browser jedes Bild auf die Spaltenbreite — auch ein
           512-px-Porträt, das dabei nur weicher wird. Vergrößern bleibt eine Entscheidung des Lesers. */}
       <img src={quelle} alt={alt} loading="lazy" decoding="async" onError={() => setFehlt(true)}

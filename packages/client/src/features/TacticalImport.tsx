@@ -6,6 +6,7 @@ import type { TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { FidelityReport } from "@chronicle/forge";
 import { Button, Notice } from "@chronicle/ui";
 import { api, apiPath } from "../api";
+import { t } from "../i18n";
 import { useTask } from "../hooks";
 import { useCommand } from "./game-api";
 
@@ -18,7 +19,7 @@ export function TacticalImport({ campaignId, onChanged, onDirty }: { campaignId:
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; onDirty(false); }; }, [onDirty]);
   const invalidate = () => { setPreview(null); setPrepared(null); setSaved(""); onDirty(true); };
   return <form className="panel tactical-import" onChange={invalidate} onSubmit={e => { e.preventDefault(); if (!file) return; void task.run(async () => {
-    if (file.size > 64 * 1024 * 1024 || (image && image.size > 16 * 1024 * 1024)) throw new Error("Die Quelldatei darf höchstens64MiB, das separate Kartenbild16MiB groß sein.");
+    if (file.size > 64 * 1024 * 1024 || (image && image.size > 16 * 1024 * 1024)) throw new Error(t("Die Quelldatei darf höchstens64MiB, das separate Kartenbild16MiB groß sein."));
     let imageBase64: string | null = null;
     if (image && format === "native") {
       const bytes = new Uint8Array(await image.arrayBuffer()); let binary = "";
@@ -30,18 +31,18 @@ export function TacticalImport({ campaignId, onChanged, onDirty }: { campaignId:
     const result = await api<Preview>(apiPath(campaignId, "/tactical/maps/import-preview"), { method: "POST", body: { ...input, commandId: crypto.randomUUID() } });
     if (mounted.current) { setPrepared(input); setPreview(result); }
   }); }}>
-    <fieldset className="tactical-command-fields" disabled={task.busy}><h2>Eine Szenenkarte übernehmen</h2><p className="field-help">UVTT aus Dungeondraft oder ein natives Kartendokument. Original und Herkunft bleiben erhalten. Wissensregionen und Wiki-Verknüpfungen legst du anschließend ausdrücklich an.</p>
-      <label>Name der Karte<input required maxLength={160} value={name} onChange={e => setName(e.target.value)} /></label>
-      <label>Kartenformat<select value={format} onChange={e => { setFormat(e.target.value as typeof format); setFile(null); setImage(null); }}><option value="uvtt">Universal VTT (.dd2vtt, .uvtt)</option><option value="native">Natives TacticalMapDocument v1 (.json)</option></select></label>
-      <label>Quelldatei<input key={format} required type="file" accept={format === "uvtt" ? ".dd2vtt,.df2vtt,.uvtt,.json" : ".json"} onChange={e => setFile(e.target.files?.[0] ?? null)} /></label>
-      {format === "native" ? <label>Zum Dokument gehörendes Bild (falls referenziert)<input type="file" accept="image/png,image/webp" onChange={e => setImage(e.target.files?.[0] ?? null)} /></label> : null}
-      <div className="rule-fields"><label>Urheber<input required maxLength={2048} value={creator} onChange={e => setCreator(e.target.value)} /></label><label>Lizenz oder eigene Nutzungsrechte<input required maxLength={2048} value={license} onChange={e => setLicense(e.target.value)} /></label></div>
-      <label>Quellseite (optional)<input type="url" value={url} onChange={e => setUrl(e.target.value)} /></label><label>Lizenznachweis (optional)<input type="url" value={licenseUrl} onChange={e => setLicenseUrl(e.target.value)} /></label>
-      <Button type="submit" variant="primary" disabled={!file}>Import prüfen</Button>
-      {preview ? <section className="tactical-import-report"><h3>Importvorschau</h3><p>{preview.document.geometry.size[0]} × {preview.document.geometry.size[1]} Pixel · {preview.document.walls.length} Wände/Blocker · {preview.document.portals.length} Portale · {preview.document.lights.length} Lichter</p>
-        <ul>{preview.fidelity.issues.map((issue, i) => <li key={i}>{issue.message}</li>)}</ul><p>Die Karte bleibt bis zur Verknüpfung von Wissensregionen privat.</p>
-        <Button variant="primary" disabled={!!saved} onClick={() => { if (prepared) void task.run(async () => { const result = await command<TacticalAck>(apiPath(campaignId, "/tactical/maps"), prepared); if (mounted.current) { setSaved(result.subjectId); onDirty(false); onChanged(); } }); }}>Karte in die Kampagne übernehmen</Button>
+    <fieldset className="tactical-command-fields" disabled={task.busy}><h2>{t("Eine Szenenkarte übernehmen")}</h2><p className="field-help">{t("UVTT aus Dungeondraft oder ein natives Kartendokument. Original und Herkunft bleiben erhalten. Wissensregionen und Wiki-Verknüpfungen legst du anschließend ausdrücklich an.")}</p>
+      <label>{t("Name der Karte")}<input required maxLength={160} value={name} onChange={e => setName(e.target.value)} /></label>
+      <label>{t("Kartenformat")}<select value={format} onChange={e => { setFormat(e.target.value as typeof format); setFile(null); setImage(null); }}><option value="uvtt">Universal VTT (.dd2vtt, .uvtt)</option><option value="native">{t("Natives TacticalMapDocument v1 (.json)")}</option></select></label>
+      <label>{t("Quelldatei")}<input key={format} required type="file" accept={format === "uvtt" ? ".dd2vtt,.df2vtt,.uvtt,.json" : ".json"} onChange={e => setFile(e.target.files?.[0] ?? null)} /></label>
+      {format === "native" ? <label>{t("Zum Dokument gehörendes Bild (falls referenziert)")}<input type="file" accept="image/png,image/webp" onChange={e => setImage(e.target.files?.[0] ?? null)} /></label> : null}
+      <div className="rule-fields"><label>{t("Urheber")}<input required maxLength={2048} value={creator} onChange={e => setCreator(e.target.value)} /></label><label>{t("Lizenz oder eigene Nutzungsrechte")}<input required maxLength={2048} value={license} onChange={e => setLicense(e.target.value)} /></label></div>
+      <label>{t("Quellseite (optional)")}<input type="url" value={url} onChange={e => setUrl(e.target.value)} /></label><label>{t("Lizenznachweis (optional)")}<input type="url" value={licenseUrl} onChange={e => setLicenseUrl(e.target.value)} /></label>
+      <Button type="submit" variant="primary" disabled={!file}>{t("Import prüfen")}</Button>
+      {preview ? <section className="tactical-import-report"><h3>{t("Importvorschau")}</h3><p>{t("{breite} × {hoehe} Pixel · {waende} Wände/Blocker · {portale} Portale · {lichter} Lichter", { breite: preview.document.geometry.size[0], hoehe: preview.document.geometry.size[1], waende: preview.document.walls.length, portale: preview.document.portals.length, lichter: preview.document.lights.length })}</p>
+        <ul>{preview.fidelity.issues.map((issue, i) => <li key={i}>{issue.message}</li>)}</ul><p>{t("Die Karte bleibt bis zur Verknüpfung von Wissensregionen privat.")}</p>
+        <Button variant="primary" disabled={!!saved} onClick={() => { if (prepared) void task.run(async () => { const result = await command<TacticalAck>(apiPath(campaignId, "/tactical/maps"), prepared); if (mounted.current) { setSaved(result.subjectId); onDirty(false); onChanged(); } }); }}>{t("Karte in die Kampagne übernehmen")}</Button>
       </section> : null}
-    </fieldset>{task.error ? <Notice error>{task.error}</Notice> : null}{saved ? <Notice>Die Karte ist gespeichert. Unter „Karte & Vorbereitung“ kannst du Regionen verknüpfen und Figuren für eine Szene platzieren.</Notice> : null}
+    </fieldset>{task.error ? <Notice error>{task.error}</Notice> : null}{saved ? <Notice>{t("Die Karte ist gespeichert. Unter „Karte & Vorbereitung“ kannst du Regionen verknüpfen und Figuren für eine Szene platzieren.")}</Notice> : null}
   </form>;
 }

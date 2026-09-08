@@ -77,6 +77,20 @@ export const ETIKETT_KONSTANTEN = /_(?:LABEL|LABELS|TITEL)$/;
 /** Datenkonstanten: ihre Schlüssel und Array-Elemente sind gespeicherte Werte, keine Anzeige.
  * Ihre Anzeigetabellen (`*_LABEL`) sind ausdrücklich nicht gemeint. */
 export const DENY_KONSTANTEN = /(?:_TYPEN|_SETTINGS|_GENRES|_ARTEN|_KANTEN|_NAMESPACES)$/;
+/**
+ * Wörter, die in einem Datenpaket stehen und trotzdem Oberfläche sind.
+ *
+ * `MEDIAWIKI_NAMESPACES` in `packages/io/src/wikitext.ts` führt die Namensräume eines Wikis
+ * als gespeicherte Werte — darunter „Datei", „Karte", „Kategorie" und „Vorlage". Dieselben
+ * Wörter sind aber auch gewöhnliche Oberflächenwörter: „Datei wählen" im Bildbestand, „Karte"
+ * als Umschalter im Kartenstudio, „Kategorie" über der Gruppenseite der Chronik, „Figurvorlage"
+ * und die Vorlagenwahl am Tisch. Der Deny-Test kennt
+ * nur die Zeichenkette, nicht ihre Rolle; diese Liste trägt die Entscheidung nach, dass hier
+ * der Anzeigetext gemeint ist. Sie bleibt kurz und ausdrücklich: jeder Eintrag ist ein Ruling,
+ * kein Schlupfloch. Die Wikitext-Erkennung selbst liest weiter die Konstante, nicht den
+ * Katalog — übersetzt wird die Anzeige, nie der Namensraum im Quelltext eines Artikels.
+ */
+export const DENY_AUSNAHMEN = new Set(["Datei", "Karte", "Kategorie", "Vorlage"]);
 const DISKRIMINATOREN = new Set(["art", "kind", "role"]);
 
 const LOKAL_FUNKTIONEN = new Set(["toLocaleString", "toLocaleDateString", "toLocaleTimeString"]);
@@ -249,7 +263,8 @@ export function verschmelzeKataloge(dateien) {
 const platzhalter = text => new Set([...String(text).matchAll(/\{([A-Za-z0-9_]+)\}/g)].map(treffer => treffer[1]));
 
 /** Die reine Prüfung. Alles Lesen steckt in `main`, damit der Selbsttest ohne Dateien auskommt. */
-export function pruefeSprache({ quellen, katalog = {}, plural = {}, dynamisch = [], denyLiterale = new Set(), lokalAllowlist = {}, dynamischErlaubt = {}, etikettTabellen = {} }) {
+export function pruefeSprache({ quellen, katalog = {}, plural = {}, dynamisch = [], denyLiterale = new Set(), denyAusnahmen = new Set(), lokalAllowlist = {}, dynamischErlaubt = {}, etikettTabellen = {} }) {
+  const gesperrt = schluessel => denyLiterale.has(schluessel) && !denyAusnahmen.has(schluessel);
   const verstoesse = [];
   const genutzteTexte = new Map(), genutztePlural = new Map();
   const offen = [];
@@ -292,13 +307,13 @@ export function pruefeSprache({ quellen, katalog = {}, plural = {}, dynamisch = 
     if (!genutzteTexte.has(schluessel) && !dynamischSatz.has(schluessel)) {
       verstoesse.push(`verwaist · en/*.json · "${schluessel}" kommt im Quelltext nicht als t("…") vor`);
     }
-    if (denyLiterale.has(schluessel)) verstoesse.push(`deny · en/*.json · "${schluessel}" ist ein Datenschlüssel aus den eingefrorenen Paketen`);
+    if (gesperrt(schluessel)) verstoesse.push(`deny · en/*.json · "${schluessel}" ist ein Datenschlüssel aus den eingefrorenen Paketen`);
     const erlaubt = platzhalter(schluessel);
     for (const name of platzhalter(wert)) if (!erlaubt.has(name)) verstoesse.push(`platzhalter · en/*.json · "${schluessel}" kennt kein {${name}}`);
   }
   for (const [schluessel, formen] of Object.entries(plural)) {
     if (!genutztePlural.has(schluessel)) verstoesse.push(`verwaist · en.plural.json · "${schluessel}" kommt im Quelltext nicht als plural(…) vor`);
-    if (denyLiterale.has(schluessel)) verstoesse.push(`deny · en.plural.json · "${schluessel}" ist ein Datenschlüssel aus den eingefrorenen Paketen`);
+    if (gesperrt(schluessel)) verstoesse.push(`deny · en.plural.json · "${schluessel}" ist ein Datenschlüssel aus den eingefrorenen Paketen`);
     const erlaubt = platzhalter(schluessel).add("n");
     for (const form of [formen.eins, formen.viele]) {
       for (const name of platzhalter(form)) if (!erlaubt.has(name)) verstoesse.push(`platzhalter · en.plural.json · "${schluessel}" kennt kein {${name}}`);
@@ -360,7 +375,7 @@ async function main() {
     }
   }
 
-  const ergebnis = pruefeSprache({ quellen, katalog, plural, dynamisch, denyLiterale, lokalAllowlist: LOKAL_ALLOWLIST, dynamischErlaubt: DYNAMISCH_ERLAUBT, etikettTabellen });
+  const ergebnis = pruefeSprache({ quellen, katalog, plural, dynamisch, denyLiterale, denyAusnahmen: DENY_AUSNAHMEN, lokalAllowlist: LOKAL_ALLOWLIST, dynamischErlaubt: DYNAMISCH_ERLAUBT, etikettTabellen });
   const alle = [...katalogVerstoesse, ...ergebnis.verstoesse];
 
   if (alle.length > 0) {

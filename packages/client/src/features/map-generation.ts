@@ -3,6 +3,7 @@
 import type { GrundrissOptionen, HoehleOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
 import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type KartenSetting, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
+import { t } from "../i18n";
 
 export type MapArt = "siedlung" | "grundriss" | "hoehle";
 export type MapStyle = "grundriss" | "gemalt" | "zeitwelten" | "genres";
@@ -42,12 +43,12 @@ export function generationOptions(value: GenerationSettings, defaults: Generatio
 }
 export function generationError(value: GenerationSettings, defaults: GenerationDefaults): string | null {
   const [w, h] = generationDimensions(value, defaults);
-  if (![w, h].every(n => Number.isSafeInteger(n) && n >= 12 && n <= 192)) return "Breite und Höhe müssen ganze Zahlen zwischen 12 und 192 sein.";
-  if (w * h > 20_000) return "Die Karte darf höchstens 20.000 Zellen enthalten. Verringere Breite oder Höhe.";
+  if (![w, h].every(n => Number.isSafeInteger(n) && n >= 12 && n <= 192)) return t("Breite und Höhe müssen ganze Zahlen zwischen 12 und 192 sein.");
+  if (w * h > 20_000) return t("Die Karte darf höchstens 20.000 Zellen enthalten. Verringere Breite oder Höhe.");
   const z = value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).zellgroesse : defaults[value.art].zellgroesse;
-  if (w * z > TACTICAL_MAP_LIMITS.dimension || h * z > TACTICAL_MAP_LIMITS.dimension || w * h * z * z > TACTICAL_MAP_LIMITS.pixels) return "Diese Größe überschreitet das Kartenbudget. Wähle eine kleinere Fläche.";
+  if (w * z > TACTICAL_MAP_LIMITS.dimension || h * z > TACTICAL_MAP_LIMITS.dimension || w * h * z * z > TACTICAL_MAP_LIMITS.pixels) return t("Diese Größe überschreitet das Kartenbudget. Wähle eine kleinere Fläche.");
   const min = value.art === "siedlung" ? 1 : 2, max = value.art === "siedlung" ? 256 : value.art === "hoehle" ? 32 : 64;
-  if (value.anzahl !== "" && (!Number.isSafeInteger(value.anzahl) || value.anzahl < min || value.anzahl > max)) return `Die Anzahl muss zwischen ${min} und ${max} liegen.`;
+  if (value.anzahl !== "" && (!Number.isSafeInteger(value.anzahl) || value.anzahl < min || value.anzahl > max)) return t("Die Anzahl muss zwischen {min} und {max} liegen.", { min, max });
   return null;
 }
 export const BUILDING_COLORS: Record<BauwerkTyp, number> = {

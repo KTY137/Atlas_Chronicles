@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DYNAMISCH_ERLAUBT, LOKAL_ALLOWLIST, pruefeSprache, sammleAufrufe, sammleDatenschluessel, sammleEtiketttabellen, verschmelzeKataloge } from "../gate-sprache.mjs";
+import { DENY_AUSNAHMEN, DYNAMISCH_ERLAUBT, LOKAL_ALLOWLIST, pruefeSprache, sammleAufrufe, sammleDatenschluessel, sammleEtiketttabellen, verschmelzeKataloge } from "../gate-sprache.mjs";
 
 const quelle = (datei, text) => [{ datei, text }];
 const arten = ergebnis => ergebnis.verstoesse.map(zeile => zeile.split(" ·")[0]);
@@ -110,6 +110,28 @@ test("hält Datenschlüssel aus dem Katalog heraus, lässt aber „Schmiede“ a
     katalog: { bauwerk: "building" }, denyLiterale,
   });
   assert.deepEqual(arten(datenschluessel), ["deny"]);
+});
+
+test("lässt die benannten Ausnahmen trotz Datenschlüssel als Oberflächenwort zu", () => {
+  // „Datei", „Karte", „Kategorie" und „Vorlage" sind Namensräume in MEDIAWIKI_NAMESPACES und zugleich Anzeigewörter.
+  const denyLiterale = sammleDatenschluessel(DATENPAKET);
+  assert.deepEqual([...DENY_AUSNAHMEN].sort(), ["Datei", "Karte", "Kategorie", "Vorlage"]);
+  const ohne = pruefeSprache({
+    quellen: quelle("packages/client/src/features/WikiMedien.tsx", 'const a = t("Datei");'),
+    katalog: { Datei: "File" }, denyLiterale,
+  });
+  assert.deepEqual(arten(ohne), ["deny"]);
+  const mit = pruefeSprache({
+    quellen: quelle("packages/client/src/features/WikiMedien.tsx", 'const a = t("Datei");'),
+    katalog: { Datei: "File" }, denyLiterale, denyAusnahmen: DENY_AUSNAHMEN,
+  });
+  assert.deepEqual(mit.verstoesse, []);
+  // Die Ausnahme gilt genau für ihre Wörter, nicht für den Rest des Datenpakets.
+  const fremd = pruefeSprache({
+    quellen: quelle("packages/client/src/App.tsx", 'const a = t("bauwerk");'),
+    katalog: { bauwerk: "building" }, denyLiterale, denyAusnahmen: DENY_AUSNAHMEN,
+  });
+  assert.deepEqual(arten(fremd), ["deny"]);
 });
 
 test("erlaubt die Anzeigestelle t(BAUWERK_LABEL[typ]) und nur sie", () => {

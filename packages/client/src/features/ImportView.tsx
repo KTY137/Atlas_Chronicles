@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Download, FileJson, Globe, Image as ImageIcon, Search
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, errorText } from "../api";
 import { useTask } from "../hooks";
+import { locale, plural, t } from "../i18n";
 
 interface Report { eintraege: number; aliase: number; passagen: number; passagenNachArt: Record<string, number>; blaueKanten: number; roteKanten: number; textErhaltung: number; verluste: { art: string; bezeichnung: string; detail?: string }[] }
 interface Preview { artifactId: string; report: Report; attributionComplete: boolean; entries: { id: string; title: string; existing: boolean }[]; notice: string; medien?: MediaBalance }
@@ -54,13 +55,13 @@ function wikiBaseUrl(input: string): string | null {
 async function wikiApiGet(endpoint: string, params: Record<string, string>, signal?: AbortSignal): Promise<Record<string, unknown>> {
   const query = new URLSearchParams({ format: "json", formatversion: "2", origin: "*", ...params });
   const response = await fetch(`${endpoint}?${query}`, { signal, headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error(`Das Wiki antwortete mit Status ${response.status}. Prüfe die Adresse, oder ob das Wiki öffentlich lesbar ist.`);
+  if (!response.ok) throw new Error(t("Das Wiki antwortete mit Status {status}. Prüfe die Adresse, oder ob das Wiki öffentlich lesbar ist.", { status: response.status }));
   return await response.json() as Record<string, unknown>;
 }
 
 async function probeWiki(input: string, signal?: AbortSignal): Promise<WikiProbe> {
   const candidates = wikiEndpointCandidates(input);
-  if (!candidates.length) throw new Error("Das ist keine gültige Wiki-Adresse. Beispiel: https://mein-wiki.fandom.com/de/");
+  if (!candidates.length) throw new Error(t("Das ist keine gültige Wiki-Adresse. Beispiel: https://mein-wiki.fandom.com/de/"));
   let sawNetworkError = false;
   for (const endpoint of candidates) {
     try {
@@ -71,18 +72,18 @@ async function probeWiki(input: string, signal?: AbortSignal): Promise<WikiProbe
       return { endpoint, siteName: general.sitename, language: general.lang ?? "", articlesCount: data.query?.statistics?.articles ?? 0,
         license: data.query?.rightsinfo?.text ? { text: data.query.rightsinfo.text, url: data.query.rightsinfo.url ?? "" } : null };
     } catch (error) {
-      if (signal?.aborted) throw new Error("Prüfung abgebrochen.");
+      if (signal?.aborted) throw new Error(t("Prüfung abgebrochen."));
       if (error instanceof TypeError) sawNetworkError = true;
     }
   }
   throw new Error(sawNetworkError
-    ? "Unter dieser Adresse antwortet keine MediaWiki-API. Möglich: Das Wiki blockiert Anfragen aus dem Browser, oder ist nicht öffentlich lesbar. Nutze in dem Fall den Datei-Upload weiter unten."
-    : "Unter dieser Adresse antwortet keine MediaWiki-API. Prüfe die Adresse, oder nutze den Datei-Upload weiter unten.");
+    ? t("Unter dieser Adresse antwortet keine MediaWiki-API. Möglich: Das Wiki blockiert Anfragen aus dem Browser, oder ist nicht öffentlich lesbar. Nutze in dem Fall den Datei-Upload weiter unten.")
+    : t("Unter dieser Adresse antwortet keine MediaWiki-API. Prüfe die Adresse, oder nutze den Datei-Upload weiter unten."));
 }
 
 async function fetchWikiArticles(probe: WikiProbe, onProgress: (p: WikiFetchProgress) => void, signal?: AbortSignal): Promise<LiveArticle[]> {
   const rows: LiveArticle[] = []; let cont: Record<string, string> | null = null, batch = 0;
-  const cancelled = () => new Error(`Laden abgebrochen. ${rows.length} Artikel waren bereits geladen.`);
+  const cancelled = () => new Error(t("Laden abgebrochen. {anzahl} Artikel waren bereits geladen.", { anzahl: rows.length }));
   try {
     do {
       const data = await wikiApiGet(probe.endpoint, { action: "query", generator: "allpages", gaplimit: "50", gapnamespace: "0",
@@ -102,13 +103,13 @@ async function fetchWikiArticles(probe: WikiProbe, onProgress: (p: WikiFetchProg
     } while (cont && !signal?.aborted);
   } catch (error) { throw signal?.aborted ? cancelled() : error; }
   if (signal?.aborted) throw cancelled();
-  if (!rows.length) throw new Error("Das Wiki antwortet, liefert aber keine Artikel im Hauptnamensraum. Ist das Wiki leer, oder falsch adressiert?");
+  if (!rows.length) throw new Error(t("Das Wiki antwortet, liefert aber keine Artikel im Hauptnamensraum. Ist das Wiki leer, oder falsch adressiert?"));
   return rows;
 }
 
 async function fetchWikiTemplates(probe: WikiProbe, onProgress: (p: WikiFetchProgress) => void, signal?: AbortSignal): Promise<LiveTemplate[]> {
   const rows: LiveTemplate[] = []; let cont: Record<string, string> | null = null, batch = 0;
-  const cancelled = () => new Error(`Laden abgebrochen. ${rows.length} Vorlagen waren bereits geladen.`);
+  const cancelled = () => new Error(t("Laden abgebrochen. {anzahl} Vorlagen waren bereits geladen.", { anzahl: rows.length }));
   try {
     do {
       const data = await wikiApiGet(probe.endpoint, { action: "query", generator: "allpages", gaplimit: "50", gapnamespace: "10",
@@ -184,35 +185,41 @@ async function fetchWikiMedia(probe: WikiProbe, onProgress: (p: WikiFetchProgres
  * (z. B. die bereits deutschen Texte aus app.ts wie "Konflikt: …") bleiben unverändert — nichts
  * wird verschluckt, nur bekannte Fälle werden lesbar gemacht.
  */
-const KNOWN_REASONS: Record<string, string> = {
-  "object required": "muss ein JSON-Objekt sein",
-  "plain JSON object required": "muss ein einfaches JSON-Objekt sein (kein Array, keine Klasse)",
-  "bounded string required": "fehlt, ist leer oder zu lang",
-  "boolean required": "muss ja/nein (true/false) sein",
-  "maximum JSON depth exceeded": "ist zu tief verschachtelt",
-  "unsafe object key": "enthält einen nicht erlaubten Schlüsselnamen",
-  "absolute HTTP(S) URL required": "muss eine vollständige http(s)-Adresse sein",
-  "plain HTTP(S) source URL required": "darf keine Anmeldedaten, Suchparameter oder Anker (#…) enthalten",
-  "duplicate page identity/title": "kommt doppelt vor (gleiche Seiten-ID oder gleicher Titel wie ein anderer Artikel)",
-  "duplicate template title": "kommt doppelt vor (gleicher Titel wie eine andere Vorlage)",
-  "maximum source size is 20 MB": "sind zusammen größer als 20 MB",
-  "UTC ISO timestamp required": "hat ein ungültiges Zeitformat",
-  "complete revision history must be explicitly confirmed": "muss ausdrücklich als vollständig bestätigt werden",
-  "MediaWiki SHA1 required": "enthält keine gültige Revisions-Prüfsumme",
-  "author history cannot be empty": "darf nicht leer sein",
-  "maximum author-history JSON size is 2 MiB": "sind größer als 2 MiB",
+// Schlüssel sind die Meldungen des Servers (Daten); die Erklärungen sind Oberfläche und
+// entstehen darum erst beim Aufruf in der gewählten Sprache.
+const KNOWN_REASONS: Record<string, () => string> = {
+  "object required": () => t("muss ein JSON-Objekt sein"),
+  "plain JSON object required": () => t("muss ein einfaches JSON-Objekt sein (kein Array, keine Klasse)"),
+  "bounded string required": () => t("fehlt, ist leer oder zu lang"),
+  "boolean required": () => t("muss ja/nein (true/false) sein"),
+  "maximum JSON depth exceeded": () => t("ist zu tief verschachtelt"),
+  "unsafe object key": () => t("enthält einen nicht erlaubten Schlüsselnamen"),
+  "absolute HTTP(S) URL required": () => t("muss eine vollständige http(s)-Adresse sein"),
+  "plain HTTP(S) source URL required": () => t("darf keine Anmeldedaten, Suchparameter oder Anker (#…) enthalten"),
+  "duplicate page identity/title": () => t("kommt doppelt vor (gleiche Seiten-ID oder gleicher Titel wie ein anderer Artikel)"),
+  "duplicate template title": () => t("kommt doppelt vor (gleicher Titel wie eine andere Vorlage)"),
+  "maximum source size is 20 MB": () => t("sind zusammen größer als 20 MB"),
+  "UTC ISO timestamp required": () => t("hat ein ungültiges Zeitformat"),
+  "complete revision history must be explicitly confirmed": () => t("muss ausdrücklich als vollständig bestätigt werden"),
+  "MediaWiki SHA1 required": () => t("enthält keine gültige Revisions-Prüfsumme"),
+  "author history cannot be empty": () => t("darf nicht leer sein"),
+  "maximum author-history JSON size is 2 MiB": () => t("sind größer als 2 MiB"),
 };
 function pathSubject(path: string): string {
   const article = /^articles\[(\d+)\]\.?(.*)$/.exec(path);
-  if (article) return `Artikel Nr. ${Number(article[1]) + 1} in der Artikeldatei${article[2] ? ` (Feld „${article[2]}")` : ""}`;
+  if (article) return article[2]
+    ? t("Artikel Nr. {nummer} in der Artikeldatei (Feld „{feld}\")", { nummer: Number(article[1]) + 1, feld: article[2] })
+    : t("Artikel Nr. {nummer} in der Artikeldatei", { nummer: Number(article[1]) + 1 });
   const template = /^templates\[(\d+)\]\.?(.*)$/.exec(path);
-  if (template) return `Vorlage Nr. ${Number(template[1]) + 1} in der Vorlagendatei${template[2] ? ` (Feld „${template[2]}")` : ""}`;
-  if (path === "articles") return "Die Artikeldatei";
-  if (path === "templates") return "Die Vorlagendatei";
-  if (path === "wikiUrl") return "Die Wiki-Adresse";
-  if (path === "license") return "Die Lizenzangabe";
-  if (path === "source") return "Die hochgeladenen Dateien";
-  if (path.startsWith("attribution")) return "Die Autorennachweise";
+  if (template) return template[2]
+    ? t("Vorlage Nr. {nummer} in der Vorlagendatei (Feld „{feld}\")", { nummer: Number(template[1]) + 1, feld: template[2] })
+    : t("Vorlage Nr. {nummer} in der Vorlagendatei", { nummer: Number(template[1]) + 1 });
+  if (path === "articles") return t("Die Artikeldatei");
+  if (path === "templates") return t("Die Vorlagendatei");
+  if (path === "wikiUrl") return t("Die Wiki-Adresse");
+  if (path === "license") return t("Die Lizenzangabe");
+  if (path === "source") return t("Die hochgeladenen Dateien");
+  if (path.startsWith("attribution")) return t("Die Autorennachweise");
   return `„${path}"`;
 }
 function friendlyImportError(raw: string): string {
@@ -220,14 +227,14 @@ function friendlyImportError(raw: string): string {
   if (cut < 0) return raw;
   const path = raw.slice(0, cut), reason = raw.slice(cut + 2);
   if (!/^[a-zA-Z][\w.[\]]*$/.test(path)) return raw;
-  const plain = KNOWN_REASONS[reason]
-    ?? (/^integer >= \d+ required$/.test(reason) ? "fehlt oder ist keine gültige Zahl" : undefined)
-    ?? (/^array of at most \d+ items required$/.test(reason) ? "ist keine JSON-Liste, oder hat zu viele Einträge" : undefined)
-    ?? (/^expected /.test(reason) ? "hat einen nicht erlaubten Wert" : undefined);
+  const plain = KNOWN_REASONS[reason]?.()
+    ?? (/^integer >= \d+ required$/.test(reason) ? t("fehlt oder ist keine gültige Zahl") : undefined)
+    ?? (/^array of at most \d+ items required$/.test(reason) ? t("ist keine JSON-Liste, oder hat zu viele Einträge") : undefined)
+    ?? (/^expected /.test(reason) ? t("hat einen nicht erlaubten Wert") : undefined);
   if (!plain) return raw;
-  return `${pathSubject(path)}: ${plain}. Prüfe die Datei und lade sie erneut hoch, oder exportiere sie erneut aus dem Wiki.`;
+  return t("{gegenstand}: {grund}. Prüfe die Datei und lade sie erneut hoch, oder exportiere sie erneut aus dem Wiki.", { gegenstand: pathSubject(path), grund: plain });
 }
-const formatPercent = (value: number) => `${(value * 100).toFixed(2).replace(".", ",")} %`;
+const formatPercent = (value: number) => `${(value * 100).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
 
 /**
  * Für die Verlustarten "nicht-umgewandelt" und "kurzer-absatz" ist `bezeichnung` serverseitig
@@ -240,7 +247,7 @@ const formatPercent = (value: number) => `${(value * 100).toFixed(2).replace("."
 function lossSubject(bezeichnung: string, pageTitles: Record<number, string>): string {
   if (!/^\d+$/.test(bezeichnung)) return bezeichnung;
   const title = pageTitles[Number(bezeichnung)];
-  return title ? `${title} (Seite ${bezeichnung})` : `Seite ${bezeichnung}`;
+  return title ? t("{titel} (Seite {seite})", { titel: title, seite: bezeichnung }) : t("Seite {seite}", { seite: bezeichnung });
 }
 function groupLosses(verluste: Report["verluste"]): [string, Report["verluste"]][] {
   const groups = new Map<string, Report["verluste"]>();
@@ -268,7 +275,7 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
       setPageTitles(Object.fromEntries(result.source.articles.map((row) => [row.pageid, row.title])));
       setPreview({ artifactId: id, report: artifact.report, attributionComplete: result.attributionComplete,
         entries: result.entries.map((entry) => ({ id: entry.id, title: entry.titel, existing: artifact.source.versions[entry.id] !== undefined })),
-        notice: "Dies ist die gespeicherte Importvorschau. Wähle die Artikel aus, deren Inhalt du übernehmen möchtest." });
+        notice: t("Dies ist die gespeicherte Importvorschau. Wähle die Artikel aus, deren Inhalt du übernehmen möchtest.") });
     }).catch((error) => { if (!controller.signal.aborted) setResumeError(errorText(error)); }).finally(() => { if (!controller.signal.aborted) setResuming(false); });
     return () => controller.abort();
   }, [campaignId]);
@@ -285,12 +292,12 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
   const sendToServer = async (articleJson: unknown[], templateJson: unknown[], effectiveWikiUrl: string, mediaJson?: unknown[]) => {
     let attributionByPageId: unknown;
     if (attributionFile) {
-      if (!attributionConfirmed) throw new Error("Bestätige die vollständige Autorenhistorie der mitgelieferten Nachweise.");
-      if (attributionFile.size > 2 * 1024 * 1024) throw new Error("Die Autorennachweise dürfen höchstens 2 MiB groß sein.");
-      try { attributionByPageId = JSON.parse(await attributionFile.text()); } catch { throw new Error("Die Autorennachweise enthalten kein gültiges JSON."); }
-      if (!attributionByPageId || typeof attributionByPageId !== "object" || Array.isArray(attributionByPageId)) throw new Error("Die Nachweisdatei muss Seitenkennungen auf Autorenhistorien abbilden.");
+      if (!attributionConfirmed) throw new Error(t("Bestätige die vollständige Autorenhistorie der mitgelieferten Nachweise."));
+      if (attributionFile.size > 2 * 1024 * 1024) throw new Error(t("Die Autorennachweise dürfen höchstens 2 MiB groß sein."));
+      try { attributionByPageId = JSON.parse(await attributionFile.text()); } catch { throw new Error(t("Die Autorennachweise enthalten kein gültiges JSON.")); }
+      if (!attributionByPageId || typeof attributionByPageId !== "object" || Array.isArray(attributionByPageId)) throw new Error(t("Die Nachweisdatei muss Seitenkennungen auf Autorenhistorien abbilden."));
     }
-    setPhase("Wird an den Server gesendet und ausgewertet – bei größeren Wikis kann das etwas dauern …");
+    setPhase(t("Wird an den Server gesendet und ausgewertet – bei größeren Wikis kann das etwas dauern …"));
     const result = await api<Preview>(apiPath(campaignId, "/imports/eron"), { method: "POST",
       body: { articles: articleJson, templates: templateJson, wikiUrl: effectiveWikiUrl, license,
         ...(mediaJson?.length ? { media: mediaJson } : {}), ...(attributionByPageId ? { attributionByPageId } : {}) } });
@@ -299,18 +306,19 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
   };
 
   const makePreview = () => task.run(async () => {
-    if (!articles || !templates) throw new Error("Wähle beide Dateien aus: die Artikeldatei (articles.json) und die Vorlagendatei (templates.json).");
-    if (articles.size + templates.size > 20_000_000) throw new Error("Artikel- und Vorlagendatei sind zusammen größer als 20 MB. Teile den Export auf (z. B. nach Kategorie) und importiere ihn in mehreren Durchgängen.");
+    if (!articles || !templates) throw new Error(t("Wähle beide Dateien aus: die Artikeldatei (articles.json) und die Vorlagendatei (templates.json)."));
+    if (articles.size + templates.size > 20_000_000) throw new Error(t("Artikel- und Vorlagendatei sind zusammen größer als 20 MB. Teile den Export auf (z. B. nach Kategorie) und importiere ihn in mehreren Durchgängen."));
     const base = wikiBaseUrl(wikiUrl);
-    if (!base) throw new Error("Die Adresse des Quell-Wikis fehlt oder ist ungültig. Beispiel: https://mein-wiki.fandom.com/de/");
+    if (!base) throw new Error(t("Die Adresse des Quell-Wikis fehlt oder ist ungültig. Beispiel: https://mein-wiki.fandom.com/de/"));
     setWikiUrl(base);
-    setPhase("Dateien werden gelesen …");
-    const [a, t] = await Promise.all([articles.text(), templates.text()]);
+    setPhase(t("Dateien werden gelesen …"));
+    // `t` heißt jetzt die Übersetzung; der Rohtext der Vorlagendatei bekommt darum einen eigenen Namen.
+    const [a, rohVorlagen] = await Promise.all([articles.text(), templates.text()]);
     let articleJson: unknown, templateJson: unknown;
-    try { articleJson = JSON.parse(a); } catch { throw new Error(`„${articles.name}" enthält kein gültiges JSON. Prüfe, ob wirklich der articles.json-Export aus dem Wiki hochgeladen wurde, und lade ihn im Zweifel erneut herunter.`); }
-    try { templateJson = JSON.parse(t); } catch { throw new Error(`„${templates.name}" enthält kein gültiges JSON. Prüfe, ob wirklich der templates.json-Export aus dem Wiki hochgeladen wurde, und lade ihn im Zweifel erneut herunter.`); }
-    if (!Array.isArray(articleJson)) throw new Error(`„${articles.name}" ist keine JSON-Liste. Die Artikeldatei muss ein Array von Artikeln sein: [{ "title": …, … }, …].`);
-    if (!Array.isArray(templateJson)) throw new Error(`„${templates.name}" ist keine JSON-Liste. Die Vorlagendatei muss ein Array von Vorlagen sein: [{ "title": …, … }, …].`);
+    try { articleJson = JSON.parse(a); } catch { throw new Error(t("„{datei}\" enthält kein gültiges JSON. Prüfe, ob wirklich der articles.json-Export aus dem Wiki hochgeladen wurde, und lade ihn im Zweifel erneut herunter.", { datei: articles.name })); }
+    try { templateJson = JSON.parse(rohVorlagen); } catch { throw new Error(t("„{datei}\" enthält kein gültiges JSON. Prüfe, ob wirklich der templates.json-Export aus dem Wiki hochgeladen wurde, und lade ihn im Zweifel erneut herunter.", { datei: templates.name })); }
+    if (!Array.isArray(articleJson)) throw new Error(t("„{datei}\" ist keine JSON-Liste. Die Artikeldatei muss ein Array von Artikeln sein: [{ \"title\": …, … }, …].", { datei: articles.name }));
+    if (!Array.isArray(templateJson)) throw new Error(t("„{datei}\" ist keine JSON-Liste. Die Vorlagendatei muss ein Array von Vorlagen sein: [{ \"title\": …, … }, …].", { datei: templates.name }));
     const titles: Record<number, string> = {};
     for (const row of articleJson) {
       if (!row || typeof row !== "object") continue;
@@ -321,8 +329,8 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
     let mediaJson: unknown[] | undefined;
     if (mediaFile) {
       let parsed: unknown;
-      try { parsed = JSON.parse(await mediaFile.text()); } catch { throw new Error(`„${mediaFile.name}" enthält kein gültiges JSON. Das Dateiverzeichnis ist freiwillig — du kannst den Import auch ohne es starten.`); }
-      if (!Array.isArray(parsed)) throw new Error(`„${mediaFile.name}" ist keine JSON-Liste. Das Dateiverzeichnis muss ein Array von Dateien sein.`);
+      try { parsed = JSON.parse(await mediaFile.text()); } catch { throw new Error(t("„{datei}\" enthält kein gültiges JSON. Das Dateiverzeichnis ist freiwillig — du kannst den Import auch ohne es starten.", { datei: mediaFile.name })); }
+      if (!Array.isArray(parsed)) throw new Error(t("„{datei}\" ist keine JSON-Liste. Das Dateiverzeichnis muss ein Array von Dateien sein.", { datei: mediaFile.name }));
       mediaJson = parsed;
     }
     await sendToServer(articleJson, templateJson, base, mediaJson);
@@ -330,26 +338,28 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
 
   const runProbe = () => task.run(async () => {
     const base = wikiBaseUrl(wikiUrl);
-    if (!base) throw new Error("Gib zuerst eine gültige Wiki-Adresse ein. Beispiel: https://mein-wiki.fandom.com/de/");
+    if (!base) throw new Error(t("Gib zuerst eine gültige Wiki-Adresse ein. Beispiel: https://mein-wiki.fandom.com/de/"));
     if (base !== wikiUrl) setWikiUrl(base);
     setProbe(null);
     const controller = new AbortController(); liveAbort.current = controller; setCancelable(true);
-    try { setPhase("Wiki wird geprüft …"); setProbe(await probeWiki(base, controller.signal)); }
+    try { setPhase(t("Wiki wird geprüft …")); setProbe(await probeWiki(base, controller.signal)); }
     finally { liveAbort.current = null; setCancelable(false); setPhase(""); }
   });
 
   const loadFromWiki = () => task.run(async () => {
-    if (!probe) throw new Error("Prüfe zuerst die Wiki-Adresse.");
+    if (!probe) throw new Error(t("Prüfe zuerst die Wiki-Adresse."));
     const controller = new AbortController(); liveAbort.current = controller; setCancelable(true);
     try {
-      const liveArticles = await fetchWikiArticles(probe, (p) => setPhase(`Lädt Artikel … ${p.fetched}${p.total ? ` von ca. ${p.total}` : ""} (Stapel ${p.batch})`), controller.signal);
+      const liveArticles = await fetchWikiArticles(probe, (p) => setPhase(p.total
+        ? t("Lädt Artikel … {geladen} von ca. {gesamt} (Stapel {stapel})", { geladen: p.fetched, gesamt: p.total, stapel: p.batch })
+        : t("Lädt Artikel … {geladen} (Stapel {stapel})", { geladen: p.fetched, stapel: p.batch })), controller.signal);
       setPageTitles(Object.fromEntries(liveArticles.map((a) => [a.pageid, a.title])));
-      const liveTemplates = await fetchWikiTemplates(probe, (p) => setPhase(`Lädt Vorlagen … ${p.fetched} geladen (Stapel ${p.batch})`), controller.signal);
+      const liveTemplates = await fetchWikiTemplates(probe, (p) => setPhase(t("Lädt Vorlagen … {geladen} geladen (Stapel {stapel})", { geladen: p.fetched, stapel: p.batch })), controller.signal);
       // Ein Wiki, dessen Dateiliste nicht antwortet, ist kein gescheiterter Import: die Artikel
       // sind da, die Bilder heißen dann eben nur beim Namen. Deshalb wird hier gefangen.
       let liveMedia: LiveMediaFile[] = [];
-      try { liveMedia = await fetchWikiMedia(probe, (p) => setPhase(`Lädt Dateiverzeichnis … ${p.fetched} Dateien (Stapel ${p.batch})`), controller.signal); }
-      catch (error) { if (controller.signal.aborted) throw error; setMediaWarning("Das Dateiverzeichnis dieses Wikis war nicht abrufbar. Die Artikel werden vollständig importiert; die Bilder bleiben zunächst nur als Namen vermerkt."); }
+      try { liveMedia = await fetchWikiMedia(probe, (p) => setPhase(t("Lädt Dateiverzeichnis … {geladen} Dateien (Stapel {stapel})", { geladen: p.fetched, stapel: p.batch })), controller.signal); }
+      catch (error) { if (controller.signal.aborted) throw error; setMediaWarning(t("Das Dateiverzeichnis dieses Wikis war nicht abrufbar. Die Artikel werden vollständig importiert; die Bilder bleiben zunächst nur als Namen vermerkt.")); }
       const base = wikiBaseUrl(wikiUrl) ?? probe.endpoint;
       await sendToServer(liveArticles, liveTemplates, base, liveMedia);
     } finally { liveAbort.current = null; setCancelable(false); }
@@ -372,102 +382,104 @@ export function ImportView({ campaignId, onClose, onImported }: { campaignId: st
   };
   const switchMode = (next: "live" | "upload") => { setMode(next); task.setError(""); };
 
-  return <section className="import-view"><div className="document-toolbar"><Button variant="quiet" onClick={onClose}><ArrowLeft size={16} /> Zur Chronik</Button><span>Wiki importieren</span></div><div className="import-content">
-    <p className="eyebrow">Deine Welt zieht ein</p><h1>Geschichten mit Herkunft.</h1><p className="muted">Übernimm die Artikel eures Wikis. Du siehst vor dem Speichern, was ankommt, was sich nicht automatisch umwandeln ließ, und wie viel vom Originaltext erhalten bleibt.</p>
+  return <section className="import-view"><div className="document-toolbar"><Button variant="quiet" onClick={onClose}><ArrowLeft size={16} /> {t("Zur Chronik")}</Button><span>{t("Wiki importieren")}</span></div><div className="import-content">
+    <p className="eyebrow">{t("Deine Welt zieht ein")}</p><h1>{t("Geschichten mit Herkunft.")}</h1><p className="muted">{t("Übernimm die Artikel eures Wikis. Du siehst vor dem Speichern, was ankommt, was sich nicht automatisch umwandeln ließ, und wie viel vom Originaltext erhalten bleibt.")}</p>
     {task.error ? <Notice error>{friendlyImportError(task.error)}</Notice> : null}{resumeError ? <Notice error>{friendlyImportError(resumeError)}</Notice> : null}
-    {resuming ? <Loading text="Gespeicherter Importbericht wird geöffnet …" /> : !preview ? <form className="panel" onSubmit={submitIntake}>
-      <label>Adresse des Quell-Wikis<input type="url" value={wikiUrl} required disabled={task.busy} placeholder="https://mein-wiki.fandom.com/de/"
+    {resuming ? <Loading text={t("Gespeicherter Importbericht wird geöffnet …")} /> : !preview ? <form className="panel" onSubmit={submitIntake}>
+      <label>{t("Adresse des Quell-Wikis")}<input type="url" value={wikiUrl} required disabled={task.busy} placeholder="https://mein-wiki.fandom.com/de/"
         onChange={(event) => changeWikiUrl(event.target.value)} onBlur={normalizeWikiUrl} />
-        <span className="field-help">Die Basisadresse des Wikis — nicht die Adresse eines einzelnen Artikels. Sie erscheint als Quellenangabe an jedem übernommenen Absatz und wird dafür beim Verlassen des Felds automatisch auf die Basisadresse gekürzt.</span>
+        <span className="field-help">{t("Die Basisadresse des Wikis — nicht die Adresse eines einzelnen Artikels. Sie erscheint als Quellenangabe an jedem übernommenen Absatz und wird dafür beim Verlassen des Felds automatisch auf die Basisadresse gekürzt.")}</span>
       </label>
-      <label>Lizenz der importierten Texte<input value={license} maxLength={200} required disabled={task.busy} onChange={event => setLicense(event.target.value)} /></label>
+      <label>{t("Lizenz der importierten Texte")}<input value={license} maxLength={200} required disabled={task.busy} onChange={event => setLicense(event.target.value)} /></label>
 
       <div className="button-row">
-        <Button type="button" variant={mode === "live" ? "primary" : "quiet"} disabled={task.busy} onClick={() => switchMode("live")}><Globe size={16} /> Direkt aus dem Wiki laden</Button>
-        <Button type="button" variant={mode === "upload" ? "primary" : "quiet"} disabled={task.busy} onClick={() => switchMode("upload")}><FileJson size={16} /> Bereits exportierte Dateien hochladen</Button>
+        <Button type="button" variant={mode === "live" ? "primary" : "quiet"} disabled={task.busy} onClick={() => switchMode("live")}><Globe size={16} /> {t("Direkt aus dem Wiki laden")}</Button>
+        <Button type="button" variant={mode === "upload" ? "primary" : "quiet"} disabled={task.busy} onClick={() => switchMode("upload")}><FileJson size={16} /> {t("Bereits exportierte Dateien hochladen")}</Button>
       </div>
 
       {mode === "live" ? <div className="panel">
-        <p className="field-help">Diese Ansicht ruft Artikel und Vorlagen direkt über die MediaWiki-Schnittstelle des Wikis ab — dafür muss nichts exportiert oder hochgeladen werden. Voraussetzung: Das Wiki läuft auf MediaWiki (u. a. Fandom-Wikis, Wikipedia, die meisten selbstgehosteten Wikis) und ist ohne Anmeldung lesbar.</p>
+        <p className="field-help">{t("Diese Ansicht ruft Artikel und Vorlagen direkt über die MediaWiki-Schnittstelle des Wikis ab — dafür muss nichts exportiert oder hochgeladen werden. Voraussetzung: Das Wiki läuft auf MediaWiki (u. a. Fandom-Wikis, Wikipedia, die meisten selbstgehosteten Wikis) und ist ohne Anmeldung lesbar.")}</p>
         {!probe ? <>
-          <Button type="submit" variant="primary" disabled={task.busy || !wikiUrl.trim()}><Search size={16} /> Wiki prüfen</Button>
-          {!task.busy && !wikiUrl.trim() ? <p className="field-help">Gib zuerst oben die Adresse des Quell-Wikis ein.</p> : null}
+          <Button type="submit" variant="primary" disabled={task.busy || !wikiUrl.trim()}><Search size={16} /> {t("Wiki prüfen")}</Button>
+          {!task.busy && !wikiUrl.trim() ? <p className="field-help">{t("Gib zuerst oben die Adresse des Quell-Wikis ein.")}</p> : null}
         </> : <>
           <div className="import-metrics">
-            <div><strong>{probe.siteName}</strong><span>Wiki gefunden</span></div>
-            <div><strong>{probe.language || "?"}</strong><span>Sprache</span></div>
-            <div><strong>{probe.articlesCount}</strong><span>Artikel laut Wiki-Statistik</span></div>
-            <div><strong>{probe.license?.text ?? "unbekannt"}</strong><span>Lizenz</span></div>
+            <div><strong>{probe.siteName}</strong><span>{t("Wiki gefunden")}</span></div>
+            <div><strong>{probe.language || "?"}</strong><span>{t("Sprache")}</span></div>
+            <div><strong>{probe.articlesCount}</strong><span>{t("Artikel laut Wiki-Statistik")}</span></div>
+            <div><strong>{probe.license?.text ?? t("unbekannt")}</strong><span>{t("Lizenz")}</span></div>
           </div>
-          {probe.articlesCount > 2000 ? <Notice>Das sind sehr viele Artikel für einen einzelnen Import (Grenze: 20 MB Rohtext insgesamt für Artikel und Vorlagen zusammen). Das Laden kann lange dauern oder am Ende an der Größe scheitern.</Notice> : null}
+          {probe.articlesCount > 2000 ? <Notice>{t("Das sind sehr viele Artikel für einen einzelnen Import (Grenze: 20 MB Rohtext insgesamt für Artikel und Vorlagen zusammen). Das Laden kann lange dauern oder am Ende an der Größe scheitern.")}</Notice> : null}
           <div className="button-row">
-            <Button type="submit" variant="primary" disabled={task.busy}><Upload size={16} /> Ist das dein Wiki? Artikel und Vorlagen jetzt laden</Button>
-            <Button type="button" variant="quiet" disabled={task.busy} onClick={() => setProbe(null)}>Andere Adresse prüfen</Button>
+            <Button type="submit" variant="primary" disabled={task.busy}><Upload size={16} /> {t("Ist das dein Wiki? Artikel und Vorlagen jetzt laden")}</Button>
+            <Button type="button" variant="quiet" disabled={task.busy} onClick={() => setProbe(null)}>{t("Andere Adresse prüfen")}</Button>
           </div>
         </>}
       </div> : <div className="panel">
-        <p>Zwei JSON-Dateien aus einem MediaWiki-API-Export dieses Wikis, optional eine dritte für die Bilder: <strong>articles.json</strong> (ein Eintrag je Artikel mit Titel, Seiten-ID, Namensraum, Revisions-ID und dem vollständigen Wikitext) und <strong>templates.json</strong> (ein Eintrag je Infobox-Vorlage mit Titel und Quelltext). Das ist NICHT die Datei aus „Spezial:Exportieren" des Wikis — die liefert XML ohne Vorlagen und ohne Seiten-ID. Ohne eigenen JSON-Export lieber oben „Direkt aus dem Wiki laden" verwenden.</p>
-        <details><summary>Genaues Format der Dateien</summary>
+        {/* Die beiden Dateinamen stehen als Platzhalter im Satz, damit der Satz als Ganzes
+            übersetzbar bleibt; hervorgehoben werden sie weiterhin über die Auszeichnung. */}
+        <p>{t("Zwei JSON-Dateien aus einem MediaWiki-API-Export dieses Wikis, optional eine dritte für die Bilder: {artikeldatei} (ein Eintrag je Artikel mit Titel, Seiten-ID, Namensraum, Revisions-ID und dem vollständigen Wikitext) und {vorlagendatei} (ein Eintrag je Infobox-Vorlage mit Titel und Quelltext).", { artikeldatei: "articles.json", vorlagendatei: "templates.json" })} {t("Das ist NICHT die Datei aus „Spezial:Exportieren\" des Wikis — die liefert XML ohne Vorlagen und ohne Seiten-ID.")} {t("Ohne eigenen JSON-Export lieber oben „Direkt aus dem Wiki laden\" verwenden.")}</p>
+        <details><summary>{t("Genaues Format der Dateien")}</summary>
           <pre>{"articles.json:  [{ \"title\": \"Erismus\", \"pageid\": 305, \"ns\": 0, \"revid\": 1023, \"wikitext\": \"…\" }, …]\ntemplates.json: [{ \"title\": \"Vorlage:Person\", \"source\": \"…\" }, …]\nmedia.json:     [{ \"title\": \"Datei:Bodin.jpg\", \"url\": \"https://…\", \"uploader\": \"…\", \"used_by_articles\": [\"Bodin\"] }, …]"}</pre>
         </details>
         <div className="import-files">
-          <label><FileJson size={20} /> Artikeldatei<input type="file" accept=".json,application/json" required disabled={task.busy} onChange={(event) => setArticles(event.target.files?.[0] ?? null)} /><span className="field-help">articles.json mit vollständigem Wikitext</span></label>
-          <label><FileJson size={20} /> Vorlagendatei<input type="file" accept=".json,application/json" required disabled={task.busy} onChange={(event) => setTemplates(event.target.files?.[0] ?? null)} /><span className="field-help">templates.json mit Infobox-Definitionen</span></label>
+          <label><FileJson size={20} /> {t("Artikeldatei")}<input type="file" accept=".json,application/json" required disabled={task.busy} onChange={(event) => setArticles(event.target.files?.[0] ?? null)} /><span className="field-help">{t("articles.json mit vollständigem Wikitext")}</span></label>
+          <label><FileJson size={20} /> {t("Vorlagendatei")}<input type="file" accept=".json,application/json" required disabled={task.busy} onChange={(event) => setTemplates(event.target.files?.[0] ?? null)} /><span className="field-help">{t("templates.json mit Infobox-Definitionen")}</span></label>
           {/* Freiwillig, und deshalb ohne `required`: ohne diese Datei importieren die Artikel
               vollstaendig, die Bilder heissen dann eben nur beim Namen. Mit ihr kommen Uploader,
               Lizenzstand und die Adresse mit, unter der die Bilddateien zu holen sind. */}
-          <label><ImageIcon size={20} /> Dateiverzeichnis <small>(freiwillig)</small><input type="file" accept=".json,application/json" disabled={task.busy} onChange={(event) => setMediaFile(event.target.files?.[0] ?? null)} /><span className="field-help">media.json mit Herkunft und Lizenzstand der Bilder</span></label>
+          <label><ImageIcon size={20} /> {t("Dateiverzeichnis")} <small>{t("(freiwillig)")}</small><input type="file" accept=".json,application/json" disabled={task.busy} onChange={(event) => setMediaFile(event.target.files?.[0] ?? null)} /><span className="field-help">{t("media.json mit Herkunft und Lizenzstand der Bilder")}</span></label>
         </div>
-        <Button type="submit" variant="primary" disabled={task.busy || !articles || !templates || !wikiUrl.trim()}><Upload size={16} /> Importvorschau erstellen</Button>
+        <Button type="submit" variant="primary" disabled={task.busy || !articles || !templates || !wikiUrl.trim()}><Upload size={16} /> {t("Importvorschau erstellen")}</Button>
         {!task.busy && (!wikiUrl.trim() || !articles || !templates) ? <p className="field-help">
-          {!wikiUrl.trim() ? "Gib zuerst oben die Adresse des Quell-Wikis ein." : !articles && !templates ? "Wähle beide Dateien aus." : !articles ? "Es fehlt noch die Artikeldatei (articles.json)." : "Es fehlt noch die Vorlagendatei (templates.json)."}
+          {!wikiUrl.trim() ? t("Gib zuerst oben die Adresse des Quell-Wikis ein.") : !articles && !templates ? t("Wähle beide Dateien aus.") : !articles ? t("Es fehlt noch die Artikeldatei (articles.json).") : t("Es fehlt noch die Vorlagendatei (templates.json).")}
         </p> : null}
       </div>}
 
-      {task.busy ? <div className="button-row"><Loading text={phase || "Wird verarbeitet …"} />{cancelable ? <Button type="button" variant="quiet" onClick={cancelLive}>Abbrechen</Button> : null}</div> : null}
+      {task.busy ? <div className="button-row"><Loading text={phase || t("Wird verarbeitet …")} />{cancelable ? <Button type="button" variant="quiet" onClick={cancelLive}>{t("Abbrechen")}</Button> : null}</div> : null}
 
-      <details><summary>Vollständige Autorennachweise ergänzen</summary><p>Für eine spätere öffentliche Freigabe brauchen importierte Texte die vollständige Autorenhistorie und den Revisionsnachweis ihrer Quelle. Fehlende Angaben bleiben ausdrücklich offen.</p>
-        <label>Autorennachweise als JSON<input type="file" accept=".json,application/json" disabled={task.busy} onChange={event => { setAttributionFile(event.target.files?.[0] ?? null); setAttributionConfirmed(false); }} /></label>
-        <p className="field-help">Die Datei ordnet jeder Seitenkennung einen Nachweis mit complete, authors, anonymousContributions und revisionSha1 zu. Verwende die vollständige Historie, nicht nur den letzten Bearbeiter.</p>
-        <label className="check-label"><input type="checkbox" disabled={!attributionFile || task.busy} checked={attributionConfirmed} onChange={event => setAttributionConfirmed(event.target.checked)} /> Die mitgelieferten Nachweise enthalten die vollständige Autorenhistorie der angegebenen Seiten.</label>
+      <details><summary>{t("Vollständige Autorennachweise ergänzen")}</summary><p>{t("Für eine spätere öffentliche Freigabe brauchen importierte Texte die vollständige Autorenhistorie und den Revisionsnachweis ihrer Quelle. Fehlende Angaben bleiben ausdrücklich offen.")}</p>
+        <label>{t("Autorennachweise als JSON")}<input type="file" accept=".json,application/json" disabled={task.busy} onChange={event => { setAttributionFile(event.target.files?.[0] ?? null); setAttributionConfirmed(false); }} /></label>
+        <p className="field-help">{t("Die Datei ordnet jeder Seitenkennung einen Nachweis mit complete, authors, anonymousContributions und revisionSha1 zu. Verwende die vollständige Historie, nicht nur den letzten Bearbeiter.")}</p>
+        <label className="check-label"><input type="checkbox" disabled={!attributionFile || task.busy} checked={attributionConfirmed} onChange={event => setAttributionConfirmed(event.target.checked)} /> {t("Die mitgelieferten Nachweise enthalten die vollständige Autorenhistorie der angegebenen Seiten.")}</label>
       </details>
     </form> : <>
       {applied !== null ? <div ref={successRef} className="panel">
-        <div className="section-heading"><h2><Check size={18} /> Import abgeschlossen</h2></div>
-        <p>{applied} von {preview.entries.length} ausgewählten Artikeln {applied === 1 ? "wurde" : "wurden"} jetzt gespeichert — Teil eines Imports mit insgesamt {preview.report.eintraege} Artikeln und {preview.report.passagen} Passagen ({formatPercent(preview.report.textErhaltung)} Texterhaltung). Importbericht und unveränderte Quelle bleiben auf dem Server gespeichert.</p>
-        <div className="button-row"><Button variant="primary" onClick={onClose}><ArrowLeft size={16} /> Zur Chronik — importierte Artikel ansehen</Button></div>
+        <div className="section-heading"><h2><Check size={18} /> {t("Import abgeschlossen")}</h2></div>
+        <p>{plural(applied, "{n} von {ausgewaehlt} ausgewählten Artikeln wurde jetzt gespeichert — Teil eines Imports mit insgesamt {eintraege} Artikeln und {passagen} Passagen ({erhaltung} Texterhaltung).", "{n} von {ausgewaehlt} ausgewählten Artikeln wurden jetzt gespeichert — Teil eines Imports mit insgesamt {eintraege} Artikeln und {passagen} Passagen ({erhaltung} Texterhaltung).", { ausgewaehlt: preview.entries.length, eintraege: preview.report.eintraege, passagen: preview.report.passagen, erhaltung: formatPercent(preview.report.textErhaltung) })} {t("Importbericht und unveränderte Quelle bleiben auf dem Server gespeichert.")}</p>
+        <div className="button-row"><Button variant="primary" onClick={onClose}><ArrowLeft size={16} /> {t("Zur Chronik — importierte Artikel ansehen")}</Button></div>
       </div> : null}
-      {!preview.attributionComplete ? <Notice>Die vollständige Autorenhistorie und Revisionsnachweise fehlen in diesem Export. Diese Lücke bleibt in jeder Quellenangabe vermerkt. Importierte Texte bleiben Notizen; Medien sind nicht als lizenzgeprüft freigegeben.</Notice> : null}
+      {!preview.attributionComplete ? <Notice>{t("Die vollständige Autorenhistorie und Revisionsnachweise fehlen in diesem Export. Diese Lücke bleibt in jeder Quellenangabe vermerkt. Importierte Texte bleiben Notizen; Medien sind nicht als lizenzgeprüft freigegeben.")}</Notice> : null}
       {mediaWarning ? <Notice>{mediaWarning}</Notice> : null}
-      {preview.medien && preview.medien.dateien > 0 ? <section className="panel"><div className="section-heading"><h2><ImageIcon size={18} /> Die Bilder</h2><span className="muted">{preview.medien.dateien} Dateien</span></div>
-        <p className="field-help">Bilder werden mit importiert: Herkunft, Uploader und Lizenzstand kommen jetzt mit, die Bilddateien selbst holst du danach in der Chronik unter „Bilder“ — in einem eigenen Schritt, damit ein langsames Bild nie den Text aufhält.</p>
+      {preview.medien && preview.medien.dateien > 0 ? <section className="panel"><div className="section-heading"><h2><ImageIcon size={18} /> {t("Die Bilder")}</h2><span className="muted">{plural(preview.medien.dateien, "{n} Datei", "{n} Dateien")}</span></div>
+        <p className="field-help">{t("Bilder werden mit importiert: Herkunft, Uploader und Lizenzstand kommen jetzt mit, die Bilddateien selbst holst du danach in der Chronik unter „Bilder“ — in einem eigenen Schritt, damit ein langsames Bild nie den Text aufhält.")}</p>
         <div className="import-metrics">
-          <div><strong>{preview.medien.verwendet}</strong><span>in Artikeln verwendet</span></div>
-          <div><strong>{preview.medien.abrufbar}</strong><span>mit abrufbarer Datei</span></div>
-          <div><strong>{preview.medien.verwaist}</strong><span>von keinem Artikel benutzt</span></div>
-          <div><strong>{preview.medien.nachLizenz.unbekannt}</strong><span>ohne dokumentierte Lizenz</span></div>
+          <div><strong>{preview.medien.verwendet}</strong><span>{t("in Artikeln verwendet")}</span></div>
+          <div><strong>{preview.medien.abrufbar}</strong><span>{t("mit abrufbarer Datei")}</span></div>
+          <div><strong>{preview.medien.verwaist}</strong><span>{t("von keinem Artikel benutzt")}</span></div>
+          <div><strong>{preview.medien.nachLizenz.unbekannt}</strong><span>{t("ohne dokumentierte Lizenz")}</span></div>
         </div>
-        {preview.medien.nachLizenz.unbekannt > 0 ? <p className="field-help">Bei {preview.medien.nachLizenz.unbekannt} von {preview.medien.dateien} Dateien nennt das Quell-Wiki keine Lizenz. Sie werden importiert und sichtbar als „Lizenz unbekannt“ geführt — nicht stillschweigend als frei behandelt. Du kannst den Status je Datei selbst setzen.</p> : null}
-        {preview.medien.fehlend > 0 ? <p className="field-help">{preview.medien.fehlend} {preview.medien.fehlend === 1 ? "Datei wird" : "Dateien werden"} in Artikeln erwähnt, {preview.medien.fehlend === 1 ? "existiert" : "existieren"} im Quell-Wiki aber nicht.</p> : null}
+        {preview.medien.nachLizenz.unbekannt > 0 ? <p className="field-help">{t("Bei {ohne} von {gesamt} Dateien nennt das Quell-Wiki keine Lizenz. Sie werden importiert und sichtbar als „Lizenz unbekannt“ geführt — nicht stillschweigend als frei behandelt. Du kannst den Status je Datei selbst setzen.", { ohne: preview.medien.nachLizenz.unbekannt, gesamt: preview.medien.dateien })}</p> : null}
+        {preview.medien.fehlend > 0 ? <p className="field-help">{plural(preview.medien.fehlend, "{n} Datei wird in Artikeln erwähnt, existiert im Quell-Wiki aber nicht.", "{n} Dateien werden in Artikeln erwähnt, existieren im Quell-Wiki aber nicht.")}</p> : null}
       </section> : null}
-      <div className="import-metrics"><div><strong>{preview.report.eintraege}</strong><span>Artikel</span></div><div><strong>{preview.report.passagen}</strong><span>Passagen</span></div><div><strong>{preview.report.aliase}</strong><span>Weiterleitungen</span></div><div><strong>{formatPercent(preview.report.textErhaltung)}</strong><span>Texterhaltung</span></div><div><strong>{preview.report.verluste.length}</strong><span>Hinweise zur Übernahme</span></div></div>
-      <div className="button-row import-actions"><Button disabled={task.busy} onClick={() => void download()}><Download size={16} /> Quelle und Bericht sichern</Button><Button onClick={() => { navigator.clipboard?.writeText(location.href).catch(() => task.setError("Der Link konnte nicht kopiert werden. Kopiere die Adresse aus der Browserzeile.")); }}>Bericht-Link kopieren</Button></div>
-      <section className="panel"><div className="section-heading"><h2>Was möchtest du übernehmen?</h2><span className="muted">{selected.size} ausgewählt</span></div><p className="field-help">{preview.notice}</p>
-        <div className="button-row"><Button onClick={() => setSelected(new Set(preview.entries.filter((entry) => !entry.existing).map((entry) => entry.id)))}>Alle neuen Artikel auswählen</Button><Button onClick={() => setSelected(new Set())}>Auswahl aufheben</Button></div>
-        <div className="import-entry-list">{preview.entries.map((entry) => <label key={entry.id}><input type="checkbox" checked={selected.has(entry.id)} disabled={task.busy} onChange={(event) => setSelected((current) => { const next = new Set(current); if (event.target.checked) next.add(entry.id); else next.delete(entry.id); return next; })} /><span>{entry.title}{entry.existing ? <small>Vorhandenen Artikel nach Prüfung ersetzen</small> : <small>Neuer Artikel</small>}</span></label>)}</div>
+      <div className="import-metrics"><div><strong>{preview.report.eintraege}</strong><span>{plural(preview.report.eintraege, "Artikel", "Artikel")}</span></div><div><strong>{preview.report.passagen}</strong><span>{t("Passagen")}</span></div><div><strong>{preview.report.aliase}</strong><span>{t("Weiterleitungen")}</span></div><div><strong>{formatPercent(preview.report.textErhaltung)}</strong><span>{t("Texterhaltung")}</span></div><div><strong>{preview.report.verluste.length}</strong><span>{t("Hinweise zur Übernahme")}</span></div></div>
+      <div className="button-row import-actions"><Button disabled={task.busy} onClick={() => void download()}><Download size={16} /> {t("Quelle und Bericht sichern")}</Button><Button onClick={() => { navigator.clipboard?.writeText(location.href).catch(() => task.setError(t("Der Link konnte nicht kopiert werden. Kopiere die Adresse aus der Browserzeile."))); }}>{t("Bericht-Link kopieren")}</Button></div>
+      <section className="panel"><div className="section-heading"><h2>{t("Was möchtest du übernehmen?")}</h2><span className="muted">{t("{anzahl} ausgewählt", { anzahl: selected.size })}</span></div><p className="field-help">{preview.notice}</p>
+        <div className="button-row"><Button onClick={() => setSelected(new Set(preview.entries.filter((entry) => !entry.existing).map((entry) => entry.id)))}>{t("Alle neuen Artikel auswählen")}</Button><Button onClick={() => setSelected(new Set())}>{t("Auswahl aufheben")}</Button></div>
+        <div className="import-entry-list">{preview.entries.map((entry) => <label key={entry.id}><input type="checkbox" checked={selected.has(entry.id)} disabled={task.busy} onChange={(event) => setSelected((current) => { const next = new Set(current); if (event.target.checked) next.add(entry.id); else next.delete(entry.id); return next; })} /><span>{entry.title}{entry.existing ? <small>{t("Vorhandenen Artikel nach Prüfung ersetzen")}</small> : <small>{t("Neuer Artikel")}</small>}</span></label>)}</div>
         <Button variant="primary" disabled={task.busy || selected.size === 0} onClick={() => void task.run(async () => {
           const result = await api<{ applied: number }>(apiPath(campaignId, `/imports/${encodeURIComponent(preview.artifactId)}/accept`), { method: "POST", body: { entryIds: [...selected] } });
           setApplied(result.applied); setSelected(new Set()); onImported();
           const url = new URL(location.href); url.searchParams.delete("import"); window.history.replaceState(null, "", url);
-        })}><Check size={16} /> Auswahl übernehmen</Button>
+        })}><Check size={16} /> {t("Auswahl übernehmen")}</Button>
       </section>
-      <section className="panel"><h2>Was nicht vollständig umgewandelt wurde</h2><p className="field-help">Die ehrliche Liste dessen, was nicht automatisch übernommen wurde — die Originalquelle bleibt dabei vollständig im gespeicherten Importartefakt erhalten.</p>
+      <section className="panel"><h2>{t("Was nicht vollständig umgewandelt wurde")}</h2><p className="field-help">{t("Die ehrliche Liste dessen, was nicht automatisch übernommen wurde — die Originalquelle bleibt dabei vollständig im gespeicherten Importartefakt erhalten.")}</p>
         {preview.report.verluste.length ? groupLosses(preview.report.verluste).map(([art, items]) => {
           const examples = [...new Set(items.map((loss) => lossSubject(loss.bezeichnung, pageTitles)))];
-          return <details key={art}><summary>{art} ({items.length}) — u. a. {examples.slice(0, 3).join(", ")}{examples.length > 3 ? " …" : ""}</summary>
-            <div className="import-losses">{items.map((loss, i) => <details key={`${loss.bezeichnung}-${i}`}><summary>{lossSubject(loss.bezeichnung, pageTitles)}</summary><pre>{loss.detail ?? "Die ursprüngliche Quelle bleibt im Importartefakt erhalten."}</pre></details>)}</div>
+          return <details key={art}><summary>{t("{art} ({anzahl}) — u. a. {beispiele}", { art, anzahl: items.length, beispiele: `${examples.slice(0, 3).join(", ")}${examples.length > 3 ? " …" : ""}` })}</summary>
+            <div className="import-losses">{items.map((loss, i) => <details key={`${loss.bezeichnung}-${i}`}><summary>{lossSubject(loss.bezeichnung, pageTitles)}</summary><pre>{loss.detail ?? t("Die ursprüngliche Quelle bleibt im Importartefakt erhalten.")}</pre></details>)}</div>
           </details>;
-        }) : <p className="muted">Für diese Artikel wurden keine Umwandlungsverluste gemeldet.</p>}
+        }) : <p className="muted">{t("Für diese Artikel wurden keine Umwandlungsverluste gemeldet.")}</p>}
       </section>
     </>}
   </div></section>;

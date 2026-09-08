@@ -2,22 +2,35 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Building2, Castle, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree } from "lucide-react";
 import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
+import { locale, t } from "../i18n";
 import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
 
+// Die Anzeigetexte stehen als Tabelle daneben, damit die Anzeigestelle sie mit `t` nachschlägt.
+const MAP_KIND_LABEL = { siedlung: "Stadt & Dorf", grundriss: "Gebäude & Dungeon", hoehle: "Höhle" } as const;
+const MAP_KIND_TITEL = {
+  siedlung: "Straßen, Viertel und begehbare Gebäude",
+  grundriss: "Vom Wohnhaus über das Labor bis zur Raumstation",
+  hoehle: "Natürliche Kammern und gewachsener Fels",
+} as const;
 export const MAP_KINDS = [
-  { id: "siedlung", label: "Stadt & Dorf", text: "Straßen, Viertel und begehbare Gebäude", icon: Building2 },
-  { id: "grundriss", label: "Gebäude & Dungeon", text: "Vom Wohnhaus über das Labor bis zur Raumstation", icon: Castle },
-  { id: "hoehle", label: "Höhle", text: "Natürliche Kammern und gewachsener Fels", icon: Mountain },
+  { id: "siedlung", label: MAP_KIND_LABEL.siedlung, text: MAP_KIND_TITEL.siedlung, icon: Building2 },
+  { id: "grundriss", label: MAP_KIND_LABEL.grundriss, text: MAP_KIND_TITEL.grundriss, icon: Castle },
+  { id: "hoehle", label: MAP_KIND_LABEL.hoehle, text: MAP_KIND_TITEL.hoehle, icon: Mountain },
 ] as const;
 
+const MAP_LOCATION_LABEL = { ebene: "Ebene", wald: "Wald", gebirge: "Gebirge", fluss: "Fluss", see: "See", kueste: "Küste", insel: "Insel" } as const;
+const MAP_LOCATION_TITEL = {
+  ebene: "Offenes Land & Felder", wald: "Lichtung im dichten Wald", gebirge: "Ein Ort zwischen Felsen", fluss: "Ufer, Brücken & Wege",
+  see: "Siedlung am Seeufer", kueste: "Strand & offenes Meer", insel: "Rundum vom Meer umgeben",
+} as const;
 export const MAP_LOCATIONS = [
-  { id: "ebene", label: "Ebene", text: "Offenes Land & Felder", icon: Sprout },
-  { id: "wald", label: "Wald", text: "Lichtung im dichten Wald", icon: Trees },
-  { id: "gebirge", label: "Gebirge", text: "Ein Ort zwischen Felsen", icon: Mountain },
-  { id: "fluss", label: "Fluss", text: "Ufer, Brücken & Wege", icon: Waves },
-  { id: "see", label: "See", text: "Siedlung am Seeufer", icon: Circle },
-  { id: "kueste", label: "Küste", text: "Strand & offenes Meer", icon: Sailboat },
-  { id: "insel", label: "Insel", text: "Rundum vom Meer umgeben", icon: Palmtree },
+  { id: "ebene", label: MAP_LOCATION_LABEL.ebene, text: MAP_LOCATION_TITEL.ebene, icon: Sprout },
+  { id: "wald", label: MAP_LOCATION_LABEL.wald, text: MAP_LOCATION_TITEL.wald, icon: Trees },
+  { id: "gebirge", label: MAP_LOCATION_LABEL.gebirge, text: MAP_LOCATION_TITEL.gebirge, icon: Mountain },
+  { id: "fluss", label: MAP_LOCATION_LABEL.fluss, text: MAP_LOCATION_TITEL.fluss, icon: Waves },
+  { id: "see", label: MAP_LOCATION_LABEL.see, text: MAP_LOCATION_TITEL.see, icon: Circle },
+  { id: "kueste", label: MAP_LOCATION_LABEL.kueste, text: MAP_LOCATION_TITEL.kueste, icon: Sailboat },
+  { id: "insel", label: MAP_LOCATION_LABEL.insel, text: MAP_LOCATION_TITEL.insel, icon: Palmtree },
 ] as const;
 
 export function MapGenerationControls({ value, defaults, onChange, compact = false, profileLocked = false }: {
@@ -32,57 +45,57 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     ...(["weiler", "dorf", "stadt"] as const).map((art, index) => {
       const fallback = [{ ausdehnung: [24, 20], bauwerke: 12, strassenDichte: .15, licht: false }, defaults.siedlung, { ausdehnung: [56, 44], bauwerke: 130, strassenDichte: .55, licht: true }][index]!;
       const preset = defaults.siedlungsarten?.[art] ?? fallback;
-      return { label: ["Weiler", "Dorf", "Stadt"][index]!, breite: preset.ausdehnung[0]!, hoehe: preset.ausdehnung[1]!, anzahl: preset.bauwerke, siedlung: art, dichte: preset.strassenDichte, licht: preset.licht };
+      return { label: [t("Weiler"), t("Dorf"), t("Stadt")][index]!, breite: preset.ausdehnung[0]!, hoehe: preset.ausdehnung[1]!, anzahl: preset.bauwerke, siedlung: art, dichte: preset.strassenDichte, licht: preset.licht };
     }),
-    { label: "Großstadt", breite: 88, hoehe: 64, anzahl: 256, siedlung: "stadt" as const, dichte: .7 },
-  ] : [ { label: "Klein", breite: 24, hoehe: 20, anzahl: 5 }, { label: "Mittel", breite: 40, hoehe: 30, anzahl: 11 }, { label: "Groß", breite: 64, hoehe: 48, anzahl: 24 } ];
+    { label: t("Großstadt"), breite: 88, hoehe: 64, anzahl: 256, siedlung: "stadt" as const, dichte: .7 },
+  ] : [ { label: t("Klein"), breite: 24, hoehe: 20, anzahl: 5 }, { label: t("Mittel"), breite: 40, hoehe: 30, anzahl: 11 }, { label: t("Groß"), breite: 64, hoehe: 48, anzahl: 24 } ];
   const changeArt = (art: MapArt) => update({ art, breite: "", hoehe: "", anzahl: "" });
   return <div className={`map-generation-controls${compact ? " compact" : ""}`}>
-    {compact ? <label>Was liegt hinter dieser Tür?<select value={value.art} onChange={event => changeArt(event.target.value as MapArt)}>
-      {MAP_KINDS.map(kind => <option key={kind.id} value={kind.id}>{kind.label}</option>)}
-    </select></label> : <div className="map-kind-cards" role="group" aria-label="Art der Karte">
-      {MAP_KINDS.map(({ id, label, text, icon: Icon }) => <button type="button" key={id} aria-pressed={value.art === id} onClick={() => changeArt(id)}><Icon size={23} /><strong>{label}</strong><span>{text}</span></button>)}
+    {compact ? <label>{t("Was liegt hinter dieser Tür?")}<select value={value.art} onChange={event => changeArt(event.target.value as MapArt)}>
+      {MAP_KINDS.map(kind => <option key={kind.id} value={kind.id}>{t(MAP_KIND_LABEL[kind.id])}</option>)}
+    </select></label> : <div className="map-kind-cards" role="group" aria-label={t("Art der Karte")}>
+      {MAP_KINDS.map(({ id, icon: Icon }) => <button type="button" key={id} aria-pressed={value.art === id} onClick={() => changeArt(id)}><Icon size={23} /><strong>{t(MAP_KIND_LABEL[id])}</strong><span>{t(MAP_KIND_TITEL[id])}</span></button>)}
     </div>}
-    {city ? <section className="map-location-section" aria-label="Standort der Siedlung">
-      <div className="map-setting-heading"><MapPin size={16} /><strong>Wo liegt dein Ort?</strong></div>
-      <div className="map-location-cards" role="group" aria-label="Landschaft auswählen">
-        {MAP_LOCATIONS.map(({ id, label, text, icon: Icon }) => <button type="button" key={id} aria-pressed={value.standort === id} onClick={() => update({ standort: id })}>
-          <span className={`map-location-swatch ${id}`} aria-hidden="true"><Icon size={20} /></span><span><strong>{label}</strong><small>{text}</small></span>
+    {city ? <section className="map-location-section" aria-label={t("Standort der Siedlung")}>
+      <div className="map-setting-heading"><MapPin size={16} /><strong>{t("Wo liegt dein Ort?")}</strong></div>
+      <div className="map-location-cards" role="group" aria-label={t("Landschaft auswählen")}>
+        {MAP_LOCATIONS.map(({ id, icon: Icon }) => <button type="button" key={id} aria-pressed={value.standort === id} onClick={() => update({ standort: id })}>
+          <span className={`map-location-swatch ${id}`} aria-hidden="true"><Icon size={20} /></span><span><strong>{t(MAP_LOCATION_LABEL[id])}</strong><small>{t(MAP_LOCATION_TITEL[id])}</small></span>
         </button>)}
       </div>
-      <small>Bestimmt Gelände, Wasser und bebaubares Land. Danach kannst du die Landschaft frei bearbeiten.</small>
+      <small>{t("Bestimmt Gelände, Wasser und bebaubares Land. Danach kannst du die Landschaft frei bearbeiten.")}</small>
     </section> : null}
-    {!cave ? <div className="map-era-section"><span className="map-setting-heading"><strong>Setting</strong><span>Welt & Einrichtung</span></span>
-      <div className="map-era-options" role="group" aria-label="Setting">{KARTEN_SETTINGS.map(setting => <button type="button" key={setting} aria-pressed={value.setting === setting} onClick={() => onChange(changeGenerationSetting(value, setting))}>
-        <strong>{KARTEN_SETTING_LABEL[setting]}</strong><small>{setting === "fantasy" ? "Gewachsene Orte & alte Mauern" : setting === "gegenwart" ? "Stadtblöcke, Alltag & Industrie" : "Kolonien, Decks & Zukunftstechnik"}</small>
-      </button>)}</div><small>Bestimmt Stadtstruktur und Ausstattung. Der passende Zeichenstil wird vorausgewählt.</small>
+    {!cave ? <div className="map-era-section"><span className="map-setting-heading"><strong>{t("Setting")}</strong><span>{t("Welt & Einrichtung")}</span></span>
+      <div className="map-era-options" role="group" aria-label={t("Setting")}>{KARTEN_SETTINGS.map(setting => <button type="button" key={setting} aria-pressed={value.setting === setting} onClick={() => onChange(changeGenerationSetting(value, setting))}>
+        <strong>{t(KARTEN_SETTING_LABEL[setting])}</strong><small>{setting === "fantasy" ? t("Gewachsene Orte & alte Mauern") : setting === "gegenwart" ? t("Stadtblöcke, Alltag & Industrie") : t("Kolonien, Decks & Zukunftstechnik")}</small>
+      </button>)}</div><small>{t("Bestimmt Stadtstruktur und Ausstattung. Der passende Zeichenstil wird vorausgewählt.")}</small>
     </div> : null}
-    {value.art === "grundriss" ? <label>{profileLocked ? "Innenraum für Gebäudetyp" : "Gebäudetyp"}<select disabled={profileLocked} value={value.profil} onChange={event => update({ profil: event.target.value as GenerationSettings["profil"] })}>
-      <option value="frei">Freier Grundriss / Dungeon</option><optgroup label={`Passend zu ${KARTEN_SETTING_LABEL[value.setting]}`}>{suggested.map(typ => <option key={typ} value={typ}>{BAUWERK_LABEL[typ]}</option>)}</optgroup>
-      <optgroup label="Weitere Gebäudetypen">{BAUWERK_TYPEN.filter(typ => !suggested.includes(typ)).map(typ => <option key={typ} value={typ}>{BAUWERK_LABEL[typ]}</option>)}</optgroup>
+    {value.art === "grundriss" ? <label>{profileLocked ? t("Innenraum für Gebäudetyp") : t("Gebäudetyp")}<select disabled={profileLocked} value={value.profil} onChange={event => update({ profil: event.target.value as GenerationSettings["profil"] })}>
+      <option value="frei">{t("Freier Grundriss / Dungeon")}</option><optgroup label={t("Passend zu {setting}", { setting: t(KARTEN_SETTING_LABEL[value.setting]) })}>{suggested.map(typ => <option key={typ} value={typ}>{t(BAUWERK_LABEL[typ])}</option>)}</optgroup>
+      <optgroup label={t("Weitere Gebäudetypen")}>{BAUWERK_TYPEN.filter(typ => !suggested.includes(typ)).map(typ => <option key={typ} value={typ}>{t(BAUWERK_LABEL[typ])}</option>)}</optgroup>
     </select></label> : null}
-    <div className="map-setting-heading"><Ruler size={16} /><strong>{city ? "Siedlungsgröße" : "Kartengröße"}</strong><span>{w} × {h} Zellen</span></div>
-    <div className="map-size-presets" role="group" aria-label="Größenprofile">{presets.map(preset => <button type="button" key={preset.label}
+    <div className="map-setting-heading"><Ruler size={16} /><strong>{city ? t("Siedlungsgröße") : t("Kartengröße")}</strong><span>{t("{breite} × {hoehe} Zellen", { breite: w, hoehe: h })}</span></div>
+    <div className="map-size-presets" role="group" aria-label={t("Größenprofile")}>{presets.map(preset => <button type="button" key={preset.label}
       aria-pressed={value.breite === preset.breite && value.hoehe === preset.hoehe && value.anzahl === preset.anzahl} onClick={() => update(preset)}>{preset.label}</button>)}</div>
     <div className="map-numbers">
-      <label>Breite<input type="number" min={12} max={192} step={1} value={value.breite} placeholder={String(w)} onChange={event => update({ breite: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
-      <label>Höhe<input type="number" min={12} max={192} step={1} value={value.hoehe} placeholder={String(h)} onChange={event => update({ hoehe: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
-      <label>{city ? "Gebäude" : cave ? "Kammern" : "Räume"}<input type="number" min={city ? 1 : 2} max={city ? 256 : cave ? 32 : 64} step={1} value={value.anzahl}
+      <label>{t("Breite")}<input type="number" min={12} max={192} step={1} value={value.breite} placeholder={String(w)} onChange={event => update({ breite: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
+      <label>{t("Höhe")}<input type="number" min={12} max={192} step={1} value={value.hoehe} placeholder={String(h)} onChange={event => update({ hoehe: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
+      <label>{city ? t("Gebäude") : cave ? t("Kammern") : t("Räume")}<input type="number" min={city ? 1 : 2} max={city ? 256 : cave ? 32 : 64} step={1} value={value.anzahl}
         placeholder={String(city ? cityDefaults.bauwerke : cave ? defaults.hoehle.kammern : defaults.grundriss.raeume)} onChange={event => update({ anzahl: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
     </div>
-    <small className="field-help">{(w * std.zellgroesse).toLocaleString("de")} × {(h * std.zellgroesse).toLocaleString("de")} Pixel · {city ? "Gebäudezahl als Ziel; Straßen und freie Flächen brauchen Platz." : "Raumzahl als Ziel; die Aufteilung richtet sich nach dem Gebäudetyp."}</small>
-    <div className="map-setting-heading"><Paintbrush size={16} /><strong>Zeichenstil</strong></div>
-    <div className="map-style-options" role="group" aria-label="Zeichenstil">
-      <button type="button" aria-pressed={value.stil === "genres"} onClick={() => update({ stil: "genres" })}><span className="map-style-swatch genres" /><span><strong>Genre-Archiv</strong><small>300 Motive · Genre-Mix passend zum Setting</small></span></button>
-      <button type="button" aria-pressed={value.stil === "zeitwelten"} onClick={() => update({ stil: "zeitwelten" })}><span className="map-style-swatch zeitwelten" /><span><strong>Zeitwelten</strong><small>100 Objekte für Gegenwart & Science-Fiction</small></span></button>
-      <button type="button" aria-pressed={value.stil === "gemalt"} onClick={() => update({ stil: "gemalt" })}><span className="map-style-swatch painted" /><span><strong>Gemalt</strong><small>Warme Farben und Texturen</small></span></button>
-      <button type="button" aria-pressed={value.stil === "grundriss"} onClick={() => update({ stil: "grundriss" })}><span className="map-style-swatch blueprint" /><span><strong>Grundriss</strong><small>Klare Linien und Symbole</small></span></button>
+    <small className="field-help">{t("{breite} × {hoehe} Pixel", { breite: (w * std.zellgroesse).toLocaleString(locale()), hoehe: (h * std.zellgroesse).toLocaleString(locale()) })} · {city ? t("Gebäudezahl als Ziel; Straßen und freie Flächen brauchen Platz.") : t("Raumzahl als Ziel; die Aufteilung richtet sich nach dem Gebäudetyp.")}</small>
+    <div className="map-setting-heading"><Paintbrush size={16} /><strong>{t("Zeichenstil")}</strong></div>
+    <div className="map-style-options" role="group" aria-label={t("Zeichenstil")}>
+      <button type="button" aria-pressed={value.stil === "genres"} onClick={() => update({ stil: "genres" })}><span className="map-style-swatch genres" /><span><strong>{t("Genre-Archiv")}</strong><small>{t("300 Motive · Genre-Mix passend zum Setting")}</small></span></button>
+      <button type="button" aria-pressed={value.stil === "zeitwelten"} onClick={() => update({ stil: "zeitwelten" })}><span className="map-style-swatch zeitwelten" /><span><strong>{t("Zeitwelten")}</strong><small>{t("100 Objekte für Gegenwart & Science-Fiction")}</small></span></button>
+      <button type="button" aria-pressed={value.stil === "gemalt"} onClick={() => update({ stil: "gemalt" })}><span className="map-style-swatch painted" /><span><strong>{t("Gemalt")}</strong><small>{t("Warme Farben und Texturen")}</small></span></button>
+      <button type="button" aria-pressed={value.stil === "grundriss"} onClick={() => update({ stil: "grundriss" })}><span className="map-style-swatch blueprint" /><span><strong>{t("Grundriss")}</strong><small>{t("Klare Linien und Symbole")}</small></span></button>
     </div>
-    <details className="map-fine-settings"><summary>Feineinstellungen</summary><div>
-      {city ? <label>Straßendichte <output>{Math.round(value.dichte * 100)} %</output><input type="range" min={0} max={1} step={.05} value={value.dichte} onChange={event => update({ dichte: event.target.valueAsNumber })} /></label>
-        : <label>Einrichtung <output>{Math.round(value.moeblierung * 100)} %</output><input type="range" min={0} max={1} step={.1} value={value.moeblierung} onChange={event => update({ moeblierung: event.target.valueAsNumber })} /></label>}
-      {value.art === "grundriss" && value.profil === "frei" ? <label>Raumaufteilung<select value={value.anordnung} onChange={event => update({ anordnung: event.target.value as GenerationSettings["anordnung"] })}><option value="streuung">Organisch verbunden</option><option value="raster">Geplanter Grundriss</option><option value="kachelwerk">Verzweigte Anlage</option></select></label> : null}
-      <label className="check-label"><input type="checkbox" checked={value.licht} onChange={event => update({ licht: event.target.checked })} /> Lichter platzieren</label>
+    <details className="map-fine-settings"><summary>{t("Feineinstellungen")}</summary><div>
+      {city ? <label>{t("Straßendichte")} <output>{Math.round(value.dichte * 100)} %</output><input type="range" min={0} max={1} step={.05} value={value.dichte} onChange={event => update({ dichte: event.target.valueAsNumber })} /></label>
+        : <label>{t("Einrichtung")} <output>{Math.round(value.moeblierung * 100)} %</output><input type="range" min={0} max={1} step={.1} value={value.moeblierung} onChange={event => update({ moeblierung: event.target.valueAsNumber })} /></label>}
+      {value.art === "grundriss" && value.profil === "frei" ? <label>{t("Raumaufteilung")}<select value={value.anordnung} onChange={event => update({ anordnung: event.target.value as GenerationSettings["anordnung"] })}><option value="streuung">{t("Organisch verbunden")}</option><option value="raster">{t("Geplanter Grundriss")}</option><option value="kachelwerk">{t("Verzweigte Anlage")}</option></select></label> : null}
+      <label className="check-label"><input type="checkbox" checked={value.licht} onChange={event => update({ licht: event.target.checked })} /> {t("Lichter platzieren")}</label>
     </div></details>
   </div>;
 }

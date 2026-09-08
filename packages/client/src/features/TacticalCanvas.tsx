@@ -5,6 +5,7 @@ import { createMapRenderer, visibleMapTiles, type MapEditorInteraction, type Map
 import { Button, Notice } from "@chronicle/ui";
 import { parseAssetpaket } from "@chronicle/szene";
 import { errorText } from "../api";
+import { locale, t } from "../i18n";
 import { useAppearance } from "./Appearance";
 import "./TacticalCanvas.css";
 
@@ -84,7 +85,7 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
         revoked.current = `${base}:${query}:${current.rasterScope}`;
         map.cancelInteraction();
         map.update({ id: current.id, width: current.width, height: current.height, cells: [], pins: [] }); clear();
-        setTileError("Die Kartensicht ist nicht mehr gültig. Die Ansicht wird aktualisiert.");
+        setTileError(t("Die Kartensicht ist nicht mehr gültig. Die Ansicht wird aktualisiert."));
         latest.current.onScopeInvalidated?.();
       };
       const worker = async () => {
@@ -94,9 +95,9 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
           if (!blob) {
             const response = await fetch(`${base}/${id}?view=${encodeURIComponent(current.rasterScope!)}${query ? `&${query}` : ""}`, { credentials: "same-origin", signal: controller.signal });
             if ([401, 403, 404, 409].includes(response.status)) { invalidate(); return; }
-            if (!response.ok) throw new Error("Die Kartenkacheln konnten nicht geladen werden. Die Figurenliste bleibt bedienbar.");
+            if (!response.ok) throw new Error(t("Die Kartenkacheln konnten nicht geladen werden. Die Figurenliste bleibt bedienbar."));
             if (response.headers.get("X-Tactical-View") !== current.rasterScope) { invalidate(); return; }
-            blob = await response.blob(); if (blob.type !== "image/png" || blob.size > 2 * 1024 * 1024) throw new Error("Ungültige Kartenkachel.");
+            blob = await response.blob(); if (blob.type !== "image/png" || blob.size > 2 * 1024 * 1024) throw new Error(t("Ungültige Kartenkachel."));
             if (controller.signal.aborted || scope !== cacheScope) return;
             while (cacheBytes + blob.size > 16 * 1024 * 1024 && blobs.size) { const first = blobs.keys().next().value!; cacheBytes -= blobs.get(first)!.size; blobs.delete(first); }
             blobs.set(id, blob); cacheBytes += blob.size;
@@ -140,17 +141,17 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
     void (async () => {
       const packIds = [...new Set(assets.map(asset => asset.split("/")[0]!))];
       const manifests = new Map(await Promise.all(packIds.map(async pack => {
-        if (!/^[a-z0-9._-]+$/.test(pack)) throw new Error("Ungültiger Karten-Assetverweis.");
+        if (!/^[a-z0-9._-]+$/.test(pack)) throw new Error(t("Ungültiger Karten-Assetverweis."));
         const response = await fetch(`/api/packs/${encodeURIComponent(pack)}/manifest`, { credentials: "same-origin", signal: controller.signal });
-        if (!response.ok) throw new Error("Das Karten-Assetpaket konnte nicht geladen werden.");
+        if (!response.ok) throw new Error(t("Das Karten-Assetpaket konnte nicht geladen werden."));
         return [pack, parseAssetpaket(await response.text())] as const;
       })));
       const results = await Promise.allSettled(assets.map(async (asset): Promise<MapStampImage> => {
         const [pack, name, extra] = asset.split("/");
         const entry = pack && !extra ? manifests.get(pack)?.assets.find(item => item.name === name) : undefined;
-        if (!pack || !entry) throw new Error("Das Karten-Asset ist im Paket nicht enthalten.");
+        if (!pack || !entry) throw new Error(t("Das Karten-Asset ist im Paket nicht enthalten."));
         const response = await fetch(`/api/packs/${encodeURIComponent(pack)}/asset/${entry.datei.split("/").map(encodeURIComponent).join("/")}`, { credentials: "same-origin", signal: controller.signal });
-        if (!response.ok) throw new Error("Ein Karten-Asset konnte nicht geladen werden.");
+        if (!response.ok) throw new Error(t("Ein Karten-Asset konnte nicht geladen werden."));
         const blob = await response.blob(), url = URL.createObjectURL(blob);
         try {
           const image = new Image(); image.src = url; await image.decode();
@@ -160,7 +161,7 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
       const images = results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
       if (controller.signal.aborted || renderer.current !== instance || revoked.current) { for (const item of images) item.image.close(); return; }
       instance.setStampImages(images);
-      if (results.some(result => result.status === "rejected")) setArtError("Ein Teil der Kartenobjekte konnte nicht gezeichnet werden. Räume und Eingänge bleiben bedienbar.");
+      if (results.some(result => result.status === "rejected")) setArtError(t("Ein Teil der Kartenobjekte konnte nicht gezeichnet werden. Räume und Eingänge bleiben bedienbar."));
     })().catch(failure => { if (!controller.signal.aborted && renderer.current === instance) setArtError(errorText(failure)); });
     return () => controller.abort();
   }, [stampAssets, ready, scene.id]);
@@ -179,22 +180,22 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
     map.setCamera({ ...camera, x: element.clientWidth / 2 - focusObject.x * camera.scale, y: element.clientHeight / 2 - focusObject.y * camera.scale });
   }, [focusObject?.id, focusObject?.x, focusObject?.y, ready]);
   return <div className={`tactical-canvas-frame${expanded ? " tactical-canvas-expanded" : ""}`} ref={frame}>
-    <div className="tactical-canvas-toolbar" role="group" aria-label="Kartenansicht">
-      <div className="tactical-canvas-zoom"><Button disabled={!ready} onClick={() => renderer.current?.fit()}>Ganze Karte</Button>
-        <Button disabled={!ready} aria-label="Karte verkleinern" onClick={() => renderer.current?.zoomAt(1 / 1.5)}>−</Button>
-        <output className="tactical-canvas-percentage" aria-label="Vergrößerung">{zoom < 10 ? zoom.toFixed(1) : Math.round(zoom)} %</output>
-        <Button disabled={!ready} aria-label="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.5)}>+</Button></div>
+    <div className="tactical-canvas-toolbar" role="group" aria-label={t("Kartenansicht")}>
+      <div className="tactical-canvas-zoom"><Button disabled={!ready} onClick={() => renderer.current?.fit()}>{t("Ganze Karte")}</Button>
+        <Button disabled={!ready} aria-label={t("Karte verkleinern")} onClick={() => renderer.current?.zoomAt(1 / 1.5)}>−</Button>
+        <output className="tactical-canvas-percentage" aria-label={t("Vergrößerung")}>{zoom < 10 ? zoom.toFixed(1) : Math.round(zoom)} %</output>
+        <Button disabled={!ready} aria-label={t("Karte vergrößern")} onClick={() => renderer.current?.zoomAt(1.5)}>+</Button></div>
       <div className="tactical-canvas-layers">
         <label><input type="checkbox" checked={gridVisible && !!projectedScene.grid && projectedScene.grid.kind !== "none"}
-          disabled={!projectedScene.grid || projectedScene.grid.kind === "none"} onChange={event => { gridTouched.current = true; setGridVisible(event.target.checked); }} /> Raster</label>
-        <label><input type="checkbox" checked={labelsVisible} onChange={event => setLabelsVisible(event.target.checked)} /> Namen</label>
-        <Button disabled={!ready} aria-pressed={expanded} onClick={() => { void toggleExpanded().catch(() => setExpanded(false)); }}>{expanded ? "Ansicht verkleinern" : "Große Ansicht"}</Button>
+          disabled={!projectedScene.grid || projectedScene.grid.kind === "none"} onChange={event => { gridTouched.current = true; setGridVisible(event.target.checked); }} /> {t("Raster")}</label>
+        <label><input type="checkbox" checked={labelsVisible} onChange={event => setLabelsVisible(event.target.checked)} /> {t("Namen")}</label>
+        <Button disabled={!ready} aria-pressed={expanded} onClick={() => { void toggleExpanded().catch(() => setExpanded(false)); }}>{expanded ? t("Ansicht verkleinern") : t("Große Ansicht")}</Button>
       </div>
-      <span className="tactical-canvas-dimensions">{scene.width.toLocaleString("de-DE")} × {scene.height.toLocaleString("de-DE")} px</span>
+      <span className="tactical-canvas-dimensions">{scene.width.toLocaleString(locale())} × {scene.height.toLocaleString(locale())} px</span>
     </div>
-    {error ? <Notice error>{error} Die Liste darunter bietet dieselben Figurenbefehle.</Notice> : null}
+    {error ? <Notice error>{error} {t("Die Liste darunter bietet dieselben Figurenbefehle.")}</Notice> : null}
     {artError ? <Notice error>{artError}</Notice> : null}
-    {tileError ? <Notice error>{tileError} <Button onClick={() => retryTiles.current()}>Kacheln erneut laden</Button></Notice> : null}
+    {tileError ? <Notice error>{tileError} <Button onClick={() => retryTiles.current()}>{t("Kacheln erneut laden")}</Button></Notice> : null}
     {/* Die Signatur liegt NEBEN dem Renderziel, nicht darin: `createMapRenderer` besitzt das
         Wirtselement und raeumt es aus. Ein Kind darin waere beim ersten Neuaufbau verschwunden —
         und `pointer-events: none` sorgt dafuer, dass sie keinen Klick auf die Karte schluckt. */}
@@ -215,6 +216,6 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
       }} />
       <span className="karten-signatur" aria-hidden="true">Atlas Chronicles</span>
     </div>
-    <p className="field-help">{editor ? "Mit dem Werkzeug direkt zeichnen. Leertaste oder Alt halten und ziehen verschiebt die Karte; Esc verwirft die Geste. Strg/Cmd+Z nimmt Änderungen zurück." : "Karte ziehen oder mit Pfeiltasten verschieben. Mit dem Mausrad zoomen. Bewegliche Figuren lassen sich ziehen; genaue Werte stehen auch in der Figurenliste."}</p>
+    <p className="field-help">{editor ? t("Mit dem Werkzeug direkt zeichnen. Leertaste oder Alt halten und ziehen verschiebt die Karte; Esc verwirft die Geste. Strg/Cmd+Z nimmt Änderungen zurück.") : t("Karte ziehen oder mit Pfeiltasten verschieben. Mit dem Mausrad zoomen. Bewegliche Figuren lassen sich ziehen; genaue Werte stehen auch in der Figurenliste.")}</p>
   </div>;
 }

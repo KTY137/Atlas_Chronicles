@@ -5,6 +5,7 @@ import type { ActorCard, ReaderPerspective as Perspective } from "@chronicle/pro
 import { Button, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
+import { t } from "../i18n";
 import { useCommand } from "./game-api";
 import "./actors.css";
 
@@ -16,12 +17,12 @@ export function ReaderPerspective({ campaignId, gm, current, revision, guard, on
   const actors = useResource<ActorCard[]>(apiPath(campaignId, "/actors"), revision + refresh);
   const choices = actors.data?.filter(a => a.canReadAs) ?? [];
   if (!current || (!choices.length && !current.actorId)) return actors.error ? <Notice error>{actors.error}</Notice> : null;
-  return <div className="reader-perspective"><label>{gm ? "Brieffigur" : "Wissensblick"}<select aria-label={gm ? "Brieffigur" : "Wissensblick"}
+  return <div className="reader-perspective"><label>{gm ? t("Brieffigur") : t("Wissensblick")}<select aria-label={gm ? t("Brieffigur") : t("Wissensblick")}
     value={current.actorId ?? ""} disabled={task.busy} onChange={event => {
       const actorId = event.target.value || null;
       if (guard()) void task.run(async () => { await command(apiPath(campaignId, "/reader-perspective"), { actorId, expectedVersion: current.version }, "PUT"); onChanged(); });
-    }}><option value="">Keine Figur gewählt</option>{choices.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
-    <p className="field-help">{gm ? "Dein Buch zeigt weiterhin die Sicht der Spielleitung." : "Chronik, Atlas und empfangene Briefe folgen dieser Figur."}</p>
-    {task.error || actors.error ? <Notice error>{task.error || actors.error}<Button onClick={() => { setRefresh(n => n + 1); onChanged(); }}>Auswahl aktualisieren</Button></Notice> : null}
+    }}><option value="">{t("Keine Figur gewählt")}</option>{choices.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+    <p className="field-help">{gm ? t("Dein Buch zeigt weiterhin die Sicht der Spielleitung.") : t("Chronik, Atlas und empfangene Briefe folgen dieser Figur.")}</p>
+    {task.error || actors.error ? <Notice error>{task.error || actors.error}<Button onClick={() => { setRefresh(n => n + 1); onChanged(); }}>{t("Auswahl aktualisieren")}</Button></Notice> : null}
   </div>;
 }

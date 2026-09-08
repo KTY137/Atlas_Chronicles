@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { BookOpen, CalendarRange, Home } from "lucide-react";
 import { EmptyState } from "@chronicle/ui";
+import { plural, t } from "../i18n";
 import { baueNavigation, type Gruppe, type NavigationDaten } from "./wiki-navigation-model";
 import "./wiki-kopf.css";
 
@@ -25,10 +26,10 @@ export function WikiKopf({ daten, ansicht, onAnsicht }: {
 }) {
   const gruppen = baueNavigation(daten);
   const aktiv = (art: string, id?: string) => ansicht?.art === art && (id === undefined || (ansicht.art === "gruppe" && ansicht.id === id));
-  return <nav className="wiki-kopf" aria-label="Ordnung der Chronik">
+  return <nav className="wiki-kopf" aria-label={t("Ordnung der Chronik")}>
     <button type="button" className={aktiv("uebersicht") ? "kopf-knopf aktiv" : "kopf-knopf"}
       aria-current={aktiv("uebersicht") ? "page" : undefined} onClick={() => onAnsicht({ art: "uebersicht" })}>
-      <Home size={14} /> Übersicht
+      <Home size={14} /> {t("Übersicht")}
     </button>
     <span className="kopf-trenner" aria-hidden="true" />
     <div className="kopf-gruppen">{gruppen.map(gruppe => <button key={gruppe.id} type="button"
@@ -40,7 +41,7 @@ export function WikiKopf({ daten, ansicht, onAnsicht }: {
     <span className="kopf-trenner" aria-hidden="true" />
     <button type="button" className={aktiv("zeitstrahl") ? "kopf-knopf aktiv" : "kopf-knopf"}
       aria-current={aktiv("zeitstrahl") ? "page" : undefined} onClick={() => onAnsicht({ art: "zeitstrahl" })}>
-      <CalendarRange size={14} /> Zeitstrahl
+      <CalendarRange size={14} /> {t("Zeitstrahl")}
     </button>
   </nav>;
 }
@@ -59,19 +60,19 @@ export function WikiGruppenseite({ daten, gruppeId, onEntry, onAnsicht }: {
   daten: NavigationDaten; gruppeId: string; onEntry: (id: string) => void; onAnsicht: (ansicht: Kopfansicht) => void;
 }) {
   const gruppe = finde(baueNavigation(daten), gruppeId);
-  if (!gruppe) return <EmptyState title="Diese Ordnung gibt es nicht mehr.">Wähle oben eine andere.</EmptyState>;
+  if (!gruppe) return <EmptyState title={t("Diese Ordnung gibt es nicht mehr.")}>{t("Wähle oben eine andere.")}</EmptyState>;
   const liste = (eintraege: Gruppe["artikel"]) => <ul className="gruppen-artikel">{eintraege.map((artikel, index) =>
     artikel.bekannt
       ? <li key={artikel.id}><button type="button" onClick={() => onEntry(artikel.id)}><BookOpen size={14} /> {artikel.titel}</button></li>
-      : <li key={`silhouette-${index}`} className="gruppen-silhouette" aria-label="Ein Artikel, den du noch nicht kennst">···</li>)}
+      : <li key={`silhouette-${index}`} className="gruppen-silhouette" aria-label={t("Ein Artikel, den du noch nicht kennst")}>···</li>)}
   </ul>;
   return <section className="wiki-gruppenseite page-content" aria-label={gruppe.titel}>
     <div className="page-heading"><div>
-      <p className="eyebrow">{gruppe.herkunft === "kategorie" ? "Kategorie" : "Art"}</p>
+      <p className="eyebrow">{gruppe.herkunft === "kategorie" ? t("Kategorie") : t("Art")}</p>
       <h1>{gruppe.titel}</h1>
       <p className="muted">{gruppe.bekannt === gruppe.gesamt
-        ? `${gruppe.gesamt} Artikel.`
-        : `${gruppe.bekannt} von ${gruppe.gesamt} Artikeln kennst du. Die übrigen stehen als Platz, nicht als Name.`}</p>
+        ? plural(gruppe.gesamt, "{n} Artikel.", "{n} Artikel.")
+        : t("{bekannt} von {gesamt} Artikeln kennst du. Die übrigen stehen als Platz, nicht als Name.", { bekannt: gruppe.bekannt, gesamt: gruppe.gesamt })}</p>
     </div></div>
     {gruppe.artikel.length ? liste(gruppe.artikel) : null}
     {gruppe.kinder.map(kind => <section key={kind.id} className="gruppen-untergruppe">
@@ -79,6 +80,6 @@ export function WikiGruppenseite({ daten, gruppeId, onEntry, onAnsicht }: {
       {liste(kind.artikel)}
     </section>)}
     {!gruppe.artikel.length && !gruppe.kinder.length
-      ? <EmptyState title="Hier steht noch nichts.">Sobald ein Artikel dieser Ordnung zugeordnet ist, findest du ihn hier.</EmptyState> : null}
+      ? <EmptyState title={t("Hier steht noch nichts.")}>{t("Sobald ein Artikel dieser Ordnung zugeordnet ist, findest du ihn hier.")}</EmptyState> : null}
   </section>;
 }

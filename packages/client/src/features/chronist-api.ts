@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { ApiError, apiPath } from "../api";
+import { t } from "../i18n";
 
 export const chronistPath = (campaignId: string, suffix = "") => apiPath(campaignId, `/chronist${suffix}`);
-export const CHRONIST_REASONS: Record<string, string> = {
+/** Die Codes links sind Daten des Servers und bleiben deutsch wie englisch gleich; die Sätze
+ * rechts sind Oberfläche und werden erst an der Anzeigestelle mit `t(…)` übersetzt. */
+export const CHRONIST_REASON_LABELS: Record<string, string> = {
   "source-stale": "Eine Quelle wurde inzwischen geändert. Wähle den aktuellen Artikelstand und prüfe den Umfang erneut. Der bisherige Vorschlag bleibt als ältere Fassung erhalten.",
   "scope-changed": "Umfang oder Anbieter haben sich geändert. Bitte zuerst eine neue Vorschau erstellen.",
   "freigabe-missing": "Für diesen Lauf liegt keine gültige Freigabe vor. Erstelle die Vorschau und gib den angezeigten Umfang ausdrücklich frei.",
@@ -22,7 +25,9 @@ export const CHRONIST_REASONS: Record<string, string> = {
   "cancelled": "Abgebrochen. Bereits gesendete Aufrufe können noch Verbrauch melden; vorhandene Vorschläge bleiben erhalten.",
   "authorization": "Der bisherige Zugang ist nicht mehr verfügbar. Geschützte Inhalte werden nicht weiter angezeigt.",
 };
-export const chronistReason = (code: string | null) => code ? CHRONIST_REASONS[code] ?? "Die Auswertung wurde unterbrochen. Prüfe den Laufstand und versuche die angebotene Aktion erneut." : "";
+export const chronistReason = (code: string | null) => !code ? ""
+  : CHRONIST_REASON_LABELS[code] ? t(CHRONIST_REASON_LABELS[code]!)
+  : t("Die Auswertung wurde unterbrochen. Prüfe den Laufstand und versuche die angebotene Aktion erneut.");
 export class ChronistApiError extends ApiError { constructor(status: number, readonly code: string | null, message: string) { super(status, message); } }
 export async function chronistApi<T>(path: string, options: { method?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
   const response = await fetch(path, { method: options.method ?? "GET", credentials: "same-origin", cache: "no-store", signal: options.signal,
@@ -30,7 +35,7 @@ export async function chronistApi<T>(path: string, options: { method?: string; b
   const result = await response.json().catch(() => null);
   if (!response.ok) {
     const code = typeof result?.code === "string" ? result.code : null;
-    throw new ChronistApiError(response.status, code, code && CHRONIST_REASONS[code] ? CHRONIST_REASONS[code]! : typeof result?.error === "string" ? result.error : "Die Verbindung konnte nicht abgeschlossen werden. Bitte erneut versuchen.");
+    throw new ChronistApiError(response.status, code, code && CHRONIST_REASON_LABELS[code] ? t(CHRONIST_REASON_LABELS[code]!) : typeof result?.error === "string" ? result.error : t("Die Verbindung konnte nicht abgeschlossen werden. Bitte erneut versuchen."));
   }
   return result as T;
 }

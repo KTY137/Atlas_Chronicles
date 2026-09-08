@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiPath, ApiError } from "../api";
+import { t } from "../i18n";
 
 export type LiveStatus = "idle" | "connecting" | "connected" | "reconnecting" | "offline" | "unavailable";
 export interface CampaignPresence { userId: string; displayName: string; state: "online" | "away" }
@@ -16,10 +17,13 @@ export interface CampaignLive {
   refresh: () => void;
   sendMessage: (draft: CampaignMessageDraft) => Promise<{ id: string }>;
 }
-export const liveStatusLabel: Record<LiveStatus, string> = {
+/** Anzeigetexte des Verbindungsstands; die Anzeigestelle übersetzt mit `t(LIVE_STATUS_LABEL[status])`. */
+export const LIVE_STATUS_LABEL: Record<LiveStatus, string> = {
   idle: "Keine Kampagne geöffnet", connecting: "Verbindung wird aufgebaut", connected: "Live verbunden",
   reconnecting: "Verbindung wird wiederhergestellt", offline: "Gerät ist offline", unavailable: "Live-Zugang nicht verfügbar",
 };
+/** Bisheriger Name derselben Tabelle; `App.tsx` liest sie noch darüber. */
+export const liveStatusLabel = LIVE_STATUS_LABEL;
 
 interface PendingMessage { commandId: string; request?: Promise<{ id: string }> }
 interface Scope { key: string; seq: number | null; messages: Map<string, PendingMessage>; requests: Set<AbortController> }
@@ -106,7 +110,7 @@ export function useCampaignLive(campaignId: string | null, userId: string | null
       current.onclose = event => {
         if (disposed || current !== socket) return;
         clearTimers(); socket = null;
-        if (event.code === 1008) { update({ status: "unavailable", presence: [], error: "Der Server hat die Live-Verbindung beendet. Prüfe deinen Zugang oder verbinde dich erneut." }); return; }
+        if (event.code === 1008) { update({ status: "unavailable", presence: [], error: t("Der Server hat die Live-Verbindung beendet. Prüfe deinen Zugang oder verbinde dich erneut.") }); return; }
         update({ status: navigator.onLine ? "reconnecting" : "offline", presence: [] });
         if (navigator.onLine) reconnectTimer = setTimeout(connect, Math.min(30_000, 1000 * 2 ** Math.min(failures++, 5)));
       };
@@ -128,9 +132,9 @@ export function useCampaignLive(campaignId: string | null, userId: string | null
 
   const sendMessage = useCallback((draft: CampaignMessageDraft): Promise<{ id: string }> => {
     const scope = scopeRef.current;
-    if (!campaignId || scope.key !== key) return Promise.reject(new Error("Öffne die Kampagne erneut, um deine Nachricht zu senden."));
+    if (!campaignId || scope.key !== key) return Promise.reject(new Error(t("Öffne die Kampagne erneut, um deine Nachricht zu senden.")));
     const input = { body: draft.body.trim(), kind: draft.kind, ...(draft.parentId ? { parentId: draft.parentId } : {}), ...(draft.expectedScene ? { expectedScene: draft.expectedScene } : {}) };
-    if (!input.body || input.body.length > 8000) return Promise.reject(new Error("Eine Nachricht braucht 1 bis 8000 Zeichen."));
+    if (!input.body || input.body.length > 8000) return Promise.reject(new Error(t("Eine Nachricht braucht 1 bis 8000 Zeichen.")));
     const fingerprint = JSON.stringify(input);
     // Keep the original command id after any uncertain response, even across reconnects and stage changes.
     const pending = scope.messages.get(fingerprint) ?? { commandId: crypto.randomUUID() };
@@ -147,7 +151,7 @@ export function useCampaignLive(campaignId: string | null, userId: string | null
         return result;
       } catch (error) {
         if (error instanceof ApiError && error.status >= 400 && error.status < 500) throw error;
-        throw new Error("Die Zustellung ist noch nicht bestätigt. Versuche dieselbe Nachricht erneut; sie wird dabei höchstens einmal gespeichert.");
+        throw new Error(t("Die Zustellung ist noch nicht bestätigt. Versuche dieselbe Nachricht erneut; sie wird dabei höchstens einmal gespeichert."));
       } finally { clearTimeout(timeout); scope.requests.delete(controller); delete pending.request; }
     })();
     return pending.request;

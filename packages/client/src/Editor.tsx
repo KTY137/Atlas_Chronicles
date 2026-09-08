@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
 import { api, apiPath, ApiError, errorText, plainText, type DraftPassage, type EntryDocument, type HistoryItem } from "./api";
+import { t } from "./i18n";
 import { BlockReader } from "./Reader";
 
 export interface EditorSeed { instanceId: string; title: string; slug?: string; entryId?: string; expectedVersion?: number; passages: DraftPassage[] }
@@ -19,7 +20,7 @@ export function Editor({ campaignId, seed, onSaved, onCancel, onDirty }: { campa
   const [savedAt, setSavedAt] = useState<{ title: string; passages: DraftPassage[] } | null>(() => seed.entryId ? { title: seed.title, passages: seed.passages } : null);
   const dirty = title !== seed.title || JSON.stringify(passages) !== JSON.stringify(seed.passages);
   const matchesSaved = savedAt !== null && title.trim() === savedAt.title && JSON.stringify(passages) === JSON.stringify(savedAt.passages);
-  const saveLabel = busy ? "Wird gespeichert …" : conflict ? "Konflikt" : matchesSaved ? "Gespeichert" : savedAt ? "Ungespeicherte Änderungen" : "Neuer Entwurf";
+  const saveLabel = busy ? t("Wird gespeichert …") : conflict ? t("Konflikt") : matchesSaved ? t("Gespeichert") : savedAt ? t("Ungespeicherte Änderungen") : t("Neuer Entwurf");
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const update = (index: number, patch: Partial<DraftPassage>) => setPassages((current) => current.map((p, i) => i === index ? { ...p, ...patch } : p));
@@ -40,21 +41,21 @@ export function Editor({ campaignId, seed, onSaved, onCancel, onDirty }: { campa
     const href = URL.createObjectURL(blob), anchor = document.createElement("a"); anchor.href = href; anchor.download = "chronicle-entwurf.json"; anchor.click(); setTimeout(() => URL.revokeObjectURL(href), 1000);
   };
   return <form className="editor" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-    <div className="editor-toolbar"><span className="eyebrow">{seed.entryId ? `Revision ${seed.expectedVersion} bearbeiten` : "Neuer Artikel"}</span><span className="save-state" role="status" aria-live="polite">{saveLabel}</span><Button disabled={busy} onClick={onCancel}>Abbrechen</Button><Button type="submit" variant="primary" disabled={busy || !title.trim()}><Save size={16} /> Speichern</Button></div>
-    {error ? <Notice error>{conflict ? "Nicht gespeichert: Der Artikel wurde inzwischen anderswo geändert — vermutlich in einem zweiten Fenster, oder der Titel ist bereits vergeben. Dein Entwurf bleibt hiervon unberührt und geht nicht verloren. Lade ihn sicherheitshalber herunter, brich dann ab und öffne den Artikel neu, um den aktuellen Stand zu sehen." : error}{conflict ? <Button onClick={downloadDraft}>Entwurf herunterladen</Button> : null}</Notice> : null}
-    <label className="title-input">Artikeltitel<input value={title} maxLength={200} required onChange={(e) => setTitle(e.target.value)} placeholder="Gib deiner Geschichte einen Namen" disabled={busy} autoFocus /></label>
-    <p className="field-help">Der Artikel gliedert sich in Passagen, weil jede einzelne später für bestimmte Figuren freigegeben werden kann — so erfährt eure Runde die Welt Stück für Stück statt auf einen Schlag. Beim Verschieben bleibt diese Freigabe je Passage erhalten.</p>
+    <div className="editor-toolbar"><span className="eyebrow">{seed.entryId ? t("Revision {nummer} bearbeiten", { nummer: seed.expectedVersion ?? 0 }) : t("Neuer Artikel")}</span><span className="save-state" role="status" aria-live="polite">{saveLabel}</span><Button disabled={busy} onClick={onCancel}>{t("Abbrechen")}</Button><Button type="submit" variant="primary" disabled={busy || !title.trim()}><Save size={16} /> {t("Speichern")}</Button></div>
+    {error ? <Notice error>{conflict ? t("Nicht gespeichert: Der Artikel wurde inzwischen anderswo geändert — vermutlich in einem zweiten Fenster, oder der Titel ist bereits vergeben. Dein Entwurf bleibt hiervon unberührt und geht nicht verloren. Lade ihn sicherheitshalber herunter, brich dann ab und öffne den Artikel neu, um den aktuellen Stand zu sehen.") : error}{conflict ? <Button onClick={downloadDraft}>{t("Entwurf herunterladen")}</Button> : null}</Notice> : null}
+    <label className="title-input">{t("Artikeltitel")}<input value={title} maxLength={200} required onChange={(e) => setTitle(e.target.value)} placeholder={t("Gib deiner Geschichte einen Namen")} disabled={busy} autoFocus /></label>
+    <p className="field-help">{t("Der Artikel gliedert sich in Passagen, weil jede einzelne später für bestimmte Figuren freigegeben werden kann — so erfährt eure Runde die Welt Stück für Stück statt auf einen Schlag. Beim Verschieben bleibt diese Freigabe je Passage erhalten.")}</p>
     {passages.map((passage, i) => {
       const editable = passage.inhalt.kind === "absatz" || passage.inhalt.kind === "zitat";
-      return <fieldset className="editor-passage" key={passage.localKey} disabled={busy}><legend>Passage {i + 1}</legend>
-        <div className="passage-toolbar"><label>Abschnitt<input value={passage.pfad.join(" / ")} onChange={(e) => update(i, { pfad: e.target.value.split("/").map((v) => v.trim()).filter(Boolean) })} placeholder="z. B. Geschichte / Herkunft" /></label>
-          <Button aria-label={`Passage ${i + 1} nach oben`} disabled={i === 0 || busy} onClick={() => move(i, -1)}><ArrowUp size={15} /></Button><Button aria-label={`Passage ${i + 1} nach unten`} disabled={i === passages.length - 1 || busy} onClick={() => move(i, 1)}><ArrowDown size={15} /></Button>
-          <Button variant="quiet" aria-label={`Passage ${i + 1} entfernen`} onClick={() => setPassages((current) => current.filter((_, index) => index !== i))}><Trash2 size={15} /></Button>
+      return <fieldset className="editor-passage" key={passage.localKey} disabled={busy}><legend>{t("Passage {nummer}", { nummer: i + 1 })}</legend>
+        <div className="passage-toolbar"><label>{t("Abschnitt")}<input value={passage.pfad.join(" / ")} onChange={(e) => update(i, { pfad: e.target.value.split("/").map((v) => v.trim()).filter(Boolean) })} placeholder={t("z. B. Geschichte / Herkunft")} /></label>
+          <Button aria-label={t("Passage {nummer} nach oben", { nummer: i + 1 })} disabled={i === 0 || busy} onClick={() => move(i, -1)}><ArrowUp size={15} /></Button><Button aria-label={t("Passage {nummer} nach unten", { nummer: i + 1 })} disabled={i === passages.length - 1 || busy} onClick={() => move(i, 1)}><ArrowDown size={15} /></Button>
+          <Button variant="quiet" aria-label={t("Passage {nummer} entfernen", { nummer: i + 1 })} onClick={() => setPassages((current) => current.filter((_, index) => index !== i))}><Trash2 size={15} /></Button>
         </div>
-        {editable ? <><label className="sr-only" htmlFor={`text-${passage.localKey}`}>Text der Passage {i + 1}</label><textarea id={`text-${passage.localKey}`} rows={Math.max(4, Math.min(14, plainText(passage.inhalt).split("\n").length + 2))} value={plainText(passage.inhalt)} onChange={(event) => update(i, { inhalt: { kind: passage.inhalt.kind as "absatz" | "zitat", inhalt: [{ text: event.target.value, marks: [] }] } })} placeholder="Schreibe, was eure Welt ausmacht …" /></> : <div className="preserved-block"><BlockReader block={passage.inhalt} /><p className="field-help">Dieser strukturierte Inhalt wird beim Speichern vollständig erhalten.</p></div>}
-        {editable && passage.inhalt.kind !== "rohblock" && "inhalt" in passage.inhalt && passage.inhalt.inhalt.some((part) => part.marks.length) ? <p className="field-help">Dieser Absatz enthält Formatierung oder Links. Eine Textänderung ersetzt sie durch Klartext.</p> : null}
+        {editable ? <><label className="sr-only" htmlFor={`text-${passage.localKey}`}>{t("Text der Passage {nummer}", { nummer: i + 1 })}</label><textarea id={`text-${passage.localKey}`} rows={Math.max(4, Math.min(14, plainText(passage.inhalt).split("\n").length + 2))} value={plainText(passage.inhalt)} onChange={(event) => update(i, { inhalt: { kind: passage.inhalt.kind as "absatz" | "zitat", inhalt: [{ text: event.target.value, marks: [] }] } })} placeholder={t("Schreibe, was eure Welt ausmacht …")} /></> : <div className="preserved-block"><BlockReader block={passage.inhalt} /><p className="field-help">{t("Dieser strukturierte Inhalt wird beim Speichern vollständig erhalten.")}</p></div>}
+        {editable && passage.inhalt.kind !== "rohblock" && "inhalt" in passage.inhalt && passage.inhalt.inhalt.some((part) => part.marks.length) ? <p className="field-help">{t("Dieser Absatz enthält Formatierung oder Links. Eine Textänderung ersetzt sie durch Klartext.")}</p> : null}
       </fieldset>;
     })}
-    <Button disabled={busy || passages.length >= 1000} onClick={() => setPassages((current) => [...current, blank()])}><Plus size={16} /> Passage hinzufügen</Button>
+    <Button disabled={busy || passages.length >= 1000} onClick={() => setPassages((current) => [...current, blank()])}><Plus size={16} /> {t("Passage hinzufügen")}</Button>
   </form>;
 }

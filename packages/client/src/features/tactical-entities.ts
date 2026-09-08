@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { TacticalAnchor } from "@chronicle/protocol";
 import type { TacticalMapDocumentV1 } from "@chronicle/szene";
+import { t } from "../i18n";
 
 export interface MapObject {
   id: string; kind: "stamp" | "place"; x: number; y: number; label: string; entryId?: string;
@@ -21,6 +22,6 @@ export function preparationObjects(document: TacticalMapDocumentV1, anchors: rea
   const bindings = new Map(anchors.map(a => [`${a.targetKind}:${a.targetId}`, a]));
   const titles = new Map(entries.map(e => [e.id, e.title]));
   return ([...document.geometry.stamps.map(o => ({ ...o, kind: "stamp" as const })), ...document.geometry.places.map(o => ({ ...o, kind: "place" as const }))])
-    .map(o => { const a = bindings.get(objectKey(o)); return { id: o.id, kind: o.kind, x: o.x, y: o.y, label: a ? titles.get(a.entryId) ?? "Verknüpfter Artikel" : o.kind === "place" ? "Unverknüpfter Ort" : "Unverknüpftes Kartenobjekt", ...(a ? { entryId: a.entryId } : {}) }; })
+    .map(o => { const a = bindings.get(objectKey(o)); return { id: o.id, kind: o.kind, x: o.x, y: o.y, label: a ? titles.get(a.entryId) ?? t("Verknüpfter Artikel") : o.kind === "place" ? t("Unverknüpfter Ort") : t("Unverknüpftes Kartenobjekt"), ...(a ? { entryId: a.entryId } : {}) }; })
     .sort((a, b) => objectKey(a) < objectKey(b) ? -1 : objectKey(a) > objectKey(b) ? 1 : 0);
 }

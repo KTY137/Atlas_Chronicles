@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { ASSET_GENRES, ASSET_GENRE_LABEL, type AssetGenre, type AssetpaketV1, type PaketAsset, type Stamp, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
+import { t } from "../i18n";
 
 export interface ArtworkBrush { packId: string; cellSize: number; asset: PaketAsset }
 export const artworkName = (name: string) => name.replaceAll("_", " ").replace(/^./, character => character.toLocaleUpperCase("de"));
@@ -10,7 +11,7 @@ export function artworkMatches(asset: PaketAsset, query: string, category: strin
   return (category === "all" || asset.art === category)
     && (genre === "all" || assetGenre === genre)
     && (era === "all" || !asset.schlagworte.some(tag => ["fantasy", "gegenwart", "scifi"].includes(tag)) || asset.schlagworte.includes(era))
-    && (!needle || `${artworkName(asset.name)} ${asset.schlagworte.join(" ")} ${assetGenre ? ASSET_GENRE_LABEL[assetGenre] : ""}`.toLocaleLowerCase("de").includes(needle));
+    && (!needle || `${artworkName(asset.name)} ${asset.schlagworte.join(" ")} ${assetGenre ? t(ASSET_GENRE_LABEL[assetGenre]) : ""}`.toLocaleLowerCase("de").includes(needle));
 }
 export function artworkBrush(pack: AssetpaketV1, asset: PaketAsset): ArtworkBrush { return { packId: pack.id, cellSize: pack.zellgroesse, asset }; }
 /** Intrinsic artwork stays in scale with the map; clamp its whole footprint onto the canvas. */

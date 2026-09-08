@@ -5,6 +5,7 @@ import { ArrowLeft, CircleAlert, Download, ImageOff, ShieldQuestion, Trash2, Upl
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, assetPath, errorText, type WikiAsset, type WikiMedienBestand } from "../api";
 import { useResource, useTask } from "../hooks";
+import { locale, plural, t } from "../i18n";
 
 /**
  * DIE BILDER — Bestand, Herkunft und der Knopf, der die Dateien wirklich holt.
@@ -18,10 +19,12 @@ import { useResource, useTask } from "../hooks";
  * ankommt, steht danach mit Grund in der Liste.
  */
 
-const LIZENZ_TEXT: Record<WikiAsset["lizenzStatus"], string> = {
-  frei: "Freie Lizenz",
-  zitat: "Bildzitat — nicht vom Wiki selbst erstellt",
-  unbekannt: "Lizenz unbekannt",
+// Als Funktionen, damit der Text erst beim Zeichnen in der gewählten Sprache entsteht:
+// ein Modulwert bliebe in der Sprache eingefroren, in der die Seite geladen wurde.
+const LIZENZ_TEXT: Record<WikiAsset["lizenzStatus"], () => string> = {
+  frei: () => t("Freie Lizenz"),
+  zitat: () => t("Bildzitat — nicht vom Wiki selbst erstellt"),
+  unbekannt: () => t("Lizenz unbekannt"),
 };
 
 /** Deckungsgleich mit `WIKI_ASSET_GRENZEN.bytes` — hier nur, damit die Absage vor dem Upload kommt. */
@@ -29,11 +32,11 @@ const GRENZE_BYTES = 24 * 1024 * 1024;
 const BILDTYPEN = "image/png,image/jpeg,image/webp,image/gif";
 
 const groesse = (bytes: number | null): string =>
-  bytes === null ? "—" : bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  bytes === null ? "—" : bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
 interface Fortschritt { geholt: number; gesamt: number; fehler: number; laeuft: boolean; aktuell: string }
 
-export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", embedded = false, onDirty }: { campaignId: string; onClose: () => void; closeLabel?: string; embedded?: boolean; onDirty?: (dirty: boolean) => void }) {
+export function WikiMedien({ campaignId, onClose, closeLabel = t("Zur Chronik"), embedded = false, onDirty }: { campaignId: string; onClose: () => void; closeLabel?: string; embedded?: boolean; onDirty?: (dirty: boolean) => void }) {
   const task = useTask();
   const [revision, setRevision] = useState(0);
   const [fortschritt, setFortschritt] = useState<Fortschritt | null>(null);
@@ -63,7 +66,7 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
     });
     if (!antwort.ok) {
       const körper = await antwort.json().catch(() => null) as { error?: string } | null;
-      throw new Error(körper?.error ?? `Der Server lehnte die Datei ab (Status ${antwort.status}).`);
+      throw new Error(körper?.error ?? t("Der Server lehnte die Datei ab (Status {status}).", { status: antwort.status }));
     }
   };
 
@@ -80,7 +83,7 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
 
   const hochladen = () => task.run(async () => {
     if (!datei) return;
-    if (datei.size > GRENZE_BYTES) throw new Error(`Die Datei ist ${groesse(datei.size)} groß; erlaubt sind 24 MB.`);
+    if (datei.size > GRENZE_BYTES) throw new Error(t("Die Datei ist {groesse} groß; erlaubt sind 24 MB.", { groesse: groesse(datei.size) }));
     // Zwei Schritte, absichtlich: erst die Zeile, dann die Bytes. Scheitert der zweite, bleibt die
     // Zeile leer liegen und derselbe Name lässt sich erneut hochladen.
     const zeile = await api<{ id: string; dateiname: string }>(apiPath(campaignId, "/wiki-medien"), {
@@ -94,7 +97,7 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
 
   /** Eine Datei, die das Quell-Wiki nicht mehr hergibt, von Hand nachreichen. Dieselbe Zeile, dieselbe Route. */
   const nachreichen = (asset: WikiAsset, gewaehlteDatei: File) => task.run(async () => {
-    if (gewaehlteDatei.size > GRENZE_BYTES) throw new Error(`Die Datei ist ${groesse(gewaehlteDatei.size)} groß; erlaubt sind 24 MB.`);
+    if (gewaehlteDatei.size > GRENZE_BYTES) throw new Error(t("Die Datei ist {groesse} groß; erlaubt sind 24 MB.", { groesse: groesse(gewaehlteDatei.size) }));
     await sendeBytes(asset.id, await gewaehlteDatei.arrayBuffer());
     setAngekommen(asset.dateiname);
     setRevision((value) => value + 1);
@@ -112,7 +115,7 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
         setFortschritt({ geholt: index, gesamt: auswahl.length, fehler: fehler.length, laeuft: true, aktuell: asset.dateiname });
         try {
           const antwort = await fetch(asset.quellUrl!, { signal: controller.signal, credentials: "omit", referrerPolicy: "no-referrer" });
-          if (!antwort.ok) throw new Error(`Das Wiki antwortete mit Status ${antwort.status}.`);
+          if (!antwort.ok) throw new Error(t("Das Wiki antwortete mit Status {status}.", { status: antwort.status }));
           await sendeBytes(asset.id, await antwort.arrayBuffer(), controller.signal);
         } catch (error) {
           if (controller.signal.aborted) break;
@@ -132,7 +135,7 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
    * prüft es trotzdem noch einmal: was die Liste beim Laden wusste, kann inzwischen veraltet sein.
    */
   const loesche = (asset: WikiAsset) => {
-    if (!window.confirm(`„${asset.dateiname}“ endgültig aus dem Bestand entfernen? Das lässt sich nicht rückgängig machen.`)) return;
+    if (!window.confirm(t("„{name}“ endgültig aus dem Bestand entfernen? Das lässt sich nicht rückgängig machen.", { name: asset.dateiname }))) return;
     void task.run(async () => {
       await api(apiPath(campaignId, `/wiki-medien/${encodeURIComponent(asset.id)}`), { method: "DELETE" });
       setAngekommen(null);
@@ -154,37 +157,37 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
   const bilanz = bestand.data?.bilanz;
 
   return <section className={`import-view${embedded ? " medien-embedded" : ""}`}>
-    <div className="document-toolbar"><Button variant="quiet" onClick={onClose}><ArrowLeft size={16} /> {closeLabel}</Button><span>Bilder der Chronik</span></div>
+    <div className="document-toolbar"><Button variant="quiet" onClick={onClose}><ArrowLeft size={16} /> {closeLabel}</Button><span>{t("Bilder der Chronik")}</span></div>
     <div className="import-content">
-      <p className="eyebrow">Bilder für eure Welt</p>{embedded ? <h2>Bilder hochladen & verwalten</h2> : <h1>Bilder hochladen & verwalten</h1>}
-      <p className="muted">Lade Bilder für Lootkarten und Artikel hoch. Im Bestand findest du eure Dateien, ihre Herkunft und den Lizenzstand.</p>
+      <p className="eyebrow">{t("Bilder für eure Welt")}</p>{embedded ? <h2>{t("Bilder hochladen & verwalten")}</h2> : <h1>{t("Bilder hochladen & verwalten")}</h1>}
+      <p className="muted">{t("Lade Bilder für Lootkarten und Artikel hoch. Im Bestand findest du eure Dateien, ihre Herkunft und den Lizenzstand.")}</p>
       {task.error ? <Notice error>{task.error}</Notice> : null}
-      {bestand.error ? <Notice error>{bestand.error} <Button variant="quiet" onClick={() => setRevision((v) => v + 1)}>Erneut versuchen</Button></Notice> : null}
-      {bestand.loading && !bestand.data ? <Loading text="Bildbestand wird geladen …" /> : <>
+      {bestand.error ? <Notice error>{bestand.error} <Button variant="quiet" onClick={() => setRevision((v) => v + 1)}>{t("Erneut versuchen")}</Button></Notice> : null}
+      {bestand.loading && !bestand.data ? <Loading text={t("Bildbestand wird geladen …")} /> : <>
         {/* Der Uploadkasten steht VOR der Fallunterscheidung und damit auch dann da, wenn der
             Bestand leer ist. Genau dort wurde er gebraucht: eine Runde ohne Wiki-Import hatte
             bisher gar keine Möglichkeit, ein eigenes Bild in die Kampagne zu bekommen. */}
         <section className="panel">
-          <div className="section-heading"><h2><Upload size={18} /> Eigenes Bild hochladen</h2></div>
-          <p className="field-help">PNG, JPEG, WebP oder GIF, bis 24 MB. Nach dem Hochladen kannst du das Bild auf einer Lootkarte auswählen. Wer die Karte im Inventar hat, sieht auch ihr Bild.</p>
+          <div className="section-heading"><h2><Upload size={18} /> {t("Eigenes Bild hochladen")}</h2></div>
+          <p className="field-help">{t("PNG, JPEG, WebP oder GIF, bis 24 MB. Nach dem Hochladen kannst du das Bild auf einer Lootkarte auswählen. Wer die Karte im Inventar hat, sieht auch ihr Bild.")}</p>
           <div className="medien-upload">
-            <label>Bilddatei<input ref={dateiFeld} type="file" accept={BILDTYPEN} disabled={task.busy}
+            <label>{t("Bilddatei")}<input ref={dateiFeld} type="file" accept={BILDTYPEN} disabled={task.busy}
               onChange={(event) => gewaehlt(event.target.files?.[0] ?? null)} /></label>
-            <label>Name im Bestand<input value={name} maxLength={512} disabled={!datei || task.busy}
+            <label>{t("Name im Bestand")}<input value={name} maxLength={512} disabled={!datei || task.busy}
               onChange={(event) => setName(event.target.value)} /></label>
-            <label>Lizenz<select value={lizenz} disabled={task.busy}
+            <label>{t("Lizenz")}<select value={lizenz} disabled={task.busy}
               onChange={(event) => setLizenz(event.target.value as WikiAsset["lizenzStatus"])}>
-              <option value="unbekannt">Lizenz unbekannt</option>
-              <option value="frei">Freie Lizenz</option>
-              <option value="zitat">Bildzitat</option>
+              <option value="unbekannt">{t("Lizenz unbekannt")}</option>
+              <option value="frei">{t("Freie Lizenz")}</option>
+              <option value="zitat">{t("Bildzitat")}</option>
             </select></label>
           </div>
-          {vergeben ? <Notice error>„{name.trim()}“ liegt schon im Bestand. Wähle einen anderen Namen.</Notice> : null}
+          {vergeben ? <Notice error>{t("„{name}“ liegt schon im Bestand. Wähle einen anderen Namen.", { name: name.trim() })}</Notice> : null}
           <div className="button-row">
-            <Button variant="primary" disabled={!datei || !name.trim() || vergeben || task.busy} onClick={() => void hochladen()}><Upload size={16} /> Hochladen</Button>
-            {datei ? <Button variant="quiet" disabled={task.busy} onClick={() => gewaehlt(null)}>Verwerfen</Button> : null}
+            <Button variant="primary" disabled={!datei || !name.trim() || vergeben || task.busy} onClick={() => void hochladen()}><Upload size={16} /> {t("Hochladen")}</Button>
+            {datei ? <Button variant="quiet" disabled={task.busy} onClick={() => gewaehlt(null)}>{t("Verwerfen")}</Button> : null}
           </div>
-          {angekommen ? <Notice>„{angekommen}“ liegt jetzt im Bestand.</Notice> : null}
+          {angekommen ? <Notice>{t("„{name}“ liegt jetzt im Bestand.", { name: angekommen })}</Notice> : null}
         </section>
         <input ref={nachreichung} type="file" accept={BILDTYPEN} hidden onChange={(event) => {
           const gewaehlteDatei = event.target.files?.[0], ziel = nachreichungZiel.current;
@@ -192,27 +195,30 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
           if (gewaehlteDatei && ziel) void nachreichen(ziel, gewaehlteDatei);
         }} />
         {!alle.length ? (
-        <EmptyState title="Noch keine Bilder in dieser Chronik.">Lade oben ein eigenes Bild hoch — oder importiere ein Wiki: sobald ein importierter Artikel eine Datei zeigt, erscheint sie hier mit ihrer Herkunft.</EmptyState>
+        <EmptyState title={t("Noch keine Bilder in dieser Chronik.")}>{t("Lade oben ein eigenes Bild hoch — oder importiere ein Wiki: sobald ein importierter Artikel eine Datei zeigt, erscheint sie hier mit ihrer Herkunft.")}</EmptyState>
       ) : <>
         {bilanz ? <div className="import-metrics">
-          <div><strong>{bilanz.vorhanden}</strong><span>Dateien geholt</span></div>
-          <div><strong>{bilanz.offen}</strong><span>noch abzuholen</span></div>
-          <div><strong>{bilanz.nachLizenz.unbekannt}</strong><span>ohne dokumentierte Lizenz</span></div>
-          <div><strong>{bilanz.verwaist}</strong><span>von keinem Artikel benutzt</span></div>
+          <div><strong>{bilanz.vorhanden}</strong><span>{t("Dateien geholt")}</span></div>
+          <div><strong>{bilanz.offen}</strong><span>{t("noch abzuholen")}</span></div>
+          <div><strong>{bilanz.nachLizenz.unbekannt}</strong><span>{t("ohne dokumentierte Lizenz")}</span></div>
+          <div><strong>{bilanz.verwaist}</strong><span>{t("von keinem Artikel benutzt")}</span></div>
         </div> : null}
 
         {bilanz && bilanz.formatwidersprueche > 0 ? <Notice>
-          Bei {bilanz.formatwidersprueche} {bilanz.formatwidersprueche === 1 ? "Datei" : "Dateien"} widerspricht der tatsächliche Inhalt der Dateiendung des Quell-Wikis — dort heißt sie etwa <code>.jpg</code>, geliefert wurde WebP. Wir speichern den gemessenen Typ, nicht den behaupteten.
+          {plural(bilanz.formatwidersprueche,
+            "Bei {n} Datei widerspricht der tatsächliche Inhalt der Dateiendung des Quell-Wikis — dort heißt sie etwa {beispiel}, geliefert wurde WebP. Wir speichern den gemessenen Typ, nicht den behaupteten.",
+            "Bei {n} Dateien widerspricht der tatsächliche Inhalt der Dateiendung des Quell-Wikis — dort heißen sie etwa {beispiel}, geliefert wurde WebP. Wir speichern den gemessenen Typ, nicht den behaupteten.",
+            { beispiel: ".jpg" })}
         </Notice> : null}
 
         {offen.length ? <section className="panel">
-          <div className="section-heading"><h2><Download size={18} /> Bilddateien holen</h2><span className="muted">{offen.length} offen</span></div>
-          <p className="field-help">Die Dateien werden aus deinem Browser direkt beim Quell-Wiki geholt und hier gespeichert. Das dauert bei vielen Bildern einen Moment; du kannst jederzeit abbrechen und später fortsetzen — bereits geholte Dateien werden nicht erneut geladen.</p>
+          <div className="section-heading"><h2><Download size={18} /> {t("Bilddateien holen")}</h2><span className="muted">{t("{anzahl} offen", { anzahl: offen.length })}</span></div>
+          <p className="field-help">{t("Die Dateien werden aus deinem Browser direkt beim Quell-Wiki geholt und hier gespeichert. Das dauert bei vielen Bildern einen Moment; du kannst jederzeit abbrechen und später fortsetzen — bereits geholte Dateien werden nicht erneut geladen.")}</p>
           {fortschritt?.laeuft ? <>
-            <p role="status">Holt {fortschritt.geholt + 1} von {fortschritt.gesamt}{fortschritt.aktuell ? ` — ${fortschritt.aktuell}` : ""}{fortschritt.fehler ? ` · ${fortschritt.fehler} fehlgeschlagen` : ""}</p>
-            <Button onClick={() => abbruch.current?.abort()}>Abbrechen</Button>
+            <p role="status">{t("Holt {geholt} von {gesamt}", { geholt: fortschritt.geholt + 1, gesamt: fortschritt.gesamt })}{fortschritt.aktuell ? ` — ${fortschritt.aktuell}` : ""}{fortschritt.fehler ? ` · ${t("{anzahl} fehlgeschlagen", { anzahl: fortschritt.fehler })}` : ""}</p>
+            <Button onClick={() => abbruch.current?.abort()}>{t("Abbrechen")}</Button>
           </> : <div className="button-row">
-            <Button variant="primary" disabled={task.busy} onClick={() => void holen(offen)}><Download size={16} /> {offen.length} {offen.length === 1 ? "Datei" : "Dateien"} holen</Button>
+            <Button variant="primary" disabled={task.busy} onClick={() => void holen(offen)}><Download size={16} /> {plural(offen.length, "{n} Datei holen", "{n} Dateien holen")}</Button>
           </div>}
         </section> : null}
 
@@ -221,15 +227,17 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
             für genau den Klick, der ihn leer gemacht hat. Wer holt, soll lesen, dass es geklappt
             hat, und nicht aus einem Zähler schließen müssen. */}
         {fortschritt && !fortschritt.laeuft ? <Notice error={fortschritt.fehler > 0}>
-          {fortschritt.geholt} von {fortschritt.gesamt} {fortschritt.gesamt === 1 ? "Datei" : "Dateien"} geholt{fortschritt.fehler ? `, ${fortschritt.fehler} fehlgeschlagen` : ""}.
+          {fortschritt.fehler
+            ? plural(fortschritt.gesamt, "{geholt} von {n} Datei geholt, {fehler} fehlgeschlagen.", "{geholt} von {n} Dateien geholt, {fehler} fehlgeschlagen.", { geholt: fortschritt.geholt, fehler: fortschritt.fehler })
+            : plural(fortschritt.gesamt, "{geholt} von {n} Datei geholt.", "{geholt} von {n} Dateien geholt.", { geholt: fortschritt.geholt })}
         </Notice> : null}
-        {fehlgeschlagen.length ? <details><summary>{fehlgeschlagen.length} {fehlgeschlagen.length === 1 ? "Datei kam nicht an" : "Dateien kamen nicht an"}</summary>
+        {fehlgeschlagen.length ? <details><summary>{plural(fehlgeschlagen.length, "{n} Datei kam nicht an", "{n} Dateien kamen nicht an")}</summary>
           <div className="import-losses">{fehlgeschlagen.map((row) => <details key={row.dateiname}><summary>{row.dateiname}</summary><pre>{row.grund}</pre></details>)}</div>
         </details> : null}
 
         <section className="panel">
-          <div className="section-heading"><h2>Der Bestand</h2>
-            <label className="check-label"><input type="checkbox" checked={nurOffene} onChange={(event) => setNurOffene(event.target.checked)} /> Nur Dateien ohne Bild</label>
+          <div className="section-heading"><h2>{t("Der Bestand")}</h2>
+            <label className="check-label"><input type="checkbox" checked={nurOffene} onChange={(event) => setNurOffene(event.target.checked)} /> {t("Nur Dateien ohne Bild")}</label>
           </div>
           <ul className="medien-liste">{sichtbar.map((asset) => <li key={asset.id} className={asset.vorhanden ? "medien-zeile" : "medien-zeile medien-zeile-offen"}>
             <div className="medien-vorschau">{asset.vorhanden
@@ -239,44 +247,44 @@ export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", em
               <strong>{asset.dateiname}</strong>
               <p className="muted">
                 {asset.vorhanden ? `${asset.mime?.replace("image/", "").toUpperCase()} · ${asset.breite}×${asset.hoehe} · ${groesse(asset.bytes)}`
-                  : asset.selbstHochgeladen ? "Angelegt, aber ohne Bild — Datei wählen" : asset.imBestand ? "Datei noch nicht geholt" : "Im Quell-Wiki nicht vorhanden"}
-                {asset.urheber ? ` · hochgeladen von ${asset.urheber}` : ""}
+                  : asset.selbstHochgeladen ? t("Angelegt, aber ohne Bild — Datei wählen") : asset.imBestand ? t("Datei noch nicht geholt") : t("Im Quell-Wiki nicht vorhanden")}
+                {asset.urheber ? ` · ${t("hochgeladen von {urheber}", { urheber: asset.urheber })}` : ""}
               </p>
               <p className="muted">
                 {/* „Im Quell-Wiki nicht vorhanden" wäre über ein selbst hochgeladenes Bild schlicht
                     falsch: es war nie in einem Wiki. */}
-                {asset.selbstHochgeladen ? "Selbst hochgeladen" : asset.verwaist ? "Von keinem Artikel benutzt" : asset.verwendetVon.length ? `Benutzt von ${asset.verwendetVon.slice(0, 3).join(", ")}${asset.verwendetVon.length > 3 ? " …" : ""}` : "Verwendung nicht bekannt"}
-                {asset.beschreibungsseiteUrl ? <> · <a href={asset.beschreibungsseiteUrl} target="_blank" rel="noreferrer noopener">Dateiseite im Wiki</a></> : null}
+                {asset.selbstHochgeladen ? t("Selbst hochgeladen") : asset.verwaist ? t("Von keinem Artikel benutzt") : asset.verwendetVon.length ? t("Benutzt von {namen}", { namen: `${asset.verwendetVon.slice(0, 3).join(", ")}${asset.verwendetVon.length > 3 ? " …" : ""}` }) : t("Verwendung nicht bekannt")}
+                {asset.beschreibungsseiteUrl ? <> · <a href={asset.beschreibungsseiteUrl} target="_blank" rel="noreferrer noopener">{t("Dateiseite im Wiki")}</a></> : null}
               </p>
               {/* Auch für eine Wiki-Zeile: was das CDN nicht mehr hergibt, kann von Hand kommen —
                   dieselbe Zeile, dieselbe Route, keine zweite Geschichte über dieselbe Datei. */}
               <div className="button-row">
                 {!asset.vorhanden ? <Button variant="quiet" disabled={task.busy}
                   onClick={() => { nachreichungZiel.current = asset; nachreichung.current?.click(); }}>
-                  <Upload size={14} /> Datei wählen</Button> : null}
+                  <Upload size={14} /> {t("Datei wählen")}</Button> : null}
                 {/* Kein Kaskadenlöschen: ein Bild, das ein Artikel oder eine Lootkarte zeigt,
                     ließe leere Rahmen zurück. Der Knopf sagt das, statt ihn wortlos zu sperren. */}
                 {asset.loeschbar
-                  ? <Button variant="quiet" disabled={task.busy} onClick={() => loesche(asset)}><Trash2 size={14} /> Entfernen</Button>
-                  : <span className="muted medien-gebunden" title="Solange ein Artikel oder eine Lootkarte dieses Bild zeigt, bleibt es im Bestand.">Wird gezeigt — nicht entfernbar</span>}
+                  ? <Button variant="quiet" disabled={task.busy} onClick={() => loesche(asset)}><Trash2 size={14} /> {t("Entfernen")}</Button>
+                  : <span className="muted medien-gebunden" title={t("Solange ein Artikel oder eine Lootkarte dieses Bild zeigt, bleibt es im Bestand.")}>{t("Wird gezeigt — nicht entfernbar")}</span>}
               </div>
-              {asset.formatWiderspruch ? <p className="medien-warnung"><CircleAlert size={14} aria-hidden="true" /> Der Name im Wiki sagt {asset.behaupteterMime?.replace("image/", "")}, geliefert wurde {asset.mime?.replace("image/", "")}.</p> : null}
+              {asset.formatWiderspruch ? <p className="medien-warnung"><CircleAlert size={14} aria-hidden="true" /> {t("Der Name im Wiki sagt {behauptet}, geliefert wurde {geliefert}.", { behauptet: asset.behaupteterMime?.replace("image/", "") ?? "", geliefert: asset.mime?.replace("image/", "") ?? "" })}</p> : null}
             </div>
             <div className="medien-lizenz">
               <span className={`medien-marke medien-marke-${asset.lizenzStatus}`}>
-                {asset.lizenzStatus === "unbekannt" ? <ShieldQuestion size={13} aria-hidden="true" /> : null}{LIZENZ_TEXT[asset.lizenzStatus]}
+                {asset.lizenzStatus === "unbekannt" ? <ShieldQuestion size={13} aria-hidden="true" /> : null}{LIZENZ_TEXT[asset.lizenzStatus]()}
               </span>
-              {asset.lizenzQuelle ? <small title={`Grundlage der Einstufung: ${asset.lizenzQuelle}`}>laut „{asset.lizenzQuelle}“</small> : null}
-              <label className="sr-only" htmlFor={`lizenz-${asset.id}`}>Lizenzstatus von {asset.dateiname}</label>
+              {asset.lizenzQuelle ? <small title={t("Grundlage der Einstufung: {quelle}", { quelle: asset.lizenzQuelle })}>{t("laut „{quelle}“", { quelle: asset.lizenzQuelle })}</small> : null}
+              <label className="sr-only" htmlFor={`lizenz-${asset.id}`}>{t("Lizenzstatus von {name}", { name: asset.dateiname })}</label>
               <select id={`lizenz-${asset.id}`} value={asset.lizenzStatus} disabled={task.busy}
                 onChange={(event) => void setzeLizenz(asset, event.target.value as WikiAsset["lizenzStatus"])}>
-                <option value="unbekannt">Lizenz unbekannt</option>
-                <option value="frei">Freie Lizenz</option>
-                <option value="zitat">Bildzitat</option>
+                <option value="unbekannt">{t("Lizenz unbekannt")}</option>
+                <option value="frei">{t("Freie Lizenz")}</option>
+                <option value="zitat">{t("Bildzitat")}</option>
               </select>
             </div>
           </li>)}</ul>
-          {!sichtbar.length ? <p className="muted"><Trash2 size={14} aria-hidden="true" /> Für diese Auswahl gibt es keine Dateien.</p> : null}
+          {!sichtbar.length ? <p className="muted"><Trash2 size={14} aria-hidden="true" /> {t("Für diese Auswahl gibt es keine Dateien.")}</p> : null}
         </section>
       </>}
       </>}

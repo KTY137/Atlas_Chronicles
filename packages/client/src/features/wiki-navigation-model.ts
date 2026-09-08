@@ -8,6 +8,8 @@
  * ausgelassen. Ein unbekannter Artikel behält seinen Platz im Baum und verliert nur seinen Namen —
  * das ist die Silhouette, und sie entsteht auf dem Server, nicht hier.
  */
+import { t } from "../i18n";
+
 export interface NavigationKategorie {
   readonly id: string; readonly slug: string; readonly titel: string;
   readonly elternId: string | null;
@@ -32,12 +34,13 @@ export interface Gruppe {
   readonly artikel: readonly NavigationArtikel[];
 }
 
-/** Die acht Arten aus `EntryArt`, als Überschrift lesbar gemacht. */
-const ART_TITEL: Readonly<Record<string, string>> = {
-  charakter: "Figuren", organisation: "Organisationen", spezies: "Völker", gegenstand: "Gegenstände",
-  ereignis: "Ereignisse", ort: "Orte", regelseite: "Regeln", sonstiges: "Sonstiges",
+/** Die acht Arten aus `EntryArt`, als Überschrift lesbar gemacht. Jede Überschrift ist eine
+ * Funktion, damit der Text erst beim Bauen des Baums in der gewählten Sprache entsteht. */
+const ART_TITEL: Readonly<Record<string, () => string>> = {
+  charakter: () => t("Figuren"), organisation: () => t("Organisationen"), spezies: () => t("Völker"), gegenstand: () => t("Gegenstände"),
+  ereignis: () => t("Ereignisse"), ort: () => t("Orte"), regelseite: () => t("Regeln"), sonstiges: () => t("Sonstiges"),
 };
-export const artTitel = (art: string): string => ART_TITEL[art] ?? "Sonstiges";
+export const artTitel = (art: string): string => (ART_TITEL[art] ?? ART_TITEL.sonstiges!)();
 
 /**
  * Kategorien zuerst, danach die Arten als Rückfall für alles, was keine Kategorie trägt. Ohne

@@ -70,6 +70,14 @@ Datenschlüssel und gespeicherte Werte werden nie übersetzt. Das Sprachgate
 
 Gesperrt ist also `"schmiede"`, `"fantasy"`, `"liegt_in_geografie"`, `"Datei"` — 80 Werte.
 
+Vier dieser Werte sind zugleich gewöhnliche Oberflächenwörter: `„Datei"`, `„Karte"`,
+`„Kategorie"` und `„Vorlage"` sind Namensräume in `MEDIAWIKI_NAMESPACES` **und** Anzeigetexte
+(„Datei wählen", der Umschalter „Karte" im Kartenstudio, die Kategorie über einer
+Gruppenseite, die Figurvorlage). Sie stehen deshalb in
+`DENY_AUSNAHMEN` in `tools/gate-sprache.mjs` und dürfen als Anzeigetext übersetzt werden.
+Die Wikitext-Erkennung liest weiter die Konstante, nie den Katalog. Die Liste ist kurz und
+wächst nur durch ein ausdrückliches Ruling.
+
 **Nicht** gesperrt sind die Werte der Anzeigetabellen `*_LABEL`, `*_LABELS` und `*_TITEL`.
 `"Schmiede"`, `"Wohnhaus"`, `"Fantasy"` sind Anzeigetexte und gehören in den Katalog —
 `App.tsx` benutzt „Schmiede" als Navigationsbeschriftung.
