@@ -121,6 +121,43 @@ describe("closed revision cartography v1", () => {
   });
 });
 
+describe("explicit interior ownership profile", () => {
+  const interior = () => ({ schemaVersion: 1, floor: "wood", stampIds: [], wallIds: ["wall"], portalIds: ["door"], lightIds: ["light"], placeIds: ["place"], portalArtwork: [] });
+  const document = (): TacticalMapDocumentV1 => ({ ...map(), geometry: { ...map().geometry, places: [{ id: "place", x: 550, y: 50 }] },
+    walls: [{ id: "wall", kind: "wall", points: [[500, 0], [580, 0]], elevation: 0 }],
+    portals: [{ id: "door", position: [550, 0], bounds: [[540, 0], [560, 0]], rotationRadians: 0, closed: true, freestanding: false, elevation: 0 }],
+    lights: [{ id: "light", position: [550, 50], range: 40, intensity: .5, colorArgb: "ffffffff", shadows: true, elevation: 0 }] });
+  it("roundtrips explicit ownership while preserving old records and rejecting absent geometry", () => {
+    const old = serializeTacticalCartography(cartography());
+    const owned = withRegion("room", { interior: interior() }), parsed = parseTacticalCartography(owned, document());
+    expect(parseTacticalCartography(serializeTacticalCartography(parsed), document())).toEqual(parsed);
+    expect(serializeTacticalCartography(cartography())).toBe(old);
+    for (const field of ["wallIds", "portalIds", "lightIds", "placeIds", "stampIds"]) {
+      expect(() => parseTacticalCartography(withRegion("room", { interior: { ...interior(), [field]: ["absent"] } }), document())).toThrow(/existing/);
+    }
+  });
+  it("requires a supported version, closed fields and unique local references", () => {
+    for (const extra of [{ schemaVersion: 2 }, { floor: "lava" }, { permissions: true }, { wallIds: ["wall", "wall"] }]) {
+      expect(() => parseTacticalCartography(withRegion("room", { interior: { ...interior(), ...extra } }), document())).toThrow();
+    }
+    expect(() => parseTacticalCartography(withRegion("house", { interior: interior() }), document())).toThrow(/migration/);
+  });
+  it("allows two room owners per boundary while retaining exclusive furniture, light and place ownership", () => {
+    const primary = withRegion("room", { interior: interior() });
+    const share = (extra: Record<string, unknown>) => ({ ...primary, regions: primary.regions.map(role => role.regionId === "unknown" ? { regionId: role.regionId, role: "room", authored: true, locked: false, provenance: null, interior: { ...interior(), stampIds: [], lightIds: [], placeIds: [], ...extra } } : role) });
+    expect(() => parseTacticalCartography(share({}), document())).not.toThrow();
+    for (const field of ["lightIds", "placeIds"]) expect(() => parseTacticalCartography(share({ [field]: interior()[field as "lightIds" | "placeIds"] }), document())).toThrow(/at most one/);
+    const three = share({});
+    const tripled = { ...three, regions: three.regions.map(role => role.regionId === "lot" ? { regionId: role.regionId, role: "room", authored: true, locked: false, provenance: null, interior: { ...interior(), lightIds: [], placeIds: [] } } : role) };
+    expect(() => parseTacticalCartography(tripled, document())).toThrow(/at most two/);
+    expect(() => parseTacticalCartography(withRegion("room", { interior: { ...interior(), stampIds: ["roof"] } }), document())).toThrow(/at most one/);
+  });
+  it("limits painted doorway associations to their explicit room-owned stamp and portal", () => {
+    expect(() => parseTacticalCartography(withRegion("room", { interior: { ...interior(), portalArtwork: [{ portalId: "foreign", stampIds: [] }] } }), document())).toThrow(/owned portal/);
+    expect(() => parseTacticalCartography(withRegion("room", { interior: { ...interior(), portalArtwork: [{ portalId: "door", stampIds: ["roof"] }] } }), document())).toThrow(/owned stamp/);
+  });
+});
+
 describe("evidence-based legacy cartography", () => {
   const nodes: NonNullable<LegacyCartographyEvidence["nodes"]> = [{ id: "house" as KnotenId, art: "bauwerk" }, { id: "room" as KnotenId, art: "raum" }];
   it("keeps arbitrary imported and newly drawn polygons generic, independently of shape/name/order", () => {

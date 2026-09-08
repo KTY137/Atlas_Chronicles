@@ -69,5 +69,20 @@
 .map-generation-controls.compact .map-style-options{grid-template-columns:1fr}
 .map-generation-controls.compact .map-numbers{gap:6px}
 .map-generation-controls.compact .map-size-presets button{padding:7px}
+.map-location-section{display:grid;gap:9px;min-width:0}
+.map-location-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.map-location-cards button{display:flex;align-items:center;gap:9px;min-width:0;padding:9px 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--text);text-align:left;font:inherit;cursor:pointer}
+.map-location-cards button:hover{background:var(--surface-2)}
+.map-location-cards button[aria-pressed=true]{border-color:var(--accent-strong);box-shadow:inset 0 0 0 1px var(--accent-strong);background:var(--surface-2)}
+.map-location-cards button:focus-visible{outline:2px solid var(--accent-strong);outline-offset:3px}
+.map-location-cards strong{display:block;font-size:12px}
+.map-location-cards small{display:block;margin-top:3px;font-size:10px;line-height:1.4}
+.map-location-swatch{display:grid;place-items:center;width:39px;height:43px;flex:none;border-radius:5px;color:#fff9e6;background:linear-gradient(145deg,#668656,#a3aa69);box-shadow:inset 0 0 9px #142a2440}
+.map-location-swatch.wald{background:radial-gradient(ellipse at center,#b1ba78 0 20%,#517150 23% 50%,#314d3b 73%)}
+.map-location-swatch.gebirge{background:linear-gradient(130deg,#889294 0 35%,#515f63 36% 57%,#a4aaa1 58% 71%,#667558 72%)}
+.map-location-swatch.fluss{background:linear-gradient(115deg,#77895c 0 32%,#94b5b4 33% 39%,#4e8493 40% 61%,#94b5b4 62% 67%,#77895c 68%)}
+.map-location-swatch.see{background:radial-gradient(ellipse at 68% 35%,#568b9b 0 35%,#a1b8a2 38% 44%,#74845c 46%)}
+.map-location-swatch.kueste{background:linear-gradient(108deg,#7b9061 0 44%,#c8b88a 45% 55%,#6e9caa 56%)}
+.map-location-swatch.insel{background:radial-gradient(ellipse at center,#7c945f 0 37%,#cabb8c 39% 46%,#6895a4 49%)}
 @media(max-width:1100px){.map-workshop-layout{grid-template-columns:minmax(0,1fr)}.map-workshop-preview{position:static}.map-preview-empty{min-height:300px}.map-kind-cards button{min-height:120px}}
 @media(max-width:600px){.map-workshop-layout{gap:18px}.map-kind-cards button{padding:10px 8px}.map-kind-cards span{display:none}.map-kind-cards button{min-height:88px}.map-workshop-preview{padding:10px}.map-workshop-preview .tactical-canvas{min-height:280px}.map-workshop-heading h2{font-size:22px}.map-workshop-badge{font-size:10px}.map-preview-empty h3{font-size:20px}}

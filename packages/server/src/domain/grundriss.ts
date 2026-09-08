@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFileSync } from "node:fs";
-import { erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, type GrundrissOptionen, type HoehleOptionen, type SiedlungOptionen } from "@chronicle/forge";
+import { erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, SIEDLUNG_STANDORTE, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, type GrundrissOptionen, type HoehleOptionen, type SiedlungOptionen } from "@chronicle/forge";
 import { inferLegacyCartography, KARTEN_SETTINGS, parseAssetpaket, parseTacticalCartography, serializeTacticalMapDocument, type AssetpaketV1, type KartenSetting, type Weltkeim } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
@@ -63,13 +63,15 @@ export function validateKartenOptionen(art: KartenArt, optionen?: KartenOptionen
   const keys: Record<KartenArt, readonly string[]> = {
     grundriss: ["zellen", "zellgroesse", "raeume", "minRaum", "schleifen", "moeblierung", "licht", "gangboden", "anordnung", "profil", "setting"],
     hoehle: ["zellen", "zellgroesse", "kammern", "fuellung", "glaettung", "mindestFlaeche", "moeblierung", "licht"],
-    siedlung: ["art", "ausdehnung", "zellgroesse", "bauwerke", "strassenDichte", "grundstueck", "licht", "setting"],
+    siedlung: ["art", "ausdehnung", "zellgroesse", "bauwerke", "strassenDichte", "grundstueck", "licht", "setting", "standort"],
   };
   if (!Object.hasOwn(keys, art) || optionen !== undefined && (!optionen || typeof optionen !== "object" || Array.isArray(optionen)
     || ![Object.prototype, null].includes(Object.getPrototypeOf(optionen)) || Object.keys(optionen).some(key => !keys[art].includes(key))))
     throw new TacticalValidationError("Bitte die Optionen der gewählten Kartenart verwenden.");
   if (optionen && "setting" in optionen && !KARTEN_SETTINGS.some(setting => setting === optionen.setting))
     throw new TacticalValidationError("Bitte ein vorhandenes Kartensetting auswählen.");
+  if (optionen && "standort" in optionen && !SIEDLUNG_STANDORTE.some(value => value === optionen.standort))
+    throw new TacticalValidationError("Bitte einen vorhandenen Standort auswählen.");
 }
 
 /** The normalized seed vector owns generation settings; older generators omitted this field. */

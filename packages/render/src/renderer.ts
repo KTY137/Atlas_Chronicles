@@ -458,7 +458,9 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     if ((event.button !== 0 && !(editing && event.button === 1)) || drag) return;
     const p = local(event);
     const hit = renderer.hitTest(p), token = hit?.kind === "token" ? scene.tokens?.find(t => t.id === hit.id && t.movable) : undefined;
-    const editor = editing && event.button === 0 && !hand && !event.altKey && (options.editor?.begin(screenToMap(p, camera), hit) ?? false);
+    const worldPoint = screenToMap(p, camera);
+    const stampId = editing ? hitTestStamp(scene.stamps ?? [], worldPoint, new Map([...stampTextures].map(([asset, { bitmap }]) => [asset, [bitmap.width, bitmap.height] as const]))) : undefined;
+    const editor = editing && event.button === 0 && !hand && !event.altKey && (options.editor?.begin(worldPoint, hit, stampId) ?? false);
     drag = { id: event.pointerId, last: p, start: p, moved: false, ...(editor ? { editor: true } : token && !editing ? { token: token.id, snapshot: { ...token } } : {}) };
     canvas.setPointerCapture(event.pointerId);
     canvas.focus({ preventScroll: true });
@@ -512,3 +514,4 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   draw();
   return renderer;
 }
+import { hitTestStamp } from "./stamp-hit.ts";

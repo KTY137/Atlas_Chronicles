@@ -1,6 +1,60 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
+Updated: **2026-09-08, 17:00** (Kartenstudio: freies Bauen, Innenräume, Standortwahl)
+
+## Kartenstudio: freies Bauen und Standortwahl — 2026-09-08
+
+Kayas Auftrag: kompletter Rework des Kartenbaus, freies Bauen wie Inkarnate/Dungeondraft
+mit Raum- und Gebäudevorlagen, Orte gezielt im Gebirge, am Fluss, am Meer usw. Der Codex-
+Thread hat das umgesetzt (`dcbf449`, „new version") und brach vor seiner Abschlussprüfung
+ab. Der Stand war nicht übersetzbar: `forge/src/interior-edit.ts` deklarierte `along` im
+Türzweig zweimal. Repariert (jetzt `center`), dazu vier Testkorrekturen für die neuen
+Verträge (Türen als Linien in `mapDocumentScene`, Stempel-ID beim Drag-Start) und die
+Katalog-Locator der Studio-Spec. Ein unabhängiger Review fand dazu einen echten Fehler
+in der neuen Stempel-Trefferprüfung (Gleichstand in derselben Ebene wählte das verdeckte
+Möbel); behoben mit Test. Belege in
+`design/iterations/map-studio-20260908.md`, Abschnitt „Nachweise".
+
+Was jetzt geht, im echten Browser geprüft: Raum aufziehen (leer, Schlafzimmer, Taverne;
+Rechteck oder L-Form), Wände ziehen, Tür an eine Wand setzen, Einrichtung aus dem
+Katalog platzieren und mit „Auswählen" verschieben, ganzen Raum mit Tür und Möbeln
+verschieben oder drehen, Rückgängig/Wiederholen, speichern, neu laden mit denselben
+Raum-, Tür- und Möbel-IDs; Siedlungen mit Standort Ebene, Wald, Gebirge, Fluss, See,
+Küste, Insel; Innenräume aus der Außenkarte öffnen. Grün: Typecheck, Build, Version,
+Paketgrenzen, Forge/Server/Client-Suiten der Karten, `e2e/map-studio.spec.ts` 2/2.
+
+Offen: neun Fälle in `client/test/tactical-entities-review.test.ts` waren schon vor
+diesem Umbau rot (alter Editor-Harness, Bedienelemente wie „Region zeichnen" gibt es
+nicht mehr) und brauchen eine Neuschreibung. Drei Browser-Specs waren schon am
+Elterncommit `8350764` rot und sind es weiterhin: `genre-assets` und `map-settings`
+erwarten den Objektkatalog ohne vorherigen Klick auf „Möbel & Objekte",
+`siedlung-workshop` eine Auswahl „Szenenkarte", die es nicht mehr gibt. Desktop-Paket
+und Installation stehen noch auf `ca3898b`. PDF-Parität nicht behauptet. Chronist,
+NPC-Generator und GUI-Abschluss bleiben im Feature-Checkout in Arbeit.
+
+## Ausgeliefert: Karteneditor und Rechtsklick-Löschen
+
+Der vollständige Kartenumbau liegt mit **`ca3898b` auf main und ist installiert**.
+Client und Desktop sind auch direkt in main neu gebaut. Das feste Paket
+`integration-20260908/.local/desktop-artifacts/2026-09-08T11-56-41-698Z` besteht
+21 tatsächliche Desktop-Prüfungen (`smoke-jMOHhl/evidence.json`); dieselben 21
+Prüfungen bestehen nach Installation direkt aus `AppData/Local/AtlasChronicles/app-0.1.0`
+(`smoke-pulXOG/evidence.json`). Eigene Testprofile sind geschlossen; Benutzerdaten
+wurden dafür nicht verwendet. Der Installer lief nach bestätigtem Schließen der App.
+`installed-verification.json` belegt 2.496 installierte Dateien gegen das Paket sowie
+unveränderte Profilidentität und DPAPI-Zugangsdaten. Installer: 225.622.528 Bytes,
+SHA256 `cdbdb27bacf0e9a261260325e797a90b62dd11083861ea520f2b7f1b322c4240`.
+
+Geprüft sind insbesondere der neue Karteneditor und die Genre-Auswahl, Rechtsklick-
+Löschung zweier verschachtelter Karten, freier Eingang und Ersatzinnenraum, alle sieben
+Schmiede-Werkstätten, Neustart, Host-Recovery und Native-V15-Export/Restore. Der im
+ersten Desktop-Versuch gefundene zuklappende Objektkatalog ist rot reproduziert und
+korrigiert. Vorhandene Karten behalten ihre gespeicherte Geometrie; neue Generierung
+nutzt Generator v5 und cartography-5. PDF-Parität wird nicht automatisch behauptet.
+
+Chronist (027/V16), freier NPC-Generator und GUI-Abschluss werden im getrennten
+Feature-Checkout weiter umgesetzt. Sie gehören noch nicht zu dieser Kartenlieferung.
+Die folgenden Abschnitte sind historische Zwischenstände.
 
 ## Aktuell: Karten installiert, Chronist in Umsetzung
 

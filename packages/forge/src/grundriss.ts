@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
-  BAUWERK_LABEL, BAUWERK_TYPEN, KARTEN_SETTINGS, parseTacticalMapDocument, weltkeim,
-  type AssetpaketV1, type BauwerkTyp, type KartenSetting, type Knoten, type TacticalLight, type TacticalMapDocumentV1, type TacticalPortal, type TacticalWall, type Weltkeim,
+  BAUWERK_LABEL, BAUWERK_TYPEN, KARTEN_SETTINGS, parseTacticalMapDocument, parseTacticalCartography, weltkeim,
+  type AssetpaketV1, type BauwerkTyp, type KartenSetting, type Knoten, type TacticalCartographyV1, type TacticalLight, type TacticalMapDocumentV1, type TacticalPortal, type TacticalWall, type Weltkeim,
 } from "@chronicle/szene";
 import {
   AUSGELASSEN_BASIS, FELS, KARTENWERK_LIMITS, baueKnoten, bestuecker, fail, idFabrik,
@@ -48,7 +48,7 @@ import { BAUPROGRAMME, ZEIT_RAUM_LABEL, freieZeitThemen, programmRaeume, zeitThe
 
 export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const GRUNDRISS_VERSION = "6";
+export const GRUNDRISS_VERSION = "7";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
@@ -120,6 +120,7 @@ export interface Grundriss {
   /** The artefact's root node — the one that owns this map's `Rahmen`. */
   readonly wurzelId: KnotenId;
   readonly karte: TacticalMapDocumentV1;
+  readonly cartography?: TacticalCartographyV1;
   /** The root and one node per room. A fragment: merge it under a parent before validating. */
   readonly knoten: readonly Knoten[];
   readonly raeume: readonly GrundrissRaum[];
@@ -761,7 +762,28 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   });
 
   // -- walls -----------------------------------------------------------------------------------
-  const waende: TacticalWall[] = wandLaeufe((x, y) => gitter[idx(x, y)] !== FELS, breite, hoehe, z, ids.geometrieId);
+  const waende: TacticalWall[] = [];
+  const waendeJeRaum = rohRaeume.map(() => [] as string[]);
+  // Split exact source-grid runs where their room ownership changes. A spatial guess on a
+  // saved drawing could capture unrelated furniture or corridor walls; this grid is evidence.
+  const quellRaum = (x: number, y: number) => drin(x, y) && gitter[idx(x, y)] === RAUM ? raumVon[idx(x, y)]! : -1;
+  for (const run of wandLaeufe((x, y) => gitter[idx(x, y)] !== FELS, breite, hoehe, z, ids.geometrieId)) {
+    const a = run.points[0]!, b = run.points[1]!, vertical = a[0] === b[0], length = Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / z);
+    let start = 0, prior = -2;
+    const finish = (end: number) => {
+      if (end <= start) return;
+      const wallId = ids.geometrieId("raumwand", run.id, String(start));
+      waende.push({ ...run, id: wallId, points: [[a[0] + (vertical ? 0 : start * z), a[1] + (vertical ? start * z : 0)], [a[0] + (vertical ? 0 : end * z), a[1] + (vertical ? end * z : 0)]] });
+      if (prior >= 0) waendeJeRaum[prior]!.push(wallId);
+      start = end;
+    };
+    for (let step = 0; step < length; step++) {
+      const x = Math.round(a[0] / z) + (vertical ? 0 : step), y = Math.round(a[1] / z) + (vertical ? step : 0);
+      const owner = Math.max(quellRaum(x, y), vertical ? quellRaum(x - 1, y) : quellRaum(x, y - 1));
+      if (owner !== prior) { finish(step); prior = owner; }
+    }
+    finish(length);
+  }
 
   // -- portals: room/corridor openings, one per contiguous run ---------------------------------
   interface Oeffnung { raum: number; senkrecht: boolean; fest: number; lauf: number }
@@ -808,6 +830,9 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
 
   // -- stamps ----------------------------------------------------------------------------------
   const werk = bestuecker(paket, r, z, ids.geometrieId, setting);
+  const stampsJeRaum = rohRaeume.map(() => [] as string[]), lichterJeRaum = rohRaeume.map(() => [] as string[]);
+  const tuerGrafik = new Map<string, string[]>();
+  const claimStamps = (roomIndex: number, from: number) => { if (roomIndex >= 0) stampsJeRaum[roomIndex]!.push(...werk.stamps.slice(from).map(stamp => stamp.id)); };
   const nichtPlatziert: string[] = [];
   for (const [x, y] of tuerZelle) werk.sperre(x, y);
 
@@ -824,7 +849,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     const feld = gitter[idx(x, y)];
     if (feld === FELS) continue;
     const asset = feld === RAUM ? raumboden[raumVon[idx(x, y)]!] ?? gangboden : gangboden;
-    if (asset) werk.setze(asset, x, y);
+    if (asset) { const before = werk.stamps.length; werk.setze(asset, x, y); if (feld === RAUM) claimStamps(raumVon[idx(x, y)]!, before); }
   }
 
   // Stairs before furniture: an entrance that could not be placed is a broken map, a chair that
@@ -832,7 +857,9 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   const setzeMarkiert = (raum: RohRaum, art: string, schlagwort: string) => {
     const asset = werk.waehle(art, schlagwort);
     if (!asset) return;
+    const before = werk.stamps.length;
     if (!werk.platziere(asset, zellenVon(raum))) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
+    claimStamps(rohRaeume.indexOf(raum), before);
   };
   if (profil === "frei" && setting === "fantasy") setzeMarkiert(rohRaeume[0]!, "aufbau", "aufwaerts");
   setzeMarkiert(rohRaeume[0]!, "marke", "eingang");
@@ -850,6 +877,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       if (!r.chance(optionen.moeblierung)) continue;
       const asset = werk.waehle(art, schlagwort);
       if (!asset) continue;
+      const before = werk.stamps.length;
       if (!werk.platziere(asset, zellenVon(raum))) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
       else if (optionen.licht && art === "licht") {
         const letzter = werk.stamps[werk.stamps.length - 1]!;
@@ -860,7 +888,9 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
           range: Math.max(raum.w, raum.h) * z * 0.85, intensity: schlagwort === "kerze" ? 0.55 : 0.9,
           colorArgb: schlagwort === "kerze" ? "ffe8c98a" : "ffdd8a33", shadows: true, elevation: 0,
         });
+        lichterJeRaum[i]!.push(lichter[lichter.length - 1]!.id);
       }
+      claimStamps(i, before);
     }
   });
 
@@ -873,7 +903,11 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       // A door sits on the edge between two cells, so its anchor cell is half a cell off. Routed
       // through the same `setze` as everything else: `Stamp.a` is composed in exactly one place.
       const [ew, eh] = tuerAsset.einheiten;
+      const before = werk.stamps.length;
       werk.setze(tuerAsset, tuer.position[0] / z - ew / 2, tuer.position[1] / z - eh / 2, tuer.rotationRadians);
+      const ownedStamps = werk.stamps.slice(before).map(stamp => stamp.id); tuerGrafik.set(tuer.id, ownedStamps);
+      const owner = [...tuerenJeRaum].find(([, portals]) => portals.includes(tuer.id))?.[0];
+      if (owner !== undefined) claimStamps(owner, before);
     }
   }
 
@@ -937,6 +971,10 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
 
   return Object.freeze({
     art: "grundriss", erzeuger: GRUNDRISS_ERZEUGER, version: GRUNDRISS_VERSION, keim, wurzelId, karte,
+    cartography: parseTacticalCartography({ schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: z, origin: [0, 0] },
+      regions: raeume.map((raum, i) => ({ regionId: raum.id, role: "room", authored: false, locked: false, provenance: keim,
+        interior: { schemaVersion: 1, floor: setting === "fantasy" ? "wood" : "tile", stampIds: stampsJeRaum[i]!.sort(), wallIds: waendeJeRaum[i]!.sort(), portalIds: raum.tueren, lightIds: lichterJeRaum[i]!.sort(), placeIds: [ids.geometrieId("ort", raum.pfad)],
+          portalArtwork: raum.tueren.map(portalId => ({ portalId, stampIds: tuerGrafik.get(portalId) ?? [] })) } })) }, karte),
     knoten: Object.freeze(knoten), raeume: Object.freeze(raeume),
     bericht: Object.freeze({
       raeume: raeume.length, gangzellen, bodenzellen, tueren: tueren.length, waende: waende.length,

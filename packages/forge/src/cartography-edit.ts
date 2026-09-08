@@ -10,7 +10,7 @@ export type QuarterTurns = 0 | 1 | 2 | 3;
 export type CartographyEditOperation =
   | { readonly kind: "terrain"; readonly points: readonly TacticalPoint[]; readonly radius: number; readonly material: CartographyTerrainMaterial | "water" }
   | { readonly kind: "road"; readonly points: readonly TacticalPoint[]; readonly width: number; readonly material: "path" | "street" | "square" }
-  | { readonly kind: "building"; readonly at: TacticalPoint; readonly width: number; readonly height: number; readonly quarterTurns?: QuarterTurns; readonly shape?: "rectangle" | "l"; readonly typ: BauwerkTyp; readonly titel: string }
+  | { readonly kind: "building"; readonly at: TacticalPoint; readonly width: number; readonly height: number; readonly quarterTurns?: QuarterTurns; readonly shape?: "rectangle" | "l"; readonly typ: BauwerkTyp; readonly titel: string; readonly requireRoad?: boolean }
   | { readonly kind: "transform"; readonly regionId: string; readonly delta: TacticalPoint; readonly quarterTurns?: QuarterTurns }
   | { readonly kind: "remove"; readonly regionId: string }
   | { readonly kind: "variation"; readonly regionIds: readonly string[] };
@@ -198,14 +198,20 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
     const cannotChange = (id: string, variation = false) => roles.get(id)!.locked || variation && (roles.get(id)!.authored || protectedIds.has(id));
     const erase = (id: string) => {
       const role = roles.get(id)!;
+      if (role.role === "room") reject("protected", "Entferne Räume mit dem Innenraumwerkzeug, damit Wände, Türen und Einrichtung zusammen erhalten bleiben.", [id]);
       if (protectedIds.has(id) || role.locked) reject("protected", "Dieser Zugang oder diese gesperrte Fläche muss erhalten bleiben.", [id]);
       if ([...roles.values()].some(other => other.role === "building" && (other.lotRegionId === id || other.streetRegionId === id))) reject("protected", "Diese Fläche wird von einem Gebäude als Grundstück oder Zugang benötigt.", [id]);
       for (const stampId of role.role === "building" ? role.attachedStampIds ?? [] : []) removedStamps.add(stampId);
       stamps = stamps.filter(stamp => !removedStamps.has(stamp.id)); regions = regions.filter(value => value.id !== id); roles.delete(id); removed.add(id); changed.add(id);
     };
-    const checkBuilding = (points: Polygon, ownId?: string) => {
+    const checkBuilding = (points: Polygon, ownId?: string, requireRoad = true) => {
       if (!within(points)) reject("invalid", "Das Gebäude passt nicht auf die Karte.");
-      for (const other of regions) if (other.id !== ownId && ["building", "water", "road"].includes(roles.get(other.id)!.role) && intersects(points, other.punkte)) reject("contradiction", "Das Gebäude überschneidet ein Haus, Wasser oder eine Straße.", [other.id]);
+      for (const other of regions) if (other.id !== ownId && intersects(points, other.punkte)) {
+        const role = roles.get(other.id)!;
+        if (role.locked || protectedIds.has(other.id)) reject("protected", "Das Gebäude würde einen geschützten Ort überbauen.", [other.id]);
+        if (["building", "room", "water", "road"].includes(role.role)) reject("contradiction", "Das Gebäude überschneidet ein Haus, einen Raum, Wasser oder eine Straße.", [other.id]);
+      }
+      if (!requireRoad) return undefined;
       const z = cartography.construction.cellSize;
       let closest: { id: string; distance: number } | null = null;
       const roads = regions.filter(value => roles.get(value.id)!.role === "road");
@@ -268,20 +274,20 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
       const points = old.punkte.map(transform);
       let nextRole: CartographyRegionV1 = { ...role, authored: true, provenance: null };
       if (role.role === "building") {
-        const streetRegionId = checkBuilding(points, old.id);
-        const { lotRegionId: _lot, ...remaining } = role;
-        nextRole = { ...remaining, authored: true, provenance: null, streetRegionId, ...(role.lotRegionId && points.every(point => imPolygon(point, region(role.lotRegionId!).punkte)) ? { lotRegionId: role.lotRegionId } : {}) };
+        const streetRegionId = checkBuilding(points, old.id, !!role.streetRegionId);
+        const { lotRegionId: _lot, streetRegionId: _street, ...remaining } = role;
+        nextRole = { ...remaining, authored: true, provenance: null, ...(streetRegionId ? { streetRegionId } : {}), ...(role.lotRegionId && points.every(point => imPolygon(point, region(role.lotRegionId!).punkte)) ? { lotRegionId: role.lotRegionId } : {}) };
         const attached = new Set(role.attachedStampIds ?? []);
         stamps = stamps.map(stamp => { if (!attached.has(stamp.id)) return stamp; const at = transform([stamp.x, stamp.y]); return { ...stamp, x: at[0], y: at[1], r: stamp.r + turns * Math.PI / 2 }; });
       }
       put(old.id, points, nextRole);
     } else if (operation.kind === "building") {
-      if (!finitePoint(operation.at) || !positive(operation.width) || !positive(operation.height) || !turning(operation.quarterTurns) || !BAUWERK_TYPEN.includes(operation.typ) || typeof operation.titel !== "string" || !operation.titel.trim() || operation.titel.trim().length > 160) reject("invalid", "Gebäudetyp, Name und Abmessungen prüfen.");
+      if (!finitePoint(operation.at) || !positive(operation.width) || !positive(operation.height) || !turning(operation.quarterTurns) || !BAUWERK_TYPEN.includes(operation.typ) || typeof operation.titel !== "string" || !operation.titel.trim() || operation.titel.trim().length > 160 || operation.requireRoad !== undefined && typeof operation.requireRoad !== "boolean") reject("invalid", "Gebäudetyp, Name und Abmessungen prüfen.");
       const [cx, cy] = operation.at, w = operation.width / 2, h = operation.height / 2;
       const shape: Polygon = operation.shape === "l" ? [[cx - w, cy - h], [cx, cy - h], [cx, cy], [cx + w, cy], [cx + w, cy + h], [cx - w, cy + h]] : rect(cx - w, cy - h, cx + w, cy + h);
-      const points = shape.map(point => rotate(point, operation.at, operation.quarterTurns ?? 0)), streetRegionId = checkBuilding(points), id = idFor("building");
+      const points = shape.map(point => rotate(point, operation.at, operation.quarterTurns ?? 0)), streetRegionId = checkBuilding(points, undefined, operation.requireRoad ?? true), id = idFor("building");
       const lot = regions.find(value => roles.get(value.id)!.role === "lot" && points.every(point => imPolygon(point, value.punkte)));
-      put(id, points, { ...common(id), role: "building", streetRegionId, ...(lot ? { lotRegionId: lot.id } : {}) });
+      put(id, points, { ...common(id), role: "building", ...(streetRegionId ? { streetRegionId } : {}), ...(lot ? { lotRegionId: lot.id } : {}) });
       addedBuildings.push({ regionId: id, titel: operation.titel.trim(), typ: operation.typ });
     } else if (operation.kind === "variation") {
       if (!Array.isArray(operation.regionIds) || operation.regionIds.length > limits.cells) reject("budget", "Die Auswahl ist zu groß.");
@@ -301,7 +307,8 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
           const resize = (point: TacticalPoint): TacticalPoint => [q(center[0] + (point[0] - center[0]) * scale), q(center[1] + (point[1] - center[1]) * scale)];
           const points = old.punkte.map(resize);
           if (points.every(point => imPolygon(point, old.punkte))) {
-            put(id, points, { ...role, authored: true, provenance: null, streetRegionId: checkBuilding(points, id) });
+            const streetRegionId = checkBuilding(points, id, !!role.streetRegionId), { streetRegionId: _street, ...rest } = role;
+            put(id, points, { ...rest, authored: true, provenance: null, ...(streetRegionId ? { streetRegionId } : {}) });
             const attached = new Set(role.attachedStampIds ?? []);
             stamps = stamps.map(stamp => { if (!attached.has(stamp.id)) return stamp; const at = resize([stamp.x, stamp.y]); return { ...stamp, x: at[0], y: at[1], s: stamp.s * scale }; });
           }

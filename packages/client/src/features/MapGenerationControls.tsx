@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { Building2, Castle, Mountain, Paintbrush, Ruler } from "lucide-react";
+import { Building2, Castle, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree } from "lucide-react";
 import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
 import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
 
@@ -8,6 +8,16 @@ export const MAP_KINDS = [
   { id: "siedlung", label: "Stadt & Dorf", text: "Straßen, Viertel und begehbare Gebäude", icon: Building2 },
   { id: "grundriss", label: "Gebäude & Dungeon", text: "Vom Wohnhaus über das Labor bis zur Raumstation", icon: Castle },
   { id: "hoehle", label: "Höhle", text: "Natürliche Kammern und gewachsener Fels", icon: Mountain },
+] as const;
+
+export const MAP_LOCATIONS = [
+  { id: "ebene", label: "Ebene", text: "Offenes Land & Felder", icon: Sprout },
+  { id: "wald", label: "Wald", text: "Lichtung im dichten Wald", icon: Trees },
+  { id: "gebirge", label: "Gebirge", text: "Ein Ort zwischen Felsen", icon: Mountain },
+  { id: "fluss", label: "Fluss", text: "Ufer, Brücken & Wege", icon: Waves },
+  { id: "see", label: "See", text: "Siedlung am Seeufer", icon: Circle },
+  { id: "kueste", label: "Küste", text: "Strand & offenes Meer", icon: Sailboat },
+  { id: "insel", label: "Insel", text: "Rundum vom Meer umgeben", icon: Palmtree },
 ] as const;
 
 export function MapGenerationControls({ value, defaults, onChange, compact = false, profileLocked = false }: {
@@ -33,6 +43,15 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     </select></label> : <div className="map-kind-cards" role="group" aria-label="Art der Karte">
       {MAP_KINDS.map(({ id, label, text, icon: Icon }) => <button type="button" key={id} aria-pressed={value.art === id} onClick={() => changeArt(id)}><Icon size={23} /><strong>{label}</strong><span>{text}</span></button>)}
     </div>}
+    {city ? <section className="map-location-section" aria-label="Standort der Siedlung">
+      <div className="map-setting-heading"><MapPin size={16} /><strong>Wo liegt dein Ort?</strong></div>
+      <div className="map-location-cards" role="group" aria-label="Landschaft auswählen">
+        {MAP_LOCATIONS.map(({ id, label, text, icon: Icon }) => <button type="button" key={id} aria-pressed={value.standort === id} onClick={() => update({ standort: id })}>
+          <span className={`map-location-swatch ${id}`} aria-hidden="true"><Icon size={20} /></span><span><strong>{label}</strong><small>{text}</small></span>
+        </button>)}
+      </div>
+      <small>Bestimmt Gelände, Wasser und bebaubares Land. Danach kannst du die Landschaft frei bearbeiten.</small>
+    </section> : null}
     {!cave ? <div className="map-era-section"><span className="map-setting-heading"><strong>Setting</strong><span>Welt & Einrichtung</span></span>
       <div className="map-era-options" role="group" aria-label="Setting">{KARTEN_SETTINGS.map(setting => <button type="button" key={setting} aria-pressed={value.setting === setting} onClick={() => onChange(changeGenerationSetting(value, setting))}>
         <strong>{KARTEN_SETTING_LABEL[setting]}</strong><small>{setting === "fantasy" ? "Gewachsene Orte & alte Mauern" : setting === "gegenwart" ? "Stadtblöcke, Alltag & Industrie" : "Kolonien, Decks & Zukunftstechnik"}</small>

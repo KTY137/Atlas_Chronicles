@@ -45,7 +45,7 @@ def work_node(name: str):
 
 def build_graph(checkpointer, workflow="review"):
     graph = StateGraph(ReviewState)
-    if workflow == "map-visuals":
+    if workflow in ("map-visuals", "map-studio"):
         branches = ["cartography_data", "cartography_engine", "cartography_ui"]
         for name in ["discovery", "design", *branches, "verification", "repair", "delivery", "handoff"]:
             graph.add_node(name, work_node(name))
@@ -135,7 +135,7 @@ def main():
     parser.add_argument("work", nargs="?")
     parser.add_argument("evidence", nargs="?")
     parser.add_argument("--passed", action="store_true")
-    parser.add_argument("--workflow", choices=["review", "features", "map-research", "map-visuals", "delivery"], default="review")
+    parser.add_argument("--workflow", choices=["review", "features", "map-research", "map-visuals", "map-studio", "delivery"], default="review")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     checkpoint = root / ".local" / f"{args.workflow}-20260908" / "workflow.sqlite"

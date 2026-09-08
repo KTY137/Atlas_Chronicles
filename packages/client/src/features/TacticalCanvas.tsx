@@ -125,7 +125,7 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
       onSelect: hit => { if (!synchronizing.current) latest.current.onSelect?.(hit); }, onMoveToken: (id, to) => latest.current.onMove?.(id, to),
       onPoint: point => latest.current.onPoint?.(point),
       editor: { active: () => !revoked.current && !!latest.current.editor?.active(),
-        begin: (point, hit) => latest.current.editor?.begin(point, hit) ?? false,
+        begin: (point, hit, stampId) => latest.current.editor?.begin(point, hit, stampId) ?? false,
         move: point => latest.current.editor?.move(point), commit: point => latest.current.editor?.commit(point), cancel: () => latest.current.editor?.cancel() },
     }).then(map => { if (mount.signal.aborted) { map.destroy(); return; } renderer.current = map; synchronize(() => map.update(latest.current.scene)); setZoom(map.getCamera().scale * 100); setReady(true); queue(); })
       .catch(reason => { if (!mount.signal.aborted) setError(errorText(reason)); });

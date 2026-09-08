@@ -108,10 +108,19 @@ function validateAuthoredCartography(before: P.TacticalMapCard, document: Tactic
   const previous = new Map((before.cartography ?? before.legacyCartography)!.regions.map(region => [region.regionId, region]));
   const oldGeometry = new Map(before.document.geometry.regions.map(region => [region.id, region])), nextGeometry = new Map(document.geometry.regions.map(region => [region.id, region]));
   const oldStamps = new Map(before.document.geometry.stamps.map(stamp => [stamp.id, stamp])), nextStamps = new Map(document.geometry.stamps.map(stamp => [stamp.id, stamp]));
+  const parts = new Map([before.document, document].map(doc => [doc, {
+    stamps: new Map(doc.geometry.stamps.map(item => [item.id, item])), walls: new Map(doc.walls.map(item => [item.id, item])),
+    portals: new Map(doc.portals.map(item => [item.id, item])), lights: new Map(doc.lights.map(item => [item.id, item])), places: new Map(doc.geometry.places.map(item => [item.id, item])),
+  }]));
+  const roomContents = (region: CartographyRegionV1, doc: TacticalMapDocumentV1) => region.role === "room" && region.interior ? [
+    region.interior.stampIds.map(id => parts.get(doc)!.stamps.get(id)), region.interior.wallIds.map(id => parts.get(doc)!.walls.get(id)),
+    region.interior.portalIds.map(id => parts.get(doc)!.portals.get(id)), region.interior.lightIds.map(id => parts.get(doc)!.lights.get(id)), (region.interior.placeIds ?? []).map(id => parts.get(doc)!.places.get(id)),
+  ] : null;
   for (const region of cartography.regions) {
     const old = previous.get(region.regionId);
     const same = old && tacticalHash(oldGeometry.get(region.regionId)) === tacticalHash(nextGeometry.get(region.regionId)) && tacticalHash(regionMeaning(old)) === tacticalHash(regionMeaning(region))
-      && (region.role !== "building" || (region.attachedStampIds ?? []).every(id => oldStamps.has(id) && nextStamps.has(id) && tacticalHash(oldStamps.get(id)) === tacticalHash(nextStamps.get(id))));
+      && (region.role !== "building" || (region.attachedStampIds ?? []).every(id => oldStamps.has(id) && nextStamps.has(id) && tacticalHash(oldStamps.get(id)) === tacticalHash(nextStamps.get(id))))
+      && tacticalHash(roomContents(old, before.document)) === tacticalHash(roomContents(region, document));
     if (!same && (!region.authored || region.provenance !== null)) throw new TacticalValidationError("Neue oder bearbeitete Flächen benötigen authored:true und dürfen keine Generatorherkunft behaupten.");
     if (same && tacticalHash(old.provenance) !== tacticalHash(region.provenance)) throw new TacticalValidationError("Die gespeicherte Herkunft einer unveränderten Fläche bleibt erhalten.");
   }
@@ -284,7 +293,7 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     return command(userId, campaignId, "map", mapId, "map.revise", input, true, async () => {}, async tx => {
       await assertMapActive(tx, campaignId, "tactical", mapId);
       const before = await mapCard(tx, campaignId, mapId); if (input.expectedVersion !== before.version) throw new Conflict();
-      const v2 = "schemaVersion" in input && input.schemaVersion === 2;
+      const v2 = "schemaVersion" in input && (input.schemaVersion === 2 || input.schemaVersion === 3);
       if (before.cartography && !v2) throw new TacticalValidationError("Diese Karte benötigt den aktuellen Karteneditor.");
       const cartography = v2 ? parseTacticalCartography(input.cartography, input.document) : undefined;
       if (cartography) validateAuthoredCartography(before, input.document, cartography);
@@ -298,6 +307,7 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
         if (entrances.some(entrance => roles.get(entrance.knoten_id) !== oldRoles.get(entrance.knoten_id))) throw new TacticalValidationError("Die Rolle eines Zugangs mit vorhandener Unterkarte bleibt erhalten.");
       }
       const addedBuildings: readonly BuildingIntent[] = v2 ? input.addedBuildings : [];
+      const addedRooms = "addedRooms" in input ? input.addedRooms : [];
       if (cartography) {
         const oldIds = new Set(before.document.geometry.regions.map(region => region.id)), roles = new Map(cartography.regions.map(region => [region.regionId, region.role])), seen = new Set<string>();
         const oldRoles = new Map((before.cartography ?? before.legacyCartography)!.regions.map(region => [region.regionId, region.role]));
@@ -306,6 +316,12 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
           if (seen.has(intent.regionId) || oldIds.has(intent.regionId) || historicalIds.has(intent.regionId) || roles.get(intent.regionId) !== "building") throw new TacticalValidationError("Neue Gebäude benötigen eine neue, eindeutige Gebäude-Region ohne frühere Knotenidentität.");
           seen.add(intent.regionId);
         }
+        for (const intent of addedRooms) {
+          if (seen.has(intent.regionId) || oldIds.has(intent.regionId) || historicalIds.has(intent.regionId) || roles.get(intent.regionId) !== "room") throw new TacticalValidationError("Neue Räume benötigen eine neue, eindeutige Raum-Region ohne frühere Knotenidentität.");
+          seen.add(intent.regionId);
+        }
+        for (const region of cartography.regions) if (region.role === "room" && region.interior && !oldIds.has(region.regionId) && !seen.has(region.regionId)) throw new TacticalValidationError("Für jeden neuen gebauten Raum wird ein Raumname benötigt.");
+        for (const region of cartography.regions) if (region.role === "room" && region.interior && oldIds.has(region.regionId) && oldRoles.get(region.regionId) !== "room") throw new TacticalValidationError("Ein neuer Raum benötigt eine neue Raum-Region mit Namen.");
         for (const region of cartography.regions) if (region.role === "building") {
           if (oldIds.has(region.regionId) && oldRoles.get(region.regionId) !== "building") throw new TacticalValidationError("Ein neues Gebäude benötigt eine neue Gebäude-Region mit Name und Gebäudetyp.");
           if (!oldIds.has(region.regionId) && !seen.has(region.regionId)) throw new TacticalValidationError("Für jedes neue Gebäude werden Name und Gebäudetyp benötigt.");
@@ -319,6 +335,13 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
         const node: Knoten = { id: intent.regionId as Knoten["id"], art: "bauwerk", titel: intent.titel.trim(), bauwerk: { typ: intent.typ, beschreibung: "" },
           eltern: [], rahmen: input.document.frame, anker: null, sichtAnker: null,
           herkunft: { erzeuger: "chronicle-manual-cartography", version: "1", keimHash: seed, erzeugungspfad: ["building", intent.regionId], kindKeim: seed } };
+        await tx.query("INSERT INTO tactical_map_nodes(map_id,knoten_id,campaign_id,data) VALUES($1,$2,$3,$4)", [mapId, intent.regionId, campaignId, json(node)]);
+      }
+      for (const intent of addedRooms) {
+        const seed = tacticalHash(["chronicle-room-child-v1", campaignId, mapId, intent.regionId]);
+        const node: Knoten = { id: intent.regionId as Knoten["id"], art: "raum", titel: intent.titel.trim(),
+          eltern: [], rahmen: input.document.frame, anker: null, sichtAnker: null,
+          herkunft: { erzeuger: "chronicle-manual-cartography", version: "1", keimHash: seed, erzeugungspfad: ["room", intent.regionId], kindKeim: seed } };
         await tx.query("INSERT INTO tactical_map_nodes(map_id,knoten_id,campaign_id,data) VALUES($1,$2,$3,$4)", [mapId, intent.regionId, campaignId, json(node)]);
       }
       await storeAnchors(tx, campaignId, mapId, next, bindings); await tx.query("UPDATE tactical_maps SET head_revision=$2,version=version+1 WHERE id=$1", [mapId, next]);

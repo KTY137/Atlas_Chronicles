@@ -1,5 +1,24 @@
 # Desktop and the managed local host
 
+## Installed map delivery — 2026-09-08
+
+Source `ca3898b` is on main and installed. Package
+`integration-20260908/.local/desktop-artifacts/2026-09-08T11-56-41-698Z` passed all
+21 desktop checks before installation and all 21 again from the installed executable.
+Evidence: `.local/desktop-profiles/smoke-jMOHhl/evidence.json` and
+`.local/desktop-profiles/smoke-pulXOG/evidence.json` in that checkout.
+The measured installer has 225,622,528 bytes and SHA256
+`cdbdb27bacf0e9a261260325e797a90b62dd11083861ea520f2b7f1b322c4240`.
+`installed-verification.json` compares all installed resources to the package and
+confirms that existing profile identity and DPAPI credential files are unchanged.
+
+The real compiled client verifies the new editable map, retained asset catalog across
+genre changes, two-level right-click map deletion, replacement interior at the freed
+entrance, seven Schmiede workbenches, full process restart, host recovery and Native V15
+portable restore. Tests used and closed independent profiles. Installation followed
+the user's confirmation that the running app was closed. Chronist and later feature
+work remain outside this delivered package. Historical records below describe earlier builds.
+
 The Windows x64 desktop now implements a genuine local-world vertical slice: Electron
 starts its own PostgreSQL 17 cluster, runs the existing Fastify application in an Electron
 utility process, and opens a byte-for-byte copy of the existing web client. There is no

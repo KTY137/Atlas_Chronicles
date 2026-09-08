@@ -99,7 +99,7 @@ export interface MapCamera { readonly x: number; readonly y: number; readonly sc
 export interface MapHit { readonly kind: "pin" | "token" | "cell"; readonly id: string }
 export interface MapEditorInteraction {
   active(): boolean;
-  begin(point: MapPoint, hit: MapHit | null): boolean;
+  begin(point: MapPoint, hit: MapHit | null, stampId?: string): boolean;
   move(point: MapPoint): void;
   commit(point: MapPoint): void;
   cancel(): void;

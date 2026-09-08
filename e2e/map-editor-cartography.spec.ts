@@ -134,6 +134,10 @@ test("real editor gestures, reload recovery, original-image retry and 390px cont
     await page.getByRole("button",{ name: "Kacheln erneut laden", exact: true }).click(); failTiles = false;
     await expect(page.getByText("Die Kartenberechtigung wurde entzogen.",{ exact: false })).toHaveCount(0);
     await expect(page.getByRole("button",{ name: "Kacheln erneut laden", exact: true })).toHaveCount(0);
+    // Finished gestures apply directly and snap to the grid by default; this flow checks the
+    // optional confirmed preview with free placement, so both toggles are switched off first.
+    await page.getByLabel("Änderungen direkt übernehmen",{ exact: true }).uncheck();
+    await page.getByLabel("Am Raster einrasten",{ exact: true }).uncheck();
     await page.getByRole("button",{ name: "Gelände", exact: true }).click();
     await page.getByLabel("Material",{ exact: true }).selectOption("forest");
     await clickMap(page,150,150); await expect(page.getByRole("button",{ name: "Vorschau übernehmen", exact: true })).toBeEnabled();

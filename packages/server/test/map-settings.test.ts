@@ -174,7 +174,11 @@ describe("Kartensettings: generation, inherited interiors and native evidence", 
     expect(list.setting).toBe("fantasy");
     const entered = await betreten.betrete(gm, campaign, { commandId: randomUUID(), ...scope, knotenId: list.nodes[0]!.knotenId, expectedVersion: list.version, stil: "zeitwelten", optionen: { setting: "scifi" } });
     const child = await tactical.getMap(gm, campaign, entered.mapId);
-    await tactical.reviseMap(gm, campaign, child.id, { schemaVersion: 2, commandId: randomUUID(), expectedVersion: child.version, document: { ...child.document, geometry: { ...child.document.geometry, stamps: [] } }, anchors: [], cartography: child.cartography!, addedBuildings: [] });
+    const withoutStamps = { ...child.document, geometry: { ...child.document.geometry, stamps: [] } };
+    await expect(tactical.reviseMap(gm, campaign, child.id, { schemaVersion: 2, commandId: randomUUID(), expectedVersion: child.version, document: withoutStamps, anchors: [], cartography: child.cartography!, addedBuildings: [] })).rejects.toThrow(/existing stamp/);
+    const cartography = { ...child.cartography!, regions: child.cartography!.regions.map(role => role.role === "room" && role.interior ? { ...role, authored: true, provenance: null,
+      interior: { ...role.interior, stampIds: [], ...(role.interior.portalArtwork ? { portalArtwork: role.interior.portalArtwork.map(item => ({ ...item, stampIds: [] })) } : {}) } } : role) };
+    await tactical.reviseMap(gm, campaign, child.id, { schemaVersion: 2, commandId: randomUUID(), expectedVersion: child.version, document: withoutStamps, anchors: [], cartography, addedBuildings: [] });
     expect(await betreten.children(gm, campaign, { parentKind: "tactical", parentMapId: child.id })).toMatchObject({ setting: "scifi", stil: "zeitwelten" });
   });
 

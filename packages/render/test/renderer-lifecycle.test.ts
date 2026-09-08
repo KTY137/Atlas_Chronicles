@@ -81,7 +81,7 @@ describe("mounted renderer submission and resource lifecycle", () => {
     const camera = map.getCamera(), canvas = mount.children[0]!;
     const start = mapToScreen([1200,1200], camera), end = mapToScreen([1400,1300], camera);
     pointer(canvas, "pointerdown", start); pointer(canvas, "pointermove", end); pointer(canvas, "pointerup", end);
-    expect(begin).toHaveBeenCalledWith([1200,1200], { kind: "token", id: "visible-token" });
+    expect(begin).toHaveBeenCalledWith([1200,1200], { kind: "token", id: "visible-token" }, undefined);
     expect(move.mock.calls[0]![0][0]).toBeCloseTo(1400); expect(commit.mock.calls[0]![0][1]).toBeCloseTo(1300);
     expect(map.getCamera()).toEqual(camera); expect(token).not.toHaveBeenCalled(); map.destroy();
   });

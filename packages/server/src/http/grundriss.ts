@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
-import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS } from "@chronicle/forge";
+import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, SIEDLUNG_STANDORTE } from "@chronicle/forge";
 import { BAUWERK_TYPEN, KARTEN_SETTINGS, TacticalMapValidationError } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
@@ -62,6 +62,7 @@ export const HoehleOptionenSchema = Type.Object({
 const grundstueck = Type.Integer({ minimum: SIEDLUNG_LIMITS.grundstueckMin, maximum: SIEDLUNG_LIMITS.grundstueckMax });
 export const SiedlungOptionenSchema = Type.Object({
   setting: Type.Optional(KartenSettingSchema),
+  standort: Type.Optional(Type.Union(SIEDLUNG_STANDORTE.map(value => Type.Literal(value)))),
   art: Type.Optional(Type.Union([Type.Literal("weiler"), Type.Literal("dorf"), Type.Literal("stadt")])),
   ausdehnung: Type.Optional(Type.Tuple([zelle, zelle])),
   zellgroesse: Type.Optional(Type.Integer({ minimum: SIEDLUNG_LIMITS.zellgroesseMin, maximum: SIEDLUNG_LIMITS.zellgroesseMax })),
