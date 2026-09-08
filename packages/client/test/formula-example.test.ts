@@ -43,4 +43,12 @@ describe("example breakdown", () => {
     expect(formulaExample("1 / 0", context, sources)).toEqual({ ok: false, message: "Mit den Beispielwerten teilt diese Formel durch null." });
     expect(formulaExample("actor.fehlt", context, sources)).toMatchObject({ ok: false });
   });
+  it("renders a negative head value with the typographic minus, never the ASCII hyphen", () => {
+    const result = formulaExample("0 - actor.geschick", context, sources);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.text).toBe("Beispiel für Beispielfigur: −3 = 0 (0) − 3 (Geschick)");
+      expect(result.text).not.toContain("-");
+    }
+  });
 });

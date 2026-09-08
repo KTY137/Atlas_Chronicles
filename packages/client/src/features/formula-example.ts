@@ -39,7 +39,7 @@ function label(node: Formula, sources: FormulaSources): string {
   if (node.kind === "field") return sources[node.source].find(m => m.id === node.field)?.label ?? node.field;
   return resugarFormula(formulaSource(node));
 }
-const show = (value: Scalar): string => typeof value === "boolean" ? (value ? "trifft zu" : "trifft nicht zu") : typeof value === "number" ? String(Math.round(value * 100) / 100) : `„${value}“`;
+const show = (value: Scalar): string => typeof value === "boolean" ? (value ? "trifft zu" : "trifft nicht zu") : typeof value === "number" ? String(Math.round(value * 100) / 100).replace(/^-/, "−") : `„${value}“`;
 function plain(message: string): string {
   if (/division by zero/.test(message)) return "Mit den Beispielwerten teilt diese Formel durch null.";
   if (/unknown (actor|input)\./.test(message)) return "Die Formel verweist auf ein Attribut, das die Beispielfigur nicht hat.";
