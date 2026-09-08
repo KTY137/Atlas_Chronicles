@@ -15,4 +15,9 @@ describe("direct furniture selection", () => {
     expect(hitTestStamp([{ ...table, l: -80 }], [100, 100], sizes)).toBeUndefined();
     expect(hitTestStamp([table], [100, 100], new Map())).toBeUndefined();
   });
+  it("breaks same-layer ties like the draw order, not like the array order", () => {
+    const rug = { ...table, id: "a-rug" }, chair = { ...table, id: "z-chair" };
+    expect(hitTestStamp([chair, rug], [100, 100], sizes)).toBe("z-chair");
+    expect(hitTestStamp([rug, chair], [100, 100], sizes)).toBe("z-chair");
+  });
 });

@@ -81,7 +81,7 @@ function harness(file: "NestedMapView" | "TacticalGenerate", component: string, 
 
 const church = { knotenId: "church", titel: "Alte Kapelle", art: "bauwerk", x: 100, y: 100, canEnter: true, vorhandeneKarteId: null, bauwerk: { typ: "kirche", beschreibung: "Am Marktplatz" } };
 const defaults = { grundriss: { zellen: [40, 30], zellgroesse: 96, raeume: 8 }, hoehle: { zellen: [40, 30], zellgroesse: 96, kammern: 8 }, siedlung: { ausdehnung: [36, 28], zellgroesse: 96, bauwerke: 42 } };
-const mapDocument = { geometry: { size: [300, 200], regions: [{ id: "church", punkte: [[50, 50], [150, 50], [150, 150], [50, 150]] }], places: [], stamps: [] }, grid: { kind: "none" }, walls: [] };
+const mapDocument = { geometry: { size: [300, 200], regions: [{ id: "church", punkte: [[50, 50], [150, 50], [150, 150], [50, 150]] }], places: [], stamps: [] }, grid: { kind: "none" }, walls: [], portals: [] };
 const preview = { keimHash: "preview-one", art: "siedlung", groesse: [300, 200], document: mapDocument, nodes: [church], bauwerke: 1, strassen: 1, bericht: { nichtBedient: [] } };
 
 describe("map workshop concurrency and navigation review", () => {

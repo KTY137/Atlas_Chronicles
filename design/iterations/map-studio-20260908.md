@@ -53,4 +53,48 @@ Workspace-Tools führen Effekte aus. Keine externen Veröffentlichungen.
 
 ## Nachweise
 
-Umsetzung und Prüfergebnisse werden nach tatsächlichem Lauf ergänzt.
+Stand `dcbf449` („new version", 2026-09-08 15:45) plus Reparatur vom selben Nachmittag.
+Der Codex-Thread brach vor seiner Abschlussprüfung ab; der committete Stand war nicht
+übersetzbar (`interior-edit.ts`: `along` im Türzweig zweimal deklariert, einmal als
+Mittelpunkt auf der Wand, einmal als Projektion auf die Türachse). Die Zahl heißt jetzt
+`center`; Typecheck und die beiden davon abhängigen Suiten sind wieder grün.
+
+- Forge: `interior-edit` 12 Fälle (Raum mit Wänden/Einrichtung, Tür schneidet jede
+  deckungsgleiche Wand, Verschieben mit Kindidentität, geteilte Wände geschützt, L-Form,
+  Grenzen), `siedlung-standort` 15 Fälle, `cartography-edit`, `siedlung-cartography`.
+- Server: `map-studio` 5 Fälle (V3-Revision mit Raumidentitäten, Native-Archiv, Spieler
+  abgewiesen, Replay unter alter Revision), `map-standort` 8, `map-settings` 9.
+- Client/Render/Szene: `map-location` 9 Fälle (sieben Standorte sichtbar vor den
+  Feineinstellungen), `stamp-hit`, `cartography`, `map-generation`, `map-edit-history`.
+- Echter Browser (`e2e/map-studio.spec.ts`, 2/2): Raum aufziehen, speichern, Tür an die
+  Wand, Möbel aus `pk.gemalt` platzieren, per Auswahl verschieben, Raum mit Tür und Möbel
+  verschieben, Rückgängig/Wiederholen, speichern, neu laden — Raum-, Tür- und Möbel-IDs
+  bleiben dieselben; schmale Ansicht ohne horizontales Scrollen; Gebirge und Insel
+  rendern. Die Spec adressierte die Katalogfelder mit `getByLabel`, das beim umschließenden
+  `<label>` die Optionstexte mitliest; jetzt `getByRole("combobox")` wie in den
+  Schwester-Specs.
+- Regressionen des Commits in bestehenden Suiten: `mapDocumentScene` zeichnet Türen und
+  liest `document.portals`; drei Test-Fixtures ohne `portals` ergänzt. Der Renderer meldet
+  beim Drag-Start zusätzlich die getroffene Stempel-ID; der Lifecycle-Test erwartet das
+  dritte Argument.
+- Konsumenten des Editors im echten Browser (`map-editor-cartography`, `map-context-menu`,
+  `map-workshop`, `siedlung-workshop` mobil): grün. Die Gesten-Spec prüft den bestätigten
+  Vorschau-Pfad und freie Platzierung; seit diesem Umbau sind direkte Übernahme und
+  Einrasten Standard, die Spec schaltet beides vorher ab. Der Fokus-Fall des
+  Kontextmenüs fiel nur unter paralleler Last, allein 2/2 grün.
+- Unabhängiger Korrektheits-Review des Umbaus fand einen echten Fehler: die
+  Stempel-Trefferprüfung (`render/src/stamp-hit.ts`) entschied Gleichstände in derselben
+  Ebene nach Array-Reihenfolge, das Zeichnen sortiert nach Ebene und ID. Bei zwei
+  überlappenden Möbeln derselben Ebene wurde das verdeckte gewählt. Behoben; neuer Fall
+  war gegen die alte Implementierung rot.
+- Gates: Typecheck, Produktionsbuild, Version, Paketgrenzen grün.
+
+Offen und nicht behauptet: neun Fälle in `client/test/tactical-entities-review.test.ts`
+waren schon vor diesem Umbau rot (Harness erwartet `MapEditor` in
+`TacticalPreparation.tsx` und prüft Bedienelemente des alten Editors wie „Region
+zeichnen"); sie brauchen eine Neuschreibung gegen den neuen Editor. Ebenfalls schon am
+Elterncommit `8350764` rot, im Integrations-Worktree gegengeprüft: `e2e/genre-assets`
+und `e2e/map-settings` erwarten den Objektkatalog direkt nach „Karte bearbeiten", der
+Abschnitt ist aber zugeklappt, bis „Möbel & Objekte" gedrückt wird; `e2e/siedlung-workshop`
+erwartet eine Auswahl „Szenenkarte", die es im Client nicht mehr gibt. Desktop-Paket und
+Installation stehen auf `ca3898b`, nicht auf diesem Stand. PDF-Parität ist nicht geprüft.

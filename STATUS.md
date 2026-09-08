@@ -1,6 +1,36 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
+Updated: **2026-09-08, 17:00** (Kartenstudio: freies Bauen, Innenräume, Standortwahl)
+
+## Kartenstudio: freies Bauen und Standortwahl — 2026-09-08
+
+Kayas Auftrag: kompletter Rework des Kartenbaus, freies Bauen wie Inkarnate/Dungeondraft
+mit Raum- und Gebäudevorlagen, Orte gezielt im Gebirge, am Fluss, am Meer usw. Der Codex-
+Thread hat das umgesetzt (`dcbf449`, „new version") und brach vor seiner Abschlussprüfung
+ab. Der Stand war nicht übersetzbar: `forge/src/interior-edit.ts` deklarierte `along` im
+Türzweig zweimal. Repariert (jetzt `center`), dazu vier Testkorrekturen für die neuen
+Verträge (Türen als Linien in `mapDocumentScene`, Stempel-ID beim Drag-Start) und die
+Katalog-Locator der Studio-Spec. Ein unabhängiger Review fand dazu einen echten Fehler
+in der neuen Stempel-Trefferprüfung (Gleichstand in derselben Ebene wählte das verdeckte
+Möbel); behoben mit Test. Belege in
+`design/iterations/map-studio-20260908.md`, Abschnitt „Nachweise".
+
+Was jetzt geht, im echten Browser geprüft: Raum aufziehen (leer, Schlafzimmer, Taverne;
+Rechteck oder L-Form), Wände ziehen, Tür an eine Wand setzen, Einrichtung aus dem
+Katalog platzieren und mit „Auswählen" verschieben, ganzen Raum mit Tür und Möbeln
+verschieben oder drehen, Rückgängig/Wiederholen, speichern, neu laden mit denselben
+Raum-, Tür- und Möbel-IDs; Siedlungen mit Standort Ebene, Wald, Gebirge, Fluss, See,
+Küste, Insel; Innenräume aus der Außenkarte öffnen. Grün: Typecheck, Build, Version,
+Paketgrenzen, Forge/Server/Client-Suiten der Karten, `e2e/map-studio.spec.ts` 2/2.
+
+Offen: neun Fälle in `client/test/tactical-entities-review.test.ts` waren schon vor
+diesem Umbau rot (alter Editor-Harness, Bedienelemente wie „Region zeichnen" gibt es
+nicht mehr) und brauchen eine Neuschreibung. Drei Browser-Specs waren schon am
+Elterncommit `8350764` rot und sind es weiterhin: `genre-assets` und `map-settings`
+erwarten den Objektkatalog ohne vorherigen Klick auf „Möbel & Objekte",
+`siedlung-workshop` eine Auswahl „Szenenkarte", die es nicht mehr gibt. Desktop-Paket
+und Installation stehen noch auf `ca3898b`. PDF-Parität nicht behauptet. Chronist,
+NPC-Generator und GUI-Abschluss bleiben im Feature-Checkout in Arbeit.
 
 ## Ausgeliefert: Karteneditor und Rechtsklick-Löschen
 

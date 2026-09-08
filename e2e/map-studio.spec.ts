@@ -37,8 +37,8 @@ test("free interior building, door, furniture selection, room move, history and 
     expect((await host.map()).document.portals).toHaveLength(1);
     await page.getByRole("button", { name: "Möbel & Objekte", exact: true }).click();
     const palette = page.getByRole("region", { name: "Kartenassets", exact: true });
-    await palette.getByLabel("Assetpaket", { exact: true }).selectOption("pk.gemalt");
-    await palette.getByLabel("Kategorie", { exact: true }).selectOption("moebel");
+    await palette.getByRole("combobox", { name: "Assetpaket", exact: true }).selectOption("pk.gemalt");
+    await palette.getByRole("combobox", { name: "Kategorie", exact: true }).selectOption("moebel");
     await palette.locator('.map-artwork-grid button').first().click(); await click(page, 300, 300);
     await page.locator('.map-editor-stage').getByRole("button", { name: "Platzieren beenden", exact: true }).click();
     await page.getByRole("button", { name: "Auswählen", exact: true }).click();

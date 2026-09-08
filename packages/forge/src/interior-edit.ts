@@ -178,9 +178,9 @@ export function applyInteriorEdit(input: InteriorEditInput): InteriorEditResult 
       if (!best) fail("invalid", "Setze die Tür auf eine vorhandene Wand.");
       const chosen = best!, owned = owners("wallIds", chosen.wall.id); checkOwners(owned);
       if (operation.width > chosen.length - .002) fail("contradiction", "Die gewählte Wand ist für diese Tür zu kurz.");
-      const half = operation.width / 2, along = Math.max(half, Math.min(chosen.length - half, chosen.along)), start = chosen.wall.points[chosen.index]!, end = chosen.wall.points[chosen.index + 1]!;
+      const half = operation.width / 2, center = Math.max(half, Math.min(chosen.length - half, chosen.along)), start = chosen.wall.points[chosen.index]!, end = chosen.wall.points[chosen.index + 1]!;
       const dx = (end[0] - start[0]) / chosen.length, dy = (end[1] - start[1]) / chosen.length;
-      const a: TacticalPoint = [q(start[0] + dx * (along - half)), q(start[1] + dy * (along - half))], b: TacticalPoint = [q(start[0] + dx * (along + half)), q(start[1] + dy * (along + half))];
+      const a: TacticalPoint = [q(start[0] + dx * (center - half)), q(start[1] + dy * (center - half))], b: TacticalPoint = [q(start[0] + dx * (center + half)), q(start[1] + dy * (center + half))];
       const onLine = (p: TacticalPoint) => Math.abs(dx * (p[1] - a[1]) - dy * (p[0] - a[0])) < .001;
       const along = (p: TacticalPoint) => (p[0] - a[0]) * dx + (p[1] - a[1]) * dy;
       if (portals.some(portal => portal.bounds.every(onLine) && Math.min(operation.width, Math.max(...portal.bounds.map(along))) - Math.max(0, Math.min(...portal.bounds.map(along))) > .001)) fail("contradiction", "Hier befindet sich bereits eine Tür.");

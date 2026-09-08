@@ -59,7 +59,7 @@ function harness(file: "TacticalView" | "TacticalPreparation", component: string
 
 const callbacks = { onChanged: () => {}, onDirty: () => {} };
 const token = { id: "token", actorId: "actor", name: "Actor", canMove: true, x: 0, y: 0, elevation: 0, rotation: 0, scale: 1, version: 1 };
-const map = { id: "map", name: "Map", revision: 1, version: 1, contentHash: "map-one", document: { geometry: { size: [100, 100], regions: [], stamps: [], places: [] }, walls: [], grid: { kind: "none" }, elevation: 0 } };
+const map = { id: "map", name: "Map", revision: 1, version: 1, contentHash: "map-one", document: { geometry: { size: [100, 100], regions: [], stamps: [], places: [] }, walls: [], portals: [], grid: { kind: "none" }, elevation: 0 } };
 const scene = { id: "scene", name: "Scene", status: "prepared", version: 1 };
 const plan = { sceneId: "scene", mapId: "map", mapRevision: 1, version: 1, tokens: [token] };
 
