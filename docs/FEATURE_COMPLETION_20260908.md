@@ -66,7 +66,11 @@ startbaren Desktop-Build angefordert. `main` enthält bereits weitere Kartenfunk
 (Stand `07e9245`), die bei der Integration erhalten und gemeinsam geprüft wurden.
 Der weitere Agent hat seine Genre-Assets in `7693a4a` abgeschlossen; auch diese sind
 integriert und gezielt geprüft. Desktop-Paketfehler für Kartenstile
-und Andaria sind reproduziert und behoben; die vollständige Lieferprüfung läuft noch.
+und Andaria sind reproduziert und behoben. Der fertige Stand ist mit dem Spielerbanner
+und der Entfernung des Sprach-/Videochats in `a7e1487` auf `main`. Das Desktop-Paket
+`2026-09-08T10-02-47-659Z` ist installiert; ausgepacktes Paket und tatsächliche Installation
+bestehen je 20 Desktop-Prüfungen. Profil- und Zugangsdaten bleiben unverändert. Der neue
+Kartografie-/Editor-Rework bleibt ausdrücklich im Feature-Worktree und ist noch nicht geliefert.
 
 Die angeforderte tiefe Kartenrecherche liegt in `docs/research/map-generation-20260908.pdf`.
 Chronist, NPC und abschließende GUI-Gegenprüfung sind noch nicht umgesetzt und bleiben

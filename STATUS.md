@@ -4,7 +4,7 @@ Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
 
 ## Aktuelle Liefergrenze
 
-Dieser Integrationsstand vereint `bcfd51f` mit dem fertigen `main`-Stand `4813080`:
+`main` enthält seit `a7e1487` den geprüften Integrationsstand aus `bcfd51f` und `4813080`:
 neue Schmiede, Aufgaben-Navigation, Siedlungsvorschau, Unterkarten, alle 571 Assets,
 Desktop-CSP-Fix und Spielerbanner ohne Sprach-/Videochat. Die drei Konflikte in App,
 STATUS und Desktop-Dokumentation wurden im isolierten `integration-20260908`-Checkout
@@ -18,14 +18,23 @@ CSS-Korrektur und einer Kollision der Test-Ausgabeverzeichnisse. Enthalten sind 
 Loot-Erstellung/Übergabe, mobile Navigation/Entwurfsstatus, Spielerbanner/Textchat,
 Entwurfsschutz und der echte CSP-Kartenpixel. Keine volle Suite.
 
-Installer: kurze, zweimal vollständig vermessene temporäre App-Kopie vermeidet NuGets
-Windows-Pfadlimit. Nur die gepinnte Vendor-Squirrel.exe darf hinzukommen; originale
-Artefaktbytes bleiben unverändert. Der ältere CSP-Installer im Delivery-Checkout wurde
-erzeugt (226.006.016 Bytes), enthält aber noch Sprach-/Videochat. Ein neuer Desktop-Build
-aus diesem kombinierten Stand entsteht. Noch keine Aktualisierung der installierten App.
-Der vollständige Smoke muss vor Installation bestehen. Zwei Testaufbau-Fehler sind
-belegt und korrigiert: zu langer Chromium-Cookiepfad (echter Neustartvergleich) und Reload
-vor Abschluss des Save-GET. Benutzerprofile wurden nicht geändert.
+Der Desktop-Build aus `a7e1487` ist erstellt und tatsächlich installiert. Das Paket
+`integration-20260908/.local/desktop-artifacts/2026-09-08T10-02-47-659Z` enthält
+2.491 vermessene Dateien; `installer/Atlas-Chronicles-Setup.exe` hat 225.413.120 Bytes
+und SHA256 `32c0c633a2f68c16f40f78fd0e039c70601ad9760d669caeeff53f8c88aea31f`.
+Der vollständige Desktop-Smoke besteht zweimal mit je 20 Prüfungen: im ausgepackten
+Paket (`smoke-qDBhJ8`) und direkt aus der Installation (`smoke-HiQ8xe`). Beide
+Nachweise liegen im Integrationscheckout unter `.local/desktop-profiles/<Lauf>/evidence.json`.
+Geprüft sind auch die sieben Werkstätten, echter Karten-Canvas, alle Genre-Assetbytes,
+Speichern/Neustart, Sicherung/Wiederherstellung und neue Profile aus Kampagnenexporten.
+Die installierten Programmdateien sind gegen das Paket vermessen; bestehende Profil-
+und Zugangsdaten sind unverändert. Auch die ignorierten Build-Ausgaben in `main` sind neu.
+
+Der Installer verwendet eine kurze, zweimal vollständig vermessene temporäre App-Kopie
+gegen NuGets Windows-Pfadlimit. Nur die gepinnte Vendor-Squirrel.exe darf hinzukommen;
+originale Artefaktbytes bleiben unverändert. Die älteren Pakete sind überholt. Zwei
+Testaufbau-Fehler sind belegt und korrigiert: zu langer Chromium-Cookiepfad (echter
+Neustartvergleich) und Reload vor Abschluss des Save-GET. Die Tests nutzen eigene Profile.
 
 Der größere Karten-/Editor-Rework ist weiterhin **uncommitteter Feature-Worktree-Stand**:
 native v14, Kartografie, Generator v5, Terrain-/Straßen-/Gebäudewerkzeuge und Undo/Redo.
