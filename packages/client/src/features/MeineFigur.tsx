@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ActorCard } from "@chronicle/protocol";
-import { RefreshCw } from "lucide-react";
+import { PackageOpen, RefreshCw } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type Campaign } from "../api";
 import { useResource } from "../hooks";
@@ -20,29 +20,46 @@ import "./gameplay.css";
  * *Was habe ich, und was kann ich?*
  */
 export function MeineFigur({ campaign, onDirty }: { campaign: Campaign; onDirty: (value: boolean) => void }) {
+  const inventory = useRef<HTMLDivElement>(null);
   const [revision, setRevision] = useState(0), [chosen, setChosen] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState({ sheet: false, inventory: false });
+  const dirty = drafts.sheet || drafts.inventory;
+  const reportSheet = useCallback((value: boolean) => setDrafts(old => ({ ...old, sheet: value })), []);
+  const reportInventory = useCallback((value: boolean) => setDrafts(old => ({ ...old, inventory: value })), []);
+  useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
+  useEffect(() => () => onDirty(false), [onDirty]);
   const rules = useResource<RulesState>(apiPath(campaign.id, "/rules"), revision);
   const actors = useResource<ActorCard[]>(apiPath(campaign.id, "/actors"), revision);
   const meine = actors.data?.filter(actor => actor.canControl) ?? [];
   // Die erste Wahl wird einmal festgehalten. Eine spätere Freigabe darf keinen offenen Entwurf umhängen.
-  useEffect(() => { if (chosen === null && actors.data) setChosen(meine[0]?.id ?? ""); }, [chosen, actors.data, meine]);
+  useEffect(() => { if (!dirty && meine.length && !meine.some(actor => actor.id === chosen)) setChosen(meine[0]!.id); }, [chosen, dirty, meine]);
   const actorId = meine.find(actor => actor.id === chosen)?.id ?? "";
   const refresh = useCallback(() => setRevision(value => value + 1), []);
   const gm = campaign.role === "leitung";
+  const openInventory = () => {
+    const target = inventory.current, stage = target?.closest<HTMLElement>(".main-stage");
+    if (!target || !stage) return;
+    // Only move the content pane; scrollIntoView can also move the outer document.
+    stage.scrollTo({ top: stage.scrollTop + target.getBoundingClientRect().top - stage.getBoundingClientRect().top - 20 });
+    target.focus({ preventScroll: true });
+  };
   return <section className="page-content table-page"><div className="page-heading"><div>
       <p className="eyebrow">Was du hältst und was du kannst</p><h1>Deine Figur</h1>
       <p className="muted">Bogen und Inventar — dieselben, die am Tisch gelten.</p>
-    </div><Button aria-label="Figur aktualisieren" onClick={refresh}><RefreshCw size={16} /></Button></div>
+    </div><div className="button-row">{actorId ? <Button onClick={openInventory}><PackageOpen size={17} /> Zum Inventar</Button> : null}<Button aria-label="Figur aktualisieren" onClick={refresh}><RefreshCw size={16} /></Button></div></div>
     {rules.error || actors.error ? <Notice error>{rules.error || actors.error}</Notice> : null}
     {meine.length > 1 ? <div className="table-controls"><label className="actor-picker">Deine Figur
-      <select value={actorId} onChange={event => setChosen(event.target.value)}>
+      <select value={actorId} onChange={event => {
+        if (event.target.value === actorId || (dirty && !window.confirm("Ungespeicherte Änderungen dieser Figur verwerfen?"))) return;
+        setDrafts({ sheet: false, inventory: false }); setChosen(event.target.value);
+      }}>
         {meine.map(actor => <option key={actor.id} value={actor.id}>{actor.name}</option>)}
       </select></label></div> : null}
     {rules.loading || actors.loading ? <Loading />
       : !actorId ? <EmptyState title="Noch führst du keine Figur.">Sobald deine Spielleitung dir eine Figur anvertraut, findest du hier ihren Bogen und alles, was sie trägt.</EmptyState>
       : rules.data ? <>
-        <CharacterSheet key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} liveRevision={revision} onDirty={onDirty} onChanged={refresh} />
-        <Inventory campaignId={campaign.id} actorId={actorId} actors={actors.data ?? []} gm={false} revision={revision} onChanged={refresh} onDirty={onDirty} />
+        <CharacterSheet key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} liveRevision={revision} onDirty={reportSheet} onChanged={refresh} />
+        <div ref={inventory} tabIndex={-1} className="character-inventory"><Inventory key={actorId} campaignId={campaign.id} actorId={actorId} actors={actors.data ?? []} gm={false} revision={revision} onChanged={refresh} onDirty={reportInventory} /></div>
       </> : null}
   </section>;
 }

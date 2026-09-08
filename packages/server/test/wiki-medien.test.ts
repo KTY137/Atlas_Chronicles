@@ -122,7 +122,7 @@ describe("Wiki-Medien — Herkunft, Bytes und Sicht", () => {
 
     // Die Spielerin kennt die Adresse — und bekommt trotzdem nichts, weil ihr niemand die
     // Passage freigegeben hat, die das Bild zeigt.
-    await expect(medien.ausliefern(spieler, campaign, assetId)).rejects.toThrow(Gone);
+    await expect(medien.ausliefern(spieler, campaign, assetId).then(file => file.mime)).rejects.toThrow(Gone);
 
     const docs = createDocuments(db, {});
     const bildPassage = (await db.query<{ passage_id: string }>(
@@ -181,5 +181,20 @@ describe("Wiki-Medien — Herkunft, Bytes und Sicht", () => {
     // Nur die Spielleitung entscheidet über Lizenzen, und nur sie sieht überhaupt den Bestand.
     await expect(medien.lizenzSetzen(spieler, campaign, assetId, "unbekannt", null)).rejects.toThrow();
     await expect(medien.bestand(spieler, campaign)).rejects.toThrow();
+  });
+
+  it("stops delivering an image after its revealed passage is retired", async () => {
+    const docs = createDocuments(db), medien = createWikiMedien(db);
+    await medien.bytesAnnehmen(gm, campaign, assetId, bytesVon("Bodin.webp"));
+    const use = (await db.query<{ passage_id: string; entry_id: string }>(
+      "SELECT passage_id,entry_id FROM wiki_asset_uses WHERE campaign_id=$1 AND asset_id=$2", [campaign, assetId])).rows[0]!;
+    await docs.revealPassage(gm, campaign, use.passage_id, actorId);
+    await expect(medien.ausliefern(spieler, campaign, assetId)).resolves.toHaveProperty("mime", "image/webp");
+    const before = await docs.source(campaign, use.entry_id);
+    await docs.saveEntry(gm, campaign, { title: before.entry.title, expectedVersion: before.entry.version,
+      passages: before.passagen.filter(p => p.pid !== use.passage_id).map(p => ({ pid: p.pid, inhalt: p.inhalt })) }, use.entry_id);
+    expect([...(await docs.knowledge(spieler, campaign)).gehaltenePids]).not.toContain(use.passage_id);
+    await expect(medien.ausliefern(spieler, campaign, assetId)).rejects.toThrow(Gone);
+    await expect(medien.ausliefern(gm, campaign, assetId)).resolves.toHaveProperty("mime", "image/webp");
   });
 });

@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { buildApp } from "../packages/server/src/app.ts";
-import { createPgDb, migrate, type Db } from "../packages/server/src/db/index.ts";
+import { createPgDb, createTestDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { createIdentity } from "../packages/server/src/identity/index.ts";
 import { createCampaigns } from "../packages/server/src/domain/campaigns.ts";
 import { createDocuments } from "../packages/server/src/domain/documents.ts";
@@ -14,10 +14,14 @@ const port = 10100 + Math.floor(Math.random() * 150), origin = `http://localhost
 const config = { origin, bootstrapToken: randomBytes(32).toString("hex"), cookieSecret: randomBytes(32).toString("hex"), staticRoot: resolve("packages/client/dist"), publicDeliveryEnabled: true };
 let admin: Db, db: Db, app: Awaited<ReturnType<typeof buildApp>>, campaignId: string, gm: { userId: string; value: string }, player: { userId: string; value: string }, entryId: string;
 test.beforeAll(async () => {
-  const settings = process.env.E2E_DATABASE_URL ? null : JSON.parse(await readFile(".local/config.json", "utf8"));
-  const base = process.env.E2E_DATABASE_URL ?? settings.databaseUrl;
-  admin = createPgDb(base); await admin.query(`CREATE SCHEMA "${schema}"`);
-  const url = new URL(base); url.searchParams.set("options", `-c search_path=${schema}`); db = createPgDb(url.href); await migrate(db);
+  const settings = process.env.E2E_DATABASE_URL ? null : await readFile(".local/config.json", "utf8")
+    .then(text => JSON.parse(text)).catch(error => { if (error.code === "ENOENT") return null; throw error; });
+  const base = process.env.E2E_DATABASE_URL ?? settings?.databaseUrl;
+  if (base) {
+    admin = createPgDb(base); await admin.query(`CREATE SCHEMA "${schema}"`);
+    const url = new URL(base); url.searchParams.set("options", `-c search_path=${schema}`); db = createPgDb(url.href);
+  } else db = await createTestDb();
+  await migrate(db);
   const identity = createIdentity(db, config), campaigns = createCampaigns(db);
   gm = await identity.bootstrap("Kaya Gestaltung"); campaignId = (await campaigns.createCampaign(gm.userId, { name: "Die offenen Annalen" })).id;
   const invite = await campaigns.issueInvitation(gm.userId, campaignId), request = await campaigns.requestJoin(invite.code, { displayName: "Sera Leserin" }), member = await campaigns.approveJoin(gm.userId, campaignId, request.id);
@@ -38,7 +42,7 @@ test("local appearance persists, OS restrictions win and a theme revision reache
   const errors: string[] = []; for (const page of [editor!, reader!]) page.on("pageerror", error => errors.push(error.message));
   try {
     await login(editor!); await login(reader!, player, "account");
-    await editor!.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
+    await editor!.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Aussehen(?:\s|$)/ }).click();
     await editor!.getByRole("button", { name: "Vorlage Cyberpunk", exact: true }).click();
     await editor!.getByLabel("Name", { exact: true }).fill("");
     await expect(editor!.getByLabel("Name", { exact: true })).toBeVisible();
@@ -98,7 +102,7 @@ test("publication preview matches anonymous bytes and private later edits stay p
 });
 
 test("theme retries retain a lost write acknowledgement and a failed revision read without creating duplicate themes", async ({ page }) => {
-  await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
+  await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Aussehen(?:\s|$)/ }).click();
   await page.getByLabel("Name", { exact: true }).fill("Einmal trotz Netzfehler");
   const commands: string[] = []; let failWrite = true, failRead = true;
   await page.route(`**/api/campaigns/${campaignId}/themes`, async route => {
@@ -170,7 +174,7 @@ test("a proven Wiki import can be published with attribution and an explicitly c
 
 test("draft recipe preview overrides the surrounding local skin in actual CSS", async ({ page }) => {
   await login(page, gm, "account"); await page.getByLabel("Lokaler Look", { exact: true }).selectOption("PixelArt");
-  await page.getByRole("navigation", { name: "Bereiche" }).getByRole("button", { name: "Schmiede", exact: true }).click(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
+  await page.getByRole("navigation", { name: "Bereiche" }).getByRole("button", { name: "Schmiede", exact: true }).click(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Aussehen(?:\s|$)/ }).click();
   await page.getByRole("button", { name: "Vorlage Medieval", exact: true }).click();
   const preview = page.getByRole("region", { name: "Theme-Vorschau", exact: true });
   await expect(page.locator("html")).toHaveAttribute("data-appearance-edges", "pixel");
@@ -190,7 +194,7 @@ test("a removed GM role clears the private theme editor and navigation after liv
   const created = await app.inject({ method: "POST", url: `/api/campaigns/${campaignId}/themes`, headers: { origin, cookie: `chronicle_session=${authorSession.value}` }, payload: { commandId: randomUUID(), manifest: { ...getThemePreset("Fantasy"), name: "Privater unveröffentlichter Look" } } }); expect(created.statusCode).toBe(200);
   try {
     await db.query("UPDATE campaign_memberships SET role='leitung' WHERE campaign_id=$1 AND user_id=$2", [campaignId, player.userId]);
-    await login(page, player); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
+    await login(page, player); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Aussehen(?:\s|$)/ }).click();
     await page.getByRole("button", { name: "Privater unveröffentlichter Look · Revision 1", exact: true }).click();
     await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Privater unveröffentlichter Look");
     await page.getByLabel("Name", { exact: true }).fill("Privater Entwurf im Editor");
@@ -202,7 +206,7 @@ test("a removed GM role clears the private theme editor and navigation after liv
 });
 
 for (const status of [503, 429]) test(`a transient ${status} membership refresh keeps the mounted authoring draft`, async ({ page }) => {
-  await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Themes(?:\s|$)/ }).click();
+  await login(page); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Aussehen(?:\s|$)/ }).click();
   await page.getByLabel("Name", { exact: true }).fill("Dieser Entwurf bleibt erhalten");
   await expect(page.getByRole("status", { name: "Live-Verbindung", exact: true })).toHaveAttribute("data-live-state", "connected");
   await page.route("**/api/campaigns", route => route.fulfill({ status, contentType: "application/json", body: JSON.stringify({ error: "Temporärer Mitgliedschaftsabruf" }) }));
@@ -211,5 +215,5 @@ for (const status of [503, 429]) test(`a transient ${status} membership refresh 
   const nudge = await app.inject({ method: "POST", url: `/api/campaigns/${campaignId}/themes`, headers: { origin, cookie: `chronicle_session=${session.value}` }, payload: { commandId: randomUUID(), manifest: { ...getThemePreset("Fantasy"), name: `Ein anderer Entwurf ${status}` } } }); expect(nudge.statusCode).toBe(200);
   await failedRefresh;
   await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Dieser Entwurf bleibt erhalten");
-  await expect(page.getByText("Ungespeicherter Entwurf", { exact: true })).toBeVisible();
+  await expect(page.locator(".band-status")).toHaveText("Ungespeicherter Entwurf");
 });

@@ -23,8 +23,8 @@ const TeilnehmerAnlegen = Type.Object({
   actorId: Type.Optional(Type.Union([id, Type.Null()])),
   initiativeRollId: Type.Optional(Type.Union([id, Type.Null()])),
 }, { additionalProperties: false });
-/** `von` nennt, wer gerade dran ist — der zweite Klick soll niemanden überspringen. */
-const ZugWeiter = Type.Object({ von: id }, { additionalProperties: false });
+/** A participant acts again next round, so both values identify the expected turn. */
+const ZugWeiter = Type.Object({ von: id, runde: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }) }, { additionalProperties: false });
 
 export function registerKampfbuehne(app: FastifyInstance, db: Db, config: AppConfig) {
   const identity = createIdentity(db, config), domain = createKampfbuehne(db, config);
@@ -49,7 +49,7 @@ export function registerKampfbuehne(app: FastifyInstance, db: Db, config: AppCon
     domain.eroeffnen(await user(req.headers.cookie), req.params.campaignId, req.params.kampfId));
   app.post<{ Params: Kampf; Body: Static<typeof ZugWeiter> }>("/api/campaigns/:campaignId/kaempfe/:kampfId/zug",
     { schema: { body: ZugWeiter } }, async req =>
-      domain.naechsterZug(await user(req.headers.cookie), req.params.campaignId, req.params.kampfId, req.body.von));
+      domain.naechsterZug(await user(req.headers.cookie), req.params.campaignId, req.params.kampfId, req.body.von, req.body.runde));
   app.post<{ Params: Kampf }>("/api/campaigns/:campaignId/kaempfe/:kampfId/beenden", async req =>
     domain.beenden(await user(req.headers.cookie), req.params.campaignId, req.params.kampfId));
 }

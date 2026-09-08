@@ -8,11 +8,13 @@ import { createCampaignBundleV5, validateCampaignBundleV5, type CampaignBundleV5
 import { requireReciprocalMintEvidence } from "../campaign-current-evidence.ts";
 
 export type CurrentCampaignBundle = CampaignBundleV4 | CampaignBundleV5;
-/** An inactive installed package is still durable campaign data and selects v5. */
+/** Installed packages and immutable template revisions select their required reader profile. */
 export function createCurrentCampaignBundle(data: CampaignBundleDataV4): CurrentCampaignBundle {
   assertJson(data);
   const supported = data.tables.rule_packages.some(row => object(row.document, "rule_packages.document").schemaVersion === 2)
-    || data.tables.action_rolls.some(row => object(row.receipt, "action_rolls.receipt").schemaVersion === 2);
+    || data.tables.action_rolls.some(row => object(row.receipt, "action_rolls.receipt").schemaVersion === 2)
+    || data.tables.actor_template_revisions.some(row => object(row.definition, "actor_template_revisions.definition").schemaVersion === 2)
+    || data.tables.item_template_revisions.some(row => object(row.definition, "item_template_revisions.definition").schemaVersion === 2);
   if (supported) return createCampaignBundleV5(data);
   const bundle = createCampaignBundleV4(data); requireReciprocalMintEvidence(bundle.tables); return bundle;
 }

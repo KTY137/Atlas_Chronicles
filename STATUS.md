@@ -1,6 +1,34 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-07 12:30** (Desktop-Installer gelandet, Token-Sackgasse geschlossen; mehrere Sessions arbeiten parallel weiter)
+Updated: **2026-09-08** (GUI-Rework und Regressionen im Featurelisten-Worktree)
+
+## GUI und Regressionen — 2026-09-08
+
+**Aktiver Arbeitsstand:** `.claude/worktrees/featureliste`, Branch
+`experimental/featureliste-20260907`, Ausgangspunkt `9086cdb`. Der Hauptcheckout und der
+installierte Desktop wurden durch diese Arbeit nicht verändert.
+
+Die Schmiede bietet jetzt eine Aufgabenübersicht für **Lootkarten, Figuren & NPCs, Karten,
+Bilder, Regeln, Aussehen und Veröffentlichung**. Der Weg zur Beute ist sichtbar:
+**Heute → Lootkarte erstellen → Vorlage gestalten → Exemplar erzeugen → übergeben**.
+Bild-Upload und Vorschau erhalten den Kartenentwurf. Die Hauptnavigation gruppiert die
+Bereiche, bleibt auf dem Telefon erreichbar und speichert Werkstatt/Tischansicht in der URL.
+**Ich → Zum Inventar** und die Inventaraktion im Kampf verkürzen den Zugriff beim Spielen.
+
+Die Review fand und reparierte Fehler bei Exportversionen für Loot-/NPC-Vorlagen,
+Beutereferenzen, unbenannter Währung, Bildfreigaben nach entfernten Passagen,
+Kampfrunden und verspäteten Zugbefehlen, Entwürfen bei Figurenwechsel und Live-Updates,
+Navigation, Generatormaßen sowie freizugebenden Grafikressourcen.
+Bestehende Datenmodelle und Editoren werden wiederverwendet.
+
+**Nachweise und Grenzen:** [Reviewbericht](docs/reviews/gui-regression-review-20260908.md),
+[Designentscheidung](design/iterations/gui-20260908.md) und
+[Featureledger](docs/FEATURELISTE.md). Gezielte Paket- und Browserprüfungen, keine volle
+Suite. `typecheck` und Client-Build sind beide erforderlich und wurden ausgeführt.
+Die Browserprüfungen verwenden isolierte Testkampagnen; ein neuer Desktop-Installer gehört
+nicht zu diesem Stand. Die Chronisten-Modellanbindung und Siedlungsauswahl bleiben offen.
+
+Die folgenden Abschnitte sind die vorherige Projekthistorie.
 
 ## Die Token-Sackgasse im Desktop ist geschlossen — Session Desktop-Installer, 2026-09-07 12:30
 

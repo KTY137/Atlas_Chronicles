@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { DEMO_RULE_PACKAGE } from "@chronicle/rules";
 import type { ActorCard, ItemCard, ItemContract, TemplateCard } from "@chronicle/protocol";
 import { buildApp } from "../packages/server/src/app.ts";
-import { createPgDb, migrate, type Db } from "../packages/server/src/db/index.ts";
+import { createPgDb, createTestDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { createIdentity } from "../packages/server/src/identity/index.ts";
 import { createCampaigns } from "../packages/server/src/domain/campaigns.ts";
 import { createActors } from "../packages/server/src/domain/actors.ts";
@@ -21,10 +21,14 @@ test.beforeEach(async () => {
   schema = `chronicle_actor_drafts_${randomUUID().replaceAll("-", "")}`;
   const port = 9500 + Math.floor(Math.random() * 150); origin = `http://localhost:${port}`;
   const config = { origin, bootstrapToken: randomBytes(32).toString("hex"), cookieSecret: randomBytes(32).toString("hex"), staticRoot: resolve("packages/client/dist") };
-  const settings = process.env.E2E_DATABASE_URL ? null : JSON.parse(await readFile(".local/config.json", "utf8"));
-  const base = process.env.E2E_DATABASE_URL ?? settings.databaseUrl;
-  admin = createPgDb(base); await admin.query(`CREATE SCHEMA "${schema}"`);
-  const url = new URL(base); url.searchParams.set("options", `-c search_path=${schema}`); db = createPgDb(url.href); await migrate(db);
+  const settings = process.env.E2E_DATABASE_URL ? null : await readFile(".local/config.json", "utf8")
+    .then(text => JSON.parse(text)).catch(error => { if (error.code === "ENOENT") return null; throw error; });
+  const base = process.env.E2E_DATABASE_URL ?? settings?.databaseUrl;
+  if (base) {
+    admin = createPgDb(base); await admin.query(`CREATE SCHEMA "${schema}"`);
+    const url = new URL(base); url.searchParams.set("options", `-c search_path=${schema}`); db = createPgDb(url.href);
+  } else db = await createTestDb();
+  await migrate(db);
   const identity = createIdentity(db, config), campaigns = createCampaigns(db), actors = createActors(db);
   gmSession = await identity.bootstrap("Kaya Entwürfe");
   campaignId = (await campaigns.createCampaign(gmSession.userId, { name: "Entwürfe am Frosttor" })).id;
@@ -74,8 +78,8 @@ async function openInventory(page: Page) {
   await page.goto(`${origin}/?campaign=${campaignId}&stage=tisch`);
   await page.getByRole("combobox", { name: "Handelnde Figur", exact: true }).selectOption(later.id);
   await page.getByRole("tab", { name: "Figuren & Inventar", exact: true }).click();
-  await page.getByRole("button", { name: "Silberner Wegschlüssel · 1", exact: true }).click();
-  const editor = page.locator(".inventory-section"); await expect(editor.getByRole("heading", { name: "Silberner Wegschlüssel", exact: true })).toBeVisible(); return editor;
+  await page.getByRole("button", { name: /Silberner Wegschlüssel/ }).click();
+  const editor = page.locator(".inventory-section"); await expect(editor.getByRole("heading", { name: "Silberner Wegschlüssel", exact: true, level: 3 })).toBeVisible(); return editor;
 }
 
 test("same selection and adding inventory cannot silently abandon an existing draft", async ({ browser }) => {
@@ -87,7 +91,7 @@ test("same selection and adding inventory cannot silently abandon an existing dr
       await expect(page.locator(".band-status")).toHaveText("Ungespeicherter Entwurf");
       // Old behavior asks to discard, yet keeps the child mounted with its draft and clears only the guard.
       page.on("dialog", dialog => dialog.accept());
-      if (selected === "item") await page.getByRole("button", { name: "Silberner Wegschlüssel · 1", exact: true }).click();
+      if (selected === "item") await page.getByRole("button", { name: /Silberner Wegschlüssel/ }).click();
       else await page.getByRole("tab", { name: "Figuren & Inventar", exact: true }).click();
       await paint(page);
       await expect.soft(notes, "reselecting the current object is a no-op").toHaveValue(`Ungespeicherter ${selected}-Entwurf`, { timeout: 2000 });
@@ -179,7 +183,7 @@ test("a delayed template save cannot erase a subsequently opened template draft"
     const path = kind === "actor" ? "/actor-templates" : "/item-templates";
     const names = kind === "actor"
       ? { view: "Figurvorlagen", input: "Vorlagenname", save: "Figurvorlage speichern", create: "Neue Figurvorlage" }
-      : { view: "Gegenstandsvorlagen", input: "Gegenstandsname", save: "Gegenstandsvorlage speichern", create: "Neue Gegenstandsvorlage" };
+      : { view: "Lootkarten erstellen", input: "Gegenstandsname", save: "Lootkarte speichern", create: "Neue Lootkarte" };
     try {
       await page.goto(`${origin}/?campaign=${campaignId}&stage=tisch`);
       await page.getByRole("tab", { name: "Figuren & Inventar", exact: true }).click();

@@ -13,11 +13,9 @@ import { Conflict, Gone } from "./errors.ts";
  * Szenen führt und die Runde sie liest — ein Kampf ist nichts Heimliches, sonst wüsste niemand,
  * wann er dran ist.
  *
- * **Der Zug ist zugleich die Nebenläufigkeitssicherung.** `naechsterZug` verlangt zu wissen, wer
- * gerade dran IST. Zwei Klicks auf denselben Knopf schieben deshalb einmal weiter und melden
- * beim zweiten Mal einen Konflikt, statt zwei Kämpfende zu überspringen. Das spart die
- * `version`-Spalte, die sonst dasselbe sagen würde: der Zeiger ist schon ein Zustand, der sich
- * bei jeder Änderung bewegt.
+ * **Figur und Runde sichern den Zug gemeinsam.** Dieselbe Figur ist in der nächsten Runde
+ * wieder dran; ihre Kennung allein erkennt dann keinen verspäteten zweiten Klick mehr.
+ * Schreibvorgänge sperren die Bühne, bevor sie diesen gemeinsamen Stand lesen.
  */
 
 export type Seite = "gefaehrten" | "gegner" | "neutral";
@@ -59,9 +57,9 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
     return member;
   }
 
-  async function lies(tx: Db, campaignId: string, kampfId: string): Promise<Kampf> {
+  async function lies(tx: Db, campaignId: string, kampfId: string, sperren = false): Promise<Kampf> {
     const kopf = (await tx.query<KampfRow>(
-      "SELECT id,name,zustand,runde,erstellt_am,beendet_am FROM kaempfe WHERE id=$1 AND campaign_id=$2",
+      `SELECT id,name,zustand,runde,erstellt_am,beendet_am FROM kaempfe WHERE id=$1 AND campaign_id=$2${sperren ? " FOR UPDATE" : ""}`,
       [kampfId, campaignId])).rows[0];
     if (!kopf) throw new Gone();
     const reihen = (await tx.query<TeilnehmerRow>(
@@ -105,16 +103,17 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
     input: { name: string; seite: Seite; initiative: number; actorId?: string | null; initiativeRollId?: string | null }): Promise<Kampf> {
     await leitung(userId, campaignId);
     return db.transaction(async tx => {
-      const kampf = (await tx.query<{ zustand: Kampfzustand }>("SELECT zustand FROM kaempfe WHERE id=$1 AND campaign_id=$2", [kampfId, campaignId])).rows[0];
+      const kampf = (await tx.query<{ zustand: Kampfzustand }>("SELECT zustand FROM kaempfe WHERE id=$1 AND campaign_id=$2 FOR UPDATE", [kampfId, campaignId])).rows[0];
       if (!kampf) throw new Gone();
       // Ein beendeter Kampf nimmt niemanden mehr auf.
       if (kampf.zustand === "beendet") throw new Conflict();
       const naechste = (await tx.query<{ n: number | string | null }>(
         "SELECT max(ordnung) AS n FROM kampf_teilnehmer WHERE campaign_id=$1 AND kampf_id=$2", [campaignId, kampfId])).rows[0]?.n;
+      const amZug = kampf.zustand === "laufend" && (naechste === null || naechste === undefined);
       await tx.query(`INSERT INTO kampf_teilnehmer(id,kampf_id,campaign_id,seite,name,actor_id,initiative,ordnung,initiative_roll_id,am_zug)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,false)`,
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [randomUUID(), kampfId, campaignId, input.seite, input.name, input.actorId ?? null, input.initiative,
-          naechste === null || naechste === undefined ? 0 : Number(naechste) + 1, input.initiativeRollId ?? null]);
+          naechste === null || naechste === undefined ? 0 : Number(naechste) + 1, input.initiativeRollId ?? null, amZug]);
       return lies(tx, campaignId, kampfId);
     });
   }
@@ -127,7 +126,7 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
   async function teilnehmerEntfernen(userId: string, campaignId: string, kampfId: string, teilnehmerId: string): Promise<Kampf> {
     await leitung(userId, campaignId);
     return db.transaction(async tx => {
-      const vorher = await lies(tx, campaignId, kampfId);
+      const vorher = await lies(tx, campaignId, kampfId, true);
       const weg = vorher.teilnehmer.find(t => t.id === teilnehmerId);
       if (!weg) throw new Gone();
       if (weg.amZug) {
@@ -136,6 +135,8 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
         const nachfolger = rest[stelle % rest.length];
         await tx.query("UPDATE kampf_teilnehmer SET am_zug=false WHERE id=$1 AND campaign_id=$2", [teilnehmerId, campaignId]);
         if (nachfolger) await tx.query("UPDATE kampf_teilnehmer SET am_zug=true WHERE id=$1 AND campaign_id=$2", [nachfolger.id, campaignId]);
+        if (nachfolger && stelle === rest.length)
+          await tx.query("UPDATE kaempfe SET runde=runde+1 WHERE id=$1 AND campaign_id=$2", [kampfId, campaignId]);
       }
       await tx.query("DELETE FROM kampf_teilnehmer WHERE id=$1 AND campaign_id=$2", [teilnehmerId, campaignId]);
       return lies(tx, campaignId, kampfId);
@@ -146,7 +147,7 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
   async function eroeffnen(userId: string, campaignId: string, kampfId: string): Promise<Kampf> {
     await leitung(userId, campaignId);
     return db.transaction(async tx => {
-      const kampf = await lies(tx, campaignId, kampfId);
+      const kampf = await lies(tx, campaignId, kampfId, true);
       // Zweimal eröffnen würde die Runde zurücksetzen und den laufenden Zug verwerfen.
       if (kampf.zustand !== "vorbereitet") throw new Conflict();
       const erster = kampf.teilnehmer[0];
@@ -159,15 +160,15 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
   }
 
   /**
-   * Den Zug weiterschieben. `von` nennt, wer gerade dran ist: stimmt das nicht mehr, hat jemand
-   * anderes schon geschoben, und ein zweiter Klick würde jemanden überspringen.
+   * Den Zug weiterschieben. `von` und `runde` nennen den erwarteten Zug, auch wenn dieselbe
+   * Figur inzwischen in einer späteren Runde wieder an der Reihe ist.
    */
-  async function naechsterZug(userId: string, campaignId: string, kampfId: string, von: string): Promise<Kampf> {
+  async function naechsterZug(userId: string, campaignId: string, kampfId: string, von: string, runde: number): Promise<Kampf> {
     await leitung(userId, campaignId);
     return db.transaction(async tx => {
-      const kampf = await lies(tx, campaignId, kampfId);
+      const kampf = await lies(tx, campaignId, kampfId, true);
       // Nur ein laufender Kampf hat einen nächsten Zug.
-      if (kampf.zustand !== "laufend") throw new Conflict();
+      if (kampf.zustand !== "laufend" || kampf.runde !== runde) throw new Conflict();
       const stelle = kampf.teilnehmer.findIndex(t => t.amZug);
       const aktuell = kampf.teilnehmer[stelle];
       // Der Zug ist inzwischen weitergegangen — ein zweiter Klick würde jemanden überspringen.
@@ -187,7 +188,7 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
   async function beenden(userId: string, campaignId: string, kampfId: string): Promise<Kampf> {
     await leitung(userId, campaignId);
     return db.transaction(async tx => {
-      const kampf = await lies(tx, campaignId, kampfId);
+      const kampf = await lies(tx, campaignId, kampfId, true);
       // Zweimal beenden würde den Beendigungszeitpunkt überschreiben.
       if (kampf.zustand === "beendet") throw new Conflict();
       await tx.query("UPDATE kampf_teilnehmer SET am_zug=false WHERE campaign_id=$1 AND kampf_id=$2 AND am_zug", [campaignId, kampfId]);

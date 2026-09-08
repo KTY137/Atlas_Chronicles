@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Vitalanzeige } from "./Vitalanzeige";
 import { Geldzaehler } from "./Geldzaehler";
 import { validatePackageFields, evaluateComputedFields, HTBAH_GROUPS, HTBAH_GROUP_LABELS, HTBAH_EXAMPLE_CHARACTERS, htbahSpentField, type Scalar } from "@chronicle/rules";
@@ -14,9 +14,16 @@ import { hasHtbahExamples, hasHtbahGuidance, RuleAttribution, RuleComputedFields
 
 export function CharacterSheet({ campaignId, actorId, rules, onDirty, gm, onChanged, liveRevision = 0 }: { campaignId: string; actorId: string; rules: RulesState; onDirty: (value: boolean) => void; gm: boolean; onChanged: () => void; liveRevision?: number }) {
   const [revision, setRevision] = useState(0), sheet = useResource<ActorSheet>(apiPath(campaignId, `/actors/${encodeURIComponent(actorId)}/sheet`), revision + liveRevision);
+  const [drafts, setDrafts] = useState({ sheet: false, money: false });
+  const reportSheet = useCallback((value: boolean) => setDrafts(old => ({ ...old, sheet: value })), []);
+  const reportMoney = useCallback((value: boolean) => setDrafts(old => ({ ...old, money: value })), []);
+  const dirty = drafts.sheet || drafts.money;
+  useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
+  useEffect(() => () => onDirty(false), [onDirty]);
+  const refresh = () => { setRevision(value => value + 1); onChanged(); };
   // Der Geldzaehler steht auch hier: "im Inventar, aber noch beim Char". Dieselbe Komponente
   // wie im Inventar — zweimal geschrieben liefe sie beim ersten Umbau auseinander.
-  return sheet.loading ? <Loading /> : <>{sheet.error ? <Notice error>{sheet.error} Der letzte geladene Stand bleibt bei einem Verbindungsfehler erhalten.</Notice> : null}<Geldzaehler campaignId={campaignId} actorId={actorId} gm={gm} revision={revision + liveRevision} kompakt onChanged={() => setRevision(v => v + 1)} />{sheet.data ? <SheetForm key={actorId} campaignId={campaignId} latest={sheet.data} rules={rules} onDirty={onDirty} gm={gm} onSaved={() => { setRevision((v) => v + 1); onChanged(); }} /> : null}</>;
+  return sheet.loading ? <Loading /> : <>{sheet.error ? <Notice error>{sheet.error} Der letzte geladene Stand bleibt bei einem Verbindungsfehler erhalten.</Notice> : null}<Geldzaehler campaignId={campaignId} actorId={actorId} gm={gm} revision={revision + liveRevision} kompakt onDirty={reportMoney} onChanged={refresh} />{sheet.data ? <SheetForm key={actorId} campaignId={campaignId} latest={sheet.data} rules={rules} onDirty={reportSheet} gm={gm} onSaved={refresh} /> : null}</>;
 }
 
 function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campaignId: string; latest: ActorSheet; rules: RulesState; onDirty: (value: boolean) => void; gm: boolean; onSaved: () => void }) {

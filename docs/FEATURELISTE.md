@@ -53,9 +53,29 @@ Legende: ☐ offen · ◐ in Arbeit · ☑ grün und belegt
 | 13 | Leben/Mana/Ausdauer-Anzeige | ☑ | Balken am Bogen, gelesen aus der `vitals`-Deklaration |
 | 14 | Dynamisch setzbare Bars | ☑ | Balken-Editor in der Schmiede: Feld, Höchststand, Erschöpfung |
 | 15 | KI-vorgeschlagene Änderungen | ◐ | Chronist-Regelwerk grün; Modellknoten bewusst offen (Egress-Entscheidung) |
-| 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ☑ | Beutetabelle an der Vorlage; Kartenart wählbar (Siedlung offen) |
+| 16 | NPC-Templates (Loot mit Wahrscheinlichkeit) + NPC-Generator mit Typus | ◐ | Vorlagen/Beutetabellen in Schmiede → Figuren & NPCs; Siedlungsauswahl weiterhin offen |
 | 17 | PNGs hochladbar | ☑ | eigener Eingang in den Bildbestand; Kartengesicht für Haltende sichtbar; Löschweg mit Sperre |
 | 18 | Außerhalb der Hauptkarte erzeugbare Karten | ☑ | frei und hinter der Tür erzeugbar; die Kartenart reicht jetzt durch |
+
+## GUI-Rework und Regressionen — 2026-09-08
+
+Fortsetzung nach `9086cdb` auf ausdrücklichen Auftrag: bestehende Features prüfen und
+verständlich zugänglich machen. [Reviewbericht](reviews/gui-regression-review-20260908.md)
+mit Befunden, Prüfumfang und Nachweisen; [Designiteration](../design/iterations/gui-20260908.md).
+
+- **Lootkarte erstellen:** direkt auf Heute oder unter Schmiede → Lootkarten. Erst die
+  Kartenvorlage mit Vorschau/Bild gestalten, dann ein Exemplar im Vorrat erzeugen und vergeben.
+- **NPC erstellen:** Heute oder Schmiede → Figuren & NPCs. Vorlagen und konkrete Figuren
+  sind getrennt; bestehende Figuren und Inventare bleiben am Tisch.
+- **Karte erstellen / Bild hochladen:** eigene benannte Werkstätten; vorhandene Generatoren
+  und der vorhandene Bildbestand werden wiederverwendet.
+- **Spielen:** gruppierte Navigation, funktionierende Kampflinks, direkter Inventarzugriff
+  und Entwurfsschutz auch bei Live-Antworten und Figurenwechsel.
+
+Export-, Beute-, Geld-, Bildberechtigungs-, Kampfrunden- und Clientregressionen sind repariert.
+Der reale Browserweg PNG → Lootvorlage → Exemplar → Übergabe → Spielerinventar ist geprüft.
+Die Chronisten-Modellanbindung (#15) und Siedlungsauswahl (#16) sind weiterhin offen;
+das zuvor trotz dieser Einschränkung gesetzte Häkchen bei #16 ist korrigiert.
 
 ## Feature 1 — Kampfsystem: gemessen, nicht vermutet
 

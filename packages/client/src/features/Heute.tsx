@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { BookOpen, CalendarDays, Compass, Dice6, Hammer, MessageSquare, Users } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, Compass, Dice6, Hammer, Image, Layers, Map, MessageSquare, Swords, User, Users } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type Campaign, type EntrySummary } from "../api";
 import { useResource } from "../hooks";
+import type { Stage, TableTab } from "../navigation";
+import type { ForgeSection } from "./forge-navigation";
 
 /**
  * „Heute" — der Landeplatz einer Kampagne.
@@ -25,7 +27,7 @@ import { useResource } from "../hooks";
  * Aufrufen, die der Client ohnehin schon macht.
  */
 
-export type Stage = "wiki" | "atlas" | "tisch" | "kanal" | "woche" | "schmiede" | "runde";
+export type { Stage } from "../navigation";
 
 interface Ziel {
   readonly id: Stage;
@@ -39,20 +41,22 @@ interface Ziel {
 const ZIELE: readonly Ziel[] = [
   { id: "wiki", titel: "Chronik", zweck: "Das Buch eurer Welt: Orte, Figuren, Ereignisse — und was jede Figur davon weiß.", icon: BookOpen },
   { id: "tisch", titel: "Tisch", zweck: "Der Abend selbst: Szenenkarten erzeugen oder laden, würfeln, Ergebnisse bestätigen.", icon: Dice6 },
-  { id: "atlas", titel: "Atlas", zweck: "Die Weltkarte und ihre Orte. Karten entstehen anderswo und werden hier hereingeholt.", icon: Compass },
+  { id: "atlas", titel: "Atlas", zweck: "Die Weltkarte erkunden, Orte verbinden und ihre Unterkarten betreten.", icon: Compass },
   { id: "woche", titel: "Woche", zweck: "Was zwischen zwei Abenden passiert: Briefe unterwegs, offene Vorhaben.", icon: CalendarDays },
   { id: "kanal", titel: "Kanal", zweck: "Der Ort zum Reden zwischen den Abenden. Verfasstes bleibt, Tischgeplauder nicht.", icon: MessageSquare },
   { id: "runde", titel: "Runde", zweck: "Wer mitspielt. Hier lädst du Leute ein und gibst Beitritte frei.", icon: Users },
-  { id: "schmiede", titel: "Schmiede", zweck: "Regeln, Vorlagen und das Aussehen eurer Kampagne bauen.", icon: Hammer, nurLeitung: true },
+  { id: "schmiede", titel: "Schmiede", zweck: "Lootkarten, NPCs und Karten erstellen, Bilder hochladen und Regeln gestalten.", icon: Hammer, nurLeitung: true },
 ];
 
-export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigate, onOpenEntry }: {
+export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigate, onOpenForge, onOpenTable, onOpenEntry }: {
   campaign: Campaign;
   displayName: string;
   /** Wer gerade verbunden ist. Kommt aus der bestehenden Live-Verbindung. */
   anwesend: readonly { userId: string; displayName: string }[];
   liveRevision: number;
   onNavigate: (stage: Stage) => void;
+  onOpenForge: (section: ForgeSection) => void;
+  onOpenTable: (tab: TableTab) => void;
   onOpenEntry: (entryId: string) => void;
 }) {
   const leitung = campaign.role === "leitung";
@@ -66,9 +70,27 @@ export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigat
       <h1>{campaign.name}</h1>
       <p className="muted">
         {leitung
-          ? "Von hier führt jeder Weg weiter. Such dir aus, woran ihr heute arbeitet."
-          : "Willkommen zurück. Von hier kommst du überall hin, wo deine Figur etwas zu tun hat."}
+          ? "Bereite euer nächstes Abenteuer vor oder steig direkt in den Spielabend ein."
+          : "Deine Figuren, eure Geschichte und der nächste gemeinsame Spielabend."}
       </p>
+
+      <div className="heute-play-actions">
+        <Button variant="primary" onClick={() => onOpenTable("actions")}><Dice6 size={18} /> Zum Spieltisch<ArrowRight size={16} /></Button>
+        <Button onClick={() => onNavigate("ich")}><User size={17} /> Meine Figuren & Inventare</Button>
+        <Button onClick={() => onOpenTable("kampf")}><Swords size={17} /> Kampf öffnen</Button>
+      </div>
+
+      {leitung ? <section className="heute-workshop" aria-labelledby="heute-create-heading">
+        <div className="section-heading"><div><p className="eyebrow">Vor dem Abenteuer</p><h2 id="heute-create-heading">Was möchtest du erstellen?</h2></div><Button variant="quiet" onClick={() => onOpenForge("overview")}>Zur Schmiede<ArrowRight size={16} /></Button></div>
+        <div className="heute-create-grid">
+          {([
+            { section: "loot", label: "Lootkarte erstellen", text: "Gegenstände gestalten und an die Gruppe verteilen.", icon: Layers },
+            { section: "actors", label: "NPC erstellen", text: "Figurvorlagen, Werte und mögliche Beute festlegen.", icon: Users },
+            { section: "maps", label: "Karte erstellen", text: "Grundrisse und Höhlen erzeugen oder Karten importieren.", icon: Map },
+            { section: "media", label: "Bild hochladen", text: "Illustrationen für Lootkarten und eure Chronik sammeln.", icon: Image },
+          ] as const).map(({ section, label, text, icon: Icon }) => <button type="button" className="heute-create-card" key={section} aria-label={label} onClick={() => onOpenForge(section)}><Icon size={23} aria-hidden="true" /><strong>{label}</strong><span>{text}</span><ArrowRight className="heute-card-arrow" size={17} aria-hidden="true" /></button>)}
+        </div>
+      </section> : null}
 
       {andere.length > 0 ? (
         <p className="heute-anwesend">
@@ -76,7 +98,7 @@ export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigat
         </p>
       ) : null}
 
-      <h2 className="heute-abschnitt">Wo du weitermachst</h2>
+      <h2 className="heute-abschnitt">Aus eurer Chronik</h2>
       {entries.error && !entries.data ? (
         <Notice error>{entries.error}</Notice>
       ) : entries.loading && !entries.data ? (

@@ -9,6 +9,8 @@ import { seedActorControl } from "./actor-fixtures.ts";
 import { createGameplay } from "../src/domain/gameplay.ts";
 import { createKampfbuehne, type Seite } from "../src/domain/kampfbuehne.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
+import { buildApp } from "../src/app.ts";
+import { createIdentity } from "../src/identity/index.ts";
 
 // Die Bühne ist die abstrakte Schwester der taktischen Karte: keine Koordinaten, sondern zwei
 // Reihen, eine Reihenfolge, ein Rundenzähler. Diese Datei fährt genau das, was am Tisch
@@ -82,12 +84,12 @@ describe("Die Kampfbühne", () => {
     expect(stand).toMatchObject({ zustand: "laufend", runde: 1 });
     expect(amZug(stand)).toBe("Erste");
 
-    stand = await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, stand.teilnehmer[0]!.id);
+    stand = await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, stand.teilnehmer[0]!.id, stand.runde);
     expect(amZug(stand)).toBe("Zweite");
     expect(stand.runde).toBe(1);
 
     // Der Rücksprung an den Anfang IST die neue Runde — kein Zähler, den die Oberfläche führt.
-    stand = await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, stand.teilnehmer[1]!.id);
+    stand = await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, stand.teilnehmer[1]!.id, stand.runde);
     expect(amZug(stand)).toBe("Erste");
     expect(stand.runde).toBe(2);
   });
@@ -99,11 +101,80 @@ describe("Die Kampfbühne", () => {
     const offen = await f.buehne.eroeffnen(f.gm, f.campaignId, kampf.id);
     const a = offen.teilnehmer[0]!.id;
 
-    const nach = await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, a);
+    const nach = await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, a, offen.runde);
     expect(amZug(nach)).toBe("B");
-    await expect(f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, a)).rejects.toBeInstanceOf(Conflict);
+    await expect(f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, a, offen.runde)).rejects.toBeInstanceOf(Conflict);
     // Und C wurde nicht übersprungen: B ist weiterhin dran.
     expect(amZug(await f.buehne.buehne(f.gm, f.campaignId, kampf.id))).toBe("B");
+  });
+
+  it("advances the round when removing the active participant wraps to the start", async () => {
+    const f = await fixture();
+    const kampf = await f.buehne.anlegen(f.gm, f.campaignId, { name: "Last in order" });
+    await stellen(f, kampf.id, "A", 20); await stellen(f, kampf.id, "B", 10);
+    const opened = await f.buehne.eroeffnen(f.gm, f.campaignId, kampf.id);
+    const next = await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, opened.teilnehmer[0]!.id, opened.runde);
+    const removed = await f.buehne.teilnehmerEntfernen(f.gm, f.campaignId, kampf.id, next.teilnehmer[1]!.id);
+    expect(amZug(removed)).toBe("A");
+    expect(removed.runde).toBe(2);
+  });
+
+  it("restores the turn when adding to a running stage emptied by removals", async () => {
+    const f = await fixture();
+    const kampf = await f.buehne.anlegen(f.gm, f.campaignId, { name: "Reinforcements" });
+    await stellen(f, kampf.id, "A", 20);
+    const opened = await f.buehne.eroeffnen(f.gm, f.campaignId, kampf.id);
+    await f.buehne.teilnehmerEntfernen(f.gm, f.campaignId, kampf.id, opened.teilnehmer[0]!.id);
+    const added = await stellen(f, kampf.id, "B", 10);
+    expect(amZug(added)).toBe("B");
+    expect((await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, added.teilnehmer[0]!.id, added.runde)).runde).toBe(2);
+  });
+
+  it("rejects replaying a single participant's turn from a previous round", async () => {
+    const f = await fixture();
+    const kampf = await f.buehne.anlegen(f.gm, f.campaignId, { name: "Solo" });
+    await stellen(f, kampf.id, "A", 10);
+    const opened = await f.buehne.eroeffnen(f.gm, f.campaignId, kampf.id);
+    const actor = opened.teilnehmer[0]!.id;
+    expect((await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, actor, 1)).runde).toBe(2);
+    await expect(f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, actor, 1)).rejects.toBeInstanceOf(Conflict);
+    expect((await f.buehne.buehne(f.gm, f.campaignId, kampf.id)).runde).toBe(2);
+    expect((await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, actor, 2)).runde).toBe(3);
+  });
+
+  it("rejects a delayed turn request when its participant acts again after a full round", async () => {
+    const f = await fixture();
+    const kampf = await f.buehne.anlegen(f.gm, f.campaignId, { name: "Round replay" });
+    await stellen(f, kampf.id, "A", 20); await stellen(f, kampf.id, "B", 10);
+    const opened = await f.buehne.eroeffnen(f.gm, f.campaignId, kampf.id);
+    const [a, b] = opened.teilnehmer;
+    await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, a!.id, 1);
+    await f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, b!.id, 1);
+    await expect(f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, a!.id, 1)).rejects.toBeInstanceOf(Conflict);
+    const current = await f.buehne.buehne(f.gm, f.campaignId, kampf.id);
+    expect(amZug(current)).toBe("A");
+    expect(current.runde).toBe(2);
+  });
+
+  it("requires the round at the HTTP boundary and rejects stale requests", async () => {
+    const f = await fixture();
+    const kampf = await f.buehne.anlegen(f.gm, f.campaignId, { name: "HTTP round" });
+    await stellen(f, kampf.id, "A", 10);
+    const opened = await f.buehne.eroeffnen(f.gm, f.campaignId, kampf.id);
+    const config = { ...cfg, origin: "https://kampf.test", cookieSecret: "kampf-review-cookie-secret-over-32-characters",
+      bootstrapToken: "kampf-review-bootstrap-token-over-32-characters" };
+    const app = await buildApp(db, config);
+    try {
+      const session = await createIdentity(db, config).issueSession(f.gm);
+      const headers = { cookie: `chronicle_session=${session.value}`, origin: config.origin };
+      const send = (payload: object) => app.inject({ method: "POST", url: `/api/campaigns/${f.campaignId}/kaempfe/${kampf.id}/zug`, headers, payload });
+      const von = opened.teilnehmer[0]!.id;
+      expect((await send({ von })).statusCode).toBe(400);
+      const advanced = await send({ von, runde: 1 });
+      expect(advanced.statusCode).toBe(200);
+      expect(advanced.json().runde).toBe(2);
+      expect((await send({ von, runde: 1 })).statusCode).toBe(409);
+    } finally { await app.close(); }
   });
 
   it("schiebt den Zug weiter, wenn die Kämpfende am Zug die Bühne verlässt", async () => {
@@ -133,7 +204,7 @@ describe("Die Kampfbühne", () => {
     expect(aus).toMatchObject({ zustand: "beendet", beendetAm: time });
     expect(amZug(aus)).toBeNull();
     await expect(stellen(f, kampf.id, "Zu spät", 1)).rejects.toBeInstanceOf(Conflict);
-    await expect(f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, aus.teilnehmer[0]!.id)).rejects.toBeInstanceOf(Conflict);
+    await expect(f.buehne.naechsterZug(f.gm, f.campaignId, kampf.id, aus.teilnehmer[0]!.id, aus.runde)).rejects.toBeInstanceOf(Conflict);
     await expect(f.buehne.beenden(f.gm, f.campaignId, kampf.id)).rejects.toBeInstanceOf(Conflict);
   });
 

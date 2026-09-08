@@ -78,6 +78,9 @@ export function createGeld(db: Db, config: DomainConfig = {}) {
       // Verbindung, und eine Abfrage daneben wartet auf die offene Transaktion — auf sich selbst.
       const member = await createCampaigns(tx, config).requireMember(userId, campaignId);
       await authorizeActor(tx, member, actorId);
+      // A purse without a named currency cannot be represented by the native bundle.
+      // Keep the empty version-0 state until the GM has named the campaign's unit.
+      if (!(await tx.query("SELECT 1 FROM geld_einheit WHERE campaign_id=$1", [campaignId])).rowCount) throw new Conflict();
       const vorher = (await tx.query<{ version: number }>("SELECT version FROM geldbestand WHERE campaign_id=$1 AND actor_id=$2 FOR UPDATE", [campaignId, actorId])).rows[0];
       if (Number(vorher?.version ?? 0) !== input.expectedVersion) throw new Conflict();
       if (vorher) await tx.query("UPDATE geldbestand SET betrag=$3,version=version+1,geaendert_am=$4 WHERE campaign_id=$1 AND actor_id=$2", [campaignId, actorId, input.betrag, now()]);

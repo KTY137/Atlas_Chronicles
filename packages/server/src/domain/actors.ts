@@ -161,6 +161,12 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
       return item;
     }
     const actor = value as P.ActorTemplateData, pkg = await rulePackage(tx, current.campaignId, actor.package);
+    // The native bundle requires valid, pinned references and an ordered range. Check these
+    // before storing immutable revisions, even when a one-percent drop never gets rolled.
+    if (actor.schemaVersion === 2) for (const drop of actor.beute) {
+      if (drop.menge[0] > drop.menge[1]) throw new ActorValidationError("Die kleinste Beutemenge darf die groesste nicht uebersteigen.");
+      await template<P.ItemContract>(tx, current.campaignId, "item", drop.templateId, drop.templateRevision);
+    }
     const resolved = { ...actor, fields: { ...validatePackageFields(pkg, actor.fields) } };
     await installDemo(tx, current.campaignId, current.userId, pkg);
     return resolved;

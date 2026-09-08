@@ -7,6 +7,8 @@ import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createActors } from "../src/domain/actors.ts";
 import { Gone } from "../src/domain/errors.ts";
+import { currentCampaignSemanticDiff, parseCurrentCampaignBundle, serializeCurrentCampaignBundle } from "@chronicle/io";
+import { exportCampaignBundle, initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
 
 // Das Admininventar ist die Werkbank der Spielleitung: sie entwirft Lootkarten, legt sie in
 // ihren eigenen Vorrat und gibt sie aus. Zwei Aussagen tragen das Ganze — nur sie darf
@@ -59,6 +61,22 @@ describe("Das Admininventar", () => {
     // Die Karte behaelt ihr Gesicht auf dem Weg: die Spielerin sieht dieselbe Lootkarte.
     expect((await f.actors.getItem(f.spieler, f.campaign, stueck.id)).definition).toMatchObject({ schemaVersion: 2, seltenheit: "selten" });
   });
+
+  it("exports and restores a loot card without a v2 rule package or any image", async () => {
+    const f = await fixture();
+    const template = await f.actors.createItemTemplate(gm, f.campaign, { ...befehl(), definition: lootkarte() });
+    const item = await f.actors.instantiateItem(gm, f.campaign, { ...befehl(), templateId: template.id,
+      templateRevision: 1, holderActorId: f.actorId });
+    const bundle = await exportCampaignBundle(db, gm, f.campaign);
+    expect(bundle.version).toBe(5);
+    const target = await createTestDb();
+    try {
+      await initializeCampaignRestoreTarget(target);
+      await restoreCampaignBundle(target, parseCurrentCampaignBundle(serializeCurrentCampaignBundle(bundle)));
+      expect(currentCampaignSemanticDiff(bundle, await exportCampaignBundle(target, gm, f.campaign))).toEqual([]);
+      expect((await createActors(target).getItem(f.spieler, f.campaign, item.id)).definition).toEqual(item.definition);
+    } finally { await target.close(); }
+  }, 30_000);
 
   it("haelt den Vorrat für die Spielleitung allein", async () => {
     const f = await fixture();

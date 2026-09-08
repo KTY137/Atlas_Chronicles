@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useState } from "react";
-import { ChevronRight, Flag, Plus, Swords, Trash2 } from "lucide-react";
+import { Backpack, ChevronRight, Flag, Plus, Swords, Trash2 } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import type { ActorCard } from "@chronicle/protocol";
 import { api, apiPath } from "../api";
@@ -27,8 +27,8 @@ interface Kampf { id: string; name: string; zustand: "vorbereitet" | "laufend" |
 const SEITENTITEL: Record<Seite, string> = { gegner: "Gegner", neutral: "Dazwischen", gefaehrten: "Gefährten" };
 const ZUSTANDSTEXT: Record<Kampf["zustand"], string> = { vorbereitet: "Vorbereitet", laufend: "Läuft", beendet: "Beendet" };
 
-export function Kampfbuehne({ campaignId, gm, actors, revision, onChanged }: {
-  campaignId: string; gm: boolean; actors: ActorCard[]; revision: number; onChanged: () => void;
+export function Kampfbuehne({ campaignId, gm, actors, revision, onChanged, onOpenInventory }: {
+  campaignId: string; gm: boolean; actors: ActorCard[]; revision: number; onChanged: () => void; onOpenInventory?: (actorId: string) => void;
 }) {
   const kaempfe = useResource<Kampf[]>(apiPath(campaignId, "/kaempfe"), revision, 4000);
   // Dieselbe Wurfliste, die der Reiter „Aktionen" zeigt — kein zweiter Kanal für dieselbe Sache.
@@ -63,13 +63,13 @@ export function Kampfbuehne({ campaignId, gm, actors, revision, onChanged }: {
       ? <EmptyState title="Noch ist es ruhig.">{gm
         ? "Stell eine Bühne auf, setz die Kämpfenden darauf und eröffne — die Reihenfolge führt danach der Server."
         : "Sobald deine Spielleitung einen Kampf eröffnet, siehst du hier, wer wann dran ist."}</EmptyState>
-      : <Buehne kampf={gewaehlt} campaignId={campaignId} gm={gm} actors={actors} wuerfe={wuerfe.data ?? []} busy={task.busy} fuehren={fuehren} onChanged={onChanged} />}
+      : <Buehne kampf={gewaehlt} campaignId={campaignId} gm={gm} actors={actors} wuerfe={wuerfe.data ?? []} busy={task.busy} fuehren={fuehren} onChanged={onChanged} onOpenInventory={onOpenInventory} />}
   </div>;
 }
 
-function Buehne({ kampf, campaignId, gm, actors, wuerfe, busy, fuehren, onChanged }: {
+function Buehne({ kampf, campaignId, gm, actors, wuerfe, busy, fuehren, onChanged, onOpenInventory }: {
   kampf: Kampf; campaignId: string; gm: boolean; actors: ActorCard[]; wuerfe: ActionCard[]; busy: boolean;
-  fuehren: (pfad: string, body?: unknown, method?: "POST" | "DELETE") => void; onChanged: () => void;
+  fuehren: (pfad: string, body?: unknown, method?: "POST" | "DELETE") => void; onChanged: () => void; onOpenInventory?: (actorId: string) => void;
 }) {
   const dran = kampf.teilnehmer.find(t => t.amZug) ?? null;
   const reihe = (seite: Seite) => kampf.teilnehmer.filter(t => t.seite === seite);
@@ -88,7 +88,7 @@ function Buehne({ kampf, campaignId, gm, actors, wuerfe, busy, fuehren, onChange
           ? <Button variant="primary" disabled={busy || !kampf.teilnehmer.length} onClick={() => fuehren(`${pfad}/eroeffnen`)}><Swords size={16} /> Eröffnen</Button>
           : null}
         {kampf.zustand === "laufend" && dran
-          ? <Button variant="primary" disabled={busy} onClick={() => fuehren(`${pfad}/zug`, { von: dran.id })}><ChevronRight size={16} /> Nächster Zug</Button>
+          ? <Button variant="primary" disabled={busy} onClick={() => fuehren(`${pfad}/zug`, { von: dran.id, runde: kampf.runde })}><ChevronRight size={16} /> Nächster Zug</Button>
           : null}
         {kampf.zustand !== "beendet"
           ? <Button disabled={busy} onClick={() => fuehren(`${pfad}/beenden`)}><Flag size={16} /> Beenden</Button>
@@ -112,6 +112,7 @@ function Buehne({ kampf, campaignId, gm, actors, wuerfe, busy, fuehren, onChange
                   {t.initiativeRollId ? <span className="kampfkarte-beleg" title="Aus einem Wurf">gewürfelt</span> : <span className="kampfkarte-beleg gesetzt" title="Von der Spielleitung gesetzt">gesetzt</span>}
                 </span>
                 {t.amZug ? <span className="kampfkarte-marke">am Zug</span> : null}
+                {gm && t.actorId && onOpenInventory ? <Button variant="quiet" onClick={() => onOpenInventory(t.actorId!)}><Backpack size={14} /> Inventar öffnen</Button> : null}
                 {gm && kampf.zustand !== "beendet" ? <button className="kampfkarte-weg" aria-label={`${t.name} von der Bühne nehmen`} disabled={busy}
                   onClick={() => fuehren(`${pfad}/teilnehmer/${encodeURIComponent(t.id)}`, undefined, "DELETE")}><Trash2 size={14} /></button> : null}
               </article></li>)}</ul>

@@ -60,7 +60,7 @@ export function TacticalGenerate({ campaignId, onCreated }: { campaignId: string
     // Die Regler heissen bei beiden Arten verschieden. Sie zu vermischen waere genau das, was
     // die Union an der Tuer abweist — also schickt jede Art nur ihre eigenen.
     ...(raeume === "" ? {} : hoehle ? { kammern: raeume } : { raeume }),
-    ...(breite === "" || hoehe === "" ? {} : { zellen: [breite, hoehe] as [number, number] }),
+    ...(breite === "" && hoehe === "" ? {} : { zellen: [breite === "" ? std.zellen[0] : breite, hoehe === "" ? std.zellen[1] : hoehe] as [number, number] }),
     ...(schleifen === "" || hoehle ? {} : { schleifen }),
     ...(licht === std.licht ? {} : { licht }),
   });

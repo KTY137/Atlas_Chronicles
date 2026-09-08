@@ -6,6 +6,7 @@ import type { LizenzStatus } from "@chronicle/chronik";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
 import { listControlledActorIds } from "./actors.ts";
+import { createDocuments } from "./documents.ts";
 import { Conflict, Gone } from "./errors.ts";
 
 /**
@@ -321,10 +322,14 @@ export function createWikiMedien(db: Db, cfg: DomainConfig = {}) {
 
   async function darfSehen(member: Membership, assetId: string): Promise<boolean> {
     if (member.actorId) {
+      // Use the same effective knowledge as the article: raw revelations can name retired
+      // ancestors, and split/merge descendants can be visible without a direct revelation.
+      const held = await createDocuments(db, cfg).held(member.campaignId, member.actorId);
       const ausPassage = await db.query(`SELECT 1 FROM wiki_asset_uses u
-        JOIN revelations r ON r.passage_id=u.passage_id AND r.campaign_id=u.campaign_id
-        WHERE u.asset_id=$1 AND u.campaign_id=$2 AND r.actor_id=$3 AND r.revoked_at IS NULL LIMIT 1`,
-        [assetId, member.campaignId, member.actorId]);
+        JOIN passages p ON p.id=u.passage_id AND p.campaign_id=u.campaign_id
+        WHERE u.asset_id=$1 AND u.campaign_id=$2 AND u.passage_id=ANY($3::text[])
+          AND p.retired_at_revision IS NULL AND p.content->>'kind'='bildunterschrift'
+          AND p.content->>'assetId'=$1 LIMIT 1`, [assetId, member.campaignId, [...held]]);
       if (ausPassage.rowCount) return true;
     }
     const meine = await listControlledActorIds(db, member);

@@ -48,7 +48,7 @@ test("HTBAH catalogue, computed sheet, classified rolls and v5 export survive ho
   };
   try {
     await signIn(gm.context(), gmSession); await signIn(context, playerSession);
-    await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede`);
+    await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
     const template = gm.getByRole("region", { name: "How to be a Hero Vorlage" });
     await template.getByRole("button", { name: "HTBAH-Vorlage anpassen" }).click();
     await template.getByRole("group", { name: "Fertigkeit 1", exact: true }).getByLabel("Name", { exact: true }).fill("Klettern und Kraxeln");
@@ -92,7 +92,7 @@ test("HTBAH catalogue, computed sheet, classified rolls and v5 export survive ho
     await saveSheet();
     expect((await sheet()).fields.gbp_spent_handeln).toBe(1);
     expect(evaluateComputedFields(downloaded, (await sheet()).fields).gbp_remaining_handeln).toBe(1);
-    await player.getByLabel("Lebenspunkte", { exact: true }).fill("9");
+    await player.getByRole("spinbutton", { name: "Lebenspunkte", exact: true }).fill("9");
     await expect(player.getByRole("status").filter({ hasText: "Unter 10 Lebenspunkten" })).toBeVisible();
     await saveSheet(); expect(await sheet()).toMatchObject({ version: 3, fields: { hp: 9 }, defeatPending: false, defeatedAt: null });
     await player.screenshot({ path: info.outputPath("htbah-sheet-desktop.png"), fullPage: true });
@@ -129,7 +129,7 @@ test("HTBAH catalogue, computed sheet, classified rolls and v5 export survive ho
     await expect(player.locator(".roll-card").filter({ hasText: "skill_klettern" })).toContainText("Bestätigt");
     expect((await (await player.request.get(`${base}/rolls/${roll.id}/replay`)).json()).valid).toBe(true);
     await player.getByRole("tab", { name: "Figur", exact: true }).click();
-    await expect(player.getByLabel("Lebenspunkte", { exact: true })).toHaveValue("9");
+    await expect(player.getByRole("spinbutton", { name: "Lebenspunkte", exact: true })).toHaveValue("9");
     await player.setViewportSize({ width: 390, height: 844 });
     expect(await player.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await player.screenshot({ path: info.outputPath("htbah-sheet-mobile.png"), fullPage: true });

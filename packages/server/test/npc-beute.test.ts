@@ -7,6 +7,7 @@ import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createActors } from "../src/domain/actors.ts";
+import { exportCampaignBundle } from "../src/domain/bundles.ts";
 
 /**
  * NPC-Vorlagen mit Beute nach Wahrscheinlichkeit.
@@ -109,5 +110,31 @@ describe("Beute an der Figurvorlage", () => {
     const f = await fixture();
     await expect(erschaffe(f, [{ templateId: randomUUID(), templateRevision: 1, wahrscheinlichkeit: 100, menge: [1, 1] }]))
       .rejects.toThrow();
+  });
+
+  it("rejects an inverted loot range before storing an unexportable template", async () => {
+    const f = await fixture();
+    await expect(f.actors.createActorTemplate(gm, f.campaign, { ...befehl(), definition: figur("Wolf", [
+      { templateId: f.fell, templateRevision: 1, wahrscheinlichkeit: 100, menge: [5, 2] },
+    ]) })).rejects.toThrow();
+    expect(await f.actors.listActorTemplates(gm, f.campaign)).toEqual([]);
+    await expect(exportCampaignBundle(db, gm, f.campaign)).resolves.toHaveProperty("version");
+  });
+
+  it("rejects unknown loot references on create and revise even at one percent", async () => {
+    const f = await fixture();
+    const foreign = await fixture();
+    for (const [templateId, templateRevision] of [[randomUUID(), 1], [f.fell, 99], [foreign.fell, 1]] as const) {
+      await expect(f.actors.createActorTemplate(gm, f.campaign, { ...befehl(), definition: figur("Wolf", [
+        { templateId, templateRevision, wahrscheinlichkeit: 1, menge: [1, 1] },
+      ]) })).rejects.toThrow();
+    }
+    const valid = await f.actors.createActorTemplate(gm, f.campaign, { ...befehl(), definition: figur("Wolf", []) });
+    await expect(f.actors.reviseActorTemplate(gm, f.campaign, valid.id, { ...befehl(), expectedVersion: valid.version,
+      reason: "Broken reference", definition: figur("Wolf", [
+        { templateId: f.fell, templateRevision: 99, wahrscheinlichkeit: 1, menge: [1, 1] },
+      ]) })).rejects.toThrow();
+    expect((await f.actors.getActorTemplate(gm, f.campaign, valid.id)).revision).toBe(1);
+    await expect(exportCampaignBundle(db, gm, f.campaign)).resolves.toHaveProperty("version");
   });
 });

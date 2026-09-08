@@ -273,6 +273,12 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       const previousSelection = selected;
       if (changedScope || changedWorld) clearRaster();
       scene = next;
+      // Artwork belongs to the placements still in this map, not every asset edited here.
+      const usedStampAssets = new Set(scene.stamps?.map(stamp => stamp.asset) ?? []);
+      for (const [asset, resource] of stampTextures) {
+        if (usedStampAssets.has(asset)) continue;
+        resource.texture.destroy(true); resource.bitmap.close(); stampTextures.delete(asset);
+      }
       for (const resource of rasterResources) resource.texture.source.scaleMode = scene.rasterSampling ?? "linear";
       if (drag && (changedWorld || changedScope || (drag.snapshot && !retainsTokenDrag(drag.snapshot, scene.tokens?.find(t => t.id === drag?.token))))) {
         if (canvas.hasPointerCapture(drag.id)) canvas.releasePointerCapture(drag.id);

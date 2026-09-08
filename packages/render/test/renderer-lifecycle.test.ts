@@ -34,7 +34,7 @@ vi.mock("pixi.js", () => {
     canvas = new Canvas(); stage = new Container(); renderer = { type: pixi.type, resolution: pixi.resolution, resize() {} };
     async init() {} render() {} destroy() { this.stage.destroy(); }
   }
-  class Sprite extends Container { width = 0; height = 0; }
+  class Sprite extends Container { width = 0; height = 0; anchor = new Vector(); }
   return { Application, Container, Graphics, Text, Sprite, RendererType: { WEBGL: 1, WEBGPU: 2, CANVAS: 4 }, Texture: { from() { const texture = { source: { scaleMode: "linear" }, destroy: vi.fn() }; pixi.textures.push(texture); return texture; } } };
 });
 
@@ -51,6 +51,20 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("mounted renderer submission and resource lifecycle", () => {
+  it("releases artwork textures and bitmaps when their last map placement is removed", async () => {
+    const image = { width: 64, height: 64, close: vi.fn() } as unknown as ImageBitmap;
+    const stamp = { id: "chair", asset: "pack/chair", x: 100, y: 100, s: 1, r: 0, l: 0 };
+    const map = await createMapRenderer(host(), { ...scene, lines: [], stamps: [stamp] });
+    map.setStampImages([{ asset: stamp.asset, image }]);
+    map.update({ ...scene, lines: [], stamps: [{ ...stamp, x: 200 }] });
+    expect(image.close).not.toHaveBeenCalled();
+    map.update({ ...scene, lines: [], stamps: [] });
+    expect(image.close).toHaveBeenCalledTimes(1);
+    expect(pixi.textures[0]!.destroy).toHaveBeenCalledWith(true);
+    map.destroy();
+    expect(image.close).toHaveBeenCalledTimes(1);
+  });
+
   it("draws local pin glyphs once and retains their screen size, selection and picking through camera changes", async () => {
     const icons: MapPinIcon[] = ["place", "city", "castle", "cave", "ruin", "portal"];
     const pins = icons.map((icon, i) => ({ id: icon, icon, label: icon, x: 200 + i * 200, y: 500 }));

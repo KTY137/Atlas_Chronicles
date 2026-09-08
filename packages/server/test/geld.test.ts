@@ -8,6 +8,7 @@ import { createIdentity } from "../src/identity/index.ts";
 import { createGeld } from "../src/domain/geld.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 import { seedActorControl } from "./actor-fixtures.ts";
+import { exportCampaignBundle } from "../src/domain/bundles.ts";
 
 // Der Geldzaehler ist eine Zahl, die der Figur gehoert — nicht dem Bogen und nicht einem Beutel.
 // Zwei Aussagen tragen ihn: wer die Figur fuehrt, fuehrt ihre Boerse, und jede Aenderung nennt
@@ -40,6 +41,14 @@ describe("Der Geldzähler", () => {
     expect(await f.geld.einheit(f.spieler, f.campaign)).toBeNull();
   });
 
+  it("rejects unnamed balances before they can prevent campaign export", async () => {
+    const f = await fixture();
+    await expect(f.geld.setzen(f.spieler, f.campaign, f.actorId, { betrag: 40, expectedVersion: 0 }))
+      .rejects.toBeInstanceOf(Conflict);
+    expect((await f.geld.bestand(f.spieler, f.campaign, f.actorId)).version).toBe(0);
+    await expect(exportCampaignBundle(db, gm, f.campaign, cfg)).resolves.toHaveProperty("version");
+  });
+
   it("nennt das Geld dieser Runde und lässt die Spielleitung es umbenennen", async () => {
     const f = await fixture();
     const gesetzt = await f.geld.einheitSetzen(gm, f.campaign, { name: "Silbertaler", expectedVersion: 0 });
@@ -55,6 +64,7 @@ describe("Der Geldzähler", () => {
 
   it("lässt führen, wer die Figur führt", async () => {
     const f = await fixture();
+    await f.geld.einheitSetzen(gm, f.campaign, { name: "Silbertaler", expectedVersion: 0 });
     const erst = await f.geld.setzen(f.spieler, f.campaign, f.actorId, { betrag: 40, expectedVersion: 0 });
     expect(erst).toEqual({ actorId: f.actorId, betrag: 40, version: 1 });
     // Die Spielleitung darf ebenfalls — sie fuehrt alle Figuren.
@@ -68,6 +78,7 @@ describe("Der Geldzähler", () => {
     // Zwei Leute kaufen gleichzeitig. Ein `+5`-Befehl waere bequemer und wuerde den Verlust
     // verstecken; die erwartete Fassung macht ihn sichtbar.
     const f = await fixture();
+    await f.geld.einheitSetzen(gm, f.campaign, { name: "Silbertaler", expectedVersion: 0 });
     await f.geld.setzen(f.spieler, f.campaign, f.actorId, { betrag: 100, expectedVersion: 0 });
     await f.geld.setzen(gm, f.campaign, f.actorId, { betrag: 80, expectedVersion: 1 });
     await expect(f.geld.setzen(f.spieler, f.campaign, f.actorId, { betrag: 90, expectedVersion: 1 })).rejects.toBeInstanceOf(Conflict);
@@ -76,6 +87,7 @@ describe("Der Geldzähler", () => {
 
   it("kennt keine Schulden und keine krummen Beträge", async () => {
     const f = await fixture();
+    await f.geld.einheitSetzen(gm, f.campaign, { name: "Silbertaler", expectedVersion: 0 });
     for (const betrag of [-1, 1.5, Number.NaN, Number.MAX_VALUE])
       await expect(f.geld.setzen(f.spieler, f.campaign, f.actorId, { betrag, expectedVersion: 0 })).rejects.toBeInstanceOf(Conflict);
     expect((await f.geld.bestand(f.spieler, f.campaign, f.actorId)).version).toBe(0);
@@ -85,6 +97,7 @@ describe("Der Geldzähler", () => {
 
   it("gibt der Spielleitung den Überblick, der Runde nicht", async () => {
     const f = await fixture();
+    await f.geld.einheitSetzen(gm, f.campaign, { name: "Silbertaler", expectedVersion: 0 });
     await f.geld.setzen(f.spieler, f.campaign, f.actorId, { betrag: 12, expectedVersion: 0 });
     await f.geld.setzen(f.fremd, f.campaign, f.fremdActor, { betrag: 7, expectedVersion: 0 });
     expect((await f.geld.alle(gm, f.campaign)).map(s => s.betrag).sort((a, b) => a - b)).toEqual([7, 12]);

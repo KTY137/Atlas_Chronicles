@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, CircleAlert, Download, ImageOff, ShieldQuestion, Trash2, Upload } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, assetPath, errorText, type WikiAsset, type WikiMedienBestand } from "../api";
@@ -33,7 +33,7 @@ const groesse = (bytes: number | null): string =>
 
 interface Fortschritt { geholt: number; gesamt: number; fehler: number; laeuft: boolean; aktuell: string }
 
-export function WikiMedien({ campaignId, onClose }: { campaignId: string; onClose: () => void }) {
+export function WikiMedien({ campaignId, onClose, closeLabel = "Zur Chronik", embedded = false, onDirty }: { campaignId: string; onClose: () => void; closeLabel?: string; embedded?: boolean; onDirty?: (dirty: boolean) => void }) {
   const task = useTask();
   const [revision, setRevision] = useState(0);
   const [fortschritt, setFortschritt] = useState<Fortschritt | null>(null);
@@ -48,6 +48,8 @@ export function WikiMedien({ campaignId, onClose }: { campaignId: string; onClos
   const dateiFeld = useRef<HTMLInputElement>(null);
   const nachreichung = useRef<HTMLInputElement>(null);
   const nachreichungZiel = useRef<WikiAsset | null>(null);
+  useEffect(() => { onDirty?.(!!datei || task.busy); }, [datei, task.busy, onDirty]);
+  useEffect(() => () => { abbruch.current?.abort(); onDirty?.(false); }, [onDirty]);
 
   /**
    * Der eine Byteweg. Ob die Datei aus dem Quell-Wiki geholt oder von der Festplatte gewählt
@@ -151,11 +153,11 @@ export function WikiMedien({ campaignId, onClose }: { campaignId: string; onClos
   const sichtbar = nurOffene ? alle.filter((asset) => !asset.vorhanden) : alle;
   const bilanz = bestand.data?.bilanz;
 
-  return <section className="import-view">
-    <div className="document-toolbar"><Button variant="quiet" onClick={onClose}><ArrowLeft size={16} /> Zur Chronik</Button><span>Bilder der Chronik</span></div>
+  return <section className={`import-view${embedded ? " medien-embedded" : ""}`}>
+    <div className="document-toolbar"><Button variant="quiet" onClick={onClose}><ArrowLeft size={16} /> {closeLabel}</Button><span>Bilder der Chronik</span></div>
     <div className="import-content">
-      <p className="eyebrow">Was eure Welt zeigt</p><h1>Bilder mit belegter Herkunft.</h1>
-      <p className="muted">Jede Datei, die eure Artikel zeigen, mit Uploader, Quelladresse und Lizenzstand. Was das Quell-Wiki über eine Lizenz nicht weiß, steht hier als „unbekannt“ — und nicht als frei.</p>
+      <p className="eyebrow">Bilder für eure Welt</p>{embedded ? <h2>Bilder hochladen & verwalten</h2> : <h1>Bilder hochladen & verwalten</h1>}
+      <p className="muted">Lade Bilder für Lootkarten und Artikel hoch. Im Bestand findest du eure Dateien, ihre Herkunft und den Lizenzstand.</p>
       {task.error ? <Notice error>{task.error}</Notice> : null}
       {bestand.error ? <Notice error>{bestand.error} <Button variant="quiet" onClick={() => setRevision((v) => v + 1)}>Erneut versuchen</Button></Notice> : null}
       {bestand.loading && !bestand.data ? <Loading text="Bildbestand wird geladen …" /> : <>
@@ -164,7 +166,7 @@ export function WikiMedien({ campaignId, onClose }: { campaignId: string; onClos
             bisher gar keine Möglichkeit, ein eigenes Bild in die Kampagne zu bekommen. */}
         <section className="panel">
           <div className="section-heading"><h2><Upload size={18} /> Eigenes Bild hochladen</h2></div>
-          <p className="field-help">PNG, JPEG, WebP oder GIF, bis 24 MB. Was hier liegt, kannst du als Bild einer Lootkarte wählen — und wer die Karte im Inventar hat, sieht es. Typ und Maße bestimmt der Server aus der Datei selbst; die Endung im Namen ist nur Beschriftung.</p>
+          <p className="field-help">PNG, JPEG, WebP oder GIF, bis 24 MB. Nach dem Hochladen kannst du das Bild auf einer Lootkarte auswählen. Wer die Karte im Inventar hat, sieht auch ihr Bild.</p>
           <div className="medien-upload">
             <label>Bilddatei<input ref={dateiFeld} type="file" accept={BILDTYPEN} disabled={task.busy}
               onChange={(event) => gewaehlt(event.target.files?.[0] ?? null)} /></label>

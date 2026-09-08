@@ -35,3 +35,44 @@
 
 /* Die Inventarauswahl steht in der Kopfzeile, nicht als Knopfpaar: es sind mehr als zwei. */
 .inventar-wahl { width: 15rem; max-width: 100%; margin: 0; }
+
+/* Vorlagenbibliothek und Editor teilen sich dieselbe Darstellung am Tisch und in der Schmiede. */
+.actor-forge-entry { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: var(--radius); padding: 18px 20px; }
+.actor-forge-entry strong { font-size: 13px; }.actor-forge-entry p { margin: 6px 0 0; }
+.actor-template-workspace { grid-template-columns: minmax(190px, 240px) minmax(0, 1fr); gap: 22px; }
+.actor-template-library { position: sticky; top: 18px; }
+.actor-template-library h2 { font: 500 21px/1.3 var(--font-display); margin: 0; }
+.actor-template-library .actor-object-list { max-height: 55vh; overflow-y: auto; }
+.actor-template-library .actor-object-list li, .actor-template-library .actor-object-list button { width: 100%; }
+.actor-template-library .actor-object-list button { display: grid; justify-content: start; gap: 5px; padding: 12px; }
+.actor-workbench .actor-template-library .actor-object-list button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.actor-template-library small { color: var(--text-muted); font-size: 10px; font-weight: 400; }
+.actor-workbench label { display: grid; gap: 7px; min-width: 0; font-size: 12px; }
+.actor-workbench input, .actor-workbench select, .actor-workbench textarea { width: 100%; max-width: 100%; min-width: 0; }
+.actor-workbench .check-label { display: flex; align-items: center; }.actor-workbench input[type="checkbox"] { width: auto; }
+.actor-workbench .button { white-space: normal; overflow-wrap: anywhere; }
+.actor-workbench :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.actor-workbench .field-help { line-height: 1.7; }
+.actor-optional { border-top: 1px solid var(--line); margin: 5px 0; padding-top: 8px; min-width: 0; }
+.actor-optional > summary { cursor: pointer; color: var(--accent); font-size: 12px; padding: 10px 0; line-height: 1.5; }
+.actor-optional > label { margin: 12px 0; }
+.actor-workbench .actor-optional fieldset { border: 0; padding: 8px 0; margin: 0; }
+.actor-empty-hint { padding: 20px; border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--accent-soft); }
+.actor-empty-hint p { font-size: 12px; color: var(--text-muted); line-height: 1.7; margin: 0 0 14px; }
+.loot-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 235px); gap: 22px; align-items: start; min-width: 0; }
+.loot-template-form h2 { margin: 0; font: 500 24px/1.3 var(--font-display); }
+.loot-basic-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.loot-value-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.loot-live-preview { position: sticky; top: 18px; min-width: 0; padding: 20px 16px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); }
+.loot-live-preview h3 { margin: 0; font: 500 21px/1.3 var(--font-display); }
+.loot-live-preview > .lootkarte { width: 100%; margin: 18px 0; box-sizing: border-box; }
+.loot-live-preview .lootkarte-kopf { flex-wrap: wrap; }
+.loot-live-preview .lootkarte-zeilen > div { flex-wrap: wrap; }
+.loot-live-preview > p { margin: 8px 0 0; font-size: 11px; }
+.loot-save-actions { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 8px; }
+.loot-save-actions > .button { width: 100%; }
+.loot-media-editor { min-width: 0; }.loot-media-editor .import-content { padding: 20px 0 0; }.loot-media-editor .document-toolbar { padding: 0 0 12px; }
+.inventory-create h3, .inventory-create .field-help { grid-column: 1 / -1; margin: 0; }
+@media (max-width: 1200px) { .actor-template-workspace { grid-template-columns: minmax(0, 1fr); }.actor-template-library { position: static; }.actor-template-library .actor-object-list { max-height: 230px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
+@media (max-width: 720px) { .loot-editor-layout { grid-template-columns: minmax(0, 1fr); }.loot-live-preview { position: static; max-width: 320px; width: 100%; justify-self: center; box-sizing: border-box; }.loot-value-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }.loot-value-row > .button { grid-column: 1 / -1; justify-self: start; }.actor-forge-entry { padding: 16px; } }
+@media (max-width: 440px) { .loot-basic-fields { grid-template-columns: minmax(0, 1fr); }.actor-template-library .actor-object-list { grid-template-columns: minmax(0, 1fr); } }

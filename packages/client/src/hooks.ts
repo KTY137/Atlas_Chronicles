@@ -56,12 +56,14 @@ export function frischeAuswahl(bekannt: ReadonlySet<string> | null, ids: readonl
 }
 
 /** Welche dieser Karten sind gerade neu dazugekommen? Siehe {@link frischeAuswahl}. */
-export function useFrischeKarten(ids: readonly string[]): ReadonlySet<string> {
+export function useFrischeKarten(ids: readonly string[] | null): ReadonlySet<string> {
   const [frisch, setFrisch] = useState<ReadonlySet<string>>(() => new Set<string>());
   const bekannt = useRef<ReadonlySet<string> | null>(null);
   // Wurfkennungen sind UUIDs; das Komma kommt darin nicht vor und trennt daher eindeutig.
-  const schluessel = ids.join(",");
+  const schluessel = ids?.join(",") ?? null;
   useEffect(() => {
+    // Noch nicht geladen ist kein leerer Bestand. Erst eine erlaubte Antwort setzt die Basis.
+    if (schluessel === null) return;
     const stand = frischeAuswahl(bekannt.current, schluessel ? schluessel.split(",") : []);
     bekannt.current = stand.bekannt;
     if (stand.frisch.length) setFrisch(new Set(stand.frisch));
