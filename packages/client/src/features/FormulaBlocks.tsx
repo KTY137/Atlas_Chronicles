@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useId, type ReactElement } from "react";
 import { RULE_LIMITS } from "@chronicle/rules";
-import { FUNCTION_HELP, typeWord, type FormulaOptions, type FormulaSources } from "./formula-sugar";
+import { FUNCTION_HELP, memberOptionLabel, memberUnusable, type FormulaOptions, type FormulaSources } from "./formula-sugar";
 import { literalDraft, type FormulaDraft } from "./rule-forge-model";
 
 export type BlockKind = "number" | "text" | "boolean" | "attribute" | "parameter" | "dice" | "calc" | "compare" | "negate" | "if" | "function";
@@ -47,7 +47,7 @@ function Block({ value, onChange, onRemove, sources, options, disabled, label, d
       ? <select aria-label={label} value={value.value} disabled={disabled} onChange={event => onChange({ ...value, value: event.target.value })}><option value="true">wahr</option><option value="false">falsch</option></select>
       : <input aria-label={label} type={value.type === "number" ? "number" : "text"} step="any" size={Math.max(3, value.value.length)} value={value.value} disabled={disabled} onChange={event => onChange({ ...value, value: event.target.value })} />; break;
     case "field": { const members = sources[value.source], found = members.find(m => m.id === value.field);
-      body = <select aria-label={label} value={value.field} disabled={disabled} onChange={event => onChange({ ...value, field: event.target.value })}>{!found ? <option value={value.field}>{value.field ? `${value.field} (gibt es nicht mehr)` : "wählen …"}</option> : null}{members.map(m => <option key={m.id} value={m.id}>{m.label} · {typeWord(m.type)}</option>)}</select>; break; }
+      body = <select aria-label={label} value={value.field} disabled={disabled} onChange={event => onChange({ ...value, field: event.target.value })}>{!found ? <option value={value.field}>{value.field ? `${value.field} (gibt es nicht mehr)` : "wählen …"}</option> : null}{members.map(m => <option key={m.id} value={m.id} disabled={memberUnusable(m)}>{memberOptionLabel(m)}</option>)}</select>; break; }
     case "dice": body = <span className="ff-dice"><input aria-label="Anzahl Würfel" type="number" min={1} max={RULE_LIMITS.dice} value={value.count} disabled={disabled} onChange={event => onChange({ ...value, count: event.target.value })} /><span>d</span><input aria-label="Seiten je Würfel" type="number" min={2} max={RULE_LIMITS.sides} value={value.sides} disabled={disabled} onChange={event => onChange({ ...value, sides: event.target.value })} />
       <select aria-label="Welche Würfel zählen" value={value.keep} disabled={disabled} onChange={event => onChange({ ...value, keep: event.target.value as typeof value.keep })}><option value="none">alle zählen</option><option value="highest">höchste behalten</option><option value="lowest">niedrigste behalten</option></select>
       {value.keep !== "none" ? <input aria-label="Wie viele behalten" type="number" min={1} max={RULE_LIMITS.dice} value={value.keepCount} disabled={disabled} onChange={event => onChange({ ...value, keepCount: event.target.value })} /> : null}

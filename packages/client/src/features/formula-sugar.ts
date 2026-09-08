@@ -28,6 +28,12 @@ const DICE_SUGGESTIONS: readonly { insert: string; title: string }[] = [
   { insert: "2d20kh1", title: "zwei W20, den höheren behalten" }, { insert: "2d20kl1", title: "zwei W20, den niedrigeren behalten" }, { insert: "1d6!3", title: "W6, bei 6 bis zu dreimal weiterwürfeln" },
 ];
 export const typeWord = (type: FormulaType): string => type === "number" ? "Zahl" : type === "boolean" ? "Ja/Nein" : "Text";
+/** A hyphenated id parses fine as a `DraftField.id` but not inside a formula (`actor.erste-hilfe`
+ * is not a valid identifier there). The line's completion already refuses to insert these with an
+ * explanatory note; the Blocks and Graph <select> views need the same refusal so such a member
+ * cannot be chosen from those views either. */
+export const memberUnusable = (m: FormulaMember): boolean => m.id.includes("-");
+export const memberOptionLabel = (m: FormulaMember): string => memberUnusable(m) ? `${m.id} · Bindestrich in Formeln nicht möglich` : `${m.label} · ${typeWord(m.type)}`;
 export const fieldTypesOf = (sources: FormulaSources): FormulaFieldTypes => ({ actor: Object.fromEntries(sources.actor.map(m => [m.id, m.type])), input: Object.fromEntries(sources.input.map(m => [m.id, m.type])) });
 
 /** `@x` → `actor.x`, `?x` → `input.x` outside strings, with a position map from canonical to typed text. */

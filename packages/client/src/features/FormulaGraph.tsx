@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Formula } from "@chronicle/rules";
-import { FUNCTION_HELP, typeWord, type FormulaOptions, type FormulaSources } from "./formula-sugar";
+import { FUNCTION_HELP, memberOptionLabel, memberUnusable, typeWord, type FormulaOptions, type FormulaSources } from "./formula-sugar";
 import { formulaGraph, moveSubtree, nodeAt, removeAt, replaceAt, wrapAt, GAP_X, NODE_HEIGHT, NODE_WIDTH, type GraphNode, type NodePath } from "./formula-graph-model";
 import { blockFor, blockKinds, type BlockKind } from "./FormulaBlocks";
 import { compileFormula } from "./rule-forge-model";
@@ -23,6 +23,25 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
     try { edit(moveSubtree(ast, dragging, target.path)); } catch { /* moving a part into itself is refused; nothing changes */ }
     setDragging(null);
   };
+  // Pointer capture (set on pointerdown, below) routes every subsequent pointer event for this
+  // drag back to the port that started it, no matter where the pointer is released — so this one
+  // handler both completes a drop onto a node and clears a stale drag released anywhere else
+  // (empty canvas, outside the graph entirely).
+  const release = (event: { pointerId: number; clientX: number; clientY: number; currentTarget: Element }) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!dragging) return;
+    const under = document.elementFromPoint(event.clientX, event.clientY);
+    const nodeEl = under?.closest<HTMLElement>("[data-node-id]");
+    const target = nodeEl ? byId.get(nodeEl.dataset.nodeId!) : undefined;
+    if (target) drop(target); else setDragging(null);
+  };
+  // The hint promises Escape aborts a drag; make that true.
+  useEffect(() => {
+    if (!dragging) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setDragging(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dragging]);
   const path = (edge: { from: string; to: string; slot: number }) => {
     const from = byId.get(edge.from)!, to = byId.get(edge.to)!;
     const x1 = from.x + NODE_WIDTH, y1 = from.y + NODE_HEIGHT / 2, x2 = to.x, y2 = to.y + 14 + edge.slot * 12;
@@ -47,6 +66,7 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
         {graph.nodes.map(node => (
           <div
             key={node.id}
+            data-node-id={node.id}
             className={`ff-node ff-node-${node.kind} ff-type-${node.type}${selected === node.id ? " is-selected" : ""}`}
             style={{ left: node.x, top: node.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
             role="button"
@@ -60,7 +80,6 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
                 setSelected(current => (current === node.id ? null : node.id));
               }
             }}
-            onPointerUp={() => drop(node)}
           >
             <strong>{node.label}</strong>
             <small>{node.detail}</small>
@@ -74,8 +93,11 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
                 onPointerDown={event => {
                   if (locked) return;
                   event.stopPropagation();
+                  event.currentTarget.setPointerCapture(event.pointerId);
                   setDragging(node.path);
                 }}
+                onPointerUp={release}
+                onPointerCancel={release}
               />
             ) : null}
           </div>
@@ -118,7 +140,7 @@ function NodeEditor({
         <label>
           {current.source === "actor" ? "Attribut" : "Parameter"}
           <select value={current.field} onChange={event => onReplace({ ...current, field: event.target.value })}>
-            {sources[current.source].map(m => <option key={m.id} value={m.id}>{m.label} · {typeWord(m.type)}</option>)}
+            {sources[current.source].map(m => <option key={m.id} value={m.id} disabled={memberUnusable(m)}>{memberOptionLabel(m)}</option>)}
           </select>
         </label>
       ) : null}

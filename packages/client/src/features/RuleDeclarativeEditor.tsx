@@ -1,14 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import type { ComputedField, RuleAssertion, RuleAttribution, RuleOutcome, OutcomeComparison, RuleVital } from "@chronicle/rules";
 import { Button, Notice } from "@chronicle/ui";
 import { FormulaField } from "./FormulaField";
 import { sourcesFromDraft } from "./formula-sugar";
-import { moveItem, uniqueId, type RuleDraft, type DraftAction } from "./rule-forge-model";
+import { moveItem, uniqueId, type RuleDraft, type DraftAction, type DraftField } from "./rule-forge-model";
+
+/** A stable empty-array identity: an inline `?? []` fallback would be a fresh array (and thus a
+ * fresh `sources`/`example` downstream) on every render. */
+const NO_INPUTS: readonly DraftField[] = [];
 
 function ExpressionInput({ value, onChange, draft, action, label, help }: { value: string; onChange(value: string): void; draft: RuleDraft; action?: DraftAction; label: string; help?: string }) {
-  return <FormulaField label={label} help={help} value={value} onChange={onChange} sources={sourcesFromDraft(draft.fields, action?.inputs ?? [])} fields={draft.fields} inputs={action?.inputs ?? []} actionId={action?.id} allowDice={false} allowKnowledge={false} />;
+  const inputs = action?.inputs ?? NO_INPUTS;
+  // FormulaField memoises on `sources`/`example` identity; building this object fresh on every
+  // keystroke would re-parse and re-evaluate every mounted formula (H: memoisation must hold).
+  const sources = useMemo(() => sourcesFromDraft(draft.fields, inputs), [draft.fields, inputs]);
+  return <FormulaField label={label} help={help} value={value} onChange={onChange} sources={sources} fields={draft.fields} inputs={inputs} actionId={action?.id} allowDice={false} allowKnowledge={false} />;
 }
 function AssertionEditor({ values, draft, action, onChange, limit, title }: { values: readonly RuleAssertion[]; draft: RuleDraft; action?: DraftAction; onChange(values: readonly RuleAssertion[]): void; limit: number; title: string }) {
   const update = (index: number, patch: Partial<RuleAssertion>) => onChange(values.map((value, i) => i === index ? { ...value, ...patch } : value));
@@ -21,9 +29,9 @@ function AssertionEditor({ values, draft, action, onChange, limit, title }: { va
 /**
  * Die Balken der Runde: welche Zahlen auf dem Bogen steigen und fallen — Leben, Mana, Ausdauer.
  *
- * **Das Feld wird gewählt, nicht getippt.** Ein Vitalwert zeigt auf ein vorhandenes Zahlenfeld;
- * ein Textfeld hätte keinen Stand, und ein erfundener Name keinen Wert. Was der Parser ohnehin
- * ablehnt, soll hier gar nicht erst eingebbar sein.
+ * **Das Attribut wird gewählt, nicht getippt.** Ein Vitalwert zeigt auf ein vorhandenes
+ * Zahlenattribut; ein Textattribut hätte keinen Stand, und ein erfundener Name keinen Wert. Was
+ * der Parser ohnehin ablehnt, soll hier gar nicht erst eingebbar sein.
  *
  * **Erschöpfung ist eine Entscheidung, keine Voreinstellung.** Nur wer „Niederlage" wählt, macht
  * aus einer leeren Leiste einen Zustand am Tisch — genau die Verwechslung, die das Regelpaket
@@ -31,17 +39,17 @@ function AssertionEditor({ values, draft, action, onChange, limit, title }: { va
  */
 function VitalEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: RuleDraft): void }) {
   const vitals = draft.vitals ?? [];
-  const zahlenfelder = draft.fields.filter(field => field.type === "integer" || field.type === "number");
+  const zahlenattribute = draft.fields.filter(field => field.type === "integer" || field.type === "number");
   const update = (index: number, patch: Partial<RuleVital>) =>
     onChange({ ...draft, vitals: vitals.map((value, i) => i === index ? { ...value, ...patch } : value) });
-  const frei = zahlenfelder.filter(field => !vitals.some(vital => vital.id === field.id));
+  const frei = zahlenattribute.filter(field => !vitals.some(vital => vital.id === field.id));
   return <section><h3>Balken der Figur</h3>
-    <p className="rf-help">Leben, Mana, Ausdauer: eine Zahl auf dem Bogen, ein Höchststand und die Frage, was Erschöpfung bedeutet. Nur Zahlenfelder können Balken tragen.</p>
-    {!zahlenfelder.length ? <Notice>Dieses Regelwerk hat noch kein Zahlenfeld. Lege zuerst eines an — ein Balken braucht eine Zahl, die steigt und fällt.</Notice> : null}
+    <p className="rf-help">Leben, Mana, Ausdauer: eine Zahl auf dem Bogen, ein Höchststand und die Frage, was Erschöpfung bedeutet. Nur Zahlenattribute können Balken tragen.</p>
+    {!zahlenattribute.length ? <Notice>Dieses Regelwerk hat noch kein Zahlenattribut. Lege zuerst eines an — ein Balken braucht eine Zahl, die steigt und fällt.</Notice> : null}
     {vitals.map((vital, i) => <fieldset className="rf-card" key={i}><legend>{vital.label || `Balken ${i + 1}`}</legend>
       <div className="rf-form-grid">
-        <label>Feld auf dem Bogen<select value={vital.id} onChange={e => update(i, { id: e.target.value })}>
-          {zahlenfelder.map(field => <option key={field.id} value={field.id}>{field.label || field.id}</option>)}
+        <label>Attribut auf dem Bogen<select value={vital.id} onChange={e => update(i, { id: e.target.value })}>
+          {zahlenattribute.map(field => <option key={field.id} value={field.id}>{field.label || field.id}</option>)}
         </select></label>
         <label>Beschriftung<input value={vital.label} maxLength={120} onChange={e => update(i, { label: e.target.value })} /></label>
       </div>
@@ -55,8 +63,8 @@ function VitalEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: Ru
     <Button disabled={vitals.length >= 8 || !frei.length} onClick={() => onChange({ ...draft, vitals: [...vitals, {
       id: frei[0]!.id, label: frei[0]!.label || frei[0]!.id, max: String(frei[0]!.maximum || "100"), depletion: "none",
     }] })}>Balken hinzufügen</Button>
-    {/* `zahlenfelder.length && …` haette bei null Feldern die Ziffer 0 auf die Seite gerendert. */}
-    {zahlenfelder.length > 0 && !frei.length && vitals.length < 8 ? <p className="rf-help">Jedes Zahlenfeld trägt höchstens einen Balken; für einen weiteren braucht es ein weiteres Feld.</p> : null}
+    {/* `zahlenattribute.length && …` haette bei null Attributen die Ziffer 0 auf die Seite gerendert. */}
+    {zahlenattribute.length > 0 && !frei.length && vitals.length < 8 ? <p className="rf-help">Jedes Zahlenattribut trägt höchstens einen Balken; für ein weiteres braucht es ein weiteres Attribut.</p> : null}
   </section>;
 }
 export function RuleDeclarativeEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: RuleDraft): void }) {

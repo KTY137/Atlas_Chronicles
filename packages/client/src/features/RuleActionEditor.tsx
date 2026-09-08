@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "@chronicle/ui";
 import { RULE_LIMITS } from "@chronicle/rules";
@@ -8,11 +8,19 @@ import { FormulaField } from "./FormulaField";
 import { sourcesFromDraft } from "./formula-sugar";
 import { RuleActionExtensions } from "./RuleDeclarativeEditor";
 import { FieldList } from "./RuleFieldList";
-import { draftExpression, moveItem, newAction, type DraftAction, type RuleDraft } from "./rule-forge-model";
+import { draftExpression, moveItem, newAction, type DraftAction, type DraftField, type RuleDraft } from "./rule-forge-model";
+
+/** A stable empty-array identity: an inline `?? []` fallback would be a fresh array (and thus a
+ * fresh `sources`/`example` downstream) on every render. */
+const NO_INPUTS: readonly DraftField[] = [];
 
 export function RuleActionEditor({ draft, disabled, onChange }: { draft: RuleDraft; disabled: boolean; onChange(actions: DraftAction[]): void }) {
   const [selected, setSelected] = useState(""), [query, setQuery] = useState("");
   const action = draft.actions.find(a => a.localId === selected) ?? draft.actions[0];
+  const inputs = action?.inputs ?? NO_INPUTS;
+  // FormulaField memoises on `sources`/`example` identity; building this object fresh on every
+  // keystroke would re-parse and re-evaluate every mounted formula (H: memoisation must hold).
+  const sources = useMemo(() => sourcesFromDraft(draft.fields, inputs), [draft.fields, inputs]);
   const update = (next: DraftAction) => onChange(draft.actions.map(a => a.localId === next.localId ? next : a));
   const shown = draft.actions.filter(a => !query.trim() || `${a.name} ${a.id}`.toLocaleLowerCase("de").includes(query.trim().toLocaleLowerCase("de")));
   const index = action ? draft.actions.indexOf(action) : -1;
@@ -30,7 +38,7 @@ export function RuleActionEditor({ draft, disabled, onChange }: { draft: RuleDra
       <h5>Parameter</h5><p className="rf-help">Was beim Würfeln abgefragt wird, zum Beispiel ein Bonus. In der Formel als ?kennung.</p>
       <FieldList title="Parameter" fields={action.inputs} onChange={inputs => update({ ...action, inputs })} compact />
       <h5>Ergebnis</h5>
-      <FormulaField label="Ergebnis" help="Der Wurf mit allen Zuschlägen, zum Beispiel 1d20 + @geschick + ?bonus." value={draftExpression(action)} onChange={expression => update({ ...action, expression })} sources={sourcesFromDraft(draft.fields, action.inputs)} fields={draft.fields} inputs={action.inputs} actionId={action.id} allowDice allowKnowledge />
+      <FormulaField label="Ergebnis" help="Der Wurf mit allen Zuschlägen, zum Beispiel 1d20 + @geschick + ?bonus." value={draftExpression(action)} onChange={expression => update({ ...action, expression })} sources={sources} fields={draft.fields} inputs={inputs} actionId={action.id} allowDice allowKnowledge />
       <h5>Erfolg</h5>
       <label className="rf-check"><input type="checkbox" disabled={!!action.outcome} checked={action.thresholdEnabled} onChange={event => update({ ...action, thresholdEnabled: event.target.checked })} />Feste Erfolgsschwelle verwenden</label>
       {action.thresholdEnabled ? <label>Erfolg ab Ergebnis<input type="number" value={action.threshold} step="any" onChange={event => update({ ...action, threshold: event.target.value })} /><small>Das Ergebnis mit allen Zuschlägen muss mindestens diese Zahl erreichen, zum Beispiel 15 bei einem W20.</small></label> : null}

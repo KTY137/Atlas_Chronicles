@@ -58,8 +58,31 @@ test("typing a formula with suggestions, plain errors, three views, install and 
     await editor.getByRole("group", { name: "Ergebnis", exact: true }).getByRole("combobox", { name: "Rechenzeichen", exact: true }).selectOption("*");
     await expect(formula).toHaveValue("1d20 * @insight");
     await gm.getByRole("button", { name: "Knoten", exact: true }).click();
-    await expect(gm.getByRole("group", { name: "Formel als Knotennetz", exact: true }).getByRole("button", { name: /Geschick|insight|Scharfsinn/ })).toBeVisible();
+    const graphGroup = gm.getByRole("group", { name: "Formel als Knotennetz", exact: true });
+    await expect(graphGroup.getByRole("button", { name: /Geschick|insight|Scharfsinn/ })).toBeVisible();
+    // A stale drag (finding 1): start dragging from the attribute node's port, release far outside
+    // the graph (not on any node), then click a node. Without the pointer-capture fix this leaves
+    // `dragging` set and the click above silently runs moveSubtree, rewriting the formula.
+    const dragPort = graphGroup.getByRole("button", { name: /insight|Scharfsinn/ }).locator(".ff-port-out");
+    const portBox = await dragPort.boundingBox();
+    if (!portBox) throw new Error("drag port not found");
+    await gm.mouse.move(portBox.x + portBox.width / 2, portBox.y + portBox.height / 2);
+    await gm.mouse.down();
+    await gm.mouse.move(4, 4);
+    await gm.mouse.up();
+    await graphGroup.getByRole("button", { name: /Rechnung$/ }).click();
+    await expect(formula).toHaveValue("1d20 * @insight");
     await gm.getByRole("button", { name: "Zeile", exact: true }).click();
+    // The coloured overlay must scroll together with the input once the formula is wider than the
+    // field (finding 2); otherwise typing continues at what still looks like the start.
+    await formula.fill("1d20 + @insight + @insight + @insight + @insight + @insight + @insight + @insight");
+    await formula.press("End");
+    await expect.poll(() => editor.evaluate(container => container.querySelector<HTMLInputElement>(".ff-line-input")!.scrollLeft)).toBeGreaterThan(0);
+    const [inputScroll, overlayScroll] = await editor.evaluate(container => {
+      const input = container.querySelector<HTMLInputElement>(".ff-line-input")!, overlay = container.querySelector<HTMLElement>(".ff-line-overlay")!;
+      return [input.scrollLeft, overlay.scrollLeft];
+    });
+    expect(overlayScroll).toBe(inputScroll);
     await formula.fill("1d20 + @insight");
     const install = gm.waitForResponse(r => r.url() === `${base}/rules` && r.request().method() === "POST");
     await gm.getByRole("button", { name: "Version installieren", exact: true }).click(); expect((await install).status()).toBe(200);

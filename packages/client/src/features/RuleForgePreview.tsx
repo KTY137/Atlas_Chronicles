@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, TestTubeDiagonal, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
 import { evaluateSupportedAction as evaluateAction, RULE_LIMITS, HTBAH_EXAMPLE_CHARACTERS, type AnyActionResult as ActionResult, type Experience, type AnyRulePackage as RulePackage, type RuleAction, type RuleActionV2, type Scalar } from "@chronicle/rules";
@@ -27,9 +27,19 @@ export function RuleForgePreview({ pkg, onFigure, onSaveTest }: { pkg: RulePacka
   const update = (id: string, change: Partial<Fixture>) => setFixtures(items => items.map(f => f.id === id ? { ...f, ...change } : f));
   const addFixture = () => setFixtures(items => items.length >= MAX_FIXTURES ? items : [...items, { id: localKey(), name: `Testfigur ${items.length + 1}`, values: {}, inputs: {}, passages: [] }]);
   const removeFixture = (id: string) => setFixtures(items => items.length > 2 ? items.filter(f => f.id !== id) : items);
+  // `pkg` gets a fresh identity on every draft edit, and this effect would otherwise hand
+  // `onFigure` a fresh object on every keystroke — which every mounted FormulaField reads via
+  // context to build its example, invalidating that memo and re-parsing/re-evaluating every
+  // formula on the "Abgeleitet" tab per keystroke. Only call back when the figure's *content*
+  // actually changed.
+  const lastFigure = useRef<string | null>(null);
   useEffect(() => {
     const first = fixtures[0];
-    onFigure?.(pkg && first ? { name: first.name, values: fixtureValues(pkg.fields, first.values), inputs: first.inputs, passages: first.passages.map(p => ({ passageId: p.passageId, labels: p.labels.split(",").map(s => s.trim()).filter(Boolean), experience: p.experience })) } : null);
+    const next = pkg && first ? { name: first.name, values: fixtureValues(pkg.fields, first.values), inputs: first.inputs, passages: first.passages.map(p => ({ passageId: p.passageId, labels: p.labels.split(",").map(s => s.trim()).filter(Boolean), experience: p.experience })) } : null;
+    const serialized = next ? JSON.stringify(next) : null;
+    if (serialized === lastFigure.current) return;
+    lastFigure.current = serialized;
+    onFigure?.(next);
   }, [fixtures, pkg, onFigure]);
   return <section className="rf-preview" aria-labelledby="rf-preview-title">
     <div className="rf-section-heading"><h2 id="rf-preview-title"><TestTubeDiagonal size={20} />Testtafel</h2><span className="rf-node-badge">Nur Beispiele</span></div>
