@@ -46,18 +46,30 @@ export function safeEnvironment(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     if (source[key]) result[key] = source[key];
   return result;
 }
-/** Dedicated operator settings cross only to the private application worker, never PostgreSQL. */
-export function hostEnvironment(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const result = safeEnvironment(source), configPath = source["CHRONICLE_CHRONIST_CONFIG"];
+/** A Chronist key never reaches a log, an error text, a descriptor or the renderer. */
+export function chronistKey(value: unknown): string {
+  const key = typeof value === "string" ? value.trim() : value;
+  if (typeof key !== "string" || key.length < 1 || key.length > 8192 || /[\x00-\x20\x7f]/.test(key))
+    return fail("chronist-key", "Der Chronist-Schlüssel ist leer, zu lang oder enthält unzulässige Zeichen.");
+  return key;
+}
+/** Dedicated operator settings cross only to the private application worker, never PostgreSQL.
+ *  An inherited operator file wins over the profile's own; only the operator's own file also
+ *  forwards operating-system key variables. The profile's decrypted key is authoritative and
+ *  replaces an inherited variable of that name. */
+export function hostEnvironment(source: NodeJS.ProcessEnv, chronist: { key?: string; configPath?: string } = {}): NodeJS.ProcessEnv {
+  const result = safeEnvironment(source), operator = source["CHRONICLE_CHRONIST_CONFIG"];
+  const configPath = operator || chronist.configPath;
   if (configPath) {
     if (!isAbsolute(configPath) || configPath.length > 4096 || /[\x00-\x1f\x7f]/.test(configPath))
       fail("chronist-config", "Für den Chronisten ist ein vollständiger Konfigurationspfad erforderlich.");
     result["CHRONICLE_CHRONIST_CONFIG"] = configPath;
-    for (const key of Object.keys(source)) if (/^CHRONICLE_CHRONIST_KEY_[A-Z0-9_]{1,96}$/.test(key)) {
+    if (operator) for (const key of Object.keys(source)) if (/^CHRONICLE_CHRONIST_KEY_[A-Z0-9_]{1,96}$/.test(key)) {
       const value = source[key];
       if (value && value.length <= 8192 && !/[\x00-\x1f\x7f]/.test(value)) result[key] = value;
     }
   }
+  if (chronist.key !== undefined) result["CHRONICLE_CHRONIST_KEY_ANTHROPIC"] = chronistKey(chronist.key);
   return result;
 }
 export function postgresCommandOwnsDirectory(commandLine: string, directory: string): boolean {
@@ -73,9 +85,11 @@ export type Command =
   | { kind: "restore-select"; name: string }
   | { kind: "restore-confirm"; ticket: string }
   | { kind: "recovery-restore"; recoveryId: string; name: string }
-  | { kind: "enroll"; campaignId: string; userId: string };
+  | { kind: "enroll"; campaignId: string; userId: string }
+  | { kind: "chronist-key"; profileId: string; action: "set"; value: string }
+  | { kind: "chronist-key"; profileId: string; action: "clear" };
 export function command(value: unknown): Command {
-  const v = object(value, ["kind", "name", "profileId", "origin", "ticket", "campaignId", "userId", "recoveryId"]);
+  const v = object(value, ["kind", "name", "profileId", "origin", "ticket", "campaignId", "userId", "recoveryId", "action", "value"]);
   const exact = (keys: string[]) => object(value, ["kind", ...keys]);
   switch (v["kind"]) {
     case "status": case "stop": case "open": case "backup": exact([]); return { kind: v["kind"] };
@@ -85,6 +99,17 @@ export function command(value: unknown): Command {
     case "restore-confirm": exact(["ticket"]); return { kind: "restore-confirm", ticket: profileId(v["ticket"]) };
     case "recovery-restore": exact(["recoveryId", "name"]); return { kind: "recovery-restore", recoveryId: profileId(v["recoveryId"]), name: label(v["name"]) };
     case "enroll": exact(["campaignId", "userId"]); return { kind: "enroll", campaignId: profileId(v["campaignId"]), userId: profileId(v["userId"]) };
+    case "chronist-key": {
+      // The key only ever travels inward. Removal carries no value at all.
+      exact(["profileId", "action", "value"]);
+      const id = profileId(v["profileId"]);
+      if (v["action"] === "clear") {
+        if ("value" in v) fail("chronist-key", "Zum Entfernen wird kein Schlüssel übergeben.");
+        return { kind: "chronist-key", profileId: id, action: "clear" };
+      }
+      if (v["action"] !== "set") return fail("invalid-request", "Unbekannte Verwaltungsaktion.");
+      return { kind: "chronist-key", profileId: id, action: "set", value: chronistKey(v["value"]) };
+    }
     default: return fail("invalid-request", "Unbekannte Verwaltungsaktion.");
   }
 }

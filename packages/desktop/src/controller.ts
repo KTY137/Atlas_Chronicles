@@ -21,7 +21,10 @@ export class HostController {
   private stopping = false;
   private pending = new Map<string, { kind: string; owned: OwnedProfile; expired: boolean; receipt?: SetupReceipt; resolve: (value: unknown) => void; reject: (error: Error) => void; timeout: NodeJS.Timeout }>();
   private responses: Promise<void> = Promise.resolve();
-  constructor(readonly store: ProfileStore, readonly assets: string, readonly runtime: string, readonly changed: () => void, readonly migrations: MigrationGuard) {}
+  /** `chronistHostOf` is injected like the migration guard: only Main holds a store that may
+   *  decrypt profile secrets, and the reader stays out of every status and error path. */
+  constructor(readonly store: ProfileStore, readonly assets: string, readonly runtime: string, readonly changed: () => void, readonly migrations: MigrationGuard,
+              private readonly chronistHostOf?: (profileId: string) => Promise<{ key?: string; configPath?: string }>) {}
   private transition(state: HostState) { this.state = state; this.changed(); }
   private rejectPending(message: string) {
     for (const [id, pending] of this.pending) { clearTimeout(pending.timeout); pending.reject(new DesktopError("host-lost", message)); if (!pending.receipt) this.pending.delete(id); }
@@ -65,7 +68,11 @@ export class HostController {
       await this.postgres.start();
       this.transition("checking-schema");
       await this.migrations.beforeSchema(this.owned, this.postgres);
-      const worker = utilityProcess.fork(join(this.assets, "worker.cjs"), [], { env: hostEnvironment(process.env), execArgv: [], stdio: "ignore", cwd: this.owned.directory, serviceName: "Atlas Chronicles Local Host" });
+      // The profile's Chronist key is decrypted once, here, together with its operator file,
+      // and exists only inside the private worker environment. Neither is retained on the
+      // controller, its status or its failure text.
+      const chronist = await this.chronistHostOf?.(this.owned.profile.id);
+      const worker = utilityProcess.fork(join(this.assets, "worker.cjs"), [], { env: hostEnvironment(process.env, chronist), execArgv: [], stdio: "ignore", cwd: this.owned.directory, serviceName: "Atlas Chronicles Local Host" });
       this.worker = worker;
       worker.on("message", (message: unknown) => {
         if (!message || typeof message !== "object") return;

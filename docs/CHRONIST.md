@@ -99,6 +99,34 @@ einem Millionstel der angegebenen Währung. Preise werden nur anhand gemeldeter 
 geschätzt; fehlende oder unvollständige Verbrauchsdaten bleiben als solche erkennbar.
 Die Konfiguration enthält keine automatisch gepflegte Preisliste.
 
+## Desktop
+
+Im Verwaltungsfenster des Desktops trägst du unter **Chronist-Schlüssel** je Welt einen
+Anthropic-Schlüssel ein. Er wird mit dem Windows-Geheimnisspeicher verschlüsselt als
+`chronist-key.dpapi` im Profil dieser Welt abgelegt, nie im Klartext. **Speichern** ersetzt
+einen vorhandenen Schlüssel, **Entfernen** löscht die Datei. Das Feld ist maskiert und wird
+vor dem Absenden geleert; der gespeicherte Wert wird nie zurückgegeben. Das Verwaltungsfenster
+zeigt ausschließlich, ob ein Schlüssel gesetzt ist.
+
+Beim ersten Start der Welt nach dem Speichern legt der Desktop im Profil einmalig die
+Betreiberdatei `chronist-providers.json` an: den lokalen Ollama-Endpunkt und den Anbieter
+`anthropic-messages-1` mit `apiKeyEnv: "CHRONICLE_CHRONIST_KEY_ANTHROPIC"`, Modell
+`claude-sonnet-5` und Tarif in USD-Micros je Million (Eingabe 2 000 000, Ausgabe 10 000 000).
+Die Datei enthält keinen Schlüssel und wird nie überschrieben; deine Änderungen bleiben also
+erhalten. Beim Start entschlüsselt der Desktop den Schlüssel und reicht ihn als
+`CHRONICLE_CHRONIST_KEY_ANTHROPIC` zusammen mit dem absoluten Pfad dieser Datei in
+`CHRONICLE_CHRONIST_CONFIG` allein an den privaten lokalen Host weiter; eine geerbte Variable
+gleichen Namens wird ersetzt. Ein selbst gesetztes `CHRONICLE_CHRONIST_CONFIG` hat Vorrang.
+
+Solange kein Schlüssel gespeichert ist, entsteht keine Datei und der Host erkennt lokale
+Ollama-Modelle wie bisher selbst. Mit Datei entfällt diese Erkennung: Trage deine
+installierten Modellnamen dann im Ollama-Eintrag der Datei ein, sonst bleibt dort der
+sichtbare Platzhalter „Kein lokales Modell eingerichtet". Ein Anbieter-, Schlüssel- oder
+Dateiwechsel verlangt einen Neustart der Welt: Ein laufender Host behält die Umgebung, mit
+der er gestartet wurde. Ohne verfügbaren Windows-Geheimnisspeicher wird nichts gespeichert;
+die Meldung ist dieselbe wie bei der Ersteinrichtung. Der Schlüssel erscheint nicht in
+Statusmeldungen, Fehlertexten, Logs, Deskriptoren, Kampagnenexports oder der Spieloberfläche.
+
 ## Unterbrechung und Sicherung
 
 Abbrechen stoppt neue Anfragen und verbucht bereits bekannte Ergebnisse. Bei einem

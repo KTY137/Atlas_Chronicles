@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomBytes } from "node:crypto";
-import { copyFile, mkdtemp, readFile, rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { expect, it } from "vitest";
 import { ProfileStore } from "../src/profiles.ts";
 
@@ -42,5 +43,75 @@ it("persists the first-login receipt privately and refuses cross-profile replay"
     await expect(store.readSetupReceipt(b.profile.id)).rejects.toThrow("diesem Profil");
     await store.clearSetupReceipt(a.profile.id, "different"); expect(await store.readSetupReceipt(a.profile.id)).toEqual(receipt);
     await store.clearSetupReceipt(a.profile.id, receipt.value); expect(await store.readSetupReceipt(a.profile.id)).toBeUndefined();
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+it("keeps the Chronist key encrypted inside its own profile and never in clear text", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "chronicle-chronist-key-test-")), values = new Map<string, string>();
+  const store = new ProfileStore(directory, {
+    available: () => true,
+    encrypt: text => { const cipher = randomBytes(96); values.set(cipher.toString("hex"), text); return cipher; },
+    decrypt: bytes => { const text = values.get(bytes.toString("hex")); if (!text) throw new Error("Unknown test ciphertext"); return text; },
+  });
+  const key = "synthetic-test-key-a4f2c9";
+  try {
+    const a = await store.create("Original"), b = await store.create("Different");
+    expect(await store.hasChronistKey(a.profile.id)).toBe(false);
+    expect(await store.readChronistKey(a.profile.id)).toBeUndefined();
+    await store.saveChronistKey(a.profile.id, key);
+    expect(await store.hasChronistKey(a.profile.id)).toBe(true);
+    expect(await store.readChronistKey(a.profile.id)).toBe(key);
+    const bytes = await readFile(join(a.directory, "chronist-key.dpapi"));
+    expect(bytes.includes(Buffer.from(key)), "Der Schlüssel darf nie im Klartext auf der Platte stehen").toBe(false);
+    expect((await readdir(a.directory)).filter(name => name.endsWith(".tmp"))).toEqual([]);
+    expect(await store.hasChronistKey(b.profile.id)).toBe(false);
+    await copyFile(join(a.directory, "chronist-key.dpapi"), join(b.directory, "chronist-key.dpapi"));
+    await expect(store.readChronistKey(b.profile.id)).rejects.toThrow("Profil");
+    await expect(store.saveChronistKey("22222222-2222-4222-8222-222222222222", key)).rejects.toThrow();
+    await expect(store.saveChronistKey("../../.local", key)).rejects.toThrow();
+    await store.clearChronistKey(a.profile.id);
+    expect(await store.hasChronistKey(a.profile.id)).toBe(false);
+    expect(await store.readChronistKey(a.profile.id)).toBeUndefined();
+    await store.clearChronistKey(a.profile.id);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+it("refuses to store a Chronist key without the Windows secret store", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "chronicle-chronist-key-off-")), id = "11111111-1111-4111-8111-111111111111";
+  const store = new ProfileStore(directory, { available: () => false, encrypt: () => { throw new Error("must not run"); }, decrypt: () => "" });
+  try {
+    await expect(store.saveChronistKey(id, "synthetic-test-key")).rejects.toThrow("Windows");
+    expect(await store.hasChronistKey(id)).toBe(false);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+it("writes its own operator file once beside a stored key and never rewrites or fills it with the key", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "chronicle-chronist-config-test-")), values = new Map<string, string>();
+  const store = new ProfileStore(directory, {
+    available: () => true,
+    encrypt: text => { const cipher = randomBytes(96); values.set(cipher.toString("hex"), text); return cipher; },
+    decrypt: bytes => { const text = values.get(bytes.toString("hex")); if (!text) throw new Error("Unknown test ciphertext"); return text; },
+  });
+  const key = "synthetic-test-key-9be21f";
+  try {
+    const owned = await store.create("Original"), file = join(owned.directory, "chronist-providers.json");
+    // Without a stored key nothing is configured: the host keeps its own Ollama discovery.
+    expect(await store.chronistHostConfig(owned.profile.id)).toEqual({});
+    expect(existsSync(file)).toBe(false);
+    await store.saveChronistKey(owned.profile.id, key);
+    expect(await store.chronistHostConfig(owned.profile.id)).toEqual({ key, configPath: file });
+    expect(isAbsolute(file)).toBe(true);
+    const written = await readFile(file, "utf8");
+    expect(written).not.toContain(key);
+    const settings = JSON.parse(written) as { schemaVersion: number; globalConcurrency: number; providers: Record<string, unknown>[] };
+    expect(settings.schemaVersion).toBe(1);
+    expect(settings.providers.map(provider => provider.profileId)).toEqual(["ollama-chat-1", "anthropic-messages-1"]);
+    expect(settings.providers[0]).toMatchObject({ id: "ollama", location: "lokal", baseUrl: "http://127.0.0.1:11434" });
+    expect(settings.providers[1]).toMatchObject({ id: "anthropic", location: "fremd", baseUrl: "https://api.anthropic.com/v1",
+      models: ["claude-sonnet-5"], apiKeyEnv: "CHRONICLE_CHRONIST_KEY_ANTHROPIC",
+      pricing: { currency: "USD", inputMicrosPerMillion: 2_000_000, outputMicrosPerMillion: 10_000_000 } });
+    expect(settings.providers.some(provider => "apiKey" in provider), "Die Betreiberdatei enthält nie einen Schlüssel").toBe(false);
+    // An operator may edit this file; a later start must leave it byte for byte alone.
+    const edited = `${written.replace("Kein lokales Modell eingerichtet", "mein-lokales-modell")}\n`;
+    await writeFile(file, edited);
+    expect(await store.chronistHostConfig(owned.profile.id)).toEqual({ key, configPath: file });
+    expect(await readFile(file, "utf8")).toBe(edited);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
