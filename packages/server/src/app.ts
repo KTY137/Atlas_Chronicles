@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import Fastify, { type FastifyRequest } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import staticFiles from "@fastify/static";
 import { timingSafeEqual } from "node:crypto";
@@ -31,6 +31,10 @@ import { registerKampfbuehne } from "./http/kampfbuehne.ts";
 import { registerErleichterungen } from "./http/erleichterungen.ts";
 import { registerGeld } from "./http/geld.ts";
 import { registerZeitleiste } from "./http/zeitleiste.ts";
+import { registerChronist } from "./http/chronist.ts";
+import type { ChronistRuntimeConfig } from "./domain/chronist/runtime.ts";
+import { createChronistRuntime } from "./chronist-providers/registry.ts";
+import { disableChronistTracing } from "./chronist-providers/tracing.ts";
 import { registerWikiMedien } from "./http/wiki-medien.ts";
 import { registerBundles } from "./http/bundles.ts";
 import { registerActors } from "./http/actors.ts";
@@ -44,8 +48,17 @@ import { registerOperator } from "./http/operator.ts";
 import { registerMetering } from "./http/metering.ts";
 import { AuthoringValidationError } from "./domain/authoring.ts";
 
-export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; publicDeliveryEnabled?: boolean }
+export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; publicDeliveryEnabled?: boolean; chronist?: ChronistRuntimeConfig }
+const chronistDrains = new WeakMap<FastifyInstance, () => Promise<void>>();
+/** Explicit shutdown boundary; unlike Fastify close hooks it is checked on every retry. */
+export async function drainAppChronist(app: FastifyInstance): Promise<void> {
+  const drain = chronistDrains.get(app);
+  if (!drain) throw new Error("Application drain boundary missing.");
+  await drain();
+}
 export async function buildApp(db: Db, config: AppConfig) {
+  disableChronistTracing();
+  config = { ...config, chronist: config.chronist ?? createChronistRuntime() };
   const app = Fastify({ logger: config.logger ?? false, bodyLimit: 2 * 1024 * 1024,
     ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   registerHttpLifecycle(app);
@@ -188,6 +201,19 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerErleichterungen(app, db, config);
   registerGeld(app, db, config);
   registerZeitleiste(app, db, config);
+  const chronistService = registerChronist(app, db, config);
+  let runtimeCleanup: Promise<void> | undefined;
+  const drainChronist = async () => {
+    // A CLI activation owns local helpers. Release them only after its graph calls drain,
+    // and retry a failed drain explicitly: Fastify does not replay failed close hooks.
+    await chronistService.close();
+    runtimeCleanup ??= Promise.resolve().then(() => config.chronist?.close?.()).catch(error => {
+      runtimeCleanup = undefined; throw error;
+    });
+    await runtimeCleanup;
+  };
+  app.addHook("onClose", drainChronist);
+  chronistDrains.set(app, drainChronist);
   registerWikiMedien(app, db, config);
   registerBundles(app, db, config);
   registerActors(app, db, config);

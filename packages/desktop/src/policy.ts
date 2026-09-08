@@ -46,6 +46,20 @@ export function safeEnvironment(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     if (source[key]) result[key] = source[key];
   return result;
 }
+/** Dedicated operator settings cross only to the private application worker, never PostgreSQL. */
+export function hostEnvironment(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const result = safeEnvironment(source), configPath = source["CHRONICLE_CHRONIST_CONFIG"];
+  if (configPath) {
+    if (!isAbsolute(configPath) || configPath.length > 4096 || /[\x00-\x1f\x7f]/.test(configPath))
+      fail("chronist-config", "Für den Chronisten ist ein vollständiger Konfigurationspfad erforderlich.");
+    result["CHRONICLE_CHRONIST_CONFIG"] = configPath;
+    for (const key of Object.keys(source)) if (/^CHRONICLE_CHRONIST_KEY_[A-Z0-9_]{1,96}$/.test(key)) {
+      const value = source[key];
+      if (value && value.length <= 8192 && !/[\x00-\x1f\x7f]/.test(value)) result[key] = value;
+    }
+  }
+  return result;
+}
 export function postgresCommandOwnsDirectory(commandLine: string, directory: string): boolean {
   const match = /(?:^|\s)-D\s+"([^"]+)"(?:\s|$)/.exec(commandLine);
   return !!match?.[1] && resolve(match[1]).toLowerCase() === resolve(directory).toLowerCase();

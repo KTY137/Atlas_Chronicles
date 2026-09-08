@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import {
-  CAMPAIGN_V15_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables,
+  CAMPAIGN_V16_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds,
   createCurrentCampaignBundle as createCampaignBundle, validateCurrentCampaignBundle as validateCampaignBundle,
   currentCampaignSemanticDiff as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, upgradeCampaignBundleV4,
-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV15 as CampaignTables,
-  type CampaignTableNameV15 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV16 as CampaignTables,
+  type ChronistRunRow,type ChronistProposalRow,
+  type CampaignTableNameV16 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -53,6 +54,7 @@ export const restoreOrder: readonly CampaignTableName[] = [
   // Zuletzt das Geld: die Einheit gehoert der Kampagne, die Boerse einer Figur — beide
   // stehen weiter oben.
   "geld_einheit", "geldbestand",
+  "chronist_laeufe", "chronist_vorschlaege",
 ];
 
 export class CampaignRestoreError extends Error {
@@ -61,7 +63,7 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15; migration?: CampaignMigrationChain;
+  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
   sourceVersion: 1 | 2 | 3 | 4; targetVersion: 4 | 5; sourceContentHash: string; targetContentHash: string;
@@ -154,6 +156,7 @@ async function collect(tx: Db, campaignId: string, universeId: string, exportedA
   const users = new Set<string>();
   for (const rows of Object.values(tables)) for (const row of rows) for (const [key, value] of Object.entries(row))
     if (identityColumns.has(key) && typeof value === "string") users.add(value);
+  for(const id of collectChronistIdentityIds(tables.chronist_laeufe as unknown as ChronistRunRow[],tables.chronist_vorschlaege as unknown as ChronistProposalRow[]))users.add(id);
   tables.users = (await tx.query<CampaignRow>('SELECT id,display_name,created_at::text AS created_at FROM users WHERE id=ANY($1::text[])', [[...users]])).rows;
   return createCampaignBundle({ campaignId, universeId, exportedAt, tables: tables as CampaignTables });
 }
@@ -242,6 +245,9 @@ export async function restoreCampaignBundle(db: Db, input: unknown, options: Cam
     await tx.query("SET CONSTRAINTS ALL IMMEDIATE");
     const reopened = await collect(tx, bundle.manifest.campaignId, bundle.manifest.universeId, bundle.manifest.exportedAt);
     if (campaignSemanticDiff(bundle, reopened).length) throw new CampaignRestoreError("Restored campaign differs from the supplied evidence; the transaction was rolled back.");
+    // Restored leases are history, never capabilities of this host. Immutable requests,
+    // calls, checkpoints and ACKs were checked above and remain byte-for-byte unchanged.
+    await tx.query("UPDATE chronist_laeufe SET lease_owner=NULL,lease_until=NULL,fence=fence+1");
     // ALTER IDENTITY RESTART is transactional, unlike setval. A failed restore
     // therefore cannot advance destination identity sequences outside its rollback.
     for (const [name, column] of [["lineage_events", "seq"], ["audit", "id"], ["access_incidents", "id"], ["map_lifecycle_events", "seq"]] as const) {

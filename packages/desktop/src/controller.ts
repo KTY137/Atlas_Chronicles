@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { utilityProcess, type UtilityProcess } from "electron";
-import { DesktopError, fail, safeEnvironment, type HostState } from "./policy.ts";
+import { DesktopError, fail, hostEnvironment, type HostState } from "./policy.ts";
 import { databaseUrlOf, originOf, ProfileStore, type OwnedProfile, type SetupReceipt } from "./profiles.ts";
 import { ManagedPostgres } from "./postgres.ts";
 
@@ -65,7 +65,7 @@ export class HostController {
       await this.postgres.start();
       this.transition("checking-schema");
       await this.migrations.beforeSchema(this.owned, this.postgres);
-      const worker = utilityProcess.fork(join(this.assets, "worker.cjs"), [], { env: safeEnvironment(process.env), execArgv: [], stdio: "ignore", cwd: this.owned.directory, serviceName: "Atlas Chronicles Local Host" });
+      const worker = utilityProcess.fork(join(this.assets, "worker.cjs"), [], { env: hostEnvironment(process.env), execArgv: [], stdio: "ignore", cwd: this.owned.directory, serviceName: "Atlas Chronicles Local Host" });
       this.worker = worker;
       worker.on("message", (message: unknown) => {
         if (!message || typeof message !== "object") return;

@@ -55,6 +55,7 @@ export const UMWEG: Readonly<Record<string, string>> = {
  * Kampagnenzugehörigkeit über `entry_id -> entries`, dieser Umweg muss also noch tragen.
  */
 export const LOESCHREIHENFOLGE: readonly string[] = [
+  "chronist_vorschlaege", "chronist_laeufe",
   // Blatt: zeigt auf beide Vollmacht-Tabellen, auf die niemand zurückzeigt.
   "zugangsvorfaelle",
   // Ebenfalls Blatt: die Beziehungskante zeigt auf Passage und Einträge, niemand zeigt auf sie.

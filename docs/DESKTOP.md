@@ -8,6 +8,12 @@ database. This is an implementation milestone, not the completed M8 release gate
 
 ## Build and run
 
+Chronist host configuration is documented in [CHRONIST.md](CHRONIST.md). The private
+worker accepts the explicit `CHRONICLE_CHRONIST_CONFIG` path and dedicated
+`CHRONICLE_CHRONIST_KEY_*` variables when that path is configured. The PostgreSQL
+environment stays unchanged. Without a file, startup queries only installed local
+Ollama model names; it never downloads or invokes a model during discovery.
+
 Use the locked workspace install and an already built web client. Desktop builds do not
 rebuild that client. The following commands run from the repository root:
 

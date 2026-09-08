@@ -2,6 +2,36 @@
 
 Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
 
+## Aktuell: Karten installiert, Chronist in Umsetzung
+
+`main` und der feste Integrationscheckout stehen auf **`8350764`**, Produktcode und
+Feature-HEAD auf **`ca3898b`**; `8350764` ergänzt nur die Lieferdokumentation.
+Die Kartenlieferung liegt vollständig auf main; Client- und Desktop-Buildausgaben dort
+sind neu. Das feste Paket in `integration-20260908/.local/desktop-artifacts/2026-09-08T11-56-41-698Z`
+besteht 21 tatsächliche Desktop-Prüfungen (`smoke-jMOHhl/evidence.json`). Nach ausdrücklicher
+Rückmeldung zum Schließen der Benutzer-App wurde der Installer ausgeführt (Exit 0).
+`installed-verification.json` belegt 2.496 installierte Dateien gegen das Paket und
+unveränderte Profil-/DPAPI-Dateien. Der abschließende installierte Smoke besteht ebenfalls
+alle 21 Prüfungen (`smoke-pulXOG/evidence.json`). Sämtliche eigenen Testprozesse sind
+geschlossen; der Nutzer kann Atlas wieder öffnen. LangGraph `map-visuals` ist abgeschlossen.
+Installer-SHA256: `cdbdb27bacf0e9a261260325e797a90b62dd11083861ea520f2b7f1b322c4240`.
+
+Chronistproduktion ist ausschließlich uncommittetes WIP im Feature-Checkout (027/V16).
+Der korrigierte Vertrag ist zur Umsetzung freigegeben. Engine: 45 betroffene Fälle grün,
+einschließlich echter LangGraph-Untergraphen, Fan-out, Neustart und Interrupt-Resume.
+Dokumentwriter: 35 betroffene Fälle grün; verlustfreies Anhängen menschlicher Anträge
+mit echten Revisions-/Nativebelegen. UI und Produktionsclient bauen; 9 Hilfs-/Navigationsfälle
+grün. Die im ersten Browser gefundenen ESM-/Query-Schemafehler sind behoben; der echte
+Prosaablauf besteht Quellenwahl, Modellbeitrag, Wiederherstellung, Bearbeitung und Antrag.
+HTTP-Transport: 42 lokale Streamprüfungen grün. Root-Registry: 8 Fälle, Host/HTTP: 9 Fälle,
+Desktop-Umgebungsgrenze: 15 Fälle grün. Engine-Timeoutkorrektur: 31 Enginefälle grün.
+Gemeinsamer Typecheck grün; weitere Browser-/DB-/Nativeprüfung läuft noch.
+Root besitzt Registry/Host/App/Worker, Pure-Providerprofil, Manifest/Lockfile und Dokumentation.
+Agenten besitzen Backend/IO/Protokoll, UI und HTTP-Transport jeweils disjunkt.
+CLI-Abnahme, Chronistintegration, freier NPC-Generator und GUI-Abschluss bleiben offen.
+
+Die folgenden Abschnitte dokumentieren frühere Zwischenstände.
+
 ## Laufender Kartenabschluss
 
 Der Kartenumbau ist in `646bb58` committet und wird am Desktop-Paket geprüft.

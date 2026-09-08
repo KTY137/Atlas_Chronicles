@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { Authority, command, contained, partitionFor, postgresCommandOwnsDirectory, remoteOrigin, safeEnvironment } from "../src/policy.ts";
+import { Authority, command, contained, hostEnvironment, partitionFor, postgresCommandOwnsDirectory, remoteOrigin, safeEnvironment } from "../src/policy.ts";
 import { parseProfile } from "../src/profiles.ts";
 
 describe("native management boundaries", () => {
@@ -29,6 +29,17 @@ describe("native management boundaries", () => {
     expect(postgresCommandOwnsDirectory('"C:/runtime/bin/postgres.exe" -D "C:/profiles/owned/postgres" ', "C:\\profiles\\owned\\postgres")).toBe(true);
     expect(postgresCommandOwnsDirectory('"C:/runtime/bin/postgres.exe" -D "C:/profiles/owned/postgres-other" ', "C:\\profiles\\owned\\postgres")).toBe(false);
     expect(postgresCommandOwnsDirectory('"C:/runtime/bin/postgres.exe" -D "C:/foreign" -c other="C:/profiles/owned/postgres"', "C:\\profiles\\owned\\postgres")).toBe(false);
+  });
+  it("passes only dedicated configured Chronist credentials to the private host", () => {
+    const source = { SystemRoot: "C:/Windows", CHRONICLE_CHRONIST_CONFIG: "C:/Atlas/provider.json",
+      CHRONICLE_CHRONIST_KEY_OPENAI: "synthetic-test-key", OPENAI_API_KEY: "unrelated-account",
+      LANGSMITH_API_KEY: "unrelated-tracing", NODE_OPTIONS: "--import unsafe", DATABASE_URL: "private" };
+    expect(hostEnvironment(source)).toEqual({ SystemRoot: "C:/Windows", CHRONICLE_CHRONIST_CONFIG: source.CHRONICLE_CHRONIST_CONFIG,
+      CHRONICLE_CHRONIST_KEY_OPENAI: "synthetic-test-key" });
+    expect(safeEnvironment(source)).toEqual({ SystemRoot: "C:/Windows" });
+    expect(hostEnvironment({ ...source, CHRONICLE_CHRONIST_CONFIG: "" })).toEqual({ SystemRoot: "C:/Windows" });
+    expect(() => hostEnvironment({ CHRONICLE_CHRONIST_CONFIG: "relative.json" })).toThrow();
+    expect(hostEnvironment({ ...source, CHRONICLE_CHRONIST_KEY_OPENAI: "invalid\r\nkey" })).not.toHaveProperty("CHRONICLE_CHRONIST_KEY_OPENAI");
   });
   it("rejects profile major-version replacement and operative ports", () => {
     const profile = { version: 1, id: "11111111-1111-4111-8111-111111111111", name: "World", createdAt: new Date().toISOString(), httpPort: 44001, pgPort: 44002, pgMajor: 17 };
