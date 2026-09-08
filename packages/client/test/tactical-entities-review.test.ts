@@ -6,6 +6,7 @@ import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
 import * as Entities from "../src/features/tactical-entities.ts";
 import * as MapGeneration from "../src/features/map-generation.ts";
+import * as MapArtwork from "../src/features/map-artwork.ts";
 
 /** Runs the actual component handlers/effects with controlled resource responses.
  * No DOM/WebGL emulation: canvas assertions concern the real renderer input contract. */
@@ -37,10 +38,11 @@ function harness(file: string, component: string, initial: Record<string, any>, 
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "./tactical-entities") return Entities;
       if (name === "./map-generation") return MapGeneration;
+      if (name === "./map-artwork") return MapArtwork;
       if (name === "../hooks") return { useResource: resource, useTask: () => ({ busy: false, error: "", run: (fn: () => unknown) => fn() }) };
       if (name === "./game-api") return { useCommand: () => async () => ({ subjectId: "subject", version: 2 }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, plainText: () => "Passage" };
-      if (name === "@chronicle/szene") return { TACTICAL_MAP_LIMITS: { places: 20_000 } };
+      if (name === "@chronicle/szene") return { TACTICAL_MAP_LIMITS: { places: 20_000, stamps: 50_000 } };
       return new Proxy({}, { get: (_target, key) => String(key) });
     },
   });
@@ -83,7 +85,7 @@ describe("independent tactical entity client review", () => {
     try {
       const rendered = h.nodes(node => node.type === "TacticalCanvas")[0]!.props.scene;
       expect(paths).toContain("/api/campaigns/campaign/maps/tactical/city/children");
-      expect(rendered.cells).toEqual([{ id: "church", polygon: pinned.geometry.regions[0]!.punkte, surface: "building", fill: MapGeneration.BUILDING_COLORS.kirche }]);
+      expect(rendered.cells).toEqual([{ id: "church", polygon: pinned.geometry.regions[0]!.punkte, surface: "building", roof: "pitched", fill: MapGeneration.BUILDING_COLORS.kirche }]);
       expect(rendered.stamps).toEqual([{ id: "inside", asset: "pk.private/chest", x: 20, y: 20, s: 1, r: 0, l: 0 }]);
       expect(rendered.pins).toEqual([{ id: "stamp:inside", x: 20, y: 20, label: objects[1]!.label, entryId: "entry" }]);
       expect(rendered.id).toBe(board.sessionId);
@@ -155,6 +157,38 @@ describe("independent tactical entity client review", () => {
       expect(h.nodes(node => node.type === "select" && node.props["aria-label"] === "Kartenraster")[0]!.props.value).toBe("none");
       expect(h.nodes(node => node.type === "Button" && h.text(node) === "Entwurf zurücksetzen")[0]!.props.disabled).toBe(true);
       expect(h.nodes(node => node.type === "TacticalCanvas")[0]!.props.scene.lines).toHaveLength(0);
+    } finally { h.cleanup(); }
+  });
+
+  it("places real catalogue artwork and removes only that stamp's knowledge and elevation references", () => {
+    const current = { ...map, document: { ...document, geometryElevation: [{ targetKind: "stamp", targetId: "inside", elevation: 2 }, { targetKind: "place", targetId: "outside", elevation: 3 }] },
+      anchors: [{ targetKind: "stamp", targetId: "inside", entryId: "entry", passageId: null }, { targetKind: "place", targetId: "outside", entryId: "entry", passageId: null }] };
+    const h = harness("TacticalPreparation", "MapEditor", { current, campaignId: "campaign", ...callbacks });
+    const palette = () => h.nodes(node => node.type === "MapArtworkPalette")[0]!.props;
+    try {
+      palette().onBrush({ packId: "pk.zeitwelten", cellSize: 64, asset: { name: "schreibtisch", groesse: [20, 20], art: "moebel", schlagworte: ["schreibtisch"] } });
+      h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onPoint([40, 40]);
+      expect(palette().document.geometry.stamps).toHaveLength(2);
+      expect(palette().document.geometry.stamps[1]).toMatchObject({ a: "pk.zeitwelten/schreibtisch", x: 40, y: 40 });
+      palette().onRemove("inside");
+      expect(palette().document.geometry.stamps.map((stamp: any) => stamp.id)).toEqual(["new-place"]);
+      expect(palette().document.geometryElevation).toEqual([{ targetKind: "place", targetId: "outside", elevation: 3 }]);
+      expect(h.nodes(node => node.type === "TacticalEntitiesEditor")[0]!.props.anchors).toEqual([current.anchors[1]]);
+      h.nodes(node => node.type === "Button" && h.text(node) === "Entwurf zurücksetzen")[0]!.props.onClick();
+      expect(palette().document).toEqual(current.document); expect(palette().brush).toBeNull();
+    } finally { h.cleanup(); }
+  });
+
+  it("switches from an artwork brush to region drawing when adding a numeric corner", () => {
+    const h = harness("TacticalPreparation", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
+    const palette = () => h.nodes(node => node.type === "MapArtworkPalette")[0]!.props;
+    try {
+      palette().onBrush({ packId: "pk.zeitwelten", cellSize: 64, asset: { name: "schreibtisch", groesse: [20, 20], art: "moebel", schlagworte: ["schreibtisch"] } });
+      h.nodes(node => node.type === "Button" && h.text(node) === "Eckpunkt hinzufügen")[0]!.props.onClick();
+      h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onPoint([40, 40]);
+      expect(palette().document.geometry.stamps).toEqual(document.geometry.stamps);
+      expect(palette().brush).toBeNull();
+      expect(h.nodes(node => node.type === "TacticalCanvas")[0]!.props.scene.lines).toContainEqual({ id: "draft-region", points: [[0, 0], [40, 40]], color: 0xffffff });
     } finally { h.cleanup(); }
   });
 

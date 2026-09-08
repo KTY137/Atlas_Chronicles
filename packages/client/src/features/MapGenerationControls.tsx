@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Building2, Castle, Mountain, Paintbrush, Ruler } from "lucide-react";
-import { BAUWERK_LABEL, BAUWERK_TYPEN } from "@chronicle/szene";
-import { generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
+import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
+import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
 
 export const MAP_KINDS = [
   { id: "siedlung", label: "Stadt & Dorf", text: "Straßen, Viertel und begehbare Gebäude", icon: Building2 },
-  { id: "grundriss", label: "Gebäude & Dungeon", text: "Wohnhaus, Kirche, Taverne oder eigene Anlage", icon: Castle },
+  { id: "grundriss", label: "Gebäude & Dungeon", text: "Vom Wohnhaus über das Labor bis zur Raumstation", icon: Castle },
   { id: "hoehle", label: "Höhle", text: "Natürliche Kammern und gewachsener Fels", icon: Mountain },
 ] as const;
 
@@ -16,6 +16,7 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
   const update = (patch: Partial<GenerationSettings>) => onChange({ ...value, ...patch });
   const [w, h] = generationDimensions(value, defaults), city = value.art === "siedlung", cave = value.art === "hoehle";
   const std = city ? defaults.siedlung : cave ? defaults.hoehle : defaults.grundriss;
+  const suggested = BAUWERK_SETTINGS[value.setting];
   const presets = city ? [
     { label: "Weiler", breite: 24, hoehe: 20, anzahl: 12, siedlung: "weiler" as const, dichte: .15 },
     { label: "Dorf", breite: 36, hoehe: 28, anzahl: 42, siedlung: "dorf" as const, dichte: .3 },
@@ -29,8 +30,14 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     </select></label> : <div className="map-kind-cards" role="group" aria-label="Art der Karte">
       {MAP_KINDS.map(({ id, label, text, icon: Icon }) => <button type="button" key={id} aria-pressed={value.art === id} onClick={() => changeArt(id)}><Icon size={23} /><strong>{label}</strong><span>{text}</span></button>)}
     </div>}
+    {!cave ? <div className="map-era-section"><span className="map-setting-heading"><strong>Setting</strong><span>Welt & Einrichtung</span></span>
+      <div className="map-era-options" role="group" aria-label="Setting">{KARTEN_SETTINGS.map(setting => <button type="button" key={setting} aria-pressed={value.setting === setting} onClick={() => onChange(changeGenerationSetting(value, setting))}>
+        <strong>{KARTEN_SETTING_LABEL[setting]}</strong><small>{setting === "fantasy" ? "Gewachsene Orte & alte Mauern" : setting === "gegenwart" ? "Stadtblöcke, Alltag & Industrie" : "Kolonien, Decks & Zukunftstechnik"}</small>
+      </button>)}</div><small>Bestimmt Stadtstruktur und Ausstattung. Der passende Zeichenstil wird vorausgewählt.</small>
+    </div> : null}
     {value.art === "grundriss" ? <label>{profileLocked ? "Innenraum für Gebäudetyp" : "Gebäudetyp"}<select disabled={profileLocked} value={value.profil} onChange={event => update({ profil: event.target.value as GenerationSettings["profil"] })}>
-      <option value="frei">Freier Grundriss / Dungeon</option>{BAUWERK_TYPEN.map(typ => <option key={typ} value={typ}>{BAUWERK_LABEL[typ]}</option>)}
+      <option value="frei">Freier Grundriss / Dungeon</option><optgroup label={`Passend zu ${KARTEN_SETTING_LABEL[value.setting]}`}>{suggested.map(typ => <option key={typ} value={typ}>{BAUWERK_LABEL[typ]}</option>)}</optgroup>
+      <optgroup label="Weitere Gebäudetypen">{BAUWERK_TYPEN.filter(typ => !suggested.includes(typ)).map(typ => <option key={typ} value={typ}>{BAUWERK_LABEL[typ]}</option>)}</optgroup>
     </select></label> : null}
     <div className="map-setting-heading"><Ruler size={16} /><strong>{city ? "Siedlungsgröße" : "Kartengröße"}</strong><span>{w} × {h} Zellen</span></div>
     <div className="map-size-presets" role="group" aria-label="Größenprofile">{presets.map(preset => <button type="button" key={preset.label}
@@ -44,6 +51,7 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     <small className="field-help">{(w * std.zellgroesse).toLocaleString("de")} × {(h * std.zellgroesse).toLocaleString("de")} Pixel · {city ? "Gebäudezahl als Ziel; Straßen und freie Flächen brauchen Platz." : "Raumzahl als Ziel; die Aufteilung richtet sich nach dem Gebäudetyp."}</small>
     <div className="map-setting-heading"><Paintbrush size={16} /><strong>Zeichenstil</strong></div>
     <div className="map-style-options" role="group" aria-label="Zeichenstil">
+      <button type="button" aria-pressed={value.stil === "zeitwelten"} onClick={() => update({ stil: "zeitwelten" })}><span className="map-style-swatch zeitwelten" /><span><strong>Zeitwelten</strong><small>100 Objekte für Gegenwart & Science-Fiction</small></span></button>
       <button type="button" aria-pressed={value.stil === "gemalt"} onClick={() => update({ stil: "gemalt" })}><span className="map-style-swatch painted" /><span><strong>Gemalt</strong><small>Warme Farben und Texturen</small></span></button>
       <button type="button" aria-pressed={value.stil === "grundriss"} onClick={() => update({ stil: "grundriss" })}><span className="map-style-swatch blueprint" /><span><strong>Grundriss</strong><small>Klare Linien und Symbole</small></span></button>
     </div>

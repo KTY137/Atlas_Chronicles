@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createHash } from "node:crypto";
-import { BAUWERK_TYPEN, type Knoten, type TacticalPoint } from "@chronicle/szene";
-import type { GrundrissOptionen } from "@chronicle/forge";
+import { BAUWERK_TYPEN, type KartenSetting, type Knoten, type TacticalPoint } from "@chronicle/szene";
+import type { GrundrissOptionen, SiedlungOptionen } from "@chronicle/forge";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createCampaigns } from "./campaigns.ts";
@@ -40,7 +40,7 @@ export interface BetretenInput {
 export interface BetretenResult { mapId: string; erzeugt: boolean; keimHash: string | null }
 interface AdresseRow { map_id: string; keim_hash: string | null; parent_kind: ParentKind; parent_map_id: string; knoten_id: string }
 interface Eingang { knotenId: string; titel: string; art: Knoten["art"]; bauwerk?: Knoten["bauwerk"]; x: number; y: number; kindKeim: string | null; erzeugungsArt?: KartenArt }
-interface Quelle { scope: BetretenScope; title: string; version: number; nodes: Eingang[]; art?: KartenArt; stil?: KartenStil }
+interface Quelle { scope: BetretenScope; title: string; version: number; nodes: Eingang[]; art?: KartenArt; stil?: KartenStil; setting: KartenSetting }
 export interface MapAncestor { kind: ParentKind; id: string; title: string }
 export interface KnotenMetadataInput { readonly commandId: string; readonly expectedVersion: number; readonly titel: string; readonly bauwerk?: NonNullable<Knoten["bauwerk"]> }
 
@@ -56,7 +56,7 @@ function validateInput(input: BetretenInput): void {
     || input.name !== undefined && (typeof input.name !== "string" || !input.name.trim() || input.name.length > 160)
     || input.targetMapId !== undefined && !validId(input.targetMapId)
     || input.art !== undefined && !["grundriss", "hoehle", "siedlung"].includes(input.art)
-    || input.stil !== undefined && !["grundriss", "gemalt"].includes(input.stil)
+    || input.stil !== undefined && !["grundriss", "gemalt", "zeitwelten"].includes(input.stil)
     || input.expectedVersion !== undefined && (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 1))
     throw new TacticalValidationError("Bitte Kartenadresse, Namen und erwartete Version prüfen.");
   // Eine Kartenart zu nennen und zugleich eine fertige Karte anzuhaengen sind zwei verschiedene
@@ -123,7 +123,7 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
       const data = new Map((await tx.query<{ id: string; data: Knoten }>("SELECT id,data FROM atlas_nodes WHERE campaign_id=$1 AND map_id=$2", [campaignId, scope.parentMapId])).rows.map(row => [row.id, row.data]));
       const pins = new Map<string, (typeof map.pins)[number]>(map.pins.map(pin => [pin.id, pin]));
       const member = await createCampaigns(tx, cfg).requireMember(userId, campaignId);
-      return { scope, title: map.title, version: map.version ?? 0,
+      return { scope, title: map.title, version: map.version ?? 0, setting: "fantasy",
         nodes: map.nodes.map(node => {
           const knoten = data.get(node.id), pin = pins.get(node.id);
           const erzeugungsArt = knoten?.herkunft?.erzeuger === "azgaar-fmg" && knoten.herkunft.erzeugungspfad[0] === "ort" ? "siedlung" as const : "grundriss" as const;
@@ -142,8 +142,10 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
     // regions remain enterable; a street never becomes a fake room simply for lacking a node.
     const originalDocument = original.format === "native" ? JSON.parse(original.source_text) as typeof map.document : null;
     const originalRegions = new Set(originalDocument?.geometry.regions.map(region => region.id));
-    const stil: KartenStil = (originalDocument ?? map.document).geometry.stamps.some(stamp => stamp.a.startsWith("pk.gemalt/")) ? "gemalt" : "grundriss";
-    return { scope, title: map.name, version: map.version, art, stil, nodes: map.document.geometry.regions
+    const stamps = (originalDocument ?? map.document).geometry.stamps;
+    const stil: KartenStil = stamps.some(stamp => stamp.a.startsWith("pk.zeitwelten/")) ? "zeitwelten"
+      : stamps.some(stamp => stamp.a.startsWith("pk.gemalt/")) ? "gemalt" : "grundriss";
+    return { scope, title: map.name, version: map.version, art, stil, setting: original.provenance.setting ?? "fantasy", nodes: map.document.geometry.regions
       .filter(region => art !== "siedlung" || data.get(region.id)?.art === "bauwerk" || !originalRegions.has(region.id))
       .map((region, index) => {
       const node = data.get(region.id), [x, y] = roomAnchor(region.punkte);
@@ -191,7 +193,7 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
       if (existing) await createTactical(tx, cfg).getMap(userId, campaignId, existing.map_id);
       return { kindKeim: node.kindKeim, vorhandeneKarteId: existing?.map_id ?? null, titel: node.titel,
         art: node.art, ...(node.bauwerk ? { bauwerk: node.bauwerk } : {}),
-        erzeugungsArt: node.erzeugungsArt ?? "grundriss", stil: parent.stil ?? "grundriss",
+        erzeugungsArt: node.erzeugungsArt ?? "grundriss", stil: parent.stil ?? "grundriss", setting: parent.setting,
         ...scope, knotenId, version: parent.version };
     });
   }
@@ -201,7 +203,7 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
       await createCampaigns(tx, cfg).requireMember(userId, campaignId, ["leitung"]);
       const parent = await source(tx, userId, campaignId, scope);
       const edges = new Map((await tx.query<AdresseRow>("SELECT * FROM betreten_karten WHERE campaign_id=$1 AND parent_kind=$2 AND parent_map_id=$3", [campaignId, scope.parentKind, scope.parentMapId])).rows.map(edge => [edge.knoten_id, edge]));
-      return { art: parent.art, stil: parent.stil,
+      return { art: parent.art, stil: parent.stil, setting: parent.setting,
         nodes: parent.nodes.map(({ kindKeim, erzeugungsArt, ...node }) => ({ ...node, canEnter: kindKeim !== null || edges.has(node.knotenId), vorhandeneKarteId: edges.get(node.knotenId)?.map_id ?? null })),
         version: parent.version, ancestors: await ancestry(tx, userId, campaignId, scope) };
     });
@@ -250,8 +252,11 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
           validateKartenOptionen(art, input.optionen);
           // The saved building type governs its first interior. Later metadata edits never
           // touch an existing child: that address was resolved above, before generation.
-          const optionen = art === "grundriss" && node.bauwerk
-            ? { ...(input.optionen as Partial<GrundrissOptionen>), profil: node.bauwerk.typ } : input.optionen;
+          const chosen = input.optionen as Partial<GrundrissOptionen | SiedlungOptionen> | undefined;
+          const optionen = art === "hoehle" ? input.optionen : {
+            ...chosen, setting: chosen?.setting ?? parent.setting,
+            ...(art === "grundriss" && node.bauwerk ? { profil: node.bauwerk.typ } : {}),
+          };
           const generated = await createGrundriss(tx, cfg).generate(userId, campaignId, {
             commandId, name: input.name?.trim() || node.titel, keim: node.kindKeim,
             // Ohne Angabe bleibt es beim Grundriss: eine Tuer, die gestern Raeume und Gaenge

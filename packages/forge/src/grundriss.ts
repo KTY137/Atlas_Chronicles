@@ -2,16 +2,17 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
-  BAUWERK_LABEL, BAUWERK_TYPEN, parseTacticalMapDocument, weltkeim,
-  type AssetpaketV1, type BauwerkTyp, type Knoten, type TacticalLight, type TacticalMapDocumentV1, type TacticalPortal, type TacticalWall, type Weltkeim,
+  BAUWERK_LABEL, BAUWERK_TYPEN, KARTEN_SETTINGS, parseTacticalMapDocument, weltkeim,
+  type AssetpaketV1, type BauwerkTyp, type KartenSetting, type Knoten, type TacticalLight, type TacticalMapDocumentV1, type TacticalPortal, type TacticalWall, type Weltkeim,
 } from "@chronicle/szene";
 import {
   AUSGELASSEN_BASIS, FELS, KARTENWERK_LIMITS, baueKnoten, bestuecker, fail, idFabrik,
-  rauschen, sortiereNachId, wandLaeufe,
+  passtZumSetting, rauschen, sortiereNachId, wandLaeufe,
   type GrundrissBericht, type GrundrissEltern, type GrundrissRaum, type Rauschen,
 } from "./kartenwerk.ts";
 import { delaunayKanten, spannbaumMitSchleifen, type Polygon, type Punkt } from "./polygon.ts";
 import { loeseWfc, type WfcKachel } from "./wfc.ts";
+import { BAUPROGRAMME, ZEIT_RAUM_LABEL, freieZeitThemen, programmRaeume, zeitThema } from "./bauprogramme.ts";
 
 /**
  * **The first generation Chronicle performs itself**, rather than importing: rooms, corridors and
@@ -47,13 +48,14 @@ import { loeseWfc, type WfcKachel } from "./wfc.ts";
 
 export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const GRUNDRISS_VERSION = "5";
+export const GRUNDRISS_VERSION = "6";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
 });
 
 export interface GrundrissOptionen {
+  readonly setting?: KartenSetting;
   /** A building profile controls its footprint and room uses. Omitted legacy values mean `frei`. */
   readonly profil?: "frei" | BauwerkTyp;
   /** Grid extent in cells. The pixel extent is this times `zellgroesse`. */
@@ -95,7 +97,7 @@ export interface GrundrissOptionen {
 
 export const GRUNDRISS_STANDARD: GrundrissOptionen = Object.freeze({
   zellen: [40, 30] as const, zellgroesse: 64, raeume: 11, minRaum: 3, schleifen: 3,
-  moeblierung: 1, licht: true, gangboden: "trocken", anordnung: "streuung", profil: "frei",
+  moeblierung: 1, licht: true, gangboden: "trocken", anordnung: "streuung", profil: "frei", setting: "fantasy",
 });
 
 export interface GrundrissAuftrag {
@@ -234,6 +236,11 @@ interface RohRaum { x: number; y: number; w: number; h: number; pfad: string; th
 
 /** Compact buildings have adjoining wings, not a random dungeon with a new name. */
 function bauwerkRaeume(profil: BauwerkTyp, breite: number, hoehe: number, o: GrundrissOptionen): RohRaum[] {
+  if (BAUPROGRAMME[profil]) {
+    const raeume = programmRaeume(profil, breite, hoehe, o.minRaum, o.raeume, o.setting ?? "fantasy");
+    if (raeume.length < 2) fail("geometrie", "optionen.profil", "Gebäudeprogramm und Raummindestmaß passen nicht in das Raster");
+    return raeume;
+  }
   const m = o.minRaum, raeume: RohRaum[] = [];
   let w = Math.min(breite - 2, Math.max(2 * m + 1, Math.round(breite * (profil === "kirche" ? 0.88 : 0.76))));
   let h = Math.min(hoehe - 2, Math.max(2 * m + 1, Math.round(hoehe * (profil === "kirche" ? 0.88 : 0.76))));
@@ -268,12 +275,12 @@ function bauwerkRaeume(profil: BauwerkTyp, breite: number, hoehe: number, o: Gru
       raum("schlafzimmer", x + links + 1, y + oben + 1, w - links - 1, unten);
     } else raum("schlafzimmer", x + links + 1, y, w - links - 1, h);
   } else {
-    const themen: Readonly<Record<Exclude<BauwerkTyp, "kirche">, readonly string[]>> = {
+    const themen: Readonly<Partial<Record<BauwerkTyp, readonly string[]>>> = {
       haus: ["wohnraum", "schlafzimmer"], taverne: ["schankraum", "kueche", "vorratsraum", "gaestezimmer"],
       schmiede: ["werkstatt", "verkauf", "materiallager"], lager: ["lagerhalle", "ladestube", "kontor"],
       turm: ["wachstube", "treppenhaus", "waffenkammer"],
     };
-    const nutzungen = themen[profil];
+    const nutzungen = themen[profil]!;
     const rechts = Math.min(nutzungen.length - 1, o.raeume - 1, Math.floor((h + 1) / (m + 1)));
     const links = Math.max(m, Math.min(w - m - 1, Math.floor((w - 1) * (profil === "turm" ? 0.5 : 0.62))));
     raum(nutzungen[0]!, x, y, links, h);
@@ -343,8 +350,12 @@ const kachelOffen = (id: string | null, richtung: number): boolean =>
 
 export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1): Grundriss {
   if (typeof auftrag?.keim !== "string" || !auftrag.keim.trim() || auftrag.keim.length > 256) fail("option", "auftrag.keim", "nichtleerer Keim mit höchstens 256 Zeichen erwartet");
-  const optionen: GrundrissOptionen = { ...GRUNDRISS_STANDARD, ...auftrag.optionen, profil: auftrag.optionen?.profil === undefined ? "frei" : auftrag.optionen.profil };
+  const optionen: GrundrissOptionen = { ...GRUNDRISS_STANDARD, ...auftrag.optionen, profil: auftrag.optionen?.profil === undefined ? "frei" : auftrag.optionen.profil,
+    setting: auftrag.optionen?.setting === undefined ? "fantasy" : auftrag.optionen.setting };
   const profil = optionen.profil!;
+  const setting = optionen.setting!;
+  if (!KARTEN_SETTINGS.some(era => era === setting)) fail("option", "optionen.setting", "fantasy, gegenwart oder scifi erwartet");
+  const themenWahl = setting === "fantasy" ? THEMEN : freieZeitThemen(setting);
   const [breite, hoehe] = optionen.zellen;
   const L = GRUNDRISS_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>
@@ -374,7 +385,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     optionen: {
       zellen: [breite, hoehe], zellgroesse: optionen.zellgroesse, raeume: optionen.raeume,
       minRaum: optionen.minRaum, schleifen: optionen.schleifen, moeblierung: optionen.moeblierung,
-      licht: optionen.licht, gangboden: optionen.gangboden, anordnung: optionen.anordnung, profil,
+      licht: optionen.licht, gangboden: optionen.gangboden, anordnung: optionen.anordnung, profil, setting,
       paket: { id: paket.id, version: paket.version, zellgroesse: paket.zellgroesse },
     } as Readonly<Record<string, CanonicalValue>>,
   });
@@ -498,7 +509,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       const w = r.ganz(mindestens(freiW), freiW), h = r.ganz(mindestens(freiH), freiH);
       const x = x0 + r.ganz(0, freiW - w), y = y0 + r.ganz(0, freiH - h);
       raumVonFeld.set(feldNr, rohRaeume.length);
-      rohRaeume.push({ x, y, w, h, pfad: `k${sx}_${sy}`, thema: r.waehle(THEMEN) ?? THEMEN[0]! });
+      rohRaeume.push({ x, y, w, h, pfad: `k${sx}_${sy}`, thema: r.waehle(themenWahl) ?? themenWahl[0]! });
     }
     for (const feldNr of behalten) {
       const a = raumVonFeld.get(feldNr);
@@ -578,7 +589,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       frei.push(k);
     }
     for (const k of frei.slice(0, optionen.raeume)) {
-      rohRaeume.push({ x: k.x, y: k.y, w: k.w, h: k.h, pfad: `s${k.x}_${k.y}`, thema: r.waehle(THEMEN) ?? THEMEN[0]! });
+      rohRaeume.push({ x: k.x, y: k.y, w: k.w, h: k.h, pfad: `s${k.x}_${k.y}`, thema: r.waehle(themenWahl) ?? themenWahl[0]! });
     }
     rohRaeume.sort((a, b) => a.y - b.y || a.x - b.x);
     if (rohRaeume.length < L.raeumeMin) fail("geometrie", "raeume", "die Streuung trug auf diesem Raster keine zwei überschneidungsfreien Räume");
@@ -600,9 +611,19 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     const w = r.ganz(mindestens(freiW), freiW), h = r.ganz(mindestens(freiH), freiH);
     const x = blatt.x + 1 + r.ganz(0, freiW - w), y = blatt.y + 1 + r.ganz(0, freiH - h);
     blatt.raum = rohRaeume.length;
-    rohRaeume.push({ x, y, w, h, pfad: blatt.pfad || "wurzel", thema: r.waehle(THEMEN) ?? THEMEN[0]! });
+    rohRaeume.push({ x, y, w, h, pfad: blatt.pfad || "wurzel", thema: r.waehle(themenWahl) ?? themenWahl[0]! });
   }
   if (rohRaeume.length < L.raeumeMin) fail("geometrie", "raeume", "nach dem Zuschnitt bleiben weniger als zwei Räume");
+  }
+
+  if (setting !== "fantasy" && profil !== "frei" && !BAUPROGRAMME[profil]) {
+    const moderneNutzung: Readonly<Record<string, string>> = { wohnraum: "cafe", kueche: "kueche", schlafzimmer: "hotelzimmer",
+      schankraum: "speisesaal", gaestezimmer: "hotelzimmer", vorratsraum: "lager", werkstatt: "reparatur", verkauf: "beratung",
+      materiallager: "ersatzteile", lagerhalle: "frachthalle", ladestube: "lager", kontor: "buero", wachstube: "leitstelle", waffenkammer: "kontrolle" };
+    for (const raum of rohRaeume) {
+      const key = moderneNutzung[raum.thema.schluessel];
+      if (key) raum.thema = { ...zeitThema(key, setting), schluessel: raum.thema.schluessel };
+    }
   }
 
   // -- carve -----------------------------------------------------------------------------------
@@ -786,7 +807,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   }
 
   // -- stamps ----------------------------------------------------------------------------------
-  const werk = bestuecker(paket, r, z, ids.geometrieId);
+  const werk = bestuecker(paket, r, z, ids.geometrieId, setting);
   const nichtPlatziert: string[] = [];
   for (const [x, y] of tuerZelle) werk.sperre(x, y);
 
@@ -797,7 +818,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   };
 
   // Floors first, so that everything else draws over a complete surface.
-  const gangboden = werk.waehle("boden", optionen.gangboden);
+  const gangboden = werk.waehle("boden", setting === "scifi" ? "metall" : setting === "gegenwart" ? "fliesen" : optionen.gangboden);
   const raumboden = rohRaeume.map((raum) => werk.waehle("boden", raum.thema.boden) ?? gangboden);
   for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) {
     const feld = gitter[idx(x, y)];
@@ -813,9 +834,9 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     if (!asset) return;
     if (!werk.platziere(asset, zellenVon(raum))) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
   };
-  if (profil === "frei") setzeMarkiert(rohRaeume[0]!, "aufbau", "aufwaerts");
+  if (profil === "frei" && setting === "fantasy") setzeMarkiert(rohRaeume[0]!, "aufbau", "aufwaerts");
   setzeMarkiert(rohRaeume[0]!, "marke", "eingang");
-  if (profil === "frei" && tiefsterRaum !== 0) setzeMarkiert(rohRaeume[tiefsterRaum]!, "aufbau", "abwaerts");
+  if (profil === "frei" && setting === "fantasy" && tiefsterRaum !== 0) setzeMarkiert(rohRaeume[tiefsterRaum]!, "aufbau", "abwaerts");
 
   const lichter: TacticalLight[] = [];
   const themen: Record<string, number> = {};
@@ -844,7 +865,9 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   });
 
   // Doors last, on top of their opening.
-  const tuerAsset = werk.waehle("tuer", "drehbar");
+  const tuerTag = setting === "scifi" && paket.assets.some(asset => asset.art === "tuer" && asset.schlagworte.includes("schiebbar") && passtZumSetting(asset, setting))
+    ? "schiebbar" : "drehbar";
+  const tuerAsset = werk.waehle("tuer", tuerTag);
   if (tuerAsset) {
     for (const tuer of tueren) {
       // A door sits on the edge between two cells, so its anchor cell is half a cell off. Routed
@@ -904,7 +927,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       else {
         const raum = raeume.find(raum => raum.id === k.id)!;
         const nummer = (nummern.get(raum.thema) ?? 0) + 1; nummern.set(raum.thema, nummer);
-        knoten[i] = { ...k, titel: `${RAUM_LABEL[raum.thema] ?? raum.thema}${nummer > 1 ? ` ${nummer}` : ""}` };
+        knoten[i] = { ...k, titel: `${RAUM_LABEL[raum.thema] ?? ZEIT_RAUM_LABEL[raum.thema] ?? raum.thema}${nummer > 1 ? ` ${nummer}` : ""}` };
       }
     }
   }

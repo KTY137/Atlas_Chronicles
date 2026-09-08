@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
+.map-artwork{border-top:1px solid var(--line);padding-top:24px;margin:22px 0;min-width:0}
+.map-artwork-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.map-artwork-heading h3{display:flex;align-items:center;gap:9px;margin:0}
+.map-artwork-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.map-artwork label{display:grid;gap:6px;font-size:12px;min-width:0}
+.map-artwork input,.map-artwork select{width:100%;min-width:0}
+.map-artwork-search{display:flex;align-items:center;gap:8px}
+.map-artwork-search>svg{flex-shrink:0;color:var(--text-muted)}
+.map-artwork-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:365px;overflow:auto;padding:3px 6px 8px 3px}
+.map-artwork-grid button{display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;padding:8px;cursor:pointer;min-width:0}
+.map-artwork-grid button:hover,.map-artwork-grid button[aria-pressed=true]{border-color:var(--accent-strong);background:var(--surface)}
+.map-artwork-grid button[aria-pressed=true]{box-shadow:inset 0 0 0 1px var(--accent-strong)}
+.map-artwork-grid img{width:72px;height:72px;object-fit:contain;background:radial-gradient(ellipse,#bec8c522,transparent 75%)}
+.map-artwork-grid span{font-size:11px;text-align:center;line-height:1.4;overflow-wrap:anywhere}
+.map-artwork-grid small{font-size:10px;color:var(--text-muted)}
+.map-placed-artwork{margin-top:18px;font-size:12px}
+.map-placed-artwork summary{cursor:pointer;padding:8px 0;color:var(--text-muted)}
+.map-placed-artwork>label{margin-top:12px;max-width:600px}
+.map-artwork-selected{display:grid;gap:12px;padding:14px;margin-top:14px;border:1px solid var(--line);border-radius:8px;max-width:600px}
+@media(max-width:900px){.map-artwork-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.map-artwork-filters{grid-template-columns:minmax(0,1fr)}.map-artwork-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.map-artwork-grid img{width:58px;height:58px}.map-artwork-grid button{padding:6px}}

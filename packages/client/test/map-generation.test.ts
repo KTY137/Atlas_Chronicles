@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { parseTacticalMapDocument, TACTICAL_MAP_LIMITS } from "@chronicle/szene";
 import {
-  BUILDING_COLORS, generationDimensions, generationError, generationOptions, generationSettings, mapDocumentScene,
+  BUILDING_COLORS, changeGenerationSetting, generationDimensions, generationError, generationOptions, generationSettings, mapDocumentScene,
   type GenerationDefaults, type MapNode,
 } from "../src/features/map-generation.ts";
 
@@ -33,13 +33,13 @@ describe("map generation request boundaries", () => {
   it("emits the settlement, cave and floorplan option fields accepted by their separate API variants", () => {
     const edit = { breite: 42, hoehe: 24, anzahl: 18, licht: false, dichte: .45, moeblierung: .25 };
     expect(generationOptions({ ...generationSettings("siedlung"), ...edit, siedlung: "stadt" }, defaults)).toEqual({
-      art: "stadt", ausdehnung: [42, 24], bauwerke: 18, strassenDichte: .45, licht: false,
+      art: "stadt", setting: "fantasy", ausdehnung: [42, 24], bauwerke: 18, strassenDichte: .45, licht: false,
     });
     expect(generationOptions({ ...generationSettings("hoehle"), ...edit }, defaults)).toEqual({
       zellen: [42, 24], kammern: 18, moeblierung: .25, licht: false,
     });
     expect(generationOptions({ ...generationSettings("grundriss", "kirche"), ...edit, anordnung: "raster" }, defaults)).toEqual({
-      zellen: [42, 24], raeume: 18, profil: "kirche", anordnung: "raster", moeblierung: .25, licht: false,
+      zellen: [42, 24], raeume: 18, profil: "kirche", anordnung: "raster", setting: "fantasy", moeblierung: .25, licht: false,
     });
     for (const art of ["siedlung", "grundriss", "hoehle"] as const) {
       const options = generationOptions(generationSettings(art), defaults);
@@ -101,6 +101,14 @@ const nodes: readonly MapNode[] = [
 ];
 
 describe("map document presentation keeps spatial identity", () => {
+  it("renders modern and future roofs without changing footprints or picking IDs", () => {
+    const contemporary = mapDocumentScene("city", document, nodes, "siedlung", undefined, "gegenwart");
+    const future = mapDocumentScene("city", document, nodes, "siedlung", undefined, "scifi");
+    expect(contemporary.cells[0]!.roof).toBe("flat"); expect(future.cells[0]!.roof).toBe("tech");
+    expect(contemporary.cells[1]!.roof).toBeUndefined();
+    expect(contemporary.cells.map(cell => [cell.id, cell.polygon])).toEqual(future.cells.map(cell => [cell.id, cell.polygon]));
+    expect(contemporary.cells[1]!.fill).not.toBe(future.cells[1]!.fill);
+  });
   it("paints building roofs and streets while retaining exact region identities and authorized node pins", () => {
     const scene = mapDocumentScene("city", document, nodes, "siedlung", "campaign:map");
     expect(scene.cells.map(cell => cell.id)).toEqual(["church", "street", "legacy-house"]);
@@ -134,5 +142,20 @@ describe("map document presentation keeps spatial identity", () => {
     expect(scene.cells.every(cell => cell.surface === undefined)).toBe(true);
     expect(scene.pins).toHaveLength(1);
     expect(scene.pins[0]!.id).toBe("church");
+  });
+});
+
+describe("setting and inherited interior choices", () => {
+  it("changes setting and default artwork while retaining authored sizes and building profile", () => {
+    const original = { ...generationSettings("grundriss", "labor"), breite: 52, hoehe: 28, anzahl: 7 };
+    const modern = changeGenerationSetting(original, "gegenwart");
+    expect(modern).toMatchObject({ setting: "gegenwart", stil: "zeitwelten", profil: "labor", breite: 52, hoehe: 28, anzahl: 7 });
+    expect(changeGenerationSetting(modern, "fantasy").stil).toBe("gemalt");
+    expect(generationOptions(modern, defaults)).toMatchObject({ setting: "gegenwart", profil: "labor", zellen: [52, 28] });
+  });
+  it("retains the parent's science-fiction setting for the initial child request", () => {
+    const child = generationSettings("grundriss", "medstation", "zeitwelten", "scifi");
+    expect(generationOptions(child, defaults)).toMatchObject({ setting: "scifi", profil: "medstation" });
+    expect(generationOptions({ ...child, art: "hoehle" }, defaults)).not.toHaveProperty("setting");
   });
 });

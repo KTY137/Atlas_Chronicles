@@ -46,4 +46,35 @@ describe("authenticated rate budgets behind a shared network", () => {
       expect((await app.inject({ method: "POST", url, headers, payload: {} })).statusCode).toBe(429);
     } finally { await app.close(); }
   });
+
+  it("keeps authenticated pack bursts separate from the unchanged API budget", async () => {
+    const app = await buildApp(db, config), userId = randomUUID();
+    await db.query("INSERT INTO users(id,display_name,created_at) VALUES($1,$1,1)", [userId]);
+    const headers = { cookie: `chronicle_session=${(await createIdentity(db, config).issueSession(userId)).value}` };
+    try {
+      const paths = ["/api/packs", "/api/packs/pk.grundriss/manifest", "/api/packs/pk.grundriss/asset/boden/boden_stein.svg"];
+      for (let i = 0; i < 280; i++) expect((await app.inject({ url: paths[i % paths.length]!, headers })).statusCode).toBe(200);
+      const health = await app.inject({ url: "/api/health", headers });
+      expect(health.statusCode).toBe(200); expect(health.headers["x-ratelimit-remaining"]).toBe("239");
+      for (let i = 1; i < 240; i++) expect((await app.inject({ url: "/api/health", headers })).statusCode).toBe(200);
+      expect((await app.inject({ url: "/api/health", headers })).statusCode).toBe(429);
+      for (const url of paths) {
+        const asset = await app.inject({ url, headers }); expect(asset.statusCode).toBe(200);
+        expect(asset.headers["x-ratelimit-limit"]).toBe("1200");
+        expect((await app.inject({ url })).statusCode).toBe(404);
+      }
+    } finally { await app.close(); }
+  });
+
+  it("bounds the separate pack budget and leaves data reads available when it is exhausted", async () => {
+    const app = await buildApp(db, config), userId = randomUUID();
+    await db.query("INSERT INTO users(id,display_name,created_at) VALUES($1,$1,1)", [userId]);
+    const headers = { cookie: `chronicle_session=${(await createIdentity(db, config).issueSession(userId)).value}` };
+    try {
+      for (let i = 0; i < 1200; i++) expect((await app.inject({ url: "/api/packs", headers })).statusCode).toBe(200);
+      expect((await app.inject({ url: "/api/packs", headers })).statusCode).toBe(429);
+      const health = await app.inject({ url: "/api/health", headers });
+      expect(health.statusCode).toBe(200); expect(health.headers["x-ratelimit-remaining"]).toBe("239");
+    } finally { await app.close(); }
+  }, 45_000);
 });

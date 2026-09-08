@@ -54,6 +54,18 @@ describe("planeStapel — viewport cull", () => {
     const b = planeStapel([stempel({ id: "a", x: 850, y: 300, s: 5, r: 2.4 })], IDENTITAET, VIEWPORT);
     expect(a.sichtbar).toBe(b.sichtbar);
   });
+
+  it("uses loaded bitmap extents for a long asset whose visible edge is far from its center", () => {
+    const asset = "pk.zeitwelten/bus";
+    const visible = stempel({ id: "bus", asset, x: 700, y: 1700, s: 10 });
+    const outside = stempel({ ...visible, id: "outside", y: 5000 });
+    // The 128 x 320 bus spans x=60..1340 and y=100..3300, intersecting this viewport.
+    const plan = planeStapel([visible, outside], IDENTITAET, VIEWPORT, {
+      assetGroessen: new Map([[asset, [128, 320] as const]]),
+    });
+    expect(plan.buendel.flatMap(bucket => bucket.stamps.map(stamp => stamp.id))).toEqual(["bus"]);
+    expect(plan.verworfen).toBe(1);
+  });
 });
 
 describe("planeStapel — bucketing", () => {

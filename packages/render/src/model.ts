@@ -14,6 +14,7 @@ export interface ProjectedMapCell {
   readonly fill?: number;
   /** Presentation only: a settlement footprint or street band, never a new stored map kind. */
   readonly surface?: "building" | "street";
+  readonly roof?: "pitched" | "flat" | "tech";
 }
 export interface ProjectedMapPin {
   readonly id: string;

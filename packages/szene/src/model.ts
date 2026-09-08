@@ -120,10 +120,30 @@ export interface Kante {
 export const MAX_TIEFE = 24;
 
 /** Building intent belongs to the persistent address, independently of any generated interior. */
-export const BAUWERK_TYPEN = Object.freeze(["haus", "kirche", "taverne", "schmiede", "lager", "turm"] as const);
+export const BAUWERK_TYPEN = Object.freeze([
+  "haus", "kirche", "taverne", "schmiede", "lager", "turm", "wohnblock", "buero", "cafe", "restaurant",
+  "supermarkt", "krankenhaus", "polizei", "feuerwache", "schule", "hotel", "fabrik", "bahnhof", "labor",
+  "raumhafen", "raumstation", "medstation", "kommando", "reaktor", "bibliothek", "museum", "bank", "werkstatt",
+] as const);
 export type BauwerkTyp = (typeof BAUWERK_TYPEN)[number];
 export const BAUWERK_LABEL: Readonly<Record<BauwerkTyp, string>> = Object.freeze({
   haus: "Wohnhaus", kirche: "Kirche", taverne: "Taverne", schmiede: "Schmiede", lager: "Lagerhaus", turm: "Turm",
+  wohnblock: "Wohnblock", buero: "Büro", cafe: "Café", restaurant: "Restaurant", supermarkt: "Supermarkt",
+  krankenhaus: "Krankenhaus", polizei: "Polizeiwache", feuerwache: "Feuerwache", schule: "Schule", hotel: "Hotel",
+  fabrik: "Fabrik", bahnhof: "Bahnhof", labor: "Labor", raumhafen: "Raumhafen", raumstation: "Raumstation",
+  medstation: "Medstation", kommando: "Kommandozentrale", reaktor: "Reaktor", bibliothek: "Bibliothek",
+  museum: "Museum", bank: "Bank", werkstatt: "Werkstatt",
+});
+export const KARTEN_SETTINGS = Object.freeze(["fantasy", "gegenwart", "scifi"] as const);
+export type KartenSetting = (typeof KARTEN_SETTINGS)[number];
+export const KARTEN_SETTING_LABEL: Readonly<Record<KartenSetting, string>> = Object.freeze({
+  fantasy: "Fantasy", gegenwart: "Gegenwart", scifi: "Science-Fiction",
+});
+/** Suggested programs for each setting. Individual profiles remain freely selectable. */
+export const BAUWERK_SETTINGS: Readonly<Record<KartenSetting, readonly BauwerkTyp[]>> = Object.freeze({
+  fantasy: Object.freeze(["haus", "kirche", "taverne", "schmiede", "lager", "turm", "bibliothek", "museum", "bank", "werkstatt"] as const),
+  gegenwart: Object.freeze(["wohnblock", "buero", "cafe", "restaurant", "supermarkt", "krankenhaus", "polizei", "feuerwache", "schule", "hotel", "fabrik", "bahnhof", "labor", "bibliothek", "museum", "bank", "werkstatt", "haus", "kirche", "lager"] as const),
+  scifi: Object.freeze(["raumstation", "raumhafen", "medstation", "kommando", "reaktor", "labor", "wohnblock", "fabrik", "lager", "werkstatt", "buero", "restaurant"] as const),
 });
 export interface BauwerkMetadaten {
   readonly typ: BauwerkTyp;

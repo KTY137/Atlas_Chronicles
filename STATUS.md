@@ -1,6 +1,47 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-08** (Git-Worktree-Hygiene und reproduzierbare Installation)
+Updated: **2026-09-08** (Gegenwart, Science-Fiction und 100 Kartenassets)
+
+## Zeitwelten: 100 Assets und passende Städte/Innenräume — Session 2026-09-08
+
+**Exakt 100 neue, eigenständige SVG-Assets sind im Paket `pk.zeitwelten` eingebunden.**
+12 Böden, 3 Wände, 3 Türen, 23 Aufbauten/Fahrzeuge, 1 Marke, 3 Lichter,
+50 Einrichtungsobjekte und 5 Behälter. Reproduzierbarer Autor, Lizenz und Hashmanifest
+liegen im Repository; der durchsuchbare Editor-Katalog zeigt alle 100 als Vorschaubilder.
+Platzieren, Verschieben, Drehen, Skalieren und Entfernen werden als Kartenrevision gespeichert.
+
+**Fantasy, Gegenwart und Science-Fiction bestimmen Stadtbild und passende Raumprogramme.**
+22 neue Gebäudetypen ergänzen die bisherigen sechs: unter anderem Büro, Café, Supermarkt,
+Krankenhaus, Polizei, Schule, Fabrik, Labor, Raumstation und Reaktor. Grundriss **v6** und
+Siedlung **v4** verwenden passende Ausstattung, geplante moderne Straßenblöcke beziehungsweise
+futuristische Module, Flach-/Technikdächer, Fahrzeuge und Beleuchtung. Stadtgebäude bleiben
+anklickbar und führen zu passenden Innenräumen. Die unveränderliche Quellenprovenienz trägt
+das Setting durch verschachteltes Betreten und Native-Archive; Altquellen bedeuten Fantasy.
+
+**Einstieg:** Atlas → Neue Karte → Setting wählen. Im Karteneditor liegt der neue Bereich
+„Einrichtung & Kartenassets“. Beim Settingwechsel wird der passende Standardstil gewählt;
+Größe und übrige Einstellungen bleiben erhalten. Der lokale Kontaktbogen liegt unter
+`.local/map-expansion/asset-contact-sheet-128.png`. Details und Reviewbefunde:
+[Designlinie](design/iterations/map-settings-assets-20260908.md).
+
+**Abgesichert:** Paketgate **15/15**, vier Pakete mit **271 Assets / 271 gültigen Referenzen**,
+bytegleich reproduziert. Generatorabschluss **115/115**, Client/Renderer **31 Dateien / 315 Tests**,
+Setting-Serverintegration **8/8**, bestehende Kartenfälle **50/50**, UVTT **30/30** grün.
+Der breite Lauf hatte ausschließlich 18 Zwischenstandfehler in den beiden inzwischen mit
+115/115 bestandenen Generatordateien: **1.725 weitere Tests grün, 52 übersprungen**. Es wird
+kein nachträglich grüner Gesamtlauf behauptet. Version, Paketgrenzen, Typecheck und Build grün.
+
+Der echte Browserablauf deckte auf, dass 100 Assetbilder und Renderer-Module das gemeinsame
+API-Limit ausschöpften. Statische Module verbrauchen jetzt kein Aktionsbudget; authentifizierte
+Packleser haben eigene begrenzte Budgets. **27/27 Serverregressionen** und unabhängiger Review
+bestätigen API-Limits, Anmeldung, Dateigrenzen und Cache-Verhalten. Zwei weitere Reviewfehler
+sind behoben: numerische Eckpunkte beenden den Assetmodus; große Bitmaps bleiben beim Schwenken
+sichtbar. Der vollständige Browserablauf besteht **in 49,7 s** ohne Test-Cooldown:
+Gegenwartsstadt → Polizeiwache, Sci-Fi-Stadt → Medstation, Settingvererbung, 100er-Katalog,
+Platzierung/Speichern/Neuladen, Wiederbetreten derselben Unterkarte und Mobilansicht ohne
+horizontalen Überlauf. Keine Assetfehler oder Browserausnahmen. Sieben Screenshots unter
+`test-results/map-settings-verified/`; isolierte Testdienste werden im Fixture geschlossen.
+Die vorhandene Desktop-Installation wurde in dieser Session nicht erneuert.
 
 ## Git-Worktree-Hygiene und Veröffentlichung — 2026-09-08
 

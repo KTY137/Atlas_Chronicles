@@ -64,8 +64,8 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   const markers = new Container();
   // Placements sit above the floor and below walls, grid and markers: furniture is part of the
   // ground truth of the room, but it must never hide a wall or a token.
-  const stampLayer = new Container();
-  world.addChild(rasterBounds, raster, geography, stampLayer, buildings, gridOverlay, wallsOverlay, markers, dragPreview);
+  const stampLayer = new Container(), rooftopStamps = new Container();
+  world.addChild(rasterBounds, raster, geography, stampLayer, buildings, rooftopStamps, gridOverlay, wallsOverlay, markers, dragPreview);
   raster.mask = rasterBounds;
   app.stage.addChild(world);
   const selection = new Graphics().circle(0, 0, 15).stroke({ color: 0xffe7a1, width: 2 }); selection.visible = false;
@@ -193,6 +193,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     Math.abs(stampAnker.x - camera.x) > STAMP_RAND || Math.abs(stampAnker.y - camera.y) > STAMP_RAND;
   const drawStamps = (): void => {
     for (const child of stampLayer.removeChildren()) child.destroy();
+    for (const child of rooftopStamps.removeChildren()) child.destroy();
     stampAnker = { x: camera.x, y: camera.y, scale: camera.scale };
     if (!scene.stamps?.length) return;
     // Cull against a window larger than the viewport, centred on it: grow the viewport by the
@@ -202,6 +203,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       scene.stamps,
       { ...camera, x: camera.x + STAMP_RAND, y: camera.y + STAMP_RAND },
       [viewport[0] + STAMP_RAND * 2, viewport[1] + STAMP_RAND * 2],
+      { assetGroessen: new Map([...stampTextures].map(([asset, { bitmap }]) => [asset, [bitmap.width, bitmap.height] as const])) },
     );
     // Draw in the AUTHOR's order, not in bucket order. `planeStapel` groups by texture because
     // that is what a batch wants, but layer order is a statement about what lies on top of what:
@@ -221,7 +223,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       sprite.scale.set(stamp.s);
       if (stamp.t) sprite.tint = stamp.t;
       sprite.eventMode = "none";
-      stampLayer.addChild(sprite);
+      (stamp.l >= 40 ? rooftopStamps : stampLayer).addChild(sprite);
     }
   };
   const drawPin = (pin: ProjectedMapPin): InstanceType<typeof Graphics> => {
@@ -280,11 +282,13 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
         for (const [x, y] of cell.polygon) { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); }
         const width = maxX - minX, height = maxY - minY;
         const stroke = Math.max(.5, Math.min(width, height) * .035);
-        shape.stroke({ color: 0x493d32, width: stroke, alpha: .95 });
+        shape.stroke({ color: cell.roof === "tech" ? 0x304c58 : cell.roof === "flat" ? 0x424a4d : 0x493d32, width: stroke, alpha: .95 });
         // Intersect a roof ridge with the actual footprint. Pairing scanline crossings also
         // handles concave buildings without drawing a ridge across an empty courtyard.
         const axis = width >= height ? 0 : 1, cross = axis === 0 ? 1 : 0;
-        const middle = axis === 0 ? (minY + maxY) / 2 : (minX + maxX) / 2;
+        const fractions = cell.roof === "flat" ? [.25, .5, .75] : cell.roof === "tech" ? [.3, .7] : [.5];
+        for (const fraction of fractions) {
+        const middle = axis === 0 ? minY + height * fraction : minX + width * fraction;
         const crossings: number[] = [];
         for (let i = 0, j = cell.polygon.length - 1; i < cell.polygon.length; j = i++) {
           const a = cell.polygon[j]!, b = cell.polygon[i]!;
@@ -297,7 +301,8 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
           if (axis === 0) shape.moveTo(left + inset, middle).lineTo(right - inset, middle);
           else shape.moveTo(middle, left + inset).lineTo(middle, right - inset);
         }
-        if (crossings.length) shape.stroke({ color: 0xf0d0a0, width: stroke * .8, alpha: .55 });
+        if (crossings.length) shape.stroke({ color: cell.roof === "tech" ? 0x9ce2dc : cell.roof === "flat" ? 0xe1e6e5 : 0xf0d0a0, width: stroke * (cell.roof === "flat" ? .4 : .8), alpha: .55 });
+        }
       }
       shape.eventMode = "none";
       (building ? buildings : geography).addChild(shape);

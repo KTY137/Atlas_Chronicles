@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Anvil, ArrowLeft, Beer, Building2, Castle, Church, DoorOpen, House, Link, Map, Pencil, RefreshCw, Search, Warehouse, WandSparkles } from "lucide-react";
 import type { TacticalMapCard, TacticalMapSummary } from "@chronicle/protocol";
-import { BAUWERK_LABEL, BAUWERK_TYPEN, type BauwerkTyp } from "@chronicle/szene";
+import { BAUWERK_LABEL, BAUWERK_TYPEN, KARTEN_SETTING_LABEL, type BauwerkTyp, type KartenSetting } from "@chronicle/szene";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
@@ -18,8 +18,8 @@ import "./NestedMapView.css";
 
 export interface MapAncestor { kind: "atlas" | "tactical"; id: string; title: string }
 interface Entrance extends MapNode { canEnter: boolean; vorhandeneKarteId: string | null }
-interface Children { nodes: Entrance[]; version: number; ancestors: MapAncestor[]; art?: MapArt; stil?: MapStyle }
-const BUILDING_ICONS = { haus: House, kirche: Church, taverne: Beer, schmiede: Anvil, lager: Warehouse, turm: Castle };
+interface Children { nodes: Entrance[]; version: number; ancestors: MapAncestor[]; art?: MapArt; stil?: MapStyle; setting?: KartenSetting }
+const BUILDING_ICONS: Partial<Record<BauwerkTyp, typeof House>> = { haus: House, kirche: Church, taverne: Beer, schmiede: Anvil, lager: Warehouse, turm: Castle };
 const NO_ENTRANCES: Entrance[] = [];
 
 export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot, onChanged, onDirty }: {
@@ -41,6 +41,7 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
   const navigate = (ancestor: MapAncestor) => { if (guard()) onNavigate(ancestor); };
   const entrances = children.data?.nodes ?? NO_ENTRANCES, selected = entrances.find(node => node.knotenId === selectedId);
   const ancestors = children.data?.ancestors ?? [], city = children.data?.art === "siedlung" || entrances.some(node => node.art === "bauwerk");
+  const presentTypes = BAUWERK_TYPEN.filter(typ => entrances.some(node => node.bauwerk?.typ === typ));
   const choose = (nodeId: string) => { if (nodeId === selectedId || guard()) setSelectedId(nodeId); };
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("de");
@@ -49,12 +50,12 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
   }, [entrances, query, filter]);
   const scene = useMemo(() => {
     if (!map.data) return null;
-    const result = mapDocumentScene(mapId, map.data.document, entrances, children.data?.art, map.data.document.background ? map.data.contentHash : undefined);
+    const result = mapDocumentScene(mapId, map.data.document, entrances, children.data?.art, map.data.document.background ? map.data.contentHash : undefined, children.data?.setting);
     return { ...result, pins: result.pins.map(pin => {
       const node = entrances.find(item => item.knotenId === pin.id)!;
       return { ...pin, ...(node.vorhandeneKarteId ? { icon: "portal" as const } : {}) };
     }) };
-  }, [map.data, mapId, entrances, children.data?.art]);
+  }, [map.data, mapId, entrances, children.data?.art, children.data?.setting]);
 
   return <section className="atlas-feature nested-map-view" aria-label="Unterkarte">
     <nav className="atlas-breadcrumbs" aria-label="Kartenpfad">
@@ -62,7 +63,7 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
       {ancestors.map((ancestor, index) => <span key={`${ancestor.kind}:${ancestor.id}`}><span aria-hidden="true">/</span><button type="button" aria-current={index === ancestors.length - 1 ? "page" : undefined}
         disabled={ancestor.kind === "tactical" && ancestor.id === mapId} onClick={() => navigate(ancestor)}>{ancestor.title}</button></span>)}
     </nav>
-    <header className="atlas-heading"><div><p className="eyebrow">{city ? "Stadtplan · Jeder Ort hat ein Inneres" : "Unterkarte · Auf eurem Server gespeichert"}</p><h1>{map.data?.name ?? "Karte öffnen"}</h1>
+    <header className="atlas-heading"><div><p className="eyebrow">{city ? "Stadtplan" : "Unterkarte"} · {KARTEN_SETTING_LABEL[children.data?.setting ?? "fantasy"]}</p><h1>{map.data?.name ?? "Karte öffnen"}</h1>
       <p className="muted">{city ? `${entrances.length} Gebäude. Wähle ein Dach, entdecke den Ort und öffne seinen Innenraum.` : "Jeder Eingang führt zu einer eigenen Karte. Eure Änderungen bleiben beim Zurückkehren erhalten."}</p></div>
       <div className="button-row"><Button variant="quiet" aria-label="Unterkarte aktualisieren" onClick={onChanged}><RefreshCw size={16} /></Button><Button variant="quiet" onClick={() => { const parent = ancestors.at(-2); if (guard()) { if (parent) onNavigate(parent); else onRoot(); } }}><ArrowLeft size={16} /> Eine Ebene zurück</Button>
         <Button aria-pressed={editing} onClick={() => { if (guard()) { setDrafts({ map: false, plan: false, metadata: false }); setEditing(value => !value); } }}><Pencil size={16} /> {editing ? "Karte ansehen" : "Karte bearbeiten"}</Button></div>
@@ -74,21 +75,21 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
         selection={selected ? { kind: "pin", id: selected.knotenId } : null} focusObject={selected ? { id: selected.knotenId, x: selected.x, y: selected.y } : null}
         onSelect={hit => { if (hit?.kind !== "pin" && hit?.kind !== "cell") { choose(""); return; } const node = entrances.find(item => item.knotenId === hit.id);
           if (node?.vorhandeneKarteId) navigate({ kind: "tactical", id: node.vorhandeneKarteId, title: node.titel }); else choose(node?.knotenId ?? ""); }} />
-        {city ? <div className="building-legend" aria-label="Gebäudelegende">{BAUWERK_TYPEN.map(typ => <span key={typ}><i style={{ background: `#${BUILDING_COLORS[typ].toString(16).padStart(6, "0")}` }} />{BAUWERK_LABEL[typ]}</span>)}</div> : null}
+        {city ? <div className="building-legend" aria-label="Gebäudelegende">{presentTypes.map(typ => <span key={typ}><i style={{ background: `#${BUILDING_COLORS[typ].toString(16).padStart(6, "0")}` }} />{BAUWERK_LABEL[typ]}</span>)}</div> : null}
         <p className="field-help"><DoorOpen size={14} /> {city ? "Dächer auswählen, Gebäudedaten bearbeiten und Innenräume erzeugen. Ein Portal öffnet eine vorhandene Unterkarte direkt." : "Wähle einen Raum, um ihn zu benennen oder eine weitere Unterkarte anzulegen."}</p></div>
         <aside className="panel nested-map-rooms" aria-label={city ? "Gebäude und Unterkarten" : "Räume und Unterkarten"}>
           <div className="nested-index-heading"><h2>{city ? <Building2 size={18} /> : <Map size={18} />}{city ? "Gebäude" : "Räume & Unterkarten"}</h2><span>{entrances.filter(node => node.vorhandeneKarteId).length} erschlossen</span></div>
           <label className="nested-search"><Search size={15} /><input aria-label={city ? "Gebäude suchen" : "Räume suchen"} placeholder={city ? "Name, Typ oder Beschreibung …" : "Raum suchen …"} value={query} onChange={event => setQuery(event.target.value)} /></label>
           <select aria-label="Orte filtern" value={filter} onChange={event => setFilter(event.target.value)}><option value="all">Alle {city ? "Gebäude" : "Räume"}</option><option value="linked">Mit Unterkarte</option>{city ? BAUWERK_TYPEN.map(typ => <option key={typ} value={typ}>{BAUWERK_LABEL[typ]}</option>) : null}</select>
           {children.loading ? <Loading /> : !entrances.length ? <EmptyState title={city ? "Noch keine Gebäude" : "Noch keine Räume"}>Lege im Karteneditor eine Region an, um darin eine Unterkarte zu verknüpfen.</EmptyState> : null}
-          <ul className="nested-building-list">{visible.map(node => { const Icon = node.bauwerk ? BUILDING_ICONS[node.bauwerk.typ] : Map; return <li key={node.knotenId}>
+          <ul className="nested-building-list">{visible.map(node => { const Icon = node.bauwerk ? BUILDING_ICONS[node.bauwerk.typ] ?? Building2 : Map; return <li key={node.knotenId}>
             <button type="button" aria-pressed={selectedId === node.knotenId} onClick={() => choose(node.knotenId)}><Icon size={18} /><span>{node.titel}<small>{node.bauwerk ? BAUWERK_LABEL[node.bauwerk.typ] : "Raum"} · {node.vorhandeneKarteId ? "Innenraum vorhanden" : "Noch nicht betreten"}</small></span></button>
             {node.vorhandeneKarteId ? <button className="nested-open-shortcut" type="button" aria-label={`${node.titel} betreten`} title="Unterkarte öffnen" onClick={() => navigate({ kind: "tactical", id: node.vorhandeneKarteId!, title: node.titel })}><DoorOpen size={17} /></button> : null}
           </li>; })}</ul>
           {entrances.length && !visible.length ? <p className="field-help">Keine passenden Orte. Ändere die Suche oder den Filter.</p> : null}
           {selected && children.data ? <div className="nested-building-inspector"><BuildingMetadata key={selected.knotenId} campaignId={campaignId} mapId={mapId} node={selected} version={children.data.version} onChanged={onChanged} onDirty={reportMetadata} />
             <MapEntrance key={`${selected.knotenId}:${selected.bauwerk?.typ ?? "frei"}`} campaignId={campaignId} parentKind="tactical" parentMapId={mapId} nodeId={selected.knotenId} title={selected.titel}
-              version={children.data.version} canEnter={selected.canEnter && !drafts.metadata} childMapId={selected.vorhandeneKarteId} profil={selected.bauwerk?.typ} stil={children.data.stil}
+              version={children.data.version} canEnter={selected.canEnter && !drafts.metadata} childMapId={selected.vorhandeneKarteId} profil={selected.bauwerk?.typ} stil={children.data.stil} setting={children.data.setting}
               onOpen={id => navigate({ kind: "tactical", id, title: selected.titel })} onChanged={onChanged} />
             {drafts.metadata ? <p className="field-help">Speichere die Gebäudedaten, bevor du einen neuen Innenraum erzeugst.</p> : null}
           </div> : entrances.length ? <div className="nested-select-hint"><Building2 size={28} /><p>Wähle {city ? "ein Gebäude" : "einen Raum"} auf der Karte oder in der Liste.</p></div> : null}
@@ -121,15 +122,15 @@ function BuildingMetadata({ campaignId, mapId, node, version, onChanged, onDirty
     {task.error ? <Notice error>{task.error}<Button variant="quiet" onClick={onChanged}>Aktuellen Stand laden</Button></Notice> : null}</form>;
 }
 
-export function MapEntrance({ campaignId, parentKind, parentMapId, nodeId, title, version, canEnter, childMapId, onOpen, onChanged, profil, defaultArt, stil = "gemalt" }: {
+export function MapEntrance({ campaignId, parentKind, parentMapId, nodeId, title, version, canEnter, childMapId, onOpen, onChanged, profil, defaultArt, stil = "gemalt", setting = "fantasy" }: {
   campaignId: string; parentKind: "atlas" | "tactical"; parentMapId: string; nodeId: string; title: string; version: number;
   canEnter: boolean; childMapId?: string | null; onOpen: (id: string) => void; onChanged: () => void;
-  profil?: BauwerkTyp; defaultArt?: MapArt; stil?: MapStyle;
+  profil?: BauwerkTyp; defaultArt?: MapArt; stil?: MapStyle; setting?: KartenSetting;
 }) {
   const task = useTask(), command = useCommand(), mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [linking, setLinking] = useState(false), [targetId, setTargetId] = useState("");
-  const [settings, setSettings] = useState(() => generationSettings(defaultArt ?? (parentKind === "atlas" ? "siedlung" : "grundriss"), profil ?? "frei", stil));
+  const [settings, setSettings] = useState(() => generationSettings(defaultArt ?? (parentKind === "atlas" ? "siedlung" : "grundriss"), profil ?? "frei", stil, setting));
   const maps = useResource<TacticalMapSummary[]>(linking ? apiPath(campaignId, "/tactical/maps") : null);
   const defaults = useResource<GenerationDefaults>(!childMapId ? apiPath(campaignId, "/tactical/generate/defaults") : null);
   const problem = defaults.data ? generationError(settings, defaults.data) : null;

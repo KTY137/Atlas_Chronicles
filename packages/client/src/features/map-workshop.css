@@ -32,6 +32,14 @@
 .map-style-swatch{width:30px;height:38px;flex-shrink:0;border-radius:4px}
 .map-style-swatch.painted{background:linear-gradient(145deg,#a9b28b 25%,#cbbd98 26% 42%,#aa765b 43% 70%,#d5c9aa 71%);box-shadow:inset 0 0 7px #37271755}
 .map-style-swatch.blueprint{background:repeating-linear-gradient(0deg,transparent 0 8px,#9c916c 9px 10px),repeating-linear-gradient(90deg,#ede6d0 0 8px,#9c916c 9px 10px)}
+.map-style-swatch.zeitwelten{background:linear-gradient(90deg,transparent 42%,#8ee4d0 43% 48%,transparent 49%),linear-gradient(145deg,#748c98 0 24%,#263942 25% 56%,#d0a47e 57% 76%,#3a5863 77%);box-shadow:inset 0 0 8px #14262d80}
+.map-style-options button:first-child:last-child,.map-style-options button:first-child:nth-last-child(3){grid-column:1/-1}
+.map-era-section{display:grid;gap:9px}
+.map-era-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.map-era-options button{border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);padding:11px 8px;text-align:left;font:inherit;cursor:pointer}
+.map-era-options button[aria-pressed=true]{border-color:var(--accent-strong);box-shadow:inset 0 0 0 1px var(--accent-strong);background:var(--surface-2)}
+.map-era-options strong{font-size:11px;display:block}
+.map-era-options small{display:block;font-size:10px;line-height:1.5;margin-top:6px}
 .map-fine-settings{border-top:1px solid var(--line);padding-top:12px;font-size:12px}
 .map-fine-settings summary{cursor:pointer;color:var(--text-muted)}
 .map-fine-settings>div{display:grid;gap:14px;padding:16px 0 0}

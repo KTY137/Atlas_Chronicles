@@ -80,4 +80,25 @@ describe("Ausgelieferte Dateien überleben einen Client-Build ohne Neustart", ()
     expect(response.statusCode).toBe(404);
     expect(response.headers["content-type"]).not.toMatch(/html/);
   });
+
+  it("lädt große Modulbündel ohne das API-Aktionsbudget zu verbrauchen", async () => {
+    const isolated = await buildApp(db, { ...config, staticRoot: root });
+    try {
+      const first = await isolated.inject({ url: "/api/health" });
+      expect(first.statusCode).toBe(200);
+      for (let i = 0; i < 280; i++) {
+        const module = await isolated.inject({ method: i % 2 ? "HEAD" : "GET", url: i % 3 ? "/assets/spaet-CAFEBABE.js" : "/assets/spaet-CAFEBABE.css" });
+        expect(module.statusCode).toBe(200);
+      }
+      const next = await isolated.inject({ url: "/api/health" });
+      expect(next.statusCode).toBe(200);
+      expect(Number(next.headers["x-ratelimit-remaining"])).toBe(Number(first.headers["x-ratelimit-remaining"]) - 1);
+      const module = await isolated.inject({ url: "/assets/spaet-CAFEBABE.js" });
+      expect(module.headers["cache-control"]).toContain("immutable");
+      expect((await isolated.inject({ url: "/index.html" })).headers["cache-control"]).toBe("no-store");
+      // Encode the slash too: URL parsing normally collapses a standalone encoded '..'.
+      expect((await isolated.inject({ url: "/assets/..%2findex.html" })).statusCode).not.toBe(200);
+      expect((await isolated.inject({ url: "/api/gibt-es-nicht" })).statusCode).toBe(404);
+    } finally { await isolated.close(); }
+  }, 20_000);
 });

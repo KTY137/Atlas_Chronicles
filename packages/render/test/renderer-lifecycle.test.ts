@@ -9,7 +9,7 @@ import type { MapPinIcon, ProjectedMapScene } from "../src/model.ts";
 // narrow Pixi boundary records geometry submission; it does not simulate GPU speed.
 const pixi = vi.hoisted(() => ({ type: 1, resolution: 1, paths: 0, strokes: [] as { color?: number; width?: number; pixelLine?: boolean }[], textures: [] as { source: { scaleMode: string }; destroy: ReturnType<typeof vi.fn> }[],
   graphics: [] as { position: { x: number; y: number }; scale: { x: number; y: number }; circles: number[]; paths: number; visible: boolean; fills: unknown[]; segments: number[][] }[],
-  labels: [] as { text: string; visible: boolean }[] }));
+  labels: [] as { text: string; visible: boolean }[], sprites: [] as { destroyed: boolean; position: { x: number; y: number }; scale: { x: number; y: number } }[] }));
 vi.mock("pixi.js", () => {
   class Vector { x = 0; y = 0; set(x: number, y = x) { this.x = x; this.y = y; } }
   class Container {
@@ -35,7 +35,11 @@ vi.mock("pixi.js", () => {
     canvas = new Canvas(); stage = new Container(); renderer = { type: pixi.type, resolution: pixi.resolution, resize() {} };
     async init() {} render() {} destroy() { this.stage.destroy(); }
   }
-  class Sprite extends Container { width = 0; height = 0; anchor = new Vector(); }
+  class Sprite extends Container {
+    width = 0; height = 0; anchor = new Vector(); destroyed = false;
+    constructor() { super(); pixi.sprites.push(this); }
+    override destroy() { this.destroyed = true; super.destroy(); }
+  }
   return { Application, Container, Graphics, Text, Sprite, RendererType: { WEBGL: 1, WEBGPU: 2, CANVAS: 4 }, Texture: { from() { const texture = { source: { scaleMode: "linear" }, destroy: vi.fn() }; pixi.textures.push(texture); return texture; } } };
 });
 
@@ -45,7 +49,7 @@ const scene: ProjectedMapScene = { id: "authorized-scene", width: 2560, height: 
   rasterScope: "authorized-view" };
 function host() { const children: unknown[] = []; return { clientWidth: 1200, clientHeight: 800, appendChild(child: unknown) { children.push(child); }, children } as unknown as HTMLElement; }
 beforeEach(() => {
-  pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0; pixi.labels.length = 0;
+  pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0; pixi.labels.length = 0; pixi.sprites.length = 0;
   vi.stubGlobal("window", { devicePixelRatio: 1 }); vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1)); vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
 });
@@ -101,6 +105,31 @@ describe("mounted renderer submission and resource lifecycle", () => {
     const late = { close: vi.fn() } as unknown as ImageBitmap;
     map.setStampImages([{ asset, image: late }]); expect(late.close).toHaveBeenCalledTimes(1);
     expect(pixi.textures).toHaveLength(1); map.destroy();
+  });
+
+  it.each([15, 40])("keeps a partly visible 128 x 320 bitmap on layer %s through zoom and culls it only offscreen", async layer => {
+    const asset = "pk.zeitwelten/bus", bitmap = { width: 128, height: 320, close: vi.fn() } as unknown as ImageBitmap;
+    const map = await createMapRenderer(host(), { ...scene, width: 4096, height: 4096, tokens: [], lines: [],
+      stamps: [{ id: "bus", asset, x: 700, y: 1700, s: 10, r: 0, l: layer }] });
+    const visible = () => pixi.sprites.filter(sprite => !sprite.destroyed);
+    map.setCamera({ x: 0, y: 0, scale: 1 }); map.setStampImages([{ asset, image: bitmap }]);
+    expect(visible()).toHaveLength(1);
+    expect(visible()[0]).toMatchObject({ position: { x: 700, y: 1700 }, scale: { x: 10, y: 10 } });
+    map.setCamera({ x: 0, y: 0, scale: 2 }); expect(visible()).toHaveLength(1);
+    map.panBy(0, -10_000); expect(visible()).toHaveLength(0);
+    map.destroy(); expect(bitmap.close).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["flat", "tech"] as const)("clips %s roof seams inside a concave footprint", async roof => {
+    const polygon = [[0, 0], [120, 0], [120, 100], [80, 100], [80, 20], [40, 20], [40, 100], [0, 100]] as const;
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], cells: [{ id: "building", polygon, surface: "building", roof }] });
+    const shape = pixi.graphics.find(graphics => graphics.fills.some(fill => typeof fill === "object" && fill !== null && "color" in fill && fill.color === 0xb87954))!;
+    expect(shape.segments.length).toBeGreaterThan(2);
+    for (const [x1, y1, x2, y2] of shape.segments) {
+      expect(y1).toBe(y2); expect(y1! > 20 && y1! < 100).toBe(true);
+      expect(x1! >= 0 && x2! <= 40 || x1! >= 80 && x2! <= 120).toBe(true);
+    }
+    map.destroy();
   });
 
   it("rejects unknown presentation surfaces and non-boolean name visibility", async () => {

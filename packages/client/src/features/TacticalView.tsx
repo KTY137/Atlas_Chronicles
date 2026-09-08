@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TacticalAck, TacticalMoveInput, TacticalToken, TacticalView as Board } from "@chronicle/protocol";
+import type { KartenSetting } from "@chronicle/szene";
 import { snapMapPoint, type MapPoint, type ProjectedMapScene } from "@chronicle/render";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
@@ -44,7 +45,7 @@ function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpenEntry }
   useEffect(() => { onDirty(Object.values(drafts).some(Boolean)); }, [drafts, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const data = board.data === invalidated || board.data?.gm !== gm ? null : board.data;
-  const mapNodes = useResource<{ nodes: MapNode[]; art?: string }>(data?.gm && data.map ? apiPath(campaignId, `/maps/tactical/${data.map.id}/children`) : null, revision, 10000);
+  const mapNodes = useResource<{ nodes: MapNode[]; art?: string; setting?: KartenSetting }>(data?.gm && data.map ? apiPath(campaignId, `/maps/tactical/${data.map.id}/children`) : null, revision, 10000);
   const objects = data?.entities ?? [];
   const visibleObjects = useMemo(() => data ? mapObjectWindow(data.entities, selectedObject, data.size[0], data.size[1]) : [], [data, selectedObject]);
   const chosenObject = objects.find(o => objectKey(o) === selectedObject);
@@ -56,7 +57,7 @@ function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpenEntry }
     if (!data) return null;
     // The complete pinned document is present only in the GM projection. Players retain
     // their knowledge-filtered regions and entities; no private stamps or names enter it.
-    const authored = data.gm && data.document ? mapDocumentScene(data.sessionId, data.document, (mapNodes.data?.nodes ?? []).filter(node => data.document!.geometry.regions.some(region => region.id === node.knotenId)), mapNodes.data?.art) : null;
+    const authored = data.gm && data.document ? mapDocumentScene(data.sessionId, data.document, (mapNodes.data?.nodes ?? []).filter(node => data.document!.geometry.regions.some(region => region.id === node.knotenId)), mapNodes.data?.art, undefined, mapNodes.data?.setting) : null;
     return { ...authored,
     id: data.sessionId, width: data.size[0], height: data.size[1], ...(data.hatRaster ? { rasterScope: data.rasterDigest } : {}),
     cells: authored?.cells ?? data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, entryId: o.entryId })),

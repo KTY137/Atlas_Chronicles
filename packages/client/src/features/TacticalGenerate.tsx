@@ -29,7 +29,7 @@ export function TacticalGenerate({ campaignId, onCreated }: { campaignId: string
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const visiblePreview = preview?.fingerprint === fingerprint ? preview.data : null;
-  const scene = useMemo(() => visiblePreview ? mapDocumentScene(`preview:${visiblePreview.keimHash}`, visiblePreview.document, visiblePreview.nodes, visiblePreview.art) : null, [visiblePreview]);
+  const scene = useMemo(() => visiblePreview ? mapDocumentScene(`preview:${visiblePreview.keimHash}`, visiblePreview.document, visiblePreview.nodes, visiblePreview.art, undefined, settings.setting) : null, [visiblePreview, settings.setting]);
   if (defaults.loading) return <Loading text="Kartenwerkstatt wird vorbereitet …" />;
   if (defaults.error || !defaults.data) return <Notice error>{defaults.error || "Der Generator ist nicht verfügbar."}</Notice>;
   const problem = generationError(settings, defaults.data), ready = !!name.trim() && !!keim.trim() && !problem;
@@ -40,7 +40,7 @@ export function TacticalGenerate({ campaignId, onCreated }: { campaignId: string
       const data = await command<Vorschau>(apiPath(campaignId, "/tactical/generate/preview"), request());
       if (mounted.current && latest.current === current) setPreview({ fingerprint: current, data });
     }); }}><fieldset disabled={task.busy}>
-      <label>Name der Karte<input value={name} maxLength={160} required placeholder={settings.art === "siedlung" ? "z. B. Nebelhafen" : "z. B. Kapelle des Morgenlichts"} onChange={event => setName(event.target.value)} /></label>
+      <label>Name der Karte<input value={name} maxLength={160} required placeholder={settings.setting === "scifi" ? "z. B. Kolonie Aurora" : settings.setting === "gegenwart" ? "z. B. Hafenviertel Nord" : settings.art === "siedlung" ? "z. B. Nebelhafen" : "z. B. Kapelle des Morgenlichts"} onChange={event => setName(event.target.value)} /></label>
       <MapGenerationControls value={settings} defaults={defaults.data} onChange={setSettings} />
       <label>Weltkeim<div className="map-seed-field"><input value={keim} maxLength={256} required onChange={event => setKeim(event.target.value)} /><Button variant="quiet" aria-label="Neuen Keim würfeln" title="Neuen Keim würfeln" onClick={() => setKeim(crypto.randomUUID().slice(0, 8))}><Dices size={18} /></Button></div><small>Gleicher Keim und gleiche Einstellungen ergeben dieselbe Karte.</small></label>
       {problem ? <Notice error>{problem}</Notice> : null}

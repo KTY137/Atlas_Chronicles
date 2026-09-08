@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it, vi } from "vitest";
-import { BAUWERK_LABEL, BAUWERK_TYPEN } from "@chronicle/szene";
+import { BAUWERK_LABEL, BAUWERK_TYPEN, KARTEN_SETTING_LABEL } from "@chronicle/szene";
 import * as Generation from "../src/features/map-generation.ts";
 
 /** Actual form handlers/effects, with held transport responses. The harness controls network
@@ -43,7 +43,7 @@ function harness(file: "NestedMapView" | "TacticalGenerate", component: string, 
     require: (name: string) => {
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
-      if (name === "@chronicle/szene") return { BAUWERK_TYPEN, BAUWERK_LABEL };
+      if (name === "@chronicle/szene") return { BAUWERK_TYPEN, BAUWERK_LABEL, KARTEN_SETTING_LABEL };
       if (name === "./map-generation") return Generation;
       if (name === "../hooks") return { useResource: (path: string | null) => ({ data: resource(path), loading: false, error: "" }), useTask: () => task };
       if (name === "./game-api") return { useCommand: () => (path: string, body: unknown, method?: string) => new Promise((resolve, reject) => { requests.push({ path, body, method, resolve, reject }); }) };

@@ -48,6 +48,21 @@ keinen zweiten Validator in einer zweiten Sprache.
 | `pk.grundriss` 1.2.0 | 84 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-grundrisspaket.mjs`](../tools/assets/erzeuge-grundrisspaket.mjs) |
 | `pk.atlas` 1.1.0 | 32 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-atlaspaket.mjs`](../tools/assets/erzeuge-atlaspaket.mjs) |
 | `pk.gemalt` 1.1.0 | 55 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-gemaltpaket.mjs`](../tools/assets/erzeuge-gemaltpaket.mjs) |
+| `pk.zeitwelten` 1.0.0 | 100 | CC0-1.0 | technische Draufsichten für Gegenwart, Industrie und Science-Fiction — [`tools/assets/erzeuge-zeitweltenpaket.mjs`](../tools/assets/erzeuge-zeitweltenpaket.mjs) |
+
+`pk.zeitwelten` ergänzt **100 eigenständige Silhouetten und Einrichtungen**: zwölf kachelbare
+Materialböden; Wände, Türen und vertikale Übergänge; Wohnen, Büros, Handel und Bildung;
+Medizin, Labore und Maschinen; Raumfahrttechnik sowie Straßenfahrzeuge und Dachinstallationen.
+Kupfer, Schieferblau und Salbeigrün verbinden Metallverläufe, Glasflächen, lesbare Details und
+weiche Kontaktschatten zu einer gemeinsamen technischen Draufsicht. Die Zeichnungen enthalten
+kein fremdes Raster-, Schrift- oder Vorlagenmaterial. Exklusive Motive tragen `gegenwart` oder
+`scifi`; verwendbare gemeinsame Einrichtung bleibt ohne Settingtag. Zellgrößen, Platzbedarf,
+Mittelanker, semantische Schlagworte und Dateihashes stehen im normalen Paketmanifest.
+
+`node tools/assets/zeitwelten-kontaktbogen.mjs` erzeugt den durchsuchbaren Kontaktbogen sowie
+64-/128-Pixel-Übersichten und 4×4-Bodenproben unter `.local/map-expansion/`. Die Paketprüfung
+prüft zusätzlich alle 100 Rasterisierungen, blickdichte Böden, unterschiedliche Geometrien
+unabhängig von Farben und die tatsächlich benötigten Gegenwart-/Science-Fiction-Schlagworte.
 
 `pk.grundriss` sind **schematische Grundriss-Symbole in einer Tuschesprache**, lesbar bei 64 px.
 Es ist ausdrücklich keine gemalte Battlemap-Kunst; das steht so im Pakettitel, damit niemand es am
@@ -129,7 +144,7 @@ bei einzeln erzeugten Bildern die eigentliche Schwierigkeit ist.
 Die drei PNGs bleiben, wo sie sind, und dienen als Stilvorlage. Sobald die Lizenzfrage entschieden
 ist, ist ihre Registrierung eine eigene Entscheidung, kein Nebeneffekt dieses Pakets.
 
-Alle drei Pakete zeichnen mit derselben Feder: Palette, Rauschen, Striche und die Baumaschinerie
+Die drei ursprünglichen Pakete zeichnen mit derselben Feder: Palette, Rauschen, Striche und die Baumaschinerie
 stehen in [`tools/assets/tusche.mjs`](../tools/assets/tusche.mjs). Extrahiert wurde sie, als das
 zweite Paket kam, und keinen Tag früher — eine Abstraktion mit einem Nutzer ist Spekulation. Dass
 die Extraktion nichts an der Kunst verändert hat, ist kein Versprechen, sondern eine Gate-Zeile:

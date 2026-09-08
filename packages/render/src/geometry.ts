@@ -115,6 +115,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
     for (const point of cell.polygon) if (point.length !== 2 || !point.every(Number.isFinite)) throw new Error("invalid polygon coordinate");
     color(cell.fill);
     if (cell.surface !== undefined && cell.surface !== "building" && cell.surface !== "street") throw new Error("invalid map surface");
+    if (cell.roof !== undefined && !["pitched", "flat", "tech"].includes(cell.roof)) throw new Error("invalid roof presentation");
   }
   for (const [kind, rows] of [["pin", scene.pins], ["token", scene.tokens ?? []]] as const) for (const item of rows) {
     id(kind, item.id);

@@ -3,7 +3,7 @@
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
 import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS } from "@chronicle/forge";
-import { TacticalMapValidationError } from "@chronicle/szene";
+import { BAUWERK_TYPEN, KARTEN_SETTINGS, TacticalMapValidationError } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { createGrundriss } from "../domain/grundriss.ts";
@@ -26,9 +26,11 @@ const closed = { additionalProperties: false } as const;
 
 const zelle = Type.Integer({ minimum: GRUNDRISS_LIMITS.zellenMin, maximum: GRUNDRISS_LIMITS.zellenMax });
 
-export const BauwerkTypSchema = Type.Union([Type.Literal("haus"), Type.Literal("kirche"), Type.Literal("taverne"), Type.Literal("schmiede"), Type.Literal("lager"), Type.Literal("turm")]);
-export const KartenStilSchema = Type.Union([Type.Literal("grundriss"), Type.Literal("gemalt")]);
+export const BauwerkTypSchema = Type.Union(BAUWERK_TYPEN.map(typ => Type.Literal(typ)));
+export const KartenSettingSchema = Type.Union(KARTEN_SETTINGS.map(setting => Type.Literal(setting)));
+export const KartenStilSchema = Type.Union([Type.Literal("grundriss"), Type.Literal("gemalt"), Type.Literal("zeitwelten")]);
 export const OptionenSchema = Type.Object({
+  setting: Type.Optional(KartenSettingSchema),
   zellen: Type.Optional(Type.Tuple([zelle, zelle])),
   zellgroesse: Type.Optional(Type.Integer({ minimum: GRUNDRISS_LIMITS.zellgroesseMin, maximum: GRUNDRISS_LIMITS.zellgroesseMax })),
   raeume: Type.Optional(Type.Integer({ minimum: GRUNDRISS_LIMITS.raeumeMin, maximum: GRUNDRISS_LIMITS.raeumeMax })),
@@ -59,6 +61,7 @@ export const HoehleOptionenSchema = Type.Object({
 
 const grundstueck = Type.Integer({ minimum: SIEDLUNG_LIMITS.grundstueckMin, maximum: SIEDLUNG_LIMITS.grundstueckMax });
 export const SiedlungOptionenSchema = Type.Object({
+  setting: Type.Optional(KartenSettingSchema),
   art: Type.Optional(Type.Union([Type.Literal("weiler"), Type.Literal("dorf"), Type.Literal("stadt")])),
   ausdehnung: Type.Optional(Type.Tuple([zelle, zelle])),
   zellgroesse: Type.Optional(Type.Integer({ minimum: SIEDLUNG_LIMITS.zellgroesseMin, maximum: SIEDLUNG_LIMITS.zellgroesseMax })),

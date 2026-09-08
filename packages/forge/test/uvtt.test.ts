@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { parseTacticalMapDocument } from "@chronicle/szene";
+import { KARTEN_SETTINGS, parseTacticalMapDocument } from "@chronicle/szene";
 import { exportTacticalUvtt, exportUvtt, importUvtt, inspectUvttImage, type UvttProvenance } from "../src/uvtt.ts";
 
 const sample = readFileSync(new URL("./fixtures/uvtt/sampleMap.dd2vtt", import.meta.url), "utf8");
@@ -51,6 +51,18 @@ describe("real external Dungeondraft UVTT fixture", () => {
 });
 
 describe("UVTT fidelity and coordinate semantics", () => {
+  it("retains optional map settings while accepting old provenance and rejecting malformed extensions", () => {
+    const source = JSON.stringify(raw());
+    expect(importUvtt(source, attribution).source.provenance).toEqual(attribution);
+    for (const setting of KARTEN_SETTINGS) {
+      const origin = { ...attribution, setting }, value = importUvtt(source, origin);
+      expect(value.source.provenance).toEqual(origin);
+      expect(importUvtt(exportUvtt(value).json, value.source.provenance).source.provenance.setting).toBe(setting);
+    }
+    for (const setting of [null, "", "modern", "scifi\u0000", 1, {}, ["gegenwart"]])
+      expect(() => importUvtt(source, { ...attribution, setting } as UvttProvenance)).toThrow(/provenance.setting/);
+    expect(() => importUvtt(source, { ...attribution, setting: "scifi", settings: {} } as UvttProvenance)).toThrow(/closed provenance/);
+  });
   it("preserves unrecognized extensions in the source and surviving exported identities", () => {
     const source = raw(); source.software = "external-exporter"; source.portals[0].custom = { windowHint: "producer-specific" }; source.lights[0].position.label = "source-only";
     const value = ingest(source); expect(value.fidelity.issues.filter(i => i.code === "source-only").map(i => i.path)).toEqual(["uvtt.software", "portals[0].custom", "lights[0].position.label"]);

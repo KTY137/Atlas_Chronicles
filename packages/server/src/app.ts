@@ -4,6 +4,7 @@ import Fastify, { type FastifyRequest } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import staticFiles from "@fastify/static";
 import { timingSafeEqual } from "node:crypto";
+import { join } from "node:path";
 import type { Static } from "@sinclair/typebox";
 import type { RegistrationResponseJSON, AuthenticationResponseJSON } from "@simplewebauthn/server";
 import * as P from "@chronicle/protocol";
@@ -204,7 +205,16 @@ export async function buildApp(db: Db, config: AppConfig) {
     // (@fastify/static index.js, else-Zweig). Jeder danach gebaute Client-Chunk hatte damit
     // keine Route mehr und fiel auf `index.html` zurück — siehe `static-assets.test.ts`.
     // Der Wildcard löst pro Anfrage auf und überlebt einen Neubau ohne Serverneustart.
-    await app.register(staticFiles, { root: config.staticRoot });
+    await app.register(staticFiles, { root: config.staticRoot, setHeaders(reply) {
+      // Hashed build resources may be reused; index.html and application routes stay no-store.
+      reply.header("Cache-Control", reply.request.routeOptions.url === "/assets/*" ? "public, max-age=31536000, immutable" : "no-store");
+    } });
+    // Loading a renderer can fetch dozens of modules. Static bytes never consume the user's
+    // API action budget. sendFile retains @fastify/static's path and file boundary, rooted in
+    // this public build directory; the general static/HTML route keeps its existing limit.
+    const assetRoot = join(config.staticRoot, "assets");
+    app.get<{ Params: { "*": string } }>("/assets/*", { config: { rateLimit: false } },
+      (req, reply) => reply.sendFile(req.params["*"], assetRoot));
   }
   await app.ready();
   return app;

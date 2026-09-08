@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
-  BAUWERK_LABEL, parseTacticalMapDocument, weltkeim,
-  type AssetpaketV1, type BauwerkTyp, type Herkunft, type Kante, type Knoten, type TacticalLight,
+  BAUWERK_LABEL, BAUWERK_SETTINGS, KARTEN_SETTINGS, parseTacticalMapDocument, weltkeim,
+  type AssetpaketV1, type BauwerkTyp, type KartenSetting, type Herkunft, type Kante, type Knoten, type TacticalLight,
   type TacticalMapDocumentV1, type Weltkeim,
 } from "@chronicle/szene";
 import {
@@ -62,7 +62,7 @@ import {
 
 export const SIEDLUNG_ERZEUGER = "chronicle-siedlung";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const SIEDLUNG_VERSION = "3";
+export const SIEDLUNG_VERSION = "4";
 
 export const SIEDLUNG_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 256, grundstueckMin: 2, grundstueckMax: 24,
@@ -71,6 +71,7 @@ export const SIEDLUNG_LIMITS = Object.freeze({
 export type SiedlungArt = "weiler" | "dorf" | "stadt";
 
 export interface SiedlungOptionen {
+  readonly setting?: KartenSetting;
   /** Hamlet, village or town — shifts every default below, and is itself part of the option vector
    * because it also chooses the street surface (dirt track vs paved stone), not only the numbers. */
   readonly art: SiedlungArt;
@@ -94,7 +95,7 @@ const SIEDLUNG_ART_STANDARD: Readonly<Record<SiedlungArt, Omit<SiedlungOptionen,
   stadt: Object.freeze({ ausdehnung: [56, 44] as const, zellgroesse: 96, bauwerke: 130, strassenDichte: 0.55, grundstueck: [2, 5] as const, licht: true }),
 });
 
-export const SIEDLUNG_STANDARD: SiedlungOptionen = Object.freeze({ art: "dorf", ...SIEDLUNG_ART_STANDARD.dorf });
+export const SIEDLUNG_STANDARD: SiedlungOptionen = Object.freeze({ art: "dorf", setting: "fantasy", ...SIEDLUNG_ART_STANDARD.dorf });
 
 export interface SiedlungAuftrag {
   /** The seed. Typically a world-scale `Ort.kindKeim`, or a room's `Herkunft.kindKeim` one scale
@@ -202,7 +203,9 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   if (typeof auftrag?.keim !== "string" || !auftrag.keim.trim() || auftrag.keim.length > 256) fail("option", "auftrag.keim", "nichtleerer Keim mit höchstens 256 Zeichen erwartet");
   const art: SiedlungArt = auftrag.optionen?.art ?? "dorf";
   if (art !== "weiler" && art !== "dorf" && art !== "stadt") fail("option", "optionen.art", "weiler, dorf oder stadt erwartet");
-  const optionen: SiedlungOptionen = { ...SIEDLUNG_ART_STANDARD[art], ...auftrag.optionen, art };
+  const setting = auftrag.optionen?.setting === undefined ? "fantasy" : auftrag.optionen.setting;
+  if (!KARTEN_SETTINGS.some(era => era === setting)) fail("option", "optionen.setting", "fantasy, gegenwart oder scifi erwartet");
+  const optionen: SiedlungOptionen = { ...SIEDLUNG_ART_STANDARD[art], ...auftrag.optionen, art, setting };
   const [breite, hoehe] = optionen.ausdehnung;
   const L = SIEDLUNG_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>
@@ -232,7 +235,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     optionen: {
       art: optionen.art, ausdehnung: [breite, hoehe], zellgroesse: optionen.zellgroesse,
       bauwerke: optionen.bauwerke, strassenDichte: optionen.strassenDichte, grundstueck: [gMin, gMax],
-      licht: optionen.licht,
+      licht: optionen.licht, setting,
       paket: { id: paket.id, version: paket.version, zellgroesse: paket.zellgroesse },
     } as Readonly<Record<string, CanonicalValue>>,
   });
@@ -252,15 +255,16 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   const reihen = Math.max(2, Math.round(zielViertel / spalten));
   const zellBreite = breite / spalten, zellHoehe = hoehe / reihen;
   const rohPunkte: Punkt[] = [];
+  const streuung = setting === "fantasy" ? .34 : setting === "gegenwart" ? .035 : 0;
   for (let j = 0; j < reihen; j++) {
     for (let i = 0; i < spalten; i++) {
       rohPunkte.push([
-        (i + 0.5 + r.zahl(-0.34, 0.34)) * zellBreite,
-        (j + 0.5 + r.zahl(-0.34, 0.34)) * zellHoehe,
+        (i + 0.5 + r.zahl(-streuung, streuung) + (setting === "scifi" && j % 2 ? .18 : 0)) * zellBreite,
+        (j + 0.5 + r.zahl(-streuung, streuung)) * zellHoehe,
       ]);
     }
   }
-  const punkte = lloyd(rohPunkte, rahmen, 2).map(qp);
+  const punkte = (setting === "fantasy" ? lloyd(rohPunkte, rahmen, 2) : rohPunkte).map(qp);
   const alleZellen = voronoi(punkte, rahmen);
 
   // -- 2. Stadtgebiet: eine gejitterte Scheibe um die Mitte -----------------------------------
@@ -274,7 +278,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   const abstandZurMitte = punkte.map((p) => Math.sqrt((p[0] - mitteX) ** 2 + (p[1] - mitteY) ** 2));
   for (let i = 0; i < punkte.length; i++) {
     if (alleZellen[i]!.length < 3) continue;
-    if (abstandZurMitte[i]! <= maxRadius * anteil * r.zahl(0.74, 1.12)) gewaehlt.push(i);
+    if (setting !== "fantasy" || abstandZurMitte[i]! <= maxRadius * anteil * r.zahl(0.74, 1.12)) gewaehlt.push(i);
   }
   // Ein Ort ohne Mitte ist kein Ort: notfalls die nächstgelegenen Viertel nehmen.
   if (gewaehlt.length < 3) {
@@ -304,7 +308,8 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   // Zwei Viertel teilen sich genau eine Kante; sie einmal als Band zu zeichnen ergibt einen
   // planaren Graphen, dessen Maschen die Blöcke sind. Das ist der ganze Unterschied zur alten
   // Kammstruktur, in der Gassen im Nichts endeten.
-  const gassenBreite = Math.max(0.55, Math.min(1.6, 0.7 + optionen.strassenDichte * 0.9));
+  const gassenBreite = setting === "gegenwart" ? 1.4 + optionen.strassenDichte * .6
+    : setting === "scifi" ? 1.2 + optionen.strassenDichte * .5 : Math.max(0.55, Math.min(1.6, 0.7 + optionen.strassenDichte * 0.9));
   const kantenTreffer = new Map<string, { a: number; b: number; von: Punkt; bis: Punkt }>();
   for (let vi = 0; vi < viertel.length; vi++) {
     const zelle = viertel[vi]!.zelle;
@@ -477,10 +482,18 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   const tavernennamen = ["Zum Silberfuchs", "Zur alten Brücke", "Zum goldenen Hirsch", "Zum roten Kessel"];
   const bauwerke: SiedlungBauwerk[] = rohBauwerke.map((b, i) => {
     const platz = rang.get(b.pfad)!;
-    const typ: BauwerkTyp = platz === 0 ? "kirche" : platz === 1 ? "taverne" : platz === 3 ? "schmiede"
-      : platz === 4 || platz > 8 && platz % 11 === 0 ? "lager" : platz === 6 && art === "stadt" ? "turm" : "haus";
-    const titel = typ === "kirche" ? r.waehle(kirchennamen)! : typ === "taverne" ? r.waehle(tavernennamen)!
-      : typ === "haus" ? `Haus ${r.waehle(hausnamen)} ${i + 1}` : `${BAUWERK_LABEL[typ]} ${i + 1}`;
+    const modern: readonly BauwerkTyp[] = ["krankenhaus", "bahnhof", "wohnblock", "schule", "supermarkt", "polizei", "feuerwache", "cafe", "buero", "restaurant", "hotel", "fabrik", "labor", "bibliothek", "museum", "bank", "werkstatt"];
+    const raumfahrt: readonly BauwerkTyp[] = ["raumhafen", "kommando", "raumstation", "medstation", "reaktor", "labor", "werkstatt", "fabrik", "lager"];
+    const mix = setting === "gegenwart" ? modern : raumfahrt;
+    const typ: BauwerkTyp = setting !== "fantasy"
+      ? platz < mix.length ? mix[platz]! : platz % 3 ? (setting === "gegenwart" ? "wohnblock" : "raumstation") : r.waehle(BAUWERK_SETTINGS[setting])!
+      : platz === 0 ? "kirche" : platz === 1 ? "taverne" : platz === 3 ? "schmiede"
+        : platz === 4 || platz > 8 && platz % 11 === 0 ? "lager" : platz === 6 && art === "stadt" ? "turm"
+          : platz === 7 ? "bibliothek" : platz === 9 ? "museum" : platz === 12 ? "bank" : platz === 15 ? "werkstatt" : "haus";
+    const titel = setting === "gegenwart" ? `${BAUWERK_LABEL[typ]} ${r.waehle(["Nordpark", "Parkallee", "Westend", "Hafenring"])} ${i + 1}`
+      : setting === "scifi" ? `${BAUWERK_LABEL[typ]} ${r.waehle(["Orion", "Vega", "Nova", "Kepler"])} ${i + 1}`
+        : typ === "kirche" ? r.waehle(kirchennamen)! : typ === "taverne" ? r.waehle(tavernennamen)!
+          : typ === "haus" ? `Haus ${r.waehle(hausnamen)} ${i + 1}` : `${BAUWERK_LABEL[typ]} ${i + 1}`;
     return { id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: b.strasseId, typ, titel };
   });
   const mitte = (b: SiedlungBauwerk): readonly [number, number] => {
@@ -491,7 +504,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
 
   // -- 6. Mauer und Tore: nur eine Stadt ummauert sich ----------------------------------------
   const mauern: { id: string; kind: "wall"; points: readonly (readonly [number, number])[]; elevation: number }[] = [];
-  if (art === "stadt") {
+  if (art === "stadt" && setting === "fantasy") {
     // Ein Tor ist teuer und selten. Kandidaten sind die Enden der Hauptstraßen, die tatsächlich
     // auf der Mauer liegen; genommen werden die vier äussersten. Eine Mauer mit einer Lücke je
     // Hauptstraße ist keine Mauer, sondern ein Zaunrest — die erste Fassung sah genau so aus.
@@ -527,9 +540,9 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   // -- 7. Stempel: Straßenbelag, Hofboden, eine Eingangsmarke, optionale Laternen -------------
   // A settlement's kind is not only numbers: a village track is dirt, a town street is paved.
   // The pack answers a query; this generator never names an asset (`kartenwerk.ts`'s own rule).
-  const werk = bestuecker(paket, r, z, ids.geometrieId);
-  const strassenAsset = werk.waehle("boden", optionen.art === "stadt" ? "stein" : "erde");
-  const hofAsset = werk.waehle("boden", "erde");
+  const werk = bestuecker(paket, r, z, ids.geometrieId, setting);
+  const strassenAsset = werk.waehle("boden", setting === "gegenwart" ? "asphalt" : setting === "scifi" ? "metall" : optionen.art === "stadt" ? "stein" : "erde");
+  const hofAsset = werk.waehle("boden", setting === "gegenwart" ? "beton" : setting === "scifi" ? "metall" : "erde");
   const inEinem = (p: Punkt, polys: readonly Polygon[]): boolean => {
     for (const poly of polys) if (imPolygon(p, poly)) return true;
     return false;
@@ -565,10 +578,20 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   }
 
   const lichter: TacticalLight[] = [];
+  if (setting !== "fantasy") {
+    const verkehr = werk.waehle("aufbau", "verkehr");
+    if (verkehr) {
+      const frei: [number, number][] = [];
+      for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) {
+        if (inEinem([x + .5, y + .5], strassenPolys) && !inEinem([x + .5, y + .5], bauwerkPolys)) frei.push([x, y]);
+      }
+      for (let i = 0; i < Math.min(12, Math.max(1, Math.floor(bauwerke.length / 6))); i++) werk.platziere(verkehr, frei);
+    }
+  }
   if (optionen.licht) {
     for (const g of gassen) {
       if (g.art !== "hauptstrasse") continue;
-      const asset = werk.waehle("licht", "warm");
+      const asset = werk.waehle("licht", setting === "fantasy" ? "warm" : "kalt");
       if (!asset) continue; // recorded in nichtBedient; not fatal to the map
       const mx = Math.max(0, Math.min(breite - 1, Math.floor((g.von[0] + g.bis[0]) / 2)));
       const my = Math.max(0, Math.min(hoehe - 1, Math.floor((g.von[1] + g.bis[1]) / 2)));
@@ -578,7 +601,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
         // Auf beide Enden geschluesselt: an einer Kreuzung teilen sich mehrere Hauptstrassen
         // denselben Anfangspunkt, und eine Id, die nur den kennt, waere dort nicht eindeutig.
         id: ids.geometrieId("licht", `${q(g.von[0])}_${q(g.von[1])}`, `${q(g.bis[0])}_${q(g.bis[1])}`), position: [letzter.x, letzter.y],
-        range: z * 4, intensity: 0.8, colorArgb: "ffdd8a33", shadows: true, elevation: 0,
+        range: z * 4, intensity: 0.8, colorArgb: setting === "fantasy" ? "ffdd8a33" : "ffb9ddff", shadows: true, elevation: 0,
       });
     }
   }
@@ -603,7 +626,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     grid: { kind: "square", size: z, origin: [0, 0] },
     elevation: 0, geometryElevation: [],
     walls: sortiereNachId(mauern), portals: [], lights: sortiereNachId(lichter),
-    environment: { bakedLighting: false, ambientLightArgb: "ffd9cba0" },
+    environment: { bakedLighting: false, ambientLightArgb: setting === "scifi" ? "ffb4c6dd" : setting === "gegenwart" ? "ffe0e4e7" : "ffd9cba0" },
     background: null,
   });
 
