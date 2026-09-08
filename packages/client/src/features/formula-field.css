@@ -22,9 +22,8 @@
 .ff-tok-text { color: var(--ok); }
 .ff-tok-function, .ff-tok-keyword { color: var(--accent); }
 .ff-tok-operator, .ff-tok-paren { color: var(--text-muted); }
-.ff-tok-missing { text-decoration: line-through; color: var(--danger); }
 .ff-tok-error { text-decoration: underline wavy var(--danger); text-underline-offset: 3px; }
-.ff-tok-end { display: inline-block; min-width: 6px; border-bottom: 2px wavy var(--danger); }
+.ff-tok-end { display: inline-block; min-width: 6px; text-decoration: underline wavy var(--danger); text-underline-offset: 3px; }
 .ff-completion { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin: 4px 0 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; max-height: 260px; overflow: auto; font: 13px/1.4 var(--font-body); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
 .ff-completion li { display: grid; gap: 2px; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
 .ff-completion li.is-active { background: var(--accent-soft); }
