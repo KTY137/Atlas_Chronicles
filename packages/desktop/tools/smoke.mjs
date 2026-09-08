@@ -222,5 +222,12 @@ try{
   const encrypted=await readFile(join(run,"user-data/profiles",profileId,"secrets.dpapi"));assert.ok(!encrypted.includes(Buffer.from("cookieSecret")));
   record("DPAPI ciphertext persisted; original development ports and configuration never selected");
   evidence.passed=true;
-}catch(error){evidence.passed=false;evidence.error=String(error);console.error(error);process.exitCode=1;}
+}catch(error){
+  evidence.passed=false;evidence.error=String(error);console.error(error);process.exitCode=1;
+  if(game&&!game.isClosed())try{
+    evidence.failureView={url:game.url(),text:(await game.locator("body").innerText()).slice(0,12000)};
+    await game.screenshot({path:join(run,"failure.png"),fullPage:true});
+    evidence.gpuFeatures=await application.evaluate(({app})=>app.getGPUFeatureStatus());
+  }catch(captureError){evidence.captureError=String(captureError);}
+}
 finally{try{await stop();}catch(error){evidence.cleanupError=String(error);process.exitCode=1;}await writeFile(join(run,"evidence.json"),JSON.stringify(evidence,null,2));console.log(`Evidence: ${join(run,"evidence.json")}`);}

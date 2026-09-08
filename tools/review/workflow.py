@@ -70,10 +70,13 @@ def build_graph(checkpointer, workflow="review"):
         graph.add_edge(branches, "verification")
         graph.add_conditional_edges("verification", lambda state: "desktop" if state["passed"] else "repair")
         graph.add_edge("repair", "verification")
-        graph.add_edge("desktop", "desktop_verification")
-        graph.add_conditional_edges("desktop_verification", lambda state: "merge_main" if state["passed"] else "desktop_repair")
-        graph.add_edge("desktop_repair", "desktop_verification")
-        graph.add_edge("merge_main", "install")
+        # A verified source fix can land independently of the packaged runtime check.
+        # Installation still requires the actual desktop verifier to pass. This also lets
+        # the user package main while newer features remain in their separate worktree.
+        graph.add_edge("desktop", "merge_main")
+        graph.add_edge("desktop_repair", "merge_main")
+        graph.add_edge("merge_main", "desktop_verification")
+        graph.add_conditional_edges("desktop_verification", lambda state: "install" if state["passed"] else "desktop_repair")
         graph.add_edge("install", "handoff")
         graph.add_edge("handoff", END)
         return graph.compile(checkpointer=checkpointer)

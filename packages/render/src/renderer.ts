@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /// <reference lib="dom" />
+/// <reference path="./pixi-csp.d.ts" />
 import { fitCamera, hitTestMap, mapPinHitRadius, mapToScreen, normalizeCamera, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
 import { rasterTileDisplaySize } from "./tactical-geometry.ts";
 import { createGridGeometryCache } from "./grid-cache.ts";
@@ -30,6 +31,10 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   validateMapScene(initial);
   if (options.signal?.aborted) throw new DOMException("Renderer creation aborted", "AbortError");
   const { Application, Container, Graphics, Text, Sprite, Texture, RendererType } = await import("pixi.js");
+  // This Pixi compatibility module replaces runtime Function generation with static
+  // synchronizers. Its name does not request unsafe-eval; the desktop CSP stays intact.
+  await import("pixi.js/unsafe-eval");
+  if (options.signal?.aborted) throw new DOMException("Renderer creation aborted", "AbortError");
   const app = new Application();
   let viewport: MapPoint = [Math.max(1, host.clientWidth), Math.max(1, host.clientHeight)];
   try {

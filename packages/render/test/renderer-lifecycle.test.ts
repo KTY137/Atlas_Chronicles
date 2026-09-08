@@ -5,6 +5,8 @@ import { createMapRenderer } from "../src/renderer.ts";
 import { mapToScreen } from "../src/geometry.ts";
 import type { MapPinIcon, ProjectedMapScene } from "../src/model.ts";
 
+vi.mock("pixi.js/unsafe-eval", () => ({}));
+
 // The product factory and its camera/resource lifecycle run unchanged. This
 // narrow Pixi boundary records geometry submission; it does not simulate GPU speed.
 const pixi = vi.hoisted(() => ({ type: 1, resolution: 1, paths: 0, strokes: [] as { color?: number; width?: number; pixelLine?: boolean }[], textures: [] as { source: { scaleMode: string }; destroy: ReturnType<typeof vi.fn> }[],

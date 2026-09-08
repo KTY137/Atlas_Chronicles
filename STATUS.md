@@ -2,6 +2,21 @@
 
 Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
 
+## Aktuelle Liefergrenze
+
+Der geprüfte zusammengeführte Stand umfasst die neue Schmiede, Siedlungsvorschau,
+Unterkarten, alle 571 Assets und den Desktop-CSP-Fix. Der CSP-Browserfall wurde zuerst
+rot und danach grün mit tatsächlich gemessenem Kartenpixel; die Sicherheitsrichtlinie
+bleibt unverändert. Typecheck und Produktionsbuild bestehen auch im isolierten
+`delivery-20260908`-Checkout ohne die neuere Kartografie. Dieser Stand wird jetzt nach
+`main` übernommen. Die tatsächliche neue Desktop-Paketprüfung muss vor Installation
+zusätzlich bestehen.
+
+Der größere Karten-/Editor-Rework ist weiterhin **uncommitteter Feature-Worktree-Stand**:
+native v14, Kartografie, Generator v5, Terrain-/Straßen-/Gebäudewerkzeuge und Undo/Redo.
+Nicht als fertig oder in der ausgelieferten App enthalten melden. Die parallele Claude-
+Review koordiniert sich über `../AGENT_COORDINATION.md` und `../CLAUDE_REVIEW_FINDINGS.md`.
+
 ## Siedlungen, Recherche und angeforderter Merge — 2026-09-08
 
 Worktree-Siedlungen sind vollständig durch HTTP, Speicherung, Unterkarten, Vorschau und
