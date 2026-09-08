@@ -80,6 +80,25 @@ der auf `_LABEL`, `_LABELS` oder `_TITEL` endet — die Tabelle bleibt in ihrem 
 Client übersetzt an der Anzeigestelle und filtert weiter über den deutschen Wert. Jedes
 andere nicht-literale `t(…)` bleibt ein Verstoß.
 
+## Etikettwerte gelten als benutzt
+
+Steht `t(BAUWERK_LABEL[typ])` im Code, sucht das Gate die gleichnamige Konstante in allen
+`packages/*/src`-Dateien und behandelt **jeden ihrer Anzeigetexte** wie ein Literal an
+dieser Stelle. Die Werte von `BAUWERK_LABEL`, `KARTEN_SETTING_LABEL`, `ASSET_GENRE_LABEL`,
+`RAUM_LABEL`, `ZEIT_RAUM_LABEL`, `HTBAH_GROUP_LABELS` und `UNVERORTET_TITEL` gehören also
+in eure Paketdatei — mit dem deutschen Anzeigetext als Schlüssel („Wohnhaus", „Küche",
+„Fantasy & Magie"), nicht mit dem Tabellenschlüssel. Sie sind dadurch nie „verwaist"; fehlt
+die Übersetzung eines solchen Werts, meldet das Gate ihn wie jeden anderen als „fehlend",
+sobald die Datei angefangen ist.
+
+## Denselben Satz dürfen zwei Pakete übersetzen
+
+Standardknöpfe wie „Speichern" kommen in mehreren Paketen vor. Derselbe Schlüssel darf
+deshalb in mehreren `P*.json` stehen — **solange die Übersetzung identisch ist**. Weichen
+zwei Fassungen voneinander ab, meldet das Gate „uneinheitlich" mit beiden Dateinamen; dann
+einigt euch auf eine Fassung, statt eine der beiden Zeilen zu löschen. Ein Schlüssel, dessen
+Wert kein Text ist, meldet sich als „aufbau".
+
 ## Vollständigkeit je Datei
 
 Das Gate prüft dateiweise: sobald eine Quelldatei **einen** übersetzten Schlüssel hat,

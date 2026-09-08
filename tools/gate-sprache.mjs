@@ -12,9 +12,11 @@
 // (typescript@7 liefert keinen Parser im Prozess, wohl aber seinen Lexer) statt mit
 // Regexen über JSX.
 //
-// Fünf Verstöße:
+// Sieben Verstöße:
 //   fehlend      — eine bereits übersetzte Datei hat einen unübersetzten Schlüssel
 //   verwaist     — ein Katalogeintrag hat keine Fundstelle im Code
+//   uneinheitlich— zwei Paketdateien übersetzen denselben Satz verschieden
+//   aufbau       — eine Paketdatei hält an einem Schlüssel keinen Text
 //   nicht-literal— `t(x)` / `plural(n, a, b)` ohne Zeichenkettenliteral
 //   deny         — ein Katalogeintrag ist ein Datenschlüssel aus den eingefrorenen Paketen
 //                  (Schlüssel und Array-Elemente der Datenkonstanten, nicht deren Anzeigetabellen)
@@ -164,6 +166,48 @@ export function sammleAufrufe(text) {
   return { texte, plural: pluralformen, nichtLiteral, lokal, etiketten };
 }
 
+const DEKLARATION = new Set([SyntaxKind.ConstKeyword, SyntaxKind.LetKeyword, SyntaxKind.VarKeyword]);
+
+/** Läuft den Initialisierer einer Deklaration ab und meldet jedes Zeichenkettenliteral mit
+ * seiner Rolle: `element` (im Array), `schluessel` (vor einem `:`) oder `wert`. */
+function initialisierer(tokens, start, melde) {
+  let j = start + 1;
+  while (j < tokens.length && tokens[j].kind !== SyntaxKind.EqualsToken && tokens[j].kind !== SyntaxKind.SemicolonToken) j++;
+  if (tokens[j]?.kind !== SyntaxKind.EqualsToken) return start;
+  const stapel = [];
+  for (j++; j < tokens.length; j++) {
+    const kind = tokens[j].kind;
+    if (AUF.has(kind) || kind === SyntaxKind.OpenParenToken) { stapel.push(kind); continue; }
+    if (ZU.has(kind) || kind === SyntaxKind.CloseParenToken) { stapel.pop(); if (stapel.length === 0) break; continue; }
+    if (stapel.length === 0 && (kind === SyntaxKind.SemicolonToken || kind === SyntaxKind.CommaToken)) break;
+    const oben = stapel[stapel.length - 1];
+    const vorDoppelpunkt = tokens[j + 1]?.kind === SyntaxKind.ColonToken;
+    if (kind === SyntaxKind.Identifier && vorDoppelpunkt && oben === SyntaxKind.OpenBraceToken) melde("schluessel", tokens[j].text);
+    else if (!LITERAL_ARTEN.has(kind)) continue;
+    else if (oben === SyntaxKind.OpenBracketToken) melde("element", tokens[j].wert);
+    else if (oben === SyntaxKind.OpenBraceToken) melde(vorDoppelpunkt ? "schluessel" : "wert", tokens[j].wert);
+    else if (oben === undefined) melde("wert", tokens[j].wert);
+    if (stapel.length === 0) break;
+  }
+  return j;
+}
+
+/** Die Anzeigetexte der Etikettentabellen (`*_LABEL`, `*_LABELS`, `*_TITEL`). Sie stehen in
+ * ihrem Paket; der Client übersetzt sie an der Anzeigestelle mit `t(BAUWERK_LABEL[typ])`. */
+export function sammleEtiketttabellen(text) {
+  const tokens = tokenListe(text);
+  const tabellen = new Map();
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token.kind !== SyntaxKind.Identifier || !ETIKETT_KONSTANTEN.test(token.text)) continue;
+    if (!DEKLARATION.has(tokens[i - 1]?.kind)) continue;
+    const werte = tabellen.get(token.text) ?? new Set();
+    i = initialisierer(tokens, i, (rolle, wert) => { if (rolle !== "schluessel") werte.add(wert); });
+    if (werte.size > 0) tabellen.set(token.text, werte);
+  }
+  return tabellen;
+}
+
 /** Nur die gespeicherten Werte einer Datei: Schlüssel und Array-Elemente der Datenkonstanten
  * sowie `art:`/`kind:`/`role:`-Werte. Anzeigetexte aus `*_LABEL`/`*_TITEL` bleiben draußen —
  * „Schmiede" ist ein Navigationslabel, „schmiede" ein Datenschlüssel. */
@@ -178,38 +222,41 @@ export function sammleDatenschluessel(text) {
       continue;
     }
     if (!DENY_KONSTANTEN.test(token.text) || ETIKETT_KONSTANTEN.test(token.text)) continue;
-    let j = i + 1;
-    while (j < tokens.length && tokens[j].kind !== SyntaxKind.EqualsToken && tokens[j].kind !== SyntaxKind.SemicolonToken) j++;
-    if (tokens[j]?.kind !== SyntaxKind.EqualsToken) continue;
-    const stapel = [];
-    for (j++; j < tokens.length; j++) {
-      const kind = tokens[j].kind;
-      if (AUF.has(kind)) { stapel.push(kind); continue; }
-      if (kind === SyntaxKind.OpenParenToken) { stapel.push(kind); continue; }
-      if (ZU.has(kind) || kind === SyntaxKind.CloseParenToken) { stapel.pop(); if (stapel.length === 0) break; continue; }
-      if (stapel.length === 0 && (kind === SyntaxKind.SemicolonToken || kind === SyntaxKind.CommaToken)) break;
-      const oben = stapel[stapel.length - 1];
-      const schluessel = tokens[j + 1]?.kind === SyntaxKind.ColonToken;
-      if (oben === SyntaxKind.OpenBracketToken && LITERAL_ARTEN.has(kind)) werte.add(tokens[j].wert);
-      else if (oben === SyntaxKind.OpenBraceToken && schluessel && LITERAL_ARTEN.has(kind)) werte.add(tokens[j].wert);
-      else if (oben === SyntaxKind.OpenBraceToken && schluessel && kind === SyntaxKind.Identifier) werte.add(tokens[j].text);
-    }
-    i = j;
+    i = initialisierer(tokens, i, (rolle, wert) => { if (rolle !== "wert") werte.add(wert); });
   }
   return werte;
+}
+
+/** Verschmilzt die Paketdateien. Zwei Pakete dürfen denselben deutschen Satz übersetzen —
+ * sie teilen sich Standardknöpfe —, aber nicht verschieden. */
+export function verschmelzeKataloge(dateien) {
+  const katalog = {}, herkunft = {}, dynamisch = [], verstoesse = [];
+  for (const { name, inhalt } of dateien) {
+    for (const [schluessel, wert] of Object.entries(inhalt)) {
+      if (schluessel === "__dynamisch") { if (Array.isArray(wert)) dynamisch.push(...wert); continue; }
+      if (schluessel.startsWith("__")) continue;
+      if (typeof wert !== "string") { verstoesse.push(`aufbau · ${name} · "${schluessel}" ist kein Text`); continue; }
+      if (Object.hasOwn(katalog, schluessel) && katalog[schluessel] !== wert) {
+        verstoesse.push(`uneinheitlich · ${herkunft[schluessel]} und ${name} · "${schluessel}" ist zweimal verschieden übersetzt`);
+        continue;
+      }
+      katalog[schluessel] = wert; herkunft[schluessel] ??= name;
+    }
+  }
+  return { katalog, dynamisch, verstoesse };
 }
 
 const platzhalter = text => new Set([...String(text).matchAll(/\{([A-Za-z0-9_]+)\}/g)].map(treffer => treffer[1]));
 
 /** Die reine Prüfung. Alles Lesen steckt in `main`, damit der Selbsttest ohne Dateien auskommt. */
-export function pruefeSprache({ quellen, katalog = {}, plural = {}, dynamisch = [], denyLiterale = new Set(), lokalAllowlist = {}, dynamischErlaubt = {} }) {
+export function pruefeSprache({ quellen, katalog = {}, plural = {}, dynamisch = [], denyLiterale = new Set(), lokalAllowlist = {}, dynamischErlaubt = {}, etikettTabellen = {} }) {
   const verstoesse = [];
   const genutzteTexte = new Map(), genutztePlural = new Map();
   const offen = [];
   const dynamischSatz = new Set(dynamisch);
 
   for (const { datei, text } of quellen) {
-    const { texte, plural: pluralAufrufe, nichtLiteral, lokal } = sammleAufrufe(text);
+    const { texte, plural: pluralAufrufe, nichtLiteral, lokal, etiketten } = sammleAufrufe(text);
     const erlaubteDynamik = dynamischErlaubt[datei] ?? 0;
     if (nichtLiteral.length > erlaubteDynamik) {
       for (const stelle of nichtLiteral.slice(erlaubteDynamik)) {
@@ -224,9 +271,11 @@ export function pruefeSprache({ quellen, katalog = {}, plural = {}, dynamisch = 
     }
     let getroffen = false;
     const fehlend = [];
-    for (const { schluessel, zeile } of texte) {
+    // Eine Anzeigestelle `t(BAUWERK_LABEL[typ])` benutzt jeden Wert ihrer Tabelle.
+    const stellen = [...texte, ...etiketten.flatMap(stelle => (etikettTabellen[stelle.name] ?? []).map(schluessel => ({ schluessel, zeile: stelle.zeile, tabelle: stelle.name })))];
+    for (const { schluessel, zeile, tabelle } of stellen) {
       genutzteTexte.set(schluessel, (genutzteTexte.get(schluessel) ?? 0) + 1);
-      if (Object.hasOwn(katalog, schluessel)) getroffen = true; else fehlend.push({ art: "t", schluessel, zeile });
+      if (Object.hasOwn(katalog, schluessel)) getroffen = true; else fehlend.push({ art: tabelle ? `t(${tabelle}[...])` : "t", schluessel, zeile });
     }
     for (const { schluessel, zeile } of pluralAufrufe) {
       genutztePlural.set(schluessel, (genutztePlural.get(schluessel) ?? 0) + 1);
@@ -283,18 +332,12 @@ async function main() {
     }
   }
 
-  const katalog = {}, dynamisch = [];
-  let paketDateien = 0;
+  const paket = [];
   for (const name of (await readdir(join(ROOT, KATALOG_ORDNER)).catch(() => [])).filter(name => name.endsWith(".json")).sort()) {
-    paketDateien++;
-    for (const [schluessel, wert] of Object.entries(await lies(`${KATALOG_ORDNER}/${name}`))) {
-      if (schluessel === "__dynamisch") { if (Array.isArray(wert)) dynamisch.push(...wert); continue; }
-      if (schluessel.startsWith("__")) continue;
-      if (typeof wert !== "string") { console.error(`gate:sprache — ${name}: "${schluessel}" ist kein Text`); process.exit(2); }
-      if (Object.hasOwn(katalog, schluessel)) { console.error(`gate:sprache — "${schluessel}" steht in mehr als einer Paketdatei`); process.exit(2); }
-      katalog[schluessel] = wert;
-    }
+    paket.push({ name, inhalt: await lies(`${KATALOG_ORDNER}/${name}`) });
   }
+  const paketDateien = paket.length;
+  const { katalog, dynamisch, verstoesse: katalogVerstoesse } = verschmelzeKataloge(paket);
   const plural = {};
   for (const [schluessel, formen] of Object.entries(await lies(PLURAL_DATEI).catch(() => ({})))) {
     if (schluessel.startsWith("__")) continue;
@@ -307,16 +350,27 @@ async function main() {
     for (const wert of sammleDatenschluessel(await readFile(join(ROOT, datei), "utf8"))) denyLiterale.add(wert);
   }
 
-  const ergebnis = pruefeSprache({ quellen, katalog, plural, dynamisch, denyLiterale, lokalAllowlist: LOKAL_ALLOWLIST, dynamischErlaubt: DYNAMISCH_ERLAUBT });
+  // Die Etikettentabellen stehen in ihren Paketen, nicht nur in den Deny-Dateien.
+  const etikettTabellen = {};
+  for (const ordner of await readdir(join(ROOT, "packages")).catch(() => [])) {
+    for await (const datei of wandere(join(ROOT, "packages", ordner, "src"))) {
+      for (const [name, werte] of sammleEtiketttabellen(await readFile(datei, "utf8"))) {
+        etikettTabellen[name] = [...new Set([...(etikettTabellen[name] ?? []), ...werte])];
+      }
+    }
+  }
 
-  if (ergebnis.verstoesse.length > 0) {
-    console.error(`\nGATE RED — Sprachpaket (${ergebnis.verstoesse.length}):\n`);
-    for (const verstoss of ergebnis.verstoesse) console.error(`  ${verstoss}`);
+  const ergebnis = pruefeSprache({ quellen, katalog, plural, dynamisch, denyLiterale, lokalAllowlist: LOKAL_ALLOWLIST, dynamischErlaubt: DYNAMISCH_ERLAUBT, etikettTabellen });
+  const alle = [...katalogVerstoesse, ...ergebnis.verstoesse];
+
+  if (alle.length > 0) {
+    console.error(`\nGATE RED — Sprachpaket (${alle.length}):\n`);
+    for (const verstoss of alle) console.error(`  ${verstoss}`);
     console.error("");
     process.exit(1);
   }
 
-  console.log(`gate:sprache GREEN — ${ergebnis.schluessel} Schlüssel aus ${paketDateien} Paketdateien, ${ergebnis.dateien} Quelldateien geprüft, ${ergebnis.offen.length} offene Texte, ${denyLiterale.size} gesperrte Literale, 0 Verstöße`);
+  console.log(`gate:sprache GREEN — ${ergebnis.schluessel} Schlüssel aus ${paketDateien} Paketdateien, ${ergebnis.dateien} Quelldateien geprüft, ${Object.keys(etikettTabellen).length} Etikettentabellen, ${ergebnis.offen.length} offene Texte, ${denyLiterale.size} gesperrte Literale, 0 Verstöße`);
 }
 
 if (/gate-sprache\.mjs$/.test((process.argv[1] ?? "").split("\\").join("/"))) await main();

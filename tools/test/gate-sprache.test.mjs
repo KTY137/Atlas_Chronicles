@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DYNAMISCH_ERLAUBT, LOKAL_ALLOWLIST, pruefeSprache, sammleAufrufe, sammleDatenschluessel } from "../gate-sprache.mjs";
+import { DYNAMISCH_ERLAUBT, LOKAL_ALLOWLIST, pruefeSprache, sammleAufrufe, sammleDatenschluessel, sammleEtiketttabellen, verschmelzeKataloge } from "../gate-sprache.mjs";
 
 const quelle = (datei, text) => [{ datei, text }];
 const arten = ergebnis => ergebnis.verstoesse.map(zeile => zeile.split(" ·")[0]);
@@ -138,4 +138,55 @@ test("verwechselt eine Eigenschaft namens t und eine eigene Deklaration nicht mi
   const text = 'const x = obj.t("kein Schlüssel"); function t(text) { return text; } export const y = i18n?.t("auch nicht");';
   assert.deepEqual(sammleAufrufe(text).texte, []);
   assert.deepEqual(sammleAufrufe(text).nichtLiteral, []);
+});
+
+test("liest die Anzeigetexte einer Etikettentabelle, nicht ihre Schlüssel", () => {
+  const tabellen = sammleEtiketttabellen(`${DATENPAKET}
+    export const UNVERORTET_TITEL = "Unverortet";`);
+  assert.deepEqual([...tabellen.get("BAUWERK_LABEL")], ["Wohnhaus", "Schmiede"]);
+  assert.deepEqual([...tabellen.get("UNVERORTET_TITEL")], ["Unverortet"]);
+  assert.equal(tabellen.has("BAUWERK_TYPEN"), false);
+});
+
+test("zählt die Werte einer Etikettentabelle als benutzt und verlangt sie im Katalog", () => {
+  const etikettTabellen = { BAUWERK_LABEL: ["Wohnhaus"] };
+  const quellen = quelle("packages/client/src/Wiki.tsx", 'const a = t("Speichern"), b = t(BAUWERK_LABEL[typ]);');
+  const ganz = pruefeSprache({ quellen, katalog: { Speichern: "Save", Wohnhaus: "House" }, etikettTabellen });
+  assert.deepEqual(ganz.verstoesse, []);
+  const ohne = pruefeSprache({ quellen, katalog: { Speichern: "Save" }, etikettTabellen });
+  assert.deepEqual(arten(ohne), ["fehlend"]);
+  assert.match(ohne.verstoesse[0], /Wohnhaus/);
+  assert.match(ohne.verstoesse[0], /BAUWERK_LABEL/);
+});
+
+test("hält einen übersetzten Etikettwert ohne eigenes Literal für benutzt, nicht für verwaist", () => {
+  const ergebnis = pruefeSprache({
+    quellen: quelle("packages/client/src/Wiki.tsx", "const a = t(BAUWERK_LABEL[typ]);"),
+    katalog: { Wohnhaus: "House" }, etikettTabellen: { BAUWERK_LABEL: ["Wohnhaus"] },
+  });
+  assert.deepEqual(ergebnis.verstoesse, []);
+  const ohneTabelle = pruefeSprache({ quellen: quelle("packages/client/src/Wiki.tsx", "const a = t(BAUWERK_LABEL[typ]);"), katalog: { Wohnhaus: "House" } });
+  assert.deepEqual(arten(ohneTabelle), ["verwaist"]);
+});
+
+test("erlaubt denselben Satz in zwei Paketdateien, aber nur mit derselben Übersetzung", () => {
+  const gleich = verschmelzeKataloge([
+    { name: "P1.json", inhalt: { Speichern: "Save", "__dynamisch": ["Serverfehler"] } },
+    { name: "P4.json", inhalt: { Speichern: "Save", Verwerfen: "Discard" } },
+  ]);
+  assert.deepEqual(gleich.verstoesse, []);
+  assert.deepEqual(gleich.katalog, { Speichern: "Save", Verwerfen: "Discard" });
+  assert.deepEqual(gleich.dynamisch, ["Serverfehler"]);
+
+  const verschieden = verschmelzeKataloge([
+    { name: "P1.json", inhalt: { Speichern: "Save" } },
+    { name: "P4.json", inhalt: { Speichern: "Store" } },
+  ]);
+  assert.equal(verschieden.verstoesse.length, 1);
+  assert.match(verschieden.verstoesse[0], /^uneinheitlich/);
+  assert.match(verschieden.verstoesse[0], /P1\.json und P4\.json/);
+  assert.equal(verschieden.katalog.Speichern, "Save");
+
+  const kaputt = verschmelzeKataloge([{ name: "P2.json", inhalt: { Speichern: 3 } }]);
+  assert.match(kaputt.verstoesse[0], /^aufbau/);
 });
