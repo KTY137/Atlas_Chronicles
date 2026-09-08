@@ -88,9 +88,13 @@ function parseTokens(tokens: readonly string[], spans?: Map<Formula, readonly [n
     else if (t.startsWith('"')) left = { kind: "literal", value: JSON.parse(t) as string };
     else if (t === "true" || t === "false") left = { kind: "literal", value: t === "true" };
     else if (t === "actor" || t === "input") {
-      take("."); const field = tokens[cursor++];
-      if (typeof field !== "string" || !/^[a-z][a-z0-9_-]*$/.test(field) || ["constructor", "prototype", "__proto__"].includes(field)) syntax("expected", "field: invalid identifier", cursor - 1, { expected: "field" });
-      left = { kind: "field", source: t, field: field as string };
+      take("."); const at = cursor, raw = tokens[cursor++];
+      // Reuse the exact same validation `identifier` applies elsewhere (incl. the 96-char cap); only the
+      // reporting differs — its thrown RuleValidationError becomes a positioned FormulaSyntaxError here.
+      let field: string;
+      try { field = identifier(raw, "field"); }
+      catch (error) { return syntax("expected", error instanceof Error ? error.message : "field: invalid identifier", at, { expected: "field" }); }
+      left = { kind: "field", source: t, field };
     } else {
       if (t !== "if" && !(CALLS as readonly string[]).includes(t)) syntax("unsupported-function", `formula: unsupported function ${t}`, start, { name: t });
       take("("); const args: Formula[] = [];
@@ -124,8 +128,16 @@ function parseTokens(tokens: readonly string[], spans?: Map<Formula, readonly [n
 export function parseFormula(source: string): Formula {
   string(source, "formula", RULE_LIMITS.formulaLength);
   const tokens = tokenizeFormula(source), last = tokens[tokens.length - 1];
-  if (last?.kind === "invalid") fail(`formula: invalid token at ${last.start}`);
-  if (tokens.length > RULE_LIMITS.formulaNodes * 4) fail("formula: token limit exceeded");
+  // The old scanner counted the token limit as tokens were produced, so it threw "token limit exceeded"
+  // before ever attempting to scan past the limit — including past an invalid character beyond it. Mirror
+  // that: count only the good tokens (the invalid one, if any, was never counted by the old scanner either).
+  const goodTokens = last?.kind === "invalid" ? tokens.length - 1 : tokens.length;
+  if (goodTokens > RULE_LIMITS.formulaNodes * 4) fail("formula: token limit exceeded");
+  if (last?.kind === "invalid") {
+    // The old scanner reported the offset where scanning stopped — the end of the previous good token (or 0
+    // for the very first token) — not where the bad character itself starts after leading whitespace.
+    fail(`formula: invalid token at ${tokens[tokens.length - 2]?.end ?? 0}`);
+  }
   // Left-associative chains must obey the same depth cap as parenthesised expressions.
   return parseFormulaAst(parseTokens(tokens.map(t => t.text)));
 }
@@ -137,8 +149,11 @@ export function parseFormulaDetailed(source: string, fields?: FormulaFieldTypes)
   const at = (index: number, spanEnd?: number): [number, number] => spanEnd === undefined ? between([index, index + 1]) : between([index, spanEnd]);
   if (typeof source !== "string" || source.length > RULE_LIMITS.formulaLength) return { ok: false, code: "limit", message: "formula: expected nonempty string (max 4096)", start: 0, end: source.length, tokens };
   const last = tokens[tokens.length - 1];
+  // Same precedence as parseFormula: the token limit is checked against the good tokens only, and wins over
+  // reporting an invalid character found beyond that limit.
+  const goodTokens = last?.kind === "invalid" ? tokens.length - 1 : tokens.length;
+  if (goodTokens > RULE_LIMITS.formulaNodes * 4) return { ok: false, code: "limit", message: "formula: token limit exceeded", start: 0, end: source.length, tokens };
   if (last?.kind === "invalid") return { ok: false, code: "invalid-token", message: `formula: invalid token at ${last.start}`, start: last.start, end: last.end, tokens };
-  if (tokens.length > RULE_LIMITS.formulaNodes * 4) return { ok: false, code: "limit", message: "formula: token limit exceeded", start: 0, end: source.length, tokens };
   const spans = new Map<Formula, readonly [number, number]>(); let raw: Formula;
   try { raw = parseTokens(tokens.map(t => t.text), spans); }
   catch (error) {

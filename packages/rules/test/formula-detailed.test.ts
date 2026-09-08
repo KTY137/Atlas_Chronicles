@@ -56,6 +56,22 @@ describe("detailed parsing agrees with the frozen parser", () => {
   it("keeps parseFormula messages and error class unchanged", () => {
     expect(() => parseFormula("borf(1)")).toThrow(RuleValidationError);
     expect(() => parseFormula("borf(1)")).toThrow("formula: unsupported function borf");
-    expect(() => parseFormula("1 + §2")).toThrow("formula: invalid token at 4");
+    // The old scanner reported where scanning stopped (end of the previous good token), not the bad
+    // character's own position; parseFormulaDetailed keeps the exact position (see the table above, 4..6).
+    expect(() => parseFormula("1 + §2")).toThrow("formula: invalid token at 3");
+  });
+  it("keeps the old 96-character field-identifier cap and message", () => {
+    expect(() => parseFormula("actor.")).toThrow("field: expected nonempty string (max 96)");
+    expect(() => parseFormula(`actor.${"a".repeat(97)}`)).toThrow("field: expected nonempty string (max 96)");
+    const detail = parseFormulaDetailed(`actor.${"a".repeat(97)}`);
+    expect(detail.ok).toBe(false);
+    if (!detail.ok) expect(detail.expected).toBe("field");
+  });
+  it("reports the token limit before an invalid character found beyond it", () => {
+    const source = "1+".repeat(1100) + "§";
+    expect(() => parseFormula(source)).toThrow(/token limit/);
+    const detail = parseFormulaDetailed(source);
+    expect(detail.ok).toBe(false);
+    if (!detail.ok) expect(detail.code).toBe("limit");
   });
 });
