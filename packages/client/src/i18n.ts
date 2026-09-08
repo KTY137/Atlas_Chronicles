@@ -25,6 +25,10 @@ const RESERVIERT = (schluessel: string) => schluessel.startsWith("__");
 const leererKatalog: EnglischerKatalog = { texte: {}, plural: {} };
 
 let sprache: Sprache = "de";
+// Steigt bei jeder Aenderung, die die Oberflaeche sehen muss - auch bei der spaeten
+// Ankunft des Katalogs. Die Sprache allein reicht als beobachteter Wert nicht: sie
+// steht schon vor dem ersten Zeichnen fest, der Katalog kommt erst danach.
+let stand = 0;
 let katalog: EnglischerKatalog = leererKatalog;
 let ladung: Promise<EnglischerKatalog> | null = null;
 let quelle: EnglischeQuelle | null = null;
@@ -75,6 +79,8 @@ export function plural(n: number, eins: string, viele: string, params?: Platzhal
 }
 
 export function aktuelleSprache(): Sprache { return sprache; }
+/** Der beobachtete Wert fuer `useSyncExternalStore`. Siehe `stand`. */
+export function spracheStand(): number { return stand; }
 export function locale(): "de-DE" | "en-GB" { return sprache === "en" ? "en-GB" : "de-DE"; }
 
 /** Für `useSyncExternalStore`; die Rückgabe meldet den Hörer wieder ab. */
@@ -99,13 +105,13 @@ export async function setzeSprache(gewaehlt: Sprache): Promise<void> {
   }
   // Auch die späte Ankunft des Katalogs ist eine Änderung, die die Oberfläche sehen muss.
   if (gewaehlt === sprache && katalog === vorher) return;
-  sprache = gewaehlt;
+  sprache = gewaehlt; stand += 1;
   for (const melde of [...hoerer]) melde();
 }
 
 /** Nur für Tests: setzt Sprache, Katalog und Ladezustand zurück; `null` stellt die Dateien wieder her. */
 export function setzeEnglischeQuelleFuerTests(ersatz: EnglischeQuelle | null): void {
-  quelle = ersatz; ladung = null; katalog = leererKatalog; sprache = "de";
+  quelle = ersatz; ladung = null; katalog = leererKatalog; sprache = "de"; stand += 1;
 }
 
 /** Ersatz für die Prüfstände in `packages/client/test`: immer Deutsch, aber mit Platzhaltern. */
@@ -116,4 +122,5 @@ export const I18nStub = {
   locale: () => "de-DE" as const,
   setzeSprache: async (_gewaehlt: Sprache) => {},
   subscribe: (_hoerer: () => void) => () => {},
+  spracheStand: () => 0,
 };

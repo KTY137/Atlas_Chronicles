@@ -3,7 +3,7 @@
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { DEFAULT_ACCESSIBILITY_PREFERENCES, getThemePreset, parseAccessibilityPreferences, resolveTheme, serializeAccessibilityPreferences,
   type AccessibilityPreferencesV2, type ResolvedThemeV1, type Sprache, type SystemAccessibility, type ThemeManifestV1 } from "@chronicle/theme";
-import { aktuelleSprache, initialisiereSprache, setzeSprache, subscribe, t } from "../i18n";
+import { aktuelleSprache, initialisiereSprache, setzeSprache, spracheStand, subscribe, t } from "../i18n";
 
 const STORAGE_KEY = "chronicle.appearance.v1";
 const fonts = { cinzel: '"Cinzel", Georgia, serif', plex: '"IBM Plex Sans Variable", system-ui, sans-serif', system: "system-ui, sans-serif", serif: "Georgia, Cambria, serif", mono: "ui-monospace, Consolas, monospace" };
@@ -66,7 +66,10 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     return () => { media.forEach(([, query]) => query.removeEventListener("change", refresh)); window.removeEventListener("storage", storage); };
   }, []);
   // Der Sprachzustand liegt als Modulvariable in i18n.ts; React haengt hier daran.
-  const sprache = useSyncExternalStore(subscribe, aktuelleSprache, aktuelleSprache);
+  // Der Stand ist der Anlass zum Neuzeichnen, die Sprache das Ergebnis: der Katalog kommt
+  // nach dem ersten Zeichnen an, ohne dass sich die Sprache dabei aendert.
+  const stand = useSyncExternalStore(subscribe, spracheStand, spracheStand);
+  const sprache = useMemo(() => aktuelleSprache(), [stand]);
   // Der Katalog kommt nach; weil er die Sprache nicht ändert, bleibt der Baum stehen.
   useEffect(() => { setzeSprache(preferences.language).then(() => setSpracheFehler(""), () => setSpracheFehler(spracheFehlerText())); }, [preferences.language]);
   useLayoutEffect(() => { document.documentElement.lang = sprache; }, [sprache]);

@@ -12,7 +12,7 @@ import { Wiki } from "./Wiki";
 import { Round } from "./Round";
 import { Heute } from "./features/Heute";
 import { Account } from "./Account";
-import { useCampaignLive, liveStatusLabel } from "./features/useCampaignLive";
+import { useCampaignLive, LIVE_STATUS_LABEL } from "./features/useCampaignLive";
 import { useAppearance } from "./features/Appearance";
 import type { ThemeManifestV1 } from "@chronicle/theme";
 import { parseStage, type Stage, type TableTab } from "./navigation";
@@ -140,7 +140,7 @@ export function App() {
       </main></div><footer className="band">
         <span className="band-mark" aria-hidden="true">✧</span><span className="band-marke" title="Atlas Chronicles — Business Source License 1.1">Atlas Chronicles</span>
         {campaign ? <span className="band-runde">{campaign.name}</span> : null}
-        {campaign ? <span className="band-connection" role="status" aria-label={t("Live-Verbindung")} data-live-state={live.status}>{liveStatusLabel[live.status]}</span> : null}
+        {campaign ? <span className="band-connection" role="status" aria-label={t("Live-Verbindung")} data-live-state={live.status}>{t(LIVE_STATUS_LABEL[live.status])}</span> : null}
         {campaign && live.status === "connected" && live.presence.length > 0 ? <ul className="band-players" aria-label={t("Spieler in der Runde")} tabIndex={0}>
           {live.presence.map(person => { const zustand = person.state === "online" ? t("Online") : t("Abwesend"), selbst = person.userId === me.userId;
             return <li key={person.userId} className="band-player" aria-label={selbst ? t("{name} · du · {zustand}", { name: person.displayName, zustand }) : t("{name} · {zustand}", { name: person.displayName, zustand })} title={t("{name} · {zustand}", { name: person.displayName, zustand })}>

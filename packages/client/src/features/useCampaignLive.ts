@@ -23,7 +23,6 @@ export const LIVE_STATUS_LABEL: Record<LiveStatus, string> = {
   reconnecting: "Verbindung wird wiederhergestellt", offline: "Gerät ist offline", unavailable: "Live-Zugang nicht verfügbar",
 };
 /** Bisheriger Name derselben Tabelle; `App.tsx` liest sie noch darüber. */
-export const liveStatusLabel = LIVE_STATUS_LABEL;
 
 interface PendingMessage { commandId: string; request?: Promise<{ id: string }> }
 interface Scope { key: string; seq: number | null; messages: Map<string, PendingMessage>; requests: Set<AbortController> }
