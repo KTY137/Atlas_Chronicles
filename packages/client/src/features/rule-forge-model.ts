@@ -5,6 +5,7 @@ import {
   stableJson, type FieldSchema, type Formula, type FormulaType, type MigrationStep,
   type AnyRulePackage, type RulePackageV2, type RuleOutcome, type RuleAssertion, type Scalar,
 } from "@chronicle/rules";
+import { t } from "../i18n";
 
 export type FormulaDraft =
   | { kind: "literal"; type: FormulaType; value: string }
@@ -48,14 +49,14 @@ export const copyJson = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) a
 export const literalDraft = (type: FormulaType = "number"): FormulaDraft => ({ kind: "literal", type, value: type === "number" ? "0" : type === "boolean" ? "false" : "spuren" });
 
 export function numberValue(value: string, label: string): number {
-  if (!value.trim()) throw new Error(`${label}: Bitte eine Zahl eintragen.`);
+  if (!value.trim()) throw new Error(t("{label}: Bitte eine Zahl eintragen.", { label }));
   const result = Number(value);
-  if (!Number.isFinite(result) || Math.abs(result) > 1e12) throw new Error(`${label}: Eine endliche Zahl zwischen −10¹² und 10¹² ist erforderlich.`);
+  if (!Number.isFinite(result) || Math.abs(result) > 1e12) throw new Error(t("{label}: Eine endliche Zahl zwischen −10¹² und 10¹² ist erforderlich.", { label }));
   return result;
 }
 export function scalarValue(type: FormulaType, value: string, label: string): Scalar {
   if (type === "number") return numberValue(value, label);
-  if (type === "boolean") { if (value !== "true" && value !== "false") throw new Error(`${label}: Wahr oder falsch wählen.`); return value === "true"; }
+  if (type === "boolean") { if (value !== "true" && value !== "false") throw new Error(t("{label}: Wahr oder falsch wählen.", { label })); return value === "true"; }
   return value;
 }
 
@@ -72,11 +73,11 @@ export function formulaDraft(ast: Formula): FormulaDraft {
 }
 function compileNode(draft: FormulaDraft): Formula {
   switch (draft.kind) {
-    case "literal": return { kind: "literal", value: scalarValue(draft.type, draft.value, "Konstante") };
+    case "literal": return { kind: "literal", value: scalarValue(draft.type, draft.value, t("Konstante")) };
     case "field": return { ...draft };
-    case "dice": return { kind: "dice", count: numberValue(draft.count, "Würfelanzahl"), sides: numberValue(draft.sides, "Würfelseiten"),
-      ...(draft.keep === "none" ? {} : { keep: { mode: draft.keep, count: numberValue(draft.keepCount, "Gewertete Würfel") } }),
-      ...(draft.explode.trim() ? { explode: numberValue(draft.explode, "Explosionsgrenze") } : {}) };
+    case "dice": return { kind: "dice", count: numberValue(draft.count, t("Würfelanzahl")), sides: numberValue(draft.sides, t("Würfelseiten")),
+      ...(draft.keep === "none" ? {} : { keep: { mode: draft.keep, count: numberValue(draft.keepCount, t("Gewertete Würfel")) } }),
+      ...(draft.explode.trim() ? { explode: numberValue(draft.explode, t("Explosionsgrenze")) } : {}) };
     case "unary": return { ...draft, value: compileNode(draft.value) };
     case "binary": return { ...draft, left: compileNode(draft.left), right: compileNode(draft.right) };
     case "if": return { kind: "if", condition: compileNode(draft.condition), then: compileNode(draft.then), else: compileNode(draft.else) };
@@ -87,7 +88,7 @@ export const compileFormula = (draft: FormulaDraft): Formula => parseFormulaAst(
 
 /** The expression grammar has no exponent notation. Expand it without decimal rounding. */
 export function decimalSource(value: number): string {
-  if (!Number.isFinite(value)) throw new Error("Die Formel enthält keine endliche Zahl.");
+  if (!Number.isFinite(value)) throw new Error(t("Die Formel enthält keine endliche Zahl."));
   const text = String(value); if (!/[eE]/.test(text)) return text;
   const [coefficient, exponent] = text.split(/[eE]/), negative = coefficient!.startsWith("-");
   const unsigned = negative ? coefficient!.slice(1) : coefficient!, [whole, fraction = ""] = unsigned.split(".");
@@ -132,11 +133,11 @@ export function uniqueId(prefix: string, ids: readonly string[]): string { let n
 function fieldsMap(fields: readonly DraftField[]): Record<string, FieldSchema> {
   const result: Record<string, FieldSchema> = Object.create(null) as Record<string, FieldSchema>;
   for (const field of fields) {
-    if (!/^[a-z][a-z0-9_-]*$/.test(field.id) || ["constructor", "prototype", "__proto__"].includes(field.id)) throw new Error(`Feldkennung „${field.id}“: Kleinbuchstaben, Ziffern, _ und - verwenden; mit einem Buchstaben beginnen.`);
-    if (Object.hasOwn(result, field.id)) throw new Error(`Die Feldkennung „${field.id}“ ist doppelt vergeben.`);
-    const common = { type: field.type, label: field.label, default: scalarValue(field.type === "integer" ? "number" : field.type, field.defaultValue, `${field.label}: Vorgabe`) };
-    result[field.id] = field.type === "integer" || field.type === "number" ? { ...common, minimum: numberValue(field.minimum, `${field.label}: Minimum`), maximum: numberValue(field.maximum, `${field.label}: Maximum`) }
-      : field.type === "string" ? { ...common, maxLength: numberValue(field.maxLength, `${field.label}: Zeichenlimit`), ...(field.hasEnum ? { enum: [...field.enumValues] } : {}) } : common;
+    if (!/^[a-z][a-z0-9_-]*$/.test(field.id) || ["constructor", "prototype", "__proto__"].includes(field.id)) throw new Error(t("Feldkennung „{kennung}“: Kleinbuchstaben, Ziffern, _ und - verwenden; mit einem Buchstaben beginnen.", { kennung: field.id }));
+    if (Object.hasOwn(result, field.id)) throw new Error(t("Die Feldkennung „{kennung}“ ist doppelt vergeben.", { kennung: field.id }));
+    const common = { type: field.type, label: field.label, default: scalarValue(field.type === "integer" ? "number" : field.type, field.defaultValue, t("{label}: Vorgabe", { label: field.label })) };
+    result[field.id] = field.type === "integer" || field.type === "number" ? { ...common, minimum: numberValue(field.minimum, t("{label}: Minimum", { label: field.label })), maximum: numberValue(field.maximum, t("{label}: Maximum", { label: field.label })) }
+      : field.type === "string" ? { ...common, maxLength: numberValue(field.maxLength, t("{label}: Zeichenlimit", { label: field.label })), ...(field.hasEnum ? { enum: [...field.enumValues] } : {}) } : common;
   }
   return result;
 }
@@ -149,7 +150,7 @@ function migrationStep(step: DraftMigrationStep): MigrationStep {
   if (step.kind === "rename") return { kind: "rename", from: step.from, to: step.to };
   if (step.kind === "archive") return { kind: "archive", field: step.field };
   if (step.kind === "numeric") return { kind: "numeric", field: step.field, expression: draftExpression(step) };
-  return { kind: "add", field: step.field, value: scalarValue(step.type, step.value, "Neuer Feldwert") };
+  return { kind: "add", field: step.field, value: scalarValue(step.type, step.value, t("Neuer Feldwert")) };
 }
 export function packageDraft(input: AnyRulePackage): RuleDraft {
   const pkg = parseSupportedRulePackage(input), fields = Object.entries(pkg.fields).map(([id, field]) => fieldDraft(id, field));
@@ -164,19 +165,19 @@ export function packageDraft(input: AnyRulePackage): RuleDraft {
 export function compilePackage(draft: RuleDraft): AnyRulePackage {
   const fields = fieldsMap(draft.fields);
   return parseSupportedRulePackage({ schemaVersion: draft.schemaVersion, engineVersion: ENGINE_VERSION, id: draft.id, name: draft.name, version: draft.version, license: draft.license, authors: [...draft.authors], fields,
-    layout: { sections: draft.sections.map(s => ({ id: s.id, label: s.label, fields: s.fieldKeys.map(key => { const field = draft.fields.find(f => f.localId === key); if (!field) throw new Error(`Der Bogenabschnitt „${s.label}“ verweist auf ein entferntes Feld.`); return field.id; }) })) },
-    actions: draft.actions.map(a => ({ id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, requiresConfirmation: true, inputs: fieldsMap(a.inputs), expression: draftExpression(a), ...(a.thresholdEnabled ? { threshold: numberValue(a.threshold, `${a.name}: Erfolgsschwelle`) } : {}), ...(a.outcome ? { outcome: copyJson(a.outcome) } : {}), ...(a.preconditions !== undefined ? { preconditions: copyJson(a.preconditions) } : {}) })),
+    layout: { sections: draft.sections.map(s => ({ id: s.id, label: s.label, fields: s.fieldKeys.map(key => { const field = draft.fields.find(f => f.localId === key); if (!field) throw new Error(t("Der Bogenabschnitt „{abschnitt}“ verweist auf ein entferntes Feld.", { abschnitt: s.label })); return field.id; }) })) },
+    actions: draft.actions.map(a => ({ id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, requiresConfirmation: true, inputs: fieldsMap(a.inputs), expression: draftExpression(a), ...(a.thresholdEnabled ? { threshold: numberValue(a.threshold, t("{name}: Erfolgsschwelle", { name: a.name })) } : {}), ...(a.outcome ? { outcome: copyJson(a.outcome) } : {}), ...(a.preconditions !== undefined ? { preconditions: copyJson(a.preconditions) } : {}) })),
     migrations: draft.migrations.map(m => ({ from: m.from, to: draft.version, steps: m.steps.map(migrationStep) })),
     ...(draft.includeSelfTests || draft.selfTests.length ? { selfTests: copyJson(draft.selfTests) } : {}),
     ...(draft.computed !== undefined ? { computed: copyJson(draft.computed) } : {}), ...(draft.constraints !== undefined ? { constraints: copyJson(draft.constraints) } : {}), ...(draft.vitals !== undefined ? { vitals: copyJson(draft.vitals) } : {}), ...(draft.attribution !== undefined ? { attribution: copyJson(draft.attribution) } : {}) });
 }
 export function validateDraft(draft: RuleDraft): Validation<AnyRulePackage> {
-  try { return { valid: true, value: compilePackage(draft) }; } catch (e) { return { valid: false, error: e instanceof Error ? e.message : "Das Paket konnte nicht geprüft werden." }; }
+  try { return { valid: true, value: compilePackage(draft) }; } catch (e) { return { valid: false, error: e instanceof Error ? e.message : t("Das Paket konnte nicht geprüft werden.") }; }
 }
 export function nextVersion(pkg: AnyRulePackage, installed: readonly AnyRulePackage[]): string {
   const [major, minor, patch] = pkg.version.split(".").map(Number); let next = patch! + 1;
   while (installed.some(p => p.id === pkg.id && p.version === `${major}.${minor}.${next}`)) next++;
-  if (next > 999999) throw new Error("Bitte die nächste Paketversion selbst festlegen.");
+  if (next > 999999) throw new Error(t("Bitte die nächste Paketversion selbst festlegen."));
   return `${major}.${minor}.${next}`;
 }
 export function forkPackage(pkg: AnyRulePackage, installed: readonly AnyRulePackage[]): RuleDraft {
@@ -203,6 +204,6 @@ export function packageTestResults(pkg: AnyRulePackage): { name: string; expecte
     try { const result = evaluateSupportedAction(pkg, test.actionId, test.context), actual = result.total;
       const passed = actual === test.expectedTotal && (!("expectedSuccess" in test) || result.success === test.expectedSuccess) && (!("expectedOutcomeId" in test) || result.schemaVersion === 2 && result.outcome?.id === test.expectedOutcomeId);
       return { name: test.name, expected: test.expectedTotal, actual, passed }; }
-    catch (error) { return { name: test.name, expected: test.expectedTotal, passed: false, error: error instanceof Error ? error.message : "Test fehlgeschlagen." }; }
+    catch (error) { return { name: test.name, expected: test.expectedTotal, passed: false, error: error instanceof Error ? error.message : t("Test fehlgeschlagen.") }; }
   });
 }

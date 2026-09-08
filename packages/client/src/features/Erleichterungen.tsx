@@ -9,6 +9,7 @@ import { api, apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
 import { RuleFields } from "./RuleFields";
 import { defaults, useCommand, type ActionCard, type RulesState } from "./game-api";
+import { t } from "../i18n";
 import "./erleichterungen.css";
 
 /**
@@ -20,6 +21,9 @@ import "./erleichterungen.css";
  *
  * Die Eingabefelder zeichnet `RuleFields` — dieselbe Komponente wie überall sonst. Ein eigenes
  * Formular für dieselben Felder wäre eine Doppelung, die beim nächsten Feldtyp auseinanderliefe.
+ *
+ * Aktionsnamen, Begründungen und Feldnamen stammen aus dem Regelpaket und vom Tisch; sie
+ * bleiben, wie sie geschrieben wurden.
  */
 
 export interface Erleichterung {
@@ -47,7 +51,7 @@ export function OffeneErleichterungen({ campaignId, actorId, rules, gm, revision
   const namen = new Map(alleAktionen(rules).map(action => [action.id, action.name]));
   if (!actorId || !offene.data?.length) return null;
   return <section className="panel erleichterungen">
-    <h2><HandHeart size={19} /> Dir wurde entgegengekommen</h2>
+    <h2><HandHeart size={19} /> {t("Dir wurde entgegengekommen")}</h2>
     {task.error ? <Notice error>{task.error}</Notice> : null}
     <ul className="erleichterung-liste">{offene.data.map(zugestaendnis => <li key={zugestaendnis.id}>
       <article>
@@ -60,10 +64,10 @@ export function OffeneErleichterungen({ campaignId, actorId, rules, gm, revision
           <Button variant="primary" disabled={task.busy} onClick={() => void task.run(async () => {
             onGewuerfelt(await command<ActionCard>(apiPath(campaignId, "/rolls"), { actorId, actionId: zugestaendnis.gewuerfelteAktion, erleichterungId: zugestaendnis.id }));
             onChanged();
-          })}>Erleichterte Probe würfeln</Button>
+          })}>{t("Erleichterte Probe würfeln")}</Button>
           {gm ? <Button variant="danger" disabled={task.busy} onClick={() => void task.run(async () => {
             await api(apiPath(campaignId, `/erleichterungen/${encodeURIComponent(zugestaendnis.id)}`), { method: "DELETE" }); onChanged();
-          })}><Trash2 size={15} /> Zurücknehmen</Button> : null}
+          })}><Trash2 size={15} /> {t("Zurücknehmen")}</Button> : null}
         </div>
       </article></li>)}</ul>
   </section>;
@@ -82,8 +86,8 @@ export function ErleichterungGewaehren({ campaignId, rules, roster, revision, on
   const task = useTask();
   const figuren = roster.filter(m => m.actorId);
 
-  if (!traegt.length) return <section className="panel"><h2><HandHeart size={19} /> Eine Probe erleichtern</h2>
-    <p className="field-help">Dieses Regelwerk kennt keine Aktion mit festlegbaren Eingaben. Eine Erleichterung braucht eine solche Absprache-Aktion — sonst gäbe es nichts, was die Spielleitung vereinbaren könnte.</p></section>;
+  if (!traegt.length) return <section className="panel"><h2><HandHeart size={19} /> {t("Eine Probe erleichtern")}</h2>
+    <p className="field-help">{t("Dieses Regelwerk kennt keine Aktion mit festlegbaren Eingaben. Eine Erleichterung braucht eine solche Absprache-Aktion — sonst gäbe es nichts, was die Spielleitung vereinbaren könnte.")}</p></section>;
 
   return <form className="panel" onSubmit={event => { event.preventDefault(); void task.run(async () => {
     await api(apiPath(campaignId, "/erleichterungen"), { method: "POST", body: {
@@ -91,29 +95,29 @@ export function ErleichterungGewaehren({ campaignId, rules, roster, revision, on
       eingaben: { ...defaults(aktion?.inputs ?? {}), ...eingaben }, grund,
     } }); setGrund(""); setEingaben({}); onChanged();
   }); }}>
-    <h2><HandHeart size={19} /> Eine Probe erleichtern</h2>
-    <p className="field-help">Du legst die Absprache fest — gewürfelt wird sie von der Spielerin selbst. Der Beleg zeigt danach, dass du sie zugestanden hast.</p>
+    <h2><HandHeart size={19} /> {t("Eine Probe erleichtern")}</h2>
+    <p className="field-help">{t("Du legst die Absprache fest — gewürfelt wird sie von der Spielerin selbst. Der Beleg zeigt danach, dass du sie zugestanden hast.")}</p>
     <div className="rule-fields">
-      <label>Figur<select required value={actorId} onChange={e => setActorId(e.target.value)}>
-        <option value="">Figur wählen</option>
+      <label>{t("Figur")}<select required value={actorId} onChange={e => setActorId(e.target.value)}>
+        <option value="">{t("Figur wählen")}</option>
         {figuren.map(m => <option key={m.actorId} value={m.actorId!}>{m.displayName}</option>)}</select></label>
-      <label>Gemeinte Probe<select value={gemeint} onChange={e => setGemeint(e.target.value)}>
-        <option value="">Wie die gewürfelte</option>
+      <label>{t("Gemeinte Probe")}<select value={gemeint} onChange={e => setGemeint(e.target.value)}>
+        <option value="">{t("Wie die gewürfelte")}</option>
         {alle.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
     </div>
-    <label>Wird gewürfelt als<select value={gewuerfelt} onChange={e => { setGewuerfelt(e.target.value); setEingaben({}); }}>
+    <label>{t("Wird gewürfelt als")}<select value={gewuerfelt} onChange={e => { setGewuerfelt(e.target.value); setEingaben({}); }}>
       {traegt.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
     {aktion ? <><p className="field-help">{aktion.disclosure}</p>
       <RuleFields fields={aktion.inputs} values={{ ...defaults(aktion.inputs), ...eingaben }} onChange={setEingaben} disabled={task.busy} /></> : null}
-    <label>Begründung<input required maxLength={500} value={grund} onChange={e => setGrund(e.target.value)}
-      placeholder="z. B. Du hast das Seil vorher gesichert." /></label>
+    <label>{t("Begründung")}<input required maxLength={500} value={grund} onChange={e => setGrund(e.target.value)}
+      placeholder={t("z. B. Du hast das Seil vorher gesichert.")} /></label>
     {task.error ? <Notice error>{task.error}</Notice> : null}
-    <Button type="submit" variant="primary" disabled={task.busy || !actorId || !grund.trim()}>Erleichterung gewähren</Button>
+    <Button type="submit" variant="primary" disabled={task.busy || !actorId || !grund.trim()}>{t("Erleichterung gewähren")}</Button>
 
     {alleOffenen.loading && !alleOffenen.data ? <Loading /> : alleOffenen.data?.length
-      ? <details className="erleichterung-offen"><summary>Offen: {alleOffenen.data.length}</summary>
+      ? <details className="erleichterung-offen"><summary>{t("Offen: {n}", { n: alleOffenen.data.length })}</summary>
         <ul>{alleOffenen.data.map(z => <li key={z.id}>
-          {figuren.find(m => m.actorId === z.actorId)?.displayName ?? "Figur"} · {alle.find(a => a.id === z.gemeinteAktion)?.name ?? z.gemeinteAktion} — „{z.grund}"</li>)}</ul>
+          {figuren.find(m => m.actorId === z.actorId)?.displayName ?? t("Figur")} · {alle.find(a => a.id === z.gemeinteAktion)?.name ?? z.gemeinteAktion} — „{z.grund}"</li>)}</ul>
       </details> : null}
   </form>;
 }

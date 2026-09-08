@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, CalendarDays, Compass, Dice6, Hammer, Image, Laye
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type Campaign, type EntrySummary } from "../api";
 import { useResource } from "../hooks";
+import { t } from "../i18n";
 import type { Stage, TableTab } from "../navigation";
 import type { ForgeSection } from "./forge-navigation";
 
@@ -38,14 +39,16 @@ interface Ziel {
   readonly nurLeitung?: boolean;
 }
 
-const ZIELE: readonly Ziel[] = [
-  { id: "wiki", titel: "Chronik", zweck: "Das Buch eurer Welt: Orte, Figuren, Ereignisse — und was jede Figur davon weiß.", icon: BookOpen },
-  { id: "tisch", titel: "Tisch", zweck: "Der Abend selbst: Szenenkarten erzeugen oder laden, würfeln, Ergebnisse bestätigen.", icon: Dice6 },
-  { id: "atlas", titel: "Atlas", zweck: "Die Weltkarte erkunden, Orte verbinden und ihre Unterkarten betreten.", icon: Compass },
-  { id: "woche", titel: "Woche", zweck: "Was zwischen zwei Abenden passiert: Briefe unterwegs, offene Vorhaben.", icon: CalendarDays },
-  { id: "kanal", titel: "Kanal", zweck: "Der Ort zum Reden zwischen den Abenden. Verfasstes bleibt, Tischgeplauder nicht.", icon: MessageSquare },
-  { id: "runde", titel: "Runde", zweck: "Wer mitspielt. Hier lädst du Leute ein und gibst Beitritte frei.", icon: Users },
-  { id: "schmiede", titel: "Schmiede", zweck: "Lootkarten, NPCs und Karten erstellen, Bilder hochladen und Regeln gestalten.", icon: Hammer, nurLeitung: true },
+/** Beim Zeichnen gebaut, nicht beim Laden des Moduls: sonst hielte die Liste die Sprache fest,
+ * die beim ersten Import galt. */
+const ziele = (): readonly Ziel[] => [
+  { id: "wiki", titel: t("Chronik"), zweck: t("Das Buch eurer Welt: Orte, Figuren, Ereignisse — und was jede Figur davon weiß."), icon: BookOpen },
+  { id: "tisch", titel: t("Tisch"), zweck: t("Der Abend selbst: Szenenkarten erzeugen oder laden, würfeln, Ergebnisse bestätigen."), icon: Dice6 },
+  { id: "atlas", titel: t("Atlas"), zweck: t("Die Weltkarte erkunden, Orte verbinden und ihre Unterkarten betreten."), icon: Compass },
+  { id: "woche", titel: t("Woche"), zweck: t("Was zwischen zwei Abenden passiert: Briefe unterwegs, offene Vorhaben."), icon: CalendarDays },
+  { id: "kanal", titel: t("Kanal"), zweck: t("Der Ort zum Reden zwischen den Abenden. Verfasstes bleibt, Tischgeplauder nicht."), icon: MessageSquare },
+  { id: "runde", titel: t("Runde"), zweck: t("Wer mitspielt. Hier lädst du Leute ein und gibst Beitritte frei."), icon: Users },
+  { id: "schmiede", titel: t("Schmiede"), zweck: t("Lootkarten, NPCs und Karten erstellen, Bilder hochladen und Regeln gestalten."), icon: Hammer, nurLeitung: true },
 ];
 
 export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigate, onOpenForge, onOpenTable, onOpenEntry }: {
@@ -66,43 +69,43 @@ export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigat
 
   return (
     <section className="page-content heute">
-      <p className="eyebrow">{leitung ? "Spielleitung" : "Deine Runde"}</p>
+      <p className="eyebrow">{leitung ? t("Spielleitung") : t("Deine Runde")}</p>
       <h1>{campaign.name}</h1>
       <p className="muted">
         {leitung
-          ? "Bereite euer nächstes Abenteuer vor oder steig direkt in den Spielabend ein."
-          : "Deine Figuren, eure Geschichte und der nächste gemeinsame Spielabend."}
+          ? t("Bereite euer nächstes Abenteuer vor oder steig direkt in den Spielabend ein.")
+          : t("Deine Figuren, eure Geschichte und der nächste gemeinsame Spielabend.")}
       </p>
 
       <div className="heute-play-actions">
-        <Button variant="primary" onClick={() => onOpenTable("actions")}><Dice6 size={18} /> Zum Spieltisch<ArrowRight size={16} /></Button>
-        <Button onClick={() => onNavigate("ich")}><User size={17} /> Meine Figuren & Inventare</Button>
-        <Button onClick={() => onOpenTable("kampf")}><Swords size={17} /> Kampf öffnen</Button>
+        <Button variant="primary" onClick={() => onOpenTable("actions")}><Dice6 size={18} /> {t("Zum Spieltisch")}<ArrowRight size={16} /></Button>
+        <Button onClick={() => onNavigate("ich")}><User size={17} /> {t("Meine Figuren & Inventare")}</Button>
+        <Button onClick={() => onOpenTable("kampf")}><Swords size={17} /> {t("Kampf öffnen")}</Button>
       </div>
 
       {leitung ? <section className="heute-workshop" aria-labelledby="heute-create-heading">
-        <div className="section-heading"><div><p className="eyebrow">Vor dem Abenteuer</p><h2 id="heute-create-heading">Was möchtest du erstellen?</h2></div><Button variant="quiet" onClick={() => onOpenForge("overview")}>Zur Schmiede<ArrowRight size={16} /></Button></div>
+        <div className="section-heading"><div><p className="eyebrow">{t("Vor dem Abenteuer")}</p><h2 id="heute-create-heading">{t("Was möchtest du erstellen?")}</h2></div><Button variant="quiet" onClick={() => onOpenForge("overview")}>{t("Zur Schmiede")}<ArrowRight size={16} /></Button></div>
         <div className="heute-create-grid">
           {([
-            { section: "loot", label: "Lootkarte erstellen", text: "Gegenstände gestalten und an die Gruppe verteilen.", icon: Layers },
-            { section: "actors", label: "NPC erstellen", text: "Figurvorlagen, Werte und mögliche Beute festlegen.", icon: Users },
-            { section: "maps", label: "Karte erstellen", text: "Grundrisse und Höhlen erzeugen oder Karten importieren.", icon: Map },
-            { section: "media", label: "Bild hochladen", text: "Illustrationen für Lootkarten und eure Chronik sammeln.", icon: Image },
+            { section: "loot", label: t("Lootkarte erstellen"), text: t("Gegenstände gestalten und an die Gruppe verteilen."), icon: Layers },
+            { section: "actors", label: t("NPC erstellen"), text: t("Figurvorlagen, Werte und mögliche Beute festlegen."), icon: Users },
+            { section: "maps", label: t("Karte erstellen"), text: t("Grundrisse und Höhlen erzeugen oder Karten importieren."), icon: Map },
+            { section: "media", label: t("Bild hochladen"), text: t("Illustrationen für Lootkarten und eure Chronik sammeln."), icon: Image },
           ] as const).map(({ section, label, text, icon: Icon }) => <button type="button" className="heute-create-card" key={section} aria-label={label} onClick={() => onOpenForge(section)}><Icon size={23} aria-hidden="true" /><strong>{label}</strong><span>{text}</span><ArrowRight className="heute-card-arrow" size={17} aria-hidden="true" /></button>)}
         </div>
       </section> : null}
 
       {andere.length > 0 ? (
         <p className="heute-anwesend">
-          Gerade auch da: {andere.map((person) => person.displayName).join(", ")}.
+          {t("Gerade auch da: {namen}.", { namen: andere.map((person) => person.displayName).join(", ") })}
         </p>
       ) : null}
 
-      <h2 className="heute-abschnitt">Aus eurer Chronik</h2>
+      <h2 className="heute-abschnitt">{t("Aus eurer Chronik")}</h2>
       {entries.error && !entries.data ? (
         <Notice error>{entries.error}</Notice>
       ) : entries.loading && !entries.data ? (
-        <Loading text="Deine Chronik wird gelesen …" />
+        <Loading text={t("Deine Chronik wird gelesen …")} />
       ) : zuletzt.length > 0 ? (
         <ul className="heute-artikel">
           {zuletzt.map((entry) => (
@@ -116,18 +119,18 @@ export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigat
         </ul>
       ) : (
         <EmptyState
-          title="Eure Chronik ist noch leer."
-          action={<Button variant="primary" onClick={() => onNavigate("wiki")}>Zur Chronik</Button>}
+          title={t("Eure Chronik ist noch leer.")}
+          action={<Button variant="primary" onClick={() => onNavigate("wiki")}>{t("Zur Chronik")}</Button>}
         >
           {leitung
-            ? "Schreibt den ersten Artikel, oder holt ein bestehendes Wiki herein — beides beginnt in der Chronik."
-            : "Sobald deine Spielleitung etwas für deine Figur freigibt, steht es hier."}
+            ? t("Schreibt den ersten Artikel, oder holt ein bestehendes Wiki herein — beides beginnt in der Chronik.")
+            : t("Sobald deine Spielleitung etwas für deine Figur freigibt, steht es hier.")}
         </EmptyState>
       )}
 
-      <h2 className="heute-abschnitt">Was du hier tun kannst</h2>
+      <h2 className="heute-abschnitt">{t("Was du hier tun kannst")}</h2>
       <div className="heute-ziele">
-        {ZIELE.filter((ziel) => !ziel.nurLeitung || leitung).map(({ id, titel, zweck, icon: Icon }) => (
+        {ziele().filter((ziel) => !ziel.nurLeitung || leitung).map(({ id, titel, zweck, icon: Icon }) => (
           <button type="button" className="heute-ziel" key={id} onClick={() => onNavigate(id)}>
             <span className="heute-ziel-kopf">
               <Icon size={19} aria-hidden="true" />

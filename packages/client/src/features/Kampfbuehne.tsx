@@ -6,6 +6,7 @@ import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import type { ActorCard } from "@chronicle/protocol";
 import { api, apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
+import { t } from "../i18n";
 import type { ActionCard } from "./game-api";
 import "./kampfbuehne.css";
 
@@ -18,14 +19,18 @@ import "./kampfbuehne.css";
  *
  * Die Reihenfolge kommt vollständig vom Server. Diese Fläche sortiert nichts nach und zählt
  * keine Runde mit: gäbe es hier eine zweite Rechnung, wäre sie die unzuverlässige.
+ *
+ * `seite` und `zustand` sind Datenschlüssel des Servers; übersetzt wird nur, wie sie heißen.
  */
 
 type Seite = "gefaehrten" | "gegner" | "neutral";
 interface Teilnehmer { id: string; name: string; seite: Seite; actorId: string | null; initiative: number; ordnung: number; initiativeRollId: string | null; amZug: boolean }
 interface Kampf { id: string; name: string; zustand: "vorbereitet" | "laufend" | "beendet"; runde: number; erstelltAm: number; beendetAm: number | null; teilnehmer: Teilnehmer[] }
 
-const SEITENTITEL: Record<Seite, string> = { gegner: "Gegner", neutral: "Dazwischen", gefaehrten: "Gefährten" };
-const ZUSTANDSTEXT: Record<Kampf["zustand"], string> = { vorbereitet: "Vorbereitet", laufend: "Läuft", beendet: "Beendet" };
+const seitentitel = (seite: Seite): string =>
+  seite === "gegner" ? t("Gegner") : seite === "neutral" ? t("Dazwischen") : t("Gefährten");
+const zustandstext = (zustand: Kampf["zustand"]): string =>
+  zustand === "vorbereitet" ? t("Vorbereitet") : zustand === "laufend" ? t("Läuft") : t("Beendet");
 
 export function Kampfbuehne({ campaignId, gm, actors, revision, onChanged, onOpenInventory }: {
   campaignId: string; gm: boolean; actors: ActorCard[]; revision: number; onChanged: () => void; onOpenInventory?: (actorId: string) => void;
@@ -46,23 +51,23 @@ export function Kampfbuehne({ campaignId, gm, actors, revision, onChanged, onOpe
 
   return <div className="kampf-buehne">
     <div className="page-heading kampf-kopf">
-      <div><p className="eyebrow">Wer ist dran</p><h2>Die Kampfbühne</h2>
-        <p className="muted">Zwei Reihen, eine Reihenfolge. Für Gelände und Marken ist die Szenenkarte nebenan zuständig.</p></div>
+      <div><p className="eyebrow">{t("Wer ist dran")}</p><h2>{t("Die Kampfbühne")}</h2>
+        <p className="muted">{t("Zwei Reihen, eine Reihenfolge. Für Gelände und Marken ist die Szenenkarte nebenan zuständig.")}</p></div>
       {gm ? <NeuerKampf campaignId={campaignId} onAngelegt={id => { setOffen(id); onChanged(); }} /> : null}
     </div>
     {task.error ? <Notice error>{task.error}</Notice> : null}
     {kaempfe.error ? <Notice error>{kaempfe.error}</Notice> : null}
 
-    {liste.length > 1 ? <div className="kampf-wahl" role="tablist" aria-label="Kämpfe dieser Runde">
+    {liste.length > 1 ? <div className="kampf-wahl" role="tablist" aria-label={t("Kämpfe dieser Runde")}>
       {liste.map(k => <button key={k.id} role="tab" aria-selected={k.id === gewaehlt?.id}
         className={k.id === gewaehlt?.id ? "kampf-reiter aktiv" : "kampf-reiter"} onClick={() => setOffen(k.id)}>
-        {k.name}<small>{ZUSTANDSTEXT[k.zustand]}</small></button>)}
+        {k.name}<small>{zustandstext(k.zustand)}</small></button>)}
     </div> : null}
 
     {kaempfe.loading && !kaempfe.data ? <Loading /> : !gewaehlt
-      ? <EmptyState title="Noch ist es ruhig.">{gm
-        ? "Stell eine Bühne auf, setz die Kämpfenden darauf und eröffne — die Reihenfolge führt danach der Server."
-        : "Sobald deine Spielleitung einen Kampf eröffnet, siehst du hier, wer wann dran ist."}</EmptyState>
+      ? <EmptyState title={t("Noch ist es ruhig.")}>{gm
+        ? t("Stell eine Bühne auf, setz die Kämpfenden darauf und eröffne — die Reihenfolge führt danach der Server.")
+        : t("Sobald deine Spielleitung einen Kampf eröffnet, siehst du hier, wer wann dran ist.")}</EmptyState>
       : <Buehne kampf={gewaehlt} campaignId={campaignId} gm={gm} actors={actors} wuerfe={wuerfe.data ?? []} busy={task.busy} fuehren={fuehren} onChanged={onChanged} onOpenInventory={onOpenInventory} />}
   </div>;
 }
@@ -71,50 +76,50 @@ function Buehne({ kampf, campaignId, gm, actors, wuerfe, busy, fuehren, onChange
   kampf: Kampf; campaignId: string; gm: boolean; actors: ActorCard[]; wuerfe: ActionCard[]; busy: boolean;
   fuehren: (pfad: string, body?: unknown, method?: "POST" | "DELETE") => void; onChanged: () => void; onOpenInventory?: (actorId: string) => void;
 }) {
-  const dran = kampf.teilnehmer.find(t => t.amZug) ?? null;
-  const reihe = (seite: Seite) => kampf.teilnehmer.filter(t => t.seite === seite);
+  const dran = kampf.teilnehmer.find(teil => teil.amZug) ?? null;
+  const reihe = (seite: Seite) => kampf.teilnehmer.filter(teil => teil.seite === seite);
   const pfad = `/kaempfe/${encodeURIComponent(kampf.id)}`;
 
   return <section className="panel buehne-tafel">
     <header className="buehne-leiste">
       <div><h3>{kampf.name}</h3>
-        <p className="muted">{ZUSTANDSTEXT[kampf.zustand]}{kampf.runde > 0 ? ` · Runde ${kampf.runde}` : ""}</p></div>
+        <p className="muted">{zustandstext(kampf.zustand)}{kampf.runde > 0 ? ` · ${t("Runde {n}", { n: kampf.runde })}` : ""}</p></div>
       {/* Die eine Aussage, für die diese Fläche existiert — deshalb steht sie groß und allein. */}
-      <p className="buehne-dran" aria-live="polite">{dran ? <><span className="muted">Am Zug</span><strong>{dran.name}</strong></>
-        : kampf.zustand === "beendet" ? <span className="muted">Der Kampf ist vorbei.</span>
-        : <span className="muted">Noch nicht eröffnet.</span>}</p>
+      <p className="buehne-dran" aria-live="polite">{dran ? <><span className="muted">{t("Am Zug")}</span><strong>{dran.name}</strong></>
+        : kampf.zustand === "beendet" ? <span className="muted">{t("Der Kampf ist vorbei.")}</span>
+        : <span className="muted">{t("Noch nicht eröffnet.")}</span>}</p>
       {gm ? <div className="button-row">
         {kampf.zustand === "vorbereitet"
-          ? <Button variant="primary" disabled={busy || !kampf.teilnehmer.length} onClick={() => fuehren(`${pfad}/eroeffnen`)}><Swords size={16} /> Eröffnen</Button>
+          ? <Button variant="primary" disabled={busy || !kampf.teilnehmer.length} onClick={() => fuehren(`${pfad}/eroeffnen`)}><Swords size={16} /> {t("Eröffnen")}</Button>
           : null}
         {kampf.zustand === "laufend" && dran
-          ? <Button variant="primary" disabled={busy} onClick={() => fuehren(`${pfad}/zug`, { von: dran.id, runde: kampf.runde })}><ChevronRight size={16} /> Nächster Zug</Button>
+          ? <Button variant="primary" disabled={busy} onClick={() => fuehren(`${pfad}/zug`, { von: dran.id, runde: kampf.runde })}><ChevronRight size={16} /> {t("Nächster Zug")}</Button>
           : null}
         {kampf.zustand !== "beendet"
-          ? <Button disabled={busy} onClick={() => fuehren(`${pfad}/beenden`)}><Flag size={16} /> Beenden</Button>
+          ? <Button disabled={busy} onClick={() => fuehren(`${pfad}/beenden`)}><Flag size={16} /> {t("Beenden")}</Button>
           : null}
       </div> : null}
     </header>
 
     {kampf.zustand === "vorbereitet" && !kampf.teilnehmer.length
-      ? <EmptyState title="Die Bühne ist leer.">{gm ? "Setz die erste Kämpfende darauf. Eröffnen lässt sich erst, wenn jemand darauf steht." : "Die Spielleitung stellt gerade auf."}</EmptyState>
+      ? <EmptyState title={t("Die Bühne ist leer.")}>{gm ? t("Setz die erste Kämpfende darauf. Eröffnen lässt sich erst, wenn jemand darauf steht.") : t("Die Spielleitung stellt gerade auf.")}</EmptyState>
       : <div className="buehne-reihen">
         {(["gegner", "neutral", "gefaehrten"] as const).filter(seite => reihe(seite).length).map(seite =>
           <div key={seite} className={`buehne-reihe seite-${seite}`}>
-            <h4>{SEITENTITEL[seite]}</h4>
-            <ul>{reihe(seite).map(t => <li key={t.id}>
-              <article className={t.amZug ? "kampfkarte amzug" : "kampfkarte"} aria-current={t.amZug ? "step" : undefined}>
-                <span className="kampfkarte-initiative" title="Initiative">{t.initiative}</span>
-                <strong className="kampfkarte-name">{t.name}</strong>
+            <h4>{seitentitel(seite)}</h4>
+            <ul>{reihe(seite).map(teil => <li key={teil.id}>
+              <article className={teil.amZug ? "kampfkarte amzug" : "kampfkarte"} aria-current={teil.amZug ? "step" : undefined}>
+                <span className="kampfkarte-initiative" title={t("Initiative")}>{teil.initiative}</span>
+                <strong className="kampfkarte-name">{teil.name}</strong>
                 <span className="kampfkarte-fuss">
-                  {t.actorId ? <span className="kampfkarte-figur">Figur am Tisch</span> : <span className="muted">Ohne Bogen</span>}
+                  {teil.actorId ? <span className="kampfkarte-figur">{t("Figur am Tisch")}</span> : <span className="muted">{t("Ohne Bogen")}</span>}
                   {/* Ein Wert ohne Beleg sagt das, statt es zu verschweigen. */}
-                  {t.initiativeRollId ? <span className="kampfkarte-beleg" title="Aus einem Wurf">gewürfelt</span> : <span className="kampfkarte-beleg gesetzt" title="Von der Spielleitung gesetzt">gesetzt</span>}
+                  {teil.initiativeRollId ? <span className="kampfkarte-beleg" title={t("Aus einem Wurf")}>{t("gewürfelt")}</span> : <span className="kampfkarte-beleg gesetzt" title={t("Von der Spielleitung gesetzt")}>{t("gesetzt")}</span>}
                 </span>
-                {t.amZug ? <span className="kampfkarte-marke">am Zug</span> : null}
-                {gm && t.actorId && onOpenInventory ? <Button variant="quiet" onClick={() => onOpenInventory(t.actorId!)}><Backpack size={14} /> Inventar öffnen</Button> : null}
-                {gm && kampf.zustand !== "beendet" ? <button className="kampfkarte-weg" aria-label={`${t.name} von der Bühne nehmen`} disabled={busy}
-                  onClick={() => fuehren(`${pfad}/teilnehmer/${encodeURIComponent(t.id)}`, undefined, "DELETE")}><Trash2 size={14} /></button> : null}
+                {teil.amZug ? <span className="kampfkarte-marke">{t("am Zug")}</span> : null}
+                {gm && teil.actorId && onOpenInventory ? <Button variant="quiet" onClick={() => onOpenInventory(teil.actorId!)}><Backpack size={14} /> {t("Inventar öffnen")}</Button> : null}
+                {gm && kampf.zustand !== "beendet" ? <button className="kampfkarte-weg" aria-label={t("{name} von der Bühne nehmen", { name: teil.name })} disabled={busy}
+                  onClick={() => fuehren(`${pfad}/teilnehmer/${encodeURIComponent(teil.id)}`, undefined, "DELETE")}><Trash2 size={14} /></button> : null}
               </article></li>)}</ul>
           </div>)}
       </div>}
@@ -130,9 +135,9 @@ function NeuerKampf({ campaignId, onAngelegt }: { campaignId: string; onAngelegt
     const kampf = await api<Kampf>(apiPath(campaignId, "/kaempfe"), { method: "POST", body: { name } });
     setName(""); onAngelegt(kampf.id);
   }); }}>
-    <label className="sr-only" htmlFor="kampf-name">Name des Kampfes</label>
-    <input id="kampf-name" value={name} onChange={e => setName(e.target.value)} required maxLength={160} placeholder="z. B. Der Hinterhalt am Pass" />
-    <Button type="submit" variant="primary" disabled={task.busy || !name.trim()}><Plus size={16} /> Bühne aufstellen</Button>
+    <label className="sr-only" htmlFor="kampf-name">{t("Name des Kampfes")}</label>
+    <input id="kampf-name" value={name} onChange={e => setName(e.target.value)} required maxLength={160} placeholder={t("z. B. Der Hinterhalt am Pass")} />
+    <Button type="submit" variant="primary" disabled={task.busy || !name.trim()}><Plus size={16} /> {t("Bühne aufstellen")}</Button>
     {task.error ? <Notice error>{task.error}</Notice> : null}
   </form>;
 }
@@ -164,23 +169,23 @@ function NeuerTeilnehmer({ campaignId, kampfId, actors, wuerfe, onChanged }: { c
       body: { name, seite, initiative, actorId: actorId || null, initiativeRollId: beleg } });
     setName(""); setActorId(""); setInitiative(10); setBeleg(null); onChanged();
   }); }}>
-    <h4><Plus size={17} /> Wer kämpft mit?</h4>
+    <h4><Plus size={17} /> {t("Wer kämpft mit?")}</h4>
     <div className="kampf-felder">
-      <label>Figur am Tisch<select value={actorId} onChange={e => waehleFigur(e.target.value)}>
-        <option value="">Ohne Bogen (Gegner, Tier, Ding)</option>
+      <label>{t("Figur am Tisch")}<select value={actorId} onChange={e => waehleFigur(e.target.value)}>
+        <option value="">{t("Ohne Bogen (Gegner, Tier, Ding)")}</option>
         {actors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
       </select></label>
-      <label>Name auf der Karte<input value={name} onChange={e => setName(e.target.value)} required maxLength={160} placeholder="z. B. Wolf im Unterholz" /></label>
-      <label>Seite<select value={seite} onChange={e => setSeite(e.target.value as Seite)}>
-        {(["gefaehrten", "gegner", "neutral"] as const).map(s => <option key={s} value={s}>{SEITENTITEL[s]}</option>)}
+      <label>{t("Name auf der Karte")}<input value={name} onChange={e => setName(e.target.value)} required maxLength={160} placeholder={t("z. B. Wolf im Unterholz")} /></label>
+      <label>{t("Seite")}<select value={seite} onChange={e => setSeite(e.target.value as Seite)}>
+        {(["gefaehrten", "gegner", "neutral"] as const).map(s => <option key={s} value={s}>{seitentitel(s)}</option>)}
       </select></label>
-      <label>Initiative<input type="number" value={initiative} onChange={e => setzeVonHand(e.target.valueAsNumber)} required /></label>
+      <label>{t("Initiative")}<input type="number" value={initiative} onChange={e => setzeVonHand(e.target.valueAsNumber)} required /></label>
     </div>
-    {wurf ? <p className="kampf-wurf">Diese Figur hat Initiative gewürfelt: <strong>{Math.trunc(wurf.receipt.total)}</strong>.{" "}
-      {beleg === wurf.id ? <span className="kampfkarte-beleg">übernommen</span>
-        : <Button onClick={uebernimm}>Wert übernehmen</Button>}</p> : null}
-    <p className="field-help">Höhere Initiative handelt zuerst. Bei Gleichstand entscheidet, wer zuerst aufgestellt wurde — und das bleibt so.{actorId && !wurf ? " Für diese Figur liegt noch kein Initiativwurf vor; der Wert gilt dann als gesetzt." : ""}</p>
-    <Button type="submit" variant="primary" disabled={task.busy || !name.trim() || Number.isNaN(initiative)}>Auf die Bühne stellen</Button>
+    {wurf ? <p className="kampf-wurf">{t("Diese Figur hat Initiative gewürfelt:")} <strong>{Math.trunc(wurf.receipt.total)}</strong>.{" "}
+      {beleg === wurf.id ? <span className="kampfkarte-beleg">{t("übernommen")}</span>
+        : <Button onClick={uebernimm}>{t("Wert übernehmen")}</Button>}</p> : null}
+    <p className="field-help">{t("Höhere Initiative handelt zuerst. Bei Gleichstand entscheidet, wer zuerst aufgestellt wurde — und das bleibt so.")}{actorId && !wurf ? ` ${t("Für diese Figur liegt noch kein Initiativwurf vor; der Wert gilt dann als gesetzt.")}` : ""}</p>
+    <Button type="submit" variant="primary" disabled={task.busy || !name.trim() || Number.isNaN(initiative)}>{t("Auf die Bühne stellen")}</Button>
     {task.error ? <Notice error>{task.error}</Notice> : null}
   </form>;
 }

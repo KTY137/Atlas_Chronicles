@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import type { AnyActionResult as ActionResult, FieldSchema, PackagePin, AnyRulePackage as RulePackage, Scalar } from "@chronicle/rules";
 import { api } from "../api";
+import { t } from "../i18n";
 
 export interface RulesState { packages: RulePackage[]; pin: PackagePin; version: number }
 export interface ActorSheet { actorId: string; packageId: string; packageVersion: string; fields: Record<string, Scalar>; version: number; defeatPending: boolean; defeatedAt: number | null }
@@ -22,7 +23,7 @@ export function useCommand() {
     if (!commandId) {
       // Preserve unresolved acknowledgements even when several token forms share this hook.
       // Refuse further new gestures at the bound rather than forgetting a retry identity.
-      if (pending.current.size >= 256) throw new Error("Zu viele unbestätigte Änderungen. Bitte die ausstehenden Änderungen erneut versuchen.");
+      if (pending.current.size >= 256) throw new Error(t("Zu viele unbestätigte Änderungen. Bitte die ausstehenden Änderungen erneut versuchen."));
       commandId = crypto.randomUUID(); pending.current.set(fingerprint, commandId);
     }
     const value = await api<T>(path, { method, body: { ...body, commandId } });
