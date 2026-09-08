@@ -63,10 +63,12 @@ und läuft dann in `smoke.mjs:162` in einen Timeout: er wartet auf den Hilfetext
 per Bisect belegt: bei `858f427` vorhanden, nach dem Merge von main weg, also im
 Kartenstudio-Umbau entfernt und nicht durch das Sprachpaket. Bildschirmfoto und Belege unter
 `.local/desktop-profiles/smoke-UOgc4i/`; darauf ist zu sehen, dass alles andere stimmt.
-Der Fall liegt bei der Sitzung, die das Kartenstudio besitzt: entweder kehrt die
-Revisionsanzeige zurück — dafür spricht, dass daneben „Kartenrevision speichern" steht —
-oder der Smoke wird auf einen anderen Beleg derselben Zusage umgehängt. **Es gibt deshalb
-keinen neuen Installer mit diesem Stand.** Nicht geprüft außerdem:
+Die Kartenstudio-Sitzung hat den Befund bestätigt und behoben: die Anzeige war versehentlich
+entfallen und ist als eigener Hilfetext zurück, jetzt mit dem Zusatz, dass eine laufende Szene
+ihre Fassung behält; ein Prüffall klammert Revisionsnummer und Speicherknopf zusammen, damit
+das nicht wieder auseinanderfällt. Ihr Stand liegt noch uncommittet in ihrem Hauptcheckout.
+**Sobald er über main hier ist, fehlt für den Desktop-Nachweis nur ein Lauf und ein Installer;
+bis dahin gibt es keinen neuen Installer mit diesem Stand.** Nicht geprüft außerdem:
 NVDA, Windows Hello und gemessene Budgets. `packages/client/src/features/formula-sugar.ts`
 kam mit dem Merge von `main` und ist noch nicht an die Oberfläche angeschlossen; ihre
 vierzehn deutschen Klartextfehler übersetzt die Sitzung, die sie einbaut.
