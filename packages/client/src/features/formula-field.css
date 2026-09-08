@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
+/* Formel-Bauteil: Zeile, Bausteine, Knoten. Farben nur aus den App-Variablen. */
+.ff-field { margin: 18px 0; }
+.ff-field-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.ff-views { display: inline-flex; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.ff-views button { border: 0; background: transparent; color: var(--text-muted); padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.ff-views button[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
+.ff-line label { display: block; font-size: 12px; margin-bottom: 6px; }
+.ff-line-stack { position: relative; font: 14px/1.6 var(--font-mono); }
+.ff-line-input, .ff-line-overlay { box-sizing: border-box; width: 100%; padding: 10px 14px; font: inherit; letter-spacing: 0; white-space: pre; overflow: hidden; }
+.ff-line-overlay { position: absolute; inset: 0; pointer-events: none; color: var(--text); border: 1px solid transparent; }
+.ff-line-input { position: relative; background: var(--bg); color: transparent; caret-color: var(--text); border: 1px solid var(--line-strong); border-radius: 5px; }
+.ff-line-input::selection { background: var(--accent-soft); }
+.ff-line-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ff-line-invalid .ff-line-input { border-color: var(--danger); }
+.ff-line-placeholder { color: var(--text-faint); }
+.ff-tok-attribute, .ff-tok-parameter { background: var(--accent-soft); border-radius: 4px; padding: 1px 0; }
+.ff-tok-parameter { text-decoration: underline dotted; }
+.ff-tok-dice { color: var(--accent-strong); font-weight: 600; }
+.ff-tok-number { color: var(--text); }
+.ff-tok-text { color: var(--ok); }
+.ff-tok-function, .ff-tok-keyword { color: var(--accent); }
+.ff-tok-operator, .ff-tok-paren { color: var(--text-muted); }
+.ff-tok-missing { text-decoration: line-through; color: var(--danger); }
+.ff-tok-error { text-decoration: underline wavy var(--danger); text-underline-offset: 3px; }
+.ff-tok-end { display: inline-block; min-width: 6px; border-bottom: 2px wavy var(--danger); }
+.ff-completion { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin: 4px 0 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; max-height: 260px; overflow: auto; font: 13px/1.4 var(--font-body); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+.ff-completion li { display: grid; gap: 2px; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
+.ff-completion li.is-active { background: var(--accent-soft); }
+.ff-completion li small { color: var(--text-muted); }
+.ff-completion-note { cursor: default; opacity: .8; }
+.ff-line-status { margin: 8px 0 0; font-size: 12px; color: var(--text-muted); min-height: 1.4em; }
+.ff-error { color: var(--danger); }
+.ff-help { display: block; color: var(--text-muted); margin-top: 4px; }
+.ff-hint { display: flex; align-items: center; gap: 8px; font-size: 12px; background: var(--accent-soft); border-left: 2px solid var(--accent); padding: 8px 12px; margin: 0 0 8px; }
+.ff-line-tools { margin-top: 6px; }
+.ff-line-tools summary { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); cursor: pointer; list-style: none; }
+.ff-line-tools summary::-webkit-details-marker { display: none; }
+.ff-cheat-sheet { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.ff-cheat-sheet button { width: 100%; text-align: left; display: grid; gap: 4px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; color: var(--text); cursor: pointer; }
+.ff-cheat-sheet code { font: 12px var(--font-mono); color: var(--text-muted); }
+.ff-readonly { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+.ff-reroll { margin-left: 8px; }
