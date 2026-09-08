@@ -19,7 +19,7 @@ describe("formula line", () => {
   });
   it("underlines the failing part and prints the plain explanation instead of the example", () => {
     const html = render("1d20 + @gescick");
-    expect(html).toContain('aria-invalid="true"'); expect(html).toContain('class="ff-tok ff-tok-attribute ff-tok-error"');
+    expect(html).toContain('aria-invalid="true"'); expect(html).toContain('class="ff-tok ff-tok-attribute ff-tok-missing ff-tok-error"');
     expect(html).toContain("Das Attribut „gescick“ gibt es nicht. Meintest du „geschick“?"); expect(html).not.toContain("Beispiel für Sera");
   });
   it("keeps a trailing error position visible as a marker at the end", () => {
@@ -30,5 +30,11 @@ describe("formula line", () => {
     expect(CHEAT_SHEET).toHaveLength(6);
     for (const item of CHEAT_SHEET) expect(html).toContain(item.title);
     expect(html).not.toMatch(/Parser|Token|Syntax|kanonisch/i);
+  });
+  it("marks a reference to a removed attribute as missing, but not a present one", () => {
+    const emptySources: FormulaSources = { actor: [], input: [] };
+    const missingHtml = renderToStaticMarkup(createElement(FormulaLine, { id: "f", label: "Ergebnis", text: "@weg", analysis: analyzeFormula("@weg", emptySources, options), sources: emptySources, options, status: "Beispiel für Sera: 17", onText() {} }));
+    expect(missingHtml).toContain("ff-tok-missing");
+    expect(render("@geschick")).not.toContain("ff-tok-missing");
   });
 });

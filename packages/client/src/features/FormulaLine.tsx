@@ -25,7 +25,7 @@ function Overlay({ text, analysis }: { text: string; analysis: FormulaAnalysis }
   const inError = (start: number, end: number) => !!error && error.start < error.end && start < error.end && end > error.start;
   for (const [i, span] of analysis.spans.entries()) {
     if (span.start > cursor) pieces.push(text.slice(cursor, span.start));
-    const classes = ["ff-tok", `ff-tok-${span.kind}`, inError(span.start, span.end) ? "ff-tok-error" : ""].filter(Boolean).join(" ");
+    const classes = ["ff-tok", `ff-tok-${span.kind}`, span.missing ? "ff-tok-missing" : "", inError(span.start, span.end) ? "ff-tok-error" : ""].filter(Boolean).join(" ");
     pieces.push(<span key={i} className={classes} {...(span.title ? { title: span.title } : {})}>{text.slice(span.start, span.end)}</span>);
     cursor = span.end;
   }
