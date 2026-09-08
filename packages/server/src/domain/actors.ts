@@ -72,6 +72,26 @@ export async function authorizeActorPerspective(db: Db, viewer: Membership, acto
   if (!await explicitControl(db, viewer, actorId)) throw new Gone();
 }
 
+/**
+ * Die Spielerprojektion einer Figurvorlage — Name, Art und Anfangswerte, sonst nichts.
+ *
+ * **Ohne `beute`.** Die Beutetabelle ist Spielleitungswissen: sie verriete vorab, was an einer
+ * Figur haengt. Sie wird beim Erschaffen ausgewuerfelt, nicht vorher angekuendigt.
+ *
+ * **Ohne `loreEntryId`.** Der Verweis zeigt auf einen Wikiartikel, dessen Sichtbarkeit am
+ * Wissensblick des Lesers haengt. Die einfachste sichere Regel laesst ihn fuer Spieler IMMER
+ * weg — sonst braeuchte jede einzelne Vorlagenkarte eine zweite Wissensabfrage, und ein
+ * vergessener Pfad waere ein stiller Hinweis auf einen Artikel, den niemand freigegeben hat.
+ * Wer den Artikel kennen darf, findet ihn im Wiki; die Vorlagenkarte ist nicht der Weg dorthin.
+ *
+ * Auch `package` und `schemaVersion` fallen weg: beides ist Werkstattbuchhaltung, keine Angabe,
+ * die bei der Wahl einer Figur hilft.
+ */
+export function templateForPlayer(id: string, version: number, definition: P.ActorTemplateData):
+  { id: string; name: string; art: string; anfangswerte: Record<string, unknown>; version: number } {
+  return { id, name: definition.name, art: definition.kind, anfangswerte: { ...definition.fields }, version };
+}
+
 export function createActors(db: Db, cfg: DomainConfig = {}) {
   const now = cfg.now ?? Date.now;
   async function knownLore(tx: Db, current: Membership): Promise<ReadonlySet<string> | null> {
@@ -265,8 +285,19 @@ const zufall = (): number => randomInt(0, 2 ** 30) / 2 ** 30;
 /** 1..100 — dieselbe Skala wie die Wahrscheinlichkeit, damit der Vergleich keine Umrechnung braucht. */
 const zufallsProzent = (): number => randomInt(1, 101);
 
-  async function instantiateActor(userId: string, campaignId: string, raw: unknown): Promise<P.ActorCard> {
+  /**
+   * Eine Figur erschaffen.
+   *
+   * `origin` ist der einzige Unterschied zwischen „die Spielleitung legt eine Figur an" und
+   * „die Spielleitung bestaetigt den Antrag eines Spielers": die Figur gehoert dann dem
+   * Antragsteller (`createdBy`) und die Kontrolle geht an ihn (`grantTo`), waehrend der Befehl
+   * weiterhin der Spielleitung gehoert — sie hat ihn ausgeloest, sie steht im Ereignisbuch.
+   * Ohne `origin` verhaelt sich alles wie zuvor: beides ist die aufrufende Person.
+   */
+  async function instantiateActor(userId: string, campaignId: string, raw: unknown,
+    origin: { createdBy?: string; grantTo?: string } = {}): Promise<P.ActorCard> {
     const input = parse(P.ActorInstantiate, raw);
+    const owner = origin.createdBy ?? userId, controller = origin.grantTo ?? userId;
     return command(userId, campaignId, "actor.instantiate", null, input, true, async (tx, current) => {
       const source = await template<P.ActorTemplateData>(tx, campaignId, "actor", input.templateId, input.templateRevision);
       if (source.archivedAt !== null) throw new Gone();
@@ -275,10 +306,10 @@ const zufallsProzent = (): number => randomInt(1, 101);
       const pkg = await rulePackage(tx, campaignId, source.definition.package), fields = validatePackageFields(pkg, source.definition.fields);
       await installDemo(tx, campaignId, userId, pkg);
       const id = randomUUID(), at = now();
-      await tx.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,$4)", [id, campaignId, userId, input.name ?? source.definition.name]);
+      await tx.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,$4)", [id, campaignId, owner, input.name ?? source.definition.name]);
       await tx.query(`INSERT INTO actor_profiles(actor_id,campaign_id,kind,template_id,template_revision,lore_entry_id,created_by,created_at)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [id, campaignId, source.definition.kind, input.templateId, input.templateRevision, source.definition.loreEntryId, userId, at]);
-      await tx.query("INSERT INTO actor_controllers(actor_id,campaign_id,user_id,granted_by,granted_at) VALUES($1,$2,$3,$3,$4)", [id, campaignId, userId, at]);
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [id, campaignId, source.definition.kind, input.templateId, input.templateRevision, source.definition.loreEntryId, owner, at]);
+      await tx.query("INSERT INTO actor_controllers(actor_id,campaign_id,user_id,granted_by,granted_at) VALUES($1,$2,$3,$4,$5)", [id, campaignId, controller, userId, at]);
       await tx.query("INSERT INTO actor_sheets(actor_id,campaign_id,package_id,package_version,fields,updated_at) VALUES($1,$2,$3,$4,$5,$6)", [id, campaignId, pkg.id, pkg.version, JSON.stringify(fields), at]);
       await wuerfleBeute(tx, campaignId, userId, id, source.definition, at);
       const after = await actorCard(tx, current, id);

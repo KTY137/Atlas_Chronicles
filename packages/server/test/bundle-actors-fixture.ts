@@ -14,6 +14,12 @@ export async function seedBundleActors(db: Db, campaign: string, gm: string, pla
   await actors.reviseActorTemplate(gm, campaign, template.id, { commandId: command(), expectedVersion: 1, reason, definition: { ...definition, name: "Later template" } });
   const actor = await actors.instantiateActor(gm, campaign, { commandId: command(), templateId: template.id, templateRevision: 1, name: "Ash" });
   await actors.updateActor(gm, campaign, actor.id, { commandId: command(), expectedVersion: 1, reason, name: "Ash of the lantern", kind: "companion", loreEntryId: entry });
+  // Der Weg des bestaetigten Figurantrags, ohne seine Tabellen: die Spielleitung loest den Befehl
+  // aus, die Figur gehoert aber dem Spieler und die Kontrolle geht an ihn. Genau diese Herkunft
+  // muss eine Sicherung unveraendert wieder herstellen — sonst gehoerte die zurueckgespielte
+  // Figur ploetzlich der Spielleitung.
+  const beantragt = await actors.instantiateActor(gm, campaign, { commandId: command(), templateId: template.id, templateRevision: 1, name: "Nell" },
+    { createdBy: player, grantTo: player });
   await actors.grantController(gm, campaign, actor.id, player, { commandId: command(), expectedVersion: 0, reason });
   const perspective = await actors.getReaderPerspective(player, campaign);
   await actors.setReaderPerspective(player, campaign, { commandId: command(), expectedVersion: perspective.version, actorId: actor.id });
@@ -29,5 +35,5 @@ export async function seedBundleActors(db: Db, campaign: string, gm: string, pla
   await actors.archiveActor(gm, campaign, actor.id, { commandId: command(), expectedVersion: 2, reason });
   await actors.archiveActorTemplate(gm, campaign, template.id, { commandId: command(), expectedVersion: 2, reason });
   await actors.archiveItemTemplate(gm, campaign, itemTemplate.id, { commandId: command(), expectedVersion: 2, reason });
-  return { retryInput, historicalItem: item, actorId: actor.id };
+  return { retryInput, historicalItem: item, actorId: actor.id, grantedActorId: beantragt.id };
 }

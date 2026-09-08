@@ -2,9 +2,12 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { DEMO_RULE_PACKAGE } from "@chronicle/rules";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createDocuments } from "../src/domain/documents.ts";
+import { createActors } from "../src/domain/actors.ts";
+import { createFigurantrag } from "../src/domain/figurantrag.ts";
 import { createDeletion, LOESCHREIHENFOLGE, UEBERLEBT, UMWEG } from "../src/domain/deletion.ts";
 import { Gone } from "../src/domain/errors.ts";
 
@@ -107,6 +110,31 @@ describe("Kampagnenlöschung", () => {
     expect(quittung.rowCounts["campaigns"]).toBe(1);
     const beleg = (await db.query<{ campaign_name: string }>("SELECT campaign_name FROM campaign_deletions WHERE campaign_id=$1", [weg.campaignId])).rows[0];
     expect(beleg?.campaign_name).toBe("Verschwindet");
+  });
+
+  /**
+   * Der Figurantrag hängt an vier Tabellen, die alle weiter unten fallen: Vorlage, Revision,
+   * Figur und Mitgliedschaft. Ein einziger falscher Platz in der Reihenfolge bricht deshalb
+   * einen Fremdschlüssel — und zwar erst dann, wenn tatsächlich Anträge vorliegen.
+   */
+  it("räumt Freigaben, Anträge und ihr Ereignisbuch mit der Kampagne ab", async () => {
+    const w = await welt("Antraege"), actors = createActors(db, cfg), antraege = createFigurantrag(db, cfg);
+    const vorlage = await actors.createActorTemplate(w.gm, w.campaignId, { commandId: randomUUID(), definition: {
+      schemaVersion: 1, name: "Wanderin", kind: "player_character", loreEntryId: null,
+      package: { id: DEMO_RULE_PACKAGE.id, version: DEMO_RULE_PACKAGE.version }, fields: { insight: 3 } } });
+    await antraege.freigeben(w.gm, w.campaignId, vorlage.id, 0);
+    const antrag = await antraege.beantragen(w.spieler, w.campaignId, randomUUID(),
+      { templateId: vorlage.id, name: "Nell", anfangswerte: { insight: 3 } });
+    await antraege.bestaetigen(w.gm, w.campaignId, antrag.id, antrag.version);
+    expect(await zaehle("figurantraege", w.campaignId)).toBe(1);
+
+    const quittung = await createDeletion(db, cfg).deleteCampaign(w.gm, w.campaignId);
+    expect(quittung.rowCounts["figurvorlagen_freigaben"]).toBe(1);
+    expect(quittung.rowCounts["figurantraege"]).toBe(1);
+    expect(quittung.rowCounts["figurantrag_events"]).toBe(3);
+    for (const table of LOESCHREIHENFOLGE) {
+      expect({ table, n: await zaehle(table, w.campaignId) }).toEqual({ table, n: 0 });
+    }
   });
 
   it("schließt den Riegel nach der Transaktion wieder", async () => {

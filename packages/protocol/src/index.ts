@@ -39,3 +39,4 @@ export * from "./tactical.ts";
 export * from "./map-lifecycle.ts";
 export * from "./authoring.ts";
 export * from "./chronist.ts";
+export * from "./figurantrag.ts";
