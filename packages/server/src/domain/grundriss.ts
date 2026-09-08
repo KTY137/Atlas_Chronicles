@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFileSync } from "node:fs";
-import {
-  erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, GRUNDRISS_STANDARD, HOEHLE_STANDARD,
-  type GrundrissOptionen, type HoehleOptionen, type SiedlungArt, type SiedlungOptionen,
-} from "@chronicle/forge";
-import { parseAssetpaket, serializeTacticalMapDocument, type AssetpaketV1 } from "@chronicle/szene";
+import { erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, type GrundrissOptionen, type HoehleOptionen, type SiedlungOptionen } from "@chronicle/forge";
+import { KARTEN_SETTINGS, parseAssetpaket, serializeTacticalMapDocument, type AssetpaketV1, type KartenSetting, type Weltkeim } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createCampaigns } from "./campaigns.ts";
@@ -35,19 +32,49 @@ import { createTactical, TacticalValidationError } from "./tactical.ts";
  */
 
 /** The generator needs an asset pack, and the pack's identity is part of the seed (see below). */
-const PAKET_URL = new URL("../../../../assets/packs/pk.grundriss/paket.json", import.meta.url);
-
-let cached: AssetpaketV1 | null = null;
-function paket(): AssetpaketV1 {
-  if (cached) return cached;
+export type KartenArt = "grundriss" | "hoehle" | "siedlung";
+export type KartenStil = "grundriss" | "gemalt" | "zeitwelten";
+export type KartenOptionen = Partial<GrundrissOptionen> | Partial<HoehleOptionen> | Partial<SiedlungOptionen>;
+const PAKET_URLS: Record<KartenStil, URL> = {
+  grundriss: new URL("../../../../assets/packs/pk.grundriss/paket.json", import.meta.url),
+  gemalt: new URL("../../../../assets/packs/pk.gemalt/paket.json", import.meta.url),
+  zeitwelten: new URL("../../../../assets/packs/pk.zeitwelten/paket.json", import.meta.url),
+};
+const cached = new Map<KartenStil, AssetpaketV1>();
+function paket(stil: KartenStil = "grundriss"): AssetpaketV1 {
+  if (!Object.hasOwn(PAKET_URLS, stil)) throw new TacticalValidationError("Bitte einen vorhandenen Kartenstil auswählen.");
+  const existing = cached.get(stil);
+  if (existing) return existing;
   try {
-    cached = parseAssetpaket(readFileSync(PAKET_URL, "utf8"));
+    const loaded = parseAssetpaket(readFileSync(PAKET_URLS[stil], "utf8"));
+    cached.set(stil, loaded);
+    return loaded;
   } catch (cause) {
     // Fail loudly and specifically. A generator that silently falls back to an empty pack would
     // produce a map that is subtly wrong instead of a request that is honestly refused.
-    throw new TacticalValidationError("Das Grundriss-Assetpaket ist auf diesem Server nicht lesbar.");
+    throw new TacticalValidationError("Das gewählte Karten-Assetpaket ist auf diesem Server nicht lesbar.");
   }
-  return cached;
+}
+
+/** Reject irrelevant options for domain callers as well as HTTP callers. Numeric bounds stay
+ * with the generators; a cave's options must never be silently swallowed by a floorplan. */
+export function validateKartenOptionen(art: KartenArt, optionen?: KartenOptionen): void {
+  const keys: Record<KartenArt, readonly string[]> = {
+    grundriss: ["zellen", "zellgroesse", "raeume", "minRaum", "schleifen", "moeblierung", "licht", "gangboden", "anordnung", "profil", "setting"],
+    hoehle: ["zellen", "zellgroesse", "kammern", "fuellung", "glaettung", "mindestFlaeche", "moeblierung", "licht"],
+    siedlung: ["art", "ausdehnung", "zellgroesse", "bauwerke", "strassenDichte", "grundstueck", "licht", "setting"],
+  };
+  if (!Object.hasOwn(keys, art) || optionen !== undefined && (!optionen || typeof optionen !== "object" || Array.isArray(optionen)
+    || ![Object.prototype, null].includes(Object.getPrototypeOf(optionen)) || Object.keys(optionen).some(key => !keys[art].includes(key))))
+    throw new TacticalValidationError("Bitte die Optionen der gewählten Kartenart verwenden.");
+  if (optionen && "setting" in optionen && !KARTEN_SETTINGS.some(setting => setting === optionen.setting))
+    throw new TacticalValidationError("Bitte ein vorhandenes Kartensetting auswählen.");
+}
+
+/** The normalized seed vector owns generation settings; older generators omitted this field. */
+function setting(ergebnis: { keim: Pick<Weltkeim, "optionen"> }): KartenSetting {
+  const value = ergebnis.keim.optionen.setting;
+  return KARTEN_SETTINGS.find(candidate => candidate === value) ?? "fantasy";
 }
 
 export interface GrundrissRequest {
@@ -61,23 +88,27 @@ export interface GrundrissRequest {
   readonly keim: string;
   /**
    * Welche Art Karte entsteht. `grundriss` sind Räume und Gänge (Schloss, Krypta, Haus),
-   * `hoehle` ist gewachsener Fels, `siedlung` ein Ort mit Gebäuden und Straßen. Alle liefern
-   * ein gewöhnliches taktisches Dokument und gehen denselben Weg in die Datenbank.
+   * `hoehle` ist gewachsener Fels. Beide liefern dasselbe Ergebnis (`Grundriss`) und gehen
+   * denselben Weg in die Datenbank; nur der Erzeuger dahinter ist ein anderer.
    */
-  readonly art?: "grundriss" | "hoehle" | "siedlung";
-  readonly optionen?: Partial<GrundrissOptionen> | Partial<HoehleOptionen> | Partial<SiedlungOptionen>;
+  readonly art?: KartenArt;
+  readonly stil?: KartenStil;
+  readonly optionen?: KartenOptionen;
 }
 
 export function createGrundriss(db: Db, cfg: IdentityConfig) {
   const campaigns = createCampaigns(db);
 
   const erzeuge = (input: GrundrissRequest) => {
+    // Die Verzweigung ist die ganze Erweiterung: `erzeugeHoehle` war gebaut, geprueft und aus dem
+    // Fass exportiert — und unerreichbar, genau wie `erzeugeGrundriss` es einmal war.
     const auftrag = { keim: input.keim, titel: input.name };
-    if (input.art === "siedlung") return erzeugeSiedlung({ ...auftrag,
-      ...(input.optionen ? { optionen: input.optionen as Partial<SiedlungOptionen> } : {}) }, paket());
+    validateKartenOptionen(input.art ?? "grundriss", input.optionen);
     return input.art === "hoehle"
-      ? erzeugeHoehle({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<HoehleOptionen> } : {}) }, paket())
-      : erzeugeGrundriss({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<GrundrissOptionen> } : {}) }, paket());
+      ? erzeugeHoehle({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<HoehleOptionen> } : {}) }, paket(input.stil))
+      : input.art === "siedlung"
+        ? erzeugeSiedlung({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<SiedlungOptionen> } : {}) }, paket(input.stil))
+        : erzeugeGrundriss({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<GrundrissOptionen> } : {}) }, paket(input.stil));
   };
 
   /**
@@ -91,25 +122,28 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
    * Grundriss-Generator als ihren Urheber genannt — eine falsche Herkunftsangabe in genau dem
    * Feld, ueber dem der Absatz daueber steht.
    */
-  const herkunft = (ergebnis: { keim: { keimHash: string }; erzeuger: string; version: string }) => ({
+  const herkunft = (ergebnis: { keim: Pick<Weltkeim, "keimHash" | "optionen">; erzeuger: string; version: string }, stil?: KartenStil) => ({
     // Der Name der Quelle nennt das Werkzeug. Das ist die Signatur, die mit der Karte in jeden
     // Export wandert — und es bleibt eine Aussage ueber die ERZEUGUNG, nicht ueber das Werk:
     // was auf der Karte steht, hat sich die Runde ausgedacht.
     name: `Erzeugt mit Atlas Chronicles · ${ergebnis.keim.keimHash.slice(0, 12)}`,
     creator: ergebnis.erzeuger,
     sourceUrl: null,
-    license: paket().lizenz.spdx,
+    license: paket(stil).lizenz.spdx,
     licenseUrl: null,
     retrievedAt: null,
     generator: ergebnis.erzeuger,
     generatorVersion: ergebnis.version,
+    setting: setting(ergebnis),
   });
 
   return {
-    /** Every kind reads its own engine defaults; the form does not carry a second option table. */
-    defaults(): { grundriss: GrundrissOptionen; hoehle: HoehleOptionen; siedlung: Record<SiedlungArt, SiedlungOptionen> } {
-      return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD,
-        siedlung: { weiler: siedlungStandard("weiler"), dorf: siedlungStandard("dorf"), stadt: siedlungStandard("stadt") } };
+    /** The surface receives the exact generator defaults and the locally available styles. */
+    defaults() {
+      return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD, siedlung: SIEDLUNG_STANDARD,
+        siedlungsarten: { weiler: siedlungStandard("weiler"), dorf: siedlungStandard("dorf"), stadt: siedlungStandard("stadt") },
+        stile: [{ id: "grundriss", titel: "Grundriss" }, { id: "gemalt", titel: "Gemalt" }, { id: "zeitwelten", titel: "Zeitwelten" }],
+        limits: { grundriss: GRUNDRISS_LIMITS, hoehle: HOEHLE_LIMITS, siedlung: SIEDLUNG_LIMITS } };
     },
 
     /** Generate without persisting: the GM sees the room count and the seed before committing. */
@@ -120,13 +154,17 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
         keimHash: grundriss.keim.keimHash,
         wurzelId: grundriss.wurzelId as string,
         art: grundriss.art,
+        stil: input.stil ?? "grundriss",
+        setting: setting(grundriss),
         bericht: grundriss.bericht,
-        ...(grundriss.art === "siedlung"
-          ? { bauwerke: grundriss.bauwerke.length, strassen: grundriss.strassen.length }
-          : { raeume: grundriss.raeume.length }),
+        ...(grundriss.art === "siedlung" ? { bauwerke: grundriss.bauwerke.length, strassen: grundriss.strassen.length } : { raeume: grundriss.raeume.length }),
         knoten: grundriss.knoten.length,
         groesse: grundriss.karte.geometry.size,
-        karte: grundriss.karte,
+        document: grundriss.karte,
+        nodes: grundriss.knoten.filter(node => node.id !== grundriss.wurzelId).map(node => ({
+          knotenId: node.id, titel: node.titel ?? "Unbenannt", art: node.art,
+          ...(node.bauwerk ? { bauwerk: node.bauwerk } : {}), x: node.anker?.bei[0] ?? 0, y: node.anker?.bei[1] ?? 0,
+        })),
       };
     },
 
@@ -148,7 +186,7 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
           name: input.name,
           format: "native",
           sourceText: serializeTacticalMapDocument(grundriss.karte),
-          provenance: herkunft(grundriss),
+          provenance: herkunft(grundriss, input.stil),
         });
         // Region ids are Knoten ids. Retain their derived child seeds with the persisted map,
         // so opening an edited room tomorrow reaches the same address as opening it today.

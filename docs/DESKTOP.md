@@ -17,6 +17,7 @@ npm.cmd ci
 node node_modules/electron/install.js
 # Prepare the pinned PostgreSQL runtime as described below, then:
 node packages/desktop/tools/prepare-runtime.mjs
+npm.cmd run build
 npm.cmd run desktop:build
 node packages/desktop/tools/launch.mjs
 ```
@@ -24,7 +25,7 @@ node packages/desktop/tools/launch.mjs
 The launcher removes inherited `ELECTRON_RUN_AS_NODE`, Node execution hooks, and checkout
 database settings. A normal launch stores its profiles under Electron's `userData`.
 The management window offers new world, continue, first GM setup, stop, separate HTTPS
-server connection, and native V4/V5 campaign restore into a newly allocated empty profile.
+server connection, and native campaign restore into a newly allocated empty profile.
 After restore, explicitly choose the historical GM and redeem the one-use pairing code in
 the ordinary game login. Import does not grant a browser credential or enable public hosting.
 
@@ -62,7 +63,7 @@ is not a database rollback. A compatible recovery point must be restored into a 
 Fresh empty clusters do not require a meaningless pre-initialization backup.
 
 These recovery points depend on the same Windows account and its DPAPI state. They are
-distinct from the portable V4/V5 campaign export, which excludes credentials and uses
+distinct from the portable native campaign export, which excludes credentials and uses
 separate historical-GM enrollment. A portable encrypted full-host format is not delivered.
 
 ## Pinned runtime and resources
@@ -95,7 +96,7 @@ This observed archive checksum is a build pin; public distribution still needs a
 artifact trust chain.
 
 Build resources contain the unchanged SQL migrations, copied web distribution, and licensed
-`pk.grundriss` assets. The build maps the generator's source-relative resource URL to its
+local map asset packs. The build maps the generator's source-relative resource URLs to their
 packaged resource location, verifies the copied manifest and all declared asset/license
 hashes, and records client/worker/runtime/resource hashes in `dist/build.json`. It leaves the
 generator source unchanged. The production bundle removes the unused PGlite test-adapter
@@ -151,11 +152,41 @@ It uses an actual Electron main/utility process, actual DPAPI, PostgreSQL and sh
 native open-file dialog selection is supplied by the harness; validation, new-target restore,
 enrollment and login follow the production path.
 
+The smoke imports the packaged ERON source, checks its 190 Andaria places and fetches and
+decodes the actual 8192 × 8192 WebP image. It generates painted fantasy interiors and
+Zeitwelten interiors for both modern and science-fiction settings through the packaged
+HTTP host, checking the saved artwork pack.
+It checks the Schmiede overview and all seven workshop entrances before opening
+**Regeln** and activating the HTBAH template. It validates exports with the current native
+bundle reader, including checksums, generated map nodes and rule attribution. Restart,
+device recovery and campaign restore must preserve the content hash and all campaign tables.
+The observed envelope version is recorded in the evidence rather than fixed to V5. First
+setup and reopened game windows have a 90-second budget; reopen durations are recorded,
+and cleanup waits for a pending management action before requesting orderly shutdown.
+These checks apply to the newly built executable; the earlier artifact records below are
+historical.
+
+On 2026-09-08 the expanded compiled-desktop smoke passed **15/15** checks at
+`.local/desktop-profiles/smoke-a86d61f85d7142b7/evidence.json`, including native V6 exports,
+all three extra asset probes, Andaria image decoding and both restore paths. Its screenshots
+are `forge-overview.png`, `manager.png` and `game.png` beside the evidence. All owned hosts
+stopped cleanly. This run exercised the compiled desktop distribution, not an installed
+release. A separate long-profile-path recovery check found that libpq cannot read the
+original 261-character absolute password-file path. Using its basename with a profile-local
+working directory also failed. The unique shorter profile-local name
+`pg-<32 UUID hex digits>.tmp` reduced the same path to 242 characters and completed the real
+backup; both counterchecks are recorded in
+`.local/desktop-profiles/smoke-1788856132565-b6d2802f/recovery-{relative,short}-pgpass.json`.
+The same directory's `window-timing.json` records a separate native loading delay: window
+creation and `did-start-loading` were immediate, while `dom-ready` and `did-finish-load`
+arrived about 30.5 seconds later. The longer smoke budget accommodates that observed runtime
+latency; it does not establish its cause or meet a startup-performance target.
+
 On 2026-09-06 the focused baseline passed **33 tests in nine files** and root TypeScript,
 including independent main-authority, failed-drain, shutdown-retry and late-setup-receipt
 regressions. This is a focused desktop/server-host result, not a full M8 gate claim.
 
-The fresh development and standalone executable runs both passed **10/10** checks:
+The historical 2026-09-06 development and standalone executable runs both passed **10/10** checks:
 `.local/desktop-profiles/smoke-1788720754713-4eb9504a/evidence.json` and
 `.local/desktop-profiles/smoke-1788720879254-5ea2d23b/evidence.json`. They cover actual PG17,
 Electron Node24/sharp, the real licensed Grundriss generator, shared-client installation
@@ -171,7 +202,7 @@ The isolated recovery helper additionally passed **3/3** checks at
 listener is live, tampered-manifest refusal before destination creation, and real HTTP
 authentication with the exact original credential after recovery into a new cluster.
 
-The current tested artifact is
+The historical artifact tested on 2026-09-06 is
 `.local/desktop-artifacts/2026-09-06T18-53-43-212Z/Atlas Chronicles-win32-x64/`,
 **563,751,412 bytes** as an unpacked directory. Its executable SHA256 is
 `774a608e1aad25bcd2eaace765788fbceb294a49bce0a38c5de4f7fc251b8409`.
@@ -182,8 +213,10 @@ Earlier artifacts and smoke runs are historical, superseded by the independent l
 review fixes and the recovery integration in this artifact.
 
 The package command creates a new, explicitly **unsigned, unpacked local Windows application**
-under `.local/desktop-artifacts`. Its exact executable hash, size, dependency versions/licenses
-and unfulfilled release gates are recorded beside it. It does not create a signed installer,
+under `.local/desktop-artifacts`. Its adjacent `artifact.json` records every packaged file's
+relative path, byte size and SHA256 in `files`, the total byte count, executable hash and open
+release gates. Links and non-regular files are refused. Dependency versions and licenses are
+recorded in the packaged `DEPENDENCIES.json`. The package command does not create a signed installer,
 publish a release, or claim a tested updater. A packaged smoke can select that executable with
 `--executable=<absolute AtlasChronicles.exe path>`; its CLI test profile override remains confined
 to a child of `.local/desktop-profiles`.
@@ -192,8 +225,11 @@ to a child of `.local/desktop-profiles`.
 
 `node packages/desktop/tools/installer.mjs` (`npm run desktop:installer`) wraps an already packaged
 and recorded artifact, without rebuilding it, into an explicitly **unsigned, per-user Squirrel
-setup** under `.local/desktop-artifacts/<stamp>/installer/`. It refuses to run when the packaged
-executable no longer matches its artifact record. Squirrel remains the adopted Windows packaging
+setup** under `.local/desktop-artifacts/<stamp>/installer/`. Before invoking Squirrel it checks
+the complete file inventory, total byte count and executable hash. Changed, missing, extra or
+linked resources are refused, as are legacy artifact records without the complete inventory.
+`tools/test/desktop-artifacts.test.mjs` covers this admission boundary.
+Squirrel remains the adopted Windows packaging
 base; the pinned build tool is `electron-winstaller@5.4.4`. This step delivers only the local,
 unsigned form: it configures no update feed, claims no tested updater, and sets no release fuses.
 `installer.json` beside the setup records the tool pin, both hashes, the size and the open gates.
@@ -248,7 +284,7 @@ configure DNS, certificates, firewall, router, TURN or a relay.
 The adopted [desktop design and attack rounds](../design/iterations/desktop-shell-20260906.md)
 remain the full scope; this milestone does not replace them with a wrapper.
 
-The current standalone artifact record was enriched with the four application-resource hashes
-for this audit. `tools/package.mjs` does not yet emit those `appResources` fields automatically;
-that automation belongs to the following packaging refinement. The cited hashes are verified
-for this particular artifact, not claimed output from every invocation of the current packager.
+The historical standalone artifact record above was manually enriched with four application
+resource hashes. New packages instead record the complete `files` inventory automatically,
+and the installer verifies that inventory before packaging. An old executable hash or the
+four historical hashes alone no longer satisfies this check; package the current build again.

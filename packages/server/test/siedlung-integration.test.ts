@@ -59,13 +59,14 @@ describe("settlements through the existing tactical and entrance contracts", () 
   it("exposes a complete default vector for hamlet, village and town", async () => {
     const response = await app.inject({ url: `/api/campaigns/${campaign}/tactical/generate/defaults`, headers: { cookie } });
     expect(response.statusCode).toBe(200);
-    const values = response.json().siedlung;
+    const values = response.json().siedlungsarten;
     expect(values).toBeDefined();
     for (const art of ["weiler", "dorf", "stadt"] as const) {
       expect(values[art]).toMatchObject({ art, ausdehnung: expect.any(Array), bauwerke: expect.any(Number), licht: expect.any(Boolean) });
       expect(values[art].ausdehnung).toHaveLength(2);
       expect(values[art].grundstueck).toHaveLength(2);
       expect(values[art].zellgroesse).toBeGreaterThan(0);
+      expect(values[art].setting).toBe("fantasy");
     }
     expect(values.weiler.bauwerke).toBeLessThan(values.dorf.bauwerke);
     expect(values.dorf.bauwerke).toBeLessThan(values.stadt.bauwerke);
@@ -84,15 +85,15 @@ describe("settlements through the existing tactical and entrance contracts", () 
     expect(preview.bericht.bauwerke).toBe(preview.bauwerke);
     expect(preview.bericht.strassen).toBe(preview.strassen);
     expect(preview.knoten).toBe(preview.bauwerke + 1);
-    expect(preview.karte.kind).toBe("tactical-map");
-    expect(preview.karte.geometry.regions).toHaveLength(preview.bauwerke + preview.strassen);
-    expect(preview.karte.geometry.stamps.length).toBeGreaterThan(0);
-    expect(preview.karte.geometry.size).toEqual(preview.groesse);
-    expect(preview.karte.background).toBeNull();
+    expect(preview.document.kind).toBe("tactical-map");
+    expect(preview.document.geometry.regions).toHaveLength(preview.bauwerke + preview.strassen);
+    expect(preview.document.geometry.stamps.length).toBeGreaterThan(0);
+    expect(preview.document.geometry.size).toEqual(preview.groesse);
+    expect(preview.document.background).toBeNull();
     expect(preview.keimHash).toMatch(/^[a-f0-9]{64}$/);
     expect((await post("/tactical/generate/preview", { ...request, commandId: randomUUID() })).json().keimHash).toBe(preview.keimHash);
     expect(await createTactical(db).listMaps(gm, campaign)).toHaveLength(before.length);
-    if (art === "stadt") expect(preview.karte.walls.length).toBeGreaterThan(0);
+    if (art === "stadt") expect(preview.document.walls.length).toBeGreaterThan(0);
   });
 
   it("saves the preview geometry, retained building addresses and true generator provenance", async () => {
@@ -105,7 +106,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
     const result = saved.json(), tactical = createTactical(db);
     const map = await tactical.getMap(gm, campaign, result.ack.subjectId);
     expect(result.keimHash).toBe(preview.keimHash);
-    expect(map.document).toEqual(preview.karte);
+    expect(map.document).toEqual(preview.document);
     expect(map.document.geometry.size).toEqual([1920, 1536]);
     expect(map.document.lights).toHaveLength(0);
     const retained = await nodes(map.id), buildings = retained.filter(node => node.art === "bauwerk");
@@ -125,14 +126,15 @@ describe("settlements through the existing tactical and entrance contracts", () 
     const map = await tactical.getMap(gm, campaign, mapId), scope = { parentKind: "tactical" as const, parentMapId: mapId };
     const children = await createBetreten(db, config).children(gm, campaign, scope);
     expect(children.nodes.map(node => node.knotenId).sort()).toEqual(buildings.map(node => node.id).sort());
-    expect(children.nodes.every(node => node.canEnter && /^Gebäude \d+$/.test(node.titel))).toBe(true);
+    expect(children.nodes.every(node => node.canEnter && node.art === "bauwerk" && node.bauwerk && node.titel.trim())).toBe(true);
     const road = map.document.geometry.regions.find(region => !retained.some(node => node.id === region.id))!;
     expect(road).toBeDefined();
     const refused = await post("/betreten", { commandId: randomUUID(), ...scope, knotenId: road.id, expectedVersion: children.version });
     expect(refused.statusCode).toBe(404);
     const building = buildings[0]!, entrance = await createBetreten(db, config).betretbar(gm, campaign, building.id, scope);
     expect(entrance.kindKeim).toBe(building.herkunft!.kindKeim);
-    const expected = await post("/tactical/generate/preview", body({ art: "grundriss", keim: entrance.kindKeim }));
+    const expected = await post("/tactical/generate/preview", body({ art: "grundriss", keim: entrance.kindKeim,
+      optionen: { setting: entrance.setting, profil: building.bauwerk!.typ } }));
     expect(expected.statusCode, expected.body).toBe(200);
     const opened = await post("/betreten", { commandId: randomUUID(), ...scope, knotenId: building.id, expectedVersion: children.version });
     expect(opened.statusCode, opened.body).toBe(200);
@@ -179,7 +181,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
       herkunft: { erzeuger: "test", version: "1", keimHash: "0".repeat(64), erzeugungspfad: ["ort", knotenId], kindKeim: "atlas-settlement-child" } };
     await db.query("INSERT INTO atlas_nodes(map_id,id,campaign_id,data) VALUES($1,$2,$3,$4)", [parentMapId, knotenId, campaign, JSON.stringify(node)]);
     const response = await post("/betreten", { commandId: randomUUID(), parentKind: "atlas", parentMapId,
-      knotenId, expectedVersion: 1, art: "siedlung", siedlungsart: "dorf" });
+      knotenId, expectedVersion: 1, art: "siedlung", optionen: { art: "dorf" } });
     expect(response.statusCode, response.body).toBe(200);
     const villageId = response.json().mapId, entrance = createBetreten(db, config);
     const village = await entrance.children(gm, campaign, { parentKind: "tactical", parentMapId: villageId });
@@ -196,7 +198,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
     const scope = { parentKind: "tactical" as const, parentMapId: rootMap.id };
     const knotenId = rootMap.document.geometry.regions[0]!.id;
     const address = await createBetreten(db, config).betretbar(gm, campaign, knotenId, scope);
-    const request = { commandId: randomUUID(), ...scope, knotenId, expectedVersion: address.version, art: "siedlung", siedlungsart, name: `Nested ${siedlungsart}` };
+    const request = { commandId: randomUUID(), ...scope, knotenId, expectedVersion: address.version, art: "siedlung", optionen: { art: siedlungsart }, name: `Nested ${siedlungsart}` };
     const response = await post("/betreten", request);
     expect(response.statusCode, response.body).toBe(200);
     const opened = response.json(), source = await createTactical(db).getSource(gm, campaign, opened.mapId);
@@ -207,7 +209,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
     const children = await createBetreten(db, config).children(gm, campaign, { parentKind: "tactical", parentMapId: opened.mapId });
     expect(children.ancestors.map(row => row.id)).toEqual([rootMap.id, opened.mapId]);
     expect(children.nodes).toHaveLength(preview.json().bauwerke);
-    const reopened = await post("/betreten", { ...request, commandId: randomUUID(), siedlungsart: siedlungsart === "stadt" ? "weiler" : "stadt" });
+    const reopened = await post("/betreten", { ...request, commandId: randomUUID(), optionen: { art: siedlungsart === "stadt" ? "weiler" : "stadt" } });
     expect(reopened.statusCode, reopened.body).toBe(200);
     expect(reopened.json()).toEqual({ ...opened, erzeugt: false });
     expect((await post("/betreten", request)).json()).toEqual(opened);
@@ -238,7 +240,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
       expect((await post(path, body(), playerCookie)).statusCode).toBe(404);
     }
     expect((await post("/betreten", { commandId: randomUUID(), parentKind: "tactical", parentMapId: mapId,
-      knotenId: firstBuilding.id, expectedVersion: 1, art: "siedlung", siedlungsart: "dorf" }, playerCookie)).statusCode).toBe(404);
+      knotenId: firstBuilding.id, expectedVersion: 1, art: "siedlung", optionen: { art: "dorf" } }, playerCookie)).statusCode).toBe(404);
     const response = await app.inject({ url: `/api/campaigns/${campaign}/maps/tactical/${mapId}/children`, headers: { cookie: playerCookie } });
     expect(response.statusCode).toBe(404);
     expect(await createTactical(db).listMaps(gm, campaign)).toHaveLength(before.length);
@@ -250,9 +252,9 @@ describe("settlements through the existing tactical and entrance contracts", () 
     const base = { commandId: randomUUID(), parentKind: "tactical", parentMapId: map.id,
       knotenId: map.document.geometry.regions[0]!.id, expectedVersion: 1 };
     for (const over of [
-      { siedlungsart: "dorf" }, { art: "grundriss", siedlungsart: "dorf" },
-      { art: "siedlung", siedlungsart: "metropole" }, { art: "siedlung", optionen: { bauwerke: 7 } },
-      { targetMapId: map.id, siedlungsart: "dorf" }, { targetMapId: map.id, art: "siedlung" },
+      { optionen: { art: "dorf" } }, { art: "grundriss", optionen: { art: "dorf" } },
+      { art: "siedlung", optionen: { art: "metropole" } }, { art: "siedlung", optionen: { raeume: 7 } },
+      { targetMapId: map.id, optionen: { art: "dorf" } }, { targetMapId: map.id, art: "siedlung" },
     ]) expect((await post("/betreten", { ...base, ...over })).statusCode, JSON.stringify(over)).toBe(400);
   });
 

@@ -2,12 +2,14 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { canonicalJson, textHash, type CanonicalValue } from "@chronicle/core";
 import { sha256Hex } from "@chronicle/core";
-import { TACTICAL_MAP_LIMITS, parseBoundedMapJson, parseTacticalMapDocument, serializeTacticalMapDocument, type TacticalImageRef, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
+import { KARTEN_SETTINGS, TACTICAL_MAP_LIMITS, parseBoundedMapJson, parseTacticalMapDocument, serializeTacticalMapDocument, type KartenSetting, type TacticalImageRef, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
 
 export const UVTT_ADAPTER_VERSION = 1 as const;
 export interface UvttProvenance {
   readonly name: string; readonly creator: string; readonly sourceUrl: string | null; readonly license: string;
   readonly licenseUrl: string | null; readonly retrievedAt: string | null; readonly generator: string | null; readonly generatorVersion: string | null;
+  /** Generated maps retain their normalized setting here; older sources default to fantasy. */
+  readonly setting?: KartenSetting;
 }
 export interface FidelityIssue {
   readonly code: "source-only" | "defaulted" | "ambiguous-portal" | "no-region-bindings" | "image-missing" | "unsupported-export" | "source-rebased";
@@ -44,7 +46,8 @@ const counts = (doc: TacticalMapDocumentV1): FidelityReport["counts"] => ({ wall
 const identity = (sourceHash: string, path: string): string => `uvtt-${textHash(`uvtt-v1\n${sourceHash}\n${path}`).slice(0, 32)}`;
 function provenance(input: UvttProvenance): UvttProvenance {
   const row = record(parseBoundedMapJson(input, 16_384), "provenance"), keys = ["name", "creator", "sourceUrl", "license", "licenseUrl", "retrievedAt", "generator", "generatorVersion"];
-  if (Object.keys(row).some(key => !keys.includes(key)) || keys.some(key => !Object.hasOwn(row, key))) fail("provenance", "closed provenance record required");
+  if (Object.keys(row).some(key => !keys.includes(key) && key !== "setting") || keys.some(key => !Object.hasOwn(row, key))) fail("provenance", "closed provenance record required");
+  if (Object.hasOwn(row, "setting") && !KARTEN_SETTINGS.some(setting => setting === row.setting)) fail("provenance.setting", "known map setting required");
   for (const key of keys) { const value = row[key]; if (value === null && !["name", "creator", "license"].includes(key)) continue; if (typeof value !== "string" || !value.trim() || value.length > 2048 || /[\u0000-\u001f\u007f]/.test(value)) fail(`provenance.${key}`, "bounded nonempty text or explicit null required"); }
   for (const key of ["sourceUrl", "licenseUrl"]) if (row[key] !== null) { try { const url = new URL(row[key] as string); if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) fail(`provenance.${key}`, "HTTP(S) attribution URL without credentials required"); } catch { fail(`provenance.${key}`, "valid attribution URL required"); } }
   if (row.retrievedAt !== null && (typeof row.retrievedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(row.retrievedAt) || !Number.isFinite(Date.parse(row.retrievedAt)))) fail("provenance.retrievedAt", "UTC timestamp required");

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { canonicalHash, deriveKnotenId, type KnotenId } from "@chronicle/core";
-import { assetVerweis, type AssetpaketV1, type Herkunft, type Kante, type KantenArt, type Knoten, type KnotenArt, type PaketAsset, type Rahmen, type Stamp, type TacticalWall, type Weltkeim } from "@chronicle/szene";
+import { KARTEN_SETTINGS, assetVerweis, type KartenSetting, type AssetpaketV1, type Herkunft, type Kante, type KantenArt, type Knoten, type KnotenArt, type PaketAsset, type Rahmen, type Stamp, type TacticalWall, type Weltkeim } from "@chronicle/szene";
 
 /**
  * The machinery the map generators share, in one place.
@@ -270,7 +270,11 @@ export interface Bestuecker {
   readonly nichtBedient: Set<string>;
 }
 
-export function bestuecker(paket: AssetpaketV1, r: Rauschen, zellgroesse: number, id: (...pfad: string[]) => string): Bestuecker {
+export function passtZumSetting(asset: Pick<PaketAsset, "schlagworte">, setting?: KartenSetting): boolean {
+  return setting === undefined || !KARTEN_SETTINGS.some(era => asset.schlagworte.includes(era)) || asset.schlagworte.includes(setting);
+}
+
+export function bestuecker(paket: AssetpaketV1, r: Rauschen, zellgroesse: number, id: (...pfad: string[]) => string, setting?: KartenSetting): Bestuecker {
   const stamps: Stamp[] = [], nachArt: Record<string, number> = {}, nichtBedient = new Set<string>();
   const belegt = new Set<string>();
   const massstab = zellgroesse / paket.zellgroesse;
@@ -286,7 +290,7 @@ export function bestuecker(paket: AssetpaketV1, r: Rauschen, zellgroesse: number
     stamps, nachArt, nichtBedient, setze,
     sperre: (x, y) => { belegt.add(`${x}:${y}`); },
     waehle(art, schlagwort) {
-      const kandidaten = paket.assets.filter((a) => a.art === art && a.schlagworte.includes(schlagwort));
+      const kandidaten = paket.assets.filter((a) => a.art === art && a.schlagworte.includes(schlagwort) && passtZumSetting(a, setting));
       if (!kandidaten.length) { nichtBedient.add(`${art}/${schlagwort}`); return null; }
       return r.waehle(kandidaten);
     },

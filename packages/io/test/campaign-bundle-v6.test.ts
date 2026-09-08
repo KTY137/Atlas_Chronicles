@@ -32,6 +32,63 @@ function fixture() {
 }
 
 describe("native v6 durable nested map addresses", () => {
+  it("roundtrips optional building metadata without changing the persistent address or legacy nodes", () => {
+    const data = fixture();
+    const node = data.tables.tactical_map_nodes[0]!.data as MutableRow;
+    node.art = "bauwerk"; node.titel = "Kirche der Morgenröte";
+    node.bauwerk = { typ: "kirche", beschreibung: "Steinerne Kirche am Marktplatz." };
+    const reopened = parseCampaignBundleV6(serializeCampaignBundleV6(createCampaignBundleV6(data)));
+    expect(reopened.tables.tactical_map_nodes).toEqual(data.tables.tactical_map_nodes);
+    delete node.bauwerk;
+    expect(() => createCampaignBundleV6(data)).not.toThrow();
+  });
+
+  it.each([
+    null, { typ: "burg", beschreibung: "" }, { typ: "haus" }, { typ: "haus", beschreibung: 42 },
+    { typ: "haus", beschreibung: "x".repeat(2001) }, { typ: "haus", beschreibung: "", titel: "duplicate" },
+  ])("rejects malformed building metadata %j", metadata => {
+    const data = fixture(), node = data.tables.tactical_map_nodes[0]!.data as MutableRow;
+    node.art = "bauwerk"; node.bauwerk = metadata as CanonicalValue;
+    expect(() => createCampaignBundleV6(data)).toThrow();
+  });
+
+  it("rejects building metadata on a room node", () => {
+    const data = fixture(), node = data.tables.tactical_map_nodes[0]!.data as MutableRow;
+    node.bauwerk = { typ: "haus", beschreibung: "" };
+    expect(() => createCampaignBundleV6(data)).toThrow(/building node/);
+  });
+
+  it("roundtrips metadata edit receipts alongside entrance receipts", () => {
+    const data = fixture();
+    const node = data.tables.tactical_map_nodes[0]!.data as MutableRow;
+    node.art = "bauwerk"; node.titel = "Kirche am Markt";
+    node.bauwerk = { typ: "kirche", beschreibung: "x".repeat(2000) };
+    data.tables.betreten_command_receipts.push({
+      ...data.tables.betreten_command_receipts[0]!, command_id: "metadata-edit",
+      response: { operation: "knoten.metadata", parentMapId: "map", knotenId: "room", version: 2 },
+    });
+    const reopened = parseCampaignBundleV6(serializeCampaignBundleV6(createCampaignBundleV6(data)));
+    expect(reopened.tables.betreten_command_receipts).toEqual(data.tables.betreten_command_receipts);
+    expect(reopened.tables.tactical_map_nodes).toEqual(data.tables.tactical_map_nodes);
+    expect(reopened.tables.betreten_karten).toHaveLength(data.tables.betreten_karten.length);
+    expect(reopened.tables.betreten_karten).toEqual(expect.arrayContaining(data.tables.betreten_karten));
+  });
+
+  it.each([
+    { parentMapId: "missing", knotenId: "room", version: 2 },
+    { parentMapId: "map", knotenId: "missing", version: 2 },
+    { parentMapId: "child", knotenId: "room", version: 2 },
+    { parentMapId: "map", knotenId: "room", version: 3 },
+    { parentMapId: "map", knotenId: "room", version: 0 },
+    { parentMapId: "map", knotenId: "room", version: 1.5 },
+    { parentMapId: "map", knotenId: "room", version: "2" },
+    { parentMapId: "map", knotenId: "room", version: 2, mapId: "child" },
+  ])("rejects metadata receipt with invalid address or version %j", response => {
+    const data = fixture();
+    data.tables.betreten_command_receipts[0]!.response = { operation: "knoten.metadata", ...response } as CanonicalValue;
+    expect(() => createCampaignBundleV6(data)).toThrow();
+  });
+
   it("roundtrips scoped repeated room ids, generated/manual links, node metadata and replay receipts", () => {
     const data = fixture(), bundle = createCampaignBundleV6(data), encoded = serializeCampaignBundleV6(bundle);
     const reopened = parseCampaignBundleV6(encoded);

@@ -9,6 +9,8 @@ import { useResource, useTask } from "../hooks.ts";
 import "./AtlasView.css";
 import { useAppearance } from "./Appearance";
 import { MapEntrance, NestedMapView, type MapAncestor } from "./NestedMapView";
+import { TacticalGenerate } from "./TacticalGenerate";
+import type { TacticalMapSummary } from "@chronicle/protocol";
 
 interface AtlasNode { id: string; title: string | null; kind: string; entryId?: string; canEnter?: boolean; childMapId?: string; parents: readonly { id: string; kind: string }[] }
 interface ImportReport { orte: number; zellen: number; unterdrueckteNotizen: number; hinweise: readonly string[]; ausgelasseneDatensaetze: Record<string, number> }
@@ -33,6 +35,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   const [articleTitle, setArticleTitle] = useState("");
   const [articleBody, setArticleBody] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [showGenerator, setShowGenerator] = useState(false);
   const [message, setMessage] = useState("");
   const [rendererError, setRendererError] = useState("");
   const [rendererReady, setRendererReady] = useState(false);
@@ -44,6 +47,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   const reportDirty = useCallback((dirty: boolean) => { childDirty.current = dirty; onDirty(dirty); }, [onDirty]);
   const task = useTask();
   const maps = useResource<MapSummary[]>(apiPath(campaignId, "/maps"), revision, 15000);
+  const localMaps = useResource<TacticalMapSummary[]>(gm ? apiPath(campaignId, "/tactical/maps") : null, revision, 15000);
   const map = useResource<AtlasMap>(mapId ? apiPath(campaignId, `/maps/${pathId(mapId)}`) : null, revision, 10000);
   const roster = useResource<Member[]>(gm ? apiPath(campaignId, "/roster") : null, revision, 15000);
   const entries = useResource<EntrySummary[]>(gm && mapId ? apiPath(campaignId, "/entries") : null, revision);
@@ -93,6 +97,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   }, [selectedId]);
 
   function navigateMap(ancestor?: MapAncestor) {
+    if (showGenerator && childDirty.current && !window.confirm("Ungespeicherte Kartenänderungen verwerfen?")) return;
     if (renderer.current && mapId) cameras.current[mapId] = renderer.current.getCamera();
     const nextChild = ancestor?.kind === "tactical" ? ancestor.id : "";
     if (ancestor?.kind === "atlas") setMapId(ancestor.id);
@@ -206,6 +211,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   return <section className="atlas-feature" aria-label="Atlas">
     <header className="atlas-heading"><div><p className="eyebrow">Eure Welt, Ort für Ort</p><h1><Compass size={28} aria-hidden="true" /> Atlas</h1><p className="muted">Jede Reise beginnt mit einem Ort.</p></div>
       <div className="atlas-heading-actions"><Button variant="quiet" aria-label="Atlas aktualisieren" title="Atlas aktualisieren" disabled={task.busy} onClick={refresh}><RefreshCw size={16} /></Button>
+        {gm ? <Button aria-expanded={showGenerator} onClick={() => { if (!showGenerator || !childDirty.current || window.confirm("Ungespeicherte Kartenänderungen verwerfen?")) setShowGenerator(value => !value); }}><Map size={16} /> {showGenerator ? "Kartenwerkstatt schließen" : "Neue Karte"}</Button> : null}
         {gm && <Button disabled={task.busy} onClick={() => void task.run(async () => {
           const result = await api<{ id: string; unchanged: boolean }>(apiPath(campaignId, "/maps/eron"), { method: "POST" });
           setMapId(result.id); refresh(); setMessage(result.unchanged ? "Die gespeicherte ERON-Karte wurde geöffnet." : "ERON ist mit seinen Ortsmarkern im Atlas gespeichert.");
@@ -217,6 +223,11 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     {task.error && <Notice error>{task.error}</Notice>}
     {message && <Notice>{message}</Notice>}
     {maps.error && <Notice error>{maps.error}</Notice>}
+    {gm && showGenerator ? <TacticalGenerate key={campaignId} campaignId={campaignId} onDirty={reportDirty} onCreated={id => { setShowGenerator(false); refresh(); navigateMap({ kind: "tactical", id, title: "Neue Karte" }); }} /> : null}
+    {gm && localMaps.data?.length ? <label className="atlas-local-maps">Gespeicherte Orts- und Gebäudekarten<select value="" onChange={event => { const chosen = localMaps.data?.find(item => item.id === event.target.value); if (chosen) navigateMap({ kind: "tactical", id: chosen.id, title: chosen.name }); }}>
+      <option value="">Stadt, Gebäude oder Unterkarte öffnen …</option>{localMaps.data.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+    </select></label> : null}
+    {gm && localMaps.error ? <Notice error>{localMaps.error}</Notice> : null}
     {maps.loading && <Loading text="Euer Atlas wird geöffnet …" />}
     {!maps.loading && !maps.error && !maps.data?.length && !mapId && <EmptyState title={gm ? "Euer Atlas wartet auf die erste Weltkarte." : "Deine Reise beginnt hier."}
       action={gm ? <Button variant="primary" onClick={() => fileInput.current?.click()}><Upload size={16} /> Weltkarte importieren</Button> : undefined}>
@@ -252,6 +263,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
         <h2>{selected.title ?? "Unbenannt"}</h2>
         {gm && map.data.version !== undefined && (selected.kind === "ort" || selected.childMapId) ? <MapEntrance key={`${mapId}:${selected.id}`} campaignId={campaignId} parentKind="atlas" parentMapId={mapId}
           nodeId={selected.id} title={selected.title ?? "Unterkarte"} version={map.data.version} canEnter={!!selected.canEnter} childMapId={selected.childMapId}
+          defaultArt={map.data.pins.find(pin => pin.id === selected.id)?.icon === "cave" ? "hoehle" : map.data.pins.find(pin => pin.id === selected.id)?.icon === "castle" || map.data.pins.find(pin => pin.id === selected.id)?.icon === "ruin" ? "grundriss" : "siedlung"}
           onOpen={id => navigateMap({ kind: "tactical", id, title: selected.title ?? "Unterkarte" })} onChanged={refresh} /> : null}
         {!!selected.parents.length && <div className="atlas-hierarchy"><p className="atlas-hierarchy-label">Liegt in</p><div className="atlas-parents">{selected.parents.map((parent) => {
           const node = map.data!.nodes.find((row) => row.id === parent.id);

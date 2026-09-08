@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
-import { mapRegionOutlines } from "../src/features/map-region-outlines.ts";
+import * as MapGeneration from "../src/features/map-generation.ts";
 
 /** Runs the actual component handlers/effects with controlled props and transport;
  * no browser, server, or production exports are changed by this review harness. */
@@ -30,7 +30,7 @@ function harness(file: "TacticalView" | "TacticalPreparation", component: string
   runInNewContext(code, { module: mod, exports: mod.exports, crypto: { randomUUID: () => "review-command" }, window: { confirm: (message: string) => { confirmations.push(message); return true; } },
     require: (name: string) => {
       if (name === "react") return react;
-      if (name === "./map-region-outlines") return { mapRegionOutlines };
+      if (name === "./map-generation") return MapGeneration;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "../hooks") return { useResource: resource, useTask: () => ({ busy: false, error: "", run: (fn: () => Promise<unknown>) => { const job = fn(); jobs.push(job); return job; } }) };
       if (name === "./game-api") return { useCommand: () => async (path: string, body: unknown) => { commands.push({ path, body }); return { subjectId: "subject", version: 2 }; } };

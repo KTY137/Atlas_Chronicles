@@ -33,16 +33,4 @@
 .tactical-points li { padding: .35rem 0; }
 .tactical-import { max-width: 960px; }
 .tactical-import-report { padding: 1rem; border: 1px solid var(--line); border-radius: 10px; }
-.generator-basics { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
-.generator-settlement { display: grid; grid-template-columns: 1fr 1.2fr; align-items: center; gap: 24px; padding: 20px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); }
-.generator-settlement .field-help { margin: 0; }
-.generator-options { border-block: 1px solid var(--line); padding: 16px 0; }
-.generator-options > summary { cursor: pointer; color: var(--accent); margin-bottom: 12px; font-size: 13px; }
-.generator-options[open] { display: grid; gap: 16px; }
-.generator-preview { display: grid; gap: 18px; border-top: 1px solid var(--line); padding-top: 24px; }
-.generator-preview h3 { margin: 0; font: 500 24px var(--font-display); }
-.generator-preview header p:last-child { color: var(--text-muted); margin-bottom: 0; font-size: 13px; }
-.generator-preview-empty { min-height: 180px; border: 1px dashed var(--line-strong); border-radius: var(--radius); display: grid; align-content: center; justify-items: center; gap: 8px; color: var(--text-muted); }
-.generator-preview-empty p { margin: 0; font: 500 23px var(--font-display); }.generator-preview-empty span { font-size: 12px; }
-@media (max-width: 760px) { .generator-basics, .generator-settlement { grid-template-columns: minmax(0, 1fr); }.generator-settlement { padding: 16px; gap: 8px; }.generator-preview .tactical-canvas { min-height: 280px; height: 44vh; } }
 @media (max-width: 800px) { .tactical-prep-columns { grid-template-columns: minmax(0, 1fr); } .tactical-canvas { height: 50vh; min-height: 280px; } }

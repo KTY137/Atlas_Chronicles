@@ -27,6 +27,9 @@ export function registerPacks(app: FastifyInstance, db: Db, config: IdentityConf
   const identity = createIdentity(db, config), packs = createPacks();
   const auth = async (req: FastifyRequest) => { await identity.authenticate(req.headers.cookie); };
   const base = "/api/packs";
+  // Artwork bursts have their own bounded read budgets. Route overrides retain the host's
+  // authenticated identity key, while leaving its ordinary action budget untouched.
+  const readLimit = { config: { rateLimit: { max: 1200, timeWindow: "1 minute" } } };
   type PackParams = { packId: string };
   type AssetParams = PackParams & { "*": string };
 
@@ -38,14 +41,14 @@ export function registerPacks(app: FastifyInstance, db: Db, config: IdentityConf
     }
   };
 
-  app.get(base, async (req) => { await auth(req); return packs.list(); });
+  app.get(base, readLimit, async (req) => { await auth(req); return packs.list(); });
 
-  app.get<{ Params: PackParams }>(`${base}/:packId/manifest`, async (req) => {
+  app.get<{ Params: PackParams }>(`${base}/:packId/manifest`, readLimit, async (req) => {
     await auth(req);
     return packs.manifest(req.params.packId);
   });
 
-  app.get<{ Params: AssetParams }>(`${base}/:packId/asset/*`, async (req, reply) => {
+  app.get<{ Params: AssetParams }>(`${base}/:packId/asset/*`, readLimit, async (req, reply) => {
     await auth(req);
     return guarded(reply, () => {
       const { asset } = packs.resolveAsset(req.params.packId, req.params["*"]);

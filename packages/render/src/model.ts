@@ -12,6 +12,9 @@ export interface ProjectedMapCell {
   readonly id: string;
   readonly polygon: readonly MapPoint[];
   readonly fill?: number;
+  /** Presentation only: a settlement footprint or street band, never a new stored map kind. */
+  readonly surface?: "building" | "street";
+  readonly roof?: "pitched" | "flat" | "tech";
 }
 export interface ProjectedMapPin {
   readonly id: string;
@@ -76,6 +79,8 @@ export interface ProjectedMapScene {
   readonly rasterScope?: string;
   /** Presentation only; omitted sampling uses linear filtering. */
   readonly rasterSampling?: MapRasterSampling;
+  /** Show collision-limited pin names. False hides all names; omitted retains selection-only names. */
+  readonly showLabels?: boolean;
 }
 /** The host fetches authorized tiles. Ownership of each bitmap transfers to the renderer. */
 export interface MapRasterTile { readonly id: string; readonly left: number; readonly top: number; readonly width: number; readonly height: number; readonly pixelScale: number; readonly image: ImageBitmap }

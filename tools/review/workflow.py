@@ -45,18 +45,35 @@ def work_node(name: str):
 
 def build_graph(checkpointer, workflow="review"):
     graph = StateGraph(ReviewState)
+    if workflow == "map-visuals":
+        branches = ["cartography_data", "cartography_engine", "cartography_ui"]
+        for name in ["discovery", "design", *branches, "verification", "repair", "delivery", "handoff"]:
+            graph.add_node(name, work_node(name))
+        graph.add_edge(START, "discovery")
+        graph.add_edge("discovery", "design")
+        for name in branches:
+            graph.add_edge("design", name)
+        graph.add_edge(branches, "verification")
+        graph.add_conditional_edges("verification", lambda state: "delivery" if state["passed"] else "repair")
+        graph.add_edge("repair", "verification")
+        graph.add_edge("delivery", "handoff")
+        graph.add_edge("handoff", END)
+        return graph.compile(checkpointer=checkpointer)
     if workflow == "delivery":
-        for name in ["preflight", "integration", "verification", "repair", "merge_main", "desktop", "desktop_verification", "desktop_repair", "install", "handoff"]:
+        branches = ["integration_server", "integration_client", "integration_render"]
+        for name in ["preflight", "integration", *branches, "verification", "repair", "merge_main", "desktop", "desktop_verification", "desktop_repair", "install", "handoff"]:
             graph.add_node(name, work_node(name))
         graph.add_edge(START, "preflight")
         graph.add_edge("preflight", "integration")
-        graph.add_edge("integration", "verification")
-        graph.add_conditional_edges("verification", lambda state: "merge_main" if state["passed"] else "repair")
+        for name in branches:
+            graph.add_edge("integration", name)
+        graph.add_edge(branches, "verification")
+        graph.add_conditional_edges("verification", lambda state: "desktop" if state["passed"] else "repair")
         graph.add_edge("repair", "verification")
-        graph.add_edge("merge_main", "desktop")
         graph.add_edge("desktop", "desktop_verification")
-        graph.add_conditional_edges("desktop_verification", lambda state: "install" if state["passed"] else "desktop_repair")
+        graph.add_conditional_edges("desktop_verification", lambda state: "merge_main" if state["passed"] else "desktop_repair")
         graph.add_edge("desktop_repair", "desktop_verification")
+        graph.add_edge("merge_main", "install")
         graph.add_edge("install", "handoff")
         graph.add_edge("handoff", END)
         return graph.compile(checkpointer=checkpointer)
@@ -115,7 +132,7 @@ def main():
     parser.add_argument("work", nargs="?")
     parser.add_argument("evidence", nargs="?")
     parser.add_argument("--passed", action="store_true")
-    parser.add_argument("--workflow", choices=["review", "features", "map-research", "delivery"], default="review")
+    parser.add_argument("--workflow", choices=["review", "features", "map-research", "map-visuals", "delivery"], default="review")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     checkpoint = root / ".local" / f"{args.workflow}-20260908" / "workflow.sqlite"

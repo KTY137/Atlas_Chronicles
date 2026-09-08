@@ -1,0 +1,2802 @@
+{
+  "assets": [
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 6890,
+      "datei": "boden/boden_beton.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_beton",
+      "schlagworte": [
+        "beton",
+        "trocken",
+        "halle",
+        "keller",
+        "industrie"
+      ],
+      "sha256": "5d5cfe37aa1614d212de93efded30380508ffe1812b8463b81edf22740fbf75a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 7574,
+      "datei": "boden/boden_parkett.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_parkett",
+      "schlagworte": [
+        "holz",
+        "wohnraum",
+        "gehoben",
+        "trocken",
+        "gegenwart"
+      ],
+      "sha256": "8260b014e29ab661339df02ad8e4cbcf509f95131aa47d05145b57b9eedbb459"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2382,
+      "datei": "boden/boden_keramik.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_keramik",
+      "schlagworte": [
+        "fliese",
+        "fliesen",
+        "trocken",
+        "wohnraum",
+        "halle",
+        "medizin"
+      ],
+      "sha256": "b2a6d03f4715b526951f6c97847fea43a55b4c93f61272e2110e62981fd3f0d8"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 26914,
+      "datei": "boden/boden_teppich.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_teppich",
+      "schlagworte": [
+        "teppich",
+        "wohnraum",
+        "trocken",
+        "buero"
+      ],
+      "sha256": "9a3c5d43fa271fbee2c1cbfdb2e3fb4520f05acdc3cdbabb11eb65a86f16f51b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 6763,
+      "datei": "boden/boden_linoleum.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_linoleum",
+      "schlagworte": [
+        "steril",
+        "medizin",
+        "labor",
+        "fliesen",
+        "trocken"
+      ],
+      "sha256": "a8e7586cf2d19cb43714e5cd19a548f2b18aa5a40de5304e7b188e83b816e1f5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3625,
+      "datei": "boden/boden_gitter.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_gitter",
+      "schlagworte": [
+        "metall",
+        "industrie",
+        "technik",
+        "keller"
+      ],
+      "sha256": "2e505470b1a02e46311781776e67657412c2200dfb110cb3dfc86345fe46bc28"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 10227,
+      "datei": "boden/boden_asphalt.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_asphalt",
+      "schlagworte": [
+        "asphalt",
+        "strasse",
+        "trocken",
+        "gegenwart"
+      ],
+      "sha256": "6c87dd2568ddb99e36dbc841f1c90bb4006ffba161b087a453626080b5ba0ec2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3580,
+      "datei": "boden/boden_pflaster.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_pflaster",
+      "schlagworte": [
+        "stein",
+        "trocken",
+        "halle",
+        "gehoben",
+        "strasse"
+      ],
+      "sha256": "406355834b4c53fe7117e815fc5fe848694d0902fdfb4dfe61c21b3aefd998f1"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3176,
+      "datei": "boden/boden_metalldeck.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_metalldeck",
+      "schlagworte": [
+        "metall",
+        "technik",
+        "halle",
+        "trocken",
+        "scifi"
+      ],
+      "sha256": "2c291fdd54db3702a575a196b5b5ca3bda9e58ce3df76fd23bc61a3b66b2deb1"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2490,
+      "datei": "boden/boden_leuchtpfad.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_leuchtpfad",
+      "schlagworte": [
+        "technik",
+        "metall",
+        "halle",
+        "trocken",
+        "scifi"
+      ],
+      "sha256": "b8aa67e12be3c23e4d90baaaa0940f6668a4b733eeeb32379e6813f2d9357f3c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 6398,
+      "datei": "boden/boden_erde.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_erde",
+      "schlagworte": [
+        "erde",
+        "trocken",
+        "hof"
+      ],
+      "sha256": "347987a96522266f0e93dcd29d3fa1f708abf0e493b9c8584e9c604b828a2398"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3577,
+      "datei": "boden/boden_sicherheitszone.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boden_sicherheitszone",
+      "schlagworte": [
+        "industrie",
+        "beton",
+        "sicherheit"
+      ],
+      "sha256": "036d5b64b74113f4ef344a2fcce436adb6724cbd693c27cf3b008f7e4be6b046"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 2410,
+      "datei": "wand/wand_beton.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wand_beton",
+      "schlagworte": [
+        "beton",
+        "tragend",
+        "neutral"
+      ],
+      "sha256": "70c77b489220c0d64388f59c1b7f740352d74a722394a01d1e250130b8e4b0d9"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 2470,
+      "datei": "wand/wand_glas.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wand_glas",
+      "schlagworte": [
+        "glas",
+        "buero",
+        "labor"
+      ],
+      "sha256": "2de7a31f34312db24998eac1d5689246d45ce36b0446b45bbf0f714db030b39d"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 4026,
+      "datei": "wand/wand_schott.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wand_schott",
+      "schlagworte": [
+        "metall",
+        "schott",
+        "scifi"
+      ],
+      "sha256": "9cebebe63a3bcdf34a37e8ca2d72cda912ad5f8062273f2fe575c22e0e399bc5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2227,
+      "datei": "tuer/tuer_buero.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tuer_buero",
+      "schlagworte": [
+        "drehbar",
+        "holz",
+        "buero",
+        "gegenwart"
+      ],
+      "sha256": "4c0b468e53d4e547ddee6f009bb39354def16f081c74dd3cb3e4c73bfb63dd98"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2606,
+      "datei": "tuer/tuer_glasschieber.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tuer_glasschieber",
+      "schlagworte": [
+        "glas",
+        "schiebbar",
+        "eingang",
+        "gegenwart"
+      ],
+      "sha256": "0d2922c736df638974ce0d804ec118dd37fa9defe55da2c02b246753219280d4"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2655,
+      "datei": "tuer/tuer_schott.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tuer_schott",
+      "schlagworte": [
+        "metall",
+        "schiebbar",
+        "schwer",
+        "scifi"
+      ],
+      "sha256": "8238028a3fce99808cbe042b7329af5b3957cefee45b158c562a2302ce2e9f7f"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4162,
+      "datei": "aufbau/treppe_beton.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "treppe_beton",
+      "schlagworte": [
+        "treppe",
+        "aufwaerts",
+        "abwaerts",
+        "beton"
+      ],
+      "sha256": "f9e4e37c3d37fc8c8c154b4ea4c5577e844290c80fea54d38cac41fbd5483592"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4541,
+      "datei": "aufbau/rolltreppe.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "rolltreppe",
+      "schlagworte": [
+        "treppe",
+        "aufwaerts",
+        "abwaerts",
+        "verkehr",
+        "gegenwart"
+      ],
+      "sha256": "93ddc25ff49c4d4d88b7780abf953237558e7c52c94a3893065ac0bc7505fc03"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3075,
+      "datei": "aufbau/aufzug.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "aufzug",
+      "schlagworte": [
+        "aufwaerts",
+        "abwaerts",
+        "aufzug",
+        "technik"
+      ],
+      "sha256": "7e8b6ff87e02e2c05a21def07d33297b784335573499665bf57d586bed4ef1ec"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 2155,
+      "datei": "marke/marke_eingang.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "marke_eingang",
+      "schlagworte": [
+        "eingang",
+        "hinweis"
+      ],
+      "sha256": "b6300c4f467186d17984d8f2d36c938fbd6b33e9d3ffee4e7e71efac9e288ba3"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "licht",
+      "bytes": 3326,
+      "datei": "licht/led_deckenleuchte.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "led_deckenleuchte",
+      "schlagworte": [
+        "kalt",
+        "hell",
+        "technik",
+        "medizin",
+        "labor"
+      ],
+      "sha256": "5a763df0a1542c70c25b233f9acfdafb23698ffc6a9a66372fb22fcea3045fdf"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 2664,
+      "datei": "licht/kerzeninsel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kerzeninsel",
+      "schlagworte": [
+        "kerze",
+        "warm",
+        "kult",
+        "schwach"
+      ],
+      "sha256": "faae64baff455ca31ac6b72c05e3bd1c236e2c31619f608acd925b7ed9ed2c23"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3362,
+      "datei": "moebel/bett_doppel.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "bett_doppel",
+      "schlagworte": [
+        "bett",
+        "hotelbett",
+        "rast",
+        "wohnraum",
+        "kammer"
+      ],
+      "sha256": "ea6ea450f9ff96b3ae5c4a540afc8bc50ec331a8492bff9cc237adccc2f1c1a6"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2588,
+      "datei": "moebel/sofa_ecke.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "sofa_ecke",
+      "schlagworte": [
+        "sofa",
+        "sitz",
+        "sitzen",
+        "rast",
+        "wohnraum"
+      ],
+      "sha256": "fa80b1a0010bf46a30407fba2f94c391cc2cf4c5b108c3e58f04d7556fed363e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2392,
+      "datei": "moebel/sessel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "sessel",
+      "schlagworte": [
+        "sitz",
+        "sitzen",
+        "rast",
+        "wohnraum"
+      ],
+      "sha256": "f1b59369def546f694cabdcdab5a083822a2d389d6582bb08ec56333ca872169"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2317,
+      "datei": "moebel/couchtisch.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "couchtisch",
+      "schlagworte": [
+        "tisch",
+        "wohnraum",
+        "rast"
+      ],
+      "sha256": "2376baa367f8914a44dbdcca1e294fe77b482e8e98540bce00018e79a34bf36b"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 7228,
+      "datei": "moebel/esstisch.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "esstisch",
+      "schlagworte": [
+        "tisch",
+        "mahl",
+        "sitz",
+        "wohnraum"
+      ],
+      "sha256": "e0eee9159d9f5f45ec16092bd811572088584e16ea45855309b0d8ac08637855"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3397,
+      "datei": "moebel/kuechenzeile.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kuechenzeile",
+      "schlagworte": [
+        "kuechenzeile",
+        "mahl",
+        "kueche",
+        "wohnraum"
+      ],
+      "sha256": "225c82171984a8f4cab722d38f92fa10cedbafd01da2d35e08c72d30ea27e5e5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2625,
+      "datei": "moebel/kuehlschrank.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kuehlschrank",
+      "schlagworte": [
+        "kuehlung",
+        "vorrat",
+        "kueche"
+      ],
+      "sha256": "261926185296439585ed85dc6537366aed2563e190667a3f6d9e6760726522d5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2674,
+      "datei": "moebel/duschkabine.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "duschkabine",
+      "schlagworte": [
+        "dusche",
+        "wasser",
+        "bad",
+        "wohnraum"
+      ],
+      "sha256": "6d99edec1a2fb0f1ba763423f2653366aade8382987676649c55e2f7f90214ab"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2189,
+      "datei": "moebel/toilette.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "toilette",
+      "schlagworte": [
+        "toilette",
+        "bad",
+        "sanitaer"
+      ],
+      "sha256": "b4e0317ef271aa09d893a45639355e971f3e7d38aa0ffaca890c71179eac2a61"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2444,
+      "datei": "moebel/waschbecken.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "waschbecken",
+      "schlagworte": [
+        "wasser",
+        "bad",
+        "sanitaer",
+        "medizin"
+      ],
+      "sha256": "450337088e26ab1bb812abb937da17ff475c39e50fa5146399436bc3ec057303"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4550,
+      "datei": "moebel/schreibtisch.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schreibtisch",
+      "schlagworte": [
+        "schreibtisch",
+        "tisch",
+        "buero",
+        "wissen"
+      ],
+      "sha256": "bc6e8527914e4bb4aeaa7d975ac489cac188cc893c33883e153395eba6653725"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3185,
+      "datei": "moebel/buerostuhl.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "buerostuhl",
+      "schlagworte": [
+        "sitz",
+        "buero",
+        "sitzen"
+      ],
+      "sha256": "85e71b32fd2e99cecb9c9168dc419d2014ce8013daddaaf0fdedcd75c5453e5a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4766,
+      "datei": "moebel/computer.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "computer",
+      "schlagworte": [
+        "computer",
+        "technik",
+        "konsole",
+        "buero"
+      ],
+      "sha256": "855b265a492998789787625cbdb4a06d5738eb0d2cee454f0b9e051a85de7000"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 5855,
+      "datei": "moebel/empfangstheke.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "empfangstheke",
+      "schlagworte": [
+        "empfang",
+        "theke",
+        "buero",
+        "halle"
+      ],
+      "sha256": "d27f35ba839f7c1eaba1a11e5f1cc816fa59d633a92cf5260a0d318691e3e069"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 7449,
+      "datei": "moebel/konferenztisch.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "konferenztisch",
+      "schlagworte": [
+        "tisch",
+        "konferenz",
+        "buero",
+        "sitz"
+      ],
+      "sha256": "60ad039d227d0e09b3e3894ba7969fca59fb51187732b4549b0fc12e44699292"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3267,
+      "datei": "moebel/aktenregal.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "aktenregal",
+      "schlagworte": [
+        "regal",
+        "lager",
+        "buecher",
+        "wissen",
+        "buero"
+      ],
+      "sha256": "88dda84c9ef4a034355a13fcda2936114b8f01b5084728cc8a099f2d6d106320"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2860,
+      "datei": "moebel/drucker.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "drucker",
+      "schlagworte": [
+        "drucker",
+        "buero",
+        "technik"
+      ],
+      "sha256": "0307e8f1aba45ea980ce8ca820bedf9fbfff5836c5450d81168d337ac0a2ef5f"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3864,
+      "datei": "moebel/spind.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "spind",
+      "schlagworte": [
+        "spind",
+        "lager",
+        "wache",
+        "kammer"
+      ],
+      "sha256": "93dec177f83dddce2e145e416168d16d3ddde116cd9024420688cfcc01bd844b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3249,
+      "datei": "moebel/tresor.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tresor",
+      "schlagworte": [
+        "tresor",
+        "schatz",
+        "lager",
+        "sicherheit"
+      ],
+      "sha256": "4608368a61fbfc92bf26306ece1c7b98062d613233680c7fd78bd4165fee1206"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2745,
+      "datei": "moebel/terminal_ticket.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "terminal_ticket",
+      "schlagworte": [
+        "ticket",
+        "empfang",
+        "verkehr",
+        "computer"
+      ],
+      "sha256": "c126885be5088b06b323e9bfa0dbda02ae9b62add8d45b7974e20cac2149f907"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3493,
+      "datei": "moebel/cafe_bistrotisch.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cafe_bistrotisch",
+      "schlagworte": [
+        "tisch",
+        "mahl",
+        "cafe",
+        "sitz"
+      ],
+      "sha256": "2401d7dbdb49b12cc32a5739e309036d5aa774e8e49d1c7d6e4bdfebdb3097a3"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3197,
+      "datei": "moebel/kaffeemaschine.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kaffeemaschine",
+      "schlagworte": [
+        "kaffeemaschine",
+        "cafe",
+        "mahl"
+      ],
+      "sha256": "d385b185cc202985b292e39235204198dc197f7f00dc72cd83ef28adc0e89546"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3385,
+      "datei": "moebel/theke_baeckerei.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "theke_baeckerei",
+      "schlagworte": [
+        "theke",
+        "vitrine",
+        "mahl",
+        "cafe"
+      ],
+      "sha256": "c9d90a07b6b637cdd34c9407ad9ff3edfeeeacd60ac3c6ad27e77dfa01ce207e"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4771,
+      "datei": "moebel/restaurant_herd.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "restaurant_herd",
+      "schlagworte": [
+        "kuechenzeile",
+        "herd",
+        "mahl",
+        "handwerk"
+      ],
+      "sha256": "aed6600639931f59f85400428a32e906dca330d9a37eb8eb0e6fde116b77675a"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3351,
+      "datei": "moebel/spuelstation.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "spuelstation",
+      "schlagworte": [
+        "wasser",
+        "kueche",
+        "mahl",
+        "hygiene"
+      ],
+      "sha256": "43e276112ee016b408cdfcc824f1e4a5ee2753936b5cb7a3f166599ff5f23755"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4042,
+      "datei": "moebel/supermarkt_regal.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "supermarkt_regal",
+      "schlagworte": [
+        "regal",
+        "lager",
+        "vorrat",
+        "supermarkt"
+      ],
+      "sha256": "b18cbad1904ea854f29485666665369288b6702bd8b5b8158e425a97ce1aaf48"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3438,
+      "datei": "moebel/kuehlregal.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kuehlregal",
+      "schlagworte": [
+        "kuehlregal",
+        "kuehlung",
+        "vorrat",
+        "supermarkt"
+      ],
+      "sha256": "10851759448754d6d0edf0216aea29e053e96ca005fa389342624011f9ba1f7b"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4264,
+      "datei": "moebel/kasse.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kasse",
+      "schlagworte": [
+        "kasse",
+        "scanner",
+        "handel",
+        "empfang"
+      ],
+      "sha256": "c1542edbf02c075b57963feb995f86238646f9dd6370377b21b56171fa1875cb"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2979,
+      "datei": "moebel/einkaufswagen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "einkaufswagen",
+      "schlagworte": [
+        "wagen",
+        "handel",
+        "lager",
+        "gegenwart"
+      ],
+      "sha256": "b7a5deb2ba6e487b3607072f77c93a6603df55d7455626992e86f58a10ae9580"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2998,
+      "datei": "moebel/schulbank.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schulbank",
+      "schlagworte": [
+        "schulbank",
+        "tisch",
+        "wissen",
+        "schule"
+      ],
+      "sha256": "261fa64809a7130720135a0ca15ac13a1869662c6496eea2e45eaab9c6031c78"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2286,
+      "datei": "moebel/tafel.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tafel",
+      "schlagworte": [
+        "tafel",
+        "wissen",
+        "schule",
+        "buero"
+      ],
+      "sha256": "f5a05948eb75b4ed37c7ffad8eb3ef42674f9f1a99f81e47aa50dd9504cbd217"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4995,
+      "datei": "moebel/buecherregal.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "buecherregal",
+      "schlagworte": [
+        "buecher",
+        "wissen",
+        "regal",
+        "lager"
+      ],
+      "sha256": "7239bee45ee7d872f9d3ccd3c108f35db7c30a5936243b5896a50d505961fa99"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2594,
+      "datei": "moebel/museum_vitrine.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "museum_vitrine",
+      "schlagworte": [
+        "vitrine",
+        "wissen",
+        "museum",
+        "schatz"
+      ],
+      "sha256": "1dd026da82f4b85b6636ff1f251a4516f313d33360d2926c478563b2f612a906"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3086,
+      "datei": "moebel/lesetisch.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "lesetisch",
+      "schlagworte": [
+        "buecher",
+        "wissen",
+        "tisch",
+        "bibliothek"
+      ],
+      "sha256": "876d1fe9794eb59e11e9f3a8424268eaea3e55630fe166a4ecd3b07192d01b68"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2557,
+      "datei": "moebel/gebetsbank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gebetsbank",
+      "schlagworte": [
+        "kult",
+        "sitz",
+        "rast",
+        "kammer"
+      ],
+      "sha256": "72a36b5dce353b693f37e12e54e4de77fd9eab7ed7b486114c6d1cefe3863b71"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 2653,
+      "datei": "gefaess/schale_zeremoniell.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schale_zeremoniell",
+      "schlagworte": [
+        "kult",
+        "behaelter",
+        "wasser"
+      ],
+      "sha256": "684f685058d2a91da6b91d736d0dc62409686e69472a70a80523beb0b9f6191d"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2825,
+      "datei": "moebel/krankenbett.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "krankenbett",
+      "schlagworte": [
+        "krankenbett",
+        "bett",
+        "medizin",
+        "rast"
+      ],
+      "sha256": "484e95bddfcf1495fe25e04b3e122a7a0401f1742704a29d3c1b00d5e54fe9a7"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3459,
+      "datei": "moebel/operationstisch.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "operationstisch",
+      "schlagworte": [
+        "operation",
+        "medizin",
+        "steril"
+      ],
+      "sha256": "45e42fe4c77cc346e99bd76b1f4babb93d3842924429b2818be37a49b998d9bd"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2627,
+      "datei": "moebel/behandlungsstuhl.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "behandlungsstuhl",
+      "schlagworte": [
+        "medizin",
+        "sitz",
+        "behandlung"
+      ],
+      "sha256": "0e4952a31ed13db473e985f01ab0f3078eebf9954285c8b088a96d760751ede9"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3248,
+      "datei": "moebel/medizinwagen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "medizinwagen",
+      "schlagworte": [
+        "medizin",
+        "vorrat",
+        "wagen"
+      ],
+      "sha256": "e0915562a6d45ccd105475c52abcb01aec19c37f325b3f0a0eb010bac2b9f9f9"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2961,
+      "datei": "moebel/scanner_medizin.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "scanner_medizin",
+      "schlagworte": [
+        "scanner",
+        "medizin",
+        "technik"
+      ],
+      "sha256": "13b966f3cdb7c5aa3a90170a8da1c220eb7a66ea909d46828c9db5e0fac58856"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2972,
+      "datei": "moebel/labortisch.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "labortisch",
+      "schlagworte": [
+        "labortisch",
+        "labor",
+        "wissen",
+        "technik"
+      ],
+      "sha256": "d5da5d85a2102c407d6c99b7f2cd3d1e683a6024539f623ed85ccb8601f30484"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2511,
+      "datei": "moebel/mikroskop.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "mikroskop",
+      "schlagworte": [
+        "mikroskop",
+        "labor",
+        "wissen"
+      ],
+      "sha256": "1295e987958592608090cb41e82c7b4ee64e72469161ffbdd0e74d03c76cc947"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3785,
+      "datei": "moebel/zentrifuge.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "zentrifuge",
+      "schlagworte": [
+        "labor",
+        "maschine",
+        "zentrifuge"
+      ],
+      "sha256": "af1aa4e24f06f98f58e067e4b6c68b25d5faa3469a5a7fe3538bd4e0cbe9cb05"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3506,
+      "datei": "moebel/werkbank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "werkbank",
+      "schlagworte": [
+        "werkbank",
+        "handwerk",
+        "tisch",
+        "industrie"
+      ],
+      "sha256": "61e482303ec45780c487519a8c736fac8e1f7764934491e2f0062666737f1ca7"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3467,
+      "datei": "aufbau/maschinen_drehbank.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "maschinen_drehbank",
+      "schlagworte": [
+        "maschine",
+        "industrie",
+        "handwerk"
+      ],
+      "sha256": "2c42245c3223c2d002d01a4d056292374dc836eb2712a7f96f915f83aa674c8e"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3424,
+      "datei": "aufbau/foerderband.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "foerderband",
+      "schlagworte": [
+        "maschine",
+        "foerderband",
+        "industrie",
+        "lager"
+      ],
+      "sha256": "043307e278077f0310f5c6f291885b49815a93c2249bedffb0f78ae373074922"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3794,
+      "datei": "aufbau/gabelstapler.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gabelstapler",
+      "schlagworte": [
+        "verkehr",
+        "maschine",
+        "lager",
+        "industrie"
+      ],
+      "sha256": "116e4fd2c3343f2c59df1a45449505dd6cc213c794bff1031d7cf965ac8a2b6b"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "gefaess",
+      "bytes": 3684,
+      "datei": "gefaess/industrietank.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "industrietank",
+      "schlagworte": [
+        "vorrat",
+        "behaelter",
+        "industrie",
+        "lager"
+      ],
+      "sha256": "c6efa6a2696997b83b43a92a80a26e4a29d4188ca4460aa3720448ea51aff845"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 3336,
+      "datei": "gefaess/fassregal.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fassregal",
+      "schlagworte": [
+        "vorrat",
+        "behaelter",
+        "lager",
+        "industrie"
+      ],
+      "sha256": "e372d9289580b3c7615d2824884506530e846442aca049aab4d3952b0e26b30f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 4487,
+      "datei": "aufbau/serverrack.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "serverrack",
+      "schlagworte": [
+        "server",
+        "technik",
+        "computer",
+        "lager"
+      ],
+      "sha256": "384d0b9ece23126e6373a564424b0e5fe3f5d71b764126146e9d481597be88fa"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3169,
+      "datei": "moebel/waffenschrank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "waffenschrank",
+      "schlagworte": [
+        "waffe",
+        "schild",
+        "wache",
+        "lager"
+      ],
+      "sha256": "db43b7f6024b7138d465ad3220594a1fb7f620b9bdb10ebc4b829d87e73feb33"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 5163,
+      "datei": "moebel/kommandokonsole.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kommandokonsole",
+      "schlagworte": [
+        "konsole",
+        "computer",
+        "technik",
+        "scifi"
+      ],
+      "sha256": "b7cec5277f0998fe76286ba04e081beadb11bf6caefa6e72884c5bf5892299da"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3212,
+      "datei": "moebel/kryokapsel.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kryokapsel",
+      "schlagworte": [
+        "kryokapsel",
+        "bett",
+        "rast",
+        "medizin",
+        "scifi"
+      ],
+      "sha256": "6ea3a59da0eaa6e7224ca61e468031ac103cfbb34e7f7b3835028217a0d9448d"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4797,
+      "datei": "aufbau/reaktor.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "reaktor",
+      "schlagworte": [
+        "reaktor",
+        "maschine",
+        "technik",
+        "scifi"
+      ],
+      "sha256": "c7cf4732740ea2c09c91f3dfcafcecc55c47b28a000bb71e9ae5945b181231fe"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3029,
+      "datei": "moebel/hologrammtisch.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "hologrammtisch",
+      "schlagworte": [
+        "konsole",
+        "tisch",
+        "wissen",
+        "scifi"
+      ],
+      "sha256": "647d57e104a1a513df930ae02c5ab7c153fdf330e53ca85ae5fb961217377555"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3085,
+      "datei": "aufbau/teleportplattform.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "teleportplattform",
+      "schlagworte": [
+        "teleport",
+        "technik",
+        "scifi"
+      ],
+      "sha256": "60f26d1230e7cf6bb12a5e82ee0d1184e2013977087f29c48b58d39b1ae8c633"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3141,
+      "datei": "aufbau/antenne_parabol.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antenne_parabol",
+      "schlagworte": [
+        "antenne",
+        "technik",
+        "dach"
+      ],
+      "sha256": "8bef2fe591c446ba767f8d9daad5c7a5a79b7affabdbc3ae530c2d1e2569fcb7"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 3645,
+      "datei": "gefaess/frachtcontainer.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "frachtcontainer",
+      "schlagworte": [
+        "behaelter",
+        "lager",
+        "vorrat",
+        "fracht"
+      ],
+      "sha256": "ccfb3f99229cc417c67c7528573de30f8ff59875ea9790e40033909513780687"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3103,
+      "datei": "aufbau/wartungsdrohne.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wartungsdrohne",
+      "schlagworte": [
+        "drohne",
+        "maschine",
+        "technik",
+        "scifi"
+      ],
+      "sha256": "70c9ae857419545b7d917122681b411549af2260651b848a1658037326c07595"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 2959,
+      "datei": "aufbau/shuttle.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "shuttle",
+      "schlagworte": [
+        "verkehr",
+        "shuttle",
+        "scifi"
+      ],
+      "sha256": "c4409e87aa57faf79cd4d275e5836890df0d74bc79ca7f9043a14b07b6bd9630"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5851,
+      "datei": "aufbau/rover.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "rover",
+      "schlagworte": [
+        "verkehr",
+        "rover",
+        "scifi"
+      ],
+      "sha256": "63f0358fa17995db40d41cfc937fc52fcd81741683218d04c46d1a39c9f0d295"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3825,
+      "datei": "aufbau/schleusenkammer.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schleusenkammer",
+      "schlagworte": [
+        "schleuse",
+        "technik",
+        "scifi"
+      ],
+      "sha256": "95bef708bd23b65ea03018fb848cc9f980e7b9278db56abdded25b49870b2c0c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2861,
+      "datei": "moebel/schildgenerator.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schildgenerator",
+      "schlagworte": [
+        "schild",
+        "technik",
+        "wache",
+        "scifi"
+      ],
+      "sha256": "ed329ace89ba43ff03087227473ebd440b5065ff1dc22f75d9be849200e2cc89"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3333,
+      "datei": "aufbau/auto.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "auto",
+      "schlagworte": [
+        "verkehr",
+        "auto",
+        "gegenwart"
+      ],
+      "sha256": "2bdbb35fb87a6094b567435a320336a2003a42439673b49d207fbfe104cec36b"
+    },
+    {
+      "anker": [
+        64,
+        160
+      ],
+      "art": "aufbau",
+      "bytes": 5281,
+      "datei": "aufbau/bus.svg",
+      "einheiten": [
+        2,
+        5
+      ],
+      "groesse": [
+        128,
+        320
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "bus",
+      "schlagworte": [
+        "verkehr",
+        "bus",
+        "gegenwart"
+      ],
+      "sha256": "0e8715cb012d9a9fc0197cd70ecd7e702a24fc65d0c91823884db2d3241f52ae"
+    },
+    {
+      "anker": [
+        64,
+        128
+      ],
+      "art": "aufbau",
+      "bytes": 3595,
+      "datei": "aufbau/krankenwagen.svg",
+      "einheiten": [
+        2,
+        4
+      ],
+      "groesse": [
+        128,
+        256
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "krankenwagen",
+      "schlagworte": [
+        "verkehr",
+        "medizin",
+        "rettung",
+        "gegenwart"
+      ],
+      "sha256": "4060adc1d91d93375efc50cc42f9065825341400d4623d9d1304268485db39c9"
+    },
+    {
+      "anker": [
+        64,
+        160
+      ],
+      "art": "aufbau",
+      "bytes": 4884,
+      "datei": "aufbau/feuerwehrauto.svg",
+      "einheiten": [
+        2,
+        5
+      ],
+      "groesse": [
+        128,
+        320
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "feuerwehrauto",
+      "schlagworte": [
+        "verkehr",
+        "feuerwache",
+        "rettung",
+        "gegenwart"
+      ],
+      "sha256": "5b4c1a107e1f3b13ce8cb57a27ed0b916aa3da0b0f1b0e668e50953e176d9c2b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 2479,
+      "datei": "licht/strassenlaterne.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "strassenlaterne",
+      "schlagworte": [
+        "warm",
+        "wache",
+        "strasse",
+        "licht"
+      ],
+      "sha256": "e44624f8818d0da8b1c2ee15e8d51ab1e6601f7b0d29c74fdb41d3e0f4f899b0"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2704,
+      "datei": "moebel/parkbank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "parkbank",
+      "schlagworte": [
+        "sitz",
+        "rast",
+        "strasse",
+        "park"
+      ],
+      "sha256": "993cad48dad47d8329111a5c77e05b50228fb5e86942dd96c44d63c16a8b17f9"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 3316,
+      "datei": "gefaess/muellstation.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "muellstation",
+      "schlagworte": [
+        "behaelter",
+        "lager",
+        "abfall",
+        "strasse"
+      ],
+      "sha256": "0b0ab63da2705cc81a3caa6d3f0116cd4c43afbf87ff960b2fb11989ce2c9abd"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2865,
+      "datei": "aufbau/hydrant.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "hydrant",
+      "schlagworte": [
+        "hydrant",
+        "wasser",
+        "strasse",
+        "gegenwart"
+      ],
+      "sha256": "5b3a390ba79e92abf08e189aaa19a528a3dae50bb6e755b1525e8fa54b47577f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2876,
+      "datei": "aufbau/ladesaeule.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "ladesaeule",
+      "schlagworte": [
+        "ladung",
+        "technik",
+        "strasse"
+      ],
+      "sha256": "f9ccdc698b6e1d79cbd3675c977dca2d9e69b54327d30eb596df8df23a838ea8"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 6698,
+      "datei": "aufbau/solardach.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "solardach",
+      "schlagworte": [
+        "solar",
+        "technik",
+        "dach"
+      ],
+      "sha256": "62a61496c46571a74a33ff7091fff21c270d69eae7235ddca69a57f45b76cc83"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4613,
+      "datei": "aufbau/klimadach.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "klimadach",
+      "schlagworte": [
+        "klima",
+        "technik",
+        "dach",
+        "maschine"
+      ],
+      "sha256": "4c35a1845c03127892d853b9dd5363c4473e6eb38019b1aadc2a843407fe8d7a"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 7572,
+      "datei": "aufbau/dachgarten.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "dachgarten",
+      "schlagworte": [
+        "garten",
+        "gruen",
+        "dach"
+      ],
+      "sha256": "ac44a3b87eff77ed6ae1c7ceb3338ed3d8f74218ae888e084c4b9f53a1e2a70c"
+    }
+  ],
+  "id": "pk.zeitwelten",
+  "kind": "asset-pack",
+  "lizenz": {
+    "datei": "lizenz.txt",
+    "herkunft": "eigen",
+    "inhaber": "Chronicle contributors 2026",
+    "quelle": null,
+    "spdx": "CC0-1.0",
+    "textSha256": "12da1cb973d60428e60faf330abef3f1d52c113a096b575feb7ab30bd63ff43f"
+  },
+  "schemaVersion": 1,
+  "titel": "Zeitwelten — 100 technische Draufsichten für Gegenwart, Industrie und Raumfahrt",
+  "urheber": "Chronicle contributors",
+  "version": "1.0.0",
+  "zellgroesse": 64
+}

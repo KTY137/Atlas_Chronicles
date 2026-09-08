@@ -5,8 +5,8 @@
 .atlas-breadcrumbs button{border:0;border-radius:6px;padding:8px;background:transparent;color:var(--text);font:inherit;cursor:pointer;overflow-wrap:anywhere}
 .atlas-breadcrumbs button:disabled{color:var(--text-muted);cursor:default}
 .atlas-breadcrumbs button:hover:not(:disabled){background:var(--surface-2)}
-.nested-map-workspace{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
-.nested-map-rooms{min-width:0;max-height:740px;overflow:auto}
+.nested-map-workspace{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.nested-map-rooms{min-width:0;overflow:visible}
 .nested-map-rooms h2{font-size:18px;margin-top:0}
 .nested-map-rooms ul{list-style:none;padding:0;margin:14px 0}
 .nested-map-rooms li>button{width:100%;display:flex;gap:12px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;color:inherit;padding:12px 8px;border-radius:8px;cursor:pointer;font:inherit}
@@ -30,3 +30,31 @@
 .nested-map-view .tactical-canvas{min-height:480px}
 @media(max-width:1050px){.nested-map-workspace{grid-template-columns:minmax(0,1fr)}.nested-map-rooms{max-height:none}.nested-map-rooms ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.nested-map-view .tactical-canvas{min-height:360px}}
 @media(max-width:600px){.atlas-breadcrumbs{font-size:12px;gap:2px}.atlas-breadcrumbs button{padding:6px}.nested-map-view .tactical-canvas{min-height:300px}.nested-map-view .atlas-heading .button-row{width:100%;flex-wrap:wrap}.atlas-entrance{width:100%;display:flex}.nested-map-rooms ul{grid-template-columns:minmax(0,1fr)}}
+.nested-map-stage{min-width:0;position:sticky;top:18px}
+.nested-index-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.nested-index-heading h2{display:flex;align-items:center;gap:8px;margin:0}
+.nested-index-heading>span{font-size:10px;color:var(--text-muted);white-space:nowrap}
+.nested-search{display:flex;flex-direction:row;align-items:center;gap:8px;border:1px solid var(--line);border-radius:7px;padding-left:10px;color:var(--text-muted);margin-bottom:10px}
+.nested-search>input{border:0;background:transparent;min-width:0;width:100%;font-size:12px}
+.nested-map-rooms>select{width:100%;min-width:0;font-size:12px}
+.nested-map-rooms .nested-building-list{max-height:300px;overflow:auto;display:block;overscroll-behavior:contain}
+.nested-building-list li{display:flex;align-items:center;gap:3px}
+.nested-building-list li>button:first-child{flex:1;min-width:0}
+.nested-building-list li>.nested-open-shortcut{width:auto;flex:none;padding:9px}
+.nested-building-inspector{border-top:1px solid var(--line);padding-top:18px}
+.building-metadata{display:grid;gap:14px}
+.building-metadata h3{display:flex;align-items:center;gap:8px;margin:0;font-size:14px}
+.building-metadata fieldset,.entrance-generation-fields{border:0;padding:0;margin:0;min-width:0;display:grid;gap:12px}
+.building-metadata label{display:grid;gap:5px;font-size:12px;margin:0}
+.building-metadata input,.building-metadata textarea,.building-metadata select{width:100%;min-width:0}
+.building-metadata textarea{resize:vertical;min-height:70px;font-family:inherit}
+.building-legend{display:flex;flex-wrap:wrap;gap:10px 18px;padding:14px 0;font-size:11px;color:var(--text-muted)}
+.building-legend span{display:flex;gap:6px;align-items:center}
+.building-legend i{width:9px;height:9px;border-radius:2px}
+.nested-select-hint{padding:22px 10px;text-align:center;color:var(--text-muted);font-size:12px;line-height:1.7}
+.nested-select-hint svg{color:var(--accent-strong)}
+.nested-map-rooms:has(.nested-building-inspector) .nested-building-list{max-height:130px}
+.entrance-customize summary{font-size:12px;cursor:pointer;color:var(--accent-strong);padding:8px 0}
+.entrance-customize[open] .entrance-generation-fields{padding-top:12px}
+@media(max-width:1050px){.nested-map-stage{position:static}.nested-map-rooms .nested-building-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}.nested-building-inspector{max-width:620px}}
+@media(max-width:600px){.nested-map-rooms .nested-building-list{display:block}.nested-map-workspace{gap:14px}.building-legend{gap:8px 12px}}

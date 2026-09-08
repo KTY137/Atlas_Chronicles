@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
+.tactical-canvas-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem 1rem; padding: .65rem .8rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface, #18252e); }
+.tactical-canvas-zoom, .tactical-canvas-layers { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; }
+.tactical-canvas-layers { gap: .8rem; }
+.tactical-canvas-layers label { display: inline-flex; flex-direction: row; align-items: center; gap: .4rem; margin: 0; font-size: .85rem; white-space: nowrap; }
+.tactical-canvas-layers input { width: auto; accent-color: var(--accent); }
+.tactical-canvas-percentage { min-width: 4.1rem; text-align: center; font-size: .82rem; font-variant-numeric: tabular-nums; }
+.tactical-canvas-dimensions { color: var(--text-muted); font-size: .75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tactical-canvas-expanded .tactical-canvas { height: 78vh; min-height: 380px; }
+.tactical-canvas-frame:fullscreen { box-sizing: border-box; display: flex; flex-direction: column; padding: 1rem; width: 100vw; height: 100vh; background: var(--bg, #14212b); overflow: auto; }
+.tactical-canvas-frame:fullscreen .tactical-canvas-wrap { flex: 1; min-height: 240px; }
+.tactical-canvas-frame:fullscreen .tactical-canvas { height: 100%; min-height: 240px; }
+.tactical-canvas-frame:fullscreen .tactical-canvas-toolbar { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .tactical-canvas-toolbar { padding: .55rem; }
+  .tactical-canvas-layers { justify-content: space-between; width: 100%; }
+  .tactical-canvas-dimensions { margin-left: auto; }
+  .tactical-canvas-frame:fullscreen { padding: .5rem; }
+}

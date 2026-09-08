@@ -23,13 +23,9 @@ import type { MapCamera, MapPoint, ProjectedMapStamp } from "./model.ts";
  */
 
 /**
- * `ProjectedMapStamp` deliberately carries no width/height — RB-20b's stamp is a transform, not
- * pixels, and the true footprint only exists once a texture has loaded inside the renderer, which
- * this module must not import. Absent that, every stamp is bounded by the circumscribed circle of
- * one assumed reference footprint, scaled by `s`. A circle is rotation-invariant by construction, so
- * this sidesteps computing the actual rotated rectangle for every stamp, every frame, and it can only
- * ever *over*-include a stamp near the edge — never pop one that should be visible. A renderer that
- * later carries real per-asset extents can tighten this without changing the contract below.
+ * `ProjectedMapStamp` carries a transform; loaded bitmap dimensions arrive separately from the
+ * renderer. Their circumscribed circle conservatively covers the image at every rotation.
+ * Callers without loaded dimensions retain the original 64-pixel reference footprint.
  */
 const REFERENZ_KANTE = 64;
 const REFERENZ_HALBDIAGONALE = (REFERENZ_KANTE / 2) * Math.SQRT2;
@@ -43,6 +39,8 @@ export interface StapelGrenzen {
   readonly massenAb?: number;
   /** Distinct-texture count above which a single batch can no longer hold the frame. */
   readonly maxTexturen?: number;
+  /** Intrinsic loaded bitmap dimensions, before the stamp and camera scales are applied. */
+  readonly assetGroessen?: ReadonlyMap<string, MapPoint>;
 }
 
 export interface StapelPlan {
@@ -84,6 +82,12 @@ export function planeStapel(
   const maxTexturen = grenzen?.maxTexturen ?? STANDARD_MAX_TEXTUREN;
   const breite = viewport[0], hoehe = viewport[1];
   const kx = kamera.x, ky = kamera.y, skala = kamera.scale;
+  const halbdiagonalen = new Map<string, number>();
+  for (const [asset, [width, height]] of grenzen?.assetGroessen ?? []) {
+    if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+      halbdiagonalen.set(asset, Math.hypot(width, height) / 2);
+    }
+  }
 
   const eimer = new Map<string, ProjectedMapStamp[]>();
   let verworfen = 0;
@@ -96,7 +100,7 @@ export function planeStapel(
     const sy = stamp.y * skala + ky;
     // Rotation is irrelevant to a circle's radius; this is the whole point of bounding by the
     // circumscribed circle instead of the true rotated rectangle. `r` is read only by the renderer.
-    const radius = REFERENZ_HALBDIAGONALE * stamp.s * skala;
+    const radius = (halbdiagonalen.get(stamp.asset) ?? REFERENZ_HALBDIAGONALE) * stamp.s * skala;
     if (sx + radius < 0 || sx - radius > breite || sy + radius < 0 || sy - radius > hoehe) {
       verworfen++;
       continue;

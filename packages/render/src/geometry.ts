@@ -96,6 +96,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
   const color = (value: number | undefined): void => { if (value !== undefined && (!Number.isInteger(value) || value < 0 || value > 0xffffff)) throw new Error("invalid color"); };
   if (scene.rasterScope !== undefined && (typeof scene.rasterScope !== "string" || scene.rasterScope.length > 512)) throw new Error("invalid raster scope");
   if (scene.rasterSampling !== undefined && scene.rasterSampling !== "nearest" && scene.rasterSampling !== "linear") throw new Error("invalid raster sampling");
+  if (scene.showLabels !== undefined && typeof scene.showLabels !== "boolean") throw new Error("invalid label visibility");
   if (scene.grid && scene.grid.kind !== "none") {
     if (!["square", "hex"].includes(scene.grid.kind) || !Number.isFinite(scene.grid.size) || scene.grid.size <= 0 || scene.grid.origin.length !== 2 || !scene.grid.origin.every(Number.isFinite)) throw new Error("invalid grid");
     if (scene.grid.kind === "hex" && (!["pointy", "flat"].includes(scene.grid.orientation) || !["even", "odd"].includes(scene.grid.offset))) throw new Error("invalid hex grid");
@@ -113,6 +114,8 @@ export function validateMapScene(scene: ProjectedMapScene): void {
     if (vertices > 1_000_000) throw new Error("polygon resource limit exceeded");
     for (const point of cell.polygon) if (point.length !== 2 || !point.every(Number.isFinite)) throw new Error("invalid polygon coordinate");
     color(cell.fill);
+    if (cell.surface !== undefined && cell.surface !== "building" && cell.surface !== "street") throw new Error("invalid map surface");
+    if (cell.roof !== undefined && !["pitched", "flat", "tech"].includes(cell.roof)) throw new Error("invalid roof presentation");
   }
   for (const [kind, rows] of [["pin", scene.pins], ["token", scene.tokens ?? []]] as const) for (const item of rows) {
     id(kind, item.id);

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TacticalAck, TacticalMoveInput, TacticalToken, TacticalView as Board } from "@chronicle/protocol";
+import type { KartenSetting } from "@chronicle/szene";
 import { snapMapPoint, type MapPoint, type ProjectedMapScene } from "@chronicle/render";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
@@ -12,6 +13,7 @@ import { TacticalPreparation } from "./TacticalPreparation";
 import { TacticalImport } from "./TacticalImport";
 import { TacticalObjectList } from "./TacticalObjectList";
 import { mapObjectWindow, objectKey } from "./tactical-entities";
+import { mapDocumentScene, type MapNode } from "./map-generation";
 import "./tactical.css";
 
 type Page = "live" | "prepare" | "import";
@@ -43,6 +45,7 @@ function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpenEntry }
   useEffect(() => { onDirty(Object.values(drafts).some(Boolean)); }, [drafts, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const data = board.data === invalidated || board.data?.gm !== gm ? null : board.data;
+  const mapNodes = useResource<{ nodes: MapNode[]; art?: string; setting?: KartenSetting }>(data?.gm && data.map ? apiPath(campaignId, `/maps/tactical/${data.map.id}/children`) : null, revision, 10000);
   const objects = data?.entities ?? [];
   const visibleObjects = useMemo(() => data ? mapObjectWindow(data.entities, selectedObject, data.size[0], data.size[1]) : [], [data, selectedObject]);
   const chosenObject = objects.find(o => objectKey(o) === selectedObject);
@@ -50,12 +53,18 @@ function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpenEntry }
   useEffect(() => { if (!chosenObject) setSelectedObject(""); }, [chosenObject]);
   const selectedToken = data?.tokens.find(token => token.id === selected);
   useEffect(() => { if (!selectedToken) setSelected(""); }, [selectedToken]);
-  const scene = useMemo<ProjectedMapScene | null>(() => data ? {
+  const scene = useMemo<ProjectedMapScene | null>(() => {
+    if (!data) return null;
+    // The complete pinned document is present only in the GM projection. Players retain
+    // their knowledge-filtered regions and entities; no private stamps or names enter it.
+    const authored = data.gm && data.document ? mapDocumentScene(data.sessionId, data.document, (mapNodes.data?.nodes ?? []).filter(node => data.document!.geometry.regions.some(region => region.id === node.knotenId)), mapNodes.data?.art, undefined, mapNodes.data?.setting) : null;
+    return { ...authored,
     id: data.sessionId, width: data.size[0], height: data.size[1], ...(data.hatRaster ? { rasterScope: data.rasterDigest } : {}),
-    cells: data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, entryId: o.entryId })),
+    cells: authored?.cells ?? data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, entryId: o.entryId })),
     tokens: data.tokens.map(t => ({ id: t.id, x: t.x, y: t.y, label: t.name, ...(t.version === null ? {} : { revision: t.version }), radius: Math.min(40, Math.max(7, 11 * t.scale)), movable: data.active && t.canMove && !task.busy, color: t.canMove ? 0xebc887 : 0x81b8d1 })),
-    ...(grid ? { grid: data.grid } : {}), lines: data.gm ? data.walls?.map(w => ({ id: w.id, points: w.points })) : [],
-  } : null, [data, grid, task.busy, visibleObjects]);
+    grid: grid ? data.grid : { kind: "none" }, lines: data.gm ? data.walls?.map(w => ({ id: w.id, points: w.points })) : [],
+    };
+  }, [data, grid, task.busy, visibleObjects, mapNodes.data]);
   const move = async (token: TacticalToken, values: Omit<TacticalMoveInput, "commandId" | "expectedVersion">) => {
     if (!data || token.version === null) throw new Error("Diese Figur kann gerade nicht bewegt werden.");
     const result = await command<TacticalAck>(apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tokens/${token.id}/move`), { ...values, expectedVersion: token.version });

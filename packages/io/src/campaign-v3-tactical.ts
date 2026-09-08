@@ -3,7 +3,7 @@
 // Copyright (c) 2026 Atlas Chronicles contributors. SPDX-License-Identifier: MIT
 import { canonicalJson, textHash, type CanonicalValue } from "@chronicle/core";
 import { importUvtt, inspectUvttImage, type UvttProvenance, type UvttImage } from "@chronicle/forge";
-import { parseTacticalMapDocument, parseBoundedMapJson, type TacticalMapDocumentV1 } from "@chronicle/szene";
+import { KARTEN_SETTINGS, parseTacticalMapDocument, parseBoundedMapJson, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import { CAMPAIGN_V3_ADDITIONAL_TABLES, type CampaignTablesV3, type CampaignTableNameV3 } from "./campaign-schema-v3.ts";
 import { type CampaignRow } from "./campaign-schema.ts";
 import { CAMPAIGN_BUNDLE_V3_LIMITS as LIMITS } from "./campaign-v3-limits.ts";
@@ -29,7 +29,8 @@ class Graph {
 function provenance(value: unknown): void {
   parseBoundedMapJson(value, 16_384);
   const row = object(value, "source.provenance"), names = ["name", "creator", "sourceUrl", "license", "licenseUrl", "retrievedAt", "generator", "generatorVersion"];
-  keys(row, names, "source.provenance");
+  keys(row, names, "source.provenance", ["setting"]);
+  if (Object.hasOwn(row, "setting") && !KARTEN_SETTINGS.some(setting => setting === row.setting)) fail("source.provenance.setting", "known map setting required");
   for (const key of names) {
     const value = row[key]; if (value === null && !["name", "creator", "license"].includes(key)) continue;
     if (typeof value !== "string" || !value.trim() || value.length > 2048 || /[\u0000-\u001f\u007f]/.test(value)) fail("source.provenance", "bounded attribution text required");

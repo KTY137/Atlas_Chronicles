@@ -7,7 +7,7 @@ fertige Teilstücke verkürzt. Vorherige Review: `docs/reviews/gui-regression-re
 
 ## Abnahmekriterien
 
-- [ ] Siedlungen: Weiler/Dorf/Stadt frei erzeugen, echte Vorschau, kanonisch speichern,
+- [x] Siedlungen: Weiler/Dorf/Stadt frei erzeugen, echte Vorschau, kanonisch speichern,
   wieder öffnen, Gebäude betreten, Siedlung auch als Unterkarte erzeugen; Straßen sind
   keine Gebäude. Richtige Herkunft und Keime bleiben in Sicherung/Restore erhalten.
 - [ ] KI-Chronist: vorhandenes Regelwerk bleibt zuerst; Prosa auswerten, Sitzungsnotizen
@@ -42,13 +42,31 @@ Dateien, Tests und andere Effekte führt die autorisierte Sitzung aus; LangSmith
 
 ## Aktueller Stand
 
-Siedlungsbackend und GUI im Worktree implementiert; unabhängige Serverfälle,
-28 Clientfälle, zwei Siedlungs-Browserabläufe und der bestehende taktische Browserkonsument
-sind grün. Dabei wurden getrennte Kachelbudgets und die HTTP-503-Behandlung repariert.
+Zusätzlicher verbindlicher Kartenauftrag vom Nutzer: Die Karte soll mindestens die
+visuelle Qualität der Referenzen in `docs/research/map-generation-20260908.pdf`
+erreichen und sich direkt bearbeiten lassen wie beim Bauen in Dorfromantik.
+Gelände, Wege und Gebäude sollen durch direkte Werkzeuge veränderbar sein;
+passende Übergänge, geschützte Bereiche, gezielte Varianten sowie Rücknahme gehören
+zur Abnahme. Das ist noch offen. Der vorhandene LangGraph führt die Umsetzung unter
+`--workflow map-visuals` (Discovery, Design, Struktur/Darstellung/Bedienung,
+Verifikation/Reparatur, Lieferung). Es entsteht kein zweiter Ausführungsrunner.
+
+Die Steam-Produktbeschreibung belegt Platzieren/Drehen und einen Kreativmodus,
+keinen bestimmten internen Algorithmus. WFC ist eine gesonderte technische Referenz
+für Nachbarschaftsregeln und Ergänzen manueller Vorgaben:
+https://store.steampowered.com/app/1455840/Dorfromantik/
+https://github.com/mxgmn/WaveFunctionCollapse
+
+Siedlungsbackend und GUI im Worktree implementiert und mit den drei `main`-Kartencommits
+integriert. 210 Generator-/Serverfälle, 114 Rendererfälle, 77 Clientfälle, 42 Admission-/Rasterfälle
+und sechs Browserabläufe sind grün. Dabei wurden getrennte Kachelbudgets und die
+HTTP-503-Behandlung repariert.
 Der Nutzer hat anschließend den vollständigen Merge nach `main` und einen tatsächlich
 startbaren Desktop-Build angefordert. `main` enthält bereits weitere Kartenfunktionen
-(Stand `07e9245`), die bei der Integration vollständig erhalten bleiben. Die kombinierte
-Fassung muss nach dem Merge erneut gezielt geprüft werden.
+(Stand `07e9245`), die bei der Integration erhalten und gemeinsam geprüft wurden.
+Ein weiterer Agent arbeitet im Hauptcheckout an Genre-Assets; dessen Abschluss muss
+vor dem abschließenden Merge einbezogen werden. Desktop-Paketfehler für Kartenstile
+und Andaria sind reproduziert und behoben; die vollständige Lieferprüfung läuft noch.
 
 Die angeforderte tiefe Kartenrecherche liegt in `docs/research/map-generation-20260908.pdf`.
 Chronist, NPC und abschließende GUI-Gegenprüfung sind noch nicht umgesetzt und bleiben

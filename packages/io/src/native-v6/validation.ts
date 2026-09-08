@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { digest, fail, keys, list, object, string } from "../campaign-v3-json.ts";
+import { BAUWERK_TYPEN } from "@chronicle/szene";
 import { CAMPAIGN_V6_ADDITIONAL_TABLES, type CampaignTablesV6 } from "./schema.ts";
 
 const address = (map: unknown, node: unknown): string => JSON.stringify([map, node]);
@@ -14,10 +15,16 @@ function positive(value: unknown, path: string): void {
 /** Retain the existing Knoten payload as evidence; never regenerate it during restore. */
 function node(value: unknown, id: unknown, entries: ReadonlySet<string>): void {
   const data = object(value, "tactical_map_nodes.data");
-  keys(data, ["id", "art", "titel", "eltern", "rahmen", "anker", "herkunft", "sichtAnker"], "tactical_map_nodes.data");
+  keys(data, ["id", "art", "titel", "eltern", "rahmen", "anker", "herkunft", "sichtAnker"], "tactical_map_nodes.data", ["bauwerk"]);
   if (data.id !== id) fail("tactical_map_nodes", "node identity differs from stored address");
   if (typeof data.art !== "string" || !["welt", "landmasse", "macht", "region", "ort", "bauwerk", "raum", "behaelter", "gegenstand"].includes(data.art)) fail("tactical_map_nodes", "unknown node kind");
   if (data.titel !== null && (typeof data.titel !== "string" || data.titel.length > 4096)) fail("tactical_map_nodes", "invalid node title");
+  if (data.bauwerk !== undefined) {
+    if (data.art !== "bauwerk") fail("node.bauwerk", "building metadata requires a building node");
+    const building = object(data.bauwerk, "node.bauwerk"); keys(building, ["typ", "beschreibung"], "node.bauwerk");
+    if (typeof building.typ !== "string" || !BAUWERK_TYPEN.some(typ => typ === building.typ)) fail("node.bauwerk.typ", "unknown building type");
+    if (typeof building.beschreibung !== "string" || building.beschreibung.length > 2000) fail("node.bauwerk.beschreibung", "description must be a string of at most 2000 characters");
+  }
   if (data.sichtAnker !== null && (typeof data.sichtAnker !== "string" || !entries.has(data.sichtAnker))) fail("tactical_map_nodes", "missing node knowledge anchor");
   const frame = object(data.rahmen, "node.rahmen"); keys(frame, ["ursprung", "einheitenProPixel", "ordnung", "hoch"], "node.rahmen");
   point(frame.ursprung, "node.rahmen.ursprung"); positive(frame.einheitenProPixel, "node.rahmen.einheitenProPixel");
@@ -44,6 +51,7 @@ export function checkNestedMapTables(tables: CampaignTablesV6, campaignId: strin
   const maps = new Map(tables.tactical_maps.map(row => [String(row.id), row]));
   const atlasMaps = new Set(tables.atlas_maps.map(row => String(row.id)));
   const atlasNodes = new Set(tables.atlas_nodes.map(row => address(row.map_id, row.id)));
+  const tacticalNodes = new Set(tables.tactical_map_nodes.map(row => address(row.map_id, row.knoten_id)));
   const headRegions = new Map<string, Set<string>>();
   for (const revision of tables.tactical_map_revisions) if (maps.get(String(revision.map_id))?.head_revision === revision.revision) {
     const document = object(revision.document, "map.document"), geometry = object(document.geometry, "map.geometry");
@@ -82,7 +90,16 @@ export function checkNestedMapTables(tables: CampaignTablesV6, campaignId: strin
     for (const id of chain) finished.add(id);
   }
   for (const row of tables.betreten_command_receipts) {
-    const response = object(row.response, "betreten_command_receipts.response"); keys(response, ["mapId", "erzeugt", "keimHash"], "betreten_command_receipts.response");
+    const response = object(row.response, "betreten_command_receipts.response");
+    if (response.operation === "knoten.metadata") {
+      keys(response, ["operation", "parentMapId", "knotenId", "version"], "betreten_command_receipts.response");
+      const parent = string(response.parentMapId, "receipt.parentMapId"), knoten = string(response.knotenId, "receipt.knotenId");
+      const map = maps.get(parent);
+      if (!map || !tacticalNodes.has(address(parent, knoten))) fail("betreten_command_receipts", "missing tactical node for metadata receipt");
+      if (typeof response.version !== "number" || !Number.isSafeInteger(response.version) || response.version < 1 || response.version > Number(map!.version)) fail("betreten_command_receipts", "metadata receipt version exceeds retained map version");
+      continue;
+    }
+    keys(response, ["mapId", "erzeugt", "keimHash"], "betreten_command_receipts.response");
     const child = children.get(string(response.mapId, "receipt.mapId"));
     if (!child) fail("betreten_command_receipts", "missing durable entrance for receipt");
     if (typeof response.erzeugt !== "boolean" || response.keimHash !== child!.keim_hash || (response.erzeugt && response.keimHash === null)) fail("betreten_command_receipts", "response differs from durable entrance evidence");

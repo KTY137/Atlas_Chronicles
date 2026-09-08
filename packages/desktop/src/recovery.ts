@@ -115,7 +115,9 @@ export class RecoveryStore {
   constructor(userData: string, readonly runtime: string, readonly resources: string, private readonly box: SecretBox) { this.root = join(userData, "recovery"); }
   private async tool(name: "pg_dump" | "pg_restore", owned: OwnedProfile, args: string[]): Promise<void> {
     await verifyRuntime(this.runtime);
-    const passfile = join(owned.directory, `recovery-password-${randomUUID()}.tmp`);
+    // libpq cannot read a password file beyond Windows MAX_PATH even when Node can
+    // create it. Keep all 128 random bits while avoiding the long decorative prefix.
+    const passfile = join(owned.directory, `pg-${randomUUID().replaceAll("-", "")}.tmp`);
     await writeFile(passfile, `127.0.0.1:${owned.profile.pgPort}:postgres:chronicle:${owned.secrets.databasePassword}\n`, { flag: "wx", mode: 0o600 });
     try {
       await new Promise<void>((resolve, reject) => {

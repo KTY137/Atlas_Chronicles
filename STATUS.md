@@ -1,25 +1,50 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-08** (GUI-Rework und Regressionen im Featurelisten-Worktree)
+Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
 
 ## Siedlungen, Recherche und angeforderter Merge — 2026-09-08
 
 Worktree-Siedlungen sind vollständig durch HTTP, Speicherung, Unterkarten, Vorschau und
-Bibliothek verbunden. Geprüft: 35 Serverfälle (Integration/Raster), 28 Clientfälle,
-zwei neue Siedlungs-Browserabläufe, bestehender taktischer Browserkonsument mit drei
-tatsächlich gezeichneten Kartenansichten. Zusätzliche 14 Admission-/Health-Fälle prüfen
-getrennte Kachelbudgets und sichere HTTP-503-Antworten; Typecheck und Client-Build grün.
+Bibliothek verbunden. Der kombinierte Stand mit `main`-Commit `07e9245` besteht 210
+Generator-/Serverfälle, 114 Rendererfälle, 77 Clientfälle und 42 Admission-/Rasterfälle.
+Sechs Browserabläufe prüfen Fantasy/Gegenwart/Science-Fiction, Innenräume, mobile Entwürfe,
+drei tatsächlich gezeichnete Szenenansichten sowie Berechtigungsentzug und Wiederherstellung.
+Typecheck, Client-Build sowie Versions-, Paketgrenzen- und Asset-Gates sind grün.
 
 Der Nutzer autorisiert jetzt ausdrücklich den Merge des vollständigen funktionierenden
 Worktrees nach `main` und die Aktualisierung der tatsächlich startbaren Desktop-App.
-`main` ist sauber auf `07e9245` und enthält neuere Karten-/Setting-/Asset-Funktionen.
-Diese werden erhalten und mit der Schmiede sowie den Regressionen-Fixes integriert;
-der kombinierte Stand ist noch nicht verifiziert oder installiert.
+Der andere Agent ist laut Nutzer fertig. `main` ist jetzt sauber auf `7693a4a` mit 300
+zusätzlichen Genre-Assets und Katalogfiltern. Die 13 Konflikte mit dem vorigen `07e9245`
+sind im Feature-Worktree gelöst; dessen Integrationscommit wird abgeschlossen, danach
+folgt die zusätzliche Integration von `7693a4a`. Keine seiner laufenden Änderungen wurden
+überschrieben oder gestasht.
+
+Desktop: Die neue Schmiede ist im kopierten Produktionsclient. Echte isolierte Desktop-Läufe
+reproduzierten fehlende Pfade für `gemalt`/`zeitwelten` (HTTP 400) und die gebündelte
+Andaria-Karte (HTTP 500). Der Build schreibt jetzt alle Stilpfade sowie beide Atlas-Ressourcen
+um und kopiert diese Dateien. Der erweiterte Desktop-Smoke prüft zusätzlich alle sieben
+Werkstätten, Andaria-Bilddekodierung, die Kartenstile und die aktuelle native Bundlefassung.
+Der erweiterte Desktop-Smoke besteht vollständig (15 Prüfungen) einschließlich Neustart,
+Host-Recovery und portabler Kampagnenwiederherstellung; Evidence unter
+`.local/desktop-profiles/smoke-a86d61f85d7142b7/`. Zusätzlicher echter Windows-Befund:
+libpq konnte eine Passwortdatei bei 261 Zeichen nicht lesen. Der kürzere Name bei unverändert
+128 Bit Zufall funktioniert im gleichen Profil (242 Zeichen) und wurde in `recovery.ts`
+übernommen. Der lange Testprofilname bleibt als Regression erhalten. Die native Fensterladung
+braucht etwa 30,5 Sekunden; die Ursache ist noch offen. Installation und neuer Genre-Build
+stehen aus; ein vorheriger Installer ohne die letzten Änderungen ist nur Zwischenartefakt.
+
+Neu autorisiert: Karten mindestens auf dem visuellen Niveau der PDF und direktes Bauen
+wie bei Dorfromantik. Discovery ist abgeschlossen: eindeutige Geländerollen, kleine
+straßenorientierte Hauskörper, lesbare Landschaften, direkte Werkzeuge, lokale Regeln,
+geschützte Bereiche und Entwurfs-Undo. Design nach unabhängiger Daten-/Sichtprüfung angenommen:
+`design/iterations/map-visual-editor-20260908.md`. Neue Vertrags-/Solverdateien entstehen
+zunächst isoliert ohne Änderung vorhandener Exporte; noch keine fertige Produktoberfläche.
+Eigener Modus `map-visuals` im vorhandenen LangGraph. Keine Behauptung, Dorfromantik benutze WFC.
 
 Tiefe Recherche: `docs/research/map-generation-20260908.pdf`. Vollständiges verbleibendes
 Featureziel: `docs/FEATURE_COMPLETION_20260908.md`. Chronist und freier NPC-Generator
 bleiben offen; nicht als erledigt markieren. Lokale LangGraph-Checkpoints:
-`tools/review/workflow.py --workflow features|map-research|delivery`.
+`tools/review/workflow.py --workflow features|map-research|map-visuals|delivery`.
 
 ## GUI und Regressionen — 2026-09-08
 
@@ -48,6 +73,109 @@ Die Browserprüfungen verwenden isolierte Testkampagnen; ein neuer Desktop-Insta
 nicht zu diesem Stand. Die Chronisten-Modellanbindung und Siedlungsauswahl bleiben offen.
 
 Die folgenden Abschnitte sind die vorherige Projekthistorie.
+Updated: **2026-09-08** (Gegenwart, Science-Fiction und 100 Kartenassets)
+
+## Zeitwelten: 100 Assets und passende Städte/Innenräume — Session 2026-09-08
+
+**Exakt 100 neue, eigenständige SVG-Assets sind im Paket `pk.zeitwelten` eingebunden.**
+12 Böden, 3 Wände, 3 Türen, 23 Aufbauten/Fahrzeuge, 1 Marke, 3 Lichter,
+50 Einrichtungsobjekte und 5 Behälter. Reproduzierbarer Autor, Lizenz und Hashmanifest
+liegen im Repository; der durchsuchbare Editor-Katalog zeigt alle 100 als Vorschaubilder.
+Platzieren, Verschieben, Drehen, Skalieren und Entfernen werden als Kartenrevision gespeichert.
+
+**Fantasy, Gegenwart und Science-Fiction bestimmen Stadtbild und passende Raumprogramme.**
+22 neue Gebäudetypen ergänzen die bisherigen sechs: unter anderem Büro, Café, Supermarkt,
+Krankenhaus, Polizei, Schule, Fabrik, Labor, Raumstation und Reaktor. Grundriss **v6** und
+Siedlung **v4** verwenden passende Ausstattung, geplante moderne Straßenblöcke beziehungsweise
+futuristische Module, Flach-/Technikdächer, Fahrzeuge und Beleuchtung. Stadtgebäude bleiben
+anklickbar und führen zu passenden Innenräumen. Die unveränderliche Quellenprovenienz trägt
+das Setting durch verschachteltes Betreten und Native-Archive; Altquellen bedeuten Fantasy.
+
+**Einstieg:** Atlas → Neue Karte → Setting wählen. Im Karteneditor liegt der neue Bereich
+„Einrichtung & Kartenassets“. Beim Settingwechsel wird der passende Standardstil gewählt;
+Größe und übrige Einstellungen bleiben erhalten. Der lokale Kontaktbogen liegt unter
+`.local/map-expansion/asset-contact-sheet-128.png`. Details und Reviewbefunde:
+[Designlinie](design/iterations/map-settings-assets-20260908.md).
+
+**Abgesichert:** Paketgate **15/15**, vier Pakete mit **271 Assets / 271 gültigen Referenzen**,
+bytegleich reproduziert. Generatorabschluss **115/115**, Client/Renderer **31 Dateien / 315 Tests**,
+Setting-Serverintegration **8/8**, bestehende Kartenfälle **50/50**, UVTT **30/30** grün.
+Der breite Lauf hatte ausschließlich 18 Zwischenstandfehler in den beiden inzwischen mit
+115/115 bestandenen Generatordateien: **1.725 weitere Tests grün, 52 übersprungen**. Es wird
+kein nachträglich grüner Gesamtlauf behauptet. Version, Paketgrenzen, Typecheck und Build grün.
+
+Der echte Browserablauf deckte auf, dass 100 Assetbilder und Renderer-Module das gemeinsame
+API-Limit ausschöpften. Statische Module verbrauchen jetzt kein Aktionsbudget; authentifizierte
+Packleser haben eigene begrenzte Budgets. **27/27 Serverregressionen** und unabhängiger Review
+bestätigen API-Limits, Anmeldung, Dateigrenzen und Cache-Verhalten. Zwei weitere Reviewfehler
+sind behoben: numerische Eckpunkte beenden den Assetmodus; große Bitmaps bleiben beim Schwenken
+sichtbar. Der vollständige Browserablauf besteht **in 49,7 s** ohne Test-Cooldown:
+Gegenwartsstadt → Polizeiwache, Sci-Fi-Stadt → Medstation, Settingvererbung, 100er-Katalog,
+Platzierung/Speichern/Neuladen, Wiederbetreten derselben Unterkarte und Mobilansicht ohne
+horizontalen Überlauf. Keine Assetfehler oder Browserausnahmen. Sieben Screenshots unter
+`test-results/map-settings-verified/`; isolierte Testdienste werden im Fixture geschlossen.
+Die vorhandene Desktop-Installation wurde in dieser Session nicht erneuert.
+
+## Git-Worktree-Hygiene und Veröffentlichung — 2026-09-08
+
+- Der versehentlich vorgemerkte Gitlink `.claude/worktrees/featureliste` wurde nur aus dem
+  Index entfernt. `/.claude/worktrees/` ist jetzt ignoriert; der separate Checkout und sein
+  Branch bleiben erhalten.
+- Ein frischer Checkout von `1c5fdf8` deckte den fehlenden Workspace `@chronicle/chronist`
+  im Lockfile auf. Das Lockfile ist mit den vorhandenen Manifesten synchronisiert;
+  externe Paketversionen und Paketobjekte bleiben unverändert.
+- Nachweise im isolierten Checkout: `npm ci --offline --no-audit --no-fund` und Client-Build
+  erfolgreich. Vollständiges `npm run gate` mit Exit 0: **159 Testdateien / 1.601 Tests grün**,
+  **10 Dateien / 52 Tests übersprungen**; Version, Grenzen, Assets und Typecheck grün.
+  Lokal höchstens zwei Vitest-Worker, keine veränderten Tests oder Zeitlimits. Die
+  PostgreSQL-spezifischen Prüfungen benötigen den separaten Datenbankdienst der CI.
+- Die parallel laufende Karten-Erweiterung (`map-settings-assets-20260908.md` und zugehörige
+  Quelltexte) gehört zu einer anderen Session und ist nicht Teil dieser Veröffentlichung.
+
+## Kartenwerkstatt und begehbare Städte — Session 2026-09-08
+
+**Stadt → benanntes Gebäude → passender Innenraum ist gebaut.** Siedlungen erhalten Straßen,
+anklickbare Dächer und deterministische Gebäudenamen. Die sechs Typen `haus`, `kirche`, `taverne`,
+`schmiede`, `lager`, `turm` bestimmen echte Raumaufteilungen und Möblierung: Die Kirche hat
+Kirchenschiff, Altarraum und Seitenräume; das Haus Wohnstube, Küche und Schlafzimmer. Grundriss
+**v5**, Siedlung **v3**; Kartenformat und gespeicherte Identitäten bleiben erhalten.
+
+**Namen, Typ und Beschreibung sind bearbeitbare Knotenmetadaten.** Migration **024** erlaubt
+gezielt `titel`/`bauwerk`-Änderungen und schützt Identität, Herkunft und Löschhistorie weiter.
+Spielleitungsrechte, atomare Versionsprüfung und idempotente Befehlsbelege gelten auch für diese
+Bearbeitung. Vorhandene Unterkarten werden wieder geöffnet; eine spätere Typänderung würfelt sie
+nicht neu. Native Archive erhalten Metadaten, verschachtelte Adressen und beide Belegvarianten.
+Entscheidung und Prüfungsbefunde: [Designlinie](design/iterations/map-workshop-20260908.md).
+
+**Erreichbar über Atlas → Neue Karte und Tisch → Karte & Vorbereitung → Neue Karte.** Die
+Werkstatt bietet Stadt, Grundriss und Höhle, Größe, Stil „Grundriss“/„Gemalt“ und eine echte
+Vorschau ohne Schreibeffekte. Eine Änderung nur der Breite oder Höhe erhält das andere Servermaß.
+Gebäudeinspektor, Suche, Navigation, Dachflächen sowie Raster-/Namensregler, Zoom und große Ansicht
+verwenden den gemeinsamen Renderer. Gespeicherte Orts- und Gebäudekarten sind im Atlas direkt
+wieder auswählbar. Die laufende Szene zeigt der Spielleitung auch das
+Kartenbild mit seinen Assets; Spieler erhalten weiter ausschließlich ihre Wissensprojektion.
+Rollenwechsel entfernen private Darstellung und private Knotenabfragen unmittelbar.
+
+**Nachweise, ohne nachträglich einen vollständigen grünen Gesamtlauf zu behaupten:**
+
+- Erster Gesamtlauf: **168 Dateien, 1.588 Tests grün, 52 übersprungen, 2 fehlgeschlagen**.
+  Der bereits eingelesene Serverstand legte noch das 16-Millionen-Rasterlimit auf Vektorkarten.
+  Nach der Korrektur ist die betroffene Datei **11/11 grün**: Vektorkarten folgen dem nativen
+  144-Millionen-Pixelbudget; Hintergrundbilder behalten das 16-Millionen-Limit.
+- Abschließende Client-/Renderer-Prüfung: **30 Dateien, 298 Tests grün**. Die anschließend
+  ergänzten Live-/Rollenregressionen bestehen separat mit **16/16**.
+- `gate:version`, `gate:assets`, `gate:boundaries`, Typecheck und Client-Build **grün**.
+- Browser: Kartenwerkstatt und bestehende verschachtelte Navigation **2/2 grün**.
+  Beide bisherigen taktischen Tests bestehen ebenfalls auf isoliertem PostgreSQL:
+  Sichtwechsel/Asset-Entsorgung **41,0 s**, finaler UVTT-/Native-/Neustartlauf **1,3 min**.
+  Die veralteten Exportannahmen im Test sind aktualisiert; die Produktionsratenbegrenzung
+  bleibt aktiv. Die temporäre Datenbank ist beendet. Nachweise unter
+  `test-results/tactical-final-verified/` und den getrennten Werkstatt-/Security-Ausgaben.
+- Daten-/Integritätsreview: **keine bestätigten Blocker**. Die Übergabe umfasst nur eigene
+  Pfade; fremdes `.claude/worktrees/` bleibt außen vor.
+
+Übergabe: neue Stadt im Atlas anlegen, ein Gebäude benennen und betreten. Build und
+Browserabläufe sind geprüft; der vorhandene Desktop-Installer wurde in dieser Session nicht erneuert.
 
 ## Die Token-Sackgasse im Desktop ist geschlossen — Session Desktop-Installer, 2026-09-07 12:30
 

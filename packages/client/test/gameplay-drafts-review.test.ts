@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
-import { mapRegionOutlines } from "../src/features/map-region-outlines.ts";
+import * as MapGeneration from "../src/features/map-generation.ts";
 
 /** Executes production component handlers/effects with controlled resources and transport. */
 function harness(file: string, initial: Record<string, any>, component = file, extraExports = "") {
@@ -24,10 +24,10 @@ function harness(file: string, initial: Record<string, any>, component = file, e
   const element = (type: unknown, props: unknown, key: unknown) => ({ type, props, key }), mod = { exports: {} as any };
   const actual = readFileSync(new URL(file === "../hooks" ? "../src/hooks.ts" : `../src/features/${file}.tsx`, import.meta.url), "utf8");
   runInNewContext(transformSync(`${actual}\n${extraExports ? `export { ${extraExports} };` : ""}`, { loader: "tsx", format: "cjs", jsx: "automatic" }).code, {
-    module: mod, exports: mod.exports, window: { confirm: (message: string) => { confirmations.push(message); return props.confirm ?? true; } },
+    module: mod, exports: mod.exports, crypto: { randomUUID: () => "test-seed-123456" }, window: { confirm: (message: string) => { confirmations.push(message); return props.confirm ?? true; } },
     require: (name: string) => {
       if (name === "react") return react;
-      if (name === "./map-region-outlines") return { mapRegionOutlines };
+      if (name === "./map-generation") return MapGeneration;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "../hooks") return { useResource: (path: string) => props.resource?.(path) ?? { data: null, loading: false, loaded: true, error: "" }, useTask: () => ({ busy: false, error: "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, api: async (path: string, request: unknown) => { requests.push({ path, request }); return props.transport?.(path, request); } };
@@ -67,13 +67,13 @@ describe("gameplay draft regression review", () => {
   });
 
   it("respects a single edited map dimension while retaining the generator default for the other", async () => {
-    const defaults = { grundriss: { raeume: 8, zellen: [64, 64], schleifen: 2, licht: true }, hoehle: { kammern: 8, zellen: [64, 64], licht: true } };
+    const defaults = { grundriss: { raeume: 8, zellen: [64, 64], zellgroesse: 96, licht: true }, hoehle: { kammern: 8, zellen: [64, 64], zellgroesse: 96, licht: true }, siedlung: { ausdehnung: [36, 28], zellgroesse: 96, bauwerke: 42 } };
     const h = harness("TacticalGenerate", { campaignId: "campaign", onCreated() {}, resource: () => loaded(defaults) });
     h.nodes(n => n.type === "input" && n.props.maxLength === 160)[0]!.props.onChange({ target: { value: "Testkarte" } });
     h.nodes(n => n.type === "input" && n.props.maxLength === 256)[0]!.props.onChange({ target: { value: "seed" } });
-    const dimensions = h.nodes(n => n.type === "input" && n.props.min === 12);
-    dimensions[0]!.props.onChange({ target: { value: "96" } });
-    h.button("Vorschau").props.onClick(); await h.settle();
+    const controls = h.nodes(n => n.type === "MapGenerationControls")[0]!;
+    controls.props.onChange({ ...controls.props.value, art: "grundriss", breite: 96 });
+    h.nodes(n => n.type === "form")[0]!.props.onSubmit({ preventDefault() {} }); await h.settle();
     expect(h.requests[0]?.request.body.optionen.zellen).toEqual([96, 64]);
   });
 
@@ -85,18 +85,19 @@ describe("gameplay draft regression review", () => {
     expect(h.nodes(n => n.type === "CharacterSheet")[0]?.props.actorId).toBe("a");
   });
 
-  it("uses the chosen settlement defaults and discards incompatible floorplan options", async () => {
-    const defaults = { grundriss: { raeume: 8, zellen: [64, 64], schleifen: 2, licht: true }, hoehle: { kammern: 8, zellen: [64, 64], licht: true },
-      siedlung: { dorf: { art: "dorf", bauwerke: 42, ausdehnung: [36, 28], strassenDichte: .3, licht: true }, weiler: { art: "weiler", bauwerke: 9, ausdehnung: [20, 16], strassenDichte: .1, licht: false } } };
+  it("preserves a chosen settlement size profile and discards incompatible floorplan options", async () => {
+    const defaults = { grundriss: { raeume: 8, zellen: [64, 64], zellgroesse: 96, licht: true }, hoehle: { kammern: 8, zellen: [64, 64], zellgroesse: 96, licht: true },
+      siedlung: { art: "dorf", bauwerke: 42, ausdehnung: [36, 28], zellgroesse: 96, strassenDichte: .3, licht: true } };
     const h = harness("TacticalGenerate", { campaignId: "campaign", onCreated() {}, resource: () => loaded(defaults) });
     h.nodes(n => n.type === "input" && n.props.maxLength === 160)[0]!.props.onChange({ target: { value: "Silberbach" } });
-    h.nodes(n => n.type === "input" && n.props.max === 16)[0]!.props.onChange({ target: { value: "4" } });
-    h.nodes(n => n.type === "select")[0]!.props.onChange({ target: { value: "siedlung" } });
-    h.nodes(n => n.type === "select")[1]!.props.onChange({ target: { value: "weiler" } });
-    expect(h.nodes(n => n.type === "input" && n.props.type === "checkbox")[0]!.props.checked).toBe(false);
-    h.nodes(n => n.type === "input" && n.props.min === 12)[0]!.props.onChange({ target: { value: "32" } });
-    h.button("Vorschau").props.onClick(); await h.settle();
-    expect(h.requests[0]?.request.body).toEqual({ art: "siedlung", name: "Silberbach", keim: "Silberbach", optionen: { art: "weiler", ausdehnung: [32, 16] } });
+    h.nodes(n => n.type === "input" && n.props.maxLength === 256)[0]!.props.onChange({ target: { value: "seed" } });
+    const controls = () => h.nodes(n => n.type === "MapGenerationControls")[0]!;
+    controls().props.onChange({ ...controls().props.value, art: "grundriss", anzahl: 4, anordnung: "raster", moeblierung: .4 });
+    // The size-profile control supplies both dimensions; editing width must retain its height.
+    controls().props.onChange({ ...controls().props.value, art: "siedlung", siedlung: "weiler", breite: 24, hoehe: 20, anzahl: 12, dichte: .15 });
+    controls().props.onChange({ ...controls().props.value, breite: 32 });
+    h.nodes(n => n.type === "form")[0]!.props.onSubmit({ preventDefault() {} }); await h.settle();
+    expect(h.requests[0]?.request.body).toEqual({ art: "siedlung", name: "Silberbach", keim: "seed", stil: "gemalt", optionen: { art: "weiler", setting: "fantasy", ausdehnung: [32, 20], bauwerke: 12, strassenDichte: .15, licht: true } });
   });
 
   it("keeps sheet dirtiness when inventory is clean and allows declining an actor switch", () => {

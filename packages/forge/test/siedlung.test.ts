@@ -230,7 +230,8 @@ describe("A-G5 · Siedlung — jedes Bauwerk bekommt eine Adresse", () => {
         expect(knoten.anker?.in, keim).toBe(g.wurzelId);
         expect(knoten.herkunft?.keimHash, keim).toBe(g.keim.keimHash);
         expect(knoten.herkunft?.erzeugungspfad[0], keim).toBe("bauwerk");
-        expect(knoten.titel, keim).toBeNull(); // der Erzeuger schreibt Türen, keine Artikel
+        expect(knoten.titel, keim).toEqual(expect.any(String)); // Namen gehören zur Adresse, nicht zu einem Artikel.
+        expect(knoten.bauwerk?.typ, keim).toEqual(expect.any(String));
         expect(knoten.sichtAnker, keim).toBeNull();
       }
     }
