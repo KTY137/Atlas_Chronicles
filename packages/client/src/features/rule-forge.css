@@ -102,3 +102,13 @@
 .forge-content .medien-embedded .import-content > .eyebrow { margin-top: 0; }
 @media (max-width: 1050px) { .forge-tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.forge-tool { padding: 21px; } }
 @media (max-width: 640px) { .forge-header { flex-wrap: wrap; gap: 12px; }.forge-navigation { flex-wrap: nowrap; overflow-x: auto; margin-bottom: 24px; padding-bottom: 12px; }.forge-navigation .button { flex-shrink: 0; }.forge-tool-grid { grid-template-columns: minmax(0, 1fr); }.forge-tool { padding: 20px; gap: 10px; }.forge-orientation { padding: 18px; }.forge-section-heading h2 { font-size: 23px; }.forge-task-tabs { display: grid; grid-template-columns: minmax(0, 1fr); } }
+
+.rf-split { display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.rf-list ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.rf-list li button { width: 100%; text-align: left; display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--text); cursor: pointer; }
+.rf-list li button[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.rf-list li button small { color: var(--text-muted); overflow-wrap: anywhere; }
+.rf-list-search { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.rf-list-search input { flex: 1; }
+.rf-detail h5 { margin: 20px 0 6px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+@media (max-width: 760px) { .rf-split { grid-template-columns: minmax(0, 1fr); } }
