@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { erfahrungsgrad, haelt, haelt_etikett, parseProjectedKnowledge, type ProjectedKnowledge } from "./knowledge.ts";
-import { fail, finite, integer, record, keys, identifier, string, snapshotJson, deepFreeze, RULE_LIMITS } from "./validation.ts";
+import { fail, finite, integer, record, keys, identifier, string, snapshotJson, deepFreeze, RULE_LIMITS, RuleValidationError } from "./validation.ts";
 
 export type Scalar = number | boolean | string;
 export type FormulaType = "number" | "boolean" | "string";
@@ -33,59 +33,171 @@ export function parseDice(source: string): Extract<Formula, {kind: "dice"}> {
   });
 }
 
-/** Pratt parser for an explicitly closed grammar. No host language is evaluated. */
-export function parseFormula(source: string): Formula {
-  string(source, "formula", RULE_LIMITS.formulaLength);
-  const tokens: string[] = []; let offset = 0;
-  const token = /\s*(\d{1,3}d\d{1,6}(?:(?:kh|kl)\d{1,3})?(?:!\d{1,2})?|(?:\d+(?:\.\d+)?|\.\d+)|"(?:[^"\\\r\n]|\\["\\/bfnrt]|\\u[\da-fA-F]{4})*"|[a-zA-Z_][a-zA-Z_0-9]*|==|!=|>=|<=|&&|\|\||[+*/%(),.!<>-])/y;
+export type FormulaTokenKind = "dice" | "number" | "string" | "word" | "operator" | "paren" | "comma" | "dot" | "invalid";
+export interface FormulaToken { readonly kind: FormulaTokenKind; readonly text: string; readonly start: number; readonly end: number }
+export type FormulaErrorCode = "invalid-token" | "expected" | "unsupported-function" | "unknown-field" | "argument-count" | "limit" | "type" | "dice" | "number";
+export type FormulaParseDetail =
+  | { readonly ok: true; readonly ast: Formula; readonly tokens: readonly FormulaToken[] }
+  | { readonly ok: false; readonly code: FormulaErrorCode; readonly message: string; readonly start: number; readonly end: number; readonly tokens: readonly FormulaToken[]; readonly expected?: string; readonly name?: string };
+
+const TOKEN = /\s*(\d{1,3}d\d{1,6}(?:(?:kh|kl)\d{1,3})?(?:!\d{1,2})?|(?:\d+(?:\.\d+)?|\.\d+)|"(?:[^"\\\r\n]|\\["\\/bfnrt]|\\u[\da-fA-F]{4})*"|[a-zA-Z_][a-zA-Z_0-9]*|==|!=|>=|<=|&&|\|\||[+*/%(),.!<>-])/y;
+function tokenKind(text: string): FormulaTokenKind {
+  if (/^\d+d/.test(text)) return "dice";
+  if (text === ".") return "dot";
+  if (/^[\d.]/.test(text)) return "number";
+  if (text.startsWith('"')) return "string";
+  if (/^[a-zA-Z_]/.test(text)) return "word";
+  if (text === "(" || text === ")") return "paren";
+  if (text === ",") return "comma";
+  return "operator";
+}
+/** Same token rule as the parser, with positions; an unreadable rest becomes one `invalid` token. */
+export function tokenizeFormula(source: string): readonly FormulaToken[] {
+  const tokens: FormulaToken[] = []; let offset = 0;
   while (offset < source.length) {
     if (/^\s*$/.test(source.slice(offset))) break;
-    token.lastIndex = offset; const match = token.exec(source);
-    if (!match) fail(`formula: invalid token at ${offset}`);
-    tokens.push(match[1]!); offset = token.lastIndex;
-    if (tokens.length > RULE_LIMITS.formulaNodes * 4) fail("formula: token limit exceeded");
+    TOKEN.lastIndex = offset; const match = TOKEN.exec(source);
+    if (!match) { const rest = /\s*(\S+)/y; rest.lastIndex = offset; const bad = rest.exec(source)!; const start = bad.index + bad[0].length - bad[1]!.length; tokens.push({ kind: "invalid", text: bad[1]!, start, end: start + bad[1]!.length }); break; }
+    const text = match[1]!, end = TOKEN.lastIndex;
+    tokens.push({ kind: tokenKind(text), text, start: end - text.length, end }); offset = end;
   }
+  return tokens;
+}
+
+/** Error with the token span the parser was looking at; message and class stay exactly as before.
+ *  Field is called `subject` (not `name`) to avoid shadowing Error#name from the base class. */
+class FormulaSyntaxError extends RuleValidationError {
+  constructor(message: string, readonly tokenIndex: number, readonly code: FormulaErrorCode, readonly expected?: string, readonly subject?: string, readonly spanEnd?: number) { super(message); }
+}
+/** Pratt parser over a token list; records the token span of every node for the detailed variant. */
+function parseTokens(tokens: readonly string[], spans?: Map<Formula, readonly [number, number]>): Formula {
   let cursor = 0; let nodes = 0;
-  const take = (expected: string) => { if (tokens[cursor++] !== expected) fail(`formula: expected ${expected}`); };
+  // `spanEnd`, when given, widens the reported location from the single anchor token to [at, spanEnd)
+  // — used for argument-count errors, where the whole call (not just its name) is the culprit.
+  const syntax = (code: FormulaErrorCode, message: string, at = cursor, extra: { expected?: string; name?: string; spanEnd?: number } = {}): never => { throw new FormulaSyntaxError(message, at, code, extra.expected, extra.name, extra.spanEnd); };
+  const take = (expected: string) => { if (tokens[cursor] !== expected) syntax("expected", `formula: expected ${expected}`, cursor, { expected }); cursor++; };
+  const remember = (node: Formula, start: number): Formula => { spans?.set(node, [start, cursor]); return node; };
   const parse = (minPrecedence: number, depth: number): Formula => {
-    if (depth > RULE_LIMITS.formulaDepth || ++nodes > RULE_LIMITS.formulaNodes) fail("formula: complexity limit exceeded");
-    const t = tokens[cursor++]; let left: Formula;
-    if (!t) return fail("formula: missing expression");
+    if (depth > RULE_LIMITS.formulaDepth || ++nodes > RULE_LIMITS.formulaNodes) syntax("limit", "formula: complexity limit exceeded");
+    const start = cursor, t = tokens[cursor++]; let left: Formula;
+    if (!t) return syntax("expected", "formula: missing expression", cursor - 1, { expected: "expression" });
     if (t === "-" || t === "!") left = { kind: "unary", op: t, value: parse(7, depth + 1) };
     else if (t === "(") { left = parse(0, depth + 1); take(")"); }
-    else if (/^\d+d/.test(t)) left = parseDice(t);
-    else if (/^[\d.]/.test(t)) left = { kind: "literal", value: finite(Number(t), "literal") };
+    else if (/^\d+d/.test(t)) { try { left = parseDice(t); } catch (error) { syntax("dice", error instanceof Error ? error.message : "dice: invalid notation", start); } }
+    else if (/^[\d.]/.test(t)) { const value = Number(t); if (!Number.isFinite(value) || Math.abs(value) > 1e12) syntax("number", "literal: expected finite number within +/-1e12", start); left = { kind: "literal", value }; }
     else if (t.startsWith('"')) left = { kind: "literal", value: JSON.parse(t) as string };
     else if (t === "true" || t === "false") left = { kind: "literal", value: t === "true" };
     else if (t === "actor" || t === "input") {
-      take("."); left = { kind: "field", source: t, field: identifier(tokens[cursor++], "field") };
+      take("."); const at = cursor, raw = tokens[cursor++];
+      // Reuse the exact same validation `identifier` applies elsewhere (incl. the 96-char cap); only the
+      // reporting differs — its thrown RuleValidationError becomes a positioned FormulaSyntaxError here.
+      let field: string;
+      try { field = identifier(raw, "field"); }
+      catch (error) { return syntax("expected", error instanceof Error ? error.message : "field: invalid identifier", at, { expected: "field" }); }
+      left = { kind: "field", source: t, field };
     } else {
-      if (t !== "if" && !(CALLS as readonly string[]).includes(t)) fail(`formula: unsupported function ${t}`);
+      if (t !== "if" && !(CALLS as readonly string[]).includes(t)) syntax("unsupported-function", `formula: unsupported function ${t}`, start, { name: t });
       take("("); const args: Formula[] = [];
       if (tokens[cursor] !== ")") for (;;) {
-        args.push(parse(0, depth + 1)); if (args.length > 8) fail("formula: argument limit exceeded");
+        args.push(parse(0, depth + 1)); if (args.length > 8) syntax("argument-count", "formula: argument limit exceeded", start);
         if (tokens[cursor] !== ",") break; cursor++;
       }
       take(")");
       if (t === "if") {
-        if (args.length !== 3) fail("if: expected three arguments");
+        if (args.length !== 3) syntax("argument-count", "if: expected three arguments", start, { name: t, spanEnd: cursor });
         left = { kind: "if", condition: args[0]!, then: args[1]!, else: args[2]! };
       } else {
-        if (t === "min" || t === "max" ? args.length < 2 : args.length !== 1) fail(`${t}: invalid argument count`);
+        if (t === "min" || t === "max" ? args.length < 2 : args.length !== 1) syntax("argument-count", `${t}: invalid argument count`, start, { name: t, spanEnd: cursor });
         left = { kind: "call", name: t as Extract<Formula, {kind: "call"}>["name"], args };
       }
     }
+    remember(left!, start);
     for (;;) {
       const op = tokens[cursor]; const precedence = op ? PRECEDENCE[op] : undefined;
       if (precedence === undefined || precedence < minPrecedence) break;
-      cursor++; if (++nodes > RULE_LIMITS.formulaNodes) fail("formula: node limit exceeded");
-      left = { kind: "binary", op: op as BinaryOperator, left, right: parse(precedence + 1, depth + 1) };
+      cursor++; if (++nodes > RULE_LIMITS.formulaNodes) syntax("limit", "formula: node limit exceeded");
+      left = remember({ kind: "binary", op: op as BinaryOperator, left: left!, right: parse(precedence + 1, depth + 1) }, start);
     }
-    return left;
+    return left!;
   };
-  const ast = parse(0, 0); if (cursor !== tokens.length) fail(`formula: unexpected token ${tokens[cursor]}`);
+  const ast = parse(0, 0); if (cursor !== tokens.length) syntax("expected", `formula: unexpected token ${tokens[cursor]}`, cursor, { expected: "end" });
+  return ast;
+}
+
+/** Pratt parser for an explicitly closed grammar. No host language is evaluated. */
+export function parseFormula(source: string): Formula {
+  string(source, "formula", RULE_LIMITS.formulaLength);
+  const tokens = tokenizeFormula(source), last = tokens[tokens.length - 1];
+  // The old scanner counted the token limit as tokens were produced, so it threw "token limit exceeded"
+  // before ever attempting to scan past the limit — including past an invalid character beyond it. Mirror
+  // that: count only the good tokens (the invalid one, if any, was never counted by the old scanner either).
+  const goodTokens = last?.kind === "invalid" ? tokens.length - 1 : tokens.length;
+  if (goodTokens > RULE_LIMITS.formulaNodes * 4) fail("formula: token limit exceeded");
+  if (last?.kind === "invalid") {
+    // The old scanner reported the offset where scanning stopped — the end of the previous good token (or 0
+    // for the very first token) — not where the bad character itself starts after leading whitespace.
+    fail(`formula: invalid token at ${tokens[tokens.length - 2]?.end ?? 0}`);
+  }
   // Left-associative chains must obey the same depth cap as parenthesised expressions.
-  return parseFormulaAst(ast);
+  return parseFormulaAst(parseTokens(tokens.map(t => t.text)));
+}
+
+/** Same grammar and type check, reported with positions instead of thrown. */
+export function parseFormulaDetailed(source: string, fields?: FormulaFieldTypes): FormulaParseDetail {
+  const tokens = tokenizeFormula(source);
+  const between = (span: readonly [number, number]): [number, number] => [tokens[span[0]]?.start ?? source.length, tokens[span[1] - 1]?.end ?? source.length];
+  const at = (index: number, spanEnd?: number): [number, number] => spanEnd === undefined ? between([index, index + 1]) : between([index, spanEnd]);
+  if (typeof source !== "string" || source.length > RULE_LIMITS.formulaLength) return { ok: false, code: "limit", message: "formula: expected nonempty string (max 4096)", start: 0, end: source.length, tokens };
+  const last = tokens[tokens.length - 1];
+  // Same precedence as parseFormula: the token limit is checked against the good tokens only, and wins over
+  // reporting an invalid character found beyond that limit.
+  const goodTokens = last?.kind === "invalid" ? tokens.length - 1 : tokens.length;
+  if (goodTokens > RULE_LIMITS.formulaNodes * 4) return { ok: false, code: "limit", message: "formula: token limit exceeded", start: 0, end: source.length, tokens };
+  if (last?.kind === "invalid") return { ok: false, code: "invalid-token", message: `formula: invalid token at ${last.start}`, start: last.start, end: last.end, tokens };
+  const spans = new Map<Formula, readonly [number, number]>(); let raw: Formula;
+  try { raw = parseTokens(tokens.map(t => t.text), spans); }
+  catch (error) {
+    if (error instanceof FormulaSyntaxError) { const [start, end] = at(error.tokenIndex, error.spanEnd); return { ok: false, code: error.code, message: error.message, start, end, tokens, ...(error.expected ? { expected: error.expected } : {}), ...(error.subject ? { name: error.subject } : {}) }; }
+    const message = error instanceof Error ? error.message : "formula: invalid"; return { ok: false, code: "limit", message, start: 0, end: source.length, tokens };
+  }
+  let ast: Formula;
+  try { ast = parseFormulaAst(raw); } catch (error) { return { ok: false, code: "limit", message: error instanceof Error ? error.message : "formula: invalid", start: 0, end: source.length, tokens }; }
+  if (fields) {
+    // The type each child must have for `node`'s own check to pass; null means "no fixed requirement".
+    // Mirrors inferFormulaType's requireType calls, but only to locate the culprit — never to validate.
+    const requiredChildTypes = (node: Formula): readonly (FormulaType | null)[] => {
+      switch (node.kind) {
+        case "unary": return [node.op === "!" ? "boolean" : "number"];
+        case "binary": {
+          if (node.op === "==" || node.op === "!=") return [null, inferFormulaType(node.left, fields)];
+          const type = node.op === "&&" || node.op === "||" ? "boolean" : "number";
+          return [type, type];
+        }
+        case "if": return ["boolean", null, inferFormulaType(node.then, fields)];
+        case "call": return (["haelt", "haelt_etikett", "erfahrungsgrad"] as readonly string[]).includes(node.name) ? ["string"] : node.args.map(() => "number" as const);
+        default: return [];
+      }
+    };
+    // Children first: the deepest node that fails on its own is the culprit, its parent only inherits the failure.
+    const check = (node: Formula): FormulaParseDetail | null => {
+      const children: Formula[] = node.kind === "unary" ? [node.value] : node.kind === "binary" ? [node.left, node.right] : node.kind === "if" ? [node.condition, node.then, node.else] : node.kind === "call" ? [...node.args] : [];
+      for (const child of children) { const failure = check(child); if (failure) return failure; }
+      try { inferFormulaType(node, fields); return null; }
+      catch (error) {
+        const message = error instanceof Error ? error.message : "formula: invalid";
+        const unknown = /^formula: unknown ((?:actor|input)\.[^\s]+)$/.exec(message);
+        if (unknown) { const [start, end] = between(spans.get(node) ?? [0, tokens.length]); return { ok: false, code: "unknown-field", message, start, end, tokens, name: unknown[1]! }; }
+        // Every child already passed on its own; `node`'s own check fails only because one of them has the
+        // wrong type in this context. Point at that child's span, not the whole enclosing expression.
+        const required = requiredChildTypes(node);
+        const culprit = children.find((child, i) => { const expected = required[i]; return expected != null && inferFormulaType(child, fields) !== expected; });
+        const [start, end] = between(spans.get(culprit ?? node) ?? [0, tokens.length]);
+        return { ok: false, code: "type", message, start, end, tokens };
+      }
+    };
+    const failure = check(raw); if (failure) return failure;
+  }
+  return { ok: true, ast, tokens };
 }
 
 export function parseFormulaAst(input: unknown): Formula {
