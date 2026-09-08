@@ -18,6 +18,7 @@ import type { ThemeManifestV1 } from "@chronicle/theme";
 import { parseStage, type Stage, type TableTab } from "./navigation";
 import { t } from "./i18n";
 import { parseForgeSection, type ForgeSection } from "./features/forge-navigation";
+import { QuickNavigation } from "./features/QuickNavigation";
 import "./shell.css";
 
 const AtlasView = lazy(() => import("./features/AtlasView").then((module) => ({ default: module.AtlasView })));
@@ -89,8 +90,8 @@ export function App() {
   }, [dirty]);
   const guard = () => !dirty || window.confirm(t("Ungespeicherte Änderungen verwerfen?"));
   const navigate = (next: Stage, target?: { forge?: ForgeSection; tab?: TableTab }) => {
-    if (next === stage && !choosing && !target) { setMenuOpen(false); return; }
-    if (!guard()) return;
+    if (next === stage && !choosing && !target) { setMenuOpen(false); return true; }
+    if (!guard()) return false;
     if (menuOpen) menuButton.current?.focus();
     setDirty(false); setComposeSeed(undefined); setDoorRequest(undefined); setStage(next); setChoosing(false); setMenuOpen(false);
     const url = new URL(location.href); url.searchParams.set("stage", next); url.searchParams.delete("tab"); url.searchParams.delete("door"); url.searchParams.delete("forge"); url.searchParams.delete("inventory");
@@ -98,6 +99,7 @@ export function App() {
     if (target?.tab) { url.searchParams.set("tab", target.tab); setTableRequest(previous => ({ tab: target.tab!, request: (previous?.request ?? 0) + 1 })); }
     else setTableRequest(undefined);
     window.history.replaceState(null, "", url);
+    return true;
   };
   const openForge = (section: ForgeSection) => navigate("schmiede", { forge: section });
   const openTable = (tab: TableTab) => navigate("tisch", { tab });
@@ -129,7 +131,7 @@ export function App() {
   if (connectionError) return <main className="connection-error"><Notice error>{connectionError}</Notice><Button onClick={() => void refreshSession()}>{t("Verbindung erneut prüfen")}</Button></main>;
   if (!me) return <Auth onAuthenticated={refreshSession} />;
 
-  return <div className="application"><a className="skip-link" href="#main-content">{t("Zum Inhalt")}</a><header className="context-bar"><button className="wordmark" onClick={() => { if (guard()) { setDirty(false); setChoosing(true); } }} aria-label={t("Kampagnenübersicht")}><span aria-hidden="true">A✧</span><strong>ATLAS <small>CHRONICLES</small></strong></button><span className="context-divider" /><Button variant="quiet" className="campaign-trigger" onClick={() => { if (guard()) { setDirty(false); setChoosing(true); } }}>{campaign?.name ?? t("Deine Kampagnen")}<ChevronDown size={15} /></Button><div className="context-right"><span className="user-name">{me.displayName}</span><Button variant="quiet" aria-label={t("Zugang verwalten")} onClick={() => navigate("account")}><Settings size={18} /></Button><Button variant="quiet" aria-label={t("Abmelden")} disabled={task.busy} onClick={() => { if (guard()) void task.run(async () => { await api("/api/logout", { method: "POST" }); setMe(null); setDirty(false); setCampaignId(""); }); }}><LogOut size={18} /></Button></div></header>
+  return <div className="application"><a className="skip-link" href="#main-content">{t("Zum Inhalt")}</a><header className="context-bar"><button className="wordmark" onClick={() => { if (guard()) { setDirty(false); setChoosing(true); } }} aria-label={t("Kampagnenübersicht")}><span aria-hidden="true">A✧</span><strong>ATLAS <small>CHRONICLES</small></strong></button><span className="context-divider" /><Button variant="quiet" className="campaign-trigger" onClick={() => { if (guard()) { setDirty(false); setChoosing(true); } }}>{campaign?.name ?? t("Deine Kampagnen")}<ChevronDown size={15} /></Button><div className="context-right">{campaign && !choosing ? <QuickNavigation key={`${campaign.id}:${campaign.role}`} gm={campaign.role === "leitung"} onNavigate={command => navigate(command.stage, command.target)} /> : null}<span className="user-name">{me.displayName}</span><Button variant="quiet" aria-label={t("Zugang verwalten")} onClick={() => navigate("account")}><Settings size={18} /></Button><Button variant="quiet" aria-label={t("Abmelden")} disabled={task.busy} onClick={() => { if (guard()) void task.run(async () => { await api("/api/logout", { method: "POST" }); setMe(null); setDirty(false); setCampaignId(""); }); }}><LogOut size={18} /></Button></div></header>
     <div className="mobile-navigation"><button ref={menuButton} type="button" aria-label={menuOpen ? t("Bereiche schließen") : t("Bereiche öffnen")} aria-expanded={menuOpen} aria-controls="area-navigation" onClick={() => setMenuOpen(value => !value)}>{menuOpen ? <X size={18} /> : <Menu size={18} />}<span>{bereiche.flatMap(group => group.items).find(item => item.id === stage)?.label ?? t("Zugang")}</span><ChevronDown size={15} /></button><span>{campaign?.role === "leitung" ? t("Spielleitung") : t("Deine Runde")}</span></div>
     <div className="app-main"><nav id="area-navigation" className={`rail${menuOpen ? " rail-open" : ""}`} aria-label={t("Bereiche")}>{bereiche.map(group => <div className="rail-group" key={group.label}><p className="rail-group-label">{group.label}</p>{group.items.filter(item => item.id !== "schmiede" || campaign?.role === "leitung").map(({ id, label, description, icon: Icon }) => <button key={id} className={stage === id && !choosing ? "rail-item active" : "rail-item"} aria-label={label} aria-current={stage === id && !choosing ? "page" : undefined} onClick={() => navigate(id)} disabled={!campaign}><Icon size={20} aria-hidden="true" /><span><strong>{label}</strong><small>{description}</small></span></button>)}</div>)}</nav>
       <main id="main-content" className="main-stage" tabIndex={-1}>{campaign && !choosing && stage !== "account" ? <ReaderPerspective campaignId={campaign.id} gm={campaign.role === "leitung"} current={perspective.data} revision={revision + live.revision} guard={guard} onChanged={() => setRevision(v => v + 1)} /> : null}{campaigns.error && campaigns.data ? <Notice error>{campaigns.error}<Button onClick={() => setRevision(value => value + 1)}>{t("Kampagnen erneut laden")}</Button></Notice> : null}{perspective.error ? <Notice error>{perspective.error}</Notice> : null}{task.error ? <Notice error>{task.error}</Notice> : null}
