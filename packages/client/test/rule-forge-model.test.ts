@@ -109,3 +109,14 @@ describe("migration and fixture evidence", () => {
     expect(() => new RulePackageRegistry().install(pkg)).toThrow(/self-test failed/);
   });
 });
+
+describe("expression text on drafts", () => {
+  it("returns the typed expression verbatim when set and falls back to the visual tree otherwise", async () => {
+    const { draftExpression, packageDraft } = await import("../src/features/rule-forge-model");
+    const draft = packageDraft(DEMO_RULE_PACKAGE), action = draft.actions[0]!;
+    expect(draftExpression(action)).toBe(DEMO_RULE_PACKAGE.actions[0]!.expression);
+    expect(draftExpression({ ...action, expression: "1d20 + actor.insight" })).toBe("1d20 + actor.insight");
+    expect(draftExpression({ ...action, expression: "1d20 +" })).toBe("1d20 +");
+    expect(validateDraft({ ...draft, actions: [{ ...action, expression: "1d20 +" }] }).valid).toBe(false);
+  });
+});

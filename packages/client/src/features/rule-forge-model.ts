@@ -24,13 +24,15 @@ export interface DraftAction {
   localId: string; id: string; name: string; version: string; disclosure: string;
   inputs: DraftField[]; thresholdEnabled: boolean; threshold: string; formula: FormulaDraft;
   originalExpression?: string; originalFormula?: FormulaDraft;
+  /** The typed expression, canonical (`actor.x`); wins over `formula` when present, even while invalid. */
+  expression?: string;
   outcome?: RuleOutcome; preconditions?: readonly RuleAssertion[];
 }
 export type DraftMigrationStep =
   | { localId: string; kind: "rename"; from: string; to: string }
   | { localId: string; kind: "add"; field: string; type: FormulaType; value: string }
   | { localId: string; kind: "archive"; field: string }
-  | { localId: string; kind: "numeric"; field: string; formula: FormulaDraft; originalExpression?: string; originalFormula?: FormulaDraft };
+  | { localId: string; kind: "numeric"; field: string; formula: FormulaDraft; originalExpression?: string; originalFormula?: FormulaDraft; expression?: string };
 export interface DraftMigration { localId: string; from: string; steps: DraftMigrationStep[] }
 export type PackageSelfTest = NonNullable<RulePackageV2["selfTests"]>[number];
 export interface RuleDraft {
@@ -113,7 +115,10 @@ function expressionSource(ast: Formula, parentPrecedence: number): string {
   }
   return precedence < parentPrecedence ? `(${result})` : result;
 }
-export function draftExpression(draft: { formula: FormulaDraft; originalFormula?: FormulaDraft; originalExpression?: string }): string {
+export function draftExpression(draft: { formula: FormulaDraft; originalFormula?: FormulaDraft; originalExpression?: string; expression?: string }): string {
+  // The typed expression, when present, wins verbatim — even while invalid (H6: an incomplete
+  // block must invalidate the package draft, never silently fall back to the visual tree).
+  if (draft.expression !== undefined) return draft.expression;
   const ast = compileFormula(draft.formula);
   // Opening an installed package must not rewrite even equivalent expression bytes.
   if (draft.originalFormula && draft.originalExpression !== undefined && stableJson(draft.originalFormula) === stableJson(draft.formula)) return draft.originalExpression;
@@ -141,7 +146,7 @@ function fieldsMap(fields: readonly DraftField[]): Record<string, FieldSchema> {
   return result;
 }
 export function migrationStepDraft(step: MigrationStep): DraftMigrationStep {
-  if (step.kind === "numeric") { const formula = formulaDraft(parseFormula(step.expression)); return { localId: localKey(), kind: "numeric", field: step.field, formula, originalFormula: copyJson(formula), originalExpression: step.expression }; }
+  if (step.kind === "numeric") { const formula = formulaDraft(parseFormula(step.expression)); return { localId: localKey(), kind: "numeric", field: step.field, formula, originalFormula: copyJson(formula), originalExpression: step.expression, expression: step.expression }; }
   if (step.kind === "add") return { localId: localKey(), kind: "add", field: step.field, type: typeof step.value as FormulaType, value: String(step.value) };
   return { localId: localKey(), ...step };
 }
@@ -190,7 +195,7 @@ export function newPackage(author: string, installed: readonly AnyRulePackage[] 
   draft.id = id; draft.name = "Mein Regelwerk"; draft.authors = [author || "Spielleitung"]; draft.version = "1.0.0"; draft.migrations = []; draft.selfTests = []; draft.includeSelfTests = false;
   return draft;
 }
-export function newAction(ids: readonly string[]): DraftAction { return { localId: localKey(), id: uniqueId("aktion", ids), name: "Neue Aktion", version: "1.0.0", disclosure: "Ein Würfel entscheidet über diese Handlung. Das Ergebnis wird am Tisch bestätigt.", inputs: [], thresholdEnabled: false, threshold: "10", formula: formulaDraft(parseFormula("1d20")) }; }
+export function newAction(ids: readonly string[]): DraftAction { return { localId: localKey(), id: uniqueId("aktion", ids), name: "Neue Aktion", version: "1.0.0", disclosure: "Ein Würfel entscheidet über diese Handlung. Das Ergebnis wird am Tisch bestätigt.", inputs: [], thresholdEnabled: false, threshold: "10", formula: formulaDraft(parseFormula("1d20")), expression: "1d20" }; }
 export function moveItem<T>(items: readonly T[], index: number, delta: -1 | 1): T[] { const result = [...items], next = index + delta; if (index >= 0 && index < result.length && next >= 0 && next < result.length) [result[index], result[next]] = [result[next]!, result[index]!]; return result; }
 export function fieldTypes(fields: readonly DraftField[]): Record<string, FormulaType> { return Object.fromEntries(fields.map(f => [f.id, f.type === "integer" ? "number" : f.type])); }
 

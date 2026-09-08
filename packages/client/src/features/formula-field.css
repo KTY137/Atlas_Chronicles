@@ -84,3 +84,7 @@
 .ff-node-editor-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .ff-node-editor-actions button { font: inherit; padding: 5px 9px; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 4px; cursor: pointer; }
 .ff-graph-drag { font-size: 12px; color: var(--accent); margin: 8px 0 0; }
+
+.ff-field-title { font-size: 12px; color: var(--text-muted); }
+.ff-field .ff-line + .ff-blocks, .ff-field .ff-line + .ff-graph, .ff-field .ff-readonly + .ff-blocks, .ff-field .ff-readonly + .ff-graph { margin-top: 10px; }
+@media (max-width: 760px) { .ff-views button { padding: 5px 9px; } .ff-cheat-sheet { grid-template-columns: minmax(0, 1fr); } }
