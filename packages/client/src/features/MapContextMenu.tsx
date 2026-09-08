@@ -3,6 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
+import { t } from "../i18n";
 import "./map-context-menu.css";
 
 export interface MapContextAction {
@@ -61,9 +62,9 @@ export function MapContextMenu({ label, actions, children, className = "", popup
     if (event.key === "ContextMenu" || event.shiftKey && event.key === "F10") { event.preventDefault(); event.stopPropagation(); open(); }
   }}>
     {children}
-    {!popup ? <button type="button" ref={trigger} className="map-context-trigger" aria-label={`Aktionen für ${label}`} title={`Aktionen für ${label}`}
+    {!popup ? <button type="button" ref={trigger} className="map-context-trigger" aria-label={t("Aktionen für {label}", { label })} title={t("Aktionen für {label}", { label })}
       aria-haspopup="menu" aria-expanded={!!at} aria-controls={at ? id : undefined} onClick={() => at ? close(true) : open()}><MoreHorizontal size={19} aria-hidden="true" /></button> : null}
-    {at ? createPortal(<div id={id} ref={menu} className="map-context-menu" role="menu" aria-label={`Karte ${label}`} style={{ left: at.x, top: at.y }} onKeyDown={event => {
+    {at ? createPortal(<div id={id} ref={menu} className="map-context-menu" role="menu" aria-label={t("Karte {label}", { label })} style={{ left: at.x, top: at.y }} onKeyDown={event => {
       if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(true); return; }
       if (event.key === "Tab") { close(true); return; }
       const buttons = [...menu.current!.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];

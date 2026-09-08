@@ -1,1 +1,66 @@
-{}
+{
+  "Artikel": {
+    "eins": "Article",
+    "viele": "Articles"
+  },
+  "Bei {n} Datei widerspricht der tatsächliche Inhalt der Dateiendung des Quell-Wikis — dort heißt sie etwa {beispiel}, geliefert wurde WebP. Wir speichern den gemessenen Typ, nicht den behaupteten.": {
+    "eins": "For {n} file the actual content contradicts the file extension of the source wiki — there it is called {beispiel}, for instance, while WebP was delivered. We store the measured type, not the claimed one.",
+    "viele": "For {n} files the actual content contradicts the file extensions of the source wiki — there they are called {beispiel}, for instance, while WebP was delivered. We store the measured type, not the claimed one."
+  },
+  "Die Karte wurde gelöscht.": {
+    "eins": "The map was deleted.",
+    "viele": "{n} maps were deleted."
+  },
+  "Diese Karte wird gelöscht": {
+    "eins": "This map will be deleted",
+    "viele": "{n} maps will be deleted"
+  },
+  "ein Punkt": {
+    "eins": "one point",
+    "viele": "{n} points"
+  },
+  "Eine Person wartet vor der Tür auf deine Freigabe.": {
+    "eins": "One person is waiting at the door for your approval.",
+    "viele": "{n} people are waiting at the door for your approval."
+  },
+  "{geholt} von {n} Datei geholt, {fehler} fehlgeschlagen.": {
+    "eins": "{geholt} of {n} file fetched, {fehler} failed.",
+    "viele": "{geholt} of {n} files fetched, {fehler} failed."
+  },
+  "{geholt} von {n} Datei geholt.": {
+    "eins": "{geholt} of {n} file fetched.",
+    "viele": "{geholt} of {n} files fetched."
+  },
+  "{n} Artikel.": {
+    "eins": "{n} article.",
+    "viele": "{n} articles."
+  },
+  "{n} Datei": {
+    "eins": "{n} file",
+    "viele": "{n} files"
+  },
+  "{n} Datei holen": {
+    "eins": "Fetch {n} file",
+    "viele": "Fetch {n} files"
+  },
+  "{n} Datei kam nicht an": {
+    "eins": "{n} file did not arrive",
+    "viele": "{n} files did not arrive"
+  },
+  "{n} Datei wird in Artikeln erwähnt, existiert im Quell-Wiki aber nicht.": {
+    "eins": "{n} file is mentioned in articles but does not exist in the source wiki.",
+    "viele": "{n} files are mentioned in articles but do not exist in the source wiki."
+  },
+  "{n} Passage ausgewählt": {
+    "eins": "{n} passage selected",
+    "viele": "{n} passages selected"
+  },
+  "{n} Tag": {
+    "eins": "{n} day",
+    "viele": "{n} days"
+  },
+  "{n} von {ausgewaehlt} ausgewählten Artikeln wurde jetzt gespeichert — Teil eines Imports mit insgesamt {eintraege} Artikeln und {passagen} Passagen ({erhaltung} Texterhaltung).": {
+    "eins": "{n} of {ausgewaehlt} selected articles has now been saved — part of an import with {eintraege} articles and {passagen} passages in total ({erhaltung} text preservation).",
+    "viele": "{n} of {ausgewaehlt} selected articles have now been saved — part of an import with {eintraege} articles and {passagen} passages in total ({erhaltung} text preservation)."
+  }
+}

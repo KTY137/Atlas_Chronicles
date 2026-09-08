@@ -115,10 +115,16 @@ describe("Nachricht als Schlüssel", () => {
     abmelden();
   });
 
-  it("trägt den echten Katalogordner ohne Einträge ohne Fehler", async () => {
-    await setzeSprache("en");
+  it("lädt den echten Katalogordner ohne Fehler und lässt Unbekanntes deutsch", async () => {
+    // Kein Satz aus dem echten Katalog: die acht Pakete landen unabhängig voneinander,
+    // eine Erwartung auf einen bestimmten Eintrag wäre von ihrer Reihenfolge abhängig.
+    const unbekannt = "__i18n_test_unbekannt__";
+    await expect(setzeSprache("en")).resolves.toBeUndefined();
     expect(aktuelleSprache()).toBe("en");
-    expect(t("Speichern")).toBe("Speichern");
+    expect(locale()).toBe("en-GB");
+    expect(t(unbekannt)).toBe(unbekannt);
+    expect(t(unbekannt, { name: "Kaya" })).toBe(unbekannt);
+    expect(plural(2, unbekannt, `${unbekannt}!`)).toBe(`${unbekannt}!`);
   });
 
   it("hält im Prüfstand-Stub Deutsch und interpoliert trotzdem", () => {
@@ -206,8 +212,8 @@ describe("Sprachwahl in „Deine Darstellung“", () => {
     const modul = stand.lade("AppearanceSettings.tsx", {
       "@chronicle/theme": Theme,
       "@chronicle/ui": { Button: "Button", Notice: "Notice" },
-      "../i18n": { setzeSprache: spracheWechseln },
-      "./Appearance": { SPRACHE_FEHLER: FEHLERTEXT, useAppearance: () => darstellung },
+      "../i18n": { ...I18nStub, setzeSprache: spracheWechseln },
+      "./Appearance": { spracheFehlerText: () => FEHLERTEXT, useAppearance: () => darstellung },
     }, { window: { confirm: (frage: string) => { gerufen.confirm.push(frage); return bestaetigen; } } });
     const auswahl = () => knoten(stand.render(modul.AppearanceSettings, {}), node => node.type === "select" && node.props["aria-label"] === "Sprache")[0];
     return { stand, gerufen, auswahl, hinweise: () => knoten(stand.render(modul.AppearanceSettings, {}), node => node.type === "Notice" && node.props.error) };

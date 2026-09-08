@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { t } from "./i18n";
 
 /**
  * Die letzte Auffanglinie der Anwendung.
@@ -45,21 +46,15 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.failed) return this.props.children;
     return (
       <div className="crash-screen" role="alert">
-        <h1>Die Anwendung ist stehen geblieben</h1>
-        <p>
-          Hier ist etwas schiefgegangen, das nicht an dir liegt. Deine gespeicherten Inhalte sind
-          davon nicht betroffen — es ist nur diese Ansicht, die nicht mehr weiterkonnte.
-        </p>
-        <p>
-          Am häufigsten passiert das, wenn die Anwendung erneuert wurde, während du sie offen
-          hattest. Dann genügt ein Neuladen.
-        </p>
+        <h1>{t("Die Anwendung ist stehen geblieben")}</h1>
+        <p>{t("Hier ist etwas schiefgegangen, das nicht an dir liegt. Deine gespeicherten Inhalte sind davon nicht betroffen — es ist nur diese Ansicht, die nicht mehr weiterkonnte.")}</p>
+        <p>{t("Am häufigsten passiert das, wenn die Anwendung erneuert wurde, während du sie offen hattest. Dann genügt ein Neuladen.")}</p>
         <button type="button" className="button button-primary" onClick={this.reload}>
-          Seite neu laden
+          {t("Seite neu laden")}
         </button>
         {this.state.detail ? (
           <details>
-            <summary>Technische Einzelheiten</summary>
+            <summary>{t("Technische Einzelheiten")}</summary>
             <pre>{this.state.detail}</pre>
           </details>
         ) : null}

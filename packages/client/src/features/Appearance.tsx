@@ -3,7 +3,7 @@
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { DEFAULT_ACCESSIBILITY_PREFERENCES, getThemePreset, parseAccessibilityPreferences, resolveTheme, serializeAccessibilityPreferences,
   type AccessibilityPreferencesV2, type ResolvedThemeV1, type Sprache, type SystemAccessibility, type ThemeManifestV1 } from "@chronicle/theme";
-import { aktuelleSprache, initialisiereSprache, setzeSprache, subscribe } from "../i18n";
+import { aktuelleSprache, initialisiereSprache, setzeSprache, subscribe, t } from "../i18n";
 
 const STORAGE_KEY = "chronicle.appearance.v1";
 const fonts = { cinzel: '"Cinzel", Georgia, serif', plex: '"IBM Plex Sans Variable", system-ui, sans-serif', system: "system-ui, sans-serif", serif: "Georgia, Cambria, serif", mono: "ui-monospace, Consolas, monospace" };
@@ -19,8 +19,10 @@ export function appearanceStyle(theme: ResolvedThemeV1): CSSProperties {
   } as CSSProperties;
 }
 
-/** Ein fehlgeschlagener Katalog-Import darf nicht still deutsch bleiben; die Auswahl zeigt ihn. */
-export const SPRACHE_FEHLER = "Das englische Sprachpaket konnte nicht geladen werden.";
+/** Ein fehlgeschlagener Katalog-Import darf nicht still deutsch bleiben; die Auswahl zeigt ihn.
+ * Als Funktion, damit `t` den Satz beim Anzeigen liest: eine Konstante stuende schon fest,
+ * bevor die Sprache ueberhaupt gewaehlt ist. Der deutsche Satz bleibt der Katalogschluessel. */
+export const spracheFehlerText = (): string => t("Das englische Sprachpaket konnte nicht geladen werden.");
 
 interface AppearanceState {
   preferences: AccessibilityPreferencesV2; resolved: ResolvedThemeV1; system: SystemAccessibility; sprache: Sprache; spracheFehler: string; storageError: string;
@@ -66,12 +68,12 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   // Der Sprachzustand liegt als Modulvariable in i18n.ts; React haengt hier daran.
   const sprache = useSyncExternalStore(subscribe, aktuelleSprache, aktuelleSprache);
   // Der Katalog kommt nach; weil er die Sprache nicht ändert, bleibt der Baum stehen.
-  useEffect(() => { setzeSprache(preferences.language).then(() => setSpracheFehler(""), () => setSpracheFehler(SPRACHE_FEHLER)); }, [preferences.language]);
+  useEffect(() => { setzeSprache(preferences.language).then(() => setSpracheFehler(""), () => setSpracheFehler(spracheFehlerText())); }, [preferences.language]);
   useLayoutEffect(() => { document.documentElement.lang = sprache; }, [sprache]);
   const update = useCallback((input: AccessibilityPreferencesV2) => {
     const next = parseAccessibilityPreferences(input); setPreferences(next);
     try { localStorage.setItem(STORAGE_KEY, serializeAccessibilityPreferences(next)); setStorageError(""); }
-    catch { setStorageError("Diese Darstellung gilt gerade nur für das geöffnete Fenster, weil der Browser keine lokale Speicherung erlaubt."); }
+    catch { setStorageError(t("Diese Darstellung gilt gerade nur für das geöffnete Fenster, weil der Browser keine lokale Speicherung erlaubt.")); }
   }, []);
   const resolved = useMemo(() => resolveTheme(campaignTheme ?? getThemePreset("Fantasy"), preferences, system), [campaignTheme, preferences, system]);
   useLayoutEffect(() => {
