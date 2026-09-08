@@ -156,6 +156,34 @@ describe("Figurantrag — die Figur entsteht erst bei der Bestätigung", () => {
     await expect(f.antraege.freigeben(f.sera.userId, f.campaign, f.vorlage.id, 1)).rejects.toBeInstanceOf(Gone);
   });
 
+  it("führt den Freigabestand samt eigener Version auf der Vorlagenkarte der Spielleitung", async () => {
+    const f = await fixture();
+    const stand = async () => (await f.actors.getActorTemplate(gm, f.campaign, f.vorlage.id)).freigabe;
+    const ausListe = async () => (await f.actors.listActorTemplates(gm, f.campaign)).find(k => k.id === f.vorlage.id)!.freigabe;
+    // Nie freigegeben ist etwas anderes als entzogen — deshalb null und nicht `{frei:false}`.
+    expect(await stand()).toBeNull();
+    expect(await ausListe()).toBeNull();
+    expect((await f.actors.createActorTemplate(gm, f.campaign, { commandId: command(), definition: spielerVorlage("Zweite") })).freigabe).toBeNull();
+
+    expect((await f.antraege.freigeben(gm, f.campaign, f.vorlage.id, 0)).version).toBe(1);
+    expect(await stand()).toEqual({ frei: true, version: 1 });
+    expect(await ausListe()).toEqual({ frei: true, version: 1 });
+    expect((await f.antraege.entziehen(gm, f.campaign, f.vorlage.id, 1))).toMatchObject({ freigegeben: false, version: 2 });
+    expect(await stand()).toEqual({ frei: false, version: 2 });
+    expect((await f.antraege.freigeben(gm, f.campaign, f.vorlage.id, 2)).version).toBe(3);
+    expect(await stand()).toEqual({ frei: true, version: 3 });
+
+    // Genau diese Version ist das erwartete `expectedVersion` — geraten wird nichts.
+    await expect(f.antraege.entziehen(gm, f.campaign, f.vorlage.id, 1)).rejects.toBeInstanceOf(Conflict);
+    expect((await f.antraege.entziehen(gm, f.campaign, f.vorlage.id, (await stand())!.version)).version).toBe(4);
+
+    // Gegenstandsvorlagen kennen keine Freigabe und tragen das Feld deshalb gar nicht.
+    const gegenstand = await f.actors.createItemTemplate(gm, f.campaign, { commandId: command(),
+      definition: { schemaVersion: 1, name: "Messingschlüssel", loreEntryId: null, tags: ["Werkzeug"] } });
+    expect(Object.hasOwn(gegenstand, "freigabe")).toBe(false);
+    expect(Object.hasOwn(await f.actors.getItemTemplate(gm, f.campaign, gegenstand.id), "freigabe")).toBe(false);
+  });
+
   it("legt die Anfangswerte als Abweichung über die Vorlage und zeigt sie auf der Karte", async () => {
     const f = await fixture();
     await f.antraege.freigeben(gm, f.campaign, f.vorlage.id, 0);

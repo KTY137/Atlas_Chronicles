@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Type, type Static } from "@sinclair/typebox";
+import type { FigurvorlageFreigabeStand } from "./figurantrag.ts";
 
 const closed = { additionalProperties: false } as const;
 const id = Type.String({ minLength: 1, maxLength: 128 });
@@ -131,6 +132,12 @@ export interface ActorCard {
 }
 export interface TemplateCard<T> {
   id: string; revision: number; version: number; archivedAt: number | null; definition: T; contentHash: string;
+  /**
+   * Nur an Figurvorlagen und nur auf den Spielleitungswegen: der Stand der Spielerfreigabe samt
+   * ihrer eigenen Version, damit der Schalter sein `expectedVersion` liest statt es zu raten.
+   * `null` = nie freigegeben. An Gegenstandsvorlagen fehlt das Feld — sie kennen keine Freigabe.
+   */
+  freigabe?: FigurvorlageFreigabeStand | null;
 }
 export interface ControllerCard {
   userId: string; permission: "control"; version: number;

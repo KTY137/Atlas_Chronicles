@@ -62,6 +62,11 @@ describe("actor templates, explicit control and item custody", () => {
     expect((await f.game.getSheet(gm, f.campaign, first.id)).fields.insight).toBe(2);
     expect((await f.game.getSheet(gm, f.campaign, second.id)).fields.insight).toBe(5);
     expect(await f.actors.getActorTemplate(gm, f.campaign, template.id, 1)).toMatchObject({ definition: template.definition, contentHash: template.contentHash });
+    // Die Spielerfreigabe gehoert an die Vorlagenkarte der Spielleitung: `null` = nie freigegeben.
+    // Gegenstandsvorlagen kennen keine Freigabe und tragen das Feld gar nicht.
+    expect(template.freigabe).toBeNull();
+    expect((await f.actors.listActorTemplates(gm, f.campaign)).every(card => card.freigabe === null)).toBe(true);
+    expect(Object.hasOwn(await f.actors.createItemTemplate(gm, f.campaign, { ...command(), definition: itemDefinition() }), "freigabe")).toBe(false);
     expect((await db.query("SELECT 1 FROM entries WHERE campaign_id=$1", [f.campaign])).rowCount).toBe(1);
     expect((await f.actors.listControllers(gm, f.campaign, first.id))[0]).toMatchObject({ userId: gm, permission: "control", revokedAt: null });
     await expect(f.actors.createActorTemplate(gm, f.campaign, { ...draft, definition: actorDefinition(3) })).rejects.toBeInstanceOf(Conflict);

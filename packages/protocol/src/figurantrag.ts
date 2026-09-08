@@ -59,6 +59,15 @@ export interface FigurantragCard {
 export interface FreigegebeneVorlageCard {
   id: string; name: string; art: string; anfangswerte: Record<string, unknown>; version: number;
 }
+/**
+ * Der Freigabestand einer Figurvorlage, wie ihn die **Spielleitung** auf ihrer Vorlagenkarte
+ * liest. `null` heisst: nie freigegeben.
+ *
+ * Ohne diese Angabe muesste der Freigabeschalter seine `expectedVersion` raten. Nach einem Entzug
+ * und einer erneuten Freigabe in einer frueheren Sitzung waere die geratene Zahl dauerhaft falsch,
+ * und auch Neuladen loeste den 409 nicht auf — die Version stand ja nirgends.
+ */
+export interface FigurvorlageFreigabeStand { frei: boolean; version: number }
 /** Die Quittung der Freigabe. `freigegeben` ist die Antwort, alles andere ihr Beleg. */
 export interface FigurantragFreigabeAck {
   templateId: string; campaignId: string; freigegeben: boolean; version: number;

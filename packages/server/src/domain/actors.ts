@@ -202,20 +202,39 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
     if (!row || hash(row.definition) !== row.content_hash) throw new Gone();
     return { id, revision: selected, version: h.version, archivedAt: timestamp(h.archived_at), definition: row.definition, contentHash: row.content_hash };
   }
+  /**
+   * Der Stand der Spielerfreigabe an einer Figurvorlage — nur fuer die Spielleitung.
+   *
+   * Er haengt hier und nicht am Antragsmodul, weil die Karte ohne ihn unvollstaendig ist: der
+   * Schalter, der die Freigabe umlegt, braucht deren eigene Version. Fehlt sie, raet er, und nach
+   * einem Entzug mit erneuter Freigabe ist die geratene Zahl dauerhaft falsch.
+   *
+   * Der Beleg im Ereignisbuch bleibt davon unberuehrt: `command()` schreibt weiterhin die reine
+   * Vorlagenkarte, und dieses Feld kommt erst danach an die ausgelieferte Antwort. Eine
+   * unveraenderliche Quittung soll keinen Zustand tragen, der sich spaeter aendert.
+   */
+  async function freigabestand(campaignId: string, templateId: string) {
+    const row = (await db.query<{ version: number; revoked_at: string | null }>(
+      "SELECT version,revoked_at FROM figurvorlagen_freigaben WHERE template_id=$1 AND campaign_id=$2", [templateId, campaignId])).rows[0];
+    return row ? { frei: row.revoked_at === null, version: row.version } : null;
+  }
+  async function mitFreigabe<T>(campaignId: string, kind: TemplateKind, card: P.TemplateCard<T>): Promise<P.TemplateCard<T>> {
+    return kind === "item" ? card : { ...card, freigabe: await freigabestand(campaignId, card.id) };
+  }
   async function listTemplates<T>(userId: string, campaignId: string, kind: TemplateKind) {
     if ((await member(db, userId, campaignId)).role !== "leitung") throw new Gone();
     const ids = (await db.query<{ id: string }>(`SELECT id FROM ${kind}_templates WHERE campaign_id=$1 AND archived_at IS NULL ORDER BY created_at,id`, [campaignId])).rows;
     const cards: P.TemplateCard<T>[] = [];
-    for (const row of ids) cards.push(await template<T>(db, campaignId, kind, row.id));
+    for (const row of ids) cards.push(await mitFreigabe(campaignId, kind, await template<T>(db, campaignId, kind, row.id)));
     return cards;
   }
   async function getTemplate<T>(userId: string, campaignId: string, kind: TemplateKind, id: string, revision?: number) {
     if ((await member(db, userId, campaignId)).role !== "leitung") throw new Gone();
-    return template<T>(db, campaignId, kind, id, revision);
+    return mitFreigabe(campaignId, kind, await template<T>(db, campaignId, kind, id, revision));
   }
   async function saveTemplate<T extends P.ActorTemplateData | P.ItemContract>(userId: string, campaignId: string, kind: TemplateKind,
     input: { commandId: string; definition: T; expectedVersion?: number; reason?: string }, id?: string): Promise<P.TemplateCard<T>> {
-    return command(userId, campaignId, `${kind}.template.${id ? "revise" : "create"}`, id ?? null, input, true, async (tx, current) => {
+    return mitFreigabe(campaignId, kind, await command<P.TemplateCard<T>>(userId, campaignId, `${kind}.template.${id ? "revise" : "create"}`, id ?? null, input, true, async (tx, current) => {
       const value = await definition(tx, current, kind, input.definition), before = id ? await template<T>(tx, campaignId, kind, id) : null;
       if (before && (before.archivedAt !== null || before.version !== input.expectedVersion)) throw new Conflict();
       const targetId = id ?? randomUUID(), nextRevision = before ? before.revision + 1 : 1;
@@ -224,17 +243,17 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
       if (before) await tx.query(`UPDATE ${kind}_templates SET head_revision=$3,version=version+1 WHERE id=$1 AND campaign_id=$2`, [targetId, campaignId, nextRevision]);
       const after = await template<T>(tx, campaignId, kind, targetId);
       return { subjectId: targetId, before, after, result: after };
-    });
+    }));
   }
   async function archiveTemplate<T>(userId: string, campaignId: string, kind: TemplateKind, id: string, raw: unknown) {
     const input = parse(P.ArchiveObject, raw);
-    return command(userId, campaignId, `${kind}.template.archive`, id, input, true, async tx => {
+    return mitFreigabe(campaignId, kind, await command<P.TemplateCard<T>>(userId, campaignId, `${kind}.template.archive`, id, input, true, async tx => {
       const before = await template<T>(tx, campaignId, kind, id);
       if (before.version !== input.expectedVersion || before.archivedAt !== null) throw new Conflict();
       await tx.query(`UPDATE ${kind}_templates SET archived_at=$3,version=version+1 WHERE id=$1 AND campaign_id=$2`, [id, campaignId, now()]);
       const after = await template<T>(tx, campaignId, kind, id);
       return { subjectId: id, before, after, result: after };
-    });
+    }));
   }
   async function actorCard(tx: Db, current: Membership, actorId: string): Promise<P.ActorCard> {
     const actor = await profile(tx, current.campaignId, actorId);
