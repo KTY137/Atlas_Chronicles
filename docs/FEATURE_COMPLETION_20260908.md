@@ -64,8 +64,8 @@ HTTP-503-Behandlung repariert.
 Der Nutzer hat anschließend den vollständigen Merge nach `main` und einen tatsächlich
 startbaren Desktop-Build angefordert. `main` enthält bereits weitere Kartenfunktionen
 (Stand `07e9245`), die bei der Integration erhalten und gemeinsam geprüft wurden.
-Ein weiterer Agent arbeitet im Hauptcheckout an Genre-Assets; dessen Abschluss muss
-vor dem abschließenden Merge einbezogen werden. Desktop-Paketfehler für Kartenstile
+Der weitere Agent hat seine Genre-Assets in `7693a4a` abgeschlossen; auch diese sind
+integriert und gezielt geprüft. Desktop-Paketfehler für Kartenstile
 und Andaria sind reproduziert und behoben; die vollständige Lieferprüfung läuft noch.
 
 Die angeforderte tiefe Kartenrecherche liegt in `docs/research/map-generation-20260908.pdf`.

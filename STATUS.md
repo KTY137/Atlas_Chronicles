@@ -15,9 +15,17 @@ Der Nutzer autorisiert jetzt ausdrücklich den Merge des vollständigen funktion
 Worktrees nach `main` und die Aktualisierung der tatsächlich startbaren Desktop-App.
 Der andere Agent ist laut Nutzer fertig. `main` ist jetzt sauber auf `7693a4a` mit 300
 zusätzlichen Genre-Assets und Katalogfiltern. Die 13 Konflikte mit dem vorigen `07e9245`
-sind im Feature-Worktree gelöst; dessen Integrationscommit wird abgeschlossen, danach
-folgt die zusätzliche Integration von `7693a4a`. Keine seiner laufenden Änderungen wurden
+sind in `5176c4d` zusammengeführt; die zusätzliche Integration von `7693a4a` erhält
+Genre-Archiv und Siedlungseinstellungen gemeinsam. Keine seiner laufenden Änderungen wurden
 überschrieben oder gestasht.
+
+Die zweite Integration besteht zusätzlich 104 gezielte Generator-/Server-/Clientfälle,
+29 Assetprüfungen mit 571 gültigen Referenzen sowie drei Browserabläufe: Genre-Katalog mit
+Platzierung/Speichern/Reload, Stadtvorschau mit Gebäudeeingang und mobiler Entwurfswechsel.
+Der übernommene Genre-Browsertest benötigte zuerst die jetzt verpflichtende Vorschau;
+der angepasste Ablauf besteht. Typecheck, Produktionsbuild, Versions- und Grenzprüfungen
+sind grün. Paket `2026-09-08T08-58-37-116Z` enthält 2.482 vermessene Dateien;
+die erweiterte Prüfung dieses tatsächlichen Desktop-Artefakts läuft.
 
 Desktop: Die neue Schmiede ist im kopierten Produktionsclient. Echte isolierte Desktop-Läufe
 reproduzierten fehlende Pfade für `gemalt`/`zeitwelten` (HTTP 400) und die gebündelte
@@ -38,7 +46,8 @@ wie bei Dorfromantik. Discovery ist abgeschlossen: eindeutige Geländerollen, kl
 straßenorientierte Hauskörper, lesbare Landschaften, direkte Werkzeuge, lokale Regeln,
 geschützte Bereiche und Entwurfs-Undo. Design nach unabhängiger Daten-/Sichtprüfung angenommen:
 `design/iterations/map-visual-editor-20260908.md`. Neue Vertrags-/Solverdateien entstehen
-zunächst isoliert ohne Änderung vorhandener Exporte; noch keine fertige Produktoberfläche.
+zunächst isoliert. Nach dem unveränderlichen Desktop-Paket sind jetzt alle drei Builderflächen
+für Verträge, Generator und Editor freigegeben; noch keine fertige Produktoberfläche.
 Eigener Modus `map-visuals` im vorhandenen LangGraph. Keine Behauptung, Dorfromantik benutze WFC.
 
 Tiefe Recherche: `docs/research/map-generation-20260908.pdf`. Vollständiges verbleibendes
@@ -73,7 +82,45 @@ Die Browserprüfungen verwenden isolierte Testkampagnen; ein neuer Desktop-Insta
 nicht zu diesem Stand. Die Chronisten-Modellanbindung und Siedlungsauswahl bleiben offen.
 
 Die folgenden Abschnitte sind die vorherige Projekthistorie.
-Updated: **2026-09-08** (Gegenwart, Science-Fiction und 100 Kartenassets)
+Updated: **2026-09-08** (300 zusätzliche Assets für zwölf Genres)
+
+## Genre-Archiv: 300 weitere Kartenassets — Session 2026-09-08
+
+**300 zusätzliche, eigenständige SVG-Draufsichten sind als `pk.genres` 1.0.0 eingebunden.**
+Zwölf Genres mit je 25 Motiven: Fantasy, Gothic-Horror, Antike, Wuxia, Piraten, Western,
+Steampunk, Noir, Cyberpunk, Weltraum, Postapokalypse und Unterwasser. Insgesamt 36 Böden,
+12 Wände, 12 Türen, 12 Lichter, 12 Behälter, 90 Aufbauten, 118 Möbel und 8 Zeichen.
+Alle bisherigen 271 Assets bleiben unverändert; die Bibliothek enthält jetzt **571 Assets**.
+
+**Einstieg:** Karteneditor → Einrichtung & Kartenassets → Assetpaket → Genre-Archiv.
+Genre, Kategorie, Setting und Suche sind kombinierbar. Platzierung, Drehen, Skalieren,
+Verschieben und Entfernen verwenden weiterhin die gespeicherten Kartenrevisionen.
+Der zusätzliche Zeichenstil Genre-Archiv erzeugt einen Mix aus zum Setting passenden
+Motiven; spezielle Genres stellt man im Editor zusammen. Fehlende Generatoranfragen
+bleiben sichtbar. Der Stil wird beim Betreten über die originale Quelle geerbt; bestehende
+Unterkarten behalten ihre Identität. Details: [Designlinie](design/iterations/genre-assets-20260908.md).
+
+**Nachweise:** finales Assetgate **29/29**, fünf Pakete mit **571 gültigen Referenzen**
+bytegleich reproduziert. Alle 300 neuen Geometrien auch gegen bisherige Assets geprüft,
+600 erfolgreiche Rasterisierungen bei 64/128 Pixeln. Alle Genre-Kontaktbögen und 36 Böden
+in 4×4 gesichtet. Randüberstände und fünf Bodenübergänge korrigiert; die neue Rasterprüfung
+für zwölf Zukunftsböden war für die drei betroffenen Muster zuerst rot und besteht jetzt.
+Neue Generatorintegration **45/45**, Client **203/203**, fokussierte Serverfälle **59/59**
+einschließlich Auslieferung aller 300 SVGs grün. Version, Grenzen, Typecheck und Build grün.
+
+Der breite Vitestlauf endete mit **1.788 Tests bestanden, einem Timeout, 52 übersprungen**
+und einem Worker-RPC-Timeout. Die betroffene Datei `map-workshop.test.ts` besteht anschließend
+einzeln **11/11**, bei unverändertem Zeitlimit; der Archivfall brauchte 17.950 ms. Kein
+nachträglich behaupteter grüner Gesamtlauf. Logs unter `.local/genre-assets/`.
+
+**Browserabschluss: 1/1 grün in 54,2 s.** Zwölf Genre-Filter, drei reale Platzierungen,
+Revision/Speichern/Reload, Mobilansicht ohne horizontalen Überlauf und Wechsel zum alten Paket.
+Keine Browser- oder Assetfehler; Screenshots unter `test-results/genre-assets-verified/`.
+Testkontext, App und PGlite sind geschlossen.
+
+Galerie: `.local/genre-assets/galerie.html`; Übersicht: `300-assets.png`; Download:
+`genre-archiv-300.zip` (302 Dateien, bytegleich zum Paket). Die Artefakte liegen jeweils
+unter `.local/genre-assets/`. Die vorhandene Desktop-Installation wurde nicht erneuert.
 
 ## Zeitwelten: 100 Assets und passende Städte/Innenräume — Session 2026-09-08
 

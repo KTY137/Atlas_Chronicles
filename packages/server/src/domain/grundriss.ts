@@ -33,12 +33,13 @@ import { createTactical, TacticalValidationError } from "./tactical.ts";
 
 /** The generator needs an asset pack, and the pack's identity is part of the seed (see below). */
 export type KartenArt = "grundriss" | "hoehle" | "siedlung";
-export type KartenStil = "grundriss" | "gemalt" | "zeitwelten";
+export type KartenStil = "grundriss" | "gemalt" | "zeitwelten" | "genres";
 export type KartenOptionen = Partial<GrundrissOptionen> | Partial<HoehleOptionen> | Partial<SiedlungOptionen>;
 const PAKET_URLS: Record<KartenStil, URL> = {
   grundriss: new URL("../../../../assets/packs/pk.grundriss/paket.json", import.meta.url),
   gemalt: new URL("../../../../assets/packs/pk.gemalt/paket.json", import.meta.url),
   zeitwelten: new URL("../../../../assets/packs/pk.zeitwelten/paket.json", import.meta.url),
+  genres: new URL("../../../../assets/packs/pk.genres/paket.json", import.meta.url),
 };
 const cached = new Map<KartenStil, AssetpaketV1>();
 function paket(stil: KartenStil = "grundriss"): AssetpaketV1 {
@@ -142,7 +143,7 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
     defaults() {
       return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD, siedlung: SIEDLUNG_STANDARD,
         siedlungsarten: { weiler: siedlungStandard("weiler"), dorf: siedlungStandard("dorf"), stadt: siedlungStandard("stadt") },
-        stile: [{ id: "grundriss", titel: "Grundriss" }, { id: "gemalt", titel: "Gemalt" }, { id: "zeitwelten", titel: "Zeitwelten" }],
+        stile: [{ id: "grundriss", titel: "Grundriss" }, { id: "gemalt", titel: "Gemalt" }, { id: "zeitwelten", titel: "Zeitwelten" }, { id: "genres", titel: "Genre-Archiv" }],
         limits: { grundriss: GRUNDRISS_LIMITS, hoehle: HOEHLE_LIMITS, siedlung: SIEDLUNG_LIMITS } };
     },
 

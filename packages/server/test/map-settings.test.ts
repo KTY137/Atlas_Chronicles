@@ -74,6 +74,31 @@ describe("Kartensettings: generation, inherited interiors and native evidence", 
     expect(await createBetreten(db, config).children(gm, campaign, { parentKind: "tactical", parentMapId: mapId })).toMatchObject({ setting: "gegenwart", stil: "zeitwelten" });
   });
 
+  it("serves all 300 genre assets and retains the new style when entering and reopening a building", async () => {
+    const catalogue = await app.inject({ url: "/api/packs", headers: { cookie } });
+    expect(catalogue.json()).toEqual(expect.arrayContaining([expect.objectContaining({ id: "pk.genres", assetCount: 300 })]));
+    const manifest = await app.inject({ url: "/api/packs/pk.genres/manifest", headers: { cookie } });
+    const pack = manifest.json(); expect(pack.assets).toHaveLength(300);
+    for (const asset of pack.assets) {
+      const image = await app.inject({ url: `/api/packs/pk.genres/asset/${asset.datei}`, headers: { cookie } });
+      expect(image.statusCode, asset.name).toBe(200); expect(image.headers["content-type"]).toContain("image/svg+xml");
+    }
+    const input = request("scifi", { stil: "genres" }), preview = await post("/tactical/generate/preview", input);
+    expect(preview.statusCode, preview.body).toBe(200); expect(preview.json().stil).toBe("genres");
+    const saved = await post("/tactical/generate", input); expect(saved.statusCode, saved.body).toBe(200);
+    const mapId = saved.json().ack.subjectId, tactical = createTactical(db), betreten = createBetreten(db, config);
+    expect((await tactical.getMap(gm, campaign, mapId)).document).toEqual(preview.json().document);
+    const scope = { parentKind: "tactical" as const, parentMapId: mapId }, list = await betreten.children(gm, campaign, scope);
+    expect(list).toMatchObject({ stil: "genres", setting: "scifi" });
+    const knotenId = list.nodes[0]!.knotenId;
+    const entered = await betreten.betrete(gm, campaign, { commandId: randomUUID(), ...scope, knotenId, expectedVersion: list.version });
+    const child = await tactical.getMap(gm, campaign, entered.mapId);
+    expect(child.document.geometry.stamps.some(stamp => stamp.a.startsWith("pk.genres/"))).toBe(true);
+    expect(await betreten.children(gm, campaign, { parentKind: "tactical", parentMapId: child.id })).toMatchObject({ stil: "genres", setting: "scifi" });
+    const again = await betreten.betrete(gm, campaign, { commandId: randomUUID(), ...scope, knotenId, expectedVersion: list.version });
+    expect(again.mapId).toBe(child.id); expect(await tactical.getMap(gm, campaign, child.id)).toEqual(child);
+  }, 30_000);
+
   it("carries modern settlement options through the nested HTTP union", async () => {
     const root = await createGrundriss(db, config).generate(gm, campaign, { commandId: randomUUID(), name: "Eingang", keim: "modern-settlement-through-door", optionen: { profil: "haus" } });
     const scope = { parentKind: "tactical" as const, parentMapId: root.ack.subjectId }, betreten = createBetreten(db, config), list = await betreten.children(gm, campaign, scope);

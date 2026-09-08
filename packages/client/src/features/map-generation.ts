@@ -5,7 +5,7 @@ import { TACTICAL_MAP_LIMITS, type BauwerkTyp, type KartenSetting, type Tactical
 import type { ProjectedMapScene } from "@chronicle/render";
 
 export type MapArt = "siedlung" | "grundriss" | "hoehle";
-export type MapStyle = "grundriss" | "gemalt" | "zeitwelten";
+export type MapStyle = "grundriss" | "gemalt" | "zeitwelten" | "genres";
 export interface GenerationDefaults {
   grundriss: GrundrissOptionen; hoehle: HoehleOptionen; siedlung: SiedlungOptionen;
   siedlungsarten?: Readonly<Record<SiedlungOptionen["art"], SiedlungOptionen>>;

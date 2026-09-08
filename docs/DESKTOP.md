@@ -156,6 +156,13 @@ The smoke imports the packaged ERON source, checks its 190 Andaria places and fe
 decodes the actual 8192 × 8192 WebP image. It generates painted fantasy interiors and
 Zeitwelten interiors for both modern and science-fiction settings through the packaged
 HTTP host, checking the saved artwork pack.
+The Genre-Archiv checks additionally generate interiors for all three settings and fetch
+all 300 SVGs through the packaged host, comparing their byte lengths and SHA256 hashes with
+the served manifest. In the actual client the smoke previews and saves a genre settlement,
+checks twelve genre filters with 25 motifs each, combines genre/category/text searches,
+decodes selected images, and places and saves an asset before reloading its map. The search
+evidence and `genre-catalogue.png` are saved alongside the other smoke results. These genre
+checks were added after the 15-check run recorded below and require a fresh build and run.
 It checks the Schmiede overview and all seven workshop entrances before opening
 **Regeln** and activating the HTBAH template. It validates exports with the current native
 bundle reader, including checksums, generated map nodes and rule attribution. Restart,

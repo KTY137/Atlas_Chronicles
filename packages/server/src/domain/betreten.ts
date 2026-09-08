@@ -56,7 +56,7 @@ function validateInput(input: BetretenInput): void {
     || input.name !== undefined && (typeof input.name !== "string" || !input.name.trim() || input.name.length > 160)
     || input.targetMapId !== undefined && !validId(input.targetMapId)
     || input.art !== undefined && !["grundriss", "hoehle", "siedlung"].includes(input.art)
-    || input.stil !== undefined && !["grundriss", "gemalt", "zeitwelten"].includes(input.stil)
+    || input.stil !== undefined && !["grundriss", "gemalt", "zeitwelten", "genres"].includes(input.stil)
     || input.expectedVersion !== undefined && (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 1))
     throw new TacticalValidationError("Bitte Kartenadresse, Namen und erwartete Version prüfen.");
   // Eine Kartenart zu nennen und zugleich eine fertige Karte anzuhaengen sind zwei verschiedene
@@ -143,7 +143,8 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
     const originalDocument = original.format === "native" ? JSON.parse(original.source_text) as typeof map.document : null;
     const originalRegions = new Set(originalDocument?.geometry.regions.map(region => region.id));
     const stamps = (originalDocument ?? map.document).geometry.stamps;
-    const stil: KartenStil = stamps.some(stamp => stamp.a.startsWith("pk.zeitwelten/")) ? "zeitwelten"
+    const stil: KartenStil = stamps.some(stamp => stamp.a.startsWith("pk.genres/")) ? "genres"
+      : stamps.some(stamp => stamp.a.startsWith("pk.zeitwelten/")) ? "zeitwelten"
       : stamps.some(stamp => stamp.a.startsWith("pk.gemalt/")) ? "gemalt" : "grundriss";
     return { scope, title: map.name, version: map.version, art, stil, setting: original.provenance.setting ?? "fantasy", nodes: map.document.geometry.regions
       .filter(region => art !== "siedlung" || data.get(region.id)?.art === "bauwerk" || !originalRegions.has(region.id))

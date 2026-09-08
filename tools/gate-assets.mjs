@@ -44,6 +44,7 @@ const ERZEUGER = [
   { paket: "pk.atlas", skript: "tools/assets/erzeuge-atlaspaket.mjs" },
   { paket: "pk.gemalt", skript: "tools/assets/erzeuge-gemaltpaket.mjs" },
   { paket: "pk.zeitwelten", skript: "tools/assets/erzeuge-zeitweltenpaket.mjs" },
+  { paket: "pk.genres", skript: "tools/assets/erzeuge-genrepaket.mjs" },
 ];
 
 /** Anything that turns a drawing into an execution or a fetch. Case-insensitive, source-level. */

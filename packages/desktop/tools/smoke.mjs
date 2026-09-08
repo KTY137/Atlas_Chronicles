@@ -72,7 +72,7 @@ try{
   assert.equal(eronImage.error,undefined);assert.deepEqual([eronImage.width,eronImage.height],[8192,8192]);assert.ok(eronImage.bytes>0);
   record("packaged ERON source imports 190 Andaria places and browser decodes its actual 8192 x 8192 WebP image");
   evidence.assetProbes=[];
-  for(const [stil,setting,profil] of [["gemalt","fantasy","haus"],["zeitwelten","gegenwart","krankenhaus"],["zeitwelten","scifi","raumstation"]]){
+  for(const [stil,setting,profil] of [["gemalt","fantasy","haus"],["zeitwelten","gegenwart","krankenhaus"],["zeitwelten","scifi","raumstation"],["genres","fantasy","haus"],["genres","gegenwart","krankenhaus"],["genres","scifi","raumstation"]]){
     const probe=await request(`/api/campaigns/${campaignId}/tactical/generate`,"POST",{commandId:randomUUID(),name:`Bundled ${stil} ${setting}`,keim:`desktop-assets-${stil}-${setting}`,art:"grundriss",stil,optionen:{setting,profil,zellen:[24,20],raeume:5}});
     evidence.assetProbes.push({stil,setting,status:probe.status,...(probe.status===200?{}:{error:probe.body})});
     console.log(`Packaged asset probe ${stil}/${setting}: HTTP ${probe.status}`);
@@ -81,6 +81,83 @@ try{
     assert.ok(map.body.document.geometry.stamps.some(stamp=>stamp.a.startsWith(`pk.${stil}/`)),`${stil}/${setting} must retain artwork from its packaged asset pack`);
     record(`packaged ${stil} assets generate and persist ${setting} interiors`);
   }
+  const genres=["fantasy","gothic","antike","wuxia","piraten","western","steampunk","noir","cyberpunk","weltraum","postapokalypse","unterwasser"];
+  const packs=await request("/api/packs"),genreManifest=await request("/api/packs/pk.genres/manifest");
+  evidence.genrePack={catalogueStatus:packs.status,manifestStatus:genreManifest.status};
+  assert.equal(packs.status,200,JSON.stringify(packs.body));assert.equal(genreManifest.status,200,JSON.stringify(genreManifest.body));
+  assert.equal(packs.body.find(pack=>pack.id==="pk.genres")?.assetCount,300);
+  assert.equal(genreManifest.body.assets.length,300);
+  evidence.genrePack.genres=Object.fromEntries(genres.map(genre=>[genre,genreManifest.body.assets.filter(asset=>asset.schlagworte.includes(`genre_${genre}`)).length]));
+  assert.deepEqual(Object.values(evidence.genrePack.genres),genres.map(()=>25));
+  const assetFiles=await game.evaluate(async assets=>{
+    const result={verified:0,bytes:0,failures:[]};
+    // Read every shipped file through the real authenticated host. A manifest alone cannot
+    // establish that a packaged SVG exists, has the declared bytes, or survives serving.
+    for(const asset of assets){
+      const response=await fetch(`/api/packs/pk.genres/asset/${asset.datei.split("/").map(encodeURIComponent).join("/")}`);
+      const contentType=response.headers.get("content-type");
+      if(response.status!==200||!contentType?.startsWith("image/svg+xml")){result.failures.push({name:asset.name,status:response.status,contentType});continue;}
+      const bytes=await response.arrayBuffer(),sha256=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),byte=>byte.toString(16).padStart(2,"0")).join("");
+      if(bytes.byteLength!==asset.bytes||sha256!==asset.sha256){result.failures.push({name:asset.name,error:"manifest-bytes-or-hash-mismatch"});continue;}
+      result.verified++;result.bytes+=bytes.byteLength;
+    }
+    return result;
+  },genreManifest.body.assets);
+  Object.assign(evidence.genrePack,assetFiles);assert.deepEqual(assetFiles.failures,[]);assert.equal(assetFiles.verified,300);
+  record("packaged Genre-Archiv serves all 300 SVGs across twelve genres with their exact manifest bytes and SHA256");
+  await game.goto(`${origin}/?campaign=${campaignId}&stage=atlas`);
+  await game.getByRole("button",{name:"Neue Karte",exact:true}).click();
+  const workshop=game.getByRole("region",{name:"Kartenwerkstatt",exact:true});
+  await workshop.getByLabel("Name der Karte",{exact:true}).fill("Desktop genre catalogue");
+  await workshop.getByRole("group",{name:"Größenprofile",exact:true}).getByRole("button",{name:"Weiler",exact:true}).click();
+  await workshop.getByRole("group",{name:"Zeichenstil",exact:true}).getByRole("button",{name:/^Genre-Archiv/}).click();
+  await workshop.locator(".map-seed-field input").fill("desktop-genre-catalogue");
+  const previewResponse=game.waitForResponse(response=>response.url()===`${origin}/api/campaigns/${campaignId}/tactical/generate/preview`&&response.request().method()==="POST");
+  await workshop.getByRole("button",{name:"Vorschau",exact:true}).click();
+  const preview=await previewResponse;assert.equal(preview.status(),200);const previewMap=await preview.json();
+  const savedResponse=game.waitForResponse(response=>response.url()===`${origin}/api/campaigns/${campaignId}/tactical/generate`&&response.request().method()==="POST");
+  await workshop.getByRole("button",{name:"Erzeugen und speichern",exact:true}).click();
+  const saved=await savedResponse;assert.equal(saved.status(),200);const genreMapId=(await saved.json()).ack.subjectId;
+  const genreMap=await request(`/api/campaigns/${campaignId}/tactical/maps/${genreMapId}`);assert.equal(genreMap.status,200);
+  assert.deepEqual(genreMap.body.document,previewMap.document);assert.ok(genreMap.body.document.geometry.stamps.some(stamp=>stamp.a.startsWith("pk.genres/")));
+  const canvas=()=>game.locator('.nested-map-view .tactical-canvas[data-canvas-ready="true"] canvas');
+  await canvas().waitFor({state:"visible"});
+  await game.getByRole("button",{name:"Karte bearbeiten",exact:true}).click();
+  const palette=game.getByRole("region",{name:"Kartenassets",exact:true}),grid=palette.locator(".map-artwork-grid");
+  await palette.getByRole("combobox",{name:"Genre",exact:true}).waitFor({state:"visible"});
+  assert.equal(await palette.getByRole("combobox",{name:"Assetpaket",exact:true}).inputValue(),"pk.genres");
+  const waitForAssets=(count,genre)=>game.waitForFunction(({count,genre})=>{
+    const buttons=[...document.querySelectorAll('[aria-label="Kartenassets"] .map-artwork-grid > button')];
+    return buttons.length===count&&(!genre||buttons.every(button=>button.querySelector("img")?.src.split("/").at(-1)?.startsWith(`${genre}_`)));
+  },{count,genre});
+  await waitForAssets(300);assert.equal(await palette.getByRole("combobox",{name:"Genre",exact:true}).locator("option").count(),13);
+  for(const genre of genres){await palette.getByRole("combobox",{name:"Genre",exact:true}).selectOption(genre);await waitForAssets(25,genre);}
+  evidence.genreCatalogue={mapId:genreMapId,filteredGenres:genres,searches:[]};
+  let selectedAsset;
+  for(const genre of ["fantasy","piraten","cyberpunk"]){
+    selectedAsset=genreManifest.body.assets.find(asset=>asset.art==="moebel"&&asset.schlagworte.includes(`genre_${genre}`));assert.ok(selectedAsset);
+    await palette.getByRole("combobox",{name:"Genre",exact:true}).selectOption(genre);
+    await palette.getByRole("combobox",{name:"Kategorie",exact:true}).selectOption("moebel");
+    await palette.getByRole("textbox",{name:"Assets suchen",exact:true}).fill(selectedAsset.name.replaceAll("_"," "));
+    await waitForAssets(1,genre);await grid.locator("button").scrollIntoViewIfNeeded();
+    const image=await grid.locator("img").evaluate(async image=>{await image.decode();return{width:image.naturalWidth,height:image.naturalHeight};});
+    assert.ok(image.width>0&&image.height>0);await grid.locator("button").click();
+    assert.equal(await grid.locator("button").getAttribute("aria-pressed"),"true");
+    evidence.genreCatalogue.searches.push({genre,name:selectedAsset.name,...image});
+  }
+  await palette.screenshot({path:join(run,"genre-catalogue.png")});
+  await canvas().scrollIntoViewIfNeeded();await game.locator(".nested-map-view").getByRole("button",{name:"Ganze Karte",exact:true}).click();
+  const bounds=await canvas().boundingBox();assert.ok(bounds);await game.mouse.click(bounds.x+bounds.width*.5,bounds.y+bounds.height*.5);
+  const revisionResponse=game.waitForResponse(response=>response.url()===`${origin}/api/campaigns/${campaignId}/tactical/maps/${genreMapId}/revision`&&response.request().method()==="PUT");
+  await game.getByRole("button",{name:"Kartenrevision speichern",exact:true}).click();assert.equal((await revisionResponse).status(),200);
+  await game.waitForFunction(()=>[...document.querySelectorAll("button")].find(button=>button.textContent?.trim()==="Kartenrevision speichern")?.disabled);
+  const revisedGenreMap=await request(`/api/campaigns/${campaignId}/tactical/maps/${genreMapId}`);assert.equal(revisedGenreMap.status,200);
+  const knownStamps=new Set(genreMap.body.document.geometry.stamps.map(stamp=>stamp.id));
+  assert.deepEqual(revisedGenreMap.body.document.geometry.stamps.filter(stamp=>!knownStamps.has(stamp.id)).map(stamp=>stamp.a),[`pk.genres/${selectedAsset.name}`]);
+  assert.equal(revisedGenreMap.body.revision,genreMap.body.revision+1);evidence.genreCatalogue.savedRevision=revisedGenreMap.body.revision;
+  await game.reload();await canvas().waitFor({state:"visible"});
+  assert.deepEqual((await request(`/api/campaigns/${campaignId}/tactical/maps/${genreMapId}`)).body.document,revisedGenreMap.body.document);
+  record("compiled client previews and saves Genre-Archiv, filters twelve genres, searches and decodes three motifs, and persists placed artwork through reload");
   await game.goto(`${origin}/?campaign=${campaignId}&stage=schmiede`);
   const overview=game.getByRole("region",{name:"Was möchtest du vorbereiten?",exact:true});
   await overview.waitFor({state:"visible"});
