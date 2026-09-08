@@ -352,7 +352,15 @@ async function main() {
     paket.push({ name, inhalt: await lies(`${KATALOG_ORDNER}/${name}`) });
   }
   const paketDateien = paket.length;
-  const { katalog, dynamisch, verstoesse: katalogVerstoesse } = verschmelzeKataloge(paket);
+  // Das Verzeichnis in i18n.ts wird von Hand gefuehrt, weil `import.meta.glob` eine
+  // Vite-Eigenheit ist und die esbuild-gebuendelten Browserwirte damit gar nicht mounten.
+  // Eine vergessene Paketdatei bliebe sonst still unuebersetzt.
+  const verzeichnis = await readFile(join(ROOT, "packages/client/src/i18n.ts"), "utf8");
+  const verzeichnisVerstoesse = paket
+    .filter(({ name }) => !verzeichnis.includes(`./i18n/en/${name}`))
+    .map(({ name }) => `unverzeichnet · i18n.ts · ${name} fehlt in textDateien und wird nie geladen`);
+  const { katalog, dynamisch, verstoesse: rohKatalogVerstoesse } = verschmelzeKataloge(paket);
+  const katalogVerstoesse = [...rohKatalogVerstoesse, ...verzeichnisVerstoesse];
   const plural = {};
   for (const [schluessel, formen] of Object.entries(await lies(PLURAL_DATEI).catch(() => ({})))) {
     if (schluessel.startsWith("__")) continue;

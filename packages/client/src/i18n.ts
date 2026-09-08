@@ -34,9 +34,18 @@ let ladung: Promise<EnglischerKatalog> | null = null;
 let quelle: EnglischeQuelle | null = null;
 const hoerer = new Set<() => void>();
 
-/** Ein JSON je Übersetzungspaket, damit die acht Pakete konfliktfrei mergen. */
-const textDateien = import.meta.glob<Record<string, unknown>>("./i18n/en/*.json");
-const pluralDateien = import.meta.glob<Record<string, unknown>>("./i18n/*.plural.json");
+/** Ein JSON je Übersetzungspaket, damit die acht Pakete konfliktfrei mergen. Das Verzeichnis
+ * steht ausdrücklich hier statt als `import.meta.glob`: Der Glob ist eine Vite-Eigenheit, und
+ * die Browserwirte unter `e2e/helpers` bündeln denselben Client mit esbuild, das ihn
+ * unverändert stehen lässt — der Bootstrap wirft dann `glob is not a function` und die
+ * Anwendung mountet gar nicht. `gate:sprache` prüft, dass jede Paketdatei hier steht. */
+const textDateien: (() => Promise<Record<string, unknown>>)[] = [
+  () => import("./i18n/en/P1.json"), () => import("./i18n/en/P2.json"),
+  () => import("./i18n/en/P3.json"), () => import("./i18n/en/P4.json"),
+  () => import("./i18n/en/P5.json"), () => import("./i18n/en/P6.json"),
+  () => import("./i18n/en/P7.json"), () => import("./i18n/en/P8.json"),
+];
+const pluralDateien: (() => Promise<Record<string, unknown>>)[] = [() => import("./i18n/en.plural.json")];
 
 function inhalt(modul: Record<string, unknown>): Record<string, unknown> {
   const wert = "default" in modul ? modul.default : modul;
@@ -45,12 +54,12 @@ function inhalt(modul: Record<string, unknown>): Record<string, unknown> {
 
 async function ausDateien(): Promise<EnglischerKatalog> {
   const texte: Record<string, string> = {}, plural: Record<string, PluralFormen> = {};
-  for (const lade of Object.values(textDateien)) {
+  for (const lade of textDateien) {
     for (const [schluessel, wert] of Object.entries(inhalt(await lade()))) {
       if (!RESERVIERT(schluessel) && typeof wert === "string") texte[schluessel] = wert;
     }
   }
-  for (const lade of Object.values(pluralDateien)) {
+  for (const lade of pluralDateien) {
     for (const [schluessel, wert] of Object.entries(inhalt(await lade()))) {
       if (RESERVIERT(schluessel) || wert === null || typeof wert !== "object") continue;
       const formen = wert as { eins?: unknown; viele?: unknown };
