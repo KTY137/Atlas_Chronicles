@@ -1,6 +1,22 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-08** (Kartenwerkstatt und begehbare Städte umgesetzt und geprüft)
+Updated: **2026-09-08** (Git-Worktree-Hygiene und reproduzierbare Installation)
+
+## Git-Worktree-Hygiene und Veröffentlichung — 2026-09-08
+
+- Der versehentlich vorgemerkte Gitlink `.claude/worktrees/featureliste` wurde nur aus dem
+  Index entfernt. `/.claude/worktrees/` ist jetzt ignoriert; der separate Checkout und sein
+  Branch bleiben erhalten.
+- Ein frischer Checkout von `1c5fdf8` deckte den fehlenden Workspace `@chronicle/chronist`
+  im Lockfile auf. Das Lockfile ist mit den vorhandenen Manifesten synchronisiert;
+  externe Paketversionen und Paketobjekte bleiben unverändert.
+- Nachweise im isolierten Checkout: `npm ci --offline --no-audit --no-fund` und Client-Build
+  erfolgreich. Vollständiges `npm run gate` mit Exit 0: **159 Testdateien / 1.601 Tests grün**,
+  **10 Dateien / 52 Tests übersprungen**; Version, Grenzen, Assets und Typecheck grün.
+  Lokal höchstens zwei Vitest-Worker, keine veränderten Tests oder Zeitlimits. Die
+  PostgreSQL-spezifischen Prüfungen benötigen den separaten Datenbankdienst der CI.
+- Die parallel laufende Karten-Erweiterung (`map-settings-assets-20260908.md` und zugehörige
+  Quelltexte) gehört zu einer anderen Session und ist nicht Teil dieser Veröffentlichung.
 
 ## Kartenwerkstatt und begehbare Städte — Session 2026-09-08
 

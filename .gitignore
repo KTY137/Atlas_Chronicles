@@ -19,6 +19,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Local Claude worktrees (separate Git checkouts)
+/.claude/worktrees/
+
 # Daedalus local state
 .daedalus/
 runs/
