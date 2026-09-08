@@ -31,8 +31,7 @@ describe("packs: serving asset-pack artwork against the real pk.grundriss pack",
     const account = await identity.bootstrap("Packs GM");
     cookie = account.setCookie.split(";")[0]!;
     app = Fastify();
-    // Mirrors the convention every other standalone-route test in this suite uses (media.test.ts):
-    // the real app's Gone -> 404 mapping, reproduced locally so this file does not depend on app.ts.
+    // The real app's Gone -> 404 mapping, reproduced locally so this file does not depend on app.ts.
     app.setErrorHandler((error: FastifyError, _req: FastifyRequest, reply: FastifyReply) =>
       reply.code(error instanceof Gone ? 404 : (typeof error === "object" && error !== null && "validation" in error) ? 400 : 500).send({ error: "unavailable" }));
     registerPacks(app, db, identityConfig);

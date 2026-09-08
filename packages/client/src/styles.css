@@ -103,6 +103,12 @@ details[open] summary { margin-bottom: 20px; color: var(--text); }
 .band-runde { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .band-runde::before { content: "·"; margin-right: 9px; color: var(--text-faint); }
 .band-status { margin-left: auto; }
+.band-connection { flex-shrink: 0; }
+.band-players { display: flex; align-items: center; flex: 1; gap: 12px; min-width: 0; margin: 0; padding: 3px; overflow-x: auto; list-style: none; }
+.band-players:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.band-player { display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; }
+.band-player-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--warning, #a69155); }
+.band-player-dot.online { background: var(--ok, #72a77e); }
 .role-chip { text-transform: uppercase; color: var(--accent); border: 1px solid #d98e3b3d; border-radius: 3px; padding: 3px 7px; font-size: 8px; letter-spacing: .12em; }
 .page-content { padding: 48px 6%; max-width: 1200px; margin: 0 auto; }
 .page-heading, .section-heading { display: flex; gap: 16px; justify-content: space-between; align-items: center; margin-bottom: 25px; }
@@ -309,7 +315,8 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
   .context-bar { padding: 0 12px; gap: 8px; height: 58px; min-height: 58px; }.wordmark strong { display: none; }.wordmark > span { font-size: 25px; }.context-divider { display: none; }
   .campaign-trigger { font-size: 11px; padding: 6px; max-width: calc(100vw - 170px); }.user-name { display: none; }.context-right { gap: 0; }.context-right .button { padding: 7px; }
   .app-main { flex-direction: column; }.rail { flex-direction: row; width: 100%; min-width: 0; min-height: 51px; height: 51px; padding: 0 7px; border-right: 0; border-bottom: 1px solid var(--line); gap: 2px; }.rail-item { flex: 1; min-height: 50px; flex-direction: row; gap: 7px; border-radius: 0; }.rail-item svg { width: 17px; }.rail-item.active { box-shadow: inset 0 -2px var(--accent); }
-  .main-stage { min-height: 0; }.band { height: 36px; min-height: 36px; padding: 0 14px; gap: 9px; font-size: 9px; }.band-mark { font-size: 19px; }.role-chip { font-size: 7px; }.band-status { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .main-stage { min-height: 0; }.band { height: auto; min-height: 36px; padding: 5px 14px; gap: 4px 9px; flex-wrap: wrap; font-size: 9px; }.band-mark { font-size: 19px; }.role-chip { font-size: 7px; }.band-status { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .band-runde { max-width: 30%; }.band-connection { margin-left: auto; }.band-players { order: 1; flex-basis: 100%; }
   .page-content { padding: 28px 20px; }.page-content h1 { font-size: 28px; }.round-grid { grid-template-columns: 1fr; gap: 0; }.panel { padding: 20px; }.campaign-grid { grid-template-columns: 1fr; margin: 27px 0; }.campaign-card { min-height: 175px; }.campaign-card h2 { max-width: 85%; }
   .wiki-layout { display: flex; flex-direction: column; height: auto; min-height: 100%; }.entry-sidebar { border-right: 0; border-bottom: 1px solid var(--line); max-height: 280px; flex-shrink: 0; }.sidebar-heading { padding: 18px 18px 12px; }.sidebar-heading h2 { font-size: 19px; }.sidebar-heading .eyebrow { display: none; }.sidebar-heading .button { min-height: 32px; padding: 5px 9px; }.search-box { margin-bottom: 12px; }.entry-list { display: flex; overflow-x: auto; min-height: 72px; padding: 0 10px 8px; }.entry-item { min-width: 190px; max-width: 190px; width: 190px; padding: 10px; border-radius: 5px; }.entry-item small { -webkit-line-clamp: 1; }.entry-item.active { box-shadow: inset 0 -2px var(--accent); }.sidebar-bottom { display: none; }.sidebar-empty { margin: 0; padding-top: 0; }
   .document-stage { overflow: visible; padding-bottom: 20px; }.document-toolbar { padding: 13px 18px; }.document-toolbar > span { font-size: 10px; }.article-body { padding: 27px 22px 40px; }.article-body h1 { font-size: 28px; }.passage p { font-size: 15px; }.empty-state { padding: 35px 25px; min-height: 300px; }.empty-glyph { font-size: 45px; margin-bottom: 15px; }.empty-state h2 { font-size: 21px; }

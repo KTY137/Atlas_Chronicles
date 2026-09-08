@@ -60,10 +60,9 @@ Wochenunterschiede. Die Schmiede bietet visuellen Regel- und Bogenbau mit
 Testfiguren, Würfel-Trace und ausdrücklich bestätigter Paketmigration. Die
 [Theme- und Publikationswerkstatt](docs/AUTHORING.md) ergänzt vier Presets, lokale
 Leseeinstellungen und die ausdrückliche Freigabe ausgewählter Artikelstände.
-Sprache,
-Video, Bildschirmfreigabe und private Flüsterräume bleiben beim Bühnenwechsel
-verbunden; Einrichtung und geprüfte Grenzen stehen in
-[Medien im Client](docs/MEDIA_UI.md). Aktuelle Nachweise und offene Lieferpunkte
+Das Spielerbanner zeigt Namen und Anwesenheit der verbundenen Runde auch beim
+Bühnenwechsel. Sprach- und Videochat, Bildschirmfreigabe und Sprachräume sind entfernt.
+Aktuelle Nachweise und offene Lieferpunkte
 stehen in [STATUS.md](STATUS.md).
 
 Die Spielleitung kann die vollständige Kampagne als native `.chronicle`-Datei
@@ -75,5 +74,5 @@ benennt auch ausgeschlossene Laufzeitdaten.
 Wer selbst hosten will, beginnt beim [Self-Hosting-Guide](docs/SELFHOSTING.md): er
 stellt die drei Betriebsformen gegenüber, benennt die benötigten Dateien und sagt
 für jede, was geprüft ist. Die Betriebs- und Architekturdetails dahinter stehen in
-[deploy/README.md](deploy/README.md). Öffentliche Domain/TLS und Medien hinter
-NAT benötigen weiterhin eine Prüfung in der tatsächlichen Betriebsumgebung.
+[deploy/README.md](deploy/README.md). Öffentliche Domain/TLS benötigen weiterhin
+eine Prüfung in der tatsächlichen Betriebsumgebung.

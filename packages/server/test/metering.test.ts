@@ -80,15 +80,18 @@ describe("Raumuhr — was eine Kampagne verbraucht hat", () => {
     expect(verbrauch).toMatchObject({ sessions: 0, roomSeconds: 0 });
   });
 
-  it("misst offene Medienräume getrennt von der Raumzeit", async () => {
+  it("ignores retained historical media rooms when reporting session usage", async () => {
     const t = await tisch("Medien");
     const s = await sitzung(t, clock - 3 * STUNDE, clock - STUNDE);
-    await db.query(`INSERT INTO media_rooms(id,campaign_id,session_id,kind,provider_room,created_by,created_at,closed_at)
-      VALUES($1,$2,$3,'table',$4,$5,$6,$7)`, [randomUUID(), t.campaignId, s, `raum-${randomUUID()}`, t.gm, clock - 3 * STUNDE, clock - 2 * STUNDE]);
+    const roomId = randomUUID();
+    await db.query(`INSERT INTO media_rooms(id,campaign_id,session_id,kind,provider_room,created_by,created_at)
+      VALUES($1,$2,$3,'table',$4,$5,$6)`, [roomId, t.campaignId, s, `raum-${randomUUID()}`, t.gm, clock - 3 * STUNDE]);
 
     const verbrauch = await createMetering(db, cfg).campaignUsage(t.gm, t.campaignId);
-    expect(verbrauch.roomSeconds).toBe(2 * 3600);
-    expect(verbrauch.mediaRoomSeconds).toBe(3600);
+    expect(verbrauch).toEqual({ campaignId: t.campaignId, from: 0, to: clock,
+      sessions: 1, openSessions: 0, roomSeconds: 2 * 3600 });
+    expect((await createMetering(db, cfg).allUsage()).find(u => u.campaignId === t.campaignId)).toEqual(verbrauch);
+    expect((await db.query("SELECT closed_at FROM media_rooms WHERE id=$1", [roomId])).rows).toEqual([{ closed_at: null }]);
   });
 
   it("zeigt die Rechnung nur der Spielleitung — nach S1 zahlt genau einer für den Tisch", async () => {

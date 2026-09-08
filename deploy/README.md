@@ -1,7 +1,6 @@
 # Deployment — ein Verbund, zwei Betriebsarten
 
 Grundlage: [`design/08-backend-architektur.md`](../design/08-backend-architektur.md) (Stack, S4 = Ja),
-[`design/07-shell-redesign.md`](../design/07-shell-redesign.md) §5 (drei Netzebenen),
 `OPEN-DECISIONS.md` S3/S4/P11. Hosted Rooms und Self-Host laufen aus **demselben Image** und
 **derselben Compose-Datei**; der gehostete Betrieb setzt nur Regionen und Skalierung davor.
 
@@ -19,12 +18,9 @@ Downgrade: fehlt eine Ebene, benennt die App den Zustand.
 ## Schnellstart (Self-Host)
 
 ```bash
-node deploy/configure-selfhost.mjs chronik.example.org      # schreibt deploy/.env (ohne Medienebene)
-# mit Voice/Video: node deploy/configure-selfhost.mjs chronik.example.org --media <öffentliche IP>
-# DNS: chronik.example.org (und mit --media livekit.chronik.example.org) → dieser Host.
+node deploy/configure-selfhost.mjs chronik.example.org      # schreibt deploy/.env
+# DNS: chronik.example.org → dieser Host.
 docker compose --env-file deploy/.env -f deploy/docker-compose.selfhost.yml --profile tls up -d --build
-# Voice/Video (nur mit --media erzeugter .env; PUBLIC_IP leer ⇒ TURN/ICE kaputt, ohne Startfehler):
-docker compose --env-file deploy/.env -f deploy/docker-compose.selfhost.yml --profile tls --profile media up -d
 ```
 
 Erste Einrichtung: Die App fragt beim ersten Öffnen nach Name und **Einrichtungsschlüssel** — das ist
@@ -35,23 +31,21 @@ Ohne TLS-Profil (LAN): `CHRONICLE_ORIGIN=http://192.168.1.5:3000` und `CHRONICLE
 `deploy/.env`; Spieler öffnen die IP. Der Server prüft `Origin` gegen `CHRONICLE_ORIGIN` — beides muss
 exakt übereinstimmen.
 
-## Die drei Ebenen (07 §5)
+## Textchat und Anwesenheit
 
-| Ebene | Container | Regel |
+| Funktion | Dienst | Übertragung |
 |---|---|---|
-| Befehlsbus | `app` (WebSocket `/api/campaigns/:id/live`, `seq`/resume) | hält, wenn alles andere fällt |
-| Medienebene | `livekit` + `coturn` | Zugangstoken pro Mitgliedschaft aus der App; Räume ↔ Session |
-| Präsenz | Piggyback auf dem Befehlsbus | läuft nie über die Medienebene |
+| Tischbefehle und Textchat | `app` | HTTP; Live-Updates über WebSocket `/api/campaigns/:id/live`, `seq`/resume |
+| Anwesenheit im Spielerbanner | `app` | derselbe WebSocket |
 
-Degradationsleiter, sichtbar und benannt, nie still: **SFU → TURN-Relay → P2P (≤4) → „Sprache liegt
-— der Tisch läuft"**. Das Abschalten von `livekit` darf keinen Tischbefehl anhalten.
+Atlas Chronicles enthält keinen eingebauten Sprach- oder Videochat. Mikrofon, Kamera,
+Bildschirmfreigabe und Sprachräume sind entfernt. Spielerbanner, Textchat und
+App-Anwesenheit bleiben verfügbar; für Gespräche verwendet die Runde eine externe Anwendung.
+Der Verbund benötigt dafür nur `app`, `postgres` und bei eigener Domain das Profil `tls`.
 
-> **Stand 2026-09-07: die Leiter ist Absicht, nicht Zustand.** Gebaut ist die *Trennung* der
-> Ebenen — der Befehlsbus importiert `domain/media.ts` nirgends, fehlende `LIVEKIT_*` sind ein
-> regulärer Zustand, und ein Medienausfall wird zu einem 503, der keinen Tischbefehl anhält.
-> Gebaut ist **nicht** die Umschaltung: Der Client verbindet ausschließlich über LiveKits
-> `Room.connect()`, einen P2P-Fallback gibt es nicht (`docs/MEDIA_UI.md:75` sagt das selbst).
-> Erwarte also SFU oder „Sprache liegt", nicht die vier Stufen.
+Bei bestehenden Installationen bleiben alte lokale Konfigurationsdateien erhalten.
+Früher eingerichtete Sprachdienste werden durch ein App-Update nicht automatisch beendet;
+Betreiber können diese getrennt stilllegen. Das Datenbankvolume bleibt dabei bestehen.
 
 ## Betrieb
 
@@ -72,8 +66,7 @@ Degradationsleiter, sichtbar und benannt, nie still: **SFU → TURN-Relay → P2
   und das Zurückrollen der Anwendung ist **kein** Zurückrollen des Schemas. Vorher sichern.
 - **Health, und die Trennung ist Absicht:** `GET /api/live` beantwortet „läuft der Prozess und bedient er HTTP" **ohne** Datenbank und ist der Container-Healthcheck, also das, was einen Neustart auslöst. `GET /api/ready` macht den Datenbank-Roundtrip mit 2-Sekunden-Budget und ist das, was ein Load Balancer oder ein Betreiber fragt, bevor Verkehr fließt. **Warum getrennt:** hing der Neustart an einem DB-Roundtrip, dann startete ein ausgelasteter Abend den funktionierenden Server neu und der Neustart erhöhte die Last — und eine wirklich ausgefallene Datenbank repariert ein Neustart ohnehin nicht. Beide Sonden sind vom Rate-Limit ausgenommen, damit ein Verkehrsgipfel keinen Scheinausfall meldet. `GET /api/health` bleibt unverändert für seine bisherigen Aufrufer.
 - **Geheimnisse** liegen nur in `deploy/.env` (git-ignored, Modus 600). Nie in Logs, nie in Tickets.
-- **Ports nach außen:** `tls`: 80/443. `media`: 7881/tcp, 50000–50100/udp (SFU), 3478 tcp+udp und
-  49160–49200/udp (TURN). Ohne Profile lauscht nur `127.0.0.1:3000`.
+- **Ports nach außen:** `tls`: 80/443. Ohne Profile lauscht nur `127.0.0.1:3000`.
 
 ## Datenbankbetrieb
 
@@ -100,9 +93,8 @@ Verbindungszeichenkette** — dort steht bereits `search_path` für isolierte Te
 
 ## Was hier verifiziert wurde — und was nicht
 
-- ✅ `docker compose config` löst beide Profile und alle Variablen auf (2026-09-06, lokal).
+- ✅ `docker compose config` löst App + Postgres mit und ohne das Profil `tls` auf (2026-09-08, lokal).
 - ✅ Das Image baut aus `deploy/Dockerfile` (siehe Ledger in `STATUS.md`, Datum des Laufs).
 - ✅ App + Postgres aus diesem Compose lokal hochgefahren (2026-09-06): `/api/health` ok, `/api/setup` required, `/` 200 html, POST ohne Origin → 404, danach `down -v`.
-- ❌ **UNVERIFIED:** Caddy-TLS gegen eine echte Domain; LiveKit/coturn mit `PUBLIC_IP` hinter NAT
-  (die lokale Loopback-Variante liegt unter `deploy/media/`). Beides braucht einen erreichbaren Host und
-  ist die Abnahme von Meilenstein M5, nicht dieser Datei.
+- ❌ **UNVERIFIED:** Caddy-TLS gegen eine echte Domain. Dafür ist ein erreichbarer Host nötig;
+  das gehört zur externen Betriebsabnahme.

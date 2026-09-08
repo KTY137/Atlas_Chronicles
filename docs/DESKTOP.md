@@ -131,10 +131,9 @@ Remote origins must be HTTPS without credentials,
 path, query or fragment. Cross-origin navigation is blocked; an external HTTP(S) link needs
 a separate system-browser confirmation. Certificate validation is unchanged.
 
-Microphone/camera permission requires the known game frame/origin and an explicit dialog.
-Screen sharing presents actual available source names and requires a current user gesture;
-navigation invalidates pending grants. These implemented controls still need real Windows
-device, screen-picker and NVDA acceptance. An automated browser cannot supply that evidence.
+The management, local game and remote game sessions reject microphone, camera and screen
+capture requests without opening a permission dialog or source picker. Built-in voice/video
+chat and screen sharing are removed; the player banner, app presence and text chat remain.
 
 ## Verification and artifacts
 
@@ -240,10 +239,10 @@ injection, and full failure-injection/independent review remain to be delivered.
 recovery and the mandatory pre-migration guard are implemented; their normal live recovery
 path and the pure schema admission cases have the scoped evidence above.
 The existing portable campaign export excludes credentials and is not a full host backup.
-No UI labels it as such. NVDA, Windows Hello, actual media devices, sleep/wake,
+No UI labels it as such. NVDA, Windows Hello, sleep/wake,
 OS reboot, installation without admin rights, and measured installed/idle/load budgets remain
 explicit acceptance gates. LAN/self-host HTTPS topology remains P11; the local host does not
-configure DNS, certificates, firewall, router, TURN or a relay.
+configure DNS, certificates, firewall, router or a relay.
 
 The adopted [desktop design and attack rounds](../design/iterations/desktop-shell-20260906.md)
 remain the full scope; this milestone does not replace them with a wrapper.

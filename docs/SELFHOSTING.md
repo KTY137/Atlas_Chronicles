@@ -16,7 +16,7 @@ ist die Antwort, und die Dateiliste steht unter [Was du wirklich brauchst](#was-
 | Was du können musst | nichts | eine Anwendung starten | Terminal, DNS, Docker |
 | Mitspieler übers Internet | ja | **nein, noch nicht** | ja |
 | Passkeys (Login ohne Passwort) | ja | ja (localhost) | nur mit eigener Domain + TLS |
-| Sprache/Video | ja | ja | optional, eigene Arbeit |
+| Textchat und App-Anwesenheit | ja | ja | ja |
 | Deine Daten gehören dir | ja — `.chronicle`-Export | ja | ja |
 | Stand heute | im Betrieb | unsignierte lokale App | funktioniert, TLS-Kante ungeprüft |
 
@@ -40,7 +40,7 @@ und Fortsetzen, `.chronicle`-Import in eine neue leere Welt, gerätegebundene Si
 
 **Was heute nicht funktioniert — und das ist der entscheidende Satz:** Der lokale Host lauscht
 ausschließlich auf `127.0.0.1`. Er richtet **kein** DNS, **keine** Zertifikate und **keine**
-Firewall-, Router-, TURN- oder Relay-Konfiguration ein. Du kannst damit also **noch keine
+Firewall- oder Router-Konfiguration ein. Du kannst damit also **noch keine
 Mitspieler einladen.** Das ist Minecraft-Singleplayer; „Open to LAN" ist noch nicht gebaut.
 Wer heute mit anderen spielen will, nimmt einen gehosteten Raum oder Weg B.
 
@@ -95,7 +95,7 @@ Die Dateien liegen alle in [`deploy/`](../deploy/) und kommen mit dem Repository
 
 | Datei | Wofür |
 |---|---|
-| `deploy/docker-compose.selfhost.yml` | der Verbund: `app` + `postgres`, dazu die Profile `tls` und `media` |
+| `deploy/docker-compose.selfhost.yml` | der Verbund: `app` + `postgres`, dazu das Profil `tls` |
 | `deploy/Dockerfile` | baut das Image — dasselbe Image, das auch gehostete Räume fahren |
 | `deploy/Caddyfile` | automatisches HTTPS für deine Domain |
 | `deploy/configure-selfhost.mjs` | erzeugt `deploy/.env` mit frischen Geheimnissen |
@@ -184,26 +184,16 @@ Ebene, benennt die App den Zustand.
 stehen haben. Der Server prüft jeden `Origin`-Header dagegen. Ein `https` statt `http`, ein
 fehlender Port oder ein Schrägstrich zu viel, und schreibende Anfragen werden abgewiesen.
 
-### Sprache und Video (optional)
+### Textchat, Spielerbanner und Gespräche
 
-Der Tisch läuft ohne diese Ebene vollständig. Sie ist bewusst abtrennbar: Ein Ausfall von
-Sprache hält nie einen Tischbefehl an. Die Degradationsleiter wird sichtbar benannt, nie
-still durchlaufen: **SFU → TURN-Relay → P2P (bis 4) → „Sprache liegt — der Tisch läuft"**.
+Textchat, Spielerbanner und App-Anwesenheit laufen über den App-Server. Dafür sind keine
+weiteren Dienste, Domains oder Portfreigaben nötig.
 
-```bash
-node deploy/configure-selfhost.mjs chronik.example.org --media 203.0.113.10
-docker compose --env-file deploy/.env -f deploy/docker-compose.selfhost.yml \
-  --profile tls --profile media up -d
-```
-
-Dazu ein zweiter DNS-Eintrag `livekit.chronik.example.org` auf denselben Host und offene
-Ports: 7881/tcp und 50000–50100/udp für den SFU, 3478 tcp+udp und 49160–49200/udp für TURN.
-
-**Sei hier ehrlich zu dir selbst:** Das ist der einzige Teil, der echte Netzwerkarbeit
-verlangt, und er ist gegen eine reale Umgebung hinter NAT noch **nicht verifiziert**. Ist
-`PUBLIC_IP` leer oder falsch, startet alles fehlerfrei und ICE scheitert trotzdem — ein
-Fehlerbild, das schwer zu lesen ist. Halbkonfigurierte Medien lehnt die App dagegen
-absichtlich beim Start ab, damit eine kaputte Einrichtung nicht still bleibt.
+Eingebauter Sprach- und Videochat einschließlich Bildschirmfreigabe und Sprachräumen
+wurde entfernt. Für Gespräche verwendet die Runde eine externe Anwendung.
+Bestehende lokale Konfigurationsdateien werden bei dieser Änderung nicht gelöscht.
+Früher eingerichtete Sprachdienste kann der Betreiber getrennt stilllegen; ein App-Update
+beendet sie nicht automatisch. Das Datenbankvolume bleibt erhalten.
 
 ---
 
@@ -272,8 +262,7 @@ Scheinausfall meldet.
 **Geheimnisse** stehen nur in `deploy/.env`. Nie in Logs, nie in Tickets, nie in einem
 Screenshot fürs Forum.
 
-**Offene Ports nach außen.** Mit `tls`: 80 und 443. Mit `media` zusätzlich 7881/tcp,
-50000–50100/udp, 3478 tcp+udp und 49160–49200/udp. Ohne Profile lauscht ausschließlich
+**Offene Ports nach außen.** Mit `tls`: 80 und 443. Ohne Profile lauscht ausschließlich
 `127.0.0.1:3000` — von außen dann gar nichts.
 
 **Datenbankschrauben.** Die vier Werte unten sind bewusst gesetzt und über die Umgebung
@@ -314,10 +303,6 @@ exakt passen.
 **Kein Passkey-Angebot im Login.** Erwartet, wenn du ohne Domain über eine IP zugreifst.
 `GET /api/reachability` sagt dir, was die App für dieses Origin tatsächlich anbietet.
 
-**Sprache verbindet nicht, aber der Tisch läuft.** Genau so ist die Degradation gedacht.
-Prüfe `PUBLIC_IP` in `deploy/.env` und die UDP-Portfreigaben. Der Tisch bleibt in der
-Zwischenzeit voll benutzbar.
-
 **Der Server verabschiedet sich nach einem Postgres-Neustart.** Behoben: Der Pool hat einen
 `error`-Zuhörer, protokolliert den Vorfall und überlässt dem Pool das Verwerfen der kaputten
 Verbindung. Belegt in `packages/server/test/db-pool.pg.test.ts` gegen echtes PostgreSQL.
@@ -332,7 +317,7 @@ nachmessen musst.
 
 **Geprüft:**
 
-- `docker compose config` löst beide Profile und alle Variablen auf.
+- `docker compose config` löst App + Postgres mit und ohne das Profil `tls` auf.
 - Das Image baut aus `deploy/Dockerfile`.
 - App und Postgres aus diesem Compose lokal hochgefahren: `/api/health` ok, `/api/setup`
   verlangt Einrichtung, `/` liefert 200, POST ohne Origin wird abgewiesen.
@@ -342,7 +327,6 @@ nachmessen musst.
 **Nicht geprüft — hier misst du selbst nach:**
 
 - Die **TLS-Kante gegen eine echte Domain.** Im Test gab es keine öffentliche Domain.
-- **LiveKit und coturn hinter NAT** mit echter `PUBLIC_IP`.
 - Die **LAN-Topologie ohne Domain** ist offener Punkt P11 und deshalb nicht beworben.
 - Der Desktop-Weg hat **keinen signierten Installer und keinen Update-Feed**, und er kann
   **keine Mitspieler von außen bedienen**.

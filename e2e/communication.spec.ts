@@ -29,17 +29,29 @@ const authenticate = (context: BrowserContext, value: string) => context.addCook
 
 test("two browsers exchange persistent posts, recover a lost acknowledgement, reconnect and separate scene chat", async ({ browser }) => {
   const gmContext = await browser.newContext(), playerContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const errors: string[] = [];
+  const errors: string[] = [], mediaRequests: string[] = [];
   try {
     await authenticate(gmContext, gmCookie); await authenticate(playerContext, playerCookie);
     const gm = await gmContext.newPage(), player = await playerContext.newPage();
-    for (const page of [gm, player]) page.on("pageerror", error => errors.push(error.message));
+    for (const page of [gm, player]) {
+      page.on("pageerror", error => errors.push(error.message));
+      page.on("request", request => { if (/\/media(?:\/|\?|$)|livekit/i.test(request.url())) mediaRequests.push(request.url()); });
+    }
     await Promise.all([gm.goto(`${origin}/?campaign=${campaign}&stage=kanal`), player.goto(`${origin}/?campaign=${campaign}&stage=kanal`)]);
     for (const page of [gm, player]) {
       await expect(page.getByRole("heading", { name: "Kampagnenkanal", exact: true })).toBeVisible();
       await expect(page.getByLabel("Live-Verbindung", { exact: true })).toHaveAttribute("data-live-state", "connected");
       await expect(page.getByLabel("Anwesenheit im Kampagnenkanal")).toContainText("Sera Kanal");
+      await expect(page.getByRole("list", { name: "Spieler in der Runde" })).toContainText("Sera Kanal");
+      await expect(page.getByRole("list", { name: "Spieler in der Runde" })).toContainText("Kaya Kanal");
+      await expect(page.getByRole("button", { name: /Sprache|Mikrofon|Kamera|Bildschirm teilen/ })).toHaveCount(0);
     }
+    await gm.screenshot({ path: test.info().outputPath("player-banner-desktop.png"), fullPage: true });
+    await player.setViewportSize({ width: 320, height: 740 });
+    await expect(player.getByRole("list", { name: "Spieler in der Runde" })).toBeVisible();
+    expect(await player.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await player.screenshot({ path: test.info().outputPath("player-banner-phone.png"), fullPage: true });
+    await player.setViewportSize({ width: 390, height: 844 });
 
     let firstCommand: string | undefined;
     await player.route("**/messages", async route => {
@@ -67,10 +79,12 @@ test("two browsers exchange persistent posts, recover a lost acknowledgement, re
 
     await playerContext.setOffline(true);
     await expect(player.getByLabel("Live-Verbindung", { exact: true })).toHaveAttribute("data-live-state", "offline");
+    await expect(player.getByRole("list", { name: "Spieler in der Runde" })).toHaveCount(0);
     await gm.getByLabel("Nachricht an die Kampagne", { exact: true }).fill("Die Tür ist ab sechs offen.");
     await gm.getByRole("button", { name: "Beitrag veröffentlichen", exact: true }).click();
     await playerContext.setOffline(false);
     await expect(player.getByLabel("Live-Verbindung", { exact: true })).toHaveAttribute("data-live-state", "connected");
+    await expect(player.getByRole("list", { name: "Spieler in der Runde" })).toContainText("Sera Kanal");
     await expect(player.locator(".channel-message-body").filter({ hasText: "Die Tür ist ab sechs offen." })).toBeVisible();
 
     const game = createGameplay(db);
@@ -99,6 +113,7 @@ test("two browsers exchange persistent posts, recover a lost acknowledgement, re
     await player.reload();
     await expect(player.locator(".channel-message-body")).toHaveCount(2);
     await gm.getByRole("button", { name: "Runde", exact: true }).click();
+    await expect(gm.getByRole("list", { name: "Spieler in der Runde" })).toContainText("Sera Kanal");
     const downloading = gm.waitForEvent("download");
     await gm.getByRole("button", { name: "Kampagne exportieren", exact: true }).click();
     const download = await downloading, path = test.info().outputPath("campaign.chronicle");
@@ -109,5 +124,6 @@ test("two browsers exchange persistent posts, recover a lost acknowledgement, re
     expect(bundle.tables.campaign_messages.every(message => message.kind === "letter")).toBe(true);
     expect(bundle.tables).not.toHaveProperty("credentials");
     expect(errors).toEqual([]);
+    expect(mediaRequests).toEqual([]);
   } finally { await gmContext.close(); await playerContext.close(); }
 });

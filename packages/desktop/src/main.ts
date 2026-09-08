@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { app, BrowserWindow, dialog, ipcMain, protocol, safeStorage, session, shell, desktopCapturer, Tray, Menu, nativeImage, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, protocol, safeStorage, session, shell, Tray, Menu, nativeImage, type IpcMainInvokeEvent } from "electron";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -82,6 +82,7 @@ async function run() {
   manager.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   manager.webContents.session.setPermissionCheckHandler(() => false);
   manager.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+  manager.webContents.session.setDisplayMediaRequestHandler((_request, callback) => callback({}));
   function sender(event: IpcMainInvokeEvent) {
     if (event.sender !== manager.webContents || !event.senderFrame || event.senderFrame !== manager.webContents.mainFrame || event.senderFrame.url !== SHELL_URL)
       fail("unauthorized", "Verwaltungsaktion ist nur im lokalen Hauptfenster verfügbar.");
@@ -129,33 +130,12 @@ async function run() {
         headers["Content-Security-Policy"] = ["default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'self'"];
       callback({ responseHeaders: headers });
     });
-    let generation = 0;
-    const granted = new Set<string>();
-    const current = () => !game.isDestroyed() && new URL(game.webContents.getURL() || origin).origin === origin;
-    game.webContents.on("did-start-navigation", (_event, _url, _inPlace, isMainFrame) => { if (isMainFrame) { generation++; granted.clear(); } });
     game.webContents.on("will-navigate", (event, url) => { if (new URL(url).origin !== origin) { event.preventDefault(); void external(game, url); } });
     game.webContents.on("will-redirect", (event, url) => { if (new URL(url).origin !== origin) event.preventDefault(); });
     game.webContents.setWindowOpenHandler(details => { void external(game, details.url); return { action: "deny" }; });
-    ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => wc === game.webContents && current() && requestingOrigin === origin && details.isMainFrame && permission === "media" && granted.has("media"));
-    ses.setPermissionRequestHandler((wc, permission, callback, details) => {
-      const permitted = wc === game.webContents && current() && details.isMainFrame && new URL(details.requestingUrl).origin === origin && permission === "media";
-      if (!permitted) { callback(false); return; }
-      const expected = generation;
-      void dialog.showMessageBox(game, { type: "question", title: "Gerätefreigabe", message: `Mikrofon/Kamera für ${origin} freigeben?`, buttons: ["Ablehnen", "Freigeben"], defaultId: 0, cancelId: 0 }).then(result => {
-        const allowed = result.response === 1 && generation === expected && current();
-        if (allowed) granted.add("media"); callback(allowed);
-      }, () => callback(false));
-    });
-    ses.setDisplayMediaRequestHandler((request, callback) => {
-      if (!current() || request.frame !== game.webContents.mainFrame || request.securityOrigin !== origin || !request.userGesture) { callback({}); return; }
-      const expected = generation;
-      void desktopCapturer.getSources({ types: ["screen", "window"], thumbnailSize: { width: 0, height: 0 } }).then(async sources => {
-        const choices = sources.slice(0, 12);
-        const result = await dialog.showMessageBox(game, { title: "Bildschirm teilen", message: "Welche Quelle möchtest du teilen?", buttons: ["Abbrechen", ...choices.map(s => s.name)], defaultId: 0, cancelId: 0 });
-        const source = choices[result.response - 1];
-        if (source && generation === expected && current()) callback({ video: source }); else callback({});
-      }, () => callback({}));
-    });
+    ses.setPermissionCheckHandler(() => false);
+    ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+    ses.setDisplayMediaRequestHandler((_request, callback) => callback({}));
     await game.loadURL(origin);
   }
   async function cleanupRestore() { if (restore) { await rm(restore.path, { force: true }); restore = undefined; } }

@@ -21,8 +21,6 @@ import { registerImports } from "./http/imports.ts";
 import { registerGameplay } from "./http/gameplay.ts";
 import { RuleValidationError } from "@chronicle/rules";
 import { registerRealtime } from "./http/realtime.ts";
-import { registerMedia } from "./http/media.ts";
-import type { MediaServerConfig } from "./domain/media.ts";
 import { registerWeek } from "./http/week.ts";
 import { registerHealth } from "./http/health.ts";
 import { registerHttpLifecycle } from "./http/lifecycle.ts";
@@ -46,7 +44,7 @@ import { registerOperator } from "./http/operator.ts";
 import { registerMetering } from "./http/metering.ts";
 import { AuthoringValidationError } from "./domain/authoring.ts";
 
-export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; livekit?: MediaServerConfig; publicDeliveryEnabled?: boolean }
+export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; publicDeliveryEnabled?: boolean }
 export async function buildApp(db: Db, config: AppConfig) {
   const app = Fastify({ logger: config.logger ?? false, bodyLimit: 2 * 1024 * 1024,
     ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
@@ -198,7 +196,6 @@ export async function buildApp(db: Db, config: AppConfig) {
   registerPublication(app, db, config);
   registerOperator(app, db, config);
   registerMetering(app, db, config);
-  registerMedia(app,db,config,config.livekit);
   await registerRealtime(app,db,config);
   if (config.staticRoot) {
     // `wildcard: false` hat die Routentabelle EINMAL beim Start aus einem Glob gebaut
