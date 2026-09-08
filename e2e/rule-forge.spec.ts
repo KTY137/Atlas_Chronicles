@@ -57,7 +57,7 @@ test("visual package authoring, live play and reviewed migration preserve player
     await editor.getByRole("textbox", { name: /^Name(?:\s|$)/ }).fill("Nordlicht");
     await editor.getByRole("textbox", { name: /Paketkennung/ }).fill(packageId);
     await gm.getByRole("tab", { name: "Attribute", exact: true }).click();
-    await editor.getByRole("button", { name: /Scharfsinn/ }).click();
+    await editor.getByRole("button", { name: /^Scharfsinn / }).click();
     const insight = editor.locator(".rf-card").filter({ has: gm.getByRole("heading", { name: "Scharfsinn", exact: true }) });
     await insight.getByLabel(/^Vorgabewert/).fill("3");
     await insight.getByLabel("Bezeichnung", { exact: true }).fill("Wachsamkeit");
