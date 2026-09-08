@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
+import { I18nStub } from "../src/i18n.ts";
 
 type Element = { type: string | ((props: any) => Element); props: any; key?: string; rendered?: Element };
 type Fiber = { slots: any[]; cursor: number };
@@ -53,6 +54,7 @@ function tableHarness(requests: { openTab?: { tab: string; request: number }; op
       document: { getElementById: () => ({ focus() {} }) },
       window: { confirm: (message: string) => { confirmations.push(message); return true; }, history: { replaceState: (_state: unknown, _title: string, url: URL) => { location.href = String(url); location.search = url.search; } } },
       require: (name: string) => {
+        if (name === "../i18n" || name === "./i18n" || name === "../../i18n") return I18nStub;
         if (name === "react") return react;
         if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "Fragment" };
         if (name === "../navigation") return load("navigation.ts");

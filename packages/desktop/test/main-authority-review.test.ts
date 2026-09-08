@@ -57,7 +57,15 @@ async function harness() {
       this.url = url; this.webContents.mainFrame.url = url;
     }
   }
-  const profiles = { list: vi.fn(async () => []), create: vi.fn(), readSetupReceipt: vi.fn(async () => undefined), clearSetupReceipt: vi.fn(async () => undefined) };
+  const configPath = "C:/test-only-unused-profile/chronist-providers.json";
+  const profiles = {
+    list: vi.fn(async (): Promise<{ id: string; name: string }[]> => []), create: vi.fn(),
+    readSetupReceipt: vi.fn(async () => undefined), clearSetupReceipt: vi.fn(async () => undefined),
+    hasChronistKey: vi.fn(async (_id: string) => false),
+    saveChronistKey: vi.fn(async (_id: string, _value: string) => undefined),
+    clearChronistKey: vi.fn(async (_id: string) => undefined),
+    chronistHostConfig: vi.fn(async (_id: string) => ({ key: "synthetic-test-key", configPath })),
+  };
   let host!: FakeHost;
   class FakeHost {
     state = "stopped";
@@ -65,8 +73,12 @@ async function harness() {
     ready: { origin: string; setupRequired: boolean; nodeVersion: string; decoder: string } | undefined;
     failure: string | undefined;
     request = vi.fn(async (_kind: string, _payload?: unknown): Promise<unknown> => undefined);
-    constructor(_store: unknown, _assets: unknown, _runtime: unknown, readonly changed: () => void) { host = this; }
+    chronist: unknown;
+    constructor(_store: unknown, _assets: unknown, _runtime: unknown, readonly changed: () => void, _migrations?: unknown,
+                readonly chronistHostOf?: (profileId: string) => Promise<unknown>) { host = this; }
     async start(id: string) {
+      // Production decrypts the profile's Chronist setup here; a missing reader must show up.
+      this.chronist = await this.chronistHostOf?.(id);
       this.owned = { profile: { id } };
       this.ready = { origin: localOrigin, setupRequired: true, nodeVersion: "24.test", decoder: "test" };
       this.state = "ready"; this.changed(); return this.ready;
@@ -192,4 +204,28 @@ it("retains the committed first-login credential in its bound profile session wh
   }));
   expect(h.fromPartition(partitionFor(localOrigin)).cookies.flushStore).toHaveBeenCalledOnce();
   expect(h.windows).toHaveLength(1);
+});
+
+it("hands the private Chronist reader to the controller when a world starts", async () => {
+  const h = await harness();
+  expect((await h.invoke({ kind: "start", profileId })).ok).toBe(true);
+  expect(h.profiles.chronistHostConfig, "Ohne übergebenen Leser bleibt der Schlüssel des Profils wirkungslos").toHaveBeenCalledExactlyOnceWith(profileId);
+  expect(h.host.chronist).toEqual({ key: "synthetic-test-key", configPath: "C:/test-only-unused-profile/chronist-providers.json" });
+  expect(JSON.stringify(await h.invoke({ kind: "status" })), "Kein Schlüssel in einer Statusantwort").not.toContain("synthetic-test-key");
+});
+
+it("stores a Chronist key only for an existing own world and never answers with its value", async () => {
+  const h = await harness();
+  h.profiles.list.mockResolvedValue([{ id: profileId, name: "Isolated test" }]);
+  const stored = await h.invoke({ kind: "chronist-key", profileId, action: "set", value: "synthetic-test-key" });
+  expect(stored.ok).toBe(true);
+  expect(h.profiles.saveChronistKey).toHaveBeenCalledExactlyOnceWith(profileId, "synthetic-test-key");
+  expect(JSON.stringify(stored.value), "Die Antwort ist der gewöhnliche Status ohne Schlüssel").not.toContain("synthetic-test-key");
+  // A well-formed but foreign profile is refused before any profile file is touched.
+  const foreign = await h.invoke({ kind: "chronist-key", profileId: "22222222-2222-4222-8222-222222222222", action: "set", value: "synthetic-test-key" });
+  expect(foreign.ok).toBe(false);
+  expect(h.profiles.saveChronistKey).toHaveBeenCalledOnce();
+  expect((await h.invoke({ kind: "chronist-key", profileId, action: "clear" })).ok).toBe(true);
+  expect(h.profiles.clearChronistKey).toHaveBeenCalledExactlyOnceWith(profileId);
+  expect(h.profiles.hasChronistKey, "Der Status fragt nur, ob ein Schlüssel existiert").toHaveBeenCalledWith(profileId);
 });

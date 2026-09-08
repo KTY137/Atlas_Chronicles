@@ -2,12 +2,15 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /** Explicit operating boundary. Importing this module never reads checkout settings,
  * starts a listener, registers process handlers, or opens a database. */
-import { buildApp } from "./app.ts";
+import { buildApp, drainAppChronist } from "./app.ts";
 import { createPgDb, migrate, type Db } from "./db/index.ts";
 import { createIdentity } from "./identity/index.ts";
 import { inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm } from "./domain/bundles.ts";
 import { parseCurrentCampaignBundle, CAMPAIGN_BUNDLE_V5_LIMITS } from "@chronicle/io";
 import sharp from "sharp";
+import type { ChronistRuntimeConfig } from "./domain/chronist/runtime.ts";
+export { loadChronistRuntime, CHRONIST_UNCONFIGURED_MODEL, CHRONIST_ANTHROPIC_PROFILE, CHRONIST_ANTHROPIC_BASE_URL,
+  CHRONIST_ANTHROPIC_KEY_ENV, CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING } from "./chronist-providers/registry.ts";
 
 export { createPgDb } from "./db/index.ts";
 export interface EmbeddedHostConfig {
@@ -15,6 +18,7 @@ export interface EmbeddedHostConfig {
   origin: string;
   cookieSecret: string;
   staticRoot: string;
+  chronist?: ChronistRuntimeConfig;
 }
 
 export function validateEmbeddedHostConfig(config: EmbeddedHostConfig): number {
@@ -40,10 +44,12 @@ export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?:
     const png = await sharp({ create: { width: 2, height: 2, channels: 4, background: "#294c60" } }).png().toBuffer();
     const decoder = await sharp(png).metadata();
     if (decoder.width !== 2 || decoder.format !== "png") throw new Error("Native decoder self-check failed.");
-    app = await buildApp(db, { ...identityConfig, bootstrapToken: "", staticRoot: config.staticRoot, publicDeliveryEnabled: false });
+    app = await buildApp(db, { ...identityConfig, bootstrapToken: "", staticRoot: config.staticRoot, publicDeliveryEnabled: false,
+      ...(config.chronist ? { chronist: config.chronist } : {}) });
     await app.listen({ host: "127.0.0.1", port });
   } catch (error) {
-    await app?.close();
+    if (app) { await drainAppChronist(app); await app.close(); }
+    else await config.chronist?.close?.();
     await db.close();
     throw error;
   }
@@ -84,7 +90,7 @@ export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?:
       // A failed drain must not close the pool beneath active work.
       // Keep commands closed after failure, but permit an explicit shutdown retry.
       draining = true;
-      closing ??= app!.close().then(() => db.close()).catch(error => { closing = undefined; throw error; });
+      closing ??= drainAppChronist(app!).then(() => app!.close()).then(() => db.close()).catch(error => { closing = undefined; throw error; });
       return closing;
     },
   };

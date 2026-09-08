@@ -6,6 +6,7 @@ import { webcrypto } from "node:crypto";
 import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, it } from "vitest";
+import { I18nStub } from "../src/i18n.ts";
 
 const source = transformSync(readFileSync(new URL("../src/features/useCampaignLive.ts", import.meta.url), "utf8"), { loader: "ts", format: "cjs" }).code;
 
@@ -62,7 +63,7 @@ function harness() {
   const timeout = (fn: () => void, delay: number, interval = false) => { const id = ++timerId; timers.set(id, { fn, at: now + delay, period: interval ? delay : 0 }); return id; };
   const mod = { exports: {} as any };
   runInNewContext(source, {
-    module: mod, exports: mod.exports, require: (name: string) => name === "react" ? react : api,
+    module: mod, exports: mod.exports, require: (name: string) => name === "../i18n" || name === "./i18n" || name === "../../i18n" ? I18nStub : name === "react" ? react : api,
     URL, WebSocket: Socket, window, document, navigator, location: { href: "https://atlas.example/?campaign=campaign-a" },
     AbortController, crypto: webcrypto, Date: { now: () => now },
     setTimeout: (fn: () => void, delay: number) => timeout(fn, delay), clearTimeout: (id: number) => timers.delete(id),

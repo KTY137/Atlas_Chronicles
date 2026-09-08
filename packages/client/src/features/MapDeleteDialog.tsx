@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { MapDeletionAck, MapDeletionPreview, MapReference } from "@chronicle/protocol";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, ApiError, errorText } from "../api";
+import { plural, t } from "../i18n";
 import { useCommand } from "./game-api";
 import "./map-context-menu.css";
 
@@ -34,24 +35,24 @@ export function MapDeleteDialog({ campaignId, target, onClose, onDeleted }: {
       if (mounted.current) onDeleted(ack);
     } catch (failure) {
       if (!mounted.current) return;
-      if (failure instanceof ApiError && failure.status === 409) { setStale(true); setError("Die Karten oder ihre Verwendung haben sich geändert. Lade die Löschvorschau neu und prüfe sie erneut."); }
+      if (failure instanceof ApiError && failure.status === 409) { setStale(true); setError(t("Die Karten oder ihre Verwendung haben sich geändert. Lade die Löschvorschau neu und prüfe sie erneut.")); }
       else setError(errorText(failure));
     } finally { submitting.current = false; if (mounted.current) setBusy(false); }
   };
   return <dialog ref={dialog} className="map-delete-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); if (!submitting.current) onClose(); }}>
-    <h2 id={titleId}>Karte löschen</h2>
-    {loading ? <Loading text="Karten und Unterkarten werden geprüft …" /> : null}
-    {preview ? <><p><strong>{preview.root.name}</strong> wird aus der Kartenbibliothek entfernt. {preview.maps.length > 1 ? `Dazu gehören ${preview.maps.length-1} verbundene Unterkarten.` : ""}</p>
-      <section aria-label="Karten zum Löschen"><h3>{preview.maps.length === 1 ? "Diese Karte wird gelöscht" : `${preview.maps.length} Karten werden gelöscht`}</h3>
-        <ul className="map-delete-list">{preview.maps.map(map => <li key={`${map.kind}:${map.id}`}><span>{map.name}</span><small>{map.kind === "atlas" ? "Weltkarte" : "Orts- oder Gebäudekarte"} · Version {map.version}</small></li>)}</ul></section>
-      {preview.incoming ? <p>Der Eingang in <strong>{preview.incoming.parentName}</strong> wird wieder frei. Dort kann später ein neuer Innenraum entstehen.</p> : null}
-      {preview.affectedPlans.length ? <section aria-label="Betroffene Szenenvorbereitungen"><h3>Szenen brauchen danach eine neue Karte</h3><ul>{preview.affectedPlans.map(plan => <li key={plan.sceneId}>{plan.name}</li>)}</ul></section> : null}
-      {preview.blockers.length ? <Notice error><p>Diese Karten werden in laufenden Szenen verwendet. Beende diese Szenen, bevor du die Karten löschst.</p><ul>{preview.blockers.map(blocker => <li key={blocker.sessionId}>{blocker.name}</li>)}</ul></Notice> : null}
+    <h2 id={titleId}>{t("Karte löschen")}</h2>
+    {loading ? <Loading text={t("Karten und Unterkarten werden geprüft …")} /> : null}
+    {preview ? <><p>{t("{name} wird aus der Kartenbibliothek entfernt.", { name: preview.root.name })} {preview.maps.length > 1 ? t("Dazu gehören {anzahl} verbundene Unterkarten.", { anzahl: preview.maps.length-1 }) : ""}</p>
+      <section aria-label={t("Karten zum Löschen")}><h3>{plural(preview.maps.length, "Diese Karte wird gelöscht", "{n} Karten werden gelöscht")}</h3>
+        <ul className="map-delete-list">{preview.maps.map(map => <li key={`${map.kind}:${map.id}`}><span>{map.name}</span><small>{map.kind === "atlas" ? t("Weltkarte") : t("Orts- oder Gebäudekarte")} · {t("Version {version}", { version: map.version })}</small></li>)}</ul></section>
+      {preview.incoming ? <p>{t("Der Eingang in {name} wird wieder frei. Dort kann später ein neuer Innenraum entstehen.", { name: preview.incoming.parentName })}</p> : null}
+      {preview.affectedPlans.length ? <section aria-label={t("Betroffene Szenenvorbereitungen")}><h3>{t("Szenen brauchen danach eine neue Karte")}</h3><ul>{preview.affectedPlans.map(plan => <li key={plan.sceneId}>{plan.name}</li>)}</ul></section> : null}
+      {preview.blockers.length ? <Notice error><p>{t("Diese Karten werden in laufenden Szenen verwendet. Beende diese Szenen, bevor du die Karten löschst.")}</p><ul>{preview.blockers.map(blocker => <li key={blocker.sessionId}>{blocker.name}</li>)}</ul></Notice> : null}
     </> : null}
     {error ? <Notice error>{error}</Notice> : null}
-    <div className="map-delete-actions"><Button autoFocus disabled={busy} onClick={onClose}>Abbrechen</Button>
-      {stale || !loading && (!preview || preview.blockers.length > 0) ? <Button disabled={busy} onClick={() => setRefresh(value => value+1)}>Löschvorschau neu laden</Button> : null}
-      <Button variant="primary" className="map-delete-confirm" disabled={loading || busy || stale || !preview || !!preview.blockers.length} onClick={() => void remove()}>{busy ? "Wird gelöscht …" : preview && preview.maps.length > 1 ? `${preview.maps.length} Karten löschen` : "Karte endgültig löschen"}</Button>
+    <div className="map-delete-actions"><Button autoFocus disabled={busy} onClick={onClose}>{t("Abbrechen")}</Button>
+      {stale || !loading && (!preview || preview.blockers.length > 0) ? <Button disabled={busy} onClick={() => setRefresh(value => value+1)}>{t("Löschvorschau neu laden")}</Button> : null}
+      <Button variant="primary" className="map-delete-confirm" disabled={loading || busy || stale || !preview || !!preview.blockers.length} onClick={() => void remove()}>{busy ? t("Wird gelöscht …") : preview && preview.maps.length > 1 ? t("{anzahl} Karten löschen", { anzahl: preview.maps.length }) : t("Karte endgültig löschen")}</Button>
     </div>
   </dialog>;
 }

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useMemo } from "react";
 import { evaluateVitals, type AnyRulePackage, type Scalar, type VitalReading } from "@chronicle/rules";
+import { t } from "../i18n";
 import "./vitalanzeige.css";
 
 /**
@@ -18,6 +19,9 @@ import "./vitalanzeige.css";
  *
  * **Die Zahl steht immer da.** Der Balken ist die Illustration, nicht die Aussage: wer ihn nicht
  * sieht — Farbenblindheit, schmales Fenster, abgeschaltete Stile —, liest trotzdem „37 / 100".
+ *
+ * Die Beschriftung eines Vitalwerts stammt aus dem Regelpaket und bleibt dessen Text: sie ist
+ * Inhalt der Runde, nicht Oberfläche dieses Programms.
  */
 
 export function Vitalanzeige({ pkg, fields, kompakt = false }: {
@@ -48,8 +52,8 @@ export function Vitalanzeige({ pkg, fields, kompakt = false }: {
         {/* Erschöpfung als WORT, nicht nur als leerer Balken: was Niederlage bedeutet, hat das
             Regelpaket erklärt, und wer es liest, soll es lesen können. */}
         {vital.depleted ? <p className="vitalwert-hinweis">{vital.depletion === "defeat"
-          ? "Aufgebraucht — die Spielleitung kann die Niederlage bestätigen."
-          : "Aufgebraucht."}</p> : null}
+          ? t("Aufgebraucht — die Spielleitung kann die Niederlage bestätigen.")
+          : t("Aufgebraucht.")}</p> : null}
       </div>;
     })}
   </div>;

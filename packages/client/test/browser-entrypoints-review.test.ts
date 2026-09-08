@@ -16,6 +16,7 @@ const builtins = new Set(builtinModules.map(name => name.replace(/^node:/, "")))
 const browserBoundary: Plugin = {
   name: "review-browser-boundary",
   setup(builder) {
+    builder.onResolve({ filter: /(?:^|\/)i18n$/ }, () => ({ path: "i18n", external: true }));
     builder.onResolve({ filter: /^[^./]/ }, args => {
       if (args.path.startsWith("node:") || builtins.has(args.path)) {
         return { errors: [{ text: `Node builtin ${args.path} reached from ${args.importer}` }] };

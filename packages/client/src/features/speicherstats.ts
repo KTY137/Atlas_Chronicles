@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { ActorCard, ItemCard, LootRarityValue } from "@chronicle/protocol";
+import { t } from "../i18n";
 
 /**
  * Der Speicherstand: was es gibt, wie viel davon, und **wo es liegt**.
@@ -68,7 +69,7 @@ export function speicherstats(items: readonly ItemCard[], actors: readonly Actor
       const vorhanden = eintrag.vergaben.get(item.holderActorId);
       if (vorhanden) { vorhanden.stuecke += menge; vorhanden.karten += 1; }
       else eintrag.vergaben.set(item.holderActorId, {
-        actorId: item.holderActorId, name: namen.get(item.holderActorId) ?? "Unbekannte Figur", stuecke: menge, karten: 1,
+        actorId: item.holderActorId, name: namen.get(item.holderActorId) ?? t("Unbekannte Figur"), stuecke: menge, karten: 1,
       });
     }
   }

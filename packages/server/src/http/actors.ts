@@ -3,14 +3,16 @@
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
 import * as P from "../../../protocol/src/actors.ts";
+import * as F from "../../../protocol/src/figurantrag.ts";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createIdentity } from "../identity/index.ts";
 import { ActorValidationError, createActors } from "../domain/actors.ts";
+import { createFigurantrag } from "../domain/figurantrag.ts";
 
 /** The existing app supplies authenticated-cookie, Origin, rate-limit and error policies. */
 export function registerActors(app: FastifyInstance, db: Db, config: IdentityConfig) {
-  const identity = createIdentity(db, config), actors = createActors(db, config);
+  const identity = createIdentity(db, config), actors = createActors(db, config), antraege = createFigurantrag(db, config);
   const auth = async (cookie: string | undefined) => (await identity.authenticate(cookie)).userId;
   const base = "/api/campaigns/:campaignId";
   type Scope = { campaignId: string }; type Item = Scope & { id: string }; type Controller = Item & { userId: string };
@@ -32,6 +34,9 @@ export function registerActors(app: FastifyInstance, db: Db, config: IdentityCon
   app.put<{ Params: Scope; Body: Static<typeof P.ReaderPerspectiveUpdate> }>(`${base}/reader-perspective`, { schema: { body: P.ReaderPerspectiveUpdate } }, async req => actors.setReaderPerspective(await auth(req.headers.cookie), req.params.campaignId, req.body));
 
   app.get<{ Params: Scope }>(`${base}/actor-templates`, async req => actors.listActorTemplates(await auth(req.headers.cookie), req.params.campaignId));
+  // Vor `:id` eingetragen: `freigegeben` ist ein fester Pfad, kein Vorlagenname. Die
+  // Spielerprojektion der freigegebenen Vorlagen — ohne Beute, ohne fremden Artikelverweis.
+  app.get<{ Params: Scope }>(`${base}/actor-templates/freigegeben`, async req => antraege.freigegebeneVorlagen(await auth(req.headers.cookie), req.params.campaignId));
   app.get<{ Params: Item; Querystring: Static<typeof revisionQuery> }>(`${base}/actor-templates/:id`, { schema: { querystring: revisionQuery } }, async req => actors.getActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision)));
   app.post<{ Params: Scope; Body: Static<typeof P.ActorTemplateCreate> }>(`${base}/actor-templates`, { schema: { body: P.ActorTemplateCreate } }, async req => actors.createActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.body));
   app.put<{ Params: Item; Body: Static<typeof P.ActorTemplateRevise> }>(`${base}/actor-templates/:id`, { schema: { body: P.ActorTemplateRevise } }, async req => actors.reviseActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
@@ -48,4 +53,20 @@ export function registerActors(app: FastifyInstance, db: Db, config: IdentityCon
   app.put<{ Params: Item; Body: Static<typeof P.ItemUpdate> }>(`${base}/items/:id`, { schema: { body: P.ItemUpdate } }, async req => actors.updateItem(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.post<{ Params: Item; Body: Static<typeof P.ItemCustodyChange> }>(`${base}/items/:id/custody`, { schema: { body: P.ItemCustodyChange } }, async req => actors.transferItem(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.post<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/items/:id/archive`, { schema: { body: P.ArchiveObject } }, async req => actors.archiveItem(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
+
+  /**
+   * Der Figurantrag. Die Rechte liegen in der Domain — hier steht keine zweite Rollenprüfung,
+   * die von ihr abweichen könnte. `Conflict`, `Gone` und `ActorValidationError` beantwortet der
+   * Fehlerbehandler der Anwendung wie bei jeder anderen Figurenroute auch.
+   */
+  app.put<{ Params: Item; Body: Static<typeof F.FigurvorlageFreigabeBody> }>(`${base}/actor-templates/:id/freigabe`, { schema: { body: F.FigurvorlageFreigabeBody } }, async req => antraege.freigeben(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body.expectedVersion));
+  app.post<{ Params: Item; Body: Static<typeof F.FigurvorlageFreigabeBody> }>(`${base}/actor-templates/:id/freigabe/entziehen`, { schema: { body: F.FigurvorlageFreigabeBody } }, async req => antraege.entziehen(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body.expectedVersion));
+  app.get<{ Params: Scope }>(`${base}/figurantraege`, async req => antraege.liste(await auth(req.headers.cookie), req.params.campaignId));
+  // Die Befehls-ID steht im Körper, nicht in der Route: sie gehört zur Anfrage, deren
+  // Wiederholung dieselbe Antwort bekommen soll.
+  app.post<{ Params: Scope; Body: Static<typeof F.FigurantragAntragBody> }>(`${base}/figurantraege`, { schema: { body: F.FigurantragAntragBody } }, async req => antraege.beantragen(await auth(req.headers.cookie), req.params.campaignId, req.body.commandId,
+    { templateId: req.body.templateId, name: req.body.name, anfangswerte: req.body.anfangswerte }));
+  app.post<{ Params: Item; Body: Static<typeof F.FigurantragEntscheidungBody> }>(`${base}/figurantraege/:id/zuruecknehmen`, { schema: { body: F.FigurantragEntscheidungBody } }, async req => antraege.zuruecknehmen(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body.expectedVersion));
+  app.post<{ Params: Item; Body: Static<typeof F.FigurantragEntscheidungBody> }>(`${base}/figurantraege/:id/bestaetigen`, { schema: { body: F.FigurantragEntscheidungBody } }, async req => antraege.bestaetigen(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body.expectedVersion));
+  app.post<{ Params: Item; Body: Static<typeof F.FigurantragAblehnungBody> }>(`${base}/figurantraege/:id/ablehnen`, { schema: { body: F.FigurantragAblehnungBody } }, async req => antraege.ablehnen(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body.expectedVersion, req.body.reason));
 }

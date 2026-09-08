@@ -4,7 +4,31 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, readdir, rename, rm, lstat, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join } from "node:path";
-import { contained, fail, label, object, profileId } from "./policy.ts";
+import { CHRONIST_ANTHROPIC_BASE_URL, CHRONIST_ANTHROPIC_KEY_ENV, CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING,
+  CHRONIST_ANTHROPIC_PROFILE, CHRONIST_UNCONFIGURED_MODEL } from "@chronicle/server/host";
+import { chronistKey, contained, fail, label, object, profileId } from "./policy.ts";
+
+export const CHRONIST_KEY_FILE = "chronist-key.dpapi";
+export const CHRONIST_PROVIDERS_FILE = "chronist-providers.json";
+/** The profile's own operator file. It carries no key: the key is named, not contained.
+ *  Profile, addresses, model names and prices are the registry's documented defaults, so this file
+ *  and the host cannot drift apart. The local entry keeps the server's unconfigured placeholder:
+ *  the host fills it in from its own Ollama tag discovery and leaves any concrete model entered
+ *  here untouched. Both Anthropic entries name the same key variable, so a stored key makes both
+ *  available and no key leaves both visibly unavailable. */
+const anthropic = (id: string, label: string, model: string) => ({ id, label, profileId: CHRONIST_ANTHROPIC_PROFILE,
+  location: "fremd", baseUrl: CHRONIST_ANTHROPIC_BASE_URL, models: [model], apiKeyEnv: CHRONIST_ANTHROPIC_KEY_ENV,
+  pricing: CHRONIST_ANTHROPIC_PRICING[model] });
+export const CHRONIST_PROVIDER_DEFAULTS = {
+  schemaVersion: 1,
+  globalConcurrency: 2,
+  providers: [
+    { id: "ollama", label: "Ollama auf diesem Rechner", profileId: "ollama-chat-1", location: "lokal",
+      baseUrl: "http://127.0.0.1:11434", models: [CHRONIST_UNCONFIGURED_MODEL], available: false },
+    anthropic("anthropic", "Anthropic", CHRONIST_ANTHROPIC_MODELS.standard),
+    anthropic("anthropic-haiku", "Anthropic (Sparmodus)", CHRONIST_ANTHROPIC_MODELS.economy),
+  ],
+} as const;
 
 export interface SecretBox { available(): boolean; encrypt(text: string): Buffer; decrypt(bytes: Buffer): string }
 export interface Profile { version: 1; id: string; name: string; createdAt: string; httpPort: number; pgPort: number; pgMajor: 17 }
@@ -123,5 +147,47 @@ export class ProfileStore {
   async clearSetupReceipt(id: string, value: string): Promise<void> {
     const receipt = await this.readSetupReceipt(id);
     if (receipt?.value === value) await rm(contained(this.root, profileId(id), "setup-receipt.dpapi"));
+  }
+  private chronistKeyPath(id: string): string { return contained(this.root, profileId(id), CHRONIST_KEY_FILE); }
+  /** Management only ever learns whether a key exists, never its value. */
+  async hasChronistKey(id: string): Promise<boolean> {
+    const stats = await lstat(this.chronistKeyPath(id)).catch(() => undefined);
+    return stats?.isFile() === true;
+  }
+  async saveChronistKey(id: string, value: string): Promise<void> {
+    if (!this.box.available()) fail("encryption-unavailable", "Windows-Geheimnisspeicher ist nicht verfügbar. Der Chronist-Schlüssel wird nicht gespeichert.");
+    const key = chronistKey(value), directory = contained(this.root, profileId(id));
+    const temporary = join(directory, `chronist-key-${randomUUID()}.tmp`);
+    const file = await open(temporary, "wx", 0o600);
+    try {
+      // Only the authenticated OS-bound ciphertext is ever persisted, bound to its own profile.
+      try { await file.writeFile(this.box.encrypt(JSON.stringify({ version: 1, profileId: id, provider: "anthropic", value: key }))); await file.sync(); }
+      finally { await file.close(); }
+      await rename(temporary, join(directory, CHRONIST_KEY_FILE));
+    } catch (error) { await rm(temporary, { force: true }); throw error; }
+  }
+  async readChronistKey(id: string): Promise<string | undefined> {
+    const bytes = await readFile(this.chronistKeyPath(id)).catch(error => { if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined; throw error; });
+    if (!bytes) return undefined;
+    if (!this.box.available()) return fail("encryption-unavailable", "Windows-Geheimnisspeicher ist nicht verfügbar. Der Chronist-Schlüssel bleibt ungelesen.");
+    if (bytes.length > 65_536) fail("chronist-key", "Der gespeicherte Chronist-Schlüssel ist beschädigt.");
+    let stored: Record<string, unknown>;
+    // Neither a decryption nor a parse failure may quote the protected material.
+    try { stored = object(JSON.parse(this.box.decrypt(bytes)), ["version", "profileId", "provider", "value"]); }
+    catch { return fail("chronist-key", "Der gespeicherte Chronist-Schlüssel ist nicht lesbar. Bitte im Verwaltungsfenster neu setzen oder entfernen."); }
+    if (stored["version"] !== 1 || stored["profileId"] !== profileId(id) || stored["provider"] !== "anthropic")
+      fail("chronist-key", "Der gespeicherte Chronist-Schlüssel gehört nicht zu diesem Profil.");
+    return chronistKey(stored["value"]);
+  }
+  async clearChronistKey(id: string): Promise<void> { await rm(this.chronistKeyPath(id), { force: true }); }
+  /** Read at world start: a stored key only works with an operator file, so the profile
+   *  writes its own once. An existing file is never rewritten; the key never enters it. */
+  async chronistHostConfig(id: string): Promise<{ key?: string; configPath?: string }> {
+    const key = await this.readChronistKey(id);
+    if (key === undefined) return {};
+    const path = contained(this.root, profileId(id), CHRONIST_PROVIDERS_FILE);
+    await writeFile(path, `${JSON.stringify(CHRONIST_PROVIDER_DEFAULTS, null, 2)}\n`, { flag: "wx", mode: 0o600 })
+      .catch(error => { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; });
+    return { key, configPath: path };
   }
 }

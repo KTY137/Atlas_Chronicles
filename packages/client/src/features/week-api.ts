@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { ApiError, type EntryDocument, type ProjectedPassage } from "../api";
+import { t } from "../i18n";
 import type { DoorCard } from "./game-api";
 
 export interface FictionClock { day: number; label: string; postDays: number; version: number }
@@ -40,11 +41,11 @@ export function createLetterSubmission(transport: (request: SendLetterRequest) =
   let inFlight: Promise<LetterDetail> | null = null;
   return {
     get pending() { return pending?.request ?? null; },
-    discard() { if (inFlight) throw new Error("Der Versand läuft noch."); pending = null; },
+    discard() { if (inFlight) throw new Error(t("Der Versand läuft noch.")); pending = null; },
     submit(draft: LetterDraft): Promise<LetterDetail> {
       const body = { fromActorId: draft.fromActorId, toActorIds: [...draft.toActorIds].sort(), passageIds: [...draft.passageIds].sort(), note: draft.note };
       const fingerprint = JSON.stringify(body);
-      if (pending && pending.fingerprint !== fingerprint) return Promise.reject(new Error("Der vorherige Versand ist noch ungeklärt. Wiederhole ihn oder verwirf diesen Entwurf ausdrücklich."));
+      if (pending && pending.fingerprint !== fingerprint) return Promise.reject(new Error(t("Der vorherige Versand ist noch ungeklärt. Wiederhole ihn oder verwirf diesen Entwurf ausdrücklich.")));
       if (inFlight) return inFlight;
       pending ??= { fingerprint, request: Object.freeze({ ...body, toActorIds: Object.freeze(body.toActorIds), passageIds: Object.freeze(body.passageIds), commandId: makeId() }) };
       const attempt = pending;

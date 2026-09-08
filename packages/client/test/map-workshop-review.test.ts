@@ -6,6 +6,7 @@ import { transformSync } from "esbuild";
 import { describe, expect, it, vi } from "vitest";
 import { BAUWERK_LABEL, BAUWERK_TYPEN, KARTEN_SETTING_LABEL } from "@chronicle/szene";
 import * as Generation from "../src/features/map-generation.ts";
+import { I18nStub } from "../src/i18n.ts";
 
 /** Actual form handlers/effects, with held transport responses. The harness controls network
  * ordering and prop refreshes; it does not reproduce CAS, preview or navigation decisions. */
@@ -41,6 +42,7 @@ function harness(file: "NestedMapView" | "TacticalGenerate", component: string, 
     module: mod, exports: mod.exports, crypto: { randomUUID: () => "test-seed-123456" },
     window: { confirm: (message: string) => { confirmations.push(message); return acceptsDiscard; } },
     require: (name: string) => {
+      if (name === "../i18n" || name === "./i18n" || name === "../../i18n") return I18nStub;
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "@chronicle/szene") return { BAUWERK_TYPEN, BAUWERK_LABEL, KARTEN_SETTING_LABEL };

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFile, stat } from "node:fs/promises";
-import { startEmbeddedHost, type EmbeddedHostConfig } from "@chronicle/server/host";
+import { startEmbeddedHost, loadChronistRuntime, type EmbeddedHostConfig } from "@chronicle/server/host";
 import { object } from "./policy.ts";
 
 interface ParentPort { on(event: "message", callback: (event: { data: unknown }) => void): void; postMessage(message: unknown): void }
@@ -22,7 +22,10 @@ parent.on("message", event => {
         startId = request["startId"];
         const config = object(request["config"], ["databaseUrl", "origin", "cookieSecret", "staticRoot"]);
         if (!Object.values(config).every(value => typeof value === "string")) throw new Error("Invalid host configuration.");
-        host = await startEmbeddedHost(config as unknown as EmbeddedHostConfig);
+        // Operator configuration belongs to this trusted worker, never to renderer IPC or a campaign bundle.
+        const chronist = await loadChronistRuntime({ allowCli: true,
+          ...(process.env["CHRONICLE_CHRONIST_CONFIG"] ? { configPath: process.env["CHRONICLE_CHRONIST_CONFIG"] } : {}) });
+        host = await startEmbeddedHost({ ...config as unknown as EmbeddedHostConfig, chronist });
         parent.postMessage({ id, startId, ok: true, value: { origin: host.origin, nodeVersion: host.nodeVersion, decoder: host.decoder, ...await host.state() } });
         return;
       }

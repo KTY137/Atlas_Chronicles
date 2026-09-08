@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Suspense, lazy, useState } from "react";
-import { BookOpen, Columns2, Download, History, Images, Network, Pencil, Plus, Search, RefreshCw, Upload } from "lucide-react";
+import { BookOpen, Columns2, Download, Feather, History, Images, Network, Pencil, Plus, Search, RefreshCw, Upload } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, ladeAlsDatei, type Campaign, type EntryDocument, type EntrySummary, type HistoryItem, type Member } from "./api";
 import { useResource, useTask } from "./hooks";
@@ -17,6 +17,7 @@ const WikiMedien = lazy(() => import("./features/WikiMedien").then(module => ({ 
 const Gegenueberstellung = lazy(() => import("./features/Gegenueberstellung").then(module => ({ default: module.Gegenueberstellung })));
 const Gefuege = lazy(() => import("./features/Gefuege").then(module => ({ default: module.Gefuege })));
 const Zeitstrahl = lazy(() => import("./features/Zeitstrahl").then(module => ({ default: module.Zeitstrahl })));
+const ChronistWorkbench = lazy(() => import("./features/ChronistWorkbench").then(module => ({ default: module.ChronistWorkbench })));
 
 export function Wiki({ campaign, onDirty, liveRevision = 0, onComposeLetter, onOpenDoors }: { campaign: Campaign; onDirty: (dirty: boolean) => void; liveRevision?: number; onComposeLetter?: (seed: { entryId: string; passageIds: string[] }) => void; onOpenDoors?: (id: string) => void }) {
   const [query, setQuery] = useState(""), [revision, setRevision] = useState(0);
@@ -27,6 +28,7 @@ export function Wiki({ campaign, onDirty, liveRevision = 0, onComposeLetter, onO
   const [kopf, setKopf] = useState<Kopfansicht>(null);
   const [importing, setImporting] = useState(() => campaign.role === "leitung" && new URLSearchParams(location.search).has("import"));
   const [medien, setMedien] = useState(() => campaign.role === "leitung" && new URLSearchParams(location.search).get("tab") === "bilder");
+  const [chronist, setChronist] = useState(() => new URLSearchParams(location.search).get("tab") === "chronist");
   const task = useTask();
   const entries = useResource<EntrySummary[]>(apiPath(campaign.id, `/entries${query ? `?q=${encodeURIComponent(query)}` : ""}`), revision + liveRevision);
   const document = useResource<Umbruch>(selected ? apiPath(campaign.id, `/entries/${encodeURIComponent(selected)}/umbruch`) : null, revision + liveRevision);
@@ -42,18 +44,28 @@ export function Wiki({ campaign, onDirty, liveRevision = 0, onComposeLetter, onO
   const [notifyDirty] = useState(() => (value: boolean) => { setDirty(value); onDirty(value); });
   const select = (id: string | null) => {
     if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
-    setSelected(id); setKopf(null); setEditor(null); setHistory(null); setVergleich(false); setGefuege(false); setImporting(false); setMedien(false); changeDirty(false); setNotice(""); task.setError("");
-    const url = new URL(location.href); url.searchParams.delete("import"); if (id) url.searchParams.set("entry", id); else url.searchParams.delete("entry"); historyReplace(url);
+    setSelected(id); setKopf(null); setEditor(null); setHistory(null); setVergleich(false); setGefuege(false); setImporting(false); setMedien(false); setChronist(false); changeDirty(false); setNotice(""); task.setError("");
+    const url = new URL(location.href); url.searchParams.delete("import"); if (url.searchParams.get("tab") === "chronist") url.searchParams.delete("tab"); if (id) url.searchParams.set("entry", id); else url.searchParams.delete("entry"); historyReplace(url);
   };
-  const startNew = () => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; setEditor(newEditorSeed()); setHistory(null); setVergleich(false); setGefuege(false); setImporting(false); setMedien(false); };
+  const startNew = () => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; clearChronistTab(); setChronist(false); setKopf(null); setEditor(newEditorSeed()); setHistory(null); setVergleich(false); setGefuege(false); setImporting(false); setMedien(false); };
   // Shared by the sidebar entry point and the empty-state action so both open the importer identically.
-  const openImport = () => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setEditor(null); changeDirty(false); setMedien(false); setImporting(true); } };
+  const openImport = () => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { clearChronistTab(); setChronist(false); setEditor(null); changeDirty(false); setMedien(false); setImporting(true); } };
   const openMedien = () => {
     if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
-    setEditor(null); changeDirty(false); setImporting(false); setHistory(null); setMedien(true);
+    setChronist(false); setEditor(null); changeDirty(false); setImporting(false); setHistory(null); setMedien(true);
     const url = new URL(location.href); url.searchParams.set("tab", "bilder"); url.searchParams.delete("import"); historyReplace(url);
   };
   const closeMedien = () => { setMedien(false); const url = new URL(location.href); url.searchParams.delete("tab"); historyReplace(url); };
+  const openChronist = () => {
+    if (chronist) return;
+    if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
+    setEditor(null); setHistory(null); setKopf(null); setImporting(false); setMedien(false); setChronist(true); changeDirty(false);
+    const url = new URL(location.href); url.searchParams.set("tab", "chronist"); url.searchParams.delete("import"); historyReplace(url);
+  };
+  const closeChronist = () => {
+    if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
+    setChronist(false); changeDirty(false); const url = new URL(location.href); url.searchParams.delete("tab"); historyReplace(url);
+  };
   const edit = () => task.run(async () => {
     if (!selected) return;
     const rows = await api<HistoryItem[]>(apiPath(campaign.id, `/entries/${encodeURIComponent(selected)}/history`));
@@ -61,15 +73,17 @@ export function Wiki({ campaign, onDirty, liveRevision = 0, onComposeLetter, onO
     setEditor(historyEditorSeed(selected, rows[0])); setHistory(null);
   });
   return <div className="wiki-layout"><aside className="entry-sidebar" aria-label="Artikelübersicht"><div className="sidebar-heading"><div><p className="eyebrow">Deine Welt</p><h2>Die Chronik</h2></div>{canEdit ? <Button aria-label="Artikel anlegen" title="Artikel anlegen" onClick={startNew}><Plus size={18} /></Button> : null}</div>
+    <Button className="wiki-chronist-entry" aria-pressed={chronist} onClick={openChronist}><Feather size={17} /><span>Chronist</span></Button>
     <label className="search-box"><Search size={17} /><span className="sr-only">Artikel durchsuchen</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="In der Chronik suchen" /></label>
     {entries.loading ? <Loading text="Artikel werden geladen …" /> : entries.error ? <Notice error>{entries.error} <Button variant="quiet" onClick={() => setRevision((v) => v + 1)}>Erneut versuchen</Button></Notice> : geordnet ? <NavigationBaum daten={navigation.data!} ausgewaehlt={selected} onEntry={select} /> : <nav className="entry-list" aria-label="Wiki-Artikel">{entries.data?.map((entry) => <button key={entry.id} className={selected === entry.id ? "entry-item active" : "entry-item"} onClick={() => select(entry.id)} aria-current={selected === entry.id ? "page" : undefined}><BookOpen size={16} /><span><strong>{entry.title}</strong><small>{entry.excerpt || "Noch ohne Text"}</small></span></button>)}</nav>}
     {entries.data?.length === 0 ? <p className="sidebar-empty">{query ? "Keine Artikel für diese Suche." : canEdit ? "Hier wächst eure Welt. Beginne mit dem ersten Artikel oder importiere ein bestehendes Wiki." : "Deine Chronik füllt sich, sobald du etwas in der Welt erfährst."}</p> : null}
     <div className="sidebar-import">{canEdit ? <><Button onClick={openImport}><Upload size={14} /> Wiki importieren</Button><Button onClick={openMedien}><Images size={14} /> Bilder</Button></> : null}{/* Der Export steht ALLEN offen: eine Spielerin nimmt mit, was ihre Figur weiss. Genau das sagt auch der Kopf des Dokuments — eine Teilmenge, die sich fuer das Ganze ausgibt, waere die unangenehmste Sorte Fehler. */}<Button disabled={task.busy} onClick={() => void task.run(() => ladeAlsDatei(apiPath(campaign.id, "/wiki-export"), "chronik.md", status => status === 404 ? "Die Chronik ist für diesen Zugang nicht verfügbar." : "Der Export konnte nicht erstellt werden."))}><Download size={14} /> {canEdit ? "Chronik exportieren" : "Mein Wissen exportieren"}</Button></div>
     <div className="sidebar-bottom"><span>{campaign.role === "leitung" ? "Ansicht der Spielleitung" : "Dein Wissen"}</span><Button variant="quiet" aria-label="Artikel aktualisieren" title="Artikel aktualisieren" onClick={() => setRevision((v) => v + 1)}><RefreshCw size={14} /></Button></div>
   </aside><section className="document-stage" aria-label="Artikel">
-    {navBereit ? <WikiKopf daten={navigation.data!} ansicht={kopf} onAnsicht={ansicht => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; changeDirty(false); setKopf(ansicht); setEditor(null); setHistory(null); setVergleich(false); setGefuege(false); setImporting(false); setMedien(false); }} /> : null}
+    {navBereit ? <WikiKopf daten={navigation.data!} ansicht={kopf} onAnsicht={ansicht => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; clearChronistTab(); changeDirty(false); setChronist(false); setKopf(ansicht); setEditor(null); setHistory(null); setVergleich(false); setGefuege(false); setImporting(false); setMedien(false); }} /> : null}
     {task.error ? <Notice error>{task.error}</Notice> : null}{document.error ? <Notice error>{document.error} <Button variant="quiet" onClick={() => setRevision((v) => v + 1)}>Erneut versuchen</Button></Notice> : null}{notice ? <Notice>{notice}</Notice> : null}
-    {kopf?.art === "zeitstrahl" ? <Suspense fallback={<Loading text="Zeitstrahl wird geöffnet …" />}><Zeitstrahl campaignId={campaign.id} onOpenEntry={select} onClose={() => setKopf(null)} /></Suspense>
+    {chronist ? <Suspense fallback={<Loading text="Der Chronist wird geöffnet …" />}><ChronistWorkbench campaign={campaign} onDirty={notifyDirty} onOpenEntry={select} onClose={closeChronist} liveRevision={revision + liveRevision} /></Suspense>
+      : kopf?.art === "zeitstrahl" ? <Suspense fallback={<Loading text="Zeitstrahl wird geöffnet …" />}><Zeitstrahl campaignId={campaign.id} onOpenEntry={select} onClose={() => setKopf(null)} /></Suspense>
       : kopf?.art === "gruppe" && navBereit ? <WikiGruppenseite daten={navigation.data!} gruppeId={kopf.id} onEntry={select} onAnsicht={setKopf} />
       : kopf?.art === "uebersicht" && navBereit ? <WikiUebersicht daten={navigation.data!} onEntry={select} />
       : medien ? <Suspense fallback={<Loading text="Bildbestand wird geöffnet …" />}><WikiMedien campaignId={campaign.id} onClose={closeMedien} /></Suspense> : importing ? <ImportView campaignId={campaign.id} onClose={() => { setImporting(false); const url = new URL(location.href); url.searchParams.delete("import"); historyReplace(url); }} onImported={() => setRevision((v) => v + 1)} /> : editor ? <Editor key={editor.instanceId} campaignId={campaign.id} seed={editor} onDirty={notifyDirty} onCancel={() => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) { setEditor(null); changeDirty(false); } }} onSaved={(doc) => { setEditor(null); changeDirty(false); setSelected(doc.entryId); setRevision((v) => v + 1); setNotice("Artikel gespeichert."); const url = new URL(location.href); url.searchParams.set("entry", doc.entryId); historyReplace(url); }} /> : !selected ? (entries.data?.length === 0 ? <EmptyState title="Hier beginnt eure Chronik." action={canEdit ? <div className="button-row"><Button variant="primary" onClick={startNew}><Plus size={16} /> Ersten Artikel schreiben</Button><Button onClick={openImport}><Upload size={16} /> Wiki importieren</Button></div> : undefined}>{canEdit ? "Hier sammelt ihr das Wissen eurer Welt: Orte, Figuren, Ereignisse. Schreibe den ersten Artikel selbst oder übernimm bestehende Inhalte aus eurem Wiki." : "Hier sammelt eure Runde das Wissen der Welt. Sobald eure Spielleitung Artikel anlegt oder ein Wiki importiert, erscheinen sie hier."}</EmptyState> : navBereit ? <WikiUebersicht daten={navigation.data!} onEntry={select} /> : <EmptyState title="Eine Welt zwischen zwei Buchdeckeln." action={canEdit ? <Button variant="primary" onClick={startNew}><Plus size={16} /> Neuen Artikel anlegen</Button> : undefined}>Wähle einen Artikel aus der Chronik und folge den Geschichten deiner Runde.</EmptyState>) : document.loading ? <Loading text="Artikel wird geöffnet …" /> : document.data ? <>
@@ -85,3 +99,4 @@ export function Wiki({ campaign, onDirty, liveRevision = 0, onComposeLetter, onO
 }
 
 function historyReplace(url: URL) { window.history.replaceState(null, "", url); }
+function clearChronistTab() { const url = new URL(location.href); if (url.searchParams.get("tab") === "chronist") { url.searchParams.delete("tab"); historyReplace(url); } }

@@ -3,6 +3,7 @@
 import { ImageOff } from "lucide-react";
 import type { ItemContract, LootRarityValue } from "@chronicle/protocol";
 import { assetPath } from "../api";
+import { t } from "../i18n";
 import "./lootkarte.css";
 
 /**
@@ -23,14 +24,29 @@ export const SELTENHEIT_TEXT: Readonly<Record<LootRarityValue, string>> = Object
   episch: "Episch", legendaer: "Legendär",
 });
 
+/**
+ * Dieselben fünf Wörter als Anzeigefassung. `t` braucht ein Zeichenkettenliteral — ein
+ * `t(SELTENHEIT_TEXT[stufe])` entzöge sich dem Katalog —, deshalb stehen sie hier ein zweites
+ * Mal. `SELTENHEIT_TEXT` bleibt die deutsche Tabelle für die Stellen, die noch darauf greifen.
+ */
+export function seltenheitText(stufe: LootRarityValue): string {
+  switch (stufe) {
+    case "ungewoehnlich": return t("Ungewöhnlich");
+    case "selten": return t("Selten");
+    case "episch": return t("Episch");
+    case "legendaer": return t("Legendär");
+    default: return t("Gewöhnlich");
+  }
+}
+
 export function Lootkarte({ definition, campaignId, klein = false }: { definition: ItemContract; campaignId: string; klein?: boolean }) {
   const gesicht = definition.schemaVersion === 2 ? definition : null;
   const seltenheit = gesicht?.seltenheit ?? "gewoehnlich";
   return <article className={`lootkarte${klein ? " klein" : ""}`} data-seltenheit={seltenheit}
-    aria-label={`${definition.name}${gesicht ? ` — ${SELTENHEIT_TEXT[gesicht.seltenheit]}` : ""}`}>
+    aria-label={gesicht ? t("{name} — {seltenheit}", { name: definition.name, seltenheit: seltenheitText(gesicht.seltenheit) }) : definition.name}>
     <header className="lootkarte-kopf">
       <h4>{definition.name}</h4>
-      {gesicht ? <span className="lootkarte-seltenheit">{SELTENHEIT_TEXT[gesicht.seltenheit]}</span> : null}
+      {gesicht ? <span className="lootkarte-seltenheit">{seltenheitText(gesicht.seltenheit)}</span> : null}
     </header>
     <div className="lootkarte-bild">
       {gesicht?.bildAssetId
@@ -44,12 +60,13 @@ export function Lootkarte({ definition, campaignId, klein = false }: { definitio
         ? <dl className="lootkarte-zeilen">{gesicht.zeilen.map((zeile, i) =>
           <div key={`${zeile.label}-${i}`}><dt>{zeile.label}</dt><dd>{zeile.wert}</dd></div>)}</dl>
         : null}
-      {!gesicht ? <p className="lootkarte-ohne-gesicht">Diese Vorlage hat noch kein Kartengesicht. Beim nächsten Überarbeiten lässt sich eines anlegen.</p> : null}
+      {!gesicht ? <p className="lootkarte-ohne-gesicht">{t("Diese Vorlage hat noch kein Kartengesicht. Beim nächsten Überarbeiten lässt sich eines anlegen.")}</p> : null}
     </div>
     {definition.tags.length ? <footer className="lootkarte-etiketten">{definition.tags.map(tag => <span key={tag}>{tag}</span>)}</footer> : null}
     {/* Die Signatur am Kartenrand. `aria-hidden`, weil sie zur Karte NICHTS aussagt: eine
         Vorleserin soll den Gegenstand vorlesen, nicht den Namen des Programms. Und sie steht
-        auf der KLEINEN Karte nicht — dort ist jeder Millimeter der Karte selbst geschuldet. */}
+        auf der KLEINEN Karte nicht — dort ist jeder Millimeter der Karte selbst geschuldet.
+        Der Produktname bleibt in jeder Sprache derselbe. */}
     {klein ? null : <span className="lootkarte-signatur" aria-hidden="true">Atlas Chronicles</span>}
   </article>;
 }

@@ -27,6 +27,29 @@ database. This is an implementation milestone, not the completed M8 release gate
 
 ## Build and run
 
+Chronist host configuration is documented in [CHRONIST.md](CHRONIST.md). The private
+worker accepts the explicit `CHRONICLE_CHRONIST_CONFIG` path and dedicated
+`CHRONICLE_CHRONIST_KEY_*` variables when that path is configured. The PostgreSQL
+environment stays unchanged. Without a file, startup queries only installed local
+Ollama model names; it never downloads or invokes a model during discovery.
+
+The management window additionally stores one Anthropic key per profile, encrypted as
+`chronist-key.dpapi` beside that world's other profile secrets. The first start after a key
+is stored also writes that profile's own operator file `chronist-providers.json`: the local
+Ollama endpoint and the `anthropic-messages-1` provider with `apiKeyEnv`, model and published
+prices. That file contains no key and is never rewritten, so later operator edits survive.
+The controller decrypts the key while starting that world and injects it as
+`CHRONICLE_CHRONIST_KEY_ANTHROPIC` together with the absolute `CHRONICLE_CHRONIST_CONFIG`
+path into that world's private worker only, replacing an inherited variable of the same name.
+An inherited `CHRONICLE_CHRONIST_CONFIG` wins as an explicit operator override and keeps its
+own `CHRONICLE_CHRONIST_KEY_*` variables; a profile file alone forwards none of them.
+
+Without a stored key no file is written and startup keeps its Ollama discovery, because a
+configured file replaces that discovery: after storing a key, enter the installed local model
+names in the file, where the local entry is otherwise the same visibly unconfigured placeholder
+the host shows without Ollama. A changed provider, key or file takes effect only after the
+world is stopped and started again.
+
 Use the locked workspace install and an already built web client. Desktop builds do not
 rebuild that client. The following commands run from the repository root:
 
@@ -139,7 +162,14 @@ The shared game and remote windows have no management preload or process/file/re
 All windows enable sandbox, context isolation and web security and disable Node integration.
 
 Profile passwords and cookie keys are random, persisted through Windows `safeStorage`, and
-never returned to game JavaScript. Missing OS encryption blocks setup. Main installs the
+never returned to game JavaScript. Missing OS encryption blocks setup. The same secret box
+protects the profile's Chronist key: the closed `chronist-key` command carries `set` with a
+value or `clear` without one, addresses only an existing own profile of this installation,
+and passes the ordinary WebContents, main-frame, page, lease and single-operation checks.
+Management is told whether a world holds a key, never a character of it; the value crosses
+only inward, appears in no status, error text, log, descriptor, generated operator file or
+campaign export, and missing OS encryption refuses to store it exactly as it refuses first
+setup. Main installs the
 first-setup cookie directly into the game's isolated session with the existing
 HttpOnly/Secure/SameSite=Strict flags. Successful private setup responses, including late
 responses after a management timeout, are durably retained for their original profile.

@@ -61,7 +61,7 @@ async function run() {
   }, { beforeSchema: async (owned, postgres) => {
     const admission = await inspectMigrationAdmission(owned, assets);
     if (admission.recoveryRequired) await recovery.create(owned, postgres, app.getVersion());
-  } });
+  } }, id => store.chronistHostConfig(id));
   let restore: { ticket: string; path: string; profileId: string; report: unknown; gms: unknown; assert: () => void } | undefined;
   session.fromPartition("chronicle-management").protocol.handle("chronicle-shell", async request => {
     const url = new URL(request.url);
@@ -88,8 +88,13 @@ async function run() {
       fail("unauthorized", "Verwaltungsaktion ist nur im lokalen Hauptfenster verfügbar.");
   }
   ipcMain.handle("chronicle:hello", event => { sender(event); return capability; });
-  const snapshot = async () => ({ profiles: await store.list(), recovery: await recovery.list(), state: host.state, profileId: host.owned?.profile.id, origin: host.ready?.origin,
-    setupRequired: host.ready?.setupRequired, failure: host.failure, busy, version: app.getVersion(), runtime: host.ready ? { node: host.ready.nodeVersion, decoder: host.ready.decoder } : undefined });
+  const snapshot = async () => {
+    const profiles = await store.list();
+    // Management learns which worlds carry a Chronist key, never a single character of one.
+    const chronistKeys = (await Promise.all(profiles.map(async profile => await store.hasChronistKey(profile.id) ? profile.id : ""))).filter(Boolean);
+    return { profiles, chronistKeys, recovery: await recovery.list(), state: host.state, profileId: host.owned?.profile.id, origin: host.ready?.origin,
+      setupRequired: host.ready?.setupRequired, failure: host.failure, busy, version: app.getVersion(), runtime: host.ready ? { node: host.ready.nodeVersion, decoder: host.ready.decoder } : undefined };
+  };
   async function retainSetupSession(id: string, origin: string, receipt: { value: string; expiresAt: number }) {
     // This binding is a private committed-operation receipt, independent of the
     // management document's navigation lease. It can only target its original
@@ -219,6 +224,15 @@ async function run() {
           await cleanupRestore();
           if (host.ready) host.ready.setupRequired = false;
           return { ok: true, value: { report, gms, enrollmentRequired: true } };
+        }
+        case "chronist-key": {
+          // Only an own, existing profile of this installation may be addressed, and the
+          // stored value never travels back: the reply is the ordinary status snapshot.
+          const known = await store.list(); assert();
+          if (!known.some(profile => profile.id === request.profileId)) fail("invalid-profile", "Diese lokale Welt ist auf diesem Rechner nicht vorhanden.");
+          if (request.action === "set") await store.saveChronistKey(request.profileId, request.value);
+          else await store.clearChronistKey(request.profileId);
+          assert(); break;
         }
         case "enroll": {
           const pairing = await host.request("enroll", { campaignId: request.campaignId, userId: request.userId }); assert();

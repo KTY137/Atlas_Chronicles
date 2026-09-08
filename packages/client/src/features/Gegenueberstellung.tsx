@@ -6,15 +6,18 @@ import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type ProjectedPassage } from "../api";
 import { useResource } from "../hooks";
 import { BlockReader } from "../Reader";
+import { t } from "../i18n";
 import "./gegenueberstellung.css";
 
 type Seite = "nur-links" | "nur-rechts" | "beide";
 interface Spalte { actorId: string; name: string; passagen: readonly ProjectedPassage[] }
 interface Vergleich { entryId: string; slug: string; titel: string; links: Spalte; rechts: Spalte; zeilen: readonly { pid: string; ord: number; seite: Seite }[] }
 
-const beschriftung: Record<Seite, string> = {
-  "nur-links": "Nur links bekannt", "nur-rechts": "Nur rechts bekannt", beide: "Beide halten diese Passage",
-};
+/** `seite` ist ein Datenschlüssel; nur die Beschriftung daneben ist Oberfläche. */
+const beschriftung = (seite: Seite): string =>
+  seite === "nur-links" ? t("Nur links bekannt")
+    : seite === "nur-rechts" ? t("Nur rechts bekannt")
+      : t("Beide halten diese Passage");
 
 /**
  * `Die Gegenüberstellung` — derselbe Artikel nebeneinander für zwei Figuren.
@@ -43,24 +46,24 @@ export function Gegenueberstellung({ campaignId, entryId, onClose }: { campaignI
     {spalte?.passagen.length ? spalte.passagen.map(passage => {
       const seite = seiten.get(passage.pid) ?? "beide";
       return <article key={passage.pid} className={`vergleichs-passage ${seite}`} data-seite={seite}>
-        <span className="seiten-marke">{beschriftung[seite]}</span>
+        <span className="seiten-marke">{beschriftung(seite)}</span>
         <BlockReader block={passage.inhalt} campaignId={campaignId} />
       </article>;
-    }) : <p className="muted">Diese Figur hält in diesem Artikel noch nichts.</p>}
+    }) : <p className="muted">{t("Diese Figur hält in diesem Artikel noch nichts.")}</p>}
   </section>;
-  return <section className="gegenueberstellung panel" aria-label="Gegenüberstellung">
+  return <section className="gegenueberstellung panel" aria-label={t("Gegenüberstellung")}>
     <div className="section-heading"><div>
-      <p className="eyebrow">Zwei Bücher, ein Server</p>
-      <h2>Gegenüberstellung</h2>
-    </div><Button onClick={onClose}>Schließen</Button></div>
+      <p className="eyebrow">{t("Zwei Bücher, ein Server")}</p>
+      <h2>{t("Gegenüberstellung")}</h2>
+    </div><Button onClick={onClose}>{t("Schließen")}</Button></div>
     {actors.error ? <Notice error>{actors.error}</Notice> : null}
     {figuren.length < 2
-      ? <EmptyState title="Dafür braucht es zwei Figuren.">Sobald eure Runde eine zweite Figur führt, kannst du denselben Artikel aus beiden Blickwinkeln nebeneinander lesen.</EmptyState>
-      : <><div className="figurenwahl">{auswahl("Linke Figur", linkeFigur, setLinks)}{auswahl("Rechte Figur", rechteFigur, setRechts)}</div>
-        {!bereit ? <p className="field-help">Wähle zwei verschiedene Figuren.</p>
-          : vergleich.loading ? <Loading text="Beide Sichten werden hergeleitet …" />
+      ? <EmptyState title={t("Dafür braucht es zwei Figuren.")}>{t("Sobald eure Runde eine zweite Figur führt, kannst du denselben Artikel aus beiden Blickwinkeln nebeneinander lesen.")}</EmptyState>
+      : <><div className="figurenwahl">{auswahl(t("Linke Figur"), linkeFigur, setLinks)}{auswahl(t("Rechte Figur"), rechteFigur, setRechts)}</div>
+        {!bereit ? <p className="field-help">{t("Wähle zwei verschiedene Figuren.")}</p>
+          : vergleich.loading ? <Loading text={t("Beide Sichten werden hergeleitet …")} />
           : vergleich.error ? <Notice error>{vergleich.error}</Notice>
-          : vergleich.data ? <><p className="field-help">Was keine der beiden Figuren hält, erscheint in keiner Spalte — auch nicht als Lücke.</p>
+          : vergleich.data ? <><p className="field-help">{t("Was keine der beiden Figuren hält, erscheint in keiner Spalte — auch nicht als Lücke.")}</p>
             <div className="vergleich-spalten">{spalte(vergleich.data.links)}{spalte(vergleich.data.rechts)}</div></> : null}</>}
   </section>;
 }

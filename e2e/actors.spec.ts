@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseCurrentCampaignBundle } from "@chronicle/io";
+import { DEMO_RULE_PACKAGE } from "@chronicle/rules";
 import { buildApp } from "../packages/server/src/app.ts";
 import { createPgDb, createTestDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { createIdentity } from "../packages/server/src/identity/index.ts";
@@ -141,6 +142,54 @@ test("templates create independent shared actors and inventory; perspective and 
     await gm.setViewportSize({ width: 390, height: 844 });
     await expect.poll(() => gm.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await gm.screenshot({ path: test.info().outputPath("actor-inventory-phone.png"), fullPage: true });
+    expect(errors).toEqual([]);
+  } finally { for (const context of contexts) await context.close(); }
+});
+
+test("Freigabe und Anträge: die Spielleitung öffnet eine Vorlage und bestätigt die beantragte Figur", async ({ browser }) => {
+  const contexts = await Promise.all([browser.newContext(), browser.newContext()]), errors: string[] = [];
+  const base = `${origin}/api/campaigns/${campaignId}`;
+  try {
+    for (let i = 0; i < contexts.length; i++)
+      await contexts[i]!.addCookies([{ name: "chronicle_session", value: sessions[i]!.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict" }]);
+    const gm = await contexts[0]!.newPage(), player = await contexts[1]!.newPage();
+    for (const page of [gm, player]) page.on("pageerror", error => errors.push(error.message));
+    const template = await (await gm.request.post(`${base}/actor-templates`, { headers: { origin }, data: { commandId: randomUUID(), definition: {
+      schemaVersion: 1, name: "Freigegebene Wanderin", kind: "player_character", loreEntryId: null,
+      package: { id: DEMO_RULE_PACKAGE.id, version: DEMO_RULE_PACKAGE.version }, fields: { insight: 4 },
+    } } })).json();
+
+    // Der Schalter steht an der Vorlage selbst — dort, wo die Spielleitung sie ohnehin ansieht.
+    await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=actors`);
+    const zeile = gm.locator("li").filter({ hasText: "Freigegebene Wanderin" });
+    const freigegeben = gm.waitForResponse(r => r.url() === `${base}/actor-templates/${template.id}/freigabe` && r.request().method() === "PUT");
+    await zeile.getByRole("button", { name: "Für Spieler freigeben", exact: true }).click();
+    const quittung = await freigegeben; expect(quittung.status()).toBe(200);
+    expect(await quittung.json()).toMatchObject({ freigegeben: true, version: 1 });
+    await expect(zeile.getByRole("button", { name: "Freigabe entziehen", exact: true })).toBeVisible();
+    // Erst jetzt sieht ein Spieler die Vorlage überhaupt.
+    expect((await (await player.request.get(`${base}/actor-templates/freigegeben`)).json()).map((v: { id: string }) => v.id)).toContain(template.id);
+
+    const antrag = await (await player.request.post(`${base}/figurantraege`, { headers: { origin },
+      data: { commandId: randomUUID(), templateId: template.id, name: "Nell vom Frosttor", anfangswerte: { insight: 5 } } })).json();
+    expect(antrag.status).toBe("offen");
+
+    await gm.goto(`${origin}/?campaign=${campaignId}&stage=tisch`);
+    await gm.getByRole("tab", { name: "Figuren & Inventar", exact: true }).click();
+    await gm.getByRole("button", { name: "Anträge", exact: true }).click();
+    // Die Abweichung steht auf der Karte: bestätigt wird nicht bloß ein Name.
+    await expect(gm.getByText("Nell vom Frosttor", { exact: true })).toBeVisible();
+    await expect(gm.getByText("Scharfsinn · 5", { exact: true })).toBeVisible();
+    const entschieden = gm.waitForResponse(r => r.url() === `${base}/figurantraege/${antrag.id}/bestaetigen` && r.request().method() === "POST");
+    await gm.getByRole("button", { name: "Bestätigen", exact: true }).click();
+    const antwort = await entschieden; expect(antwort.status()).toBe(200);
+    const { antrag: karte, actorId } = await antwort.json();
+    expect(karte.status).toBe("bestaetigt");
+
+    // Die Figur gehört der Spielerin und trägt die bestätigten Werte; die Liste ist wieder leer.
+    expect((await (await player.request.get(`${base}/actors/${actorId}/sheet`)).json()).fields.insight).toBe(5);
+    await expect(gm.getByText("Zurzeit wartet kein Antrag auf eine Entscheidung.")).toBeVisible();
+    await gm.screenshot({ path: test.info().outputPath("figurantrag-entscheidung.png"), fullPage: true });
     expect(errors).toEqual([]);
   } finally { for (const context of contexts) await context.close(); }
 });

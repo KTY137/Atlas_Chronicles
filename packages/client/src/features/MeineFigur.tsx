@@ -7,6 +7,7 @@ import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type Campaign } from "../api";
 import { useResource } from "../hooks";
 import { CharacterSheet } from "./CharacterSheet";
+import { FigurAntrag } from "./FigurAntrag";
 import { Inventory } from "./ActorWorkbench";
 import type { RulesState } from "./game-api";
 import "./gameplay.css";
@@ -19,7 +20,7 @@ import "./gameplay.css";
  * unter der Woche zuerst gestellt wird und für die der Tisch der falsche Ort war:
  * *Was habe ich, und was kann ich?*
  */
-export function MeineFigur({ campaign, onDirty }: { campaign: Campaign; onDirty: (value: boolean) => void }) {
+export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: Campaign; liveRevision?: number; onDirty: (value: boolean) => void }) {
   const inventory = useRef<HTMLDivElement>(null);
   const [revision, setRevision] = useState(0), [chosen, setChosen] = useState<string | null>(null);
   const [drafts, setDrafts] = useState({ sheet: false, inventory: false });
@@ -28,8 +29,11 @@ export function MeineFigur({ campaign, onDirty }: { campaign: Campaign; onDirty:
   const reportInventory = useCallback((value: boolean) => setDrafts(old => ({ ...old, inventory: value })), []);
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
-  const rules = useResource<RulesState>(apiPath(campaign.id, "/rules"), revision);
-  const actors = useResource<ActorCard[]>(apiPath(campaign.id, "/actors"), revision);
+  // Der eigene Takt und der Live-Takt der Anwendung sind derselbe Anlass, neu zu laden: bestätigt
+  // die Spielleitung einen Antrag, soll hier die Figur stehen und nicht weiter „wartet auf …".
+  const takt = revision + liveRevision;
+  const rules = useResource<RulesState>(apiPath(campaign.id, "/rules"), takt);
+  const actors = useResource<ActorCard[]>(apiPath(campaign.id, "/actors"), takt);
   const meine = actors.data?.filter(actor => actor.canControl) ?? [];
   // Die erste Wahl wird einmal festgehalten. Eine spätere Freigabe darf keinen offenen Entwurf umhängen.
   useEffect(() => { if (!dirty && meine.length && !meine.some(actor => actor.id === chosen)) setChosen(meine[0]!.id); }, [chosen, dirty, meine]);
@@ -56,10 +60,15 @@ export function MeineFigur({ campaign, onDirty }: { campaign: Campaign; onDirty:
         {meine.map(actor => <option key={actor.id} value={actor.id}>{actor.name}</option>)}
       </select></label></div> : null}
     {rules.loading || actors.loading ? <Loading />
-      : !actorId ? <EmptyState title="Noch führst du keine Figur.">Sobald deine Spielleitung dir eine Figur anvertraut, findest du hier ihren Bogen und alles, was sie trägt.</EmptyState>
+      : !actorId ? (gm || !rules.data
+        // Die leere Fläche einer Spielerin ist keine Sackgasse mehr: sie kann hier selbst eine
+        // Figur beantragen. Für die Spielleitung bleibt sie, was sie war — sie erschafft Figuren
+        // in der Schmiede, nicht über einen Antrag an sich selbst.
+        ? <EmptyState title="Noch führst du keine Figur.">Sobald deine Spielleitung dir eine Figur anvertraut, findest du hier ihren Bogen und alles, was sie trägt.</EmptyState>
+        : <FigurAntrag campaignId={campaign.id} rules={rules.data} revision={takt} onChanged={refresh} />)
       : rules.data ? <>
-        <CharacterSheet key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} liveRevision={revision} onDirty={reportSheet} onChanged={refresh} />
-        <div ref={inventory} tabIndex={-1} className="character-inventory"><Inventory key={actorId} campaignId={campaign.id} actorId={actorId} actors={actors.data ?? []} gm={false} revision={revision} onChanged={refresh} onDirty={reportInventory} /></div>
+        <CharacterSheet key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} liveRevision={takt} onDirty={reportSheet} onChanged={refresh} />
+        <div ref={inventory} tabIndex={-1} className="character-inventory"><Inventory key={actorId} campaignId={campaign.id} actorId={actorId} actors={actors.data ?? []} gm={false} revision={takt} onChanged={refresh} onDirty={reportInventory} /></div>
       </> : null}
   </section>;
 }

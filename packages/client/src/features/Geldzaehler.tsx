@@ -5,6 +5,7 @@ import { Coins, Pencil } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
 import { api, apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
+import { t } from "../i18n";
 import "./geld.css";
 
 /**
@@ -17,6 +18,9 @@ import "./geld.css";
  * **Gesetzt wird ein Stand, nicht verrechnet.** Das Feld zeigt den Betrag und schickt ihn mit der
  * erwarteten Fassung; wer inzwischen eingekauft hat, bekommt einen Konflikt statt eines stillen
  * Verlusts. Ein „+5"-Knopf wäre bequemer und würde genau diesen Verlust verstecken.
+ *
+ * Der Name der Währung gehört der Runde und bleibt unübersetzt; nur der Ersatzname, solange
+ * keiner gewählt ist, ist Oberfläche.
  */
 
 interface Einheit { name: string; version: number }
@@ -49,7 +53,7 @@ export function Geldzaehler({ campaignId, actorId, gm, revision, kompakt = false
   if (!actorId) return null;
 
   const betrag = entwurf?.betrag ?? current?.betrag ?? 0;
-  const bezeichnung = currency?.name ?? "Geld";
+  const bezeichnung = currency?.name ?? t("Geld");
   const changed = () => { setLocal(value => value + 1); onChanged?.(); };
   const speichern = () => void task.run(async () => {
     if (!entwurf || !current || !currency) return;
@@ -62,27 +66,27 @@ export function Geldzaehler({ campaignId, actorId, gm, revision, kompakt = false
   return <section className={kompakt ? "geldzaehler kompakt" : "geldzaehler"}>
     <h3><Coins size={17} /> {bezeichnung}</h3>
     <div className="geld-zeile">
-      <label><span className="sr-only">Betrag in {bezeichnung}</span>
+      <label><span className="sr-only">{t("Betrag in {waehrung}", { waehrung: bezeichnung })}</span>
         <input type="number" min={0} max={Number.MAX_SAFE_INTEGER} step={1} value={betrag} disabled={task.busy || !current || !currency}
           onChange={event => { if (current && currency) setEntwurf({ scope, baseline: entwurf?.baseline ?? current, betrag: Number.isFinite(event.target.valueAsNumber) ? Math.max(0, Math.trunc(event.target.valueAsNumber)) : 0 }); }} /></label>
-      <Button disabled={task.busy || !current || !currency || entwurf === null || !Number.isSafeInteger(betrag)} onClick={speichern}>Übernehmen</Button>
+      <Button disabled={task.busy || !current || !currency || entwurf === null || !Number.isSafeInteger(betrag)} onClick={speichern}>{t("Übernehmen")}</Button>
     </div>
-    {entwurf && current && current.version > entwurf.baseline.version ? <Notice>Der Geldstand wurde inzwischen geändert. Dein Entwurf bleibt erhalten. <Button disabled={task.busy} onClick={() => { if (window.confirm("Geldentwurf verwerfen und den aktuellen Stand übernehmen?")) { setEntwurf(null); task.setError(""); } }}>Aktuellen Geldstand übernehmen</Button></Notice> : null}
+    {entwurf && current && current.version > entwurf.baseline.version ? <Notice>{t("Der Geldstand wurde inzwischen geändert. Dein Entwurf bleibt erhalten.")} <Button disabled={task.busy} onClick={() => { if (window.confirm(t("Geldentwurf verwerfen und den aktuellen Stand übernehmen?"))) { setEntwurf(null); task.setError(""); } }}>{t("Aktuellen Geldstand übernehmen")}</Button></Notice> : null}
     {/* Der Name des Geldes gehoert der Runde. Ohne ihn stuende hier nur eine Zahl. */}
     {gm && !kompakt ? (name === null
-      ? <Button variant="quiet" disabled={task.busy || !einheit.loaded} onClick={() => setName({ scope, name: currency?.name ?? "", baseline: currency })}><Pencil size={14} /> Währung benennen</Button>
+      ? <Button variant="quiet" disabled={task.busy || !einheit.loaded} onClick={() => setName({ scope, name: currency?.name ?? "", baseline: currency })}><Pencil size={14} /> {t("Währung benennen")}</Button>
       : <form className="geld-zeile" onSubmit={event => { event.preventDefault(); void task.run(async () => {
           const saved = await api<Einheit>(apiPath(campaignId, "/geld/einheit"), { method: "PUT", body: { name: name.name, expectedVersion: name.baseline?.version ?? 0 } });
           if (activeScope.current !== scope) return;
           setAcceptedName({ scope, einheit: saved }); setName(null); changed();
         }); }}>
-        <label><span className="sr-only">Name der Währung</span>
-          <input value={name.name} maxLength={40} required disabled={task.busy} placeholder="z. B. Silbertaler" onChange={event => setName({ ...name, name: event.target.value })} /></label>
-        <Button type="submit" disabled={task.busy || !name.name.trim()}>Speichern</Button>
-        <Button disabled={task.busy} onClick={() => setName(null)}>Abbrechen</Button>
-        {(currency?.version ?? 0) > (name.baseline?.version ?? 0) ? <p className="field-help">Die Währung wurde inzwischen umbenannt. Brich den Entwurf ab, um den aktuellen Namen zu übernehmen.</p> : null}
+        <label><span className="sr-only">{t("Name der Währung")}</span>
+          <input value={name.name} maxLength={40} required disabled={task.busy} placeholder={t("z. B. Silbertaler")} onChange={event => setName({ ...name, name: event.target.value })} /></label>
+        <Button type="submit" disabled={task.busy || !name.name.trim()}>{t("Speichern")}</Button>
+        <Button disabled={task.busy} onClick={() => setName(null)}>{t("Abbrechen")}</Button>
+        {(currency?.version ?? 0) > (name.baseline?.version ?? 0) ? <p className="field-help">{t("Die Währung wurde inzwischen umbenannt. Brich den Entwurf ab, um den aktuellen Namen zu übernehmen.")}</p> : null}
       </form>) : null}
     {task.error || stand.error || einheit.error ? <Notice error>{task.error || stand.error || einheit.error}</Notice> : null}
-    {einheit.loaded && !currency ? <p className="field-help">{gm ? "Benenne zuerst die Währung eurer Runde. Danach könnt ihr Geldstände eintragen." : "Die Spielleitung muss zuerst die Währung eurer Runde benennen. Danach kannst du deinen Geldstand eintragen."}</p> : null}
+    {einheit.loaded && !currency ? <p className="field-help">{gm ? t("Benenne zuerst die Währung eurer Runde. Danach könnt ihr Geldstände eintragen.") : t("Die Spielleitung muss zuerst die Währung eurer Runde benennen. Danach kannst du deinen Geldstand eintragen.")}</p> : null}
   </section>;
 }

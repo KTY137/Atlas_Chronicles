@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
+import { Type } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 import { canonicalHash, trustEntryId, trustPassageId, trustRevisionId, trustUserId, trustActorId, type PassageId, type CanonicalValue } from "@chronicle/core";
 import { lineage, resolvePassage, mergeGuard, type Blockinhalt, type Passage, type LineageEvent } from "@chronicle/chronik";
+import { Block, Id, SaveDocument } from "@chronicle/protocol";
 import { projiziereEntry, type BetrachterWissen, type EntryProjektion } from "@chronicle/projection";
 import { wikiAlsMarkdown } from "@chronicle/io";
 import type { Db } from "../db/index.ts";
@@ -11,8 +14,28 @@ import { Gone, Conflict } from "./errors.ts";
 
 export interface PassageInput { pid?: string; inhalt: Blockinhalt; pfad?: string[]; tags?: string[] }
 export interface DocumentInput { title: string; slug?: string; passages: PassageInput[]; expectedVersion?: number }
+export interface SubmitProposalInput {
+  readonly target: { readonly kind: "existing"; readonly entryId: string; readonly expectedVersion: number }
+    | { readonly kind: "new"; readonly title: string; readonly slug?: string };
+  readonly blocks: readonly Blockinhalt[];
+}
+export interface SubmittedDocument {
+  readonly entryId: string; readonly revisionId: string; readonly version: number;
+  /** Only the new proposal passages, in document order. */
+  readonly passageIds: readonly string[];
+}
 interface EntryRow { id: string; universe_id: string; campaign_id: string; slug: string; title: string; version: number; current_revision_id: string; public: boolean }
 interface PassageRow { id: string; entry_id: string; revision_id: string; ord: number; path: string[]; content: Blockinhalt; gen: number; geltung: Passage["geltung"]; praegung: Passage["praegung"]; tags: string[] }
+interface DocumentSnapshot { title: string; slug: string; passagen: readonly Passage[]; tags: readonly (readonly string[])[] }
+const closed = { additionalProperties: false } as const;
+// Internal intent only. The public SaveDocument schema still exposes no status or author.
+const SubmitProposal = Type.Object({
+  target: Type.Union([
+    Type.Object({ kind: Type.Literal("existing"), entryId: Id, expectedVersion: Type.Integer({ minimum: 1 }) }, closed),
+    Type.Object({ kind: Type.Literal("new"), title: SaveDocument.properties.title, slug: SaveDocument.properties.slug }, closed),
+  ]),
+  blocks: Type.Array(Block, { minItems: 1, maxItems: 1000 }),
+}, closed);
 export const plainBlock = (block: Blockinhalt): string => {
   switch (block.kind) {
     case "absatz": case "zitat": case "bildunterschrift": return block.inhalt.map((t) => t.text).join("");
@@ -114,11 +137,7 @@ export function createDocuments(db: Db, cfg: DomainConfig = {}) {
       const old = entryId ? await scoped.source(campaignId, entryId) : null;
       if (old && input.expectedVersion !== old.entry.version) throw new Conflict();
       const version = (old?.entry.version ?? 0) + 1, oldIds = new Set(old?.passagen.map((p) => p.pid) ?? []);
-      const slug = slugify(input.slug ?? old?.entry.slug ?? input.title);
-      if (!slug || slug.length > 200) throw new Gone("slug-invalid");
-      const occupied = await tx.query(`SELECT id FROM entries WHERE campaign_id=$1 AND slug=$2 AND id<>$3
-        UNION SELECT entry_id AS id FROM entry_aliases WHERE campaign_id=$1 AND slug=$2 AND entry_id<>$3`, [campaignId, slug, id]);
-      if (occupied.rowCount) throw new Conflict();
+      const slug = await availableSlug(tx, campaignId, id, slugify(input.slug ?? old?.entry.slug ?? input.title));
       const seen = new Set<string>();
       const passagen: Passage[] = input.passages.map((p, ord) => {
         const pid = p.pid ? trustPassageId(p.pid) : trustPassageId(randomUUID());
@@ -130,31 +149,99 @@ export function createDocuments(db: Db, cfg: DomainConfig = {}) {
           geltung: unchanged ? existing.geltung : "notiz", praegung: unchanged ? existing.praegung : null, autorUserId: trustUserId(userId),
           erstelltInRevision: existing?.erstelltInRevision ?? trustRevisionId(revisionId) };
       });
-      const delta = lineage((old?.passagen ?? []).map((p) => ({ pid: p.pid, text: plainBlock(p.inhalt), fingerprint: hash(p.inhalt) })),
-        passagen.map((p) => ({ pid: p.pid, text: plainBlock(p.inhalt), fingerprint: hash(p.inhalt) })));
-      const actors = (await tx.query<{ id: string }>("SELECT id FROM actors WHERE campaign_id=$1", [campaignId])).rows;
-      const holdings = await Promise.all(actors.map(async (a) => ({ id: trustActorId(a.id), held: await scoped.held(campaignId, a.id) })));
-      for (const event of delta) if (event.kind === "merge" && mergeGuard(event.parents, (pid) => holdings.filter((a) => a.held.has(pid)).map((a) => a.id)))
-        throw new Conflict();
-      if (!old) await tx.query(`INSERT INTO entries(id,universe_id,campaign_id,slug,title,current_revision_id,created_by)
-        VALUES($1,$2,$3,$4,$5,$6,$7)`, [id, membership.universeId, campaignId, slug, input.title.trim(), revisionId, userId]);
       const snapshot = { title: input.title.trim(), slug, passagen, tags: input.passages.map((p) => p.tags ?? []) };
-      await tx.query(`INSERT INTO revisions(id,entry_id,seq,author_user_id,content_hash,document,created_at)
-        VALUES($1,$2,$3,$4,$5,$6,$7)`, [revisionId, id, version, userId, hash(snapshot), snapshot, now()]);
-      if (old) {
-        if (old.entry.slug !== slug) await tx.query("INSERT INTO entry_aliases(campaign_id,slug,entry_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [campaignId, old.entry.slug, id]);
-        await tx.query("UPDATE entries SET slug=$2,title=$3,current_revision_id=$4,version=$5 WHERE id=$1", [id, slug, input.title.trim(), revisionId, version]);
-        await tx.query("UPDATE passages SET retired_at_revision=$2 WHERE entry_id=$1 AND retired_at_revision IS NULL AND NOT(id=ANY($3::text[]))", [id, revisionId, [...seen]]);
-      }
-      for (const p of passagen) {
-        const tags = input.passages[p.ord]?.tags ?? [];
-        await tx.query(`INSERT INTO passages(id,entry_id,campaign_id,revision_id,ord,path,content,gen,geltung,praegung,tags)
-          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-          ON CONFLICT(id) DO UPDATE SET ord=EXCLUDED.ord,path=EXCLUDED.path,content=EXCLUDED.content,tags=EXCLUDED.tags,geltung=EXCLUDED.geltung,praegung=EXCLUDED.praegung`,
-          [p.pid, id, campaignId, p.erstelltInRevision, p.ord, JSON.stringify(p.pfad), JSON.stringify(p.inhalt), p.gen, p.geltung, p.praegung, JSON.stringify(tags)]);
-      }
-      for (const event of delta) await tx.query("INSERT INTO lineage_events(entry_id,revision_id,event,created_at) VALUES($1,$2,$3,$4)", [id, revisionId, event, now()]);
+      await persistRevision(tx, userId, campaignId, membership.universeId, id, revisionId, version, old, snapshot);
       return scoped.getEntry(userId, campaignId, id);
+    });
+  }
+
+  async function availableSlug(tx: Db, campaignId: string, entryId: string, slug: string) {
+    if (!slug || slug.length > 200) throw new Gone("slug-invalid");
+    const occupied = await tx.query(`SELECT id FROM entries WHERE campaign_id=$1 AND slug=$2 AND id<>$3
+      UNION SELECT entry_id AS id FROM entry_aliases WHERE campaign_id=$1 AND slug=$2 AND entry_id<>$3`, [campaignId, slug, entryId]);
+    if (occupied.rowCount) throw new Conflict();
+    return slug;
+  }
+
+  /** Both write intents arrive here after authorization, target CAS and complete snapshot construction. */
+  async function persistRevision(tx: Db, userId: string, campaignId: string, universeId: string, id: string,
+    revisionId: string, version: number, old: Awaited<ReturnType<typeof source>> | null, snapshot: DocumentSnapshot) {
+    const scoped = createDocuments(tx, cfg), { title, slug, passagen, tags } = snapshot;
+    const delta = lineage((old?.passagen ?? []).map((p) => ({ pid: p.pid, text: plainBlock(p.inhalt), fingerprint: hash(p.inhalt) })),
+      passagen.map((p) => ({ pid: p.pid, text: plainBlock(p.inhalt), fingerprint: hash(p.inhalt) })));
+    const actors = (await tx.query<{ id: string }>("SELECT id FROM actors WHERE campaign_id=$1", [campaignId])).rows;
+    const holdings = await Promise.all(actors.map(async (a) => ({ id: trustActorId(a.id), held: await scoped.held(campaignId, a.id) })));
+    for (const event of delta) if (event.kind === "merge" && mergeGuard(event.parents, (pid) => holdings.filter((a) => a.held.has(pid)).map((a) => a.id)))
+      throw new Conflict();
+    if (!old) await tx.query(`INSERT INTO entries(id,universe_id,campaign_id,slug,title,current_revision_id,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7)`, [id, universeId, campaignId, slug, title, revisionId, userId]);
+    await tx.query(`INSERT INTO revisions(id,entry_id,seq,author_user_id,content_hash,document,created_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7)`, [revisionId, id, version, userId, hash(snapshot), snapshot, now()]);
+    if (old) {
+      if (old.entry.slug !== slug) await tx.query("INSERT INTO entry_aliases(campaign_id,slug,entry_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [campaignId, old.entry.slug, id]);
+      await tx.query("UPDATE entries SET slug=$2,title=$3,current_revision_id=$4,version=$5 WHERE id=$1", [id, slug, title, revisionId, version]);
+      await tx.query("UPDATE passages SET retired_at_revision=$2 WHERE entry_id=$1 AND retired_at_revision IS NULL AND NOT(id=ANY($3::text[]))", [id, revisionId, passagen.map(p => p.pid)]);
+    }
+    for (const [index, p] of passagen.entries()) {
+      await tx.query(`INSERT INTO passages(id,entry_id,campaign_id,revision_id,ord,path,content,gen,geltung,praegung,tags)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        ON CONFLICT(id) DO UPDATE SET ord=EXCLUDED.ord,path=EXCLUDED.path,content=EXCLUDED.content,tags=EXCLUDED.tags,geltung=EXCLUDED.geltung,praegung=EXCLUDED.praegung`,
+        [p.pid, id, campaignId, p.erstelltInRevision, p.ord, JSON.stringify(p.pfad), JSON.stringify(p.inhalt), p.gen, p.geltung, p.praegung, JSON.stringify(tags[index])]);
+    }
+    for (const event of delta) await tx.query("INSERT INTO lineage_events(entry_id,revision_id,event,created_at) VALUES($1,$2,$3,$4)", [id, revisionId, event, now()]);
+  }
+
+  /** Read snapshot-only authors without assigning the submitting GM to any resident passage. */
+  async function appendSnapshot(tx: Db, old: Awaited<ReturnType<typeof source>>): Promise<DocumentSnapshot> {
+    const revision = (await tx.query<{ document: DocumentSnapshot; content_hash: string; created_at: string }>(
+      "SELECT document,content_hash,created_at FROM revisions WHERE id=$1 AND entry_id=$2", [old.entry.current_revision_id, old.entry.id])).rows[0];
+    const document = revision?.document;
+    if (!document || typeof document !== "object" || Array.isArray(document)) throw new Gone("target-history-unavailable");
+    // Migration 002 introduced {} with created_at=0. Its author column is the revision author,
+    // not evidence of passage authorship. Preserve the known live state and the historical {}.
+    if (Object.keys(document).length === 0 && Number(revision.created_at) === 0) {
+      return { title: old.entry.title, slug: old.entry.slug, passagen: old.passagen, tags: old.rows.map(p => p.tags) };
+    }
+    if (hash(document) !== revision.content_hash || document.title !== old.entry.title || document.slug !== old.entry.slug
+      || !Array.isArray(document.passagen) || !Array.isArray(document.tags)
+      || document.passagen.length !== old.passagen.length || document.tags.length !== old.rows.length) throw new Gone("target-history-unavailable");
+    // Minting changes gen/geltung/praegung in both the live rows and the current snapshot.
+    // Check those live fields, keeping optional snapshot metadata untouched.
+    const liveKeys = ["pid", "entryId", "gen", "ord", "pfad", "inhalt", "geltung", "praegung", "erstelltInRevision"] as const;
+    for (const [index, live] of old.passagen.entries()) {
+      const saved = document.passagen[index];
+      if (!saved || typeof saved !== "object" || Array.isArray(saved)
+        || liveKeys.some(key => !(key in saved) || hash(saved[key]) !== hash(live[key]))
+        || hash(document.tags[index]) !== hash(old.rows[index]!.tags)) throw new Gone("target-history-unavailable");
+    }
+    return document;
+  }
+
+  /** Internal only; a parent's proposal/ACK transaction owns the final commit. */
+  async function submitProposal(userId: string, campaignId: string, input: SubmitProposalInput): Promise<SubmittedDocument> {
+    // Retain one validated input even while waiting for campaign/entry locks.
+    let checked: SubmitProposalInput;
+    try { checked = structuredClone(input); if (!Value.Check(SubmitProposal, checked)) throw new Error(); }
+    catch { throw new Gone("document-invalid"); }
+    return db.transaction(async tx => {
+      const membership = await authorizeWrite(tx, userId, campaignId), scoped = createDocuments(tx, cfg), target = checked.target;
+      const id = target.kind === "existing" ? target.entryId : randomUUID(), revisionId = randomUUID();
+      if (target.kind === "existing") await tx.query("SELECT id FROM entries WHERE id=$1 AND campaign_id=$2 FOR UPDATE", [id, campaignId]);
+      const old = target.kind === "existing" ? await scoped.source(campaignId, id) : null;
+      if (old && target.kind === "existing" && target.expectedVersion !== old.entry.version) throw new Conflict();
+      if ((old?.passagen.length ?? 0) + checked.blocks.length > 1000) throw new Gone("document-invalid");
+      const title = target.kind === "new" ? target.title.trim() : old!.entry.title;
+      if (!title || title.length > 200) throw new Gone("document-invalid");
+      const slug = await availableSlug(tx, campaignId, id, target.kind === "new" ? slugify(target.slug ?? target.title) : old!.entry.slug);
+      const resident = old ? await appendSnapshot(tx, old) : { passagen: [], tags: [] };
+      const nextOrd = resident.passagen.reduce((next, p) => Math.max(next, p.ord + 1), 0);
+      const added: Passage[] = checked.blocks.map((inhalt, index) => ({ pid: trustPassageId(randomUUID()), entryId: trustEntryId(id),
+        gen: 1, ord: nextOrd + index, pfad: [], inhalt, geltung: "antrag", praegung: null,
+        autorUserId: trustUserId(userId), erstelltInRevision: trustRevisionId(revisionId) }));
+      const snapshot = { title, slug, passagen: [...resident.passagen, ...added], tags: [...resident.tags, ...added.map(() => [])] };
+      const version = (old?.entry.version ?? 0) + 1;
+      await persistRevision(tx, userId, campaignId, membership.universeId, id, revisionId, version, old, snapshot);
+      return { entryId: id, revisionId, version, passageIds: added.map(p => p.pid) };
     });
   }
   async function revealPassage(userId: string, campaignId: string, passageId: string, actorId: string) {
@@ -193,5 +280,5 @@ export function createDocuments(db: Db, cfg: DomainConfig = {}) {
     return { dateiname: `${slugify(kopf.name) || "chronik"}.md`, markdown };
   }
 
-  return { source, held, knowledge, wissenFor, listEntries, getEntry, saveEntry, revealPassage, history, exportWiki };
+  return { source, held, knowledge, wissenFor, listEntries, getEntry, saveEntry, submitProposal, revealPassage, history, exportWiki };
 }
