@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { TacticalAnchor } from "@chronicle/protocol";
-import type { BuildingIntent, TacticalCartographyV1, TacticalMapDocumentV1 } from "@chronicle/szene";
+import type { BuildingIntent, RoomIntent, TacticalCartographyV1, TacticalMapDocumentV1 } from "@chronicle/szene";
 
 export interface MapEditSnapshot {
   readonly document: TacticalMapDocumentV1;
   readonly cartography: TacticalCartographyV1;
   readonly anchors: readonly TacticalAnchor[];
   readonly addedBuildings: readonly BuildingIntent[];
+  readonly addedRooms?: readonly RoomIntent[];
 }
 export interface MapEditGesture {
   readonly id: string;
@@ -59,10 +60,14 @@ function normalizeEdit(snapshot: MapEditSnapshot, saved: MapEditSnapshot): MapEd
   const index = (value: MapEditSnapshot) => {
     const geometry = new Map(value.document.geometry.regions.map(region => [region.id, region]));
     const stamps = new Map(value.document.geometry.stamps.map(stamp => [stamp.id, stamp]));
+    const walls = new Map(value.document.walls.map(item => [item.id, item]));
+    const portals = new Map(value.document.portals.map(item => [item.id, item]));
+    const lights = new Map(value.document.lights.map(item => [item.id, item]));
+    const places = new Map(value.document.geometry.places.map(item => [item.id, item]));
     return new Map(value.cartography.regions.map(region => {
       const { authored: _authored, locked: _locked, provenance: _provenance, ...meaning } = region;
       return [region.regionId, { region, fingerprint: stable([geometry.get(region.regionId), meaning,
-        region.role === "building" ? (region.attachedStampIds ?? []).map(id => stamps.get(id)) : null]) }] as const;
+        region.role === "building" ? (region.attachedStampIds ?? []).map(id => stamps.get(id)) : region.role === "room" && region.interior ? [region.interior.stampIds.map(id => stamps.get(id)), region.interior.wallIds.map(id => walls.get(id)), region.interior.portalIds.map(id => portals.get(id)), region.interior.lightIds.map(id => lights.get(id)), (region.interior.placeIds ?? []).map(id => places.get(id))] : null]) }] as const;
     }));
   };
   const before = index(saved), current = index(snapshot);
@@ -80,6 +85,7 @@ function normalizeEdit(snapshot: MapEditSnapshot, saved: MapEditSnapshot): MapEd
 export function acknowledgeEdit(history: MapEditHistory, submitted: MapEditSnapshot, saved: MapEditSnapshot): MapEditHistory {
   const rebase = (snapshot: MapEditSnapshot): MapEditSnapshot => editFingerprint(snapshot) === editFingerprint(submitted) ? saved : ({ ...normalizeEdit(snapshot, saved),
     addedBuildings: snapshot.addedBuildings.filter(intent => !saved.document.geometry.regions.some(region => region.id === intent.regionId)),
+    ...(snapshot.addedRooms ? { addedRooms: snapshot.addedRooms.filter(intent => !saved.document.geometry.regions.some(region => region.id === intent.regionId)) } : {}),
   });
   const present = editFingerprint(history.present) === editFingerprint(submitted) ? saved : rebase(history.present);
   const reversedIndex = [...history.past].reverse().findIndex(snapshot => editFingerprint(snapshot) === editFingerprint(submitted));
@@ -100,5 +106,14 @@ export function editDocument(snapshot: MapEditSnapshot, document: TacticalMapDoc
     const changed = JSON.stringify(previousRegions.get(region.id)) !== JSON.stringify(region) || existing.role === "building" && existing.attachedStampIds?.some(id => JSON.stringify(stamps.get(id)) !== JSON.stringify(previousStamps.get(id)));
     const role = changed ? { ...existing, authored: true, provenance: null } : existing;
     return role.role === "building" && role.attachedStampIds ? { ...role, attachedStampIds: role.attachedStampIds.filter(id => stamps.has(id)) } : role;
-  }) }, addedBuildings: snapshot.addedBuildings.filter(intent => document.geometry.regions.some(region => region.id === intent.regionId)) };
+    
+  }).map(region => region.role === "room" && region.interior ? { ...region, interior: { ...region.interior,
+    stampIds: region.interior.stampIds.filter(id => stamps.has(id)),
+    wallIds: region.interior.wallIds.filter(id => document.walls.some(item => item.id === id)),
+    portalIds: region.interior.portalIds.filter(id => document.portals.some(item => item.id === id)),
+    lightIds: region.interior.lightIds.filter(id => document.lights.some(item => item.id === id)),
+    ...(region.interior.placeIds ? { placeIds: region.interior.placeIds.filter(id => document.geometry.places.some(item => item.id === id)) } : {}),
+    ...(region.interior.portalArtwork ? { portalArtwork: region.interior.portalArtwork.filter(mapping => document.portals.some(item => item.id === mapping.portalId)).map(mapping => ({ ...mapping, stampIds: mapping.stampIds.filter(id => stamps.has(id)) })) } : {}),
+  } } : region) }, addedBuildings: snapshot.addedBuildings.filter(intent => document.geometry.regions.some(region => region.id === intent.regionId)),
+    ...(snapshot.addedRooms ? { addedRooms: snapshot.addedRooms.filter(intent => document.geometry.regions.some(region => region.id === intent.regionId)) } : {}) };
 }

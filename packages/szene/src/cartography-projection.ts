@@ -5,7 +5,7 @@ import type { TacticalCartographyV1 } from "./cartography.ts";
 import type { TacticalMapDocumentV1, TacticalPoint } from "./tactical-map.ts";
 
 /** Bump whenever these pixels change; this pin belongs in every cartography raster key. */
-export const rendererVersion = "cartography-5" as const;
+export const rendererVersion = "cartography-6" as const;
 export interface CartographyPolygon {
   readonly regionId: string;
   readonly points: readonly TacticalPoint[];
@@ -165,6 +165,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     if (role?.role === "terrain") fill = palette[role.material];
     else if (role?.role === "water") fill = palette.water;
     else if (role?.role === "road") fill = palette[role.material];
+    else if (role?.role === "room" && role.interior) fill = role.interior.floor === "wood" ? 0xb78c60 : role.interior.floor === "tile" ? 0xd0cbbc : 0x929591;
     else if (role?.role === "lot" || role?.role === "room") fill = palette[role.role];
     else if (role?.role === "building") fill = palette.roof;
     if (role?.role === "building" && !roofsStarted) {
@@ -175,7 +176,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         emit(house.id, house.punkte.map(point => [point[0] + shadow * .75, point[1] + shadow]), 0x26332b, .38);
       }
     }
-    emit(id, points, fill, document.background && (!role || role.role === "generic" || role.role === "room") ? .08 : 1, false);
+    emit(id, points, fill, document.background && (!role || role.role === "generic" || role.role === "room" && !role.interior) ? .08 : 1, false);
     const xs = points.map(point => point[0]), ys = points.map(point => point[1]);
     const minX = Math.min(...xs), minY = Math.min(...ys), maxX = Math.max(...xs), maxY = Math.max(...ys);
     const width = maxX - minX, height = maxY - minY;
@@ -206,6 +207,11 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         const a = points[index]!, b = points[(index + 1) % points.length]!;
         emit(id, line(a, b, pen), ink, .9);
       }
+    } else if (role?.role === "room" && role.interior) {
+      const step = Math.max(cartography.construction.cellSize * (role.interior.floor === "wood" ? .35 : .7), Math.max(width, height) / 70);
+      const seam = Math.max(.5, step * .025);
+      for (let y = minY + step; y < maxY; y += step) emit(id, stripe(points, 1, y, y + seam), 0x403c36, .25);
+      if (role.interior.floor !== "wood") for (let x = minX + step; x < maxX; x += step) emit(id, stripe(points, 0, x, x + seam), 0x403c36, .22);
     } else if (role?.role === "lot") {
       const axes = roofAxes(points), edge = Math.max(.7, cartography.construction.cellSize * .008);
       for (let index = 0; index < points.length; index++) {

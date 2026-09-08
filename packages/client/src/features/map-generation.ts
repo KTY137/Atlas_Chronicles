@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import type { GrundrissOptionen, HoehleOptionen, SiedlungOptionen } from "@chronicle/forge";
+import type { GrundrissOptionen, HoehleOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
 import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type KartenSetting, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
 
@@ -18,11 +18,11 @@ export interface MapNode {
 export interface GenerationSettings {
   art: MapArt; stil: MapStyle; breite: number | ""; hoehe: number | ""; anzahl: number | "";
   setting: KartenSetting;
-  siedlung: SiedlungOptionen["art"]; dichte: number; profil: "frei" | BauwerkTyp;
+  siedlung: SiedlungOptionen["art"]; standort: SiedlungStandort; dichte: number; profil: "frei" | BauwerkTyp;
   anordnung: GrundrissOptionen["anordnung"]; moeblierung: number; licht: boolean;
 }
 export function generationSettings(art: MapArt = "siedlung", profil: "frei" | BauwerkTyp = "frei", stil: MapStyle = "gemalt", setting: KartenSetting = "fantasy"): GenerationSettings {
-  return { art, stil, setting, breite: "", hoehe: "", anzahl: "", siedlung: "dorf", dichte: .3, profil, anordnung: "streuung", moeblierung: 1, licht: true };
+  return { art, stil, setting, breite: "", hoehe: "", anzahl: "", siedlung: "dorf", standort: "fluss", dichte: .3, profil, anordnung: "streuung", moeblierung: 1, licht: true };
 }
 export function changeGenerationSetting(value: GenerationSettings, setting: KartenSetting): GenerationSettings {
   return { ...value, setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
@@ -33,7 +33,7 @@ export function generationDimensions(value: GenerationSettings, defaults: Genera
 }
 export function generationOptions(value: GenerationSettings, defaults: GenerationDefaults) {
   const dimensions = value.breite !== "" || value.hoehe !== "" ? generationDimensions(value, defaults) : undefined;
-  if (value.art === "siedlung") return { art: value.siedlung, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
+  if (value.art === "siedlung") return { art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
     ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, licht: value.licht };
   return { ...(dimensions ? { zellen: dimensions } : {}),
     ...(value.anzahl !== "" ? value.art === "hoehle" ? { kammern: value.anzahl } : { raeume: value.anzahl } : {}),
@@ -81,7 +81,8 @@ export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, no
         ...(node.vorhandeneKarteId ? { icon: "portal" as const, showMarker: true } : node.art === "bauwerk" && polygon ? { showMarker: false } : {}),
         ...(node.bauwerk ? { color: BUILDING_COLORS[node.bauwerk.typ] } : {}), ...(ordinary ? { labelMinScale: 32 / Math.max(1, span) } : {}) };
     }),
-    lines: document.walls.map(wall => ({ id: wall.id, points: wall.points, ...(cartography && cartographyPaintsWalls(cartography, document) ? { paint: false } : {}) })), grid: document.grid,
+    lines: [...document.walls.map(wall => ({ id: wall.id, points: wall.points, ...(cartography && cartographyPaintsWalls(cartography, document) ? { paint: false } : {}) })),
+      ...document.portals.map(portal => ({ id: portal.id, points: portal.bounds, color: portal.closed ? 0xb58a50 : 0x6faa98 }))], grid: document.grid,
     stamps: document.geometry.stamps.map(stamp => ({ id: stamp.id, asset: stamp.a, x: stamp.x, y: stamp.y, s: stamp.s, r: stamp.r, l: stamp.l, ...(stamp.t !== undefined ? { t: stamp.t } : {}) })),
   };
 }

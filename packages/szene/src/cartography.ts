@@ -25,8 +25,23 @@ export interface CartographyRegionCommon {
   /** A valid hash proves consistency only. The server determines provenance authority. */
   readonly provenance: Weltkeim | null;
 }
+/** Optional, explicitly versioned interior ownership profile. Geometry remains in the map.
+ * Shared boundaries can belong to two rooms; furniture and lights have one owner. Absence
+ * means ownership is unknown, never permission to guess it from spatial containment. */
+export interface CartographyRoomInteriorV1 {
+  readonly schemaVersion: 1;
+  readonly floor: "wood" | "stone" | "tile";
+  readonly stampIds: readonly string[];
+  readonly wallIds: readonly string[];
+  readonly portalIds: readonly string[];
+  readonly lightIds: readonly string[];
+  readonly placeIds?: readonly string[];
+  /** Artwork generated for a particular opening, required to edit old painted doors safely. */
+  readonly portalArtwork?: readonly { readonly portalId: string; readonly stampIds: readonly string[] }[];
+}
 export type CartographyRegionV1 = CartographyRegionCommon & (
-  | { readonly role: "generic" | "lot" | "room" }
+  | { readonly role: "generic" | "lot" }
+  | { readonly role: "room"; readonly interior?: CartographyRoomInteriorV1 }
   | { readonly role: "terrain"; readonly material: CartographyTerrainMaterial }
   | { readonly role: "water"; readonly material: CartographyWaterMaterial }
   | { readonly role: "road"; readonly material: CartographyRoadMaterial }
@@ -40,6 +55,7 @@ export interface TacticalCartographyV1 {
 }
 /** An intent for a newly drawn building, not writable node identity or provenance. */
 export interface BuildingIntent { readonly regionId: string; readonly titel: string; readonly typ: BauwerkTyp }
+export interface RoomIntent { readonly regionId: string; readonly titel: string }
 
 export class TacticalCartographyValidationError extends Error {
   override readonly name = "TacticalCartographyValidationError";
@@ -102,9 +118,11 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
   origin.forEach((coordinate, index) => number(coordinate, `construction.origin[${index}]`, -TACTICAL_CARTOGRAPHY_LIMITS.coordinate, TACTICAL_CARTOGRAPHY_LIMITS.coordinate));
   const regions = array(root.regions, "regions", TACTICAL_CARTOGRAPHY_LIMITS.regions);
   const byId = new Map<string, Record<string, unknown>>(), attached = new Set<string>();
+  const interiorReferences = { wallIds: new Map<string, number>(), portalIds: new Map<string, number>(), lightIds: new Map<string, number>(), placeIds: new Map<string, number>() };
+  let interiorReferenceCount = 0;
   for (const [index, value] of regions.entries()) {
     const path = `regions[${index}]`, common = ["regionId", "role", "authored", "locked", "provenance"];
-    const row = object(value, path, common, ["material", "lotRegionId", "streetRegionId", "attachedStampIds"]);
+    const row = object(value, path, common, ["material", "lotRegionId", "streetRegionId", "attachedStampIds", "interior"]);
     const id = text(row.regionId, `${path}.regionId`);
     if (byId.has(id)) fail(`${path}.regionId`, "duplicate region identity");
     byId.set(id, row); choice(row.role, CARTOGRAPHY_ROLES, `${path}.role`);
@@ -122,6 +140,45 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
         attached.add(id);
         if (attached.size > TACTICAL_CARTOGRAPHY_LIMITS.attachedStamps) fail("regions", "total attached stamp budget exceeded");
       }
+    } else if (row.role === "room") {
+      object(row, path, common, ["interior"]);
+      if (Object.hasOwn(row, "interior")) {
+        const interior = object(row.interior, `${path}.interior`, ["schemaVersion", "floor", "stampIds", "wallIds", "portalIds", "lightIds"], ["portalArtwork", "placeIds"]);
+        if (interior.schemaVersion !== 1) fail(`${path}.interior.schemaVersion`, "unsupported interior ownership profile; explicit migration required");
+        choice(interior.floor, ["wood", "stone", "tile"], `${path}.interior.floor`);
+        for (const field of ["stampIds", "wallIds", "portalIds", "lightIds", "placeIds"] as const) {
+          if (field === "placeIds" && !Object.hasOwn(interior, field)) continue;
+          const own = new Set<string>();
+          for (const item of array(interior[field], `${path}.interior.${field}`, field === "stampIds" ? TACTICAL_MAP_LIMITS.stamps : field === "wallIds" ? TACTICAL_MAP_LIMITS.walls : field === "portalIds" ? TACTICAL_MAP_LIMITS.portals : field === "placeIds" ? TACTICAL_MAP_LIMITS.places : TACTICAL_MAP_LIMITS.lights)) {
+            const id = text(item, `${path}.interior.${field}`);
+            if (own.has(id)) fail(`${path}.interior.${field}`, "duplicate interior reference");
+            own.add(id);
+            if (++interiorReferenceCount > 150_000) fail("regions.interior", "total interior reference budget exceeded");
+            if (field === "stampIds") {
+              if (attached.has(id)) fail(`${path}.interior.stampIds`, "stamp must belong to at most one region");
+              attached.add(id);
+              if (attached.size > TACTICAL_CARTOGRAPHY_LIMITS.attachedStamps) fail("regions", "total attached stamp budget exceeded");
+            } else {
+              const references = interiorReferences[field], count = (references.get(id) ?? 0) + 1;
+              if (count > (field === "lightIds" || field === "placeIds" ? 1 : 2)) fail(`${path}.interior.${field}`, field === "lightIds" || field === "placeIds" ? "light/place must belong to at most one room" : "boundary must belong to at most two rooms");
+              references.set(id, count);
+            }
+          }
+        }
+        if (Object.hasOwn(interior, "portalArtwork")) {
+          const portals = new Set(interior.portalIds as string[]), stamps = new Set(interior.stampIds as string[]), mappedPortals = new Set<string>(), mappedStamps = new Set<string>();
+          for (const item of array(interior.portalArtwork, `${path}.interior.portalArtwork`, TACTICAL_MAP_LIMITS.portals)) {
+            const artwork = object(item, `${path}.interior.portalArtwork`, ["portalId", "stampIds"]), portalId = text(artwork.portalId, `${path}.interior.portalArtwork.portalId`);
+            if (!portals.has(portalId) || mappedPortals.has(portalId)) fail(`${path}.interior.portalArtwork`, "one artwork mapping per owned portal required");
+            mappedPortals.add(portalId);
+            for (const id of array(artwork.stampIds, `${path}.interior.portalArtwork.stampIds`, TACTICAL_MAP_LIMITS.stamps)) {
+              const stampId = text(id, `${path}.interior.portalArtwork.stampIds`);
+              if (!stamps.has(stampId) || mappedStamps.has(stampId)) fail(`${path}.interior.portalArtwork.stampIds`, "distinct owned stamp required");
+              mappedStamps.add(stampId);
+            }
+          }
+        }
+      }
     } else object(row, path, common);
   }
   for (const [id, row] of byId) if (row.role === "building") {
@@ -132,6 +189,10 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
     const map = parseTacticalMapDocument(document), mapRegions = new Set(map.geometry.regions.map(region => region.id)), stamps = new Set(map.geometry.stamps.map(stamp => stamp.id));
     if (byId.size !== mapRegions.size || [...byId.keys()].some(id => !mapRegions.has(id))) fail("regions", "exactly one role for every region of the matching map revision required");
     if ([...attached].some(id => !stamps.has(id))) fail("regions.attachedStampIds", "existing stamp in the matching map revision required");
+    for (const [field, values] of [["wallIds", map.walls], ["portalIds", map.portals], ["lightIds", map.lights], ["placeIds", map.geometry.places]] as const) {
+      const ids = new Set(values.map(value => value.id));
+      if ([...interiorReferences[field].keys()].some(id => !ids.has(id))) fail(`regions.interior.${field}`, "existing geometry in the matching map revision required");
+    }
   }
   return freeze(raw as TacticalCartographyV1);
 }

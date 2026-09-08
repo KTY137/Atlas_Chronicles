@@ -21,7 +21,9 @@ export const TacticalImportSchema = Type.Object({ commandId: id, name: Type.Stri
 export const TacticalRevisionV1Schema = Type.Object({ commandId: id, expectedVersion: version, document: Type.Unknown(), anchors: Type.Array(TacticalAnchorSchema, { maxItems: 72048 }) }, closed);
 export const TacticalBuildingIntentSchema = Type.Object({ regionId: geometryId, titel: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }), typ: Type.Union(BAUWERK_TYPEN.map(value => Type.Literal(value))) }, closed);
 export const TacticalRevisionV2Schema = Type.Object({ ...TacticalRevisionV1Schema.properties, schemaVersion: Type.Literal(2), cartography: Type.Unknown(), addedBuildings: Type.Array(TacticalBuildingIntentSchema, { maxItems: 2048 }) }, closed);
-export const TacticalRevisionSchema = Type.Union([TacticalRevisionV1Schema, TacticalRevisionV2Schema]);
+export const TacticalRoomIntentSchema = Type.Object({ regionId: geometryId, titel: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }) }, closed);
+export const TacticalRevisionV3Schema = Type.Object({ ...TacticalRevisionV2Schema.properties, schemaVersion: Type.Literal(3), addedRooms: Type.Array(TacticalRoomIntentSchema, { maxItems: 2048 }) }, closed);
+export const TacticalRevisionSchema = Type.Union([TacticalRevisionV1Schema, TacticalRevisionV2Schema, TacticalRevisionV3Schema]);
 export const TacticalPlanSchema = Type.Object({ commandId: id, expectedVersion: expected, mapId: id, mapRevision: version, tokens: Type.Array(TacticalTokenPlanSchema, { maxItems: 1000 }) }, closed);
 export const TacticalMoveSchema = Type.Object({ commandId: id, expectedVersion: version, ...pose }, closed);
 export const TacticalPortalSchema = Type.Object({ commandId: id, expectedVersion: version, closed: Type.Boolean() }, closed);

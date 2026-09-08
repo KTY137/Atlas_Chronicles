@@ -63,16 +63,20 @@ import {
 
 export const SIEDLUNG_ERZEUGER = "chronicle-siedlung";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const SIEDLUNG_VERSION = "5";
+export const SIEDLUNG_VERSION = "6";
 
 export const SIEDLUNG_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 256, grundstueckMin: 2, grundstueckMax: 24,
 });
 
 export type SiedlungArt = "weiler" | "dorf" | "stadt";
+export const SIEDLUNG_STANDORTE = Object.freeze(["ebene", "wald", "gebirge", "fluss", "see", "kueste", "insel"] as const);
+export type SiedlungStandort = typeof SIEDLUNG_STANDORTE[number];
 
 export interface SiedlungOptionen {
   readonly setting?: KartenSetting;
+  /** Physical surroundings, normalized into the seed; older callers retain the river default. */
+  readonly standort?: SiedlungStandort;
   /** Hamlet, village or town — shifts every default below, and is itself part of the option vector
    * because it also chooses the street surface (dirt track vs paved stone), not only the numbers. */
   readonly art: SiedlungArt;
@@ -97,7 +101,7 @@ const SIEDLUNG_ART_STANDARD: Readonly<Record<SiedlungArt, Omit<SiedlungOptionen,
 
 export function siedlungStandard(art: SiedlungArt = "dorf"): SiedlungOptionen {
   if (art !== "weiler" && art !== "dorf" && art !== "stadt") fail("option", "optionen.art", "weiler, dorf oder stadt erwartet");
-  return Object.freeze({ art, setting: "fantasy", ...SIEDLUNG_ART_STANDARD[art] });
+  return Object.freeze({ art, setting: "fantasy", standort: "fluss", ...SIEDLUNG_ART_STANDARD[art] });
 }
 
 export const SIEDLUNG_STANDARD: SiedlungOptionen = siedlungStandard();
@@ -338,7 +342,9 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   if (art !== "weiler" && art !== "dorf" && art !== "stadt") fail("option", "optionen.art", "weiler, dorf oder stadt erwartet");
   const setting = auftrag.optionen?.setting === undefined ? "fantasy" : auftrag.optionen.setting;
   if (!KARTEN_SETTINGS.some(era => era === setting)) fail("option", "optionen.setting", "fantasy, gegenwart oder scifi erwartet");
-  const optionen: SiedlungOptionen = { ...siedlungStandard(art), ...auftrag.optionen, art, setting };
+  const standort = auftrag.optionen?.standort === undefined ? "fluss" : auftrag.optionen.standort;
+  if (!SIEDLUNG_STANDORTE.some(value => value === standort)) fail("option", "optionen.standort", "ebene, wald, gebirge, fluss, see, kueste oder insel erwartet");
+  const optionen: SiedlungOptionen = { ...siedlungStandard(art), ...auftrag.optionen, art, setting, standort };
   const [breite, hoehe] = optionen.ausdehnung;
   const L = SIEDLUNG_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>
@@ -368,7 +374,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     optionen: {
       art: optionen.art, ausdehnung: [breite, hoehe], zellgroesse: optionen.zellgroesse,
       bauwerke: optionen.bauwerke, strassenDichte: optionen.strassenDichte, grundstueck: [gMin, gMax],
-      licht: optionen.licht, setting,
+      licht: optionen.licht, setting, standort,
       paket: { id: paket.id, version: paket.version, zellgroesse: paket.zellgroesse },
     } as Readonly<Record<string, CanonicalValue>>,
   });
@@ -392,7 +398,40 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     const half = flussBreite * (breitStart * (1 - i / 16) + breitEnde * i / 16) / 2;
     return { left: qp([point[0] - dy / size * half, point[1] + dx / size * half]), right: qp([point[0] + dy / size * half, point[1] - dx / size * half]) };
   });
-  const fluss: Polygon[] = ufer.slice(1).map((b, i) => schnitt([ufer[i]!.left, ufer[i]!.right, b.right, b.left], rahmen)).filter(polygon => polygon.length >= 3);
+  const fluss: Polygon[] = standort === "fluss" ? ufer.slice(1).map((b, i) => schnitt([ufer[i]!.left, ufer[i]!.right, b.right, b.left], rahmen)).filter(polygon => polygon.length >= 3) : [];
+  const ellipse = (cx: number, cy: number, rx: number, ry: number, shear: number): Polygon => Array.from({ length: 28 }, (_, i) => {
+    const angle = i / 28 * Math.PI * 2, x = Math.cos(angle) * rx, y = Math.sin(angle) * ry;
+    return qp([cx + x + y * shear, cy + y]);
+  });
+  // Every obstacle is convex. The same polygons govern visible water/rock, streets, parcels
+  // and walls, including the actual open sea around an island rather than a decorative label.
+  const wasser: Polygon[] = [...fluss], fels: Polygon[] = [], strand: Polygon[] = [];
+  const wasserMaterial = standort === "see" ? "lake" : standort === "kueste" || standort === "insel" ? "sea" : "river";
+  if (standort === "see") {
+    const lake = ellipse(breite * .78, hoehe * .34, breite * .18, hoehe * .27, -.15);
+    wasser.push(schnitt(lake, rahmen));
+    strand.push(schnitt(mitAbstand(lake, Math.min(breite, hoehe) * .025), rahmen));
+  } else if (standort === "kueste") {
+    const shore = Array.from({ length: 9 }, (_, i): Punkt => [q(breite * (.72 + .045 * Math.sin(i / 8 * Math.PI * 2 + r.zahl(-.12, .12)))), q(hoehe * i / 8)]);
+    for (let i = 1; i < shore.length; i++) {
+      const a = shore[i - 1]!, b = shore[i]!;
+      wasser.push([a, [breite, a[1]], [breite, b[1]], b]);
+      strand.push(([[a[0] - breite * .028, a[1]], a, b, [b[0] - breite * .028, b[1]]] as Polygon).map(qp));
+    }
+  } else if (standort === "insel") {
+    const land = ellipse(breite * .5, hoehe * .5, breite * .405, hoehe * .405, .08);
+    wasser.push(...ohne(rahmen, land));
+    strand.push(...ohne(land, einwaerts(land, Math.min(breite, hoehe) * .026)));
+  } else if (standort === "gebirge") {
+    const formations: Polygon[] = [
+      [[0, 0], [breite * .57, 0], [breite * .42, hoehe * .16], [breite * .2, hoehe * .32], [0, hoehe * .42]],
+      [[breite, hoehe * .29], [breite, hoehe], [breite * .69, hoehe], [breite * .77, hoehe * .69]],
+      [[0, hoehe * .77], [breite * .17, hoehe * .87], [breite * .28, hoehe], [0, hoehe]],
+    ];
+    fels.push(...formations.map(polygon => polygon.map(qp)));
+  }
+  const bauHindernisse = [...wasser, ...fels];
+  const strassenHindernisse = standort === "fluss" ? [] : bauHindernisse;
 
   // -- 1. Viertel: Punkte streuen, Lloyd glätten, Voronoi schneiden ---------------------------
   // Ein gestörtes Raster statt reinem Zufall: reiner Zufall erzeugt Klumpen und Splitterzellen,
@@ -461,7 +500,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   for (let i = 1; i < viertel.length; i++) if (viertel[i]!.ferne < viertel[zentrumIndex]!.ferne) zentrumIndex = i;
   const marktIndex = viertel.length >= 5 ? viertel.map((ward, index) => ({ ward, index }))
     .sort((a, b) => a.ward.ferne - b.ward.ferne || a.index - b.index)
-    .find(({ ward }) => !fluss.some(water => imPolygon(schwerpunkt(ward.zelle), water)
+    .find(({ ward }) => !bauHindernisse.some(water => imPolygon(schwerpunkt(ward.zelle), water)
       || water.some((point, i) => abstandPolygonStrecke([schwerpunkt(ward.zelle)], point, water[(i + 1) % water.length]!) < 1.7)))?.index ?? zentrumIndex : -1;
 
   // -- 3. Gassen: geteilte Voronoikanten. Hier entsteht das Netz mit Zyklen. -------------------
@@ -562,6 +601,19 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     }
     if (reached.has(target)) gassen.splice(index, 1);
   }
+  // Only rivers receive bridges. Lake, sea and mountain faces stop the full road width;
+  // shortened frontages become the addresses used by parcel generation below.
+  if (strassenHindernisse.length) {
+    const clearance = strassenHindernisse.map(polygon => mitAbstand(polygon, gassenBreite + .045));
+    const trockeneGassen = gassen.flatMap(road => freieMauer(road.von, road.bis, clearance).flatMap(([von, bis], index) => {
+      if (Math.hypot(bis[0] - von[0], bis[1] - von[1]) < gassenBreite) return [];
+      const dx = bis[0] - von[0], dy = bis[1] - von[1];
+      const band = clipHalbebene(clipHalbebene(road.band, -dx, -dy, -dx * von[0] - dy * von[1]), dx, dy, dx * bis[0] + dy * bis[1]).map(qp);
+      if (band.length < 3 || flaeche(band) < .02 || strassenHindernisse.some(polygon => flaeche(schnitt(band, polygon)) > 1e-10)) return [];
+      return [{ ...road, id: ids.geometrieId("landstrasse", road.id, `${index}`), von, bis, band }];
+    }));
+    gassen.splice(0, gassen.length, ...trockeneGassen);
+  }
   for (const list of nachbarn) list.length = 0;
   for (const [index, road] of gassen.entries()) {
     nachbarn[road.a]!.push(index);
@@ -614,12 +666,13 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     const side = distances.indexOf(Math.min(...distances));
     const edge: Punkt = side === 0 ? [point[0] + rand * .3, 0] : side === 1 ? [breite, point[1] + rand * .3] : side === 2 ? [point[0] - rand * .3, hoehe] : [0, point[1] - rand * .3];
     if (distances[side]! < .002 && !arrivals.some(value => value.side === side)
-      && !fluss.some(water => imPolygon(point, water) || imPolygon(edge, water))) arrivals.push({ point, ward: g.a, side });
+      && !bauHindernisse.some(water => imPolygon(point, water) || imPolygon(edge, water))) arrivals.push({ point, ward: g.a, side });
   }
   for (const arrival of arrivals.slice(0, art === "weiler" ? 2 : 4)) {
     const a = arrival.point, side = arrival.side, b: Punkt = side === 0 ? [q(a[0] + rand * .3), 0] : side === 1 ? [breite, q(a[1] + rand * .3)] : side === 2 ? [q(a[0] - rand * .3), hoehe] : [0, q(a[1] - rand * .3)];
     const dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx, dy), half = gassenBreite * .36, nx = -dy / length * half, ny = dx / length * half;
     const band = schnitt([[a[0] + nx, a[1] + ny], [b[0] + nx, b[1] + ny], [b[0] - nx, b[1] - ny], [a[0] - nx, a[1] - ny]], rahmen);
+    if (strassenHindernisse.some(polygon => flaeche(schnitt(band, polygon)) > 1e-10)) continue;
     gassen.push({ id: ids.geometrieId("zufahrt", `${side}`), art: "hauptstrasse", a: arrival.ward, b: arrival.ward, von: a, bis: b, band });
   }
 
@@ -635,7 +688,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
       const end: Punkt = [road.von[0] + t * dx, road.von[1] + t * dy], distance = Math.hypot(end[0] - center[0], end[1] - center[1]);
       const nx = (end[1] - center[1]) / (distance || 1) * .2, ny = (center[0] - end[0]) / (distance || 1) * .2;
       return { distance, polygon: ([[center[0] + nx, center[1] + ny], [end[0] + nx, end[1] + ny], [end[0] - nx, end[1] - ny], [center[0] - nx, center[1] - ny]] as Polygon).map(qp) };
-    }).filter(path => path.distance > .05 && !fluss.some(water => flaeche(schnitt(path.polygon, water)) > 1e-10)).sort((a, b) => a.distance - b.distance);
+    }).filter(path => path.distance > .05 && !bauHindernisse.some(water => flaeche(schnitt(path.polygon, water)) > 1e-10)).sort((a, b) => a.distance - b.distance);
     marktZugang = paths[0]?.polygon ?? [];
   }
 
@@ -684,7 +737,8 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
       const w = art === "weiler" ? Math.max(.65, Math.min(setting === "fantasy" ? 2.7 : 3.4, Math.sqrt(flaeche(los)) * r.zahl(.64, .77)))
         : Math.max(.65, Math.min(frontage * r.zahl(.83, .94), Math.sqrt(flaeche(los)) * .9));
       const haus = hausImLos(innen, gassen[beste]!, w, w * r.zahl(.84, 1.32), setting === "fantasy" && r.zahl(0, 1) < .21);
-      if (haus.length < 3 || fluss.some(wasser => flaeche(schnitt(haus, wasser)) > 1e-10 || wasser.some((point, i) => abstandPolygonStrecke(haus, point, wasser[(i + 1) % wasser.length]!) < .04))) continue;
+      if (haus.length < 3 || bauHindernisse.some(wasser => flaeche(schnitt(haus, wasser)) > 1e-10 || wasser.some((point, i) => abstandPolygonStrecke(haus, point, wasser[(i + 1) % wasser.length]!) < .04))) continue;
+      if (standort !== "fluss" && bauHindernisse.some(polygon => flaeche(schnitt(los, polygon)) > 1e-10)) continue;
       if ([marktFlaeche, marktZugang].some(reserve => reserve.length >= 3 && flaeche(schnitt(haus, reserve)) > 1e-10)) continue;
       if (meine.some(other => !getrennteDaecher(haus, other.umriss))) continue;
       meine.push({
@@ -744,6 +798,10 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   const generatedRole = (regionId: string) => ({ regionId, authored: false, locked: false, provenance: keim });
   const groundId = ids.geometrieId("gelände", "grund");
   extraRegions.push({ id: groundId, polygon: rahmen, role: { ...generatedRole(groundId), role: "terrain", material: "grass" } });
+  for (const [material, polygons] of [["rock", fels], ["sand", strand]] as const) for (const [index, polygon] of polygons.entries()) {
+    const id = ids.geometrieId("standort", material, `${index}`);
+    extraRegions.push({ id, polygon, role: { ...generatedRole(id), role: "terrain", material } });
+  }
   const junctions = new Map<string, { point: Punkt; count: number; radius: number; main: boolean }>();
   for (const road of gassen) for (const point of [road.von, road.bis]) {
     const key = `${Math.round(point[0] * 100)}:${Math.round(point[1] * 100)}`, old = junctions.get(key);
@@ -758,7 +816,8 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     extraRegions.push({ id, polygon, role: { ...generatedRole(id), role: "road", material: art === "stadt" ? "street" : "path" } });
     strassen.push({ id, art: junction.main ? "hauptstrasse" : "gasse", umriss: polygon });
   }
-  const habitatObstacles = [...fluss.map(poly => mitAbstand(poly, .035)), ...strassen.map(road => mitAbstand(road.umriss, .06))]
+  const habitatObstacles = [...bauHindernisse.map(poly => mitAbstand(poly, .035)), ...strand,
+    ...strassen.map(road => mitAbstand(road.umriss, .06)), ...(standort === "wald" ? rohBauwerke.map(building => mitAbstand(building.los, .08)) : [])]
     .filter(polygon => polygon.length >= 3).map(polygon => ({ polygon, box: huelle(polygon) }));
   const landscape = (polygon: Polygon, path: string, material: "forest" | "field") => {
     let pieces = [schnitt(polygon, rahmen)];
@@ -786,7 +845,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     if (gewaehlt.includes(i) || alleZellen[i]!.length < 3) continue;
     const polygon = einwaerts(alleZellen[i]!, .22); if (polygon.length < 3) continue;
     const path = `${punkte[i]![0]}_${punkte[i]![1]}`;
-    if (punkte[i]![0] < breite * .32 || punkte[i]![1] > hoehe * .72 && punkte[i]![0] > breite * .55) woodland(polygon, path);
+    if (standort === "wald" || standort !== "ebene" && (punkte[i]![0] < breite * .32 || punkte[i]![1] > hoehe * .72 && punkte[i]![0] > breite * .55)) woodland(polygon, path);
     else for (const [index, field] of teileInParzellen(polygon, flaeche(polygon) / 2, r, 2).entries()) {
       const shape = einwaerts(field, .15); if (shape.length < 3) continue;
       landscape(shape, `${path}.${index}`, "field");
@@ -794,24 +853,27 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   }
   // Two broad off-map woodlands leave the north/east open. Their rounded, slanted edge
   // is one continuous silhouette; a few isolated circles would read as garden ornaments.
-  const ellipse = (cx: number, cy: number, rx: number, ry: number, shear: number): Polygon => Array.from({ length: 28 }, (_, i) => {
-    const angle = i / 28 * Math.PI * 2, x = Math.cos(angle) * rx, y = Math.sin(angle) * ry;
-    return qp([cx + x + y * shear, cy + y]);
-  });
-  landscape(ellipse(-rand * .16, hoehe * .37, rand * 1.08, hoehe * .41, .025), "westlicher-waldsaum", "forest");
-  landscape(ellipse(breite * .77, hoehe + rand * .14, breite * .34, rand * 1.05, -.65), "suedlicher-waldsaum", "forest");
+  if (standort === "wald") {
+    // A continuous forest surrounds a clearing; roads and actual plots cut its canopy.
+    const clearing = ellipse(mitteX, mitteY, breite * .27, hoehe * .27, .08);
+    for (const [index, polygon] of ohne(rahmen, clearing).entries()) landscape(polygon, `waldlichtung.${index}`, "forest");
+  } else if (standort !== "ebene") {
+    landscape(ellipse(-rand * .16, hoehe * .37, rand * 1.08, hoehe * .41, .025), "westlicher-waldsaum", "forest");
+    landscape(ellipse(breite * .77, hoehe + rand * .14, breite * .34, rand * 1.05, -.65), "suedlicher-waldsaum", "forest");
+  }
   const fieldGroups: Polygon[] = [
     [[breite * .34, .05], [breite - .05, .05], [breite * .96, rand * .72], [breite * .54, rand * .94], [breite * .4, rand * .48]],
     [[breite * .13, hoehe - rand * .55], [breite * .3, hoehe - rand * .94], [breite * .49, hoehe - rand * .7], [breite * .5, hoehe - .05], [breite * .12, hoehe - .05]],
   ];
-  for (const [group, polygon] of fieldGroups.entries()) for (const [index, field] of teileInParzellen(polygon, flaeche(polygon) / 3, r, 3).entries()) {
+  for (const [group, polygon] of (standort === "wald" ? [] : fieldGroups).entries()) for (const [index, field] of teileInParzellen(polygon, flaeche(polygon) / 3, r, 3).entries()) {
     const shape = einwaerts(field, .1);
     if (shape.length >= 3) landscape(shape, `flur.${group}.${index}`, "field");
   }
   const tragendeStrassen = [...strassen];
-  for (let i = 0; i < fluss.length; i++) {
+  for (let i = 0; i < wasser.length; i++) {
     const id = ids.geometrieId("wasser", `abschnitt.${i}`);
-    extraRegions.push({ id, polygon: fluss[i]!, role: { ...generatedRole(id), role: "water", material: "river" } });
+    extraRegions.push({ id, polygon: wasser[i]!, role: { ...generatedRole(id), role: "water", material: wasserMaterial } });
+    if (standort !== "fluss") continue;
     for (const gasse of tragendeStrassen) {
       const bridge = schnitt(gasse.umriss, fluss[i]!); if (bridge.length < 3 || flaeche(bridge) < .00001) continue;
       const bridgeId = ids.geometrieId("brücke", gasse.id, `abschnitt.${i}`);
@@ -825,7 +887,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   }
   if (marktIndex >= 0) {
     let parts: Polygon[] = [marktFlaeche];
-    for (const water of fluss) parts = parts.flatMap(polygon => ohne(polygon, water));
+    for (const water of bauHindernisse) parts = parts.flatMap(polygon => ohne(polygon, water));
     for (const [index, polygon] of parts.entries()) {
       if (polygon.length < 3 || flaeche(polygon) < .04) continue;
       const id = ids.geometrieId("markt", viertel[marktIndex]!.pfad, `${index}`);
@@ -876,7 +938,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
       const pieces = p.length === 6 ? [[p[0]!, p[1]!, p[2]!, p[5]!], [p[2]!, p[3]!, p[4]!, p[5]!]] : [p];
       return pieces.map(piece => mitAbstand(piece, roofClearance));
     });
-    const obstacles = [...fluss.map(poly => mitAbstand(poly, .07)), ...gassen.map(road => mitAbstand(road.band, .14)), ...roofObstacles];
+    const obstacles = [...bauHindernisse.map(poly => mitAbstand(poly, .07)), ...strassen.map(road => mitAbstand(road.umriss, .14)), ...roofObstacles];
     for (const line of wallLines) for (const [index, [a, b]] of freieMauer(line.a, line.b, obstacles).entries()) {
       if ([a, b].some(([x, y]) => x < 0 || x > breite || y < 0 || y > hoehe)) continue;
       mauern.push({ id: ids.geometrieId("mauer", line.path, `${index}`), kind: "wall", elevation: 0,
@@ -932,7 +994,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     const verkehr = werk.waehle("aufbau", "verkehr");
     if (verkehr) {
       const frei: [number, number][] = [];
-      const obstacles = [...bauwerkPolys, ...fluss].map(polygon => ({ polygon, box: huelle(polygon) }));
+      const obstacles = [...bauwerkPolys, ...bauHindernisse].map(polygon => ({ polygon, box: huelle(polygon) }));
       for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) {
         const point: Punkt = [x + .5, y + .5], cell: Polygon = [[x, y], [x + 1, y], [x + 1, y + 1], [x, y + 1]];
         if ((inEinem(point, strassenPolys) || inEinem(point, hofFlaechen)) && !obstacles.some(({ polygon, box }) => box[0] < x + 1 && box[2] > x && box[1] < y + 1 && box[3] > y && flaeche(schnitt(polygon, cell)) > 1e-10)) frei.push([x, y]);

@@ -23,6 +23,20 @@ const village = () => fixture([box("street", 0, 0, 20, 200), box("house", 40, 40
 const area = (region: Region) => Math.abs(region.punkte.reduce((sum, point, i) => { const next = region.punkte[(i + 1) % region.punkte.length]!; return sum + point[0] * next[1] - next[0] * point[1]; }, 0)) / 2;
 
 describe("atomic cartography edit operations", () => {
+  it("permits a freely placed cottage without a road while retaining collision and protected-place checks", () => {
+    const input = fixture([], []), operation = { kind: "building", at: [60, 60], width: 30, height: 20, typ: "haus", titel: "Waldhütte", requireRoad: false } as const;
+    const result = applyCartographyEdit({ ...input, operation }); expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const id = result.addedBuildings[0]!.regionId;
+    expect(result.cartography.regions[0]).not.toHaveProperty("streetRegionId");
+    expect(applyCartographyEdit({ ...input, ...result, operationId: "moved", operation: { kind: "transform", regionId: id, delta: [50, 30], quarterTurns: 1 } }).ok).toBe(true);
+    expect(applyCartographyEdit({ ...input, ...result, operationId: "overlap", operation })).toMatchObject({ ok: false, code: "contradiction" });
+    const water = fixture([box("water", 30, 30, 80, 80)], [{ ...base, regionId: "water", role: "water", material: "lake" }]);
+    expect(applyCartographyEdit({ ...water, operation })).toMatchObject({ ok: false, code: "contradiction" });
+    const locked = fixture([box("land", 30, 30, 80, 80)], [{ ...terrain("land"), locked: true }]);
+    expect(applyCartographyEdit({ ...locked, operation })).toMatchObject({ ok: false, code: "protected" });
+    expect(applyCartographyEdit({ ...input, operation: { ...operation, requireRoad: true } })).toMatchObject({ ok: false, code: "contradiction" });
+  });
   it("paints only the local module, keeps outside objects byte-identical and conserves surface coverage", () => {
     const input = fixture([box("ground", 0, 0, 100, 100), box("outside", 150, 150, 20, 20)], [terrain("ground"), terrain("outside")]);
     const before = JSON.stringify(input), operation: CartographyEditOperation = { kind: "terrain", points: [[30, 30]], radius: 2, material: "forest" };

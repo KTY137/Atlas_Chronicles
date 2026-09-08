@@ -16,7 +16,7 @@ function overlap(a: Polygon, b: Polygon): boolean {
   }
   return true;
 }
-describe("settlement v5 canonical cartography", () => {
+describe("settlement v6 canonical cartography", () => {
   it("keeps visible wall stonework, shadows and gate caps out of canonical building roofs", () => {
     const cases = [96, 16, 192].map(zellgroesse => ({ seed: "gallery:river-1", zellgroesse }))
       .concat(["gallery:orchard-2", "gallery:gate-3"].map(seed => ({ seed, zellgroesse: 96 })));
@@ -98,7 +98,7 @@ describe("settlement v5 canonical cartography", () => {
   for (const art of ["weiler", "dorf", "stadt"] as SiedlungArt[]) it(`${art}: small orthogonal roofs, larger lots, landscape and actual water crossings across fixed seeds`, () => {
     for (const seed of ["gallery:river-1", "gallery:orchard-2", "gallery:gate-3"]) {
       const generated = erzeugeSiedlung({ keim: seed, optionen: { art } }, paket);
-      expect(generated.version).toBe("5");
+      expect(generated.version).toBe("6");
       const roles = parseTacticalCartography(generated.cartography, generated.karte).regions;
       expect(roles).toHaveLength(generated.karte.geometry.regions.length);
       const region = (id: string) => generated.karte.geometry.regions.find(value => value.id === id)!;
