@@ -1,0 +1,9002 @@
+{
+  "assets": [
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2505,
+      "datei": "boden/fantasy_wurzelplatten.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_wurzelplatten",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "stein",
+        "erde",
+        "trocken",
+        "keller",
+        "hof"
+      ],
+      "sha256": "95c8a863f7450d5065fabeb6ab0c7cdf0f97d8ed4080fd4207be5cdd107ae87a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3259,
+      "datei": "boden/fantasy_eichendielen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_eichendielen",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "holz",
+        "wohnraum",
+        "halle",
+        "trocken"
+      ],
+      "sha256": "aaf5b3610a2ceec38c3f20d97f634d679a6f90e8aaa6dca3fa5be0fd86430bce"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3395,
+      "datei": "boden/fantasy_runenintarsie.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_runenintarsie",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "stein",
+        "gehoben",
+        "halle",
+        "kult",
+        "trocken"
+      ],
+      "sha256": "1c403fa71383046b7afcf1eb5624591ee27d7561a5b95f4c5db7edf0e66bfde2"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 3565,
+      "datei": "wand/fantasy_astwerkwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_astwerkwand",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "holz",
+        "tragend",
+        "natur"
+      ],
+      "sha256": "c58ac95c88c6992633494022ff79898f3a7ecdd43860a96f607b43aeb15c0c61"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2631,
+      "datei": "tuer/fantasy_rundbogentuer.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_rundbogentuer",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "drehbar",
+        "holz",
+        "eingang",
+        "wohnraum"
+      ],
+      "sha256": "ae0e93d80d6e470165e73cc94fde2fae1ca3f3a51206338e5419ff057b1b96e2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 2872,
+      "datei": "licht/fantasy_kristallleuchte.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_kristallleuchte",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "kalt",
+        "warm",
+        "kristall",
+        "kult"
+      ],
+      "sha256": "629b8ad1fec863a1462a56d041e028d59a63af35c72282aa2b6d8a41f3f27931"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 2630,
+      "datei": "gefaess/fantasy_kraeuterkessel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_kraeuterkessel",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "behaelter",
+        "kult",
+        "handwerk",
+        "kraeuter"
+      ],
+      "sha256": "02e47b9fe4216f052b83b333a0339b1ab43f72bfb3d07cec82fb59512d2e59b3"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3897,
+      "datei": "aufbau/fantasy_wendeltreppe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_wendeltreppe",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "treppe",
+        "aufwaerts",
+        "abwaerts",
+        "stein"
+      ],
+      "sha256": "893d47f89af79a7b7d8410ba0c8647f1ccf188997b1adae454351cabb3059747"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2953,
+      "datei": "moebel/fantasy_alchemiepult.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_alchemiepult",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "handwerk",
+        "wissen",
+        "labor",
+        "tisch"
+      ],
+      "sha256": "766a35efd32503da100ab5bccf6fc9a4a5128f35d6e58f1f201d9f17af32251b"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3524,
+      "datei": "moebel/fantasy_sternensphaere.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_sternensphaere",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "wissen",
+        "astronomie",
+        "kult"
+      ],
+      "sha256": "13bb9fad503b69c5e7be6d58591c4df90042b6f3e98eb2a932168dadae9a63af"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4812,
+      "datei": "moebel/fantasy_zauberwebstuhl.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_zauberwebstuhl",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "handwerk",
+        "tuch",
+        "werkbank"
+      ],
+      "sha256": "57ce628dbcbdb4ab18ee14429dca15390fbb6dada257520680dc3d3157da5ddf"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3156,
+      "datei": "moebel/fantasy_pilzhockergruppe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_pilzhockergruppe",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "sitz",
+        "mahl",
+        "rast",
+        "natur"
+      ],
+      "sha256": "0611d4b8f7cea640103c400cb6f7871af8965b23519507af047eeb3b274dc0cd"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2956,
+      "datei": "moebel/fantasy_kartografentisch.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_kartografentisch",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "wissen",
+        "tisch",
+        "karte"
+      ],
+      "sha256": "2caf8ff19c95e90d7630d529cf5eabb08d5967628c1caef1cfadf1860f8c6b68"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3156,
+      "datei": "moebel/fantasy_reiseharfe.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_reiseharfe",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "musik",
+        "kult",
+        "rast"
+      ],
+      "sha256": "83f8780227be925b9eeafd927e24e1509f235f7be3b5a09cdb156c539988d89b"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 6284,
+      "datei": "moebel/fantasy_buecherkarussell.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_buecherkarussell",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "buecher",
+        "wissen",
+        "lager",
+        "regal"
+      ],
+      "sha256": "da3007b6767d18e4ed842ece5103975f478ded224ec00c1c7c680cd9821033a1"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2823,
+      "datei": "moebel/fantasy_reisebettrolle.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_reisebettrolle",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "rast",
+        "bett",
+        "kammer",
+        "lager"
+      ],
+      "sha256": "6b5e4de600e3c92df5d22269398d43be8aafa37c2c04311a93a0f06fc7104a17"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4617,
+      "datei": "moebel/fantasy_wabenregal.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_wabenregal",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "lager",
+        "regal",
+        "vorrat",
+        "wissen"
+      ],
+      "sha256": "2001785008fcb1f72fd9a70187c19e1dd4c891896b19c69c5abcc20f1ff132ef"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3706,
+      "datei": "moebel/fantasy_runenschmiede.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_runenschmiede",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "handwerk",
+        "werkbank",
+        "metall",
+        "schmiede"
+      ],
+      "sha256": "ccebf58a4b3545f3515581870d46ecea7aa8f2d43b7f6edb722c692b9f93ab0a"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "marke",
+      "bytes": 3108,
+      "datei": "marke/fantasy_bannkreis.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_bannkreis",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "kult",
+        "magie",
+        "markierung"
+      ],
+      "sha256": "76ffd29caf66984da99323a8f81f4a5f00345eb82c353853a17f74d38e3f47b3"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3218,
+      "datei": "aufbau/fantasy_kristallgarten.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_kristallgarten",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "garten",
+        "kristall",
+        "hof",
+        "aussen"
+      ],
+      "sha256": "64a008e594416be11b4989785b09afb4f411b1829170042eda29539f717daffc"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3758,
+      "datei": "aufbau/fantasy_marktsegel.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_marktsegel",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "markt",
+        "handel",
+        "strasse",
+        "aussen"
+      ],
+      "sha256": "37b577cd894b4a6a183748b08256db0c8207b79f91f574ded4559e72c1b806d9"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5621,
+      "datei": "aufbau/fantasy_wasserrad.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_wasserrad",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "wasser",
+        "muhle",
+        "handwerk",
+        "aussen"
+      ],
+      "sha256": "b1103ef97b45c2e4c2e276a869f046834d40ecb7942dc1e3b764f929afa6f750"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 6566,
+      "datei": "aufbau/fantasy_greifenhorst.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_greifenhorst",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "natur",
+        "nest",
+        "tier",
+        "aussen"
+      ],
+      "sha256": "6634f47af4e64d864490926ac6248ae35b1a44dcb8fddcd388af2babebce8d2d"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3093,
+      "datei": "aufbau/fantasy_schwebebruecke.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_schwebebruecke",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "bruecke",
+        "weg",
+        "aussen",
+        "magie"
+      ],
+      "sha256": "b08f05cac413d2f2e09e8e9ca6e3bb5559f07b905148b89ad0d8987a90b23b3f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "marke",
+      "bytes": 2635,
+      "datei": "marke/fantasy_gildenwegweiser.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fantasy_gildenwegweiser",
+      "schlagworte": [
+        "genre_fantasy",
+        "fantasy",
+        "eingang",
+        "hinweis",
+        "weg",
+        "strasse"
+      ],
+      "sha256": "484b9500968c747ccf72de4eef1a8843f9a1a2ac18b32045cbcd5f94e2a4da2f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2950,
+      "datei": "boden/gothic_schachmarmor.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_schachmarmor",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "stein",
+        "marmor",
+        "gehoben",
+        "halle",
+        "trocken"
+      ],
+      "sha256": "c4f641f7d5625289120d97342fa06985be3c6238b184c3abd3a1515d63793887"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3128,
+      "datei": "boden/gothic_grabschiefer.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_grabschiefer",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "stein",
+        "keller",
+        "trocken",
+        "krypta"
+      ],
+      "sha256": "6db54713a1b10987d6a6271f75eb3fb0493b5d31c73fd59c8323f1cdda25e588"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3052,
+      "datei": "boden/gothic_rosettenfliesen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_rosettenfliesen",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "fliesen",
+        "stein",
+        "kult",
+        "gehoben",
+        "trocken"
+      ],
+      "sha256": "a4070e09bcb5f6e3f64ebed9494458935c2532138079949bf9c2cb45508e1346"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "wand",
+      "bytes": 3325,
+      "datei": "wand/gothic_strebewand.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_strebewand",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "stein",
+        "tragend",
+        "kirche"
+      ],
+      "sha256": "68b839d687fd1fbd485c40f51aafee421aeeeb93fc75fe61be7db2bd047cd7d4"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 4039,
+      "datei": "tuer/gothic_eisentor.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_eisentor",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "drehbar",
+        "metall",
+        "eingang",
+        "schwer"
+      ],
+      "sha256": "1cfb532c0c4d2035b8a36e27272877baf76bfde5101a80168cdf24f6afb927a8"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "licht",
+      "bytes": 5347,
+      "datei": "licht/gothic_kerzenkrone.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_kerzenkrone",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "kerze",
+        "warm",
+        "kult",
+        "kirche",
+        "wache"
+      ],
+      "sha256": "f50949d0aa71c1c2630bcaf8cbc1118c2338a9696a39a19e368d535bc7ecfbc7"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 3130,
+      "datei": "gefaess/gothic_reliquienurne.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_reliquienurne",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "kult",
+        "behaelter",
+        "schatz"
+      ],
+      "sha256": "d7ef4527f5db3e0d7bc65d35114d8fcccc1a15a5bd108c0261595bcf034fb990"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 4274,
+      "datei": "aufbau/gothic_kryptatreppe.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_kryptatreppe",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "treppe",
+        "aufwaerts",
+        "abwaerts",
+        "krypta",
+        "stein"
+      ],
+      "sha256": "6a12fcb6dbcef2d579edb48c2d2a789416f3d92b5f0893667886c7d6cf4386e1"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2583,
+      "datei": "moebel/gothic_sarkophag.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_sarkophag",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "kult",
+        "grab",
+        "stein"
+      ],
+      "sha256": "a2de35ccb8a85d471846159fea6890a7d7a57fe1ecb6a06bb5b861c83daa6739"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 6537,
+      "datei": "moebel/gothic_pfeifenorgel.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_pfeifenorgel",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "musik",
+        "kult",
+        "kirche"
+      ],
+      "sha256": "90ca1908b67eb2d585b28d782fdb2b47994e55115e33d1a68f505aae2f508f00"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3797,
+      "datei": "moebel/gothic_beichtstuhl.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_beichtstuhl",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "kult",
+        "sitz",
+        "kammer",
+        "kirche"
+      ],
+      "sha256": "4f186df5d08b09f311ed18455777d0143bf2685f9ac754084a30e4c65fa3ba11"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3070,
+      "datei": "moebel/gothic_lesepult.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_lesepult",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "buecher",
+        "wissen",
+        "kult",
+        "tisch"
+      ],
+      "sha256": "8fbc775ebd0c265b5f6f4284933fbdff44a0f506c12008091af4ef40e9e7e40c"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4018,
+      "datei": "moebel/gothic_chorgestuehl.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_chorgestuehl",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "sitz",
+        "kult",
+        "kirche"
+      ],
+      "sha256": "53ccbe4f639800e90c84eb9d7182f0b86a19a99b4f17221c7db089c5530aad51"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "moebel",
+      "bytes": 2997,
+      "datei": "moebel/gothic_katafalk.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_katafalk",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "kult",
+        "grab",
+        "tuch"
+      ],
+      "sha256": "35cdd9d29663caaa8b2a355b93df9d725cb889cad37f86bfc733450f75408d15"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2792,
+      "datei": "moebel/gothic_reliquienschrein.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_reliquienschrein",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "kult",
+        "schatz",
+        "vitrine"
+      ],
+      "sha256": "489ccc592a897eb1ef1a0f8daca23ac479b1fb1acbb30b60307117e530c414a1"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2808,
+      "datei": "moebel/gothic_seziertisch.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_seziertisch",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "medizin",
+        "handwerk",
+        "tisch",
+        "wissen"
+      ],
+      "sha256": "2f8df979ffc1c1961aa179398ad1a453d71cdb6a660203ab70dee2198063567a"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2995,
+      "datei": "moebel/gothic_spitzbogenschrank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_spitzbogenschrank",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "lager",
+        "regal",
+        "kammer"
+      ],
+      "sha256": "35b2c4a55afdb3a8eb2757c25e9b332414d2f0d9f6d7b18767cc56ee2d887e86"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3840,
+      "datei": "moebel/gothic_pendeluhr.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_pendeluhr",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "uhr",
+        "wissen",
+        "kammer"
+      ],
+      "sha256": "07e55d2f8486d404302f65d093c46748cdf3fc5d5ae4e032dcc79703e593cfbe"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3775,
+      "datei": "aufbau/gothic_rosenhecke.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_rosenhecke",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "garten",
+        "gruen",
+        "hof",
+        "aussen"
+      ],
+      "sha256": "8beb14648ca63bb2d8a1de7de2f776585b7bfe26e7df1266047cc48d292b0909"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 2690,
+      "datei": "aufbau/gothic_zisternenbrunnen.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_zisternenbrunnen",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "wasser",
+        "brunnen",
+        "hof",
+        "aussen"
+      ],
+      "sha256": "334a2398407e432be237ee4d82ae9c757eb1dd2562c8ffd1a224f40109033898"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3483,
+      "datei": "aufbau/gothic_mausoleumsdach.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_mausoleumsdach",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "dach",
+        "grab",
+        "gebaeude",
+        "aussen"
+      ],
+      "sha256": "958e5ffa3439690a5aac47dbf3eef25c810f803260753a6e46e945279226747a"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3203,
+      "datei": "aufbau/gothic_grabreihen.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_grabreihen",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "grab",
+        "garten",
+        "stein",
+        "aussen"
+      ],
+      "sha256": "07ac34431d5277a71de29deef342c7c2e03e7471330c9ffb878ed38c22a544ed"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 5567,
+      "datei": "aufbau/gothic_eisenzaun.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_eisenzaun",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "zaun",
+        "grenze",
+        "strasse",
+        "aussen"
+      ],
+      "sha256": "15b282f62ab7d89063dace62574e4f025a477cf7f8acaa4305e546577dd0890d"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3202,
+      "datei": "aufbau/gothic_glockenstuhl.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_glockenstuhl",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "glocke",
+        "kirche",
+        "aussen",
+        "dach"
+      ],
+      "sha256": "2c3a0bf0ef0098b412d0aef210ac3aaa2ec367a8140fbdf3d7d20ebc4b38e14c"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "marke",
+      "bytes": 2758,
+      "datei": "marke/gothic_heraldikpodest.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "gothic_heraldikpodest",
+      "schlagworte": [
+        "genre_gothic",
+        "fantasy",
+        "eingang",
+        "kult",
+        "schild",
+        "hinweis"
+      ],
+      "sha256": "2b07c94cfc9e427092afa45de9e5e8c5a1539e8af009627e5757a668498ccf66"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 9634,
+      "datei": "boden/antike_kiesmosaik.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_kiesmosaik",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "stein",
+        "trocken",
+        "halle",
+        "hof"
+      ],
+      "sha256": "82e40fdd7c752a448a951a8067eb045e09ceb4c5e77564c08bb98f3ed30937ba"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3437,
+      "datei": "boden/antike_flechtmarmor.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_flechtmarmor",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "marmor",
+        "stein",
+        "gehoben",
+        "halle",
+        "trocken"
+      ],
+      "sha256": "341593bef03d9354bb7ccd11122e11f386197c1ac4b9293ca786d8cad3fdd072"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2878,
+      "datei": "boden/antike_terracotta.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_terracotta",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "fliesen",
+        "trocken",
+        "wohnraum",
+        "halle"
+      ],
+      "sha256": "b9c8952def1a0446f8fc3465c7907ba4802b81bc80762a7c87a90690a5bfdd8d"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "wand",
+      "bytes": 6573,
+      "datei": "wand/antike_saeulenwand.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_saeulenwand",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "stein",
+        "saeule",
+        "tragend",
+        "halle"
+      ],
+      "sha256": "f7bbbf62c511e644cb5f772a226c28dd47e65dc6c83d58cccb7d5df5c60ee2ee"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2561,
+      "datei": "tuer/antike_bronzetuer.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_bronzetuer",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "drehbar",
+        "metall",
+        "eingang"
+      ],
+      "sha256": "1ca0bbd8343d04ed4f7ece9beda2172bdd4be5138c952c9559909e84a13bc243"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 3617,
+      "datei": "licht/antike_oellampentraeger.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_oellampentraeger",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "warm",
+        "oel",
+        "wache",
+        "kult"
+      ],
+      "sha256": "493c0a73711081b6be789d064ee4a4c233d82ecc10f993eab587ab7d57b2277e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 3562,
+      "datei": "gefaess/antike_amphorenkorb.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_amphorenkorb",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "behaelter",
+        "vorrat",
+        "wasser",
+        "lager"
+      ],
+      "sha256": "adfe66bc6d1190b107d9d6fa7bd52299de8fdad942d1b2843cecdfb9b3d4234c"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3196,
+      "datei": "aufbau/antike_freitreppe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_freitreppe",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "treppe",
+        "aufwaerts",
+        "abwaerts",
+        "stein",
+        "aussen"
+      ],
+      "sha256": "9292c3024f87a8f6ea3f2d2b35b8678d72ba9f73ee7c987a365cc5a5e856d101"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3243,
+      "datei": "moebel/antike_triclinium.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_triclinium",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "mahl",
+        "sitz",
+        "rast",
+        "gehoben"
+      ],
+      "sha256": "84b71d9118a64cf26c5a37f6efbd6683dd58f6cfd2a06e22ca0ca04415963baa"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3065,
+      "datei": "moebel/antike_schreibbank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_schreibbank",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "wissen",
+        "tisch",
+        "schreiben"
+      ],
+      "sha256": "7c45d9fef48a3da9f587148073747e42aa699e1ceec832a64d06676de0ee2592"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2686,
+      "datei": "moebel/antike_marktwaage.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_marktwaage",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "handel",
+        "waage",
+        "wissen"
+      ],
+      "sha256": "291922a3d9223f0789679cd54c2e83b301c23e05c89b41bcdb5744489dce6cdb"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4643,
+      "datei": "moebel/antike_muehlstein.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_muehlstein",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "handwerk",
+        "muhle",
+        "mahl"
+      ],
+      "sha256": "645aad5a3a6e300428648f0f07528fc33de2bffd27cdf3c41e69c582ef587ce5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2666,
+      "datei": "moebel/antike_toepferscheibe.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_toepferscheibe",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "handwerk",
+        "keramik",
+        "werkbank"
+      ],
+      "sha256": "7538b9e58c18188d61f68bb60e33150e71b7e3183a53085fc6c9d1a2a0b446e7"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 6231,
+      "datei": "moebel/antike_gewichtswebrahmen.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_gewichtswebrahmen",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "handwerk",
+        "tuch",
+        "werkbank"
+      ],
+      "sha256": "b6db8edd8e0332915338f72b8c8f52c43cc810cf9fff993fe5959d0cc04e6da2"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3393,
+      "datei": "moebel/antike_kohleherd.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_kohleherd",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "mahl",
+        "kueche",
+        "herd",
+        "handwerk"
+      ],
+      "sha256": "0896f61eb51b8ad09e35145f7d53d9986735d279f8dce9e6c6db21e2102a0448"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3303,
+      "datei": "moebel/antike_spieltafel.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_spieltafel",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "spiel",
+        "rast",
+        "tisch",
+        "sitz"
+      ],
+      "sha256": "f0b09cdba81150cbe4157a69b77782fc4cc2211964b8958552d13a95c84346fa"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4700,
+      "datei": "moebel/antike_schriftrollenfaecher.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_schriftrollenfaecher",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "wissen",
+        "buecher",
+        "lager",
+        "regal"
+      ],
+      "sha256": "36416964919a987f6de5d7612b6368a1a6831c61ec2ae45c7c887007a4a3a518"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 2811,
+      "datei": "aufbau/antike_badebecken.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_badebecken",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "wasser",
+        "bad",
+        "medizin",
+        "gehoben"
+      ],
+      "sha256": "b42b614ca670928cf7617d56c91734558e7b00d8ed5257790a77ec9e12612d22"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 6001,
+      "datei": "aufbau/antike_hypokaustum.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_hypokaustum",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "heizung",
+        "keller",
+        "ruine",
+        "handwerk"
+      ],
+      "sha256": "c4ced378fd9b8aea2754f3845988e23922fae110c738b383623d008659b5c896"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3158,
+      "datei": "aufbau/antike_zisternenmund.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_zisternenmund",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "wasser",
+        "brunnen",
+        "vorrat",
+        "aussen"
+      ],
+      "sha256": "f8d17189cbe66a7a29c037d65c804d3f417a12e1b8b3cafda74741b1488e7994"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 5000,
+      "datei": "aufbau/antike_saeulenrundbau.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_saeulenrundbau",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "dach",
+        "gebaeude",
+        "kult",
+        "aussen"
+      ],
+      "sha256": "032ef896e02148fb08844d041d83567616f3e248e64c9bd8f79f091b8c30e6f0"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3000,
+      "datei": "aufbau/antike_streitwagen.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_streitwagen",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "verkehr",
+        "wagen",
+        "aussen"
+      ],
+      "sha256": "3fb2a7c64fadc8dabdb298af1032258c8832205ad9aee550325880b7bd24f816"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3688,
+      "datei": "aufbau/antike_lastkarren.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_lastkarren",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "verkehr",
+        "wagen",
+        "lager",
+        "aussen"
+      ],
+      "sha256": "c677a8fb2ca6dc5693a5a5779cd6f1d80a74fa2bcca0be8d0c8e4634c72e9d27"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3199,
+      "datei": "moebel/antike_sonnenuhr.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_sonnenuhr",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "wissen",
+        "uhr",
+        "hof",
+        "aussen"
+      ],
+      "sha256": "e9ba914b9f6af3a86c8875a37b07992d00f4326157b84a8c8113dab356e42537"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 5914,
+      "datei": "moebel/antike_obststand.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "antike_obststand",
+      "schlagworte": [
+        "genre_antike",
+        "fantasy",
+        "markt",
+        "mahl",
+        "handel",
+        "vorrat",
+        "aussen"
+      ],
+      "sha256": "bf61d99b7b54dd51dcdc2ab27549e86314206e6085e5fd8054f72af799181268"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 8045,
+      "datei": "boden/wuxia_kieshof.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_kieshof",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "stein",
+        "erde",
+        "trocken",
+        "hof"
+      ],
+      "sha256": "107c853dd6bf23eb9dd5f035a355347452fc7ceefe58fbd272d86067bb1872eb"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 4419,
+      "datei": "boden/wuxia_bambusmatte.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_bambusmatte",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "holz",
+        "trocken",
+        "wohnraum",
+        "halle"
+      ],
+      "sha256": "db974ddd236eae0ecbc2cc84a025a4cde2f0e13a1d1932d6c34fa91aa2007e9a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2673,
+      "datei": "boden/wuxia_steinbaender.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_steinbaender",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "stein",
+        "trocken",
+        "gehoben",
+        "hof"
+      ],
+      "sha256": "eb1e9559aeb8ef15f505eedc2bcfc68b3ae0dffbdd537a2ea7dc94d6a96b9024"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "wand",
+      "bytes": 4495,
+      "datei": "wand/wuxia_hofmauer.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_hofmauer",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "stein",
+        "ziegel",
+        "tragend",
+        "hof"
+      ],
+      "sha256": "a893c2f82583ea899e9335793003d8236b208ca080817a98f77f782e3df67961"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2948,
+      "datei": "tuer/wuxia_faltportal.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_faltportal",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "drehbar",
+        "holz",
+        "eingang",
+        "hof"
+      ],
+      "sha256": "fd4e4fa709fe38d1b18c284597735ac636f5ba4b8a27059e2b48ecbcd4674075"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 3384,
+      "datei": "licht/wuxia_papierlaterne.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_papierlaterne",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "warm",
+        "papier",
+        "wache",
+        "kult"
+      ],
+      "sha256": "b2ab26ac4442a5b280a19b630dda4265f2e9bc4905a18d2b2c0028dda390837f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 2500,
+      "datei": "gefaess/wuxia_teewassertopf.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_teewassertopf",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "behaelter",
+        "wasser",
+        "vorrat",
+        "tee"
+      ],
+      "sha256": "7762da5c65407dc8baa86d05b5906205f18a12a0d02cd1e2aed2db3e08668b4c"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3273,
+      "datei": "aufbau/wuxia_gartentreppe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_gartentreppe",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "treppe",
+        "aufwaerts",
+        "abwaerts",
+        "stein",
+        "garten"
+      ],
+      "sha256": "eeca0a2300bf8c86a9e7e7d2e38825eab745fefd02ee06f756e802eefb5dde6c"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3782,
+      "datei": "moebel/wuxia_teetafel.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_teetafel",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "tee",
+        "mahl",
+        "tisch",
+        "sitz",
+        "rast"
+      ],
+      "sha256": "e13241235b7dac20491e3ec76a322e41055aab9536480f8acd295065e7483cca"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2907,
+      "datei": "moebel/wuxia_kalligraphietisch.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_kalligraphietisch",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "wissen",
+        "schreiben",
+        "tisch",
+        "handwerk"
+      ],
+      "sha256": "d909bd5d509a30432e6d62a29b2966f96f52f3eeea013c302365a032f340e518"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4123,
+      "datei": "moebel/wuxia_guqin.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_guqin",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "musik",
+        "wissen",
+        "rast",
+        "kult"
+      ],
+      "sha256": "0800d800ca4299b403c6487092d1c8dd43cb850cb4c2f41fba4d64144be60449"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4877,
+      "datei": "moebel/wuxia_weiqibrett.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_weiqibrett",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "spiel",
+        "wissen",
+        "tisch",
+        "rast"
+      ],
+      "sha256": "8b9990bfd5abd5208feb2493a8d47a2f62d279a9298ebb315d898685f0044a16"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3596,
+      "datei": "moebel/wuxia_medizinladen.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_medizinladen",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "medizin",
+        "kraeuter",
+        "handwerk",
+        "lager"
+      ],
+      "sha256": "f277635b333e9a8116e7abe2f23dea8e397218da0b3d142e89ac41de662e19f2"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2768,
+      "datei": "moebel/wuxia_rollenpult.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_rollenpult",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "wissen",
+        "buecher",
+        "tisch",
+        "kunst"
+      ],
+      "sha256": "a61013f9cb9a0e237fa6c3673548dfa3c38a7c806a0e0366a4b887c8400c266a"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2966,
+      "datei": "moebel/wuxia_rundfensterschirm.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_rundfensterschirm",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "trennwand",
+        "holz",
+        "kammer",
+        "wohnraum"
+      ],
+      "sha256": "ec1c3f7fdaa4087403e3e672b356d8cae6966eb1ce5c0b7dc394f2cfb656b6a3"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4166,
+      "datei": "aufbau/wuxia_uebungspfaehle.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_uebungspfaehle",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "training",
+        "holz",
+        "hof",
+        "aussen"
+      ],
+      "sha256": "601b80221a6175b0b3a991990d5a9254375ea18cf1fc811c2faff53c3af060c2"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3667,
+      "datei": "moebel/wuxia_waffenstaender.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_waffenstaender",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "waffe",
+        "schild",
+        "training",
+        "lager"
+      ],
+      "sha256": "21f0bab199242ddbd86f90228aa6e43edef0f57d7d48525d3b8b58087ac5ba40"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3647,
+      "datei": "moebel/wuxia_reisebuendel.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_reisebuendel",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "rast",
+        "reise",
+        "lager"
+      ],
+      "sha256": "69c60021c45bf9824fd98c72b5ea2a3cee0560483fd26e7d5d05bda4102c4801"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2547,
+      "datei": "moebel/wuxia_lacktruhe.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_lacktruhe",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "lager",
+        "truhe",
+        "schatz",
+        "kammer"
+      ],
+      "sha256": "c24f52c1ebf8510996cfc8f4e75d67374d05673e7bbf1d7fc11335bc8c71669a"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2645,
+      "datei": "aufbau/wuxia_mondtor.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_mondtor",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "eingang",
+        "tor",
+        "garten",
+        "aussen"
+      ],
+      "sha256": "3a41608abcc6e082a1b42646ebcac3daa4b807b26bd82e25639132dd773652bd"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3450,
+      "datei": "aufbau/wuxia_pavillondach.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_pavillondach",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "dach",
+        "gebaeude",
+        "garten",
+        "aussen"
+      ],
+      "sha256": "5c5e5d8200ad2cd9623fd8f2fbe4543480527aef642432e9b8bd30ac06f7c7e6"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3951,
+      "datei": "aufbau/wuxia_lotusteich.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_lotusteich",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "wasser",
+        "garten",
+        "natur",
+        "aussen"
+      ],
+      "sha256": "deb8f279d9311b7e19ace8b00f8e1ad9d8a4f6a8bb4c63cd3b6a06f6729c1e3e"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 5607,
+      "datei": "aufbau/wuxia_bogenbruecke.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_bogenbruecke",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "bruecke",
+        "weg",
+        "garten",
+        "aussen"
+      ],
+      "sha256": "77183928b9cc1afe0414094806235408163301a2f27a630093c4e795af9dff31"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3986,
+      "datei": "aufbau/wuxia_steinlaternenweg.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_steinlaternenweg",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "weg",
+        "garten",
+        "licht",
+        "aussen"
+      ],
+      "sha256": "da58f1388785b620441dd39b66b8f2f14edd0e32c9a413699713d2fb5d60810e"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 8471,
+      "datei": "aufbau/wuxia_bambusbeet.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wuxia_bambusbeet",
+      "schlagworte": [
+        "genre_wuxia",
+        "fantasy",
+        "garten",
+        "natur",
+        "gruen",
+        "aussen"
+      ],
+      "sha256": "c7c7113dd5b5990bbc4adea39371936c1e1f9022e6b028f261b6a39ccaf2fe7c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 4978,
+      "datei": "boden/piraten_teerdeck.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_teerdeck",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "holz",
+        "trocken",
+        "halle",
+        "deck"
+      ],
+      "sha256": "9ca8451c5e40590caa5af59352b2a02dcbfe936cf78e5b09ce01b11cee56cd44"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3042,
+      "datei": "boden/piraten_kapitaensparkett.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_kapitaensparkett",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "holz",
+        "trocken",
+        "wohnraum",
+        "gehoben"
+      ],
+      "sha256": "4bef5792ffc7d7a260494b9c460e9835520d6454f86b89c96765a78c2af4eeed"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 5944,
+      "datei": "boden/piraten_kaipflaster.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_kaipflaster",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "stein",
+        "strasse",
+        "hof",
+        "feucht",
+        "halle",
+        "keller"
+      ],
+      "sha256": "18f2671f9d9c7820dae367e8880dfd34961b85d510f075225dae3f691228d04c"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 3702,
+      "datei": "wand/piraten_schottwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_schottwand",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "holz",
+        "tragend",
+        "deck"
+      ],
+      "sha256": "00dfff32f71aeeb0b87e75344a4c429c142cca8d73f4131a8653abb9186cc2eb"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2730,
+      "datei": "tuer/piraten_kajuetentuer.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_kajuetentuer",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "drehbar",
+        "holz",
+        "eingang"
+      ],
+      "sha256": "52af2e19f01a7c5116cfe0e3babd655a217a9c7586005d32f8e24dca31295d00"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 2660,
+      "datei": "licht/piraten_schiffslaterne.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_schiffslaterne",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "warm",
+        "kerze",
+        "wache",
+        "deck"
+      ],
+      "sha256": "8a8d37aa40ecacf86e52e745a665939fa077f7811cd3773e04c73c019bbe4f8b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 2819,
+      "datei": "gefaess/piraten_rumfass.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_rumfass",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "behaelter",
+        "vorrat",
+        "lager",
+        "fass"
+      ],
+      "sha256": "676cdd8fd4333a3aa2bbb57312babee905ec1f4b921b98336cd202dc6fa9fb95"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3762,
+      "datei": "moebel/piraten_haengematte.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_haengematte",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "rast",
+        "bett",
+        "wohnraum"
+      ],
+      "sha256": "e67e515e60c8558f79ec35521b3525108e04ccbefea3effb74e4aeb26c2222c4"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3647,
+      "datei": "moebel/piraten_seekartentisch.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_seekartentisch",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "wissen",
+        "tisch",
+        "buecher",
+        "navigation"
+      ],
+      "sha256": "bbd61bfbdc213e2b52c2b55140af65fbfec1e739783b1743b6398454ae4f7fbd"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3106,
+      "datei": "moebel/piraten_koje.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_koje",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "rast",
+        "bett",
+        "wohnraum"
+      ],
+      "sha256": "3c04c36e79c87dfefe47e02bcddb520811161312318cff154561a619de303ab2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 6730,
+      "datei": "aufbau/piraten_beutemuenzen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_beutemuenzen",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "schatz",
+        "muenzen"
+      ],
+      "sha256": "879718d5d95bfb77f0687027de2497f7954d3773d9bb0a7acf21ed4e7ef69378"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3805,
+      "datei": "aufbau/piraten_kanone.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_kanone",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "waffen",
+        "wache",
+        "deck"
+      ],
+      "sha256": "cc41b14948554a00fb5b3cae20f103f6141c11756bd09a5979d31993070ce4b3"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4278,
+      "datei": "aufbau/piraten_ankerspill.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_ankerspill",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "handwerk",
+        "deck",
+        "hafen",
+        "aussen"
+      ],
+      "sha256": "69e24fbe197713f0c5d69d0262e62cf6935df0b14be153f05f6e716e828b487e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3305,
+      "datei": "moebel/piraten_steuerrad.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_steuerrad",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "navigation",
+        "deck",
+        "kommando"
+      ],
+      "sha256": "da5f88b458d5048f9ae6d80a966325be70b18c510bc7d3234700807f4b31d316"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3254,
+      "datei": "aufbau/piraten_taurollen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_taurollen",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "tau",
+        "lager",
+        "hafen"
+      ],
+      "sha256": "2ccbe11cfb755f40c199b16bfb2a46b01b6e273a0ec4cd0288bd3fd0ec837533"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4131,
+      "datei": "moebel/piraten_musketenstaender.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_musketenstaender",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "waffen",
+        "regal",
+        "lager",
+        "wache"
+      ],
+      "sha256": "4875986de4c53dbafcde4e9fecdacddbe474d9efaf49004897db9376f3d72e80"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3244,
+      "datei": "moebel/piraten_kombuese.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_kombuese",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "mahl",
+        "herd",
+        "kuechenzeile",
+        "handwerk"
+      ],
+      "sha256": "f1e3ad9f32623fea189baee93f96b5bc16c64534558b6f20a8bcf01c776a360a"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4347,
+      "datei": "moebel/piraten_messetafel.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_messetafel",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "mahl",
+        "tisch",
+        "sitz",
+        "rast"
+      ],
+      "sha256": "aaf90de3f1431b7a66f2a4f0688c1a5ee6ba4a930adc5f0b29a907d5db9eed0a"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3578,
+      "datei": "aufbau/piraten_taucherglocke.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_taucherglocke",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "tauchen",
+        "handwerk",
+        "hafen",
+        "aussen"
+      ],
+      "sha256": "22f819d7d1ff8fbd5092c274316a391516a1107e76a6f016695a89d80b489c88"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3451,
+      "datei": "aufbau/piraten_beiboot.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_beiboot",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "boot",
+        "fahrzeug",
+        "hafen",
+        "aussen"
+      ],
+      "sha256": "41bfc9d0d905d2d3cd3efc796ddb4862df0b2ce392aedfd7142b1e2dee79a630"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3250,
+      "datei": "aufbau/piraten_dalben.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_dalben",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "hafen",
+        "aussen",
+        "pfosten"
+      ],
+      "sha256": "71f5166df0f2a280809919d96986cf15e68a06f209de26d7663be0aa429f022e"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5119,
+      "datei": "aufbau/piraten_fallreep.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_fallreep",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "treppe",
+        "aufgang",
+        "abgang",
+        "deck"
+      ],
+      "sha256": "bb893a4c9fdb579777ec82e3db46cc34ac95fdb1df1e23d6b246a55dddc20d49"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 4044,
+      "datei": "aufbau/piraten_netzgestell.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_netzgestell",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "handwerk",
+        "hafen",
+        "aussen",
+        "netz"
+      ],
+      "sha256": "d1815b56eccd587dec572c0dd8c1c51cc6f192070aa0ff291ca4248709137418"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "marke",
+      "bytes": 2688,
+      "datei": "marke/piraten_piratenflagge.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_piratenflagge",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "flagge",
+        "pirat",
+        "zeichen"
+      ],
+      "sha256": "5c09c7fbc240d48f58b2e9ff929fdd0574083b7a909779e5564d233fb80915e3"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3474,
+      "datei": "moebel/piraten_zahlmeisterpult.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "piraten_zahlmeisterpult",
+      "schlagworte": [
+        "genre_piraten",
+        "fantasy",
+        "wissen",
+        "tisch",
+        "empfang",
+        "schatz"
+      ],
+      "sha256": "db20c6353229a4475427e5334cb4bac5a5489e8e0e48a035c23178f18a0c5b26"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 6833,
+      "datei": "boden/western_staubstrasse.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_staubstrasse",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "erde",
+        "strasse",
+        "trocken",
+        "hof"
+      ],
+      "sha256": "396b068af5d844704931cc4e0d7d02c5eecbded8d698d5aca7d5e9cbbc10a37a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 4600,
+      "datei": "boden/western_saloonbretter.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_saloonbretter",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "holz",
+        "trocken",
+        "wohnraum",
+        "halle"
+      ],
+      "sha256": "18de9d023d62395bf3091dad5beeb29899c97e94ce9f3174c6569b3396895a3a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3307,
+      "datei": "boden/western_terracotta.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_terracotta",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "stein",
+        "trocken",
+        "fliesen",
+        "keller",
+        "halle"
+      ],
+      "sha256": "dc920c7d6e7e41c0cb015455dfbef926ebcbc68ba988a5d28da0c0809744398a"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 2414,
+      "datei": "wand/western_adobewand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_adobewand",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "stein",
+        "lehm",
+        "tragend"
+      ],
+      "sha256": "6ba785a9b75703a4dd777e46281e90278aec3a6cdaeed48c9c1fad5ce4e60ca2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2714,
+      "datei": "tuer/western_saloontuer.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_saloontuer",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "drehbar",
+        "holz",
+        "eingang"
+      ],
+      "sha256": "89867ea410e523e2b80d55d510613988df1aae2c5fde4bca2ce9cbafffb08b51"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 2697,
+      "datei": "licht/western_petroleumlicht.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_petroleumlicht",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "warm",
+        "kerze",
+        "wohnraum",
+        "wache"
+      ],
+      "sha256": "ca9c8726c1ed78d86ff48c1ae40c4b7f0e0f7abf46406641e065c96f25d508ae"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 2770,
+      "datei": "gefaess/western_viehtraenke.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_viehtraenke",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "wasser",
+        "behaelter",
+        "hof",
+        "aussen"
+      ],
+      "sha256": "a0dee38197fd47232c94559d2b8d228b0ec92911bf62c901633baef00c848630"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3854,
+      "datei": "moebel/western_pokertisch.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_pokertisch",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "tisch",
+        "spiel",
+        "mahl",
+        "sitz"
+      ],
+      "sha256": "d59cfd591a79f5b976e48d679d8955ef392fb44785bc21440923cff73c8d4a19"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3837,
+      "datei": "moebel/western_barbierstuhl.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_barbierstuhl",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "sitz",
+        "rast",
+        "handwerk"
+      ],
+      "sha256": "7839efd582477bfa4cfa4e3322c64aa96dad527e9a02f5c904f1a8c40bc47707"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 6112,
+      "datei": "moebel/western_saloonklavier.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_saloonklavier",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "musik",
+        "kultur",
+        "wohnraum"
+      ],
+      "sha256": "b72ad0679d56647a59065faace23b52661dab57a417f27b0acb9326360355cc6"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3484,
+      "datei": "moebel/western_rollsekretaer.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_rollsekretaer",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "schreibtisch",
+        "wissen",
+        "tisch",
+        "buecher"
+      ],
+      "sha256": "e361b8087372c21a900b9dc004c7a6e0e3839bfa8f669330b405bdd6fc570ac5"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2712,
+      "datei": "moebel/western_feldpritsche.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_feldpritsche",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "rast",
+        "bett",
+        "kammer"
+      ],
+      "sha256": "8aeab7bba04f242b526900e2985317c22af412c0bfdf711146e796867769efa8"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3345,
+      "datei": "moebel/western_telegrafenpult.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_telegrafenpult",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "wissen",
+        "technik",
+        "schreibtisch",
+        "kommunikation"
+      ],
+      "sha256": "0bc9923299f8218249fa42cc9f8dee6824018b03199deba16350e3d3b3cd0d0b"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3697,
+      "datei": "moebel/western_waffenregal.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_waffenregal",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "waffen",
+        "regal",
+        "lager",
+        "wache"
+      ],
+      "sha256": "d31b96e9954da2be92650d356e403b49fd7cabd182655984d8e72b9cd3190028"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3362,
+      "datei": "moebel/western_banktresen.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_banktresen",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "empfang",
+        "handel",
+        "schatz",
+        "tisch"
+      ],
+      "sha256": "8645891980f22d016673a5c4beaf8a9f300d118d4348fc49e3d179e4f40abc83"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3167,
+      "datei": "moebel/western_kochherd.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_kochherd",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "herd",
+        "mahl",
+        "handwerk",
+        "kuechenzeile"
+      ],
+      "sha256": "b3ceaa41c5f3bdd3a4fea4bf6a6206388048024edda292e2234eb1d5bd01f264"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2957,
+      "datei": "moebel/western_sattelbock.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_sattelbock",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "handwerk",
+        "lager",
+        "leder",
+        "reiten"
+      ],
+      "sha256": "7cb40d0f08ca6bcb93329b597e44f0df87c860935172ffce887f72a83477ec17"
+    },
+    {
+      "anker": [
+        32,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 4534,
+      "datei": "aufbau/western_goldwaschrinne.svg",
+      "einheiten": [
+        1,
+        3
+      ],
+      "groesse": [
+        64,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_goldwaschrinne",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "handwerk",
+        "wasser",
+        "mine",
+        "aussen"
+      ],
+      "sha256": "946405160abaac650862d61f3140b6ad28dd157c80b7a62dc4835fa53850e964"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3796,
+      "datei": "aufbau/western_planwagen.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_planwagen",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "fahrzeug",
+        "wagen",
+        "lager",
+        "aussen"
+      ],
+      "sha256": "b4e96c42f84f3ccf25f95772f9278fbcadc351796cece177c119c0d96e20d517"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3144,
+      "datei": "aufbau/western_pferdeanbinder.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_pferdeanbinder",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "aussen",
+        "hof",
+        "pfosten",
+        "reiten"
+      ],
+      "sha256": "a30eba9b7cbb4a44fa88d7f33dffb51f89f943944436bf05c350e19898ac3a07"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5483,
+      "datei": "aufbau/western_windpumpe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_windpumpe",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "aussen",
+        "wasser",
+        "technik",
+        "hof"
+      ],
+      "sha256": "f62ec7297ee3f54f9862c8e1197ad9896e7e698d552ec6eeac2ea51cb1490414"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 5519,
+      "datei": "aufbau/western_verandatreppe.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_verandatreppe",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "treppe",
+        "aufgang",
+        "abgang",
+        "holz",
+        "aussen"
+      ],
+      "sha256": "de376369dad48ad39058faa1f8f55b767cd98a8086762863109852bea3516100"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2658,
+      "datei": "moebel/western_schmiedeamboss.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_schmiedeamboss",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "handwerk",
+        "amboss",
+        "metall",
+        "schmiede"
+      ],
+      "sha256": "4c3feb15d592ec40744f2587ecde6c50e487d79561a9ff2ed160983d2df4fe74"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4743,
+      "datei": "moebel/western_roulette.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_roulette",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "spiel",
+        "tisch",
+        "gehoben"
+      ],
+      "sha256": "59af33d50c404b3528d07c7c4b4d04415060f7e7ec45044f4ec8025c167b0907"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 5473,
+      "datei": "moebel/western_druckerpresse.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "western_druckerpresse",
+      "schlagworte": [
+        "genre_western",
+        "fantasy",
+        "handwerk",
+        "wissen",
+        "papier",
+        "druck"
+      ],
+      "sha256": "775d6a7523b145e0b938431ed4eb4f890b95140b44ec6db81bd24827d597ef22"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3735,
+      "datei": "boden/steampunk_messingroste.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_messingroste",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "metall",
+        "trocken",
+        "halle",
+        "keller",
+        "technik"
+      ],
+      "sha256": "8eff5a23767daacb76a61e2d38a38abce8b442c2930c07882b05ab632174f1b3"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 4014,
+      "datei": "boden/steampunk_riemenwerkboden.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_riemenwerkboden",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "stein",
+        "trocken",
+        "handwerk",
+        "industrie",
+        "halle"
+      ],
+      "sha256": "361c1f8e9a1dd5307389c368ee607ae674dd1ae7e09f771d912b9531c491f126"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2287,
+      "datei": "boden/steampunk_sternparkett.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_sternparkett",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "holz",
+        "trocken",
+        "wohnraum",
+        "gehoben"
+      ],
+      "sha256": "75ecb3634549bce4bc76ee4c5bf1ef0e08f0ef3f9521cedcbc20217d51c44f05"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 6050,
+      "datei": "wand/steampunk_kesselwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_kesselwand",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "metall",
+        "tragend",
+        "technik"
+      ],
+      "sha256": "898db5dc840a96c12637d4aeef56ec13297459daa3217cddfe830a492257086f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 4565,
+      "datei": "tuer/steampunk_zahnradtor.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_zahnradtor",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "drehbar",
+        "metall",
+        "eingang"
+      ],
+      "sha256": "1192ff2b8c861f79200feb7887d233d4178a59ef22e8cfe1bdb6c5b5fa61db37"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 3219,
+      "datei": "licht/steampunk_gaslicht.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_gaslicht",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "warm",
+        "gas",
+        "wache",
+        "wohnraum"
+      ],
+      "sha256": "4e7013266a1856090a0971af2fbded3d7fe8f451cd7d219979fc4f126df78126"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 4402,
+      "datei": "gefaess/steampunk_drucktank.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_drucktank",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "behaelter",
+        "technik",
+        "druck",
+        "lager"
+      ],
+      "sha256": "5eaf3cd52f84f12a61e81b583d10297f9146412563837a2624fb3b478932d298"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 9248,
+      "datei": "moebel/steampunk_differenzmaschine.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_differenzmaschine",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "wissen",
+        "technik",
+        "rechnen",
+        "handwerk"
+      ],
+      "sha256": "0036036c2b2568a7b10f66a0b358cd4fd01358e05ef7ac068538b3c03b112477"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3582,
+      "datei": "moebel/steampunk_orrery.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_orrery",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "wissen",
+        "astronomie",
+        "gehoben"
+      ],
+      "sha256": "d1b42fac2bb7cd38730d136a2dfe877fcce5bdf9cb162b56fd68ff4e2134c9a3"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2762,
+      "datei": "moebel/steampunk_zeichentisch.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_zeichentisch",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "wissen",
+        "tisch",
+        "handwerk",
+        "schreibtisch"
+      ],
+      "sha256": "842f4e3e786fe07f17e4a105a6414175f0924d30f962d8f96015719cb486398a"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3825,
+      "datei": "moebel/steampunk_pneumatikpost.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_pneumatikpost",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "technik",
+        "kommunikation",
+        "empfang"
+      ],
+      "sha256": "f8bcffe5048c41e785aa989cb1cba0c0bfe9723a345671a69a3a2170c5106e89"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 5642,
+      "datei": "moebel/steampunk_kesselpult.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_kesselpult",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "technik",
+        "kommando",
+        "kontrolle",
+        "handwerk"
+      ],
+      "sha256": "8aaaad07a6a8b33949ee1dc12ea64885e8153af6e3f0a6cb6111f05a6b5cb8e6"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5134,
+      "datei": "aufbau/steampunk_turbine.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_turbine",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "maschine",
+        "industrie",
+        "technik"
+      ],
+      "sha256": "f11827d222c47a6e20aef736c6762843c60917b3ad2f572e0591f96c90354258"
+    },
+    {
+      "anker": [
+        64,
+        128
+      ],
+      "art": "aufbau",
+      "bytes": 4996,
+      "datei": "aufbau/steampunk_luftschiffgondel.svg",
+      "einheiten": [
+        2,
+        4
+      ],
+      "groesse": [
+        128,
+        256
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_luftschiffgondel",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "fahrzeug",
+        "luftschiff",
+        "aussen"
+      ],
+      "sha256": "59fb7959d62622215cdd618d87ceb0a542e9be25814cd085b95bfce96d1723f6"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 7326,
+      "datei": "moebel/steampunk_uhrmacherbank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_uhrmacherbank",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "handwerk",
+        "wissen",
+        "tisch",
+        "werkbank"
+      ],
+      "sha256": "a990798632777426d285f0e893b44d8e4fab3c831e2f102938994fdf941bda25"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 5610,
+      "datei": "aufbau/steampunk_greifkran.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_greifkran",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "aussen",
+        "maschine",
+        "handwerk",
+        "kran"
+      ],
+      "sha256": "eb8868c40e5e158f5eafc37a8a92ac815a45dda4ec112828877265b8c5835b82"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4887,
+      "datei": "moebel/steampunk_ventilbatterie.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_ventilbatterie",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "technik",
+        "wasser",
+        "handwerk",
+        "industrie"
+      ],
+      "sha256": "55f1d6b077cfe6b12618601936f724af3c7c1e705d2132583256c723acffee89"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3063,
+      "datei": "moebel/steampunk_grammophon.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_grammophon",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "musik",
+        "kultur",
+        "wohnraum",
+        "gehoben"
+      ],
+      "sha256": "e395a3460150436eb62817927ddffa0e6fe16b6bfe393fe38fd61636ff4d91ad"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3375,
+      "datei": "moebel/steampunk_lesesessel.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_lesesessel",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "rast",
+        "sitz",
+        "wohnraum",
+        "gehoben"
+      ],
+      "sha256": "6f82a86ec1b02c6a800e436b9e1f37e1488236b35bee7b3aff6554cc8f36a5c1"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3602,
+      "datei": "moebel/steampunk_ruestungsgestell.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_ruestungsgestell",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "waffen",
+        "ruestung",
+        "handwerk",
+        "lager"
+      ],
+      "sha256": "4d4d7de1aa78de7dde63f0ae704bae4d0017565c1cff6c551431964ff607258b"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5624,
+      "datei": "aufbau/steampunk_drahtlift.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_drahtlift",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "aufzug",
+        "lager",
+        "industrie",
+        "technik"
+      ],
+      "sha256": "f49860caefa156796bff068c7464735d0e4d57e7d24fc17586adf3db801838a0"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 6659,
+      "datei": "aufbau/steampunk_wendeltreppe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_wendeltreppe",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "treppe",
+        "aufgang",
+        "abgang",
+        "metall"
+      ],
+      "sha256": "aa44358fb3792c7d9b1efee6da5564804e3391d0ef7c629dd6095aa534a36f8e"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 12329,
+      "datei": "aufbau/steampunk_glashaus.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_glashaus",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "aussen",
+        "garten",
+        "pflanzen",
+        "glas"
+      ],
+      "sha256": "530e4ef2aa371ca785209e22e1875a84164c3b5416e9481faa1d5a18152c0e9f"
+    },
+    {
+      "anker": [
+        64,
+        128
+      ],
+      "art": "aufbau",
+      "bytes": 5026,
+      "datei": "aufbau/steampunk_dampfomnibus.svg",
+      "einheiten": [
+        2,
+        4
+      ],
+      "groesse": [
+        128,
+        256
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_dampfomnibus",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "aussen",
+        "fahrzeug",
+        "wagen",
+        "strasse"
+      ],
+      "sha256": "3bfe0ead1321c0074f61ad33f0e369dbf0db8c69f070ee01f2c03e5c2de34359"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 8046,
+      "datei": "aufbau/steampunk_kohlenbunker.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "steampunk_kohlenbunker",
+      "schlagworte": [
+        "genre_steampunk",
+        "fantasy",
+        "lager",
+        "kohle",
+        "industrie",
+        "aussen"
+      ],
+      "sha256": "c49e48f2218da72b0b484a89af16a5dbc1ddf60ae454e8cdd47486ada039970e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 6623,
+      "datei": "boden/noir_regenkopfstein.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_regenkopfstein",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "stein",
+        "strasse",
+        "hof",
+        "feucht"
+      ],
+      "sha256": "36b4a704db8b70e321f38e2b05be288d21882990762105fb70b172fd53dd417d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 4529,
+      "datei": "boden/noir_schachfliesen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_schachfliesen",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "fliesen",
+        "stein",
+        "trocken",
+        "halle",
+        "keller"
+      ],
+      "sha256": "bff274f76ea8794e581df5d96b44e36db0af268e6e9f07c09cd6a17b86a0567b"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3815,
+      "datei": "boden/noir_deco_parkett.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_deco_parkett",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "holz",
+        "trocken",
+        "wohnraum",
+        "gehoben"
+      ],
+      "sha256": "b9d072c024f94afa2f4ad31379cf53f0d9132d03c9628b164c1a888d399de9ab"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 3523,
+      "datei": "wand/noir_ziegelwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_ziegelwand",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "stein",
+        "ziegel",
+        "tragend"
+      ],
+      "sha256": "28fdae258d1f6a4823e36784fa832b5b6907efc74e775109ae2bd66ddd5a48ad"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 2597,
+      "datei": "tuer/noir_buerotuer.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_buerotuer",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "drehbar",
+        "glas",
+        "eingang",
+        "buero"
+      ],
+      "sha256": "7ee6ca1610006b4a5bebd38880f0af79920e5793ee4fe44f505f5aeeea78fc4f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 2881,
+      "datei": "licht/noir_strassenlaterne.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_strassenlaterne",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "warm",
+        "wache",
+        "strasse",
+        "aussen"
+      ],
+      "sha256": "5e92d61c33770ee958a80e28829f9940e05343261dae3e3349132d5b98c077e1"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 3469,
+      "datei": "gefaess/noir_aschetonne.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_aschetonne",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "behaelter",
+        "abfall",
+        "aussen",
+        "industrie"
+      ],
+      "sha256": "589163bf254d86e944d9e16fad45a6e6ecf15ac9a8e946928a6ef77aaac14057"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4935,
+      "datei": "moebel/noir_ermittlerschreibtisch.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_ermittlerschreibtisch",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "schreibtisch",
+        "wissen",
+        "tisch",
+        "buero"
+      ],
+      "sha256": "7d594c3bc07b15136decce4850baf87ad6e3dcea3e71db42a8bf7c0e9ae6ef49"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4397,
+      "datei": "moebel/noir_verhoertafel.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_verhoertafel",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "tisch",
+        "sitz",
+        "wache",
+        "polizei"
+      ],
+      "sha256": "3fc5dd465207eb66430143b18dcd09dcc6a0e600bf6a02231814d33a7546f399"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3564,
+      "datei": "aufbau/noir_telefonkabine.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_telefonkabine",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "aussen",
+        "kommunikation",
+        "strasse"
+      ],
+      "sha256": "48c6094b70e41db662f03b7b847a7983290c643168733c5489dc2a2187c39135"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3475,
+      "datei": "moebel/noir_jukebox.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_jukebox",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "musik",
+        "kultur",
+        "spiel",
+        "diner"
+      ],
+      "sha256": "3eff4c9edc34d87308305c73e9fe9feccdd42f15d81a35c5c71b5484f30c2315"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3742,
+      "datei": "moebel/noir_dinerbank.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_dinerbank",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "mahl",
+        "sitz",
+        "rast",
+        "diner"
+      ],
+      "sha256": "7e81e8dc17e29b5caa33fc0d5540f477ecdec478587fb6fb3556e385a9c1d175"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "moebel",
+      "bytes": 3665,
+      "datei": "moebel/noir_billardtisch.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_billardtisch",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "spiel",
+        "tisch",
+        "gehoben"
+      ],
+      "sha256": "61e62aa180d8a44d9d220fc3070f22f847c386919843ecee17626c35ec6b9e51"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 7129,
+      "datei": "moebel/noir_jazzfluegel.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_jazzfluegel",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "musik",
+        "kultur",
+        "gehoben"
+      ],
+      "sha256": "d05a42efc04e2aa758a957145888c827cd3c8cf8c0cb161cc4d2019efe355692"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3975,
+      "datei": "moebel/noir_filmprojektor.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_filmprojektor",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "kino",
+        "technik",
+        "kultur",
+        "wissen"
+      ],
+      "sha256": "2f67a5ea29702970c6dbbf72f71c72be93041c6000e4543602a91484881d2d93"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3420,
+      "datei": "moebel/noir_aktenregal.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_aktenregal",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "regal",
+        "lager",
+        "wissen",
+        "akten",
+        "buero"
+      ],
+      "sha256": "722907c28f044c879c6899dc33e7d2eb8773a4699f4dd82e1d4ea2da26a38d5a"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3325,
+      "datei": "moebel/noir_empfangstresen.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_empfangstresen",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "empfang",
+        "tisch",
+        "handel",
+        "gehoben"
+      ],
+      "sha256": "805190a9e367853f5eeccf91c21566785261d6414866bbb22c95011c054f149a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3452,
+      "datei": "moebel/noir_drehstuhl.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_drehstuhl",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "sitz",
+        "rast",
+        "buero"
+      ],
+      "sha256": "c6f04bf7ffe4b99db6b66c70b16983f6ade03d786960eb47eb932ac35dbe833c"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3078,
+      "datei": "moebel/noir_chaiselongue.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_chaiselongue",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "rast",
+        "sitz",
+        "wohnraum",
+        "gehoben"
+      ],
+      "sha256": "0aef2ca66444c6de4d5a6eba5cc1c8cea87f2701794c8f22697062d9407db5c6"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4097,
+      "datei": "aufbau/noir_mikrofonbuehne.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_mikrofonbuehne",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "musik",
+        "kultur",
+        "buehne"
+      ],
+      "sha256": "a46a7aa386d85d390b4e29843c9cf073d962bcb053a500c7ab2a592e73867b6d"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4452,
+      "datei": "aufbau/noir_zeitungskiosk.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_zeitungskiosk",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "aussen",
+        "handel",
+        "wissen",
+        "strasse"
+      ],
+      "sha256": "f64a7448f0dbbb190260e9027dfcf9ef1dbdc3bb6d2d154c8ae17fec0452d16e"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3656,
+      "datei": "aufbau/noir_oldtimertaxi.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_oldtimertaxi",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "fahrzeug",
+        "auto",
+        "strasse",
+        "aussen"
+      ],
+      "sha256": "548e20cc65d82f8dc439f5d8542cb9b076f5aec58f2308e9e0fb407fbaff791e"
+    },
+    {
+      "anker": [
+        32,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 6207,
+      "datei": "aufbau/noir_feuerleiter.svg",
+      "einheiten": [
+        1,
+        3
+      ],
+      "groesse": [
+        64,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_feuerleiter",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "treppe",
+        "aufgang",
+        "abgang",
+        "aussen",
+        "metall"
+      ],
+      "sha256": "d1efd8f5f507d7ca2927f797561b79dafd2f373a06d19ce2e12e45608518f3f8"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3716,
+      "datei": "moebel/noir_dunkelkammer.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_dunkelkammer",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "handwerk",
+        "wissen",
+        "fotografie",
+        "labor"
+      ],
+      "sha256": "f09489978879cc6712aaf5c4752c135d7b833cc4b5ef09d879a4cbf6ffabb0e5"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 5081,
+      "datei": "moebel/noir_roulettebar.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "noir_roulettebar",
+      "schlagworte": [
+        "genre_noir",
+        "gegenwart",
+        "mahl",
+        "empfang",
+        "spiel",
+        "handel",
+        "gehoben"
+      ],
+      "sha256": "aff42b945d11f653631b4f83da2bd9e96f607ea4ca5f0ca783c4596d4a45c279"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2954,
+      "datei": "boden/cyberpunk_leiterbahnboden.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_leiterbahnboden",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "metall",
+        "technik",
+        "trocken",
+        "halle"
+      ],
+      "sha256": "757bc0443e0d9860cb8b1375116816e1af86861710d40fc776ee19ea7fae75a3"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 11824,
+      "datei": "boden/cyberpunk_gummiwaben.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_gummiwaben",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "trocken",
+        "halle",
+        "technik",
+        "gummi"
+      ],
+      "sha256": "eb95ff63ccb0d8fc74cbb99dc0908a72a07d8aef3f40e9a15772538176f775e8"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2778,
+      "datei": "boden/cyberpunk_reklamepflaster.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_reklamepflaster",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "fliesen",
+        "trocken",
+        "strasse",
+        "technik"
+      ],
+      "sha256": "3c11f9e75ed39f20a6c0b7d078239fb52ee249261bce1a65c27b4bd60def4942"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 4508,
+      "datei": "wand/cyberpunk_faserkabelwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_faserkabelwand",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "metall",
+        "technik",
+        "kabel",
+        "tragend"
+      ],
+      "sha256": "de3fc9cfa38c3d85c87ed1865da37df5d85b711d08a0e6b0545e79bcdbc2cbaa"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 3984,
+      "datei": "tuer/cyberpunk_irisverschluss.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_irisverschluss",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "metall",
+        "schiebbar",
+        "schwer",
+        "sicherheit"
+      ],
+      "sha256": "55ffbecb0bea4e0001e83da64a8e8d1794ab318f5e07bff05d9c2dcfb0ee905a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 2471,
+      "datei": "licht/cyberpunk_neonkreuz.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_neonkreuz",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "kalt",
+        "wache",
+        "neon",
+        "strasse"
+      ],
+      "sha256": "ec3803b4d8cb73cc1b52630c41be809880e288be2162ddc4720ad4e3771d7613"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 4638,
+      "datei": "gefaess/cyberpunk_datentresor.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_datentresor",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "behaelter",
+        "lager",
+        "daten",
+        "technik"
+      ],
+      "sha256": "7eb966706267f3a7a21f610efe364933ea8d9d5f74abda73ed88b053803ec183"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3761,
+      "datei": "aufbau/cyberpunk_nudelstand.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_nudelstand",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "strasse",
+        "markt",
+        "mahl",
+        "kueche",
+        "empfang"
+      ],
+      "sha256": "ae7e7db291b0d4d26a02cc277ec3f0c976f7597cd3778eb9f7d8e8fddeaee736"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3461,
+      "datei": "moebel/cyberpunk_neurodock.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_neurodock",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "konsole",
+        "computer",
+        "scanner",
+        "sitz",
+        "technik"
+      ],
+      "sha256": "f991a86217b11e8c2a8bc1c605a722b4e23608f27e5faa64a6c0b760ce7dba7c"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4377,
+      "datei": "aufbau/cyberpunk_paketdrohnenkai.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_paketdrohnenkai",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "dach",
+        "strasse",
+        "drohne",
+        "fracht",
+        "technik"
+      ],
+      "sha256": "d4b8361679390a8bd4b88feb638381222f65bb6aedaf0f4d371c3b6ef05a63ff"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2899,
+      "datei": "aufbau/cyberpunk_werbeprisma.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_werbeprisma",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "strasse",
+        "schild",
+        "hinweis",
+        "technik"
+      ],
+      "sha256": "7ce54186b430dbdc62c75ab3e4493742907ee3756ac7c3e8f7ac1f2d11429b1a"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3674,
+      "datei": "aufbau/cyberpunk_monorad.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_monorad",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "verkehr",
+        "strasse",
+        "technik"
+      ],
+      "sha256": "5a31490ba7f3386c631db47921a8e124f37b18e5276b2c3baeeed3e37957f3ab"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3615,
+      "datei": "moebel/cyberpunk_organbioprinter.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_organbioprinter",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "labortisch",
+        "steril",
+        "operation",
+        "medizin",
+        "technik"
+      ],
+      "sha256": "bd652c538f5ad7fe8b4d848d1a576d2f746ebdd8737f7168a5d5749c37434221"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4987,
+      "datei": "moebel/cyberpunk_sinneskino.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_sinneskino",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "sofa",
+        "sitz",
+        "rast",
+        "unterhaltung",
+        "technik"
+      ],
+      "sha256": "d07bd559ba8040c16f99b4d93a957e33e3a24a0dd694ff0c0c349b0012c7a13f"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 6951,
+      "datei": "aufbau/cyberpunk_meshknoten.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_meshknoten",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "dach",
+        "antenne",
+        "technik",
+        "kommunikation"
+      ],
+      "sha256": "95b804e475026e788f7a3f2000f1e4d03f1fb5f45bda13ed2d9ca6d58484a90a"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3278,
+      "datei": "aufbau/cyberpunk_anonymitaetskabine.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_anonymitaetskabine",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "strasse",
+        "empfang",
+        "scanner",
+        "privat",
+        "technik"
+      ],
+      "sha256": "9bd7e01ca977da4907da40e1a89065862253d3b5e1de379bd1b2cee98599be2e"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4636,
+      "datei": "moebel/cyberpunk_chipaetzwerk.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_chipaetzwerk",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "labortisch",
+        "computer",
+        "elektronik",
+        "steril",
+        "technik"
+      ],
+      "sha256": "b3f46e8f670df2721b6ea4d1aac834e5a91f3e47df4cbec792b41a463d682965"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3660,
+      "datei": "aufbau/cyberpunk_untergrundrampe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_untergrundrampe",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "treppe",
+        "aufwaerts",
+        "abwaerts",
+        "verkehr",
+        "strasse"
+      ],
+      "sha256": "a73ef94ffcb83819dce58a2ccdfdf60182bcccb4c95227b12b5c304e6967036f"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 4541,
+      "datei": "aufbau/cyberpunk_marktbarriere.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_marktbarriere",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "strasse",
+        "wache",
+        "schild",
+        "absperrung"
+      ],
+      "sha256": "740d5d57b122ec3c759bdc047ca04f49c731a5408f949a00d673ac91b59afc3e"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3032,
+      "datei": "moebel/cyberpunk_implantatvitrine.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_implantatvitrine",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "vitrine",
+        "medizin",
+        "handel",
+        "technik"
+      ],
+      "sha256": "3a5e5397ecd9e99e67635064b01d532d10265a0b3a39ee597d9fb426f5169064"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4101,
+      "datei": "moebel/cyberpunk_biometriescanner.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_biometriescanner",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "scanner",
+        "empfang",
+        "wache",
+        "technik"
+      ],
+      "sha256": "d8a3a81f186bdf4e7bf6c2e9d86d0e8a3d2383a41b86b3ca2113e9892797af44"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4840,
+      "datei": "moebel/cyberpunk_anzugpresse.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_anzugpresse",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "werkbank",
+        "industrie",
+        "kleidung",
+        "technik"
+      ],
+      "sha256": "7877e9807f32f7d6b6e8a4de7739743126996e076fd2a965d9bc915995fc0b25"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "marke",
+      "bytes": 2296,
+      "datei": "marke/cyberpunk_gangemblem.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_gangemblem",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "hinweis",
+        "strasse",
+        "zeichen"
+      ],
+      "sha256": "4691c53be19af536793d8f14f7a8bfa805f1f88c9d6af6c0372171b06a240c14"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3510,
+      "datei": "moebel/cyberpunk_emp_faecher.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_emp_faecher",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "technik",
+        "wache",
+        "antenne",
+        "jammer"
+      ],
+      "sha256": "a8eede7406dc59190fcdea0d3b39d2c5b6b3fb682e30dae731865162b366b1e0"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4717,
+      "datei": "moebel/cyberpunk_nachtmarktgrill.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "cyberpunk_nachtmarktgrill",
+      "schlagworte": [
+        "genre_cyberpunk",
+        "scifi",
+        "mahl",
+        "kueche",
+        "markt",
+        "feuer"
+      ],
+      "sha256": "fee0cacdab5c97de3f140eb8d7e45f1e68c60c5e994bfc313857c1f9bc3a32f8"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 13790,
+      "datei": "boden/weltraum_wabenverbund.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_wabenverbund",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "metall",
+        "trocken",
+        "halle",
+        "technik"
+      ],
+      "sha256": "0000b72984f5f938719e2f3b80c239df967e766d920bdf75c377dd72681d1960"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 5324,
+      "datei": "boden/weltraum_magnetsohlenbelag.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_magnetsohlenbelag",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "metall",
+        "trocken",
+        "halle",
+        "technik",
+        "sicherheit"
+      ],
+      "sha256": "6317e7d0fb77e5d6b870cfc0a5e5d73f423839079c2fa19958c801a325479c0d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 2457,
+      "datei": "boden/weltraum_kuehlkanalboden.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_kuehlkanalboden",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "metall",
+        "steril",
+        "technik",
+        "kuehlung"
+      ],
+      "sha256": "e8cc169890d7a17b7efc0977b019a6abe6b700adc98cc7d8a73fa465bcce431e"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 3758,
+      "datei": "wand/weltraum_strahlenschutzwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_strahlenschutzwand",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "metall",
+        "schott",
+        "schwer",
+        "strahlenschutz"
+      ],
+      "sha256": "c0b35323f331022300628cf279458112f78fa7dc870fd4bda61da45ec11abe5d"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 3790,
+      "datei": "tuer/weltraum_faecherschott.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_faecherschott",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "schiebbar",
+        "metall",
+        "schwer",
+        "schleuse"
+      ],
+      "sha256": "1b97d5cd30debf06a5442fb4bc3a7615d7e22140cf3879181598e5a518c836d7"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 2848,
+      "datei": "licht/weltraum_sternbake.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_sternbake",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "kalt",
+        "wache",
+        "signal",
+        "technik"
+      ],
+      "sha256": "0aa3edc811969b634c14960a9699d44189ef24e406edf8d0bca624ec24eb5342"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "gefaess",
+      "bytes": 3022,
+      "datei": "gefaess/weltraum_probensarkophag.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_probensarkophag",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "behaelter",
+        "lager",
+        "steril",
+        "probe",
+        "labor"
+      ],
+      "sha256": "d7e1d48c4452a2a4022000d4ddb089d45f5c527156c1e7a0da70d9f80a070ca1"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4293,
+      "datei": "moebel/weltraum_astrograf.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_astrograf",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "konsole",
+        "wissen",
+        "navigation",
+        "technik"
+      ],
+      "sha256": "c11854e6cbb33ce7ed0013f199a027246f10dbfd7f8f0fed134f0b324eeffe5e"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5006,
+      "datei": "aufbau/weltraum_spiegelteleskop.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_spiegelteleskop",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "dach",
+        "aussen",
+        "forschung",
+        "optik",
+        "technik"
+      ],
+      "sha256": "b0e9041e63afa02d3fd076947a1c091d3460dd92ac10ebc153e5e8902922cf5a"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3602,
+      "datei": "aufbau/weltraum_andockklaue.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_andockklaue",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "aussen",
+        "andocken",
+        "fracht",
+        "technik"
+      ],
+      "sha256": "1df5798e8dfce3d36257ef47c8df0a6b8e294ff142507365efed5a87482c02ea"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3586,
+      "datei": "aufbau/weltraum_eva_leiterschacht.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_eva_leiterschacht",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "treppe",
+        "aufwaerts",
+        "abwaerts",
+        "schleuse",
+        "technik"
+      ],
+      "sha256": "4bcd0605c0549352934cd845a32f36105d0dbf3534b96a93daf613e6aa95dc57"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4497,
+      "datei": "moebel/weltraum_netzkoje.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_netzkoje",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "rast",
+        "bett",
+        "quartier",
+        "netz"
+      ],
+      "sha256": "85341689da98d131115f856d30106598d5c425a423a565405d568146ed01064c"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "moebel",
+      "bytes": 3138,
+      "datei": "moebel/weltraum_medizinzentrifuge.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_medizinzentrifuge",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "medizin",
+        "scanner",
+        "operation",
+        "technik"
+      ],
+      "sha256": "ac81370ce3ce9313adfe62ac5604346c3cfd31a92eb296b31257f0cd04ce8e95"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3723,
+      "datei": "aufbau/weltraum_massentreiber.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_massentreiber",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "aussen",
+        "fracht",
+        "maschine",
+        "industrie",
+        "technik"
+      ],
+      "sha256": "f0675d625c30cdeedd00a99bf1a1b9cf2216a97035ca7c0c173479848d95f7e6"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3416,
+      "datei": "moebel/weltraum_probenmanipulator.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_probenmanipulator",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "labortisch",
+        "probe",
+        "steril",
+        "technik"
+      ],
+      "sha256": "434189f88f9378b6a0a3749a24603f95a35fd9445034ef84990507ce1d57d24c"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4333,
+      "datei": "moebel/weltraum_saatgutarchiv.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_saatgutarchiv",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "regal",
+        "lager",
+        "vorrat",
+        "forschung",
+        "steril"
+      ],
+      "sha256": "b524ee8ab0652a1c6addda096d91753a43e19d07b289ecc64b77d85e678ef121"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3664,
+      "datei": "moebel/weltraum_sternsextant.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_sternsextant",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "konsole",
+        "navigation",
+        "wissen",
+        "optik"
+      ],
+      "sha256": "194df380444871689038686b58ab7e1c140de430c1ab23a137eb7e1a69baba6e"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4058,
+      "datei": "moebel/weltraum_gravikueche.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_gravikueche",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "mahl",
+        "kuechenzeile",
+        "kueche",
+        "technik"
+      ],
+      "sha256": "234f3f341705295f6e79db705cb25d6ba06075fa38b4433745130cd04a72441f"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 2823,
+      "datei": "aufbau/weltraum_schlepper.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_schlepper",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "verkehr",
+        "fracht",
+        "andocken",
+        "technik"
+      ],
+      "sha256": "d401299c0e1bb0807fdfd32eef95e24b7774696b28eeaa4277b240d3d24b7f7f"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 7853,
+      "datei": "aufbau/weltraum_meteoritenschild.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_meteoritenschild",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "aussen",
+        "schild",
+        "sicherheit",
+        "metall"
+      ],
+      "sha256": "12e1fe6031f470776ca73ec60b4580956b88b323fdffe903784578697bc029c4"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3998,
+      "datei": "aufbau/weltraum_ionengondel.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_ionengondel",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "aussen",
+        "antrieb",
+        "maschine",
+        "technik"
+      ],
+      "sha256": "804ed72b54b7443744017197b36c23667943ccbb087f58b1e903b7e073ed6471"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4290,
+      "datei": "aufbau/weltraum_radiatorfaecher.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_radiatorfaecher",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "aussen",
+        "kuehlung",
+        "technik",
+        "radiator"
+      ],
+      "sha256": "948043e3e140b14362edba2d977019eac2d6322ac365e8ef900a52798a24fe85"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3433,
+      "datei": "aufbau/weltraum_sternfunkmast.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_sternfunkmast",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "aussen",
+        "antenne",
+        "kommunikation",
+        "technik"
+      ],
+      "sha256": "3c90d3677bcdcdc72f06f64c8e149015bceb4e95e5ce73d1e6a2733e70f9241f"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2815,
+      "datei": "moebel/weltraum_schwerelos_training.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_schwerelos_training",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "sitz",
+        "training",
+        "rast",
+        "quartier"
+      ],
+      "sha256": "51eb966806c83a3233f766a4971e7211c4b1ef9337535709d0db39088ddc9e76"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "marke",
+      "bytes": 2422,
+      "datei": "marke/weltraum_evakuierungssektor.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weltraum_evakuierungssektor",
+      "schlagworte": [
+        "genre_weltraum",
+        "scifi",
+        "hinweis",
+        "eingang",
+        "sicherheit",
+        "evakuierung"
+      ],
+      "sha256": "e74229cff04b478e4481077864314f9a1e53879ae2d54fe56b1a763023baf3ce"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3165,
+      "datei": "boden/postapokalypse_scherbenverbund.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_scherbenverbund",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "trocken",
+        "beton",
+        "halle",
+        "werkstatt"
+      ],
+      "sha256": "af652a0dc12a41bc0af2e8809ec390d11280787432d3f93feff601c720b58ed0"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 7642,
+      "datei": "boden/postapokalypse_reifenmatten.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_reifenmatten",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "trocken",
+        "gummi",
+        "halle",
+        "werkstatt"
+      ],
+      "sha256": "e8263b4566d6bb9e13b4be086a9afe027c963052dfb2be3bbae74b4b3727287a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3574,
+      "datei": "boden/postapokalypse_aufgerissene_fahrbahn.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_aufgerissene_fahrbahn",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "aussen",
+        "beton",
+        "strasse",
+        "trocken"
+      ],
+      "sha256": "10003f8719d7d448075440b6c105d485d41009aa4286237abe7cb7ab1bf6471d"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 4448,
+      "datei": "wand/postapokalypse_schrottwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_schrottwand",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "metall",
+        "schrott",
+        "barrikade",
+        "trocken"
+      ],
+      "sha256": "799e85551b5675c009c5952aa77388a75f26da2019123cfc88f38b40b29cd181"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "tuer",
+      "bytes": 3759,
+      "datei": "tuer/postapokalypse_bunkerschwenktor.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_bunkerschwenktor",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "drehbar",
+        "metall",
+        "sicherheit",
+        "eingang"
+      ],
+      "sha256": "ffcd353ae3cb5c77c8da6a7aa283a3d3522b643a242ee6c891418d5d491a223a"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 4931,
+      "datei": "licht/postapokalypse_fackelkorb.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_fackelkorb",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "warm",
+        "wache",
+        "feuer",
+        "aussen"
+      ],
+      "sha256": "97ff8ff964ee1637fea7df88c10ac9ffd0359bcfee97f3f1e0547ff275c91c3d"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "gefaess",
+      "bytes": 3815,
+      "datei": "gefaess/postapokalypse_wasserbehaelter.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_wasserbehaelter",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "wasser",
+        "vorrat",
+        "lager",
+        "aussen"
+      ],
+      "sha256": "ba5bb4a9a84e45e3b751545327223330664069ada9682447c91c5a2afbaf1bad"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4740,
+      "datei": "moebel/postapokalypse_pedalgenerator.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_pedalgenerator",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "maschine",
+        "strom",
+        "technik",
+        "werkstatt"
+      ],
+      "sha256": "fba0509dd746d0bb197ed1bbcd6c41ae332a28e7b1f507113cecad41e21b340c"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3848,
+      "datei": "aufbau/postapokalypse_regenfaenger.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_regenfaenger",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "aussen",
+        "wasser",
+        "versorgung",
+        "plane"
+      ],
+      "sha256": "962be1cbea5a4a2298fb365e53b96f46bcde8b683fc7dab905f80fd81b6347f0"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3969,
+      "datei": "moebel/postapokalypse_wasserdestille.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_wasserdestille",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "wasser",
+        "maschine",
+        "versorgung",
+        "werkstatt"
+      ],
+      "sha256": "0fc8c64298cb47c12027db0232970803d9695c803af4ee17c508d00513e13664"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3759,
+      "datei": "moebel/postapokalypse_feldzahnarzt.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_feldzahnarzt",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "medizin",
+        "operation",
+        "behandlung",
+        "sitz"
+      ],
+      "sha256": "4c31780325b1cf14de6fcaa4828bb7dc02bd2697d3af4f3b157663b56401b94c"
+    },
+    {
+      "anker": [
+        64,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3576,
+      "datei": "aufbau/postapokalypse_wrackchassis.svg",
+      "einheiten": [
+        2,
+        3
+      ],
+      "groesse": [
+        128,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_wrackchassis",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "aussen",
+        "verkehr",
+        "schrott",
+        "deckung"
+      ],
+      "sha256": "82a1873f94ca548770eaaae6759db688d56c096e9c38fa072fa4a1871d4451de"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 10337,
+      "datei": "aufbau/postapokalypse_reifenbarrikade.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_reifenbarrikade",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "aussen",
+        "barrikade",
+        "deckung",
+        "schrott"
+      ],
+      "sha256": "006cd2121cb1edf6373884ec3b870471c1f1c0e9bfa5b27028745223cb0301c7"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5561,
+      "datei": "aufbau/postapokalypse_sandsackposten.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_sandsackposten",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "aussen",
+        "wache",
+        "barrikade",
+        "deckung"
+      ],
+      "sha256": "eb1118efd5244685965aba77ee1c71548a52fab7331c94e44c365949d5eec686"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 5234,
+      "datei": "moebel/postapokalypse_saatwerkbank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_saatwerkbank",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "labortisch",
+        "garten",
+        "saatgut",
+        "vorrat"
+      ],
+      "sha256": "ef1e160ba32a908b8c67b31b967b6621ca9df0476343250a5e4b9cc45680fe0f"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4788,
+      "datei": "aufbau/postapokalypse_dekontaminationsbogen.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_dekontaminationsbogen",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "eingang",
+        "hygiene",
+        "wasser",
+        "sicherheit"
+      ],
+      "sha256": "68192a18dbfef46f2e9965e4218a2761083abf8c08edb88296408d3262cdb4af"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3052,
+      "datei": "aufbau/postapokalypse_handpumpe.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_handpumpe",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "aussen",
+        "wasser",
+        "versorgung",
+        "pumpe"
+      ],
+      "sha256": "07bc5bf403e363bbd8ae9615798460babebe5ece1a51e2c82afbda06aaca56d0"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 2877,
+      "datei": "aufbau/postapokalypse_savoniusrotor.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_savoniusrotor",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "aussen",
+        "strom",
+        "wind",
+        "maschine"
+      ],
+      "sha256": "7792e92de6ed0d48e8eac3fbd8996e6b4db6e2f2ba17dc3c7357756e1280ec5d"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3390,
+      "datei": "aufbau/postapokalypse_tunnelabstieg.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_tunnelabstieg",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "treppe",
+        "eingang",
+        "untergrund",
+        "beton"
+      ],
+      "sha256": "65ddc923ac43df15c845061a7f2d3f0c061b32532a88e8e7cf0e069d436e04c2"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4212,
+      "datei": "moebel/postapokalypse_funkbasteltisch.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_funkbasteltisch",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "kommunikation",
+        "konsole",
+        "technik",
+        "werkstatt"
+      ],
+      "sha256": "380dff934666ae1219381e902139ed36fcdf55ba5c52a9387b3e07148af4618b"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 7109,
+      "datei": "aufbau/postapokalypse_pilzbeet.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_pilzbeet",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "garten",
+        "nahrung",
+        "feucht",
+        "vorrat"
+      ],
+      "sha256": "d2b9c4afd5a1581f0731cc005c57b08f6fa7888db83d95f82af31708539298e0"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4996,
+      "datei": "moebel/postapokalypse_tauschtheke.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_tauschtheke",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "empfang",
+        "handel",
+        "markt",
+        "vorrat"
+      ],
+      "sha256": "5752b58d2788054b6f50d2072e5702a9f013e2a80ea371bacf3cfb8468945edb"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4077,
+      "datei": "moebel/postapokalypse_schrottkoje.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_schrottkoje",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "rast",
+        "bett",
+        "quartier",
+        "schrott"
+      ],
+      "sha256": "4ed68086cfaec78a8acc812bfeff25d07703068cecf212af2de7a19ba47ad818"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3845,
+      "datei": "moebel/postapokalypse_fassherd.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_fassherd",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "mahl",
+        "kueche",
+        "herd",
+        "feuer"
+      ],
+      "sha256": "cce0168dfa0694305d3cb30b075d710c7b376bf27eff85d5342c9b8f9cf3c8ae"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "marke",
+      "bytes": 2571,
+      "datei": "marke/postapokalypse_sperrkreuz.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "postapokalypse_sperrkreuz",
+      "schlagworte": [
+        "genre_postapokalypse",
+        "gegenwart",
+        "hinweis",
+        "sicherheit",
+        "sperre",
+        "strasse"
+      ],
+      "sha256": "b9b81f809c9078526f91310b6d31af00e29e3e8bebaf1609eeee828eb3261635"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 14593,
+      "datei": "boden/unterwasser_perlmuttplatten.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_perlmuttplatten",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "trocken",
+        "halle",
+        "steril",
+        "mineral"
+      ],
+      "sha256": "9979c086d4b22a187f230190447d239f02cfbe55c6db60f0c7f1268c3d266f65"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 5904,
+      "datei": "boden/unterwasser_kieselmosaik.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_kieselmosaik",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "feucht",
+        "stein",
+        "aussen",
+        "mineral"
+      ],
+      "sha256": "0a49856c51cabd372d64ad168210f75bb0ebd6e71880ea019841eec8703f5020"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "boden",
+      "bytes": 3714,
+      "datei": "boden/unterwasser_drainagelamellen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": true,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_drainagelamellen",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "metall",
+        "feucht",
+        "halle",
+        "technik"
+      ],
+      "sha256": "56c43dbb151b614f2704a3e9cac20290fc2a2da2a25f93ca49b5afe1c858e7e0"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "wand",
+      "bytes": 4232,
+      "datei": "wand/unterwasser_druckglaswand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_druckglaswand",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "glas",
+        "metall",
+        "druck",
+        "technik"
+      ],
+      "sha256": "730f548b14ab309796e917d4d2d9c8dd2e15e065de4254492dac598d544ef824"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "tuer",
+      "bytes": 3171,
+      "datei": "tuer/unterwasser_druckschiebetor.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_druckschiebetor",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "schiebbar",
+        "metall",
+        "druck",
+        "eingang"
+      ],
+      "sha256": "c5019ef680a76ee7598dd50a77cddc683ef93d40c16649ac863345f517dbccdf"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 3743,
+      "datei": "licht/unterwasser_leuchtpolyp.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_leuchtpolyp",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "kalt",
+        "wache",
+        "biolumineszenz",
+        "wasser"
+      ],
+      "sha256": "41925ec15eb63636016832f0b8a3be7466ceb07e9a67f18e282c870f5a0c88d2"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 3584,
+      "datei": "gefaess/unterwasser_isotopenkoffer.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_isotopenkoffer",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "probe",
+        "lager",
+        "steril",
+        "sicherheit"
+      ],
+      "sha256": "a31278dc4ca1e4df7713c6284eb0ebe02dad7ed9e9e2a059c6d8c52663470308"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 5186,
+      "datei": "aufbau/unterwasser_druckhabitat.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_druckhabitat",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "aussen",
+        "gebaeude",
+        "forschung",
+        "druck"
+      ],
+      "sha256": "39e73e9e756b80e7b4cfea2a2acc1ac3a80d2fd307f6558a0413b755b4d5c23a"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4263,
+      "datei": "aufbau/unterwasser_proben_rov.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_proben_rov",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "aussen",
+        "fahrzeug",
+        "forschung",
+        "scanner",
+        "technik"
+      ],
+      "sha256": "0d7050045ee8236bf618200704d155816beead1a768e79e5146c60e13e588a70"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4850,
+      "datei": "aufbau/unterwasser_tauchglocke.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_tauchglocke",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "aussen",
+        "druck",
+        "tauchen",
+        "eingang"
+      ],
+      "sha256": "62533422afb80ab02575f4120833b290a5bccfc00700e31e32c1cb203532bd1f"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2965,
+      "datei": "moebel/unterwasser_korallenlabor.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_korallenlabor",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "labortisch",
+        "forschung",
+        "probe",
+        "wasser"
+      ],
+      "sha256": "3fbdbee9a69f27376e29fb17877adbf14ec1356d03ca3f90b624410ffbb70221"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 6920,
+      "datei": "moebel/unterwasser_algenharfe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_algenharfe",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "garten",
+        "nahrung",
+        "forschung",
+        "wasser"
+      ],
+      "sha256": "f71eb54bcd231d6e96a5a9b93ae6d302099f68e0e24de19fcbf2e75a431a97c8"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4556,
+      "datei": "aufbau/unterwasser_sonarfeld.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_sonarfeld",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "aussen",
+        "scanner",
+        "navigation",
+        "akustik"
+      ],
+      "sha256": "defb9c0efcd3dd4b89599589bee7ff43f5e0059ad556288a6722c5e094a0d1ef"
+    },
+    {
+      "anker": [
+        32,
+        96
+      ],
+      "art": "moebel",
+      "bytes": 4417,
+      "datei": "moebel/unterwasser_druckkammer.svg",
+      "einheiten": [
+        1,
+        3
+      ],
+      "groesse": [
+        64,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_druckkammer",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "medizin",
+        "druck",
+        "sicherheit",
+        "behandlung"
+      ],
+      "sha256": "ee6f2d15818626ac114e56e070d059cc0200ef8f3ca12ada23821927b74f55ae"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3331,
+      "datei": "moebel/unterwasser_tauchanzugstaender.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_tauchanzugstaender",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "lager",
+        "ausruestung",
+        "tauchen",
+        "sicherheit"
+      ],
+      "sha256": "37c6d20b393b6de74b9d45222a4709e6c7f5eb592a16520290bc5158b3834a1f"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4995,
+      "datei": "moebel/unterwasser_flossentrockner.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_flossentrockner",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "lager",
+        "ausruestung",
+        "regal",
+        "tauchen"
+      ],
+      "sha256": "3b982694688dd564fd1a7d5bad07ce4b02ab795d55cebff40cecaf4e698d56ae"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4986,
+      "datei": "moebel/unterwasser_probenkarussell.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_probenkarussell",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "labortisch",
+        "probe",
+        "forschung",
+        "steril"
+      ],
+      "sha256": "de40cbe7cb4fa97855c4c96ad4ab560a53cfd1655754b3c32ca0f4ba2ea66958"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4358,
+      "datei": "aufbau/unterwasser_schleusentreppe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_schleusentreppe",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "treppe",
+        "eingang",
+        "druck",
+        "metall"
+      ],
+      "sha256": "d7f28fb20c37f638d51424b9cb57cd062d605d1a32dac8291240d245d3f096cb"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 4341,
+      "datei": "moebel/unterwasser_perlenwiege.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_perlenwiege",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "labortisch",
+        "probe",
+        "handwerk",
+        "handel"
+      ],
+      "sha256": "f4c50e086ef454a6fc58ffb0c41ce762f7fea3bff22100da2869000c329258d8"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3552,
+      "datei": "moebel/unterwasser_hydrofonkanzel.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_hydrofonkanzel",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "konsole",
+        "kommunikation",
+        "scanner",
+        "akustik"
+      ],
+      "sha256": "fa8b374858c8c8a8bece5ff677c0c7c8358948d6de4a437aa937baa61c76d80d"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 4906,
+      "datei": "aufbau/unterwasser_versorgungsnabel.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_versorgungsnabel",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "aussen",
+        "wasser",
+        "strom",
+        "technik",
+        "versorgung"
+      ],
+      "sha256": "3ffd6ae63c09ce7dd494a662bff1c551ad09339e9359bb3c61a5cbdb176e5de0"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 5139,
+      "datei": "aufbau/unterwasser_bergungswinde.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_bergungswinde",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "aussen",
+        "fracht",
+        "bergung",
+        "maschine"
+      ],
+      "sha256": "9017bcfb0be38ce0ef7c38d68335364264182cde193d45d0060ee21664209c8a"
+    },
+    {
+      "anker": [
+        96,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 9093,
+      "datei": "aufbau/unterwasser_seesternsteg.svg",
+      "einheiten": [
+        3,
+        3
+      ],
+      "groesse": [
+        192,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_seesternsteg",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "aussen",
+        "steg",
+        "plattform",
+        "verkehr"
+      ],
+      "sha256": "27932d8737ba6b717e363c546d595ec7cbd5f244f55b638333aaa0fb57e38565"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 5203,
+      "datei": "aufbau/unterwasser_tangvorhang.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_tangvorhang",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "aussen",
+        "garten",
+        "wasser",
+        "sichtschutz"
+      ],
+      "sha256": "a5a2fd24d67b1e348c17e37f6219b111d7b860aef6e66ff68dfdabafa870b134"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "marke",
+      "bytes": 2508,
+      "datei": "marke/unterwasser_stroemungssektor.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "unterwasser_stroemungssektor",
+      "schlagworte": [
+        "genre_unterwasser",
+        "scifi",
+        "hinweis",
+        "navigation",
+        "sicherheit",
+        "stroemung"
+      ],
+      "sha256": "04c3586be937ae84d2130e6c81e29b17b9ec69d647a57d554ffb57ce600f5897"
+    }
+  ],
+  "id": "pk.genres",
+  "kind": "asset-pack",
+  "lizenz": {
+    "datei": "lizenz.txt",
+    "herkunft": "eigen",
+    "inhaber": "Chronicle contributors 2026",
+    "quelle": null,
+    "spdx": "CC0-1.0",
+    "textSha256": "b1e9c5d6a10141493c5a46edc610df1a72e539a12470a2af16193dbf38034d21"
+  },
+  "schemaVersion": 1,
+  "titel": "Genre-Archiv · 300 Motive aus zwölf Welten",
+  "urheber": "Chronicle contributors",
+  "version": "1.0.0",
+  "zellgroesse": 64
+}

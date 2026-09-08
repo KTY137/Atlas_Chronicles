@@ -1,6 +1,44 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-08** (Gegenwart, Science-Fiction und 100 Kartenassets)
+Updated: **2026-09-08** (300 zusätzliche Assets für zwölf Genres)
+
+## Genre-Archiv: 300 weitere Kartenassets — Session 2026-09-08
+
+**300 zusätzliche, eigenständige SVG-Draufsichten sind als `pk.genres` 1.0.0 eingebunden.**
+Zwölf Genres mit je 25 Motiven: Fantasy, Gothic-Horror, Antike, Wuxia, Piraten, Western,
+Steampunk, Noir, Cyberpunk, Weltraum, Postapokalypse und Unterwasser. Insgesamt 36 Böden,
+12 Wände, 12 Türen, 12 Lichter, 12 Behälter, 90 Aufbauten, 118 Möbel und 8 Zeichen.
+Alle bisherigen 271 Assets bleiben unverändert; die Bibliothek enthält jetzt **571 Assets**.
+
+**Einstieg:** Karteneditor → Einrichtung & Kartenassets → Assetpaket → Genre-Archiv.
+Genre, Kategorie, Setting und Suche sind kombinierbar. Platzierung, Drehen, Skalieren,
+Verschieben und Entfernen verwenden weiterhin die gespeicherten Kartenrevisionen.
+Der zusätzliche Zeichenstil Genre-Archiv erzeugt einen Mix aus zum Setting passenden
+Motiven; spezielle Genres stellt man im Editor zusammen. Fehlende Generatoranfragen
+bleiben sichtbar. Der Stil wird beim Betreten über die originale Quelle geerbt; bestehende
+Unterkarten behalten ihre Identität. Details: [Designlinie](design/iterations/genre-assets-20260908.md).
+
+**Nachweise:** finales Assetgate **29/29**, fünf Pakete mit **571 gültigen Referenzen**
+bytegleich reproduziert. Alle 300 neuen Geometrien auch gegen bisherige Assets geprüft,
+600 erfolgreiche Rasterisierungen bei 64/128 Pixeln. Alle Genre-Kontaktbögen und 36 Böden
+in 4×4 gesichtet. Randüberstände und fünf Bodenübergänge korrigiert; die neue Rasterprüfung
+für zwölf Zukunftsböden war für die drei betroffenen Muster zuerst rot und besteht jetzt.
+Neue Generatorintegration **45/45**, Client **203/203**, fokussierte Serverfälle **59/59**
+einschließlich Auslieferung aller 300 SVGs grün. Version, Grenzen, Typecheck und Build grün.
+
+Der breite Vitestlauf endete mit **1.788 Tests bestanden, einem Timeout, 52 übersprungen**
+und einem Worker-RPC-Timeout. Die betroffene Datei `map-workshop.test.ts` besteht anschließend
+einzeln **11/11**, bei unverändertem Zeitlimit; der Archivfall brauchte 17.950 ms. Kein
+nachträglich behaupteter grüner Gesamtlauf. Logs unter `.local/genre-assets/`.
+
+**Browserabschluss: 1/1 grün in 54,2 s.** Zwölf Genre-Filter, drei reale Platzierungen,
+Revision/Speichern/Reload, Mobilansicht ohne horizontalen Überlauf und Wechsel zum alten Paket.
+Keine Browser- oder Assetfehler; Screenshots unter `test-results/genre-assets-verified/`.
+Testkontext, App und PGlite sind geschlossen.
+
+Galerie: `.local/genre-assets/galerie.html`; Übersicht: `300-assets.png`; Download:
+`genre-archiv-300.zip` (302 Dateien, bytegleich zum Paket). Die Artefakte liegen jeweils
+unter `.local/genre-assets/`. Die vorhandene Desktop-Installation wurde nicht erneuert.
 
 ## Zeitwelten: 100 Assets und passende Städte/Innenräume — Session 2026-09-08
 

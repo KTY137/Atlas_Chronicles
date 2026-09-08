@@ -49,6 +49,25 @@ keinen zweiten Validator in einer zweiten Sprache.
 | `pk.atlas` 1.1.0 | 32 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-atlaspaket.mjs`](../tools/assets/erzeuge-atlaspaket.mjs) |
 | `pk.gemalt` 1.1.0 | 55 | CC0-1.0 | vollständig in diesem Repository erzeugt — [`tools/assets/erzeuge-gemaltpaket.mjs`](../tools/assets/erzeuge-gemaltpaket.mjs) |
 | `pk.zeitwelten` 1.0.0 | 100 | CC0-1.0 | technische Draufsichten für Gegenwart, Industrie und Science-Fiction — [`tools/assets/erzeuge-zeitweltenpaket.mjs`](../tools/assets/erzeuge-zeitweltenpaket.mjs) |
+| `pk.genres` 1.0.0 | 300 | CC0-1.0 | zwölf Genres mit je 25 eigenen Motiven — [`tools/assets/erzeuge-genrepaket.mjs`](../tools/assets/erzeuge-genrepaket.mjs) |
+
+`pk.genres` ergänzt **300 neue Draufsichten**: Fantasy, Gothic-Horror, Antike, Wuxia,
+Piraten, Western, Steampunk, Noir, Cyberpunk, Weltraum, Postapokalypse und Unterwasser.
+Jedes Genre enthält drei kachelbare Böden, je eine Wand, Tür, Lichtquelle und einen Behälter
+sowie 18 weitere Einrichtungsobjekte und Aufbauten. Die Gesamtbibliothek umfasst **571 Assets**.
+Die Motivkompositionen liegen in drei `genres-*.mjs`-Modulen; `genre-tusche.mjs` teilt
+Materialstriche und Zeichenelemente. Vorhandene Pakete werden dabei nicht verändert.
+
+Im Karteneditor unter **Einrichtung & Kartenassets → Assetpaket → Genre-Archiv** lassen
+sich Genre, Kategorie, Setting und Suche kombinieren. Der Zeichenstil **Genre-Archiv** nutzt
+die Motive als Genre-Mix des jeweiligen Kartensettings; er behauptet keine vollständige
+Ausstattung jedes Gebäudetyps. Nicht bediente Generatoranfragen werden weiterhin gemeldet.
+Ein einzelnes Genre lässt sich im Editor gezielt zusammenstellen. Tags `genre_<id>` ergänzen
+die bestehenden semantischen Schlagworte ohne ein neues Karten- oder Paketformat.
+
+`node tools/assets/genre-kontaktbogen.mjs` erzeugt eine selbstständige durchsuchbare
+Galerie unter `.local/genre-assets/galerie.html`, eine Übersicht `300-assets.png`, zwölf
+Kontaktbögen bei 64/128 Pixeln sowie die 36 Böden jeweils in 4×4-Kachelung.
 
 `pk.zeitwelten` ergänzt **100 eigenständige Silhouetten und Einrichtungen**: zwölf kachelbare
 Materialböden; Wände, Türen und vertikale Übergänge; Wohnen, Büros, Handel und Bildung;

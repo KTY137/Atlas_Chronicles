@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { parseTacticalMapDocument, type PaketAsset } from "@chronicle/szene";
-import { placeArtwork, type ArtworkBrush } from "../src/features/map-artwork.ts";
+import { artworkGenre, artworkMatches, placeArtwork, type ArtworkBrush } from "../src/features/map-artwork.ts";
 
 const document = parseTacticalMapDocument({
   schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels",
@@ -16,6 +16,16 @@ const asset: PaketAsset = { name: "schreibtisch", art: "moebel", datei: "moebel/
 const brush: ArtworkBrush = { packId: "pk.zeitwelten", cellSize: 64, asset };
 
 describe("placing artwork from its actual asset manifest", () => {
+  it("combines exact genre, category, era and localized search while retaining older untagged assets", () => {
+    const noir = { ...asset, name: "noir_ermittlerpult", schlagworte: ["genre_noir", "gegenwart", "schreibtisch"] };
+    expect(artworkGenre(noir)).toBe("noir");
+    expect(artworkMatches(noir, " KRIMI ", "moebel", "gegenwart", "noir")).toBe(true);
+    expect(artworkMatches(noir, "", "all", "all", "western")).toBe(false);
+    expect(artworkMatches(noir, "", "boden", "all", "noir")).toBe(false);
+    expect(artworkMatches(noir, "", "all", "scifi", "noir")).toBe(false);
+    expect(artworkMatches(asset, "schreibtisch", "moebel", "scifi", "all")).toBe(true);
+    expect(artworkMatches(asset, "", "all", "all", "noir")).toBe(false);
+  });
   it("fits the complete image footprint at all canvas edges and preserves grid scale", () => {
     const topLeft = placeArtwork(document, brush, [0, 0], "left")!;
     const bottomRight = placeArtwork(document, brush, [960, 768], "right")!;

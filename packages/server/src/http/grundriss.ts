@@ -28,7 +28,7 @@ const zelle = Type.Integer({ minimum: GRUNDRISS_LIMITS.zellenMin, maximum: GRUND
 
 export const BauwerkTypSchema = Type.Union(BAUWERK_TYPEN.map(typ => Type.Literal(typ)));
 export const KartenSettingSchema = Type.Union(KARTEN_SETTINGS.map(setting => Type.Literal(setting)));
-export const KartenStilSchema = Type.Union([Type.Literal("grundriss"), Type.Literal("gemalt"), Type.Literal("zeitwelten")]);
+export const KartenStilSchema = Type.Union([Type.Literal("grundriss"), Type.Literal("gemalt"), Type.Literal("zeitwelten"), Type.Literal("genres")]);
 export const OptionenSchema = Type.Object({
   setting: Type.Optional(KartenSettingSchema),
   zellen: Type.Optional(Type.Tuple([zelle, zelle])),

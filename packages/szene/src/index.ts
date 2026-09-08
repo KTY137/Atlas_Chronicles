@@ -56,6 +56,7 @@ export { TACTICAL_MAP_VERSION, TACTICAL_MAP_LIMITS, TacticalMapValidationError, 
 export type { TacticalPoint, TacticalGrid, TacticalWall, TacticalPortal, TacticalLight, TacticalImageRef, TacticalGeometryElevation, TacticalMapDocumentV1 } from "./tactical-map.ts";
 export { ASSETPAKET_VERSION, ASSETPAKET_LIMITS, ASSET_MIME_TYPES, ASSET_ARTEN, AssetpaketValidationError, parseAssetpaket, serializeAssetpaket, assetVerweis, assetIndex, pruefeStampVerweise } from "./assetpaket.ts";
 export type { AssetMimeType, AssetArt, Lizenz, PaketAsset, AssetpaketV1, AufgeloestesAsset, UnaufgeloesterVerweis } from "./assetpaket.ts";
+export { ASSET_GENRES, ASSET_GENRE_LABEL, type AssetGenre } from "./asset-genres.ts";
 export { baueMaske, erweitereMaske } from "./sichtmaske.ts";
 export type { Maske, MaskeEingabe } from "./sichtmaske.ts";
 export { entfernung, pfadlaenge, flaeche, rasterEntfernung, nachWelt, nachRahmen } from "./messung.ts";
