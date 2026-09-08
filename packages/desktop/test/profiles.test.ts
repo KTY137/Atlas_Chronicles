@@ -6,6 +6,8 @@ import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/pro
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { expect, it } from "vitest";
+import { CHRONIST_ANTHROPIC_BASE_URL, CHRONIST_ANTHROPIC_KEY_ENV, CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING,
+  CHRONIST_ANTHROPIC_PROFILE, CHRONIST_UNCONFIGURED_MODEL } from "@chronicle/server/host";
 import { ProfileStore } from "../src/profiles.ts";
 
 it("refuses setup without OS encryption and preserves only ciphertext across reopening", async () => {
@@ -102,11 +104,23 @@ it("writes its own operator file once beside a stored key and never rewrites or 
     expect(written).not.toContain(key);
     const settings = JSON.parse(written) as { schemaVersion: number; globalConcurrency: number; providers: Record<string, unknown>[] };
     expect(settings.schemaVersion).toBe(1);
-    expect(settings.providers.map(provider => provider.profileId)).toEqual(["ollama-chat-1", "anthropic-messages-1"]);
-    expect(settings.providers[0]).toMatchObject({ id: "ollama", location: "lokal", baseUrl: "http://127.0.0.1:11434" });
-    expect(settings.providers[1]).toMatchObject({ id: "anthropic", location: "fremd", baseUrl: "https://api.anthropic.com/v1",
-      models: ["claude-sonnet-5"], apiKeyEnv: "CHRONICLE_CHRONIST_KEY_ANTHROPIC",
-      pricing: { currency: "USD", inputMicrosPerMillion: 2_000_000, outputMicrosPerMillion: 10_000_000 } });
+    // The written file is the registry's documented default, not a second hand-kept copy of it.
+    expect(settings.providers.map(provider => provider.profileId)).toEqual(["ollama-chat-1", CHRONIST_ANTHROPIC_PROFILE, CHRONIST_ANTHROPIC_PROFILE]);
+    expect(settings.providers[0]).toMatchObject({ id: "ollama", location: "lokal", baseUrl: "http://127.0.0.1:11434",
+      models: [CHRONIST_UNCONFIGURED_MODEL], available: false });
+    expect(settings.providers.slice(1)).toEqual([
+      { id: "anthropic", label: "Anthropic", profileId: CHRONIST_ANTHROPIC_PROFILE, location: "fremd", baseUrl: CHRONIST_ANTHROPIC_BASE_URL,
+        models: [CHRONIST_ANTHROPIC_MODELS.standard], apiKeyEnv: CHRONIST_ANTHROPIC_KEY_ENV, pricing: CHRONIST_ANTHROPIC_PRICING["claude-sonnet-5"] },
+      { id: "anthropic-haiku", label: "Anthropic (Sparmodus)", profileId: CHRONIST_ANTHROPIC_PROFILE, location: "fremd", baseUrl: CHRONIST_ANTHROPIC_BASE_URL,
+        models: [CHRONIST_ANTHROPIC_MODELS.economy], apiKeyEnv: CHRONIST_ANTHROPIC_KEY_ENV, pricing: CHRONIST_ANTHROPIC_PRICING["claude-haiku-4-5"] },
+    ]);
+    // Neither Anthropic entry may pin availability: the stored key alone decides for both.
+    expect(settings.providers.slice(1).some(provider => "available" in provider)).toBe(false);
+    expect(settings.providers[1]!.baseUrl).toBe("https://api.anthropic.com/v1");
+    expect(settings.providers.slice(1).map(provider => (provider.models as string[])[0])).toEqual(["claude-sonnet-5", "claude-haiku-4-5"]);
+    expect(settings.providers.slice(1).map(provider => provider.pricing)).toEqual([
+      { currency: "USD", asOf: "2026-09-08", inputMicrosPerMillion: 2_000_000, outputMicrosPerMillion: 10_000_000 },
+      { currency: "USD", asOf: "2026-09-08", inputMicrosPerMillion: 1_000_000, outputMicrosPerMillion: 5_000_000 }]);
     expect(settings.providers.some(provider => "apiKey" in provider), "Die Betreiberdatei enthält nie einen Schlüssel").toBe(false);
     // An operator may edit this file; a later start must leave it byte for byte alone.
     const edited = `${written.replace("Kein lokales Modell eingerichtet", "mein-lokales-modell")}\n`;

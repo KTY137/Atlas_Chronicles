@@ -9,7 +9,7 @@ import type { ChronistModelUnit, ChronistProviderPort, ChronistSnapshot, Chronis
 
 /** These versioned wire recipes are also used by the historical Native reader. Never change
  * an existing recipe's bytes: introduce a new profile ID for a changed provider protocol. */
-export const CHRONIST_HTTP_PROFILES = ["ollama-chat-1", "openai-responses-1", "openai-chat-1", "anthropic-messages-1", "google-generate-1"] as const;
+export const CHRONIST_HTTP_PROFILES = ["ollama-chat-1", "openai-responses-1", "openai-chat-1", "anthropic-messages-1", "anthropic-messages-2", "google-generate-1"] as const;
 export type ChronistHttpProfile = typeof CHRONIST_HTTP_PROFILES[number];
 export const CHRONIST_CLAUDE_CLI_PROFILE = "claude-cli-2.1.261-1" as const;
 export function isChronistHttpProfile(value: string): value is ChronistHttpProfile {
@@ -90,6 +90,10 @@ export function renderChronistUnit(profileId: string, model: string, fingerprint
       response_format: { type: "json_schema", json_schema: { name: "chronist_reply", strict: true, schema: CHRONIST_REPLY_SCHEMA } } }; break;
     case "anthropic-messages-1": body = { model, system: SYSTEM, messages: [{ role: "user", content: prompt }], tools: [],
       stream: true, max_tokens: tokens, output_config: { format: { type: "json_schema", schema: CHRONIST_REPLY_SCHEMA } } }; break;
+    // Profile 2 is profile 1 plus an explicit thinking switch-off; it carries no temperature,
+    // so the provider default stays in force. Profile 1 keeps its own bytes and hashes.
+    case "anthropic-messages-2": body = { model, system: SYSTEM, messages: [{ role: "user", content: prompt }], tools: [],
+      thinking: { type: "disabled" }, stream: true, max_tokens: tokens, output_config: { format: { type: "json_schema", schema: CHRONIST_REPLY_SCHEMA } } }; break;
     // The pinned CLI's EXTRA_BODY replaces its injected date, SDK prompt and random metadata.
     // Its local one-request bridge verifies this exact recipe before any upstream request.
     // Never use --json-schema: that CLI flag reintroduces a StructuredOutput tool.

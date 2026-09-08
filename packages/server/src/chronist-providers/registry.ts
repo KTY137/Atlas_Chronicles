@@ -86,6 +86,20 @@ export function parseChronistHostSettings(value: unknown, environment: Readonly<
   });
   return { providers, globalConcurrency: root.globalConcurrency === undefined ? 2 : integer(root.globalConcurrency, 4, 1) };
 }
+/** The single source of the documented Anthropic defaults; the desktop operator file is derived
+ *  from exactly these values. Model names carry no date suffix, so a provider-side revision of the
+ *  same name needs no file edit. Prices are USD micros per million tokens, a micro being a
+ *  millionth of a US dollar; they are a written operator decision, not an automatic price list. */
+export const CHRONIST_ANTHROPIC_PROFILE = "anthropic-messages-2" as const;
+export const CHRONIST_ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1" as const;
+export const CHRONIST_ANTHROPIC_KEY_ENV = "CHRONICLE_CHRONIST_KEY_ANTHROPIC" as const;
+export const CHRONIST_ANTHROPIC_MODELS = Object.freeze({ standard: "claude-sonnet-5", economy: "claude-haiku-4-5" } as const);
+export const CHRONIST_ANTHROPIC_PRICING: Readonly<Record<string, NonNullable<ChronistProviderDescription["pricing"]>>> = Object.freeze({
+  "claude-sonnet-5": Object.freeze({ currency: "USD", asOf: "2026-09-08", inputMicrosPerMillion: 2_000_000, outputMicrosPerMillion: 10_000_000 }),
+  "claude-haiku-4-5": Object.freeze({ currency: "USD", asOf: "2026-09-08", inputMicrosPerMillion: 1_000_000, outputMicrosPerMillion: 5_000_000 }),
+});
+/** No hard local default model: the placeholder stays visibly unavailable until discovery or the
+ *  operator file names an actually installed model. Nothing here downloads or invokes a model. */
 const offlineOllama = (): ChronistHttpProviderConfig => ({ id: "ollama", label: "Ollama", profileId: "ollama-chat-1",
   location: "lokal", baseUrl: "http://127.0.0.1:11434", models: [CHRONIST_UNCONFIGURED_MODEL], available: false });
 
@@ -121,9 +135,22 @@ async function boundedFile(path: string): Promise<string> {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, length));
   } finally { await handle.close(); }
 }
-async function localModels(invokeFetch: typeof fetch): Promise<readonly string[]> {
+/** The operator file's own local address, normalized exactly like the dispatch endpoint. */
+function tagsUrl(baseUrl: string): string {
+  const url = new URL(baseUrl);
+  if (url.hostname === "localhost") url.hostname = "127.0.0.1";
+  url.pathname = `${url.pathname.replace(/\/$/, "")}/api/tags`;
+  return url.href;
+}
+/** A local Ollama entry that names no model yet: only the placeholder invites startup discovery.
+ *  An entry with a concrete model is the operator's decision and is never queried or replaced. */
+function awaitsDiscovery(provider: ChronistHttpProviderConfig | ChronistCliProviderConfig): provider is ChronistHttpProviderConfig {
+  return provider.profileId === "ollama-chat-1" && provider.location === "lokal"
+    && provider.models.length === 1 && provider.models[0] === CHRONIST_UNCONFIGURED_MODEL;
+}
+async function localModels(invokeFetch: typeof fetch, baseUrl = "http://127.0.0.1:11434"): Promise<readonly string[]> {
   // Startup discovery reads installed model names only. It neither downloads nor invokes a model.
-  const response = await invokeFetch("http://127.0.0.1:11434/api/tags", { redirect: "manual", signal: AbortSignal.timeout(1000) });
+  const response = await invokeFetch(tagsUrl(baseUrl), { redirect: "manual", signal: AbortSignal.timeout(1000) });
   if (!response.ok || !response.body) { await response.body?.cancel(); return []; }
   const reader = response.body.getReader(), chunks: Uint8Array[] = []; let length = 0;
   try {
@@ -143,7 +170,14 @@ export async function loadChronistRuntime(options: { readonly configPath?: strin
   if (options.configPath) {
     const activated = new Map<string, ChronistCliActivation>();
     try {
-      const settings = parseChronistHostSettings(JSON.parse(await boundedFile(options.configPath)), options.environment ?? process.env);
+      const parsed = parseChronistHostSettings(JSON.parse(await boundedFile(options.configPath)), options.environment ?? process.env);
+      // Ruling 2026-09-08: a file no longer switches discovery off wholesale. Only an Ollama entry
+      // still carrying the placeholder is filled in from its own already validated local address.
+      const settings: ChronistHostSettings = { ...parsed, providers: await Promise.all(parsed.providers.map(async provider => {
+        if (!awaitsDiscovery(provider)) return provider;
+        const found = await localModels(options.fetch ?? fetch, provider.baseUrl).catch(() => []);
+        return found.length ? { ...provider, models: [...found], available: true } : provider;
+      })) };
       for (const provider of settings.providers) if (provider.profileId === CHRONIST_CLAUDE_CLI_PROFILE) {
         const activation = options.allowCli === true && provider.capabilityEnabled === true
           ? await activateChronistCli(provider)

@@ -55,13 +55,15 @@ function failed(outcome: ChronistCallOutcome, code: "unavailable" | "cancelled" 
   assert.equal(outcome.usage.tokensComplete, false); assert.equal(outcome.usage.costComplete, false);
   assert(!JSON.stringify(outcome).includes(key));
 }
+// Both Anthropic profiles share one wire protocol; profile 2 only disables thinking in the request.
+const anthropicFrames: readonly unknown[] = [{ type: "message_start", message: { usage: { input_tokens: 5, cache_creation_input_tokens: 2, cache_read_input_tokens: 3, output_tokens: 1 } } },
+  { type: "content_block_delta", delta: { type: "text_delta", text: answer } }, { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 6 } }, { type: "message_stop" }];
 const profileFrames: Record<ChronistHttpProfile, readonly unknown[]> = {
   "ollama-chat-1": [{ message: { content: answer }, done: false }, { message: { content: "" }, done: true, prompt_eval_count: 10, eval_count: 6 }],
   "openai-responses-1": [{ type: "response.output_text.delta", delta: answer }, { type: "response.completed", response: { status: "completed", usage: { input_tokens: 10, output_tokens: 6 } } }],
   "openai-chat-1": [{ choices: [{ delta: { content: answer }, finish_reason: null }] }, { choices: [{ delta: {}, finish_reason: "stop" }] },
     { choices: [], usage: { prompt_tokens: 10, completion_tokens: 6 } }, "[DONE]"],
-  "anthropic-messages-1": [{ type: "message_start", message: { usage: { input_tokens: 5, cache_creation_input_tokens: 2, cache_read_input_tokens: 3, output_tokens: 1 } } },
-    { type: "content_block_delta", delta: { type: "text_delta", text: answer } }, { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 6 } }, { type: "message_stop" }],
+  "anthropic-messages-1": anthropicFrames, "anthropic-messages-2": anthropicFrames,
   "google-generate-1": [{ candidates: [{ content: { parts: [{ text: "internal", thought: true }, { text: answer }] } }] },
     { candidates: [{ finishReason: "STOP" }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 4, thoughtsTokenCount: 2, totalTokenCount: 16 } }],
 };
@@ -94,11 +96,12 @@ for (const profileId of CHRONIST_HTTP_PROFILES) it(`${profileId}: real HTTP send
   assert(request.body.includes("vorherige Antwort")); assert(!request.body.includes(key)); assert(!request.body.includes(permit.callId));
   assert.equal(request.method, "POST"); assert.equal(request.headers.accept, contentType(profileId));
   const paths: Record<ChronistHttpProfile, string> = { "ollama-chat-1": "/v1/api/chat", "openai-responses-1": "/v1/responses", "openai-chat-1": "/v1/chat/completions",
-    "anthropic-messages-1": "/v1/messages", "google-generate-1": `/v1/models/${model}:streamGenerateContent?alt=sse` };
+    "anthropic-messages-1": "/v1/messages", "anthropic-messages-2": "/v1/messages", "google-generate-1": `/v1/models/${model}:streamGenerateContent?alt=sse` };
   assert.equal(request.url, paths[profileId]);
-  assert.equal(request.headers[profileId === "anthropic-messages-1" ? "x-api-key" : profileId === "google-generate-1" ? "x-goog-api-key" : "authorization"],
-    profileId === "anthropic-messages-1" || profileId === "google-generate-1" ? key : `Bearer ${key}`);
-  if (profileId === "anthropic-messages-1") assert.equal(request.headers["anthropic-version"], "2023-06-01");
+  const anthropic = profileId === "anthropic-messages-1" || profileId === "anthropic-messages-2";
+  assert.equal(request.headers[anthropic ? "x-api-key" : profileId === "google-generate-1" ? "x-goog-api-key" : "authorization"],
+    anthropic || profileId === "google-generate-1" ? key : `Bearer ${key}`);
+  if (anthropic) assert.equal(request.headers["anthropic-version"], "2023-06-01");
   failed(await invoke(unit, permit, new AbortController().signal), "cancelled", 0, false);
   assert.equal(server.requests.length, 1, "the same consumed permit cannot send twice");
 });
@@ -133,7 +136,7 @@ for (const status of [307, 429, 500]) it(`HTTP ${status} does not redirect or re
 });
 
 for (const profileId of CHRONIST_HTTP_PROFILES) it(`${profileId}: post-terminal model output is rejected without releasing the unknown reservation`, async t => {
-  const server = await host(t, res => { res.writeHead(200, { "content-type": contentType(profileId) }); res.end(wire(profileId, [...profileFrames[profileId], profileFrames[profileId][profileId === "anthropic-messages-1" ? 1 : 0]])); });
+  const server = await host(t, res => { res.writeHead(200, { "content-type": contentType(profileId) }); res.end(wire(profileId, [...profileFrames[profileId], profileFrames[profileId][profileId.startsWith("anthropic-messages-") ? 1 : 0]])); });
   const { binding, unit, permit } = setup(server.baseUrl, profileId);
   const result = await binding.bind(async () => true)(unit, permit, new AbortController().signal);
   failed(result, "unavailable", answer.length); assert.equal(result.usage.inputTokens, 10); assert.equal(result.usage.outputTokens, 6);
@@ -195,11 +198,12 @@ for (const limit of ["frame", "frames", "bytes"] as const) it(`transport ${limit
   failed(await binding.bind(async () => true)(unit, permit, new AbortController().signal), "output-limit", 0);
 });
 
+const anthropicTool = { type: "content_block_start", content_block: { type: "server_tool_use", name: "web_search", input: {} } };
 const toolFrames: Record<ChronistHttpProfile, unknown> = {
   "ollama-chat-1": { message: { tool_calls: [{ function: { name: "fetch", arguments: { url: "http://127.0.0.1" } } }] }, done: true },
   "openai-responses-1": { type: "response.output_item.added", item: { type: "function_call", name: "fetch", arguments: "{}" } },
   "openai-chat-1": { choices: [{ delta: { tool_calls: [{ function: { name: "fetch", arguments: "{}" } }] } }] },
-  "anthropic-messages-1": { type: "content_block_start", content_block: { type: "server_tool_use", name: "web_search", input: {} } },
+  "anthropic-messages-1": anthropicTool, "anthropic-messages-2": anthropicTool,
   "google-generate-1": { candidates: [{ content: { parts: [{ functionCall: { name: "fetch", args: {} } }] }, finishReason: "STOP" }] },
 };
 for (const profileId of CHRONIST_HTTP_PROFILES) it(`${profileId}: tool output cannot become a successful text response or a second request`, async t => {

@@ -48,6 +48,21 @@ describe("frozen, replayable Chronist provider wire profiles", () => {
     expect(repair.dispatch.wireText).toContain("vorherige Antwort");
     expect(repair.dispatch.requestHash).not.toBe(dispatch.requestHash);
   });
+  it("keeps profile 1 frozen byte for byte and adds the disabled thinking switch only in profile 2", () => {
+    const snapshot = fixture(), plan = planChronistUnits(snapshot)[0]!;
+    const one = renderChronistUnit("anthropic-messages-1", model, fingerprint, plan, snapshot, 1, []);
+    const two = renderChronistUnit("anthropic-messages-2", model, fingerprint, plan, snapshot, 1, []);
+    // A pinned hash over the complete wire text: any byte change of profile 1 is a new profile.
+    expect(one.dispatch.requestHash).toBe("ab41ca9f83f0bb316817216f957f1282e50e4348acb6041495f63e0813da50b6");
+    expect(JSON.parse(two.dispatch.wireText)).toEqual({ ...JSON.parse(one.dispatch.wireText), thinking: { type: "disabled" } });
+    expect(JSON.parse(two.dispatch.wireText).temperature).toBeUndefined();
+    expect(JSON.parse(two.dispatch.wireText).thinking.type).toBe("disabled");
+    // Profile 2 is frozen from here on as well: a changed byte is a profile 3, not an edit.
+    expect(two.dispatch.requestHash).toBe("945415a814fbc9389722580a6765139460d647b12a0580167ac8bba826bafaaa");
+    expect(two.dispatch.requestHash).not.toBe(one.dispatch.requestHash);
+    expect(two.dispatch.inputChars).toBe(two.dispatch.wireText.length);
+    expect(CHRONIST_HTTP_PROFILES).toContain("anthropic-messages-2");
+  });
   it("uses documented response formats and explicitly disables OpenAI response storage", () => {
     const snapshot = fixture(), plan = planChronistUnits(snapshot)[0]!;
     const body = (profile: string) => JSON.parse(renderChronistUnit(profile, model, fingerprint, plan, snapshot, 1, []).dispatch.wireText);

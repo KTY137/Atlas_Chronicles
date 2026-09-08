@@ -604,6 +604,31 @@ Secretgrenze. Die vorhandenen Desktop-Profilgeheimnisse sind heute nur DB-/Cooki
 nicht beiläufig umgenutzt. Einrichtung muss Providerverfügbarkeit und externe Freigabe getrennt
 behandeln. Ein Schlüssel ist keine Freigabe zum Senden.
 
+### Offen (Stand 2026-09-08, A5/A6)
+
+- **Anbieterprofil 2.** `anthropic-messages-2` ist `anthropic-messages-1` plus
+  `thinking:{type:"disabled"}` und ohne `temperature`. Profil 1 bleibt byteweise eingefroren;
+  sein Dispatchhash ist im Test gepinnt. Neue Einrichtungen, einschließlich der
+  Desktop-Betreiberdatei, verwenden Profil 2; Profil 1 bleibt nur für alte Läufe lesbar.
+- **Modelle und Tarife.** Standard `claude-sonnet-5`, Sparmodus `claude-haiku-4-5`, beide
+  ohne Datumssuffix. Tarife in USD-Micros je Million, Stand 2026-09-08: Sonnet 5
+  2 000 000 / 10 000 000, Haiku 4.5 1 000 000 / 5 000 000. Die Registry führt keine
+  automatisch gepflegte Preisliste; sie ist aber die einzige Wahrheitsquelle dieser Vorgaben:
+  die Desktop-Betreiberdatei leitet Profil, Adresse, Schlüsselname, Modelle und Tarife aus
+  denselben Konstanten ab und legt Sonnet und Haiku als zwei Einträge mit demselben
+  Schlüsselnamen an.
+- **Ollama-Discovery.** Kein hartes lokales Standardmodell. Ohne Betreiberdatei fragt der Host
+  beim Start `/api/tags` auf Loopback ab. Mit Betreiberdatei gilt das für einen lokalen
+  Ollama-Eintrag, der noch den Platzhalter „Kein lokales Modell eingerichtet" trägt: seine
+  eigene `baseUrl` wird abgefragt und die installierten Modelle werden eingetragen. Ein
+  Eintrag mit konkretem Modell wird nicht abgefragt und nicht verändert; ohne erreichbares
+  Ollama bleibt der Eintrag mit dem bisherigen Code `available:false`. Die Datei selbst wird
+  dabei nie geschrieben. Marker ist der Platzhalter, nicht das Feld `available`: ein Eintrag
+  mit Platzhalter wird auch über ein ausdrückliches `available:false` hinweg verfügbar, sobald
+  Modelle gefunden sind. Das ist dokumentiert, weil die Desktop-Vorgabe genau so aussieht.
+- **CLI weiterhin unbelegt.** Codex- und Gemini-CLI bleiben `capability-unverified`; ihre
+  Adapter sind nicht verfügbar, bis die Transport-Gegenprobe das gesamte Profil belegt.
+
 ## 6. Datenbank, Versionen und unveränderlicher ACK
 
 Zwei neue Tabellen, beide kampagnengebunden. JSON-Strukturen besitzen `schemaVersion: 1`, geschlossene

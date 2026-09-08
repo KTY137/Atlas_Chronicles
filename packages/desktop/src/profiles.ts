@@ -4,22 +4,29 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, readdir, rename, rm, lstat, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join } from "node:path";
+import { CHRONIST_ANTHROPIC_BASE_URL, CHRONIST_ANTHROPIC_KEY_ENV, CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING,
+  CHRONIST_ANTHROPIC_PROFILE, CHRONIST_UNCONFIGURED_MODEL } from "@chronicle/server/host";
 import { chronistKey, contained, fail, label, object, profileId } from "./policy.ts";
 
 export const CHRONIST_KEY_FILE = "chronist-key.dpapi";
 export const CHRONIST_PROVIDERS_FILE = "chronist-providers.json";
 /** The profile's own operator file. It carries no key: the key is named, not contained.
- *  A configured file replaces the host's Ollama discovery, so the local entry mirrors the
- *  server's unconfigured placeholder and stays visibly unavailable until models are entered. */
+ *  Profile, addresses, model names and prices are the registry's documented defaults, so this file
+ *  and the host cannot drift apart. The local entry keeps the server's unconfigured placeholder:
+ *  the host fills it in from its own Ollama tag discovery and leaves any concrete model entered
+ *  here untouched. Both Anthropic entries name the same key variable, so a stored key makes both
+ *  available and no key leaves both visibly unavailable. */
+const anthropic = (id: string, label: string, model: string) => ({ id, label, profileId: CHRONIST_ANTHROPIC_PROFILE,
+  location: "fremd", baseUrl: CHRONIST_ANTHROPIC_BASE_URL, models: [model], apiKeyEnv: CHRONIST_ANTHROPIC_KEY_ENV,
+  pricing: CHRONIST_ANTHROPIC_PRICING[model] });
 export const CHRONIST_PROVIDER_DEFAULTS = {
   schemaVersion: 1,
   globalConcurrency: 2,
   providers: [
     { id: "ollama", label: "Ollama auf diesem Rechner", profileId: "ollama-chat-1", location: "lokal",
-      baseUrl: "http://127.0.0.1:11434", models: ["Kein lokales Modell eingerichtet"], available: false },
-    { id: "anthropic", label: "Anthropic", profileId: "anthropic-messages-1", location: "fremd",
-      baseUrl: "https://api.anthropic.com/v1", models: ["claude-sonnet-5"], apiKeyEnv: "CHRONICLE_CHRONIST_KEY_ANTHROPIC",
-      pricing: { currency: "USD", asOf: "2026-09-08", inputMicrosPerMillion: 2_000_000, outputMicrosPerMillion: 10_000_000 } },
+      baseUrl: "http://127.0.0.1:11434", models: [CHRONIST_UNCONFIGURED_MODEL], available: false },
+    anthropic("anthropic", "Anthropic", CHRONIST_ANTHROPIC_MODELS.standard),
+    anthropic("anthropic-haiku", "Anthropic (Sparmodus)", CHRONIST_ANTHROPIC_MODELS.economy),
   ],
 } as const;
 

@@ -9,7 +9,8 @@ import { inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm
 import { parseCurrentCampaignBundle, CAMPAIGN_BUNDLE_V5_LIMITS } from "@chronicle/io";
 import sharp from "sharp";
 import type { ChronistRuntimeConfig } from "./domain/chronist/runtime.ts";
-export { loadChronistRuntime } from "./chronist-providers/registry.ts";
+export { loadChronistRuntime, CHRONIST_UNCONFIGURED_MODEL, CHRONIST_ANTHROPIC_PROFILE, CHRONIST_ANTHROPIC_BASE_URL,
+  CHRONIST_ANTHROPIC_KEY_ENV, CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING } from "./chronist-providers/registry.ts";
 
 export { createPgDb } from "./db/index.ts";
 export interface EmbeddedHostConfig {

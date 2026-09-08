@@ -45,7 +45,7 @@ function endpoint(config: ChronistHttpProviderConfig, model: string): URL {
   if (config.location === "lokal" && !privateTarget || !privateTarget && base.protocol !== "https:") throw new Error("Chronist-Anbieteradresse passt nicht zum Standort.");
   if (base.hostname === "localhost") base.hostname = "127.0.0.1";
   const suffix: Record<ChronistHttpProfile, string> = { "ollama-chat-1": "api/chat", "openai-responses-1": "responses",
-    "openai-chat-1": "chat/completions", "anthropic-messages-1": "messages", "google-generate-1": `models/${encodeURIComponent(model)}:streamGenerateContent` };
+    "openai-chat-1": "chat/completions", "anthropic-messages-1": "messages", "anthropic-messages-2": "messages", "google-generate-1": `models/${encodeURIComponent(model)}:streamGenerateContent` };
   base.pathname = `${base.pathname.replace(/\/$/, "")}/${suffix[config.profileId]}`;
   if (config.profileId === "google-generate-1") base.search = "?alt=sse";
   return base;
@@ -149,7 +149,8 @@ export async function decodeChronistHttpResponse(response: Response, options: Ch
         if (typeof choice.finish_reason === "string") chatTextFinished = true;
         break;
       }
-      case "anthropic-messages-1": {
+      case "anthropic-messages-1":
+      case "anthropic-messages-2": {
         const delta = record(value.delta);
         const measured = value.type === "message_start" ? record(record(value.message).usage) : record(value.usage);
         const incoming = measuredCount(measured.input_tokens), cacheWrite = measuredCount(measured.cache_creation_input_tokens), cacheRead = measuredCount(measured.cache_read_input_tokens);
@@ -230,7 +231,9 @@ export function createChronistHttpBinding(input: ChronistHttpProviderConfig, mod
   if (config.pricing && (!/^[A-Z]{3}$/.test(config.pricing.currency) || count(config.pricing.inputMicrosPerMillion) === null
     || count(config.pricing.outputMicrosPerMillion) === null || !config.pricing.asOf)) throw new Error("Ungültiger Chronist-Anbietertarif.");
   const target = endpoint(config, model), invokeFetch = dependencies.fetch ?? fetch;
-  const requiresKey = ["openai-responses-1", "anthropic-messages-1", "google-generate-1"].includes(config.profileId);
+  // Both Anthropic wire profiles share the same endpoint suffix, auth header and API version.
+  const anthropic = config.profileId === "anthropic-messages-1" || config.profileId === "anthropic-messages-2";
+  const requiresKey = ["openai-responses-1", "anthropic-messages-1", "anthropic-messages-2", "google-generate-1"].includes(config.profileId);
   const available = config.available !== false && (!requiresKey || !!config.apiKey);
   const description: ChronistProviderDescription = { id: config.id, label: config.label, location: config.location, transport: "http",
     available, availabilityCode: available ? null : requiresKey && !config.apiKey ? "key-not-configured" : "provider-not-configured",
@@ -258,11 +261,11 @@ export function createChronistHttpBinding(input: ChronistHttpProviderConfig, mod
         if (stop.aborted) return failed(stopCode());
         const headers: Record<string, string> = { "Content-Type": "application/json", Accept: config.profileId === "ollama-chat-1" ? "application/x-ndjson" : "text/event-stream" };
         if (config.apiKey) {
-          if (config.profileId === "anthropic-messages-1") headers["x-api-key"] = config.apiKey;
+          if (anthropic) headers["x-api-key"] = config.apiKey;
           else if (config.profileId === "google-generate-1") headers["x-goog-api-key"] = config.apiKey;
           else headers.Authorization = `Bearer ${config.apiKey}`;
         }
-        if (config.profileId === "anthropic-messages-1") headers["anthropic-version"] = "2023-06-01";
+        if (anthropic) headers["anthropic-version"] = "2023-06-01";
         sent = true;
         const response = await untilAborted(invokeFetch(target, { method: "POST", headers, body, redirect: "manual", signal: stop }), stop);
         return await decodeChronistHttpResponse(response, { profileId: config.profileId, maxOutputChars: unit.dispatch.maxOutputChars,

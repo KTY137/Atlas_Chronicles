@@ -48,6 +48,22 @@ Umgebungsvariable `CHRONICLE_CHRONIST_CONFIG` benennt den vollständigen Dateipf
 beim Start von Atlas. Dieselbe Datei funktioniert im Selbstbetrieb und im Desktop.
 Änderungen werden nach Neustart des Hosts wirksam. Relative Pfade werden abgewiesen.
 
+Ohne Betreiberdatei fragt der Host beim Start `http://127.0.0.1:11434/api/tags` ab und
+übernimmt die gefundenen Modellnamen. Mit Betreiberdatei gilt dasselbe für den dortigen
+Ollama-Eintrag, solange er noch den Platzhalter „Kein lokales Modell eingerichtet" trägt:
+dann fragt der Host die `baseUrl` genau dieses Eintrags ab und trägt die installierten
+Modelle ein. Ein Eintrag mit konkreten Modellnamen bleibt unangetastet; für ihn wird nichts
+abgefragt. Es gibt kein fest eingebautes lokales Standardmodell. Ist kein Ollama erreichbar,
+bleibt der Eintrag mit dem Platzhalter sichtbar nicht verfügbar. Abgefragt werden nur
+Loopback- oder ausdrücklich private Adressen; Weiterleitungen werden nicht verfolgt.
+
+Der Platzhalter ist dabei das Signal, nicht das Feld `available`: Werden für einen Eintrag mit
+Platzhalter Modelle gefunden, wird er verfügbar, auch wenn in der Datei `"available": false`
+steht. Willst du einen lokalen Anbieter dauerhaft stilllegen, trage statt des Platzhalters
+deinen Modellnamen ein und setze `"available": false`, oder entferne den Eintrag; für einen
+Eintrag mit konkretem Modell wird weder abgefragt noch etwas überschrieben. Die Betreiberdatei
+selbst wird nie geschrieben.
+
 Eine HausKI kann `openai-chat-1` verwenden. Bei privatem Betrieb ist `location` gleich
 `lokal`; als Adresse sind ausdrücklich konfigurierte private numerische IPv4-Adressen
 oder IPv6-ULA sowie Loopback zulässig. Ein DNS-Name allein belegt keine lokale Grenze.
@@ -62,6 +78,7 @@ dein Anbieter für das gewählte strukturierte Antwortformat bereitstellt.
 |---|---|---|
 | `openai-responses-1` | `https://api.openai.com/v1` | Responses, JSON-Schema, Speicherung abgeschaltet |
 | `anthropic-messages-1` | `https://api.anthropic.com/v1` | Messages, JSON-Schema |
+| `anthropic-messages-2` | `https://api.anthropic.com/v1` | Messages, JSON-Schema, `thinking` ausgeschaltet |
 | `google-generate-1` | `https://generativelanguage.googleapis.com/v1beta` | GenerateContent, JSON-Schema |
 | `openai-chat-1` | Vom Betreiber eingerichtet, einschließlich API-Basispfad | OpenAI-kompatibles Chat-JSON-Schema |
 
@@ -78,6 +95,36 @@ Beispiel für einen zusätzlichen Eintrag in `providers`:
   "apiKeyEnv": "CHRONICLE_CHRONIST_KEY_OPENAI"
 }
 ```
+
+Für Anthropic ist `anthropic-messages-2` das empfohlene Profil: identisch zu
+`anthropic-messages-1`, zusätzlich mit ausgeschaltetem `thinking`. `anthropic-messages-1`
+bleibt unverändert erhalten, damit ältere Läufe byteweise nachvollziehbar bleiben. Standard
+ist `claude-sonnet-5`, als Sparmodus `claude-haiku-4-5`; beide ohne Datumssuffix.
+
+```json
+{
+  "id": "anthropic",
+  "label": "Anthropic",
+  "profileId": "anthropic-messages-2",
+  "location": "fremd",
+  "baseUrl": "https://api.anthropic.com/v1",
+  "models": ["claude-sonnet-5", "claude-haiku-4-5"],
+  "apiKeyEnv": "CHRONICLE_CHRONIST_KEY_ANTHROPIC",
+  "pricing": {
+    "currency": "USD",
+    "asOf": "2026-09-08",
+    "inputMicrosPerMillion": 2000000,
+    "outputMicrosPerMillion": 10000000
+  }
+}
+```
+
+Die Tarife sind USD-Micros je Million Tokens, Stand 2026-09-08: `claude-sonnet-5` 2 000 000
+Eingabe und 10 000 000 Ausgabe, `claude-haiku-4-5` 1 000 000 Eingabe und 5 000 000 Ausgabe.
+Ein Tarif gilt je Anbietereintrag; für getrennte Tarife lege zwei Einträge mit eigenen IDs an.
+Der Desktop legt genau das an: `anthropic` mit `claude-sonnet-5` und `anthropic-haiku` mit
+`claude-haiku-4-5`, beide mit demselben Schlüsselnamen. Ein gespeicherter Schlüssel macht damit
+beide verfügbar; ohne Schlüssel bleiben beide sichtbar nicht verfügbar.
 
 Setze den Schlüssel im Betriebssystem unter dem ausdrücklich genannten Variablennamen,
 bevor Atlas startet. Der Desktop gibt ausschließlich eigene Schlüsselvariablen mit
@@ -109,9 +156,11 @@ vor dem Absenden geleert; der gespeicherte Wert wird nie zurückgegeben. Das Ver
 zeigt ausschließlich, ob ein Schlüssel gesetzt ist.
 
 Beim ersten Start der Welt nach dem Speichern legt der Desktop im Profil einmalig die
-Betreiberdatei `chronist-providers.json` an: den lokalen Ollama-Endpunkt und den Anbieter
-`anthropic-messages-1` mit `apiKeyEnv: "CHRONICLE_CHRONIST_KEY_ANTHROPIC"`, Modell
-`claude-sonnet-5` und Tarif in USD-Micros je Million (Eingabe 2 000 000, Ausgabe 10 000 000).
+Betreiberdatei `chronist-providers.json` an: den lokalen Ollama-Endpunkt sowie zwei Anthropic-
+Einträge im Profil `anthropic-messages-2`, beide mit `apiKeyEnv: "CHRONICLE_CHRONIST_KEY_ANTHROPIC"`
+— `anthropic` mit `claude-sonnet-5` (2 000 000 / 10 000 000) und `anthropic-haiku` mit
+`claude-haiku-4-5` (1 000 000 / 5 000 000), Tarife in USD-Micros je Million. Diese Werte sind
+dieselben, die der Host als Vorgabe kennt; die Datei ist keine zweite, getrennt gepflegte Liste.
 Die Datei enthält keinen Schlüssel und wird nie überschrieben; deine Änderungen bleiben also
 erhalten. Beim Start entschlüsselt der Desktop den Schlüssel und reicht ihn als
 `CHRONICLE_CHRONIST_KEY_ANTHROPIC` zusammen mit dem absoluten Pfad dieser Datei in
@@ -119,9 +168,11 @@ erhalten. Beim Start entschlüsselt der Desktop den Schlüssel und reicht ihn al
 gleichen Namens wird ersetzt. Ein selbst gesetztes `CHRONICLE_CHRONIST_CONFIG` hat Vorrang.
 
 Solange kein Schlüssel gespeichert ist, entsteht keine Datei und der Host erkennt lokale
-Ollama-Modelle wie bisher selbst. Mit Datei entfällt diese Erkennung: Trage deine
-installierten Modellnamen dann im Ollama-Eintrag der Datei ein, sonst bleibt dort der
-sichtbare Platzhalter „Kein lokales Modell eingerichtet". Ein Anbieter-, Schlüssel- oder
+Ollama-Modelle selbst. Mit Datei bleibt diese Erkennung erhalten, solange der Ollama-Eintrag
+den Platzhalter „Kein lokales Modell eingerichtet" trägt: der Host fragt dann die `baseUrl`
+dieses Eintrags ab und trägt die installierten Modelle ein, ohne die Datei zu ändern. Trägst
+du dort selbst Modellnamen ein, gelten genau diese und es wird nichts abgefragt. Ein Anbieter-,
+Schlüssel- oder
 Dateiwechsel verlangt einen Neustart der Welt: Ein laufender Host behält die Umgebung, mit
 der er gestartet wurde. Ohne verfügbaren Windows-Geheimnisspeicher wird nichts gespeichert;
 die Meldung ist dieselbe wie bei der Ersteinrichtung. Der Schlüssel erscheint nicht in
@@ -143,3 +194,4 @@ Die HTTP-Adapter sind mit aufgezeichneten Antworten und lokalen Streaming-Server
 geprüft; dies behauptet keine Live-Abnahme jedes konkreten Anbietermodells.
 CLI-Anbieter werden erst nach gesondertem Nachweis ihrer Werkzeug-, Kontext-,
 Abbruch- und Verbrauchsgrenzen freigegeben; deren vollständige Abnahme läuft noch.
+Codex- und Gemini-CLI bleiben deshalb `capability-unverified` und damit nicht verfügbar.
