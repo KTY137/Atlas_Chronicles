@@ -453,3 +453,15 @@ Kompakte Fragen für den unabhängigen Angriff:
 
 Umsetzung ist bereits autorisiert. Nach dem unabhängigen Root-Review gehen die drei Builder
 mit diesen Dateigrenzen in die Ausführung; daraus entsteht keine weitere Nutzer-Freigaberunde.
+
+## Desktop-Gegenprobe: Öffnungszustand der Werkzeuge
+
+Der tatsächliche Desktop aus `646bb58` fand beim Genrewechsel einen Bedienfehler:
+`open={brush ? true : undefined}` schloss den vom Benutzer geöffneten Katalog, sobald
+Genre-/Paketwechsel den Pinsel löschte. Dasselbe Muster betraf Zeichnen und Markieren.
+Die drei Abschnitte führen jetzt ihren eigenen Öffnungszustand mit `onToggle`.
+Neue Auswahl darf die passenden Werkzeuge zeigen; ihr Ende schließt keinen Abschnitt,
+und bewusstes Schließen wird bis zur nächsten einschlägigen Auswahl erhalten.
+Der exakte Browserfall war rot (`.local/map-editor-sections-red-2/`) und ist grün
+(`.local/map-editor-sections-green/`, 42,7 s), einschließlich beider analogen Wechsel.
+Das ursprüngliche Desktop-Paket wird vor Installation neu gebaut und erneut geprüft.

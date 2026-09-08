@@ -4,7 +4,7 @@ Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
 
 ## Laufender Kartenabschluss
 
-Der Kartenumbau auf Basis von `d6065a9` ist funktionsgeprüft und wird paketiert.
+Der Kartenumbau ist in `646bb58` committet und wird am Desktop-Paket geprüft.
 `main` bleibt vor der Übernahme sauber; die installierte App ist weiterhin der unten belegte Stand
 `a7e1487`, der große Kartenumbau ist darin noch nicht enthalten.
 
@@ -28,10 +28,19 @@ Der Datenabschluss behebt die unabhängigen roten Befunde zu alten Import-Quittu
 aktiven Ersatzverbindungen und der CAS-/Revisionszuordnung alter Karten. Zuletzt
 15 Lifecycle-/Nativefälle grün, zuvor 54 betroffene Integrationsfälle; Szenenstart
 mit gelöschter Vorbereitung rollt den gesamten Wechsel zurück.
-Desktop-Smoke ist auf den neuen Editor und einen echten V15-Lösch-/Ersatzablauf
-erweitert, aber noch nicht am neuen Paket ausgeführt. Gemeinsamer Typecheck und
-Produktionsclient-Build sowie Version, Paketgrenzen und alle 571 Assets sind grün.
-Paketprüfung, Merge und aktualisierte Installation stehen aus.
+Das Paket `featureliste/.local/desktop-artifacts/2026-09-08T11-42-43-259Z` und sein
+Installer sind gebaut (2.495 Dateien). Der tatsächliche Desktop-Smoke prüft den
+neuen Editor und einen V15-Lösch-/Ersatzablauf. Er fand zuerst einen mehrdeutigen
+Testselektor, danach einen echten Bedienfehler: Genrewechsel nach Assetauswahl
+schließt den Objektkatalog. Die zweite rote Gegenprobe steht unter
+`.local/desktop-profiles/smoke-FnptJv/evidence.json`. Der Fehler ist in einem engen
+Browserfall rot reproduziert und korrigiert: Die drei Editorabschnitte behalten
+ihren manuellen Öffnungszustand bei Genrewechsel und beim Beenden von Werkzeugen.
+Client-Typecheck und echte Browser-Gegenprobe (`.local/map-editor-sections-green/`)
+sind grün. Der ursprüngliche Paketstand wird deshalb vor der Installation ersetzt.
+Gemeinsamer Typecheck und Produktionsclient-Build
+sowie Version, Paketgrenzen und alle 571 Assets waren am Quellenabschluss grün.
+Paketprüfung, Merge und aktualisierte Installation stehen noch aus.
 
 Chronist (027 / V16 reserviert) und freier NPC-Generator bleiben im vollständigen
 aktiven Ziel offen. Der Chronistvertrag liegt zur Gegenprüfung in
@@ -71,9 +80,9 @@ originale Artefaktbytes bleiben unverändert. Die älteren Pakete sind überholt
 Testaufbau-Fehler sind belegt und korrigiert: zu langer Chromium-Cookiepfad (echter
 Neustartvergleich) und Reload vor Abschluss des Save-GET. Die Tests nutzen eigene Profile.
 
-Der größere Karten-/Editor-Rework ist weiterhin **uncommitteter Feature-Worktree-Stand**:
-native v14, Kartografie, Generator v5, Terrain-/Straßen-/Gebäudewerkzeuge und Undo/Redo.
-Nicht als fertig oder in der ausgelieferten App enthalten melden. Die parallele Claude-
+Der größere Karten-/Editor-Rework ist jetzt in **`646bb58` committet**, aber noch
+nicht installiert: native v14/v15, Kartografie, Generator v5, direkte Bearbeitung,
+Undo/Redo und Kartenlöschung. Nicht als in der ausgelieferten App enthalten melden. Die parallele Claude-
 Review koordiniert sich über `../AGENT_COORDINATION.md` und `../CLAUDE_REVIEW_FINDINGS.md`.
 
 ## Siedlungen, Recherche und angeforderter Merge — 2026-09-08

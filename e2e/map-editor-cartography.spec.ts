@@ -49,6 +49,49 @@ async function dragMap(page: Page, from: readonly [number,number], to: readonly 
   await page.mouse.move(start.x,start.y); await page.mouse.down(); await page.mouse.move(end.x,end.y,{ steps: 6 }); await page.mouse.up();
 }
 
+test("editor sections retain user choices across genre and drawing tool changes",async ({browser},info)=>{
+  test.setTimeout(120_000);
+  let db:Db|undefined,app:Awaited<ReturnType<typeof buildApp>>|undefined,context:BrowserContext|undefined;
+  try {
+    db=await createTestDb();await migrate(db);
+    const port=10100+Math.floor(Math.random()*70),origin=`http://localhost:${port}`;
+    const config={origin,cookieSecret:randomBytes(32).toString("hex"),bootstrapToken:randomBytes(32).toString("hex")};
+    const gm=await createIdentity(db,config).bootstrap("Abschnittprüfung"),campaign=await createCampaigns(db).createCampaign(gm.userId,{name:"Abschnittprüfung"});
+    const document:TacticalMapDocumentV1={schemaVersion:1,kind:"tactical-map",coordinates:"image-pixels",frame:{ursprung:[0,0],einheitenProPixel:1,ordnung:"xy",hoch:"unten"},
+      geometry:{v:3,size:[200,200],stamps:[],places:[],regions:[]},grid:{kind:"none"},elevation:0,geometryElevation:[],walls:[],portals:[],lights:[],environment:{bakedLighting:false,ambientLightArgb:"ffffffff"},background:null};
+    const imported=await createTactical(db,config).importMap(gm.userId,campaign.id,{commandId:randomUUID(),name:"Offene Werkzeuge",format:"native",sourceText:serializeTacticalMapDocument(document),
+      provenance:{name:"Test fixture",creator:"Tests",sourceUrl:null,license:"CC0-1.0",licenseUrl:null,retrievedAt:null,generator:null,generatorVersion:null}});
+    const compiled=await editorBundle(campaign.id,imported.subjectId),staticRoot=await mkdtemp(resolve(".local/map-editor-sections-host-"));await mkdir(join(staticRoot,"assets"));
+    await Promise.all([writeFile(join(staticRoot,"check.js"),compiled.outputFiles!.find(f=>f.path.endsWith(".js"))!.text),writeFile(join(staticRoot,"check.css"),compiled.outputFiles!.find(f=>f.path.endsWith(".css"))!.text),
+      writeFile(join(staticRoot,"index.html"),'<!doctype html><html lang="de"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/check.css"></head><body><main id="root"></main><script type="module" src="/check.js"></script></body></html>')]);
+    app=await buildApp(db,{...config,staticRoot});await app.listen({host:"127.0.0.1",port});
+    context=await browser.newContext();await context.addCookies([{name:"chronicle_session",value:gm.value,url:origin,httpOnly:true,sameSite:"Strict"}]);
+    const page=await context.newPage(),errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));await page.goto(origin);await expect(canvas(page)).toBeVisible();
+    const assets=page.locator('details.map-editor-section').filter({has:page.locator('summary',{hasText:"Einrichtung & Kartenassets"})}),palette=page.getByRole("region",{name:"Kartenassets",exact:true});
+    await expect(palette).toBeHidden();await assets.locator(':scope > summary').click();
+    await palette.getByRole("combobox",{name:"Assetpaket",exact:true}).selectOption("pk.genres");await palette.getByRole("combobox",{name:"Genre",exact:true}).selectOption("fantasy");
+    await palette.locator('.map-artwork-grid button').first().click();await expect(palette.getByRole("button",{name:"Platzieren beenden",exact:true})).toBeVisible();
+    await palette.getByRole("combobox",{name:"Genre",exact:true}).selectOption("cyberpunk");
+    await expect(palette.getByRole("combobox",{name:"Kategorie",exact:true})).toBeVisible();await palette.getByRole("combobox",{name:"Kategorie",exact:true}).selectOption("moebel");
+    await palette.locator('.map-artwork-grid button').first().click();await palette.getByRole("button",{name:"Platzieren beenden",exact:true}).click();await expect(palette).toBeVisible();
+    await palette.locator('.map-artwork-grid button').first().click();await assets.locator(':scope > summary').click();await expect(palette).toBeHidden();
+    await page.getByRole("button",{name:"Platzieren beenden",exact:true}).click();await expect(palette).toBeHidden();
+    await assets.locator(':scope > summary').click();await palette.getByRole("combobox",{name:"Genre",exact:true}).selectOption("fantasy");await expect(palette.getByRole("combobox",{name:"Kategorie",exact:true})).toBeVisible();
+    await assets.locator(':scope > summary').click();
+    const knowledge=page.locator('details.map-editor-section').filter({has:page.locator('summary',{hasText:"Wissensregionen & Verknüpfungen"})});
+    await knowledge.locator(':scope > summary').click();await knowledge.getByRole("button",{name:"Region zeichnen",exact:true}).click();await knowledge.getByRole("button",{name:"Zeichnen pausieren",exact:true}).click();
+    await expect(knowledge.getByLabel("Eckpunkt X",{exact:true})).toBeVisible();
+    await knowledge.getByRole("button",{name:"Region zeichnen",exact:true}).click();await knowledge.locator(':scope > summary').click();
+    await page.getByRole("button",{name:"Auswählen",exact:true}).click();await expect(knowledge.getByLabel("Eckpunkt X",{exact:true})).toBeHidden();
+    const objects=page.locator('details.map-editor-section').filter({has:page.locator('summary',{hasText:"Orte & Kartenobjekte"})});
+    await objects.locator(':scope > summary').click();await objects.getByRole("button",{name:"Ort auf Karte markieren",exact:true}).click();await objects.getByRole("button",{name:"Markieren beenden",exact:true}).click();
+    await expect(objects.getByRole("button",{name:"Ort auf Karte markieren",exact:true})).toBeVisible();
+    await objects.getByRole("button",{name:"Ort auf Karte markieren",exact:true}).click();await objects.locator(':scope > summary').click();
+    await page.getByRole("button",{name:"Auswählen",exact:true}).click();await expect(objects.getByRole("button",{name:"Ort auf Karte markieren",exact:true})).toBeHidden();
+    await page.screenshot({path:info.outputPath("retained-section-choices.png"),fullPage:true});expect(errors).toEqual([]);
+  }finally{await context?.close();await app?.close();await db?.close();}
+});
+
 test("real editor gestures, reload recovery, original-image retry and 390px controls", async ({ browser }, info) => {
   test.setTimeout(180_000);
   let db: Db | undefined, app: Awaited<ReturnType<typeof buildApp>> | undefined, context: BrowserContext | undefined;

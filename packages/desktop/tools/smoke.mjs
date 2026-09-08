@@ -124,7 +124,7 @@ try{
   const canvas=()=>game.locator('.nested-map-view .tactical-canvas[data-canvas-ready="true"] canvas');
   await canvas().waitFor({state:"visible"});
   await game.getByRole("button",{name:"Karte bearbeiten",exact:true}).click();
-  await game.getByText("Einrichtung & Kartenassets",{exact:true}).click();
+  await game.locator("summary").filter({hasText:/^Einrichtung & Kartenassets$/}).click();
   const palette=game.getByRole("region",{name:"Kartenassets",exact:true}),grid=palette.locator(".map-artwork-grid");
   await palette.getByRole("combobox",{name:"Genre",exact:true}).waitFor({state:"visible"});
   assert.equal(await palette.getByRole("combobox",{name:"Assetpaket",exact:true}).inputValue(),"pk.genres");
