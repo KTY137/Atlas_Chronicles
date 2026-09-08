@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
-  parseTacticalMapDocument, weltkeim,
-  type AssetpaketV1, type Knoten, type TacticalLight, type TacticalMapDocumentV1, type TacticalPortal, type TacticalWall, type Weltkeim,
+  BAUWERK_LABEL, BAUWERK_TYPEN, parseTacticalMapDocument, weltkeim,
+  type AssetpaketV1, type BauwerkTyp, type Knoten, type TacticalLight, type TacticalMapDocumentV1, type TacticalPortal, type TacticalWall, type Weltkeim,
 } from "@chronicle/szene";
 import {
   AUSGELASSEN_BASIS, FELS, KARTENWERK_LIMITS, baueKnoten, bestuecker, fail, idFabrik,
@@ -47,13 +47,15 @@ import { loeseWfc, type WfcKachel } from "./wfc.ts";
 
 export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const GRUNDRISS_VERSION = "4";
+export const GRUNDRISS_VERSION = "5";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
 });
 
 export interface GrundrissOptionen {
+  /** A building profile controls its footprint and room uses. Omitted legacy values mean `frei`. */
+  readonly profil?: "frei" | BauwerkTyp;
   /** Grid extent in cells. The pixel extent is this times `zellgroesse`. */
   readonly zellen: readonly [number, number];
   readonly zellgroesse: number;
@@ -93,7 +95,7 @@ export interface GrundrissOptionen {
 
 export const GRUNDRISS_STANDARD: GrundrissOptionen = Object.freeze({
   zellen: [40, 30] as const, zellgroesse: 64, raeume: 11, minRaum: 3, schleifen: 3,
-  moeblierung: 1, licht: true, gangboden: "trocken", anordnung: "streuung",
+  moeblierung: 1, licht: true, gangboden: "trocken", anordnung: "streuung", profil: "frei",
 });
 
 export interface GrundrissAuftrag {
@@ -151,6 +153,36 @@ const THEMEN: readonly Thema[] = Object.freeze([
   { schluessel: "waffenkammer", boden: "keller", stuecke: [["moebel", "waffe"], ["moebel", "ruestung"], ["moebel", "schild"], ["gefaess", "behaelter"], ["licht", "wache"]] },
 ]);
 
+/** These are architectural uses, expressed through the same asset queries as free floorplans. */
+const BAU_THEMEN: Readonly<Record<string, Thema>> = Object.freeze({
+  wohnraum: { schluessel: "wohnraum", boden: "wohnraum", stuecke: [["moebel", "mahl"], ["moebel", "sitz"], ["moebel", "sitz"], ["licht", "warm"]] },
+  kueche: { schluessel: "kueche", boden: "keller", stuecke: [["moebel", "mahl"], ["gefaess", "vorrat"], ["gefaess", "behaelter"], ["licht", "warm"]] },
+  schlafzimmer: { schluessel: "schlafzimmer", boden: "wohnraum", stuecke: [["moebel", "rast"], ["moebel", "kammer"], ["licht", "kerze"]] },
+  kirchenschiff: { schluessel: "kirchenschiff", boden: "halle", stuecke: [["moebel", "sitz"], ["moebel", "sitz"], ["licht", "kerze"]] },
+  altar: { schluessel: "altar", boden: "gehoben", stuecke: [["moebel", "kult"], ["gefaess", "kult"], ["licht", "kerze"]] },
+  sakristei: { schluessel: "sakristei", boden: "wohnraum", stuecke: [["moebel", "buecher"], ["moebel", "kammer"], ["licht", "kerze"]] },
+  kapelle: { schluessel: "kapelle", boden: "gehoben", stuecke: [["moebel", "kult"], ["moebel", "sitz"], ["licht", "kerze"]] },
+  schankraum: { schluessel: "schankraum", boden: "halle", stuecke: [["moebel", "mahl"], ["moebel", "sitz"], ["moebel", "sitz"], ["gefaess", "vorrat"], ["licht", "warm"]] },
+  gaestezimmer: { schluessel: "gaestezimmer", boden: "wohnraum", stuecke: [["moebel", "rast"], ["moebel", "rast"], ["licht", "kerze"]] },
+  vorratsraum: { schluessel: "vorratsraum", boden: "keller", stuecke: [["moebel", "lager"], ["gefaess", "vorrat"], ["gefaess", "behaelter"]] },
+  werkstatt: { schluessel: "werkstatt", boden: "keller", stuecke: [["moebel", "handwerk"], ["moebel", "handwerk"], ["moebel", "waffe"], ["licht", "warm"]] },
+  verkauf: { schluessel: "verkauf", boden: "wohnraum", stuecke: [["moebel", "mahl"], ["moebel", "waffe"], ["moebel", "schild"], ["licht", "warm"]] },
+  materiallager: { schluessel: "materiallager", boden: "keller", stuecke: [["moebel", "lager"], ["gefaess", "behaelter"], ["aufbau", "geroell"]] },
+  lagerhalle: { schluessel: "lagerhalle", boden: "halle", stuecke: [["moebel", "lager"], ["moebel", "lager"], ["gefaess", "behaelter"], ["gefaess", "vorrat"]] },
+  ladestube: { schluessel: "ladestube", boden: "keller", stuecke: [["gefaess", "behaelter"], ["gefaess", "vorrat"]] },
+  kontor: { schluessel: "kontor", boden: "wohnraum", stuecke: [["moebel", "wissen"], ["moebel", "sitz"], ["licht", "kerze"]] },
+  wachstube: { schluessel: "wachstube", boden: "halle", stuecke: [["moebel", "mahl"], ["moebel", "sitz"], ["moebel", "schild"], ["licht", "wache"]] },
+  treppenhaus: { schluessel: "treppenhaus", boden: "halle", stuecke: [["aufbau", "aufwaerts"], ["licht", "wache"]] },
+  waffenkammer: THEMEN.find(thema => thema.schluessel === "waffenkammer")!,
+});
+const RAUM_LABEL: Readonly<Record<string, string>> = Object.freeze({
+  wohnraum: "Wohnstube", kueche: "Küche", schlafzimmer: "Schlafzimmer", kirchenschiff: "Kirchenschiff",
+  altar: "Altarraum", sakristei: "Sakristei", kapelle: "Seitenkapelle", schankraum: "Schankraum",
+  gaestezimmer: "Gästezimmer", vorratsraum: "Vorratsraum", werkstatt: "Schmiedewerkstatt", verkauf: "Verkaufsraum",
+  materiallager: "Materiallager", lagerhalle: "Lagerhalle", ladestube: "Ladestube", kontor: "Kontor",
+  wachstube: "Wachstube", treppenhaus: "Treppenhaus", waffenkammer: "Waffenkammer",
+});
+
 const AUSGELASSEN: readonly string[] = Object.freeze([
   ...AUSGELASSEN_BASIS,
   "Keine Geheimtüren. Ein Stamp trägt keine eigene Sichtbarkeit; eine 'versteckte' Marke im Dokument wäre für Spieler sichtbar und damit ein Leck, kein Feature.",
@@ -199,6 +231,60 @@ function partitioniere(breite: number, hoehe: number, optionen: GrundrissOptione
 const RAUM = 1, GANG = 2;
 
 interface RohRaum { x: number; y: number; w: number; h: number; pfad: string; thema: Thema }
+
+/** Compact buildings have adjoining wings, not a random dungeon with a new name. */
+function bauwerkRaeume(profil: BauwerkTyp, breite: number, hoehe: number, o: GrundrissOptionen): RohRaum[] {
+  const m = o.minRaum, raeume: RohRaum[] = [];
+  let w = Math.min(breite - 2, Math.max(2 * m + 1, Math.round(breite * (profil === "kirche" ? 0.88 : 0.76))));
+  let h = Math.min(hoehe - 2, Math.max(2 * m + 1, Math.round(hoehe * (profil === "kirche" ? 0.88 : 0.76))));
+  if (profil === "turm") w = h = Math.min(w, h);
+  const x = Math.floor((breite - w) / 2), y = Math.floor((hoehe - h) / 2);
+  const raum = (thema: string, rx: number, ry: number, rw: number, rh: number) => {
+    if (rw < m || rh < m) fail("geometrie", "optionen.profil", "Gebäudeprofil und Raummindestmaß passen nicht in das Raster");
+    const nummer = raeume.filter(r => r.thema.schluessel === thema).length + 1;
+    raeume.push({ x: rx, y: ry, w: rw, h: rh, pfad: `${profil}/${thema}/${nummer}`, thema: BAU_THEMEN[thema]! });
+  };
+  if (profil === "kirche") {
+    const fluegel = o.raeume >= 3 && w >= m * 3 + 2;
+    const nw = fluegel ? Math.max(m, Math.min(w - 2 * m - 2, Math.floor((w - 2) * 0.48))) : w;
+    const nx = x + Math.floor((w - nw) / 2), ah = Math.max(m, Math.floor((h - 1) * 0.25));
+    const ny = y + ah + 1, nh = h - ah - 1;
+    // Long nave on the entry axis, a narrower sanctuary above it, lateral service wings.
+    raum("kirchenschiff", nx, ny, nw, nh);
+    const aw = Math.max(m, nw - 2);
+    raum("altar", nx + Math.floor((nw - aw) / 2), y, aw, ah);
+    if (fluegel) {
+      const sh = Math.max(m, Math.floor(nh * 0.48));
+      raum("sakristei", x, ny, nx - x - 1, sh);
+      if (o.raeume >= 4) raum("kapelle", nx + nw + 1, ny, x + w - nx - nw - 1, sh);
+    }
+  } else if (profil === "haus" && o.raeume >= 3 && h >= 2 * m + 1) {
+    const links = Math.max(m, Math.min(w - m - 1, Math.round((w - 1) * 0.58)));
+    const oben = Math.floor((h - 1) / 2), unten = h - oben - 1;
+    raum("wohnraum", x, y + oben + 1, links, unten);
+    raum("kueche", x, y, links, oben);
+    if (o.raeume >= 4) {
+      raum("schlafzimmer", x + links + 1, y, w - links - 1, oben);
+      raum("schlafzimmer", x + links + 1, y + oben + 1, w - links - 1, unten);
+    } else raum("schlafzimmer", x + links + 1, y, w - links - 1, h);
+  } else {
+    const themen: Readonly<Record<Exclude<BauwerkTyp, "kirche">, readonly string[]>> = {
+      haus: ["wohnraum", "schlafzimmer"], taverne: ["schankraum", "kueche", "vorratsraum", "gaestezimmer"],
+      schmiede: ["werkstatt", "verkauf", "materiallager"], lager: ["lagerhalle", "ladestube", "kontor"],
+      turm: ["wachstube", "treppenhaus", "waffenkammer"],
+    };
+    const nutzungen = themen[profil];
+    const rechts = Math.min(nutzungen.length - 1, o.raeume - 1, Math.floor((h + 1) / (m + 1)));
+    const links = Math.max(m, Math.min(w - m - 1, Math.floor((w - 1) * (profil === "turm" ? 0.5 : 0.62))));
+    raum(nutzungen[0]!, x, y, links, h);
+    for (let i = 0; i < rechts; i++) {
+      const von = Math.floor(i * (h + 1) / rechts), bis = Math.floor((i + 1) * (h + 1) / rechts) - 1;
+      raum(nutzungen[i + 1]!, x + links + 1, y + von, w - links - 1, bis - von);
+    }
+  }
+  if (raeume.length < 2) fail("geometrie", "optionen.profil", "Gebäudeprofil benötigt mindestens zwei Räume");
+  return raeume;
+}
 
 // ---------------------------------------------------------------------------------------------
 // Kachelwerk — der Kachelsatz, mit dem Wave Function Collapse das Verbindungsmuster legt
@@ -257,7 +343,8 @@ const kachelOffen = (id: string | null, richtung: number): boolean =>
 
 export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1): Grundriss {
   if (typeof auftrag?.keim !== "string" || !auftrag.keim.trim() || auftrag.keim.length > 256) fail("option", "auftrag.keim", "nichtleerer Keim mit höchstens 256 Zeichen erwartet");
-  const optionen: GrundrissOptionen = { ...GRUNDRISS_STANDARD, ...auftrag.optionen };
+  const optionen: GrundrissOptionen = { ...GRUNDRISS_STANDARD, ...auftrag.optionen, profil: auftrag.optionen?.profil === undefined ? "frei" : auftrag.optionen.profil };
+  const profil = optionen.profil!;
   const [breite, hoehe] = optionen.zellen;
   const L = GRUNDRISS_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>
@@ -270,6 +357,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   ganzIn(optionen.schleifen, 0, L.schleifenMax, "optionen.schleifen");
   if (typeof optionen.moeblierung !== "number" || !(optionen.moeblierung >= 0 && optionen.moeblierung <= 1)) fail("option", "optionen.moeblierung", "Zahl in 0..1 erwartet");
   if (typeof optionen.licht !== "boolean") fail("option", "optionen.licht", "Boolean erwartet");
+  if (profil !== "frei" && !BAUWERK_TYPEN.some(typ => typ === profil)) fail("option", "optionen.profil", "frei oder bekannter Gebäudetyp erwartet");
   if (typeof optionen.gangboden !== "string" || !optionen.gangboden.trim()) fail("option", "optionen.gangboden", "Schlagwort erwartet");
   if (optionen.anordnung !== "raster" && optionen.anordnung !== "streuung" && optionen.anordnung !== "kachelwerk") fail("option", "optionen.anordnung", "raster, streuung oder kachelwerk erwartet");
   if (breite * hoehe > L.zellenGesamt) fail("budget", "optionen.zellen", `höchstens ${L.zellenGesamt} Zellen`);
@@ -286,7 +374,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     optionen: {
       zellen: [breite, hoehe], zellgroesse: optionen.zellgroesse, raeume: optionen.raeume,
       minRaum: optionen.minRaum, schleifen: optionen.schleifen, moeblierung: optionen.moeblierung,
-      licht: optionen.licht, gangboden: optionen.gangboden, anordnung: optionen.anordnung,
+      licht: optionen.licht, gangboden: optionen.gangboden, anordnung: optionen.anordnung, profil,
       paket: { id: paket.id, version: paket.version, zellgroesse: paket.zellgroesse },
     } as Readonly<Record<string, CanonicalValue>>,
   });
@@ -299,7 +387,9 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   let wurzel: Blatt | null = null;
   /** Von `kachelwerk` gelegte Verbindungen, als Indexpaare in `rohRaeume`. */
   const kachelKanten: [number, number][] = [];
-  if (optionen.anordnung === "kachelwerk") {
+  if (profil !== "frei") {
+    rohRaeume.push(...bauwerkRaeume(profil, breite, hoehe, optionen));
+  } else if (optionen.anordnung === "kachelwerk") {
     // **Das Raster wird am Budget bemessen, nicht am Mindestmass.** Erst stand hier
     // `minRaum + 2` als Feldgrösse; auf 40x30 ergab das ein 8x6-Raster mit 3x3 nutzbarer Fläche
     // je Feld — winzige Kammern, und von 48 Feldern trugen elf einen Raum. Sinnvoll ist der
@@ -553,7 +643,18 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     if (a && b) gang(a, b, r.chance(0.5), r.chance(0.28));
     return a ?? b;
   };
-  if (optionen.anordnung === "kachelwerk") {
+  if (profil !== "frei") {
+    // Every service room joins the main room across the shared gap. No random extra tunnels.
+    for (let i = 1; i < rohRaeume.length; i++) {
+      const a = rohRaeume[0]!, b = rohRaeume[i]!;
+      const overlapX = Math.max(a.x, b.x) < Math.min(a.x + a.w, b.x + b.w);
+      const overlapY = Math.max(a.y, b.y) < Math.min(a.y + a.h, b.y + b.h);
+      const ac = mitteZelle(a), bc = mitteZelle(b);
+      if (overlapX) ac[0] = bc[0] = Math.floor((Math.max(a.x, b.x) + Math.min(a.x + a.w, b.x + b.w)) / 2);
+      if (overlapY) ac[1] = bc[1] = Math.floor((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2);
+      gang(ac, bc, overlapY);
+    }
+  } else if (optionen.anordnung === "kachelwerk") {
     // Die Verbindungen stehen schon fest — sie sind das, was WFC entschieden hat. Hier wird nur
     // noch gegraben. Keine Schleifen nachträglich: ein Muster, in dem beide Seiten den Durchgang
     // erwidern mussten, trägt seine Kreuzungen bereits.
@@ -712,9 +813,9 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     if (!asset) return;
     if (!werk.platziere(asset, zellenVon(raum))) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
   };
-  setzeMarkiert(rohRaeume[0]!, "aufbau", "aufwaerts");
+  if (profil === "frei") setzeMarkiert(rohRaeume[0]!, "aufbau", "aufwaerts");
   setzeMarkiert(rohRaeume[0]!, "marke", "eingang");
-  if (tiefsterRaum !== 0) setzeMarkiert(rohRaeume[tiefsterRaum]!, "aufbau", "abwaerts");
+  if (profil === "frei" && tiefsterRaum !== 0) setzeMarkiert(rohRaeume[tiefsterRaum]!, "aufbau", "abwaerts");
 
   const lichter: TacticalLight[] = [];
   const themen: Record<string, number> = {};
@@ -795,6 +896,18 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     wurzelArt: "bauwerk", titel: auftrag.titel ?? null, rahmen: karte.frame,
     eltern: auftrag.eltern, raeume, mitte, ids,
   });
+  if (profil !== "frei") {
+    const nummern = new Map<string, number>();
+    for (let i = 0; i < knoten.length; i++) {
+      const k = knoten[i]!;
+      if (k.id === wurzelId) knoten[i] = { ...k, titel: auftrag.titel ?? BAUWERK_LABEL[profil], bauwerk: { typ: profil, beschreibung: "" } };
+      else {
+        const raum = raeume.find(raum => raum.id === k.id)!;
+        const nummer = (nummern.get(raum.thema) ?? 0) + 1; nummern.set(raum.thema, nummer);
+        knoten[i] = { ...k, titel: `${RAUM_LABEL[raum.thema] ?? raum.thema}${nummer > 1 ? ` ${nummer}` : ""}` };
+      }
+    }
+  }
 
   let bodenzellen = 0, gangzellen = 0;
   for (const feld of gitter) { if (feld !== FELS) bodenzellen++; if (feld === GANG) gangzellen++; }

@@ -1,6 +1,51 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-07 12:30** (Desktop-Installer gelandet, Token-Sackgasse geschlossen; mehrere Sessions arbeiten parallel weiter)
+Updated: **2026-09-08** (Kartenwerkstatt und begehbare Städte umgesetzt und geprüft)
+
+## Kartenwerkstatt und begehbare Städte — Session 2026-09-08
+
+**Stadt → benanntes Gebäude → passender Innenraum ist gebaut.** Siedlungen erhalten Straßen,
+anklickbare Dächer und deterministische Gebäudenamen. Die sechs Typen `haus`, `kirche`, `taverne`,
+`schmiede`, `lager`, `turm` bestimmen echte Raumaufteilungen und Möblierung: Die Kirche hat
+Kirchenschiff, Altarraum und Seitenräume; das Haus Wohnstube, Küche und Schlafzimmer. Grundriss
+**v5**, Siedlung **v3**; Kartenformat und gespeicherte Identitäten bleiben erhalten.
+
+**Namen, Typ und Beschreibung sind bearbeitbare Knotenmetadaten.** Migration **024** erlaubt
+gezielt `titel`/`bauwerk`-Änderungen und schützt Identität, Herkunft und Löschhistorie weiter.
+Spielleitungsrechte, atomare Versionsprüfung und idempotente Befehlsbelege gelten auch für diese
+Bearbeitung. Vorhandene Unterkarten werden wieder geöffnet; eine spätere Typänderung würfelt sie
+nicht neu. Native Archive erhalten Metadaten, verschachtelte Adressen und beide Belegvarianten.
+Entscheidung und Prüfungsbefunde: [Designlinie](design/iterations/map-workshop-20260908.md).
+
+**Erreichbar über Atlas → Neue Karte und Tisch → Karte & Vorbereitung → Neue Karte.** Die
+Werkstatt bietet Stadt, Grundriss und Höhle, Größe, Stil „Grundriss“/„Gemalt“ und eine echte
+Vorschau ohne Schreibeffekte. Eine Änderung nur der Breite oder Höhe erhält das andere Servermaß.
+Gebäudeinspektor, Suche, Navigation, Dachflächen sowie Raster-/Namensregler, Zoom und große Ansicht
+verwenden den gemeinsamen Renderer. Gespeicherte Orts- und Gebäudekarten sind im Atlas direkt
+wieder auswählbar. Die laufende Szene zeigt der Spielleitung auch das
+Kartenbild mit seinen Assets; Spieler erhalten weiter ausschließlich ihre Wissensprojektion.
+Rollenwechsel entfernen private Darstellung und private Knotenabfragen unmittelbar.
+
+**Nachweise, ohne nachträglich einen vollständigen grünen Gesamtlauf zu behaupten:**
+
+- Erster Gesamtlauf: **168 Dateien, 1.588 Tests grün, 52 übersprungen, 2 fehlgeschlagen**.
+  Der bereits eingelesene Serverstand legte noch das 16-Millionen-Rasterlimit auf Vektorkarten.
+  Nach der Korrektur ist die betroffene Datei **11/11 grün**: Vektorkarten folgen dem nativen
+  144-Millionen-Pixelbudget; Hintergrundbilder behalten das 16-Millionen-Limit.
+- Abschließende Client-/Renderer-Prüfung: **30 Dateien, 298 Tests grün**. Die anschließend
+  ergänzten Live-/Rollenregressionen bestehen separat mit **16/16**.
+- `gate:version`, `gate:assets`, `gate:boundaries`, Typecheck und Client-Build **grün**.
+- Browser: Kartenwerkstatt und bestehende verschachtelte Navigation **2/2 grün**.
+  Beide bisherigen taktischen Tests bestehen ebenfalls auf isoliertem PostgreSQL:
+  Sichtwechsel/Asset-Entsorgung **41,0 s**, finaler UVTT-/Native-/Neustartlauf **1,3 min**.
+  Die veralteten Exportannahmen im Test sind aktualisiert; die Produktionsratenbegrenzung
+  bleibt aktiv. Die temporäre Datenbank ist beendet. Nachweise unter
+  `test-results/tactical-final-verified/` und den getrennten Werkstatt-/Security-Ausgaben.
+- Daten-/Integritätsreview: **keine bestätigten Blocker**. Die Übergabe umfasst nur eigene
+  Pfade; fremdes `.claude/worktrees/` bleibt außen vor.
+
+Übergabe: neue Stadt im Atlas anlegen, ein Gebäude benennen und betreten. Build und
+Browserabläufe sind geprüft; der vorhandene Desktop-Installer wurde in dieser Session nicht erneuert.
 
 ## Die Token-Sackgasse im Desktop ist geschlossen — Session Desktop-Installer, 2026-09-07 12:30
 

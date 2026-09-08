@@ -8,6 +8,7 @@ import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { createBetreten } from "../domain/betreten.ts";
 import { TacticalValidationError } from "../domain/tactical.ts";
+import { BauwerkTypSchema, KartenStilSchema, OptionenSchema, HoehleOptionenSchema, SiedlungOptionenSchema } from "./grundriss.ts";
 
 /**
  * „Betreten" — the address, made walkable.
@@ -27,7 +28,7 @@ import { TacticalValidationError } from "../domain/tactical.ts";
  */
 const closed = { additionalProperties: false } as const;
 
-export const BetretenSchema = Type.Object({
+const gemeinsam = {
   commandId: Type.String({ minLength: 1, maxLength: 128 }),
   knotenId: Type.String({ minLength: 1, maxLength: 128 }),
   parentKind: Type.Optional(Type.Union([Type.Literal("atlas"), Type.Literal("tactical")])),
@@ -35,8 +36,18 @@ export const BetretenSchema = Type.Object({
   expectedVersion: Type.Optional(Type.Integer({ minimum: 1 })),
   targetMapId: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" })),
-  /** Welche Art Karte hinter der Tuer entsteht. Gilt nur beim ersten Betreten. */
-  art: Type.Optional(Type.Union([Type.Literal("grundriss"), Type.Literal("hoehle")])),
+  stil: Type.Optional(KartenStilSchema),
+};
+export const BetretenSchema = Type.Union([
+  Type.Object({ ...gemeinsam, art: Type.Optional(Type.Literal("grundriss")), optionen: Type.Optional(OptionenSchema) }, closed),
+  Type.Object({ ...gemeinsam, art: Type.Literal("hoehle"), optionen: Type.Optional(HoehleOptionenSchema) }, closed),
+  Type.Object({ ...gemeinsam, art: Type.Literal("siedlung"), optionen: Type.Optional(SiedlungOptionenSchema) }, closed),
+]);
+export const KnotenMetadataSchema = Type.Object({
+  commandId: Type.String({ minLength: 1, maxLength: 128 }),
+  expectedVersion: Type.Integer({ minimum: 1 }),
+  titel: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }),
+  bauwerk: Type.Optional(Type.Object({ typ: BauwerkTypSchema, beschreibung: Type.String({ maxLength: 2000 }) }, closed)),
 }, closed);
 
 export type BetretenBody = Static<typeof BetretenSchema>;
@@ -84,5 +95,11 @@ export function registerBetreten(app: FastifyInstance, db: Db, config: IdentityC
     `${base}/betreten`,
     { schema: { body: BetretenSchema } },
     req => run(async () => betreten.betrete(await auth(req.headers.cookie), req.params.campaignId, req.body)),
+  );
+  app.put<{ Params: Scope & { parentMapId: string; knotenId: string }; Body: Static<typeof KnotenMetadataSchema> }>(
+    `${base}/maps/tactical/:parentMapId/knoten/:knotenId/metadata`,
+    { schema: { body: KnotenMetadataSchema } },
+    req => run(async () => betreten.updateMetadata(await auth(req.headers.cookie), req.params.campaignId,
+      req.params.parentMapId, req.params.knotenId, req.body)),
   );
 }

@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
-  parseTacticalMapDocument, weltkeim,
-  type AssetpaketV1, type Herkunft, type Kante, type Knoten, type TacticalLight,
+  BAUWERK_LABEL, parseTacticalMapDocument, weltkeim,
+  type AssetpaketV1, type BauwerkTyp, type Herkunft, type Kante, type Knoten, type TacticalLight,
   type TacticalMapDocumentV1, type Weltkeim,
 } from "@chronicle/szene";
 import {
@@ -62,7 +62,7 @@ import {
 
 export const SIEDLUNG_ERZEUGER = "chronicle-siedlung";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const SIEDLUNG_VERSION = "2";
+export const SIEDLUNG_VERSION = "3";
 
 export const SIEDLUNG_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 256, grundstueckMin: 2, grundstueckMax: 24,
@@ -107,6 +107,8 @@ export interface SiedlungAuftrag {
 
 export interface SiedlungBauwerk {
   readonly id: KnotenId;
+  readonly typ: BauwerkTyp;
+  readonly titel: string;
   /** Stable generation path — the ward's point and the lot's centroid, both as coordinates.
    * A grid coordinate, never an array index (invariant I8). */
   readonly pfad: string;
@@ -173,10 +175,8 @@ const AUSGELASSEN: readonly string[] = Object.freeze([
   "Keine Türen und keine Portale. Ab Fassung 2 trägt eine Stadt eine Ringmauer als " +
     "`walls`-Geometrie, und wo eine Hauptstraße sie kreuzt, bleibt eine Lücke — das Tor ist die " +
     "Lücke, kein Portal. Ein Portal führt in eine andere Karte; ein Stadttor führt in dieselbe.",
-  "Keine Gebäudetypen oder Gewerbe (Schmiede, Markt, Taverne): das wäre eine Namensvergabe ohne " +
-    "Beleg. Dieser Erzeuger liefert Parzellen mit Adresse, keine Artikel (model.ts:160-166). " +
-    "Der Marktplatz ist die einzige Ausnahme und auch keine: er ist ein leer gelassenes Viertel, " +
-    "kein benanntes Bauwerk.",
+  "Gebäudetypen und Namen beschreiben die Adresse. Keine Gewerbe-Simulation, Bewohner oder Artikel; " +
+    "die Spielleitung kann Namen, Typ und Beschreibung bearbeiten, ohne vorhandene Innenräume neu zu erzeugen.",
 ]);
 
 /** Ein Viertel: die Voronoizelle, ihr Punkt, und wie weit sie vom Marktplatz weg liegt. */
@@ -468,9 +468,21 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   }
   if (!rohBauwerke.length) fail("geometrie", "bauwerke", "auf diesem Raster ließ sich kein einziges Gebäude an einer Straße platzieren");
 
-  const bauwerke: SiedlungBauwerk[] = rohBauwerke.map((b) => ({
-    id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: b.strasseId,
-  }));
+  // The largest plots serve the public buildings. Houses remain the majority; even a small
+  // settlement with three addresses has a church, an inn and a home. No wiki entries are minted.
+  const nachGroesse = [...rohBauwerke].sort((a, b) => Math.abs(flaeche(b.umriss)) - Math.abs(flaeche(a.umriss)) || (a.pfad < b.pfad ? -1 : a.pfad > b.pfad ? 1 : 0));
+  const rang = new Map(nachGroesse.map((b, i) => [b.pfad, i]));
+  const hausnamen = ["Linden", "Weber", "Falk", "Birken", "Mühlen", "Rosen", "Stein", "Eichen"];
+  const kirchennamen = ["Kirche des Morgenlichts", "Kirche am Brunnen", "Kirche der stillen Wacht", "Kirche der Heimkehr"];
+  const tavernennamen = ["Zum Silberfuchs", "Zur alten Brücke", "Zum goldenen Hirsch", "Zum roten Kessel"];
+  const bauwerke: SiedlungBauwerk[] = rohBauwerke.map((b, i) => {
+    const platz = rang.get(b.pfad)!;
+    const typ: BauwerkTyp = platz === 0 ? "kirche" : platz === 1 ? "taverne" : platz === 3 ? "schmiede"
+      : platz === 4 || platz > 8 && platz % 11 === 0 ? "lager" : platz === 6 && art === "stadt" ? "turm" : "haus";
+    const titel = typ === "kirche" ? r.waehle(kirchennamen)! : typ === "taverne" ? r.waehle(tavernennamen)!
+      : typ === "haus" ? `Haus ${r.waehle(hausnamen)} ${i + 1}` : `${BAUWERK_LABEL[typ]} ${i + 1}`;
+    return { id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: b.strasseId, typ, titel };
+  });
   const mitte = (b: SiedlungBauwerk): readonly [number, number] => {
     const s = schwerpunkt(b.umriss);
     return [q(s[0] * z), q(s[1] * z)];
@@ -523,10 +535,12 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     return false;
   };
   const strassenPolys = gassen.map((g) => g.band);
+  const bauwerkPolys = bauwerke.map(b => b.umriss);
   let strassenzellen = 0, hofzellen = 0;
   for (let y = 0; y < hoehe; y++) {
     for (let x = 0; x < breite; x++) {
       const p: Punkt = [x + 0.5, y + 0.5];
+      if (inEinem(p, bauwerkPolys)) continue;
       if (inEinem(p, strassenPolys)) {
         strassenzellen++;
         if (strassenAsset) werk.setze(strassenAsset, x, y);
@@ -606,7 +620,8 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   }];
   for (const b of bauwerke) {
     knoten.push({
-      id: b.id, art: "bauwerk", titel: null,
+      id: b.id, art: "bauwerk", titel: b.titel,
+      bauwerk: { typ: b.typ, beschreibung: "" },
       eltern: [{ von: b.id, nach: wurzelId, art: "liegt_in_geografie" }],
       rahmen: karte.frame,
       anker: { in: wurzelId, bei: mitte(b), massstab: 1 },

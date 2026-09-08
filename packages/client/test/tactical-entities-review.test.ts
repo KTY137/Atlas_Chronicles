@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
 import * as Entities from "../src/features/tactical-entities.ts";
+import * as MapGeneration from "../src/features/map-generation.ts";
 
 /** Runs the actual component handlers/effects with controlled resource responses.
  * No DOM/WebGL emulation: canvas assertions concern the real renderer input contract. */
@@ -29,11 +30,13 @@ function harness(file: string, component: string, initial: Record<string, any>, 
   const extra = component === file || actual.includes(`export function ${component}(`) ? "" : `\nexport { ${component} };`;
   runInNewContext(transformSync(actual + extra, { loader: "tsx", format: "cjs", jsx: "automatic" }).code, {
     module: mod, exports: mod.exports, AbortController, setTimeout: () => 1, clearTimeout: () => {}, crypto: { randomUUID: () => "new-place" }, window: { confirm: () => true, devicePixelRatio: 1 },
+    document: { fullscreenElement: null, fullscreenEnabled: false, addEventListener() {}, removeEventListener() {} },
     require: (name: string) => {
       if (name in mocks) return mocks[name];
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "./tactical-entities") return Entities;
+      if (name === "./map-generation") return MapGeneration;
       if (name === "../hooks") return { useResource: resource, useTask: () => ({ busy: false, error: "", run: (fn: () => unknown) => fn() }) };
       if (name === "./game-api") return { useCommand: () => async () => ({ subjectId: "subject", version: 2 }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, plainText: () => "Passage" };
@@ -69,6 +72,108 @@ const map = { id: "map", name: "Map", revision: 1, version: 1, contentHash: "map
 const board = { gm: true, sessionId: "session", size: [100, 100], entities: objects, regions: [], tokens: [], grid: { kind: "none" }, rasterDigest: "raster", undoTargets: [], portals: [], elevation: 0, active: true };
 
 describe("independent tactical entity client review", () => {
+  it("renders the GM's pinned city footprints and artwork without replacing authorized object markers", () => {
+    const church = { knotenId: "church", titel: "Kapelle am Markt", art: "bauwerk", x: 50, y: 50, bauwerk: { typ: "kirche", beschreibung: "Privater Spielleitungsentwurf" } };
+    const pinned = { ...document, geometry: { ...document.geometry, regions: [{ id: "church", punkte: [[20, 20], [80, 20], [80, 80], [20, 80]] }] } };
+    const response = { ...board, map: { id: "city", name: "Stadt", revision: 2 }, document: pinned, walls: [] };
+    const paths: (string | null)[] = [];
+    const h = harness("TacticalView", "LiveBoard", { campaignId: "campaign", gm: true, revision: 1, ...callbacks }, path => {
+      paths.push(path); return { data: path?.endsWith("/tactical/active") ? response : { nodes: [church], art: "siedlung" }, loading: false, error: "" };
+    });
+    try {
+      const rendered = h.nodes(node => node.type === "TacticalCanvas")[0]!.props.scene;
+      expect(paths).toContain("/api/campaigns/campaign/maps/tactical/city/children");
+      expect(rendered.cells).toEqual([{ id: "church", polygon: pinned.geometry.regions[0]!.punkte, surface: "building", fill: MapGeneration.BUILDING_COLORS.kirche }]);
+      expect(rendered.stamps).toEqual([{ id: "inside", asset: "pk.private/chest", x: 20, y: 20, s: 1, r: 0, l: 0 }]);
+      expect(rendered.pins).toEqual([{ id: "stamp:inside", x: 20, y: 20, label: objects[1]!.label, entryId: "entry" }]);
+      expect(rendered.id).toBe(board.sessionId);
+    } finally { h.cleanup(); }
+  });
+
+  it("ignores forged GM documents and cached building metadata in a player projection without requesting private nodes", () => {
+    const secret = { knotenId: "secret-church", titel: "Geheime Kapelle", art: "bauwerk", x: 50, y: 50, bauwerk: { typ: "kirche", beschreibung: "Unsichtbares Geheimnis" } };
+    const knownRegion = { id: "public-road", points: [[0, 0], [10, 0], [10, 10]] };
+    const response = { ...board, gm: false, entities: [], regions: [knownRegion], map: { id: "city", name: "Stadt" },
+      document: { ...document, geometry: { ...document.geometry, regions: [{ id: secret.knotenId, punkte: [[20, 20], [80, 20], [80, 80]] }] } },
+      walls: [{ id: "private-wall", points: [[20, 20], [80, 20]] }],
+    };
+    const paths: (string | null)[] = [];
+    const h = harness("TacticalView", "LiveBoard", { campaignId: "campaign", gm: false, revision: 1, ...callbacks }, path => {
+      paths.push(path);
+      // Even a retained/forged hook response at the disabled path cannot promote this player.
+      return { data: path?.endsWith("/tactical/active") ? response : { nodes: [secret], art: "siedlung" }, loading: false, error: "" };
+    });
+    try {
+      const rendered = h.nodes(node => node.type === "TacticalCanvas")[0]!.props.scene;
+      expect(paths.filter(path => path?.includes("/children"))).toHaveLength(0);
+      expect(rendered.cells).toEqual([{ id: knownRegion.id, polygon: knownRegion.points, fill: 0xd98e3b }]);
+      expect(rendered.stamps).toBeUndefined(); expect(rendered.pins).toHaveLength(0); expect(rendered.lines).toHaveLength(0);
+      const output = JSON.stringify(rendered); expect(output).not.toContain("pk.private"); expect(output).not.toContain(secret.titel); expect(output).not.toContain(secret.knotenId);
+    } finally { h.cleanup(); }
+  });
+
+  it("drops private artwork and stops node requests immediately after the current GM role is revoked", () => {
+    const response = { ...board, map: { id: "city", name: "Stadt" }, document };
+    const paths: (string | null)[] = [];
+    const h = harness("TacticalView", "LiveBoard", { campaignId: "campaign", gm: true, revision: 1, ...callbacks }, path => {
+      paths.push(path); return { data: path?.endsWith("/tactical/active") ? response : { nodes: [], art: "siedlung" }, loading: false, error: "" };
+    });
+    try {
+      expect(h.nodes(node => node.type === "TacticalCanvas")[0]!.props.scene.stamps).toHaveLength(1);
+      paths.length = 0; h.replace({ gm: false });
+      expect(h.nodes(node => node.type === "TacticalCanvas")).toHaveLength(0);
+      expect(paths.filter(path => path?.includes("/children"))).toHaveLength(0);
+    } finally { h.cleanup(); }
+  });
+
+  it("selects a named city building from its footprint and preserves its region knowledge binding", () => {
+    const church = { knotenId: "church", titel: "Kapelle am Markt", art: "bauwerk", x: 50, y: 50, bauwerk: { typ: "kirche", beschreibung: "Ein stiller Ort." } };
+    const current = { ...map, document: { ...document, geometry: { ...document.geometry, regions: [{ id: church.knotenId, punkte: [[20, 20], [80, 20], [80, 80], [20, 80]] }] } },
+      anchors: [{ targetKind: "region", targetId: church.knotenId, entryId: "entry", passageId: "passage" }] };
+    const h = harness("TacticalPreparation", "MapEditor", { current, campaignId: "campaign", ...callbacks }, path => ({
+      data: !path ? null : path.endsWith("/children") ? { nodes: [church], art: "siedlung" } : path.endsWith("/entries/entry") ? { passagen: [] } : [], loading: false, error: "",
+    }));
+    try {
+      h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onSelect({ kind: "cell", id: church.knotenId });
+      const canvas = h.nodes(node => node.type === "TacticalCanvas")[0]!;
+      expect(canvas.props.selection).toEqual({ kind: "pin", id: "node:church" });
+      expect(canvas.props.scene.cells[0]).toMatchObject({ id: "church", surface: "building" });
+      expect(canvas.props.scene.pins.find((pin: any) => pin.id === "node:church")).toMatchObject({ label: church.titel });
+      expect(h.nodes(node => node.type === "select").slice(0, 3).map(node => node.props.value)).toEqual(["church", "entry", "passage"]);
+      expect(h.text(h.render())).toContain(church.titel);
+    } finally { h.cleanup(); }
+  });
+
+  it("resets an unsaved grid change and unfinished region to the saved document", () => {
+    const h = harness("TacticalPreparation", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
+    try {
+      h.nodes(node => node.type === "select" && node.props["aria-label"] === "Kartenraster")[0]!.props.onChange({ target: { value: "square" } });
+      h.nodes(node => node.type === "Button" && h.text(node) === "Region zeichnen")[0]!.props.onClick();
+      h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onPoint([10, 10]);
+      const reset = h.nodes(node => node.type === "Button" && h.text(node) === "Entwurf zurücksetzen")[0]!;
+      expect(reset.props.disabled).toBe(false); reset.props.onClick();
+      expect(h.nodes(node => node.type === "select" && node.props["aria-label"] === "Kartenraster")[0]!.props.value).toBe("none");
+      expect(h.nodes(node => node.type === "Button" && h.text(node) === "Entwurf zurücksetzen")[0]!.props.disabled).toBe(true);
+      expect(h.nodes(node => node.type === "TacticalCanvas")[0]!.props.scene.lines).toHaveLength(0);
+    } finally { h.cleanup(); }
+  });
+
+  it("opens generation explicitly, selects the saved result and blocks new generation while editing a draft", () => {
+    const h = harness("TacticalPreparation", "TacticalPreparation", { campaignId: "campaign", revision: 1, ...callbacks }, path => ({
+      data: path?.endsWith("/tactical/maps") ? [map] : path?.endsWith("/tactical/maps/map") ? map : null, loading: false, error: "",
+    }));
+    try {
+      expect(h.nodes(node => node.type === "TacticalGenerate")).toHaveLength(0);
+      h.nodes(node => node.type === "Button" && h.text(node) === "Neue Karte")[0]!.props.onClick();
+      h.nodes(node => node.type === "TacticalGenerate")[0]!.props.onCreated("map");
+      expect(h.nodes(node => node.type === "TacticalGenerate")).toHaveLength(0);
+      expect(h.nodes(node => node.type === "select")[0]!.props.value).toBe("map");
+      h.nodes(node => node.type?.name === "MapEditor")[0]!.props.onDirty(true);
+      expect(h.nodes(node => node.type === "Button" && h.text(node) === "Neue Karte")[0]!.props.disabled).toBe(true);
+      expect(h.nodes(node => node.type?.name === "MapEditor")).toHaveLength(1);
+    } finally { h.cleanup(); }
+  });
+
   it("keeps all 70,000 outline objects reachable while the graphic retains a selected overflow object", () => {
     const all = Array.from({ length: 70_000 }, (_, i): Entities.MapObject => ({ id: String(i).padStart(5, "0"), kind: i < 50_000 ? "stamp" : "place", x: 10, y: 10, label: `Object ${i}` }));
     const selected = Entities.objectKey(all.at(-1)!);

@@ -1,133 +1,63 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useState } from "react";
-import type { GrundrissBericht, GrundrissOptionen, HoehleOptionen } from "@chronicle/forge";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Compass, Dices, Eye, WandSparkles } from "lucide-react";
+import type { GrundrissBericht, SiedlungBericht } from "@chronicle/forge";
+import type { TacticalMapDocumentV1 } from "@chronicle/szene";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
 import { useCommand } from "./game-api";
+import { TacticalCanvas } from "./TacticalCanvas";
+import { MapGenerationControls } from "./MapGenerationControls";
+import { generationError, generationOptions, generationSettings, mapDocumentScene, type GenerationDefaults, type MapNode } from "./map-generation";
+import "./map-workshop.css";
 
-/**
- * Die eigene Erzeugung — the surface that makes the generator reachable by a person.
- *
- * Two deliberate choices here, both of them about honesty rather than layout:
- *
- * 1. **The defaults come from the server**, which reads them from the generator itself. A form
- *    carrying its own idea of "8 rooms" would drift the moment the generator's defaults changed,
- *    and the drift would be invisible — the map would simply stop matching what the algorithm
- *    considers ordinary.
- * 2. **A preview is offered before anything is written.** Generation is cheap, but a campaign
- *    filling up with discarded dungeons is not, and the `keimHash` shown here is the thing worth
- *    seeing: it is what makes the map reproducible, and it changes when the options change.
- */
 interface Vorschau {
-  readonly keimHash: string;
-  readonly wurzelId: string;
-  readonly art: string;
-  readonly raeume: number;
-  readonly knoten: number;
-  readonly groesse: readonly [number, number];
-  readonly bericht: GrundrissBericht;
-}
-
-interface Erzeugt {
-  readonly ack: { subjectId: string; version: number };
-  readonly keimHash: string;
-  readonly bericht: GrundrissBericht;
+  keimHash: string; art: string; groesse: readonly [number, number]; document: TacticalMapDocumentV1; nodes: MapNode[];
+  bericht: GrundrissBericht | SiedlungBericht; raeume?: number; bauwerke?: number; strassen?: number;
 }
 
 export function TacticalGenerate({ campaignId, onCreated }: { campaignId: string; onCreated: (mapId: string) => void }) {
-  const defaults = useResource<{ grundriss: GrundrissOptionen; hoehle: HoehleOptionen }>(apiPath(campaignId, "/tactical/generate/defaults"), 0);
+  const defaults = useResource<GenerationDefaults>(apiPath(campaignId, "/tactical/generate/defaults"));
+  const [settings, setSettings] = useState(() => generationSettings());
+  const [name, setName] = useState(""), [keim, setKeim] = useState(() => crypto.randomUUID().slice(0, 8));
+  const [preview, setPreview] = useState<{ fingerprint: string; data: Vorschau } | null>(null);
   const command = useCommand(), task = useTask();
-  // Was fuer eine Karte entsteht. Raeume und Gaenge oder gewachsener Fels — zwei Erzeuger, ein
-  // Ergebnis, ein Weg in die Datenbank.
-  const [art, setArt] = useState<"grundriss" | "hoehle">("grundriss");
-  const [name, setName] = useState(""), [keim, setKeim] = useState("");
-  const [raeume, setRaeume] = useState<number | "">("");
-  const [breite, setBreite] = useState<number | "">(""), [hoehe, setHoehe] = useState<number | "">("");
-  const [schleifen, setSchleifen] = useState<number | "">("");
-  const [licht, setLicht] = useState(true);
-  const [vorschau, setVorschau] = useState<Vorschau | null>(null);
-
-  if (defaults.loading) return <Loading text="Der Generator meldet seine Vorgaben …" />;
-  if (defaults.error || !defaults.data) return <Notice error>{defaults.error || "Der Generator ist auf diesem Server nicht verfügbar."}</Notice>;
-
-  const std = art === "hoehle" ? defaults.data.hoehle : defaults.data.grundriss;
-  const hoehle = art === "hoehle";
-  // An untouched field means "whatever the generator considers ordinary" and is left out entirely,
-  // rather than sent as a copy of the default that would silently freeze today's value.
-  const optionen = () => ({
-    // Die Regler heissen bei beiden Arten verschieden. Sie zu vermischen waere genau das, was
-    // die Union an der Tuer abweist — also schickt jede Art nur ihre eigenen.
-    ...(raeume === "" ? {} : hoehle ? { kammern: raeume } : { raeume }),
-    ...(breite === "" || hoehe === "" ? {} : { zellen: [breite, hoehe] as [number, number] }),
-    ...(schleifen === "" || hoehle ? {} : { schleifen }),
-    ...(licht === std.licht ? {} : { licht }),
-  });
-  const anfrage = () => ({ art, name: name.trim(), keim: keim.trim(), optionen: optionen() });
-  const bereit = name.trim().length > 0 && keim.trim().length > 0;
-
-  const zahl = (value: number | "", set: (v: number | "") => void, label: string, min: number, max: number, hint: string) =>
-    <label>{label}<input type="number" min={min} max={max} value={value} placeholder={hint}
-      onChange={event => set(event.target.value === "" ? "" : Number(event.target.value))} /></label>;
-
-  return <section className="panel tactical-generate">
-    <h2>Einen Ort erzeugen</h2>
-    <p className="field-help">
-      Der Grundriss entsteht aus deinem Keim. Derselbe Keim mit denselben Optionen ergibt immer
-      dieselbe Karte — änderst du eine Option, ist es ehrlich eine andere Karte und nicht dieselbe
-      anders.
-    </p>
-
-    <label>Name der Karte<input value={name} maxLength={160} required placeholder="z. B. Die Krypta unter Bjoldiri"
-      onChange={event => { setName(event.target.value); setVorschau(null); }} /></label>
-    <label>Keim<input value={keim} maxLength={512} required placeholder="Ein Wort, ein Satz, oder der Keim eines Ortes"
-      onChange={event => { setKeim(event.target.value); setVorschau(null); }} />
-      <small>Aus einer erzeugten Welt kannst du den Keim eines Ortes übernehmen — dann hängt der Grundriss an diesem Ort.</small>
-    </label>
-
-    <label>Art der Karte<select value={art} onChange={event => {
-      setArt(event.target.value as "grundriss" | "hoehle"); setRaeume(""); setSchleifen(""); setVorschau(null);
-    }}>
-      <option value="grundriss">Gebaut — Räume und Gänge (Schloss, Haus, Krypta)</option>
-      <option value="hoehle">Gewachsen — Höhle aus Fels</option>
-    </select></label>
-
-    <div className="rf-form-grid">
-      {hoehle
-        ? zahl(raeume, v => { setRaeume(v); setVorschau(null); }, "Kammern", 2, 32, String((std as HoehleOptionen).kammern))
-        : zahl(raeume, v => { setRaeume(v); setVorschau(null); }, "Räume", 2, 64, String((std as GrundrissOptionen).raeume))}
-      {hoehle ? null : zahl(schleifen, v => { setSchleifen(v); setVorschau(null); }, "Zusätzliche Gänge", 0, 16, String((std as GrundrissOptionen).schleifen))}
-      {zahl(breite, v => { setBreite(v); setVorschau(null); }, "Zellen breit", 12, 192, String(std.zellen[0]))}
-      {zahl(hoehe, v => { setHoehe(v); setVorschau(null); }, "Zellen hoch", 12, 192, String(std.zellen[1]))}
-    </div>
-    <label className="checkbox"><input type="checkbox" checked={licht} onChange={event => { setLicht(event.target.checked); setVorschau(null); }} /> Lichter setzen</label>
-
-    <div className="scene-links">
-      <Button disabled={!bereit || task.busy} onClick={() => void task.run(async () => {
-        setVorschau(await command<Vorschau>(apiPath(campaignId, "/tactical/generate/preview"), anfrage()));
-      })}>Vorschau</Button>
-      <Button variant="primary" disabled={!bereit || task.busy} onClick={() => void task.run(async () => {
-        const erzeugt = await command<Erzeugt>(apiPath(campaignId, "/tactical/generate"), anfrage());
-        setVorschau(null); setName(""); setKeim("");
-        onCreated(erzeugt.ack.subjectId);
-      })}>Erzeugen und speichern</Button>
-    </div>
-    {task.error ? <Notice error>{task.error}</Notice> : null}
-
-    {vorschau ? <div className="tactical-generate-report">
-      <p>
-        <strong>{vorschau.raeume} Räume</strong> auf {vorschau.groesse[0]} × {vorschau.groesse[1]} Pixeln ·{" "}
-        {vorschau.bericht.tueren} Türen · {vorschau.bericht.waende} Wände · {vorschau.bericht.lichter} Lichter ·{" "}
-        {vorschau.bericht.stamps} Objekte
-      </p>
-      <p className="muted">
-        Keim <code>{vorschau.keimHash.slice(0, 16)}</code> · Paket {vorschau.bericht.paket.id}@{vorschau.bericht.paket.version}
-      </p>
-      {vorschau.bericht.nichtBedient.length ? <Notice>
-        Das Assetpaket kennt {vorschau.bericht.nichtBedient.length} gewünschte Stücke nicht:{" "}
-        {vorschau.bericht.nichtBedient.join(", ")}. Die Karte entsteht trotzdem, an diesen Stellen bleibt sie leer.
-      </Notice> : null}
-    </div> : null}
+  const fingerprint = JSON.stringify([campaignId, name.trim(), keim.trim(), settings]);
+  const latest = useRef(fingerprint); latest.current = fingerprint;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const visiblePreview = preview?.fingerprint === fingerprint ? preview.data : null;
+  const scene = useMemo(() => visiblePreview ? mapDocumentScene(`preview:${visiblePreview.keimHash}`, visiblePreview.document, visiblePreview.nodes, visiblePreview.art) : null, [visiblePreview]);
+  if (defaults.loading) return <Loading text="Kartenwerkstatt wird vorbereitet …" />;
+  if (defaults.error || !defaults.data) return <Notice error>{defaults.error || "Der Generator ist nicht verfügbar."}</Notice>;
+  const problem = generationError(settings, defaults.data), ready = !!name.trim() && !!keim.trim() && !problem;
+  const request = () => ({ name: name.trim(), keim: keim.trim(), art: settings.art, stil: settings.stil, optionen: generationOptions(settings, defaults.data!) });
+  return <section className="panel tactical-generate map-workshop" aria-label="Kartenwerkstatt">
+    <header className="map-workshop-heading"><div><p className="eyebrow">Vom Ort zum Abenteuer</p><h2><Compass size={25} /> Kartenwerkstatt</h2><p>Baue eine Stadt, betritt ihre Gebäude und gestalte die Orte eurer Geschichte.</p></div><span className="map-workshop-badge">Stadt → Gebäude → Raum</span></header>
+    <div className="map-workshop-layout"><form className="map-workshop-form" onSubmit={event => { event.preventDefault(); if (!ready || task.busy) return; const current = fingerprint; void task.run(async () => {
+      const data = await command<Vorschau>(apiPath(campaignId, "/tactical/generate/preview"), request());
+      if (mounted.current && latest.current === current) setPreview({ fingerprint: current, data });
+    }); }}><fieldset disabled={task.busy}>
+      <label>Name der Karte<input value={name} maxLength={160} required placeholder={settings.art === "siedlung" ? "z. B. Nebelhafen" : "z. B. Kapelle des Morgenlichts"} onChange={event => setName(event.target.value)} /></label>
+      <MapGenerationControls value={settings} defaults={defaults.data} onChange={setSettings} />
+      <label>Weltkeim<div className="map-seed-field"><input value={keim} maxLength={256} required onChange={event => setKeim(event.target.value)} /><Button variant="quiet" aria-label="Neuen Keim würfeln" title="Neuen Keim würfeln" onClick={() => setKeim(crypto.randomUUID().slice(0, 8))}><Dices size={18} /></Button></div><small>Gleicher Keim und gleiche Einstellungen ergeben dieselbe Karte.</small></label>
+      {problem ? <Notice error>{problem}</Notice> : null}
+      <div className="map-create-actions"><Button type="submit" disabled={!ready} variant="primary"><Eye size={17} /> {task.busy ? "Karte entsteht …" : "Vorschau"}</Button>
+        <Button disabled={!ready} onClick={() => void task.run(async () => {
+          const result = await command<{ ack: { subjectId: string } }>(apiPath(campaignId, "/tactical/generate"), request());
+          if (mounted.current) { setPreview(null); onCreated(result.ack.subjectId); }
+        })}><WandSparkles size={17} /> Erzeugen und speichern</Button></div>
+    </fieldset>{task.error ? <Notice error>{task.error}</Notice> : null}</form>
+    <div className="map-workshop-preview" aria-label="Kartenvorschau">{scene && visiblePreview ? <>
+      <div className="map-preview-title"><div><span className="eyebrow">Vorschau</span><h3>{name}</h3></div><span>Noch nicht gespeichert</span></div>
+      <TacticalCanvas scene={scene} tileBase="" />
+      <div className="map-preview-stats"><span><strong>{visiblePreview.bauwerke ?? visiblePreview.raeume ?? visiblePreview.nodes.length}</strong>{visiblePreview.art === "siedlung" ? "Gebäude" : "Räume"}</span>
+        {visiblePreview.strassen !== undefined ? <span><strong>{visiblePreview.strassen}</strong>Straßen</span> : "tueren" in visiblePreview.bericht ? <span><strong>{visiblePreview.bericht.tueren}</strong>Türen</span> : null}
+        <span><strong>{visiblePreview.groesse[0].toLocaleString("de")} × {visiblePreview.groesse[1].toLocaleString("de")}</strong>Pixel</span></div>
+      {visiblePreview.art === "siedlung" ? <p className="field-help">Nach dem Speichern kannst du jedes Gebäude auswählen, benennen und seinen passenden Innenraum erzeugen.</p> : null}
+      {visiblePreview.bericht.nichtBedient.length ? <Notice>Für {visiblePreview.bericht.nichtBedient.length} Einrichtungswünsche enthält der Stil kein passendes Objekt.</Notice> : null}
+    </> : <div className="map-preview-empty"><Compass size={58} strokeWidth={1} /><span className="eyebrow">Deine Welt beginnt hier</span><h3>{preview ? "Neue Einstellungen, neuer Entwurf." : "Ein Ort. Viele Geschichten."}</h3><p>Wähle Kartenart, Größe und Stil. Mit „Vorschau“ siehst du die fertige Karte, bevor du sie speicherst.</p><div className="map-preview-journey"><span>Stadt</span><span>→</span><span>Gebäude</span><span>→</span><span>Innenraum</span></div></div>}</div></div>
   </section>;
 }

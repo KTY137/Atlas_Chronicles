@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
-import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS } from "@chronicle/forge";
+import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS } from "@chronicle/forge";
 import { TacticalMapValidationError } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
@@ -26,7 +26,9 @@ const closed = { additionalProperties: false } as const;
 
 const zelle = Type.Integer({ minimum: GRUNDRISS_LIMITS.zellenMin, maximum: GRUNDRISS_LIMITS.zellenMax });
 
-const OptionenSchema = Type.Object({
+export const BauwerkTypSchema = Type.Union([Type.Literal("haus"), Type.Literal("kirche"), Type.Literal("taverne"), Type.Literal("schmiede"), Type.Literal("lager"), Type.Literal("turm")]);
+export const KartenStilSchema = Type.Union([Type.Literal("grundriss"), Type.Literal("gemalt")]);
+export const OptionenSchema = Type.Object({
   zellen: Type.Optional(Type.Tuple([zelle, zelle])),
   zellgroesse: Type.Optional(Type.Integer({ minimum: GRUNDRISS_LIMITS.zellgroesseMin, maximum: GRUNDRISS_LIMITS.zellgroesseMax })),
   raeume: Type.Optional(Type.Integer({ minimum: GRUNDRISS_LIMITS.raeumeMin, maximum: GRUNDRISS_LIMITS.raeumeMax })),
@@ -35,6 +37,8 @@ const OptionenSchema = Type.Object({
   moeblierung: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
   licht: Type.Optional(Type.Boolean()),
   gangboden: Type.Optional(Type.String({ minLength: 1, maxLength: 64 })),
+  anordnung: Type.Optional(Type.Union([Type.Literal("raster"), Type.Literal("streuung"), Type.Literal("kachelwerk")])),
+  profil: Type.Optional(Type.Union([Type.Literal("frei"), BauwerkTypSchema])),
 }, closed);
 
 /**
@@ -42,7 +46,7 @@ const OptionenSchema = Type.Object({
  * ergibt dieselbe Art Ergebnis wie der Grundriss (`Grundriss` mit `art: "hoehle"`) und geht
  * deshalb denselben Persistenzweg — ein zweiter waere die Doppelung, die dieses Modul meidet.
  */
-const HoehleOptionenSchema = Type.Object({
+export const HoehleOptionenSchema = Type.Object({
   zellen: Type.Optional(Type.Tuple([zelle, zelle])),
   zellgroesse: Type.Optional(Type.Integer({ minimum: GRUNDRISS_LIMITS.zellgroesseMin, maximum: GRUNDRISS_LIMITS.zellgroesseMax })),
   kammern: Type.Optional(Type.Integer({ minimum: HOEHLE_LIMITS.kammernMin, maximum: HOEHLE_LIMITS.kammernMax })),
@@ -53,10 +57,22 @@ const HoehleOptionenSchema = Type.Object({
   licht: Type.Optional(Type.Boolean()),
 }, closed);
 
+const grundstueck = Type.Integer({ minimum: SIEDLUNG_LIMITS.grundstueckMin, maximum: SIEDLUNG_LIMITS.grundstueckMax });
+export const SiedlungOptionenSchema = Type.Object({
+  art: Type.Optional(Type.Union([Type.Literal("weiler"), Type.Literal("dorf"), Type.Literal("stadt")])),
+  ausdehnung: Type.Optional(Type.Tuple([zelle, zelle])),
+  zellgroesse: Type.Optional(Type.Integer({ minimum: SIEDLUNG_LIMITS.zellgroesseMin, maximum: SIEDLUNG_LIMITS.zellgroesseMax })),
+  bauwerke: Type.Optional(Type.Integer({ minimum: SIEDLUNG_LIMITS.bauwerkeMin, maximum: SIEDLUNG_LIMITS.bauwerkeMax })),
+  strassenDichte: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
+  grundstueck: Type.Optional(Type.Tuple([grundstueck, grundstueck])),
+  licht: Type.Optional(Type.Boolean()),
+}, closed);
+
 const gemeinsam = {
   commandId: Type.String({ minLength: 1, maxLength: 128 }),
   name: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }),
   keim: Type.String({ minLength: 1, maxLength: 512 }),
+  stil: Type.Optional(KartenStilSchema),
 };
 /**
  * Zwei Arten, eine Tuer. Die Union ist nach `art` unterschieden, damit die Regler der einen
@@ -67,6 +83,7 @@ const gemeinsam = {
 export const GrundrissSchema = Type.Union([
   Type.Object({ ...gemeinsam, art: Type.Optional(Type.Literal("grundriss")), optionen: Type.Optional(OptionenSchema) }, closed),
   Type.Object({ ...gemeinsam, art: Type.Literal("hoehle"), optionen: Type.Optional(HoehleOptionenSchema) }, closed),
+  Type.Object({ ...gemeinsam, art: Type.Literal("siedlung"), optionen: Type.Optional(SiedlungOptionenSchema) }, closed),
 ]);
 
 export type GrundrissBody = Static<typeof GrundrissSchema>;

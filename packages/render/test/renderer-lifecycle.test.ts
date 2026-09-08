@@ -8,7 +8,8 @@ import type { MapPinIcon, ProjectedMapScene } from "../src/model.ts";
 // The product factory and its camera/resource lifecycle run unchanged. This
 // narrow Pixi boundary records geometry submission; it does not simulate GPU speed.
 const pixi = vi.hoisted(() => ({ type: 1, resolution: 1, paths: 0, strokes: [] as { color?: number; width?: number; pixelLine?: boolean }[], textures: [] as { source: { scaleMode: string }; destroy: ReturnType<typeof vi.fn> }[],
-  graphics: [] as { position: { x: number; y: number }; scale: { x: number; y: number }; circles: number[]; paths: number; visible: boolean }[] }));
+  graphics: [] as { position: { x: number; y: number }; scale: { x: number; y: number }; circles: number[]; paths: number; visible: boolean; fills: unknown[]; segments: number[][] }[],
+  labels: [] as { text: string; visible: boolean }[] }));
 vi.mock("pixi.js", () => {
   class Vector { x = 0; y = 0; set(x: number, y = x) { this.x = x; this.y = y; } }
   class Container {
@@ -18,14 +19,14 @@ vi.mock("pixi.js", () => {
     destroy() { for (const child of this.removeChildren()) child.destroy(); }
   }
   class Graphics extends Container {
-    circles: number[] = []; paths = 0;
+    circles: number[] = []; paths = 0; fills: unknown[] = []; segments: number[][] = [];
     constructor() { super(); pixi.graphics.push(this); }
     clear() { this.circles.length = 0; this.paths = 0; return this; } rect() { return this; }
-    circle(_x: number, _y: number, radius: number) { this.circles.push(radius); return this; } fill() { return this; }
-    poly() { pixi.paths++; this.paths++; return this; } moveTo() { pixi.paths++; this.paths++; return this; } lineTo() { return this; }
+    circle(_x: number, _y: number, radius: number) { this.circles.push(radius); return this; } fill(style: unknown) { this.fills.push(style); return this; }
+    poly() { pixi.paths++; this.paths++; return this; } moveTo(x: number, y: number) { pixi.paths++; this.paths++; this.segments.push([x, y]); return this; } lineTo(x: number, y: number) { this.segments.at(-1)?.push(x, y); return this; }
     stroke(style: { color?: number; width?: number; pixelLine?: boolean }) { pixi.strokes.push(style); return this; }
   }
-  class Text extends Container { text = ""; width = 20; height = 10; }
+  class Text extends Container { text = ""; width = 20; height = 10; constructor() { super(); pixi.labels.push(this); } }
   class Canvas extends EventTarget {
     style: Record<string, string> = {}; dataset: Record<string, string> = {}; tabIndex = 0;
     setAttribute() {} hasPointerCapture() { return false; } releasePointerCapture() {} setPointerCapture() {} focus() {}
@@ -34,7 +35,7 @@ vi.mock("pixi.js", () => {
     canvas = new Canvas(); stage = new Container(); renderer = { type: pixi.type, resolution: pixi.resolution, resize() {} };
     async init() {} render() {} destroy() { this.stage.destroy(); }
   }
-  class Sprite extends Container { width = 0; height = 0; }
+  class Sprite extends Container { width = 0; height = 0; anchor = new Vector(); }
   return { Application, Container, Graphics, Text, Sprite, RendererType: { WEBGL: 1, WEBGPU: 2, CANVAS: 4 }, Texture: { from() { const texture = { source: { scaleMode: "linear" }, destroy: vi.fn() }; pixi.textures.push(texture); return texture; } } };
 });
 
@@ -44,13 +45,69 @@ const scene: ProjectedMapScene = { id: "authorized-scene", width: 2560, height: 
   rasterScope: "authorized-view" };
 function host() { const children: unknown[] = []; return { clientWidth: 1200, clientHeight: 800, appendChild(child: unknown) { children.push(child); }, children } as unknown as HTMLElement; }
 beforeEach(() => {
-  pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0;
+  pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0; pixi.labels.length = 0;
   vi.stubGlobal("window", { devicePixelRatio: 1 }); vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1)); vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("mounted renderer submission and resource lifecycle", () => {
+  it("toggles names and grid without changing camera, marker glyphs or hit targets", async () => {
+    const projected: ProjectedMapScene = { ...scene, tokens: [], lines: [], showLabels: true,
+      grid: { kind: "square", origin: [0, 0], size: 100 }, pins: [{ id: "church", label: "Kirche", icon: "portal", x: 1200, y: 1200 }] };
+    const map = await createMapRenderer(host(), projected);
+    map.zoomAt(1.4); map.panBy(12, -17); map.select({ kind: "pin", id: "church" });
+    const camera = map.getCamera(), center = mapToScreen([1200, 1200], camera);
+    expect(pixi.labels.some(text => text.visible && text.text === "Kirche")).toBe(true);
+    map.update({ ...projected, showLabels: false, grid: { kind: "none" } });
+    expect(map.getCamera()).toEqual(camera); expect(pixi.labels.some(text => text.visible)).toBe(false);
+    expect(map.hitTest(center)).toEqual({ kind: "pin", id: "church" });
+    expect(pixi.graphics.some(graphics => graphics.position.x === 1200 && graphics.circles[0] === 11 && graphics.visible)).toBe(true);
+    map.update(projected);
+    expect(map.getCamera()).toEqual(camera); expect(pixi.labels.some(text => text.visible && text.text === "Kirche")).toBe(true);
+    map.destroy();
+  });
+
+  it("limits crowded names while preserving every icon and picking target", async () => {
+    const pins = Array.from({ length: 400 }, (_, index) => ({ id: `house-${index}`, x: 1200, y: 1200, label: `Haus ${index}`, icon: "place" as const }));
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], showLabels: true, pins });
+    expect(pixi.labels.filter(text => text.visible)).toHaveLength(1);
+    expect(pixi.graphics.filter(graphics => graphics.circles[0] === 11)).toHaveLength(400);
+    expect(map.hitTest(mapToScreen([1200, 1200], map.getCamera()))).toEqual({ kind: "pin", id: "house-399" });
+    map.select({ kind: "pin", id: "house-10" });
+    expect(pixi.labels.some(text => text.visible && text.text === "Haus 10")).toBe(true); map.destroy();
+  });
+
+  it("renders opaque roofs and streets while clipping concave roof ridges away from a courtyard", async () => {
+    const polygon = [[0, 0], [120, 0], [120, 100], [80, 100], [80, 30], [40, 30], [40, 100], [0, 100]] as const;
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], cells: [
+      { id: "street", polygon: [[0, 0], [130, 0], [130, 110]], surface: "street" },
+      { id: "house", polygon, surface: "building" }, { id: "region", polygon, fill: 0x112233 },
+    ] });
+    const roof = pixi.graphics.find(graphics => graphics.fills.some(fill => typeof fill === "object" && fill !== null && "color" in fill && fill.color === 0xb87954))!;
+    expect(roof.fills).toContainEqual({ color: 0xb87954, alpha: 1 });
+    expect(roof.segments).toHaveLength(2);
+    for (const [x1, y1, x2, y2] of roof.segments) { expect(y1).toBe(50); expect(y2).toBe(50); expect(x1! >= 0 && x2! <= 40 || x1! >= 80 && x2! <= 120).toBe(true); }
+    expect(pixi.graphics.flatMap(graphics => graphics.fills)).toContainEqual({ color: 0xb4a180, alpha: 1 });
+    expect(pixi.graphics.flatMap(graphics => graphics.fills)).toContainEqual({ color: 0x112233, alpha: .08 });
+    map.destroy();
+  });
+
+  it("releases stamp artwork removed from a replacement scene and closes late unused images", async () => {
+    const asset = "pk.city/roof", bitmap = { width: 64, height: 64, close: vi.fn() } as unknown as ImageBitmap;
+    const map = await createMapRenderer(host(), { ...scene, lines: [], stamps: [{ id: "roof", asset, x: 100, y: 100, s: 1, r: 0, l: 0 }] });
+    map.setStampImages([{ asset, image: bitmap }]);
+    map.update({ ...scene, lines: [] }); expect(bitmap.close).toHaveBeenCalledTimes(1);
+    const late = { close: vi.fn() } as unknown as ImageBitmap;
+    map.setStampImages([{ asset, image: late }]); expect(late.close).toHaveBeenCalledTimes(1);
+    expect(pixi.textures).toHaveLength(1); map.destroy();
+  });
+
+  it("rejects unknown presentation surfaces and non-boolean name visibility", async () => {
+    await expect(createMapRenderer(host(), { ...scene, showLabels: "yes" } as unknown as ProjectedMapScene)).rejects.toThrow("label visibility");
+    await expect(createMapRenderer(host(), { ...scene, cells: [{ id: "bad", polygon: [[0, 0], [10, 0], [10, 10]], surface: "external" }] } as unknown as ProjectedMapScene)).rejects.toThrow("map surface");
+  });
+
   it("draws local pin glyphs once and retains their screen size, selection and picking through camera changes", async () => {
     const icons: MapPinIcon[] = ["place", "city", "castle", "cave", "ruin", "portal"];
     const pins = icons.map((icon, i) => ({ id: icon, icon, label: icon, x: 200 + i * 200, y: 500 }));

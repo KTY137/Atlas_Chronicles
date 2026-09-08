@@ -6,6 +6,7 @@ import { Button, Notice } from "@chronicle/ui";
 import { parseAssetpaket } from "@chronicle/szene";
 import { errorText } from "../api";
 import { useAppearance } from "./Appearance";
+import "./TacticalCanvas.css";
 
 /** The renderer never fetches private images. This scoped host owns requests and their lifetime. */
 export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated, selection, focusObject }: {
@@ -13,7 +14,15 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
   selection?: MapHit | null; focusObject?: { id: string; x: number; y: number } | null;
 }) {
   const { resolved } = useAppearance();
-  const scene = useMemo(() => ({ ...projectedScene, rasterSampling: resolved.sampling }), [projectedScene, resolved.sampling]);
+  const city = projectedScene.cells.some(cell => cell.surface === "building");
+  const gridTouched = useRef(false);
+  const [gridVisible, setGridVisible] = useState(!city), [labelsVisible, setLabelsVisible] = useState(projectedScene.showLabels !== false);
+  useEffect(() => { if (!gridTouched.current) setGridVisible(!city); }, [city]);
+  const [zoom, setZoom] = useState(100), [expanded, setExpanded] = useState(false);
+  const scene = useMemo(() => ({ ...projectedScene, rasterSampling: resolved.sampling, showLabels: labelsVisible,
+    ...(!gridVisible ? { grid: { kind: "none" as const } } : {}),
+  }), [projectedScene, resolved.sampling, gridVisible, labelsVisible]);
+  const frame = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null), renderer = useRef<MapRenderer | null>(null);
   const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection };
   const synchronizing = useRef(0);
@@ -28,6 +37,22 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
   const [error, setError] = useState(""), [tileError, setTileError] = useState(""), [ready, setReady] = useState(false);
   const [artError, setArtError] = useState("");
   const stampAssets = JSON.stringify([...new Set(scene.stamps?.map(stamp => stamp.asset) ?? [])].sort());
+  useEffect(() => {
+    const fullscreenChanged = () => setExpanded(document.fullscreenElement === frame.current);
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape" && !document.fullscreenElement) setExpanded(false); };
+    document.addEventListener("fullscreenchange", fullscreenChanged); document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("fullscreenchange", fullscreenChanged); document.removeEventListener("keydown", escape); };
+  }, []);
+  const toggleExpanded = async () => {
+    const element = frame.current;
+    if (!element) return;
+    if (document.fullscreenElement === element) { await document.exitFullscreen(); return; }
+    if (expanded) { setExpanded(false); return; }
+    if (element.requestFullscreen && document.fullscreenEnabled) {
+      try { await element.requestFullscreen(); return; } catch { /* Embedded clients can reject fullscreen; the larger in-page view remains useful. */ }
+    }
+    setExpanded(true);
+  };
   useEffect(() => {
     if (!host.current) return;
     const mount = new AbortController(); let tilesRequest: AbortController | null = null, timer: ReturnType<typeof setTimeout> | undefined;
@@ -88,11 +113,11 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
     const queue = () => { clearTimeout(timer); timer = setTimeout(() => { void loadTiles(); }, 100); };
     schedule.current = queue;
     retryTiles.current = () => { deniedScope = ""; clear(); latest.current.onScopeInvalidated?.(); queue(); };
-    setError(""); setReady(false);
-    void createMapRenderer(host.current, latest.current.scene, { signal: mount.signal, onCameraChange: queue,
+    setError(""); setTileError(""); setArtError(""); setReady(false);
+    void createMapRenderer(host.current, latest.current.scene, { signal: mount.signal, onCameraChange: camera => { if (!mount.signal.aborted) setZoom(camera.scale * 100); queue(); },
       onSelect: hit => { if (!synchronizing.current) latest.current.onSelect?.(hit); }, onMoveToken: (id, to) => latest.current.onMove?.(id, to),
       onPoint: point => latest.current.onPoint?.(point),
-    }).then(map => { if (mount.signal.aborted) { map.destroy(); return; } renderer.current = map; synchronize(() => map.update(latest.current.scene)); setReady(true); queue(); })
+    }).then(map => { if (mount.signal.aborted) { map.destroy(); return; } renderer.current = map; synchronize(() => map.update(latest.current.scene)); setZoom(map.getCamera().scale * 100); setReady(true); queue(); })
       .catch(reason => { if (!mount.signal.aborted) setError(errorText(reason)); });
     return () => { mount.abort(); clearTimeout(timer); clear(); renderer.current?.destroy(); renderer.current = null; schedule.current = () => {}; clearScope.current = () => {}; retryTiles.current = () => {}; };
   }, [scene.id]);
@@ -126,13 +151,13 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
       if (controller.signal.aborted || renderer.current !== instance) { for (const item of images) item.image.close(); return; }
       instance.setStampImages(images);
       if (results.some(result => result.status === "rejected")) setArtError("Ein Teil der Kartenobjekte konnte nicht gezeichnet werden. Räume und Eingänge bleiben bedienbar.");
-    })().catch(failure => { if (!controller.signal.aborted) setArtError(errorText(failure)); });
+    })().catch(failure => { if (!controller.signal.aborted && renderer.current === instance) setArtError(errorText(failure)); });
     return () => controller.abort();
   }, [stampAssets, ready, scene.id]);
   useLayoutEffect(() => {
     synchronize(() => renderer.current?.update(scene)); schedule.current();
   }, [scene]);
-  useLayoutEffect(() => { clearScope.current(); schedule.current(); }, [scene.rasterScope, tileBase, tileQuery]);
+  useLayoutEffect(() => { clearScope.current(); setTileError(""); schedule.current(); }, [scene.rasterScope, tileBase, tileQuery]);
   useLayoutEffect(() => { if (selection !== undefined) synchronize(() => renderer.current?.select(selection)); }, [selection?.kind, selection?.id, ready]);
   useLayoutEffect(() => {
     const map = renderer.current, element = host.current;
@@ -140,8 +165,20 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
     const camera = map.getCamera();
     map.setCamera({ ...camera, x: element.clientWidth / 2 - focusObject.x * camera.scale, y: element.clientHeight / 2 - focusObject.y * camera.scale });
   }, [focusObject?.id, focusObject?.x, focusObject?.y, ready]);
-  return <div className="tactical-canvas-frame">
-    <div className="button-row"><Button disabled={!ready} onClick={() => renderer.current?.fit()}>Ganze Karte</Button><Button disabled={!ready} aria-label="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.5)}>+</Button><Button disabled={!ready} aria-label="Karte verkleinern" onClick={() => renderer.current?.zoomAt(1 / 1.5)}>−</Button></div>
+  return <div className={`tactical-canvas-frame${expanded ? " tactical-canvas-expanded" : ""}`} ref={frame}>
+    <div className="tactical-canvas-toolbar" role="group" aria-label="Kartenansicht">
+      <div className="tactical-canvas-zoom"><Button disabled={!ready} onClick={() => renderer.current?.fit()}>Ganze Karte</Button>
+        <Button disabled={!ready} aria-label="Karte verkleinern" onClick={() => renderer.current?.zoomAt(1 / 1.5)}>−</Button>
+        <output className="tactical-canvas-percentage" aria-label="Vergrößerung">{zoom < 10 ? zoom.toFixed(1) : Math.round(zoom)} %</output>
+        <Button disabled={!ready} aria-label="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.5)}>+</Button></div>
+      <div className="tactical-canvas-layers">
+        <label><input type="checkbox" checked={gridVisible && !!projectedScene.grid && projectedScene.grid.kind !== "none"}
+          disabled={!projectedScene.grid || projectedScene.grid.kind === "none"} onChange={event => { gridTouched.current = true; setGridVisible(event.target.checked); }} /> Raster</label>
+        <label><input type="checkbox" checked={labelsVisible} onChange={event => setLabelsVisible(event.target.checked)} /> Namen</label>
+        <Button disabled={!ready} aria-pressed={expanded} onClick={() => { void toggleExpanded().catch(() => setExpanded(false)); }}>{expanded ? "Ansicht verkleinern" : "Große Ansicht"}</Button>
+      </div>
+      <span className="tactical-canvas-dimensions">{scene.width.toLocaleString("de-DE")} × {scene.height.toLocaleString("de-DE")} px</span>
+    </div>
     {error ? <Notice error>{error} Die Liste darunter bietet dieselben Figurenbefehle.</Notice> : null}
     {artError ? <Notice error>{artError}</Notice> : null}
     {tileError ? <Notice error>{tileError} <Button onClick={() => retryTiles.current()}>Kacheln erneut laden</Button></Notice> : null}

@@ -119,12 +119,25 @@ export interface Kante {
  */
 export const MAX_TIEFE = 24;
 
+/** Building intent belongs to the persistent address, independently of any generated interior. */
+export const BAUWERK_TYPEN = Object.freeze(["haus", "kirche", "taverne", "schmiede", "lager", "turm"] as const);
+export type BauwerkTyp = (typeof BAUWERK_TYPEN)[number];
+export const BAUWERK_LABEL: Readonly<Record<BauwerkTyp, string>> = Object.freeze({
+  haus: "Wohnhaus", kirche: "Kirche", taverne: "Taverne", schmiede: "Schmiede", lager: "Lagerhaus", turm: "Turm",
+});
+export interface BauwerkMetadaten {
+  readonly typ: BauwerkTyp;
+  readonly beschreibung: string;
+}
+
 export interface Knoten {
   /** `hash(keim | kind | erzeugungspfad)` — **never an index** (invariant I8). */
   readonly id: KnotenId;
   readonly art: KnotenArt;
   /** `null` is legal and meaningful: an unnamed container is a real state, not a missing one. */
   readonly titel: string | null;
+  /** Optional for legacy maps; only meaningful on a `bauwerk` node. Names remain `titel`. */
+  readonly bauwerk?: BauwerkMetadaten;
   /**
    * **MULTI-PARENT, typed, never a single pointer.** Measured on one real generated world:
    * 324 of 575 routes (56.3 %) cross more than one province, 8 of 25 states span more than one

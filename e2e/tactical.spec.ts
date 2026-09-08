@@ -2,8 +2,9 @@ import { test, expect, type Browser, type BrowserContext, type Locator, type Pag
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import sharp from "sharp";
-import { parseCampaignBundleV4 } from "@chronicle/io";
+import { parseCurrentCampaignBundle } from "@chronicle/io";
 import type { UvttProvenance } from "@chronicle/forge";
 import type { TacticalAck, TacticalMapCard, TacticalMoveInput, TacticalPlan, TacticalView } from "@chronicle/protocol";
 import { buildApp } from "../packages/server/src/app.ts";
@@ -245,12 +246,22 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       const saved = gm.waitForResponse(r => r.url() === `${base()}/scenes/${sceneId}/tactical-plan` && r.request().method() === "PUT");
       await gm.getByRole("button", { name: "Karte & Figuren für Szene speichern", exact: true }).click(); expect((await saved).status()).toBe(200);
       expect((await view(a)).tokens[0]!.x).toBe(512);
-      const plan: TacticalPlan = await (await gm.request.get(`${base()}/scenes/${sceneId}/tactical-plan`)).json(); expect(plan.tokens.find(t => t.actorId === sessions[1]!.actorId)!.x).toBe(768);
+      let planResponse = await gm.request.get(`${base()}/scenes/${sceneId}/tactical-plan`);
+      // The accelerated import/zoom/edit flow can exhaust the real user's minute bucket.
+      // Keep that policy enabled and honor its explicit cooldown once for this read only.
+      if (planResponse.status() === 429) {
+        const seconds = Number(planResponse.headers()["retry-after"]);
+        expect(Number.isFinite(seconds) && seconds > 0 && seconds <= 60).toBe(true);
+        await delay(seconds * 1000 + 100);
+        planResponse = await gm.request.get(`${base()}/scenes/${sceneId}/tactical-plan`);
+      }
+      expect(planResponse.status()).toBe(200);
+      const plan: TacticalPlan = await planResponse.json(); expect(plan.tokens.find(t => t.actorId === sessions[1]!.actorId)!.x).toBe(768);
       await stage(gm, "Runde").click();
       const downloading = gm.waitForEvent("download"); await gm.getByRole("button", { name: "Kampagne exportieren", exact: true }).click();
-      const download = await downloading; expect(download.suggestedFilename()).toBe(`campaign-${campaignId}.chronicle`);
+      const download = await downloading; expect(download.suggestedFilename()).toBe("zwei-blicke-auf-das-frosttor.chronicle");
       const archive = await readFile((await download.path())!, "utf8");
-      const bundle = parseCampaignBundleV4(archive); expect(bundle.version).toBe(4);
+      const bundle = parseCurrentCampaignBundle(archive); expect(bundle.manifest.campaignId).toBe(campaignId);
       expect(bundle.tables.tactical_sources[0]!.source_text).toBe(sourceText); expect(bundle.tables.session_tactical_states).toHaveLength(1);
       expect(bundle.tables.tactical_token_states.find(t => t.actor_id === sessions[1]!.actorId)!.x).toBe(512);
       expect(bundle.tables.tactical_map_anchors.filter(a => a.target_kind === "place")).toHaveLength(2);

@@ -59,18 +59,22 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   host.appendChild(canvas);
   const world = new Container();
   const geography = new Container();
+  const buildings = new Container();
   const raster = new Container(), rasterBounds = new Graphics(), gridOverlay = new Graphics(), wallsOverlay = new Graphics(), dragPreview = new Graphics();
   const markers = new Container();
   // Placements sit above the floor and below walls, grid and markers: furniture is part of the
   // ground truth of the room, but it must never hide a wall or a token.
   const stampLayer = new Container();
-  world.addChild(rasterBounds, raster, geography, stampLayer, gridOverlay, wallsOverlay, markers, dragPreview);
+  world.addChild(rasterBounds, raster, geography, stampLayer, buildings, gridOverlay, wallsOverlay, markers, dragPreview);
   raster.mask = rasterBounds;
   app.stage.addChild(world);
   const selection = new Graphics().circle(0, 0, 15).stroke({ color: 0xffe7a1, width: 2 }); selection.visible = false;
   const label = new Text({ text: "", style: { fontFamily: "system-ui, sans-serif", fontSize: 14, fill: 0xffffff,
     stroke: { color: 0x14212b, width: 4 } } });
   app.stage.addChild(selection, label);
+  const names = new Container(); names.eventMode = "none";
+  app.stage.addChild(names);
+  const pinLabels: InstanceType<typeof Text>[] = [];
   let scene = initial;
   let camera = fitCamera([scene.width, scene.height], viewport);
   let selected: MapHit | null = null;
@@ -105,7 +109,32 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       selection.position.set(p[0], p[1]); selection.visible = true;
       label.text = item.label;
       label.position.set(Math.min(Math.max(4, p[0] + 18), Math.max(4, viewport[0] - label.width - 4)), Math.min(Math.max(4, p[1] - 12), Math.max(4, viewport[1] - label.height - 4)));
-      label.visible = true;
+      label.visible = scene.showLabels !== false;
+    }
+  };
+  const updateLabels = (): void => {
+    for (const text of pinLabels) text.visible = false;
+    if (scene.showLabels !== true) return;
+    // Screen-space boxes keep a whole city legible. The pool bounds both text objects and
+    // overlap work; zooming reveals names as their projected footprints separate.
+    const occupied: { x: number; y: number; width: number; height: number }[] = [];
+    if (label.visible) occupied.push({ x: label.position.x - 4, y: label.position.y - 4, width: label.width + 8, height: label.height + 8 });
+    let count = 0;
+    for (const pin of scene.pins) {
+      if (count >= 160) break;
+      if (!pin.label.trim() || selected?.kind === "pin" && selected.id === pin.id) continue;
+      const point = mapToScreen([pin.x, pin.y], camera);
+      const width = Math.min(220, pin.label.length * 7 + 8), x = point[0] + mapPinHitRadius(pin) + 5, y = point[1] - 8;
+      if (x < 0 || y < 0 || x + width > viewport[0] || y + 20 > viewport[1]) continue;
+      if (occupied.some(box => x < box.x + box.width && x + width > box.x && y < box.y + box.height && y + 20 > box.y)) continue;
+      let text = pinLabels[count];
+      if (!text) {
+        text = new Text({ text: "", style: { fontFamily: "system-ui, sans-serif", fontSize: 12, fill: 0xf4ebd8, stroke: { color: 0x14212b, width: 3 } } });
+        text.eventMode = "none"; pinLabels.push(text); names.addChild(text);
+      }
+      text.text = pin.label.length > 30 ? `${pin.label.slice(0, 29)}…` : pin.label;
+      text.position.set(x, y); text.visible = true;
+      occupied.push({ x: x - 4, y: y - 4, width: Math.max(width, text.width) + 8, height: Math.max(20, text.height) + 8 }); count++;
     }
   };
   const drawWalls = (): void => {
@@ -141,6 +170,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     }
     previousScale = camera.scale;
     updateSelection();
+    updateLabels();
     render();
     // Panning far enough to leave the culled window is the only thing that can reveal a stamp
     // that was legitimately dropped last frame. Zooming always re-culls, because scale changes
@@ -237,13 +267,40 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     rasterBounds.clear().rect(0, 0, scene.width, scene.height).fill(0xffffff);
     drawStamps();
     clear(geography);
+    clear(buildings);
     clear(markers);
     markerGraphics = [];
     // Separate simple polygons preserve Pixi's batching; geometry is rebuilt only on update.
     for (const cell of scene.cells) {
-      const shape = new Graphics().poly(cell.polygon.flatMap((p) => [p[0], p[1]]), true).fill({ color: cell.fill ?? 0x536b52, alpha: scene.rasterScope ? .08 : 1 });
+      const building = cell.surface === "building", street = cell.surface === "street";
+      const shape = new Graphics().poly(cell.polygon.flatMap((p) => [p[0], p[1]]), true)
+        .fill({ color: cell.fill ?? (building ? 0xb87954 : street ? 0xb4a180 : 0x536b52), alpha: cell.surface ? 1 : scene.rasterScope ? .08 : 1 });
+      if (building) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const [x, y] of cell.polygon) { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); }
+        const width = maxX - minX, height = maxY - minY;
+        const stroke = Math.max(.5, Math.min(width, height) * .035);
+        shape.stroke({ color: 0x493d32, width: stroke, alpha: .95 });
+        // Intersect a roof ridge with the actual footprint. Pairing scanline crossings also
+        // handles concave buildings without drawing a ridge across an empty courtyard.
+        const axis = width >= height ? 0 : 1, cross = axis === 0 ? 1 : 0;
+        const middle = axis === 0 ? (minY + maxY) / 2 : (minX + maxX) / 2;
+        const crossings: number[] = [];
+        for (let i = 0, j = cell.polygon.length - 1; i < cell.polygon.length; j = i++) {
+          const a = cell.polygon[j]!, b = cell.polygon[i]!;
+          if ((a[cross] > middle) !== (b[cross] > middle)) crossings.push(a[axis] + (middle - a[cross]) * (b[axis] - a[axis]) / (b[cross] - a[cross]));
+        }
+        crossings.sort((a, b) => a - b);
+        for (let i = 0; i + 1 < crossings.length; i += 2) {
+          const left = crossings[i]!, right = crossings[i + 1]!, inset = (right - left) * .14;
+          if (right - left <= stroke * 2) continue;
+          if (axis === 0) shape.moveTo(left + inset, middle).lineTo(right - inset, middle);
+          else shape.moveTo(middle, left + inset).lineTo(middle, right - inset);
+        }
+        if (crossings.length) shape.stroke({ color: 0xf0d0a0, width: stroke * .8, alpha: .55 });
+      }
       shape.eventMode = "none";
-      geography.addChild(shape);
+      (building ? buildings : geography).addChild(shape);
     }
     for (const pin of scene.pins) {
       const shape = drawPin(pin);
@@ -272,7 +329,12 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       const changedScope = scene.rasterScope !== next.rasterScope;
       const previousSelection = selected;
       if (changedScope || changedWorld) clearRaster();
+      if (next.id !== scene.id) clearStampTextures();
       scene = next;
+      const referencedAssets = new Set(scene.stamps?.map(stamp => stamp.asset));
+      for (const [asset, resource] of stampTextures) if (!referencedAssets.has(asset)) {
+        resource.texture.destroy(true); resource.bitmap.close(); stampTextures.delete(asset);
+      }
       for (const resource of rasterResources) resource.texture.source.scaleMode = scene.rasterSampling ?? "linear";
       if (drag && (changedWorld || changedScope || (drag.snapshot && !retainsTokenDrag(drag.snapshot, scene.tokens?.find(t => t.id === drag?.token))))) {
         if (canvas.hasPointerCapture(drag.id)) canvas.releasePointerCapture(drag.id);
@@ -289,7 +351,10 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       renderer.update({ ...scene, ...(patch.cells ? { cells: patch.cells } : {}), ...(patch.pins ? { pins: patch.pins } : {}), ...(patch.tokens ? { tokens: patch.tokens } : {}) });
     },
     setStampImages(images) {
+      if (destroyed) { for (const item of images) item.image.close(); return; }
+      const referencedAssets = new Set(scene.stamps?.map(stamp => stamp.asset));
       for (const { asset, image } of images) {
+        if (!referencedAssets.has(asset)) { image.close(); continue; }
         const existing = stampTextures.get(asset);
         if (existing) { existing.texture.destroy(true); existing.bitmap.close(); }
         stampTextures.set(asset, { bitmap: image, texture: Texture.from(image) });
@@ -327,6 +392,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       if (hit && !(hit.kind === "pin" ? scene.pins : hit.kind === "token" ? scene.tokens ?? [] : scene.cells).some((r) => r.id === hit.id)) throw new Error("selection is not in the projected scene");
       selected = hit;
       updateSelection();
+      updateLabels();
       render();
       options.onSelect?.(hit);
     },
