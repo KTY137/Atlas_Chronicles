@@ -79,10 +79,11 @@ function explain(code: FormulaErrorCode, detail: { message: string; expected?: s
     case "type": { const wanted = /expected (number|boolean|string)/.exec(detail.message)?.[1] as FormulaType | undefined; return wanted ? `Hier wird ${wanted === "number" ? "eine Zahl" : wanted === "boolean" ? "Ja/Nein" : "ein Text"} gebraucht.` : "Die Werte passen hier nicht zusammen."; }
   }
 }
-/** Refines a type error with the offending reference, e.g. „aber „Vertraut“ ist Ja/Nein“. */
+/** Refines a type error with the offending reference, e.g. „aber „Vertraut“ ist Ja/Nein“. Matches both the sugared (`@x`/`?x`) and canonical (`actor.x`/`input.x`) spelling. */
 function typeDetail(message: string, spanText: string, sources: FormulaSources): string {
-  const ref = /^([@?])([a-z][a-z0-9_]*)$/.exec(spanText.trim()); if (!ref) return message;
-  const found = member(sources, ref[1] === "@" ? "actor" : "input", ref[2]!); if (!found) return message;
+  const ref = /^(?:([@?])([a-z][a-z0-9_]*)|(actor|input)\.([a-z][a-z0-9_]*))$/.exec(spanText.trim()); if (!ref) return message;
+  const source = ref[1] ? (ref[1] === "@" ? "actor" : "input") : (ref[3] as "actor" | "input"), id = (ref[2] ?? ref[4])!;
+  const found = member(sources, source, id); if (!found) return message;
   return message.replace(/ gebraucht\.$/, ` gebraucht, aber „${found.label}“ ist ${typeWord(found.type)}.`);
 }
 function spansOf(canonical: string, map: readonly number[], sources: FormulaSources): HighlightSpan[] {
@@ -119,8 +120,19 @@ export function analyzeFormula(text: string, sources: FormulaSources, options: F
   if (!options.allowKnowledge && knowledge) return failure({ code: "knowledge-forbidden", message: "Das Wissen der Figur lässt sich hier nicht abfragen, nur in der Ergebnisformel einer Aktion.", start: knowledge.start, end: knowledge.end });
   return { text, canonical, ok: true, ast: detail.ast, spans };
 }
+/** Scans `before` the way `desugarFormula` scans strings: true once an unclosed `"` runs to the end. */
+function insideString(before: string): boolean {
+  let i = 0;
+  while (i < before.length) {
+    if (before[i] === '"') { STRING.lastIndex = i; const match = STRING.exec(before); if (match && match.index === i) { i += match[0].length; continue; } return true; }
+    i++;
+  }
+  return false;
+}
 export function completionsAt(text: string, caret: number, sources: FormulaSources, options: FormulaOptions): Completion | null {
-  const before = text.slice(0, caret), match = /([@?])([a-zA-Z0-9_-]*)$|(?:^|[^a-zA-Z0-9_@?"])([a-zA-Z][a-zA-Z0-9_]*)$|(\d{1,3}d[a-z0-9!]*)$/.exec(before);
+  const before = text.slice(0, caret);
+  if (insideString(before)) return null;
+  const match = /([@?])([a-zA-Z0-9_-]*)$|(?:^|[^a-zA-Z0-9_@?"])([a-zA-Z][a-zA-Z0-9_]*)$|(\d{1,3}d[a-z0-9!]*)$/.exec(before);
   if (!match) return null;
   const fold = (value: string) => value.toLocaleLowerCase("de");
   if (match[1]) {

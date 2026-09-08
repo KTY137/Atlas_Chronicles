@@ -53,6 +53,10 @@ describe("analysis explains in plain German with positions in the typed text", (
   it("marks a reference to a removed attribute as missing", () => {
     expect(analyzeFormula("@weg", { actor: [], input: [] }, options).spans[0]).toMatchObject({ kind: "attribute", missing: true });
   });
+  it("names the offending reference for the canonical actor./input. spelling too", () => {
+    const analysis = analyzeFormula("actor.vertraut + 1", sources, options);
+    expect(analysis.error).toEqual(expect.objectContaining({ code: "type", message: "Hier wird eine Zahl gebraucht, aber „Vertraut“ ist Ja/Nein.", start: 0, end: 14 }));
+  });
 });
 
 describe("completion follows the caret", () => {
@@ -77,5 +81,10 @@ describe("completion follows the caret", () => {
     expect(completionsAt("1d", 2, sources, options)!.items.map(i => i.insert)).toEqual(["1d20", "1d100", "1d6", "2d6", "2d20kh1", "2d20kl1", "1d6!3"]);
     expect(completionsAt("1d", 2, sources, { allowDice: false, allowKnowledge: false })).toBeNull();
     expect(completionsAt("1 + ", 4, sources, options)).toBeNull();
+  });
+  it("does not complete inside an unterminated string literal", () => {
+    expect(completionsAt('haelt_etikett("Erste mi', 23, sources, options)).toBeNull();
+    expect(completionsAt('"text @geschick', 15, sources, options)).toBeNull();
+    expect(completionsAt('"a" + @ges', 10, sources, options)!.items.map(i => i.insert)).toEqual(["@geschick"]);
   });
 });
