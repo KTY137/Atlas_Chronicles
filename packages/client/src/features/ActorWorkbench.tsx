@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ActorCard, ActorKindValue, ActorTemplateData, Beutezeile, ControllerCard, ItemCard, ItemContract, ItemState, LootRarityValue, TemplateCard } from "@chronicle/protocol";
+import type { ActorCard, ActorKindValue, ActorTemplateData, Beutezeile, ControllerCard, FigurantragCard, FigurantragFreigabeAck, FigurvorlageFreigabeStand, ItemCard, ItemContract, ItemState, LootRarityValue, TemplateCard } from "@chronicle/protocol";
 import { LOOT_RARITIES } from "@chronicle/protocol";
 import { Lootkarte, SELTENHEIT_TEXT } from "./Lootkarte";
 import { speicherstats } from "./speicherstats";
@@ -10,7 +10,8 @@ import { Geldzaehler } from "./Geldzaehler";
 import type { Scalar } from "@chronicle/rules";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { PackageOpen } from "lucide-react";
-import { apiPath, errorText, type EntrySummary, type Member, type WikiMedienBestand } from "../api";
+import { api, apiPath, errorText, type EntrySummary, type Member, type WikiMedienBestand } from "../api";
+import { t } from "../i18n";
 import { useResource, useTask } from "../hooks";
 import { defaults, useCommand, type RulesState } from "./game-api";
 import { RuleFields } from "./RuleFields";
@@ -19,7 +20,7 @@ import { WikiMedien } from "./WikiMedien";
 import "./actors.css";
 
 const kinds: Record<ActorKindValue, string> = { player_character: "Spielerfigur", npc: "Nebenfigur", creature: "Kreatur", companion: "Begleitung", vehicle: "Fahrzeug" };
-type View = "actors" | "templates" | "item-templates";
+type View = "actors" | "templates" | "item-templates" | "antraege";
 // A completed request belongs to the editor that submitted it, even when the user
 // deliberately navigates to a different draft before its response arrives.
 function useTemplateDraft(onDirty: (value: boolean) => void) {
@@ -47,14 +48,19 @@ export function ActorWorkbench({ campaignId, gm, actorId, actors, roster, rules,
   const selected = actors.find(a => a.id === actorId);
   const createSelect = useRef<HTMLSelectElement>(null);
   return <div className="actor-workbench">
-    {gm && onOpenForge ? <aside className="actor-forge-entry"><div><strong>Neue Figuren und Lootkarten entstehen in der Schmiede.</strong><p className="field-help">Hier verwaltest du eure Figuren und ihren Besitz.</p></div><div className="button-row"><Button onClick={() => onOpenForge("actors")}>Figurvorlagen</Button><Button onClick={() => onOpenForge("loot")}>Lootkarten erstellen</Button></div></aside> : gm ? <div className="view-tabs" aria-label="Figurenverwaltung">{([
-      ["actors", "Figuren & Besitz"], ["templates", "Figurvorlagen"], ["item-templates", "Gegenstandsvorlagen"],
-    ] as const).map(([id, label]) => <Button key={id} aria-pressed={view === id} onClick={() => {
+    {gm && onOpenForge ? <aside className="actor-forge-entry"><div><strong>Neue Figuren und Lootkarten entstehen in der Schmiede.</strong><p className="field-help">Hier verwaltest du eure Figuren und ihren Besitz.</p></div><div className="button-row"><Button onClick={() => onOpenForge("actors")}>Figurvorlagen</Button><Button onClick={() => onOpenForge("loot")}>Lootkarten erstellen</Button></div></aside> : null}
+    {/* Die Vorlagenreiter entfallen, wo die Schmiede sie führt; die Anträge stehen in beiden
+        Fällen hier, denn sie sind keine Werkstattarbeit, sondern eine Entscheidung am Tisch. */}
+    {gm ? <div className="view-tabs" aria-label="Figurenverwaltung">{(onOpenForge
+      ? [["actors", "Figuren & Besitz"], ["antraege", t("Anträge")]]
+      : [["actors", "Figuren & Besitz"], ["templates", "Figurvorlagen"], ["item-templates", "Gegenstandsvorlagen"], ["antraege", t("Anträge")]]
+    ).map(([id, label]) => <Button key={id} aria-pressed={view === id} onClick={() => {
       if (view === id) return;
       if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
-      setView(id); setDirtyParts({ details: false, inventory: false, templates: false, creation: false });
+      setView(id as View); setDirtyParts({ details: false, inventory: false, templates: false, creation: false });
     }}>{label}</Button>)}</div> : null}
-    {view === "templates" && gm ? <ActorTemplates campaignId={campaignId} rules={rules} revision={revision} onChanged={onChanged} onDirty={reportTemplates} />
+    {view === "antraege" && gm ? <Figurantraege campaignId={campaignId} rules={rules} revision={revision} onChanged={onChanged} />
+      : view === "templates" && gm ? <ActorTemplates campaignId={campaignId} rules={rules} revision={revision} onChanged={onChanged} onDirty={reportTemplates} />
       : view === "item-templates" && gm ? <ItemTemplates campaignId={campaignId} revision={revision} onChanged={onChanged} onDirty={reportTemplates} />
       : <><div className="actor-columns">{selected ? <ActorDetails key={selected.id} campaignId={campaignId} current={selected} gm={gm} roster={roster} revision={revision} onChanged={onChanged} onDirty={reportDetails} />
         : gm ? <EmptyState title="Noch keine Figur ausgewählt." action={<Button variant="primary" onClick={() => createSelect.current?.focus()}>Figur erschaffen</Button>}>Du musst nicht warten, bis jemand beitritt: Als Spielleitung legst du selbst eine Figurvorlage an und erschaffst daraus direkt eine eigenständige Figur.</EmptyState>
@@ -63,6 +69,55 @@ export function ActorWorkbench({ campaignId, gm, actorId, actors, roster, rules,
         <Inventory key={`${actorId}:${gm}`} campaignId={campaignId} actorId={actorId} actors={actors} gm={gm} revision={revision} onChanged={onChanged} onDirty={reportInventory} onCreateTemplate={gm && onOpenForge ? () => onOpenForge("loot") : undefined} />
       </>}
   </div>;
+}
+
+/**
+ * Die offenen Figuranträge — die Arbeitsliste der Spielleitung.
+ *
+ * **Die Abweichung steht auf der Karte, nicht hinter einem Klick.** Ohne sie bestätigte die
+ * Spielleitung einen Namen und eine Vorlage, aber nicht die Werte, die dabei entstehen. Gezeigt
+ * wird deshalb genau das, was der Server als `anfangswerte` gespeichert hat — die geprüften
+ * Wünsche, nicht die Eingabe des Spielers.
+ *
+ * **`expectedVersion` kommt von der Karte.** Zwei Spielleitungen, die denselben Antrag
+ * gleichzeitig entscheiden, sollen nicht beide gewinnen; die zweite bekommt einen Konflikt und
+ * den Hinweis, die Liste neu zu laden.
+ */
+function Figurantraege({ campaignId, rules, revision, onChanged }: { campaignId: string; rules: RulesState; revision: number; onChanged: () => void }) {
+  const list = useResource<FigurantragCard[]>(apiPath(campaignId, "/figurantraege"), revision);
+  const vorlagen = useResource<TemplateCard<ActorTemplateData>[]>(apiPath(campaignId, "/actor-templates"), revision);
+  const [gruende, setGruende] = useState<Record<string, string>>({});
+  const task = useTask(), [konflikt, setKonflikt] = useState(false);
+  const paket = rules.packages.find(p => p.id === rules.pin.id && p.version === rules.pin.version);
+  const feldname = (schluessel: string) => paket?.fields[schluessel]?.label ?? schluessel;
+  const grund = (id: string) => gruende[id] ?? "";
+  const entscheide = (antrag: FigurantragCard, weg: "bestaetigen" | "ablehnen") => void task.run(async () => {
+    setKonflikt(false);
+    try {
+      await api(apiPath(campaignId, `/figurantraege/${encodeURIComponent(antrag.id)}/${weg}`),
+        { method: "POST", body: weg === "ablehnen" ? { expectedVersion: antrag.version, reason: grund(antrag.id).trim() } : { expectedVersion: antrag.version } });
+    } catch (fehler) { if ((fehler as { status?: number }).status === 409) setKonflikt(true); throw fehler; }
+    setGruende(alt => { const next = { ...alt }; delete next[antrag.id]; return next; });
+    onChanged();
+  });
+  return <section className="panel"><h2>{t("Anträge auf eine Figur")}</h2>
+    <p className="field-help">{t("Bestätigst du, entsteht die Figur aus der beantragten Vorlagenrevision und gehört der antragstellenden Person.")}</p>
+    {list.error || vorlagen.error ? <Notice error>{list.error || vorlagen.error}</Notice> : null}
+    {task.error ? <><Notice error>{konflikt ? `${task.error} ${t("Der Antrag wurde inzwischen geändert.")}` : task.error}</Notice><Button onClick={onChanged}>{t("Anträge neu laden")}</Button></> : null}
+    {list.loading ? <Loading /> : !list.data?.length ? <p className="field-help">{t("Zurzeit wartet kein Antrag auf eine Entscheidung.")}</p> : null}
+    <ul className="actor-object-list">{list.data?.map(antrag => <li key={antrag.id}>
+      <strong>{antrag.name}</strong>
+      <p className="field-help">{t("Vorlage {vorlage} · Revision {revision}", { vorlage: vorlagen.data?.find(v => v.id === antrag.templateId)?.definition.name ?? antrag.templateId, revision: antrag.templateRevision })}</p>
+      {Object.keys(antrag.anfangswerte).length
+        ? <ul className="rule-fields">{Object.entries(antrag.anfangswerte).map(([schluessel, wert]) => <li key={schluessel}>{feldname(schluessel)} · {String(wert)}</li>)}</ul>
+        : <p className="field-help">{t("Ohne Abweichung — die Werte der Vorlage bleiben, wie sie sind.")}</p>}
+      <label>{t("Grund einer Ablehnung")}<input maxLength={500} value={grund(antrag.id)} onChange={event => { const wert = event.target.value; setGruende(alt => ({ ...alt, [antrag.id]: wert })); }} /></label>
+      <div className="button-row">
+        <Button variant="primary" disabled={task.busy} onClick={() => entscheide(antrag, "bestaetigen")}>{t("Bestätigen")}</Button>
+        <Button variant="danger" disabled={task.busy || !grund(antrag.id).trim()} onClick={() => entscheide(antrag, "ablehnen")}>{t("Ablehnen")}</Button>
+      </div>
+    </li>)}</ul>
+  </section>;
 }
 
 function LoreField({ campaignId, value, onChange }: { campaignId: string; value: string | null; onChange: (value: string | null) => void }) {
@@ -101,6 +156,30 @@ export function ActorTemplates({ campaignId, rules, revision, onChanged, onDirty
   const [selected, setSelected] = useState<TemplateCard<ActorTemplateData> | null>(null);
   const [viewRevision, setViewRevision] = useState<number | null>(null);
   const { epoch, dirty, report, reset, current } = useTemplateDraft(onDirty);
+  /**
+   * Die Freigabe macht eine Werkstattvorlage für Spieler wählbar. Ihre **eigene** Version steht
+   * auf der Karte (`freigabe`), und nur von dort kommt `expectedVersion`.
+   *
+   * Geraten werden darf sie nicht: die Domain zählt bei jedem Umlegen hoch (freigeben 1,
+   * entziehen 2, erneut freigeben 3). Ein „freigegeben, also Version 1" wäre nach dem ersten
+   * Entzug dauerhaft falsch, und kein Neuladen brächte die richtige Zahl zurück. Die
+   * Spielerliste taugt dafür ebenfalls nicht: eine freigegebene Vorlage aus einem fremden
+   * Regelpaket fehlt darin, ihre Freigabe steht aber weiter.
+   */
+  const [quittungen, setQuittungen] = useState<Record<string, FigurvorlageFreigabeStand>>({});
+  const freigabe = useTask(), [konflikt, setKonflikt] = useState(false);
+  const stand = (karte: TemplateCard<ActorTemplateData>): FigurvorlageFreigabeStand =>
+    quittungen[karte.id] ?? karte.freigabe ?? { frei: false, version: 0 };
+  const schalte = (karte: TemplateCard<ActorTemplateData>) => void freigabe.run(async () => {
+    const jetzt = stand(karte);
+    setKonflikt(false);
+    try {
+      const quittung = await api<FigurantragFreigabeAck>(apiPath(campaignId, `/actor-templates/${encodeURIComponent(karte.id)}/freigabe${jetzt.frei ? "/entziehen" : ""}`),
+        { method: jetzt.frei ? "POST" : "PUT", body: { expectedVersion: jetzt.version } });
+      setQuittungen(alt => ({ ...alt, [quittung.templateId]: { frei: quittung.freigegeben, version: quittung.version } }));
+    } catch (fehler) { if ((fehler as { status?: number }).status === 409) setKonflikt(true); throw fehler; }
+    onChanged();
+  });
   const choose = (value: TemplateCard<ActorTemplateData> | null) => {
     if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
     setSelected(value); setViewRevision(null); reset();
@@ -112,7 +191,10 @@ export function ActorTemplates({ campaignId, rules, revision, onChanged, onDirty
   return <div className="actor-columns actor-template-workspace"><section className="panel actor-template-library"><h2>Figurvorlagen</h2><p className="field-help">Lege eine Spielerfigur, einen NPC, eine Kreatur oder ein Fahrzeug an. Aus einer Vorlage kannst du beliebig viele eigenständige Figuren erschaffen.</p>
     <Button onClick={() => choose(null)}>Neue Figurvorlage</Button>{list.error ? <Notice error>{list.error}</Notice> : null}
     {list.loading ? <Loading /> : !list.data?.length ? <p className="field-help">Noch keine Vorlagen gespeichert. Beginne mit Name, Art und Anfangswerten im Formular.</p> : null}
-    <ul className="actor-object-list">{list.data?.map(t => <li key={t.id}><Button aria-pressed={selected?.id === t.id} onClick={() => choose(t)}>{t.definition.name}<small>{kinds[t.definition.kind]} · Revision {t.revision}</small></Button></li>)}</ul>
+    {/* Nur ein Konflikt heisst „inzwischen geaendert"; jeder andere Fehler sagt, was er ist. */}
+    {freigabe.error ? <Notice error>{konflikt ? `${freigabe.error} ${t("Die Freigabe wurde inzwischen an anderer Stelle geändert; bitte die Vorlagen neu laden.")}` : freigabe.error}</Notice> : null}
+    <ul className="actor-object-list">{list.data?.map(karte => <li key={karte.id}><Button aria-pressed={selected?.id === karte.id} onClick={() => choose(karte)}>{karte.definition.name}<small>{kinds[karte.definition.kind]} · Revision {karte.revision}</small></Button>
+      <Button disabled={freigabe.busy} onClick={() => schalte(karte)}>{stand(karte).frei ? t("Freigabe entziehen") : t("Für Spieler freigeben")}</Button></li>)}</ul>
     {onInstantiate && list.data?.length ? <Button onClick={onInstantiate}>Aus Vorlage Figur erschaffen</Button> : null}
     {selected ? <RevisionPicker head={selected.revision} value={viewRevision ?? selected.revision} onChange={pickRevision} /> : null}
   </section>{selected && viewRevision !== null && viewRevision !== selected.revision

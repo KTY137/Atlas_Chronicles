@@ -22,6 +22,36 @@ Figuren und Gegenständen verlangen den erwarteten Versionsstand; eine parallele
 übernommen werden. Archivierte Figuren erhalten keine neuen Handlungen;
 historische Würfe, Vorlagenrevisionen und Änderungsbelege bleiben erhalten.
 
+## Vorlagen freigeben, Anträge entscheiden
+
+Spieler legen ihre Figur selbst an — die Spielleitung entscheidet, aus welchem Material und ob
+daraus eine Figur wird.
+
+1. **Freigeben.** In **Figurvorlagen** (in der Schmiede, oder unter Tisch → Figurvorlagen, wo
+   die Schmiede fehlt) trägt jede Vorlage den Schalter **Für Spieler freigeben** bzw.
+   **Freigabe entziehen**. Erst eine freigegebene Vorlage taucht in der Auswahl eines Spielers
+   auf; ohne sie beantwortet der Server einen Antrag darauf mit „nicht verfügbar". Die Freigabe
+   ist widerrufbar und trägt ihre **eigene** Version, die mit jedem Umlegen steigt. Der Schalter
+   liest sie aus dem Feld `freigabe` der Vorlagenkarte (`GET /actor-templates`) — geraten wird
+   sie nicht, sonst wäre die Zahl nach dem ersten Entzug dauerhaft falsch.
+2. **Entscheiden.** Der Reiter **Anträge** unter Tisch → Figuren & Inventar führt die offenen
+   Anträge. Jede Karte nennt Name, Vorlage mit Revision und die **Abweichung** von den
+   Vorlagenwerten — ohne sie bestätigte die Spielleitung einen Namen, aber nicht die Werte, die
+   dabei entstehen. **Bestätigen** erschafft die Figur, **Ablehnen** verlangt einen Grund, den
+   der Antragsteller zu sehen bekommt.
+3. **Was bei der Bestätigung geschieht.** Die Figur entsteht über denselben
+   `actor.instantiate`-Befehl wie jede andere: der Bogen kommt aus der beantragten
+   Vorlagenrevision, darüber die bestätigten Abweichungen, und der Antragsteller erhält genau
+   einen Kontrollgrant. Es gibt zu keinem Zeitpunkt eine unbestätigte Figur.
+
+Anträge tragen wie alle anderen Änderungen einen erwarteten Versionsstand: entscheiden zwei
+Spielleitungen gleichzeitig, gewinnt die erste, und die zweite bekommt den Hinweis, die Liste
+neu zu laden. Ein Freigabeentzug zwischen Antrag und Entscheidung lässt den Antrag offen und
+sichtbar — bestätigen lässt er sich erst wieder, wenn die Freigabe erneuert ist. Wechselt die
+Kampagne zwischenzeitlich ihr Regelpaket, entsteht aus dem Antrag keine Figur.
+
+Die Spielersicht dieser Fläche steht in [Ich — die eigene Figur](ICH.md).
+
 ## Handeln und Wissen
 
 **Handelnde Figur** bestimmt den Bogen und die Handlungen am Tisch.
@@ -53,6 +83,10 @@ auf. V1 bleibt lesbar und unverändert; das [Restore-Werkzeug](CAMPAIGN_RESTORE.
 verlangt für die Übernahme einer alten Datei `--upgrade-from-v1` und liefert
 einen deterministischen Upgradebericht.
 
+Migration 028 ergänzt `figurvorlagen_freigaben`, `figurantraege` und den unveränderlichen
+Beleg `figurantrag_events`; der [Formatvertrag v17](CAMPAIGN_FORMAT_V17.md) nimmt sie auf.
+Keine eingefrorene Tabelle wird dafür angefasst, und `authorizeActor` bleibt unverändert.
+
 Die automatisierten Browserabläufe prüfen echte PostgreSQL-Daten mit drei
 getrennten Lesern: Vorlage und Instanz, geteilte Kontrolle, getrennter
 Wissensblick, Bogen und Inventar, Kontrollentzug und nativer Download. Drei
@@ -61,3 +95,9 @@ neuem Inventar, verspäteten Speicherantworten, weiteren Kontrollgrants und
 verzögert geladenem Wissensblick. Ein vierter Test schützt neue Vorlagenentwürfe
 vor verspäteten Antworten eines bereits verlassenen Editors. Der aktuelle Gesamtprüfstand steht in
 [STATUS.md](../STATUS.md).
+
+Ein zweiter Browserablauf in `e2e/actors.spec.ts` prüft den Figurantrag von der anderen Seite:
+die Freigabe über den Schalter an der Vorlage, die Sichtbarkeit für einen Spieler erst danach,
+die Abweichung auf der Antragskarte und die Bestätigung samt entstandenem Bogen.
+`packages/server/test/figurantrag-http.test.ts` prüft dieselben Routen ohne Browser, samt der
+Abbildung von Konflikt, Nichtverfügbarkeit und Eingabefehler.
