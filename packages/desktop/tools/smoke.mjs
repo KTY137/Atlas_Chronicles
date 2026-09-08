@@ -1,7 +1,7 @@
 import { _electron as electron } from "playwright";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tsImport } from "tsx/esm/api";
@@ -11,10 +11,11 @@ import { tsImport } from "tsx/esm/api";
 const { validateCurrentCampaignBundle, currentCampaignSemanticDiff }=await tsImport("@chronicle/io",import.meta.url);
 
 const root=fileURLToPath(new URL("../../../",import.meta.url));
-// Keep the timestamped profile path: nested worktrees also exercise libpq's password-file
-// path limit. Recovery must retain its short, unique password filename inside that profile.
-const run=join(root,".local/desktop-profiles",`smoke-${Date.now()}-${randomUUID().slice(0,8)}`);
-await mkdir(run,{recursive:true});
+// Chromium's SQLite journal also needs room below MAX_PATH. A timestamped name in a
+// nested delivery checkout can make cookies appear to flush while nothing is persisted.
+// Keep the actual production partition identity and allocate a short, atomic test child.
+const profiles=join(root,".local/desktop-profiles");await mkdir(profiles,{recursive:true});
+const run=await mkdtemp(join(profiles,"smoke-"));
 const artifactFlag=process.argv.find(value=>value.startsWith("--executable="));
 const executable=artifactFlag?artifactFlag.slice("--executable=".length):fileURLToPath(new URL("../../../node_modules/electron/dist/electron.exe",import.meta.url));
 const entry=join(root,"packages/desktop/dist");
@@ -155,6 +156,9 @@ try{
   const knownStamps=new Set(genreMap.body.document.geometry.stamps.map(stamp=>stamp.id));
   assert.deepEqual(revisedGenreMap.body.document.geometry.stamps.filter(stamp=>!knownStamps.has(stamp.id)).map(stamp=>stamp.a),[`pk.genres/${selectedAsset.name}`]);
   assert.equal(revisedGenreMap.body.revision,genreMap.body.revision+1);evidence.genreCatalogue.savedRevision=revisedGenreMap.body.revision;
+  // Disabled also means an in-flight save. Wait for its GET and React's clean-draft
+  // propagation before reloading, otherwise this test races the beforeunload guard.
+  await game.waitForFunction(revision=>document.querySelector('.band-status')?.textContent?.trim()!=="Ungespeicherter Entwurf"&&[...document.querySelectorAll('.page-heading .field-help')].some(node=>node.textContent?.includes(`Kartenrevision ${revision}.`)),revisedGenreMap.body.revision);
   await game.reload();await canvas().waitFor({state:"visible"});
   assert.deepEqual((await request(`/api/campaigns/${campaignId}/tactical/maps/${genreMapId}`)).body.document,revisedGenreMap.body.document);
   record("compiled client previews and saves Genre-Archiv, filters twelve genres, searches and decodes three motifs, and persists placed artwork through reload");

@@ -77,15 +77,16 @@ async function harness() {
     }
   }
   const openDialog = vi.fn(async (): Promise<{ canceled: boolean; filePaths: string[] }> => ({ canceled: true, filePaths: [] }));
+  const messageDialog = vi.fn(async () => ({ response: 0 }));
   vi.doMock("electron", () => ({
     app: Object.assign(new EventEmitter(), { requestSingleInstanceLock: () => true, whenReady: async () => undefined, getPath: () => "C:/test-only-unused-profile", getVersion: () => "test", quit: vi.fn() }),
     BrowserWindow: FakeWindow,
-    dialog: { showOpenDialog: openDialog, showMessageBox: vi.fn(async () => ({ response: 0 })) },
+    dialog: { showOpenDialog: openDialog, showMessageBox: messageDialog },
     ipcMain: { handle: (name: string, fn: Handler) => handlers.set(name, fn) },
     protocol: { registerSchemesAsPrivileged: vi.fn() },
     safeStorage: { isEncryptionAvailable: () => true, encryptString: vi.fn(), decryptString: vi.fn() },
     session: { fromPartition }, shell: { openExternal: vi.fn() },
-    desktopCapturer: { getSources: vi.fn(async () => []) }, Tray: class {}, Menu: {}, nativeImage: {},
+    Tray: class {}, Menu: {}, nativeImage: {},
   }));
   vi.doMock("../src/profiles.ts", () => ({ ProfileStore: class { constructor() { return profiles; } } }));
   vi.doMock("../src/controller.ts", () => ({ HostController: FakeHost }));
@@ -100,7 +101,7 @@ async function harness() {
   const hello = (sender: unknown = event()) => handlers.get("chronicle:hello")!(sender);
   const invoke = (request: unknown, capability = hello(), sender: unknown = event()) =>
     Promise.resolve(handlers.get("chronicle:manage")!(sender, { capability, request })) as Promise<Reply>;
-  return { windows, manager, host, profiles, openDialog, hello, invoke, event, fromPartition };
+  return { windows, manager, host, profiles, openDialog, messageDialog, hello, invoke, event, fromPartition };
 }
 
 beforeEach(() => vi.resetModules());
@@ -149,6 +150,30 @@ it("revokes the local game window when the authenticated worker crashes", async 
   const local = h.windows.find(window => window.url === localOrigin)!;
   h.host.state = "failed"; h.host.ready = undefined; h.host.changed();
   expect(local.isDestroyed(), "The previous localhost document must lose access when host ownership is lost").toBe(true);
+});
+
+it("denies camera, microphone and screen capture in every window without a native prompt", async () => {
+  const h = await harness();
+  expect((await h.invoke({ kind: "start", profileId })).ok).toBe(true);
+  expect((await h.invoke({ kind: "open" })).ok).toBe(true);
+  expect((await h.invoke({ kind: "remote", origin: remoteOrigin })).ok).toBe(true);
+  for (const window of h.windows) {
+    const ses = window.webContents.session;
+    const check = ses.setPermissionCheckHandler.mock.calls[0]![0];
+    const request = ses.setPermissionRequestHandler.mock.calls[0]![0];
+    const display = ses.setDisplayMediaRequestHandler.mock.calls[0]?.[0];
+    for (const mediaType of ["audio", "video"]) {
+      expect(check(window.webContents, "media", new URL(window.url).origin, { isMainFrame: true, mediaType })).toBe(false);
+      const reply = vi.fn();
+      request(window.webContents, "media", reply, { isMainFrame: true, requestingUrl: window.url, mediaTypes: [mediaType] });
+      expect(reply).toHaveBeenCalledExactlyOnceWith(false);
+    }
+    expect(display, "Every window session must explicitly reject display capture").toBeTypeOf("function");
+    const reply = vi.fn();
+    display({ frame: window.webContents.mainFrame, securityOrigin: new URL(window.url).origin, userGesture: true }, reply);
+    expect(reply).toHaveBeenCalledExactlyOnceWith({});
+  }
+  expect(h.messageDialog).not.toHaveBeenCalled();
 });
 
 it("retains the committed first-login credential in its bound profile session when the manager reloads", async () => {

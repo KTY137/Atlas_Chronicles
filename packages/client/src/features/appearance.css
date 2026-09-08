@@ -33,21 +33,18 @@ html[data-appearance-theme] body .entry-item.active { background: var(--accent-s
 html[data-appearance-theme] body .import-files label { background: var(--surface-2); }
 html[data-appearance-theme] body .role-chip { border-color: var(--control-line); }
 html[data-appearance-theme] .appearance-settings { max-width: 900px; }
-html[data-appearance-theme] body :is(.roll-card, .atlas-map-tools, .atlas-canvas-loading, .atlas-canvas-fallback, .media-peer) { background: var(--surface); color: var(--text); }
+html[data-appearance-theme] body :is(.roll-card, .atlas-map-tools, .atlas-canvas-loading, .atlas-canvas-fallback) { background: var(--surface); color: var(--text); }
 html[data-appearance-theme] body .dice-results > span { background: var(--accent-soft); color: var(--text); border-color: var(--control-line); }
 html[data-appearance-theme] body .schema-status { background: var(--info-soft); color: var(--info); border-color: var(--info); }
 html[data-appearance-theme] body .schema-status.error { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
-html[data-appearance-theme] body :is(.media-whisper, .media-whisper-indicator) { background: var(--private-soft); color: var(--private); border-color: var(--private); }
-html[data-appearance-theme] body :is(.media-peer.speaking, .media-band-peer.speaking) { color: var(--ok); border-color: var(--ok); box-shadow: none; }
-html[data-appearance-theme] body :is(.media-connection-dot.connected, .channel-connection-dot.connected, .channel-presence-dot.online, .live-dot.connected) { background: var(--ok); }
+html[data-appearance-theme] body :is(.channel-connection-dot.connected, .channel-presence-dot.online, .live-dot.connected) { background: var(--ok); }
 html[data-appearance-theme] body .live-dot { background: var(--warning); }
 html[data-appearance-theme] body .live-dot.offline { background: var(--danger); }
 html[data-appearance-theme] body :is(.package-card.active, .atlas-place-list button.is-selected) { border-color: var(--focus); }
 html[data-appearance-theme] body .atlas-map-caption { color: var(--text-muted); background: var(--surface); padding: 4px 8px; }
 
 html[data-appearance-density="comfortable"] body :is(input, select, .button) { min-height: 44px; }
-html[data-appearance-density="comfortable"] .band { height: 52px; min-height: 52px; }
-html[data-appearance-density="comfortable"] .media-panel { bottom: 64px; }
+html[data-appearance-density="comfortable"] .band { min-height: 52px; }
 html[data-appearance-density="comfortable"] .panel { padding: calc(var(--theme-space) * 4); }
 html[data-appearance-density="compact"] .panel { padding: calc(var(--theme-space) * 2.5); }
 html[data-appearance-density="compact"] .page-content { padding-top: 24px; }

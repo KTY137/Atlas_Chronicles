@@ -132,10 +132,9 @@ Remote origins must be HTTPS without credentials,
 path, query or fragment. Cross-origin navigation is blocked; an external HTTP(S) link needs
 a separate system-browser confirmation. Certificate validation is unchanged.
 
-Microphone/camera permission requires the known game frame/origin and an explicit dialog.
-Screen sharing presents actual available source names and requires a current user gesture;
-navigation invalidates pending grants. These implemented controls still need real Windows
-device, screen-picker and NVDA acceptance. An automated browser cannot supply that evidence.
+The management, local game and remote game sessions reject microphone, camera and screen
+capture requests without opening a permission dialog or source picker. Built-in voice/video
+chat and screen sharing are removed; the player banner, app presence and text chat remain.
 
 ## Verification and artifacts
 
@@ -148,6 +147,16 @@ node packages/desktop/tools/installer.mjs
 
 The isolated smoke allocates a unique child of `.local/desktop-profiles`, leaves development
 configuration and databases untouched, and records JSON plus manager/game screenshots there.
+Its short, atomically allocated `smoke-` name leaves room for Chromium's persistent cookie
+database on Windows. A real Electron comparison showed that a deeply nested timestamped
+test profile can exceed MAX_PATH and lose cookies after restart even when `flushStore()`
+reports success. Production profile and partition identities are unchanged.
+
+The installer checks the complete artifact inventory, then makes a short private copy in
+the system temporary directory for NuGet. After Squirrel finishes, it checks that copy again;
+only the pinned vendor's `Squirrel.exe` may have been added. It copies the result back to an
+empty artifact installer directory and removes its own temporary copy. This avoids NuGet's
+path limit and keeps the measured unpacked application unchanged, including on failure.
 It uses an actual Electron main/utility process, actual DPAPI, PostgreSQL and sharp. Only the
 native open-file dialog selection is supplied by the harness; validation, new-target restore,
 enrollment and login follow the production path.
@@ -283,10 +292,10 @@ injection, and full failure-injection/independent review remain to be delivered.
 recovery and the mandatory pre-migration guard are implemented; their normal live recovery
 path and the pure schema admission cases have the scoped evidence above.
 The existing portable campaign export excludes credentials and is not a full host backup.
-No UI labels it as such. NVDA, Windows Hello, actual media devices, sleep/wake,
+No UI labels it as such. NVDA, Windows Hello, sleep/wake,
 OS reboot, installation without admin rights, and measured installed/idle/load budgets remain
 explicit acceptance gates. LAN/self-host HTTPS topology remains P11; the local host does not
-configure DNS, certificates, firewall, router, TURN or a relay.
+configure DNS, certificates, firewall, router or a relay.
 
 The adopted [desktop design and attack rounds](../design/iterations/desktop-shell-20260906.md)
 remain the full scope; this milestone does not replace them with a wrapper.

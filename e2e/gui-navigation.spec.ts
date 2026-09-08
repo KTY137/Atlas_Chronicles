@@ -42,6 +42,11 @@ test("mobile navigation reaches the forge and closes without overflowing", async
   await expect(page.getByRole("heading", { name: "Schmiede", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: ".local/review-20260908/forge-mobile.png", fullPage: true });
+  await page.goto(`${app.origin}/?campaign=${app.campaign.id}&stage=schmiede&forge=loot`);
+  await page.locator('.loot-template-form').getByLabel('Gegenstandsname', { exact: true }).fill('Mobiler Entwurf');
+  await expect(page.locator('.band-status')).toHaveText('Ungespeicherter Entwurf');
+  await expect(page.locator('.band-status')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test("players see play tasks without creation tools", async ({ page }) => {

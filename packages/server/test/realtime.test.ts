@@ -50,6 +50,43 @@ describe("Authenticated realtime bus and deliberately authored messages",()=>{
     await live.purge();expect((await db.query("SELECT id FROM campaign_messages WHERE kind='table'")).rowCount).toBe(0);
     expect((await live.messages(player,campaign)).some(m=>m.id===sent.id)).toBe(true);
   });
+  it("removes voice/video endpoints while retaining the roster, table chat and online/away presence",async()=>{
+    const game=createGameplay(db),scene=await game.createScene(gm,campaign,{name:"Text table",entryIds:[],fictionDate:"2. Herbst"});
+    await game.startScene(gm,campaign,scene.id);
+    const headers={origin:config.origin,cookie};
+    const retiredRoutes=[
+      {method:"GET",path:""},
+      {method:"POST",path:"/token",payload:{}},
+      {method:"POST",path:"/whispers",payload:{memberIds:[gm]}},
+      {method:"DELETE",path:`/whispers/${randomUUID()}`},
+      {method:"POST",path:"/presence",payload:{roomId:randomUUID()}},
+      {method:"DELETE",path:"/presence"},
+      {method:"POST",path:`/members/${player}/revoke`},
+      {method:"POST",path:`/members/${player}/restore`},
+    ] as const;
+    for(const {method,path,...body} of retiredRoutes){
+      const response=await app.inject({method,url:`/api/campaigns/${campaign}/media${path}`,headers,...body});
+      expect(response.statusCode,`${method} ${path}`).toBe(404);
+      expect(response.json()).toEqual({error:"Nicht verfügbar"});
+    }
+    const roster=await app.inject({url:`/api/campaigns/${campaign}/roster`,headers});
+    expect(roster.statusCode).toBe(200);
+    expect(roster.json()).toEqual(expect.arrayContaining([expect.objectContaining({userId:player,displayName:"Sera"})]));
+    const sent=await app.inject({method:"POST",url:`/api/campaigns/${campaign}/messages`,headers,
+      payload:{commandId:randomUUID(),kind:"table",body:"Der Textchat bleibt."}});
+    expect(sent.statusCode).toBe(200);
+    const messages=await app.inject({url:`/api/campaigns/${campaign}/messages?kind=table`,headers});
+    expect(messages.statusCode).toBe(200);
+    expect(messages.json()).toEqual(expect.arrayContaining([expect.objectContaining({id:sent.json().id,body:"Der Textchat bleibt."})]));
+    const socket=new WebSocket(address.replace("http:","ws:")+`/api/campaigns/${campaign}/live`,{headers});
+    const packets:Record<string,unknown>[]=[];
+    socket.on("message",data=>packets.push(JSON.parse(data.toString())));
+    try{
+      await expect.poll(()=>packets.filter(p=>p.type==="presence").at(-1)?.members).toEqual([{userId:player,displayName:"Sera",state:"online"}]);
+      socket.send(JSON.stringify({type:"presence",state:"away"}));
+      await expect.poll(()=>packets.filter(p=>p.type==="presence").at(-1)?.members).toEqual([{userId:player,displayName:"Sera",state:"away"}]);
+    }finally{socket.terminate();}
+  },20_000);
   it("uses a real socket for scoped commands, resumable invalidation and revoked credential denial",async()=>{
     const socket=new WebSocket(address.replace("http:","ws:")+`/api/campaigns/${campaign}/live`,{headers:{origin:config.origin,cookie}});
     const packets:Record<string,unknown>[]=[];socket.on("message",data=>packets.push(JSON.parse(data.toString())));

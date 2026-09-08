@@ -23,7 +23,7 @@ describe("authenticated rate budgets behind a shared network", () => {
       expect((await app.inject({ url: "/api/health", headers: { cookie: cookies[0]! } })).statusCode).toBe(429);
       expect((await app.inject({ url: "/api/health", headers: { cookie: cookies[1]! } })).statusCode).toBe(200);
     } finally { await app.close(); }
-  });
+  }, 45_000);
   it("does not let forged cookie values or caller identity headers mint fresh buckets", async () => {
     const app = await buildApp(db, config);
     try {
@@ -64,7 +64,7 @@ describe("authenticated rate budgets behind a shared network", () => {
         expect((await app.inject({ url })).statusCode).toBe(404);
       }
     } finally { await app.close(); }
-  });
+  }, 45_000);
 
   it("bounds the separate pack budget and leaves data reads available when it is exhausted", async () => {
     const app = await buildApp(db, config), userId = randomUUID();

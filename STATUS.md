@@ -4,13 +4,28 @@ Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
 
 ## Aktuelle Liefergrenze
 
-Der geprüfte zusammengeführte Stand umfasst die neue Schmiede, Siedlungsvorschau,
-Unterkarten, alle 571 Assets und den Desktop-CSP-Fix. Der CSP-Browserfall wurde zuerst
-rot und danach grün mit tatsächlich gemessenem Kartenpixel; die Sicherheitsrichtlinie
-bleibt unverändert. Typecheck und Produktionsbuild bestehen auch im isolierten
-`delivery-20260908`-Checkout ohne die neuere Kartografie. Dieser Stand wird jetzt nach
-`main` übernommen. Die tatsächliche neue Desktop-Paketprüfung muss vor Installation
-zusätzlich bestehen.
+Dieser Integrationsstand vereint `bcfd51f` mit dem fertigen `main`-Stand `4813080`:
+neue Schmiede, Aufgaben-Navigation, Siedlungsvorschau, Unterkarten, alle 571 Assets,
+Desktop-CSP-Fix und Spielerbanner ohne Sprach-/Videochat. Die drei Konflikte in App,
+STATUS und Desktop-Dokumentation wurden im isolierten `integration-20260908`-Checkout
+aufgelöst; der bewegliche Karteneditor-Worktree bleibt getrennt. Unabhängiger Review
+bestätigte die erhaltenen Navigation-/Schmiedepfade und fand einen verdeckten mobilen
+Entwurfsstatus. Der echte Browserfall war rot; die Korrektur zeigt den Dirty-Status
+auch mobil an. Typecheck, Produktionsbuild, 15 betroffene Server-/Desktopfälle,
+10 Artefaktprüfungen und Versions-/Paketgrenz-Gates sind grün. Alle acht betroffenen
+Browserabläufe bestehen: sechs im ersten Lauf, zwei in gezielter Nachprüfung nach
+CSS-Korrektur und einer Kollision der Test-Ausgabeverzeichnisse. Enthalten sind echte
+Loot-Erstellung/Übergabe, mobile Navigation/Entwurfsstatus, Spielerbanner/Textchat,
+Entwurfsschutz und der echte CSP-Kartenpixel. Keine volle Suite.
+
+Installer: kurze, zweimal vollständig vermessene temporäre App-Kopie vermeidet NuGets
+Windows-Pfadlimit. Nur die gepinnte Vendor-Squirrel.exe darf hinzukommen; originale
+Artefaktbytes bleiben unverändert. Der ältere CSP-Installer im Delivery-Checkout wurde
+erzeugt (226.006.016 Bytes), enthält aber noch Sprach-/Videochat. Ein neuer Desktop-Build
+aus diesem kombinierten Stand entsteht. Noch keine Aktualisierung der installierten App.
+Der vollständige Smoke muss vor Installation bestehen. Zwei Testaufbau-Fehler sind
+belegt und korrigiert: zu langer Chromium-Cookiepfad (echter Neustartvergleich) und Reload
+vor Abschluss des Save-GET. Benutzerprofile wurden nicht geändert.
 
 Der größere Karten-/Editor-Rework ist weiterhin **uncommitteter Feature-Worktree-Stand**:
 native v14, Kartografie, Generator v5, Terrain-/Straßen-/Gebäudewerkzeuge und Undo/Redo.
@@ -98,6 +113,45 @@ nicht zu diesem Stand. Die Chronisten-Modellanbindung und Siedlungsauswahl bleib
 
 Die folgenden Abschnitte sind die vorherige Projekthistorie.
 Updated: **2026-09-08** (300 zusätzliche Assets für zwölf Genres)
+
+Updated: **2026-09-08** (Sprach-/Videochat entfernt, Spielerbanner erhalten)
+
+## Spielerbanner ohne Sprach- und Videochat — Session 2026-09-08
+
+**Owner-Korrektur umgesetzt:** Sprach-/Videochat, Bildschirmfreigabe und Flüsterräume
+sind entfernt. Das Banner zeigt Namen und Online-/Abwesend-Status über die vorhandene
+App-Verbindung. Es bleibt beim Bühnenwechsel sichtbar; bei Offline/Kampagnenwechsel
+werden alte Anwesenheiten verworfen. Auf Mobilgeräten hat die Spielerliste eine eigene
+Zeile. Kampagnenbeiträge, Tischchat, Bilder und Kartenassets bleiben erhalten.
+
+MediaPanel, LiveKit-Abhängigkeiten, Medienrouten und laufende Mediennutzungszähler sind
+entfernt; Desktop-Sitzungen verweigern Aufnahme ohne Geräte- oder Bildschirmdialog.
+Self-Host enthält App/PostgreSQL und optional TLS. Alte Migrationen, historische Daten
+und lokale ignorierte Konfigurationen bleiben erhalten. Frühere Designbeschlüsse sind
+durch die [neue Entscheidung](design/iterations/player-banner-without-calls-20260908.md)
+überholt; aktuelle Betriebsanleitungen und Abhängigkeitshinweise sind angepasst.
+
+**Nachweise:** Typecheck und Produktionsbuild grün. Serverprüfungen **28/28**, Desktop
+**33/33** grün. Die neuen Server-/Desktopregressionen waren vor der Änderung rot.
+Browserabschluss **1/1 grün**: zwei getrennte Benutzer, Banner bei 320 px und Desktop,
+Offline/Reconnect, Bühnenwechsel, Nachrichtenzustellung und getrennter Tischchat;
+keine Sprach-/Video-Anfragen oder Browserausnahmen. Screenshots liegen unter
+`test-results/player-banner-verified/`. Unabhängiger Review ohne offene Befunde.
+Self-Host-Konfiguration und geschützter Konfigurationsgenerator sind geprüft;
+keine Container wurden gestartet oder beendet. Version **4/4**, Paketgrenzen
+**471 Dateien / 8 Regeln / 0 Verstöße**, Assets **29/29** mit fünf reproduzierten
+Paketen und **571 gültigen Referenzen** grün.
+
+Der vollständige Vitestlauf mit zwei Workern endet nach **728,51 s** mit **1.766
+bestandenen Tests, einem Timeout und 52 übersprungenen Tests**. Einzig der unveränderte
+Überlappungstest in `packages/forge/test/siedlung.test.ts:287` überschreitet seine
+5.000 ms. Die Datei besteht anschließend einzeln **39/39**; derselbe Test braucht
+**868 ms**, bei unverändertem Zeitlimit. Kein nachträglich behaupteter grüner Gesamtlauf.
+51 übersprungene PostgreSQL-Fälle benötigen `TEST_DATABASE_URL`; ein weiterer
+Concurrency-Fall ist nur für PostgreSQL vorgesehen. Logs: `.local/player-banner/`.
+
+Die vorhandene Desktop-Installation und bereits eingerichtete externe Sprachdienste
+wurden nicht aktualisiert oder beendet.
 
 ## Genre-Archiv: 300 weitere Kartenassets — Session 2026-09-08
 

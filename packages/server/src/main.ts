@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { buildApp } from "./app.ts";
 import { createPgDb, migrate } from "./db/index.ts";
-import { mediaConfigFromEnv } from "./domain/media.ts";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = resolve(root, ".local");
@@ -36,8 +35,7 @@ if (process.argv.includes("--configure")) {
   await migrate(db);
   const staticRoot = resolve(root, "packages/client/dist");
   const hasClient = await access(resolve(staticRoot, "index.html")).then(() => true, () => false);
-  const livekit=mediaConfigFromEnv(process.env);
-  const app = await buildApp(db, { ...settings, origin, logger: true, publicDeliveryEnabled: process.env["CHRONICLE_PUBLIC_DELIVERY"] === "1", ...(hasClient ? { staticRoot } : {}), ...(livekit ? { livekit } : {}) });
+  const app = await buildApp(db, { ...settings, origin, logger: true, publicDeliveryEnabled: process.env["CHRONICLE_PUBLIC_DELIVERY"] === "1", ...(hasClient ? { staticRoot } : {}) });
   const shutdown = async () => { await app.close(); await db.close(); process.exit(0); };
   process.once("SIGINT", () => { void shutdown(); }); process.once("SIGTERM", () => { void shutdown(); });
   await app.listen({ host: process.env["HOST"] ?? "127.0.0.1", port });

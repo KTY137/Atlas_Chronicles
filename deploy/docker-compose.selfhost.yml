@@ -1,10 +1,10 @@
 # Atlas Chronicles — der eine Verbund für Self-Host UND Hosted Rooms
-# (design/07-shell-redesign.md §5, design/08-backend-architektur.md §2). Kein zweiter Codepfad:
-# App + Postgres laufen immer; TLS-Kante und Medienebene sind Profile.
+# (design/08-backend-architektur.md §2). Kein zweiter Codepfad:
+# App + Postgres laufen immer; die TLS-Kante ist ein optionales Profil.
 #
 #   node deploy/configure-selfhost.mjs chronik.example.org          # schreibt deploy/.env (git-ignored)
 #   docker compose --env-file deploy/.env -f deploy/docker-compose.selfhost.yml \
-#       --profile tls --profile media up -d --build
+#       --profile tls up -d --build
 #
 # Topologien (deploy/README.md): "tls" = eigene Domain + Zertifikat → Passkeys laufen.
 # Ohne "tls" nur http://<LAN-IP>:3000 → OPEN P11 (Cookie-Fallback), CHRONICLE_BIND=0.0.0.0 setzen.
@@ -34,11 +34,6 @@ services:
       DB_CONNECT_TIMEOUT_MS: ${DB_CONNECT_TIMEOUT_MS:-}
       DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-}
       DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-}
-      # All four empty → app runs without the media layer, and the media routes say so explicitly.
-      LIVEKIT_URL: ${LIVEKIT_URL:-}
-      LIVEKIT_API_URL: ${LIVEKIT_API_URL:-}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     ports:
       - "${CHRONICLE_BIND:-127.0.0.1}:${CHRONICLE_PORT:-3000}:3000"
     # Readiness here, and that is a different question than the image's own probe. The image
@@ -88,63 +83,6 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - chronicle-caddy-data:/data
       - chronicle-caddy-config:/config
-
-  # --- Medienebene (07 §5): eigener Pfad, ein Voice-Ausfall hält den Tisch nie an --------
-  livekit:
-    profiles: [media]
-    image: livekit/livekit-server:v1.13.6
-    restart: unless-stopped
-    environment:
-      # LiveKit reads its YAML from this variable; keys/TURN come from deploy/.env.
-      LIVEKIT_CONFIG: |
-        port: 7880
-        rtc:
-          tcp_port: 7881
-          port_range_start: 50000
-          port_range_end: 50100
-          use_external_ip: true
-          turn_servers:
-            - host: ${PUBLIC_IP:-}
-              port: 3478
-              protocol: udp
-              username: chronicle
-              credential: ${TURN_SECRET:-}
-        keys:
-          ${LIVEKIT_API_KEY:-unset}: ${LIVEKIT_API_SECRET:-}
-        turn:
-          enabled: false
-        logging:
-          level: info
-    ports:
-      - "7881:7881/tcp"
-      - "50000-50100:50000-50100/udp"
-    read_only: true
-    tmpfs: [/tmp]
-    security_opt: ["no-new-privileges:true"]
-
-  coturn:
-    profiles: [media]
-    image: coturn/coturn:4.17.2-r0-alpine
-    restart: unless-stopped
-    command:
-      - -n
-      - --listening-port=3478
-      - --realm=${CHRONICLE_DOMAIN:-chronik.example.org}
-      - --user=chronicle:${TURN_SECRET:-}
-      - --lt-cred-mech
-      - --fingerprint
-      - --no-tls
-      - --no-dtls
-      - --min-port=49160
-      - --max-port=49200
-      - --external-ip=${PUBLIC_IP:-}
-    ports:
-      - "3478:3478/tcp"
-      - "3478:3478/udp"
-      - "49160-49200:49160-49200/udp"
-    read_only: true
-    tmpfs: [/tmp, /var/lib/coturn, /var/run]
-    security_opt: ["no-new-privileges:true"]
 
 volumes:
   chronicle-postgres:

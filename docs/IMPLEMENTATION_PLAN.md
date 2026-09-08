@@ -41,7 +41,7 @@ Die Quellen bestimmen Semantik und Reihenfolge:
 
 - [Champion](../design/iterations/CHAMPION.md), insbesondere §12: vollständiger Abend/Woche-Ablauf und bestehende Gates.
 - [Produktarchitektur](../design/06-giga-product-architecture.md), insbesondere §§11, 12, 16, 19, 21–22: gemeinsame Objekte, Commands, Projektion und vertikale Lieferung; übergreifend weiterhin ein Architekturentwurf.
-- [Shell-Entscheidung](../design/07-shell-redesign.md): Band, Bühne, Instrument; natives Voice/Video ist beschlossen und ersetzt die ältere Ablehnung in Dokument 06.
+- [Shell-Entscheidung](../design/07-shell-redesign.md): Band, Bühne, Instrument; die [Owner-Korrektur vom 08.09.2026](../design/iterations/player-banner-without-calls-20260908.md) entfernt Voice/Video und erhält das Spielerbanner.
 - [Backend-Entscheidung](../design/08-backend-architektur.md): Node/TypeScript, Fastify, TypeBox, Postgres, PGlite, WebSocket; Hosted Rooms sind beschlossen.
 - [Offene Entscheidungen](../design/iterations/OPEN-DECISIONS.md): insbesondere N3 Import-first, N7 Weltkeim als Provenienz und M3 bedingter Placement-Editor. Der neuere Beschluss S4=Ja hat Vorrang vor alten Einträgen.
 
@@ -61,7 +61,7 @@ packages/
   rules/        deklarative Regeln, Würfel, Auswertung und nachvollziehbarer Trace
   render/       MapRenderer mit Pixi-Implementierung und DOM-Fallback
   forge/        Generatoradapter, später Regel-/Theme-Autorenwerkzeuge
-deploy/         Container, Compose, LiveKit/TURN-Konfiguration und Betriebsanleitung
+deploy/         Container, Compose, TLS-Konfiguration und Betriebsanleitung
 e2e/            echte Browserabläufe mit getrennten Benutzerkontexten
 ```
 
@@ -154,18 +154,17 @@ Die erste Kartengenerierungsfunktion ist damit die beschlossene Übernahme eines
 
 ### M5 — Kommunikation und Hosting im echten Betrieb
 
-**Lieferung:** Persistenter Kampagnenkanal, echte Anwesenheit und funktionierendes Voice/Video mit sichtbarem Flüsterzustand.
+**Lieferung:** Persistenter Kampagnenkanal, getrennter Tischchat und Spielerbanner mit echter Anwesenheit.
 
 - Vor dem Nachrichtenmodell die offene Vertragsfrage aus Dokument 07 §10 entscheiden: Aufbewahrung ausdrücklich verfasster Kampagnennachrichten gegenüber flüchtigem Tischchat und dem Champion-Gate **„Kein Protokoll“**. Kein dauerhaftes Sitzungsprotokoll stillschweigend durch Kanalpersistenz einführen.
 - Kanal/Nachricht/Thread am gemeinsamen Objektmodell ausrichten; Würfelkarten und Kanonbelege referenzieren M4-Objekte.
 - Präsenz und Reconnect über den Befehlsbus; das Band zeigt tatsächliche Verbindung statt Lab-Zufallszustände.
-- LiveKit/coturn als eigener Medienpfad; Token-Minting und Track-Abos aus Membership ableiten. Flüsterkanal für Dritte sichtbar, Audio ausschließlich für Teilnehmer.
-- Medienausfall im Client benennen; Wiki, Commands und Tisch bleiben benutzbar. Jede angebotene Ersatzverbindung muss tatsächlich geprüft sein.
-- Derselbe App-/Postgres-/Medienverbund für Hosted und Self-Host; Healthchecks, Migration, Backup/Restore, Metriken und Zugangskonfiguration dokumentieren.
+- Sprach-/Videochat, Bildschirmfreigabe und Flüsterräume sind gemäß Owner-Korrektur vom 08.09.2026 entfernt. Das Spielerbanner bezieht Namen und Online-/Abwesend-Status aus der bestehenden App-Verbindung.
+- Derselbe App-/Postgres-Verbund für Hosted und Self-Host; Healthchecks, Migration, Backup/Restore, Metriken und Zugangskonfiguration dokumentieren.
 
-**Abnahme:** Drei reale Browser, Kanalzustellung nach Reconnect, Mikrofon/Video und selektives Hören; SFU stoppen, Tischbefehle weiter ausführen. Isolierte Kampagnen können sich nicht abonnieren. Self-Host wird auf einer benannten erreichbaren HTTPS-Topologie getestet; die offene LAN-Transportfrage P11 wird nicht mit einer allgemeinen Join-Zusage verdeckt.
+**Abnahme:** Getrennte Browser, Kanalzustellung nach Reconnect und Spielerbanner beim Bühnenwechsel; offline werden keine veralteten Anwesenheiten angezeigt. Keine Sprach-/Video-Anfragen oder Gerätefreigaben. Isolierte Kampagnen können sich nicht abonnieren. Self-Host wird auf einer benannten erreichbaren HTTPS-Topologie getestet; die offene LAN-Transportfrage P11 wird nicht mit einer allgemeinen Join-Zusage verdeckt.
 
-Der Medienstrang kann nach M1 parallel zu M2–M4 beginnen. Ein Compose-Eintrag allein ist weder Voice-Abnahme noch Betriebsabnahme. Endgültige Produktionsdomain, Region und Kostenrahmen betreffen den späteren Betrieb und blockieren die lokale Implementierung nicht.
+Endgültige Produktionsdomain, Region und Kostenrahmen betreffen den späteren Betrieb und blockieren die lokale Implementierung nicht.
 
 ### M6 — Der vollständige Champion „Die Woche“
 

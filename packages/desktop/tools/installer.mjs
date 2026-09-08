@@ -3,10 +3,12 @@
 // nicht neu, ändert die Packager-Grenze nicht und erzeugt keinen Update-Feed. Das Ergebnis ist ein
 // unsignierter per-user Setup, kein signiertes Release.
 import { createWindowsInstaller } from "electron-winstaller";
-import { mkdir, readFile, readdir, writeFile, realpath } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, writeFile, realpath, rm } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { join, resolve, relative, isAbsolute } from "node:path";
+import { dirname, join, resolve, relative, isAbsolute } from "node:path";
+import { tmpdir } from "node:os";
 import { measureArtifactFiles } from "./package.mjs";
 
 /** An unpacked Electron executable does not identify its separate worker/client resources. */
@@ -35,6 +37,33 @@ export async function verifyArtifactFiles(directory,record){
   return measured;
 }
 
+/** NuGet still applies MAX_PATH, and electron-winstaller writes Squirrel.exe into its
+ * input directory. Give it a short, verified copy so the measured artifact stays frozen. */
+export async function buildInstallerArtifact(appDirectory,record,outputDirectory,installer=createWindowsInstaller){
+  await verifyArtifactFiles(appDirectory,record);
+  await mkdir(outputDirectory,{recursive:true});
+  if((await readdir(outputDirectory)).length)throw new Error("Installer output directory must be empty; existing output is preserved.");
+  const squirrel=await readFile(createRequire(import.meta.url).resolve("electron-winstaller/vendor/Squirrel.exe"));
+  const squirrelFingerprint={bytes:squirrel.length,sha256:createHash("sha256").update(squirrel).digest("hex")};
+  const stagedRecord={...record,bytes:record.bytes-(record.files["Squirrel.exe"]?.bytes??0)+squirrel.length,files:{...record.files,"Squirrel.exe":squirrelFingerprint}};
+  const temporaryRoot=await realpath(tmpdir()),stage=await mkdtemp(join(temporaryRoot,"atlas-setup-"));
+  try{
+    const stagedApp=join(stage,"app"),stagedOutput=join(stage,"out"),licenses="LICENSES.chromium.html";
+    await cp(appDirectory,stagedApp,{recursive:true,force:false,errorOnExist:true});
+    await verifyArtifactFiles(stagedApp,record);
+    await readFile(join(stagedApp,licenses));
+    await installer({appDirectory:stagedApp,outputDirectory:stagedOutput,exe:"AtlasChronicles.exe",name:"AtlasChronicles",title:"Atlas Chronicles",authors:"Atlas Chronicles",description:"Atlas Chronicles local worlds",version:record.version,setupExe:"Atlas-Chronicles-Setup.exe",noMsi:true,additionalFiles:[{src:join(stagedApp,licenses),target:join("lib","net45",licenses)}]});
+    await verifyArtifactFiles(stagedApp,stagedRecord);
+    await verifyArtifactFiles(appDirectory,record);
+    for(const name of await readdir(stagedOutput))await cp(join(stagedOutput,name),join(outputDirectory,name),{recursive:true,force:false,errorOnExist:true});
+  }finally{
+    const resolvedStage=await realpath(stage);
+    if(resolvedStage!==stage||dirname(resolvedStage)!==temporaryRoot||!relative(temporaryRoot,resolvedStage).startsWith("atlas-setup-"))
+      throw new Error("Installer cleanup must stay inside its own temporary directory.");
+    await rm(resolvedStage,{recursive:true,force:true});
+  }
+}
+
 async function main(){
 const root=fileURLToPath(new URL("../../../",import.meta.url)),artifacts=join(root,".local/desktop-artifacts");
 const flag=process.argv.find(value=>value.startsWith("--artifact="));
@@ -58,9 +87,8 @@ await mkdir(outputDirectory,{recursive:true});
 // nicht mit. Electrons `version` fehlt bewusst weiter: die Anwendung liest ihren eigenen
 // `build.json`, und eine zweite Versionsquelle im Paket wäre genau die Drift, die gate:version
 // verhindert.
-const licenses="LICENSES.chromium.html",additionalFiles=[{src:join(appDirectory,licenses),target:join("lib","net45",licenses)}];
-await readFile(additionalFiles[0].src);
-await createWindowsInstaller({appDirectory,outputDirectory,exe:"AtlasChronicles.exe",name:"AtlasChronicles",title:"Atlas Chronicles",authors:"Atlas Chronicles",description:"Atlas Chronicles local worlds",version:record.version,setupExe:"Atlas-Chronicles-Setup.exe",noMsi:true,additionalFiles});
+const licenses="LICENSES.chromium.html";
+await buildInstallerArtifact(appDirectory,record,outputDirectory);
 const setup=await readFile(join(outputDirectory,"Atlas-Chronicles-Setup.exe"));
 await writeFile(join(destination,"installer.json"),JSON.stringify({kind:"unsigned-local-per-user-squirrel-setup",version:record.version,electron:record.electron,tool:"electron-winstaller@5.4.4",appDirectory,appExeSha256:exeHash,bundledThirdPartyLicenses:[licenses],setupExe:join(outputDirectory,"Atlas-Chronicles-Setup.exe"),setupSha256:hash(setup),bytes:setup.length,publicRelease:false,missingReleaseGates:["signed installer, timestamping and expected publisher","configured update feed and tested updater","ASAR integrity and release fuses","drain, recovery point and migration admission before install"]},null,2));
 console.log(`Unsigned per-user Squirrel setup: ${join(outputDirectory,"Atlas-Chronicles-Setup.exe")} (${setup.length} bytes). Unsigned; no update feed. Public release gates remain open.`);
