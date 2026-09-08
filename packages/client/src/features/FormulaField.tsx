@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useId, useMemo, useRef, useState 
 import { Dices } from "lucide-react";
 import { Button } from "@chronicle/ui";
 import type { Formula } from "@chronicle/rules";
-import { analyzeFormula, resugarFormula, type FormulaSources } from "./formula-sugar";
+import { analyzeFormula, resugarFormula, type FormulaAnalysis, type FormulaSources } from "./formula-sugar";
 import { DEFAULT_EXAMPLE_SEED, exampleContextFor, formulaExample, randomSeed, type ExampleFigure } from "./formula-example";
 import { FormulaLine } from "./FormulaLine";
 import { FormulaBlocks } from "./FormulaBlocks";
@@ -22,6 +22,11 @@ export interface FormulaFieldProps {
 const VIEW_KEY = "atlas.formula-view", VIEWS: readonly [FormulaView, string][] = [["line", "Zeile"], ["blocks", "Bausteine"], ["graph", "Knoten"]];
 export function readFormulaView(): FormulaView { try { const value = localStorage.getItem(VIEW_KEY); return value === "blocks" || value === "graph" ? value : "line"; } catch { return "line"; } }
 export function writeFormulaView(view: FormulaView): void { try { localStorage.setItem(VIEW_KEY, view); } catch { /* storage may be blocked; the choice just does not persist */ } }
+/** True when `value` arrived from outside (opening a package, undo) rather than being an echo of our own last `onChange` emission — the guard behind "external values replace the typed text; our own emissions do not". */
+export function isExternalValue(value: string, lastEmitted: string): boolean { return value !== lastEmitted; }
+const INCOMPLETE_BLOCK_ERROR = { code: "empty" as const, message: "Ergänze den leeren Wert in den Bauteilen; bis dahin ist die Formel unvollständig.", start: 0, end: 0 };
+/** While a visual block is incomplete (H6), the line must show that — not the stale example or highlighting for a formula that is no longer what will be published. */
+export function displayAnalysis(analysis: FormulaAnalysis, incomplete: boolean): FormulaAnalysis { return incomplete ? { ...analysis, ok: false, error: INCOMPLETE_BLOCK_ERROR } : analysis; }
 
 export function FormulaField({ id, label, help, value, onChange, sources, allowDice, allowKnowledge, fields, inputs = [], actionId, disabled = false }: FormulaFieldProps) {
   const generated = useId(), fieldId = id ?? generated, options = useMemo(() => ({ allowDice, allowKnowledge }), [allowDice, allowKnowledge]);
@@ -29,7 +34,7 @@ export function FormulaField({ id, label, help, value, onChange, sources, allowD
   const [view, setView] = useState<FormulaView>("line"), [seed, setSeed] = useState(DEFAULT_EXAMPLE_SEED);
   useEffect(() => { setView(readFormulaView()); }, []);
   // A value arriving from outside (opening a package, undoing) replaces the typed text; our own emissions do not.
-  useEffect(() => { if (value !== emitted.current) { emitted.current = value; setText(resugarFormula(value)); } }, [value]);
+  useEffect(() => { if (isExternalValue(value, emitted.current)) { emitted.current = value; setText(resugarFormula(value)); } }, [value]);
   const analysis = useMemo(() => analyzeFormula(text, sources, options), [text, sources, options]);
   const lastValid = useRef<Formula | null>(null); if (analysis.ok && analysis.ast) lastValid.current = analysis.ast;
   const figure = useContext(FormulaExampleContext);
@@ -50,11 +55,14 @@ export function FormulaField({ id, label, help, value, onChange, sources, allowD
   const status = example ? (example.ok ? <>{example.text}{hasDice ? <Button variant="quiet" className="ff-reroll" aria-label="Neu würfeln" onClick={() => setSeed(randomSeed())}><Dices size={13} />Neu würfeln</Button> : null}</> : example.message) : "";
   const tree = analysis.ok && analysis.ast ? analysis.ast : lastValid.current;
   const readOnly = !analysis.ok;
+  // While a block is incomplete, the last valid text still analyzes fine on its own — but it no
+  // longer matches what emit("") just published, so the line shows that instead of a stale example.
+  const lineAnalysis = displayAnalysis(analysis, blocks !== null), lineStatus = blocks !== null ? "" : status;
   return <div className="ff-field">
     <div className="ff-field-head"><span className="ff-field-title">{label}</span><div className="ff-views" role="group" aria-label="Ansicht der Formel">{VIEWS.map(([key, name]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); writeFormulaView(key); }}>{name}</button>)}</div></div>
-    {view === "line" ? <FormulaLine id={fieldId} label="Formel" help={help} text={text} analysis={analysis} sources={sources} options={options} status={status} disabled={disabled} onText={onText} /> : null}
+    {view === "line" ? <FormulaLine id={fieldId} label="Formel" help={help} text={text} analysis={lineAnalysis} sources={sources} options={options} status={lineStatus} disabled={disabled} onText={onText} /> : null}
     {view !== "line" ? <>
-      <FormulaLine id={fieldId} label="Formel" help={help} text={text} analysis={analysis} sources={sources} options={options} status={status} disabled={disabled} onText={onText} />
+      <FormulaLine id={fieldId} label="Formel" help={help} text={text} analysis={lineAnalysis} sources={sources} options={options} status={lineStatus} disabled={disabled} onText={onText} />
       {readOnly && !blocks ? <p className="ff-readonly">Die Zeile enthält einen Fehler; hier siehst du den Stand davor.</p> : null}
       {view === "blocks" ? (blocks ?? tree ? <FormulaBlocks value={blocks ?? formulaDraft(tree!)} onChange={fromDraft} sources={sources} options={options} disabled={disabled || (readOnly && !blocks)} resultLabel={label} /> : null) : null}
       {view === "graph" ? (tree ? <FormulaGraph ast={tree} onChange={fromTree} sources={sources} options={options} disabled={disabled} readOnly={readOnly} /> : null) : null}

@@ -195,7 +195,11 @@ export function newPackage(author: string, installed: readonly AnyRulePackage[] 
   draft.id = id; draft.name = "Mein Regelwerk"; draft.authors = [author || "Spielleitung"]; draft.version = "1.0.0"; draft.migrations = []; draft.selfTests = []; draft.includeSelfTests = false;
   return draft;
 }
-export function newAction(ids: readonly string[]): DraftAction { return { localId: localKey(), id: uniqueId("aktion", ids), name: "Neue Aktion", version: "1.0.0", disclosure: "Ein Würfel entscheidet über diese Handlung. Das Ergebnis wird am Tisch bestätigt.", inputs: [], thresholdEnabled: false, threshold: "10", formula: formulaDraft(parseFormula("1d20")), expression: "1d20" }; }
+// `expression` is deliberately left unset: setting it here reproduces the packageDraft hazard —
+// once set it freezes draftExpression on this text, so a later `.formula`-only edit (RuleForge.tsx
+// still edits actions through `.formula`) would go unpublished. The `.formula` fallback already
+// prints "1d20".
+export function newAction(ids: readonly string[]): DraftAction { return { localId: localKey(), id: uniqueId("aktion", ids), name: "Neue Aktion", version: "1.0.0", disclosure: "Ein Würfel entscheidet über diese Handlung. Das Ergebnis wird am Tisch bestätigt.", inputs: [], thresholdEnabled: false, threshold: "10", formula: formulaDraft(parseFormula("1d20")) }; }
 export function moveItem<T>(items: readonly T[], index: number, delta: -1 | 1): T[] { const result = [...items], next = index + delta; if (index >= 0 && index < result.length && next >= 0 && next < result.length) [result[index], result[next]] = [result[next]!, result[index]!]; return result; }
 export function fieldTypes(fields: readonly DraftField[]): Record<string, FormulaType> { return Object.fromEntries(fields.map(f => [f.id, f.type === "integer" ? "number" : f.type])); }
 

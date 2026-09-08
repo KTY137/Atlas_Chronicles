@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { DEMO_RULE_PACKAGE, RulePackageRegistry, evaluateFormula, parseFormula, parseRulePackage, previewPackageMigration, stableJson, type EvaluationContext } from "@chronicle/rules";
-import { changeFieldType, compileFormula, compilePackage, copyJson, decimalSource, fieldDraft, fixtureValues, forkPackage, formulaDraft, formulaSource, migrationStepDraft, newAction, newField, newPackage, numberValue, packageDraft, packageTestResults, validateDraft } from "../src/features/rule-forge-model";
+import { changeFieldType, compileFormula, compilePackage, copyJson, decimalSource, draftExpression, fieldDraft, fixtureValues, forkPackage, formulaDraft, formulaSource, migrationStepDraft, newAction, newField, newPackage, numberValue, packageDraft, packageTestResults, validateDraft } from "../src/features/rule-forge-model";
 
 const context: EvaluationContext = { seed: "00000001000000020000000300000004", actor: { n: 3 }, input: { topic: "spuren" }, knowledge: { actorId: "fixture-sera", passages: [{ passageId: "beispiel", labels: ["spuren"], experience: "erfahren" }] } };
 
@@ -118,5 +118,14 @@ describe("expression text on drafts", () => {
     expect(draftExpression({ ...action, expression: "1d20 + actor.insight" })).toBe("1d20 + actor.insight");
     expect(draftExpression({ ...action, expression: "1d20 +" })).toBe("1d20 +");
     expect(validateDraft({ ...draft, actions: [{ ...action, expression: "1d20 +" }] }).valid).toBe(false);
+  });
+  it("does not freeze a freshly created action's expression on its 1d20 default: editing .formula alone must still take effect", () => {
+    // Regression for the packageDraft hazard reproduced in newAction: if `expression` were set
+    // up front, draftExpression's short-circuit on `expression` would keep printing "1d20" forever
+    // because RuleForge.tsx edits actions through `.formula` only, never touching `.expression`.
+    const action = newAction([]);
+    expect(draftExpression(action)).toBe("1d20");
+    const edited = { ...action, formula: formulaDraft(parseFormula("2d6 + actor.staerke")) };
+    expect(draftExpression(edited)).toBe("2d6 + actor.staerke");
   });
 });

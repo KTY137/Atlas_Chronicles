@@ -3,8 +3,9 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { FormulaField, FormulaExampleContext } from "../src/features/FormulaField";
+import { FormulaField, FormulaExampleContext, displayAnalysis, isExternalValue } from "../src/features/FormulaField";
 import { newField } from "../src/features/rule-forge-model";
+import { analyzeFormula } from "../src/features/formula-sugar";
 
 const fields = [{ ...newField("geschick"), label: "Geschick", defaultValue: "3" }];
 const sources = { actor: [{ id: "geschick", label: "Geschick", type: "number" as const }], input: [] };
@@ -27,5 +28,34 @@ describe("formula field", () => {
     // "Bausteine" is the current view-switch label and legitimately contains "Baustein"; the
     // lookahead excludes it while still catching the old singular builder vocabulary.
     expect(render("1")).not.toMatch(/Baustein(?!e)|Linker Wert|Rechter Wert|Ausdruck/);
+  });
+});
+
+// The two guards below (external value replaces the typed text; the component's own emissions do
+// not) live inside a `useEffect` that never runs under `renderToStaticMarkup` — SSR has no commit
+// phase, so effects are pure no-ops there, and this suite has no jsdom/interactive DOM to re-render
+// the component with new props and let React actually run them. That path genuinely needs a DOM;
+// rather than fake it, the exact predicate the effect uses is extracted and tested directly here.
+describe("external-value guard (isExternalValue)", () => {
+  it("does not treat an echo of our own last emission as an external value", () => {
+    expect(isExternalValue("1d20 + actor.geschick", "1d20 + actor.geschick")).toBe(false);
+  });
+  it("treats a different incoming value (opening a package, undo) as external", () => {
+    expect(isExternalValue("2d6", "1d20")).toBe(true);
+  });
+});
+
+describe("incomplete-block display (displayAnalysis)", () => {
+  const sourcesLocal = { actor: [{ id: "geschick", label: "Geschick", type: "number" as const }], input: [] };
+  it("passes a valid analysis through unchanged while no block is incomplete", () => {
+    const analysis = analyzeFormula("1d20 + actor.geschick", sourcesLocal, { allowDice: true, allowKnowledge: false });
+    expect(displayAnalysis(analysis, false)).toBe(analysis);
+  });
+  it("overrides an otherwise-valid analysis with the incomplete-block error, keeping text, canonical and spans", () => {
+    const analysis = analyzeFormula("1d20 + actor.geschick", sourcesLocal, { allowDice: true, allowKnowledge: false });
+    const shown = displayAnalysis(analysis, true);
+    expect(shown.ok).toBe(false);
+    expect(shown.error?.message).toBe("Ergänze den leeren Wert in den Bauteilen; bis dahin ist die Formel unvollständig.");
+    expect(shown.text).toBe(analysis.text); expect(shown.canonical).toBe(analysis.canonical); expect(shown.spans).toBe(analysis.spans);
   });
 });
