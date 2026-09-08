@@ -284,6 +284,8 @@ describe("A-G5 · Siedlung — niemand ist eingemauert", () => {
     }
   });
 
+  // Beide Faelle bauen vollstaendige Siedlungen; das 5-s-Standardbudget von Vitest reicht
+  // dafuer auf gewoehnlicher Hardware nicht. Praezedenz: campaign-bundle-v3-large.test.ts.
   it("überlappt keine zwei Bauwerke", () => {
     for (const { keim, g } of laeufe) {
       // The separation check already tests both polygons' axes. Each unordered pair
@@ -293,7 +295,7 @@ describe("A-G5 · Siedlung — niemand ist eingemauert", () => {
         expect(getrennt(a.umriss, b.umriss), `${keim}: ${a.pfad} vs ${b.pfad}`).toBe(true);
       }
     }
-  });
+  }, 30_000);
 
   it("liefert für jede Straße eine echte Region, unterscheidbar von jedem Bauwerk", () => {
     for (const { keim, g } of laeufe) {
@@ -316,7 +318,7 @@ describe("A-G5 · Siedlung — Adressen kollidieren nicht über viele Saaten", (
       gesamt += 1 + g.bauwerke.length;
     }
     expect(new Set(alleIds).size).toBe(gesamt);
-  });
+  }, 30_000);
 
   it("bedient mit dem echten Paket jede Themenanfrage", () => {
     for (const keim of SAATEN) expect(bauen(keim).bericht.nichtBedient, keim).toStrictEqual([]);

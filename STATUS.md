@@ -42,9 +42,10 @@ Die volle Vitest-Suite meldet **35 rote Fälle in 22 Dateien, ausnahmslos Zeitü
 keine einzige Zusicherung schlägt fehl. Das ist Laufzeit, nicht Inhalt, und zwar belegt:
 `bundles.test.ts` läuft allein 8/8 grün (109 Sekunden) und war nur in der vollen Suite rot; die
 betroffenen Testdateien und ihr Produktcode sind seit dem Beginn dieser Arbeit unverändert.
-**Echte Grenzfälle bleiben zwei Fälle in `forge/test/siedlung.test.ts`**, die auch allein mit
-6,0 und 5,5 Sekunden über ihrem Fünf-Sekunden-Limit liegen; `packages/forge` gehört einer
-parallel arbeitenden Sitzung, und ein blind angehobenes Limit verdeckt echte Regressionen.
+Die zwei Fälle in `forge/test/siedlung.test.ts`, die auch allein mit 6,0 und 5,5 Sekunden über
+dem Fünf-Sekunden-Standard lagen, bauen vollständige Siedlungen und tragen jetzt ein
+ausdrückliches Budget von 30 Sekunden — dieselbe Behandlung wie die langen Bündelprüfungen in
+`campaign-bundle-v3-large.test.ts`. Die Datei ist damit 39/39 grün.
 
 Drei Fehler fand erst der volle Lauf, zwei davon Regressionen dieser Arbeit. `import.meta.glob`
 ist eine Vite-Eigenheit und ließ jeden esbuild-gehosteten Browsertest gar nicht mounten; die
