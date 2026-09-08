@@ -55,7 +55,18 @@ ins Leere; die Konfiguration pinnt jetzt `de-DE`. Der Abschalt-Prüfstand mockte
 ohne `drainAppChronist`.
 
 Browserabläufe nach den Korrekturen: `map-editor-cartography` und `map-studio` 5/5,
-`sprache` und `meine-figur` 4/4. Nicht geprüft: ein neues Desktop-Paket mit diesem Stand,
+`sprache` und `meine-figur` 4/4, `chronist` 5/5, `actors` 2/2.
+
+**Der Desktop-Smoke stoppt nach zehn grünen Prüfungen**, einschließlich der 300 Genre-Assets,
+und läuft dann in `smoke.mjs:162` in einen Timeout: er wartet auf den Hilfetext
+`Kartenrevision <n>.` in der Seitenüberschrift des Kartenstudios. Den gibt es nicht mehr —
+per Bisect belegt: bei `858f427` vorhanden, nach dem Merge von main weg, also im
+Kartenstudio-Umbau entfernt und nicht durch das Sprachpaket. Bildschirmfoto und Belege unter
+`.local/desktop-profiles/smoke-UOgc4i/`; darauf ist zu sehen, dass alles andere stimmt.
+Der Fall liegt bei der Sitzung, die das Kartenstudio besitzt: entweder kehrt die
+Revisionsanzeige zurück — dafür spricht, dass daneben „Kartenrevision speichern" steht —
+oder der Smoke wird auf einen anderen Beleg derselben Zusage umgehängt. **Es gibt deshalb
+keinen neuen Installer mit diesem Stand.** Nicht geprüft außerdem:
 NVDA, Windows Hello und gemessene Budgets. `packages/client/src/features/formula-sugar.ts`
 kam mit dem Merge von `main` und ist noch nicht an die Oberfläche angeschlossen; ihre
 vierzehn deutschen Klartextfehler übersetzt die Sitzung, die sie einbaut.
