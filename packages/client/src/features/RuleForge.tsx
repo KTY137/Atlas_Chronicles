@@ -3,22 +3,24 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { ArrowDown, ArrowUp, BookOpen, Check, Download, FlaskConical, Hammer, Plus, Trash2, TriangleAlert, Upload } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
-import { ENGINE_VERSION, RULE_LIMITS, parseSupportedRulePackage as parseRulePackage, stableJson, type FieldSchema, type FormulaType, type MigrationPreview, type PackagePin, type AnyRulePackage as RulePackage } from "@chronicle/rules";
+import { ENGINE_VERSION, RULE_LIMITS, parseSupportedRulePackage as parseRulePackage, stableJson, type FormulaType, type MigrationPreview, type PackagePin, type AnyRulePackage as RulePackage } from "@chronicle/rules";
 import { ApiError, api, apiPath, errorText, type Campaign } from "../api";
 import { useResource, useTask } from "../hooks";
-import { FormulaField } from "./FormulaField";
+import { FormulaExampleContext, FormulaField } from "./FormulaField";
+import type { ExampleFigure } from "./formula-example";
 import { RuleActionEditor } from "./RuleActionEditor";
+import { FieldList } from "./RuleFieldList";
 import { RuleForgePreview } from "./RuleForgePreview";
 import { HtbahTemplate } from "./HtbahTemplate";
 import { RuleDeclarativeEditor, RuleActionExtensions, AttributionEditor } from "./RuleDeclarativeEditor";
 import { RuleAttribution } from "./RuleComputedFields";
 import type { RulesState } from "./game-api";
-import { changeFieldType, draftExpression, forkPackage, localKey, migrationStepDraft, moveItem, newField, newPackage, packageDraft, packageTestResults, uniqueId, validateDraft, type DraftAction, type DraftField, type DraftMigration, type DraftMigrationStep, type DraftSection, type FormulaDraft, type RuleDraft } from "./rule-forge-model";
+import { draftExpression, forkPackage, localKey, migrationStepDraft, moveItem, newField, newPackage, packageDraft, packageTestResults, uniqueId, validateDraft, type DraftAction, type DraftField, type DraftMigration, type DraftMigrationStep, type DraftSection, type FormulaDraft, type RuleDraft } from "./rule-forge-model";
 import "./rule-forge.css";
 
 interface RuleReview { from: PackagePin; to: PackagePin; pinVersion: number; migration: MigrationPreview | null; previewHash: string }
 type EditorTab = "package" | "fields" | "sheet" | "actions" | "computed" | "tests" | "migrations";
-const tabs: [EditorTab, string][] = [["package", "Paket"], ["fields", "Felder"], ["sheet", "Bogen"], ["actions", "Aktionen"], ["computed", "Berechnungen"], ["tests", "Pakettests"], ["migrations", "Migration"]];
+const tabs: [EditorTab, string][] = [["package", "Paket"], ["fields", "Attribute"], ["sheet", "Bogen"], ["actions", "Aktionen"], ["computed", "Abgeleitet"], ["tests", "Pakettests"], ["migrations", "Migration"]];
 const packageKey = (pkg: PackagePin) => `${pkg.id}@${pkg.version}`;
 function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, current: EditorTab, onChange: (tab: EditorTab) => void) {
   const index = tabs.findIndex(([id]) => id === current);
@@ -26,13 +28,13 @@ function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, current: EditorTa
   if (next < 0) return; event.preventDefault(); const id = tabs[next]![0]; onChange(id); document.getElementById(`rf-tab-${id}`)?.focus();
 }
 const tabDescriptions: Record<EditorTab, string> = {
-  package: "Name, Version, Kennung und Lizenz – die Grunddaten dieses Regelpakets.",
-  fields: "Die Werte jeder Figur, z. B. Kraft oder Geschick – die Bausteine für Bogen und Aktionen.",
-  sheet: "Wie die Felder oben auf dem Charakterbogen angeordnet werden.",
-  actions: "Die Würfe: Formel, Boni und Erfolgsschwelle jeder Aktion.",
-  computed: "Zusätzliche, aus vorhandenen Feldern berechnete Werte und Bedingungen für einen gültigen Bogen (erweitertes Paketformat).",
-  tests: "Feste Beispiele, die bei jeder Installation automatisch nachgerechnet werden.",
-  migrations: "Wie vorhandene Charakterbögen beim Wechsel auf diese Version übernommen werden.",
+  package: "Name, Version, Kennung und Lizenz: die Grunddaten dieses Regelwerks.",
+  fields: "Attribute: die Werte, die jede Figur trägt, zum Beispiel Geschick oder Lebenspunkte.",
+  sheet: "Bogen: wie die Attribute auf dem Charakterbogen angeordnet sind.",
+  actions: "Aktionen: was eine Figur tun kann und wie dafür gewürfelt wird.",
+  computed: "Abgeleitet: Werte, die sich aus Attributen ergeben, Regeln für einen gültigen Bogen und Balken wie Lebenspunkte.",
+  tests: "Pakettests: feste Beispiele, die bei jeder Installation nachgerechnet werden.",
+  migrations: "Migration: wie vorhandene Bögen beim Wechsel auf diese Version übernommen werden.",
 };
 
 /**
@@ -107,13 +109,13 @@ function explainValidationError(message: string): string {
     [/^layout: duplicate section id$/, "Zwei Abschnitte haben dieselbe Kennung. Vergib im Reiter „Bogen“ unterschiedliche Abschnittskennungen."],
     [/^layout: duplicate field reference$/, "Ein Feld ist im selben Abschnitt doppelt eingetragen. Entferne den doppelten Eintrag im Reiter „Bogen“."],
     [/^layout: unknown field reference$/, "Der Bogen verweist auf ein Feld, das es nicht mehr gibt. Öffne den Reiter „Bogen“ und entferne oder ersetze den verwaisten Eintrag."],
-    [/^field: reversed range$/, "Bei einem Feld ist das Minimum größer als das Maximum. Öffne den Reiter „Felder“ und stelle sicher, dass jedes Minimum kleiner oder gleich seinem Maximum ist."],
+    [/^field: reversed range$/, "Bei einem Attribut ist das Minimum größer als das Maximum. Öffne den Reiter „Attribute“ und stelle sicher, dass jedes Minimum kleiner oder gleich seinem Maximum ist."],
     [/outside declared range$/, "Ein Vorgabewert liegt außerhalb von Minimum und Maximum. Öffne den betroffenen Reiter und passe entweder den Vorgabewert oder die Grenzen an."],
     [/invalid string length$/, "Ein Text ist leer oder länger als das erlaubte Zeichenlimit. Öffne den betroffenen Reiter und kürze den Text oder erhöhe „Maximale Zeichen“."],
     [/^action: result must be numeric$/, "Das Ergebnis einer Aktion muss eine Zahl sein. Öffne den Reiter „Aktionen“ und prüfe die Formel – sie darf nicht mit einem Vergleich oder einem Text enden."],
     [/^package: action required$/, "Ein Regelpaket braucht mindestens eine Aktion. Lege im Reiter „Aktionen“ eine erste Aktion an."],
-    [/^formula: unknown (actor|input)\.(.+)$/, "Die Formel verwendet ein Feld, das es nicht mehr gibt. Öffne den Reiter „Aktionen“, such den markierten Baustein und wähle dort ein vorhandenes Feld neu aus."],
-    [/dice forbidden$/, "In einer Versionsmigration sind Würfel nicht erlaubt, nur Berechnungen aus dem bisherigen Zahlenwert. Entferne den Würfel-Baustein aus der Formel im Reiter „Migration“."],
+    [/^formula: unknown (actor|input)\.(.+)$/, "Die Formel verwendet ein Feld, das es nicht mehr gibt. Öffne den Reiter „Aktionen“, such die markierte Stelle in der Formel und wähle dort ein vorhandenes Feld neu aus."],
+    [/dice forbidden$/, "In einer Versionsmigration sind Würfel nicht erlaubt, nur Berechnungen aus dem bisherigen Zahlenwert. Entferne den Würfel an der markierten Stelle in der Formel im Reiter „Migration“."],
     [/^migration: numeric result required$/, "Die Formel zur Zahlenumrechnung muss eine Zahl ergeben. Prüfe die Formel im betroffenen Migrationsschritt."],
     [/knowledge predicates forbidden$/, "Gehaltenes Wissen darf in einer Migration nicht abgefragt werden, nur der bisherige Zahlenwert. Passe die Formel im Reiter „Migration“ an."],
     [/^migration: must target this package version from a different version$/, "Ein Migrationsweg muss von einer anderen Version zu dieser Version führen. Ändere die Ausgangsversion im Reiter „Migration“."],
@@ -129,6 +131,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const [selected, setSelected] = useState<string | null>(null), [draft, setDraft] = useState<RuleDraft | null>(null), [locked, setLocked] = useState(false), [dirty, setDirty] = useState(false);
   const [tab, setTab] = useState<EditorTab>("package"), [review, setReview] = useState<(RuleReview & { fingerprint: string }) | null>(null), [acknowledged, setAcknowledged] = useState(false), [notice, setNotice] = useState("");
   const [justInstalled, setJustInstalled] = useState<RulePackage | null>(null), upload = useRef<HTMLInputElement>(null);
+  const [figure, setFigure] = useState<ExampleFigure | null>(null);
   const packages = useMemo(() => { const values = resource.data?.packages ?? []; return justInstalled && !values.some(p => packageKey(p) === packageKey(justInstalled)) ? [...values, justInstalled] : values; }, [resource.data, justInstalled]);
   const base = packages.find(p => packageKey(p) === selected) ?? packages.find(p => resource.data && packageKey(p) === packageKey(resource.data.pin)) ?? packages[0];
   const baseDraft = useMemo(() => base ? packageDraft(base) : null, [base]), current = draft ?? baseDraft;
@@ -187,15 +190,16 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
       <p className="rf-help">Installierte Versionen bleiben unveränderlich.</p>
       {packages.map(item => <button type="button" key={packageKey(item)} className={`rf-catalog-item ${!editable && current?.id === item.id && current.version === item.version ? "is-selected" : ""}`} disabled={task.busy} onClick={() => selectPackage(item)} aria-pressed={!editable && current?.id === item.id && current.version === item.version}><strong>{item.name}</strong><span>{item.version}{resource.data && packageKey(item) === packageKey(resource.data.pin) ? " · Aktiv in dieser Runde" : " · Installiert"}</span><small>{item.id}</small></button>)}
       {!packages.length ? <p>Noch kein Paket geladen. Du kannst einen Entwurf anlegen oder eine Paketdatei öffnen.</p> : null}
-    </aside><section className="rf-editor" aria-label="Regelpaket">
+    </aside><section className="rf-editor" aria-label="Regelpaket"><FormulaExampleContext.Provider value={figure}>
       {current ? <><div className="rf-section-heading"><div><h2>{current.name || "Unbenanntes Regelpaket"}</h2><span className="rf-help">{editable ? dirty ? "Ungespeicherter Entwurf" : "Entwurf" : "Installierte Version · schreibgeschützt"} · {current.version}</span></div><div className="rf-toolbar">
         {!editable && pkg ? <Button disabled={task.busy} onClick={() => { try { begin(forkPackage(pkg, packages)); } catch (error) { task.setError(errorText(error)); } }}>Neue Version erstellen</Button> : null}
         <Button disabled={!pkg || task.busy} onClick={download}><Download size={15} />Paketdatei</Button></div></div>
-        <div className="rf-card" aria-label="Aufbau dieses Regelpakets"><div className="rf-section-heading"><h3>Aufbau dieses Pakets</h3><span className="rf-help">Schritt {tabs.findIndex(([id]) => id === tab) + 1} von {tabs.length}</span></div><p className="rf-help">{tabDescriptions[tab]}</p><div className="rf-toolbar"><span className="rf-node-badge">{current.fields.length} Felder</span><span className="rf-node-badge">{current.sections.length} Abschnitte</span><span className="rf-node-badge">{current.actions.length} Aktionen</span><span className="rf-node-badge">{current.migrations.length} Migrationswege</span><span className="rf-node-badge">{current.selfTests.length} Pakettests</span></div></div>
+        <div className="rf-card rf-object" aria-label="Die Figur in diesem Regelwerk"><div className="rf-section-heading"><h3>Die Figur in diesem Regelwerk</h3><span className="rf-help">Schritt {tabs.findIndex(([id]) => id === tab) + 1} von {tabs.length}</span></div><p className="rf-help">{tabDescriptions[tab]}</p>
+          <div className="rf-toolbar"><span className="rf-node-badge">{current.fields.length} Attribute</span><span className="rf-node-badge">{(current.computed?.length ?? 0)} abgeleitet</span><span className="rf-node-badge">{(current.constraints?.length ?? 0)} Regeln</span><span className="rf-node-badge">{(current.vitals?.length ?? 0)} Balken</span><span className="rf-node-badge">{current.actions.length} Aktionen</span><span className="rf-node-badge">{current.selfTests.length} Pakettests</span></div></div>
         <div className="rf-tabs" role="tablist" aria-label="Regelpaket bearbeiten">{tabs.map(([id, label], index) => <button key={id} type="button" role="tab" aria-selected={tab === id} aria-controls={`rf-panel-${id}`} id={`rf-tab-${id}`} tabIndex={tab === id ? 0 : -1} title={`Schritt ${index + 1} von ${tabs.length}: ${tabDescriptions[id]}`} onKeyDown={event => navigateTabs(event, id, setTab)} onClick={() => setTab(id)}>{label}{id === "tests" && current.selfTests.length ? ` (${current.selfTests.length})` : ""}{errorLocation?.tab === id ? <TriangleAlert size={12} aria-label="Betrifft vermutlich den aktuellen Fehler" /> : null}</button>)}</div>
         <fieldset className="rf-editor-fields" disabled={tab !== "actions" && (!editable || task.busy)}><div role="tabpanel" id={`rf-panel-${tab}`} aria-labelledby={`rf-tab-${tab}`}>
           {tab === "package" ? <><PackageEditor draft={current} onChange={edit} />{pkg ? <RuleAttribution pkg={pkg} /> : null}{current.attribution ? <AttributionEditor value={current.attribution} onChange={attribution => edit({ ...current, attribution })} /> : null}</> : null}
-          {tab === "fields" ? <FieldList title="Charakterfelder" fields={current.fields} onChange={fields => edit({ ...current, fields, sections: current.sections.map(s => ({ ...s, fieldKeys: s.fieldKeys.filter(id => fields.some(f => f.localId === id)) })) })} /> : null}
+          {tab === "fields" ? <FieldList title="Attribute" fields={current.fields} onChange={fields => edit({ ...current, fields, sections: current.sections.map(s => ({ ...s, fieldKeys: s.fieldKeys.filter(id => fields.some(f => f.localId === id)) })) })} /> : null}
           {tab === "sheet" ? <SheetEditor fields={current.fields} sections={current.sections} onChange={sections => edit({ ...current, sections })} /> : null}
           {tab === "actions" ? <RuleActionEditor draft={current} disabled={!editable || task.busy} onChange={actions => edit({ ...current, actions })} /> : null}
           {tab === "computed" ? <RuleDeclarativeEditor draft={current} onChange={edit} /> : null}
@@ -211,9 +215,9 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
           {readyReview && !exactInstalled ? <p className="rf-help">Installiere zuerst genau diese geprüfte Version. Die Vorschau bleibt für die anschließende Aktivierung erhalten.</p> : null}
         </div>
       </> : <EmptyState title="Leg dein erstes Regelpaket an." action={<div className="rf-toolbar"><Button onClick={() => begin(starterDraft(authorName, packages))}><Plus size={16} />Neues Paket beginnen</Button><Button onClick={() => upload.current?.click()}><Upload size={16} />Paketdatei öffnen</Button></div>}>Ein Regelpaket bündelt Charakterfelder wie Kraft oder Geschick, den Aufbau des Charakterbogens und Aktionen zu einer festen Version. Eine Aktion ist ein Wurf wie „1d20 plus Geschick, Erfolg ab 15“: ein Würfel, ein Charakterwert und eine Zahl, ab der die Aktion gelingt. „Neues Paket beginnen“ legt genau so ein Beispiel an, das du danach frei umbaust.</EmptyState>}
-    </section></div>
+    </FormulaExampleContext.Provider></section></div>
     {!pkg && lastValidPkg ? <Notice>Die Testtafel unten zeigt zur Orientierung weiter die zuletzt gültige Fassung (Version {lastValidPkg.version}), statt beim Bearbeiten zu verschwinden. Dein aktueller Entwurf ist noch nicht gültig: {validation && !validation.valid ? explainValidationError(validation.error) : ""}</Notice> : null}
-    <RuleForgePreview pkg={previewPkg} onSaveTest={editable && current && !task.busy && current.selfTests.length < 64 ? test => edit({ ...current, includeSelfTests: true, selfTests: [...current.selfTests, test] }) : undefined} />
+    <RuleForgePreview pkg={previewPkg} onFigure={setFigure} onSaveTest={editable && current && !task.busy && current.selfTests.length < 64 ? test => edit({ ...current, includeSelfTests: true, selfTests: [...current.selfTests, test] }) : undefined} />
   </div>;
 }
 
@@ -226,31 +230,6 @@ function PackageEditor({ draft, onChange }: { draft: RuleDraft; onChange(value: 
 function OrderButtons({ index, length, onMove }: { index: number; length: number; onMove(delta: -1 | 1): void }) {
   return <span className="rf-order"><Button variant="quiet" disabled={index === 0} aria-label="Nach oben verschieben" onClick={() => onMove(-1)}><ArrowUp size={14} /></Button><Button variant="quiet" disabled={index === length - 1} aria-label="Nach unten verschieben" onClick={() => onMove(1)}><ArrowDown size={14} /></Button></span>;
 }
-export function FieldList({ fields, onChange, title }: { fields: DraftField[]; onChange(fields: DraftField[]): void; title: string }) {
-  return <><div className="rf-section-heading"><h3>{title}</h3><Button disabled={fields.length >= RULE_LIMITS.fields} onClick={() => onChange([...fields, newField(uniqueId("feld", fields.map(f => f.id)))])}><Plus size={15} />Feld hinzufügen</Button></div><p className="rf-help">Jedes Feld erhält einen Typ, eine Vorgabe und passende Grenzen. Die Feldkennung wird in Formeln als actor.kennung angesprochen: Sie muss mit einem Kleinbuchstaben beginnen und darf danach nur Kleinbuchstaben, Ziffern, „_“ und „-“ enthalten, keine Umlaute, keine Großbuchstaben, z. B. geschick oder leben_max.</p>
-    {!fields.length ? <p>Noch keine Felder. Füge oben ein Feld hinzu, z. B. „Geschick“ als ganze Zahl von 0 bis 6.</p> : null}{fields.map((field, index) => <FieldEditor key={field.localId} field={field} index={index} length={fields.length} onChange={next => onChange(fields.map(f => f.localId === field.localId ? next : f))} onRemove={() => onChange(fields.filter(f => f.localId !== field.localId))} onMove={delta => onChange(moveItem(fields, index, delta))} />)}</>;
-}
-function FieldEditor({ field, index, length, onChange, onRemove, onMove }: { field: DraftField; index: number; length: number; onChange(value: DraftField): void; onRemove(): void; onMove(delta: -1 | 1): void }) {
-  const numericField = field.type === "integer" || field.type === "number";
-  const min = Number(field.minimum), max = Number(field.maximum), def = Number(field.defaultValue);
-  const idInvalid = field.id.trim() !== "" && !/^[a-z][a-z0-9_-]*$/.test(field.id);
-  const rangeInverted = numericField && field.minimum.trim() !== "" && field.maximum.trim() !== "" && Number.isFinite(min) && Number.isFinite(max) && min > max;
-  const defaultOutOfRange = numericField && !rangeInverted && field.defaultValue.trim() !== "" && Number.isFinite(def) && Number.isFinite(min) && Number.isFinite(max) && (def < min || def > max);
-  const defaultTooLong = field.type === "string" && field.maxLength.trim() !== "" && Number.isFinite(Number(field.maxLength)) && field.defaultValue.length > Number(field.maxLength);
-  return <article className="rf-card"><div className="rf-section-heading"><h4>{field.label || `Feld ${index + 1}`}</h4><span className="rf-toolbar"><OrderButtons index={index} length={length} onMove={onMove} /><Button variant="quiet" aria-label={`Feld ${field.label} entfernen`} onClick={onRemove}><Trash2 size={15} /></Button></span></div>
-    <div className="rf-form-grid"><label>Bezeichnung<input value={field.label} maxLength={120} required onChange={e => onChange({ ...field, label: e.target.value })} /></label><label>Feldkennung<input value={field.id} maxLength={96} required spellCheck={false} onChange={e => onChange({ ...field, id: e.target.value })} /><small>So heißt das Feld in Formeln, z. B. actor.geschick. Nur Kleinbuchstaben, Ziffern, „_“ und „-“, beginnend mit einem Buchstaben.</small></label><label>Typ<select value={field.type} onChange={e => onChange(changeFieldType(field, e.target.value as FieldSchema["type"]))}><option value="integer">Ganze Zahl</option><option value="number">Zahl mit Nachkommastellen</option><option value="string">Text</option><option value="boolean">Wahr / falsch</option></select></label>
-      <label>Vorgabewert{field.type === "boolean" ? <select value={field.defaultValue} onChange={e => onChange({ ...field, defaultValue: e.target.value })}><option value="false">Falsch</option><option value="true">Wahr</option></select> : <input value={field.defaultValue} type={field.type === "string" ? "text" : "number"} step={field.type === "integer" ? 1 : "any"} onChange={e => onChange({ ...field, defaultValue: e.target.value })} />}<small>Der Wert, den eine neue Figur erhält, bevor sie ihn ändert.</small></label>
-      {numericField ? <><label>Minimum<input type="number" value={field.minimum} step={field.type === "integer" ? 1 : "any"} required onChange={e => onChange({ ...field, minimum: e.target.value })} /></label><label>Maximum<input type="number" value={field.maximum} step={field.type === "integer" ? 1 : "any"} required onChange={e => onChange({ ...field, maximum: e.target.value })} /><small>Erlaubter Bereich, z. B. 0 bis 6 für eine kleine Eigenschaft oder 0 bis 20 für einen Fertigkeitswert.</small></label></> : null}
-      {field.type === "string" ? <label>Maximale Zeichen<input type="number" value={field.maxLength} min={1} max={4096} step={1} required onChange={e => onChange({ ...field, maxLength: e.target.value })} /><small>Höchste erlaubte Textlänge, z. B. 120 für einen Namen.</small></label> : null}
-    </div>
-    {idInvalid ? <Notice error>Die Feldkennung „{field.id}“ ist ungültig: Kleinbuchstaben, Ziffern, „_“ und „-“, das erste Zeichen muss ein Buchstabe sein. Beispiel: geschick.</Notice> : null}
-    {rangeInverted ? <Notice error>Minimum ({field.minimum}) ist größer als Maximum ({field.maximum}). Setze das Minimum auf einen Wert kleiner oder gleich dem Maximum.</Notice> : null}
-    {defaultOutOfRange ? <Notice error>Der Vorgabewert ({field.defaultValue}) liegt außerhalb von Minimum und Maximum. Wähle einen Wert zwischen {field.minimum} und {field.maximum}.</Notice> : null}
-    {defaultTooLong ? <Notice error>Der Vorgabewert ist länger als das Zeichenlimit ({field.maxLength}). Kürze den Text oder erhöhe „Maximale Zeichen“.</Notice> : null}
-    {field.type === "string" ? <><label className="rf-check"><input type="checkbox" checked={field.hasEnum} onChange={e => onChange({ ...field, hasEnum: e.target.checked, enumValues: e.target.checked && !field.enumValues.length ? [field.defaultValue || "Wert"] : field.enumValues })} />Auswahl auf festgelegte Texte beschränken</label>{field.hasEnum ? <div className="rf-enum">{field.enumValues.map((item, i) => <div className="rf-inline" key={i}><label>Auswahlwert {i + 1}<input value={item} maxLength={4096} onChange={e => onChange({ ...field, enumValues: field.enumValues.map((value, n) => n === i ? e.target.value : value) })} /></label><Button variant="quiet" aria-label={`Auswahlwert ${i + 1} entfernen`} onClick={() => onChange({ ...field, enumValues: field.enumValues.filter((_, n) => n !== i) })}><Trash2 size={14} /></Button></div>)}<Button disabled={field.enumValues.length >= 64} onClick={() => onChange({ ...field, enumValues: [...field.enumValues, ""] })}><Plus size={14} />Auswahlwert</Button></div> : null}</> : null}
-  </article>;
-}
-
 function SheetEditor({ fields, sections, onChange }: { fields: DraftField[]; sections: DraftSection[]; onChange(sections: DraftSection[]): void }) {
   const update = (section: DraftSection) => onChange(sections.map(s => s.localId === section.localId ? section : s));
   return <><div className="rf-section-heading"><h3>Aufbau des Charakterbogens</h3><Button disabled={sections.length >= 32} onClick={() => onChange([...sections, { localId: localKey(), id: uniqueId("abschnitt", sections.map(s => s.id)), label: "Neuer Abschnitt", fieldKeys: [] }])}><Plus size={15} />Abschnitt</Button></div><p className="rf-help">Ordne Felder in Abschnitten an, z. B. „Werte“ oder „Ausrüstung“. Die Testtafel zeigt diesen Bogen unmittelbar mit Beispielwerten; Felder ohne Abschnitt erscheinen dort automatisch unter „Weitere Felder“.</p>

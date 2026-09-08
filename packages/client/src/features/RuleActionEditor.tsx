@@ -7,7 +7,7 @@ import { RULE_LIMITS } from "@chronicle/rules";
 import { FormulaField } from "./FormulaField";
 import { sourcesFromDraft } from "./formula-sugar";
 import { RuleActionExtensions } from "./RuleDeclarativeEditor";
-import { FieldList } from "./RuleForge";
+import { FieldList } from "./RuleFieldList";
 import { draftExpression, moveItem, newAction, type DraftAction, type RuleDraft } from "./rule-forge-model";
 
 export function RuleActionEditor({ draft, disabled, onChange }: { draft: RuleDraft; disabled: boolean; onChange(actions: DraftAction[]): void }) {
@@ -28,7 +28,7 @@ export function RuleActionEditor({ draft, disabled, onChange }: { draft: RuleDra
       <div className="rf-section-heading"><h4>{action.name || "Ohne Namen"}</h4><span className="rf-toolbar"><span className="rf-order"><Button variant="quiet" disabled={index <= 0} aria-label="Nach oben verschieben" onClick={() => onChange(moveItem(draft.actions, index, -1))}><ArrowUp size={14} /></Button><Button variant="quiet" disabled={index >= draft.actions.length - 1} aria-label="Nach unten verschieben" onClick={() => onChange(moveItem(draft.actions, index, 1))}><ArrowDown size={14} /></Button></span><Button variant="quiet" onClick={() => { onChange(draft.actions.filter(a => a.localId !== action.localId)); setSelected(""); }}><Trash2 size={15} />Aktion entfernen</Button></span></div>
       <div className="rf-form-grid"><label>Name<input value={action.name} maxLength={120} onChange={event => update({ ...action, name: event.target.value })} /><small>So heißt die Aktion am Tisch, zum Beispiel Angriff.</small></label><label>Kennung<input value={action.id} maxLength={96} spellCheck={false} onChange={event => update({ ...action, id: event.target.value })} /><small>Für Pakettests und Migrationen, zum Beispiel angriff. Nur Kleinbuchstaben, Ziffern, „_" und „-", beginnend mit einem Buchstaben.</small></label></div>
       <h5>Parameter</h5><p className="rf-help">Was beim Würfeln abgefragt wird, zum Beispiel ein Bonus. In der Formel als ?kennung.</p>
-      <FieldList title="Parameter" fields={action.inputs} onChange={inputs => update({ ...action, inputs })} />
+      <FieldList title="Parameter" fields={action.inputs} onChange={inputs => update({ ...action, inputs })} compact />
       <h5>Ergebnis</h5>
       <FormulaField label="Ergebnis" help="Der Wurf mit allen Zuschlägen, zum Beispiel 1d20 + @geschick + ?bonus." value={draftExpression(action)} onChange={expression => update({ ...action, expression })} sources={sourcesFromDraft(draft.fields, action.inputs)} fields={draft.fields} inputs={action.inputs} actionId={action.id} allowDice allowKnowledge />
       <h5>Erfolg</h5>

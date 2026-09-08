@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, TestTubeDiagonal, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
 import { evaluateSupportedAction as evaluateAction, RULE_LIMITS, HTBAH_EXAMPLE_CHARACTERS, type AnyActionResult as ActionResult, type Experience, type AnyRulePackage as RulePackage, type RuleAction, type RuleActionV2, type Scalar } from "@chronicle/rules";
 import { RuleFields } from "./RuleFields";
+import type { ExampleFigure } from "./formula-example";
 import { copyJson, fixtureValues, localKey, type PackageSelfTest } from "./rule-forge-model";
 import { hasHtbahExamples, hasHtbahGuidance, RuleComputedFields } from "./RuleComputedFields";
 
@@ -18,7 +19,7 @@ const initialFixtures = (): Fixture[] => [
 const MAX_FIXTURES = 6;
 
 /** Pure, reproducible examples. This component never writes a campaign sheet or roll. */
-export function RuleForgePreview({ pkg, onSaveTest }: { pkg: RulePackage | null; onSaveTest?: (test: PackageSelfTest) => void }) {
+export function RuleForgePreview({ pkg, onFigure, onSaveTest }: { pkg: RulePackage | null; onFigure?: (figure: ExampleFigure | null) => void; onSaveTest?: (test: PackageSelfTest) => void }) {
   const [fixtures, setFixtures] = useState(initialFixtures), [selected, setSelected] = useState("");
   const [seed, setSeed] = useState("00000001000000020000000300000004");
   const action = pkg?.actions.find(a => a.id === selected) ?? pkg?.actions[0];
@@ -26,6 +27,10 @@ export function RuleForgePreview({ pkg, onSaveTest }: { pkg: RulePackage | null;
   const update = (id: string, change: Partial<Fixture>) => setFixtures(items => items.map(f => f.id === id ? { ...f, ...change } : f));
   const addFixture = () => setFixtures(items => items.length >= MAX_FIXTURES ? items : [...items, { id: localKey(), name: `Testfigur ${items.length + 1}`, values: {}, inputs: {}, passages: [] }]);
   const removeFixture = (id: string) => setFixtures(items => items.length > 2 ? items.filter(f => f.id !== id) : items);
+  useEffect(() => {
+    const first = fixtures[0];
+    onFigure?.(pkg && first ? { name: first.name, values: fixtureValues(pkg.fields, first.values), inputs: first.inputs, passages: first.passages.map(p => ({ passageId: p.passageId, labels: p.labels.split(",").map(s => s.trim()).filter(Boolean), experience: p.experience })) } : null);
+  }, [fixtures, pkg, onFigure]);
   return <section className="rf-preview" aria-labelledby="rf-preview-title">
     <div className="rf-section-heading"><h2 id="rf-preview-title"><TestTubeDiagonal size={20} />Testtafel</h2><span className="rf-node-badge">Nur Beispiele</span></div>
     <p>Vergleiche zwei oder mehr Figuren mit unterschiedlichem Wissen. Alle erhalten denselben Würfelstart, damit nur der Wissensunterschied zählt. Die Beispiele verändern keine Charaktere oder Würfe deiner Runde.</p>

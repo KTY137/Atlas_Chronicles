@@ -112,3 +112,4 @@
 .rf-list-search input { flex: 1; }
 .rf-detail h5 { margin: 20px 0 6px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
 @media (max-width: 760px) { .rf-split { grid-template-columns: minmax(0, 1fr); } }
+.rf-object .rf-toolbar { margin-top: 10px; }
