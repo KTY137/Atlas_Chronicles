@@ -10,6 +10,7 @@ import { createAtlas } from "./atlas.ts";
 import { Conflict, Gone } from "./errors.ts";
 import { createGrundriss, validateKartenOptionen, type KartenArt, type KartenStil, type KartenOptionen } from "./grundriss.ts";
 import { createTactical, tacticalHash, TacticalValidationError } from "./tactical.ts";
+import { activeMapEntrances, isMapDeleted, MapLifecycleConflict, type MapEntranceRow, type MapEnterPayload } from "./map-lifecycle.ts";
 import { tacticalPointInside } from "./tactical-state.ts";
 
 /** One durable entrance per source placement, with ordinary editable tactical maps behind it.
@@ -110,7 +111,9 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
       const scope = { parentKind: input.parentKind!, parentMapId: input.parentMapId! }; validateScope(scope); return scope;
     }
     // Legacy route remains usable only when the old unscoped address is unambiguous.
-    const rows = (await tx.query<{ map_id: string }>("SELECT map_id FROM atlas_nodes WHERE campaign_id=$1 AND id=$2 LIMIT 2", [campaignId, knotenId])).rows;
+    const rows = (await tx.query<{ map_id: string }>(`SELECT n.map_id FROM atlas_nodes n WHERE n.campaign_id=$1 AND n.id=$2
+      AND NOT EXISTS (SELECT 1 FROM map_lifecycle_events e WHERE e.campaign_id=n.campaign_id AND e.operation='map.delete'
+        AND e.payload->'preview'->'maps' @> jsonb_build_array(jsonb_build_object('kind','atlas','id',n.map_id))) LIMIT 2`, [campaignId, knotenId])).rows;
     if (rows.length !== 1) throw new Gone("knoten");
     return { parentKind: "atlas", parentMapId: rows[0]!.map_id };
   }
@@ -142,31 +145,34 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
     // regions remain enterable; a street never becomes a fake room simply for lacking a node.
     const originalDocument = original.format === "native" ? JSON.parse(original.source_text) as typeof map.document : null;
     const originalRegions = new Set(originalDocument?.geometry.regions.map(region => region.id));
+    const roles = map.cartography ? new Map(map.cartography.regions.map(region => [region.regionId, region.role])) : null;
+    const existingEntrances = new Set((await activeMapEntrances(tx, campaignId)).filter(edge => edge.parent_kind === "tactical" && edge.parent_map_id === map.id).map(row => row.knoten_id));
     const stamps = (originalDocument ?? map.document).geometry.stamps;
     const stil: KartenStil = stamps.some(stamp => stamp.a.startsWith("pk.genres/")) ? "genres"
       : stamps.some(stamp => stamp.a.startsWith("pk.zeitwelten/")) ? "zeitwelten"
       : stamps.some(stamp => stamp.a.startsWith("pk.gemalt/")) ? "gemalt" : "grundriss";
     return { scope, title: map.name, version: map.version, art, stil, setting: original.provenance.setting ?? "fantasy", nodes: map.document.geometry.regions
-      .filter(region => art !== "siedlung" || data.get(region.id)?.art === "bauwerk" || !originalRegions.has(region.id))
+      .filter(region => roles ? ["building", "room"].includes(roles.get(region.id) ?? "") || existingEntrances.has(region.id)
+        : art !== "siedlung" || data.get(region.id)?.art === "bauwerk" || !originalRegions.has(region.id))
       .map((region, index) => {
       const node = data.get(region.id), [x, y] = roomAnchor(region.punkte);
       // Drawn/imported rooms have a stable server-derived seed. Generated rooms keep their exact
       // original seed, independently of names, geometry or subsequent edits.
       const seed = node?.herkunft?.kindKeim ?? createHash("sha256").update(JSON.stringify(["chronicle-room-child-v1", campaignId, map.id, region.id])).digest("hex");
       return { knotenId: region.id, titel: node?.titel ?? `${art === "siedlung" ? "Gebäude" : "Raum"} ${index + 1}`,
-        art: node?.art ?? (art === "siedlung" ? "bauwerk" : "raum"), ...(node?.bauwerk ? { bauwerk: node.bauwerk } : {}), x, y, kindKeim: seed };
+        art: roles?.get(region.id) === "building" ? "bauwerk" : roles?.get(region.id) === "room" ? "raum" : node?.art ?? (art === "siedlung" ? "bauwerk" : "raum"), ...(node?.bauwerk ? { bauwerk: node.bauwerk } : {}), x, y, kindKeim: seed };
     }) };
   }
 
   async function address(tx: Db, campaignId: string, scope: BetretenScope, knotenId: string): Promise<AdresseRow | null> {
-    return (await tx.query<AdresseRow>(`SELECT * FROM betreten_karten
-      WHERE campaign_id=$1 AND parent_kind=$2 AND parent_map_id=$3 AND knoten_id=$4`,
-    [campaignId, scope.parentKind, scope.parentMapId, knotenId])).rows[0] ?? null;
+    return (await activeMapEntrances(tx, campaignId)).find(edge => edge.parent_kind === scope.parentKind
+      && edge.parent_map_id === scope.parentMapId && edge.knoten_id === knotenId) ?? null;
   }
 
   async function ancestry(tx: Db, userId: string, campaignId: string, scope: BetretenScope): Promise<MapAncestor[]> {
     await createCampaigns(tx, cfg).requireMember(userId, campaignId, ["leitung"]);
     const result: MapAncestor[] = [], seen = new Set<string>();
+    const edges = await activeMapEntrances(tx, campaignId);
     let current: BetretenScope | null = scope;
     while (current) {
       const key = `${current.parentKind}:${current.parentMapId}`;
@@ -178,7 +184,8 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
       if (!parent) throw new Gone("parent-map");
       result.unshift({ kind: current.parentKind, id: current.parentMapId, title: parent.title });
       if (current.parentKind === "atlas") break;
-      const edge: AdresseRow | undefined = (await tx.query<AdresseRow>("SELECT * FROM betreten_karten WHERE campaign_id=$1 AND map_id=$2", [campaignId, current.parentMapId])).rows[0];
+      const currentId: string = current.parentMapId;
+      const edge: AdresseRow | undefined = edges.find(candidate => candidate.map_id === currentId);
       current = edge ? { parentKind: edge.parent_kind, parentMapId: edge.parent_map_id } : null;
     }
     return result;
@@ -203,7 +210,8 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
     return db.transaction(async tx => {
       await createCampaigns(tx, cfg).requireMember(userId, campaignId, ["leitung"]);
       const parent = await source(tx, userId, campaignId, scope);
-      const edges = new Map((await tx.query<AdresseRow>("SELECT * FROM betreten_karten WHERE campaign_id=$1 AND parent_kind=$2 AND parent_map_id=$3", [campaignId, scope.parentKind, scope.parentMapId])).rows.map(edge => [edge.knoten_id, edge]));
+      const edges = new Map((await activeMapEntrances(tx, campaignId)).filter(edge => edge.parent_kind === scope.parentKind
+        && edge.parent_map_id === scope.parentMapId).map(edge => [edge.knoten_id, edge]));
       return { art: parent.art, stil: parent.stil, setting: parent.setting,
         nodes: parent.nodes.map(({ kindKeim, erzeugungsArt, ...node }) => ({ ...node, canEnter: kindKeim !== null || edges.has(node.knotenId), vorhandeneKarteId: edges.get(node.knotenId)?.map_id ?? null })),
         version: parent.version, ancestors: await ancestry(tx, userId, campaignId, scope) };
@@ -218,18 +226,28 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
       if (!(await tx.query(`SELECT c.id FROM campaigns c JOIN campaign_memberships m ON m.campaign_id=c.id
         WHERE c.id=$1 AND m.user_id=$2 FOR UPDATE OF c FOR SHARE OF m`, [campaignId, userId])).rowCount) throw new Gone();
       await createCampaigns(tx, cfg).requireMember(userId, campaignId, ["leitung"]);
-      const scope = await resolveScope(tx, campaignId, input.knotenId, input);
-      const parent = await source(tx, userId, campaignId, scope), node = parent.nodes.find(candidate => candidate.knotenId === input.knotenId);
-      if (!node) throw new Gone("knoten");
       const requestHash = tacticalHash({ userId, campaignId, input });
       const receipt = (await tx.query<{ request_hash: string; response: BetretenResult }>("SELECT request_hash,response FROM betreten_command_receipts WHERE command_id=$1", [input.commandId])).rows[0];
       if (receipt) {
         if (receipt.request_hash !== requestHash) throw new Conflict();
+        if (await isMapDeleted(tx, campaignId, "tactical", receipt.response.mapId))
+          throw new MapLifecycleConflict("map-deleted", "Die damals geöffnete Unterkarte wurde gelöscht. Bitte den aktuellen Eingang erneut öffnen.");
         await createTactical(tx, cfg).getMap(userId, campaignId, receipt.response.mapId);
         return receipt.response;
       }
+      const later = (await tx.query<{ operation: string; request_hash: string; ack: BetretenResult }>("SELECT operation,request_hash,ack FROM map_lifecycle_events WHERE command_id=$1", [input.commandId])).rows[0];
+      if (later) {
+        if (later.operation !== "map.enter" || later.request_hash !== requestHash) throw new Conflict();
+        if (await isMapDeleted(tx, campaignId, "tactical", later.ack.mapId))
+          throw new MapLifecycleConflict("map-deleted", "Die damals geöffnete Unterkarte wurde gelöscht. Bitte den aktuellen Eingang erneut öffnen.");
+        await createTactical(tx, cfg).getMap(userId, campaignId, later.ack.mapId); return later.ack;
+      }
+      const scope = await resolveScope(tx, campaignId, input.knotenId, input);
+      const parent = await source(tx, userId, campaignId, scope), node = parent.nodes.find(candidate => candidate.knotenId === input.knotenId);
+      if (!node) throw new Gone("knoten");
       const existing = await address(tx, campaignId, scope, input.knotenId);
       let result: BetretenResult;
+      let newEdge: MapEntranceRow | null = null;
       if (existing) {
         if (input.targetMapId && input.targetMapId !== existing.map_id) throw new Conflict();
         await createTactical(tx, cfg).getMap(userId, campaignId, existing.map_id);
@@ -240,7 +258,7 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
         let mapId: string, keimHash: string | null, erzeugt: boolean;
         if (input.targetMapId) {
           const target = await createTactical(tx, cfg).getMap(userId, campaignId, input.targetMapId);
-          if ((await tx.query("SELECT 1 FROM betreten_karten WHERE campaign_id=$1 AND map_id=$2", [campaignId, target.id])).rowCount)
+          if ((await activeMapEntrances(tx, campaignId)).some(edge => edge.map_id === target.id))
             throw new TacticalValidationError("Diese Karte hat bereits einen übergeordneten Ort.");
           const ancestors = await ancestry(tx, userId, campaignId, scope);
           if (ancestors.some(item => item.kind === "tactical" && item.id === target.id))
@@ -266,18 +284,35 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
           });
           mapId = generated.ack.subjectId; keimHash = generated.keimHash; erzeugt = true;
         }
-        await tx.query(`INSERT INTO betreten_karten(campaign_id,parent_kind,parent_map_id,knoten_id,map_id,keim_hash,created_by,created_at)
-          VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [campaignId, scope.parentKind, scope.parentMapId, input.knotenId, mapId, keimHash, userId, now()]);
+        // A generator can return a durable import retry. Recheck its actual target before
+        // committing an entrance or parent CAS, including a previously retired result.
+        await createTactical(tx, cfg).getMap(userId, campaignId, mapId);
+        newEdge = { campaign_id: campaignId, parent_kind: scope.parentKind, parent_map_id: scope.parentMapId,
+          knoten_id: input.knotenId, map_id: mapId, keim_hash: keimHash, created_by: userId, created_at: String(now()) };
+        const legacySlot = (await tx.query(`SELECT 1 FROM betreten_karten WHERE campaign_id=$1 AND parent_kind=$2
+          AND parent_map_id=$3 AND knoten_id=$4`, [campaignId, scope.parentKind, scope.parentMapId, input.knotenId])).rowCount > 0;
+        if (!legacySlot) await tx.query(`INSERT INTO betreten_karten(campaign_id,parent_kind,parent_map_id,knoten_id,map_id,keim_hash,created_by,created_at)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [campaignId, scope.parentKind, scope.parentMapId, input.knotenId, mapId, keimHash, userId, newEdge.created_at]);
         const table = scope.parentKind === "atlas" ? "atlas_maps" : "tactical_maps";
         if (!(await tx.query(`UPDATE ${table} SET version=version+1 WHERE campaign_id=$1 AND id=$2 AND version=$3 RETURNING id`, [campaignId, scope.parentMapId, input.expectedVersion])).rowCount) throw new Conflict();
         result = { mapId, erzeugt, keimHash };
       }
-      await tx.query(`INSERT INTO betreten_command_receipts(command_id,campaign_id,actor_user_id,request_hash,response,created_at)
-        VALUES($1,$2,$3,$4,$5,$6)`, [input.commandId, campaignId, userId, requestHash, JSON.stringify(result), now()]);
+      if ((await tx.query("SELECT 1 FROM betreten_karten WHERE campaign_id=$1 AND map_id=$2", [campaignId, result.mapId])).rowCount) {
+        await tx.query(`INSERT INTO betreten_command_receipts(command_id,campaign_id,actor_user_id,request_hash,response,created_at)
+          VALUES($1,$2,$3,$4,$5,$6)`, [input.commandId, campaignId, userId, requestHash, JSON.stringify(result), now()]);
+      } else {
+        const edge = newEdge ?? (await activeMapEntrances(tx, campaignId)).find(candidate => candidate.map_id === result.mapId)!;
+        const parentRevision = scope.parentKind === "tactical" ? (await tx.query<{ head_revision: number }>("SELECT head_revision FROM tactical_maps WHERE campaign_id=$1 AND id=$2", [campaignId, scope.parentMapId])).rows[0]!.head_revision : null;
+        const payload: MapEnterPayload = { schemaVersion: 1, edge, createdEdge: newEdge !== null, parentRevision,
+          parentVersionBefore: parent.version, parentVersionAfter: parent.version + (newEdge ? 1 : 0) };
+        await tx.query(`INSERT INTO map_lifecycle_events(command_id,campaign_id,actor_user_id,operation,request_hash,request,payload,ack,created_at)
+          VALUES($1,$2,$3,'map.enter',$4,$5,$6,$7,$8)`, [input.commandId, campaignId, userId, requestHash,
+          JSON.stringify(input), JSON.stringify(payload), JSON.stringify(result), newEdge ? Number(newEdge.created_at) : now()]);
+      }
       return result;
     }).catch((error: unknown) => {
       const pg = error as { code?: string; constraint?: string };
-      if (pg?.code === "23505" && pg.constraint?.startsWith("betreten_")) throw new Conflict();
+      if (pg?.code === "23505" && (pg.constraint?.startsWith("betreten_") || pg.constraint === "map_lifecycle_events_command_id_key")) throw new Conflict();
       throw error;
     });
   }

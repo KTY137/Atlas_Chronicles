@@ -174,7 +174,7 @@ describe("Kartensettings: generation, inherited interiors and native evidence", 
     expect(list.setting).toBe("fantasy");
     const entered = await betreten.betrete(gm, campaign, { commandId: randomUUID(), ...scope, knotenId: list.nodes[0]!.knotenId, expectedVersion: list.version, stil: "zeitwelten", optionen: { setting: "scifi" } });
     const child = await tactical.getMap(gm, campaign, entered.mapId);
-    await tactical.reviseMap(gm, campaign, child.id, { commandId: randomUUID(), expectedVersion: child.version, document: { ...child.document, geometry: { ...child.document.geometry, stamps: [] } }, anchors: [] });
+    await tactical.reviseMap(gm, campaign, child.id, { schemaVersion: 2, commandId: randomUUID(), expectedVersion: child.version, document: { ...child.document, geometry: { ...child.document.geometry, stamps: [] } }, anchors: [], cartography: child.cartography!, addedBuildings: [] });
     expect(await betreten.children(gm, campaign, { parentKind: "tactical", parentMapId: child.id })).toMatchObject({ setting: "scifi", stil: "zeitwelten" });
   });
 

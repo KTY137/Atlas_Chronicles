@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 // Immer das neueste Profil: der Wächter ist nur so viel wert, wie er aktuell ist.
-import { CAMPAIGN_V13_TABLES } from "@chronicle/io";
+import { CAMPAIGN_V15_TABLES } from "@chronicle/io";
 import { restoreOrder } from "../src/domain/bundles.ts";
 
 /**
@@ -21,7 +21,7 @@ import { restoreOrder } from "../src/domain/bundles.ts";
  * Schema her und ist damit genauer, als eine Liste hier je wäre.
  */
 describe("Jede Profiltabelle wird auch wirklich zurückgespielt", () => {
-  const profil = CAMPAIGN_V13_TABLES.map(table => table.name);
+  const profil = CAMPAIGN_V15_TABLES.map(table => table.name);
 
   it("nennt restoreOrder jede Tabelle des Kampagnenprofils", () => {
     expect(profil.filter(name => !restoreOrder.includes(name))).toEqual([]);

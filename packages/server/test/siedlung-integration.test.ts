@@ -86,7 +86,10 @@ describe("settlements through the existing tactical and entrance contracts", () 
     expect(preview.bericht.strassen).toBe(preview.strassen);
     expect(preview.knoten).toBe(preview.bauwerke + 1);
     expect(preview.document.kind).toBe("tactical-map");
-    expect(preview.document.geometry.regions).toHaveLength(preview.bauwerke + preview.strassen);
+    expect(preview.document.geometry.regions).toHaveLength(preview.cartography.regions.length);
+    expect(preview.cartography.regions.filter((region: { role: string }) => region.role === "building")).toHaveLength(preview.bauwerke);
+    expect(preview.cartography.regions.filter((region: { role: string }) => region.role === "road")).toHaveLength(preview.strassen);
+    expect(preview.cartography.regions.some((region: { role: string }) => region.role === "terrain")).toBe(true);
     expect(preview.document.geometry.stamps.length).toBeGreaterThan(0);
     expect(preview.document.geometry.size).toEqual(preview.groesse);
     expect(preview.document.background).toBeNull();
@@ -142,7 +145,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
     expect((await tactical.getSource(gm, campaign, opened.json().mapId)).provenance.generator).toBe("chronicle-grundriss");
   });
 
-  it("saves a default city larger than the raster image budget and serves bounded transparent tiles", async () => {
+  it("saves a default city larger than the raster image budget and serves bounded painted tiles", async () => {
     // The city defaults are 5376 x 4224 pixels (22.7M). The old 16M image-decoder admission
     // applied to geometry too: preview succeeded, then saving the exact preview failed.
     const generated = await generate({ name: "Large default city", optionen: { art: "stadt" } });
@@ -155,7 +158,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
     const decoded = await sharp(response.rawPayload).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     expect(decoded.info.width).toBe(256);
     expect(decoded.info.height).toBe(256);
-    expect(decoded.data.every(value => value === 0)).toBe(true);
+    expect(decoded.data.some((value, index) => index % 4 === 3 && value > 0)).toBe(true);
     expect((await app.inject({ url: `/api/campaigns/${campaign}/tactical/maps/${map.id}/tiles/0/0/0`, headers: { cookie: playerCookie } })).statusCode).toBe(404);
   });
 

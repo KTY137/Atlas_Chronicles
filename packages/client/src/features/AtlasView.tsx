@@ -10,7 +10,10 @@ import "./AtlasView.css";
 import { useAppearance } from "./Appearance";
 import { MapEntrance, NestedMapView, type MapAncestor } from "./NestedMapView";
 import { TacticalGenerate } from "./TacticalGenerate";
-import type { TacticalMapSummary } from "@chronicle/protocol";
+import type { MapDeletionAck, MapReference, TacticalMapSummary } from "@chronicle/protocol";
+import { MapLibrary, type MapLibraryItem } from "./MapLibrary";
+import { MapContextMenu, type MapContextAction } from "./MapContextMenu";
+import { MapDeleteDialog } from "./MapDeleteDialog";
 
 interface AtlasNode { id: string; title: string | null; kind: string; entryId?: string; canEnter?: boolean; childMapId?: string; parents: readonly { id: string; kind: string }[] }
 interface ImportReport { orte: number; zellen: number; unterdrueckteNotizen: number; hinweise: readonly string[]; ausgelasseneDatensaetze: Record<string, number> }
@@ -26,6 +29,9 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   const selectionKey = `chronicle.atlas-map.${campaignId}`;
   const [mapId, setMapId] = useState("");
   const [childMapId, setChildMapId] = useState(() => gm ? new URLSearchParams(location.search).get("atlasChild") ?? "" : "");
+  const [childEditing,setChildEditing] = useState(false), [deleting,setDeleting] = useState<MapReference | null>(null);
+  const [canvasMenu,setCanvasMenu] = useState<{ key:number; nodeId?:string; x:number; y:number } | null>(null);
+  const [deletedIds,setDeletedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [revision, setRevision] = useState(0);
   const [selectedId, setSelectedId] = useState("");
   const [query, setQuery] = useState("");
@@ -48,6 +54,11 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   const task = useTask();
   const maps = useResource<MapSummary[]>(apiPath(campaignId, "/maps"), revision, 15000);
   const localMaps = useResource<TacticalMapSummary[]>(gm ? apiPath(campaignId, "/tactical/maps") : null, revision, 15000);
+  const availableMaps = useMemo(() => (maps.data ?? []).filter(map => !deletedIds.has(`atlas:${map.id}`)),[maps.data,deletedIds]);
+  const libraryMaps = useMemo<MapLibraryItem[]>(() => [
+    ...availableMaps.map(map => ({ kind:"atlas" as const,id:map.id,name:map.title })),
+    ...(localMaps.data ?? []).filter(map => !deletedIds.has(`tactical:${map.id}`)).map(map => ({ kind:"tactical" as const,id:map.id,name:map.name,revision:map.revision })),
+  ],[availableMaps,localMaps.data,deletedIds]);
   const map = useResource<AtlasMap>(mapId ? apiPath(campaignId, `/maps/${pathId(mapId)}`) : null, revision, 10000);
   const roster = useResource<Member[]>(gm ? apiPath(campaignId, "/roster") : null, revision, 15000);
   const entries = useResource<EntrySummary[]>(gm && mapId ? apiPath(campaignId, "/entries") : null, revision);
@@ -74,22 +85,22 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     .sort((a, b) => (a.title ?? "Unbenannt").localeCompare(b.title ?? "Unbenannt", "de")), [map.data, selectedId]);
 
   useEffect(() => {
-    setMapId(""); setSelectedId(""); setMessage(""); setQuery("");
+    setMapId(""); setSelectedId(""); setMessage(""); setQuery(""); setDeleting(null); setDeletedIds(new Set());
   }, [campaignId]);
   useEffect(() => {
     if (!maps.data) return;
-    if (maps.data.some((row) => row.id === mapIdRef.current)) return;
+    if (availableMaps.some((row) => row.id === mapIdRef.current)) return;
     let remembered = "";
     try { remembered = sessionStorage.getItem(selectionKey) ?? ""; } catch { /* Optional preference storage. */ }
     const fromUrl = new URLSearchParams(location.search).get("atlasMap");
-    setMapId(maps.data.find((row) => row.id === fromUrl)?.id ?? maps.data.find((row) => row.id === remembered)?.id ?? maps.data[0]?.id ?? "");
-  }, [maps.data, selectionKey]);
+    setMapId(availableMaps.find((row) => row.id === fromUrl)?.id ?? availableMaps.find((row) => row.id === remembered)?.id ?? availableMaps[0]?.id ?? "");
+  }, [maps.data, availableMaps, selectionKey]);
   useEffect(() => {
     if (!mapId) return;
     try { sessionStorage.setItem(selectionKey, mapId); } catch { /* The map itself is saved on the server. */ }
   }, [mapId, selectionKey]);
   useEffect(() => {
-    setSelectedId(""); setRendererError("");
+    setSelectedId(""); setRendererError(""); setCanvasMenu(null);
   }, [mapId]);
   useEffect(() => {
     setEntryId(selected?.entryId ?? ""); setActorId(""); setShowCreate(false);
@@ -101,7 +112,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     if (renderer.current && mapId) cameras.current[mapId] = renderer.current.getCamera();
     const nextChild = ancestor?.kind === "tactical" ? ancestor.id : "";
     if (ancestor?.kind === "atlas") setMapId(ancestor.id);
-    setChildMapId(nextChild); reportDirty(false);
+    setChildMapId(nextChild); setChildEditing(!!ancestor?.edit); reportDirty(false);
     const url = new URL(location.href);
     url.searchParams.set("atlasMap", ancestor?.kind === "atlas" ? ancestor.id : mapId);
     if (nextChild) url.searchParams.set("atlasChild", nextChild); else url.searchParams.delete("atlasChild");
@@ -176,6 +187,25 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     renderer.current?.select(pin ? { kind: "pin", id: nodeId } : null);
   }
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  const requestDelete = (target: MapReference) => { if (!childDirty.current || window.confirm("Ungespeicherte Kartenänderungen verwerfen?")) setDeleting(target); };
+  const entranceActions = (node: AtlasNode): MapContextAction[] => node.childMapId && !deletedIds.has(`tactical:${node.childMapId}`) ? [
+    { id:"open",label:"Unterkarte öffnen",onSelect:() => navigateMap({kind:"tactical",id:node.childMapId!,title:node.title ?? "Unterkarte"}) },
+    { id:"edit",label:"Unterkarte bearbeiten",onSelect:() => navigateMap({kind:"tactical",id:node.childMapId!,title:node.title ?? "Unterkarte",edit:true}) },
+    { id:"delete",label:"Unterkarte löschen …",danger:true,onSelect:() => requestDelete({kind:"tactical",id:node.childMapId!}) },
+  ] : [{ id:"select",label:"Ort auswählen",onSelect:() => choose(node.id) }];
+  const menuNode = canvasMenu?.nodeId ? map.data?.nodes.find(node => node.id === canvasMenu.nodeId) : undefined;
+  const deleted = (ack: MapDeletionAck) => {
+    setDeleting(null); setDeletedIds(old => new Set([...old,...ack.deletedMaps.map(map => `${map.kind}:${map.id}`)])); refresh();
+    const removesCurrent = ack.deletedMaps.some(map => map.kind === "atlas" && map.id === mapId || map.kind === "tactical" && map.id === childMapId);
+    if (removesCurrent) {
+      setSelectedId(""); setShowGenerator(false); reportDirty(false);
+      if (ack.parent) navigateMap({ kind:ack.parent.kind,id:ack.parent.id,title:ack.parent.name });
+      else {
+        setMapId(""); setChildMapId(""); const url = new URL(location.href); url.searchParams.delete("atlasMap"); url.searchParams.delete("atlasChild"); window.history.replaceState(null,"",url); navigationUrl.current=url.href;
+      }
+    }
+    setMessage(`${ack.deletedMaps.length === 1 ? "Die Karte wurde" : `${ack.deletedMaps.length} Karten wurden`} gelöscht.`);
+  };
   async function linkArticle(id: string) {
     if (!map.data || !selected || map.data.version === undefined) throw new Error("Die Karte muss neu geladen werden, bevor sie geändert werden kann.");
     try {
@@ -205,10 +235,16 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     if (fileInput.current) fileInput.current.value = "";
   }
 
-  if (gm && childMapId) return <NestedMapView key={`${campaignId}:${childMapId}`} campaignId={campaignId} mapId={childMapId} revision={revision}
+  if (gm && childMapId) return <NestedMapView key={`${campaignId}:${childMapId}`} campaignId={campaignId} mapId={childMapId} revision={revision} initialEditing={childEditing}
     onNavigate={navigateMap} onRoot={() => navigateMap()} onChanged={refresh} onDirty={reportDirty} />;
 
   return <section className="atlas-feature" aria-label="Atlas">
+    {gm && canvasMenu && map.data && (!canvasMenu.nodeId || menuNode) ? <MapContextMenu key={canvasMenu.key} label={menuNode?.title ?? map.data.title}
+      actions={menuNode ? entranceActions(menuNode) : [
+        { id:"open",label:"Karte ansehen",onSelect:() => setSelectedId("") },
+        { id:"delete",label:"Karte löschen …",danger:true,onSelect:() => requestDelete({kind:"atlas",id:mapId}) },
+      ]} popup={{...canvasMenu,onDismiss:() => setCanvasMenu(null)}} /> : null}
+    {deleting ? <MapDeleteDialog key={`${deleting.kind}:${deleting.id}`} campaignId={campaignId} target={deleting} onClose={() => setDeleting(null)} onDeleted={deleted} /> : null}
     <header className="atlas-heading"><div><p className="eyebrow">Eure Welt, Ort für Ort</p><h1><Compass size={28} aria-hidden="true" /> Atlas</h1><p className="muted">Jede Reise beginnt mit einem Ort.</p></div>
       <div className="atlas-heading-actions"><Button variant="quiet" aria-label="Atlas aktualisieren" title="Atlas aktualisieren" disabled={task.busy} onClick={refresh}><RefreshCw size={16} /></Button>
         {gm ? <Button aria-expanded={showGenerator} onClick={() => { if (!showGenerator || !childDirty.current || window.confirm("Ungespeicherte Kartenänderungen verwerfen?")) setShowGenerator(value => !value); }}><Map size={16} /> {showGenerator ? "Kartenwerkstatt schließen" : "Neue Karte"}</Button> : null}
@@ -224,16 +260,15 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     {message && <Notice>{message}</Notice>}
     {maps.error && <Notice error>{maps.error}</Notice>}
     {gm && showGenerator ? <TacticalGenerate key={campaignId} campaignId={campaignId} onDirty={reportDirty} onCreated={id => { setShowGenerator(false); refresh(); navigateMap({ kind: "tactical", id, title: "Neue Karte" }); }} /> : null}
-    {gm && localMaps.data?.length ? <label className="atlas-local-maps">Gespeicherte Orts- und Gebäudekarten<select value="" onChange={event => { const chosen = localMaps.data?.find(item => item.id === event.target.value); if (chosen) navigateMap({ kind: "tactical", id: chosen.id, title: chosen.name }); }}>
-      <option value="">Stadt, Gebäude oder Unterkarte öffnen …</option>{localMaps.data.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-    </select></label> : null}
+    {gm ? <MapLibrary items={libraryMaps} selected={{kind:"atlas",id:mapId}} disabled={task.busy} onOpen={map => navigateMap({kind:map.kind,id:map.id,title:map.name})}
+      onEdit={map => navigateMap({kind:map.kind,id:map.id,title:map.name,edit:map.kind === "tactical"})} onDelete={requestDelete} /> : null}
     {gm && localMaps.error ? <Notice error>{localMaps.error}</Notice> : null}
     {maps.loading && <Loading text="Euer Atlas wird geöffnet …" />}
     {!maps.loading && !maps.error && !maps.data?.length && !mapId && <EmptyState title={gm ? "Euer Atlas wartet auf die erste Weltkarte." : "Deine Reise beginnt hier."}
       action={gm ? <Button variant="primary" onClick={() => fileInput.current?.click()}><Upload size={16} /> Weltkarte importieren</Button> : undefined}>
       {gm ? "Öffne die ERON-Karte mit ihren vorhandenen Markern oder importiere eure Welt als Azgaar Full JSON. An jedem Ort kannst du eine eigene Unterkarte erzeugen oder eine vorhandene Szenenkarte verbinden." : "Der Atlas zeigt die Weltkarte eurer Kampagne, aber nur die Orte, die eure Spielleitung für deine Figur freigegeben hat. Sobald der erste Ort freigegeben ist, erscheint er hier."}
     </EmptyState>}
-    {!!maps.data?.length && <div className="atlas-map-choice"><Map size={17} aria-hidden="true" /><label htmlFor="atlas-map-select">Weltkarte</label>
+    {!gm && !!maps.data?.length && <div className="atlas-map-choice"><Map size={17} aria-hidden="true" /><label htmlFor="atlas-map-select">Weltkarte</label>
       <select id="atlas-map-select" value={mapId} onChange={(event) => { setMapId(event.target.value); setMessage(""); }} disabled={task.busy}>{maps.data.map((row) => <option key={row.id} value={row.id}>{row.title}</option>)}</select>
       <span className="atlas-saved">Auf eurem Server gespeichert</span></div>}
     {map.loading && <Loading text="Karte und Orte werden geladen …" />}
@@ -242,11 +277,21 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
       <aside className="atlas-places" aria-label="Orte und Gebiete"><div className="atlas-places-heading"><h2>{map.data.title}</h2><p>Orte &amp; Gebiete</p></div>
         <label className="atlas-search"><Search size={16} aria-hidden="true" /><span className="atlas-sr-only">Orte durchsuchen</span><input type="search" placeholder="Einen Ort finden …" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         <label className="atlas-filter"><span className="atlas-sr-only">Art des Ortes</span><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="all">Alle Orte &amp; Gebiete</option><option value="places">Siedlungen</option><option value="regions">Gebiete &amp; Herrschaften</option><option value="linked">Mit Unterkarte</option></select></label>
-        <ul className="atlas-place-list">{nodes.map((node) => <li key={node.id}><button type="button" className={node.id === selectedId ? "is-selected" : ""} aria-pressed={node.id === selectedId} onClick={() => choose(node.id)}>
+        <ul className="atlas-place-list">{nodes.map((node) => { const row = <button type="button" className={node.id === selectedId ? "is-selected" : ""} aria-pressed={node.id === selectedId} onClick={() => choose(node.id)}>
           <span className="atlas-place-symbol" aria-hidden="true">{node.childMapId ? <DoorOpen size={18} /> : node.kind === "ort" ? "◆" : "◇"}</span><span><strong>{node.title ?? "Unbenannt"}</strong><small>{node.childMapId ? "Mit Unterkarte" : kindLabel[node.kind] ?? node.kind}</small></span>{node.entryId && <BookOpen size={14} aria-label="Mit Wiki-Artikel verbunden" />}
-        </button></li>)}</ul>{!nodes.length && <p className="atlas-no-results">Keine passenden Orte.</p>}
+        </button>; return <li key={node.id}>{gm && node.childMapId && !deletedIds.has(`tactical:${node.childMapId}`) ? <MapContextMenu label={node.title ?? "Unterkarte"} actions={entranceActions(node)}>{row}</MapContextMenu> : row}</li>; })}</ul>{!nodes.length && <p className="atlas-no-results">Keine passenden Orte.</p>}
       </aside>
-      <div className="atlas-canvas-column"><div className="atlas-map-frame"><div ref={host} className="atlas-render-host" />
+      <div className="atlas-canvas-column"><div className="atlas-map-frame"><div ref={host} className="atlas-render-host" onContextMenu={event => {
+        if (!gm || !rendererReady || !renderer.current) return;
+        event.preventDefault(); event.stopPropagation(); const bounds=event.currentTarget.getBoundingClientRect();
+        const hit=renderer.current.hitTest([event.clientX-bounds.left,event.clientY-bounds.top]);
+        const node=hit && map.data?.nodes.find(node => node.id === hit.id);
+        setCanvasMenu({ key:performance.now(),nodeId:node?.id,x:event.clientX,y:event.clientY });
+      }} onKeyDown={event => {
+        if (!gm || !rendererReady || !(event.key === "ContextMenu" || event.shiftKey && event.key === "F10")) return;
+        event.preventDefault(); event.stopPropagation(); const bounds=event.currentTarget.getBoundingClientRect();
+        setCanvasMenu({ key:performance.now(),nodeId:selected?.id,x:bounds.left+bounds.width/2,y:bounds.top+bounds.height/2 });
+      }} />
         {!rendererReady && !rendererError && <div className="atlas-canvas-loading"><Loading text="Karte wird gezeichnet …" /></div>}
         {rendererError && <div className="atlas-canvas-fallback"><Compass size={40} /><p>{rendererError}</p><p>Alle verfügbaren Orte findest du in der Ortsliste.</p></div>}
         <div className="atlas-map-tools" aria-label="Kartenansicht"><Button disabled={!rendererReady} aria-label="Karte vergrößern" title="Karte vergrößern" onClick={() => renderer.current?.zoomAt(1.3)}><Plus size={16} /></Button>

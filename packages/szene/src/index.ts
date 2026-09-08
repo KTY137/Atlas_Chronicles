@@ -61,3 +61,6 @@ export { baueMaske, erweitereMaske } from "./sichtmaske.ts";
 export type { Maske, MaskeEingabe } from "./sichtmaske.ts";
 export { entfernung, pfadlaenge, flaeche, rasterEntfernung, nachWelt, nachRahmen } from "./messung.ts";
 export type { Punkt } from "./messung.ts";
+export * from "./cartography.ts";
+export { cartographyDraw, cartographyPaintsWalls, rendererVersion } from "./cartography-projection.ts";
+export type { CartographyPolygon, CartographyDrawing } from "./cartography-projection.ts";

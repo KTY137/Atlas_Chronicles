@@ -1,0 +1,35 @@
+.map-editor { min-width: 0; }
+.map-editor > .page-heading { align-items: flex-start; }
+.map-editor .map-editor-actions { position: sticky; top: .5rem; z-index: 3; padding: .5rem; background: var(--surface, #18252c); border-radius: .65rem; flex-wrap: wrap; }
+.map-editor-status { color: var(--text-muted, #aebabb); font-size: .9rem; margin: .25rem 0 1rem; }
+.map-editor-workspace { display: grid; grid-template-columns: minmax(190px, 235px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.map-edit-tools { border: 1px solid var(--border, #38474d); border-radius: .75rem; padding: .8rem; }
+.map-edit-tools fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: .75rem; }
+.map-edit-tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+.map-edit-tools h3, .map-edit-tools p { margin: .2rem 0; }
+.map-edit-tools label { min-width: 0; }
+.map-edit-tools input, .map-edit-tools select { width: 100%; min-width: 0; }
+.map-edit-tools button { white-space: normal; }
+.map-editor-stage { min-width: 0; }
+.map-editor-stage .tactical-canvas { min-height: min(66vh, 670px); }
+.map-editor-preview-actions { display: flex; flex-wrap: wrap; gap: .5rem; padding: .8rem; border: 1px solid var(--border, #38474d); border-radius: .5rem; }
+.map-editor-details { margin-top: 1rem; }
+.map-editor-details > .tactical-command-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.map-editor-section { border: 1px solid var(--border, #38474d); border-radius: .65rem; margin: .65rem 0; padding: 0 1rem; }
+.map-editor-section > summary { cursor: pointer; font-weight: 600; padding: .9rem 0; }
+.map-editor-section > summary::before { content: "▸"; display: inline-block; margin-right: .5rem; }
+.map-editor-section[open] > summary::before { transform: rotate(90deg); }
+.map-editor-section[open] { padding-bottom: 1rem; }
+.map-editor-section > section { min-width: 0; }
+.map-editor-mobile-tabs { display: none; }
+@media (max-width: 700px) {
+  .map-editor > .page-heading { display: block; }
+  .map-editor .map-editor-actions { top: 0; display: grid; grid-template-columns: 1fr 1fr; margin: .5rem -.35rem; }
+  .map-editor-actions button { white-space: normal; min-width: 0; }
+  .map-editor-mobile-tabs { display: flex; gap: .5rem; margin-bottom: .75rem; }
+  .map-editor-workspace { display: block; }
+  .map-editor:not(.map-editor-sheet) .map-edit-tools, .map-editor:not(.map-editor-sheet) .map-editor-details { display: none; }
+  .map-editor-sheet .map-editor-stage { display: none; }
+  .map-editor-stage .tactical-canvas { min-height: 48vh; }
+  .map-editor-preview-actions { position: sticky; bottom: 0; background: var(--surface, #18252c); }
+}

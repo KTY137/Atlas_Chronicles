@@ -3,6 +3,7 @@
 import { canonicalJson, textHash, type CanonicalValue } from "@chronicle/core";
 import { sha256Hex } from "@chronicle/core";
 import { KARTEN_SETTINGS, TACTICAL_MAP_LIMITS, parseBoundedMapJson, parseTacticalMapDocument, serializeTacticalMapDocument, type KartenSetting, type TacticalImageRef, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
+import { parseTacticalCartography, type TacticalCartographyV1 } from "@chronicle/szene";
 
 export const UVTT_ADAPTER_VERSION = 1 as const;
 export interface UvttProvenance {
@@ -235,4 +236,18 @@ export function exportUvtt(imported: UvttImport, editedDocument: TacticalMapDocu
   return writeUvtt(document, verified.image, { raw: record(parseBoundedMapJson(verified.source.json, TACTICAL_MAP_LIMITS.sourceBytes), "source"), imported: verified });
 }
 /** Export a natively authored document. Unsupported semantics are explicit in the report. */
-export function exportTacticalUvtt(document: TacticalMapDocumentV1, image: UvttImage | null = null): UvttExport { return writeUvtt(parseTacticalMapDocument(document), image); }
+export function exportTacticalUvtt(document: TacticalMapDocumentV1, image: UvttImage | null = null, cartography?: TacticalCartographyV1): UvttExport {
+  const doc = parseTacticalMapDocument(document);
+  if (cartography) {
+    parseTacticalCartography(cartography, doc);
+    if (!doc.background || !image) fail("export.cartography", "Kartografie benötigt ein gerendertes, eingebettetes Bild; für verlustfreie Daten bitte nativ exportieren.");
+    image = inspectUvttImage(image.base64);
+    if (image.width * image.height > 16_000_000) fail("export.cartography", "Der Bildexport ist auf 16 Megapixel begrenzt. Eine kleinere Auflösung ausdrücklich wählen oder nativ exportieren.");
+  }
+  const result = writeUvtt(doc, image);
+  if (!cartography) return result;
+  return freeze({ ...result, fidelity: { ...result.fidelity, nativeRoundTrip: false, issues: [...result.fidelity.issues, {
+    code: "unsupported-export" as const, path: "cartography", severity: "loss" as const,
+    message: "Kartografie ist als Bild enthalten. Geländerollen, Sperren, Herkunft, Gebäudeadressen und lokale Variationen bleiben ausschließlich in der nativen Sicherung erhalten.",
+  }] } });
+}

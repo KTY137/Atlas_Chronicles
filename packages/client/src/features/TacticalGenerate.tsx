@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Compass, Dices, Eye, WandSparkles } from "lucide-react";
 import type { GrundrissBericht, SiedlungBericht } from "@chronicle/forge";
-import type { TacticalMapDocumentV1 } from "@chronicle/szene";
+import type { TacticalCartographyV1, TacticalMapDocumentV1 } from "@chronicle/szene";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
@@ -14,7 +14,7 @@ import { generationError, generationOptions, generationSettings, mapDocumentScen
 import "./map-workshop.css";
 
 interface Vorschau {
-  keimHash: string; art: string; groesse: readonly [number, number]; document: TacticalMapDocumentV1; nodes: MapNode[];
+  keimHash: string; art: string; groesse: readonly [number, number]; document: TacticalMapDocumentV1; cartography?: TacticalCartographyV1; nodes: MapNode[];
   bericht: GrundrissBericht | SiedlungBericht; raeume?: number; bauwerke?: number; strassen?: number;
 }
 
@@ -33,7 +33,7 @@ export function TacticalGenerate({ campaignId, onCreated, onDirty }: { campaignI
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const visiblePreview = preview?.fingerprint === fingerprint ? preview.data : null;
-  const scene = useMemo(() => visiblePreview ? mapDocumentScene(`preview:${visiblePreview.keimHash}`, visiblePreview.document, visiblePreview.nodes, visiblePreview.art, undefined, settings.setting) : null, [visiblePreview, settings.setting]);
+  const scene = useMemo(() => visiblePreview ? mapDocumentScene(`preview:${visiblePreview.keimHash}`, visiblePreview.document, visiblePreview.nodes, visiblePreview.art, undefined, settings.setting, visiblePreview.cartography) : null, [visiblePreview, settings.setting]);
   if (defaults.loading) return <Loading text="Kartenwerkstatt wird vorbereitet …" />;
   if (defaults.error || !defaults.data) return <Notice error>{defaults.error || "Der Generator ist nicht verfügbar."}</Notice>;
   const problem = generationError(settings, defaults.data), ready = !!name.trim() && !!keim.trim() && !problem;

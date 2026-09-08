@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMapRenderer } from "../src/renderer.ts";
+import { rendererVersion } from "@chronicle/szene";
 import { mapToScreen } from "../src/geometry.ts";
 import type { MapPinIcon, ProjectedMapScene } from "../src/model.ts";
 
@@ -32,6 +33,7 @@ vi.mock("pixi.js", () => {
   class Canvas extends EventTarget {
     style: Record<string, string> = {}; dataset: Record<string, string> = {}; tabIndex = 0;
     setAttribute() {} hasPointerCapture() { return false; } releasePointerCapture() {} setPointerCapture() {} focus() {}
+    getBoundingClientRect() { return { left: 0, top: 0, width: 1200, height: 800 }; }
   }
   class Application {
     canvas = new Canvas(); stage = new Container(); renderer = { type: pixi.type, resolution: pixi.resolution, resize() {} };
@@ -58,6 +60,57 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("mounted renderer submission and resource lifecycle", () => {
+  it("keeps a building entrance clickable and selectable without painting a dot over its roof", async () => {
+    const map = await createMapRenderer(host(), { id: "roof", width: 400, height: 400, showLabels: true, cells: [],
+      pins: [{ id: "house", x: 150, y: 150, label: "House", showMarker: false }] });
+    expect(pixi.graphics.some(graphic => graphic.visible && graphic.circles.includes(5))).toBe(false);
+    expect(map.hitTest(mapToScreen([150,150],map.getCamera()))).toEqual({ kind: "pin", id: "house" });
+    map.select({ kind: "pin", id: "house" }); expect(pixi.labels.some(label => label.visible && label.text === "House")).toBe(true); map.destroy();
+  });
+  it("shows a selected building name once when its cell and entrance share the same label", async () => {
+    const map = await createMapRenderer(host(), { id: "selection", width: 400, height: 400, showLabels: true,
+      cells: [{ id: "house", polygon: [[100,100],[200,100],[200,200],[100,200]], label: "Selected house" }],
+      pins: [{ id: "entrance", x: 150, y: 150, label: "Selected house" }] });
+    map.select({ kind: "cell", id: "house" });
+    expect(pixi.labels.filter(label => label.visible && label.text === "Selected house")).toHaveLength(1); map.destroy();
+  });
+  const pointer = (canvas: EventTarget, type: string, point: readonly number[], extra = {}) => canvas.dispatchEvent(Object.assign(new Event(type), { pointerId: 1, button: 0, clientX: point[0], clientY: point[1], ...extra }));
+  it("routes opt-in edit drags in map coordinates without panning or moving a token", async () => {
+    const mount = host(), begin = vi.fn(() => true), move = vi.fn(), commit = vi.fn(), token = vi.fn();
+    const map = await createMapRenderer(mount, scene, { onMoveToken: token, editor: { active: () => true, begin, move, commit, cancel: vi.fn() } });
+    const camera = map.getCamera(), canvas = mount.children[0]!;
+    const start = mapToScreen([1200,1200], camera), end = mapToScreen([1400,1300], camera);
+    pointer(canvas, "pointerdown", start); pointer(canvas, "pointermove", end); pointer(canvas, "pointerup", end);
+    expect(begin).toHaveBeenCalledWith([1200,1200], { kind: "token", id: "visible-token" });
+    expect(move.mock.calls[0]![0][0]).toBeCloseTo(1400); expect(commit.mock.calls[0]![0][1]).toBeCloseTo(1300);
+    expect(map.getCamera()).toEqual(camera); expect(token).not.toHaveBeenCalled(); map.destroy();
+  });
+  it("keeps token movement unchanged when editing is inactive and uses Alt as an explicit pan gesture", async () => {
+    const mount = host(), begin = vi.fn(() => true), token = vi.fn(); let active = false;
+    const map = await createMapRenderer(mount, scene, { onMoveToken: token, editor: { active: () => active, begin, move: vi.fn(), commit: vi.fn(), cancel: vi.fn() } });
+    const camera = map.getCamera(), canvas = mount.children[0]!, start = mapToScreen([1200,1200], camera), end = [start[0]+50,start[1]+20];
+    pointer(canvas, "pointerdown", start); pointer(canvas, "pointermove", end); pointer(canvas, "pointerup", end);
+    expect(token).toHaveBeenCalledTimes(1); expect(begin).not.toHaveBeenCalled(); expect(map.getCamera()).toEqual(camera);
+    active = true; pointer(canvas, "pointerdown", start, { altKey: true }); pointer(canvas, "pointermove", end); pointer(canvas, "pointerup", end);
+    expect(begin).not.toHaveBeenCalled(); expect(token).toHaveBeenCalledTimes(1); expect(map.getCamera().x).toBe(camera.x+50); map.destroy();
+  });
+  it("cancels a live edit exactly once on scope replacement and teardown, keeping late pointerup inert", async () => {
+    const mount = host(), cancel = vi.fn(), commit = vi.fn();
+    const map = await createMapRenderer(mount, scene, { editor: { active: () => true, begin: () => true, move: vi.fn(), commit, cancel } });
+    const canvas = mount.children[0]!, point = mapToScreen([1200,1200], map.getCamera());
+    pointer(canvas, "pointerdown", point); map.update({ ...scene, rasterScope: "new-scope" }); pointer(canvas, "pointerup", point);
+    expect(cancel).toHaveBeenCalledTimes(1); expect(commit).not.toHaveBeenCalled();
+    pointer(canvas, "pointerdown", point); map.destroy(); expect(cancel).toHaveBeenCalledTimes(2);
+  });
+  it("submits shared ordered polygon colors without additional legacy roof strokes", async () => {
+    const polygon = [[10,10],[100,10],[100,100],[10,100]] as const;
+    const before = pixi.strokes.length;
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], cells: [{ id: "roof", polygon, surface: "building" }],
+      drawing: { rendererVersion, width: scene.width, height: scene.height, background: null,
+        polygons: [{ regionId: "roof", points: polygon, fill: 0x123456, opacity: .7 }, { regionId: "roof", points: polygon, fill: 0x654321, opacity: .2 }] } });
+    expect(pixi.graphics.flatMap(item => item.fills).filter(fill => typeof fill === "object")).toEqual([{ color: 0x123456, alpha: .7 }, { color: 0x654321, alpha: .2 }]);
+    expect(pixi.strokes.length - before).toBe(1); map.destroy();
+  });
   it("releases artwork textures and bitmaps when their last map placement is removed", async () => {
     const image = { width: 64, height: 64, close: vi.fn() } as unknown as ImageBitmap;
     const stamp = { id: "chair", asset: "pack/chair", x: 100, y: 100, s: 1, r: 0, l: 0 };

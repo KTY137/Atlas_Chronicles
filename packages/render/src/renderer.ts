@@ -2,17 +2,18 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /// <reference lib="dom" />
 /// <reference path="./pixi-csp.d.ts" />
-import { fitCamera, hitTestMap, mapPinHitRadius, mapToScreen, normalizeCamera, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
+import { fitCamera, hitTestMap, mapPinHitRadius, mapToScreen, normalizeCamera, pointInPolygon, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
 import { rasterTileDisplaySize } from "./tactical-geometry.ts";
 import { createGridGeometryCache } from "./grid-cache.ts";
 import { planeStapel } from "./stapel.ts";
-import type { MapCamera, MapHit, MapPoint, MapRenderer, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
+import type { MapCamera, MapEditorInteraction, MapHit, MapPoint, MapRenderer, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
 export interface MapRendererOptions {
   readonly onSelect?: (hit: MapHit | null) => void;
   readonly onCameraChange?: (camera: MapCamera) => void;
   readonly onMoveToken?: (tokenId: string, to: MapPoint) => void;
   readonly onPoint?: (point: MapPoint) => void;
+  readonly editor?: MapEditorInteraction;
   readonly signal?: AbortSignal;
 }
 export class MapRendererUnavailableError extends Error {
@@ -107,10 +108,20 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     selection.visible = false;
     label.visible = false;
     if (!selected) return;
+    if (selected.kind === "cell") {
+      const cell = scene.cells.find(item => item.id === selected!.id);
+      if (!cell) return;
+      const points = cell.polygon.map(point => mapToScreen(point, camera));
+      selection.clear().poly(points.flatMap(point => [point[0], point[1]]), true).stroke({ color: 0xffe7a1, width: 2 });
+      selection.position.set(0, 0); selection.visible = true;
+      if (cell.label && scene.showLabels !== false) { label.text = cell.label; label.position.set(Math.max(4, Math.min(points[0]![0], viewport[0] - label.width - 4)), Math.max(4, points[0]![1] - 22)); label.visible = true; }
+      return;
+    }
     const item = selected.kind === "pin" ? scene.pins.find((p) => p.id === selected!.id)
       : selected.kind === "token" ? scene.tokens?.find((t) => t.id === selected!.id) : undefined;
     if (item) {
       const p = mapToScreen([item.x, item.y], camera);
+      selection.clear().circle(0, 0, 15).stroke({ color: 0xffe7a1, width: 2 });
       selection.position.set(p[0], p[1]); selection.visible = true;
       label.text = item.label;
       label.position.set(Math.min(Math.max(4, p[0] + 18), Math.max(4, viewport[0] - label.width - 4)), Math.min(Math.max(4, p[1] - 12), Math.max(4, viewport[1] - label.height - 4)));
@@ -125,9 +136,11 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     const occupied: { x: number; y: number; width: number; height: number }[] = [];
     if (label.visible) occupied.push({ x: label.position.x - 4, y: label.position.y - 4, width: label.width + 8, height: label.height + 8 });
     let count = 0;
+    const selectedCell = selected?.kind === "cell" ? scene.cells.find(cell => cell.id === selected!.id) : undefined;
     for (const pin of scene.pins) {
       if (count >= 160) break;
-      if (!pin.label.trim() || selected?.kind === "pin" && selected.id === pin.id) continue;
+      if (!pin.label.trim() || camera.scale < (pin.labelMinScale ?? 0) || selected?.kind === "pin" && selected.id === pin.id) continue;
+      if (selectedCell?.label === pin.label && pointInPolygon([pin.x, pin.y], selectedCell.polygon)) continue;
       const point = mapToScreen([pin.x, pin.y], camera);
       const width = Math.min(220, pin.label.length * 7 + 8), x = point[0] + mapPinHitRadius(pin) + 5, y = point[1] - 8;
       if (x < 0 || y < 0 || x + width > viewport[0] || y + 20 > viewport[1]) continue;
@@ -148,6 +161,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     // Batch only adjacent equal-color paths, retaining original overlap order.
     // Zoom still rebuilds stroke geometry to preserve exactly 2 CSS pixels.
     for (const line of scene.lines ?? []) {
+      if (line.paint === false) continue;
       const next = line.color ?? 0xebc887;
       if (color !== undefined && color !== next) wallsOverlay.stroke({ color, width: 2 / camera.scale });
       color = next;
@@ -233,6 +247,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   };
   const drawPin = (pin: ProjectedMapPin): InstanceType<typeof Graphics> => {
     const shape = new Graphics();
+    if (pin.showMarker === false) { shape.visible = false; return shape; }
     if (!pin.icon) return shape.circle(0, 0, 5).fill(pin.color ?? 0xebc887).stroke({ color: 0x13202a, width: 1.5 });
     const color = pin.color ?? (pin.icon === "portal" ? 0x80d9c9 : 0xebc887);
     // One Graphics per pin, with no textures or extra display objects. Both the outline
@@ -277,8 +292,15 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     clear(buildings);
     clear(markers);
     markerGraphics = [];
+    if (scene.drawing) {
+      if (scene.drawing.background !== null) geography.addChild(new Graphics().rect(0, 0, scene.width, scene.height).fill(scene.drawing.background));
+      for (const polygon of scene.drawing.polygons) {
+        const shape = new Graphics().poly(polygon.points.flatMap(point => [point[0], point[1]]), true).fill({ color: polygon.fill, alpha: polygon.opacity });
+        shape.eventMode = "none"; geography.addChild(shape);
+      }
+    }
     // Separate simple polygons preserve Pixi's batching; geometry is rebuilt only on update.
-    for (const cell of scene.cells) {
+    for (const cell of scene.drawing || scene.paintCells === false ? [] : scene.cells) {
       const building = cell.surface === "building", street = cell.surface === "street";
       const shape = new Graphics().poly(cell.polygon.flatMap((p) => [p[0], p[1]]), true)
         .fill({ color: cell.fill ?? (building ? 0xb87954 : street ? 0xb4a180 : 0x536b52), alpha: cell.surface ? 1 : scene.rasterScope ? .08 : 1 });
@@ -347,8 +369,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       }
       for (const resource of rasterResources) resource.texture.source.scaleMode = scene.rasterSampling ?? "linear";
       if (drag && (changedWorld || changedScope || (drag.snapshot && !retainsTokenDrag(drag.snapshot, scene.tokens?.find(t => t.id === drag?.token))))) {
-        if (canvas.hasPointerCapture(drag.id)) canvas.releasePointerCapture(drag.id);
-        drag = null; dragPreview.clear();
+        renderer.cancelInteraction();
       }
       if (changedWorld) { camera = fitCamera([scene.width, scene.height], viewport); selected = null; }
       // Remove a selection if the server's replacement projection no longer includes it.
@@ -406,8 +427,15 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       render();
       options.onSelect?.(hit);
     },
+    cancelInteraction() {
+      const cancelled = drag; drag = null;
+      if (cancelled?.editor) options.editor?.cancel();
+      if (cancelled && canvas.hasPointerCapture(cancelled.id)) canvas.releasePointerCapture(cancelled.id);
+      dragPreview.clear(); render();
+    },
     destroy() {
       if (destroyed) return;
+      renderer.cancelInteraction();
       destroyed = true;
       listeners.abort();
       observer.disconnect();
@@ -423,12 +451,15 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     const bounds = canvas.getBoundingClientRect();
     return [(event.clientX - bounds.left) * viewport[0] / Math.max(1, bounds.width), (event.clientY - bounds.top) * viewport[1] / Math.max(1, bounds.height)];
   };
-  let drag: { id: number; last: MapPoint; start: MapPoint; moved: boolean; token?: string; snapshot?: ProjectedMapToken } | null = null;
+  let drag: { id: number; last: MapPoint; start: MapPoint; moved: boolean; editor?: boolean; token?: string; snapshot?: ProjectedMapToken } | null = null;
+  let hand = false;
   canvas.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0 || drag) return;
+    const editing = options.editor?.active() ?? false;
+    if ((event.button !== 0 && !(editing && event.button === 1)) || drag) return;
     const p = local(event);
     const hit = renderer.hitTest(p), token = hit?.kind === "token" ? scene.tokens?.find(t => t.id === hit.id && t.movable) : undefined;
-    drag = { id: event.pointerId, last: p, start: p, moved: false, ...(token ? { token: token.id, snapshot: { ...token } } : {}) };
+    const editor = editing && event.button === 0 && !hand && !event.altKey && (options.editor?.begin(screenToMap(p, camera), hit) ?? false);
+    drag = { id: event.pointerId, last: p, start: p, moved: false, ...(editor ? { editor: true } : token && !editing ? { token: token.id, snapshot: { ...token } } : {}) };
     canvas.setPointerCapture(event.pointerId);
     canvas.focus({ preventScroll: true });
   }, { signal: listeners.signal });
@@ -436,25 +467,32 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     if (!drag || event.pointerId !== drag.id) return;
     const p = local(event);
     if (Math.hypot(p[0] - drag.start[0], p[1] - drag.start[1]) > 4) drag.moved = true;
-    if (drag.moved && drag.token) { const at = screenToMap(p, camera); dragPreview.clear().circle(at[0], at[1], 12 / camera.scale).stroke({ color: 0xffffff, width: 2 / camera.scale, alpha: .7 }); render(); }
+    if (drag.editor) { if (options.editor?.active()) options.editor.move(screenToMap(p, camera)); else renderer.cancelInteraction(); }
+    else if (drag.moved && drag.token) { const at = screenToMap(p, camera); dragPreview.clear().circle(at[0], at[1], 12 / camera.scale).stroke({ color: 0xffffff, width: 2 / camera.scale, alpha: .7 }); render(); }
     else if (drag.moved) renderer.panBy(p[0] - drag.last[0], p[1] - drag.last[1]);
-    drag.last = p;
+    if (drag) drag.last = p;
   }, { signal: listeners.signal });
   canvas.addEventListener("pointerup", (event) => {
     if (!drag || event.pointerId !== drag.id) return;
-    if (drag.moved && drag.token) options.onMoveToken?.(drag.token, screenToMap(local(event), camera));
+    if (drag.editor) { if (options.editor?.active()) options.editor.commit(screenToMap(local(event), camera)); else options.editor?.cancel(); }
+    else if (drag.moved && drag.token) options.onMoveToken?.(drag.token, screenToMap(local(event), camera));
     else if (!drag.moved) { renderer.select(renderer.hitTest(local(event))); options.onPoint?.(screenToMap(local(event), camera)); }
     dragPreview.clear(); render();
     drag = null;
     if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
   }, { signal: listeners.signal });
-  canvas.addEventListener("pointercancel", () => { drag = null; dragPreview.clear(); render(); }, { signal: listeners.signal });
+  canvas.addEventListener("pointercancel", () => renderer.cancelInteraction(), { signal: listeners.signal });
+  canvas.addEventListener("lostpointercapture", () => renderer.cancelInteraction(), { signal: listeners.signal });
+  canvas.addEventListener("blur", () => { hand = false; renderer.cancelInteraction(); }, { signal: listeners.signal });
   canvas.addEventListener("wheel", (event) => {
     event.preventDefault();
     const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewport[1] : 1);
     renderer.zoomAt(Math.exp(Math.max(-2, Math.min(2, -delta * 0.001))), local(event));
   }, { signal: listeners.signal, passive: false });
   canvas.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") { renderer.cancelInteraction(); event.preventDefault(); return; }
+    if (event.code === "Space" && options.editor?.active()) { hand = true; event.preventDefault(); return; }
+    if (drag?.editor || event.ctrlKey || event.metaKey) return;
     const pan: Record<string, MapPoint> = { ArrowLeft: [48, 0], ArrowRight: [-48, 0], ArrowUp: [0, 48], ArrowDown: [0, -48] };
     const movement = pan[event.key];
     if (movement) renderer.panBy(...movement);
@@ -464,6 +502,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     else return;
     event.preventDefault();
   }, { signal: listeners.signal });
+  canvas.addEventListener("keyup", event => { if (event.code === "Space") hand = false; }, { signal: listeners.signal });
   const observer = new ResizeObserver((entries) => {
     const bounds = entries[0]?.contentRect;
     if (bounds && bounds.width > 0 && bounds.height > 0 && !destroyed && (bounds.width !== viewport[0] || bounds.height !== viewport[1])) renderer.resize(bounds.width, bounds.height);

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { parseTacticalMapDocument, TACTICAL_MAP_LIMITS } from "@chronicle/szene";
+import { inferLegacyCartography, parseTacticalMapDocument, TACTICAL_MAP_LIMITS } from "@chronicle/szene";
+import { validateMapScene } from "../../render/src/geometry.ts";
 import {
   BUILDING_COLORS, changeGenerationSetting, generationDimensions, generationError, generationOptions, generationSettings, mapDocumentScene,
   type GenerationDefaults, type MapNode,
@@ -113,38 +114,46 @@ const nodes: readonly MapNode[] = [
   { knotenId: "legacy-house", titel: "Haus Linden", art: "bauwerk", x: 260, y: 80 },
 ];
 
+const cartography = { ...inferLegacyCartography(document), regions: document.geometry.regions.map(region => ({ regionId: region.id, authored: false, locked: false, provenance: null, ...(region.id === "street" ? { role: "road" as const, material: "street" as const } : { role: "building" as const }) })) };
 describe("map document presentation keeps spatial identity", () => {
+  it("retains a visible portal for an existing interior while ordinary roof markers remain hidden", () => {
+    const scene = mapDocumentScene("city",document,nodes.map(node => ({ ...node, vorhandeneKarteId: "interior" })),"siedlung",undefined,"fantasy",cartography);
+    expect(scene.pins.every(pin => pin.icon === "portal" && pin.showMarker === true)).toBe(true);
+  });
   it("renders modern and future roofs without changing footprints or picking IDs", () => {
-    const contemporary = mapDocumentScene("city", document, nodes, "siedlung", undefined, "gegenwart");
-    const future = mapDocumentScene("city", document, nodes, "siedlung", undefined, "scifi");
+    const contemporary = mapDocumentScene("city", document, nodes, "siedlung", undefined, "gegenwart", cartography);
+    const future = mapDocumentScene("city", document, nodes, "siedlung", undefined, "scifi", cartography);
     expect(contemporary.cells[0]!.roof).toBe("flat"); expect(future.cells[0]!.roof).toBe("tech");
     expect(contemporary.cells[1]!.roof).toBeUndefined();
     expect(contemporary.cells.map(cell => [cell.id, cell.polygon])).toEqual(future.cells.map(cell => [cell.id, cell.polygon]));
     expect(contemporary.cells[1]!.fill).not.toBe(future.cells[1]!.fill);
   });
   it("paints building roofs and streets while retaining exact region identities and authorized node pins", () => {
-    const scene = mapDocumentScene("city", document, nodes, "siedlung", "campaign:map");
+    const scene = mapDocumentScene("city", document, nodes, "siedlung", "campaign:map", "fantasy", cartography);
     expect(scene.cells.map(cell => cell.id)).toEqual(["church", "street", "legacy-house"]);
     expect(scene.cells.map(cell => cell.surface)).toEqual(["building", "street", "building"]);
     expect(scene.cells.map(cell => cell.polygon)).toEqual(document.geometry.regions.map(region => region.punkte));
     expect(scene.cells[0]!.fill).toBe(BUILDING_COLORS.kirche);
     expect(scene.cells[2]!.fill).toBe(BUILDING_COLORS.haus);
     expect(scene.pins).toEqual([
-      { id: "church", x: 90, y: 100, label: "Kirche der Morgenröte", color: BUILDING_COLORS.kirche },
-      { id: "legacy-house", x: 260, y: 80, label: "Haus Linden" },
+      { id: "church", x: 90, y: 100, label: "Kirche der Morgenröte", color: BUILDING_COLORS.kirche, showMarker: false },
+      { id: "legacy-house", x: 260, y: 80, label: "Haus Linden", showMarker: false },
     ]);
     expect(scene.pins.some(pin => pin.id === "street")).toBe(false);
     expect(scene).toMatchObject({ id: "city", width: 640, height: 480, rasterScope: "campaign:map", grid: document.grid,
-      lines: [{ id: "wall", points: [[0, 0], [640, 0]] }],
+      lines: [{id:"wall",points:document.walls[0]!.points,paint:false}],
       stamps: [{ id: "paving", asset: "pk.grundriss/stein", x: 170, y: 80, s: 1, r: .5, l: -100, t: 123 }],
     });
+    expect(() => validateMapScene(scene)).not.toThrow();
+    expect(scene.drawing!.polygons.some(polygon=>polygon.regionId==="wall")).toBe(true);
+    expect(() => validateMapScene({...scene,drawing:{...scene.drawing!,polygons:[{...scene.drawing!.polygons[0]!,regionId:"missing-wall"}]}})).toThrow("invalid cartography polygon");
   });
 
-  it("never invents a building or an entrance for an unbound region", () => {
+  it("never guesses a street, building or entrance for an unbound legacy region", () => {
     const scene = mapDocumentScene("city", document, [], "siedlung");
     expect(scene.pins).toEqual([]);
     expect(scene.cells).toHaveLength(document.geometry.regions.length);
-    expect(scene.cells.every(cell => cell.surface === "street")).toBe(true);
+    expect(scene.cells.every(cell => cell.surface === undefined)).toBe(true);
     expect(scene).not.toHaveProperty("rasterScope");
   });
 
@@ -155,6 +164,8 @@ describe("map document presentation keeps spatial identity", () => {
     expect(scene.cells.every(cell => cell.surface === undefined)).toBe(true);
     expect(scene.pins).toHaveLength(1);
     expect(scene.pins[0]!.id).toBe("church");
+    expect(scene.lines).toEqual([{ id: "wall", points: [[0, 0], [640, 0]] }]);
+    expect(mapDocumentScene("room-map",document,[room],"grundriss",undefined,"fantasy",inferLegacyCartography(document)).lines).toEqual(scene.lines);
   });
 });
 

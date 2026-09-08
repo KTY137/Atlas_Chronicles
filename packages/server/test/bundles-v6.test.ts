@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAMPAIGN_V6_ADDITIONAL_TABLES, CAMPAIGN_V6_TABLES, currentCampaignSemanticDiff, parseCurrentCampaignBundle, serializeCurrentCampaignBundle } from "@chronicle/io";
+import { CAMPAIGN_V6_ADDITIONAL_TABLES, CAMPAIGN_V14_TABLES, currentCampaignSemanticDiff, parseCurrentCampaignBundle, serializeCurrentCampaignBundle } from "@chronicle/io";
 import { tacticalAttribution, tacticalDocument } from "../../io/test/campaign-v3-fixture.ts";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -33,16 +33,16 @@ describe("native v6 generated map persistence and restoration", () => {
   it("restores three levels, retained generator nodes and exact command retries into an empty target", async () => {
     const bundle = await exportCampaignBundle(source, gm, campaign, cfg), target = await createTestDb();
     try {
-      expect(bundle.version).toBe(6);
-      if (bundle.version !== 6) throw new Error("Nested rows require v6");
+      expect(bundle.version).toBe(14);
+      if (bundle.version !== 14) throw new Error("New generated cartography requires v14; retained v6 rows remain unchanged");
       for (const table of CAMPAIGN_V6_ADDITIONAL_TABLES) expect(bundle.tables[table.name].length).toBeGreaterThan(0);
       expect(bundle.tables.betreten_karten).toHaveLength(2);
       expect(attached.keimHash).toBeNull(); expect(entered.keimHash).toMatch(/^[a-f0-9]{64}$/);
       await initializeCampaignRestoreTarget(target);
       const parsed = parseCurrentCampaignBundle(serializeCurrentCampaignBundle(bundle));
-      expect(await inspectCampaignRestore(target, parsed)).toMatchObject({ dryRun: true, formatVersion: 6 });
+      expect(await inspectCampaignRestore(target, parsed)).toMatchObject({ dryRun: true, formatVersion: 14 });
       expect((await target.query("SELECT 1 FROM users")).rowCount).toBe(0);
-      expect(await restoreCampaignBundle(target, parsed)).toMatchObject({ dryRun: false, formatVersion: 6 });
+      expect(await restoreCampaignBundle(target, parsed)).toMatchObject({ dryRun: false, formatVersion: 14 });
       expect(currentCampaignSemanticDiff(bundle, await exportCampaignBundle(target, gm, campaign, cfg))).toEqual([]);
       const reopened = createBetreten(target, cfg);
       expect(await reopened.betrete(gm, campaign, enter)).toEqual(entered);
@@ -62,7 +62,7 @@ describe("native v6 generated map persistence and restoration", () => {
       await initializeCampaignRestoreTarget(target);
       const fault = (db: Db): Db => ({ close: async () => {}, query: async (sql, params) => { if (sql.startsWith('INSERT INTO "betreten_command_receipts"')) throw new Error("Injected nested receipt failure"); return db.query(sql, params); }, transaction: work => db.transaction(tx => work(fault(tx))) });
       await expect(restoreCampaignBundle(fault(target), bundle)).rejects.toThrow("Injected nested receipt failure");
-      for (const table of CAMPAIGN_V6_TABLES) expect((await target.query(`SELECT 1 FROM "${table.name}" LIMIT 1`)).rowCount).toBe(0);
+      for (const table of CAMPAIGN_V14_TABLES) expect((await target.query(`SELECT 1 FROM "${table.name}" LIMIT 1`)).rowCount).toBe(0);
     } finally { await target.close(); }
   }, 20_000);
 });

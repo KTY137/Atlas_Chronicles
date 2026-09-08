@@ -48,6 +48,7 @@ test("ERON markers open persistent nested maps, edit, restore navigation and wor
     expect(second).toBeTruthy();
     await expect(page.getByRole("navigation", { name: "Kartenpfad" }).locator("button[aria-current=page]")).toBeVisible();
     await page.getByRole("button", { name: "Karte bearbeiten", exact: true }).click();
+    await page.getByText("Raster, Maßstab & Export", { exact: true }).click();
     await page.getByRole("combobox", { name: "Kartenraster", exact: true }).selectOption("none");
     await page.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click();
     await expect(page.getByText(/Kartenrevision 2\./)).toBeVisible();
@@ -56,12 +57,13 @@ test("ERON markers open persistent nested maps, edit, restore navigation and wor
     await expect(page.getByRole("region", { name: "Unterkarte", exact: true })).toBeVisible();
     expect(new URL(page.url()).searchParams.get("atlasChild")).toBe(second);
     await page.getByRole("button", { name: "Karte bearbeiten", exact: true }).click();
+    await page.getByText("Raster, Maßstab & Export", { exact: true }).click();
     await expect(page.getByRole("combobox", { name: "Kartenraster", exact: true })).toHaveValue("none");
     await page.getByRole("button", { name: "Karte ansehen", exact: true }).click();
     await page.screenshot({ path: testInfo.outputPath("nested-desktop.png"), fullPage: true });
     await page.getByRole("button", { name: "Hauptkarte", exact: true }).click();
     await expect(page.locator(".atlas-render-host canvas")).toBeVisible();
-    const rootId = await page.locator("#atlas-map-select").inputValue();
+    const rootId = new URL(page.url()).searchParams.get("atlasMap")!;
     const root = await (await page.request.get(`${origin}/api/campaigns/${campaign.id}/maps/${rootId}`)).json();
     const pin = root.pins.find((item: { label: string }) => item.label === "Akkator");
     expect(pin.icon).toBe("portal");
@@ -77,7 +79,7 @@ test("ERON markers open persistent nested maps, edit, restore navigation and wor
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath("nested-mobile.png"), fullPage: true });
     await page.getByRole("button", { name: "Hauptkarte", exact: true }).click();
-    await expect(page.locator("#atlas-map-select")).toHaveValue(rootId);
+    await expect.poll(() => new URL(page.url()).searchParams.get("atlasMap")).toBe(rootId);
     // A scene opened directly must return to its actual ancestor, even if another atlas was remembered.
     const alternateSource = JSON.parse(await readFile(resolve("design/fixtures/eron/map-andaria.json"), "utf8"));
     alternateSource.mapImage = "Andere Hauptkarte.jpg";
@@ -86,7 +88,7 @@ test("ERON markers open persistent nested maps, edit, restore navigation and wor
     await page.goto(`${origin}/?campaign=${campaign.id}&stage=atlas&atlasMap=${(await alternate.json()).id}&atlasChild=${second}`);
     await expect(page.getByRole("navigation", { name: "Kartenpfad" }).locator("button[aria-current=page]")).toBeVisible();
     await page.getByRole("button", { name: "Hauptkarte", exact: true }).click();
-    await expect(page.locator("#atlas-map-select")).toHaveValue(rootId);
+    await expect.poll(() => new URL(page.url()).searchParams.get("atlasMap")).toBe(rootId);
     await page.goBack();
     await expect(page.getByRole("region", { name: "Unterkarte", exact: true })).toBeVisible();
     expect(new URL(page.url()).searchParams.get("atlasChild")).toBe(second);

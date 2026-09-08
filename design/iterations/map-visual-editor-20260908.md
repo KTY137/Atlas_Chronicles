@@ -110,7 +110,7 @@ Budget von 20.000 Regionspunkten. Grundstück-/Straßenreferenzen müssen die pa
 derselben Revision haben. Zyklen durch Eigentumsreferenzen sind ausgeschlossen.
 
 Neue Migration `025_tactical_cartography.sql` (vor Anwendung auf weiterhin freien Namen prüfen):
-`tactical_map_cartography(map_id, campaign_id, map_revision, document, content_hash)`, Primärschlüssel
+`tactical_map_cartography(map_id, campaign_id, map_revision, map_version, document, content_hash)`, Primärschlüssel
 `(map_id, map_revision)`, FK auf dieselbe Kampagnenkarte und genau diese Revision. Zeilen sind wie
 Revisionen unveränderlich. `content_hash` ist der kanonische Hash allein dieser Kartografie.
 Leseantworten liefern zusätzlich einen `compositionHash` über Dokument-/Ankerhash und
@@ -346,6 +346,13 @@ LangGraph; dieser Absatz ist die Arbeitsaufteilung, kein paralleler Control-Plan
 
 ## Angenommene Ergänzungen aus dem unabhängigen Review
 
+- `map_version` hält die CAS-Version beim Entstehen einer Kartografierevision fest. Der reale
+  Gegenbeleg war Childverbindung → Metadatenänderung → Kartenrevision → Export: Der eingefrorene
+  V3-Prüfer verwechselt dort `ack.version` mit einer Geometrierevision. V14 prüft eine eindeutige,
+  streng monotone Zuordnung und übersetzt ACK-Versionen ausschließlich für die V13-Kernprüfung.
+  Originalquittungen, ihre Bytes und exportierten Hashes bleiben unverändert. Keine synthetischen
+  Revisionen und keine Lockerung älterer Reader; Einzelheiten in `docs/CAMPAIGN_FORMAT_V14.md`.
+
 - Vorhandene `initial_snapshot.map`-Felder bleiben exakt `id`, `revision`, `contentHash`.
   `compositionHash` wird separat aus der zugeordneten unveränderlichen Sidecar-Zeile abgeleitet.
   Nach der ersten Kartografie-Revision einer Karte muss jede spätere Revision eine passende
@@ -370,6 +377,41 @@ prinzipielle Sperre, sondern diese notwendigen Vertragsbedingungen. Die drei Imp
 werden anschließend zusammen gegen die aufgeführten Angriffsfragen und echte Browserbilder geprüft.
 
 ## Abnahme und Angriffsfragen
+
+Nutzerkorrektur während der Umsetzung: Die installierte App zeigte noch den früheren
+Kartenstand; auch die echten Worktree-Galerien lagen sichtbar unter den PDF-Referenzen.
+Die geforderte größere Ambition wird an konkreter Komposition umgesetzt: Stadtstandard mit
+224 tatsächlich erreichbaren Häusern, dichter Kern mit kleineren Straßenfront-Parzellen und
+Gassen, größere Höfe am Rand, zusammenhängende natürlich begrenzte Gehölze und Feldgruppen,
+breiterer mäandernder Fluss sowie eine organische Kernmauer mit Wasser-/Straßenaussparungen.
+Root übernimmt die reine gemeinsame Projektion: stärkere Dachkonturen und Schatten,
+lesbare Ufer ohne innere Reach-Nähte, dichte variierte Baumkronen, gerichtete Feldfurchen und
+Steinmauern aus der bestehenden Wallgeometrie. Ordinary-Dachpins und doppelte Labels sollen
+die Karte nicht überdecken. Die echten Zwischenstandsgalerien bleiben als Vergleich erhalten.
+Die kleinere Funktionskarte belegt Bedienung, ausdrücklich keine visuelle Qualitätsabnahme.
+
+Unabhängiger Projektionsreview von `cartography-4` fand drei reale Abweichungen: Browser-
+Validierung kannte die neuen Wall-IDs nicht, dichtes Walddekor verbrauchte das Mauerbudget,
+und ein zusätzlicher kollinearer Wasservertex erzeugte ein falsches inneres Ufer.
+`cartography-5` behält echte Wall-Linienidentitäten mit `paint:false`, reserviert deren
+notwendige Basisflächen vor optionalem Dekor und berechnet Ufer über einen Intervall-Sweep
+auf den belegten Seiten kollinearer Kanten. Sehr große Wandmengen behalten den bestehenden
+vollständigen Linienpfad. Der originale unabhängige Gegenbeleg ist als
+`.local/projection-independent-review-before-fix.json` erhalten; der aktuelle Gegenbeleg
+bestätigt Browserannahme, erhaltene Mauerflächen und null innere Uferbänder. Dauerhafte
+Adapter-/Raster-/Budgetfälle und die betroffenen Rendererfälle sind gezielt geprüft.
+
+Der anschließende echte Browser-Detailvergleich fand Mauerabschlüsse unmittelbar an
+Dachkanten. Die Mittellinien lagen außerhalb, gezeichnete Steinbreite, Schatten und Kappen
+überschnitten dennoch 45 Mauer-/Hauspaare. Der Generator erweitert die tatsächlichen
+Hausgrundrisse nun vor dem Ausschneiden der Mauer um einen sichtbaren Abstand; konkave
+L-Häuser werden dafür in ihre beiden konvexen Teile zerlegt. Die unabhängige Prüfung aller
+gezeichneten Mauerflächen bestätigt null Überschneidungen bei drei Stadtseeds und zusätzlich
+den Zellgrößen 16/192. Produktionshash und Gegenbeleg: `.local/map-visuals-20260908/wall-evidence.json`.
+
+Zusätzlich gehört der neu angeforderte Kartenlöschpfad mit Rechtsklick-/Touch-Menü,
+Unterkarten-Vorschau und freiem Elterneingang zur Kartenabnahme:
+[angenommener Lifecycle-Vertrag](map-lifecycle-20260908.md), Migration 026/native V15.
 
 Vor Versand entsteht eine feste Galerie aus mindestens drei Seeds je Weiler/Dorf/Stadt;
 zusätzlich Gegenwart und Science-Fiction sowie ein bestehendes importiertes Legacy-Dokument.

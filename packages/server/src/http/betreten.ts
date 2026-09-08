@@ -8,6 +8,7 @@ import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { createBetreten } from "../domain/betreten.ts";
 import { TacticalValidationError } from "../domain/tactical.ts";
+import { MapLifecycleConflict } from "../domain/map-lifecycle.ts";
 import { BauwerkTypSchema, KartenStilSchema, OptionenSchema, HoehleOptionenSchema, SiedlungOptionenSchema } from "./grundriss.ts";
 
 /**
@@ -94,7 +95,10 @@ export function registerBetreten(app: FastifyInstance, db: Db, config: IdentityC
   app.post<{ Params: Scope; Body: BetretenBody }>(
     `${base}/betreten`,
     { schema: { body: BetretenSchema } },
-    req => run(async () => betreten.betrete(await auth(req.headers.cookie), req.params.campaignId, req.body)),
+    (req, reply) => run(async () => betreten.betrete(await auth(req.headers.cookie), req.params.campaignId, req.body)).catch(error => {
+      if (error instanceof MapLifecycleConflict) return reply.code(409).send(error.response());
+      throw error;
+    }),
   );
   app.put<{ Params: Scope & { parentMapId: string; knotenId: string }; Body: Static<typeof KnotenMetadataSchema> }>(
     `${base}/maps/tactical/:parentMapId/knoten/:knotenId/metadata`,

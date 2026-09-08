@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import {
-  CAMPAIGN_V13_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables,
+  CAMPAIGN_V15_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables,
   createCurrentCampaignBundle as createCampaignBundle, validateCurrentCampaignBundle as validateCampaignBundle,
   currentCampaignSemanticDiff as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, upgradeCampaignBundleV4,
-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV13 as CampaignTables,
-  type CampaignTableNameV13 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV15 as CampaignTables,
+  type CampaignTableNameV15 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -31,12 +31,12 @@ export const restoreOrder: readonly CampaignTableName[] = [
   "atlas_maps", "atlas_nodes", "atlas_revelations", "campaign_messages", "audit", "access_incidents",
   "actor_templates", "actor_template_revisions", "item_templates", "item_template_revisions",
   "actor_profiles", "actor_controllers", "reader_perspectives", "item_instances", "actor_inventory_events",
-  "tactical_sources", "tactical_maps", "tactical_map_revisions", "tactical_map_anchors",
+  "tactical_sources", "tactical_maps", "tactical_map_revisions", "tactical_map_cartography", "tactical_map_anchors",
   "scene_tactical_plans", "scene_token_plans", "session_tactical_states", "tactical_token_states",
   "tactical_command_receipts", "tactical_transitions",
   "theme_presets", "theme_preset_revisions", "campaign_theme_pins", "campaign_publications",
   "entry_publications", "publication_routes", "authoring_events",
-  "tactical_map_nodes", "betreten_karten", "betreten_command_receipts",
+  "tactical_map_nodes", "betreten_karten", "betreten_command_receipts", "map_lifecycle_events",
   // Erst die Assets, dann ihre Verwendungen: eine Verwendung zeigt auf Asset UND Passage.
   "wiki_assets", "wiki_asset_uses",
   // Zuletzt der Zugangsvorfall: er zeigt auf eine der beiden Vollmacht-Tabellen und auf ein
@@ -61,7 +61,7 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13; migration?: CampaignMigrationChain;
+  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
   sourceVersion: 1 | 2 | 3 | 4; targetVersion: 4 | 5; sourceContentHash: string; targetContentHash: string;
@@ -244,8 +244,8 @@ export async function restoreCampaignBundle(db: Db, input: unknown, options: Cam
     if (campaignSemanticDiff(bundle, reopened).length) throw new CampaignRestoreError("Restored campaign differs from the supplied evidence; the transaction was rolled back.");
     // ALTER IDENTITY RESTART is transactional, unlike setval. A failed restore
     // therefore cannot advance destination identity sequences outside its rollback.
-    for (const [name, column] of [["lineage_events", "seq"], ["audit", "id"], ["access_incidents", "id"]] as const) {
-      const maximum = bundle.tables[name].reduce((max, row) => { const value = BigInt(String(row[column])); return value > max ? value : max; }, 0n);
+    for (const [name, column] of [["lineage_events", "seq"], ["audit", "id"], ["access_incidents", "id"], ["map_lifecycle_events", "seq"]] as const) {
+      const maximum = tables[name].reduce((max, row) => { const value = BigInt(String(row[column])); return value > max ? value : max; }, 0n);
       if (maximum >= 9223372036854775807n) throw new CampaignRestoreError("An identity sequence is exhausted.");
       await tx.query(`ALTER TABLE ${quoted(name)} ALTER COLUMN ${quoted(column)} RESTART WITH ${maximum + 1n}`);
     }

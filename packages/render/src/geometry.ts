@@ -97,6 +97,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
   if (scene.rasterScope !== undefined && (typeof scene.rasterScope !== "string" || scene.rasterScope.length > 512)) throw new Error("invalid raster scope");
   if (scene.rasterSampling !== undefined && scene.rasterSampling !== "nearest" && scene.rasterSampling !== "linear") throw new Error("invalid raster sampling");
   if (scene.showLabels !== undefined && typeof scene.showLabels !== "boolean") throw new Error("invalid label visibility");
+  if (scene.paintCells !== undefined && typeof scene.paintCells !== "boolean") throw new Error("invalid cell paint visibility");
   if (scene.grid && scene.grid.kind !== "none") {
     if (!["square", "hex"].includes(scene.grid.kind) || !Number.isFinite(scene.grid.size) || scene.grid.size <= 0 || scene.grid.origin.length !== 2 || !scene.grid.origin.every(Number.isFinite)) throw new Error("invalid grid");
     if (scene.grid.kind === "hex" && (!["pointy", "flat"].includes(scene.grid.orientation) || !["even", "odd"].includes(scene.grid.offset))) throw new Error("invalid hex grid");
@@ -105,6 +106,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
   let vertices = 0;
   for (const line of scene.lines ?? []) {
     id("line", line.id); color(line.color); vertices += line.points.length;
+    if (line.paint !== undefined && typeof line.paint !== "boolean") throw new Error("invalid line paint visibility");
     if (line.points.length < 2 || vertices > 1_000_000 || line.points.some((p: MapPoint) => p.length !== 2 || !p.every(Number.isFinite))) throw new Error("invalid map line");
   }
   for (const cell of scene.cells) {
@@ -114,6 +116,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
     if (vertices > 1_000_000) throw new Error("polygon resource limit exceeded");
     for (const point of cell.polygon) if (point.length !== 2 || !point.every(Number.isFinite)) throw new Error("invalid polygon coordinate");
     color(cell.fill);
+    if (cell.label !== undefined && (typeof cell.label !== "string" || cell.label.length > 4096)) throw new Error("invalid cell label");
     if (cell.surface !== undefined && cell.surface !== "building" && cell.surface !== "street") throw new Error("invalid map surface");
     if (cell.roof !== undefined && !["pitched", "flat", "tech"].includes(cell.roof)) throw new Error("invalid roof presentation");
   }
@@ -125,4 +128,20 @@ export function validateMapScene(scene: ProjectedMapScene): void {
     if ("revision" in item && item.revision !== undefined && (!Number.isSafeInteger(item.revision) || item.revision < 1)) throw new Error("invalid token revision");
   }
   for (const pin of scene.pins) if (pin.icon !== undefined && !PIN_ICONS.has(pin.icon)) throw new Error("invalid map pin icon");
+  for (const pin of scene.pins) if (pin.labelMinScale !== undefined && (!Number.isFinite(pin.labelMinScale) || pin.labelMinScale < 0)) throw new Error("invalid name scale");
+  for (const pin of scene.pins) if (pin.showMarker !== undefined && typeof pin.showMarker !== "boolean") throw new Error("invalid marker visibility");
+  if (scene.drawing) {
+    const drawing = scene.drawing;
+    if (drawing.width !== scene.width || drawing.height !== scene.height || typeof drawing.rendererVersion !== "string" || drawing.rendererVersion.length > 64
+      || !Array.isArray(drawing.polygons) || drawing.polygons.length > 32768) throw new Error("invalid cartography drawing");
+    if (drawing.background !== null) color(drawing.background);
+    let count = 0;
+    for (const polygon of drawing.polygons) {
+      count += polygon.points.length;
+      if (!(identities.has(`cell:${polygon.regionId}`) || identities.has(`line:${polygon.regionId}`)) || polygon.points.length < 3 || count > 262144
+        || !Number.isFinite(polygon.opacity) || polygon.opacity < 0 || polygon.opacity > 1
+        || polygon.points.some((point: MapPoint) => point.length !== 2 || !point.every(value => Number.isFinite(value) && Math.abs(value) <= 1_000_000))) throw new Error("invalid cartography polygon");
+      color(polygon.fill);
+    }
+  }
 }

@@ -5,6 +5,7 @@ import { setImmediate as immediate } from "node:timers/promises";
 import sharp from "sharp";
 import { inspectUvttImage } from "@chronicle/forge";
 import { TACTICAL_MAP_LIMITS, type TacticalImageRef, type TacticalPoint } from "@chronicle/szene";
+import type { CartographyDrawing } from "../../../szene/src/cartography-projection.ts";
 
 /** Derived artifacts only. Never use this private cache identity as a player-visible revision. */
 export const TACTICAL_RASTER_DECODER_ID = `chronicle-raster-v1:center-evenodd-union:whole-footprint-box:rgba8:${JSON.stringify(Object.fromEntries(Object.entries(sharp.versions).sort(([a], [b]) => a.localeCompare(b, "en"))))}`;
@@ -18,6 +19,7 @@ export type TacticalRasterPolygon = readonly TacticalPoint[];
 export interface TacticalTileRequest {
   readonly image: Uint8Array | null;
   readonly documentSize: readonly [number, number];
+  readonly drawing?: CartographyDrawing;
   /** Already authorized image-pixel polygons, interpreted as a union of even-odd rings.
    * null explicitly authorizes the full background; [] authorizes no pixels.
    * A base pixel is inside at its center, with left-inclusive/right-exclusive crossings.
@@ -26,6 +28,9 @@ export interface TacticalTileRequest {
   readonly level: number; readonly x: number; readonly y: number; readonly tileSize?: number;
 }
 export interface TacticalTile { readonly bytes: Buffer; readonly mimeType: "image/png"; readonly width: number; readonly height: number }
+export interface CartographyImageRequest {
+  readonly image: Uint8Array | null; readonly documentSize: readonly [number, number]; readonly drawing: CartographyDrawing;
+}
 export interface ValidatedTacticalImage extends TacticalImageRef { readonly bytes: number; readonly decoderId: string }
 export interface TacticalRasterOptions {
   readonly maxConcurrent?: number; readonly maxQueue?: number; readonly queueWaitMs?: number;
@@ -38,6 +43,7 @@ export interface TacticalRasterStats {
 export interface TacticalRasterService {
   validateImage(image: Uint8Array, expected: TacticalImageRef): Promise<ValidatedTacticalImage>;
   renderTacticalTile(request: TacticalTileRequest): Promise<TacticalTile>;
+  renderCartographyImage(request: CartographyImageRequest): Promise<TacticalTile>;
   clearCache(): void;
   stats(): TacticalRasterStats;
 }
@@ -200,6 +206,117 @@ async function boxTile(source: MaskedSource | null, geometry: TileGeometry, job:
   job.check(); return output;
 }
 
+// Projection is numeric data, never SVG/HTML accepted by libvips. Decorations share the
+// renderer's ordered primitives, but raster work is clipped and bounded independently.
+const DRAW_LIMITS = Object.freeze({ polygons: 32768, points: 262144, edgeChecks: 64_000_000, pixelWrites: 64_000_000 });
+function drawingCopy(input: CartographyDrawing, dimensions: readonly [number, number]): CartographyDrawing {
+  if (!input || typeof input !== "object" || input.width !== dimensions[0] || input.height !== dimensions[1]
+    || typeof input.rendererVersion !== "string" || !/^[a-zA-Z0-9._:-]{1,128}$/.test(input.rendererVersion)
+    || !Array.isArray(input.polygons) || input.polygons.length > DRAW_LIMITS.polygons) fail("invalid cartography drawing or dimensions");
+  const color = (value: number) => integer(value, 0, 0xffffff, "drawing color");
+  let count = 0;
+  return { rendererVersion: input.rendererVersion, width: input.width, height: input.height,
+    background: input.background === null ? null : color(input.background),
+    polygons: input.polygons.map(polygon => {
+      if (!polygon || typeof polygon !== "object" || typeof polygon.regionId !== "string" || !polygon.regionId.length || polygon.regionId.length > 256
+        || !Array.isArray(polygon.points) || polygon.points.length < 3 || (count += polygon.points.length) > DRAW_LIMITS.points
+        || typeof polygon.opacity !== "number" || !Number.isFinite(polygon.opacity) || polygon.opacity < 0 || polygon.opacity > 1) fail("invalid cartography polygon or work budget");
+      const points = polygon.points.map(point => {
+        if (!Array.isArray(point) || point.length !== 2 || point.some(value => typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > TACTICAL_RASTER_LIMITS.coordinate)) fail("invalid cartography coordinates");
+        return [point[0], point[1]] as TacticalPoint;
+      });
+      return { regionId: polygon.regionId, points, fill: color(polygon.fill), opacity: polygon.opacity };
+    }),
+  };
+}
+function crossingsAt(polygon: TacticalRasterPolygon, y: number): number[] {
+  const crossings: number[] = [];
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i]!, b = polygon[(i+1)%polygon.length]!;
+    if ((a[1] > y) !== (b[1] > y)) crossings.push(a[0] + (y-a[1])*(b[0]-a[0])/(b[1]-a[1]));
+  }
+  return crossings.sort((a,b)=>a-b);
+}
+/** Only output-pixel coverage is retained. Scanline unions prove that EVERY native
+ * pixel in a coarse footprint is authorized, even when several known polygons meet. */
+async function tileVisibility(polygons: readonly TacticalRasterPolygon[] | null, geometry: TileGeometry, job: Job): Promise<Buffer | null> {
+  if (polygons === null) return null;
+  const {width,height,left,top,factor,sourceWidth,sourceHeight} = geometry;
+  const visible = Buffer.alloc(width*height, polygons.length ? 1 : 0);
+  if (!polygons.length) return visible;
+  let work = 0, writes = 0;
+  for (let sy = top*factor; sy < Math.min(sourceHeight,(top+height)*factor); sy++) {
+    const spans: [number,number][] = [];
+    for (const polygon of polygons) {
+      if ((work += polygon.length) > TACTICAL_RASTER_LIMITS.edgeChecks) fail("polygon rasterization work budget exceeded");
+      const intersections = crossingsAt(polygon,sy+.5);
+      for (let i=0;i+1<intersections.length;i+=2) {
+        const start=Math.max(left*factor,Math.ceil(intersections[i]!-.5)),end=Math.min(sourceWidth,(left+width)*factor,Math.ceil(intersections[i+1]!-.5));
+        if (end>start) spans.push([start,end]);
+      }
+    }
+    spans.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    const union: [number,number][]=[];
+    for (const span of spans) { const last=union.at(-1); if(last&&span[0]<=last[1])last[1]=Math.max(last[1],span[1]);else union.push(span); }
+    const row=Math.floor(sy/factor)-top; let index=0;
+    if ((writes+=width)>TACTICAL_RASTER_LIMITS.maskPixelWrites) fail("polygon pixel-write work budget exceeded");
+    for(let x=0;x<width;x++) {
+      const start=(left+x)*factor,end=Math.min(sourceWidth,start+factor);
+      while(index<union.length&&union[index]![1]<=start)index++;
+      const span=union[index]; if(!span||span[0]>start||span[1]<end)visible[row*width+x]=0;
+    }
+    if ((sy&31)===0)await job.pause();
+  }
+  return visible;
+}
+async function paintDrawing(rgba: Buffer, drawing: CartographyDrawing, geometry: TileGeometry, visible: Buffer | null, base: boolean, job: Job): Promise<void> {
+  const {width,height,left,top,factor,sourceWidth,sourceHeight}=geometry;
+  const composite=(pixel:number,color:number,opacity:number)=>{
+    if(visible!==null&&!visible[pixel])return;
+    const at=pixel*4,a=opacity+(rgba[at+3]!/255)*(1-opacity),alpha=Math.round(a*255);
+    if(!alpha){rgba.fill(0,at,at+4);return;}
+    const retain=(rgba[at+3]!/255)*(1-opacity);
+    rgba[at]=Math.round((((color>>>16)&255)*opacity+rgba[at]!*retain)/a);
+    rgba[at+1]=Math.round((((color>>>8)&255)*opacity+rgba[at+1]!*retain)/a);
+    rgba[at+2]=Math.round(((color&255)*opacity+rgba[at+2]!*retain)/a);rgba[at+3]=alpha;
+  };
+  if(base&&drawing.background!==null)for(let y=0;y<height;y++) {
+    for(let x=0;x<width;x++)composite(y*width+x,drawing.background,1);
+    if((y&31)===0)await job.pause();
+  }
+  let edgeWork=0,pixelWork=0;
+  for(const polygon of drawing.polygons) {
+    if(!polygon.opacity)continue;
+    let minY=Infinity,maxY=-Infinity;
+    for(const point of polygon.points){minY=Math.min(minY,point[1]);maxY=Math.max(maxY,point[1]);}
+    const startY=Math.max(0,Math.floor(minY/factor-top)-1),endY=Math.min(height,Math.ceil(maxY/factor-top)+1);
+    for(let y=startY;y<endY;y++) {
+      if((edgeWork+=polygon.points.length)>DRAW_LIMITS.edgeChecks)fail("cartography rasterization work budget exceeded");
+      const cy=((top+y)*factor+Math.min(sourceHeight,(top+y+1)*factor))/2;
+      const spans=crossingsAt(polygon.points,cy);
+      for(let i=0;i+1<spans.length;i+=2) {
+        const startX=Math.max(0,Math.floor(spans[i]!/factor-left)-1),endX=Math.min(width,Math.ceil(spans[i+1]!/factor-left)+1);
+        if((pixelWork+=Math.max(0,endX-startX))>DRAW_LIMITS.pixelWrites)fail("cartography pixel-write work budget exceeded");
+        for(let x=startX;x<endX;x++) {
+          const cx=((left+x)*factor+Math.min(sourceWidth,(left+x+1)*factor))/2;
+          if(cx>=spans[i]!&&cx<spans[i+1]!)composite(y*width+x,polygon.fill,polygon.opacity);
+        }
+      }
+      if((y&31)===0)await job.pause();
+    }
+    job.check();
+  }
+  if(visible!==null)for(let y=0;y<height;y++){
+    for(let x=0;x<width;x++)if(!visible[y*width+x])rgba.fill(0,(y*width+x)*4,(y*width+x+1)*4);
+    if((y&31)===0)await job.pause();
+  }
+}
+async function encodeTile(rgba: Buffer, geometry: Pick<TileGeometry,"width"|"height">, job: Job): Promise<TacticalTile> {
+  const bytes=await sharp(rgba,{raw:{width:geometry.width,height:geometry.height,channels:4}})
+    .timeout({seconds:job.seconds()}).png({compressionLevel:6,adaptiveFiltering:false,palette:false}).toBuffer();
+  job.check(); return {bytes,mimeType:"image/png",width:geometry.width,height:geometry.height};
+}
+
 /** One service owns a bounded queue and LRU of sanitized pixels. No DB, network, auth,
  * source-byte cache, disk files, or global sharp configuration is involved. A timed-out
  * caller releases no worker slot until its native operation actually settles. libvips'
@@ -254,6 +371,7 @@ export function createTacticalRasterService(options: TacticalRasterOptions = {})
       capacity();
       if (!request || typeof request !== "object") fail("tile request required");
       const geometry = tileGeometry(request), polygons = polygonsCopy(request.regions, geometry.sourceHeight), image = request.image === null ? null : sourceCopy(request.image);
+      const drawing=request.drawing===undefined?undefined:drawingCopy(request.drawing,[geometry.sourceWidth,geometry.sourceHeight]);
       return run(async job => {
         let source: MaskedSource | null = null;
         if (image !== null) {
@@ -270,11 +388,22 @@ export function createTacticalRasterService(options: TacticalRasterOptions = {})
           }
         }
         const rgba = await boxTile(source, geometry, job);
+        if(drawing)await paintDrawing(rgba,drawing,geometry,await tileVisibility(polygons,geometry,job),image===null,job);
         // Fresh raw input drops source EXIF/XMP/ICC/text chunks. Alpha-zero RGB is already zero.
-        const bytes = await sharp(rgba, { raw: { width: geometry.width, height: geometry.height, channels: 4 } })
-          .timeout({ seconds: job.seconds() }).png({ compressionLevel: 6, adaptiveFiltering: false, palette: false }).toBuffer();
-        job.check();
-        return { bytes, mimeType: "image/png", width: geometry.width, height: geometry.height };
+        return encodeTile(rgba,geometry,job);
+      });
+    },
+    async renderCartographyImage(request) {
+      capacity(); if(!request||typeof request!=="object")fail("cartography image request required");
+      const dimensions=size(request.documentSize),drawing=drawingCopy(request.drawing,dimensions),image=request.image===null?null:sourceCopy(request.image);
+      return run(async job=>{
+        const [width,height]=dimensions,geometry={width,height,sourceWidth:width,sourceHeight:height,left:0,top:0,factor:1};
+        const rgba=image===null?Buffer.alloc(width*height*4):(await decode(image,dimensions,job)).rgba;
+        await paintDrawing(rgba,drawing,geometry,null,image===null,job);
+        await materializeMask(rgba,null,width,height,job);
+        const result=await encodeTile(rgba,geometry,job);
+        if(result.bytes.length>TACTICAL_RASTER_LIMITS.imageBytes)fail("rendered cartography exceeds the 16 MiB image limit");
+        return result;
       });
     },
     clearCache() { cache.clear(); cacheBytes = 0; },
@@ -285,6 +414,7 @@ export function createTacticalRasterService(options: TacticalRasterOptions = {})
 const defaultService = createTacticalRasterService();
 export const validateImage: TacticalRasterService["validateImage"] = (image, expected) => defaultService.validateImage(image, expected);
 export const renderTacticalTile: TacticalRasterService["renderTacticalTile"] = request => defaultService.renderTacticalTile(request);
+export const renderCartographyImage: TacticalRasterService["renderCartographyImage"] = request => defaultService.renderCartographyImage(request);
 /**
  * Der Zustand des einen prozessweiten Rasterdienstes. Bis hier wurde er gemessen und nirgends
  * ausgegeben (design/10-hosted-betrieb-und-auslieferung.md §3.5). Er gehört hinter eine

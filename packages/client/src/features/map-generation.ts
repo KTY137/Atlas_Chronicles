@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { GrundrissOptionen, HoehleOptionen, SiedlungOptionen } from "@chronicle/forge";
-import { TACTICAL_MAP_LIMITS, type BauwerkTyp, type KartenSetting, type TacticalMapDocumentV1 } from "@chronicle/szene";
+import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type KartenSetting, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
 
 export type MapArt = "siedlung" | "grundriss" | "hoehle";
@@ -13,6 +13,7 @@ export interface GenerationDefaults {
 export interface MapNode {
   knotenId: string; titel: string; art: string; x: number; y: number;
   bauwerk?: { typ: BauwerkTyp; beschreibung: string };
+  vorhandeneKarteId?: string | null;
 }
 export interface GenerationSettings {
   art: MapArt; stil: MapStyle; breite: number | ""; hoehe: number | ""; anzahl: number | "";
@@ -58,21 +59,29 @@ export const BUILDING_COLORS: Record<BauwerkTyp, number> = {
   bank: 0xa5b398, werkstatt: 0xb0a28b,
 };
 /** Only already-authorized nodes and geometry enter this presentation adapter. */
-export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, nodes: readonly MapNode[], art?: string, rasterScope?: string, setting: KartenSetting = "fantasy"): ProjectedMapScene {
+export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, nodes: readonly MapNode[], art?: string, rasterScope?: string, setting: KartenSetting = "fantasy", cartography?: TacticalCartographyV1): ProjectedMapScene {
   const byId = new Map(nodes.map(node => [node.knotenId, node]));
-  const city = art === "siedlung" || nodes.some(node => node.art === "bauwerk");
+  const roles = new Map(cartography?.regions.map(region => [region.regionId, region]));
+  const polygons = new Map(document.geometry.regions.map(region => [region.id, region.punkte]));
   return {
     id, width: document.geometry.size[0], height: document.geometry.size[1], ...(rasterScope ? { rasterScope } : {}),
+    ...(cartography ? { drawing: cartographyDraw(document, cartography, setting) } : {}),
     cells: document.geometry.regions.map(region => {
-      const node = byId.get(region.id), building = node?.art === "bauwerk";
+      const node = byId.get(region.id), role = roles.get(region.id), building = role ? role.role === "building" : node?.art === "bauwerk", street = role?.role === "road";
       return { id: region.id, polygon: region.punkte,
-        fill: building ? BUILDING_COLORS[node.bauwerk?.typ ?? "haus"] : city ? setting === "fantasy" ? 0xbfae8c : setting === "scifi" ? 0x46545c : 0x64696a : 0x596f66,
-        ...(city ? { surface: building ? "building" as const : "street" as const } : {}),
+        ...(node ? { label: node.titel } : {}),
+        fill: building ? BUILDING_COLORS[node?.bauwerk?.typ ?? "haus"] : street ? setting === "fantasy" ? 0xbfae8c : setting === "scifi" ? 0x46545c : 0x64696a : 0x596f66,
+        ...(building ? { surface: "building" as const } : street ? { surface: "street" as const } : {}),
         ...(building ? { roof: setting === "fantasy" ? "pitched" as const : setting === "scifi" ? "tech" as const : "flat" as const } : {}) };
     }),
-    pins: nodes.map(node => ({ id: node.knotenId, x: node.x, y: node.y, label: node.titel,
-      ...(node.bauwerk ? { color: BUILDING_COLORS[node.bauwerk.typ] } : {}) })),
-    lines: document.walls.map(wall => ({ id: wall.id, points: wall.points })), grid: document.grid,
+    pins: nodes.map(node => {
+      const polygon = polygons.get(node.knotenId), ordinary = node.bauwerk && ["haus", "wohnblock", "buero", "lager"].includes(node.bauwerk.typ);
+      const span = polygon ? Math.max(...polygon.map(point => point[0])) - Math.min(...polygon.map(point => point[0])) : 32;
+      return { id: node.knotenId, x: node.x, y: node.y, label: node.titel,
+        ...(node.vorhandeneKarteId ? { icon: "portal" as const, showMarker: true } : node.art === "bauwerk" && polygon ? { showMarker: false } : {}),
+        ...(node.bauwerk ? { color: BUILDING_COLORS[node.bauwerk.typ] } : {}), ...(ordinary ? { labelMinScale: 32 / Math.max(1, span) } : {}) };
+    }),
+    lines: document.walls.map(wall => ({ id: wall.id, points: wall.points, ...(cartography && cartographyPaintsWalls(cartography, document) ? { paint: false } : {}) })), grid: document.grid,
     stamps: document.geometry.stamps.map(stamp => ({ id: stamp.id, asset: stamp.a, x: stamp.x, y: stamp.y, s: stamp.s, r: stamp.r, l: stamp.l, ...(stamp.t !== undefined ? { t: stamp.t } : {}) })),
   };
 }

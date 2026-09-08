@@ -22,3 +22,7 @@ export { loeseWfc, WfcError } from "./wfc.ts";
 export type { WfcKachel, WfcAuftrag, WfcErgebnis } from "./wfc.ts";
 export { SIEDLUNG_ERZEUGER, SIEDLUNG_VERSION, SIEDLUNG_LIMITS, SIEDLUNG_STANDARD, siedlungStandard, erzeugeSiedlung } from "./siedlung.ts";
 export type { SiedlungArt, SiedlungOptionen, SiedlungAuftrag, SiedlungBauwerk, SiedlungStrasse, SiedlungBericht, Siedlung } from "./siedlung.ts";
+export { applyCartographyEdit } from "./cartography-edit.ts";
+export type { CartographyEditInput, CartographyEditOperation, CartographyEditResult, QuarterTurns } from "./cartography-edit.ts";
+export { CARTOGRAPHY_EDIT_LIMITS, CARTOGRAPHY_PATTERN_VERSION, solveCartographyPatterns } from "./cartography-patterns.ts";
+export type { EditLimits, CartographyPattern, PatternBoundary, PatternCell, PatternSolution } from "./cartography-patterns.ts";

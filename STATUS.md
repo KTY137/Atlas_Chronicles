@@ -2,6 +2,41 @@
 
 Updated: **2026-09-08** (Integration, Desktop-Lieferung und bearbeitbare Karten)
 
+## Laufender Kartenabschluss
+
+Der Kartenumbau auf Basis von `d6065a9` ist funktionsgeprüft und wird paketiert.
+`main` bleibt vor der Übernahme sauber; die installierte App ist weiterhin der unten belegte Stand
+`a7e1487`, der große Kartenumbau ist darin noch nicht enthalten.
+
+Der gemeinsame Browser zeigt jetzt `cartography-5`: 224 echte Häuser je geprüfter
+Stadt, dichte Wälder, breite Flüsse, Straßenfronten und steinerne Mauern. Die Galerie
+`.local/map-editor-gallery-4/` prüft elf Übersichten sowie Detail, Mobilansicht,
+gespeicherten Innenraum und alte Bildkarte ohne Asset-/Browserfehler. Der auffällige
+Mauer-/Gebäudeanschluss ist korrigiert: 45 auf null sichtbare Kollisionen, auch bei
+kleinen/großen Zellmaßen; tatsächlicher Detailbrowser nachgeprüft. PDF-Parität wird
+nicht automatisch behauptet. 72 betroffene Projektions-/Raster-/Rendererfälle und
+drei unabhängige Rasterprüfungen bestanden nach echten Fehlerkorrekturen.
+
+Neu angefordert und im echten Browser funktionsgeprüft: Rechtsklick-/Tastatur-/
+Touch-Menüs mit klarem Kartenziel, serverseitige Löschvorschau für den vollständigen
+Unterbaum, Schutz laufender Tischkarten, Konflikt mit erneuter Bestätigung,
+Elternnavigation, freier Eingang und neuer Ersatzinnenraum. Der Nachweis liegt unter
+`.local/map-deletion-8/`; auch die Schmiede-Bibliothek, Entwurfsschutz und Fokus-
+Rückkehr funktionieren. Wasserfläche öffnet das aktuelle Kartenmenü, Dach die Unterkarte.
+Migration 026 / Native V15 ergänzen den Kartenlebenszyklus neben 025 / V14-Kartografie.
+Der Datenabschluss behebt die unabhängigen roten Befunde zu alten Import-Quittungen,
+aktiven Ersatzverbindungen und der CAS-/Revisionszuordnung alter Karten. Zuletzt
+15 Lifecycle-/Nativefälle grün, zuvor 54 betroffene Integrationsfälle; Szenenstart
+mit gelöschter Vorbereitung rollt den gesamten Wechsel zurück.
+Desktop-Smoke ist auf den neuen Editor und einen echten V15-Lösch-/Ersatzablauf
+erweitert, aber noch nicht am neuen Paket ausgeführt. Gemeinsamer Typecheck und
+Produktionsclient-Build sowie Version, Paketgrenzen und alle 571 Assets sind grün.
+Paketprüfung, Merge und aktualisierte Installation stehen aus.
+
+Chronist (027 / V16 reserviert) und freier NPC-Generator bleiben im vollständigen
+aktiven Ziel offen. Der Chronistvertrag liegt zur Gegenprüfung in
+`design/iterations/chronist-completion-20260908.md`; noch keine Umsetzung behaupten.
+
 ## Aktuelle Liefergrenze
 
 `main` enthält seit `a7e1487` den geprüften Integrationsstand aus `bcfd51f` und `4813080`:

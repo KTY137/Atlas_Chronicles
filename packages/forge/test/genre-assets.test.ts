@@ -24,7 +24,13 @@ describe("genre archive artwork in the existing generators", () => {
       const request = { keim: `genre-city:${setting}`, optionen: { setting, bauwerke: 24 } };
       const result = erzeugeSiedlung(request, pack);
       expect(pruefeStampVerweise(result.karte.geometry, index)).toEqual([]);
-      expect(result.karte.geometry.stamps.length).toBeGreaterThan(10);
+      // Continuous ground is canonical cartography now; repeated floor stamps are no
+      // longer a measure of successful artwork use. Check actual referenced genre props.
+      const placed = result.karte.geometry.stamps.map(stamp => byName.get(stamp.a)!);
+      expect(placed.length).toBeGreaterThan(0);
+      expect(placed.every(asset => !KARTEN_SETTINGS.some(era => asset.schlagworte.includes(era)) || asset.schlagworte.includes(setting))).toBe(true);
+      if (setting !== "fantasy") expect(placed.some(asset => asset.art === "aufbau" && asset.schlagworte.includes("verkehr"))).toBe(true);
+      expect(result.cartography.regions.some(role => role.role === "terrain" && role.material === "grass")).toBe(true);
       expect(erzeugeSiedlung(request, pack)).toEqual(result);
       expect(result.bauwerke.length).toBeGreaterThan(2);
     });

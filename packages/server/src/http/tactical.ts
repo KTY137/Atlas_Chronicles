@@ -2,17 +2,20 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
-import { TacticalMapValidationError } from "@chronicle/szene";
+import { Value } from "@sinclair/typebox/value";
+import { TacticalCartographyValidationError, TacticalMapValidationError } from "@chronicle/szene";
 import { UvttValidationError } from "@chronicle/forge";
 import * as P from "../../../protocol/src/tactical.ts";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { createTactical, TacticalValidationError } from "../domain/tactical.ts";
 import { TacticalRasterError } from "../domain/tactical-raster.ts";
+import { registerMapLifecycle } from "./map-lifecycle.ts";
 
 /** Route-specific bound includes escaped JSON source and an optional native image. */
 export const TACTICAL_IMPORT_BODY_LIMIT = 96 * 1024 * 1024;
 export function registerTactical(app: FastifyInstance, db: Db, config: IdentityConfig) {
+  registerMapLifecycle(app, db, config);
   const identity = createIdentity(db, config), tactical = createTactical(db, config);
   const auth = async (cookie: string | undefined) => (await identity.authenticate(cookie)).userId;
   const base = "/api/campaigns/:campaignId";
@@ -21,10 +24,15 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
   type Tile = Item & { level: string; x: string; y: string };
   const revisionQuery = Type.Object({ revision: Type.Optional(Type.String({ pattern: "^[1-9][0-9]{0,9}$" })) }, { additionalProperties: false });
   const tileQuery = Type.Object({ ...revisionQuery.properties, view: Type.Optional(Type.String({ pattern: "^[a-f0-9]{64}$" })) }, { additionalProperties: false });
+  const mapTileQuery = Type.Object({ ...tileQuery.properties, layer: Type.Optional(Type.Literal("background")) }, { additionalProperties: false });
   // Die drei Routen mit TACTICAL_IMPORT_BODY_LIMIT tragen bis zu 96 MiB und rastern anschließend.
   // Ohne eigenes Budget liefen sie unter dem allgemeinen 240/Minute, während der weit billigere
   // Export auf 4/Minute steht (http/bundles.ts). Acht lässt ein ungeduldiges Nacheinander zu.
   const importLimit = { rateLimit: { max: 8, timeWindow: "1 minute" } };
+  const importOptions = { bodyLimit: TACTICAL_IMPORT_BODY_LIMIT, config: importLimit, schema: { body: P.TacticalImportSchema },
+    // Generator-only content is an internal argument, never a silently discarded HTTP field.
+    validatorCompiler: () => (data: unknown) => Value.Check(P.TacticalImportSchema, data) ? { value: data } : { error: new TacticalValidationError("Ungültiger Kartenimport.") },
+  };
   // Panning and revising a map requests many tiles. They share one bounded budget across both
   // preview and live routes, separate from commands and lists. Reusing one plugin hook matters:
   // route-specific config alone would create a separate store for each route. The plugin keeps
@@ -40,7 +48,7 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
   const revision = (raw?: string) => raw === undefined ? undefined : number(raw, 1);
   async function run<T>(work: () => Promise<T>): Promise<T> {
     try { return await work(); } catch (error) {
-      if (error instanceof TacticalMapValidationError || error instanceof UvttValidationError) throw new TacticalValidationError(error.message);
+      if (error instanceof TacticalMapValidationError || error instanceof TacticalCartographyValidationError || error instanceof UvttValidationError) throw new TacticalValidationError(error.message);
       if (error instanceof TacticalRasterError) {
         const failure = new Error(error.message) as Error & { statusCode: number };
         failure.statusCode = error.code === "invalid" ? 400 : 503; throw failure;
@@ -49,12 +57,17 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
     }
   }
   app.get<{ Params: Scope }>(`${base}/tactical/maps`, req => run(async () => tactical.listMaps(await auth(req.headers.cookie), req.params.campaignId)));
-  app.post<{ Params: Scope; Body: P.TacticalImportInput }>(`${base}/tactical/maps/import-preview`, { bodyLimit: TACTICAL_IMPORT_BODY_LIMIT, config: importLimit, schema: { body: P.TacticalImportSchema } }, req => run(async () => tactical.importPreview(await auth(req.headers.cookie), req.params.campaignId, req.body)));
-  app.post<{ Params: Scope; Body: P.TacticalImportInput }>(`${base}/tactical/maps`, { bodyLimit: TACTICAL_IMPORT_BODY_LIMIT, config: importLimit, schema: { body: P.TacticalImportSchema } }, req => run(async () => tactical.importMap(await auth(req.headers.cookie), req.params.campaignId, req.body)));
+  app.post<{ Params: Scope; Body: P.TacticalImportInput }>(`${base}/tactical/maps/import-preview`, importOptions, req => run(async () => tactical.importPreview(await auth(req.headers.cookie), req.params.campaignId, req.body)));
+  app.post<{ Params: Scope; Body: P.TacticalImportInput }>(`${base}/tactical/maps`, importOptions, req => run(async () => tactical.importMap(await auth(req.headers.cookie), req.params.campaignId, req.body)));
   app.get<{ Params: Item; Querystring: Static<typeof revisionQuery> }>(`${base}/tactical/maps/:id`, { schema: { querystring: revisionQuery } }, req => run(async () => tactical.getMap(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision))));
   app.get<{ Params: Item; Querystring: Static<typeof revisionQuery> }>(`${base}/tactical/maps/:id/source`, { schema: { querystring: revisionQuery } }, req => run(async () => tactical.getSource(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision))));
   app.get<{ Params: Item; Querystring: Static<typeof revisionQuery> }>(`${base}/tactical/maps/:id/uvtt`, { schema: { querystring: revisionQuery } }, req => run(async () => tactical.exportMap(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision))));
-  app.put<{ Params: Item; Body: P.TacticalRevisionInput }>(`${base}/tactical/maps/:id/revision`, { bodyLimit: TACTICAL_IMPORT_BODY_LIMIT, config: importLimit, schema: { body: P.TacticalRevisionSchema } }, req => run(async () => tactical.reviseMap(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body)));
+  app.put<{ Params: Item; Body: P.TacticalRevisionInput }>(`${base}/tactical/maps/:id/revision`, {
+    bodyLimit: TACTICAL_IMPORT_BODY_LIMIT, config: importLimit, schema: { body: P.TacticalRevisionSchema },
+    // Ajv's removeAdditional can strip v2 fields while trying the closed legacy branch first.
+    // Validate this version union without mutation; the domain independently checks it again.
+    validatorCompiler: () => data => Value.Check(P.TacticalRevisionSchema, data) ? { value: data } : { error: new TacticalValidationError("Ungültige Kartenrevision.") },
+  }, req => run(async () => tactical.reviseMap(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body)));
   app.get<{ Params: Item }>(`${base}/scenes/:id/tactical-plan`, req => run(async () => tactical.getPlan(await auth(req.headers.cookie), req.params.campaignId, req.params.id)));
   app.put<{ Params: Item; Body: P.TacticalPlanInput }>(`${base}/scenes/:id/tactical-plan`, { schema: { body: P.TacticalPlanSchema } }, req => run(async () => tactical.savePlan(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body)));
   app.get<{ Params: Scope }>(`${base}/tactical/active`, req => run(async () => tactical.getActive(await auth(req.headers.cookie), req.params.campaignId)));
@@ -66,8 +79,8 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
     const tile = await tactical.getTile(await auth(req.headers.cookie), req.params.campaignId, req.params.id, number(req.params.level), number(req.params.x), number(req.params.y), req.query.view);
     return reply.header("Cache-Control", "private, no-store").header("X-Tactical-View", tile.view).type(tile.mimeType).send(tile.bytes);
   }));
-  app.get<{ Params: Tile; Querystring: Static<typeof tileQuery> }>(`${base}/tactical/maps/:id/tiles/:level/:x/:y`, tileOptions, (req, reply) => run(async () => {
-    const tile = await tactical.getMapTile(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision), number(req.params.level), number(req.params.x), number(req.params.y), req.query.view);
-    return reply.header("Cache-Control", "private, no-store").header("X-Tactical-View", tile.view).type(tile.mimeType).send(tile.bytes);
+  app.get<{ Params: Tile; Querystring: Static<typeof mapTileQuery> }>(`${base}/tactical/maps/:id/tiles/:level/:x/:y`, { ...tileOptions, schema: { querystring: mapTileQuery } }, (req, reply) => run(async () => {
+    const tile = await tactical.getMapTile(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision), number(req.params.level), number(req.params.x), number(req.params.y), req.query.view, req.query.layer);
+    return reply.header("Cache-Control", "private, no-store").header("X-Tactical-View", tile.view).header("X-Tactical-Layer", tile.layer).type(tile.mimeType).send(tile.bytes);
   }));
 }

@@ -6,14 +6,16 @@ import type { Static, TSchema } from "@sinclair/typebox";
 import { resolvePassage, type LineageEvent } from "@chronicle/chronik";
 import { trustPassageId } from "@chronicle/core";
 import { importUvtt, exportUvtt, exportTacticalUvtt, inspectUvttImage, type UvttImage, type UvttProvenance, type FidelityReport } from "@chronicle/forge";
-import { parseBoundedMapJson, parseTacticalMapDocument, TACTICAL_MAP_LIMITS, type TacticalMapDocumentV1 } from "@chronicle/szene";
+import { cartographyDraw, rendererVersion, inferLegacyCartography, parseBoundedMapJson, parseTacticalCartography, parseTacticalMapDocument, tacticalCartographyHash, tacticalCompositionHash, TACTICAL_MAP_LIMITS,
+  type BuildingIntent, type CartographyRegionV1, type Knoten, type LegacyCartographyEvidence, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import * as P from "../../../protocol/src/tactical.ts";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
 import { createDocuments } from "./documents.ts";
 import { authorizeActor, listControlledActorIds } from "./actors.ts";
 import { Conflict, Gone } from "./errors.ts";
-import { validateImage, renderTacticalTile, TACTICAL_RASTER_LIMITS } from "./tactical-raster.ts";
+import { activeMapEntrances, assertMapActive, isMapDeleted, mapLifecycleRows, retiredMapKeys } from "./map-lifecycle.ts";
+import { validateImage, renderTacticalTile, renderCartographyImage, TACTICAL_RASTER_LIMITS } from "./tactical-raster.ts";
 import { applyTacticalPatch, sameTacticalValues, tacticalPointInside, tacticalCanonicalJson, type TacticalSnapshot, type TacticalTokenState, type TacticalPortalState, type TacticalPatch } from "./tactical-state.ts";
 
 export const TACTICAL_UNDO_LIMIT = 50;
@@ -67,7 +69,52 @@ async function mapCard(tx: Db, campaignId: string, mapId: string, revision?: num
   if (!row) throw new Gone();
   const bindings = await anchors(tx, mapId, row.revision), document = parseTacticalMapDocument(row.document);
   if (tacticalHash({ document, anchors: bindings }) !== row.contentHash) throw new Gone();
-  return { ...row, document, anchors: bindings };
+  const stored = (await tx.query<{ document: unknown; content_hash: string }>("SELECT document,content_hash FROM tactical_map_cartography WHERE campaign_id=$1 AND map_id=$2 AND map_revision=$3", [campaignId, mapId, row.revision])).rows[0];
+  if (stored) {
+    const cartography = parseTacticalCartography(stored.document, document), cartographyHash = tacticalCartographyHash(cartography);
+    if (cartographyHash !== stored.content_hash) throw new Gone();
+    const compositionHash = tacticalCompositionHash(row.contentHash, cartographyHash);
+    const original = (await tx.query<{ provenance: UvttProvenance }>("SELECT provenance FROM tactical_sources WHERE campaign_id=$1 AND id=$2", [campaignId, row.sourceId])).rows[0];
+    if (!original) throw new Gone();
+    const rasterDigest = tacticalHash({ mapRevision: row.revision, compositionHash, rendererVersion, setting: original.provenance.setting ?? "fantasy" });
+    return { ...row, document, anchors: bindings, cartography, cartographyHash, compositionHash, rasterDigest };
+  }
+  if ((await tx.query("SELECT 1 FROM tactical_map_cartography WHERE campaign_id=$1 AND map_id=$2 AND map_revision<$3 LIMIT 1", [campaignId, mapId, row.revision])).rowCount) throw new Gone();
+  const storedNodes = (await tx.query<{ data: Knoten }>("SELECT data FROM tactical_map_nodes WHERE campaign_id=$1 AND map_id=$2", [campaignId, mapId])).rows.map(value => value.data);
+  const original = (await tx.query<Pick<SourceRow, "format" | "source_text" | "source_hash" | "provenance">>("SELECT format,source_text,source_hash,provenance FROM tactical_sources WHERE campaign_id=$1 AND id=$2", [campaignId, row.sourceId])).rows[0];
+  if (!original || sourceHash(original.source_text) !== original.source_hash) throw new Gone();
+  const originalDocument = original.format === "native" ? parseTacticalMapDocument(original.source_text) : undefined;
+  const originalIds = new Set(originalDocument?.geometry.regions.map(region => region.id));
+  // Metadata rows can be created long after this pinned revision. Only retained original
+  // generator nodes establish an old role; a current room name must not rewrite history.
+  const nodes = storedNodes.filter(node => originalIds.has(node.id) && node.herkunft !== null
+    && ["chronicle-siedlung", "chronicle-grundriss", "chronicle-hoehle"].includes(node.herkunft.erzeuger)
+    && node.herkunft.erzeuger === original.provenance.generator && node.herkunft.version === original.provenance.generatorVersion);
+  let settlement: LegacyCartographyEvidence["settlement"];
+  if (originalDocument && original.provenance.generator === "chronicle-siedlung" && ["1", "2", "3", "4"].includes(original.provenance.generatorVersion ?? "")) {
+    const buildingRegionIds = nodes.filter(node => node.art === "bauwerk" && originalIds.has(node.id)).map(node => node.id as string);
+    if (buildingRegionIds.length) settlement = { generator: "chronicle-siedlung", version: original.provenance.generatorVersion as "1" | "2" | "3" | "4", originalDocument, buildingRegionIds };
+  }
+  return { ...row, document, anchors: bindings, legacyCartography: inferLegacyCartography(document, { nodes, ...(settlement ? { settlement } : {}) }) };
+}
+
+/** The generator is an internal caller; an HTTP import cannot supply this trusted argument. */
+export interface GeneratedMapContent { readonly cartography: TacticalCartographyV1; readonly nodes: readonly Knoten[] }
+async function storeCartography(tx: Db, campaignId: string, mapId: string, revision: number, cartography: TacticalCartographyV1, mapVersion = revision): Promise<void> {
+  await tx.query("INSERT INTO tactical_map_cartography(map_id,campaign_id,map_revision,map_version,document,content_hash) VALUES($1,$2,$3,$4,$5,$6)", [mapId, campaignId, revision, mapVersion, json(cartography), tacticalCartographyHash(cartography)]);
+}
+const regionMeaning = ({ authored: _authored, locked: _locked, provenance: _provenance, ...meaning }: CartographyRegionV1) => meaning;
+function validateAuthoredCartography(before: P.TacticalMapCard, document: TacticalMapDocumentV1, cartography: TacticalCartographyV1): void {
+  const previous = new Map((before.cartography ?? before.legacyCartography)!.regions.map(region => [region.regionId, region]));
+  const oldGeometry = new Map(before.document.geometry.regions.map(region => [region.id, region])), nextGeometry = new Map(document.geometry.regions.map(region => [region.id, region]));
+  const oldStamps = new Map(before.document.geometry.stamps.map(stamp => [stamp.id, stamp])), nextStamps = new Map(document.geometry.stamps.map(stamp => [stamp.id, stamp]));
+  for (const region of cartography.regions) {
+    const old = previous.get(region.regionId);
+    const same = old && tacticalHash(oldGeometry.get(region.regionId)) === tacticalHash(nextGeometry.get(region.regionId)) && tacticalHash(regionMeaning(old)) === tacticalHash(regionMeaning(region))
+      && (region.role !== "building" || (region.attachedStampIds ?? []).every(id => oldStamps.has(id) && nextStamps.has(id) && tacticalHash(oldStamps.get(id)) === tacticalHash(nextStamps.get(id))));
+    if (!same && (!region.authored || region.provenance !== null)) throw new TacticalValidationError("Neue oder bearbeitete Flächen benötigen authored:true und dürfen keine Generatorherkunft behaupten.");
+    if (same && tacticalHash(old.provenance) !== tacticalHash(region.provenance)) throw new TacticalValidationError("Die gespeicherte Herkunft einer unveränderten Fläche bleibt erhalten.");
+  }
 }
 async function plan(tx: Db, campaignId: string, sceneId: string): Promise<P.TacticalPlan | null> {
   if (!(await tx.query("SELECT 1 FROM scenes WHERE id=$1 AND campaign_id=$2", [sceneId, campaignId])).rowCount) throw new Gone();
@@ -80,6 +127,8 @@ export async function captureTacticalSession(tx: Db, campaignId: string, sceneId
   if (!(await tx.query("SELECT 1 FROM game_sessions WHERE id=$1 AND campaign_id=$2 AND scene_id=$3", [sessionId, campaignId, sceneId])).rowCount) throw new Gone();
   if ((await tx.query("SELECT 1 FROM session_tactical_states WHERE session_id=$1", [sessionId])).rowCount) return;
   const chosen = await plan(tx, campaignId, sceneId); if (!chosen) return;
+  if (await isMapDeleted(tx, campaignId, "tactical", chosen.mapId))
+    throw new TacticalValidationError("Die vorbereitete Karte wurde gelöscht. Bitte vor dem Szenenstart eine verfügbare Karte in der Vorbereitung speichern.");
   const source = await mapCard(tx, campaignId, chosen.mapId, chosen.mapRevision);
   const snapshot: TacticalSnapshot = { schemaVersion: 1, map: { id: source.id, revision: source.revision, contentHash: source.contentHash },
     tokens: sorted(chosen.tokens.map(token => ({ ...token, version: 1 }))), portals: sorted(source.document.portals.map(p => ({ id: p.id, closed: p.closed, version: 1 }))) };
@@ -136,14 +185,23 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
         if (old.actor_user_id !== userId || old.campaign_id !== campaignId || old.scope_kind !== scopeKind || old.scope_id !== scopeId || old.operation !== operation || old.request_hash !== hash
           || operation === "token.move" && (old.subject_kind !== "token" || old.subject_id !== input.tokenId)
           || operation === "portal.set" && (old.subject_kind !== "portal" || old.subject_id !== input.portalId)) throw new Conflict();
+        if (operation === "map.import") await assertMapActive(tx, campaignId, "tactical", old.subject_id);
         return old.ack;
       }
       const outcome = await work(tx, member);
-      await tx.query(`INSERT INTO tactical_command_receipts(command_id,actor_user_id,campaign_id,scope_kind,scope_id,subject_kind,subject_id,operation,request_hash,ack,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, [input.commandId, userId, campaignId, scopeKind, scopeId, outcome.subjectKind, outcome.ack.subjectId, operation, hash, json(outcome.ack), now()]);
+      const at = now();
+      await tx.query(`INSERT INTO tactical_command_receipts(command_id,actor_user_id,campaign_id,scope_kind,scope_id,subject_kind,subject_id,operation,request_hash,ack,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, [input.commandId, userId, campaignId, scopeKind, scopeId, outcome.subjectKind, outcome.ack.subjectId, operation, hash, json(outcome.ack), at]);
+      if (operation === "map.revise" && input.schemaVersion !== 2) {
+        const revision = (await tx.query<{ revision: number; content_hash: string }>(`SELECT r.revision,r.content_hash FROM tactical_maps m
+          JOIN tactical_map_revisions r ON r.map_id=m.id AND r.revision=m.head_revision WHERE m.id=$1 AND m.campaign_id=$2`, [scopeId, campaignId])).rows[0]!;
+        if (outcome.ack.version !== revision.revision) await tx.query(`INSERT INTO map_lifecycle_events(command_id,campaign_id,actor_user_id,operation,request_hash,request,payload,ack,created_at)
+          VALUES($1,$2,$3,'map.revise',$4,$5,$6,$7,$8)`, [input.commandId, campaignId, userId, hash, json(input),
+          json({ schemaVersion: 1, mapId: scopeId, mapRevision: revision.revision, mapVersion: outcome.ack.version, contentHash: revision.content_hash }), json(outcome.ack), at]);
+      }
       return outcome.ack;
     }).catch((error: unknown) => {
       const e = error as { code?: string; constraint?: string };
-      if (e?.code === "23505" && ["tactical_command_receipts_pkey", "tactical_transitions_command_id_key"].includes(e.constraint ?? "")) throw new Conflict();
+      if (e?.code === "23505" && ["tactical_command_receipts_pkey", "tactical_transitions_command_id_key", "map_lifecycle_events_command_id_key"].includes(e.constraint ?? "")) throw new Conflict();
       throw error;
     });
   }
@@ -172,33 +230,51 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); const bindings = await validateAnchors(tx, campaignId, prepared.document, input.anchors ?? []);
       return { document: prepared.document, anchors: bindings, fidelity: prepared.fidelity, image: prepared.imageMeta, sourceHash: sourceHash(input.sourceText) }; });
   }
-  async function importMap(userId: string, campaignId: string, raw: unknown): Promise<P.TacticalAck> {
+  async function importMap(userId: string, campaignId: string, raw: unknown, generated?: GeneratedMapContent): Promise<P.TacticalAck> {
     await createCampaigns(db).requireMember(userId, campaignId, ["leitung"]);
     const parsed = parse(P.TacticalImportSchema, raw), input = { ...parsed, imageBase64: parsed.imageBase64 ?? null, anchors: parsed.anchors ?? [] }, prepared = await prepareImport(input);
-    return command(userId, campaignId, "campaign", campaignId, "map.import", input, true, async () => {}, async tx => {
+    const generatedContent = generated ? { cartography: parseTacticalCartography(generated.cartography, prepared.document), nodes: generated.nodes } : undefined;
+    return command(userId, campaignId, "campaign", campaignId, "map.import", { ...input, ...(generatedContent ? { generated: generatedContent } : {}) }, true, async () => {}, async tx => {
       const id = randomUUID(), sourceId = randomUUID(), at = now(), bindings = await validateAnchors(tx, campaignId, prepared.document, input.anchors);
       await tx.query(`INSERT INTO tactical_sources(id,campaign_id,format,format_version,source_text,source_hash,source_bytes,image_base64,image_meta,provenance,fidelity,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, [sourceId, campaignId, input.format, prepared.formatVersion, input.sourceText, sourceHash(input.sourceText), Buffer.byteLength(input.sourceText, "utf8"), input.format === "native" ? input.imageBase64 : null, prepared.imageMeta ? json(prepared.imageMeta) : null, json(prepared.provenance), json(prepared.fidelity), userId, at]);
       await tx.query("INSERT INTO tactical_maps(id,campaign_id,name,created_by,created_at) VALUES($1,$2,$3,$4,$5)", [id, campaignId, input.name, userId, at]);
       await tx.query("INSERT INTO tactical_map_revisions(map_id,campaign_id,revision,source_id,document,content_hash,created_by,created_at) VALUES($1,$2,1,$3,$4,$5,$6,$7)", [id, campaignId, sourceId, json(prepared.document), tacticalHash({ document: prepared.document, anchors: bindings }), userId, at]);
       await storeAnchors(tx, campaignId, id, 1, bindings);
+      if (generatedContent) {
+        await storeCartography(tx, campaignId, id, 1, generatedContent.cartography);
+        await tx.query(`INSERT INTO tactical_map_nodes(map_id,knoten_id,campaign_id,data)
+          SELECT $1,n.id,$2,n.data FROM jsonb_to_recordset($3::jsonb) AS n(id text,data jsonb)`,
+        [id, campaignId, json(generatedContent.nodes.map(data => ({ id: data.id, data })))]);
+      }
       return { subjectKind: "map", ack: { subjectId: id, version: 1 } };
     });
   }
   async function listMaps(userId: string, campaignId: string): Promise<P.TacticalMapSummary[]> {
-    return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return (await tx.query<P.TacticalMapSummary>("SELECT id,name,head_revision AS revision,version FROM tactical_maps WHERE campaign_id=$1 ORDER BY name COLLATE \"C\",id", [campaignId])).rows; });
+    return db.transaction(async tx => { await authorize(tx, userId, campaignId, true);
+      const retired = retiredMapKeys(await mapLifecycleRows(tx, campaignId));
+      return (await tx.query<P.TacticalMapSummary>("SELECT id,name,head_revision AS revision,version FROM tactical_maps WHERE campaign_id=$1 ORDER BY name COLLATE \"C\",id", [campaignId])).rows.filter(map => !retired.has(`tactical:${map.id}`)); });
   }
   async function getMap(userId: string, campaignId: string, mapId: string, revision?: number) {
-    return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return mapCard(tx, campaignId, mapId, revision); });
+    return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); await assertMapActive(tx, campaignId, "tactical", mapId); return mapCard(tx, campaignId, mapId, revision); });
   }
   async function source(tx: Db, campaignId: string, sourceId: string): Promise<SourceRow> {
     const row = (await tx.query<SourceRow>("SELECT * FROM tactical_sources WHERE id=$1 AND campaign_id=$2", [sourceId, campaignId])).rows[0];
     if (!row || sourceHash(row.source_text) !== row.source_hash || Buffer.byteLength(row.source_text, "utf8") !== Number(row.source_bytes)) throw new Gone(); return row;
   }
   async function getSource(userId: string, campaignId: string, mapId: string, revision?: number) {
-    return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); const map = await mapCard(tx, campaignId, mapId, revision); return source(tx, campaignId, map.sourceId); });
+    return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); await assertMapActive(tx, campaignId, "tactical", mapId); const map = await mapCard(tx, campaignId, mapId, revision); return source(tx, campaignId, map.sourceId); });
   }
   async function exportMap(userId: string, campaignId: string, mapId: string, revision?: number) {
-    const evidence = await db.transaction(async tx => { await authorize(tx, userId, campaignId, true); const map = await mapCard(tx, campaignId, mapId, revision); return { map, source: await source(tx, campaignId, map.sourceId) }; });
+    const evidence = await db.transaction(async tx => { await authorize(tx, userId, campaignId, true); await assertMapActive(tx, campaignId, "tactical", mapId); const map = await mapCard(tx, campaignId, mapId, revision); return { map, source: await source(tx, campaignId, map.sourceId) }; });
+    if (evidence.map.cartography) {
+      const drawing = cartographyDraw(evidence.map.document, evidence.map.cartography, evidence.source.provenance.setting ?? "fantasy");
+      const rendered = await renderCartographyImage({ image: imageBytes(evidence.source), documentSize: evidence.map.document.geometry.size, drawing });
+      const image = inspectUvttImage(rendered.bytes.toString("base64"));
+      const document = { ...evidence.map.document, background: { sha256: image.sha256, mimeType: image.mimeType, width: image.width, height: image.height } };
+      const exported = exportTacticalUvtt(document, image, evidence.map.cartography);
+      await db.transaction(async tx => { await authorize(tx, userId, campaignId, true); await assertMapActive(tx, campaignId, "tactical", mapId); });
+      return { ...exported, fidelity: { ...exported.fidelity, sourceRetained: true } };
+    }
     return evidence.source.format === "uvtt" ? exportUvtt(importUvtt(evidence.source.source_text, evidence.source.provenance), evidence.map.document)
       : exportTacticalUvtt(evidence.map.document, evidence.source.image_base64 ? inspectUvttImage(evidence.source.image_base64) : null);
   }
@@ -206,23 +282,58 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     const parsed = parse(P.TacticalRevisionSchema, raw), input = { ...parsed, document: parseTacticalMapDocument(parsed.document) };
     validateServerMap(input.document);
     return command(userId, campaignId, "map", mapId, "map.revise", input, true, async () => {}, async tx => {
+      await assertMapActive(tx, campaignId, "tactical", mapId);
       const before = await mapCard(tx, campaignId, mapId); if (input.expectedVersion !== before.version) throw new Conflict();
+      const v2 = "schemaVersion" in input && input.schemaVersion === 2;
+      if (before.cartography && !v2) throw new TacticalValidationError("Diese Karte benötigt den aktuellen Karteneditor.");
+      const cartography = v2 ? parseTacticalCartography(input.cartography, input.document) : undefined;
+      if (cartography) validateAuthoredCartography(before, input.document, cartography);
       if (tacticalHash(input.document.background) !== tacticalHash(before.document.background)) throw new TacticalValidationError("Ein anderes Hintergrundbild bitte als neue Karte importieren.");
       const regions = new Set(input.document.geometry.regions.map(region => region.id));
-      const entrances = (await tx.query<{ knoten_id: string }>("SELECT knoten_id FROM betreten_karten WHERE campaign_id=$1 AND parent_kind='tactical' AND parent_map_id=$2", [campaignId, mapId])).rows;
+      const entrances = (await activeMapEntrances(tx, campaignId)).filter(edge => edge.parent_kind === "tactical" && edge.parent_map_id === mapId);
       if (entrances.some(entrance => !regions.has(entrance.knoten_id)))
         throw new TacticalValidationError("Ein Raum mit verknüpfter Unterkarte muss als Zugang auf dieser Karte erhalten bleiben.");
+      if (cartography) {
+        const roles = new Map(cartography.regions.map(region => [region.regionId, region.role])), oldRoles = new Map((before.cartography ?? before.legacyCartography)!.regions.map(region => [region.regionId, region.role]));
+        if (entrances.some(entrance => roles.get(entrance.knoten_id) !== oldRoles.get(entrance.knoten_id))) throw new TacticalValidationError("Die Rolle eines Zugangs mit vorhandener Unterkarte bleibt erhalten.");
+      }
+      const addedBuildings: readonly BuildingIntent[] = v2 ? input.addedBuildings : [];
+      if (cartography) {
+        const oldIds = new Set(before.document.geometry.regions.map(region => region.id)), roles = new Map(cartography.regions.map(region => [region.regionId, region.role])), seen = new Set<string>();
+        const oldRoles = new Map((before.cartography ?? before.legacyCartography)!.regions.map(region => [region.regionId, region.role]));
+        const historicalIds = new Set((await tx.query<{ knoten_id: string }>("SELECT knoten_id FROM tactical_map_nodes WHERE campaign_id=$1 AND map_id=$2", [campaignId, mapId])).rows.map(row => row.knoten_id));
+        for (const intent of addedBuildings) {
+          if (seen.has(intent.regionId) || oldIds.has(intent.regionId) || historicalIds.has(intent.regionId) || roles.get(intent.regionId) !== "building") throw new TacticalValidationError("Neue Gebäude benötigen eine neue, eindeutige Gebäude-Region ohne frühere Knotenidentität.");
+          seen.add(intent.regionId);
+        }
+        for (const region of cartography.regions) if (region.role === "building") {
+          if (oldIds.has(region.regionId) && oldRoles.get(region.regionId) !== "building") throw new TacticalValidationError("Ein neues Gebäude benötigt eine neue Gebäude-Region mit Name und Gebäudetyp.");
+          if (!oldIds.has(region.regionId) && !seen.has(region.regionId)) throw new TacticalValidationError("Für jedes neue Gebäude werden Name und Gebäudetyp benötigt.");
+        }
+      }
       const bindings = await validateAnchors(tx, campaignId, input.document, input.anchors), next = before.revision + 1;
       await tx.query("INSERT INTO tactical_map_revisions(map_id,campaign_id,revision,source_id,document,content_hash,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)", [mapId, campaignId, next, before.sourceId, json(input.document), tacticalHash({ document: input.document, anchors: bindings }), userId, now()]);
+      if (cartography) await storeCartography(tx, campaignId, mapId, next, cartography, before.version + 1);
+      for (const intent of addedBuildings) {
+        const seed = tacticalHash(["chronicle-room-child-v1", campaignId, mapId, intent.regionId]);
+        const node: Knoten = { id: intent.regionId as Knoten["id"], art: "bauwerk", titel: intent.titel.trim(), bauwerk: { typ: intent.typ, beschreibung: "" },
+          eltern: [], rahmen: input.document.frame, anker: null, sichtAnker: null,
+          herkunft: { erzeuger: "chronicle-manual-cartography", version: "1", keimHash: seed, erzeugungspfad: ["building", intent.regionId], kindKeim: seed } };
+        await tx.query("INSERT INTO tactical_map_nodes(map_id,knoten_id,campaign_id,data) VALUES($1,$2,$3,$4)", [mapId, intent.regionId, campaignId, json(node)]);
+      }
       await storeAnchors(tx, campaignId, mapId, next, bindings); await tx.query("UPDATE tactical_maps SET head_revision=$2,version=version+1 WHERE id=$1", [mapId, next]);
       return { subjectKind: "map", ack: { subjectId: mapId, version: before.version + 1 } };
     });
   }
-  async function getPlan(userId: string, campaignId: string, sceneId: string) { return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return plan(tx, campaignId, sceneId); }); }
+  async function getPlan(userId: string, campaignId: string, sceneId: string) { return db.transaction(async tx => {
+    await authorize(tx, userId, campaignId, true); const saved = await plan(tx, campaignId, sceneId);
+    return saved && await isMapDeleted(tx, campaignId, "tactical", saved.mapId) ? { ...saved, unavailable: "map-deleted" as const } : saved;
+  }); }
   async function savePlan(userId: string, campaignId: string, sceneId: string, raw: unknown) {
     const parsed = parse(P.TacticalPlanSchema, raw), input = { ...parsed, tokens: sorted(parsed.tokens) };
     return command(userId, campaignId, "scene", sceneId, "plan.save", input, true, async () => {}, async (tx, member) => {
       const old = await plan(tx, campaignId, sceneId); if ((old?.version ?? 0) !== input.expectedVersion) throw new Conflict();
+      await assertMapActive(tx, campaignId, "tactical", input.mapId);
       await mapCard(tx, campaignId, input.mapId, input.mapRevision); const ids = new Set<string>();
       for (const token of input.tokens) { if (ids.has(token.id)) throw new TacticalValidationError("Token-IDs müssen eindeutig sein."); ids.add(token.id); await authorizeActor(tx, member, token.actorId); }
       await tx.query(`INSERT INTO scene_tactical_plans(scene_id,campaign_id,map_id,map_revision,updated_by,updated_at) VALUES($1,$2,$3,$4,$5,$6)
@@ -306,11 +417,13 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
         if (token?.canMove && (gm || visiblePoint({ size: map.document.geometry.size, regions }, target.x, target.y))) undoTargets.push({ commandId: t.command_id, subjectKind: "token", subjectId: t.subject_id, version: token.version! });
       }
     }
-    const rasterDigest = tacticalHash({ sessionId: row.session_id, perspectiveActorId: gm ? null : member.actorId, gm, size: map.document.geometry.size, regions });
+    const cartographyPin = map.cartography ? { mapRevision: map.revision, compositionHash: map.compositionHash, rendererVersion, setting: (await source(tx, member.campaignId, map.sourceId)).provenance.setting ?? "fantasy" } : {};
+    const rasterDigest = tacticalHash({ sessionId: row.session_id, perspectiveActorId: gm ? null : member.actorId, gm, size: map.document.geometry.size, regions, ...cartographyPin });
     const view: Omit<P.TacticalView, "digest"> = { sessionId: row.session_id, sceneId: row.scene_id, active: row.ended_at === null, gm, size: map.document.geometry.size, frame: map.document.frame, grid: map.document.grid, elevation: map.document.elevation,
       regions, entities: sorted(entities), tokens: projected, undoTargets, rasterDigest,
-      hatRaster: map.document.background !== null,
+      hatRaster: map.document.background !== null || map.cartography !== undefined,
       ...(gm ? { map: { id: map.id, name: map.name, revision: map.revision, version: map.version }, document: map.document, walls: map.document.walls,
+        ...(map.cartography ? { cartography: map.cartography, compositionHash: map.compositionHash! } : {}),
         portals: map.document.portals.map(p => ({ ...p, ...state.portals.find(x => x.id === p.id)! })) } : {}) };
     return { ...view, digest: tacticalHash(view) };
   }
@@ -400,21 +513,30 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
       const member = await authorize(tx, userId, campaignId), row = await session(tx, campaignId, sessionId), view = await project(tx, member, row);
       if (expectedView !== undefined && expectedView !== view.rasterDigest) throw new Conflict();
       const map = await mapCard(tx, campaignId, row.map_id, row.map_revision), original = await source(tx, campaignId, map.sourceId);
-      return { digest: view.rasterDigest, request: { image: imageBytes(original), documentSize: view.size, regions: view.gm ? null : view.regions.map(r => r.points), level, x, y, tileSize: 256 } };
+      return { digest: view.rasterDigest, request: { image: imageBytes(original), documentSize: view.size, regions: view.gm ? null : view.regions.map(r => r.points), level, x, y, tileSize: 256,
+        ...(map.cartography ? { drawing: cartographyDraw(map.document, map.cartography, original.provenance.setting ?? "fantasy") } : {}) } };
     });
     const tile = await renderTacticalTile(input.request);
     if ((await getSession(userId, campaignId, sessionId)).rasterDigest !== input.digest) throw new Conflict();
     return { ...tile, view: input.digest };
   }
-  async function getMapTile(userId: string, campaignId: string, mapId: string, revision: number | undefined, level: number, x: number, y: number, expectedView?: string) {
+  async function getMapTile(userId: string, campaignId: string, mapId: string, revision: number | undefined, level: number, x: number, y: number, expectedView?: string, layer?: "background") {
     const input = await db.transaction(async tx => {
-      await authorize(tx, userId, campaignId, true); const map = await mapCard(tx, campaignId, mapId, revision);
-      if (expectedView !== undefined && expectedView !== map.contentHash) throw new Conflict();
-      return { revision: map.revision, digest: map.contentHash, request: { image: imageBytes(await source(tx, campaignId, map.sourceId)), documentSize: map.document.geometry.size, regions: null, level, x, y, tileSize: 256 } };
+      await authorize(tx, userId, campaignId, true); await assertMapActive(tx, campaignId, "tactical", mapId);
+      const map = await mapCard(tx, campaignId, mapId, revision);
+      if (layer !== undefined && layer !== "background") throw new TacticalValidationError("Bitte eine vorhandene Kartenebene auswählen.");
+      const digest = map.rasterDigest ?? map.contentHash;
+      if (expectedView !== undefined && expectedView !== digest) throw new Conflict();
+      const original = await source(tx, campaignId, map.sourceId);
+      const image = imageBytes(original);
+      if (layer === "background" && image === null) throw new TacticalValidationError("Diese Karte besitzt kein ursprüngliches Hintergrundbild.");
+      return { revision: map.revision, digest, request: { image, documentSize: map.document.geometry.size, regions: null, level, x, y, tileSize: 256,
+        ...(layer !== "background" && map.cartography ? { drawing: cartographyDraw(map.document, map.cartography, original.provenance.setting ?? "fantasy") } : {}) } };
     });
     const tile = await renderTacticalTile(input.request);
-    if ((await getMap(userId, campaignId, mapId, input.revision)).contentHash !== input.digest) throw new Conflict();
-    return { ...tile, view: input.digest };
+    const current = await getMap(userId, campaignId, mapId, input.revision);
+    if ((current.rasterDigest ?? current.contentHash) !== input.digest) throw new Conflict();
+    return { ...tile, view: input.digest, layer: layer ?? "composite" };
   }
   return { importPreview, importMap, listMaps, getMap, getSource, exportMap, reviseMap, getPlan, savePlan, getActive, getSession, moveToken, setPortal, undo, getTile, getMapTile };
 }

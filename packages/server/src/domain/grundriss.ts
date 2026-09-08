@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFileSync } from "node:fs";
 import { erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, type GrundrissOptionen, type HoehleOptionen, type SiedlungOptionen } from "@chronicle/forge";
-import { KARTEN_SETTINGS, parseAssetpaket, serializeTacticalMapDocument, type AssetpaketV1, type KartenSetting, type Weltkeim } from "@chronicle/szene";
+import { inferLegacyCartography, KARTEN_SETTINGS, parseAssetpaket, parseTacticalCartography, serializeTacticalMapDocument, type AssetpaketV1, type KartenSetting, type Weltkeim } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createCampaigns } from "./campaigns.ts";
@@ -138,6 +138,12 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
     setting: setting(ergebnis),
   });
 
+  const kartografie = (ergebnis: ReturnType<typeof erzeuge>) => {
+    if ("cartography" in ergebnis) return parseTacticalCartography(ergebnis.cartography, ergebnis.karte);
+    const inferred = inferLegacyCartography(ergebnis.karte, { nodes: ergebnis.knoten });
+    return parseTacticalCartography({ ...inferred, regions: inferred.regions.map(region => ({ ...region, provenance: ergebnis.keim })) }, ergebnis.karte);
+  };
+
   return {
     /** The surface receives the exact generator defaults and the locally available styles. */
     defaults() {
@@ -162,6 +168,7 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
         knoten: grundriss.knoten.length,
         groesse: grundriss.karte.geometry.size,
         document: grundriss.karte,
+        cartography: kartografie(grundriss),
         nodes: grundriss.knoten.filter(node => node.id !== grundriss.wurzelId).map(node => ({
           knotenId: node.id, titel: node.titel ?? "Unbenannt", art: node.art,
           ...(node.bauwerk ? { bauwerk: node.bauwerk } : {}), x: node.anker?.bei[0] ?? 0, y: node.anker?.bei[1] ?? 0,
@@ -188,13 +195,7 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
           format: "native",
           sourceText: serializeTacticalMapDocument(grundriss.karte),
           provenance: herkunft(grundriss, input.stil),
-        });
-        // Region ids are Knoten ids. Retain their derived child seeds with the persisted map,
-        // so opening an edited room tomorrow reaches the same address as opening it today.
-        await tx.query(`INSERT INTO tactical_map_nodes(map_id,knoten_id,campaign_id,data)
-          SELECT $1,n.id,$2,n.data FROM jsonb_to_recordset($3::jsonb) AS n(id text,data jsonb)
-          ON CONFLICT(map_id,knoten_id) DO NOTHING`,
-        [ack.subjectId, campaignId, JSON.stringify(grundriss.knoten.map(data => ({ id: data.id, data })))]);
+        }, { cartography: kartografie(grundriss), nodes: grundriss.knoten });
         return {
           ack,
           keimHash: grundriss.keim.keimHash,

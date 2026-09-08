@@ -58,4 +58,5 @@ export const Command = Type.Object({ commandId: Id, campaignId: Id,
   ]) }, closed);
 export type CommandBody = Static<typeof Command>;
 export * from "./tactical.ts";
+export * from "./map-lifecycle.ts";
 export * from "./authoring.ts";

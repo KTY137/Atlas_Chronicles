@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { createMapRenderer, visibleMapTiles, type MapHit, type MapPoint, type MapRasterTile, type MapStampImage, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
+import { createMapRenderer, visibleMapTiles, type MapEditorInteraction, type MapHit, type MapPoint, type MapRasterTile, type MapStampImage, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
 import { Button, Notice } from "@chronicle/ui";
 import { parseAssetpaket } from "@chronicle/szene";
 import { errorText } from "../api";
 import { useAppearance } from "./Appearance";
 import "./TacticalCanvas.css";
 
+export type MapCanvasContext = (hit: MapHit | null, at: { x: number; y: number }) => void;
+
 /** The renderer never fetches private images. This scoped host owns requests and their lifetime. */
-export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated, selection, focusObject }: {
+export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated, selection, focusObject, editor, onUndo, onRedo, onContextMenu }: {
   scene: ProjectedMapScene; tileBase: string; tileQuery?: string; onMove?: (id: string, to: MapPoint) => void; onSelect?: (hit: MapHit | null) => void; onPoint?: (point: MapPoint) => void; onScopeInvalidated?: () => void;
   selection?: MapHit | null; focusObject?: { id: string; x: number; y: number } | null;
+  editor?: MapEditorInteraction; onUndo?: () => void; onRedo?: () => void;
+  onContextMenu?: MapCanvasContext;
 }) {
   const { resolved } = useAppearance();
   const city = projectedScene.cells.some(cell => cell.surface === "building");
@@ -24,7 +28,8 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
   }), [projectedScene, resolved.sampling, gridVisible, labelsVisible]);
   const frame = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null), renderer = useRef<MapRenderer | null>(null);
-  const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection };
+  const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection, editor }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection, editor };
+  const revoked = useRef("");
   const synchronizing = useRef(0);
   // Renderer callbacks report user choices. Applying a controlled projection/selection
   // must not feed its temporary null selection back into the complete object outline.
@@ -76,7 +81,9 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
         deniedScope = scope;
         // A denied tile invalidates already displayed pixels as well as pending/cache data.
         // Clear synchronously; projection polling can be offline or delayed indefinitely.
-        map.setRasterTiles(current.rasterScope!, []); clear();
+        revoked.current = `${base}:${query}:${current.rasterScope}`;
+        map.cancelInteraction();
+        map.update({ id: current.id, width: current.width, height: current.height, cells: [], pins: [] }); clear();
         setTileError("Die Kartensicht ist nicht mehr gültig. Die Ansicht wird aktualisiert.");
         latest.current.onScopeInvalidated?.();
       };
@@ -112,11 +119,14 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
     };
     const queue = () => { clearTimeout(timer); timer = setTimeout(() => { void loadTiles(); }, 100); };
     schedule.current = queue;
-    retryTiles.current = () => { deniedScope = ""; clear(); latest.current.onScopeInvalidated?.(); queue(); };
+    retryTiles.current = () => { clear(); if (deniedScope) latest.current.onScopeInvalidated?.(); else queue(); };
     setError(""); setTileError(""); setArtError(""); setReady(false);
     void createMapRenderer(host.current, latest.current.scene, { signal: mount.signal, onCameraChange: camera => { if (!mount.signal.aborted) setZoom(camera.scale * 100); queue(); },
       onSelect: hit => { if (!synchronizing.current) latest.current.onSelect?.(hit); }, onMoveToken: (id, to) => latest.current.onMove?.(id, to),
       onPoint: point => latest.current.onPoint?.(point),
+      editor: { active: () => !revoked.current && !!latest.current.editor?.active(),
+        begin: (point, hit) => latest.current.editor?.begin(point, hit) ?? false,
+        move: point => latest.current.editor?.move(point), commit: point => latest.current.editor?.commit(point), cancel: () => latest.current.editor?.cancel() },
     }).then(map => { if (mount.signal.aborted) { map.destroy(); return; } renderer.current = map; synchronize(() => map.update(latest.current.scene)); setZoom(map.getCamera().scale * 100); setReady(true); queue(); })
       .catch(reason => { if (!mount.signal.aborted) setError(errorText(reason)); });
     return () => { mount.abort(); clearTimeout(timer); clear(); renderer.current?.destroy(); renderer.current = null; schedule.current = () => {}; clearScope.current = () => {}; retryTiles.current = () => {}; };
@@ -148,17 +158,20 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
         } finally { URL.revokeObjectURL(url); }
       }));
       const images = results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
-      if (controller.signal.aborted || renderer.current !== instance) { for (const item of images) item.image.close(); return; }
+      if (controller.signal.aborted || renderer.current !== instance || revoked.current) { for (const item of images) item.image.close(); return; }
       instance.setStampImages(images);
       if (results.some(result => result.status === "rejected")) setArtError("Ein Teil der Kartenobjekte konnte nicht gezeichnet werden. Räume und Eingänge bleiben bedienbar.");
     })().catch(failure => { if (!controller.signal.aborted && renderer.current === instance) setArtError(errorText(failure)); });
     return () => controller.abort();
   }, [stampAssets, ready, scene.id]);
   useLayoutEffect(() => {
+    const scope = `${tileBase}:${tileQuery}:${scene.rasterScope}`;
+    if (revoked.current === scope) return;
+    revoked.current = "";
     synchronize(() => renderer.current?.update(scene)); schedule.current();
-  }, [scene]);
-  useLayoutEffect(() => { clearScope.current(); setTileError(""); schedule.current(); }, [scene.rasterScope, tileBase, tileQuery]);
-  useLayoutEffect(() => { if (selection !== undefined) synchronize(() => renderer.current?.select(selection)); }, [selection?.kind, selection?.id, ready]);
+  }, [scene, tileBase, tileQuery]);
+  useLayoutEffect(() => { renderer.current?.cancelInteraction(); if (scene.rasterScope) renderer.current?.setRasterTiles(scene.rasterScope, []); clearScope.current(); setTileError(""); schedule.current(); }, [scene.rasterScope, tileBase, tileQuery]);
+  useLayoutEffect(() => { if (!revoked.current && selection !== undefined) synchronize(() => renderer.current?.select(selection)); }, [selection?.kind, selection?.id, ready]);
   useLayoutEffect(() => {
     const map = renderer.current, element = host.current;
     if (!map || !element || !focusObject || !Number.isFinite(focusObject.x) || !Number.isFinite(focusObject.y)) return;
@@ -186,9 +199,22 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
         Wirtselement und raeumt es aus. Ein Kind darin waere beim ersten Neuaufbau verschwunden —
         und `pointer-events: none` sorgt dafuer, dass sie keinen Klick auf die Karte schluckt. */}
     <div className="tactical-canvas-wrap">
-      <div className="tactical-canvas" ref={host} data-canvas-ready={ready} />
+      <div className="tactical-canvas" ref={host} data-canvas-ready={ready} onContextMenu={event => {
+        if (!onContextMenu || !ready || revoked.current || !renderer.current) return;
+        event.preventDefault(); event.stopPropagation();
+        const bounds = event.currentTarget.getBoundingClientRect();
+        onContextMenu(renderer.current.hitTest([event.clientX-bounds.left,event.clientY-bounds.top]), { x:event.clientX,y:event.clientY });
+      }} onKeyDown={event => {
+        if (onContextMenu && ready && !revoked.current && (event.key === "ContextMenu" || event.shiftKey && event.key === "F10")) {
+          event.preventDefault(); event.stopPropagation(); const bounds = event.currentTarget.getBoundingClientRect();
+          onContextMenu(selection ?? null,{ x:bounds.left+bounds.width/2,y:bounds.top+bounds.height/2 }); return;
+        }
+        if (!(event.target instanceof HTMLCanvasElement) || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "z") return;
+        const action = event.shiftKey ? onRedo : onUndo;
+        if (action) { event.preventDefault(); action(); renderer.current?.cancelInteraction(); }
+      }} />
       <span className="karten-signatur" aria-hidden="true">Atlas Chronicles</span>
     </div>
-    <p className="field-help">Karte ziehen oder mit Pfeiltasten verschieben. Mit dem Mausrad zoomen. Bewegliche Figuren lassen sich ziehen; genaue Werte stehen auch in der Figurenliste.</p>
+    <p className="field-help">{editor ? "Mit dem Werkzeug direkt zeichnen. Leertaste oder Alt halten und ziehen verschiebt die Karte; Esc verwirft die Geste. Strg/Cmd+Z nimmt Änderungen zurück." : "Karte ziehen oder mit Pfeiltasten verschieben. Mit dem Mausrad zoomen. Bewegliche Figuren lassen sich ziehen; genaue Werte stehen auch in der Figurenliste."}</p>
   </div>;
 }

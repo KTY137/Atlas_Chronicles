@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Type, type Static } from "@sinclair/typebox";
-import type { Rahmen, TacticalGrid, TacticalMapDocumentV1, TacticalPoint, TacticalPortal, TacticalWall } from "@chronicle/szene";
+import { BAUWERK_TYPEN, type Rahmen, type TacticalCartographyV1, type TacticalGrid, type TacticalMapDocumentV1, type TacticalPoint, type TacticalPortal, type TacticalWall } from "@chronicle/szene";
 
 const closed = { additionalProperties: false } as const;
 const id = Type.String({ minLength: 1, maxLength: 128, pattern: "^.+$" });
@@ -18,7 +18,10 @@ export const TacticalImportSchema = Type.Object({ commandId: id, name: Type.Stri
   provenance: Type.Unknown(), imageBase64: Type.Optional(Type.Union([Type.String({ maxLength: 64 * 1024 * 1024 }), Type.Null()])),
   anchors: Type.Optional(Type.Array(TacticalAnchorSchema, { maxItems: 72048 })),
 }, closed);
-export const TacticalRevisionSchema = Type.Object({ commandId: id, expectedVersion: version, document: Type.Unknown(), anchors: Type.Array(TacticalAnchorSchema, { maxItems: 72048 }) }, closed);
+export const TacticalRevisionV1Schema = Type.Object({ commandId: id, expectedVersion: version, document: Type.Unknown(), anchors: Type.Array(TacticalAnchorSchema, { maxItems: 72048 }) }, closed);
+export const TacticalBuildingIntentSchema = Type.Object({ regionId: geometryId, titel: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }), typ: Type.Union(BAUWERK_TYPEN.map(value => Type.Literal(value))) }, closed);
+export const TacticalRevisionV2Schema = Type.Object({ ...TacticalRevisionV1Schema.properties, schemaVersion: Type.Literal(2), cartography: Type.Unknown(), addedBuildings: Type.Array(TacticalBuildingIntentSchema, { maxItems: 2048 }) }, closed);
+export const TacticalRevisionSchema = Type.Union([TacticalRevisionV1Schema, TacticalRevisionV2Schema]);
 export const TacticalPlanSchema = Type.Object({ commandId: id, expectedVersion: expected, mapId: id, mapRevision: version, tokens: Type.Array(TacticalTokenPlanSchema, { maxItems: 1000 }) }, closed);
 export const TacticalMoveSchema = Type.Object({ commandId: id, expectedVersion: version, ...pose }, closed);
 export const TacticalPortalSchema = Type.Object({ commandId: id, expectedVersion: version, closed: Type.Boolean() }, closed);
@@ -33,8 +36,12 @@ export type TacticalPortalInput = Static<typeof TacticalPortalSchema>;
 export type TacticalUndoInput = Static<typeof TacticalUndoSchema>;
 export interface TacticalAck { subjectId: string; version: number }
 export interface TacticalMapSummary { id: string; name: string; revision: number; version: number }
-export interface TacticalMapCard extends TacticalMapSummary { sourceId: string; contentHash: string; document: TacticalMapDocumentV1; anchors: TacticalAnchor[] }
-export interface TacticalPlan { sceneId: string; mapId: string; mapRevision: number; version: number; tokens: TacticalTokenPlan[] }
+export interface TacticalMapCard extends TacticalMapSummary { sourceId: string; contentHash: string; document: TacticalMapDocumentV1; anchors: TacticalAnchor[];
+  cartography?: TacticalCartographyV1; cartographyHash?: string; compositionHash?: string; rasterDigest?: string;
+  /** Inferred editor baseline only; opening this card never persists an upgrade. */
+  legacyCartography?: TacticalCartographyV1;
+}
+export interface TacticalPlan { sceneId: string; mapId: string; mapRevision: number; version: number; tokens: TacticalTokenPlan[]; unavailable?: "map-deleted" }
 export interface TacticalToken extends TacticalTokenPlan { name: string; canMove: boolean; version: number | null }
 /** A knowledge-authorized semantic marker, without its private source geometry or asset. */
 export interface TacticalEntity { id: string; kind: "stamp" | "place"; x: number; y: number; entryId: string; label: string }
@@ -44,9 +51,9 @@ export interface TacticalView {
   size: readonly [number, number]; frame: Rahmen; grid: TacticalGrid; elevation: number;
   regions: { id: string; points: readonly TacticalPoint[] }[];
   entities: TacticalEntity[]; tokens: TacticalToken[]; undoTargets: TacticalUndoTarget[]; digest: string; rasterDigest: string;
-  /** False for a generated map: it is pure geometry and has no photograph to stream. */
+  /** Background or authoritative vector cartography can produce masked raster tiles. */
   hatRaster: boolean;
   /** These properties are completely absent from player responses. */
-  map?: TacticalMapSummary; document?: TacticalMapDocumentV1;
+  map?: TacticalMapSummary; document?: TacticalMapDocumentV1; cartography?: TacticalCartographyV1; compositionHash?: string;
   walls?: readonly TacticalWall[]; portals?: (TacticalPortal & { version: number })[];
 }

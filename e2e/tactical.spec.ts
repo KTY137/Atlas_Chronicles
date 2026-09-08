@@ -135,7 +135,9 @@ test("real UVTT import, region knowledge, preparation, three live views, command
     await test.step("draw and explicitly bind separate left/right passage regions", async () => {
       await gm.getByRole("button", { name: "Karte & Vorbereitung", exact: true }).click();
       await gm.getByRole("button", { name: /^Kartenbibliothek/ }).click();
-      await gm.getByRole("combobox", { name: "Szenenkarte", exact: true }).selectOption(mapId);
+      await gm.getByRole("region", { name: "Kartenbibliothek", exact: true }).getByRole("button", { name: "Aktionen für Imagix Frosttor – zwei Wissensblicke", exact: true }).click();
+      await gm.getByRole("menuitem", { name: "Karte bearbeiten", exact: true }).click();
+      await gm.getByText("Wissensregionen & Verknüpfungen", { exact: true }).click();
       for (const [i, corners] of [
         [[0, 0], [1280, 0], [1280, 2560], [0, 2560]],
         [[1280, 0], [2560, 0], [2560, 2560], [1280, 2560]],
@@ -250,7 +252,8 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       }
       await gm.getByRole("button", { name: "Karte & Vorbereitung", exact: true }).click();
       await gm.getByRole("button", { name: /^Kartenbibliothek/ }).click();
-      await gm.getByRole("combobox", { name: "Szenenkarte", exact: true }).selectOption(mapId);
+      await gm.getByRole("region", { name: "Kartenbibliothek", exact: true }).getByRole("button", { name: "Aktionen für Imagix Frosttor – zwei Wissensblicke", exact: true }).click();
+      await gm.getByRole("menuitem", { name: "Karte bearbeiten", exact: true }).click();
       await gm.getByRole("combobox", { name: "Szene", exact: true }).selectOption(sceneId);
       await editor(gm, "Sera").getByLabel("X", { exact: true }).fill("768");
       const saved = gm.waitForResponse(r => r.url() === `${base()}/scenes/${sceneId}/tactical-plan` && r.request().method() === "PUT");

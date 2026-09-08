@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /// <reference lib="dom" />
-import type { TacticalGrid } from "@chronicle/szene";
+import type { CartographyDrawing, TacticalGrid } from "@chronicle/szene";
 /** Closed presentation boundary. Only records already selected by the server belong here. */
 export type MapPoint = readonly [number, number];
 export type MapRasterSampling = "nearest" | "linear";
@@ -15,6 +15,7 @@ export interface ProjectedMapCell {
   /** Presentation only: a settlement footprint or street band, never a new stored map kind. */
   readonly surface?: "building" | "street";
   readonly roof?: "pitched" | "flat" | "tech";
+  readonly label?: string;
 }
 export interface ProjectedMapPin {
   readonly id: string;
@@ -25,6 +26,10 @@ export interface ProjectedMapPin {
   readonly color?: number;
   /** Optional 24-CSS-pixel badge. Omitted icons retain the original point marker. */
   readonly icon?: MapPinIcon;
+  /** Ordinary names appear once their footprint is readable; selection always shows a name. */
+  readonly labelMinScale?: number;
+  /** Preserve hit testing and names where a building footprint already supplies the marker. */
+  readonly showMarker?: boolean;
 }
 export interface ProjectedMapToken {
   readonly id: string;
@@ -69,10 +74,14 @@ export interface ProjectedMapScene {
   readonly width: number;
   readonly height: number;
   readonly cells: readonly ProjectedMapCell[];
+  /** Shared, already projected polygon colors; replaces private cell decorations. */
+  readonly drawing?: CartographyDrawing;
+  /** A fully painted raster already contains these hit polygons. */
+  readonly paintCells?: boolean;
   readonly pins: readonly ProjectedMapPin[];
   readonly tokens?: readonly ProjectedMapToken[];
   readonly grid?: TacticalGrid;
-  readonly lines?: readonly { readonly id: string; readonly points: readonly MapPoint[]; readonly color?: number }[];
+  readonly lines?: readonly { readonly id: string; readonly points: readonly MapPoint[]; readonly color?: number; readonly paint?: boolean }[];
   /** Placements. A stamp with no supplied image draws nothing — never a placeholder box. */
   readonly stamps?: readonly ProjectedMapStamp[];
   /** Changing the authorized raster scope discards every old texture immediately. */
@@ -88,6 +97,13 @@ export interface MapScenePatch { readonly sceneId: string; readonly tokens?: rea
 /** Translation in viewport CSS pixels, then scale in CSS pixels per map unit. */
 export interface MapCamera { readonly x: number; readonly y: number; readonly scale: number }
 export interface MapHit { readonly kind: "pin" | "token" | "cell"; readonly id: string }
+export interface MapEditorInteraction {
+  active(): boolean;
+  begin(point: MapPoint, hit: MapHit | null): boolean;
+  move(point: MapPoint): void;
+  commit(point: MapPoint): void;
+  cancel(): void;
+}
 
 export interface MapRenderer {
   readonly backend: MapRendererBackend;
@@ -105,5 +121,6 @@ export interface MapRenderer {
   /** Hit point uses viewport CSS pixels, not client or world coordinates. */
   hitTest(point: MapPoint): MapHit | null;
   select(hit: MapHit | null): void;
+  cancelInteraction(): void;
   destroy(): void;
 }

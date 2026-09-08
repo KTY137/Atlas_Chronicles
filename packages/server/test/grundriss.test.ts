@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
+import sharp from "sharp";
 import { buildApp } from "../src/app.ts";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -173,14 +174,9 @@ describe("die eigene Erzeugung, an das Produkt angeschlossen", () => {
     const maps = await createTactical(db).listMaps(gm, campaign);
     expect(maps.every(map => map.name !== "Heimlich")).toBe(true);
   });
-  it("tells the play view there is no raster, so the renderer draws the geometry solid", async () => {
-    // The defect this pins: every scene builder set `rasterScope` unconditionally from a content
-    // hash. For a generated map — pure geometry, `background: null` — that made the renderer treat
-    // the cells as an 8 % tint over a photograph that does not exist, and made the canvas request
-    // tiles for it. A generated map would have looked like a blank page: the exact failure mode
-    // "no fake previews" is about, arrived at honestly through a wrong assumption rather than a
-    // shortcut. `rasterDigest` cannot answer the question — it is a hash of the visibility scope
-    // and is always present.
+  it("streams real cartography pixels for a generated map without a background photograph", async () => {
+    // Cartography now provides an actual raster source. Its flag must agree with visible bytes,
+    // preserving the original regression guarantee against blank generated maps.
     const created = (await post("/tactical/generate", body({ name: "Sichtprobe" }))).json();
     const game = createGameplay(db), tactical = createTactical(db);
     const scene = await game.createScene(gm, campaign, { name: "Sichtprobe", entryIds: [], fictionDate: "Heute" });
@@ -190,7 +186,10 @@ describe("die eigene Erzeugung, an das Produkt angeschlossen", () => {
     await game.startScene(gm, campaign, scene.id);
     const view = await tactical.getActive(gm, campaign);
     expect(view).not.toBeNull();
-    expect(view!.hatRaster).toBe(false);
+    expect(view!.hatRaster).toBe(true);
+    const tile = await tactical.getTile(gm, campaign, view!.sessionId, 0, 0, 0, view!.rasterDigest);
+    const rgba = await sharp(tile.bytes).ensureAlpha().raw().toBuffer();
+    expect(rgba.some((value, index) => index % 4 === 3 && value > 0)).toBe(true);
     expect(view!.regions.length).toBeGreaterThan(0);
   });
 });

@@ -286,8 +286,10 @@ describe("A-G5 · Siedlung — niemand ist eingemauert", () => {
 
   it("überlappt keine zwei Bauwerke", () => {
     for (const { keim, g } of laeufe) {
-      for (const a of g.bauwerke) for (const b of g.bauwerke) {
-        if (a.id === b.id) continue;
+      // The separation check already tests both polygons' axes. Each unordered pair
+      // needs one assertion, including dense cities with the full building budget.
+      for (let i = 0; i < g.bauwerke.length; i++) for (let j = i + 1; j < g.bauwerke.length; j++) {
+        const a = g.bauwerke[i]!, b = g.bauwerke[j]!;
         expect(getrennt(a.umriss, b.umriss), `${keim}: ${a.pfad} vs ${b.pfad}`).toBe(true);
       }
     }

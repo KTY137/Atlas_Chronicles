@@ -8,6 +8,7 @@ import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { createDocuments } from "./documents.ts";
 import { Gone, Conflict } from "./errors.ts";
+import { activeMapEntrances, assertMapActive, authorizeMapLifecycle, mapLifecycleRows, retiredMapKeys } from "./map-lifecycle.ts";
 
 interface NodeRow { id: string; data: Knoten; entry_id: string | null }
 interface MapRow { id: string; title: string; artifact_id: string; width: number; height: number; version: number }
@@ -30,13 +31,14 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
     const world: AtlasSource = format && typeof format === "object" && "mapBounds" in format ? importiereEronKarte(json) : importiereAzgaar(json);
     const artifactKind = isEron(world) ? "eron-map" : "azgaar";
     return db.transaction(async (tx) => {
-      await createCampaigns(tx, cfg).requireMember(userId, campaignId, ["leitung"]);
-      await tx.query("SELECT id FROM campaigns WHERE id=$1 FOR UPDATE", [campaignId]);
-      const existing = (await tx.query<{ id: string }>(`SELECT m.id FROM atlas_maps m JOIN artifacts a ON a.id=m.artifact_id
-        WHERE a.campaign_id=$1 AND a.kind=$2 AND a.source_hash=$3`, [campaignId, artifactKind, world.quelle.sha256])).rows[0];
+      await authorizeMapLifecycle(tx, userId, campaignId);
+      const previous = (await tx.query<{ id: string; artifact_id: string }>(`SELECT m.id,m.artifact_id FROM atlas_maps m JOIN artifacts a ON a.id=m.artifact_id
+        WHERE a.campaign_id=$1 AND a.kind=$2 AND a.source_hash=$3 ORDER BY m.created_at,m.id`, [campaignId, artifactKind, world.quelle.sha256])).rows;
+      const retired = retiredMapKeys(await mapLifecycleRows(tx, campaignId));
+      const existing = previous.find(map => !retired.has(`atlas:${map.id}`));
       if (existing) return { id: existing.id, report: world.bericht, unchanged: true };
-      const artifactId = randomUUID(), id = randomUUID();
-      await tx.query("INSERT INTO artifacts(id,campaign_id,kind,source_hash,source,report,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+      const artifactId = previous[0]?.artifact_id ?? randomUUID(), id = randomUUID();
+      if (!previous.length) await tx.query("INSERT INTO artifacts(id,campaign_id,kind,source_hash,source,report,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
         [artifactId, campaignId, artifactKind, world.quelle.sha256, world, world.bericht, userId, now()]);
       await tx.query("INSERT INTO atlas_maps(id,campaign_id,artifact_id,title,width,height,created_at) VALUES($1,$2,$3,$4,$5,$6,$7)",
         [id, campaignId, artifactId, world.titel, world.szene.size[0], world.szene.size[1], now()]);
@@ -53,6 +55,7 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
   }
   async function visible(userId: string, campaignId: string, mapId: string) {
     const member = await campaigns.requireMember(userId, campaignId);
+    await assertMapActive(db, campaignId, "atlas", mapId);
     const map = (await db.query<MapRow>("SELECT * FROM atlas_maps WHERE id=$1 AND campaign_id=$2", [mapId, campaignId])).rows[0];
     if (!map) throw new Gone();
     const all = (await db.query<NodeRow>("SELECT id,data,entry_id FROM atlas_nodes WHERE map_id=$1 ORDER BY id", [mapId])).rows;
@@ -66,8 +69,10 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
   async function listMaps(userId: string, campaignId: string) {
     const member = await campaigns.requireMember(userId, campaignId);
     const all = (await db.query<MapRow>("SELECT * FROM atlas_maps WHERE campaign_id=$1 ORDER BY created_at,id", [campaignId])).rows;
+    const retired = retiredMapKeys(await mapLifecycleRows(db, campaignId));
     const result: { id: string; title: string }[] = [];
     for (const m of all) {
+      if (retired.has(`atlas:${m.id}`)) continue;
       if (member.role !== "leitung") { try { await visible(userId, campaignId, m.id); } catch (e) { if (e instanceof Gone) continue; throw e; } }
       result.push({ id: m.id, title: m.title });
     }
@@ -77,8 +82,8 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
     const { map, member, nodes } = await visible(userId, campaignId, mapId);
     const source = (await db.query<{ source: AtlasSource }>("SELECT source FROM artifacts WHERE id=$1", [map.artifact_id])).rows[0]!.source;
     const gm = member.role === "leitung";
-    const children = new Map(gm ? (await db.query<{ knoten_id: string; map_id: string }>(
-      "SELECT knoten_id,map_id FROM betreten_karten WHERE campaign_id=$1 AND parent_kind='atlas' AND parent_map_id=$2", [campaignId, mapId])).rows.map(row => [row.knoten_id, row.map_id]) : []);
+    const children = new Map(gm ? (await activeMapEntrances(db, campaignId))
+      .filter(edge => edge.parent_kind === "atlas" && edge.parent_map_id === mapId).map(row => [row.knoten_id, row.map_id]) : []);
     const allowed = new Set(nodes.map((n) => n.id)), entries = new Map(nodes.map((n) => [n.id, n.entry_id]));
     const knownEntries = member.role === "leitung" ? null : (await createDocuments(db,cfg).knowledge(userId,campaignId)).bekannteEntryIds;
     const knownEntry = (id: string | null | undefined) => id && (member.role === "leitung" || knownEntries?.has(id)) ? id : null;
@@ -112,23 +117,28 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
   }
   async function mapImage(userId: string, campaignId: string, mapId: string) {
     await campaigns.requireMember(userId, campaignId, ["leitung"]);
+    await assertMapActive(db, campaignId, "atlas", mapId);
     const row = (await db.query<{ source: AtlasSource }>(`SELECT a.source FROM atlas_maps m JOIN artifacts a ON a.id=m.artifact_id
       WHERE m.id=$1 AND m.campaign_id=$2`, [mapId, campaignId])).rows[0];
     if (!row || !hasBundledRaster(row.source)) throw new Gone("map-image");
     // This path is constant. Neither uploaded source names nor route parameters resolve files.
-    return readFile(ERON_IMAGE);
+    const image = await readFile(ERON_IMAGE);
+    await campaigns.requireMember(userId, campaignId, ["leitung"]); await assertMapActive(db, campaignId, "atlas", mapId);
+    return image;
   }
   async function revealNode(userId: string, campaignId: string, mapId: string, nodeId: string, actorId: string) {
-    await campaigns.requireMember(userId, campaignId, ["leitung"]);
-    const valid = await db.query(`SELECT 1 FROM atlas_nodes n JOIN actors a ON a.campaign_id=n.campaign_id
+    return db.transaction(async tx => {
+    await authorizeMapLifecycle(tx, userId, campaignId); await assertMapActive(tx, campaignId, "atlas", mapId);
+    const valid = await tx.query(`SELECT 1 FROM atlas_nodes n JOIN actors a ON a.campaign_id=n.campaign_id
       WHERE n.map_id=$1 AND n.id=$2 AND n.campaign_id=$3 AND a.id=$4`, [mapId, nodeId, campaignId, actorId]);
     if (!valid.rowCount) throw new Gone();
-    await db.query(`INSERT INTO atlas_revelations(map_id,node_id,campaign_id,actor_id,knowledge,granted_by,granted_at)
+    await tx.query(`INSERT INTO atlas_revelations(map_id,node_id,campaign_id,actor_id,knowledge,granted_by,granted_at)
       VALUES($1,$2,$3,$4,'benannt',$5,$6) ON CONFLICT(map_id,node_id,actor_id) DO NOTHING`, [mapId,nodeId,campaignId,actorId,userId,now()]);
+    });
   }
   async function linkEntry(userId: string, campaignId: string, mapId: string, nodeId: string, entryId: string, expectedVersion: number) {
     return db.transaction(async (tx) => {
-      await createCampaigns(tx, cfg).requireMember(userId, campaignId, ["leitung"]);
+      await authorizeMapLifecycle(tx, userId, campaignId); await assertMapActive(tx, campaignId, "atlas", mapId);
       await createDocuments(tx, cfg).source(campaignId, entryId);
       if (!(await tx.query("UPDATE atlas_maps SET version=version+1 WHERE id=$1 AND campaign_id=$2 AND version=$3 RETURNING id", [mapId,campaignId,expectedVersion])).rowCount) throw new Conflict();
       if (!(await tx.query("UPDATE atlas_nodes SET entry_id=$4 WHERE map_id=$1 AND id=$2 AND campaign_id=$3 RETURNING id", [mapId,nodeId,campaignId,entryId])).rowCount) throw new Gone();

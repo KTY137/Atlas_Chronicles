@@ -34,10 +34,10 @@ describe("Kartenwerkstatt: Städte, Stile und dauerhafte Gebäudemetadaten", () 
   afterAll(async () => { await app?.close(); await db?.close(); });
   const post = (path: string, payload: object, session = cookie) => app.inject({ method: "POST", url: `/api/campaigns/${campaign}${path}`, headers: { cookie: session, origin: config.origin }, payload });
   const body = (over: object = {}) => ({ commandId: randomUUID(), name: "Lindenstadt", keim: "lindenstadt", art: "siedlung", optionen: { art: "weiler", bauwerke: 9 }, ...over });
-  const city = async (stil: "grundriss" | "gemalt" = "grundriss") => {
-    const created = await createGrundriss(db, config).generate(gm, campaign, { ...body(), art: "siedlung", stil, optionen: { art: "weiler", bauwerke: 9 } });
+  const city = async (stil: "grundriss" | "gemalt" = "grundriss", campaignId = campaign) => {
+    const created = await createGrundriss(db, config).generate(gm, campaignId, { ...body(), art: "siedlung", stil, optionen: { art: "weiler", bauwerke: 9 } });
     const parentMapId = created.ack.subjectId, scope = { parentKind: "tactical" as const, parentMapId };
-    return { parentMapId, scope, list: await createBetreten(db, config).children(gm, campaign, scope) };
+    return { parentMapId, scope, list: await createBetreten(db, config).children(gm, campaignId, scope) };
   };
   const metadata = (map: string, node: string, payload: object, session = cookie, campaignId = campaign) => app.inject({ method: "PUT",
     url: `/api/campaigns/${campaignId}/maps/tactical/${map}/knoten/${node}/metadata`, headers: { cookie: session, origin: config.origin }, payload });
@@ -53,7 +53,9 @@ describe("Kartenwerkstatt: Städte, Stile und dauerhafte Gebäudemetadaten", () 
     expect(preview).not.toHaveProperty("raeume");
     expect(preview.nodes).toHaveLength(preview.bauwerke);
     expect(preview.nodes[0]).toMatchObject({ art: "bauwerk", bauwerk: { typ: expect.any(String) }, titel: expect.any(String), x: expect.any(Number), y: expect.any(Number) });
-    expect(preview.document.geometry.regions).toHaveLength(preview.bauwerke + preview.strassen);
+    expect(preview.document.geometry.regions).toHaveLength(preview.cartography.regions.length);
+    expect(preview.cartography.regions.filter((region: { role: string }) => region.role === "building")).toHaveLength(preview.bauwerke);
+    expect(preview.cartography.regions.filter((region: { role: string }) => region.role === "road")).toHaveLength(preview.strassen);
     expect(await createTactical(db).listMaps(gm, campaign)).toHaveLength(before.length);
   });
 
@@ -68,13 +70,13 @@ describe("Kartenwerkstatt: Städte, Stile und dauerhafte Gebäudemetadaten", () 
     const generated = await post("/tactical/generate", request); expect(generated.statusCode).toBe(200);
     const tactical = createTactical(db), mapId = generated.json().ack.subjectId;
     const map = await tactical.getMap(gm, campaign, mapId); expect(map.document).toEqual(document);
-    await tactical.reviseMap(gm, campaign, mapId, { commandId: randomUUID(), expectedVersion: map.version, document: { ...map.document, grid: { kind: "none" } }, anchors: [] });
+    await tactical.reviseMap(gm, campaign, mapId, { schemaVersion: 2, cartography: map.cartography, addedBuildings: [], commandId: randomUUID(), expectedVersion: map.version, document: { ...map.document, grid: { kind: "none" } }, anchors: [] });
     const revised = await tactical.getMap(gm, campaign, mapId); expect(revised.revision).toBe(2);
     const gameplay = createGameplay(db), scene = await gameplay.createScene(gm, campaign, { name: label, entryIds: [], fictionDate: "Heute" });
     await tactical.savePlan(gm, campaign, scene.id, { commandId: randomUUID(), expectedVersion: 0, mapId, mapRevision: revised.revision, tokens: [] });
     await gameplay.startScene(gm, campaign, scene.id);
     const active = await tactical.getActive(gm, campaign);
-    expect(active?.hatRaster).toBe(false); expect(active?.size).toEqual(document.geometry.size);
+    expect(active?.hatRaster).toBe(true); expect(active?.size).toEqual(document.geometry.size);
     expect(active?.regions.length).toBe(document.geometry.regions.length);
   }, 30_000);
 
@@ -156,7 +158,9 @@ describe("Kartenwerkstatt: Städte, Stile und dauerhafte Gebäudemetadaten", () 
   it("benennt neu gezeichnete Stadtgebäude und erhält deren abgeleiteten Kindkeim", async () => {
     const { parentMapId, scope } = await city(), tactical = createTactical(db), map = await tactical.getMap(gm, campaign, parentMapId);
     const region = { id: "drawn-building", punkte: [[10, 10], [110, 10], [110, 110], [10, 110]] as const };
-    await tactical.reviseMap(gm, campaign, parentMapId, { commandId: randomUUID(), expectedVersion: map.version,
+    await tactical.reviseMap(gm, campaign, parentMapId, { schemaVersion: 2,
+      cartography: { ...map.cartography!, regions: [...map.cartography!.regions, { regionId: region.id, role: "building", authored: true, locked: false, provenance: null }] },
+      addedBuildings: [{ regionId: region.id, titel: "Neues Haus", typ: "haus" }], commandId: randomUUID(), expectedVersion: map.version,
       document: { ...map.document, geometry: { ...map.document.geometry, regions: [...map.document.geometry.regions, region] } }, anchors: [] });
     const betreten = createBetreten(db, config), before = await betreten.betretbar(gm, campaign, region.id, scope);
     const edit = await metadata(parentMapId, region.id, { commandId: randomUUID(), expectedVersion: before.version, titel: "Das neue Haus", bauwerk: { typ: "haus", beschreibung: "Selbst gezeichnet" } });
@@ -180,7 +184,9 @@ describe("Kartenwerkstatt: Städte, Stile und dauerhafte Gebäudemetadaten", () 
   });
 
   it("stellt Metadaten und deren idempotente Quittungen mit einem nativen Archiv wieder her", async () => {
-    const { parentMapId, scope, list } = await city(), knotenId = list.nodes[0]!.knotenId;
+    // The receipt/metadata fixture is independent of every city created by earlier cases.
+    const campaign = (await createCampaigns(db).createCampaign(gm, { name: "Archiv-Metadaten" })).id;
+    const { parentMapId, scope, list } = await city("grundriss", campaign), knotenId = list.nodes[0]!.knotenId;
     const edit = { commandId: randomUUID(), expectedVersion: list.version, titel: "Die bewahrte Schmiede", bauwerk: { typ: "schmiede" as const, beschreibung: "Am südlichen Tor" } };
     const edited = await createBetreten(db, config).updateMetadata(gm, campaign, parentMapId, knotenId, edit);
     const input = { commandId: randomUUID(), ...scope, knotenId, expectedVersion: edited.version };
