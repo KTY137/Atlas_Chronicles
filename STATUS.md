@@ -23,7 +23,7 @@ Dokumentwriter: 35 betroffene Fälle grün; verlustfreies Anhängen menschlicher
 mit echten Revisions-/Nativebelegen. UI und Produktionsclient bauen; 9 Hilfs-/Navigationsfälle
 grün. Die im ersten Browser gefundenen ESM-/Query-Schemafehler sind behoben; der echte
 Prosaablauf besteht Quellenwahl, Modellbeitrag, Wiederherstellung, Bearbeitung und Antrag.
-HTTP-Transport: 42 lokale Streamprüfungen grün. Root-Registry: 8 Fälle, Host/HTTP: 9 Fälle,
+HTTP-Transport: 48 lokale Streamprüfungen grün (Vitest, `chronist-http-provider.test.ts`). Root-Registry: 8 Fälle, Host/HTTP: 9 Fälle,
 Desktop-Umgebungsgrenze: 15 Fälle grün. Engine-Timeoutkorrektur: 31 Enginefälle grün.
 Gemeinsamer Typecheck grün; weitere Browser-/DB-/Nativeprüfung läuft noch.
 Root besitzt Registry/Host/App/Worker, Pure-Providerprofil, Manifest/Lockfile und Dokumentation.

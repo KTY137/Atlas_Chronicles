@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { createServer, type IncomingHttpHeaders, type ServerResponse } from "node:http";
 import { setImmediate as turn, setTimeout as delay } from "node:timers/promises";
-import { test, type TestContext } from "node:test";
+import { it, type TestContext } from "vitest";
 import { canonicalHash } from "@chronicle/core";
 import { CHRONIST_DEFAULT_BUDGET, CHRONIST_HTTP_PROFILES, canonicalChronistSources, deriveChronistFacts,
   makeChronistSourceSnapshot, parseChronistCallOutcome, planChronistUnits,
@@ -32,7 +32,7 @@ async function host(t: TestContext, handle: (res: ServerResponse, request: Reque
     try { await handle(res, request); } catch { res.destroy(); }
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
-  t.after(() => new Promise<void>((resolve, reject) => { server.close(error => error ? reject(error) : resolve()); server.closeAllConnections(); }));
+  t.onTestFinished(() => new Promise<void>((resolve, reject) => { server.close(error => error ? reject(error) : resolve()); server.closeAllConnections(); }));
   const address = server.address(); assert(address && typeof address !== "string");
   return { baseUrl: `http://127.0.0.1:${address.port}/v1`, requests };
 }
@@ -70,7 +70,7 @@ function wire(profileId: ChronistHttpProfile, frames: readonly unknown[] = profi
 }
 function contentType(profileId: ChronistHttpProfile) { return profileId === "ollama-chat-1" ? "application/x-ndjson" : "text/event-stream"; }
 
-for (const profileId of CHRONIST_HTTP_PROFILES) test(`${profileId}: real HTTP sends only the consumed complete durable dispatch and counts usage`, async t => {
+for (const profileId of CHRONIST_HTTP_PROFILES) it(`${profileId}: real HTTP sends only the consumed complete durable dispatch and counts usage`, async t => {
   let consumed = false;
   const server = await host(t, (res) => { assert(consumed); res.writeHead(200, { "content-type": `${contentType(profileId)}; charset=utf-8` }); res.end(wire(profileId)); });
   const { binding, unit, permit } = setup(server.baseUrl, profileId);
@@ -103,7 +103,7 @@ for (const profileId of CHRONIST_HTTP_PROFILES) test(`${profileId}: real HTTP se
   assert.equal(server.requests.length, 1, "the same consumed permit cannot send twice");
 });
 
-test("denied or aborted permits never reach HTTP, and full-unit tampering is visible to the CAS", async t => {
+it("denied or aborted permits never reach HTTP, and full-unit tampering is visible to the CAS", async t => {
   const server = await host(t, res => { res.end(); });
   const { binding, unit, permit } = setup(server.baseUrl);
   const changed = { ...structuredClone(unit), mode: "sitzung" as const };
@@ -115,7 +115,7 @@ test("denied or aborted permits never reach HTTP, and full-unit tampering is vis
   assert.equal(calls, 1); assert.equal(server.requests.length, 0);
 });
 
-test("no request escapes while the permit CAS is pending or after cancellation during CAS", async t => {
+it("no request escapes while the permit CAS is pending or after cancellation during CAS", async t => {
   const server = await host(t, res => { res.end(); }); const { binding, unit, permit } = setup(server.baseUrl);
   const controller = new AbortController(); let release!: (allowed: boolean) => void;
   const invoke = binding.bind(() => new Promise(resolve => { release = resolve; }));
@@ -124,7 +124,7 @@ test("no request escapes while the permit CAS is pending or after cancellation d
   failed(await result, "cancelled", 0, false); assert.equal(server.requests.length, 0);
 });
 
-for (const status of [307, 429, 500]) test(`HTTP ${status} does not redirect or retry`, async t => {
+for (const status of [307, 429, 500]) it(`HTTP ${status} does not redirect or retry`, async t => {
   const redirect = await host(t, res => { res.end(); });
   const server = await host(t, res => { res.writeHead(status, { location: `${redirect.baseUrl}/capture` }); res.end(key); });
   const { binding, unit, permit } = setup(server.baseUrl);
@@ -132,20 +132,20 @@ for (const status of [307, 429, 500]) test(`HTTP ${status} does not redirect or 
   assert.equal(server.requests.length, 1); assert.equal(redirect.requests.length, 0);
 });
 
-for (const profileId of CHRONIST_HTTP_PROFILES) test(`${profileId}: post-terminal model output is rejected without releasing the unknown reservation`, async t => {
+for (const profileId of CHRONIST_HTTP_PROFILES) it(`${profileId}: post-terminal model output is rejected without releasing the unknown reservation`, async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": contentType(profileId) }); res.end(wire(profileId, [...profileFrames[profileId], profileFrames[profileId][profileId === "anthropic-messages-1" ? 1 : 0]])); });
   const { binding, unit, permit } = setup(server.baseUrl, profileId);
   const result = await binding.bind(async () => true)(unit, permit, new AbortController().signal);
   failed(result, "unavailable", answer.length); assert.equal(result.usage.inputTokens, 10); assert.equal(result.usage.outputTokens, 6);
 });
 
-test("a MIME mismatch is rejected before model text is parsed", async t => {
+it("a MIME mismatch is rejected before model text is parsed", async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": "text/html" }); res.end(wire("ollama-chat-1")); });
   const { binding, unit, permit } = setup(server.baseUrl);
   failed(await binding.bind(async () => true)(unit, permit, new AbortController().signal), "unavailable", 0);
 });
 
-for (const reason of ["cancelled", "timeout"] as const) test(`${reason} preserves text and cumulative tokens from a real partial stream`, { timeout: 5000 }, async t => {
+for (const reason of ["cancelled", "timeout"] as const) it(`${reason} preserves text and cumulative tokens from a real partial stream`, { timeout: 5000 }, async t => {
   const controller = new AbortController();
   const server = await host(t, async res => {
     res.writeHead(200, { "content-type": "application/x-ndjson" });
@@ -157,7 +157,7 @@ for (const reason of ["cancelled", "timeout"] as const) test(`${reason} preserve
   failed(result, reason, "Teiltext 🧭".length); assert.equal(result.usage.inputTokens, 10); assert.equal(result.usage.outputTokens, 3); assert.equal(result.usage.costMicros, 16);
 });
 
-test("output overflow preserves same-frame usage and never splits a surrogate pair", async t => {
+it("output overflow preserves same-frame usage and never splits a surrogate pair", async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": "application/x-ndjson" });
     res.end(ndjson({ message: { content: "abc🧭more" }, done: true, prompt_eval_count: 10, eval_count: 6 })); });
   const { binding, unit, permit } = setup(server.baseUrl, "ollama-chat-1", 4);
@@ -165,7 +165,7 @@ test("output overflow preserves same-frame usage and never splits a surrogate pa
   failed(result, "output-limit", 3); assert.equal(result.usage.inputTokens, 10); assert.equal(result.usage.outputTokens, 6); assert.equal(result.usage.costMicros, 22);
 });
 
-test("valid multibyte UTF-8 split across transport chunks is decoded losslessly", async t => {
+it("valid multibyte UTF-8 split across transport chunks is decoded losslessly", async t => {
   const reply = "Die Fähre 🧭", bytes = Buffer.from(ndjson({ message: { content: reply }, done: true, prompt_eval_count: 2, eval_count: 4 }));
   const server = await host(t, async res => { res.writeHead(200, { "content-type": "application/x-ndjson" });
     for (const byte of bytes) { res.write(Buffer.from([byte])); await turn(); } res.end(); });
@@ -174,7 +174,7 @@ test("valid multibyte UTF-8 split across transport chunks is decoded losslessly"
   assert.equal(result.kind, "returned"); if (result.kind === "returned") assert.equal(result.reply.text, reply);
 });
 
-for (const broken of ["utf8", "json", "sse-eof", "missing-terminal", "terminal-then-broken"] as const) test(`broken stream ${broken} cannot claim completeness`, async t => {
+for (const broken of ["utf8", "json", "sse-eof", "missing-terminal", "terminal-then-broken"] as const) it(`broken stream ${broken} cannot claim completeness`, async t => {
   const profileId = broken === "sse-eof" ? "openai-chat-1" : "ollama-chat-1";
   const server = await host(t, res => {
     res.writeHead(200, { "content-type": contentType(profileId) });
@@ -188,7 +188,7 @@ for (const broken of ["utf8", "json", "sse-eof", "missing-terminal", "terminal-t
   failed(await binding.bind(async () => true)(unit, permit, new AbortController().signal), "unavailable", 2);
 });
 
-for (const limit of ["frame", "frames", "bytes"] as const) test(`transport ${limit} has a hard bound without model output`, async t => {
+for (const limit of ["frame", "frames", "bytes"] as const) it(`transport ${limit} has a hard bound without model output`, async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": "text/event-stream" });
     res.end(limit === "frame" ? `data: ${"x".repeat(256 * 1024 + 1)}` : limit === "frames" ? sse({}).repeat(10_001) : `: ${"x".repeat(1000)}\n\n`.repeat(2100)); });
   const { binding, unit, permit } = setup(server.baseUrl, "openai-chat-1");
@@ -202,14 +202,14 @@ const toolFrames: Record<ChronistHttpProfile, unknown> = {
   "anthropic-messages-1": { type: "content_block_start", content_block: { type: "server_tool_use", name: "web_search", input: {} } },
   "google-generate-1": { candidates: [{ content: { parts: [{ functionCall: { name: "fetch", args: {} } }] }, finishReason: "STOP" }] },
 };
-for (const profileId of CHRONIST_HTTP_PROFILES) test(`${profileId}: tool output cannot become a successful text response or a second request`, async t => {
+for (const profileId of CHRONIST_HTTP_PROFILES) it(`${profileId}: tool output cannot become a successful text response or a second request`, async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": contentType(profileId) }); res.end(wire(profileId, [toolFrames[profileId], ...profileFrames[profileId]])); });
   const { binding, unit, permit } = setup(server.baseUrl, profileId);
   failed(await binding.bind(async () => true)(unit, permit, new AbortController().signal), "unavailable", 0);
   assert.equal(server.requests.length, 1);
 });
 
-test("malformed final token counts retain earlier evidence but cannot claim complete token or cost accounting", async t => {
+it("malformed final token counts retain earlier evidence but cannot claim complete token or cost accounting", async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": "application/x-ndjson" });
     res.end(ndjson({ message: { content: "ok" }, done: false, prompt_eval_count: 3, eval_count: 1 })
       + ndjson({ message: { content: "" }, done: true, prompt_eval_count: -1, eval_count: "oops" })); });
@@ -219,7 +219,7 @@ test("malformed final token counts retain earlier evidence but cannot claim comp
   assert.equal(result.usage.tokensComplete, false); assert.equal(result.usage.costComplete, false);
 });
 
-test("Google output usage includes thought tokens when the optional total is absent", async t => {
+it("Google output usage includes thought tokens when the optional total is absent", async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": "text/event-stream" }); res.end(sse({ candidates: [{ content: { parts: [{ text: "ok" }] }, finishReason: "STOP" }],
     usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 4, thoughtsTokenCount: 2 } })); });
   const { binding, unit, permit } = setup(server.baseUrl, "google-generate-1");
@@ -227,7 +227,7 @@ test("Google output usage includes thought tokens when the optional total is abs
   assert.equal(result.kind, "returned"); assert.equal(result.usage.outputTokens, 6); assert.equal(result.usage.costMicros, 22);
 });
 
-test("reader cancellation cannot hold the adapter open indefinitely", { timeout: 3000 }, async () => {
+it("reader cancellation cannot hold the adapter open indefinitely", { timeout: 3000 }, async () => {
   let cancelled = 0; const controller = new AbortController();
   const body = new ReadableStream<Uint8Array>({ start(stream) { stream.enqueue(Buffer.from(ndjson({ message: { content: "ok" }, done: false, prompt_eval_count: 3, eval_count: 1 }))); },
     cancel() { cancelled++; return new Promise(() => {}); } });
@@ -238,7 +238,7 @@ test("reader cancellation cannot hold the adapter open indefinitely", { timeout:
   assert.notEqual(result, "hung"); if (result !== "hung") failed(result, "cancelled", 2); assert.equal(cancelled, 1);
 });
 
-test("provider addresses and tariff metadata are validated without network access", () => {
+it("provider addresses and tariff metadata are validated without network access", () => {
   const { config } = setup("http://127.0.0.1:9");
   for (const baseUrl of ["https://example.invalid", "file:///tmp/provider", "http://user:pass@127.0.0.1", "http://127.0.0.1?secret=value"]) {
     assert.throws(() => createChronistHttpBinding({ ...config, baseUrl }, model));
@@ -249,7 +249,7 @@ test("provider addresses and tariff metadata are validated without network acces
   }
 });
 
-test("explicit literal private HausKI endpoints are accepted, while private DNS aliases and adjacent public ranges are refused", () => {
+it("explicit literal private HausKI endpoints are accepted, while private DNS aliases and adjacent public ranges are refused", () => {
   const { config } = setup("http://127.0.0.1:9");
   for (const address of ["127.0.0.2", "10.0.0.1", "172.16.0.1", "172.31.255.254", "192.168.1.1", "[::1]", "[fc00::1]", "[fdff::1]", "localhost"]) {
     assert.equal(createChronistHttpBinding({ ...config, baseUrl: `http://${address}:11434` }, model).description.location, "lokal");
@@ -260,14 +260,14 @@ test("explicit literal private HausKI endpoints are accepted, while private DNS 
   assert.equal(createChronistHttpBinding({ ...config, location: "fremd", baseUrl: "https://example.invalid" }, model).description.location, "fremd");
 });
 
-test("a chat finish reason closes text before the subsequent usage and DONE frames", async t => {
+it("a chat finish reason closes text before the subsequent usage and DONE frames", async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": "text/event-stream" });
     res.end(wire("openai-chat-1", [profileFrames["openai-chat-1"][0], profileFrames["openai-chat-1"][1], profileFrames["openai-chat-1"][0], ...profileFrames["openai-chat-1"].slice(2)])); });
   const { binding, unit, permit } = setup(server.baseUrl, "openai-chat-1");
   failed(await binding.bind(async () => true)(unit, permit, new AbortController().signal), "unavailable", answer.length);
 });
 
-test("Anthropic partial input updates retain previously reported cache input tokens", async t => {
+it("Anthropic partial input updates retain previously reported cache input tokens", async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": "text/event-stream" });
     res.end(wire("anthropic-messages-1", [profileFrames["anthropic-messages-1"][0], profileFrames["anthropic-messages-1"][1],
       { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { input_tokens: 6, cache_creation_input_tokens: null, cache_read_input_tokens: null, output_tokens: 6 } }, { type: "message_stop" }])); });
@@ -276,7 +276,7 @@ test("Anthropic partial input updates retain previously reported cache input tok
   assert.equal(result.kind, "returned"); assert.equal(result.usage.inputTokens, 11); assert.equal(result.usage.costMicros, 23); assert.equal(result.usage.tokensComplete, true);
 });
 
-test("missing final usage stays unknown even after a valid output terminal", async t => {
+it("missing final usage stays unknown even after a valid output terminal", async t => {
   const server = await host(t, res => { res.writeHead(200, { "content-type": "application/x-ndjson" });
     res.end(ndjson({ message: { content: "ok" }, done: false, prompt_eval_count: 3, eval_count: 1 }) + ndjson({ message: { content: "" }, done: true })); });
   const { binding, unit, permit } = setup(server.baseUrl);
@@ -285,7 +285,7 @@ test("missing final usage stays unknown even after a valid output terminal", asy
   assert.equal(result.usage.outputTokens, 1); assert.equal(result.usage.tokensComplete, false); assert.equal(result.usage.costComplete, false);
 });
 
-test("SSE CRLF framing works when each CR and LF arrives in separate writes", async t => {
+it("SSE CRLF framing works when each CR and LF arrives in separate writes", async t => {
   const bytes = Buffer.from(wire("openai-chat-1").replace(/\n/g, "\r\n"));
   const server = await host(t, async res => { res.writeHead(200, { "content-type": "text/event-stream" });
     for (const byte of bytes) { res.write(Buffer.from([byte])); await turn(); } res.end(); });
@@ -294,7 +294,7 @@ test("SSE CRLF framing works when each CR and LF arrives in separate writes", as
   assert.equal(result.kind, "returned"); if (result.kind === "returned") assert.equal(result.reply.text, answer);
 });
 
-for (const scenario of ["missing-usage", "partial", "overflow"] as const) test(`shared decoder and HTTP binding produce the same Anthropic ${scenario} evidence`, async t => {
+for (const scenario of ["missing-usage", "partial", "overflow"] as const) it(`shared decoder and HTTP binding produce the same Anthropic ${scenario} evidence`, async t => {
   const frames = scenario === "missing-usage"
     ? [profileFrames["anthropic-messages-1"][1], { type: "message_stop" }]
     : [profileFrames["anthropic-messages-1"][0], profileFrames["anthropic-messages-1"][1]];
@@ -318,7 +318,7 @@ for (const scenario of ["missing-usage", "partial", "overflow"] as const) test(`
   } else failed(direct, scenario === "overflow" ? "output-limit" : "unavailable", scenario === "overflow" ? cap : answer.length);
 });
 
-test("shared decoder aborts a partial reader and does not await an unresponsive cancellation acknowledgement", async () => {
+it("shared decoder aborts a partial reader and does not await an unresponsive cancellation acknowledgement", async () => {
   const controller = new AbortController(); let cancellations = 0;
   const body = new ReadableStream<Uint8Array>({ start(stream) {
     stream.enqueue(Buffer.from(wire("anthropic-messages-1", profileFrames["anthropic-messages-1"].slice(0, 2))));
@@ -331,7 +331,7 @@ test("shared decoder aborts a partial reader and does not await an unresponsive 
   assert.equal(cancellations, 1);
 });
 
-test("shared decoder cancels an already dispatched response on a bad MIME type", async () => {
+it("shared decoder cancels an already dispatched response on a bad MIME type", async () => {
   let cancellations = 0;
   const body = new ReadableStream<Uint8Array>({ cancel() { cancellations++; return new Promise(() => {}); } });
   const result = await decodeChronistHttpResponse(new Response(body, { headers: { "content-type": "text/html" } }), {
@@ -340,7 +340,7 @@ test("shared decoder cancels an already dispatched response on a bad MIME type",
   failed(result, "unavailable", 0); assert.equal(cancellations, 1);
 });
 
-test("shared decoder keeps the original request deadline when response headers arrive after the hard limit", async () => {
+it("shared decoder keeps the original request deadline when response headers arrive after the hard limit", async () => {
   let cancellations = 0;
   const body = new ReadableStream<Uint8Array>({ start(stream) { stream.enqueue(Buffer.from(wire("anthropic-messages-1"))); },
     cancel() { cancellations++; } });

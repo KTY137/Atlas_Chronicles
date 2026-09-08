@@ -7,7 +7,8 @@ import { afterEach, expect, it, vi } from "vitest";
 import { MemorySaver } from "@langchain/langgraph-checkpoint";
 import { canonicalHash } from "@chronicle/core";
 import { createChronistGraph, makeChronistSourceSnapshot, CHRONIST_CLAUDE_CLI_PROFILE, CHRONIST_DEFAULT_BUDGET, type ChronistSnapshot } from "@chronicle/chronist";
-import { CHRONIST_UNCONFIGURED_MODEL, createChronistRuntime, loadChronistRuntime, parseChronistHostSettings } from "../src/chronist-providers/registry.ts";
+import { CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING, CHRONIST_ANTHROPIC_PROFILE, CHRONIST_UNCONFIGURED_MODEL, createChronistRuntime, loadChronistRuntime, parseChronistHostSettings } from "../src/chronist-providers/registry.ts";
+import type { ChronistCliActivation } from "../src/chronist-providers/cli.ts";
 import { disableChronistTracing } from "../src/chronist-providers/tracing.ts";
 
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
@@ -45,7 +46,7 @@ it("rejects transport cross-fields and unsupported native profiles before any ac
 it("cannot promote a forged CLI activation and drains every owned activation before allowing a retry", async () => {
   const disposeFirst = vi.fn(async () => { if (disposeFirst.mock.calls.length === 1) throw new Error("synthetic cleanup failure"); });
   const disposeSecond = vi.fn(async () => undefined);
-  const fake = { available: true, availabilityCode: null, dispose: disposeFirst };
+  const fake: ChronistCliActivation = { available: true, availabilityCode: null, dispose: disposeFirst };
   const runtime = createChronistRuntime(parseChronistHostSettings(cliConfig()), {}, new Map([
     ["claude-cli", fake], ["second-owned", { available: false, availabilityCode: "host-disabled", dispose: disposeSecond }],
     ["same-owned", fake],
@@ -153,4 +154,59 @@ it("executes the actual offline graph without trace egress even when all inherit
     recordRejection: async () => undefined, finish: async () => { finishes++; },
   } }).start(snap, new AbortController().signal);
   expect(finishes).toBe(1); expect(network).not.toHaveBeenCalled();
+});
+
+const ollamaEntry = (models: string[]) => ({ id: "ollama", label: "Ollama auf diesem Rechner", profileId: "ollama-chat-1",
+  location: "lokal", baseUrl: "http://127.0.0.1:11434", models, available: false });
+const withFile = async (raw: unknown, run: (path: string) => Promise<void>) => {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-chronist-config-")), path = join(dir, "provider.json");
+  try { await writeFile(path, JSON.stringify(raw)); await run(path); } finally { await rm(dir, { recursive: true, force: true }); }
+};
+
+it("fills an operator file's placeholder Ollama entry from its own local tag discovery", async () => {
+  const transport = vi.fn<typeof fetch>(async (url, options) => {
+    expect(String(url)).toBe("http://127.0.0.1:11434/api/tags"); expect(options?.redirect).toBe("manual");
+    expect(options?.method).toBeUndefined(); expect(options?.body).toBeUndefined();
+    return new Response(JSON.stringify({ models: [{ name: "z:latest" }, { name: "a:7b" }] }));
+  });
+  await withFile({ schemaVersion: 1, providers: [ollamaEntry([CHRONIST_UNCONFIGURED_MODEL]), config().providers[0]!] }, async path => {
+    const runtime = await loadChronistRuntime({ configPath: path, fetch: transport, environment: {} });
+    expect(runtime.providers).toMatchObject([{ id: "ollama", available: true, models: ["a:7b", "z:latest"] }, { id: "openai" }]);
+    expect(runtime.resolveProvider("ollama", "a:7b")).toBeDefined();
+    expect(runtime.resolveProvider("ollama", CHRONIST_UNCONFIGURED_MODEL)).toBeUndefined();
+    expect(transport).toHaveBeenCalledTimes(1);
+  });
+});
+it("keeps the placeholder and stays unavailable when the operator file's Ollama cannot be reached", async () => {
+  const transport = vi.fn<typeof fetch>(async () => { throw new Error("Unavailable"); });
+  await withFile({ schemaVersion: 1, providers: [ollamaEntry([CHRONIST_UNCONFIGURED_MODEL])] }, async path => {
+    const runtime = await loadChronistRuntime({ configPath: path, fetch: transport, environment: {} });
+    expect(runtime.providers).toMatchObject([{ id: "ollama", location: "lokal", available: false, models: [CHRONIST_UNCONFIGURED_MODEL] }]);
+    expect(transport).toHaveBeenCalledTimes(1);
+  });
+});
+it("never queries tags for an operator file that names a concrete model or no Ollama at all", async () => {
+  const transport = vi.fn<typeof fetch>(() => { throw new Error("No discovery expected"); });
+  await withFile({ schemaVersion: 1, providers: [ollamaEntry(["mein-lokales-modell"])] }, async path => {
+    const runtime = await loadChronistRuntime({ configPath: path, fetch: transport, environment: {} });
+    expect(runtime.providers).toMatchObject([{ id: "ollama", available: false, models: ["mein-lokales-modell"] }]);
+  });
+  await withFile(config(), async path => {
+    expect((await loadChronistRuntime({ configPath: path, fetch: transport, environment: {} })).providers[0]!.id).toBe("openai");
+  });
+  expect(transport).not.toHaveBeenCalled();
+});
+it("publishes the documented Anthropic profile 2 defaults with prices in USD micros per million", () => {
+  expect(CHRONIST_ANTHROPIC_PROFILE).toBe("anthropic-messages-2");
+  expect(CHRONIST_ANTHROPIC_MODELS).toEqual({ standard: "claude-sonnet-5", economy: "claude-haiku-4-5" });
+  expect(CHRONIST_ANTHROPIC_PRICING["claude-sonnet-5"]).toMatchObject({ currency: "USD", inputMicrosPerMillion: 2_000_000, outputMicrosPerMillion: 10_000_000 });
+  expect(CHRONIST_ANTHROPIC_PRICING["claude-haiku-4-5"]).toMatchObject({ currency: "USD", inputMicrosPerMillion: 1_000_000, outputMicrosPerMillion: 5_000_000 });
+  const anthropic = { id: "anthropic", label: "Anthropic", profileId: CHRONIST_ANTHROPIC_PROFILE, location: "fremd",
+    baseUrl: "https://api.anthropic.com/v1", models: [CHRONIST_ANTHROPIC_MODELS.standard, CHRONIST_ANTHROPIC_MODELS.economy],
+    apiKey: "synthetic-credential", pricing: CHRONIST_ANTHROPIC_PRICING["claude-sonnet-5"] };
+  const runtime = createChronistRuntime(parseChronistHostSettings({ schemaVersion: 1, providers: [anthropic] }));
+  expect(runtime.providers[0]).toMatchObject({ id: "anthropic", transport: "http", available: true, availabilityCode: null,
+    models: ["claude-sonnet-5", "claude-haiku-4-5"] });
+  expect(runtime.resolveProvider("anthropic", "claude-haiku-4-5")).toBeDefined();
+  expect(JSON.stringify(runtime.providers)).not.toContain("synthetic-credential");
 });

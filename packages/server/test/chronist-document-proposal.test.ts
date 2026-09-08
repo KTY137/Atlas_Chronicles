@@ -4,7 +4,8 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { canonicalHash, trustActorId, trustEntryId, trustPassageId, trustRevisionId, trustUserId, type CanonicalValue } from "@chronicle/core";
 import type { Blockinhalt, Passage } from "@chronicle/chronik";
-import { createCampaignBundleV15, currentCampaignTables, parseCampaignBundleV15, serializeCampaignBundleV15 } from "@chronicle/io";
+import { CAMPAIGN_V15_TABLES, createCampaignBundleV15, currentCampaignTables, parseCampaignBundleV15, serializeCampaignBundleV15,
+  type CampaignTableNameV15, type CampaignTablesV15 } from "@chronicle/io";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
@@ -114,8 +115,16 @@ describe("internal human document proposals through the migrated database", () =
     const exported = await exportCampaignBundle(db, gm, f.campaign.id, config);
     // The collector selects the oldest sufficient format. Validate its complete real rows
     // through V15 as well, without manufacturing an unrelated map deletion just to select V15.
+    // V15 refuses unknown fields, so the current tables are projected onto exactly the V15 names.
+    const current = currentCampaignTables(exported) as unknown as Record<string, CampaignTablesV15[CampaignTableNameV15]>;
+    const v15Names = new Set<string>(CAMPAIGN_V15_TABLES.map(table => table.name));
+    // The projection must never silently lose rows: everything newer than V15 has to be empty here.
+    const dropped = Object.entries(current).filter(([name]) => !v15Names.has(name));
+    expect(dropped.length).toBeGreaterThan(0);
+    expect(dropped.filter(([, rows]) => rows.length)).toEqual([]);
+    const v15Tables = Object.fromEntries(CAMPAIGN_V15_TABLES.map(table => [table.name, current[table.name]])) as unknown as CampaignTablesV15;
     const v15 = createCampaignBundleV15({ campaignId: f.campaign.id, universeId: f.campaign.universeId,
-      exportedAt: exported.manifest.exportedAt, tables: currentCampaignTables(exported) });
+      exportedAt: exported.manifest.exportedAt, tables: v15Tables });
     const parsed = parseCampaignBundleV15(serializeCampaignBundleV15(v15));
     expect(parsed.version).toBe(15);
     expect(parsed.tables.revisions.find(r => r.id === ack.revisionId)?.document).toEqual(submitted.document);

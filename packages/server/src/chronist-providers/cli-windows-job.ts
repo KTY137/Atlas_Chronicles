@@ -20,6 +20,7 @@ public static class AtlasChronistJob {
     public uint x,y,xsize,ysize,xchars,ychars,fill,flags;
     public short show,reserved2; public IntPtr reservedPtr,input,output,error;
   }
+  [StructLayout(LayoutKind.Sequential)] struct STARTUPINFOEX { public STARTUPINFO startup; public IntPtr attributes; }
   [StructLayout(LayoutKind.Sequential)] struct PROCESS_INFORMATION { public IntPtr process,thread; public uint pid,tid; }
   [StructLayout(LayoutKind.Sequential)] struct BASIC_LIMIT {
     public long processTime,jobTime; public uint flags; public UIntPtr minimumWorkingSet,maximumWorkingSet;
@@ -33,8 +34,10 @@ public static class AtlasChronistJob {
   public sealed class Configuration { public string executable; public string[] arguments; public string cwd; }
   [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr CreateJobObject(IntPtr security,string name);
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool SetInformationJobObject(IntPtr job,int type,ref EXTENDED_LIMIT info,uint length);
-  [DllImport("kernel32.dll",SetLastError=true)] static extern bool AssignProcessToJobObject(IntPtr job,IntPtr process);
-  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool CreateProcess(string application,StringBuilder command,IntPtr processSecurity,IntPtr threadSecurity,bool inherit,uint flags,IntPtr environment,string cwd,ref STARTUPINFO startup,out PROCESS_INFORMATION process);
+  [DllImport("kernel32.dll",SetLastError=true)] static extern bool InitializeProcThreadAttributeList(IntPtr list,int count,int reserved,ref IntPtr size);
+  [DllImport("kernel32.dll",SetLastError=true)] static extern bool UpdateProcThreadAttribute(IntPtr list,uint flags,IntPtr attribute,IntPtr value,IntPtr size,IntPtr previous,IntPtr returned);
+  [DllImport("kernel32.dll")] static extern void DeleteProcThreadAttributeList(IntPtr list);
+  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool CreateProcess(string application,StringBuilder command,IntPtr processSecurity,IntPtr threadSecurity,bool inherit,uint flags,IntPtr environment,string cwd,ref STARTUPINFOEX startup,out PROCESS_INFORMATION process);
   [DllImport("kernel32.dll",SetLastError=true)] static extern uint ResumeThread(IntPtr thread);
   [DllImport("kernel32.dll")] static extern uint WaitForSingleObject(IntPtr handle,uint duration);
   [DllImport("kernel32.dll")] static extern bool GetExitCodeProcess(IntPtr process,out uint code);
@@ -52,7 +55,8 @@ public static class AtlasChronistJob {
     result.Append('\\',slashes*2); return result.Append('"').ToString();
   }
   public static int Main(string[] arguments) {
-    IntPtr job=IntPtr.Zero; PROCESS_INFORMATION child=new PROCESS_INFORMATION();
+    IntPtr job=IntPtr.Zero,attributes=IntPtr.Zero,jobList=IntPtr.Zero; bool attributesReady=false;
+    PROCESS_INFORMATION child=new PROCESS_INFORMATION();
     try {
       if(arguments.Length!=1) return 120;
       var input=File.ReadAllText(arguments[0]); if(input.Length>131072) return 120;
@@ -63,16 +67,25 @@ public static class AtlasChronistJob {
       job=CreateJobObject(IntPtr.Zero,null); if(job==IntPtr.Zero) return 121;
       var limits=new EXTENDED_LIMIT(); limits.basic.flags=0x2000|0x8; limits.basic.activeProcesses=8;
       if(!SetInformationJobObject(job,9,ref limits,(uint)Marshal.SizeOf(typeof(EXTENDED_LIMIT)))) return 121;
-      var startup=new STARTUPINFO(); startup.cb=(uint)Marshal.SizeOf(typeof(STARTUPINFO));
-      startup.flags=0x100; startup.input=GetStdHandle(-10); startup.output=GetStdHandle(-11); startup.error=GetStdHandle(-12);
-      // Suspended + no console. No command interpreter and no window.
-      if(!CreateProcess(config.executable,command,IntPtr.Zero,IntPtr.Zero,true,0x08000004,IntPtr.Zero,config.cwd,ref startup,out child)) return 122;
+      var startup=new STARTUPINFOEX(); startup.startup.cb=(uint)Marshal.SizeOf(typeof(STARTUPINFOEX));
+      startup.startup.flags=0x100; startup.startup.input=GetStdHandle(-10); startup.startup.output=GetStdHandle(-11); startup.startup.error=GetStdHandle(-12);
+      // The job is part of the creation call (PROC_THREAD_ATTRIBUTE_JOB_LIST), never a later
+      // assignment: a supervisor that dies before ResumeThread must not leave a suspended orphan.
+      IntPtr required=IntPtr.Zero; InitializeProcThreadAttributeList(IntPtr.Zero,1,0,ref required);
+      if(required==IntPtr.Zero) return 121;
+      attributes=Marshal.AllocHGlobal(required);
+      if(!InitializeProcThreadAttributeList(attributes,1,0,ref required)) return 121;
+      attributesReady=true;
+      jobList=Marshal.AllocHGlobal(IntPtr.Size); Marshal.WriteIntPtr(jobList,job);
+      if(!UpdateProcThreadAttribute(attributes,0,(IntPtr)0x0002000D,jobList,(IntPtr)IntPtr.Size,IntPtr.Zero,IntPtr.Zero)) return 121;
+      startup.attributes=attributes;
+      // Suspended + no console + extended startup. No command interpreter and no window.
+      if(!CreateProcess(config.executable,command,IntPtr.Zero,IntPtr.Zero,true,0x08080004,IntPtr.Zero,config.cwd,ref startup,out child)) return 122;
       // Deterministic local regression seam; production's fixed environment omits it.
       if(Environment.GetEnvironmentVariable("ATLAS_CHRONIST_TEST_SUSPENDED_START")=="1") {
         Console.WriteLine("ATLAS_CHRONIST_JOB_SUSPENDED_PID="+child.pid); Console.Out.Flush();
         System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
       }
-      if(!AssignProcessToJobObject(job,child.process)) { TerminateProcess(child.process,123); return 123; }
       if(ResumeThread(child.thread)==0xffffffff) { TerminateProcess(child.process,124); return 124; }
       CloseHandle(child.thread); child.thread=IntPtr.Zero;
       if(WaitForSingleObject(child.process,0xffffffff)!=0) return 125;
@@ -80,6 +93,9 @@ public static class AtlasChronistJob {
       return unchecked((int)exit);
     } catch { return 126; }
     finally {
+      if(attributesReady) DeleteProcThreadAttributeList(attributes);
+      if(attributes!=IntPtr.Zero) Marshal.FreeHGlobal(attributes);
+      if(jobList!=IntPtr.Zero) Marshal.FreeHGlobal(jobList);
       if(job!=IntPtr.Zero) CloseHandle(job);
       if(child.thread!=IntPtr.Zero) CloseHandle(child.thread);
       if(child.process!=IntPtr.Zero) CloseHandle(child.process);
