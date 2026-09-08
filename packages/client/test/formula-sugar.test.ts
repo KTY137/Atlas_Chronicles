@@ -50,6 +50,18 @@ describe("analysis explains in plain German with positions in the typed text", (
     expect(analyzeFormula('haelt("x")', sources, { allowDice: true, allowKnowledge: false }).error).toMatchObject({ code: "knowledge-forbidden", start: 0, end: 5 });
     expect(analyzeFormula('haelt("x")', sources, { allowDice: true, allowKnowledge: true }).ok).toBe(true);
   });
+  // Both type sentences are produced whole, never one derived from the other by replacing a
+  // sentence ending — that would break silently on any rewording and cannot be reordered for
+  // another language. Each shape below must therefore stand on its own.
+  it.each([
+    ["@vertraut + 1", "Hier wird eine Zahl gebraucht, aber „Vertraut“ ist Ja/Nein."],
+    ["@geschick && true", "Hier wird Ja/Nein gebraucht, aber „Geschick“ ist Zahl."],
+    ["(@vertraut) + 1", "Hier wird eine Zahl gebraucht."],
+    ["1d20 && true", "Hier wird Ja/Nein gebraucht."],
+  ])("states the type mismatch in %s as one whole sentence", (text, message) => {
+    expect(analyzeFormula(text, sources, options).error).toMatchObject({ code: "type", message });
+  });
+
   it("marks a reference to a removed attribute as missing", () => {
     expect(analyzeFormula("@weg", { actor: [], input: [] }, options).spans[0]).toMatchObject({ kind: "attribute", missing: true });
   });
