@@ -20,5 +20,5 @@ export { VERSCHACHTELUNG_VERSION, MAX_MASSSTABSSPRUNG, erzeugeVerschachtelt } fr
 export type { EbenenArt, EbenenAuftrag, VerschachtelungsAuftrag, Uebergang, Verschachtelung, VerschachtelungsBericht } from "./verschachtelung.ts";
 export { loeseWfc, WfcError } from "./wfc.ts";
 export type { WfcKachel, WfcAuftrag, WfcErgebnis } from "./wfc.ts";
-export { SIEDLUNG_ERZEUGER, SIEDLUNG_VERSION, SIEDLUNG_LIMITS, SIEDLUNG_STANDARD, erzeugeSiedlung } from "./siedlung.ts";
+export { SIEDLUNG_ERZEUGER, SIEDLUNG_VERSION, SIEDLUNG_LIMITS, SIEDLUNG_STANDARD, siedlungStandard, erzeugeSiedlung } from "./siedlung.ts";
 export type { SiedlungArt, SiedlungOptionen, SiedlungAuftrag, SiedlungBauwerk, SiedlungStrasse, SiedlungBericht, Siedlung } from "./siedlung.ts";

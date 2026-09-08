@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
+import { mapRegionOutlines } from "../src/features/map-region-outlines.ts";
 
 /** Executes production component handlers/effects with controlled resources and transport. */
 function harness(file: string, initial: Record<string, any>, component = file, extraExports = "") {
@@ -26,6 +27,7 @@ function harness(file: string, initial: Record<string, any>, component = file, e
     module: mod, exports: mod.exports, window: { confirm: (message: string) => { confirmations.push(message); return props.confirm ?? true; } },
     require: (name: string) => {
       if (name === "react") return react;
+      if (name === "./map-region-outlines") return { mapRegionOutlines };
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "../hooks") return { useResource: (path: string) => props.resource?.(path) ?? { data: null, loading: false, loaded: true, error: "" }, useTask: () => ({ busy: false, error: "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, api: async (path: string, request: unknown) => { requests.push({ path, request }); return props.transport?.(path, request); } };
@@ -68,7 +70,7 @@ describe("gameplay draft regression review", () => {
     const defaults = { grundriss: { raeume: 8, zellen: [64, 64], schleifen: 2, licht: true }, hoehle: { kammern: 8, zellen: [64, 64], licht: true } };
     const h = harness("TacticalGenerate", { campaignId: "campaign", onCreated() {}, resource: () => loaded(defaults) });
     h.nodes(n => n.type === "input" && n.props.maxLength === 160)[0]!.props.onChange({ target: { value: "Testkarte" } });
-    h.nodes(n => n.type === "input" && n.props.maxLength === 512)[0]!.props.onChange({ target: { value: "seed" } });
+    h.nodes(n => n.type === "input" && n.props.maxLength === 256)[0]!.props.onChange({ target: { value: "seed" } });
     const dimensions = h.nodes(n => n.type === "input" && n.props.min === 12);
     dimensions[0]!.props.onChange({ target: { value: "96" } });
     h.button("Vorschau").props.onClick(); await h.settle();
@@ -81,6 +83,20 @@ describe("gameplay draft regression review", () => {
     expect(h.nodes(n => n.type === "CharacterSheet")).toHaveLength(0);
     actors = [actor]; h.replace({});
     expect(h.nodes(n => n.type === "CharacterSheet")[0]?.props.actorId).toBe("a");
+  });
+
+  it("uses the chosen settlement defaults and discards incompatible floorplan options", async () => {
+    const defaults = { grundriss: { raeume: 8, zellen: [64, 64], schleifen: 2, licht: true }, hoehle: { kammern: 8, zellen: [64, 64], licht: true },
+      siedlung: { dorf: { art: "dorf", bauwerke: 42, ausdehnung: [36, 28], strassenDichte: .3, licht: true }, weiler: { art: "weiler", bauwerke: 9, ausdehnung: [20, 16], strassenDichte: .1, licht: false } } };
+    const h = harness("TacticalGenerate", { campaignId: "campaign", onCreated() {}, resource: () => loaded(defaults) });
+    h.nodes(n => n.type === "input" && n.props.maxLength === 160)[0]!.props.onChange({ target: { value: "Silberbach" } });
+    h.nodes(n => n.type === "input" && n.props.max === 16)[0]!.props.onChange({ target: { value: "4" } });
+    h.nodes(n => n.type === "select")[0]!.props.onChange({ target: { value: "siedlung" } });
+    h.nodes(n => n.type === "select")[1]!.props.onChange({ target: { value: "weiler" } });
+    expect(h.nodes(n => n.type === "input" && n.props.type === "checkbox")[0]!.props.checked).toBe(false);
+    h.nodes(n => n.type === "input" && n.props.min === 12)[0]!.props.onChange({ target: { value: "32" } });
+    h.button("Vorschau").props.onClick(); await h.settle();
+    expect(h.requests[0]?.request.body).toEqual({ art: "siedlung", name: "Silberbach", keim: "Silberbach", optionen: { art: "weiler", ausdehnung: [32, 16] } });
   });
 
   it("keeps sheet dirtiness when inventory is clean and allows declining an actor switch", () => {

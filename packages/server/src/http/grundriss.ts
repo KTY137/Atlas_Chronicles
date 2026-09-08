@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
-import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS } from "@chronicle/forge";
+import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS } from "@chronicle/forge";
 import { TacticalMapValidationError } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
@@ -53,13 +53,24 @@ const HoehleOptionenSchema = Type.Object({
   licht: Type.Optional(Type.Boolean()),
 }, closed);
 
+const grundstueck = Type.Integer({ minimum: SIEDLUNG_LIMITS.grundstueckMin, maximum: SIEDLUNG_LIMITS.grundstueckMax });
+const SiedlungOptionenSchema = Type.Object({
+  art: Type.Optional(Type.Union([Type.Literal("weiler"), Type.Literal("dorf"), Type.Literal("stadt")])),
+  ausdehnung: Type.Optional(Type.Tuple([zelle, zelle])),
+  zellgroesse: Type.Optional(Type.Integer({ minimum: SIEDLUNG_LIMITS.zellgroesseMin, maximum: SIEDLUNG_LIMITS.zellgroesseMax })),
+  bauwerke: Type.Optional(Type.Integer({ minimum: SIEDLUNG_LIMITS.bauwerkeMin, maximum: SIEDLUNG_LIMITS.bauwerkeMax })),
+  strassenDichte: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
+  grundstueck: Type.Optional(Type.Tuple([grundstueck, grundstueck])),
+  licht: Type.Optional(Type.Boolean()),
+}, closed);
+
 const gemeinsam = {
   commandId: Type.String({ minLength: 1, maxLength: 128 }),
   name: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }),
-  keim: Type.String({ minLength: 1, maxLength: 512 }),
+  keim: Type.String({ minLength: 1, maxLength: 256, pattern: "\\S" }),
 };
 /**
- * Zwei Arten, eine Tuer. Die Union ist nach `art` unterschieden, damit die Regler der einen
+ * Drei Arten, eine Tuer. Die Union ist nach `art` unterschieden, damit die Regler der einen
  * Art nicht bei der anderen durchrutschen: eine „Fuellung" an einem Grundriss waere eine
  * Angabe, die niemand liest, und stillschweigend ignorierte Eingaben sind schlimmer als
  * abgewiesene.
@@ -67,6 +78,7 @@ const gemeinsam = {
 export const GrundrissSchema = Type.Union([
   Type.Object({ ...gemeinsam, art: Type.Optional(Type.Literal("grundriss")), optionen: Type.Optional(OptionenSchema) }, closed),
   Type.Object({ ...gemeinsam, art: Type.Literal("hoehle"), optionen: Type.Optional(HoehleOptionenSchema) }, closed),
+  Type.Object({ ...gemeinsam, art: Type.Literal("siedlung"), optionen: Type.Optional(SiedlungOptionenSchema) }, closed),
 ]);
 
 export type GrundrissBody = Static<typeof GrundrissSchema>;

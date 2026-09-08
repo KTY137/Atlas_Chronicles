@@ -2,6 +2,25 @@
 
 Updated: **2026-09-08** (GUI-Rework und Regressionen im Featurelisten-Worktree)
 
+## Siedlungen, Recherche und angeforderter Merge — 2026-09-08
+
+Worktree-Siedlungen sind vollständig durch HTTP, Speicherung, Unterkarten, Vorschau und
+Bibliothek verbunden. Geprüft: 35 Serverfälle (Integration/Raster), 28 Clientfälle,
+zwei neue Siedlungs-Browserabläufe, bestehender taktischer Browserkonsument mit drei
+tatsächlich gezeichneten Kartenansichten. Zusätzliche 14 Admission-/Health-Fälle prüfen
+getrennte Kachelbudgets und sichere HTTP-503-Antworten; Typecheck und Client-Build grün.
+
+Der Nutzer autorisiert jetzt ausdrücklich den Merge des vollständigen funktionierenden
+Worktrees nach `main` und die Aktualisierung der tatsächlich startbaren Desktop-App.
+`main` ist sauber auf `07e9245` und enthält neuere Karten-/Setting-/Asset-Funktionen.
+Diese werden erhalten und mit der Schmiede sowie den Regressionen-Fixes integriert;
+der kombinierte Stand ist noch nicht verifiziert oder installiert.
+
+Tiefe Recherche: `docs/research/map-generation-20260908.pdf`. Vollständiges verbleibendes
+Featureziel: `docs/FEATURE_COMPLETION_20260908.md`. Chronist und freier NPC-Generator
+bleiben offen; nicht als erledigt markieren. Lokale LangGraph-Checkpoints:
+`tools/review/workflow.py --workflow features|map-research|delivery`.
+
 ## GUI und Regressionen — 2026-09-08
 
 **Aktiver Arbeitsstand:** `.claude/worktrees/featureliste`, Branch

@@ -9,25 +9,33 @@ import { api, apiPath, ApiError, plainText, type EntryDocument, type EntrySummar
 import { useResource, useTask } from "../hooks";
 import { useCommand, type SceneCard } from "./game-api";
 import { TacticalCanvas } from "./TacticalCanvas";
+import { mapRegionOutlines } from "./map-region-outlines";
 import { TacticalGenerate } from "./TacticalGenerate";
 import { TacticalEntitiesEditor } from "./TacticalEntitiesEditor";
 import { mapObjectWindow, objectKey, preparationObjects } from "./tactical-entities";
 
 export function TacticalPreparation({ campaignId, revision, onChanged, onDirty }: { campaignId: string; revision: number; onChanged: () => void; onDirty: (value: boolean) => void }) {
   const maps = useResource<TacticalMapSummary[]>(apiPath(campaignId, "/tactical/maps"), revision);
-  const [selected, setSelected] = useState(""), [parts, setParts] = useState({ map: false, plan: false });
+  const [selected, setSelected] = useState(""), [mode, setMode] = useState<"generate" | "library">("generate"), [parts, setParts] = useState({ map: false, plan: false, generate: false });
   const current = useResource<TacticalMapCard>(selected ? apiPath(campaignId, `/tactical/maps/${selected}`) : null, revision);
-  const dirty = parts.map || parts.plan;
+  const dirty = parts.map || parts.plan || parts.generate;
+  const generationDirty = useCallback((value: boolean) => setParts(v => ({ ...v, generate: value })), []);
   const mapDirty = useCallback((value: boolean) => setParts(v => ({ ...v, map: value })), []), planDirty = useCallback((value: boolean) => setParts(v => ({ ...v, plan: value })), []);
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]); useEffect(() => () => onDirty(false), [onDirty]);
-  return <div className="tactical-preparation"><label>Szenenkarte<select value={selected} onChange={e => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; setSelected(e.target.value); }}><option value="">Karte wählen</option>{maps.data?.map(m => <option key={m.id} value={m.id}>{m.name} · Revision {m.revision}</option>)}</select></label>
-    <TacticalGenerate campaignId={campaignId} onCreated={id => { setSelected(id); onChanged(); }} />
+  const chooseMode = (next: typeof mode) => {
+    if (mode === next || (dirty && !window.confirm("Ungespeicherte Kartenänderungen verwerfen?"))) return;
+    setParts({ map: false, plan: false, generate: false }); setMode(next);
+  };
+  return <div className="tactical-preparation"><nav className="forge-task-tabs" aria-label="Karten vorbereiten"><Button aria-pressed={mode === "generate"} onClick={() => chooseMode("generate")}>Neue Karte erzeugen</Button><Button aria-pressed={mode === "library"} onClick={() => chooseMode("library")}>Kartenbibliothek{maps.data ? ` · ${maps.data.length}` : ""}</Button></nav>
+    {mode === "generate" ? <TacticalGenerate key={campaignId} campaignId={campaignId} onDirty={generationDirty} onCreated={id => { setSelected(id); setMode("library"); onChanged(); }} /> : <>
+    <label>Szenenkarte<select value={selected} onChange={e => { if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return; setSelected(e.target.value); }}><option value="">Karte wählen</option>{maps.data?.map(m => <option key={m.id} value={m.id}>{m.name} · Revision {m.revision}</option>)}</select></label>
     {current.data ? <Button onClick={() => {
       if (dirty && !window.confirm("Ungespeicherte Kartenänderungen verwerfen?")) return;
       const url = new URL(location.href); url.searchParams.set("stage", "atlas"); url.searchParams.set("atlasChild", current.data!.id); location.assign(url.href);
     }}>Karte im Atlas öffnen</Button> : null}
     {maps.error || current.error ? <Notice error>{maps.error || current.error}</Notice> : null}
-    {current.loading ? <Loading /> : current.data ? <><MapEditor key={current.data.id} current={current.data} campaignId={campaignId} onChanged={onChanged} onDirty={mapDirty} /><ScenePlan key={current.data.id} map={current.data} campaignId={campaignId} revision={revision} onChanged={onChanged} onDirty={planDirty} /></> : <EmptyState title="Eine Karte für euren nächsten Abend.">Importiere eine Karte und wähle sie hier aus. Regionen verweisen auf vorhandene Artikel; daraus entsteht der Wissensblick auf der Karte.</EmptyState>}
+    {current.loading ? <Loading /> : current.data ? <><MapEditor key={current.data.id} current={current.data} campaignId={campaignId} onChanged={onChanged} onDirty={mapDirty} /><ScenePlan key={current.data.id} map={current.data} campaignId={campaignId} revision={revision} onChanged={onChanged} onDirty={planDirty} /></> : <EmptyState title="Deine Karten für den nächsten Abend.">Wähle eine gespeicherte Karte zum Bearbeiten aus oder erzeuge eine neue Karte. Im Atlas kannst du ihre Gebäude und Räume betreten.</EmptyState>}
+    </>}
   </div>;
 }
 
@@ -48,7 +56,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty }: { current
   const focusedObject = visibleObjects.find(o => objectKey(o) === selectedObject);
   const scene = useMemo<ProjectedMapScene>(() => ({ id: baseline.id, width: document.geometry.size[0], height: document.geometry.size[1], ...(document.background ? { rasterScope: baseline.contentHash } : {}),
     cells: document.geometry.regions.map(r => ({ id: r.id, polygon: r.punkte, fill: anchors.some(a => a.targetKind === "region" && a.targetId === r.id) ? 0x60bb8d : 0xd98e3b })), pins: visibleObjects.filter(o => o.kind === "place" || o.entryId || objectKey(o) === selectedObject).map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, ...(o.entryId ? { entryId: o.entryId } : {}) })), grid: document.grid,
-    lines: [...document.walls.map(w => ({ id: w.id, points: w.points })), ...(points.length >= 2 ? [{ id: "draft-region", points, color: 0xffffff }] : [])],
+    lines: [...mapRegionOutlines(document), ...document.walls.map(w => ({ id: w.id, points: w.points })), ...(points.length >= 2 ? [{ id: "draft-region", points, color: 0xffffff }] : [])],
     stamps: document.geometry.stamps.map(stamp => ({ id: stamp.id, asset: stamp.a, x: stamp.x, y: stamp.y, s: stamp.s, r: stamp.r, l: stamp.l })),
   }), [baseline, document, anchors, points, visibleObjects]);
   const addPoint = (p: TacticalPoint) => {

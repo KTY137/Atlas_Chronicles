@@ -9,6 +9,7 @@ import { apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
 import { useCommand } from "./game-api";
 import { TacticalCanvas } from "./TacticalCanvas";
+import { mapRegionOutlines } from "./map-region-outlines";
 import { MapEditor, ScenePlan } from "./TacticalPreparation";
 import "./tactical.css";
 import "./NestedMapView.css";
@@ -45,7 +46,7 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
       id: mapId, width: document.geometry.size[0], height: document.geometry.size[1],
       ...(document.background ? { rasterScope: map.data.contentHash } : {}),
       cells: document.geometry.regions.map(region => ({ id: region.id, polygon: region.punkte, fill: 0x375949 })),
-      lines: document.walls.map(wall => ({ id: wall.id, points: wall.points })), grid: document.grid,
+      lines: [...mapRegionOutlines(document), ...document.walls.map(wall => ({ id: wall.id, points: wall.points }))], grid: document.grid,
       stamps: document.geometry.stamps.map(stamp => ({ id: stamp.id, asset: stamp.a, x: stamp.x, y: stamp.y, s: stamp.s, r: stamp.r, l: stamp.l })),
       pins: (children.data?.nodes ?? []).map(node => ({ id: node.knotenId, x: node.x, y: node.y, label: node.titel,
         icon: node.vorhandeneKarteId ? "portal" as const : "place" as const })),
@@ -82,10 +83,10 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
         }} />
         <p className="field-help"><DoorOpen size={14} /> Eingangs-Icons öffnen Unterkarten direkt. Wähle einen Raum, um eine weitere Ebene anzulegen.</p></div>
         <aside className="panel nested-map-rooms" aria-label="Räume und Unterkarten"><h2>Räume &amp; Unterkarten</h2>
-          {children.loading ? <Loading /> : !entrances.length ? <EmptyState title="Noch keine Räume">Lege im Karteneditor eine Region an, um darin eine Unterkarte zu verknüpfen.</EmptyState> : null}
+          {children.loading ? <Loading /> : !entrances.length ? <EmptyState title="Noch keine Eingänge">Lege im Karteneditor eine Region an, um darin eine Unterkarte zu verknüpfen.</EmptyState> : null}
           <ul>{entrances.map(node => <li key={node.knotenId}><button type="button" aria-pressed={selectedId === node.knotenId} onClick={() => {
             if (node.vorhandeneKarteId) navigate({ kind: "tactical", id: node.vorhandeneKarteId, title: node.titel }); else setSelectedId(node.knotenId);
-          }}>{node.vorhandeneKarteId ? <DoorOpen size={18} /> : <Map size={18} />}<span>{node.titel}<small>{node.vorhandeneKarteId ? "Unterkarte öffnen" : "Raum auswählen"}</small></span></button></li>)}</ul>
+          }}>{node.vorhandeneKarteId ? <DoorOpen size={18} /> : <Map size={18} />}<span>{node.titel}<small>{node.vorhandeneKarteId ? "Unterkarte öffnen" : "Eingang auswählen"}</small></span></button></li>)}</ul>
           {selected && children.data ? <MapEntrance key={selected.knotenId} campaignId={campaignId} parentKind="tactical" parentMapId={mapId}
             nodeId={selected.knotenId} title={selected.titel} version={children.data.version} canEnter={selected.canEnter} childMapId={selected.vorhandeneKarteId}
             onOpen={id => navigate({ kind: "tactical", id, title: selected.titel })} onChanged={onChanged} /> : null}
@@ -103,7 +104,8 @@ export function MapEntrance({ campaignId, parentKind, parentMapId, nodeId, title
   const [linking, setLinking] = useState(false), [targetId, setTargetId] = useState("");
   // Was hinter der Tuer entsteht. Vorher gab es die Wahl nur beim freien Erzeugen — hinter jedem
   // Hoehleneingang lagen deshalb Raeume und Gaenge.
-  const [art, setArt] = useState<"grundriss" | "hoehle">("grundriss");
+  const [art, setArt] = useState<"grundriss" | "hoehle" | "siedlung">("grundriss");
+  const [siedlungsart, setSiedlungsart] = useState<"weiler" | "dorf" | "stadt">("dorf");
   const maps = useResource<TacticalMapSummary[]>(linking ? apiPath(campaignId, "/tactical/maps") : null);
   const enter = (targetMapId?: string) => void task.run(async () => {
     try {
@@ -111,7 +113,7 @@ export function MapEntrance({ campaignId, parentKind, parentMapId, nodeId, title
         // Entweder anhaengen ODER erzeugen: eine Kartenart neben einer fertigen Karte weist der
         // Server ab, statt sie wirkungslos zu schlucken.
         parentKind, parentMapId, knotenId: nodeId, expectedVersion: version, name: title.slice(0, 160),
-        ...(targetMapId ? { targetMapId } : { art }),
+        ...(targetMapId ? { targetMapId } : { art, ...(art === "siedlung" ? { siedlungsart } : {}) }),
       });
       if (mounted.current) { onChanged(); onOpen(result.mapId); }
     } catch (error) { if (mounted.current) onChanged(); throw error; }
@@ -120,11 +122,13 @@ export function MapEntrance({ campaignId, parentKind, parentMapId, nodeId, title
     {childMapId ? <Button variant="primary" onClick={() => onOpen(childMapId)}><DoorOpen size={16} /> Unterkarte öffnen</Button> : <>
       <p>Erzeuge eine Karte für diesen Ort oder verbinde eine vorhandene Szenenkarte.</p>
       <label className="atlas-entrance-art">Was liegt hinter dieser Tür?
-        <select value={art} disabled={task.busy} onChange={event => setArt(event.target.value as "grundriss" | "hoehle")}>
+        <select value={art} disabled={task.busy} onChange={event => setArt(event.target.value as typeof art)}>
           <option value="grundriss">Grundriss — Räume und Gänge</option>
           <option value="hoehle">Höhle — gewachsener Fels</option>
+          <option value="siedlung">Siedlung — Gebäude und Straßen</option>
         </select>
       </label>
+      {art === "siedlung" ? <label>Größe der Siedlung<select value={siedlungsart} disabled={task.busy} onChange={event => setSiedlungsart(event.target.value as typeof siedlungsart)}><option value="weiler">Weiler</option><option value="dorf">Dorf</option><option value="stadt">Stadt</option></select></label> : null}
       <p className="field-help">Die Wahl gilt beim ersten Betreten. Danach ist der Ort da: wer noch einmal hindurchgeht, kommt an denselben Ort — er wird nicht neu gewürfelt.</p>
       <Button variant="primary" disabled={task.busy || !canEnter} onClick={() => enter()}><WandSparkles size={16} /> {task.busy ? "Karte wird verbunden …" : "Unterkarte erzeugen"}</Button>
       <Button variant="quiet" disabled={task.busy} onClick={() => setLinking(value => !value)}><Link size={16} /> Vorhandene Karte verbinden</Button>

@@ -115,7 +115,10 @@ async function prepareImport(input: P.TacticalImportInput) {
 }
 function validateServerMap(document: TacticalMapDocumentV1) {
   const [w, h] = document.geometry.size;
-  if (!Number.isSafeInteger(w) || !Number.isSafeInteger(h) || w * h > TACTICAL_RASTER_LIMITS.pixels) throw new TacticalValidationError("Dieser Server unterstützt Karten mit ganzen Pixelmaßen bis 16.000.000 Pixeln.");
+  // Vector maps have no source pixels to decode. Keep the image budget for actual backgrounds,
+  // while generated settlements use the published tactical-document extent limit.
+  const pixels = document.background === null ? TACTICAL_MAP_LIMITS.pixels : TACTICAL_RASTER_LIMITS.pixels;
+  if (!Number.isSafeInteger(w) || !Number.isSafeInteger(h) || w * h > pixels) throw new TacticalValidationError(`Dieser Server unterstützt diese Kartenart mit ganzen Pixelmaßen bis ${pixels.toLocaleString("de-DE")} Pixeln.`);
   if (document.geometry.regions.reduce((n, region) => n + region.punkte.length, 0) > TACTICAL_RASTER_LIMITS.points) throw new TacticalValidationError("Dieser Server unterstützt höchstens 20.000 Regionspunkte pro Karte.");
 }
 

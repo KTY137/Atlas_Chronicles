@@ -7,7 +7,7 @@ import { parseCampaignBundleV4 } from "@chronicle/io";
 import type { UvttProvenance } from "@chronicle/forge";
 import type { TacticalAck, TacticalMapCard, TacticalMoveInput, TacticalPlan, TacticalView } from "@chronicle/protocol";
 import { buildApp } from "../packages/server/src/app.ts";
-import { createPgDb, migrate, type Db } from "../packages/server/src/db/index.ts";
+import { createPgDb, createTestDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { createIdentity } from "../packages/server/src/identity/index.ts";
 import { createCampaigns } from "../packages/server/src/domain/campaigns.ts";
 import { createDocuments } from "../packages/server/src/domain/documents.ts";
@@ -16,12 +16,12 @@ import { createTactical } from "../packages/server/src/domain/tactical.ts";
 import { fitCamera } from "../packages/render/src/geometry.ts";
 import { visibleMapTiles } from "../packages/render/src/tactical-geometry.ts";
 
-// Real, isolated PostgreSQL schemas and authenticated browsers. Only the denial regression
+// Isolated PostgreSQL schemas when configured, otherwise PGlite, and authenticated browsers. Only the denial regression
 // interrupts projection polling; its 409 tile response comes from the actual server policy.
 const fixturePath = resolve("packages/forge/test/fixtures/uvtt/sampleMap.dd2vtt");
 const fixtureProvenance = resolve("packages/forge/test/fixtures/uvtt/provenance.json");
 let schema: string, origin: string, campaignId: string, sceneId: string, entryId: string, passages: string[];
-let admin: Db, db: Db, app: Awaited<ReturnType<typeof buildApp>>, config: Parameters<typeof buildApp>[1];
+let admin: Db | undefined, db: Db, app: Awaited<ReturnType<typeof buildApp>>, config: Parameters<typeof buildApp>[1];
 let sourceText: string, provenance: UvttProvenance;
 let sessions: { userId: string; value: string; actorId?: string }[];
 const base = () => `${origin}/api/campaigns/${campaignId}`;
@@ -36,10 +36,15 @@ test.beforeEach(async () => {
   schema = `chronicle_tactical_e2e_${randomUUID().replaceAll("-", "")}`;
   const port = 9900 + Math.floor(Math.random() * 150); origin = `http://localhost:${port}`;
   config = { origin, bootstrapToken: randomBytes(32).toString("hex"), cookieSecret: randomBytes(32).toString("hex"), staticRoot: resolve("packages/client/dist") };
-  const settings = process.env.E2E_DATABASE_URL ? null : JSON.parse(await readFile(".local/config.json", "utf8"));
-  const databaseUrl = process.env.E2E_DATABASE_URL ?? settings.databaseUrl;
-  admin = createPgDb(databaseUrl); await admin.query(`CREATE SCHEMA "${schema}"`);
-  const url = new URL(databaseUrl); url.searchParams.set("options", `-c search_path=${schema}`); db = createPgDb(url.href); await migrate(db);
+  const settings = process.env.E2E_DATABASE_URL ? null : await readFile(".local/config.json", "utf8")
+    .then(text => JSON.parse(text)).catch(error => { if (error.code === "ENOENT") return null; throw error; });
+  const databaseUrl = process.env.E2E_DATABASE_URL ?? settings?.databaseUrl;
+  admin = undefined;
+  if (databaseUrl) {
+    admin = createPgDb(databaseUrl); await admin.query(`CREATE SCHEMA "${schema}"`);
+    const url = new URL(databaseUrl); url.searchParams.set("options", `-c search_path=${schema}`); db = createPgDb(url.href);
+  } else db = await createTestDb();
+  await migrate(db);
   const identity = createIdentity(db, config), campaigns = createCampaigns(db), gm = await identity.bootstrap("Kaya Karten"); sessions = [gm];
   campaignId = (await campaigns.createCampaign(gm.userId, { name: "Zwei Blicke auf das Frosttor" })).id;
   const invitation = await campaigns.issueInvitation(gm.userId, campaignId);
@@ -128,6 +133,7 @@ test("real UVTT import, region knowledge, preparation, three live views, command
 
     await test.step("draw and explicitly bind separate left/right passage regions", async () => {
       await gm.getByRole("button", { name: "Karte & Vorbereitung", exact: true }).click();
+      await gm.getByRole("button", { name: /^Kartenbibliothek/ }).click();
       await gm.getByRole("combobox", { name: "Szenenkarte", exact: true }).selectOption(mapId);
       for (const [i, corners] of [
         [[0, 0], [1280, 0], [1280, 2560], [0, 2560]],
@@ -177,7 +183,9 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       await gm.getByRole("button", { name: "Vorbereitete Szene beginnen", exact: true }).click(); expect((await started).status()).toBe(200);
       await gm.getByRole("button", { name: "Laufende Szene", exact: true }).click();
       await openTactical(a); await openTactical(b);
-      for (const page of [gm, a, b]) await canvasReady(page);
+      // A ready WebGL canvas may still be blank after a tile failure. All three actual
+      // raster views must be painted before claiming that multiplayer rendering works.
+      for (const page of [gm, a, b]) await paintedFittedCanvas(page);
       const [gmView, aView, bView] = await Promise.all([view(gm), view(a), view(b)]); sessionId = gmView.sessionId;
       expect(gmView.tokens.map(token => token.name).sort()).toEqual(["Dorn", "Sera"]);
       expect(aView.tokens.map(token => token.name)).toEqual(["Sera"]); expect(bView.tokens.map(token => token.name)).toEqual(["Dorn"]);
@@ -239,7 +247,9 @@ test("real UVTT import, region knowledge, preparation, three live views, command
         await page.locator(".tactical-object-selected").getByRole("button", { name: "Artikel öffnen", exact: true }).click();
         await expect(page.locator("article.article-body")).toContainText(known); await expect(page.locator("article.article-body")).not.toContainText(hidden);
       }
-      await gm.getByRole("button", { name: "Karte & Vorbereitung", exact: true }).click(); await gm.getByRole("combobox", { name: "Szenenkarte", exact: true }).selectOption(mapId);
+      await gm.getByRole("button", { name: "Karte & Vorbereitung", exact: true }).click();
+      await gm.getByRole("button", { name: /^Kartenbibliothek/ }).click();
+      await gm.getByRole("combobox", { name: "Szenenkarte", exact: true }).selectOption(mapId);
       await gm.getByRole("combobox", { name: "Szene", exact: true }).selectOption(sceneId);
       await editor(gm, "Sera").getByLabel("X", { exact: true }).fill("768");
       const saved = gm.waitForResponse(r => r.url() === `${base()}/scenes/${sceneId}/tactical-plan` && r.request().method() === "PUT");
@@ -248,7 +258,7 @@ test("real UVTT import, region knowledge, preparation, three live views, command
       const plan: TacticalPlan = await (await gm.request.get(`${base()}/scenes/${sceneId}/tactical-plan`)).json(); expect(plan.tokens.find(t => t.actorId === sessions[1]!.actorId)!.x).toBe(768);
       await stage(gm, "Runde").click();
       const downloading = gm.waitForEvent("download"); await gm.getByRole("button", { name: "Kampagne exportieren", exact: true }).click();
-      const download = await downloading; expect(download.suggestedFilename()).toBe(`campaign-${campaignId}.chronicle`);
+      const download = await downloading; expect(download.suggestedFilename()).toBe("zwei-blicke-auf-das-frosttor.chronicle");
       const archive = await readFile((await download.path())!, "utf8");
       const bundle = parseCampaignBundleV4(archive); expect(bundle.version).toBe(4);
       expect(bundle.tables.tactical_sources[0]!.source_text).toBe(sourceText); expect(bundle.tables.session_tactical_states).toHaveLength(1);

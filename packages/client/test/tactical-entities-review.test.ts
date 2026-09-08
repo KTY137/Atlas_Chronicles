@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
 import * as Entities from "../src/features/tactical-entities.ts";
+import { mapRegionOutlines } from "../src/features/map-region-outlines.ts";
 
 /** Runs the actual component handlers/effects with controlled resource responses.
  * No DOM/WebGL emulation: canvas assertions concern the real renderer input contract. */
@@ -32,6 +33,7 @@ function harness(file: string, component: string, initial: Record<string, any>, 
     require: (name: string) => {
       if (name in mocks) return mocks[name];
       if (name === "react") return react;
+      if (name === "./map-region-outlines") return { mapRegionOutlines };
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "./tactical-entities") return Entities;
       if (name === "../hooks") return { useResource: resource, useTask: () => ({ busy: false, error: "", run: (fn: () => unknown) => fn() }) };

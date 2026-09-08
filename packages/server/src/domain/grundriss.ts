@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFileSync } from "node:fs";
-import { erzeugeGrundriss, erzeugeHoehle, GRUNDRISS_ERZEUGER, GRUNDRISS_VERSION, GRUNDRISS_STANDARD, HOEHLE_STANDARD, type GrundrissOptionen, type HoehleOptionen } from "@chronicle/forge";
+import {
+  erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, GRUNDRISS_STANDARD, HOEHLE_STANDARD,
+  type GrundrissOptionen, type HoehleOptionen, type SiedlungArt, type SiedlungOptionen,
+} from "@chronicle/forge";
 import { parseAssetpaket, serializeTacticalMapDocument, type AssetpaketV1 } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
@@ -58,20 +61,20 @@ export interface GrundrissRequest {
   readonly keim: string;
   /**
    * Welche Art Karte entsteht. `grundriss` sind Räume und Gänge (Schloss, Krypta, Haus),
-   * `hoehle` ist gewachsener Fels. Beide liefern dasselbe Ergebnis (`Grundriss`) und gehen
-   * denselben Weg in die Datenbank; nur der Erzeuger dahinter ist ein anderer.
+   * `hoehle` ist gewachsener Fels, `siedlung` ein Ort mit Gebäuden und Straßen. Alle liefern
+   * ein gewöhnliches taktisches Dokument und gehen denselben Weg in die Datenbank.
    */
-  readonly art?: "grundriss" | "hoehle";
-  readonly optionen?: Partial<GrundrissOptionen> | Partial<HoehleOptionen>;
+  readonly art?: "grundriss" | "hoehle" | "siedlung";
+  readonly optionen?: Partial<GrundrissOptionen> | Partial<HoehleOptionen> | Partial<SiedlungOptionen>;
 }
 
 export function createGrundriss(db: Db, cfg: IdentityConfig) {
   const campaigns = createCampaigns(db);
 
   const erzeuge = (input: GrundrissRequest) => {
-    // Die Verzweigung ist die ganze Erweiterung: `erzeugeHoehle` war gebaut, geprueft und aus dem
-    // Fass exportiert — und unerreichbar, genau wie `erzeugeGrundriss` es einmal war.
     const auftrag = { keim: input.keim, titel: input.name };
+    if (input.art === "siedlung") return erzeugeSiedlung({ ...auftrag,
+      ...(input.optionen ? { optionen: input.optionen as Partial<SiedlungOptionen> } : {}) }, paket());
     return input.art === "hoehle"
       ? erzeugeHoehle({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<HoehleOptionen> } : {}) }, paket())
       : erzeugeGrundriss({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<GrundrissOptionen> } : {}) }, paket());
@@ -103,9 +106,10 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
   });
 
   return {
-    /** Die Voreinstellungen beider Arten — die Oberflaeche soll nicht raten, was ueblich ist. */
-    defaults(): { grundriss: GrundrissOptionen; hoehle: HoehleOptionen } {
-      return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD };
+    /** Every kind reads its own engine defaults; the form does not carry a second option table. */
+    defaults(): { grundriss: GrundrissOptionen; hoehle: HoehleOptionen; siedlung: Record<SiedlungArt, SiedlungOptionen> } {
+      return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD,
+        siedlung: { weiler: siedlungStandard("weiler"), dorf: siedlungStandard("dorf"), stadt: siedlungStandard("stadt") } };
     },
 
     /** Generate without persisting: the GM sees the room count and the seed before committing. */
@@ -117,9 +121,12 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
         wurzelId: grundriss.wurzelId as string,
         art: grundriss.art,
         bericht: grundriss.bericht,
-        raeume: grundriss.raeume.length,
+        ...(grundriss.art === "siedlung"
+          ? { bauwerke: grundriss.bauwerke.length, strassen: grundriss.strassen.length }
+          : { raeume: grundriss.raeume.length }),
         knoten: grundriss.knoten.length,
         groesse: grundriss.karte.geometry.size,
+        karte: grundriss.karte,
       };
     },
 

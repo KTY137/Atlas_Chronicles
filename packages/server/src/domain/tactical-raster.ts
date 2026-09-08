@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { setImmediate as immediate } from "node:timers/promises";
 import sharp from "sharp";
 import { inspectUvttImage } from "@chronicle/forge";
-import type { TacticalImageRef, TacticalPoint } from "@chronicle/szene";
+import { TACTICAL_MAP_LIMITS, type TacticalImageRef, type TacticalPoint } from "@chronicle/szene";
 
 /** Derived artifacts only. Never use this private cache identity as a player-visible revision. */
 export const TACTICAL_RASTER_DECODER_ID = `chronicle-raster-v1:center-evenodd-union:whole-footprint-box:rgba8:${JSON.stringify(Object.fromEntries(Object.entries(sharp.versions).sort(([a], [b]) => a.localeCompare(b, "en"))))}`;
@@ -51,10 +51,10 @@ function integer(value: unknown, min: number, max: number, name: string): number
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < min || value > max) fail(`${name} must be an integer in ${min}..${max}`);
   return value as number;
 }
-function size(value: readonly [number, number]): readonly [number, number] {
+function size(value: readonly [number, number], maxPixels: number = TACTICAL_RASTER_LIMITS.pixels): readonly [number, number] {
   if (!Array.isArray(value) || value.length !== 2) fail("documentSize must contain width and height");
   const width = integer(value[0], 1, TACTICAL_RASTER_LIMITS.dimension, "width"), height = integer(value[1], 1, TACTICAL_RASTER_LIMITS.dimension, "height");
-  if (width * height > TACTICAL_RASTER_LIMITS.pixels) fail("server raster pixel limit is 16,000,000");
+  if (width * height > maxPixels) fail(`server raster pixel limit is ${maxPixels.toLocaleString("en-US")}`);
   return [width, height];
 }
 function sourceCopy(image: Uint8Array): Buffer {
@@ -105,7 +105,9 @@ async function decode(image: Buffer, dimensions: readonly [number, number], job:
 
 interface TileGeometry { width: number; height: number; sourceWidth: number; sourceHeight: number; left: number; top: number; factor: number }
 function tileGeometry(request: TacticalTileRequest): TileGeometry {
-  const [sourceWidth, sourceHeight] = size(request.documentSize), tileSize = integer(request.tileSize ?? 256, 1, TACTICAL_RASTER_LIMITS.tileSize, "tileSize");
+  // With no image, boxTile allocates only this transparent tile. There is no document-sized
+  // raster or visibility mask; image decoding continues to use the strict 16M pixel budget.
+  const [sourceWidth, sourceHeight] = size(request.documentSize, request.image === null ? TACTICAL_MAP_LIMITS.pixels : TACTICAL_RASTER_LIMITS.pixels), tileSize = integer(request.tileSize ?? 256, 1, TACTICAL_RASTER_LIMITS.tileSize, "tileSize");
   const lastLevel = Math.max(0, Math.ceil(Math.log2(Math.max(sourceWidth, sourceHeight) / tileSize)));
   const level = integer(request.level, 0, lastLevel, "level"), factor = 2 ** level;
   const levelWidth = Math.ceil(sourceWidth / factor), levelHeight = Math.ceil(sourceHeight / factor);

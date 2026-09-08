@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createHash } from "node:crypto";
+import { SIEDLUNG_ERZEUGER, type SiedlungArt } from "@chronicle/forge";
 import type { Knoten, TacticalPoint } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
@@ -32,7 +33,9 @@ export interface BetretenInput {
    * Gaenge. Die Wahl gilt nur beim ERSTEN Betreten; danach ist der Ort da, und ein zweites
    * Betreten fuehrt dorthin zurueck, statt ihn neu zu wuerfeln.
    */
-  readonly art?: "grundriss" | "hoehle";
+  readonly art?: "grundriss" | "hoehle" | "siedlung";
+  /** Settlement size preset; the child seed and all other defaults remain server-owned. */
+  readonly siedlungsart?: SiedlungArt;
 }
 export interface BetretenResult { mapId: string; erzeugt: boolean; keimHash: string | null }
 interface AdresseRow { map_id: string; keim_hash: string | null; parent_kind: ParentKind; parent_map_id: string; knoten_id: string }
@@ -46,12 +49,13 @@ function validateScope(scope: BetretenScope): void {
     throw new TacticalValidationError("Bitte eine vorhandene übergeordnete Karte auswählen.");
 }
 function validateInput(input: BetretenInput): void {
-  const allowed = new Set(["commandId", "knotenId", "parentKind", "parentMapId", "expectedVersion", "name", "targetMapId", "art"]);
+  const allowed = new Set(["commandId", "knotenId", "parentKind", "parentMapId", "expectedVersion", "name", "targetMapId", "art", "siedlungsart"]);
   if (!input || typeof input !== "object" || Object.keys(input).some(key => !allowed.has(key))
     || !validId(input.commandId) || !validId(input.knotenId)
     || input.name !== undefined && (typeof input.name !== "string" || !input.name.trim() || input.name.length > 160)
     || input.targetMapId !== undefined && !validId(input.targetMapId)
-    || input.art !== undefined && input.art !== "grundriss" && input.art !== "hoehle"
+    || input.art !== undefined && input.art !== "grundriss" && input.art !== "hoehle" && input.art !== "siedlung"
+    || input.siedlungsart !== undefined && !["weiler", "dorf", "stadt"].includes(input.siedlungsart)
     || input.expectedVersion !== undefined && (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 1))
     throw new TacticalValidationError("Bitte Kartenadresse, Namen und erwartete Version prüfen.");
   // Eine Kartenart zu nennen und zugleich eine fertige Karte anzuhaengen sind zwei verschiedene
@@ -59,6 +63,8 @@ function validateInput(input: BetretenInput): void {
   // schlimmer als eine abgelehnte: niemand erfaehrt, dass seine Wahl nicht galt.
   if (input.art !== undefined && input.targetMapId !== undefined)
     throw new TacticalValidationError("Eine bereits vorhandene Karte wird angehängt, nicht erzeugt — eine Kartenart lässt sich dabei nicht wählen.");
+  if (input.siedlungsart !== undefined && input.art !== "siedlung")
+    throw new TacticalValidationError("Weiler, Dorf oder Stadt lässt sich nur für eine neue Siedlung auswählen.");
   if (input.parentKind !== undefined || input.parentMapId !== undefined)
     validateScope({ parentKind: input.parentKind!, parentMapId: input.parentMapId! });
 }
@@ -114,12 +120,18 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
     // getMap is the canonical GM-only draft reader. Players cannot inspect generated rooms.
     const map = await createTactical(tx, cfg).getMap(userId, campaignId, scope.parentMapId);
     const data = new Map((await tx.query<{ knoten_id: string; data: Knoten }>("SELECT knoten_id,data FROM tactical_map_nodes WHERE campaign_id=$1 AND map_id=$2", [campaignId, scope.parentMapId])).rows.map(row => [row.knoten_id, row.data]));
-    return { scope, title: map.name, version: map.version, nodes: map.document.geometry.regions.map((region, index) => {
+    const siedlung = [...data.values()].some(node => node.art === "ort" && node.herkunft?.erzeuger === SIEDLUNG_ERZEUGER);
+    // A settlement's roads also have polygons, but no child addresses. Recover those original
+    // road ids from the ordinary first revision, rather than create a second metadata store.
+    // Newly drawn regions remain enterable and buildings keep their saved seeds after edits.
+    const initial = siedlung && map.revision !== 1 ? await createTactical(tx, cfg).getMap(userId, campaignId, map.id, 1) : map;
+    const strassen = new Set(siedlung ? initial.document.geometry.regions.filter(region => !data.has(region.id)).map(region => region.id) : []);
+    return { scope, title: map.name, version: map.version, nodes: map.document.geometry.regions.filter(region => !strassen.has(region.id)).map((region, index) => {
       const node = data.get(region.id), [x, y] = roomAnchor(region.punkte);
       // Drawn/imported rooms have a stable server-derived seed. Generated rooms keep their exact
       // original seed, independently of names, geometry or subsequent edits.
       const seed = node?.herkunft?.kindKeim ?? createHash("sha256").update(JSON.stringify(["chronicle-room-child-v1", campaignId, map.id, region.id])).digest("hex");
-      return { knotenId: region.id, titel: node?.titel ?? `Raum ${index + 1}`, x, y, kindKeim: seed };
+      return { knotenId: region.id, titel: node?.titel ?? `${node?.art === "bauwerk" || siedlung ? "Gebäude" : "Raum"} ${index + 1}`, x, y, kindKeim: seed };
     }) };
   }
 
@@ -216,6 +228,7 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
             // Ohne Angabe bleibt es beim Grundriss: eine Tuer, die gestern Raeume und Gaenge
             // ergab, soll heute nicht ploetzlich in Fels fuehren.
             ...(input.art ? { art: input.art } : {}),
+            ...(input.art === "siedlung" && input.siedlungsart ? { optionen: { art: input.siedlungsart } } : {}),
           });
           mapId = generated.ack.subjectId; keimHash = generated.keimHash; erzeugt = true;
         }

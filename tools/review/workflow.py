@@ -37,14 +37,66 @@ def work_node(name: str):
         if not isinstance(result, dict) or not result.get("evidence"):
             raise ValueError("Completion requires concrete evidence")
         update = {"evidence": [{"work": name, **result}]}
-        if name == "verification":
+        if name.endswith("verification"):
             update["passed"] = result.get("passed") is True
         return update
     return node
 
 
-def build_graph(checkpointer):
+def build_graph(checkpointer, workflow="review"):
     graph = StateGraph(ReviewState)
+    if workflow == "delivery":
+        for name in ["preflight", "integration", "verification", "repair", "merge_main", "desktop", "desktop_verification", "desktop_repair", "install", "handoff"]:
+            graph.add_node(name, work_node(name))
+        graph.add_edge(START, "preflight")
+        graph.add_edge("preflight", "integration")
+        graph.add_edge("integration", "verification")
+        graph.add_conditional_edges("verification", lambda state: "merge_main" if state["passed"] else "repair")
+        graph.add_edge("repair", "verification")
+        graph.add_edge("merge_main", "desktop")
+        graph.add_edge("desktop", "desktop_verification")
+        graph.add_conditional_edges("desktop_verification", lambda state: "install" if state["passed"] else "desktop_repair")
+        graph.add_edge("desktop_repair", "desktop_verification")
+        graph.add_edge("install", "handoff")
+        graph.add_edge("handoff", END)
+        return graph.compile(checkpointer=checkpointer)
+    if workflow == "map-research":
+        branches = ["city_sources", "dungeon_sources", "local_gap_analysis"]
+        for name in ["discovery", *branches, "synthesis", "verification", "repair", "handoff"]:
+            graph.add_node(name, work_node(name))
+        graph.add_edge(START, "discovery")
+        for name in branches:
+            graph.add_edge("discovery", name)
+        graph.add_edge(branches, "synthesis")
+        graph.add_edge("synthesis", "verification")
+        graph.add_conditional_edges("verification", lambda state: "handoff" if state["passed"] else "repair")
+        graph.add_edge("repair", "verification")
+        graph.add_edge("handoff", END)
+        return graph.compile(checkpointer=checkpointer)
+    if workflow == "features":
+        previous = START
+        for phase, branches in [
+            ("settlement", ["settlement_backend", "settlement_ui", "settlement_tests"]),
+            ("chronist", ["chronist_backend", "chronist_engine", "chronist_ui"]),
+            ("npc", ["npc_backend", "npc_ui", "npc_tests"]),
+            ("final", ["gui_polish", "completion_audit"]),
+        ]:
+            verification, repair = f"{phase}_verification", f"{phase}_repair"
+            for name in branches + [verification, repair]:
+                graph.add_node(name, work_node(name))
+            for name in branches:
+                graph.add_edge(previous, name)
+            graph.add_edge(branches, verification)
+            # A separate join carries a passing phase into the next feature.
+            done = f"{phase}_done"
+            graph.add_node(done, lambda state: {})
+            graph.add_conditional_edges(verification, lambda state, done=done, repair=repair: done if state["passed"] else repair)
+            graph.add_edge(repair, verification)
+            previous = done
+        graph.add_node("handoff", work_node("handoff"))
+        graph.add_edge(previous, "handoff")
+        graph.add_edge("handoff", END)
+        return graph.compile(checkpointer=checkpointer)
     branches = ["data_review", "play_review", "forge_rework", "shell_rework"]
     for name in branches + ["verification", "repair", "handoff"]:
         graph.add_node(name, work_node(name))
@@ -63,13 +115,14 @@ def main():
     parser.add_argument("work", nargs="?")
     parser.add_argument("evidence", nargs="?")
     parser.add_argument("--passed", action="store_true")
+    parser.add_argument("--workflow", choices=["review", "features", "map-research", "delivery"], default="review")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    checkpoint = root / ".local" / "review-20260908" / "workflow.sqlite"
+    checkpoint = root / ".local" / f"{args.workflow}-20260908" / "workflow.sqlite"
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
-    config = {"configurable": {"thread_id": "gui-regression-review-20260908"}}
+    config = {"configurable": {"thread_id": f"gui-{args.workflow}-20260908" if args.workflow != "review" else "gui-regression-review-20260908"}}
     with SqliteSaver.from_conn_string(str(checkpoint)) as saver:
-        graph = build_graph(saver)
+        graph = build_graph(saver, args.workflow)
         state = graph.get_state(config)
         if args.action == "start":
             if state.created_at:

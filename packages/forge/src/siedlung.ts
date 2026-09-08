@@ -86,15 +86,20 @@ export interface SiedlungOptionen {
   readonly licht: boolean;
 }
 
-/** How `art` shifts the defaults. Kept private: a caller who wants a specific kind's numbers asks
- * for them by generating, not by reaching into this table. */
+/** How `art` shifts the defaults. The product reads these through `siedlungStandard`, so its
+ * controls describe the same defaults that generation actually uses. */
 const SIEDLUNG_ART_STANDARD: Readonly<Record<SiedlungArt, Omit<SiedlungOptionen, "art">>> = Object.freeze({
   weiler: Object.freeze({ ausdehnung: [20, 16] as const, zellgroesse: 96, bauwerke: 9, strassenDichte: 0.1, grundstueck: [3, 5] as const, licht: false }),
   dorf: Object.freeze({ ausdehnung: [36, 28] as const, zellgroesse: 96, bauwerke: 42, strassenDichte: 0.3, grundstueck: [3, 6] as const, licht: true }),
   stadt: Object.freeze({ ausdehnung: [56, 44] as const, zellgroesse: 96, bauwerke: 130, strassenDichte: 0.55, grundstueck: [2, 5] as const, licht: true }),
 });
 
-export const SIEDLUNG_STANDARD: SiedlungOptionen = Object.freeze({ art: "dorf", ...SIEDLUNG_ART_STANDARD.dorf });
+export function siedlungStandard(art: SiedlungArt = "dorf"): SiedlungOptionen {
+  if (art !== "weiler" && art !== "dorf" && art !== "stadt") fail("option", "optionen.art", "weiler, dorf oder stadt erwartet");
+  return Object.freeze({ art, ...SIEDLUNG_ART_STANDARD[art] });
+}
+
+export const SIEDLUNG_STANDARD: SiedlungOptionen = siedlungStandard();
 
 export interface SiedlungAuftrag {
   /** The seed. Typically a world-scale `Ort.kindKeim`, or a room's `Herkunft.kindKeim` one scale
@@ -202,7 +207,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   if (typeof auftrag?.keim !== "string" || !auftrag.keim.trim() || auftrag.keim.length > 256) fail("option", "auftrag.keim", "nichtleerer Keim mit höchstens 256 Zeichen erwartet");
   const art: SiedlungArt = auftrag.optionen?.art ?? "dorf";
   if (art !== "weiler" && art !== "dorf" && art !== "stadt") fail("option", "optionen.art", "weiler, dorf oder stadt erwartet");
-  const optionen: SiedlungOptionen = { ...SIEDLUNG_ART_STANDARD[art], ...auftrag.optionen, art };
+  const optionen: SiedlungOptionen = { ...siedlungStandard(art), ...auftrag.optionen, art };
   const [breite, hoehe] = optionen.ausdehnung;
   const L = SIEDLUNG_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>

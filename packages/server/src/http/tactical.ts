@@ -25,6 +25,13 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
   // Ohne eigenes Budget liefen sie unter dem allgemeinen 240/Minute, während der weit billigere
   // Export auf 4/Minute steht (http/bundles.ts). Acht lässt ein ungeduldiges Nacheinander zu.
   const importLimit = { rateLimit: { max: 8, timeWindow: "1 minute" } };
+  // Panning and revising a map requests many tiles. They share one bounded budget across both
+  // preview and live routes, separate from commands and lists. Reusing one plugin hook matters:
+  // route-specific config alone would create a separate store for each route. The plugin keeps
+  // the application's verified-user/IP identity rule; raster concurrency is still bounded below.
+  // Minimal route harnesses without the plugin retain their existing unthrottled test setup.
+  const tileAdmission = app.hasDecorator("rateLimit") ? app.rateLimit({ max: 768, timeWindow: "1 minute" }) : undefined;
+  const tileOptions = { config: { rateLimit: false as const }, ...(tileAdmission ? { onRequest: tileAdmission } : {}), schema: { querystring: tileQuery } };
   const number = (raw: string, minimum = 0) => {
     const value = Number(raw);
     if (!/^[0-9]{1,10}$/.test(raw) || !Number.isSafeInteger(value) || value < minimum || value > 2_147_483_647) throw new TacticalValidationError("Ungültige Kartennummer.");
@@ -55,11 +62,11 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
   app.post<{ Params: Token; Body: P.TacticalMoveInput }>(`${base}/sessions/:id/tactical/tokens/:tokenId/move`, { schema: { body: P.TacticalMoveSchema } }, req => run(async () => tactical.moveToken(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.params.tokenId, req.body)));
   app.post<{ Params: Portal; Body: P.TacticalPortalInput }>(`${base}/sessions/:id/tactical/portals/:portalId`, { schema: { body: P.TacticalPortalSchema } }, req => run(async () => tactical.setPortal(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.params.portalId, req.body)));
   app.post<{ Params: Item; Body: P.TacticalUndoInput }>(`${base}/sessions/:id/tactical/undo`, { schema: { body: P.TacticalUndoSchema } }, req => run(async () => tactical.undo(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body)));
-  app.get<{ Params: Tile; Querystring: Static<typeof tileQuery> }>(`${base}/sessions/:id/tactical/tiles/:level/:x/:y`, { schema: { querystring: tileQuery } }, (req, reply) => run(async () => {
+  app.get<{ Params: Tile; Querystring: Static<typeof tileQuery> }>(`${base}/sessions/:id/tactical/tiles/:level/:x/:y`, tileOptions, (req, reply) => run(async () => {
     const tile = await tactical.getTile(await auth(req.headers.cookie), req.params.campaignId, req.params.id, number(req.params.level), number(req.params.x), number(req.params.y), req.query.view);
     return reply.header("Cache-Control", "private, no-store").header("X-Tactical-View", tile.view).type(tile.mimeType).send(tile.bytes);
   }));
-  app.get<{ Params: Tile; Querystring: Static<typeof tileQuery> }>(`${base}/tactical/maps/:id/tiles/:level/:x/:y`, { schema: { querystring: tileQuery } }, (req, reply) => run(async () => {
+  app.get<{ Params: Tile; Querystring: Static<typeof tileQuery> }>(`${base}/tactical/maps/:id/tiles/:level/:x/:y`, tileOptions, (req, reply) => run(async () => {
     const tile = await tactical.getMapTile(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision), number(req.params.level), number(req.params.x), number(req.params.y), req.query.view);
     return reply.header("Cache-Control", "private, no-store").header("X-Tactical-View", tile.view).type(tile.mimeType).send(tile.bytes);
   }));

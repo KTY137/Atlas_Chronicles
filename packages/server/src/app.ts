@@ -72,6 +72,9 @@ export async function buildApp(db: Db, config: AppConfig) {
     if (fault.validation || fault.statusCode === 400) return reply.code(400).send({ error: "Bitte Eingaben prüfen." });
     if (fault.statusCode === 429) return reply.code(429).send({ error: "Zu viele Anfragen. Bitte kurz warten." });
     if (fault.statusCode === 413) return reply.code(413).send({ error: "Die Datei ist zu groß." });
+    // Raster capacity/timeout errors already carry 503 at the route boundary. Preserve that
+    // retryable status without exposing worker details or misreporting a failed write.
+    if (fault.statusCode === 503) return reply.code(503).header("Retry-After", "1").send({ error: "Der Dienst ist vorübergehend ausgelastet. Bitte kurz warten und erneut versuchen." });
     reqLog(error);
     return reply.code(500).send({ error: "Speichern fehlgeschlagen. Bitte erneut versuchen." });
   });
