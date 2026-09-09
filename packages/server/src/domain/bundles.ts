@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import {
-  CAMPAIGN_V17_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds, collectFigurantragIdentityIds,
+  CAMPAIGN_V19_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds, collectFigurantragIdentityIds, collectRegelarchivIdentityIds, collectKartenherkunftIdentityIds,
   createCurrentCampaignBundle as createCampaignBundle, validateCurrentCampaignBundle as validateCampaignBundle,
   currentCampaignSemanticDiff as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, upgradeCampaignBundleV4,
-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV17 as CampaignTables,
+  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV19 as CampaignTables,
   type ChronistRunRow,type ChronistProposalRow,
-  type FigurvorlageFreigabeRow,type FigurantragRow,type FigurantragEventRow,
-  type CampaignTableNameV17 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+  type FigurvorlageFreigabeRow,type FigurantragRow,type FigurantragEventRow,type RulePackageArchivRow,type AtlasKartenherkunftRow,
+  type CampaignTableNameV19 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -60,6 +60,12 @@ export const restoreOrder: readonly CampaignTableName[] = [
   // Vorlagenrevision und — wenn er bestaetigt wurde — auf die daraus entstandene Figur. Alle drei
   // stehen weiter oben. Das Ereignisbuch ist ein Blatt und geht zuletzt.
   "figurvorlagen_freigaben", "figurantraege", "figurantrag_events",
+  // Ganz zuletzt das Regelarchiv: „aus der Bibliothek genommen" zeigt auf genau die
+  // Paketversion, die es meint, und die steht weiter oben. Ein Blatt, auf das niemand zeigt.
+  "rule_package_archiv",
+  // Und ganz zuletzt die Kartenherkunft: sie zeigt auf ihre Karte und auf den Menschen, der sie
+  // geholt hat. Beide stehen weiter oben, auf sie zeigt niemand.
+  "atlas_karten_herkunft",
 ];
 
 export class CampaignRestoreError extends Error {
@@ -68,7 +74,7 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17; migration?: CampaignMigrationChain;
+  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
   sourceVersion: 1 | 2 | 3 | 4; targetVersion: 4 | 5; sourceContentHash: string; targetContentHash: string;
@@ -163,6 +169,8 @@ async function collect(tx: Db, campaignId: string, universeId: string, exportedA
     if (identityColumns.has(key) && typeof value === "string") users.add(value);
   for(const id of collectChronistIdentityIds(tables.chronist_laeufe as unknown as ChronistRunRow[],tables.chronist_vorschlaege as unknown as ChronistProposalRow[]))users.add(id);
   for(const id of collectFigurantragIdentityIds(tables.figurvorlagen_freigaben as unknown as FigurvorlageFreigabeRow[],tables.figurantraege as unknown as FigurantragRow[],tables.figurantrag_events as unknown as FigurantragEventRow[]))users.add(id);
+  for(const id of collectRegelarchivIdentityIds(tables.rule_package_archiv as unknown as RulePackageArchivRow[]))users.add(id);
+  for(const id of collectKartenherkunftIdentityIds(tables.atlas_karten_herkunft as unknown as AtlasKartenherkunftRow[]))users.add(id);
   tables.users = (await tx.query<CampaignRow>('SELECT id,display_name,created_at::text AS created_at FROM users WHERE id=ANY($1::text[])', [[...users]])).rows;
   return createCampaignBundle({ campaignId, universeId, exportedAt, tables: tables as CampaignTables });
 }

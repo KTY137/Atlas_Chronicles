@@ -115,6 +115,27 @@ nach. Das ist teurer als ein Blick auf die Spalten und genau deshalb richtig: ei
 `image/webp` behauptet und PNG-Bytes trägt, überlebt sonst jeden Export, und ab da glaubt jedes
 Werkzeug der Spalte statt der Datei.
 
+## Das Kartenbild geht denselben Weg
+
+Seit dem Kartenabruf ist auch das **Kartenbild** einer Weltkarte eine Zeile in diesem Bestand,
+und zwar aus dem Grund, aus dem dieser Bestand überhaupt existiert: vorher lag es als feste Datei
+neben dem Programm, und deshalb bekam **jede** Karte außer einer einzigen grundsätzlich kein Bild
+(`atlas.ts`, `hasBundledRaster`). Jetzt gilt:
+
+- Der Name kommt aus der Karte selbst — eine Fandom-Karte nennt ihn in `mapImage` — oder, bei
+  einer hochgeladenen Bildkarte, von der Spielleitung. Nie aus einem Routenparameter.
+- Die Auskunft holt `action=query&prop=imageinfo&iiprop=url|size|mime|extmetadata`; das
+  Lizenzurteil fällt **derselbe** `leseLizenz`, der jeden Artikelimport beurteilt. Ohne benannte
+  Lizenz bleibt die Datei `unbekannt`, wird aufgenommen und sichtbar markiert.
+- Die Bytes gehen durch `bytesAnnehmen` und damit durch dieselbe Vermessung: Typ und Maße aus den
+  Magic Bytes. Die mitgelieferte Andaria-Datei heißt im Quell-Wiki `.jpg` und ist eine WebP —
+  genau der Fall, für den `formatWiderspruch` da ist.
+- Ein Bild, das nicht ankommt, reißt die Karte nicht mit. `POST /maps/aus-wiki` antwortet dann
+  mit `bild.status = "fehlgeschlagen"`, und die Karte steht mit allen Markern.
+
+Woher die **Karte** kommt, steht daneben in `atlas_karten_herkunft`
+([Kampagnenformat v19](CAMPAIGN_FORMAT_V19.md)).
+
 ## Was das nicht kann
 
 - **Keine öffentliche Bildauslieferung.** Die Publikation zeigt die Unterschrift, nicht die Datei.

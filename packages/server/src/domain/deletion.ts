@@ -87,11 +87,14 @@ export const LOESCHREIHENFOLGE: readonly string[] = [
   "actor_profiles", "item_template_revisions", "item_templates",
   "actor_template_revisions", "actor_templates",
   "access_incidents", "audit", "campaign_messages",
-  "atlas_revelations", "atlas_nodes", "atlas_maps",
+  // Erst die Herkunft, dann die Karte: die Herkunftszeile zeigt auf ihre Karte.
+  "atlas_karten_herkunft", "atlas_revelations", "atlas_nodes", "atlas_maps",
   "reading_watermarks", "letter_delivery_receipts", "letter_recipients", "letters",
   "week_clocks", "confirmed_mints", "action_rolls", "action_vollmachten",
   "game_sessions", "week_baselines", "scenes", "actor_sheets",
-  "campaign_rule_pins", "rule_packages",
+  // Erst das Regelarchiv, dann die Pakete: „aus der Bibliothek genommen" zeigt auf genau die
+  // Paketversion, die es meint.
+  "rule_package_archiv", "campaign_rule_pins", "rule_packages",
   "revelations", "rolls", "vollmachten",
   "import_acceptances", "entry_aliases", "entry_categories", "categories",
   "lineage_events", "artifacts", "passages",

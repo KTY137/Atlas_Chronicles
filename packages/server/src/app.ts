@@ -79,7 +79,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   app.setErrorHandler((error, _req, reply) => {
     const fault = error as { validation?: unknown; statusCode?: number };
     if (error instanceof Gone) return reply.code(404).send({ error: "Nicht verfügbar" });
-    if (error instanceof Conflict) return reply.code(409).send({ error: "Konflikt: Bitte den aktuellen Stand laden." });
+    if (error instanceof Conflict) return reply.code(409).send({ error: error.hinweis ?? "Konflikt: Bitte den aktuellen Stand laden." });
     if (error instanceof ImportValidationError || error instanceof AzgaarImportError || error instanceof RuleValidationError || error instanceof AuthoringValidationError) return reply.code(400).send({error:error.message});
     if (fault.validation || fault.statusCode === 400) return reply.code(400).send({ error: "Bitte Eingaben prüfen." });
     if (fault.statusCode === 429) return reply.code(429).send({ error: "Zu viele Anfragen. Bitte kurz warten." });

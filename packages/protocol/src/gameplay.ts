@@ -8,6 +8,8 @@ const scalar = Type.Union([Type.String({maxLength:4096}),Type.Number({minimum:-1
 const values = Type.Record(Type.String({minLength:1,maxLength:96}),scalar,{maxProperties:128});
 export const PackageActivation = Type.Object({packageId:id,packageVersion:id,expectedVersion:Type.Integer({minimum:0}),previewHash:Type.Optional(Type.String({pattern:"^[a-f0-9]{64}$"}))},closed);
 export const PackagePreview = Type.Object({package:Type.Object({},{additionalProperties:true})},closed);
+/** Ein Paket aus der Bibliothek nehmen, es zurueckholen oder endgueltig loeschen. */
+export const PackageSelection = Type.Object({packageId:id,packageVersion:id},closed);
 export const SheetUpdate = Type.Object({expectedVersion:Type.Integer({minimum:0}),fields:values},closed);
 export const ResourceAdjustment = Type.Object({expectedVersion:Type.Integer({minimum:0}),field:id,delta:Type.Number({minimum:-1e12,maximum:1e12})},closed);
 export const SceneDraft = Type.Object({name:Type.String({minLength:1,maxLength:160}),entryIds:Type.Array(id,{maxItems:128,uniqueItems:true}),fictionDate:date},closed);

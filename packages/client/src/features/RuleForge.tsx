@@ -13,9 +13,10 @@ import { RuleActionEditor } from "./RuleActionEditor";
 import { FieldList } from "./RuleFieldList";
 import { RuleForgePreview } from "./RuleForgePreview";
 import { HtbahTemplate } from "./HtbahTemplate";
+import { MapContextMenu } from "./MapContextMenu";
 import { RuleDeclarativeEditor, RuleActionExtensions, AttributionEditor } from "./RuleDeclarativeEditor";
 import { RuleAttribution } from "./RuleComputedFields";
-import type { RulesState } from "./game-api";
+import type { RulePackageHindernis, RulePackageStand, RulesState } from "./game-api";
 import { draftExpression, forkPackage, localKey, migrationStepDraft, moveItem, newField, newPackage, packageDraft, packageTestResults, uniqueId, validateDraft, type DraftAction, type DraftField, type DraftMigration, type DraftMigrationStep, type DraftSection, type FormulaDraft, type RuleDraft } from "./rule-forge-model";
 import "./rule-forge.css";
 
@@ -78,6 +79,24 @@ function starterDraft(authorName: string, packages: readonly RulePackage[]): Rul
     inputs: [], thresholdEnabled: true, threshold: "15", formula };
   return { ...draft, actions: [action] };
 }
+
+/**
+ * Warum ein Paket gerade nicht endgueltig verschwinden kann, in einem halben Satz.
+ *
+ * Der Server nennt nur den Fall; der Satz entsteht hier, damit er uebersetzbar bleibt und ein
+ * Sprachwechsel ihn erreicht. Als Funktion und nicht als Tabelle, aus demselben Grund wie
+ * `tabLabel` weiter oben.
+ */
+export function grundText(fall: RulePackageHindernis): string {
+  switch (fall) {
+    case "eingebaut": return t("noch gar nicht in der Bibliothek gespeichert");
+    case "angeheftet": return t("gerade für diese Runde angeheftet");
+    case "boegen": return t("von Figurenbögen benutzt");
+    case "wuerfe": return t("in Würfen belegt");
+  }
+}
+/** Der Stand einer Version, wenn der Server ihn noch nicht kennt: sichtbar, aber nicht löschbar. */
+const UNBEKANNTER_STAND: Omit<RulePackageStand, "id" | "version"> = { genommen: false, loeschbar: false, hindernisse: ["eingebaut"] };
 
 interface ErrorLocation { tab: EditorTab; label: string }
 /**
@@ -154,7 +173,15 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const [tab, setTab] = useState<EditorTab>("package"), [review, setReview] = useState<(RuleReview & { fingerprint: string }) | null>(null), [acknowledged, setAcknowledged] = useState(false), [notice, setNotice] = useState("");
   const [justInstalled, setJustInstalled] = useState<RulePackage | null>(null), upload = useRef<HTMLInputElement>(null);
   const [figure, setFigure] = useState<ExampleFigure | null>(null);
+  // „Genommene" bleiben in der Antwort des Servers und verschwinden nur aus dieser Liste; der
+  // Schalter holt sie zurück ins Bild, ohne dass irgendetwas am Paket selbst geschieht.
+  const [zeigeGenommene, setZeigeGenommene] = useState(false);
+  const [menu, setMenu] = useState<{ key: number; id: string; version: string; name: string; x: number; y: number } | null>(null);
   const packages = useMemo(() => { const values = resource.data?.packages ?? []; return justInstalled && !values.some(p => packageKey(p) === packageKey(justInstalled)) ? [...values, justInstalled] : values; }, [resource.data, justInstalled]);
+  const stand = (item: { id: string; version: string }): Omit<RulePackageStand, "id" | "version"> =>
+    resource.data?.bibliothek?.find(row => row.id === item.id && row.version === item.version) ?? UNBEKANNTER_STAND;
+  const genommene = packages.filter(item => stand(item).genommen);
+  const sichtbar = zeigeGenommene ? packages : packages.filter(item => !stand(item).genommen);
   const base = packages.find(p => packageKey(p) === selected) ?? packages.find(p => resource.data && packageKey(p) === packageKey(resource.data.pin)) ?? packages[0];
   const baseDraft = useMemo(() => base ? packageDraft(base) : null, [base]), current = draft ?? baseDraft;
   const validation = useMemo(() => current ? validateDraft(current) : null, [current]), pkg = validation?.valid ? validation.value : null;
@@ -197,6 +224,26 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
     const file = event.target.files?.[0]; event.target.value = ""; if (!file || !canReplace()) return;
     void task.run(async () => { if (file.size > RULE_LIMITS.packageBytes) throw new Error(t("Das Regelpaket darf höchstens 1 MiB groß sein.")); const next = packageDraft(parseRulePackage(await file.text())); setDraft(next); setLocked(false); setDirtyState(true); clearReview(); setTab("package"); });
   };
+  /** Nehmen und Zurückholen sind zwei Wege, nie ein Umschalter: ein zweiter Klick tut dasselbe. */
+  const nehmen = (item: RulePackage, zurueck: boolean) => { void task.run(async () => {
+    await api(apiPath(campaign.id, zurueck ? "/rules/unarchive" : "/rules/archive"), { method: "POST", body: { packageId: item.id, packageVersion: item.version } });
+    setNotice(zurueck ? t("„{name} {version}“ ist wieder in der Bibliothek.", { name: item.name, version: item.version })
+      : t("„{name} {version}“ ist aus der Bibliothek genommen. Über „Auch genommene zeigen“ holst du es zurück.", { name: item.name, version: item.version }));
+    refresh();
+  }); };
+  const loeschen = (item: RulePackage) => {
+    if (!window.confirm(t("„{name} {version}“ endgültig löschen? Diese Paketfassung verschwindet vollständig und lässt sich nicht zurückholen.", { name: item.name, version: item.version }))) return;
+    void task.run(async () => {
+      await api(apiPath(campaign.id, "/rules"), { method: "DELETE", body: { packageId: item.id, packageVersion: item.version } });
+      if (selected === packageKey(item)) { setSelected(null); setDraft(null); setLastValidPkg(null); }
+      if (justInstalled && packageKey(justInstalled) === packageKey(item)) setJustInstalled(null);
+      setNotice(t("„{name} {version}“ ist endgültig gelöscht.", { name: item.name, version: item.version }));
+      refresh();
+    });
+  };
+  const oeffneMenu = (item: RulePackage, x: number, y: number) => setMenu({ key: Date.now(), id: item.id, version: item.version, name: item.name, x, y });
+  const menuPaket = menu ? packages.find(item => item.id === menu.id && item.version === menu.version) : undefined;
+  const menuStand = menuPaket ? stand(menuPaket) : null;
   const download = () => {
     if (!pkg) return; const url = URL.createObjectURL(new Blob([JSON.stringify(pkg, null, 2) + "\n"], { type: "application/json" }));
     const link = document.createElement("a"); link.href = url; link.download = `${pkg.id}-${pkg.version}.rules.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -210,8 +257,26 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
     {task.error ? <Notice error>{task.error}</Notice> : null}{notice ? <Notice>{notice}</Notice> : null}
     <div className="rf-workspace"><aside className="rf-catalog" aria-label={t("Installierte Regelpakete")}><div className="rf-section-heading"><h2><BookOpen size={18} />{t("Bibliothek")}</h2><Button variant="quiet" disabled={task.busy} onClick={refresh} aria-label={t("Paketbibliothek aktualisieren")}>↻</Button></div>
       <p className="rf-help">{t("Installierte Versionen bleiben unveränderlich.")}</p>
-      {packages.map(item => <button type="button" key={packageKey(item)} className={`rf-catalog-item ${!editable && current?.id === item.id && current.version === item.version ? "is-selected" : ""}`} disabled={task.busy} onClick={() => selectPackage(item)} aria-pressed={!editable && current?.id === item.id && current.version === item.version}><strong>{item.name}</strong><span>{resource.data && packageKey(item) === packageKey(resource.data.pin) ? t("{version} · Aktiv in dieser Runde", { version: item.version }) : t("{version} · Installiert", { version: item.version })}</span><small>{item.id}</small></button>)}
+      <p className="rf-help">{t("Mit der rechten Maustaste auf einen Eintrag kannst du ein Paket aus der Bibliothek nehmen — und, wenn nichts mehr darauf verweist, endgültig löschen.")}</p>
+      {genommene.length ? <Button variant="quiet" aria-pressed={zeigeGenommene} disabled={task.busy} onClick={() => setZeigeGenommene(v => !v)}>{t("Auch genommene zeigen ({anzahl})", { anzahl: genommene.length })}</Button> : null}
+      {sichtbar.map(item => <button type="button" key={packageKey(item)} className={`rf-catalog-item ${!editable && current?.id === item.id && current.version === item.version ? "is-selected" : ""}`} disabled={task.busy} aria-pressed={!editable && current?.id === item.id && current.version === item.version}
+        onClick={() => selectPackage(item)}
+        onContextMenu={event => { event.preventDefault(); event.stopPropagation(); oeffneMenu(item, event.clientX, event.clientY); }}
+        onKeyDown={event => { if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return;
+          event.preventDefault(); event.stopPropagation();
+          const rand = event.currentTarget.getBoundingClientRect(); oeffneMenu(item, rand.left, rand.bottom + 4); }}
+      ><strong>{item.name}</strong><span>{stand(item).genommen ? t("{version} · Aus der Bibliothek genommen", { version: item.version })
+        : resource.data && packageKey(item) === packageKey(resource.data.pin) ? t("{version} · Aktiv in dieser Runde", { version: item.version })
+        : t("{version} · Installiert", { version: item.version })}</span><small>{item.id}</small></button>)}
       {!packages.length ? <p>{t("Noch kein Paket geladen. Du kannst einen Entwurf anlegen oder eine Paketdatei öffnen.")}</p> : null}
+      {packages.length && !sichtbar.length ? <p>{t("Alle Pakete sind aus der Bibliothek genommen. Über den Schalter oben werden sie wieder sichtbar.")}</p> : null}
+      {menu && menuPaket && menuStand ? <MapContextMenu key={menu.key} label={`${menuPaket.name} ${menuPaket.version}`} popup={{ x: menu.x, y: menu.y, onDismiss: () => setMenu(null) }} actions={[
+        { id: "nehmen", label: menuStand.genommen ? t("Wieder in die Bibliothek") : t("Aus der Bibliothek nehmen"), onSelect: () => nehmen(menuPaket, menuStand.genommen) },
+        { id: "loeschen", danger: true, disabled: !menuStand.loeschbar,
+          label: menuStand.loeschbar ? t("Endgültig löschen …")
+            : t("Endgültig löschen — geht nicht: {grund}", { grund: menuStand.hindernisse.map(grundText).join(", ") }),
+          onSelect: () => loeschen(menuPaket) },
+      ]} /> : null}
     </aside><section className="rf-editor" aria-label={t("Regelpaket")}><FormulaExampleContext.Provider value={figure}>
       {current ? <><div className="rf-section-heading"><div><h2>{current.name || t("Unbenanntes Regelpaket")}</h2><span className="rf-help">{!editable ? t("Installierte Version · schreibgeschützt · {version}", { version: current.version }) : dirty ? t("Ungespeicherter Entwurf · {version}", { version: current.version }) : t("Entwurf · {version}", { version: current.version })}</span></div><div className="rf-toolbar">
         {!editable && pkg ? <Button disabled={task.busy} onClick={() => { try { begin(forkPackage(pkg, packages)); } catch (error) { task.setError(errorText(error)); } }}>{t("Neue Version erstellen")}</Button> : null}

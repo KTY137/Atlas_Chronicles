@@ -6,7 +6,12 @@ import { Gone, Conflict } from "./errors.ts";
 import { normalizeName } from "./names.ts";
 import { secretToken, tokenHash } from "../identity/index.ts";
 
-export interface DomainConfig { now?: () => number }
+/**
+ * `fetch` ist hier eine ABHÄNGIGKEIT und keine Bequemlichkeit: der Kartenabruf aus einem Wiki ist
+ * die einzige Stelle, an der dieser Server nach draußen spricht, und ein Test darf dabei nie
+ * wirklich ins Netz. Ohne diesen Haken wäre die Grenze nur behauptet.
+ */
+export interface DomainConfig { now?: () => number; fetch?: typeof fetch }
 export interface Membership { campaignId: string; userId: string; role: "leitung" | "spieler" | "beobachter"; displayName: string; actorId: string | null; universeId: string }
 export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
   const now = cfg.now ?? Date.now;

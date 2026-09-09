@@ -5,7 +5,11 @@ import type { AnyActionResult as ActionResult, FieldSchema, PackagePin, AnyRuleP
 import { api } from "../api";
 import { t } from "../i18n";
 
-export interface RulesState { packages: RulePackage[]; pin: PackagePin; version: number }
+/** Was dem endgueltigen Loeschen einer Paketversion im Weg steht — der Server zaehlt es auf. */
+export type RulePackageHindernis = "eingebaut" | "angeheftet" | "boegen" | "wuerfe";
+/** Der Bibliotheksstand einer Paketversion: aus der Bibliothek genommen? loeschbar? warum nicht? */
+export interface RulePackageStand { id: string; version: string; genommen: boolean; loeschbar: boolean; hindernisse: RulePackageHindernis[] }
+export interface RulesState { packages: RulePackage[]; pin: PackagePin; version: number; bibliothek?: RulePackageStand[] }
 export interface ActorSheet { actorId: string; packageId: string; packageVersion: string; fields: Record<string, Scalar>; version: number; defeatPending: boolean; defeatedAt: number | null }
 export interface SceneCard { id: string; name: string; entryIds: string[]; fictionDate: string; status: "prepared" | "active" | "ended"; version: number }
 export interface MintReceipt { id: string; kind: string; passageId: string; revisionId: string; provenance: Record<string, unknown>; seal: string; confirmedAt: number }

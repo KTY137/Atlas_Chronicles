@@ -28,7 +28,10 @@ test("ERON markers open persistent nested maps, edit, restore navigation and wor
     } });
     await page.goto(`${origin}/?campaign=${campaign.id}&stage=atlas`);
     const background = page.waitForResponse(response => /\/maps\/[^/]+\/image$/.test(response.url()) && response.ok());
-    await page.getByRole("button", { name: "ERON-Karte öffnen", exact: true }).click();
+    // Die Beispielkarte liegt jetzt hinter „Karte aus einem Wiki holen" — derselbe Weg wie ein
+    // echter Abruf, nur ohne Netz. Einen ERON-Sonderknopf gibt es nicht mehr.
+    await page.getByRole("button", { name: "Karte aus einem Wiki holen", exact: true }).click();
+    await page.getByRole("button", { name: "Beispielkarte laden", exact: true }).click();
     await expect(page.locator(".atlas-place-list li")).toHaveCount(191);
     await expect(page.locator(".atlas-render-host canvas")).toBeVisible();
     expect((await background).headers()["content-type"]).toContain("image/webp");

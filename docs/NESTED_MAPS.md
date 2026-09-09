@@ -8,11 +8,15 @@ Revisionsgeschichte.
 
 ## Bedienung
 
-1. Als Spielleitung den **Atlas** öffnen und **ERON-Karte öffnen** wählen.
-   Der Import übernimmt die mitgelieferte Andaria-Quelle mit ihren 190
-   Ortsmarkern. Wiederholtes Öffnen verwendet den bereits gespeicherten Import.
-   Alternativ nimmt **Karte importieren** Azgaar Full JSON oder Fandoms
-   InteractiveMap-JSON an.
+1. Als Spielleitung den **Atlas** öffnen und **Karte aus einem Wiki holen**
+   wählen. Dort Adresse des Wikis und Name der Kartenseite angeben — die App
+   holt Karte und Kartenbild selbst und schreibt mit, woher beides stammt.
+   Daneben liegen **Kartenbild hochladen** (eine Karte, die nur aus einem Bild
+   besteht: Inkarnate, Wonderdraft, ein Scan) und **Beispielkarte laden** für
+   die mitgelieferte Andaria-Quelle mit ihren 190 Ortsmarkern. **Karte
+   importieren** nimmt weiterhin Azgaar Full JSON oder Fandoms
+   InteractiveMap-JSON von der Festplatte an. Alle Wege enden im selben Import;
+   wiederholtes Laden derselben Quelle öffnet den gespeicherten Stand.
 2. Einen Ort auf der Karte oder in der Ortsliste auswählen. **Unterkarte
    erzeugen** legt einen Grundriss an; **Vorhandene Karte verbinden** ordnet
    eine bestehende Szenenkarte diesem Ort zu.
@@ -75,10 +79,12 @@ bestehende Sitzungsauthentifizierung.
 
 | Methode und Pfad | Vertrag |
 | --- | --- |
-| `POST /maps/eron` | Importiert die lokale Andaria-Quelle; Antwort `{id, report, unchanged}` |
+| `POST /maps/aus-wiki` | Body `{wiki, titel}`; holt Kartenseite und Kartenbild aus dem genannten Wiki. Antwort `{id, report, unchanged, bild}` |
+| `POST /maps/beispiel` | Importiert die mitgelieferte Andaria-Quelle samt Bild; gleiche Antwort |
+| `POST /maps/bild?dateiname=…` | Rohe Bildbytes; erzeugt eine Karte, die nur aus diesem Bild besteht |
 | `POST /maps/import` | Body `{json: string}` für Azgaar oder Fandom InteractiveMap |
-| `GET /maps/:id` | Sichtbare Atlasprojektion; für die Spielleitung zusätzlich `version`, pro Knoten `canEnter` und gegebenenfalls `childMapId` |
-| `GET /maps/:id/image` | Autorisiertes lokales Andaria-WebP, `private, no-store` |
+| `GET /maps/:id` | Sichtbare Atlasprojektion; für die Spielleitung zusätzlich `version`, `herkunft`, `background`, pro Knoten `canEnter`, `description` und gegebenenfalls `childMapId` |
+| `GET /maps/:id/image` | Das Kartenbild aus dem Bildbestand der Kampagne, gemessener Typ, `private, no-store` |
 | `GET /maps/:parentKind/:parentMapId/children` | `{nodes, version, ancestors}`; jeder Knoten enthält `knotenId`, `titel`, `x`, `y`, `canEnter`, `vorhandeneKarteId` |
 | `GET /maps/:parentKind/:parentMapId/knoten/:knotenId/betretbar` | Beschreibt einen konkreten Eingang und die Elternversion |
 | `POST /betreten` | Erzeugt oder verbindet eine Unterkarte; Antwort `{mapId, erzeugt, keimHash}` |
@@ -140,12 +146,29 @@ Quellmarker-IDs bestimmen die Knotenidentität. Titel, Beschreibung und
 Kategorien werden nicht als erfundene Wiki-Artikel veröffentlicht. Politische
 Kategorien erzeugen keine räumliche Verschachtelung.
 
+Die **Markerbeschreibung** kommt seit dem Kartenabruf mit in die Ortsansicht:
+`GET /maps/:id` liefert sie der Spielleitung je Knoten als `description`, die
+Ortsansicht zeigt sie unter „Aus der Quelle". Sie bleibt Quelltext — kein
+Artikel, kein Kanon, keine Freigabe. Wer daraus einen Artikel machen will, tut
+das ausdrücklich über „Mit dem Wiki verbinden".
+
 Das passende Bild ist `Andaria_03.02.2024.webp`, 8192 × 8192 Pixel. Die Quelle
 verwendet `xy` mit Ursprung unten links; im Renderer gilt `[x, 8192-y]`.
 Der Client lädt das autorisierte Original und verkleinert es zur Anzeige auf
 2048 × 2048 Pixel. Die Marker behalten ihre ursprüngliche Genauigkeit im
 8192er-Koordinatensystem. Hineinzoomen liefert daher keine zusätzlichen
-Rasterdetails. Zur Laufzeit wird das Wiki nicht abgefragt.
+Rasterdetails.
+
+Das Wiki wird **nur** abgefragt, wenn die Spielleitung „Karte holen" drückt:
+nie beim Start, nie beim Anzeigen, nie beim Wiederherstellen einer Sicherung
+und nie ausgelöst durch importierten Inhalt. Der Abruf spricht ausschließlich
+`https:`, verweigert private und Rückschleifen-Ziele, folgt Weiterleitungen von
+Hand (`redirect: "manual"`, höchstens drei, jede erneut geprüft) und bricht bei
+harten Zeit- und Größengrenzen ab (Karte 8 MiB, Bild 24 MiB). Das Kartenbild
+wird als Kampagnendatum im Bildbestand abgelegt, nicht als Datei neben dem
+Programm — die Herkunft der Karte steht in `atlas_karten_herkunft`
+([Kampagnenformat v19](CAMPAIGN_FORMAT_V19.md)), das Lizenzurteil des Bildes
+fällt derselbe Leser wie beim Artikelimport ([WIKI_MEDIEN](WIKI_MEDIEN.md)).
 
 Die importierte Originalquelle einschließlich SHA-256 bleibt als Artefakt
 `eron-map` erhalten. Der native Validator leitet die normalisierten Daten

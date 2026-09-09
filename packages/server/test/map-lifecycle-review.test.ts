@@ -16,6 +16,9 @@ import { createGrundriss } from "../src/domain/grundriss.ts";
 import { createMapLifecycle } from "../src/domain/map-lifecycle.ts";
 import { createTactical } from "../src/domain/tactical.ts";
 import { Gone } from "../src/domain/errors.ts";
+import { readFileSync } from "node:fs";
+/** Die mitgelieferte Beispielkarte als reine Quelle — derselbe Weg wie jeder andere Import. */
+const beispielkarte = () => readFileSync(new URL("../../../design/fixtures/eron/map-andaria.json", import.meta.url), "utf8");
 
 /** Independent cross-path review. Production code and the lifecycle builder's tests are
  * deliberately untouched; each case owns a separate ephemeral campaign. */
@@ -47,14 +50,14 @@ describe("map lifecycle independent cross-path review", () => {
   const remove = async (id: string, reference: MapReference) => createMapLifecycle(db).remove(gm, id, reference, await deletionInput(id, reference));
 
   it("keeps the legacy entrance unambiguous after deleting and reimporting the identical Atlas source", async () => {
-    const id = await campaign(), atlas = createAtlas(db), first = await atlas.importEronMap(gm, id);
+    const id = await campaign(), atlas = createAtlas(db), first = await atlas.importMap(gm, id, beispielkarte());
     const nodeId = (await atlas.getMap(gm, id, first.id)).pins[0]!.id;
     const legacyUrl = `/api/campaigns/${id}/knoten/${nodeId}/betretbar`;
     expect((await app.inject({ url: legacyUrl, headers: { cookie } })).statusCode).toBe(200);
     await remove(id, { kind: "atlas", id: first.id });
-    const next = await atlas.importEronMap(gm, id);
+    const next = await atlas.importMap(gm, id, beispielkarte());
     expect(next.unchanged).toBe(false); expect(next.id).not.toBe(first.id);
-    expect((await atlas.importEronMap(gm, id)).id).toBe(next.id);
+    expect((await atlas.importMap(gm, id, beispielkarte())).id).toBe(next.id);
     expect(await atlas.listMaps(gm, id)).toEqual([{ id: next.id, title: (await atlas.getMap(gm, id, next.id)).title }]);
     const scoped = await app.inject({ url: `/api/campaigns/${id}/maps/atlas/${next.id}/knoten/${nodeId}/betretbar`, headers: { cookie } });
     expect(scoped.statusCode).toBe(200);

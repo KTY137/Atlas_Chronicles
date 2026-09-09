@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { AzgaarImportError, MAX_AZGAAR_BYTES, importiereAzgaar, importiereEronKarte, type AzgaarImport, type EronMapImport, type AtlasMarkerIcon } from "@chronicle/forge";
+import { dateiSlug } from "@chronicle/io";
 import type { Knoten, Ort } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
@@ -13,15 +13,35 @@ import { activeMapEntrances, assertMapActive, authorizeMapLifecycle, mapLifecycl
 interface NodeRow { id: string; data: Knoten; entry_id: string | null }
 interface MapRow { id: string; title: string; artifact_id: string; width: number; height: number; version: number }
 type AtlasSource = AzgaarImport | EronMapImport;
-const ERON_MAP = new URL("../../../../design/fixtures/eron/map-andaria.json", import.meta.url);
-const ERON_IMAGE = new URL("../../../../design/fixtures/eron/media/Andaria_03.02.2024.webp", import.meta.url);
 function isEron(source: AtlasSource): source is EronMapImport { return source.quelle.format === "fandom-interactivemap"; }
-function hasBundledRaster(source: AtlasSource): boolean {
-  return isEron(source) && source.keim.seed === "Andaria 03.02.2024.jpg" && source.szene.size[0] === 8192 && source.szene.size[1] === 8192;
+/**
+ * Welches Bild zu dieser Karte gehört — und zwar für JEDE Karte, nicht für eine.
+ *
+ * Vorher stand hier eine Bedingung, die genau eine Datei durchließ: der Quellname musste wörtlich
+ * `Andaria 03.02.2024.jpg` lauten und die Karte 8192×8192 groß sein. Jede andere Karte bekam
+ * deshalb grundsätzlich kein Bild. Der Name steht in der Karte selbst — eine Fandom-Karte nennt
+ * ihr Bild in `mapImage`, und genau das ist der Keim des Imports. Eine ausdrücklich
+ * mitgeschriebene Herkunft (`atlas_karten_herkunft.bild_dateiname`) sticht ihn, weil ein
+ * hochgeladenes Kartenbild seinen Namen von der Spielleitung hat und nicht aus der Quelle.
+ */
+export function kartenbildName(source: AtlasSource): string | null {
+  if (!isEron(source)) return null;
+  const name = dateiSlug(source.keim.seed);
+  return name || null;
+}
+export interface Kartenherkunft {
+  readonly art: "wiki" | "beispiel" | "bild";
+  readonly wikiUrl?: string; readonly seitentitel?: string;
+  readonly pageid?: number; readonly revid?: number;
+  readonly lizenz?: string; readonly bildDateiname?: string;
+}
+interface HerkunftRow {
+  art: "wiki" | "beispiel" | "bild"; wiki_url: string | null; seitentitel: string | null;
+  pageid: string | null; revid: string | null; bild_dateiname: string | null; lizenz: string | null; abgerufen_am: string;
 }
 export function createAtlas(db: Db, cfg: DomainConfig = {}) {
   const now = cfg.now ?? Date.now, campaigns = createCampaigns(db, cfg);
-  async function importMap(userId: string, campaignId: string, json: string) {
+  async function importMap(userId: string, campaignId: string, json: string, herkunft?: Kartenherkunft) {
     await campaigns.requireMember(userId, campaignId, ["leitung"]);
     // Detection must retain the parser's size boundary before allocating a parsed document.
     if (typeof json !== "string" || Buffer.byteLength(json, "utf8") > MAX_AZGAAR_BYTES)
@@ -36,6 +56,8 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
         WHERE a.campaign_id=$1 AND a.kind=$2 AND a.source_hash=$3 ORDER BY m.created_at,m.id`, [campaignId, artifactKind, world.quelle.sha256])).rows;
       const retired = retiredMapKeys(await mapLifecycleRows(tx, campaignId));
       const existing = previous.find(map => !retired.has(`atlas:${map.id}`));
+      // Dieselbe Karte ein zweites Mal: ihr Stand wird geöffnet, ihre einmal notierte Herkunft
+      // bleibt stehen. Ein zweiter Abruf ist kein zweiter Ursprung.
       if (existing) return { id: existing.id, report: world.bericht, unchanged: true };
       const artifactId = previous[0]?.artifact_id ?? randomUUID(), id = randomUUID();
       if (!previous.length) await tx.query("INSERT INTO artifacts(id,campaign_id,kind,source_hash,source,report,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
@@ -46,12 +68,13 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
       await tx.query(`INSERT INTO atlas_nodes(map_id,id,campaign_id,data)
         SELECT $1,n.id,$2,n.data FROM jsonb_to_recordset($3::jsonb) AS n(id text,data jsonb)`,
         [id, campaignId, JSON.stringify(world.knoten.map((n) => ({ id: n.id, data: n })))]);
+      if (herkunft) await tx.query(`INSERT INTO atlas_karten_herkunft(map_id,campaign_id,art,wiki_url,seitentitel,pageid,revid,bild_dateiname,lizenz,abgerufen_am,geholt_von)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [id, campaignId, herkunft.art, herkunft.wikiUrl ?? null, herkunft.seitentitel ?? null,
+          herkunft.pageid ?? null, herkunft.revid ?? null,
+          herkunft.bildDateiname ?? kartenbildName(world), herkunft.lizenz ?? null, now(), userId]);
       return { id, report: world.bericht, unchanged: false };
     });
-  }
-  async function importEronMap(userId: string, campaignId: string) {
-    await campaigns.requireMember(userId, campaignId, ["leitung"]);
-    return importMap(userId, campaignId, await readFile(ERON_MAP, "utf8"));
   }
   async function visible(userId: string, campaignId: string, mapId: string) {
     const member = await campaigns.requireMember(userId, campaignId);
@@ -78,6 +101,23 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
     }
     return result;
   }
+  /** Die mitgeschriebene Herkunft dieser Karte, oder nichts, wenn sie älter ist als das Feld. */
+  async function herkunftVon(campaignId: string, mapId: string): Promise<HerkunftRow | undefined> {
+    return (await db.query<HerkunftRow>(`SELECT art,wiki_url,seitentitel,pageid,revid,bild_dateiname,lizenz,abgerufen_am
+      FROM atlas_karten_herkunft WHERE map_id=$1 AND campaign_id=$2`, [mapId, campaignId])).rows[0];
+  }
+  interface BildKopf { id: string; mime: string; breite: number; hoehe: number; sha256: string }
+  /**
+   * Das Kartenbild als Kampagnendatum: eine Zeile im Bildbestand, kein Pfad im Programmordner.
+   * Damit trägt jede Karte ihr Bild — geholt, hochgeladen oder mitgeliefert, gleich behandelt.
+   */
+  async function bildkopf(campaignId: string, source: AtlasSource, herkunft: HerkunftRow | undefined): Promise<BildKopf | undefined> {
+    const name = herkunft?.bild_dateiname ?? kartenbildName(source);
+    if (!name) return undefined;
+    const row = (await db.query<BildKopf & { mime: string | null }>(`SELECT id,mime,breite,hoehe,sha256 FROM wiki_assets
+      WHERE campaign_id=$1 AND dateiname=$2`, [campaignId, name])).rows[0];
+    return row?.mime ? row as BildKopf : undefined;
+  }
   async function getMap(userId: string, campaignId: string, mapId: string) {
     const { map, member, nodes } = await visible(userId, campaignId, mapId);
     const source = (await db.query<{ source: AtlasSource }>("SELECT source FROM artifacts WHERE id=$1", [map.artifact_id])).rows[0]!.source;
@@ -99,13 +139,38 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
     });
     const cells = source.zellen.filter((c) => member.role === "leitung" || [c.regionId,c.machtId,c.landmasseId].some((id) => id && allowed.has(id)))
       .map((c) => ({ id: c.id, polygon: c.polygon, fill: c.land ? 0x273d37 : 0x142632 }));
+    /**
+     * DIE MARKERBESCHREIBUNG. Sie kam schon immer mit — der Parser hebt sie als
+     * `merkmale.description` auf — und wurde bis hierher nirgends gezeigt. Sie ist QUELLTEXT des
+     * Wikis, kein Kanon: sie erzeugt keinen Artikel und keine Freigabe (docs/NESTED_MAPS.md), sie
+     * steht neben dem Ort wie eine Notiz an der Pinnwand. Deshalb nur für die Spielleitung, in
+     * einer Reihe mit dem Importbericht und der Herkunft eines Ortes.
+     */
+    const beschreibungen = new Map<string, string>(source.orte
+      .map((o: Ort) => [String(o.id), typeof o.merkmale.description === "string" ? o.merkmale.description : ""] as const)
+      .filter(([, wert]) => wert.length > 0));
+    // Eine Abfrage für beides: die Herkunft nennt das Bild und steht selbst unter der Karte.
+    const herkunft = gm ? await herkunftVon(campaignId, mapId) : undefined;
+    const bild = gm ? await bildkopf(campaignId, source, herkunft) : undefined;
     return { id: map.id, title: map.title, width: map.width, height: map.height, cells, pins,
       nodes: nodes.map((n) => ({ id: n.id, title: n.data.titel, kind: n.data.art,
         parents: n.data.eltern.filter((e) => allowed.has(e.nach)).map((e) => ({ id: e.nach, kind: e.art })),
         ...(knownEntry(n.entry_id) ? { entryId: n.entry_id! } : {}),
-        ...(gm ? { canEnter: Boolean(n.data.herkunft?.kindKeim), ...(children.has(n.id) ? { childMapId: children.get(n.id)! } : {}) } : {}) })),
+        ...(gm ? { canEnter: Boolean(n.data.herkunft?.kindKeim), ...(beschreibungen.has(n.id) ? { description: beschreibungen.get(n.id)! } : {}),
+          ...(children.has(n.id) ? { childMapId: children.get(n.id)! } : {}) } : {}) })),
       ...(gm ? { version: map.version, report: source.bericht } : {}),
-      ...(gm && hasBundledRaster(source) ? { background: { url: `/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}/image`, width: 8192, height: 8192 } } : {}) };
+      ...(herkunft ? { herkunft: kartenherkunft(herkunft) } : {}),
+      ...(bild ? { background: { url: `/api/campaigns/${encodeURIComponent(campaignId)}/maps/${encodeURIComponent(mapId)}/image`, width: bild.breite, height: bild.hoehe } } : {}) };
+  }
+  /**
+   * Woher diese Karte kommt, für die Anzeige unter der Karte. Vorher stand dort ein fest
+   * verdrahteter Verweis auf das ERON-Wiki — auch unter einer Karte, die von woanders kam.
+   */
+  function kartenherkunft(row: HerkunftRow) {
+    return { art: row.art,
+      ...(row.wiki_url ? { wikiUrl: row.wiki_url } : {}), ...(row.seitentitel ? { seitentitel: row.seitentitel } : {}),
+      ...(row.pageid ? { pageid: Number(row.pageid) } : {}), ...(row.revid ? { revid: Number(row.revid) } : {}),
+      ...(row.lizenz ? { lizenz: row.lizenz } : {}), abgerufenAm: Number(row.abgerufen_am) };
   }
   async function getNode(userId: string, campaignId: string, mapId: string, nodeId: string) {
     const { nodes, member } = await visible(userId, campaignId, mapId);
@@ -115,16 +180,27 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
     if (member.role !== "leitung") throw new Gone("membership");
     return { node: selected.data, ...(selected.entry_id ? { entryId: selected.entry_id } : {}) };
   }
+  /**
+   * Das Kartenbild kommt aus der Kampagne, nicht aus dem Dateisystem.
+   *
+   * Der Weg vorher las eine feste Datei neben dem Programm und lieferte sie nur aus, wenn die
+   * Quelle wörtlich eine bestimmte Karte war. Jetzt entscheidet die Kampagne: der Bildbestand
+   * hält die Bytes samt gemessenem Typ, und der Name kommt aus der Herkunft der Karte oder aus
+   * der Karte selbst — nie aus einem Routenparameter, nie aus einem hochgeladenen Dateinamen,
+   * der sich in einen Pfad verwandeln könnte.
+   */
   async function mapImage(userId: string, campaignId: string, mapId: string) {
     await campaigns.requireMember(userId, campaignId, ["leitung"]);
     await assertMapActive(db, campaignId, "atlas", mapId);
     const row = (await db.query<{ source: AtlasSource }>(`SELECT a.source FROM atlas_maps m JOIN artifacts a ON a.id=m.artifact_id
       WHERE m.id=$1 AND m.campaign_id=$2`, [mapId, campaignId])).rows[0];
-    if (!row || !hasBundledRaster(row.source)) throw new Gone("map-image");
-    // This path is constant. Neither uploaded source names nor route parameters resolve files.
-    const image = await readFile(ERON_IMAGE);
-    await campaigns.requireMember(userId, campaignId, ["leitung"]); await assertMapActive(db, campaignId, "atlas", mapId);
-    return image;
+    if (!row) throw new Gone("map-image");
+    const name = (await herkunftVon(campaignId, mapId))?.bild_dateiname ?? kartenbildName(row.source);
+    if (!name) throw new Gone("map-image");
+    const bild = (await db.query<{ mime: string | null; sha256: string | null; daten: string | null }>(
+      "SELECT mime,sha256,daten FROM wiki_assets WHERE campaign_id=$1 AND dateiname=$2", [campaignId, name])).rows[0];
+    if (!bild?.daten || !bild.mime) throw new Gone("map-image");
+    return { mime: bild.mime, sha256: bild.sha256!, daten: Buffer.from(bild.daten, "base64") };
   }
   async function revealNode(userId: string, campaignId: string, mapId: string, nodeId: string, actorId: string) {
     return db.transaction(async tx => {
@@ -145,5 +221,5 @@ export function createAtlas(db: Db, cfg: DomainConfig = {}) {
       return { ok: true };
     });
   }
-  return { importMap, importEronMap, listMaps, getMap, getNode, mapImage, revealNode, linkEntry };
+  return { importMap, listMaps, getMap, getNode, mapImage, revealNode, linkEntry, herkunftVon };
 }

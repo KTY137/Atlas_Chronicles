@@ -5,12 +5,16 @@ import { Type, type Static } from "@sinclair/typebox";
 import type { Db } from "../db/index.ts";
 import { createIdentity } from "../identity/index.ts";
 import { createAtlas } from "../domain/atlas.ts";
+import { createAtlasQuellen } from "../domain/atlas-quellen.ts";
+import { WIKI_ASSET_GRENZEN } from "../domain/wiki-medien.ts";
+import { ImportValidationError } from "@chronicle/io";
 import { createImports } from "../domain/imports.ts";
 import type { AppConfig } from "../app.ts";
 import { Id } from "@chronicle/protocol";
 
 export function registerImports(app: FastifyInstance,db: Db,config: AppConfig) {
   const identity = createIdentity(db,config), atlas = createAtlas(db,config), imports = createImports(db,config);
+  const quellen = createAtlasQuellen(db,config);
   const closed = {additionalProperties:false}, jsonBody = Type.Object({json:Type.String({maxLength:32*1024*1024})},closed);
   const attribution = Type.Object({ complete: Type.Literal(true), authors: Type.Array(Type.String({ minLength: 1, maxLength: 512, pattern: "\\S" }), { maxItems: 100_000 }),
     anonymousContributions: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }), revisionSha1: Type.String({ pattern: "^[0-9a-zA-Z]{1,40}$" }) }, closed);
@@ -21,6 +25,11 @@ export function registerImports(app: FastifyInstance,db: Db,config: AppConfig) {
     // /wiki-medien/:id/bytes, damit ein Artikelimport nicht auf hundert CDN-Antworten wartet.
     media: Type.Optional(Type.Array(Type.Unknown(), { maxItems: 20_000 })) },closed);
   const selection = Type.Object({entryIds:Type.Array(Id,{maxItems:10_000})},closed);
+  // Adresse und Kartenname kommen vom Menschen; die Feinpruefung macht `wiki-abruf.ts`.
+  const ausWiki = Type.Object({wiki:Type.String({minLength:1,maxLength:500}),titel:Type.String({minLength:1,maxLength:255})},closed);
+  const bildFrage = Type.Object({dateiname:Type.String({minLength:1,maxLength:512}),
+    lizenz:Type.Optional(Type.Union([Type.Literal("frei"),Type.Literal("zitat"),Type.Literal("unbekannt")])),
+    quelle:Type.Optional(Type.String({maxLength:2000}))},closed);
   const link = Type.Object({entryId:Id,expectedVersion:Type.Integer({minimum:1})},closed), reveal = Type.Object({actorId:Id},closed);
   type Scope = {campaignId:string}; type Item = Scope & {id:string}; type Node = Item & {nodeId:string};
   // Der Weg hinein trägt 64 MiB, der Weg hinaus steht auf 4/Minute (http/bundles.ts). Acht und
@@ -28,11 +37,34 @@ export function registerImports(app: FastifyInstance,db: Db,config: AppConfig) {
   const importLimit = {rateLimit:{max:8,timeWindow:"1 minute"}};
   app.post<{Params:Scope;Body:Static<typeof jsonBody>}>("/api/campaigns/:campaignId/maps/import", {schema:{body:jsonBody},bodyLimit:64*1024*1024,config:importLimit}, async req =>
     atlas.importMap((await identity.authenticate(req.headers.cookie)).userId,req.params.campaignId,req.body.json));
-  app.post<{Params:Scope}>("/api/campaigns/:campaignId/maps/eron", async req =>
-    atlas.importEronMap((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId));
+  /**
+   * Die Karte aus einem Wiki. NUR hier spricht der Server nach draußen, und nur, weil die
+   * Spielleitung gerade eine Adresse eingetippt hat: kein Zeitplan, kein Programmstart, kein
+   * importierter Inhalt erreicht diesen Weg. Der Ratenzaehler ist derselbe wie beim Import.
+   */
+  app.post<{Params:Scope;Body:Static<typeof ausWiki>}>("/api/campaigns/:campaignId/maps/aus-wiki",
+    {schema:{body:ausWiki},config:importLimit}, async req =>
+      quellen.ausWiki((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.body));
+  /** Die mitgelieferte Beispielkarte — derselbe Weg, nur ohne Netz. */
+  app.post<{Params:Scope}>("/api/campaigns/:campaignId/maps/beispiel", {config:importLimit}, async req =>
+    quellen.beispiel((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId));
+  /**
+   * Eine Karte, die nur aus einem Bild besteht (Inkarnate, Wonderdraft, ein Scan). Die Bytes
+   * kommen roh, weil base64 in JSON ein Drittel Aufschlag kostet und die Vermessung ohnehin auf
+   * den Bytes arbeitet — derselbe Rahmen wie beim Bildbestand.
+   */
+  app.post<{Params:Scope;Querystring:Static<typeof bildFrage>}>("/api/campaigns/:campaignId/maps/bild",
+    {schema:{querystring:bildFrage},bodyLimit:WIKI_ASSET_GRENZEN.bytes+1024,config:importLimit}, async req => {
+      const body: unknown = req.body;
+      if (!Buffer.isBuffer(body)) throw new ImportValidationError("bild", "raw image bytes required");
+      return quellen.ausBild((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId,
+        { dateiname: req.query.dateiname, ...(req.query.lizenz ? { lizenz: req.query.lizenz } : {}), ...(req.query.quelle ? { quelle: req.query.quelle } : {}) }, body);
+    });
   app.get<{Params:Item}>("/api/campaigns/:campaignId/maps/:id/image", async (req, reply) => {
-    const bytes = await atlas.mapImage((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.params.id);
-    return reply.header("Cache-Control", "private, no-store").header("X-Content-Type-Options", "nosniff").type("image/webp").send(bytes);
+    const bild = await atlas.mapImage((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.params.id);
+    return reply.header("Cache-Control", "private, no-store").header("X-Content-Type-Options", "nosniff")
+      .header("Content-Security-Policy", "default-src 'none'; sandbox").header("ETag", `"${bild.sha256}"`)
+      .type(bild.mime).send(bild.daten);
   });
   app.get<{Params:Scope}>("/api/campaigns/:campaignId/maps", async req => atlas.listMaps((await identity.authenticate(req.headers.cookie)).userId,req.params.campaignId));
   app.get<{Params:Item}>("/api/campaigns/:campaignId/maps/:id", async req => atlas.getMap((await identity.authenticate(req.headers.cookie)).userId,req.params.campaignId,req.params.id));

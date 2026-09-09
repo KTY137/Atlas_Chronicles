@@ -11,7 +11,7 @@ import { createAtlas } from "../src/domain/atlas.ts";
 import { Gone } from "../src/domain/errors.ts";
 import { registerImports } from "../src/http/imports.ts";
 
-describe("persisted ERON maps and authorized raster delivery", () => {
+describe("Die Beispielkarte geht denselben Weg wie jeder Import, samt Bild aus dem Bestand", () => {
   const config = { origin: "https://eron-map.test", cookieSecret: "eron-map-secret-longer-than-thirty-two-characters", bootstrapToken: "eron-map-bootstrap-token-long-enough" };
   let db: Db, gm: string, campaign: string, otherCampaign: string, player: string, actor: string, cookie: string, playerCookie: string;
   let app: ReturnType<typeof Fastify>, mapId: string;
@@ -29,11 +29,16 @@ describe("persisted ERON maps and authorized raster delivery", () => {
   afterAll(async () => { await app?.close(); await db?.close(); });
   const url = (path: string) => `/api/campaigns/${campaign}${path}`;
 
+  /**
+   * Der Knopf „Beispielkarte laden" benutzt weiter die mitgelieferte Datei — aber ohne
+   * Sonderbedingung: dieselbe `importMap`, dieselbe Bildzeile im Bestand, dieselbe Auslieferung
+   * wie bei einer Karte aus einem beliebigen Wiki.
+   */
   it("imports the bundled source once and returns existing content on repetition and JSON upload", async () => {
-    const first = await app.inject({ method: "POST", url: url("/maps/eron"), headers: { cookie } });
+    const first = await app.inject({ method: "POST", url: url("/maps/beispiel"), headers: { cookie } });
     expect(first.statusCode).toBe(200); const result = first.json(); mapId = result.id;
     expect(result).toMatchObject({ unchanged: false, report: { orte: 190 } });
-    expect((await app.inject({ method: "POST", url: url("/maps/eron"), headers: { cookie } })).json()).toMatchObject({ id: mapId, unchanged: true });
+    expect((await app.inject({ method: "POST", url: url("/maps/beispiel"), headers: { cookie } })).json()).toMatchObject({ id: mapId, unchanged: true });
     const json = await readFile(new URL("../../../design/fixtures/eron/map-andaria.json", import.meta.url), "utf8");
     expect(await createAtlas(db).importMap(gm, campaign, json)).toMatchObject({ id: mapId, unchanged: true });
     expect((await db.query("SELECT id FROM atlas_maps WHERE campaign_id=$1", [campaign])).rowCount).toBe(1);
@@ -58,6 +63,7 @@ describe("persisted ERON maps and authorized raster delivery", () => {
 
   it("serves only the authenticated GM's canonical map image without shared caching", async () => {
     const response = await app.inject({ method: "GET", url: url(`/maps/${mapId}/image`), headers: { cookie } });
+    // Der Typ ist GEMESSEN: die Datei heißt im Quell-Wiki `.jpg` und ist eine WebP.
     expect(response.statusCode).toBe(200); expect(response.headers["content-type"]).toContain("image/webp");
     expect(response.headers["cache-control"]).toBe("private, no-store");
     expect(response.rawPayload.subarray(0, 4).toString("ascii")).toBe("RIFF");
@@ -65,7 +71,7 @@ describe("persisted ERON maps and authorized raster delivery", () => {
     expect((await app.inject({ method: "GET", url: url(`/maps/${mapId}/image`), headers: { cookie: playerCookie } })).statusCode).toBe(404);
     expect((await app.inject({ method: "GET", url: `/api/campaigns/${otherCampaign}/maps/${mapId}/image`, headers: { cookie } })).statusCode).toBe(404);
     expect((await app.inject({ method: "GET", url: url(`/maps/${mapId}/image`) })).statusCode).toBe(404);
-    expect((await app.inject({ method: "POST", url: url("/maps/eron"), headers: { cookie: playerCookie } })).statusCode).toBe(404);
+    expect((await app.inject({ method: "POST", url: url("/maps/beispiel"), headers: { cookie: playerCookie } })).statusCode).toBe(404);
   });
 
   it("rejects broken source JSON through the existing upload route", async () => {

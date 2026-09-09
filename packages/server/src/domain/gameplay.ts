@@ -15,6 +15,24 @@ import { authorizeActor, listControlledActorIds } from "./actors.ts";
 
 export interface GameplayConfig extends DomainConfig { /** Test-only entropy injection; never accepted from an HTTP request. */ seed?: () => string }
 export interface ActorSheet { actorId: string; packageId: string; packageVersion: string; fields: Readonly<Record<string, Scalar>>; version: number; defeatPending: boolean; defeatedAt: number | null }
+/** Was einem endgueltigen Loeschen im Weg steht. Vier Faelle, keiner davon ein Rechtefehler. */
+export type RulePackageHindernis = "eingebaut" | "angeheftet" | "boegen" | "wuerfe";
+/** Der Bibliotheksstand einer Paketversion: genommen? loeschbar? und wenn nicht, warum nicht. */
+export interface RulePackageStand { id: string; version: string; genommen: boolean; loeschbar: boolean; hindernisse: RulePackageHindernis[] }
+export interface RulePackageWahl { packageId: string; packageVersion: string }
+/**
+ * Die Saetze, die der Server schickt, wenn zwischen Ansicht und Befehl doch noch jemand
+ * zugegriffen hat. Die Oberflaeche baut ihren ausgegrauten Menueeintrag aus `hindernisse`;
+ * dieser Text ist der Rueckfall fuer genau dieses Wettrennen.
+ */
+const HINDERNIS_TEXT: Readonly<Record<RulePackageHindernis, string>> = {
+  eingebaut: "es ist gar nicht erst in der Bibliothek gespeichert",
+  angeheftet: "es ist gerade für diese Runde angeheftet",
+  boegen: "Figurenbögen benutzen es",
+  wuerfe: "es ist in Würfen belegt",
+};
+const hindernisSatz = (hindernisse: readonly RulePackageHindernis[]) =>
+  `Dieses Regelpaket lässt sich nicht endgültig löschen: ${hindernisse.map(h => HINDERNIS_TEXT[h]).join("; ")}.`;
 export interface PrepareActionInput {
   commandId: string; actorId: string; packageId?: string; packageVersion?: string; actionId: string;
   input?: Readonly<Record<string, Scalar>>; targetPassageId?: string; fictionDate?: string;
@@ -83,10 +101,98 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const rows = (await db.query<{ document: RulePackage }>("SELECT document FROM rule_packages WHERE campaign_id=$1 ORDER BY package_id,version", [campaignId])).rows.map(r => r.document);
     if (!rows.some(p => p.id === DEMO_RULE_PACKAGE.id && p.version === DEMO_RULE_PACKAGE.version)) rows.unshift(DEMO_RULE_PACKAGE);
     const version = (await db.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0]?.version ?? 0;
-    return { packages: rows, pin: await currentPin(db, campaignId), version };
+    // Genommene Pakete bleiben in der Antwort: das Verstecken ist eine Entscheidung der Ansicht,
+    // und ein genommenes Paket muss auffindbar bleiben, damit man es zurueckholen kann.
+    return { packages: rows, pin: await currentPin(db, campaignId), version, bibliothek: await library(db, campaignId, rows) };
   }
   async function installPackage(userId: string, campaignId: string, input: unknown) {
     return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return install(tx, userId, campaignId, input); });
+  }
+  /**
+   * Der Bibliotheksstand jeder aufgelisteten Paketversion.
+   *
+   * Die vier Fremdschluessel aus `004_gameplay.sql` sind der eigentliche Schutz vor einem
+   * verlorenen Paket; diese Abfragen lesen genau sie, damit die Oberflaeche vorher weiss, was
+   * die Datenbank hinterher sagen wuerde. `eingebaut` meint das mitgelieferte Beispielpaket,
+   * das noch in keiner Zeile steht: da ist nichts zu loeschen.
+   */
+  async function library(tx: Db, campaignId: string, packages: readonly { id: string; version: string }[]): Promise<RulePackageStand[]> {
+    const key = (id: unknown, version: unknown) => `${String(id)}@${String(version)}`;
+    const paare = async (sql: string, links: string, rechts: string) =>
+      new Set((await tx.query<Record<string, string>>(sql, [campaignId])).rows.map(row => key(row[links], row[rechts])));
+    const installiert = await paare("SELECT package_id,version FROM rule_packages WHERE campaign_id=$1", "package_id", "version");
+    const genommen = await paare("SELECT package_id,version FROM rule_package_archiv WHERE campaign_id=$1", "package_id", "version");
+    // Ueber `currentPin`, nicht ueber die Tabelle: eine Runde ohne eigene Zeile spielt auf dem
+    // mitgelieferten Paket. Es ist dann angeheftet, obwohl kein Fremdschluessel darauf zeigt —
+    // und „das Paket, auf dem gerade gespielt wird" ist genau das, was niemand loeschen soll.
+    const pin = await currentPin(tx, campaignId), angeheftet = new Set([key(pin.id, pin.version)]);
+    const boegen = await paare("SELECT DISTINCT package_id,package_version FROM actor_sheets WHERE campaign_id=$1", "package_id", "package_version");
+    const vollmachten = await paare("SELECT DISTINCT package_id,package_version FROM action_vollmachten WHERE campaign_id=$1", "package_id", "package_version");
+    const wuerfe = await paare("SELECT DISTINCT package_id,package_version FROM action_rolls WHERE campaign_id=$1", "package_id", "package_version");
+    return packages.map(pkg => {
+      const k = key(pkg.id, pkg.version), hindernisse: RulePackageHindernis[] = [];
+      if (!installiert.has(k)) hindernisse.push("eingebaut");
+      if (angeheftet.has(k)) hindernisse.push("angeheftet");
+      if (boegen.has(k)) hindernisse.push("boegen");
+      // Vollmacht und Wurf sind fuer die Spielleitung dieselbe Sache: das Paket steckt in einem
+      // Wurf, der schon geschehen ist oder noch aussteht.
+      if (vollmachten.has(k) || wuerfe.has(k)) hindernisse.push("wuerfe");
+      return { id: pkg.id, version: pkg.version, genommen: genommen.has(k), loeschbar: !hindernisse.length, hindernisse };
+    });
+  }
+  /** Ein Paket, das es in dieser Kampagne wirklich gibt — sonst dieselbe 404 wie ueberall. */
+  async function requirePackage(tx: Db, campaignId: string, wahl: RulePackageWahl): Promise<void> {
+    const row = await tx.query("SELECT package_id FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3 FOR SHARE",
+      [campaignId, wahl.packageId, wahl.packageVersion]);
+    if (!row.rowCount) throw new Gone("package");
+  }
+  /**
+   * Aus der Bibliothek nehmen. Immer erlaubt, auch fuer das angeheftete Paket: die Aussage
+   * betrifft die Ansicht, nicht das Spiel. Der Inhalt des Pakets wird dabei nicht angefasst —
+   * das kann er auch gar nicht, `030` laesst UPDATE weiterhin nicht zu.
+   */
+  async function archivePackage(userId: string, campaignId: string, wahl: RulePackageWahl) {
+    return db.transaction(async tx => {
+      await authorize(tx, userId, campaignId, true);
+      await requirePackage(tx, campaignId, wahl);
+      await tx.query(`INSERT INTO rule_package_archiv(campaign_id,package_id,version,archived_at,archived_by)
+        VALUES($1,$2,$3,$4,$5) ON CONFLICT(campaign_id,package_id,version) DO NOTHING`,
+        [campaignId, wahl.packageId, wahl.packageVersion, now(), userId]);
+      return { ...wahl, genommen: true };
+    });
+  }
+  /** Wieder in die Bibliothek. Die Zeile verschwindet, mehr war es nie. */
+  async function unarchivePackage(userId: string, campaignId: string, wahl: RulePackageWahl) {
+    return db.transaction(async tx => {
+      await authorize(tx, userId, campaignId, true);
+      await requirePackage(tx, campaignId, wahl);
+      await tx.query("DELETE FROM rule_package_archiv WHERE campaign_id=$1 AND package_id=$2 AND version=$3",
+        [campaignId, wahl.packageId, wahl.packageVersion]);
+      return { ...wahl, genommen: false };
+    });
+  }
+  /**
+   * Endgueltig loeschen. Erst gefragt, dann getan — und der Fremdschluessel bleibt trotzdem die
+   * letzte Instanz: zwischen Pruefung und DELETE kann eine andere Sitzung angeheftet oder einen
+   * Wurf vorbereitet haben. `23503` ist dann kein Absturz, sondern derselbe Konflikt.
+   */
+  async function deletePackage(userId: string, campaignId: string, wahl: RulePackageWahl) {
+    return db.transaction(async tx => {
+      await authorize(tx, userId, campaignId, true);
+      await requirePackage(tx, campaignId, wahl);
+      const stand = (await library(tx, campaignId, [{ id: wahl.packageId, version: wahl.packageVersion }]))[0]!;
+      if (!stand.loeschbar) throw new Conflict(hindernisSatz(stand.hindernisse));
+      await tx.query("DELETE FROM rule_package_archiv WHERE campaign_id=$1 AND package_id=$2 AND version=$3",
+        [campaignId, wahl.packageId, wahl.packageVersion]);
+      try {
+        await tx.query("DELETE FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3",
+          [campaignId, wahl.packageId, wahl.packageVersion]);
+      } catch (error) {
+        if ((error as { code?: string }).code === "23503") throw new Conflict(hindernisSatz(["angeheftet", "boegen", "wuerfe"]));
+        throw error;
+      }
+      return { ...wahl, geloescht: true };
+    });
   }
   async function packageReview(tx: Db, campaignId: string, next: RulePackage, expectedHash?: string) {
     const from = await currentPin(tx, campaignId), previous = await packageFor(tx, campaignId, from);
@@ -465,7 +571,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     await target(db, campaignId, passageId);
     return (await db.query("SELECT id,kind,passage_id AS \"passageId\",revision_id AS \"revisionId\",provenance,seal,confirmed_at AS \"confirmedAt\" FROM confirmed_mints WHERE campaign_id=$1 AND passage_id=$2 ORDER BY confirmed_at,id", [campaignId, passageId])).rows;
   }
-  return { listPackages, installPackage, previewPackage, activatePackage, getSheet, updateSheet, adjustResource, listScenes, createScene, startScene,
+  return { listPackages, installPackage, previewPackage, activatePackage, archivePackage, unarchivePackage, deletePackage, getSheet, updateSheet, adjustResource, listScenes, createScene, startScene,
     prepareAction, confirmAction, getRoll, listRolls, replayRoll, mintGesprochen, mintRatifikation, mintBerichtigung, confirmDefeat, mintProvenance,
     issueVollmacht, prepareVollmacht, confirmVollmacht, listVollmachten, revokeVollmacht, expireVollmachten };
 }

@@ -15,6 +15,9 @@ import { createDeletion } from "../src/domain/deletion.ts";
 import { Gone } from "../src/domain/errors.ts";
 import { createAtlas } from "../src/domain/atlas.ts";
 import { exportCampaignBundle, initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
+import { readFileSync } from "node:fs";
+/** Die mitgelieferte Beispielkarte als reine Quelle — derselbe Weg wie jeder andere Import. */
+const beispielkarte = () => readFileSync(new URL("../../../design/fixtures/eron/map-andaria.json", import.meta.url), "utf8");
 
 const config = { origin: "https://map-lifecycle.test", cookieSecret: "map-lifecycle-secret-more-than-thirty-two-characters", now: Date.now };
 describe("map retirement and retained evidence", () => {
@@ -143,7 +146,7 @@ describe("map retirement and retained evidence", () => {
   });
   it("restores a retired Atlas subtree plus a fresh identical import without duplicating source bytes", async () => {
     const campaign = (await createCampaigns(db).createCampaign(gm, { name: "Atlas retirement" })).id;
-    const atlas = createAtlas(db), original = await atlas.importEronMap(gm, campaign), card = await atlas.getMap(gm, campaign, original.id);
+    const atlas = createAtlas(db), original = await atlas.importMap(gm, campaign, beispielkarte()), card = await atlas.getMap(gm, campaign, original.id);
     if (card.version === undefined) throw new Error("An editable Atlas map must expose its CAS version");
     const tactical = createTactical(db), child = (await tactical.importMap(gm, campaign, { commandId: randomUUID(), name: "Interior", format: "native", sourceText: JSON.stringify(tacticalDocument()), provenance: tacticalAttribution })).subjectId;
     await createBetreten(db, config).betrete(gm, campaign, { commandId: randomUUID(), parentKind: "atlas", parentMapId: original.id, knotenId: card.nodes[0]!.id, expectedVersion: card.version, targetMapId: child });
@@ -151,7 +154,7 @@ describe("map retirement and retained evidence", () => {
     expect(preview.maps).toHaveLength(2);
     await lifecycle.remove(gm, campaign, reference, { commandId: randomUUID(), expectedVersion: preview.root.version, confirmationHash: preview.confirmationHash, confirmedMapIds: preview.maps.map(map => `${map.kind}:${map.id}`) });
     await expect(atlas.mapImage(gm, campaign, original.id)).rejects.toBeInstanceOf(Gone);
-    const next = await atlas.importEronMap(gm, campaign); expect(next.id).not.toBe(original.id);
+    const next = await atlas.importMap(gm, campaign, beispielkarte()); expect(next.id).not.toBe(original.id);
     expect((await db.query("SELECT 1 FROM artifacts WHERE campaign_id=$1", [campaign])).rowCount).toBe(1);
     const bundle = await exportCampaignBundle(db, gm, campaign), target = await createTestDb();
     try {

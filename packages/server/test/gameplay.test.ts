@@ -197,6 +197,11 @@ describe("production gameplay with PGlite transactions", () => {
     expect((await f.game.getSheet(f.a, f.campaignId, f.actorA)).fields.insight).toBe(3);
     expect(await f.game.prepareAction(f.a, f.campaignId, input)).toEqual(old);
     expect((await f.game.replayRoll(f.a, f.campaignId, old.id)).valid).toBe(true);
-    await expect(db.query("DELETE FROM rule_packages WHERE campaign_id=$1 AND version='1.0.0'", [f.campaignId])).rejects.toMatchObject({ code: "42501" });
+    // Seit 030 darf ein Regelpaket verschwinden — aber nur eines, auf das nichts mehr zeigt.
+    // 1.0.0 steckt in dem oben vorbereiteten Wurf, also weist die Datenbank es selbst ab: nicht
+    // mehr als „Historie" (42501), sondern als „wird gebraucht" (23503). Der Inhalt bleibt
+    // unveränderlich, das prüft die Zeile darunter.
+    await expect(db.query("DELETE FROM rule_packages WHERE campaign_id=$1 AND version='1.0.0'", [f.campaignId])).rejects.toMatchObject({ code: "23503" });
+    await expect(db.query("UPDATE rule_packages SET content_hash='x' WHERE campaign_id=$1 AND version='1.0.0'", [f.campaignId])).rejects.toMatchObject({ code: "42501" });
   });
 });

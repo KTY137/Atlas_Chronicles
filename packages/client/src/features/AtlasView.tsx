@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Compass, DoorOpen, Eye, Link, Map, Maximize, Minus, Plus, RefreshCw, Search, Upload, X } from "lucide-react";
+import { BookOpen, Compass, DoorOpen, Eye, Globe, Link, Map, Maximize, Minus, Plus, RefreshCw, Search, Upload, X } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { createMapRenderer, type MapCamera, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
 import { api, apiPath, ApiError, errorText, type EntryDocument, type EntrySummary, type Member } from "../api.ts";
@@ -14,11 +14,14 @@ import type { MapDeletionAck, MapReference, TacticalMapSummary } from "@chronicl
 import { MapLibrary, type MapLibraryItem } from "./MapLibrary";
 import { MapContextMenu, type MapContextAction } from "./MapContextMenu";
 import { MapDeleteDialog } from "./MapDeleteDialog";
-import { plural, t } from "../i18n";
+import { locale, plural, t } from "../i18n";
 
-interface AtlasNode { id: string; title: string | null; kind: string; entryId?: string; canEnter?: boolean; childMapId?: string; parents: readonly { id: string; kind: string }[] }
+interface AtlasNode { id: string; title: string | null; kind: string; entryId?: string; canEnter?: boolean; childMapId?: string; description?: string; parents: readonly { id: string; kind: string }[] }
 interface ImportReport { orte: number; zellen: number; unterdrueckteNotizen: number; hinweise: readonly string[]; ausgelasseneDatensaetze: Record<string, number> }
-interface AtlasMap extends ProjectedMapScene { title: string; nodes: readonly AtlasNode[]; version?: number; report?: ImportReport; background?: { url: string; width: number; height: number } }
+/** Woher diese Karte kommt. Kommt vom Server aus der Kampagne — nicht mehr aus dem Quelltext. */
+interface Kartenherkunft { art: "wiki" | "beispiel" | "bild"; wikiUrl?: string; seitentitel?: string; pageid?: number; revid?: number; lizenz?: string; abgerufenAm: number }
+interface AtlasMap extends ProjectedMapScene { title: string; nodes: readonly AtlasNode[]; version?: number; report?: ImportReport; herkunft?: Kartenherkunft; background?: { url: string; width: number; height: number } }
+interface KartenErgebnis { id: string; unchanged: boolean; report?: ImportReport; bild: { status: "geholt" | "vorhanden" | "keins" | "fehlgeschlagen"; dateiname?: string; grund?: string } }
 interface MapSummary { id: string; title: string }
 export interface AtlasViewProps { campaignId: string; role: "leitung" | "spieler" | "beobachter"; onOpenEntry: (id: string) => void; onDirty: (dirty: boolean) => void }
 const KARTENART_LABEL: Record<string, string> = { welt: "Welt", landmasse: "Landmasse", macht: "Herrschaft", region: "Region", ort: "Ort", bauwerk: "Bauwerk", raum: "Raum", behaelter: "Behälter", gegenstand: "Gegenstand" };
@@ -48,6 +51,9 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   const [rendererReady, setRendererReady] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [backgroundError, setBackgroundError] = useState("");
+  const [showQuelle, setShowQuelle] = useState(false);
+  const [wikiAdresse, setWikiAdresse] = useState("");
+  const [kartenname, setKartenname] = useState("");
   const cameras = useRef<Record<string, MapCamera>>({});
   const childDirty = useRef(false);
   const navigationUrl = useRef(location.href);
@@ -72,6 +78,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   const mapIdRef = useRef(mapId);
   mapIdRef.current = mapId;
   const fileInput = useRef<HTMLInputElement>(null);
+  const bildInput = useRef<HTMLInputElement>(null);
   const selected = map.data?.nodes.find((node) => node.id === selectedId);
   const members = roster.data?.filter((member) => member.actorId) ?? [];
   const nodes = useMemo(() => {
@@ -221,11 +228,41 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     }
     setMessage(t("Der Artikel ist mit diesem Ort verbunden.")); refresh();
   }
+  /** Eine Meldung, die auch sagt, was aus dem Bild wurde — eine Karte ohne Bild ist kein Fehler. */
+  function meldung(result: KartenErgebnis): string {
+    const karte = result.unchanged ? t("Diese Karte ist bereits gespeichert. Ihr bestehender Stand wurde geöffnet.")
+      : t("Karte gespeichert: {orte} Orte können jetzt mit euren Geschichten verbunden werden.", { orte: result.report?.orte ?? 0 });
+    if (result.bild.status === "geholt") return `${karte} ${t("Das Kartenbild liegt jetzt bei euren Bildern.")}`;
+    if (result.bild.status === "fehlgeschlagen") return `${karte} ${t("Das Kartenbild kam nicht an: {grund}", { grund: result.bild.grund ?? "" })}`;
+    if (result.bild.status === "keins") return `${karte} ${t("Diese Karte bringt kein eigenes Bild mit.")}`;
+    return karte;
+  }
+  async function holeAusWiki() {
+    await task.run(async () => {
+      setMessage("");
+      const result = await api<KartenErgebnis>(apiPath(campaignId, "/maps/aus-wiki"),
+        { method: "POST", body: { wiki: wikiAdresse.trim(), titel: kartenname.trim() } });
+      setMapId(result.id); refresh(); setMessage(meldung(result));
+    });
+  }
+  async function importBild(file: File) {
+    await task.run(async () => {
+      setMessage("");
+      if (file.size > 24 * 1024 * 1024) throw new Error(t("Das Kartenbild darf höchstens 24 MiB groß sein."));
+      const antwort = await fetch(`${apiPath(campaignId, "/maps/bild")}?dateiname=${encodeURIComponent(file.name)}`, {
+        method: "POST", credentials: "same-origin", body: await file.arrayBuffer(),
+        headers: { "Content-Type": "application/octet-stream" } });
+      const koerper = await antwort.json().catch(() => null) as (KartenErgebnis & { error?: string }) | null;
+      if (!antwort.ok) throw new Error(koerper?.error ?? t("Der Server lehnte die Datei ab (Status {status}).", { status: antwort.status }));
+      setMapId(koerper!.id); refresh(); setMessage(meldung(koerper!));
+    });
+    if (bildInput.current) bildInput.current.value = "";
+  }
   async function importFile(file: File) {
     await task.run(async () => {
       setMessage("");
       if (file.size > 32 * 1024 * 1024) throw new Error(t("Die Kartendatei darf höchstens 32 MiB groß sein."));
-      if (!file.name.toLowerCase().endsWith(".json")) throw new Error(t("Bitte eine Azgaar-Full-JSON- oder ERON-Kartendatei auswählen."));
+      if (!file.name.toLowerCase().endsWith(".json")) throw new Error(t("Bitte eine Kartendatei im JSON-Format auswählen. Ein Kartenbild geht über „Kartenbild hochladen“."));
       const json = await file.text();
       const result = await api<{ id: string; report: ImportReport; unchanged: boolean }>(apiPath(campaignId, "/maps/import"), { method: "POST", body: { json } });
       setMapId(result.id);
@@ -249,17 +286,35 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     <header className="atlas-heading"><div><p className="eyebrow">{t("Eure Welt, Ort für Ort")}</p><h1><Compass size={28} aria-hidden="true" /> {t("Atlas")}</h1><p className="muted">{t("Jede Reise beginnt mit einem Ort.")}</p></div>
       <div className="atlas-heading-actions"><Button variant="quiet" aria-label={t("Atlas aktualisieren")} title={t("Atlas aktualisieren")} disabled={task.busy} onClick={refresh}><RefreshCw size={16} /></Button>
         {gm ? <Button aria-expanded={showGenerator} onClick={() => { if (!showGenerator || !childDirty.current || window.confirm(t("Ungespeicherte Kartenänderungen verwerfen?"))) setShowGenerator(value => !value); }}><Map size={16} /> {showGenerator ? t("Kartenwerkstatt schließen") : t("Neue Karte")}</Button> : null}
-        {gm && <Button disabled={task.busy} onClick={() => void task.run(async () => {
-          const result = await api<{ id: string; unchanged: boolean }>(apiPath(campaignId, "/maps/eron"), { method: "POST" });
-          setMapId(result.id); refresh(); setMessage(result.unchanged ? t("Die gespeicherte ERON-Karte wurde geöffnet.") : t("ERON ist mit seinen Ortsmarkern im Atlas gespeichert."));
-        })}><Compass size={16} /> {t("ERON-Karte öffnen")}</Button>}
-        {gm && <><input ref={fileInput} className="atlas-file-input" type="file" accept=".json,application/json" aria-label={t("Azgaar-Kartendatei auswählen")}
+        {gm && <Button aria-expanded={showQuelle} disabled={task.busy} onClick={() => setShowQuelle(value => !value)}><Globe size={16} /> {showQuelle ? t("Kartenquelle schließen") : t("Karte aus einem Wiki holen")}</Button>}
+        {gm && <><input ref={fileInput} className="atlas-file-input" type="file" accept=".json,application/json" aria-label={t("Kartendatei auswählen")}
           onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file); }} />
           <Button variant="primary" disabled={task.busy} onClick={() => fileInput.current?.click()}><Upload size={16} /> {task.busy ? t("Wird gespeichert …") : t("Karte importieren")}</Button></>}
       </div></header>
     {task.error && <Notice error>{task.error}</Notice>}
     {message && <Notice>{message}</Notice>}
     {maps.error && <Notice error>{maps.error}</Notice>}
+    {gm && showQuelle ? <section className="atlas-quelle" aria-label={t("Karte aus einem Wiki holen")}>
+      <h2>{t("Karte aus einem Wiki holen")}</h2>
+      <p className="field-help">{t("Gib die Adresse des Wikis und den Namen der Kartenseite an. Wir holen die Karte und ihr Bild von dort und schreiben auf, woher beides stammt. Das passiert nur, wenn du hier auf Holen drückst.")}</p>
+      <form onSubmit={(event) => { event.preventDefault(); void holeAusWiki(); }}>
+        <label>{t("Adresse des Wikis")}<input type="text" inputMode="url" required value={wikiAdresse} disabled={task.busy}
+          placeholder={t("zum Beispiel eron.fandom.com/de")} onChange={(event) => setWikiAdresse(event.target.value)} /></label>
+        <label>{t("Name der Kartenseite")}<input type="text" required value={kartenname} disabled={task.busy}
+          placeholder={t("zum Beispiel Karte:Andaria")} onChange={(event) => setKartenname(event.target.value)} /></label>
+        <Button type="submit" variant="primary" disabled={task.busy || !wikiAdresse.trim() || !kartenname.trim()}><Globe size={16} /> {task.busy ? t("Wird geholt …") : t("Karte holen")}</Button>
+      </form>
+      <div className="atlas-quelle-weitere">
+        <input ref={bildInput} className="atlas-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label={t("Kartenbild auswählen")}
+          onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBild(file); }} />
+        <Button disabled={task.busy} onClick={() => bildInput.current?.click()}><Upload size={16} /> {t("Kartenbild hochladen")}</Button>
+        <Button variant="quiet" disabled={task.busy} onClick={() => void task.run(async () => {
+          const result = await api<KartenErgebnis>(apiPath(campaignId, "/maps/beispiel"), { method: "POST" });
+          setMapId(result.id); refresh(); setMessage(meldung(result));
+        })}><Compass size={16} /> {t("Beispielkarte laden")}</Button>
+      </div>
+      <p className="field-help">{t("Ein Kartenbild wird zur Karte: Bild als Hintergrund, Ortsmarker setzt ihr selbst. So kommen auch Karten aus Zeichenprogrammen herein.")}</p>
+    </section> : null}
     {gm && showGenerator ? <TacticalGenerate key={campaignId} campaignId={campaignId} onDirty={reportDirty} onCreated={id => { setShowGenerator(false); refresh(); navigateMap({ kind: "tactical", id, title: t("Neue Karte") }); }} /> : null}
     {gm ? <MapLibrary items={libraryMaps} selected={{kind:"atlas",id:mapId}} disabled={task.busy} onOpen={map => navigateMap({kind:map.kind,id:map.id,title:map.name})}
       onEdit={map => navigateMap({kind:map.kind,id:map.id,title:map.name,edit:map.kind === "tactical"})} onDelete={requestDelete} /> : null}
@@ -267,7 +322,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     {maps.loading && <Loading text={t("Euer Atlas wird geöffnet …")} />}
     {!maps.loading && !maps.error && !maps.data?.length && !mapId && <EmptyState title={gm ? t("Euer Atlas wartet auf die erste Weltkarte.") : t("Deine Reise beginnt hier.")}
       action={gm ? <Button variant="primary" onClick={() => fileInput.current?.click()}><Upload size={16} /> {t("Weltkarte importieren")}</Button> : undefined}>
-      {gm ? t("Öffne die ERON-Karte mit ihren vorhandenen Markern oder importiere eure Welt als Azgaar Full JSON. An jedem Ort kannst du eine eigene Unterkarte erzeugen oder eine vorhandene Szenenkarte verbinden.") : t("Der Atlas zeigt die Weltkarte eurer Kampagne, aber nur die Orte, die eure Spielleitung für deine Figur freigegeben hat. Sobald der erste Ort freigegeben ist, erscheint er hier.")}
+      {gm ? t("Hol eure Karte aus einem Wiki, lade ein Kartenbild hoch oder importiere eine Kartendatei. An jedem Ort kannst du eine eigene Unterkarte erzeugen oder eine vorhandene Szenenkarte verbinden.") : t("Der Atlas zeigt die Weltkarte eurer Kampagne, aber nur die Orte, die eure Spielleitung für deine Figur freigegeben hat. Sobald der erste Ort freigegeben ist, erscheint er hier.")}
     </EmptyState>}
     {!gm && !!maps.data?.length && <div className="atlas-map-choice"><Map size={17} aria-hidden="true" /><label htmlFor="atlas-map-select">{t("Weltkarte")}</label>
       <select id="atlas-map-select" value={mapId} onChange={(event) => { setMapId(event.target.value); setMessage(""); }} disabled={task.busy}>{maps.data.map((row) => <option key={row.id} value={row.id}>{row.title}</option>)}</select>
@@ -300,7 +355,13 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
           <Button disabled={!rendererReady} aria-label={t("Gesamte Karte anzeigen")} title={t("Gesamte Karte anzeigen")} onClick={() => renderer.current?.fit()}><Maximize size={16} /></Button></div>
         <span className="atlas-map-caption">{map.data.title}</span></div><p className="atlas-navigation-hint">{t("Ziehen zum Bewegen · Mausrad zum Zoomen · Eingangs-Icon: Unterkarte öffnen")}</p>
         {backgroundError ? <Notice error>{backgroundError}</Notice> : null}
-        {map.data.background ? <p className="field-help">{t("Ortsdaten:")} <a href="https://eron.fandom.com/de/wiki/Karte:Andaria" target="_blank" rel="noreferrer">ERON Wiki</a> · CC BY-SA 3.0 · {t("Positionen und Symbole für den Atlas aufbereitet.")}</p> : null}
+        {map.data.herkunft ? <p className="field-help">{t("Woher diese Karte kommt:")}{" "}
+          {map.data.herkunft.wikiUrl && map.data.herkunft.seitentitel
+            ? <a href={`${map.data.herkunft.wikiUrl}wiki/${encodeURIComponent(map.data.herkunft.seitentitel.replace(/ /g, "_"))}`} target="_blank" rel="noreferrer">{map.data.herkunft.seitentitel}</a>
+            : t("Ein hochgeladenes Kartenbild")}
+          {map.data.herkunft.revid ? ` · ${t("Fassung {revid}", { revid: map.data.herkunft.revid })}` : ""}
+          {` · ${map.data.herkunft.lizenz ?? t("Lizenz nicht angegeben")}`}
+          {` · ${t("Geholt am {datum}", { datum: new Date(map.data.herkunft.abgerufenAm).toLocaleDateString(locale()) })}`}</p> : null}
         {gm && map.data.report && <details className="atlas-import-report"><summary>{t("Importbericht")}</summary><p>{t("{orte} Orte · {zellen} Kartenzellen", { orte: map.data.report.orte, zellen: map.data.report.zellen })}</p>
           <p>{t("{anzahl} Generatornotizen wurden als Quelle aufbewahrt und nicht veröffentlicht.", { anzahl: map.data.report.unterdrueckteNotizen })}</p>
           {map.data.report.hinweise.map((line) => <p key={line}>{line}</p>)}</details>}
@@ -318,6 +379,11 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
         {!!children.length && <div className="atlas-hierarchy"><p className="atlas-hierarchy-label">{t("Enthält")}</p><div className="atlas-parents">{children.map((node) => (
           <button key={node.id} type="button" onClick={() => choose(node.id)}>{node.title ?? t("Unbenannt")}</button>
         ))}</div></div>}
+        {selected.description ? <section className="atlas-inspector-section atlas-quelltext">
+          <h3>{t("Aus der Quelle")}</h3>
+          <p>{selected.description}</p>
+          <p className="field-help">{t("Übernommener Text der Kartenquelle. Er wird nicht zu einem Artikel und nicht zu Kanon — das entscheidet ihr.")}</p>
+        </section> : null}
         {selected.entryId ? <Button variant="primary" className="full-width" onClick={() => onOpenEntry(selected.entryId!)}><BookOpen size={16} /> {t("Geschichte öffnen")}</Button>
           : <p className="atlas-door">{t("Ein Ort mit Raum für eure Geschichte.")}</p>}
         {gm && <><section className="atlas-inspector-section"><h3><Link size={15} /> {t("Mit dem Wiki verbinden")}</h3>
