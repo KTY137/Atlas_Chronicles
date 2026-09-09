@@ -1,6 +1,57 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-08, 23:30** (Chronist fertig, englisches Sprachpaket, Figurenantrag)
+Updated: **2026-09-09, 00:30** (Chronist, Sprachpaket, Figurenantrag — dazu Kartenstudio: gemalte Landschaft, Kartenzier, Wasserart)
+
+## Kartenstudio: gemalte Landschaft, Kompass und Maßstab — 2026-09-08 abends
+
+Kayas Auftrag: Kartenerzeugung und Karteneditor weiter Richtung Inkarnate/WorldAnvil und
+Dorfromantik. Drei Pakete, alle innerhalb der vorhandenen Architektur, keine neuen Schichten.
+
+1. **Gemalte Landschaft** (`szene/src/cartography-projection.ts`, `rendererVersion`
+   `cartography-6` → `cartography-7`). Fels wird gezeichnetes Relief statt grauer Fläche:
+   Gipfel mit Licht- und Schattenflanke, Schlagschatten, Firstlinie, Schneekappe, je Gipfel
+   eigener Steinton und eigene Schultern. See und Meer bekommen den gezeichneten Uferhalo
+   und einen Flachwassersaum, ein Fluss ausdrücklich nicht. Wiese, Erde und Sand bekommen
+   Halme, Kiesel und Dünenstriche, Feldergruppen eine Hecke. Die Kantenschau arbeitet jetzt
+   je Materialgruppe (`regionBanks`), damit die Tessellierung des Generators nicht als Netz
+   von Nähten sichtbar wird.
+2. **Kartenzier** (`render/src/renderer.ts`). Kompassrose und Maßstabsleiste als
+   Bildschirm-Beiwerk in einem eigenen Container `chrome` — nicht als Polygone der
+   Zeichnung, weil die Szenenprüfung dort nur echte Regionen zulässt. Nur sichtbar, wenn
+   die Szene eine Kartografie-Zeichnung trägt; Kampfkarten bleiben frei. Der Maßstab zählt
+   Rasterfelder und wählt eine runde Zahl.
+3. **Revisionsanzeige zurück in der Überschrift.** Der Umbau `dcbf449` hatte
+   `Kartenrevision {n}.` durch die Tagline ersetzt; daneben steht aber weiter der Knopf
+   „Kartenrevision speichern", und `desktop/tools/smoke.mjs:162` hing als benutzersichtbarer
+   Speicherbeleg daran (30-s-Timeout, von `project-atlas-54` gemeldet). Zurückgeholt in
+   Klartext, mit Fall und Mutationsprobe, im echten Browser gegen das Smoke-Prädikat geprüft.
+4. **Wasserart im Editor.** Beim Werkzeug „Gelände" mit Material „Wasser" ist jetzt
+   Fluss / See / Meer wählbar. Vorher wurde jedes gemalte Gewässer als Fluss eingetragen,
+   ein See ließ sich also nicht malen. Additiv: ohne Angabe bleibt es ein Fluss.
+
+Grün: 26 Testdateien mit 348 Fällen (szene, forge, render, server-Raster, tactical-entities),
+Typecheck, Produktionsbuild, `gate:version`, `gate:boundaries`. Dazu `e2e/map-studio` und
+`e2e/map-editor-cartography` zusammen 5/5 grün — allerdings nur mit den beiden Korrekturen von
+`project-atlas-54` (Locale-Pin plus feste Sprachdateiliste statt `import.meta.glob`), die für
+die Gegenprobe vorübergehend lokal gesetzt und danach exakt zurückgenommen wurden. Der
+Studio-Screenshot deckte dabei einen echten Fehler auf, den kein Unit-Test hatte: die
+Maßstabsleiste beschriftete sich falsch (»10 Bildpunkte« unter 1.000 Kartenpixeln, und eine auf
+260 Punkte gekappte Länge ohne passende Beschriftung). Behoben und mit Mutationsprobe belegt.
+
+**Offen und nicht behauptet:** `e2e/map-studio.spec.ts` ist **schon am unveränderten
+`1b5b7d1`** 2/2 rot (per `git stash` gegengeprüft) — die Seite mountet nicht,
+`(intermediate value).glob is not a function`. Ursache ist `import.meta.glob` in
+`client/src/i18n.ts:34-35`, das der esbuild-Wirt der Browsertests nicht auflöst; der
+Vite-Produktionsbuild ist nicht betroffen. Dazu kommt eine zweite Ursache, die
+`project-atlas-54` gefunden hat: Playwright startet englisch, und die Oberfläche folgt dem
+seit dem Sprachpaket, sodass alle deutschen Text-Locator ins Leere gehen. **Beide**
+Korrekturen liegen auf `experimental/featureliste-20260907` und werden beide gebraucht; bis
+dieser Branch gemergt ist, laufen die Kartenspecs im Hauptcheckout nicht. Die drei schweren Galeriefälle in
+`forge/test/siedlung-cartography.test.ts` tragen jetzt ein ausdrückliches 30-s-Budget; sie
+liefen schon vorher ins 5-s-Standardlimit. Echte Kammlinien statt Gipfelgitter, PDF-Parität
+sowie Desktop-Paket und Installation (weiterhin `ca3898b`) sind offen. Belege in
+`design/iterations/map-studio-20260908.md`, Abschnitt „Gemalte Landschaft, Kartenzier und
+Wasserart".
 
 ## Drei Lieferungen auf `experimental/featureliste-20260907` — 2026-09-08
 

@@ -16,6 +16,11 @@ function overlap(a: Polygon, b: Polygon): boolean {
   }
   return true;
 }
+/** These cases each build three to six complete cities. Generation, not assertion, owns the
+ * wall clock here, so they carry their own budget instead of raising the global default.
+ * 30 s is the house number for that across the repo (`io/test/campaign-bundle-v3-large.test.ts`
+ * and the Postgres fixtures in `server/test`), not a figure invented for these cases. */
+const HEAVY = 30_000;
 describe("settlement v6 canonical cartography", () => {
   it("keeps visible wall stonework, shadows and gate caps out of canonical building roofs", () => {
     const cases = [96, 16, 192].map(zellgroesse => ({ seed: "gallery:river-1", zellgroesse }))
@@ -33,7 +38,7 @@ describe("settlement v6 canonical cartography", () => {
       const collisions = wallPaint.flatMap(wall => roofs.filter(roof => overlap(wall.points, roof.points)).map(roof => `${wall.regionId}/${roof.id}`));
       expect([...new Set(collisions)], `${seed}/${zellgroesse}: all visible stone, caps and shadows need a real setback from buildings`).toEqual([]);
     }
-  });
+  }, HEAVY);
   it("keeps usable market walks, organic core walls and landscape clear of real water and road crossings", () => {
     for (const art of ["dorf", "stadt"] as const) for (const seed of ["gallery:river-1", "gallery:orchard-2", "gallery:gate-3"]) {
       const generated = erzeugeSiedlung({ keim: seed, optionen: { art } }, paket);
@@ -68,7 +73,7 @@ describe("settlement v6 canonical cartography", () => {
         for (const obstacle of [...water, ...roads]) expect(overlap(strip, obstacle), `${seed}: wall blocks an actual crossing`).toBe(false);
       }
     }
-  });
+  }, HEAVY);
   it("composes a dense inhabited city core, loose outskirts and substantial countryside across the gallery seeds", () => {
     for (const seed of ["gallery:river-1", "gallery:orchard-2", "gallery:gate-3"]) {
       const generated = erzeugeSiedlung({ keim: seed, optionen: { art: "stadt" } }, paket);
@@ -133,5 +138,5 @@ describe("settlement v6 canonical cartography", () => {
       expect(generated.karte.geometry.stamps.length).toBeLessThan(80);
       expect(erzeugeSiedlung({ keim: seed, optionen: { art } }, paket)).toEqual(generated);
     }
-  });
+  }, HEAVY);
 });

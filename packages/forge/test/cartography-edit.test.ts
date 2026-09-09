@@ -37,6 +37,16 @@ describe("atomic cartography edit operations", () => {
     expect(applyCartographyEdit({ ...locked, operation })).toMatchObject({ ok: false, code: "protected" });
     expect(applyCartographyEdit({ ...input, operation: { ...operation, requireRoad: true } })).toMatchObject({ ok: false, code: "contradiction" });
   });
+  it("paints the chosen kind of water and rejects an unknown one instead of writing it into the map", () => {
+    const input = fixture([box("ground", 0, 0, 200, 200)], [terrain("ground")]);
+    const paint = (water?: string) => applyCartographyEdit({ ...input,
+      operation: { kind: "terrain", points: [[50, 50]], radius: 5, material: "water", ...(water === undefined ? {} : { water }) } as CartographyEditOperation });
+    const materials = (result: ReturnType<typeof paint>) => result.ok ? result.cartography.regions.filter(role => role.role === "water").map(role => role.material) : [];
+    for (const water of ["lake", "sea", "river"] as const) expect(materials(paint(water)), water).toEqual([water]);
+    // Callers from before the option keep painting a river, which is what they always painted.
+    expect(materials(paint())).toEqual(["river"]);
+    expect(paint("swamp")).toMatchObject({ ok: false, code: "invalid" });
+  });
   it("paints only the local module, keeps outside objects byte-identical and conserves surface coverage", () => {
     const input = fixture([box("ground", 0, 0, 100, 100), box("outside", 150, 150, 20, 20)], [terrain("ground"), terrain("outside")]);
     const before = JSON.stringify(input), operation: CartographyEditOperation = { kind: "terrain", points: [[30, 30]], radius: 2, material: "forest" };

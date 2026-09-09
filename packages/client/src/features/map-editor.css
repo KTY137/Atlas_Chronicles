@@ -98,6 +98,10 @@
 .map-editor .map-edit-tools .map-room-size { display: grid; justify-items: center; gap: .25rem; padding: .6rem .25rem; background: transparent; border-color: var(--line); }
 .map-editor .map-room-size strong { font-size: .67rem; font-weight: 500; }
 .map-editor .map-room-size small { color: var(--text-muted); font-size: .65rem; font-variant-numeric: tabular-nums; }
+.map-editor .map-water-kinds { display: grid; gap: .35rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.map-editor .map-edit-tools .map-water-kind { display: grid; justify-items: center; gap: .2rem; padding: .5rem .25rem; text-align: center; background: transparent; border-color: var(--line); }
+.map-editor .map-water-kind strong { font-size: .67rem; font-weight: 500; }
+.map-editor .map-water-kind small { color: var(--text-muted); font-size: .6rem; line-height: 1.25; }
 .map-editor .map-edit-tools .map-floor-card { display: grid; justify-items: stretch; gap: .35rem; padding: .3rem; font-size: .65rem; background: transparent; border-color: var(--line); }
 .map-editor .map-floor-swatch { height: 26px; border-radius: 2px; }
 .map-editor .map-floor-wood { background: repeating-linear-gradient(0deg, #826046, #826046 5px, #513f32 6px, #513f32 7px); }

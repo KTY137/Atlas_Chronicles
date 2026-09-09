@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Armchair, BedDouble, Beer, BrickWall, Check, Copy, DoorOpen, Grid2X2, Hand, House, Lock, MousePointer2, Paintbrush, RotateCw, Route, Square, Trash2, Unlock, type LucideIcon } from "lucide-react";
-import { BAUWERK_LABEL, BAUWERK_TYPEN, type BauwerkTyp, type CartographyRegionV1, type CartographyTerrainMaterial } from "@chronicle/szene";
+import { BAUWERK_LABEL, BAUWERK_TYPEN, type BauwerkTyp, type CartographyRegionV1, type CartographyTerrainMaterial, type CartographyWaterMaterial } from "@chronicle/szene";
 import { Button } from "@chronicle/ui";
 import { t } from "../i18n";
 
@@ -9,6 +9,7 @@ export interface MapToolSettings {
   tool: "select" | "terrain" | "road" | "building" | "room" | "wall" | "door";
   hand: boolean;
   terrain: CartographyTerrainMaterial | "water";
+  water: CartographyWaterMaterial;
   radius: number;
   road: "path" | "street" | "square";
   roadWidth: number;
@@ -23,7 +24,7 @@ export interface MapToolSettings {
 }
 
 export const mapToolSettings = (cellSize: number): MapToolSettings => ({
-  tool: "select", hand: false, terrain: "grass", radius: cellSize, road: "street", roadWidth: cellSize * .4,
+  tool: "select", hand: false, terrain: "grass", water: "river", radius: cellSize, road: "street", roadWidth: cellSize * .4,
   buildingWidth: cellSize * .65, buildingHeight: cellSize * .5, buildingType: "haus", buildingName: "Neues Haus", shape: "rectangle", turns: 0,
   roomShape: "rectangle", roomFloor: "wood", roomTemplate: "empty", roomWidth: cellSize * 6, roomHeight: cellSize * 5,
   doorWidth: cellSize, doorClosed: true, snap: true, direct: true,
@@ -47,6 +48,11 @@ export function MapEditTools({ value, onChange, selected, linked, onLock, onRota
   // Die Beschriftungen entstehen bei jedem Rendern neu, damit ein Sprachwechsel sie erreicht.
   const TERRAIN = [
     ["grass", t("Wiese")], ["forest", t("Wald")], ["field", t("Feld")], ["earth", t("Erde")], ["rock", t("Fels")], ["sand", t("Sand")], ["water", t("Wasser")],
+  ] as const;
+  const WATER = [
+    { id: "river", label: t("Fluss"), text: t("Fließt, kann Brücken tragen") },
+    { id: "lake", label: t("See"), text: t("Steht still, mit Uferkranz") },
+    { id: "sea", label: t("Meer"), text: t("Offenes Wasser bis zum Rand") },
   ] as const;
   const ROOM_SIZES = [{ label: t("Kammer"), width: 4, height: 4 }, { label: t("Zimmer"), width: 6, height: 5 }, { label: t("Saal"), width: 10, height: 8 }] as const;
   const ROOM_TEMPLATES = [
@@ -86,6 +92,9 @@ export function MapEditTools({ value, onChange, selected, linked, onLock, onRota
         {value.tool === "terrain" ? <><div className="map-tool-section-title"><Paintbrush size={17} aria-hidden="true" /><h3>{t("Gelände zeichnen")}</h3></div>
           <div className="map-material-grid" role="group" aria-label={t("Geländematerial")}>{TERRAIN.map(([id, name]) => <Button key={id} className="map-material-card" aria-label={name} aria-pressed={value.terrain === id} onClick={() => change({ terrain: id })}><span className={`map-material-swatch map-material-${id}`} aria-hidden="true">{value.terrain === id ? <Check size={16} /> : null}</span><span>{name}</span></Button>)}</div>
           <label className="map-tool-field">{t("Material")}<select aria-label={t("Material")} value={value.terrain} onChange={event => change({ terrain: event.target.value as MapToolSettings["terrain"] })}>{TERRAIN.map(([id, name]) => <option value={id} key={id}>{name}</option>)}</select></label>
+          {value.terrain === "water" ? <div className="map-tool-subgroup"><span className="map-tool-label">{t("Was für ein Gewässer?")}</span>
+            <div className="map-water-kinds" role="group" aria-label={t("Wasserart")}>{WATER.map(({ id, label, text }) => <Button key={id} className="map-water-kind" aria-label={`${label} · ${text}`} aria-pressed={value.water === id} onClick={() => change({ water: id })}><strong>{label}</strong><small>{text}</small></Button>)}</div>
+            <p className="field-help">{t("See und Meer bekommen einen hellen Uferkranz und Wellen; ein Fluss bleibt schmal und kann überbrückt werden.")}</p></div> : null}
           {number(t("Pinselradius"), "radius", true)}<p className="field-help">{t("Klicken und ziehen, um die Landschaft zu malen.")}</p>
           <details className="map-tool-advanced"><summary>{t("Präzise Maße")}</summary>{number(t("Pinselradius in Pixeln"), "radius")}</details>
         </> : null}

@@ -5,7 +5,7 @@ import type { TacticalCartographyV1 } from "./cartography.ts";
 import type { TacticalMapDocumentV1, TacticalPoint } from "./tactical-map.ts";
 
 /** Bump whenever these pixels change; this pin belongs in every cartography raster key. */
-export const rendererVersion = "cartography-6" as const;
+export const rendererVersion = "cartography-7" as const;
 export interface CartographyPolygon {
   readonly regionId: string;
   readonly points: readonly TacticalPoint[];
@@ -79,8 +79,11 @@ function mix(first: number, second: number, amount: number): number {
 
 interface Bank { readonly a: TacticalPoint; readonly b: TacticalPoint; readonly inward: number }
 /** Sweep collinear edge intervals. Opposite occupied sides cancel even if a neighbour
- * subdivides its shared edge; duplicate polygons on the same side still have one shore. */
-function waterBanks(regions: readonly { id: string; punkte: readonly TacticalPoint[] }[]): Map<string, Bank[]> {
+ * subdivides its shared edge; duplicate polygons on the same side still have one shore.
+ * Any material group may be swept: the generator tessellates one wood, one massif or one
+ * lake into many polygons, and only the outer silhouette of that group is a real edge.
+ * Decorating every polygon instead would expose the tessellation as a lattice of seams. */
+function regionBanks(regions: readonly { id: string; punkte: readonly TacticalPoint[] }[]): Map<string, Bank[]> {
   interface Edge { id: string; side: number; from: number; to: number }
   interface Group { u: number; v: number; c: number; edges: Edge[] }
   const groups = new Map<string, Group>(), result = new Map<string, Bank[]>();
@@ -153,7 +156,10 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     polygons.push({ regionId, points: points.map(point => [point[0], point[1]] as const), fill, opacity });
   };
   const regions = document.geometry.regions.map((region, index) => ({ ...region, index, role: roles.get(region.id) }));
-  const banks=waterBanks(regions.filter(region=>region.role?.role==="water"));
+  const banks=regionBanks(regions.filter(region=>region.role?.role==="water"));
+  // One silhouette per contiguous material area, for the same reason water has one shore.
+  const groupBank=(material:"rock"|"field")=>regionBanks(regions.filter(region=>region.role?.role==="terrain"&&region.role.material===material));
+  const rockBanks=groupBank("rock"), fieldBanks=groupBank("field");
   const ink = setting === "scifi" ? 0x304d57 : 0x504537;
   const pen = Math.max(.8, Math.min(4, cartography.construction.cellSize * .035));
   const bridge = (role: typeof regions[number]["role"]) => role?.role === "road" && role.material === "bridge" ? 1 : 0;
@@ -222,11 +228,85 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       }
       emit(id, band(points, axes.across, axes.top, axes.top + edge), palette.background, .4);
     } else if (role?.role === "terrain" && role.material === "field") {
+      for (const { a, b, inward: winding } of fieldBanks.get(id) ?? []) emit(id, line(a, b, pen*1.1, winding*pen*.55), palette.forest, .32);
       const axes = roofAxes(points), count = Math.min(44, Math.max(6, Math.ceil((axes.bottom - axes.top) / (cartography.construction.cellSize * .18))));
       for (let index = 1; index < count; index++) {
         const at = axes.top + (axes.bottom - axes.top) * index / count;
         emit(id, band(points, axes.across, at, at + pen * .7), palette.roofDark, .3);
         emit(id, band(points, axes.across, at + pen, at + pen * 1.6), palette.sand, .3);
+      }
+    } else if (role?.role === "terrain" && role.material === "rock") {
+      // A massif is drawn relief, not a grey patch. Peaks stand inside the region, lit from
+      // the north-west, each with a cast shadow and an ink silhouette; the group's own outer
+      // edge gets a lit talus rim so the range sits on the land instead of floating over it.
+      const light = mix(palette.rock, palette.background, .5), dark = tint(palette.rock, -42), snow = mix(light, palette.background, .55);
+      for (const { a, b, inward: winding } of rockBanks.get(id) ?? []) {
+        emit(id, line(a, b, pen*2.2, winding*pen*1.1), light, .45);
+        emit(id, line(a, b, pen*.6), ink, .5);
+      }
+      // A peak is roughly one construction cell wide, so a range reads as many drawn summits
+      // rather than as a handful of giant triangles; a single crag never outgrows its region.
+      // A capped count must widen the lattice, never truncate it: cutting the loop short would
+      // fill the top rows of a large massif and leave the rest of it bare grey.
+      let size = Math.max(3, Math.min(cartography.construction.cellSize * .46, Math.min(width, height) * .42)), spacing = size * 1.4;
+      if (width * height > 900 * spacing * spacing) { spacing = Math.sqrt(width * height / 900); size = spacing / 1.4; }
+      const columns = Math.max(1, Math.ceil(width / spacing)), rows = Math.max(1, Math.ceil(height / spacing));
+      const peaks: { x: number; y: number; size: number }[] = [];
+      for (let index = 0; index < columns * rows; index++) {
+        const row = Math.floor(index / columns), column = index % columns;
+        const x = minX + (column + .5 + (row % 2) * .5 + (phase(id, index * 6 + 1) - .5) * .5) * spacing;
+        const y = minY + (row + .5 + (phase(id, index * 6 + 2) - .5) * .46) * spacing;
+        // A coarse second lattice raises whole shoulders of the range and lets others stay low,
+        // so summits cluster into ridges instead of repeating as one stamped triangle.
+        const massif = phase(`${Math.floor(x / (spacing * 3.5))}:${Math.floor(y / (spacing * 3.5))}`, 11);
+        if (inside([x, y], points)) peaks.push({ x, y, size: size * (.5 + phase(id, index * 6 + 3) * .7) * (.62 + massif * .82) });
+      }
+      // Painter's order: a peak further down the map overlaps the one standing behind it.
+      peaks.sort((first, second) => first.y - second.y || first.x - second.x);
+      for (const [index, peak] of peaks.entries()) {
+        const half = peak.size, high = peak.size * 1.5, foot = peak.y + high * .5;
+        // Every summit gets its own stone tone and its own shoulders. Without that a range
+        // reads as one triangle stamped in a grid, which is exactly how the first pass looked.
+        const stone = (phase(id, index * 6 + 5) - .5) * 26;
+        const apex: TacticalPoint = [peak.x + (phase(id, index * 6 + 4) - .5) * half * .34, peak.y - high * .5];
+        const heart: TacticalPoint = [peak.x, foot - high * .34];
+        const lift = .3 + phase(id, index * 6 + 6) * .3, drop = .28 + phase(id, index * 6 + 7) * .28;
+        const shoulder: TacticalPoint = [peak.x - half * (.3 + phase(id, index * 6 + 8) * .22), foot - high * lift];
+        const ridgeFoot: TacticalPoint = [peak.x + half * .06, foot];
+        const silhouette: TacticalPoint[] = [apex, [peak.x + half * (.26 + phase(id, index * 6 + 9) * .2), foot - high * drop], [peak.x + half, foot], [peak.x - half, foot], shoulder];
+        emit(id, silhouette.map(point => [point[0] + half * .3, point[1] + high * .12]), 0x26332b, .18);
+        emit(id, silhouette.map(point => [heart[0] + (point[0] - heart[0]) * 1.08, heart[1] + (point[1] - heart[1]) * 1.08]), ink, .8);
+        emit(id, silhouette, tint(dark, stone));
+        emit(id, [apex, shoulder, [peak.x - half, foot], ridgeFoot], tint(light, stone));
+        emit(id, line(apex, ridgeFoot, Math.max(.4, pen * .45)), ink, .35);
+        if (peak.size > size * .9) emit(id, [apex, [apex[0] + half * .2, apex[1] + high * .19], [apex[0] - half * .18, apex[1] + high * .17]], snow, .85);
+      }
+    } else if (role?.role === "terrain" && (role.material === "grass" || role.material === "earth" || role.material === "sand")) {
+      // Open ground gets a hand on it: tufts, pebbles and dune strokes. They sample one global
+      // lattice for the same reason the ripples do -- a per-polygon scatter would print the
+      // generator's tessellation onto the meadow as a visible grid of clusters.
+      const material = role.material;
+      const spacing = Math.max(10, cartography.construction.cellSize * (material === "sand" ? .7 : .45));
+      const startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing);
+      const step = Math.max(1, Math.ceil(Math.sqrt((Math.ceil(maxX / spacing) - startX + 1) * (Math.ceil(maxY / spacing) - startY + 1) / 1800)));
+      const shade = material === "grass" ? mix(palette.grass, palette.forest, .5) : material === "earth" ? tint(palette.earth, -26) : tint(palette.sand, -20);
+      for (let row = startY; row <= Math.ceil(maxY / spacing); row += step) for (let column = startX; column <= Math.ceil(maxX / spacing); column += step) {
+        const key = `${column}:${row}`;
+        if (phase(key, material === "grass" ? 5 : 7) > (material === "sand" ? .3 : .42)) continue;
+        const x = column * spacing + spacing * phase(key, 1), y = row * spacing + spacing * phase(key, 2), scale = spacing * (.2 + phase(key, 3) * .16);
+        if (material === "grass") {
+          // Three drawn blades, not one filled glyph: at map scale a solid tuft reads as a
+          // stamped symbol, while separate strokes stay a texture the eye passes over.
+          const stroke = Math.max(.6, scale * .17), lean = (phase(key, 4) - .5) * .5;
+          const blades: readonly (readonly [number, number, number])[] = [[-.55, -.85, .75], [.02, .1, 1], [.55, .9, .7]];
+          if (blades.every(([foot, head, tall]) => inside([x + scale * foot, y + scale * .8], points) && inside([x + scale * (head + lean), y - scale * tall], points)))
+            for (const [foot, head, tall] of blades) emit(id, line([x + scale * foot, y + scale * .8], [x + scale * (head + lean), y - scale * tall], stroke), shade, .34);
+          continue;
+        }
+        const shape: TacticalPoint[] = material === "earth"
+          ? [[x - scale, y], [x - scale * .4, y - scale * .7], [x + scale * .6, y - scale * .5], [x + scale, y + scale * .3], [x, y + scale * .8]]
+          : [[x - scale * 2, y], [x - scale * .6, y - scale * .35], [x + scale * 1.8, y - scale * .1], [x - scale * .4, y + scale * .3]];
+        if (shape.every(point => inside(point, points))) emit(id, shape, shade, material === "sand" ? .22 : .3);
       }
     } else if (role?.role === "terrain" && role.material === "forest") {
       const radius = Math.max(.8, Math.min(Math.max(cartography.construction.cellSize * .2, Math.sqrt(width * height / 150) * .6), Math.min(width, height) / 7));
@@ -255,17 +335,32 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         emit(id, line(a,b,pen*.7,-winding*pen*.2), ink, .7);
         emit(id, line(a,b,pen*1.4,winding*pen*1.25), 0xd1e3d9, .75);
         emit(id, line(a,b,pen*2.5,winding*pen*3.1), 0xa4ccd0, .3);
+        // Standing water carries the drawn halo: shore-parallel lines fading outward. A river
+        // is left alone; its two banks are close enough that halos would merge into a smear.
+        if (role.material !== "river") {
+          for (let ring = 1; ring <= 3; ring++) emit(id, line(a,b,pen*.55,-winding*(pen*4+ring*pen*4.6)), palette.water, .34-ring*.07);
+          // A shallow shelf keeps open water from reading as one flat blue field.
+          emit(id, line(a,b,pen*7,winding*pen*6.4), 0xa4ccd0, .17);
+        }
       }
       // Short ripples use one global map lattice. Per-segment full-width stripes exposed
       // the generator's river tessellation as regular seams in the finished image.
       const spacing = Math.max(12, cartography.construction.cellSize * .75);
       const startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing);
-      const step = Math.max(1, Math.ceil(Math.sqrt((Math.ceil(maxX / spacing) - startX + 1) * (Math.ceil(maxY / spacing) - startY + 1) / 128)));
+      const step = Math.max(1, Math.ceil(Math.sqrt((Math.ceil(maxX / spacing) - startX + 1) * (Math.ceil(maxY / spacing) - startY + 1) / 700)));
+      const swell = role.material === "river" ? 1 : 2;
       for (let row = startY; row <= Math.ceil(maxY / spacing); row += step) for (let column = startX; column <= Math.ceil(maxX / spacing); column += step) {
-        if (phase(`${column}:${row}`, 3) > .35) continue;
-        const x = column * spacing + spacing * phase(`${column}:${row}`, 1), y = row * spacing + spacing * phase(`${column}:${row}`, 2);
-        const ripple: TacticalPoint[] = [[x,y],[x+spacing*.2,y],[x+spacing*.2,y+spacing*.014],[x,y+spacing*.014]];
-        if (ripple.every(point => inside(point, points))) emit(id, ripple, 0xe1eeea, .24);
+        const key = `${column}:${row}`;
+        if (phase(key, 3) > .35) continue;
+        const x = column * spacing + spacing * phase(key, 1), y = row * spacing + spacing * phase(key, 2);
+        // Standing water gets the drawn double swell; a river keeps its single short ripple,
+        // because two strokes in a narrow channel merge into a smear at map scale.
+        for (let stroke = 0; stroke < swell; stroke++) {
+          const length = spacing * (.2 + stroke * .1), thickness = Math.max(.7, spacing * .016);
+          const at: TacticalPoint = [x - stroke * spacing * .08, y + stroke * spacing * .11];
+          const ripple: TacticalPoint[] = [at, [at[0]+length,at[1]], [at[0]+length,at[1]+thickness], [at[0],at[1]+thickness]];
+          if (ripple.every(point => inside(point, points))) emit(id, ripple, 0xe1eeea, .26);
+        }
       }
     } else if (role?.role === "road" && role.material === "bridge") {
       const axis = width >= height ? 0 : 1, min = axis ? minY : minX, size = axis ? height : width;
