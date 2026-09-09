@@ -23,7 +23,9 @@ const resourcePlugin={name:"desktop-resource-boundaries",setup(builder){
     if(!source.includes(old))throw new Error("Packs resource boundary changed; inspect before packaging.");
     return{contents:source.replace(old,'new URL("./assets/packs/", import.meta.url)'),loader:"ts"};
   });
-  builder.onLoad({filter:/server[\\/]src[\\/]domain[\\/]atlas\.ts$/},async args=>{
+  // Nur die Beispielkarte liegt noch als Datei im Paket; jede andere Karte kommt aus einem
+  // Wiki oder als hochgeladenes Bild. Die Pfade dafuer stehen seit dem Umbau in atlas-quellen.ts.
+  builder.onLoad({filter:/server[\\/]src[\\/]domain[\\/]atlas-quellen\.ts$/},async args=>{
     const source=await readFile(args.path,"utf8"),old='new URL("../../../../design/fixtures/eron/';
     if(!source.includes(old))throw new Error("Atlas resource boundary changed; inspect before packaging.");
     return{contents:source.replaceAll(old,'new URL("./fixtures/eron/'),loader:"ts"};
