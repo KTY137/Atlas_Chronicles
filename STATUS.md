@@ -31,25 +31,35 @@ Dorfromantik. Drei Pakete, alle innerhalb der vorhandenen Architektur, keine neu
 
 Grün: 26 Testdateien mit 348 Fällen (szene, forge, render, server-Raster, tactical-entities),
 Typecheck, Produktionsbuild, `gate:version`, `gate:boundaries`. Dazu `e2e/map-studio` und
-`e2e/map-editor-cartography` zusammen 5/5 grün — allerdings nur mit den beiden Korrekturen von
-`project-atlas-54` (Locale-Pin plus feste Sprachdateiliste statt `import.meta.glob`), die für
-die Gegenprobe vorübergehend lokal gesetzt und danach exakt zurückgenommen wurden. Der
+`e2e/map-editor-cartography` zusammen 5/5 grün. Zum Zeitpunkt des Kartencommits ging das nur mit
+den beiden Korrekturen von `project-atlas-54` (Locale-Pin plus feste Sprachdateiliste statt
+`import.meta.glob`), die für die Gegenprobe vorübergehend lokal gesetzt und danach exakt
+zurückgenommen wurden; **seit ihrem Merge `128b7d7` laufen die Kartenspecs ohne jede Krücke**. Der
 Studio-Screenshot deckte dabei einen echten Fehler auf, den kein Unit-Test hatte: die
 Maßstabsleiste beschriftete sich falsch (»10 Bildpunkte« unter 1.000 Kartenpixeln, und eine auf
 260 Punkte gekappte Länge ohne passende Beschriftung). Behoben und mit Mutationsprobe belegt.
 
-**Offen und nicht behauptet:** `e2e/map-studio.spec.ts` ist **schon am unveränderten
+**Erledigt, hier nur noch als Merkposten:** `e2e/map-studio.spec.ts` war **schon am unveränderten
 `1b5b7d1`** 2/2 rot (per `git stash` gegengeprüft) — die Seite mountet nicht,
 `(intermediate value).glob is not a function`. Ursache ist `import.meta.glob` in
 `client/src/i18n.ts:34-35`, das der esbuild-Wirt der Browsertests nicht auflöst; der
 Vite-Produktionsbuild ist nicht betroffen. Dazu kommt eine zweite Ursache, die
 `project-atlas-54` gefunden hat: Playwright startet englisch, und die Oberfläche folgt dem
 seit dem Sprachpaket, sodass alle deutschen Text-Locator ins Leere gehen. **Beide**
-Korrekturen liegen auf `experimental/featureliste-20260907` und werden beide gebraucht; bis
-dieser Branch gemergt ist, laufen die Kartenspecs im Hauptcheckout nicht. Die drei schweren Galeriefälle in
+Korrekturen wurden gebraucht — die Locale-Zeile allein ließ die Specs rot, weil ohne Oberfläche
+nichts zu lokalisieren ist. Seit `128b7d7` sind beide auf `main`, der Browserpfad ist frei.
+Ebenfalls behoben, in `c9bbc46` und nur in den Specs: `genre-assets` 1/1, `map-settings` 1/1 und
+`siedlung-workshop` 2/2, die drei seit Tagen roten Abläufe — in allen dreien war die Erwartung
+veraltet, nicht das Produkt.
+
+Nach dem Merge nachgeprüft: die Revisionszeile ist übersetzt worden und trägt jetzt einen
+Platzhalter (`Kartenrevision {revision}. …`). Im echten Browser gegen den gemergten Stand
+geprüft — sie rendert unverändert als „Kartenrevision 1. …", kein Platzhalter rutscht durch,
+und das Prädikat aus `smoke.mjs:162` liefert weiter `true`. Die drei schweren Galeriefälle in
 `forge/test/siedlung-cartography.test.ts` tragen jetzt ein ausdrückliches 30-s-Budget; sie
-liefen schon vorher ins 5-s-Standardlimit. Echte Kammlinien statt Gipfelgitter, PDF-Parität
-sowie Desktop-Paket und Installation (weiterhin `ca3898b`) sind offen. Belege in
+liefen schon vorher ins 5-s-Standardlimit. Desktop-Paket und Installation stehen **nicht mehr auf `ca3898b`**: `48731bf` weist 21 von 21
+Prüfungen auf dem gemergten Stand nach, also erstmals mit dem Kartenumbau darin. Offen bleiben
+echte Kammlinien statt Gipfelgitter im Gebirge und die PDF-Parität. Belege in
 `design/iterations/map-studio-20260908.md`, Abschnitt „Gemalte Landschaft, Kartenzier und
 Wasserart".
 
