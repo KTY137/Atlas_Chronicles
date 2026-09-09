@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { parseFormulaDetailed, tokenizeFormula, type Formula, type FormulaErrorCode, type FormulaFieldTypes, type FormulaType } from "@chronicle/rules";
+import type { DraftField } from "./rule-forge-model";
 
 export interface FormulaMember { readonly id: string; readonly label: string; readonly type: FormulaType }
 export interface FormulaSources { readonly actor: readonly FormulaMember[]; readonly input: readonly FormulaMember[] }
@@ -27,6 +28,12 @@ const DICE_SUGGESTIONS: readonly { insert: string; title: string }[] = [
   { insert: "2d20kh1", title: "zwei W20, den höheren behalten" }, { insert: "2d20kl1", title: "zwei W20, den niedrigeren behalten" }, { insert: "1d6!3", title: "W6, bei 6 bis zu dreimal weiterwürfeln" },
 ];
 export const typeWord = (type: FormulaType): string => type === "number" ? "Zahl" : type === "boolean" ? "Ja/Nein" : "Text";
+/** A hyphenated id parses fine as a `DraftField.id` but not inside a formula (`actor.erste-hilfe`
+ * is not a valid identifier there). The line's completion already refuses to insert these with an
+ * explanatory note; the Blocks and Graph <select> views need the same refusal so such a member
+ * cannot be chosen from those views either. */
+export const memberUnusable = (m: FormulaMember): boolean => m.id.includes("-");
+export const memberOptionLabel = (m: FormulaMember): string => memberUnusable(m) ? `${m.id} · Bindestrich in Formeln nicht möglich` : `${m.label} · ${typeWord(m.type)}`;
 export const fieldTypesOf = (sources: FormulaSources): FormulaFieldTypes => ({ actor: Object.fromEntries(sources.actor.map(m => [m.id, m.type])), input: Object.fromEntries(sources.input.map(m => [m.id, m.type])) });
 
 /** `@x` → `actor.x`, `?x` → `input.x` outside strings, with a position map from canonical to typed text. */
@@ -66,7 +73,7 @@ function suggestion(sources: FormulaSources, source: "actor" | "input", id: stri
   };
   return [...sources[source]].map(m => ({ id: m.id, d: distance(id, m.id) })).filter(m => m.d <= 2).sort((a, b) => a.d - b.d)[0]?.id;
 }
-function explain(code: FormulaErrorCode, detail: { message: string; expected?: string; name?: string }, sources: FormulaSources): string {
+function explain(code: FormulaErrorCode, detail: { message: string; expected?: string; name?: string; found?: FormulaMember }, sources: FormulaSources): string {
   switch (code) {
     case "invalid-token": return "Dieses Zeichen gehört nicht in eine Formel.";
     case "expected": return detail.expected === ")" ? "Hier fehlt eine schließende Klammer." : detail.expected === "end" ? "Nach diesem Wert fehlt ein Rechenzeichen wie + oder *." : detail.expected === "field" ? "Nach @ oder ? gehört eine Kennung, zum Beispiel @geschick." : "Nach dem Rechenzeichen fehlt noch ein Wert, zum Beispiel eine Zahl, ein Würfel oder ein Attribut.";
@@ -76,15 +83,25 @@ function explain(code: FormulaErrorCode, detail: { message: string; expected?: s
     case "limit": return "Diese Formel ist zu lang oder zu tief verschachtelt. Teile sie in einen abgeleiteten Wert auf.";
     case "dice": return "Würfel schreibt man als Anzahl, d und Seiten, zum Beispiel 1d20 oder 2d6; mindestens 2 Seiten, höchstens 100 Würfel.";
     case "number": return "Diese Zahl ist zu groß. Erlaubt sind Werte bis eine Billion.";
-    case "type": { const wanted = /expected (number|boolean|string)/.exec(detail.message)?.[1] as FormulaType | undefined; return wanted ? `Hier wird ${wanted === "number" ? "eine Zahl" : wanted === "boolean" ? "Ja/Nein" : "ein Text"} gebraucht.` : "Die Werte passen hier nicht zusammen."; }
+    case "type": {
+      const wanted = /expected (number|boolean|string)/.exec(detail.message)?.[1] as FormulaType | undefined;
+      if (!wanted) return "Die Werte passen hier nicht zusammen.";
+      const needed = wanted === "number" ? "eine Zahl" : wanted === "boolean" ? "Ja/Nein" : "ein Text";
+      // Two whole sentences, never one assembled from the other: a sentence built by replacing
+      // another one's ending breaks silently as soon as anybody rewords it or moves a comma,
+      // and it cannot be reordered for a language that puts the clause elsewhere.
+      return detail.found
+        ? `Hier wird ${needed} gebraucht, aber „${detail.found.label}“ ist ${typeWord(detail.found.type)}.`
+        : `Hier wird ${needed} gebraucht.`;
+    }
   }
 }
-/** Refines a type error with the offending reference, e.g. „aber „Vertraut“ ist Ja/Nein“. Matches both the sugared (`@x`/`?x`) and canonical (`actor.x`/`input.x`) spelling. */
-function typeDetail(message: string, spanText: string, sources: FormulaSources): string {
-  const ref = /^(?:([@?])([a-z][a-z0-9_]*)|(actor|input)\.([a-z][a-z0-9_]*))$/.exec(spanText.trim()); if (!ref) return message;
-  const source = ref[1] ? (ref[1] === "@" ? "actor" : "input") : (ref[3] as "actor" | "input"), id = (ref[2] ?? ref[4])!;
-  const found = member(sources, source, id); if (!found) return message;
-  return message.replace(/ gebraucht\.$/, ` gebraucht, aber „${found.label}“ ist ${typeWord(found.type)}.`);
+/** The attribute or parameter a failing span names, if it names exactly one. Matches both the
+ * sugared (`@x`/`?x`) and the canonical (`actor.x`/`input.x`) spelling. */
+function referencedMember(spanText: string, sources: FormulaSources): FormulaMember | undefined {
+  const ref = /^(?:([@?])([a-z][a-z0-9_]*)|(actor|input)\.([a-z][a-z0-9_]*))$/.exec(spanText.trim()); if (!ref) return undefined;
+  const source = ref[1] ? (ref[1] === "@" ? "actor" : "input") : (ref[3] as "actor" | "input");
+  return member(sources, source, (ref[2] ?? ref[4])!);
 }
 function spansOf(canonical: string, map: readonly number[], sources: FormulaSources): HighlightSpan[] {
   const tokens = tokenizeFormula(canonical), spans: HighlightSpan[] = [];
@@ -110,8 +127,8 @@ export function analyzeFormula(text: string, sources: FormulaSources, options: F
   const detail = parseFormulaDetailed(canonical, fieldTypesOf(sources));
   if (!detail.ok) {
     const start = map[detail.start] ?? text.length, end = map[detail.end] ?? text.length;
-    let message = explain(detail.code, detail, sources);
-    if (detail.code === "type") message = typeDetail(message, text.slice(start, end), sources);
+    const found = detail.code === "type" ? referencedMember(text.slice(start, end), sources) : undefined;
+    const message = explain(detail.code, { ...detail, ...(found ? { found } : {}) }, sources);
     return failure({ code: detail.code, message, start, end });
   }
   const dice = spans.find(s => s.kind === "dice");
@@ -152,4 +169,9 @@ export function completionsAt(text: string, caret: number, sources: FormulaSourc
   const typed = fold(match[0]), start = caret - match[0].length;
   const items = DICE_SUGGESTIONS.filter(d => typed.endsWith("d") || d.insert.startsWith(typed)).map(d => ({ kind: "dice" as const, insert: d.insert, title: d.insert, detail: d.title }));
   return items.length ? { start, end: caret, items } : null;
+}
+/** Draft fields as formula sources: Kennung, Bezeichnung (Fallback Kennung) und Typ; ungültige Kennungen entfallen. */
+export function sourcesFromDraft(fields: readonly DraftField[], inputs: readonly DraftField[] = []): FormulaSources {
+  const members = (list: readonly DraftField[]): FormulaMember[] => list.filter(f => /^[a-z][a-z0-9_-]*$/.test(f.id)).map(f => ({ id: f.id, label: f.label.trim() || f.id, type: f.type === "integer" ? "number" : f.type }));
+  return { actor: members(fields), input: members(inputs) };
 }

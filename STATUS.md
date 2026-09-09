@@ -74,6 +74,26 @@ kam mit dem Merge von `main` und ist noch nicht an die Oberfläche angeschlossen
 vierzehn deutschen Klartextfehler übersetzt die Sitzung, die sie einbaut.
 
 
+## Regelschmiede: Formel-Bauteil im Objekt-Bild — 2026-09-08
+
+Kayas Auftrag: Formeln als eigenes Bauteil im Objekt-Bild — Zeile mit
+Vorschlägen und Klartext-Fehlern, zwei weitere Ansichten (Bausteine, Knoten)
+auf dieselbe Formel, Beispiel, Klartext ohne Jargon. Zwölf Aufgaben lang
+gebaut, `82c90a1` war der letzte Stand vor der Browserprüfung. Diese Aufgabe
+(12) hat den Ablauf im echten `msedge` gefahren: `e2e/rule-forge-formula.spec.ts`
+2/2 neu, `e2e/rule-forge.spec.ts` 1/1 nach einer Selektor-Korrektur (die
+alte Regex traf seit Aufgabe 3 zwei Knöpfe statt einem), `e2e/htbah.spec.ts`
+1/1 unverändert. Ein Bündellauf riss einmal an einem bekannten Windows-
+Tracing-Race in `context.close()` ab (`ENOENT …-pwnetcopy-1.network`), nicht
+an einer Assertion; isoliert und im Bündel danach beide Male sauber. Grün:
+Typecheck, Build, `gate:version`, `gate:boundaries` (541 Dateien, 0
+Verstöße), gezielte Vitest-Liste 291/291 in 19 Dateien (inkl.
+`rule-preview.test.ts`/`gameplay-rule-bounds.test.ts` statt eines nicht
+existierenden `rules.test.ts` im Server-Paket). Offen: Regelkarte,
+Kategorien für Attribute/Aktionen, Ausrüstung als Feldtyp, weitere
+Beispiel-Regelwerke, Lizenzfragen jenseits HTBAH. Nachweise:
+`design/iterations/regelschmiede-formel-bauteil-20260908.md`.
+
 ## Kartenstudio: freies Bauen und Standortwahl — 2026-09-08
 
 Kayas Auftrag: kompletter Rework des Kartenbaus, freies Bauen wie Inkarnate/Dungeondraft

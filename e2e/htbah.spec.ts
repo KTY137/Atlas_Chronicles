@@ -59,7 +59,7 @@ test("HTBAH catalogue, computed sheet, classified rolls and v5 export survive ho
     await expect(mara).toContainText("Das vereinbarte Punktebudget ist vollständig verteilt.");
     await expect(mara.locator(".rf-fixture-result")).toContainText("Gelungen");
 
-    await gm.getByRole("tab", { name: "Berechnungen", exact: true }).click();
+    await gm.getByRole("tab", { name: "Abgeleitet", exact: true }).click();
     const computed = gm.locator(".rf-editor-fields").getByRole("group", { name: "Begabung · Handeln", exact: true });
     await computed.getByLabel("Beschriftung", { exact: true }).fill("Handeln · Begabung");
     const downloadPromise = gm.waitForEvent("download");
