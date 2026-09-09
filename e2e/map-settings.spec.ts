@@ -112,6 +112,10 @@ test("Zeitwelten cities inherit modern and science-fiction interiors, with a sea
       if (scenario.setting === "gegenwart") await test.step("browse 100 real assets, place a computer and retain it after revision and reload", async () => {
         const baseline = await readMap(childId), before = new Set(baseline.document.geometry.stamps.map(stamp => stamp.id));
         await page.getByRole("button", { name: "Karte bearbeiten", exact: true }).click();
+        // Der Objektkatalog liegt im zugeklappten Abschnitt "Einrichtung & Kartenassets";
+        // "Moebel & Objekte" in der Buehnenleiste klappt ihn auf, sonst steht die Palette nicht im DOM.
+        const openCatalogue = () => page.getByRole("button", { name: "Möbel & Objekte", exact: true }).click();
+        await openCatalogue();
         const palette = page.getByRole("region", { name: "Kartenassets", exact: true });
         await expect(palette).toBeVisible(); await expect(palette.getByRole("combobox", { name: "Assetpaket", exact: true })).toHaveValue("pk.zeitwelten");
         await expect(palette.locator(".map-artwork-grid button")).toHaveCount(100);
@@ -135,6 +139,7 @@ test("Zeitwelten cities inherit modern and science-fiction interiors, with a sea
         await page.reload(); await expect(canvas()).toBeVisible();
         expect((await readMap(childId)).document.geometry.stamps).toContainEqual(added[0]);
         await page.getByRole("button", { name: "Karte bearbeiten", exact: true }).click();
+        await openCatalogue();
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(palette.locator(".map-artwork-grid button")).toHaveCount(100);
         await palette.scrollIntoViewIfNeeded();

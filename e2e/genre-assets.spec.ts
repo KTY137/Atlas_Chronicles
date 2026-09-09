@@ -49,6 +49,10 @@ test("300 genre assets are reachable, filterable and persist as editable map art
     await expect(canvas()).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("genre-city-desktop.png"), fullPage: true });
     await page.getByRole("button", { name: "Karte bearbeiten", exact: true }).click();
+    // Der Objektkatalog steckt im zugeklappten Abschnitt "Einrichtung & Kartenassets";
+    // "Moebel & Objekte" in der Buehnenleiste klappt ihn auf. Ohne den Klick existiert die Palette nicht im DOM.
+    const openCatalogue = () => page.getByRole("button", { name: "Möbel & Objekte", exact: true }).click();
+    await openCatalogue();
     const palette = page.getByRole("region", { name: "Kartenassets", exact: true }), grid = palette.locator(".map-artwork-grid");
     await expect(palette.getByRole("combobox", { name: "Assetpaket", exact: true })).toHaveValue("pk.genres");
     await expect(grid.locator("button")).toHaveCount(300);
@@ -92,6 +96,7 @@ test("300 genre assets are reachable, filterable and persist as editable map art
     await page.reload(); await expect(canvas()).toBeVisible();
     expect((await readMap(mapId)).document.geometry.stamps).toEqual(revised.document.geometry.stamps);
     await page.getByRole("button", { name: "Karte bearbeiten", exact: true }).click();
+    await openCatalogue();
     await page.setViewportSize({ width: 390, height: 844 });
     await genreSelect.selectOption("piraten"); await expect(grid.locator("button")).toHaveCount(25);
     await palette.scrollIntoViewIfNeeded();

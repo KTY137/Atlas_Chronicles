@@ -37,10 +37,14 @@ test("preview a city, save it, and enter a building through the same atlas map",
   const savedResponse = await saveResponse; expect(savedResponse.ok()).toBeTruthy();
   const saved = await savedResponse.json();
   expect(saved.keimHash).toBe(preview.keimHash);
-  await expect(page.getByRole("combobox", { name: "Szenenkarte", exact: true })).toHaveValue(saved.ack.subjectId);
+  // Die Werkstatt waehlt die frisch erzeugte Karte nicht mehr ueber ein Auswahlfeld "Szenenkarte",
+  // sondern markiert sie in der Kartenbibliothek. Die Kennung prueft der Atlas-Link darunter.
+  await expect(page.locator('.map-library-list button.map-library-open[aria-pressed="true"]')).toContainText("Stadt am Silberbach");
   await page.getByRole("button", { name: "Karte im Atlas öffnen", exact: true }).click();
-  await expect(page).toHaveURL(/atlasChild=/);
-  await page.locator(".nested-building-list > li > button[aria-pressed]").first().click();
+  await expect(page).toHaveURL(new RegExp(`atlasChild=${saved.ack.subjectId}`));
+  // Die Eintraege der Gebaeudeliste stecken inzwischen im Wrapper des Kontextmenues,
+  // sind also keine direkten Kinder des <li> mehr.
+  await page.locator(".nested-building-list li button[aria-pressed]").first().click();
   const buildingName = await page.getByRole("textbox", { name: "Gebäudename", exact: true }).inputValue();
   expect(preview.nodes.some((node: { titel: string }) => node.titel === buildingName)).toBeTruthy();
   await page.getByRole("button", { name: "Unterkarte erzeugen", exact: true }).click();
