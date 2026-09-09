@@ -57,7 +57,7 @@ try{
   const entry=await request(`/api/campaigns/${campaignId}/entries`,"POST",{title:"Survives restart",passages:[{inhalt:{kind:"absatz",inhalt:[{text:"Written in the genuine desktop host.",marks:[]}]}}]});assert.equal(entry.status,200);
   const generated=await request(`/api/campaigns/${campaignId}/tactical/generate`,"POST",{commandId:randomUUID(),name:"Bundled floorplan",keim:"desktop-runtime-smoke"});assert.equal(generated.status,200,JSON.stringify(generated.body));
   record("real generator route reads packaged licensed Grundriss assets and persists native tactical map");
-  const eron=await request(`/api/campaigns/${campaignId}/maps/eron`,"POST");
+  const eron=await request(`/api/campaigns/${campaignId}/maps/beispiel`,"POST");
   evidence.eronImport={status:eron.status,...(eron.status===200?{mapId:eron.body.id}:{error:eron.body})};
   console.log(`Packaged Andaria import: HTTP ${eron.status}`);
   assert.equal(eron.status,200,JSON.stringify(eron.body));assert.equal(eron.body.report.orte,190);
@@ -216,7 +216,9 @@ try{
   }
   bundle=validatedExport(await request(`/api/campaigns/${campaignId}/export`));
   assert.equal(bundle.manifest.rulePackageSchemaVersion,2);assert.equal(bundle.manifest.nestedMapSchemaVersion,1);
-  assert.equal(bundle.version,15);assert.equal(bundle.manifest.mapLifecycleSchemaVersion,1);
+  // V19, weil die importierte Beispielkarte ihre Herkunft mitschreibt: das Format waehlt sich
+  // datenabhaengig, und eine gefuellte Tabelle hebt es an. Ohne Karte bliebe es niedriger.
+  assert.equal(bundle.version,19);assert.equal(bundle.manifest.mapLifecycleSchemaVersion,1);
   assert.ok(bundle.tables.map_lifecycle_events.some(row=>row.command_id===evidence.mapLifecycle.deletionAck.commandId));
   assert.ok(bundle.tables.tactical_map_nodes.some(node=>node.map_id===generated.body.ack.subjectId));
   assert.ok(JSON.stringify(bundle.tables.rule_packages).includes("CC-BY-NC-SA-4.0"));
