@@ -44,6 +44,13 @@ path into that world's private worker only, replacing an inherited variable of t
 An inherited `CHRONICLE_CHRONIST_CONFIG` wins as an explicit operator override and keeps its
 own `CHRONICLE_CHRONIST_KEY_*` variables; a profile file alone forwards none of them.
 
+A stored key that no longer decrypts — a profile directory copied to another machine, a
+different Windows account, a rotated DPAPI state — costs the Chronist provider, not the world.
+Startup then treats it as no key at all, writes no operator file, and the management window
+adds one sentence beside that world's key status saying the stored key is unreadable and
+should be set again or removed. The explicit key reader itself keeps refusing; only world
+startup degrades.
+
 Without a stored key no file is written and startup keeps its Ollama discovery, because a
 configured file replaces that discovery: after storing a key, enter the installed local model
 names in the file, where the local entry is otherwise the same visibly unconfigured placeholder
@@ -103,6 +110,12 @@ requires a verified recovery point while the application listener is stopped. Un
 changed previously applied migration checksums reject startup. An older executable alone
 is not a database rollback. A compatible recovery point must be restored into a new target.
 Fresh empty clusters do not require a meaningless pre-initialization backup.
+
+A recovery point carries `database.dump`, `secrets.dpapi` and `profile.json` and nothing
+else, so a world restored from one starts without a Chronist key and without that profile's
+operator file: `chronist-key.dpapi` and `chronist-providers.json` stay with the original
+profile directory. Enter the key again in the management window of the restored world; the
+first start after that writes its operator file as usual.
 
 These recovery points depend on the same Windows account and its DPAPI state. They are
 distinct from the portable native campaign export, which excludes credentials and uses

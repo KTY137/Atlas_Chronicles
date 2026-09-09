@@ -14,6 +14,8 @@ export class HostController {
   owned: OwnedProfile | undefined;
   ready: Ready | undefined;
   failure: string | undefined;
+  /** Warum diese Welt ohne Chronist-Schluessel laeuft — leer, wenn sie einen hat oder keinen will. */
+  chronistHinweis: string | undefined;
   private worker: UtilityProcess | undefined;
   private postgres: ManagedPostgres | undefined;
   private unlock: (() => Promise<void>) | undefined;
@@ -24,7 +26,7 @@ export class HostController {
   /** `chronistHostOf` is injected like the migration guard: only Main holds a store that may
    *  decrypt profile secrets, and the reader stays out of every status and error path. */
   constructor(readonly store: ProfileStore, readonly assets: string, readonly runtime: string, readonly changed: () => void, readonly migrations: MigrationGuard,
-              private readonly chronistHostOf?: (profileId: string) => Promise<{ key?: string; configPath?: string }>) {}
+              private readonly chronistHostOf?: (profileId: string) => Promise<{ key?: string; configPath?: string; hinweis?: string }>) {}
   private transition(state: HostState) { this.state = state; this.changed(); }
   private rejectPending(message: string) {
     for (const [id, pending] of this.pending) { clearTimeout(pending.timeout); pending.reject(new DesktopError("host-lost", message)); if (!pending.receipt) this.pending.delete(id); }
@@ -58,7 +60,7 @@ export class HostController {
   }
   async start(id: string): Promise<Ready> {
     if (this.state !== "stopped") return fail("host-busy", "Bitte den laufenden Host zuerst beenden.");
-    this.failure = undefined;
+    this.failure = undefined; this.chronistHinweis = undefined;
     this.owned = await this.store.open(id);
     this.unlock = await this.store.lock(this.owned);
     this.startId = randomUUID();
@@ -72,6 +74,8 @@ export class HostController {
       // and exists only inside the private worker environment. Neither is retained on the
       // controller, its status or its failure text.
       const chronist = await this.chronistHostOf?.(this.owned.profile.id);
+      // Der Hinweis ist kein Geheimnis und kein Fehler: er sagt nur, warum der Anbieter fehlt.
+      this.chronistHinweis = chronist?.hinweis;
       const worker = utilityProcess.fork(join(this.assets, "worker.cjs"), [], { env: hostEnvironment(process.env, chronist), execArgv: [], stdio: "ignore", cwd: this.owned.directory, serviceName: "Atlas Chronicles Local Host" });
       this.worker = worker;
       worker.on("message", (message: unknown) => {
@@ -127,7 +131,7 @@ export class HostController {
       if (beforeDatabaseStop && this.owned && this.postgres) await beforeDatabaseStop(this.owned, this.postgres);
       await this.postgres?.stop();
       await this.unlock?.(); this.unlock = undefined;
-      this.worker = undefined; this.postgres = undefined; this.ready = undefined; this.owned = undefined; this.failure = undefined;
+      this.worker = undefined; this.postgres = undefined; this.ready = undefined; this.owned = undefined; this.failure = undefined; this.chronistHinweis = undefined;
       this.transition("stopped");
     } catch (error) {
       this.ready = undefined;

@@ -74,11 +74,13 @@ async function harness() {
     failure: string | undefined;
     request = vi.fn(async (_kind: string, _payload?: unknown): Promise<unknown> => undefined);
     chronist: unknown;
+    chronistHinweis: string | undefined;
     constructor(_store: unknown, _assets: unknown, _runtime: unknown, readonly changed: () => void, _migrations?: unknown,
                 readonly chronistHostOf?: (profileId: string) => Promise<unknown>) { host = this; }
     async start(id: string) {
       // Production decrypts the profile's Chronist setup here; a missing reader must show up.
       this.chronist = await this.chronistHostOf?.(id);
+      this.chronistHinweis = (this.chronist as { hinweis?: string } | undefined)?.hinweis;
       this.owned = { profile: { id } };
       this.ready = { origin: localOrigin, setupRequired: true, nodeVersion: "24.test", decoder: "test" };
       this.state = "ready"; this.changed(); return this.ready;
@@ -212,6 +214,17 @@ it("hands the private Chronist reader to the controller when a world starts", as
   expect(h.profiles.chronistHostConfig, "Ohne übergebenen Leser bleibt der Schlüssel des Profils wirkungslos").toHaveBeenCalledExactlyOnceWith(profileId);
   expect(h.host.chronist).toEqual({ key: "synthetic-test-key", configPath: "C:/test-only-unused-profile/chronist-providers.json" });
   expect(JSON.stringify(await h.invoke({ kind: "status" })), "Kein Schlüssel in einer Statusantwort").not.toContain("synthetic-test-key");
+});
+
+it("carries the reason for a missing Chronist provider into the management status", async () => {
+  // Der Weltstart darf an einem unlesbaren Schlüssel nicht scheitern; dann muss die
+  // Verwaltung aber sagen, warum der Chronist fehlt — sonst sucht niemand die Ursache.
+  const hinweis = "Der gespeicherte Chronist-Schlüssel ist mit diesem Windows-Konto nicht lesbar.";
+  const h = await harness();
+  h.profiles.chronistHostConfig.mockResolvedValue({ hinweis } as never);
+  expect((await h.invoke({ kind: "start", profileId })).ok).toBe(true);
+  const status = (await h.invoke({ kind: "status" })).value as { chronistHinweis?: string };
+  expect(status.chronistHinweis).toBe(hinweis);
 });
 
 it("stores a Chronist key only for an existing own world and never answers with its value", async () => {

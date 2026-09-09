@@ -6,7 +6,7 @@ import { createServer } from "node:net";
 import { join } from "node:path";
 import { CHRONIST_ANTHROPIC_BASE_URL, CHRONIST_ANTHROPIC_KEY_ENV, CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING,
   CHRONIST_ANTHROPIC_PROFILE, CHRONIST_UNCONFIGURED_MODEL } from "@chronicle/server/host";
-import { chronistKey, contained, fail, label, object, profileId } from "./policy.ts";
+import { chronistKey, contained, DesktopError, fail, label, object, profileId } from "./policy.ts";
 
 export const CHRONIST_KEY_FILE = "chronist-key.dpapi";
 export const CHRONIST_PROVIDERS_FILE = "chronist-providers.json";
@@ -180,10 +180,23 @@ export class ProfileStore {
     return chronistKey(stored["value"]);
   }
   async clearChronistKey(id: string): Promise<void> { await rm(this.chronistKeyPath(id), { force: true }); }
-  /** Read at world start: a stored key only works with an operator file, so the profile
-   *  writes its own once. An existing file is never rewritten; the key never enters it. */
-  async chronistHostConfig(id: string): Promise<{ key?: string; configPath?: string }> {
-    const key = await this.readChronistKey(id);
+  /**
+   * Read at world start: a stored key only works with an operator file, so the profile
+   * writes its own once. An existing file is never rewritten; the key never enters it.
+   *
+   * **An unreadable ciphertext is a missing key, not a broken world.** A copied profile
+   * directory, a different Windows account or a rotated DPAPI state all leave the file
+   * lying there without decrypting. Refusing to start over it costs the whole world for
+   * one optional provider, and the only repair — clearing the key in the management
+   * window — needs no running host anyway. So the world starts without the key and the
+   * caller carries a sentence saying why the Chronist provider is absent.
+   */
+  async chronistHostConfig(id: string): Promise<{ key?: string; configPath?: string; hinweis?: string }> {
+    const key = await this.readChronistKey(id).catch((error: unknown) => {
+      if (!(error instanceof DesktopError)) throw error;
+      return null;
+    });
+    if (key === null) return { hinweis: "Der gespeicherte Chronist-Schlüssel ist mit diesem Windows-Konto nicht lesbar. Die Welt läuft ohne ihn; bitte im Verwaltungsfenster neu setzen oder entfernen." };
     if (key === undefined) return {};
     const path = contained(this.root, profileId(id), CHRONIST_PROVIDERS_FILE);
     await writeFile(path, `${JSON.stringify(CHRONIST_PROVIDER_DEFAULTS, null, 2)}\n`, { flag: "wx", mode: 0o600 })

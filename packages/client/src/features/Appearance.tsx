@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
-import { DEFAULT_ACCESSIBILITY_PREFERENCES, getThemePreset, parseAccessibilityPreferences, resolveTheme, serializeAccessibilityPreferences,
+import { DEFAULT_ACCESSIBILITY_PREFERENCES, getThemePreset, parseAccessibilityPreferences, recoverAccessibilityPreferences, resolveTheme, serializeAccessibilityPreferences,
   type AccessibilityPreferencesV2, type ResolvedThemeV1, type Sprache, type SystemAccessibility, type ThemeManifestV1 } from "@chronicle/theme";
 import { aktuelleSprache, initialisiereSprache, setzeSprache, spracheStand, subscribe, t } from "../i18n";
 
@@ -26,6 +26,8 @@ export const spracheFehlerText = (): string => t("Das englische Sprachpaket konn
 
 interface AppearanceState {
   preferences: AccessibilityPreferencesV2; resolved: ResolvedThemeV1; system: SystemAccessibility; sprache: Sprache; spracheFehler: string; storageError: string;
+  /** Der gespeicherte Stand war unlesbar und wurde auf die Vorgabe zurückgesetzt. */
+  preferencesRecovered: boolean;
   update: (next: AccessibilityPreferencesV2) => void; setCampaignTheme: (theme: ThemeManifestV1 | null) => void;
 }
 const AppearanceContext = createContext<AppearanceState | null>(null);
@@ -41,21 +43,54 @@ function adressSprache(): Sprache | null {
   try { const wert = new URLSearchParams(location.search).get("lang"); return wert === "en" || wert === "de" ? wert : null; }
   catch { return null; }
 }
-function readPreferences(): AccessibilityPreferencesV2 {
-  let base = DEFAULT_ACCESSIBILITY_PREFERENCES;
-  try {
-    const source = localStorage.getItem(STORAGE_KEY);
-    base = source ? parseAccessibilityPreferences(source) : { ...DEFAULT_ACCESSIBILITY_PREFERENCES, language: browserSprache() };
-  } catch { base = DEFAULT_ACCESSIBILITY_PREFERENCES; }
-  const override = adressSprache();
-  return override && override !== base.language ? { ...base, language: override } : base;
+/**
+ * Der gespeicherte Stand, so wie er heute gelesen wird.
+ *
+ * Ein beschädigter Eintrag läuft über `recoverAccessibilityPreferences` statt über einen
+ * stillen `catch`: das Theme-Paket hat die Wiederherstellung samt Merkzeichen genau dafür,
+ * und wessen Darstellung sich ohne Zutun zurücksetzt, soll den Grund lesen statt zu raten.
+ * Ein gesperrter Speicher ist etwas anderes als ein beschädigter Eintrag — dort gibt es
+ * nichts wiederherzustellen, also auch nichts zu melden.
+ *
+ * `roh` bleibt daneben stehen, damit der Aufrufer eine migrierte oder wiederhergestellte
+ * Fassung zurückschreiben kann; ohne das bliebe eine gespeicherte Fassung 1 bis zur
+ * nächsten Nutzeränderung Fassung 1.
+ */
+function gespeicherteDarstellung(): { basis: AccessibilityPreferencesV2; roh: string | null; wiederhergestellt: boolean } {
+  let roh: string | null = null;
+  try { roh = localStorage.getItem(STORAGE_KEY); }
+  catch { return { basis: DEFAULT_ACCESSIBILITY_PREFERENCES, roh: null, wiederhergestellt: false }; }
+  if (roh === null) return { basis: { ...DEFAULT_ACCESSIBILITY_PREFERENCES, language: browserSprache() }, roh: null, wiederhergestellt: false };
+  const { preferences, recovered } = recoverAccessibilityPreferences(roh);
+  return { basis: preferences, roh, wiederhergestellt: recovered };
 }
+/** `?lang=` übersteuert die Anzeige, wird aber nie gespeichert: es ist ein Testschalter. */
+function mitAdressSprache(basis: AccessibilityPreferencesV2): AccessibilityPreferencesV2 {
+  const override = adressSprache();
+  return override && override !== basis.language ? { ...basis, language: override } : basis;
+}
+function readPreferences(): AccessibilityPreferencesV2 { return mitAdressSprache(gespeicherteDarstellung().basis); }
 
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   // Die Startsprache steht vor dem ersten Rendern fest: sonst zeigt der Start erst Deutsch
   // und baut die ganze Ansicht samt Verbindungen sofort wieder neu auf.
-  const [preferences, setPreferences] = useState(() => { const erste = readPreferences(); initialisiereSprache(erste.language); return erste; }),
+  const [start] = useState(() => {
+    const stand = gespeicherteDarstellung(), erste = mitAdressSprache(stand.basis);
+    initialisiereSprache(erste.language);
+    return { ...stand, erste };
+  });
+  const [preferences, setPreferences] = useState(start.erste), [preferencesRecovered, setPreferencesRecovered] = useState(start.wiederhergestellt),
     [campaignTheme, setCampaignTheme] = useState<ThemeManifestV1 | null>(null), [storageError, setStorageError] = useState(""), [spracheFehler, setSpracheFehler] = useState("");
+  // Was gelesen wurde, wird sofort in seiner heutigen Fassung zurückgeschrieben: eine migrierte
+  // Fassung 1 bliebe sonst auf der Platte Fassung 1, und ein beschädigter Eintrag meldete sich
+  // bei jedem Start erneut. Die Adressübersteuerung bleibt draußen — sie gilt nur diesem Fenster.
+  useEffect(() => {
+    if (start.roh === null) return;
+    let kanonisch: string;
+    try { kanonisch = serializeAccessibilityPreferences(start.basis); } catch { return; }
+    if (kanonisch === start.roh) return;
+    try { localStorage.setItem(STORAGE_KEY, kanonisch); } catch { /* gesperrter Speicher: der gelesene Stand gilt trotzdem */ }
+  }, []);
   const [system, setSystem] = useState<SystemAccessibility>(() => Object.fromEntries(Object.entries(queries).map(([key, query]) => [key, matchMedia(query).matches])));
   useEffect(() => {
     const media = Object.entries(queries).map(([key, query]) => [key, matchMedia(query)] as const);
@@ -74,7 +109,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => { setzeSprache(preferences.language).then(() => setSpracheFehler(""), () => setSpracheFehler(spracheFehlerText())); }, [preferences.language]);
   useLayoutEffect(() => { document.documentElement.lang = sprache; }, [sprache]);
   const update = useCallback((input: AccessibilityPreferencesV2) => {
-    const next = parseAccessibilityPreferences(input); setPreferences(next);
+    const next = parseAccessibilityPreferences(input); setPreferences(next); setPreferencesRecovered(false);
     try { localStorage.setItem(STORAGE_KEY, serializeAccessibilityPreferences(next)); setStorageError(""); }
     catch { setStorageError(t("Diese Darstellung gilt gerade nur für das geöffnete Fenster, weil der Browser keine lokale Speicherung erlaubt.")); }
   }, []);
@@ -90,5 +125,5 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   }, [resolved]);
   // `t` liest die Modulvariable beim Rendern; ein Sprachwechsel muss den Baum daher neu
   // aufbauen. Das kostet den lokalen Zustand einer Ansicht, aber nur bei einer bewussten Wahl.
-  return <AppearanceContext.Provider value={{ preferences, resolved, system, sprache, spracheFehler, storageError, update, setCampaignTheme }}><Fragment key={sprache}>{children}</Fragment></AppearanceContext.Provider>;
+  return <AppearanceContext.Provider value={{ preferences, resolved, system, sprache, spracheFehler, storageError, preferencesRecovered, update, setCampaignTheme }}><Fragment key={sprache}>{children}</Fragment></AppearanceContext.Provider>;
 }

@@ -8,7 +8,7 @@ import { canonicalHash } from "@chronicle/core";
 import { CHRONIST_DEFAULT_BUDGET, CHRONIST_HTTP_PROFILES, canonicalChronistSources, deriveChronistFacts,
   makeChronistSourceSnapshot, parseChronistCallOutcome, planChronistUnits,
   type ChronistCallOutcome, type ChronistHttpProfile, type ChronistSnapshot } from "@chronicle/chronist";
-import { createChronistHttpBinding, decodeChronistHttpResponse, type ChronistHttpDependencies, type ChronistHttpProviderConfig } from "../src/chronist-providers/http.ts";
+import { CHRONIST_HTTP_KEY_REQUIRED, createChronistHttpBinding, decodeChronistHttpResponse, type ChronistHttpDependencies, type ChronistHttpProviderConfig } from "../src/chronist-providers/http.ts";
 
 const model = "fixture-model", answer = '{"schemaVersion":1,"candidates":[]}', key = "fixture-key-never-real";
 const pricing = { currency: "USD", inputMicrosPerMillion: 1_000_000, outputMicrosPerMillion: 2_000_000, asOf: "2026-09-08" };
@@ -352,4 +352,25 @@ it("shared decoder keeps the original request deadline when response headers arr
     profileId: "anthropic-messages-1", maxOutputChars: 1000, signal: new AbortController().signal, pricing,
     startedAt: performance.now() - 120_001, inputChars: 123 });
   failed(result, "timeout", 0); assert.equal(cancellations, 1);
+});
+
+// A future wire profile must not slip past the key requirement in silence. The endpoint suffix
+// is an exhaustive record and would refuse to compile without its entry; the key requirement was
+// a plain string array, so an unlisted profile silently counted as "needs no key" and reported
+// itself available without one. This pins the record and the availability it derives.
+it("declares a key requirement for every HTTP wire profile and derives availability from it", async t => {
+  const { baseUrl } = await host(t, res => { res.destroy(); });
+  assert.deepEqual(Object.keys(CHRONIST_HTTP_KEY_REQUIRED).sort(), [...CHRONIST_HTTP_PROFILES].sort());
+  assert.deepEqual(CHRONIST_HTTP_KEY_REQUIRED, { "ollama-chat-1": false, "openai-chat-1": false, "openai-responses-1": true,
+    "anthropic-messages-1": true, "anthropic-messages-2": true, "google-generate-1": true });
+  for (const profileId of CHRONIST_HTTP_PROFILES) {
+    const ohneSchluessel: ChronistHttpProviderConfig = { id: "fixture-provider", label: "Fixture", profileId,
+      location: "lokal", baseUrl, models: [model] };
+    const beschreibung = createChronistHttpBinding(ohneSchluessel, model, {}).description;
+    assert.equal(beschreibung.available, !CHRONIST_HTTP_KEY_REQUIRED[profileId], profileId);
+    assert.equal(beschreibung.availabilityCode, CHRONIST_HTTP_KEY_REQUIRED[profileId] ? "key-not-configured" : null, profileId);
+    const mitSchluessel = createChronistHttpBinding({ ...ohneSchluessel, apiKey: key }, model, {}).description;
+    assert.equal(mitSchluessel.available, true, profileId);
+    assert.equal(mitSchluessel.availabilityCode, null, profileId);
+  }
 });

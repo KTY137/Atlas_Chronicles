@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEMO_RULE_PACKAGE } from "@chronicle/rules";
-import { createTestDb, migrate, type Db } from "../src/db/index.ts";
+import { createTestDb, migrate, type Db, type QueryResult } from "../src/db/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createGameplay } from "../src/domain/gameplay.ts";
@@ -54,6 +54,16 @@ describe("Figurantrag — die Figur entsteht erst bei der Bestätigung", () => {
     await f.game.activatePackage(gm, f.campaign, { packageId: next.id, packageVersion: next.version, expectedVersion: 0 });
   }
   const zaehle = async (sql: string, params: readonly unknown[]) => Number((await db.query<{ n: string }>(sql, params)).rows[0]!.n);
+  /** Zählt Abfragen und Transaktionen einer Verbindung, ohne ihr Verhalten zu ändern. */
+  function mitZaehler(inner: Db) {
+    const zaehler = { query: 0, transaction: 0 };
+    const huelle = (ziel: Db): Db => ({
+      query: <T = Record<string, unknown>>(sql: string, params?: readonly unknown[]) => { zaehler.query++; return ziel.query<T>(sql, params) as Promise<QueryResult<T>>; },
+      transaction: <T>(fn: (tx: Db) => Promise<T>) => { zaehler.transaction++; return ziel.transaction(tx => fn(huelle(tx))); },
+      close: () => ziel.close(),
+    });
+    return { db: huelle(inner), zaehler };
+  }
 
   it("weist einen Antrag auf eine nicht freigegebene Vorlage ab", async () => {
     const f = await fixture();
@@ -220,6 +230,40 @@ describe("Figurantrag — die Figur entsteht erst bei der Bestätigung", () => {
     // Eine andere Person ist davon nie betroffen.
     await expect(f.antraege.beantragen(f.brannt.userId, f.campaign, command(),
       { templateId: f.vorlage.id, name: "Torvid", anfangswerte: {} })).resolves.toMatchObject({ status: "offen", anfangswerte: {} });
+  });
+
+  it("beantwortet einen wiederholten Antragsbefehl mit dem heutigen Stand statt mit „offen“", async () => {
+    const f = await fixture();
+    await f.antraege.freigeben(gm, f.campaign, f.vorlage.id, 0);
+    const befehl = command(), koerper = { templateId: f.vorlage.id, name: "Nell", anfangswerte: { insight: 3 } };
+    const antrag = await f.antraege.beantragen(f.sera.userId, f.campaign, befehl, koerper);
+    const { actorId } = await f.antraege.bestaetigen(gm, f.campaign, antrag.id, antrag.version);
+    // Derselbe Befehl noch einmal — etwa nach einem Verbindungsabbruch. Die Quittung meint
+    // dieselbe Sache, muss aber den heutigen Zustand zeigen; „offen“ wäre eine Lüge.
+    const wiederholt = await f.antraege.beantragen(f.sera.userId, f.campaign, befehl, koerper);
+    expect(wiederholt).toMatchObject({ id: antrag.id, status: "bestaetigt", actorId, decidedBy: gm, version: antrag.version + 1 });
+    expect(await zaehle("SELECT count(*) AS n FROM figurantraege WHERE campaign_id=$1", [f.campaign])).toBe(1);
+    expect(await zaehle("SELECT count(*) AS n FROM actors WHERE campaign_id=$1 AND name='Nell'", [f.campaign])).toBe(1);
+    // Derselbe Befehl mit anderem Inhalt bleibt ein Konflikt.
+    await expect(f.antraege.beantragen(f.sera.userId, f.campaign, befehl,
+      { ...koerper, name: "Andere" })).rejects.toBeInstanceOf(Conflict);
+  });
+
+  it("liest die freigegebenen Vorlagen in einer Transaktion und ohne Abfrage je Vorlage", async () => {
+    const f = await fixture();
+    const gezaehlt = mitZaehler(db), antraege = createFigurantrag(gezaehlt.db);
+    await f.antraege.freigeben(gm, f.campaign, f.vorlage.id, 0);
+    gezaehlt.zaehler.query = 0; gezaehlt.zaehler.transaction = 0;
+    expect(await antraege.freigegebeneVorlagen(f.sera.userId, f.campaign)).toHaveLength(1);
+    const eine = { ...gezaehlt.zaehler };
+    for (const name of ["Zweite", "Dritte"]) {
+      const weitere = await f.actors.createActorTemplate(gm, f.campaign, { commandId: command(), definition: spielerVorlage(name) });
+      await f.antraege.freigeben(gm, f.campaign, weitere.id, 0);
+    }
+    gezaehlt.zaehler.query = 0; gezaehlt.zaehler.transaction = 0;
+    expect(await antraege.freigegebeneVorlagen(f.sera.userId, f.campaign)).toHaveLength(3);
+    expect(gezaehlt.zaehler.query, "eine zusätzliche Abfrage je Vorlage ist ein N+1").toBe(eine.query);
+    expect(gezaehlt.zaehler.transaction, "eine Liste muss einen einzigen Schnappschuss sehen").toBe(1);
   });
 
   it("projiziert die Vorlage für Spieler ohne Beute und ohne Wissensverweis", async () => {

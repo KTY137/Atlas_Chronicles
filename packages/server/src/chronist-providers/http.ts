@@ -50,6 +50,18 @@ function endpoint(config: ChronistHttpProviderConfig, model: string): URL {
   if (config.profileId === "google-generate-1") base.search = "?alt=sse";
   return base;
 }
+/**
+ * Braucht dieses Wireprofil einen Schluessel, um ueberhaupt erreichbar zu sein?
+ *
+ * Als geschlossener Record und nicht als Liste von Zeichenketten: ein neu aufgenommenes Profil
+ * kommt sonst still als „braucht keinen Schluessel“ durch und meldet sich ohne Schluessel als
+ * verfuegbar. Der Endpunkt-Suffix darueber ist aus demselben Grund ein Record — hier fehlte die
+ * Vollstaendigkeitspruefung als einziges.
+ */
+export const CHRONIST_HTTP_KEY_REQUIRED: Record<ChronistHttpProfile, boolean> = {
+  "ollama-chat-1": false, "openai-chat-1": false, "openai-responses-1": true,
+  "anthropic-messages-1": true, "anthropic-messages-2": true, "google-generate-1": true,
+};
 export interface ChronistHttpResponseOptions {
   readonly profileId: ChronistHttpProfile;
   readonly maxOutputChars: number;
@@ -233,7 +245,7 @@ export function createChronistHttpBinding(input: ChronistHttpProviderConfig, mod
   const target = endpoint(config, model), invokeFetch = dependencies.fetch ?? fetch;
   // Both Anthropic wire profiles share the same endpoint suffix, auth header and API version.
   const anthropic = config.profileId === "anthropic-messages-1" || config.profileId === "anthropic-messages-2";
-  const requiresKey = ["openai-responses-1", "anthropic-messages-1", "anthropic-messages-2", "google-generate-1"].includes(config.profileId);
+  const requiresKey = CHRONIST_HTTP_KEY_REQUIRED[config.profileId];
   const available = config.available !== false && (!requiresKey || !!config.apiKey);
   const description: ChronistProviderDescription = { id: config.id, label: config.label, location: config.location, transport: "http",
     available, availabilityCode: available ? null : requiresKey && !config.apiKey ? "key-not-configured" : "provider-not-configured",

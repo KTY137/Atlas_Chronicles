@@ -84,6 +84,30 @@ it("refuses to store a Chronist key without the Windows secret store", async () 
     expect(await store.hasChronistKey(id)).toBe(false);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+it("starts the world without the key when the stored ciphertext cannot be read, and says so", async () => {
+  // Ein fremdes Windows-Konto oder eine DPAPI-Rotation macht genau das aus dem Chiffrat: es
+  // liegt da und entschlüsselt nicht. Das darf den Weltstart nicht verhindern — ohne Schlüssel
+  // fehlt der Chronist-Anbieter, ohne Welt fehlt alles.
+  const directory = await mkdtemp(join(tmpdir(), "chronicle-chronist-key-fremd-"));
+  const box = { available: () => true, encrypt: (text: string) => Buffer.from(text, "utf8"),
+    decrypt: () => { throw new Error("Decryption failed"); } };
+  const store = new ProfileStore(directory, box);
+  try {
+    const owned = await store.create("Original"), file = join(owned.directory, "chronist-providers.json");
+    await writeFile(join(owned.directory, "chronist-key.dpapi"), Buffer.from("fremdes-chiffrat"), { mode: 0o600 });
+    // Der ausdrückliche Leser sagt weiterhin die Wahrheit; nur der Weltstart trägt sie anders.
+    await expect(store.readChronistKey(owned.profile.id)).rejects.toThrow("nicht lesbar");
+    const konfiguration = await store.chronistHostConfig(owned.profile.id);
+    expect(konfiguration.key).toBeUndefined();
+    expect(konfiguration.configPath).toBeUndefined();
+    expect(konfiguration.hinweis).toContain("Chronist-Schlüssel");
+    // Ohne brauchbaren Schlüssel entsteht auch keine profilinterne Betreiberdatei: der Host
+    // behält seine eigene Ollama-Erkennung statt sie gegen einen toten Eintrag zu tauschen.
+    expect(existsSync(file)).toBe(false);
+    // Die Verwaltung sieht die Datei weiterhin — entfernen und neu setzen bleibt ihr Weg.
+    expect(await store.hasChronistKey(owned.profile.id)).toBe(true);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
 it("writes its own operator file once beside a stored key and never rewrites or fills it with the key", async () => {
   const directory = await mkdtemp(join(tmpdir(), "chronicle-chronist-config-test-")), values = new Map<string, string>();
   const store = new ProfileStore(directory, {

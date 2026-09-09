@@ -201,12 +201,12 @@ const wurzelElement = () => ({ lang: "", style: { setProperty() {}, removeProper
 describe("Sprachwahl in „Deine Darstellung“", () => {
   beforeEach(async () => { setzeEnglischeQuelleFuerTests(null); await setzeSprache("de"); });
 
-  function einstellungen(sprache: "de" | "en", bestaetigen: boolean, spracheWechseln: (s: string) => Promise<void>) {
+  function einstellungen(sprache: "de" | "en", bestaetigen: boolean, spracheWechseln: (s: string) => Promise<void>, wiederhergestellt = false) {
     const stand = bauePruefstand();
     const gerufen: { update: unknown[]; confirm: string[] } = { update: [], confirm: [] };
     const darstellung = {
       preferences: { ...Theme.DEFAULT_ACCESSIBILITY_PREFERENCES, language: sprache },
-      resolved: { basePreset: "Fantasy" }, spracheFehler: "", storageError: "",
+      resolved: { basePreset: "Fantasy" }, spracheFehler: "", storageError: "", preferencesRecovered: wiederhergestellt,
       update: (naechste: unknown) => gerufen.update.push(naechste),
     };
     const modul = stand.lade("AppearanceSettings.tsx", {
@@ -256,19 +256,20 @@ describe("Sprachwahl in „Deine Darstellung“", () => {
   const ThemeBruecke = { ...Theme,
     resolveTheme: (manifest: unknown, preferences: unknown, system: unknown) => Theme.resolveTheme(bruecke(manifest), bruecke(preferences), bruecke(system)),
     parseAccessibilityPreferences: (input: unknown) => Theme.parseAccessibilityPreferences(typeof input === "string" ? input : bruecke(input)),
+    recoverAccessibilityPreferences: (input: unknown) => Theme.recoverAccessibilityPreferences(typeof input === "string" ? input : bruecke(input)),
     serializeAccessibilityPreferences: (input: unknown) => Theme.serializeAccessibilityPreferences(typeof input === "string" ? input : bruecke(input)),
   };
 
-  function provider(gespeichert: string, wurzel: ReturnType<typeof wurzelElement>) {
+  function provider(gespeichert: string | null, wurzel: ReturnType<typeof wurzelElement>, geschrieben: string[] = []) {
     const stand = bauePruefstand();
     const modul = stand.lade("Appearance.tsx", { "@chronicle/theme": ThemeBruecke, "../i18n": I18n }, {
-      localStorage: { getItem: () => gespeichert, setItem() {} },
+      localStorage: { getItem: () => gespeichert, setItem: (_schluessel: string, wert: string) => { geschrieben.push(wert); } },
       matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
       window: { addEventListener() {}, removeEventListener() {} },
       document: { documentElement: wurzel },
       navigator: { language: "de-DE" }, location: { search: "" },
     });
-    return { stand, zeichne: () => stand.render(modul.AppearanceProvider, { children: "KINDER" }) };
+    return { stand, geschrieben, zeichne: () => stand.render(modul.AppearanceProvider, { children: "KINDER" }) };
   }
   const englischGespeichert = () => Theme.serializeAccessibilityPreferences({ ...Theme.DEFAULT_ACCESSIBILITY_PREFERENCES, language: "en" });
 
@@ -296,5 +297,44 @@ describe("Sprachwahl in „Deine Darstellung“", () => {
     zeichne();
     await ruhe();
     expect(zeichne().props.value.spracheFehler).toBe(FEHLERTEXT);
+  });
+
+  const gespeicherteFassung1 = () => JSON.stringify({ schemaVersion: 1, contrast: "system", motion: "system",
+    transparency: "system", art: "on", font: "theme", density: "comfortable", atmosphere: "crafted", lowPower: false, localSkin: null });
+
+  it("schreibt eine gespeicherte Fassung 1 beim Start als Fassung 2 zurück", async () => {
+    // Die Migration lief bisher nur im Speicher: bis zur nächsten Nutzeränderung stand auf
+    // der Platte weiter V1, und jeder Start migrierte erneut.
+    const { zeichne, geschrieben } = provider(gespeicherteFassung1(), wurzelElement());
+    zeichne();
+    await ruhe();
+    expect(geschrieben).toHaveLength(1);
+    expect(JSON.parse(geschrieben[0]!)).toMatchObject({ schemaVersion: 2, language: "de" });
+    expect(zeichne().props.value.preferences.schemaVersion).toBe(2);
+    expect(zeichne().props.value.preferencesRecovered).toBe(false);
+  });
+
+  it("stellt eine beschädigte gespeicherte Darstellung sichtbar wieder her, statt still auf die Vorgabe zu fallen", async () => {
+    const { zeichne, geschrieben } = provider("{kein gültiges JSON", wurzelElement());
+    zeichne();
+    await ruhe();
+    expect(zeichne().props.value.preferencesRecovered).toBe(true);
+    expect(zeichne().props.value.preferences).toEqual(Theme.DEFAULT_ACCESSIBILITY_PREFERENCES);
+    // Zurückgeschrieben wird die wiederhergestellte Fassung: der Hinweis erscheint einmal.
+    expect(geschrieben.map(wert => JSON.parse(wert).schemaVersion)).toEqual([2]);
+  });
+
+  it("schreibt eine bereits gültige Fassung 2 beim Start nicht zurück", async () => {
+    const { zeichne, geschrieben } = provider(englischGespeichert(), wurzelElement());
+    zeichne();
+    await ruhe();
+    expect(geschrieben).toEqual([]);
+    expect(zeichne().props.value.preferencesRecovered).toBe(false);
+  });
+
+  it("zeigt die Wiederherstellung in „Deine Darstellung“ an", () => {
+    const { hinweise } = einstellungen("de", true, async () => {}, true);
+    expect(hinweise().map(node => node.props.children))
+      .toEqual(["Deine gespeicherte Darstellung war beschädigt und wurde auf die Vorgabe zurückgesetzt."]);
   });
 });

@@ -121,10 +121,19 @@ export function createFigurantrag(db: Db, cfg: DomainConfig = {}) {
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [commandId, campaignId, userId, operation, requestHash,
       JSON.stringify(request), JSON.stringify(payload), JSON.stringify(ack), now()]);
   }
+  /**
+   * Nur `beantragen` kann hier hineinlaufen, und nur `beantragen` traegt diesen Fang.
+   *
+   * Ein wiederholter Befehl und ein zweiter offener Antrag sind derselbe Sachverhalt: hier
+   * wurde dieselbe Sache zweimal gewollt. Beides ist ein Konflikt, kein Serverfehler.
+   *
+   * Die uebrigen fuenf Operationen hatten denselben Fang und konnten ihn nie ausloesen: sie
+   * schreiben keine Zeile nach `figurantraege`, und ihre Belegzeile traegt eine frische
+   * `randomUUID()` als Befehls-ID, die mit nichts kollidiert. Ein Fang, der nie greift,
+   * behauptet einen Schutz, den es nicht gibt; ihre Einmaligkeit steht in `expectedVersion`.
+   */
   function doppelterBefehl(error: unknown): never {
     const pg = error as { code?: string; constraint?: string };
-    // Ein wiederholter Befehl und ein zweiter offener Antrag sind derselbe Sachverhalt: hier
-    // wurde dieselbe Sache zweimal gewollt. Beides ist ein Konflikt, kein Serverfehler.
     if (pg?.code === "23505" && (pg.constraint === "figurantrag_events_command_id_key" || pg.constraint === "figurantraege_ein_offener")) throw new Conflict();
     throw error;
   }
@@ -177,7 +186,7 @@ export function createFigurantrag(db: Db, cfg: DomainConfig = {}) {
       const after = (await freigabe(tx, campaignId, templateId))!, ack = freigabeAck(after);
       await beleg(tx, campaignId, userId, operation, randomUUID(), request, requestHash, { schemaVersion: 1, before: before ? freigabeAck(before) : null, after: ack }, ack);
       return ack;
-    }).catch(doppelterBefehl);
+    });
   }
 
   /**
@@ -186,18 +195,27 @@ export function createFigurantrag(db: Db, cfg: DomainConfig = {}) {
    * Spielersicht und soll in der Vorschau genau das zeigen, was ein Spieler saehe.
    */
   async function freigegebeneVorlagen(userId: string, campaignId: string): Promise<FreigegebeneVorlageCard[]> {
-    await member(db, userId, campaignId, ["leitung", "spieler"]);
-    const aktiv = await pin(db, campaignId);
-    const rows = (await db.query<{ id: string }>(`SELECT t.id FROM figurvorlagen_freigaben f
-      JOIN actor_templates t ON t.id=f.template_id AND t.campaign_id=f.campaign_id
-      WHERE f.campaign_id=$1 AND f.revoked_at IS NULL AND t.archived_at IS NULL ORDER BY t.created_at,t.id`, [campaignId])).rows;
-    const karten: FreigegebeneVorlageCard[] = [];
-    for (const row of rows) {
-      const source = await vorlage(db, campaignId, row.id);
-      if (!passendesPaket(source.definition, aktiv)) continue;
-      karten.push(templateForPlayer(source.id, source.version, source.definition));
-    }
-    return karten;
+    // In einer Transaktion, weil die Liste eine einzige Aussage ist: liest sie Mitgliedschaft,
+    // Paketbindung und Freigaben aus drei Augenblicken, kann eine Vorlage aus einem Paket
+    // erscheinen, das zwischendurch gewechselt wurde. Und in einer Abfrage statt zweien je
+    // Vorlage — die Kopfzeile und ihre Revision holt derselbe Verbund.
+    return db.transaction(async tx => {
+      await member(tx, userId, campaignId, ["leitung", "spieler"]);
+      const aktiv = await pin(tx, campaignId);
+      const rows = (await tx.query<{ id: string; version: number; definition: ActorTemplateData; content_hash: string }>(
+        `SELECT t.id,t.version,r.definition,r.content_hash FROM figurvorlagen_freigaben f
+        JOIN actor_templates t ON t.id=f.template_id AND t.campaign_id=f.campaign_id
+        JOIN actor_template_revisions r ON r.template_id=t.id AND r.campaign_id=t.campaign_id AND r.revision=t.head_revision
+        WHERE f.campaign_id=$1 AND f.revoked_at IS NULL AND t.archived_at IS NULL ORDER BY t.created_at,t.id`, [campaignId])).rows;
+      const karten: FreigegebeneVorlageCard[] = [];
+      for (const row of rows) {
+        // Derselbe Riegel wie in `vorlage`: eine Vorlage mit gebrochenem Inhaltshash ist keine.
+        if (hash(row.definition) !== row.content_hash) throw new Gone();
+        if (!passendesPaket(row.definition, aktiv)) continue;
+        karten.push(templateForPlayer(row.id, row.version, row.definition));
+      }
+      return karten;
+    });
   }
 
   async function beantragen(userId: string, campaignId: string, commandId: string, body: FigurantragBody): Promise<FigurantragCard> {
@@ -209,7 +227,12 @@ export function createFigurantrag(db: Db, cfg: DomainConfig = {}) {
         "SELECT campaign_id,actor_user_id,request_hash,ack FROM figurantrag_events WHERE command_id=$1", [commandId])).rows[0];
       if (alt) {
         if (alt.campaign_id !== campaignId || alt.actor_user_id !== userId || alt.request_hash !== requestHash) throw new Conflict();
-        return alt.ack;
+        // Die Quittung im Ereignisbuch bleibt, was sie war — sie ist der Beleg des damaligen
+        // Augenblicks. Ausgeliefert wird trotzdem der heutige Stand desselben Antrags: wer
+        // nach einem Verbindungsabbruch denselben Befehl wiederholt, bekaeme sonst „offen“
+        // fuer einen Antrag, den die Spielleitung laengst bestaetigt hat, und legt in gutem
+        // Glauben einen zweiten an. `actors.ts` haelt es mit `projectResult` genauso.
+        return antragCard(await antrag(tx, campaignId, alt.ack.id));
       }
       const source = await vorlage(tx, campaignId, input.templateId);
       // 410, nicht 409: eine nicht freigegebene Vorlage existiert fuer einen Spieler nicht.
@@ -269,7 +292,7 @@ export function createFigurantrag(db: Db, cfg: DomainConfig = {}) {
       await beleg(tx, campaignId, userId, operation, randomUUID(), request, requestHash,
         { schemaVersion: 1, before: antragCard(before), after: ack }, ack);
       return { antrag: ack, actorId };
-    }).catch(doppelterBefehl);
+    });
   }
 
   /**

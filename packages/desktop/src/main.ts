@@ -92,7 +92,8 @@ async function run() {
     const profiles = await store.list();
     // Management learns which worlds carry a Chronist key, never a single character of one.
     const chronistKeys = (await Promise.all(profiles.map(async profile => await store.hasChronistKey(profile.id) ? profile.id : ""))).filter(Boolean);
-    return { profiles, chronistKeys, recovery: await recovery.list(), state: host.state, profileId: host.owned?.profile.id, origin: host.ready?.origin,
+    // Warum der Chronist in der laufenden Welt fehlt. Ein Satz, nie ein Schlüsselzeichen.
+    return { profiles, chronistKeys, chronistHinweis: host.chronistHinweis, recovery: await recovery.list(), state: host.state, profileId: host.owned?.profile.id, origin: host.ready?.origin,
       setupRequired: host.ready?.setupRequired, failure: host.failure, busy, version: app.getVersion(), runtime: host.ready ? { node: host.ready.nodeVersion, decoder: host.ready.decoder } : undefined };
   };
   async function retainSetupSession(id: string, origin: string, receipt: { value: string; expiresAt: number }) {

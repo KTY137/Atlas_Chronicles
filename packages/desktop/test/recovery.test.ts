@@ -28,3 +28,13 @@ it("requires recovery before extending an existing schema and refuses an unpaire
   expect(() => migrationAdmission([pin, next], [pin])).toThrow("passt nicht");
   expect(() => migrationAdmission([pin], [{ ...pin, sha256: "0".repeat(64) }])).toThrow("passt nicht");
 });
+
+// Pin zur Dokumentation in DESKTOP.md: ein Recovery-Punkt trägt genau drei Dateien. Der
+// Chronist-Schlüssel und die profilinterne Betreiberdatei bleiben beim Ursprungsprofil,
+// eine wiederhergestellte Welt startet also ohne beide.
+it("carries no Chronist key in a recovery point, so a restored world starts without one", () => {
+  const hmac = recoveryAuthentication(unsigned, "e".repeat(64));
+  expect(Object.keys(parseRecoveryManifest({ ...unsigned, hmac }).files)).toEqual(["database.dump", "secrets.dpapi", "profile.json"]);
+  expect(() => parseRecoveryManifest({ ...unsigned, hmac, files: { ...unsigned.files, "chronist-key.dpapi": unsigned.files["secrets.dpapi"] } })).toThrow();
+  expect(() => parseRecoveryManifest({ ...unsigned, hmac, files: { ...unsigned.files, "chronist-providers.json": unsigned.files["profile.json"] } })).toThrow();
+});

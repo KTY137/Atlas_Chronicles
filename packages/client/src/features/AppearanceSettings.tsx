@@ -7,7 +7,7 @@ import { setzeSprache, t } from "../i18n";
 import { spracheFehlerText, useAppearance } from "./Appearance";
 
 export function AppearanceSettings() {
-  const { preferences, resolved, spracheFehler, storageError, update } = useAppearance();
+  const { preferences, resolved, preferencesRecovered, spracheFehler, storageError, update } = useAppearance();
   const [wechselFehler, setWechselFehler] = useState("");
   const change = <K extends keyof AccessibilityPreferencesV2>(key: K, value: AccessibilityPreferencesV2[K]) => update({ ...preferences, [key]: value });
   // Der Sprachwechsel baut die ganze Ansicht neu auf. Wer gerade schreibt, verliert den
@@ -34,6 +34,9 @@ export function AppearanceSettings() {
     <p className="field-help">{t("Aktiv: {preset}. Einschränkungen deines Betriebssystems haben Vorrang. Browserzoom und erzwungene Systemfarben bleiben verfügbar.", { preset: resolved.basePreset })}</p>
     {wechselFehler || spracheFehler ? <Notice error>{wechselFehler || spracheFehler}</Notice> : null}
     {storageError ? <Notice error>{storageError}</Notice> : null}
+    {/* Roh deutsch ohne t(): dieser Satz entsteht nach den acht Übersetzungspaketen und hat
+        noch keinen Katalogeintrag. Er ist gemeldet und gehört in das nächste Sprachpaket. */}
+    {preferencesRecovered ? <Notice error>{t("Deine gespeicherte Darstellung war beschädigt und wurde auf die Vorgabe zurückgesetzt.")}</Notice> : null}
     <Button onClick={() => update(DEFAULT_ACCESSIBILITY_PREFERENCES)}>{t("Lokale Darstellung zurücksetzen")}</Button>
   </section>;
 }
