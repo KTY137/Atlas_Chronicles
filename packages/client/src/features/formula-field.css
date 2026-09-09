@@ -74,6 +74,8 @@
 .ff-edge { fill: none; stroke: currentColor; stroke-width: 2; opacity: .7; }
 .ff-node { position: absolute; box-sizing: border-box; display: grid; align-content: center; gap: 2px; padding: 6px 14px; background: var(--surface); border: 1px solid currentColor; border-radius: 8px; cursor: pointer; }
 .ff-node strong { color: var(--text); font-size: 14px; } .ff-node small { color: var(--text-muted); font-size: 11px; }
+/* Lange Bezeichnungen (»Spurenlesen · Rohpunkte«) bleiben in ihrer Zeile; der volle Name steht im Tooltip. */
+.ff-node strong, .ff-node small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ff-node.is-selected { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ff-node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ff-node-attribute, .ff-node-parameter { background: var(--accent-soft); }

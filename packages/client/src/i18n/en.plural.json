@@ -74,5 +74,6 @@
   "Eine Person wartet vor der Tür auf deine Freigabe.": {
     "eins": "One person is waiting at the door for your approval.",
     "viele": "{n} people are waiting at the door for your approval."
-  }
+  },
+  "{n} Hinweis": {"eins": "{n} note", "viele": "{n} notes"}
 }

@@ -8,7 +8,9 @@ import { formulaGraph, moveSubtree, nodeAt, removeAt, replaceAt, wrapAt, GAP_X, 
 import { blockFor, blockKinds, type BlockKind } from "./FormulaBlocks";
 import { compileFormula } from "./rule-forge-model";
 
-export interface FormulaGraphProps { ast: Formula; onChange(next: Formula): void; sources: FormulaSources; options: FormulaOptions; disabled?: boolean; readOnly?: boolean }
+/** `compact` lässt Legende und Ergebnissatz weg — für viele kleine Netze nebeneinander, etwa in
+ * der Regelkarte, wo eine Legende je Formel nur Platz frisst. */
+export interface FormulaGraphProps { ast: Formula; onChange(next: Formula): void; sources: FormulaSources; options: FormulaOptions; disabled?: boolean; readOnly?: boolean; compact?: boolean }
 const OPS: Record<string, readonly string[]> = { calc: ["+", "-", "*", "/", "%"], compare: ["==", "!=", ">", ">=", "<", "<="], logic: ["&&", "||"] };
 /** Das Zeichen eines Rechenschritts; die drei Wortformen stehen als Literal in einem Zweig,
  * damit `t` sie sieht. Die Symbole bleiben in jeder Sprache gleich. */
@@ -32,7 +34,7 @@ const opLabel = (op: string): string => {
 const resultSentence = (type: FormulaType | "unknown"): string => type === "number" ? t("Ergebnis: Zahl")
   : type === "boolean" ? t("Ergebnis: Ja/Nein") : type === "string" ? t("Ergebnis: Text") : t("Ergebnis: noch unklar");
 
-export function FormulaGraph({ ast, onChange, sources, options, disabled = false, readOnly = false }: FormulaGraphProps) {
+export function FormulaGraph({ ast, onChange, sources, options, disabled = false, readOnly = false, compact = false }: FormulaGraphProps) {
   const graph = formulaGraph(ast, sources), locked = disabled || readOnly;
   const [selected, setSelected] = useState<string | null>(null);
   const [dragging, setDragging] = useState<NodePath | null>(null);
@@ -70,14 +72,14 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
   };
   const selectedNode = selected ? byId.get(selected) : undefined;
   return (
-    <div className="ff-graph" role="group" aria-label={t("Formel als Knotennetz")}>
-      <p className="ff-graph-legend">
+    <div className={compact ? "ff-graph ff-graph-compact" : "ff-graph"} role="group" aria-label={t("Formel als Knotennetz")}>
+      {compact ? null : <p className="ff-graph-legend">
         <span className="ff-type ff-type-number">{t("Zahl")}</span>
         <span className="ff-type ff-type-boolean">{t("Ja/Nein")}</span>
         <span className="ff-type ff-type-string">{t("Text")}</span>
         <span>{resultSentence(graph.resultType)}</span>
         {readOnly ? <span className="ff-readonly">{t("Die Zeile enthält einen Fehler; hier siehst du den Stand davor.")}</span> : null}
-      </p>
+      </p>}
       <div className="ff-graph-canvas" style={{ width: graph.width, height: graph.height }}>
         <svg className="ff-graph-edges" width={graph.width} height={graph.height} aria-hidden="true">
           {graph.edges.map(edge => (
@@ -93,6 +95,7 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
             role="button"
             tabIndex={locked ? -1 : 0}
             aria-label={t("{name}, {detail}", { name: node.label, detail: node.detail })}
+            title={t("{name}, {detail}", { name: node.label, detail: node.detail })}
             aria-pressed={selected === node.id}
             onClick={() => !locked && setSelected(current => (current === node.id ? null : node.id))}
             onKeyDown={event => {

@@ -1,6 +1,36 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-09, 00:30** (Chronist, Sprachpaket, Figurenantrag — dazu Kartenstudio: gemalte Landschaft, Kartenzier, Wasserart)
+Updated: **2026-09-09, 16:00** (Regelschmiede: Regelkarte über das ganze Paket — Teilprojekt 2 von 4)
+
+## Regelschmiede: Regelkarte über das ganze Paket — 2026-09-09
+
+Kayas Auftrag: „Kannst du die Regelwerkschmiede noch besser machen?" Nach seiner Reihenfolge
+vom Vortag war Teilprojekt 2 dran. Gebaut auf `feature/regelschmiede-regelkarte`, Spec
+`docs/superpowers/specs/2026-09-09-regelschmiede-regelkarte-design.md`, entschieden ohne
+Rückfrage (Kayas Vorgabe: allgemeinste Option, nicht nachfragen).
+
+Neuer Reiter **Regelkarte** direkt nach „Paket": das ganze Regelwerk als ein Bild, drei Modi
+umschaltbar. **Übersicht** zeigt die Figur als Karte eines Objekts (Attribute je
+Bogenabschnitt, Abgeleitet, Regeln, Balken, Aktionen als `name(?parameter: Zahl) → Formel`).
+**Karte** zeigt jeden Teil als Knoten in vier Spalten und jede Verwendung in einer Formel als
+Verbindung; ein gewählter Knoten hebt seine Nachbarn hervor, der Rest blendet ab.
+**Knotennetz** bettet jede Formel als kleines Knotennetz aus Teilprojekt 1 ein. In allen drei
+Modi öffnet die Wahl ein Bearbeitungsfeld rechts (Beschriftung, Formel über das
+Formel-Bauteil, Meldung einer Regel, Erschöpfung eines Balkens, „Hängt zusammen mit",
+Sprung in den zuständigen Reiter). Befunde in Klartext: unlesbare Formel, Verweis auf ein
+fehlendes Attribut oder einen fehlenden Parameter, unbenutztes Zahlen-/Ja-Nein-Attribut —
+Hinweise, keine Sperre. Kanten laufen nur von Attributen aus, weil die Engine abgeleitete
+Werte, Regeln, Balken und Aktionen nur über `actor.<attribut>` rechnet.
+
+Grün: `e2e/rule-forge-map.spec.ts` 1/1 neu, dazu `rule-forge-formula` 2/2 und `rule-forge`
+1/1 im selben Bündel; Typecheck, Build, `gate:sprache` (3029 Schlüssel, 0 Verstöße),
+`gate:boundaries` (640 Dateien), `gate:version`; 14 gezielte Vitest-Dateien der Schmiede
+(darunter `rule-map-model` 6/6 und `rule-map` 6/6, neu). Bildschirmfotos der drei Modi mit
+der HTBAH-Vorlage (74 Teile) angesehen; der einzige Befund daraus (überlaufende Beschriftungen
+in kleinen Formelknoten) ist behoben. Keine Änderung an `@chronicle/rules`, Paketformat,
+Belegen, Protokoll, Server, Desktop; Sprachpaket um 56 Sätze ergänzt. Offen: Teilprojekt 3
+(Kategorien und Summen) und 4 (Ausrüstung mit Regelwirkung, Absprache nötig). Nachweise:
+`design/iterations/regelschmiede-regelkarte-20260909.md`.
 
 ## Kartenstudio: gemalte Landschaft, Kompass und Maßstab — 2026-09-08 abends
 

@@ -12,6 +12,7 @@ import type { ExampleFigure } from "./formula-example";
 import { RuleActionEditor } from "./RuleActionEditor";
 import { FieldList } from "./RuleFieldList";
 import { RuleForgePreview } from "./RuleForgePreview";
+import { RuleMap } from "./RuleMap";
 import { HtbahTemplate } from "./HtbahTemplate";
 import { MapContextMenu } from "./MapContextMenu";
 import { RuleDeclarativeEditor, RuleActionExtensions, AttributionEditor } from "./RuleDeclarativeEditor";
@@ -21,13 +22,14 @@ import { draftExpression, forkPackage, localKey, migrationStepDraft, moveItem, n
 import "./rule-forge.css";
 
 interface RuleReview { from: PackagePin; to: PackagePin; pinVersion: number; migration: MigrationPreview | null; previewHash: string }
-type EditorTab = "package" | "fields" | "sheet" | "actions" | "computed" | "tests" | "migrations";
-const tabs: EditorTab[] = ["package", "fields", "sheet", "actions", "computed", "tests", "migrations"];
+type EditorTab = "package" | "map" | "fields" | "sheet" | "actions" | "computed" | "tests" | "migrations";
+const tabs: EditorTab[] = ["package", "map", "fields", "sheet", "actions", "computed", "tests", "migrations"];
 /** Beschriftung und Beschreibung eines Reiters als Funktion, nicht als Tabelle: so sieht `t` ein
  * Zeichenkettenliteral, und ein Sprachwechsel erreicht auch diese Texte. */
 function tabLabel(id: EditorTab): string {
   switch (id) {
     case "package": return t("Paket");
+    case "map": return t("Regelkarte");
     case "fields": return t("Attribute");
     case "sheet": return t("Bogen");
     case "actions": return t("Aktionen");
@@ -52,6 +54,7 @@ function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, current: EditorTa
 function tabDescription(id: EditorTab): string {
   switch (id) {
     case "package": return t("Name, Version, Kennung und Lizenz: die Grunddaten dieses Regelwerks.");
+    case "map": return t("Regelkarte: das ganze Regelwerk als ein Bild, mit Verbindungen von den Attributen zu allem, was sie benutzt.");
     case "fields": return t("Attribute: die Werte, die jede Figur trägt, zum Beispiel Geschick oder Lebenspunkte.");
     case "sheet": return t("Bogen: wie die Attribute auf dem Charakterbogen angeordnet sind.");
     case "actions": return t("Aktionen: was eine Figur tun kann und wie dafür gewürfelt wird.");
@@ -284,8 +287,9 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
         <div className="rf-card rf-object" aria-label={t("Die Figur in diesem Regelwerk")}><div className="rf-section-heading"><h3>{t("Die Figur in diesem Regelwerk")}</h3><span className="rf-help">{t("Schritt {schritt} von {gesamt}", { schritt: tabs.indexOf(tab) + 1, gesamt: tabs.length })}</span></div><p className="rf-help">{tabDescription(tab)}</p>
           <div className="rf-toolbar"><span className="rf-node-badge">{t("{anzahl} Attribute", { anzahl: current.fields.length })}</span><span className="rf-node-badge">{t("{anzahl} abgeleitet", { anzahl: current.computed?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Regeln", { anzahl: current.constraints?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Balken", { anzahl: current.vitals?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Aktionen", { anzahl: current.actions.length })}</span><span className="rf-node-badge">{t("{anzahl} Pakettests", { anzahl: current.selfTests.length })}</span></div></div>
         <div className="rf-tabs" role="tablist" aria-label={t("Regelpaket bearbeiten")}>{tabs.map((id, index) => <button key={id} type="button" role="tab" aria-selected={tab === id} aria-controls={`rf-panel-${id}`} id={`rf-tab-${id}`} tabIndex={tab === id ? 0 : -1} title={t("Schritt {schritt} von {gesamt}: {beschreibung}", { schritt: index + 1, gesamt: tabs.length, beschreibung: tabDescription(id) })} onKeyDown={event => navigateTabs(event, id, setTab)} onClick={() => setTab(id)}>{id === "tests" && current.selfTests.length ? t("{name} ({anzahl})", { name: tabLabel(id), anzahl: current.selfTests.length }) : tabLabel(id)}{errorLocation?.tab === id ? <TriangleAlert size={12} aria-label={t("Betrifft vermutlich den aktuellen Fehler")} /> : null}</button>)}</div>
-        <fieldset className="rf-editor-fields" disabled={tab !== "actions" && (!editable || task.busy)}><div role="tabpanel" id={`rf-panel-${tab}`} aria-labelledby={`rf-tab-${tab}`}>
+        <fieldset className="rf-editor-fields" disabled={tab !== "actions" && tab !== "map" && (!editable || task.busy)}><div role="tabpanel" id={`rf-panel-${tab}`} aria-labelledby={`rf-tab-${tab}`}>
           {tab === "package" ? <><PackageEditor draft={current} onChange={edit} />{pkg ? <RuleAttribution pkg={pkg} /> : null}{current.attribution ? <AttributionEditor value={current.attribution} onChange={attribution => edit({ ...current, attribution })} /> : null}</> : null}
+          {tab === "map" ? <RuleMap draft={current} disabled={!editable || task.busy} onChange={edit} onOpen={setTab} /> : null}
           {tab === "fields" ? <FieldList title={t("Attribute")} fields={current.fields} onChange={fields => edit({ ...current, fields, sections: current.sections.map(s => ({ ...s, fieldKeys: s.fieldKeys.filter(id => fields.some(f => f.localId === id)) })) })} /> : null}
           {tab === "sheet" ? <SheetEditor fields={current.fields} sections={current.sections} onChange={sections => edit({ ...current, sections })} /> : null}
           {tab === "actions" ? <RuleActionEditor draft={current} disabled={!editable || task.busy} onChange={actions => edit({ ...current, actions })} /> : null}
