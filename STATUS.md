@@ -114,12 +114,18 @@ und läuft dann in `smoke.mjs:162` in einen Timeout: er wartet auf den Hilfetext
 per Bisect belegt: bei `858f427` vorhanden, nach dem Merge von main weg, also im
 Kartenstudio-Umbau entfernt und nicht durch das Sprachpaket. Bildschirmfoto und Belege unter
 `.local/desktop-profiles/smoke-UOgc4i/`; darauf ist zu sehen, dass alles andere stimmt.
-Die Kartenstudio-Sitzung hat den Befund bestätigt und behoben: die Anzeige war versehentlich
-entfallen und ist als eigener Hilfetext zurück, jetzt mit dem Zusatz, dass eine laufende Szene
-ihre Fassung behält; ein Prüffall klammert Revisionsnummer und Speicherknopf zusammen, damit
-das nicht wieder auseinanderfällt. Ihr Stand liegt noch uncommittet in ihrem Hauptcheckout.
-**Sobald er über main hier ist, fehlt für den Desktop-Nachweis nur ein Lauf und ein Installer;
-bis dahin gibt es keinen neuen Installer mit diesem Stand.** Nicht geprüft außerdem:
+Die Kartenstudio-Sitzung hat den Befund bestätigt und behoben; die Anzeige ist zurück, jetzt
+mit dem Zusatz, dass eine laufende Szene ihre Fassung behält.
+
+**Der Desktop ist damit nachgewiesen: 21 von 21 Prüfungen grün** gegen den gemergten Stand,
+einschließlich vollständigem Neustart, Wiederherstellung in ein neues Profil, nativem Restore
+und der Kontrolle, dass die DPAPI-Chiffre liegt und keine Entwicklungsports gewählt wurden.
+Beleg: `.local/desktop-profiles/smoke-fgMmUy/evidence.json`. Das Paket hat 583.015.550 Bytes
+in 2.529 vermessenen Dateien, das unsignierte Setup 226.974.208 Bytes mit SHA256
+`88b89cae9fd83172e94c4bee31a07bccf7dd782251e623caa4a74fcace7b4b79`. Offen bleiben die im
+Artefakt vermerkten Release-Gates: signierter Installer mit Zeitstempel und erwartetem
+Herausgeber, konfigurierter Update-Feed, ASAR-Integrität und Release-Fuses, sowie Drain,
+Sicherungspunkt und Migrationsprüfung vor der Installation. Nicht geprüft außerdem:
 NVDA, Windows Hello und gemessene Budgets. `packages/client/src/features/formula-sugar.ts`
 kam mit dem Merge von `main` und ist noch nicht an die Oberfläche angeschlossen; ihre
 vierzehn deutschen Klartextfehler übersetzt die Sitzung, die sie einbaut.
