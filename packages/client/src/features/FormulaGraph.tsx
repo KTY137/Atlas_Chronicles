@@ -1,15 +1,36 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useState } from "react";
-import type { Formula } from "@chronicle/rules";
-import { FUNCTION_HELP, memberOptionLabel, memberUnusable, typeWord, type FormulaOptions, type FormulaSources } from "./formula-sugar";
+import type { Formula, FormulaType } from "@chronicle/rules";
+import { t } from "../i18n";
+import { FUNCTION_HELP, memberOptionLabel, memberUnusable, type FormulaOptions, type FormulaSources } from "./formula-sugar";
 import { formulaGraph, moveSubtree, nodeAt, removeAt, replaceAt, wrapAt, GAP_X, NODE_HEIGHT, NODE_WIDTH, type GraphNode, type NodePath } from "./formula-graph-model";
 import { blockFor, blockKinds, type BlockKind } from "./FormulaBlocks";
 import { compileFormula } from "./rule-forge-model";
 
 export interface FormulaGraphProps { ast: Formula; onChange(next: Formula): void; sources: FormulaSources; options: FormulaOptions; disabled?: boolean; readOnly?: boolean }
 const OPS: Record<string, readonly string[]> = { calc: ["+", "-", "*", "/", "%"], compare: ["==", "!=", ">", ">=", "<", "<="], logic: ["&&", "||"] };
-const OP_LABEL: Record<string, string> = { "+": "+", "-": "−", "*": "×", "/": "÷", "%": "Rest", "==": "=", "!=": "≠", ">": ">", ">=": "≥", "<": "<", "<=": "≤", "&&": "und", "||": "oder" };
+/** Das Zeichen eines Rechenschritts; die drei Wortformen stehen als Literal in einem Zweig,
+ * damit `t` sie sieht. Die Symbole bleiben in jeder Sprache gleich. */
+const opLabel = (op: string): string => {
+  switch (op) {
+    case "-": return "−";
+    case "*": return "×";
+    case "/": return "÷";
+    case "%": return t("Rest");
+    case "==": return "=";
+    case "!=": return "≠";
+    case ">=": return "≥";
+    case "<=": return "≤";
+    case "&&": return t("und");
+    case "||": return t("oder");
+    default: return op;
+  }
+};
+/** Ein ganzer Satz je Ergebnistyp: „Ergebnis: “ plus angehängtem Typwort ließe sich in einer
+ * anderen Sprache nicht umstellen. */
+const resultSentence = (type: FormulaType | "unknown"): string => type === "number" ? t("Ergebnis: Zahl")
+  : type === "boolean" ? t("Ergebnis: Ja/Nein") : type === "string" ? t("Ergebnis: Text") : t("Ergebnis: noch unklar");
 
 export function FormulaGraph({ ast, onChange, sources, options, disabled = false, readOnly = false }: FormulaGraphProps) {
   const graph = formulaGraph(ast, sources), locked = disabled || readOnly;
@@ -49,13 +70,13 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
   };
   const selectedNode = selected ? byId.get(selected) : undefined;
   return (
-    <div className="ff-graph" role="group" aria-label="Formel als Knotennetz">
+    <div className="ff-graph" role="group" aria-label={t("Formel als Knotennetz")}>
       <p className="ff-graph-legend">
-        <span className="ff-type ff-type-number">Zahl</span>
-        <span className="ff-type ff-type-boolean">Ja/Nein</span>
-        <span className="ff-type ff-type-string">Text</span>
-        <span>Ergebnis: {graph.resultType === "unknown" ? "noch unklar" : typeWord(graph.resultType)}</span>
-        {readOnly ? <span className="ff-readonly">Die Zeile enthält einen Fehler; hier siehst du den Stand davor.</span> : null}
+        <span className="ff-type ff-type-number">{t("Zahl")}</span>
+        <span className="ff-type ff-type-boolean">{t("Ja/Nein")}</span>
+        <span className="ff-type ff-type-string">{t("Text")}</span>
+        <span>{resultSentence(graph.resultType)}</span>
+        {readOnly ? <span className="ff-readonly">{t("Die Zeile enthält einen Fehler; hier siehst du den Stand davor.")}</span> : null}
       </p>
       <div className="ff-graph-canvas" style={{ width: graph.width, height: graph.height }}>
         <svg className="ff-graph-edges" width={graph.width} height={graph.height} aria-hidden="true">
@@ -71,7 +92,7 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
             style={{ left: node.x, top: node.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
             role="button"
             tabIndex={locked ? -1 : 0}
-            aria-label={`${node.label}, ${node.detail}`}
+            aria-label={t("{name}, {detail}", { name: node.label, detail: node.detail })}
             aria-pressed={selected === node.id}
             onClick={() => !locked && setSelected(current => (current === node.id ? null : node.id))}
             onKeyDown={event => {
@@ -114,7 +135,7 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
           onWrap={op => edit(wrapAt(ast, selectedNode.path, op))}
         />
       ) : null}
-      {dragging ? <p className="ff-graph-drag">Lass den Teil auf dem Knoten los, der ihn bekommen soll. Escape bricht ab.</p> : null}
+      {dragging ? <p className="ff-graph-drag">{t("Lass den Teil auf dem Knoten los, der ihn bekommen soll. Escape bricht ab.")}</p> : null}
     </div>
   );
 }
@@ -127,18 +148,18 @@ function NodeEditor({
 }) {
   const ops = OPS[node.kind];
   return (
-    <div className="ff-node-editor" role="group" aria-label={`Bearbeiten: ${node.label}`}>
+    <div className="ff-node-editor" role="group" aria-label={t("Bearbeiten: {name}", { name: node.label })}>
       {current.kind === "binary" && ops ? (
         <label>
-          Rechenzeichen
+          {t("Rechenzeichen")}
           <select value={current.op} onChange={event => onReplace({ ...current, op: event.target.value as typeof current.op })}>
-            {ops.map(op => <option key={op} value={op}>{OP_LABEL[op]}</option>)}
+            {ops.map(op => <option key={op} value={op}>{opLabel(op)}</option>)}
           </select>
         </label>
       ) : null}
       {current.kind === "field" ? (
         <label>
-          {current.source === "actor" ? "Attribut" : "Parameter"}
+          {current.source === "actor" ? t("Attribut") : t("Parameter")}
           <select value={current.field} onChange={event => onReplace({ ...current, field: event.target.value })}>
             {sources[current.source].map(m => <option key={m.id} value={m.id} disabled={memberUnusable(m)}>{memberOptionLabel(m)}</option>)}
           </select>
@@ -146,7 +167,7 @@ function NodeEditor({
       ) : null}
       {current.kind === "literal" && typeof current.value === "number" ? (
         <label>
-          Zahl
+          {t("Zahl")}
           <input
             type="number"
             step="any"
@@ -160,29 +181,29 @@ function NodeEditor({
       ) : null}
       {current.kind === "literal" && typeof current.value === "boolean" ? (
         <label>
-          Wert
+          {t("Wert")}
           <select value={String(current.value)} onChange={event => onReplace({ kind: "literal", value: event.target.value === "true" })}>
-            <option value="true">wahr</option>
-            <option value="false">falsch</option>
+            <option value="true">{t("wahr")}</option>
+            <option value="false">{t("falsch")}</option>
           </select>
         </label>
       ) : null}
       {current.kind === "literal" && typeof current.value === "string" ? (
         <label>
-          Text
+          {t("Text")}
           <input value={current.value} maxLength={4096} onChange={event => onReplace({ kind: "literal", value: event.target.value })} />
         </label>
       ) : null}
       {current.kind === "dice" ? (
         <label>
-          Würfel
+          {t("Würfel")}
           <input value={`${current.count}d${current.sides}`} readOnly />
-          <small>Anzahl und Seiten änderst du in der Zeile oder in den Bausteinen.</small>
+          <small>{t("Anzahl und Seiten änderst du in der Zeile oder in den Bausteinen.")}</small>
         </label>
       ) : null}
       {current.kind === "call" ? (
         <label>
-          Funktion
+          {t("Funktion")}
           <select
             value={current.name}
             onChange={event => {
@@ -203,17 +224,17 @@ function NodeEditor({
         </label>
       ) : null}
       <label>
-        Durch etwas anderes ersetzen
+        {t("Durch etwas anderes ersetzen")}
         <select value="" onChange={event => { if (event.target.value) onReplace(compileFormula(blockFor(event.target.value as BlockKind, sources))); }}>
-          <option value="">wählen …</option>
+          <option value="">{t("wählen …")}</option>
           {blockKinds(sources, options).map(k => <option key={k.id} value={k.id} disabled={k.disabled}>{k.label}</option>)}
         </select>
       </label>
       <div className="ff-node-editor-actions">
         {(["+", "-", "*", "/"] as const).map(op => (
-          <button key={op} type="button" onClick={() => onWrap(op)}>{`Rechenschritt ${OP_LABEL[op]} anhängen`}</button>
+          <button key={op} type="button" onClick={() => onWrap(op)}>{t("Rechenschritt {zeichen} anhängen", { zeichen: opLabel(op) })}</button>
         ))}
-        <button type="button" onClick={onRemove}>Entfernen</button>
+        <button type="button" onClick={onRemove}>{t("Entfernen")}</button>
       </div>
     </div>
   );

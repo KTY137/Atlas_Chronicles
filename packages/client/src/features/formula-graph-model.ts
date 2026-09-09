@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { inferFormulaType, type Formula, type FormulaType } from "@chronicle/rules";
-import { fieldTypesOf, FUNCTION_HELP, type FormulaSources } from "./formula-sugar";
+import { t } from "../i18n";
+import { fieldTypesOf, functionTitle, type FormulaSources } from "./formula-sugar";
 import { copyJson } from "./rule-forge-model";
 
 export type NodePath = readonly number[];
@@ -10,17 +11,33 @@ export interface GraphNode { readonly id: string; readonly path: NodePath; reado
 export interface GraphEdge { readonly from: string; readonly to: string; readonly slot: number }
 export interface FormulaGraphLayout { readonly nodes: readonly GraphNode[]; readonly edges: readonly GraphEdge[]; readonly width: number; readonly height: number; readonly resultType: FormulaType | "unknown" }
 export const NODE_WIDTH = 168, NODE_HEIGHT = 48, GAP_X = 56, GAP_Y = 14;
-const OP: Record<string, string> = { "+": "+", "-": "−", "*": "×", "/": "÷", "%": "Rest", "==": "=", "!=": "≠", ">": ">", ">=": "≥", "<": "<", "<=": "≤", "&&": "und", "||": "oder" };
+/** Das Zeichen eines Rechenschritts. Die drei Wortformen stehen als Zeichenkettenliteral in
+ * einem Zweig, damit `t` sie sieht; die Symbole bleiben in jeder Sprache gleich. */
+const opLabel = (op: string): string => {
+  switch (op) {
+    case "-": return "−";
+    case "*": return "×";
+    case "/": return "÷";
+    case "%": return t("Rest");
+    case "==": return "=";
+    case "!=": return "≠";
+    case ">=": return "≥";
+    case "<=": return "≤";
+    case "&&": return t("und");
+    case "||": return t("oder");
+    default: return op;
+  }
+};
 
 const children = (node: Formula): readonly Formula[] => node.kind === "unary" ? [node.value] : node.kind === "binary" ? [node.left, node.right] : node.kind === "if" ? [node.condition, node.then, node.else] : node.kind === "call" ? node.args : [];
-export function nodeAt(ast: Formula, path: NodePath): Formula { let node = ast; for (const index of path) { const next = children(node)[index]; if (!next) throw new Error("Diesen Teil der Formel gibt es nicht."); node = next; } return node; }
+export function nodeAt(ast: Formula, path: NodePath): Formula { let node = ast; for (const index of path) { const next = children(node)[index]; if (!next) throw new Error(t("Diesen Teil der Formel gibt es nicht.")); node = next; } return node; }
 function withChild(node: Formula, index: number, child: Formula): Formula {
   switch (node.kind) {
     case "unary": return { ...node, value: child };
     case "binary": return index === 0 ? { ...node, left: child } : { ...node, right: child };
     case "if": return index === 0 ? { ...node, condition: child } : index === 1 ? { ...node, then: child } : { ...node, else: child };
     case "call": return { ...node, args: node.args.map((arg, i) => i === index ? child : arg) };
-    default: throw new Error("Dieser Teil der Formel hat keine Unterteile.");
+    default: throw new Error(t("Dieser Teil der Formel hat keine Unterteile."));
   }
 }
 export function replaceAt(ast: Formula, path: NodePath, next: Formula): Formula {
@@ -44,20 +61,20 @@ export function wrapAt(ast: Formula, path: NodePath, op: "+" | "-" | "*" | "/"):
 }
 const prefix = (a: NodePath, b: NodePath) => a.length <= b.length && a.every((v, i) => v === b[i]);
 export function moveSubtree(ast: Formula, from: NodePath, to: NodePath): Formula {
-  if (prefix(from, to)) throw new Error("Ein Teil kann nicht in seinen eigenen Unterteil verschoben werden.");
+  if (prefix(from, to)) throw new Error(t("Ein Teil kann nicht in seinen eigenen Unterteil verschoben werden."));
   const moved = copyJson(nodeAt(ast, from)), parent = from.length ? nodeAt(ast, from.slice(0, -1)) : null;
   const cleared = parent ? replaceAt(ast, from, placeholderFor(parent, from[from.length - 1]!)) : ast;
   return replaceAt(cleared, to, moved);
 }
 function describe(node: Formula, sources: FormulaSources): { kind: GraphKind; label: string; detail: string } {
   switch (node.kind) {
-    case "literal": return typeof node.value === "number" ? { kind: "number", label: String(node.value), detail: "Zahl" } : typeof node.value === "boolean" ? { kind: "boolean", label: node.value ? "wahr" : "falsch", detail: "Ja/Nein" } : { kind: "text", label: `„${node.value}“`, detail: "Text" };
-    case "field": { const found = sources[node.source].find(m => m.id === node.field); return { kind: node.source === "actor" ? "attribute" : "parameter", label: found?.label ?? node.field, detail: found ? `${node.source === "actor" ? "Attribut" : "Parameter"} · ${node.field}` : "gibt es nicht mehr" }; }
-    case "dice": return { kind: "dice", label: `${node.count}d${node.sides}${node.keep ? (node.keep.mode === "highest" ? "kh" : "kl") + node.keep.count : ""}${node.explode ? "!" + node.explode : ""}`, detail: "Würfel" };
-    case "unary": return { kind: "negate", label: node.op === "-" ? "−" : "nicht", detail: "Umkehren" };
-    case "binary": return { kind: ["&&", "||"].includes(node.op) ? "logic" : ["+", "-", "*", "/", "%"].includes(node.op) ? "calc" : "compare", label: OP[node.op]!, detail: ["+", "-", "*", "/", "%"].includes(node.op) ? "Rechnung" : "Vergleich" };
-    case "if": return { kind: "if", label: "wenn", detail: "wenn · dann · sonst" };
-    case "call": return { kind: "function", label: node.name, detail: FUNCTION_HELP.find(f => f.name === node.name)?.title ?? "Funktion" };
+    case "literal": return typeof node.value === "number" ? { kind: "number", label: String(node.value), detail: t("Zahl") } : typeof node.value === "boolean" ? { kind: "boolean", label: node.value ? t("wahr") : t("falsch"), detail: t("Ja/Nein") } : { kind: "text", label: `„${node.value}“`, detail: t("Text") };
+    case "field": { const found = sources[node.source].find(m => m.id === node.field); return { kind: node.source === "actor" ? "attribute" : "parameter", label: found?.label ?? node.field, detail: !found ? t("gibt es nicht mehr") : node.source === "actor" ? t("Attribut · {id}", { id: node.field }) : t("Parameter · {id}", { id: node.field }) }; }
+    case "dice": return { kind: "dice", label: `${node.count}d${node.sides}${node.keep ? (node.keep.mode === "highest" ? "kh" : "kl") + node.keep.count : ""}${node.explode ? "!" + node.explode : ""}`, detail: t("Würfel") };
+    case "unary": return { kind: "negate", label: node.op === "-" ? "−" : t("nicht"), detail: t("Umkehren") };
+    case "binary": return { kind: ["&&", "||"].includes(node.op) ? "logic" : ["+", "-", "*", "/", "%"].includes(node.op) ? "calc" : "compare", label: opLabel(node.op), detail: ["+", "-", "*", "/", "%"].includes(node.op) ? t("Rechnung") : t("Vergleich") };
+    case "if": return { kind: "if", label: t("wenn"), detail: t("wenn · dann · sonst") };
+    case "call": return { kind: "function", label: node.name, detail: functionTitle(node.name) };
   }
 }
 // Lexicographic path order: a node with a shorter path that is a prefix of a longer one comes

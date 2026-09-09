@@ -21,13 +21,12 @@ describe("Sprachpaket P2 — Figuren, Werkbänke, Gefüge", () => {
 
   it("liefert die deutschen Stichproben unverändert, solange Deutsch gewählt ist", () => {
     expect(locale()).toBe("de-DE");
-    // FigurAntrag, MeineFigur, CharacterSheet, ActorWorkbench, ForgeWorkbench, Gefuege, FormulaBuilder.
+    // FigurAntrag, MeineFigur, CharacterSheet, ActorWorkbench, ForgeWorkbench, Gefuege.
     expect(t("Deine eigene Figur")).toBe("Deine eigene Figur");
     expect(t("Bogen speichern")).toBe("Bogen speichern");
     expect(t("Inventar · {name}", { name: "Sera" })).toBe("Inventar · Sera");
     expect(t("Vorrat der Spielleitung")).toBe("Vorrat der Spielleitung");
     expect(t("Das Gefüge")).toBe("Das Gefüge");
-    expect(t("Was du hier bauen kannst")).toBe("Was du hier bauen kannst");
   });
 
   it("übersetzt dieselben Stichproben nach setzeSprache(\"en\")", async () => {
@@ -39,7 +38,6 @@ describe("Sprachpaket P2 — Figuren, Werkbänke, Gefüge", () => {
     expect(t("Inventar · {name}", { name: "Sera" })).toBe("Inventory · Sera");
     expect(t("Vorrat der Spielleitung")).toBe("GM stash");
     expect(t("Das Gefüge")).toBe("The Web of Relations");
-    expect(t("Was du hier bauen kannst")).toBe("What you can build here");
   });
 
   it("trägt die Anzeigetexte der Etikettentabellen in beiden Sprachen", async () => {

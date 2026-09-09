@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { BookOpen, X } from "lucide-react";
 import { Button } from "@chronicle/ui";
+import { t } from "../i18n";
 import { completionsAt, type Completion, type FormulaAnalysis, type FormulaOptions, type FormulaSources } from "./formula-sugar";
 
 export interface FormulaLineProps {
@@ -10,11 +11,21 @@ export interface FormulaLineProps {
   sources: FormulaSources; options: FormulaOptions; status: ReactNode; disabled?: boolean;
   onText(next: string): void;
 }
-export const CHEAT_SHEET: readonly { title: string; text: string }[] = [
-  { title: "Wurf plus Attribut", text: "1d20 + @geschick" }, { title: "Zwei Würfel, den besseren nehmen", text: "2d20kh1 + @geschick" },
-  { title: "Wenn … dann … sonst", text: "if(@geschick >= 12, 1d20 + 2, 1d20)" }, { title: "Erfolg ab 15", text: "1d20 + @geschick >= 15" },
-  { title: "Abrunden", text: "floor(@geschick / 2)" }, { title: "Mindestens 1", text: "max(1, @geschick - 3)" },
-];
+/** Die Überschrift eines Spickzettel-Beispiels. Als Funktion mit Literalen, damit `t` sie sieht
+ * und ein Sprachwechsel sie erreicht. */
+export function cheatTitle(text: string): string {
+  switch (text) {
+    case "1d20 + @geschick": return t("Wurf plus Attribut");
+    case "2d20kh1 + @geschick": return t("Zwei Würfel, den besseren nehmen");
+    case "if(@geschick >= 12, 1d20 + 2, 1d20)": return t("Wenn … dann … sonst");
+    case "1d20 + @geschick >= 15": return t("Erfolg ab 15");
+    case "floor(@geschick / 2)": return t("Abrunden");
+    default: return t("Mindestens 1");
+  }
+}
+const CHEAT_TEXTS: readonly string[] = ["1d20 + @geschick", "2d20kh1 + @geschick", "if(@geschick >= 12, 1d20 + 2, 1d20)", "1d20 + @geschick >= 15", "floor(@geschick / 2)", "max(1, @geschick - 3)"];
+// `title` ist ein Zugriff, kein gespeicherter Text: er fragt bei jeder Anzeige neu nach.
+export const CHEAT_SHEET: readonly { title: string; text: string }[] = CHEAT_TEXTS.map(text => ({ text, get title() { return cheatTitle(text); } }));
 const HINT_KEY = "atlas.formula-hint-seen";
 const readFlag = (key: string): boolean => { try { return localStorage.getItem(key) === "1"; } catch { return true; } };
 const writeFlag = (key: string) => { try { localStorage.setItem(key, "1"); } catch { /* browser storage may be blocked; the hint simply shows again */ } };
@@ -31,7 +42,7 @@ function Overlay({ text, analysis, overlayRef }: { text: string; analysis: Formu
   }
   if (cursor < text.length) pieces.push(text.slice(cursor));
   if (error && error.start === error.end && error.start >= text.length) pieces.push(<span key="end" className="ff-tok ff-tok-end ff-tok-error" aria-hidden="true"> </span>);
-  return <div ref={overlayRef} className="ff-line-overlay" aria-hidden="true">{pieces}{text.length ? null : <span className="ff-line-placeholder">1d20 + @attribut</span>}</div>;
+  return <div ref={overlayRef} className="ff-line-overlay" aria-hidden="true">{pieces}{text.length ? null : <span className="ff-line-placeholder">{t("1d20 + @attribut")}</span>}</div>;
 }
 
 export function FormulaLine({ id, label, help, text, analysis, sources, options, status, disabled = false, onText }: FormulaLineProps) {
@@ -62,7 +73,7 @@ export function FormulaLine({ id, label, help, text, analysis, sources, options,
   const listId = `${id}-list`, statusId = `${id}-status`, error = analysis.error;
   return <div className={`ff-line${error ? " ff-line-invalid" : ""}`}>
     <label htmlFor={id}>{label}</label>
-    {!hintSeen ? <p className="ff-hint">Tippe @ für Attribute, ? für Parameter, Zahlen und Würfel wie 1d20 direkt. <Button variant="quiet" aria-label="Hinweis schließen" onClick={() => { writeFlag(HINT_KEY); setHintSeen(true); }}><X size={13} /></Button></p> : null}
+    {!hintSeen ? <p className="ff-hint">{t("Tippe @ für Attribute, ? für Parameter, Zahlen und Würfel wie 1d20 direkt.")} <Button variant="quiet" aria-label={t("Hinweis schließen")} onClick={() => { writeFlag(HINT_KEY); setHintSeen(true); }}><X size={13} /></Button></p> : null}
     <div className="ff-line-stack">
       <Overlay text={text} analysis={analysis} overlayRef={overlay} />
       <input ref={input} id={id} className="ff-line-input" value={text} disabled={disabled} autoComplete="off" spellCheck={false} maxLength={4096}
@@ -72,13 +83,13 @@ export function FormulaLine({ id, label, help, text, analysis, sources, options,
         onKeyDown={onKeyDown} onBlur={() => setTimeout(() => setCompletion(null), 120)}
         onScroll={syncScroll}
         onSelect={event => { const target = event.currentTarget; if (completion) refresh(target.value, target.selectionStart ?? target.value.length); }} />
-      {completion ? <ul id={listId} className="ff-completion" role="listbox" aria-label="Vorschläge">{completion.items.map((item, i) => <li key={`${item.kind}-${item.insert || item.title}`} id={`${listId}-${i}`} role="option" aria-selected={i === active} className={`ff-completion-${item.kind}${i === active ? " is-active" : ""}`} onMouseDown={event => { event.preventDefault(); accept(i); }}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul> : null}
+      {completion ? <ul id={listId} className="ff-completion" role="listbox" aria-label={t("Vorschläge")}>{completion.items.map((item, i) => <li key={`${item.kind}-${item.insert || item.title}`} id={`${listId}-${i}`} role="option" aria-selected={i === active} className={`ff-completion-${item.kind}${i === active ? " is-active" : ""}`} onMouseDown={event => { event.preventDefault(); accept(i); }}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul> : null}
     </div>
     <p id={statusId} className="ff-line-status" aria-live="polite">{error ? <span className="ff-error">{error.message}</span> : status}</p>
     {help ? <small className="ff-help">{help}</small> : null}
     <details ref={sheet} className="ff-line-tools">
-      <summary><BookOpen size={14} aria-hidden="true" />Spickzettel</summary>
-      <ul className="ff-cheat-sheet" aria-label="Beispiele zum Einsetzen">{CHEAT_SHEET.map(item => <li key={item.text}><button type="button" disabled={disabled} onClick={() => { onText(item.text); if (sheet.current) sheet.current.open = false; }}><strong>{item.title}</strong><code>{item.text}</code></button></li>)}</ul>
+      <summary><BookOpen size={14} aria-hidden="true" />{t("Spickzettel")}</summary>
+      <ul className="ff-cheat-sheet" aria-label={t("Beispiele zum Einsetzen")}>{CHEAT_SHEET.map(item => <li key={item.text}><button type="button" disabled={disabled} onClick={() => { onText(item.text); if (sheet.current) sheet.current.open = false; }}><strong>{item.title}</strong><code>{item.text}</code></button></li>)}</ul>
     </details>
   </div>;
 }

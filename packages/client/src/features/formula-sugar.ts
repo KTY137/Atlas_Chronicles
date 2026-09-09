@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { parseFormulaDetailed, tokenizeFormula, type Formula, type FormulaErrorCode, type FormulaFieldTypes, type FormulaType } from "@chronicle/rules";
+import { t } from "../i18n";
 import type { DraftField } from "./rule-forge-model";
 
 export interface FormulaMember { readonly id: string; readonly label: string; readonly type: FormulaType }
@@ -16,24 +17,61 @@ export interface Completion { readonly start: number; readonly end: number; read
 const SIGIL: Record<"actor" | "input", string> = { actor: "@", input: "?" };
 const IDENT = /[a-z][a-z0-9_-]*/y, STRING = /"(?:[^"\\\r\n]|\\["\\/bfnrt]|\\u[\da-fA-F]{4})*"/y;
 const KNOWLEDGE = new Set(["haelt", "haelt_etikett", "erfahrungsgrad"]);
+/** Die Kurzerklärung einer Funktion. Als Funktion mit Zeichenkettenliteralen, damit `t` sie
+ * sieht und ein Sprachwechsel sie erreicht — eine Tabelle hätte ihre Texte beim Laden des
+ * Moduls eingefroren. */
+export function functionTitle(name: string): string {
+  switch (name) {
+    case "min": return t("kleinster Wert");
+    case "max": return t("größter Wert");
+    case "floor": return t("abrunden");
+    case "ceil": return t("aufrunden");
+    case "round": return t("runden");
+    case "abs": return t("Betrag ohne Vorzeichen");
+    case "if": return t("wenn … dann … sonst");
+    case "haelt": return t("Figur hält diese Passage");
+    case "haelt_etikett": return t("gehaltene Passagen mit Etikett zählen");
+    case "erfahrungsgrad": return t("Erfahrungsgrad zu einem Etikett");
+    default: return t("Funktion");
+  }
+}
+// `title` ist ein Zugriff, kein gespeicherter Text: er fragt `functionTitle` bei jeder Anzeige
+// neu, sodass ein Sprachwechsel auch diese Tabelle erreicht.
+const help = (name: string, knowledge: boolean, insert: string) => ({ name, knowledge, insert, get title() { return functionTitle(name); } });
 export const FUNCTION_HELP: readonly { name: string; title: string; knowledge: boolean; insert: string }[] = [
-  { name: "min", title: "kleinster Wert", knowledge: false, insert: "min(" }, { name: "max", title: "größter Wert", knowledge: false, insert: "max(" },
-  { name: "floor", title: "abrunden", knowledge: false, insert: "floor(" }, { name: "ceil", title: "aufrunden", knowledge: false, insert: "ceil(" },
-  { name: "round", title: "runden", knowledge: false, insert: "round(" }, { name: "abs", title: "Betrag ohne Vorzeichen", knowledge: false, insert: "abs(" },
-  { name: "if", title: "wenn … dann … sonst", knowledge: false, insert: "if(" },
-  { name: "haelt", title: "Figur hält diese Passage", knowledge: true, insert: "haelt(" }, { name: "haelt_etikett", title: "gehaltene Passagen mit Etikett zählen", knowledge: true, insert: "haelt_etikett(" }, { name: "erfahrungsgrad", title: "Erfahrungsgrad zu einem Etikett", knowledge: true, insert: "erfahrungsgrad(" },
+  help("min", false, "min("), help("max", false, "max("),
+  help("floor", false, "floor("), help("ceil", false, "ceil("),
+  help("round", false, "round("), help("abs", false, "abs("),
+  help("if", false, "if("),
+  help("haelt", true, "haelt("), help("haelt_etikett", true, "haelt_etikett("), help("erfahrungsgrad", true, "erfahrungsgrad("),
 ];
-const DICE_SUGGESTIONS: readonly { insert: string; title: string }[] = [
-  { insert: "1d20", title: "ein W20" }, { insert: "1d100", title: "ein W100" }, { insert: "1d6", title: "ein W6" }, { insert: "2d6", title: "zwei W6" },
-  { insert: "2d20kh1", title: "zwei W20, den höheren behalten" }, { insert: "2d20kl1", title: "zwei W20, den niedrigeren behalten" }, { insert: "1d6!3", title: "W6, bei 6 bis zu dreimal weiterwürfeln" },
-];
-export const typeWord = (type: FormulaType): string => type === "number" ? "Zahl" : type === "boolean" ? "Ja/Nein" : "Text";
+const DICE_SUGGESTIONS: readonly string[] = ["1d20", "1d100", "1d6", "2d6", "2d20kh1", "2d20kl1", "1d6!3"];
+function diceTitle(insert: string): string {
+  switch (insert) {
+    case "1d20": return t("ein W20");
+    case "1d100": return t("ein W100");
+    case "1d6": return t("ein W6");
+    case "2d6": return t("zwei W6");
+    case "2d20kh1": return t("zwei W20, den höheren behalten");
+    case "2d20kl1": return t("zwei W20, den niedrigeren behalten");
+    default: return t("W6, bei 6 bis zu dreimal weiterwürfeln");
+  }
+}
+/** Ein ganzer Satz je Typ statt „Name“ plus angehängtem Typwort: englische Sätze fügen sich
+ * anders, und ein Fragment ließe sich dort nicht umstellen. */
+export function memberTypeLabel(name: string, type: FormulaType): string {
+  switch (type) {
+    case "number": return t("{name} · Zahl", { name });
+    case "boolean": return t("{name} · Ja/Nein", { name });
+    default: return t("{name} · Text", { name });
+  }
+}
 /** A hyphenated id parses fine as a `DraftField.id` but not inside a formula (`actor.erste-hilfe`
  * is not a valid identifier there). The line's completion already refuses to insert these with an
  * explanatory note; the Blocks and Graph <select> views need the same refusal so such a member
  * cannot be chosen from those views either. */
 export const memberUnusable = (m: FormulaMember): boolean => m.id.includes("-");
-export const memberOptionLabel = (m: FormulaMember): string => memberUnusable(m) ? `${m.id} · Bindestrich in Formeln nicht möglich` : `${m.label} · ${typeWord(m.type)}`;
+export const memberOptionLabel = (m: FormulaMember): string => memberUnusable(m) ? t("{name} · Bindestrich in Formeln nicht möglich", { name: m.id }) : memberTypeLabel(m.label, m.type);
 export const fieldTypesOf = (sources: FormulaSources): FormulaFieldTypes => ({ actor: Object.fromEntries(sources.actor.map(m => [m.id, m.type])), input: Object.fromEntries(sources.input.map(m => [m.id, m.type])) });
 
 /** `@x` → `actor.x`, `?x` → `input.x` outside strings, with a position map from canonical to typed text. */
@@ -73,26 +111,46 @@ function suggestion(sources: FormulaSources, source: "actor" | "input", id: stri
   };
   return [...sources[source]].map(m => ({ id: m.id, d: distance(id, m.id) })).filter(m => m.d <= 2).sort((a, b) => a.d - b.d)[0]?.id;
 }
+/** Jede Paarung aus gebrauchtem und gefundenem Typ als ein ganzer Satz. Ein Satz, der aus einem
+ * anderen durch Ersetzen seines Endes entsteht, bricht still, sobald jemand ihn umformuliert —
+ * und er ließe sich für eine Sprache mit anderer Satzstellung nicht umstellen. */
+function typeMismatch(wanted: FormulaType, found: FormulaMember): string {
+  const name = found.label;
+  switch (wanted) {
+    case "number": return found.type === "number" ? t("Hier wird eine Zahl gebraucht, aber „{name}“ ist Zahl.", { name })
+      : found.type === "boolean" ? t("Hier wird eine Zahl gebraucht, aber „{name}“ ist Ja/Nein.", { name })
+      : t("Hier wird eine Zahl gebraucht, aber „{name}“ ist Text.", { name });
+    case "boolean": return found.type === "number" ? t("Hier wird Ja/Nein gebraucht, aber „{name}“ ist Zahl.", { name })
+      : found.type === "boolean" ? t("Hier wird Ja/Nein gebraucht, aber „{name}“ ist Ja/Nein.", { name })
+      : t("Hier wird Ja/Nein gebraucht, aber „{name}“ ist Text.", { name });
+    default: return found.type === "number" ? t("Hier wird ein Text gebraucht, aber „{name}“ ist Zahl.", { name })
+      : found.type === "boolean" ? t("Hier wird ein Text gebraucht, aber „{name}“ ist Ja/Nein.", { name })
+      : t("Hier wird ein Text gebraucht, aber „{name}“ ist Text.", { name });
+  }
+}
+const typeNeeded = (wanted: FormulaType): string => wanted === "number" ? t("Hier wird eine Zahl gebraucht.")
+  : wanted === "boolean" ? t("Hier wird Ja/Nein gebraucht.") : t("Hier wird ein Text gebraucht.");
 function explain(code: FormulaErrorCode, detail: { message: string; expected?: string; name?: string; found?: FormulaMember }, sources: FormulaSources): string {
   switch (code) {
-    case "invalid-token": return "Dieses Zeichen gehört nicht in eine Formel.";
-    case "expected": return detail.expected === ")" ? "Hier fehlt eine schließende Klammer." : detail.expected === "end" ? "Nach diesem Wert fehlt ein Rechenzeichen wie + oder *." : detail.expected === "field" ? "Nach @ oder ? gehört eine Kennung, zum Beispiel @geschick." : "Nach dem Rechenzeichen fehlt noch ein Wert, zum Beispiel eine Zahl, ein Würfel oder ein Attribut.";
-    case "unsupported-function": return `„${detail.name}“ kennt die Schmiede nicht. Erlaubt sind min, max, floor, ceil, round, abs und if.`;
-    case "unknown-field": { const [source, id] = (detail.name ?? "actor.").split(".") as ["actor" | "input", string]; const hint = suggestion(sources, source, id); const what = source === "actor" ? "Das Attribut" : "Den Parameter"; return `${what} „${id}“ gibt es nicht.${hint ? ` Meintest du „${hint}“?` : ""}`; }
-    case "argument-count": return detail.name === "if" ? "„if“ braucht genau drei Werte: Bedingung, dann, sonst." : detail.name === "min" || detail.name === "max" ? `„${detail.name}“ braucht mindestens zwei Werte.` : `„${detail.name}“ braucht genau einen Wert.`;
-    case "limit": return "Diese Formel ist zu lang oder zu tief verschachtelt. Teile sie in einen abgeleiteten Wert auf.";
-    case "dice": return "Würfel schreibt man als Anzahl, d und Seiten, zum Beispiel 1d20 oder 2d6; mindestens 2 Seiten, höchstens 100 Würfel.";
-    case "number": return "Diese Zahl ist zu groß. Erlaubt sind Werte bis eine Billion.";
+    case "invalid-token": return t("Dieses Zeichen gehört nicht in eine Formel.");
+    case "expected": return detail.expected === ")" ? t("Hier fehlt eine schließende Klammer.") : detail.expected === "end" ? t("Nach diesem Wert fehlt ein Rechenzeichen wie + oder *.") : detail.expected === "field" ? t("Nach @ oder ? gehört eine Kennung, zum Beispiel @geschick.") : t("Nach dem Rechenzeichen fehlt noch ein Wert, zum Beispiel eine Zahl, ein Würfel oder ein Attribut.");
+    case "unsupported-function": return t("„{name}“ kennt die Schmiede nicht. Erlaubt sind min, max, floor, ceil, round, abs und if.", { name: detail.name ?? "" });
+    case "unknown-field": {
+      const [source, id] = (detail.name ?? "actor.").split(".") as ["actor" | "input", string];
+      const hint = suggestion(sources, source, id);
+      // Vier ganze Sätze statt „Das Attribut“ plus angehängtem Vorschlag: der Nebensatz steht
+      // in anderen Sprachen nicht zwingend am Ende.
+      if (source === "actor") return hint ? t("Das Attribut „{id}“ gibt es nicht. Meintest du „{hint}“?", { id, hint }) : t("Das Attribut „{id}“ gibt es nicht.", { id });
+      return hint ? t("Den Parameter „{id}“ gibt es nicht. Meintest du „{hint}“?", { id, hint }) : t("Den Parameter „{id}“ gibt es nicht.", { id });
+    }
+    case "argument-count": return detail.name === "if" ? t("„if“ braucht genau drei Werte: Bedingung, dann, sonst.") : detail.name === "min" || detail.name === "max" ? t("„{name}“ braucht mindestens zwei Werte.", { name: detail.name }) : t("„{name}“ braucht genau einen Wert.", { name: detail.name ?? "" });
+    case "limit": return t("Diese Formel ist zu lang oder zu tief verschachtelt. Teile sie in einen abgeleiteten Wert auf.");
+    case "dice": return t("Würfel schreibt man als Anzahl, d und Seiten, zum Beispiel 1d20 oder 2d6; mindestens 2 Seiten, höchstens 100 Würfel.");
+    case "number": return t("Diese Zahl ist zu groß. Erlaubt sind Werte bis eine Billion.");
     case "type": {
       const wanted = /expected (number|boolean|string)/.exec(detail.message)?.[1] as FormulaType | undefined;
-      if (!wanted) return "Die Werte passen hier nicht zusammen.";
-      const needed = wanted === "number" ? "eine Zahl" : wanted === "boolean" ? "Ja/Nein" : "ein Text";
-      // Two whole sentences, never one assembled from the other: a sentence built by replacing
-      // another one's ending breaks silently as soon as anybody rewords it or moves a comma,
-      // and it cannot be reordered for a language that puts the clause elsewhere.
-      return detail.found
-        ? `Hier wird ${needed} gebraucht, aber „${detail.found.label}“ ist ${typeWord(detail.found.type)}.`
-        : `Hier wird ${needed} gebraucht.`;
+      if (!wanted) return t("Die Werte passen hier nicht zusammen.");
+      return detail.found ? typeMismatch(wanted, detail.found) : typeNeeded(wanted);
     }
   }
 }
@@ -121,9 +179,9 @@ function spansOf(canonical: string, map: readonly number[], sources: FormulaSour
 export function analyzeFormula(text: string, sources: FormulaSources, options: FormulaOptions): FormulaAnalysis {
   const { canonical, map } = desugarFormula(text), spans = spansOf(canonical, map, sources);
   const failure = (error: FormulaError): FormulaAnalysis => ({ text, canonical, ok: false, error, spans });
-  if (!text.trim()) return failure({ code: "empty", message: "Trage eine Formel ein, zum Beispiel 1d20 + @geschick.", start: 0, end: 0 });
+  if (!text.trim()) return failure({ code: "empty", message: t("Trage eine Formel ein, zum Beispiel 1d20 + @geschick."), start: 0, end: 0 });
   const path = /(^|[^"\w])([?@])[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+/.exec(text);
-  if (path) { const start = path.index + path[1]!.length; return failure({ code: "object-path", message: "Werte von Gegenständen kommen mit einem späteren Schritt; heute gibt es nur Attribute und Parameter.", start, end: start + path[0].length - path[1]!.length }); }
+  if (path) { const start = path.index + path[1]!.length; return failure({ code: "object-path", message: t("Werte von Gegenständen kommen mit einem späteren Schritt; heute gibt es nur Attribute und Parameter."), start, end: start + path[0].length - path[1]!.length }); }
   const detail = parseFormulaDetailed(canonical, fieldTypesOf(sources));
   if (!detail.ok) {
     const start = map[detail.start] ?? text.length, end = map[detail.end] ?? text.length;
@@ -133,8 +191,8 @@ export function analyzeFormula(text: string, sources: FormulaSources, options: F
   }
   const dice = spans.find(s => s.kind === "dice");
   const knowledge = spans.find(s => s.kind === "function" && KNOWLEDGE.has(text.slice(s.start, s.end)));
-  if (!options.allowDice && dice) return failure({ code: "dice-forbidden", message: "Würfel sind hier nicht erlaubt: Dieser Wert gilt ohne Wurf. Nutze Attribute und Zahlen.", start: dice.start, end: dice.end });
-  if (!options.allowKnowledge && knowledge) return failure({ code: "knowledge-forbidden", message: "Das Wissen der Figur lässt sich hier nicht abfragen, nur in der Ergebnisformel einer Aktion.", start: knowledge.start, end: knowledge.end });
+  if (!options.allowDice && dice) return failure({ code: "dice-forbidden", message: t("Würfel sind hier nicht erlaubt: Dieser Wert gilt ohne Wurf. Nutze Attribute und Zahlen."), start: dice.start, end: dice.end });
+  if (!options.allowKnowledge && knowledge) return failure({ code: "knowledge-forbidden", message: t("Das Wissen der Figur lässt sich hier nicht abfragen, nur in der Ergebnisformel einer Aktion."), start: knowledge.start, end: knowledge.end });
   return { text, canonical, ok: true, ast: detail.ast, spans };
 }
 /** Scans `before` the way `desugarFormula` scans strings: true once an unclosed `"` runs to the end. */
@@ -154,20 +212,20 @@ export function completionsAt(text: string, caret: number, sources: FormulaSourc
   const fold = (value: string) => value.toLocaleLowerCase("de");
   if (match[1]) {
     const source = match[1] === "@" ? "actor" : "input", query = fold(match[2] ?? ""), start = caret - match[0].length;
-    if (source === "input" && !sources.input.length) return { start, end: caret, items: [{ kind: "note", insert: "", title: "Hier gibt es keine Parameter.", detail: "Parameter gibt es nur bei Aktionen, weil sie beim Würfeln abgefragt werden. Nutze Attribute mit @." }] };
+    if (source === "input" && !sources.input.length) return { start, end: caret, items: [{ kind: "note", insert: "", title: t("Hier gibt es keine Parameter."), detail: t("Parameter gibt es nur bei Aktionen, weil sie beim Würfeln abgefragt werden. Nutze Attribute mit @.") }] };
     const items: CompletionItem[] = sources[source].filter(m => !query || fold(m.id).includes(query) || fold(m.label).includes(query)).map(m => m.id.includes("-")
-      ? { kind: "note" as const, insert: "", title: m.label, detail: `Kennungen mit Bindestrich lassen sich in Formeln nicht verwenden. Benenne das Attribut um, zum Beispiel ${m.id.replaceAll("-", "_")}.` }
-      : { kind: source === "actor" ? "attribute" as const : "parameter" as const, insert: `${match[1]}${m.id}`, title: m.label, detail: `${m.id} · ${typeWord(m.type)}` });
+      ? { kind: "note" as const, insert: "", title: m.label, detail: t("Kennungen mit Bindestrich lassen sich in Formeln nicht verwenden. Benenne das Attribut um, zum Beispiel {name}.", { name: m.id.replaceAll("-", "_") }) }
+      : { kind: source === "actor" ? "attribute" as const : "parameter" as const, insert: `${match[1]}${m.id}`, title: m.label, detail: memberTypeLabel(m.id, m.type) });
     return { start, end: caret, items };
   }
   if (match[3]) {
     const query = fold(match[3]), start = caret - match[3].length;
-    const items = FUNCTION_HELP.filter(f => (options.allowKnowledge || !f.knowledge) && f.name.startsWith(query)).map(f => ({ kind: "function" as const, insert: f.insert, title: f.name, detail: f.title }));
+    const items = FUNCTION_HELP.filter(f => (options.allowKnowledge || !f.knowledge) && f.name.startsWith(query)).map(f => ({ kind: "function" as const, insert: f.insert, title: f.name, detail: functionTitle(f.name) }));
     return items.length ? { start, end: caret, items } : null;
   }
   if (!options.allowDice) return null;
   const typed = fold(match[0]), start = caret - match[0].length;
-  const items = DICE_SUGGESTIONS.filter(d => typed.endsWith("d") || d.insert.startsWith(typed)).map(d => ({ kind: "dice" as const, insert: d.insert, title: d.insert, detail: d.title }));
+  const items = DICE_SUGGESTIONS.filter(d => typed.endsWith("d") || d.startsWith(typed)).map(d => ({ kind: "dice" as const, insert: d, title: d, detail: diceTitle(d) }));
   return items.length ? { start, end: caret, items } : null;
 }
 /** Draft fields as formula sources: Kennung, Bezeichnung (Fallback Kennung) und Typ; ungültige Kennungen entfallen. */

@@ -20,7 +20,7 @@ const englisch = async () => {
 /** Je eine Stichprobe aus jeder Datei des Pakets. */
 const STICHPROBEN: [string, string][] = [
   ["Regelwerkstatt", "Rule Forge"],                                    // RuleForge.tsx
-  ["Berechnete Werte und Bedingungen", "Computed values and conditions"], // RuleDeclarativeEditor.tsx
+  ["Abgeleitete Werte", "Derived values"],                                // RuleDeclarativeEditor.tsx
   ["Testtafel", "Test bench"],                                          // RuleForgePreview.tsx
   ["Bitte Ja oder Nein auswählen.", "Please choose yes or no."],        // RuleFields.tsx
   ["Berechnete Werte", "Computed values"],                              // RuleComputedFields.tsx
