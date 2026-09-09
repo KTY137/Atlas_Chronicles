@@ -98,3 +98,129 @@ und `e2e/map-settings` erwarten den Objektkatalog direkt nach „Karte bearbeite
 Abschnitt ist aber zugeklappt, bis „Möbel & Objekte" gedrückt wird; `e2e/siedlung-workshop`
 erwartet eine Auswahl „Szenenkarte", die es im Client nicht mehr gibt. Desktop-Paket und
 Installation stehen auf `ca3898b`, nicht auf diesem Stand. PDF-Parität ist nicht geprüft.
+
+## Gemalte Landschaft, Kartenzier und Wasserart — 2026-09-08 abends
+
+Kayas Auftrag: Kartenerzeugung und Karteneditor weiter Richtung Inkarnate/WorldAnvil
+und Dorfromantik entwickeln. Drei Pakete, alle innerhalb der vorhandenen Architektur.
+
+**1. Gemalte Landschaft** (`szene/src/cartography-projection.ts`, `rendererVersion`
+`cartography-6` → `cartography-7`, damit jeder Rasterschlüssel neu zieht).
+
+- Die Kantenschau `waterBanks` heißt jetzt `regionBanks` und wird für jede Materialgruppe
+  benutzt, nicht nur für Wasser. Das ist der tragende Punkt: der Generator zerlegt einen
+  Wald, ein Massiv oder einen See in viele Polygone, und nur die äußere Silhouette der
+  Gruppe ist eine echte Kante. Ein Saum je Polygon hätte die Tessellierung als Netz von
+  Nähten sichtbar gemacht — derselbe Fehler, den der vorhandene Kommentar bei den
+  Wasserkräuseln beschreibt.
+- Fels wird gezeichnetes Relief: Gipfel mit Licht- und Schattenflanke, Schlagschatten,
+  Tuschesilhouette, Firstlinie und Schneekappe auf den hohen. Größe, Ton und Schultern
+  variieren je Gipfel; ein grobes zweites Gitter hebt ganze Schultern des Zugs an, damit
+  Gipfel sich zu Kämmen gruppieren. Dazu ein heller Schuttsaum entlang der Gruppenkante.
+- See und Meer bekommen den gezeichneten Halo (drei nach außen abklingende Uferlinien)
+  und einen Flachwassersaum nach innen. Ein Fluss bekommt beides nicht: seine zwei Ufer
+  liegen zu nah beieinander, die Halos würden zu einem Schmier verlaufen. Stehendes
+  Wasser trägt die doppelte Welle, der Fluss die einfache Kräusel.
+- Offener Boden bekommt Textur: drei gezeichnete Halme auf Wiese, Kiesel auf Erde,
+  Dünenstriche auf Sand — abgetastet von **einem globalen Gitter**, aus demselben Grund
+  wie die Kräusel. Feldergruppen bekommen eine Hecke entlang ihrer Außenkante.
+
+**2. Kartenzier** (`render/src/renderer.ts`). Kompassrose und Maßstabsleiste als
+Bildschirm-Beiwerk in einem eigenen Container `chrome`, nicht als Polygone der Zeichnung:
+`validateMapScene` lässt in `drawing.polygons` nur Regionen zu, die es in der Szene
+wirklich gibt (`geometry.ts:138`), und ein erfundenes `regionId` wäre genau der Griff an
+der Wissensmaske vorbei. Die Zier erscheint nur, wenn die Szene tatsächlich eine
+Kartografie-Zeichnung trägt; Kampfkarten ohne Zeichnung bleiben frei. Der Maßstab zählt
+in Rasterfeldern (Hex über den Inkreis-Abstand) und wählt eine runde Zahl, die zwischen
+60 und 260 Bildschirmpunkten landet; ohne Raster zählt er Bildpunkte. Rose und Leiste
+werden nur neu gezeichnet, wenn Sichtfenster bzw. Beschriftung sich ändern — sonst
+entstünde ein Dutzend Pfade je Kameraschritt für ein Stück Papier, das stillsteht.
+Die Ebenen `geography` und `chrome` tragen jetzt Pixis eigenes `label`.
+
+**3. Wasserart im Editor.** `CartographyEditOperation` „terrain" trägt zusätzlich
+`water?: CartographyWaterMaterial`. Bisher wurde jedes gemalte Gewässer als `river`
+eingetragen, ein See ließ sich also nicht malen. Die Ergänzung ist additiv: fehlt sie,
+bleibt es ein Fluss. Die Modulnachbarschaft ändert sich nicht — für den Musterlöser ist
+Wasser Wasser. In der Oberfläche erscheint beim Werkzeug „Gelände" mit Material „Wasser"
+eine Auswahl Fluss / See / Meer, jede mit einem Satz Klartext dazu.
+
+### Nachweise
+
+- Neu und gegen Mutationen geprüft (jede Mutation genau vom zuständigen Fall gefangen):
+  `szene/test/cartography-projection.test.ts` 10/10 — Relief über die **ganze** Ausdehnung
+  (die Obergrenze weitet jetzt das Gitter, statt Zeilen abzuschneiden; die abgeschnittene
+  Fassung ließ die untere Hälfte eines hohen Massivs kahl), Gruppensilhouette statt Naht
+  zwischen zwei Felspolygonen, Halo nur bei stehendem Wasser, globales Gitter für die
+  Bodentextur (eine neu zerlegte Wiese darf keinen Halm verschieben).
+  `forge/test/cartography-edit.test.ts` 21/21 — gemalte Wasserart landet in der Karte,
+  fehlende bleibt `river`, unbekannte wird abgewiesen statt eingetragen.
+  `render/test/renderer-lifecycle.test.ts` 30/30 — Zier liegt außerhalb der Weltebene,
+  fehlt ohne Zeichnung, Maßstabsbeschriftung folgt dem Zoom.
+- Der vorhandene Fall „submits shared ordered polygon colors" prüfte Füllungen und Striche
+  über die ganze Bühne. Er ist jetzt auf die Ebene `geography` geschärft: Kartenzier kann
+  eine Aussage über die eingereichte Kartografie weder erfüllen noch brechen.
+- Gezielt gegengeprüft: 26 Dateien, 348 Fälle grün (szene, forge, render, server-Raster,
+  `client/test/tactical-entities-review.test.ts`).
+- **Echte Browser-Specs, nachgereicht:** `e2e/map-studio.spec.ts` und
+  `e2e/map-editor-cartography.spec.ts` zusammen **5/5 grün** — allerdings nur mit den beiden
+  Korrekturen von `project-atlas-54` (Locale-Pin und statt `import.meta.glob` eine feste
+  Dateiliste), die ich zur Gegenprobe vorübergehend lokal gesetzt und danach exakt
+  zurückgenommen habe (`git checkout` auf `i18n.ts`, temporäre Konfiguration gelöscht,
+  Arbeitsbaum unverändert bei denselben zwölf Dateien). Die Locale-Zeile allein **reicht auf
+  diesem Stand nicht**: ohne den i18n-Teil mountet die Seite weiterhin nicht.
+- Dieser Studio-Screenshot deckte einen Fehler auf, den kein Unit-Test hatte: die
+  Maßstabsleiste schrieb „10 Bildpunkte" unter einen Balken, der 1.000 Kartenpixel misst.
+  Ohne Raster zählen die Stufen Hundert-Pixel-Einheiten, die Beschriftung nannte aber die
+  Stufe. Zweiter Fall derselben Sorte im selben Code: die gezeichnete Länge war auf 260
+  Bildschirmpunkte gekappt, die Beschriftung nicht — der Balken log über seine eigene Länge.
+  Beides behoben (die größte runde Stufe, die wirklich passt, wird gewählt und exakt so
+  gezeichnet), mit Fall und Mutationsprobe. Im Studio steht jetzt „1.000 Bildpunkte".
+- Eigener Renderer-Pfad: der Renderer wurde in Edge 152 mit **pixi-webgl** gegen eine echt
+  erzeugte Gebirgssiedlung montiert und abgelichtet; Kompassrose, Maßstabsleiste
+  („5 Felder"), Relief, Bodentextur und Waldkronen sind im Bild. Laufzeit von
+  `cartographyDraw` an denselben drei Zellgrößen wie der Galerietest gemessen:
+  197/187/138 ms gegen 272/217/173 ms vorher, also keine Verlangsamung.
+- Gates: Typecheck, Produktionsbuild, `gate:version`, `gate:boundaries` grün.
+
+### Nachgereicht: die Revisionsanzeige in der Überschrift
+
+`project-atlas-54` meldete aus dem Desktop-Smoke, dass die Kartenrevision in der Überschrift
+des Kartenstudios fehlt. Selbst nachgeprüft und bestätigt: `git show dcbf449^` zeigt dort
+`Kartenrevision {baseline.revision}. …`, seit dem Umbau steht nur noch die Tagline
+„Landschaft gestalten. Räume bauen. Geschichten einrichten." Der Wegfall war keine Absicht —
+direkt daneben sitzt der Knopf **„Kartenrevision speichern"**, und eine Seite, die zum
+Speichern einer Revision auffordert, muss zeigen, welche gerade offen ist. Dazu hing
+`desktop/tools/smoke.mjs:162` daran als benutzersichtbarer Beleg, dass ein Speichern
+angekommen ist, und lief in einen 30-Sekunden-Timeout.
+
+Zurückgeholt als eigene Zeile unter der Tagline, in Klartext statt der alten Fassung:
+„Kartenrevision *n*. Jedes Speichern legt eine neue Fassung an; eine laufende Szene behält die
+Fassung, mit der sie begonnen hat." Belegt durch einen Fall in
+`client/test/tactical-entities-review.test.ts` (19/19), der die Überschrift als Ganzes prüft —
+Revisionsnummer **und** Speicherknopf im selben Block; die Mutation „Zeile wieder entfernt"
+fällt darauf. Zusätzlich im echten Browser gegengeprüft: ein Wegwerf-Spec wertete genau das
+Prädikat aus `smoke.mjs:162` gegen das laufende Studio aus und bekam `true`; der Smoke findet
+seinen Beleg also wieder. Bildschirmfoto der Überschrift gesehen, Spec danach gelöscht.
+
+### Offen und nicht behauptet
+
+- **Vorbestehender Blocker für alle Browser-Specs, nicht von dieser Arbeit — inzwischen von
+  `project-atlas-54` auf `experimental/featureliste-20260907` behoben, hier aber noch nicht
+  vorhanden:** am unveränderten `1b5b7d1` ist `e2e/map-studio.spec.ts` 2/2 rot, per `git stash`
+  gegengeprüft. Die Seite mountet nicht, `body` bleibt `<main id="root"></main>`,
+  Browserkonsole `(intermediate value).glob is not a function`. Ursache:
+  `client/src/i18n.ts:34-35` nutzt `import.meta.glob` (eine Vite-Transformation), der
+  e2e-Wirt `e2e/helpers/map-studio-host.ts` bündelt den Client aber mit esbuild. Der
+  Produktionsbuild über Vite ist nicht betroffen. Gemeldet an die Sitzung, der die
+  i18n-Fläche gehört; hier dauerhaft nicht angefasst. Sie fand dazu eine zweite Ursache:
+  Playwright startet mit englischer Browsersprache, seit dem Sprachpaket folgt die Oberfläche
+  dem, und alle deutschen Text-Locator gingen ins Leere; ihre `playwright.config.ts` pinnt
+  jetzt `locale: "de-DE"`. **Beide** Korrekturen werden gebraucht — mit nur einer bleiben die
+  Specs rot. Solange ihr Stand nicht gemergt ist, laufen die Kartenspecs hier nicht.
+- Die drei schweren Fälle in `forge/test/siedlung-cartography.test.ts` bauen je drei bis
+  sechs vollständige Städte und liefen schon am Elterncommit ins 5-s-Standardlimit (dort
+  sogar 3 rot). Sie tragen jetzt ein ausdrückliches Budget von 30 s, wie der vorhandene
+  Präzedenzfall bei den langen Burst-Tests. Kein globales Limit geändert.
+- Die Gipfel stehen weiterhin auf einem versetzten Gitter. Echte Kammlinien aus einem
+  Skelett des Massivs wären der nächste Schritt und sind hier nicht gemacht.
+- PDF-Parität, Desktop-Paket und Installation stehen unverändert auf `ca3898b`.

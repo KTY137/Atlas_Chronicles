@@ -166,6 +166,18 @@ describe("independent tactical entity client review", () => {
     } finally { h.cleanup(); }
   });
 
+  it("names the revision being edited next to the button that saves one", () => {
+    const h = harness("MapEditor", "MapEditor", { current: { ...map, revision: 7 }, campaignId: "campaign", ...callbacks });
+    try {
+      // The rework of 2026-09-08 replaced this line with the studio tagline. The heading then
+      // offered "Kartenrevision speichern" beside nothing that said which revision was open,
+      // and the desktop smoke lost its user-visible proof that a save had landed.
+      const heading = h.nodes(node => node.props?.className === "page-heading")[0]!;
+      expect(h.text(heading)).toContain("Kartenrevision 7.");
+      expect(h.text(heading)).toContain("Kartenrevision speichern");
+    } finally { h.cleanup(); }
+  });
+
   it("resets an unsaved grid change and unfinished region to the saved document", () => {
     const h = harness("MapEditor", "MapEditor", { current: map, campaignId: "campaign", ...callbacks });
     try {

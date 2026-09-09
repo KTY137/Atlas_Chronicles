@@ -65,6 +65,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   host.appendChild(canvas);
   const world = new Container();
   const geography = new Container();
+  geography.label = "geography";
   const buildings = new Container();
   const raster = new Container(), rasterBounds = new Graphics(), gridOverlay = new Graphics(), wallsOverlay = new Graphics(), dragPreview = new Graphics();
   const markers = new Container();
@@ -80,6 +81,18 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   app.stage.addChild(selection, label);
   const names = new Container(); names.eventMode = "none";
   app.stage.addChild(names);
+  // Map furniture. It belongs to the drawn map, not to the world: a compass and a scale bar
+  // keep their size and corner while the camera moves, exactly as they do on a printed sheet.
+  // Neither carries an identity, so neither can leak one; both appear only on a scene that
+  // actually is a drawn map, so battle maps without cartography stay clean.
+  const chromeInk = 0x2c2519, chromePaper = 0xf0e6cb;
+  const chrome = new Container(); chrome.eventMode = "none"; chrome.label = "chrome";
+  const compass = new Graphics(), scaleBar = new Graphics();
+  const chromeText = (size: number) => new Text({ text: "", style: { fontFamily: "system-ui, sans-serif", fontSize: size, fontWeight: "600",
+    fill: chromeInk, stroke: { color: chromePaper, width: 2 } } });
+  const compassLabel = chromeText(13), scaleLabel = chromeText(12);
+  chrome.addChild(scaleBar, compass, compassLabel, scaleLabel);
+  app.stage.addChild(chrome);
   const pinLabels: InstanceType<typeof Text>[] = [];
   let scene = initial;
   let camera = fitCamera([scene.width, scene.height], viewport);
@@ -127,6 +140,64 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       label.position.set(Math.min(Math.max(4, p[0] + 18), Math.max(4, viewport[0] - label.width - 4)), Math.min(Math.max(4, p[1] - 12), Math.max(4, viewport[1] - label.height - 4)));
       label.visible = scene.showLabels !== false;
     }
+  };
+  /** Round steps for the scale bar; the largest one that fits 260 screen pixels wins. */
+  const scaleSteps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10_000] as const;
+  let compassAt = "", scaleAt = "";
+  const updateChrome = (): void => {
+    chrome.visible = !!scene.drawing;
+    // Keep each caption's own flag in step with the layer: a hidden container still leaves its
+    // children claiming to be visible, and a map's names are counted by that flag.
+    compassLabel.visible = scaleLabel.visible = chrome.visible;
+    if (!chrome.visible) return;
+    const pitch = scene.grid && scene.grid.kind !== "none"
+      // Hex cells are named by their circumradius; neighbours sit one inradius pair apart.
+      ? scene.grid.kind === "hex" ? Math.sqrt(3) * scene.grid.size : scene.grid.size
+      : 0;
+    const unit = pitch > 0 ? pitch : 100;
+    // Pick the largest round step that still fits, and draw exactly that. Clamping the drawn
+    // bar instead would leave the caption describing a span the bar does not cover — a scale
+    // that lies about itself is worse than no scale. Only past full zoom, where even the
+    // smallest step is wider than the budget, does the bar honestly run long.
+    const span = (step: number) => step * unit * camera.scale;
+    const count = scaleSteps.filter(step => span(step) <= 260).at(-1) ?? scaleSteps[0]!;
+    const length = span(count);
+    const left = 18, bottom = viewport[1] - 30, height = 8, quarters = 4;
+    // The rose never changes with the camera and the bar only when its label does; redrawing
+    // either on every pan would rebuild a dozen paths per frame for a fixed piece of paper.
+    // Without a grid the step counts hundred-pixel units, so the caption has to name the span
+    // the bar actually covers. Saying "10" for a bar a thousand pixels wide is a wrong scale.
+    const amount = pitch > 0 ? count : count * unit;
+    const scaleKey = `${amount}:${length.toFixed(2)}:${bottom}`;
+    if (scaleKey !== scaleAt) {
+    scaleAt = scaleKey;
+    scaleBar.clear();
+    for (let part = 0; part < quarters; part++) {
+      scaleBar.rect(left + length * part / quarters, bottom, length / quarters, height)
+        .fill(part % 2 ? chromeInk : chromePaper);
+    }
+    scaleBar.rect(left, bottom, length, height).stroke({ color: chromeInk, width: 1.2 });
+    const caption = pitch > 0 ? amount === 1 ? "Feld" : "Felder" : amount === 1 ? "Bildpunkt" : "Bildpunkte";
+    scaleLabel.text = `${amount.toLocaleString("de")} ${caption}`;
+    scaleLabel.position.set(left, bottom - scaleLabel.height - 3);
+    }
+    const compassKey = `${viewport[0]}:${viewport[1]}`;
+    if (compassKey === compassAt) return;
+    compassAt = compassKey;
+    const radius = 25, centre = [viewport[0] - radius - 22, radius + 30] as const;
+    compass.clear().circle(centre[0], centre[1], radius + 4).fill(chromePaper).stroke({ color: chromeInk, width: 1.2 });
+    // Four long points and four short ones: the drawn rose every printed map carries. The
+    // short diagonals go down first so the cardinals lie cleanly on top of them.
+    const point = (index: number, reach: number, fill: number) => {
+      const angle = index * Math.PI / 4 - Math.PI / 2, span = Math.PI / 8;
+      const tip = [centre[0] + Math.cos(angle) * reach, centre[1] + Math.sin(angle) * reach];
+      const side = (turn: number) => [centre[0] + Math.cos(angle + turn) * reach * .3, centre[1] + Math.sin(angle + turn) * reach * .3];
+      compass.poly([...tip, ...side(span), ...side(-span)], true).fill(fill).stroke({ color: chromeInk, width: 1 });
+    };
+    for (let index = 1; index < 8; index += 2) point(index, radius * .5, chromePaper);
+    for (let index = 0; index < 8; index += 2) point(index, radius, index ? chromeInk : 0x9c3f2f);
+    compassLabel.text = "N";
+    compassLabel.position.set(centre[0] - compassLabel.width / 2, centre[1] - radius - compassLabel.height - 3);
   };
   const updateLabels = (): void => {
     for (const text of pinLabels) text.visible = false;
@@ -190,6 +261,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     previousScale = camera.scale;
     updateSelection();
     updateLabels();
+    updateChrome();
     render();
     // Panning far enough to leave the culled window is the only thing that can reveal a stamp
     // that was legitimately dropped last frame. Zooming always re-culls, because scale changes

@@ -11,23 +11,24 @@ vi.mock("pixi.js/unsafe-eval", () => ({}));
 // The product factory and its camera/resource lifecycle run unchanged. This
 // narrow Pixi boundary records geometry submission; it does not simulate GPU speed.
 const pixi = vi.hoisted(() => ({ type: 1, resolution: 1, paths: 0, strokes: [] as { color?: number; width?: number; pixelLine?: boolean }[], textures: [] as { source: { scaleMode: string }; destroy: ReturnType<typeof vi.fn> }[],
-  graphics: [] as { position: { x: number; y: number }; scale: { x: number; y: number }; circles: number[]; paths: number; visible: boolean; fills: unknown[]; segments: number[][] }[],
+  graphics: [] as { position: { x: number; y: number }; scale: { x: number; y: number }; circles: number[]; paths: number; visible: boolean; fills: unknown[]; strokes: unknown[]; segments: number[][] }[],
+  stages: [] as { label: string; children: unknown[] }[],
   labels: [] as { text: string; visible: boolean }[], sprites: [] as { destroyed: boolean; position: { x: number; y: number }; scale: { x: number; y: number } }[] }));
 vi.mock("pixi.js", () => {
   class Vector { x = 0; y = 0; set(x: number, y = x) { this.x = x; this.y = y; } }
   class Container {
-    children: Container[] = []; position = new Vector(); scale = new Vector(); visible = true; eventMode = "auto"; mask: unknown;
+    children: Container[] = []; position = new Vector(); scale = new Vector(); visible = true; eventMode = "auto"; mask: unknown; label = "";
     addChild(...children: Container[]) { this.children.push(...children); return children[0]; }
     removeChildren() { return this.children.splice(0); }
     destroy() { for (const child of this.removeChildren()) child.destroy(); }
   }
   class Graphics extends Container {
-    circles: number[] = []; paths = 0; fills: unknown[] = []; segments: number[][] = [];
+    circles: number[] = []; paths = 0; fills: unknown[] = []; strokes: unknown[] = []; segments: number[][] = [];
     constructor() { super(); pixi.graphics.push(this); }
     clear() { this.circles.length = 0; this.paths = 0; return this; } rect() { return this; }
     circle(_x: number, _y: number, radius: number) { this.circles.push(radius); return this; } fill(style: unknown) { this.fills.push(style); return this; }
     poly() { pixi.paths++; this.paths++; return this; } moveTo(x: number, y: number) { pixi.paths++; this.paths++; this.segments.push([x, y]); return this; } lineTo(x: number, y: number) { this.segments.at(-1)?.push(x, y); return this; }
-    stroke(style: { color?: number; width?: number; pixelLine?: boolean }) { pixi.strokes.push(style); return this; }
+    stroke(style: { color?: number; width?: number; pixelLine?: boolean }) { pixi.strokes.push(style); this.strokes.push(style); return this; }
   }
   class Text extends Container { text = ""; width = 20; height = 10; constructor() { super(); pixi.labels.push(this); } }
   class Canvas extends EventTarget {
@@ -37,6 +38,7 @@ vi.mock("pixi.js", () => {
   }
   class Application {
     canvas = new Canvas(); stage = new Container(); renderer = { type: pixi.type, resolution: pixi.resolution, resize() {} };
+    constructor() { pixi.stages.push(this.stage as unknown as { label: string; children: unknown[] }); }
     async init() {} render() {} destroy() { this.stage.destroy(); }
   }
   class Sprite extends Container {
@@ -51,6 +53,14 @@ const scene: ProjectedMapScene = { id: "authorized-scene", width: 2560, height: 
   tokens: [{ id: "visible-token", x: 1200, y: 1200, label: "Known token", movable: true, revision: 1 }],
   lines: Array.from({ length: 1500 }, (_, i) => ({ id: `wall-${i}`, points: [[30 + i % 50 * 50, 30 + Math.floor(i / 50) * 70], [50 + i % 50 * 50, 42 + Math.floor(i / 50) * 70]] as const, color: 0xebc887 })),
   rasterScope: "authorized-view" };
+/** Finds a named layer on the most recently created stage; layers carry Pixi's own `label`. */
+function layer(name: string) {
+  const walk = (node: { label: string; children: unknown[] }): { label: string; children: unknown[]; visible: boolean } | undefined =>
+    node.label === name ? node as never : (node.children as { label: string; children: unknown[] }[]).map(walk).find(Boolean);
+  const found = walk(pixi.stages.at(-1)!);
+  if (!found) throw new Error(`no layer labelled ${name}`);
+  return found;
+}
 function host() { const children: unknown[] = []; return { clientWidth: 1200, clientHeight: 800, appendChild(child: unknown) { children.push(child); }, children } as unknown as HTMLElement; }
 beforeEach(() => {
   pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0; pixi.labels.length = 0; pixi.sprites.length = 0;
@@ -104,12 +114,46 @@ describe("mounted renderer submission and resource lifecycle", () => {
   });
   it("submits shared ordered polygon colors without additional legacy roof strokes", async () => {
     const polygon = [[10,10],[100,10],[100,100],[10,100]] as const;
-    const before = pixi.strokes.length;
     const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], cells: [{ id: "roof", polygon, surface: "building" }],
       drawing: { rendererVersion, width: scene.width, height: scene.height, background: null,
         polygons: [{ regionId: "roof", points: polygon, fill: 0x123456, opacity: .7 }, { regionId: "roof", points: polygon, fill: 0x654321, opacity: .2 }] } });
-    expect(pixi.graphics.flatMap(item => item.fills).filter(fill => typeof fill === "object")).toEqual([{ color: 0x123456, alpha: .7 }, { color: 0x654321, alpha: .2 }]);
-    expect(pixi.strokes.length - before).toBe(1); map.destroy();
+    // Scoped to the drawing's own layer: map furniture is chrome in a separate container and
+    // must not be able to satisfy — or to break — a claim about the submitted cartography.
+    const painted = layer("geography").children as { fills: unknown[]; strokes: unknown[] }[];
+    expect(painted.flatMap(item => item.fills)).toEqual([{ color: 0x123456, alpha: .7 }, { color: 0x654321, alpha: .2 }]);
+    expect(painted.flatMap(item => item.strokes)).toEqual([]);
+    map.destroy();
+  });
+  it("keeps compass and scale bar out of the world and away from a map that carries no drawing", async () => {
+    const plain = await createMapRenderer(host(), { ...scene, tokens: [], lines: [] });
+    expect(layer("chrome").visible).toBe(false);
+    plain.destroy();
+    const drawn = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], grid: { kind: "square", size: 128, origin: [0, 0] },
+      drawing: { rendererVersion, width: scene.width, height: scene.height, background: null, polygons: [] } });
+    const chrome = layer("chrome");
+    expect(chrome.visible).toBe(true);
+    // Chrome lives on the stage, never inside the panned/zoomed world container.
+    expect((layer("geography") as { children: unknown[] }).children).not.toContain(chrome);
+    const captions = () => (chrome.children as { text?: string }[]).map(child => child.text).filter(text => typeof text === "string");
+    expect(captions()).toEqual(["N", expect.stringContaining("Felder")]);
+    const before = captions();
+    drawn.zoomAt(8);
+    expect(captions()).not.toEqual(before);
+    drawn.destroy();
+    // Without a grid the bar counts pixels, and its caption must name the span it really
+    // covers: the real studio showed "10 Bildpunkte" under a bar a thousand pixels wide.
+    const gridless = await createMapRenderer(host(), { ...scene, tokens: [], lines: [],
+      drawing: { rendererVersion, width: scene.width, height: scene.height, background: null, polygons: [] } });
+    const bar = layer("chrome").children as { text?: string; fills?: unknown[]; strokes?: { width?: number }[] }[];
+    const caption = bar.map(child => child.text).find(text => typeof text === "string" && text !== "N")!;
+    const span = Number.parseInt(caption.replace(/\./g, ""), 10);
+    // Four painted quarters plus the outline: the bar's own drawn width in screen pixels.
+    const painted = bar.find(child => (child.fills?.length ?? 0) === 4)!;
+    expect(caption).toMatch(/Bildpunkt/);
+    expect(span * gridless.getCamera().scale).toBeGreaterThan(60);
+    expect(span * gridless.getCamera().scale).toBeLessThanOrEqual(260);
+    expect(painted).toBeDefined();
+    gridless.destroy();
   });
   it("releases artwork textures and bitmaps when their last map placement is removed", async () => {
     const image = { width: 64, height: 64, close: vi.fn() } as unknown as ImageBitmap;

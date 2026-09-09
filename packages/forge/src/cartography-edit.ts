@@ -2,13 +2,16 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { textHash } from "@chronicle/core";
 import { BAUWERK_TYPEN, parseTacticalMapDocument, type BauwerkTyp, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
-import { parseTacticalCartography, type BuildingIntent, type CartographyRegionV1, type CartographyTerrainMaterial, type TacticalCartographyV1 } from "@chronicle/szene";
+import { CARTOGRAPHY_WATER_MATERIALS, parseTacticalCartography, type BuildingIntent, type CartographyRegionV1, type CartographyTerrainMaterial, type CartographyWaterMaterial, type TacticalCartographyV1 } from "@chronicle/szene";
 import { CARTOGRAPHY_EDIT_LIMITS, CARTOGRAPHY_PATTERNS, solveCartographyPatterns, type Cardinal, type EditLimits, type PatternBoundary, type PatternCell, type PatternPort } from "./cartography-patterns.ts";
 import { clipHalbebene, doppelflaeche, flaeche, huelle, imPolygon, q, type Polygon } from "./polygon.ts";
 
 export type QuarterTurns = 0 | 1 | 2 | 3;
 export type CartographyEditOperation =
-  | { readonly kind: "terrain"; readonly points: readonly TacticalPoint[]; readonly radius: number; readonly material: CartographyTerrainMaterial | "water" }
+  /** `water` names what the painted water *is* — river, lake or sea. It changes only the role
+   * the brush writes, never the module adjacency: for the pattern solver water is water.
+   * Absent, it stays a river, which is what every caller before this option painted. */
+  | { readonly kind: "terrain"; readonly points: readonly TacticalPoint[]; readonly radius: number; readonly material: CartographyTerrainMaterial | "water"; readonly water?: CartographyWaterMaterial }
   | { readonly kind: "road"; readonly points: readonly TacticalPoint[]; readonly width: number; readonly material: "path" | "street" | "square" }
   | { readonly kind: "building"; readonly at: TacticalPoint; readonly width: number; readonly height: number; readonly quarterTurns?: QuarterTurns; readonly shape?: "rectangle" | "l"; readonly typ: BauwerkTyp; readonly titel: string; readonly requireRoad?: boolean }
   | { readonly kind: "transform"; readonly regionId: string; readonly delta: TacticalPoint; readonly quarterTurns?: QuarterTurns }
@@ -318,6 +321,7 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
     } else if (operation.kind === "terrain" || operation.kind === "road") {
       const z = cartography.construction.cellSize, [ox, oy] = cartography.construction.origin;
       const radius = operation.kind === "terrain" ? operation.radius : operation.width / 2;
+      if (operation.kind === "terrain" && operation.water !== undefined && !CARTOGRAPHY_WATER_MATERIALS.includes(operation.water)) reject("invalid", "Unbekannte Wasserart; wähle Fluss, See oder Meer.");
       if (!Array.isArray(operation.points) || !operation.points.length || operation.points.length > 4096 || operation.points.some(point => !finitePoint(point) || point[0] < 0 || point[1] < 0 || point[0] > document.geometry.size[0] || point[1] > document.geometry.size[1]) || !positive(radius) || radius > z * 16) reject("invalid", "Ungültiger Pinselzug oder Pinselradius.");
       const selection = new Map<string, { x: number; y: number }>();
       const cellKey = (x: number, y: number) => `${x},${y}`;
@@ -393,7 +397,7 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
           }
         }
         const id = idFor(`module:${cell.x}:${cell.y}`), pattern = solved.assignments.find(value => value.x === cell.x && value.y === cell.y)!.pattern;
-        const role: CartographyRegionV1 = operation.kind === "terrain" ? operation.material === "water" ? { ...common(id), role: "water", material: "river" } : { ...common(id), role: "terrain", material: operation.material }
+        const role: CartographyRegionV1 = operation.kind === "terrain" ? operation.material === "water" ? { ...common(id), role: "water", material: operation.water ?? "river" } : { ...common(id), role: "terrain", material: operation.material }
           : { ...common(id), role: "road", material: pattern.waterMask ? "bridge" : operation.material };
         const surface = operation.kind === "road" ? networkFootprint(x, y, z, Math.min(z, operation.width), pattern.roadMask)
           : operation.material === "water" && pattern.waterMask ? networkFootprint(x, y, z, z * .7, pattern.waterMask) : polygon;
