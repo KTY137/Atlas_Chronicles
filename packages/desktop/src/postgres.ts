@@ -28,6 +28,13 @@ export async function verifyRuntime(root: string): Promise<void> {
   }
 }
 
+// Nur ESRCH beweist, dass es diese PID nicht mehr gibt. Alles andere - fehlende Rechte,
+// eine unlesbare Zahl - gilt als lebend und muss den vollen Eigentuemernachweis durchlaufen.
+function possiblyAlive(pid: number): boolean {
+  if (!Number.isSafeInteger(pid) || pid <= 0) return true;
+  try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
+}
+
 export class ManagedPostgres {
   private confirmed = false;
   constructor(readonly runtimeRoot: string, readonly owned: OwnedProfile) {}
@@ -92,7 +99,13 @@ export class ManagedPostgres {
     await this.verifyOwnership();
   }
   async stop(): Promise<void> {
-    if (!this.confirmed && !(await lstat(join(this.owned.dataDirectory, "postmaster.pid")).catch(() => undefined))) return;
+    const recorded = await readFile(join(this.owned.dataDirectory, "postmaster.pid"), "utf8").catch(() => undefined);
+    if (!this.confirmed && recorded === undefined) return;
+    // Ein abgestuerzter Postmaster laesst seine PID-Datei liegen. Einen toten Prozess kann der
+    // Eigentuemernachweis nicht mehr messen: Win32_Process antwortet leer, und das ist von einem
+    // Fremdprozess ununterscheidbar. Ohne diesen Zweig bliebe die Welt dauerhaft unbeendbar,
+    // denn Fenster-X, Tray und app.quit laufen alle durch dieselbe Pruefung.
+    if (recorded !== undefined && !possiblyAlive(Number(recorded.split(/\r?\n/)[0]))) { this.confirmed = false; return; }
     await this.verifyOwnership();
     // Smart waits for connected sessions. The host's app and pool must close first.
     await this.run("pg_ctl", ["-D", this.owned.dataDirectory, "-m", "smart", "-w", "-t", "60", "stop"]);
