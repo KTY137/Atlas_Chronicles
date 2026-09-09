@@ -21,7 +21,7 @@ interface ImportReport { orte: number; zellen: number; unterdrueckteNotizen: num
 interface AtlasMap extends ProjectedMapScene { title: string; nodes: readonly AtlasNode[]; version?: number; report?: ImportReport; background?: { url: string; width: number; height: number } }
 interface MapSummary { id: string; title: string }
 export interface AtlasViewProps { campaignId: string; role: "leitung" | "spieler" | "beobachter"; onOpenEntry: (id: string) => void; onDirty: (dirty: boolean) => void }
-const KIND_LABEL: Record<string, string> = { welt: "Welt", landmasse: "Landmasse", macht: "Herrschaft", region: "Region", ort: "Ort", bauwerk: "Bauwerk", raum: "Raum", behaelter: "Behälter", gegenstand: "Gegenstand" };
+const KARTENART_LABEL: Record<string, string> = { welt: "Welt", landmasse: "Landmasse", macht: "Herrschaft", region: "Region", ort: "Ort", bauwerk: "Bauwerk", raum: "Raum", behaelter: "Behälter", gegenstand: "Gegenstand" };
 const pathId = (id: string) => encodeURIComponent(id);
 
 export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewProps) {
@@ -279,7 +279,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
         <label className="atlas-search"><Search size={16} aria-hidden="true" /><span className="atlas-sr-only">{t("Orte durchsuchen")}</span><input type="search" placeholder={t("Einen Ort finden …")} value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         <label className="atlas-filter"><span className="atlas-sr-only">{t("Art des Ortes")}</span><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="all">{t("Alle Orte & Gebiete")}</option><option value="places">{t("Siedlungen")}</option><option value="regions">{t("Gebiete & Herrschaften")}</option><option value="linked">{t("Mit Unterkarte")}</option></select></label>
         <ul className="atlas-place-list">{nodes.map((node) => { const row = <button type="button" className={node.id === selectedId ? "is-selected" : ""} aria-pressed={node.id === selectedId} onClick={() => choose(node.id)}>
-          <span className="atlas-place-symbol" aria-hidden="true">{node.childMapId ? <DoorOpen size={18} /> : node.kind === "ort" ? "◆" : "◇"}</span><span><strong>{node.title ?? t("Unbenannt")}</strong><small>{node.childMapId ? t("Mit Unterkarte") : t(KIND_LABEL[node.kind] ?? node.kind)}</small></span>{node.entryId && <BookOpen size={14} aria-label={t("Mit Wiki-Artikel verbunden")} />}
+          <span className="atlas-place-symbol" aria-hidden="true">{node.childMapId ? <DoorOpen size={18} /> : node.kind === "ort" ? "◆" : "◇"}</span><span><strong>{node.title ?? t("Unbenannt")}</strong><small>{node.childMapId ? t("Mit Unterkarte") : t(KARTENART_LABEL[node.kind] ?? node.kind)}</small></span>{node.entryId && <BookOpen size={14} aria-label={t("Mit Wiki-Artikel verbunden")} />}
         </button>; return <li key={node.id}>{gm && node.childMapId && !deletedIds.has(`tactical:${node.childMapId}`) ? <MapContextMenu label={node.title ?? t("Unterkarte")} actions={entranceActions(node)}>{row}</MapContextMenu> : row}</li>; })}</ul>{!nodes.length && <p className="atlas-no-results">{t("Keine passenden Orte.")}</p>}
       </aside>
       <div className="atlas-canvas-column"><div className="atlas-map-frame"><div ref={host} className="atlas-render-host" onContextMenu={event => {
@@ -305,7 +305,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
           <p>{t("{anzahl} Generatornotizen wurden als Quelle aufbewahrt und nicht veröffentlicht.", { anzahl: map.data.report.unterdrueckteNotizen })}</p>
           {map.data.report.hinweise.map((line) => <p key={line}>{line}</p>)}</details>}
       </div>
-      {selected && <aside className="atlas-inspector" aria-label={t("Ort: {name}", { name: selected.title ?? t("Unbenannt") })}><div className="atlas-inspector-top"><span className="eyebrow">{t(KIND_LABEL[selected.kind] ?? selected.kind)}</span><Button variant="quiet" aria-label={t("Ortsdetails schließen")} title={t("Ortsdetails schließen")} onClick={() => { setSelectedId(""); renderer.current?.select(null); }}><X size={16} /></Button></div>
+      {selected && <aside className="atlas-inspector" aria-label={t("Ort: {name}", { name: selected.title ?? t("Unbenannt") })}><div className="atlas-inspector-top"><span className="eyebrow">{t(KARTENART_LABEL[selected.kind] ?? selected.kind)}</span><Button variant="quiet" aria-label={t("Ortsdetails schließen")} title={t("Ortsdetails schließen")} onClick={() => { setSelectedId(""); renderer.current?.select(null); }}><X size={16} /></Button></div>
         <h2>{selected.title ?? t("Unbenannt")}</h2>
         {gm && map.data.version !== undefined && (selected.kind === "ort" || selected.childMapId) ? <MapEntrance key={`${mapId}:${selected.id}`} campaignId={campaignId} parentKind="atlas" parentMapId={mapId}
           nodeId={selected.id} title={selected.title ?? t("Unterkarte")} version={map.data.version} canEnter={!!selected.canEnter} childMapId={selected.childMapId}

@@ -137,12 +137,18 @@ describe("server-issued Chronist egress release",()=>{
   it("schätzt die Kosten als obere Schranke, wenn ein Tarif hinterlegt ist",async()=>{
     const pricing={currency:"USD",inputMicrosPerMillion:2_000_000,outputMicrosPerMillion:10_000_000,asOf:"2026-09-08"};
     const f=await fixture({external:true,pricing}),preview=await f.service.preview(gm,f.campaignId,f.input);
-    const outputTokens=Math.max(64,Math.min(16_000,preview.budget.maxOutputCharsPerCall));
+    // Nicht die Formel nachbauen, sonst macht der Test jeden Rechenfehler mit — genau das ist
+    // hier passiert: die Ausgabe ging einmal ungeteilt als Tokenzahl ein und war 4x zu hoch.
+    // Beide Budgets sind ZEICHEN; vier Zeichen sind ein Token, in beide Richtungen.
     const calls=Math.min(preview.maxCalls,preview.budget.maxCalls);
-    const expected=Math.ceil(calls*Math.ceil(preview.budget.maxInputCharsPerCall/4)*pricing.inputMicrosPerMillion/1e6
-      +calls*outputTokens*pricing.outputMicrosPerMillion/1e6);
+    const eingabeTokenProCall=Math.ceil(preview.budget.maxInputCharsPerCall/4);
+    const ausgabeTokenProCall=Math.max(64,Math.min(16_000,Math.ceil(preview.budget.maxOutputCharsPerCall/4)));
     expect(calls).toBeGreaterThan(0);
-    expect(preview.estimate.costMicros).toBe(expected);
+    expect(ausgabeTokenProCall).toBeLessThan(preview.budget.maxOutputCharsPerCall);
+    const eingabeAnteil=calls*eingabeTokenProCall*2_000_000/1e6, ausgabeAnteil=calls*ausgabeTokenProCall*10_000_000/1e6;
+    expect(preview.estimate.costMicros).toBe(Math.ceil(eingabeAnteil+ausgabeAnteil));
+    // Gegenprobe gegen die alte, falsche Rechnung: sie lag um das Vierfache des Ausgabeanteils daneben.
+    expect(preview.estimate.costMicros).toBeLessThan(Math.ceil(eingabeAnteil+ausgabeAnteil*4));
     expect(preview.estimate.costMicros!).toBeGreaterThan(0);
     expect(preview.estimate.costKind).toBe("estimated");
     expect(preview.estimate.currency).toBe("USD");

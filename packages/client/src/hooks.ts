@@ -31,11 +31,17 @@ export function useResource<T>(path: string | null, revision = 0, interval = 0) 
 
 export function useTask() {
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
+  // Der HTTP-Status wird mitgeführt, damit eine Oberfläche einen Konflikt am Code erkennt und
+  // nicht am Fehlertext: ein Textvergleich fällt still aus, sobald jemand den Satz umformuliert
+  // oder seine Übersetzung ändert.
+  const [status, setStatus] = useState(0);
   const run = useCallback(async (work: () => Promise<void>) => {
-    setBusy(true); setError("");
-    try { await work(); } catch (error) { setError(errorText(error)); } finally { setBusy(false); }
+    setBusy(true); setError(""); setStatus(0);
+    try { await work(); }
+    catch (error) { setError(errorText(error)); setStatus(error instanceof ApiError ? error.status : 0); }
+    finally { setBusy(false); }
   }, []);
-  return { busy, error, setError, run };
+  return { busy, error, status, setError, run };
 }
 
 /**

@@ -91,6 +91,6 @@ export function Auth({ onAuthenticated }: { onAuthenticated: (campaignId?: strin
         await api("/api/pairing/redeem", { method: "POST", body: { code: pairCode.trim() } }); setPairCode(""); await onAuthenticated();
       }); }}><label>{t("Kopplungscode der Spielleitung")}<input value={pairCode} onChange={(e) => setPairCode(e.target.value)} autoComplete="off" required /></label><Button type="submit" disabled={task.busy}>{t("Gerät verbinden")}</Button></form></details>
     </>}
-    {task.error ? <Notice error>{task.error.includes(t("Konflikt")) ? t("Dieser Name ist bereits vergeben. Wähle bitte einen unterscheidbaren Namen.") : task.error}</Notice> : null}
+    {task.error ? <Notice error>{task.status === 409 ? t("Dieser Name ist bereits vergeben. Wähle bitte einen unterscheidbaren Namen.") : task.error}</Notice> : null}
   </div><p className="auth-footer">{t("Eure Geschichten bleiben bei eurem Server.")}</p></section></main>;
 }

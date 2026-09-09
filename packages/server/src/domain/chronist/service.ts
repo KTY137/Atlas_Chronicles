@@ -42,12 +42,13 @@ export function createChronistService(db:Db,config:ChronistServiceConfig&Chronis
     if(base.sessionId&&!((await tx.query("SELECT id FROM game_sessions WHERE id=$1 AND campaign_id=$2",[base.sessionId,campaignId])).rowCount))throw new Gone("session");
     const scopeHash=chronistScopeHash(base,provider),snapshot:ChronistSnapshot={...base,scopeHash,runId:"scope-preview"},plans=planChronistUnits(snapshot);
     const findings=chronistRuleCandidates(snapshot).flatMap(c=>c.ruleFinding?[c.ruleFinding]:[]),sourceChars=sources.reduce((n,s)=>n+s.text.length,0);
-    const maxCalls=plans.length*2,inputChars=maxCalls*budget.maxInputCharsPerCall,outputChars=plans.reduce((n,p)=>n+p.maxOutputChars*2,0),pricing=provider.description.pricing;
+    const maxCalls=plans.length*2,inputChars=maxCalls*budget.maxInputCharsPerCall,outputChars=maxCalls*budget.maxOutputCharsPerCall,pricing=provider.description.pricing;
     // Obere Schranke, keine Prognose: jeder erlaubte Aufruf schöpft seine Eingabegrenze aus und
     // erzeugt die volle vom Profil gesetzte Ausgabemenge. Die Annahme „vier Zeichen je Token"
-    // steht so auch in der Oberfläche; sie ist grob, aber nie kleiner als die Wirklichkeit.
+    // steht so auch in der Oberfläche und gilt für BEIDE Richtungen: maxOutputCharsPerCall
+    // ist ein Zeichen-, kein Tokenbudget. Grob, aber nie kleiner als die Wirklichkeit.
     const abrechenbareCalls=Math.min(maxCalls,budget.maxCalls);
-    const inputTokens=abrechenbareCalls*Math.ceil(budget.maxInputCharsPerCall/4),outputTokens=abrechenbareCalls*Math.max(64,Math.min(16_000,budget.maxOutputCharsPerCall));
+    const inputTokens=abrechenbareCalls*Math.ceil(budget.maxInputCharsPerCall/4),outputTokens=abrechenbareCalls*Math.max(64,Math.min(16_000,Math.ceil(budget.maxOutputCharsPerCall/4)));
     const costMicros=pricing?Math.ceil(inputTokens*pricing.inputMicrosPerMillion/1e6+outputTokens*pricing.outputMicrosPerMillion/1e6):null;
     const warnings:string[]=[];if(!provider.description.available)warnings.push("provider-unavailable");
     if(maxCalls>budget.maxCalls||inputChars>budget.maxInputChars||outputChars>budget.maxOutputChars)warnings.push("partial-budget");
@@ -99,8 +100,11 @@ export function createChronistService(db:Db,config:ChronistServiceConfig&Chronis
       consume:()=>{verbrauchteFreigaben.set(abdruck,ablaufAt+CHRONIST_FREIGABE_TTL_MS);}};
   }
   /** Der partielle Unique-Index aus 029 ist der strukturelle Rückhalt derselben Zusage. */
-  const usedFreigabe=(error:unknown)=>String((error as {code?:string;message?:string}).code??"")==="23505"
-    ||/chronist_freigabe_start/.test(String((error as {message?:string}).message??""));
+  const usedFreigabe=(error:unknown)=>{const e=error as {code?:string;constraint?:string;message?:string};
+    // Nur DIESER Index bedeutet eine zweitverwendete Freigabe. Ein nackter 23505 traefe auch
+    // den aktiven Lauf je Kampagne oder die Befehlsidentitaet und meldete dann das Falsche.
+    return e.constraint==="chronist_freigabe_start"
+      ||String(e.code??"")==="23505"&&/chronist_freigabe_start/.test(String(e.message??""));};
   async function view(tx:Db,run:ChronistRunRow):Promise<ChronistRunView>{const count=Number((await tx.query<{count:string}>("SELECT count(*)::text AS count FROM chronist_vorschlaege WHERE run_id=$1",[run.id])).rows[0]!.count),at=await chronistDbTime(tx,config),expired=run.state==="running"&&Number(run.lease_until)<=at;
     return {runId:run.id,version:run.version,state:expired?"paused":run.state,mode:run.mode,sessionId:run.session_id,scopeHash:run.snapshot.scopeHash,provider:run.provider.description,model:run.provider.model,
       createdAt:Number(run.created_at),updatedAt:Number(run.updated_at),stopReason:run.stop_reason,cancelRequested:run.cancel_requested,budget:run.snapshot.budget,
