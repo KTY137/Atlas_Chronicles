@@ -1,6 +1,6 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — 1, 2, 5, 6 fertig)
+Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — 1, 2, 3, 5, 6 fertig)
 
 ## Kartenstudio Runde 4: die Zehnerliste — 2026-09-10
 
@@ -15,7 +15,11 @@ Tag = Feld fehlt, gespeichert, Spieler sehen sie; nachts tragen die Lichter, Mon
 Mondtönung der Möbel) und Ebenenleiste (14 Reihen, ausblenden über `view.hide`/`applyLayers`,
 sperren über geschützte Flächen; Sitzungszustand, nie gespeichert; ausgeblendet = gesperrt).
 Spec-Abschnitt 5 in `docs/superpowers/specs/2026-09-10-kartenstudio-optik-und-innenraum-design.md`,
-Nachweise `design/iterations/map-studio-20260910-optik.md` (Runde 4). **Offen:** 3, 4, 7, 8, 9, 10.
+Nachweise `design/iterations/map-studio-20260910-optik.md` (Runde 4).
+**3 Streupinsel** (Folge-Commit): Paket `pk.natur` (16 Außenmotive aus
+`tools/assets/erzeuge-naturpaket.mjs`, Asset-Gate 6 Pakete) und „Streuen beim Ziehen" im
+Pinselbalken (`map-scatter.ts`: Abstand, Zufall, ein Strich ein Schritt, Räume übernehmen ihre
+Objekte). **Offen:** 4, 7, 8, 9, 10.
 
 Zuvor: **2026-09-10, Runde 3** (Kartenstudio Stufe 11: Licht, Schatten, Tusche, Flickenfelder)
 

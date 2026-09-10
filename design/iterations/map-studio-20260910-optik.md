@@ -76,6 +76,22 @@ dazu forge/server/client-Kartensuiten 80/80. Typecheck, Build, `gate:sprache`, `
 grün. Browser: `map-studio` (neu: Stimmung speichern und nach Neuladen sehen, Wasser
 ausblenden, Ebene sperren, Leiste schließen; die Schalter sind `role="switch"`, weil `getByRole("button", { name: "Gelände" })` sonst Werkzeug und Ebene traf), `map-editor-cartography`, `nested-maps`: 8/8 in 6,5 min, Bild `night-layers-studio.png` angesehen.
 
+## Runde 4, Punkt 3 — Streupinsel und Naturpaket
+
+Kontaktbogen `.local/relief-probe/kontaktbogen-natur.ts` (16 Motive auf Wiesengrund, 3×)
+angesehen: Laubkronen anfangs gezackt und die Blattballen kaum sichtbar → gelappter Umriss
+(jede zweite Ecke innen) und kräftigere Ballen. Im Studio (`scatter-studio.png`): ein Strich
+Laubbäume am Südrand der Küstenstadt, in Größe und Drehung verschieden, mit gebackenem Schatten
+auf der gemalten Wiese, im Maßstab der gemalten Kronen. Nachweise: client `map-scatter` 4/4
+(gleichmäßig ohne Zufall, gebunden mit Zufall, gleicher Keim gleiches Ergebnis, Klick/stiller
+Strich/Grenzfälle, Stempel geklemmt/benannt/im Budget), `gate:assets` GREEN mit 6 Paketen und
+587 Assets, alle aus der Quelle reproduziert; server `packs`/`map-settings` 24/24;
+`gate:sprache`, `gate:boundaries`, Typecheck. Browser `map-studio` „scatter brush": Strich auf
+dem leeren Blatt → mehr als 8 Bäume in mindestens 4 Drehungen, Rückgängig nimmt alle,
+Wiederholen bringt alle, dann derselbe Strich auf der Küstenstadt mit Bild. Erste Fassung des
+Specs wollte nach dem Speichern rückgängig machen; nach dem Speichern ist die Historie leer,
+also erst rückgängig, dann wiederholen, dann speichern.
+
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel
 für Außenobjekte, Möbel an die Wand rücken (Möbel stehen frei im Raum). Desktop nicht neu gebaut.

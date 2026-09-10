@@ -533,5 +533,11 @@
   "Ebene sperren": "Lock layer",
   "Ebene freigeben": "Unlock layer",
   "Die Ebene {ebene} ist ausgeblendet oder gesperrt.": "The layer {ebene} is hidden or locked.",
-  "Ausblenden, was gerade stört; sperren, was fertig ist. Beides gilt nur für deine Ansicht beim Bearbeiten und wird nicht gespeichert.": "Hide what is in the way; lock what is finished. Both apply only to your view while editing and are not saved."
+  "Ausblenden, was gerade stört; sperren, was fertig ist. Beides gilt nur für deine Ansicht beim Bearbeiten und wird nicht gespeichert.": "Hide what is in the way; lock what is finished. Both apply only to your view while editing and are not saved.",
+  "Natur · Bäume, Felsen, Schilf & Boote": "Nature · trees, rocks, reeds & boats",
+  "Streuen beim Ziehen": "Scatter while dragging",
+  "Abstand": "Spacing",
+  "Zufall": "Randomness",
+  "{zellen} Zellen": "{zellen} cells",
+  "Über die Karte streichen, um Objekte zu verstreuen · jeder Strich ist ein Schritt · Esc beendet das Streuen": "Stroke across the map to scatter objects · every stroke is one step · Esc stops scattering"
 }

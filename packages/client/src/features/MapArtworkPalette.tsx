@@ -10,7 +10,7 @@ import { artworkBrush, artworkGenre, artworkMatches, artworkName, type ArtworkBr
 import "./map-artwork.css";
 
 const ART_LABEL: Record<AssetArt, string> = { boden: "Böden", wand: "Wände", tuer: "Türen", aufbau: "Aufbauten & Stadt", moebel: "Einrichtung", gefaess: "Behälter", licht: "Lichter", marke: "Zeichen", figur: "Figuren" };
-const PACK_LABEL: Record<string, string> = { "pk.genres": "Genre-Archiv · zwölf Welten", "pk.zeitwelten": "Zeitwelten · Gegenwart & Science-Fiction", "pk.gemalt": "Gemalt", "pk.grundriss": "Grundriss", "pk.atlas": "Weltatlas" };
+const PACK_LABEL: Record<string, string> = { "pk.genres": "Genre-Archiv · zwölf Welten", "pk.zeitwelten": "Zeitwelten · Gegenwart & Science-Fiction", "pk.gemalt": "Gemalt", "pk.grundriss": "Grundriss", "pk.atlas": "Weltatlas", "pk.natur": "Natur · Bäume, Felsen, Schilf & Boote" };
 interface PackSummary { id: string; version: string; assetCount: number }
 
 export function MapArtworkPalette({ document, brush, onBrush, selected, onSelect, onUpdate, onRemove }: {

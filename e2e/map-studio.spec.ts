@@ -105,6 +105,44 @@ test("the mood is saved with the map, and the layer panel hides and locks for th
   } finally { await context.close(); await host.close(); }
 });
 
+test("the scatter brush strews a wood along one stroke, as one undoable step, on a blank sheet and on a painted coast", async ({ browser }, info) => {
+  test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
+  try {
+    await context.addCookies([host.cookie]); const page = await context.newPage(), errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+    const pickTree = async () => {
+      await page.getByRole("button", { name: "Möbel & Objekte", exact: true }).click();
+      const palette = page.getByRole("region", { name: "Kartenassets", exact: true });
+      await palette.getByRole("combobox", { name: "Assetpaket", exact: true }).selectOption("pk.natur");
+      await palette.getByRole("button", { name: /^Laubbaum/ }).first().click();
+      await page.getByLabel("Streuen beim Ziehen", { exact: true }).check();
+    };
+    await page.goto(host.origin); await expect(canvas(page)).toBeVisible();
+    await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
+    await pickTree();
+    await drag(page, [150, 150], [850, 650]);
+    // One stroke is one step: undo takes the whole wood away and leaves nothing to save; redo
+    // brings every tree back.
+    await expect(page.getByRole("button", { name: "Rückgängig", exact: true })).toBeEnabled();
+    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
+    await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    await page.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
+    const saved = await host.map(), trees = saved.document.geometry.stamps.filter(stamp => stamp.a === "pk.natur/laubbaum");
+    expect(trees.length).toBeGreaterThan(8);
+    expect(new Set(trees.map(stamp => stamp.r)).size).toBeGreaterThan(3);
+    expect(trees.every(stamp => stamp.x >= 0 && stamp.x <= 1000 && stamp.y >= 0 && stamp.y <= 800)).toBe(true);
+    const generated = await host.generate("kueste"); await page.goto(`${host.origin}/?map=${generated.ack.subjectId}`); await expect(canvas(page)).toBeVisible();
+    await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
+    await pickTree();
+    await drag(page, [120, 700], [900, 720]);
+    await page.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
+    await page.screenshot({ path: info.outputPath("scatter-studio.png"), fullPage: true });
+    expect(errors).toEqual([]);
+  } finally { await context.close(); await host.close(); }
+});
+
 test("the height tool shapes a map that never had a relief, and the relief survives save and reload", async ({ browser }, info) => {
   test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
   try {

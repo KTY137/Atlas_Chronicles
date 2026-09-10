@@ -102,7 +102,7 @@ Präsentation, keine Daten geändert; jede Wirkung kommt aus dem, was die Karte 
 ## 5. Runde 4 — die Zehnerliste (`cartography-11`)
 
 Kaya fragte nach zehn Verbesserungen und ließ sie abarbeiten. Reihenfolge nach Wirkung, jedes
-Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1, 2, 5, 6 fertig.
+Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1, 2, 3, 5, 6 fertig.
 
 **1 Möbel an die Wand, 2 Gärten um die Häuser** (Commit `3f75ad3`): Möbel werden nach Art
 platziert — Betten, Schränke, Regale, Truhen an die Wand (`Lage` mit bevorzugten Plätzen und
@@ -137,6 +137,20 @@ was man nicht sieht. Gesperrte Ebenen gehen als geschützte Flächen in jede Bea
 Türen, Pinsel/Verschieben/Entfernen/Drehen/Duplizieren an Einrichtung; die Meldung nennt die
 Ebene. Die Schalter sind Schalter (`role="switch"`), keine Knöpfe, weil die Werkzeugleiste links
 schon Knöpfe namens Gelände und Gebäude hat.
+
+**3 Streupinsel und Außenobjekte.** Zwei Teile. Das Paket `pk.natur` (16 Motive, von oben:
+Laubbaum in drei Größen, Nadelbaum in zwei, Busch, Baumstumpf, umgestürzter Stamm, Findling,
+Geröll, Schilf, Seerosen, Ruderboot, Heuhaufen, Karren, Zaunstück) entsteht wie die anderen aus
+einem Skript (`tools/assets/erzeuge-naturpaket.mjs`, im Asset-Gate registriert, CC0), in der
+Hand von `pk.gemalt`: Verlauf für die Form, Korn für das Material, und der Schatten nach Südost
+ist in jede Zeichnung gebacken, weil der Renderer seinen Möbelschatten nur unter Ebenen −10..10
+legt und Aufbauten auf 15 stehen. Der Pinsel (`map-scatter.ts`): mit „Streuen beim Ziehen" wird
+ein Strich zu vielen Objekten — der erste am Anfang des Strichs, jeder weitere nach „Abstand"
+Zellen Bogenlänge, quer und längs versetzt, gedreht und in der Größe verändert nach „Zufall".
+Alles kommt aus dem Strich und dem Keim der Geste, deshalb ist die Vorschau beim Ziehen genau
+das, was der Commit behält, und **ein Strich ist ein Schritt** (Rückgängig nimmt den ganzen
+Wald). Objekte, die in einen Raum fallen, gehören dem Raum; ein gesperrter Raum nimmt nichts;
+die Ebene Einrichtung sperrt den Pinsel mit. Ein Klick ohne Ziehen setzt weiter ein Objekt.
 
 ## 6. Nachweis
 Siehe `design/iterations/map-studio-20260910-optik.md`.

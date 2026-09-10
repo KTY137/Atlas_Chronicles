@@ -17,6 +17,7 @@ import { MapArtworkPalette } from "./MapArtworkPalette";
 import { placeArtwork, type ArtworkBrush } from "./map-artwork";
 import { Eye, EyeOff, Layers, Lock, MousePointer2, Palette, RotateCw, Save, Unlock } from "lucide-react";
 import { applyLayers, blockedRegionIds, layerBlocked, layerView, MAP_LAYERS, mapLayerLabel, mapLayerState, toggleLayer } from "./map-layers";
+import { scatterSettings, scatterStamps, SCATTER_SPACING } from "./map-scatter";
 import { interiorHit, snapPoint, type InteriorTarget } from "./map-studio";
 import { applyInteriorEdit, type InteriorEditOperation } from "@chronicle/forge";
 
@@ -42,7 +43,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const epoch = useRef(0), identity = useRef(current.id); identity.current = current.id;
   const heldBaseline = useRef<TacticalMapCard | null>(null);
   const [childrenRefresh, setChildrenRefresh] = useState(0);
-  const gesture = useRef<{ id: string; seed: string; baseline: MapEditSnapshot; path: TacticalPoint[]; regionId?: string; stampId?: string; target?: InteriorTarget; operation?: CartographyEditOperation; interiorOperation?: InteriorEditOperation } | null>(null);
+  const gesture = useRef<{ id: string; seed: string; baseline: MapEditSnapshot; path: TacticalPoint[]; regionId?: string; stampId?: string; target?: InteriorTarget; operation?: CartographyEditOperation; interiorOperation?: InteriorEditOperation; scatter?: boolean } | null>(null);
   const scheduled = useRef<number | null>(null);
   const [drawing, setDrawing] = useState(false), [points, setPoints] = useState<TacticalPoint[]>([]), [regionId, setRegionId] = useState(""), [entryId, setEntryId] = useState(""), [passageId, setPassageId] = useState("");
   const [pointX, setPointX] = useState(0), [pointY, setPointY] = useState(0), [exportInfo, setExportInfo] = useState("");
@@ -51,6 +52,8 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const [brush, setBrush] = useState<ArtworkBrush | null>(null);
   const [interiorSelected, setInteriorSelected] = useState<InteriorTarget | null>(null);
   const [brushTurns, setBrushTurns] = useState(0), [brushScale, setBrushScale] = useState(1);
+  // The scatter brush: with it on, a drag strews the chosen motif along the stroke as one step.
+  const [scatter, setScatter] = useState(scatterSettings);
   // The layer panel: what is hidden while working and what is locked once it is done. Both are
   // this sitting's view of the map and never enter the saved map; a hidden layer is locked too.
   const [layers, setLayers] = useState(mapLayerState), [layersOpen, setLayersOpen] = useState(true);
@@ -141,6 +144,22 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     const draft = gesture.current;
     if (!draft || historyRef.current.gesture?.id !== draft.id) return;
     const last = draft.path.at(-1)!, first = draft.path[0]!;
+    if (draft.scatter) {
+      if (!brush) return;
+      // Every object of the stroke, then the rooms that own the ones that fell inside them; a
+      // locked room takes nothing, the way a single placement respects its lock.
+      const rooms = draft.baseline.cartography.regions.filter(region => region.role === "room" && region.interior).map(region => ({ region, polygon: draft.baseline.document.geometry.regions.find(polygon => polygon.id === region.regionId) }));
+      const owned = new Map<string, string[]>(), kept = [];
+      for (const stamp of scatterStamps(draft.baseline.document, brush, draft.path, cartography.construction.cellSize, scatter, draft.seed, index => `${draft.id}:${index}`, brushTurns, brushScale)) {
+        const room = rooms.find(({ polygon }) => polygon && pointInPolygon([stamp.x, stamp.y], polygon.punkte));
+        if (room?.region.locked) continue;
+        if (room) owned.set(room.region.regionId, [...(owned.get(room.region.regionId) ?? []), stamp.id]);
+        kept.push(stamp);
+      }
+      const next = editDocument(draft.baseline, { ...draft.baseline.document, geometry: { ...draft.baseline.document.geometry, stamps: [...draft.baseline.document.geometry.stamps, ...kept] } });
+      changeHistory(old => previewEdit(old, draft.id, { ...next, cartography: { ...next.cartography, regions: next.cartography.regions.map(region => region.role === "room" && region.interior && owned.has(region.regionId) ? { ...region, interior: { ...region.interior, stampIds: [...region.interior.stampIds, ...owned.get(region.regionId)!] } } : region) } }));
+      return;
+    }
     if (draft.stampId) {
       const stamp = draft.baseline.document.geometry.stamps.find(item => item.id === draft.stampId);
       if (!stamp) return;
@@ -210,9 +229,13 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     else { setSelectedObject(hit?.kind === "pin" ? hit.id : ""); setRegionId(""); }
   };
   const editor: MapEditorInteraction = {
-    active: () => !editingDisabled && !drawing && !marking && !brush && !tools.hand,
+    active: () => !editingDisabled && !drawing && !marking && (!brush || scatter.on) && !tools.hand,
     begin: (point, hit, pickedStampId) => {
       setFocusRequested(false);
+      if (brush) {
+        if (!scatter.on || blocked("einrichtung")) return false;
+        startGesture([point], { scatter: true }); computeGesture(); return true;
+      }
       if (tools.tool === "select") {
         const primitive = interiorHit(document, point, Math.max(2, cartography.construction.cellSize * .12));
         if (primitive?.kind === "portal" || primitive && !pickedStampId) {
@@ -240,7 +263,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       if (scheduled.current !== null) cancelAnimationFrame(scheduled.current); scheduled.current = null;
       if ((draft.regionId || draft.stampId || draft.target) && Math.hypot(point[0] - draft.path[0]![0], point[1] - draft.path[0]![1]) < 1) { cancelGesture(); return; }
       draft.path.push(point); computeGesture();
-      if (draft.regionId || draft.stampId || draft.target || tools.direct) finishGesture();
+      if (draft.regionId || draft.stampId || draft.target || draft.scatter || tools.direct) finishGesture();
     },
     cancel: cancelGesture,
   };
@@ -346,8 +369,12 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       else if (hit?.kind === "pin" && hit.id.startsWith("node:")) selectRegion(hit.id.slice(5));
       else { setSelectedObject(hit?.kind === "pin" ? hit.id : ""); setRegionId(""); }
     }} />
-    <div className="map-editor-hint"><MousePointer2 size={14} /><span>{brush ? t("Objekt durch Klicken platzieren · R drehen · Esc beendet das Platzieren") : tools.hand ? t("Ziehen zum Verschieben der Karte") : toolHints[tools.tool]}</span></div>
-    {brush ? <div className="map-editor-stage-toolbar"><Button onClick={() => setBrushTurns(value => (value + 1) % 4)}><RotateCw size={15} /> {t("Objekt drehen · {grad}°", { grad: brushTurns * 90 })}</Button><label>{t("Objektgröße")}<select value={brushScale} onChange={event => setBrushScale(Number(event.target.value))}><option value={.5}>{t("Halb")}</option><option value={1}>{t("Normal")}</option><option value={1.5}>{t("Groß")}</option><option value={2}>{t("Doppelt")}</option></select></label><Button onClick={() => setBrush(null)}>{t("Platzieren beenden")}</Button></div> : null}
+    <div className="map-editor-hint"><MousePointer2 size={14} /><span>{brush ? scatter.on ? t("Über die Karte streichen, um Objekte zu verstreuen · jeder Strich ist ein Schritt · Esc beendet das Streuen") : t("Objekt durch Klicken platzieren · R drehen · Esc beendet das Platzieren") : tools.hand ? t("Ziehen zum Verschieben der Karte") : toolHints[tools.tool]}</span></div>
+    {brush ? <div className="map-editor-stage-toolbar map-editor-brushbar"><Button onClick={() => setBrushTurns(value => (value + 1) % 4)}><RotateCw size={15} /> {t("Objekt drehen · {grad}°", { grad: brushTurns * 90 })}</Button><label>{t("Objektgröße")}<select value={brushScale} onChange={event => setBrushScale(Number(event.target.value))}><option value={.5}>{t("Halb")}</option><option value={1}>{t("Normal")}</option><option value={1.5}>{t("Groß")}</option><option value={2}>{t("Doppelt")}</option></select></label>
+      <label className="map-editor-brush-check"><input type="checkbox" checked={scatter.on} onChange={event => { cancelGesture(); setScatter(old => ({ ...old, on: event.target.checked })); }} />{t("Streuen beim Ziehen")}</label>
+      {scatter.on ? <><label>{t("Abstand")}<input type="range" min={SCATTER_SPACING.min} max={SCATTER_SPACING.max} step={.2} value={scatter.spacing} onChange={event => setScatter(old => ({ ...old, spacing: event.target.valueAsNumber }))} /><span className="map-editor-brush-value">{t("{zellen} Zellen", { zellen: scatter.spacing.toFixed(1) })}</span></label>
+        <label>{t("Zufall")}<input type="range" min={0} max={1} step={.1} value={scatter.jitter} onChange={event => setScatter(old => ({ ...old, jitter: event.target.valueAsNumber }))} /><span className="map-editor-brush-value">{Math.round(scatter.jitter * 100)} %</span></label></> : null}
+      <Button onClick={() => setBrush(null)}>{t("Platzieren beenden")}</Button></div> : null}
     {history.gesture ? <div className="map-editor-preview-actions"><Button variant="primary" disabled={!history.gesture.preview || editingDisabled} onClick={() => { gesture.current = null; changeHistory(acceptEdit); }}>{t("Vorschau übernehmen")}</Button><Button onClick={cancelGesture}>{t("Vorschau verwerfen")}</Button></div> : null}
     </div><div className="map-editor-details"><div className="map-editor-topline"><strong>{t("Details & Einrichtung")}</strong><small>{t("{flaechen} Flächen · {waende} Wände · {tueren} Türen", { flaechen: document.geometry.regions.length, waende: document.walls.length, tueren: document.portals.length })}</small></div>
     <details className="map-editor-section" open={assetsOpen} onToggle={event => setAssetsOpen(event.currentTarget.open)}><summary>{t("Einrichtung & Kartenassets")}</summary><fieldset className="tactical-command-fields" disabled={editingDisabled}><MapArtworkPalette document={document} brush={brush} onBrush={next => { cancelGesture(); setBrush(next); setDrawing(false); setMarking(false); if (next) setSheet(false); }} selected={selectedObject.startsWith("stamp:") ? selectedObject.slice(6) : ""}

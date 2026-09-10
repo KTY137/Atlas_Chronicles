@@ -1,0 +1,470 @@
+{
+  "assets": [
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3030,
+      "datei": "aufbau/laubbaum.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "laubbaum",
+      "schlagworte": [
+        "aussen",
+        "baum",
+        "wald",
+        "laub"
+      ],
+      "sha256": "41072365ecab8a9c5a5d73e0d5c6d435f3985927de81a4b76e04052bbda6cde6"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4549,
+      "datei": "aufbau/laubbaum_gross.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "laubbaum_gross",
+      "schlagworte": [
+        "aussen",
+        "baum",
+        "wald",
+        "laub",
+        "gross"
+      ],
+      "sha256": "daa4d40d915e1c2515ea15542f698d3270d6847a6029d1914dccdb292b2f056e"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 6828,
+      "datei": "aufbau/baumgruppe.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "baumgruppe",
+      "schlagworte": [
+        "aussen",
+        "baum",
+        "wald",
+        "laub",
+        "gruppe"
+      ],
+      "sha256": "aa6b12b0428120d7e5262d00896e308768954bf3cbd44600f918edeb12f521a5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3242,
+      "datei": "aufbau/nadelbaum.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "nadelbaum",
+      "schlagworte": [
+        "aussen",
+        "baum",
+        "wald",
+        "nadel"
+      ],
+      "sha256": "11a4035253ae52a874a54570ada33244b53498f07514bf3e824981116f710ad8"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 4142,
+      "datei": "aufbau/nadelbaum_gross.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "nadelbaum_gross",
+      "schlagworte": [
+        "aussen",
+        "baum",
+        "wald",
+        "nadel",
+        "gross"
+      ],
+      "sha256": "87bac9f88d7a9b0f686cbb04db9f9c907e5712a2a28a142bb19e4b19b9d8ac7f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2833,
+      "datei": "aufbau/busch.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "busch",
+      "schlagworte": [
+        "aussen",
+        "busch",
+        "hecke",
+        "laub"
+      ],
+      "sha256": "c410f2a56ec789d81e375cadb9de57c278f63a80329d9d9d62d6216efb179872"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2424,
+      "datei": "aufbau/baumstumpf.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "baumstumpf",
+      "schlagworte": [
+        "aussen",
+        "holz",
+        "wald",
+        "lichtung"
+      ],
+      "sha256": "de73c1326beffe215fd21f429b840ba2d977450f39bf862afa43fb080daf4ed1"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3268,
+      "datei": "aufbau/totholz.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "totholz",
+      "schlagworte": [
+        "aussen",
+        "holz",
+        "wald",
+        "hindernis"
+      ],
+      "sha256": "8c52863159dc5ad1c6c131f74a61a352143283c655c35b7a6f0a616bf92ab126"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 1966,
+      "datei": "aufbau/findling.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "findling",
+      "schlagworte": [
+        "aussen",
+        "fels",
+        "stein",
+        "hindernis"
+      ],
+      "sha256": "505db40b716d868b356aa78f8d9590572bdb1f97a8a05ababaa66f06f1eff480"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 4329,
+      "datei": "aufbau/geroell.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "geroell",
+      "schlagworte": [
+        "aussen",
+        "fels",
+        "stein",
+        "geroell"
+      ],
+      "sha256": "5cc3c5c7498f088f2dc21a47d31cb4d287679d7b43cc59e2d163632d06beff1f"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 6031,
+      "datei": "aufbau/schilf.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schilf",
+      "schlagworte": [
+        "aussen",
+        "ufer",
+        "wasser",
+        "sumpf"
+      ],
+      "sha256": "2f1d2ffa9fd0895128ba5beb367874bb13407a79b40bfed706970350d3337b0e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 6634,
+      "datei": "aufbau/seerosen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "seerosen",
+      "schlagworte": [
+        "aussen",
+        "wasser",
+        "see",
+        "bluete"
+      ],
+      "sha256": "49e1ef18e4f7247c5f1d7e784422b82fad3f0ceb9307c9adaf4f15c1bc6b8303"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3352,
+      "datei": "aufbau/boot.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "boot",
+      "schlagworte": [
+        "aussen",
+        "wasser",
+        "boot",
+        "hafen"
+      ],
+      "sha256": "ca7a27f0e5d31e2fa10b60892cbbb741051c4af3194f391c64a89c807cedd464"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 5333,
+      "datei": "aufbau/heuhaufen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "heuhaufen",
+      "schlagworte": [
+        "aussen",
+        "hof",
+        "feld",
+        "vorrat"
+      ],
+      "sha256": "8c22b1a3896576225da27e01839fe8ae3d618b163a11b5e3fa609433f630d291"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 3734,
+      "datei": "aufbau/karren.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "karren",
+      "schlagworte": [
+        "aussen",
+        "hof",
+        "weg",
+        "verkehr"
+      ],
+      "sha256": "8795b04329c66b1b1675420218650aeb2f69b04e622dfe889576a6f03924673d"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2928,
+      "datei": "aufbau/zaun.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "zaun",
+      "schlagworte": [
+        "aussen",
+        "hof",
+        "holz",
+        "grenze"
+      ],
+      "sha256": "4e8a256b28fbf6baaa9c080b63440ed09755d7690cf13981b36d445812d64a21"
+    }
+  ],
+  "id": "pk.natur",
+  "kind": "asset-pack",
+  "lizenz": {
+    "datei": "lizenz.txt",
+    "herkunft": "eigen",
+    "inhaber": "Chronicle 2026",
+    "quelle": null,
+    "spdx": "CC0-1.0",
+    "textSha256": "c46970e03c031d01ba35276dcfec22c56694b0dca50c2c19676b9a711eff94b8"
+  },
+  "schemaVersion": 1,
+  "titel": "Natur — Bäume, Felsen, Schilf, Boote und Hofzeug für die gemalte Landschaft",
+  "urheber": "Chronicle",
+  "version": "1.0.0",
+  "zellgroesse": 64
+}
