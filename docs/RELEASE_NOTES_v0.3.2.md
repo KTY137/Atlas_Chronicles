@@ -23,6 +23,35 @@ Nothing about the codes themselves changed. An invitation still lasts seven days
 be approved by the game master inside the world; a pairing code still lasts ten minutes, is still
 single-use, and is still redeemed in the browser under “Neues Gerät verbinden”.
 
+## Invitations are links now, and the window says what it is for
+
+The host window handed you a code to type. The sign-in page has always accepted both — its field
+is called “Einladungslink oder Code” and pulls the code out of an address — so the window now
+hands you the link instead:
+
+```
+http://localhost:46389/?join=Yy4kR2m8QpX7vLb3NwT5ZhF6cJ1sD0aG
+```
+
+in a selectable field with a Copy button. The link also carries the address of this world, which
+nobody else would otherwise know.
+
+The same for the pairing link, which needed one change on the sign-in page: it read only `?join=`.
+It now reads `?pair=`, opens “Neues Gerät verbinden” by itself and fills the code in. Without that,
+the code would have to be typed by exactly the person who cannot get in.
+
+Copying can fail silently if the clipboard is not permitted in that window, which is why the link
+sits in an input: the text stays selected and the sentence says “copy with Ctrl+C” rather than a
+button that does nothing and says nothing.
+
+And an orientation note at the top, because the window had grown section by section without ever
+saying what it was: **this window is the caretaker, not the game.** What happens here, what
+happens in the other window, and the order the first time round — create a world, set up a game
+master, open the world, create a round *inside* the world, then come back here for the invitation
+link. Buttons are named after what comes out of them, and the closing note explains the difference
+between the two kinds of link: an invitation is for somebody not yet in the round, a pairing link
+for somebody already in it who can no longer get in.
+
 ## Local worlds can be deleted
 
 Until now a world could be created but never removed. Every world you ever tried out stayed in
