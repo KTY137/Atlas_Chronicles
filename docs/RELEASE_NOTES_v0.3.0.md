@@ -106,4 +106,4 @@ Get-FileHash .\Atlas-Chronicles-Setup.exe -Algorithm SHA256
 286b6ec33cf159b68077d17edfc77e09f04d8ed5886d48251c943ef75f767aec  Atlas-Chronicles-Setup.exe
 ```
 
-Built from commit `COMMIT_PLATZHALTER`.
+Built from commit `19443456d30011e1e27a37f43c6a18fe8e7d7930`.
