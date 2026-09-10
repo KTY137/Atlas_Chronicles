@@ -17,6 +17,12 @@
 .map-editor .map-tools-heading svg { color: var(--text-faint); }
 .map-editor .map-edit-tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; }
 .map-editor .map-edit-tool-navigation { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.map-editor .map-edit-tool-single { grid-template-columns: minmax(0, 1fr); }
+.map-editor .map-edit-tool-single .map-tool-button { min-height: 43px; flex-direction: row; gap: .35rem; }
+.map-editor .map-label-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.map-editor .map-label-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .3rem; align-items: center; }
+.map-editor .map-edit-tools .map-label-list select { width: auto; padding-right: 1.2rem; }
+.map-editor .map-label-list .button { min-height: 31px; padding: .3rem .45rem; }
 .map-editor .map-edit-tools .map-tool-button { position: relative; min-width: 0; flex-direction: column; gap: .35rem; min-height: 67px; padding: .7rem .2rem .5rem; background: transparent; border-color: var(--line); font-size: .68rem; line-height: 1.3; }
 .map-editor .map-tool-button svg { color: var(--text-muted); }
 .map-editor .map-tool-button kbd { position: absolute; right: .25rem; top: .2rem; color: var(--text-faint); font-family: var(--font-mono); font-size: .5rem; font-weight: 400; }

@@ -92,6 +92,24 @@ Wiederholen bringt alle, dann derselbe Strich auf der Küstenstadt mit Bild. Ers
 Specs wollte nach dem Speichern rückgängig machen; nach dem Speichern ist die Historie leer,
 also erst rückgängig, dann wiederholen, dann speichern.
 
+## Runde 4, Punkt 4 — Namen auf der Karte
+
+Im Studio angesehen (`names-studio.png`): „Silberbach im Tal" als Gewässer kursiv in Blau mit
+Papiersaum, Buchstabe für Buchstabe entlang der gezogenen Linie. Nachweise: szene `cartography`
+62/62 (Namen gespeichert, gehasht, serialisiert; Anker in der Mitte der Linie; zehn Ablehnungen
+von leerem Text bis doppelter Kennung), render `geometry` 19/19 und `renderer-lifecycle` 39/39
+(ein Buchstabe je Zeichen entlang der Linie mit Drehung an der Ecke, ganzer Name beim Klick,
+nachts bleich, Linie von rechts nach links umgedreht, Gegend in Kapitälchen), client
+`map-labels` 4/4 (Klick → ein Punkt, Enden bleiben, Zittern geglättet, Feld fällt mit dem
+letzten Namen), `map-generation` 33/33, `map-layers` 5/5; server `tactical-entities` 9/9 (neu:
+Spieler a sieht nur „Linke Halle", b auch „Rechter Saal", der Spielleiter alles; die
+Spielerantwort trägt die verborgenen Texte nicht). Browser `map-studio` „names on the map":
+Strich → Name mit mehr als zwei Punkten, Klick → ein Punkt bei [500, 200], Liste benennt um und
+entfernt, nach Neuladen steht der Name in der Liste; alle drei Specs zusammen 10/10 in 8,2 min.
+Zwei Fallen dabei: der Client-Build prüft strenger als der Wurzel-Typecheck (Streupinsel-Commit
+war kurz baurot, jetzt `npm run build` vor jedem Commit), und der Prüfstand
+`tactical-entities-review` kennt nur eingetragene Module.
+
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel
 für Außenobjekte, Möbel an die Wand rücken (Möbel stehen frei im Raum). Desktop nicht neu gebaut.

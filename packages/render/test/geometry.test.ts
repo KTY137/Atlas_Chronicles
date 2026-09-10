@@ -60,6 +60,10 @@ describe("MapRenderer camera and hit boundary", () => {
     expect(() => validateMapScene({ ...scene, pins: [{ ...scene.pins[0], icon }] } as unknown as ProjectedMapScene)).toThrow("pin icon");
     for (const mood of ["nacht", "winter", "herbst", "tag"]) expect(() => validateMapScene({ ...scene, mood } as unknown as ProjectedMapScene)).not.toThrow();
     expect(() => validateMapScene({ ...scene, mood: "daemmerung" } as unknown as ProjectedMapScene)).toThrow("mood");
+    const label = { id: "l", text: "Silberbach", points: [[1, 1], [50, 5]], size: 24, style: "wasser" };
+    expect(() => validateMapScene({ ...scene, labels: [label, { ...label, id: "m", points: [[3, 3]], style: "ort" }] } as unknown as ProjectedMapScene)).not.toThrow();
+    for (const broken of [{ ...label, text: " " }, { ...label, points: [] }, { ...label, points: [[1]] }, { ...label, size: 0 }, { ...label, style: "fett" }]) expect(() => validateMapScene({ ...scene, labels: [broken] } as unknown as ProjectedMapScene)).toThrow("label");
+    expect(() => validateMapScene({ ...scene, labels: [label, label] } as unknown as ProjectedMapScene)).toThrow();
   });
   it("handles concave polygon interiors, edges and outside points", () => {
     const polygon = [[0, 0], [10, 0], [10, 4], [4, 4], [4, 10], [0, 10]] as const;

@@ -1,6 +1,6 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — 1, 2, 3, 5, 6 fertig)
+Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — 1 bis 6 fertig)
 
 ## Kartenstudio Runde 4: die Zehnerliste — 2026-09-10
 
@@ -19,7 +19,10 @@ Nachweise `design/iterations/map-studio-20260910-optik.md` (Runde 4).
 **3 Streupinsel** (Folge-Commit): Paket `pk.natur` (16 Außenmotive aus
 `tools/assets/erzeuge-naturpaket.mjs`, Asset-Gate 6 Pakete) und „Streuen beim Ziehen" im
 Pinselbalken (`map-scatter.ts`: Abstand, Zufall, ein Strich ein Schritt, Räume übernehmen ihre
-Objekte). **Offen:** 4, 7, 8, 9, 10.
+Objekte). **4 Beschriftungen** (Folge-Commit): `cartography.labels`, Werkzeug „Beschriften"
+(N), Renderer setzt Namen in der Welt entlang der Linie, Spieler bekommen einen Namen nur mit
+der Mitte seiner Linie in bekannter Region (`labels` in der Sitzungsansicht).
+**Offen:** 7, 8, 9, 10.
 
 Zuvor: **2026-09-10, Runde 3** (Kartenstudio Stufe 11: Licht, Schatten, Tusche, Flickenfelder)
 

@@ -64,7 +64,7 @@ export function layerView(state: MapLayerState): CartographyView {
 export function applyLayers(scene: ProjectedMapScene, state: MapLayerState): ProjectedMapScene {
   const { title, ...rest } = scene, hidden = state.hidden;
   return { ...rest,
-    ...(hidden.has("namen") ? { showLabels: false } : title !== undefined ? { title } : {}),
+    ...(hidden.has("namen") ? { showLabels: false, labels: [] } : title !== undefined ? { title } : {}),
     ...(hidden.has("einrichtung") ? { stamps: [] } : {}), ...(hidden.has("lichter") ? { lights: [] } : {}), ...(hidden.has("waende") ? { lines: [] } : {}),
     ...(hidden.has("raster") ? { grid: { kind: "none" as const } } : {}) };
 }

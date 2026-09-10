@@ -30,7 +30,7 @@ vi.mock("pixi.js", () => {
     poly() { pixi.paths++; this.paths++; return this; } moveTo(x: number, y: number) { pixi.paths++; this.paths++; this.segments.push([x, y]); return this; } lineTo(x: number, y: number) { this.segments.at(-1)?.push(x, y); return this; }
     stroke(style: { color?: number; width?: number; pixelLine?: boolean }) { pixi.strokes.push(style); this.strokes.push(style); return this; }
   }
-  class Text extends Container { text = ""; width = 20; height = 10; constructor() { super(); pixi.labels.push(this); } }
+  class Text extends Container { text = ""; width = 20; height = 10; anchor = new Vector(); rotation = 0; resolution = 1; style: unknown; constructor(options?: { text?: string; style?: unknown }) { super(); if (options?.text !== undefined) this.text = options.text; this.style = options?.style; pixi.labels.push(this); } }
   class Canvas extends EventTarget {
     style: Record<string, string> = {}; dataset: Record<string, string> = {}; tabIndex = 0;
     setAttribute() {} hasPointerCapture() { return false; } releasePointerCapture() {} setPointerCapture() {} focus() {}
@@ -432,6 +432,36 @@ describe("the same room by night", () => {
     map.update({ ...scene, tokens: [], lines: [], showLabels: true, pins, drawing, stamps, mood: "winter" });
     expect(label()?.style?.fill).toBe(0x2c2519);
     expect((pixi.sprites.at(-1) as { tint?: number }).tint).toBeUndefined();
+    map.destroy();
+  });
+});
+
+describe("names lettered along their lines", () => {
+  const drawing = { rendererVersion, width: scene.width, height: scene.height, background: null, polygons: [] };
+  const letters = () => (layer("lettering") as { children: { text: string; rotation: number; position: { x: number; y: number }; style?: { fill?: number; fontStyle?: string } }[] }).children;
+  it("sets one letter per character along the line, turned with it, centred on its middle, and a clicked name whole", async () => {
+    const labels = [{ id: "bach", text: "Silberbach", points: [[100, 100], [500, 100], [500, 500]] as const, size: 24, style: "wasser" as const }, { id: "feste", text: "Alte Feste", points: [[800, 800]] as const, size: 30, style: "ort" as const }];
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], drawing, labels });
+    const all = letters(), bach = all.filter(item => item.text.length === 1), feste = all.find(item => item.text === "Alte Feste")!;
+    expect(bach.map(item => item.text).join("")).toBe("Silberbach");
+    expect(feste.position).toMatchObject({ x: 800, y: 800 }); expect(feste.rotation).toBe(0);
+    // Ten letters of 20 px with a little air between them are centred on the 800 px line: the
+    // first sits on the first leg, the last on the second, and the corner turns the word down.
+    expect(bach[0]!.rotation).toBe(0); expect(bach.at(-1)!.rotation).toBeCloseTo(Math.PI / 2);
+    expect(bach[0]!.position.y).toBe(100); expect(bach.at(-1)!.position.x).toBe(500);
+    expect(bach[0]!.style?.fontStyle).toBe("italic"); expect(bach[0]!.style?.fill).toBe(0x2f5666);
+    map.update({ ...scene, tokens: [], lines: [], drawing, labels: [labels[1]!], mood: "nacht" });
+    expect(letters()).toHaveLength(1); expect(letters()[0]!.style?.fill).toBe(0xe9e2cf);
+    map.update({ ...scene, tokens: [], lines: [], drawing });
+    expect(letters()).toHaveLength(0);
+    map.destroy();
+  });
+  it("turns a line drawn right to left around so the name still reads left to right, and spaces a region out in capitals", async () => {
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], drawing, labels: [{ id: "wald", text: "Finsterwald", points: [[900, 300], [100, 300]], size: 40, style: "gegend" }] });
+    const glyphs = letters();
+    expect(glyphs.map(item => item.text).join("")).toBe("FINSTERWALD");
+    expect(glyphs[0]!.position.x).toBeLessThan(glyphs.at(-1)!.position.x);
+    expect(glyphs.every(item => item.rotation === 0)).toBe(true);
     map.destroy();
   });
 });

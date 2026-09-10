@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Type, type Static } from "@sinclair/typebox";
-import { BAUWERK_TYPEN, type Rahmen, type TacticalCartographyV1, type TacticalGrid, type TacticalMapDocumentV1, type TacticalPoint, type TacticalPortal, type TacticalWall } from "@chronicle/szene";
+import { BAUWERK_TYPEN, type CartographyLabelV1, type Rahmen, type TacticalCartographyV1, type TacticalGrid, type TacticalMapDocumentV1, type TacticalPoint, type TacticalPortal, type TacticalWall } from "@chronicle/szene";
 
 const closed = { additionalProperties: false } as const;
 const id = Type.String({ minLength: 1, maxLength: 128, pattern: "^.+$" });
@@ -55,6 +55,8 @@ export interface TacticalView {
   entities: TacticalEntity[]; tokens: TacticalToken[]; undoTargets: TacticalUndoTarget[]; digest: string; rasterDigest: string;
   /** Background or authoritative vector cartography can produce masked raster tiles. */
   hatRaster: boolean;
+  /** Free names of the map. A player receives only those whose anchor lies in a known region. */
+  labels?: readonly CartographyLabelV1[];
   /** These properties are completely absent from player responses. */
   map?: TacticalMapSummary; document?: TacticalMapDocumentV1; cartography?: TacticalCartographyV1; compositionHash?: string;
   walls?: readonly TacticalWall[]; portals?: (TacticalPortal & { version: number })[];

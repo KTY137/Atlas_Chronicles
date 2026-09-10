@@ -10,6 +10,9 @@ import * as MapArtwork from "../src/features/map-artwork.ts";
 import { I18nStub } from "../src/i18n.ts";
 import * as MapStudio from "../src/features/map-studio.ts";
 import * as MapEditHistory from "../src/features/map-edit-history.ts";
+import * as MapLayers from "../src/features/map-layers.ts";
+import * as MapScatter from "../src/features/map-scatter.ts";
+import * as MapLabels from "../src/features/map-labels.ts";
 import { mapToolSettings } from "../src/features/MapEditTools.tsx";
 import * as Szene from "@chronicle/szene";
 import * as Render from "@chronicle/render";
@@ -49,6 +52,9 @@ function harness(file: string, component: string, initial: Record<string, any>, 
       if (name === "./map-artwork") return MapArtwork;
       if (name === "./map-studio") return MapStudio;
       if (name === "./map-edit-history") return MapEditHistory;
+      if (name === "./map-layers") return MapLayers;
+      if (name === "./map-scatter") return MapScatter;
+      if (name === "./map-labels") return MapLabels;
       if (name === "./MapEditTools") return { MapEditTools: "MapEditTools", mapToolSettings };
       if (name === "@chronicle/render") return Render;
       if (name === "@chronicle/forge") return Forge;
@@ -161,7 +167,8 @@ describe("independent tactical entity client review", () => {
       expect(canvas.props.selection).toEqual({ kind: "cell", id: church.knotenId });
       expect(canvas.props.scene.cells[0]).toMatchObject({ id: "church", surface: "building" });
       expect(canvas.props.scene.pins.find((pin: any) => pin.id === "node:church")).toMatchObject({ label: church.titel });
-      expect(h.nodes(node => node.type === "select").slice(0, 3).map(node => node.props.value)).toEqual(["church", "entry", "passage"]);
+      // The stage toolbar's mood select comes first in the tree; the knowledge selects follow it.
+      expect(h.nodes(node => node.type === "select" && node.props["aria-label"] !== "Stimmung").slice(0, 3).map(node => node.props.value)).toEqual(["church", "entry", "passage"]);
       expect(h.text(h.render())).toContain(church.titel);
     } finally { h.cleanup(); }
   });

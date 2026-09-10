@@ -11,6 +11,8 @@ export const TACTICAL_CARTOGRAPHY_LIMITS = Object.freeze({
   cellSize: 32_768, coordinate: TACTICAL_MAP_LIMITS.coordinate,
   /** Relief samples sit on construction-cell corners; the largest settlement (192×192) needs 193². */
   reliefAxis: 1025, reliefSamples: 65_536,
+  /** Free names on the map: how many, how long a line each may follow, how long its text. */
+  labels: 512, labelPoints: 64, labelText: 80, labelSize: 4096,
 });
 export const CARTOGRAPHY_ROLES = Object.freeze(["generic", "terrain", "water", "road", "lot", "building", "room"] as const);
 export const CARTOGRAPHY_TERRAIN_MATERIALS = Object.freeze(["grass", "earth", "forest", "field", "rock", "sand", "swamp", "snow"] as const);
@@ -67,6 +69,21 @@ export interface CartographyReliefV1 {
  * export carry it too. `tag` is the plain painting and is never written. */
 export const CARTOGRAPHY_MOODS = ["tag", "nacht", "winter", "herbst"] as const;
 export type CartographyMood = typeof CARTOGRAPHY_MOODS[number];
+/** How a free name is set: a place upright, a water in italics, a region spaced out, a way small. */
+export const CARTOGRAPHY_LABEL_STYLES = ["ort", "wasser", "gegend", "weg"] as const;
+export type CartographyLabelStyle = typeof CARTOGRAPHY_LABEL_STYLES[number];
+/**
+ * A free name on the map — a river's, a wood's, a region's — with the line it follows. One point
+ * sets it straight there; more bend it along the path. `size` is the letter height in map units.
+ * A player sees a name only when the middle of its line lies in a region they know.
+ */
+export interface CartographyLabelV1 {
+  readonly id: string;
+  readonly text: string;
+  readonly points: readonly TacticalPoint[];
+  readonly size: number;
+  readonly style: CartographyLabelStyle;
+}
 export interface TacticalCartographyV1 {
   readonly schemaVersion: 1;
   readonly kind: "tactical-cartography";
@@ -76,6 +93,20 @@ export interface TacticalCartographyV1 {
   readonly relief?: CartographyReliefV1;
   /** Absent means day; absence keeps bytes and hash unchanged. */
   readonly mood?: Exclude<CartographyMood, "tag">;
+  /** Absent means no free names; absence keeps bytes and hash unchanged. */
+  readonly labels?: readonly CartographyLabelV1[];
+}
+/** The point a name hangs from: the middle of its line by arc length, or its one point. */
+export function cartographyLabelAnchor(label: Pick<CartographyLabelV1, "points">): TacticalPoint {
+  const points = label.points;
+  if (points.length <= 1) return points[0] ?? [0, 0];
+  const lengths = points.slice(1).map((point, index) => Math.hypot(point[0] - points[index]![0], point[1] - points[index]![1]));
+  let remaining = lengths.reduce((sum, length) => sum + length, 0) / 2;
+  for (const [index, length] of lengths.entries()) {
+    if (remaining <= length && length > 0) { const a = points[index]!, b = points[index + 1]!, t = remaining / length; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+    remaining -= length;
+  }
+  return points[0]!;
 }
 /** An intent for a newly drawn building, not writable node identity or provenance. */
 export interface BuildingIntent { readonly regionId: string; readonly titel: string; readonly typ: BauwerkTyp }
@@ -123,6 +154,22 @@ function freeze<T>(value: T): T {
   if (value && typeof value === "object") { for (const child of Object.values(value)) freeze(child); Object.freeze(value); }
   return value;
 }
+function label(value: unknown, path: string, seen: Set<string>): void {
+  const row = object(value, path, ["id", "text", "points", "size", "style"]);
+  const id = text(row.id, `${path}.id`, 128);
+  if (seen.has(id)) fail(`${path}.id`, "duplicate label identity");
+  seen.add(id);
+  if (!text(row.text, `${path}.text`, TACTICAL_CARTOGRAPHY_LIMITS.labelText).trim()) fail(`${path}.text`, "bounded nonempty text required");
+  const points = array(row.points, `${path}.points`, TACTICAL_CARTOGRAPHY_LIMITS.labelPoints);
+  if (!points.length) fail(`${path}.points`, "at least one point required");
+  points.forEach((point, index) => {
+    const pair = array(point, `${path}.points[${index}]`, 2);
+    if (pair.length !== 2) fail(`${path}.points[${index}]`, "exactly two coordinates required");
+    pair.forEach((coordinate, axis) => number(coordinate, `${path}.points[${index}][${axis}]`, -TACTICAL_CARTOGRAPHY_LIMITS.coordinate, TACTICAL_CARTOGRAPHY_LIMITS.coordinate));
+  });
+  number(row.size, `${path}.size`, 1, TACTICAL_CARTOGRAPHY_LIMITS.labelSize);
+  choice(row.style, CARTOGRAPHY_LABEL_STYLES, `${path}.style`);
+}
 function relief(value: unknown, path: string): void {
   const row = object(value, path, ["schemaVersion", "columns", "rows", "seaLevel", "heights"]);
   if (row.schemaVersion !== 1) fail(`${path}.schemaVersion`, "unsupported relief profile; an explicit schema migration is required");
@@ -147,11 +194,12 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
   let raw: unknown;
   try { raw = parseBoundedMapJson(input, TACTICAL_CARTOGRAPHY_LIMITS.documentBytes); }
   catch (error) { if (error instanceof TacticalMapValidationError) fail(error.path, error.message.slice(error.path.length + 2)); throw error; }
-  const root = object(raw, "cartography", ["schemaVersion", "kind", "construction", "regions"], ["relief", "mood"]);
+  const root = object(raw, "cartography", ["schemaVersion", "kind", "construction", "regions"], ["relief", "mood", "labels"]);
   if (root.schemaVersion !== 1 || root.kind !== "tactical-cartography") fail("cartography", "unsupported cartography profile/version; an explicit schema migration is required");
   if (Object.hasOwn(root, "relief")) relief(root.relief, "relief");
   // Day is the absence of a mood: writing it would change the hash of every untouched map.
   if (Object.hasOwn(root, "mood")) choice(root.mood, CARTOGRAPHY_MOODS.filter(mood => mood !== "tag"), "mood");
+  if (Object.hasOwn(root, "labels")) { const seen = new Set<string>(); array(root.labels, "labels", TACTICAL_CARTOGRAPHY_LIMITS.labels).forEach((row, index) => label(row, `labels[${index}]`, seen)); }
   const construction = object(root.construction, "construction", ["cellSize", "origin"]);
   number(construction.cellSize, "construction.cellSize", Number.MIN_VALUE, TACTICAL_CARTOGRAPHY_LIMITS.cellSize);
   const origin = array(construction.origin, "construction.origin", 2);

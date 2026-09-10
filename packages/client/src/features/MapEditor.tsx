@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TacticalAck, TacticalAnchor, TacticalMapCard } from "@chronicle/protocol";
-import { inferLegacyCartography, TACTICAL_MAP_LIMITS, type AssetpaketV1, type CartographyMood, type KartenSetting, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
+import { inferLegacyCartography, TACTICAL_CARTOGRAPHY_LIMITS, TACTICAL_MAP_LIMITS, type AssetpaketV1, type CartographyMood, type KartenSetting, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
 import { pointInPolygon, type MapEditorInteraction, type MapHit, type ProjectedMapScene } from "@chronicle/render";
 import { Button, Notice } from "@chronicle/ui";
 import { api, apiPath, ApiError, errorText, plainText, type EntryDocument, type EntrySummary } from "../api";
@@ -18,6 +18,7 @@ import { placeArtwork, type ArtworkBrush } from "./map-artwork";
 import { Eye, EyeOff, Layers, Lock, MousePointer2, Palette, RotateCw, Save, Unlock } from "lucide-react";
 import { applyLayers, blockedRegionIds, layerBlocked, layerView, MAP_LAYERS, mapLayerLabel, mapLayerState, toggleLayer } from "./map-layers";
 import { scatterSettings, scatterStamps, SCATTER_SPACING } from "./map-scatter";
+import { LABEL_SIZES, labelPath, withLabels } from "./map-labels";
 import { interiorHit, snapPoint, type InteriorTarget } from "./map-studio";
 import { applyInteriorEdit, type InteriorEditOperation } from "@chronicle/forge";
 
@@ -192,6 +193,17 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
         addedRooms: [...(draft.baseline.addedRooms ?? []).filter(intent => !removedRegions.has(intent.regionId)), ...result.addedRooms],
       })); return;
     }
+    if (tools.tool === "label" && !draft.regionId && !draft.stampId && !draft.target && !draft.operation) {
+      // A name is written where the stroke went; a click writes it straight. One stroke, one name, one step.
+      const textValue = tools.labelText.trim();
+      if (!textValue) { setEditError(t("Gib zuerst den Namen ein, den du auf die Karte setzen willst.")); return; }
+      if (blocked("namen")) return;
+      if ((draft.baseline.cartography.labels?.length ?? 0) >= TACTICAL_CARTOGRAPHY_LIMITS.labels) { setEditError(t("Mehr Namen passen nicht auf diese Karte.")); return; }
+      const label = { id: draft.id, text: textValue, points: labelPath(draft.path, cartography.construction.cellSize * .5), size: LABEL_SIZES.find(size => size.id === tools.labelSize)!.cells * cartography.construction.cellSize, style: tools.labelStyle };
+      setEditError("");
+      changeHistory(old => previewEdit(old, draft.id, { ...draft.baseline, cartography: withLabels(draft.baseline.cartography, [...(draft.baseline.cartography.labels ?? []), label]) }));
+      return;
+    }
     const operation: CartographyEditOperation | null = draft.operation ?? (draft.regionId ? { kind: "transform", regionId: draft.regionId, delta }
       : tools.tool === "terrain" ? { kind: "terrain", points: draft.path, radius: tools.radius, material: tools.terrain, ...(tools.terrain === "water" ? { water: tools.water } : {}) }
       : tools.tool === "road" ? { kind: "road", points: draft.path, width: tools.roadWidth, material: tools.road }
@@ -214,7 +226,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       addedRooms: (draft.baseline.addedRooms ?? []).filter(intent => !removedRegions.has(intent.regionId)) };
     changeHistory(old => previewEdit(old, draft.id, next));
   };
-  const startGesture = (path: TacticalPoint[], extra: { regionId?: string; stampId?: string; target?: InteriorTarget; operation?: CartographyEditOperation; interiorOperation?: InteriorEditOperation } = {}) => {
+  const startGesture = (path: TacticalPoint[], extra: { regionId?: string; stampId?: string; target?: InteriorTarget; operation?: CartographyEditOperation; interiorOperation?: InteriorEditOperation; scatter?: boolean } = {}) => {
     cancelGesture(); const id = crypto.randomUUID(), seed = crypto.randomUUID();
     gesture.current = { id, seed, baseline: historyRef.current.present, path, ...extra };
     changeHistory(old => beginEdit(old, id, seed));
@@ -263,7 +275,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       if (scheduled.current !== null) cancelAnimationFrame(scheduled.current); scheduled.current = null;
       if ((draft.regionId || draft.stampId || draft.target) && Math.hypot(point[0] - draft.path[0]![0], point[1] - draft.path[0]![1]) < 1) { cancelGesture(); return; }
       draft.path.push(point); computeGesture();
-      if (draft.regionId || draft.stampId || draft.target || draft.scatter || tools.direct) finishGesture();
+      if (draft.regionId || draft.stampId || draft.target || draft.scatter || tools.tool === "label" || tools.direct) finishGesture();
     },
     cancel: cancelGesture,
   };
@@ -319,7 +331,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     const id = crypto.randomUUID(), z = cartography.construction.cellSize;
     setDocument(old => ({ ...old, geometry: { ...old.geometry, stamps: [...old.geometry.stamps, { ...selectedStamp, id, x: Math.min(scene.width, selectedStamp.x + z), y: Math.min(scene.height, selectedStamp.y + z) }] } })); setSelectedObject(`stamp:${id}`);
   } : undefined;
-  const toolHints: Record<MapToolSettings["tool"], string> = { select: t("Anklicken zum Auswählen · Ziehen zum Verschieben · R drehen · Entf entfernen"), terrain: t("Gelände mit gedrückter Maustaste malen"), relief: t("Über die Landschaft streichen, um Hügel und Täler zu formen"), road: t("Einen Weg aufziehen · Anschlüsse entstehen beim Zeichnen"), building: t("Klicken zum Bauen · R dreht das Gebäude"), room: t("Raum aufziehen oder klicken, um die gewählte Vorlage zu setzen"), wall: t("Vom Anfang bis zum Ende ziehen, um eine Wand zu bauen"), door: t("Auf eine Wand klicken: Die Tür rastet in die Wand ein") };
+  const toolHints: Record<MapToolSettings["tool"], string> = { label: t("Text eingeben, dann klicken für einen geraden Namen oder ziehen, damit er einer Linie folgt"), select: t("Anklicken zum Auswählen · Ziehen zum Verschieben · R drehen · Entf entfernen"), terrain: t("Gelände mit gedrückter Maustaste malen"), relief: t("Über die Landschaft streichen, um Hügel und Täler zu formen"), road: t("Einen Weg aufziehen · Anschlüsse entstehen beim Zeichnen"), building: t("Klicken zum Bauen · R dreht das Gebäude"), room: t("Raum aufziehen oder klicken, um die gewählte Vorlage zu setzen"), wall: t("Vom Anfang bis zum Ende ziehen, um eine Wand zu bauen"), door: t("Auf eine Wand klicken: Die Tür rastet in die Wand ein") };
   if (revoked) return <section className="panel"><Notice error>{t("Die Kartenberechtigung wurde entzogen. Der Entwurf wird nicht weiter angezeigt.")}</Notice><Button disabled={task.busy} onClick={() => void task.run(async () => {
     await api<TacticalMapCard>(apiPath(campaignId, `/tactical/maps/${baseline.id}`));
     if (mounted.current) { setRevoked(false); onChanged(); }
@@ -329,7 +341,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     const key = event.key.toLowerCase();
     if ((event.ctrlKey || event.metaKey) && key === "s") { event.preventDefault(); if (dirty && !history.gesture && !points.length) save(); return; }
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const shortcut = ({ v: "select", t: "terrain", e: "relief", p: "road", b: "building", f: "room", w: "wall", d: "door" } as const)[key as "v"];
+    const shortcut = ({ v: "select", t: "terrain", e: "relief", p: "road", b: "building", f: "room", w: "wall", d: "door", n: "label" } as const)[key as "v"];
     if (shortcut) { event.preventDefault(); changeTool({ ...tools, tool: shortcut, hand: false }); }
     else if (key === "h") { event.preventDefault(); changeTool({ ...tools, hand: !tools.hand }); }
     else if (key === "o") { event.preventDefault(); openAssets(); }
@@ -348,7 +360,10 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       {...(selectedOwner?.locked ? { selectedLocked: true } : {})} linked={!!nodesById.get(regionId)?.vorhandeneKarteId} busy={editingDisabled} childrenConfirmed={childrenConfirmed}
       onLock={() => commit(old => ({ ...old, cartography: { ...old.cartography, regions: old.cartography.regions.map(region => region.regionId === regionId ? { ...region, locked: !region.locked } : region) } }))}
       onRotate={rotateSelection} onDuplicate={duplicateSelection}
-      onRemove={removeSelection} onVary={() => operationPreview({ kind: "variation", regionIds: [regionId] })} />
+      onRemove={removeSelection} onVary={() => operationPreview({ kind: "variation", regionIds: [regionId] })}
+      {...(cartography.labels ? { labels: cartography.labels } : {})}
+      onLabelChange={(id, patch) => commit(old => ({ ...old, cartography: withLabels(old.cartography, (old.cartography.labels ?? []).map(label => label.id === id ? { ...label, ...patch } : label)) }))}
+      onLabelRemove={id => commit(old => ({ ...old, cartography: withLabels(old.cartography, (old.cartography.labels ?? []).filter(label => label.id !== id)) }))} />
     <div className="map-editor-stage"><div className="map-editor-stage-toolbar"><span>{children.data?.art === "siedlung" ? t("Außenkarte") : t("Grundriss & Landschaft")}</span><div className="button-row">
       <label className="map-editor-mood" title={t("Die Stimmung wird mit der Karte gespeichert; auch Spieler sehen sie.")}><Palette size={15} />{t("Stimmung")}<select aria-label={t("Stimmung")} value={cartography.mood ?? "tag"} disabled={editingDisabled} onChange={event => {
         const mood = event.target.value as CartographyMood;

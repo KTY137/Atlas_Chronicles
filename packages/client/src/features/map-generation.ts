@@ -94,5 +94,7 @@ export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, no
     lights: (document.lights ?? []).map(light => ({ id: light.id, x: light.position[0], y: light.position[1], range: light.range, intensity: Math.max(0, Math.min(1, light.intensity)), color: Number.parseInt(light.colorArgb.slice(-6), 16) })),
     // The mood is painted into the drawing already; the renderer needs it for the lights and names.
     ...((view.mood ?? cartography?.mood) ? { mood: view.mood ?? cartography!.mood! } : {}),
+    // Free names travel as they are stored: the line in map units, the letter height in map units.
+    ...(cartography?.labels?.length ? { labels: cartography.labels } : {}),
   };
 }

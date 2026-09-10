@@ -82,6 +82,16 @@ export interface ProjectedMapLight {
   /** RGB, absent = warm candlelight. */
   readonly color?: number;
 }
+export type MapLabelStyle = "ort" | "wasser" | "gegend" | "weg";
+/** A free name set along a line on the map: one point sets it straight, more bend it. `size` is
+ * the letter height in map units, so a name zooms with the sheet it is written on. */
+export interface ProjectedMapLabel {
+  readonly id: string;
+  readonly text: string;
+  readonly points: readonly MapPoint[];
+  readonly size: number;
+  readonly style: MapLabelStyle;
+}
 export interface ProjectedMapScene {
   readonly id: string;
   readonly width: number;
@@ -110,6 +120,8 @@ export interface ProjectedMapScene {
   /** The map's mood, already painted into `drawing`; at night the renderer lets the lights carry
    * and sets names in moonlit ink. Presentation only. */
   readonly mood?: CartographyMood;
+  /** Free names, lettered along their lines in the world, above walls and under markers. */
+  readonly labels?: readonly ProjectedMapLabel[];
 }
 /** The host fetches authorized tiles. Ownership of each bitmap transfers to the renderer. */
 export interface MapRasterTile { readonly id: string; readonly left: number; readonly top: number; readonly width: number; readonly height: number; readonly pixelScale: number; readonly image: ImageBitmap }

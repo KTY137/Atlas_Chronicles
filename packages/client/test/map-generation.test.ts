@@ -220,3 +220,15 @@ describe("the map's mood reaches the picture", () => {
     expect(mapDocumentScene("preview", document, [], undefined, undefined, "fantasy", { ...cartography, mood: "nacht" }, { mood: "winter" }).mood).toBe("winter");
   });
 });
+
+describe("the map's free names reach the picture", () => {
+  it("hands every stored name to the scene as it is, and leaves a map without names alone", () => {
+    const document = parseTacticalMapDocument({ schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels", frame: { ursprung: [0, 0], einheitenProPixel: 1, ordnung: "xy", hoch: "unten" },
+      geometry: { v: 3, size: [800, 600], stamps: [], places: [], regions: [{ id: "land", punkte: [[0, 0], [800, 0], [800, 600], [0, 600]] }] }, grid: { kind: "square", size: 64, origin: [0, 0] }, elevation: 0, geometryElevation: [], walls: [], portals: [],
+      lights: [], environment: { bakedLighting: false, ambientLightArgb: "ffffffff" }, background: null });
+    const cartography = inferLegacyCartography(document), labels = [{ id: "bach", text: "Silberbach", points: [[10, 10], [300, 40]] as const, size: 51.2, style: "wasser" as const }];
+    expect(mapDocumentScene("plain", document, [], undefined, undefined, "fantasy", cartography)).not.toHaveProperty("labels");
+    const named = mapDocumentScene("named", document, [], undefined, undefined, "fantasy", { ...cartography, labels });
+    expect(named.labels).toEqual(labels); expect(() => validateMapScene(named)).not.toThrow();
+  });
+});

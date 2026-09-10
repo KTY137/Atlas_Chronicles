@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { TacticalMapDocumentV1 } from "@chronicle/szene";
+import type { TacticalCartographyV1, TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { TacticalAnchor } from "../../protocol/src/tactical.ts";
 import { createPgDb, createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -90,6 +90,22 @@ for (const engine of ["PGlite", "PostgreSQL"] as const) describe.skipIf(engine =
     expect(full.document?.geometry.places.some(p => p.id === "unbound-place")).toBe(true);
     const { digest, ...body } = view; expect(digest).toBe(tacticalHash(body));
     await expect(f.docs.getEntry(f.a.userId, f.campaign, f.beta.entryId)).rejects.toBeInstanceOf(Gone);
+  });
+
+  it("hands a free name to a player only once the middle of its line lies in a region they know", async () => {
+    const f = await fixture(false);
+    const role = (id: string) => ({ regionId: id, role: "generic" as const, authored: false, locked: false, provenance: null });
+    const cartography: TacticalCartographyV1 = { schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: 8, origin: [0, 0] }, regions: [role("left"), role("right")],
+      labels: [{ id: "hall", text: "Linke Halle", points: [[4, 30], [28, 30]], size: 6, style: "ort" }, { id: "vault", text: "Rechter Saal", points: [[40, 20]], size: 6, style: "gegend" }, { id: "beyond", text: "Jenseits der Karte", points: [[70, 10]], size: 6, style: "weg" }] };
+    const labelled = await f.tactical.importMap(gm, f.campaign, { ...command(), name: "Named map", format: "native", sourceText: JSON.stringify(document()), provenance, anchors: f.anchors.slice(0, 2) }, { cartography, nodes: [] });
+    const scene = await f.game.createScene(gm, f.campaign, { name: "Named", entryIds: [], fictionDate: "Day two" });
+    await f.tactical.savePlan(gm, f.campaign, scene.id, { ...command(), expectedVersion: 0, mapId: labelled.subjectId, mapRevision: 1, tokens: [] });
+    const sessionId = String((await f.game.startScene(gm, f.campaign, scene.id)).id);
+    const a = await f.tactical.getSession(f.a.userId, f.campaign, sessionId), b = await f.tactical.getSession(f.b.userId, f.campaign, sessionId), full = await f.tactical.getSession(gm, f.campaign, sessionId);
+    expect(a.labels?.map(label => label.text)).toEqual(["Linke Halle"]);
+    expect(b.labels?.map(label => label.text)).toEqual(["Linke Halle", "Rechter Saal"]);
+    expect(full.labels?.map(label => label.text)).toEqual(["Linke Halle", "Rechter Saal", "Jenseits der Karte"]);
+    for (const hidden of ["Rechter Saal", "Jenseits"]) expect(JSON.stringify(a)).not.toContain(hidden);
   });
 
   it("keeps bulk anchor validation scoped to geometry, campaign and the passage's own article", async () => {

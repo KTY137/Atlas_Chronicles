@@ -11,7 +11,8 @@ const cartography: TacticalCartographyV1 = { schemaVersion: 1, kind: "tactical-c
   { ...base, regionId: "yard", role: "lot" }, { ...base, regionId: "barn", role: "building" }, { ...base, regionId: "hall", role: "room" }, { ...base, regionId: "unknown", role: "generic" },
 ] };
 const scene: ProjectedMapScene = { id: "s", width: 100, height: 100, cells: [], pins: [{ id: "p", x: 1, y: 1, label: "Hof" }], title: "Hof", grid: { kind: "square", size: 64, origin: [0, 0] },
-  stamps: [{ id: "t", asset: "pk.gemalt/tisch", x: 5, y: 5, s: 1, r: 0, l: 0 }], lights: [{ id: "l", x: 5, y: 5, range: 10 }], lines: [{ id: "w", points: [[0, 0], [1, 1]] }] };
+  stamps: [{ id: "t", asset: "pk.gemalt/tisch", x: 5, y: 5, s: 1, r: 0, l: 0 }], lights: [{ id: "l", x: 5, y: 5, range: 10 }], lines: [{ id: "w", points: [[0, 0], [1, 1]] }],
+  labels: [{ id: "n", text: "Hof", points: [[2, 2]], size: 20, style: "ort" }] };
 
 describe("the layer panel: hide while working, lock when done, never saved", () => {
   it("names every row in plain words and knows which rows the tools can change", () => {
@@ -43,7 +44,7 @@ describe("the layer panel: hide while working, lock when done, never saved", () 
     const state = ["einrichtung", "lichter", "waende", "namen", "raster"].reduce((old, id) => toggleLayer(old, id as "namen", "hidden"), mapLayerState());
     const shown = applyLayers(scene, state);
     expect(shown.stamps).toEqual([]); expect(shown.lights).toEqual([]); expect(shown.lines).toEqual([]);
-    expect(shown.showLabels).toBe(false); expect(shown).not.toHaveProperty("title"); expect(shown.grid).toEqual({ kind: "none" });
+    expect(shown.showLabels).toBe(false); expect(shown).not.toHaveProperty("title"); expect(shown.grid).toEqual({ kind: "none" }); expect(shown.labels).toEqual([]);
     expect(shown.pins).toEqual(scene.pins); expect(shown.cells).toEqual(scene.cells);
   });
 });

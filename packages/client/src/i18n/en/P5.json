@@ -539,5 +539,19 @@
   "Abstand": "Spacing",
   "Zufall": "Randomness",
   "{zellen} Zellen": "{zellen} cells",
-  "Über die Karte streichen, um Objekte zu verstreuen · jeder Strich ist ein Schritt · Esc beendet das Streuen": "Stroke across the map to scatter objects · every stroke is one step · Esc stops scattering"
+  "Über die Karte streichen, um Objekte zu verstreuen · jeder Strich ist ein Schritt · Esc beendet das Streuen": "Stroke across the map to scatter objects · every stroke is one step · Esc stops scattering",
+  "Beschriften": "Label",
+  "Namen setzen": "Set names",
+  "Schriftgröße": "Letter size",
+  "Gewässer": "Water",
+  "Gegend": "Region",
+  "Riesig": "Huge",
+  "Silberbach, Finsterwald, Alter Weg …": "Silver Brook, Dark Wood, Old Road …",
+  "Klicke für einen geraden Namen oder ziehe eine Linie, der der Name folgt: an einem Fluss entlang, quer über einen Wald.": "Click for a straight name, or drag a line for the name to follow: along a river, across a wood.",
+  "Spieler sehen einen Namen, sobald die Mitte seiner Linie in einer aufgedeckten Region liegt.": "Players see a name once the middle of its line lies in a revealed region.",
+  "Namen auf der Karte": "Names on the map",
+  "Namen entfernen": "Remove name",
+  "Gib zuerst den Namen ein, den du auf die Karte setzen willst.": "First enter the name you want to put on the map.",
+  "Mehr Namen passen nicht auf diese Karte.": "This map cannot take any more names.",
+  "Text eingeben, dann klicken für einen geraden Namen oder ziehen, damit er einer Linie folgt": "Enter the text, then click for a straight name or drag so it follows a line"
 }

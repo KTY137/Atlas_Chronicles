@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { Armchair, BedDouble, Beer, Blend, BrickWall, Check, Copy, DoorOpen, Equal, Grid2X2, Hand, House, Lock, MountainSnow, MousePointer2, Paintbrush, RotateCw, Route, Square, Trash2, TrendingDown, TrendingUp, Unlock, Waves, type LucideIcon } from "lucide-react";
-import { BAUWERK_LABEL, BAUWERK_TYPEN, type BauwerkTyp, type CartographyRegionV1, type CartographyTerrainMaterial, type CartographyWaterMaterial } from "@chronicle/szene";
+import { Armchair, BedDouble, Beer, Blend, BrickWall, Check, Copy, DoorOpen, Equal, Eye, Grid2X2, Hand, House, Lock, MountainSnow, MousePointer2, Paintbrush, RotateCw, Route, Square, Trash2, TrendingDown, TrendingUp, Type, Unlock, Waves, type LucideIcon } from "lucide-react";
+import { BAUWERK_LABEL, BAUWERK_TYPEN, type BauwerkTyp, type CartographyLabelStyle, type CartographyLabelV1, type CartographyRegionV1, type CartographyTerrainMaterial, type CartographyWaterMaterial } from "@chronicle/szene";
+import { LABEL_SIZES, LABEL_STYLES, labelSizeName, labelStyleName, type LabelSizeId } from "./map-labels";
 import { Button } from "@chronicle/ui";
 import { t } from "../i18n";
 
 export type ReliefMode = "raise" | "lower" | "smooth" | "level";
 export interface MapToolSettings {
-  tool: "select" | "terrain" | "road" | "building" | "room" | "wall" | "door" | "relief";
+  tool: "select" | "terrain" | "road" | "building" | "room" | "wall" | "door" | "relief" | "label";
   hand: boolean;
   terrain: CartographyTerrainMaterial | "water";
   water: CartographyWaterMaterial;
@@ -23,6 +24,8 @@ export interface MapToolSettings {
   roomTemplate: "empty" | "bedroom" | "tavern";
   roomWidth: number; roomHeight: number;
   doorWidth: number; doorClosed: boolean;
+  /** The name tool: what the next stroke writes, how, and how large (in size steps). */
+  labelText: string; labelStyle: CartographyLabelStyle; labelSize: LabelSizeId;
   snap: boolean; direct: boolean;
 }
 
@@ -30,7 +33,7 @@ export const mapToolSettings = (cellSize: number): MapToolSettings => ({
   tool: "select", hand: false, terrain: "grass", water: "river", reliefMode: "raise", reliefStrength: .6, radius: cellSize, road: "street", roadWidth: cellSize * .4,
   buildingWidth: cellSize * .65, buildingHeight: cellSize * .5, buildingType: "haus", buildingName: "Neues Haus", shape: "rectangle", turns: 0,
   roomShape: "rectangle", roomFloor: "wood", roomTemplate: "empty", roomWidth: cellSize * 6, roomHeight: cellSize * 5,
-  doorWidth: cellSize, doorClosed: true, snap: true, direct: true,
+  doorWidth: cellSize, doorClosed: true, labelText: "", labelStyle: "ort", labelSize: "normal", snap: true, direct: true,
 });
 
 type Dimension = "radius" | "roadWidth" | "buildingWidth" | "buildingHeight" | "roomWidth" | "roomHeight" | "doorWidth";
@@ -40,13 +43,15 @@ interface MapEditToolsProps {
   onLock: () => void; onRotate: () => void; onRemove: () => void; onVary: () => void; busy: boolean; childrenConfirmed: boolean;
   cellSize?: number; onAssets?: () => void; assetsActive?: boolean;
   selectedTitle?: string; selectedKind?: MapSelectionKind; selectedLocked?: boolean; onDuplicate?: () => void;
+  /** The names already on the map, editable in place. */
+  labels?: readonly CartographyLabelV1[]; onLabelChange?: (id: string, patch: Partial<Pick<CartographyLabelV1, "text" | "style">>) => void; onLabelRemove?: (id: string) => void;
 }
 
 const SELECTION_LABEL: Record<MapSelectionKind, string> = { stamp: "Einrichtung", wall: "Wand", portal: "Tür", room: "Raum", building: "Gebäude", terrain: "Gelände", road: "Straße" };
-const SHORTCUT: Record<MapToolSettings["tool"], string> = { select: "V", terrain: "T", road: "P", building: "B", room: "F", wall: "W", door: "D", relief: "E" };
+const SHORTCUT: Record<MapToolSettings["tool"], string> = { select: "V", terrain: "T", road: "P", building: "B", room: "F", wall: "W", door: "D", relief: "E", label: "N" };
 
 export function MapEditTools({ value, onChange, selected, linked, onLock, onRotate, onRemove, onVary, busy, childrenConfirmed,
-  cellSize = 100, onAssets, assetsActive = false, selectedTitle, selectedKind, selectedLocked, onDuplicate }: MapEditToolsProps) {
+  cellSize = 100, onAssets, assetsActive = false, selectedTitle, selectedKind, selectedLocked, onDuplicate, labels, onLabelChange, onLabelRemove }: MapEditToolsProps) {
   const cell = Number.isFinite(cellSize) && cellSize > 0 ? cellSize : 100;
   // Die Beschriftungen entstehen bei jedem Rendern neu, damit ein Sprachwechsel sie erreicht.
   const TERRAIN = [
@@ -93,6 +98,9 @@ export function MapEditTools({ value, onChange, selected, linked, onLock, onRota
     </div></div>
     <div className="map-tool-group"><h3>{t("Innenräume")}</h3><div className="map-edit-tool-grid" role="group" aria-label={t("Innenräume bauen")}>
       {toolButton("room", t("Raum"), Square)}{toolButton("wall", t("Wand"), BrickWall)}{toolButton("door", t("Tür"), DoorOpen)}
+    </div></div>
+    <div className="map-tool-group"><h3>{t("Namen")}</h3><div className="map-edit-tool-grid map-edit-tool-single" role="group" aria-label={t("Namen setzen")}>
+      {toolButton("label", t("Beschriften"), Type)}
     </div></div>
     {onAssets ? <Button className="map-tool-assets" aria-label={t("Einrichtung platzieren")} title={t("Einrichtung platzieren · O")} aria-pressed={assetsActive} onClick={onAssets}><Armchair size={20} aria-hidden="true" /><span>{t("Einrichtung platzieren")}<small>{t("Objekte aus dem Katalog")}</small></span></Button> : null}
 
@@ -153,6 +161,19 @@ export function MapEditTools({ value, onChange, selected, linked, onLock, onRota
           {number(t("Türbreite"), "doorWidth", true)}
           <label className="map-tool-check"><input type="checkbox" checked={value.doorClosed} onChange={event => change({ doorClosed: event.target.checked })} /><span>{t("Tür zunächst geschlossen")}</span></label>
           <details className="map-tool-advanced"><summary>{t("Präzise Maße")}</summary>{number(t("Türbreite in Pixeln"), "doorWidth")}</details>
+        </> : null}
+
+        {value.tool === "label" ? <><div className="map-tool-section-title"><Type size={17} aria-hidden="true" /><h3>{t("Namen setzen")}</h3></div>
+          <label className="map-tool-field">{t("Text")}<input value={value.labelText} maxLength={80} placeholder={t("Silberbach, Finsterwald, Alter Weg …")} onChange={event => change({ labelText: event.target.value })} /></label>
+          <label className="map-tool-field">{t("Art")}<select aria-label={t("Art")} value={value.labelStyle} onChange={event => change({ labelStyle: event.target.value as CartographyLabelStyle })}>{LABEL_STYLES.map(style => <option key={style} value={style}>{labelStyleName(style)}</option>)}</select></label>
+          <label className="map-tool-field">{t("Schriftgröße")}<select aria-label={t("Schriftgröße")} value={value.labelSize} onChange={event => change({ labelSize: event.target.value as LabelSizeId })}>{LABEL_SIZES.map(size => <option key={size.id} value={size.id}>{labelSizeName(size.id)}</option>)}</select></label>
+          <p className="field-help">{t("Klicke für einen geraden Namen oder ziehe eine Linie, der der Name folgt: an einem Fluss entlang, quer über einen Wald.")}</p>
+          <p className="map-tool-tip"><Eye size={16} aria-hidden="true" />{t("Spieler sehen einen Namen, sobald die Mitte seiner Linie in einer aufgedeckten Region liegt.")}</p>
+          {labels?.length ? <div className="map-tool-subgroup"><span className="map-tool-label">{t("Namen auf der Karte")}</span><ul className="map-label-list">{labels.map(label => <li key={label.id}>
+            <input key={label.text} aria-label={t("Text")} defaultValue={label.text} maxLength={80} onBlur={event => { const text = event.target.value.trim(); if (text && text !== label.text) onLabelChange?.(label.id, { text }); }} />
+            <select aria-label={t("Art")} value={label.style} onChange={event => onLabelChange?.(label.id, { style: event.target.value as CartographyLabelStyle })}>{LABEL_STYLES.map(style => <option key={style} value={style}>{labelStyleName(style)}</option>)}</select>
+            <Button aria-label={t("Namen entfernen")} title={t("Namen entfernen")} onClick={() => onLabelRemove?.(label.id)}><Trash2 size={14} aria-hidden="true" /></Button>
+          </li>)}</ul></div> : null}
         </> : null}
 
         {value.tool === "select" ? <><div className="map-tool-section-title"><MousePointer2 size={17} aria-hidden="true" /><h3>{t("Auswahl bearbeiten")}</h3></div>

@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { canonicalHash, type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
   inferLegacyCartography, parseTacticalCartography, serializeTacticalCartography, tacticalCartographyHash,
-  tacticalCompositionHash, TacticalCartographyValidationError, TACTICAL_CARTOGRAPHY_LIMITS, reliefHeightAt, flatRelief, RELIEF_LEVELS,
-  type CartographyRegionV1, type LegacyCartographyEvidence, type TacticalCartographyV1,
+  tacticalCompositionHash, TacticalCartographyValidationError, TACTICAL_CARTOGRAPHY_LIMITS, reliefHeightAt, flatRelief, RELIEF_LEVELS, cartographyLabelAnchor,
+  type CartographyLabelV1, type CartographyRegionV1, type LegacyCartographyEvidence, type TacticalCartographyV1,
 } from "../src/cartography.ts";
 import { weltkeim } from "../src/containment.ts";
 import { parseTacticalMapDocument, serializeTacticalMapDocument, type TacticalMapDocumentV1 } from "../src/tactical-map.ts";
@@ -251,5 +251,35 @@ describe("mood: night, winter and autumn belong to the map, day is its absence",
     expect(() => parseTacticalCartography({ ...plain, mood: "tag" }, document)).toThrow(TacticalCartographyValidationError);
     expect(() => parseTacticalCartography({ ...plain, mood: "daemmerung" }, document)).toThrow(TacticalCartographyValidationError);
     expect(() => parseTacticalCartography({ ...plain, mood: 2 }, document)).toThrow(TacticalCartographyValidationError);
+  });
+});
+
+describe("free names: a river's, a wood's, a region's, with the line each follows", () => {
+  const name = (over: Record<string, unknown> = {}): CartographyLabelV1 => ({ id: "silberbach", text: "Silberbach", points: [[10, 10], [110, 10], [110, 60]], size: 40, style: "wasser", ...over }) as CartographyLabelV1;
+  it("keeps a map without names byte-identical, stores and hashes them, and hangs each from the middle of its line", () => {
+    const document = map(), plain = cartography();
+    expect(serializeTacticalCartography(plain)).not.toContain("labels");
+    const named = { ...plain, labels: [name(), name({ id: "feste", text: "Alte Feste", points: [[30, 30]], style: "ort" })] };
+    const parsed = parseTacticalCartography(named, document);
+    expect(parsed.labels).toEqual(named.labels);
+    expect(tacticalCartographyHash(named)).not.toBe(tacticalCartographyHash(plain));
+    expect(parseTacticalCartography(serializeTacticalCartography(named), document)).toEqual(parsed);
+    expect(cartographyLabelAnchor(name())).toEqual([85, 10]);
+    expect(cartographyLabelAnchor({ points: [[30, 30]] })).toEqual([30, 30]);
+    expect(cartographyLabelAnchor({ points: [[5, 5], [5, 5]] })).toEqual([5, 5]);
+  });
+  it.each([
+    ["empty text", [name({ text: "   " })]],
+    ["long text", [name({ text: "x".repeat(81) })]],
+    ["no points", [name({ points: [] })]],
+    ["too many points", [name({ points: Array.from({ length: 65 }, (_, k) => [k, 0]) })]],
+    ["bad point", [name({ points: [[1, 2, 3]] })]],
+    ["tiny size", [name({ size: 0 })]],
+    ["unknown style", [name({ style: "fett" })]],
+    ["extra property", [name({ farbe: "rot" })]],
+    ["duplicate identity", [name(), name({ text: "Zweimal" })]],
+    ["not a list", "Silberbach"],
+  ])("rejects %s", (_reason, labels) => {
+    expect(() => parseTacticalCartography({ ...cartography(), labels }, map())).toThrow(TacticalCartographyValidationError);
   });
 });

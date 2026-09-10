@@ -102,7 +102,7 @@ Präsentation, keine Daten geändert; jede Wirkung kommt aus dem, was die Karte 
 ## 5. Runde 4 — die Zehnerliste (`cartography-11`)
 
 Kaya fragte nach zehn Verbesserungen und ließ sie abarbeiten. Reihenfolge nach Wirkung, jedes
-Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1, 2, 3, 5, 6 fertig.
+Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1, 2, 3, 4, 5, 6 fertig.
 
 **1 Möbel an die Wand, 2 Gärten um die Häuser** (Commit `3f75ad3`): Möbel werden nach Art
 platziert — Betten, Schränke, Regale, Truhen an die Wand (`Lage` mit bevorzugten Plätzen und
@@ -151,6 +151,25 @@ Alles kommt aus dem Strich und dem Keim der Geste, deshalb ist die Vorschau beim
 das, was der Commit behält, und **ein Strich ist ein Schritt** (Rückgängig nimmt den ganzen
 Wald). Objekte, die in einen Raum fallen, gehören dem Raum; ein gesperrter Raum nimmt nichts;
 die Ebene Einrichtung sperrt den Pinsel mit. Ein Klick ohne Ziehen setzt weiter ein Objekt.
+
+**4 Beschriftungen als Werkzeug.** Entscheidung: freie Namen sind **Teil der Kartografie**
+(`cartography.labels`, je Name `id`, `text` ≤ 80, `points` 1..64, `size` als Buchstabenhöhe
+in Karteneinheiten, `style` ∈ ort/wasser/gegend/weg; fehlt das Feld, bleibt jede alte Karte
+hashgleich). Sie sind kein Polygon, also zeichnet sie nicht die Projektion, sondern der Renderer
+setzt sie **in der Welt** (Container `lettering`, über Wänden, unter Marken): ein Punkt setzt
+den Namen gerade dorthin, mehrere Punkte legen ihn Buchstabe für Buchstabe entlang der Linie,
+zentriert auf ihre Mitte, jeder Buchstabe mit der Tangente gedreht; eine von rechts nach links
+gezogene Linie wird umgedreht, damit der Name lesbar bleibt. Buchtypen: Ort aufrecht und fett,
+Gewässer kursiv mit Luft, Gegend gesperrt in Kapitälchen, Weg klein kursiv; nachts bleiche Tusche.
+**Spielerregel, festgesetzt:** ein Spieler bekommt einen Namen genau dann, wenn die Mitte seiner
+Linie (Bogenlänge, `cartographyLabelAnchor`) in einer Region liegt, die er kennt — dieselbe
+`visiblePoint`-Prüfung wie für Orte; der Server legt die durchgelassenen Namen als `labels`
+in die Sitzungsansicht, Spieler sehen nie den Rest. Werkzeug „Beschriften" (N) im Studio: Text,
+Art, Schriftgröße (klein/normal/groß/riesig als 0,5/0,8/1,3/2,2 Zellen); Klick setzt gerade,
+Ziehen legt den Namen auf die geglättete Linie des Strichs (`labelPath`: Punkte unter einer
+halben Zelle Abstand fallen weg, eine Mittelung, höchstens 64 Punkte); ein Strich ist ein
+Schritt. Die Liste unter dem Werkzeug benennt um (beim Verlassen des Felds) und entfernt. Die
+Ebene „Namen" blendet freie Namen mit aus und sperrt das Werkzeug.
 
 ## 6. Nachweis
 Siehe `design/iterations/map-studio-20260910-optik.md`.

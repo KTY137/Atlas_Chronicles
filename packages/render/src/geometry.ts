@@ -108,6 +108,16 @@ export function validateMapScene(scene: ProjectedMapScene): void {
       color(light.color);
     }
   }
+  if (scene.labels !== undefined) {
+    if (!Array.isArray(scene.labels) || scene.labels.length > 512) throw new Error("invalid map labels");
+    for (const label of scene.labels) {
+      id("label", label.id);
+      if (typeof label.text !== "string" || !label.text.trim() || label.text.length > 80) throw new Error("invalid map label text");
+      if (!Array.isArray(label.points) || !label.points.length || label.points.length > 64 || !label.points.every((point: unknown) => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite))) throw new Error("invalid map label line");
+      if (!Number.isFinite(label.size) || label.size <= 0 || label.size > 4096) throw new Error("invalid map label size");
+      if (!["ort", "wasser", "gegend", "weg"].includes(label.style)) throw new Error("invalid map label style");
+    }
+  }
   if (scene.paintCells !== undefined && typeof scene.paintCells !== "boolean") throw new Error("invalid cell paint visibility");
   if (scene.grid && scene.grid.kind !== "none") {
     if (!["square", "hex"].includes(scene.grid.kind) || !Number.isFinite(scene.grid.size) || scene.grid.size <= 0 || scene.grid.origin.length !== 2 || !scene.grid.origin.every(Number.isFinite)) throw new Error("invalid grid");

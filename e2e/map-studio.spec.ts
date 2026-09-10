@@ -143,6 +143,44 @@ test("the scatter brush strews a wood along one stroke, as one undoable step, on
   } finally { await context.close(); await host.close(); }
 });
 
+test("names on the map: one along a stroke, one straight by click, renamed and removed in the list, saved with the map", async ({ browser }, info) => {
+  test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
+  try {
+    await context.addCookies([host.cookie]); const page = await context.newPage(), errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+    await page.goto(host.origin); await expect(canvas(page)).toBeVisible();
+    await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
+    await page.getByRole("button", { name: "Beschriften", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Namen setzen" })).toBeVisible();
+    const tools = page.getByRole("complementary", { name: "Kartenwerkzeuge", exact: true });
+    await tools.getByRole("textbox", { name: "Text", exact: true }).first().fill("Silberbach");
+    await tools.getByRole("combobox", { name: "Art", exact: true }).first().selectOption("wasser");
+    await drag(page, [150, 600], [850, 400]);
+    await tools.getByRole("textbox", { name: "Text", exact: true }).first().fill("Alte Feste");
+    await tools.getByRole("combobox", { name: "Art", exact: true }).first().selectOption("ort");
+    await click(page, 500, 200);
+    await page.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
+    const named = (await host.map()).cartography!.labels!;
+    expect(named.map(label => [label.text, label.style])).toEqual([["Silberbach", "wasser"], ["Alte Feste", "ort"]]);
+    expect(named[0]!.points.length).toBeGreaterThan(2); expect(named[1]!.points).toHaveLength(1);
+    expect(named[1]!.points[0]).toEqual([500, 200]);
+    // The list under the tool renames and removes; both are steps of their own and saved with the map.
+    const list = page.locator(".map-label-list");
+    await list.getByRole("textbox", { name: "Text", exact: true }).first().fill("Silberbach im Tal");
+    await list.getByRole("textbox", { name: "Text", exact: true }).first().press("Tab");
+    await list.getByRole("button", { name: "Namen entfernen", exact: true }).nth(1).click();
+    await page.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
+    expect((await host.map()).cartography!.labels!.map(label => label.text)).toEqual(["Silberbach im Tal"]);
+    await page.reload(); await expect(canvas(page)).toBeVisible();
+    await page.getByRole("button", { name: "Beschriften", exact: true }).click();
+    await expect(page.locator(".map-label-list").getByRole("textbox", { name: "Text", exact: true })).toHaveValue("Silberbach im Tal");
+    await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
+    await page.screenshot({ path: info.outputPath("names-studio.png"), fullPage: true });
+    expect(errors).toEqual([]);
+  } finally { await context.close(); await host.close(); }
+});
+
 test("the height tool shapes a map that never had a relief, and the relief survives save and reload", async ({ browser }, info) => {
   test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
   try {

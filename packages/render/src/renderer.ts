@@ -6,7 +6,7 @@ import { fitCamera, hitTestMap, mapPinHitRadius, mapToScreen, normalizeCamera, p
 import { rasterTileDisplaySize } from "./tactical-geometry.ts";
 import { createGridGeometryCache } from "./grid-cache.ts";
 import { planeStapel } from "./stapel.ts";
-import type { MapCamera, MapEditorInteraction, MapHit, MapPoint, MapRenderer, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
+import type { MapCamera, MapEditorInteraction, MapHit, MapPoint, MapRenderer, ProjectedMapLabel, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
 export interface MapRendererOptions {
   readonly onSelect?: (hit: MapHit | null) => void;
@@ -75,7 +75,9 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   // Light pools lie over floor and furniture and under walls: a torch warms the room it stands
   // in, the wall in front of it still reads as a wall. Additive, so two lamps brighten, not muddy.
   const glow = new Graphics(); glow.eventMode = "none"; glow.label = "glow"; glow.blendMode = "add";
-  world.addChild(rasterBounds, raster, geography, stampLayer, buildings, rooftopStamps, glow, gridOverlay, wallsOverlay, markers, dragPreview);
+  // Free names are lettered in the world, so they zoom with the sheet: above walls, under markers.
+  const lettering = new Container(); lettering.eventMode = "none"; lettering.label = "lettering";
+  world.addChild(rasterBounds, raster, geography, stampLayer, buildings, rooftopStamps, glow, gridOverlay, wallsOverlay, lettering, markers, dragPreview);
   raster.mask = rasterBounds;
   app.stage.addChild(world);
   const selection = new Graphics().circle(0, 0, 15).stroke({ color: 0xffe7a1, width: 2 }); selection.visible = false;
@@ -408,9 +410,53 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     }
     return shape;
   };
+  /** The book face for a free name: a place upright and bold, a water in italics with air
+   * between the letters, a region spaced out in capitals, a way small; by moonlight pale. */
+  const letteringStyle = (label: ProjectedMapLabel, night: boolean) => {
+    const ink = night ? 0xe9e2cf : 0x2c2519, halo = night ? 0x141b30 : 0xf0e6cb;
+    const base = { fontFamily: "Georgia, 'Times New Roman', serif", fontSize: label.size, fill: ink, stroke: { color: halo, width: Math.max(1, label.size * .16) } };
+    switch (label.style) {
+      case "wasser": return { ...base, fontStyle: "italic" as const, fill: night ? 0xbfd3e0 : 0x2f5666, letterSpacing: label.size * .12 };
+      case "gegend": return { ...base, fontWeight: "600" as const, fill: night ? 0xd9d3c2 : 0x4a4032, letterSpacing: label.size * .35 };
+      case "weg": return { ...base, fontStyle: "italic" as const, fontSize: label.size * .85, fill: night ? 0xd8cdb8 : 0x5a4632 };
+      default: return { ...base, fontWeight: "700" as const, letterSpacing: label.size * .06 };
+    }
+  };
+  const drawLettering = (): void => {
+    clear(lettering);
+    const night = scene.mood === "nacht";
+    for (const label of scene.labels ?? []) {
+      const style = letteringStyle(label, night), text = label.style === "gegend" ? label.text.toUpperCase() : label.text;
+      // A line is read left to right: a stroke drawn the other way round is turned around.
+      const points = label.points.length > 1 && label.points.at(-1)![0] < label.points[0]![0] ? [...label.points].reverse() : label.points;
+      const lengths = points.slice(1).map((point, index) => Math.hypot(point[0] - points[index]![0], point[1] - points[index]![1])), total = lengths.reduce((sum, length) => sum + length, 0);
+      const glyph = (value: string) => { const item = new Text({ text: value, style }); item.anchor.set(.5); item.resolution = 2; item.eventMode = "none"; return item; };
+      if (points.length === 1 || total === 0) { const whole = glyph(text); whole.position.set(points[0]![0], points[0]![1]); lettering.addChild(whole); continue; }
+      // Each letter sits at its own distance along the line and turns with it; the word is centred
+      // on the line's middle and may overhang both ends along their own direction.
+      const glyphs = [...text].map(glyph), spacing = "letterSpacing" in style ? style.letterSpacing : 0;
+      const width = glyphs.reduce((sum, item) => sum + item.width, 0) + spacing * (glyphs.length - 1);
+      const along = (distance: number) => {
+        let remaining = distance;
+        for (const [index, length] of lengths.entries()) {
+          const last = index === lengths.length - 1;
+          if (remaining <= length || last) { const a = points[index]!, b = points[index + 1]!, t = length ? remaining / length : 0; return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, angle: Math.atan2(b[1] - a[1], b[0] - a[0]) }; }
+          remaining -= length;
+        }
+        return { x: points[0]![0], y: points[0]![1], angle: 0 };
+      };
+      let at = (total - width) / 2;
+      for (const item of glyphs) {
+        const { x, y, angle } = along(at + item.width / 2);
+        item.position.set(x, y); item.rotation = angle; lettering.addChild(item);
+        at += item.width + spacing;
+      }
+    }
+  };
   const draw = (): void => {
     rasterBounds.clear().rect(0, 0, scene.width, scene.height).fill(0xffffff);
     drawStamps();
+    drawLettering();
     clear(geography);
     clear(buildings);
     clear(markers);
