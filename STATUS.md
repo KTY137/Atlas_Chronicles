@@ -1,6 +1,46 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 7** (Zugangsverwaltung im Hostfenster · v0.3.0)
+Updated: **2026-09-10, Runde 8** (Welten löschen, Einladungen sichtbar · v0.3.1)
+
+## Runde 8 — Welten löschen, Einladungen sichtbar · 2026-09-10 · v0.3.1
+
+**Zwei Bitten von Kaya, beide klein, beide berechtigt.**
+
+(1) *„ich mein den lokalen Welten screen können wir da einen invitation code ersteller haben?"* —
+den gab es seit v0.3.0, aber **nur bei laufender Welt**. Gesucht wird er genau dann, wenn nichts
+läuft. Jetzt immer sichtbar; ohne laufende Welt sagt er, was zu tun ist. **Merksatz:** eine
+Ansicht, die nur im Erfolgsfall erscheint, ist im Bedarfsfall unauffindbar.
+
+(2) *„die option lokale welten zu löschen wäre auch gut"* — es gab keinen Weg, eine Welt wieder
+loszuwerden. Neu `ProfileStore.remove`, Befehl `loeschen` in `policy.ts`, Bestätigungszeile in
+der Weltenliste.
+
+**Bindende Festlegungen beim Löschen:**
+- Bestätigt wird durch **Tippen des Namens**, geprüft **in `ProfileStore.remove`** gegen die Welt
+  selbst. Eine Bestätigung, die nur im Renderer stattfindet, ist keine.
+- Ein **lebender** Halter von `host.lock` lässt das Löschen scheitern; ein Lock ohne Prozess
+  nicht — dieselbe Unterscheidung wie in `lock()`, nur ohne etwas zu übernehmen.
+- **Erst umbenennen, dann entfernen** (`.deleting-<uuid>`): `list()` nimmt nur reine UUID-Ordner,
+  also verschwindet die Welt auch dann aus der Liste, wenn `rm` an einer offenen Datei scheitert.
+- **Recovery-Punkte bleiben.** Sie tragen ihre eigene Kopie von `profile.json` und
+  `secrets.dpapi` (siehe `RecoveryStore.create`) und sind ohne ihr Profil wiederherstellbar. Das
+  steht auch in der Oberfläche — sonst wäre „gelöscht" eine Lüge in die eine oder andere Richtung.
+- Die Browserpartition der Adresse wird mitgeräumt (`clearStorageData`).
+
+**Nebenbefund: der Electron-Prüflauf war seit `b59851a` rot** und niemandem aufgefallen, weil er
+selten läuft. `assert.equal(bundle.version,19)` stammte aus der Zeit der Beispielkarte; seit die
+Karte über `/maps/import` hereinkommt, notiert nichts mehr eine Herkunft, und die Sicherung ist
+korrekt eine V15-Datei. Jetzt auf 15 gestellt, **plus** die Zusicherung, dass
+`atlas_karten_herkunft` wirklich leer ist — sonst wäre die 15 nur eine gesenkte Erwartung.
+
+**Falle bei der neuen Prüfstufe:** `stop()` im Prüflauf schließt die **ganze Anwendung**. Alles,
+was die Verwaltungsbrücke braucht, muss davor stehen; das Löschen verlangt zusätzlich einen
+beendeten Host, also erst `invoke({kind:"stop"})`, dann löschen, dann `stop()`.
+
+**Nachweis:** beide Typechecks; gate:version (0.3.1), gate:boundaries, gate:sprache; 120
+Desktop- und Theme-Prüfungen inklusive zwei neuer; `node --check manager.js`; **voller
+`desktop:smoke` grün** — gegen die gebaute dist und gegen die installierte 0.3.0. Paket, Setup
+und `installer.json` melden 0.3.1.
 
 ## Runde 7 — Zugänge und Rollen im Hostfenster · 2026-09-10 · v0.3.0
 

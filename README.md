@@ -11,13 +11,14 @@ Rechner, LAN oder eigener Server — steht in
 
 ## Herunterladen
 
-[**v0.3.0 für Windows**](https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.3.0)
+[**v0.3.1 für Windows**](https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.3.1)
 — ein Setup für den eigenen Benutzer, ohne Administratorrechte. Der Bau ist
 **unsigniert**: Windows warnt vor einem unbekannten Herausgeber, und diese Warnung
 stimmt. Es gibt keinen Aktualisierungskanal; eine neue Fassung heißt neu
 herunterladen. Was drin ist, was fehlt und die Prüfsumme zum Nachrechnen stehen in
-den [Release-Notizen](docs/RELEASE_NOTES_v0.3.0.md); die früheren Fassungen bleiben
-in den Notizen zu [v0.2.0](docs/RELEASE_NOTES_v0.2.0.md) und
+den [Release-Notizen](docs/RELEASE_NOTES_v0.3.1.md); die früheren Fassungen bleiben
+in den Notizen zu [v0.3.0](docs/RELEASE_NOTES_v0.3.0.md),
+[v0.2.0](docs/RELEASE_NOTES_v0.2.0.md) und
 [v0.1.0](docs/RELEASE_NOTES_v0.1.0.md) beschrieben.
 
 Diese Fassung schließt eine Lücke, die im Betrieb schmerzte: eine gewöhnliche
@@ -26,7 +27,10 @@ Browser gemerkt hat, stand danach vor der Anmeldeseite ohne Weg zurück — auch
 Spielleitung, der dieser Server gehört. Das Hostfenster hat jetzt einen Bereich
 **Zugänge und Rollen**: Runden und Mitglieder mit der Spalte, wer gerade nicht
 mehr hereinkommt, ein Zugangscode für jedes Mitglied, ein Einladungscode für eine
-Runde und die Wahl, wer die Spielleitung führt.
+Runde und die Wahl, wer die Spielleitung führt. Der Abschnitt ist immer sichtbar,
+auch wenn gerade keine Welt läuft — dann sagt er, was zu tun ist. Und eine lokale
+Welt lässt sich löschen; bestätigt wird durch Tippen ihres Namens, gesicherte
+Stände bleiben erhalten.
 
 ## Lokal starten
 
