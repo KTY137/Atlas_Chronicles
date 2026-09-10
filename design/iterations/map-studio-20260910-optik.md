@@ -162,6 +162,9 @@ gebaut (`npm run desktop:build`: 151 Client-Dateien, 6 Assetpakete samt `pk.natu
 die Lampe im bekannten Raum, b beide, `gemalt` gesetzt, kein `mood` ohne Stimmung), render
 `renderer-lifecycle` (gemalte Kachelkarte: Tuschenamen, Schatten, Kartenzier — ohne Zeichnung),
 client `map-generation` (`lightsToScene`), Prüfstand; 204 Fälle; Typecheck, Build, Gates.
+Browser: Studio-Trio 10/11 im Lauf, der bekannte Gestenfall allein erneut grün; `tactical.spec` erwartet
+einen laufenden Entwicklungsserver mit der lokalen Datenbank auf Port 54329 (`server/src/main.ts`)
+und fällt ohne ihn in 30 ms mit ECONNREFUSED — eine Umgebungsvoraussetzung, kein Befund.
 
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel
