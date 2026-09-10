@@ -53,12 +53,15 @@ describe("frozen, replayable Chronist provider wire profiles", () => {
     const one = renderChronistUnit("anthropic-messages-1", model, fingerprint, plan, snapshot, 1, []);
     const two = renderChronistUnit("anthropic-messages-2", model, fingerprint, plan, snapshot, 1, []);
     // A pinned hash over the complete wire text: any byte change of profile 1 is a new profile.
-    expect(one.dispatch.requestHash).toBe("ab41ca9f83f0bb316817216f957f1282e50e4348acb6041495f63e0813da50b6");
+    // Neu gesetzt mit `chronist-prompt-2` (Aufgaben „Artikel schreiben" und „Artikel
+    // überarbeiten"). Der Systemprompt gehört zum Draht, also verschiebt seine Fassung diesen
+    // Hash — und genau dafür trägt der Plan eine Promptfassung: die Änderung ist angesagt.
+    expect(one.dispatch.requestHash).toBe("01350f263aa2c77a375432334e224dc3795fdd0b229cf093ae30ae912a361979");
     expect(JSON.parse(two.dispatch.wireText)).toEqual({ ...JSON.parse(one.dispatch.wireText), thinking: { type: "disabled" } });
     expect(JSON.parse(two.dispatch.wireText).temperature).toBeUndefined();
     expect(JSON.parse(two.dispatch.wireText).thinking.type).toBe("disabled");
     // Profile 2 is frozen from here on as well: a changed byte is a profile 3, not an edit.
-    expect(two.dispatch.requestHash).toBe("945415a814fbc9389722580a6765139460d647b12a0580167ac8bba826bafaaa");
+    expect(two.dispatch.requestHash).toBe("2a7eea281fe0e4a271c69999f5477941aa6f9f74e677066901f0e77df39e434c");
     expect(two.dispatch.requestHash).not.toBe(one.dispatch.requestHash);
     expect(two.dispatch.inputChars).toBe(two.dispatch.wireText.length);
     expect(CHRONIST_HTTP_PROFILES).toContain("anthropic-messages-2");

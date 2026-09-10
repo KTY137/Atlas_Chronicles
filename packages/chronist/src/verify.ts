@@ -7,14 +7,24 @@ import type { ChronistCandidate, ChronistCitation, ChronistDate, ChronistModelDr
 import { chronistHash, chronistValue } from "./hash.ts";
 import { assertChronist, parseChronistCandidate, parseChronistModelUnit } from "./parse.ts";
 import { chronistCitationText, chronistFactSourceIds, chronistSourceSentences, extractChronistDates } from "./sources.ts";
-import { chronistSortedIds, chronistUnitSpans, planChronistUnits } from "./plan.ts";
+import { CHRONIST_MODUS_ART, chronistSortedIds, chronistUnitSpans, planChronistUnits } from "./plan.ts";
 
 export function chronistCandidateHash(candidate: ChronistCandidate): string { return chronistHash("candidate", chronistValue(parseChronistCandidate(candidate))); }
 const paragraph = (text: string): Blockinhalt => ({ kind: "absatz", inhalt: [{ text, marks: [] }] });
 const bodyKey = (body: Omit<ChronistCandidate, "candidateKey">) => chronistHash("candidate", chronistValue(body));
+/**
+ * Ein Ereignis ist ein Satz, ein Artikel hat Absätze. Leerzeilen im Modelltext werden deshalb zu
+ * eigenen Absatzblöcken — mehr Struktur trägt der Block-AST nicht, und mehr soll ein Modell hier
+ * auch nicht setzen können: es bleibt bei reinem Text ohne Auszeichnung und ohne HTML.
+ */
+const absaetze = (text: string): readonly Blockinhalt[] => {
+  const teile = text.split(/\n\s*\n+/).map(part => part.trim()).filter(part => part.length > 0);
+  return teile.length ? teile.map(paragraph) : [paragraph(text)];
+};
 export function candidateFromDraft(draft: ChronistModelDraft, unit: ChronistModelUnit, _snapshot: ChronistSnapshot): ChronistCandidate {
-  const body = { kind: draft.kind, blocks: [paragraph(draft.text)], citations: draft.citations,
-    dependencies: unit.sourceIds, origin: "modell" as const, ruleFinding: null, date: draft.date };
+  const mehrteilig = draft.kind === "artikel" || draft.kind === "ueberarbeitung";
+  const body = { kind: draft.kind, blocks: mehrteilig ? [...absaetze(draft.text)] : [paragraph(draft.text)],
+    citations: draft.citations, dependencies: unit.sourceIds, origin: "modell" as const, ruleFinding: null, date: draft.date };
   return parseChronistCandidate({ candidateKey: bodyKey(body), ...body });
 }
 
@@ -77,7 +87,7 @@ export function verifyChronistCandidate(value: ChronistCandidate, unit: Chronist
   const { attempt: _attempt, parentResults: _parents, dispatch: _dispatch, ...unitPlan } = unit;
   if (!plan || !same(plan, unitPlan)) return { ok: false, reason: "schema" };
   if (!same(candidate.dependencies, plan.sourceIds)) return { ok: false, reason: "citation" };
-  if (candidate.kind !== (snapshot.mode === "abriss" ? "abriss" : "ereignis")) return { ok: false, reason: "schema" };
+  if (candidate.kind !== CHRONIST_MODUS_ART[snapshot.mode]) return { ok: false, reason: "schema" };
   const spans = chronistUnitSpans(plan, plans);
   const cited = (c: ChronistCitation): boolean => Boolean(chronistCitationText(c, snapshot.sources)?.trim()) &&
     spans.some(s => s.sourceId === c.sourceId && s.from <= c.from && s.to >= c.to);

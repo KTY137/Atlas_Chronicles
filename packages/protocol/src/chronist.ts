@@ -12,7 +12,9 @@ export const ChronistBudgetSchema = Type.Object({
   maxActiveMs: Type.Integer({ minimum: 100, maximum: 1_800_000 }), concurrency: Type.Integer({ minimum: 1, maximum: 4 }),
   maxInputCharsPerCall: Type.Integer({ minimum: 100, maximum: 24_000 }), maxOutputCharsPerCall: Type.Integer({ minimum: 1, maximum: 64_000 }),
 }, closed);
-export const ChronistPreview = Type.Object({ mode: Type.Union([Type.Literal("prosa"),Type.Literal("sitzung"),Type.Literal("abriss")]),
+export const CHRONIST_MODES = ["prosa","sitzung","abriss","artikel","ueberarbeitung"] as const;
+export const CHRONIST_KINDS = ["ereignis","widerspruch","luecke","abriss","artikel","ueberarbeitung"] as const;
+export const ChronistPreview = Type.Object({ mode: Type.Union(CHRONIST_MODES.map(value => Type.Literal(value))),
   sessionId: Type.Optional(Id), sourceRefs: Type.Array(ChronistSourceRefSchema,{minItems:1,maxItems:512}),
   providerId: Id, model: Type.String({minLength:1,maxLength:256}), budget: Type.Optional(Type.Partial(ChronistBudgetSchema)) },closed);
 /** Die Freigabe ist ein serverseitig signiertes Einmal-Token, keine Behauptung der Oberflaeche. */
@@ -28,7 +30,14 @@ export const ResumeChronistRun = Type.Object({expectedVersion:Type.Integer({mini
 export const EditChronistProposal = Type.Object({expectedVersion:Type.Integer({minimum:1}),blocks:Type.Array(Block,{minItems:1,maxItems:1000})},closed);
 export const SubmitChronistProposal = Type.Object({commandId:Id,expectedVersion:Type.Integer({minimum:1}),expectedDraftHash:ChronistHash,
   target:Type.Union([Type.Object({kind:Type.Literal("existing"),entryId:Id,expectedVersion:Type.Integer({minimum:1})},closed),
-    Type.Object({kind:Type.Literal("new"),title:Type.String({minLength:1,maxLength:200}),slug:Type.Optional(Type.String({minLength:1,maxLength:200}))},closed)])},closed);
+    Type.Object({kind:Type.Literal("new"),title:Type.String({minLength:1,maxLength:200}),slug:Type.Optional(Type.String({minLength:1,maxLength:200}))},closed),
+    /**
+     * **Berichtigung.** Der Antrag tritt an die Stelle einer vorhandenen Passage statt hinten
+     * angehängt zu werden. Er entsteht trotzdem als gewöhnlicher Antrag im selben Artikel — was
+     * die Zielpassage ersetzt, entscheidet erst die Prägung am Tisch. `passageId` muss genau die
+     * Passage sein, die der Vorschlag überarbeitet hat; der Server prüft das gegen den Lauf.
+     */
+    Type.Object({kind:Type.Literal("revision"),entryId:Id,passageId:Id,expectedVersion:Type.Integer({minimum:1})},closed)])},closed);
 export type ChronistPreviewBody = Static<typeof ChronistPreview>;
 export type StartChronistRunBody = Static<typeof StartChronistRun>;
 export type ResumeChronistRunBody = Static<typeof ResumeChronistRun>;
@@ -36,7 +45,9 @@ export type EditChronistProposalBody = Static<typeof EditChronistProposal>;
 export type SubmitChronistProposalBody = Static<typeof SubmitChronistProposal>;
 export interface ChronistStartAck {readonly runId:string;readonly version:number;readonly state:"running"}
 export interface ChronistSubmissionAck {readonly commandId:string;readonly proposalId:string;readonly proposalVersion:number;
-  readonly state:"eingereicht";readonly entryId:string;readonly revisionId:string;readonly version:number;readonly passageIds:readonly string[]}
+  readonly state:"eingereicht";readonly entryId:string;readonly revisionId:string;readonly version:number;readonly passageIds:readonly string[];
+  /** Bei einer Berichtigung: die Passage, an deren Stelle dieser Antrag treten soll. Sonst null. */
+  readonly berichtigt:string|null}
 export interface ChronistProviderDescription {readonly id:string;readonly label:string;readonly location:"lokal"|"fremd";
   readonly transport:"http"|"cli";readonly available:boolean;readonly availabilityCode:string|null;
   readonly models:readonly string[];readonly pricing:{readonly currency:string;readonly inputMicrosPerMillion:number;readonly outputMicrosPerMillion:number;readonly asOf:string}|null}
@@ -77,7 +88,9 @@ export interface ChronistRunView {readonly runId:string;readonly version:number;
   readonly actions:readonly ("cancel"|"resume")[]}
 export interface ChronistRunPage {readonly runs:readonly ChronistRunView[];readonly after:string|null;readonly complete:boolean}
 export interface ChronistSuggestionView {readonly id:string;readonly runId:string;readonly unitId:string;readonly version:number;
-  readonly kind:"ereignis"|"widerspruch"|"luecke"|"abriss";readonly origin:"regelwerk"|"modell";
+  readonly kind:typeof CHRONIST_KINDS[number];readonly origin:"regelwerk"|"modell";
+  /** Bei einer Überarbeitung: die vorgelegte Passage, die dieser Vorschlag ersetzen will. */
+  readonly ueberarbeitet:{readonly entryId:string;readonly passageId:string}|null;
   readonly state:"offen"|"eingereicht"|"verworfen";readonly originalBlocks:readonly Blockinhalt[];readonly blocks:readonly Blockinhalt[];
   readonly draftHash:string;readonly sources:readonly ChronistSourceDescriptor[];
   readonly citations:readonly {readonly sourceId:string;readonly from:number;readonly to:number}[];

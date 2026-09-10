@@ -83,11 +83,12 @@ function date(v: unknown): ChronistDate | null {
 }
 function draft(v: unknown): ChronistModelDraft {
   const o = closed(v, ["kind", "text", "citations", "date"]);
-  const kind = oneOf(o.kind, ["ereignis", "abriss"]); stringValue(o.text, 1, 16000); assertChronist(String(o.text).trim().length > 0);
+  const kind = oneOf(o.kind, ["ereignis", "abriss", "artikel", "ueberarbeitung"]); stringValue(o.text, 1, 16000); assertChronist(String(o.text).trim().length > 0);
   // Text is always rendered as a plain AST paragraph; the model cannot create links or HTML.
   assertChronist(!/<\/?[a-z][^>]*>/i.test(String(o.text)));
   const citations = arrayValue(o.citations, 512); assertChronist(citations.length > 0); citations.forEach(citation); date(o.date);
-  if (kind === "abriss") assertChronist(o.date === null); return v as ChronistModelDraft;
+  // Nur ein Ereignis trägt ein Datum. Erzählendes und Überarbeitetes darf keines behaupten.
+  if (kind !== "ereignis") assertChronist(o.date === null); return v as ChronistModelDraft;
 }
 export function parseChronistModelReply(value: unknown): { readonly schemaVersion: 1; readonly candidates: readonly ChronistModelDraft[] } {
   return inspected(value, v => { const o = closed(v, ["schemaVersion", "candidates"]); assertChronist(o.schemaVersion === 1); arrayValue(o.candidates, CHRONIST_LIMITS.candidates).forEach(draft); return v as { schemaVersion: 1; candidates: readonly ChronistModelDraft[] }; });
@@ -95,26 +96,35 @@ export function parseChronistModelReply(value: unknown): { readonly schemaVersio
 function finding(v: unknown): Befund | null { if (v === null) return null; const o = closed(v, ["art", "entryId", "titel", "text", "passagen"]); oneOf(o.art, BEFUNDARTEN); idValue(o.entryId); stringValue(o.titel, 0, 10000); stringValue(o.text, 1, 16000); arrayValue(o.passagen, 512).forEach(idValue); return v as Befund; }
 function candidate(v: unknown): ChronistCandidate {
   const o = closed(v, ["candidateKey", "kind", "blocks", "citations", "dependencies", "origin", "ruleFinding", "date"]);
-  hashValue(o.candidateKey); oneOf(o.kind, ["ereignis", "widerspruch", "luecke", "abriss"]);
+  hashValue(o.candidateKey); oneOf(o.kind, ["ereignis", "widerspruch", "luecke", "abriss", "artikel", "ueberarbeitung"]);
   const blocks = arrayValue(o.blocks, 64); assertChronist(blocks.length > 0); blocks.forEach(block);
   const citations = arrayValue(o.citations, 512); assertChronist(citations.length > 0); citations.forEach(citation);
   const dependencies = strings(o.dependencies); assertChronist(dependencies.length > 0); dependencies.forEach(hashValue);
   oneOf(o.origin, ["regelwerk", "modell"]); finding(o.ruleFinding); date(o.date);
-  assertChronist(o.kind !== "abriss" || o.date === null);
+  assertChronist(o.kind === "ereignis" || o.kind === "widerspruch" || o.kind === "luecke" || o.date === null);
   if (o.origin === "modell") {
-    assertChronist(o.ruleFinding === null && (o.kind === "ereignis" || o.kind === "abriss"));
-    assertChronist(blocks.length === 1 && (blocks[0] as Blockinhalt).kind === "absatz");
-    const b = blocks[0] as Extract<Blockinhalt, { kind: "absatz" }>;
-    assertChronist(b.inhalt.length === 1 && b.inhalt[0]!.marks.length === 0); stringValue(b.inhalt[0]!.text, 1, 16000);
-    assertChronist(!/<\/?[a-z][^>]*>/i.test(b.inhalt[0]!.text));
+    assertChronist(o.ruleFinding === null && (o.kind === "ereignis" || o.kind === "abriss" || o.kind === "artikel" || o.kind === "ueberarbeitung"));
+    // Ein Ereignis ist genau eine Aussage; ein Artikel und eine überarbeitete Passage dürfen
+    // mehrere Absätze haben. Was gleich bleibt: **jeder** Block ist reiner Text ohne
+    // Auszeichnung — das Modell kann weder Verweise noch HTML in die Chronik legen.
+    assertChronist(o.kind === "ereignis" ? blocks.length === 1 : blocks.length >= 1);
+    let gesamt = 0;
+    for (const value of blocks) {
+      const b = value as Blockinhalt; assertChronist(b.kind === "absatz");
+      const absatz = b as Extract<Blockinhalt, { kind: "absatz" }>;
+      assertChronist(absatz.inhalt.length === 1 && absatz.inhalt[0]!.marks.length === 0);
+      stringValue(absatz.inhalt[0]!.text, 1, 16000); gesamt += absatz.inhalt[0]!.text.length;
+      assertChronist(!/<\/?[a-z][^>]*>/i.test(absatz.inhalt[0]!.text));
+    }
+    assertChronist(gesamt <= 16000);
   }
   return v as ChronistCandidate;
 }
 export const parseChronistCandidate = (v: unknown): ChronistCandidate => inspected(v, candidate);
 function unitPlan(v: unknown, extra: readonly string[] = []): ChronistUnitPlan {
   const o = closed(v, ["unitId", "mode", "sourceIds", "sourceSpans", "factIds", "parentUnitIds", "promptVersion", "maxOutputChars"], extra);
-  hashValue(o.unitId); oneOf(o.mode, ["prosa", "sitzung", "abriss"]); strings(o.sourceIds).forEach(hashValue); arrayValue(o.sourceSpans, 512).forEach(citation);
-  strings(o.factIds, 10000).forEach(hashValue); strings(o.parentUnitIds, 128).forEach(hashValue); assertChronist(o.promptVersion === "chronist-prompt-1"); integer(o.maxOutputChars, 1, CHRONIST_LIMITS.maxOutputCharsPerCall); return v as ChronistUnitPlan;
+  hashValue(o.unitId); oneOf(o.mode, ["prosa", "sitzung", "abriss", "artikel", "ueberarbeitung"]); strings(o.sourceIds).forEach(hashValue); arrayValue(o.sourceSpans, 512).forEach(citation);
+  strings(o.factIds, 10000).forEach(hashValue); strings(o.parentUnitIds, 128).forEach(hashValue); assertChronist(o.promptVersion === "chronist-prompt-2"); integer(o.maxOutputChars, 1, CHRONIST_LIMITS.maxOutputCharsPerCall); return v as ChronistUnitPlan;
 }
 export const parseChronistUnitPlan = (v: unknown): ChronistUnitPlan => inspected(v, unitPlan);
 export function parseChronistDispatch(v: unknown): ChronistDispatch {

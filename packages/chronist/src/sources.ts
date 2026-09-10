@@ -144,7 +144,7 @@ export function chronistFactSourceIds(fact: Zeitereignis, sources: readonly Chro
 export function parseChronistSnapshot(value: unknown): ChronistSnapshot {
   admitChronistValue(value);
   const o = closed(value, ["schemaVersion", "graphVersion", "runId", "mode", "sessionId", "scopeHash", "sources", "facts", "budget"]);
-  assertChronist(o.schemaVersion === 1 && o.graphVersion === "chronist-1"); idValue(o.runId); oneOf(o.mode, ["prosa", "sitzung", "abriss"]);
+  assertChronist(o.schemaVersion === 1 && o.graphVersion === "chronist-1"); idValue(o.runId); oneOf(o.mode, ["prosa", "sitzung", "abriss", "artikel", "ueberarbeitung"]);
   if (o.sessionId !== null) idValue(o.sessionId); assertChronist(o.mode !== "sitzung" || o.sessionId !== null); hashValue(o.scopeHash); parseChronistBudget(o.budget);
   const sources = arrayValue(o.sources, CHRONIST_LIMITS.sources).map(parseChronistSourceSnapshot);
   const canonical = canonicalChronistSources(sources);

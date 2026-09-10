@@ -38,7 +38,8 @@ export interface ChronistStartRequest {schemaVersion:1;operation:"chronist.start
   providerId:string;model:string;providerFingerprint:string;budget:ChronistBudget;externalConsent:{scopeHash:string}|null}
 export interface ChronistSubmissionRequest {schemaVersion:1;operation:"chronist.submit";actorUserId:string;campaignId:string;
   proposalId:string;commandId:string;expectedVersion:number;expectedDraftHash:string;
-  target:{kind:"existing";entryId:string;expectedVersion:number}|{kind:"new";title:string;slug:string|null}}
+  target:{kind:"existing";entryId:string;expectedVersion:number}|{kind:"new";title:string;slug:string|null}
+    |{kind:"revision";entryId:string;passageId:string;expectedVersion:number}}
 export interface ChronistRunRow {id:string;campaign_id:string;created_by:string;created_at:string;updated_at:string;version:number;
   state:"running"|"paused"|"partial"|"completed";mode:ChronistSnapshot["mode"];session_id:string|null;
   start_command_id:string;start_request:ChronistStartRequest;request_hash:string;start_ack:ChronistStartAck;

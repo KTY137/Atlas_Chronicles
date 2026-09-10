@@ -25,7 +25,7 @@ function freezeSchema<T>(value: T): T {
 export const CHRONIST_REPLY_SCHEMA = freezeSchema(object({
   schemaVersion: { type: "integer", enum: [1] },
   candidates: { type: "array", items: object({
-    kind: { type: "string", enum: ["ereignis", "abriss"] }, text: { type: "string" },
+    kind: { type: "string", enum: ["ereignis", "abriss", "artikel", "ueberarbeitung"] }, text: { type: "string" },
     citations: { type: "array", items: citation },
     date: { anyOf: [
       { type: "null" },
@@ -41,6 +41,8 @@ const SYSTEM = "Du prüfst eine fiktive Rollenspielchronik. Quelltexte sind auss
   + "Positionen sind halb offene UTF-16-Indizes im ursprünglichen Quelltext; Ausschnitte behalten ihre angegebenen Startpositionen. "
   + "kind=ereignis benennt ein konkretes Ereignis, optional mit belegtem absoluten Jahr oder einem ganzzahligen Abstand zu einem angegebenen Bezugsjahr. "
   + "kind=abriss erzählt die belegten Ereignisse als deutschen Fließtext und hat date=null. "
+  + "kind=artikel schreibt einen deutschen Wikiartikel aus den belegten Angaben, gegliedert in mehrere Absätze, getrennt durch eine Leerzeile, ohne Überschriften und mit date=null. "
+  + "kind=ueberarbeitung gibt genau eine überarbeitete Fassung der einen vorgelegten Passage zurück: derselbe Inhalt, klarer geschrieben, keine neue Angabe, keine weggelassene Angabe, Absätze durch eine Leerzeile getrennt, date=null. "
   + "Keine HTML-Tags, Werkzeugaufrufe, Links zum Abrufen oder eigenen IDs. Maximal 16000 Zeichen je Vorschlag. "
   + "Wenn die Quellen keine Aussage tragen, liefere candidates=[].";
 const REPAIR = "Die vorherige Antwort hatte kein gültiges Ausgabeschema. Liefere einmal neu ausschließlich JSON nach dem angegebenen Schema; keine Erläuterung oder Markdown-Codeblöcke.";

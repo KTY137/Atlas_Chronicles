@@ -1,12 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { canonicalJson } from "@chronicle/core";
-import type { ChronistCitation, ChronistSnapshot, ChronistUnitPlan } from "./types.ts";
+import type { ChronistCitation, ChronistKind, ChronistMode, ChronistSnapshot, ChronistUnitPlan } from "./types.ts";
 import { CHRONIST_LIMITS, chronistHash, chronistValue, codeUnitCompare } from "./hash.ts";
 import { assertChronist, parseChronistUnitPlan } from "./parse.ts";
 import { chronistFactSourceIds, chronistSourceSentences, extractChronistDates, isChronistTextBoundary } from "./sources.ts";
 
-export const CHRONIST_PROMPT_VERSION = "chronist-prompt-1" as const;
+export const CHRONIST_PROMPT_VERSION = "chronist-prompt-2" as const;
+/**
+ * Welche Art Vorschlag eine Aufgabe hervorbringt. Eine Aufgabe, eine Art — die Prüfung weist
+ * jeden Vorschlag ab, der die Art seiner Aufgabe verfehlt, und der Prompt nennt nur diese eine.
+ */
+export const CHRONIST_MODUS_ART: Readonly<Record<ChronistMode, ChronistKind>> = Object.freeze({
+  prosa: "ereignis", sitzung: "ereignis", abriss: "abriss", artikel: "artikel", ueberarbeitung: "ueberarbeitung",
+});
+/** Aufgaben, die viele Quellen über Zwischenstufen zu einem Entwurf zusammenführen. */
+export const chronistFasstZusammen = (mode: ChronistMode): boolean => mode === "abriss" || mode === "artikel";
 export const CHRONIST_PLAN_VERSION = "chronist-plan-1" as const;
 export const CHRONIST_RULE_UNIT = "regelwerk";
 export const chronistSortedIds = (ids: readonly string[]): readonly string[] => [...new Set(ids)].sort(codeUnitCompare);
@@ -17,9 +26,14 @@ export function planChronistUnits(snapshot: ChronistSnapshot): readonly Chronist
   // Leave space for fixed profile instructions/schema, escaping, facts and relative anchors.
   const chars = Math.max(64, Math.floor((snapshot.budget.maxInputCharsPerCall - 4000) / 3));
   const maxOutputChars = Math.min(snapshot.budget.maxOutputCharsPerCall,
-    snapshot.mode === "abriss" ? Math.max(128, Math.floor((snapshot.budget.maxInputCharsPerCall - 4000) / 12)) : 16000);
-  const allFactIds = snapshot.facts.map(f => f.id);
-  const factSources = snapshot.facts.flatMap(f => [...chronistFactSourceIds(f, snapshot.sources)]);
+    chronistFasstZusammen(snapshot.mode) ? Math.max(128, Math.floor((snapshot.budget.maxInputCharsPerCall - 4000) / 12)) : 16000);
+  // **Eine Überarbeitung hängt an ihrer einen Passage und an nichts sonst.** Die Datumsfakten
+  // stehen den anderen Aufgaben als Bezugsanker für relative Angaben zur Verfügung; hier ist
+  // `date` ohnehin immer null, und mitgeführte Fremdquellen würden die Zusage „eine Passage, eine
+  // Einheit" stillschweigend brechen — an ihr hängt, welche Passage der Antrag ersetzen darf.
+  const nutztFakten = snapshot.mode !== "ueberarbeitung";
+  const allFactIds = nutztFakten ? snapshot.facts.map(f => f.id) : [];
+  const factSources = nutztFakten ? snapshot.facts.flatMap(f => [...chronistFactSourceIds(f, snapshot.sources)]) : [];
   const add = (spans: readonly ChronistCitation[], parents: readonly ChronistUnitPlan[] = []) => {
     const factIds = parents.length ? chronistSortedIds(parents.flatMap(p => [...p.factIds])) : chronistSortedIds(allFactIds);
     const sourceIds = chronistSortedIds(parents.length ? parents.flatMap(p => [...p.sourceIds]) : [...spans.map(s => s.sourceId), ...factSources]);
@@ -30,6 +44,15 @@ export function planChronistUnits(snapshot: ChronistSnapshot): readonly Chronist
   };
   for (const source of snapshot.sources) {
     if (source.block.kind === "rohblock" || source.text.trim().length === 0) continue;
+    // **Eine Passage, eine Einheit.** Wer eine Passage überarbeitet, überarbeitet sie ganz: eine
+    // in Stücke zerlegte Passage ergäbe mehrere Fassungen, von denen nur eine die alte ersetzen
+    // kann. Passt sie nicht in einen Aufruf, bleibt sie ungeändert — das ist ehrlicher als eine
+    // halbe Fassung. Zugleich ist damit die Beleggrenze gezogen: die Einheit kennt genau diese
+    // eine Quelle, also kann die Prüfung unten kein fremdes Zitat durchlassen.
+    if (snapshot.mode === "ueberarbeitung") {
+      if (source.text.length <= chars) add([{ sourceId: source.sourceId, from: 0, to: source.text.length }]);
+      continue;
+    }
     const dates = extractChronistDates(source);
     const spans = snapshot.mode === "prosa" ? chronistSourceSentences(source).filter(s =>
       !dates.some(d => d.citation.from >= s.from && d.citation.to <= s.to) ||
@@ -46,7 +69,7 @@ export function planChronistUnits(snapshot: ChronistSnapshot): readonly Chronist
     }
   }
   // Every intermediate and final abriss is in the preview recipe, with transitive dependencies.
-  if (snapshot.mode === "abriss" && plans.length > 1) {
+  if (chronistFasstZusammen(snapshot.mode) && plans.length > 1) {
     let level = [...plans];
     while (level.length > 1) {
       const next: ChronistUnitPlan[] = [];

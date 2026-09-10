@@ -28,12 +28,14 @@ describe("durable Chronist through real database and graph",()=>{
   let db:Db,gm:string;const services:ReturnType<typeof createChronist>[]=[];
   beforeAll(async()=>{db=await createTestDb();await migrate(db);gm=(await createIdentity(db,identityConfig).bootstrap("Kaya")).userId;},30000);
   afterAll(async()=>{for(const s of services)await s.close();await db.close();});
-  async function fixture(passages:PassageInput[],external=false,database:Db=db){
+  async function fixture(passages:PassageInput[],external=false,database:Db=db,art:"abriss"|"artikel"|"ueberarbeitung"="abriss"){
     const campaignId=(await createCampaigns(database).createCampaign(gm,{name:"Chronist"})).id,docs=createDocuments(database),entry=await docs.saveEntry(gm,campaignId,{title:"Mara",passages});let calls=0;
     const binding:ChronistProviderBinding={description:{id:"recorded",label:"Aufzeichnung",location:external?"fremd":"lokal",transport:"http",available:true,availabilityCode:null,models:["recorded"],pricing:null},fingerprint:"a".repeat(64),profileId:"ollama-chat-1",
       prepare:(plan,snapshot,attempt,parents)=>renderChronistUnit("ollama-chat-1","recorded","a".repeat(64),plan,snapshot,attempt,parents),
       bind:consume=>async(unit,permit)=>{expect(await consume(permit,unit)).toBe(true);expect(await consume(permit,unit)).toBe(false);calls++;
-        const citation=unit.sourceSpans[0]!,text=JSON.stringify({schemaVersion:1,candidates:[{kind:"abriss",text:"Mara brach auf.",citations:[citation],date:null}]});
+        const citation=unit.sourceSpans[0]!,leerzeile=String.fromCharCode(10,10);
+        const absatz=art==="abriss"?"Mara brach auf.":["Mara brach auf.","Sie kam nicht zurück."].join(leerzeile);
+        const text=JSON.stringify({schemaVersion:1,candidates:[{kind:art,text:absatz,citations:[citation],date:null}]});
         return {kind:"returned",reply:{text},usage:{inputChars:unit.dispatch.inputChars,outputChars:text.length,outputComplete:true,inputTokens:13,outputTokens:17,tokensComplete:true,durationMs:1,costMicros:null,currency:null,costKind:"unknown",costComplete:false}} as ChronistCallOutcome;}};
     const serviceConfig:ChronistServiceConfig&ChronistFreigabeConfig={cookieSecret:identityConfig.cookieSecret,chronist:{providers:[binding.description],resolveProvider:()=>binding}};
     const service=createChronist(database,serviceConfig);services.push(service);
@@ -243,5 +245,67 @@ describe("durable Chronist through real database and graph",()=>{
       await local.query("DELETE FROM campaign_memberships WHERE campaign_id=$1 AND user_id=$2",[f.campaignId,otherGm]);
       const historical=await exportCampaignBundle(local,gm,f.campaignId);expect(historical.version).toBe(16);expect(historical.tables.users.some(u=>u.id===otherGm)).toBe(true);
     }finally{await resumed?.close();await local.close();}
+  },45000);
+  it("überarbeitet jede Passage einzeln und setzt die neue Fassung an die Stelle der alten",async()=>{
+    const f=await fixture([paragraph("Mara brach auf."),paragraph("Sie kam nicht zurück.")],false,db,"ueberarbeitung");
+    // Berichtigt wird Kanon. Eine bloße Notiz ändert man in der Chronik, da ist nichts zu ersetzen.
+    const gespeichert=await f.docs.source(f.campaignId,f.entry.entryId);
+    for(const passage of gespeichert.passagen)
+      await createGameplay(db).mintGesprochen(gm,f.campaignId,{commandId:randomUUID(),passageId:passage.pid,fictionDate:"812"});
+    // Jede Prägung ist eine neue Fassung des Artikels: die Quellen danach frisch lesen.
+    const refs=(await f.service.sources(gm,f.campaignId,{entryId:f.entry.entryId})).sources.map(s=>s.ref);
+    const stand=(await f.docs.source(f.campaignId,f.entry.entryId)).entry.version;
+    const input={mode:"ueberarbeitung" as const,sourceRefs:refs,providerId:"recorded",model:"recorded"};
+    const preview=await f.service.preview(gm,f.campaignId,input);
+    // Eine Passage, eine Einheit — genau das ist die Zusage, an der die Berichtigung hängt.
+    expect(preview.modelUnits).toBe(2);
+    const ack=await f.service.start(gm,f.campaignId,{...input,commandId:randomUUID(),scopeHash:preview.scopeHash});
+    expect((await settled(f,ack.runId)).state).toBe("completed");
+    const vorschlaege=(await f.service.suggestions(gm,f.campaignId,{runId:ack.runId})).suggestions;
+    expect(vorschlaege).toHaveLength(2);
+    for(const v of vorschlaege){
+      expect(v.kind).toBe("ueberarbeitung");
+      expect(v.sources).toHaveLength(1);
+      expect(v.ueberarbeitet).toEqual({entryId:f.entry.entryId,passageId:v.sources[0]!.ref.passageId});
+      // Mehrere Absätze, keine Textwand.
+      expect(v.blocks.length).toBeGreaterThan(1);
+    }
+    const p=vorschlaege[0]!,fremd=vorschlaege[1]!;
+    // Die Oberfläche darf sich das Ziel nicht ausdenken: eine fremde Passage wird abgewiesen.
+    await expect(f.service.submitSuggestion(gm,f.campaignId,p.id,{commandId:randomUUID(),expectedVersion:p.version,expectedDraftHash:p.draftHash,
+      target:{kind:"revision",entryId:f.entry.entryId,passageId:fremd.ueberarbeitet!.passageId,expectedVersion:stand}})).rejects.toMatchObject({reason:"proposal-version"});
+    const submitted=await f.service.submitSuggestion(gm,f.campaignId,p.id,{commandId:randomUUID(),expectedVersion:p.version,expectedDraftHash:p.draftHash,
+      target:{kind:"revision",entryId:f.entry.entryId,passageId:p.ueberarbeitet!.passageId,expectedVersion:stand}});
+    expect(submitted.entryId).toBe(f.entry.entryId);
+    expect(submitted.berichtigt).toBe(p.ueberarbeitet!.passageId);
+    // Bis hierhin ist nichts ersetzt: der Antrag liegt daneben, die alte Passage steht unverändert.
+    const vorher=await f.docs.source(f.campaignId,f.entry.entryId);
+    expect(vorher.passagen.find(x=>x.pid===p.ueberarbeitet!.passageId)?.geltung).not.toBe("zurückgezogen");
+    expect(vorher.passagen.find(x=>x.pid===submitted.passageIds[0]!)?.geltung).toBe("antrag");
+    await createGameplay(db).mintBerichtigung(gm,f.campaignId,{commandId:randomUUID(),passageId:submitted.passageIds[0]!,
+      fictionDate:"813",ersetztPassageId:submitted.berichtigt!});
+    const nachher=await f.docs.source(f.campaignId,f.entry.entryId);
+    const neue=nachher.passagen.find(x=>x.pid===submitted.passageIds[0]!)!;
+    expect(neue.geltung).toBe("kanon");
+    expect(neue.praegung).toEqual({art:"berichtigung",ersetzt:p.ueberarbeitet!.passageId});
+  },45000);
+
+  it("schreibt aus vielen Passagen einen Artikel in mehreren Absätzen",async()=>{
+    const f=await fixture([paragraph("Mara brach auf und kam nicht zurück.")],false,db,"artikel");
+    const input={mode:"artikel" as const,sourceRefs:f.sourceRefs,providerId:"recorded",model:"recorded"};
+    const preview=await f.service.preview(gm,f.campaignId,input);
+    const ack=await f.service.start(gm,f.campaignId,{...input,commandId:randomUUID(),scopeHash:preview.scopeHash});
+    expect((await settled(f,ack.runId)).state).toBe("completed");
+    const vorschlaege=(await f.service.suggestions(gm,f.campaignId,{runId:ack.runId})).suggestions;
+    expect(vorschlaege.length).toBeGreaterThan(0);
+    expect(vorschlaege.every(v=>v.kind==="artikel")).toBe(true);
+    // Ein Artikel ist keine Überarbeitung: er ersetzt nichts, er entsteht neu.
+    expect(vorschlaege.every(v=>v.ueberarbeitet===null)).toBe(true);
+    expect(vorschlaege[0]!.blocks.length).toBeGreaterThan(1);
+    const p=vorschlaege[0]!;
+    const submitted=await f.service.submitSuggestion(gm,f.campaignId,p.id,{commandId:randomUUID(),expectedVersion:p.version,
+      expectedDraftHash:p.draftHash,target:{kind:"new",title:"Maras Aufbruch"}});
+    expect(submitted.berichtigt).toBeNull();
+    expect((await f.docs.getEntry(gm,f.campaignId,submitted.entryId)).titel).toBe("Maras Aufbruch");
   },45000);
 });

@@ -3,7 +3,7 @@
 import { ApiError, type Block } from "../api";
 import { locale, t } from "../i18n";
 
-export const CHRONIST_TASKS = ["prosa", "sitzung", "abriss"] as const;
+export const CHRONIST_TASKS = ["prosa", "sitzung", "abriss", "artikel", "ueberarbeitung"] as const;
 export type ChronistMode = typeof CHRONIST_TASKS[number];
 export interface ChronistTaskLabel { titel: string; beschreibung: string }
 /** Die Kennungen oben sind Daten, die Beschriftungen hier sind Oberfläche: die Anzeigestelle
@@ -12,10 +12,13 @@ export const CHRONIST_TASK_LABEL: Record<ChronistMode, ChronistTaskLabel> = {
   prosa: { titel: "Wiki durchsehen", beschreibung: "Ereignisse und offene Fragen in euren Artikeln finden." },
   sitzung: { titel: "Sitzung auswerten", beschreibung: "Gespeicherte Notizen zum Spielabend durchsehen." },
   abriss: { titel: "Zusammenfassung erstellen", beschreibung: "Aus gewählten Quellen einen erzählerischen Abriss entwerfen." },
+  artikel: { titel: "Artikel schreiben", beschreibung: "Aus gewählten Quellen einen ganzen Artikel in mehreren Absätzen entwerfen." },
+  ueberarbeitung: { titel: "Artikel überarbeiten", beschreibung: "Zu jeder gewählten Passage eine klarere Fassung entwerfen, die du an ihre Stelle setzen kannst." },
 };
 /** Die Art eines Vorschlags: Stapel und Durchsicht beschriften sie gleich. */
-export const VORSCHLAG_ART_LABEL: Record<"ereignis" | "widerspruch" | "luecke" | "abriss", string> = {
+export const VORSCHLAG_ART_LABEL: Record<"ereignis" | "widerspruch" | "luecke" | "abriss" | "artikel" | "ueberarbeitung", string> = {
   ereignis: "Ereignis", widerspruch: "Widerspruch", luecke: "Offene Datierung", abriss: "Erzählerischer Abriss",
+  artikel: "Artikelentwurf", ueberarbeitung: "Überarbeitete Fassung",
 };
 export const DEFAULT_CHRONIST_BUDGET = Object.freeze({ maxCalls: 8, maxInputChars: 160_000, maxOutputChars: 32_000,
   maxInputCharsPerCall: 24_000, maxOutputCharsPerCall: 8_000, callTimeoutMs: 60_000, maxActiveMs: 300_000, concurrency: 1 });

@@ -186,13 +186,21 @@ export function validateChronistTables(tables:CampaignTablesV16,campaignId:strin
     const req=p.submission_request,ack=p.submission_ack;require(req&&ack,"submission missing");
     closed(req,["schemaVersion","operation","actorUserId","campaignId","proposalId","commandId","expectedVersion","expectedDraftHash","target"]);
     require(req.schemaVersion===1&&req.operation==="chronist.submit"&&req.actorUserId===p.accepted_by&&req.campaignId===campaignId&&req.proposalId===p.id&&req.commandId===p.submission_command_id&&req.expectedDraftHash===p.draft_hash&&hash("submit-request",req)===p.submission_request_hash,"submission original request");
-    closed(ack,["commandId","proposalId","proposalVersion","state","entryId","revisionId","version","passageIds"]);
+    closed(ack,["commandId","proposalId","proposalVersion","state","entryId","revisionId","version","passageIds","berichtigt"]);
     require(ack.commandId===req.commandId&&ack.proposalId===p.id&&ack.proposalVersion===req.expectedVersion+1&&p.version===ack.proposalVersion&&ack.state==="eingereicht","submission original ACK");
     const revision=revisions.get(ack.revisionId),entry=entries.get(ack.entryId);require(revision&&entry&&revision.entry_id===entry.id&&entry.campaign_id===campaignId&&revision.seq===ack.version&&revision.author_user_id===req.actorUserId,"submission revision");
     const document=revision.document as unknown as {title:string;slug:string;passagen:readonly Record<string,unknown>[];tags:unknown[]};
     require(Array.isArray(document.passagen)&&Array.isArray(document.tags)&&ack.passageIds.length===p.blocks.length,"submission passages");unique(ack.passageIds,"submission passage");
     const appended=document.passagen.slice(-ack.passageIds.length);for(const [i,passage]of appended.entries())require(passage.pid===ack.passageIds[i]&&same(passage.inhalt,p.blocks[i])&&passage.geltung==="antrag"&&passage.praegung===null&&passage.autorUserId===req.actorUserId&&passage.erstelltInRevision===ack.revisionId,"historical proposal passage");
-    if(req.target.kind==="existing"){closed(req.target,["kind","entryId","expectedVersion"]);require(req.target.entryId===ack.entryId&&req.target.expectedVersion+1===ack.version,"target revision step");
+    // Eine Berichtigung ist genau ein Antrag im selben Artikel — nur die Passage, an deren Stelle
+    // er treten soll, steht zusätzlich im Beleg. Ersetzt wird erst durch die Prägung; hier ist
+    // deshalb nichts anderes zu prüfen als beim Ergänzen, plus die genannte Passage selbst.
+    const berichtigung=req.target.kind==="revision"?req.target:null;
+    if(berichtigung){closed(berichtigung,["kind","entryId","passageId","expectedVersion"]);
+      require(ack.berichtigt===berichtigung.passageId&&document.passagen.some(x=>x.pid===berichtigung.passageId),"berichtigte Passage");}
+    else require(ack.berichtigt===null,"unerwartete Berichtigung");
+    if(req.target.kind==="existing"||req.target.kind==="revision"){if(req.target.kind==="existing")closed(req.target,["kind","entryId","expectedVersion"]);
+      require(req.target.entryId===ack.entryId&&req.target.expectedVersion+1===ack.version,"target revision step");
       const targetVersion=req.target.expectedVersion,previous=tables.revisions.find(r=>r.entry_id===ack.entryId&&r.seq===targetVersion);require(previous,"previous target snapshot");const before=previous.document as unknown as typeof document;
       const prefix=document.passagen.slice(0,-ack.passageIds.length);
       if(Object.keys(before).length===0&&previous.created_at==="0"&&previous.seq===1){

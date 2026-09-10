@@ -140,7 +140,7 @@ function fixture() {
     accepted_by: "gm", submission_command_id: "submit-proposal", submission_request: submissionRequest,
     submission_request_hash: chronistHash("submit-request", submissionRequest as unknown as CanonicalValue),
     submission_ack: { commandId: "submit-proposal", proposalId: "proposal", proposalVersion: 2, state: "eingereicht",
-      entryId: "entry", revisionId: "revision-2", version: 2, passageIds: ["passage-antrag"] } };
+      entryId: "entry", revisionId: "revision-2", version: 2, passageIds: ["passage-antrag"], berichtigt: null } };
   tables.chronist_laeufe = [run as unknown as Record<string, CanonicalValue>];
   tables.chronist_vorschlaege = [proposal as unknown as Record<string, CanonicalValue>];
   return { campaignId: "campaign", universeId: legacy.manifest.universeId, exportedAt: legacy.manifest.exportedAt, tables };

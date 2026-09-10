@@ -4,8 +4,13 @@ import type { Blockinhalt } from "@chronicle/chronik";
 import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint";
 import type { Befund, Zeitereignis } from "./regelwerk.ts";
 
-export type ChronistMode = "prosa" | "sitzung" | "abriss";
-export type ChronistKind = "ereignis" | "widerspruch" | "luecke" | "abriss";
+/**
+ * Die Aufgaben. `prosa`/`sitzung` suchen Ereignisse in vorhandenem Text, `abriss` erzählt sie
+ * zusammen — und die beiden neuen schreiben selbst: `artikel` entwirft aus gewählten Quellen
+ * einen ganzen Artikel, `ueberarbeitung` eine geänderte Fassung **einer** vorhandenen Passage.
+ */
+export type ChronistMode = "prosa" | "sitzung" | "abriss" | "artikel" | "ueberarbeitung";
+export type ChronistKind = "ereignis" | "widerspruch" | "luecke" | "abriss" | "artikel" | "ueberarbeitung";
 export type Sha256 = string; // Laufzeitparser: exakt 64 kleine Hexzeichen
 export interface ChronistSourceRef {
   readonly entryId: string; readonly passageId: string;
@@ -39,7 +44,8 @@ export type ChronistDate =
   | { readonly kind: "relative"; readonly anchorSourceId: string;
       readonly offsetYears: number; readonly source: ChronistCitation };
 export interface ChronistModelDraft {
-  readonly kind: "ereignis" | "abriss"; readonly text: string;
+  /** `artikel` und `ueberarbeitung` trennen ihre Absätze durch Leerzeilen; sonst ein Absatz. */
+  readonly kind: "ereignis" | "abriss" | "artikel" | "ueberarbeitung"; readonly text: string;
   readonly citations: readonly ChronistCitation[];
   readonly date: ChronistDate | null;
 }
@@ -48,7 +54,7 @@ export interface ChronistUnitPlan {
   readonly sourceIds: readonly string[]; // vollständige Abhängigkeiten
   readonly sourceSpans: readonly ChronistCitation[];
   readonly factIds: readonly string[]; readonly parentUnitIds: readonly string[];
-  readonly promptVersion: "chronist-prompt-1";
+  readonly promptVersion: "chronist-prompt-2";
   readonly maxOutputChars: number;
 }
 export interface ChronistDispatch {

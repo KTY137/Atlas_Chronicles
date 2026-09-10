@@ -12,6 +12,17 @@ import { Gone } from "../errors.ts";
 import { ChronistConflict,chronistSourceStatus,lockChronistCampaign,pageLimit } from "./sources.ts";
 import { CHRONIST_DISPATCH_LOCK,chronistDbTime,checkChronistStorage,getChronistRun,hashChronist } from "./store.ts";
 import type { ChronistServiceConfig } from "./runtime.ts";
+/**
+ * **Welche Passage eine Überarbeitung ersetzen will.** Die Antwort steht schon im Plan: die
+ * Aufgabe `ueberarbeitung` legt je Passage genau eine Einheit an, ein Vorschlag hängt also an
+ * genau einer Quelle — und deren `ref` ist die Zielpassage. Kein zusätzliches Feld, keine
+ * Migration, und die Oberfläche kann sich das Ziel nicht ausdenken.
+ */
+function ueberarbeiteteQuelle(run:ChronistRunRow,p:ChronistProposalRow):{entryId:string;passageId:string}|null{
+  if(run.snapshot.mode!=="ueberarbeitung"||p.original.kind!=="ueberarbeitung"||p.dependencies.length!==1)return null;
+  const quelle=run.snapshot.sources.find(s=>s.sourceId===p.dependencies[0]);
+  return quelle?{entryId:quelle.ref.entryId,passageId:quelle.ref.passageId}:null;
+}
 export function createChronistProposals(db:Db,cfg:ChronistServiceConfig={}){
   async function proposal(tx:Db,campaignId:string,id:string,lock=false):Promise<ChronistProposalRow>{const row=(await tx.query<ChronistProposalRow>(`SELECT * FROM chronist_vorschlaege WHERE id=$1 AND campaign_id=$2${lock?" FOR UPDATE":""}`,[id,campaignId])).rows[0];if(!row)throw new Gone("chronist-proposal");return row;}
   async function project(tx:Db,userId:string,campaignId:string,p:ChronistProposalRow,run?:ChronistRunRow):Promise<ChronistSuggestionView|null>{
@@ -19,6 +30,7 @@ export function createChronistProposals(db:Db,cfg:ChronistServiceConfig={}){
     if(sources.length!==p.dependencies.length)throw new ChronistConflict("source-stale");
     const rights=await chronistSourceStatus(tx,userId,campaignId,sources);if(!rights.visible)return null;
     return {id:p.id,runId:p.run_id,unitId:p.unit_id,version:p.version,kind:p.original.kind,origin:p.original.origin,state:p.state,
+      ueberarbeitet:ueberarbeiteteQuelle(r,p),
       originalBlocks:p.original.blocks,blocks:p.blocks,draftHash:p.draft_hash,sources,citations:p.original.citations,stale:rights.stale,submissionAck:p.submission_ack};
   }
   async function suggestions(userId:string,campaignId:string,options:{runId?:string;after?:string;limit?:number}={}):Promise<ChronistSuggestionPage>{
@@ -48,7 +60,8 @@ export function createChronistProposals(db:Db,cfg:ChronistServiceConfig={}){
   async function submitSuggestion(userId:string,campaignId:string,id:string,input:SubmitChronistProposalBody):Promise<ChronistSubmissionAck>{
     admitChronistValue(input);if(!Value.Check(SubmitChronistProposal,input))throw new Gone("chronist-input");
     const request:ChronistSubmissionRequest={schemaVersion:1,operation:"chronist.submit",actorUserId:userId,campaignId,proposalId:id,commandId:input.commandId,
-      expectedVersion:input.expectedVersion,expectedDraftHash:input.expectedDraftHash,target:input.target.kind==="existing"?{...input.target}:{kind:"new",title:input.target.title.trim(),slug:input.target.slug??null}};
+      expectedVersion:input.expectedVersion,expectedDraftHash:input.expectedDraftHash,
+      target:input.target.kind==="new"?{kind:"new",title:input.target.title.trim(),slug:input.target.slug??null}:{...input.target}};
     const requestHash=hashChronist("submit-request",request);
     return db.transaction(async tx=>{await tx.query("SELECT pg_advisory_xact_lock($1)",[CHRONIST_DISPATCH_LOCK]);await lockChronistCampaign(tx,userId,campaignId);
       await createCampaigns(tx,cfg).requireMember(userId,campaignId,["leitung"]);
@@ -57,9 +70,19 @@ export function createChronistProposals(db:Db,cfg:ChronistServiceConfig={}){
       const p=await proposal(tx,campaignId,id,true);if(p.state!=="offen"||p.version!==input.expectedVersion||p.draft_hash!==input.expectedDraftHash)throw new ChronistConflict("proposal-version");
       const run=await getChronistRun(tx,campaignId,p.run_id,true),sources=run.snapshot.sources.filter(s=>p.dependencies.includes(s.sourceId));
       const status=await chronistSourceStatus(tx,userId,campaignId,sources);if(sources.length!==p.dependencies.length||!status.visible||status.stale)throw new ChronistConflict("source-stale");
-      const target=request.target.kind==="existing"?request.target:{kind:"new" as const,title:request.target.title,...(request.target.slug===null?{}:{slug:request.target.slug})};
+      // Eine Berichtigung wird als gewöhnlicher Antrag im selben Artikel angelegt. Was sie
+      // ersetzt, steht im Beleg und wird erst am Tisch geprägt — der Server prüft hier nur, dass
+      // die Oberfläche genau die Passage nennt, die dieser Vorschlag überarbeitet hat.
+      const berichtigt=request.target.kind==="revision"?request.target:null;
+      if(berichtigt){
+        const gemeint=ueberarbeiteteQuelle(run,p);
+        if(!gemeint||gemeint.entryId!==berichtigt.entryId||gemeint.passageId!==berichtigt.passageId)throw new ChronistConflict("proposal-version");
+      }
+      const target=request.target.kind==="new"?{kind:"new" as const,title:request.target.title,...(request.target.slug===null?{}:{slug:request.target.slug})}
+        :{kind:"existing" as const,entryId:request.target.entryId,expectedVersion:request.target.expectedVersion};
       const submitted=await createDocuments(tx,cfg).submitProposal(userId,campaignId,{target,blocks:p.blocks});
-      const ack:ChronistSubmissionAck={...submitted,commandId:input.commandId,proposalId:id,proposalVersion:p.version+1,state:"eingereicht"};
+      const ack:ChronistSubmissionAck={...submitted,commandId:input.commandId,proposalId:id,proposalVersion:p.version+1,state:"eingereicht",
+        berichtigt:berichtigt?berichtigt.passageId:null};
       await tx.query(`UPDATE chronist_vorschlaege SET state='eingereicht',version=$2,updated_by=$3,updated_at=$4,accepted_by=$3,
         submission_command_id=$5,submission_request=$6,submission_request_hash=$7,submission_ack=$8 WHERE id=$1`,[id,ack.proposalVersion,userId,await chronistDbTime(tx,cfg),input.commandId,JSON.stringify(request),requestHash,JSON.stringify(ack)]);
       await checkChronistStorage(tx,run);return ack;});
