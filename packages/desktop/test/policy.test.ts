@@ -15,6 +15,17 @@ describe("native management boundaries", () => {
       expect(() => command(value)).toThrow();
     expect(() => contained("C:/profiles", "..", "config.json")).toThrow();
   });
+  /** Der Loeschbefehl. Der Name reist mit, weil die Bestaetigung nicht im Fenster stattfindet. */
+  it("nimmt einen Löschbefehl nur mit Profilkennung und Namen an", () => {
+    const welt = "6c59fc3e-1172-43d9-9e90-a60b5b46bed6";
+    expect(command({ kind: "loeschen", profileId: welt, name: "Die Nordlande" })).toEqual({ kind: "loeschen", profileId: welt, name: "Die Nordlande" });
+    // Ohne Namen keine Bestaetigung, mit fremdem Feld kein Befehl, und keine Kennung ausserhalb
+    // der UUID-Form — dieselbe Grenze wie bei jedem anderen Profilbefehl.
+    for (const value of [{ kind: "loeschen", profileId: welt }, { kind: "loeschen", name: "Die Nordlande" },
+      { kind: "loeschen", profileId: welt, name: "Die Nordlande", force: true },
+      { kind: "loeschen", profileId: "../..", name: "Die Nordlande" }, { kind: "loeschen", profileId: welt, name: "" }])
+      expect(() => command(value)).toThrow();
+  });
   it("invalidates file-dialog authority after navigation and profile replacement", () => {
     const authority = new Authority(); authority.select("a");
     const dialog = authority.lease(); authority.select("b"); expect(dialog).toThrow();

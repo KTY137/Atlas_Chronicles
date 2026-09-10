@@ -1,6 +1,7 @@
 import { _electron as electron } from "playwright";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -290,6 +291,24 @@ try{
   unchangedExport(await request(`/api/campaigns/${campaignId}/export`));
   assert.notEqual((await request("/api/pairing/redeem","POST",{code:enrollment.code})).status,200);
   record(`native V${bundle.version} restores only into new profile, explicit historical GM enrolls once, semantic reexport equals source`);
+  // Der Host wird hier schon beendet, weil das Loeschen eine stehende Welt verlangt — und
+  // weil `stop()` darunter die ganze Anwendung schliesst, also auch die Verwaltungsbruecke.
+  await invoke({kind:"stop"});
+  // Eine Welt loeschen. Der Name ist die Bestaetigung, und genau das wird hier bewiesen: ein
+  // knapp falscher Name laesst die Welt stehen, der richtige entfernt sie samt Ordner. Der
+  // Recovery-Punkt der GESICHERTEN Welt bleibt dabei liegen — er traegt seine eigene Kopie von
+  // profile.json und secrets.dpapi und ist darum auch ohne sein Profil wiederherstellbar.
+  const opfer=(await invoke({kind:"status"})).profiles.find(profile=>profile.name==="Restored desktop world");
+  assert.ok(opfer,"restored world listed before deletion");
+  await assert.rejects(invoke({kind:"loeschen",profileId:opfer.id,name:"Restored desktop"}));
+  assert.ok((await invoke({kind:"status"})).profiles.some(profile=>profile.id===opfer.id));
+  assert.equal((await invoke({kind:"loeschen",profileId:opfer.id,name:"Restored desktop world"})).name,"Restored desktop world");
+  const nachDemLoeschen=await invoke({kind:"status"});
+  assert.equal(nachDemLoeschen.profiles.some(profile=>profile.id===opfer.id),false);
+  assert.equal(existsSync(join(run,"user-data/profiles",opfer.id)),false);
+  assert.ok(nachDemLoeschen.recovery.some(punkt=>punkt.id===point.recoveryId));
+  evidence.geloescht={id:opfer.id,verbleibendeWelten:nachDemLoeschen.profiles.length,recoveryPunkte:nachDemLoeschen.recovery.length};
+  record("management deletes one local world only against its typed name, leaves no directory and keeps its recovery point");
   await stop();
   const disk=JSON.parse(await readFile(join(run,"user-data/profiles",profileId,"profile.json"),"utf8"));assert.notEqual(disk.pgPort,54329);
   const encrypted=await readFile(join(run,"user-data/profiles",profileId,"secrets.dpapi"));assert.ok(!encrypted.includes(Buffer.from("cookieSecret")));

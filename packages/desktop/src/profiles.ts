@@ -90,6 +90,45 @@ export class ProfileStore {
     await rename(staging, directory);
     return { profile, directory, dataDirectory: join(directory, "postgres"), secrets };
   }
+  /**
+   * Eine lokale Welt endgültig löschen.
+   *
+   * **Der Name ist die Bestätigung.** Nicht das Fenster prüft ihn, sondern diese Stelle: eine
+   * versehentlich angeklickte Zeile darf keine Welt kosten, und eine Bestätigung, die nur im
+   * Renderer stattfindet, ist keine. Wer löscht, tippt den Namen der Welt.
+   *
+   * **Was hier nicht mitgelöscht wird:** die Recovery-Punkte dieser Welt. Sie tragen ihre eigene
+   * Kopie von `profile.json` und `secrets.dpapi` (siehe `RecoveryStore.create`) und bleiben
+   * darum auch ohne ihr Profil wiederherstellbar. Das ist der Unterschied zwischen „gelöscht"
+   * und „unwiederbringlich": wer gesichert hat, hat noch einen Weg zurück.
+   *
+   * Zuerst umbenannt, dann entfernt: `list()` nimmt nur Ordner mit reinem UUID-Namen an, also
+   * verschwindet die Welt mit dem Umbenennen aus der Liste — auch wenn das Entfernen danach an
+   * einer offenen Datei scheitert und ein Rest liegen bleibt.
+   */
+  async remove(id: string, expectedName: string): Promise<Profile> {
+    await this.rootReady();
+    const directory = contained(this.root, profileId(id));
+    if ((await lstat(directory)).isSymbolicLink()) fail("profile-path", "Profil darf keine Verknüpfung sein.");
+    const profile = parseProfile(JSON.parse(await readFile(join(directory, "profile.json"), "utf8")));
+    if (profile.id !== id) fail("profile-owner", "Profilzuordnung ist beschädigt.");
+    if (label(expectedName) !== profile.name) fail("profile-name-mismatch", `Zum Löschen muss der Name genau stimmen. Diese Welt heißt „${profile.name}".`);
+    // Ein lebender Halter ist ein laufender Host. Ein Lock einer Sitzung, die es nicht mehr gibt,
+    // hält nichts auf — dieselbe Unterscheidung wie in `lock()`, nur ohne etwas zu übernehmen.
+    const lockFile = join(directory, "host.lock");
+    const held = await readFile(lockFile, "utf8").catch(() => undefined);
+    if (held !== undefined) {
+      const holder = JSON.parse(held) as { pid?: number };
+      if (!Number.isSafeInteger(holder.pid) || Number(holder.pid) <= 0) fail("profile-lock", "Profil-Lock ist beschädigt.");
+      let absent = false;
+      try { process.kill(Number(holder.pid), 0); } catch (error) { absent = (error as NodeJS.ErrnoException).code === "ESRCH"; }
+      if (!absent) fail("profile-busy", "Diese Welt läuft gerade. Bitte zuerst den Host beenden.");
+    }
+    const grave = contained(this.root, `.deleting-${randomUUID()}`);
+    await rename(directory, grave);
+    await rm(grave, { recursive: true, force: true, maxRetries: 3 });
+    return profile;
+  }
   async open(id: string): Promise<OwnedProfile> {
     if (!this.box.available()) return fail("encryption-unavailable", "Windows-Geheimnisspeicher ist nicht verfügbar.");
     const directory = contained(this.root, profileId(id));

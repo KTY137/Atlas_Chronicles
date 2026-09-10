@@ -86,6 +86,9 @@ export type Command =
   | { kind: "restore-confirm"; ticket: string }
   | { kind: "recovery-restore"; recoveryId: string; name: string }
   | { kind: "enroll"; campaignId: string; userId: string }
+  // Eine lokale Welt löschen. Der Name ist die Bestätigung und wird gegen die Welt selbst
+  // geprüft, nicht gegen die Anzeige — siehe `ProfileStore.remove`.
+  | { kind: "loeschen"; profileId: string; name: string }
   // Zugangsverwaltung des Hostfensters: liest Runden, erzeugt Einladungs- und Kopplungscodes,
   // setzt die Rolle innerhalb einer Runde. Keines davon stellt eine Sitzung aus.
   | { kind: "runden" }
@@ -105,6 +108,7 @@ export function command(value: unknown): Command {
     case "restore-confirm": exact(["ticket"]); return { kind: "restore-confirm", ticket: profileId(v["ticket"]) };
     case "recovery-restore": exact(["recoveryId", "name"]); return { kind: "recovery-restore", recoveryId: profileId(v["recoveryId"]), name: label(v["name"]) };
     case "enroll": exact(["campaignId", "userId"]); return { kind: "enroll", campaignId: profileId(v["campaignId"]), userId: profileId(v["userId"]) };
+    case "loeschen": exact(["profileId", "name"]); return { kind: "loeschen", profileId: profileId(v["profileId"]), name: label(v["name"]) };
     // Die Zugangsverwaltung. `runden` liest nur; die drei anderen erzeugen einen Code oder
     // aendern eine Rolle innerhalb einer Runde. Keines stellt eine Sitzung aus.
     case "runden": exact([]); return { kind: "runden" };

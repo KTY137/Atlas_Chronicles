@@ -8,14 +8,17 @@
   <p id="message" role="status" aria-live="polite"></p>
   <section id="setup" hidden aria-labelledby="setup-title"><h2 id="setup-title">Erste Einrichtung</h2><p>Wie möchtest du als Spielleitung heißen? Danach legst du in der Welt deine erste Kampagne an.</p><form id="setup-form"><label for="gm-name">Dein Anzeigename</label><div class="input-row"><input id="gm-name" name="name" maxlength="80" required autocomplete="nickname"><button>Spielleitung einrichten</button></div></form></section>
   <div class="columns">
-    <section aria-labelledby="profiles-title"><h2 id="profiles-title">Lokale Welten</h2><div id="profiles"></div><form id="create-form"><label for="profile-name">Neue Welt</label><div class="input-row"><input id="profile-name" name="name" maxlength="80" placeholder="Zum Beispiel: Die Nordlande" required><button>Welt anlegen</button></div></form></section>
+    <section aria-labelledby="profiles-title"><h2 id="profiles-title">Lokale Welten</h2><div id="profiles"></div><form id="create-form"><label for="profile-name">Neue Welt</label><div class="input-row"><input id="profile-name" name="name" maxlength="80" placeholder="Zum Beispiel: Die Nordlande" required><button>Welt anlegen</button></div></form><p class="note">Einladungscodes für neue Mitspieler und Zugangscodes für alle, die sich nicht mehr anmelden können, stehen weiter unten unter „Zugänge und Rollen“ — sobald die Welt läuft. Zum Löschen einer Welt tippst du ihren Namen; gesicherte Stände unter „Lokale Host-Sicherung“ bleiben dabei erhalten und lassen sich weiterhin wiederherstellen.</p></section>
     <section aria-labelledby="remote-title"><h2 id="remote-title">Mit einem Server verbinden</h2><p>Öffne einen bestehenden HTTPS-Server. Du meldest dich dort mit deinem normalen Zugang an.</p><form id="remote-form"><label for="remote-origin">Serveradresse</label><input id="remote-origin" name="origin" type="url" placeholder="https://chronicles.example.org" required><button>Server öffnen</button></form><p class="note">Ein lokaler Host ist zunächst nur auf diesem Rechner erreichbar. Öffentliche Teilnahme benötigt eine eingerichtete HTTPS-Verbindung.</p></section>
   </div>
-  <section id="zugaenge" hidden aria-labelledby="zugaenge-title"><h2 id="zugaenge-title">Zugänge und Rollen</h2>
+  <section id="zugaenge" aria-labelledby="zugaenge-title"><h2 id="zugaenge-title">Zugänge und Rollen</h2>
     <p>Hier vergibst du Einladungen für neue Mitspieler, bestimmst wer eine Runde führt, und holst jemanden zurück, der sich nicht mehr anmelden kann. Das geht nur von diesem Fenster aus — es läuft auf dem Rechner, dem die Welt gehört.</p>
-    <label for="zugang-runde">Runde</label><select id="zugang-runde"></select>
-    <div id="zugang-mitglieder"></div>
-    <div class="input-row"><button id="zugang-einladung" type="button">Einladungscode erzeugen</button></div>
+    <p id="zugang-hinweis" role="status"></p>
+    <div id="zugang-inhalt" hidden>
+      <label for="zugang-runde">Runde</label><select id="zugang-runde"></select>
+      <div id="zugang-mitglieder"></div>
+      <div class="input-row"><button id="zugang-einladung" type="button">Einladungscode erzeugen</button></div>
+    </div>
     <p id="zugang-ausgabe" role="status"></p>
     <p class="note">Ein Einladungscode gilt sieben Tage und legt für die eingeladene Person einen eigenen Zugang in dieser Runde an; die Spielleitung gibt den Beitritt in der Welt frei. Ein Zugangscode gilt zehn Minuten, ist einmal einlösbar und wird in der Welt unter „Neues Gerät verbinden“ eingegeben — er stellt hier keine Anmeldung aus.</p>
   </section>

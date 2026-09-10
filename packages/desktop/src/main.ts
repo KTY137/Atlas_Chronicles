@@ -8,7 +8,7 @@ import { readFile, copyFile, mkdir, rm, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Authority, DesktopError, SHELL_URL, command, fail, object, partitionFor } from "./policy.ts";
-import { ProfileStore } from "./profiles.ts";
+import { originOf, ProfileStore } from "./profiles.ts";
 import { HostController } from "./controller.ts";
 import { RecoveryStore, inspectMigrationAdmission, type RecoveryManifest } from "./recovery.ts";
 
@@ -238,6 +238,21 @@ async function run() {
         case "enroll": {
           const pairing = await host.request("enroll", { campaignId: request.campaignId, userId: request.userId }); assert();
           return { ok: true, value: pairing };
+        }
+        /**
+         * Eine lokale Welt löschen. Die eigentliche Prüfung — der getippte Name, ein lebender
+         * Halter des Locks — steht in `ProfileStore.remove`; hier steht nur, was darüber hinaus
+         * zu dieser Welt gehört: die Browserdaten ihrer Adresse. Ein neuer Host könnte denselben
+         * zufälligen Port bekommen, und dann läge in seiner Partition noch das Sitzungsplätzchen
+         * einer Welt, die es nicht mehr gibt. Es wäre wertlos (ein neuer cookieSecret), aber
+         * „gelöscht" soll nichts zurücklassen.
+         */
+        case "loeschen": {
+          if (host.state !== "stopped") fail("host-busy", "Bitte zuerst den laufenden Host beenden.");
+          const geloescht = await store.remove(request.profileId, request.name); assert();
+          await session.fromPartition(partitionFor(originOf(geloescht))).clearStorageData();
+          assert();
+          return { ok: true, value: { name: geloescht.name } };
         }
         // Zugangsverwaltung: nur bei laufendem Host, weil sie die Datenbank der offenen Welt liest.
         case "runden": case "einladung": case "kopplung": case "rolle": {

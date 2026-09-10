@@ -153,3 +153,44 @@ it("writes its own operator file once beside a stored key and never rewrites or 
     expect(await readFile(file, "utf8")).toBe(edited);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+/**
+ * Eine Welt loeschen.
+ *
+ * Der Anlass ist eine Bitte von Kaya („die option lokale welten zu löschen wäre auch gut"), und
+ * die einzige Frage, die dabei zaehlt, ist die nach dem Versehen: eine Welt sind Monate Spiel.
+ * Bestaetigt wird deshalb durch Tippen des Namens, und geprueft wird er hier — nicht im Fenster.
+ */
+it("löscht eine Welt nur gegen ihren getippten Namen und nie unter einem laufenden Host", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "chronicle-loeschen-test-"));
+  const werte = new Map<string, string>();
+  try {
+    const store = new ProfileStore(directory, { available: () => true,
+      encrypt: text => { const key = randomBytes(8).toString("hex"); werte.set(key, text); return Buffer.from(key); },
+      decrypt: bytes => werte.get(bytes.toString())! });
+    const welt = await store.create("Die Nordlande"), andere = await store.create("Die Sudlande");
+
+    // Ein falscher Name loescht nichts — und die Fehlermeldung nennt den richtigen, sonst
+    // raet man an der eigenen Welt herum.
+    await expect(store.remove(welt.profile.id, "Die Nordlanden")).rejects.toThrow("Die Nordlande");
+    await expect(store.remove(welt.profile.id, "  ")).rejects.toThrow();
+    expect((await store.list()).map(profile => profile.name).sort()).toEqual(["Die Nordlande", "Die Sudlande"]);
+
+    // Ein lebender Halter des Locks ist eine laufende Welt. Sie wird nicht unter sich weggezogen.
+    const unlock = await store.lock(welt);
+    await expect(store.remove(welt.profile.id, "Die Nordlande")).rejects.toThrow("läuft gerade");
+    await unlock();
+
+    // Fuehrende und folgende Leerzeichen sind Tippfehler, kein anderer Name: `label()` trimmt.
+    expect((await store.remove(welt.profile.id, " Die Nordlande ")).id).toBe(welt.profile.id);
+    expect(existsSync(welt.directory)).toBe(false);
+    expect((await store.list()).map(profile => profile.name)).toEqual(["Die Sudlande"]);
+    // Kein Rest im Profilordner: weder der Ordner selbst noch ein Grab daneben.
+    expect(await readdir(join(directory, "profiles"))).toEqual([andere.profile.id]);
+
+    // Dieselbe Welt ein zweites Mal loeschen ist kein stiller Erfolg.
+    await expect(store.remove(welt.profile.id, "Die Nordlande")).rejects.toThrow();
+    // Und die verbliebene Welt ist unversehrt: Geheimnisse lesbar, Ports unveraendert.
+    expect(await store.open(andere.profile.id)).toEqual(andere);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
