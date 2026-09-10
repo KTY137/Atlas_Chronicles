@@ -179,3 +179,47 @@ describe("furniture stands where it belongs", () => {
     }
   });
 });
+
+describe("Innenwände", () => {
+  /** Jede Zellkante am Rand eines Raums, als `s|w:festeAchse:laufendeAchse`. */
+  const raumKanten = (raum: { zellen: readonly [number, number, number, number] }): string[] => {
+    const [x, y, w, h] = raum.zellen, kanten: string[] = [];
+    for (let i = 0; i < w; i++) { kanten.push(`w:${y}:${x + i}`, `w:${y + h}:${x + i}`); }
+    for (let i = 0; i < h; i++) { kanten.push(`s:${x}:${y + i}`, `s:${x + w}:${y + i}`); }
+    return kanten;
+  };
+  /** Wandläufe und Türen in dieselben Einheitskanten zerlegt. */
+  const belegteKanten = (karte: { walls: readonly { points: readonly (readonly [number, number])[] }[]; portals: readonly { bounds: readonly (readonly [number, number])[] }[] }, z: number) => {
+    const wand = new Set<string>(), tuer = new Set<string>();
+    const zerlege = (ziel: Set<string>, a: readonly [number, number], b: readonly [number, number]) => {
+      const [ax, ay] = [Math.round(a[0] / z), Math.round(a[1] / z)], [bx, by] = [Math.round(b[0] / z), Math.round(b[1] / z)];
+      if (ax === bx) for (let i = Math.min(ay, by); i < Math.max(ay, by); i++) ziel.add(`s:${ax}:${i}`);
+      else for (let i = Math.min(ax, bx); i < Math.max(ax, bx); i++) ziel.add(`w:${ay}:${i}`);
+    };
+    for (const w of karte.walls) for (let i = 1; i < w.points.length; i++) zerlege(wand, w.points[i - 1]!, w.points[i]!);
+    for (const p of karte.portals) zerlege(tuer, p.bounds[0]!, p.bounds[1]!);
+    return { wand, tuer };
+  };
+
+  it("umschliesst jeden Raum eines Gebäudes — jede Raumkante ist Wand oder Tür, nie offener Boden", () => {
+    for (const typ of ["haus", "taverne", "kirche", "schmiede", "hotel"] as const) {
+      const innen = erzeugeGrundriss({ keim: `innenwand:${typ}`, optionen: { profil: typ } }, paket);
+      const z = innen.keim.optionen.zellgroesse as number;
+      const { wand, tuer } = belegteKanten(innen.karte, z);
+      const offen = innen.raeume.flatMap(raum => raumKanten(raum).filter(kante => !wand.has(kante) && !tuer.has(kante)));
+      expect({ typ, offen }).toEqual({ typ, offen: [] });
+    }
+  });
+
+  it("stellt jede Tür in eine Wand statt in die freie Fläche", () => {
+    const innen = erzeugeGrundriss({ keim: "innenwand:tuerlinie", optionen: { profil: "haus" } }, paket);
+    const z = innen.keim.optionen.zellgroesse as number;
+    const { wand, tuer } = belegteKanten(innen.karte, z);
+    // Eine Tür sitzt in einer Wandlinie: an mindestens einem ihrer beiden Enden geht die Wand weiter.
+    for (const kante of tuer) {
+      const [achse, fest, lauf] = kante.split(":") as [string, string, string];
+      const vor = `${achse}:${fest}:${Number(lauf) - 1}`, nach = `${achse}:${fest}:${Number(lauf) + 1}`;
+      expect({ kante, inWand: wand.has(vor) || wand.has(nach) }).toEqual({ kante, inWand: true });
+    }
+  });
+});

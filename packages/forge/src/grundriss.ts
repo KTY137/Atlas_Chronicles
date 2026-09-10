@@ -48,7 +48,7 @@ import { BAUPROGRAMME, ZEIT_RAUM_LABEL, bauwerkAusdehnung, freieZeitThemen, prog
 
 export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const GRUNDRISS_VERSION = "8";
+export const GRUNDRISS_VERSION = "9";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
@@ -232,6 +232,8 @@ function partitioniere(breite: number, hoehe: number, optionen: GrundrissOptione
 // ---------------------------------------------------------------------------------------------
 
 const RAUM = 1, GANG = 2;
+/** Eignerkennungen für die Wandläufe. Fels und Flur liegen negativ, weil ab 0 die Räume zählen. */
+const FELS_EIGNER = -1;
 
 interface RohRaum { x: number; y: number; w: number; h: number; pfad: string; thema: Thema }
 
@@ -537,64 +539,94 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     // Überschneidung ist und die gestreute Anordnung am wenigsten stört.
     // **Am Raster gedeckelt.** Ohne Deckel zog die Streuung auf einem 16x14-Raster Räume bis
     // 13x13 — davon passt genau einer, und der Erzeuger scheiterte an einem völlig legalen
-    // Optionsvektor. Die längere Seite darf höchstens die halbe kürzere Kartenseite messen,
-    // damit zwei Räume nebeneinander immer Platz haben.
-    const maxSeite = Math.max(optionen.minRaum, Math.floor(Math.min(breite, hoehe) / 2) - 1);
+    // Optionsvektor. Zwei Räume nebeneinander brauchen: zwei Randzellen, zwei Raumbreiten und
+    // eine Zelle Luft dazwischen. Der Deckel folgt genau dieser Rechnung. Die frühere Fassung
+    // (halbe Kartenseite minus eins) war eine Zelle zu grosszügig, und auf 12x12 scheiterten
+    // dadurch knapp fünf Prozent aller Saaten an einem völlig legalen Optionsvektor.
+    const maxSeite = Math.max(optionen.minRaum, Math.floor((Math.min(breite, hoehe) - 3) / 2));
     const spanne = Math.max(0, Math.min(10, Math.round(optionen.minRaum * 1.6), maxSeite - optionen.minRaum));
     const kandidatenZahl = Math.max(optionen.raeume, Math.min(L.raeumeMax * 2, Math.round(optionen.raeume * 2.2)));
     const mx = breite / 2, my = hoehe / 2;
-    const kandidaten: { x: number; y: number; w: number; h: number }[] = [];
-    for (let i = 0; i < kandidatenZahl; i++) {
-      const w = optionen.minRaum + r.ganz(0, spanne), h = optionen.minRaum + r.ganz(0, spanne);
-      // Ablehnungsstichprobe in der Ellipse — aber ein Kandidat wird nie **verworfen**, nur
-      // schlechter platziert. Ein verworfener Kandidat war auf engen Rastern der zweite Grund,
-      // warum am Ende zu wenige Räume übrig blieben; die Trennkraft räumt ohnehin auf.
-      let x = r.ganz(1, Math.max(1, breite - w - 1)), y = r.ganz(1, Math.max(1, hoehe - h - 1));
-      for (let versuch = 0; versuch < 10; versuch++) {
-        const nx = (x + w / 2 - mx) / (breite / 2), ny = (y + h / 2 - my) / (hoehe / 2);
-        if (nx * nx + ny * ny <= 0.92) break;
-        x = r.ganz(1, Math.max(1, breite - w - 1));
-        y = r.ganz(1, Math.max(1, hoehe - h - 1));
-      }
-      kandidaten.push({ x, y, w, h });
-    }
-    for (let runde = 0; runde < 24; runde++) {
-      let bewegt = false;
-      for (let i = 0; i < kandidaten.length; i++) {
-        for (let j = i + 1; j < kandidaten.length; j++) {
-          const a = kandidaten[i]!, b = kandidaten[j]!;
-          // Ein Zellrand Luft zwischen zwei Räumen: sonst teilen sie sich eine Wand und die
-          // Türerkennung sieht eine Öffnung, wo keine ist.
-          const uebX = Math.min(a.x + a.w + 1, b.x + b.w + 1) - Math.max(a.x - 1, b.x - 1);
-          const uebY = Math.min(a.y + a.h + 1, b.y + b.h + 1) - Math.max(a.y - 1, b.y - 1);
-          if (uebX <= 0 || uebY <= 0) continue;
-          bewegt = true;
-          if (uebX <= uebY) {
-            const schub = Math.ceil(uebX / 2);
-            if (a.x + a.w / 2 <= b.x + b.w / 2) { a.x -= schub; b.x += schub; } else { a.x += schub; b.x -= schub; }
-          } else {
-            const schub = Math.ceil(uebY / 2);
-            if (a.y + a.h / 2 <= b.y + b.h / 2) { a.y -= schub; b.y += schub; } else { a.y += schub; b.y -= schub; }
-          }
-          a.x = Math.max(1, Math.min(breite - a.w - 1, a.x)); a.y = Math.max(1, Math.min(hoehe - a.h - 1, a.y));
-          b.x = Math.max(1, Math.min(breite - b.w - 1, b.x)); b.y = Math.max(1, Math.min(hoehe - b.h - 1, b.y));
+    /**
+     * **Bester aus drei Läufen** — dieselbe Vorsichtsmassnahme, die `kachelwerk` schon trifft.
+     * Streuung ist eine Ziehung: wie viele Kandidaten die Trennkraft überschneidungsfrei
+     * unterbringt, ist Ergebnis, nicht Zusage. Auf einem 12x12-Raster mit zwei angeforderten
+     * Räumen blieb bei manchen Saaten genau einer übrig, und der Erzeuger scheiterte an einem
+     * völlig legalen Optionsvektor. Drei Läufe mit abgeleiteten Saaten kosten nichts Nennenswertes
+     * und bleiben reproduzierbar, weil die Saaten es sind.
+     */
+    const lege = (saat: string, spanne: number): { x: number; y: number; w: number; h: number }[] => {
+      const rs = rauschen(saat);
+      const kandidaten: { x: number; y: number; w: number; h: number }[] = [];
+      for (let i = 0; i < kandidatenZahl; i++) {
+        const w = optionen.minRaum + rs.ganz(0, spanne), h = optionen.minRaum + rs.ganz(0, spanne);
+        // Ablehnungsstichprobe in der Ellipse — aber ein Kandidat wird nie **verworfen**, nur
+        // schlechter platziert. Ein verworfener Kandidat war auf engen Rastern der zweite Grund,
+        // warum am Ende zu wenige Räume übrig blieben; die Trennkraft räumt ohnehin auf.
+        let x = rs.ganz(1, Math.max(1, breite - w - 1)), y = rs.ganz(1, Math.max(1, hoehe - h - 1));
+        for (let versuch = 0; versuch < 10; versuch++) {
+          const nx = (x + w / 2 - mx) / (breite / 2), ny = (y + h / 2 - my) / (hoehe / 2);
+          if (nx * nx + ny * ny <= 0.92) break;
+          x = rs.ganz(1, Math.max(1, breite - w - 1));
+          y = rs.ganz(1, Math.max(1, hoehe - h - 1));
         }
+        kandidaten.push({ x, y, w, h });
       }
-      if (!bewegt) break;
+      for (let runde = 0; runde < 24; runde++) {
+        let bewegt = false;
+        for (let i = 0; i < kandidaten.length; i++) {
+          for (let j = i + 1; j < kandidaten.length; j++) {
+            const a = kandidaten[i]!, b = kandidaten[j]!;
+            // Ein Zellrand Luft zwischen zwei Räumen: sonst teilen sie sich eine Wand und die
+            // Türerkennung sieht eine Öffnung, wo keine ist.
+            const uebX = Math.min(a.x + a.w + 1, b.x + b.w + 1) - Math.max(a.x - 1, b.x - 1);
+            const uebY = Math.min(a.y + a.h + 1, b.y + b.h + 1) - Math.max(a.y - 1, b.y - 1);
+            if (uebX <= 0 || uebY <= 0) continue;
+            bewegt = true;
+            if (uebX <= uebY) {
+              const schub = Math.ceil(uebX / 2);
+              if (a.x + a.w / 2 <= b.x + b.w / 2) { a.x -= schub; b.x += schub; } else { a.x += schub; b.x -= schub; }
+            } else {
+              const schub = Math.ceil(uebY / 2);
+              if (a.y + a.h / 2 <= b.y + b.h / 2) { a.y -= schub; b.y += schub; } else { a.y += schub; b.y -= schub; }
+            }
+            a.x = Math.max(1, Math.min(breite - a.w - 1, a.x)); a.y = Math.max(1, Math.min(hoehe - a.h - 1, a.y));
+            b.x = Math.max(1, Math.min(breite - b.w - 1, b.x)); b.y = Math.max(1, Math.min(hoehe - b.h - 1, b.y));
+          }
+        }
+        if (!bewegt) break;
+      }
+      // Wer nach der Trennung noch überlappt, fällt raus — die Karte darf keine zwei Räume in
+      // derselben Zelle behaupten, und ein Reparaturlauf wäre hier teurer als ein Verzicht.
+      // Nach Fläche absteigend packen, **bevor** überlappende verworfen werden: in
+      // Erzeugungsreihenfolge blockierte ein zufällig früher Splitter den Platz eines grossen
+      // Raums, und die Karte verlor genau die Räume, die sie tragen sollten.
+      const nachGroesse = [...kandidaten].sort((a, b) => (b.w * b.h) - (a.w * a.h) || a.y - b.y || a.x - b.x);
+      const frei: typeof kandidaten = [];
+      for (const k of nachGroesse) {
+        if (k.x < 1 || k.y < 1 || k.x + k.w > breite - 1 || k.y + k.h > hoehe - 1) continue;
+        if (frei.some((f) => k.x - 1 < f.x + f.w + 1 && f.x - 1 < k.x + k.w + 1 && k.y - 1 < f.y + f.h + 1 && f.y - 1 < k.y + k.h + 1)) continue;
+        frei.push(k);
+      }
+      return frei.slice(0, optionen.raeume);
+    };
+    // **Bester aus drei Läufen** — dieselbe Vorsichtsmassnahme, die `kachelwerk` schon trifft.
+    let beste = lege(`${keim.keimHash}:streuung:0`, spanne);
+    for (let versuch = 1; versuch < 3 && beste.length < optionen.raeume; versuch++) {
+      const kandidat = lege(`${keim.keimHash}:streuung:${versuch}`, spanne);
+      if (kandidat.length > beste.length) beste = kandidat;
     }
-    // Wer nach der Trennung noch überlappt, fällt raus — die Karte darf keine zwei Räume in
-    // derselben Zelle behaupten, und ein Reparaturlauf wäre hier teurer als ein Verzicht.
-    // Nach Fläche absteigend packen, **bevor** überlappende verworfen werden: in
-    // Erzeugungsreihenfolge blockierte ein zufällig früher Splitter den Platz eines grossen
-    // Raums, und die Karte verlor genau die Räume, die sie tragen sollten.
-    const nachGroesse = [...kandidaten].sort((a, b) => (b.w * b.h) - (a.w * a.h) || a.y - b.y || a.x - b.x);
-    const frei: typeof kandidaten = [];
-    for (const k of nachGroesse) {
-      if (k.x < 1 || k.y < 1 || k.x + k.w > breite - 1 || k.y + k.h > hoehe - 1) continue;
-      if (frei.some((f) => k.x - 1 < f.x + f.w + 1 && f.x - 1 < k.x + k.w + 1 && k.y - 1 < f.y + f.h + 1 && f.y - 1 < k.y + k.h + 1)) continue;
-      frei.push(k);
+    // **Notausgang, und nur der.** Bleibt die Streuung unter zwei Räumen, gibt es keine Karte,
+    // sondern einen Abbruch — und ein Abbruch ist für die Benutzerin kein schwächeres Ergebnis,
+    // sondern gar keins. Dann ziehen die Kandidaten auf Mindestmass: wenn überhaupt etwas auf
+    // dieses Raster passt, dann das. Für die blosse Raumzahl greift das ausdrücklich nicht —
+    // sonst gewönne der Mindestmasslauf jedes Mal, wenn ein normaler Lauf einen Raum zu wenig
+    // trägt, und ein 40x30-Kerker bestünde aus lauter 3x3-Kammern an langen Gängen.
+    for (let versuch = 3; versuch < 6 && beste.length < L.raeumeMin; versuch++) {
+      const kandidat = lege(`${keim.keimHash}:streuung:${versuch}`, 0);
+      if (kandidat.length > beste.length) beste = kandidat;
     }
-    for (const k of frei.slice(0, optionen.raeume)) {
+    for (const k of beste) {
       rohRaeume.push({ x: k.x, y: k.y, w: k.w, h: k.h, pfad: `s${k.x}_${k.y}`, thema: r.waehle(themenWahl) ?? themenWahl[0]! });
     }
     rohRaeume.sort((a, b) => a.y - b.y || a.x - b.x);
@@ -781,30 +813,6 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     if (d > tiefsteEntfernung) { tiefsteEntfernung = d; tiefsterRaum = i; }
   });
 
-  // -- walls -----------------------------------------------------------------------------------
-  const waende: TacticalWall[] = [];
-  const waendeJeRaum = rohRaeume.map(() => [] as string[]);
-  // Split exact source-grid runs where their room ownership changes. A spatial guess on a
-  // saved drawing could capture unrelated furniture or corridor walls; this grid is evidence.
-  const quellRaum = (x: number, y: number) => drin(x, y) && gitter[idx(x, y)] === RAUM ? raumVon[idx(x, y)]! : -1;
-  for (const run of wandLaeufe((x, y) => gitter[idx(x, y)] !== FELS, breite, hoehe, z, ids.geometrieId)) {
-    const a = run.points[0]!, b = run.points[1]!, vertical = a[0] === b[0], length = Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / z);
-    let start = 0, prior = -2;
-    const finish = (end: number) => {
-      if (end <= start) return;
-      const wallId = ids.geometrieId("raumwand", run.id, String(start));
-      waende.push({ ...run, id: wallId, points: [[a[0] + (vertical ? 0 : start * z), a[1] + (vertical ? start * z : 0)], [a[0] + (vertical ? 0 : end * z), a[1] + (vertical ? end * z : 0)]] });
-      if (prior >= 0) waendeJeRaum[prior]!.push(wallId);
-      start = end;
-    };
-    for (let step = 0; step < length; step++) {
-      const x = Math.round(a[0] / z) + (vertical ? 0 : step), y = Math.round(a[1] / z) + (vertical ? step : 0);
-      const owner = Math.max(quellRaum(x, y), vertical ? quellRaum(x - 1, y) : quellRaum(x, y - 1));
-      if (owner !== prior) { finish(step); prior = owner; }
-    }
-    finish(length);
-  }
-
   // -- portals: room/corridor openings, one per contiguous run ---------------------------------
   interface Oeffnung { raum: number; senkrecht: boolean; fest: number; lauf: number }
   const oeffnungen: Oeffnung[] = [];
@@ -823,6 +831,8 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   }
   const tueren: TacticalPortal[] = [];
   const tuerZelle: [number, number][] = [];
+  /** Zellkanten mit Tür, als `s|w:festeAchse:laufendeAchse` — dort lässt der Wandlauf die Lücke. */
+  const tuerKanten = new Set<string>();
   const tuerenJeRaum = new Map<number, string[]>();
   for (const key of [...gruppen.keys()].sort()) {
     const gruppe = gruppen.get(key)!.sort((a, b) => a.lauf - b.lauf);
@@ -834,6 +844,7 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       const a: readonly [number, number] = s ? [fest * z, v * z] : [v * z, fest * z];
       const b: readonly [number, number] = s ? [fest * z, (v + 1) * z] : [(v + 1) * z, fest * z];
       const id = ids.geometrieId("tuer", s ? "s" : "w", `${fest}:${v}`);
+      tuerKanten.add(`${s ? "s" : "w"}:${fest}:${v}`);
       tueren.push({ id, position: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], bounds: [a, b], rotationRadians: s ? Math.PI / 2 : 0, closed: true, freestanding: false, elevation: 0 });
       (tuerenJeRaum.get(raum) ?? tuerenJeRaum.set(raum, []).get(raum)!).push(id);
       // Keep both cells beside a door clear of furniture, or the first thing the party meets is
@@ -858,11 +869,50 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     const x = kandidaten[0];
     if (x !== undefined) {
       const id = ids.geometrieId("tuer", "aussen", `${x}:${unten + 1}`);
+      tuerKanten.add(`w:${unten + 1}:${x}`);
       tueren.push({ id, position: [(x + .5) * z, (unten + 1) * z], bounds: [[x * z, (unten + 1) * z], [(x + 1) * z, (unten + 1) * z]], rotationRadians: 0, closed: true, freestanding: false, elevation: 0 });
       const owner = raumVon[idx(x, unten)]!;
       if (owner >= 0) (tuerenJeRaum.get(owner) ?? tuerenJeRaum.set(owner, []).get(owner)!).push(id);
       tuerZelle.push([x, unten]); eingangZelle = [x, unten];
     }
+  }
+
+  // -- walls -----------------------------------------------------------------------------------
+  // **Eine Wand steht zwischen zwei verschieden genutzten Zellen, nicht nur zwischen Boden und
+  // Fels.** Die alte Regel kannte nur die Aussengrenze der Bodenfläche — und weil ein Gebäude
+  // seine Lücken zwischen den Programmräumen zu Flur ausfüllt (siehe oben), war das Innere eines
+  // Hauses eine einzige Fläche: gemessen an einem Haus auf 14x12 Zellen zwölf Wandläufe, alle auf
+  // dem Aussenrechteck, keine einzige Trennwand — und neun Türen, die im Freien standen.
+  //
+  // Der Eigner einer Zelle ist ihre Nutzung: Fels, Flur oder ein bestimmter Raum. Wo er wechselt,
+  // steht eine Wand; wo die Türerkennung oben eine Öffnung gesetzt hat, bleibt die Lücke, denn
+  // Wände liegen über den Türblättern und eine durchlaufende Wand mauert jede Tür zu.
+  const waende: TacticalWall[] = [];
+  const waendeJeRaum = rohRaeume.map(() => [] as string[]);
+  // Split exact source-grid runs where their room ownership changes. A spatial guess on a
+  // saved drawing could capture unrelated furniture or corridor walls; this grid is evidence.
+  const quellRaum = (x: number, y: number) => drin(x, y) && gitter[idx(x, y)] === RAUM ? raumVon[idx(x, y)]! : -1;
+  const FLUR = -2;
+  for (const run of wandLaeufe({
+    eigner: (x, y) => gitter[idx(x, y)] === FELS ? FELS_EIGNER : gitter[idx(x, y)] === RAUM ? raumVon[idx(x, y)]! : FLUR,
+    aussen: FELS_EIGNER, breite, hoehe, zellgroesse: z, id: ids.geometrieId,
+    offen: (senkrecht, fest, lauf) => tuerKanten.has(`${senkrecht ? "s" : "w"}:${fest}:${lauf}`),
+  })) {
+    const a = run.points[0]!, b = run.points[1]!, vertical = a[0] === b[0], length = Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / z);
+    let start = 0, prior = -2;
+    const finish = (end: number) => {
+      if (end <= start) return;
+      const wallId = ids.geometrieId("raumwand", run.id, String(start));
+      waende.push({ ...run, id: wallId, points: [[a[0] + (vertical ? 0 : start * z), a[1] + (vertical ? start * z : 0)], [a[0] + (vertical ? 0 : end * z), a[1] + (vertical ? end * z : 0)]] });
+      if (prior >= 0) waendeJeRaum[prior]!.push(wallId);
+      start = end;
+    };
+    for (let step = 0; step < length; step++) {
+      const x = Math.round(a[0] / z) + (vertical ? 0 : step), y = Math.round(a[1] / z) + (vertical ? step : 0);
+      const owner = Math.max(quellRaum(x, y), vertical ? quellRaum(x - 1, y) : quellRaum(x, y - 1));
+      if (owner !== prior) { finish(step); prior = owner; }
+    }
+    finish(length);
   }
 
   // -- stamps ----------------------------------------------------------------------------------

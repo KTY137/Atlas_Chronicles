@@ -265,7 +265,10 @@ export function erzeugeHoehle(auftrag: HoehleAuftrag, paket: AssetpaketV1): Grun
   });
 
   // -- geometry --------------------------------------------------------------------------------
-  const waende = wandLaeufe((x, y) => gitter[idx(x, y)] !== FELS, breite, hoehe, z, ids.geometrieId);
+  // Eine Höhle kennt nur zwei Nutzungen: Fels und Hohlraum. Die Kammern liegen ohnehin in Fels,
+  // also fällt hier keine Trennwand an, die es nicht schon gäbe.
+  const waende = wandLaeufe({ eigner: (x, y) => gitter[idx(x, y)] === FELS ? FELS : 1, aussen: FELS,
+    breite, hoehe, zellgroesse: z, id: ids.geometrieId });
 
   const werk = bestuecker(paket, r, z, ids.geometrieId);
   const nichtPlatziert: string[] = [];

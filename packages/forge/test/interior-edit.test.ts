@@ -111,7 +111,7 @@ describe("interior construction and identity", () => {
 describe("source-owned generated interiors", () => {
   it("owns generated floors, furniture, walls, doors and lights from construction evidence", () => {
     const generated = erzeugeGrundriss({ keim: "source-ownership", optionen: { profil: "haus", zellen: [32, 24], moeblierung: 1 } }, pack);
-    expect(generated.version).toBe("8");
+    expect(generated.version).toBe("9");
     const cartography = parseTacticalCartography(generated.cartography, generated.karte);
     expect(cartography.regions.every(role => role.role === "room" && !!role.interior)).toBe(true);
     const owned = cartography.regions.find(role => role.role === "room" && role.interior!.portalIds.length)!;

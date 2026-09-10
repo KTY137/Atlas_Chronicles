@@ -175,25 +175,44 @@ function laeufe(kanten: ReadonlySet<string>): [number, number, number][] {
 }
 
 /**
- * Every unit edge where a floor cell meets rock or the map border, merged into maximal runs and
- * emitted in image pixels. Works on any floor shape — a rectangle, a corridor, or a cavern — which
- * is exactly why the two layouts can share it unchanged.
+ * **Eine Wand steht dort, wo zwei Zellen verschieden genutzt werden.** Nicht nur dort, wo Boden
+ * an Fels stösst — das war die alte Regel, und sie hat gekostet: ein Gebäudeinneres ist eine
+ * einzige zusammenhängende Bodenfläche (die Lücken zwischen den Programmräumen werden Flur), also
+ * blieb von einem Haus nur die Aussenmauer übrig und die Türen schwebten im offenen Raum.
+ *
+ * `eigner` gibt je Zelle eine Zahl: gleiche Zahl heisst gleiche Nutzung, also keine Wand. Fels
+ * bekommt seine eigene Zahl, und `aussen` sagt, welche Zahl jenseits des Rasters gilt — damit ist
+ * der Kartenrand eine gewöhnliche Eignergrenze und braucht keinen Sonderfall.
+ *
+ * Kanten werden zu maximalen Läufen verschmolzen und in Bildpixeln ausgegeben. Wo `offen` eine
+ * Tür meldet, endet der Lauf: eine Tür ist die Lücke in der Wand, nicht eine Grafik darüber
+ * (Wände liegen über den Türblättern, eine durchlaufende Wand hätte jede Tür zugemauert).
  */
-export function wandLaeufe(
-  istBoden: (x: number, y: number) => boolean,
-  breite: number, hoehe: number, zellgroesse: number,
-  id: (...pfad: string[]) => string,
-): TacticalWall[] {
+export interface WandFeld {
+  /** Nutzungskennung je Zelle. Gleiche Zahl zwischen zwei Nachbarn = keine Wand. */
+  readonly eigner: (x: number, y: number) => number;
+  /** Die Kennung jenseits des Rasters. */
+  readonly aussen: number;
+  readonly breite: number;
+  readonly hoehe: number;
+  readonly zellgroesse: number;
+  readonly id: (...pfad: string[]) => string;
+  /**
+   * Kanten mit Tür. `senkrecht` heisst: Kante auf der Linie x = `fest`, neben der Zelle y = `lauf`;
+   * sonst Kante auf y = `fest`, neben der Zelle x = `lauf`.
+   */
+  readonly offen?: (senkrecht: boolean, fest: number, lauf: number) => boolean;
+}
+
+export function wandLaeufe(feld: WandFeld): TacticalWall[] {
+  const { breite, hoehe, zellgroesse: z, id, aussen } = feld;
+  const offen = feld.offen ?? (() => false);
+  const eigner = (x: number, y: number) => x >= 0 && y >= 0 && x < breite && y < hoehe ? feld.eigner(x, y) : aussen;
   const waagrecht = new Set<string>(), senkrecht = new Set<string>();
-  const boden = (x: number, y: number) => x >= 0 && y >= 0 && x < breite && y < hoehe && istBoden(x, y);
-  for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) {
-    if (!boden(x, y)) continue;
-    if (!boden(x, y - 1)) waagrecht.add(`${y}:${x}`);
-    if (!boden(x, y + 1)) waagrecht.add(`${y + 1}:${x}`);
-    if (!boden(x - 1, y)) senkrecht.add(`${x}:${y}`);
-    if (!boden(x + 1, y)) senkrecht.add(`${x + 1}:${y}`);
+  for (let y = 0; y <= hoehe; y++) for (let x = 0; x <= breite; x++) {
+    if (x < breite && eigner(x, y - 1) !== eigner(x, y) && !offen(false, y, x)) waagrecht.add(`${y}:${x}`);
+    if (y < hoehe && eigner(x - 1, y) !== eigner(x, y) && !offen(true, x, y)) senkrecht.add(`${x}:${y}`);
   }
-  const z = zellgroesse;
   return [
     ...laeufe(waagrecht).map(([y, x0, x1]): TacticalWall => ({ id: id("wand", "w", `${y}:${x0}:${x1}`), kind: "wall", points: [[x0 * z, y * z], [x1 * z, y * z]], elevation: 0 })),
     ...laeufe(senkrecht).map(([x, y0, y1]): TacticalWall => ({ id: id("wand", "s", `${x}:${y0}:${y1}`), kind: "wall", points: [[x * z, y0 * z], [x * z, y1 * z]], elevation: 0 })),
