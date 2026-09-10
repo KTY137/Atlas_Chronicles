@@ -23,7 +23,7 @@ The installer is per-user and needs no administrator rights.
 | | |
 |---|---|
 | File | `Atlas-Chronicles-Setup.exe` |
-| Size | 217 MB |
+| Size | 206 MB |
 | Platform | Windows, 64-bit |
 | Electron | 44.2.0 |
 
@@ -47,10 +47,10 @@ Get-FileHash .\Atlas-Chronicles-Setup.exe -Algorithm SHA256
 ```
 
 ```
-003a000f740644029daee86dabd125f211beb0740e7c89cca027eed44564dbf9  Atlas-Chronicles-Setup.exe
+8972c6d1c2edfbcb1b911028962383f8a729a1849895cff101728b04aafb5cf4  Atlas-Chronicles-Setup.exe
 ```
 
-Built from commit `10f3b54`.
+Built from commit `b59851a`.
 
 ## What is left before publishing
 
@@ -67,9 +67,3 @@ long as it says so, and this one does.
 One thing worth a decision, separate from the release: the picture is still in the public git
 history of this repository. Taking it out of the history means rewriting it, which is the owner's
 call rather than a routine cleanup.
-
-## Rebuild before publishing
-
-The installer named above predates the removal of the example map. Build it again and replace the
-SHA-256 in this file before the release goes out; the numbers here must describe the file people
-actually download.

@@ -29,6 +29,11 @@ die eine Spielleitung geht — `POST /maps/import` für die JSON, `POST /wiki-me
 serverseitig an; die Frist für die Bildantwort steht dort auf 120 s, weil das 8192²-WebP jetzt
 beim ersten Zeichnen kommt und nicht mehr nach einem Klick.
 
+**Am fertigen Paket nachgemessen** (`2026-09-10T16-15-44-012Z`): kein `Andaria`-Dateiname, kein
+`fixtures`-Ordner, 2550 statt 2552 Dateien, 572.771.665 statt 583.738.074 Bytes — genau das Bild
+weniger. Setup 216.245.248 Bytes, SHA-256 `8972c6d1…5cf4`. Die verbliebenen `Andaria`-Treffer im
+Paket sind Platzhaltertexte der Oberfläche („zum Beispiel Karte:Andaria"), kein Inhalt.
+
 **Offen bleibt:** das Bild liegt weiterhin im öffentlichen Git-Verlauf. Es aus der Historie zu
 entfernen wäre ein Rewrite und ist Kayas Entscheidung, nicht meine.
 
