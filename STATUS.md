@@ -1,6 +1,44 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 8** (Welten löschen, Einladungen sichtbar · v0.3.2)
+Updated: **2026-09-10, Runde 9** (Der Chronist schreibt selbst · v0.4.0)
+
+## Runde 9 — Chronist schreibt und überarbeitet Wiki-Einträge · 2026-09-10 · v0.4.0
+
+**Zwei neue Aufgaben.** `artikel` entwirft aus gewählten Quellen einen gegliederten Artikel,
+`ueberarbeitung` je gewählter Passage genau eine geänderte Fassung. Die Beleggrenze der
+Überarbeitung fällt aus der **Planung** heraus, nicht aus einer Sonderregel: eine Passage = eine
+Einheit = eine Quelle, also kann `verify.ts` kein fremdes Zitat durchlassen. Passt eine Passage
+nicht in einen Aufruf, wird sie übersprungen.
+
+**Berichtigung ohne neues Feld.** Ziel `{kind:"revision",entryId,passageId,expectedVersion}` in
+`SubmitChronistProposal`. Welche Passage ersetzt werden soll, folgt aus der einzigen Abhängigkeit
+des Vorschlags (`ueberarbeiteteQuelle` in `domain/chronist/proposals.ts`); der Server prüft die
+Angabe der Oberfläche dagegen. Der Antrag entsteht als gewöhnliche `geltung:"antrag"`-Passage,
+ersetzt wird über das vorhandene `mintBerichtigung` — **die alte Passage muss dafür schon Kanon
+sein**, eine Notiz ändert man direkt in der Chronik.
+
+**Fallen dieser Runde:**
+- `CHRONIST_PROMPT_VERSION` steckt im Draht: eine Promptänderung verschiebt die zwei gepinnten
+  Profilhashes in `chronist/test/provider-profile.test.ts`. Der Wächter meldet das zu Recht — neu
+  pinnen und die Fassung hochzählen, nicht umgehen.
+- `plan.ts` hängte bisher **alle** Datumsfaktenquellen an jede Einheit. Für `ueberarbeitung` bricht
+  das die Zusage „eine Passage, eine Einheit"; deshalb `nutztFakten`.
+- Eine Migrationsdatei darf nur **eine** Anweisung enthalten, sonst „cannot insert multiple
+  commands into a prepared statement". Mehrere trennt `-- statement` in eigener Zeile.
+- `io/native-v16/validation.ts` prüft `closed(...)` auf Antrag und Beleg: jedes neue Feld im
+  `ChronistSubmissionAck` oder im Ziel muss dort eingetragen werden, sonst bricht jede Sicherung.
+- `git add -A` in dieser Arbeitskopie zieht die Arbeit der Nachbarsitzung mit hinein. Pfade
+  einzeln stagen.
+
+**Karten-Nebenbefund derselben Runde (f262746):** `wandLaeufe` fragt nicht mehr „Boden oder Fels",
+sondern nach dem **Eigner** der Zelle; Türen lassen die Lücke. `GRUNDRISS_VERSION` 8 → 9. Dazu
+zwei ältere Streuungsfehler: Größendeckel war eine Zelle zu großzügig, und ein Lauf ist eine
+Ziehung (jetzt bester aus drei, Notausgang auf Mindestmaß nur unter zwei Räumen).
+
+**Nachweis:** Typecheck; gate:version (0.4.0), gate:boundaries, gate:sprache, gate:assets; 503
+Kartenprüfungen; 58 Chronistprüfungen (6 neue); 349 Server-/Sicherungsprüfungen (2 neue
+Ende-zu-Ende); 463 Client-/Protokollprüfungen; Paketlauf 22/22, zweimal. **Nicht gelaufen:** volle
+Vitest-Suite, Browsersuite, und die neue Chronisten-Oberfläche wurde nicht durchgeklickt.
 
 ## Runde 8 — Welten löschen, Einladungen sichtbar · 2026-09-10 · v0.3.2
 

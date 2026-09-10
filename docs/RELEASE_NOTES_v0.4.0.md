@@ -1,11 +1,50 @@
 <!-- SPDX-License-Identifier: BUSL-1.1 -->
 <!-- Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. -->
-# Atlas Chronicles v0.3.2 — release notes
+# Atlas Chronicles v0.4.0 — release notes
 
-Two small things in the host window, both asked for after v0.3.0 was already built — and one
-map fix from separate work that landed in the same build.
+The Chronicler can write now, not only read. Plus everything that had piled up in the host window
+since v0.3.0, and one map fix that changes what a generated building looks like.
 
 Setup is described in [Getting Started](https://github.com/KTY137/Atlas_Chronicles/blob/main/docs/GETTING_STARTED_EN.md).
+
+## The Chronicler writes and revises wiki entries
+
+Until now the Chronicler only read. It found events in your articles, went through your session
+notes, and told the story back to you as a narrative summary. Writing worked halfway — a summary
+could be submitted as a new article. Changing an article did not work at all: whatever you
+submitted was appended at the end, and an existing passage stayed untouched.
+
+Two new tasks in its workbench.
+
+**Write an article.** You pick the sources; it drafts one coherent article in several paragraphs
+instead of a single wall of text. Many sources are folded together through intermediate steps, so
+a long list still fits in one budget.
+
+**Revise an article.** Each passage you pick becomes exactly one unit covering its whole text, and
+yields exactly one suggestion: the same statement, written more clearly. You see the old and the
+new version side by side and decide whether the new one takes its place.
+
+**The evidence rule got stricter without a new rule being written.** A revision's unit knows only
+the one passage it revises, so a suggestion that quotes a different passage cannot pass the
+citation check — that falls out of the planning rather than out of a special case. And if a
+passage is too long for a single model call, it is skipped: there is no such thing as a
+half-revised passage.
+
+**Nothing reaches your canon without you.** A revision is filed as an ordinary proposal in the
+same article, exactly like every other suggestion. Which passage it wants to replace is not a new
+field in the database — it follows from the suggestion's single dependency, and the server checks
+the interface's claim against it. Replacing happens through the correction mint that has existed
+since the very first releases, on a button, with the fiction date you type. A passage that is not
+canon yet cannot be corrected; you edit that one directly in the chronicle, because there is
+nothing there to correct.
+
+**A model still cannot put markup into your chronicle.** A suggestion may now carry several
+paragraphs, but every block is still plain text: no links, no marks, no HTML.
+
+The system prompt gained two sentences for the new tasks, so its version goes `chronist-prompt-1`
+→ `-2`. The prompt is part of the wire, and the plan carries a prompt version precisely so that
+change is announced rather than silent. Runs that were already going keep the plan they started
+with.
 
 ## The invitation generator is findable now
 
@@ -116,12 +155,16 @@ per-user and needs no administrator rights.
 | | |
 |---|---|
 | File | `Atlas-Chronicles-Setup.exe` |
-| Size | SIZE_PLATZHALTER MB |
+| Size | 206 MB |
 | Platform | Windows, 64-bit |
 | Electron | 44.2.0 |
 
-Your worlds live in `%APPDATA%\Atlas Chronicles`, separate from the installation. This release
-contains **no migration and no schema change**; installing over v0.3.0 does not touch your data.
+Your worlds live in `%APPDATA%\Atlas Chronicles`, separate from the installation.
+
+This release **does** carry a schema change, the first since v0.1.0: migration `032` widens one
+check constraint so the Chronicler's run table accepts the two new task names. It adds no table
+and no column, and every existing row stays valid. It is applied automatically when a world
+starts. Your data is not rewritten.
 
 ## What is not finished
 
@@ -131,18 +174,25 @@ Unchanged from v0.3.0, and recorded by the build itself in `installer.json`:
 - No update feed and no tested updater.
 - No ASAR integrity check and no release fuses.
 - No drain, recovery point or migration admission before installing over an existing version.
+  That last one is worth a second look in this release, because this one does migrate: make a
+  recovery point before you install over v0.3.0.
 
 The eight-hour session and the absence of a password login are also unchanged. The host window is
 a way back, not a reason to skip setting up a passkey.
 
-**Why 0.3.2 and not 0.3.1.** 0.3.1 was built and installed on the development machine, and its
-packaged test run found the deletion race described above. It was never published; this is that
-version with the race fixed.
+**Why 0.4.0 and not 0.3.2.** 0.3.1 and 0.3.2 were both built on the development machine and
+neither was published — 0.3.1's packaged test run found the deletion race described above, and
+0.3.2 was ready to go when the Chronicler work landed on top of it. A new capability is not a
+patch, so this is 0.4.0. Everything those two builds contained is in this one.
 
-**What was verified.** Both typechecks, the language and boundary gates, 503 map-generation
-checks, 120 desktop and theme checks including two new ones for deletion, and the full packaged
-Electron run — which now includes a step that deletes a world across the real IPC boundary,
-proves a near-miss name leaves it standing, and proves its recovery point survives.
+**What was verified.** The typecheck across every package; the version, boundary, language and
+asset gates; 503 map-generation checks; 58 Chronicler checks including six new ones for the two
+new tasks; 349 server and backup-format checks including two new end-to-end ones — one that
+revises a passage, files it as a proposal and then really puts it in place of the old passage
+across the actual database, and one that writes a whole article; 463 client and protocol checks;
+and the full packaged Electron run, 22 checks, twice — which includes deleting a world across the
+real IPC boundary, proving a near-miss name leaves it standing, and proving its recovery point
+survives.
 
 **One correction to the v0.3.0 notes.** That release said the packaged test run was not
 performed. It was run afterwards and passed, but it uncovered one stale assertion in the test
@@ -151,8 +201,12 @@ because the sample map was removed in an earlier release and the expectation was
 test now asserts V15 and that the provenance table really is empty. No application code was
 involved.
 
-**The browser test suite still did not run** — it needs Microsoft Edge and a running PostgreSQL
-instance. Seven server tests remain red for reasons that predate this work.
+**What was not verified.** The browser suite did not run — it needs Microsoft Edge and a running
+PostgreSQL instance. The Chronicler's two new tasks were checked through the server and the
+generator, end to end including the correction that replaces a passage, but **not by clicking
+through the finished window**; the workbench tiles and the side-by-side comparison are covered by
+types and by the language gate, not by a screenshot. Seven server tests remain red for reasons
+that predate this work.
 
 ## Checking what you downloaded
 
@@ -161,7 +215,7 @@ Get-FileHash .\Atlas-Chronicles-Setup.exe -Algorithm SHA256
 ```
 
 ```
-SHA256_PLATZHALTER  Atlas-Chronicles-Setup.exe
+42C314EA805B18D8ADBDA4F7FEA25F214781EB5882415C0BA7186B90C97EAE59  Atlas-Chronicles-Setup.exe
 ```
 
-Built from commit `COMMIT_PLATZHALTER`.
+Built from commit `487637e`.
