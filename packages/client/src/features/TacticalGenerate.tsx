@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Compass, Dices, Eye, WandSparkles } from "lucide-react";
-import type { GrundrissBericht, SiedlungBericht } from "@chronicle/forge";
+import type { GrundrissBericht, SiedlungBericht, RegionBericht } from "@chronicle/forge";
 import type { TacticalCartographyV1, TacticalMapDocumentV1 } from "@chronicle/szene";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
@@ -16,7 +16,7 @@ import "./map-workshop.css";
 
 interface Vorschau {
   keimHash: string; art: string; groesse: readonly [number, number]; document: TacticalMapDocumentV1; cartography?: TacticalCartographyV1; nodes: MapNode[];
-  bericht: GrundrissBericht | SiedlungBericht; raeume?: number; bauwerke?: number; strassen?: number;
+  bericht: GrundrissBericht | SiedlungBericht | RegionBericht; raeume?: number; bauwerke?: number; strassen?: number; orte?: number;
 }
 
 export function TacticalGenerate({ campaignId, onCreated, onDirty }: { campaignId: string; onCreated: (mapId: string) => void; onDirty?: (dirty: boolean) => void }) {
@@ -62,12 +62,14 @@ export function TacticalGenerate({ campaignId, onCreated, onDirty }: { campaignI
     <div className="map-workshop-preview" aria-label={t("Kartenvorschau")}>{scene && visiblePreview ? <>
       <div className="map-preview-title"><div><span className="eyebrow">{t("Vorschau")}</span><h3>{name}</h3></div><span>{t("Noch nicht gespeichert")}</span></div>
       <TacticalCanvas scene={scene} tileBase="" />
-      <div className="map-preview-stats"><span><strong>{visiblePreview.bauwerke ?? visiblePreview.raeume ?? visiblePreview.nodes.length}</strong>{visiblePreview.art === "siedlung" ? t("Gebäude") : t("Räume")}</span>
+      <div className="map-preview-stats"><span><strong>{visiblePreview.orte ?? visiblePreview.bauwerke ?? visiblePreview.raeume ?? visiblePreview.nodes.length}</strong>{visiblePreview.art === "region" ? t("Orte") : visiblePreview.art === "siedlung" ? t("Gebäude") : t("Räume")}</span>
         {visiblePreview.strassen !== undefined ? <span><strong>{visiblePreview.strassen}</strong>{t("Straßen")}</span> : "tueren" in visiblePreview.bericht ? <span><strong>{visiblePreview.bericht.tueren}</strong>{t("Türen")}</span> : null}
         <span><strong>{visiblePreview.groesse[0].toLocaleString(locale())} × {visiblePreview.groesse[1].toLocaleString(locale())}</strong>{t("Pixel")}</span></div>
       {visiblePreview.art === "siedlung" ? <p className="field-help">{t("Nach dem Speichern kannst du jedes Gebäude auswählen, benennen und seinen passenden Innenraum erzeugen.")}</p> : null}
-      {"angefordert" in visiblePreview.bericht && visiblePreview.bericht.bauwerke < visiblePreview.bericht.angefordert ? <Notice>{t("Für {angefordert} Gebäude reicht die bebaubare Fläche nicht. Die Vorschau enthält {bauwerke} Gebäude; vergrößere die Karte, wenn du mehr brauchst.", { angefordert: visiblePreview.bericht.angefordert, bauwerke: visiblePreview.bericht.bauwerke })}</Notice> : null}
-      {visiblePreview.bericht.nichtBedient.length ? <Notice>{t("Für {anzahl} Einrichtungswünsche enthält der Stil kein passendes Objekt.", { anzahl: visiblePreview.bericht.nichtBedient.length })}</Notice> : null}
+      {visiblePreview.art === "region" ? <p className="field-help">{t("Nach dem Speichern kannst du jeden Ort auswählen und seine Stadt oder sein Dorf erzeugen; Größe und Lage kommen von der Landkarte.")}</p> : null}
+      {"verbunden" in visiblePreview.bericht && !visiblePreview.bericht.verbunden ? <Notice>{t("Nicht alle Orte sind durch Straßen verbunden; Wasser oder Fels lagen im Weg.")}</Notice> : null}
+      {"bauwerke" in visiblePreview.bericht && "angefordert" in visiblePreview.bericht && visiblePreview.bericht.bauwerke < visiblePreview.bericht.angefordert ? <Notice>{t("Für {angefordert} Gebäude reicht die bebaubare Fläche nicht. Die Vorschau enthält {bauwerke} Gebäude; vergrößere die Karte, wenn du mehr brauchst.", { angefordert: visiblePreview.bericht.angefordert, bauwerke: visiblePreview.bericht.bauwerke })}</Notice> : null}
+      {"nichtBedient" in visiblePreview.bericht && visiblePreview.bericht.nichtBedient.length ? <Notice>{t("Für {anzahl} Einrichtungswünsche enthält der Stil kein passendes Objekt.", { anzahl: visiblePreview.bericht.nichtBedient.length })}</Notice> : null}
     </> : <div className="map-preview-empty"><Compass size={58} strokeWidth={1} /><span className="eyebrow">{t("Deine Welt beginnt hier")}</span><h3>{preview ? t("Neue Einstellungen, neuer Entwurf.") : t("Ein Ort. Viele Geschichten.")}</h3><p>{t("Wähle Kartenart, Größe und Stil. Mit „Vorschau“ siehst du die fertige Karte, bevor du sie speicherst.")}</p><div className="map-preview-journey"><span>{t("Stadt")}</span><span>→</span><span>{t("Gebäude")}</span><span>→</span><span>{t("Innenraum")}</span></div></div>}</div></div>
   </section>;
 }

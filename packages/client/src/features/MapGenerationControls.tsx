@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { Building2, Castle, CloudSun, Droplets, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree } from "lucide-react";
+import { Building2, Castle, CloudSun, Droplets, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree, Map } from "lucide-react";
 import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
 import { locale, t } from "../i18n";
 import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
 
 // Die Anzeigetexte stehen als Tabelle daneben, damit die Anzeigestelle sie mit `t` nachschlägt.
-const MAP_KIND_LABEL = { siedlung: "Stadt & Dorf", grundriss: "Gebäude & Dungeon", hoehle: "Höhle" } as const;
+const MAP_KIND_LABEL = { region: "Land & Region", siedlung: "Stadt & Dorf", grundriss: "Gebäude & Dungeon", hoehle: "Höhle" } as const;
 const MAP_KIND_TITEL = {
+  region: "Weites Land mit Orten, die du betreten kannst",
   siedlung: "Straßen, Viertel und begehbare Gebäude",
   grundriss: "Vom Wohnhaus über das Labor bis zur Raumstation",
   hoehle: "Natürliche Kammern und gewachsener Fels",
 } as const;
 export const MAP_KINDS = [
+  { id: "region", label: MAP_KIND_LABEL.region, text: MAP_KIND_TITEL.region, icon: Map },
   { id: "siedlung", label: MAP_KIND_LABEL.siedlung, text: MAP_KIND_TITEL.siedlung, icon: Building2 },
   { id: "grundriss", label: MAP_KIND_LABEL.grundriss, text: MAP_KIND_TITEL.grundriss, icon: Castle },
   { id: "hoehle", label: MAP_KIND_LABEL.hoehle, text: MAP_KIND_TITEL.hoehle, icon: Mountain },

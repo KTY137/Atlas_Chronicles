@@ -232,3 +232,17 @@ describe("the map's free names reach the picture", () => {
     expect(named.labels).toEqual(labels); expect(() => validateMapScene(named)).not.toThrow();
   });
 });
+
+describe("the land above the towns: region requests", () => {
+  const withRegion: GenerationDefaults = { ...defaults, region: { setting: "fantasy", standort: "huegel", relief: .6, bewaldung: .5, ausdehnung: [56, 42], zellgroesse: 112, orte: 7 } };
+  it("takes the server's regional extent, sends only regional options, and bounds the number of places", () => {
+    const settings = generationSettings("region");
+    expect(generationDimensions(settings, withRegion)).toEqual([56, 42]);
+    expect(generationDimensions(settings, defaults)).toEqual([56, 42]);
+    expect(generationOptions({ ...settings, standort: "kueste", anzahl: 9 }, withRegion)).toEqual({ standort: "kueste", setting: "fantasy", orte: 9, relief: .5, bewaldung: .5 });
+    expect(generationOptions(settings, withRegion)).not.toHaveProperty("bauwerke");
+    expect(generationError(settings, withRegion)).toBeNull();
+    expect(generationError({ ...settings, anzahl: 25 }, withRegion)).toMatch(/zwischen 1 und 24/);
+    expect(generationError({ ...settings, breite: 300 }, withRegion)).not.toBeNull();
+  });
+});

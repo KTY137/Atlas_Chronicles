@@ -102,7 +102,7 @@ Präsentation, keine Daten geändert; jede Wirkung kommt aus dem, was die Karte 
 ## 5. Runde 4 — die Zehnerliste (`cartography-11`)
 
 Kaya fragte nach zehn Verbesserungen und ließ sie abarbeiten. Reihenfolge nach Wirkung, jedes
-Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1, 2, 3, 4, 5, 6 fertig.
+Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1 bis 7 fertig.
 
 **1 Möbel an die Wand, 2 Gärten um die Häuser** (Commit `3f75ad3`): Möbel werden nach Art
 platziert — Betten, Schränke, Regale, Truhen an die Wand (`Lage` mit bevorzugten Plätzen und
@@ -170,6 +170,31 @@ Ziehen legt den Namen auf die geglättete Linie des Strichs (`labelPath`: Punkte
 halben Zelle Abstand fallen weg, eine Mittelung, höchstens 64 Punkte); ein Strich ist ein
 Schritt. Die Liste unter dem Werkzeug benennt um (beim Verlassen des Felds) und entfernt. Die
 Ebene „Namen" blendet freie Namen mit aus und sperrt das Werkzeug.
+
+**7 Regionalkarte als eigener Generator.** Vierte Kartenart `region` neben Grundriss, Höhle
+und Siedlung — dieselbe Tür (`/tactical/generate`), derselbe Weg in die Datenbank, derselbe
+Eingangsvertrag. `forge/src/region.ts` (`chronicle-region` 1): dieselbe Reliefmaschine formt das
+ganze Land (grobe Zelle 112 px auf 56×42 Zellen — eine Region wird von weit gelesen, und jedes
+gezeichnete Merkmal wächst mit der Zelle); **Siedlungsplätze werden vom Land abgelesen** (flach,
+trocken, nicht in Wasser, Fels oder Moor, Wasser in der Nähe zählt viel, ein wenig Rauschen;
+bestwertig zuerst, mit Mindestabstand, der nur schrumpft, wenn das Land zu arm ist); der beste
+Platz wird Stadt, zwei von fünf Dorf, der Rest Weiler; jeder Ort liest seine Umgebung aus dem
+Relief (Küste, See, Moor, Fluss, Gebirge, Wald, Hügel, Ebene). **Straßen:** Delaunay-Nachbarn,
+auf Spannbaum plus Schleifen gedünnt, jede Verbindung mit A\* über das Zellgitter (Hang kostet,
+Fels und Moor mehr, stehendes Wasser sperrt, ein Fluss kostet eine Brücke); Stadtverbindungen
+gepflastert, der Rest Wege. Namen aus Silben (Silberbach, Falkenfurt …), je Karte eindeutig.
+**Neue Kartografie-Rolle `ort`** (`groesse` weiler/dorf/stadt, `standort`): in der Projektion ein
+Dächerhaufen auf dem globalen Gitter, dichter und größer je Ort, Dorf und Stadt mit Kirche und
+Turm, die Stadt mit Mauer und Ecktürmen; für Bearbeitungen ein Hindernis wie ein Gebäude;
+Ebene „Gebäude". **Eintreten:** `betreten` erkennt Regionalkarten am Erzeuger, ihre Eingänge sind
+die Orte (`erzeugungsArt: siedlung`, `siedlung: { art, standort }` aus der Rolle); wer einen Ort
+ohne Optionen betritt, bekommt genau die Stadt, die die Karte gespeichert hat (Stil gemalt), der
+Dialog ist damit vorbelegt. Karten-Budget: die Projektion teilt sich das Polygonbudget jetzt
+ausdrücklich — Kronen und Gipfel wachsen mit der Fläche, die sie decken, und lassen vier Fünftel
+für alles, was auf dem Boden steht; ein Regionalwald hatte vorher jedes Dach verschluckt.
+Kronen am Waldrand dürfen über die Stückkante ragen, damit die Tessellation des Generators
+nicht als Treppe im Bild steht. Keine generierten freien Namen: die Orte tragen ihre Namen als
+Knoten (Kartenmarke „Stadt"), freie Namen setzt der Spielleiter.
 
 ## 6. Nachweis
 Siehe `design/iterations/map-studio-20260910-optik.md`.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { cartographyDraw, cartographyPaintsWalls, rendererVersion } from "../src/cartography-projection.ts";
+import { cartographyDraw, cartographyLayerOf, cartographyPaintsWalls, rendererVersion } from "../src/cartography-projection.ts";
 import type { CartographyReliefV1, TacticalCartographyV1 } from "../src/cartography.ts";
 import type { TacticalMapDocumentV1, TacticalPoint } from "../src/tactical-map.ts";
 
@@ -360,5 +360,31 @@ describe("mood and layers: the same map by night, under snow, in autumn, and wit
     const walled = { ...document, walls: [{ id: "wall", kind: "wall" as const, elevation: 0, points: [[100, 100], [300, 100]] as TacticalPoint[] }] };
     expect(cartographyDraw(walled, cartography, "fantasy", { paper: false }).polygons.some(p => p.regionId === "wall")).toBe(true);
     expect(cartographyDraw(walled, cartography, "fantasy", { paper: false, hide: ["walls"] }).polygons.some(p => p.regionId === "wall")).toBe(false);
+  });
+});
+
+describe("a settlement seen from the region: roofs, a church, a wall", () => {
+  const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const base = { authored: false, locked: false, provenance: null } as const;
+  const sheet = (groesse: "weiler" | "dorf" | "stadt", setting: "fantasy" | "gegenwart" = "fantasy") => {
+    const { document, cartography } = fixture();
+    const regions = [{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "ort", punkte: rect(150, 150, 300, 260) }];
+    const roles = [{ ...base, regionId: "ground", role: "terrain", material: "grass" }, { ...base, regionId: "ort", role: "ort", groesse, standort: "huegel" }] as const;
+    return cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 60, origin: [0, 0] }, regions: [...roles] }, setting, { paper: false }).polygons.filter(p => p.regionId === "ort");
+  };
+  it("draws more roofs the bigger the place, above the roads and below the buildings", () => {
+    const hamlet = sheet("weiler"), village = sheet("dorf"), town = sheet("stadt");
+    const roofs = (polygons: typeof hamlet) => polygons.filter(p => p.points.length === 4 && p.opacity === 1).length;
+    expect(roofs(hamlet)).toBeGreaterThan(4); expect(roofs(village)).toBeGreaterThan(roofs(hamlet)); expect(roofs(town)).toBeGreaterThan(roofs(village));
+    expect(cartographyLayerOf({ ...base, regionId: "x", role: "ort", groesse: "dorf", standort: "ebene" })).toBe("building");
+  });
+  it("gives a village a church spire and a town its wall with towers, and flat roofs outside the fantasy setting", () => {
+    const { document, cartography } = fixture();
+    const spire = (polygons: ReturnType<typeof sheet>) => polygons.filter(p => p.fill === 0x683e32 && p.opacity === 1).length;
+    expect(spire(sheet("weiler"))).toBe(0); expect(spire(sheet("dorf"))).toBe(1);
+    const town = sheet("stadt"), stone = town.filter(p => p.fill === 0xaaa08a);
+    expect(stone.length).toBeGreaterThanOrEqual(8);
+    expect(sheet("dorf", "gegenwart").filter(p => p.fill === 0x683e32)).toHaveLength(0);
+    void document; void cartography;
   });
 });

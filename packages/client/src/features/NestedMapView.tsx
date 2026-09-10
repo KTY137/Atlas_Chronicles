@@ -7,6 +7,7 @@ import { BAUWERK_LABEL, BAUWERK_TYPEN, KARTEN_SETTING_LABEL, type BauwerkTyp, ty
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
+import type { SiedlungArt, SiedlungStandort } from "@chronicle/forge";
 import { t } from "../i18n";
 import { useCommand } from "./game-api";
 import { TacticalCanvas, type MapCanvasContext } from "./TacticalCanvas";
@@ -20,7 +21,7 @@ import "./map-workshop.css";
 import "./NestedMapView.css";
 
 export interface MapAncestor { kind: "atlas" | "tactical"; id: string; title: string; edit?: boolean }
-interface Entrance extends MapNode { canEnter: boolean; vorhandeneKarteId: string | null }
+interface Entrance extends MapNode { canEnter: boolean; vorhandeneKarteId: string | null; erzeugungsArt?: MapArt; siedlung?: { art: SiedlungArt; standort: SiedlungStandort } }
 interface Children { nodes: Entrance[]; version: number; ancestors: MapAncestor[]; art?: MapArt; stil?: MapStyle; setting?: KartenSetting }
 const BUILDING_ICONS: Partial<Record<BauwerkTyp, typeof House>> = { haus: House, kirche: Church, taverne: Beer, schmiede: Anvil, lager: Warehouse, turm: Castle };
 const NO_ENTRANCES: Entrance[] = [];
@@ -133,6 +134,7 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
           {selected && children.data ? <div className="nested-building-inspector"><BuildingMetadata key={selected.knotenId} campaignId={campaignId} mapId={mapId} node={selected} version={children.data.version} onChanged={onChanged} onDirty={reportMetadata} />
             <MapEntrance key={`${selected.knotenId}:${selected.bauwerk?.typ ?? "frei"}`} campaignId={campaignId} parentKind="tactical" parentMapId={mapId} nodeId={selected.knotenId} title={selected.titel}
               version={children.data.version} canEnter={selected.canEnter && !drafts.metadata} childMapId={selected.vorhandeneKarteId} profil={selected.bauwerk?.typ} stil={children.data.stil} setting={children.data.setting}
+              {...(selected.erzeugungsArt ? { defaultArt: selected.erzeugungsArt } : {})} {...(selected.siedlung ? { siedlung: selected.siedlung } : {})}
               onOpen={id => navigate({ kind: "tactical", id, title: selected.titel })} onChanged={onChanged} />
             {drafts.metadata ? <p className="field-help">{t("Speichere die Gebäudedaten, bevor du einen neuen Innenraum erzeugst.")}</p> : null}
           </div> : entrances.length ? <div className="nested-select-hint"><Building2 size={28} /><p>{city ? t("Wähle ein Gebäude auf der Karte oder in der Liste.") : t("Wähle einen Raum auf der Karte oder in der Liste.")}</p></div> : null}
@@ -165,15 +167,17 @@ function BuildingMetadata({ campaignId, mapId, node, version, onChanged, onDirty
     {task.error ? <Notice error>{task.error}<Button variant="quiet" onClick={onChanged}>{t("Aktuellen Stand laden")}</Button></Notice> : null}</form>;
 }
 
-export function MapEntrance({ campaignId, parentKind, parentMapId, nodeId, title, version, canEnter, childMapId, onOpen, onChanged, profil, defaultArt, stil = "gemalt", setting = "fantasy" }: {
+export function MapEntrance({ campaignId, parentKind, parentMapId, nodeId, title, version, canEnter, childMapId, onOpen, onChanged, profil, defaultArt, stil = "gemalt", setting = "fantasy", siedlung }: {
   campaignId: string; parentKind: "atlas" | "tactical"; parentMapId: string; nodeId: string; title: string; version: number;
   canEnter: boolean; childMapId?: string | null; onOpen: (id: string) => void; onChanged: () => void;
   profil?: BauwerkTyp; defaultArt?: MapArt; stil?: MapStyle; setting?: KartenSetting;
+  /** A settlement entered from its region: the town's size and surroundings come from the map. */
+  siedlung?: { art: SiedlungArt; standort: SiedlungStandort };
 }) {
   const task = useTask(), command = useCommand(), mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [linking, setLinking] = useState(false), [targetId, setTargetId] = useState("");
-  const [settings, setSettings] = useState(() => generationSettings(defaultArt ?? (parentKind === "atlas" ? "siedlung" : "grundriss"), profil ?? "frei", stil, setting));
+  const [settings, setSettings] = useState(() => { const base = generationSettings(defaultArt ?? (parentKind === "atlas" ? "siedlung" : "grundriss"), profil ?? "frei", stil, setting); return siedlung ? { ...base, siedlung: siedlung.art, standort: siedlung.standort } : base; });
   const maps = useResource<TacticalMapSummary[]>(linking ? apiPath(campaignId, "/tactical/maps") : null);
   const defaults = useResource<GenerationDefaults>(!childMapId ? apiPath(campaignId, "/tactical/generate/defaults") : null);
   const problem = defaults.data ? generationError(settings, defaults.data) : null;

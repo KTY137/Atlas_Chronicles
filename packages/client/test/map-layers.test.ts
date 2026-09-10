@@ -9,6 +9,7 @@ const base = { authored: false, locked: false, provenance: null } as const;
 const cartography: TacticalCartographyV1 = { schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: 64, origin: [0, 0] }, regions: [
   { ...base, regionId: "meadow", role: "terrain", material: "grass" }, { ...base, regionId: "pond", role: "water", material: "lake" }, { ...base, regionId: "lane", role: "road", material: "path" },
   { ...base, regionId: "yard", role: "lot" }, { ...base, regionId: "barn", role: "building" }, { ...base, regionId: "hall", role: "room" }, { ...base, regionId: "unknown", role: "generic" },
+  { ...base, regionId: "town", role: "ort", groesse: "stadt", standort: "fluss" },
 ] };
 const scene: ProjectedMapScene = { id: "s", width: 100, height: 100, cells: [], pins: [{ id: "p", x: 1, y: 1, label: "Hof" }], title: "Hof", grid: { kind: "square", size: 64, origin: [0, 0] },
   stamps: [{ id: "t", asset: "pk.gemalt/tisch", x: 5, y: 5, s: 1, r: 0, l: 0 }], lights: [{ id: "l", x: 5, y: 5, range: 10 }], lines: [{ id: "w", points: [[0, 0], [1, 1]] }],
@@ -28,10 +29,10 @@ describe("the layer panel: hide while working, lock when done, never saved", () 
     state = toggleLayer(state, "wasser", "locked"); expect(layerBlocked(state, "wasser")).toBe(true); expect(state.hidden.has("wasser")).toBe(false);
   });
   it("puts every region on exactly one row, land for a region without a role, and protects the blocked rows' regions", () => {
-    expect(cartography.regions.map(layerOfRegion)).toEqual(["gelaende", "wasser", "wege", "grundstuecke", "gebaeude", "raeume", "gelaende"]);
+    expect(cartography.regions.map(layerOfRegion)).toEqual(["gelaende", "wasser", "wege", "grundstuecke", "gebaeude", "raeume", "gelaende", "gebaeude"]);
     expect(layerOfRegion(undefined)).toBe("gelaende");
     const state = toggleLayer(toggleLayer(mapLayerState(), "wasser", "hidden"), "gebaeude", "locked");
-    expect(blockedRegionIds(state, cartography)).toEqual(["pond", "barn"]);
+    expect(blockedRegionIds(state, cartography)).toEqual(["pond", "barn", "town"]);
     expect(blockedRegionIds(mapLayerState(), cartography)).toEqual([]);
   });
   it("tells the shared projection what to leave out", () => {

@@ -110,6 +110,24 @@ Zwei Fallen dabei: der Client-Build prüft strenger als der Wurzel-Typecheck (St
 war kurz baurot, jetzt `npm run build` vor jedem Commit), und der Prüfstand
 `tactical-entities-review` kennt nur eingetragene Module.
 
+## Runde 4, Punkt 7 — Regionalkarte
+
+Bilder: `.local/relief-probe/region.ts` je Standort (halbe Auflösung; das Ganzbild übersteigt das
+16-MP-Limit des Rasterers, im Produkt laufen Kacheln). Drei Runden am Bild: (1) Orte als leere
+Flecken und Fels ohne Gipfel — der Wald hatte das Dekorationsbudget geleert → geteiltes Budget,
+Kronen/Gipfel skalieren mit der Fläche; (2) Waldränder als Treppe der Zellstücke → Kronen ragen
+über die Kante; (3) doppelte Ortsnamen (Knoten und freie Beschriftung) → keine generierten
+Beschriftungen. Nachweise: forge `region` 8/8 (Plätze, Größen, Umgebungen, Namen, verbunden;
+Rolle/Knoten/Kindkeim; deterministisch; alle neun Standorte; fünf Ablehnungen), forge gesamt
+24 Dateien 499 Fälle; szene `cartography` (Rolle `ort`) und `cartography-projection` (mehr
+Dächer je Größe, Kirche ab Dorf, Mauer ab Stadt, flache Dächer außerhalb Fantasy); client
+`map-layers`, `map-generation` (Regionsoptionen), Prüfstand `tactical-entities-review`; server
+`region-integration` 2/2 (Vorschau, Speichern, Kinder sind Orte mit Siedlungshinweis, Eintreten
+ohne Optionen = gespeicherte Stadt, keimHash gleich der Vorschau, Straße hat keinen Eingang,
+falsche Optionen 400), `siedlung-integration`, `betreten`. Typecheck, Build, `gate:sprache`.
+Browser `map-studio` „regional map": Landkarte im Studio mit Orten, Auswahl eines Ortes zeigt
+„Ort" (`region-studio.png` angesehen: Fluss, Wälder, fünf Orte mit Dächern, Namen an den Marken).
+
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel
 für Außenobjekte, Möbel an die Wand rücken (Möbel stehen frei im Raum). Desktop nicht neu gebaut.

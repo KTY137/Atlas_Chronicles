@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { RELIEF_LEVELS, type CartographyReliefV1 } from "@chronicle/szene";
+import { RELIEF_LEVELS, type CartographyReliefV1, CARTOGRAPHY_STANDORTE, type CartographyStandort } from "@chronicle/szene";
 import { doppelflaeche, flaeche, qp, schnittKonvex, type Polygon, type Punkt } from "./polygon.ts";
 
 /**
@@ -36,8 +36,8 @@ import { doppelflaeche, flaeche, qp, schnittKonvex, type Polygon, type Punkt } f
 export const RELIEF_VERSION = "1";
 /** Meeresspiegel in Höhenstufen; die Fels- und Schneeschwellen liegen in `RELIEF_LEVELS` darüber. */
 export const MEERESSPIEGEL = 77;
-export const RELIEF_STANDORTE = Object.freeze(["ebene", "huegel", "wald", "gebirge", "fluss", "see", "moor", "kueste", "insel"] as const);
-export type ReliefStandort = typeof RELIEF_STANDORTE[number];
+export const RELIEF_STANDORTE = CARTOGRAPHY_STANDORTE;
+export type ReliefStandort = CartographyStandort;
 
 export interface ReliefAuftrag {
   readonly breite: number;

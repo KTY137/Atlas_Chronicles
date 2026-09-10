@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import type { GrundrissOptionen, HoehleOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
+import type { GrundrissOptionen, HoehleOptionen, RegionOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
 import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type CartographyView, type KartenSetting, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
 import { t } from "../i18n";
 
-export type MapArt = "siedlung" | "grundriss" | "hoehle";
+export type MapArt = "siedlung" | "grundriss" | "hoehle" | "region";
 export type MapStyle = "grundriss" | "gemalt" | "zeitwelten" | "genres";
 export interface GenerationDefaults {
   grundriss: GrundrissOptionen; hoehle: HoehleOptionen; siedlung: SiedlungOptionen;
+  /** The land above the towns; an older server has no such defaults and the card stays hidden. */
+  region?: RegionOptionen;
   siedlungsarten?: Readonly<Record<SiedlungOptionen["art"], SiedlungOptionen>>;
   /** Default interior extent per building type, in cells; the server sizes a typed interior by it. */
   gebaeude?: Readonly<Partial<Record<BauwerkTyp, readonly [number, number]>>>;
@@ -34,6 +36,7 @@ export function changeGenerationSetting(value: GenerationSettings, setting: Kart
 }
 export function generationDimensions(value: GenerationSettings, defaults: GenerationDefaults): readonly [number, number] {
   const std = value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).ausdehnung
+    : value.art === "region" ? (defaults.region?.ausdehnung ?? [56, 42])
     : value.art === "grundriss" && value.profil !== "frei" && defaults.gebaeude?.[value.profil] ? defaults.gebaeude[value.profil]! : defaults[value.art].zellen;
   return [value.breite === "" ? std[0] : value.breite, value.hoehe === "" ? std[1] : value.hoehe];
 }
@@ -41,6 +44,7 @@ export function generationOptions(value: GenerationSettings, defaults: Generatio
   const dimensions = value.breite !== "" || value.hoehe !== "" ? generationDimensions(value, defaults) : undefined;
   if (value.art === "siedlung") return { art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
     ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, relief: value.relief, bewaldung: value.bewaldung, licht: value.licht };
+  if (value.art === "region") return { standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}), ...(value.anzahl !== "" ? { orte: value.anzahl } : {}), relief: value.relief, bewaldung: value.bewaldung };
   return { ...(dimensions ? { zellen: dimensions } : {}),
     ...(value.anzahl !== "" ? value.art === "hoehle" ? { kammern: value.anzahl } : { raeume: value.anzahl } : {}),
     ...(value.art === "grundriss" ? { profil: value.profil, anordnung: value.anordnung, setting: value.setting } : {}),
@@ -50,9 +54,9 @@ export function generationError(value: GenerationSettings, defaults: GenerationD
   const [w, h] = generationDimensions(value, defaults);
   if (![w, h].every(n => Number.isSafeInteger(n) && n >= 12 && n <= 192)) return t("Breite und Höhe müssen ganze Zahlen zwischen 12 und 192 sein.");
   if (w * h > 20_000) return t("Die Karte darf höchstens 20.000 Zellen enthalten. Verringere Breite oder Höhe.");
-  const z = value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).zellgroesse : defaults[value.art].zellgroesse;
+  const z = value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).zellgroesse : value.art === "region" ? (defaults.region?.zellgroesse ?? 112) : defaults[value.art].zellgroesse;
   if (w * z > TACTICAL_MAP_LIMITS.dimension || h * z > TACTICAL_MAP_LIMITS.dimension || w * h * z * z > TACTICAL_MAP_LIMITS.pixels) return t("Diese Größe überschreitet das Kartenbudget. Wähle eine kleinere Fläche.");
-  const min = value.art === "siedlung" ? 1 : 2, max = value.art === "siedlung" ? 256 : value.art === "hoehle" ? 32 : 64;
+  const min = value.art === "siedlung" || value.art === "region" ? 1 : 2, max = value.art === "siedlung" ? 256 : value.art === "region" ? 24 : value.art === "hoehle" ? 32 : 64;
   if (value.anzahl !== "" && (!Number.isSafeInteger(value.anzahl) || value.anzahl < min || value.anzahl > max)) return t("Die Anzahl muss zwischen {min} und {max} liegen.", { min, max });
   return null;
 }
@@ -84,7 +88,7 @@ export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, no
       const polygon = polygons.get(node.knotenId), ordinary = node.bauwerk && ["haus", "wohnblock", "buero", "lager"].includes(node.bauwerk.typ);
       const span = polygon ? Math.max(...polygon.map(point => point[0])) - Math.min(...polygon.map(point => point[0])) : 32;
       return { id: node.knotenId, x: node.x, y: node.y, label: node.titel,
-        ...(node.vorhandeneKarteId ? { icon: "portal" as const, showMarker: true } : node.art === "bauwerk" && polygon ? { showMarker: false } : {}),
+        ...(node.vorhandeneKarteId ? { icon: "portal" as const, showMarker: true } : node.art === "ort" ? { icon: "city" as const, showMarker: true } : node.art === "bauwerk" && polygon ? { showMarker: false } : {}),
         ...(node.bauwerk ? { color: BUILDING_COLORS[node.bauwerk.typ] } : {}), ...(ordinary ? { labelMinScale: 32 / Math.max(1, span) } : {}) };
     }),
     lines: [...document.walls.map(wall => ({ id: wall.id, points: wall.points, ...(cartography && cartographyPaintsWalls(cartography, document) ? { paint: false } : {}) })),

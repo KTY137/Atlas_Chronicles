@@ -11,7 +11,7 @@ export const rendererVersion = "cartography-11" as const;
 export const CARTOGRAPHY_LAYERS = ["terrain", "water", "road", "lot", "building", "room", "walls"] as const;
 export type CartographyLayer = typeof CARTOGRAPHY_LAYERS[number];
 export function cartographyLayerOf(role: CartographyRegionV1 | undefined): Exclude<CartographyLayer, "walls"> {
-  return !role || role.role === "generic" ? "terrain" : role.role;
+  return !role || role.role === "generic" ? "terrain" : role.role === "ort" ? "building" : role.role;
 }
 /** What of the map the viewer wants drawn. Presentation only; the stored map is untouched. */
 export interface CartographyView {
@@ -42,7 +42,7 @@ const palettes = {
   scifi: { background: 0x536368, generic: 0x67767a, grass: 0x8caa90, earth: 0x9b8f7d, forest: 0x537c76, field: 0x9cac7b, rock: 0x839097, sand: 0xbeb695, swamp: 0x62777a, snow: 0xc7d1d4, water: 0x5a9fae, path: 0x96aaa8, street: 0x465b63, square: 0x7f9299, bridge: 0xa3b8ba, lot: 0x7d9190, room: 0x9bafb2, roof: 0x91aeb4, roofLight: 0xbcd2d4, roofDark: 0x5b7b88 },
 } as const;
 type Palette = { -readonly [key in keyof typeof palettes.fantasy]: number };
-const order = { terrain: 0, lot: 1, generic: 2, room: 3, water: 4, road: 5, building: 6 };
+const order = { terrain: 0, lot: 1, generic: 2, room: 3, water: 4, road: 5, ort: 6, building: 7 };
 /** Polygon half-plane clipping uses map coordinates identically in SVG and WebGL consumers. */
 function half(points: readonly TacticalPoint[], axis: 0 | 1, at: number, greater: boolean): TacticalPoint[] {
   const result: TacticalPoint[] = [];
@@ -188,6 +188,10 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   const paintWalls=cartographyPaintsWalls(cartography,document)&&!hidden.has("walls"),wallSegments=paintWalls?document.walls.reduce((sum,wall)=>sum+wall.points.length-1,0):0;
   const basePoints = document.geometry.regions.reduce((sum, region) => sum + region.punkte.length, 0)+wallSegments*8;
   const basePolygons=document.geometry.regions.length+wallSegments*2;
+  // The ground's own texture — crowns, crags — may spend four fifths of the budget; the rest is
+  // kept for what stands on the ground later: roofs, settlements, walls. A regional wood once
+  // ate the whole budget and every town on the sheet came out as a bare patch.
+  const groundBudget = 200_000 - basePoints;
   const emit = (regionId: string, points: readonly TacticalPoint[], fill: number, opacity = 1, decoration = true) => {
     // Decorative detail is deterministic and bounded separately; every semantic base polygon
     // is always retained within the shared rasterizer's 32K-polygon / 256K-point admission.
@@ -203,6 +207,15 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   const groupBank=(material:"rock"|"field")=>regionBanks(regions.filter(region=>region.role?.role==="terrain"&&region.role.material===material));
   const rockBanks=groupBank("rock"), fieldBanks=groupBank("field");
   const roadBanks=regionBanks(regions.filter(region=>region.role?.role==="road"));
+  // Every wood on the sheet, so a crown at a piece's edge knows whether the ground beyond is
+  // still wood (another piece draws it) or open land (this piece lets it straddle the edge).
+  const woods = regions.filter(region => region.role?.role === "terrain" && region.role.material === "forest").map(region => ({ points: region.punkte, box: [Math.min(...region.punkte.map(p => p[0])), Math.min(...region.punkte.map(p => p[1])), Math.max(...region.punkte.map(p => p[0])), Math.max(...region.punkte.map(p => p[1]))] as const }));
+  const inWood = (point: TacticalPoint) => woods.some(wood => point[0] >= wood.box[0] && point[0] <= wood.box[2] && point[1] >= wood.box[1] && point[1] <= wood.box[3] && inside(point, wood.points));
+  // On a regional sheet a wood or a massif covers half the map: crowns and crags grow with the
+  // area they have to cover, so the whole wood gets its trees instead of the first half only.
+  const areaOf = (points: readonly TacticalPoint[]) => Math.abs(points.reduce((sum, a, i) => { const b = points[(i + 1) % points.length]!; return sum + a[0] * b[1] - b[0] * a[1]; }, 0)) / 2;
+  const woodArea = woods.reduce((sum, wood) => sum + areaOf(wood.points), 0);
+  const rockArea = regions.filter(region => region.role?.role === "terrain" && region.role.material === "rock").reduce((sum, region) => sum + areaOf(region.punkte), 0);
   // Which roofs stand on which plot, so a garden never grows under a house.
   const lotHouses = new Map<string, readonly (readonly TacticalPoint[])[]>();
   for (const region of regions) if (region.role?.role === "building" && region.role.lotRegionId) lotHouses.set(region.role.lotRegionId, [...(lotHouses.get(region.role.lotRegionId) ?? []), region.punkte]);
@@ -365,6 +378,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     else if (role?.role === "road") fill = palette[role.material];
     else if (role?.role === "room" && role.interior) fill = role.interior.floor === "wood" ? 0xb78c60 : role.interior.floor === "tile" ? 0xd0cbbc : 0x929591;
     else if (role?.role === "lot" || role?.role === "room") fill = palette[role.role];
+    else if (role?.role === "ort") fill = mix(palette.path, palette.background, .45);
     else if (role?.role === "building") fill = palette.roof;
     if (role?.role === "building" && !roofsStarted) {
       roofsStarted = true;
@@ -416,6 +430,52 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       for (let index = 0; index < points.length; index++) {
         const a = points[index]!, b = points[(index + 1) % points.length]!;
         emit(id, line(a, b, pen), ink, .9);
+      }
+    } else if (role?.role === "ort") {
+      // A settlement seen from the region: a cluster of small roofs on the global lattice, denser
+      // and larger the bigger the place; a village and a town get a church with its spire, a town
+      // its wall with a tower at every corner. The same painted roofs as the town map, one scale up.
+      const z = cartography.construction.cellSize, size = role.groesse, spacing = z * (size === "stadt" ? .42 : size === "dorf" ? .55 : .7);
+      const axes = roofAxes(points), lean = Math.atan2(axes.along[1], axes.along[0]);
+      const startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing), centre: TacticalPoint = [(minX + maxX) / 2, (minY + maxY) / 2];
+      // A rectangle in roof coordinates (u along the ridge, v across it), turned by `angle`.
+      const quad = (x: number, y: number, angle: number, u0: number, u1: number, v0: number, v1: number): TacticalPoint[] => ([[u0, v0], [u1, v0], [u1, v1], [u0, v1]] as const).map(([u, v]) => [x + u * Math.cos(angle) - v * Math.sin(angle), y + u * Math.sin(angle) + v * Math.cos(angle)] as TacticalPoint);
+      const roofOf = (x: number, y: number, w: number, h: number, angle: number) => quad(x, y, angle, -w, w, -h, h);
+      const drawRoof = (x: number, y: number, w: number, h: number, angle: number, key: string) => {
+        const roof = roofOf(x, y, w, h, angle), shift = (phase(key, 5) - .5) * 20;
+        emit(id, roof.map(point => [point[0] + w * .3, point[1] + h * .45]), 0x26332b, .3);
+        if (setting === "fantasy") { emit(id, quad(x, y, angle, -w, w, -h, 0), tint(palette.roofLight, shift)); emit(id, quad(x, y, angle, -w, w, 0, h), tint(palette.roof, shift - 16)); }
+        else emit(id, roof, tint(palette.roofLight, shift - 10));
+        for (let index = 0; index < 4; index++) emit(id, line(roof[index]!, roof[(index + 1) % 4]!, pen * .45), ink, .85);
+      };
+      for (let row = startY; row <= Math.ceil(maxY / spacing); row++) for (let column = startX; column <= Math.ceil(maxX / spacing); column++) {
+        const key = `ort:${column}:${row}`, x = column * spacing + spacing * (.2 + .6 * phase(key, 1)), y = row * spacing + spacing * (.2 + .6 * phase(key, 2));
+        if (!inside([x, y], points) || size === "weiler" && phase(key, 3) > .6) continue;
+        if ((size !== "weiler") && Math.hypot(x - centre[0], y - centre[1]) < spacing * .9) continue;
+        const w = spacing * (.24 + phase(key, 6) * .12), h = w * (.55 + phase(key, 7) * .25);
+        drawRoof(x, y, w, h, lean + (phase(key, 4) - .5) * .7, key);
+      }
+      if (size !== "weiler") {
+        // The church: a longer roof on the square, and a spire drawn as a dark square with an ink cross.
+        const w = spacing * .48, h = w * .5;
+        drawRoof(centre[0], centre[1], w, h, lean, `${id}:kirche`);
+        const tower = w * .3, tx = centre[0] - Math.cos(lean) * w * .7, ty = centre[1] - Math.sin(lean) * w * .7;
+        emit(id, roofOf(tx, ty, tower, tower, lean), palette.roofDark);
+        emit(id, roofOf(tx, ty, tower, tower, lean), ink, .5);
+        emit(id, line([tx, ty - tower * 1.9], [tx, ty + tower * .6], pen * .5), ink, .9);
+        emit(id, line([tx - tower * .6, ty - tower * 1.3], [tx + tower * .6, ty - tower * 1.3], pen * .5), ink, .9);
+      }
+      if (size === "stadt") {
+        const stone = setting === "scifi" ? 0x8ea5aa : 0xaaa08a;
+        for (let index = 0; index < points.length; index++) {
+          const a = points[index]!, b = points[(index + 1) % points.length]!;
+          emit(id, line(a, b, pen * 1.6), ink, .9); emit(id, line(a, b, pen * .9), stone);
+        }
+        for (const corner of points) {
+          const tower = pen * 1.6;
+          emit(id, [[corner[0] - tower, corner[1] - tower], [corner[0] + tower, corner[1] - tower], [corner[0] + tower, corner[1] + tower], [corner[0] - tower, corner[1] + tower]], ink);
+          emit(id, [[corner[0] - tower * .6, corner[1] - tower * .6], [corner[0] + tower * .6, corner[1] - tower * .6], [corner[0] + tower * .6, corner[1] + tower * .6], [corner[0] - tower * .6, corner[1] + tower * .6]], stone);
+        }
       }
     } else if (role?.role === "room" && role.interior) {
       const step = Math.max(cartography.construction.cellSize * (role.interior.floor === "wood" ? .35 : .7), Math.max(width, height) / 70);
@@ -486,7 +546,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       // rather than as a handful of giant triangles. The summits sit on ONE global lattice, for
       // the same reason the ripples and the tufts do: the generator tessellates a massif into
       // many pieces, and a lattice per piece printed that tessellation as fields of dwarf crags.
-      const size = Math.max(3, cartography.construction.cellSize * .46), spacing = Math.max(4, cartography.construction.cellSize * .82);
+      const spacing = Math.max(4, cartography.construction.cellSize * .82, Math.sqrt(rockArea / 1100)), size = spacing * .56;
       const startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing);
       const peaks: { x: number; y: number; size: number; snow: boolean; key: string }[] = [];
       const rockLine = relief ? relief.seaLevel + RELIEF_LEVELS.rockAbove : 0, snowLine = relief ? relief.seaLevel + RELIEF_LEVELS.snowAbove : Infinity;
@@ -509,6 +569,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       // Painter's order: a peak further down the map overlaps the one standing behind it.
       peaks.sort((first, second) => first.y - second.y || first.x - second.x);
       for (const peak of peaks) {
+        if (decorationPoints + 40 > groundBudget || decorationPolygons + 7 >= 27_000 - basePolygons) break;
         const half = peak.size, high = peak.size * 1.5, foot = peak.y + high * .5, key = peak.key;
         // Every summit gets its own stone tone and its own shoulders. Without that a range
         // reads as one triangle stamped in a grid, which is exactly how the first pass looked.
@@ -589,14 +650,21 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       // pieces, and a lattice per piece drew each strip as a dark block with dwarf trees.
       // A crown whose centre lies in this piece is drawn whole; where it reaches into the
       // neighbouring piece it meets the same wood, so the seam never shows.
-      const spacing = Math.max(6, cartography.construction.cellSize * .34), radius = spacing * .8;
+      const spacing = Math.max(6, cartography.construction.cellSize * .34, Math.sqrt(woodArea / 2200)), radius = spacing * .8;
+      // On a regional sheet the crowns are read as texture: the pale highlight is left out there.
+      const regional = spacing > cartography.construction.cellSize * .5;
       const startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing);
       const step = Math.max(1, Math.ceil(Math.sqrt((Math.ceil(maxX / spacing) - startX + 1) * (Math.ceil(maxY / spacing) - startY + 1) / 6000)));
       for (let row = startY; row <= Math.ceil(maxY / spacing); row += step) for (let column = startX; column <= Math.ceil(maxX / spacing); column += step) {
-        if (decorationPoints + 120 > 250_000 - basePoints || decorationPolygons + 5 >= 30_000 - basePolygons) break;
+        if (decorationPoints + 120 > groundBudget || decorationPolygons + 5 >= 16_000 - basePolygons) break;
         const key = `${column}:${row}`;
         const x = column * spacing + spacing * (.2 + .6 * phase(key, 31) + (row % 2) * .3), y = row * spacing + spacing * (.2 + .6 * phase(key, 32));
-        if (!inside([x, y], points)) continue;
+        // A crown just outside this piece is drawn here when it stands on open ground and reaches
+        // into the piece: the wood's edge becomes a ragged line of crowns, not the tessellation.
+        if (!inside([x, y], points)) {
+          const reach = spacing * .5;
+          if (inWood([x, y]) || !([[x + reach, y], [x - reach, y], [x, y + reach], [x, y - reach]] as TacticalPoint[]).some(point => inside(point, points))) continue;
+        }
         const size = radius * (.86 + phase(key, 33) * .34);
         // High, cold land grows spruce; elsewhere a few conifers stand among the broadleaves.
         const conifer = relief ? reliefHeightAt(relief, cartography.construction, x, y) > seaLevel + RELIEF_LEVELS.flatLand + 36 || phase(key, 35) < .18 : phase(key, 35) < .25;
@@ -613,7 +681,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         emit(id, crown.map(point => [point[0] + size * .28, point[1] + size * .32]), 0x263c2b, .34);
         emit(id, crown.map(point => [x + (point[0] - x) * 1.055, y + (point[1] - y) * 1.055]), ink, .9);
         emit(id, crown, mix(palette.forest, palette.grass, .25 + phase(key, 34) * .32));
-        emit(id, crown.map(point => [x + (point[0] - x) * .65 - size * .15, y + (point[1] - y) * .65 - size * .15]), palette.grass, .3);
+        if (!regional) emit(id, crown.map(point => [x + (point[0] - x) * .65 - size * .15, y + (point[1] - y) * .65 - size * .15]), palette.grass, .3);
       }
     } else if (role?.role === "water") {
       for (const {a,b,inward:winding} of banks.get(id)??[]) {

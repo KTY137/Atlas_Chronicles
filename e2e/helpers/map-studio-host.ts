@@ -41,6 +41,9 @@ export async function studioHost() {
     return { origin, campaignId: campaign.id, mapId: imported.subjectId, cookie: { name: "chronicle_session", value: gm.value, url: origin, httpOnly: true, sameSite: "Strict" as const },
       map: () => tactical.getMap(gm.userId, campaign.id, imported.subjectId),
       generate: (standort: "gebirge" | "insel" | "kueste") => createGrundriss(db, config).generate(gm.userId, campaign.id, { commandId: randomUUID(), name: standort === "gebirge" ? "Dorf im Gebirge" : standort === "insel" ? "Inselhafen" : "Küstenstadt", keim: `studio-${standort}`, art: "siedlung", stil: "gemalt", optionen: { art: "dorf", standort, bauwerke: 32 } }),
+      /** The land above the towns: a small river region with five places. */
+      generateRegion: () => createGrundriss(db, config).generate(gm.userId, campaign.id, { commandId: randomUUID(), name: "Das Silbertal", keim: "studio-region", art: "region", stil: "gemalt", optionen: { standort: "fluss", orte: 5, ausdehnung: [40, 30] } }),
+      mapById: (id: string) => tactical.getMap(gm.userId, campaign.id, id),
       close: async () => { await app?.close(); await db.close(); } };
   } catch (error) { await app?.close(); await db.close(); throw error; }
 }

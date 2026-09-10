@@ -553,5 +553,14 @@
   "Namen entfernen": "Remove name",
   "Gib zuerst den Namen ein, den du auf die Karte setzen willst.": "First enter the name you want to put on the map.",
   "Mehr Namen passen nicht auf diese Karte.": "This map cannot take any more names.",
-  "Text eingeben, dann klicken für einen geraden Namen oder ziehen, damit er einer Linie folgt": "Enter the text, then click for a straight name or drag so it follows a line"
+  "Text eingeben, dann klicken für einen geraden Namen oder ziehen, damit er einer Linie folgt": "Enter the text, then click for a straight name or drag so it follows a line",
+  "Land & Region": "Land & region",
+  "Weites Land mit Orten, die du betreten kannst": "Wide land with places you can enter",
+  "Orte": "Places",
+  "Landkarte": "Land map",
+  "Ort öffnen": "Open place",
+  "Ort anlegen": "Create place",
+  "Speichere deinen Entwurf, um den Ort zu öffnen.": "Save your draft to open the place.",
+  "Nach dem Speichern kannst du jeden Ort auswählen und seine Stadt oder sein Dorf erzeugen; Größe und Lage kommen von der Landkarte.": "After saving you can select any place and generate its town or village; size and surroundings come from the land map.",
+  "Nicht alle Orte sind durch Straßen verbunden; Wasser oder Fels lagen im Weg.": "Not every place is joined by road; water or rock was in the way."
 }

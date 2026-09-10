@@ -283,3 +283,19 @@ describe("free names: a river's, a wood's, a region's, with the line each follow
     expect(() => parseTacticalCartography({ ...cartography(), labels }, map())).toThrow(TacticalCartographyValidationError);
   });
 });
+
+describe("ort: a settlement on a regional map, with the town it becomes", () => {
+  it("accepts a place with its size and surroundings and rejects one without them or with strange ones", () => {
+    const document = map(), base = cartography();
+    // A region nothing else refers to: a lot is a building's, a street its access.
+    const referenced = new Set(base.regions.flatMap(role => role.role === "building" ? [role.lotRegionId, role.streetRegionId] : []));
+    const free = base.regions.findIndex(role => !referenced.has(role.regionId) && role.role !== "building"), others = base.regions.filter((_, index) => index !== free);
+    const ort = { regionId: base.regions[free]!.regionId, role: "ort", groesse: "dorf", standort: "fluss", authored: false, locked: false, provenance: null };
+    const parsed = parseTacticalCartography({ ...base, regions: [ort, ...others] }, document);
+    expect(parsed.regions[0]).toMatchObject({ role: "ort", groesse: "dorf", standort: "fluss" });
+    for (const broken of [{ ...ort, groesse: undefined }, { ...ort, standort: undefined }, { ...ort, groesse: "metropole" }, { ...ort, standort: "wueste" }, { ...ort, material: "grass" }]) {
+      const { groesse, standort, ...rest } = broken as Record<string, unknown>;
+      expect(() => parseTacticalCartography({ ...base, regions: [{ ...rest, ...(groesse !== undefined ? { groesse } : {}), ...(standort !== undefined ? { standort } : {}) }, ...others] }, document)).toThrow(TacticalCartographyValidationError);
+    }
+  });
+});

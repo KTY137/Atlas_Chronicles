@@ -255,7 +255,7 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
         for (const visited of seen) connected.set(visited, found);
         return found;
       };
-      const obstacles = regions.filter(value => value.id !== ownId && ["building", "water"].includes(roles.get(value.id)!.role));
+      const obstacles = regions.filter(value => value.id !== ownId && ["building", "water", "ort"].includes(roles.get(value.id)!.role));
       const frontage = points.flatMap((p, i) => { const next = points[(i + 1) % points.length]!; return [p, [(p[0] + next[0]) / 2, (p[1] + next[1]) / 2] as TacticalPoint]; });
       for (const road of roads) {
         let distance = Infinity;

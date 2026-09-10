@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
-import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, SIEDLUNG_STANDORTE } from "@chronicle/forge";
+import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS, REGION_LIMITS, SIEDLUNG_LIMITS, SIEDLUNG_STANDORTE } from "@chronicle/forge";
 import { BAUWERK_TYPEN, KARTEN_SETTINGS, TacticalMapValidationError } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
@@ -75,6 +75,18 @@ export const SiedlungOptionenSchema = Type.Object({
   bewaldung: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
 }, closed);
 
+/** A region: the land above the towns. Its cells are coarse on purpose, so the limits differ. */
+const regionZelle = Type.Integer({ minimum: REGION_LIMITS.zellenMin, maximum: REGION_LIMITS.zellenMax });
+export const RegionOptionenSchema = Type.Object({
+  setting: Type.Optional(KartenSettingSchema),
+  standort: Type.Optional(Type.Union(SIEDLUNG_STANDORTE.map(value => Type.Literal(value)))),
+  ausdehnung: Type.Optional(Type.Tuple([regionZelle, regionZelle])),
+  zellgroesse: Type.Optional(Type.Integer({ minimum: REGION_LIMITS.zellgroesseMin, maximum: REGION_LIMITS.zellgroesseMax })),
+  orte: Type.Optional(Type.Integer({ minimum: REGION_LIMITS.orteMin, maximum: REGION_LIMITS.orteMax })),
+  relief: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
+  bewaldung: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
+}, closed);
+
 const gemeinsam = {
   commandId: Type.String({ minLength: 1, maxLength: 128 }),
   name: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }),
@@ -91,6 +103,7 @@ export const GrundrissSchema = Type.Union([
   Type.Object({ ...gemeinsam, art: Type.Optional(Type.Literal("grundriss")), optionen: Type.Optional(OptionenSchema) }, closed),
   Type.Object({ ...gemeinsam, art: Type.Literal("hoehle"), optionen: Type.Optional(HoehleOptionenSchema) }, closed),
   Type.Object({ ...gemeinsam, art: Type.Literal("siedlung"), optionen: Type.Optional(SiedlungOptionenSchema) }, closed),
+  Type.Object({ ...gemeinsam, art: Type.Literal("region"), optionen: Type.Optional(RegionOptionenSchema) }, closed),
 ]);
 
 export type GrundrissBody = Static<typeof GrundrissSchema>;

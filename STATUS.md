@@ -1,6 +1,6 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — 1 bis 6 fertig)
+Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — 1 bis 7 fertig)
 
 ## Kartenstudio Runde 4: die Zehnerliste — 2026-09-10
 
@@ -22,7 +22,8 @@ Pinselbalken (`map-scatter.ts`: Abstand, Zufall, ein Strich ein Schritt, Räume 
 Objekte). **4 Beschriftungen** (Folge-Commit): `cartography.labels`, Werkzeug „Beschriften"
 (N), Renderer setzt Namen in der Welt entlang der Linie, Spieler bekommen einen Namen nur mit
 der Mitte seiner Linie in bekannter Region (`labels` in der Sitzungsansicht).
-**Offen:** 7, 8, 9, 10.
+**7 Regionalkarte** (Folge-Commit): Kartenart `region` (`forge/src/region.ts`, Rolle `ort` mit
+Größe und Standort, Orte als Eingänge zu Siedlungen, Straßen mit Brücken). **Offen:** 8, 9, 10.
 
 Zuvor: **2026-09-10, Runde 3** (Kartenstudio Stufe 11: Licht, Schatten, Tusche, Flickenfelder)
 

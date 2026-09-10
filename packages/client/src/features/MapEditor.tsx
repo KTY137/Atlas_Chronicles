@@ -364,7 +364,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       {...(cartography.labels ? { labels: cartography.labels } : {})}
       onLabelChange={(id, patch) => commit(old => ({ ...old, cartography: withLabels(old.cartography, (old.cartography.labels ?? []).map(label => label.id === id ? { ...label, ...patch } : label)) }))}
       onLabelRemove={id => commit(old => ({ ...old, cartography: withLabels(old.cartography, (old.cartography.labels ?? []).filter(label => label.id !== id)) }))} />
-    <div className="map-editor-stage"><div className="map-editor-stage-toolbar"><span>{children.data?.art === "siedlung" ? t("Außenkarte") : t("Grundriss & Landschaft")}</span><div className="button-row">
+    <div className="map-editor-stage"><div className="map-editor-stage-toolbar"><span>{children.data?.art === "region" ? t("Landkarte") : children.data?.art === "siedlung" ? t("Außenkarte") : t("Grundriss & Landschaft")}</span><div className="button-row">
       <label className="map-editor-mood" title={t("Die Stimmung wird mit der Karte gespeichert; auch Spieler sehen sie.")}><Palette size={15} />{t("Stimmung")}<select aria-label={t("Stimmung")} value={cartography.mood ?? "tag"} disabled={editingDisabled} onChange={event => {
         const mood = event.target.value as CartographyMood;
         commit(old => { const { mood: _previous, ...rest } = old.cartography; return { ...old, cartography: mood === "tag" ? rest : { ...rest, mood } }; });
@@ -396,8 +396,8 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       onSelect={id => { setSelectedObject(id ? `stamp:${id}` : ""); setRegionId(""); setInteriorSelected(null); setFocusRequested(true); }} onUpdate={stamp => { if (!selectedOwner?.locked && !blocked("einrichtung")) setDocument(old => ({ ...old, geometry: { ...old.geometry, stamps: old.geometry.stamps.map(item => item.id === stamp.id ? stamp : item) } })); }}
       onRemove={removeStamp} /></fieldset></details>
     {selectedNode ? <div className="tactical-object-selected"><strong>{selectedNode.titel}</strong>{selectedNode.bauwerk?.beschreibung ? <p>{selectedNode.bauwerk.beschreibung}</p> : null}
-      {onOpenInterior ? <Button disabled={dirty || !childrenConfirmed} onClick={() => onOpenInterior(selectedNode.knotenId, selectedNode.vorhandeneKarteId)}>{selectedNode.vorhandeneKarteId ? t("Innenraum bearbeiten") : t("Innenraum anlegen")}</Button> : null}
-      {dirty && onOpenInterior ? <p className="field-help">{t("Speichere deinen Entwurf, um den Innenraum zu öffnen.")}</p> : null}
+      {onOpenInterior ? <Button disabled={dirty || !childrenConfirmed} onClick={() => onOpenInterior(selectedNode.knotenId, selectedNode.vorhandeneKarteId)}>{selectedNode.art === "ort" ? selectedNode.vorhandeneKarteId ? t("Ort öffnen") : t("Ort anlegen") : selectedNode.vorhandeneKarteId ? t("Innenraum bearbeiten") : t("Innenraum anlegen")}</Button> : null}
+      {dirty && onOpenInterior ? <p className="field-help">{selectedNode.art === "ort" ? t("Speichere deinen Entwurf, um den Ort zu öffnen.") : t("Speichere deinen Entwurf, um den Innenraum zu öffnen.")}</p> : null}
       {visible.addedRooms?.some(intent => intent.regionId === regionId) ? <label>{t("Raumname")}<input maxLength={160} value={visible.addedRooms.find(intent => intent.regionId === regionId)?.titel ?? ""} onChange={event => { const titel = event.target.value; commit(old => ({ ...old, addedRooms: old.addedRooms?.map(intent => intent.regionId === regionId ? { ...intent, titel } : intent) })); }} /></label> : null}
     </div> : null}
     {selectedRegion?.role === "room" && selectedRegion.interior ? <form className="map-editor-room-size" key={regionId} onSubmit={event => {

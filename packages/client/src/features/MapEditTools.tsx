@@ -77,7 +77,7 @@ export function MapEditTools({ value, onChange, selected, linked, onLock, onRota
   const change = (patch: Partial<MapToolSettings>) => onChange({ ...value, ...patch });
   const locked = selected?.locked ?? selectedLocked ?? false;
   const hasSelection = !!selected || !!selectedKind;
-  const selectionLabel = selectedKind ? t(SELECTION_LABEL[selectedKind]) : selected?.role === "building" ? t("Gebäude") : selected?.role === "road" ? t("Straße") : t("Fläche");
+  const selectionLabel = selectedKind ? t(SELECTION_LABEL[selectedKind]) : selected?.role === "building" ? t("Gebäude") : selected?.role === "ort" ? t("Ort") : selected?.role === "road" ? t("Straße") : t("Fläche");
   const number = (label: string, key: Dimension, inCells = false) => <label className="map-tool-field">{label}<span className="map-tool-number"><input type="number" min={inCells ? .01 : 1} max={inCells ? 32768 / cell : 32768} step="any"
     value={inCells ? Math.round(value[key] / cell * 1000) / 1000 : value[key]} onChange={event => {
       const next = event.target.valueAsNumber * (inCells ? cell : 1);

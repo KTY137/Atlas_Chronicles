@@ -14,7 +14,12 @@ export const TACTICAL_CARTOGRAPHY_LIMITS = Object.freeze({
   /** Free names on the map: how many, how long a line each may follow, how long its text. */
   labels: 512, labelPoints: 64, labelText: 80, labelSize: 4096,
 });
-export const CARTOGRAPHY_ROLES = Object.freeze(["generic", "terrain", "water", "road", "lot", "building", "room"] as const);
+export const CARTOGRAPHY_ROLES = Object.freeze(["generic", "terrain", "water", "road", "lot", "building", "room", "ort"] as const);
+/** The physical surroundings a settlement can have; the relief engine shapes each of them. */
+export const CARTOGRAPHY_STANDORTE = Object.freeze(["ebene", "huegel", "wald", "gebirge", "fluss", "see", "moor", "kueste", "insel"] as const);
+export const CARTOGRAPHY_ORT_GROESSEN = Object.freeze(["weiler", "dorf", "stadt"] as const);
+export type CartographyStandort = typeof CARTOGRAPHY_STANDORTE[number];
+export type CartographyOrtGroesse = typeof CARTOGRAPHY_ORT_GROESSEN[number];
 export const CARTOGRAPHY_TERRAIN_MATERIALS = Object.freeze(["grass", "earth", "forest", "field", "rock", "sand", "swamp", "snow"] as const);
 export const CARTOGRAPHY_WATER_MATERIALS = Object.freeze(["river", "lake", "sea"] as const);
 export const CARTOGRAPHY_ROAD_MATERIALS = Object.freeze(["path", "street", "square", "bridge"] as const);
@@ -50,6 +55,8 @@ export type CartographyRegionV1 = CartographyRegionCommon & (
   | { readonly role: "water"; readonly material: CartographyWaterMaterial }
   | { readonly role: "road"; readonly material: CartographyRoadMaterial }
   | { readonly role: "building"; readonly lotRegionId?: string; readonly streetRegionId?: string; readonly attachedStampIds?: readonly string[] }
+  /** A settlement on a regional map: drawn as a cluster of roofs, entered as a town of this size in these surroundings. */
+  | { readonly role: "ort"; readonly groesse: CartographyOrtGroesse; readonly standort: CartographyStandort }
 );
 /**
  * The land's height, sampled on the corners of construction cells: sample (i, j) sits at
@@ -211,7 +218,7 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
   let interiorReferenceCount = 0;
   for (const [index, value] of regions.entries()) {
     const path = `regions[${index}]`, common = ["regionId", "role", "authored", "locked", "provenance"];
-    const row = object(value, path, common, ["material", "lotRegionId", "streetRegionId", "attachedStampIds", "interior"]);
+    const row = object(value, path, common, ["material", "lotRegionId", "streetRegionId", "attachedStampIds", "interior", "groesse", "standort"]);
     const id = text(row.regionId, `${path}.regionId`);
     if (byId.has(id)) fail(`${path}.regionId`, "duplicate region identity");
     byId.set(id, row); choice(row.role, CARTOGRAPHY_ROLES, `${path}.role`);
@@ -220,6 +227,10 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
     if (row.role === "terrain" || row.role === "water" || row.role === "road") {
       object(row, path, [...common, "material"]);
       choice(row.material, row.role === "terrain" ? CARTOGRAPHY_TERRAIN_MATERIALS : row.role === "water" ? CARTOGRAPHY_WATER_MATERIALS : CARTOGRAPHY_ROAD_MATERIALS, `${path}.material`);
+    } else if (row.role === "ort") {
+      object(row, path, [...common, "groesse", "standort"]);
+      choice(row.groesse, CARTOGRAPHY_ORT_GROESSEN, `${path}.groesse`);
+      choice(row.standort, CARTOGRAPHY_STANDORTE, `${path}.standort`);
     } else if (row.role === "building") {
       object(row, path, common, ["lotRegionId", "streetRegionId", "attachedStampIds"]);
       for (const field of ["lotRegionId", "streetRegionId"]) if (Object.hasOwn(row, field)) text(row[field], `${path}.${field}`);

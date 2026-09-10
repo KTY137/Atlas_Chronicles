@@ -181,6 +181,26 @@ test("names on the map: one along a stroke, one straight by click, renamed and r
   } finally { await context.close(); await host.close(); }
 });
 
+test("a regional map opens in the studio as a land map, and a place on it offers its town", async ({ browser }, info) => {
+  test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
+  try {
+    await context.addCookies([host.cookie]); const page = await context.newPage(), errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+    const generated = await host.generateRegion(), map = await host.mapById(generated.ack.subjectId);
+    const orte = map.cartography!.regions.filter(role => role.role === "ort");
+    expect(orte).toHaveLength(5);
+    await page.goto(`${host.origin}/?map=${generated.ack.subjectId}`); await expect(canvas(page)).toBeVisible();
+    await expect(page.locator(".map-editor-stage-toolbar").first()).toContainText("Landkarte");
+    await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
+    await page.locator("summary", { hasText: "Wissensregionen & Verknüpfungen" }).click();
+    const town = orte.find(role => role.role === "ort" && role.groesse === "stadt") ?? orte[0]!;
+    await page.getByRole("combobox", { name: "Region auswählen", exact: true }).selectOption(town.regionId);
+    // The studio host has no entrance flow of its own; the selection tells the place apart from a building.
+    await expect(page.locator(".map-tool-selection .map-tool-label")).toHaveText("Ort");
+    await page.screenshot({ path: info.outputPath("region-studio.png"), fullPage: true });
+    expect(errors).toEqual([]);
+  } finally { await context.close(); await host.close(); }
+});
+
 test("the height tool shapes a map that never had a relief, and the relief survives save and reload", async ({ browser }, info) => {
   test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
   try {
