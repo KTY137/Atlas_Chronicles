@@ -6,6 +6,8 @@ import { buildApp } from "../packages/server/src/app.ts";
 import { createTestDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { createIdentity } from "../packages/server/src/identity/index.ts";
 import { createCampaigns } from "../packages/server/src/domain/campaigns.ts";
+import { createAtlas } from "../packages/server/src/domain/atlas.ts";
+import { createWikiMedien } from "../packages/server/src/domain/wiki-medien.ts";
 import { fitCamera } from "../packages/render/src/geometry.ts";
 
 // An isolated PostgreSQL-compatible database and real HTTP/UI; no application API mocks.
@@ -18,6 +20,16 @@ test("ERON markers open persistent nested maps, edit, restore navigation and wor
     const config = { origin, cookieSecret: randomBytes(32).toString("hex"), bootstrapToken: randomBytes(32).toString("hex"), staticRoot: resolve("packages/client/dist") };
     const gm = await createIdentity(db, config).bootstrap("Kartenleitung");
     const campaign = await createCampaigns(db).createCampaign(gm.userId, { name: "ERON · Die verschachtelte Welt" });
+    // Die Karte wird HEREINGEHOLT, nicht mitgeliefert: dieselben zwei Schritte, die eine
+    // Spielleitung geht — Karten-JSON importieren, Bild in den Bildbestand der Kampagne legen.
+    // Der frühere Knopf „Beispielkarte laden" ist weg, und mit ihm das fremde Bild im Programm.
+    const quelle = await readFile("design/fixtures/eron/map-andaria.json", "utf8");
+    await createAtlas(db).importMap(gm.userId, campaign.id, quelle);
+    const medien = createWikiMedien(db);
+    const bildzeile = await medien.anlegen(gm.userId, campaign.id,
+      { dateiname: "Andaria 03.02.2024.jpg", lizenz: "unbekannt", quelle: "Prüfmuster aus dem Checkout, nicht ausgeliefert" });
+    await medien.bytesAnnehmen(gm.userId, campaign.id, bildzeile.id,
+      new Uint8Array(await readFile("design/fixtures/eron/media/Andaria_03.02.2024.webp")));
     app = await buildApp(db, config); await app.listen({ host: "127.0.0.1", port });
     context = await browser.newContext();
     await context.addCookies([{ name: "chronicle_session", value: gm.value, url: origin, httpOnly: true, sameSite: "Strict" }]);
@@ -26,12 +38,10 @@ test("ERON markers open persistent nested maps, edit, restore navigation and wor
     page.on("response", response => { if (/\/api\/packs\/[^/]+\/asset\//.test(response.url())) {
       if (response.ok()) loadedAssets.add(response.url()); else failedAssets.add(response.url());
     } });
+    // Vor dem Aufruf angemeldet, weil die Karte jetzt schon liegt: das Bild wird beim ersten
+    // Zeichnen geholt, nicht erst nach einem Klick. Die Frist deckt den ganzen Seitenaufbau ab.
+    const background = page.waitForResponse(response => /\/maps\/[^/]+\/image$/.test(response.url()) && response.ok(), { timeout: 120_000 });
     await page.goto(`${origin}/?campaign=${campaign.id}&stage=atlas`);
-    const background = page.waitForResponse(response => /\/maps\/[^/]+\/image$/.test(response.url()) && response.ok());
-    // Die Beispielkarte liegt jetzt hinter „Karte aus einem Wiki holen" — derselbe Weg wie ein
-    // echter Abruf, nur ohne Netz. Einen ERON-Sonderknopf gibt es nicht mehr.
-    await page.getByRole("button", { name: "Karte aus einem Wiki holen", exact: true }).click();
-    await page.getByRole("button", { name: "Beispielkarte laden", exact: true }).click();
     await expect(page.locator(".atlas-place-list li")).toHaveCount(191);
     await expect(page.locator(".atlas-render-host canvas")).toBeVisible();
     expect((await background).headers()["content-type"]).toContain("image/webp");

@@ -179,7 +179,9 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
       try {
         for (const [x, y] of [[0, 0], [1024, 0], [0, 1024], [1024, 1024]]) {
           const image = await createImageBitmap(bitmap, x!, y!, 1024, 1024);
-          tiles.push({ id: `andaria:${x}:${y}`, left: x! * 4, top: y! * 4, width: 4096, height: 4096, pixelScale: 4, image });
+          // Der Name der Kachel gehört zur Karte, nicht zu einer bestimmten Welt: hier stand
+          // einmal `andaria:…`, aus der Zeit, als genau eine Karte im Programm lag.
+          tiles.push({ id: `kartenbild:${x}:${y}`, left: x! * 4, top: y! * 4, width: 4096, height: 4096, pixelScale: 4, image });
         }
         if (controller.signal.aborted || renderer.current !== instance) { for (const tile of tiles) tile.image.close(); return; }
         instance.setRasterTiles(scope, tiles);
@@ -308,10 +310,6 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
         <input ref={bildInput} className="atlas-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label={t("Kartenbild auswählen")}
           onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBild(file); }} />
         <Button disabled={task.busy} onClick={() => bildInput.current?.click()}><Upload size={16} /> {t("Kartenbild hochladen")}</Button>
-        <Button variant="quiet" disabled={task.busy} onClick={() => void task.run(async () => {
-          const result = await api<KartenErgebnis>(apiPath(campaignId, "/maps/beispiel"), { method: "POST" });
-          setMapId(result.id); refresh(); setMessage(meldung(result));
-        })}><Compass size={16} /> {t("Beispielkarte laden")}</Button>
       </div>
       <p className="field-help">{t("Ein Kartenbild wird zur Karte: Bild als Hintergrund, Ortsmarker setzt ihr selbst. So kommen auch Karten aus Zeichenprogrammen herein.")}</p>
     </section> : null}

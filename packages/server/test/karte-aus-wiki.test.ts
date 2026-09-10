@@ -178,23 +178,10 @@ describe("Eine Weltkarte aus einem Wiki, ohne fest verdrahtete Datei", () => {
     const zeile = (await createWikiMedien(db).bestand(gm, eigene)).assets[0]!;
     expect(zeile).toMatchObject({ dateiname: "Nordmark.png", lizenzStatus: "frei", vorhanden: true });
   }, 60_000);
-
-  it("lädt die Beispielkarte über denselben Weg, mit ihrer dokumentierten Herkunft", async () => {
-    const eigene = (await createCampaigns(db).createCampaign(gm, { name: "Beispiel" })).id;
-    const ergebnis = await createAtlasQuellen(db).beispiel(gm, eigene);
-    expect(ergebnis.unchanged).toBe(false);
-    const sicht = await createAtlas(db).getMap(gm, eigene, ergebnis.id) as Record<string, any>;
-    expect(sicht.herkunft).toMatchObject({ art: "beispiel", wikiUrl: "https://eron.example/de/".replace("eron.example", "eron.fandom.com"), seitentitel: "Karte:Andaria", pageid: 280, revid: 1149 });
-    expect(sicht.background).toEqual({ url: `/api/campaigns/${eigene}/maps/${ergebnis.id}/image`, width: 8192, height: 8192 });
-    const zeile = (await createWikiMedien(db).bestand(gm, eigene)).assets.find(a => a.dateiname === "Andaria 03.02.2024.jpg")!;
-    // Die mitgelieferte Datei trägt im Quell-Wiki keine Lizenz (media/LIESMICH.md §3).
-    expect(zeile.lizenzStatus).toBe("unbekannt");
-    expect(zeile.mime).toBe("image/webp"); expect(zeile.breite).toBe(8192);
-  }, 120_000);
 });
 
 /**
- * Dieselben drei Wege durch die echte Anwendung: geschlossene Schemata, Rollenprüfung und der
+ * Dieselben Wege durch die echte Anwendung: geschlossene Schemata, Rollenprüfung und der
  * rohe Byteweg für ein Kartenbild, der ohne HTTP gar nicht geprüft werden kann.
  */
 describe("Die Kartenwege durch die echte Anwendung", () => {

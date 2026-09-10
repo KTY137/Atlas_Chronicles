@@ -17,7 +17,7 @@ import { createMapLifecycle } from "../src/domain/map-lifecycle.ts";
 import { createTactical } from "../src/domain/tactical.ts";
 import { Gone } from "../src/domain/errors.ts";
 import { readFileSync } from "node:fs";
-/** Die mitgelieferte Beispielkarte als reine Quelle — derselbe Weg wie jeder andere Import. */
+/** Ein Prüfmuster aus dem Checkout, nicht ausgeliefert — derselbe Weg wie jeder andere Import. */
 const beispielkarte = () => readFileSync(new URL("../../../design/fixtures/eron/map-andaria.json", import.meta.url), "utf8");
 
 /** Independent cross-path review. Production code and the lifecycle builder's tests are

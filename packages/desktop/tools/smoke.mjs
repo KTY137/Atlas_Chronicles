@@ -26,6 +26,16 @@ const record=name=>{evidence.checks.push(name);console.log(`PASS ${name}`);};
 async function launch(){application=await electron.launch(options);manager=await application.firstWindow();manager.setDefaultTimeout(30000);await manager.waitForURL("chronicle-shell://app/index.html");await manager.waitForSelector("#create-form");console.log("Desktop manager loaded.");}
 async function invoke(request){const result=await manager.evaluate(request=>window.chronicleDesktop.invoke(request),request);assert.equal(result.ok,true,result.error);return result.value;}
 async function request(path,method="GET",body){return game.evaluate(async({path,method,body})=>{const response=await fetch(path,{method,headers:body?{"Content-Type":"application/json"}:{},...(body?{body:JSON.stringify(body)}:{})});return{status:response.status,body:await response.json()};},{path,method,body});}
+async function rawRequest(path,bytes,contentType="application/octet-stream",method="PUT"){
+  // Die Bytes reisen als base64 durch die CDP-Bruecke und werden IM Fenster wieder zu Bytes.
+  // Damit laeuft der Upload durch dieselbe fetch-Grenze wie bei einem Menschen am Rechner.
+  return game.evaluate(async({path,b64,contentType,method})=>{
+    const binary=atob(b64),bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i+=1)bytes[i]=binary.charCodeAt(i);
+    const response=await fetch(path,{method,headers:{"Content-Type":contentType},body:bytes});
+    return{status:response.status,body:await response.json()};
+  },{path,b64:Buffer.from(bytes).toString("base64"),contentType,method});
+}
 function validatedExport(response){assert.equal(response.status,200,JSON.stringify(response.body));const result=validateCurrentCampaignBundle(response.body);assert.equal(result.manifest.campaignId,campaignId);return result;}
 function unchangedExport(response){const result=validatedExport(response);assert.equal(result.manifest.contentHash,bundle.manifest.contentHash);assert.deepEqual(currentCampaignSemanticDiff(bundle,result),[]);}
 async function openGameWindow(phase){
@@ -57,10 +67,25 @@ try{
   const entry=await request(`/api/campaigns/${campaignId}/entries`,"POST",{title:"Survives restart",passages:[{inhalt:{kind:"absatz",inhalt:[{text:"Written in the genuine desktop host.",marks:[]}]}}]});assert.equal(entry.status,200);
   const generated=await request(`/api/campaigns/${campaignId}/tactical/generate`,"POST",{commandId:randomUUID(),name:"Bundled floorplan",keim:"desktop-runtime-smoke"});assert.equal(generated.status,200,JSON.stringify(generated.body));
   record("real generator route reads packaged licensed Grundriss assets and persists native tactical map");
-  const eron=await request(`/api/campaigns/${campaignId}/maps/beispiel`,"POST");
+  // Das Paket traegt KEINE Karte mehr. Beides kommt hier aus dem Pruefmuster im Checkout und geht
+  // durch genau die Wege, die eine Spielleitung benutzt: Karten-JSON hochladen, dann das Bild in
+  // den Bildbestand der Kampagne. Der Test misst damit den Server im Paket, nicht seinen Inhalt.
+  const kartenQuelle=await readFile(join(root,"design/fixtures/eron/map-andaria.json"),"utf8");
+  const eron=await request(`/api/campaigns/${campaignId}/maps/import`,"POST",{json:kartenQuelle});
   evidence.eronImport={status:eron.status,...(eron.status===200?{mapId:eron.body.id}:{error:eron.body})};
-  console.log(`Packaged Andaria import: HTTP ${eron.status}`);
+  console.log(`Uploaded map import: HTTP ${eron.status}`);
   assert.equal(eron.status,200,JSON.stringify(eron.body));assert.equal(eron.body.report.orte,190);
+  // Der Name ist keine Angabe von aussen: die Karte nennt ihr Bild selbst, der Bestand fuehrt es
+  // unter genau diesem Namen, und erst dadurch findet die Karte ihr Bild wieder.
+  const bildZeile=await request(`/api/campaigns/${campaignId}/wiki-medien`,"POST",{dateiname:"Andaria 03.02.2024.jpg",lizenz:"unbekannt",quelle:"Pruefmuster aus dem Checkout, nicht ausgeliefert"});
+  assert.equal(bildZeile.status,200,JSON.stringify(bildZeile.body));
+  const bildBytes=await readFile(join(root,"design/fixtures/eron/media/Andaria_03.02.2024.webp"));
+  const hochgeladen=await rawRequest(`/api/campaigns/${campaignId}/wiki-medien/${bildZeile.body.id}/bytes`,bildBytes,"image/webp");
+  evidence.eronBildUpload={status:hochgeladen.status,...(hochgeladen.status===200?{mime:hochgeladen.body.mime,breite:hochgeladen.body.breite,hoehe:hochgeladen.body.hoehe}:{error:hochgeladen.body})};
+  console.log(`Uploaded map picture: HTTP ${hochgeladen.status} ${JSON.stringify(evidence.eronBildUpload)}`);
+  assert.equal(hochgeladen.status,200,JSON.stringify(hochgeladen.body));
+  // Der Typ ist GEMESSEN, nicht geglaubt: die Karte nennt die Datei `.jpg`, sie ist eine WebP.
+  assert.equal(hochgeladen.body.mime,"image/webp");assert.deepEqual([hochgeladen.body.breite,hochgeladen.body.hoehe],[8192,8192]);
   const eronImage=await game.evaluate(async path=>{
     const response=await fetch(path),contentType=response.headers.get("content-type");
     if(!response.ok||!contentType?.startsWith("image/webp"))return{status:response.status,contentType,error:await response.text()};
@@ -68,10 +93,10 @@ try{
     try{const bitmap=await createImageBitmap(bytes);try{return{status:response.status,contentType,bytes:bytes.size,width:bitmap.width,height:bitmap.height};}finally{bitmap.close();}}
     catch(error){return{status:response.status,contentType,error:String(error)};}
   },`/api/campaigns/${campaignId}/maps/${eron.body.id}/image`);
-  evidence.eronImage=eronImage;console.log(`Packaged Andaria image: ${JSON.stringify(eronImage)}`);
+  evidence.eronImage=eronImage;console.log(`Served map image: ${JSON.stringify(eronImage)}`);
   assert.equal(eronImage.status,200,JSON.stringify(eronImage));assert.match(eronImage.contentType,/^image\/webp(?:;|$)/i);
   assert.equal(eronImage.error,undefined);assert.deepEqual([eronImage.width,eronImage.height],[8192,8192]);assert.ok(eronImage.bytes>0);
-  record("packaged ERON source imports 190 Andaria places and browser decodes its actual 8192 x 8192 WebP image");
+  record("packaged server imports an uploaded 190-place map, stores its 8192 x 8192 WebP in the campaign image store and the browser decodes what it serves back");
   evidence.assetProbes=[];
   for(const [stil,setting,profil] of [["gemalt","fantasy","haus"],["zeitwelten","gegenwart","krankenhaus"],["zeitwelten","scifi","raumstation"],["genres","fantasy","haus"],["genres","gegenwart","krankenhaus"],["genres","scifi","raumstation"]]){
     const probe=await request(`/api/campaigns/${campaignId}/tactical/generate`,"POST",{commandId:randomUUID(),name:`Bundled ${stil} ${setting}`,keim:`desktop-assets-${stil}-${setting}`,art:"grundriss",stil,optionen:{setting,profil,zellen:[24,20],raeume:5}});
@@ -207,23 +232,23 @@ try{
   await game.screenshot({path:join(run,"forge-overview.png"),fullPage:true});
   record("shared packaged client shows the Schmiede overview and all seven discoverable workshops");
   await workshops.getByRole("button",{name:"Regeln",exact:true}).click();
-  const template=game.getByRole("region",{name:"How to be a Hero Vorlage"});
-  await template.getByRole("button",{name:"HTBAH-Vorlage anpassen",exact:true}).click();
-  await template.getByRole("button",{name:/HTBAH als Regelentwurf/}).click();
+  const template=game.getByRole("region",{name:"ChronicleHeroes Vorlage"});
+  await template.getByRole("button",{name:"Vorlage anpassen",exact:true}).click();
+  await template.getByRole("button",{name:/ChronicleHeroes als Regelentwurf/}).click();
   for(const [suffix,label] of [["/rules/preview",/^Aktivierung pr/],["/rules",/^Version installieren$/],["/rules/activate",/^Gepr.*Version.*aktivieren$/]]){
     const response=game.waitForResponse(response=>response.url()===`${origin}/api/campaigns/${campaignId}${suffix}`&&response.request().method()==="POST");
     await game.getByRole("button",{name:label}).click();assert.equal((await response).status(),200);
   }
   bundle=validatedExport(await request(`/api/campaigns/${campaignId}/export`));
   assert.equal(bundle.manifest.rulePackageSchemaVersion,2);assert.equal(bundle.manifest.nestedMapSchemaVersion,1);
-  // V19, weil die importierte Beispielkarte ihre Herkunft mitschreibt: das Format waehlt sich
+  // V19, weil die hochgeladene Karte ihre Herkunft mitschreibt: das Format waehlt sich
   // datenabhaengig, und eine gefuellte Tabelle hebt es an. Ohne Karte bliebe es niedriger.
   assert.equal(bundle.version,19);assert.equal(bundle.manifest.mapLifecycleSchemaVersion,1);
   assert.ok(bundle.tables.map_lifecycle_events.some(row=>row.command_id===evidence.mapLifecycle.deletionAck.commandId));
   assert.ok(bundle.tables.tactical_map_nodes.some(node=>node.map_id===generated.body.ack.subjectId));
-  assert.ok(JSON.stringify(bundle.tables.rule_packages).includes("CC-BY-NC-SA-4.0"));
+  assert.ok(JSON.stringify(bundle.tables.rule_packages).includes("BUSL-1.1"));
   evidence.bundleVersion=bundle.version;evidence.campaignContentHash=bundle.manifest.contentHash;
-  record(`shared packaged client installs and activates HTBAH V2 rules and exports attributed current native V${bundle.version} with generated map nodes`);
+  record(`shared packaged client installs and activates ChronicleHeroes V2 rules and exports attributed current native V${bundle.version} with generated map nodes`);
   record("native first setup installs HttpOnly cookie and shared client writes campaign/article");
   assert.equal(await game.evaluate(()=>typeof window.chronicleDesktop),"undefined");
   const prefs=await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().map(window=>window.webContents.getLastWebPreferences()));assert.ok(prefs.every(pref=>pref.nodeIntegration===false&&pref.contextIsolation===true&&pref.sandbox===true&&pref.webSecurity===true));

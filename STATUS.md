@@ -1,6 +1,39 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — alle zehn fertig)
+Updated: **2026-09-10, Runde 5** (keine Karte mehr im Programm; Kartenstudio-Zehnerliste fertig)
+
+## Keine Karte mehr im Programm — 2026-09-10
+
+Kaya: *„mach die andaria map raus ich importier die dann selber nix hardcoded bitte — das geht
+ja auch schon hab ich schon gemacht"*. Der Knopf „Beispielkarte laden" und die zwei Dateien
+dahinter sind weg. Damit trägt das Desktop-Paket **kein fremdes Kartenbild** mehr mit sich, und
+der zweite Lizenzblocker aus `steam-tuer-offen-halten` ist für das Artefakt erledigt (der erste,
+HTBAH, seit `cb889fb`).
+
+**Raus:** `quellen.beispiel`, `POST /maps/beispiel`, der Knopf in `AtlasView`, der Schlüssel
+„Beispielkarte laden", das Kopieren von `design/fixtures/eron/**` ins Paket und `atlasResources`
+in `dist/build.json`. Der Kachelname `andaria:x:y` heißt jetzt `kartenbild:x:y`.
+
+**Drin geblieben, mit Absicht:** `art: "beispiel"` in Schema und Typ — Karten, die vor dieser
+Änderung über den alten Knopf hereinkamen, liegen mit dieser Herkunft im Bestand und müssen
+lesbar bleiben. Geschrieben wird der Wert nirgends mehr.
+
+**Zwei Wächter, damit es nicht zurückkommt:** der esbuild-Ladehaken für `atlas-quellen.ts`
+bricht den Paketbau ab, sobald die Datei wieder einen Pfad nach `design/fixtures/` auflöst, und
+`packages/desktop/tools/build.mjs` löscht `dist/fixtures` bei jedem Bau.
+
+**Wo die Prüfmuster jetzt herkommen:** `design/fixtures/eron/` bleibt im Checkout und wird
+**nicht** ausgeliefert. Tests und Rauchtest holen Karte und Bild von dort über genau die Wege,
+die eine Spielleitung geht — `POST /maps/import` für die JSON, `POST /wiki-medien` plus
+`PUT /wiki-medien/:id/bytes` für das Bild. `e2e/nested-maps.spec.ts` legt beides vor dem Aufruf
+serverseitig an; die Frist für die Bildantwort steht dort auf 120 s, weil das 8192²-WebP jetzt
+beim ersten Zeichnen kommt und nicht mehr nach einem Klick.
+
+**Offen bleibt:** das Bild liegt weiterhin im öffentlichen Git-Verlauf. Es aus der Historie zu
+entfernen wäre ein Rewrite und ist Kayas Entscheidung, nicht meine.
+
+Nebenbei mitgenommen: `packages/desktop/tools/smoke.mjs` zeigte noch auf die HTBAH-Oberfläche,
+die es seit `cb889fb` nicht mehr gibt (Region „ChronicleHeroes Vorlage", Lizenz `BUSL-1.1`).
 
 ## Kartenstudio Runde 4: die Zehnerliste — 2026-09-10
 

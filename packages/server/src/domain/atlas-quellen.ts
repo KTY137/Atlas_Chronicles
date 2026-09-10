@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { dateiSlug, vermisseBild, ImportValidationError } from "@chronicle/io";
 import type { LizenzStatus } from "@chronicle/chronik";
 import type { Db } from "../db/index.ts";
@@ -13,44 +12,33 @@ import { holeBildbytes, holeDateiauskunft, holeSeitenkennung, holeSeitenquelle, 
   type Dateiauskunft } from "./wiki-abruf.ts";
 
 /**
- * WOHER EINE WELTKARTE KOMMT — drei Eingänge, ein Weg.
+ * WOHER EINE WELTKARTE KOMMT — zwei Eingänge, ein Weg.
  *
- * Bis hierher gab es genau einen: eine Datei neben dem Programm, ein fest verdrahteter Name, und
- * jede andere Karte blieb ohne Bild. Kayas Satz dazu war deutlich — *„mach das hard coded weg das
- * ist nur ein beispiel für andaria weil ich nich weiß wie ich die json der Karte runterlade"*.
+ * Ganz am Anfang gab es genau einen: eine Datei neben dem Programm, ein fest verdrahteter Name,
+ * und jede andere Karte blieb ohne Bild. Kayas Satz dazu war deutlich — *„mach das hard coded weg
+ * das ist nur ein beispiel für andaria weil ich nich weiß wie ich die json der Karte runterlade"*.
  *
- * Also holt die App die Karte jetzt selbst:
+ * Danach stand die fest verdrahtete Karte noch als Knopf „Beispielkarte laden" daneben. Auch der
+ * ist weg, auf Ansage — *„mach die andaria map raus ich importier die dann selber nix hardcoded"*.
+ * Damit trägt die App kein fremdes Bild mehr mit sich herum: **jede** Karte kommt herein, weil ein
+ * Mensch sie hereinholt.
  *
  * 1. **Aus einem Wiki.** Die Spielleitung nennt Adresse und Kartennamen, der Server holt die
  *    Seite (`?action=raw`), ihre Kennung (`action=query`) und das Bild, das die Karte selbst in
  *    `mapImage` nennt. Das ist der Weg, den `design/fixtures/eron/map-andaria.README.md`
  *    dokumentiert, nur nicht mehr von Hand.
- * 2. **Als Beispiel.** Die mitgelieferte Andaria-Karte geht denselben Weg, nur ohne Netz. Sie ist
- *    ein Beispiel und keine Bedingung: fehlt die Datei, fehlt der Knopf sein Ergebnis, sonst
- *    nichts.
- * 3. **Als reines Bild.** Eine Inkarnate- oder Wonderdraft-Karte ist ein BILD und war deshalb
- *    bisher gar nicht importierbar. Sie wird zu einer Karte mit Rahmen und ohne Marker; die
+ * 2. **Als reines Bild.** Eine Inkarnate- oder Wonderdraft-Karte ist ein BILD und war deshalb
+ *    lange gar nicht importierbar. Sie wird zu einer Karte mit Rahmen und ohne Marker; die
  *    Ortsmarker setzt die Spielleitung selbst oder sie kommen später aus einer Quelle dazu.
  *
- * Alle drei enden in `atlas.importMap` und in derselben Bildzeile im Bestand. Es gibt keinen
+ * Dazu kommt der Datei-Upload (`/maps/import`) für eine Karten-JSON, die schon auf der Platte
+ * liegt. Alle enden in `atlas.importMap` und in derselben Bildzeile im Bestand. Es gibt keinen
  * zweiten Kartenweg und keine zweite Bildablage.
+ *
+ * `art: "beispiel"` bleibt in Schema und Typ stehen. Nicht als Nachlässigkeit: Karten, die vor
+ * dieser Änderung über den alten Knopf hereinkamen, liegen mit dieser Herkunft im Bestand und
+ * müssen weiter lesbar sein. Geschrieben wird der Wert nirgends mehr.
  */
-
-const BEISPIEL_KARTE = new URL("../../../../design/fixtures/eron/map-andaria.json", import.meta.url);
-const BEISPIEL_BILD = new URL("../../../../design/fixtures/eron/media/Andaria_03.02.2024.webp", import.meta.url);
-/** Die dokumentierte Herkunft der Beispieldatei (map-andaria.README.md, media/manifest.json). */
-const BEISPIEL_HERKUNFT = Object.freeze({
-  wikiUrl: "https://eron.fandom.com/de/", seitentitel: "Karte:Andaria", pageid: 280, revid: 1149,
-  lizenz: "CC BY-SA 3.0", bildQuelle: "https://eron.fandom.com/de/wiki/Datei:Andaria_03.02.2024.jpg",
-  bildUrheber: "Cornelius Holloway", bildHochgeladenAm: "2024-02-03T13:52:25Z",
-  /**
-   * Ausdrücklich `unbekannt`. Das Quell-Wiki führt für keine seiner 41 Dateien ein Lizenzfeld
-   * (media/LIESMICH.md §3). Eine unbekannte Lizenz wird markiert, nie als frei behandelt — auch
-   * dann nicht, wenn der Text der Seite unter CC BY-SA steht.
-   */
-  bildLizenz: "unbekannt" as LizenzStatus,
-  bildLizenzQuelle: "Im Quell-Wiki ist für diese Datei keine Lizenz angegeben.",
-});
 
 export interface KarteAusWikiEingabe { readonly wiki: string; readonly titel: string }
 export interface KartenbildEingabe { readonly dateiname: string; readonly lizenz?: LizenzStatus; readonly quelle?: string }
@@ -151,32 +139,6 @@ export function createAtlasQuellen(db: Db, cfg: DomainConfig = {}) {
   }
 
   /**
-   * Die Beispielkarte. Dieselbe Reihenfolge wie oben, nur ohne Netz — und die App muss ohne diese
-   * beiden Dateien vollständig funktionieren, deshalb sagt ein Fehlen es und zerstört nichts.
-   */
-  async function beispiel(userId: string, campaignId: string): Promise<KartenErgebnis> {
-    await campaigns.requireMember(userId, campaignId, ["leitung"]);
-    let json: string;
-    try { json = await readFile(BEISPIEL_KARTE, "utf8"); }
-    catch { throw new ImportValidationError("beispiel", "this installation does not carry the bundled example map"); }
-    const karte = await atlas.importMap(userId, campaignId, json, { art: "beispiel", ...BEISPIEL_HERKUNFT });
-    const dateiname = (await atlas.herkunftVon(campaignId, karte.id))?.bild_dateiname;
-    if (!dateiname) return { ...karte, bild: { status: "keins" } };
-    if (await bildVorhanden(campaignId, dateiname)) return { ...karte, bild: { status: "vorhanden", dateiname } };
-    try {
-      const bytes = new Uint8Array(await readFile(BEISPIEL_BILD));
-      const id = await bildzeile(userId, campaignId, dateiname, {
-        lizenz: BEISPIEL_HERKUNFT.bildLizenz, lizenzQuelle: BEISPIEL_HERKUNFT.bildLizenzQuelle,
-        quellUrl: BEISPIEL_HERKUNFT.bildQuelle, beschreibungsseite: BEISPIEL_HERKUNFT.bildQuelle,
-        behaupteterMime: "image/jpeg", urheber: BEISPIEL_HERKUNFT.bildUrheber, hochgeladenAm: BEISPIEL_HERKUNFT.bildHochgeladenAm });
-      await medien.bytesAnnehmen(userId, campaignId, id, bytes);
-      return { ...karte, bild: { status: "geholt", dateiname } };
-    } catch (fehler) {
-      return { ...karte, bild: { status: "fehlgeschlagen", dateiname, grund: fehler instanceof Error ? fehler.message : "" } };
-    }
-  }
-
-  /**
    * Eine Karte, die nur aus einem Bild besteht — Inkarnate, Wonderdraft, ein Scan.
    *
    * Der Rahmen wird aus dem BILD gelesen, nicht aus dem Dateinamen und nicht aus einer Angabe:
@@ -207,5 +169,5 @@ export function createAtlasQuellen(db: Db, cfg: DomainConfig = {}) {
     return { ...karte, bild: { status: "geholt", dateiname: name } };
   }
 
-  return { ausWiki, beispiel, ausBild };
+  return { ausWiki, ausBild };
 }

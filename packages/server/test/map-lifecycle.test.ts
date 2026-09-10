@@ -16,7 +16,7 @@ import { Gone } from "../src/domain/errors.ts";
 import { createAtlas } from "../src/domain/atlas.ts";
 import { exportCampaignBundle, initializeCampaignRestoreTarget, restoreCampaignBundle } from "../src/domain/bundles.ts";
 import { readFileSync } from "node:fs";
-/** Die mitgelieferte Beispielkarte als reine Quelle — derselbe Weg wie jeder andere Import. */
+/** Ein Prüfmuster aus dem Checkout, nicht ausgeliefert — derselbe Weg wie jeder andere Import. */
 const beispielkarte = () => readFileSync(new URL("../../../design/fixtures/eron/map-andaria.json", import.meta.url), "utf8");
 
 const config = { origin: "https://map-lifecycle.test", cookieSecret: "map-lifecycle-secret-more-than-thirty-two-characters", now: Date.now };

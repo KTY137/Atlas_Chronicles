@@ -11,12 +11,15 @@ Revisionsgeschichte.
 1. Als Spielleitung den **Atlas** öffnen und **Karte aus einem Wiki holen**
    wählen. Dort Adresse des Wikis und Name der Kartenseite angeben — die App
    holt Karte und Kartenbild selbst und schreibt mit, woher beides stammt.
-   Daneben liegen **Kartenbild hochladen** (eine Karte, die nur aus einem Bild
-   besteht: Inkarnate, Wonderdraft, ein Scan) und **Beispielkarte laden** für
-   die mitgelieferte Andaria-Quelle mit ihren 190 Ortsmarkern. **Karte
-   importieren** nimmt weiterhin Azgaar Full JSON oder Fandoms
-   InteractiveMap-JSON von der Festplatte an. Alle Wege enden im selben Import;
-   wiederholtes Laden derselben Quelle öffnet den gespeicherten Stand.
+   Daneben liegt **Kartenbild hochladen** — eine Karte, die nur aus einem Bild
+   besteht: Inkarnate, Wonderdraft, ein Scan. **Karte importieren** nimmt Azgaar
+   Full JSON oder Fandoms InteractiveMap-JSON von der Festplatte an. Alle Wege
+   enden im selben Import; wiederholtes Laden derselben Quelle öffnet den
+   gespeicherten Stand.
+
+   Es liegt **keine** Karte im Programm. Der frühere Knopf „Beispielkarte laden"
+   zog eine fremde Zeichnung herein, die das Programm mit sich trug; er ist weg,
+   und mit ihm die Datei. Jede Karte kommt herein, weil ein Mensch sie hereinholt.
 2. Einen Ort auf der Karte oder in der Ortsliste auswählen. **Unterkarte
    erzeugen** legt einen Grundriss an; **Vorhandene Karte verbinden** ordnet
    eine bestehende Szenenkarte diesem Ort zu.
@@ -80,7 +83,6 @@ bestehende Sitzungsauthentifizierung.
 | Methode und Pfad | Vertrag |
 | --- | --- |
 | `POST /maps/aus-wiki` | Body `{wiki, titel}`; holt Kartenseite und Kartenbild aus dem genannten Wiki. Antwort `{id, report, unchanged, bild}` |
-| `POST /maps/beispiel` | Importiert die mitgelieferte Andaria-Quelle samt Bild; gleiche Antwort |
 | `POST /maps/bild?dateiname=…` | Rohe Bildbytes; erzeugt eine Karte, die nur aus diesem Bild besteht |
 | `POST /maps/import` | Body `{json: string}` für Azgaar oder Fandom InteractiveMap |
 | `GET /maps/:id` | Sichtbare Atlasprojektion; für die Spielleitung zusätzlich `version`, `herkunft`, `background`, pro Knoten `canEnter`, `description` und gegebenenfalls `childMapId` |

@@ -2,7 +2,7 @@
 <!-- Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. -->
 # Atlas Chronicles v0.1.0 — release notes
 
-Prepared for the first GitHub release. Not published yet; see the block at the end for what still blocks it.
+Prepared for the first GitHub release. Not published yet; the end of this file says what is left.
 
 **A shared chronicle for pen & paper.** Campaigns, per-character knowledge, a wiki, generated maps, rule packages, and a table with traceable rolls.
 
@@ -52,11 +52,24 @@ Get-FileHash .\Atlas-Chronicles-Setup.exe -Algorithm SHA256
 
 Built from commit `10f3b54`.
 
-## Why this is still a draft
+## What is left before publishing
 
-Two things stand between this file and a published release.
+**Both licence blockers are cleared.** How-to-be-a-Hero moved behind `@chronicle/rules/examples`,
+out of the shipped barrel, with `gate:boundaries` failing the build if product code imports it;
+ChronicleHeroes ships in its place. The bundled example map and its picture are gone too, on the
+owner's instruction, so the app now carries no drawing it does not own. Every map arrives because
+a person fetches it, from a wiki, as an uploaded picture, or as a map file.
 
-- **`Andaria_03.02.2024.webp` states no licence.** The picture sits in the desktop artifact. Nobody has written down who drew it or under which terms it may be redistributed, so shipping it publicly would distribute a work without permission. Either the co-author records consent in the provenance package, or the image leaves the build.
-- **Four build gates are open**, recorded by the build itself in `installer.json`: signature, update feed, ASAR integrity, and install-over-existing admission. These do not block a clearly labelled first release, but they belong in the notes, and they are in them.
+What remains is not a blocker, only the truth about the build, and it is already stated above:
+the four open build gates recorded in `installer.json`. A first release may ship with them open as
+long as it says so, and this one does.
 
-How-to-be-a-Hero was the third blocker. It is resolved: the CC BY-NC-SA package now lives behind `@chronicle/rules/examples`, out of the shipped barrel, and `gate:boundaries` fails the build if product code imports it. ChronicleHeroes ships in its place.
+One thing worth a decision, separate from the release: the picture is still in the public git
+history of this repository. Taking it out of the history means rewriting it, which is the owner's
+call rather than a routine cleanup.
+
+## Rebuild before publishing
+
+The installer named above predates the removal of the example map. Build it again and replace the
+SHA-256 in this file before the release goes out; the numbers here must describe the file people
+actually download.

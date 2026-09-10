@@ -45,9 +45,6 @@ export function registerImports(app: FastifyInstance,db: Db,config: AppConfig) {
   app.post<{Params:Scope;Body:Static<typeof ausWiki>}>("/api/campaigns/:campaignId/maps/aus-wiki",
     {schema:{body:ausWiki},config:importLimit}, async req =>
       quellen.ausWiki((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.body));
-  /** Die mitgelieferte Beispielkarte — derselbe Weg, nur ohne Netz. */
-  app.post<{Params:Scope}>("/api/campaigns/:campaignId/maps/beispiel", {config:importLimit}, async req =>
-    quellen.beispiel((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId));
   /**
    * Eine Karte, die nur aus einem Bild besteht (Inkarnate, Wonderdraft, ein Scan). Die Bytes
    * kommen roh, weil base64 in JSON ein Drittel Aufschlag kostet und die Vermessung ohnehin auf
