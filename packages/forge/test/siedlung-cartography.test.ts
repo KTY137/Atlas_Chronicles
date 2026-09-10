@@ -20,7 +20,7 @@ function overlap(a: Polygon, b: Polygon): boolean {
  * wall clock here, so they carry their own budget instead of raising the global default.
  * 30 s is the house number for that across the repo (`io/test/campaign-bundle-v3-large.test.ts`
  * and the Postgres fixtures in `server/test`), not a figure invented for these cases. */
-const HEAVY = 30_000;
+const HEAVY = 60_000; // 2026-09-10: 30 s reichte allein (7 s), nicht unter Volllast von 96 Dateien (30,5 s).
 describe("settlement v7 canonical cartography", () => {
   it("keeps visible wall stonework, shadows and gate caps out of canonical building roofs", () => {
     const cases = [96, 16, 192].map(zellgroesse => ({ seed: "gallery:river-1", zellgroesse }))

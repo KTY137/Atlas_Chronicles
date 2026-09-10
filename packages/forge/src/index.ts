@@ -29,4 +29,5 @@ export type { CartographyEditInput, CartographyEditOperation, CartographyEditRes
 export { CARTOGRAPHY_EDIT_LIMITS, CARTOGRAPHY_PATTERN_VERSION, solveCartographyPatterns } from "./cartography-patterns.ts";
 export type { EditLimits, CartographyPattern, PatternBoundary, PatternCell, PatternSolution } from "./cartography-patterns.ts";
 export { RELIEF_VERSION, RELIEF_STANDORTE, MEERESSPIEGEL, erzeugeLandschaft, flussBand } from "./relief.ts";
+export { BAUWERK_AUSDEHNUNG, BAUWERK_MASSSTAB, bauwerkAusdehnung } from "./bauprogramme.ts";
 export type { ReliefStandort, ReliefAuftrag, Landschaft, FlussStueck } from "./relief.ts";

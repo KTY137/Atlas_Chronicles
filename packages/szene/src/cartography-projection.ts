@@ -5,9 +5,9 @@ import { RELIEF_LEVELS, reliefHeightAt, type CartographyReliefV1, type TacticalC
 import type { TacticalMapDocumentV1, TacticalPoint } from "./tactical-map.ts";
 
 /** Bump whenever these pixels change; this pin belongs in every cartography raster key. */
-export const rendererVersion = "cartography-8" as const;
+export const rendererVersion = "cartography-9" as const;
 /** What of the relief the viewer wants drawn. Presentation only; the stored map is untouched. */
-export interface CartographyView { readonly contours?: boolean; readonly shading?: boolean }
+export interface CartographyView { readonly contours?: boolean; readonly shading?: boolean; /** Parchment mottle and edge vignette on a generated map. */ readonly paper?: boolean }
 export interface CartographyPolygon {
   readonly regionId: string;
   readonly points: readonly TacticalPoint[];
@@ -162,19 +162,33 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   // One silhouette per contiguous material area, for the same reason water has one shore.
   const groupBank=(material:"rock"|"field")=>regionBanks(regions.filter(region=>region.role?.role==="terrain"&&region.role.material===material));
   const rockBanks=groupBank("rock"), fieldBanks=groupBank("field");
+  const roadBanks=regionBanks(regions.filter(region=>region.role?.role==="road"));
   const ink = setting === "scifi" ? 0x304d57 : 0x504537;
   const pen = Math.max(.8, Math.min(4, cartography.construction.cellSize * .035));
   const bridge = (role: typeof regions[number]["role"]) => role?.role === "road" && role.material === "bridge" ? 1 : 0;
   // Rock is the last ground to be painted and the relief goes down just before it: contour
   // lines belong on meadow, field and wood, while a massif carries its own drawn summits.
-  const rank = (role: typeof regions[number]["role"]) => order[role?.role ?? "generic"] + (role?.role === "terrain" && role.material === "rock" ? .5 : 0);
+  const rank = (role: typeof regions[number]["role"]) => order[role?.role ?? "generic"] + (role?.role === "terrain" ? role.material === "rock" ? .5 : role.material === "forest" ? .2 : 0 : 0);
   regions.sort((a, b) => rank(a.role) - rank(b.role) || bridge(a.role) - bridge(b.role) || a.index - b.index);
   // The relief is drawn once, above every ground material and below water, roads and roofs:
   // hillshade from the height field and contour lines above the water line. Both attach to the
   // largest ground region — the scene check wants a real region id, and the knowledge mask
   // works on pixels, so the owner only has to exist. Under water nothing is drawn: water is
   // where the land lies at or below the water line, so no contour ever crosses a lake.
-  const relief = cartography.relief;
+  const relief = cartography.relief, seaLevel = relief?.seaLevel ?? 77;
+  // Paper first: a generated map is drawn on aged parchment, mottled from one global lattice
+  // so the blotches never follow any region. Imported images keep their own surface.
+  const paperOwner = document.background || view.paper === false ? undefined : regions[0]?.id;
+  const [paperWidth, paperHeight] = document.geometry.size;
+  if (paperOwner) {
+    const spacing = Math.max(48, cartography.construction.cellSize * 1.4);
+    const across = Math.ceil(paperWidth / spacing) + 1, down = Math.ceil(paperHeight / spacing) + 1, step = Math.max(1, Math.ceil(Math.sqrt(across * down / 900)));
+    for (let row = 0; row <= down; row += step) for (let column = 0; column <= across; column += step) {
+      const key = `paper:${column}:${row}`, x = column * spacing + spacing * phase(key, 1), y = row * spacing + spacing * phase(key, 2), size = spacing * (.5 + phase(key, 3) * .6);
+      const blotch = Array.from({ length: 9 }, (_, index) => { const angle = index * Math.PI * 2 / 9, reach = size * (.7 + .3 * phase(key, 10 + index)); return [x + Math.cos(angle) * reach, y + Math.sin(angle) * reach * .8] as TacticalPoint; });
+      emit(paperOwner, blotch, phase(key, 4) < .5 ? tint(palette.background, -9) : tint(palette.background, 8), .24);
+    }
+  }
   const groundOwner = regions.filter(region => region.role?.role === "terrain" || !region.role || region.role.role === "generic")
     .map(region => { const xs = region.punkte.map(p => p[0]), ys = region.punkte.map(p => p[1]); return { id: region.id, size: (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)) }; })
     .sort((a, b) => b.size - a.size || (a.id < b.id ? -1 : 1))[0]?.id ?? regions[0]?.id;
@@ -196,6 +210,48 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     // wider the more squarely it faces or turns. Nothing is stacked over an area, so a high
     // plateau stays the colour of its ground, and a map without slopes stays untouched.
     const light = tint(palette.background, 34), shadow = 0x2b3a2e;
+    /** Convex pieces of one cell where `keep(value)` holds, the isoline interpolated linearly. */
+    const cellPieces = (h: readonly number[], level: number, keep: (value: number) => boolean, u: number, v: number): TacticalPoint[][] => {
+      const square: TacticalPoint[] = [[u, v], [u + 1, v], [u + 1, v + 1], [u, v + 1]], inside = h.map(keep), count = inside.filter(Boolean).length;
+      if (!count) return []; if (count === 4) return [square];
+      const cross = (k: number, l: number): TacticalPoint => { const s = h[k] === h[l] ? .5 : Math.max(0, Math.min(1, (level - h[k]!) / (h[l]! - h[k]!))); return [square[k]![0] + (square[l]![0] - square[k]![0]) * s, square[k]![1] + (square[l]![1] - square[k]![1]) * s]; };
+      if (count === 2 && inside[0] === inside[2]) return inside[0] ? [[square[0]!, cross(0, 1), cross(3, 0)], [square[2]!, cross(2, 3), cross(1, 2)]] : [[square[1]!, cross(1, 2), cross(0, 1)], [square[3]!, cross(3, 0), cross(2, 3)]];
+      const piece: TacticalPoint[] = [];
+      for (let k = 0; k < 4; k++) { const l = (k + 1) % 4; if (inside[k]) piece.push(square[k]!); if (inside[k] !== inside[l]) piece.push(cross(k, l)); }
+      return [piece];
+    };
+    const toMap = (piece: readonly TacticalPoint[]) => piece.map(([u, v]) => [ox + u * z, oy + v * z] as TacticalPoint);
+    if (view.shading !== false) {
+      // Bathymetry: the sea floor falls away from the shore in steps of the same contour interval,
+      // each step a shade deeper. Water is where the land lies under the water line, so these
+      // bands never leave the water. A huge sea keeps one shelf so the budget survives.
+      let wet = 0;
+      for (let v = 0; v < rows; v++) for (let u = 0; u < columns; u++) if (Math.min(at(u, v), at(u + 1, v), at(u + 1, v + 1), at(u, v + 1)) < sea) wet++;
+      const deep = mix(palette.water, 0x1d3648, .55), bands = wet * 3 > 6000 ? 1 : 3;
+      for (let band = 1; band <= bands; band++) {
+        const level = sea - band * step * (bands === 1 ? 1.5 : 1);
+        for (let v = 0; v < rows; v++) for (let u = 0; u < columns; u++) {
+          const h = [at(u, v), at(u + 1, v), at(u + 1, v + 1), at(u, v + 1)];
+          if (Math.min(...h) >= level) continue;
+          for (const piece of cellPieces(h, level, value => value < level, u, v)) emit(groundOwner, toMap(piece), deep, .15);
+        }
+      }
+      // Hills: on land that rises above the plain but stays below the rock, small drawn mounds
+      // on one global lattice, denser the higher the land; not on tilled fields.
+      const fields = regions.filter(region => region.role?.role === "terrain" && region.role.material === "field").map(region => { const xs = region.punkte.map(p => p[0]), ys = region.punkte.map(p => p[1]); return { points: region.punkte, box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] as const }; });
+      const hillLine = sea + RELIEF_LEVELS.flatLand + 16, rockLine = sea + RELIEF_LEVELS.rockAbove, spacing = Math.max(8, z * 1.35), mound = tint(palette.background, 22);
+      for (let row = 0; row <= Math.ceil(rows * z / spacing); row++) for (let column = 0; column <= Math.ceil(columns * z / spacing); column++) {
+        const key = `hill:${column}:${row}`, x = ox + column * spacing + spacing * (.15 + .7 * phase(key, 1)), y = oy + row * spacing + spacing * (.15 + .7 * phase(key, 2));
+        const height = reliefHeightAt(relief, construction, x, y);
+        if (height < hillLine || height > rockLine - 4 || phase(key, 51) > Math.min(1, (height - hillLine) / 50) * .85) continue;
+        if (fields.some(field => x >= field.box[0] && x <= field.box[2] && y >= field.box[1] && y <= field.box[3] && inside([x, y], field.points))) continue;
+        const w = z * .5 * (.8 + .4 * phase(key, 52)), h = w * .42 * (.9 + .3 * phase(key, 53));
+        const arc: TacticalPoint[] = [[x - w / 2, y], [x - w * .3, y - h * .75], [x - w * .08, y - h], [x + w * .18, y - h * .9], [x + w * .4, y - h * .55], [x + w / 2, y]];
+        emit(groundOwner, arc, mound, .55);
+        emit(groundOwner, [[x + w * .02, y - h * .98], [x + w * .18, y - h * .9], [x + w * .4, y - h * .55], [x + w / 2, y], [x + w * .05, y]], shadow, .16);
+        for (let index = 0; index + 1 < arc.length; index++) emit(groundOwner, line(arc[index]!, arc[index + 1]!, pen * .42), ink, .5);
+      }
+    }
     if (view.shading !== false || view.contours !== false) {
       for (let v = 0; v < rows; v++) for (let u = 0; u < columns; u++) {
         const corners: TacticalPoint[] = [[u, v], [u + 1, v], [u + 1, v + 1], [u, v + 1]], h = [at(u, v), at(u + 1, v), at(u + 1, v + 1), at(u, v + 1)];
@@ -425,6 +481,17 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         const x = column * spacing + spacing * (.2 + .6 * phase(key, 31) + (row % 2) * .3), y = row * spacing + spacing * (.2 + .6 * phase(key, 32));
         if (!inside([x, y], points)) continue;
         const size = radius * (.86 + phase(key, 33) * .34);
+        // High, cold land grows spruce; elsewhere a few conifers stand among the broadleaves.
+        const conifer = relief ? reliefHeightAt(relief, cartography.construction, x, y) > seaLevel + RELIEF_LEVELS.flatLand + 36 || phase(key, 35) < .18 : phase(key, 35) < .25;
+        if (conifer) {
+          const s = size * 1.05;
+          const spruce: TacticalPoint[] = [[x, y - s * 1.7], [x + s * .42, y - s * .75], [x + s * .22, y - s * .75], [x + s * .68, y + s * .1], [x + s * .36, y + s * .1], [x + s * .55, y + s * .75], [x - s * .55, y + s * .75], [x - s * .36, y + s * .1], [x - s * .68, y + s * .1], [x - s * .22, y - s * .75], [x - s * .42, y - s * .75]];
+          emit(id, spruce.map(point => [point[0] + s * .25, point[1] + s * .3]), 0x263c2b, .34);
+          emit(id, spruce.map(point => [x + (point[0] - x) * 1.06, y + (point[1] - y) * 1.06]), ink, .9);
+          emit(id, spruce, tint(palette.forest, -14 + phase(key, 36) * 20));
+          emit(id, [[x, y - s * 1.7], [x - s * .42, y - s * .75], [x - s * .22, y - s * .75], [x - s * .68, y + s * .1], [x - s * .36, y + s * .1], [x - s * .55, y + s * .75], [x, y + s * .75]], mix(palette.forest, palette.grass, .35), .5);
+          continue;
+        }
         const crown = Array.from({ length: 24 }, (_, index) => { const angle = index * Math.PI / 12, r = size * (.88 + .09 * Math.cos(angle * 8) + .08 * phase(key, 40 + index)); return [x + Math.cos(angle) * r, y + Math.sin(angle) * r] as TacticalPoint; });
         emit(id, crown.map(point => [point[0] + size * .28, point[1] + size * .32]), 0x263c2b, .34);
         emit(id, crown.map(point => [x + (point[0] - x) * 1.055, y + (point[1] - y) * 1.055]), ink, .9);
@@ -469,6 +536,24 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     } else if (role?.role === "road" && role.material === "bridge") {
       const axis = width >= height ? 0 : 1, min = axis ? minY : minX, size = axis ? height : width;
       for (let index = 1; index < 9; index++) emit(id, stripe(points, axis, min + size * index / 9, min + size * (index + .18) / 9), palette.roofDark, .25);
+    } else if (role?.role === "road") {
+      // A road is inked along the outer edge of the whole network, never along the seam between
+      // two reaches. A track carries two faint wheel ruts; a paved street a sprinkle of cobbles.
+      for (const { a, b, inward: winding } of roadBanks.get(id) ?? []) emit(id, line(a, b, pen * .45, winding * pen * .12), ink, .22);
+      if (role.material === "path") {
+        const axes = roofAxes(points), middle = (axes.top + axes.bottom) / 2, span = axes.bottom - axes.top;
+        for (const offset of [-.24, .24]) emit(id, band(points, axes.across, middle + span * offset - pen * .14, middle + span * offset + pen * .14), tint(palette.path, -48), .28);
+      } else {
+        const spacing = Math.max(4, pen * 2.8), startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing);
+        const step = Math.max(1, Math.ceil(Math.sqrt((Math.ceil(maxX / spacing) - startX + 1) * (Math.ceil(maxY / spacing) - startY + 1) / 900)));
+        for (let row = startY; row <= Math.ceil(maxY / spacing); row += step) for (let column = startX; column <= Math.ceil(maxX / spacing); column += step) {
+          const key = `${column}:${row}`;
+          if (phase(key, 61) > .45) continue;
+          const x = column * spacing + spacing * phase(key, 62), y = row * spacing + spacing * phase(key, 63), s = spacing * .2;
+          const stone: TacticalPoint[] = [[x - s, y - s * .7], [x + s, y - s * .7], [x + s, y + s * .7], [x - s, y + s * .7]];
+          if (stone.every(point => inside(point, points))) emit(id, stone, tint(palette[role.material], -24), .2);
+        }
+      }
     }
   }
   if (!reliefDrawn) { reliefDrawn = true; drawRelief(); }
@@ -500,6 +585,18 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       const cap = Array.from({length:8},(_,i) => [point[0]+Math.cos(i*Math.PI/4)*radius,point[1]+Math.sin(i*Math.PI/4)*radius] as TacticalPoint);
       emit(wallId,cap,ink);
       emit(wallId,cap.map(p=>[point[0]+(p[0]-point[0])*.7,point[1]+(p[1]-point[1])*.7]),stone);
+    }
+  }
+  // Last, the vignette: four stepped bands darken the sheet towards its edges, the way old
+  // paper and a printed frame do. Presentation only, on a generated map only.
+  if (paperOwner) {
+    const depth = Math.min(paperWidth, paperHeight) * .05;
+    for (let ring = 0; ring < 4; ring++) {
+      const outer = depth * ring / 4, inner = depth * (ring + 1) / 4, alpha = .055 - ring * .012;
+      emit(paperOwner, [[outer, outer], [paperWidth - outer, outer], [paperWidth - outer, inner], [outer, inner]], 0x2b2218, alpha);
+      emit(paperOwner, [[outer, paperHeight - inner], [paperWidth - outer, paperHeight - inner], [paperWidth - outer, paperHeight - outer], [outer, paperHeight - outer]], 0x2b2218, alpha);
+      emit(paperOwner, [[outer, inner], [inner, inner], [inner, paperHeight - inner], [outer, paperHeight - inner]], 0x2b2218, alpha);
+      emit(paperOwner, [[paperWidth - inner, inner], [paperWidth - outer, inner], [paperWidth - outer, paperHeight - inner], [paperWidth - inner, paperHeight - inner]], 0x2b2218, alpha);
     }
   }
   return { rendererVersion, width: document.geometry.size[0], height: document.geometry.size[1], background: document.background ? null : palette.background, polygons };

@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { parseTacticalCartography, type Knoten } from "@chronicle/szene";
+import { bauwerkAusdehnung } from "@chronicle/forge";
 import { buildApp } from "../src/app.ts";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -393,4 +394,35 @@ describe("Der Zugang — die Adresse, die man begehen kann", () => {
       payload: JSON.stringify({ ...input(erfunden), ...(await scopeFor(erfunden)), art: "labyrinth" }) });
     expect(abgewiesen.statusCode).toBe(400);
   });
+});
+
+describe("Ein Haus wird so groß, wie es auf der Stadtkarte steht", () => {
+  it("bemisst den Innenraum am Umriss des Gebäudes und nicht an der freien Grundrissleinwand", async () => {
+    const db = await createTestDb(); await migrate(db);
+    const config = { origin: "https://betreten-umriss.test", cookieSecret: "betreten-umriss-cookie-secret-more-than-32-characters", bootstrapToken: "betreten-umriss-bootstrap-secret-more-than-32-characters" };
+    try {
+      const gm = (await createIdentity(db, config).bootstrap("Kaya")).userId;
+      const campaign = (await createCampaigns(db).createCampaign(gm, { name: "Umriss" })).id;
+      const town = await createGrundriss(db, config).generate(gm, campaign, { commandId: randomUUID(), name: "Silberbach", keim: "umriss", art: "siedlung", stil: "gemalt", optionen: { art: "dorf", standort: "ebene", bauwerke: 24, licht: false } });
+      const betreten = createBetreten(db, config), tactical = createTactical(db);
+      const parent = await tactical.getMap(gm, campaign, town.ack.subjectId);
+      const children = await betreten.children(gm, campaign, { parentKind: "tactical", parentMapId: parent.id });
+      const house = children.nodes.find(node => node.bauwerk?.typ === "haus" && node.canEnter)!, church = children.nodes.find(node => node.bauwerk?.typ === "kirche" && node.canEnter)!;
+      expect(house).toBeTruthy(); expect(church).toBeTruthy();
+      expect(children.nodes.some(node => "umfang" in node)).toBe(false);
+      const cell = parent.cartography!.construction.cellSize;
+      const outline = (knotenId: string): readonly [number, number] => { const points = parent.document.geometry.regions.find(region => region.id === knotenId)!.punkte, xs = points.map(p => p[0]), ys = points.map(p => p[1]); return [(Math.max(...xs) - Math.min(...xs)) / cell, (Math.max(...ys) - Math.min(...ys)) / cell]; };
+      const entered = await betreten.betrete(gm, campaign, { commandId: randomUUID(), parentKind: "tactical", parentMapId: parent.id, knotenId: house.knotenId, expectedVersion: children.version, name: house.titel, art: "grundriss", stil: "gemalt" });
+      const interior = await tactical.getMap(gm, campaign, entered.mapId);
+      const expected = bauwerkAusdehnung("haus", outline(house.knotenId)), z = interior.document.grid.kind === "none" ? 64 : interior.document.grid.size;
+      expect(interior.document.geometry.size).toEqual([expected[0] * z, expected[1] * z]);
+      expect(interior.document.geometry.size[0]).toBeLessThan(40 * z);
+      // The front door sits on the bottom wall of the house, below every room.
+      const bottom = Math.max(...interior.document.geometry.regions.flatMap(region => region.punkte.map(p => p[1])));
+      expect(interior.document.portals.some(portal => portal.position[1] === bottom)).toBe(true);
+      // A size the user chose still wins over the outline.
+      const chosen = await betreten.betrete(gm, campaign, { commandId: randomUUID(), parentKind: "tactical", parentMapId: parent.id, knotenId: church.knotenId, expectedVersion: children.version + 1, name: church.titel, art: "grundriss", stil: "gemalt", optionen: { zellen: [30, 20] } });
+      expect((await tactical.getMap(gm, campaign, chosen.mapId)).document.geometry.size).toEqual([30 * z, 20 * z]);
+    } finally { await db.close(); }
+  }, 30_000);
 });

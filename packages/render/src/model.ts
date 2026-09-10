@@ -90,6 +90,8 @@ export interface ProjectedMapScene {
   readonly rasterSampling?: MapRasterSampling;
   /** Show collision-limited pin names. False hides all names; omitted retains selection-only names. */
   readonly showLabels?: boolean;
+  /** The map's name for its cartouche; drawn only on a scene that carries a cartography drawing. */
+  readonly title?: string;
 }
 /** The host fetches authorized tiles. Ownership of each bitmap transfers to the renderer. */
 export interface MapRasterTile { readonly id: string; readonly left: number; readonly top: number; readonly width: number; readonly height: number; readonly pixelScale: number; readonly image: ImageBitmap }

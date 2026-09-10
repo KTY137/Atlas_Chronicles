@@ -97,6 +97,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
   if (scene.rasterScope !== undefined && (typeof scene.rasterScope !== "string" || scene.rasterScope.length > 512)) throw new Error("invalid raster scope");
   if (scene.rasterSampling !== undefined && scene.rasterSampling !== "nearest" && scene.rasterSampling !== "linear") throw new Error("invalid raster sampling");
   if (scene.showLabels !== undefined && typeof scene.showLabels !== "boolean") throw new Error("invalid label visibility");
+  if (scene.title !== undefined && (typeof scene.title !== "string" || scene.title.length > 200)) throw new Error("invalid map title");
   if (scene.paintCells !== undefined && typeof scene.paintCells !== "boolean") throw new Error("invalid cell paint visibility");
   if (scene.grid && scene.grid.kind !== "none") {
     if (!["square", "hex"].includes(scene.grid.kind) || !Number.isFinite(scene.grid.size) || scene.grid.size <= 0 || scene.grid.origin.length !== 2 || !scene.grid.origin.every(Number.isFinite)) throw new Error("invalid grid");

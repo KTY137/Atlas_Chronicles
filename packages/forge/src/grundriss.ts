@@ -12,7 +12,7 @@ import {
 } from "./kartenwerk.ts";
 import { delaunayKanten, spannbaumMitSchleifen, type Polygon, type Punkt } from "./polygon.ts";
 import { loeseWfc, type WfcKachel } from "./wfc.ts";
-import { BAUPROGRAMME, ZEIT_RAUM_LABEL, freieZeitThemen, programmRaeume, zeitThema } from "./bauprogramme.ts";
+import { BAUPROGRAMME, ZEIT_RAUM_LABEL, bauwerkAusdehnung, freieZeitThemen, programmRaeume, zeitThema } from "./bauprogramme.ts";
 
 /**
  * **The first generation Chronicle performs itself**, rather than importing: rooms, corridors and
@@ -48,7 +48,7 @@ import { BAUPROGRAMME, ZEIT_RAUM_LABEL, freieZeitThemen, programmRaeume, zeitThe
 
 export const GRUNDRISS_ERZEUGER = "chronicle-grundriss";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const GRUNDRISS_VERSION = "7";
+export const GRUNDRISS_VERSION = "8";
 
 export const GRUNDRISS_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, minRaumMin: 2, minRaumMax: 16, schleifenMax: 16,
@@ -351,8 +351,13 @@ const kachelOffen = (id: string | null, richtung: number): boolean =>
 
 export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1): Grundriss {
   if (typeof auftrag?.keim !== "string" || !auftrag.keim.trim() || auftrag.keim.length > 256) fail("option", "auftrag.keim", "nichtleerer Keim mit höchstens 256 Zeichen erwartet");
-  const optionen: GrundrissOptionen = { ...GRUNDRISS_STANDARD, ...auftrag.optionen, profil: auftrag.optionen?.profil === undefined ? "frei" : auftrag.optionen.profil,
+  const profilWahl = auftrag.optionen?.profil === undefined ? "frei" : auftrag.optionen.profil;
+  const roh: GrundrissOptionen = { ...GRUNDRISS_STANDARD, ...auftrag.optionen, profil: profilWahl,
     setting: auftrag.optionen?.setting === undefined ? "fantasy" : auftrag.optionen.setting };
+  // A building is sized by its kind, not by the free floorplan's canvas: before this, a cottage
+  // took the full 40×30 and became four halls with a chair lost in each (`bauwerkAusdehnung`).
+  const optionen: GrundrissOptionen = auftrag.optionen?.zellen === undefined && profilWahl !== "frei" && BAUWERK_TYPEN.some(typ => typ === profilWahl)
+    ? { ...roh, zellen: bauwerkAusdehnung(profilWahl as BauwerkTyp) } : roh;
   const profil = optionen.profil!;
   const setting = optionen.setting!;
   if (!KARTEN_SETTINGS.some(era => era === setting)) fail("option", "optionen.setting", "fantasy, gegenwart oder scifi erwartet");
@@ -676,6 +681,21 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       if (overlapY) ac[1] = bc[1] = Math.floor((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2);
       gang(ac, bc, overlapY);
     }
+    // A building is one enclosed house, not rooms floating in the open. The one-cell gaps the
+    // program leaves between rooms become hallway floor — a gap cell is one with room on both
+    // sides, then the crossings between such gaps — so the outer wall runs around the whole
+    // building and every door opens into the house instead of into the yard. The bounding box
+    // is deliberately not used: a church's corners beside its narrow choir stay outside.
+    const zwischen = (x: number, y: number, feld: number) => {
+      const links = drin(x - 1, y) && gitter[idx(x - 1, y)] === feld, rechts = drin(x + 1, y) && gitter[idx(x + 1, y)] === feld;
+      const oben = drin(x, y - 1) && gitter[idx(x, y - 1)] === feld, unten = drin(x, y + 1) && gitter[idx(x, y + 1)] === feld;
+      return links && rechts || oben && unten;
+    };
+    for (const feld of [RAUM, GANG]) {
+      const neu: number[] = [];
+      for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) if (gitter[idx(x, y)] === FELS && zwischen(x, y, feld)) neu.push(idx(x, y));
+      for (const stelle of neu) gitter[stelle] = GANG;
+    }
   } else if (optionen.anordnung === "kachelwerk") {
     // Die Verbindungen stehen schon fest — sie sind das, was WFC entschieden hat. Hier wird nur
     // noch gegraben. Keine Schleifen nachträglich: ein Muster, in dem beide Seiten den Durchgang
@@ -828,6 +848,23 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     schliesse();
   }
 
+  // -- the front door: a building is entered from the street, not from its own first room ------
+  let eingangZelle: readonly [number, number] | null = null;
+  if (profil !== "frei") {
+    const unten = Math.max(...rohRaeume.map(raum => raum.y + raum.h)) - 1, ziel = mitteZelle(rohRaeume[0]!)[0];
+    const kandidaten: number[] = [];
+    for (let x = 0; x < breite; x++) if (gitter[idx(x, unten)] !== FELS && drin(x, unten + 1) && gitter[idx(x, unten + 1)] === FELS) kandidaten.push(x);
+    kandidaten.sort((a, b) => Math.abs(a - ziel) - Math.abs(b - ziel) || a - b);
+    const x = kandidaten[0];
+    if (x !== undefined) {
+      const id = ids.geometrieId("tuer", "aussen", `${x}:${unten + 1}`);
+      tueren.push({ id, position: [(x + .5) * z, (unten + 1) * z], bounds: [[x * z, (unten + 1) * z], [(x + 1) * z, (unten + 1) * z]], rotationRadians: 0, closed: true, freestanding: false, elevation: 0 });
+      const owner = raumVon[idx(x, unten)]!;
+      if (owner >= 0) (tuerenJeRaum.get(owner) ?? tuerenJeRaum.set(owner, []).get(owner)!).push(id);
+      tuerZelle.push([x, unten]); eingangZelle = [x, unten];
+    }
+  }
+
   // -- stamps ----------------------------------------------------------------------------------
   const werk = bestuecker(paket, r, z, ids.geometrieId, setting);
   const stampsJeRaum = rohRaeume.map(() => [] as string[]), lichterJeRaum = rohRaeume.map(() => [] as string[]);
@@ -843,7 +880,9 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
   };
 
   // Floors first, so that everything else draws over a complete surface.
-  const gangboden = werk.waehle("boden", setting === "scifi" ? "metall" : setting === "gegenwart" ? "fliesen" : optionen.gangboden);
+  // A house's hallway is floored like its main room, not like a dungeon's damp corridor.
+  const hallenBoden = profil !== "frei" && auftrag.optionen?.gangboden === undefined ? rohRaeume[0]!.thema.boden : optionen.gangboden;
+  const gangboden = werk.waehle("boden", setting === "scifi" ? "metall" : setting === "gegenwart" ? "fliesen" : hallenBoden) ?? werk.waehle("boden", optionen.gangboden);
   const raumboden = rohRaeume.map((raum) => werk.waehle("boden", raum.thema.boden) ?? gangboden);
   for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) {
     const feld = gitter[idx(x, y)];
@@ -862,7 +901,11 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
     claimStamps(rohRaeume.indexOf(raum), before);
   };
   if (profil === "frei" && setting === "fantasy") setzeMarkiert(rohRaeume[0]!, "aufbau", "aufwaerts");
-  setzeMarkiert(rohRaeume[0]!, "marke", "eingang");
+  if (eingangZelle) {
+    // The entrance mark stands just inside the front door, where a visitor actually arrives.
+    const marke = werk.waehle("marke", "eingang");
+    if (marke) { const before = werk.stamps.length; werk.setze(marke, eingangZelle[0], eingangZelle[1]); claimStamps(raumVon[idx(eingangZelle[0], eingangZelle[1])]!, before); }
+  } else setzeMarkiert(rohRaeume[0]!, "marke", "eingang");
   if (profil === "frei" && setting === "fantasy" && tiefsterRaum !== 0) setzeMarkiert(rohRaeume[tiefsterRaum]!, "aufbau", "abwaerts");
 
   const lichter: TacticalLight[] = [];

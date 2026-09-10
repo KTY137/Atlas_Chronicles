@@ -134,7 +134,8 @@ describe("mounted renderer submission and resource lifecycle", () => {
     expect(chrome.visible).toBe(true);
     // Chrome lives on the stage, never inside the panned/zoomed world container.
     expect((layer("geography") as { children: unknown[] }).children).not.toContain(chrome);
-    const captions = () => (chrome.children as { text?: string }[]).map(child => child.text).filter(text => typeof text === "string");
+    // The cartouche is a caption too; without a title it stays an empty, hidden text.
+    const captions = () => (chrome.children as { text?: string }[]).map(child => child.text).filter(text => typeof text === "string" && text !== "");
     expect(captions()).toEqual(["N", expect.stringContaining("Felder")]);
     const before = captions();
     drawn.zoomAt(8);
@@ -340,5 +341,29 @@ describe("mounted renderer submission and resource lifecycle", () => {
   it("rejects undeclared sampling and unknown runtime backends", async () => {
     await expect(createMapRenderer(host(), { ...scene, rasterSampling: "smooth" } as unknown as ProjectedMapScene)).rejects.toThrow("sampling");
     pixi.type = 3; await expect(createMapRenderer(host(), scene)).rejects.toThrow("Grafikkarte");
+  });
+});
+
+describe("the cartouche and the stone wall", () => {
+  it("names a drawn map in its corner and stays silent on a map without a drawing or a title", async () => {
+    const drawing = { rendererVersion, width: scene.width, height: scene.height, background: null, polygons: [] };
+    const titled = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], title: "Silberbach", drawing });
+    const chromeTexts = () => (layer("chrome").children as { text?: string; visible: boolean }[]).filter(child => typeof child.text === "string");
+    expect(chromeTexts().some(text => text.text === "Silberbach" && text.visible)).toBe(true);
+    titled.update({ ...scene, tokens: [], lines: [], drawing });
+    expect(chromeTexts().some(text => text.text === "Silberbach" && text.visible)).toBe(false);
+    titled.update({ ...scene, tokens: [], lines: [], title: "Silberbach" });
+    expect(chromeTexts().some(text => text.visible)).toBe(false);
+    titled.destroy();
+  });
+  it("draws uncoloured walls as stone with a shadow and a seam sized by the cell, and doors as two-pixel marks", async () => {
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], grid: { kind: "square", size: 64, origin: [0, 0] },
+      lines: [{ id: "wall", points: [[10, 10], [200, 10]] }, { id: "door", points: [[50, 10], [70, 10]], color: 0x6faa98 }] });
+    pixi.strokes.length = 0; map.zoomAt(1.5);
+    const widths = pixi.strokes.map(style => style.width!);
+    expect(pixi.strokes).toHaveLength(4);
+    expect(widths[1]).toBeCloseTo(64 * .11, 5); expect(widths[0]).toBeGreaterThan(widths[1]!); expect(widths[2]).toBeLessThan(widths[1]!);
+    expect(pixi.strokes[3]!.color).toBe(0x6faa98); expect(widths[3]! * map.getCamera().scale).toBeCloseTo(2, 10);
+    map.destroy();
   });
 });

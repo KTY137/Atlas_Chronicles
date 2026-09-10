@@ -10,6 +10,8 @@ export type MapStyle = "grundriss" | "gemalt" | "zeitwelten" | "genres";
 export interface GenerationDefaults {
   grundriss: GrundrissOptionen; hoehle: HoehleOptionen; siedlung: SiedlungOptionen;
   siedlungsarten?: Readonly<Record<SiedlungOptionen["art"], SiedlungOptionen>>;
+  /** Default interior extent per building type, in cells; the server sizes a typed interior by it. */
+  gebaeude?: Readonly<Partial<Record<BauwerkTyp, readonly [number, number]>>>;
 }
 export interface MapNode {
   knotenId: string; titel: string; art: string; x: number; y: number;
@@ -31,7 +33,8 @@ export function changeGenerationSetting(value: GenerationSettings, setting: Kart
   return { ...value, setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
 }
 export function generationDimensions(value: GenerationSettings, defaults: GenerationDefaults): readonly [number, number] {
-  const std = value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).ausdehnung : defaults[value.art].zellen;
+  const std = value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).ausdehnung
+    : value.art === "grundriss" && value.profil !== "frei" && defaults.gebaeude?.[value.profil] ? defaults.gebaeude[value.profil]! : defaults[value.art].zellen;
   return [value.breite === "" ? std[0] : value.breite, value.hoehe === "" ? std[1] : value.hoehe];
 }
 export function generationOptions(value: GenerationSettings, defaults: GenerationDefaults) {

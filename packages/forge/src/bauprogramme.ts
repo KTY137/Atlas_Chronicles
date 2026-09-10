@@ -152,3 +152,32 @@ export function programmRaeume(profil: BauwerkTyp, breite: number, hoehe: number
   }
   return result;
 }
+
+/**
+ * How large a building's interior is by default, in construction cells: a cottage is a
+ * handful of rooms, a church a long nave, a hospital a wing. Before this table every
+ * interior took the free floorplan's 40×30 canvas, so a farmhouse became four halls with a
+ * chair lost in each. A known footprint (the building's outline on the town map, in the
+ * town's cells) scales the interior instead, keeping its orientation, and never below the
+ * size its program needs.
+ */
+export const BAUWERK_AUSDEHNUNG: Readonly<Record<BauwerkTyp, readonly [number, number]>> = Object.freeze({
+  haus: [14, 12], kirche: [18, 24], taverne: [18, 14], schmiede: [14, 12], lager: [16, 13], turm: [12, 12],
+  wohnblock: [24, 18], buero: [22, 16], cafe: [16, 12], restaurant: [18, 14], supermarkt: [22, 16],
+  krankenhaus: [32, 24], polizei: [22, 16], feuerwache: [22, 16], schule: [28, 20], hotel: [24, 18],
+  fabrik: [30, 22], bahnhof: [28, 18], labor: [20, 16], raumhafen: [32, 24], raumstation: [28, 28],
+  medstation: [22, 18], kommando: [24, 24], reaktor: [22, 22], bibliothek: [20, 16], museum: [24, 18],
+  bank: [18, 14], werkstatt: [18, 14],
+});
+/** Interior cells per town cell: a town cell is roughly five paces, an interior cell one. */
+export const BAUWERK_MASSSTAB = 4.5;
+export function bauwerkAusdehnung(profil: BauwerkTyp, umfang?: readonly [number, number]): readonly [number, number] {
+  const standard = BAUWERK_AUSDEHNUNG[profil];
+  if (!umfang || !umfang.every(v => Number.isFinite(v) && v > 0)) return standard;
+  const [breite, hoehe] = umfang.map(v => Math.round(v * BAUWERK_MASSSTAB)) as [number, number];
+  // Keep the outline's proportions, but never shrink below what the rooms need nor grow past
+  // the free floorplan's canvas. A classic house scales its rooms down with it; a programmed
+  // building (a police station, a hospital) has a fixed list of rooms and keeps its full size.
+  const mindest: readonly [number, number] = BAUPROGRAMME[profil] ? standard : [Math.max(12, Math.ceil(standard[0] * .75)), Math.max(12, Math.ceil(standard[1] * .75))];
+  return [Math.max(mindest[0], Math.min(40, breite)), Math.max(mindest[1], Math.min(30, hoehe))];
+}

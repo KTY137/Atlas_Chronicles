@@ -88,7 +88,7 @@ describe("shared bounded cartography drawing", () => {
     const punkte: TacticalPoint[] = [[200,200],[400,200],[400,400],[200,400]];
     const outside = (material: "sea" | "river") => cartographyDraw(
       { ...document, geometry: { ...document.geometry, size: [600,600], regions: [{ id: "water", punkte }] } },
-      { ...cartography, regions: [{ regionId: "water", role: "water", material, authored: false, locked: false, provenance: null }] })
+      { ...cartography, regions: [{ regionId: "water", role: "water", material, authored: false, locked: false, provenance: null }] }, "fantasy", { paper: false })
       .polygons.some(polygon => polygon.points.some(point => point[0] < 180 || point[0] > 420 || point[1] < 180 || point[1] > 420));
     expect(outside("sea")).toBe(true);
     expect(outside("river")).toBe(false);
@@ -142,7 +142,7 @@ describe("relief in the painted drawing: shading, contour lines and summits that
     const flat = withRelief(() => 117), { relief: _relief, ...without } = flat.cartography;
     const flatDrawing = cartographyDraw(flat.document, flat.cartography), plainDrawing = cartographyDraw(flat.document, without);
     expect(flatDrawing.polygons.length).toBe(plainDrawing.polygons.length);
-    expect(flatDrawing.rendererVersion).toBe("cartography-8");
+    expect(flatDrawing.rendererVersion).toBe("cartography-9");
   });
   it("shades a slope on its lit and shadowed flanks and draws contour lines only above the water line", () => {
     // A ridge along the middle: land rises from the west edge to a crest and falls to the east,
@@ -164,7 +164,9 @@ describe("relief in the painted drawing: shading, contour lines and summits that
     const { relief: _relief, ...without } = ridge.cartography;
     const none = cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false, shading: false });
     expect(none.polygons.length).toBe(cartographyDraw(ridge.document, without).polygons.length);
-    expect(cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false }).polygons.filter(p => p.regionId === "ground" && p.fill === ink)).toHaveLength(0);
+    // Contours off leaves the hills their ink outlines (they belong to the shading); the contour lines themselves are gone.
+    expect(cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false }).polygons.filter(p => p.regionId === "ground" && p.fill === ink && (p.opacity === .3 || p.opacity === .46))).toHaveLength(0);
+    expect(cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false, shading: false, paper: false }).polygons.filter(p => p.regionId === "ground" && p.fill === ink)).toHaveLength(0);
   });
   it("grows summits with the land under a rock region and puts snow only above the snow line", () => {
     const { document, cartography } = fixture();
@@ -190,7 +192,8 @@ describe("relief in the painted drawing: shading, contour lines and summits that
       { ...cartography, regions: [{ regionId: "patch", role: "terrain", material, authored: false, locked: false, provenance: null }] }).polygons.filter(p => p.regionId === "patch");
     const swamp = paint("swamp"), snow = paint("snow");
     expect(swamp.length).toBeGreaterThan(30); expect(swamp.some(p => p.points.length === 10)).toBe(true);
-    expect(snow.length).toBeGreaterThan(10); expect(snow[0]!.fill).toBe(0xeef0ea);
-    expect(new Set(snow.slice(1).map(p => p.fill)).size).toBe(1);
+    expect(snow.length).toBeGreaterThan(10); expect(snow.some(p => p.fill === 0xeef0ea && p.opacity === 1 && p.points.length === 4)).toBe(true);
+    const drifts = snow.filter(p => p.opacity === .35);
+    expect(drifts.length).toBeGreaterThan(5); expect(new Set(drifts.map(p => p.fill)).size).toBe(1);
   });
 });

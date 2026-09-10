@@ -95,7 +95,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const scene = useMemo<ProjectedMapScene>(() => {
     const projected = mapDocumentScene(baseline.id, document, nodes, children.data?.art, document.background ? baseline.rasterDigest ?? baseline.contentHash : undefined, children.data?.setting, cartography, { contours: showContours, shading: showShading });
     if (revoked) return { id: baseline.id, width: projected.width, height: projected.height, cells: [], pins: [] };
-    return { ...projected, grid: showGrid ? (projected.grid?.kind === "none" ? { kind: "square" as const, size: cartography.construction.cellSize, origin: cartography.construction.origin } : projected.grid) : { kind: "none" as const },
+    return { ...projected, title: baseline.name, grid: showGrid ? (projected.grid?.kind === "none" ? { kind: "square" as const, size: cartography.construction.cellSize, origin: cartography.construction.origin } : projected.grid) : { kind: "none" as const },
       cells: projected.cells.map(cell => ({ ...cell, ...(cell.surface !== "building" && anchors.some(anchor => anchor.targetKind === "region" && anchor.targetId === cell.id) ? { fill: 0x60bb8d } : {}) })),
       pins: [...projected.pins.map(pin => ({ ...pin, id: `node:${pin.id}` })),
         ...visibleObjects.filter(object => object.entryId || objectKey(object) === selectedObject || object.kind === "place" && !nodes.some(node => {

@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { assetIndex, parseAssetpaket, parseTacticalMapDocument, serializeTacticalMapDocument } from "@chronicle/szene";
-import { erzeugeGrundriss, erzeugeSiedlung } from "../src/index.ts";
+import { assetIndex, BAUWERK_TYPEN, parseAssetpaket, parseTacticalMapDocument, serializeTacticalMapDocument } from "@chronicle/szene";
+import { BAUWERK_AUSDEHNUNG, bauwerkAusdehnung, erzeugeGrundriss, erzeugeSiedlung } from "../src/index.ts";
 
 const paket = parseAssetpaket(readFileSync(new URL("../../../assets/packs/pk.grundriss/paket.json", import.meta.url), "utf8"));
 const assets = assetIndex([paket]);
@@ -81,5 +81,45 @@ describe("named city buildings and architectural interiors", () => {
     expect(() => erzeugeGrundriss({ keim: "a", optionen: { profil: "burg" as never } }, paket)).toThrow();
     expect(() => erzeugeGrundriss({ keim: "a", optionen: { profil: null as never } }, paket)).toThrow();
     expect(() => erzeugeGrundriss({ keim: "a", optionen: { profil: "kirche", zellen: [12, 12], minRaum: 10 } }, paket)).toThrow();
+  });
+});
+
+describe("a typed building is one house: sized by its kind, enclosed, entered from the street", () => {
+  const stampAt = (g: ReturnType<typeof erzeugeGrundriss>, art: string) => g.karte.geometry.stamps.filter(s => s.a.split("/")[1]?.startsWith(art));
+  for (const profil of ["haus", "kirche", "taverne", "schmiede", "lager", "turm"] as const) it(`${profil}: default extent, hallway between the rooms, a front door with the entrance mark inside it`, () => {
+    const g = erzeugeGrundriss({ keim: `haus:${profil}`, optionen: { profil, moeblierung: 0 } }, paket), z = g.keim.optionen.zellgroesse as number;
+    expect(g.karte.geometry.size).toEqual(BAUWERK_AUSDEHNUNG[profil].map(cells => cells * z));
+    expect(g.karte.geometry.size[0]).toBeLessThanOrEqual(24 * z);
+    // The gaps the program leaves between rooms are hallway floor now, so the house is enclosed.
+    expect(g.bericht.gangzellen).toBeGreaterThan(0);
+    for (const room of g.raeume) expect(room.tueren.length, room.thema).toBeGreaterThan(0);
+    // The front door sits on the building's bottom wall: the one portal at the lowest room edge.
+    const bottom = Math.max(...g.raeume.map(room => (room.zellen[1] + room.zellen[3]) * z));
+    const front = g.karte.portals.filter(portal => portal.position[1] === bottom && portal.rotationRadians === 0);
+    expect(front).toHaveLength(1);
+    // The entrance mark stands in the cell just inside the front door, on top of that cell's floor.
+    const marks = g.karte.geometry.stamps.filter(stamp => Math.abs(stamp.x - front[0]!.position[0]) < 1e-6 && Math.abs(stamp.y - (front[0]!.position[1] - z / 2)) < 1e-6);
+    expect(marks.length).toBeGreaterThanOrEqual(2);
+    expect(g.bericht.stampsNachArt["marke"]).toBe(1);
+    expect(stampAt(g, "boden").length).toBeGreaterThan(g.raeume.length);
+  });
+  it("scales the interior from the building's outline on the town map, within the program's limits", () => {
+    expect(bauwerkAusdehnung("haus")).toEqual(BAUWERK_AUSDEHNUNG.haus);
+    expect(bauwerkAusdehnung("haus", [3, 2])).toEqual([14, 12]);
+    expect(bauwerkAusdehnung("kirche", [6, 5])).toEqual([27, 23]);
+    expect(bauwerkAusdehnung("lager", [12, 12])).toEqual([40, 30]);
+    expect(bauwerkAusdehnung("turm", [1, 1])).toEqual([12, 12]);
+    for (const profil of BAUWERK_TYPEN) {
+      const [w, h] = bauwerkAusdehnung(profil);
+      expect(w).toBeGreaterThanOrEqual(12); expect(h).toBeGreaterThanOrEqual(12); expect(w * h).toBeLessThanOrEqual(1200);
+      const g = erzeugeGrundriss({ keim: `default:${profil}`, optionen: { profil, moeblierung: 0 } }, paket);
+      expect(g.raeume.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+  it("keeps an explicitly chosen extent and the free floorplan's canvas untouched", () => {
+    const chosen = erzeugeGrundriss({ keim: "gewählt", optionen: { profil: "haus", zellen: [24, 18], moeblierung: 0 } }, paket);
+    expect(chosen.karte.geometry.size).toEqual([24 * 64, 18 * 64]);
+    const free = erzeugeGrundriss({ keim: "frei", optionen: { profil: "frei", moeblierung: 0 } }, paket);
+    expect(free.karte.geometry.size).toEqual([40 * 64, 30 * 64]);
   });
 });

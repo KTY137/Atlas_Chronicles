@@ -6,7 +6,7 @@ import type { FastifyInstance } from "fastify";
 import sharp from "sharp";
 import type { Knoten, TacticalMapDocumentV1 } from "@chronicle/szene";
 import { currentCampaignSemanticDiff, parseCurrentCampaignBundle, serializeCurrentCampaignBundle } from "@chronicle/io";
-import { SIEDLUNG_ERZEUGER, SIEDLUNG_VERSION } from "@chronicle/forge";
+import { bauwerkAusdehnung, SIEDLUNG_ERZEUGER, SIEDLUNG_VERSION } from "@chronicle/forge";
 import { buildApp } from "../src/app.ts";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -136,8 +136,11 @@ describe("settlements through the existing tactical and entrance contracts", () 
     expect(refused.statusCode).toBe(404);
     const building = buildings[0]!, entrance = await createBetreten(db, config).betretbar(gm, campaign, building.id, scope);
     expect(entrance.kindKeim).toBe(building.herkunft!.kindKeim);
+    // The interior is sized by the building's outline on the town map (`bauwerkAusdehnung`).
+    const outline = map.document.geometry.regions.find(region => region.id === building.id)!.punkte, cell = map.cartography!.construction.cellSize;
+    const umfang: readonly [number, number] = [(Math.max(...outline.map(p => p[0])) - Math.min(...outline.map(p => p[0]))) / cell, (Math.max(...outline.map(p => p[1])) - Math.min(...outline.map(p => p[1]))) / cell];
     const expected = await post("/tactical/generate/preview", body({ art: "grundriss", keim: entrance.kindKeim,
-      optionen: { setting: entrance.setting, profil: building.bauwerk!.typ } }));
+      optionen: { setting: entrance.setting, profil: building.bauwerk!.typ, zellen: bauwerkAusdehnung(building.bauwerk!.typ, umfang) } }));
     expect(expected.statusCode, expected.body).toBe(200);
     const opened = await post("/betreten", { commandId: randomUUID(), ...scope, knotenId: building.id, expectedVersion: children.version });
     expect(opened.statusCode, opened.body).toBe(200);
@@ -196,6 +199,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
   });
 
   it.each(["weiler", "dorf", "stadt"])("creates a nested %s from the retained parent seed and reopens it without rerolling", async siedlungsart => {
+    // Three generations plus a reopen; the stadt alone takes several seconds, so this case carries its own budget.
     const root = await generate({ art: "grundriss", name: `Parent ${siedlungsart}`, keim: `nested-${siedlungsart}` });
     const rootMap = await createTactical(db).getMap(gm, campaign, root.ack.subjectId);
     const scope = { parentKind: "tactical" as const, parentMapId: rootMap.id };
@@ -216,7 +220,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
     expect(reopened.statusCode, reopened.body).toBe(200);
     expect(reopened.json()).toEqual({ ...opened, erzeugt: false });
     expect((await post("/betreten", request)).json()).toEqual(opened);
-  });
+  }, 30_000);
 
   it("rejects foreign option vectors, misspelled kinds, numeric strings and malformed bounds", async () => {
     const invalid = [

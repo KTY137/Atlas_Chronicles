@@ -183,3 +183,15 @@ describe("setting and inherited interior choices", () => {
     expect(generationOptions({ ...child, art: "hoehle" }, defaults)).not.toHaveProperty("setting");
   });
 });
+
+describe("a building's interior takes its own default extent", () => {
+  it("shows the building type's extent instead of the free floorplan's canvas, unless the user chose one", () => {
+    const withBuildings: GenerationDefaults = { ...defaults, gebaeude: { haus: [14, 12], kirche: [18, 24] } };
+    expect(generationDimensions(generationSettings("grundriss", "haus"), withBuildings)).toEqual([14, 12]);
+    expect(generationDimensions(generationSettings("grundriss", "kirche"), withBuildings)).toEqual([18, 24]);
+    expect(generationDimensions(generationSettings("grundriss", "frei"), withBuildings)).toEqual([40, 30]);
+    expect(generationDimensions({ ...generationSettings("grundriss", "haus"), breite: 20 }, withBuildings)).toEqual([20, 12]);
+    expect(generationDimensions(generationSettings("grundriss", "haus"), defaults)).toEqual([40, 30]);
+    expect(generationOptions(generationSettings("grundriss", "haus"), withBuildings)).not.toHaveProperty("zellen");
+  });
+});

@@ -1,6 +1,40 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10** (Kartenstudio Stufe 10: Relief, Landschaft, Höhenwerkzeug)
+Updated: **2026-09-10, Runde 2** (Kartenstudio Stufe 11: Optik und das Haus hinter der Tür)
+
+## Kartenstudio Stufe 11: Optik über Inkarnate hinaus, Innenräume ab Ebene 1 — 2026-09-10
+
+Kayas Auftrag: visuell an Inkarnate und Co. vorbei (mit Recherche) und der Fehler, dass
+Hausinnenräume erst ab der zweiten Verschachtelungsebene gut aussehen. Spec
+`docs/superpowers/specs/2026-09-10-kartenstudio-optik-und-innenraum-design.md`, Nachweise
+`design/iterations/map-studio-20260910-optik.md`, Branch `feature/kartenstudio-relief`.
+
+**Der Fehler, im Browser reproduziert:** Ebene 1 bekam die freie Grundrissleinwand 40×30 (vier
+Säle, Möbel als Punkte), Räume mit Lücken statt Flur, ohne Außenwand und Haustür. Jetzt:
+Größe je Gebäudetyp (`BAUWERK_AUSDEHNUNG`) und aus dem Umriss auf der Stadtkarte
+(`bauwerkAusdehnung`, 4,5 Innenzellen je Stadtzelle; Programmgebäude behalten ihre volle
+Größe; gewählte Größe gewinnt), Flurzellen zwischen den Räumen (nur die Lücken, nicht die
+Hüllbox), Haustür in der Unterkante mit Eingangsmarke dahinter, Hallenboden wie der Hauptraum.
+`GRUNDRISS_VERSION` 8. Zweiter Fund unterwegs: die HTTP-Schemas kannten `relief`/`bewaldung`
+nicht, das Atlas-Betreten meldete „Bitte Eingaben prüfen" — behoben, von `e2e/nested-maps`
+gefangen.
+
+**Optik (`cartography-9`):** Pergamentflecken und Vignette (nur auf erzeugten Karten,
+`view.paper`), Wassertiefe in Stufen unter dem Meeresspiegel, Hügelkuppen auf steigendem Land
+(nicht auf Feldern), Fichten oberhalb und als Beimischung, Tusche an der Außenkante des
+Straßennetzes, Radspuren auf Wegen, Pflaster auf Straßen; Reihenfolge Boden → Relief → Wald →
+Fels. Renderer: Steinwände mit Schatten und Saum (Türen bleiben zwei Pixel), Kartusche mit dem
+Kartennamen (`scene.title`, geprüft).
+
+Grün: forge/szene/client/render plus server-Kartensuiten 96 Dateien, 1295 Fälle (neu:
+`bauwerke` Gebäudehaus, `betreten` Umriss, Projektion Papier/Tiefe/Hügel/Fichten/Straßen,
+Renderer Kartusche/Steinwand, Client Gebäudegröße); `e2e/nested-maps` 1/1, `map-studio` 3/3,
+`map-editor-cartography` 3/3; Typecheck, Build, `gate:sprache`, `gate:boundaries`,
+`gate:version`. Galerie-Prüfung trägt jetzt 60 s (unter Volllast 30,5 s, allein 7 s). Bilder:
+`.local/nested-probe/*.png` (vorher/nachher), `.local/relief-probe/png/*.png`. Offen: gebogene
+Beschriftungen, Bildtexturen, Streupinsel, Möbel an der Wand, Desktop nicht neu gebaut.
+
+Zuvor: **2026-09-10** (Kartenstudio Stufe 10: Relief, Landschaft, Höhenwerkzeug)
 
 ## Kartenstudio Stufe 10: Relief, Landschaft, Höhenwerkzeug — 2026-09-10
 

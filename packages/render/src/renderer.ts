@@ -91,7 +91,11 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   const chromeText = (size: number) => new Text({ text: "", style: { fontFamily: "system-ui, sans-serif", fontSize: size, fontWeight: "600",
     fill: chromeInk, stroke: { color: chromePaper, width: 2 } } });
   const compassLabel = chromeText(13), scaleLabel = chromeText(12);
-  chrome.addChild(scaleBar, compass, compassLabel, scaleLabel);
+  // The cartouche: the map's name on a strip of paper in the corner, set in a book face with a
+  // little air between the letters, the way a printed sheet names itself.
+  const titleBox = new Graphics(), titleText = new Text({ text: "", style: { fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 18, fontWeight: "600",
+    letterSpacing: 1.6, fill: chromeInk } });
+  chrome.addChild(scaleBar, compass, compassLabel, scaleLabel, titleBox, titleText);
   app.stage.addChild(chrome);
   const pinLabels: InstanceType<typeof Text>[] = [];
   let scene = initial;
@@ -143,13 +147,23 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   };
   /** Round steps for the scale bar; the largest one that fits 260 screen pixels wins. */
   const scaleSteps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10_000] as const;
-  let compassAt = "", scaleAt = "";
+  let compassAt = "", scaleAt = "", titleAt = "";
   const updateChrome = (): void => {
     chrome.visible = !!scene.drawing;
     // Keep each caption's own flag in step with the layer: a hidden container still leaves its
     // children claiming to be visible, and a map's names are counted by that flag.
     compassLabel.visible = scaleLabel.visible = chrome.visible;
+    titleText.visible = titleBox.visible = chrome.visible && !!scene.title?.trim();
     if (!chrome.visible) return;
+    const titleKey = `${scene.title ?? ""}:${viewport[0]}`;
+    if (titleText.visible && titleKey !== titleAt) {
+      titleAt = titleKey;
+      titleText.text = scene.title!.trim().length > 60 ? `${scene.title!.trim().slice(0, 59)}…` : scene.title!.trim();
+      const padding = 14, left = 18, top = 18, width = titleText.width + padding * 2, height = titleText.height + 12;
+      titleBox.clear().rect(left, top, width, height).fill(chromePaper).stroke({ color: chromeInk, width: 1.2 });
+      titleBox.rect(left + 3, top + 3, width - 6, height - 6).stroke({ color: chromeInk, width: .6, alpha: .6 });
+      titleText.position.set(left + padding, top + 6);
+    }
     const pitch = scene.grid && scene.grid.kind !== "none"
       // Hex cells are named by their circumradius; neighbours sit one inradius pair apart.
       ? scene.grid.kind === "hex" ? Math.sqrt(3) * scene.grid.size : scene.grid.size
@@ -228,16 +242,32 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   };
   const drawWalls = (): void => {
     wallsOverlay.clear();
+    const lines = (scene.lines ?? []).filter(line => line.paint !== false);
+    const trace = (points: readonly MapPoint[], dx = 0, dy = 0) => {
+      const first = points[0]!; wallsOverlay.moveTo(first[0] + dx, first[1] + dy);
+      for (let i = 1; i < points.length; i++) { const point = points[i]!; wallsOverlay.lineTo(point[0] + dx, point[1] + dy); }
+    };
+    // Walls (lines with no colour of their own) are drawn as stone: a cast shadow off to the
+    // south-east, the wall's body, and a pale seam along its crown. The body grows with the
+    // map's cell, never thinner than a screen line, so a battlemap wall reads as masonry at
+    // any zoom instead of as a hairline. Coloured lines (doors) keep their colour.
+    const cell = scene.grid && scene.grid.kind !== "none" ? scene.grid.size : 100;
+    const body = Math.max(2.4 / camera.scale, cell * .11), walls = lines.filter(line => line.color === undefined);
+    if (walls.length) {
+      for (const line of walls) trace(line.points, body * .45, body * .55);
+      wallsOverlay.stroke({ color: 0x1a1410, width: body * 1.15, alpha: .32 });
+      for (const line of walls) trace(line.points);
+      wallsOverlay.stroke({ color: 0x3b2f25, width: body });
+      for (const line of walls) trace(line.points);
+      wallsOverlay.stroke({ color: 0xd9c9a8, width: Math.max(1 / camera.scale, body * .22), alpha: .55 });
+    }
     let color: number | undefined;
-    // Batch only adjacent equal-color paths, retaining original overlap order.
-    // Zoom still rebuilds stroke geometry to preserve exactly 2 CSS pixels.
-    for (const line of scene.lines ?? []) {
-      if (line.paint === false) continue;
-      const next = line.color ?? 0xebc887;
-      if (color !== undefined && color !== next) wallsOverlay.stroke({ color, width: 2 / camera.scale });
-      color = next;
-      const first = line.points[0]!; wallsOverlay.moveTo(first[0], first[1]);
-      for (let i = 1; i < line.points.length; i++) { const point = line.points[i]!; wallsOverlay.lineTo(point[0], point[1]); }
+    // Batch only adjacent equal-colour paths, retaining original overlap order. Zoom still
+    // rebuilds their geometry to preserve exactly two CSS pixels: a door mark is a mark.
+    for (const line of lines) {
+      if (line.color === undefined) continue;
+      if (color !== undefined && color !== line.color) wallsOverlay.stroke({ color, width: 2 / camera.scale });
+      color = line.color; trace(line.points);
     }
     if (color !== undefined) wallsOverlay.stroke({ color, width: 2 / camera.scale });
   };

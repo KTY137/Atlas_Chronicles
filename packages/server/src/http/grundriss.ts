@@ -70,6 +70,9 @@ export const SiedlungOptionenSchema = Type.Object({
   strassenDichte: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
   grundstueck: Type.Optional(Type.Tuple([grundstueck, grundstueck])),
   licht: Type.Optional(Type.Boolean()),
+  // How mountainous the land is and how much of it carries woodland; 0..1 like the density.
+  relief: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
+  bewaldung: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
 }, closed);
 
 const gemeinsam = {
