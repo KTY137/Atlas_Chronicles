@@ -8,6 +8,7 @@ import { createIdentity } from "../packages/server/src/identity/index.ts";
 import { createCampaigns } from "../packages/server/src/domain/campaigns.ts";
 import { createDocuments } from "../packages/server/src/domain/documents.ts";
 import { contrastRatio, getThemePreset, THEME_PRESET_IDS } from "@chronicle/theme";
+import { LOOK_LABEL } from "../packages/client/src/features/look-namen";
 
 const schema = `chronicle_authoring_e2e_${randomUUID().replaceAll("-", "")}`;
 const port = 10100 + Math.floor(Math.random() * 150), origin = `http://localhost:${port}`;
@@ -43,18 +44,18 @@ test("local appearance persists, OS restrictions win and a theme revision reache
   try {
     await login(editor!); await login(reader!, player, "account");
     await editor!.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Aussehen(?:\s|$)/ }).click();
-    await editor!.getByRole("button", { name: "Vorlage Cyberpunk", exact: true }).click();
+    await editor!.getByRole("button", { name: `Mit ${LOOK_LABEL.Cyberpunk} beginnen`, exact: true }).click();
     await editor!.getByLabel("Name", { exact: true }).fill("");
     await expect(editor!.getByLabel("Name", { exact: true })).toBeVisible();
     await editor!.getByLabel("Name", { exact: true }).fill("Nacht am Hafen");
-    await editor!.getByRole("button", { name: "Als neues Theme speichern", exact: true }).click();
-    await expect(editor!.getByText("Theme-Version gespeichert.", { exact: false })).toBeVisible();
+    await editor!.getByRole("button", { name: "Als neue Gestaltung speichern", exact: true }).click();
+    await expect(editor!.getByText("Dein Entwurf ist gespeichert.", { exact: false })).toBeVisible();
     await expect(reader!.locator("html")).toHaveAttribute("data-appearance-theme", "Fantasy");
-    await editor!.getByRole("button", { name: "Gespeicherte Revision für die Runde übernehmen", exact: true }).click();
+    await editor!.getByRole("button", { name: "Für alle am Tisch freischalten", exact: true }).click();
     await expect(reader!.locator("html")).toHaveAttribute("data-appearance-theme", "Cyberpunk");
-    await reader!.getByLabel("Lokaler Look", { exact: true }).selectOption("PixelArt");
+    await reader!.getByRole("radio", { name: LOOK_LABEL.PixelArt, exact: true }).check();
     await reader!.getByLabel("Kontrast", { exact: true }).selectOption("high");
-    await reader!.getByLabel("Dekoration ausblenden", { exact: true }).check();
+    await reader!.getByLabel("Zierbilder ausblenden", { exact: true }).check();
     await reader!.reload();
     await expect(reader!.locator("html")).toHaveAttribute("data-appearance-theme", "PixelArt");
     await expect(reader!.locator("html")).toHaveAttribute("data-appearance-contrast", "high");
@@ -112,19 +113,19 @@ test("theme retries retain a lost write acknowledgement and a failed revision re
     if (failWrite) { failWrite = false; await route.abort("failed"); } else await route.fulfill({ response });
   });
   await page.route(/\/themes\/[^/?]+\?revision=1$/, async route => { if (failRead) { failRead = false; await route.abort("failed"); } else await route.continue(); });
-  const save = page.getByRole("button", { name: "Als neues Theme speichern", exact: true });
+  const save = page.getByRole("button", { name: "Als neue Gestaltung speichern", exact: true });
   await save.click(); await expect(page.locator(".authoring-workbench > .notice-error")).toBeVisible();
   await save.click(); await expect(page.locator(".authoring-workbench > .notice-error")).toBeVisible();
-  await save.click(); await expect(page.getByText("Theme-Version gespeichert.", { exact: false })).toBeVisible();
+  await save.click(); await expect(page.getByText("Dein Entwurf ist gespeichert.", { exact: false })).toBeVisible();
   expect(commands).toHaveLength(2); expect(commands[0]).toBe(commands[1]);
   const stored = await db.query("SELECT id FROM theme_presets p JOIN theme_preset_revisions r ON r.theme_id=p.id WHERE p.campaign_id=$1 AND r.manifest->>'name'=$2", [campaignId, "Einmal trotz Netzfehler"]); expect(stored.rowCount).toBe(1);
 });
 
-test("all four local skins keep actual account text and primary hover controls legible", async ({ page }) => {
+test("every local skin keeps actual account text and primary hover controls legible", async ({ page }) => {
   await login(page, player, "account");
   const samples: unknown[] = [];
   for (const preset of THEME_PRESET_IDS) {
-    await page.getByLabel("Lokaler Look", { exact: true }).selectOption(preset);
+    await page.getByRole("radio", { name: LOOK_LABEL[preset], exact: true }).check();
     const primary = page.getByRole("button", { name: "Passkey einrichten", exact: false });
     for (const hover of [false, true]) {
       if (hover) await primary.hover(); else await page.mouse.move(0, 0);
@@ -173,15 +174,15 @@ test("a proven Wiki import can be published with attribution and an explicitly c
 });
 
 test("draft recipe preview overrides the surrounding local skin in actual CSS", async ({ page }) => {
-  await login(page, gm, "account"); await page.getByLabel("Lokaler Look", { exact: true }).selectOption("PixelArt");
+  await login(page, gm, "account"); await page.getByRole("radio", { name: LOOK_LABEL.PixelArt, exact: true }).check();
   await page.getByRole("navigation", { name: "Bereiche" }).getByRole("button", { name: "Schmiede", exact: true }).click(); await page.getByRole("navigation", { name: "Werkstätten" }).getByRole("button", { name: /^Aussehen(?:\s|$)/ }).click();
-  await page.getByRole("button", { name: "Vorlage Medieval", exact: true }).click();
-  const preview = page.getByRole("region", { name: "Theme-Vorschau", exact: true });
+  await page.getByRole("button", { name: `Mit ${LOOK_LABEL.Medieval} beginnen`, exact: true }).click();
+  const preview = page.locator("section.theme-preview");
   await expect(page.locator("html")).toHaveAttribute("data-appearance-edges", "pixel");
   await expect(preview).toHaveCSS("border-top-style", "double"); await expect(preview).toHaveCSS("box-shadow", "none");
-  await expect(preview.getByRole("button", { name: "Primäre Aktion", exact: true })).toHaveCSS("border-radius", "4px");
+  await expect(preview.locator("button.button-primary")).toHaveCSS("border-radius", "4px");
   await expect(preview.locator(".lucide")).toHaveCSS("stroke-width", "1.5px");
-  page.once("dialog", dialog => dialog.accept()); await page.getByRole("button", { name: "Vorlage PixelArt", exact: true }).click();
+  page.once("dialog", dialog => dialog.accept()); await page.getByRole("button", { name: `Mit ${LOOK_LABEL.PixelArt} beginnen`, exact: true }).click();
   await expect(preview).toHaveCSS("border-top-style", "solid"); await expect(preview).not.toHaveCSS("box-shadow", "none");
   await expect(preview.locator(".lucide")).toHaveCSS("shape-rendering", "crispedges");
   await page.setViewportSize({ width: 390, height: 844 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

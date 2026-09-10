@@ -6,6 +6,7 @@ import { transformSync } from "esbuild";
 import { beforeEach, describe, expect, it } from "vitest";
 import * as Theme from "../../theme/src/index.ts";
 import * as I18n from "../src/i18n.ts";
+import { LOOK_LABEL } from "../src/features/look-namen";
 import { I18nStub, aktuelleSprache, locale, plural, setzeEnglischeQuelleFuerTests, setzeSprache, subscribe, t } from "../src/i18n.ts";
 
 const KATALOG = {
@@ -214,8 +215,11 @@ describe("Sprachwahl in „Deine Darstellung“", () => {
       "@chronicle/ui": { Button: "Button", Notice: "Notice" },
       "../i18n": { ...I18nStub, setzeSprache: spracheWechseln },
       "./Appearance": { spracheFehlerText: () => FEHLERTEXT, useAppearance: () => darstellung },
+      // Die Kachelwand der Looks ist ein eigenes Bauteil; hier zaehlt nur die Sprachwahl.
+      "./LookAuswahl": { LookAuswahl: "LookAuswahl" },
+      "./look-namen": { LOOK_LABEL },
     }, { window: { confirm: (frage: string) => { gerufen.confirm.push(frage); return bestaetigen; } } });
-    const auswahl = () => knoten(stand.render(modul.AppearanceSettings, {}), node => node.type === "select" && node.props["aria-label"] === "Sprache")[0];
+    const auswahl = () => knoten(stand.render(modul.AppearanceSettings, {}), node => node.type === "select" && (node.props.value === "de" || node.props.value === "en"))[0];
     return { stand, gerufen, auswahl, hinweise: () => knoten(stand.render(modul.AppearanceSettings, {}), node => node.type === "Notice" && node.props.error) };
   }
 
@@ -225,7 +229,7 @@ describe("Sprachwahl in „Deine Darstellung“", () => {
     expect(auswahl().props.value).toBe("de");
     auswahl().props.onChange({ target: { value: "en" } });
     await ruhe();
-    expect(gerufen.confirm).toEqual(["Sprache wechseln? Ungespeicherte Entwürfe gehen dabei verloren."]);
+    expect(gerufen.confirm).toEqual(["Sprache umstellen? Die Seite wird neu aufgebaut. Text, den du noch nicht gespeichert hast, geht dabei verloren."]);
     expect(gewechselt).toEqual([]);
     expect(gerufen.update).toEqual([]);
     expect(auswahl().props.value).toBe("de");

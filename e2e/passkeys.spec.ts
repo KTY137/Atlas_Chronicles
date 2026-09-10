@@ -26,7 +26,7 @@ test("real browser WebAuthn registration/login verifies signatures, consumes cha
   await page.getByLabel("Dein Name",{exact:true}).fill("Passkey Test");
   await page.getByLabel("Einrichtungsschlüssel").fill(bootstrapToken);
   await page.getByRole("button",{name:"Chronik einrichten"}).click();
-  await page.getByRole("button",{name:"Zugang verwalten"}).click();
+  await page.getByRole("button",{name:"Einstellungen"}).click();
   const initial=await (await page.request.get(`${origin}/api/me`)).json();
   await page.getByRole("button",{name:"Passkey einrichten",exact:true}).click();
   await expect(page.getByText("Dein Passkey wurde eingerichtet.")).toBeVisible();
@@ -36,7 +36,7 @@ test("real browser WebAuthn registration/login verifies signatures, consumes cha
   expect((await page.request.get(`${origin}/api/me`)).status()).toBe(404);
   const assertion=page.waitForRequest(r=>r.url()===`${origin}/api/passkeys/login`&&r.method()==="POST");
   await page.getByRole("button",{name:"Mit Passkey anmelden",exact:true}).click();
-  await expect(page.getByRole("button",{name:"Zugang verwalten"})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Einstellungen"})).toBeVisible();
   const signedResponse=(await assertion).postDataJSON();
   const returned=await (await page.request.get(`${origin}/api/me`)).json();
   expect(returned.userId).toBe(initial.userId);expect(returned.credentialId).not.toBe(initial.credentialId);

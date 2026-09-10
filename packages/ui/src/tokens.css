@@ -1,15 +1,50 @@
 /* SPDX-License-Identifier: BUSL-1.1
    Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
-/* Production tokens extracted from the ratified Obsidian shell reference. */
+
+/* Die Startwerte der Oberflaeche — wortgleich das Preset „Fantasy" aus
+   packages/theme/src/presets.ts, dem oeffentlichen Standard-Look.
+
+   Warum das hier ueberhaupt steht: `Appearance.tsx` schreibt alle 34 Farben zur Laufzeit als
+   Inline-Variablen auf `<html>` und schlaegt damit jede Regel hier. Es bleiben aber drei
+   Fenster, in denen NUR diese Datei gilt — der erste Anstrich vor dem ersten Layout-Effekt,
+   der Absturzschirm (er haengt ausserhalb des Providers) und jeder Prueftisch ohne Provider.
+
+   Die Datei fuehrte frueher 15 handgepflegte Werte aus der alten „Obsidian"-Vorlage. Das
+   Theme-Paket hat den Kontrast spaeter angehoben, diese Datei nicht — in diesen drei Fenstern
+   galten also messbar schlechtere Farben, und 20 der 34 Token fehlten ganz, sodass jedes
+   `var(--focus)`, `var(--ok-soft)` oder `var(--input-bg)` ins Leere lief. Deshalb steht hier
+   jetzt der vollstaendige Satz, abgeglichen mit `THEME_PRESETS.Fantasy`.
+
+   `packages/theme/test/tokens-css.test.ts` haelt beides zusammen: weicht eine Zahl hier vom
+   Preset ab, wird der Test rot. Beim Aendern also das Preset aendern und den Test die neue
+   Zahl nennen lassen — nicht umgekehrt. */
 :root {
   color-scheme: dark;
-  --bg: #0a0c0d; --bg-deep: #060708; --surface: #121517; --surface-2: #191d20;
-  --line: rgba(216,206,188,.13); --line-strong: rgba(216,206,188,.28);
-  --text: #e8e3d8; --text-muted: #aaa493; --text-faint: #817b6e;
-  --accent: #d98e3b; --accent-strong: #f0a84b; --accent-ink: #14100a; --accent-soft: rgba(217,142,59,.12);
-  --ok: #9abb96; --danger: #ef9387;
+  --bg: #0a0c0d; --bg-deep: #060708; --surface: #121517; --surface-2: #191d20; --surface-hover: #24282b; --input-bg: #0d1011;
+  --line: #353938; --line-strong: #62665f; --control-line: #96998f;
+  --text: #f0ebe1; --text-muted: #c4beaf; --text-faint: #b6b0a1;
+  --accent: #e6a55a; --accent-strong: #ffc476; --accent-ink: #17110a; --accent-soft: #292115; --link: #f0b976; --link-visited: #d6b7ec; --focus: #ffd99c;
+  --ok: #b6d4a9; --ok-soft: #152619; --danger: #ffb1a6; --danger-soft: #2c1918; --warning: #f5d181; --warning-soft: #292312; --info: #a2d4ef; --info-soft: #14242b; --private: #d6b7ec; --private-soft: #241b2b;
+  --selection: #f0b976; --selection-ink: #17110a; --disabled: #b6b0a1; --disabled-bg: #191d20; --overlay: #060708;
+
+  /* Aliasse aus der Zeit vor dem Theme-Paket; `Appearance.tsx` setzt dieselben zwei. */
+  --muted: #c4beaf; --surface-1: #121517;
+
   --font-display: "Cinzel", Georgia, serif;
   --font-body: "IBM Plex Sans Variable", system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
-  --radius: 8px;
+  --font-mono: ui-monospace, Consolas, monospace;
+
+  /* Form und Bewegung. Auch diese Werte ueberschreibt das gewaehlte Aussehen zur Laufzeit;
+     ohne sie faellt jede `var(--radius)`-Regel auf ihren jeweiligen Ersatzwert zurueck, und
+     genau daher kamen die frueheren `var(--radius, 6px)`-Stellen mit 6 statt 12 Pixeln. */
+  --radius: 12px; --theme-border: 1px; --theme-space: 8px;
+  --control-motion: 120ms; --panel-motion: 220ms; --motion-easing: ease;
+
+  /* Die Erhebungsleiter. Drei Stufen, mehr nicht: ruhende Flaeche, angehobene Flaeche,
+     schwebende Flaeche. Vorher hatte die Oberflaeche gar keine Erhebung, und die vier
+     schwebenden Flaechen im Produkt (Kartenwerkzeuge, Vorschlagsliste, Kontextmenue,
+     Beutekarte) benutzten vier verschiedene Rezepte fuer dieselbe Aufgabe. */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .28);
+  --shadow-2: 0 4px 14px rgba(0, 0, 0, .32);
+  --shadow-3: 0 14px 36px rgba(0, 0, 0, .42);
 }

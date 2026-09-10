@@ -1,42 +1,125 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { DEFAULT_ACCESSIBILITY_PREFERENCES, THEME_PRESET_IDS, type AccessibilityPreferencesV2 } from "@chronicle/theme";
+import { DEFAULT_ACCESSIBILITY_PREFERENCES, type AccessibilityPreferencesV2 } from "@chronicle/theme";
 import { Button, Notice } from "@chronicle/ui";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { setzeSprache, t } from "../i18n";
 import { spracheFehlerText, useAppearance } from "./Appearance";
+import { LookAuswahl } from "./LookAuswahl";
+import { LOOK_LABEL } from "./look-namen";
+
+/**
+ * Eine beschriftete Wahl mit einem Satz darunter, der das ERGEBNIS beschreibt.
+ *
+ * Der Satz ist nicht Zierde. Vorher hiess eine Wahl „Gestaltung" und bot „Schlicht",
+ * „Ausgestaltet", „Szenisch" an — drei Woerter, aus denen niemand ableiten kann, was sich
+ * sichtbar aendert. Jede Wahl hier sagt jetzt, was danach anders aussieht.
+ *
+ * Kein `aria-label`: das umschliessende `<label>` benennt das Feld bereits. Ein zweiter,
+ * wortgleicher Name geht beim naechsten Umformulieren auseinander, und dann sagt die
+ * Sprachausgabe etwas anderes als der Bildschirm.
+ */
+function Wahl({ titel, hilfe, wert, aendere, optionen }: {
+  titel: string; hilfe: string; wert: string;
+  aendere: (naechster: string) => void;
+  optionen: readonly (readonly [string, string])[];
+}) {
+  return <div className="wahl-feld">
+    <label>{titel}
+      <select value={wert} onChange={ereignis => aendere(ereignis.target.value)}>
+        {optionen.map(([schluessel, beschriftung]) => <option key={schluessel} value={schluessel}>{beschriftung}</option>)}
+      </select>
+    </label>
+    <p className="field-help">{hilfe}</p>
+  </div>;
+}
+
+function Haken({ an, aendere, titel, hilfe }: { an: boolean; aendere: (an: boolean) => void; titel: string; hilfe: ReactNode }) {
+  return <div className="wahl-feld">
+    <label className="check-label"><input type="checkbox" checked={an} onChange={ereignis => aendere(ereignis.target.checked)} /> {titel}</label>
+    <p className="field-help">{hilfe}</p>
+  </div>;
+}
 
 export function AppearanceSettings() {
   const { preferences, resolved, preferencesRecovered, spracheFehler, storageError, update } = useAppearance();
   const [wechselFehler, setWechselFehler] = useState("");
-  const change = <K extends keyof AccessibilityPreferencesV2>(key: K, value: AccessibilityPreferencesV2[K]) => update({ ...preferences, [key]: value });
+  // Zaehlt hoch, wenn ein Wechsel abgebrochen wurde. Ohne das bleibt im Auswahlfeld die
+  // abgebrochene Wahl stehen: React zeichnet nicht neu, weil sich der Zustand nicht geaendert
+  // hat — der Nutzer laese dann „English", waehrend die Oberflaeche deutsch bleibt.
+  const [ruecksetzer, setRuecksetzer] = useState(0);
+  const change = <K extends keyof AccessibilityPreferencesV2>(key: K, value: AccessibilityPreferencesV2[K]) =>
+    update({ ...preferences, [key]: value });
+
   // Der Sprachwechsel baut die ganze Ansicht neu auf. Wer gerade schreibt, verliert den
   // Entwurf, also wird vorher gefragt; erst nach geladenem Katalog wird die Wahl gespeichert.
   const wechsleSprache = async (naechste: AccessibilityPreferencesV2["language"]) => {
     if (naechste === preferences.language) return;
-    if (!window.confirm(t("Sprache wechseln? Ungespeicherte Entwürfe gehen dabei verloren."))) return;
+    if (!window.confirm(t("Sprache umstellen? Die Seite wird neu aufgebaut. Text, den du noch nicht gespeichert hast, geht dabei verloren."))) {
+      setRuecksetzer(stand => stand + 1);
+      return;
+    }
     try { await setzeSprache(naechste); setWechselFehler(""); update({ ...preferences, language: naechste }); }
     catch { setWechselFehler(spracheFehlerText()); }
   };
-  return <section className="panel appearance-settings"><h2>{t("Deine Darstellung")}</h2><p>{t("Diese Einstellungen gelten für deinen Browser. Sie verändern weder die Kampagne noch die Ansicht der anderen Mitspieler.")}</p>
-    <div className="rule-fields">
-      <label>{t("Sprache")}<select aria-label={t("Sprache")} value={preferences.language} onChange={e => void wechsleSprache(e.target.value as AccessibilityPreferencesV2["language"])}><option value="de">Deutsch</option><option value="en">English</option></select></label>
-      <label>{t("Lokaler Look")}<select aria-label={t("Lokaler Look")} value={preferences.localSkin ?? "campaign"} onChange={e => change("localSkin", e.target.value === "campaign" ? null : e.target.value as AccessibilityPreferencesV2["localSkin"])}><option value="campaign">{t("Kampagnentheme verwenden")}</option>{THEME_PRESET_IDS.map(preset => <option key={preset}>{preset}</option>)}</select></label>
-      <label>{t("Kontrast")}<select aria-label={t("Kontrast")} value={preferences.contrast} onChange={e => change("contrast", e.target.value as AccessibilityPreferencesV2["contrast"])}><option value="system">{t("Systemeinstellung")}</option><option value="normal">{t("Standard")}</option><option value="high">{t("Hoher Kontrast")}</option></select></label>
-      <label>{t("Bewegung")}<select aria-label={t("Bewegung")} value={preferences.motion} onChange={e => change("motion", e.target.value as AccessibilityPreferencesV2["motion"])}><option value="system">{t("Systemeinstellung")}</option><option value="reduced">{t("Bewegung reduzieren")}</option></select></label>
-      <label>{t("Transparenz")}<select aria-label={t("Transparenz")} value={preferences.transparency} onChange={e => change("transparency", e.target.value as AccessibilityPreferencesV2["transparency"])}><option value="system">{t("Systemeinstellung")}</option><option value="reduced">{t("Transparenz reduzieren")}</option></select></label>
-      <label>{t("Leseschrift")}<select aria-label={t("Leseschrift")} value={preferences.font} onChange={e => change("font", e.target.value as AccessibilityPreferencesV2["font"])}><option value="theme">{t("Theme-Schrift")}</option><option value="system">{t("Systemschrift")}</option><option value="reader">{t("Leseschrift")}</option></select></label>
-      <label>{t("Abstände")}<select aria-label={t("Abstände")} value={preferences.density} onChange={e => change("density", e.target.value as AccessibilityPreferencesV2["density"])}><option value="comfortable">{t("Großzügig")}</option><option value="compact">{t("Kompakt")}</option></select></label>
-      <label>{t("Gestaltung")}<select aria-label={t("Gestaltung")} value={preferences.atmosphere} onChange={e => change("atmosphere", e.target.value as AccessibilityPreferencesV2["atmosphere"])}><option value="clean">{t("Schlicht")}</option><option value="crafted">{t("Ausgestaltet")}</option><option value="cinematic">{t("Szenisch")}</option></select></label>
+
+  const systemwahl = t("So wie mein Gerät es vorgibt");
+  return <section className="panel appearance-settings"><h2>{t("Deine Darstellung")}</h2>
+    <p>{t("Diese Einstellungen gelten nur für dich und nur in diesem Browser. Sie verändern weder die Kampagne noch das Bild der anderen Mitspieler.")}</p>
+
+    <LookAuswahl gewaehlt={preferences.localSkin} aktiv={resolved.basePreset}
+      aendere={naechster => change("localSkin", naechster)} />
+
+    <div className="wahl-gitter">
+      <div className="wahl-feld">
+        <label>{t("Sprache")}
+          <select key={ruecksetzer} value={preferences.language}
+            onChange={ereignis => void wechsleSprache(ereignis.target.value as AccessibilityPreferencesV2["language"])}>
+            <option value="de">Deutsch</option><option value="en">English</option>
+          </select>
+        </label>
+        <p className="field-help">{t("Ändert die Wörter der Oberfläche. Was ihr selbst geschrieben habt — Artikel, Namen, Notizen — bleibt so, wie es ist.")}</p>
+      </div>
+
+      <Wahl titel={t("Kontrast")} wert={preferences.contrast} aendere={wert => change("contrast", wert as AccessibilityPreferencesV2["contrast"])}
+        hilfe={t("Hoher Kontrast schaltet auf Schwarz, Weiß und wenige kräftige Farben mit deutlichen Rändern. Gut bei hellem Licht oder schwacher Sicht.")}
+        optionen={[["system", systemwahl], ["normal", t("Normal")], ["high", t("Hoher Kontrast")]]} />
+
+      <Wahl titel={t("Bewegte Übergänge")} wert={preferences.motion} aendere={wert => change("motion", wert as AccessibilityPreferencesV2["motion"])}
+        hilfe={t("Ohne Übergänge erscheinen Fenster und Knöpfe sofort, statt sanft einzublenden. Hilft bei Schwindel und auf langsamen Geräten.")}
+        optionen={[["system", systemwahl], ["reduced", t("Übergänge weglassen")]]} />
+
+      <Wahl titel={t("Durchscheinende Flächen")} wert={preferences.transparency} aendere={wert => change("transparency", wert as AccessibilityPreferencesV2["transparency"])}
+        hilfe={t("Deckend heißt: Leisten und Fenster sind einfarbig, statt den Inhalt dahinter durchscheinen zu lassen. Text ist dann leichter zu lesen.")}
+        optionen={[["system", systemwahl], ["reduced", t("Flächen deckend machen")]]} />
+
+      <Wahl titel={t("Schriftart")} wert={preferences.font} aendere={wert => change("font", wert as AccessibilityPreferencesV2["font"])}
+        hilfe={t("Die letzte Wahl nutzt eine breite, ruhige Schrift ohne Zierat — angenehm bei langen Textstellen.")}
+        optionen={[["theme", t("Schrift des gewählten Aussehens")], ["system", t("Schrift meines Geräts")], ["reader", t("Besonders gut lesbare Schrift")]]} />
+
+      <Wahl titel={t("Platz zwischen den Elementen")} wert={preferences.density} aendere={wert => change("density", wert as AccessibilityPreferencesV2["density"])}
+        hilfe={t("Viel Luft: größere Knöpfe und mehr Abstand, gut am Tablet und am Tisch. Eng: es passt mehr auf den Bildschirm.")}
+        optionen={[["comfortable", t("Viel Luft")], ["compact", t("Eng")]]} />
+
+      <Wahl titel={t("Wie schmuckvoll?")} wert={preferences.atmosphere} aendere={wert => change("atmosphere", wert as AccessibilityPreferencesV2["atmosphere"])}
+        hilfe={t("Nüchtern: keine Schatten, keine Verläufe. Mit Verzierungen: Schatten und Zierkanten an Feldern. Stimmungsvoll: zusätzlich ein farbiger Lichtschein hinter der Seite.")}
+        optionen={[["clean", t("Nüchtern")], ["crafted", t("Mit Verzierungen")], ["cinematic", t("Stimmungsvoll")]]} />
     </div>
-    <label className="check-label"><input type="checkbox" checked={preferences.art === "off"} onChange={e => change("art", e.target.checked ? "off" : "on")} /> {t("Dekoration ausblenden")}</label>
-    <label className="check-label"><input type="checkbox" checked={preferences.lowPower} onChange={e => change("lowPower", e.target.checked)} /> {t("Ruhige Darstellung für geringe Leistung")}</label>
-    <p className="field-help">{t("Aktiv: {preset}. Einschränkungen deines Betriebssystems haben Vorrang. Browserzoom und erzwungene Systemfarben bleiben verfügbar.", { preset: resolved.basePreset })}</p>
+
+    <Haken an={preferences.art === "off"} aendere={an => change("art", an ? "off" : "on")}
+      titel={t("Zierbilder ausblenden")}
+      hilfe={t("Angehakt heißt: Wappen, Sternchen und Schmuckgrafiken verschwinden. Text und Bedienung bleiben vollständig.")} />
+    <Haken an={preferences.lowPower} aendere={an => change("lowPower", an)}
+      titel={t("Sparsame Darstellung für ältere Geräte")}
+      hilfe={t("Schaltet aufwendige Effekte ab, damit die Seite auch auf langsamen Geräten flüssig bleibt.")} />
+
+    {/* Angesagt, nicht nur gezeigt: wer die Wahl per Tastatur trifft, hoert das Ergebnis.
+        Vorher war das ein stummes <p>, das sich unbemerkt aenderte. */}
+    <p className="field-help" role="status">{t("Gerade sichtbar: {look}.", { look: t(LOOK_LABEL[resolved.basePreset]) })} {t("Wenn dein Gerät größere Schrift, weniger Bewegung oder eigene Farben vorgibt, gilt das immer zuerst. Vergrößern mit Strg und + funktioniert weiterhin.")}</p>
+
     {wechselFehler || spracheFehler ? <Notice error>{wechselFehler || spracheFehler}</Notice> : null}
     {storageError ? <Notice error>{storageError}</Notice> : null}
-    {/* Roh deutsch ohne t(): dieser Satz entsteht nach den acht Übersetzungspaketen und hat
-        noch keinen Katalogeintrag. Er ist gemeldet und gehört in das nächste Sprachpaket. */}
     {preferencesRecovered ? <Notice error>{t("Deine gespeicherte Darstellung war beschädigt und wurde auf die Vorgabe zurückgesetzt.")}</Notice> : null}
-    <Button onClick={() => update(DEFAULT_ACCESSIBILITY_PREFERENCES)}>{t("Lokale Darstellung zurücksetzen")}</Button>
+    <Button onClick={() => update(DEFAULT_ACCESSIBILITY_PREFERENCES)}>{t("Meine Einstellungen zurücksetzen")}</Button>
   </section>;
 }

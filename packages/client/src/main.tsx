@@ -7,6 +7,10 @@ import "@fontsource-variable/ibm-plex-sans";
 import "@chronicle/ui/tokens.css";
 import "./styles.css";
 import "./features/appearance.css";
+// Zuletzt: Zustände, Bewegung und Erhebung. Die Datei benutzt nur Token und gilt daher in
+// jedem Look; die Rücknahmen aus appearance.css („Schlicht", „Hoher Kontrast",
+// „Bewegung reduzieren") wiegen weiterhin schwerer und bleiben wirksam.
+import "./zustaende.css";
 import { registriereUebersetzer } from "@chronicle/ui";
 import { t } from "./i18n";
 import { App } from "./App";

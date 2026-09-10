@@ -147,10 +147,36 @@ describe("declared contrast evidence", () => {
     expect(pixel.typography).toEqual({ display: "mono", body: "mono", mono: "mono" });
     expect(pixel.geometry).toMatchObject({ radius: 0, border: 2, edges: "pixel", icons: "pixel" });
     expect(pixel.sampling).toBe("nearest"); expect(resolveTheme(pixel).motion.cadence).toBe("steps");
-    expect(new Set(THEME_PRESET_IDS.map(id => serializeThemeManifest(THEME_PRESETS[id]))).size).toBe(5);
+    // Kein Look ist die Kopie eines anderen: zwoelf Kennungen, zwoelf verschiedene Dateien.
+    expect(new Set(THEME_PRESET_IDS.map(id => serializeThemeManifest(THEME_PRESETS[id]))).size).toBe(THEME_PRESET_IDS.length);
     expect(THEME_PRESETS.Medieval.colors.bg).not.toBe(THEME_PRESETS.Fantasy.colors.bg);
     expect(THEME_PRESETS.Cyberpunk.geometry.edges).not.toBe(THEME_PRESETS.Fantasy.geometry.edges);
     expect(PUBLIC_DEFAULT_THEME).toBe(THEME_PRESETS.Fantasy);
+  });
+
+  /** Ein Look traegt seine eigene Kennung. Ohne diese Zusicherung koennte ein kopierter
+   * Eintrag auf den Grundstil eines anderen zeigen, und die Werkstatt zeigte den falschen. */
+  it.each(THEME_PRESET_IDS)("%s names itself as its own base preset", id => {
+    expect(THEME_PRESETS[id].basePreset).toBe(id);
+    expect(THEME_PRESETS[id].name).toBe(id);
+  });
+
+  /** Helle Looks sind der Grund, warum keine Regel in der Oberflaeche eine dunkle Farbe fest
+   * verdrahten darf. Faellt der letzte helle Look weg, faellt auch dieser Schutz — dann soll
+   * dieser Test rot werden, nicht erst ein Nutzer vor weissem Text auf weissem Grund stehen. */
+  it("ships light looks as well as dark ones", () => {
+    const helligkeit = (hex: string) => {
+      const kanal = (offset: number) => {
+        const wert = Number.parseInt(hex.slice(offset, offset + 2), 16) / 255;
+        return wert <= 0.04045 ? wert / 12.92 : ((wert + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * kanal(1) + 0.7152 * kanal(3) + 0.0722 * kanal(5);
+    };
+    const hell = THEME_PRESET_IDS.filter(id => helligkeit(THEME_PRESETS[id].colors.bg) > 0.18);
+    expect(hell).toEqual(expect.arrayContaining(["Medieval", "Parchment", "Dawn"]));
+    expect(hell.length).toBeLessThan(THEME_PRESET_IDS.length);
+    // Ein heller Look braucht dunkle Schrift; sonst ist er nur ein dunkler mit heller Flaeche.
+    for (const id of hell) expect(helligkeit(THEME_PRESETS[id].colors.text)).toBeLessThan(0.18);
   });
 });
 

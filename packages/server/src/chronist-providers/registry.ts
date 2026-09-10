@@ -7,6 +7,8 @@ import type { ChronistProviderDescription } from "@chronicle/protocol";
 import type { ChronistRuntimeConfig } from "../domain/chronist/runtime.ts";
 import { createChronistHttpBinding, type ChronistHttpProviderConfig, type ChronistHttpDependencies } from "./http.ts";
 import { activateChronistCli, createChronistCliBinding, type ChronistCliProviderConfig, type ChronistCliActivation } from "./cli.ts";
+import { scanChronistLocal } from "./discovery.ts";
+import type { ChronistLocalScanReport } from "@chronicle/protocol";
 
 const MAX_CONFIG_BYTES = 256 * 1024, MAX_MODELS = 32;
 export const CHRONIST_UNCONFIGURED_MODEL = "Kein lokales Modell eingerichtet";
@@ -135,35 +137,71 @@ async function boundedFile(path: string): Promise<string> {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, length));
   } finally { await handle.close(); }
 }
-/** The operator file's own local address, normalized exactly like the dispatch endpoint. */
-function tagsUrl(baseUrl: string): string {
-  const url = new URL(baseUrl);
-  if (url.hostname === "localhost") url.hostname = "127.0.0.1";
-  url.pathname = `${url.pathname.replace(/\/$/, "")}/api/tags`;
-  return url.href;
-}
-/** A local Ollama entry that names no model yet: only the placeholder invites startup discovery.
- *  An entry with a concrete model is the operator's decision and is never queried or replaced. */
+/** Ein lokaler Ollama-Eintrag, der noch kein Modell nennt: nur der Platzhalter laedt zur Suche
+ *  ein. Ein Eintrag mit einem konkreten Modell ist die Entscheidung des Betreibers und wird
+ *  weder abgefragt noch ersetzt. */
 function awaitsDiscovery(provider: ChronistHttpProviderConfig | ChronistCliProviderConfig): provider is ChronistHttpProviderConfig {
   return provider.profileId === "ollama-chat-1" && provider.location === "lokal"
     && provider.models.length === 1 && provider.models[0] === CHRONIST_UNCONFIGURED_MODEL;
 }
-async function localModels(invokeFetch: typeof fetch, baseUrl = "http://127.0.0.1:11434"): Promise<readonly string[]> {
-  // Startup discovery reads installed model names only. It neither downloads nor invokes a model.
-  const response = await invokeFetch(tagsUrl(baseUrl), { redirect: "manual", signal: AbortSignal.timeout(1000) });
-  if (!response.ok || !response.body) { await response.body?.cancel(); return []; }
-  const reader = response.body.getReader(), chunks: Uint8Array[] = []; let length = 0;
-  try {
-    for (;;) { const next = await reader.read(); if (next.done) break; length += next.value.byteLength; if (length > MAX_CONFIG_BYTES) fail(); chunks.push(next.value); }
-    const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)));
-    if (!value || typeof value !== "object" || !Array.isArray((value as { models?: unknown }).models)) return [];
-    const names = (value as { models: unknown[] }).models.flatMap(model => {
-      const name = model && typeof model === "object" ? (model as { name?: unknown }).name : undefined;
-      return typeof name === "string" && name.trim() && name.length <= 256 && !/[\u0000-\u001f\u007f]/.test(name) ? [name] : [];
-    });
-    return [...new Set(names)].sort().slice(0, MAX_MODELS);
-  } finally { await reader.cancel().catch(() => undefined); }
+
+/**
+ * Einen Satz Anbieter mit dem Ergebnis eines Suchlaufs auffrischen.
+ *
+ * Beruehrt ausschliesslich Ollama-Eintraege, die noch den Platzhalter tragen. Findet die Suche
+ * nichts, bleibt der Platzhalter stehen — ein Eintrag, der sichtbar „noch nicht bereit" ist,
+ * sagt mehr als gar kein Eintrag.
+ */
+const LEERER_LAUF = (): ChronistLocalScanReport => Object.freeze({ scannedAt: Date.now(), entries: Object.freeze([]), found: null });
+
+async function withDiscovery(settings: ChronistHostSettings,
+  options: { readonly fetch?: typeof fetch; readonly environment?: Readonly<Record<string, string | undefined>> },
+  umfang: "datei" | "breit",
+): Promise<{ readonly settings: ChronistHostSettings; readonly scan: ChronistLocalScanReport }> {
+  const offen = settings.providers.filter(awaitsDiscovery);
+  // Nichts zu suchen heisst: gar nicht suchen. Eine Betreiberdatei, die konkrete Modelle nennt
+  // oder gar kein Ollama fuehrt, darf keinen einzigen Netzzugriff ausloesen.
+  if (!offen.length) return { settings, scan: LEERER_LAUF() };
+  // `umfang` haelt die Festlegung vom 2026-09-08 ein: eine Betreiberdatei sagt, WO gesucht wird,
+  // und hinter ihrem Ruecken werden keine weiteren Adressen angefasst. Breit gesucht wird nur
+  // ohne Datei — und auf ausdruecklichen Knopfdruck in der Oberflaeche.
+  const scan = await scanChronistLocal({ ...(options.fetch ? { fetch: options.fetch } : {}),
+    environment: options.environment ?? process.env,
+    baseUrls: offen.map(provider => provider.baseUrl),
+    ...(umfang === "datei" ? { exclusive: true } : {}) });
+  if (!scan.found) return { settings, scan };
+  const treffer = scan.found;
+  return { scan, settings: { ...settings, providers: settings.providers.map(provider =>
+    awaitsDiscovery(provider) ? { ...provider, baseUrl: treffer.baseUrl, models: [...treffer.models], available: true } : provider) } };
 }
+
+/**
+ * Eine Laufzeit, die sich austauschen laesst, ohne dass irgendwer sie neu bekommt.
+ *
+ * Die Anbieterliste haengt an einem Getter statt an einem festen Feld: alles, was diese Laufzeit
+ * schon in der Hand haelt, sieht nach einem Suchlauf sofort das neue Ergebnis. `close` schliesst
+ * immer die AKTUELLE innere Laufzeit — alle inneren teilen sich dieselben aktivierten
+ * Befehlszeilen-Bruecken, also wird jede genau einmal beendet.
+ */
+function createRescanableRuntime(initial: ChronistRuntimeConfig,
+  rescan: () => Promise<{ readonly runtime: ChronistRuntimeConfig; readonly scan: ChronistLocalScanReport }>): ChronistRuntimeConfig {
+  let current = initial, laufend: Promise<ChronistLocalScanReport> | undefined;
+  return Object.freeze({
+    get providers() { return current.providers; },
+    // `?? 2` ist derselbe Vorgabewert, den `parseChronistHostSettings` einsetzt; die innere
+    // Laufzeit fuehrt ihn immer, der Getter darf ihn nach aussen aber nicht als fehlend melden.
+    get globalConcurrency() { return current.globalConcurrency ?? 2; },
+    resolveProvider: (id: string, model: string) => current.resolveProvider(id, model),
+    close: () => current.close?.() ?? Promise.resolve(),
+    // Zwei gleichzeitige Klicks duerfen nicht zwei Suchlaeufe ausloesen; der zweite bekommt
+    // das Ergebnis des ersten.
+    rescanLocal: () => laufend ??= (async () => {
+      try { const { runtime, scan } = await rescan(); current = runtime; return scan; }
+      finally { laufend = undefined; }
+    })(),
+  });
+}
+
 /** Called only by an explicit host startup, never by an import or provider-list request. */
 export async function loadChronistRuntime(options: { readonly configPath?: string; readonly environment?: Readonly<Record<string, string | undefined>>;
   readonly fetch?: typeof fetch; readonly allowCli?: boolean } = {}): Promise<ChronistRuntimeConfig> {
@@ -172,24 +210,34 @@ export async function loadChronistRuntime(options: { readonly configPath?: strin
     try {
       const parsed = parseChronistHostSettings(JSON.parse(await boundedFile(options.configPath)), options.environment ?? process.env);
       // Ruling 2026-09-08: a file no longer switches discovery off wholesale. Only an Ollama entry
-      // still carrying the placeholder is filled in from its own already validated local address.
-      const settings: ChronistHostSettings = { ...parsed, providers: await Promise.all(parsed.providers.map(async provider => {
-        if (!awaitsDiscovery(provider)) return provider;
-        const found = await localModels(options.fetch ?? fetch, provider.baseUrl).catch(() => []);
-        return found.length ? { ...provider, models: [...found], available: true } : provider;
-      })) };
-      for (const provider of settings.providers) if (provider.profileId === CHRONIST_CLAUDE_CLI_PROFILE) {
+      // still carrying the placeholder is filled in — seit 2026-09-10 aus mehreren Adressen.
+      const erste = await withDiscovery(parsed, options, "datei");
+      for (const provider of erste.settings.providers) if (provider.profileId === CHRONIST_CLAUDE_CLI_PROFILE) {
         const activation = options.allowCli === true && provider.capabilityEnabled === true
           ? await activateChronistCli(provider)
           : Object.freeze({ available: false, availabilityCode: options.allowCli === true ? "capability-unverified" : "host-disabled", dispose: async () => undefined });
         activated.set(provider.id, activation);
       }
-      return createChronistRuntime(settings, options, activated);
+      // Ein spaeterer Suchlauf geht immer von der DATEI aus, nie vom letzten Ergebnis: sonst
+      // waere ein einmal gefundener Platzhalter fuer immer besetzt und ein abgeschalteter
+      // Dienst bliebe ewig als „bereit" stehen. Die Bruecken bleiben, wie sie sind.
+      return createRescanableRuntime(createChronistRuntime(erste.settings, options, activated), async () => {
+        // Der Knopf sucht breit: hier hat jemand ausdruecklich darum gebeten, und der Bericht
+        // zeigt ihm hinterher jede gepruefte Adresse.
+        const erneut = await withDiscovery(parsed, options, "breit");
+        return { runtime: createChronistRuntime(erneut.settings, options, activated), scan: erneut.scan };
+      });
     } catch {
       await Promise.allSettled([...activated.values()].map(activation => activation.dispose()));
       throw new ChronistConfigurationError();
     }
   }
-  const names = await localModels(options.fetch ?? fetch).catch(() => []);
-  return createChronistRuntime({ globalConcurrency: 2, providers: names.length ? [{ ...offlineOllama(), models: names, available: true }] : [] }, options);
+  // Ohne Betreiberdatei ist der Platzhalter der ganze Bestand — genau der Fall, den die Suche
+  // fuellen soll.
+  const ohneDatei: ChronistHostSettings = { globalConcurrency: 2, providers: [offlineOllama()] };
+  const erste = await withDiscovery(ohneDatei, options, "breit");
+  return createRescanableRuntime(createChronistRuntime(erste.settings, options), async () => {
+    const erneut = await withDiscovery(ohneDatei, options, "breit");
+    return { runtime: createChronistRuntime(erneut.settings, options), scan: erneut.scan };
+  });
 }

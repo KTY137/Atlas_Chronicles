@@ -101,14 +101,39 @@ const ZU = new Set([SyntaxKind.CloseParenToken, SyntaxKind.CloseBracketToken, Sy
 
 /** Der echte TypeScript-Lexer: Kommentare und Zeichenketten zählen nicht als Code.
  * Ein `}` in einem Template-Literal muss wie im TypeScript-Parser nachgescannt werden,
- * sonst verschluckt der nächste Backtick den halben Rest der Datei. */
-export function tokenListe(text) {
-  const scanner = createScanner(ScriptTarget.Latest, true, LanguageVariant.JSX);
+ * sonst verschluckt der nächste Backtick den halben Rest der Datei.
+ *
+ * `herkunft` steht nur in der Fehlermeldung; ohne sie sagt ein Abbruch nicht, welche Datei
+ * ihn ausgelöst hat.
+ *
+ * **Regex-Literale werden ausdrücklich als ein Token gelesen.** Ein `/` ist für den Lexer
+ * zunächst nur ein Schrägstrich; ob dahinter eine Division oder ein Regex steht, entscheidet
+ * erst der Parser. Ohne Nachscannen läuft der Lexer in den Regex-Körper hinein und liest ihn
+ * als Code — dann öffnet ein `"` darin eine Zeichenkette, die es nicht gibt, und bei einem
+ * `#` bleibt er ganz stehen (er versucht einen privaten Feldnamen zu lesen, scheitert und
+ * rückt nicht vor). Genau das ist am 10.09.2026 aufgefallen: `packages/io/src/wikitext.ts`
+ * enthält `/&(?:amp|…|#\d+|#x[\da-f]+);/gi`, und diese Datei steht auf der Deny-Liste — ihre
+ * Datenschlüssel wurden seit jeher ab Zeile 122 stillschweigend nicht mehr gelesen.
+ *
+ * **Und eine Stillstandssperre bleibt als Netz darunter.** Sollte der Lexer aus einem anderen
+ * Grund stehen bleiben, bricht das Gate ab, statt eine abgeschnittene Tokenliste
+ * zurückzugeben, als wäre sie vollständig — sonst meldet es jeden Text hinter der Fundstelle
+ * als „fehlend" und jeden zugehörigen Katalogeintrag als „verwaist". Ein Gate, das bei einem
+ * eigenen Fehler erfundene Befunde ausgibt, ist schlimmer als eines, das abbricht. */
+export function tokenListe(text, herkunft = "Quelle") {
+  return tokenListeMit(createScanner(ScriptTarget.Latest, true, LanguageVariant.JSX), text, herkunft);
+}
+/** Derselbe Lauf mit einem hereingereichten Lexer — nur damit der Selbsttest die
+ * Stillstandssperre mit einem Lexer prüfen kann, der absichtlich nicht vorrückt. */
+export function tokenListeMit(scanner, text, herkunft = "Quelle") {
   scanner.setText(text);
   const tokens = [], klammern = [];
+  let letzterStart = -1, stillstand = 0;
   for (let schutz = 0; schutz < 4_000_000; schutz++) {
     let kind = scanner.scan();
-    if (kind === SyntaxKind.CloseBraceToken && klammern.length > 0) {
+    if (kind === SyntaxKind.SlashToken || kind === SyntaxKind.SlashEqualsToken) {
+      if (regexErlaubt(tokens)) kind = scanner.reScanSlashToken();
+    } else if (kind === SyntaxKind.CloseBraceToken && klammern.length > 0) {
       if (klammern[klammern.length - 1] > 0) klammern[klammern.length - 1]--;
       else kind = scanner.reScanTemplateToken(false);
     } else if (kind === SyntaxKind.OpenBraceToken && klammern.length > 0) klammern[klammern.length - 1]++;
@@ -116,9 +141,42 @@ export function tokenListe(text) {
     else if (kind === SyntaxKind.TemplateMiddle) klammern[klammern.length - 1] = 0;
     else if (kind === SyntaxKind.TemplateTail) klammern.pop();
     if (kind === SyntaxKind.EndOfFile || kind === undefined) break;
-    tokens.push({ kind, text: scanner.getTokenText(), wert: LITERAL_ARTEN.has(kind) ? scanner.getTokenValue() : "", start: scanner.getTokenStart() });
+    const start = scanner.getTokenStart();
+    stillstand = start === letzterStart ? stillstand + 1 : 0;
+    letzterStart = start;
+    if (stillstand > 3) {
+      const zeile = zeileVon(text, start);
+      throw new Error(`gate:sprache — der TypeScript-Lexer kommt in ${herkunft}:${zeile} nicht weiter (bei ${JSON.stringify(text.slice(start, start + 40))}). Bekannte Ursache: ein "#" innerhalb eines Regex-Literals. Schreib die Prüfung ohne Regex, dann läuft das Gate wieder.`);
+    }
+    tokens.push({ kind, text: scanner.getTokenText(), wert: LITERAL_ARTEN.has(kind) ? scanner.getTokenValue() : "", start });
   }
   return tokens;
+}
+
+/**
+ * Steht an dieser Stelle ein Regex oder eine Division?
+ *
+ * Bewusst eine ERLAUBNIS-Liste, keine Ausschlussliste. Die übliche Faustregel „nach einem
+ * Wert ist es eine Division, sonst ein Regex" ist in einer JSX-Datei falsch: `</p>` beginnt
+ * mit `<` und `/`, und `<Dice6 size={18} />` hat ein `}` davor. Beide gälten dann als
+ * regex-erlaubt, der Lexer verschlänge den halben Rest der Datei als Regex-Körper, und das
+ * Gate meldete hunderte erfundene Verstöße — genau so ist es beim ersten Versuch passiert.
+ *
+ * Die Liste deckt die Stellen ab, an denen in diesem Quelltext tatsächlich Regexe stehen:
+ * hinter `=`, in einer Argumentliste, hinter `return`, hinter einem logischen Operator, in
+ * einem JSX-Ausdruck. Was hier fehlt, wird als Division gelesen — die Folge wäre höchstens
+ * ein nicht erkanntes Regex, nie ein verschluckter Dateirest.
+ */
+const REGEX_ERLAUBT_NACH = new Set([
+  SyntaxKind.EqualsToken, SyntaxKind.OpenParenToken, SyntaxKind.CommaToken, SyntaxKind.ColonToken,
+  SyntaxKind.OpenBracketToken, SyntaxKind.OpenBraceToken, SyntaxKind.SemicolonToken,
+  SyntaxKind.ExclamationToken, SyntaxKind.QuestionToken, SyntaxKind.QuestionQuestionToken,
+  SyntaxKind.AmpersandAmpersandToken, SyntaxKind.BarBarToken, SyntaxKind.EqualsGreaterThanToken,
+  SyntaxKind.ReturnKeyword, SyntaxKind.CaseKeyword, SyntaxKind.TypeOfKeyword,
+]);
+function regexErlaubt(tokens) {
+  const davor = tokens[tokens.length - 1];
+  return !!davor && REGEX_ERLAUBT_NACH.has(davor.kind);
 }
 
 function zeileVon(text, offset) {
@@ -144,8 +202,8 @@ function argumente(tokens, klammer) {
 const literalWert = gruppe => gruppe && gruppe.length === 1 && LITERAL_ARTEN.has(gruppe[0].kind) ? gruppe[0].wert : null;
 
 /** Alle `t`/`plural`-Aufrufe und alle harten Sprachkennungen einer Quelldatei. */
-export function sammleAufrufe(text) {
-  const tokens = tokenListe(text);
+export function sammleAufrufe(text, herkunft) {
+  const tokens = tokenListe(text, herkunft);
   const texte = [], pluralformen = [], nichtLiteral = [], lokal = [], etiketten = [];
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
@@ -208,8 +266,8 @@ function initialisierer(tokens, start, melde) {
 
 /** Die Anzeigetexte der Etikettentabellen (`*_LABEL`, `*_LABELS`, `*_TITEL`). Sie stehen in
  * ihrem Paket; der Client übersetzt sie an der Anzeigestelle mit `t(BAUWERK_LABEL[typ])`. */
-export function sammleEtiketttabellen(text) {
-  const tokens = tokenListe(text);
+export function sammleEtiketttabellen(text, herkunft) {
+  const tokens = tokenListe(text, herkunft);
   const tabellen = new Map();
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
@@ -225,8 +283,8 @@ export function sammleEtiketttabellen(text) {
 /** Nur die gespeicherten Werte einer Datei: Schlüssel und Array-Elemente der Datenkonstanten
  * sowie `art:`/`kind:`/`role:`-Werte. Anzeigetexte aus `*_LABEL`/`*_TITEL` bleiben draußen —
  * „Schmiede" ist ein Navigationslabel, „schmiede" ein Datenschlüssel. */
-export function sammleDatenschluessel(text) {
-  const tokens = tokenListe(text);
+export function sammleDatenschluessel(text, herkunft) {
+  const tokens = tokenListe(text, herkunft);
   const werte = new Set();
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
@@ -271,7 +329,7 @@ export function pruefeSprache({ quellen, katalog = {}, plural = {}, dynamisch = 
   const dynamischSatz = new Set(dynamisch);
 
   for (const { datei, text } of quellen) {
-    const { texte, plural: pluralAufrufe, nichtLiteral, lokal, etiketten } = sammleAufrufe(text);
+    const { texte, plural: pluralAufrufe, nichtLiteral, lokal, etiketten } = sammleAufrufe(text, datei);
     const erlaubteDynamik = dynamischErlaubt[datei] ?? 0;
     if (nichtLiteral.length > erlaubteDynamik) {
       for (const stelle of nichtLiteral.slice(erlaubteDynamik)) {
@@ -370,14 +428,14 @@ async function main() {
 
   const denyLiterale = new Set();
   for (const datei of DENY_DATEIEN) {
-    for (const wert of sammleDatenschluessel(await readFile(join(ROOT, datei), "utf8"))) denyLiterale.add(wert);
+    for (const wert of sammleDatenschluessel(await readFile(join(ROOT, datei), "utf8"), datei)) denyLiterale.add(wert);
   }
 
   // Die Etikettentabellen stehen in ihren Paketen, nicht nur in den Deny-Dateien.
   const etikettTabellen = {};
   for (const ordner of await readdir(join(ROOT, "packages")).catch(() => [])) {
     for await (const datei of wandere(join(ROOT, "packages", ordner, "src"))) {
-      for (const [name, werte] of sammleEtiketttabellen(await readFile(datei, "utf8"))) {
+      for (const [name, werte] of sammleEtiketttabellen(await readFile(datei, "utf8"), alsPfad(datei))) {
         etikettTabellen[name] = [...new Set([...(etikettTabellen[name] ?? []), ...werte])];
       }
     }

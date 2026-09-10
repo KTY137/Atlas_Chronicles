@@ -6,13 +6,16 @@ import { DEFAULT_ACCESSIBILITY_PREFERENCES, getThemePreset, parseAccessibilityPr
 import { aktuelleSprache, initialisiereSprache, setzeSprache, spracheStand, subscribe, t } from "../i18n";
 
 const STORAGE_KEY = "chronicle.appearance.v1";
-const fonts = { cinzel: '"Cinzel", Georgia, serif', plex: '"IBM Plex Sans Variable", system-ui, sans-serif', system: "system-ui, sans-serif", serif: "Georgia, Cambria, serif", mono: "ui-monospace, Consolas, monospace" };
+/** Die tatsaechlichen Schriftfamilien je Kennung. Exportiert, damit die Werkstatt eine
+ * Schriftprobe IN der jeweiligen Schrift zeigen kann statt nur ihren Namen — eine Liste
+ * von Schriftnamen, alle in derselben Schrift gesetzt, waehlt man blind. */
+export const SCHRIFT_FAMILIEN = { cinzel: '"Cinzel", Georgia, serif', plex: '"IBM Plex Sans Variable", system-ui, sans-serif', system: "system-ui, sans-serif", serif: "Georgia, Cambria, serif", mono: "ui-monospace, Consolas, monospace" };
 const queries = { forcedColors: "(forced-colors: active)", highContrast: "(prefers-contrast: more)", reducedMotion: "(prefers-reduced-motion: reduce)", reducedTransparency: "(prefers-reduced-transparency: reduce)" } as const;
 
 export function appearanceStyle(theme: ResolvedThemeV1): CSSProperties {
   return { ...Object.fromEntries(Object.entries(theme.colors).map(([key, value]) => [`--${key}`, value])),
     "--muted": theme.colors["text-muted"], "--surface-1": theme.colors.surface,
-    "--font-display": fonts[theme.typography.display], "--font-body": fonts[theme.typography.body], "--font-mono": fonts.mono,
+    "--font-display": SCHRIFT_FAMILIEN[theme.typography.display], "--font-body": SCHRIFT_FAMILIEN[theme.typography.body], "--font-mono": SCHRIFT_FAMILIEN.mono,
     "--radius": `${theme.geometry.radius}px`, "--theme-border": `${theme.geometry.border}px`, "--theme-space": `${theme.geometry.spacing}px`,
     "--control-motion": `${theme.motion.controlMs}ms`, "--panel-motion": `${theme.motion.panelMs}ms`,
     "--motion-easing": theme.motion.cadence === "steps" ? "steps(4, end)" : "ease",

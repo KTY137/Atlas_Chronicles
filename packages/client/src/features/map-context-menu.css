@@ -17,7 +17,7 @@
 .map-delete-list li { padding: 10px 12px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 .map-delete-list small { display: block; color: var(--text-muted); }
 .map-delete-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding-top: 18px; }
-.map-delete-actions .map-delete-confirm { background: var(--danger); border-color: var(--danger); color: #25120e; white-space: normal; }
+.map-delete-actions .map-delete-confirm { white-space: normal; }
 .map-library { border: 1px solid var(--line); border-radius: 8px; margin: 16px 0; padding: 16px; }
 .map-library-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .map-library-heading h2 { font-size: 1rem; margin: 0; }

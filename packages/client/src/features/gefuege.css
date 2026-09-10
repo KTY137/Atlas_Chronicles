@@ -2,18 +2,18 @@
    Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 .gefuege .view-tabs { margin-block: .75rem; }
 .gefuege-leinwand { width: 100%; height: auto; max-height: 60vh; display: block; margin-block: .5rem 1rem; }
-.gefuege-kante line { stroke: var(--border, #b9b0a0); stroke-width: 1.6; }
+.gefuege-kante line { stroke: var(--line-strong); stroke-width: 1.6; }
 .gefuege-kante.feindschaft_mit line { stroke: var(--danger, #a33); stroke-dasharray: 6 4; }
 .gefuege-kante.buendnis_mit line { stroke: var(--accent, #a8791f); }
-.gefuege-kante.elternteil_von line { stroke: var(--ink, #4a4034); }
-.gefuege-leinwand marker path { fill: var(--ink, #4a4034); }
-.gefuege-knoten rect { fill: var(--surface, #fdfaf4); stroke: var(--ink, #4a4034); stroke-width: 1.4; }
-.gefuege-knoten text { font-size: 13px; fill: var(--ink, #4a4034); }
+.gefuege-kante.elternteil_von line { stroke: var(--accent); }
+.gefuege-leinwand marker path { fill: var(--accent); }
+.gefuege-knoten rect { fill: var(--surface, #fdfaf4); stroke: var(--control-line); stroke-width: 1.4; }
+.gefuege-knoten text { font-size: 13px; fill: var(--text); }
 /* Ein Name, dessen Eintrag die Leserin nicht kennt, wird genannt - aber nicht als Tuer gezeigt. */
 .gefuege-knoten.fremd rect { stroke-dasharray: 5 4; fill: transparent; }
 .gefuege-knoten.fremd text { opacity: .72; font-style: italic; }
 .gefuege-liste { list-style: none; padding: 0; margin: 0; display: grid; gap: .35rem; }
-.gefuege-liste li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; padding: .35rem .5rem; border-inline-start: 3px solid var(--border, #d8d2c6); overflow-wrap: anywhere; }
+.gefuege-liste li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; padding: .35rem .5rem; border-inline-start: 3px solid var(--line-strong); overflow-wrap: anywhere; }
 .gefuege-liste li[data-art="feindschaft_mit"] { border-inline-start-color: var(--danger, #a33); }
 .gefuege-liste .kanten-art { font-size: .8rem; letter-spacing: .03em; text-transform: uppercase; opacity: .72; }
 .gefuege-eintragen { margin-block-start: 1rem; }

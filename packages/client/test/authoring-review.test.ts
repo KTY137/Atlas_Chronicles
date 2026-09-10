@@ -6,6 +6,10 @@ import { transformSync } from "esbuild";
 import { describe, expect, it } from "vitest";
 import * as Theme from "../../theme/src/index.ts";
 import { I18nStub } from "../src/i18n.ts";
+import { LOOK_LABEL } from "../src/features/look-namen";
+// Die Werkstatt zeigt keine Tokennamen mehr; ihre Anzeigetabellen muessen dem Pruefstand
+// echt gereicht werden, sonst liefert der Auffang-Proxy nur Zeichenketten und `.map` bricht.
+import * as Namen from "../src/features/gestaltung-namen";
 
 /** Actual ThemeWorkbench handlers/effects, with controlled transport and hook scheduling.
  * The isolated VM's plain objects are bridged into the pure parser's own realm; its
@@ -43,8 +47,13 @@ function themeHarness() {
         parseThemeManifest: (input: unknown) => Theme.parseThemeManifest(typeof input === "string" ? input : bridge(input)),
         evaluateThemeAccessibility: (input: unknown) => Theme.evaluateThemeAccessibility(bridge(input)),
         resolveTheme: (input: unknown, preferences: unknown, system: unknown) => Theme.resolveTheme(bridge(input), bridge(preferences), bridge(system)),
+        suggestAccessibleColor: (input: unknown, token: string) => Theme.suggestAccessibleColor(bridge(input), token as never),
       };
-      if (name === "./Appearance") return { appearanceStyle: () => ({}), useAppearance: () => ({ preferences: Theme.DEFAULT_ACCESSIBILITY_PREFERENCES, system: {} }) };
+      // Die Anzeigenamen der Looks stehen in ihrem eigenen Modul; ohne diese Zeile
+      // liefert der Auffang-Proxy nur den Schluesselnamen und jeder Knopf hiesse gleich.
+      if (name === "./look-namen") return { LOOK_LABEL };
+      if (name === "./gestaltung-namen") return Namen;
+      if (name === "./Appearance") return { appearanceStyle: () => ({}), SCHRIFT_FAMILIEN: { cinzel: "serif", plex: "sans-serif", system: "sans-serif", serif: "serif", mono: "monospace" }, useAppearance: () => ({ preferences: Theme.DEFAULT_ACCESSIBILITY_PREFERENCES, system: {} }) };
       if (name === "../hooks") return { useTask: () => ({ busy: false, error: "", setError: () => {}, run: (fn: () => Promise<unknown>) => { const job = fn(); jobs.push(job); return job; } }),
         useResource: (path: string) => path.endsWith("/themes") ? {
           data: catalogFailure === 404 ? null : headVersion > 1 ? [card(headVersion)] : [],
@@ -90,14 +99,14 @@ describe("independent authoring acknowledgement review", () => {
     const h = themeHarness();
     try {
       h.name().props.onChange({ target: { value: "Author A revision one" } });
-      h.button("Als neues Theme speichern").props.onClick();
+      h.button("Als neue Gestaltung speichern").props.onClick();
       expect(h.commands).toHaveLength(1);
       // A succeeded as revision1; while its response was held, another GM created
       // revision2. The real revision GET contract returns revision1 + current version2.
       h.concurrentHead(); h.release(); await h.settle();
       expect(h.name().props.value).toBe("Author A revision one");
       h.name().props.onChange({ target: { value: "A new edit from A's acknowledged content" } });
-      const save = h.button("Neue Revision speichern");
+      const save = h.button("Als neue Fassung speichern");
       if (!save.props.disabled) { save.props.onClick(); await h.settle(); }
       // Blocking this stale save is also safe. If offered, it must conflict against
       // acknowledged version1, requiring an explicit load of B before using version2.
@@ -129,7 +138,7 @@ describe("independent authoring acknowledgement review", () => {
   it.each(["PixelArt", "Medieval"] as const)("the %s preview carries its own full recipe instead of inheriting the shell recipe", preset => {
     const h = themeHarness();
     try {
-      h.button(`Vorlage ${preset}`).props.onClick();
+      h.button(`Mit ${LOOK_LABEL[preset]} beginnen`).props.onClick();
       const preview = h.nodes(node => node.props.className?.split(" ").includes("theme-preview"))[0]!;
       const recipe = Theme.resolveTheme(Theme.getThemePreset(preset));
       // This is the actual component-to-CSS scope seam. Painted selector precedence,

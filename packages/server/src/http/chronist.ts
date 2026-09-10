@@ -21,6 +21,9 @@ export function registerChronist(app:FastifyInstance,db:Db,config:AppConfig){
     if(error instanceof ChronistConflict)return reply.code(409).send({error:"Chronist-Stand prüfen und erneut bestätigen.",code:error.reason});
     if(error instanceof ChronistValidationError)return reply.code(error.code==="budget"?409:400).send({error:"Chronist-Eingabe prüfen.",code:error.code});throw error;}}
   app.get<{Params:Params}>(`${base}/providers`,async req=>service.providers(await user(req.headers.cookie),req.params.campaignId));
+  // POST, obwohl nichts gespeichert wird: der Suchlauf greift nach aussen (auf die
+  // Rueckschleife dieses Rechners) und wird ausdruecklich ausgeloest, nie nebenbei geholt.
+  app.post<{Params:Params}>(`${base}/providers/scan`,async(req,reply)=>handle(reply,async()=>service.rescanProviders(await user(req.headers.cookie),req.params.campaignId)));
   app.get<{Params:Params;Querystring:Query}>(`${base}/sources`,{schema:{querystring:query}},async(req,reply)=>handle(reply,async()=>service.sources(await user(req.headers.cookie),req.params.campaignId,parsedQuery(req.query))));
   app.get<{Params:Params;Querystring:Query}>(`${base}/sessions`,{schema:{querystring:query}},async req=>service.sessions(await user(req.headers.cookie),req.params.campaignId,parsedQuery(req.query)));
   app.get<{Params:Params;Querystring:Query}>(`${base}/sessions/:sessionId/context`,{schema:{querystring:query}},async req=>service.sessionContext(await user(req.headers.cookie),req.params.campaignId,req.params.sessionId,parsedQuery(req.query)));

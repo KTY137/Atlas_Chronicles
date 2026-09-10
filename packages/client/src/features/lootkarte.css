@@ -31,13 +31,13 @@
 .lootkarte-kopf h4 { margin: 0; font-family: var(--font-display, inherit); font-size: 1rem; line-height: 1.2; overflow-wrap: anywhere; }
 .lootkarte-seltenheit {
   flex: none; font-size: .6rem; letter-spacing: .07em; text-transform: uppercase;
-  padding: .1rem .4rem; border-radius: 999px; border: 1px solid var(--karte-rand); color: var(--karte-rand);
+  padding: .1rem .4rem; border-radius: 999px; border: 1px solid var(--karte-rand); color: color-mix(in srgb, var(--karte-rand) 65%, var(--text));
 }
 
 /* Das Bildfeld behaelt seine Hoehe auch ohne Bild — sonst springt die Karte, sobald eines kommt. */
 .lootkarte-bild {
   aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden;
-  border: 1px solid var(--line, #2a3230); border-radius: 6px; background: #0d1211;
+  border: 1px solid var(--line, #2a3230); border-radius: 6px; background: var(--input-bg);
 }
 .lootkarte.klein .lootkarte-bild { aspect-ratio: 3 / 2; }
 .lootkarte-bild img { width: 100%; height: 100%; object-fit: cover; display: block; }

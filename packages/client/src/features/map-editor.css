@@ -246,7 +246,7 @@
 /* Höhenwerkzeug und die beiden neuen Bodenarten (2026-09-10, Kartenstudio Relief). */
 .map-editor .map-edit-tool-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .map-editor .map-material-swamp { background: #66784f; }
-.map-editor .map-material-snow { background: #eef0ea; border: 1px solid var(--line); }
+.map-editor .map-material-snow { background: #eef0ea; border: 1px solid var(--line); color: #22201c; }
 .map-editor .map-relief-modes { display: grid; gap: .35rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .map-editor .map-edit-tools .map-relief-mode { display: flex; align-items: center; gap: .5rem; text-align: left; padding: .45rem .5rem; background: transparent; border-color: var(--line); }
 .map-editor .map-relief-mode > svg { flex-shrink: 0; color: var(--text-muted); }

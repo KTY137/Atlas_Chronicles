@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: BUSL-1.1
    Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 .wiki-kopf { display: flex; align-items: center; gap: .35rem; flex-wrap: nowrap; overflow-x: auto;
-  padding: .35rem .25rem; margin-block-end: .5rem; border-block-end: 1px solid var(--border, #d8d2c6); }
+  padding: .35rem .25rem; margin-block-end: .5rem; border-block-end: 1px solid var(--line); }
 .wiki-kopf::-webkit-scrollbar { height: 5px; }
 .kopf-gruppen { display: flex; gap: .35rem; flex-wrap: nowrap; }
 .kopf-knopf { display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap;
@@ -10,7 +10,7 @@
 .kopf-knopf:hover { background: color-mix(in srgb, currentColor 7%, transparent); }
 .kopf-knopf.aktiv { border-block-end-color: var(--accent, #a8791f); font-weight: 600; }
 .kopf-zaehler { font-style: normal; font-size: .74rem; opacity: .65; font-variant-numeric: tabular-nums; }
-.kopf-trenner { width: 1px; align-self: stretch; background: var(--border, #d8d2c6); margin-inline: .2rem; flex: none; }
+.kopf-trenner { width: 1px; align-self: stretch; background: var(--line); margin-inline: .2rem; flex: none; }
 .gruppen-artikel { list-style: none; margin: 0 0 1rem; padding: 0;
   display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .2rem .75rem; }
 .gruppen-artikel button { display: inline-flex; align-items: center; gap: .4rem; background: none; border: 0;

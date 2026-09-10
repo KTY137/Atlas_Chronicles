@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useState } from "react";
-import type { ChronistPreviewBody, ChronistPreviewResult, ChronistProviderDescription, ChronistRunPage, ChronistRunView, ChronistSourceDescriptor, ChronistStartAck, ChronistSuggestionPage, StartChronistRunBody } from "@chronicle/protocol";
-import { BookOpen, Check, Feather, Play, RefreshCw, Square } from "lucide-react";
+import type { ChronistLocalScanReport, ChronistPreviewBody, ChronistPreviewResult, ChronistProviderDescription, ChronistProviderScanResult, ChronistRunPage, ChronistRunView, ChronistSourceDescriptor, ChronistStartAck, ChronistSuggestionPage, StartChronistRunBody } from "@chronicle/protocol";
+import { BookOpen, Check, Feather, Play, RefreshCw, Search, Square } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { ApiError, errorText, type Campaign } from "../api";
 import { useResource } from "../hooks";
@@ -15,6 +15,15 @@ import { locale, t } from "../i18n";
 import "./chronist.css";
 
 interface Finding { art: string; entryId: string; titel: string; text: string; passagen: readonly string[] }
+/** Was an einer geprüften Adresse los war. Links Serverdaten, rechts Oberfläche — übersetzt
+ * wird erst an der Anzeigestelle mit `t(SCAN_CODE_LABEL[code])`. */
+const SCAN_CODE_LABEL: Record<string, string> = {
+  gefunden: "Dienst antwortet",
+  leer: "Dienst antwortet, hat aber kein Modell installiert",
+  "keine-antwort": "Dort lauscht nichts",
+  zeitueberschreitung: "Keine Antwort in der Wartezeit",
+  unlesbar: "Antwort war keine Modellliste",
+};
 const LAUF_STATUS_LABEL = { running: "Auswertung läuft", paused: "Unterbrochen", partial: "Mit Teilergebnissen beendet", completed: "Bereit zur Durchsicht" };
 export function ChronistWorkbench({ campaign, onDirty, onOpenEntry, onClose, liveRevision = 0 }: {
   campaign: Campaign; onDirty: (dirty: boolean) => void; onOpenEntry: (id: string) => void; onClose: () => void; liveRevision?: number;
@@ -27,7 +36,9 @@ export function ChronistWorkbench({ campaign, onDirty, onOpenEntry, onClose, liv
   const [busy, setBusy] = useState(false), [dirty, setDirty] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState(""), [denied, setDenied] = useState(false);
   const [jetzt, setJetzt] = useState(() => Date.now());
   const [runId, setRunId] = useState<string | null>(null), [proposalId, setProposalId] = useState<string | null>(null), [runAfter, setRunAfter] = useState<string | null>(null), [suggestionAfter, setSuggestionAfter] = useState<string | null>(null);
-  const providers = useResource<{ providers: readonly ChronistProviderDescription[] }>(gm ? chronistPath(campaignId, "/providers") : null, revision + liveRevision, 8000);
+  const providers = useResource<{ providers: readonly ChronistProviderDescription[]; canScanLocal?: boolean }>(gm ? chronistPath(campaignId, "/providers") : null, revision + liveRevision, 8000);
+  // Das Ergebnis der letzten ausdruecklichen Suche nach einem lokalen Modelldienst.
+  const [scan, setScan] = useState<ChronistLocalScanReport | null>(null), [scanning, setScanning] = useState(false);
   const findings = useResource<readonly Finding[]>(chronistPath(campaignId), revision + liveRevision);
   const runs = useResource<ChronistRunPage>(gm && view === "review" ? chronistPath(campaignId, `/runs?limit=50${runAfter ? `&after=${encodeURIComponent(runAfter)}` : ""}`) : null, revision + liveRevision, 5000);
   const run = useResource<ChronistRunView>(gm && view === "review" && runId ? chronistPath(campaignId, `/runs/${encodeURIComponent(runId)}`) : null, revision + liveRevision, 2000);
@@ -36,6 +47,27 @@ export function ChronistWorkbench({ campaign, onDirty, onOpenEntry, onClose, liv
   const provider = providers.data?.providers.find(item => item.id === providerId) ?? (!providerId ? providers.data?.providers.find(item => item.location === "lokal" && item.available) ?? providers.data?.providers.find(item => item.location === "lokal") : undefined);
   const model = chosenModel || provider?.models[0] || "";
   const refresh = () => setRevision(value => value + 1);
+  /**
+   * Sucht auf Knopfdruck nach einem lokal laufenden Modelldienst.
+   *
+   * Warum es diesen Knopf gibt: bis zum 10.09.2026 suchte der Server genau einmal beim Start,
+   * an genau einer Adresse, mit einer Sekunde Geduld — und sagte bei einem Fehlschlag nichts.
+   * Wer seinen Modelldienst nach der App startet oder ihn woanders betreibt, musste den ganzen
+   * Server neu starten und raten. Jetzt sucht er auf Ansage, ueber mehrere Adressen, und sagt
+   * fuer jede, was er dort vorgefunden hat.
+   */
+  const sucheLokal = async () => {
+    setScanning(true); setError("");
+    try {
+      const ergebnis = await chronistApi<ChronistProviderScanResult>(chronistPath(campaignId, "/providers/scan"), { method: "POST" });
+      setScan(ergebnis.scan);
+      // Die Anbieterliste kommt aus derselben Antwort; ein erneutes Laden haelt sie und die
+      // uebrigen Ansichten auf demselben Stand.
+      refresh();
+      if (ergebnis.scan.found) { setProviderId(""); setChosenModel(""); }
+    } catch (fehler) { setError(errorText(fehler)); }
+    finally { setScanning(false); }
+  };
   const changeDirty = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
   const guard = () => !dirty || window.confirm(t("Ungespeicherte Änderungen verwerfen?"));
   const invalidate = () => { setPrepared(null); setConsent(false); setError(""); };
@@ -90,6 +122,29 @@ export function ChronistWorkbench({ campaign, onDirty, onOpenEntry, onClose, liv
           </section>
           <section className="chronist-panel" aria-label={t("Anbieter und Umfang")}><p className="eyebrow">{t("Schritt 2")}</p><h3>{t("Anbieter und Umfang prüfen")}</h3><p className="field-help">{t("Jede Aufgabe beginnt mit dem Regelwerk. Modellunterstützung ergänzt nur die ausgewählten Quellen.")}</p>
             {providers.loading ? <Loading text={t("Anbieter werden geprüft …")} /> : <><div className="chronist-form-row"><label>{t("Anbieter")}<select value={provider?.id ?? ""} disabled={locked} onChange={event => { setProviderId(event.target.value); setChosenModel(""); invalidate(); }}><option value="">{t("Anbieter wählen …")}</option>{providers.data?.providers.map(item => <option key={item.id} value={item.id}>{item.label} · {item.location === "lokal" ? t("Lokal") : t("Extern")}{!item.available ? ` · ${t("noch nicht bereit")}` : ""}</option>)}</select></label><label>{t("Modell")}<select value={model} disabled={locked || !provider?.models.length} onChange={event => { setChosenModel(event.target.value); invalidate(); }}>{!model ? <option value="">{t("Kein Modell verfügbar")}</option> : null}{provider?.models.map(name => <option key={name} value={name}>{name}</option>)}</select></label></div>
+              {/* Die Suche nach einem lokalen Modelldienst — auf Ansage, nicht nur beim Start
+                  des Servers. Der Bericht nennt jede geprüfte Adresse und was dort war; ohne das
+                  bleibt „kein Anbieter gefunden" eine Aussage ohne Anhaltspunkt. */}
+              {providers.data?.canScanLocal === false
+                ? <p className="field-help">{t("Dieser Server sucht nicht selbst nach lokalen Modellen. Die Anbieter stehen in seiner Einrichtungsdatei.")}</p>
+                : <div className="chronist-scan">
+                  <div className="button-row">
+                    <Button disabled={locked || scanning} onClick={() => void sucheLokal()}>
+                      <Search size={16} aria-hidden="true" /> {scanning ? t("Wird gesucht …") : t("Auf diesem Rechner nach Modellen suchen")}
+                    </Button>
+                    <span className="field-help">{t("Liest nur die Namen installierter Modelle. Es wird nichts geladen und nichts gestartet.")}</span>
+                  </div>
+                  {scan ? <div className="chronist-scan-bericht" role="status">
+                    <p className="chronist-scan-fazit" data-treffer={scan.found ? "ja" : "nein"}>{scan.found
+                      ? t("Gefunden unter {adresse}: {anzahl} Modelle.", { adresse: scan.found.baseUrl, anzahl: scan.found.models.length })
+                      : t("Kein laufender Modelldienst gefunden.")}</p>
+                    <ul>{scan.entries.map(eintrag => <li key={eintrag.baseUrl} data-code={eintrag.code}>
+                      <code>{eintrag.baseUrl}</code>
+                      <span>{t(SCAN_CODE_LABEL[eintrag.code])}{eintrag.code === "gefunden" ? ` · ${eintrag.models.slice(0, 4).join(", ")}${eintrag.models.length > 4 ? " …" : ""}` : ""}</span>
+                    </li>)}</ul>
+                    {!scan.found ? <p className="field-help">{t("Prüfe, ob der Dienst läuft, und ob er auf einer der oben geprüften Adressen lauscht. Eine abweichende Adresse trägst du als OLLAMA_HOST in die Umgebung des Servers ein.")}</p> : null}
+                  </div> : null}
+                </div>}
               {!provider?.available ? <Notice>{provider?.availabilityCode === "capability-unverified" ? t("Dieser Anbieter ist für die benötigte Textauswertung noch nicht freigegeben.") : t("Hier ist noch kein einsatzbereiter lokaler Anbieter eingerichtet. Die Regelbefunde unten bleiben nutzbar.")}</Notice> : <p className="chronist-provider-location">{provider.location === "lokal" ? t("Lokale Verarbeitung · kein automatischer Wechsel zu einem externen Anbieter") : t("Externe Verarbeitung · deine ausdrückliche Freigabe ist für jeden Lauf erforderlich")}</p>}
               <details className="chronist-setup"><summary>{t("Anbieter einrichten")}</summary><p>{t("Die Einrichtung erfolgt auf dem Rechner, der eure Kampagne bereitstellt. Dort wird ein lokaler Modellserver oder ein unterstützter externer Anbieter mit seinem Modell konfiguriert. Zugangsschlüssel bleiben auf diesem Rechner.")}</p><p>{t("Nach der Einrichtung kannst du die Verfügbarkeit hier erneut prüfen. Die Liste zeigt ausschließlich die für diesen Host eingerichteten Anbieter.")}</p><Button onClick={refresh} disabled={busy}>{t("Verfügbarkeit neu prüfen")}</Button></details>
             </>}

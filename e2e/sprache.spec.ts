@@ -46,7 +46,7 @@ test("Sprachwahl schaltet die Oberflaeche um und ueberlebt das Neuladen", async 
   for (const label of ["Heute", "Chronik", "Atlas", "Tisch", "Kanal", "Woche", "Runde"])
     await expect(rail(label)).toBeVisible();
 
-  await page.getByRole("button", { name: "Zugang verwalten", exact: true }).click();
+  await page.getByRole("button", { name: "Einstellungen", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Deine Darstellung" })).toBeVisible();
   await page.getByRole("combobox", { name: "Sprache" }).selectOption("en");
 

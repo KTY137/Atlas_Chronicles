@@ -6,7 +6,7 @@
 .gegenueberstellung .spalte { min-width: 0; }
 .gegenueberstellung .spalte h3 { position: sticky; top: 0; margin: 0 0 .5rem; padding: .35rem 0; background: var(--surface, transparent); }
 .gegenueberstellung .vergleichs-passage { border-inline-start: 3px solid transparent; padding: .35rem 0 .35rem .75rem; margin-block-end: .5rem; overflow-wrap: anywhere; }
-.gegenueberstellung .vergleichs-passage.beide { border-inline-start-color: var(--border, #d8d2c6); }
+.gegenueberstellung .vergleichs-passage.beide { border-inline-start-color: var(--line-strong); }
 .gegenueberstellung .vergleichs-passage.nur-links,
 .gegenueberstellung .vergleichs-passage.nur-rechts { border-inline-start-color: var(--accent, #a8791f); background: color-mix(in srgb, var(--accent, #a8791f) 8%, transparent); }
 .gegenueberstellung .seiten-marke { display: block; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; opacity: .72; }

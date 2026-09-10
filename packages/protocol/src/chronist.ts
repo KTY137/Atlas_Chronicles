@@ -40,6 +40,20 @@ export interface ChronistSubmissionAck {readonly commandId:string;readonly propo
 export interface ChronistProviderDescription {readonly id:string;readonly label:string;readonly location:"lokal"|"fremd";
   readonly transport:"http"|"cli";readonly available:boolean;readonly availabilityCode:string|null;
   readonly models:readonly string[];readonly pricing:{readonly currency:string;readonly inputMicrosPerMillion:number;readonly outputMicrosPerMillion:number;readonly asOf:string}|null}
+/** Was die Suche nach einem lokalen Modelldienst an EINER Adresse ergeben hat. Die Codes sind
+ * Daten des Servers; die Oberflaeche uebersetzt sie an der Anzeigestelle in ganze Saetze.
+ * `gefunden` = Dienst antwortet und nennt Modelle · `leer` = Dienst antwortet, hat aber keins
+ * installiert · `keine-antwort` = dort lauscht niemand · `zeitueberschreitung` = niemand hat
+ * rechtzeitig geantwortet · `unlesbar` = eine Antwort kam, aber keine Modellliste. */
+export interface ChronistLocalScanEntry {readonly baseUrl:string;
+  readonly code:"gefunden"|"leer"|"keine-antwort"|"zeitueberschreitung"|"unlesbar";
+  readonly models:readonly string[];readonly durationMs:number}
+/** Der ganze Suchlauf. `found` ist der erste Treffer; danach wird nicht weitergesucht. */
+export interface ChronistLocalScanReport {readonly scannedAt:number;
+  readonly entries:readonly ChronistLocalScanEntry[];readonly found:ChronistLocalScanEntry|null}
+/** Die Antwort des Suchknopfs: der Bericht plus die daraufhin gueltige Anbieterliste. */
+export interface ChronistProviderScanResult {readonly scan:ChronistLocalScanReport;
+  readonly providers:readonly ChronistProviderDescription[]}
 export interface ChronistSourceDescriptor {readonly sourceId:string;readonly ref:Static<typeof ChronistSourceRefSchema>;
   readonly title:string;readonly textVersion:"plain-block-1";readonly text:string;readonly block:Blockinhalt}
 export interface ChronistSourcePage {readonly sources:readonly ChronistSourceDescriptor[];readonly after:string|null;readonly complete:boolean}

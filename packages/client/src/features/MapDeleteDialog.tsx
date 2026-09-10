@@ -52,7 +52,7 @@ export function MapDeleteDialog({ campaignId, target, onClose, onDeleted }: {
     {error ? <Notice error>{error}</Notice> : null}
     <div className="map-delete-actions"><Button autoFocus disabled={busy} onClick={onClose}>{t("Abbrechen")}</Button>
       {stale || !loading && (!preview || preview.blockers.length > 0) ? <Button disabled={busy} onClick={() => setRefresh(value => value+1)}>{t("Löschvorschau neu laden")}</Button> : null}
-      <Button variant="primary" className="map-delete-confirm" disabled={loading || busy || stale || !preview || !!preview.blockers.length} onClick={() => void remove()}>{busy ? t("Wird gelöscht …") : preview && preview.maps.length > 1 ? t("{anzahl} Karten löschen", { anzahl: preview.maps.length }) : t("Karte endgültig löschen")}</Button>
+      <Button variant="danger" className="map-delete-confirm" disabled={loading || busy || stale || !preview || !!preview.blockers.length} onClick={() => void remove()}>{busy ? t("Wird gelöscht …") : preview && preview.maps.length > 1 ? t("{anzahl} Karten löschen", { anzahl: preview.maps.length }) : t("Karte endgültig löschen")}</Button>
     </div>
   </dialog>;
 }

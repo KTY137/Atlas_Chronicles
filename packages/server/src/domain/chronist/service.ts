@@ -30,7 +30,22 @@ export function createChronistService(db:Db,config:ChronistServiceConfig&Chronis
   /** Schneller Vorfilter vor der dauerhaften Prüfung; die Wahrheit steht in der Datenbank. */
   const verbrauchteFreigaben=new Map<string,number>();
   const sourceService=createChronistSources(db,config),proposals=createChronistProposals(db,config);
-  async function providers(userId:string,campaignId:string){await createCampaigns(db,config).requireMember(userId,campaignId,["leitung"]);return {providers:config.chronist?.providers??[]};}
+  async function providers(userId:string,campaignId:string){await createCampaigns(db,config).requireMember(userId,campaignId,["leitung"]);
+    return {providers:config.chronist?.providers??[],canScanLocal:typeof config.chronist?.rescanLocal==="function"};}
+  /**
+   * Sucht auf ausdrueckliche Anforderung erneut nach einem lokal laufenden Modelldienst.
+   *
+   * Nur die Spielleitung darf das ausloesen — es ist derselbe Zugriff wie die Anbieterliste
+   * selbst. Der Suchlauf liest ausschliesslich Modellnamen; er laedt nichts, startet nichts und
+   * ruft kein Modell auf. Stellt der Host keine Suche bereit (etwa ein Prueftisch mit fester
+   * Laufzeit), sagt `canScanLocal:false` das, statt einen Knopf anzubieten, der nichts tut.
+   */
+  async function rescanProviders(userId:string,campaignId:string){
+    await createCampaigns(db,config).requireMember(userId,campaignId,["leitung"]);
+    const suche=config.chronist?.rescanLocal;
+    if(!suche)throw new Gone("chronist-scan-unavailable");
+    const scan=await suche();
+    return {scan,providers:config.chronist?.providers??[]};}
   function resolve(providerId:string,model:string):ChronistProviderBinding{const p=config.chronist?.resolveProvider(providerId,model);
     if(!p||p.description.id!==providerId||!p.description.models.includes(model))throw new Gone("chronist-provider");return p;}
   function recordProvider(binding:ChronistProviderBinding,model:string):ChronistProviderRecord{return {schemaVersion:1,description:binding.description,model,fingerprint:binding.fingerprint,profileId:binding.profileId};}
@@ -185,5 +200,5 @@ export function createChronistService(db:Db,config:ChronistServiceConfig&Chronis
     if(run.version!==expectedVersion||run.state!=="running")throw new ChronistConflict("run-version");run.cancel_requested=true;run.version++;run.updated_at=String(await chronistDbTime(tx,config));await saveChronistRun(tx,run);return view(tx,run);});running.get(runId)?.abort.abort();return result;}
   async function close():Promise<void>{closed=true;for(const r of running.values())r.abort.abort();
     let timer:ReturnType<typeof setTimeout>|undefined;try{await Promise.race([Promise.allSettled([...running.values()].map(r=>r.promise)),new Promise<never>((_resolve,reject)=>{timer=setTimeout(()=>reject(new Error("chronist-drain-timeout")),5000);})]);}finally{if(timer)clearTimeout(timer);}}
-  return {providers,preview,start,resume,cancel,getRun,listRuns,close,...sourceService,...proposals};
+  return {providers,rescanProviders,preview,start,resume,cancel,getRun,listRuns,close,...sourceService,...proposals};
 }

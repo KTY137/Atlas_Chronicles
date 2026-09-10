@@ -1,0 +1,158 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
+
+/* ═══ Zustände, Bewegung und Erhebung ═══════════════════════════════════════════════════
+   Was diese Datei repariert, stand vorher als Befund im Optik-Audit vom 2026-09-10:
+
+   1. „:active kommt in 31 Stilblättern exakt 0-mal vor." Kein Klick im Produkt bekam eine
+      Quittung. Ein Knopf, der beim Drücken nichts tut, fühlt sich kaputt an, auch wenn er
+      funktioniert.
+   2. Sieben von acht anklickbaren Flächen wechselten ihre Farbe beim Überfahren OHNE
+      `transition` — ein harter Sprung. Das Aussehen bot fünf Bewegungsstufen zur Auswahl an,
+      und `--panel-motion` hatte im ganzen Produkt null Verwender.
+   3. Die Oberfläche hatte keine Erhebung: sechs `box-shadow`-Regeln, alle `inset`, alle nur
+      farbige Markierungsbalken. Karten saßen auf einer 13-%-Linie. Deshalb wirkte alles flach.
+   4. `.medien-zeile` enthält Knöpfe und Auswahlfelder, gab aber keinerlei Rückmeldung, wenn
+      der Fokus in ihr stand; `:focus-within` kam im ganzen Client 0-mal vor.
+
+   Die Datei wird NACH `appearance.css` geladen. Sie benutzt ausschließlich Token, also gilt
+   sie in jedem der zwölf Looks. Die beiden Rücknahmen bleiben wirksam, weil sie höher wiegen:
+   „Schlicht" (`atmosphere="clean"`) und „Hoher Kontrast" nehmen Schatten weiter zurück, und
+   „Bewegung reduzieren" schaltet mit `!important` jede Bewegung ab.
+   ═══════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Bewegung ──────────────────────────────────────────────────────────────────────────
+   Ein Rezept für alles, was auf Zeigen und Klicken reagiert. Die Dauer kommt aus dem
+   gewählten Aussehen; die Ersatzwerte greifen nur vor dem ersten Anstrich. Animiert werden
+   ausdrücklich nur Farbe, Rand, Schatten und Verschiebung — nie Größe oder Layout, sonst
+   ruckelt die Seite beim Überfahren einer Liste. */
+:is(.button, .rail-item, .entry-item, .campaign-card, .heute-ziel, .heute-artikel-karte,
+    .heute-create-card, .medien-zeile, .look-karte, .figure-frame, .atlas-place-list button) {
+  transition:
+    background-color var(--control-motion, 120ms) var(--motion-easing, ease),
+    border-color var(--control-motion, 120ms) var(--motion-easing, ease),
+    color var(--control-motion, 120ms) var(--motion-easing, ease),
+    box-shadow var(--panel-motion, 220ms) var(--motion-easing, ease),
+    transform var(--control-motion, 120ms) var(--motion-easing, ease);
+}
+
+/* ── Druckzustand ──────────────────────────────────────────────────────────────────────
+   Ein Pixel nach unten. `transform` fließt nicht ins Layout, also kann diese Regel nichts
+   verschieben — und sie ist die billigste ehrliche Rückmeldung, die es gibt. */
+:is(.button, .rail-item, .entry-item, .campaign-card, .heute-ziel, .heute-artikel-karte,
+    .heute-create-card, .look-karte):active:not(:disabled) {
+  transform: translateY(1px);
+}
+.button:active:not(:disabled) { box-shadow: none; }
+
+/* ── Erhebung ──────────────────────────────────────────────────────────────────────────
+   Drei Stufen, definiert in `packages/ui/src/tokens.css`. Ruhende Fläche, angehobene
+   Fläche beim Überfahren, schwebende Fläche für alles, was über dem Inhalt liegt. */
+:is(.panel, .campaign-card, .heute-ziel, .heute-artikel-karte, .heute-create-card,
+    .heute-workshop, .history-panel, .import-metrics, .look-karte) {
+  box-shadow: var(--shadow-1);
+}
+:is(.campaign-card, .heute-ziel, .heute-artikel-karte, .heute-create-card, .look-karte):hover {
+  box-shadow: var(--shadow-2);
+}
+/* Schwebende Flächen: dieselbe Stufe für alle vier, die vorher vier eigene Rezepte hatten. */
+:is(.map-context-menu, .map-delete-dialog, .ff-completion, .atlas-map-tools) {
+  box-shadow: var(--shadow-3);
+}
+
+/* ── Fokus in zusammengesetzten Zeilen ─────────────────────────────────────────────────
+   Wer mit der Tastatur durch den Bildbestand geht, soll sehen, in welcher Zeile er steht. */
+:is(.medien-zeile, .member-list li, .credential-list li):focus-within {
+  border-color: var(--focus);
+  background: var(--accent-soft);
+}
+
+/* ── Mindestgröße auch im engen Modus ──────────────────────────────────────────────────
+   „Großzügig" sicherte 44 px zu, „Kompakt" hatte gar keine untere Schranke.
+   WCAG 2.2 (2.5.8) verlangt 24 px — das gilt jetzt in beiden Fällen. */
+html[data-appearance-density="compact"] body :is(button, input, select, .button) { min-height: 32px; }
+
+/* ── Fokusring auch für alles, was kein Bedienelement-Element ist ──────────────────────
+   Die Grundregel erfasste nur `button, a, summary, input, textarea, select`. Ein
+   `<iframe>` und jedes Element mit `tabindex` sind ebenfalls fokussierbar und bekamen
+   bisher keinen Ring. */
+:is([tabindex], iframe, [role="button"]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* ── Die Look-Auswahl ──────────────────────────────────────────────────────────────────
+   Eine Kachelwand statt einer Aufklappliste. Jede Kachel zeigt vier Farben des Looks, seinen
+   Alltagsnamen und einen Satz dazu. Der Radioknopf selbst ist verdeckt (`.sr-only`) — er
+   trägt aber weiter Tastatur, Sprachausgabe und Fokus, deshalb hängt der Ring der Kachel
+   an SEINEM `:focus-visible`, nicht an einem eigenen Klickfänger. */
+.look-auswahl { border: 0; padding: 0; margin: 0 0 28px; min-width: 0; }
+.look-auswahl > legend { padding: 0; font-size: 21px; font-weight: 500; font-family: var(--font-display); }
+.look-gitter { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.look-karte {
+  position: relative; display: grid; gap: 8px; margin: 0; padding: 12px; cursor: pointer;
+  border: var(--theme-border, 1px) solid var(--line); border-radius: var(--radius);
+  background: var(--surface); color: var(--text-muted); font-size: 12px; font-weight: 400;
+}
+.look-karte:hover { border-color: var(--control-line); background: var(--surface-hover); }
+.look-karte:has(> input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.look-karte.ist-gewaehlt { border-color: var(--accent); background: var(--accent-soft); }
+/* Das Häkchen sagt dasselbe wie die Rahmenfarbe — Farbe allein trägt keinen Zustand. */
+.look-karte.ist-gewaehlt .look-marke::before { content: "✓ "; color: var(--accent); }
+/* Der Radioknopf selbst: unsichtbar, aber so groß wie die ganze Kachel. Bewusst nicht
+   `.sr-only` — ein auf 1 px geklipptes Feld ist zwar erreichbar, aber nichts, worauf man
+   mit Maus oder Finger zielen kann. */
+.look-knopf {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0;
+  -webkit-appearance: none; appearance: none; background: none; border: 0; opacity: 0; cursor: pointer;
+}
+.look-probe { display: flex; height: 34px; border-radius: calc(var(--radius) / 2); overflow: hidden; border: 1px solid var(--line-strong); }
+.look-probe > span { flex: 1; }
+.look-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.look-kopf strong { color: var(--text); font-size: 14px; font-weight: 500; }
+.look-marke {
+  flex: none; font-size: 11px; letter-spacing: .04em; color: var(--text-faint);
+  border: 1px solid var(--line-strong); border-radius: 999px; padding: 1px 8px;
+}
+.look-text { line-height: 1.5; color: var(--text-muted); }
+@media (max-width: 520px) { .look-gitter { grid-template-columns: 1fr; } }
+
+/* ── Die Einstellungsfelder in „Deine Darstellung" ─────────────────────────────────────
+   Jede Wahl steht als eigene Karte mit einem Satz darunter, der das Ergebnis beschreibt.
+   Der alte `.rule-fields`-Raster hatte dafür keinen Platz: dort stand nur das Label. */
+.wahl-gitter { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 4px 20px; }
+.wahl-feld { min-width: 0; }
+.wahl-feld > label { margin-bottom: 6px; }
+.wahl-feld > .field-help { margin: 0 0 18px; max-width: 46ch; }
+.appearance-settings .check-label { margin-top: 4px; }
+
+/* ── Der Ausgang aus den Einstellungen ─────────────────────────────────────────────────
+   Die Seite war eine Sackgasse, solange keine Kampagne offen war: dann ist die gesamte
+   Bereichsleiste gesperrt, und die einzigen Rückwege lagen unbeschriftet auf der Wortmarke
+   und dem Kampagnenknopf. Jetzt steht der Ausgang oben UND unten — oben findet ihn, wer
+   sofort wieder weg will, unten, wer bis ans Ende gescrollt ist. */
+.account-exit { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.account-exit > .field-help { margin: 0; }
+.account-exit-unten { margin: 26px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
+/* Warum die Bereichsleiste leer wirkt, wenn keine Kampagne offen ist. */
+.rail-hinweis { color: var(--text-muted); font-size: 12px; line-height: 1.5; margin: 6px 12px 0; }
+/* Ein gesperrtes Bereichsziel bekam durch die allgemeine Regel für gesperrte Bedienelemente
+   eine gefüllte Fläche — und sah damit aktiver aus als ein anklickbares, das durchsichtig ist.
+   Die Schriftfarbe bleibt die gesperrte, die Fläche verschwindet. */
+html[data-appearance-theme] body .rail-item:disabled { background: transparent; border-color: transparent; }
+
+/* ── Der eigene Bereich ────────────────────────────────────────────────────────────────
+   „Dein Zugang" war eine Seite für Passkeys. Für eine Spielerin ist sie jetzt der Ort, an dem
+   steht, was sie darf, in welchen Runden sie ist und wie sie wieder herauskommt. */
+.account-runden { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.account-runden li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.account-runden li > div { min-width: 0; }
+.account-runden strong { display: block; font-size: 15px; overflow-wrap: anywhere; }
+.account-runden small { display: block; color: var(--text-muted); font-size: 12.5px; margin-top: 2px; }
+/* Eine geöffnete Einladung ist der Grund, warum jemand hier ist — sie steht ganz oben und
+   trägt die Leitfarbe, nicht die Gefahrenfarbe: es ist eine Einladung, kein Fehler. */
+.account-einladung { border-color: var(--accent); border-left: 3px solid var(--accent); }
+.account-einladung h2 svg { color: var(--accent); }
+.account-abmelden { border-top: 3px solid var(--danger); }
+.account-abmelden h2 svg { color: var(--danger); }

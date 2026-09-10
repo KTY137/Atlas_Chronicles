@@ -84,7 +84,10 @@ describe("public HTTP uses the explicit projection", () => {
       expect(html).toContain(`data-edges="${manifest.geometry.edges}"`);
       expect(html).toContain(`image-rendering:${manifest.sampling === "nearest" ? "pixelated" : "auto"}`);
       expect(html).toContain("font-family:var(--font-display)"); expect(html).toContain("font-family:var(--font-body)");
-      expect(html).toContain(preset === "Medieval" ? "--font-body:Georgia" : preset === "PixelArt" ? "--font-body:ui-monospace" : "--font-body:system-ui");
+      // Aus dem Manifest abgeleitet, nicht aus einer Liste von Presetnamen: sonst muss diese
+      // Zeile bei jedem neuen Look nachgezogen werden und prueft am Ende nur noch sich selbst.
+      const erwarteteLeseschrift = { cinzel: "Georgia", serif: "Georgia", mono: "ui-monospace", plex: "system-ui", system: "system-ui" }[manifest.typography.body];
+      expect(html).toContain(`--font-body:${erwarteteLeseschrift}`);
       expect(html).toContain("@media(prefers-contrast:more)"); expect(html).toContain(`--bg:${HIGH_CONTRAST_COLORS.bg}`);
       expect(html).toContain("@media(forced-colors:active)"); expect(html).toContain("forced-color-adjust:auto");
       expect(html).toContain("transition:none!important"); expect(html).not.toMatch(/@font-face|url\(https?:/);

@@ -2,7 +2,8 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DENY_AUSNAHMEN, DYNAMISCH_ERLAUBT, LOKAL_ALLOWLIST, pruefeSprache, sammleAufrufe, sammleDatenschluessel, sammleEtiketttabellen, verschmelzeKataloge } from "../gate-sprache.mjs";
+import { DENY_AUSNAHMEN, DYNAMISCH_ERLAUBT, LOKAL_ALLOWLIST, pruefeSprache, sammleAufrufe, sammleDatenschluessel, sammleEtiketttabellen, tokenListe, tokenListeMit, verschmelzeKataloge } from "../gate-sprache.mjs";
+import { SyntaxKind } from "typescript/unstable/ast";
 
 const quelle = (datei, text) => [{ datei, text }];
 const arten = ergebnis => ergebnis.verstoesse.map(zeile => zeile.split(" ·")[0]);
@@ -211,4 +212,32 @@ test("erlaubt denselben Satz in zwei Paketdateien, aber nur mit derselben Übers
 
   const kaputt = verschmelzeKataloge([{ name: "P2.json", inhalt: { Speichern: 3 } }]);
   assert.match(kaputt.verstoesse[0], /^aufbau/);
+});
+
+test("liest Regex-Literale als ein Token und verschluckt dahinter nichts", () => {
+  // Beobachtet am 2026-09-10: ohne Nachscannen läuft der Lexer in den Regex-Körper hinein.
+  // Bei einem "#" darin bleibt er ganz stehen — er versucht dort einen privaten Feldnamen zu
+  // lesen, scheitert und rückt nicht vor. Die Schleife lief bis zur Schutzgrenze und gab die
+  // abgeschnittene Liste ZURÜCK, als wäre sie vollständig; das Gate meldete daraufhin jeden
+  // Text dahinter als „fehlend" und jeden Katalogeintrag dazu als „verwaist".
+  const mitRaute = 'const ok = /^#[0-9a-f]{6}$/.test(wert);\nconst A = () => <p>{t("Dahinter")}</p>;';
+  assert.deepEqual(sammleAufrufe(mitRaute, "probe.tsx").texte.map(stelle => stelle.schluessel), ["Dahinter"]);
+  // Auch ein Anführungszeichen im Regex darf keine Zeichenkette eröffnen, die es nicht gibt.
+  const mitAnfuehrung = 'const ok = text.replace(/["\']/g, "");\nconst A = () => <p>{t("Auch dahinter")}</p>;';
+  assert.deepEqual(sammleAufrufe(mitAnfuehrung, "probe.tsx").texte.map(stelle => stelle.schluessel), ["Auch dahinter"]);
+  // Eine Division bleibt eine Division: nach einem Wert wird nicht nachgescannt.
+  assert.ok(tokenListe("const a = b / c; const d = (b) / 2;", "probe.ts").length > 10);
+  // Und JSX bleibt JSX — `</p>` beginnt mit `<` und `/` und darf kein Regex werden.
+  const jsx = 'const A = () => <p>{t("Erst")}</p>;\nconst B = () => <p>{t("Danach")}</p>;';
+  assert.deepEqual(sammleAufrufe(jsx, "probe.tsx").texte.map(stelle => stelle.schluessel), ["Erst", "Danach"]);
+});
+
+test("bricht ab, statt eine abgeschnittene Tokenliste als vollständig auszugeben", () => {
+  // Das Netz unter der Regexbehandlung: bleibt der Lexer aus irgendeinem anderen Grund
+  // stehen, muss das Gate laut abbrechen. Ein Gate, das bei einem eigenen Fehler erfundene
+  // Befunde ausgibt, ist schlimmer als eines, das gar nichts sagt.
+  const stehend = { setText() {}, scan: () => SyntaxKind.Identifier, getTokenStart: () => 7,
+    getTokenText: () => "x", getTokenValue: () => "x" };
+  assert.throws(() => tokenListeMit(stehend, "const a = 1;\nconst b = 2;", "probe.ts"),
+    /kommt in probe\.ts:1 nicht weiter/);
 });

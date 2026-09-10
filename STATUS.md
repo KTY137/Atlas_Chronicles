@@ -1,6 +1,69 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 5** (keine Karte mehr im Programm; Kartenstudio-Zehnerliste fertig)
+Updated: **2026-09-10, Runde 6** (Aussehen-Umbau, Werkstatt in Klartext, Nutzerfläche, Ollama-Suche · v0.2.0)
+
+## Runde 6 — Aussehen, Klartext, Nutzerfläche, Ollama · 2026-09-10
+
+**Zwölf Looks statt fünf.** Sieben neue in `packages/theme/src/presets.ts` (Midnight, Verdant,
+Ember, Astral, Brass, Parchment, Dawn), drei davon hell. Alle bestehen 135/135 Kontrastpaare;
+`tools/theme-kontrast.mjs` rechnet es mit demselben Prüfer nach, den auch der Test benutzt.
+**Drei Stellen je neuem Look:** `THEME_PRESET_IDS`, das Preset, und `LOOK_LABEL` +
+`LOOK_ERKLAERUNG_LABEL` in `features/look-namen.ts` — fehlt das dritte, steht die rohe englische
+Kennung in der Oberfläche.
+
+**Die Werkstatt spricht Deutsch.** 34 Farbrollen mit Erklärsatz in sechs Gruppen, Textfeld neben
+jedem Farbwähler (ohne das war die Farbe ohne Maus unerreichbar), Schriftwahl als Knöpfe *in*
+der jeweiligen Schrift, Lesbarkeitsbericht in Klartext mit Reparaturknopf
+(`packages/theme/src/repair.ts` — verschiebt nur die Helligkeit, prüft beide Rollen einer Farbe).
+**Falle:** die Schuld an einer verfehlten Paarung gehört an den **Vordergrund**; zählt man den
+Hintergrund mit, färbt eine kaputte Schrift dreizehn Felder rot.
+
+**Neue Schicht `packages/client/src/zustaende.css`** (nach `appearance.css` geladen, nur Token):
+Bewegung, Druckzustand, drei Erhebungsstufen, `:focus-within`. Vorher kam `:active` in 31
+Stilblättern **null Mal** vor und `--panel-motion` hatte keinen Verwender.
+
+**38 Farblecks repariert.** `styles.css` führt jetzt **0** harte Farbwerte (vorher 62),
+`packages/ui/src/tokens.css` alle 34 Token (vorher 15), gehalten von
+`packages/theme/test/tokens-css.test.ts`. **Vier Token gab es nie** — `var(--ink, …)`,
+`var(--border, …)`, `var(--ink-muted, …)`, `var(--surface-sunken, …)`: der „Ersatzwert" war der
+einzige Wert.
+
+**Zwei Betriebsmeldungen von Kaya, beide behoben.** (1) Man konnte in den Einstellungen
+feststecken: ohne offene Kampagne ist die ganze Bereichsleiste `disabled`, und die Rückwege lagen
+unbeschriftet auf Wortmarke und Kampagnenknopf. Jetzt Ausgang oben und unten mit Zielangabe,
+Escape schließt, die gesperrte Leiste sagt warum. (2) Ollama wurde nicht gefunden: der Host
+suchte **einmal beim Start, an einer Adresse, mit 1 s** und verschluckte jeden Fehlschlag. Neu
+`packages/server/src/chronist-providers/discovery.ts` (OLLAMA_HOST in drei Schreibweisen,
+`127.0.0.1` und `[::1]`, 3 s, ein Grundcode je Adresse), `rescanLocal()` auf der Laufzeit,
+`POST …/chronist/providers/scan`, Knopf und Bericht in der Chronisten-Werkstatt.
+**Bindende Festlegung eingehalten:** mit Betreiberdatei wird ausschließlich deren eigene
+`baseUrl` geprüft (`exclusive: true`); breit gesucht wird nur ohne Datei und auf Knopfdruck.
+
+**Nutzerfläche.** „Dein Zugang" sagt jetzt, was man darf, in welchen Runden man ist, und wie man
+zur Anmeldeseite zurückkommt. **Gefundene Lücke:** ein `?join=` in der Adresse las nur die
+Anmeldeseite — die aber nur erscheint, wenn niemand angemeldet ist. Wer als angemeldeter Spieler
+eine Einladung anklickte, bekam **gar nichts**. Wird jetzt aufgegriffen und erklärt: ein Beitritt
+legt immer einen **eigenen Zugang** an (`requestJoin` legt einen neuen Nutzer an), also erst
+abmelden.
+
+**Nebenbefund im Sprachgate.** Ein `#` in einem Regex-Literal brachte den TypeScript-Lexer zum
+Stehen; das Gate gab die abgeschnittene Tokenliste zurück, *als wäre sie vollständig*, und meldete
+73 erfundene Verstöße. Betroffen war seit jeher auch `packages/io/src/wikitext.ts` — eine Datei
+auf der Sperrliste, ab Zeile 122 nie gelesen. Regexe werden jetzt als ein Token gelesen
+(Erlaubnisliste, weil `</p>` in JSX sonst als Regexanfang gilt), mit Stillstandssperre darunter.
+Gesperrte Literale: 82 → 90.
+
+**Nachweis:** 578 Prüfungen in Theme, Client und Chronist grün; beide Typechecks; gate:version,
+gate:boundaries, gate:sprache (19 Selbsttests), gate:assets; Build.
+**Nicht belegt:** `npm run test:e2e` ist nicht gelaufen (Edge + PostgreSQL nötig); 15 Fundstellen
+in drei Spec-Dateien wurden angepasst, aber nicht verifiziert. **Vorbestehend rot:** sieben
+Servertests (zwei Live-Sequenz-Zusicherungen, fünf Zeitüberschreitungen) — mit `git stash` der
+Serveränderungen gegengeprüft, sie fallen genauso.
+
+**Offen:** Abstandsskala (43 Zahlen) und Schriftskala (33 Stufen); `window.confirm` an drei
+Stellen; 14 Jargon-Verstöße in der Veröffentlichungswerkstatt; Anwesenheitspunkt in der Fußleiste
+nur farbcodiert.
+
 
 ## Keine Karte mehr im Programm — 2026-09-10
 

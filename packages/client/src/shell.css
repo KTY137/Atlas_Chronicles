@@ -4,12 +4,12 @@
 /* Named areas stay visible on desktop; every area fits in the mobile menu. */
 .application .rail { width: 216px; min-width: 216px; padding: 18px 12px; gap: 22px; overflow-y: auto; overflow-x: hidden; }
 .rail-group { display: grid; gap: 3px; }
-.rail-group-label { color: var(--text-faint); font-size: 9px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; padding: 0 12px; margin: 0 0 8px; }
-.application .rail-item { width: 100%; min-height: 51px; flex-direction: row; justify-content: flex-start; text-align: left; gap: 12px; padding: 9px 12px; border-radius: 6px; }
+.rail-group-label { color: var(--text-faint); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; padding: 0 12px; margin: 0 0 8px; }
+.application .rail-item { width: 100%; min-height: 51px; flex-direction: row; justify-content: flex-start; text-align: left; gap: 12px; padding: 8px 12px; border-radius: var(--radius); }
 .application .rail-item > svg { flex-shrink: 0; width: 19px; height: 19px; }
 .application .rail-item > span { display: grid; gap: 1px; min-width: 0; }
 .application .rail-item strong { font-size: 12px; font-weight: 500; letter-spacing: .01em; }
-.application .rail-item small { font-size: 9px; line-height: 1.35; letter-spacing: 0; color: var(--text-faint); }
+.application .rail-item small { font-size: 11px; line-height: 1.35; letter-spacing: 0; color: var(--text-faint); }
 .application .rail-item.active { box-shadow: inset 2px 0 var(--accent); }
 .application .rail-item.active small { color: var(--text-muted); }
 .mobile-navigation { display: none; }
@@ -19,7 +19,7 @@
 .heute-workshop .eyebrow { margin-bottom: 7px; }
 .heute-workshop h2 { font-size: 21px; }
 .heute-create-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.heute-create-card { display: flex; flex-direction: column; position: relative; gap: 10px; min-width: 0; text-align: left; border: 1px solid var(--line); border-radius: 7px; padding: 19px 16px 40px; background: var(--surface-2); }
+.heute-create-card { display: flex; flex-direction: column; position: relative; gap: 10px; min-width: 0; text-align: left; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 16px 40px; background: var(--surface-2); }
 .heute-create-card > svg:first-child { color: var(--accent); margin-bottom: 6px; }
 .heute-create-card strong { font-size: 14px; line-height: 1.4; font-weight: 500; }
 .heute-create-card > span { font-size: 12px; line-height: 1.6; color: var(--text-muted); }

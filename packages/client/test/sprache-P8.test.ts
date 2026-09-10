@@ -44,7 +44,8 @@ describe("Sprachpaket P8 — Rahmen, Anmeldung, Konto", () => {
   it("setzt die Platzhalter der englischen Fassung", async () => {
     await englisch();
     expect(t("Gerät für {name} koppeln", { name: "Sera" })).toBe("Pair a device for Sera");
-    expect(t("Vorlage {id}", { id: "Aurora" })).toBe("Template Aurora");
+    // Der frühere Platzhaltersatz „Vorlage {id}" ist entfallen — er zeigte die rohe
+    // englische Kennung des Looks. Sein Nachfolger steht in P9 und wird dort geprüft.
   });
 
   it("waehlt in Round.tsx beide Pluralformen", async () => {

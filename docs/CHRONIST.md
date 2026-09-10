@@ -18,10 +18,28 @@ Modellarbeit pausiert mit einem sichtbaren Hinweis.
 
 ## Lokales Modell
 
-Der Host liest beim Start die installierten Modellnamen eines laufenden Ollama unter
-`http://127.0.0.1:11434/api/tags`. Er lädt keine Modelle herunter und sendet dabei keine
-Quellen. Nach Einrichtung beziehungsweise Modellwechsel den lokalen Atlas-Host
-beenden und neu starten. Dann im Chronisten die Verfügbarkeit neu prüfen.
+Der Host liest die installierten Modellnamen eines laufenden Ollama unter dessen
+`/api/tags`. Er lädt keine Modelle herunter und sendet dabei keine Quellen.
+
+**Wo gesucht wird (Stand 2026-09-10).** Ohne Betreiberdatei prüft der Host der Reihe nach
+`OLLAMA_HOST` aus seiner Umgebung, danach `CHRONICLE_CHRONIST_OLLAMA_URL`, dann
+`http://127.0.0.1:11434` und `http://[::1]:11434`. Die letzten beiden sind nicht dasselbe:
+auf Windows löst `localhost` je nach Lage auf die eine oder die andere auf, und ein Dienst,
+der nur auf einer davon lauscht, ist über die andere unerreichbar. Beim ersten Treffer hört
+die Suche auf. Die Wartezeit je Adresse beträgt drei Sekunden — der erste `/api/tags`-Aufruf
+nach dem Start eines Modelldienstes ist regelmäßig der langsamste.
+
+`OLLAMA_HOST` wird in allen drei gebräuchlichen Schreibweisen verstanden: `11434`,
+`127.0.0.1:11434` und `http://127.0.0.1:11434`. `0.0.0.0` ist eine Lausch-, keine Zieladresse
+und wird als „dieser Rechner" gelesen.
+
+**Nachträglich suchen, ohne Neustart.** Wer den Modelldienst erst nach Atlas startet oder ein
+Modell nachinstalliert, drückt im Chronisten auf **„Auf diesem Rechner nach Modellen suchen"**.
+Der Bericht darunter nennt jede geprüfte Adresse und was dort war — antwortender Dienst,
+antwortender Dienst ohne Modell, nichts am Lauschen, keine Antwort in der Wartezeit, oder eine
+Antwort, die keine Modellliste war. Nur die Spielleitung kann das auslösen. Gesucht wird auf
+Knopfdruck breit, also auch über die Umgebung und die üblichen Adressen; beim Start mit
+Betreiberdatei dagegen ausschließlich über deren eigene Adresse.
 
 Für einen anderen lokalen Endpunkt oder feste erlaubte Modelle verwende eine
 Betreiberdatei. Beispiel `C:\Atlas\chronist.json`:
@@ -48,11 +66,12 @@ Umgebungsvariable `CHRONICLE_CHRONIST_CONFIG` benennt den vollständigen Dateipf
 beim Start von Atlas. Dieselbe Datei funktioniert im Selbstbetrieb und im Desktop.
 Änderungen werden nach Neustart des Hosts wirksam. Relative Pfade werden abgewiesen.
 
-Ohne Betreiberdatei fragt der Host beim Start `http://127.0.0.1:11434/api/tags` ab und
-übernimmt die gefundenen Modellnamen. Mit Betreiberdatei gilt dasselbe für den dortigen
-Ollama-Eintrag, solange er noch den Platzhalter „Kein lokales Modell eingerichtet" trägt:
-dann fragt der Host die `baseUrl` genau dieses Eintrags ab und trägt die installierten
-Modelle ein. Ein Eintrag mit konkreten Modellnamen bleibt unangetastet; für ihn wird nichts
+Ohne Betreiberdatei sucht der Host beim Start über die oben genannten Adressen und übernimmt
+die gefundenen Modellnamen. Mit Betreiberdatei gilt dasselbe für den dortigen Ollama-Eintrag,
+solange er noch den Platzhalter „Kein lokales Modell eingerichtet" trägt — dann fragt der Host
+**ausschließlich** die `baseUrl` genau dieses Eintrags ab und trägt die installierten Modelle
+ein. Hinter dem Rücken der Datei werden keine weiteren Adressen angefasst; wer breiter suchen
+will, drückt den Suchknopf im Chronisten. Ein Eintrag mit konkreten Modellnamen bleibt unangetastet; für ihn wird nichts
 abgefragt. Es gibt kein fest eingebautes lokales Standardmodell. Ist kein Ollama erreichbar,
 bleibt der Eintrag mit dem Platzhalter sichtbar nicht verfügbar. Abgefragt werden nur
 Loopback- oder ausdrücklich private Adressen; Weiterleitungen werden nicht verfolgt.

@@ -1,0 +1,23 @@
+{
+  "__paket": "P12 — der eigene Bereich „Dein Zugang“: Rolle, Runden, geöffnete Einladung, Abmelden (2026-09-10).",
+
+  "Was du hier darfst": "What you may do here",
+  "Du kannst auf diesem Server eigene Runden anlegen und andere dazu einladen.": "On this server you can create your own groups and invite others to them.",
+  "Du spielst in Runden, zu denen dich eine Spielleitung einlädt. Eigene Runden anlegen kann auf diesem Server nur, wer ihn eingerichtet hat.": "You play in groups a game master invites you to. On this server, only whoever set it up can create groups.",
+  "Innerhalb einer Runde hat jeder zusätzlich eine eigene Rolle. Die Spielleitung sieht dort die Schmiede und alle Regeln; als Spieler siehst du deine Figuren, den Tisch, die Chronik und alles, was für dich freigegeben ist.": "Within a group everyone also has their own role. The game master sees the forge and all the rules there; as a player you see your characters, the table, the chronicle and everything released to you.",
+
+  "Deine Runden": "Your groups",
+  "Du bist noch in keiner Runde. Sobald dich eine Spielleitung einlädt, erscheint sie hier.": "You are not in a group yet. As soon as a game master invites you, it appears here.",
+  "Du führst diese Runde.": "You run this group.",
+  "Du spielst in dieser Runde.": "You play in this group.",
+
+  "Du hast eine Einladung geöffnet": "You have opened an invitation",
+  "Diese Einladung gehört zu einer Runde, in der du noch nicht bist. Ein Beitritt legt einen eigenen Zugang für genau diese Runde an — er wird nicht mit „{name}“ zusammengelegt.": "This invitation belongs to a group you are not in yet. Joining creates its own access for that group — it is not merged with “{name}”.",
+  "Das ist Absicht: In jeder Runde trittst du unter dem Namen auf, den du dort angibst. Melde dich also zuerst ab; die Einladung bleibt geöffnet und du kannst sie danach annehmen.": "That is deliberate: in every group you appear under the name you give there. So sign out first — the invitation stays open and you can accept it afterwards.",
+  "Abmelden und Einladung annehmen": "Sign out and accept the invitation",
+
+  "Ohne beides kommst du nach dem Abmelden nur mit einem neuen Kopplungscode deiner Spielleitung zurück. Richte am besten jetzt eins von beiden ein.": "Without either of these, after signing out you can only get back with a new pairing code from your game master. Best to set one of them up now.",
+
+  "Bringt dich zurück auf die Anmeldeseite. Dort kannst du dich wieder anmelden, ein neues Gerät verbinden oder einer Runde beitreten.": "Takes you back to the sign-in page. There you can sign in again, connect a new device, or join a group.",
+  "Abmelden und zur Anmeldeseite": "Sign out and go to the sign-in page"
+}

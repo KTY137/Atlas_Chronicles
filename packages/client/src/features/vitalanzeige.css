@@ -11,7 +11,7 @@
 
 .vitalwert-balken {
   block-size: .55rem; margin-block-start: .2rem; overflow: hidden;
-  border: 1px solid var(--line, #2a3230); border-radius: 999px; background: #0d1211;
+  border: 1px solid var(--line, #2a3230); border-radius: 999px; background: var(--disabled-bg);
 }
 .vitalanzeige.kompakt .vitalwert-balken { block-size: .4rem; }
 /* Der Fuellstand traegt eine eigene Farbe je Vitalwert wuerde raten, welcher welcher ist. Also

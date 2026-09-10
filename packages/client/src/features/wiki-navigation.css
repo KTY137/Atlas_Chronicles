@@ -14,7 +14,7 @@
   font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
   color: var(--text-muted); min-height: 0;
 }
-.nav-gruppe-kopf:hover:not(:disabled) { background: #ffffff05; color: var(--text); }
+.nav-gruppe-kopf:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
 .nav-gruppe-kopf:disabled { opacity: .45; }
 .nav-gruppe-kopf svg { min-width: 14px; color: var(--text-faint); }
 .nav-chevron-leer { width: 14px; }
@@ -32,7 +32,7 @@
 }
 .nav-artikel-knopf span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .nav-artikel-knopf svg { min-width: 13px; color: var(--text-faint); }
-.nav-artikel-knopf:hover { background: #ffffff05; color: var(--text); }
+.nav-artikel-knopf:hover { background: var(--surface-hover); color: var(--text); }
 .nav-artikel-knopf.aktiv { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); color: var(--accent); }
 .nav-artikel-knopf.aktiv svg { color: var(--accent); }
 .nav-ungelesen { font-style: normal; font-size: 10px; color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -48,7 +48,7 @@
 .uebersicht-kopf { margin-bottom: 34px; }
 .uebersicht-kopf h1 { margin-bottom: 10px; }
 .uebersicht-gitter { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-.uebersicht-karte { border: 1px solid var(--line); background: #10131599; padding: 18px 20px 16px; min-width: 0; }
+.uebersicht-karte { border: 1px solid var(--line); background: var(--surface); padding: 18px 20px 16px; min-width: 0; }
 .uebersicht-karte h2 {
   display: flex; align-items: center; gap: 8px; margin: 0 0 4px;
   font-family: var(--font-display); font-size: 16px; font-weight: 600;
