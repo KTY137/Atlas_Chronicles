@@ -5,6 +5,10 @@ Wiki, Karten, Regelpakete und ein Spieltisch mit nachvollziehbaren Würfen und
 ausdrücklich bestätigten Kanon-Einträgen. Die Implementierung läuft; den gesamten
 Lieferumfang hält der [Implementierungsplan](docs/IMPLEMENTATION_PLAN.md) fest.
 
+Eine Einrichtungsanleitung für Spielleitung und Spieler auf Englisch — eigener
+Rechner, LAN oder eigener Server — steht in
+[Getting Started (EN)](docs/GETTING_STARTED_EN.md).
+
 ## Lokal starten
 
 Voraussetzungen: Node.js ab 22.12, npm und laufendes Docker Desktop.
