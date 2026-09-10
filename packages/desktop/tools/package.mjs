@@ -33,6 +33,13 @@ const root=fileURLToPath(new URL("../../../",import.meta.url)),require=createReq
 const stamp=new Date().toISOString().replaceAll(/[:.]/g,"-"),destination=join(root,".local/desktop-artifacts",stamp),stage=join(destination,"source");
 await mkdir(stage,{recursive:true});
 await cp(join(root,"packages/desktop/dist"),stage,{recursive:true});
+// Die Version des Artefakts ist die des gebauten Pakets, das gerade kopiert wurde — nicht eine
+// Zahl in dieser Datei. Bis zum 10.09.2026 stand sie hier zweimal fest auf "0.1.0", unsichtbar
+// fuer `gate:version`, das nur die beiden Arbeitsbereichs-Manifeste vergleicht. Beim Bau von
+// 0.2.0 nannte sich das fertige Installationspaket deshalb weiter 0.1.0 — und Squirrel
+// entscheidet an genau dieser Zahl, ob eine Installation eine Aktualisierung ist.
+const paketVersion=JSON.parse(await readFile(join(stage,"package.json"),"utf8")).version;
+if(typeof paketVersion!=="string"||!/^\d+\.\d+\.\d+$/.test(paketVersion))throw new Error("Das gebaute Desktop-Paket fuehrt keine brauchbare Version; zuerst tools/build.mjs laufen lassen.");
 const copied=new Map();
 async function dependency(name,from=root){
   if(copied.has(name))return;
@@ -48,10 +55,10 @@ async function dependency(name,from=root){
 }
 await dependency("sharp");
 await writeFile(join(stage,"DEPENDENCIES.json"),JSON.stringify(Object.fromEntries(copied),null,2));
-const paths=await packager({dir:stage,out:destination,name:"Atlas Chronicles",executableName:"AtlasChronicles",platform:"win32",arch:"x64",electronVersion:"44.2.0",appVersion:"0.1.0",asar:false,prune:false,overwrite:false,download:{cacheRoot:join(root,".local/desktop-runtime/electron-cache")}});
+const paths=await packager({dir:stage,out:destination,name:"Atlas Chronicles",executableName:"AtlasChronicles",platform:"win32",arch:"x64",electronVersion:"44.2.0",appVersion:paketVersion,asar:false,prune:false,overwrite:false,download:{cacheRoot:join(root,".local/desktop-runtime/electron-cache")}});
 const hash=createHash("sha256").update(await readFile(join(paths[0],"AtlasChronicles.exe"))).digest("hex");
 const inventory=await measureArtifactFiles(paths[0]);
-await writeFile(join(destination,"artifact.json"),JSON.stringify({kind:"unsigned-local-unpacked-windows-app",version:"0.1.0",electron:"44.2.0",postgres:"17.11",paths,exeSha256:hash,...inventory,publicRelease:false,missingReleaseGates:["ASAR integrity and release fuses","signed installer and update feed","NVDA and real device acceptance"]},null,2));
+await writeFile(join(destination,"artifact.json"),JSON.stringify({kind:"unsigned-local-unpacked-windows-app",version:paketVersion,electron:"44.2.0",postgres:"17.11",paths,exeSha256:hash,...inventory,publicRelease:false,missingReleaseGates:["ASAR integrity and release fuses","signed installer and update feed","NVDA and real device acceptance"]},null,2));
 console.log(`Unsigned local unpacked app: ${paths[0]} (${inventory.bytes} bytes, ${Object.keys(inventory.files).length} verified files). Public release gates remain open.`);
 }
 

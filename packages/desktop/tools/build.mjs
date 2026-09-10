@@ -72,5 +72,12 @@ for(const id of paketIds){
   paketManifeste[id]=hash(copiedPack);
 }
 await writeFile(join(out,"build.json"),JSON.stringify({version:1,electron:"44.2.0",node:"24.20.0",postgres:"17.11",clientFiles,grundrissManifest:paketManifeste["pk.grundriss"],paketManifeste,worker:hash(await readFile(join(out,"worker.cjs"))),runtimeManifest:hash(await readFile(join(out,"runtime/runtime.json")))},null,2));
-await writeFile(join(out,"package.json"),JSON.stringify({name:"atlas-chronicles",productName:"Atlas Chronicles",version:"0.1.0",main:"main.cjs",description:"Atlas Chronicles local worlds",author:"Atlas Chronicles",license:"UNLICENSED"},null,2));
+// Die Version des Pakets kommt aus `packages/desktop/package.json` — der Datei, die
+// `gate:version` gegen die Wurzel prueft. Bis zum 10.09.2026 stand hier fest "0.1.0": eine
+// zweite Versionsquelle, die kein Gate sah. Beim Bau von 0.2.0 fiel es auf, weil das fertige
+// Installationspaket sich weiter 0.1.0 nannte — und Squirrel entscheidet an genau dieser Zahl,
+// ob eine Installation eine Aktualisierung ist.
+const paketVersion=JSON.parse(await readFile(join(desktop,"package.json"),"utf8")).version;
+if(typeof paketVersion!=="string"||!/^\d+\.\d+\.\d+$/.test(paketVersion))throw new Error("packages/desktop/package.json fuehrt keine brauchbare Version.");
+await writeFile(join(out,"package.json"),JSON.stringify({name:"atlas-chronicles",productName:"Atlas Chronicles",version:paketVersion,main:"main.cjs",description:"Atlas Chronicles local worlds",author:"Atlas Chronicles",license:"UNLICENSED"},null,2));
 console.log(`Desktop compiled; ${Object.keys(clientFiles).length} client files copied byte-for-byte, ${paketIds.length} asset pack(s) verified (${paketIds.join(", ")}). No client rebuild.`);
