@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
-import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { expect, it } from "vitest";
@@ -187,6 +187,15 @@ it("löscht eine Welt nur gegen ihren getippten Namen und nie unter einem laufen
     expect((await store.list()).map(profile => profile.name)).toEqual(["Die Sudlande"]);
     // Kein Rest im Profilordner: weder der Ordner selbst noch ein Grab daneben.
     expect(await readdir(join(directory, "profiles"))).toEqual([andere.profile.id]);
+
+    // Ein Rest, den Windows beim Loeschen nicht freigab, steht in keiner Liste und wird beim
+    // naechsten Blick in den Ordner weggeraeumt. (Gefunden im Pruefkauf gegen das Paket: dort
+    // hielt der eben beendete Host den Ordner noch, das Umbenennen scheiterte.)
+    const rest = join(directory, "profiles", ".deleting-6c59fc3e-1172-43d9-9e90-a60b5b46bed6");
+    await mkdir(rest, { recursive: true });
+    await writeFile(join(rest, "profile.json"), "kaputt");
+    expect((await store.list()).map(profile => profile.name)).toEqual(["Die Sudlande"]);
+    expect(existsSync(rest)).toBe(false);
 
     // Dieselbe Welt ein zweites Mal loeschen ist kein stiller Erfolg.
     await expect(store.remove(welt.profile.id, "Die Nordlande")).rejects.toThrow();

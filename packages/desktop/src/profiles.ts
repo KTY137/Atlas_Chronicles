@@ -64,7 +64,16 @@ async function freePort(used: Set<number>): Promise<number> {
 export class ProfileStore {
   readonly root: string;
   constructor(userData: string, private readonly box: SecretBox) { this.root = join(userData, "profiles"); }
-  private async rootReady() { await mkdir(this.root, { recursive: true }); if ((await lstat(this.root)).isSymbolicLink()) fail("profile-path", "Profilordner darf keine Verknüpfung sein."); }
+  private async rootReady() {
+    await mkdir(this.root, { recursive: true });
+    if ((await lstat(this.root)).isSymbolicLink()) fail("profile-path", "Profilordner darf keine Verknüpfung sein.");
+    // Reste einer Löschung, die Windows im Moment nicht freigeben wollte. Bester Aufwand und
+    // ohne Folgen: sie stehen in keiner Liste, halten nichts auf, und beim nächsten Blick in
+    // den Ordner ist der Griff darauf meist längst weg.
+    for (const entry of await readdir(this.root, { withFileTypes: true }))
+      if (entry.isDirectory() && entry.name.startsWith(".deleting-"))
+        await rm(contained(this.root, entry.name), { recursive: true, force: true }).catch(() => undefined);
+  }
   async list(): Promise<Profile[]> {
     await this.rootReady();
     const result: Profile[] = [];
@@ -125,9 +134,33 @@ export class ProfileStore {
       if (!absent) fail("profile-busy", "Diese Welt läuft gerade. Bitte zuerst den Host beenden.");
     }
     const grave = contained(this.root, `.deleting-${randomUUID()}`);
-    await rename(directory, grave);
-    await rm(grave, { recursive: true, force: true, maxRetries: 3 });
+    await this.umbenennenMitGeduld(directory, grave);
+    // Ab hier ist die Welt gelöscht: sie steht in keiner Liste mehr. Ein Rest, den Windows in
+    // diesem Moment nicht freigibt, darf das nicht mehr zum Fehlschlag machen — sonst meldet
+    // die Oberfläche einen Fehler für etwas, das aus jeder sichtbaren Sicht geschehen ist.
+    // Weggeräumt wird er beim nächsten `rootReady()`.
+    await rm(grave, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }).catch(() => undefined);
     return profile;
+  }
+  /**
+   * Windows gibt ein Verzeichnis erst frei, wenn der letzte Griff darauf weg ist — und der eben
+   * beendete Host hatte genau dieses Verzeichnis als Arbeitsverzeichnis. Das dauert
+   * Millisekunden, nicht Minuten. Kurz warten und erneut versuchen ist darum richtiger, als
+   * einem Menschen zu sagen, seine Welt lasse sich nicht löschen.
+   *
+   * Gefunden im Electron-Prüflauf gegen das installierte Paket: dort scheiterte genau dieses
+   * Umbenennen, während es gegen den Bau im Checkout durchging. Ein Wettlauf, kein Zufall.
+   */
+  private async umbenennenMitGeduld(von: string, nach: string): Promise<void> {
+    for (let versuch = 0; ; versuch += 1) {
+      try { await rename(von, nach); return; }
+      catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (versuch >= 20 || !["EPERM", "EBUSY", "EACCES", "ENOTEMPTY"].includes(code ?? ""))
+          fail("profile-busy", "Diese Welt lässt sich gerade nicht löschen: etwas hält ihren Ordner noch offen. Meist ist es der eben beendete Host. Bitte in einigen Sekunden noch einmal versuchen.");
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    }
   }
   async open(id: string): Promise<OwnedProfile> {
     if (!this.box.available()) return fail("encryption-unavailable", "Windows-Geheimnisspeicher ist nicht verfügbar.");

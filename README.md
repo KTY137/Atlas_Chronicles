@@ -11,12 +11,12 @@ Rechner, LAN oder eigener Server — steht in
 
 ## Herunterladen
 
-[**v0.3.1 für Windows**](https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.3.1)
+[**v0.3.2 für Windows**](https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.3.2)
 — ein Setup für den eigenen Benutzer, ohne Administratorrechte. Der Bau ist
 **unsigniert**: Windows warnt vor einem unbekannten Herausgeber, und diese Warnung
 stimmt. Es gibt keinen Aktualisierungskanal; eine neue Fassung heißt neu
 herunterladen. Was drin ist, was fehlt und die Prüfsumme zum Nachrechnen stehen in
-den [Release-Notizen](docs/RELEASE_NOTES_v0.3.1.md); die früheren Fassungen bleiben
+den [Release-Notizen](docs/RELEASE_NOTES_v0.3.2.md); die früheren Fassungen bleiben
 in den Notizen zu [v0.3.0](docs/RELEASE_NOTES_v0.3.0.md),
 [v0.2.0](docs/RELEASE_NOTES_v0.2.0.md) und
 [v0.1.0](docs/RELEASE_NOTES_v0.1.0.md) beschrieben.

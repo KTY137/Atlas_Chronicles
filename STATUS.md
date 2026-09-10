@@ -1,8 +1,8 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 8** (Welten löschen, Einladungen sichtbar · v0.3.1)
+Updated: **2026-09-10, Runde 8** (Welten löschen, Einladungen sichtbar · v0.3.2)
 
-## Runde 8 — Welten löschen, Einladungen sichtbar · 2026-09-10 · v0.3.1
+## Runde 8 — Welten löschen, Einladungen sichtbar · 2026-09-10 · v0.3.2
 
 **Zwei Bitten von Kaya, beide klein, beide berechtigt.**
 
@@ -33,11 +33,20 @@ Karte über `/maps/import` hereinkommt, notiert nichts mehr eine Herkunft, und d
 korrekt eine V15-Datei. Jetzt auf 15 gestellt, **plus** die Zusicherung, dass
 `atlas_karten_herkunft` wirklich leer ist — sonst wäre die 15 nur eine gesenkte Erwartung.
 
+**Der Fehler, den erst das Paket zeigte.** Das Umbenennen des Profilordners scheiterte im
+Prüflauf **gegen die installierte Fassung**, während es gegen die dist im Checkout durchging:
+Windows benennt kein Verzeichnis um, solange ein Griff darauf offen ist — und der eben beendete
+Host hat es noch als Arbeitsverzeichnis (`utilityProcess.fork(..., { cwd: owned.directory })`).
+Ein Wettlauf, kein Zufall. Jetzt bis zu 20 Versuche à 250 ms, danach ein Satz, der sagt was los
+ist. **Und:** scheitert das `rm` NACH gelungenem Umbenennen, ist das kein Fehlschlag mehr — die
+Welt steht in keiner Liste, der Rest wird beim nächsten `rootReady()` weggeräumt.
+**Merksatz:** gegen das Paket prüfen, nicht nur gegen den Bau; Zeitverhalten unterscheidet sich.
+
 **Falle bei der neuen Prüfstufe:** `stop()` im Prüflauf schließt die **ganze Anwendung**. Alles,
 was die Verwaltungsbrücke braucht, muss davor stehen; das Löschen verlangt zusätzlich einen
 beendeten Host, also erst `invoke({kind:"stop"})`, dann löschen, dann `stop()`.
 
-**Nachweis:** beide Typechecks; gate:version (0.3.1), gate:boundaries, gate:sprache; 120
+**Nachweis:** beide Typechecks; gate:version (0.3.2), gate:boundaries, gate:sprache; 120
 Desktop- und Theme-Prüfungen inklusive zwei neuer; `node --check manager.js`; **voller
 `desktop:smoke` grün** — gegen die gebaute dist und gegen die installierte 0.3.0. Paket, Setup
 und `installer.json` melden 0.3.1.

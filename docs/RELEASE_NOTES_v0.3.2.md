@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: BUSL-1.1 -->
 <!-- Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. -->
-# Atlas Chronicles v0.3.1 — release notes
+# Atlas Chronicles v0.3.2 — release notes
 
 Two small things in the host window, both asked for after v0.3.0 was already built — and one
 map fix from separate work that landed in the same build.
@@ -39,8 +39,17 @@ pulled out from under itself. A lock left behind by a process that no longer exi
 block anything.
 
 The folder is renamed first and removed second, so a world disappears from the list even if the
-removal then trips over a file somebody has open. The browser data belonging to that world's
+removal then trips over a file somebody has open — a leftover like that is swept up the next time
+the world list is read, and never counts as a failure. The browser data belonging to that world's
 address goes with it.
+
+That renaming is also the one place this feature nearly shipped broken. Windows will not rename a
+directory while any handle into it is open, and a world that was running seconds ago still has
+its folder as the stopped host's working directory. Deleting a world you had just used therefore
+failed with an unhelpful message — reliably in the packaged build, not at all in the development
+build, which is what a race looks like. The rename now waits for the handle to go, for up to five
+seconds, and only then gives up with a sentence that says what is actually happening and to try
+again in a moment.
 
 **What deliberately stays: the recovery points.** A recovery point carries its own copy of
 `profile.json` and `secrets.dpapi`, so it remains restorable without its world. That is the
@@ -78,7 +87,7 @@ per-user and needs no administrator rights.
 | | |
 |---|---|
 | File | `Atlas-Chronicles-Setup.exe` |
-| Size | 206 MB |
+| Size | SIZE_PLATZHALTER MB |
 | Platform | Windows, 64-bit |
 | Electron | 44.2.0 |
 
@@ -96,6 +105,10 @@ Unchanged from v0.3.0, and recorded by the build itself in `installer.json`:
 
 The eight-hour session and the absence of a password login are also unchanged. The host window is
 a way back, not a reason to skip setting up a passkey.
+
+**Why 0.3.2 and not 0.3.1.** 0.3.1 was built and installed on the development machine, and its
+packaged test run found the deletion race described above. It was never published; this is that
+version with the race fixed.
 
 **What was verified.** Both typechecks, the language and boundary gates, 503 map-generation
 checks, 120 desktop and theme checks including two new ones for deletion, and the full packaged
@@ -119,7 +132,7 @@ Get-FileHash .\Atlas-Chronicles-Setup.exe -Algorithm SHA256
 ```
 
 ```
-4e828bd23f807ee733c665310db56a2e9eadb559e39ba828293a1e960de59e8c  Atlas-Chronicles-Setup.exe
+SHA256_PLATZHALTER  Atlas-Chronicles-Setup.exe
 ```
 
 Built from commit `COMMIT_PLATZHALTER`.
