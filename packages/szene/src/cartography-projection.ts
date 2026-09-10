@@ -163,6 +163,9 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   const groupBank=(material:"rock"|"field")=>regionBanks(regions.filter(region=>region.role?.role==="terrain"&&region.role.material===material));
   const rockBanks=groupBank("rock"), fieldBanks=groupBank("field");
   const roadBanks=regionBanks(regions.filter(region=>region.role?.role==="road"));
+  // Which roofs stand on which plot, so a garden never grows under a house.
+  const lotHouses = new Map<string, readonly (readonly TacticalPoint[])[]>();
+  for (const region of regions) if (region.role?.role === "building" && region.role.lotRegionId) lotHouses.set(region.role.lotRegionId, [...(lotHouses.get(region.role.lotRegionId) ?? []), region.punkte]);
   const ink = setting === "scifi" ? 0x304d57 : 0x504537;
   const pen = Math.max(.8, Math.min(4, cartography.construction.cellSize * .035));
   const bridge = (role: typeof regions[number]["role"]) => role?.role === "road" && role.material === "bridge" ? 1 : 0;
@@ -259,6 +262,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       const hillLine = sea + RELIEF_LEVELS.flatLand + 16, rockLine = sea + RELIEF_LEVELS.rockAbove, spacing = Math.max(8, z * 1.35), mound = tint(palette.background, 22);
       for (let row = 0; row <= Math.ceil(rows * z / spacing); row++) for (let column = 0; column <= Math.ceil(columns * z / spacing); column++) {
         const key = `hill:${column}:${row}`, x = ox + column * spacing + spacing * (.15 + .7 * phase(key, 1)), y = oy + row * spacing + spacing * (.15 + .7 * phase(key, 2));
+        if (x < ox || y < oy || x > ox + columns * z || y > oy + rows * z) continue;
         const height = reliefHeightAt(relief, construction, x, y);
         if (height < hillLine || height > rockLine - 4 || phase(key, 51) > Math.min(1, (height - hillLine) / 50) * .85) continue;
         if (fields.some(field => x >= field.box[0] && x <= field.box[2] && y >= field.box[1] && y <= field.box[3] && inside([x, y], field.points))) continue;
@@ -384,8 +388,42 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         if (!length) continue;
         const nx = -(b[1] - a[1]) / length * edge, ny = (b[0] - a[0]) / length * edge;
         emit(id, [[a[0]-nx,a[1]-ny],[b[0]-nx,b[1]-ny],[b[0]+nx,b[1]+ny],[a[0]+nx,a[1]+ny]], palette.roofDark, .13);
+        // A picket fence along the plot: short posts in ink, a gap between each, so the yard
+        // reads as fenced without a hard line boxing the map in.
+        const posts = Math.min(60, Math.floor(length / (pen * 2.4)));
+        for (let post = 0; post < posts && decorationPoints + 4 <= 250_000 - basePoints; post++) {
+          const t = (post + .3) / posts, u = (post + .55) / posts;
+          emit(id, line([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u], pen * .55), ink, .3);
+        }
       }
       emit(id, band(points, axes.across, axes.top, axes.top + edge), palette.background, .4);
+      // The yard behind the house: vegetable beds in short rows, a fruit tree or a bush, from
+      // the global lattice, never under the roof. It is what makes a plot a home's garden.
+      const houses = lotHouses.get(id) ?? [], spacing = Math.max(8, cartography.construction.cellSize * .5);
+      const startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing), soil = tint(palette.earth, -34), leaf = mix(palette.forest, palette.grass, .4);
+      const free = (point: TacticalPoint) => inside(point, points) && !houses.some(house => inside(point, house));
+      for (let row = startY; row <= Math.ceil(maxY / spacing); row++) for (let column = startX; column <= Math.ceil(maxX / spacing); column++) {
+        const key = `${column}:${row}`, pick = phase(key, 71);
+        const x = column * spacing + spacing * phase(key, 72), y = row * spacing + spacing * phase(key, 73);
+        if (pick < .34) {
+          // Three furrows side by side, along the plot's own axis.
+          const half = spacing * .3, step = spacing * .16;
+          const rows = [-1, 0, 1].map(offset => [[x + axes.across[0] * step * offset - axes.along[0] * half, y + axes.across[1] * step * offset - axes.along[1] * half], [x + axes.across[0] * step * offset + axes.along[0] * half, y + axes.across[1] * step * offset + axes.along[1] * half]] as [TacticalPoint, TacticalPoint]);
+          if (rows.every(([p, q]) => free(p) && free(q))) for (const [p, q] of rows) emit(id, line(p, q, pen * .5), soil, .38);
+        } else if (pick < .44) {
+          const size = spacing * (.32 + phase(key, 74) * .12);
+          if (!free([x - size, y]) || !free([x + size, y]) || !free([x, y - size]) || !free([x, y + size])) continue;
+          const crown = Array.from({ length: 14 }, (_, index) => { const angle = index * Math.PI / 7, reach = size * (.85 + .15 * phase(key, 80 + index)); return [x + Math.cos(angle) * reach, y + Math.sin(angle) * reach] as TacticalPoint; });
+          emit(id, crown.map(point => [point[0] + size * .3, point[1] + size * .32]), 0x263c2b, .3);
+          emit(id, crown.map(point => [x + (point[0] - x) * 1.06, y + (point[1] - y) * 1.06]), ink, .85);
+          emit(id, crown, leaf);
+          emit(id, crown.map(point => [x + (point[0] - x) * .6 - size * .12, y + (point[1] - y) * .6 - size * .12]), palette.grass, .35);
+        } else if (pick < .52) {
+          const size = spacing * .2;
+          const bush: TacticalPoint[] = [[x - size, y + size * .2], [x - size * .6, y - size * .5], [x, y - size * .7], [x + size * .6, y - size * .45], [x + size, y + size * .25], [x + size * .4, y + size * .6], [x - size * .5, y + size * .55]];
+          if (bush.every(free)) { emit(id, bush.map(point => [point[0] + size * .25, point[1] + size * .3]), 0x263c2b, .25); emit(id, bush, tint(palette.forest, 12)); }
+        }
+      }
     } else if (role?.role === "terrain" && role.material === "field") {
       for (const { a, b, inward: winding } of fieldBanks.get(id) ?? []) emit(id, line(a, b, pen*1.1, winding*pen*.55), palette.forest, .32);
       const axes = roofAxes(points), count = Math.min(44, Math.max(6, Math.ceil((axes.bottom - axes.top) / (cartography.construction.cellSize * .18))));

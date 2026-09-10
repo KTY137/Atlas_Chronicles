@@ -198,6 +198,59 @@ describe("relief in the painted drawing: shading, contour lines and summits that
   });
 });
 
+describe("the sheet itself: parchment, vignette, sea floor, hills, spruce and roads", () => {
+  const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const sheet = (regions: { id: string; punkte: TacticalPoint[] }[], roles: TacticalCartographyV1["regions"], relief?: CartographyReliefV1) => {
+    const { document, cartography } = fixture();
+    return { document: { ...document, geometry: { ...document.geometry, regions } }, cartography: { ...cartography, construction: { cellSize: 60, origin: [0, 0] as TacticalPoint }, regions: roles, ...(relief ? { relief } : {}) } };
+  };
+  const ground = { regionId: "ground", role: "terrain", material: "grass", authored: false, locked: false, provenance: null } as const;
+  it("mottles a generated map first and darkens its edges last, and leaves an imported image alone", () => {
+    const { document, cartography } = sheet([{ id: "ground", punkte: rect(0, 0, 600, 600) }], [ground]);
+    const drawing = cartographyDraw(document, cartography);
+    expect(drawing.polygons[0]!.opacity).toBe(.24);
+    expect(drawing.polygons.at(-1)!.fill).toBe(0x2b2218);
+    expect(drawing.polygons.filter(p => p.fill === 0x2b2218)).toHaveLength(16);
+    const bare = cartographyDraw(document, cartography, "fantasy", { paper: false });
+    expect(bare.polygons.some(p => p.opacity === .24 || p.fill === 0x2b2218)).toBe(false);
+    const photographed = cartographyDraw({ ...document, background: { contentHash: "a".repeat(64), mimeType: "image/png", width: 600, height: 600 } } as typeof document, cartography);
+    expect(photographed.polygons.some(p => p.opacity === .24 || p.fill === 0x2b2218)).toBe(false);
+  });
+  it("steps the sea floor deeper away from the shore and only under water", () => {
+    const relief: CartographyReliefV1 = { schemaVersion: 1, columns: 11, rows: 11, seaLevel: 77, heights: Array.from({ length: 121 }, (_, k) => (k % 11) < 5 ? 120 : 20) };
+    const { document, cartography } = sheet([{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "sea", punkte: rect(300, 0, 300, 600) }], [ground, { regionId: "sea", role: "water", material: "sea", authored: false, locked: false, provenance: null }], relief);
+    const deep = cartographyDraw(document, cartography, "fantasy", { paper: false, contours: false }).polygons.filter(p => p.regionId === "ground" && p.opacity === .15);
+    expect(deep.length).toBeGreaterThan(20);
+    expect(deep.every(p => p.points.every(q => q[0] >= 240))).toBe(true);
+    expect(new Set(deep.map(p => p.fill)).size).toBe(1);
+  });
+  it("draws hills on rising land, none on a plain, none on tilled fields", () => {
+    const hilly: CartographyReliefV1 = { schemaVersion: 1, columns: 11, rows: 11, seaLevel: 77, heights: Array.from({ length: 121 }, () => 160) };
+    const flat: CartographyReliefV1 = { ...hilly, heights: Array.from({ length: 121 }, () => 117) };
+    const draw = (relief: CartographyReliefV1, roles: TacticalCartographyV1["regions"], regions: { id: string; punkte: TacticalPoint[] }[]) => { const s = sheet(regions, roles, relief); return cartographyDraw(s.document, s.cartography, "fantasy", { paper: false, contours: false }).polygons.filter(p => p.regionId === "ground" && p.opacity === .55); };
+    const mounds = draw(hilly, [ground], [{ id: "ground", punkte: rect(0, 0, 600, 600) }]);
+    expect(mounds.length).toBeGreaterThan(10);
+    expect(draw(flat, [ground], [{ id: "ground", punkte: rect(0, 0, 600, 600) }])).toHaveLength(0);
+    const field = { regionId: "field", role: "terrain", material: "field", authored: false, locked: false, provenance: null } as const;
+    const farmed = draw(hilly, [ground, field], [{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "field", punkte: rect(0, 0, 600, 300) }]);
+    expect(farmed.length).toBeLessThan(mounds.length);
+    // A mound stands on its lattice point and rises up to a third of a cell above it.
+    expect(farmed.every(p => p.points.every(q => q[1] >= 300 - 20))).toBe(true);
+  });
+  it("mixes spruce into a wood, more of it on high ground, and inks roads along their outer edge", () => {
+    const high: CartographyReliefV1 = { schemaVersion: 1, columns: 11, rows: 11, seaLevel: 77, heights: Array.from({ length: 121 }, () => 180) };
+    const low: CartographyReliefV1 = { ...high, heights: Array.from({ length: 121 }, () => 120) };
+    const forest = { regionId: "wood", role: "terrain", material: "forest", authored: false, locked: false, provenance: null } as const;
+    const spruce = (relief: CartographyReliefV1) => { const s = sheet([{ id: "wood", punkte: rect(0, 0, 600, 600) }], [forest], relief); return cartographyDraw(s.document, s.cartography, "fantasy", { paper: false, contours: false, shading: false }).polygons.filter(p => p.regionId === "wood" && p.points.length === 11 && p.opacity === 1).length; };
+    expect(spruce(high)).toBeGreaterThan(spruce(low)); expect(spruce(low)).toBeGreaterThan(0);
+    const path = { regionId: "track", role: "road", material: "path", authored: false, locked: false, provenance: null } as const;
+    const s = sheet([{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "track", punkte: rect(100, 280, 400, 40) }], [ground, path]);
+    const track = cartographyDraw(s.document, s.cartography, "fantasy", { paper: false }).polygons.filter(p => p.regionId === "track");
+    expect(track.filter(p => p.opacity === .22)).toHaveLength(4);
+    expect(track.filter(p => p.opacity === .28)).toHaveLength(2);
+  });
+});
+
 describe("what makes it a painting: patchwork fields, chimneys, a mottled plain, a massif that pales with height", () => {
   const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
   const base = { authored: false, locked: false, provenance: null } as const;
@@ -233,5 +286,28 @@ describe("what makes it a painting: patchwork fields, chimneys, a mottled plain,
     expect(fill("crest")).toBeGreaterThan(fill("foot"));
     const plain = cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 60, origin: [0, 0] }, regions: roles }, "fantasy", { paper: false });
     expect(plain.polygons.find(p => p.regionId === "crest" && p.opacity === 1 && p.points.length === 4)!.fill).toBe(plain.polygons.find(p => p.regionId === "foot" && p.opacity === 1 && p.points.length === 4)!.fill);
+  });
+});
+
+describe("a plot is a garden around its house", () => {
+  it("fences the plot with posts and grows beds, a tree or a bush only where no roof stands", () => {
+    const { document, cartography } = fixture();
+    const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+    const regions = [{ id: "plot", punkte: rect(0, 0, 400, 300) }, { id: "house", punkte: rect(40, 40, 200, 120) }];
+    const roles = [
+      { regionId: "plot", role: "lot", authored: false, locked: false, provenance: null },
+      { regionId: "house", role: "building", lotRegionId: "plot", authored: false, locked: false, provenance: null },
+    ] as const;
+    const drawing = cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 64, origin: [0, 0] }, regions: [...roles] }, "fantasy", { paper: false });
+    const plot = drawing.polygons.filter(p => p.regionId === "plot");
+    const posts = plot.filter(p => p.opacity === .3 && p.points.length === 4);
+    expect(posts.length).toBeGreaterThan(40);
+    const garden = plot.filter(p => p.opacity === .38 || p.opacity === 1 && p.points.length === 14 || p.opacity === 1 && p.points.length === 7);
+    expect(garden.length).toBeGreaterThan(6);
+    const house = regions[1]!.punkte;
+    const insideHouse = (point: TacticalPoint) => point[0] > house[0]![0] && point[0] < house[1]![0] && point[1] > house[0]![1] && point[1] < house[2]![1];
+    expect(garden.every(p => p.points.every(point => !insideHouse(point)))).toBe(true);
+    const bare = cartographyDraw({ ...document, geometry: { ...document.geometry, regions: [regions[0]!] } }, { ...cartography, construction: { cellSize: 64, origin: [0, 0] }, regions: [roles[0]] }, "fantasy", { paper: false }).polygons.filter(p => p.regionId === "plot");
+    expect(bare.filter(p => p.opacity === .38 || p.opacity === 1 && p.points.length === 14 || p.opacity === 1 && p.points.length === 7).length).toBeGreaterThan(garden.length);
   });
 });

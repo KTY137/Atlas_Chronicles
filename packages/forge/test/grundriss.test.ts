@@ -270,7 +270,8 @@ describe("A-G1 · Grundriss — spielbare Geometrie über viele Saaten", () => {
       for (const stamp of g.karte.geometry.stamps) {
         const art = index.get(stamp.a)!.asset;
         if (art.art === "boden" || art.art === "tuer") continue;
-        const [ew, eh] = art.einheiten;
+        // A piece turned a quarter stands on the swapped footprint: a shelf along an east wall is one wide and two tall.
+        const quer = Math.abs(Math.round(stamp.r / (Math.PI / 2))) % 2 === 1, ew = quer ? art.einheiten[1] : art.einheiten[0], eh = quer ? art.einheiten[0] : art.einheiten[1];
         const zx = Math.round(stamp.x / 64 - ew / 2), zy = Math.round(stamp.y / 64 - eh / 2);
         for (let y = zy; y < zy + eh; y++) for (let x = zx; x < zx + ew; x++) {
           expect(gesperrt.has(`${x}:${y}`), `${keim}: ${stamp.a} versperrt eine Tür bei ${x}:${y}`).toBe(false);

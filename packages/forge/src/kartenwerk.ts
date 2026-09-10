@@ -261,14 +261,25 @@ export interface Bestuecker {
   waehle(art: string, schlagwort: string): PaketAsset | null;
   /** Place a stamp at a known cell without reserving anything — floors, doors, markers. */
   setze(asset: PaketAsset, zx: number, zy: number, drehung?: number): void;
-  /** Place a stamp on free cells drawn from `zellen`, reserving its footprint. */
-  platziere(asset: PaketAsset, zellen: readonly (readonly [number, number])[]): boolean;
+  /** Place a stamp on free cells drawn from `zellen`, reserving its footprint. With a `Lage`,
+   * the preferred spots are tried first — a bed against its wall, a chair at its table — and
+   * only then any free cell; the piece is turned so its back faces the side named. */
+  platziere(asset: PaketAsset, zellen: readonly (readonly [number, number])[], lage?: Lage): boolean;
   /** Keep a cell clear of furniture — doorways, stairs, the cell a transition sits on. */
   sperre(x: number, y: number): void;
   readonly stamps: Stamp[];
   readonly nachArt: Record<string, number>;
   readonly nichtBedient: Set<string>;
 }
+
+/**
+ * Where a piece would rather stand. `seite` is the side (0 north, 1 east, 2 south, 3 west) the
+ * piece leans against — the wall behind a bed, the table beside a chair — and the footprint
+ * extends away from it; `drehung` in quarter turns is how the piece is turned there. A piece is
+ * drawn with its back at the top, so a bed on a north wall keeps its head against it unturned,
+ * and a chair at a table to its north is turned twice, to face it.
+ */
+export interface Lage { readonly bevorzugt: readonly { readonly x: number; readonly y: number; readonly seite: 0 | 1 | 2 | 3; readonly drehung: 0 | 1 | 2 | 3 }[] }
 
 export function passtZumSetting(asset: Pick<PaketAsset, "schlagworte">, setting?: KartenSetting): boolean {
   return setting === undefined || !KARTEN_SETTINGS.some(era => asset.schlagworte.includes(era)) || asset.schlagworte.includes(setting);
@@ -294,18 +305,34 @@ export function bestuecker(paket: AssetpaketV1, r: Rauschen, zellgroesse: number
       if (!kandidaten.length) { nichtBedient.add(`${art}/${schlagwort}`); return null; }
       return r.waehle(kandidaten);
     },
-    platziere(asset, zellen) {
+    platziere(asset, zellen, lage) {
       if (!zellen.length) return false;
       const erlaubt = new Set(zellen.map(([x, y]) => `${x}:${y}`));
       const [ew, eh] = asset.einheiten;
+      const frei = (zx: number, zy: number, w: number, h: number): boolean => {
+        for (let y = zy; y < zy + h; y++) for (let x = zx; x < zx + w; x++) if (!erlaubt.has(`${x}:${y}`) || belegt.has(`${x}:${y}`)) return false;
+        return true;
+      };
+      const belege = (zx: number, zy: number, w: number, h: number) => { for (let y = zy; y < zy + h; y++) for (let x = zx; x < zx + w; x++) belegt.add(`${x}:${y}`); };
+      // Preferred spots first, drawn at random from the list so two beds do not both claim the
+      // first wall cell. The footprint turns with the piece; the anchor is the cell touching the
+      // side, and the piece extends away from it.
+      if (lage?.bevorzugt.length) {
+        for (let versuch = 0; versuch < Math.min(KARTENWERK_LIMITS.versucheProStueck, lage.bevorzugt.length * 2); versuch++) {
+          const spot = lage.bevorzugt[r.ganz(0, lage.bevorzugt.length - 1)]!;
+          const quer = spot.drehung % 2 === 1, w = quer ? eh : ew, h = quer ? ew : eh;
+          const ax = spot.seite === 1 ? spot.x - w + 1 : spot.x, ay = spot.seite === 2 ? spot.y - h + 1 : spot.y;
+          if (!frei(ax, ay, w, h)) continue;
+          belege(ax, ay, w, h);
+          // `setze` anchors by the unturned footprint; shift so the turned one is centred here.
+          setze(asset, ax + (w - ew) / 2, ay + (h - eh) / 2, spot.drehung * Math.PI / 2);
+          return true;
+        }
+      }
       for (let versuch = 0; versuch < KARTENWERK_LIMITS.versucheProStueck; versuch++) {
         const [zx, zy] = zellen[r.ganz(0, zellen.length - 1)]!;
-        let passt = true;
-        for (let y = zy; y < zy + eh && passt; y++) for (let x = zx; x < zx + ew && passt; x++) {
-          if (!erlaubt.has(`${x}:${y}`) || belegt.has(`${x}:${y}`)) passt = false;
-        }
-        if (!passt) continue;
-        for (let y = zy; y < zy + eh; y++) for (let x = zx; x < zx + ew; x++) belegt.add(`${x}:${y}`);
+        if (!frei(zx, zy, ew, eh)) continue;
+        belege(zx, zy, ew, eh);
         setze(asset, zx, zy);
         return true;
       }

@@ -35,9 +35,11 @@ Ansicht in Runde 1 und hier nicht wiederholt: flache Schattierungsquadrate, Terr
   bleibt intern), `siedlung-integration` 16/16 (Erwartung des Kindkeims folgt der Umrissgröße),
   `map-settings` 9/9 (Programmgebäude behalten ihre Raumliste), `map-workshop`, `map-standort`,
   `cartography-integration`, `cartography-raster`.
-- szene `cartography-projection.test.ts` 18/18 (neu: Pergament zuerst und Vignette zuletzt,
+- szene `cartography-projection.test.ts` (neu: Pergament zuerst und Vignette zuletzt,
   nichts auf einem Bild, Wassertiefe nur unter Wasser, Hügel auf Anstieg und nicht auf Feldern,
-  Fichten mit der Höhe, Straßenkante und Radspuren); render `renderer-lifecycle` 32/32 (neu:
+  Fichten mit der Höhe, Straßenkante und Radspuren — **Korrektur 2026-09-10, Runde 4:** dieser
+  Block war wegen eines abgebrochenen Shell-Befehls nie in der Datei gelandet; die Zahl 18 oben
+  war falsch, die Fälle sind seit Runde 4 vorhanden und grün); render `renderer-lifecycle` 32/32 (neu:
   Kartusche nur mit Zeichnung und Titel, Steinwand aus drei Strichen, Tür zwei Pixel).
 - client `map-generation` 30/30 (Gebäudegröße als Vorgabe), übrige Kartensuiten grün.
 - Browser: `e2e/nested-maps` 1/1 (ERON-Ort → Siedlung → Raum, mobil), `e2e/map-studio` 3/3,

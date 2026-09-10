@@ -123,3 +123,59 @@ describe("a typed building is one house: sized by its kind, enclosed, entered fr
     expect(free.karte.geometry.size).toEqual([40 * 64, 30 * 64]);
   });
 });
+
+describe("furniture stands where it belongs", () => {
+  const cell = (stamp: { x: number; y: number }, z: number) => [Math.floor(stamp.x / z), Math.floor(stamp.y / z)] as const;
+  it("puts beds and shelves against a wall of their room, tables in the open and chairs at a table facing it", () => {
+    let beds = 0, wallBeds = 0, chairs = 0, seated = 0, tables = 0, openTables = 0;
+    for (const keim of ["moebel:1", "moebel:2", "moebel:3", "moebel:4"]) {
+      const g = erzeugeGrundriss({ keim, optionen: { profil: "taverne", zellen: [24, 18] } }, paket), z = g.keim.optionen.zellgroesse as number;
+      const rooms = g.raeume.map(room => ({ room, cells: new Set(Array.from({ length: room.zellen[2] }, (_, dx) => Array.from({ length: room.zellen[3] }, (_, dy) => `${room.zellen[0] + dx}:${room.zellen[1] + dy}`)).flat()) }));
+      const roomOf = (x: number, y: number) => rooms.find(({ cells }) => cells.has(`${x}:${y}`));
+      const SEITEN = [[0, -1], [1, 0], [0, 1], [-1, 0]] as const;
+      const isWall = (x: number, y: number) => { const own = roomOf(x, y); return !!own && SEITEN.some(([dx, dy]) => !own.cells.has(`${x + dx}:${y + dy}`)); };
+      const stamps = g.karte.geometry.stamps, name = (stamp: { a: string }) => stamp.a.split("/")[1]!;
+      const footprint = (stamp: { x: number; y: number; r: number }, w0: number, h0: number) => {
+        const quer = Math.abs(Math.round(stamp.r / (Math.PI / 2))) % 2 === 1, w = quer ? h0 : w0, h = quer ? w0 : h0;
+        const zx = Math.round(stamp.x / z - w / 2), zy = Math.round(stamp.y / z - h / 2), cells: [number, number][] = [];
+        for (let yy = zy; yy < zy + h; yy++) for (let xx = zx; xx < zx + w; xx++) cells.push([xx, yy]);
+        return cells;
+      };
+      const tableCells = new Set<string>();
+      for (const stamp of stamps.filter(s => name(s).startsWith("tisch"))) {
+        tables++;
+        const cells = footprint(stamp, name(stamp) === "tisch_lang" ? 2 : 1, 1);
+        for (const [xx, yy] of cells) tableCells.add(`${xx}:${yy}`);
+        if (cells.every(([xx, yy]) => !isWall(xx, yy))) openTables++;
+      }
+      for (const stamp of stamps.filter(s => name(s) === "bett" || name(s) === "regal")) {
+        beds++;
+        const cells = footprint(stamp, name(stamp) === "bett" ? 1 : 2, name(stamp) === "bett" ? 2 : 1);
+        if (cells.some(([xx, yy]) => isWall(xx, yy))) wallBeds++;
+      }
+      for (const stamp of stamps.filter(s => name(s) === "stuhl")) {
+        chairs++;
+        const [x, y] = cell(stamp, z);
+        if (SEITEN.some(([dx, dy]) => tableCells.has(`${x + dx}:${y + dy}`))) seated++;
+      }
+    }
+    expect(beds).toBeGreaterThan(4); expect(wallBeds).toBe(beds);
+    expect(tables).toBeGreaterThan(4); expect(openTables / tables).toBeGreaterThan(.6);
+    expect(chairs).toBeGreaterThan(4); expect(seated / chairs).toBeGreaterThan(.8);
+  });
+  it("stays deterministic and keeps every piece inside its room with the new preferences", () => {
+    const a = erzeugeGrundriss({ keim: "moebel:det", optionen: { profil: "haus" } }, paket), b = erzeugeGrundriss({ keim: "moebel:det", optionen: { profil: "haus" } }, paket);
+    expect(serializeTacticalMapDocument(a.karte)).toBe(serializeTacticalMapDocument(b.karte));
+    const z = a.keim.optionen.zellgroesse as number;
+    for (const room of a.raeume) {
+      const interior = a.cartography!.regions.find(region => region.regionId === room.id)!;
+      if (interior.role !== "room" || !interior.interior) continue;
+      for (const id of interior.interior.stampIds) {
+        const stamp = a.karte.geometry.stamps.find(s => s.id === id)!;
+        if (stamp.l < -50) continue;
+        expect(stamp.x / z).toBeGreaterThan(room.zellen[0] - .01); expect(stamp.x / z).toBeLessThan(room.zellen[0] + room.zellen[2] + .01);
+        expect(stamp.y / z).toBeGreaterThan(room.zellen[1] - .01); expect(stamp.y / z).toBeLessThan(room.zellen[1] + room.zellen[3] + .01);
+      }
+    }
+  });
+});

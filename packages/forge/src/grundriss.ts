@@ -8,7 +8,7 @@ import {
 import {
   AUSGELASSEN_BASIS, FELS, KARTENWERK_LIMITS, baueKnoten, bestuecker, fail, idFabrik,
   passtZumSetting, rauschen, sortiereNachId, wandLaeufe,
-  type GrundrissBericht, type GrundrissEltern, type GrundrissRaum, type Rauschen,
+  type GrundrissBericht, type GrundrissEltern, type GrundrissRaum, type Rauschen, type Lage,
 } from "./kartenwerk.ts";
 import { delaunayKanten, spannbaumMitSchleifen, type Polygon, type Punkt } from "./polygon.ts";
 import { loeseWfc, type WfcKachel } from "./wfc.ts";
@@ -910,6 +910,48 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
 
   const lichter: TacticalLight[] = [];
   const themen: Record<string, number> = {};
+  // Where a piece belongs. A bed, a shelf, a chest, a workbench, a torch: against a wall, its
+  // back to it. A table, a fire bowl, an altar's dais: in the open middle. A chair, a candle: at
+  // a table, turned to face it. Everything else takes any free cell, as before.
+  const AN_DER_WAND = new Set(["rast", "bett", "hotelbett", "krankenbett", "regal", "buecher", "lager", "spind", "tresor", "kuehlregal", "kuehlung", "vitrine", "wissen", "schreibtisch", "handwerk", "kuechenzeile", "kult", "waffe", "ruestung", "schild", "empfang", "theke", "tafel", "kasse", "server", "wache", "behaelter", "vorrat", "computer", "konsole", "maschine", "schmiede"]);
+  const IN_DER_MITTE = new Set(["mahl", "tisch", "konferenz", "thron", "feuer", "operation", "podest", "halle"]);
+  const AM_TISCH = new Set(["sitz", "sitzen", "kerze", "schwach"]);
+  const SEITEN: readonly (readonly [number, number])[] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+  const wandZellen = (i: number): Lage["bevorzugt"] => {
+    const raum = rohRaeume[i]!, result: { x: number; y: number; seite: 0 | 1 | 2 | 3; drehung: 0 | 1 | 2 | 3 }[] = [];
+    for (const [x, y] of zellenVon(raum)) for (const [seite, [dx, dy]] of SEITEN.entries()) {
+      const nx = x + dx, ny = y + dy;
+      if (!drin(nx, ny) || gitter[idx(nx, ny)] !== RAUM || raumVon[idx(nx, ny)] !== i) result.push({ x, y, seite: seite as 0 | 1 | 2 | 3, drehung: seite as 0 | 1 | 2 | 3 });
+    }
+    return result;
+  };
+  const mitteZellen = (i: number): Lage["bevorzugt"] => {
+    const raum = rohRaeume[i]!;
+    return zellenVon(raum).filter(([x, y]) => SEITEN.every(([dx, dy]) => drin(x + dx, y + dy) && gitter[idx(x + dx, y + dy)] === RAUM && raumVon[idx(x + dx, y + dy)] === i)).map(([x, y]) => ({ x, y, seite: 0 as const, drehung: 0 as const }));
+  };
+  const tischZellen = rohRaeume.map(() => [] as [number, number][]);
+  const amTisch = (i: number): Lage["bevorzugt"] => {
+    const raum = rohRaeume[i]!, eigene = new Set(zellenVon(raum).map(([x, y]) => `${x}:${y}`)), result: { x: number; y: number; seite: 0 | 1 | 2 | 3; drehung: 0 | 1 | 2 | 3 }[] = [];
+    for (const [tx, ty] of tischZellen[i]!) for (const [seite, [dx, dy]] of SEITEN.entries()) {
+      const x = tx - dx, y = ty - dy;
+      if (eigene.has(`${x}:${y}`)) result.push({ x, y, seite: seite as 0 | 1 | 2 | 3, drehung: ((seite + 2) % 4) as 0 | 1 | 2 | 3 });
+    }
+    return result;
+  };
+  const lage = (i: number, asset: { schlagworte: readonly string[]; einheiten: readonly [number, number] }): Lage | undefined => {
+    const tags = asset.schlagworte;
+    if (tags.some(tag => AM_TISCH.has(tag)) && tischZellen[i]!.length) return { bevorzugt: amTisch(i) };
+    if (tags.some(tag => IN_DER_MITTE.has(tag))) return { bevorzugt: mitteZellen(i) };
+    if (tags.some(tag => AN_DER_WAND.has(tag))) return { bevorzugt: wandZellen(i) };
+    return undefined;
+  };
+  const merkeTisch = (i: number, asset: { schlagworte: readonly string[]; einheiten: readonly [number, number] }, before: number) => {
+    if (!asset.schlagworte.some(tag => tag === "mahl" || tag === "tisch" || tag === "konferenz")) return;
+    const stamp = werk.stamps[before]; if (!stamp) return;
+    const quer = Math.abs(Math.round(stamp.r / (Math.PI / 2))) % 2 === 1, w = quer ? asset.einheiten[1] : asset.einheiten[0], h = quer ? asset.einheiten[0] : asset.einheiten[1];
+    const zx = Math.round(stamp.x / z - w / 2), zy = Math.round(stamp.y / z - h / 2);
+    for (let y = zy; y < zy + h; y++) for (let x = zx; x < zx + w; x++) tischZellen[i]!.push([x, y]);
+  };
   rohRaeume.forEach((raum, i) => {
     themen[raum.thema.schluessel] = (themen[raum.thema.schluessel] ?? 0) + 1;
     // A theme is a *density*, not a shopping list: running its slots once leaves a 9x7 hall with
@@ -921,8 +963,8 @@ export function erzeugeGrundriss(auftrag: GrundrissAuftrag, paket: AssetpaketV1)
       const asset = werk.waehle(art, schlagwort);
       if (!asset) continue;
       const before = werk.stamps.length;
-      if (!werk.platziere(asset, zellenVon(raum))) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
-      else if (optionen.licht && art === "licht") {
+      if (!werk.platziere(asset, zellenVon(raum), lage(i, asset))) nichtPlatziert.push(`${raum.pfad}:${art}/${schlagwort}`);
+      else if (merkeTisch(i, asset, before), optionen.licht && art === "licht") {
         const letzter = werk.stamps[werk.stamps.length - 1]!;
         lichter.push({
           id: ids.geometrieId("licht", `${i}`, `${letzter.x}:${letzter.y}`), position: [letzter.x, letzter.y],
