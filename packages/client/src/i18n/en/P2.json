@@ -120,7 +120,6 @@
   "Falsch": "False",
   "Farben, Schrift und Lesbarkeit eurer Runde abstimmen.": "Tune colours, type and readability for your party.",
   "Feindschaft mit": "Hostile to",
-  "Fertigkeit hinzufügen": "Add a skill",
   "Fertigkeit {nummer}": "Skill {nummer}",
   "Fertigkeit {nummer} entfernen": "Remove skill {nummer}",
   "Fertigkeitskatalog der Runde": "Skill catalogue of the party",
@@ -361,12 +360,17 @@
   "Das mitgelieferte Regelwerk von Atlas Chronicles": "The rules that ship with Atlas Chronicles",
   "Vorlage anpassen": "Adjust the template",
   "W100-Proben, drei Felder mit eigenem Talent, Rüstung und Funken. Der Fertigkeitskatalog gilt für die ganze Runde; jede Figur verteilt ihre eigenen Punkte. Für eine neue Runde lässt sich das Regelwerk direkt aktivieren. Vorhandene Bögen benötigen eine ausdrückliche Migration.": "d100 checks, three fields with their own talent, armour and sparks. The skill catalogue applies to the whole party; every character spends their own points. For a new party the rules can be activated directly. Existing sheets need an explicit migration.",
-  "1 bis 24 frei gewählte Fertigkeiten. Die Beispiele sind Vorschläge; das Regelwerk schreibt keinen festen Katalog vor.": "1 to 24 freely chosen skills. The examples are suggestions; the rules prescribe no fixed catalogue.",
   "Feld für Fertigkeit {nummer}": "Field for skill {nummer}",
   "ChronicleHeroes als Regelentwurf öffnen": "Open ChronicleHeroes as a rules draft",
   "Körper": "Body",
   "Geist": "Mind",
   "Herz": "Heart",
   "Regelhinweis: Bei 0 Lebenskraft ist die Figur außer Gefecht.": "Rules note: at 0 vitality the character is out of action.",
-  "Beispielfiguren laden": "Load example characters"
+  "Beispielfiguren laden": "Load example characters",
+  "Wähle aus der Sammlung oder trag eigene Fertigkeiten ein. Das Regelwerk schreibt keinen festen Katalog vor.": "Pick from the collection or enter your own skills. The rules prescribe no fixed catalogue.",
+  "Aus der Sammlung wählen": "Pick from the collection",
+  "Fertigkeit aus der Sammlung": "Skill from the collection",
+  "{offen} von {gesamt} Plätzen frei": "{offen} of {gesamt} slots free",
+  "Die Sammlung enthält einhundert Fertigkeiten. Gleichzeitig trägt ein Katalog höchstens {gesamt}; mehr Bogenfelder verarbeitet die Regelmaschine nicht. Das Talent eines Feldes rechnet mit dem Durchschnitt, ein großer Katalog verzerrt es also nicht.": "The collection holds one hundred skills. A catalogue carries at most {gesamt} at once; the rules engine takes no more sheet fields than that. A field's talent uses the average, so a large catalogue does not distort it.",
+  "Eigene Fertigkeit hinzufügen": "Add your own skill"
 }

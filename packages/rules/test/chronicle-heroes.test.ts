@@ -3,7 +3,8 @@
 import { describe, expect, it } from "vitest";
 import {
   CHRONICLE_HEROES_PACKAGE as template, CHRONICLE_DEFAULT_SKILLS, CHRONICLE_EXAMPLE_CHARACTERS, CHRONICLE_START_POINTS,
-  CHRONICLE_ARMOUR_FIELD, CHRONICLE_FUNKEN_FIELD, createChronicleHeroesPackage, defaultSupportedActorFields,
+  CHRONICLE_ARMOUR_FIELD, CHRONICLE_FUNKEN_FIELD, CHRONICLE_FIELDS, CHRONICLE_SKILL_LIBRARY, CHRONICLE_MAX_SKILLS, RULE_LIMITS,
+  createChronicleHeroesPackage, defaultSupportedActorFields,
   evaluateComputedFields, evaluateFormula, evaluateSupportedAction, validatePackageFields,
   SupportedRulePackageRegistry, type ActionResultV2, type EvaluationContext, type Scalar,
 } from "../src/index.ts";
@@ -73,18 +74,18 @@ describe("ChronicleHeroes — the shipped rules", () => {
   });
 
   it("makes armour cost initiative, which is the whole trade", () => {
-    const actor = { skill_athletik: 70, skill_handwerk: 50, skill_schlagkraft: 60 }; // Körper-Talent 18
+    const actor = { skill_athletik: 70, skill_handwerk: 50, skill_schlagkraft: 60 }; // Körper-Talent 20 (Durchschnitt 60, geteilt durch 3)
     const roll = (ruestung: number) => (evaluateSupportedAction(template, "initiative", context({ ...actor, [CHRONICLE_ARMOUR_FIELD]: ruestung }, seeds.get(7)!)) as ActionResultV2).total;
     expect(roll(0) - roll(4)).toBe(4);
-    expect(evaluateComputedFields(template, { ...actor, [CHRONICLE_ARMOUR_FIELD]: 4 })["initiative_value"]).toBe(14);
+    expect(evaluateComputedFields(template, { ...actor, [CHRONICLE_ARMOUR_FIELD]: 4 })["initiative_value"]).toBe(16);
   });
 
   it("derives talent, value, vitality and sparks from the sheet alone", () => {
     const actor = { skill_athletik: 70, skill_handwerk: 50, skill_schlagkraft: 60, bonus_athletik: true };
     const values = evaluateComputedFields(template, actor);
-    expect(values["talent_koerper"]).toBe(18);
-    expect(values["effective_athletik"]).toBe(88);
-    expect(values["lebenskraft_max"]).toBe(76);
+    expect(values["talent_koerper"]).toBe(20);
+    expect(values["effective_athletik"]).toBe(90);
+    expect(values["lebenskraft_max"]).toBe(80);
     expect(values["funken_max"]).toBe(2);
     // Turning the talent bonus off is the documented way out of a value above 100.
     expect(evaluateComputedFields(template, { ...actor, bonus_athletik: false })["effective_athletik"]).toBe(70);
@@ -107,6 +108,43 @@ describe("ChronicleHeroes — the shipped rules", () => {
     const armour = CHRONICLE_EXAMPLE_CHARACTERS.map(person => person.fields[CHRONICLE_ARMOUR_FIELD]);
     expect(armour).toEqual([4, 0]);
   });
+
+
+  it("offers a library of one hundred skills, spread over the three fields, all with valid stable keys", () => {
+    expect(CHRONICLE_SKILL_LIBRARY).toHaveLength(100);
+    expect(new Set(CHRONICLE_SKILL_LIBRARY.map(skill => skill.id)).size).toBe(100);
+    expect(new Set(CHRONICLE_SKILL_LIBRARY.map(skill => skill.label)).size).toBe(100);
+    for (const skill of CHRONICLE_SKILL_LIBRARY) {
+      expect(skill.id).toMatch(/^[a-z][a-z0-9_-]*$/);
+      expect(CHRONICLE_FIELDS).toContain(skill.field);
+      expect(skill.label.trim()).toBe(skill.label);
+    }
+    for (const field of CHRONICLE_FIELDS) expect(CHRONICLE_SKILL_LIBRARY.filter(skill => skill.field === field).length).toBeGreaterThanOrEqual(30);
+    // Every default skill is drawn from the library, so a round never sees two spellings of one thing.
+    for (const skill of CHRONICLE_DEFAULT_SKILLS) expect(CHRONICLE_SKILL_LIBRARY).toContainEqual(skill);
+  });
+
+  it("carries a full catalogue of 24 within the engine's field budget, and refuses a 25th", () => {
+    const chosen = CHRONICLE_SKILL_LIBRARY.slice(0, CHRONICLE_MAX_SKILLS);
+    const full = createChronicleHeroesPackage({ skills: chosen });
+    expect(Object.keys(full.fields).length).toBeLessThanOrEqual(RULE_LIMITS.fields);
+    expect(full.actions.length).toBeLessThanOrEqual(RULE_LIMITS.actions);
+    expect(() => new SupportedRulePackageRegistry().install(full)).not.toThrow();
+    expect(() => createChronicleHeroesPackage({ skills: CHRONICLE_SKILL_LIBRARY.slice(0, CHRONICLE_MAX_SKILLS + 1) })).toThrow();
+  }, 60_000);
+
+  it("keeps talent independent of how large the catalogue is", () => {
+    const three = CHRONICLE_SKILL_LIBRARY.filter(skill => skill.field === "koerper").slice(0, 3);
+    const eight = CHRONICLE_SKILL_LIBRARY.filter(skill => skill.field === "koerper").slice(0, 8);
+    const value = (skills: readonly typeof three[number][]) => {
+      const pkg = createChronicleHeroesPackage({ skills });
+      const actor = Object.fromEntries(skills.map(skill => [`skill_${skill.id}`, 60]));
+      return evaluateComputedFields(pkg, actor)["talent_koerper"];
+    };
+    // Three skills at 60 and eight skills at 60 describe the same competence, so the talent matches.
+    expect(value(three)).toBe(20);
+    expect(value(eight)).toBe(20);
+  }, 60_000);
 
   it("carries its own attribution and takes nothing from a foreign rulebook", () => {
     expect(template.attribution!.notice).toMatch(/eigenes Regelwerk/);

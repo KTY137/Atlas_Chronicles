@@ -58,6 +58,125 @@ export const CHRONICLE_DEFAULT_SKILLS: readonly ChronicleSkill[] = deepFreeze([
   { id: "mut", label: "Mut", field: "herz" },
 ]);
 
+
+/**
+ * **Die Sammlung: einhundert Fertigkeiten zur Auswahl.**
+ *
+ * Eine Runde aktiviert davon bis zu 24 — nicht aus Geschmack, sondern weil die Regelmaschine
+ * höchstens 64 Bogenfelder je Paket trägt (`RULE_LIMITS.fields`) und jede Fertigkeit zwei davon
+ * belegt: ihre Punkte und ihren Talentbonus. Die Sammlung ist deshalb ein Vorrat, aus dem die
+ * Spielleitung den Katalog ihrer Welt zusammenstellt — kein Bogen, den jemand ausfüllt.
+ *
+ * Genau deshalb rechnet das Talent mit dem Durchschnitt seines Feldes statt mit der Summe: ein
+ * Katalog mit drei Fertigkeiten je Feld und einer mit acht ergeben dieselben Talentwerte.
+ */
+export const CHRONICLE_SKILL_LIBRARY: readonly ChronicleSkill[] = deepFreeze([
+  { id: "athletik", label: "Athletik", field: "koerper" },
+  { id: "klettern", label: "Klettern", field: "koerper" },
+  { id: "schwimmen", label: "Schwimmen", field: "koerper" },
+  { id: "laufen", label: "Laufen", field: "koerper" },
+  { id: "springen", label: "Springen", field: "koerper" },
+  { id: "balancieren", label: "Balancieren", field: "koerper" },
+  { id: "schleichen", label: "Schleichen", field: "koerper" },
+  { id: "verstecken", label: "Verstecken", field: "koerper" },
+  { id: "zaehigkeit", label: "Zähigkeit", field: "koerper" },
+  { id: "ausweichen", label: "Ausweichen", field: "koerper" },
+  { id: "schlagkraft", label: "Schlagkraft", field: "koerper" },
+  { id: "fechten", label: "Fechten", field: "koerper" },
+  { id: "ringen", label: "Ringen", field: "koerper" },
+  { id: "bogenschiessen", label: "Bogenschießen", field: "koerper" },
+  { id: "werfen", label: "Werfen", field: "koerper" },
+  { id: "schildkampf", label: "Schildkampf", field: "koerper" },
+  { id: "reiten", label: "Reiten", field: "koerper" },
+  { id: "fahren", label: "Fahren", field: "koerper" },
+  { id: "segeln", label: "Segeln", field: "koerper" },
+  { id: "handwerk", label: "Handwerk", field: "koerper" },
+  { id: "schmieden", label: "Schmieden", field: "koerper" },
+  { id: "zimmern", label: "Zimmern", field: "koerper" },
+  { id: "steinmetzarbeit", label: "Steinmetzarbeit", field: "koerper" },
+  { id: "lederarbeit", label: "Lederarbeit", field: "koerper" },
+  { id: "weben", label: "Weben", field: "koerper" },
+  { id: "schloesser_oeffnen", label: "Schlösser öffnen", field: "koerper" },
+  { id: "fallen_stellen", label: "Fallen stellen", field: "koerper" },
+  { id: "taschendiebstahl", label: "Taschendiebstahl", field: "koerper" },
+  { id: "kochen", label: "Kochen", field: "koerper" },
+  { id: "jagen", label: "Jagen", field: "koerper" },
+  { id: "fischen", label: "Fischen", field: "koerper" },
+  { id: "graben", label: "Graben", field: "koerper" },
+  { id: "seilkunde", label: "Seilkunde", field: "koerper" },
+  { id: "feuer_machen", label: "Feuer machen", field: "koerper" },
+
+  { id: "buchwissen", label: "Buchwissen", field: "geist" },
+  { id: "wahrnehmung", label: "Wahrnehmung", field: "geist" },
+  { id: "feldmedizin", label: "Feldmedizin", field: "geist" },
+  { id: "heilkunde", label: "Heilkunde", field: "geist" },
+  { id: "kraeuterkunde", label: "Kräuterkunde", field: "geist" },
+  { id: "giftkunde", label: "Giftkunde", field: "geist" },
+  { id: "tierkunde", label: "Tierkunde", field: "geist" },
+  { id: "pflanzenkunde", label: "Pflanzenkunde", field: "geist" },
+  { id: "gesteinskunde", label: "Gesteinskunde", field: "geist" },
+  { id: "wetterkunde", label: "Wetterkunde", field: "geist" },
+  { id: "sternkunde", label: "Sternkunde", field: "geist" },
+  { id: "geschichte", label: "Geschichte", field: "geist" },
+  { id: "rechtskunde", label: "Rechtskunde", field: "geist" },
+  { id: "glaubenslehre", label: "Glaubenslehre", field: "geist" },
+  { id: "sprachen", label: "Sprachen", field: "geist" },
+  { id: "schreiben", label: "Schreiben", field: "geist" },
+  { id: "rechnen", label: "Rechnen", field: "geist" },
+  { id: "kartenkunde", label: "Kartenkunde", field: "geist" },
+  { id: "orientierung", label: "Orientierung", field: "geist" },
+  { id: "spurenlesen", label: "Spurenlesen", field: "geist" },
+  { id: "schaetzen", label: "Schätzen", field: "geist" },
+  { id: "mechanik", label: "Mechanik", field: "geist" },
+  { id: "baukunst", label: "Baukunst", field: "geist" },
+  { id: "bergbau", label: "Bergbau", field: "geist" },
+  { id: "seefahrt", label: "Seefahrt", field: "geist" },
+  { id: "kriegskunst", label: "Kriegskunst", field: "geist" },
+  { id: "entschluesseln", label: "Entschlüsseln", field: "geist" },
+  { id: "faelschung_erkennen", label: "Fälschung erkennen", field: "geist" },
+  { id: "gedaechtnis", label: "Gedächtnis", field: "geist" },
+  { id: "konzentration", label: "Konzentration", field: "geist" },
+  { id: "planen", label: "Planen", field: "geist" },
+  { id: "beobachten", label: "Beobachten", field: "geist" },
+  { id: "lauschen", label: "Lauschen", field: "geist" },
+
+  { id: "ueberreden", label: "Überreden", field: "herz" },
+  { id: "menschenkenntnis", label: "Menschenkenntnis", field: "herz" },
+  { id: "mut", label: "Mut", field: "herz" },
+  { id: "auftreten", label: "Auftreten", field: "herz" },
+  { id: "verhandeln", label: "Verhandeln", field: "herz" },
+  { id: "feilschen", label: "Feilschen", field: "herz" },
+  { id: "luegen", label: "Lügen", field: "herz" },
+  { id: "einschuechtern", label: "Einschüchtern", field: "herz" },
+  { id: "beruhigen", label: "Beruhigen", field: "herz" },
+  { id: "troesten", label: "Trösten", field: "herz" },
+  { id: "anfuehren", label: "Anführen", field: "herz" },
+  { id: "befehlen", label: "Befehlen", field: "herz" },
+  { id: "aufmuntern", label: "Aufmuntern", field: "herz" },
+  { id: "erzaehlen", label: "Erzählen", field: "herz" },
+  { id: "singen", label: "Singen", field: "herz" },
+  { id: "musizieren", label: "Musizieren", field: "herz" },
+  { id: "tanzen", label: "Tanzen", field: "herz" },
+  { id: "schauspiel", label: "Schauspiel", field: "herz" },
+  { id: "dichten", label: "Dichten", field: "herz" },
+  { id: "zeichnen", label: "Zeichnen", field: "herz" },
+  { id: "gastfreundschaft", label: "Gastfreundschaft", field: "herz" },
+  { id: "benehmen", label: "Benehmen", field: "herz" },
+  { id: "markthandel", label: "Markthandel", field: "herz" },
+  { id: "geruechte_sammeln", label: "Gerüchte sammeln", field: "herz" },
+  { id: "beziehungen_pflegen", label: "Beziehungen pflegen", field: "herz" },
+  { id: "selbstbeherrschung", label: "Selbstbeherrschung", field: "herz" },
+  { id: "willenskraft", label: "Willenskraft", field: "herz" },
+  { id: "glaube", label: "Glaube", field: "herz" },
+  { id: "tiere_beruhigen", label: "Tiere beruhigen", field: "herz" },
+  { id: "umgang_mit_kindern", label: "Umgang mit Kindern", field: "herz" },
+  { id: "verzeihen", label: "Verzeihen", field: "herz" },
+  { id: "streit_schlichten", label: "Streit schlichten", field: "herz" },
+  { id: "werben", label: "Werben", field: "herz" },
+]);
+/** Wie viele Fertigkeiten ein Katalog gleichzeitig trägt; darüber reißt das Feldbudget. */
+export const CHRONICLE_MAX_SKILLS = 24;
+
 export const CHRONICLE_ATTRIBUTION: RuleAttribution = deepFreeze({
   title: "ChronicleHeroes · Grundregeln 1.0",
   sources: [
@@ -81,8 +200,8 @@ export const CHRONICLE_RULE_GUIDANCE = deepFreeze({
 
 /** IDs sind stabile Katalogkennungen; ein geänderter Name ändert nie einen gespeicherten Schlüssel. */
 export function parseChronicleSkills(input: unknown): readonly ChronicleSkill[] {
-  const items = array(snapshotJson(input), "skill catalogue", 24);
-  if (!items.length) fail("skill catalogue: 1–24 skills required");
+  const items = array(snapshotJson(input), "skill catalogue", CHRONICLE_MAX_SKILLS);
+  if (!items.length) fail(`skill catalogue: 1–${CHRONICLE_MAX_SKILLS} skills required`);
   const seen = new Set<string>();
   return deepFreeze(items.map(item => {
     const row = record(item, "skill"); keys(row, ["id", "label", "field"], "skill");
@@ -128,7 +247,9 @@ function probeOutcome(target: string): RuleOutcome {
 export function createChronicleHeroesPackage(options: ChroniclePackageOptions = {}): RulePackageV2 {
   const skills = parseChronicleSkills(options.skills ?? CHRONICLE_DEFAULT_SKILLS);
   const raw = (skill: ChronicleSkill) => `actor.${chronicleSkillField(skill.id)}`;
-  const talent = (field: ChronicleField) => `round(${sum(skills.filter(skill => skill.field === field).map(raw))} / 10)`;
+  // Durchschnitt des Feldes, geteilt durch drei: derselbe Talentwert bei drei wie bei acht
+  // Fertigkeiten je Feld. Ein leeres Feld trägt kein Talent statt einer Division durch null.
+  const talent = (field: ChronicleField) => { const own = skills.filter(skill => skill.field === field); return own.length ? `round(${sum(own.map(raw))} / ${own.length * 3})` : "0"; };
   const effective = (skill: ChronicleSkill) => `(${raw(skill)} + if(actor.${chronicleBonusField(skill.id)}, ${talent(skill.field)}, 0))`;
   const armour = `actor.${CHRONICLE_ARMOUR_FIELD}`;
   const vitality = `40 + 2 * (${talent("koerper")})`;
