@@ -2,7 +2,8 @@
 <!-- Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. -->
 # Atlas Chronicles v0.3.1 — release notes
 
-Two small things in the host window, both asked for after v0.3.0 was already built.
+Two small things in the host window, both asked for after v0.3.0 was already built — and one
+map fix from separate work that landed in the same build.
 
 Setup is described in [Getting Started](https://github.com/KTY137/Atlas_Chronicles/blob/main/docs/GETTING_STARTED_EN.md).
 
@@ -46,6 +47,28 @@ address goes with it.
 difference between “deleted” and “gone for good”, and both sentences are in the window where you
 delete. If a world matters to you, make a recovery point before you delete it.
 
+## Also in this build: interiors have interior walls
+
+This one comes from separate work that landed in the same build, and it is worth its own
+paragraph because it changes what a generated building looks like.
+
+Stepping into a house, a tavern or a church used to give you an open box: the outer wall, and
+doors standing in the open air. Measured on a 14x12 house — four rooms, twelve wall runs, every
+one of them on the outer rectangle, not a single dividing wall, nine doors with no wall to sit in.
+
+The cause was the rule that made walls: it asked “floor or rock?”, and a building fills the gaps
+between its rooms with corridor, so the whole floorplan is one connected floor area — a rule
+like that can only ever find the outline. It now asks *whose* cell this is: rock, corridor, or a
+particular room. Where the owner changes, a wall stands; where the door pass has already opened a
+gap, the gap stays.
+
+Two older bugs came out with it, both in the room scatter: the room-size cap was one cell too
+generous, and a single scatter pass is one draw of the dice — it now takes the best of three.
+Measured over 2000 generations on five grids: no aborts, room sizes unchanged.
+
+`GRUNDRISS_VERSION` goes 8 → 9: the geometry changes, so the ids change. Interiors you generated
+before this release keep the shape they were saved with.
+
 ## Before you install
 
 This build is **unsigned**. Windows will warn you that the publisher is unknown; that warning is
@@ -74,10 +97,10 @@ Unchanged from v0.3.0, and recorded by the build itself in `installer.json`:
 The eight-hour session and the absence of a password login are also unchanged. The host window is
 a way back, not a reason to skip setting up a passkey.
 
-**What was verified.** Both typechecks, the language and boundary gates, 120 desktop and theme
-checks including two new ones for deletion, and the full packaged Electron run — which now
-includes a step that deletes a world across the real IPC boundary, proves a near-miss name leaves
-it standing, and proves its recovery point survives.
+**What was verified.** Both typechecks, the language and boundary gates, 503 map-generation
+checks, 120 desktop and theme checks including two new ones for deletion, and the full packaged
+Electron run — which now includes a step that deletes a world across the real IPC boundary,
+proves a near-miss name leaves it standing, and proves its recovery point survives.
 
 **One correction to the v0.3.0 notes.** That release said the packaged test run was not
 performed. It was run afterwards and passed, but it uncovered one stale assertion in the test
