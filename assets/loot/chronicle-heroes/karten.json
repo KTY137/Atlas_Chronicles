@@ -1,0 +1,406 @@
+{
+  "kind": "loot-deck",
+  "deck": "chronicle-heroes",
+  "karten": [
+    {
+      "id": "eisenherz",
+      "datei": "eisenherz.png",
+      "name": "Eisenherz, die Axt",
+      "seltenheit": "legendaer",
+      "bytes": 483304,
+      "sha256": "eef08d678ead3644bc31e4f3fff90bf948eee7d4d5e0661148d71f4dbd3fe823",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "erste_wacht",
+      "datei": "erste_wacht.png",
+      "name": "Panzer der ersten Wacht",
+      "seltenheit": "legendaer",
+      "bytes": 549471,
+      "sha256": "199b64d212a96cac899af94bfabd725c852c385da8f41afcf5ec5bd733b02247",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "falkenpfeife",
+      "datei": "falkenpfeife.png",
+      "name": "Falkenpfeife",
+      "seltenheit": "selten",
+      "bytes": 484552,
+      "sha256": "4c18c71af3d05ec9f09a23b550d06859de0fb003af6a7c9ab4d43d825c6184d8",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "filzhut",
+      "datei": "filzhut.png",
+      "name": "Filzhut",
+      "seltenheit": "gewoehnlich",
+      "bytes": 491046,
+      "sha256": "95e78725b3aa935f6560e7c608fab2831328219a965a72c0997553322f9c2e2b",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "flussstahlklinge",
+      "datei": "flussstahlklinge.png",
+      "name": "Klinge aus Flussstahl",
+      "seltenheit": "selten",
+      "bytes": 477669,
+      "sha256": "4304a077c3c07550f6f45d61f879b12d3e3ed7de68f7a75cec8e2bace24cd44f",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "fuhrmannskompass",
+      "datei": "fuhrmannskompass.png",
+      "name": "Kompass des Fuhrmanns",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 486024,
+      "sha256": "8c7dfb920a80bfed28c5ce3888582ddc03bf101ba39f698a28c58052006b70d7",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "grenzwacht_harnisch",
+      "datei": "grenzwacht_harnisch.png",
+      "name": "Harnisch der Grenzwacht",
+      "seltenheit": "episch",
+      "bytes": 552452,
+      "sha256": "53f03e892e9242fd5a3b8edb82b1547322fd953c6a125ef48000b47d2fcbd160",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "hanfseil",
+      "datei": "hanfseil.png",
+      "name": "Hanfseil",
+      "seltenheit": "gewoehnlich",
+      "bytes": 482886,
+      "sha256": "7c58b2daa3f3f8a1c8ecdfe2728c8633c2f9a075d1aacc3335ae466d60bc110d",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "heiltrank",
+      "datei": "heiltrank.png",
+      "name": "Heiltrank",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 475397,
+      "sha256": "a9d7f6be758f9b9f5285129305f114de742a32cf8a2b3e10aed3e40cd98a2431",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "jagdbogen",
+      "datei": "jagdbogen.png",
+      "name": "Jagdbogen",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 478400,
+      "sha256": "ab82bddfa75aa8a0c116a7afdfaa85a4dad910ca97ddbfe3f440c830627dce4d",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "kettenhemd",
+      "datei": "kettenhemd.png",
+      "name": "Kettenhemd",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 551662,
+      "sha256": "348fcb4d5a25890951daa75d6386cba7260f4db7609faecec88086d468424270",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "kienspan",
+      "datei": "kienspan.png",
+      "name": "Kienspan",
+      "seltenheit": "gewoehnlich",
+      "bytes": 482157,
+      "sha256": "5994d2ad221090b5b10821157f08b09c23ba4bec88b641407ca0e31181df973a",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "kraeuterbeutel",
+      "datei": "kraeuterbeutel.png",
+      "name": "Kräuterbeutel",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 476554,
+      "sha256": "364ed9c6920ad0a127c8e08c850ece297c63fdb67b12cc033aff0c88b6549514",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "krug_ohne_grund",
+      "datei": "krug_ohne_grund.png",
+      "name": "Der Krug, der nicht leert",
+      "seltenheit": "legendaer",
+      "bytes": 493987,
+      "sha256": "0c17ad8435f639eb3a29930dd05dfa3c9400f2a6ee33acbefc560ef3db485d6f",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "kupfermuenzen",
+      "datei": "kupfermuenzen.png",
+      "name": "Handvoll Kupfer",
+      "seltenheit": "gewoehnlich",
+      "bytes": 480406,
+      "sha256": "d8df188c636c3fd542cff3e32180309c06362bcffea013ab61be54206a3a9f4c",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "kurzmesser",
+      "datei": "kurzmesser.png",
+      "name": "Kurzmesser",
+      "seltenheit": "gewoehnlich",
+      "bytes": 476398,
+      "sha256": "0b934ee25b929da5df406dbd28dad97ce7c97e1e2ba2937b0ce2ff02ba5b09fe",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "langer_schluessel",
+      "datei": "langer_schluessel.png",
+      "name": "Der lange Schlüssel",
+      "seltenheit": "episch",
+      "bytes": 484957,
+      "sha256": "2cac2354476ba260c65c9cb49618d1742dc28da977103c954ff859d80ed4c677",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "lederkoller",
+      "datei": "lederkoller.png",
+      "name": "Lederkoller",
+      "seltenheit": "gewoehnlich",
+      "bytes": 548332,
+      "sha256": "49bb3bec427dc78124ea523986c199af8f4c33119a70b504d70e58b879ac9133",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "mondsilberkette",
+      "datei": "mondsilberkette.png",
+      "name": "Mondsilberkette",
+      "seltenheit": "selten",
+      "bytes": 490305,
+      "sha256": "ef6f25cf14017d19d34335b68c15ce577d9ace24e081bd4d694a5c82ddad6505",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "morgentau",
+      "datei": "morgentau.png",
+      "name": "Phiole Morgentau",
+      "seltenheit": "episch",
+      "bytes": 476638,
+      "sha256": "ddd75409eeefcf6bb9a13afe7acbaab9646f7bdaff377490ffda626d0d01af3a",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "offene_wege",
+      "datei": "offene_wege.png",
+      "name": "Chronik der offenen Wege",
+      "seltenheit": "legendaer",
+      "bytes": 492380,
+      "sha256": "bbb1471687b0b49a5c400f7b3b10aa3cda313adfdd68672d704bbd0fc2dacaf9",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "passkarte",
+      "datei": "passkarte.png",
+      "name": "Karte der alten Pässe",
+      "seltenheit": "selten",
+      "bytes": 494332,
+      "sha256": "96e4d54f8b1468cfe5bd15016acaca7cccf6bb0c07e50cf82797f74fc2e53546",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "rauchperlen",
+      "datei": "rauchperlen.png",
+      "name": "Rauchperlen",
+      "seltenheit": "selten",
+      "bytes": 480834,
+      "sha256": "c8a08e8c2d9a8bf8778a49f7a33f5976c4c6d476ce29a359326c7eb81d80b40e",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "reisebrot",
+      "datei": "reisebrot.png",
+      "name": "Reisebrot",
+      "seltenheit": "gewoehnlich",
+      "bytes": 490061,
+      "sha256": "255e986d47c27478cf849009f45b9035eb119d3fa694062bc26a1e29431c8a76",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "reisechronik",
+      "datei": "reisechronik.png",
+      "name": "Reisechronik",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 490924,
+      "sha256": "ac1230f7f614f31a38bcc7d8a7e9cee7bd94e435378da4b917e3ca46cd8f4648",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "rostiger_schluessel",
+      "datei": "rostiger_schluessel.png",
+      "name": "Rostiger Schlüssel",
+      "seltenheit": "gewoehnlich",
+      "bytes": 482754,
+      "sha256": "8cd957ffa855735a3f23eeacb39e0e776ec571131d9a044f773f593ec7e017b2",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "ruhige_hand",
+      "datei": "ruhige_hand.png",
+      "name": "Trank der ruhigen Hand",
+      "seltenheit": "selten",
+      "bytes": 475740,
+      "sha256": "cf2c87a1e86b77c8c891251ee2c0446709aff13545597aeca51b3fbc60eebfe9",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "schuppenpanzer",
+      "datei": "schuppenpanzer.png",
+      "name": "Schuppenpanzer",
+      "seltenheit": "selten",
+      "bytes": 551132,
+      "sha256": "7120ef3bce9b66aeba718ac77fbd79fe860fe66becdb9f855238d23b8243d146",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "silberring",
+      "datei": "silberring.png",
+      "name": "Silberring",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 491172,
+      "sha256": "d124e31f6f03ca49ece6ee77cb5fd93f196f9b6eb0801910c26a8da39813df5a",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "steigeisen",
+      "datei": "steigeisen.png",
+      "name": "Steigeisen",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 486189,
+      "sha256": "3d6a3778956cf2ace6fd840454fa03ce4faf274cfe845fe982aed0b7449dd4b8",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "stille_wacht",
+      "datei": "stille_wacht.png",
+      "name": "Buch der stillen Wacht",
+      "seltenheit": "selten",
+      "bytes": 497091,
+      "sha256": "00cb824683d506e3b8c7aa89f1fe01a5c17a29348bd637b2c37915e7d9910d9b",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "sturmlaterne",
+      "datei": "sturmlaterne.png",
+      "name": "Sturmlaterne",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 483124,
+      "sha256": "d9fde4b43d4ef82c24fbe955e77add557c41467cc08a2cb6b3e13d79defa8355",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "sturmmantel",
+      "datei": "sturmmantel.png",
+      "name": "Sturmmantel",
+      "seltenheit": "episch",
+      "bytes": 506492,
+      "sha256": "fca238c4e032cfe54341bbb80d0cbd14790eaf0e1dfd47a067b0e92631da892c",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "tonkrug",
+      "datei": "tonkrug.png",
+      "name": "Tonkrug",
+      "seltenheit": "gewoehnlich",
+      "bytes": 490732,
+      "sha256": "682cc6f98782145d75fd2ab13490f558ac57c313b0a69dc4c01e5fe2d40d5e79",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "vermittlerring",
+      "datei": "vermittlerring.png",
+      "name": "Siegelring der Vermittler",
+      "seltenheit": "episch",
+      "bytes": 493224,
+      "sha256": "16e007ac8dd966e78d9145a56346b57ff603de820e6c9fc0bad3d0911bd42d8f",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "wanderstab",
+      "datei": "wanderstab.png",
+      "name": "Wanderstab",
+      "seltenheit": "gewoehnlich",
+      "bytes": 482443,
+      "sha256": "6232fc4ed8fbf21ca2d6bb45df48803dde84b7c1cf19d3e623e3eefa308338df",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "wolfszahn",
+      "datei": "wolfszahn.png",
+      "name": "Wolfszahn, der Speer",
+      "seltenheit": "episch",
+      "bytes": 481996,
+      "sha256": "0a10a879ce94738883bdd662f794b8b631d938c14bfb1070d645a78c321553ef",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "wolldecke",
+      "datei": "wolldecke.png",
+      "name": "Wolldecke",
+      "seltenheit": "gewoehnlich",
+      "bytes": 506647,
+      "sha256": "1ff7b437105bd092a86bc24b1381d11516e5e7e32ff009464aad2ea97f4a7710",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "wurfmesser",
+      "datei": "wurfmesser.png",
+      "name": "Drei Wurfmesser",
+      "seltenheit": "ungewoehnlich",
+      "bytes": 480636,
+      "sha256": "13c6c04560623936da51e7f8e6b05b0e27a2c100acb047dc7f49fdeecda7a2e6",
+      "breite": 512,
+      "hoehe": 768
+    },
+    {
+      "id": "zunderbuechse",
+      "datei": "zunderbuechse.png",
+      "name": "Zunderbüchse",
+      "seltenheit": "gewoehnlich",
+      "bytes": 481519,
+      "sha256": "0a31e10c8daaf8a89364442f9724e36affa8e70e9e13e70025b2aed27617a608",
+      "breite": 512,
+      "hoehe": 768
+    }
+  ]
+}
