@@ -90,5 +90,7 @@ export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, no
     lines: [...document.walls.map(wall => ({ id: wall.id, points: wall.points, ...(cartography && cartographyPaintsWalls(cartography, document) ? { paint: false } : {}) })),
       ...document.portals.map(portal => ({ id: portal.id, points: portal.bounds, color: portal.closed ? 0xb58a50 : 0x6faa98 }))], grid: document.grid,
     stamps: document.geometry.stamps.map(stamp => ({ id: stamp.id, asset: stamp.a, x: stamp.x, y: stamp.y, s: stamp.s, r: stamp.r, l: stamp.l, ...(stamp.t !== undefined ? { t: stamp.t } : {}) })),
+    // The map's own light sources, as pools of warmth; the colour is the stored ARGB minus its alpha.
+    lights: (document.lights ?? []).map(light => ({ id: light.id, x: light.position[0], y: light.position[1], range: light.range, intensity: Math.max(0, Math.min(1, light.intensity)), color: Number.parseInt(light.colorArgb.slice(-6), 16) })),
   };
 }

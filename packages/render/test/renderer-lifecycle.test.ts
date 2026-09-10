@@ -23,9 +23,9 @@ vi.mock("pixi.js", () => {
     destroy() { for (const child of this.removeChildren()) child.destroy(); }
   }
   class Graphics extends Container {
-    circles: number[] = []; paths = 0; fills: unknown[] = []; strokes: unknown[] = []; segments: number[][] = [];
+    circles: number[] = []; paths = 0; fills: unknown[] = []; strokes: unknown[] = []; segments: number[][] = []; ellipses = 0; blendMode = "normal"; rotation = 0;
     constructor() { super(); pixi.graphics.push(this); }
-    clear() { this.circles.length = 0; this.paths = 0; return this; } rect() { return this; }
+    clear() { this.circles.length = 0; this.paths = 0; this.fills.length = 0; return this; } rect() { return this; } ellipse() { this.ellipses++; return this; }
     circle(_x: number, _y: number, radius: number) { this.circles.push(radius); return this; } fill(style: unknown) { this.fills.push(style); return this; }
     poly() { pixi.paths++; this.paths++; return this; } moveTo(x: number, y: number) { pixi.paths++; this.paths++; this.segments.push([x, y]); return this; } lineTo(x: number, y: number) { this.segments.at(-1)?.push(x, y); return this; }
     stroke(style: { color?: number; width?: number; pixelLine?: boolean }) { pixi.strokes.push(style); this.strokes.push(style); return this; }
@@ -364,6 +364,45 @@ describe("the cartouche and the stone wall", () => {
     expect(pixi.strokes).toHaveLength(4);
     expect(widths[1]).toBeCloseTo(64 * .11, 5); expect(widths[0]).toBeGreaterThan(widths[1]!); expect(widths[2]).toBeLessThan(widths[1]!);
     expect(pixi.strokes[3]!.color).toBe(0x6faa98); expect(widths[3]! * map.getCamera().scale).toBeCloseTo(2, 10);
+    map.destroy();
+  });
+});
+
+describe("light, shadow and ink on a drawn map", () => {
+  const drawing = { rendererVersion, width: scene.width, height: scene.height, background: null, polygons: [] };
+  it("pools every light additively over the floor and under the walls, and clears them with the scene", async () => {
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], drawing, lights: [{ id: "torch", x: 100, y: 100, range: 200, intensity: .5, color: 0xdd8a33 }, { id: "candle", x: 300, y: 300, range: 80 }] });
+    const glow = layer("glow") as { blendMode: string; circles: number[]; fills: { alpha?: number }[] };
+    expect(glow.blendMode).toBe("add");
+    expect(glow.circles).toHaveLength(8);
+    expect(glow.circles.slice(0, 3)).toEqual([200, 124, 60]);
+    expect(glow.fills[0]).toMatchObject({ color: 0xdd8a33, alpha: .02 });
+    const world = (pixi.stages.find(stage => stage.label === "") ?? { children: [] }).children;
+    void world;
+    map.update({ ...scene, tokens: [], lines: [], drawing });
+    expect(glow.circles).toHaveLength(0);
+    map.destroy();
+  });
+  it("lays a shadow under furniture on a drawn map only, never under floors, doors or marks", async () => {
+    const stamps = [{ id: "floor", asset: "pk.gemalt/boden", x: 50, y: 50, s: 1, r: 0, l: -100 }, { id: "chest", asset: "pk.gemalt/truhe", x: 90, y: 90, s: 1, r: 0, l: 0 }, { id: "door", asset: "pk.gemalt/tuer", x: 130, y: 130, s: 1, r: 0, l: 20 }];
+    const image = () => ({ width: 32, height: 32, close: vi.fn() }) as unknown as ImageBitmap;
+    const drawn = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], drawing, stamps });
+    drawn.setStampImages(stamps.map(stamp => ({ asset: stamp.asset, image: image() })));
+    const shadows = () => pixi.graphics.filter(graphics => (graphics as unknown as { ellipses: number }).ellipses > 0).length;
+    expect(shadows()).toBe(1);
+    drawn.destroy(); pixi.graphics.length = 0;
+    const plain = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], stamps });
+    plain.setStampImages(stamps.map(stamp => ({ asset: stamp.asset, image: image() })));
+    expect(shadows()).toBe(0);
+    plain.destroy();
+  });
+  it("sets place names in ink on a drawn map and keeps the bright label on a photographed one", async () => {
+    const pins = [{ id: "inn", x: 400, y: 400, label: "Zum goldenen Hirsch" }];
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], showLabels: true, pins, drawing });
+    const label = () => pixi.labels.find(text => text.text === "Zum goldenen Hirsch") as { style?: { fill?: number; fontFamily?: string } } | undefined;
+    expect(label()?.style?.fill).toBe(0x2c2519); expect(label()?.style?.fontFamily).toContain("serif");
+    map.update({ ...scene, tokens: [], lines: [], showLabels: true, pins });
+    expect(label()?.style?.fill).toBe(0xf4ebd8);
     map.destroy();
   });
 });

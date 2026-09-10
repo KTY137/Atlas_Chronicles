@@ -142,7 +142,7 @@ describe("relief in the painted drawing: shading, contour lines and summits that
     const flat = withRelief(() => 117), { relief: _relief, ...without } = flat.cartography;
     const flatDrawing = cartographyDraw(flat.document, flat.cartography), plainDrawing = cartographyDraw(flat.document, without);
     expect(flatDrawing.polygons.length).toBe(plainDrawing.polygons.length);
-    expect(flatDrawing.rendererVersion).toBe("cartography-9");
+    expect(flatDrawing.rendererVersion).toBe("cartography-10");
   });
   it("shades a slope on its lit and shadowed flanks and draws contour lines only above the water line", () => {
     // A ridge along the middle: land rises from the west edge to a crest and falls to the east,
@@ -195,5 +195,43 @@ describe("relief in the painted drawing: shading, contour lines and summits that
     expect(snow.length).toBeGreaterThan(10); expect(snow.some(p => p.fill === 0xeef0ea && p.opacity === 1 && p.points.length === 4)).toBe(true);
     const drifts = snow.filter(p => p.opacity === .35);
     expect(drifts.length).toBeGreaterThan(5); expect(new Set(drifts.map(p => p.fill)).size).toBe(1);
+  });
+});
+
+describe("what makes it a painting: patchwork fields, chimneys, a mottled plain, a massif that pales with height", () => {
+  const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const base = { authored: false, locked: false, provenance: null } as const;
+  it("colours neighbouring parcels differently and sets a chimney with its shadow on most roofs", () => {
+    const { document, cartography } = fixture();
+    const fields = Array.from({ length: 12 }, (_, index) => ({ id: `feld-${index}`, punkte: rect(index * 45, 0, 40, 80) }));
+    const houses = Array.from({ length: 12 }, (_, index) => ({ id: `haus-${index}`, punkte: rect(index * 45, 200, 40, 30) }));
+    const drawing = cartographyDraw({ ...document, geometry: { ...document.geometry, regions: [...fields, ...houses] } },
+      { ...cartography, construction: { cellSize: 64, origin: [0, 0] }, regions: [...fields.map(field => ({ ...base, regionId: field.id, role: "terrain", material: "field" } as const)), ...houses.map(house => ({ ...base, regionId: house.id, role: "building" } as const))] }, "fantasy", { paper: false });
+    const fills = new Set(fields.map(field => drawing.polygons.find(p => p.regionId === field.id && p.opacity === 1 && p.points.length === 4)!.fill));
+    expect(fills.size).toBe(3);
+    const chimneys = houses.filter(house => drawing.polygons.some(p => p.regionId === house.id && p.fill === 0x5a4a40));
+    expect(chimneys.length).toBeGreaterThan(5); expect(chimneys.length).toBeLessThan(12);
+    for (const house of chimneys) expect(drawing.polygons.filter(p => p.regionId === house.id && p.fill === 0x8d7a6a)).toHaveLength(1);
+  });
+  it("mottles the open ground before the relief and the woods, from one global lattice, not over water", () => {
+    const { document, cartography } = fixture();
+    const regions = [{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "wood", punkte: rect(0, 0, 200, 600) }, { id: "sea", punkte: rect(400, 0, 200, 600) }];
+    const roles = [{ ...base, regionId: "ground", role: "terrain", material: "grass" }, { ...base, regionId: "wood", role: "terrain", material: "forest" }, { ...base, regionId: "sea", role: "water", material: "sea" }] as const;
+    const drawing = cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 60, origin: [0, 0] }, regions: [...roles] }, "fantasy", { paper: false });
+    const first = (id: string) => drawing.polygons.findIndex(p => p.regionId === id), mottle = drawing.polygons.map((p, index) => ({ p, index })).filter(({ p }) => p.regionId === "ground" && p.opacity === .11);
+    expect(mottle.length).toBeGreaterThan(30);
+    expect(mottle.every(({ index }) => index < first("wood") && index < first("sea"))).toBe(true);
+    expect(mottle.every(({ index }) => index > first("ground"))).toBe(true);
+  });
+  it("paints a massif paler where the land under it is higher", () => {
+    const { document, cartography } = fixture();
+    const relief: CartographyReliefV1 = { schemaVersion: 1, columns: 11, rows: 11, seaLevel: 77, heights: Array.from({ length: 121 }, (_, k) => (k % 11) < 5 ? 200 : 250) };
+    const regions = [{ id: "foot", punkte: rect(0, 0, 240, 600) }, { id: "crest", punkte: rect(360, 0, 240, 600) }];
+    const roles = regions.map(region => ({ ...base, regionId: region.id, role: "terrain", material: "rock" } as const));
+    const drawing = cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 60, origin: [0, 0] }, regions: roles, relief }, "fantasy", { paper: false, contours: false, shading: false });
+    const fill = (id: string) => drawing.polygons.find(p => p.regionId === id && p.opacity === 1 && p.points.length === 4)!.fill;
+    expect(fill("crest")).toBeGreaterThan(fill("foot"));
+    const plain = cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 60, origin: [0, 0] }, regions: roles }, "fantasy", { paper: false });
+    expect(plain.polygons.find(p => p.regionId === "crest" && p.opacity === 1 && p.points.length === 4)!.fill).toBe(plain.polygons.find(p => p.regionId === "foot" && p.opacity === 1 && p.points.length === 4)!.fill);
   });
 });

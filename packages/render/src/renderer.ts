@@ -72,7 +72,10 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   // Placements sit above the floor and below walls, grid and markers: furniture is part of the
   // ground truth of the room, but it must never hide a wall or a token.
   const stampLayer = new Container(), rooftopStamps = new Container();
-  world.addChild(rasterBounds, raster, geography, stampLayer, buildings, rooftopStamps, gridOverlay, wallsOverlay, markers, dragPreview);
+  // Light pools lie over floor and furniture and under walls: a torch warms the room it stands
+  // in, the wall in front of it still reads as a wall. Additive, so two lamps brighten, not muddy.
+  const glow = new Graphics(); glow.eventMode = "none"; glow.label = "glow"; glow.blendMode = "add";
+  world.addChild(rasterBounds, raster, geography, stampLayer, buildings, rooftopStamps, glow, gridOverlay, wallsOverlay, markers, dragPreview);
   raster.mask = rasterBounds;
   app.stage.addChild(world);
   const selection = new Graphics().circle(0, 0, 15).stroke({ color: 0xffe7a1, width: 2 }); selection.visible = false;
@@ -98,6 +101,8 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   chrome.addChild(scaleBar, compass, compassLabel, scaleLabel, titleBox, titleText);
   app.stage.addChild(chrome);
   const pinLabels: InstanceType<typeof Text>[] = [];
+  const nightLabel = { fontFamily: "system-ui, sans-serif", fontSize: 12, fill: 0xf4ebd8, stroke: { color: 0x14212b, width: 3 } } as const;
+  const inkLabel = { fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 12, fontStyle: "italic", fontWeight: "600", letterSpacing: .4, fill: 0x2c2519, stroke: { color: 0xf0e6cb, width: 3 } } as const;
   let scene = initial;
   let camera = fitCamera([scene.width, scene.height], viewport);
   let selected: MapHit | null = null;
@@ -232,9 +237,12 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       if (occupied.some(box => x < box.x + box.width && x + width > box.x && y < box.y + box.height && y + 20 > box.y)) continue;
       let text = pinLabels[count];
       if (!text) {
-        text = new Text({ text: "", style: { fontFamily: "system-ui, sans-serif", fontSize: 12, fill: 0xf4ebd8, stroke: { color: 0x14212b, width: 3 } } });
+        text = new Text({ text: "", style: nightLabel });
         text.eventMode = "none"; pinLabels.push(text); names.addChild(text);
       }
+      // A drawn map names its places in ink on paper, a book face with a pale halo; a photographed
+      // or dark battlemap keeps the bright label that stays legible over any image.
+      text.style = scene.drawing ? inkLabel : nightLabel;
       text.text = pin.label.length > 30 ? `${pin.label.slice(0, 29)}…` : pin.label;
       text.position.set(x, y); text.visible = true;
       occupied.push({ x: x - 4, y: y - 4, width: Math.max(width, text.width) + 8, height: Math.max(20, text.height) + 8 }); count++;
@@ -337,6 +345,16 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       // No artwork, no shape. A placeholder box would be indistinguishable from real furniture at
       // a glance, which is exactly the kind of picture that lies about what is in the room.
       if (!resource) continue;
+      // On a drawn map every object above the floor casts a soft shadow to the south-east, the
+      // way a piece of furniture sits on a painted battlemap instead of floating on it.
+      // Layers −10..10 are what stands on the floor (fixtures, furniture, vessels, figures,
+      // lamps); floors (−100), doors, walls and marks cast nothing.
+      if (scene.drawing && stamp.l >= -10 && stamp.l <= 10) {
+        const w = resource.bitmap.width * stamp.s, h = resource.bitmap.height * stamp.s, shadow = new Graphics();
+        shadow.ellipse(0, 0, w * .48, h * .48).fill({ color: 0x1a1410, alpha: .26 });
+        shadow.position.set(stamp.x + w * .07, stamp.y + h * .1); shadow.rotation = stamp.r; shadow.eventMode = "none";
+        stampLayer.addChild(shadow);
+      }
       const sprite = new Sprite(resource.texture);
       sprite.anchor.set(.5);
       sprite.position.set(stamp.x, stamp.y);
@@ -394,6 +412,14 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     clear(buildings);
     clear(markers);
     markerGraphics = [];
+    // Each light is three pools inside one another, widest faintest, plus a small bright heart:
+    // a cheap gradient that still reads as a glow rather than as a painted disc.
+    glow.clear();
+    for (const light of scene.lights ?? []) {
+      const color = light.color ?? 0xe0a050, strength = light.intensity ?? 1;
+      for (const [reach, alpha] of [[1, .04], [.62, .07], [.3, .11]] as const) glow.circle(light.x, light.y, light.range * reach).fill({ color, alpha: alpha * strength });
+      glow.circle(light.x, light.y, Math.max(2, light.range * .06)).fill({ color: 0xfff1c8, alpha: .45 * strength });
+    }
     if (scene.drawing) {
       if (scene.drawing.background !== null) geography.addChild(new Graphics().rect(0, 0, scene.width, scene.height).fill(scene.drawing.background));
       for (const polygon of scene.drawing.polygons) {

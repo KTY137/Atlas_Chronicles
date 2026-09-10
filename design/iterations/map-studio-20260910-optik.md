@@ -44,6 +44,19 @@ Ansicht in Runde 1 und hier nicht wiederholt: flache Schattierungsquadrate, Terr
   `e2e/map-editor-cartography` 3/3.
 - Gates: Typecheck, Build, `gate:sprache`, `gate:boundaries`, `gate:version`.
 
+## Runde 3 — Licht, Schatten, Tusche, Flickenfelder
+
+Im Studio-Wirt angesehen (`.local/nested-probe/town-zoom.png`, `level1-haus.png`): Ortsnamen
+kursiv in Tusche mit Papiersaum, Kartusche, warme Lichtpools um Laternen und Fackeln (nach
+dem ersten Blick von .05/.09/.14 auf .04/.07/.11 zurückgenommen), Möbelschatten, Flickenfelder,
+Schornsteine, gefleckter Boden, heller Felsgrat. Nachweise: render `renderer-lifecycle` 35/35
+(neu: Lichtpools additiv und mit der Szene gelöscht, Schatten nur unter Mobiliar auf gezeichneten
+Karten, Tusche- gegen Nachtbeschriftung), szene `cartography-projection` 21/21 (neu: drei
+Feldfarben, Schornstein mit Kappe, Fleckung vor Wald und Wasser und nur auf offenem Boden, Fels
+blasser mit der Höhe), client `map-generation` 31/31 (Lichter erreichen die Szene, Szene bleibt
+gültig). Gesamt 96 Dateien, 1302 Fälle; `e2e` 7/7 (vor den letzten beiden Detailkorrekturen:
+Fleckung nur auf offenem Boden, Lichter bei Fixtures ohne `lights`).
+
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel
 für Außenobjekte, Möbel an die Wand rücken (Möbel stehen frei im Raum). Desktop nicht neu gebaut.

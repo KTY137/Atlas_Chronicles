@@ -5,7 +5,7 @@ import { RELIEF_LEVELS, reliefHeightAt, type CartographyReliefV1, type TacticalC
 import type { TacticalMapDocumentV1, TacticalPoint } from "./tactical-map.ts";
 
 /** Bump whenever these pixels change; this pin belongs in every cartography raster key. */
-export const rendererVersion = "cartography-9" as const;
+export const rendererVersion = "cartography-10" as const;
 /** What of the relief the viewer wants drawn. Presentation only; the stored map is untouched. */
 export interface CartographyView { readonly contours?: boolean; readonly shading?: boolean; /** Parchment mottle and edge vignette on a generated map. */ readonly paper?: boolean }
 export interface CartographyPolygon {
@@ -192,7 +192,24 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   const groundOwner = regions.filter(region => region.role?.role === "terrain" || !region.role || region.role.role === "generic")
     .map(region => { const xs = region.punkte.map(p => p[0]), ys = region.punkte.map(p => p[1]); return { id: region.id, size: (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)) }; })
     .sort((a, b) => b.size - a.size || (a.id < b.id ? -1 : 1))[0]?.id ?? regions[0]?.id;
-  let reliefDrawn = !relief || !groundOwner;
+  // The mottle belongs to open ground — meadow, earth, sand, field, marsh, snow. A map whose only
+  // ground is a massif or a wood gets none: rock has its crags and a wood its crowns.
+  const openOwner = regions.filter(region => region.role?.role === "terrain" && !["rock", "forest"].includes(region.role.material))
+    .map(region => { const xs = region.punkte.map(p => p[0]), ys = region.punkte.map(p => p[1]); return { id: region.id, size: (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)) }; })
+    .sort((a, b) => b.size - a.size || (a.id < b.id ? -1 : 1))[0]?.id;
+  let reliefDrawn = !relief || !groundOwner, groundDressed = !openOwner;
+  // Before the relief and the woods: the open ground gets a painter's mottle from the global
+  // lattice, two tones of the meadow at low opacity, so a plain is a surface, not a fill.
+  const dressGround = () => {
+    if (!openOwner) return;
+    const spacing = Math.max(40, cartography.construction.cellSize * 2.2), across = Math.ceil(paperWidth / spacing) + 1, down = Math.ceil(paperHeight / spacing) + 1;
+    const step = Math.max(1, Math.ceil(Math.sqrt(across * down / 700))), warm = mix(palette.grass, palette.sand, .5), cool = mix(palette.grass, palette.forest, .45);
+    for (let row = 0; row <= down; row += step) for (let column = 0; column <= across; column += step) {
+      const key = `ground:${column}:${row}`, x = column * spacing + spacing * phase(key, 1), y = row * spacing + spacing * phase(key, 2), size = spacing * (.55 + phase(key, 3) * .55);
+      const blotch = Array.from({ length: 9 }, (_, index) => { const angle = index * Math.PI * 2 / 9, reach = size * (.7 + .3 * phase(key, 10 + index)); return [x + Math.cos(angle) * reach, y + Math.sin(angle) * reach * .75] as TacticalPoint; });
+      emit(openOwner, blotch, phase(key, 4) < .5 ? warm : cool, .11);
+    }
+  };
   const drawRelief = () => {
     if (!relief || !groundOwner) return;
     const { construction } = cartography, z = construction.cellSize, [ox, oy] = construction.origin;
@@ -287,9 +304,18 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   let roofsStarted = false;
   for (const region of regions) {
     const { id, punkte: points, role } = region;
+    if (!groundDressed && rank(role) > 0) { groundDressed = true; dressGround(); }
     if (!reliefDrawn && rank(role) > 0) { reliefDrawn = true; drawRelief(); }
     let fill: number = palette.generic;
     if (role?.role === "terrain") fill = palette[role.material];
+    // A farmland is a patchwork: every parcel is young green, ripe gold or turned earth.
+    if (role?.role === "terrain" && role.material === "field") fill = [palette.field, mix(palette.field, palette.grass, .5), mix(palette.field, 0xd9b45a, .55)][Math.floor(phase(id, 3) * 3)]!;
+    // A massif pales with height, from its grey foot to its bright shoulders under the snow.
+    if (role?.role === "terrain" && role.material === "rock" && relief) {
+      const centre: TacticalPoint = [points.reduce((sum, point) => sum + point[0], 0) / points.length, points.reduce((sum, point) => sum + point[1], 0) / points.length];
+      const rockLine = relief.seaLevel + RELIEF_LEVELS.rockAbove, above = Math.max(0, Math.min(1, (reliefHeightAt(relief, cartography.construction, centre[0], centre[1]) - rockLine) / Math.max(1, 255 - rockLine)));
+      fill = mix(palette.rock, mix(palette.rock, palette.background, .5), above * .7);
+    }
     else if (role?.role === "water") fill = palette.water;
     else if (role?.role === "road") fill = palette[role.material];
     else if (role?.role === "room" && role.interior) fill = role.interior.floor === "wood" ? 0xb78c60 : role.interior.floor === "tile" ? 0xd0cbbc : 0x929591;
@@ -319,6 +345,18 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         for (let index = 1; index < 5; index++) {
           const at = axes.left + (axes.right - axes.left) * index / 5;
           emit(id, band(points, axes.along, at, at + ridge * .35), palette.roofDark, .18);
+        }
+        // Most houses have a chimney on the shaded slope, a little off the ridge, with its own
+        // shadow; the hearth is what makes a roof a home rather than a lid.
+        if (axes.bottom - axes.top > cartography.construction.cellSize * .35 && phase(id, 7) < .72) {
+          const size = Math.max(1.5, ridge * 2.2), a = axes.left + (axes.right - axes.left) * (.62 + phase(id, 8) * .22), c = middle + size * 1.4;
+          const at = (u: number, v: number): TacticalPoint => [axes.along[0] * u + axes.across[0] * v, axes.along[1] * u + axes.across[1] * v];
+          const stack: TacticalPoint[] = [at(a - size / 2, c - size / 2), at(a + size / 2, c - size / 2), at(a + size / 2, c + size / 2), at(a - size / 2, c + size / 2)];
+          if (stack.every(point => inside(point, points))) {
+            emit(id, stack.map(point => [point[0] + size * .45, point[1] + size * .55]), 0x26332b, .35);
+            emit(id, stack, 0x5a4a40);
+            emit(id, [at(a - size / 2, c - size / 2), at(a + size / 2, c - size / 2), at(a + size / 2, c - size * .18), at(a - size / 2, c - size * .18)], 0x8d7a6a);
+          }
         }
       } else {
         emit(id, points, tint(palette.roofLight, shift - 10));
@@ -556,6 +594,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       }
     }
   }
+  if (!groundDressed) { groundDressed = true; dressGround(); }
   if (!reliefDrawn) { reliefDrawn = true; drawRelief(); }
   if (paintWalls) {
     const wallWidth = pen * 3.6, stone = setting === "scifi" ? 0x8ea5aa : 0xaaa08a;

@@ -81,5 +81,23 @@ Entscheidungen:
   Bildschirmpixel. **Kartusche** mit dem Kartennamen in Serifen im Kartenzier-Container, nur
   auf einer gezeichneten Karte; `scene.title` ist Präsentation und wird geprüft (≤ 200 Zeichen).
 
-## 4. Nachweis
+## 4. Runde 3 — „richtig sexy" (`cartography-10`, Renderer)
+
+Kayas dritter Auftrag am selben Tag: weiterentwickeln, es soll richtig gut aussehen. Wieder nur
+Präsentation, keine Daten geändert; jede Wirkung kommt aus dem, was die Karte schon weiß.
+
+- **Licht** (`scene.lights`, aus `document.lights`): jede Lichtquelle wird zu drei ineinander
+  liegenden Pools plus hellem Kern, additiv gemischt, über Boden und Möbeln, unter Wänden und
+  Figuren. Kein Sichtsystem, kein Nebel — ein Bild, das die Fackel im Raum zeigt.
+- **Möbelschatten** auf gezeichneten Karten: alles auf den Ebenen −10..10 (Aufbauten, Möbel,
+  Gefäße, Figuren, Lampen) wirft eine weiche Ellipse nach Südost; Böden (−100), Türen, Wände
+  und Marken nicht.
+- **Beschriftung in Tusche:** auf einer gezeichneten Karte stehen Ortsnamen kursiv in Serifen,
+  dunkle Tusche mit Papiersaum; auf Bildkarten bleibt die helle Beschriftung.
+- **Projektion:** Bodenfleckung auf offenem Land (zwei Wiesentöne von einem globalen Gitter,
+  vor Relief und Wald, nie unter Fels oder Wald, `openOwner`), Felder als Flickenteppich (jung
+  grün, reif gold, gepflügt), Schornstein mit Schatten auf den meisten Dächern, Fels blasser
+  zur Höhe (Mittelpunkt des Stücks im Relief).
+
+## 5. Nachweis
 Siehe `design/iterations/map-studio-20260910-optik.md`.

@@ -1,6 +1,19 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 2** (Kartenstudio Stufe 11: Optik und das Haus hinter der Tür)
+Updated: **2026-09-10, Runde 3** (Kartenstudio Stufe 11: Licht, Schatten, Tusche, Flickenfelder)
+
+## Kartenstudio Runde 3: Licht, Schatten, Tusche — 2026-09-10
+
+Kayas Auftrag: weiter, es soll richtig gut aussehen. Nur Präsentation (`cartography-10`,
+Renderer), keine Daten geändert. Renderer: Lichtpools aus den gespeicherten Lichtquellen
+(`scene.lights`, additiv, über Boden und Möbeln, unter Wänden), Möbelschatten auf gezeichneten
+Karten (Ebenen −10..10), Ortsnamen in Tusche-Serifen mit Papiersaum. Projektion: Bodenfleckung
+auf offenem Land (nie unter Fels/Wald), Flickenfelder in drei Tönen, Schornsteine, Fels blasser
+zur Höhe. Grün: 96 Dateien, 1302 Fälle; e2e 7/7; Typecheck, Build, `gate:sprache`,
+`gate:boundaries`. Bilder `.local/nested-probe/town-zoom.png`, `level1-haus.png`. Spec-Abschnitt 4
+in `docs/superpowers/specs/2026-09-10-kartenstudio-optik-und-innenraum-design.md`.
+
+Zuvor: **2026-09-10, Runde 2** (Kartenstudio Stufe 11: Optik und das Haus hinter der Tür)
 
 ## Kartenstudio Stufe 11: Optik über Inkarnate hinaus, Innenräume ab Ebene 1 — 2026-09-10
 

@@ -69,6 +69,19 @@ export interface ProjectedMapStamp {
 }
 /** Ownership of each bitmap transfers to the renderer, exactly as with raster tiles. */
 export interface MapStampImage { readonly asset: string; readonly image: ImageBitmap }
+/** A light source as the picture shows it: a warm pool on floor and furniture. Presentation only —
+ * no sight, no fog and no rule is computed from it; the server still owns what a player sees. */
+export interface ProjectedMapLight {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  /** Reach in map units. */
+  readonly range: number;
+  /** 0..1, absent = 1. */
+  readonly intensity?: number;
+  /** RGB, absent = warm candlelight. */
+  readonly color?: number;
+}
 export interface ProjectedMapScene {
   readonly id: string;
   readonly width: number;
@@ -92,6 +105,8 @@ export interface ProjectedMapScene {
   readonly showLabels?: boolean;
   /** The map's name for its cartouche; drawn only on a scene that carries a cartography drawing. */
   readonly title?: string;
+  /** Light pools drawn over floor and furniture, under walls and tokens. */
+  readonly lights?: readonly ProjectedMapLight[];
 }
 /** The host fetches authorized tiles. Ownership of each bitmap transfers to the renderer. */
 export interface MapRasterTile { readonly id: string; readonly left: number; readonly top: number; readonly width: number; readonly height: number; readonly pixelScale: number; readonly image: ImageBitmap }

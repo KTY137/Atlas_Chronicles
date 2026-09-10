@@ -98,6 +98,15 @@ export function validateMapScene(scene: ProjectedMapScene): void {
   if (scene.rasterSampling !== undefined && scene.rasterSampling !== "nearest" && scene.rasterSampling !== "linear") throw new Error("invalid raster sampling");
   if (scene.showLabels !== undefined && typeof scene.showLabels !== "boolean") throw new Error("invalid label visibility");
   if (scene.title !== undefined && (typeof scene.title !== "string" || scene.title.length > 200)) throw new Error("invalid map title");
+  if (scene.lights !== undefined) {
+    if (!Array.isArray(scene.lights) || scene.lights.length > 4096) throw new Error("invalid map lights");
+    for (const light of scene.lights) {
+      id("light", light.id);
+      if (![light.x, light.y, light.range].every(Number.isFinite) || light.range <= 0 || light.range > 100_000) throw new Error("invalid map light");
+      if (light.intensity !== undefined && (!Number.isFinite(light.intensity) || light.intensity < 0 || light.intensity > 1)) throw new Error("invalid light intensity");
+      color(light.color);
+    }
+  }
   if (scene.paintCells !== undefined && typeof scene.paintCells !== "boolean") throw new Error("invalid cell paint visibility");
   if (scene.grid && scene.grid.kind !== "none") {
     if (!["square", "hex"].includes(scene.grid.kind) || !Number.isFinite(scene.grid.size) || scene.grid.size <= 0 || scene.grid.origin.length !== 2 || !scene.grid.origin.every(Number.isFinite)) throw new Error("invalid grid");

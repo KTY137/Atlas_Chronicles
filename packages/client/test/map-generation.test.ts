@@ -195,3 +195,14 @@ describe("a building's interior takes its own default extent", () => {
     expect(generationOptions(generationSettings("grundriss", "haus"), withBuildings)).not.toHaveProperty("zellen");
   });
 });
+
+describe("the map's own lights reach the picture", () => {
+  it("projects every stored light with its reach, strength and colour, and the scene stays valid", () => {
+    const document = parseTacticalMapDocument({ schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels", frame: { ursprung: [0, 0], einheitenProPixel: 1, ordnung: "xy", hoch: "unten" },
+      geometry: { v: 3, size: [800, 600], stamps: [], places: [], regions: [] }, grid: { kind: "square", size: 64, origin: [0, 0] }, elevation: 0, geometryElevation: [], walls: [], portals: [],
+      lights: [{ id: "fackel", position: [100, 120], range: 256, intensity: .9, colorArgb: "ffdd8a33", shadows: true, elevation: 0 }], environment: { bakedLighting: false, ambientLightArgb: "ffffffff" }, background: null });
+    const scene = mapDocumentScene("lit", document, []);
+    expect(scene.lights).toEqual([{ id: "fackel", x: 100, y: 120, range: 256, intensity: .9, color: 0xdd8a33 }]);
+    expect(() => validateMapScene(scene)).not.toThrow();
+  });
+});
