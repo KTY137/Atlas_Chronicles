@@ -143,6 +143,18 @@ Generierungs- und Eingangs-Suiten 95 Fälle; Typecheck, Build, `gate:sprache`,
 nimmt Stege aus der Regel „Straßen enden am Ufer" heraus, `siedlung-cartography` prüft den
 Waldanteil je Keim nur noch als Untergrenze und den zusammenhängenden Wald nur bei echtem Wald.
 
+## Runde 4, Punkt 9 — Höhlen
+
+Bild `.local/relief-probe/cave.ts` (Polygone ohne Stempel): erst waren die Kammern pergament-
+hell, weil eine eingeschobene `if`-Zeile die Füllkette der Rollen aufgetrennt hatte und
+jeder Raum wieder die Standardfarbe bekam — behoben, dann Kontrast zwischen Felsdecke und
+Kammerboden angehoben. Nachweise: forge `hoehle` 21/21 (neu: Fels als Boden, jede Kammer ein
+Steinboden-Raum, Stempel genau einmal besessen, alle Lichter und über 90 % der Wände einem Raum
+zugeordnet; die Kammer-Id-Prüfung nimmt die Felsmasse aus), szene `cartography-projection`
+33/33 (Höhle: keine Gipfel, Sprenkel, raue Striche, Geröll, Moos, keine Fugen; Haus und Gebirge
+unverändert), forge/szene/client/server-Suiten 1189 Fälle; Typecheck, Build, `gate:sprache`,
+`gate:boundaries`.
+
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel
 für Außenobjekte, Möbel an die Wand rücken (Möbel stehen frei im Raum). Desktop nicht neu gebaut.

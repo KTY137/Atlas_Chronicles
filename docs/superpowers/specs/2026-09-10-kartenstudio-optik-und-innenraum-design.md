@@ -102,7 +102,7 @@ Präsentation, keine Daten geändert; jede Wirkung kommt aus dem, was die Karte 
 ## 5. Runde 4 — die Zehnerliste (`cartography-11`)
 
 Kaya fragte nach zehn Verbesserungen und ließ sie abarbeiten. Reihenfolge nach Wirkung, jedes
-Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1 bis 8 fertig.
+Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1 bis 9 fertig.
 
 **1 Möbel an die Wand, 2 Gärten um die Häuser** (Commit `3f75ad3`): Möbel werden nach Art
 platziert — Betten, Schränke, Regale, Truhen an die Wand (`Lage` mit bevorzugten Plätzen und
@@ -211,6 +211,17 @@ im Relief behoben: ein Moor konnte je nach Keim ohne offenes Wasser und ohne Sum
 jetzt drei Tümpel auf einem Ring außerhalb des Kerns und eine höhere Grundfeuchte. Die
 Galerie-Heuristiken (Waldanteil je Keim) sind entsprechend gelockert: wie viel Wald ein Keim
 trägt, entscheidet das Land, und ein trockener Keim hat Gehölze statt Wald.
+
+**9 Höhlen wie Innenräume.** Der Höhlengenerator (Fassung 1 → 2) liefert jetzt eine eigene
+Kartografie statt der geratenen: die Felsmasse als Bodenfläche (`terrain rock`, ganzer Rahmen)
+und jede Kammer als Raum mit Steinboden, der besitzt, was auf seinen Zellen steht (Stempel,
+Lichter, Wände — die Wand liegt auf einer Zellkante, die Bodenzelle daneben entscheidet). Damit
+gelten für Kammern dieselben Regeln wie für Zimmer: sperren, verschieben, einrichten, Lichter
+im Raum. Die Projektion erkennt eine Höhle an Steinboden-Räumen in einer Felsmasse und malt den
+Fels dann als dunkle, gesprenkelte Decke von oben statt als Gebirge, jede Kammer mit rauer
+Kante (zwei bis drei versetzte Tuschestriche je Kante), Geröll am Fuß der Wände und Moos-
+flecken auf dem Boden; die Fugen eines gebauten Steinbodens entfallen. Ein Haus und ein
+Gebirge bleiben, wie sie waren.
 
 ## 6. Nachweis
 Siehe `design/iterations/map-studio-20260910-optik.md`.

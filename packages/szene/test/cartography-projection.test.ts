@@ -426,3 +426,31 @@ describe("water and coast: piers with boats, reed belts, waterfalls and river mo
     expect(mouth.some(p => p.opacity === .32 && p.points.length === 4)).toBe(true);
   });
 });
+
+describe("a cave: rock around chambers, rough edges, rubble and moss", () => {
+  const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const base = { authored: false, locked: false, provenance: null } as const;
+  const interior = (floor: "stone" | "wood") => ({ schemaVersion: 1 as const, floor, stampIds: [], wallIds: [], portalIds: [], lightIds: [] });
+  const draw = (floor: "stone" | "wood", ground: "rock" | "grass") => {
+    const { document, cartography } = fixture();
+    const regions = [{ id: "mass", punkte: rect(0, 0, 600, 600) }, { id: "hall", punkte: rect(120, 120, 300, 240) }];
+    return cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 60, origin: [0, 0] },
+      regions: [{ ...base, regionId: "mass", role: "terrain", material: ground }, { ...base, regionId: "hall", role: "room", interior: interior(floor) }] }, "fantasy", { paper: false }).polygons;
+  };
+  it("draws the rock as a dark stippled mass without summits and bounds the chamber with broken strokes, rubble and moss", () => {
+    const cave = draw("stone", "rock"), mass = cave.filter(p => p.regionId === "mass"), hall = cave.filter(p => p.regionId === "hall");
+    expect(mass.some(p => p.opacity === .8 && p.points.length === 5)).toBe(false);
+    expect(mass.filter(p => p.opacity === .55).length).toBeGreaterThan(40);
+    expect(hall.filter(p => p.fill === 0x2b2620 && p.opacity === .55).length).toBeGreaterThanOrEqual(12);
+    expect(hall.filter(p => p.points.length === 5 && p.fill !== 0x5f7a3c && p.opacity === 1).length).toBeGreaterThan(4);
+    expect(hall.filter(p => p.fill === 0x5f7a3c)).not.toHaveLength(0);
+    expect(hall.filter(p => p.fill === 0x403c36)).toHaveLength(0);
+  });
+  it("leaves a built house and an open massif as they were", () => {
+    const house = draw("wood", "grass");
+    expect(house.filter(p => p.regionId === "hall" && p.fill === 0x403c36).length).toBeGreaterThan(3);
+    expect(house.filter(p => p.fill === 0x2b2620)).toHaveLength(0);
+    const massif = draw("wood", "rock");
+    expect(massif.filter(p => p.regionId === "mass" && p.opacity === .8 && p.points.length === 5).length).toBeGreaterThan(0);
+  });
+});

@@ -103,7 +103,9 @@ describe("A-G3 · Höhle — die Region ist ein Umriss, kein Kasten", () => {
 
   it("benutzt die KnotenId der Kammer als Region-Id", () => {
     const h = graben("eron:hohlgang:1");
-    expect(h.karte.geometry.regions.map((r) => r.id).sort()).toStrictEqual(h.raeume.map((r) => r.id).sort());
+    // Since version 2 the rock mass is a region of its own (the cave's ground); every other region is a chamber.
+    const felsMasse = h.cartography!.regions.find(role => role.role === "terrain")!.regionId;
+    expect(h.karte.geometry.regions.map((r) => r.id).filter(id => id !== felsMasse).sort()).toStrictEqual(h.raeume.map((r) => r.id).sort());
   });
 });
 
@@ -201,4 +203,23 @@ describe("A-G3 · Höhle — Grenzen", () => {
       expect((gefangen as GrundrissError).code).toBe(code);
     });
   }
+});
+
+describe("the cave owns its chambers like a house owns its rooms", () => {
+  it("stores the rock as ground and every chamber as a stone-floored room that owns the stamps, lights and walls on its cells", () => {
+    const cave = erzeugeHoehle({ keim: "cave:owner", optionen: { licht: true, moeblierung: 1 } }, paket);
+    expect(cave.cartography).toBeDefined();
+    const roles = cave.cartography!.regions, rock = roles.filter(role => role.role === "terrain"), rooms = roles.filter(role => role.role === "room");
+    expect(rock).toHaveLength(1); expect(rock[0]).toMatchObject({ role: "terrain", material: "rock" });
+    expect(rooms).toHaveLength(cave.raeume.length);
+    for (const room of rooms) expect(room.role === "room" && room.interior?.floor).toBe("stone");
+    const owned = rooms.flatMap(room => room.role === "room" ? room.interior!.stampIds : []);
+    expect(new Set(owned).size).toBe(owned.length);
+    expect(owned.length).toBeGreaterThan(cave.karte.geometry.stamps.length * .8);
+    const lights = rooms.flatMap(room => room.role === "room" ? room.interior!.lightIds : []);
+    expect(lights.length).toBe(cave.karte.lights.length);
+    const walls = rooms.flatMap(room => room.role === "room" ? room.interior!.wallIds : []);
+    expect(walls.length).toBeGreaterThan(cave.karte.walls.length * .9);
+    expect(cave.karte.geometry.regions.some(region => region.id === rock[0]!.regionId)).toBe(true);
+  });
 });

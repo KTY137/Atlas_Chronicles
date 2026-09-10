@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { type CanonicalValue } from "@chronicle/core";
-import { parseTacticalMapDocument, weltkeim, type AssetpaketV1, type TacticalLight } from "@chronicle/szene";
+import { parseTacticalMapDocument, weltkeim, type AssetpaketV1, type TacticalLight, parseTacticalCartography } from "@chronicle/szene";
 import {
   AUSGELASSEN_BASIS, FELS, KARTENWERK_LIMITS, baueKnoten, bestuecker, fail, idFabrik,
   rauschen, sortiereNachId, umriss, wandLaeufe,
@@ -37,7 +37,7 @@ import type { Grundriss } from "./grundriss.ts";
  */
 
 export const HOEHLE_ERZEUGER = "chronicle-hoehle";
-export const HOEHLE_VERSION = "1";
+export const HOEHLE_VERSION = "2";
 
 export const HOEHLE_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, kammernMin: 2, kammernMax: 32, glaettungMax: 12, mindestFlaecheMin: 4,
@@ -323,10 +323,12 @@ export function erzeugeHoehle(auftrag: HoehleAuftrag, paket: AssetpaketV1): Grun
       v: 3, size: [breite * z, hoehe * z],
       stamps: sortiereNachId(werk.stamps),
       // The traced outline, not a bounding box. This is the assertion the rectangles could not make.
-      regions: rohKammern.map((kammer, i) => ({
-        id: raeume[i]!.id,
-        punkte: umriss(kammer.schluessel).map(([x, y]) => [x * z, y * z] as const),
-      })),
+      // The rock mass is the ground of a cave; every chamber's traced outline is a room above it.
+      regions: [{ id: ids.geometrieId("fels", "masse"), punkte: [[0, 0], [breite * z, 0], [breite * z, hoehe * z], [0, hoehe * z]] as const },
+        ...rohKammern.map((kammer, i) => ({
+          id: raeume[i]!.id,
+          punkte: umriss(kammer.schluessel).map(([x, y]) => [x * z, y * z] as const),
+        }))],
       places: rohKammern.map((kammer, i) => ({
         id: ids.geometrieId("ort", kammer.pfad),
         x: (kammer.keimFeld % breite + 0.5) * z,
@@ -348,8 +350,28 @@ export function erzeugeHoehle(auftrag: HoehleAuftrag, paket: AssetpaketV1): Grun
     eltern: auftrag.eltern, raeume, mitte, ids,
   });
 
+  // -- cartography: rock as ground, every chamber a room with a stone floor that owns what stands in it
+  // Ownership by the cell a thing stands on: a stamp, a light or a wall belongs to the chamber
+  // whose floor cells contain it; a wall lies on a cell edge, so the floor cell beside it decides.
+  const kammerFelder = rohKammern.map(kammer => new Set(kammer.zellen.map(([x, y]) => idx(x, y))));
+  const zellVon = (px: number, py: number) => idx(Math.max(0, Math.min(breite - 1, Math.floor(px / z))), Math.max(0, Math.min(hoehe - 1, Math.floor(py / z))));
+  const kammerVon = (px: number, py: number) => { const cell = zellVon(px, py); return kammerFelder.findIndex(set => set.has(cell)); };
+  const stampsJeRaum = rohKammern.map(() => [] as string[]), lichterJeRaum = rohKammern.map(() => [] as string[]), waendeJeRaum = rohKammern.map(() => [] as string[]);
+  for (const stamp of werk.stamps) { const i = kammerVon(stamp.x, stamp.y); if (i >= 0) stampsJeRaum[i]!.push(stamp.id); }
+  for (const licht of lichter) { const i = kammerVon(licht.position[0], licht.position[1]); if (i >= 0) lichterJeRaum[i]!.push(licht.id); }
+  for (const wand of waende) {
+    const a = wand.points[0]!, b = wand.points[wand.points.length - 1]!, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, length = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const nx = -(b[1] - a[1]) / length * z / 2, ny = (b[0] - a[0]) / length * z / 2;
+    for (const sign of [1, -1]) { const i = kammerVon(mx + nx * sign, my + ny * sign); if (i >= 0) { waendeJeRaum[i]!.push(wand.id); break; } }
+  }
+  const cartography = parseTacticalCartography({ schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: z, origin: [0, 0] }, regions: [
+    { regionId: ids.geometrieId("fels", "masse"), role: "terrain", material: "rock", authored: false, locked: false, provenance: keim },
+    ...raeume.map((raum, i) => ({ regionId: raum.id, role: "room", authored: false, locked: false, provenance: keim,
+      interior: { schemaVersion: 1, floor: "stone", stampIds: stampsJeRaum[i]!.sort(), wallIds: waendeJeRaum[i]!.sort(), portalIds: [], lightIds: lichterJeRaum[i]!.sort(), placeIds: [ids.geometrieId("ort", raum.pfad)] } })),
+  ] }, karte);
+
   return Object.freeze({
-    art: "hoehle", erzeuger: HOEHLE_ERZEUGER, version: HOEHLE_VERSION, keim, wurzelId, karte,
+    art: "hoehle", erzeuger: HOEHLE_ERZEUGER, version: HOEHLE_VERSION, keim, wurzelId, karte, cartography,
     knoten: Object.freeze(knoten), raeume: Object.freeze(raeume),
     bericht: Object.freeze({
       raeume: raeume.length, gangzellen: 0, bodenzellen: bodenFelder.length, tueren: 0,

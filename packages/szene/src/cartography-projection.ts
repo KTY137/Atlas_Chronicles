@@ -223,6 +223,9 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   const lotHouses = new Map<string, readonly (readonly TacticalPoint[])[]>();
   for (const region of regions) if (region.role?.role === "building" && region.role.lotRegionId) lotHouses.set(region.role.lotRegionId, [...(lotHouses.get(region.role.lotRegionId) ?? []), region.punkte]);
   const ink = setting === "scifi" ? 0x304d57 : 0x504537;
+  // A cave: rooms with stone floors inside a rock mass. The rock is then a dark ceiling seen from
+  // above, not a range of summits, and every chamber's edge is rough stone with rubble at its foot.
+  const cave = regions.some(region => region.role?.role === "room" && region.role.interior?.floor === "stone") && regions.some(region => region.role?.role === "terrain" && region.role.material === "rock");
   const pen = Math.max(.8, Math.min(4, cartography.construction.cellSize * .035));
   const bridge = (role: typeof regions[number]["role"]) => role?.role === "road" && role.material === "bridge" ? 1 : 0;
   // Rock is the last ground to be painted and the relief goes down just before it: contour
@@ -379,10 +382,11 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     }
     else if (role?.role === "water") fill = palette.water;
     else if (role?.role === "road") fill = palette[role.material];
-    else if (role?.role === "room" && role.interior) fill = role.interior.floor === "wood" ? 0xb78c60 : role.interior.floor === "tile" ? 0xd0cbbc : 0x929591;
+    else if (role?.role === "room" && role.interior) fill = role.interior.floor === "wood" ? 0xb78c60 : role.interior.floor === "tile" ? 0xd0cbbc : cave ? 0x8a8378 : 0x929591;
     else if (role?.role === "lot" || role?.role === "room") fill = palette[role.role];
     else if (role?.role === "ort") fill = mix(palette.path, palette.background, .45);
     else if (role?.role === "building") fill = palette.roof;
+    if (cave && role?.role === "terrain" && role.material === "rock") fill = tint(palette.rock, -74);
     if (role?.role === "building" && !roofsStarted) {
       roofsStarted = true;
       for (const house of regions.filter(item => item.role?.role === "building")) {
@@ -480,6 +484,39 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
           emit(id, [[corner[0] - tower * .6, corner[1] - tower * .6], [corner[0] + tower * .6, corner[1] - tower * .6], [corner[0] + tower * .6, corner[1] + tower * .6], [corner[0] - tower * .6, corner[1] + tower * .6]], stone);
         }
       }
+    } else if (role?.role === "room" && role.interior && cave && role.interior.floor === "stone") {
+      // Rough walls: two or three ink strokes per edge, each a little off the line, so the chamber
+      // is bounded by broken rock rather than a ruled line. Rubble and moss lie along the foot.
+      const spacing = Math.max(8, cartography.construction.cellSize * .55);
+      for (let index = 0; index < points.length; index++) {
+        const a = points[index]!, b = points[(index + 1) % points.length]!, length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        if (!length) continue;
+        const key = `${id}:${index}`;
+        for (const stroke of [0, 1, 2]) {
+          const from = phase(key, 10 + stroke) * .3, to = .7 + phase(key, 20 + stroke) * .3, offset = pen * (.3 + phase(key, 30 + stroke) * 1.6);
+          emit(id, line([a[0] + (b[0] - a[0]) * from, a[1] + (b[1] - a[1]) * from], [a[0] + (b[0] - a[0]) * to, a[1] + (b[1] - a[1]) * to], pen * (.5 + phase(key, 40 + stroke) * .5), offset), 0x2b2620, .55);
+        }
+        const stones = Math.min(30, Math.floor(length / spacing)), nx = -(b[1] - a[1]) / length, ny = (b[0] - a[0]) / length;
+        for (let stone = 0; stone < stones; stone++) {
+          const t = (stone + .5) / stones, stoneKey = `${key}:${stone}`;
+          if (phase(stoneKey, 1) > .5) continue;
+          const inset = pen * (2 + phase(stoneKey, 2) * 2.5), x = a[0] + (b[0] - a[0]) * t + nx * inset, y = a[1] + (b[1] - a[1]) * t + ny * inset, r = pen * (.7 + phase(stoneKey, 3) * .9);
+          const rock = Array.from({ length: 5 }, (_, k) => { const angle = k / 5 * Math.PI * 2, reach = r * (.75 + .3 * phase(stoneKey, 10 + k)); return [x + Math.cos(angle) * reach, y + Math.sin(angle) * reach * .8] as TacticalPoint; });
+          if (!rock.every(point => inside(point, points))) continue;
+          emit(id, rock.map(point => [point[0] + r * .3, point[1] + r * .35]), 0x1a1713, .35);
+          emit(id, rock, phase(stoneKey, 4) < .2 ? 0x6f8a45 : tint(palette.rock, -12 + phase(stoneKey, 5) * 24));
+          emit(id, rock.map(point => [x + (point[0] - x) * 1.12, y + (point[1] - y) * 1.12]), 0x2b2620, .35);
+        }
+      }
+      // Moss and damp: green specks on the global lattice, sparse, only where the floor is.
+      const startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing);
+      for (let row = startY; row <= Math.ceil(maxY / spacing); row++) for (let column = startX; column <= Math.ceil(maxX / spacing); column++) {
+        const key = `moos:${column}:${row}`;
+        if (phase(key, 1) > .16) continue;
+        const x = column * spacing + spacing * phase(key, 2), y = row * spacing + spacing * phase(key, 3), r = spacing * (.08 + phase(key, 4) * .1);
+        const speck: TacticalPoint[] = [[x - r, y], [x - r * .3, y - r * .7], [x + r * .8, y - r * .3], [x + r * .5, y + r * .6], [x - r * .4, y + r * .5]];
+        if (speck.every(point => inside(point, points))) emit(id, speck, 0x5f7a3c, .5);
+      }
     } else if (role?.role === "room" && role.interior) {
       const step = Math.max(cartography.construction.cellSize * (role.interior.floor === "wood" ? .35 : .7), Math.max(width, height) / 70);
       const seam = Math.max(.5, step * .025);
@@ -535,6 +572,18 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         const at = axes.top + (axes.bottom - axes.top) * index / count;
         emit(id, band(points, axes.across, at, at + pen * .7), palette.roofDark, .3);
         emit(id, band(points, axes.across, at + pen, at + pen * 1.6), palette.sand, .3);
+      }
+    } else if (role?.role === "terrain" && role.material === "rock" && cave) {
+      // The rock of a cave: a dark mass stippled from the global lattice, no summits — it is the
+      // ceiling seen from above, and the chambers are the holes in it.
+      const spacing = Math.max(6, cartography.construction.cellSize * .32), startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing);
+      const step = Math.max(1, Math.ceil(Math.sqrt((Math.ceil(maxX / spacing) - startX + 1) * (Math.ceil(maxY / spacing) - startY + 1) / 4000)));
+      for (let row = startY; row <= Math.ceil(maxY / spacing); row += step) for (let column = startX; column <= Math.ceil(maxX / spacing); column += step) {
+        const key = `fels:${column}:${row}`;
+        if (phase(key, 1) > .45) continue;
+        const x = column * spacing + spacing * phase(key, 2), y = row * spacing + spacing * phase(key, 3), r = spacing * (.14 + phase(key, 4) * .22);
+        const speck: TacticalPoint[] = [[x - r, y + r * .2], [x - r * .4, y - r * .6], [x + r * .5, y - r * .5], [x + r, y + r * .3], [x, y + r * .7]];
+        if (speck.every(point => inside(point, points))) emit(id, speck, phase(key, 5) < .5 ? tint(palette.rock, -100) : tint(palette.rock, -40), .55);
       }
     } else if (role?.role === "terrain" && role.material === "rock") {
       // A massif is drawn relief, not a grey patch. Peaks stand inside the region, lit from
