@@ -9,6 +9,15 @@ Eine Einrichtungsanleitung für Spielleitung und Spieler auf Englisch — eigene
 Rechner, LAN oder eigener Server — steht in
 [Getting Started (EN)](docs/GETTING_STARTED_EN.md).
 
+## Herunterladen
+
+[**v0.1.0 für Windows**](https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.1.0)
+— ein Setup für den eigenen Benutzer, ohne Administratorrechte. Der Bau ist
+**unsigniert**: Windows warnt vor einem unbekannten Herausgeber, und diese Warnung
+stimmt. Es gibt keinen Aktualisierungskanal; eine neue Fassung heißt neu
+herunterladen. Was drin ist, was fehlt und die Prüfsumme zum Nachrechnen stehen in
+den [Release-Notizen](docs/RELEASE_NOTES_v0.1.0.md).
+
 ## Lokal starten
 
 Voraussetzungen: Node.js ab 22.12, npm und laufendes Docker Desktop.
