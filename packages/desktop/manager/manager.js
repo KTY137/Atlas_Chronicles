@@ -8,6 +8,9 @@ let runden=[],rundenGeladen=false;
 // Welche Welt gerade zum Loeschen aussteht und was bisher getippt wurde. Die Statusabfrage
 // zeichnet die Liste alle 1,5 s neu — ohne diese beiden Zeilen waere das Feld staendig leer.
 let loeschKandidat,loeschEingabe="",loeschFokus=false;
+// Die Adresse der laufenden Welt. Aus ihr entsteht der Einladungs- oder Kopplungslink;
+// ohne laufende Welt gibt es keine, und dann wird nur der Code selbst gezeigt.
+let weltAdresse="";
 const states={stopped:"Host beendet","starting-db":"Datenbank wird gestartet","checking-schema":"Welt wird geprüft","starting-app":"Spieloberfläche wird gestartet",ready:"Deine Welt ist bereit",draining:"Änderungen werden abgeschlossen",failed:"Host benötigt Aufmerksamkeit"};
 function message(text,error=false){byId("message").textContent=text;byId("message").classList.toggle("error",error);}
 async function invoke(request){const result=await api.invoke(request);if(!result.ok)throw new Error(result.error);return result.value;}
@@ -73,6 +76,7 @@ async function welLoeschen(profile){
  */
 function zeichneZugaenge(state){
   const laeuft=state.state==="ready"&&!state.setupRequired;
+  weltAdresse=laeuft&&state.origin?state.origin:"";
   // Bewusst immer sichtbar: wer den Abschnitt nur bei laufender Welt sieht, findet ihn nicht,
   // wenn er ihn sucht — und gesucht wird er genau dann, wenn gerade nichts laeuft.
   byId("zugang-inhalt").hidden=!laeuft;
@@ -99,7 +103,7 @@ function zeichneZugaenge(state){
     detail.textContent=`${mitglied.role==="leitung"?"Spielleitung":"Spieler"}${mitglied.platformLeitung?" · darf eigene Runden anlegen":""} · ${mitglied.hasAccess?"kommt herein":"kommt gerade nicht herein"}`;
     info.append(name,detail);
     const knoepfe=document.createElement("div");knoepfe.className="actions";
-    const zugang=document.createElement("button");zugang.type="button";zugang.textContent="Zugangscode";
+    const zugang=document.createElement("button");zugang.type="button";zugang.textContent="Zugangslink";
     zugang.disabled=waiting||state.busy;
     zugang.onclick=()=>void zugangscode(runde.campaignId,mitglied.userId,mitglied.displayName);
     const rolle=document.createElement("button");rolle.type="button";
@@ -110,22 +114,49 @@ function zeichneZugaenge(state){
     zeile.append(info,knoepfe);liste.append(zeile);
   }
 }
+/**
+ * Einen erzeugten Code zeigen — als Link, nicht als Zeichenkette zum Abtippen.
+ *
+ * Die Anmeldeseite nimmt beides an: ihr Feld heisst „Einladungslink oder Code" und zieht den
+ * Code aus einer Adresse heraus. Ein Link ist trotzdem das Bessere: er nennt auch gleich die
+ * Adresse dieser Welt, die sonst niemand kennt.
+ *
+ * Das Feld ist absichtlich ein Eingabefeld und kein Absatz — daraus laesst sich mit der Maus
+ * und mit der Tastatur kopieren, auch wenn die Zwischenablage nicht erlaubt ist.
+ */
+function zeigeCode(beschriftung,link,erklaerung){
+  byId("zugang-ergebnis").hidden=false;
+  byId("zugang-linklabel").textContent=beschriftung;
+  byId("zugang-link").value=link;
+  byId("zugang-ausgabe").textContent=erklaerung;
+  byId("zugang-link").focus();byId("zugang-link").select();
+}
+function verbergeCode(){byId("zugang-ergebnis").hidden=true;byId("zugang-link").value="";byId("zugang-ausgabe").textContent="";}
+/** Der Link, wenn eine Welt laeuft; sonst der nackte Code — der ist immer noch einloesbar. */
+function codeLink(code,feld){return weltAdresse?`${weltAdresse}/?${feld}=${encodeURIComponent(code)}`:code;}
+byId("zugang-kopieren").onclick=async()=>{
+  const feld=byId("zugang-link");feld.focus();feld.select();
+  // Die Zwischenablage kann in diesem Fenster verwehrt sein. Dann bleibt der Text markiert und
+  // der Satz sagt, was jetzt zu tun ist — statt eines Knopfes, der nichts tut und nichts sagt.
+  try{await navigator.clipboard.writeText(feld.value);message("Kopiert. Schick den Link an die Person, die beitreten soll.");}
+  catch{message("Der Link ist markiert — mit Strg+C kopieren.");}
+};
 async function ladeRunden(){try{runden=await invoke({kind:"runden"});}catch(error){message(error.message,true);runden=[];}await refresh();}
 async function zugangscode(campaignId,userId,name){
-  const result=await action({kind:"kopplung",campaignId,userId},"Code erzeugt.");
-  if(result)byId("zugang-ausgabe").textContent=`Zugangscode für ${name}: ${result.code}\nZehn Minuten gültig, einmal einlösbar. In der Welt unter „Neues Gerät verbinden“ eingeben.`;
+  const result=await action({kind:"kopplung",campaignId,userId},"Zugang erzeugt.");
+  if(result)zeigeCode(`Zugangslink für ${name}`,codeLink(result.code,"pair"),`Zehn Minuten gültig, einmal einlösbar. ${weltAdresse?"Der Link öffnet die Anmeldeseite dieser Welt und trägt den Code schon ein.":"Ohne laufende Welt gibt es keine Adresse — dieser Code wird in der Welt unter „Neues Gerät verbinden“ eingegeben."}`);
 }
 async function setzeRolle(campaignId,userId,role){
   const result=await action({kind:"rolle",campaignId,userId,role},role==="leitung"?"Spielleitung gesetzt.":"Zum Spieler gemacht.");
-  if(result){rundenGeladen=false;byId("zugang-ausgabe").textContent=result.changed?"Rolle geändert.":"Diese Rolle war bereits gesetzt.";}
+  if(result){rundenGeladen=false;message(result.changed?"Rolle geändert.":"Diese Rolle war bereits gesetzt.");}
 }
-byId("zugang-runde").onchange=()=>{byId("zugang-ausgabe").textContent="";void refresh();};
+byId("zugang-runde").onchange=()=>{verbergeCode();void refresh();};
 byId("zugang-einladung").onclick=async()=>{
   const campaignId=byId("zugang-runde").value;if(!campaignId)return;
   const result=await action({kind:"einladung",campaignId},"Einladungscode erzeugt.");
   if(result){
     const runde=runden.find(kandidat=>kandidat.campaignId===campaignId);
-    byId("zugang-ausgabe").textContent=`Einladung für ${runde?runde.name:"diese Runde"}: ${result.code}\nSieben Tage gültig. Die eingeladene Person gibt den Code auf der Anmeldeseite unter „Zu einer Runde kommen“ ein; die Spielleitung gibt den Beitritt danach in der Welt frei.`;
+    zeigeCode(`Einladungslink für ${runde?runde.name:"diese Runde"}`,codeLink(result.code,"join"),`Sieben Tage gültig. ${weltAdresse?"Wer den Link öffnet, landet auf der Anmeldeseite dieser Welt mit schon eingetragenem Code und gibt nur noch seinen Namen an.":"Ohne laufende Welt gibt es keine Adresse — dieser Code wird auf der Anmeldeseite unter „Zu einer Runde kommen“ eingegeben."} Den Beitritt gibst du danach in der Welt frei.`);
   }
 };
 byId("create-form").onsubmit=event=>{event.preventDefault();void action({kind:"create",name:byId("profile-name").value},"Neue Welt bereit. Richte jetzt deine Spielleitung ein.");};

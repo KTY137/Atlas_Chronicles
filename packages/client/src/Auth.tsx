@@ -19,7 +19,9 @@ export function Auth({ onAuthenticated }: { onAuthenticated: (campaignId?: strin
   const reachability = useResource<{ passkeyEligible: boolean }>("/api/reachability");
   const task = useTask(), [name, setName] = useState(""), [secret, setSecret] = useState("");
   const [joinCode, setJoinCode] = useState(() => new URLSearchParams(location.search).get("join") ?? "");
-  const [pairCode, setPairCode] = useState("");
+  // Ein Kopplungslink aus dem Hostfenster trägt den Code in der Adresse. Ohne diese Zeile
+  // müsste er abgetippt werden — und zwar von jemandem, der gerade nicht hereinkommt.
+  const [pairCode, setPairCode] = useState(() => new URLSearchParams(location.search).get("pair") ?? "");
   const [pending, setPending] = useState(savedJoin), [approved, setApproved] = useState(false), [pollError, setPollError] = useState("");
 
   useEffect(() => {
@@ -87,9 +89,10 @@ export function Auth({ onAuthenticated }: { onAuthenticated: (campaignId?: strin
         <label>{t("Dein Name in der Runde")}<input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} autoComplete="nickname" /></label>
         <Button type="submit" disabled={task.busy}>{t("Beitritt anfragen")} <ArrowRight size={16} /></Button>
       </form>
-      <details><summary><KeyRound size={14} /> {t("Neues Gerät verbinden")}</summary><form onSubmit={(event) => { event.preventDefault(); void task.run(async () => {
-        await api("/api/pairing/redeem", { method: "POST", body: { code: pairCode.trim() } }); setPairCode(""); await onAuthenticated();
-      }); }}><label>{t("Kopplungscode der Spielleitung")}<input value={pairCode} onChange={(e) => setPairCode(e.target.value)} autoComplete="off" required /></label><Button type="submit" disabled={task.busy}>{t("Gerät verbinden")}</Button></form></details>
+      <details open={!!new URLSearchParams(location.search).get("pair")}><summary><KeyRound size={14} /> {t("Neues Gerät verbinden")}</summary><form onSubmit={(event) => { event.preventDefault(); void task.run(async () => {
+        let code = pairCode.trim(); try { code = new URL(code).searchParams.get("pair") ?? code; } catch { /* Roher Kopplungscode. */ }
+        await api("/api/pairing/redeem", { method: "POST", body: { code } }); setPairCode(""); await onAuthenticated();
+      }); }}><label>{t("Kopplungslink oder Code der Spielleitung")}<input value={pairCode} onChange={(e) => setPairCode(e.target.value)} autoComplete="off" required /></label><Button type="submit" disabled={task.busy}>{t("Gerät verbinden")}</Button></form></details>
     </>}
     {task.error ? <Notice error>{task.status === 409 ? t("Dieser Name ist bereits vergeben. Wähle bitte einen unterscheidbaren Namen.") : task.error}</Notice> : null}
   </div><p className="auth-footer">{t("Eure Geschichten bleiben bei eurem Server.")}</p></section></main>;
