@@ -241,9 +241,16 @@ try{
   }
   bundle=validatedExport(await request(`/api/campaigns/${campaignId}/export`));
   assert.equal(bundle.manifest.rulePackageSchemaVersion,2);assert.equal(bundle.manifest.nestedMapSchemaVersion,1);
-  // V19, weil die hochgeladene Karte ihre Herkunft mitschreibt: das Format waehlt sich
-  // datenabhaengig, und eine gefuellte Tabelle hebt es an. Ohne Karte bliebe es niedriger.
-  assert.equal(bundle.version,19);assert.equal(bundle.manifest.mapLifecycleSchemaVersion,1);
+  // V15, und das ist die richtige Zahl: das Format waehlt sich datenabhaengig, jede Stufe ab
+  // V16 verlangt eine gefuellte Tabelle. Diese Runde hat keine davon — kein Chronistenlauf,
+  // kein Figurantrag, kein Paket aus der Bibliothek, und vor allem keine Karte mit
+  // mitgeschriebener Herkunft: `/maps/import` nimmt eine Karten-JSON entgegen und notiert
+  // keinen Ursprung; das taten nur die entfernte Beispielroute, `/maps/aus-wiki` und
+  // `/maps/bild`. Die Zusicherung stand seit b59851a auf 19 und war seither rot — sie hatte
+  // den Weg der alten Beispielkarte im Blick. V19 selbst deckt
+  // `packages/io/test/native-v19-roundtrip.test.ts` ab, die Herkunft `karte-aus-wiki.test.ts`.
+  assert.equal(bundle.version,15);assert.equal(bundle.manifest.mapLifecycleSchemaVersion,1);
+  assert.deepEqual(bundle.tables.atlas_karten_herkunft??[],[]);
   assert.ok(bundle.tables.map_lifecycle_events.some(row=>row.command_id===evidence.mapLifecycle.deletionAck.commandId));
   assert.ok(bundle.tables.tactical_map_nodes.some(node=>node.map_id===generated.body.ack.subjectId));
   assert.ok(JSON.stringify(bundle.tables.rule_packages).includes("BUSL-1.1"));
