@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { inferLegacyCartography, parseTacticalMapDocument, TACTICAL_MAP_LIMITS } from "@chronicle/szene";
 import { validateMapScene } from "../../render/src/geometry.ts";
 import {
-  BUILDING_COLORS, changeGenerationSetting, generationDimensions, generationError, generationOptions, generationSettings, mapDocumentScene,
+  BUILDING_COLORS, changeGenerationSetting, generationDimensions, generationError, generationOptions, generationSettings, lightsToScene, mapDocumentScene,
   type GenerationDefaults, type MapNode,
 } from "../src/features/map-generation.ts";
 
@@ -244,5 +244,11 @@ describe("the land above the towns: region requests", () => {
     expect(generationError(settings, withRegion)).toBeNull();
     expect(generationError({ ...settings, anzahl: 25 }, withRegion)).toMatch(/zwischen 1 und 24/);
     expect(generationError({ ...settings, breite: 300 }, withRegion)).not.toBeNull();
+  });
+});
+
+describe("lights as the picture shows them", () => {
+  it("converts stored lights to pools with colour and clamped strength", () => {
+    expect(lightsToScene([{ id: "l", position: [3, 4], range: 50, intensity: 1.7, colorArgb: "ffdd8a33", shadows: true, elevation: 0 }])).toEqual([{ id: "l", x: 3, y: 4, range: 50, intensity: 1, color: 0xdd8a33 }]);
   });
 });

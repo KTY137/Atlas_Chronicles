@@ -122,6 +122,9 @@ export interface ProjectedMapScene {
   readonly mood?: CartographyMood;
   /** Free names, lettered along their lines in the world, above walls and under markers. */
   readonly labels?: readonly ProjectedMapLabel[];
+  /** The raster tiles show a painted map: names in ink, shadows under furniture, compass and
+   * scale — everything a drawing gets, without the drawing itself being here. */
+  readonly painted?: boolean;
 }
 /** The host fetches authorized tiles. Ownership of each bitmap transfers to the renderer. */
 export interface MapRasterTile { readonly id: string; readonly left: number; readonly top: number; readonly width: number; readonly height: number; readonly pixelScale: number; readonly image: ImageBitmap }

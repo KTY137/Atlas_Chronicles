@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { GrundrissOptionen, HoehleOptionen, RegionOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
-import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type CartographyView, type KartenSetting, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
+import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type CartographyView, type KartenSetting, type TacticalCartographyV1, type TacticalLight, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
 import { t } from "../i18n";
 
@@ -68,6 +68,8 @@ export const BUILDING_COLORS: Record<BauwerkTyp, number> = {
   medstation: 0x9bccc8, kommando: 0x7d9fad, reaktor: 0x87baab, bibliothek: 0xb59b83, museum: 0xc1baa9,
   bank: 0xa5b398, werkstatt: 0xb0a28b,
 };
+/** A stored light as the picture shows it; the colour is the stored ARGB minus its alpha. */
+export const lightsToScene = (lights: readonly TacticalLight[]) => lights.map(light => ({ id: light.id, x: light.position[0], y: light.position[1], range: light.range, intensity: Math.max(0, Math.min(1, light.intensity)), color: Number.parseInt(light.colorArgb.slice(-6), 16) }));
 /** Only already-authorized nodes and geometry enter this presentation adapter. */
 export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, nodes: readonly MapNode[], art?: string, rasterScope?: string, setting: KartenSetting = "fantasy", cartography?: TacticalCartographyV1, view: CartographyView = {}): ProjectedMapScene {
   const byId = new Map(nodes.map(node => [node.knotenId, node]));
@@ -95,7 +97,7 @@ export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, no
       ...document.portals.map(portal => ({ id: portal.id, points: portal.bounds, color: portal.closed ? 0xb58a50 : 0x6faa98 }))], grid: document.grid,
     stamps: document.geometry.stamps.map(stamp => ({ id: stamp.id, asset: stamp.a, x: stamp.x, y: stamp.y, s: stamp.s, r: stamp.r, l: stamp.l, ...(stamp.t !== undefined ? { t: stamp.t } : {}) })),
     // The map's own light sources, as pools of warmth; the colour is the stored ARGB minus its alpha.
-    lights: (document.lights ?? []).map(light => ({ id: light.id, x: light.position[0], y: light.position[1], range: light.range, intensity: Math.max(0, Math.min(1, light.intensity)), color: Number.parseInt(light.colorArgb.slice(-6), 16) })),
+    lights: lightsToScene(document.lights ?? []),
     // The mood is painted into the drawing already; the renderer needs it for the lights and names.
     ...((view.mood ?? cartography?.mood) ? { mood: view.mood ?? cartography!.mood! } : {}),
     // Free names travel as they are stored: the line in map units, the letter height in map units.

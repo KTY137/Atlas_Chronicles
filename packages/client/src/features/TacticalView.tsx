@@ -14,7 +14,7 @@ import { TacticalPreparation } from "./TacticalPreparation";
 import { TacticalImport } from "./TacticalImport";
 import { TacticalObjectList } from "./TacticalObjectList";
 import { mapObjectWindow, objectKey } from "./tactical-entities";
-import { mapDocumentScene, type MapNode } from "./map-generation";
+import { lightsToScene, mapDocumentScene, type MapNode } from "./map-generation";
 import "./tactical.css";
 
 type Page = "live" | "prepare" | "import";
@@ -64,8 +64,9 @@ function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpenEntry }
     id: data.sessionId, width: data.size[0], height: data.size[1], ...(raster ? { rasterScope: data.rasterDigest } : {}),
     ...(raster && (!data.gm || data.cartography) ? { drawing: undefined, paintCells: false } : {}),
     cells: authored?.cells ?? data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, entryId: o.entryId })),
-    // Players get the names the server let through; the game master's come with the whole document.
-    ...(authored ? {} : data.labels?.length ? { labels: data.labels } : {}),
+    // Players get the names and lights the server let through, and the painted flag that sets
+    // names in ink and shadows under furniture; the game master's come with the whole document.
+    ...(authored ? {} : { ...(data.labels?.length ? { labels: data.labels } : {}), ...(data.lights?.length ? { lights: lightsToScene(data.lights) } : {}), ...(data.gemalt ? { painted: true } : {}), ...(data.mood ? { mood: data.mood } : {}) }),
     tokens: data.tokens.map(t => ({ id: t.id, x: t.x, y: t.y, label: t.name, ...(t.version === null ? {} : { revision: t.version }), radius: Math.min(40, Math.max(7, 11 * t.scale)), movable: data.active && t.canMove && !task.busy, color: t.canMove ? 0xebc887 : 0x81b8d1 })),
     grid: grid ? data.grid : { kind: "none" }, lines: data.gm ? data.walls?.map(w => ({ id: w.id, points: w.points,
       ...(data.cartography && data.document && cartographyPaintsWalls(data.cartography,data.document) ? { paint: false } : {}) })) : [],

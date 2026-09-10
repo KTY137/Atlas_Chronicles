@@ -119,6 +119,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
     }
   }
   if (scene.paintCells !== undefined && typeof scene.paintCells !== "boolean") throw new Error("invalid cell paint visibility");
+  if (scene.painted !== undefined && typeof scene.painted !== "boolean") throw new Error("invalid painted flag");
   if (scene.grid && scene.grid.kind !== "none") {
     if (!["square", "hex"].includes(scene.grid.kind) || !Number.isFinite(scene.grid.size) || scene.grid.size <= 0 || scene.grid.origin.length !== 2 || !scene.grid.origin.every(Number.isFinite)) throw new Error("invalid grid");
     if (scene.grid.kind === "hex" && (!["pointy", "flat"].includes(scene.grid.orientation) || !["even", "odd"].includes(scene.grid.offset))) throw new Error("invalid hex grid");

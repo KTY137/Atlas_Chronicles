@@ -158,7 +158,9 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   const scaleSteps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10_000] as const;
   let compassAt = "", scaleAt = "", titleAt = "";
   const updateChrome = (): void => {
-    chrome.visible = !!scene.drawing;
+    // A drawn sheet and a painted raster get the same furniture: the raster is that drawing, tiled.
+    const painting = !!scene.drawing || scene.painted === true;
+    chrome.visible = painting;
     // Keep each caption's own flag in step with the layer: a hidden container still leaves its
     // children claiming to be visible, and a map's names are counted by that flag.
     compassLabel.visible = scaleLabel.visible = chrome.visible;
@@ -246,7 +248,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       }
       // A drawn map names its places in ink on paper, a book face with a pale halo; a photographed
       // or dark battlemap keeps the bright label that stays legible over any image.
-      text.style = scene.drawing ? scene.mood === "nacht" ? moonLabel : inkLabel : nightLabel;
+      text.style = scene.drawing || scene.painted ? scene.mood === "nacht" ? moonLabel : inkLabel : nightLabel;
       text.text = pin.label.length > 30 ? `${pin.label.slice(0, 29)}…` : pin.label;
       text.position.set(x, y); text.visible = true;
       occupied.push({ x: x - 4, y: y - 4, width: Math.max(width, text.width) + 8, height: Math.max(20, text.height) + 8 }); count++;
@@ -353,7 +355,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       // way a piece of furniture sits on a painted battlemap instead of floating on it.
       // Layers −10..10 are what stands on the floor (fixtures, furniture, vessels, figures,
       // lamps); floors (−100), doors, walls and marks cast nothing.
-      if (scene.drawing && stamp.l >= -10 && stamp.l <= 10) {
+      if ((scene.drawing || scene.painted) && stamp.l >= -10 && stamp.l <= 10) {
         const w = resource.bitmap.width * stamp.s, h = resource.bitmap.height * stamp.s, shadow = new Graphics();
         shadow.ellipse(0, 0, w * .48, h * .48).fill({ color: 0x1a1410, alpha: .26 });
         shadow.position.set(stamp.x + w * .07, stamp.y + h * .1); shadow.rotation = stamp.r; shadow.eventMode = "none";

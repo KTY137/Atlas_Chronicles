@@ -97,7 +97,8 @@ for (const engine of ["PGlite", "PostgreSQL"] as const) describe.skipIf(engine =
     const role = (id: string) => ({ regionId: id, role: "generic" as const, authored: false, locked: false, provenance: null });
     const cartography: TacticalCartographyV1 = { schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: 8, origin: [0, 0] }, regions: [role("left"), role("right")],
       labels: [{ id: "hall", text: "Linke Halle", points: [[4, 30], [28, 30]], size: 6, style: "ort" }, { id: "vault", text: "Rechter Saal", points: [[40, 20]], size: 6, style: "gegend" }, { id: "beyond", text: "Jenseits der Karte", points: [[70, 10]], size: 6, style: "weg" }] };
-    const labelled = await f.tactical.importMap(gm, f.campaign, { ...command(), name: "Named map", format: "native", sourceText: JSON.stringify(document()), provenance, anchors: f.anchors.slice(0, 2) }, { cartography, nodes: [] });
+    const lit = { ...document(), lights: [{ id: "left-lamp", position: [8, 8] as const, range: 20, intensity: .8, colorArgb: "ffdd8a33", shadows: true, elevation: 0 }, { id: "right-lamp", position: [50, 50] as const, range: 20, intensity: .8, colorArgb: "ffdd8a33", shadows: true, elevation: 0 }] };
+    const labelled = await f.tactical.importMap(gm, f.campaign, { ...command(), name: "Named map", format: "native", sourceText: JSON.stringify(lit), provenance, anchors: f.anchors.slice(0, 2) }, { cartography, nodes: [] });
     const scene = await f.game.createScene(gm, f.campaign, { name: "Named", entryIds: [], fictionDate: "Day two" });
     await f.tactical.savePlan(gm, f.campaign, scene.id, { ...command(), expectedVersion: 0, mapId: labelled.subjectId, mapRevision: 1, tokens: [] });
     const sessionId = String((await f.game.startScene(gm, f.campaign, scene.id)).id);
@@ -105,7 +106,11 @@ for (const engine of ["PGlite", "PostgreSQL"] as const) describe.skipIf(engine =
     expect(a.labels?.map(label => label.text)).toEqual(["Linke Halle"]);
     expect(b.labels?.map(label => label.text)).toEqual(["Linke Halle", "Rechter Saal"]);
     expect(full.labels?.map(label => label.text)).toEqual(["Linke Halle", "Rechter Saal", "Jenseits der Karte"]);
-    for (const hidden of ["Rechter Saal", "Jenseits"]) expect(JSON.stringify(a)).not.toContain(hidden);
+    for (const hidden of ["Rechter Saal", "Jenseits", "right-lamp"]) expect(JSON.stringify(a)).not.toContain(hidden);
+    // Lights follow the same mask, and a painted map tells the picture so: ink names, shadows, the mood.
+    expect(a.lights?.map(light => light.id)).toEqual(["left-lamp"]);
+    expect(b.lights?.map(light => light.id)).toEqual(["left-lamp", "right-lamp"]);
+    expect(a.gemalt).toBe(true); expect(a).not.toHaveProperty("mood");
   });
 
   it("keeps bulk anchor validation scoped to geometry, campaign and the passage's own article", async () => {

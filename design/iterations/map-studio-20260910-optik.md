@@ -155,6 +155,14 @@ zugeordnet; die Kammer-Id-Prüfung nimmt die Felsmasse aus), szene `cartography-
 unverändert), forge/szene/client/server-Suiten 1189 Fälle; Typecheck, Build, `gate:sprache`,
 `gate:boundaries`.
 
+## Runde 4, Punkt 10 — Aufräumen und Spielerbild
+
+`genre-assets`, `map-settings`, `siedlung-workshop`: 4/4 grün ohne Änderung. Desktop-Paket neu
+gebaut (`npm run desktop:build`: 151 Client-Dateien, 6 Assetpakete samt `pk.natur` geprüft; desktop-Suite 48/48). Spielerbild: server `tactical-entities` (Spieler a bekommt nur
+die Lampe im bekannten Raum, b beide, `gemalt` gesetzt, kein `mood` ohne Stimmung), render
+`renderer-lifecycle` (gemalte Kachelkarte: Tuschenamen, Schatten, Kartenzier — ohne Zeichnung),
+client `map-generation` (`lightsToScene`), Prüfstand; 204 Fälle; Typecheck, Build, Gates.
+
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel
 für Außenobjekte, Möbel an die Wand rücken (Möbel stehen frei im Raum). Desktop nicht neu gebaut.

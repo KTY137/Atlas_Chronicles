@@ -465,3 +465,18 @@ describe("names lettered along their lines", () => {
     map.destroy();
   });
 });
+
+describe("a painted raster is treated as the painting it shows", () => {
+  it("sets names in ink, lays shadows under furniture and shows compass and scale, without any drawing", async () => {
+    const pins = [{ id: "inn", x: 400, y: 400, label: "Zum goldenen Hirsch" }], stamps = [{ id: "chest", asset: "pk.gemalt/truhe", x: 90, y: 90, s: 1, r: 0, l: 0 }];
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], showLabels: true, pins, stamps, painted: true });
+    map.setStampImages([{ asset: "pk.gemalt/truhe", image: { width: 32, height: 32, close: vi.fn() } as unknown as ImageBitmap }]);
+    const label = pixi.labels.find(text => text.text === "Zum goldenen Hirsch") as { style?: { fill?: number } } | undefined;
+    expect(label?.style?.fill).toBe(0x2c2519);
+    expect(pixi.graphics.filter(graphics => (graphics as unknown as { ellipses: number }).ellipses > 0)).toHaveLength(1);
+    expect((layer("chrome") as { visible: boolean }).visible).toBe(true);
+    map.update({ ...scene, tokens: [], lines: [], showLabels: true, pins, stamps });
+    expect((layer("chrome") as { visible: boolean }).visible).toBe(false);
+    map.destroy();
+  });
+});

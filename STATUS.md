@@ -1,6 +1,6 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — 1 bis 9 fertig)
+Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — alle zehn fertig)
 
 ## Kartenstudio Runde 4: die Zehnerliste — 2026-09-10
 
@@ -25,7 +25,9 @@ der Mitte seiner Linie in bekannter Region (`labels` in der Sitzungsansicht).
 **7 Regionalkarte** (Folge-Commit): Kartenart `region` (`forge/src/region.ts`, Rolle `ort` mit
 Größe und Standort, Orte als Eingänge zu Siedlungen, Straßen mit Brücken). **8 Wasser und Küste** (Folge-Commit): Stege mit Booten (`steg`, Siedlung v8), Schilfgürtel,
 Wasserfälle, Mündungen; Moor mit garantierten Tümpeln. **9 Höhlen** (Folge-Commit): Höhle v2 mit eigener Kartografie (Felsmasse + Kammern als
-Steinboden-Räume mit Besitz), Projektion malt Felsdecke, raue Kanten, Geröll, Moos. **Offen:** 10.
+Steinboden-Räume mit Besitz), Projektion malt Felsdecke, raue Kanten, Geröll, Moos. **10 Aufräumen/Spielerbild** (Folge-Commit): die drei roten Specs sind grün, Desktop neu gebaut,
+Spieler bekommen Lichter in bekannten Regionen, Tuschenamen, Möbelschatten und die Stimmung
+(`TacticalView.lights/gemalt/mood`, `scene.painted`). **Die Zehnerliste ist abgearbeitet.**
 
 Zuvor: **2026-09-10, Runde 3** (Kartenstudio Stufe 11: Licht, Schatten, Tusche, Flickenfelder)
 

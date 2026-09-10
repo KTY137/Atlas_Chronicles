@@ -414,6 +414,8 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     const regions = map.document.geometry.regions.filter(r => gm || knownRegions.has(r.id)).map(r => ({ id: r.id, points: r.punkte }));
     // A free name is knowledge like a place: a player gets it once the middle of its line lies in a region they know.
     const labels = (map.cartography?.labels ?? []).filter(label => { const [x, y] = cartographyLabelAnchor(label); return gm || visiblePoint({ size: map.document.geometry.size, regions }, x, y); });
+    const lights = (map.document.lights ?? []).filter(light => gm || visiblePoint({ size: map.document.geometry.size, regions }, light.position[0], light.position[1]));
+    const gemalt = map.cartography !== undefined && map.document.background === null;
     const titles = new Map((await tx.query<{ id: string; title: string }>("SELECT id,title FROM entries WHERE campaign_id=$1 AND id=ANY($2::text[])", [member.campaignId, [...new Set(map.anchors.filter(a => a.targetKind !== "region" && knowsAnchor(a)).map(a => a.entryId))]])).rows.map(e => [e.id, e.title]));
     const geometry = { stamp: new Map(map.document.geometry.stamps.map(s => [s.id, s])), place: new Map(map.document.geometry.places.map(p => [p.id, p])) };
     const entities: P.TacticalEntity[] = [];
@@ -446,6 +448,7 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     const rasterDigest = tacticalHash({ sessionId: row.session_id, perspectiveActorId: gm ? null : member.actorId, gm, size: map.document.geometry.size, regions, ...cartographyPin });
     const view: Omit<P.TacticalView, "digest"> = { sessionId: row.session_id, sceneId: row.scene_id, active: row.ended_at === null, gm, size: map.document.geometry.size, frame: map.document.frame, grid: map.document.grid, elevation: map.document.elevation,
       regions, entities: sorted(entities), tokens: projected, undoTargets, rasterDigest, ...(labels.length ? { labels } : {}),
+      ...(lights.length ? { lights } : {}), ...(gemalt ? { gemalt } : {}), ...(map.cartography?.mood ? { mood: map.cartography.mood } : {}),
       hatRaster: map.document.background !== null || map.cartography !== undefined,
       ...(gm ? { map: { id: map.id, name: map.name, revision: map.revision, version: map.version }, document: map.document, walls: map.document.walls,
         ...(map.cartography ? { cartography: map.cartography, compositionHash: map.compositionHash! } : {}),

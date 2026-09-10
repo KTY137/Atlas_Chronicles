@@ -102,7 +102,7 @@ Präsentation, keine Daten geändert; jede Wirkung kommt aus dem, was die Karte 
 ## 5. Runde 4 — die Zehnerliste (`cartography-11`)
 
 Kaya fragte nach zehn Verbesserungen und ließ sie abarbeiten. Reihenfolge nach Wirkung, jedes
-Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1 bis 9 fertig.
+Paket ein Commit mit Nachweis. Stand dieses Abschnitts: alle zehn Punkte fertig.
 
 **1 Möbel an die Wand, 2 Gärten um die Häuser** (Commit `3f75ad3`): Möbel werden nach Art
 platziert — Betten, Schränke, Regale, Truhen an die Wand (`Lage` mit bevorzugten Plätzen und
@@ -222,6 +222,15 @@ Fels dann als dunkle, gesprenkelte Decke von oben statt als Gebirge, jede Kammer
 Kante (zwei bis drei versetzte Tuschestriche je Kante), Geröll am Fuß der Wände und Moos-
 flecken auf dem Boden; die Fugen eines gebauten Steinbodens entfallen. Ein Haus und ein
 Gebirge bleiben, wie sie waren.
+
+**10 Aufräumen und Spielerbild.** Die drei als rot geführten Specs (`genre-assets`,
+`map-settings`, `siedlung-workshop`) laufen inzwischen grün — der Blocker war längst behoben,
+nur der Eintrag nicht. Das Desktop-Paket ist neu gebaut. **Spielerbild:** die Sitzungsansicht
+trägt für Spieler jetzt `lights` (dieselbe Maske wie Orte und Namen: nur Lichter in bekannten
+Regionen), `gemalt` (die Kacheln zeigen eine gemalte Karte) und `mood`; der Renderer behandelt
+eine gemalte Kachelkarte wie die Zeichnung selbst (`scene.painted`): Ortsnamen in Tusche,
+nachts in Mondtusche, Möbelschatten, Kompass und Maßstab. Der Kartenname bleibt dem
+Spielleiter — die Kartusche erscheint nur mit Titel, und den bekommen Spieler nicht.
 
 ## 6. Nachweis
 Siehe `design/iterations/map-studio-20260910-optik.md`.
