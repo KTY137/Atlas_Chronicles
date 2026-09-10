@@ -103,7 +103,9 @@ The installer is per-user and needs no administrator rights.
 | | |
 |---|---|
 | File | `Atlas-Chronicles-Setup.exe` |
+| Size | 206 MB |
 | Platform | Windows, 64-bit |
+| Electron | 44.2.0 |
 
 ## What is not finished
 
@@ -129,6 +131,15 @@ demonstrated. Seven server tests are red and were red before this work — two l
 assertions and five timeouts around tiles, settlements and native archives; verified by setting
 this release's server changes aside and measuring again.
 
+## One thing found while building this release
+
+The desktop package named itself **0.1.0** while the release said 0.2.0. Three separate
+hard-coded version strings sat in the packaging tools, outside what `gate:version` compares —
+that gate only checks the two workspace manifests against each other. Squirrel decides from
+exactly that number whether an installation counts as an upgrade, so this was not merely a wrong
+label. The version now travels from `packages/desktop/package.json` through the built package
+into the artifact, and both tools refuse to run if they cannot find a usable one.
+
 ## Checking what you downloaded
 
 Compare the SHA-256 of the file against this line before you run it. In PowerShell:
@@ -138,7 +149,7 @@ Get-FileHash .\Atlas-Chronicles-Setup.exe -Algorithm SHA256
 ```
 
 ```
-SHA256_PLATZHALTER  Atlas-Chronicles-Setup.exe
+019d6b50c1f4cc54443ec675ed543d4b06d1ac91f48d33e0751f1cc603947162  Atlas-Chronicles-Setup.exe
 ```
 
-Built from commit `COMMIT_PLATZHALTER`.
+Built from commit `8c5d96d`.
