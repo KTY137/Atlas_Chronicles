@@ -1,6 +1,23 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 3** (Kartenstudio Stufe 11: Licht, Schatten, Tusche, Flickenfelder)
+Updated: **2026-09-10, Runde 4** (Kartenstudio: die Zehnerliste — 1, 2, 5, 6 fertig)
+
+## Kartenstudio Runde 4: die Zehnerliste — 2026-09-10
+
+Kaya: „was könnten wir noch besser machen? 10 Stichpunkte — und arbeite die dann ab." Die
+Liste (Reihenfolge nach Wirkung): 1 Möbel an die Wand, 2 Gärten um die Häuser, 3 Streupinsel
+und Außenobjekte, 4 Beschriftungen als Werkzeug, 5 Stimmungen, 6 Ebenenleiste, 7 Regionalkarte
+als eigener Generator, 8 Wasser und Küste, 9 Höhlen wie Innenräume, 10 Aufräumen und
+Spielerbild (rote Specs `genre-assets`, `map-settings`, `siedlung-workshop`; Desktop-Paket).
+**Fertig:** 1+2 (`3f75ad3`: `Lage`-Platzierung, `merkeTisch`, Gärten und Zäune auf Grundstücken)
+und 5+6 (dieser Commit, `cartography-11`): Stimmung `cartography.mood` (nacht/winter/herbst,
+Tag = Feld fehlt, gespeichert, Spieler sehen sie; nachts tragen die Lichter, Mondtusche,
+Mondtönung der Möbel) und Ebenenleiste (14 Reihen, ausblenden über `view.hide`/`applyLayers`,
+sperren über geschützte Flächen; Sitzungszustand, nie gespeichert; ausgeblendet = gesperrt).
+Spec-Abschnitt 5 in `docs/superpowers/specs/2026-09-10-kartenstudio-optik-und-innenraum-design.md`,
+Nachweise `design/iterations/map-studio-20260910-optik.md` (Runde 4). **Offen:** 3, 4, 7, 8, 9, 10.
+
+Zuvor: **2026-09-10, Runde 3** (Kartenstudio Stufe 11: Licht, Schatten, Tusche, Flickenfelder)
 
 ## Kartenstudio Runde 3: Licht, Schatten, Tusche — 2026-09-10
 

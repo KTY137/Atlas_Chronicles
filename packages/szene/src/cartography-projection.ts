@@ -1,13 +1,28 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { KartenSetting } from "./model.ts";
-import { RELIEF_LEVELS, reliefHeightAt, type CartographyReliefV1, type TacticalCartographyV1 } from "./cartography.ts";
+import { RELIEF_LEVELS, reliefHeightAt, type CartographyMood, type CartographyRegionV1, type CartographyReliefV1, type TacticalCartographyV1 } from "./cartography.ts";
 import type { TacticalMapDocumentV1, TacticalPoint } from "./tactical-map.ts";
 
 /** Bump whenever these pixels change; this pin belongs in every cartography raster key. */
-export const rendererVersion = "cartography-10" as const;
-/** What of the relief the viewer wants drawn. Presentation only; the stored map is untouched. */
-export interface CartographyView { readonly contours?: boolean; readonly shading?: boolean; /** Parchment mottle and edge vignette on a generated map. */ readonly paper?: boolean }
+export const rendererVersion = "cartography-11" as const;
+/** The drawn layers a viewer can switch off. Every region belongs to exactly one of them by its
+ * role; a region without a role counts as land. `walls` is the stone perimeter of a town plan. */
+export const CARTOGRAPHY_LAYERS = ["terrain", "water", "road", "lot", "building", "room", "walls"] as const;
+export type CartographyLayer = typeof CARTOGRAPHY_LAYERS[number];
+export function cartographyLayerOf(role: CartographyRegionV1 | undefined): Exclude<CartographyLayer, "walls"> {
+  return !role || role.role === "generic" ? "terrain" : role.role;
+}
+/** What of the map the viewer wants drawn. Presentation only; the stored map is untouched. */
+export interface CartographyView {
+  readonly contours?: boolean; readonly shading?: boolean;
+  /** Parchment mottle and edge vignette on a generated map. */
+  readonly paper?: boolean;
+  /** Layers left out of the drawing entirely, the way an editor's layer panel hides them. */
+  readonly hide?: readonly CartographyLayer[];
+  /** Overrides the mood stored in the cartography, for previews. */
+  readonly mood?: CartographyMood;
+}
 export interface CartographyPolygon {
   readonly regionId: string;
   readonly points: readonly TacticalPoint[];
@@ -26,6 +41,7 @@ const palettes = {
   gegenwart: { background: 0xd8d8cb, generic: 0xb6b7af, grass: 0xaabb97, earth: 0xbaab92, forest: 0x6d8c72, field: 0xbaba8b, rock: 0xa5aaa8, sand: 0xdacaac, swamp: 0x86927a, snow: 0xe8ebe9, water: 0x83afb9, path: 0xd1c6af, street: 0x909894, square: 0xbfc1b9, bridge: 0xa9aba4, lot: 0xc6cbbd, room: 0xced0c7, roof: 0xa2aaa8, roofLight: 0xc4cbc8, roofDark: 0x717f7d },
   scifi: { background: 0x536368, generic: 0x67767a, grass: 0x8caa90, earth: 0x9b8f7d, forest: 0x537c76, field: 0x9cac7b, rock: 0x839097, sand: 0xbeb695, swamp: 0x62777a, snow: 0xc7d1d4, water: 0x5a9fae, path: 0x96aaa8, street: 0x465b63, square: 0x7f9299, bridge: 0xa3b8ba, lot: 0x7d9190, room: 0x9bafb2, roof: 0x91aeb4, roofLight: 0xbcd2d4, roofDark: 0x5b7b88 },
 } as const;
+type Palette = { -readonly [key in keyof typeof palettes.fantasy]: number };
 const order = { terrain: 0, lot: 1, generic: 2, room: 3, water: 4, road: 5, building: 6 };
 /** Polygon half-plane clipping uses map coordinates identically in SVG and WebGL consumers. */
 function half(points: readonly TacticalPoint[], axis: 0 | 1, at: number, greater: boolean): TacticalPoint[] {
@@ -77,6 +93,26 @@ function inside(point: TacticalPoint, polygon: readonly TacticalPoint[]): boolea
 function mix(first: number, second: number, amount: number): number {
   const channel = (shift: number) => Math.round((first >> shift & 255) * (1 - amount) + (second >> shift & 255) * amount);
   return channel(16) << 16 | channel(8) << 8 | channel(0);
+}
+/** The mood's palette. Winter lays snow on every open ground and ice on the water; autumn turns
+ * meadow and wood to ochre and russet. Night is not a palette but a light and is applied to every
+ * colour as it is emitted, so ink, shadow and shoreline sink into the same blue dusk. */
+function moodPalette(palette: Palette, mood: CartographyMood): Palette {
+  if (mood === "winter") return { ...palette,
+    background: mix(palette.background, palette.snow, .35), generic: mix(palette.generic, palette.snow, .6),
+    grass: mix(palette.snow, palette.grass, .1), earth: mix(palette.snow, palette.earth, .3), field: mix(palette.snow, palette.field, .14), sand: mix(palette.snow, palette.sand, .35),
+    swamp: mix(palette.snow, palette.swamp, .45), forest: mix(palette.forest, 0x3a4d48, .45), rock: mix(palette.rock, palette.snow, .3), water: mix(palette.water, 0xc4d9de, .5),
+    path: mix(palette.snow, palette.path, .35), street: mix(palette.snow, palette.street, .35), square: mix(palette.snow, palette.square, .35), lot: mix(palette.snow, palette.lot, .18),
+    roof: mix(palette.roof, palette.snow, .45), roofLight: mix(palette.roofLight, palette.snow, .7), roofDark: mix(palette.roofDark, palette.snow, .25) };
+  if (mood === "herbst") return { ...palette,
+    background: mix(palette.background, 0xd8bf8c, .15), grass: mix(palette.grass, 0xc9a352, .45), earth: tint(palette.earth, -8), field: mix(palette.field, 0xd39d3f, .55),
+    forest: mix(palette.forest, 0x9a4e20, .62), swamp: mix(palette.swamp, 0x97783a, .4), lot: mix(palette.lot, 0xc9a352, .45), roofLight: mix(palette.roofLight, 0xd7a25a, .2) };
+  return palette;
+}
+/** Moonlight multiplies: warm colours sink furthest, blue keeps most of its light, and every
+ * colour then leans a little towards the same deep blue, so the sheet reads as one night. */
+function dusk(color: number): number {
+  return mix(Math.round((color >> 16) * .34) << 16 | Math.round((color >> 8 & 255) * .4) << 8 | Math.round((color & 255) * .6), 0x1a2547, .18);
 }
 
 interface Bank { readonly a: TacticalPoint; readonly b: TacticalPoint; readonly inward: number }
@@ -145,9 +181,11 @@ export function cartographyPaintsWalls(cartography: TacticalCartographyV1, docum
  * Missing role evidence remains generic; absence of a building is never proof of a road.
  */
 export function cartographyDraw(document: TacticalMapDocumentV1, cartography: TacticalCartographyV1, setting: KartenSetting = "fantasy", view: CartographyView = {}): CartographyDrawing {
-  const palette = palettes[setting], roles = new Map(cartography.regions.map(region => [region.regionId, region]));
+  const mood = view.mood ?? cartography.mood ?? "tag", shade = mood === "nacht" ? dusk : (color: number) => color;
+  const palette = moodPalette(palettes[setting], mood), roles = new Map(cartography.regions.map(region => [region.regionId, region]));
+  const hidden = new Set(view.hide ?? []);
   const polygons: CartographyPolygon[] = []; let decorationPoints = 0, decorationPolygons = 0;
-  const paintWalls=cartographyPaintsWalls(cartography,document),wallSegments=paintWalls?document.walls.reduce((sum,wall)=>sum+wall.points.length-1,0):0;
+  const paintWalls=cartographyPaintsWalls(cartography,document)&&!hidden.has("walls"),wallSegments=paintWalls?document.walls.reduce((sum,wall)=>sum+wall.points.length-1,0):0;
   const basePoints = document.geometry.regions.reduce((sum, region) => sum + region.punkte.length, 0)+wallSegments*8;
   const basePolygons=document.geometry.regions.length+wallSegments*2;
   const emit = (regionId: string, points: readonly TacticalPoint[], fill: number, opacity = 1, decoration = true) => {
@@ -155,9 +193,11 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     // is always retained within the shared rasterizer's 32K-polygon / 256K-point admission.
     if (points.length < 3 || decoration && (decorationPolygons >= 30_000 - basePolygons || decorationPoints + points.length > 250_000 - basePoints)) return;
     if (decoration) { decorationPoints += points.length; decorationPolygons++; }
-    polygons.push({ regionId, points: points.map(point => [point[0], point[1]] as const), fill, opacity });
+    polygons.push({ regionId, points: points.map(point => [point[0], point[1]] as const), fill: shade(fill), opacity });
   };
-  const regions = document.geometry.regions.map((region, index) => ({ ...region, index, role: roles.get(region.id) }));
+  // A hidden layer is left out entirely, region by region: its shores, fences and roofs go with
+  // it, and the ground under it shows, the way lifting a sheet of tracing paper does.
+  const regions = document.geometry.regions.map((region, index) => ({ ...region, index, role: roles.get(region.id) })).filter(region => !hidden.has(cartographyLayerOf(region.role)));
   const banks=regionBanks(regions.filter(region=>region.role?.role==="water"));
   // One silhouette per contiguous material area, for the same reason water has one shore.
   const groupBank=(material:"rock"|"field")=>regionBanks(regions.filter(region=>region.role?.role==="terrain"&&region.role.material===material));
@@ -313,7 +353,8 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     let fill: number = palette.generic;
     if (role?.role === "terrain") fill = palette[role.material];
     // A farmland is a patchwork: every parcel is young green, ripe gold or turned earth.
-    if (role?.role === "terrain" && role.material === "field") fill = [palette.field, mix(palette.field, palette.grass, .5), mix(palette.field, 0xd9b45a, .55)][Math.floor(phase(id, 3) * 3)]!;
+    // Under snow there is no ripe gold: the third parcel is only a shade warmer than the others.
+    if (role?.role === "terrain" && role.material === "field") fill = [palette.field, mix(palette.field, palette.grass, .5), mood === "winter" ? mix(palette.field, palette.sand, .4) : mix(palette.field, 0xd9b45a, .55)][Math.floor(phase(id, 3) * 3)]!;
     // A massif pales with height, from its grey foot to its bright shoulders under the snow.
     if (role?.role === "terrain" && role.material === "rock" && relief) {
       const centre: TacticalPoint = [points.reduce((sum, point) => sum + point[0], 0) / points.length, points.reduce((sum, point) => sum + point[1], 0) / points.length];
@@ -676,5 +717,5 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       emit(paperOwner, [[paperWidth - inner, inner], [paperWidth - outer, inner], [paperWidth - outer, paperHeight - inner], [paperWidth - inner, paperHeight - inner]], 0x2b2218, alpha);
     }
   }
-  return { rendererVersion, width: document.geometry.size[0], height: document.geometry.size[1], background: document.background ? null : palette.background, polygons };
+  return { rendererVersion, width: document.geometry.size[0], height: document.geometry.size[1], background: document.background ? null : shade(palette.background), polygons };
 }

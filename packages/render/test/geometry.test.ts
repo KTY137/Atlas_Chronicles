@@ -58,6 +58,8 @@ describe("MapRenderer camera and hit boundary", () => {
   });
   it.each(["unknown", "https://example.test/icon.svg", "", null, 5, {}])("rejects undeclared pin artwork %j before allocation", (icon) => {
     expect(() => validateMapScene({ ...scene, pins: [{ ...scene.pins[0], icon }] } as unknown as ProjectedMapScene)).toThrow("pin icon");
+    for (const mood of ["nacht", "winter", "herbst", "tag"]) expect(() => validateMapScene({ ...scene, mood } as unknown as ProjectedMapScene)).not.toThrow();
+    expect(() => validateMapScene({ ...scene, mood: "daemmerung" } as unknown as ProjectedMapScene)).toThrow("mood");
   });
   it("handles concave polygon interiors, edges and outside points", () => {
     const polygon = [[0, 0], [10, 0], [10, 4], [4, 4], [4, 10], [0, 10]] as const;

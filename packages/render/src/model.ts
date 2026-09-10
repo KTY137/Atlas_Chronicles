@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 /// <reference lib="dom" />
-import type { CartographyDrawing, TacticalGrid } from "@chronicle/szene";
+import type { CartographyDrawing, CartographyMood, TacticalGrid } from "@chronicle/szene";
 /** Closed presentation boundary. Only records already selected by the server belong here. */
 export type MapPoint = readonly [number, number];
 export type MapRasterSampling = "nearest" | "linear";
@@ -107,6 +107,9 @@ export interface ProjectedMapScene {
   readonly title?: string;
   /** Light pools drawn over floor and furniture, under walls and tokens. */
   readonly lights?: readonly ProjectedMapLight[];
+  /** The map's mood, already painted into `drawing`; at night the renderer lets the lights carry
+   * and sets names in moonlit ink. Presentation only. */
+  readonly mood?: CartographyMood;
 }
 /** The host fetches authorized tiles. Ownership of each bitmap transfers to the renderer. */
 export interface MapRasterTile { readonly id: string; readonly left: number; readonly top: number; readonly width: number; readonly height: number; readonly pixelScale: number; readonly image: ImageBitmap }

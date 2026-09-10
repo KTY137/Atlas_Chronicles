@@ -98,6 +98,7 @@ export function validateMapScene(scene: ProjectedMapScene): void {
   if (scene.rasterSampling !== undefined && scene.rasterSampling !== "nearest" && scene.rasterSampling !== "linear") throw new Error("invalid raster sampling");
   if (scene.showLabels !== undefined && typeof scene.showLabels !== "boolean") throw new Error("invalid label visibility");
   if (scene.title !== undefined && (typeof scene.title !== "string" || scene.title.length > 200)) throw new Error("invalid map title");
+  if (scene.mood !== undefined && !["tag", "nacht", "winter", "herbst"].includes(scene.mood)) throw new Error("invalid map mood");
   if (scene.lights !== undefined) {
     if (!Array.isArray(scene.lights) || scene.lights.length > 4096) throw new Error("invalid map lights");
     for (const light of scene.lights) {

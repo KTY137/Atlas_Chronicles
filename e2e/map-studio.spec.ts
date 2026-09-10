@@ -74,6 +74,37 @@ test("mountain and island locations render in the real studio", async ({ browser
   } finally { await context.close(); await host.close(); }
 });
 
+test("the mood is saved with the map, and the layer panel hides and locks for this sitting only", async ({ browser }, info) => {
+  test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
+  try {
+    await context.addCookies([host.cookie]); const page = await context.newPage(), errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+    await page.goto(host.origin); await expect(canvas(page)).toBeVisible();
+    await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
+    const mood = page.getByRole("combobox", { name: "Stimmung", exact: true });
+    await expect(mood).toHaveValue("tag");
+    await mood.selectOption("nacht");
+    await expect(page.getByRole("status").filter({ hasText: "Ungespeicherter Entwurf" })).toBeVisible();
+    await page.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
+    expect((await host.map()).cartography!.mood).toBe("nacht");
+    await page.reload(); await expect(canvas(page)).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Stimmung", exact: true })).toHaveValue("nacht");
+    // The layer panel is open by default: hide the water, lock the first lockable layer. Neither
+    // is saved, so the status still says everything is saved.
+    const panel = page.getByRole("group", { name: "Ebenen", exact: true });
+    await expect(panel.getByRole("switch", { name: "Wasser", exact: true })).toBeChecked();
+    await panel.getByRole("switch", { name: "Wasser", exact: true }).click();
+    await expect(panel.getByRole("switch", { name: "Wasser", exact: true })).not.toBeChecked();
+    await panel.getByRole("button", { name: "Ebene sperren", exact: true }).first().click();
+    await expect(panel.getByRole("button", { name: "Ebene freigeben", exact: true })).toHaveCount(1);
+    await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
+    await page.screenshot({ path: info.outputPath("night-layers-studio.png"), fullPage: true });
+    await page.getByRole("button", { name: "Ebenen", exact: true }).click();
+    await expect(panel).toHaveCount(0);
+    expect(errors).toEqual([]);
+  } finally { await context.close(); await host.close(); }
+});
+
 test("the height tool shapes a map that never had a relief, and the relief survives save and reload", async ({ browser }, info) => {
   test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
   try {
@@ -81,12 +112,12 @@ test("the height tool shapes a map that never had a relief, and the relief survi
     await page.goto(host.origin); await expect(canvas(page)).toBeVisible();
     await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
     // The fixture is flat land without any relief: the view toggles have nothing to show yet.
-    await expect(page.getByRole("button", { name: "Höhenlinien", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("switch", { name: "Höhenlinien", exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "Höhe", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Höhe formen" })).toBeVisible();
     await page.getByRole("button", { name: "Anheben · Hügel und Berge auftürmen", exact: true }).click();
     await drag(page, [300, 300], [700, 500]);
-    await expect(page.getByRole("button", { name: "Höhenlinien", exact: true })).toBeVisible();
+    await expect(page.getByRole("switch", { name: "Höhenlinien", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Rückgängig", exact: true })).toBeEnabled();
     await page.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
@@ -95,8 +126,8 @@ test("the height tool shapes a map that never had a relief, and the relief survi
     expect(new Set(relief.heights).size).toBeGreaterThan(1);
     expect(Math.max(...relief.heights)).toBeGreaterThan(relief.seaLevel);
     await page.reload(); await expect(canvas(page)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Höhenlinien", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Schattierung", exact: true }).click();
+    await expect(page.getByRole("switch", { name: "Höhenlinien", exact: true })).toBeVisible();
+    await page.getByRole("switch", { name: "Schattierung", exact: true }).click();
     await page.screenshot({ path: info.outputPath("relief-studio.png"), fullPage: true });
     expect(errors).toEqual([]);
   } finally { await context.close(); await host.close(); }

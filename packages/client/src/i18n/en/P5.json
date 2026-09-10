@@ -518,5 +518,20 @@
   "Kahl": "Bare",
   "Dicht": "Dense",
   "Gehölze": "Copses",
-  "Relief formt Hügel, Täler und Flüsse; Bewaldung bestimmt, wie viel offenes Land Wald trägt. Beides kannst du danach mit den Werkzeugen Höhe und Gelände weiter bearbeiten.": "Relief shapes hills, valleys and rivers; woodland sets how much open land carries forest. You can keep editing both afterwards with the Height and Terrain tools."
+  "Relief formt Hügel, Täler und Flüsse; Bewaldung bestimmt, wie viel offenes Land Wald trägt. Beides kannst du danach mit den Werkzeugen Höhe und Gelände weiter bearbeiten.": "Relief shapes hills, valleys and rivers; woodland sets how much open land carries forest. You can keep editing both afterwards with the Height and Terrain tools.",
+  "Stimmung": "Mood",
+  "Tag": "Day",
+  "Nacht": "Night",
+  "Winter": "Winter",
+  "Herbst": "Autumn",
+  "Die Stimmung wird mit der Karte gespeichert; auch Spieler sehen sie.": "The mood is saved with the map; players see it too.",
+  "Ebenen": "Layers",
+  "Papier": "Paper",
+  "Wege & Straßen": "Paths & roads",
+  "Grundstücke": "Plots",
+  "Wände & Türen": "Walls & doors",
+  "Ebene sperren": "Lock layer",
+  "Ebene freigeben": "Unlock layer",
+  "Die Ebene {ebene} ist ausgeblendet oder gesperrt.": "The layer {ebene} is hidden or locked.",
+  "Ausblenden, was gerade stört; sperren, was fertig ist. Beides gilt nur für deine Ansicht beim Bearbeiten und wird nicht gespeichert.": "Hide what is in the way; lock what is finished. Both apply only to your view while editing and are not saved."
 }

@@ -99,5 +99,44 @@ Präsentation, keine Daten geändert; jede Wirkung kommt aus dem, was die Karte 
   grün, reif gold, gepflügt), Schornstein mit Schatten auf den meisten Dächern, Fels blasser
   zur Höhe (Mittelpunkt des Stücks im Relief).
 
-## 5. Nachweis
+## 5. Runde 4 — die Zehnerliste (`cartography-11`)
+
+Kaya fragte nach zehn Verbesserungen und ließ sie abarbeiten. Reihenfolge nach Wirkung, jedes
+Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1, 2, 5, 6 fertig.
+
+**1 Möbel an die Wand, 2 Gärten um die Häuser** (Commit `3f75ad3`): Möbel werden nach Art
+platziert — Betten, Schränke, Regale, Truhen an die Wand (`Lage` mit bevorzugten Plätzen und
+Drehung zur Wand), Tische in die Mitte, Stühle an den Tisch (`merkeTisch`); auf Grundstücken
+wachsen Gemüsebeete in Reihen, ein Obstbaum oder ein Busch vom globalen Gitter, nie unter dem
+Dach (`lotHouses`), dazu ein Lattenzaun in Tusche.
+
+**5 Stimmung.** Entscheidung: die Stimmung ist **Teil der Karte**, nicht der Ansicht.
+`cartography.mood` ∈ {`nacht`, `winter`, `herbst`}; Tag ist die Abwesenheit des Felds, damit
+jede alte Karte byte- und hashgleich bleibt. Der Spielleiter wählt sie in der Bühnenleiste des
+Studios („Stimmung"), sie ist eine rückgängig machbare Änderung, wird mit der Revision
+gespeichert und erreicht über den Kartografie-Hash die Spielerkacheln und den PNG-Export von
+selbst. Wirkung in der Projektion: Winter und Herbst sind **Paletten** (Schnee auf jedem offenen
+Boden, Eis auf dem Wasser, Dächer unter Schnee, kein reifes Gold auf Winterfeldern; Wiese ocker,
+Wald rostrot); Nacht ist **ein Licht**, das auf jede ausgegebene Farbe wirkt (`dusk`:
+multiplikativ, Blau behält am meisten, dann ein Hauch zum selben Tiefblau), damit Tusche,
+Schatten und Ufer in dieselbe Dämmerung sinken. `view.mood` überschreibt für Vorschauen.
+Renderer (`scene.mood`): nachts tragen die Lichtpools das Zweieinhalbfache und einen weiteren
+äußeren Ring, Ortsnamen stehen in heller Mondtusche mit dunklem Saum, Möbel und Figuren
+bekommen dieselbe Mondtönung wie der gemalte Boden.
+
+**6 Ebenenleiste.** Entscheidung: Sichtbarkeit und Sperre je Ebene sind **Sitzungszustand des
+Studios**, nie gespeichert — die Sperre einer einzelnen Fläche (`region.locked`) bleibt die, die
+mit der Karte reist. Vierzehn Reihen von oben nach unten wie im Bild: Namen, Einrichtung,
+Lichter, Wände & Türen, Gebäude, Räume, Grundstücke, Wege & Straßen, Wasser, Höhenlinien,
+Schattierung, Gelände, Papier, Ansichtsraster (Höhenlinien und Schattierung nur mit Relief).
+Ausblenden geht durch die gemeinsame Projektion (`view.hide` mit `CARTOGRAPHY_LAYERS`; eine
+Fläche ohne Rolle zählt als Gelände) und für Einrichtung, Lichter, Wände, Namen und Raster
+durch die Szene (`applyLayers`). **Ausgeblendet ist auch gesperrt:** man kann nicht verschieben,
+was man nicht sieht. Gesperrte Ebenen gehen als geschützte Flächen in jede Bearbeitung
+(`blockedRegionIds`), das Höhenwerkzeug hängt an Gelände, Wand- und Türwerkzeuge an Wände &
+Türen, Pinsel/Verschieben/Entfernen/Drehen/Duplizieren an Einrichtung; die Meldung nennt die
+Ebene. Die Schalter sind Schalter (`role="switch"`), keine Knöpfe, weil die Werkzeugleiste links
+schon Knöpfe namens Gelände und Gebäude hat.
+
+## 6. Nachweis
 Siehe `design/iterations/map-studio-20260910-optik.md`.

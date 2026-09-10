@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TacticalAck, TacticalAnchor, TacticalMapCard } from "@chronicle/protocol";
-import { inferLegacyCartography, TACTICAL_MAP_LIMITS, type AssetpaketV1, type KartenSetting, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
+import { inferLegacyCartography, TACTICAL_MAP_LIMITS, type AssetpaketV1, type CartographyMood, type KartenSetting, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
 import { pointInPolygon, type MapEditorInteraction, type MapHit, type ProjectedMapScene } from "@chronicle/render";
 import { Button, Notice } from "@chronicle/ui";
 import { api, apiPath, ApiError, errorText, plainText, type EntryDocument, type EntrySummary } from "../api";
@@ -15,7 +15,8 @@ import { mapObjectWindow, objectKey, preparationObjects } from "./tactical-entit
 import { mapDocumentScene, type MapNode } from "./map-generation";
 import { MapArtworkPalette } from "./MapArtworkPalette";
 import { placeArtwork, type ArtworkBrush } from "./map-artwork";
-import { Grid2X2, Layers, MountainSnow, MousePointer2, RotateCw, Save, Sun } from "lucide-react";
+import { Eye, EyeOff, Layers, Lock, MousePointer2, Palette, RotateCw, Save, Unlock } from "lucide-react";
+import { applyLayers, blockedRegionIds, layerBlocked, layerView, MAP_LAYERS, mapLayerLabel, mapLayerState, toggleLayer } from "./map-layers";
 import { interiorHit, snapPoint, type InteriorTarget } from "./map-studio";
 import { applyInteriorEdit, type InteriorEditOperation } from "@chronicle/forge";
 
@@ -50,10 +51,10 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const [brush, setBrush] = useState<ArtworkBrush | null>(null);
   const [interiorSelected, setInteriorSelected] = useState<InteriorTarget | null>(null);
   const [brushTurns, setBrushTurns] = useState(0), [brushScale, setBrushScale] = useState(1);
-  const [showGrid, setShowGrid] = useState(true);
-  // Relief view: contour lines and hillshade are how the viewer reads the land; both are
-  // presentation only and never enter the saved map.
-  const [showContours, setShowContours] = useState(true), [showShading, setShowShading] = useState(true);
+  // The layer panel: what is hidden while working and what is locked once it is done. Both are
+  // this sitting's view of the map and never enter the saved map; a hidden layer is locked too.
+  const [layers, setLayers] = useState(mapLayerState), [layersOpen, setLayersOpen] = useState(true);
+  const blocked = (layer: Parameters<typeof layerBlocked>[1]) => { if (!layerBlocked(layers, layer)) return false; setEditError(t("Die Ebene {ebene} ist ausgeblendet oder gesperrt.", { ebene: mapLayerLabel(layer) })); return true; };
   const [assetsOpen, setAssetsOpen] = useState(false), [knowledgeOpen, setKnowledgeOpen] = useState(false), [objectsOpen, setObjectsOpen] = useState(false);
   // A new tool or selection may reveal its controls. Clearing it never overrides the user's
   // disclosure choice, and an explicit close stays closed until a new relevant selection.
@@ -93,9 +94,9 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const selectedNode = nodes.find(node => `node:${node.knotenId}` === selectedObject);
   const focusedObject = selectedNode ?? visibleObjects.find(o => objectKey(o) === selectedObject);
   const scene = useMemo<ProjectedMapScene>(() => {
-    const projected = mapDocumentScene(baseline.id, document, nodes, children.data?.art, document.background ? baseline.rasterDigest ?? baseline.contentHash : undefined, children.data?.setting, cartography, { contours: showContours, shading: showShading });
+    const projected = applyLayers({ ...mapDocumentScene(baseline.id, document, nodes, children.data?.art, document.background ? baseline.rasterDigest ?? baseline.contentHash : undefined, children.data?.setting, cartography, layerView(layers)), title: baseline.name }, layers);
     if (revoked) return { id: baseline.id, width: projected.width, height: projected.height, cells: [], pins: [] };
-    return { ...projected, title: baseline.name, grid: showGrid ? (projected.grid?.kind === "none" ? { kind: "square" as const, size: cartography.construction.cellSize, origin: cartography.construction.origin } : projected.grid) : { kind: "none" as const },
+    return { ...projected, grid: layers.hidden.has("raster") ? { kind: "none" as const } : projected.grid?.kind === "none" ? { kind: "square" as const, size: cartography.construction.cellSize, origin: cartography.construction.origin } : projected.grid,
       cells: projected.cells.map(cell => ({ ...cell, ...(cell.surface !== "building" && anchors.some(anchor => anchor.targetKind === "region" && anchor.targetId === cell.id) ? { fill: 0x60bb8d } : {}) })),
       pins: [...projected.pins.map(pin => ({ ...pin, id: `node:${pin.id}` })),
         ...visibleObjects.filter(object => object.entryId || objectKey(object) === selectedObject || object.kind === "place" && !nodes.some(node => {
@@ -105,7 +106,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
           .map(object => ({ id: objectKey(object), x: object.x, y: object.y, label: object.label, ...(object.entryId ? { entryId: object.entryId } : {}) }))],
       lines: [...(projected.lines ?? []).map(line => interiorSelected?.id === line.id ? { ...line, color: 0xffcd78, paint: true } : line), ...(points.length >= 2 ? [{ id: "draft-region", points, color: 0xffffff }] : [])],
     };
-  }, [baseline, document, nodes, children.data?.art, children.data?.setting, anchors, cartography, points, visibleObjects, selectedObject, revoked, showGrid, showContours, showShading, interiorSelected]);
+  }, [baseline, document, nodes, children.data?.art, children.data?.setting, anchors, cartography, points, visibleObjects, selectedObject, revoked, layers, interiorSelected]);
   const selectRegion = (id: string, focus = false) => {
     setFocusRequested(focus);
     setInteriorSelected(null);
@@ -116,6 +117,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const addPoint = (p: TacticalPoint) => {
     if (editingDisabled || p[0] < 0 || p[1] < 0 || p[0] > scene.width || p[1] > scene.height) return;
     if (brush) {
+      if (blocked("einrichtung")) return;
       const at = snapPoint(p, cartography.construction.cellSize, tools.snap, cartography.construction.origin);
       const placed = placeArtwork(document, brush, at, crypto.randomUUID());
       const stamp = placed ? { ...placed, r: brushTurns * Math.PI / 2, s: placed.s * brushScale } : null;
@@ -133,7 +135,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const bind = () => { if (!regionId || !entryId) return; setAnchors(old => [...old.filter(a => !(a.targetKind === "region" && a.targetId === regionId)), { targetKind: "region", targetId: regionId, entryId, passageId: passageId || null }]); };
   const protectedIds = (operation: CartographyEditOperation, snapshot: MapEditSnapshot) => {
     const linked = (children.data?.nodes ?? []).filter(node => node.vorhandeneKarteId).map(node => node.knotenId);
-    return [...new Set([...snapshot.cartography.regions.filter(region => region.locked || operation.kind === "variation" && region.authored).map(region => region.regionId), ...(operation.kind === "transform" ? [] : linked)])];
+    return [...new Set([...snapshot.cartography.regions.filter(region => region.locked || operation.kind === "variation" && region.authored).map(region => region.regionId), ...(operation.kind === "transform" ? [] : linked), ...blockedRegionIds(layers, snapshot.cartography)])];
   };
   const computeGesture = () => {
     const draft = gesture.current;
@@ -144,6 +146,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       if (!stamp) return;
       const owner = draft.baseline.cartography.regions.find(region => region.role === "building" ? region.attachedStampIds?.includes(stamp.id) : region.role === "room" && region.interior?.stampIds.includes(stamp.id));
       if (owner?.locked) { setEditError(t("Das zugehörige Gebäude oder der Raum ist gesperrt.")); return; }
+      if (blocked("einrichtung")) return;
       const delta = snapPoint([last[0] - first[0], last[1] - first[1]], cartography.construction.cellSize, tools.snap);
       const next = editDocument(draft.baseline, { ...draft.baseline.document, geometry: { ...draft.baseline.document.geometry,
         stamps: draft.baseline.document.geometry.stamps.map(item => item.id === stamp.id ? { ...item, x: Math.max(0, Math.min(scene.width, item.x + delta[0])), y: Math.max(0, Math.min(scene.height, item.y + delta[1])) } : item) } });
@@ -158,8 +161,10 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       : tools.tool === "door" ? { kind: "door", at: last, width: tools.doorWidth, closed: tools.doorClosed } : undefined);
     if (interiorOperation) {
       if (!childrenConfirmed) { setEditError(t("Die Raumverbindungen werden noch geladen.")); return; }
+      const wallwork = interiorOperation.kind === "wall" || interiorOperation.kind === "door" || "target" in interiorOperation && interiorOperation.target.kind !== "room";
+      if (wallwork && blocked("waende")) return;
       const protectedRegionIds = [...draft.baseline.cartography.regions.filter(region => region.locked).map(region => region.regionId),
-        ...(interiorOperation.kind === "interior-remove" ? (children.data?.nodes ?? []).filter(node => node.vorhandeneKarteId).map(node => node.knotenId) : [])];
+        ...(interiorOperation.kind === "interior-remove" ? (children.data?.nodes ?? []).filter(node => node.vorhandeneKarteId).map(node => node.knotenId) : []), ...blockedRegionIds(layers, draft.baseline.cartography)];
       const result = applyInteriorEdit({ document: draft.baseline.document, cartography: draft.baseline.cartography, operation: interiorOperation, operationId: draft.id, protectedRegionIds, ...(interiorAssets.data ? { assets: interiorAssets.data } : {}) });
       if (!result.ok) { setEditError(result.message); changeHistory(old => old.gesture?.id === draft.id ? { ...old, gesture: { ...old.gesture, preview: null } } : old); return; }
       const removedRegions = new Set(result.removedRegionIds), removedStamps = new Set(result.removedStampIds), removedPlaces = new Set(result.removedPlaceIds);
@@ -174,6 +179,8 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       : tools.tool === "relief" ? { kind: "relief", points: draft.path, radius: tools.radius, mode: tools.reliefMode, strength: tools.reliefStrength }
       : tools.tool === "building" ? { kind: "building", at: to, width: tools.buildingWidth, height: tools.buildingHeight, quarterTurns: tools.turns, shape: tools.shape, typ: tools.buildingType, titel: tools.buildingName } : null);
     if (!operation) return;
+    // The land's height is the land: shaping it is blocked with the terrain layer.
+    if (operation.kind === "relief" && blocked("gelaende")) return;
     // Shaping the height touches no region, so it never waits for the interior check.
     if (operation.kind !== "transform" && operation.kind !== "relief" && !childrenConfirmed) { setEditError(t("Verknüpfte Innenräume werden noch geprüft. Danach kannst du Flächen ersetzen oder entfernen.")); return; }
     const result = applyCartographyEdit({ document: draft.baseline.document, cartography: draft.baseline.cartography, operation,
@@ -266,11 +273,13 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const openAssets = () => { cancelGesture(); setTools(old => ({ ...old, tool: "select", hand: false })); setAssetsOpen(true); setDrawing(false); setMarking(false); setSheet(true); };
   const removeStamp = (id: string) => {
     if (selectedOwner?.locked) { setEditError(t("Der zugehörige Raum ist gesperrt.")); return; }
+    if (blocked("einrichtung")) return;
     commit(old => ({ ...editDocument(old, { ...old.document, geometry: { ...old.document.geometry, stamps: old.document.geometry.stamps.filter(item => item.id !== id) }, geometryElevation: old.document.geometryElevation.filter(item => item.targetKind !== "stamp" || item.targetId !== id) }), anchors: old.anchors.filter(anchor => anchor.targetKind !== "stamp" || anchor.targetId !== id) })); setSelectedObject("");
   };
   const rotateSelection = () => {
     if (editingDisabled) return;
     if (brush) { setBrushTurns(turns => (turns + 1) % 4); return; }
+    if (selectedStamp && blocked("einrichtung")) return;
     if (selectedStamp && !selectedOwner?.locked) setDocument(old => ({ ...old, geometry: { ...old.geometry, stamps: old.geometry.stamps.map(item => item.id === selectedStamp.id ? { ...item, r: (item.r + Math.PI / 2) % (2 * Math.PI) } : item) } }));
     else if (selectedTarget) interiorPreview({ kind: "interior-transform", target: selectedTarget, delta: [0, 0], quarterTurns: 1 });
     else if (regionId) operationPreview({ kind: "transform", regionId, delta: [0, 0], quarterTurns: 1 });
@@ -283,7 +292,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     else if (regionId) operationPreview({ kind: "remove", regionId });
   };
   const duplicateSelection = selectedStamp ? () => {
-    if (editingDisabled || selectedOwner?.locked || document.geometry.stamps.length >= TACTICAL_MAP_LIMITS.stamps) return;
+    if (editingDisabled || selectedOwner?.locked || document.geometry.stamps.length >= TACTICAL_MAP_LIMITS.stamps || blocked("einrichtung")) return;
     const id = crypto.randomUUID(), z = cartography.construction.cellSize;
     setDocument(old => ({ ...old, geometry: { ...old.geometry, stamps: [...old.geometry.stamps, { ...selectedStamp, id, x: Math.min(scene.width, selectedStamp.x + z), y: Math.min(scene.height, selectedStamp.y + z) }] } })); setSelectedObject(`stamp:${id}`);
   } : undefined;
@@ -317,7 +326,20 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       onLock={() => commit(old => ({ ...old, cartography: { ...old.cartography, regions: old.cartography.regions.map(region => region.regionId === regionId ? { ...region, locked: !region.locked } : region) } }))}
       onRotate={rotateSelection} onDuplicate={duplicateSelection}
       onRemove={removeSelection} onVary={() => operationPreview({ kind: "variation", regionIds: [regionId] })} />
-    <div className="map-editor-stage"><div className="map-editor-stage-toolbar"><span>{children.data?.art === "siedlung" ? t("Außenkarte") : t("Grundriss & Landschaft")}</span><div className="button-row"><Button aria-pressed={showGrid} onClick={() => setShowGrid(value => !value)}><Grid2X2 size={15} />{t("Ansichtsraster")}</Button>{cartography.relief ? <><Button aria-pressed={showContours} onClick={() => setShowContours(value => !value)}><MountainSnow size={15} />{t("Höhenlinien")}</Button><Button aria-pressed={showShading} onClick={() => setShowShading(value => !value)}><Sun size={15} />{t("Schattierung")}</Button></> : null}<Button onClick={openAssets}><Layers size={15} />{t("Möbel & Objekte")}</Button></div></div>
+    <div className="map-editor-stage"><div className="map-editor-stage-toolbar"><span>{children.data?.art === "siedlung" ? t("Außenkarte") : t("Grundriss & Landschaft")}</span><div className="button-row">
+      <label className="map-editor-mood" title={t("Die Stimmung wird mit der Karte gespeichert; auch Spieler sehen sie.")}><Palette size={15} />{t("Stimmung")}<select aria-label={t("Stimmung")} value={cartography.mood ?? "tag"} disabled={editingDisabled} onChange={event => {
+        const mood = event.target.value as CartographyMood;
+        commit(old => { const { mood: _previous, ...rest } = old.cartography; return { ...old, cartography: mood === "tag" ? rest : { ...rest, mood } }; });
+      }}><option value="tag">{t("Tag")}</option><option value="nacht">{t("Nacht")}</option><option value="winter">{t("Winter")}</option><option value="herbst">{t("Herbst")}</option></select></label>
+      <Button aria-pressed={layersOpen} onClick={() => setLayersOpen(value => !value)}><Layers size={15} />{t("Ebenen")}</Button><Button onClick={openAssets}><Layers size={15} />{t("Möbel & Objekte")}</Button></div></div>
+    {layersOpen ? <div className="map-editor-layers" role="group" aria-label={t("Ebenen")}>{MAP_LAYERS.filter(layer => !layer.relief || cartography.relief).map(layer => {
+      const hidden = layers.hidden.has(layer.id), locked = layers.locked.has(layer.id);
+      // A switch, not a button: the tool buttons on the left already carry names like "Gelände".
+      return <span key={layer.id} className="map-layer-chip" data-hidden={hidden} data-locked={locked}>
+        <label className="map-layer-switch"><input type="checkbox" role="switch" checked={!hidden} onChange={() => setLayers(old => toggleLayer(old, layer.id, "hidden"))} />{hidden ? <EyeOff size={13} /> : <Eye size={13} />}{mapLayerLabel(layer.id)}</label>
+        {layer.lockable ? <Button aria-pressed={locked} aria-label={locked ? t("Ebene freigeben") : t("Ebene sperren")} title={locked ? t("Ebene freigeben") : t("Ebene sperren")} onClick={() => setLayers(old => toggleLayer(old, layer.id, "locked"))}>{locked ? <Lock size={13} /> : <Unlock size={13} />}</Button> : null}
+      </span>;
+    })}<p className="field-help">{t("Ausblenden, was gerade stört; sperren, was fertig ist. Beides gilt nur für deine Ansicht beim Bearbeiten und wird nicht gespeichert.")}</p></div> : null}
     <TacticalCanvas scene={scene} onContextMenu={onContextMenu ? (hit, at) => onContextMenu(hit?.kind === "pin" && hit.id.startsWith("node:") ? { ...hit, id: hit.id.slice(5) } : hit, at) : undefined} editor={editor} onUndo={() => { gesture.current = null; changeHistory(undoEdit); }} onRedo={() => changeHistory(redoEdit)} onScopeInvalidated={() => { cancelGesture(); setRevoked(true); setSelectedObject(""); setRegionId(""); onChanged(); }} tileBase={apiPath(campaignId, `/tactical/maps/${baseline.id}/tiles`)} tileQuery={`revision=${baseline.revision}&layer=background`} onPoint={addPoint} selection={regionId ? { kind: "cell", id: regionId } : focusedObject ? { kind: "pin", id: selectedObject } : null} focusObject={focusRequested && !history.gesture && focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : null} onSelect={hit => {
       if (editingDisabled || drawing || marking || brush) return;
       if (hit?.kind === "cell") selectRegion(hit.id);
@@ -329,7 +351,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     {history.gesture ? <div className="map-editor-preview-actions"><Button variant="primary" disabled={!history.gesture.preview || editingDisabled} onClick={() => { gesture.current = null; changeHistory(acceptEdit); }}>{t("Vorschau übernehmen")}</Button><Button onClick={cancelGesture}>{t("Vorschau verwerfen")}</Button></div> : null}
     </div><div className="map-editor-details"><div className="map-editor-topline"><strong>{t("Details & Einrichtung")}</strong><small>{t("{flaechen} Flächen · {waende} Wände · {tueren} Türen", { flaechen: document.geometry.regions.length, waende: document.walls.length, tueren: document.portals.length })}</small></div>
     <details className="map-editor-section" open={assetsOpen} onToggle={event => setAssetsOpen(event.currentTarget.open)}><summary>{t("Einrichtung & Kartenassets")}</summary><fieldset className="tactical-command-fields" disabled={editingDisabled}><MapArtworkPalette document={document} brush={brush} onBrush={next => { cancelGesture(); setBrush(next); setDrawing(false); setMarking(false); if (next) setSheet(false); }} selected={selectedObject.startsWith("stamp:") ? selectedObject.slice(6) : ""}
-      onSelect={id => { setSelectedObject(id ? `stamp:${id}` : ""); setRegionId(""); setInteriorSelected(null); setFocusRequested(true); }} onUpdate={stamp => { if (!selectedOwner?.locked) setDocument(old => ({ ...old, geometry: { ...old.geometry, stamps: old.geometry.stamps.map(item => item.id === stamp.id ? stamp : item) } })); }}
+      onSelect={id => { setSelectedObject(id ? `stamp:${id}` : ""); setRegionId(""); setInteriorSelected(null); setFocusRequested(true); }} onUpdate={stamp => { if (!selectedOwner?.locked && !blocked("einrichtung")) setDocument(old => ({ ...old, geometry: { ...old.geometry, stamps: old.geometry.stamps.map(item => item.id === stamp.id ? stamp : item) } })); }}
       onRemove={removeStamp} /></fieldset></details>
     {selectedNode ? <div className="tactical-object-selected"><strong>{selectedNode.titel}</strong>{selectedNode.bauwerk?.beschreibung ? <p>{selectedNode.bauwerk.beschreibung}</p> : null}
       {onOpenInterior ? <Button disabled={dirty || !childrenConfirmed} onClick={() => onOpenInterior(selectedNode.knotenId, selectedNode.vorhandeneKarteId)}>{selectedNode.vorhandeneKarteId ? t("Innenraum bearbeiten") : t("Innenraum anlegen")}</Button> : null}

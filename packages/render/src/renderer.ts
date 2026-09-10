@@ -103,6 +103,8 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   const pinLabels: InstanceType<typeof Text>[] = [];
   const nightLabel = { fontFamily: "system-ui, sans-serif", fontSize: 12, fill: 0xf4ebd8, stroke: { color: 0x14212b, width: 3 } } as const;
   const inkLabel = { fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 12, fontStyle: "italic", fontWeight: "600", letterSpacing: .4, fill: 0x2c2519, stroke: { color: 0xf0e6cb, width: 3 } } as const;
+  // The same book face by moonlight: pale ink with a dark halo, so a name still reads at night.
+  const moonLabel = { ...inkLabel, fill: 0xe9e2cf, stroke: { color: 0x141b30, width: 3 } } as const;
   let scene = initial;
   let camera = fitCamera([scene.width, scene.height], viewport);
   let selected: MapHit | null = null;
@@ -242,7 +244,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       }
       // A drawn map names its places in ink on paper, a book face with a pale halo; a photographed
       // or dark battlemap keeps the bright label that stays legible over any image.
-      text.style = scene.drawing ? inkLabel : nightLabel;
+      text.style = scene.drawing ? scene.mood === "nacht" ? moonLabel : inkLabel : nightLabel;
       text.text = pin.label.length > 30 ? `${pin.label.slice(0, 29)}…` : pin.label;
       text.position.set(x, y); text.visible = true;
       occupied.push({ x: x - 4, y: y - 4, width: Math.max(width, text.width) + 8, height: Math.max(20, text.height) + 8 }); count++;
@@ -360,7 +362,8 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       sprite.position.set(stamp.x, stamp.y);
       sprite.rotation = stamp.r;
       sprite.scale.set(stamp.s);
-      if (stamp.t) sprite.tint = stamp.t;
+      // Furniture and figures stand in the same moonlight as the painted ground under them.
+      if (stamp.t) sprite.tint = stamp.t; else if (scene.mood === "nacht") sprite.tint = 0x8a93b3;
       sprite.eventMode = "none";
       (stamp.l >= 40 ? rooftopStamps : stampLayer).addChild(sprite);
     }
@@ -414,11 +417,15 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     markerGraphics = [];
     // Each light is three pools inside one another, widest faintest, plus a small bright heart:
     // a cheap gradient that still reads as a glow rather than as a painted disc.
+    // At night the same lights carry: the pools are two and a half times as strong, and the
+    // outermost reaches further, because a torch is what the eye finds in the dark.
     glow.clear();
+    const night = scene.mood === "nacht", carry = night ? 2.5 : 1;
     for (const light of scene.lights ?? []) {
-      const color = light.color ?? 0xe0a050, strength = light.intensity ?? 1;
-      for (const [reach, alpha] of [[1, .04], [.62, .07], [.3, .11]] as const) glow.circle(light.x, light.y, light.range * reach).fill({ color, alpha: alpha * strength });
-      glow.circle(light.x, light.y, Math.max(2, light.range * .06)).fill({ color: 0xfff1c8, alpha: .45 * strength });
+      const color = light.color ?? 0xe0a050, strength = (light.intensity ?? 1) * carry;
+      if (night) glow.circle(light.x, light.y, light.range * 1.35).fill({ color, alpha: .03 * strength });
+      for (const [reach, alpha] of [[1, .04], [.62, .07], [.3, .11]] as const) glow.circle(light.x, light.y, light.range * reach).fill({ color, alpha: Math.min(1, alpha * strength) });
+      glow.circle(light.x, light.y, Math.max(2, light.range * .06)).fill({ color: 0xfff1c8, alpha: Math.min(1, .45 * strength) });
     }
     if (scene.drawing) {
       if (scene.drawing.background !== null) geography.addChild(new Graphics().rect(0, 0, scene.width, scene.height).fill(scene.drawing.background));

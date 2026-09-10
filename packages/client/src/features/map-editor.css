@@ -120,6 +120,21 @@
 .map-editor .map-editor-stage-toolbar svg { color: var(--accent); }
 .map-editor .map-editor-stage-toolbar .button { min-height: 31px; padding: .3rem .5rem; font-size: .68rem; }
 .map-editor .map-editor-stage-toolbar .button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.map-editor .map-editor-mood { display: inline-flex; align-items: center; gap: .35rem; margin: 0; color: var(--text-muted); font-size: .68rem; }
+.map-editor .map-editor-mood select { min-height: 31px; width: auto; padding: .2rem 1.4rem .2rem .45rem; font-size: .68rem; }
+.map-editor .map-editor-layers { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; padding: .5rem .6rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.map-editor .map-layer-chip { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface-2); }
+.map-editor .map-layer-switch { position: relative; display: inline-flex; align-items: center; gap: .3rem; min-height: 27px; margin: 0; padding: .15rem .55rem; color: var(--text); font-size: .66rem; line-height: 1.2; cursor: pointer; }
+.map-editor .map-layer-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.map-editor .map-layer-switch:has(input:focus-visible) { outline: 2px solid var(--focus, var(--accent)); outline-offset: -2px; }
+.map-editor .map-layer-chip .button { min-height: 27px; padding: .15rem .45rem; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: transparent; }
+.map-editor .map-layer-chip svg { color: var(--text-muted); }
+.map-editor .map-layer-chip[data-hidden="true"] { border-style: dashed; background: transparent; }
+.map-editor .map-layer-chip[data-hidden="true"] .map-layer-switch { color: var(--text-faint); text-decoration: line-through; }
+.map-editor .map-layer-chip[data-locked="true"] { border-color: var(--accent); }
+.map-editor .map-layer-chip[data-locked="true"] .button { background: var(--accent-soft); }
+.map-editor .map-layer-chip[data-locked="true"] .button svg { color: var(--accent); }
+.map-editor .map-editor-layers .field-help { flex-basis: 100%; margin: .15rem 0 0; color: var(--text-muted); font-size: .66rem; line-height: 1.5; }
 .map-editor .map-editor-hint { display: flex; align-items: flex-start; gap: .5rem; margin: 0; padding: .1rem .3rem .3rem; color: var(--text-muted); font-size: .72rem; line-height: 1.6; }
 .map-editor .map-editor-hint svg { flex: 0 0 auto; margin-top: .15rem; }
 .map-editor .map-editor-stage .tactical-canvas { min-height: min(64vh, 720px); height: min(69vh, 820px); border-color: var(--line-strong); border-radius: var(--radius); }

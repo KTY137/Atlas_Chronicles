@@ -142,7 +142,7 @@ describe("relief in the painted drawing: shading, contour lines and summits that
     const flat = withRelief(() => 117), { relief: _relief, ...without } = flat.cartography;
     const flatDrawing = cartographyDraw(flat.document, flat.cartography), plainDrawing = cartographyDraw(flat.document, without);
     expect(flatDrawing.polygons.length).toBe(plainDrawing.polygons.length);
-    expect(flatDrawing.rendererVersion).toBe("cartography-10");
+    expect(flatDrawing.rendererVersion).toBe(rendererVersion);
   });
   it("shades a slope on its lit and shadowed flanks and draws contour lines only above the water line", () => {
     // A ridge along the middle: land rises from the west edge to a crest and falls to the east,
@@ -213,7 +213,7 @@ describe("the sheet itself: parchment, vignette, sea floor, hills, spruce and ro
     expect(drawing.polygons.filter(p => p.fill === 0x2b2218)).toHaveLength(16);
     const bare = cartographyDraw(document, cartography, "fantasy", { paper: false });
     expect(bare.polygons.some(p => p.opacity === .24 || p.fill === 0x2b2218)).toBe(false);
-    const photographed = cartographyDraw({ ...document, background: { contentHash: "a".repeat(64), mimeType: "image/png", width: 600, height: 600 } } as typeof document, cartography);
+    const photographed = cartographyDraw({ ...document, background: { contentHash: "a".repeat(64), mimeType: "image/png", width: 600, height: 600 } } as unknown as typeof document, cartography);
     expect(photographed.polygons.some(p => p.opacity === .24 || p.fill === 0x2b2218)).toBe(false);
   });
   it("steps the sea floor deeper away from the shore and only under water", () => {
@@ -309,5 +309,56 @@ describe("a plot is a garden around its house", () => {
     expect(garden.every(p => p.points.every(point => !insideHouse(point)))).toBe(true);
     const bare = cartographyDraw({ ...document, geometry: { ...document.geometry, regions: [regions[0]!] } }, { ...cartography, construction: { cellSize: 64, origin: [0, 0] }, regions: [roles[0]] }, "fantasy", { paper: false }).polygons.filter(p => p.regionId === "plot");
     expect(bare.filter(p => p.opacity === .38 || p.opacity === 1 && p.points.length === 14 || p.opacity === 1 && p.points.length === 7).length).toBeGreaterThan(garden.length);
+  });
+});
+
+describe("mood and layers: the same map by night, under snow, in autumn, and with a layer lifted", () => {
+  const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const base = { authored: false, locked: false, provenance: null } as const;
+  const scene = () => {
+    const { document, cartography } = fixture();
+    const regions = [{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "wood", punkte: rect(0, 0, 200, 600) }, { id: "sea", punkte: rect(400, 0, 200, 600) }, { id: "house", punkte: rect(250, 250, 60, 40) }, { id: "lane", punkte: rect(220, 400, 200, 30) }];
+    const roles = [{ ...base, regionId: "ground", role: "terrain", material: "grass" }, { ...base, regionId: "wood", role: "terrain", material: "forest" }, { ...base, regionId: "sea", role: "water", material: "sea" }, { ...base, regionId: "house", role: "building" }, { ...base, regionId: "lane", role: "road", material: "street" }] as const;
+    return { document: { ...document, geometry: { ...document.geometry, regions } }, cartography: { ...cartography, construction: { cellSize: 60, origin: [0, 0] as TacticalPoint }, regions: [...roles] } };
+  };
+  const channels = (color: number) => [color >> 16, color >> 8 & 255, color & 255] as const;
+  const fill = (drawing: ReturnType<typeof cartographyDraw>, id: string) => drawing.polygons.find(p => p.regionId === id && p.opacity === 1 && p.points.length === 4)!.fill;
+  it("sinks every colour of the night into the same blue dusk and keeps every polygon", () => {
+    const { document, cartography } = scene();
+    const day = cartographyDraw(document, cartography), night = cartographyDraw(document, { ...cartography, mood: "nacht" });
+    expect(night.polygons).toHaveLength(day.polygons.length);
+    for (let index = 0; index < day.polygons.length; index++) {
+      const [r, g, b] = channels(day.polygons[index]!.fill), [nr, ng, nb] = channels(night.polygons[index]!.fill);
+      expect(nr).toBeLessThanOrEqual(r); expect(ng).toBeLessThanOrEqual(g); expect(nb).toBeLessThanOrEqual(b);
+      expect(night.polygons[index]!.opacity).toBe(day.polygons[index]!.opacity);
+    }
+    expect(channels(night.background!)[2]).toBeGreaterThan(channels(night.background!)[0]);
+    expect(cartographyDraw(document, cartography, "fantasy", { mood: "nacht" })).toEqual(night);
+    expect(cartographyDraw(document, { ...cartography, mood: "nacht" }, "fantasy", { mood: "tag" })).toEqual(day);
+  });
+  it("lays snow on the meadow and ice on the water in winter, and turns the wood russet in autumn", () => {
+    const { document, cartography } = scene();
+    const day = cartographyDraw(document, cartography), winter = cartographyDraw(document, { ...cartography, mood: "winter" }), autumn = cartographyDraw(document, { ...cartography, mood: "herbst" });
+    const luminance = (color: number) => { const [r, g, b] = channels(color); return r * .3 + g * .59 + b * .11; };
+    expect(luminance(fill(winter, "ground"))).toBeGreaterThan(luminance(fill(day, "ground")) + 30);
+    expect(luminance(fill(winter, "sea"))).toBeGreaterThan(luminance(fill(day, "sea")) + 25);
+    const [dr, dg] = channels(fill(day, "wood")), [ar, ag] = channels(fill(autumn, "wood"));
+    expect(dg).toBeGreaterThan(dr); expect(ar).toBeGreaterThan(ag);
+    expect(winter.polygons).toHaveLength(day.polygons.length); expect(autumn.polygons).toHaveLength(day.polygons.length);
+  });
+  it("lifts a hidden layer with everything that belongs to it and leaves the others untouched", () => {
+    const { document, cartography } = scene();
+    const all = cartographyDraw(document, cartography, "fantasy", { paper: false }), without = cartographyDraw(document, cartography, "fantasy", { paper: false, hide: ["water", "building"] });
+    expect(without.polygons.some(p => p.regionId === "sea" || p.regionId === "house")).toBe(false);
+    for (const id of ["ground", "wood", "lane"]) expect(without.polygons.filter(p => p.regionId === id)).toEqual(all.polygons.filter(p => p.regionId === id));
+    expect(all.polygons.some(p => p.regionId === "sea") && all.polygons.some(p => p.regionId === "house")).toBe(true);
+    const bare = cartographyDraw(document, cartography, "fantasy", { paper: false, hide: ["terrain", "water", "road", "lot", "building", "room"] });
+    expect(bare.polygons).toHaveLength(0); expect(bare.background).toBe(all.background);
+  });
+  it("lifts the stone walls of a town plan as their own layer", () => {
+    const { document, cartography } = scene();
+    const walled = { ...document, walls: [{ id: "wall", kind: "wall" as const, elevation: 0, points: [[100, 100], [300, 100]] as TacticalPoint[] }] };
+    expect(cartographyDraw(walled, cartography, "fantasy", { paper: false }).polygons.some(p => p.regionId === "wall")).toBe(true);
+    expect(cartographyDraw(walled, cartography, "fantasy", { paper: false, hide: ["walls"] }).polygons.some(p => p.regionId === "wall")).toBe(false);
   });
 });

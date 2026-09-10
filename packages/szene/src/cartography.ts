@@ -62,6 +62,11 @@ export interface CartographyReliefV1 {
   readonly seaLevel: number;
   readonly heights: readonly number[];
 }
+/** The mood a map is painted in. It belongs to the map, not to the viewer: the game master
+ * chooses it in the studio, it is saved with the revision, and the players' tiles and the PNG
+ * export carry it too. `tag` is the plain painting and is never written. */
+export const CARTOGRAPHY_MOODS = ["tag", "nacht", "winter", "herbst"] as const;
+export type CartographyMood = typeof CARTOGRAPHY_MOODS[number];
 export interface TacticalCartographyV1 {
   readonly schemaVersion: 1;
   readonly kind: "tactical-cartography";
@@ -69,6 +74,8 @@ export interface TacticalCartographyV1 {
   readonly regions: readonly CartographyRegionV1[];
   /** Absent on every document written before 2026-09-10; absence keeps bytes and hash unchanged. */
   readonly relief?: CartographyReliefV1;
+  /** Absent means day; absence keeps bytes and hash unchanged. */
+  readonly mood?: Exclude<CartographyMood, "tag">;
 }
 /** An intent for a newly drawn building, not writable node identity or provenance. */
 export interface BuildingIntent { readonly regionId: string; readonly titel: string; readonly typ: BauwerkTyp }
@@ -140,9 +147,11 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
   let raw: unknown;
   try { raw = parseBoundedMapJson(input, TACTICAL_CARTOGRAPHY_LIMITS.documentBytes); }
   catch (error) { if (error instanceof TacticalMapValidationError) fail(error.path, error.message.slice(error.path.length + 2)); throw error; }
-  const root = object(raw, "cartography", ["schemaVersion", "kind", "construction", "regions"], ["relief"]);
+  const root = object(raw, "cartography", ["schemaVersion", "kind", "construction", "regions"], ["relief", "mood"]);
   if (root.schemaVersion !== 1 || root.kind !== "tactical-cartography") fail("cartography", "unsupported cartography profile/version; an explicit schema migration is required");
   if (Object.hasOwn(root, "relief")) relief(root.relief, "relief");
+  // Day is the absence of a mood: writing it would change the hash of every untouched map.
+  if (Object.hasOwn(root, "mood")) choice(root.mood, CARTOGRAPHY_MOODS.filter(mood => mood !== "tag"), "mood");
   const construction = object(root.construction, "construction", ["cellSize", "origin"]);
   number(construction.cellSize, "construction.cellSize", Number.MIN_VALUE, TACTICAL_CARTOGRAPHY_LIMITS.cellSize);
   const origin = array(construction.origin, "construction.origin", 2);

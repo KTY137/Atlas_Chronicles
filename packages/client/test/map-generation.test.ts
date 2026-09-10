@@ -206,3 +206,17 @@ describe("the map's own lights reach the picture", () => {
     expect(() => validateMapScene(scene)).not.toThrow();
   });
 });
+
+describe("the map's mood reaches the picture", () => {
+  it("hands the stored mood to the renderer, lets a preview override it, and the scene stays valid", () => {
+    const document = parseTacticalMapDocument({ schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels", frame: { ursprung: [0, 0], einheitenProPixel: 1, ordnung: "xy", hoch: "unten" },
+      geometry: { v: 3, size: [800, 600], stamps: [], places: [], regions: [{ id: "land", punkte: [[0, 0], [800, 0], [800, 600], [0, 600]] }] }, grid: { kind: "square", size: 64, origin: [0, 0] }, elevation: 0, geometryElevation: [], walls: [], portals: [],
+      lights: [], environment: { bakedLighting: false, ambientLightArgb: "ffffffff" }, background: null });
+    const cartography = inferLegacyCartography(document);
+    expect(mapDocumentScene("plain", document, [], undefined, undefined, "fantasy", cartography)).not.toHaveProperty("mood");
+    const night = mapDocumentScene("night", document, [], undefined, undefined, "fantasy", { ...cartography, mood: "nacht" });
+    expect(night.mood).toBe("nacht"); expect(() => validateMapScene(night)).not.toThrow();
+    expect(night.drawing!.background).not.toBe(mapDocumentScene("plain", document, [], undefined, undefined, "fantasy", cartography).drawing!.background);
+    expect(mapDocumentScene("preview", document, [], undefined, undefined, "fantasy", { ...cartography, mood: "nacht" }, { mood: "winter" }).mood).toBe("winter");
+  });
+});

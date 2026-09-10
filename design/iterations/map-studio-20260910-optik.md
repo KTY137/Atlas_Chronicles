@@ -59,6 +59,23 @@ blasser mit der Höhe), client `map-generation` 31/31 (Lichter erreichen die Sze
 gültig). Gesamt 96 Dateien, 1302 Fälle; `e2e` 7/7 (vor den letzten beiden Detailkorrekturen:
 Fleckung nur auf offenem Boden, Lichter bei Fixtures ohne `lights`).
 
+## Runde 4 — Stimmung und Ebenenleiste
+
+Angesehen als Rasterbilder (`.local/relief-probe/moods.ts`, Dorf am Fluss in allen vier
+Stimmungen und mit Wasser und Gebäuden ausgeblendet): Nacht anfangs zu grau mit leuchtend
+blauem Fluss (Multiplikator .5/.56/.76), dann auf .34/.4/.6 plus 18 % Tiefblau vertieft — jetzt
+Nachtblau mit dunklem Fluss und dunklen Dächern; Winter zeigte reifes Gold auf Feldern unter
+Schnee, korrigiert; Herbst war anfangs ganz ocker (Papier .3 → .15, Wiese .55 → .45). Nachweise:
+szene `cartography` (Stimmung: nur nacht/winter/herbst, nie tag, gehasht, serialisiert) und
+`cartography-projection` 26/26 (Nacht senkt jede Farbe und behält jedes Polygon, Winter/Herbst
+Paletten, `hide` je Ebene und für die Stadtmauer), render `renderer-lifecycle` (nachts 5 Pools
+mit 2,5-facher Stärke, Mondtusche, Mondtönung der Möbel) und `geometry` (Stimmung geprüft),
+client `map-layers` 5/5 (Reihen, Umschalten, Sperren, Ansicht, Szene) und `map-generation`
+(Stimmung erreicht die Szene, Vorschau überschreibt); gesamt in den sechs Suiten 170 Fälle,
+dazu forge/server/client-Kartensuiten 80/80. Typecheck, Build, `gate:sprache`, `gate:boundaries`
+grün. Browser: `map-studio` (neu: Stimmung speichern und nach Neuladen sehen, Wasser
+ausblenden, Ebene sperren, Leiste schließen; die Schalter sind `role="switch"`, weil `getByRole("button", { name: "Gelände" })` sonst Werkzeug und Ebene traf), `map-editor-cartography`, `nested-maps`: 8/8 in 6,5 min, Bild `night-layers-studio.png` angesehen.
+
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel
 für Außenobjekte, Möbel an die Wand rücken (Möbel stehen frei im Raum). Desktop nicht neu gebaut.

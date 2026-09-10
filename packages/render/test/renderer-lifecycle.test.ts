@@ -406,3 +406,32 @@ describe("light, shadow and ink on a drawn map", () => {
     map.destroy();
   });
 });
+
+describe("the same room by night", () => {
+  const drawing = { rendererVersion, width: scene.width, height: scene.height, background: null, polygons: [] };
+  it("lets the lights carry two and a half times as far and as strong", async () => {
+    const lights = [{ id: "torch", x: 100, y: 100, range: 200, intensity: .5, color: 0xdd8a33 }];
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], drawing, lights, mood: "nacht" });
+    const glow = layer("glow") as { circles: number[]; fills: { alpha?: number }[] };
+    expect(glow.circles).toEqual([270, 200, 124, 60, 12]);
+    expect(glow.fills[0]).toMatchObject({ color: 0xdd8a33, alpha: .0375 });
+    expect(glow.fills[1]).toMatchObject({ color: 0xdd8a33, alpha: .05 });
+    map.update({ ...scene, tokens: [], lines: [], drawing, lights });
+    expect(glow.circles).toEqual([200, 124, 60, 12]);
+    expect(glow.fills[0]).toMatchObject({ alpha: .02 });
+    map.destroy();
+  });
+  it("sets names in moonlit ink and stands the furniture in the same moonlight", async () => {
+    const pins = [{ id: "inn", x: 400, y: 400, label: "Zum goldenen Hirsch" }];
+    const stamps = [{ id: "chest", asset: "pk.gemalt/truhe", x: 90, y: 90, s: 1, r: 0, l: 0 }];
+    const map = await createMapRenderer(host(), { ...scene, tokens: [], lines: [], showLabels: true, pins, drawing, stamps, mood: "nacht" });
+    map.setStampImages([{ asset: "pk.gemalt/truhe", image: { width: 32, height: 32, close: vi.fn() } as unknown as ImageBitmap }]);
+    const label = () => pixi.labels.find(text => text.text === "Zum goldenen Hirsch") as { style?: { fill?: number; fontFamily?: string } } | undefined;
+    expect(label()?.style?.fill).toBe(0xe9e2cf); expect(label()?.style?.fontFamily).toContain("serif");
+    expect((pixi.sprites.at(-1) as { tint?: number }).tint).toBe(0x8a93b3);
+    map.update({ ...scene, tokens: [], lines: [], showLabels: true, pins, drawing, stamps, mood: "winter" });
+    expect(label()?.style?.fill).toBe(0x2c2519);
+    expect((pixi.sprites.at(-1) as { tint?: number }).tint).toBeUndefined();
+    map.destroy();
+  });
+});

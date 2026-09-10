@@ -237,3 +237,19 @@ describe("relief: the land's height as an optional, hashed part of the cartograp
     expect(RELIEF_LEVELS.rockAbove).toBeLessThan(RELIEF_LEVELS.snowAbove);
   });
 });
+
+describe("mood: night, winter and autumn belong to the map, day is its absence", () => {
+  it("accepts every mood but day, keeps a map without one byte-identical, and hashes the mood", () => {
+    const document = map(), plain = cartography();
+    expect(serializeTacticalCartography(plain)).not.toContain("mood");
+    for (const mood of ["nacht", "winter", "herbst"] as const) {
+      const parsed = parseTacticalCartography({ ...plain, mood }, document);
+      expect(parsed.mood).toBe(mood);
+      expect(tacticalCartographyHash({ ...plain, mood })).not.toBe(tacticalCartographyHash(plain));
+      expect(parseTacticalCartography(serializeTacticalCartography({ ...plain, mood }), document)).toEqual(parsed);
+    }
+    expect(() => parseTacticalCartography({ ...plain, mood: "tag" }, document)).toThrow(TacticalCartographyValidationError);
+    expect(() => parseTacticalCartography({ ...plain, mood: "daemmerung" }, document)).toThrow(TacticalCartographyValidationError);
+    expect(() => parseTacticalCartography({ ...plain, mood: 2 }, document)).toThrow(TacticalCartographyValidationError);
+  });
+});
