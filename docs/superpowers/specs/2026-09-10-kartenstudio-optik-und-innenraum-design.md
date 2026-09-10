@@ -102,7 +102,7 @@ Präsentation, keine Daten geändert; jede Wirkung kommt aus dem, was die Karte 
 ## 5. Runde 4 — die Zehnerliste (`cartography-11`)
 
 Kaya fragte nach zehn Verbesserungen und ließ sie abarbeiten. Reihenfolge nach Wirkung, jedes
-Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1 bis 7 fertig.
+Paket ein Commit mit Nachweis. Stand dieses Abschnitts: Punkte 1 bis 8 fertig.
 
 **1 Möbel an die Wand, 2 Gärten um die Häuser** (Commit `3f75ad3`): Möbel werden nach Art
 platziert — Betten, Schränke, Regale, Truhen an die Wand (`Lage` mit bevorzugten Plätzen und
@@ -195,6 +195,22 @@ für alles, was auf dem Boden steht; ein Regionalwald hatte vorher jedes Dach ve
 Kronen am Waldrand dürfen über die Stückkante ragen, damit die Tessellation des Generators
 nicht als Treppe im Bild steht. Keine generierten freien Namen: die Orte tragen ihre Namen als
 Knoten (Kartenmarke „Stadt"), freie Namen setzt der Spielleiter.
+
+**8 Wasser und Küste.** Straßenmaterial `steg` (ein Steg ist eine Straße, die ins Wasser
+darf): die Projektion malt Planken quer, Pfosten an beiden Kanten und ein bis zwei vertäute
+Boote daneben — als Polygone, damit der Hafen in jeder Kachel gleich aussieht. Der
+Siedlungsgenerator (Fassung 7 → 8, eine andere Karte für denselben Keim ist eine Migration)
+setzt an Küste, See und Fluss vom Ortskern aus zum nächsten Uferpunkt und geradeaus ins Wasser
+einen Steg (Stadt an Küste oder See: zwei), nie durch ein Haus, zu mindestens 45 % im Wasser.
+**Schilfgürtel:** an stillen Ufern (See dicht, Meer spärlich) Halmbüschel auf der Landseite,
+von den Uferkanten aus, damit sie jeder Bucht folgen. **Wasserfall:** fällt ein Flussstück über
+seine Länge um 14 Stufen oder mehr, wird es weiß — Gischtbänder quer zur Strömung und ein
+Schleier drumherum. **Mündung:** endet ein Flussstück in See oder Meer, fächert es sich als
+blasser Keil auf und trägt zwei Schaumlinien. Dazu zwei Befunde aus dem Versionssprung, beide
+im Relief behoben: ein Moor konnte je nach Keim ohne offenes Wasser und ohne Sumpf bleiben —
+jetzt drei Tümpel auf einem Ring außerhalb des Kerns und eine höhere Grundfeuchte. Die
+Galerie-Heuristiken (Waldanteil je Keim) sind entsprechend gelockert: wie viel Wald ein Keim
+trägt, entscheidet das Land, und ein trockener Keim hat Gehölze statt Wald.
 
 ## 6. Nachweis
 Siehe `design/iterations/map-studio-20260910-optik.md`.

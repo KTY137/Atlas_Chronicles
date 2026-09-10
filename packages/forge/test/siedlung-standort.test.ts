@@ -33,7 +33,8 @@ function landIsBuildable(map: Siedlung, standort: SiedlungStandort) {
   const hard = [...geometry(map, isStanding), ...geometry(map, isRock)];
   const buildings = geometry(map, role => role.role === "building").flatMap(p => p.length === 6 ? [[p[0]!, p[1]!, p[2]!, p[5]!], [p[2]!, p[3]!, p[4]!, p[5]!]] : [p]);
   for (const polygon of buildings) for (const obstacle of blocked) expect(overlaps(polygon, obstacle), `${standort}: a building stands in water or on rock`).toBe(false);
-  const roads = geometry(map, role => role.role === "road" && role.material !== "bridge"), bridges = geometry(map, role => role.role === "road" && role.material === "bridge");
+  // A bridge stands over a river and a pier reaches into the water on purpose; every other road stops at the shore.
+  const roads = geometry(map, role => role.role === "road" && role.material !== "bridge" && role.material !== "steg"), bridges = geometry(map, role => role.role === "road" && role.material === "bridge");
   for (const road of roads) for (const obstacle of hard) expect(overlaps(road, obstacle), `${standort}: a street runs through a lake, the sea or rock`).toBe(false);
   const rivers = geometry(map, isRiver);
   let crossings = 0;

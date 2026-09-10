@@ -37,9 +37,9 @@ export interface CartographyDrawing {
   readonly polygons: readonly CartographyPolygon[];
 }
 const palettes = {
-  fantasy: { background: 0xe0d8bc, generic: 0xcac3ae, grass: 0xc5c48d, earth: 0xbba079, forest: 0x536b48, field: 0xb6a379, rock: 0xa8a69a, sand: 0xdfcd9e, swamp: 0x7c8a63, snow: 0xeef0ea, water: 0x659eaf, path: 0xe4d5af, street: 0xe0d6bd, square: 0xd8c9aa, bridge: 0xb49470, lot: 0xcac392, room: 0xd2c5ab, roof: 0xbd7354, roofLight: 0xdd9870, roofDark: 0x683e32 },
-  gegenwart: { background: 0xd8d8cb, generic: 0xb6b7af, grass: 0xaabb97, earth: 0xbaab92, forest: 0x6d8c72, field: 0xbaba8b, rock: 0xa5aaa8, sand: 0xdacaac, swamp: 0x86927a, snow: 0xe8ebe9, water: 0x83afb9, path: 0xd1c6af, street: 0x909894, square: 0xbfc1b9, bridge: 0xa9aba4, lot: 0xc6cbbd, room: 0xced0c7, roof: 0xa2aaa8, roofLight: 0xc4cbc8, roofDark: 0x717f7d },
-  scifi: { background: 0x536368, generic: 0x67767a, grass: 0x8caa90, earth: 0x9b8f7d, forest: 0x537c76, field: 0x9cac7b, rock: 0x839097, sand: 0xbeb695, swamp: 0x62777a, snow: 0xc7d1d4, water: 0x5a9fae, path: 0x96aaa8, street: 0x465b63, square: 0x7f9299, bridge: 0xa3b8ba, lot: 0x7d9190, room: 0x9bafb2, roof: 0x91aeb4, roofLight: 0xbcd2d4, roofDark: 0x5b7b88 },
+  fantasy: { background: 0xe0d8bc, generic: 0xcac3ae, grass: 0xc5c48d, earth: 0xbba079, forest: 0x536b48, field: 0xb6a379, rock: 0xa8a69a, sand: 0xdfcd9e, swamp: 0x7c8a63, snow: 0xeef0ea, water: 0x659eaf, path: 0xe4d5af, street: 0xe0d6bd, square: 0xd8c9aa, bridge: 0xb49470, steg: 0xa6825a, lot: 0xcac392, room: 0xd2c5ab, roof: 0xbd7354, roofLight: 0xdd9870, roofDark: 0x683e32 },
+  gegenwart: { background: 0xd8d8cb, generic: 0xb6b7af, grass: 0xaabb97, earth: 0xbaab92, forest: 0x6d8c72, field: 0xbaba8b, rock: 0xa5aaa8, sand: 0xdacaac, swamp: 0x86927a, snow: 0xe8ebe9, water: 0x83afb9, path: 0xd1c6af, street: 0x909894, square: 0xbfc1b9, bridge: 0xa9aba4, steg: 0x9c8a70, lot: 0xc6cbbd, room: 0xced0c7, roof: 0xa2aaa8, roofLight: 0xc4cbc8, roofDark: 0x717f7d },
+  scifi: { background: 0x536368, generic: 0x67767a, grass: 0x8caa90, earth: 0x9b8f7d, forest: 0x537c76, field: 0x9cac7b, rock: 0x839097, sand: 0xbeb695, swamp: 0x62777a, snow: 0xc7d1d4, water: 0x5a9fae, path: 0x96aaa8, street: 0x465b63, square: 0x7f9299, bridge: 0xa3b8ba, steg: 0x8fa3a8, lot: 0x7d9190, room: 0x9bafb2, roof: 0x91aeb4, roofLight: 0xbcd2d4, roofDark: 0x5b7b88 },
 } as const;
 type Palette = { -readonly [key in keyof typeof palettes.fantasy]: number };
 const order = { terrain: 0, lot: 1, generic: 2, room: 3, water: 4, road: 5, ort: 6, building: 7 };
@@ -203,6 +203,9 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   // it, and the ground under it shows, the way lifting a sheet of tracing paper does.
   const regions = document.geometry.regions.map((region, index) => ({ ...region, index, role: roles.get(region.id) })).filter(region => !hidden.has(cartographyLayerOf(region.role)));
   const banks=regionBanks(regions.filter(region=>region.role?.role==="water"));
+  // Standing water, so a river knows where it ends: its mouth gets foam, its last reach a delta's fan.
+  const stillWater = regions.filter(region => region.role?.role === "water" && region.role.material !== "river").map(region => ({ points: region.punkte, box: [Math.min(...region.punkte.map(p => p[0])), Math.min(...region.punkte.map(p => p[1])), Math.max(...region.punkte.map(p => p[0])), Math.max(...region.punkte.map(p => p[1]))] as const }));
+  const inStillWater = (point: TacticalPoint) => stillWater.some(water => point[0] >= water.box[0] && point[0] <= water.box[2] && point[1] >= water.box[1] && point[1] <= water.box[3] && inside(point, water.points));
   // One silhouette per contiguous material area, for the same reason water has one shore.
   const groupBank=(material:"rock"|"field")=>regionBanks(regions.filter(region=>region.role?.role==="terrain"&&region.role.material===material));
   const rockBanks=groupBank("rock"), fieldBanks=groupBank("field");
@@ -697,6 +700,38 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
           for (let ring = 1; ring <= 3; ring++) emit(id, line(a,b,pen*.55,-winding*(pen*4+ring*pen*4.6)), palette.water, .34-ring*.07);
           // A shallow shelf keeps open water from reading as one flat blue field.
           emit(id, line(a,b,pen*7,winding*pen*6.4), 0xa4ccd0, .17);
+          // Reed belts: patches of blades on the land side of a still shore, thick on a lake,
+          // sparse on the open sea, drawn from the bank so they follow every bay.
+          const length = Math.hypot(b[0] - a[0], b[1] - a[1]), tufts = Math.min(40, Math.floor(length / (pen * 3.2)));
+          const nx = -(b[1] - a[1]) / (length || 1) * -winding, ny = (b[0] - a[0]) / (length || 1) * -winding;
+          for (let tuft = 0; tuft < tufts && decorationPoints + 12 <= 250_000 - basePoints; tuft++) {
+            const key = `reed:${Math.round(a[0] + (b[0] - a[0]) * (tuft + .5) / tufts)}:${Math.round(a[1] + (b[1] - a[1]) * (tuft + .5) / tufts)}`;
+            if (phase(key, 1) > (role.material === "sea" ? .22 : .5)) continue;
+            const t = (tuft + .5) / tufts, foot: TacticalPoint = [a[0] + (b[0] - a[0]) * t + nx * pen * 2.4, a[1] + (b[1] - a[1]) * t + ny * pen * 2.4];
+            for (const [lean, tall] of [[-.6, 3.6], [.05, 4.6], [.65, 3.9]] as const) {
+              const tip: TacticalPoint = [foot[0] + nx * pen * tall + (b[0] - a[0]) / (length || 1) * pen * lean * 1.6, foot[1] + ny * pen * tall + (b[1] - a[1]) / (length || 1) * pen * lean * 1.6];
+              emit(id, line(foot, tip, pen * .32), 0x6b7a37, .7);
+            }
+          }
+        }
+      }
+      if (role.material === "river") {
+        const axes = roofAxes(points), centre: TacticalPoint = [(minX + maxX) / 2, (minY + maxY) / 2];
+        const at = (u: number): TacticalPoint => [centre[0] + axes.along[0] * u, centre[1] + axes.along[1] * u], span = (axes.right - axes.left) / 2;
+        // A waterfall: where a reach of river drops a good height over its own length, the water
+        // is white — bands of foam across the flow and a haze of spray around them.
+        const drop = relief ? Math.abs(reliefHeightAt(relief, cartography.construction, ...at(-span * .9)) - reliefHeightAt(relief, cartography.construction, ...at(span * .9))) : 0;
+        if (drop >= 14 && span > pen * 2) {
+          emit(id, points, 0xe8f2f2, .28);
+          for (const step of [-.45, -.15, .15, .45]) emit(id, band(points, axes.along, axes.left + (axes.right - axes.left) * (.5 + step) - pen * .5, axes.left + (axes.right - axes.left) * (.5 + step) + pen * .5), 0xf4fbfb, .85);
+          emit(id, points.map(point => [centre[0] + (point[0] - centre[0]) * 1.25, centre[1] + (point[1] - centre[1]) * 1.25]), 0xe8f2f2, .16);
+        }
+        // The mouth: where a reach ends in a lake or the sea, it spreads a fan of pale water and
+        // a line of foam, so the river visibly arrives instead of stopping at a straight edge.
+        else if (stillWater.length && points.some(point => inStillWater(point))) {
+          const fan = points.map(point => [centre[0] + (point[0] - centre[0]) * 1.6, centre[1] + (point[1] - centre[1]) * 1.4] as TacticalPoint);
+          emit(id, fan, mix(palette.water, 0xd6e7e6, .5), .32);
+          for (const step of [-.3, .3]) emit(id, band(points, axes.along, axes.left + (axes.right - axes.left) * (.5 + step) - pen * .3, axes.left + (axes.right - axes.left) * (.5 + step) + pen * .3), 0xe1eeea, .55);
         }
       }
       // Short ripples use one global map lattice. Per-segment full-width stripes exposed
@@ -718,6 +753,28 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
           if (ripple.every(point => inside(point, points))) emit(id, ripple, 0xe1eeea, .26);
         }
       }
+    } else if (role?.role === "road" && role.material === "steg") {
+      // A pier: planks across the walkway, posts along both edges, and one or two boats moored
+      // alongside — the boats are drawn here so the harbour looks the same in every tile.
+      const axes = roofAxes(points), along = axes.along, across = axes.across, span = axes.right - axes.left, width = axes.bottom - axes.top;
+      const planks = Math.min(60, Math.max(4, Math.round(span / (pen * 1.6))));
+      for (let index = 1; index < planks; index++) { const u = axes.left + span * index / planks; emit(id, band(points, along, u, u + Math.max(.4, pen * .28)), palette.roofDark, .35); }
+      const posts = Math.min(24, Math.max(2, Math.round(span / (pen * 5))));
+      for (let index = 0; index <= posts; index++) for (const side of [axes.top + width * .12, axes.bottom - width * .12]) {
+        const u = axes.left + span * index / posts, r = Math.max(.6, pen * .5), c: TacticalPoint = [along[0] * u + across[0] * side, along[1] * u + across[1] * side];
+        emit(id, [[c[0] - r, c[1] - r], [c[0] + r, c[1] - r], [c[0] + r, c[1] + r], [c[0] - r, c[1] + r]], 0x3d2e1e, .9);
+      }
+      for (const [fraction, side] of [[.42, 1], [.78, -1]] as const) {
+        if (phase(id, fraction > .5 ? 2 : 1) > .8) continue;
+        const hullLength = Math.min(span * .34, cartography.construction.cellSize * .55), hullWidth = hullLength * .34, gap = width * .5 + hullWidth * .75;
+        const centre: TacticalPoint = [along[0] * (axes.left + span * fraction) + across[0] * ((axes.top + axes.bottom) / 2 + side * gap), along[1] * (axes.left + span * fraction) + across[1] * ((axes.top + axes.bottom) / 2 + side * gap)];
+        const hull = ([[-.5, 0], [-.3, -.5], [.3, -.5], [.5, 0], [.3, .5], [-.3, .5]] as const).map(([u, v]) => [centre[0] + along[0] * u * hullLength + across[0] * v * hullWidth, centre[1] + along[1] * u * hullLength + across[1] * v * hullWidth] as TacticalPoint);
+        emit(id, hull.map(point => [point[0] + pen * .6, point[1] + pen * .7]), 0x1d3648, .3);
+        emit(id, hull, ink, .95);
+        emit(id, hull.map(point => [centre[0] + (point[0] - centre[0]) * .82, centre[1] + (point[1] - centre[1]) * .82]), palette.steg);
+        emit(id, hull.map(point => [centre[0] + (point[0] - centre[0]) * .5, centre[1] + (point[1] - centre[1]) * .5]), tint(palette.steg, -40), .6);
+      }
+      for (const { a, b, inward: winding } of roadBanks.get(id) ?? []) emit(id, line(a, b, pen * .5, winding * pen * .2), ink, .6);
     } else if (role?.role === "road" && role.material === "bridge") {
       const axis = width >= height ? 0 : 1, min = axis ? minY : minX, size = axis ? height : width;
       for (let index = 1; index < 9; index++) emit(id, stripe(points, axis, min + size * index / 9, min + size * (index + .18) / 9), palette.roofDark, .25);

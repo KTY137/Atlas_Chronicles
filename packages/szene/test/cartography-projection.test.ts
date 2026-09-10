@@ -162,8 +162,10 @@ describe("relief in the painted drawing: shading, contour lines and summits that
     const underWater = [...shade, ...lines].filter(p => p.points.every(q => q[0] > 480));
     expect(underWater).toEqual([]);
     const { relief: _relief, ...without } = ridge.cartography;
+    // On the ground, contours and shading off is the same as no relief at all; the river keeps
+    // its relief-born waterfall either way, so only the ground is compared.
     const none = cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false, shading: false });
-    expect(none.polygons.length).toBe(cartographyDraw(ridge.document, without).polygons.length);
+    expect(none.polygons.filter(p => p.regionId === "ground").length).toBe(cartographyDraw(ridge.document, without).polygons.filter(p => p.regionId === "ground").length);
     // Contours off leaves the hills their ink outlines (they belong to the shading); the contour lines themselves are gone.
     expect(cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false }).polygons.filter(p => p.regionId === "ground" && p.fill === ink && (p.opacity === .3 || p.opacity === .46))).toHaveLength(0);
     expect(cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false, shading: false, paper: false }).polygons.filter(p => p.regionId === "ground" && p.fill === ink)).toHaveLength(0);
@@ -386,5 +388,41 @@ describe("a settlement seen from the region: roofs, a church, a wall", () => {
     expect(stone.length).toBeGreaterThanOrEqual(8);
     expect(sheet("dorf", "gegenwart").filter(p => p.fill === 0x683e32)).toHaveLength(0);
     void document; void cartography;
+  });
+});
+
+describe("water and coast: piers with boats, reed belts, waterfalls and river mouths", () => {
+  const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const base = { authored: false, locked: false, provenance: null } as const;
+  const draw = (regions: { id: string; punkte: TacticalPoint[] }[], roles: TacticalCartographyV1["regions"], relief?: CartographyReliefV1) => {
+    const { document, cartography } = fixture();
+    return cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 60, origin: [0, 0] }, regions: roles, ...(relief ? { relief } : {}) }, "fantasy", { paper: false, contours: false, shading: false }).polygons;
+  };
+  const ground = { ...base, regionId: "ground", role: "terrain", material: "grass" } as const;
+  it("lays planks and posts on a pier and moors a boat alongside", () => {
+    const polygons = draw([{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "sea", punkte: rect(300, 0, 300, 600) }, { id: "pier", punkte: rect(280, 290, 160, 24) }],
+      [ground, { ...base, regionId: "sea", role: "water", material: "sea" }, { ...base, regionId: "pier", role: "road", material: "steg" }]).filter(p => p.regionId === "pier");
+    expect(polygons.filter(p => p.fill === 0x3d2e1e).length).toBeGreaterThanOrEqual(6);
+    expect(polygons.filter(p => p.fill === 0x683e32 && p.opacity === .35).length).toBeGreaterThan(3);
+    expect(polygons.filter(p => p.points.length === 6 && p.fill === 0xa6825a).length).toBeGreaterThanOrEqual(1);
+  });
+  it("grows reeds on the land side of a lake shore and none along a river", () => {
+    const lake = draw([{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "lake", punkte: rect(200, 200, 200, 200) }], [ground, { ...base, regionId: "lake", role: "water", material: "lake" }]);
+    const reeds = lake.filter(p => p.regionId === "lake" && p.fill === 0x6b7a37);
+    expect(reeds.length).toBeGreaterThan(6);
+    expect(reeds.every(p => p.points.every(q => q[0] < 200 || q[0] > 400 || q[1] < 200 || q[1] > 400))).toBe(true);
+    const river = draw([{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "river", punkte: rect(0, 280, 600, 40) }], [ground, { ...base, regionId: "river", role: "water", material: "river" }]);
+    expect(river.filter(p => p.regionId === "river" && p.fill === 0x6b7a37)).toHaveLength(0);
+  });
+  it("whitens a reach that drops steeply and fans out a reach that ends in the sea", () => {
+    const steep: CartographyReliefV1 = { schemaVersion: 1, columns: 11, rows: 11, seaLevel: 77, heights: Array.from({ length: 121 }, (_, k) => (k % 11) < 5 ? 180 : 100) };
+    const fall = draw([{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "river", punkte: rect(200, 280, 200, 40) }], [ground, { ...base, regionId: "river", role: "water", material: "river" }], steep).filter(p => p.regionId === "river");
+    expect(fall.filter(p => p.fill === 0xf4fbfb)).toHaveLength(4);
+    const flat: CartographyReliefV1 = { ...steep, heights: Array.from({ length: 121 }, () => 120) };
+    expect(draw([{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "river", punkte: rect(200, 280, 200, 40) }], [ground, { ...base, regionId: "river", role: "water", material: "river" }], flat).filter(p => p.regionId === "river" && p.fill === 0xf4fbfb)).toHaveLength(0);
+    const mouth = draw([{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "sea", punkte: rect(400, 0, 200, 600) }, { id: "river", punkte: rect(250, 280, 160, 40) }],
+      [ground, { ...base, regionId: "sea", role: "water", material: "sea" }, { ...base, regionId: "river", role: "water", material: "river" }]).filter(p => p.regionId === "river");
+    expect(mouth.filter(p => p.fill === 0xe1eeea && p.opacity === .55)).toHaveLength(2);
+    expect(mouth.some(p => p.opacity === .32 && p.points.length === 4)).toBe(true);
   });
 });

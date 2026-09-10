@@ -22,7 +22,8 @@ export type CartographyStandort = typeof CARTOGRAPHY_STANDORTE[number];
 export type CartographyOrtGroesse = typeof CARTOGRAPHY_ORT_GROESSEN[number];
 export const CARTOGRAPHY_TERRAIN_MATERIALS = Object.freeze(["grass", "earth", "forest", "field", "rock", "sand", "swamp", "snow"] as const);
 export const CARTOGRAPHY_WATER_MATERIALS = Object.freeze(["river", "lake", "sea"] as const);
-export const CARTOGRAPHY_ROAD_MATERIALS = Object.freeze(["path", "street", "square", "bridge"] as const);
+/** `steg` is a pier: planks on posts reaching from the shore into the water, boats alongside. */
+export const CARTOGRAPHY_ROAD_MATERIALS = Object.freeze(["path", "street", "square", "bridge", "steg"] as const);
 export type CartographyRole = typeof CARTOGRAPHY_ROLES[number];
 export type CartographyTerrainMaterial = typeof CARTOGRAPHY_TERRAIN_MATERIALS[number];
 export type CartographyWaterMaterial = typeof CARTOGRAPHY_WATER_MATERIALS[number];

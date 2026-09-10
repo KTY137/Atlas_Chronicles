@@ -126,7 +126,22 @@ Dächer je Größe, Kirche ab Dorf, Mauer ab Stadt, flache Dächer außerhalb Fa
 ohne Optionen = gespeicherte Stadt, keimHash gleich der Vorschau, Straße hat keinen Eingang,
 falsche Optionen 400), `siedlung-integration`, `betreten`. Typecheck, Build, `gate:sprache`.
 Browser `map-studio` „regional map": Landkarte im Studio mit Orten, Auswahl eines Ortes zeigt
-„Ort" (`region-studio.png` angesehen: Fluss, Wälder, fünf Orte mit Dächern, Namen an den Marken).
+„Ort" (`region-studio.png` angesehen: Fluss, Wälder, fünf Orte mit Dächern, Namen an den Marken); alle drei Specs 10 von 11 im Lauf, der elfte
+(`map-editor-cartography` „real editor gestures") fiel unter Volllast und lief allein erneut grün.
+
+## Runde 4, Punkt 8 — Wasser und Küste
+
+Bilder: Küste, See, Fluss, Moor (`render.ts`) und Küstenregion (`region.ts`) angesehen: Steg
+mit Boot an Küste und See, kleiner Flusssteg neben der Brücke, Schilfkranz um den See, drei
+Tümpel im Moor mit Schilf, Wasserfall (weiße Bänder) am Flussabsturz zur Küste, Mündungsfächer.
+Nachweise: szene `cartography-projection` (Planken/Pfosten/Boot; Schilf am See, nicht am Fluss;
+Wasserfall bei 80 Stufen Gefälle, keiner bei flachem; Mündungsfächer mit zwei Schaumlinien),
+forge `siedlung-hafen` (ein Steg an Küste/See/Fluss, überwiegend im Wasser, zwei für die
+Küstenstadt, keiner in Ebene und Gebirge), forge gesamt und szene 687 Fälle, server
+Generierungs- und Eingangs-Suiten 95 Fälle; Typecheck, Build, `gate:sprache`,
+`gate:boundaries`. Der Versionssprung 7 → 8 würfelte die Galerie-Keime neu: `siedlung-standort`
+nimmt Stege aus der Regel „Straßen enden am Ufer" heraus, `siedlung-cartography` prüft den
+Waldanteil je Keim nur noch als Untergrenze und den zusammenhängenden Wald nur bei echtem Wald.
 
 ## Offen, nicht behauptet
 Gebogene Ortsbeschriftungen und freie Texte (Maskenentscheidung), Bildtexturen, Streupinsel

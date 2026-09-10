@@ -64,7 +64,7 @@ import { erzeugeLandschaft, RELIEF_STANDORTE, type FlussStueck, type ReliefStand
 
 export const SIEDLUNG_ERZEUGER = "chronicle-siedlung";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
-export const SIEDLUNG_VERSION = "7";
+export const SIEDLUNG_VERSION = "8";
 
 export const SIEDLUNG_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 256, grundstueckMin: 2, grundstueckMax: 24,
@@ -889,6 +889,34 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
       const id = ids.geometrieId("marktweg", viertel[marktIndex]!.pfad);
       extraRegions.push({ id, polygon: marktZugang, role: { ...generatedRole(id), role: "road", material: "path" } });
       strassen.push({ id, art: "gasse", umriss: marktZugang });
+    }
+  }
+
+  // -- 5b. Der Steg: eine Siedlung am Wasser hat einen Landeplatz -------------------------------
+  // From the town's centre to the nearest point of the shore, then straight on into the water:
+  // planks on posts, drawn by the projection with boats alongside. A town on a coast gets two.
+  if (standort === "kueste" || standort === "see" || standort === "fluss") {
+    const ufer = [...wasser, ...(standort === "fluss" ? fluss.map(stueck => stueck.polygon) : [])];
+    const mitteOrt: Punkt = marktIndex >= 0 ? schwerpunkt(viertel[marktIndex]!.zelle) : [breite / 2, hoehe / 2];
+    const kandidaten = ufer.flatMap(polygon => polygon.filter(p => p[0] > .5 && p[1] > .5 && p[0] < breite - .5 && p[1] < hoehe - .5).map(p => ({ p, polygon, abstand: Math.hypot(p[0] - mitteOrt[0], p[1] - mitteOrt[1]) })))
+      .sort((first, second) => first.abstand - second.abstand || first.p[0] - second.p[0] || first.p[1] - second.p[1]);
+    const haeuser = bauwerke.map(b => b.umriss);
+    let gesetzt = 0;
+    for (const kandidat of kandidaten) {
+      if (gesetzt >= (art === "stadt" && standort !== "fluss" ? 2 : 1)) break;
+      const richtung: Punkt = [schwerpunkt(kandidat.polygon)[0] - kandidat.p[0], schwerpunkt(kandidat.polygon)[1] - kandidat.p[1]], norm = Math.hypot(richtung[0], richtung[1]) || 1;
+      const dx = richtung[0] / norm, dy = richtung[1] / norm, laenge = standort === "fluss" ? Math.min(1.6, Math.max(.8, flussBreite * .55)) : art === "stadt" ? 3.2 : 2.2, halb = .26;
+      const start: Punkt = [kandidat.p[0] - dx * .35, kandidat.p[1] - dy * .35], ende: Punkt = [start[0] + dx * (laenge + .35), start[1] + dy * (laenge + .35)];
+      const steg = schnittKonvex([qp([start[0] - dy * halb, start[1] + dx * halb]), qp([ende[0] - dy * halb, ende[1] + dx * halb]), qp([ende[0] + dy * halb, ende[1] - dx * halb]), qp([start[0] + dy * halb, start[1] - dx * halb])], rahmen);
+      if (steg.length < 3 || flaeche(steg) < .1) continue;
+      // The pier has to stand in this water, not cross a house, and keep clear of an earlier pier.
+      if (flaeche(schnitt(steg, kandidat.polygon)) < flaeche(steg) * .45) continue;
+      if (haeuser.some(haus => flaeche(schnitt(steg, haus)) > 1e-6)) continue;
+      const stegId = ids.geometrieId("steg", `${q(kandidat.p[0])}_${q(kandidat.p[1])}`);
+      if (extraRegions.some(region => region.role.role === "road" && region.role.material === "steg" && Math.hypot(schwerpunkt(region.polygon)[0] - kandidat.p[0], schwerpunkt(region.polygon)[1] - kandidat.p[1]) < 4)) continue;
+      extraRegions.push({ id: stegId, polygon: steg, role: { ...generatedRole(stegId), role: "road", material: "steg" } });
+      strassen.push({ id: stegId, art: "gasse", umriss: steg });
+      gesetzt++;
     }
   }
 

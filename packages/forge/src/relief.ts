@@ -314,7 +314,15 @@ export function erzeugeLandschaft(auftrag: ReliefAuftrag): Landschaft {
       // rim reads as bays and spits instead of a drawn ellipse.
       const dn = Math.hypot((i - seeMitte[0]) / (breite * .22), (j - seeMitte[1]) / (hoehe * .28)) + warp * .55 + (fbm(seed, i / (welle * .45) + 3, j / (welle * .45) + 8, 5) - .5) * .3;
       h += nc * .10 * A + .02 - klemme(1.25 - dn) * .36;
-    } else if (standort === "moor") h += -.07 + nc * .30 * A;
+    } else if (standort === "moor") {
+      h += -.07 + nc * .30 * A;
+      // Three pools are dug on purpose, on a ring outside the town core, so every moor has open
+      // water and not only the seeds whose noise happens to dip below the water line.
+      for (let k = 0; k < 3; k++) {
+        const angle = (param(20 + k) + k) / 3 * Math.PI * 2, cx = breite / 2 + Math.cos(angle) * breite * .36, cy = hoehe / 2 + Math.sin(angle) * hoehe * .36;
+        h -= .14 * Math.exp(-((i - cx) ** 2 + (j - cy) ** 2) / (welle * .55) ** 2);
+      }
+    }
     else if (standort === "kueste") {
       const d = (seite === 0 ? v : seite === 1 ? 1 - u : seite === 2 ? 1 - v : u), ufer = .30 + warp * .16;
       h += nc * .10 * A + Math.min((d - ufer) * 2.2, .08 * A);
@@ -378,7 +386,9 @@ export function erzeugeLandschaft(auftrag: ReliefAuftrag): Landschaft {
   const feuchteWerte = new Float64Array(n);
   for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
     const k = j * columns + i, wet = nass[k] === Infinity ? 0 : klemme(1 - nass[k]! / reichweite);
-    feuchteWerte[k] = (.6 * fbm(seed2, i / (welle * .9) + 5, j / (welle * .9) - 9, 7) + .4 * wet + (standort === "moor" ? .12 : 0)) * (1 - .85 * kernNaehe(i, j));
+    // A moor is wet by definition: the bias is large enough that every seed carries marsh
+    // outside the town core, not only the ones whose noise happens to run high.
+    feuchteWerte[k] = (.6 * fbm(seed2, i / (welle * .9) + 5, j / (welle * .9) - 9, 7) + .4 * wet + (standort === "moor" ? .22 : 0)) * (1 - .85 * kernNaehe(i, j));
   }
   const feuchteFeld: Feld = { columns, rows, werte: feuchteWerte };
   // Offenes Land trägt bei mittlerer Bewaldung nur einzelne Gehölze; ein Waldstandort ist Wald.
