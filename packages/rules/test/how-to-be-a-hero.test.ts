@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { HOW_TO_BE_A_HERO_PACKAGE as template, HTBAH_DEFAULT_SKILLS, HTBAH_EXAMPLE_CHARACTERS, HTBAH_ATTRIBUTION, HTBAH_RULE_GUIDANCE, createHowToBeAHeroPackage, defaultSupportedActorFields, evaluateComputedFields, evaluateFormula, evaluateSupportedAction, parseSupportedRulePackage, previewSupportedPackageMigration, replaySupportedAction, stableJson, SupportedRulePackageRegistry, validatePackageFields, type ActionResultV2, type EvaluationContext, type HtbahSkill, type Scalar } from "../src/index.ts";
+import { defaultSupportedActorFields, evaluateComputedFields, evaluateFormula, evaluateSupportedAction, parseSupportedRulePackage, previewSupportedPackageMigration, replaySupportedAction, stableJson, SupportedRulePackageRegistry, validatePackageFields, type ActionResultV2, type EvaluationContext, type Scalar } from "../src/index.ts";
+import { HOW_TO_BE_A_HERO_PACKAGE as template, HTBAH_DEFAULT_SKILLS, HTBAH_EXAMPLE_CHARACTERS, HTBAH_ATTRIBUTION, HTBAH_RULE_GUIDANCE, createHowToBeAHeroPackage, type HtbahSkill } from "../src/examples.ts";
 
 const context = (actor: Readonly<Record<string, Scalar>>, seed = "00000001000000020000000300000004", input: Readonly<Record<string, Scalar>> = {}): EvaluationContext => ({ seed, actor, input, knowledge: { actorId: "hero", passages: [] } });
 // Find real authoritative-engine seeds for every possible W100; never stub RNG or receipts.

@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPgDb, createTestDb, migrate, type Db } from "../src/db/index.ts";
-import { HOW_TO_BE_A_HERO_PACKAGE, HTBAH_EXAMPLE_CHARACTERS } from "@chronicle/rules";
+import { HOW_TO_BE_A_HERO_PACKAGE, HTBAH_EXAMPLE_CHARACTERS } from "@chronicle/rules/examples";
 import { createCampaigns } from "../src/domain/campaigns.ts";
 import { seedActorControl } from "./actor-fixtures.ts";
 import { createGameplay } from "../src/domain/gameplay.ts";

@@ -69,9 +69,9 @@ function harness(file: string, component: string, initial: Record<string, any>, 
   return { render, nodes, requests, text, replace: (next: Record<string, any>) => { props = { ...props, ...next }; render(); }, settle: async () => { await Promise.all(jobs); render(); } };
 }
 
-describe("independent HTBAH client review", () => {
+describe("independent ChronicleHeroes client review", () => {
   it("keeps an incomplete visual expression editable without throwing or losing it", () => {
-    const updates: string[] = [], draft = model.packageDraft(rules.HOW_TO_BE_A_HERO_PACKAGE);
+    const updates: string[] = [], draft = model.packageDraft(rules.CHRONICLE_HEROES_PACKAGE);
     draft.computed = [{ id: "review_value", label: "Review value", expression: "0" }];
     const h = harness("FormulaField.tsx", "FormulaField", { label: "Berechnung", value: "0", sources: { actor: [], input: [] }, allowDice: false, allowKnowledge: false, fields: [], onChange: (value: string) => {
       updates.push(value); draft.computed = [{ ...draft.computed![0]!, expression: value }];
@@ -94,24 +94,24 @@ describe("independent HTBAH client review", () => {
     expect(blocks().props.value).toMatchObject({ kind: "literal", value: "50" });
   });
 
-  it("allows a valid HTBAH sheet to save without invented mandatory notes", () => {
-    const pkg = rules.HOW_TO_BE_A_HERO_PACKAGE, values = { ...rules.HTBAH_EXAMPLE_CHARACTERS[0]!.fields, notes: "" };
+  it("allows a valid ChronicleHeroes sheet to save without invented mandatory notes", () => {
+    const pkg = rules.CHRONICLE_HEROES_PACKAGE, values = { ...rules.CHRONICLE_EXAMPLE_CHARACTERS[0]!.fields, notes: "" };
     expect(() => rules.validatePackageFields(pkg, model.copyJson(values))).not.toThrow();
     const h = harness("RuleFields.tsx", "RuleFields", { fields: pkg.fields, values, onChange() {} });
     const notes = h.nodes(node => node.type === "input" && node.props.id.endsWith("-notes"))[0]!;
     expect(notes.props.value).toBe("");
     // Native form validation rejects a required empty text control before onSubmit.
     expect(notes.props.required).not.toBe(true);
-    expect(h.nodes(node => node.type === "input" && node.props.id.endsWith("-hp"))[0]!.props.required).toBe(true);
+    expect(h.nodes(node => node.type === "input" && node.props.id.endsWith("-lebenskraft"))[0]!.props.required).toBe(true);
   });
 
   it.each([
-    ["regrouped", rules.HTBAH_DEFAULT_SKILLS.map(skill => ({ ...skill, group: "handeln" as const }))],
-    ["replaced", rules.HTBAH_DEFAULT_SKILLS.map((skill, i) => ({ ...skill, id: `custom_${i}` }))],
-  ] as const)("does not offer invalid or falsely described 400-point examples for a %s catalogue", (_name, skills) => {
-    const pkg = rules.createHowToBeAHeroPackage({ skills });
+    ["regrouped", rules.CHRONICLE_DEFAULT_SKILLS.map(skill => ({ ...skill, field: "koerper" as const }))],
+    ["replaced", rules.CHRONICLE_DEFAULT_SKILLS.map((skill, i) => ({ ...skill, id: `custom_${i}` }))],
+  ] as const)("does not offer invalid or falsely described 360-point examples for a %s catalogue", (_name, skills) => {
+    const pkg = rules.createChronicleHeroesPackage({ skills });
     const h = harness("RuleForgePreview.tsx", "RuleForgePreview", { pkg });
-    const load = h.nodes(node => node.type === "Button" && h.text(node).includes("HTBAH-Beispielfiguren laden"))[0];
+    const load = h.nodes(node => node.type === "Button" && h.text(node).includes("Beispielfiguren laden"))[0];
     // With a changed catalogue, adapting the examples or withholding this shortcut
     // with an explanation is valid. Silently importing incompatible values is not.
     if (!load || load.props.disabled) {
@@ -124,28 +124,28 @@ describe("independent HTBAH client review", () => {
     expect(fixtures).toHaveLength(2);
     for (const { props: { fixture } } of fixtures) {
       expect(() => rules.validatePackageFields(pkg, fixture.values)).not.toThrow();
-      if (String(fixture.values.notes).includes("400 verteilten Startpunkten")) {
-        expect(rules.evaluateComputedFields(pkg, fixture.values).points_spent).toBe(400);
+      if (String(fixture.values.notes).includes("360 verteilten Startpunkten")) {
+        expect(rules.evaluateComputedFields(pkg, fixture.values).points_spent).toBe(rules.CHRONICLE_START_POINTS);
       }
     }
   });
 
-  it.each(["original", "renamed"])("retains both usable 400-point examples for the %s compatible catalogue", name => {
-    const pkg = name === "original" ? rules.HOW_TO_BE_A_HERO_PACKAGE : rules.createHowToBeAHeroPackage({ skills: rules.HTBAH_DEFAULT_SKILLS.map(skill => ({ ...skill, label: `Eigene Bezeichnung ${skill.label}` })) });
+  it.each(["original", "renamed"])("retains both usable 360-point examples for the %s compatible catalogue", name => {
+    const pkg = name === "original" ? rules.CHRONICLE_HEROES_PACKAGE : rules.createChronicleHeroesPackage({ skills: rules.CHRONICLE_DEFAULT_SKILLS.map(skill => ({ ...skill, label: `Eigene Bezeichnung ${skill.label}` })) });
     const h = harness("RuleForgePreview.tsx", "RuleForgePreview", { pkg });
-    const load = h.nodes(node => node.type === "Button" && h.text(node).includes("HTBAH-Beispielfiguren laden"))[0]!;
+    const load = h.nodes(node => node.type === "Button" && h.text(node).includes("Beispielfiguren laden"))[0]!;
     expect(load).toBeDefined(); expect(load.props.disabled).not.toBe(true); load.props.onClick();
     const fixtures = h.nodes(node => node.type?.name === "FixturePanel");
     expect(fixtures).toHaveLength(2);
     for (const { props: { fixture } } of fixtures) {
       expect(() => rules.validatePackageFields(pkg, fixture.values)).not.toThrow();
-      expect(rules.evaluateComputedFields(pkg, fixture.values).points_spent).toBe(400);
+      expect(rules.evaluateComputedFields(pkg, fixture.values).points_spent).toBe(rules.CHRONICLE_START_POINTS);
     }
   });
 
-  it("keeps Geistesblitz expenditure as a dirty draft and resolves a lost save response without double spending", async () => {
-    const pkg = rules.HOW_TO_BE_A_HERO_PACKAGE;
-    let authoritative = { actorId: "actor", packageId: pkg.id, packageVersion: pkg.version, fields: { ...rules.HTBAH_EXAMPLE_CHARACTERS[0]!.fields }, version: 1, defeatPending: false, defeatedAt: null };
+  it("keeps spark expenditure as a dirty draft and resolves a lost save response without double spending", async () => {
+    const pkg = rules.CHRONICLE_HEROES_PACKAGE;
+    let authoritative = { actorId: "actor", packageId: pkg.id, packageVersion: pkg.version, fields: { ...rules.CHRONICLE_EXAMPLE_CHARACTERS[0]!.fields }, version: 1, defeatPending: false, defeatedAt: null };
     const dirtiness: boolean[] = [], saved: unknown[] = [];
     const h = harness("CharacterSheet.tsx", "SheetForm", { campaignId: "campaign", latest: authoritative, rules: { packages: [pkg], pin: { id: pkg.id, version: pkg.version }, version: 1 }, gm: true,
       onDirty: (value: boolean) => dirtiness.push(value), onSaved: () => saved.push(true),
@@ -155,37 +155,37 @@ describe("independent HTBAH client review", () => {
         throw new Error("Accepted response lost");
       },
     }, "SheetForm");
-    const spend = () => h.nodes(node => node.type === "Button" && h.text(node) === "Geistesblitz einsetzen · Handeln")[0]!;
+    const spend = () => h.nodes(node => node.type === "Button" && h.text(node) === "Funken einsetzen")[0]!;
     spend().props.onClick(); h.render();
     expect(h.requests).toHaveLength(0); expect(dirtiness.at(-1)).toBe(true);
     const submit = () => h.nodes(node => node.type === "form")[0]!.props.onSubmit({ preventDefault() {} });
     expect(h.nodes(node => node.type === "form")).toHaveLength(1); // No legacy resource command for v2.
     submit(); await h.settle();
-    expect(h.requests[0]!.request.body).toMatchObject({ expectedVersion: 1, fields: { gbp_spent_handeln: 1 } });
+    expect(h.requests[0]!.request.body).toMatchObject({ expectedVersion: 1, fields: { funken_spent: 1 } });
     expect(dirtiness.at(-1)).toBe(true); expect(saved).toHaveLength(0);
     // A manual retry retains the original absolute values and version; it cannot
     // turn an ambiguous acceptance into a second expenditure.
     submit(); await h.settle();
-    expect(h.requests[1]!.request.body).toMatchObject({ expectedVersion: 1, fields: { gbp_spent_handeln: 1 } });
-    expect(authoritative.version).toBe(2); expect(authoritative.fields.gbp_spent_handeln).toBe(1);
+    expect(h.requests[1]!.request.body).toMatchObject({ expectedVersion: 1, fields: { funken_spent: 1 } });
+    expect(authoritative.version).toBe(2); expect(authoritative.fields.funken_spent).toBe(1);
     h.replace({ latest: authoritative });
     expect(h.requests).toHaveLength(2);
     h.nodes(node => node.type === "Button" && h.text(node) === "Aktuellen Bogen übernehmen")[0]!.props.onClick(); h.render();
     expect(dirtiness.at(-1)).toBe(false);
   });
 
-  it("preserves an edited HTBAH field against a newer authoritative sheet", () => {
-    const pkg = rules.HOW_TO_BE_A_HERO_PACKAGE, latest = { actorId: "actor", packageId: pkg.id, packageVersion: pkg.version, fields: { ...rules.HTBAH_EXAMPLE_CHARACTERS[0]!.fields }, version: 1, defeatPending: false, defeatedAt: null };
+  it("preserves an edited ChronicleHeroes field against a newer authoritative sheet", () => {
+    const pkg = rules.CHRONICLE_HEROES_PACKAGE, latest = { actorId: "actor", packageId: pkg.id, packageVersion: pkg.version, fields: { ...rules.CHRONICLE_EXAMPLE_CHARACTERS[0]!.fields }, version: 1, defeatPending: false, defeatedAt: null };
     const h = harness("CharacterSheet.tsx", "SheetForm", { campaignId: "campaign", latest, rules: { packages: [pkg] }, gm: false, onDirty() {}, onSaved() {} }, "SheetForm");
-    h.nodes(node => node.type === "RuleFields")[0]!.props.onChange({ hp: 60 });
-    h.replace({ latest: { ...latest, version: 2, fields: { ...latest.fields, hp: 20 } } });
-    expect(h.nodes(node => node.type === "RuleFields")[0]!.props.values.hp).toBe(60);
+    h.nodes(node => node.type === "RuleFields")[0]!.props.onChange({ lebenskraft: 60 });
+    h.replace({ latest: { ...latest, version: 2, fields: { ...latest.fields, lebenskraft: 20 } } });
+    expect(h.nodes(node => node.type === "RuleFields")[0]!.props.values.lebenskraft).toBe(60);
     expect(h.nodes(node => node.type === "Button" && h.text(node) === "Aktuellen Bogen übernehmen")).toHaveLength(1);
     expect(h.requests).toHaveLength(0);
   });
 
   it("does not load incompatible default-catalogue examples into a new custom-catalogue sheet", () => {
-    const pkg = rules.createHowToBeAHeroPackage({ skills: rules.HTBAH_DEFAULT_SKILLS.map(skill => ({ ...skill, group: "handeln" })) });
+    const pkg = rules.createChronicleHeroesPackage({ skills: rules.CHRONICLE_DEFAULT_SKILLS.map(skill => ({ ...skill, field: "koerper" })) });
     const latest = { actorId: "actor", packageId: pkg.id, packageVersion: pkg.version, fields: rules.defaultSupportedActorFields(pkg), version: 0, defeatPending: false, defeatedAt: null };
     const h = harness("CharacterSheet.tsx", "SheetForm", { campaignId: "campaign", latest, rules: { packages: [pkg] }, gm: false, onDirty() {}, onSaved() {} }, "SheetForm");
     const example = h.nodes(node => node.type === "Button" && h.text(node).includes("Mara Morgenwind als Beispiel übernehmen"))[0];

@@ -41,12 +41,12 @@ describe("Sprachpaket P2 — Figuren, Werkbänke, Gefüge", () => {
   });
 
   it("trägt die Anzeigetexte der Etikettentabellen in beiden Sprachen", async () => {
-    // `t(HTBAH_GROUP_LABELS[gruppe])` und `t(FIGURENART_LABEL[art])` schlagen den deutschen
-    // Anzeigetext nach; die gespeicherte Art bleibt der Datenschlüssel.
-    expect(t("Handeln")).toBe("Handeln");
+    // `t(CHRONICLE_FIELD_LABELS[feld])` und `t(FIGURENART_LABEL[art])` schlagen den deutschen
+    // Anzeigetext nach; der gespeicherte Schlüssel bleibt der Datenschlüssel.
+    expect(t("Körper")).toBe("Körper");
     expect(t("Spielerfigur")).toBe("Spielerfigur");
     await setzeSprache("en");
-    expect(t("Handeln")).toBe("Action");
+    expect(t("Körper")).toBe("Body");
     expect(t("Spielerfigur")).toBe("Player character");
     expect(t("Elternteil von")).toBe("Parent of");
   });

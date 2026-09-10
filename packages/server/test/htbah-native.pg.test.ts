@@ -3,7 +3,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { currentCampaignSemanticDiff, parseCurrentCampaignBundle, serializeCurrentCampaignBundle } from "@chronicle/io";
-import { DEMO_RULE_PACKAGE, HOW_TO_BE_A_HERO_PACKAGE, HTBAH_EXAMPLE_CHARACTERS, createHowToBeAHeroPackage } from "@chronicle/rules";
+import { DEMO_RULE_PACKAGE } from "@chronicle/rules";
+import { HOW_TO_BE_A_HERO_PACKAGE, HTBAH_EXAMPLE_CHARACTERS, createHowToBeAHeroPackage } from "@chronicle/rules/examples";
 import { createPgDb, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";

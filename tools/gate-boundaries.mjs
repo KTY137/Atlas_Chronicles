@@ -48,6 +48,12 @@ const FORBIDDEN = [
   { from: "core", to: "server", gate: "layering", why: "core may depend on nothing" },
 ];
 
+/** Der eigene Einstieg fuer fremd lizenzierte Beispielregelwerke, und wo er verboten ist. */
+const EXAMPLES_RE = /^@chronicle\/rules\/examples$|templates\/how-to-be-a-hero(\.ts)?$/;
+const PRODUCT_SOURCE_RE = /^packages\/[a-z0-9-]+\/src\//;
+/** Genau eine Datei darf sie fuehren: der eigene Einstieg, den kein Produktcode importiert. */
+const EXAMPLES_ENTRY = "packages/rules/src/examples.ts";
+
 const IMPORT_RE = /(?:^|\n)\s*(?:import|export)[\s\S]*?from\s*["']([^"']+)["']/g;
 const DYNAMIC_RE = /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g;
 const REQUIRE_RE = /\brequire\s*\(\s*["']([^"']+)["']\s*\)/g;
@@ -105,6 +111,16 @@ async function main() {
       while ((m = re.exec(src)) !== null) specs.add(m[1]);
     }
     for (const spec of specs) {
+      // Beispiel-Regelwerke sind fremd lizenziert (`packages/rules/src/examples.ts`, CC BY-NC-SA)
+      // und duerfen nur aus Tests und Werkzeugen kommen — nie aus Produktcode, sonst stehen sie
+      // im ausgelieferten Bundle. Das Modul ruft auf oberster Ebene auf, ist also nicht
+      // wegoptimierbar: ein einziger Import aus `src/` genuegt.
+      const posix = relative(ROOT, file).split(sep).join("/");
+      if (EXAMPLES_RE.test(spec) && PRODUCT_SOURCE_RE.test(posix) && posix !== EXAMPLES_ENTRY) {
+        violations.push({ file: relative(ROOT, file), from, to: "rules/examples", spec,
+          gate: "Lizenzgrenze", why: "example rule packages are foreign-licensed and must never reach a shipped bundle" });
+        continue;
+      }
       const to = targetPackage(spec);
       if (!to || to === from) continue;
       const rule = FORBIDDEN.find((r) => r.from === from && r.to === to);
@@ -124,7 +140,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`gate:boundaries GREEN — ${scanned} files scanned, ${FORBIDDEN.length} rules, 0 violations`);
+  console.log(`gate:boundaries GREEN — ${scanned} files scanned, ${FORBIDDEN.length + 1} rules, 0 violations`);
 }
 
 await main();

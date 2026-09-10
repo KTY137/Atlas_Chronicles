@@ -13,7 +13,7 @@ import { RuleActionEditor } from "./RuleActionEditor";
 import { FieldList } from "./RuleFieldList";
 import { RuleForgePreview } from "./RuleForgePreview";
 import { RuleMap } from "./RuleMap";
-import { HtbahTemplate } from "./HtbahTemplate";
+import { ChronicleHeroesTemplate } from "./ChronicleHeroesTemplate";
 import { MapContextMenu } from "./MapContextMenu";
 import { RuleDeclarativeEditor, RuleActionExtensions, AttributionEditor } from "./RuleDeclarativeEditor";
 import { RuleAttribution } from "./RuleComputedFields";
@@ -255,7 +255,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   if (resource.loading && !resource.data) return <Loading text={t("Regelpakete werden geladen …")} />;
   return <div className="rule-forge">
     <header className="rf-header"><div><span className="eyebrow">{t("Regeln für {name}", { name: campaign.name })}</span><h1><Hammer size={26} />{t("Regelwerkstatt")}</h1><p>{t("Ein Regelpaket bündelt Charakterfelder, den Aufbau des Charakterbogens und Aktionen (Würfe) zu einer versionierten, unveränderlichen Einheit. Baue sie hier auf, prüfe Beispiele auf der Testtafel unten und wähle bewusst, welche Version am Tisch gilt.")}</p></div><div className="rf-toolbar"><Button disabled={task.busy} onClick={() => begin(starterDraft(authorName, packages))}><Plus size={16} />{t("Neues Paket")}</Button><Button disabled={task.busy} onClick={() => upload.current?.click()}><Upload size={16} />{t("Paket öffnen")}</Button><input ref={upload} type="file" accept=".json,application/json" hidden onChange={importFile} disabled={task.busy} /></div></header>
-    <HtbahTemplate disabled={task.busy} onCreate={template => begin(packageDraft(template))} />
+    <ChronicleHeroesTemplate disabled={task.busy} onCreate={template => begin(packageDraft(template))} />
     {resource.error ? <Notice error>{resource.error} <Button disabled={task.busy} onClick={refresh}>{t("Erneut laden")}</Button></Notice> : null}
     {task.error ? <Notice error>{task.error}</Notice> : null}{notice ? <Notice>{notice}</Notice> : null}
     <div className="rf-workspace"><aside className="rf-catalog" aria-label={t("Installierte Regelpakete")}><div className="rf-section-heading"><h2><BookOpen size={18} />{t("Bibliothek")}</h2><Button variant="quiet" disabled={task.busy} onClick={refresh} aria-label={t("Paketbibliothek aktualisieren")}>↻</Button></div>

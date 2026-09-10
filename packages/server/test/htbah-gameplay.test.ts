@@ -2,7 +2,8 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DEMO_RULE_PACKAGE, HOW_TO_BE_A_HERO_PACKAGE, HTBAH_DEFAULT_SKILLS, HTBAH_EXAMPLE_CHARACTERS, createHowToBeAHeroPackage, defaultSupportedActorFields, evaluateSupportedAction, stableJson, supportedPackageContentHash, type AnyRulePackage, type Scalar } from "@chronicle/rules";
+import { DEMO_RULE_PACKAGE, defaultSupportedActorFields, evaluateSupportedAction, stableJson, supportedPackageContentHash, type AnyRulePackage, type Scalar } from "@chronicle/rules";
+import { HOW_TO_BE_A_HERO_PACKAGE, HTBAH_DEFAULT_SKILLS, HTBAH_EXAMPLE_CHARACTERS, createHowToBeAHeroPackage } from "@chronicle/rules/examples";
 import { createPgDb, createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createDocuments } from "../src/domain/documents.ts";

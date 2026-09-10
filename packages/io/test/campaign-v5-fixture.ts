@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { CanonicalValue } from "@chronicle/core";
-import { HOW_TO_BE_A_HERO_PACKAGE, HTBAH_EXAMPLE_CHARACTERS, evaluateSupportedAction } from "@chronicle/rules";
+import { evaluateSupportedAction } from "@chronicle/rules";
+import { HOW_TO_BE_A_HERO_PACKAGE, HTBAH_EXAMPLE_CHARACTERS } from "@chronicle/rules/examples";
 import { createCampaignBundleV2 } from "../src/campaign-bundle-v2.ts";
 import { upgradeCampaignBundleV2 } from "../src/campaign-bundle-v3.ts";
 import { upgradeCampaignBundleV3 } from "../src/native-v4/bundle.ts";

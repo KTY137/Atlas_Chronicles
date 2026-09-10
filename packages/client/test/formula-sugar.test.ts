@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { HOW_TO_BE_A_HERO_PACKAGE } from "@chronicle/rules";
+import { HOW_TO_BE_A_HERO_PACKAGE } from "@chronicle/rules/examples";
 import { analyzeFormula, completionsAt, desugarFormula, resugarFormula, type FormulaSources } from "../src/features/formula-sugar";
 
 const sources: FormulaSources = { actor: [{ id: "geschick", label: "Geschick", type: "number" }, { id: "vertraut", label: "Vertraut", type: "boolean" }, { id: "erste-hilfe", label: "Erste Hilfe", type: "number" }], input: [{ id: "bonus", label: "Bonus", type: "number" }] };

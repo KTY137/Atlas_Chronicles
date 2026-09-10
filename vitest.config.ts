@@ -9,6 +9,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@chronicle/theme": pkg("theme"),
+      // Der eigene Einstieg fuer fremd lizenzierte Beispielregelwerke; muss vor dem
+      // kuerzeren Alias stehen, sonst faengt dieser den Unterpfad ab.
+      "@chronicle/rules/examples": fileURLToPath(new URL("./packages/rules/src/examples.ts", import.meta.url)),
       "@chronicle/rules": pkg("rules"),
       "@chronicle/protocol": pkg("protocol"),
       "@chronicle/core": pkg("core"),

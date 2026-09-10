@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { HOW_TO_BE_A_HERO_PACKAGE } from "@chronicle/rules";
+import { HOW_TO_BE_A_HERO_PACKAGE } from "@chronicle/rules/examples";
 import { relatedTo, ruleMapGraph, ruleMapLayout, type RuleMapNode } from "../src/features/rule-map-model";
 import { newField, newPackage, packageDraft, type RuleDraft } from "../src/features/rule-forge-model";
 

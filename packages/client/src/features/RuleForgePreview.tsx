@@ -4,11 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, TestTubeDiagonal, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
-import { evaluateSupportedAction as evaluateAction, RULE_LIMITS, HTBAH_EXAMPLE_CHARACTERS, type AnyActionResult as ActionResult, type Experience, type AnyRulePackage as RulePackage, type RuleAction, type RuleActionV2, type Scalar } from "@chronicle/rules";
+import { evaluateSupportedAction as evaluateAction, RULE_LIMITS, CHRONICLE_EXAMPLE_CHARACTERS, type AnyActionResult as ActionResult, type Experience, type AnyRulePackage as RulePackage, type RuleAction, type RuleActionV2, type Scalar } from "@chronicle/rules";
 import { RuleFields } from "./RuleFields";
 import type { ExampleFigure } from "./formula-example";
 import { copyJson, fixtureValues, localKey, type PackageSelfTest } from "./rule-forge-model";
-import { hasHtbahExamples, hasHtbahGuidance, RuleComputedFields } from "./RuleComputedFields";
+import { hasChronicleExamples, hasChronicleGuidance, RuleComputedFields } from "./RuleComputedFields";
 
 interface SamplePassage { localId: string; passageId: string; labels: string; experience: Experience }
 interface Fixture { id: string; name: string; values: Record<string, Scalar>; inputs: Record<string, Record<string, Scalar>>; passages: SamplePassage[] }
@@ -24,7 +24,7 @@ export function RuleForgePreview({ pkg, onFigure, onSaveTest }: { pkg: RulePacka
   const [fixtures, setFixtures] = useState(initialFixtures), [selected, setSelected] = useState("");
   const [seed, setSeed] = useState("00000001000000020000000300000004");
   const action = pkg?.actions.find(a => a.id === selected) ?? pkg?.actions[0];
-  const examplesAvailable = useMemo(() => !!pkg && hasHtbahExamples(pkg), [pkg]);
+  const examplesAvailable = useMemo(() => !!pkg && hasChronicleExamples(pkg), [pkg]);
   const update = (id: string, change: Partial<Fixture>) => setFixtures(items => items.map(f => f.id === id ? { ...f, ...change } : f));
   const addFixture = () => setFixtures(items => items.length >= MAX_FIXTURES ? items : [...items, { id: localKey(), name: t("Testfigur {n}", { n: items.length + 1 }), values: {}, inputs: {}, passages: [] }]);
   const removeFixture = (id: string) => setFixtures(items => items.length > 2 ? items.filter(f => f.id !== id) : items);
@@ -45,7 +45,7 @@ export function RuleForgePreview({ pkg, onFigure, onSaveTest }: { pkg: RulePacka
   return <section className="rf-preview" aria-labelledby="rf-preview-title">
     <div className="rf-section-heading"><h2 id="rf-preview-title"><TestTubeDiagonal size={20} />{t("Testtafel")}</h2><span className="rf-node-badge">{t("Nur Beispiele")}</span></div>
     <p>{t("Vergleiche zwei oder mehr Figuren mit unterschiedlichem Wissen. Alle erhalten denselben Würfelstart, damit nur der Wissensunterschied zählt. Die Beispiele verändern keine Charaktere oder Würfe deiner Runde.")}</p>
-    {pkg && hasHtbahGuidance(pkg) ? examplesAvailable ? <Button onClick={() => setFixtures(HTBAH_EXAMPLE_CHARACTERS.map(example => ({ id: `fixture-${example.id}`, name: example.name, values: fixtureValues(pkg.fields, example.fields), inputs: {}, passages: [] })))}>{t("HTBAH-Beispielfiguren laden")}</Button> : <p className="field-help">{t("Die fertigen Beispielfiguren passen zum unveränderten Beispielkatalog. Für deinen angepassten Katalog verteilst du die Punkte hier selbst.")}</p> : null}
+    {pkg && hasChronicleGuidance(pkg) ? examplesAvailable ? <Button onClick={() => setFixtures(CHRONICLE_EXAMPLE_CHARACTERS.map(example => ({ id: `fixture-${example.id}`, name: example.name, values: fixtureValues(pkg.fields, example.fields), inputs: {}, passages: [] })))}>{t("Beispielfiguren laden")}</Button> : <p className="field-help">{t("Die fertigen Beispielfiguren passen zum unveränderten Beispielkatalog. Für deinen angepassten Katalog verteilst du die Punkte hier selbst.")}</p> : null}
     {!pkg ? <Notice>{t("Die Testtafel wird verfügbar, sobald der Entwurf gültig ist.")}</Notice> : !action ? <Notice>{t("Lege eine Aktion an, um das Regelwerk zu erproben.")}</Notice> : <>
       <div className="rf-form-grid"><label>{t("Aktion")}<select value={action.id} onChange={e => setSelected(e.target.value)}>{pkg.actions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
         <label>{t("Würfelstart für reproduzierbare Tests")}<input value={seed} maxLength={32} spellCheck={false} onChange={e => setSeed(e.target.value)} /><small>{t("32 Hexadezimalzeichen, nicht ausschließlich Nullen.")}</small></label></div>

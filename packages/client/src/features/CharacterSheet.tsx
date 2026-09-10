@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Vitalanzeige } from "./Vitalanzeige";
 import { Geldzaehler } from "./Geldzaehler";
-import { validatePackageFields, evaluateComputedFields, HTBAH_GROUPS, HTBAH_GROUP_LABELS, HTBAH_EXAMPLE_CHARACTERS, htbahSpentField, type Scalar } from "@chronicle/rules";
+import { validatePackageFields, evaluateComputedFields, CHRONICLE_EXAMPLE_CHARACTERS, CHRONICLE_FUNKEN_FIELD, type Scalar } from "@chronicle/rules";
 import { PenLine, Save, Sparkles } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath } from "../api";
@@ -11,7 +11,7 @@ import { useResource, useTask } from "../hooks";
 import { locale, t } from "../i18n";
 import type { ActorSheet, RulesState } from "./game-api";
 import { RuleFields } from "./RuleFields";
-import { hasHtbahExamples, hasHtbahGuidance, RuleAttribution, RuleComputedFields } from "./RuleComputedFields";
+import { hasChronicleExamples, hasChronicleGuidance, RuleAttribution, RuleComputedFields } from "./RuleComputedFields";
 
 export function CharacterSheet({ campaignId, actorId, rules, onDirty, gm, onChanged, liveRevision = 0 }: { campaignId: string; actorId: string; rules: RulesState; onDirty: (value: boolean) => void; gm: boolean; onChanged: () => void; liveRevision?: number }) {
   const [revision, setRevision] = useState(0), sheet = useResource<ActorSheet>(apiPath(campaignId, `/actors/${encodeURIComponent(actorId)}/sheet`), revision + liveRevision);
@@ -33,7 +33,7 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
   const [resource, setResource] = useState(""), [delta, setDelta] = useState(-1);
   const fieldsRef = useRef<HTMLDivElement>(null);
   const pkg = rules.packages.find(pkg => pkg.id === sheet.packageId && pkg.version === sheet.packageVersion);
-  const examplesAvailable = useMemo(() => !!pkg && hasHtbahExamples(pkg), [pkg]);
+  const examplesAvailable = useMemo(() => !!pkg && hasChronicleExamples(pkg), [pkg]);
   const validation = useMemo(() => { try { if (pkg) validatePackageFields(pkg, fields); return ""; } catch (error) { return error instanceof Error ? error.message : t("Die Bogenwerte sind noch nicht gültig."); } }, [pkg, fields]);
   const computed = useMemo(() => { try { return pkg ? evaluateComputedFields(pkg, fields) : {}; } catch { return {}; } }, [pkg, fields]);
   const dirty = JSON.stringify(fields) !== JSON.stringify(sheet.fields);
@@ -44,13 +44,13 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
   // "Wer bin ich" zuerst: der eigene Figurenname (falls das Regelpaket einen kennt) führt den Bogen an, nicht der Paketname.
   const characterName = pkg.fields.name?.type === "string" && typeof fields.name === "string" ? fields.name.trim() : "";
   const saveState = dirty ? t("Ungespeicherte Änderungen.") : sheet.version === 0 ? t("Noch nicht gespeichert.") : t("Gespeichert.");
-  const canOfferExamples = hasHtbahGuidance(pkg) && examplesAvailable;
+  const canOfferExamples = hasChronicleGuidance(pkg) && examplesAvailable;
   const emptyStateAction = canOfferExamples
-    ? <div className="button-row">{HTBAH_EXAMPLE_CHARACTERS.map(example => <Button key={example.id} disabled={task.busy} onClick={() => { if (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diese Beispielperson ersetzen?"))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, example.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("{name} als Beispiel übernehmen", { name: example.name })}</Button>)}</div>
+    ? <div className="button-row">{CHRONICLE_EXAMPLE_CHARACTERS.map(example => <Button key={example.id} disabled={task.busy} onClick={() => { if (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diese Beispielperson ersetzen?"))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, example.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("{name} als Beispiel übernehmen", { name: example.name })}</Button>)}</div>
     : <Button variant="primary" disabled={task.busy} onClick={() => fieldsRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus()}><PenLine size={16} /> {t("Werte jetzt eintragen")}</Button>;
   const emptyStateBody = canOfferExamples
     ? t("Noch gelten überall die Vorgabewerte des Regelwerks. Übernimm eine vorbereitete Beispielperson als Startpunkt oder trag weiter unten deine eigenen Werte ein.")
-    : hasHtbahGuidance(pkg) ? t("Noch gelten überall die Vorgabewerte des Regelwerks. Diese Runde verwendet einen angepassten Katalog. Verteile deine Startpunkte selbst; die fertigen Beispielfiguren passen zum unveränderten Beispielkatalog.")
+    : hasChronicleGuidance(pkg) ? t("Noch gelten überall die Vorgabewerte des Regelwerks. Diese Runde verwendet einen angepassten Katalog. Verteile deine Startpunkte selbst; die fertigen Beispielfiguren passen zum unveränderten Beispielkatalog.")
     : t("Noch gelten überall die Vorgabewerte des Regelwerks. Trag weiter unten deine eigenen Werte ein und speichere danach den Bogen.");
   return <div className="sheet-content"><form className="panel" onSubmit={(event) => { event.preventDefault(); void task.run(async () => { const saved = await api<ActorSheet>(apiPath(campaignId, `/actors/${encodeURIComponent(sheet.actorId)}/sheet`), { method: "PUT", body: { fields, expectedVersion: sheet.version } }); setSheet(saved); setFields({ ...saved.fields }); onDirty(false); onSaved(); }); }}>
     <div className="section-heading"><div><p className="eyebrow">{pkg.name} · {pkg.version}</p><h2>{characterName || t("Dein Charakterbogen")}</h2></div><Button type="submit" variant="primary" disabled={task.busy || !!validation}><Save size={16} /> {t("Bogen speichern")}</Button></div>
@@ -67,8 +67,8 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
     <div ref={fieldsRef}>{pkg.layout.sections.map((section) => <fieldset className="sheet-section" key={section.id}><legend>{section.label}</legend><RuleFields fields={Object.fromEntries(section.fields.map((id) => [id, pkg.fields[id]]))} values={fields} onChange={(next) => setFields((current) => ({ ...current, ...next }))} disabled={task.busy} /></fieldset>)}</div>
     {pkg.schemaVersion === 2 ? <p className="field-help">{t("Automatisch berechnet nach den Regeln von {paket} · {fassung}. Diese Werte trägst du nicht selbst ein.", { paket: pkg.name, fassung: pkg.version })}</p> : null}
     <RuleComputedFields pkg={pkg} fields={fields} />{validation && pkg.schemaVersion === 1 ? <Notice error>{validation}</Notice> : null}
-    {hasHtbahGuidance(pkg) ? <section aria-label={t("Geistesblitze verwalten")}><h3>{t("Geistesblitze")}</h3><p>{t("Bei einer misslungenen, nicht kritisch misslungenen Probe kannst du einen Punkt derselben Begabung ausgeben. Speichere die Ausgabe zuerst im Bogen und würfle danach am Tisch ausdrücklich erneut. Der erste Beleg bleibt erhalten.")}</p>
-      {HTBAH_GROUPS.map(group => { const field = htbahSpentField(group), spent = fields[field], remaining = computed[`gbp_remaining_${group}`]; return typeof spent === "number" && pkg.fields[field]?.type === "integer" ? <div className="button-row" key={group}><Button disabled={task.busy || !(typeof remaining === "number" && remaining > 0)} onClick={() => setFields(current => ({ ...current, [field]: spent + 1 }))}>{t("Geistesblitz einsetzen · {begabung}", { begabung: t(HTBAH_GROUP_LABELS[group]) })}</Button><Button disabled={task.busy || spent === 0} onClick={() => setFields(current => ({ ...current, [field]: 0 }))}>{t("Vorrat auffüllen · {begabung}", { begabung: t(HTBAH_GROUP_LABELS[group]) })}</Button></div> : null; })}
+    {hasChronicleGuidance(pkg) ? <section aria-label={t("Funken verwalten")}><h3>{t("Funken")}</h3><p>{t("Bei einer misslungenen, nicht kritisch misslungenen Probe kannst du einen Funken ausgeben und erneut würfeln. Speichere die Ausgabe zuerst im Bogen und würfle danach am Tisch ausdrücklich erneut. Der erste Beleg bleibt erhalten.")}</p>
+      {(() => { const field = CHRONICLE_FUNKEN_FIELD, spent = fields[field], remaining = computed["funken_remaining"]; return typeof spent === "number" && pkg.fields[field]?.type === "integer" ? <div className="button-row"><Button disabled={task.busy || !(typeof remaining === "number" && remaining > 0)} onClick={() => setFields(current => ({ ...current, [field]: spent + 1 }))}>{t("Funken einsetzen")}</Button><Button disabled={task.busy || spent === 0} onClick={() => setFields(current => ({ ...current, [field]: 0 }))}>{t("Vorrat auffüllen")}</Button></div> : null; })()}
       <p className="field-help">{t("Diese Knöpfe ändern deinen Entwurf. „Bogen speichern“ übernimmt die Ausgabe oder das vereinbarte Auffüllen.")}</p>
     </section> : null}
     <RuleAttribution pkg={pkg} />

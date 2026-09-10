@@ -3,7 +3,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { HOW_TO_BE_A_HERO_PACKAGE } from "@chronicle/rules";
+import { HOW_TO_BE_A_HERO_PACKAGE } from "@chronicle/rules/examples";
 import { RuleMap, type RuleMapView } from "../src/features/RuleMap";
 import { newField, newPackage, packageDraft, type RuleDraft } from "../src/features/rule-forge-model";
 
