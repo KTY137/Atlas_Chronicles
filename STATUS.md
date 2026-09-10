@@ -1,6 +1,51 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-10, Runde 6** (Aussehen-Umbau, Werkstatt in Klartext, Nutzerfläche, Ollama-Suche · v0.2.0)
+Updated: **2026-09-10, Runde 7** (Zugangsverwaltung im Hostfenster · v0.3.0)
+
+## Runde 7 — Zugänge und Rollen im Hostfenster · 2026-09-10 · v0.3.0
+
+**Der Anlass war eine Betriebsmeldung, kein Wunsch.** Kaya: *„ich werde jetzt als admin in die
+login page geworfen :("*. Nachgeprüft und **kein Datenverlust**: `curl …/api/setup` gab
+`{"required":false}` zurück, das Profil war unversehrt (95 MB, Port 42390, sauber
+heruntergefahren). Die Ursache ist die Bauart: eine gewöhnliche Sitzung hält acht Stunden, ein
+gemerkter Browser dreißig Tage, ein Passwortlogin gibt es nicht. Wer weder Passkey noch gemerkten
+Browser hat, steht danach vor einer Wand — **jeder Weg hinein verlangt eine Sitzung**.
+
+**Neu: `packages/server/src/domain/hostzugaenge.ts`** mit vier Funktionen —
+`hostRunden` (Runden, Mitglieder, Rollen und die Spalte `hasAccess`: wer gerade nicht mehr
+hereinkommt), `hostEinladung` (sieben Tage), `hostKopplung` (zehn Minuten, einmal einlösbar),
+`hostRolle`. Durchgereicht über `host.ts` → `worker.ts` → `policy.ts` → `main.ts` in den
+Abschnitt **„Zugänge und Rollen"** von `packages/desktop/manager/`.
+
+**Warum das Hostfenster das darf und sonst niemand:** es läuft auf dem Rechner, dem die Welt
+gehört, hinter Electrons Fähigkeitsprüfung, und besitzt die Profilgeheimnisse ohnehin. Wer das
+Fenster offen hat, hat den Ordner.
+
+**Drei Zusicherungen, jede mit einem Test dahinter** (`packages/server/test/hostzugaenge.test.ts`,
+10 grün):
+1. Es entsteht **keine Sitzung**. Erzeugt werden Codes, die im Browser eingelöst werden müssen;
+   erst dort entsteht ein Zugang. Der Test löst den Kopplungscode über `redeemPairing` wirklich
+   ein — sonst hätte man einen Code, der beim Einlösen wertlos ist, und das fiele erst dem
+   Ausgesperrten auf.
+2. Eine Runde bleibt **nie ohne Spielleitung** (`FOR UPDATE`, in der Transaktion geprüft).
+3. Spielleitung **einer Runde** ≠ Recht, **auf diesem Server** eigene Runden anzulegen. Zwei
+   Fragen; sie zu vermischen wäre eine stille Rechteerweiterung.
+
+**Fallen beim Bauen:** `hostEinladung` muss denselben `secretToken()`/`tokenHash()`-Weg nehmen wie
+`issueInvitation` — ein anders erzeugter Code ist beim Einlösen wertlos. `createTestDb()` ist
+async, der Kopplungscode ist **nicht** hex, `redeemPairing` liefert eine Sitzung statt `{userId}`,
+und `DomainConfig` braucht `now`. In `policy.ts` verengt `fail(...)` in einer Pfeilfunktion den
+Typ nicht — `return fail(...)` schreiben.
+
+**Nachweis:** 574 Prüfungen in Desktop, Theme und Client grün, dazu die 10 neuen Servertests;
+beide Typechecks; gate:version (0.3.0 an drei Stellen), gate:boundaries, gate:sprache;
+`node --check manager.js`. Paket und Setup gebaut, `installer.json` meldet **0.3.0** — genau die
+Prüfung, die letzte Runde die dreifach fest verdrahtete Version gefunden hat.
+**Nicht belegt:** `npm run test:e2e` erneut nicht gelaufen (Edge + PostgreSQL). **Vorbestehend
+rot:** dieselben sieben Servertests wie in Runde 6.
+
+**Nicht gelöst und bewusst so benannt:** die Acht-Stunden-Sitzung selbst und das fehlende
+Passwortlogin. Das Hostfenster ist ein Weg zurück, kein Grund, keinen Passkey einzurichten.
 
 ## Runde 6 — Aussehen, Klartext, Nutzerfläche, Ollama · 2026-09-10
 

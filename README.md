@@ -11,13 +11,22 @@ Rechner, LAN oder eigener Server — steht in
 
 ## Herunterladen
 
-[**v0.2.0 für Windows**](https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.2.0)
+[**v0.3.0 für Windows**](https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.3.0)
 — ein Setup für den eigenen Benutzer, ohne Administratorrechte. Der Bau ist
 **unsigniert**: Windows warnt vor einem unbekannten Herausgeber, und diese Warnung
 stimmt. Es gibt keinen Aktualisierungskanal; eine neue Fassung heißt neu
 herunterladen. Was drin ist, was fehlt und die Prüfsumme zum Nachrechnen stehen in
-den [Release-Notizen](docs/RELEASE_NOTES_v0.2.0.md); die erste Fassung bleibt in den
-[Notizen zu v0.1.0](docs/RELEASE_NOTES_v0.1.0.md) beschrieben.
+den [Release-Notizen](docs/RELEASE_NOTES_v0.3.0.md); die früheren Fassungen bleiben
+in den Notizen zu [v0.2.0](docs/RELEASE_NOTES_v0.2.0.md) und
+[v0.1.0](docs/RELEASE_NOTES_v0.1.0.md) beschrieben.
+
+Diese Fassung schließt eine Lücke, die im Betrieb schmerzte: eine gewöhnliche
+Sitzung hält acht Stunden, und wer weder einen Passkey eingerichtet noch den
+Browser gemerkt hat, stand danach vor der Anmeldeseite ohne Weg zurück — auch die
+Spielleitung, der dieser Server gehört. Das Hostfenster hat jetzt einen Bereich
+**Zugänge und Rollen**: Runden und Mitglieder mit der Spalte, wer gerade nicht
+mehr hereinkommt, ein Zugangscode für jedes Mitglied, ein Einladungscode für eine
+Runde und die Wahl, wer die Spielleitung führt.
 
 ## Lokal starten
 

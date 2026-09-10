@@ -14,7 +14,7 @@ parent.on("message", event => {
   chain = chain.then(async () => {
     let id = "";
     try {
-      const request = object(event.data, ["id", "kind", "startId", "config", "name", "path", "campaignId", "userId"]);
+      const request = object(event.data, ["id", "kind", "startId", "config", "name", "path", "campaignId", "userId", "role"]);
       if (typeof request["id"] !== "string" || request["id"].length > 80 || typeof request["startId"] !== "string") throw new Error("Invalid worker message.");
       id = request["id"];
       if (request["kind"] === "start") {
@@ -50,6 +50,19 @@ parent.on("message", event => {
         case "enroll":
           if (typeof request["campaignId"] !== "string" || typeof request["userId"] !== "string") throw new Error("Invalid enrollment.");
           value = await host.enroll(request["campaignId"], request["userId"]); break;
+        // Die Zugangsverwaltung des Hostfensters. Sie stellt keine Sitzung aus; sie erzeugt
+        // Codes, die im Browser eingeloest werden muessen. Siehe `domain/hostzugaenge.ts`.
+        case "runden": value = await host.runden(); break;
+        case "einladung":
+          if (typeof request["campaignId"] !== "string") throw new Error("Invalid invitation.");
+          value = await host.einladung(request["campaignId"]); break;
+        case "kopplung":
+          if (typeof request["campaignId"] !== "string" || typeof request["userId"] !== "string") throw new Error("Invalid pairing.");
+          value = await host.kopplung(request["campaignId"], request["userId"]); break;
+        case "rolle":
+          if (typeof request["campaignId"] !== "string" || typeof request["userId"] !== "string"
+            || (request["role"] !== "leitung" && request["role"] !== "spieler")) throw new Error("Invalid role.");
+          value = await host.rolle(request["campaignId"], request["userId"], request["role"]); break;
         default: throw new Error("Invalid worker method.");
       }
       parent.postMessage({ id, startId, ok: true, value });

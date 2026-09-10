@@ -239,6 +239,16 @@ async function run() {
           const pairing = await host.request("enroll", { campaignId: request.campaignId, userId: request.userId }); assert();
           return { ok: true, value: pairing };
         }
+        // Zugangsverwaltung: nur bei laufendem Host, weil sie die Datenbank der offenen Welt liest.
+        case "runden": case "einladung": case "kopplung": case "rolle": {
+          if (host.state !== "ready") fail("host-unavailable", "Bitte zuerst die lokale Welt starten.");
+          const antwort = await host.request(request.kind, request.kind === "runden" ? {}
+            : request.kind === "einladung" ? { campaignId: request.campaignId }
+            : request.kind === "kopplung" ? { campaignId: request.campaignId, userId: request.userId }
+            : { campaignId: request.campaignId, userId: request.userId, role: request.role });
+          assert();
+          return { ok: true, value: antwort };
+        }
       }
       return { ok: true, value: await snapshot() };
     } catch (error) { return { ok: false, error: error instanceof DesktopError ? error.message : "Die lokale Aktion ist fehlgeschlagen. Profilzustand prüfen." }; }

@@ -86,10 +86,16 @@ export type Command =
   | { kind: "restore-confirm"; ticket: string }
   | { kind: "recovery-restore"; recoveryId: string; name: string }
   | { kind: "enroll"; campaignId: string; userId: string }
+  // Zugangsverwaltung des Hostfensters: liest Runden, erzeugt Einladungs- und Kopplungscodes,
+  // setzt die Rolle innerhalb einer Runde. Keines davon stellt eine Sitzung aus.
+  | { kind: "runden" }
+  | { kind: "einladung"; campaignId: string }
+  | { kind: "kopplung"; campaignId: string; userId: string }
+  | { kind: "rolle"; campaignId: string; userId: string; role: "leitung" | "spieler" }
   | { kind: "chronist-key"; profileId: string; action: "set"; value: string }
   | { kind: "chronist-key"; profileId: string; action: "clear" };
 export function command(value: unknown): Command {
-  const v = object(value, ["kind", "name", "profileId", "origin", "ticket", "campaignId", "userId", "recoveryId", "action", "value"]);
+  const v = object(value, ["kind", "name", "profileId", "origin", "ticket", "campaignId", "userId", "recoveryId", "action", "value", "role"]);
   const exact = (keys: string[]) => object(value, ["kind", ...keys]);
   switch (v["kind"]) {
     case "status": case "stop": case "open": case "backup": exact([]); return { kind: v["kind"] };
@@ -99,6 +105,19 @@ export function command(value: unknown): Command {
     case "restore-confirm": exact(["ticket"]); return { kind: "restore-confirm", ticket: profileId(v["ticket"]) };
     case "recovery-restore": exact(["recoveryId", "name"]); return { kind: "recovery-restore", recoveryId: profileId(v["recoveryId"]), name: label(v["name"]) };
     case "enroll": exact(["campaignId", "userId"]); return { kind: "enroll", campaignId: profileId(v["campaignId"]), userId: profileId(v["userId"]) };
+    // Die Zugangsverwaltung. `runden` liest nur; die drei anderen erzeugen einen Code oder
+    // aendern eine Rolle innerhalb einer Runde. Keines stellt eine Sitzung aus.
+    case "runden": exact([]); return { kind: "runden" };
+    case "einladung": exact(["campaignId"]); return { kind: "einladung", campaignId: profileId(v["campaignId"]) };
+    case "kopplung": exact(["campaignId", "userId"]); return { kind: "kopplung", campaignId: profileId(v["campaignId"]), userId: profileId(v["userId"]) };
+    case "rolle": {
+      exact(["campaignId", "userId", "role"]);
+      const rolle = v["role"];
+      // `return fail(...)` statt `fail(...)`: bei einer Pfeilfunktion verengt TypeScript den Typ
+      // sonst nicht — dieselbe Schreibweise benutzt der Fall „chronist-key" darunter.
+      if (rolle !== "leitung" && rolle !== "spieler") return fail("invalid-request", "Es gibt nur Spielleitung oder Spieler.");
+      return { kind: "rolle", campaignId: profileId(v["campaignId"]), userId: profileId(v["userId"]), role: rolle };
+    }
     case "chronist-key": {
       // The key only ever travels inward. Removal carries no value at all.
       exact(["profileId", "action", "value"]);
