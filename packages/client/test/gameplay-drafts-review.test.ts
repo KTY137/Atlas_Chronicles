@@ -99,7 +99,7 @@ describe("gameplay draft regression review", () => {
     controls().props.onChange({ ...controls().props.value, art: "siedlung", siedlung: "weiler", breite: 24, hoehe: 20, anzahl: 12, dichte: .15 });
     controls().props.onChange({ ...controls().props.value, breite: 32 });
     h.nodes(n => n.type === "form")[0]!.props.onSubmit({ preventDefault() {} }); await h.settle();
-    expect(h.requests[0]?.request.body).toEqual({ art: "siedlung", name: "Silberbach", keim: "seed", stil: "gemalt", optionen: { art: "weiler", standort: "fluss", setting: "fantasy", ausdehnung: [32, 20], bauwerke: 12, strassenDichte: .15, licht: true } });
+    expect(h.requests[0]?.request.body).toEqual({ art: "siedlung", name: "Silberbach", keim: "seed", stil: "gemalt", optionen: { art: "weiler", standort: "fluss", setting: "fantasy", ausdehnung: [32, 20], bauwerke: 12, strassenDichte: .15, relief: .5, bewaldung: .5, licht: true } });
   });
 
   it("keeps sheet dirtiness when inventory is clean and allows declining an actor switch", () => {

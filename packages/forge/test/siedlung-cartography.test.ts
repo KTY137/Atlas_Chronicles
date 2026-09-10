@@ -21,7 +21,7 @@ function overlap(a: Polygon, b: Polygon): boolean {
  * 30 s is the house number for that across the repo (`io/test/campaign-bundle-v3-large.test.ts`
  * and the Postgres fixtures in `server/test`), not a figure invented for these cases. */
 const HEAVY = 30_000;
-describe("settlement v6 canonical cartography", () => {
+describe("settlement v7 canonical cartography", () => {
   it("keeps visible wall stonework, shadows and gate caps out of canonical building roofs", () => {
     const cases = [96, 16, 192].map(zellgroesse => ({ seed: "gallery:river-1", zellgroesse }))
       .concat(["gallery:orchard-2", "gallery:gate-3"].map(seed => ({ seed, zellgroesse: 96 })));
@@ -83,7 +83,9 @@ describe("settlement v6 canonical cartography", () => {
       const materialAreas = (material: string) => generated.cartography.regions
         .filter(role => "material" in role && role.material === material).map(role => area(regions.get(role.regionId)!));
       expect(materialAreas("forest").reduce((sum, value) => sum + value, 0), seed).toBeGreaterThan(canvas * .07);
-      expect(Math.max(...materialAreas("forest")), seed).toBeGreaterThan(canvas * .018);
+      // The outer woods are tessellated per relief cell and merged where they are solid; a
+      // wood is still a wood, not confetti: its largest merged patch spans several cells.
+      expect(Math.max(...materialAreas("forest")), seed).toBeGreaterThan(canvas * .003);
       expect(materialAreas("field").filter(value => value > canvas * .006).length, seed).toBeGreaterThanOrEqual(3);
       expect(materialAreas("river").reduce((sum, value) => sum + value, 0), seed).toBeGreaterThan(canvas * .045);
       const houses = generated.bauwerke.map(house => {
@@ -103,7 +105,7 @@ describe("settlement v6 canonical cartography", () => {
   for (const art of ["weiler", "dorf", "stadt"] as SiedlungArt[]) it(`${art}: small orthogonal roofs, larger lots, landscape and actual water crossings across fixed seeds`, () => {
     for (const seed of ["gallery:river-1", "gallery:orchard-2", "gallery:gate-3"]) {
       const generated = erzeugeSiedlung({ keim: seed, optionen: { art } }, paket);
-      expect(generated.version).toBe("6");
+      expect(generated.version).toBe("7");
       const roles = parseTacticalCartography(generated.cartography, generated.karte).regions;
       expect(roles).toHaveLength(generated.karte.geometry.regions.length);
       const region = (id: string) => generated.karte.geometry.regions.find(value => value.id === id)!;

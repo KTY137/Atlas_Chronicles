@@ -159,6 +159,18 @@ export function einwaerts(poly: Polygon, abstand: number): Polygon {
   return ergebnis;
 }
 
+/** Schnitt zweier konvexer Polygone: `a` gegen jede Halbebene von `b`. Dieselbe Geometrie
+ *  bleibt für Wasser, Lose und Brücken massgeblich; das Ergebnis ist auf Tausendstel quantisiert. */
+export function schnittKonvex(a: Polygon, b: Polygon): Polygon {
+  let result = a;
+  const sign = Math.sign(doppelflaeche(b));
+  for (let i = 0; i < b.length && result.length; i++) {
+    const p = b[i]!, n = b[(i + 1) % b.length]!, nx = sign * (n[1] - p[1]), ny = sign * (p[0] - n[0]);
+    result = clipHalbebene(result, nx, ny, nx * p[0] + ny * p[1]);
+  }
+  return result.map(qp);
+}
+
 /** Achsparalleles umschliessendes Rechteck als `[minX, minY, maxX, maxY]`. */
 export function huelle(poly: Polygon): readonly [number, number, number, number] {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;

@@ -7,11 +7,13 @@ import { parseBoundedMapJson, parseTacticalMapDocument, TACTICAL_MAP_LIMITS, Tac
 /** Meaning attached to one revision's existing regions; never a second geometry store. */
 export const TACTICAL_CARTOGRAPHY_VERSION = 1 as const;
 export const TACTICAL_CARTOGRAPHY_LIMITS = Object.freeze({
-  documentBytes: 1024 * 1024, regions: 2048, attachedStamps: 50_000,
+  documentBytes: 1024 * 1024, regions: 4096, attachedStamps: 50_000,
   cellSize: 32_768, coordinate: TACTICAL_MAP_LIMITS.coordinate,
+  /** Relief samples sit on construction-cell corners; the largest settlement (192×192) needs 193². */
+  reliefAxis: 1025, reliefSamples: 65_536,
 });
 export const CARTOGRAPHY_ROLES = Object.freeze(["generic", "terrain", "water", "road", "lot", "building", "room"] as const);
-export const CARTOGRAPHY_TERRAIN_MATERIALS = Object.freeze(["grass", "earth", "forest", "field", "rock", "sand"] as const);
+export const CARTOGRAPHY_TERRAIN_MATERIALS = Object.freeze(["grass", "earth", "forest", "field", "rock", "sand", "swamp", "snow"] as const);
 export const CARTOGRAPHY_WATER_MATERIALS = Object.freeze(["river", "lake", "sea"] as const);
 export const CARTOGRAPHY_ROAD_MATERIALS = Object.freeze(["path", "street", "square", "bridge"] as const);
 export type CartographyRole = typeof CARTOGRAPHY_ROLES[number];
@@ -47,11 +49,26 @@ export type CartographyRegionV1 = CartographyRegionCommon & (
   | { readonly role: "road"; readonly material: CartographyRoadMaterial }
   | { readonly role: "building"; readonly lotRegionId?: string; readonly streetRegionId?: string; readonly attachedStampIds?: readonly string[] }
 );
+/**
+ * The land's height, sampled on the corners of construction cells: sample (i, j) sits at
+ * `construction.origin + (i·cellSize, j·cellSize)`, rows first. Heights are integer levels
+ * 0..255 with `seaLevel` the water line. This is a shading and shaping layer, never a second
+ * geometry store: what *is* water or rock is still said by the regions' roles.
+ */
+export interface CartographyReliefV1 {
+  readonly schemaVersion: 1;
+  readonly columns: number;
+  readonly rows: number;
+  readonly seaLevel: number;
+  readonly heights: readonly number[];
+}
 export interface TacticalCartographyV1 {
   readonly schemaVersion: 1;
   readonly kind: "tactical-cartography";
   readonly construction: { readonly cellSize: number; readonly origin: TacticalPoint };
   readonly regions: readonly CartographyRegionV1[];
+  /** Absent on every document written before 2026-09-10; absence keeps bytes and hash unchanged. */
+  readonly relief?: CartographyReliefV1;
 }
 /** An intent for a newly drawn building, not writable node identity or provenance. */
 export interface BuildingIntent { readonly regionId: string; readonly titel: string; readonly typ: BauwerkTyp }
@@ -99,6 +116,20 @@ function freeze<T>(value: T): T {
   if (value && typeof value === "object") { for (const child of Object.values(value)) freeze(child); Object.freeze(value); }
   return value;
 }
+function relief(value: unknown, path: string): void {
+  const row = object(value, path, ["schemaVersion", "columns", "rows", "seaLevel", "heights"]);
+  if (row.schemaVersion !== 1) fail(`${path}.schemaVersion`, "unsupported relief profile; an explicit schema migration is required");
+  for (const axis of ["columns", "rows"] as const) {
+    const size = row[axis];
+    if (!Number.isSafeInteger(size) || (size as number) < 2 || (size as number) > TACTICAL_CARTOGRAPHY_LIMITS.reliefAxis) fail(`${path}.${axis}`, `integer in 2..${TACTICAL_CARTOGRAPHY_LIMITS.reliefAxis} required`);
+  }
+  const samples = (row.columns as number) * (row.rows as number);
+  if (samples > TACTICAL_CARTOGRAPHY_LIMITS.reliefSamples) fail(`${path}.heights`, "relief sample budget exceeded");
+  if (!Number.isSafeInteger(row.seaLevel) || (row.seaLevel as number) < 0 || (row.seaLevel as number) > 255) fail(`${path}.seaLevel`, "integer in 0..255 required");
+  const heights = array(row.heights, `${path}.heights`, TACTICAL_CARTOGRAPHY_LIMITS.reliefSamples);
+  if (heights.length !== samples) fail(`${path}.heights`, "exactly columns×rows samples required");
+  for (const [index, height] of heights.entries()) if (!Number.isSafeInteger(height) || (height as number) < 0 || (height as number) > 255) fail(`${path}.heights[${index}]`, "integer in 0..255 required");
+}
 
 /**
  * Detached, frozen and closed. Supplying the matching map additionally proves total region
@@ -109,8 +140,9 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
   let raw: unknown;
   try { raw = parseBoundedMapJson(input, TACTICAL_CARTOGRAPHY_LIMITS.documentBytes); }
   catch (error) { if (error instanceof TacticalMapValidationError) fail(error.path, error.message.slice(error.path.length + 2)); throw error; }
-  const root = object(raw, "cartography", ["schemaVersion", "kind", "construction", "regions"]);
+  const root = object(raw, "cartography", ["schemaVersion", "kind", "construction", "regions"], ["relief"]);
   if (root.schemaVersion !== 1 || root.kind !== "tactical-cartography") fail("cartography", "unsupported cartography profile/version; an explicit schema migration is required");
+  if (Object.hasOwn(root, "relief")) relief(root.relief, "relief");
   const construction = object(root.construction, "construction", ["cellSize", "origin"]);
   number(construction.cellSize, "construction.cellSize", Number.MIN_VALUE, TACTICAL_CARTOGRAPHY_LIMITS.cellSize);
   const origin = array(construction.origin, "construction.origin", 2);
@@ -207,6 +239,25 @@ export function tacticalCartographyHash(cartography: TacticalCartographyV1): str
 export function tacticalCompositionHash(contentHash: string, cartographyHash: string | null): string {
   hash(contentHash, "contentHash"); if (cartographyHash !== null) hash(cartographyHash, "cartographyHash");
   return canonicalHash({ contentHash, cartographyHash });
+}
+
+/** Shared thresholds above the water line, in height levels: where land turns to rock and
+ * rock to snow, and how far apart contour lines are drawn. Generator, editor and projection
+ * read the same numbers, so a painted lake and a generated one sit at the same height. */
+export const RELIEF_LEVELS = Object.freeze({ rockAbove: 118, snowAbove: 160, contourStep: 12, flatLand: 40 });
+/** Bilinear height at a map point in pixels; outside the sampled area the edge value holds. */
+export function reliefHeightAt(relief: CartographyReliefV1, construction: TacticalCartographyV1["construction"], x: number, y: number): number {
+  const u = (x - construction.origin[0]) / construction.cellSize, v = (y - construction.origin[1]) / construction.cellSize;
+  const cx = Math.max(0, Math.min(relief.columns - 1, u)), cy = Math.max(0, Math.min(relief.rows - 1, v));
+  const i = Math.min(relief.columns - 2, Math.floor(cx)), j = Math.min(relief.rows - 2, Math.floor(cy)), fx = cx - i, fy = cy - j;
+  const at = (column: number, row: number) => relief.heights[row * relief.columns + column]!;
+  return (at(i, j) * (1 - fx) + at(i + 1, j) * fx) * (1 - fy) + (at(i, j + 1) * (1 - fx) + at(i + 1, j + 1) * fx) * fy;
+}
+/** A flat relief for a map that never had one, so the height tool works on every map. */
+export function flatRelief(construction: TacticalCartographyV1["construction"], size: readonly [number, number], height = 77 + RELIEF_LEVELS.flatLand, seaLevel = 77): CartographyReliefV1 {
+  const columns = Math.min(TACTICAL_CARTOGRAPHY_LIMITS.reliefAxis, Math.max(2, Math.ceil((size[0] - construction.origin[0]) / construction.cellSize) + 1));
+  const rows = Math.min(TACTICAL_CARTOGRAPHY_LIMITS.reliefAxis, Math.max(2, Math.ceil((size[1] - construction.origin[1]) / construction.cellSize) + 1));
+  return { schemaVersion: 1, columns, rows, seaLevel, heights: Array.from({ length: columns * rows }, () => height) };
 }
 
 export interface LegacyCartographyEvidence {

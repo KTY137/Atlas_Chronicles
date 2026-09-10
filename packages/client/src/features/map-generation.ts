@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { GrundrissOptionen, HoehleOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
-import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type KartenSetting, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
+import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type CartographyView, type KartenSetting, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
 import { t } from "../i18n";
 
@@ -20,10 +20,12 @@ export interface GenerationSettings {
   art: MapArt; stil: MapStyle; breite: number | ""; hoehe: number | ""; anzahl: number | "";
   setting: KartenSetting;
   siedlung: SiedlungOptionen["art"]; standort: SiedlungStandort; dichte: number; profil: "frei" | BauwerkTyp;
+  /** 0..1 each: how mountainous the land is and how much of it carries woodland. */
+  relief: number; bewaldung: number;
   anordnung: GrundrissOptionen["anordnung"]; moeblierung: number; licht: boolean;
 }
 export function generationSettings(art: MapArt = "siedlung", profil: "frei" | BauwerkTyp = "frei", stil: MapStyle = "gemalt", setting: KartenSetting = "fantasy"): GenerationSettings {
-  return { art, stil, setting, breite: "", hoehe: "", anzahl: "", siedlung: "dorf", standort: "fluss", dichte: .3, profil, anordnung: "streuung", moeblierung: 1, licht: true };
+  return { art, stil, setting, breite: "", hoehe: "", anzahl: "", siedlung: "dorf", standort: "fluss", dichte: .3, relief: .5, bewaldung: .5, profil, anordnung: "streuung", moeblierung: 1, licht: true };
 }
 export function changeGenerationSetting(value: GenerationSettings, setting: KartenSetting): GenerationSettings {
   return { ...value, setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
@@ -35,7 +37,7 @@ export function generationDimensions(value: GenerationSettings, defaults: Genera
 export function generationOptions(value: GenerationSettings, defaults: GenerationDefaults) {
   const dimensions = value.breite !== "" || value.hoehe !== "" ? generationDimensions(value, defaults) : undefined;
   if (value.art === "siedlung") return { art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
-    ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, licht: value.licht };
+    ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, relief: value.relief, bewaldung: value.bewaldung, licht: value.licht };
   return { ...(dimensions ? { zellen: dimensions } : {}),
     ...(value.anzahl !== "" ? value.art === "hoehle" ? { kammern: value.anzahl } : { raeume: value.anzahl } : {}),
     ...(value.art === "grundriss" ? { profil: value.profil, anordnung: value.anordnung, setting: value.setting } : {}),
@@ -60,13 +62,13 @@ export const BUILDING_COLORS: Record<BauwerkTyp, number> = {
   bank: 0xa5b398, werkstatt: 0xb0a28b,
 };
 /** Only already-authorized nodes and geometry enter this presentation adapter. */
-export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, nodes: readonly MapNode[], art?: string, rasterScope?: string, setting: KartenSetting = "fantasy", cartography?: TacticalCartographyV1): ProjectedMapScene {
+export function mapDocumentScene(id: string, document: TacticalMapDocumentV1, nodes: readonly MapNode[], art?: string, rasterScope?: string, setting: KartenSetting = "fantasy", cartography?: TacticalCartographyV1, view: CartographyView = {}): ProjectedMapScene {
   const byId = new Map(nodes.map(node => [node.knotenId, node]));
   const roles = new Map(cartography?.regions.map(region => [region.regionId, region]));
   const polygons = new Map(document.geometry.regions.map(region => [region.id, region.punkte]));
   return {
     id, width: document.geometry.size[0], height: document.geometry.size[1], ...(rasterScope ? { rasterScope } : {}),
-    ...(cartography ? { drawing: cartographyDraw(document, cartography, setting) } : {}),
+    ...(cartography ? { drawing: cartographyDraw(document, cartography, setting, view) } : {}),
     cells: document.geometry.regions.map(region => {
       const node = byId.get(region.id), role = roles.get(region.id), building = role ? role.role === "building" : node?.art === "bauwerk", street = role?.role === "road";
       return { id: region.id, polygon: region.punkte,

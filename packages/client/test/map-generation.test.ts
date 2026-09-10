@@ -34,7 +34,7 @@ describe("map generation request boundaries", () => {
   it("emits the settlement, cave and floorplan option fields accepted by their separate API variants", () => {
     const edit = { breite: 42, hoehe: 24, anzahl: 18, licht: false, dichte: .45, moeblierung: .25 };
     expect(generationOptions({ ...generationSettings("siedlung"), ...edit, siedlung: "stadt" }, defaults)).toEqual({
-      art: "stadt", standort: "fluss", setting: "fantasy", ausdehnung: [42, 24], bauwerke: 18, strassenDichte: .45, licht: false,
+      art: "stadt", standort: "fluss", setting: "fantasy", ausdehnung: [42, 24], bauwerke: 18, strassenDichte: .45, relief: .5, bewaldung: .5, licht: false,
     });
     expect(generationOptions({ ...generationSettings("hoehle"), ...edit }, defaults)).toEqual({
       zellen: [42, 24], kammern: 18, moeblierung: .25, licht: false,

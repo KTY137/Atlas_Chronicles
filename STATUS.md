@@ -1,6 +1,38 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-09, 16:00** (Regelschmiede: Regelkarte über das ganze Paket — Teilprojekt 2 von 4)
+Updated: **2026-09-10** (Kartenstudio Stufe 10: Relief, Landschaft, Höhenwerkzeug)
+
+## Kartenstudio Stufe 10: Relief, Landschaft, Höhenwerkzeug — 2026-09-10
+
+Kayas Auftrag: „mach die Kartengenerierung/editing noch besser, wir sind auf lvl1, lass uns auf
+lvl10 gehen." Entschieden ohne Rückfrage (Kayas Vorgabe: allgemeinste Option). Gebaut auf
+`feature/kartenstudio-relief`, Spec `docs/superpowers/specs/2026-09-10-kartenstudio-relief-design.md`,
+Nachweise `design/iterations/map-studio-20260910-relief.md`.
+
+Die Landschaft hat jetzt **Höhe**. `cartography.relief` (optional, geschlossen, Abtastpunkte auf
+den Ecken der Konstruktionszellen, Stufen 0..255) ist die neue Schicht unter den Flächen; alte
+Karten bleiben byte- und hashgleich. Siedlung **v7** leitet Wasser, Fels, Strand, Sumpf, Wald und
+bis zu vier Flüsse (Senken füllen, steilster Abstieg, Abfluss) aus einem Höhenfeld ab statt sie zu
+zeichnen; alle Flächen konvexe Zellstücke, volle Zellen zu Rechtecken verschmolzen. Straßen queren
+jeden Fluss per Brücke, Häuser stehen nie im Wasser oder auf Fels. Neue Standorte **Hügelland**
+und **Moor**, Materialien **Sumpf** und **Schnee**, Regler **Relief** und **Bewaldung**.
+Editor: Werkzeug **Höhe** (E) mit Anheben/Absenken/Glätten/Einebnen, Radius und Stärke — Karten
+ohne Relief bekommen ein flaches; Wasser malen senkt das Land, Fels hebt es. Ansicht: Schalter
+Höhenlinien/Schattierung. Projektion `cartography-8`: beleuchtete Höhenlinien nach Tanaka
+(dunkler Saum lichtabgewandt, heller zugewandt), Gipfel folgen der Höhe mit Schnee ab der
+Schneegrenze, Kronen und Gipfel auf einem globalen Gitter. Flächenlimit 2048 → 4096 überall.
+
+Grün: forge/szene/client 79 Dateien mit 1066 Fällen (darunter neu: Relief-Parser, Projektion
+14/14, Standorte 19/19 neu geschrieben, Höhenwerkzeug 25/25, `map-relief-tool` 3/3); server
+`map-standort`, `siedlung-integration`, `map-workshop`, `map-settings` 46/46 samt nativem Archiv
+mit Relief; render/io 124; `e2e/map-studio` 3/3 (neu: Höhenwerkzeug, Speichern, Neuladen) und
+`map-editor-cartography` 3/3; Typecheck, Build, `gate:sprache` (3060 Schlüssel, 31 neu),
+`gate:boundaries`, `gate:version`. Alle neun Standorte als PNG durch die echte Rasterpipeline
+angesehen — drei Befunde daraus (Mosaik, Gitter je Polygon, dicke Quellen) sind behoben, siehe
+Nachweisdatei. Offen und nicht behauptet: freie Beschriftungen, Streupinsel für Außenobjekte,
+Erosion; Desktop-Paket nicht neu gebaut.
+
+Zuvor: **2026-09-09, 16:00** (Regelschmiede: Regelkarte über das ganze Paket — Teilprojekt 2 von 4)
 
 ## Regelschmiede: Regelkarte über das ganze Paket — 2026-09-09
 

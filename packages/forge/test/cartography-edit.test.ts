@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { parseTacticalMapDocument, weltkeim, type Region } from "@chronicle/szene";
-import { parseTacticalCartography, type CartographyRegionV1 } from "@chronicle/szene";
+import { flatRelief, parseTacticalCartography, RELIEF_LEVELS, type CartographyReliefV1, type CartographyRegionV1 } from "@chronicle/szene";
 import { applyCartographyEdit, type CartographyEditOperation } from "../src/cartography-edit.ts";
 
 const box = (id: string, x: number, y: number, w: number, h: number): Region => ({ id, punkte: [[x, y], [x + w, y], [x + w, y + h], [x, y + h]] });
@@ -175,5 +175,72 @@ describe("atomic cartography edit operations", () => {
   it("returns an explicit budget failure without partial geometry", () => {
     const input = fixture([], []), result = applyCartographyEdit({ ...input, operation: { kind: "terrain", points: [[50, 50]], radius: 25, material: "grass" }, limits: { cells: 1 } });
     expect(result).toMatchObject({ ok: false, code: "budget" }); expect(result).not.toHaveProperty("document");
+  });
+});
+
+describe("the height tool shapes the relief and the terrain brush keeps it honest", () => {
+  const withRelief = () => {
+    const input = fixture([box("land", 0, 0, 200, 200)], [terrain("land")]);
+    const relief = flatRelief(input.cartography.construction, input.document.geometry.size);
+    return { ...input, cartography: parseTacticalCartography({ ...input.cartography, relief }, input.document), relief };
+  };
+  const at = (relief: CartographyReliefV1, i: number, j: number) => relief.heights[j * relief.columns + i]!;
+  it("creates a flat relief for a map without one and raises only the land inside the brush", () => {
+    const input = fixture([box("land", 0, 0, 200, 200)], [terrain("land")]);
+    expect(input.cartography.relief).toBeUndefined();
+    const result = applyCartographyEdit({ ...input, operation: { kind: "relief", points: [[100, 100]], radius: 40, mode: "raise", strength: 1 } });
+    expect(result.ok).toBe(true); if (!result.ok) return;
+    const relief = result.cartography.relief!, flat = flatRelief(input.cartography.construction, input.document.geometry.size);
+    expect([relief.columns, relief.rows]).toEqual([flat.columns, flat.rows]);
+    expect(at(relief, 5, 5)).toBeGreaterThan(at(flat, 5, 5));
+    expect(at(relief, 6, 5)).toBeGreaterThan(at(flat, 6, 5));
+    expect(at(relief, 0, 0)).toBe(at(flat, 0, 0));
+    expect(at(relief, 10, 10)).toBe(at(flat, 10, 10));
+    expect(relief.heights.every(h => Number.isInteger(h) && h >= 0 && h <= 255)).toBe(true);
+    expect(result.changedRegionIds).toEqual([]); expect(result.document).toEqual(input.document);
+  });
+  it("lowers, levels towards the first point and smooths towards the neighbours", () => {
+    const input = withRelief();
+    const lowered = applyCartographyEdit({ ...input, operation: { kind: "relief", points: [[100, 100]], radius: 40, mode: "lower", strength: 1 } });
+    expect(lowered.ok && at(lowered.cartography.relief!, 5, 5)).toBeLessThan(at(input.relief, 5, 5));
+    const raised = applyCartographyEdit({ ...input, operation: { kind: "relief", points: [[100, 100]], radius: 60, mode: "raise", strength: 1 } });
+    if (!raised.ok) throw new Error(raised.message);
+    const peak = at(raised.cartography.relief!, 5, 5);
+    const levelled = applyCartographyEdit({ ...input, ...raised, operationId: "level", operation: { kind: "relief", points: [[20, 20], [100, 100]], radius: 60, mode: "level", strength: 1 } });
+    expect(levelled.ok && at(levelled.cartography.relief!, 5, 5)).toBeLessThan(peak);
+    const smoothed = applyCartographyEdit({ ...input, ...raised, operationId: "smooth", operation: { kind: "relief", points: [[100, 100]], radius: 60, mode: "smooth", strength: 1 } });
+    expect(smoothed.ok && at(smoothed.cartography.relief!, 5, 5)).toBeLessThan(peak);
+    expect(smoothed.ok && at(smoothed.cartography.relief!, 5, 5)).toBeGreaterThan(at(input.relief, 5, 5));
+  });
+  it("sinks the land under painted water, lifts it under painted rock and leaves it under grass", () => {
+    // The stroke sits on a cell centre: (110, 110) is the middle of construction cell (5, 5).
+    const input = withRelief(), stroke = { points: [[110, 110]] as const, radius: 10 };
+    const water = applyCartographyEdit({ ...input, operation: { kind: "terrain", ...stroke, material: "water", water: "lake" } });
+    if (!water.ok) throw new Error(water.message);
+    expect(at(water.cartography.relief!, 5, 5)).toBeLessThan(input.relief.seaLevel);
+    expect(at(water.cartography.relief!, 0, 0)).toBe(at(input.relief, 0, 0));
+    const rock = applyCartographyEdit({ ...input, operation: { kind: "terrain", ...stroke, material: "rock" } });
+    if (!rock.ok) throw new Error(rock.message);
+    expect(at(rock.cartography.relief!, 5, 5)).toBeGreaterThan(input.relief.seaLevel + RELIEF_LEVELS.rockAbove);
+    const grass = applyCartographyEdit({ ...input, operation: { kind: "terrain", ...stroke, material: "grass" } });
+    expect(grass.ok && grass.cartography.relief).toEqual(input.relief);
+    const plain = fixture([box("land", 0, 0, 200, 200)], [terrain("land")]);
+    const painted = applyCartographyEdit({ ...plain, operation: { kind: "terrain", ...stroke, material: "water", water: "lake" } });
+    expect(painted.ok && painted.cartography.relief).toBeUndefined();
+  });
+  it("passes the relief through every other operation and refuses a malformed stroke", () => {
+    const input = withRelief();
+    const built = applyCartographyEdit({ ...input, operation: { kind: "building", at: [60, 60], width: 30, height: 20, typ: "haus", titel: "Hütte", requireRoad: false } });
+    if (!built.ok) throw new Error(built.message);
+    expect(built.cartography.relief).toEqual(input.relief);
+    const removed = applyCartographyEdit({ ...input, ...built, operationId: "gone", operation: { kind: "remove", regionId: built.addedBuildings[0]!.regionId } });
+    expect(removed.ok && removed.cartography.relief).toEqual(input.relief);
+    for (const operation of [
+      { kind: "relief", points: [[100, 100]], radius: 40, mode: "raise", strength: 2 },
+      { kind: "relief", points: [[100, 100]], radius: 40, mode: "dig", strength: 1 },
+      { kind: "relief", points: [[100, 100]], radius: 20 * 17, mode: "raise", strength: 1 },
+      { kind: "relief", points: [[-5, 100]], radius: 40, mode: "raise", strength: 1 },
+      { kind: "relief", points: [], radius: 40, mode: "raise", strength: 1 },
+    ] as const) expect(applyCartographyEdit({ ...input, operation: operation as unknown as CartographyEditOperation })).toMatchObject({ ok: false, code: "invalid" });
   });
 });

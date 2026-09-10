@@ -86,3 +86,5 @@
 .map-location-swatch.insel{background:radial-gradient(ellipse at center,#7c945f 0 37%,#cabb8c 39% 46%,#6895a4 49%)}
 @media(max-width:1100px){.map-workshop-layout{grid-template-columns:minmax(0,1fr)}.map-workshop-preview{position:static}.map-preview-empty{min-height:300px}.map-kind-cards button{min-height:120px}}
 @media(max-width:600px){.map-workshop-layout{gap:18px}.map-kind-cards button{padding:10px 8px}.map-kind-cards span{display:none}.map-kind-cards button{min-height:88px}.map-workshop-preview{padding:10px}.map-workshop-preview .tactical-canvas{min-height:280px}.map-workshop-heading h2{font-size:22px}.map-workshop-badge{font-size:10px}.map-preview-empty h3{font-size:20px}}
+.map-location-swatch.huegel{background:linear-gradient(160deg,#a9b986 0 30%,#8aa062 31% 55%,#6f8a55 56% 80%,#5c7648 81%)}
+.map-location-swatch.moor{background:radial-gradient(ellipse at 40% 60%,#5f7a72 0 22%,#6c7f57 26% 60%,#4f6448 63%)}

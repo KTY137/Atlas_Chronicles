@@ -15,7 +15,7 @@ import { mapObjectWindow, objectKey, preparationObjects } from "./tactical-entit
 import { mapDocumentScene, type MapNode } from "./map-generation";
 import { MapArtworkPalette } from "./MapArtworkPalette";
 import { placeArtwork, type ArtworkBrush } from "./map-artwork";
-import { Grid2X2, Layers, MousePointer2, RotateCw, Save } from "lucide-react";
+import { Grid2X2, Layers, MountainSnow, MousePointer2, RotateCw, Save, Sun } from "lucide-react";
 import { interiorHit, snapPoint, type InteriorTarget } from "./map-studio";
 import { applyInteriorEdit, type InteriorEditOperation } from "@chronicle/forge";
 
@@ -51,6 +51,9 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const [interiorSelected, setInteriorSelected] = useState<InteriorTarget | null>(null);
   const [brushTurns, setBrushTurns] = useState(0), [brushScale, setBrushScale] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
+  // Relief view: contour lines and hillshade are how the viewer reads the land; both are
+  // presentation only and never enter the saved map.
+  const [showContours, setShowContours] = useState(true), [showShading, setShowShading] = useState(true);
   const [assetsOpen, setAssetsOpen] = useState(false), [knowledgeOpen, setKnowledgeOpen] = useState(false), [objectsOpen, setObjectsOpen] = useState(false);
   // A new tool or selection may reveal its controls. Clearing it never overrides the user's
   // disclosure choice, and an explicit close stays closed until a new relevant selection.
@@ -90,7 +93,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   const selectedNode = nodes.find(node => `node:${node.knotenId}` === selectedObject);
   const focusedObject = selectedNode ?? visibleObjects.find(o => objectKey(o) === selectedObject);
   const scene = useMemo<ProjectedMapScene>(() => {
-    const projected = mapDocumentScene(baseline.id, document, nodes, children.data?.art, document.background ? baseline.rasterDigest ?? baseline.contentHash : undefined, children.data?.setting, cartography);
+    const projected = mapDocumentScene(baseline.id, document, nodes, children.data?.art, document.background ? baseline.rasterDigest ?? baseline.contentHash : undefined, children.data?.setting, cartography, { contours: showContours, shading: showShading });
     if (revoked) return { id: baseline.id, width: projected.width, height: projected.height, cells: [], pins: [] };
     return { ...projected, grid: showGrid ? (projected.grid?.kind === "none" ? { kind: "square" as const, size: cartography.construction.cellSize, origin: cartography.construction.origin } : projected.grid) : { kind: "none" as const },
       cells: projected.cells.map(cell => ({ ...cell, ...(cell.surface !== "building" && anchors.some(anchor => anchor.targetKind === "region" && anchor.targetId === cell.id) ? { fill: 0x60bb8d } : {}) })),
@@ -102,7 +105,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
           .map(object => ({ id: objectKey(object), x: object.x, y: object.y, label: object.label, ...(object.entryId ? { entryId: object.entryId } : {}) }))],
       lines: [...(projected.lines ?? []).map(line => interiorSelected?.id === line.id ? { ...line, color: 0xffcd78, paint: true } : line), ...(points.length >= 2 ? [{ id: "draft-region", points, color: 0xffffff }] : [])],
     };
-  }, [baseline, document, nodes, children.data?.art, children.data?.setting, anchors, cartography, points, visibleObjects, selectedObject, revoked, showGrid, interiorSelected]);
+  }, [baseline, document, nodes, children.data?.art, children.data?.setting, anchors, cartography, points, visibleObjects, selectedObject, revoked, showGrid, showContours, showShading, interiorSelected]);
   const selectRegion = (id: string, focus = false) => {
     setFocusRequested(focus);
     setInteriorSelected(null);
@@ -168,9 +171,11 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     const operation: CartographyEditOperation | null = draft.operation ?? (draft.regionId ? { kind: "transform", regionId: draft.regionId, delta }
       : tools.tool === "terrain" ? { kind: "terrain", points: draft.path, radius: tools.radius, material: tools.terrain, ...(tools.terrain === "water" ? { water: tools.water } : {}) }
       : tools.tool === "road" ? { kind: "road", points: draft.path, width: tools.roadWidth, material: tools.road }
+      : tools.tool === "relief" ? { kind: "relief", points: draft.path, radius: tools.radius, mode: tools.reliefMode, strength: tools.reliefStrength }
       : tools.tool === "building" ? { kind: "building", at: to, width: tools.buildingWidth, height: tools.buildingHeight, quarterTurns: tools.turns, shape: tools.shape, typ: tools.buildingType, titel: tools.buildingName } : null);
     if (!operation) return;
-    if (operation.kind !== "transform" && !childrenConfirmed) { setEditError(t("Verknüpfte Innenräume werden noch geprüft. Danach kannst du Flächen ersetzen oder entfernen.")); return; }
+    // Shaping the height touches no region, so it never waits for the interior check.
+    if (operation.kind !== "transform" && operation.kind !== "relief" && !childrenConfirmed) { setEditError(t("Verknüpfte Innenräume werden noch geprüft. Danach kannst du Flächen ersetzen oder entfernen.")); return; }
     const result = applyCartographyEdit({ document: draft.baseline.document, cartography: draft.baseline.cartography, operation,
       protectedRegionIds: protectedIds(operation, draft.baseline), seed: draft.seed, operationId: draft.id });
     if (gesture.current !== draft || historyRef.current.gesture?.id !== draft.id || editFingerprint(historyRef.current.present) !== editFingerprint(draft.baseline)) return;
@@ -282,7 +287,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     const id = crypto.randomUUID(), z = cartography.construction.cellSize;
     setDocument(old => ({ ...old, geometry: { ...old.geometry, stamps: [...old.geometry.stamps, { ...selectedStamp, id, x: Math.min(scene.width, selectedStamp.x + z), y: Math.min(scene.height, selectedStamp.y + z) }] } })); setSelectedObject(`stamp:${id}`);
   } : undefined;
-  const toolHints: Record<MapToolSettings["tool"], string> = { select: t("Anklicken zum Auswählen · Ziehen zum Verschieben · R drehen · Entf entfernen"), terrain: t("Gelände mit gedrückter Maustaste malen"), road: t("Einen Weg aufziehen · Anschlüsse entstehen beim Zeichnen"), building: t("Klicken zum Bauen · R dreht das Gebäude"), room: t("Raum aufziehen oder klicken, um die gewählte Vorlage zu setzen"), wall: t("Vom Anfang bis zum Ende ziehen, um eine Wand zu bauen"), door: t("Auf eine Wand klicken: Die Tür rastet in die Wand ein") };
+  const toolHints: Record<MapToolSettings["tool"], string> = { select: t("Anklicken zum Auswählen · Ziehen zum Verschieben · R drehen · Entf entfernen"), terrain: t("Gelände mit gedrückter Maustaste malen"), relief: t("Über die Landschaft streichen, um Hügel und Täler zu formen"), road: t("Einen Weg aufziehen · Anschlüsse entstehen beim Zeichnen"), building: t("Klicken zum Bauen · R dreht das Gebäude"), room: t("Raum aufziehen oder klicken, um die gewählte Vorlage zu setzen"), wall: t("Vom Anfang bis zum Ende ziehen, um eine Wand zu bauen"), door: t("Auf eine Wand klicken: Die Tür rastet in die Wand ein") };
   if (revoked) return <section className="panel"><Notice error>{t("Die Kartenberechtigung wurde entzogen. Der Entwurf wird nicht weiter angezeigt.")}</Notice><Button disabled={task.busy} onClick={() => void task.run(async () => {
     await api<TacticalMapCard>(apiPath(campaignId, `/tactical/maps/${baseline.id}`));
     if (mounted.current) { setRevoked(false); onChanged(); }
@@ -292,7 +297,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
     const key = event.key.toLowerCase();
     if ((event.ctrlKey || event.metaKey) && key === "s") { event.preventDefault(); if (dirty && !history.gesture && !points.length) save(); return; }
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const shortcut = ({ v: "select", t: "terrain", p: "road", b: "building", f: "room", w: "wall", d: "door" } as const)[key as "v"];
+    const shortcut = ({ v: "select", t: "terrain", e: "relief", p: "road", b: "building", f: "room", w: "wall", d: "door" } as const)[key as "v"];
     if (shortcut) { event.preventDefault(); changeTool({ ...tools, tool: shortcut, hand: false }); }
     else if (key === "h") { event.preventDefault(); changeTool({ ...tools, hand: !tools.hand }); }
     else if (key === "o") { event.preventDefault(); openAssets(); }
@@ -312,7 +317,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
       onLock={() => commit(old => ({ ...old, cartography: { ...old.cartography, regions: old.cartography.regions.map(region => region.regionId === regionId ? { ...region, locked: !region.locked } : region) } }))}
       onRotate={rotateSelection} onDuplicate={duplicateSelection}
       onRemove={removeSelection} onVary={() => operationPreview({ kind: "variation", regionIds: [regionId] })} />
-    <div className="map-editor-stage"><div className="map-editor-stage-toolbar"><span>{children.data?.art === "siedlung" ? t("Außenkarte") : t("Grundriss & Landschaft")}</span><div className="button-row"><Button aria-pressed={showGrid} onClick={() => setShowGrid(value => !value)}><Grid2X2 size={15} />{t("Ansichtsraster")}</Button><Button onClick={openAssets}><Layers size={15} />{t("Möbel & Objekte")}</Button></div></div>
+    <div className="map-editor-stage"><div className="map-editor-stage-toolbar"><span>{children.data?.art === "siedlung" ? t("Außenkarte") : t("Grundriss & Landschaft")}</span><div className="button-row"><Button aria-pressed={showGrid} onClick={() => setShowGrid(value => !value)}><Grid2X2 size={15} />{t("Ansichtsraster")}</Button>{cartography.relief ? <><Button aria-pressed={showContours} onClick={() => setShowContours(value => !value)}><MountainSnow size={15} />{t("Höhenlinien")}</Button><Button aria-pressed={showShading} onClick={() => setShowShading(value => !value)}><Sun size={15} />{t("Schattierung")}</Button></> : null}<Button onClick={openAssets}><Layers size={15} />{t("Möbel & Objekte")}</Button></div></div>
     <TacticalCanvas scene={scene} onContextMenu={onContextMenu ? (hit, at) => onContextMenu(hit?.kind === "pin" && hit.id.startsWith("node:") ? { ...hit, id: hit.id.slice(5) } : hit, at) : undefined} editor={editor} onUndo={() => { gesture.current = null; changeHistory(undoEdit); }} onRedo={() => changeHistory(redoEdit)} onScopeInvalidated={() => { cancelGesture(); setRevoked(true); setSelectedObject(""); setRegionId(""); onChanged(); }} tileBase={apiPath(campaignId, `/tactical/maps/${baseline.id}/tiles`)} tileQuery={`revision=${baseline.revision}&layer=background`} onPoint={addPoint} selection={regionId ? { kind: "cell", id: regionId } : focusedObject ? { kind: "pin", id: selectedObject } : null} focusObject={focusRequested && !history.gesture && focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : null} onSelect={hit => {
       if (editingDisabled || drawing || marking || brush) return;
       if (hit?.kind === "cell") selectRegion(hit.id);

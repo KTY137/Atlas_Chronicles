@@ -11,7 +11,7 @@ import type { CartographyDrawing } from "../../../szene/src/cartography-projecti
 export const TACTICAL_RASTER_DECODER_ID = `chronicle-raster-v1:center-evenodd-union:whole-footprint-box:rgba8:${JSON.stringify(Object.fromEntries(Object.entries(sharp.versions).sort(([a], [b]) => a.localeCompare(b, "en"))))}`;
 export const TACTICAL_RASTER_LIMITS = Object.freeze({
   pixels: 16_000_000, dimension: 32768, imageBytes: 16 * 1024 * 1024,
-  regions: 2048, points: 20_000, coordinate: 1_000_000_000, edgeChecks: 20_000_000, maskPixelWrites: 64_000_000,
+  regions: 4096, points: 20_000, coordinate: 1_000_000_000, edgeChecks: 20_000_000, maskPixelWrites: 64_000_000,
   tileSize: 1024, concurrent: 1, queue: 8, queueWaitMs: 5_000, jobTimeoutMs: 15_000,
   cacheBytes: 64 * 1024 * 1024, cacheEntries: 32,
 });

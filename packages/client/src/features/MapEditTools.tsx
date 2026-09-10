@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { Armchair, BedDouble, Beer, BrickWall, Check, Copy, DoorOpen, Grid2X2, Hand, House, Lock, MousePointer2, Paintbrush, RotateCw, Route, Square, Trash2, Unlock, type LucideIcon } from "lucide-react";
+import { Armchair, BedDouble, Beer, Blend, BrickWall, Check, Copy, DoorOpen, Equal, Grid2X2, Hand, House, Lock, MountainSnow, MousePointer2, Paintbrush, RotateCw, Route, Square, Trash2, TrendingDown, TrendingUp, Unlock, Waves, type LucideIcon } from "lucide-react";
 import { BAUWERK_LABEL, BAUWERK_TYPEN, type BauwerkTyp, type CartographyRegionV1, type CartographyTerrainMaterial, type CartographyWaterMaterial } from "@chronicle/szene";
 import { Button } from "@chronicle/ui";
 import { t } from "../i18n";
 
+export type ReliefMode = "raise" | "lower" | "smooth" | "level";
 export interface MapToolSettings {
-  tool: "select" | "terrain" | "road" | "building" | "room" | "wall" | "door";
+  tool: "select" | "terrain" | "road" | "building" | "room" | "wall" | "door" | "relief";
   hand: boolean;
   terrain: CartographyTerrainMaterial | "water";
   water: CartographyWaterMaterial;
+  /** The height tool: what a stroke does to the land, and how hard. */
+  reliefMode: ReliefMode; reliefStrength: number;
   radius: number;
   road: "path" | "street" | "square";
   roadWidth: number;
@@ -24,7 +27,7 @@ export interface MapToolSettings {
 }
 
 export const mapToolSettings = (cellSize: number): MapToolSettings => ({
-  tool: "select", hand: false, terrain: "grass", water: "river", radius: cellSize, road: "street", roadWidth: cellSize * .4,
+  tool: "select", hand: false, terrain: "grass", water: "river", reliefMode: "raise", reliefStrength: .6, radius: cellSize, road: "street", roadWidth: cellSize * .4,
   buildingWidth: cellSize * .65, buildingHeight: cellSize * .5, buildingType: "haus", buildingName: "Neues Haus", shape: "rectangle", turns: 0,
   roomShape: "rectangle", roomFloor: "wood", roomTemplate: "empty", roomWidth: cellSize * 6, roomHeight: cellSize * 5,
   doorWidth: cellSize, doorClosed: true, snap: true, direct: true,
@@ -40,14 +43,20 @@ interface MapEditToolsProps {
 }
 
 const SELECTION_LABEL: Record<MapSelectionKind, string> = { stamp: "Einrichtung", wall: "Wand", portal: "Tür", room: "Raum", building: "Gebäude", terrain: "Gelände", road: "Straße" };
-const SHORTCUT: Record<MapToolSettings["tool"], string> = { select: "V", terrain: "T", road: "P", building: "B", room: "F", wall: "W", door: "D" };
+const SHORTCUT: Record<MapToolSettings["tool"], string> = { select: "V", terrain: "T", road: "P", building: "B", room: "F", wall: "W", door: "D", relief: "E" };
 
 export function MapEditTools({ value, onChange, selected, linked, onLock, onRotate, onRemove, onVary, busy, childrenConfirmed,
   cellSize = 100, onAssets, assetsActive = false, selectedTitle, selectedKind, selectedLocked, onDuplicate }: MapEditToolsProps) {
   const cell = Number.isFinite(cellSize) && cellSize > 0 ? cellSize : 100;
   // Die Beschriftungen entstehen bei jedem Rendern neu, damit ein Sprachwechsel sie erreicht.
   const TERRAIN = [
-    ["grass", t("Wiese")], ["forest", t("Wald")], ["field", t("Feld")], ["earth", t("Erde")], ["rock", t("Fels")], ["sand", t("Sand")], ["water", t("Wasser")],
+    ["grass", t("Wiese")], ["forest", t("Wald")], ["field", t("Feld")], ["earth", t("Erde")], ["rock", t("Fels")], ["sand", t("Sand")], ["swamp", t("Sumpf")], ["snow", t("Schnee")], ["water", t("Wasser")],
+  ] as const;
+  const RELIEF = [
+    { id: "raise", label: t("Anheben"), text: t("Hügel und Berge auftürmen"), icon: TrendingUp },
+    { id: "lower", label: t("Absenken"), text: t("Täler und Senken graben"), icon: TrendingDown },
+    { id: "smooth", label: t("Glätten"), text: t("Kanten und Stufen weich machen"), icon: Blend },
+    { id: "level", label: t("Einebnen"), text: t("Auf die Höhe des ersten Punkts bringen"), icon: Equal },
   ] as const;
   const WATER = [
     { id: "river", label: t("Fluss"), text: t("Fließt, kann Brücken tragen") },
@@ -79,8 +88,8 @@ export function MapEditTools({ value, onChange, selected, linked, onLock, onRota
       {toolButton("select", t("Auswählen"), MousePointer2)}
       <Button className="map-tool-button" aria-label={t("Hand · Karte verschieben")} title={t("Karte verschieben · H")} aria-pressed={value.hand} onClick={() => change({ hand: !value.hand })}><Hand size={20} aria-hidden="true" /><span>{t("Hand")}</span><kbd aria-hidden="true">H</kbd></Button>
     </div>
-    <div className="map-tool-group"><h3>{t("Landschaft")}</h3><div className="map-edit-tool-grid" role="group" aria-label={t("Landschaft zeichnen")}>
-      {toolButton("terrain", t("Gelände"), Paintbrush)}{toolButton("road", t("Straßen"), Route)}{toolButton("building", t("Gebäude"), House)}
+    <div className="map-tool-group"><h3>{t("Landschaft")}</h3><div className="map-edit-tool-grid map-edit-tool-grid-4" role="group" aria-label={t("Landschaft zeichnen")}>
+      {toolButton("terrain", t("Gelände"), Paintbrush)}{toolButton("relief", t("Höhe"), MountainSnow)}{toolButton("road", t("Straßen"), Route)}{toolButton("building", t("Gebäude"), House)}
     </div></div>
     <div className="map-tool-group"><h3>{t("Innenräume")}</h3><div className="map-edit-tool-grid" role="group" aria-label={t("Innenräume bauen")}>
       {toolButton("room", t("Raum"), Square)}{toolButton("wall", t("Wand"), BrickWall)}{toolButton("door", t("Tür"), DoorOpen)}
@@ -96,6 +105,15 @@ export function MapEditTools({ value, onChange, selected, linked, onLock, onRota
             <div className="map-water-kinds" role="group" aria-label={t("Wasserart")}>{WATER.map(({ id, label, text }) => <Button key={id} className="map-water-kind" aria-label={`${label} · ${text}`} aria-pressed={value.water === id} onClick={() => change({ water: id })}><strong>{label}</strong><small>{text}</small></Button>)}</div>
             <p className="field-help">{t("See und Meer bekommen einen hellen Uferkranz und Wellen; ein Fluss bleibt schmal und kann überbrückt werden.")}</p></div> : null}
           {number(t("Pinselradius"), "radius", true)}<p className="field-help">{t("Klicken und ziehen, um die Landschaft zu malen.")}</p>
+          <details className="map-tool-advanced"><summary>{t("Präzise Maße")}</summary>{number(t("Pinselradius in Pixeln"), "radius")}</details>
+        </> : null}
+
+        {value.tool === "relief" ? <><div className="map-tool-section-title"><MountainSnow size={17} aria-hidden="true" /><h3>{t("Höhe formen")}</h3></div>
+          <p className="field-help">{t("Streiche über die Landschaft. Hügel, Täler und Hänge zeigen sich als Schattierung und Höhenlinien.")}</p>
+          <div className="map-relief-modes" role="group" aria-label={t("Was der Pinsel mit dem Land macht")}>{RELIEF.map(({ id, label, text, icon: Icon }) => <Button key={id} className="map-relief-mode" aria-label={`${label} · ${text}`} aria-pressed={value.reliefMode === id} onClick={() => change({ reliefMode: id })}><Icon size={18} aria-hidden="true" /><span><strong>{label}</strong><small>{text}</small></span></Button>)}</div>
+          {number(t("Pinselradius"), "radius", true)}
+          <label className="map-tool-field">{t("Stärke")}<span className="map-tool-number"><input type="range" min={.1} max={1} step={.1} aria-label={t("Stärke")} value={value.reliefStrength} onChange={event => change({ reliefStrength: event.target.valueAsNumber })} /><output>{Math.round(value.reliefStrength * 100)} %</output></span></label>
+          <p className="map-tool-tip"><Waves size={16} aria-hidden="true" />{t("Wasser, das du mit dem Gelände-Pinsel malst, senkt das Land; Fels hebt es.")}</p>
           <details className="map-tool-advanced"><summary>{t("Präzise Maße")}</summary>{number(t("Pinselradius in Pixeln"), "radius")}</details>
         </> : null}
 

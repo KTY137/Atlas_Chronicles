@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { cartographyDraw, cartographyPaintsWalls, rendererVersion } from "../src/cartography-projection.ts";
-import type { TacticalCartographyV1 } from "../src/cartography.ts";
+import type { CartographyReliefV1, TacticalCartographyV1 } from "../src/cartography.ts";
 import type { TacticalMapDocumentV1, TacticalPoint } from "../src/tactical-map.ts";
 
 function fixture(): { document: TacticalMapDocumentV1; cartography: TacticalCartographyV1 } {
@@ -126,5 +126,71 @@ describe("shared bounded cartography drawing", () => {
     expect(drawing.polygons.reduce((total,p)=>total+p.points.length,0)).toBeLessThanOrEqual(262144);
     const complex={...source,walls:[{...source.walls[0]!,points:Array.from({length:32000},(_,i)=>[i%600,i%599] as TacticalPoint)}]};
     expect(cartographyPaintsWalls(semantic,complex)).toBe(false);
+  });
+});
+
+describe("relief in the painted drawing: shading, contour lines and summits that follow the land", () => {
+  const withRelief = (heights: (i: number, j: number) => number, columns = 11, rows = 11) => {
+    const { document, cartography } = fixture();
+    const relief: CartographyReliefV1 = { schemaVersion: 1, columns, rows, seaLevel: 77, heights: Array.from({ length: columns * rows }, (_, k) => Math.max(0, Math.min(255, Math.round(heights(k % columns, Math.floor(k / columns)))))) };
+    const ground = { id: "ground", punkte: [[0, 0], [600, 0], [600, 600], [0, 600]] as TacticalPoint[] };
+    return { document: { ...document, geometry: { ...document.geometry, regions: [ground, ...document.geometry.regions] } },
+      cartography: { ...cartography, construction: { cellSize: 60, origin: [0, 0] as TacticalPoint }, relief, regions: [{ regionId: "ground", role: "terrain", material: "grass", authored: false, locked: false, provenance: null } as const, ...cartography.regions] } };
+  };
+  const ink = 0x504537;
+  it("draws nothing extra for a flat map and no relief at all without one", () => {
+    const flat = withRelief(() => 117), { relief: _relief, ...without } = flat.cartography;
+    const flatDrawing = cartographyDraw(flat.document, flat.cartography), plainDrawing = cartographyDraw(flat.document, without);
+    expect(flatDrawing.polygons.length).toBe(plainDrawing.polygons.length);
+    expect(flatDrawing.rendererVersion).toBe("cartography-8");
+  });
+  it("shades a slope on its lit and shadowed flanks and draws contour lines only above the water line", () => {
+    // A ridge along the middle: land rises from the west edge to a crest and falls to the east,
+    // where it sinks under the water line. The east third must stay bare of lines and shade.
+    const ridge = withRelief(i => i <= 5 ? 90 + i * 22 : 200 - (i - 5) * 40);
+    const drawing = cartographyDraw(ridge.document, ridge.cartography);
+    const ground = drawing.polygons.filter(p => p.regionId === "ground").slice(1);
+    // Light is the paper lifted by 34 per channel (0xe0d8bc → 0xfffade), shadow a fixed ink green.
+    const LIGHT = 0xfffade, DARK = 0x2b3a2e;
+    const shade = ground.filter(p => p.points.length === 4 && (p.fill === LIGHT || p.fill === DARK)), lines = ground.filter(p => p.fill === ink);
+    expect(shade.length).toBeGreaterThan(20); expect(lines.length).toBeGreaterThan(20);
+    const lit = shade.filter(p => p.fill === LIGHT), dark = shade.filter(p => p.fill === DARK);
+    expect(lit.length).toBeGreaterThan(0); expect(dark.length).toBeGreaterThan(0);
+    // West flank faces north-west light (rises towards the east): lit. East flank: shadowed.
+    const centre = (p: typeof shade[number]) => p.points.reduce((s, q) => s + q[0], 0) / p.points.length;
+    expect(lit.every(p => centre(p) < 300)).toBe(true); expect(dark.every(p => centre(p) > 300)).toBe(true);
+    const underWater = [...shade, ...lines].filter(p => p.points.every(q => q[0] > 480));
+    expect(underWater).toEqual([]);
+    const { relief: _relief, ...without } = ridge.cartography;
+    const none = cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false, shading: false });
+    expect(none.polygons.length).toBe(cartographyDraw(ridge.document, without).polygons.length);
+    expect(cartographyDraw(ridge.document, ridge.cartography, "fantasy", { contours: false }).polygons.filter(p => p.regionId === "ground" && p.fill === ink)).toHaveLength(0);
+  });
+  it("grows summits with the land under a rock region and puts snow only above the snow line", () => {
+    const { document, cartography } = fixture();
+    const rock = { id: "massif", punkte: [[60, 60], [540, 60], [540, 540], [60, 540]] as TacticalPoint[] };
+    const roles = [...cartography.regions.filter(r => r.regionId !== "forest"), { regionId: "massif", role: "terrain", material: "rock", authored: false, locked: false, provenance: null } as const];
+    const base = { document: { ...document, geometry: { ...document.geometry, regions: [...document.geometry.regions.filter(r => r.id !== "forest"), rock] } }, cartography: { ...cartography, construction: { cellSize: 60, origin: [0, 0] as TacticalPoint }, regions: roles } };
+    const heights = (level: (i: number) => number): CartographyReliefV1 => ({ schemaVersion: 1, columns: 11, rows: 11, seaLevel: 77, heights: Array.from({ length: 121 }, (_, k) => level(k % 11)) });
+    const low = cartographyDraw(base.document, { ...base.cartography, relief: heights(() => 120) }, "fantasy", { contours: false, shading: false });
+    const high = cartographyDraw(base.document, { ...base.cartography, relief: heights(i => i < 5 ? 200 : 250) }, "fantasy", { contours: false, shading: false });
+    const massif = (drawing: typeof low) => drawing.polygons.filter(p => p.regionId === "massif");
+    // Land far below the rock line carries only the talus rim, no summits at all.
+    expect(massif(low).length).toBeLessThan(massif(high).length / 3);
+    const snow = massif(high).filter(p => p.opacity === .85 && p.points.length === 3);
+    expect(snow.length).toBeGreaterThan(0);
+    // The snow line runs through the bilinear ramp between column 4 (200) and column 5 (250).
+    expect(snow.every(p => p.points[0]![0] > 280)).toBe(true);
+    expect(snow.some(p => p.points[0]![0] > 400)).toBe(true);
+  });
+  it("paints marsh pools and reeds on swamp and quiet drifts on snow", () => {
+    const { document, cartography } = fixture();
+    const field = { id: "patch", punkte: [[0, 0], [600, 0], [600, 600], [0, 600]] as TacticalPoint[] };
+    const paint = (material: "swamp" | "snow") => cartographyDraw({ ...document, geometry: { ...document.geometry, regions: [field] } },
+      { ...cartography, regions: [{ regionId: "patch", role: "terrain", material, authored: false, locked: false, provenance: null }] }).polygons.filter(p => p.regionId === "patch");
+    const swamp = paint("swamp"), snow = paint("snow");
+    expect(swamp.length).toBeGreaterThan(30); expect(swamp.some(p => p.points.length === 10)).toBe(true);
+    expect(snow.length).toBeGreaterThan(10); expect(snow[0]!.fill).toBe(0xeef0ea);
+    expect(new Set(snow.slice(1).map(p => p.fill)).size).toBe(1);
   });
 });

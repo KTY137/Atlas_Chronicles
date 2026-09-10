@@ -73,3 +73,31 @@ test("mountain and island locations render in the real studio", async ({ browser
     expect(errors).toEqual([]);
   } finally { await context.close(); await host.close(); }
 });
+
+test("the height tool shapes a map that never had a relief, and the relief survives save and reload", async ({ browser }, info) => {
+  test.setTimeout(180_000); const host = await studioHost(), context = await browser.newContext();
+  try {
+    await context.addCookies([host.cookie]); const page = await context.newPage(), errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+    await page.goto(host.origin); await expect(canvas(page)).toBeVisible();
+    await page.getByRole("button", { name: "Ganze Karte", exact: true }).click();
+    // The fixture is flat land without any relief: the view toggles have nothing to show yet.
+    await expect(page.getByRole("button", { name: "Höhenlinien", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Höhe", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Höhe formen" })).toBeVisible();
+    await page.getByRole("button", { name: "Anheben · Hügel und Berge auftürmen", exact: true }).click();
+    await drag(page, [300, 300], [700, 500]);
+    await expect(page.getByRole("button", { name: "Höhenlinien", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Rückgängig", exact: true })).toBeEnabled();
+    await page.getByRole("button", { name: "Kartenrevision speichern", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Alle Änderungen gespeichert" })).toBeVisible();
+    const saved = await host.map(), relief = saved.cartography!.relief!;
+    expect(relief.columns * relief.rows).toBe(relief.heights.length);
+    expect(new Set(relief.heights).size).toBeGreaterThan(1);
+    expect(Math.max(...relief.heights)).toBeGreaterThan(relief.seaLevel);
+    await page.reload(); await expect(canvas(page)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Höhenlinien", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Schattierung", exact: true }).click();
+    await page.screenshot({ path: info.outputPath("relief-studio.png"), fullPage: true });
+    expect(errors).toEqual([]);
+  } finally { await context.close(); await host.close(); }
+});

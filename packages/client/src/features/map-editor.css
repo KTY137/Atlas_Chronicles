@@ -215,3 +215,15 @@
   .map-editor .map-floorplan { forced-color-adjust: none; color: CanvasText; }
   .map-editor .map-floorplan::after { background: Canvas; }
 }
+
+/* Höhenwerkzeug und die beiden neuen Bodenarten (2026-09-10, Kartenstudio Relief). */
+.map-editor .map-edit-tool-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.map-editor .map-material-swamp { background: #66784f; }
+.map-editor .map-material-snow { background: #eef0ea; border: 1px solid var(--line); }
+.map-editor .map-relief-modes { display: grid; gap: .35rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.map-editor .map-edit-tools .map-relief-mode { display: flex; align-items: center; gap: .5rem; text-align: left; padding: .45rem .5rem; background: transparent; border-color: var(--line); }
+.map-editor .map-relief-mode > svg { flex-shrink: 0; color: var(--text-muted); }
+.map-editor .map-relief-mode > span { display: grid; gap: .1rem; }
+.map-editor .map-relief-mode strong { font-size: .7rem; font-weight: 500; }
+.map-editor .map-relief-mode small { color: var(--text-muted); font-size: .6rem; line-height: 1.25; }
+.map-editor .map-tool-number input[type="range"] { width: 100%; }

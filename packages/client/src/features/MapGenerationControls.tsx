@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { Building2, Castle, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree } from "lucide-react";
+import { Building2, Castle, CloudSun, Droplets, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree } from "lucide-react";
 import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
 import { locale, t } from "../i18n";
 import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
@@ -18,17 +18,19 @@ export const MAP_KINDS = [
   { id: "hoehle", label: MAP_KIND_LABEL.hoehle, text: MAP_KIND_TITEL.hoehle, icon: Mountain },
 ] as const;
 
-const MAP_LOCATION_LABEL = { ebene: "Ebene", wald: "Wald", gebirge: "Gebirge", fluss: "Fluss", see: "See", kueste: "Küste", insel: "Insel" } as const;
+const MAP_LOCATION_LABEL = { ebene: "Ebene", huegel: "Hügelland", wald: "Wald", gebirge: "Gebirge", fluss: "Fluss", see: "See", moor: "Moor", kueste: "Küste", insel: "Insel" } as const;
 const MAP_LOCATION_TITEL = {
-  ebene: "Offenes Land & Felder", wald: "Lichtung im dichten Wald", gebirge: "Ein Ort zwischen Felsen", fluss: "Ufer, Brücken & Wege",
-  see: "Siedlung am Seeufer", kueste: "Strand & offenes Meer", insel: "Rundum vom Meer umgeben",
+  ebene: "Offenes Land & Felder", huegel: "Sanfte Hügel & weite Sicht", wald: "Lichtung im dichten Wald", gebirge: "Ein Ort zwischen Felsen", fluss: "Ufer, Brücken & Wege",
+  see: "Siedlung am Seeufer", moor: "Sumpf, Schilf & stilles Wasser", kueste: "Strand & offenes Meer", insel: "Rundum vom Meer umgeben",
 } as const;
 export const MAP_LOCATIONS = [
   { id: "ebene", label: MAP_LOCATION_LABEL.ebene, text: MAP_LOCATION_TITEL.ebene, icon: Sprout },
+  { id: "huegel", label: MAP_LOCATION_LABEL.huegel, text: MAP_LOCATION_TITEL.huegel, icon: CloudSun },
   { id: "wald", label: MAP_LOCATION_LABEL.wald, text: MAP_LOCATION_TITEL.wald, icon: Trees },
   { id: "gebirge", label: MAP_LOCATION_LABEL.gebirge, text: MAP_LOCATION_TITEL.gebirge, icon: Mountain },
   { id: "fluss", label: MAP_LOCATION_LABEL.fluss, text: MAP_LOCATION_TITEL.fluss, icon: Waves },
   { id: "see", label: MAP_LOCATION_LABEL.see, text: MAP_LOCATION_TITEL.see, icon: Circle },
+  { id: "moor", label: MAP_LOCATION_LABEL.moor, text: MAP_LOCATION_TITEL.moor, icon: Droplets },
   { id: "kueste", label: MAP_LOCATION_LABEL.kueste, text: MAP_LOCATION_TITEL.kueste, icon: Sailboat },
   { id: "insel", label: MAP_LOCATION_LABEL.insel, text: MAP_LOCATION_TITEL.insel, icon: Palmtree },
 ] as const;
@@ -94,6 +96,9 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     <details className="map-fine-settings"><summary>{t("Feineinstellungen")}</summary><div>
       {city ? <label>{t("Straßendichte")} <output>{Math.round(value.dichte * 100)} %</output><input type="range" min={0} max={1} step={.05} value={value.dichte} onChange={event => update({ dichte: event.target.valueAsNumber })} /></label>
         : <label>{t("Einrichtung")} <output>{Math.round(value.moeblierung * 100)} %</output><input type="range" min={0} max={1} step={.1} value={value.moeblierung} onChange={event => update({ moeblierung: event.target.valueAsNumber })} /></label>}
+      {city ? <label>{t("Relief")} <output>{value.relief < .25 ? t("Flach") : value.relief > .75 ? t("Gebirgig") : t("Hügelig")}</output><input type="range" min={0} max={1} step={.05} aria-label={t("Relief")} value={value.relief} onChange={event => update({ relief: event.target.valueAsNumber })} /></label> : null}
+      {city ? <label>{t("Bewaldung")} <output>{value.bewaldung < .25 ? t("Kahl") : value.bewaldung > .75 ? t("Dicht") : t("Gehölze")}</output><input type="range" min={0} max={1} step={.05} aria-label={t("Bewaldung")} value={value.bewaldung} onChange={event => update({ bewaldung: event.target.valueAsNumber })} /></label> : null}
+      {city ? <small className="field-help">{t("Relief formt Hügel, Täler und Flüsse; Bewaldung bestimmt, wie viel offenes Land Wald trägt. Beides kannst du danach mit den Werkzeugen Höhe und Gelände weiter bearbeiten.")}</small> : null}
       {value.art === "grundriss" && value.profil === "frei" ? <label>{t("Raumaufteilung")}<select value={value.anordnung} onChange={event => update({ anordnung: event.target.value as GenerationSettings["anordnung"] })}><option value="streuung">{t("Organisch verbunden")}</option><option value="raster">{t("Geplanter Grundriss")}</option><option value="kachelwerk">{t("Verzweigte Anlage")}</option></select></label> : null}
       <label className="check-label"><input type="checkbox" checked={value.licht} onChange={event => update({ licht: event.target.checked })} /> {t("Lichter platzieren")}</label>
     </div></details>

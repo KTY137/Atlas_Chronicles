@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { canonicalHash, type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
   inferLegacyCartography, parseTacticalCartography, serializeTacticalCartography, tacticalCartographyHash,
-  tacticalCompositionHash, TacticalCartographyValidationError, TACTICAL_CARTOGRAPHY_LIMITS,
+  tacticalCompositionHash, TacticalCartographyValidationError, TACTICAL_CARTOGRAPHY_LIMITS, reliefHeightAt, flatRelief, RELIEF_LEVELS,
   type CartographyRegionV1, type LegacyCartographyEvidence, type TacticalCartographyV1,
 } from "../src/cartography.ts";
 import { weltkeim } from "../src/containment.ts";
@@ -107,8 +107,8 @@ describe("closed revision cartography v1", () => {
     expect(tacticalCartographyHash(reordered)).toBe(tacticalCartographyHash(original));
   });
   it("bounds total roles, attachment references and UTF-8 bytes", () => {
-    const regions = Array.from({ length: 2049 }, (_, index): CartographyRegionV1 => ({ ...common(`r${index}`), role: "generic" }));
-    expect(() => parseTacticalCartography({ ...cartography(), regions })).toThrow(/2048/);
+    const regions = Array.from({ length: 4097 }, (_, index): CartographyRegionV1 => ({ ...common(`r${index}`), role: "generic" }));
+    expect(() => parseTacticalCartography({ ...cartography(), regions })).toThrow(/4096/);
     expect(() => parseTacticalCartography(withRegion("house", { attachedStampIds: Array(50_001).fill("x") }))).toThrow(/50000/);
     expect(() => parseTacticalCartography('"' + "é".repeat(TACTICAL_CARTOGRAPHY_LIMITS.documentBytes / 2) + '"')).toThrow(/byte limit/);
   });
@@ -188,5 +188,52 @@ describe("evidence-based legacy cartography", () => {
   it("supports gridless legacy documents without persisting an inferred upgrade", () => {
     const result = inferLegacyCartography({ ...map([]), grid: { kind: "none" } });
     expect(result.construction).toEqual({ cellSize: 100, origin: [0, 0] }); expect(result.regions).toEqual([]);
+  });
+});
+
+describe("relief: the land's height as an optional, hashed part of the cartography", () => {
+  const relief = (heights: number[], columns = 3, rows = 2, seaLevel = 77) => ({ schemaVersion: 1 as const, columns, rows, seaLevel, heights });
+  it("leaves documents without relief byte- and hash-identical to before", () => {
+    const document = map(), plain = cartography();
+    expect(serializeTacticalCartography(plain)).not.toContain("relief");
+    expect(parseTacticalCartography(plain, document)).not.toHaveProperty("relief");
+    const withRelief = { ...plain, relief: relief([0, 50, 100, 150, 200, 255]) };
+    const parsed = parseTacticalCartography(withRelief, document);
+    expect(parsed.relief).toEqual(withRelief.relief);
+    expect(Object.isFrozen(parsed.relief!.heights)).toBe(true);
+    expect(tacticalCartographyHash(withRelief)).not.toBe(tacticalCartographyHash(plain));
+    expect(parseTacticalCartography(serializeTacticalCartography(withRelief), document)).toEqual(parsed);
+  });
+  it.each([
+    ["wrong sample count", relief([1, 2, 3])],
+    ["fraction", relief([0, 1.5, 2, 3, 4, 5])],
+    ["out of range", relief([0, 1, 2, 3, 4, 256])],
+    ["negative", relief([0, 1, 2, 3, 4, -1])],
+    ["one column", relief([1, 2], 1, 2)],
+    ["sea level", relief([0, 1, 2, 3, 4, 5], 3, 2, 300)],
+    ["unknown profile", { ...relief([0, 1, 2, 3, 4, 5]), schemaVersion: 2 }],
+    ["extra property", { ...relief([0, 1, 2, 3, 4, 5]), unit: "m" }],
+    ["over budget", relief(new Array(1025 * 65).fill(0), 1025, 65)],
+  ])("rejects a malformed relief instead of storing it: %s", (_name, value) => {
+    expect(() => parseTacticalCartography({ ...cartography(), relief: value }, map())).toThrow(TacticalCartographyValidationError);
+  });
+  it("samples bilinearly on construction-cell corners and holds the edge value outside", () => {
+    const value = { ...cartography(), relief: relief([0, 100, 200, 0, 100, 200]) };
+    const construction = value.construction;
+    expect(reliefHeightAt(value.relief, construction, 0, 0)).toBe(0);
+    expect(reliefHeightAt(value.relief, construction, 100, 0)).toBe(100);
+    expect(reliefHeightAt(value.relief, construction, 50, 50)).toBe(50);
+    expect(reliefHeightAt(value.relief, construction, 150, 100)).toBe(150);
+    expect(reliefHeightAt(value.relief, construction, -500, -500)).toBe(0);
+    expect(reliefHeightAt(value.relief, construction, 5000, 5000)).toBe(200);
+  });
+  it("makes a flat relief covering the whole map for maps that never had one", () => {
+    const flat = flatRelief({ cellSize: 100, origin: [0, 0] }, [1000, 850]);
+    expect([flat.columns, flat.rows]).toEqual([11, 10]);
+    expect(flat.heights).toHaveLength(110);
+    expect(new Set(flat.heights).size).toBe(1);
+    expect(flat.heights[0]).toBeGreaterThan(flat.seaLevel);
+    expect(parseTacticalCartography({ ...cartography(), relief: flat }, map()).relief).toEqual(flat);
+    expect(RELIEF_LEVELS.rockAbove).toBeLessThan(RELIEF_LEVELS.snowAbove);
   });
 });

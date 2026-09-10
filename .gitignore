@@ -40,3 +40,6 @@ venv/
 # Logs
 *.log
 npm-debug.log*
+
+# Serena (Code-Intelligenz je Sitzung)
+.serena/

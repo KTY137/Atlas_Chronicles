@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { textHash } from "@chronicle/core";
 import { BAUWERK_TYPEN, parseTacticalMapDocument, type BauwerkTyp, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
-import { CARTOGRAPHY_WATER_MATERIALS, parseTacticalCartography, type BuildingIntent, type CartographyRegionV1, type CartographyTerrainMaterial, type CartographyWaterMaterial, type TacticalCartographyV1 } from "@chronicle/szene";
+import { CARTOGRAPHY_WATER_MATERIALS, TACTICAL_CARTOGRAPHY_LIMITS, RELIEF_LEVELS, flatRelief, parseTacticalCartography, reliefHeightAt, type BuildingIntent, type CartographyReliefV1, type CartographyRegionV1, type CartographyTerrainMaterial, type CartographyWaterMaterial, type TacticalCartographyV1 } from "@chronicle/szene";
 import { CARTOGRAPHY_EDIT_LIMITS, CARTOGRAPHY_PATTERNS, solveCartographyPatterns, type Cardinal, type EditLimits, type PatternBoundary, type PatternCell, type PatternPort } from "./cartography-patterns.ts";
 import { clipHalbebene, doppelflaeche, flaeche, huelle, imPolygon, q, type Polygon } from "./polygon.ts";
 
@@ -16,7 +16,12 @@ export type CartographyEditOperation =
   | { readonly kind: "building"; readonly at: TacticalPoint; readonly width: number; readonly height: number; readonly quarterTurns?: QuarterTurns; readonly shape?: "rectangle" | "l"; readonly typ: BauwerkTyp; readonly titel: string; readonly requireRoad?: boolean }
   | { readonly kind: "transform"; readonly regionId: string; readonly delta: TacticalPoint; readonly quarterTurns?: QuarterTurns }
   | { readonly kind: "remove"; readonly regionId: string }
-  | { readonly kind: "variation"; readonly regionIds: readonly string[] };
+  | { readonly kind: "variation"; readonly regionIds: readonly string[] }
+  /** The height tool. `raise`/`lower` push the land within the brush, `smooth` averages it,
+   * `level` pulls it towards the height under the stroke's first point. `strength` 0..1. A map
+   * without relief receives a flat one first, so the tool works on every map. */
+  | { readonly kind: "relief"; readonly points: readonly TacticalPoint[]; readonly radius: number; readonly mode: "raise" | "lower" | "smooth" | "level"; readonly strength: number };
+export const RELIEF_MODES = Object.freeze(["raise", "lower", "smooth", "level"] as const);
 export interface CartographyEditInput {
   readonly document: TacticalMapDocumentV1;
   readonly cartography: TacticalCartographyV1;
@@ -182,7 +187,13 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
     const limits = { ...CARTOGRAPHY_EDIT_LIMITS, ...input.limits };
     for (const name of Object.keys(CARTOGRAPHY_EDIT_LIMITS) as (keyof EditLimits)[]) if (!Number.isSafeInteger(limits[name]) || limits[name] < 0 || limits[name] > CARTOGRAPHY_EDIT_LIMITS[name]) reject("invalid", "Ungültiges Bearbeitungsbudget.");
     const protectedIds = new Set(input.protectedRegionIds), roles = new Map(cartography.regions.map(role => [role.regionId, role]));
-    let regions = [...document.geometry.regions], stamps = [...document.geometry.stamps];
+    let regions = [...document.geometry.regions], stamps = [...document.geometry.stamps], relief: CartographyReliefV1 | undefined = cartography.relief;
+    /** Corner samples of a construction cell, for coupling painted water and rock to the land's height. */
+    const cellCorners = (base: CartographyReliefV1, cellX: number, cellY: number): number[] => {
+      const result: number[] = [];
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) { const i = cellX + dx, j = cellY + dy; if (i >= 0 && j >= 0 && i < base.columns && j < base.rows) result.push(j * base.columns + i); }
+      return result;
+    };
     const changed = new Set<string>(), removed = new Set<string>(), removedStamps = new Set<string>(), addedBuildings: BuildingIntent[] = [], diagnostics: string[] = [];
     const allIds = new Set([...regions, ...stamps, ...document.geometry.places, ...document.walls, ...document.portals, ...document.lights].map(value => value.id));
     const idFor = (path: string): string => {
@@ -318,6 +329,40 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
           else diagnostics.push(`Grundriss erhalten: ${id}`);
         } else diagnostics.push(`Diese Rolle bleibt bei Gelände-/Gebäudevariation erhalten: ${id}`);
       }
+    } else if (operation.kind === "relief") {
+      const z = cartography.construction.cellSize, [ox, oy] = cartography.construction.origin;
+      if (!Array.isArray(operation.points) || !operation.points.length || operation.points.length > 4096 || operation.points.some(point => !finitePoint(point) || point[0] < 0 || point[1] < 0 || point[0] > document.geometry.size[0] || point[1] > document.geometry.size[1])
+        || !positive(operation.radius) || operation.radius > z * 16 || !RELIEF_MODES.includes(operation.mode) || typeof operation.strength !== "number" || !(operation.strength >= 0 && operation.strength <= 1)) reject("invalid", "Ungültiger Pinselzug für das Höhenwerkzeug.");
+      const base = relief ?? flatRelief(cartography.construction, document.geometry.size), heights = [...base.heights];
+      // One weight per sample, the strongest touch of the stroke: a stroke reads as one drawn
+      // shape, not as a pile of stamps that grows with every pointer event along the way.
+      const weights = new Map<number, number>();
+      const r = operation.radius / z; let work = 0;
+      for (const point of operation.points) {
+        const cx = (point[0] - ox) / z, cy = (point[1] - oy) / z;
+        for (let j = Math.max(0, Math.floor(cy - r)); j <= Math.min(base.rows - 1, Math.ceil(cy + r)); j++) for (let i = Math.max(0, Math.floor(cx - r)); i <= Math.min(base.columns - 1, Math.ceil(cx + r)); i++) {
+          if (++work > limits.propagations) reject("budget", "Der Pinselzug überschreitet das Arbeitsbudget.");
+          const d = Math.hypot(i - cx, j - cy) / r; if (d >= 1) continue;
+          const w = (1 - d * d) ** 2, k = j * base.columns + i;
+          if (w > (weights.get(k) ?? 0)) weights.set(k, w);
+        }
+      }
+      if (!weights.size) reject("invalid", "Der Pinselzug liegt außerhalb der Karte.");
+      const amount = operation.strength * 28, reference = reliefHeightAt(base, cartography.construction, operation.points[0]![0], operation.points[0]![1]);
+      for (const [k, w] of weights) {
+        const h = base.heights[k]!;
+        let next = h;
+        if (operation.mode === "raise") next = h + amount * w;
+        else if (operation.mode === "lower") next = h - amount * w;
+        else if (operation.mode === "level") next = h + (reference - h) * w * Math.max(.25, operation.strength);
+        else {
+          const i = k % base.columns, j = Math.floor(k / base.columns); let sum = 0, count = 0;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) { const x = i + dx, y = j + dy; if (x >= 0 && y >= 0 && x < base.columns && y < base.rows) { sum += base.heights[y * base.columns + x]!; count++; } }
+          next = h + (sum / count - h) * w * Math.max(.3, operation.strength);
+        }
+        heights[k] = Math.max(0, Math.min(255, Math.round(next)));
+      }
+      relief = { ...base, heights };
     } else if (operation.kind === "terrain" || operation.kind === "road") {
       const z = cartography.construction.cellSize, [ox, oy] = cartography.construction.origin;
       const radius = operation.kind === "terrain" ? operation.radius : operation.width / 2;
@@ -403,6 +448,13 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
           : operation.material === "water" && pattern.waterMask ? networkFootprint(x, y, z, z * .7, pattern.waterMask) : polygon;
         put(id, surface, role);
         paintedIds.push(id);
+        // Painted water sinks the land under it and painted rock lifts it, so contour lines and
+        // shading agree with the brush. Every other material leaves the relief alone.
+        if (relief && operation.kind === "terrain" && (operation.material === "water" || operation.material === "rock")) {
+          const heights = [...relief.heights], water = operation.material === "water";
+          for (const k of cellCorners(relief, cell.x, cell.y)) heights[k] = water ? Math.min(heights[k]!, relief.seaLevel - 6) : Math.max(heights[k]!, Math.min(255, relief.seaLevel + RELIEF_LEVELS.rockAbove + 4));
+          relief = { ...relief, heights: heights.map(h => Math.max(0, Math.min(255, h))) };
+        }
         if (operation.kind === "terrain" && operation.material === "water" && pattern.roadMask) {
           for (const road of [...regions].filter(value => roles.get(value.id)!.role === "road")) {
             if (!intersects(surface, road.punkte)) continue;
@@ -425,9 +477,9 @@ export function applyCartographyEdit(input: CartographyEditInput): CartographyEd
         for (const [index, points] of joined.entries()) { const id = idFor(`joined:${key}:${index}`); put(id, points, { ...role, regionId: id }); }
       }
     } else reject("invalid", "Unbekanntes Kartenwerkzeug.");
-    if (regions.length > 2048 || regions.reduce((sum, value) => sum + value.punkte.length, 0) > 20_000) reject("budget", "Zu viele Flächen oder Eckpunkte; wähle einen kleineren Bereich.");
+    if (regions.length > TACTICAL_CARTOGRAPHY_LIMITS.regions || regions.reduce((sum, value) => sum + value.punkte.length, 0) > 20_000) reject("budget", "Zu viele Flächen oder Eckpunkte; wähle einen kleineren Bereich.");
     const next = parseTacticalMapDocument({ ...document, geometry: { ...document.geometry, regions, stamps }, geometryElevation: document.geometryElevation.filter(value => !(value.targetKind === "region" && removed.has(value.targetId) || value.targetKind === "stamp" && removedStamps.has(value.targetId))) });
-    const nextCartography = parseTacticalCartography({ ...cartography, regions: regions.map(value => roles.get(value.id)!) }, next);
+    const nextCartography = parseTacticalCartography({ ...cartography, ...(relief ? { relief } : {}), regions: regions.map(value => roles.get(value.id)!) }, next);
     return { ok: true, document: next, cartography: nextCartography, addedBuildings, removedRegionIds: [...removed].sort(), removedStampIds: [...removedStamps].sort(), changedRegionIds: [...changed].sort(), diagnostics };
   } catch (error) {
     return error instanceof EditFailure ? { ok: false, code: error.code, regionIds: error.regionIds, message: error.message }

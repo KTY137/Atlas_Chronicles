@@ -63,5 +63,5 @@ export { entfernung, pfadlaenge, flaeche, rasterEntfernung, nachWelt, nachRahmen
 export type { Punkt } from "./messung.ts";
 export * from "./cartography.ts";
 export { cartographyDraw, cartographyPaintsWalls, rendererVersion } from "./cartography-projection.ts";
-export type { CartographyPolygon, CartographyDrawing } from "./cartography-projection.ts";
+export type { CartographyPolygon, CartographyDrawing, CartographyView } from "./cartography-projection.ts";
 export type { CartographyRoomInteriorV1, RoomIntent } from "./cartography.ts";

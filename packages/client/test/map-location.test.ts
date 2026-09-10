@@ -16,13 +16,15 @@ function elements(node: ReactNode): ReactElement<Record<string, unknown>>[] {
 }
 
 describe("visible settlement location controls", () => {
-  it.each([false, true])("offers all seven locations before fine settings (compact=%s)", compact => {
+  it.each([false, true])("offers every location, nine of them, before fine settings (compact=%s)", compact => {
     const html = renderToStaticMarkup(createElement(MapGenerationControls, { value: generationSettings(), defaults, compact, onChange() {} }));
     expect(MAP_LOCATIONS.map(location => location.id)).toEqual(SIEDLUNG_STANDORTE);
     const start = html.indexOf('aria-label="Standort der Siedlung"');
     expect(start).toBeGreaterThan(0);
     expect(start).toBeLessThan(html.indexOf("<details"));
+    expect(MAP_LOCATIONS).toHaveLength(9);
     for (const location of MAP_LOCATIONS) expect(html).toContain(`<strong>${location.label}</strong>`);
+    for (const label of ["Relief", "Bewaldung"]) expect(html).toContain(`aria-label="${label}"`);
     expect(html).toContain("Bestimmt Gelände, Wasser und bebaubares Land");
   });
 

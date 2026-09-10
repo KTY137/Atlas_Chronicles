@@ -7,7 +7,7 @@ export const TACTICAL_MAP_VERSION = 1 as const;
 export const TACTICAL_MAP_LIMITS = Object.freeze({
   documentBytes: 32 * 1024 * 1024, sourceBytes: 64 * 1024 * 1024, imageBytes: 48 * 1024 * 1024,
   depth: 48, nodes: 2_000_000, coordinate: 1_000_000_000, dimension: 32768, pixels: 144_000_000,
-  stamps: 50_000, regions: 2048, places: 20_000, walls: 20_000, portals: 20_000, lights: 4096, points: 200_000,
+  stamps: 50_000, regions: 4096, places: 20_000, walls: 20_000, portals: 20_000, lights: 4096, points: 200_000,
 });
 export type TacticalPoint = readonly [number, number];
 export type TacticalGrid =
