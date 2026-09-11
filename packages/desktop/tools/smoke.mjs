@@ -6,6 +6,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tsImport } from "tsx/esm/api";
+import sharp from "sharp";
 
 // This loader belongs only to the checkout's smoke process. The tested desktop still runs
 // its compiled main/worker and copied client, including when --executable selects an install.
@@ -65,6 +66,10 @@ try{
   const [createdGame]=await Promise.all([application.waitForEvent("window",{timeout:90000}),manager.locator("#gm-name").fill("Desktop GM").then(()=>manager.getByRole("button",{name:"Spielleitung einrichten",exact:true}).click())]);game=createdGame;await game.waitForLoadState();
   const identity=await request("/api/me");assert.equal(identity.status,200);gmId=identity.body.userId;
   const created=await request("/api/campaigns","POST",{name:"Persistent desktop campaign"});assert.equal(created.status,200);campaignId=created.body.id;
+  // Die Runde entsteht im Spielfenster. Das Hostfenster muss sie ohne Neustart der Welt anbieten:
+  // es lud seine Runden nur beim Start und zeigte danach „noch keine Runde" mit gesperrtem Knopf.
+  await manager.waitForFunction(name=>[...document.querySelectorAll("#zugang-runde option")].some(option=>option.textContent===name)&&!document.getElementById("zugang-einladung").disabled,"Persistent desktop campaign",{timeout:30000});
+  record("host window offers a round created in the game window without restarting the world");
   const entry=await request(`/api/campaigns/${campaignId}/entries`,"POST",{title:"Survives restart",passages:[{inhalt:{kind:"absatz",inhalt:[{text:"Written in the genuine desktop host.",marks:[]}]}}]});assert.equal(entry.status,200);
   const generated=await request(`/api/campaigns/${campaignId}/tactical/generate`,"POST",{commandId:randomUUID(),name:"Bundled floorplan",keim:"desktop-runtime-smoke"});assert.equal(generated.status,200,JSON.stringify(generated.body));
   record("real generator route reads packaged licensed Grundriss assets and persists native tactical map");
@@ -90,7 +95,9 @@ try{
   const eronImage=await game.evaluate(async path=>{
     const response=await fetch(path),contentType=response.headers.get("content-type");
     if(!response.ok||!contentType?.startsWith("image/webp"))return{status:response.status,contentType,error:await response.text()};
-    const bytes=await response.blob();
+    // Wie die Atlas-Ansicht: ueber den ArrayBuffer. `response.blob()` legt grosse Koerper als
+    // Datei-Blob ab und scheitert bei knapper Platte mit "Failed to fetch", ohne dass der Server irrt.
+    const bytes=new Blob([await response.arrayBuffer()],{type:contentType});
     try{const bitmap=await createImageBitmap(bytes);try{return{status:response.status,contentType,bytes:bytes.size,width:bitmap.width,height:bitmap.height};}finally{bitmap.close();}}
     catch(error){return{status:response.status,contentType,error:String(error)};}
   },`/api/campaigns/${campaignId}/maps/${eron.body.id}/image`);
@@ -98,6 +105,23 @@ try{
   assert.equal(eronImage.status,200,JSON.stringify(eronImage));assert.match(eronImage.contentType,/^image\/webp(?:;|$)/i);
   assert.equal(eronImage.error,undefined);assert.deepEqual([eronImage.width,eronImage.height],[8192,8192]);assert.ok(eronImage.bytes>0);
   record("packaged server imports an uploaded 190-place map, stores its 8192 x 8192 WebP in the campaign image store and the browser decodes what it serves back");
+  // Ein Kartenbild im Querformat, in einer eigenen Runde: `/maps/bild` schreibt eine Herkunft, und
+  // die Exportzusicherung unten erwartet fuer die Hauptrunde keine. Die Atlas-Ansicht legte jedes
+  // Bild auf ein festes 8192er-Raster; alles andere verwarf der Renderer als Ganzes, und sichtbar
+  // blieben nur die Marker. Das Muster oben misst genau 8192 und konnte das nie sehen.
+  const probeRunde=await request("/api/campaigns","POST",{name:"Kartenbild-Probe"});assert.equal(probeRunde.status,200);
+  const querformat=await sharp({create:{width:1600,height:1000,channels:3,background:"#c0392b"}}).png().toBuffer();
+  const bildkarte=await rawRequest(`/api/campaigns/${probeRunde.body.id}/maps/bild?dateiname=querformat.png`,querformat,"application/octet-stream","POST");
+  assert.equal(bildkarte.status,200,JSON.stringify(bildkarte.body));
+  await game.goto(`${origin}/?campaign=${probeRunde.body.id}&stage=atlas&atlasMap=${bildkarte.body.id}`);
+  const atlasHost=game.locator(".atlas-render-host");await atlasHost.locator("canvas").waitFor({state:"visible"});
+  // Gemessen an den Pixeln, nicht am Fehlen einer Meldung: die leere Leinwand ist dunkel, das Bild rot.
+  let rot=0;const bildStart=Date.now();
+  while(Date.now()-bildStart<30000){rot=(await sharp(await atlasHost.screenshot()).stats()).channels[0].mean;if(rot>100)break;await game.waitForTimeout(500);}
+  evidence.querformatKarte={mapId:bildkarte.body.id,mittleresRot:rot};
+  assert.equal(await game.getByText("invalid raster tiles").count(),0);
+  assert.ok(rot>100,`Das Kartenbild ist nicht zu sehen (mittleres Rot ${rot}).`);
+  record("atlas lays an uploaded 1600 x 1000 map picture over the whole map instead of dropping it");
   evidence.assetProbes=[];
   for(const [stil,setting,profil] of [["gemalt","fantasy","haus"],["zeitwelten","gegenwart","krankenhaus"],["zeitwelten","scifi","raumstation"],["genres","fantasy","haus"],["genres","gegenwart","krankenhaus"],["genres","scifi","raumstation"]]){
     const probe=await request(`/api/campaigns/${campaignId}/tactical/generate`,"POST",{commandId:randomUUID(),name:`Bundled ${stil} ${setting}`,keim:`desktop-assets-${stil}-${setting}`,art:"grundriss",stil,optionen:{setting,profil,zellen:[24,20],raeume:5}});

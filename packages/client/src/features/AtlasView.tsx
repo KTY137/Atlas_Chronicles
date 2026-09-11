@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Compass, DoorOpen, Eye, Globe, Link, Map, Maximize, Minus, Plus, RefreshCw, Search, Upload, X } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
-import { createMapRenderer, type MapCamera, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
+import { createMapRenderer, imageRasterLayout, type MapCamera, type MapRenderer, type ProjectedMapScene } from "@chronicle/render";
 import { api, apiPath, ApiError, errorText, type EntryDocument, type EntrySummary, type Member } from "../api.ts";
 import { useResource, useTask } from "../hooks.ts";
 import "./AtlasView.css";
@@ -169,19 +169,28 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     const instance = renderer.current, background = map.data?.background;
     if (!rendererReady || !instance || !background || childMapId) return;
     const controller = new AbortController(), scope = map.data!.id;
+    // Das Bild liegt so groß über der Karte, wie die Karte selbst ist. Hier stand eine feste
+    // Aufteilung auf 8192 x 8192 — die Maße der einen Karte, die einmal im Programm lag. Jede
+    // andere Größe verwarf der Renderer als Ganzes, und sichtbar blieben nur die Marker.
+    const layout = imageRasterLayout([map.data!.width, map.data!.height]);
     setBackgroundError("");
     void (async () => {
       const response = await fetch(background.url, { credentials: "same-origin", signal: controller.signal });
       if (!response.ok) { instance.setRasterTiles(scope, []); throw new Error(t("Das Kartenbild konnte nicht geladen werden. Die Ortsmarker bleiben über die Liste erreichbar.")); }
-      const blob = await response.blob();
-      const bitmap = await createImageBitmap(blob, { resizeWidth: 2048, resizeHeight: 2048, resizeQuality: "high" });
+      if (!layout.tiles.length) { instance.setRasterTiles(scope, []); return; }
+      // Nicht `response.blob()`: einen großen Antwortkörper legt Chromium als Datei-Blob auf der
+      // Platte ab, und bei knappem Plattenplatz scheitert das als „Failed to fetch" — gemessen an
+      // einem 10,9-MB-Kartenbild, das als ArrayBuffer vollständig ankam. Ein Blob aus dem Speicher
+      // braucht diesen Umweg nicht.
+      const blob = new Blob([await response.arrayBuffer()], { type: response.headers.get("content-type") ?? "" });
+      const bitmap = await createImageBitmap(blob, { resizeWidth: layout.bitmap[0], resizeHeight: layout.bitmap[1], resizeQuality: "high" });
       const tiles = [];
       try {
-        for (const [x, y] of [[0, 0], [1024, 0], [0, 1024], [1024, 1024]]) {
-          const image = await createImageBitmap(bitmap, x!, y!, 1024, 1024);
+        for (const tile of layout.tiles) {
+          const image = await createImageBitmap(bitmap, tile.sx, tile.sy, tile.sw, tile.sh);
           // Der Name der Kachel gehört zur Karte, nicht zu einer bestimmten Welt: hier stand
           // einmal `andaria:…`, aus der Zeit, als genau eine Karte im Programm lag.
-          tiles.push({ id: `kartenbild:${x}:${y}`, left: x! * 4, top: y! * 4, width: 4096, height: 4096, pixelScale: 4, image });
+          tiles.push({ id: `kartenbild:${tile.id}`, left: tile.left, top: tile.top, width: tile.width, height: tile.height, pixelScale: tile.pixelScale, image });
         }
         if (controller.signal.aborted || renderer.current !== instance) { for (const tile of tiles) tile.image.close(); return; }
         instance.setRasterTiles(scope, tiles);
@@ -189,7 +198,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
       finally { bitmap.close(); }
     })().catch((error: unknown) => { if (!controller.signal.aborted) setBackgroundError(errorText(error)); });
     return () => { controller.abort(); };
-  }, [map.data?.background?.url, rendererReady, childMapId]);
+  }, [map.data?.background?.url, map.data?.width, map.data?.height, rendererReady, childMapId]);
 
   function choose(nodeId: string) {
     setSelectedId(nodeId);

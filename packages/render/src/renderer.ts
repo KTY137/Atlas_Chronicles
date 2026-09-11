@@ -3,7 +3,7 @@
 /// <reference lib="dom" />
 /// <reference path="./pixi-csp.d.ts" />
 import { fitCamera, hitTestMap, mapPinHitRadius, mapToScreen, normalizeCamera, pointInPolygon, retainsTokenDrag, screenToMap, validateMapScene, zoomCamera } from "./geometry.ts";
-import { rasterTileDisplaySize } from "./tactical-geometry.ts";
+import { rasterTileDisplaySize, rasterTilesFit } from "./tactical-geometry.ts";
 import { createGridGeometryCache } from "./grid-cache.ts";
 import { planeStapel } from "./stapel.ts";
 import type { MapCamera, MapEditorInteraction, MapHit, MapPoint, MapRenderer, ProjectedMapLabel, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
@@ -579,7 +579,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     setRasterTiles(scope, tiles) {
       ensureAlive();
       if (scope !== scene.rasterScope) { for (const tile of tiles) tile.image.close(); return; }
-      if (tiles.length > 128 || new Set(tiles.map(t => t.id)).size !== tiles.length || tiles.some(t => ![t.left, t.top, t.width, t.height, t.pixelScale].every(Number.isFinite) || t.left < 0 || t.top < 0 || t.width <= 0 || t.height <= 0 || t.pixelScale < 1 || t.pixelScale > 32768 || !Number.isInteger(Math.log2(t.pixelScale)) || t.left + t.width > scene.width || t.top + t.height > scene.height || t.image.width !== Math.ceil(t.width / t.pixelScale) || t.image.height !== Math.ceil(t.height / t.pixelScale) || t.image.width > 1024 || t.image.height > 1024)) {
+      if (!rasterTilesFit([scene.width, scene.height], tiles)) {
         for (const tile of tiles) tile.image.close(); throw new Error("invalid raster tiles");
       }
       clearRaster();

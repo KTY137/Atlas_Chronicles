@@ -4,7 +4,7 @@ let waiting=false,restoreTicket,restoreCampaign,gms=[];
 // Die zuletzt geladenen Runden samt Mitgliedern. Sie werden nur auf Anforderung geholt:
 // die Statusabfrage laeuft alle 1,5 s, und dabei jedes Mal die Datenbank zu lesen waere
 // Verschwendung fuer eine Ansicht, die sich selten aendert.
-let runden=[],rundenGeladen=false;
+let runden=[],rundenGeladen=false,rundenAlter=0;
 // Welche Welt gerade zum Loeschen aussteht und was bisher getippt wurde. Die Statusabfrage
 // zeichnet die Liste alle 1,5 s neu — ohne diese beiden Zeilen waere das Feld staendig leer.
 let loeschKandidat,loeschEingabe="",loeschFokus=false;
@@ -85,15 +85,20 @@ function zeichneZugaenge(state){
     ?"Gerade läuft keine Welt. Starte oben eine mit „Fortsetzen“ — dann stehen hier ihre Runden, ein Einladungscode für neue Mitspieler und für jedes Mitglied ein Zugangscode."
     :state.setupRequired?"Diese Welt hat noch keine Spielleitung. Richte sie oben ein; danach erscheinen hier ihre Runden."
     :"Die Welt startet gerade.";
-  if(!laeuft){rundenGeladen=false;runden=[];return;}
-  if(!rundenGeladen){rundenGeladen=true;void ladeRunden();return;}
+  if(!laeuft){rundenGeladen=false;runden=[];rundenAlter=0;return;}
+  // Runden entstehen im Spielfenster, nicht hier — der Wegweiser oben schickt genau dorthin und
+  // wieder zurueck. Nur beim Start geladen hiess: eine danach angelegte Runde erschien erst nach
+  // einem Neustart der Welt, und bis dahin stand hier „noch keine Runde" mit gesperrtem Knopf.
+  // Darum neu laden alle zehn Statusabfragen (15 s) und sobald dieses Fenster den Fokus
+  // zurueckbekommt — nicht bei jeder Abfrage, siehe oben.
+  if(!rundenGeladen||++rundenAlter>=10){rundenGeladen=true;rundenAlter=0;void ladeRunden();return;}
   const auswahl=byId("zugang-runde"),gewaehlt=auswahl.value;
   auswahl.replaceChildren();
   for(const runde of runden){const option=document.createElement("option");option.value=runde.campaignId;option.textContent=runde.name;auswahl.append(option);}
   if(runden.some(runde=>runde.campaignId===gewaehlt))auswahl.value=gewaehlt;
   const runde=runden.find(kandidat=>kandidat.campaignId===auswahl.value);
   const liste=byId("zugang-mitglieder");liste.replaceChildren();
-  if(!runde){liste.textContent="In dieser Welt gibt es noch keine Runde. Lege sie in der Spieloberfläche an.";byId("zugang-einladung").disabled=true;return;}
+  if(!runde){liste.textContent="In dieser Welt gibt es noch keine Runde. Lege sie in der Spieloberfläche an — sie erscheint hier von selbst, sobald du in dieses Fenster zurückkommst.";byId("zugang-einladung").disabled=true;return;}
   byId("zugang-einladung").disabled=waiting||state.busy;
   for(const mitglied of runde.members){
     const zeile=document.createElement("div");zeile.className="profile";
@@ -173,4 +178,5 @@ byId("recovery-form").onsubmit=event=>{event.preventDefault();void action({kind:
 byId("restore-form").onsubmit=async event=>{event.preventDefault();const result=await action({kind:"restore-select",name:byId("restore-name").value},"Datei geprüft. Bitte den Bericht bestätigen.");if(!result||result.canceled)return;restoreTicket=result.ticket;restoreCampaign=result.report.campaignId;gms=result.gms;byId("restore-report").textContent=`Format V${result.report.formatVersion} · ${result.report.rows} Datensätze · ${result.report.identitiesWithoutCredentials} historische Identitäten. Ziel ist die soeben angelegte leere Welt. Öffentliche Auslieferung bleibt aus.`;byId("restore-review").hidden=false;};
 byId("restore-confirm").onclick=async()=>{const result=await action({kind:"restore-confirm",ticket:restoreTicket},"Kampagne wiederhergestellt. Verbinde jetzt die historische Spielleitung.");if(!result)return;byId("restore-review").hidden=true;byId("gm-select").replaceChildren();for(const gm of gms){const option=document.createElement("option");option.value=gm.id;option.textContent=gm.name;byId("gm-select").append(option);}byId("enrollment").hidden=false;};
 byId("enroll").onclick=async()=>{const result=await action({kind:"enroll",campaignId:restoreCampaign,userId:byId("gm-select").value},"Einmaligen Code jetzt in der Welt unter „Gerät verbinden“ einlösen.");if(result)byId("pairing").textContent=`${result.code}\nGültig für zehn Minuten. Teile diesen Code nur mit der gewählten Spielleitung.`;};
+window.addEventListener("focus",()=>{rundenGeladen=false;void refresh();});
 void refresh();setInterval(()=>{void refresh();},1500);

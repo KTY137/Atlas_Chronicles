@@ -12,6 +12,37 @@ export function rasterTileDisplaySize(tile: Pick<MapRasterTile, "width" | "heigh
   return [pixels[0] * tile.pixelScale, pixels[1] * tile.pixelScale];
 }
 
+type RasterTileShape = Pick<MapRasterTile, "id" | "left" | "top" | "width" | "height" | "pixelScale"> & { readonly image: { readonly width: number; readonly height: number } };
+/** The admission rule of `setRasterTiles`, pure, so a caller can lay tiles out against the same rule. */
+export function rasterTilesFit(size: MapPoint, tiles: readonly RasterTileShape[]): boolean {
+  return tiles.length <= 128 && new Set(tiles.map(t => t.id)).size === tiles.length && tiles.every(t => [t.left, t.top, t.width, t.height, t.pixelScale].every(Number.isFinite)
+    && t.left >= 0 && t.top >= 0 && t.width > 0 && t.height > 0 && t.pixelScale >= 1 && t.pixelScale <= 32768 && Number.isInteger(Math.log2(t.pixelScale))
+    && t.left + t.width <= size[0] && t.top + t.height <= size[1] && t.image.width === Math.ceil(t.width / t.pixelScale) && t.image.height === Math.ceil(t.height / t.pixelScale)
+    && t.image.width <= 1024 && t.image.height <= 1024);
+}
+
+/** One tile of a picture laid over a whole map: its cut-out in the scaled picture and its world rectangle. */
+export interface ImageRasterTile { readonly id: string; readonly sx: number; readonly sy: number; readonly sw: number; readonly sh: number; readonly left: number; readonly top: number; readonly width: number; readonly height: number; readonly pixelScale: number }
+export interface ImageRasterLayout { readonly pixelScale: number; readonly bitmap: MapPoint; readonly tiles: readonly ImageRasterTile[] }
+/**
+ * A single picture stretched over the map's own extent, cut into tiles `rasterTilesFit` admits.
+ * The picture is scaled to at most `maxEdge` pixels on its longer side at a power-of-two pitch;
+ * fractional map sizes are floored so no tile reaches past the edge.
+ */
+export function imageRasterLayout(size: MapPoint, maxEdge = 2048, tileEdge = 1024): ImageRasterLayout {
+  const [width, height] = size.map(v => Number.isFinite(v) ? Math.floor(v) : 0) as [number, number];
+  if (width < 1 || height < 1) return { pixelScale: 1, bitmap: [0, 0], tiles: [] };
+  let pixelScale = 1;
+  while (Math.ceil(Math.max(width, height) / pixelScale) > maxEdge && pixelScale < 32768) pixelScale *= 2;
+  const bitmap: MapPoint = [Math.ceil(width / pixelScale), Math.ceil(height / pixelScale)], tiles: ImageRasterTile[] = [];
+  for (let sy = 0; sy < bitmap[1]; sy += tileEdge) for (let sx = 0; sx < bitmap[0]; sx += tileEdge) {
+    const left = sx * pixelScale, top = sy * pixelScale;
+    tiles.push({ id: `${sx}:${sy}`, sx, sy, sw: Math.min(tileEdge, bitmap[0] - sx), sh: Math.min(tileEdge, bitmap[1] - sy),
+      left, top, width: Math.min(tileEdge * pixelScale, width - left), height: Math.min(tileEdge * pixelScale, height - top), pixelScale });
+  }
+  return { pixelScale, bitmap, tiles };
+}
+
 export interface VisibleTile { readonly level: number; readonly x: number; readonly y: number; readonly left: number; readonly top: number; readonly width: number; readonly height: number }
 /** Requests are chosen from the viewport, never from private geometry or source assets. */
 export function visibleMapTiles(size: MapPoint, viewport: MapPoint, camera: MapCamera, pixelRatio = 1, tileSize = 256): VisibleTile[] {
