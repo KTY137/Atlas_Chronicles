@@ -1,7 +1,7 @@
 {
   "name": "chronicle",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "license": "BUSL-1.1",
   "author": "Kaya Yesilyurt",
   "type": "module",

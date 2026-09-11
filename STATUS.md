@@ -1,6 +1,16 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-11, v0.4.1 veröffentlicht** (Kartenbild jeder Größe · Runden im Hostfenster)
+Updated: **2026-09-11, v0.4.2 gebaut, nicht veröffentlicht** (Hostfenster als Zentrale · Chronik-Import)
+
+## v0.4.2 — Hostfenster als Zentrale (Teil 1 von 3) · 2026-09-11
+
+Spec `docs/superpowers/specs/2026-09-11-hostfenster-zentrale-design.md`, Commit `5b9462c`. Das
+Hostfenster führt durch Welt, Runde, Einladung, Tür (Freigeben/Ablehnen), Mitglieder; Spiel behält
+seine Runden-Seite, gleiche Domänenfunktionen, Fristen 7 Tage / 24 h. Chronik-Import scheiterte an
+`wiki_assets_campaign_id_dateiname_key`, wenn das Kartenbild schon da war — jetzt Suche auch nach
+Dateiname. **Nachweis:** Servertests 36/36, desktop 51/51, Typecheck, gate:sprache, gate:version,
+Desktop-Smoke 26/26. Setup `.local/desktop-artifacts/2026-09-11T08-00-30-030Z/installer/`,
+SHA-256 `44C018B0…DE27C8`. **Offen:** Veröffentlichung wartet auf Kaya; Teil 2 Heimnetz, Teil 3 Internet.
 
 ## v0.4.1 — zwei Meldungen gegen v0.4.0 · 2026-09-11
 
