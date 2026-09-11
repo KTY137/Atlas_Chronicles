@@ -33,6 +33,27 @@ export interface RuleVital {
   /** Was Erreichen von 0 bedeutet. `defeat` stellt die Niederlage zur Bestätigung an. */
   readonly depletion: "defeat" | "none";
 }
+/**
+ * Fähigkeiten und Zustände (Spec 2026-09-11-chronicleheroes-faehigkeiten). Die Formelsprache bleibt
+ * unverändert: die Engine rechnet die passenden Modifikatoren vor dem Wurf aus und setzt ihre Summe in
+ * die Parameter `mod_ziel`/`mod_ergebnis`, die eine Aktion dafür erklärt. So bleiben alte Quittungen
+ * nachrechenbar, und die Aktion entscheidet selbst, wo die Zahl wirkt.
+ */
+export type ModifierTarget = "ziel" | "ergebnis";
+export interface RuleModifier { readonly actions: readonly string[]; readonly target: ModifierTarget; readonly value: string }
+export type AbilityKind = "dauerhaft" | "einsatz" | "reaktion";
+export interface RuleAbility {
+  readonly id: string; readonly name: string; readonly group: string; readonly rank: 1 | 2 | 3; readonly kind: AbilityKind;
+  /** Funkenkosten beim Einsatz — ein Hinweis; abgehakt wird am Bogen, ein Wurf schreibt nichts. */
+  readonly cost: number;
+  /** Preis gegen `abilityRules.budget`. */
+  readonly price: number;
+  readonly requires?: readonly string[]; readonly prerequisite?: string; readonly text: string; readonly modifiers?: readonly RuleModifier[];
+}
+export interface RuleCondition { readonly id: string; readonly name: string; readonly text: string; readonly modifiers?: readonly RuleModifier[] }
+export interface RuleAbilityRules { readonly abilityField: string; readonly conditionField?: string; readonly budget?: string }
+export interface AppliedModifier { readonly source: "ability" | "condition"; readonly id: string; readonly target: ModifierTarget; readonly value: number }
+export interface AbilityOverview { readonly learned: readonly string[]; readonly conditions: readonly string[]; readonly spent: number; readonly budget: number | null; readonly learnable: readonly string[] }
 export interface RuleActionV2 extends RuleAction { readonly outcome?: RuleOutcome; readonly preconditions?: readonly RuleAssertion[] }
 export interface RuleSelfTestV2 { readonly name: string; readonly actionId: string; readonly context: EvaluationContext; readonly expectedTotal: number; readonly expectedSuccess?: boolean; readonly expectedOutcomeId?: string }
 export interface RulePackageV2 extends Omit<RulePackage, "schemaVersion" | "actions" | "selfTests"> {
@@ -40,6 +61,7 @@ export interface RulePackageV2 extends Omit<RulePackage, "schemaVersion" | "acti
   readonly computed?: readonly ComputedField[]; readonly constraints?: readonly RuleAssertion[];
   readonly vitals?: readonly RuleVital[];
   readonly attribution?: RuleAttribution; readonly selfTests?: readonly RuleSelfTestV2[];
+  readonly abilityRules?: RuleAbilityRules; readonly abilities?: readonly RuleAbility[]; readonly conditions?: readonly RuleCondition[];
 }
 /** Ein Vitalwert samt gemessenem Stand — die Zahlen, aus denen eine Anzeige entsteht. */
 export interface VitalReading extends RuleVital {
@@ -60,6 +82,8 @@ export interface ActionResultV2 extends Omit<ActionResult, "schemaVersion"> {
   /** Actual formula operations across fields, preconditions, primary roll and every band. */
   readonly evaluationOperations: number;
   readonly outcome?: ClassifiedOutcome; readonly outcomeTrace?: readonly OutcomeExpressionTrace[];
+  /** Nur bei Paketen mit `abilityRules`: welche Fähigkeit oder welcher Zustand wie viel beitrug. */
+  readonly modifiers?: readonly AppliedModifier[];
 }
 export type AnyRulePackage = RulePackage | RulePackageV2;
 export type AnyActionResult = ActionResult | ActionResultV2;
@@ -103,11 +127,71 @@ function httpUrl(value: unknown): void {
   catch { fail("source URL: expected inert HTTP(S) URL"); }
 }
 
+function smallInteger(value: unknown, at: string, maximum: number): void {
+  if (!Number.isSafeInteger(value) || (value as number) < 0 || (value as number) > maximum) fail(`${at}: expected an integer from 0 to ${maximum}`);
+}
+const actionMatches = (pattern: string, actionId: string): boolean => pattern.endsWith("*") ? actionId.startsWith(pattern.slice(0, -1)) : pattern === actionId;
+/** Die drei optionalen Bausteine, geschlossen geprüft. Alles, was ein Wurf später braucht, steht hier fest. */
+function abilityDeclarations(data: Record<string, unknown>, base: RulePackage, actorOnly: FormulaFieldTypes): void {
+  if (data.abilityRules === undefined) fail("abilityRules: required when abilities or conditions are declared");
+  const rules = record(data.abilityRules, "abilityRules"); keys(rules, ["abilityField", "conditionField", "budget"], "abilityRules");
+  const textField = (value: unknown, at: string): void => {
+    const field = base.fields[identifier(value, at)];
+    if (!field || field.type !== "string" || field.enum || (field.maxLength ?? 0) < 64) fail(`${at}: expected a string field of this package with maxLength of at least 64`);
+  };
+  textField(rules.abilityField, "abilityRules.abilityField");
+  if (rules.conditionField !== undefined) textField(rules.conditionField, "abilityRules.conditionField");
+  if (data.conditions !== undefined && rules.conditionField === undefined) fail("abilityRules.conditionField: required when conditions are declared");
+  if (rules.budget !== undefined) expression(rules.budget, "number", actorOnly);
+  const modifiers = (input: unknown, at: string): void => {
+    for (const item of array(input, `${at}.modifiers`, 4)) {
+      const row = record(item, "modifier"); keys(row, ["actions", "target", "value"], "modifier");
+      if (row.target !== "ziel" && row.target !== "ergebnis") fail(`${at}: modifier target must be "ziel" or "ergebnis"`);
+      const parameter = `mod_${row.target}`, patterns = array(row.actions, `${at}.modifier.actions`, 16);
+      if (!patterns.length) fail(`${at}: modifier needs at least one action`);
+      for (const raw of patterns) {
+        const pattern = string(raw, `${at}.modifier.action`, 97), prefix = pattern.endsWith("*") ? pattern.slice(0, -1) : null;
+        if (prefix === null) identifier(pattern, `${at}.modifier.action`); else if (!/^[a-z][a-z0-9_-]*$/.test(prefix)) fail(`${at}: invalid action prefix ${pattern}`);
+        const hits = base.actions.filter(action => actionMatches(pattern, action.id));
+        // Ein genannter, aber fehlender Name ist ein Tippfehler; ein Präfix darf leer treffen (eine Auswahl von Fertigkeiten).
+        if (prefix === null && !hits.length) fail(`${at}: unknown action ${pattern}`);
+        for (const action of hits) {
+          const schema = action.inputs[parameter];
+          if (!schema || (schema.type !== "integer" && schema.type !== "number")) fail(`${at}: action ${action.id} must declare the number input ${parameter}`);
+        }
+      }
+      expression(row.value, "number", actorOnly);
+    }
+  };
+  const abilityIds = new Set<string>(), abilityRows = data.abilities === undefined ? [] : array(data.abilities, "abilities", 512).map(item => record(item, "ability"));
+  for (const row of abilityRows) { keys(row, ["id", "name", "group", "rank", "kind", "cost", "price", "requires", "prerequisite", "text", "modifiers"], "ability"); uniqueId(row.id, abilityIds, "ability"); }
+  for (const row of abilityRows) {
+    const at = `ability ${String(row.id)}`;
+    string(row.name, `${at}.name`, 120); string(row.group, `${at}.group`, 80); string(row.text, `${at}.text`, 600);
+    if (row.rank !== 1 && row.rank !== 2 && row.rank !== 3) fail(`${at}: rank must be 1, 2 or 3`);
+    if (row.kind !== "dauerhaft" && row.kind !== "einsatz" && row.kind !== "reaktion") fail(`${at}: kind must be dauerhaft, einsatz or reaktion`);
+    smallInteger(row.cost, `${at}.cost`, 9); smallInteger(row.price, `${at}.price`, 99);
+    if (row.requires !== undefined) for (const need of array(row.requires, `${at}.requires`, 4)) {
+      const id = identifier(need, `${at}.requires`);
+      if (id === row.id || !abilityIds.has(id)) fail(`${at}: requires unknown ability ${id}`);
+    }
+    if (row.prerequisite !== undefined) expression(row.prerequisite, "boolean", actorOnly);
+    if (row.modifiers !== undefined) modifiers(row.modifiers, at);
+  }
+  const conditionIds = new Set<string>();
+  for (const item of data.conditions === undefined ? [] : array(data.conditions, "conditions", 32)) {
+    const row = record(item, "condition"); keys(row, ["id", "name", "text", "modifiers"], "condition"); uniqueId(row.id, conditionIds, "condition");
+    const at = `condition ${String(row.id)}`;
+    string(row.name, `${at}.name`, 120); string(row.text, `${at}.text`, 600);
+    if (row.modifiers !== undefined) modifiers(row.modifiers, at);
+  }
+}
+
 /** Common v1 records are checked by the frozen v1 parser through an explicit projection.
  * All v2 additions are closed and checked independently; nothing is silently discarded. */
 export function parseRulePackageV2(input: unknown): RulePackageV2 {
   const data = record(typeof input === "string" ? parseBoundedJson(input) : snapshotJson(input), "package");
-  keys(data, ["schemaVersion", "id", "name", "version", "engineVersion", "license", "authors", "fields", "layout", "actions", "migrations", "selfTests", "computed", "constraints", "vitals", "attribution"], "package");
+  keys(data, ["schemaVersion", "id", "name", "version", "engineVersion", "license", "authors", "fields", "layout", "actions", "migrations", "selfTests", "computed", "constraints", "vitals", "attribution", "abilityRules", "abilities", "conditions"], "package");
   if (data.schemaVersion !== 2) fail("package: expected schemaVersion 2");
   const actionRows = array(data.actions, "actions", RULE_LIMITS.actions).map(item => record(item, "action"));
   const projectedActions = actionRows.map(action => {
@@ -120,7 +204,7 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
     if (test.expectedOutcomeId !== undefined) identifier(test.expectedOutcomeId, "expectedOutcomeId");
     const { expectedSuccess: _success, expectedOutcomeId: _outcome, ...legacy } = test; return legacy;
   });
-  const { computed: _computed, constraints: _constraints, vitals: _vitals, attribution: _attribution, selfTests: _tests, ...common } = data;
+  const { computed: _computed, constraints: _constraints, vitals: _vitals, attribution: _attribution, selfTests: _tests, abilityRules: _abilityRules, abilities: _abilities, conditions: _conditions, ...common } = data;
   const base = parseRulePackage({ ...common, schemaVersion: 1, actions: projectedActions, ...(projectedTests === undefined ? {} : { selfTests: projectedTests }) });
   const actorTypes = types(base.fields); const actorOnly = { actor: actorTypes, input: {} };
   if (data.computed !== undefined) {
@@ -158,6 +242,7 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
       const fallback = record(outcome.fallback, "fallback"); keys(fallback, ["id", "label", "success"], "fallback"); label(fallback, seen);
     }
   }
+  if (data.abilityRules !== undefined || data.abilities !== undefined || data.conditions !== undefined) abilityDeclarations(data, base, actorOnly);
   if (data.attribution !== undefined) {
     const row = record(data.attribution, "attribution"); keys(row, ["title", "sources", "licenseUrl", "notice", "changes"], "attribution");
     string(row.title, "attribution.title", 120); string(row.notice, "attribution.notice", 1024); string(row.changes, "attribution.changes", 1024); httpUrl(row.licenseUrl);
@@ -187,14 +272,72 @@ class Budget {
   }
 }
 const fieldContext = (actor: Readonly<Record<string, Scalar>>): EvaluationContext => ({ seed: "00000000000000000000000000000001", actor, input: {}, knowledge: { actorId: "fields", passages: [] } });
-function resolveFields(pkg: AnyRulePackage, input: unknown, budget: Budget): { fields: Readonly<Record<string, Scalar>>; computed: Readonly<Record<string, number>> } {
+interface ResolvedAbilities { readonly learned: readonly RuleAbility[]; readonly conditions: readonly RuleCondition[]; readonly spent: number; readonly budget: number | null }
+interface ResolvedFields { readonly fields: Readonly<Record<string, Scalar>>; readonly computed: Readonly<Record<string, number>>; readonly abilities?: ResolvedAbilities }
+/** Eine Kennungsliste aus einem Textfeld („a, b, c"). Leer ist keine Auswahl; unbekannt oder doppelt ist ein Fehler. */
+function selection(value: Scalar | undefined, known: ReadonlySet<string>, what: string): string[] {
+  if (typeof value !== "string" || !value.trim()) return [];
+  const ids = value.split(",").map(part => part.trim()).filter(Boolean), seen = new Set<string>();
+  for (const id of ids) {
+    if (!known.has(id)) fail(`${what} ${id}: unknown`);
+    if (seen.has(id)) fail(`${what} ${id}: duplicate`);
+    seen.add(id);
+  }
+  return ids;
+}
+function resolveAbilities(pkg: RulePackageV2, fields: Readonly<Record<string, Scalar>>, budget: Budget): ResolvedAbilities {
+  const rules = pkg.abilityRules!, abilities = new Map((pkg.abilities ?? []).map(ability => [ability.id, ability]));
+  const conditions = new Map((pkg.conditions ?? []).map(condition => [condition.id, condition])), context = fieldContext(fields);
+  const learned = selection(fields[rules.abilityField], new Set(abilities.keys()), "ability").map(id => abilities.get(id)!), ids = new Set(learned.map(ability => ability.id));
+  for (const ability of learned) {
+    for (const need of ability.requires ?? []) if (!ids.has(need)) fail(`ability ${ability.id}: requires ${need}`);
+    if (ability.prerequisite !== undefined && budget.evaluate(ability.prerequisite, context).value !== true) fail(`ability ${ability.id}: prerequisite not met`);
+  }
+  const spent = learned.reduce((sum, ability) => sum + ability.price, 0);
+  const limit = rules.budget === undefined ? null : finite(budget.evaluate(rules.budget, context).value, "ability budget");
+  if (limit !== null && spent > limit) fail(`ability budget exceeded: ${spent} > ${limit}`);
+  const active = rules.conditionField === undefined ? [] : selection(fields[rules.conditionField], new Set(conditions.keys()), "condition").map(id => conditions.get(id)!);
+  return { learned, conditions: active, spent, budget: limit };
+}
+function resolveFields(pkg: AnyRulePackage, input: unknown, budget: Budget): ResolvedFields {
   const fields = validateEntityFields(pkg.fields, input); const computed: Record<string, number> = {};
+  let abilities: ResolvedAbilities | undefined;
   if (pkg.schemaVersion === 2) {
     const context = fieldContext(fields);
     for (const assertion of pkg.constraints ?? []) if (budget.evaluate(assertion.expression, context).value !== true) fail(`constraint ${assertion.id}: ${assertion.message}`);
     for (const output of pkg.computed ?? []) computed[output.id] = finite(budget.evaluate(output.expression, context).value, `computed ${output.id}`);
+    if (pkg.abilityRules) abilities = resolveAbilities(pkg, fields, budget);
   }
-  return { fields, computed: deepFreeze(computed) };
+  return { fields, computed: deepFreeze(computed), ...(abilities ? { abilities } : {}) };
+}
+/**
+ * Die Modifikatoren eines Wurfs: aktive Zustände, gelernte dauerhafte Fähigkeiten und die im Parameter
+ * `einsatz` gewählten. Ihre Summe ersetzt `mod_ziel`/`mod_ergebnis` — ein von Hand übergebener Wert
+ * zählt nicht, sonst ließe sich jede Probe erleichtern.
+ */
+function applyModifiers(pkg: RulePackageV2, action: RuleActionV2, resolved: ResolvedFields, input: Readonly<Record<string, Scalar>>, budget: Budget): { input: Readonly<Record<string, Scalar>>; applied: readonly AppliedModifier[] } {
+  const own = resolved.abilities!, catalogue = new Map((pkg.abilities ?? []).map(ability => [ability.id, ability]));
+  const learned = new Set(own.learned.map(ability => ability.id)), context = fieldContext(resolved.fields);
+  const chosen = action.inputs.einsatz ? selection(input.einsatz, new Set(catalogue.keys()), "einsatz") : [];
+  for (const id of chosen) if (!learned.has(id) || catalogue.get(id)!.kind === "dauerhaft") fail(`einsatz ${id}: only learned einsatz or reaktion abilities can be used`);
+  const sources = [
+    ...own.conditions.map(condition => ({ source: "condition" as const, id: condition.id, modifiers: condition.modifiers ?? [] })),
+    ...own.learned.filter(ability => ability.kind === "dauerhaft").map(ability => ({ source: "ability" as const, id: ability.id, modifiers: ability.modifiers ?? [] })),
+    ...chosen.map(id => ({ source: "ability" as const, id, modifiers: catalogue.get(id)!.modifiers ?? [] })),
+  ];
+  const sums: Record<ModifierTarget, number> = { ziel: 0, ergebnis: 0 }, applied: AppliedModifier[] = [];
+  for (const origin of sources) for (const modifier of origin.modifiers) {
+    if (!modifier.actions.some(pattern => actionMatches(pattern, action.id))) continue;
+    const value = finite(budget.evaluate(modifier.value, context).value, `modifier ${origin.id}`);
+    sums[modifier.target] += value; applied.push({ source: origin.source, id: origin.id, target: modifier.target, value });
+  }
+  const next: Record<string, Scalar> = { ...input };
+  for (const target of ["ziel", "ergebnis"] as const) {
+    const schema = action.inputs[`mod_${target}`]; if (!schema) continue;
+    const value = schema.type === "integer" ? Math.round(sums[target]) : sums[target];
+    next[`mod_${target}`] = Math.min(schema.maximum ?? value, Math.max(schema.minimum ?? value, value));
+  }
+  return { input: deepFreeze(next), applied: deepFreeze(applied) };
 }
 export function validatePackageFields(rawPackage: AnyRulePackage, input: unknown): Readonly<Record<string, Scalar>> {
   return resolveFields(parseSupportedRulePackage(rawPackage), input, new Budget()).fields;
@@ -217,6 +360,22 @@ export function evaluateVitals(rawPackage: AnyRulePackage, input: unknown): read
     return { ...vital, value, maximum: finite(budget.evaluate(vital.max, context).value, `vital ${vital.id}: maximum`), depleted: value <= 0 };
   }));
 }
+/**
+ * Was ein Bogen gelernt hat, welche Zustände wirken, was ausgegeben ist und was jetzt lernbar wäre —
+ * Vorstufen gelernt, Voraussetzung erfüllt, Preis im Budget. Die Prüfung je Kandidat bekommt ein eigenes
+ * Rechenbudget: das ist eine Anzeige über einen ganzen Katalog, kein Wurf.
+ */
+export function abilityOverview(rawPackage: AnyRulePackage, input: unknown): AbilityOverview {
+  const pkg = parseSupportedRulePackage(rawPackage);
+  if (pkg.schemaVersion !== 2 || !pkg.abilityRules) return deepFreeze({ learned: [], conditions: [], spent: 0, budget: null, learnable: [] });
+  const resolved = resolveFields(pkg, input, new Budget()), own = resolved.abilities!, context = fieldContext(resolved.fields);
+  const learned = new Set(own.learned.map(ability => ability.id));
+  const learnable = (pkg.abilities ?? []).filter(ability => !learned.has(ability.id)
+    && (ability.requires ?? []).every(id => learned.has(id))
+    && (own.budget === null || own.spent + ability.price <= own.budget)
+    && (ability.prerequisite === undefined || new Budget().evaluate(ability.prerequisite, context).value === true)).map(ability => ability.id);
+  return deepFreeze({ learned: [...learned], conditions: own.conditions.map(condition => condition.id), spent: own.spent, budget: own.budget, learnable });
+}
 /** Die Vitalwerte, deren Erschöpfung eine Niederlage bedeutet — die einzige Quelle dafür. */
 export function depletedDefeatVitals(rawPackage: AnyRulePackage, input: unknown): readonly VitalReading[] {
   return evaluateVitals(rawPackage, input).filter(vital => vital.depletion === "defeat" && vital.depleted);
@@ -228,7 +387,10 @@ export function evaluateSupportedAction(rawPackage: AnyRulePackage, actionId: st
   const pkg = parseSupportedRulePackage(rawPackage); if (pkg.schemaVersion === 1) return evaluateAction(pkg, actionId, rawContext);
   const action = pkg.actions.find(item => item.id === actionId); if (!action) fail("action: not found in pinned package");
   const budget = new Budget(); const context = parseEvaluationContext(rawContext);
-  const resolved = deepFreeze({ ...context, actor: resolveFields(pkg, context.actor, budget).fields, input: validateEntityFields(action.inputs, context.input ?? {}) });
+  const fields = resolveFields(pkg, context.actor, budget);
+  let input = validateEntityFields(action.inputs, context.input ?? {}), applied: readonly AppliedModifier[] | undefined;
+  if (pkg.abilityRules) ({ input, applied } = applyModifiers(pkg, action, fields, input, budget));
+  const resolved = deepFreeze({ ...context, actor: fields.fields, input });
   for (const assertion of action.preconditions ?? []) if (budget.evaluate(assertion.expression, resolved).value !== true) fail(`precondition ${assertion.id}: ${assertion.message}`);
   const { value, ...calculation } = budget.evaluate(action.expression, resolved); const total = finite(value, "action total");
   let classified: { outcome: ClassifiedOutcome; outcomeTrace: readonly OutcomeExpressionTrace[] } | undefined;
@@ -240,6 +402,7 @@ export function evaluateSupportedAction(rawPackage: AnyRulePackage, actionId: st
     classified = { outcome: { id: selected.id, label: selected.label, success: selected.success, matchedBand: first < 0 ? null : first, comparisons }, outcomeTrace };
   }
   return deepFreeze({ schemaVersion: 2, packageSchemaVersion: 2, outcomeVersion: OUTCOME_VERSION, packageContentHash: packageDigest(pkg), engineVersion: ENGINE_VERSION, package: { id: pkg.id, version: pkg.version }, action: { id: action.id, version: action.version }, context: resolved, expression: action.expression, ...calculation, total, requiresConfirmation: true, evaluationOperations: budget.operations,
+    ...(applied ? { modifiers: applied } : {}),
     ...(classified ? { ...classified, success: classified.outcome.success } : action.threshold === undefined ? {} : { success: total >= action.threshold }),
   });
 }
