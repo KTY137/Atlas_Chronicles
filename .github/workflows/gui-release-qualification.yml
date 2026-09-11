@@ -83,9 +83,18 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - name: Unmodified canonical gates with real PostgreSQL
-        run: npm run gate
+        run: |
+          set -o pipefail
+          node --test tools/test/verify-gui-release.test.mjs
+          npm run gate 2>&1 | tee canonical-gate.log
         env:
           TEST_DATABASE_URL: postgresql://chronicle:chronicle@127.0.0.1:5432/chronicle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canonical-gate-log
+          path: canonical-gate.log
+          retention-days: 14
   windows-package:
     needs: [interaction, browser-suite, canonical-gate]
     runs-on: windows-latest
@@ -165,3 +174,39 @@ jobs:
             .local/desktop-profiles/smoke-*/*.png
           if-no-files-found: ignore
           retention-days: 14
+  publish-release:
+    needs: windows-package
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'KTY137/Atlas_Chronicles'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: atlas-windows-release
+          path: release-output
+      - name: Verify version, exact run and both smoke results against installer bytes
+        run: node tools/verify-gui-release.mjs release-output
+      - name: Publish the requested version without replacing existing releases or tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/heads/main --jq .object.sha)" = "$GITHUB_SHA"
+          if gh release view v0.5.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'Version 0.5.0 already exists; no tag, assets or release metadata will be overwritten.'
+            exit 0
+          fi
+          if gh api repos/$GITHUB_REPOSITORY/git/ref/tags/v0.5.0 >/dev/null 2>&1; then
+            echo 'A v0.5.0 tag exists without this release; refusing to repurpose it.' >&2
+            exit 1
+          fi
+          gh release create v0.5.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title 'Atlas Chronicles 0.5.0 — Kartenstudio und GUI-Korrekturen' --notes-file docs/releases/0.5.0.md release-output/Atlas-Chronicles-Setup.exe release-output/SHA256SUMS.txt release-output/build-evidence.json
+          gh release edit v0.5.0 --repo "$GITHUB_REPOSITORY" --draft=false --latest

@@ -47,3 +47,26 @@ smoke in an isolated world, verify installer bytes and publish only after succes
 An unsigned installer remains unsigned; no signing, update-feed or complete
 20-feature roadmap claim is made. Current campaign backups should be made before
 upgrading across the new floor/fog migrations.
+
+## First remote qualification and test corrections
+
+Run 34650492422 passed all five reproduced GUI regressions and eight independent
+state-model tests. Its four full-app monkey cases found the test trying to assert
+a visible mobile navigation item after the drawer correctly closed; the corrected
+assertions check the hidden active item, actual URL and closed drawer. The browser
+suite initially failed during collection because an obsolete HTBAH template export
+no longer exists. It now exercises the actually shipped ChronicleHeroes template
+with the same formula and byte-identical package assertions. These were test
+contract mismatches, not additional claimed GUI defects.
+
+The full canonical gate passed source assets/types and exercised real PostgreSQL.
+Its remaining failures were old Windows-only desktop fixture assumptions on Linux.
+Explicit platform/CIM doubles preserve the production guards; native path fixtures
+and the pure Windows path parser are now unambiguous. All 52 desktop cases passed
+locally, including a new fail-closed ownership-inspection regression. Native
+Windows runtime verification remains assigned to both packaged and installed smoke.
+
+Publication is scoped to this requested version and the exact main-run artifact.
+Twelve independent admission checks reject substituted bytes, missing smoke
+results, wrong run/commit/version and inconsistent checksums before publishing.
+No existing release or tag will be overwritten.
