@@ -27,7 +27,7 @@ nicht die ganze 20-Punkte-Roadmap für abgeschlossen.
 - Zwei Vorschauen lassen sich nebeneinander vergleichen. Die letzten vier Vorlagen bleiben
   nur in der geöffneten Werkstatt; keine privaten Rezepte in geteiltem localStorage.
 - Regionen zeigen jetzt Orte (1–24), regionale Zellgröße und Geländeregler statt wirkungsloser
-  Raum-/Einrichtungs-/Lichtfelder. Sprachschlüssel liegen im neuen registrierten Paket P13.
+  Raum-/Einrichtungs-/Lichtfelder. Sprachschlüssel liegen im neuen registrierten Paket P14.
 
 ## Abgrenzungen
 
@@ -42,7 +42,10 @@ historischen Generator; der Vergleichshash macht Versionsabweichungen sichtbar.
 
 Lokale Basis: exakte CI-Quellen aus `46cf704`; Abgleich gegen main `f2d99d1` zeigt ausschließlich
 zusätzliche Expeditionsassets/-Werkzeuge und die erhaltene Workflow-Korrektur. Kein betroffener
-Produktquelltext wurde parallel geändert. Die Integration verwendet main als Git-Tree-Basis.
+Produktquelltext wurde bei diesem ersten Abgleich parallel geändert. Vor der endgültigen
+Integration kam Regelschmiede-PR #6 als `3beb68e` hinzu: dessen P13 bleibt erhalten, die
+Kartenübersetzungen stehen nun in P14. Die Integration verwendet den aktualisierten main
+als Git-Tree-Basis und erhält alle parallelen Regelwerkdateien.
 
 Ausgeführt: **852 Vitest-Fälle in 42 Dateien grün** (Forge, Szene, relevante Client- und
 Betreten-/Anlagen-Servertests; JSON-Bericht, 37,94 s). Darin 19 neue Generator-, 7 reale
@@ -50,6 +53,9 @@ HTTP/Persistenz-/Berechtigungs-/Sicherungs-, 29 Vorlagen- und 4 Formularprüfung
 Burg und Schloss werden gespeichert, idempotent wieder geöffnet, ihre Innenräume betreten
 und nach nativem Export/Restore mit leerem semantischem Diff erneut gelesen.
 Root-Typecheck, Client-Typecheck/Produktionsbuild, Sprach- und Boundary-Gates sind grün.
+Eine zusätzliche Prüfung der wiedergeöffneten Kartenfamilie und Stilvererbung schlug
+zunächst für beide Anlagen fehl. Nach Korrektur bestanden 34 Serverfälle und der
+Root-Typecheck erneut; Anlagen behalten nun auch ohne Außenmöbel ihren gewählten Stil.
 Beide Anlagen wurden außerdem durch den echten serverseitigen PNG-Zeichenpfad gerendert
 und visuell geprüft; das ersetzt keine Browserabnahme.
 
