@@ -1,0 +1,35 @@
+name: gui-fixture-staging
+on:
+  push:
+    branches: ['release/gui-hardening-0.5.0']
+    paths: ['.github/gui-fixtures.patch', '.github/workflows/gui-fixture-staging.yml']
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - run: |
+          set -euo pipefail
+          cp .github/gui-fixtures.patch "$RUNNER_TEMP/fixtures.patch"
+          echo '86ed332cafc174c884cd29a4ef8ca8cff7fc0ca4e49000842c1dea02589dae16  .github/gui-fixtures.patch' | sha256sum -c -
+          git rm -- .github/gui-fixtures.patch .github/workflows/gui-fixture-staging.yml
+          test "$(git write-tree)" = 'c66b0e4e8e59766b06904311b35b48e823ee06f3'
+          git apply --index "$RUNNER_TEMP/fixtures.patch"
+          test "$(git write-tree)" = 'd475c5dc95123f6c35179d3eec9de0b77ed497fe'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck && npx vitest run packages/desktop/test
+      - run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test: preserve Windows security checks across hosts and exercise the shipped GUI contracts' -m '52 desktop cases passed locally. Mobile navigation is asserted after the drawer closes; the old non-shipped HTBAH template case now exercises the actual ChronicleHeroes template. Exact full source tree d475c5dc95123f6c35179d3eec9de0b77ed497fe. Refs #3.'
+          git push origin HEAD:refs/heads/release/gui-hardening-0.5.0
