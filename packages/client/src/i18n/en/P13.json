@@ -1,0 +1,15 @@
+{
+  "Die Kennung braucht Kleinbuchstaben, Ziffern, _ oder -, beginnt mit einem Buchstaben und hat höchstens 96 Zeichen. Reservierte Namen sind nicht erlaubt.": "Use lowercase letters, digits, _ or - for the identifier, begin with a letter and use at most 96 characters. Reserved names are not allowed.",
+  "Diese Kennung ist schon vergeben. Wähle eine andere.": "This identifier is already in use. Choose another one.",
+  "Mit dieser Kennung wäre eine gespeicherte Auswahl zu lang. Kürze die Kennung oder erhöhe die Zeichengrenze des betroffenen Attributs.": "This identifier would make a saved selection too long. Shorten it or increase the character limit of the affected attribute.",
+  "Entfernen ist gesperrt, solange andere Einträge diese Kennung benutzen.": "Removal is blocked while other entries use this identifier.",
+  "Der Eintrag fehlt oder seine Kennung ist mehrfach vergeben. Prüfe zuerst die Liste.": "The entry is missing or its identifier is used more than once. Check the list first.",
+  "Vorstufe von {name}": "Prerequisite of {name}",
+  "Vorgabe für {name}": "Default for {name}",
+  "Einsatz-Vorgabe für {name}": "Activation default for {name}",
+  "Pakettest {name}": "Package test {name}",
+  "Umstellung von {name}": "Migration from {name}",
+  "Kennung übernehmen": "Apply identifier",
+  "Nur Verweise im Entwurf werden mitgeändert. Freie Texte, Formeln und bestehende Figuren bleiben unverändert.": "Only references in the draft are updated. Free text, formulas and existing characters stay unchanged.",
+  "{n} weitere Verweise": "{n} more references"
+}
