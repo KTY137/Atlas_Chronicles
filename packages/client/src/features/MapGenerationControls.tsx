@@ -4,6 +4,7 @@ import { Building2, Castle, CloudSun, Droplets, Mountain, Paintbrush, Ruler, Map
 import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
 import { locale, t } from "../i18n";
 import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
+import { changeEntranceType, entranceTypeValue, settlementPreset, SETTLEMENT_TYPES, SETTLEMENT_TYPE_LABEL } from "./map-type-selection";
 
 // Die Anzeigetexte stehen als Tabelle daneben, damit die Anzeigestelle sie mit `t` nachschlägt.
 const MAP_KIND_LABEL = { region: "Land & Region", siedlung: "Stadt & Dorf", grundriss: "Gebäude & Dungeon", hoehle: "Höhle" } as const;
@@ -46,17 +47,23 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
   const std = city ? cityDefaults : cave ? defaults.hoehle : defaults.grundriss;
   const suggested = BAUWERK_SETTINGS[value.setting];
   const presets = city ? [
-    ...(["weiler", "dorf", "stadt"] as const).map((art, index) => {
-      const fallback = [{ ausdehnung: [24, 20], bauwerke: 12, strassenDichte: .15, licht: false }, defaults.siedlung, { ausdehnung: [56, 44], bauwerke: 130, strassenDichte: .55, licht: true }][index]!;
-      const preset = defaults.siedlungsarten?.[art] ?? fallback;
-      return { label: [t("Weiler"), t("Dorf"), t("Stadt")][index]!, breite: preset.ausdehnung[0]!, hoehe: preset.ausdehnung[1]!, anzahl: preset.bauwerke, siedlung: art, dichte: preset.strassenDichte, licht: preset.licht };
+    ...SETTLEMENT_TYPES.map(art => {
+      const preset = settlementPreset(art, defaults);
+      return { label: t(SETTLEMENT_TYPE_LABEL[art]), breite: preset.ausdehnung[0], hoehe: preset.ausdehnung[1], anzahl: preset.bauwerke, siedlung: art, dichte: preset.strassenDichte, licht: preset.licht };
     }),
     { label: t("Großstadt"), breite: 88, hoehe: 64, anzahl: 256, siedlung: "stadt" as const, dichte: .7 },
   ] : [ { label: t("Klein"), breite: 24, hoehe: 20, anzahl: 5 }, { label: t("Mittel"), breite: 40, hoehe: 30, anzahl: 11 }, { label: t("Groß"), breite: 64, hoehe: 48, anzahl: 24 } ];
   const changeArt = (art: MapArt) => update({ art, breite: "", hoehe: "", anzahl: "" });
   return <div className={`map-generation-controls${compact ? " compact" : ""}`}>
-    {compact ? <label>{t("Was liegt hinter dieser Tür?")}<select value={value.art} onChange={event => changeArt(event.target.value as MapArt)}>
-      {MAP_KINDS.map(kind => <option key={kind.id} value={kind.id}>{t(MAP_KIND_LABEL[kind.id])}</option>)}
+    {compact && profileLocked ? <label>{t("Was liegt hinter dieser Tür?")}<select value={value.art} onChange={event => changeArt(event.target.value as MapArt)}>
+      {MAP_KINDS.filter(kind => kind.id !== "region").map(kind => <option key={kind.id} value={kind.id}>{t(MAP_KIND_LABEL[kind.id])}</option>)}
+    </select></label> : compact ? <label>{t("Was liegt hinter dieser Tür?")}<select value={entranceTypeValue(value)}
+      onChange={event => onChange(changeEntranceType(value, event.target.value, defaults))}>
+      {value.art === "region" ? <option value="region" disabled>{t("Land & Region")}</option> : null}
+      <optgroup label={t("Stadt & Dorf")}>{SETTLEMENT_TYPES.map(art => <option key={art} value={`siedlung:${art}`}>{t(SETTLEMENT_TYPE_LABEL[art])}</option>)}</optgroup>
+      <optgroup label={t("Gebäude & Dungeon")}><option value="grundriss:frei">{t("Freier Grundriss / Dungeon")}</option>
+        {BAUWERK_TYPEN.map(typ => <option key={typ} value={`grundriss:${typ}`}>{t(BAUWERK_LABEL[typ])}</option>)}
+      </optgroup><option value="hoehle">{t("Höhle")}</option>
     </select></label> : <div className="map-kind-cards" role="group" aria-label={t("Art der Karte")}>
       {MAP_KINDS.map(({ id, icon: Icon }) => <button type="button" key={id} aria-pressed={value.art === id} onClick={() => changeArt(id)}><Icon size={23} /><strong>{t(MAP_KIND_LABEL[id])}</strong><span>{t(MAP_KIND_TITEL[id])}</span></button>)}
     </div>}
@@ -74,7 +81,7 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
         <strong>{t(KARTEN_SETTING_LABEL[setting])}</strong><small>{setting === "fantasy" ? t("Gewachsene Orte & alte Mauern") : setting === "gegenwart" ? t("Stadtblöcke, Alltag & Industrie") : t("Kolonien, Decks & Zukunftstechnik")}</small>
       </button>)}</div><small>{t("Bestimmt Stadtstruktur und Ausstattung. Der passende Zeichenstil wird vorausgewählt.")}</small>
     </div> : null}
-    {value.art === "grundriss" ? <label>{profileLocked ? t("Innenraum für Gebäudetyp") : t("Gebäudetyp")}<select disabled={profileLocked} value={value.profil} onChange={event => update({ profil: event.target.value as GenerationSettings["profil"] })}>
+    {value.art === "grundriss" && (!compact || profileLocked) ? <label>{profileLocked ? t("Innenraum für Gebäudetyp") : t("Gebäudetyp")}<select disabled={profileLocked} value={value.profil} onChange={event => update({ profil: event.target.value as GenerationSettings["profil"] })}>
       <option value="frei">{t("Freier Grundriss / Dungeon")}</option><optgroup label={t("Passend zu {setting}", { setting: t(KARTEN_SETTING_LABEL[value.setting]) })}>{suggested.map(typ => <option key={typ} value={typ}>{t(BAUWERK_LABEL[typ])}</option>)}</optgroup>
       <optgroup label={t("Weitere Gebäudetypen")}>{BAUWERK_TYPEN.filter(typ => !suggested.includes(typ)).map(typ => <option key={typ} value={typ}>{t(BAUWERK_LABEL[typ])}</option>)}</optgroup>
     </select></label> : null}
