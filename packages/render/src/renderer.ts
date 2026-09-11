@@ -8,6 +8,11 @@ import { createGridGeometryCache } from "./grid-cache.ts";
 import { planeStapel } from "./stapel.ts";
 import type { MapCamera, MapEditorInteraction, MapHit, MapPoint, MapRenderer, ProjectedMapLabel, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
+// Pixi's boolean `true` also clears global pools. A map owns its canvas/tree/GPU
+// resources, not pools still leased by another preview or a concurrently initializing
+// renderer. Keep shared caches reusable; app.destroy still disposes all local systems.
+const rendererDestroyOptions = { removeView: true, releaseGlobalResources: false } as const;
+
 export interface MapRendererOptions {
   readonly onSelect?: (hit: MapHit | null) => void;
   readonly onCameraChange?: (camera: MapCamera) => void;
@@ -42,16 +47,16 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     await app.init({ width: viewport[0], height: viewport[1], preference: "webgl", antialias: true,
       autoDensity: true, resolution: Math.min(window.devicePixelRatio || 1, 2), backgroundColor: 0x14212b, autoStart: false });
   } catch (error) {
-    try { app.destroy(true, { children: true }); } catch { /* initialization may not have created a renderer */ }
+    try { app.destroy(rendererDestroyOptions, { children: true }); } catch { /* initialization may not have created a renderer */ }
     throw new MapRendererUnavailableError(error);
   }
   if (options.signal?.aborted) {
-    app.destroy(true, { children: true });
+    app.destroy(rendererDestroyOptions, { children: true });
     throw new DOMException("Renderer creation aborted", "AbortError");
   }
   const backend = app.renderer.type === RendererType.WEBGL ? "pixi-webgl" : app.renderer.type === RendererType.WEBGPU ? "pixi-webgpu"
     : app.renderer.type === RendererType.CANVAS ? "pixi-canvas" : null;
-  if (!backend) { app.destroy(true, { children: true }); throw new MapRendererUnavailableError(new Error("Unsupported Pixi renderer type")); }
+  if (!backend) { app.destroy(rendererDestroyOptions, { children: true }); throw new MapRendererUnavailableError(new Error("Unsupported Pixi renderer type")); }
   const nativePixelGrid = backend !== "pixi-canvas" && app.renderer.resolution === 1;
   const canvas = app.canvas as HTMLCanvasElement;
   canvas.style.display = "block";
@@ -626,7 +631,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       if (scheduled) cancelAnimationFrame(scheduled);
       clearRaster();
       clearStampTextures();
-      app.destroy(true, { children: true });
+      app.destroy(rendererDestroyOptions, { children: true });
       markerGraphics = [];
     },
   };

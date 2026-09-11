@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
+import { erzeugeAnlage, ANLAGE_STANDARD, anlageOptionen, type AnlageOptionen } from "@chronicle/forge";
 import { readFileSync } from "node:fs";
 import { erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, BAUWERK_AUSDEHNUNG, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, SIEDLUNG_STANDORTE, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, type GrundrissOptionen, type HoehleOptionen, type SiedlungOptionen, erzeugeRegion, REGION_STANDARD, REGION_LIMITS, type RegionOptionen } from "@chronicle/forge";
 import { inferLegacyCartography, KARTEN_SETTINGS, parseAssetpaket, parseTacticalCartography, serializeTacticalMapDocument, type AssetpaketV1, type KartenSetting, type Weltkeim } from "@chronicle/szene";
@@ -34,7 +35,7 @@ import { createTactical, TacticalValidationError } from "./tactical.ts";
 /** The generator needs an asset pack, and the pack's identity is part of the seed (see below). */
 export type KartenArt = "grundriss" | "hoehle" | "siedlung" | "region";
 export type KartenStil = "grundriss" | "gemalt" | "zeitwelten" | "genres";
-export type KartenOptionen = Partial<GrundrissOptionen> | Partial<HoehleOptionen> | Partial<SiedlungOptionen> | Partial<RegionOptionen>;
+export type KartenOptionen = Partial<GrundrissOptionen> | Partial<HoehleOptionen> | Partial<SiedlungOptionen> | Partial<RegionOptionen> | Partial<AnlageOptionen>;
 const PAKET_URLS: Record<KartenStil, URL> = {
   grundriss: new URL("../../../../assets/packs/pk.grundriss/paket.json", import.meta.url),
   gemalt: new URL("../../../../assets/packs/pk.gemalt/paket.json", import.meta.url),
@@ -60,6 +61,7 @@ function paket(stil: KartenStil = "grundriss"): AssetpaketV1 {
 /** Reject irrelevant options for domain callers as well as HTTP callers. Numeric bounds stay
  * with the generators; a cave's options must never be silently swallowed by a floorplan. */
 export function validateKartenOptionen(art: KartenArt, optionen?: KartenOptionen): void {
+  if (art === "siedlung" && optionen && "anlage" in optionen) { anlageOptionen(optionen as Partial<AnlageOptionen>); return; }
   const keys: Record<KartenArt, readonly string[]> = {
     grundriss: ["zellen", "zellgroesse", "raeume", "minRaum", "schleifen", "moeblierung", "licht", "gangboden", "anordnung", "profil", "setting"],
     hoehle: ["zellen", "zellgroesse", "kammern", "fuellung", "glaettung", "mindestFlaeche", "moeblierung", "licht"],
@@ -111,7 +113,8 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
     return input.art === "hoehle"
       ? erzeugeHoehle({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<HoehleOptionen> } : {}) }, paket(input.stil))
       : input.art === "siedlung"
-        ? erzeugeSiedlung({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<SiedlungOptionen> } : {}) }, paket(input.stil))
+        ? input.optionen && "anlage" in input.optionen ? erzeugeAnlage({ ...auftrag, optionen: input.optionen as Partial<AnlageOptionen> }, paket(input.stil))
+        : erzeugeSiedlung({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<SiedlungOptionen> } : {}) }, paket(input.stil))
         : input.art === "region"
           ? erzeugeRegion({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<RegionOptionen> } : {}) }, paket(input.stil))
           : erzeugeGrundriss({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<GrundrissOptionen> } : {}) }, paket(input.stil));
@@ -154,7 +157,7 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
     defaults() {
       return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD, siedlung: SIEDLUNG_STANDARD, region: REGION_STANDARD,
         siedlungsarten: { weiler: siedlungStandard("weiler"), dorf: siedlungStandard("dorf"), stadt: siedlungStandard("stadt") },
-        gebaeude: BAUWERK_AUSDEHNUNG,
+        gebaeude: BAUWERK_AUSDEHNUNG, anlagen: ANLAGE_STANDARD,
         stile: [{ id: "grundriss", titel: "Grundriss" }, { id: "gemalt", titel: "Gemalt" }, { id: "zeitwelten", titel: "Zeitwelten" }, { id: "genres", titel: "Genre-Archiv" }],
         limits: { grundriss: GRUNDRISS_LIMITS, hoehle: HOEHLE_LIMITS, siedlung: SIEDLUNG_LIMITS, region: REGION_LIMITS } };
     },
@@ -165,6 +168,7 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
       const grundriss = erzeuge(input);
       return {
         keimHash: grundriss.keim.keimHash,
+        generator: { id: grundriss.erzeuger, version: grundriss.version },
         wurzelId: grundriss.wurzelId as string,
         art: grundriss.art,
         stil: input.stil ?? "grundriss",

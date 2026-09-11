@@ -143,7 +143,7 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
     const data = new Map((await tx.query<{ knoten_id: string; data: Knoten }>("SELECT knoten_id,data FROM tactical_map_nodes WHERE campaign_id=$1 AND map_id=$2", [campaignId, scope.parentMapId])).rows.map(row => [row.knoten_id, row.data]));
     const original = await createTactical(tx, cfg).getSource(userId, campaignId, map.id);
     const generator = original.provenance.generator;
-    const art: KartenArt = generator === "chronicle-siedlung" ? "siedlung" : generator === "chronicle-hoehle" ? "hoehle" : generator === "chronicle-region" ? "region" : "grundriss";
+    const art: KartenArt = (generator === "chronicle-siedlung" || generator === "chronicle-anlage") ? "siedlung" : generator === "chronicle-hoehle" ? "hoehle" : generator === "chronicle-region" ? "region" : "grundriss";
     const orte = new Map(map.cartography?.regions.flatMap(region => region.role === "ort" ? [[region.regionId, { art: region.groesse, standort: region.standort }] as const] : []) ?? []);
     // The source document identifies generated streets even after geometry edits. New drawn
     // regions remain enterable; a street never becomes a fake room simply for lacking a node.
@@ -154,9 +154,14 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
     const stamps = (originalDocument ?? map.document).geometry.stamps;
     const zelle = map.cartography?.construction.cellSize ?? (map.document.grid.kind === "none" ? 100 : map.document.grid.size);
     // A region places no furniture, so its stamps say nothing; its towns are painted like the land.
-    const stil: KartenStil = art === "region" ? "gemalt" : stamps.some(stamp => stamp.a.startsWith("pk.genres/")) ? "genres"
+    // Compounds have no exterior furniture stamps. Their actual seed vector records the
+    // selected pack, so reopening must not mistake an empty stamp list for a blueprint.
+    const compoundPack = generator === "chronicle-anlage" ? map.cartography?.regions[0]?.provenance?.optionen.paket : null;
+    const compoundPackId = compoundPack && typeof compoundPack === "object" && !Array.isArray(compoundPack) && "id" in compoundPack ? compoundPack.id : null;
+    const compoundStyle: KartenStil | null = compoundPackId === "pk.gemalt" ? "gemalt" : compoundPackId === "pk.genres" ? "genres" : compoundPackId === "pk.zeitwelten" ? "zeitwelten" : null;
+    const stil: KartenStil = compoundStyle ?? (art === "region" ? "gemalt" : stamps.some(stamp => stamp.a.startsWith("pk.genres/")) ? "genres"
       : stamps.some(stamp => stamp.a.startsWith("pk.zeitwelten/")) ? "zeitwelten"
-      : stamps.some(stamp => stamp.a.startsWith("pk.gemalt/")) ? "gemalt" : "grundriss";
+      : stamps.some(stamp => stamp.a.startsWith("pk.gemalt/")) ? "gemalt" : "grundriss");
     return { scope, title: map.name, version: map.version, art, stil, setting: original.provenance.setting ?? "fantasy", nodes: map.document.geometry.regions
       .filter(region => roles ? ["building", "room", "ort"].includes(roles.get(region.id) ?? "") || existingEntrances.has(region.id)
         : art !== "siedlung" || data.get(region.id)?.art === "bauwerk" || !originalRegions.has(region.id))
@@ -287,8 +292,11 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
           // `zellen` only when the user chose a size); a cottage stays a cottage, a warehouse a hall.
           const optionen = art === "hoehle" ? input.optionen : {
             ...chosen, setting: chosen?.setting ?? parent.setting,
-            // A settlement entered from its region keeps the size and surroundings the region gave it.
-            ...(art === "siedlung" && node.siedlung ? { art: node.siedlung.art, standort: node.siedlung.standort } : {}),
+            // Region metadata supplies defaults; an explicit selection in the entrance form wins.
+            ...(art === "siedlung" && node.siedlung && !(chosen && "anlage" in chosen) ? {
+              art: (chosen as Partial<SiedlungOptionen> | undefined)?.art ?? node.siedlung.art,
+              standort: (chosen as Partial<SiedlungOptionen> | undefined)?.standort ?? node.siedlung.standort,
+            } : {}),
             ...(art === "grundriss" && node.bauwerk ? { profil: node.bauwerk.typ, ...((chosen as Partial<GrundrissOptionen> | undefined)?.zellen === undefined ? { zellen: bauwerkAusdehnung(node.bauwerk.typ, node.umfang) } : {}) } : {}),
           };
           const generated = await createGrundriss(tx, cfg).generate(userId, campaignId, {

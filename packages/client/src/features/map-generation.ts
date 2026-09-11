@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import type { GrundrissOptionen, HoehleOptionen, RegionOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
+import type { AnlageArt, AnlageOptionen, GrundrissOptionen, HoehleOptionen, RegionOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
 import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type CartographyView, type KartenSetting, type TacticalCartographyV1, type TacticalLight, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
 import { t } from "../i18n";
@@ -13,6 +13,7 @@ export interface GenerationDefaults {
   region?: RegionOptionen;
   siedlungsarten?: Readonly<Record<SiedlungOptionen["art"], SiedlungOptionen>>;
   /** Default interior extent per building type, in cells; the server sizes a typed interior by it. */
+  anlagen?: Readonly<Partial<Record<AnlageArt, AnlageOptionen>>>;
   gebaeude?: Readonly<Partial<Record<BauwerkTyp, readonly [number, number]>>>;
 }
 export interface MapNode {
@@ -23,6 +24,7 @@ export interface MapNode {
 export interface GenerationSettings {
   art: MapArt; stil: MapStyle; breite: number | ""; hoehe: number | ""; anzahl: number | "";
   setting: KartenSetting;
+  anlage?: AnlageArt; graben?: boolean; symmetrie?: number;
   siedlung: SiedlungOptionen["art"]; standort: SiedlungStandort; dichte: number; profil: "frei" | BauwerkTyp;
   /** 0..1 each: how mountainous the land is and how much of it carries woodland. */
   relief: number; bewaldung: number;
@@ -35,13 +37,17 @@ export function changeGenerationSetting(value: GenerationSettings, setting: Kart
   return { ...value, setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
 }
 export function generationDimensions(value: GenerationSettings, defaults: GenerationDefaults): readonly [number, number] {
-  const std = value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).ausdehnung
+  const std = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.ausdehnung : value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).ausdehnung
     : value.art === "region" ? (defaults.region?.ausdehnung ?? [56, 42])
     : value.art === "grundriss" && value.profil !== "frei" && defaults.gebaeude?.[value.profil] ? defaults.gebaeude[value.profil]! : defaults[value.art].zellen;
   return [value.breite === "" ? std[0] : value.breite, value.hoehe === "" ? std[1] : value.hoehe];
 }
 export function generationOptions(value: GenerationSettings, defaults: GenerationDefaults) {
   const dimensions = value.breite !== "" || value.hoehe !== "" ? generationDimensions(value, defaults) : undefined;
+  if (value.art === "siedlung" && value.anlage) return { anlage: value.anlage, standort: value.standort, setting: value.setting,
+    ...(dimensions ? { ausdehnung: dimensions } : {}), ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}),
+    relief: value.relief, bewaldung: value.bewaldung, licht: value.licht,
+    ...(value.anlage === "burg" ? { graben: value.graben ?? false } : { symmetrie: value.symmetrie ?? 1 }) };
   if (value.art === "siedlung") return { art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
     ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, relief: value.relief, bewaldung: value.bewaldung, licht: value.licht };
   if (value.art === "region") return { standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}), ...(value.anzahl !== "" ? { orte: value.anzahl } : {}), relief: value.relief, bewaldung: value.bewaldung };
@@ -52,9 +58,16 @@ export function generationOptions(value: GenerationSettings, defaults: Generatio
 }
 export function generationError(value: GenerationSettings, defaults: GenerationDefaults): string | null {
   const [w, h] = generationDimensions(value, defaults);
+  if (value.art === "siedlung" && value.anlage) {
+    if (!defaults.anlagen?.[value.anlage]) return t("Dieser Server unterstützt die gewählte Anlage noch nicht.");
+    if (w < 32 || h < 28 || w > 128 || h > 128) return t("Anlagen benötigen 32–128 Zellen Breite und 28–128 Zellen Höhe.");
+    const [min, max] = value.anlage === "burg" ? [7, 12] : [3, 7];
+    if (value.anzahl !== "" && (!Number.isSafeInteger(value.anzahl) || value.anzahl < min! || value.anzahl > max!)) return t("Die Anzahl muss zwischen {min} und {max} liegen.", { min, max });
+    if (value.anlage === "schloss" && value.symmetrie !== undefined && (!Number.isFinite(value.symmetrie) || value.symmetrie < 0 || value.symmetrie > 1)) return t("Die Symmetrie muss zwischen 0 und 1 liegen.");
+  }
   if (![w, h].every(n => Number.isSafeInteger(n) && n >= 12 && n <= 192)) return t("Breite und Höhe müssen ganze Zahlen zwischen 12 und 192 sein.");
   if (w * h > 20_000) return t("Die Karte darf höchstens 20.000 Zellen enthalten. Verringere Breite oder Höhe.");
-  const z = value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).zellgroesse : value.art === "region" ? (defaults.region?.zellgroesse ?? 112) : defaults[value.art].zellgroesse;
+  const z = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.zellgroesse : value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).zellgroesse : value.art === "region" ? (defaults.region?.zellgroesse ?? 112) : defaults[value.art].zellgroesse;
   if (w * z > TACTICAL_MAP_LIMITS.dimension || h * z > TACTICAL_MAP_LIMITS.dimension || w * h * z * z > TACTICAL_MAP_LIMITS.pixels) return t("Diese Größe überschreitet das Kartenbudget. Wähle eine kleinere Fläche.");
   const min = value.art === "siedlung" || value.art === "region" ? 1 : 2, max = value.art === "siedlung" ? 256 : value.art === "region" ? 24 : value.art === "hoehle" ? 32 : 64;
   if (value.anzahl !== "" && (!Number.isSafeInteger(value.anzahl) || value.anzahl < min || value.anzahl > max)) return t("Die Anzahl muss zwischen {min} und {max} liegen.", { min, max });
