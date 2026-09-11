@@ -10,7 +10,7 @@ vi.mock("pixi.js/unsafe-eval", () => ({}));
 
 // The product factory and its camera/resource lifecycle run unchanged. This
 // narrow Pixi boundary records geometry submission; it does not simulate GPU speed.
-const pixi = vi.hoisted(() => ({ type: 1, resolution: 1, paths: 0, strokes: [] as { color?: number; width?: number; pixelLine?: boolean }[], textures: [] as { source: { scaleMode: string }; destroy: ReturnType<typeof vi.fn> }[],
+const pixi = vi.hoisted(() => ({ type: 1, resolution: 1, paths: 0, initHook: undefined as (() => void) | undefined, disposals: [] as { renderer: unknown; children: unknown }[], strokes: [] as { color?: number; width?: number; pixelLine?: boolean }[], textures: [] as { source: { scaleMode: string }; destroy: ReturnType<typeof vi.fn> }[],
   graphics: [] as { position: { x: number; y: number }; scale: { x: number; y: number }; circles: number[]; paths: number; visible: boolean; fills: unknown[]; strokes: unknown[]; segments: number[][] }[],
   stages: [] as { label: string; children: unknown[] }[],
   labels: [] as { text: string; visible: boolean }[], sprites: [] as { destroyed: boolean; position: { x: number; y: number }; scale: { x: number; y: number } }[] }));
@@ -39,7 +39,7 @@ vi.mock("pixi.js", () => {
   class Application {
     canvas = new Canvas(); stage = new Container(); renderer = { type: pixi.type, resolution: pixi.resolution, resize() {} };
     constructor() { pixi.stages.push(this.stage as unknown as { label: string; children: unknown[] }); }
-    async init() {} render() {} destroy() { this.stage.destroy(); }
+    async init() { pixi.initHook?.(); } render() {} destroy(renderer: unknown, children: unknown) { pixi.disposals.push({ renderer, children }); this.stage.destroy(); }
   }
   class Sprite extends Container {
     width = 0; height = 0; anchor = new Vector(); destroyed = false;
@@ -63,13 +63,36 @@ function layer(name: string) {
 }
 function host() { const children: unknown[] = []; return { clientWidth: 1200, clientHeight: 800, appendChild(child: unknown) { children.push(child); }, children } as unknown as HTMLElement; }
 beforeEach(() => {
-  pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0; pixi.labels.length = 0; pixi.sprites.length = 0;
+  pixi.initHook = undefined; pixi.disposals.length = 0; pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0; pixi.labels.length = 0; pixi.sprites.length = 0;
   vi.stubGlobal("window", { devicePixelRatio: 1 }); vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1)); vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("mounted renderer submission and resource lifecycle", () => {
+  // Pixi 8.20.1 interprets destroy(true) as a global pool release, not just canvas
+  // removal. Another renderer's Text instances still own textures from those pools.
+  const isolatedDisposal = { renderer: { removeView: true, releaseGlobalResources: false }, children: { children: true } };
+  it("releases a preview's own tree and canvas without emptying shared pools used by its comparison", async () => {
+    const first = await createMapRenderer(host(), scene), second = await createMapRenderer(host(), scene);
+    try {
+      first.destroy(); first.destroy();
+      expect(pixi.disposals).toEqual([isolatedDisposal]);
+      second.update({ ...scene, showLabels: true }); second.panBy(10, 10);
+    } finally { first.destroy(); second.destroy(); }
+    expect(pixi.disposals).toEqual([isolatedDisposal, isolatedDisposal]);
+  });
+  it.each(["initialization-error", "aborted-initialization", "unsupported-backend"] as const)("also preserves other renderers' pools on %s", async cause => {
+    const active = await createMapRenderer(host(), scene), controller = new AbortController();
+    try {
+      if (cause === "initialization-error") pixi.initHook = () => { throw new Error("initialization failed"); };
+      if (cause === "aborted-initialization") pixi.initHook = () => controller.abort();
+      if (cause === "unsupported-backend") pixi.type = 3;
+      await expect(createMapRenderer(host(), scene, { signal: controller.signal })).rejects.toThrow();
+      expect(pixi.disposals).toEqual([isolatedDisposal]);
+    } finally { active.destroy(); }
+    expect(pixi.disposals).toEqual([isolatedDisposal, isolatedDisposal]);
+  });
   it("keeps a building entrance clickable and selectable without painting a dot over its roof", async () => {
     const map = await createMapRenderer(host(), { id: "roof", width: 400, height: 400, showLabels: true, cells: [],
       pins: [{ id: "house", x: 150, y: 150, label: "House", showMarker: false }] });

@@ -38,7 +38,7 @@ test("main-map castle selection creates an editable persistent compound and its 
     await page.getByText("Raster, Maßstab & Export", { exact: true }).click();
     await expect(page.getByRole("combobox", { name: "Kartenraster", exact: true })).toHaveValue("none");
     await page.getByRole("button", { name: "Karte ansehen", exact: true }).click();
-    await page.locator(".nested-building-list li>button").first().click();
+    await page.locator(".nested-building-list").getByRole("button", { name: /^Bergfried/ }).click();
     await page.getByRole("button", { name: "Unterkarte erzeugen", exact: true }).click();
     await expect.poll(() => new URL(page.url()).searchParams.get("atlasChild")).not.toBe(compound);
     await expect(page.locator('.tactical-canvas[data-canvas-ready="true"]')).toHaveCount(1);
