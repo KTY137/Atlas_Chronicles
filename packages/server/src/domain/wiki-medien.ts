@@ -118,8 +118,27 @@ export async function schreibeAssetEntwuerfe(
     if (passage.inhalt.kind === "bildunterschrift" && entryIds.has(passage.entryId)) gezeigt.add(String(passage.inhalt.assetId));
   }
   for (const asset of result.assets) {
-    const vorhanden = (await tx.query<{ lizenz_gesetzt_von: string }>(
-      "SELECT lizenz_gesetzt_von FROM wiki_assets WHERE id=$1 AND campaign_id=$2", [asset.id, campaignId])).rows[0];
+    /**
+     * Gesucht wird nach der eigenen Kennung UND nach dem Dateinamen — eindeutig ist in der Tabelle der
+     * Name je Runde. Ein Kartenbild, das der Atlas unter eigener Kennung angelegt hat, ist dieselbe
+     * Datei; nur nach der Kennung gesucht, fügte der Import den Namen ein zweites Mal ein, und der
+     * ganze Import scheiterte (Kaya, 2026-09-11).
+     */
+    let vorhanden = (await tx.query<{ id: string; lizenz_gesetzt_von: string }>(
+      "SELECT id,lizenz_gesetzt_von FROM wiki_assets WHERE id=$1 AND campaign_id=$2", [asset.id, campaignId])).rows[0]
+      ?? (await tx.query<{ id: string; lizenz_gesetzt_von: string }>(
+        "SELECT id,lizenz_gesetzt_von FROM wiki_assets WHERE dateiname=$1 AND campaign_id=$2", [asset.dateiname, campaignId])).rows[0];
+    if (vorhanden && vorhanden.id !== asset.id) {
+      // Die Passagen dieses Imports zeigen ihr Bild über die Import-Kennung. Benutzt noch keine Passage
+      // die vorhandene Zeile, bekommt sie diese Kennung; Bytes, Lizenzurteil und Namensbezüge bleiben.
+      // Wird sie schon benutzt, bleibt sie unberührt — dann zeigen die neuen Passagen kein Bild, aber
+      // der Import gelingt, und die älteren Passagen zeigen ihres weiter.
+      const benutzt = (await tx.query("SELECT 1 FROM wiki_asset_uses WHERE asset_id=$1 AND campaign_id=$2 LIMIT 1", [vorhanden.id, campaignId])).rowCount;
+      if (!benutzt) {
+        await tx.query("UPDATE wiki_assets SET id=$1 WHERE id=$2 AND campaign_id=$3", [asset.id, vorhanden.id, campaignId]);
+        vorhanden = { ...vorhanden, id: asset.id };
+      }
+    }
     if (!vorhanden && !gezeigt.has(asset.id) && !asset.verwaist) continue;
     if (!vorhanden) {
       if (frei <= 0) throw new Conflict();
@@ -141,7 +160,7 @@ export async function schreibeAssetEntwuerfe(
         lizenz_status=CASE WHEN lizenz_gesetzt_von='mensch' THEN lizenz_status ELSE $11 END,
         lizenz_quelle=CASE WHEN lizenz_gesetzt_von='mensch' THEN lizenz_quelle ELSE $12 END
         WHERE id=$1 AND campaign_id=$2`,
-        [asset.id, campaignId, asset.behaupteterMime ?? null, asset.beschreibungsseiteUrl ?? null, asset.quellUrl ?? null,
+        [vorhanden.id, campaignId, asset.behaupteterMime ?? null, asset.beschreibungsseiteUrl ?? null, asset.quellUrl ?? null,
           asset.urheber ?? null, asset.hochgeladenAm ?? null, JSON.stringify(asset.verwendetVon), asset.verwaist,
           asset.imBestand, asset.lizenzStatus, asset.lizenzQuelle ?? null]);
       aktualisiert += 1;

@@ -54,7 +54,9 @@ export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
     return (await db.query(`SELECT user_id AS "userId",display_name AS "displayName",role,actor_id AS "actorId"
       FROM campaign_memberships WHERE campaign_id=$1 ORDER BY display_name,user_id`, [campaignId])).rows;
   }
-  async function issueInvitation(userId: string, campaignId: string, ttlMs = 86400_000) {
+  // Sieben Tage, wie im Hostfenster: zwei Stellen mit verschiedenen Fristen fuer dieselbe Einladung
+  // waren ein Widerspruch, den niemand verstehen konnte.
+  async function issueInvitation(userId: string, campaignId: string, ttlMs = 7 * 86400_000) {
     await requireMember(userId, campaignId, ["leitung"]);
     if (ttlMs < 60_000 || ttlMs > 7 * 86400_000) throw new Gone("invalid-ttl");
     const id = randomUUID(), code = secretToken(), expiresAt = now() + ttlMs;
@@ -81,7 +83,9 @@ export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
       const existing = await tx.query(`SELECT user_id FROM campaign_memberships WHERE campaign_id=$1 AND name_skeleton=$2
         UNION ALL SELECT user_id FROM join_requests WHERE campaign_id=$1 AND name_skeleton=$2 AND status='pending'`, [invite.campaign_id, name.skeleton]);
       if (existing.rowCount) throw new Conflict();
-      const id = randomUUID(), userId = randomUUID(), pollToken = secretToken(), expiresAt = now() + 30 * 60_000;
+      // 24 Stunden statt 30 Minuten: wer abends einen Link verschickt, gibt nicht zwingend in der
+      // naechsten halben Stunde frei. Die wartende Person sieht ihre Anfrage weiter pollen.
+      const id = randomUUID(), userId = randomUUID(), pollToken = secretToken(), expiresAt = now() + 86400_000;
       await tx.query("INSERT INTO users(id,display_name,created_at) VALUES($1,$2,$3)", [userId, name.displayName, now()]);
       await tx.query(`INSERT INTO join_requests(id,invitation_id,campaign_id,user_id,display_name,name_skeleton,status,poll_token_hash,created_at,expires_at)
         VALUES($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9)`, [id, invite.id, invite.campaign_id, userId, name.displayName, name.skeleton, tokenHash(pollToken), now(), expiresAt]);
@@ -126,6 +130,13 @@ export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
       return { userId: join.user_id, actorId };
     });
   }
+  /** Eine Anfrage ablehnen. Der Name wird damit wieder frei; die wartende Person erfährt es beim nächsten Abfragen. */
+  async function rejectJoin(gmUserId: string, campaignId: string, requestId: string) {
+    await requireMember(gmUserId, campaignId, ["leitung"]);
+    const row = await db.query("UPDATE join_requests SET status='rejected' WHERE id=$1 AND campaign_id=$2 AND status='pending' RETURNING id", [requestId, campaignId]);
+    if (!row.rowCount) throw new Gone();
+    return { rejected: true as const };
+  }
   return { requireMember, createCampaign, listCampaigns, roster, issueInvitation, revokeInvitation, listInvitations,
-    requestJoin, joinStatus, claimJoin, listPendingJoins, approveJoin };
+    requestJoin, joinStatus, claimJoin, listPendingJoins, approveJoin, rejectJoin };
 }

@@ -95,10 +95,13 @@ export type Command =
   | { kind: "einladung"; campaignId: string }
   | { kind: "kopplung"; campaignId: string; userId: string }
   | { kind: "rolle"; campaignId: string; userId: string; role: "leitung" | "spieler" }
+  // Die Zentrale: eine Runde anlegen und die Tuer bedienen — als Spielleitung der Welt bzw. Runde.
+  | { kind: "runde-anlegen"; name: string }
+  | { kind: "freigeben" | "ablehnen"; campaignId: string; requestId: string }
   | { kind: "chronist-key"; profileId: string; action: "set"; value: string }
   | { kind: "chronist-key"; profileId: string; action: "clear" };
 export function command(value: unknown): Command {
-  const v = object(value, ["kind", "name", "profileId", "origin", "ticket", "campaignId", "userId", "recoveryId", "action", "value", "role"]);
+  const v = object(value, ["kind", "name", "profileId", "origin", "ticket", "campaignId", "userId", "recoveryId", "action", "value", "role", "requestId"]);
   const exact = (keys: string[]) => object(value, ["kind", ...keys]);
   switch (v["kind"]) {
     case "status": case "stop": case "open": case "backup": exact([]); return { kind: v["kind"] };
@@ -114,6 +117,8 @@ export function command(value: unknown): Command {
     case "runden": exact([]); return { kind: "runden" };
     case "einladung": exact(["campaignId"]); return { kind: "einladung", campaignId: profileId(v["campaignId"]) };
     case "kopplung": exact(["campaignId", "userId"]); return { kind: "kopplung", campaignId: profileId(v["campaignId"]), userId: profileId(v["userId"]) };
+    case "runde-anlegen": exact(["name"]); return { kind: "runde-anlegen", name: label(v["name"]) };
+    case "freigeben": case "ablehnen": exact(["campaignId", "requestId"]); return { kind: v["kind"], campaignId: profileId(v["campaignId"]), requestId: profileId(v["requestId"]) };
     case "rolle": {
       exact(["campaignId", "userId", "role"]);
       const rolle = v["role"];

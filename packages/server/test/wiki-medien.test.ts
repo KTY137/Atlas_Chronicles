@@ -34,6 +34,34 @@ const templates = fixture("templates.json") as unknown[];
 const medienBestand = fixture("media.json") as { title: string }[];
 const artikel = alleArtikel.filter((row) => ["Bodin", "Song Kayn"].includes(row.title));
 
+/**
+ * Kaya, 2026-09-11: „ich kann nix mehr importieren, der Auswahl übernehmen Befehl schlägt fehl".
+ * Das Postgres-Protokoll: `wiki_assets_campaign_id_dateiname_key` — das Kartenbild lag schon im
+ * Bestand (Karte aus dem Wiki geholt), und der Artikelimport suchte nur nach seiner eigenen
+ * Kennung, fand nichts und fügte denselben Dateinamen ein zweites Mal ein.
+ */
+describe("Ein Bild, das schon unter demselben Namen im Bestand liegt", () => {
+  let db: Db;
+  afterAll(async () => { await db?.close(); });
+  it("bricht den Import nicht ab, sondern nimmt die vorhandene Zeile", async () => {
+    db = await createTestDb();
+    await migrate(db);
+    const config = { origin: "https://medien.test", cookieSecret: "medien-test-cookie-secret-more-than-32-characters", bootstrapToken: "medien-bootstrap-secret-more-than-32-characters" };
+    const gm = (await createIdentity(db, config).bootstrap("Kaya")).userId;
+    const runde = await createCampaigns(db).createCampaign(gm, { name: "Eron" });
+    // So legt der Kartenweg (`atlas-quellen.ts#bildzeile`) eine Zeile an: eigene Kennung, derselbe Name.
+    await db.query(`INSERT INTO wiki_assets(id,campaign_id,universe_id,dateiname,lizenz_status,lizenz_gesetzt_von,verwendet_von,verwaist,im_bestand,created_by,created_at)
+      VALUES($1,$2,$3,'Bodin.jpg','unbekannt','mensch','[]'::jsonb,false,true,$4,$5)`, ["vorher-da-0000-0000-0000-000000000000", runde.id, runde.universeId, gm, Date.now()]);
+    const imports = createImports(db, {});
+    const preview = await imports.previewEron(gm, runde.id, { articles: artikel, templates, wikiUrl: "https://eron.fandom.com/de/", media: medienBestand });
+    await imports.acceptEron(gm, runde.id, preview.artifactId, preview.entries.map((entry) => entry.id));
+    const zeilen = (await db.query<{ id: string }>("SELECT id FROM wiki_assets WHERE campaign_id=$1 AND dateiname='Bodin.jpg'", [runde.id])).rows;
+    expect(zeilen).toHaveLength(1);
+    const verwendet = await db.query("SELECT 1 FROM wiki_asset_uses WHERE campaign_id=$1 AND asset_id=$2", [runde.id, zeilen[0]!.id]);
+    expect(verwendet.rowCount).toBeGreaterThan(0);
+  }, 60_000);
+});
+
 describe("Wiki-Medien — Herkunft, Bytes und Sicht", () => {
   let db: Db, gm: string, spieler: string, campaign: string, actorId: string;
   const config = { origin: "https://medien.test", cookieSecret: "medien-test-cookie-secret-more-than-32-characters", bootstrapToken: "medien-bootstrap-secret-more-than-32-characters" };

@@ -14,7 +14,7 @@ parent.on("message", event => {
   chain = chain.then(async () => {
     let id = "";
     try {
-      const request = object(event.data, ["id", "kind", "startId", "config", "name", "path", "campaignId", "userId", "role"]);
+      const request = object(event.data, ["id", "kind", "startId", "config", "name", "path", "campaignId", "userId", "role", "requestId"]);
       if (typeof request["id"] !== "string" || request["id"].length > 80 || typeof request["startId"] !== "string") throw new Error("Invalid worker message.");
       id = request["id"];
       if (request["kind"] === "start") {
@@ -63,12 +63,22 @@ parent.on("message", event => {
           if (typeof request["campaignId"] !== "string" || typeof request["userId"] !== "string"
             || (request["role"] !== "leitung" && request["role"] !== "spieler")) throw new Error("Invalid role.");
           value = await host.rolle(request["campaignId"], request["userId"], request["role"]); break;
+        case "runde-anlegen":
+          if (typeof request["name"] !== "string") throw new Error("Invalid round.");
+          value = await host.rundeAnlegen(request["name"]); break;
+        case "freigeben": case "ablehnen":
+          if (typeof request["campaignId"] !== "string" || typeof request["requestId"] !== "string") throw new Error("Invalid join decision.");
+          value = request["kind"] === "freigeben" ? await host.freigeben(request["campaignId"], request["requestId"])
+            : await host.ablehnen(request["campaignId"], request["requestId"]);
+          break;
         default: throw new Error("Invalid worker method.");
       }
       parent.postMessage({ id, startId, ok: true, value });
-    } catch {
-      // Never return raw driver errors, stack traces, database URLs, or credentials.
-      parent.postMessage({ id, startId, ok: false, error: "Host-Aktion fehlgeschlagen. Zustand und Eingaben prüfen." });
+    } catch (error) {
+      // Never return raw driver errors, stack traces, database URLs, or credentials. Die Saetze der
+      // Zugangsverwaltung sind dagegen fuer Menschen geschrieben und tragen nichts davon.
+      const satz = error instanceof Error && error.name === "HostZugangError" ? error.message : "Host-Aktion fehlgeschlagen. Zustand und Eingaben prüfen.";
+      parent.postMessage({ id, startId, ok: false, error: satz });
     }
   });
 });

@@ -70,6 +70,26 @@ try{
   // es lud seine Runden nur beim Start und zeigte danach „noch keine Runde" mit gesperrtem Knopf.
   await manager.waitForFunction(name=>[...document.querySelectorAll("#zugang-runde option")].some(option=>option.textContent===name)&&!document.getElementById("zugang-einladung").disabled,"Persistent desktop campaign",{timeout:30000});
   record("host window offers a round created in the game window without restarting the world");
+  // Die Zentrale: eine Runde im Hostfenster anlegen, den Link erzeugen, zwei Anfragen an der Tuer —
+  // eine hinein, eine abgelehnt. Angefragt wird ueber denselben Weg wie auf der Anmeldeseite.
+  await manager.locator("#runde-name").fill("Runde aus dem Hostfenster");
+  await manager.getByRole("button",{name:"Runde anlegen",exact:true}).click();
+  await manager.waitForFunction(name=>document.getElementById("zugang-runde").selectedOptions[0]?.textContent===name&&!document.getElementById("runde-karten").hidden,"Runde aus dem Hostfenster",{timeout:30000});
+  await manager.locator("#zugang-einladung").click();
+  await manager.waitForFunction(()=>!document.getElementById("zugang-ergebnis").hidden&&document.getElementById("zugang-link").value.includes("?join="));
+  const einladungslink=new URL(await manager.locator("#zugang-link").inputValue());
+  assert.equal(einladungslink.origin,origin);const einladungscode=einladungslink.searchParams.get("join");assert.ok(einladungscode);
+  const hinein=await request(`/join/${encodeURIComponent(einladungscode)}`,"POST",{displayName:"Ylva"});assert.equal(hinein.status,200,JSON.stringify(hinein.body));
+  const draussen=await request(`/join/${encodeURIComponent(einladungscode)}`,"POST",{displayName:"Brams"});assert.equal(draussen.status,200,JSON.stringify(draussen.body));
+  const tuer=manager.locator("#tuer-liste");
+  await tuer.getByText("Brams",{exact:true}).waitFor({state:"visible",timeout:30000});
+  await tuer.locator(".profile").filter({hasText:"Brams"}).getByRole("button",{name:"Ablehnen",exact:true}).click();
+  await manager.waitForFunction(()=>!document.getElementById("tuer-liste").textContent.includes("Brams"),null,{timeout:30000});
+  await tuer.locator(".profile").filter({hasText:"Ylva"}).getByRole("button",{name:"Freigeben",exact:true}).click();
+  await manager.waitForFunction(()=>document.getElementById("zugang-mitglieder").textContent.includes("Ylva"),null,{timeout:30000});
+  assert.equal((await request(`/api/joins/${hinein.body.id}/status`,"POST",{pollToken:hinein.body.pollToken})).body.status,"approved");
+  assert.equal((await request(`/api/joins/${draussen.body.id}/status`,"POST",{pollToken:draussen.body.pollToken})).body.status,"rejected");
+  record("host window creates a round, issues its invitation link, and approves one and rejects another request at the door");
   const entry=await request(`/api/campaigns/${campaignId}/entries`,"POST",{title:"Survives restart",passages:[{inhalt:{kind:"absatz",inhalt:[{text:"Written in the genuine desktop host.",marks:[]}]}}]});assert.equal(entry.status,200);
   const generated=await request(`/api/campaigns/${campaignId}/tactical/generate`,"POST",{commandId:randomUUID(),name:"Bundled floorplan",keim:"desktop-runtime-smoke"});assert.equal(generated.status,200,JSON.stringify(generated.body));
   record("real generator route reads packaged licensed Grundriss assets and persists native tactical map");
@@ -318,6 +338,19 @@ try{
   // Der Host wird hier schon beendet, weil das Loeschen eine stehende Welt verlangt — und
   // weil `stop()` darunter die ganze Anwendung schliesst, also auch die Verwaltungsbruecke.
   await invoke({kind:"stop"});
+  // Tippen im Loeschfeld ueber mehrere Statusabfragen: bis v0.4.1 baute das Fenster alle 1,5 s neu,
+  // und das Feld verlor den Fokus mitten im Namen.
+  await manager.locator("#verwalten > summary").click();
+  const loeschZeile=manager.locator("#profiles .profile").filter({hasText:"Restored desktop world"});
+  await loeschZeile.getByRole("button",{name:"Löschen",exact:true}).click();
+  const loeschFeld=loeschZeile.locator("input");
+  await loeschFeld.pressSequentially("Restored",{delay:100});await manager.waitForTimeout(3200);await loeschFeld.pressSequentially(" desktop",{delay:100});
+  assert.equal(await loeschFeld.inputValue(),"Restored desktop");
+  assert.equal(await loeschFeld.evaluate(input=>document.activeElement===input),true,"Das Loeschfeld hat den Fokus verloren.");
+  await loeschZeile.getByRole("button",{name:"Abbrechen",exact:true}).click();
+  record("deletion confirmation keeps its focus and typed text across status polls");
+  // Eine ruhende Welt darf gehen, waehrend eine andere laeuft — die laufende selbst nicht.
+  await invoke({kind:"start",profileId});
   // Eine Welt loeschen. Der Name ist die Bestaetigung, und genau das wird hier bewiesen: ein
   // knapp falscher Name laesst die Welt stehen, der richtige entfernt sie samt Ordner. Der
   // Recovery-Punkt der GESICHERTEN Welt bleibt dabei liegen — er traegt seine eigene Kopie von
@@ -332,7 +365,10 @@ try{
   assert.equal(existsSync(join(run,"user-data/profiles",opfer.id)),false);
   assert.ok(nachDemLoeschen.recovery.some(punkt=>punkt.id===point.recoveryId));
   evidence.geloescht={id:opfer.id,verbleibendeWelten:nachDemLoeschen.profiles.length,recoveryPunkte:nachDemLoeschen.recovery.length};
-  record("management deletes one local world only against its typed name, leaves no directory and keeps its recovery point");
+  const laufend=nachDemLoeschen.profiles.find(profile=>profile.id===profileId);
+  await assert.rejects(invoke({kind:"loeschen",profileId,name:laufend.name}));
+  assert.ok((await invoke({kind:"status"})).profiles.some(profile=>profile.id===profileId));
+  record("management deletes one resting local world while another runs, only against its typed name, leaves no directory and keeps its recovery point; the running world is refused");
   await stop();
   const disk=JSON.parse(await readFile(join(run,"user-data/profiles",profileId,"profile.json"),"utf8"));assert.notEqual(disk.pgPort,54329);
   const encrypted=await readFile(join(run,"user-data/profiles",profileId,"secrets.dpapi"));assert.ok(!encrypted.includes(Buffer.from("cookieSecret")));

@@ -23,6 +23,8 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "../db/index.ts";
 import { createIdentity, secretToken, tokenHash, type IdentityConfig } from "../identity/index.ts";
+import { createCampaigns, type DomainConfig } from "./campaigns.ts";
+import { Gone } from "./errors.ts";
 
 export class HostZugangError extends Error {
   override readonly name = "HostZugangError";
@@ -43,10 +45,18 @@ export interface HostMitglied {
   /** Ob er auf diesem Server eigene Runden anlegen darf. */
   readonly platformLeitung: boolean;
 }
+/** Jemand, der vor der Tür wartet: eine offene, nicht abgelaufene Anfrage über eine gültige Einladung. */
+export interface HostWartend {
+  readonly requestId: string;
+  readonly displayName: string;
+  readonly createdAt: number;
+  readonly expiresAt: number;
+}
 export interface HostRunde {
   readonly campaignId: string;
   readonly name: string;
   readonly members: readonly HostMitglied[];
+  readonly wartend: readonly HostWartend[];
 }
 
 /**
@@ -63,15 +73,57 @@ export async function hostRunden(db: Db, jetzt = Date.now()): Promise<readonly H
        JOIN campaign_memberships m ON m.campaign_id=c.id
        JOIN users u ON u.id=m.user_id
       ORDER BY c.created_at, c.id, m.role DESC, m.display_name, m.user_id`, [jetzt]);
-  const runden = new Map<string, { campaignId: string; name: string; members: HostMitglied[] }>();
+  const runden = new Map<string, { campaignId: string; name: string; members: HostMitglied[]; wartend: HostWartend[] }>();
   for (const row of rows.rows) {
-    const runde = runden.get(row.campaignId) ?? { campaignId: row.campaignId, name: row.name, members: [] };
+    const runde = runden.get(row.campaignId) ?? { campaignId: row.campaignId, name: row.name, members: [], wartend: [] };
     runde.members.push({ userId: row.userId, displayName: row.displayName, role: row.role,
       hasAccess: Number(row.zugaenge) > 0, platformLeitung: row.platformRole === "leitung" });
     runden.set(row.campaignId, runde);
   }
+  // Dieselbe Bedingung wie `listPendingJoins`: nur was eine Spielleitung im Spiel auch sähe.
+  const wartende = await db.query<{ campaignId: string; requestId: string; displayName: string; createdAt: string; expiresAt: string }>(
+    `SELECT j.campaign_id AS "campaignId", j.id AS "requestId", j.display_name AS "displayName", j.created_at AS "createdAt", j.expires_at AS "expiresAt"
+       FROM join_requests j JOIN invitations i ON i.id=j.invitation_id
+      WHERE j.status='pending' AND j.expires_at>$1 AND i.revoked_at IS NULL AND i.expires_at>$1
+      ORDER BY j.created_at, j.id`, [jetzt]);
+  for (const row of wartende.rows) runden.get(row.campaignId)?.wartend.push({ requestId: row.requestId, displayName: row.displayName,
+    createdAt: Number(row.createdAt), expiresAt: Number(row.expiresAt) });
   return [...runden.values()];
 }
+
+async function spielleitungDerRunde(db: Db, campaignId: string): Promise<string> {
+  const leitung = await db.query<{ userId: string }>(
+    `SELECT user_id AS "userId" FROM campaign_memberships WHERE campaign_id=$1 AND role='leitung' ORDER BY display_name, user_id LIMIT 1`, [campaignId]);
+  return leitung.rows[0]?.userId ?? fail("Diese Runde hat keine Spielleitung, die einen Beitritt freigeben könnte.");
+}
+
+/**
+ * Eine Runde aus dem Hostfenster anlegen — für die Spielleitung der Welt.
+ *
+ * Über `createCampaign`, also mit denselben Tabellen und Regeln wie im Spiel. Besitzerin wird die
+ * zuerst eingerichtete Spielleitung der Welt; ohne sie gibt es niemanden, der die Runde führen könnte.
+ */
+export async function hostRundeAnlegen(db: Db, name: string, cfg: DomainConfig = {}) {
+  const titel = typeof name === "string" ? name.trim() : "";
+  if (!titel || titel.length > 160) fail("Die Runde braucht einen Namen mit höchstens 160 Zeichen.");
+  const owner = (await db.query<{ id: string }>(`SELECT id FROM users WHERE platform_role='leitung' ORDER BY created_at, id LIMIT 1`)).rows[0]?.id;
+  if (!owner) fail("Diese Welt hat noch keine Spielleitung. Richte sie zuerst ein.");
+  return createCampaigns(db, cfg).createCampaign(owner, { name: titel });
+}
+
+/** Einen Beitritt freigeben oder ablehnen — als Spielleitung der Runde, über die Funktionen des Spiels. */
+async function entscheide(db: Db, campaignId: string, requestId: string, cfg: DomainConfig, freigeben: boolean) {
+  kennung(campaignId, "Die Runde"); kennung(requestId, "Die Anfrage");
+  const leitung = await spielleitungDerRunde(db, campaignId), campaigns = createCampaigns(db, cfg);
+  try {
+    return freigeben ? await campaigns.approveJoin(leitung, campaignId, requestId) : await campaigns.rejectJoin(leitung, campaignId, requestId);
+  } catch (error) {
+    if (error instanceof Gone) fail("Diese Anfrage wartet nicht mehr — sie ist schon entschieden oder abgelaufen.");
+    throw error;
+  }
+}
+export function hostFreigeben(db: Db, campaignId: string, requestId: string, cfg: DomainConfig = {}) { return entscheide(db, campaignId, requestId, cfg, true); }
+export function hostAblehnen(db: Db, campaignId: string, requestId: string, cfg: DomainConfig = {}) { return entscheide(db, campaignId, requestId, cfg, false); }
 
 /**
  * Ein Einladungscode für eine Runde, erzeugt ohne angemeldete Spielleitung.

@@ -33,6 +33,7 @@ export function Auth({ onAuthenticated }: { onAuthenticated: (campaignId?: strin
         if (controller.signal.aborted) return;
         setPollError("");
         if (status.status === "approved") { setApproved(true); return; }
+        if (status.status === "rejected") { setPollError(t("Die Spielleitung hat deine Anfrage abgelehnt. Frag sie, ob du es noch einmal versuchen sollst.")); return; }
       } catch (error) {
         if (controller.signal.aborted) return;
         setPollError(error instanceof ApiError && error.status === 404 ? t("Die Anfrage ist abgelaufen oder die Einladung wurde widerrufen.") : errorText(error));

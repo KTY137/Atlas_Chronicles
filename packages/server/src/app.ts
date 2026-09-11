@@ -164,6 +164,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   });
   app.get<{ Params: CampaignParams }>("/api/campaigns/:campaignId/joins", async (req) => campaigns.listPendingJoins((await auth(req)).userId, req.params.campaignId));
   app.post<{ Params: CampaignParams & { id: string } }>("/api/campaigns/:campaignId/joins/:id/approve", async (req) => campaigns.approveJoin((await auth(req)).userId, req.params.campaignId, req.params.id));
+  app.post<{ Params: CampaignParams & { id: string } }>("/api/campaigns/:campaignId/joins/:id/reject", async (req) => campaigns.rejectJoin((await auth(req)).userId, req.params.campaignId, req.params.id));
   app.post<{ Params: CampaignParams; Body: Static<typeof P.PairBody> }>("/api/campaigns/:campaignId/pairing", { schema: { body: P.PairBody } }, async (req) => identity.mintPairing((await auth(req)).userId, req.params.campaignId, req.body.userId));
 
   app.get<{ Params: CampaignParams; Querystring: { q?: string } }>("/api/campaigns/:campaignId/entries", async (req) => docs.listEntries((await auth(req)).userId, req.params.campaignId, req.query.q ?? ""));

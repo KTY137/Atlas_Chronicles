@@ -83,6 +83,8 @@
   "Einladungslink kopiert.": "Invitation link copied.",
   "Einladungslink oder Code": "Invitation link or code",
   "Einmaliger Kopplungscode": "One-time pairing code",
+  "Die Anfrage von {name} ist abgelehnt.": "The request from {name} was declined.",
+  "Die Spielleitung hat deine Anfrage abgelehnt. Frag sie, ob du es noch einmal versuchen sollst.": "The game master declined your request. Ask them whether you should try again.",
   "Einrichtungsschlüssel": "Setup key",
   "Erneut laden": "Reload",
   "Erschöpft": "Exhausted",

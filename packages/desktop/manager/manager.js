@@ -1,133 +1,186 @@
 const api=window.chronicleDesktop;
 const byId=id=>document.getElementById(id);
 let waiting=false,restoreTicket,restoreCampaign,gms=[];
-// Die zuletzt geladenen Runden samt Mitgliedern. Sie werden nur auf Anforderung geholt:
-// die Statusabfrage laeuft alle 1,5 s, und dabei jedes Mal die Datenbank zu lesen waere
-// Verschwendung fuer eine Ansicht, die sich selten aendert.
-let runden=[],rundenGeladen=false,rundenAlter=0;
-// Welche Welt gerade zum Loeschen aussteht und was bisher getippt wurde. Die Statusabfrage
-// zeichnet die Liste alle 1,5 s neu — ohne diese beiden Zeilen waere das Feld staendig leer.
-let loeschKandidat,loeschEingabe="",loeschFokus=false;
-// Die Adresse der laufenden Welt. Aus ihr entsteht der Einladungs- oder Kopplungslink;
-// ohne laufende Welt gibt es keine, und dann wird nur der Code selbst gezeigt.
+/** Der zuletzt gelesene Status. Die Runden kommen getrennt und zeichnen mit diesem Stand neu. */
+let zustand;
+// Runden samt Mitgliedern und Wartenden. Gelesen beim Start der Welt, beim Zurueckkehren in dieses
+// Fenster, nach jeder eigenen Aenderung und sonst alle zehn Statusabfragen (15 s). Das Lesen nimmt in
+// main.ts keine Sperre — in v0.4.1 kollidierte es mit genau dem Klick, der das Fenster nach vorn holt.
+let runden=[],rundenBekannt=false,rundenAlter=0,rundenLaeuft=false,rundenNochmal=false;
+let gewaehlteRunde="",gewaehlteWelt="";
+/** Fuer welche Welt in dieser Sitzung schon ein Einladungslink entstand — nur fuer die Liste „Erste Schritte". */
+const eingeladen=new Set();
+let loeschKandidat,loeschEingabe="";
+// Die Adresse der laufenden Welt. Aus ihr entsteht der Einladungs- oder Zugangslink.
 let weltAdresse="";
-const states={stopped:"Host beendet","starting-db":"Datenbank wird gestartet","checking-schema":"Welt wird geprüft","starting-app":"Spieloberfläche wird gestartet",ready:"Deine Welt ist bereit",draining:"Änderungen werden abgeschlossen",failed:"Host benötigt Aufmerksamkeit"};
+const states={stopped:"Host beendet","starting-db":"Datenbank wird gestartet","checking-schema":"Welt wird geprüft","starting-app":"Spieloberfläche wird gestartet",ready:"läuft",draining:"Änderungen werden abgeschlossen",failed:"braucht Aufmerksamkeit"};
+const weltBereit=state=>state.state==="ready"&&!state.setupRequired;
 function message(text,error=false){byId("message").textContent=text;byId("message").classList.toggle("error",error);}
 async function invoke(request){const result=await api.invoke(request);if(!result.ok)throw new Error(result.error);return result.value;}
 async function action(request,success){if(waiting)return;waiting=true;message("Die lokale Aktion läuft …");try{const result=await invoke(request);message(success||"Abgeschlossen.");return result;}catch(error){message(error.message,true);}finally{waiting=false;await refresh();}}
-async function refresh(){try{const state=await invoke({kind:"status"});byId("host-title").textContent=states[state.state]||state.state;byId("host-detail").textContent=state.failure||state.origin||"Der Host ist beendet.";byId("setup").hidden=!state.setupRequired||state.state!=="ready";byId("open").hidden=state.state!=="ready"||state.setupRequired;byId("stop").hidden=state.state==="stopped";byId("backup").hidden=state.state!=="ready";byId("profiles").replaceChildren();for(const profile of state.profiles)byId("profiles").append(weltZeile(profile,state));if(!state.profiles.length)byId("profiles").textContent="Hier beginnt deine erste Welt.";const selectedRecovery=byId("recovery-select").value;byId("recovery-select").replaceChildren();for(const point of state.recovery||[]){const option=document.createElement("option");option.value=point.id;const profile=state.profiles.find(profile=>profile.id===point.sourceProfileId);option.textContent=`${new Date(point.createdAt).toLocaleString()} · ${profile?.name||"Lokale Welt"}`;byId("recovery-select").append(option);}if((state.recovery||[]).some(point=>point.id===selectedRecovery))byId("recovery-select").value=selectedRecovery;for(const formId of["create-form","restore-form","recovery-form"])for(const control of byId(formId).elements)control.disabled=waiting||state.busy||state.state!=="stopped"||(formId==="recovery-form"&&!state.recovery?.length);const selectedWorld=byId("chronist-profile").value;byId("chronist-profile").replaceChildren();for(const profile of state.profiles){const option=document.createElement("option");option.value=profile.id;option.textContent=profile.name;byId("chronist-profile").append(option);}if(state.profiles.some(profile=>profile.id===selectedWorld))byId("chronist-profile").value=selectedWorld;const world=byId("chronist-profile").value;byId("chronist-state").textContent=(!world?"Lege zuerst eine lokale Welt an.":(state.chronistKeys||[]).includes(world)?"Ein Schlüssel ist für diese Welt gespeichert.":"Für diese Welt ist kein Schlüssel gespeichert.")+(state.chronistHinweis&&world===state.profileId?` ${state.chronistHinweis}`:"");for(const control of byId("chronist-form").elements)control.disabled=waiting||state.busy||!world;zeichneZugaenge(state);byId("version").textContent=`Desktop ${state.version}${state.runtime?` · Node ${state.runtime.node} · Bilddecoder ${state.runtime.decoder}`:""}`;}catch(error){message(error.message,true);}}
 /**
- * Eine Welt in der Liste — und, wenn sie zum Loeschen aussteht, die Bestaetigung darunter.
- *
- * Bestaetigt wird durch Tippen des Namens. Kein Fenster, das man wegklickt: eine Welt ist
- * Monate Arbeit, und ein Klick daneben darf sie nicht kosten. Geprueft wird der Name nicht
- * hier, sondern in `ProfileStore.remove` gegen die Welt selbst — diese Zeile ist die
- * Bequemlichkeit, nicht die Sicherung.
+ * Ein Bereich wird nur neu gebaut, wenn sich sein Stand aendert. Bis v0.4.1 baute die Statusabfrage
+ * alle 1,5 s alles neu: ein Feld, in das man gerade tippte, verlor den Fokus, und ein Klick zwischen
+ * Druecken und Loslassen ging ins Leere.
  */
-function weltZeile(profile,state){
-  const row=document.createElement("div");row.className="profile";
-  const info=document.createElement("div"),name=document.createElement("strong"),detail=document.createElement("p");
-  name.textContent=profile.name;
-  detail.textContent=profile.id===state.profileId?"Aktive lokale Welt":"Auf diesem Rechner";
-  info.append(name,detail);
-  const knoepfe=document.createElement("div");knoepfe.className="actions";
-  const start=document.createElement("button");start.type="button";start.textContent="Fortsetzen";
-  start.disabled=waiting||state.busy||state.state!=="stopped";
-  start.onclick=()=>action({kind:"start",profileId:profile.id},"Welt gestartet.");
-  const loeschen=document.createElement("button");loeschen.type="button";loeschen.textContent="Löschen";loeschen.className="zurueckhaltend";
-  loeschen.disabled=waiting||state.busy||state.state!=="stopped";
-  loeschen.onclick=()=>{loeschKandidat=profile.id;loeschEingabe="";loeschFokus=true;void refresh();};
-  knoepfe.append(start,loeschen);
-  row.append(info,knoepfe);
+function zeichne(element,stand,bauen){if(element.dataset.stand===stand)return;element.dataset.stand=stand;element.replaceChildren(...bauen());}
+function el(tag,eigenschaften={},...kinder){
+  const element=document.createElement(tag);
+  for(const [name,wert] of Object.entries(eigenschaften)){
+    if(name==="class")element.className=wert;
+    else if(name.startsWith("on"))element[name]=wert;
+    else if(name==="disabled")element.disabled=!!wert;
+    else element.setAttribute(name,wert);
+  }
+  for(const kind of kinder.flat())if(kind!==null&&kind!==undefined&&kind!==false)element.append(kind);
+  return element;
+}
+async function refresh(){
+  try{
+    zustand=await invoke({kind:"status"});
+    if(!weltBereit(zustand)){runden=[];rundenBekannt=false;rundenAlter=0;}
+    else if((!rundenBekannt&&!rundenLaeuft)||++rundenAlter>=10)void ladeRunden();
+    render();
+  }catch(error){message(error.message,true);}
+}
+async function ladeRunden(){
+  if(!zustand||!weltBereit(zustand))return;
+  if(rundenLaeuft){rundenNochmal=true;return;}
+  rundenLaeuft=true;rundenAlter=0;
+  // Scheitert ein Nachladen, bleibt der letzte Stand stehen, statt „noch keine Runde" vorzutaeuschen.
+  try{runden=await invoke({kind:"runden"});rundenBekannt=true;}
+  catch(error){if(!rundenBekannt)message(error.message,true);}
+  finally{rundenLaeuft=false;}
+  if(rundenNochmal){rundenNochmal=false;return ladeRunden();}
+  render();
+}
+function render(){
+  if(!zustand)return;
+  const state=zustand;
+  weltAdresse=weltBereit(state)&&state.origin?state.origin:"";
+  if(!weltAdresse&&!byId("zugang-ergebnis").hidden)verbergeCode();
+  zeichneWelt(state);zeichneSchritte(state);zeichneRunde(state);zeichneVerwaltung(state);
+  const wartend=runden.reduce((summe,runde)=>summe+(runde.wartend?.length??0),0);
+  document.title=`${wartend?`(${wartend}) `:""}Atlas Chronicles – Lokale Welten`;
+  byId("version").textContent=`Desktop ${state.version}${state.runtime?` · Node ${state.runtime.node} · Bilddecoder ${state.runtime.decoder}`:""}`;
+}
+/** Oben: welche Welt, in welchem Zustand, und der eine Knopf, der jetzt dran ist. */
+function zeichneWelt(state){
+  const ruht=state.state==="stopped",aktiv=state.profiles.find(profile=>profile.id===state.profileId),sperre=waiting||state.busy;
+  byId("host-title").textContent=ruht?(state.profiles.length?"Gerade läuft keine Welt":"Bereit für deine erste Welt"):`${aktiv?.name??"Lokale Welt"} ${states[state.state]||state.state}`;
+  byId("host-detail").textContent=state.failure||(ruht?(state.profiles.length?"Wähle eine Welt und starte sie. Eine neue legst du darunter an.":"Lege darunter deine erste Welt an.")
+    :state.state==="ready"?(state.setupRequired?"Richte als Nächstes die Spielleitung ein.":`Erreichbar unter ${state.origin} — nur auf diesem Rechner.`):"Einen Moment …");
+  byId("open").hidden=!weltBereit(state);
+  byId("stop").hidden=ruht;
+  byId("weltwahl").hidden=!ruht||!state.profiles.length;
+  byId("neue-welt").hidden=!ruht;
+  const auswahl=byId("welt-select");
+  zeichne(auswahl,JSON.stringify(state.profiles.map(profile=>[profile.id,profile.name])),()=>state.profiles.map(profile=>el("option",{value:profile.id},profile.name)));
+  if(gewaehlteWelt&&state.profiles.some(profile=>profile.id===gewaehlteWelt)&&auswahl.value!==gewaehlteWelt)auswahl.value=gewaehlteWelt;
+  byId("start").disabled=sperre||!ruht;
+  for(const control of byId("create-form").elements)control.disabled=sperre||!ruht;
+}
+/** Die Liste für das erste Mal. Sie verschwindet, sobald jemand außer der Spielleitung dabei ist. */
+function zeichneSchritte(state){
+  const eingerichtet=!state.setupRequired,hatRunde=runden.length>0,hatGast=runden.some(runde=>runde.members.length>1);
+  const hatEingeladen=hatGast||runden.some(runde=>runde.wartend?.length)||eingeladen.has(state.profileId);
+  byId("schritte").hidden=state.state!=="ready"||(eingerichtet&&!rundenBekannt)||(eingerichtet&&hatRunde&&hatGast);
+  byId("setup").hidden=!(state.state==="ready"&&state.setupRequired);
+  for(const control of byId("setup-form").elements)control.disabled=waiting||state.busy;
+  const schritte=[["Spielleitung einrichten",eingerichtet,"Dein Name als Spielleitung — direkt hier darunter."],
+    ["Erste Runde anlegen",hatRunde,"Unter „Runde“: Namen eintippen und „Runde anlegen“."],
+    ["Einladungslink weitergeben",hatEingeladen,"Unter „Einladen“ den Link erzeugen, kopieren und der Person schicken."],
+    ["Die erste Person hereinlassen",hatGast,"Wer den Link öffnet, steht unter „Vor der Tür“. Dort auf „Freigeben“."]];
+  const jetzt=schritte.findIndex(schritt=>!schritt[1]);
+  zeichne(byId("schritte-liste"),JSON.stringify(schritte.map(schritt=>schritt[1])),()=>schritte.map(([titel,erledigt,wie],index)=>
+    el("li",{class:erledigt?"erledigt":index===jetzt?"jetzt":""},el("strong",{},`${erledigt?"✓ ":""}${titel}`),erledigt?null:el("span",{},wie))));
+}
+/** Die Runde: anlegen, einladen, die Tür, die Mitglieder. */
+function zeichneRunde(state){
+  byId("runde").hidden=!weltBereit(state)||!rundenBekannt;
+  if(byId("runde").hidden)return;
+  const sperre=waiting||state.busy;
+  for(const control of byId("runde-form").elements)control.disabled=sperre;
+  if(!runden.some(runde=>runde.campaignId===gewaehlteRunde))gewaehlteRunde=runden[0]?.campaignId??"";
+  byId("rundenwahl").hidden=!runden.length;
+  const auswahl=byId("zugang-runde");
+  zeichne(auswahl,JSON.stringify(runden.map(runde=>[runde.campaignId,runde.name])),()=>runden.map(runde=>el("option",{value:runde.campaignId},runde.name)));
+  if(auswahl.value!==gewaehlteRunde)auswahl.value=gewaehlteRunde;
+  const runde=runden.find(kandidat=>kandidat.campaignId===gewaehlteRunde);
+  byId("runde-form-label").textContent=runde?"Noch eine Runde anlegen":"Erste Runde anlegen";
+  byId("runde-karten").hidden=!runde;
+  if(!runde)return;
+  byId("zugang-einladung").disabled=sperre;
+  const wartend=runde.wartend??[];
+  byId("tuer-zahl").hidden=!wartend.length;byId("tuer-zahl").textContent=String(wartend.length);
+  zeichne(byId("tuer-liste"),JSON.stringify([runde.campaignId,wartend.map(anfrage=>anfrage.requestId),sperre]),()=>wartend.length?wartend.map(anfrage=>
+    el("div",{class:"profile"},
+      el("div",{},el("strong",{},anfrage.displayName),el("p",{},`wartet seit ${new Date(anfrage.createdAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · die Anfrage gilt bis ${new Date(anfrage.expiresAt).toLocaleString([],{weekday:"short",hour:"2-digit",minute:"2-digit"})}`)),
+      el("div",{class:"actions"},
+        el("button",{type:"button",disabled:sperre,onclick:()=>void entscheide(runde,anfrage,"freigeben")},"Freigeben"),
+        el("button",{type:"button",class:"zurueckhaltend",disabled:sperre,onclick:()=>void entscheide(runde,anfrage,"ablehnen")},"Ablehnen"))))
+    :[el("p",{class:"note"},"Niemand wartet gerade. Wer deinen Einladungslink öffnet und seinen Namen angibt, erscheint hier von selbst.")]);
+  zeichne(byId("zugang-mitglieder"),JSON.stringify([runde.campaignId,runde.members,sperre]),()=>runde.members.map(mitglied=>
+    el("div",{class:"profile"},
+      el("div",{},el("strong",{},mitglied.displayName),el("p",{},`${mitglied.role==="leitung"?"Spielleitung":"Spieler"}${mitglied.platformLeitung?" · darf eigene Runden anlegen":""} · ${mitglied.hasAccess?"kommt herein":"kommt gerade nicht herein"}`)),
+      el("div",{class:"actions"},
+        el("button",{type:"button",disabled:sperre,onclick:()=>void zugangscode(runde.campaignId,mitglied.userId,mitglied.displayName)},"Zugangslink"),
+        el("button",{type:"button",class:"zurueckhaltend",disabled:sperre,onclick:()=>void setzeRolle(runde.campaignId,mitglied.userId,mitglied.role==="leitung"?"spieler":"leitung")},mitglied.role==="leitung"?"Zum Spieler machen":"Zur Spielleitung machen")))));
+}
+/** Eingeklappt: Weltenliste mit Löschen, Server, Chronist, Mitbringen, Sicherung. */
+function zeichneVerwaltung(state){
+  const sperre=waiting||state.busy,ruht=state.state==="stopped";
+  zeichne(byId("profiles"),JSON.stringify([state.profiles.map(profile=>[profile.id,profile.name]),state.profileId,state.state,sperre,loeschKandidat]),
+    ()=>state.profiles.length?state.profiles.map(profile=>weltZeile(profile,state,sperre)):[el("p",{class:"note"},"Noch keine Welt auf diesem Rechner.")]);
+  byId("backup").hidden=state.state!=="ready";
+  const recovery=byId("recovery-select");
+  zeichne(recovery,JSON.stringify([(state.recovery||[]).map(point=>point.id),state.profiles.map(profile=>profile.name)]),()=>(state.recovery||[]).map(point=>{
+    const profile=state.profiles.find(kandidat=>kandidat.id===point.sourceProfileId);
+    return el("option",{value:point.id},`${new Date(point.createdAt).toLocaleString()} · ${profile?.name||"Lokale Welt"}`);}));
+  for(const formId of["restore-form","recovery-form"])for(const control of byId(formId).elements)control.disabled=sperre||!ruht||(formId==="recovery-form"&&!state.recovery?.length);
+  const chronist=byId("chronist-profile");
+  zeichne(chronist,JSON.stringify(state.profiles.map(profile=>[profile.id,profile.name])),()=>state.profiles.map(profile=>el("option",{value:profile.id},profile.name)));
+  const world=chronist.value;
+  byId("chronist-state").textContent=(!world?"Lege zuerst eine lokale Welt an.":(state.chronistKeys||[]).includes(world)?"Ein Schlüssel ist für diese Welt gespeichert.":"Für diese Welt ist kein Schlüssel gespeichert.")+(state.chronistHinweis&&world===state.profileId?` ${state.chronistHinweis}`:"");
+  for(const control of byId("chronist-form").elements)control.disabled=sperre||!world;
+}
+/**
+ * Eine Welt in der Liste — und, wenn sie zum Löschen aussteht, die Bestätigung darunter.
+ *
+ * Bestätigt wird durch Tippen des Namens; geprüft wird er in `ProfileStore.remove` gegen die Welt
+ * selbst. Nur die laufende Welt ist gesperrt, und dann steht der Grund daneben.
+ */
+function weltZeile(profile,state,sperre){
+  const laeuftDiese=profile.id===state.profileId&&state.state!=="stopped";
+  const row=el("div",{class:`profile${loeschKandidat===profile.id?" loeschend":""}`},
+    el("div",{},el("strong",{},profile.name),el("p",{},laeuftDiese?"Läuft gerade":"Auf diesem Rechner")),
+    el("div",{class:"actions"},laeuftDiese?el("span",{class:"grund"},"Zum Löschen erst oben „Welt beenden“."):null,
+      el("button",{type:"button",class:"zurueckhaltend",disabled:sperre||laeuftDiese,onclick:()=>{loeschKandidat=profile.id;loeschEingabe="";render();byId(`loeschen-${profile.id}`)?.focus();}},"Löschen")));
   if(loeschKandidat!==profile.id)return row;
-  row.classList.add("loeschend");
-  const frage=document.createElement("div");frage.className="loeschen";
-  const satz=document.createElement("p");
-  satz.textContent=`Diese Welt wird mit allem darin von dieser Platte entfernt: Runden, Wiki, Karten, Zugänge. Tippe zum Bestätigen den Namen „${profile.name}“. Gesicherte Stände dieser Welt bleiben unter „Lokale Host-Sicherung“ erhalten — sie tragen ihre eigene Kopie und lassen sich weiterhin wiederherstellen.`;
-  const eingabe=document.createElement("input");eingabe.maxLength=80;eingabe.value=loeschEingabe;
-  eingabe.setAttribute("aria-label",`Name der Welt ${profile.name} zur Bestätigung`);
-  eingabe.oninput=()=>{loeschEingabe=eingabe.value;};
-  const ja=document.createElement("button");ja.type="button";ja.textContent="Endgültig löschen";ja.className="gefahr";
-  ja.disabled=waiting||state.busy;
-  ja.onclick=()=>void welLoeschen(profile);
-  const nein=document.createElement("button");nein.type="button";nein.textContent="Abbrechen";nein.className="zurueckhaltend";
-  nein.onclick=()=>{loeschKandidat=undefined;loeschEingabe="";void refresh();};
-  const reihe=document.createElement("div");reihe.className="input-row";reihe.append(eingabe,ja,nein);
-  frage.append(satz,reihe);row.append(frage);
-  if(loeschFokus){loeschFokus=false;queueMicrotask(()=>eingabe.focus());}
+  const eingabe=el("input",{id:`loeschen-${profile.id}`,maxlength:"80","aria-label":`Name der Welt ${profile.name} zur Bestätigung`});
+  eingabe.value=loeschEingabe;eingabe.oninput=()=>{loeschEingabe=eingabe.value;};
+  row.append(el("div",{class:"loeschen"},
+    el("p",{},`Diese Welt wird mit allem darin von dieser Platte entfernt: Runden, Wiki, Karten, Zugänge. Tippe zum Bestätigen den Namen „${profile.name}“. Gesicherte Stände dieser Welt bleiben unter „Lokale Host-Sicherung“ erhalten.`),
+    el("form",{class:"input-row",onsubmit:event=>{event.preventDefault();void weltLoeschen(profile);}},eingabe,
+      el("button",{class:"gefahr",disabled:sperre||laeuftDiese},"Endgültig löschen"),
+      el("button",{type:"button",class:"zurueckhaltend",onclick:()=>{loeschKandidat=undefined;loeschEingabe="";render();}},"Abbrechen"))));
   return row;
 }
-async function welLoeschen(profile){
-  if(loeschEingabe.trim()!==profile.name){message(`Der Name stimmt noch nicht. Diese Welt heißt „${profile.name}“.`,true);return;}
+async function weltLoeschen(profile){
   const getippt=loeschEingabe.trim();
-  // Erst schliessen, dann handeln: sonst zeichnet das refresh() aus `action` die Bestaetigung
-  // noch einmal, obwohl die Welt schon weg ist.
-  loeschKandidat=undefined;loeschEingabe="";
+  if(getippt!==profile.name){message(`Der Name stimmt noch nicht. Diese Welt heißt „${profile.name}“.`,true);return;}
+  // Das Getippte bleibt stehen, bis das Löschen wirklich gelungen ist.
   const result=await action({kind:"loeschen",profileId:profile.id,name:getippt},"Welt gelöscht.");
-  if(result)message(`„${result.name}“ ist gelöscht. Gesicherte Stände dieser Welt bleiben unter „Lokale Host-Sicherung“ erhalten.`);
+  if(result){loeschKandidat=undefined;loeschEingabe="";message(`„${result.name}“ ist gelöscht. Gesicherte Stände dieser Welt bleiben unter „Lokale Host-Sicherung“ erhalten.`);render();}
+}
+async function entscheide(runde,anfrage,wie){
+  const result=await action({kind:wie,campaignId:runde.campaignId,requestId:anfrage.requestId},
+    wie==="freigeben"?`${anfrage.displayName} ist jetzt in der Runde „${runde.name}“.`:`Die Anfrage von ${anfrage.displayName} ist abgelehnt.`);
+  if(result)await ladeRunden();
 }
 /**
- * Die Zugangsverwaltung. Sie erscheint nur bei laufender Welt, weil sie deren Datenbank liest.
- *
- * Warum es sie gibt: eine gewoehnliche Sitzung haelt acht Stunden. Wer weder einen Passkey
- * eingerichtet noch den Browser gemerkt hat, steht danach vor der Anmeldeseite ohne Weg zurueck
- * — auch die Spielleitung, die diesen Server selbst eingerichtet hat. Von hier aus gibt es
- * immer einen Weg hinein.
- */
-function zeichneZugaenge(state){
-  const laeuft=state.state==="ready"&&!state.setupRequired;
-  weltAdresse=laeuft&&state.origin?state.origin:"";
-  // Bewusst immer sichtbar: wer den Abschnitt nur bei laufender Welt sieht, findet ihn nicht,
-  // wenn er ihn sucht — und gesucht wird er genau dann, wenn gerade nichts laeuft.
-  byId("zugang-inhalt").hidden=!laeuft;
-  byId("zugang-hinweis").hidden=laeuft;
-  byId("zugang-hinweis").textContent=laeuft?"":state.state==="stopped"
-    ?"Gerade läuft keine Welt. Starte oben eine mit „Fortsetzen“ — dann stehen hier ihre Runden, ein Einladungscode für neue Mitspieler und für jedes Mitglied ein Zugangscode."
-    :state.setupRequired?"Diese Welt hat noch keine Spielleitung. Richte sie oben ein; danach erscheinen hier ihre Runden."
-    :"Die Welt startet gerade.";
-  if(!laeuft){rundenGeladen=false;runden=[];rundenAlter=0;return;}
-  // Runden entstehen im Spielfenster, nicht hier — der Wegweiser oben schickt genau dorthin und
-  // wieder zurueck. Nur beim Start geladen hiess: eine danach angelegte Runde erschien erst nach
-  // einem Neustart der Welt, und bis dahin stand hier „noch keine Runde" mit gesperrtem Knopf.
-  // Darum neu laden alle zehn Statusabfragen (15 s) und sobald dieses Fenster den Fokus
-  // zurueckbekommt — nicht bei jeder Abfrage, siehe oben.
-  if(!rundenGeladen||++rundenAlter>=10){rundenGeladen=true;rundenAlter=0;void ladeRunden();return;}
-  const auswahl=byId("zugang-runde"),gewaehlt=auswahl.value;
-  auswahl.replaceChildren();
-  for(const runde of runden){const option=document.createElement("option");option.value=runde.campaignId;option.textContent=runde.name;auswahl.append(option);}
-  if(runden.some(runde=>runde.campaignId===gewaehlt))auswahl.value=gewaehlt;
-  const runde=runden.find(kandidat=>kandidat.campaignId===auswahl.value);
-  const liste=byId("zugang-mitglieder");liste.replaceChildren();
-  if(!runde){liste.textContent="In dieser Welt gibt es noch keine Runde. Lege sie in der Spieloberfläche an — sie erscheint hier von selbst, sobald du in dieses Fenster zurückkommst.";byId("zugang-einladung").disabled=true;return;}
-  byId("zugang-einladung").disabled=waiting||state.busy;
-  for(const mitglied of runde.members){
-    const zeile=document.createElement("div");zeile.className="profile";
-    const info=document.createElement("div"),name=document.createElement("strong"),detail=document.createElement("p");
-    name.textContent=mitglied.displayName;
-    // Der wichtigste Satz der Zeile: wer gerade nicht mehr hereinkommt.
-    detail.textContent=`${mitglied.role==="leitung"?"Spielleitung":"Spieler"}${mitglied.platformLeitung?" · darf eigene Runden anlegen":""} · ${mitglied.hasAccess?"kommt herein":"kommt gerade nicht herein"}`;
-    info.append(name,detail);
-    const knoepfe=document.createElement("div");knoepfe.className="actions";
-    const zugang=document.createElement("button");zugang.type="button";zugang.textContent="Zugangslink";
-    zugang.disabled=waiting||state.busy;
-    zugang.onclick=()=>void zugangscode(runde.campaignId,mitglied.userId,mitglied.displayName);
-    const rolle=document.createElement("button");rolle.type="button";
-    rolle.textContent=mitglied.role==="leitung"?"Zum Spieler machen":"Zur Spielleitung machen";
-    rolle.disabled=waiting||state.busy;
-    rolle.onclick=()=>void setzeRolle(runde.campaignId,mitglied.userId,mitglied.role==="leitung"?"spieler":"leitung");
-    knoepfe.append(zugang,rolle);
-    zeile.append(info,knoepfe);liste.append(zeile);
-  }
-}
-/**
- * Einen erzeugten Code zeigen — als Link, nicht als Zeichenkette zum Abtippen.
- *
- * Die Anmeldeseite nimmt beides an: ihr Feld heisst „Einladungslink oder Code" und zieht den
- * Code aus einer Adresse heraus. Ein Link ist trotzdem das Bessere: er nennt auch gleich die
- * Adresse dieser Welt, die sonst niemand kennt.
- *
- * Das Feld ist absichtlich ein Eingabefeld und kein Absatz — daraus laesst sich mit der Maus
- * und mit der Tastatur kopieren, auch wenn die Zwischenablage nicht erlaubt ist.
+ * Einen erzeugten Code zeigen — als Link, nicht als Zeichenkette zum Abtippen. Das Feld ist ein
+ * Eingabefeld: daraus lässt sich auch kopieren, wenn die Zwischenablage verwehrt ist.
  */
 function zeigeCode(beschriftung,link,erklaerung){
   byId("zugang-ergebnis").hidden=false;
@@ -137,46 +190,51 @@ function zeigeCode(beschriftung,link,erklaerung){
   byId("zugang-link").focus();byId("zugang-link").select();
 }
 function verbergeCode(){byId("zugang-ergebnis").hidden=true;byId("zugang-link").value="";byId("zugang-ausgabe").textContent="";}
-/** Der Link, wenn eine Welt laeuft; sonst der nackte Code — der ist immer noch einloesbar. */
 function codeLink(code,feld){return weltAdresse?`${weltAdresse}/?${feld}=${encodeURIComponent(code)}`:code;}
-byId("zugang-kopieren").onclick=async()=>{
-  const feld=byId("zugang-link");feld.focus();feld.select();
-  // Die Zwischenablage kann in diesem Fenster verwehrt sein. Dann bleibt der Text markiert und
-  // der Satz sagt, was jetzt zu tun ist — statt eines Knopfes, der nichts tut und nichts sagt.
-  try{await navigator.clipboard.writeText(feld.value);message("Kopiert. Schick den Link an die Person, die beitreten soll.");}
-  catch{message("Der Link ist markiert — mit Strg+C kopieren.");}
-};
-async function ladeRunden(){try{runden=await invoke({kind:"runden"});}catch(error){message(error.message,true);runden=[];}await refresh();}
 async function zugangscode(campaignId,userId,name){
-  const result=await action({kind:"kopplung",campaignId,userId},"Zugang erzeugt.");
-  if(result)zeigeCode(`Zugangslink für ${name}`,codeLink(result.code,"pair"),`Zehn Minuten gültig, einmal einlösbar. ${weltAdresse?"Der Link öffnet die Anmeldeseite dieser Welt und trägt den Code schon ein.":"Ohne laufende Welt gibt es keine Adresse — dieser Code wird in der Welt unter „Neues Gerät verbinden“ eingegeben."}`);
+  const result=await action({kind:"kopplung",campaignId,userId},"Zugangslink erzeugt.");
+  if(result)zeigeCode(`Zugangslink für ${name}`,codeLink(result.code,"pair"),"Zehn Minuten gültig, einmal einlösbar. Der Link öffnet die Anmeldeseite dieser Welt und trägt den Code schon ein.");
 }
 async function setzeRolle(campaignId,userId,role){
   const result=await action({kind:"rolle",campaignId,userId,role},role==="leitung"?"Spielleitung gesetzt.":"Zum Spieler gemacht.");
-  if(result){rundenGeladen=false;message(result.changed?"Rolle geändert.":"Diese Rolle war bereits gesetzt.");}
+  if(result){message(result.changed?"Rolle geändert.":"Diese Rolle war bereits gesetzt.");await ladeRunden();}
 }
-byId("zugang-runde").onchange=()=>{verbergeCode();void refresh();};
+byId("zugang-kopieren").onclick=async()=>{
+  const feld=byId("zugang-link");feld.focus();feld.select();
+  try{await navigator.clipboard.writeText(feld.value);message("Kopiert. Schick den Link an die Person, die ihn braucht.");}
+  catch{message("Der Link ist markiert — mit Strg+C kopieren.");}
+};
+byId("zugang-runde").onchange=()=>{gewaehlteRunde=byId("zugang-runde").value;verbergeCode();render();};
 byId("zugang-einladung").onclick=async()=>{
-  const campaignId=byId("zugang-runde").value;if(!campaignId)return;
-  const result=await action({kind:"einladung",campaignId},"Einladungscode erzeugt.");
+  const runde=runden.find(kandidat=>kandidat.campaignId===gewaehlteRunde);if(!runde)return;
+  const welt=zustand?.profileId;
+  const result=await action({kind:"einladung",campaignId:runde.campaignId},"Einladungslink erzeugt.");
   if(result){
-    const runde=runden.find(kandidat=>kandidat.campaignId===campaignId);
-    zeigeCode(`Einladungslink für ${runde?runde.name:"diese Runde"}`,codeLink(result.code,"join"),`Sieben Tage gültig. ${weltAdresse?"Wer den Link öffnet, landet auf der Anmeldeseite dieser Welt mit schon eingetragenem Code und gibt nur noch seinen Namen an.":"Ohne laufende Welt gibt es keine Adresse — dieser Code wird auf der Anmeldeseite unter „Zu einer Runde kommen“ eingegeben."} Den Beitritt gibst du danach in der Welt frei.`);
+    eingeladen.add(welt);render();
+    zeigeCode(`Einladungslink für ${runde.name}`,codeLink(result.code,"join"),"Sieben Tage gültig. Wer den Link öffnet, gibt nur noch seinen Namen an und steht dann hier unter „Vor der Tür“.");
   }
 };
-byId("create-form").onsubmit=event=>{event.preventDefault();void action({kind:"create",name:byId("profile-name").value},"Neue Welt bereit. Richte jetzt deine Spielleitung ein.");};
-byId("setup-form").onsubmit=event=>{event.preventDefault();void action({kind:"setup",name:byId("gm-name").value},"Spielleitung eingerichtet. Die Welt wurde geöffnet.");};
+byId("runde-form").onsubmit=async event=>{
+  event.preventDefault();
+  const feld=byId("runde-name");
+  const result=await action({kind:"runde-anlegen",name:feld.value},"Runde angelegt. Als Nächstes: Einladungslink erzeugen.");
+  if(result){feld.value="";gewaehlteRunde=result.id;verbergeCode();await ladeRunden();}
+};
+byId("welt-select").onchange=()=>{gewaehlteWelt=byId("welt-select").value;};
+byId("start").onclick=()=>{void action({kind:"start",profileId:byId("welt-select").value},"Welt gestartet.");};
+byId("create-form").onsubmit=async event=>{event.preventDefault();const result=await action({kind:"create",name:byId("profile-name").value},"Neue Welt bereit. Richte jetzt deine Spielleitung ein.");if(result)byId("profile-name").value="";};
+byId("setup-form").onsubmit=event=>{event.preventDefault();void action({kind:"setup",name:byId("gm-name").value},"Spielleitung eingerichtet. Das Spielfenster ist offen — lege als Nächstes hier eine Runde an.");};
 byId("remote-form").onsubmit=event=>{event.preventDefault();void action({kind:"remote",origin:byId("remote-origin").value},"Server geöffnet.");};
 // The entered key leaves the field before the request and is never read back from Main.
 byId("chronist-form").onsubmit=event=>{event.preventDefault();const field=byId("chronist-key"),value=field.value.trim();field.value="";if(!value){message("Bitte zuerst einen Schlüssel eingeben.",true);return;}void action({kind:"chronist-key",profileId:byId("chronist-profile").value,action:"set",value},"Schlüssel verschlüsselt in dieser Welt gespeichert. Ein Anbieterwechsel wirkt erst nach einem Neustart der Welt.");};
 byId("chronist-clear").onclick=()=>{byId("chronist-key").value="";void action({kind:"chronist-key",profileId:byId("chronist-profile").value,action:"clear"},"Schlüssel entfernt. Ein laufender Host verwendet ihn bis zum nächsten Neustart der Welt weiter.");};
-byId("chronist-profile").onchange=()=>{byId("chronist-key").value="";void refresh();};
-byId("stop").onclick=()=>action({kind:"stop"},"Host geordnet beendet.");
-byId("open").onclick=()=>action({kind:"open"},"Welt geöffnet.");
+byId("chronist-profile").onchange=()=>{byId("chronist-key").value="";render();};
+byId("stop").onclick=()=>action({kind:"stop"},"Welt geordnet beendet.");
+byId("open").onclick=()=>action({kind:"open"},"Spielfenster geöffnet.");
 byId("backup").onclick=()=>action({kind:"backup"},"Recovery-Punkt mit Gerätezugängen gesichert. Host geordnet beendet.");
 byId("recovery-form").onsubmit=event=>{event.preventDefault();void action({kind:"recovery-restore",recoveryId:byId("recovery-select").value,name:byId("recovery-name").value},"Host-Sicherung in neuer Welt wiederhergestellt. Deine ursprüngliche Welt bleibt erhalten.");};
 byId("restore-form").onsubmit=async event=>{event.preventDefault();const result=await action({kind:"restore-select",name:byId("restore-name").value},"Datei geprüft. Bitte den Bericht bestätigen.");if(!result||result.canceled)return;restoreTicket=result.ticket;restoreCampaign=result.report.campaignId;gms=result.gms;byId("restore-report").textContent=`Format V${result.report.formatVersion} · ${result.report.rows} Datensätze · ${result.report.identitiesWithoutCredentials} historische Identitäten. Ziel ist die soeben angelegte leere Welt. Öffentliche Auslieferung bleibt aus.`;byId("restore-review").hidden=false;};
 byId("restore-confirm").onclick=async()=>{const result=await action({kind:"restore-confirm",ticket:restoreTicket},"Kampagne wiederhergestellt. Verbinde jetzt die historische Spielleitung.");if(!result)return;byId("restore-review").hidden=true;byId("gm-select").replaceChildren();for(const gm of gms){const option=document.createElement("option");option.value=gm.id;option.textContent=gm.name;byId("gm-select").append(option);}byId("enrollment").hidden=false;};
 byId("enroll").onclick=async()=>{const result=await action({kind:"enroll",campaignId:restoreCampaign,userId:byId("gm-select").value},"Einmaligen Code jetzt in der Welt unter „Gerät verbinden“ einlösen.");if(result)byId("pairing").textContent=`${result.code}\nGültig für zehn Minuten. Teile diesen Code nur mit der gewählten Spielleitung.`;};
-window.addEventListener("focus",()=>{rundenGeladen=false;void refresh();});
+window.addEventListener("focus",()=>{void ladeRunden();});
 void refresh();setInterval(()=>{void refresh();},1500);

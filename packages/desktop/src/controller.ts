@@ -96,7 +96,10 @@ export class HostController {
           if (pending.kind === "stop") await this.persistReceipts();
           this.pending.delete(id);
           if (reply.ok === true) pending.resolve(reply.value);
-          else pending.reject(new DesktopError("host-operation", "Host-Aktion fehlgeschlagen. Zustand und Eingaben prüfen."));
+          // Der Worker gibt nur eigene, fuer Menschen geschriebene Saetze heraus (worker.ts); sie
+          // hier zu verschlucken hiess, „Diese Anfrage wartet nicht mehr" als Allerweltsfehler zu zeigen.
+          else pending.reject(new DesktopError("host-operation", typeof (reply as { error?: unknown }).error === "string" && ((reply as { error: string }).error).length <= 300
+            ? (reply as { error: string }).error : "Host-Aktion fehlgeschlagen. Zustand und Eingaben prüfen."));
         }).catch(() => { this.uncertain("Ersteinrichtungsbeleg konnte noch nicht dauerhaft gesichert werden. Bitte den Abschluss erneut versuchen."); pending.reject(new DesktopError("setup-receipt", this.failure!)); });
       });
       worker.on("exit", () => {

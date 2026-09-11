@@ -26,6 +26,17 @@ describe("native management boundaries", () => {
       { kind: "loeschen", profileId: "../..", name: "Die Nordlande" }, { kind: "loeschen", profileId: welt, name: "" }])
       expect(() => command(value)).toThrow();
   });
+  /** Die Zentrale (2026-09-11): Runde anlegen und die Tuer bedienen. Keiner der Befehle stellt eine Sitzung aus. */
+  it("nimmt Runde anlegen, Freigeben und Ablehnen nur in ihrer genauen Form an", () => {
+    const runde = "6c59fc3e-1172-43d9-9e90-a60b5b46bed6", anfrage = "11111111-1111-4111-8111-111111111111";
+    expect(command({ kind: "runde-anlegen", name: "Die Nordlande" })).toEqual({ kind: "runde-anlegen", name: "Die Nordlande" });
+    expect(command({ kind: "freigeben", campaignId: runde, requestId: anfrage })).toEqual({ kind: "freigeben", campaignId: runde, requestId: anfrage });
+    expect(command({ kind: "ablehnen", campaignId: runde, requestId: anfrage })).toEqual({ kind: "ablehnen", campaignId: runde, requestId: anfrage });
+    for (const value of [{ kind: "runde-anlegen", name: "" }, { kind: "runde-anlegen", name: "x", userId: anfrage },
+      { kind: "freigeben", campaignId: runde }, { kind: "ablehnen", requestId: anfrage },
+      { kind: "freigeben", campaignId: runde, requestId: "../.." }, { kind: "ablehnen", campaignId: runde, requestId: anfrage, role: "leitung" }])
+      expect(() => command(value)).toThrow();
+  });
   it("invalidates file-dialog authority after navigation and profile replacement", () => {
     const authority = new Authority(); authority.select("a");
     const dialog = authority.lease(); authority.select("b"); expect(dialog).toThrow();

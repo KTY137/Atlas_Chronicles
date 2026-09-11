@@ -145,6 +145,8 @@ async function run() {
     await game.loadURL(origin);
   }
   async function cleanupRestore() { if (restore) { await rm(restore.path, { force: true }); restore = undefined; } }
+  let wartendZuletzt = 0;
+  manager.on("focus", () => manager.flashFrame(false));
   ipcMain.handle("chronicle:manage", async (event, envelope: unknown) => {
     let ownsOperation = false;
     try {
@@ -153,6 +155,17 @@ async function run() {
       if (value["capability"] !== capability) fail("unauthorized", "Verwaltungsansicht ist nicht mehr aktuell.");
       const request = command(value["request"]);
       if (request.kind === "status") return { ok: true, value: await snapshot() };
+      // Lesen nimmt die Sperre nicht. Das Hostfenster fragt die Runden regelmaessig ab; mit Sperre
+      // kollidierte genau das mit dem Klick, der das Fenster nach vorn holt (v0.4.1).
+      if (request.kind === "runden") {
+        if (host.state !== "ready") fail("host-unavailable", "Bitte zuerst die lokale Welt starten.");
+        const runden = await host.request<readonly { wartend?: readonly unknown[] }[]>("runden", {});
+        const wartend = runden.reduce((summe, runde) => summe + (runde.wartend?.length ?? 0), 0);
+        // Wartet jemand Neues und das Fenster ist nicht vorn, blinkt es in der Taskleiste.
+        if (wartend > wartendZuletzt && !manager.isFocused()) manager.flashFrame(true);
+        wartendZuletzt = wartend;
+        return { ok: true, value: runden };
+      }
       if (busy) fail("operation-busy", "Eine lokale Aktion läuft bereits.");
       busy = true;
       ownsOperation = true;
@@ -248,19 +261,20 @@ async function run() {
          * „gelöscht" soll nichts zurücklassen.
          */
         case "loeschen": {
-          if (host.state !== "stopped") fail("host-busy", "Bitte zuerst den laufenden Host beenden.");
+          // Nur die laufende Welt selbst ist tabu; eine ruhende darf gehen, waehrend eine andere laeuft.
+          // `ProfileStore.remove` prueft zusaetzlich den Lock der Zielwelt.
+          if (host.state !== "stopped" && host.owned?.profile.id === request.profileId) fail("host-busy", "Diese Welt läuft gerade. Beende sie zuerst oben mit „Welt beenden“.");
           const geloescht = await store.remove(request.profileId, request.name); assert();
           await session.fromPartition(partitionFor(originOf(geloescht))).clearStorageData();
           assert();
           return { ok: true, value: { name: geloescht.name } };
         }
         // Zugangsverwaltung: nur bei laufendem Host, weil sie die Datenbank der offenen Welt liest.
-        case "runden": case "einladung": case "kopplung": case "rolle": {
+        case "einladung": case "kopplung": case "rolle": case "runde-anlegen": case "freigeben": case "ablehnen": {
           if (host.state !== "ready") fail("host-unavailable", "Bitte zuerst die lokale Welt starten.");
-          const antwort = await host.request(request.kind, request.kind === "runden" ? {}
-            : request.kind === "einladung" ? { campaignId: request.campaignId }
-            : request.kind === "kopplung" ? { campaignId: request.campaignId, userId: request.userId }
-            : { campaignId: request.campaignId, userId: request.userId, role: request.role });
+          // `command()` hat die Felder schon auf genau diese Form begrenzt; der Rest reist zum Worker.
+          const { kind, ...felder } = request;
+          const antwort = await host.request(kind, felder);
           assert();
           return { ok: true, value: antwort };
         }

@@ -13,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
 import { createCampaigns } from "../src/domain/campaigns.ts";
-import { hostEinladung, hostKopplung, hostRolle, hostRunden, HostZugangError } from "../src/domain/hostzugaenge.ts";
+import { hostAblehnen, hostEinladung, hostFreigeben, hostKopplung, hostRolle, hostRundeAnlegen, hostRunden, HostZugangError } from "../src/domain/hostzugaenge.ts";
 
 // `now` gehoert zu DomainConfig; die Identitaetsfunktionen nehmen dieselbe Form.
 const config = { origin: "http://localhost:3000", cookieSecret: "hostzugaenge-test-cookie-secret-over-thirty-two", now: () => Date.now() };
@@ -135,5 +135,64 @@ describe("Wer die Runde führt", () => {
   it("weist ein fremdes Mitglied und eine unbekannte Rolle zurueck", async () => {
     await expect(hostRolle(db, campaignId, randomUUID(), "leitung")).rejects.toThrow(HostZugangError);
     await expect(hostRolle(db, campaignId, spieler, "chef" as never)).rejects.toThrow(HostZugangError);
+  });
+});
+
+/** Seit 2026-09-11 fuehrt das Hostfenster durch alles: Runde, Einladung, Tuer. Es ruft dieselben
+ * Serverfunktionen wie das Spiel — sonst liefen Fristen und Regeln wieder auseinander. */
+describe("Die Runde aus dem Hostfenster", () => {
+  it("legt eine Runde fuer die Spielleitung der Welt an", async () => {
+    const neu = await hostRundeAnlegen(db, "Die zweite Runde", config);
+    const gelistet = (await hostRunden(db)).find(kandidat => kandidat.campaignId === neu.id)!;
+    expect(gelistet.name).toBe("Die zweite Runde");
+    expect(gelistet.members.map(mitglied => [mitglied.userId, mitglied.role])).toEqual([[leitung, "leitung"]]);
+    expect(gelistet.wartend).toEqual([]);
+    await expect(hostRundeAnlegen(db, "   ", config)).rejects.toThrow(HostZugangError);
+  });
+});
+
+describe("Vor der Tuer", () => {
+  it("zeigt Wartende, gibt frei und lehnt ab — und Ablehnen gibt den Namen wieder frei", async () => {
+    const campaigns = createCampaigns(db, config);
+    const einladung = await hostEinladung(db, campaignId);
+    const ja = await campaigns.requestJoin(einladung.code, { displayName: "Ylva" });
+    const nein = await campaigns.requestJoin(einladung.code, { displayName: "Brams" });
+    const vorher = (await hostRunden(db)).find(kandidat => kandidat.campaignId === campaignId)!;
+    expect(vorher.wartend.map(anfrage => anfrage.displayName)).toEqual(expect.arrayContaining(["Ylva", "Brams"]));
+
+    await hostFreigeben(db, campaignId, ja.id, config);
+    await hostAblehnen(db, campaignId, nein.id, config);
+    expect((await campaigns.joinStatus(ja.id, ja.pollToken)).status).toBe("approved");
+    expect((await campaigns.joinStatus(nein.id, nein.pollToken)).status).toBe("rejected");
+    const danach = (await hostRunden(db)).find(kandidat => kandidat.campaignId === campaignId)!;
+    expect(danach.wartend.map(anfrage => anfrage.displayName)).not.toContain("Brams");
+    expect(danach.wartend.map(anfrage => anfrage.displayName)).not.toContain("Ylva");
+
+    expect((await campaigns.requestJoin(einladung.code, { displayName: "Brams" })).id).toBeTruthy();
+    await expect(hostAblehnen(db, campaignId, nein.id, config)).rejects.toThrow();
+  });
+
+  it("laesst im Spiel nur eine Spielleitung ablehnen", async () => {
+    const campaigns = createCampaigns(db, config);
+    const einladung = await hostEinladung(db, campaignId);
+    // Eine frische Mitspielerin: der Block davor hat den ersten Spieler zur Spielleitung gemacht.
+    const odila = await campaigns.requestJoin(einladung.code, { displayName: "Odila" });
+    await hostFreigeben(db, campaignId, odila.id, config);
+    const mitspielerin = (await campaigns.claimJoin(odila.id, odila.pollToken)).userId;
+    const anfrage = await campaigns.requestJoin(einladung.code, { displayName: "Kjell" });
+    await expect(campaigns.rejectJoin(mitspielerin, campaignId, anfrage.id)).rejects.toThrow();
+    await campaigns.rejectJoin(leitung, campaignId, anfrage.id);
+    expect((await campaigns.joinStatus(anfrage.id, anfrage.pollToken)).status).toBe("rejected");
+  });
+});
+
+describe("Fristen, an beiden Stellen gleich", () => {
+  it("gibt einer Einladung aus dem Spiel sieben Tage und einer Anfrage 24 Stunden", async () => {
+    const campaigns = createCampaigns(db, config), vorher = Date.now();
+    const einladung = await campaigns.issueInvitation(leitung, campaignId);
+    expect(einladung.expiresAt - vorher).toBeGreaterThanOrEqual(7 * 86400_000 - 5000);
+    const anfrage = await campaigns.requestJoin(einladung.code, { displayName: "Fenja" });
+    expect(anfrage.expiresAt - vorher).toBeGreaterThanOrEqual(86400_000 - 5000);
+    expect(anfrage.expiresAt - vorher).toBeLessThan(86400_000 + 5000);
   });
 });

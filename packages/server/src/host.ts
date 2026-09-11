@@ -6,7 +6,7 @@ import { buildApp, drainAppChronist } from "./app.ts";
 import { createPgDb, migrate, type Db } from "./db/index.ts";
 import { createIdentity } from "./identity/index.ts";
 import { inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm } from "./domain/bundles.ts";
-import { hostEinladung, hostKopplung, hostRolle, hostRunden } from "./domain/hostzugaenge.ts";
+import { hostAblehnen, hostEinladung, hostFreigeben, hostKopplung, hostRolle, hostRundeAnlegen, hostRunden } from "./domain/hostzugaenge.ts";
 import { parseCurrentCampaignBundle, CAMPAIGN_BUNDLE_V5_LIMITS } from "@chronicle/io";
 import sharp from "sharp";
 import type { ChronistRuntimeConfig } from "./domain/chronist/runtime.ts";
@@ -96,6 +96,9 @@ export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?:
     async einladung(campaignId: string, ttlMs?: number) { open(); return hostEinladung(db, campaignId, ttlMs); },
     async kopplung(campaignId: string, userId: string) { open(); return hostKopplung(db, campaignId, userId, identityConfig); },
     async rolle(campaignId: string, userId: string, role: "leitung" | "spieler") { open(); return hostRolle(db, campaignId, userId, role); },
+    async rundeAnlegen(name: string) { open(); return hostRundeAnlegen(db, name); },
+    async freigeben(campaignId: string, requestId: string) { open(); return hostFreigeben(db, campaignId, requestId); },
+    async ablehnen(campaignId: string, requestId: string) { open(); return hostAblehnen(db, campaignId, requestId); },
     close() {
       // A failed drain must not close the pool beneath active work.
       // Keep commands closed after failure, but permit an explicit shutdown retry.
