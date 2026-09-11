@@ -1,0 +1,12 @@
+.map-road-planner{border-top:1px solid var(--line);padding-top:.75rem;min-width:0}
+.map-road-planner summary{cursor:pointer;font-weight:600}
+.map-road-planner>svg{display:block;width:100%;aspect-ratio:4/3;touch-action:none;border:1px solid var(--line);border-radius:var(--radius-sm,.35rem);margin:.75rem 0}
+.map-road-planner .road-paper{fill:var(--surface-raised,#e5dece)}
+.map-road-planner .road-background{pointer-events:none;opacity:.65}
+.map-road-planner .road-background.water{fill:#5489a2}.map-road-planner .road-background.terrain{fill:#7f7c76}.map-road-planner .road-background.building{fill:#ad7858}.map-road-planner .road-background.road{fill:#b5a990}
+.map-road-planner .road-link{stroke:#3c6a82;stroke-width:.8;pointer-events:none;stroke-dasharray:2 1}.map-road-planner .road-link.gasse{stroke-width:.45}.map-road-planner .road-link.selected{stroke:#b45623}
+.map-road-planner .road-node{cursor:grab;outline:none}.map-road-planner .road-node circle{fill:#305c75;stroke:white;stroke-width:.4}.map-road-planner .road-node.selected circle,.map-road-planner .road-node:focus circle{fill:#b45623;stroke-width:.8}
+.map-road-planner .road-node text{fill:white;text-anchor:middle;dominant-baseline:central;font-size:2.7px;pointer-events:none;font-weight:600}
+.map-road-planner .road-fields{display:grid;gap:.5rem;padding:.5rem 0}.road-coordinates,.road-actions{display:flex;gap:.5rem;flex-wrap:wrap}.road-coordinates>label{flex:1;min-width:6rem}.road-fields input,.road-fields select,.map-road-planner>label select{max-width:100%;min-width:0}.map-road-planner>label{display:grid;gap:.25rem;margin:.5rem 0}.map-road-report p{overflow-wrap:anywhere}
+
+.map-road-planner .button{max-width:100%;white-space:normal;overflow-wrap:anywhere}

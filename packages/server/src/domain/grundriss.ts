@@ -3,7 +3,7 @@
 import { erzeugeAnlage, ANLAGE_STANDARD, anlageOptionen, type AnlageOptionen } from "@chronicle/forge";
 import { readFileSync } from "node:fs";
 import { erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, BAUWERK_AUSDEHNUNG, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, SIEDLUNG_STANDORTE, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, type GrundrissOptionen, type HoehleOptionen, type SiedlungOptionen, erzeugeRegion, REGION_STANDARD, REGION_LIMITS, type RegionOptionen } from "@chronicle/forge";
-import { parseSettlementPlan, SettlementPlanError, inferLegacyCartography, KARTEN_SETTINGS, parseAssetpaket, parseTacticalCartography, serializeTacticalMapDocument, type AssetpaketV1, type KartenSetting, type Weltkeim } from "@chronicle/szene";
+import { parseRoadPlan, RoadPlanError, parseSettlementPlan, SettlementPlanError, inferLegacyCartography, KARTEN_SETTINGS, parseAssetpaket, parseTacticalCartography, serializeTacticalMapDocument, type AssetpaketV1, type KartenSetting, type Weltkeim } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createCampaigns } from "./campaigns.ts";
@@ -65,12 +65,15 @@ export function validateKartenOptionen(art: KartenArt, optionen?: KartenOptionen
   const keys: Record<KartenArt, readonly string[]> = {
     grundriss: ["zellen", "zellgroesse", "raeume", "minRaum", "schleifen", "moeblierung", "licht", "gangboden", "anordnung", "profil", "setting"],
     hoehle: ["zellen", "zellgroesse", "kammern", "fuellung", "glaettung", "mindestFlaeche", "moeblierung", "licht"],
-    siedlung: ["art", "ausdehnung", "zellgroesse", "bauwerke", "strassenDichte", "grundstueck", "licht", "setting", "standort", "relief", "bewaldung", "planung"],
+    siedlung: ["art", "ausdehnung", "zellgroesse", "bauwerke", "strassenDichte", "grundstueck", "licht", "setting", "standort", "relief", "bewaldung", "planung", "verkehr"],
     region: ["ausdehnung", "zellgroesse", "orte", "setting", "standort", "relief", "bewaldung"],
   };
   if (!Object.hasOwn(keys, art) || optionen !== undefined && (!optionen || typeof optionen !== "object" || Array.isArray(optionen)
     || ![Object.prototype, null].includes(Object.getPrototypeOf(optionen)) || Object.keys(optionen).some(key => !keys[art].includes(key))))
     throw new TacticalValidationError("Bitte die Optionen der gewählten Kartenart verwenden.");
+  if (optionen && "verkehr" in optionen) {
+    try { parseRoadPlan(optionen.verkehr); } catch (error) { if (error instanceof RoadPlanError) throw new TacticalValidationError(error.message); throw error; }
+  }
   if (optionen && "planung" in optionen) {
     try { parseSettlementPlan(optionen.planung); } catch (error) { if (error instanceof SettlementPlanError) throw new TacticalValidationError(error.message); throw error; }
   }
@@ -160,7 +163,7 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
     defaults() {
       return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD, siedlung: SIEDLUNG_STANDARD, region: REGION_STANDARD,
         siedlungsarten: { weiler: siedlungStandard("weiler"), dorf: siedlungStandard("dorf"), stadt: siedlungStandard("stadt") },
-        siedlungsplanung: 1, gebaeude: BAUWERK_AUSDEHNUNG, anlagen: ANLAGE_STANDARD,
+        strassenplanung: 1, siedlungsplanung: 1, gebaeude: BAUWERK_AUSDEHNUNG, anlagen: ANLAGE_STANDARD,
         stile: [{ id: "grundriss", titel: "Grundriss" }, { id: "gemalt", titel: "Gemalt" }, { id: "zeitwelten", titel: "Zeitwelten" }, { id: "genres", titel: "Genre-Archiv" }],
         limits: { grundriss: GRUNDRISS_LIMITS, hoehle: HOEHLE_LIMITS, siedlung: SIEDLUNG_LIMITS, region: REGION_LIMITS } };
     },
@@ -201,6 +204,8 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
     async generate(userId: string, campaignId: string, input: GrundrissRequest) {
       await campaigns.requireMember(userId, campaignId, ["leitung"]);
       const grundriss = erzeuge(input);
+      if ("verkehr" in grundriss.bericht && grundriss.bericht.verkehr && (grundriss.bericht.verkehr.invalidNodes.length || grundriss.bericht.verkehr.unreachableNodes.length || grundriss.bericht.verkehr.routes.some(r => r.status !== "gebaut")))
+        throw new TacticalValidationError("Der Straßenplan ist noch nicht ausführbar. Korrigiere die markierten Verbindungen oder Wegpunkte vor dem Speichern.");
       return db.transaction(async tx => {
         const ack = await createTactical(tx, cfg).importMap(userId, campaignId, {
           commandId: input.commandId,

@@ -68,3 +68,6 @@ export type { CartographyRoomInteriorV1, RoomIntent } from "./cartography.ts";
 
 export { SETTLEMENT_USES, SETTLEMENT_PLAN_LIMITS, parseSettlementPlan, SettlementPlanError, planContains, planOverlaps } from "./settlement-plan.ts";
 export type { SettlementUse, SettlementZone, SettlementPlan, PlanPoint } from "./settlement-plan.ts";
+
+export { parseRoadPlan, RoadPlanError, ROAD_PLAN_LIMITS } from "./road-plan.ts";
+export type { RoadPlan, RoadPlanNode, RoadPlanEdge } from "./road-plan.ts";

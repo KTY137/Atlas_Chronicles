@@ -10,6 +10,7 @@ import { locale, t } from "../i18n";
 import { useResource, useTask } from "../hooks";
 import { useCommand } from "./game-api";
 import { TacticalCanvas } from "./TacticalCanvas";
+import { RoadPlanReport } from "./MapRoadPlanner";
 import { MapGenerationControls } from "./MapGenerationControls";
 import { generationError, generationOptions, generationSettings, mapDocumentScene, type GenerationDefaults, type MapNode } from "./map-generation";
 import { MapRecipeTools } from "./MapRecipeTools";
@@ -44,6 +45,8 @@ export function TacticalGenerate({ campaignId, onCreated, onDirty }: { campaignI
   const comparisonScene = useMemo(() => comparison ? mapDocumentScene(`compare:${comparison.data.keimHash}`, comparison.data.document, comparison.data.nodes, comparison.data.art, undefined, comparison.settings.setting, comparison.data.cartography) : null, [comparison]);
   if (defaults.loading) return <Loading text={t("Kartenwerkstatt wird vorbereitet …")} />;
   if (defaults.error || !defaults.data) return <Notice error>{defaults.error || t("Der Generator ist nicht verfügbar.")}</Notice>;
+  const roadReport = visiblePreview && "verkehr" in visiblePreview.bericht ? visiblePreview.bericht.verkehr : undefined;
+  const roadsReady = !roadReport || !roadReport.invalidNodes.length && !roadReport.unreachableNodes.length && roadReport.routes.every(r => r.status === "gebaut");
   const problem = generationError(settings, defaults.data), ready = !!name.trim() && !!keim.trim() && !problem;
   const recipe = visiblePreview?.generator ? makeMapRecipe(name, keim, settings, visiblePreview.keimHash, defaults.data, visiblePreview.generator) : null;
   const loadRecipe = (next: MapRecipe) => {
@@ -58,12 +61,12 @@ export function TacticalGenerate({ campaignId, onCreated, onDirty }: { campaignI
       if (mounted.current && latest.current === current) setPreview({ fingerprint: current, data });
     }); }}><fieldset disabled={task.busy}>
       <label>{t("Name der Karte")}<input value={name} maxLength={160} required placeholder={settings.setting === "scifi" ? t("z. B. Kolonie Aurora") : settings.setting === "gegenwart" ? t("z. B. Hafenviertel Nord") : settings.art === "siedlung" ? t("z. B. Nebelhafen") : t("z. B. Kapelle des Morgenlichts")} onChange={event => setName(event.target.value)} /></label>
-      <MapGenerationControls value={settings} defaults={defaults.data} onChange={setSettings} />
+      <MapGenerationControls value={settings} defaults={defaults.data} onChange={setSettings} planningPreview={preview?.data} />
       <label>{t("Weltkeim")}<div className="map-seed-field"><input value={keim} maxLength={256} required onChange={event => setKeim(event.target.value)} /><Button variant="quiet" aria-label={t("Neuen Keim würfeln")} title={t("Neuen Keim würfeln")} onClick={() => setKeim(crypto.randomUUID().slice(0, 8))}><Dices size={18} /></Button></div><small>{t("Gleicher Keim und gleiche Einstellungen ergeben dieselbe Karte.")}</small></label>
       <MapRecipeTools recipe={recipe} defaults={defaults.data} onLoad={loadRecipe} onCompare={() => { if (visiblePreview) setComparison({ name, data: visiblePreview, settings }); }} />
       {problem ? <Notice error>{problem}</Notice> : null}
       <div className="map-create-actions"><Button type="submit" disabled={!ready} variant="primary"><Eye size={17} /> {task.busy ? t("Karte entsteht …") : t("Vorschau")}</Button>
-        <Button disabled={!ready || !visiblePreview} onClick={() => { if (!ready || !visiblePreview || task.busy) return; const current = fingerprint; void task.run(async () => {
+        <Button disabled={!ready || !visiblePreview || !roadsReady} onClick={() => { if (!ready || !visiblePreview || !roadsReady || task.busy) return; const current = fingerprint; void task.run(async () => {
           const result = await command<{ ack: { subjectId: string } }>(apiPath(campaignId, "/tactical/generate"), request());
           if (mounted.current && latest.current === current) {
             const freshSettings = generationSettings(), freshSeed = crypto.randomUUID().slice(0, 8);
@@ -86,6 +89,8 @@ export function TacticalGenerate({ campaignId, onCreated, onDirty }: { campaignI
       {visiblePreview.art === "region" ? <p className="field-help">{t("Nach dem Speichern kannst du jeden Ort auswählen und seine Stadt oder sein Dorf erzeugen; Größe und Lage kommen von der Landkarte.")}</p> : null}
       {"verbunden" in visiblePreview.bericht && !visiblePreview.bericht.verbunden ? <Notice>{t("Nicht alle Orte sind durch Straßen verbunden; Wasser oder Fels lagen im Weg.")}</Notice> : null}
       {"bauwerke" in visiblePreview.bericht && "angefordert" in visiblePreview.bericht && !("planung" in visiblePreview.bericht && visiblePreview.bericht.planung) && visiblePreview.bericht.bauwerke < visiblePreview.bericht.angefordert ? <Notice>{t("Für {angefordert} Gebäude reicht die bebaubare Fläche nicht. Die Vorschau enthält {bauwerke} Gebäude; vergrößere die Karte, wenn du mehr brauchst.", { angefordert: visiblePreview.bericht.angefordert, bauwerke: visiblePreview.bericht.bauwerke })}</Notice> : null}
+      {roadReport && settings.verkehr ? <RoadPlanReport report={roadReport} plan={settings.verkehr} names={new Map(visiblePreview.nodes.map(n=>[n.knotenId,n.titel]))} /> : null}
+      {!roadsReady ? <Notice error>{t("Der Straßenplan ist noch nicht ausführbar. Korrigiere die markierten Verbindungen oder Wegpunkte vor dem Speichern.")}</Notice> : null}
       {"planung" in visiblePreview.bericht && visiblePreview.bericht.planung ? <section aria-label={t("Ergebnis der Zonenplanung")}><h4>{t("Ergebnis der Zonenplanung")}</h4>
         {visiblePreview.bericht.planung.zonen.map(zone => <p key={zone.id}>{t("{name}: {anzahl} Gebäude", { name: zone.name, anzahl: zone.anzahl })}</p>)}
         <p className="field-help">{t("{anzahl} Bauplätze durch Zonenregeln freigehalten. Leere Viertel können durch Wasser, Fels, Dichte oder fehlende Straßenfronten entstehen.", { anzahl: visiblePreview.bericht.planung.verworfen })}</p>

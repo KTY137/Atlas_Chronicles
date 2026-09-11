@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
-  parseSettlementPlan, type SettlementPlan, type SettlementZone, BAUWERK_LABEL, BAUWERK_SETTINGS, KARTEN_SETTINGS, parseTacticalMapDocument, weltkeim,
+  parseRoadPlan, type RoadPlan, parseSettlementPlan, type SettlementPlan, type SettlementZone, BAUWERK_LABEL, BAUWERK_SETTINGS, KARTEN_SETTINGS, parseTacticalMapDocument, weltkeim,
   type AssetpaketV1, type BauwerkTyp, type KartenSetting, type Herkunft, type Kante, type Knoten, type TacticalLight,
   type TacticalMapDocumentV1, type Weltkeim,
 } from "@chronicle/szene";
@@ -17,6 +17,8 @@ import {
   type Polygon, type Punkt,
 } from "./polygon.ts";
 import { roofZone, zoneDraw, zoneBuilding } from "./siedlung-plan.ts";
+import { routeRoadPlan, type RoadRouteReport } from "./road-routing.ts";
+import { inspectRoadNetwork, type RoadNetworkReport } from "./road-network.ts";
 import { erzeugeLandschaft, RELIEF_STANDORTE, type FlussStueck, type ReliefStandort } from "./relief.ts";
 
 /**
@@ -79,6 +81,7 @@ export const SIEDLUNG_STANDORTE = RELIEF_STANDORTE;
 export type SiedlungStandort = ReliefStandort;
 
 export interface SiedlungOptionen {
+  readonly verkehr?: RoadPlan;
   readonly planung?: SettlementPlan;
   readonly setting?: KartenSetting;
   /** Physical surroundings, normalized into the seed; older callers retain the river default. */
@@ -155,6 +158,7 @@ export interface SiedlungStrasse {
 }
 
 export interface SiedlungBericht {
+  readonly verkehr?: RoadNetworkReport & { readonly routes: readonly RoadRouteReport[]; readonly invalidNodes: readonly string[]; readonly reservedRegions: readonly string[] };
   readonly planung?: { readonly zonen: readonly { id: string; name: string; anzahl: number }[]; readonly verworfen: number };
   readonly bauwerke: number;
   /** What the option vector asked for. Placement is capped by frontage, never padded to match. */
@@ -352,7 +356,9 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   for (const [name, value] of [["relief", relief], ["bewaldung", bewaldung]] as const) if (typeof value !== "number" || !(value >= 0 && value <= 1)) fail("option", `optionen.${name}`, "Zahl in 0..1 erwartet");
   const [breite, hoehe] = optionen.ausdehnung;
   const planung = optionen.planung === undefined ? undefined : parseSettlementPlan(optionen.planung);
-  const geplant = !!planung?.zonen.length, version = geplant ? SIEDLUNG_PLAN_VERSION : SIEDLUNG_VERSION;
+  const verkehr = optionen.verkehr === undefined ? undefined : parseRoadPlan(optionen.verkehr);
+  const strassenGeplant = !!verkehr?.knoten.length;
+  const geplant = !!planung?.zonen.length, version = strassenGeplant ? "10" : geplant ? SIEDLUNG_PLAN_VERSION : SIEDLUNG_VERSION;
   let planVerworfen = 0;
   const L = SIEDLUNG_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>
@@ -386,8 +392,9 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
       paket: { id: paket.id, version: paket.version, zellgroesse: paket.zellgroesse },
     } as Readonly<Record<string, CanonicalValue>>,
   });
-  const keim = geplant ? weltkeim({ generator: SIEDLUNG_ERZEUGER, version, seed: auftrag.keim,
-    optionen: { ...layoutKeim.optionen, planung: planung as unknown as CanonicalValue } }) : layoutKeim;
+  const keim = geplant || strassenGeplant ? weltkeim({ generator: SIEDLUNG_ERZEUGER, version, seed: auftrag.keim,
+    optionen: { ...layoutKeim.optionen, ...(geplant ? { planung: planung as unknown as CanonicalValue } : {}),
+      ...(strassenGeplant ? { verkehr: verkehr as unknown as CanonicalValue } : {}) } }) : layoutKeim;
   const r = rauschen(layoutKeim.keimHash);
   const z = optionen.zellgroesse;
   const ids = idFabrik(SIEDLUNG_ERZEUGER, version, keim.keimHash);
@@ -672,6 +679,12 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     gassen.push({ id: ids.geometrieId("zufahrt", `${side}`), art: "hauptstrasse", a: arrival.ward, b: arrival.ward, von: a, bis: b, band });
   }
 
+  // Explicit links supplement the automatic layout. Reserve their entire footprint BEFORE
+  // placing buildings. Empty/missing plans do not touch the old PRNG or its output contract.
+  const routed = strassenGeplant ? routeRoadPlan(verkehr!, { width: breite, height: hoehe,
+    obstacles: hartHindernisse, rivers: fluss.map(f => f.polygon), elevation: landschaft.hoehe }) : undefined;
+  const roadReservations = routed?.surfaces.map(s => s.polygon) ?? [];
+
   // The market and its walk to a dry street are reserved before roofs are fitted.
   // A plaza painted after generation could otherwise erase a house or become unreachable.
   let marktFlaeche: Polygon = [], marktZugang: Polygon = [];
@@ -735,7 +748,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
       const haus = hausImLos(innen, gassen[beste]!, w, w * r.zahl(.84, 1.32), setting === "fantasy" && r.zahl(0, 1) < .21);
       if (haus.length < 3 || bauHindernisse.some(wasser => flaeche(schnitt(haus, wasser)) > 1e-10 || wasser.some((point, i) => abstandPolygonStrecke(haus, point, wasser[(i + 1) % wasser.length]!) < .04))) continue;
       if (hartHindernisse.some(polygon => flaeche(schnitt(los, polygon)) > 1e-10)) continue;
-      if ([marktFlaeche, marktZugang].some(reserve => reserve.length >= 3 && flaeche(schnitt(haus, reserve)) > 1e-10)) continue;
+      if ([marktFlaeche, marktZugang, ...roadReservations].some(reserve => reserve.length >= 3 && flaeche(schnitt(haus, reserve)) > 1e-10)) continue;
       if (meine.some(other => !getrennteDaecher(haus, other.umriss))) continue;
       meine.push({
         pfad: `${viertel[vi]!.pfad}.los.${q(s[0])}_${q(s[1])}`,
@@ -771,7 +784,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
       rohBauwerke.push({ ...b, ...(zone ? { zone } : {}) });
     }
   }
-  if (!rohBauwerke.length && !geplant) fail("geometrie", "bauwerke", "auf diesem Raster ließ sich kein einziges Gebäude an einer Straße platzieren");
+  if (!rohBauwerke.length && !geplant && !strassenGeplant) fail("geometrie", "bauwerke", "auf diesem Raster ließ sich kein einziges Gebäude an einer Straße platzieren");
 
   // The largest plots serve the public buildings. Houses remain the majority; even a small
   // settlement with three addresses has a church, an inn and a home. No wiki entries are minted.
@@ -803,6 +816,11 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   const strassen: SiedlungStrasse[] = gassen.map((g) => ({ id: g.id, art: g.art, umriss: g.band }));
   const extraRegions: { readonly id: string; readonly polygon: Polygon; readonly role: CartographyRegionV1 }[] = [];
   const generatedRole = (regionId: string) => ({ regionId, authored: false, locked: false, provenance: keim });
+  for (const surface of routed?.surfaces ?? []) {
+    const id = ids.geometrieId("verkehr", surface.key);
+    strassen.push({ id, art: surface.art, umriss: surface.polygon });
+    extraRegions.push({ id, polygon: surface.polygon, role: { ...generatedRole(id), role: "road", material: surface.square ? "square" : surface.art === "hauptstrasse" ? "street" : "path" } });
+  }
   const groundId = ids.geometrieId("gelände", "grund");
   extraRegions.push({ id: groundId, polygon: rahmen, role: { ...generatedRole(groundId), role: "terrain", material: "grass" } });
   for (const [material, polygons] of [["rock", fels], ["sand", strand], ["swamp", sumpf]] as const) for (const [index, polygon] of polygons.entries()) {
@@ -1123,6 +1141,8 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     art: "siedlung", erzeuger: SIEDLUNG_ERZEUGER, version, keim, wurzelId, karte, cartography,
     knoten: Object.freeze(knoten), bauwerke: Object.freeze(bauwerke), strassen: Object.freeze(strassen),
     bericht: Object.freeze({
+      ...(routed ? { verkehr: { routes: routed.routes, invalidNodes: routed.invalidNodes, reservedRegions: routed.surfaces.map(s => ids.geometrieId("verkehr", s.key)),
+        ...inspectRoadNetwork(strassen, bauwerke, breite, hoehe, verkehr!, routed.routes) } } : {}),
       ...(geplant ? { planung: { zonen: planung!.zonen.map(zone => ({ id: zone.id, name: zone.name, anzahl: rohBauwerke.filter(b => b.zone?.id === zone.id).length })), verworfen: planVerworfen } } : {}),
       bauwerke: bauwerke.length, angefordert: optionen.bauwerke, strassen: strassen.length,
       strassenzellen, hofzellen, stamps: werk.stamps.length, stampsNachArt: Object.freeze({ ...werk.nachArt }),

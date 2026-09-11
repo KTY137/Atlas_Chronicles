@@ -67,6 +67,8 @@ jobs:
         run: >-
           npx vitest run packages/forge/test packages/szene/test packages/render/test
           packages/client/test/map-type-selection.test.ts
+          packages/client/test/map-road-planning.test.ts
+          packages/server/test/road-plan-integration.test.ts
           packages/client/test/map-zones.test.ts
           packages/client/test/expedition-artwork.test.ts
           packages/client/test/map-artwork.test.ts
@@ -91,8 +93,8 @@ jobs:
           retention-days: 7
       - name: Chromium for real browser flows
         run: npx playwright install --with-deps chromium
-      - name: Castle, palace, zoning and expedition browser flows
-        run: npx playwright test e2e/map-compounds.spec.ts e2e/map-zones-assets.spec.ts
+      - name: Castle, palace, zoning, expedition and road browser flows
+        run: npx playwright test e2e/map-compounds.spec.ts e2e/map-zones-assets.spec.ts e2e/map-road-planning.spec.ts
         env:
           # Initialize the real CommonJS dependency before the test host's ESM loader.
           NODE_OPTIONS: --require ./node_modules/semver/index.js

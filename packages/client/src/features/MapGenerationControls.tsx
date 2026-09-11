@@ -3,6 +3,7 @@
 import { Building2, Castle, CloudSun, Droplets, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree, Map } from "lucide-react";
 import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
 import { MapZonePlanner } from "./MapZonePlanner";
+import { MapRoadPlanner, type RoadPlanningPreview } from "./MapRoadPlanner";
 import { locale, t } from "../i18n";
 import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
 import { changeEntranceType, entranceTypeValue, settlementPreset, SETTLEMENT_TYPES, SETTLEMENT_TYPE_LABEL } from "./map-type-selection";
@@ -39,8 +40,8 @@ export const MAP_LOCATIONS = [
   { id: "insel", label: MAP_LOCATION_LABEL.insel, text: MAP_LOCATION_TITEL.insel, icon: Palmtree },
 ] as const;
 
-export function MapGenerationControls({ value, defaults, onChange, compact = false, profileLocked = false }: {
-  value: GenerationSettings; defaults: GenerationDefaults; onChange: (next: GenerationSettings) => void; compact?: boolean; profileLocked?: boolean;
+export function MapGenerationControls({ value, defaults, onChange, compact = false, profileLocked = false, planningPreview }: {
+  planningPreview?: RoadPlanningPreview | undefined; value: GenerationSettings; defaults: GenerationDefaults; onChange: (next: GenerationSettings) => void; compact?: boolean; profileLocked?: boolean;
 }) {
   const update = (patch: Partial<GenerationSettings>) => onChange({ ...value, ...patch });
   const [w, h] = generationDimensions(value, defaults), city = value.art === "siedlung", cave = value.art === "hoehle";
@@ -64,8 +65,8 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     { label: t("Großstadt"), breite: 88, hoehe: 64, anzahl: 256, siedlung: "stadt" as const, dichte: .7 },
   ] : [ { label: t("Klein"), breite: 24, hoehe: 20, anzahl: 5 }, { label: t("Mittel"), breite: 40, hoehe: 30, anzahl: 11 }, { label: t("Groß"), breite: 64, hoehe: 48, anzahl: 24 } ];
   const changeArt = (art: MapArt) => {
-    const { planung, anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
-    onChange({ ...other, ...(art === "siedlung" && planung ? { planung } : {}), art, breite: "", hoehe: "", anzahl: "" });
+    const { verkehr, planung, anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
+    onChange({ ...other, ...(art === "siedlung" && planung ? { planung } : {}), ...(art === "siedlung" && verkehr ? { verkehr } : {}), art, breite: "", hoehe: "", anzahl: "" });
   };
   return <div className={`map-generation-controls${compact ? " compact" : ""}`}>
     {compact && profileLocked ? <label>{t("Was liegt hinter dieser Tür?")}<select value={value.art} onChange={event => changeArt(event.target.value as MapArt)}>
@@ -91,6 +92,10 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
       {defaults.anlagen.schloss ? <option value="anlage:schloss">{t("Schloss")}</option> : null}
     </select></label> : null}
     {compound ? <p className="field-help">{t("Eine begehbare Anlage mit eigenen Gebäuden. Die Baufläche wird als trockene Terrasse angelegt; die Umgebung folgt dem Standort.")}</p> : null}
+    {!compact && city && !compound && defaults.strassenplanung === 1 ? <MapRoadPlanner value={value.verkehr} preview={planningPreview} onChange={verkehr => {
+      const { verkehr: _previous, ...rest } = value;
+      onChange({ ...rest, ...(verkehr ? { verkehr } : {}) });
+    }} /> : null}
     {city && !compound && defaults.siedlungsplanung === 1 ? <MapZonePlanner value={value.planung} onChange={planung => {
       const { planung: _previous, ...rest } = value;
       onChange({ ...rest, ...(planung ? { planung } : {}) });
