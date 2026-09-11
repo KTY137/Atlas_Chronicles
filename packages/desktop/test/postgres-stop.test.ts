@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { spawn } from "node:child_process";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { ManagedPostgres } from "../src/postgres.ts";
+import { ManagedPostgres, samePostgresPath } from "../src/postgres.ts";
 import type { OwnedProfile } from "../src/profiles.ts";
 
 const PORT = 57679;
@@ -39,6 +39,23 @@ it("uebernimmt weiterhin keinen fremden lebenden Prozess, nur weil er in postmas
   const owned = await profile();
   try {
     await writeFile(join(owned.dataDirectory, "postmaster.pid"), pidFile(process.pid, owned.dataDirectory));
-    await expect(new ManagedPostgres(join(owned.directory, "runtime"), owned).stop()).rejects.toThrow("fremder Prozess");
+    // Windows must inspect the live foreign executable; non-Windows cannot run CIM
+    // and must reject the unverified owner rather than attempting a stop command.
+    await expect(new ManagedPostgres(join(owned.directory, "runtime"), owned).stop()).rejects.toThrow(
+      process.platform === "win32" ? "fremder Prozess" : "Windows-Prozesszuordnung konnte nicht bestätigt werden.");
+    expect(await readFile(join(owned.dataDirectory, "postmaster.pid"), "utf8")).toBe(pidFile(process.pid, owned.dataDirectory));
+    expect(() => process.kill(process.pid, 0)).not.toThrow();
+  } finally { await rm(owned.directory, { recursive: true, force: true }); }
+});
+
+it("compares actual directory identity without treating a different or missing path as an alias", async () => {
+  const owned = await profile(), alias = join(owned.directory, "alias"), other = join(owned.directory, "other");
+  try {
+    await mkdir(other); await symlink(owned.dataDirectory, alias, process.platform === "win32" ? "junction" : "dir");
+    await expect(samePostgresPath(alias, owned.dataDirectory)).resolves.toBe(true);
+    await expect(samePostgresPath(other, owned.dataDirectory)).resolves.toBe(false);
+    await expect(samePostgresPath(join(owned.directory, "missing"), owned.dataDirectory)).resolves.toBe(false);
+    await expect(samePostgresPath("postgres", owned.dataDirectory)).resolves.toBe(false);
+    await expect(samePostgresPath(null, owned.dataDirectory)).resolves.toBe(false);
   } finally { await rm(owned.directory, { recursive: true, force: true }); }
 });

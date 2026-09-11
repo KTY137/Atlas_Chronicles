@@ -81,7 +81,7 @@ for (const seed of seeds) test(`seeded GUI state monkey ${seed.toString(16)}`, a
     await studio.getByLabel("Breite", { exact: true }).fill("36");
     await studio.getByLabel("Höhe", { exact: true }).fill("28");
     await studio.getByLabel("Gebäude", { exact: true }).fill("20");
-    await studio.getByLabel("Weltkeim", { exact: true }).fill(`gui-fuzz-${seed}`);
+    await studio.getByRole("textbox", { name: /^Weltkeim/ }).fill(`gui-fuzz-${seed}`);
     const preview = page.waitForResponse(response => response.url().endsWith("/tactical/generate/preview") && response.request().method() === "POST");
     await studio.getByRole("button", { name: "Vorschau", exact: true }).click();
     expect((await preview).status(), JSON.stringify(trace)).toBe(200);

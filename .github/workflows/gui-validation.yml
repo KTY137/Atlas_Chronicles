@@ -2,9 +2,9 @@ name: gui-validation
 on:
   push:
     branches: [fix/gui-fuzz-release-20260911, main]
-    paths: ['packages/**', 'e2e/**', 'package*.json', '.github/workflows/gui-validation.yml']
+    paths: ['packages/**', 'e2e/**', 'tools/release/**', 'tools/test/release-*', 'docs/releases/**', 'package*.json', '.github/workflows/gui-validation.yml', '.github/workflows/release-v043.yml']
   pull_request:
-    paths: ['packages/**', 'e2e/**', 'package*.json', '.github/workflows/gui-validation.yml']
+    paths: ['packages/**', 'e2e/**', 'tools/release/**', 'tools/test/release-*', 'docs/releases/**', 'package*.json', '.github/workflows/gui-validation.yml', '.github/workflows/release-v043.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,6 +22,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: node --test tools/test/release-v043.test.mjs
+      - run: python3 tools/test/release-candidate-test.py
       - run: npm run typecheck && npm run build
       - run: npx playwright install --with-deps chromium
       - name: Native dropdowns, seeded monkey states and navigation regressions
