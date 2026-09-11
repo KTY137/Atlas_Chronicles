@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Building2, Castle, CloudSun, Droplets, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree, Map } from "lucide-react";
 import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
+import { MapZonePlanner } from "./MapZonePlanner";
 import { locale, t } from "../i18n";
 import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
 import { changeEntranceType, entranceTypeValue, settlementPreset, SETTLEMENT_TYPES, SETTLEMENT_TYPE_LABEL } from "./map-type-selection";
@@ -63,8 +64,8 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     { label: t("Großstadt"), breite: 88, hoehe: 64, anzahl: 256, siedlung: "stadt" as const, dichte: .7 },
   ] : [ { label: t("Klein"), breite: 24, hoehe: 20, anzahl: 5 }, { label: t("Mittel"), breite: 40, hoehe: 30, anzahl: 11 }, { label: t("Groß"), breite: 64, hoehe: 48, anzahl: 24 } ];
   const changeArt = (art: MapArt) => {
-    const { anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
-    onChange({ ...other, art, breite: "", hoehe: "", anzahl: "" });
+    const { planung, anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
+    onChange({ ...other, ...(art === "siedlung" && planung ? { planung } : {}), art, breite: "", hoehe: "", anzahl: "" });
   };
   return <div className={`map-generation-controls${compact ? " compact" : ""}`}>
     {compact && profileLocked ? <label>{t("Was liegt hinter dieser Tür?")}<select value={value.art} onChange={event => changeArt(event.target.value as MapArt)}>
@@ -90,6 +91,10 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
       {defaults.anlagen.schloss ? <option value="anlage:schloss">{t("Schloss")}</option> : null}
     </select></label> : null}
     {compound ? <p className="field-help">{t("Eine begehbare Anlage mit eigenen Gebäuden. Die Baufläche wird als trockene Terrasse angelegt; die Umgebung folgt dem Standort.")}</p> : null}
+    {city && !compound && defaults.siedlungsplanung === 1 ? <MapZonePlanner value={value.planung} onChange={planung => {
+      const { planung: _previous, ...rest } = value;
+      onChange({ ...rest, ...(planung ? { planung } : {}) });
+    }} /> : null}
     {outdoor ? <section className="map-location-section" aria-label={t("Standort der Siedlung")}>
       <div className="map-setting-heading"><MapPin size={16} /><strong>{t("Wo liegt dein Ort?")}</strong></div>
       <div className="map-location-cards" role="group" aria-label={t("Landschaft auswählen")}>

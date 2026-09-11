@@ -65,3 +65,6 @@ export * from "./cartography.ts";
 export { cartographyDraw, cartographyLayerOf, cartographyPaintsWalls, CARTOGRAPHY_LAYERS, rendererVersion } from "./cartography-projection.ts";
 export type { CartographyLayer, CartographyPolygon, CartographyDrawing, CartographyView } from "./cartography-projection.ts";
 export type { CartographyRoomInteriorV1, RoomIntent } from "./cartography.ts";
+
+export { SETTLEMENT_USES, SETTLEMENT_PLAN_LIMITS, parseSettlementPlan, SettlementPlanError, planContains, planOverlaps } from "./settlement-plan.ts";
+export type { SettlementUse, SettlementZone, SettlementPlan, PlanPoint } from "./settlement-plan.ts";

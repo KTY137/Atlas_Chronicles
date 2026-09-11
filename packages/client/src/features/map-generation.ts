@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { AnlageArt, AnlageOptionen, GrundrissOptionen, HoehleOptionen, RegionOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
-import { cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type CartographyView, type KartenSetting, type TacticalCartographyV1, type TacticalLight, type TacticalMapDocumentV1 } from "@chronicle/szene";
+import { parseSettlementPlan, type SettlementPlan, cartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type CartographyView, type KartenSetting, type TacticalCartographyV1, type TacticalLight, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
 import { t } from "../i18n";
 
 export type MapArt = "siedlung" | "grundriss" | "hoehle" | "region";
 export type MapStyle = "grundriss" | "gemalt" | "zeitwelten" | "genres";
 export interface GenerationDefaults {
+  siedlungsplanung?: 1;
   grundriss: GrundrissOptionen; hoehle: HoehleOptionen; siedlung: SiedlungOptionen;
   /** The land above the towns; an older server has no such defaults and the card stays hidden. */
   region?: RegionOptionen;
@@ -22,6 +23,7 @@ export interface MapNode {
   vorhandeneKarteId?: string | null;
 }
 export interface GenerationSettings {
+  planung?: SettlementPlan;
   art: MapArt; stil: MapStyle; breite: number | ""; hoehe: number | ""; anzahl: number | "";
   setting: KartenSetting;
   anlage?: AnlageArt; graben?: boolean; symmetrie?: number;
@@ -48,7 +50,7 @@ export function generationOptions(value: GenerationSettings, defaults: Generatio
     ...(dimensions ? { ausdehnung: dimensions } : {}), ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}),
     relief: value.relief, bewaldung: value.bewaldung, licht: value.licht,
     ...(value.anlage === "burg" ? { graben: value.graben ?? false } : { symmetrie: value.symmetrie ?? 1 }) };
-  if (value.art === "siedlung") return { art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
+  if (value.art === "siedlung") return { ...(value.planung?.zonen.length ? { planung: value.planung } : {}), art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
     ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, relief: value.relief, bewaldung: value.bewaldung, licht: value.licht };
   if (value.art === "region") return { standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}), ...(value.anzahl !== "" ? { orte: value.anzahl } : {}), relief: value.relief, bewaldung: value.bewaldung };
   return { ...(dimensions ? { zellen: dimensions } : {}),
@@ -58,6 +60,10 @@ export function generationOptions(value: GenerationSettings, defaults: Generatio
 }
 export function generationError(value: GenerationSettings, defaults: GenerationDefaults): string | null {
   const [w, h] = generationDimensions(value, defaults);
+  if (value.planung !== undefined) {
+    if (value.art !== "siedlung" || value.anlage || defaults.siedlungsplanung !== 1) return t("Dieser Kartentyp oder Server unterstützt keine Siedlungszonen.");
+    try { parseSettlementPlan(value.planung); } catch { return t("Der Zonenplan ist ungültig. Prüfe die Flächen und ihre Einstellungen."); }
+  }
   if (value.art === "siedlung" && value.anlage) {
     if (!defaults.anlagen?.[value.anlage]) return t("Dieser Server unterstützt die gewählte Anlage noch nicht.");
     if (w < 32 || h < 28 || w > 128 || h > 128) return t("Anlagen benötigen 32–128 Zellen Breite und 28–128 Zellen Höhe.");

@@ -10,7 +10,7 @@ import { artworkBrush, artworkGenre, artworkMatches, artworkName, type ArtworkBr
 import "./map-artwork.css";
 
 const ART_LABEL: Record<AssetArt, string> = { boden: "Böden", wand: "Wände", tuer: "Türen", aufbau: "Aufbauten & Stadt", moebel: "Einrichtung", gefaess: "Behälter", licht: "Lichter", marke: "Zeichen", figur: "Figuren" };
-const PACK_LABEL: Record<string, string> = { "pk.genres": "Genre-Archiv · zwölf Welten", "pk.zeitwelten": "Zeitwelten · Gegenwart & Science-Fiction", "pk.gemalt": "Gemalt", "pk.grundriss": "Grundriss", "pk.atlas": "Weltatlas", "pk.natur": "Natur · Bäume, Felsen, Schilf & Boote" };
+const PACK_LABEL: Record<string, string> = { "pk.expedition": "Wildnis & Expedition · Wald, Höhlen & Lager", "pk.genres": "Genre-Archiv · zwölf Welten", "pk.zeitwelten": "Zeitwelten · Gegenwart & Science-Fiction", "pk.gemalt": "Gemalt", "pk.grundriss": "Grundriss", "pk.atlas": "Weltatlas", "pk.natur": "Natur · Bäume, Felsen, Schilf & Boote" };
 interface PackSummary { id: string; version: string; assetCount: number }
 
 export function MapArtworkPalette({ document, brush, onBrush, selected, onSelect, onUpdate, onRemove }: {
@@ -30,7 +30,7 @@ export function MapArtworkPalette({ document, brush, onBrush, selected, onSelect
   return <section className="map-artwork" aria-label={t("Kartenassets")}>
     <div className="map-artwork-heading"><div><h3><Boxes size={19} /> {t("Einrichtung & Kartenassets")}</h3><p className="field-help">{t("Wähle ein Objekt und klicke auf die Karte. Es wird mit der Kartenrevision gespeichert.")}</p></div>
       {brush ? <Button aria-pressed onClick={() => onBrush(null)}><MousePointer2 size={15} /> {t("Platzieren beenden")}</Button> : null}</div>
-    <div className="map-artwork-filters"><label>{t("Assetpaket")}<select value={packId} onChange={event => { setPackId(event.target.value); setGenre("all"); onBrush(null); }}>
+    <div className="map-artwork-filters"><label>{t("Assetpaket")}<select value={packId} onChange={event => { setPackId(event.target.value); setGenre("all"); setCategory("all"); setQuery(""); onBrush(null); }}>
       {!packs.data?.some(pack => pack.id === packId) ? <option value={packId}>{t(PACK_LABEL[packId] ?? packId)}</option> : null}
       {packs.data?.map(pack => <option key={pack.id} value={pack.id}>{t(PACK_LABEL[pack.id] ?? pack.id)} · {t("{anzahl} Assets", { anzahl: pack.assetCount })}</option>)}
     </select></label><label>{t("Kategorie")}<select value={category} onChange={event => setCategory(event.target.value)}><option value="all">{t("Alle Kategorien")}</option>{ASSET_ARTEN.map(art => <option key={art} value={art}>{t(ART_LABEL[art])}</option>)}</select></label>

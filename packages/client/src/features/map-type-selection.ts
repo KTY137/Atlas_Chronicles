@@ -24,7 +24,7 @@ export function entranceTypeValue(value: GenerationSettings): string {
 
 export function changeEntranceType(value: GenerationSettings, choice: string, defaults: GenerationDefaults): GenerationSettings {
   if (choice === entranceTypeValue(value)) return value;
-  const { anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
+  const { planung, anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
   const reset = { ...other, breite: "" as const, hoehe: "" as const, anzahl: "" as const };
   const compound = choice === "anlage:burg" ? "burg" : choice === "anlage:schloss" ? "schloss" : null;
   if (compound) {
@@ -37,7 +37,7 @@ export function changeEntranceType(value: GenerationSettings, choice: string, de
   const settlement = SETTLEMENT_TYPES.find(art => choice === `siedlung:${art}`);
   if (settlement) {
     const preset = settlementPreset(settlement, defaults);
-    return { ...reset, art: "siedlung", siedlung: settlement, profil: "frei",
+    return { ...reset, ...(planung ? { planung } : {}), art: "siedlung", siedlung: settlement, profil: "frei",
       breite: preset.ausdehnung[0], hoehe: preset.ausdehnung[1], anzahl: preset.bauwerke,
       dichte: preset.strassenDichte, licht: preset.licht };
   }
