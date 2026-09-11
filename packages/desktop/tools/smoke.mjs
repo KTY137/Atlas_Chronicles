@@ -45,6 +45,9 @@ async function openGameWindow(phase){
   await opened.waitForLoadState();(evidence.windowOpenMs??={})[phase]=Date.now()-started;
   console.log(`Desktop ${phase} window loaded in ${evidence.windowOpenMs[phase]} ms`);return opened;
 }
+// Ein geoeffnetes Spielfenster heisst nicht, dass "open" fertig ist: die Seite laedt noch unter der
+// Sperre. Wer direkt danach eine Verwaltungsaktion schickt, bekommt "Eine lokale Aktion laeuft bereits".
+async function bereit(){await manager.waitForFunction(async()=>{const status=await window.chronicleDesktop.invoke({kind:"status"});return status.ok&&!status.value.busy;},null,{timeout:90000,polling:250});}
 async function stop(){if(application){
   // A timed-out window wait does not cancel the native open action. Let that action settle
   // before asking the same production management boundary to drain and stop its own host.
@@ -321,7 +324,7 @@ try{
   const recoveredMe=await request("/api/me");assert.equal(recoveredMe.status,200);assert.equal(recoveredMe.body.userId,gmId);assert.equal(recoveredMe.body.credentialId,originalCredential);
   unchangedExport(await request(`/api/campaigns/${campaignId}/export`));
   record("management recovery point restores new profile with same actual signed browser credential and complete campaign hash");
-  await invoke({kind:"stop"});
+  await bereit();await invoke({kind:"stop"});
   const source=join(run,`native-v${bundle.version}.chronicle`);await writeFile(source,JSON.stringify(bundle));
   // The smoke supplies one deterministic OS file-dialog selection; all validation,
   // private transfer, empty-target restore and enrollment use the production path.
@@ -337,7 +340,7 @@ try{
   record(`native V${bundle.version} restores only into new profile, explicit historical GM enrolls once, semantic reexport equals source`);
   // Der Host wird hier schon beendet, weil das Loeschen eine stehende Welt verlangt — und
   // weil `stop()` darunter die ganze Anwendung schliesst, also auch die Verwaltungsbruecke.
-  await invoke({kind:"stop"});
+  await bereit();await invoke({kind:"stop"});
   // Tippen im Loeschfeld ueber mehrere Statusabfragen: bis v0.4.1 baute das Fenster alle 1,5 s neu,
   // und das Feld verlor den Fokus mitten im Namen.
   await manager.locator("#verwalten > summary").click();
