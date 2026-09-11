@@ -1,3 +1,10 @@
+# GUI release candidate 0.5.0 — 2026-09-11
+
+Work in progress from main 7976af9. Five reproduced GUI event/lifecycle bugs fixed;
+local Chromium component and seeded state-model tests passed. Full HTTP/browser
+qualification and Windows packaging are not yet accepted. No release published
+by this change. Details: docs/reviews/gui-release-qualification-20260911.md.
+
 # STATUS — cold-start handoff
 
 Updated: **2026-09-11, v0.4.2 veröffentlicht** (Hostfenster als Zentrale · Chronik-Import)

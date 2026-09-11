@@ -34,12 +34,16 @@ export function useTask() {
   // Der HTTP-Status wird mitgeführt, damit eine Oberfläche einen Konflikt am Code erkennt und
   // nicht am Fehlertext: ein Textvergleich fällt still aus, sobald jemand den Satz umformuliert
   // oder seine Übersetzung ändert.
-  const [status, setStatus] = useState(0);
+  const [status, setStatus] = useState(0), running = useRef(false);
   const run = useCallback(async (work: () => Promise<void>) => {
+    // React's busy render arrives after this event. Admit synchronously so double
+    // activation cannot send duplicate writes or clear busy while a write is active.
+    if (running.current) return;
+    running.current = true;
     setBusy(true); setError(""); setStatus(0);
     try { await work(); }
     catch (error) { setError(errorText(error)); setStatus(error instanceof ApiError ? error.status : 0); }
-    finally { setBusy(false); }
+    finally { running.current = false; setBusy(false); }
   }, []);
   return { busy, error, status, setError, run };
 }

@@ -45,20 +45,29 @@ export function MapContextMenu({ label, actions, children, className = "", popup
   useEffect(() => {
     if (!at) return;
     const dismiss = (event: PointerEvent) => { if (!menu.current?.contains(event.target as Node) && !trigger.current?.contains(event.target as Node)) close(false); };
-    const viewportChanged = () => close(false);
+    // Scrolling a long menu (including keyboard focus scrolling) must not dismiss it.
+    // Only movement of its surrounding viewport invalidates the popup position.
+    const viewportChanged = (event: Event) => {
+      if (event.target instanceof Node && menu.current?.contains(event.target)) return;
+      close(false);
+    };
     document.addEventListener("pointerdown",dismiss,true);
     window.addEventListener("resize",viewportChanged);
     window.addEventListener("scroll",viewportChanged,true);
     return () => { document.removeEventListener("pointerdown",dismiss,true); window.removeEventListener("resize",viewportChanged); window.removeEventListener("scroll",viewportChanged,true); };
   }, [at]);
+  // Native dialogs/fullscreen form a browser top layer. A portal into body would be
+  // visible in the DOM but behind that layer and unable to receive pointer events.
+  const portalHost = trigger.current?.closest('dialog[open]') ?? origin.current?.closest('dialog[open]')
+    ?? document.fullscreenElement ?? document.body;
   // A popup has no layout box: an empty grid/flex child would add a gap, move the canvas,
   // and dismiss its own menu through browser scroll anchoring.
   return <div className={`map-context-target ${className}`} style={popup ? { display:"contents" } : undefined} onContextMenu={event => {
     if (popup) return;
-    if ((event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return;
+    if ((event.target as Element).closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
     event.preventDefault(); event.stopPropagation(); open(event.clientX,event.clientY);
   }} onKeyDown={event => {
-    if (popup) return;
+    if (popup || (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])'))) return;
     if (event.key === "ContextMenu" || event.shiftKey && event.key === "F10") { event.preventDefault(); event.stopPropagation(); open(); }
   }}>
     {children}
@@ -72,6 +81,6 @@ export function MapContextMenu({ label, actions, children, className = "", popup
       const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length-1 : event.key === "ArrowDown" ? (index+1)%buttons.length : event.key === "ArrowUp" ? (index-1+buttons.length)%buttons.length : -1;
       if (next >= 0) { event.preventDefault(); buttons[next]?.focus(); }
     }}><strong className="map-context-caption" role="presentation">{label}</strong>{actions.map(action => <button type="button" key={action.id} role="menuitem" tabIndex={-1} disabled={action.disabled} className={action.danger ? "map-context-danger" : undefined}
-      onClick={() => { close(true); action.onSelect(); }}>{action.label}</button>)}</div>,document.body) : null}
+      onClick={() => { close(true); action.onSelect(); }}>{action.label}</button>)}</div>,portalHost) : null}
   </div>;
 }

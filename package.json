@@ -1,7 +1,7 @@
 {
   "name": "chronicle",
   "private": true,
-  "version": "0.4.2",
+  "version": "0.5.0",
   "license": "BUSL-1.1",
   "author": "Kaya Yesilyurt",
   "type": "module",
@@ -29,7 +29,7 @@
     "gate:version": "node --test tools/test/gate-version.test.mjs && node tools/gate-version.mjs",
     "gate:boundaries": "node tools/gate-boundaries.mjs",
     "gate:sprache": "node --test tools/test/gate-sprache.test.mjs && node tools/gate-sprache.mjs",
-    "gate:assets": "node --import tsx --test tools/test/gate-assets-binary.test.mjs tools/test/importiere-fremdpaket.test.mjs tools/test/zeitwelten-assets.test.mjs tools/test/genre-assets.test.mjs tools/test/genre-tiling.test.mjs tools/test/expedition-assets.test.mjs && node --import tsx tools/gate-assets.mjs",
+    "gate:assets": "node --import tsx --test tools/test/gate-assets-binary.test.mjs tools/test/importiere-fremdpaket.test.mjs tools/test/zeitwelten-assets.test.mjs tools/test/genre-assets.test.mjs tools/test/genre-tiling.test.mjs tools/test/expedition-assets.test.mjs tools/test/loot-lettering.test.mjs && node --import tsx tools/gate-assets.mjs",
     "assets:erzeugen": "node tools/assets/erzeuge-grundrisspaket.mjs && node tools/assets/erzeuge-atlaspaket.mjs && node tools/assets/erzeuge-gemaltpaket.mjs && node tools/assets/erzeuge-zeitweltenpaket.mjs && node tools/assets/erzeuge-genrepaket.mjs && node tools/assets/erzeuge-expeditionspaket.mjs",
     "gate": "npm run gate:version && npm run gate:boundaries && npm run gate:sprache && npm run gate:assets && npm run typecheck && npm run test"
   },
@@ -37,7 +37,9 @@
     "@playwright/test": "^1.63.0",
     "@types/node": "22.20.0",
     "typescript": "7.0.2",
-    "vitest": "3.2.7"
+    "vitest": "3.2.7",
+    "opentype.js": "1.3.4",
+    "@fontsource/libre-baskerville": "5.3.0"
   },
   "overrides": {
     "nanoid": ">=3.3.18"
