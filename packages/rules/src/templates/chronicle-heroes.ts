@@ -31,8 +31,9 @@
  */
 import { type Scalar } from "../formula.ts";
 import { type FieldSchema, type RuleMigration } from "../package.ts";
-import { defaultSupportedActorFields, parseRulePackageV2, validatePackageFields, type ComputedField, type RuleActionV2, type RuleAssertion, type RuleAttribution, type RuleOutcome, type RulePackageV2 } from "../package-v2.ts";
+import { defaultSupportedActorFields, parseRulePackageV2, validatePackageFields, type ComputedField, type RuleAbility, type RuleActionV2, type RuleAssertion, type RuleAttribution, type RuleCondition, type RuleModifier, type RuleOutcome, type RulePackageV2 } from "../package-v2.ts";
 import { array, deepFreeze, fail, identifier, keys, record, snapshotJson, string } from "../validation.ts";
+import { CHRONICLE_ABILITY_LIBRARY, CHRONICLE_CONDITIONS, type ChronicleAbilityEntry, type ChronicleEffect } from "./chronicle-heroes-faehigkeiten.ts";
 
 export type ChronicleField = "koerper" | "geist" | "herz";
 export interface ChronicleSkill { readonly id: string; readonly label: string; readonly field: ChronicleField }
@@ -44,7 +45,16 @@ export const CHRONICLE_FIELD_LABELS: Readonly<Record<ChronicleField, string>> = 
 export const CHRONICLE_START_POINTS = 360;
 /** Höchste Panzerung, die das Grundregelwerk kennt. Darüber verhandelt die Runde. */
 export const CHRONICLE_MAX_ARMOUR = 10;
-export const CHRONICLE_VERSION = "1.0.0";
+export const CHRONICLE_VERSION = "2.0.0";
+/** Bogenfelder von 2.0: Erfahrung, der auf Fertigkeiten gelegte Teil, gelernte Fähigkeiten, aktive Zustände. */
+export const CHRONICLE_XP_FIELD = "erfahrung";
+export const CHRONICLE_XP_SKILLS_FIELD = "erfahrung_fertigkeiten";
+export const CHRONICLE_ABILITY_FIELD = "faehigkeiten";
+export const CHRONICLE_CONDITION_FIELD = "zustaende";
+/** Erfahrung, mit der eine frische Figur ihre ersten drei Fähigkeiten vom Rang 1 bezahlt. */
+export const CHRONICLE_START_ABILITY_BUDGET = 9;
+/** Punkte je auf Fertigkeiten gelegter Erfahrung. */
+export const CHRONICLE_POINTS_PER_XP = 5;
 
 export const CHRONICLE_DEFAULT_SKILLS: readonly ChronicleSkill[] = deepFreeze([
   { id: "athletik", label: "Athletik", field: "koerper" },
@@ -178,17 +188,20 @@ export const CHRONICLE_SKILL_LIBRARY: readonly ChronicleSkill[] = deepFreeze([
 export const CHRONICLE_MAX_SKILLS = 24;
 
 export const CHRONICLE_ATTRIBUTION: RuleAttribution = deepFreeze({
-  title: "ChronicleHeroes · Grundregeln 1.0",
+  title: "ChronicleHeroes · Grundregeln 2.0",
   sources: [
     { title: "ChronicleHeroes — Regeln und Entwurfsbegründung", url: "https://github.com/KTY137/Atlas_Chronicles/blob/main/packages/rules/src/templates/chronicle-heroes.ts", revision: `Fassung ${CHRONICLE_VERSION}`, authors: ["Kaya Yesilyurt", "Atlas Chronicles"] },
   ],
   licenseUrl: "https://github.com/KTY137/Atlas_Chronicles/blob/main/LICENSE",
   notice: "ChronicleHeroes ist ein eigenes Regelwerk von Atlas Chronicles und steht unter derselben Lizenz wie das Produkt. Es übernimmt keine Texte, Tabellen oder Werte aus fremden Regelwerken.",
-  changes: "Erstfassung. Feste kritische Grenzen (1–5 / 96–100) statt mit dem Fertigkeitswert wandernder; ein gemeinsamer Funkenvorrat statt eines je Feld; Rüstung als Regelwert, der Schaden mindert und Initiative kostet; Schaden auf W6.",
+  changes: "1.0: feste kritische Grenzen (1–5 / 96–100) statt mit dem Fertigkeitswert wandernder; ein gemeinsamer Funkenvorrat statt eines je Feld; Rüstung als Regelwert, der Schaden mindert und Initiative kostet; Schaden auf W6. 2.0: 200 Fähigkeiten in Ketten vom Rang 1 bis 3, zwölf Zustände, Aufstieg über Erfahrung, zwölf Archetypen.",
 });
 
 export const CHRONICLE_RULE_GUIDANCE = deepFreeze({
-  creation: `${CHRONICLE_START_POINTS} Startpunkte auf neun Fertigkeiten. Kein Wert darf über 100 steigen, den Talentbonus eingerechnet. Vorteile, Nachteile und Entwicklung hält die Runde über die vereinbarte Punkteanpassung fest; übrige Punkte dürfen offen bleiben.`,
+  creation: `${CHRONICLE_START_POINTS} Startpunkte auf die Fertigkeiten und drei Fähigkeiten vom Rang 1. Kein Wert darf über 100 steigen, den Talentbonus eingerechnet. Wer schnell starten will, nimmt einen Archetyp und ändert danach, was nicht passt; übrige Punkte dürfen offen bleiben.`,
+  faehigkeiten: "Fähigkeiten: 200 zur Auswahl, in Ketten vom Rang 1 bis 3. Rang 1 kostet 3 Erfahrung, Rang 2 kostet 5, Rang 3 kostet 8. Ein höherer Rang verlangt die Stufe darunter und mehr Punkte in der zugehörigen Fertigkeit: 30, 50, 70. Dauerhafte Fähigkeiten wirken immer. Einsatz-Fähigkeiten wählt man beim Wurf und hakt ihre Funken am Bogen ab; Reaktionen ebenso, auch außerhalb des eigenen Zugs.",
+  zustaende: "Zustände: die Spielleitung hakt sie am Bogen an. Sie rechnen bei jedem passenden Wurf mit, bis sie wieder abgehakt sind.",
+  aufstieg: `Aufstieg: nach jedem Abend 1 bis 3 Erfahrung. Jede auf Fertigkeiten gelegte Erfahrung gibt ${CHRONICLE_POINTS_PER_XP} Punkte; die übrige bezahlt Fähigkeiten. Zum Start gibt es ${CHRONICLE_START_ABILITY_BUDGET} Erfahrung nur für Fähigkeiten — genug für drei vom Rang 1. Allgemeine Fähigkeiten vom Rang 2 verlangen 6 gesammelte Erfahrung, vom Rang 3 zwölf.`,
   talent: "Talent eines Feldes: die Summe seiner drei Fertigkeiten geteilt durch zehn, gerundet. Es ist der Wert für alles, wofür keine Fertigkeit eingetragen ist, und der Bonus, den eine gelernte Fertigkeit obendrauf bekommt.",
   probe: "Probe: ein W100 unter oder gleich dem Wert. 1 bis 5 gelingt kritisch, 96 bis 100 misslingt kritisch — unabhängig vom Wert. Eine Fertigkeit ohne Punkte wird nicht gewürfelt; dafür steht das Talent ihres Feldes.",
   health: "Lebenskraft: 40 plus das doppelte Körper-Talent. Bei 0 ist die Figur außer Gefecht; was das erzählerisch heißt, entscheidet die Runde. Ein Wurf verändert die Lebenskraft nie von selbst.",
@@ -244,6 +257,53 @@ function probeOutcome(target: string): RuleOutcome {
   ], fallback: { id: "failure", label: "Misslungen", success: false } };
 }
 
+/**
+ * Die symbolischen Ziele einer Wirkung, gegen den Katalog der Runde aufgelöst. Eine fehlende Fertigkeit
+ * lenkt auf die Talentprobe ihres Feldes um — innerhalb einer Fähigkeit nur einmal, sonst stapelte
+ * „+5 auf Klettern, Springen und Balancieren" ohne diese drei Fertigkeiten zu +15 auf das Talent.
+ */
+function modifiersFor(effects: readonly ChronicleEffect[], skills: readonly ChronicleSkill[], at: string): RuleModifier[] {
+  const fieldOf = (id: string): ChronicleField => CHRONICLE_SKILL_LIBRARY.find(skill => skill.id === id)?.field ?? fail(`${at}: unknown skill ${id}`);
+  const umgelenkt = new Set<string>(), modifiers: RuleModifier[] = [];
+  for (const effect of effects) {
+    let actions: string[];
+    if (effect.ziel === "schaden" || effect.ziel === "initiative") actions = [effect.ziel];
+    else if (effect.ziel === "proben") actions = ["skill_*", "talent_*"];
+    else if (effect.ziel === "talente") actions = ["talent_*"];
+    else if (effect.ziel.startsWith("feld:")) {
+      const feld = effect.ziel.slice(5) as ChronicleField;
+      actions = [...skills.filter(skill => skill.field === feld).map(skill => `skill_${skill.id}`), `talent_${feld}`];
+    } else {
+      const id = effect.ziel.slice("fertigkeit:".length), feld = fieldOf(id);
+      if (skills.some(skill => skill.id === id)) actions = [`skill_${id}`];
+      else if (umgelenkt.has(`${effect.art}:${feld}`)) continue;
+      else { umgelenkt.add(`${effect.art}:${feld}`); actions = [`talent_${feld}`]; }
+    }
+    for (let start = 0; start < actions.length; start += 16) modifiers.push({ actions: actions.slice(start, start + 16), target: effect.art, value: String(effect.wert) });
+  }
+  if (modifiers.length > 4) fail(`${at}: too many modifier groups for this skill catalogue`);
+  return modifiers;
+}
+const XP_THRESHOLDS = [0, 6, 12] as const;
+function abilityFor(entry: ChronicleAbilityEntry, skills: readonly ChronicleSkill[], talent: (field: ChronicleField) => string): RuleAbility {
+  let prerequisite: string | undefined;
+  if (entry.fertigkeit) {
+    const skill = CHRONICLE_SKILL_LIBRARY.find(candidate => candidate.id === entry.fertigkeit) ?? fail(`ability ${entry.id}: unknown skill ${entry.fertigkeit}`);
+    // Ohne die Fertigkeit im Katalog zählt das Talent ihres Feldes, mit einem Drittel der Punkte —
+    // dieselbe Umrechnung, mit der das Talent aus den Fertigkeiten entsteht.
+    prerequisite = skills.some(candidate => candidate.id === skill.id) ? `actor.${chronicleSkillField(skill.id)} >= ${entry.mindestens}` : `(${talent(skill.field)}) >= ${Math.round(entry.mindestens! / 3)}`;
+  } else if (entry.rang > 1) prerequisite = `actor.${CHRONICLE_XP_FIELD} >= ${XP_THRESHOLDS[entry.rang - 1]}`;
+  const modifiers = modifiersFor(entry.wirkungen, skills, `ability ${entry.id}`);
+  const group = entry.feld === "allgemein" ? `Allgemein · ${entry.gruppe}` : `${CHRONICLE_FIELD_LABELS[entry.feld]} · ${entry.gruppe}`;
+  return { id: entry.id, name: entry.name, group, rank: entry.rang, kind: entry.kind, cost: entry.funken, price: entry.preis,
+    ...(entry.vorstufe ? { requires: [entry.vorstufe] } : {}), ...(prerequisite ? { prerequisite } : {}), text: entry.text, ...(modifiers.length ? { modifiers } : {}) };
+}
+/** 1.0 → 2.0 fügt die vier Bogenfelder hinzu; nichts Bestehendes ändert seine Bedeutung. */
+export const CHRONICLE_MIGRATION_1_TO_2: RuleMigration = deepFreeze({ from: "1.0.0", to: "2.0.0", steps: [
+  { kind: "add", field: CHRONICLE_XP_FIELD, value: 0 }, { kind: "add", field: CHRONICLE_XP_SKILLS_FIELD, value: 0 },
+  { kind: "add", field: CHRONICLE_ABILITY_FIELD, value: "" }, { kind: "add", field: CHRONICLE_CONDITION_FIELD, value: "" },
+] });
+
 export function createChronicleHeroesPackage(options: ChroniclePackageOptions = {}): RulePackageV2 {
   const skills = parseChronicleSkills(options.skills ?? CHRONICLE_DEFAULT_SKILLS);
   const raw = (skill: ChronicleSkill) => `actor.${chronicleSkillField(skill.id)}`;
@@ -263,7 +323,15 @@ export function createChronicleHeroesPackage(options: ChroniclePackageOptions = 
     [CHRONICLE_ARMOUR_FIELD]: integerField("Rüstung", 0, CHRONICLE_MAX_ARMOUR),
     [CHRONICLE_FUNKEN_FIELD]: integerField("Ausgegebene Funken", 0, 24),
     budget_adjustment: integerField("Vereinbarte Punkteanpassung", -CHRONICLE_START_POINTS, 1_000_000),
+    [CHRONICLE_XP_FIELD]: integerField("Erfahrung gesamt", 0, 999),
+    [CHRONICLE_XP_SKILLS_FIELD]: integerField("Davon auf Fertigkeiten gelegt", 0, 999),
+    [CHRONICLE_ABILITY_FIELD]: textField("Fähigkeiten", 4096),
+    [CHRONICLE_CONDITION_FIELD]: textField("Zustände", 1024),
   };
+  // Die Parameter, über die Fähigkeiten und Zustände wirken. Die Engine setzt `mod_*` selbst; von Hand
+  // übergeben zählt nicht. `einsatz` nennt die gewählten Einsatz- und Reaktionsfähigkeiten.
+  const einsatz = textField("Eingesetzte Fähigkeiten", 512);
+  const probeInputs = { einsatz, mod_ziel: integerField("Erleichterung aus Fähigkeiten und Zuständen", -60, 60) };
   const computed: ComputedField[] = [];
   const constraints: RuleAssertion[] = [];
   const actions: RuleActionV2[] = [];
@@ -277,10 +345,10 @@ export function createChronicleHeroesPackage(options: ChroniclePackageOptions = 
     fields[chronicleBonusField(skill.id)] = booleanField(`${skill.label} · Talentbonus`, true);
     computed.push({ id: `effective_${skill.id}`, label: `${skill.label} · Wert`, expression: effective(skill) });
     constraints.push({ id: `skill_valid_${skill.id}`, message: `${skill.label}: Wert über 100. Punkte umverteilen oder den Talentbonus ausdrücklich abwählen.`, expression: `${effective(skill)} <= 100` });
-    actions.push({ ...baseAction, id: `skill_${skill.id}`, name: skill.label, expression: "1d100",
-      disclosure: `Fertigkeitsprobe ${CHRONICLE_FIELD_LABELS[skill.field]}: gespeicherte Punkte plus gewählter Talentbonus; ein W100. ${CHRONICLE_RULE_GUIDANCE.probe} Ohne Modifikator.`,
+    actions.push({ ...baseAction, id: `skill_${skill.id}`, name: skill.label, expression: "1d100", inputs: probeInputs,
+      disclosure: `Fertigkeitsprobe ${CHRONICLE_FIELD_LABELS[skill.field]}: gespeicherte Punkte plus gewählter Talentbonus, dazu Fähigkeiten und Zustände; ein W100. ${CHRONICLE_RULE_GUIDANCE.probe}`,
       preconditions: [{ id: "learned", message: "Diese Fertigkeit hat keine Punkte. Stattdessen die Talentprobe ihres Feldes wählen.", expression: `${raw(skill)} > 0` }],
-      outcome: probeOutcome(effective(skill)) });
+      outcome: probeOutcome(`(${effective(skill)} + input.mod_ziel)`) });
   }
   computed.push(
     { id: "lebenskraft_max", label: "Lebenskraft · Höchstwert", expression: vitality },
@@ -288,21 +356,26 @@ export function createChronicleHeroesPackage(options: ChroniclePackageOptions = 
     { id: "funken_remaining", label: "Funken übrig", expression: `${funkenMax} - actor.${CHRONICLE_FUNKEN_FIELD}` },
     { id: "initiative_value", label: "Initiative · Zuschlag", expression: `(${talent("koerper")}) - ${armour}` },
     { id: "points_spent", label: "Verteilte Punkte", expression: sum(skills.map(raw)) },
-    { id: "points_available", label: "Noch verfügbare Punkte", expression: `${CHRONICLE_START_POINTS} + actor.budget_adjustment - ${sum(skills.map(raw))}` },
+    { id: "points_available", label: "Noch verfügbare Punkte", expression: `${CHRONICLE_START_POINTS} + actor.budget_adjustment + ${CHRONICLE_POINTS_PER_XP} * actor.${CHRONICLE_XP_SKILLS_FIELD} - ${sum(skills.map(raw))}` },
   );
   constraints.push({ id: "funken_valid", message: "Ausgegebene Funken übersteigen den abgeleiteten Vorrat. Ausgabe ausdrücklich korrigieren.", expression: `actor.${CHRONICLE_FUNKEN_FIELD} <= ${funkenMax}` });
+  constraints.push({ id: "erfahrung_valid", message: "Auf Fertigkeiten ist mehr Erfahrung gelegt, als die Figur gesammelt hat.", expression: `actor.${CHRONICLE_XP_SKILLS_FIELD} <= actor.${CHRONICLE_XP_FIELD}` });
 
   for (const field of CHRONICLE_FIELDS) {
-    actions.push({ ...baseAction, id: `talent_${field}`, name: `Talent · ${CHRONICLE_FIELD_LABELS[field]}`, expression: "1d100",
-      disclosure: `Ein W100 auf das Talent ${CHRONICLE_FIELD_LABELS[field]}. ${CHRONICLE_RULE_GUIDANCE.talent} ${CHRONICLE_RULE_GUIDANCE.probe}`,
-      outcome: probeOutcome(talent(field)) });
+    actions.push({ ...baseAction, id: `talent_${field}`, name: `Talent · ${CHRONICLE_FIELD_LABELS[field]}`, expression: "1d100", inputs: probeInputs,
+      disclosure: `Ein W100 auf das Talent ${CHRONICLE_FIELD_LABELS[field]}, dazu Fähigkeiten und Zustände. ${CHRONICLE_RULE_GUIDANCE.talent} ${CHRONICLE_RULE_GUIDANCE.probe}`,
+      outcome: probeOutcome(`((${talent(field)}) + input.mod_ziel)`) });
   }
-  actions.push({ ...baseAction, id: "initiative", name: "Initiative", expression: `1d10 + (${talent("koerper")}) - ${armour}`, disclosure: `${CHRONICLE_RULE_GUIDANCE.initiative} ${CHRONICLE_RULE_GUIDANCE.armour}` });
+  actions.push({ ...baseAction, id: "initiative", name: "Initiative", expression: `1d10 + (${talent("koerper")}) - ${armour} + input.mod_ergebnis`,
+    inputs: { einsatz, mod_ergebnis: integerField("Zuschlag aus Fähigkeiten und Zuständen", -20, 20) },
+    disclosure: `${CHRONICLE_RULE_GUIDANCE.initiative} ${CHRONICLE_RULE_GUIDANCE.armour} Fähigkeiten und Zustände rechnen mit.` });
 
   let dice = "8d6";
   for (let count = 7; count >= 1; count--) dice = `if(input.dice_count == ${count}, ${count}d6, ${dice})`;
-  actions.push({ ...baseAction, id: "schaden", name: "Schaden", expression: `max(0, (${dice} + input.bonus) * if(input.critical, 2, 1) - input.ziel_ruestung)`,
+  actions.push({ ...baseAction, id: "schaden", name: "Schaden", expression: `max(0, (${dice} + input.bonus + input.mod_ergebnis) * if(input.critical, 2, 1) - input.ziel_ruestung)`,
     inputs: {
+      einsatz,
+      mod_ergebnis: integerField("Zuschlag aus Fähigkeiten und Zuständen", -20, 40),
       dice_count: integerField("Anzahl W6", 1, 8, 1),
       bonus: integerField("Abgesprochener Schadensbonus", 0, 50),
       critical: booleanField("Kritischer Treffer", false),
@@ -335,6 +408,7 @@ export function createChronicleHeroesPackage(options: ChroniclePackageOptions = 
     layout: { sections: [
       { id: "character", label: "Figur und Absprachen", fields: ["name", "profession", "notes", "budget_adjustment"] },
       { id: "koerperwerte", label: "Lebenskraft, Rüstung und Funken", fields: ["lebenskraft", CHRONICLE_ARMOUR_FIELD, CHRONICLE_FUNKEN_FIELD] },
+      { id: "entwicklung", label: "Erfahrung, Fähigkeiten und Zustände", fields: [CHRONICLE_XP_FIELD, CHRONICLE_XP_SKILLS_FIELD, CHRONICLE_ABILITY_FIELD, CHRONICLE_CONDITION_FIELD] },
       ...CHRONICLE_FIELDS.map(field => ({ id: field, label: CHRONICLE_FIELD_LABELS[field], fields: skills.filter(skill => skill.field === field).flatMap(skill => [chronicleSkillField(skill.id), chronicleBonusField(skill.id)]) })),
     ] },
     actions, computed, constraints,
@@ -344,7 +418,15 @@ export function createChronicleHeroesPackage(options: ChroniclePackageOptions = 
       { id: "lebenskraft", label: "Lebenskraft", max: vitality, depletion: "defeat" as const },
     ],
     attribution: CHRONICLE_ATTRIBUTION,
-    migrations: options.migrations ?? [],
+    abilityRules: { abilityField: CHRONICLE_ABILITY_FIELD, conditionField: CHRONICLE_CONDITION_FIELD,
+      budget: `${CHRONICLE_START_ABILITY_BUDGET} + actor.${CHRONICLE_XP_FIELD} - actor.${CHRONICLE_XP_SKILLS_FIELD}` },
+    abilities: CHRONICLE_ABILITY_LIBRARY.map(entry => abilityFor(entry, skills, talent)),
+    conditions: CHRONICLE_CONDITIONS.map((entry): RuleCondition => {
+      const modifiers = modifiersFor(entry.wirkungen, skills, `condition ${entry.id}`);
+      return { id: entry.id, name: entry.name, text: entry.text, ...(modifiers.length ? { modifiers } : {}) };
+    }),
+    // Die Migration gehört nur zur ausgelieferten Fassung; ein angepasster Katalog mit eigener Version bringt seine eigene mit.
+    migrations: options.migrations ?? ((options.version ?? CHRONICLE_VERSION) === CHRONICLE_VERSION ? [CHRONICLE_MIGRATION_1_TO_2] : []),
     selfTests: [
       { name: "Talent 0: W100 21 misslingt", actionId: "talent_koerper", context: { seed: "00000001000000020000000300000004", actor: {}, input: {}, knowledge: { actorId: "selftest", passages: [] } }, expectedTotal: 21, expectedSuccess: false, expectedOutcomeId: "failure" },
       { name: "Initiative ohne Talent und ohne Rüstung: W10 1", actionId: "initiative", context: { seed: "00000001000000020000000300000004", actor: {}, input: {}, knowledge: { actorId: "selftest", passages: [] } }, expectedTotal: 1 },
@@ -369,4 +451,36 @@ export const CHRONICLE_EXAMPLE_CHARACTERS: readonly ChronicleExampleCharacter[] 
   example("brand", "Brandt Eisenhand", "Karawanenwache", [70, 45, 65, 20, 40, 25, 30, 35, 30], 4),
   // Ungepanzert und schnell: dieselben 360 Punkte, in Geist und Herz gelegt.
   example("liva", "Liva Sonnenrahm", "Wanderärztin und Vermittlerin", [25, 35, 15, 60, 55, 70, 55, 25, 20], 0),
+]);
+
+/**
+ * Zwölf Archetypen: fertige Startbögen für die neun Grundfertigkeiten, je 360 Punkte und drei
+ * Fähigkeiten vom Rang 1, deren Voraussetzungen diese Punkte erfüllen. Ein Anfang, keine Klasse —
+ * alles darf die Runde danach ändern.
+ */
+export type ChronicleArchetype = ChronicleExampleCharacter;
+function archetype(id: string, name: string, profession: string, points: readonly number[], ruestung: number, abilities: readonly [string, string, string]): ChronicleArchetype {
+  const fields = {
+    ...defaultSupportedActorFields(CHRONICLE_HEROES_PACKAGE), name, profession,
+    notes: `Archetyp ${name}: ${CHRONICLE_START_POINTS} Startpunkte und drei Fähigkeiten vom Rang 1. Alles darf die Runde danach frei ändern.`,
+    [CHRONICLE_ARMOUR_FIELD]: ruestung,
+    [CHRONICLE_ABILITY_FIELD]: abilities.join(", "),
+    ...Object.fromEntries(CHRONICLE_DEFAULT_SKILLS.map((skill, index) => [chronicleSkillField(skill.id), points[index]!])),
+  };
+  return { id, name, description: `${profession} · ${abilities.length} Fähigkeiten · Rüstung ${ruestung}`, fields: validatePackageFields(CHRONICLE_HEROES_PACKAGE, fields) };
+}
+// Reihenfolge der Punkte: Athletik, Handwerk, Schlagkraft, Buchwissen, Wahrnehmung, Feldmedizin, Überreden, Menschenkenntnis, Mut.
+export const CHRONICLE_ARCHETYPES: readonly ChronicleArchetype[] = deepFreeze([
+  archetype("kaempfer", "Kämpfer", "Söldner", [65, 30, 70, 15, 40, 20, 25, 30, 65], 3, ["harter_schlag", "leichtfuessig", "beherzt"]),
+  archetype("spaeher", "Späher", "Kundschafter", [60, 25, 30, 30, 70, 25, 25, 40, 55], 1, ["wachsam", "leise_sohlen", "faehrtenkunde"]),
+  archetype("heiler", "Heiler", "Feldscher", [25, 30, 15, 55, 40, 70, 40, 55, 30], 0, ["verbandskunde", "heilkundig", "sanfte_stimme"]),
+  archetype("gelehrter", "Gelehrter", "Archivar", [20, 40, 15, 70, 55, 45, 40, 45, 30], 0, ["belesen", "sprachtalent", "gutes_gedaechtnis"]),
+  archetype("haendler", "Händler", "Kaufmann", [30, 35, 15, 45, 45, 20, 70, 65, 35], 0, ["redegewandt", "geschaeftssinn", "gutes_gespuer"]),
+  archetype("hauptmann", "Hauptmann", "Anführer einer Wache", [50, 20, 55, 30, 40, 25, 50, 35, 55], 4, ["vorbild", "taktiker", "beherzt"]),
+  archetype("dieb", "Dieb", "Fassadenkletterer", [60, 55, 20, 25, 60, 20, 45, 50, 25], 1, ["lange_finger", "flink", "pokerface"]),
+  archetype("handwerker", "Handwerker", "Schmied", [45, 70, 50, 30, 35, 25, 35, 30, 40], 2, ["geschickte_haende", "tueftler", "dickes_fell"]),
+  archetype("barde", "Barde", "Spielmann", [35, 20, 15, 35, 45, 25, 65, 55, 65], 0, ["spielmann", "buehnenpraesenz", "frohsinn"]),
+  archetype("jaeger", "Jäger", "Waldläufer", [60, 40, 45, 20, 65, 30, 20, 35, 45], 1, ["pirschjaeger", "ruhige_hand", "wachsam"]),
+  archetype("priester", "Priester", "Wanderprediger", [25, 35, 20, 55, 40, 50, 45, 40, 50], 0, ["gottvertrauen", "standhaft", "glueckskind"]),
+  archetype("abenteurer", "Abenteurer", "Glücksritter", [50, 40, 40, 40, 45, 35, 35, 40, 35], 1, ["kampferprobt", "weitgereist", "wachsam"]),
 ]);

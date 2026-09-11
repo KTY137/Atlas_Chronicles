@@ -89,6 +89,15 @@ export type AnyRulePackage = RulePackage | RulePackageV2;
 export type AnyActionResult = ActionResult | ActionResultV2;
 
 const comparisons: readonly OutcomeComparison[] = ["eq", "lt", "lte", "gt", "gte"];
+/**
+ * Pakete, die diese Engine selbst geprüft und tief eingefroren hat. Sie können sich nicht mehr ändern,
+ * erneutes Prüfen ergäbe dasselbe — ohne dieses Gedächtnis prüfte jeder Wurf und jede Bogenprüfung
+ * alle 200 Fähigkeiten von ChronicleHeroes von vorn und hashte dazu das ganze Paket. Kopien und
+ * fremde Objekte stehen nicht darin und werden weiterhin vollständig geprüft.
+ */
+const geprueft = new WeakSet<object>();
+const bekannt = (input: unknown): input is AnyRulePackage => typeof input === "object" && input !== null && geprueft.has(input);
+const digests = new WeakMap<object, string>();
 const types = (fields: Readonly<Record<string, FieldSchema>>): Readonly<Record<string, FormulaType>> => Object.fromEntries(Object.entries(fields).map(([id, field]) => [id, field.type === "integer" ? "number" : field.type]));
 function deterministic(ast: Formula): void {
   switch (ast.kind) {
@@ -190,6 +199,7 @@ function abilityDeclarations(data: Record<string, unknown>, base: RulePackage, a
 /** Common v1 records are checked by the frozen v1 parser through an explicit projection.
  * All v2 additions are closed and checked independently; nothing is silently discarded. */
 export function parseRulePackageV2(input: unknown): RulePackageV2 {
+  if (bekannt(input) && input.schemaVersion === 2) return input;
   const data = record(typeof input === "string" ? parseBoundedJson(input) : snapshotJson(input), "package");
   keys(data, ["schemaVersion", "id", "name", "version", "engineVersion", "license", "authors", "fields", "layout", "actions", "migrations", "selfTests", "computed", "constraints", "vitals", "attribution", "abilityRules", "abilities", "conditions"], "package");
   if (data.schemaVersion !== 2) fail("package: expected schemaVersion 2");
@@ -253,13 +263,14 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
       for (const author of array(source.authors, "source.authors", 32)) string(author, "source.author", 120);
     }
   }
-  return deepFreeze(data as unknown as RulePackageV2);
+  const parsed = deepFreeze(data as unknown as RulePackageV2); geprueft.add(parsed); return parsed;
 }
 export function parseSupportedRulePackage(input: unknown): AnyRulePackage {
+  if (bekannt(input)) return input;
   const data = record(typeof input === "string" ? parseBoundedJson(input) : snapshotJson(input), "package");
-  if (data.schemaVersion === 1) return parseRulePackage(data);
   if (data.schemaVersion === 2) return parseRulePackageV2(data);
-  return fail("package: unsupported schemaVersion; explicit format migration required");
+  if (data.schemaVersion !== 1) return fail("package: unsupported schemaVersion; explicit format migration required");
+  const parsed = parseRulePackage(data); geprueft.add(parsed); return parsed;
 }
 
 /** One aggregate budget per public operation, including dice-free formulas. */
@@ -437,6 +448,12 @@ export class SupportedRulePackageRegistry {
  * This hashes the rules stableJson encoding, not core's distinct canonical encoding. */
 export function supportedPackageContentHash(input: AnyRulePackage): string { return packageDigest(parseSupportedRulePackage(input)); }
 function packageDigest(pkg: AnyRulePackage): string {
+  // Nur für selbst geprüfte, eingefrorene Pakete gemerkt: dort kann sich der Inhalt nicht mehr ändern.
+  if (!bekannt(pkg)) return computeDigest(pkg);
+  const known = digests.get(pkg); if (known) return known;
+  const digest = computeDigest(pkg); digests.set(pkg, digest); return digest;
+}
+function computeDigest(pkg: AnyRulePackage): string {
   const bytes = new TextEncoder().encode(stableJson(pkg)); const size = Math.ceil((bytes.length + 9) / 64) * 64;
   const buffer = new Uint8Array(size); buffer.set(bytes); buffer[bytes.length] = 0x80; const view = new DataView(buffer.buffer);
   view.setUint32(size - 8, Math.floor(bytes.length / 0x20000000)); view.setUint32(size - 4, (bytes.length * 8) >>> 0);
