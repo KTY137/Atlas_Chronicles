@@ -2,13 +2,14 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { parseAssetpaket, type RoadPlan } from "@chronicle/szene";
 import { GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, ANLAGE_STANDARD, erzeugeSiedlung } from "@chronicle/forge";
 import { generationError, generationOptions, generationSettings, type GenerationDefaults } from "../src/features/map-generation.ts";
 import { changeEntranceType } from "../src/features/map-type-selection.ts";
 import { MapGenerationControls } from "../src/features/MapGenerationControls.tsx";
-import { RoadPlanReport } from "../src/features/MapRoadPlanner.tsx";
+import { MapRoadPlanner, RoadPlanReport } from "../src/features/MapRoadPlanner.tsx";
 import { makeMapRecipe, parseMapRecipe, serializeMapRecipe } from "../src/features/map-recipes.ts";
 const defaults: GenerationDefaults = { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD, siedlung: SIEDLUNG_STANDARD, anlagen: ANLAGE_STANDARD, strassenplanung: 1 };
 const verkehr: RoadPlan = { schemaVersion: 1, maxSteigung: 24,
@@ -17,6 +18,12 @@ const verkehr: RoadPlan = { schemaVersion: 1, maxSteigung: 24,
 const settings = () => ({ ...generationSettings(), standort: "ebene" as const, relief: 0, verkehr });
 
 describe("road-planning controls and portable recipes", () => {
+  it("uses the shared themed buttons instead of browser-default controls", () => {
+    const markup=renderToStaticMarkup(createElement(MapRoadPlanner,{value:verkehr,onChange:()=>{}}));
+    const buttons=markup.match(/<button[^>]*>/g)??[];
+    expect(buttons).toHaveLength(2);
+    for(const button of buttons) expect(button).toContain('class="button button-default ');
+  });
   it("sends the graph without a second geometry representation", () => expect(generationOptions(settings(), defaults)).toMatchObject({ verkehr }));
   it("gates the planner by actual server capability and generator type", () => {
     const markup = (value = settings(), d = defaults) => renderToStaticMarkup(MapGenerationControls({value,defaults:d,onChange:()=>{}}));

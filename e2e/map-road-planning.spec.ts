@@ -29,6 +29,9 @@ test("road graph is edited with keyboard and pointer, replayed and saved without
     await studio.getByText("Straßen & Verbindungen planen",{exact:true}).click();
     const planner=studio.locator(".map-road-planner");
     await expect(planner.locator(".road-background")).not.toHaveCount(0);
+    const addWaypoint=planner.getByRole("button",{name:"Wegpunkt hinzufügen",exact:true});
+    await expect(addWaypoint).toHaveClass(/\bbutton\b/);
+    expect(await addWaypoint.evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(32);
     await planner.getByRole("button",{name:"Wegpunkt hinzufügen",exact:true}).click();
     await planner.getByLabel("Name des Wegpunkts",{exact:true}).fill("");
     await expect(studio.getByRole("button",{name:"Vorschau",exact:true})).toBeDisabled();

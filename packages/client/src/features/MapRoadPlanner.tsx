@@ -3,6 +3,7 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { ROAD_PLAN_LIMITS, type RoadPlan, type RoadPlanNode, type RoadPlanEdge, type TacticalMapDocumentV1, type TacticalCartographyV1 } from "@chronicle/szene";
 import type { SiedlungBericht } from "@chronicle/forge";
+import { Button } from "@chronicle/ui";
 import { locale, plural, t } from "../i18n";
 import "./map-road-planner.css";
 
@@ -56,21 +57,21 @@ export function MapRoadPlanner({ value = EMPTY, onChange, preview }: { value?: R
       </g>)}
     </svg>
     <p className="field-help">{preview ? t("Der Hintergrund zeigt die letzte Vorschau. Neue Verbindungen werden erst mit der nächsten Vorschau berechnet.") : t("Erzeuge zunächst eine Vorschau, um Gelände und vorhandene Straßen als Hintergrund zu sehen.")}</p>
-    <div className="road-actions"><button type="button" onClick={()=>add()} disabled={value.knoten.length>=ROAD_PLAN_LIMITS.nodes}>{t("Wegpunkt hinzufügen")}</button>
-      <button type="button" onClick={addEdge} disabled={!pairAvailable||value.verbindungen.length>=ROAD_PLAN_LIMITS.edges}>{t("Verbindung hinzufügen")}</button></div>
+    <div className="road-actions"><Button type="button" onClick={()=>add()} disabled={value.knoten.length>=ROAD_PLAN_LIMITS.nodes}>{t("Wegpunkt hinzufügen")}</Button>
+      <Button type="button" onClick={addEdge} disabled={!pairAvailable||value.verbindungen.length>=ROAD_PLAN_LIMITS.edges}>{t("Verbindung hinzufügen")}</Button></div>
     <label>{t("Wegpunkt auswählen")}<select aria-label={t("Wegpunkt auswählen")} value={node?.id??""} onChange={e=>select(e.target.value)}><option value="">{t("Wegpunkt auswählen …")}</option>{value.knoten.map((n,i)=><option key={n.id} value={n.id}>{i+1}. {n.name}</option>)}</select></label>
     {node ? <div className="road-fields">
       <label>{t("Name des Wegpunkts")}<input maxLength={80} value={node.name} onChange={e=>updateNode({name:e.target.value})} /></label>
       <label>{t("Art des Wegpunkts")}<select aria-label={t("Art des Wegpunkts")} value={node.art} onChange={e=>updateNode({art:e.target.value as RoadPlanNode["art"]})}><option value="tor">{t("Zugang / Tor")}</option><option value="platz">{t("Platz")}</option><option value="wegpunkt">{t("Wegpunkt")}</option></select></label>
       <div className="road-coordinates">{([0,1] as const).map(axis=><label key={axis}>{axis===0?t("Wegpunkt X (%)"):t("Wegpunkt Y (%)")}<input type="number" min={0} max={100} step={1} value={Math.round(node.position[axis]*1000)/10} onChange={e=>{const v=e.target.valueAsNumber;if(Number.isFinite(v)&&v>=0&&v<=100)updateNode({position:axis===0?[v/100,node.position[1]]:[node.position[0],v/100]});}} /></label>)}</div>
-      <button type="button" onClick={()=>{commit({...value,knoten:value.knoten.filter(n=>n.id!==node.id),verbindungen:value.verbindungen.filter(e=>e.von!==node.id&&e.nach!==node.id)});select("");}}>{t("Wegpunkt und Verbindungen entfernen")}</button>
+      <Button type="button" onClick={()=>{commit({...value,knoten:value.knoten.filter(n=>n.id!==node.id),verbindungen:value.verbindungen.filter(e=>e.von!==node.id&&e.nach!==node.id)});select("");}}>{t("Wegpunkt und Verbindungen entfernen")}</Button>
     </div>:null}
     <label>{t("Verbindung auswählen")}<select aria-label={t("Verbindung auswählen")} value={edge?.id??""} onChange={e=>selectEdge(e.target.value)}><option value="">{t("Verbindung auswählen …")}</option>{value.verbindungen.map(e=><option key={e.id} value={e.id}>{value.knoten.find(n=>n.id===e.von)?.name} → {value.knoten.find(n=>n.id===e.nach)?.name}</option>)}</select></label>
     {edge?<div className="road-fields">
       {(["von","nach"] as const).map(key=><label key={key}>{key==="von"?t("Von Wegpunkt"):t("Zu Wegpunkt")}<select aria-label={key==="von"?t("Von Wegpunkt"):t("Zu Wegpunkt")} value={edge[key]} onChange={e=>updateEdge({[key]:e.target.value})}>{value.knoten.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select></label>)}
       <label>{t("Straßenklasse")}<select aria-label={t("Straßenklasse")} value={edge.art} onChange={e=>updateEdge({art:e.target.value as RoadPlanEdge["art"]})}><option value="hauptstrasse">{t("Hauptstraße")}</option><option value="gasse">{t("Gasse")}</option></select></label>
       <label><input type="checkbox" checked={edge.bruecke} onChange={e=>updateEdge({bruecke:e.target.checked})} />{t("Flussbrücken für diese Verbindung erlauben")}</label>
-      <button type="button" onClick={()=>{commit({...value,verbindungen:value.verbindungen.filter(e=>e.id!==edge.id)});selectEdge("");}}>{t("Verbindung entfernen")}</button>
+      <Button type="button" onClick={()=>{commit({...value,verbindungen:value.verbindungen.filter(e=>e.id!==edge.id)});selectEdge("");}}>{t("Verbindung entfernen")}</Button>
     </div>:null}
     <label>{t("Maximaler Höhenwechsel")}<input type="number" min={1} max={64} step={1} value={value.maxSteigung} onChange={e=>{const n=e.target.valueAsNumber;if(Number.isSafeInteger(n)&&n>=1&&n<=64)commit({...value,maxSteigung:n});}} /></label>
     <p className="field-help">{t("Höhenstufen je Rasterzelle, keine Prozentsteigung. Seen, Meer und Fels bleiben gesperrt. Nur Flüsse lassen sich ausdrücklich überbrücken.")}</p>
