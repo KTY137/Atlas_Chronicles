@@ -21,7 +21,7 @@ export const defaults = (fields: Readonly<Record<string, FieldSchema>>): Record<
 /** A network retry reuses its command id; a completed gesture allows a new intentional action. */
 export function useCommand() {
   const pending = useRef(new Map<string, string>());
-  return async <T,>(path: string, body: Record<string, unknown>, method: "POST" | "PUT" = "POST"): Promise<T> => {
+  return async <T,>(path: string, body: Record<string, unknown>, method: "POST" | "PUT" | "DELETE" = "POST"): Promise<T> => {
     const fingerprint = JSON.stringify({ path, body, method });
     let commandId = pending.current.get(fingerprint);
     if (!commandId) {

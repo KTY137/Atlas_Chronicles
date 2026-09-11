@@ -8,6 +8,7 @@ import { apiPath, type Campaign } from "../api";
 import { useResource } from "../hooks";
 import { t } from "../i18n";
 import { ActorTemplates, InstantiateActor, Inventory, ItemTemplates } from "./ActorWorkbench";
+import { ActorDeletionPanel } from "./ActorDeletionPanel";
 import type { RulesState } from "./game-api";
 import type { ForgeSection } from "./forge-navigation";
 import "./authoring.css";
@@ -104,11 +105,13 @@ function LootWorkshop({ campaignId, revision, onChanged, onDirty }: { campaignId
 function FigureWorkshop({ campaignId, revision, onChanged, onDirty, onOpenLoot, onOpenTable }: { campaignId: string; revision: number; onChanged: () => void; onDirty: (dirty: boolean) => void; onOpenLoot: () => void; onOpenTable?: () => void }) {
   const [tab, setTab] = useState<"templates" | "create">("templates"), [dirty, setDirty] = useState(false), [localRevision, setLocalRevision] = useState(0);
   const rules = useResource<RulesState>(apiPath(campaignId, "/rules"), revision + localRevision);
+  const actors = useResource<ActorCard[]>(apiPath(campaignId, "/actors"), revision + localRevision);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
   const refresh = () => { setLocalRevision(value => value + 1); onChanged(); };
   const choose = (next: typeof tab) => { if (next === tab || (dirty && !window.confirm(t("Ungespeicherte Änderungen verwerfen?")))) return; report(false); setTab(next); };
   return <div className="actor-workbench"><div className="forge-task-tabs" aria-label={t("Figuren vorbereiten")}><Button aria-pressed={tab === "templates"} onClick={() => choose("templates")}>{t("1 · Figurvorlagen")}</Button><Button aria-pressed={tab === "create"} onClick={() => choose("create")}>{t("2 · Figur erschaffen")}</Button></div>
     {rules.error ? <Notice error>{rules.error}</Notice> : rules.loading ? <Loading /> : rules.data ? tab === "templates" ? <ActorTemplates campaignId={campaignId} rules={rules.data} revision={revision + localRevision} onChanged={refresh} onDirty={report} onOpenLoot={onOpenLoot} onInstantiate={() => choose("create")} /> : <InstantiateActor campaignId={campaignId} revision={revision + localRevision} onChanged={refresh} onDirty={report} onCreateTemplate={() => choose("templates")} /> : null}
+    {actors.error ? <Notice error>{actors.error}</Notice> : actors.loading ? <Loading /> : <ActorDeletionPanel campaignId={campaignId} actors={actors.data ?? []} revision={revision + localRevision} onChanged={refresh} />}
     {onOpenTable ? <p className="forge-context-link">{t("Vorhandene Figuren steuern, Bögen bearbeiten und Besitz verwalten:")} <Button variant="quiet" onClick={onOpenTable}>{t("Figuren am Tisch öffnen")}<ArrowRight size={14} aria-hidden="true" /></Button></p> : null}
   </div>;
 }

@@ -8,11 +8,12 @@ import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createIdentity } from "../identity/index.ts";
 import { ActorValidationError, createActors } from "../domain/actors.ts";
+import { createActorDeletion } from "../domain/actor-deletion.ts";
 import { createFigurantrag } from "../domain/figurantrag.ts";
 
 /** The existing app supplies authenticated-cookie, Origin, rate-limit and error policies. */
 export function registerActors(app: FastifyInstance, db: Db, config: IdentityConfig) {
-  const identity = createIdentity(db, config), actors = createActors(db, config), antraege = createFigurantrag(db, config);
+  const identity = createIdentity(db, config), actors = createActors(db, config), deletion = createActorDeletion(db, config), antraege = createFigurantrag(db, config);
   const auth = async (cookie: string | undefined) => (await identity.authenticate(cookie)).userId;
   const base = "/api/campaigns/:campaignId";
   type Scope = { campaignId: string }; type Item = Scope & { id: string }; type Controller = Item & { userId: string };
@@ -27,6 +28,7 @@ export function registerActors(app: FastifyInstance, db: Db, config: IdentityCon
   app.post<{ Params: Scope; Body: Static<typeof P.ActorInstantiate> }>(`${base}/actors/instantiate`, { schema: { body: P.ActorInstantiate } }, async req => actors.instantiateActor(await auth(req.headers.cookie), req.params.campaignId, req.body));
   app.put<{ Params: Item; Body: Static<typeof P.ActorProfileUpdate> }>(`${base}/actors/:id`, { schema: { body: P.ActorProfileUpdate } }, async req => actors.updateActor(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.post<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/actors/:id/archive`, { schema: { body: P.ArchiveObject } }, async req => actors.archiveActor(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
+  app.delete<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/actors/:id`, { schema: { body: P.ArchiveObject } }, async req => deletion.deleteActor(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.get<{ Params: Item }>(`${base}/actors/:id/controllers`, async req => actors.listControllers(await auth(req.headers.cookie), req.params.campaignId, req.params.id));
   app.put<{ Params: Controller; Body: Static<typeof P.ActorControllerGrant> }>(`${base}/actors/:id/controllers/:userId`, { schema: { body: P.ActorControllerGrant } }, async req => actors.grantController(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.params.userId, req.body));
   app.post<{ Params: Controller; Body: Static<typeof P.ActorControllerRevoke> }>(`${base}/actors/:id/controllers/:userId/revoke`, { schema: { body: P.ActorControllerRevoke } }, async req => actors.revokeController(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.params.userId, req.body));
@@ -41,6 +43,7 @@ export function registerActors(app: FastifyInstance, db: Db, config: IdentityCon
   app.post<{ Params: Scope; Body: Static<typeof P.ActorTemplateCreate> }>(`${base}/actor-templates`, { schema: { body: P.ActorTemplateCreate } }, async req => actors.createActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.body));
   app.put<{ Params: Item; Body: Static<typeof P.ActorTemplateRevise> }>(`${base}/actor-templates/:id`, { schema: { body: P.ActorTemplateRevise } }, async req => actors.reviseActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.post<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/actor-templates/:id/archive`, { schema: { body: P.ArchiveObject } }, async req => actors.archiveActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
+  app.delete<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/actor-templates/:id`, { schema: { body: P.ArchiveObject } }, async req => deletion.deleteActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.get<{ Params: Scope }>(`${base}/item-templates`, async req => actors.listItemTemplates(await auth(req.headers.cookie), req.params.campaignId));
   app.get<{ Params: Item; Querystring: Static<typeof revisionQuery> }>(`${base}/item-templates/:id`, { schema: { querystring: revisionQuery } }, async req => actors.getItemTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision)));
   app.post<{ Params: Scope; Body: Static<typeof P.ItemTemplateCreate> }>(`${base}/item-templates`, { schema: { body: P.ItemTemplateCreate } }, async req => actors.createItemTemplate(await auth(req.headers.cookie), req.params.campaignId, req.body));

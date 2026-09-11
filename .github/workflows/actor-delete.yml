@@ -1,0 +1,69 @@
+name: actor-delete
+
+on:
+  push:
+    paths:
+      - 'packages/server/src/domain/actor-deletion.ts'
+      - 'packages/server/src/http/actors.ts'
+      - 'packages/server/src/db/migrations/**'
+      - 'packages/server/test/actor-deletion.test.ts'
+      - 'packages/client/src/features/ActorDeletionPanel.tsx'
+      - 'packages/client/src/features/TableView.tsx'
+      - 'packages/client/src/features/game-api.ts'
+      - 'packages/client/src/i18n.ts'
+      - 'packages/client/src/i18n/en/P18.json'
+      - 'packages/client/test/actor-delete-review.test.ts'
+      - '.github/workflows/actor-delete.yml'
+      - 'package*.json'
+  pull_request:
+    paths:
+      - 'packages/server/src/domain/actor-deletion.ts'
+      - 'packages/server/src/http/actors.ts'
+      - 'packages/server/src/db/migrations/**'
+      - 'packages/server/test/actor-deletion.test.ts'
+      - 'packages/client/src/features/ActorDeletionPanel.tsx'
+      - 'packages/client/src/features/TableView.tsx'
+      - 'packages/client/src/features/game-api.ts'
+      - 'packages/client/src/i18n.ts'
+      - 'packages/client/src/i18n/en/P18.json'
+      - 'packages/client/test/actor-delete-review.test.ts'
+      - '.github/workflows/actor-delete.yml'
+      - 'package*.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deletion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chronicle_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d chronicle_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/chronicle_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Permanent-delete regressions
+        run: npx vitest run packages/server/test/actor-deletion.test.ts packages/client/test/actor-delete-review.test.ts --maxWorkers=1
+      - name: Types
+        run: npm run typecheck
+      - name: Client build
+        run: npm run build
