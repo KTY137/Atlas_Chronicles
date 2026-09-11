@@ -30,7 +30,7 @@ export function ruleEntryReferences(draft: RuleDraft, kind: RuleEntryKind, id: s
     for (const action of draft.actions) if (action.inputs.some(input => input.id === "einsatz" && contains(input.defaultValue, id))) refs.push({ kind: "action", name: action.name || action.id });
   }
   for (const candidate of draft.fields) if (candidate.id === field && contains(candidate.defaultValue, id)) refs.push({ kind: "field", name: candidate.label || candidate.id });
-  for (const test of draft.selfTests) if ((field !== undefined && contains(test.context.actor[field], id)) || (kind === "ability" && contains(test.context.input.einsatz, id))) refs.push({ kind: "test", name: test.name });
+  for (const test of draft.selfTests) if ((field !== undefined && contains(test.context.actor[field], id)) || (kind === "ability" && contains(test.context.input?.einsatz, id))) refs.push({ kind: "test", name: test.name });
   for (const migration of draft.migrations) if (migration.steps.some(step => step.kind === "add" && step.field === field && step.type === "string" && contains(step.value, id))) refs.push({ kind: "migration", name: migration.from });
   return refs;
 }
@@ -64,7 +64,8 @@ export function renameRuleEntry(draft: RuleDraft, kind: RuleEntryKind, from: str
     const action = draft.actions.find(candidate => candidate.id === test.actionId);
     return { ...test, context: { ...test.context,
       actor: field !== undefined && Object.hasOwn(actor, field) ? { ...actor, [field]: renamedValue(actor[field]!, fieldSchema) } : actor,
-      input: kind === "ability" && Object.hasOwn(input, "einsatz") ? { ...input, einsatz: renamedValue(input.einsatz!, action?.inputs.find(candidate => candidate.id === "einsatz")) } : input,
+      ...(input === undefined ? {} : { input: kind === "ability" && Object.hasOwn(input, "einsatz")
+        ? { ...input, einsatz: renamedValue(input.einsatz!, action?.inputs.find(candidate => candidate.id === "einsatz")) } : input }),
     } };
   });
   const migrations = draft.migrations.map(migration => ({ ...migration, steps: migration.steps.map(step =>

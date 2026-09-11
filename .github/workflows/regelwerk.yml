@@ -24,6 +24,8 @@ jobs:
         include:
           - name: Typen
             command: npm run typecheck
+          - name: Client-Build
+            command: npm run build
           - name: Sprache und Grenzen
             command: npm run gate:sprache && npm run gate:boundaries
           - name: Regeln und Regelschmiede
