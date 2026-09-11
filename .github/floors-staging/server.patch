@@ -1,0 +1,95 @@
+diff --git a/packages/server/src/domain/betreten.ts b/packages/server/src/domain/betreten.ts
+index 331cb0885eadf277ca3d337f66de1557d4fa05dd..ceb4c53d7bdf0e2aaf40002c884803d628f873ae 100644
+--- a/packages/server/src/domain/betreten.ts
++++ b/packages/server/src/domain/betreten.ts
+@@ -13,0 +14 @@ import { activeMapEntrances, isMapDeleted, MapLifecycleConflict, type MapEntranc
++import { floorStackFor } from "./map-studio-state.ts";
+@@ -205 +206,3 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
+-      current = edge ? { parentKind: edge.parent_kind, parentMapId: edge.parent_map_id } : null;
++      const floorRoot = (await floorStackFor(tx, campaignId, currentId))?.root_map_id;
++      current = edge ? { parentKind: edge.parent_kind, parentMapId: edge.parent_map_id }
++        : floorRoot && floorRoot !== currentId ? { parentKind: "tactical", parentMapId: floorRoot } : null;
+@@ -277 +280,2 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
+-          if ((await activeMapEntrances(tx, campaignId)).some(edge => edge.map_id === target.id))
++          const targetStack = await floorStackFor(tx, campaignId, target.id);
++          if (targetStack && targetStack.root_map_id !== target.id || (await activeMapEntrances(tx, campaignId)).some(edge => edge.map_id === target.id))
+diff --git a/packages/server/src/domain/bundles.ts b/packages/server/src/domain/bundles.ts
+index c058cea12279addadff3565c404befda20534cfe..9438138ab99ff3484b2a4daa0b84dbca413b9e27 100644
+--- a/packages/server/src/domain/bundles.ts
++++ b/packages/server/src/domain/bundles.ts
+@@ -4 +4 @@ import {
+-  CAMPAIGN_V19_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds, collectFigurantragIdentityIds, collectRegelarchivIdentityIds, collectKartenherkunftIdentityIds,
++  CAMPAIGN_V20_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds, collectFigurantragIdentityIds, collectRegelarchivIdentityIds, collectKartenherkunftIdentityIds,
+@@ -7 +7 @@ import {
+-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV19 as CampaignTables,
++  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV20 as CampaignTables,
+@@ -10 +10 @@ import {
+-  type CampaignTableNameV19 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
++  type CampaignTableNameV20 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+@@ -68,0 +69 @@ export const restoreOrder: readonly CampaignTableName[] = [
++  "map_floor_stacks", "map_room_fog", "map_studio_commands",
+@@ -77 +78 @@ export interface CampaignRestoreReport {
+-  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19; migration?: CampaignMigrationChain;
++  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20; migration?: CampaignMigrationChain;
+diff --git a/packages/server/src/domain/deletion.ts b/packages/server/src/domain/deletion.ts
+index 1be25c48b75e29c583e023969899ec02cfad7374..7c07a8b56d784d8506fcf2c873f4fad1604cf501 100644
+--- a/packages/server/src/domain/deletion.ts
++++ b/packages/server/src/domain/deletion.ts
+@@ -57,0 +58 @@ export const LOESCHREIHENFOLGE: readonly string[] = [
++  "map_studio_commands", "map_room_fog", "map_floor_stacks",
+diff --git a/packages/server/src/domain/map-lifecycle.ts b/packages/server/src/domain/map-lifecycle.ts
+index ff6fa9a7259810ab78c75b04b2938b1d30f4dc93..9afa91d8c305f54f35db13008b07c144abb29672 100644
+--- a/packages/server/src/domain/map-lifecycle.ts
++++ b/packages/server/src/domain/map-lifecycle.ts
+@@ -9,0 +10 @@ import { createCampaigns, type DomainConfig } from "./campaigns.ts";
++import { floorStackFor } from "./map-studio-state.ts";
+@@ -91,0 +93,5 @@ export function createMapLifecycle(db: Db, cfg: DomainConfig = {}) {
++      if (current.kind === "tactical") {
++        const stack = await floorStackFor(tx, campaignId, current.id);
++        if (stack && (stack.document.floors.length > 1 || stack.root_map_id !== current.id))
++          throw new MapLifecycleConflict("conflict", "Bitte das Geschoss zuerst aus seinem Geschossverband lösen. Die Karten und ihre Übergänge werden nicht stillschweigend mitgelöscht.");
++      }
+diff --git a/packages/server/src/domain/tactical.ts b/packages/server/src/domain/tactical.ts
+index 83ee7f49e70f580a03e8c1e2f02a9bcd5db4d22b..00846acd77dec2a01a518fad553cdbe1daf6c4d1 100644
+--- a/packages/server/src/domain/tactical.ts
++++ b/packages/server/src/domain/tactical.ts
+@@ -12,0 +13,2 @@ import type { Db } from "../db/index.ts";
++import { validateFloorRevision, roomFogFor } from "./map-studio-state.ts";
++import { visibleFogRegions } from "@chronicle/szene";
+@@ -299,0 +302 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
++      await validateFloorRevision(tx, campaignId, mapId, input.document, cartography);
+@@ -332,0 +336,5 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
++      // Manual exploration stays enabled for a changed drawing, but old room grants are not
++      // transplanted onto moved geometry. The pinned running scene keeps its own fog revision.
++      if ((await roomFogFor(tx, campaignId, mapId, before.revision))?.document.enabled)
++        await tx.query("INSERT INTO map_room_fog(map_id,campaign_id,map_revision,version,document,updated_by,updated_at) VALUES($1,$2,$3,1,$4,$5,$6)",
++          [mapId, campaignId, next, json({ schemaVersion: 1, enabled: true, party: [], actors: [] }), userId, now()]);
+@@ -414 +422,3 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
+-    const regions = map.document.geometry.regions.filter(r => gm || knownRegions.has(r.id)).map(r => ({ id: r.id, points: r.punkte }));
++    const manualFog = await roomFogFor(tx, member.campaignId, map.id, map.revision);
++    const allowedRegions = visibleFogRegions(manualFog?.document ?? null, member.actorId, new Set(map.document.geometry.regions.map(r => r.id)), knownRegions);
++    const regions = map.document.geometry.regions.filter(r => gm || allowedRegions.has(r.id)).map(r => ({ id: r.id, points: r.punkte }));
+diff --git a/packages/server/src/http/tactical.ts b/packages/server/src/http/tactical.ts
+index 40ae73acfa5d17e721bf3df587383e976f84b4e9..dbfa000dfe69ea9dc1fc8d44568a8eb560949a6c 100644
+--- a/packages/server/src/http/tactical.ts
++++ b/packages/server/src/http/tactical.ts
+@@ -6 +6 @@ import { Value } from "@sinclair/typebox/value";
+-import { TacticalCartographyValidationError, TacticalMapValidationError } from "@chronicle/szene";
++import { MapFloorValidationError, TacticalCartographyValidationError, TacticalMapValidationError } from "@chronicle/szene";
+@@ -12,0 +13 @@ import { TacticalRasterError } from "../domain/tactical-raster.ts";
++import { registerMapStudio } from "./map-studio.ts";
+@@ -18,0 +20 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
++  registerMapStudio(app, db, config);
+@@ -51 +53 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
+-      if (error instanceof TacticalMapValidationError || error instanceof TacticalCartographyValidationError || error instanceof UvttValidationError) throw new TacticalValidationError(error.message);
++      if (error instanceof TacticalMapValidationError || error instanceof MapFloorValidationError || error instanceof TacticalCartographyValidationError || error instanceof UvttValidationError) throw new TacticalValidationError(error.message);
+diff --git a/packages/server/test/restore-order.test.ts b/packages/server/test/restore-order.test.ts
+index 6fa6c93df63b8b7d8c84fccd0730f4975f2fe74a..2c1e1801fe6a1a458d3ed8b64d5864f9935dc7c3 100644
+--- a/packages/server/test/restore-order.test.ts
++++ b/packages/server/test/restore-order.test.ts
+@@ -5 +5 @@ import { describe, expect, it } from "vitest";
+-import { CAMPAIGN_V19_TABLES } from "@chronicle/io";
++import { CAMPAIGN_V20_TABLES } from "@chronicle/io";
+@@ -24 +24 @@ describe("Jede Profiltabelle wird auch wirklich zurückgespielt", () => {
+-  const profil = CAMPAIGN_V19_TABLES.map(table => table.name);
++  const profil = CAMPAIGN_V20_TABLES.map(table => table.name);

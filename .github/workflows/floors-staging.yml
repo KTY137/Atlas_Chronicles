@@ -1,0 +1,51 @@
+name: floors-staging
+# One-time application of a fully specified, locally checked patch on the feature branch.
+# No main write, no force push, no protection change. Removed before opening the review PR.
+on:
+  push:
+    branches: ['feature/map-floors-room-fog-20260911']
+    paths: ['.github/workflows/floors-staging.yml']
+permissions:
+  contents: write
+jobs:
+  apply-verified-patch:
+    if: github.repository == 'KTY137/Atlas_Chronicles' && github.actor == 'KTY137'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Verify input, apply explicit patch, verify complete target tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/feature/map-floors-room-fog-20260911'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          helper_index="$RUNNER_TEMP/floors-check.index"
+          cp .git/index "$helper_index"
+          GIT_INDEX_FILE="$helper_index" git rm --cached -- .github/workflows/floors-staging.yml .github/floors-staging/client.patch .github/floors-staging/server.patch .github/floors-staging/status.patch
+          test "$(GIT_INDEX_FILE="$helper_index" git write-tree)" = 'f4373f9eba70c69b56ef03395ac603939330a0fc'
+          git apply --check --index --unidiff-zero .github/floors-staging/client.patch .github/floors-staging/server.patch .github/floors-staging/status.patch
+          git apply --index --unidiff-zero .github/floors-staging/client.patch .github/floors-staging/server.patch .github/floors-staging/status.patch
+          cp .git/index "$helper_index"
+          GIT_INDEX_FILE="$helper_index" git rm --cached -- .github/workflows/floors-staging.yml .github/floors-staging/client.patch .github/floors-staging/server.patch .github/floors-staging/status.patch
+          test "$(GIT_INDEX_FILE="$helper_index" git write-tree)" = '862bb7cd58d70feb588c4fbc79de0aca223d04d4'
+          git diff --cached --check
+          test -z "$(git diff --cached --name-only -- .github/workflows)"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck && npm run build
+      - name: Commit only the checked feature integration, preserving concurrent changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/feature/map-floors-room-fog-20260911 | cut -f1)" = "$GITHUB_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat(maps): connect floors and room fog to saved maps, scenes and native restore' -m 'Explicit tested patch; verified full source tree 862bb7cd58d70feb588c4fbc79de0aca223d04d4. Refs #3. Browser and full focused regression acceptance remains required before main integration.'
+          git push origin HEAD:refs/heads/feature/map-floors-room-fog-20260911

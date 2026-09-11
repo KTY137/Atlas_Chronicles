@@ -36,3 +36,4 @@ export type { ReliefStandort, ReliefAuftrag, Landschaft, FlussStueck } from "./r
 
 export { erzeugeAnlage, anlageOptionen, ANLAGE_ERZEUGER, ANLAGE_VERSION, ANLAGE_ARTEN, ANLAGE_LABEL, ANLAGE_GEBAEUDE, ANLAGE_STANDARD, ANLAGE_OPTION_KEYS } from "./anlage.ts";
 export type { AnlageArt, AnlageOptionen } from "./anlage.ts";
+export { copyFloorBlueprint } from "./map-floor-copy.ts";

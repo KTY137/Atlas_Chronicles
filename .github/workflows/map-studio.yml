@@ -69,6 +69,17 @@ jobs:
           packages/client/test/map-type-selection.test.ts
           packages/client/test/map-road-planning.test.ts
           packages/server/test/road-plan-integration.test.ts
+          packages/server/test/map-floors-fog.test.ts
+          packages/server/test/tactical.test.ts
+          packages/server/test/tactical-raster.test.ts
+          packages/server/test/tactical-integration.test.ts
+          packages/server/test/tactical-v3-review.test.ts
+          packages/server/test/map-lifecycle.test.ts
+          packages/server/test/map-lifecycle-review.test.ts
+          packages/server/test/map-lifecycle-native-review.test.ts
+          packages/server/test/restore-order.test.ts
+          packages/server/test/deletion.test.ts
+          packages/io/test
           packages/client/test/map-zones.test.ts
           packages/client/test/expedition-artwork.test.ts
           packages/client/test/map-artwork.test.ts
@@ -93,8 +104,8 @@ jobs:
           retention-days: 7
       - name: Chromium for real browser flows
         run: npx playwright install --with-deps chromium
-      - name: Castle, palace, zoning, expedition and road browser flows
-        run: npx playwright test e2e/map-compounds.spec.ts e2e/map-zones-assets.spec.ts e2e/map-road-planning.spec.ts
+      - name: Maps, floors and room-fog browser flows
+        run: npx playwright test e2e/map-compounds.spec.ts e2e/map-zones-assets.spec.ts e2e/map-road-planning.spec.ts e2e/map-floors-fog.spec.ts
         env:
           # Initialize the real CommonJS dependency before the test host's ESM loader.
           NODE_OPTIONS: --require ./node_modules/semver/index.js
