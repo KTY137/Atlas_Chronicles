@@ -3,6 +3,8 @@ on:
   push:
     branches: [fix/gui-fuzz-release-20260911, main]
     paths: ['packages/**', 'e2e/**', 'package*.json', '.github/workflows/gui-validation.yml']
+  pull_request:
+    paths: ['packages/**', 'e2e/**', 'package*.json', '.github/workflows/gui-validation.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,7 +25,7 @@ jobs:
       - run: npm run typecheck && npm run build
       - run: npx playwright install --with-deps chromium
       - name: Native dropdowns, seeded monkey states and navigation regressions
-        run: npx playwright test e2e/gui-fuzz.spec.ts e2e/gui-navigation.spec.ts e2e/map-context-menu.spec.ts --reporter=list,json
+        run: npx playwright test e2e/gui-fuzz.spec.ts e2e/gui-navigation.spec.ts e2e/map-context-menu.spec.ts e2e/map-editor-cartography.spec.ts e2e/rule-forge.spec.ts --reporter=list,json
         env:
           NODE_OPTIONS: --require ./node_modules/semver/index.js
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/gui-report.json

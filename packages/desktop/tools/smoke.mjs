@@ -23,7 +23,9 @@ const executable=artifactFlag?artifactFlag.slice("--executable=".length):fileURL
 const entry=join(root,"packages/desktop/dist");
 const options={executablePath:executable,args:[...artifactFlag?[]:[entry],`--user-data=${join(run,"user-data")}`],env:Object.fromEntries(Object.entries(process.env).filter(([key])=>!["ELECTRON_RUN_AS_NODE","NODE_OPTIONS","DATABASE_URL","COOKIE_SECRET"].includes(key))),timeout:90000};
 let application,manager,game,profileId,origin,gmId,campaignId,bundle;
-const evidence={schema:"chronicle-desktop-smoke/1",run,startedAt:new Date().toISOString(),checks:[]};
+const expectedVersion=JSON.parse(await readFile(join(root,"packages/desktop/package.json"),"utf8")).version;
+const executableKind=executable.toLowerCase().includes(`app-${expectedVersion}`)?"installed":"packaged";
+const evidence={executableKind,version:expectedVersion,schema:"chronicle-desktop-smoke/1",run,startedAt:new Date().toISOString(),checks:[]};
 const record=name=>{evidence.checks.push(name);console.log(`PASS ${name}`);};
 async function launch(){application=await electron.launch(options);manager=await application.firstWindow();manager.setDefaultTimeout(30000);await manager.waitForURL("chronicle-shell://app/index.html");await manager.waitForSelector("#create-form");console.log("Desktop manager loaded.");}
 async function invoke(request){const result=await manager.evaluate(request=>window.chronicleDesktop.invoke(request),request);assert.equal(result.ok,true,result.error);return result.value;}
@@ -64,11 +66,24 @@ try{
   // Ein sichtbarer "Welt oeffnen"-Knopf vor der Einrichtung fuehrt also in eine Sackgasse.
   assert.equal(await manager.locator("#open").isHidden(),true,"Welt oeffnen darf vor der ersten Einrichtung nicht angeboten werden.");
   const state=await invoke({kind:"status"});profileId=state.profileId;origin=state.origin;
-  assert.match(state.runtime.node,/^24\./);assert.ok(state.runtime.decoder);assert.notEqual(new URL(origin).port,"3000");evidence.runtime=state.runtime;
+  assert.equal(state.version,expectedVersion);assert.match(state.runtime.node,/^24\./);assert.ok(state.runtime.decoder);assert.notEqual(new URL(origin).port,"3000");evidence.runtime=state.runtime;
   record("own PG17 starts, migrations and native sharp decode under Electron Node24");
   const [createdGame]=await Promise.all([application.waitForEvent("window",{timeout:90000}),manager.locator("#gm-name").fill("Desktop GM").then(()=>manager.getByRole("button",{name:"Spielleitung einrichten",exact:true}).click())]);game=createdGame;await game.waitForLoadState();
   const identity=await request("/api/me");assert.equal(identity.status,200);gmId=identity.body.userId;
   const created=await request("/api/campaigns","POST",{name:"Persistent desktop campaign"});assert.equal(created.status,200);campaignId=created.body.id;
+  // Native Chromium controls in the actual packaged/installed Electron application.
+  await game.goto(`${origin}/?campaign=${campaignId}&stage=heute`);
+  await game.getByRole("button",{name:"Einstellungen",exact:true}).click();
+  const appearance=game.locator(".appearance-settings");await appearance.waitFor();
+  const choices=appearance.locator("select");assert.ok(await choices.count()>2);
+  for(let i=1;i<await choices.count();i++){
+    const choice=choices.nth(i),values=await choice.locator("option").evaluateAll(options=>options.map(option=>option.value));
+    await choice.click();await choice.press("End");await choice.press("Enter");assert.equal(await choice.inputValue(),values.at(-1));
+    await choice.click();await choice.press("Escape");assert.equal(await appearance.isVisible(),true);
+  }
+  await appearance.getByRole("button",{name:"Meine Einstellungen zurücksetzen",exact:true}).click();
+  await game.goto(`${origin}/?campaign=${campaignId}&stage=heute`);
+  record("native settings dropdowns in packaged Electron select, cancel and reset without navigation or focus loss");
   // Die Runde entsteht im Spielfenster. Das Hostfenster muss sie ohne Neustart der Welt anbieten:
   // es lud seine Runden nur beim Start und zeigte danach „noch keine Runde" mit gesperrtem Knopf.
   await manager.waitForFunction(name=>[...document.querySelectorAll("#zugang-runde option")].some(option=>option.textContent===name)&&!document.getElementById("zugang-einladung").disabled,"Persistent desktop campaign",{timeout:30000});

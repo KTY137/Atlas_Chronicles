@@ -77,7 +77,7 @@ for (const seed of seeds) test(`seeded GUI state monkey ${seed.toString(16)}`, a
     }
     // Deterministic recovery from arbitrary invalid intermediate states.
     await families.nth(1).click();
-    await choose(studio.getByLabel("Art des Ortes", { exact: true }), "siedlung:dorf");
+    await choose(studio.getByRole("combobox", { name: "Art des Ortes", exact: true }), "siedlung:dorf");
     await studio.getByLabel("Breite", { exact: true }).fill("36");
     await studio.getByLabel("Höhe", { exact: true }).fill("28");
     await studio.getByLabel("Gebäude", { exact: true }).fill("20");
@@ -107,4 +107,16 @@ test("native loot dropdowns survive rapid choices, media navigation and a cancel
   await expect(form.getByLabel("Gegenstandsname", { exact: true })).toHaveValue("Dropdown Regression");
   await choose(select, values.at(-1)!);
   expect(failures).toEqual([]); await page.screenshot({ path: info.outputPath("loot-dropdown.png") });
+});
+
+test("settings dropdown cancellation does not leave the settings screen", async ({ page }, info) => {
+  await enter(page, "heute"); await page.getByRole("button", { name: "Einstellungen", exact: true }).click();
+  const selects = page.locator("main select:visible"); await expect.poll(() => selects.count()).toBeGreaterThan(2);
+  // Exclude language: changing it is an explicit full-page transition, not a cosmetic setting.
+  for (let i = 1; i < await selects.count(); i++) {
+    const select = selects.nth(i), before = await select.inputValue();
+    await select.click(); await select.press("Escape"); await expect(select).toBeVisible();
+    await expect(select).toHaveValue(before);
+  }
+  await page.screenshot({ path: info.outputPath("settings-dropdowns.png") });
 });

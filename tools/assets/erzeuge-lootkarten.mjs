@@ -21,6 +21,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { join, resolve } from "node:path";
 import sharp from "sharp";
+import { lootText as text, measureLootText } from "./loot-lettering.mjs";
 import { CHRONICLE_LOOT_DECK, CHRONICLE_LOOT_SPREAD, CHRONICLE_LOOT_IMAGE_DIR } from "../../packages/rules/src/templates/chronicle-heroes-loot.ts";
 import { zufallFabrik, n, rect, circle, ellipse, line, path, poly, polyline, svg, klumpen } from "./tusche.mjs";
 import { M, korn, weichzeichner, verlauf, rundverlauf, defs, mische } from "./pinsel.mjs";
@@ -39,12 +40,6 @@ const STUFE = {
   episch: { rand: "#7a5a86", tief: "#4c3557", wort: "Episch" },
   legendaer: { rand: "#c8963c", tief: "#8a6220", wort: "Legendär" },
 };
-
-const escape = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-/** Text ohne Schriftdatei: die Rasterung nimmt, was das System hat, und wir geben eine Kette an. */
-const schrift = "Georgia, 'Times New Roman', 'DejaVu Serif', serif";
-const text = (x, y, inhalt, { groesse = 28, farbe = "#2c2519", anker = "middle", fett = 400, sperrung = 0, kursiv = "normal" } = {}) =>
-  `<text x="${n(x)}" y="${n(y)}" text-anchor="${anker}" font-family="${schrift}" font-size="${n(groesse)}" font-weight="${fett}" font-style="${kursiv}" letter-spacing="${n(sperrung)}" fill="${farbe}">${escape(inhalt)}</text>`;
 
 // ---------------------------------------------------------------------------------------------
 // Sinnbilder — zehn Familien, aus denen alle vierzig Karten schöpfen. Farbe und Beiwerk je Karte
@@ -193,14 +188,14 @@ function zeichneKarte(karte) {
   // Zeilen
   // Beschriftung links, Wert rechts. Ein langer Wert schrumpft, bis er neben seine Beschriftung
   // passt, und rutscht darunter, wenn auch das nicht reicht — Text darf nie Text ueberdecken.
-  const breiteVon = (inhalt, groesse) => inhalt.length * groesse * 0.56; // Georgia laeuft breit
+  const breiteVon = (inhalt, groesse, gewicht = 400) => measureLootText(inhalt, groesse, gewicht);
   let y = 640;
   for (const zeile of karte.zeilen.slice(0, 3)) {
     const platz = BREITE - 144 - breiteVon(zeile.label, 19) - 16;
     let groesse = 19;
-    while (groesse > 14 && breiteVon(zeile.wert, groesse) > platz) groesse -= 1;
+    while (groesse > 14 && breiteVon(zeile.wert, groesse, 600) > platz) groesse -= 1;
     teile.push(text(72, y, zeile.label, { groesse: 19, anker: "start", farbe: "#5a5145" }));
-    if (breiteVon(zeile.wert, groesse) <= platz) {
+    if (breiteVon(zeile.wert, groesse, 600) <= platz) {
       teile.push(text(BREITE - 72, y, zeile.wert, { groesse, anker: "end", fett: 600 }));
       y += 30;
     } else {
