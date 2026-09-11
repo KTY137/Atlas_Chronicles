@@ -118,8 +118,16 @@ async function harness() {
   return { windows, manager, host, profiles, openDialog, messageDialog, hello, invoke, event, fromPartition };
 }
 
-beforeEach(() => vi.resetModules());
-afterEach(() => { vi.doUnmock("electron"); vi.doUnmock("../src/profiles.ts"); vi.doUnmock("../src/controller.ts"); vi.doUnmock("../src/recovery.ts"); vi.restoreAllMocks(); });
+const originalPlatform = Object.getOwnPropertyDescriptor(process, "platform")!;
+const originalArch = Object.getOwnPropertyDescriptor(process, "arch")!;
+beforeEach(() => {
+  vi.resetModules();
+  // This suite mocks Electron/host APIs. Exercise the Windows-only entrypoint on every CI host
+  // without removing its real runtime guard or claiming to run native Windows here.
+  Object.defineProperty(process, "platform", { value: "win32", configurable: true });
+  Object.defineProperty(process, "arch", { value: "x64", configurable: true });
+});
+afterEach(() => { Object.defineProperty(process, "platform", originalPlatform); Object.defineProperty(process, "arch", originalArch); vi.doUnmock("electron"); vi.doUnmock("../src/profiles.ts"); vi.doUnmock("../src/controller.ts"); vi.doUnmock("../src/recovery.ts"); vi.restoreAllMocks(); });
 
 it("rejects same-origin impostor contents, subframes and an earlier navigation capability", async () => {
   const h = await harness(), capability = h.hello();

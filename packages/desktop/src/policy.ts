@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createHash } from "node:crypto";
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve, win32 } from "node:path";
 
 export const SHELL_URL = "chronicle-shell://app/index.html";
 export const PROFILE_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -74,7 +74,8 @@ export function hostEnvironment(source: NodeJS.ProcessEnv, chronist: { key?: str
 }
 export function postgresCommandOwnsDirectory(commandLine: string, directory: string): boolean {
   const match = /(?:^|\s)-D\s+"([^"]+)"(?:\s|$)/.exec(commandLine);
-  return !!match?.[1] && resolve(match[1]).toLowerCase() === resolve(directory).toLowerCase();
+  // The inspected command is from Windows, even when this pure parser is tested on Linux.
+  return !!match?.[1] && win32.resolve(match[1]).toLowerCase() === win32.resolve(directory).toLowerCase();
 }
 export type Command =
   | { kind: "status" | "stop" | "open" | "backup" }

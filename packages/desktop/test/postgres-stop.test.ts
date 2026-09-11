@@ -4,7 +4,21 @@ import { spawn } from "node:child_process";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, it } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
+
+// A deterministic Win32_Process probe, not an attempted PowerShell launch on Linux.
+// Native ownership is additionally verified by the actual Windows packaged smoke.
+const inspection = vi.hoisted(() => vi.fn());
+vi.mock("node:child_process", async importOriginal => {
+  const actual = await importOriginal<typeof import("node:child_process")>();
+  const { promisify } = await import("node:util");
+  const execFile = Object.assign(vi.fn(), { [promisify.custom]: inspection });
+  return { ...actual, execFile };
+});
+beforeEach(() => {
+  inspection.mockReset();
+  inspection.mockResolvedValue({ stdout: JSON.stringify({ ExecutablePath: process.execPath, CommandLine: "node test-process" }), stderr: "" });
+});
 import { ManagedPostgres } from "../src/postgres.ts";
 import type { OwnedProfile } from "../src/profiles.ts";
 
@@ -30,6 +44,7 @@ it("beendet eine Welt, deren eingetragener Postmaster nicht mehr laeuft, statt s
   try {
     await writeFile(join(owned.dataDirectory, "postmaster.pid"), pidFile(dead, owned.dataDirectory));
     await expect(new ManagedPostgres(join(owned.directory, "runtime"), owned).stop()).resolves.toBeUndefined();
+    expect(inspection).not.toHaveBeenCalled();
   } finally { await rm(owned.directory, { recursive: true, force: true }); }
 });
 
@@ -40,5 +55,20 @@ it("uebernimmt weiterhin keinen fremden lebenden Prozess, nur weil er in postmas
   try {
     await writeFile(join(owned.dataDirectory, "postmaster.pid"), pidFile(process.pid, owned.dataDirectory));
     await expect(new ManagedPostgres(join(owned.directory, "runtime"), owned).stop()).rejects.toThrow("fremder Prozess");
+    expect(inspection).toHaveBeenCalledOnce();
+    expect(() => process.kill(process.pid, 0)).not.toThrow();
+  } finally { await rm(owned.directory, { recursive: true, force: true }); }
+});
+
+
+it("refuses shutdown when Windows process ownership cannot be inspected", async () => {
+  const owned = await profile();
+  inspection.mockRejectedValueOnce(new Error("Synthetic unavailable CIM provider"));
+  try {
+    await writeFile(join(owned.dataDirectory, "postmaster.pid"), pidFile(process.pid, owned.dataDirectory));
+    await expect(new ManagedPostgres(join(owned.directory, "runtime"), owned).stop())
+      .rejects.toMatchObject({ code: "postgres-owner" });
+    expect(inspection).toHaveBeenCalledOnce();
+    expect(() => process.kill(process.pid, 0)).not.toThrow();
   } finally { await rm(owned.directory, { recursive: true, force: true }); }
 });

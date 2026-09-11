@@ -4,7 +4,7 @@ import { test, expect, type BrowserContext } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
 import { readFile } from "node:fs/promises";
-import { parseSupportedRulePackage, stableJson, HOW_TO_BE_A_HERO_PACKAGE } from "@chronicle/rules";
+import { parseSupportedRulePackage, stableJson, CHRONICLE_HEROES_PACKAGE } from "@chronicle/rules";
 import type { ActionCard } from "../packages/client/src/features/game-api";
 import { createTestDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { buildApp } from "../packages/server/src/app.ts";
@@ -103,16 +103,16 @@ test("typing a formula with suggestions, plain errors, three views, install and 
   } finally { await context.close(); }
 });
 
-test("opening the HTBAH template shows sugar and downloads the package byte for byte", async ({ page: gm }) => {
+test("opening the shipped ChronicleHeroes template shows sugar and downloads the package byte for byte", async ({ page: gm }) => {
   await signIn(gm.context(), gmSession);
   await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
-  await gm.getByRole("button", { name: "HTBAH-Vorlage anpassen" }).click();
-  await gm.getByRole("button", { name: "HTBAH als Regelentwurf öffnen" }).click();
+  await gm.getByRole("button", { name: "Vorlage anpassen" }).click();
+  await gm.getByRole("button", { name: "ChronicleHeroes als Regelentwurf öffnen" }).click();
   await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
   await gm.getByRole("button", { name: /Initiative/ }).click();
   await expect(gm.locator(".rf-editor-fields").first().getByRole("combobox", { name: "Formel", exact: true }).first()).toHaveValue(/^1d10 \+ /);
   const downloadPromise = gm.waitForEvent("download");
   await gm.getByRole("button", { name: "Paketdatei", exact: true }).click();
   const downloaded = parseSupportedRulePackage(await readFile((await (await downloadPromise).path())!, "utf8"));
-  expect(stableJson(downloaded)).toBe(stableJson(HOW_TO_BE_A_HERO_PACKAGE));
+  expect(stableJson(downloaded)).toBe(stableJson(CHRONICLE_HEROES_PACKAGE));
 });

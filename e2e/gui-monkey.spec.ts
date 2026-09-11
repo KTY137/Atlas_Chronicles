@@ -10,7 +10,12 @@ async function navigate(page:Page, name:string){
   const mobile=page.getByRole('button',{name:'Bereiche öffnen',exact:true});
   if(await mobile.isVisible()) await mobile.click();
   const target=page.getByRole('navigation',{name:'Bereiche',exact:true}).getByRole('button',{name,exact:true});
-  await target.click();await expect(target).toHaveAttribute('aria-current','page');
+  await target.click();
+  // Mobile navigation closes after selection; assert the state, not a now-hidden role.
+  await expect(page.locator('#area-navigation button[aria-current="page"]')).toHaveAttribute('aria-label',name);
+  const stage = name === 'Chronik' ? 'wiki' : name.toLowerCase();
+  await expect(page).toHaveURL(url => url.searchParams.get('stage') === stage);
+  if(await mobile.isVisible()) await expect(mobile).toHaveAttribute('aria-expanded','false');
 }
 
 // No production/world credentials, no remote calls and no unrestricted destructive button pool.
