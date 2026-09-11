@@ -1,0 +1,73 @@
+name: map-studio
+
+on:
+  push:
+    paths:
+      - 'packages/**'
+      - 'e2e/**'
+      - '.github/workflows/map-studio.yml'
+      - 'package*.json'
+  pull_request:
+    paths:
+      - 'packages/**'
+      - 'e2e/**'
+      - '.github/workflows/map-studio.yml'
+      - 'package*.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: map-studio-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      # Only tracked source and public installed dependencies: no .git, credentials,
+      # local worlds, environment files or runner state. Short-lived offline repro.
+      - name: Reproducible source
+        run: |
+          git archive --format=tar HEAD | gzip > "$RUNNER_TEMP/map-studio-source.tar.gz"
+          tar -czf "$RUNNER_TEMP/map-studio-dependencies.tar.gz" node_modules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: map-studio-source
+          path: ${{ runner.temp }}/map-studio-source.tar.gz
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: map-studio-dependencies
+          path: ${{ runner.temp }}/map-studio-dependencies.tar.gz
+          retention-days: 1
+      - name: Client build
+        run: npm run build
+      - name: Repository types
+        run: npm run typecheck
+      - name: Language and boundaries
+        run: npm run gate:sprache && npm run gate:boundaries
+      - name: Map regressions
+        run: >-
+          npx vitest run packages/forge/test packages/szene/test
+          packages/client/test/map-type-selection.test.ts
+          packages/client/test/map-generation.test.ts
+          packages/client/test/map-location.test.ts
+          packages/client/test/map-workshop-review.test.ts
+          packages/client/test/sprache-P5.test.ts
+          --reporter=default --reporter=json --outputFile=/tmp/map-studio-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: map-studio-results
+          path: /tmp/map-studio-results.json
+          if-no-files-found: ignore
+          retention-days: 7
