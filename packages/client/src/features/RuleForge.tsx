@@ -16,14 +16,15 @@ import { RuleMap } from "./RuleMap";
 import { ChronicleHeroesTemplate } from "./ChronicleHeroesTemplate";
 import { MapContextMenu } from "./MapContextMenu";
 import { RuleDeclarativeEditor, RuleActionExtensions, AttributionEditor } from "./RuleDeclarativeEditor";
+import { RuleAbilityEditor, RuleConditionEditor } from "./RuleAbilityEditor";
 import { RuleAttribution } from "./RuleComputedFields";
 import type { RulePackageHindernis, RulePackageStand, RulesState } from "./game-api";
 import { draftExpression, forkPackage, localKey, migrationStepDraft, moveItem, newField, newPackage, packageDraft, packageTestResults, uniqueId, validateDraft, type DraftAction, type DraftField, type DraftMigration, type DraftMigrationStep, type DraftSection, type FormulaDraft, type RuleDraft } from "./rule-forge-model";
 import "./rule-forge.css";
 
 interface RuleReview { from: PackagePin; to: PackagePin; pinVersion: number; migration: MigrationPreview | null; previewHash: string }
-type EditorTab = "package" | "map" | "fields" | "sheet" | "actions" | "computed" | "tests" | "migrations";
-const tabs: EditorTab[] = ["package", "map", "fields", "sheet", "actions", "computed", "tests", "migrations"];
+type EditorTab = "package" | "map" | "fields" | "sheet" | "actions" | "computed" | "abilities" | "conditions" | "tests" | "migrations";
+const tabs: EditorTab[] = ["package", "map", "fields", "sheet", "actions", "computed", "abilities", "conditions", "tests", "migrations"];
 /** Beschriftung und Beschreibung eines Reiters als Funktion, nicht als Tabelle: so sieht `t` ein
  * Zeichenkettenliteral, und ein Sprachwechsel erreicht auch diese Texte. */
 function tabLabel(id: EditorTab): string {
@@ -34,6 +35,8 @@ function tabLabel(id: EditorTab): string {
     case "sheet": return t("Bogen");
     case "actions": return t("Aktionen");
     case "computed": return t("Abgeleitet");
+    case "abilities": return t("Fähigkeiten");
+    case "conditions": return t("Zustände");
     case "tests": return t("Pakettests");
     case "migrations": return t("Migration");
   }
@@ -59,6 +62,8 @@ function tabDescription(id: EditorTab): string {
     case "sheet": return t("Bogen: wie die Attribute auf dem Charakterbogen angeordnet sind.");
     case "actions": return t("Aktionen: was eine Figur tun kann und wie dafür gewürfelt wird.");
     case "computed": return t("Abgeleitet: Werte, die sich aus Attributen ergeben, Regeln für einen gültigen Bogen und Balken wie Lebenspunkte.");
+    case "abilities": return t("Fähigkeiten: was eine Figur lernen kann, mit Rang, Vorstufen, Voraussetzung, Preis und einer Wirkung auf Würfe.");
+    case "conditions": return t("Zustände: was eine Figur vorübergehend belastet oder beflügelt und wie das in Würfe hineinrechnet.");
     case "tests": return t("Pakettests: feste Beispiele, die bei jeder Installation nachgerechnet werden.");
     case "migrations": return t("Migration: wie vorhandene Bögen beim Wechsel auf diese Version übernommen werden.");
   }
@@ -116,6 +121,7 @@ function locateValidationError(message: string, draft: RuleDraft): ErrorLocation
     [/^layout\b|^section\b/, "sheet"],
     [/^migration|^rename:|^add:|^archive:/, "migrations"],
     [/^selfTest\b/, "tests"],
+    [/^abilit|^ability\b/, "abilities"], [/^condition/, "conditions"],
   ];
   const hit = byPrefix.find(([pattern]) => pattern.test(message));
   if (hit) return { tab: hit[1], label: tabLabel(hit[1]) };
@@ -285,7 +291,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
         {!editable && pkg ? <Button disabled={task.busy} onClick={() => { try { begin(forkPackage(pkg, packages)); } catch (error) { task.setError(errorText(error)); } }}>{t("Neue Version erstellen")}</Button> : null}
         <Button disabled={!pkg || task.busy} onClick={download}><Download size={15} />{t("Paketdatei")}</Button></div></div>
         <div className="rf-card rf-object" aria-label={t("Die Figur in diesem Regelwerk")}><div className="rf-section-heading"><h3>{t("Die Figur in diesem Regelwerk")}</h3><span className="rf-help">{t("Schritt {schritt} von {gesamt}", { schritt: tabs.indexOf(tab) + 1, gesamt: tabs.length })}</span></div><p className="rf-help">{tabDescription(tab)}</p>
-          <div className="rf-toolbar"><span className="rf-node-badge">{t("{anzahl} Attribute", { anzahl: current.fields.length })}</span><span className="rf-node-badge">{t("{anzahl} abgeleitet", { anzahl: current.computed?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Regeln", { anzahl: current.constraints?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Balken", { anzahl: current.vitals?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Aktionen", { anzahl: current.actions.length })}</span><span className="rf-node-badge">{t("{anzahl} Pakettests", { anzahl: current.selfTests.length })}</span></div></div>
+          <div className="rf-toolbar"><span className="rf-node-badge">{t("{anzahl} Attribute", { anzahl: current.fields.length })}</span><span className="rf-node-badge">{t("{anzahl} abgeleitet", { anzahl: current.computed?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Regeln", { anzahl: current.constraints?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Balken", { anzahl: current.vitals?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Aktionen", { anzahl: current.actions.length })}</span>{current.abilityRules ? <><span className="rf-node-badge">{t("{anzahl} Fähigkeiten", { anzahl: current.abilities?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Zustände", { anzahl: current.conditions?.length ?? 0 })}</span></> : null}<span className="rf-node-badge">{t("{anzahl} Pakettests", { anzahl: current.selfTests.length })}</span></div></div>
         <div className="rf-tabs" role="tablist" aria-label={t("Regelpaket bearbeiten")}>{tabs.map((id, index) => <button key={id} type="button" role="tab" aria-selected={tab === id} aria-controls={`rf-panel-${id}`} id={`rf-tab-${id}`} tabIndex={tab === id ? 0 : -1} title={t("Schritt {schritt} von {gesamt}: {beschreibung}", { schritt: index + 1, gesamt: tabs.length, beschreibung: tabDescription(id) })} onKeyDown={event => navigateTabs(event, id, setTab)} onClick={() => setTab(id)}>{id === "tests" && current.selfTests.length ? t("{name} ({anzahl})", { name: tabLabel(id), anzahl: current.selfTests.length }) : tabLabel(id)}{errorLocation?.tab === id ? <TriangleAlert size={12} aria-label={t("Betrifft vermutlich den aktuellen Fehler")} /> : null}</button>)}</div>
         <fieldset className="rf-editor-fields" disabled={tab !== "actions" && tab !== "map" && (!editable || task.busy)}><div role="tabpanel" id={`rf-panel-${tab}`} aria-labelledby={`rf-tab-${tab}`}>
           {tab === "package" ? <><PackageEditor draft={current} onChange={edit} />{pkg ? <RuleAttribution pkg={pkg} /> : null}{current.attribution ? <AttributionEditor value={current.attribution} onChange={attribution => edit({ ...current, attribution })} /> : null}</> : null}
@@ -294,6 +300,8 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
           {tab === "sheet" ? <SheetEditor fields={current.fields} sections={current.sections} onChange={sections => edit({ ...current, sections })} /> : null}
           {tab === "actions" ? <RuleActionEditor draft={current} disabled={!editable || task.busy} onChange={actions => edit({ ...current, actions })} /> : null}
           {tab === "computed" ? <RuleDeclarativeEditor draft={current} onChange={edit} /> : null}
+          {tab === "abilities" ? <RuleAbilityEditor draft={current} onChange={edit} /> : null}
+          {tab === "conditions" ? <RuleConditionEditor draft={current} onChange={edit} /> : null}
           {tab === "tests" ? <><h3>{t("Pakettests")}</h3><p>{t("Speichere Beispiele aus der Testtafel als feste Erwartung. Bei der Installation werden alle enthaltenen Tests ausgeführt.")}</p>{!current.selfTests.length ? <p className="rf-help">{t("Noch keine Pakettests. Unten auf der Testtafel kannst du für jede Figur ein Beispiel speichern.")}</p> : <div className="rf-test-list">{current.selfTests.map((test, i) => <article className="rf-card" key={i}><div className="rf-section-heading"><h4>{test.name}</h4><Button variant="quiet" aria-label={t("Pakettest {name} entfernen", { name: test.name })} onClick={() => edit({ ...current, selfTests: current.selfTests.filter((_, n) => n !== i) })}><Trash2 size={15} />{t("Entfernen")}</Button></div><p>{t("{kennung} · Erwartet {erwartet} · {stand}", { kennung: test.actionId, erwartet: test.expectedTotal, stand: tests[i]?.passed ? t("Bestanden") : tests[i]?.error ?? (tests[i]?.actual === undefined ? t("Paket noch nicht gültig") : t("Ergebnis {wert} weicht ab", { wert: String(tests[i]!.actual) })) })}</p><details><summary>{t("Gespeicherte Beispielwerte")}</summary><dl className="rf-value-list"><dt>{t("Würfelstart")}</dt><dd>{test.context.seed}</dd>{Object.entries(test.context.actor).map(([id, value]) => <div key={id}><dt>{id}</dt><dd>{String(value)}</dd></div>)}</dl><p>{t("{anzahl} gehaltene Beispielpassagen", { anzahl: test.context.knowledge.passages.length })}</p></details></article>)}</div>}</> : null}
           {tab === "migrations" ? <MigrationEditor draft={current} packages={packages} onChange={migrations => edit({ ...current, migrations })} /> : null}
         </div></fieldset>

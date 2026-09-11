@@ -22,7 +22,7 @@ function comparisonLabel(comparison: OutcomeComparison): string {
     default: return t("mindestens");
   }
 }
-function ExpressionInput({ value, onChange, draft, action, label, help }: { value: string; onChange(value: string): void; draft: RuleDraft; action?: DraftAction; label: string; help?: string }) {
+export function ExpressionInput({ value, onChange, draft, action, label, help }: { value: string; onChange(value: string): void; draft: RuleDraft; action?: DraftAction; label: string; help?: string }) {
   const inputs = action?.inputs ?? NO_INPUTS;
   // FormulaField memoises on `sources`/`example` identity; building this object fresh on every
   // keystroke would re-parse and re-evaluate every mounted formula (H: memoisation must hold).
