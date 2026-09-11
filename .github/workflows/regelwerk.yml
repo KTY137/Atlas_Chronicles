@@ -1,0 +1,38 @@
+# Independent evidence for rule editing. The existing full gate remains unchanged.
+name: regelwerk
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regelwerk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruefung:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Typen
+            command: npm run typecheck
+          - name: Sprache und Grenzen
+            command: npm run gate:sprache && npm run gate:boundaries
+          - name: Regeln und Regelschmiede
+            command: npx vitest run packages/rules/test packages/client/test/rule-ability packages/client/test/faehigkeiten-bogen.test.ts packages/client/test/rule-forge packages/client/test/chronicle-forge.test.ts packages/client/test/sprache --maxWorkers=2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: ${{ matrix.command }}
