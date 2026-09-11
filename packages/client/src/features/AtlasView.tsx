@@ -33,6 +33,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
   const selectionKey = `chronicle.atlas-map.${campaignId}`;
   const [mapId, setMapId] = useState("");
   const [childMapId, setChildMapId] = useState(() => gm ? new URLSearchParams(location.search).get("atlasChild") ?? "" : "");
+  const [childFocus, setChildFocus] = useState<MapAncestor["focus"]>();
   const [childEditing,setChildEditing] = useState(false), [deleting,setDeleting] = useState<MapReference | null>(null);
   const [canvasMenu,setCanvasMenu] = useState<{ key:number; nodeId?:string; x:number; y:number } | null>(null);
   const [deletedIds,setDeletedIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -120,7 +121,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     if (renderer.current && mapId) cameras.current[mapId] = renderer.current.getCamera();
     const nextChild = ancestor?.kind === "tactical" ? ancestor.id : "";
     if (ancestor?.kind === "atlas") setMapId(ancestor.id);
-    setChildMapId(nextChild); setChildEditing(!!ancestor?.edit); reportDirty(false);
+    setChildMapId(nextChild); setChildFocus(ancestor?.focus); setChildEditing(!!ancestor?.edit); reportDirty(false);
     const url = new URL(location.href);
     url.searchParams.set("atlasMap", ancestor?.kind === "atlas" ? ancestor.id : mapId);
     if (nextChild) url.searchParams.set("atlasChild", nextChild); else url.searchParams.delete("atlasChild");
@@ -133,7 +134,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
       if (childDirty.current && !window.confirm(t("Ungespeicherte Kartenänderungen verwerfen?"))) { window.history.pushState(null, "", navigationUrl.current); return; }
       const params = new URLSearchParams(location.search);
       if (params.get("atlasMap")) setMapId(params.get("atlasMap")!);
-      setChildMapId(gm ? params.get("atlasChild") ?? "" : ""); reportDirty(false);
+      setChildMapId(gm ? params.get("atlasChild") ?? "" : ""); setChildFocus(undefined); reportDirty(false);
       navigationUrl.current = location.href;
     };
     window.addEventListener("popstate", back); return () => window.removeEventListener("popstate", back);
@@ -284,7 +285,7 @@ export function AtlasView({ campaignId, role, onOpenEntry, onDirty }: AtlasViewP
     if (fileInput.current) fileInput.current.value = "";
   }
 
-  if (gm && childMapId) return <NestedMapView key={`${campaignId}:${childMapId}`} campaignId={campaignId} mapId={childMapId} revision={revision} initialEditing={childEditing}
+  if (gm && childMapId) return <NestedMapView key={`${campaignId}:${childMapId}`} campaignId={campaignId} mapId={childMapId} revision={revision} initialEditing={childEditing} initialFocus={childFocus}
     onNavigate={navigateMap} onRoot={() => navigateMap()} onChanged={refresh} onDirty={reportDirty} />;
 
   return <section className="atlas-feature" aria-label={t("Atlas")}>

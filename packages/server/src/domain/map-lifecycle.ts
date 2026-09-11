@@ -7,6 +7,7 @@ import { MapDeleteSchema, type MapDeleteInput, type MapDeletionAck, type MapDele
   type MapKind, type MapReference, type MapVersionPin } from "@chronicle/protocol";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
+import { floorStackFor } from "./map-studio-state.ts";
 import { Conflict, Gone } from "./errors.ts";
 
 const hash = (value: unknown) => canonicalHash(value as CanonicalValue);
@@ -89,6 +90,11 @@ export function createMapLifecycle(db: Db, cfg: DomainConfig = {}) {
     while (pending.length) {
       const current = pending.pop()!, key = mapReferenceKey(current);
       if (selected.has(key)) throw new MapLifecycleConflict("conflict", "Die Kartenhierarchie ist nicht eindeutig.");
+      if (current.kind === "tactical") {
+        const stack = await floorStackFor(tx, campaignId, current.id);
+        if (stack && (stack.document.floors.length > 1 || stack.root_map_id !== current.id))
+          throw new MapLifecycleConflict("conflict", "Bitte das Geschoss zuerst aus seinem Geschossverband lösen. Die Karten und ihre Übergänge werden nicht stillschweigend mitgelöscht.");
+      }
       selected.set(key, current);
       if (selected.size > 10000) throw new MapLifecycleConflict("conflict", "Mehr als 10.000 Karten: Bitte zuerst einen kleineren Unterbaum auswählen.");
       for (const edge of children.get(key) ?? []) {

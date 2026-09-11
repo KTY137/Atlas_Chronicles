@@ -71,3 +71,8 @@ export type { SettlementUse, SettlementZone, SettlementPlan, PlanPoint } from ".
 
 export { parseRoadPlan, RoadPlanError, ROAD_PLAN_LIMITS } from "./road-plan.ts";
 export type { RoadPlan, RoadPlanNode, RoadPlanEdge } from "./road-plan.ts";
+
+export { MAP_FLOOR_LIMITS, MapFloorValidationError, parseMapFloorStack, validateFloorMaps, floorPointInside, floorRoomAnchor } from "./map-floors.ts";
+export type { MapFloor, MapFloorLink, MapFloorLinkKind, MapFloorStack } from "./map-floors.ts";
+export { RoomFogValidationError, parseRoomFog, applyRoomFog, visibleFogRegions, emptyRoomFog } from "./room-fog.ts";
+export type { RoomFog, RoomFogChange, RoomFogAudience } from "./room-fog.ts";
