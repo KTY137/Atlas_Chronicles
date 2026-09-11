@@ -59,8 +59,17 @@ export const HoehleOptionenSchema = Type.Object({
   licht: Type.Optional(Type.Boolean()),
 }, closed);
 
+const PlanungSchema = Type.Object({
+  schemaVersion: Type.Literal(1),
+  zonen: Type.Array(Type.Object({ id: Type.String({ minLength: 1, maxLength: 64 }), name: Type.String({ minLength: 1, maxLength: 80 }),
+    nutzung: Type.Union(["wohnen", "markt", "handwerk", "hafen", "adel", "arm", "frei"].map(value => Type.Literal(value))),
+    dichte: Type.Number({ minimum: 0, maximum: 1 }),
+    polygon: Type.Array(Type.Tuple([Type.Number({ minimum: 0, maximum: 1 }), Type.Number({ minimum: 0, maximum: 1 })]), { minItems: 3, maxItems: 32 }),
+  }, closed), { maxItems: 16 }),
+}, closed);
 const grundstueck = Type.Integer({ minimum: SIEDLUNG_LIMITS.grundstueckMin, maximum: SIEDLUNG_LIMITS.grundstueckMax });
 export const SiedlungOptionenSchema = Type.Object({
+  planung: Type.Optional(PlanungSchema),
   setting: Type.Optional(KartenSettingSchema),
   standort: Type.Optional(Type.Union(SIEDLUNG_STANDORTE.map(value => Type.Literal(value)))),
   art: Type.Optional(Type.Union([Type.Literal("weiler"), Type.Literal("dorf"), Type.Literal("stadt")])),

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { type CanonicalValue, type KnotenId } from "@chronicle/core";
 import {
-  BAUWERK_LABEL, BAUWERK_SETTINGS, KARTEN_SETTINGS, parseTacticalMapDocument, weltkeim,
+  parseSettlementPlan, type SettlementPlan, type SettlementZone, BAUWERK_LABEL, BAUWERK_SETTINGS, KARTEN_SETTINGS, parseTacticalMapDocument, weltkeim,
   type AssetpaketV1, type BauwerkTyp, type KartenSetting, type Herkunft, type Kante, type Knoten, type TacticalLight,
   type TacticalMapDocumentV1, type Weltkeim,
 } from "@chronicle/szene";
@@ -16,6 +16,7 @@ import {
   schnittKonvex, schwerpunkt, teileInParzellen, voronoi,
   type Polygon, type Punkt,
 } from "./polygon.ts";
+import { roofZone, zoneDraw, zoneBuilding } from "./siedlung-plan.ts";
 import { erzeugeLandschaft, RELIEF_STANDORTE, type FlussStueck, type ReliefStandort } from "./relief.ts";
 
 /**
@@ -65,6 +66,8 @@ import { erzeugeLandschaft, RELIEF_STANDORTE, type FlussStueck, type ReliefStand
 export const SIEDLUNG_ERZEUGER = "chronicle-siedlung";
 /** A bump is a migration, not an upgrade (RB-21d:240) — it changes every id this file mints. */
 export const SIEDLUNG_VERSION = "8";
+/** Planning is opt-in. Missing/empty plans retain the complete v8 output, including IDs. */
+const SIEDLUNG_PLAN_VERSION = "9";
 
 export const SIEDLUNG_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 256, grundstueckMin: 2, grundstueckMax: 24,
@@ -76,6 +79,7 @@ export const SIEDLUNG_STANDORTE = RELIEF_STANDORTE;
 export type SiedlungStandort = ReliefStandort;
 
 export interface SiedlungOptionen {
+  readonly planung?: SettlementPlan;
   readonly setting?: KartenSetting;
   /** Physical surroundings, normalized into the seed; older callers retain the river default. */
   readonly standort?: SiedlungStandort;
@@ -151,6 +155,7 @@ export interface SiedlungStrasse {
 }
 
 export interface SiedlungBericht {
+  readonly planung?: { readonly zonen: readonly { id: string; name: string; anzahl: number }[]; readonly verworfen: number };
   readonly bauwerke: number;
   /** What the option vector asked for. Placement is capped by frontage, never padded to match. */
   readonly angefordert: number;
@@ -346,6 +351,9 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   const relief = optionen.relief ?? .5, bewaldung = optionen.bewaldung ?? .5;
   for (const [name, value] of [["relief", relief], ["bewaldung", bewaldung]] as const) if (typeof value !== "number" || !(value >= 0 && value <= 1)) fail("option", `optionen.${name}`, "Zahl in 0..1 erwartet");
   const [breite, hoehe] = optionen.ausdehnung;
+  const planung = optionen.planung === undefined ? undefined : parseSettlementPlan(optionen.planung);
+  const geplant = !!planung?.zonen.length, version = geplant ? SIEDLUNG_PLAN_VERSION : SIEDLUNG_VERSION;
+  let planVerworfen = 0;
   const L = SIEDLUNG_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>
     Number.isSafeInteger(wert) && wert >= min && wert <= max ? wert : fail("option", pfad, `Ganzzahl in ${min}..${max} erwartet`);
@@ -369,7 +377,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   // left implicit in the numbers it defaults: it also picks the street surface below, so two
   // settlements that differ only in `art` must never share a `keimHash` even if every numeric
   // option was overridden back to equality.
-  const keim = weltkeim({
+  const layoutKeim = weltkeim({
     generator: SIEDLUNG_ERZEUGER, version: SIEDLUNG_VERSION, seed: auftrag.keim,
     optionen: {
       art: optionen.art, ausdehnung: [breite, hoehe], zellgroesse: optionen.zellgroesse,
@@ -378,9 +386,11 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
       paket: { id: paket.id, version: paket.version, zellgroesse: paket.zellgroesse },
     } as Readonly<Record<string, CanonicalValue>>,
   });
-  const r = rauschen(keim.keimHash);
+  const keim = geplant ? weltkeim({ generator: SIEDLUNG_ERZEUGER, version, seed: auftrag.keim,
+    optionen: { ...layoutKeim.optionen, planung: planung as unknown as CanonicalValue } }) : layoutKeim;
+  const r = rauschen(layoutKeim.keimHash);
   const z = optionen.zellgroesse;
-  const ids = idFabrik(SIEDLUNG_ERZEUGER, SIEDLUNG_VERSION, keim.keimHash);
+  const ids = idFabrik(SIEDLUNG_ERZEUGER, version, keim.keimHash);
   const rahmen: Polygon = [[0, 0], [breite, 0], [breite, hoehe], [0, hoehe]];
   const rand = Math.min(breite, hoehe) * (art === "weiler" ? .14 : .12);
   const ortsRahmen: Polygon = [[rand, rand], [breite - rand, rand], [breite - rand, hoehe - rand], [rand, hoehe - rand]];
@@ -401,7 +411,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   // The land itself: a height field shaped by the location (`relief.ts`). Water, rock, beach,
   // swamp and the outer woods are derived from it instead of drawn. The guaranteed river of
   // `fluss` is carved into it as a valley, so every tributary the hydrology finds runs into it.
-  const landschaft = erzeugeLandschaft({ breite, hoehe, standort, keimHash: keim.keimHash, relief, bewaldung,
+  const landschaft = erzeugeLandschaft({ breite, hoehe, standort, keimHash: layoutKeim.keimHash, relief, bewaldung,
     kern: { x: breite / 2, y: hoehe / 2, rx: breite * .42, ry: hoehe * .42 },
     ...(standort === "fluss" ? { flussAchse: flussPunkte, flussBreite } : {}) });
   const fluss: FlussStueck[] = [
@@ -682,7 +692,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   // Stadt und Dorf erhalten zusammenhängende Straßenfronten um freie Innenhöfe. Beim
   // Weiler bleiben rekursiv geteilte Bauernhöfe; innere Lose ohne Straßenanschluss werden
   // dort verworfen. Kein Haus erhält eine bloß angenommene Adresse.
-  interface RohBauwerk { readonly pfad: string; readonly umriss: Polygon; readonly los: Polygon; readonly strasseId: string; readonly ferne: number }
+  interface RohBauwerk { readonly zone?: SettlementZone; readonly pfad: string; readonly umriss: Polygon; readonly los: Polygon; readonly strasseId: string; readonly ferne: number }
   const proViertel: RohBauwerk[][] = [];
   const hofFlaechen: Polygon[] = [];
   for (let vi = 0; vi < viertel.length; vi++) {
@@ -750,7 +760,18 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     }
     if (!genommen) break;
   }
-  if (!rohBauwerke.length) fail("geometrie", "bauwerke", "auf diesem Raster ließ sich kein einziges Gebäude an einer Straße platzieren");
+  // Filter the already fitted and budgeted candidates, not the parcel loop. Removing a
+  // candidate there would let later overlapping roofs take its place and make density jump.
+  if (geplant) {
+    const candidates = rohBauwerke.splice(0);
+    for (const b of candidates) {
+      const zone = roofZone(planung!, b.umriss.map(([x, y]) => [x / breite, y / hoehe] as const));
+      const amUfer = () => [...wasser, ...fluss.map(f => f.polygon)].some(poly => poly.some((point, i) => abstandPolygonStrecke(b.umriss, point, poly[(i + 1) % poly.length]!) <= 4));
+      if (zone === "excluded" || zone && (zoneDraw(layoutKeim.keimHash, b.pfad, "density") >= zone.dichte || zone.nutzung === "hafen" && setting !== "scifi" && !amUfer())) { planVerworfen++; continue; }
+      rohBauwerke.push({ ...b, ...(zone ? { zone } : {}) });
+    }
+  }
+  if (!rohBauwerke.length && !geplant) fail("geometrie", "bauwerke", "auf diesem Raster ließ sich kein einziges Gebäude an einer Straße platzieren");
 
   // The largest plots serve the public buildings. Houses remain the majority; even a small
   // settlement with three addresses has a church, an inn and a home. No wiki entries are minted.
@@ -764,7 +785,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     const modern: readonly BauwerkTyp[] = ["krankenhaus", "bahnhof", "wohnblock", "schule", "supermarkt", "polizei", "feuerwache", "cafe", "buero", "restaurant", "hotel", "fabrik", "labor", "bibliothek", "museum", "bank", "werkstatt"];
     const raumfahrt: readonly BauwerkTyp[] = ["raumhafen", "kommando", "raumstation", "medstation", "reaktor", "labor", "werkstatt", "fabrik", "lager"];
     const mix = setting === "gegenwart" ? modern : raumfahrt;
-    const typ: BauwerkTyp = setting !== "fantasy"
+    const typ: BauwerkTyp = b.zone ? zoneBuilding(b.zone, setting, zoneDraw(layoutKeim.keimHash, b.pfad, "type")) : setting !== "fantasy"
       ? platz < mix.length ? mix[platz]! : platz % 3 ? (setting === "gegenwart" ? "wohnblock" : "raumstation") : r.waehle(BAUWERK_SETTINGS[setting])!
       : platz === 0 ? "kirche" : platz === 1 ? "taverne" : platz === 3 ? "schmiede"
         : platz === 4 || platz > 8 && platz % 11 === 0 ? "lager" : platz === 6 && art === "stadt" ? "turm"
@@ -1076,7 +1097,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
 
   // -- containment: the settlement's `ort`, and one `bauwerk` per building ---------------------
   const herkunft = (pfad: readonly string[], kindKeim: string): Herkunft =>
-    ({ erzeuger: SIEDLUNG_ERZEUGER, version: SIEDLUNG_VERSION, keimHash: keim.keimHash, erzeugungspfad: pfad, kindKeim });
+    ({ erzeuger: SIEDLUNG_ERZEUGER, version, keimHash: keim.keimHash, erzeugungspfad: pfad, kindKeim });
   const wurzelId = ids.knotenId("siedlung");
   const wurzelEltern: readonly Kante[] = auftrag.eltern ? [{ von: wurzelId, nach: auftrag.eltern.knotenId, art: auftrag.eltern.art }] : [];
   const knoten: Knoten[] = [{
@@ -1099,9 +1120,10 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   }
 
   return Object.freeze({
-    art: "siedlung", erzeuger: SIEDLUNG_ERZEUGER, version: SIEDLUNG_VERSION, keim, wurzelId, karte, cartography,
+    art: "siedlung", erzeuger: SIEDLUNG_ERZEUGER, version, keim, wurzelId, karte, cartography,
     knoten: Object.freeze(knoten), bauwerke: Object.freeze(bauwerke), strassen: Object.freeze(strassen),
     bericht: Object.freeze({
+      ...(geplant ? { planung: { zonen: planung!.zonen.map(zone => ({ id: zone.id, name: zone.name, anzahl: rohBauwerke.filter(b => b.zone?.id === zone.id).length })), verworfen: planVerworfen } } : {}),
       bauwerke: bauwerke.length, angefordert: optionen.bauwerke, strassen: strassen.length,
       strassenzellen, hofzellen, stamps: werk.stamps.length, stampsNachArt: Object.freeze({ ...werk.nachArt }),
       paket: Object.freeze({ id: paket.id, version: paket.version, assets: paket.assets.length }),

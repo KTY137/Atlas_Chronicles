@@ -10,7 +10,7 @@ import { artworkBrush, artworkGenre, artworkMatches, artworkName, type ArtworkBr
 import "./map-artwork.css";
 
 const ART_LABEL: Record<AssetArt, string> = { boden: "Böden", wand: "Wände", tuer: "Türen", aufbau: "Aufbauten & Stadt", moebel: "Einrichtung", gefaess: "Behälter", licht: "Lichter", marke: "Zeichen", figur: "Figuren" };
-const PACK_LABEL: Record<string, string> = { "pk.genres": "Genre-Archiv · zwölf Welten", "pk.zeitwelten": "Zeitwelten · Gegenwart & Science-Fiction", "pk.gemalt": "Gemalt", "pk.grundriss": "Grundriss", "pk.atlas": "Weltatlas", "pk.natur": "Natur · Bäume, Felsen, Schilf & Boote" };
+const PACK_LABEL: Record<string, string> = { "pk.expedition": "Wildnis & Expedition · Wald, Höhlen & Lager", "pk.genres": "Genre-Archiv · zwölf Welten", "pk.zeitwelten": "Zeitwelten · Gegenwart & Science-Fiction", "pk.gemalt": "Gemalt", "pk.grundriss": "Grundriss", "pk.atlas": "Weltatlas", "pk.natur": "Natur · Bäume, Felsen, Schilf & Boote" };
 interface PackSummary { id: string; version: string; assetCount: number }
 
 export function MapArtworkPalette({ document, brush, onBrush, selected, onSelect, onUpdate, onRemove }: {
@@ -30,14 +30,14 @@ export function MapArtworkPalette({ document, brush, onBrush, selected, onSelect
   return <section className="map-artwork" aria-label={t("Kartenassets")}>
     <div className="map-artwork-heading"><div><h3><Boxes size={19} /> {t("Einrichtung & Kartenassets")}</h3><p className="field-help">{t("Wähle ein Objekt und klicke auf die Karte. Es wird mit der Kartenrevision gespeichert.")}</p></div>
       {brush ? <Button aria-pressed onClick={() => onBrush(null)}><MousePointer2 size={15} /> {t("Platzieren beenden")}</Button> : null}</div>
-    <div className="map-artwork-filters"><label>{t("Assetpaket")}<select value={packId} onChange={event => { setPackId(event.target.value); setGenre("all"); onBrush(null); }}>
+    <div className="map-artwork-filters"><label>{t("Assetpaket")}<select aria-label={t("Assetpaket")} value={packId} onChange={event => { setPackId(event.target.value); setGenre("all"); setCategory("all"); setQuery(""); onBrush(null); }}>
       {!packs.data?.some(pack => pack.id === packId) ? <option value={packId}>{t(PACK_LABEL[packId] ?? packId)}</option> : null}
       {packs.data?.map(pack => <option key={pack.id} value={pack.id}>{t(PACK_LABEL[pack.id] ?? pack.id)} · {t("{anzahl} Assets", { anzahl: pack.assetCount })}</option>)}
-    </select></label><label>{t("Kategorie")}<select value={category} onChange={event => setCategory(event.target.value)}><option value="all">{t("Alle Kategorien")}</option>{ASSET_ARTEN.map(art => <option key={art} value={art}>{t(ART_LABEL[art])}</option>)}</select></label>
-      <label>{t("Objekt-Setting")}<select value={era} onChange={event => setEra(event.target.value)}><option value="all">{t("Alle Settings")}</option><option value="gegenwart">{t("Gegenwart & neutrale Objekte")}</option><option value="scifi">{t("Science-Fiction & neutrale Objekte")}</option><option value="fantasy">{t("Fantasy & neutrale Objekte")}</option></select></label>
+    </select></label><label>{t("Kategorie")}<select aria-label={t("Kategorie")} value={category} onChange={event => setCategory(event.target.value)}><option value="all">{t("Alle Kategorien")}</option>{ASSET_ARTEN.map(art => <option key={art} value={art}>{t(ART_LABEL[art])}</option>)}</select></label>
+      <label>{t("Objekt-Setting")}<select aria-label={t("Objekt-Setting")} value={era} onChange={event => setEra(event.target.value)}><option value="all">{t("Alle Settings")}</option><option value="gegenwart">{t("Gegenwart & neutrale Objekte")}</option><option value="scifi">{t("Science-Fiction & neutrale Objekte")}</option><option value="fantasy">{t("Fantasy & neutrale Objekte")}</option></select></label>
       <label>{t("Assets suchen")}<div className="map-artwork-search"><Search size={15} /><input value={query} placeholder={t("Objekt, Material oder Genre …")} onChange={event => setQuery(event.target.value)} /></div></label>
     </div>
-    {genres.length ? <div className="map-artwork-genres"><label>{t("Genre")}<select value={genre} onChange={event => { setGenre(event.target.value); onBrush(null); }}><option value="all">{t("Alle Genres · {anzahl} Assets", { anzahl: manifest.data?.assets.length ?? 0 })}</option>{genres.map(id => <option value={id} key={id}>{t(ASSET_GENRE_LABEL[id])}</option>)}</select></label>
+    {genres.length ? <div className="map-artwork-genres"><label>{t("Genre")}<select aria-label={t("Genre")} value={genre} onChange={event => { setGenre(event.target.value); onBrush(null); }}><option value="all">{t("Alle Genres · {anzahl} Assets", { anzahl: manifest.data?.assets.length ?? 0 })}</option>{genres.map(id => <option value={id} key={id}>{t(ASSET_GENRE_LABEL[id])}</option>)}</select></label>
       <p className="field-help">{t("Zwölf Welten, jeweils mit Böden, Architektur und Einrichtung. Genre, Kategorie und Suche lassen sich kombinieren.")}</p></div> : null}
     {manifest.loading ? <Loading text={t("Objektkatalog wird geladen …")} /> : null}{manifest.error || packs.error ? <Notice error>{manifest.error || packs.error}</Notice> : null}
     {manifest.data ? <><p className="field-help">{t("{sichtbar} von {gesamt} Assets", { sichtbar: visible.length, gesamt: manifest.data.assets.length })} · {brush ? t("{name} ausgewählt – auf der Karte platzieren", { name: artworkName(brush.asset.name) }) : t("Objekt auswählen")}</p>
@@ -51,7 +51,7 @@ export function MapArtworkPalette({ document, brush, onBrush, selected, onSelect
     </> : null}
     <details className="map-placed-artwork"><summary>{t("Platzierte Einrichtung bearbeiten ({anzahl})", { anzahl: document.geometry.stamps.filter(stamp => stamp.l > -90).length })}</summary>
       <label>{t("Platzierte Objekte suchen")}<input value={placedQuery} placeholder={t("Name des Objekts")} onChange={event => setPlacedQuery(event.target.value)} /></label>
-      <label>{t("Platziertes Asset")}<select value={placed.some(stamp => stamp.id === selected) ? selected : ""} onChange={event => { onBrush(null); onSelect(event.target.value); }}><option value="">{t("Objekt auswählen …")}</option>
+      <label>{t("Platziertes Asset")}<select aria-label={t("Platziertes Asset")} value={placed.some(stamp => stamp.id === selected) ? selected : ""} onChange={event => { onBrush(null); onSelect(event.target.value); }}><option value="">{t("Objekt auswählen …")}</option>
         {placed.slice(0, 500).map(stamp => <option key={stamp.id} value={stamp.id}>{artworkName(stamp.a.split("/")[1] ?? stamp.a)} · {Math.round(stamp.x)}, {Math.round(stamp.y)}</option>)}
       </select></label>{placed.length > 500 ? <p className="field-help">{t("Die ersten 500 Treffer. Grenze die Suche ein.")}</p> : null}
       {chosen ? <div className="map-artwork-selected"><strong>{artworkName(chosen.a.split("/")[1] ?? chosen.a)}</strong><div className="map-numbers">

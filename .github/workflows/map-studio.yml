@@ -3,12 +3,18 @@ name: map-studio
 on:
   push:
     paths:
+      - 'assets/**'
+      - 'tools/assets/**'
+      - 'tools/test/**'
       - 'packages/**'
       - 'e2e/**'
       - '.github/workflows/map-studio.yml'
       - 'package*.json'
   pull_request:
     paths:
+      - 'assets/**'
+      - 'tools/assets/**'
+      - 'tools/test/**'
       - 'packages/**'
       - 'e2e/**'
       - '.github/workflows/map-studio.yml'
@@ -55,10 +61,17 @@ jobs:
         run: npm run typecheck
       - name: Language and boundaries
         run: npm run gate:sprache && npm run gate:boundaries
+      - name: Expedition assets
+        run: node --test tools/test/expedition-assets.test.mjs
       - name: Map regressions
         run: >-
           npx vitest run packages/forge/test packages/szene/test packages/render/test
           packages/client/test/map-type-selection.test.ts
+          packages/client/test/map-zones.test.ts
+          packages/client/test/expedition-artwork.test.ts
+          packages/client/test/map-artwork.test.ts
+          packages/server/test/expedition-packs.test.ts
+          packages/server/test/siedlung-plan-integration.test.ts
           packages/client/test/map-generation.test.ts
           packages/client/test/map-location.test.ts
           packages/client/test/map-workshop-review.test.ts
@@ -78,8 +91,8 @@ jobs:
           retention-days: 7
       - name: Chromium for real browser flows
         run: npx playwright install --with-deps chromium
-      - name: Castle, palace and recipe browser flows
-        run: npx playwright test e2e/map-compounds.spec.ts
+      - name: Castle, palace, zoning and expedition browser flows
+        run: npx playwright test e2e/map-compounds.spec.ts e2e/map-zones-assets.spec.ts
         env:
           # Initialize the real CommonJS dependency before the test host's ESM loader.
           NODE_OPTIONS: --require ./node_modules/semver/index.js
