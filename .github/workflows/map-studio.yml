@@ -38,7 +38,7 @@ jobs:
       - name: Reproducible source
         run: |
           git archive --format=tar HEAD | gzip > "$RUNNER_TEMP/map-studio-source.tar.gz"
-          tar -czf "$RUNNER_TEMP/map-studio-dependencies.tar.gz" node_modules
+          find node_modules packages -path '*/node_modules' -prune -print0 | tar -czf "$RUNNER_TEMP/map-studio-dependencies.tar.gz" --null -T -
       - uses: actions/upload-artifact@v4
         with:
           name: map-studio-source
