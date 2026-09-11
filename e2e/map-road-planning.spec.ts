@@ -54,7 +54,12 @@ test("road graph is edited with keyboard and pointer, replayed and saved without
     await page.mouse.down();await page.mouse.move(circle.x+circle.width/2,circle.y+circle.height/2-bounds.height*.1,{steps:4});await page.mouse.up();
     await expect(planner.getByLabel("Wegpunkt auswählen",{exact:true})).toHaveValue("ziel-2");
     expect(Number(await planner.getByLabel("Wegpunkt Y (%)",{exact:true}).inputValue())).toBeLessThan(45);
+    // Sub-percent positions are produced by real pointer movement. HTML step validation
+    // must accept them rather than blocking the form before the preview handler can run.
+    await expect(planner.getByLabel("Wegpunkt X (%)",{exact:true})).toHaveValue("90");
+    await planner.getByLabel("Wegpunkt X (%)",{exact:true}).fill("89.8");
     await planner.getByLabel("Wegpunkt Y (%)",{exact:true}).fill("50");
+    expect(await planner.locator('input[type="number"]').evaluateAll(inputs=>inputs.every(el=>(el as HTMLInputElement).checkValidity()))).toBe(true);
     response=preview();await studio.getByRole("button",{name:"Vorschau",exact:true}).click();
     const generated=await(await response).json();
     expect(generated.generator.version).toBe("10");

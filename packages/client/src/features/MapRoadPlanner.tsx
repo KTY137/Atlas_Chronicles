@@ -30,9 +30,15 @@ export function MapRoadPlanner({ value = EMPTY, onChange, preview }: { value?: R
     const id = `weg-${number}`;
     commit({ ...value, verbindungen: [...value.verbindungen, { id, von: from.id, nach: to.id, art: "hauptstrasse", bruecke: false }] }); selectEdge(id);
   };
-  const point = (event: PointerEvent<SVGSVGElement>): readonly [number, number] => {
-    const box = event.currentTarget.getBoundingClientRect(), clamp = (n: number) => Math.round(Math.max(0,Math.min(1,n))*1000)/1000;
-    return [clamp((event.clientX-box.left)/box.width),clamp((event.clientY-box.top)/box.height)];
+  const point = (event: PointerEvent<SVGSVGElement>): readonly [number, number] | null => {
+    // The SVG transform excludes borders and handles non-uniform viewBox scaling. Using
+    // the outer DOM rectangle shifted an unmoved coordinate after adding a visible border.
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix || Math.abs(matrix.a*matrix.d-matrix.b*matrix.c) < 1e-12) return null;
+    const cursor = event.currentTarget.createSVGPoint(); cursor.x=event.clientX; cursor.y=event.clientY;
+    const local = cursor.matrixTransform(matrix.inverse());
+    const clamp = (n: number) => Math.round(Math.max(0,Math.min(1,n/100))*1000)/1000;
+    return [clamp(local.x),clamp(local.y)];
   };
   const move = (id: string, position: readonly [number,number]) => commit({ ...value, knoten: value.knoten.map(n => n.id === id ? { ...n, position } : n) });
   const roles = new Map(preview?.cartography?.regions.map(r => [r.regionId,r]));
@@ -43,9 +49,9 @@ export function MapRoadPlanner({ value = EMPTY, onChange, preview }: { value?: R
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="group" aria-label={t("Straßenplan zeichnen")}
       onPointerDown={event => { if (event.button !== 0 || event.currentTarget.closest("fieldset:disabled")) return; event.preventDefault();
         const id = (event.target as Element).closest("[data-road-node]")?.getAttribute("data-road-node");
-        if (id) { select(id); drag.current = id; event.currentTarget.setPointerCapture(event.pointerId); } else add(point(event));
+        if (id) { select(id); drag.current = id; event.currentTarget.setPointerCapture(event.pointerId); } else { const at=point(event); if(at) add(at); }
       }}
-      onPointerMove={event => { if (drag.current && !event.currentTarget.closest("fieldset:disabled")) move(drag.current, point(event)); }}
+      onPointerMove={event => { if (drag.current && !event.currentTarget.closest("fieldset:disabled")) { const at=point(event); if(at) move(drag.current,at); } }}
       onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }} onLostPointerCapture={() => { drag.current = null; }}>
       <rect width="100" height="100" className="road-paper" />
       {preview?.document.geometry.regions.map(r => { const role=roles.get(r.id); if(!role || !["water","road","building"].includes(role.role) && !(role.role === "terrain" && role.material === "rock")) return null;
@@ -63,14 +69,14 @@ export function MapRoadPlanner({ value = EMPTY, onChange, preview }: { value?: R
     {node ? <div className="road-fields">
       <label>{t("Name des Wegpunkts")}<input maxLength={80} value={node.name} onChange={e=>updateNode({name:e.target.value})} /></label>
       <label>{t("Art des Wegpunkts")}<select aria-label={t("Art des Wegpunkts")} value={node.art} onChange={e=>updateNode({art:e.target.value as RoadPlanNode["art"]})}><option value="tor">{t("Zugang / Tor")}</option><option value="platz">{t("Platz")}</option><option value="wegpunkt">{t("Wegpunkt")}</option></select></label>
-      <div className="road-coordinates">{([0,1] as const).map(axis=><label key={axis}>{axis===0?t("Wegpunkt X (%)"):t("Wegpunkt Y (%)")}<input type="number" min={0} max={100} step={1} value={Math.round(node.position[axis]*1000)/10} onChange={e=>{const v=e.target.valueAsNumber;if(Number.isFinite(v)&&v>=0&&v<=100)updateNode({position:axis===0?[v/100,node.position[1]]:[node.position[0],v/100]});}} /></label>)}</div>
+      <div className="road-coordinates">{([0,1] as const).map(axis=><label key={axis}>{axis===0?t("Wegpunkt X (%)"):t("Wegpunkt Y (%)")}<input type="number" min={0} max={100} step={.1} value={Math.round(node.position[axis]*1000)/10} onChange={e=>{const v=e.target.valueAsNumber;if(Number.isFinite(v)&&v>=0&&v<=100)updateNode({position:axis===0?[v/100,node.position[1]]:[node.position[0],v/100]});}} /></label>)}</div>
       <Button type="button" onClick={()=>{commit({...value,knoten:value.knoten.filter(n=>n.id!==node.id),verbindungen:value.verbindungen.filter(e=>e.von!==node.id&&e.nach!==node.id)});select("");}}>{t("Wegpunkt und Verbindungen entfernen")}</Button>
     </div>:null}
     <label>{t("Verbindung auswählen")}<select aria-label={t("Verbindung auswählen")} value={edge?.id??""} onChange={e=>selectEdge(e.target.value)}><option value="">{t("Verbindung auswählen …")}</option>{value.verbindungen.map(e=><option key={e.id} value={e.id}>{value.knoten.find(n=>n.id===e.von)?.name} → {value.knoten.find(n=>n.id===e.nach)?.name}</option>)}</select></label>
     {edge?<div className="road-fields">
       {(["von","nach"] as const).map(key=><label key={key}>{key==="von"?t("Von Wegpunkt"):t("Zu Wegpunkt")}<select aria-label={key==="von"?t("Von Wegpunkt"):t("Zu Wegpunkt")} value={edge[key]} onChange={e=>updateEdge({[key]:e.target.value})}>{value.knoten.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select></label>)}
       <label>{t("Straßenklasse")}<select aria-label={t("Straßenklasse")} value={edge.art} onChange={e=>updateEdge({art:e.target.value as RoadPlanEdge["art"]})}><option value="hauptstrasse">{t("Hauptstraße")}</option><option value="gasse">{t("Gasse")}</option></select></label>
-      <label><input type="checkbox" checked={edge.bruecke} onChange={e=>updateEdge({bruecke:e.target.checked})} />{t("Flussbrücken für diese Verbindung erlauben")}</label>
+      <label className="check-label"><input type="checkbox" checked={edge.bruecke} onChange={e=>updateEdge({bruecke:e.target.checked})} />{t("Flussbrücken für diese Verbindung erlauben")}</label>
       <Button type="button" onClick={()=>{commit({...value,verbindungen:value.verbindungen.filter(e=>e.id!==edge.id)});selectEdge("");}}>{t("Verbindung entfernen")}</Button>
     </div>:null}
     <label>{t("Maximaler Höhenwechsel")}<input type="number" min={1} max={64} step={1} value={value.maxSteigung} onChange={e=>{const n=e.target.valueAsNumber;if(Number.isSafeInteger(n)&&n>=1&&n<=64)commit({...value,maxSteigung:n});}} /></label>
