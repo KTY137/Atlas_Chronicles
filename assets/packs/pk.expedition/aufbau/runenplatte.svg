@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<title>Runenplatte</title>
+<g stroke="#2f2a22" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M11 9L49 7L57 17L53 54L15 58L7 45Z" fill="#9d968a"/><path d="M14 12L47 11L52 18L49 50L16 53L12 44Z" fill="#b9b2a4"/><circle cx="32" cy="32" r="14" fill="none" stroke="#7a6f5f"/><path d="M27 40L27 24L37 30L27 33M37 24L37 41M20 10L22 19L17 25M50 45L43 48L45 53" fill="none" stroke="#7a6f5f" stroke-width="2"/><path d="M18 15L40 13M15 34L15 43" fill="none" stroke="#ded2b8"/></g>
+</svg>
