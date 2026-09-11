@@ -1,0 +1,76 @@
+diff --git a/packages/desktop/tools/smoke.mjs b/packages/desktop/tools/smoke.mjs
+index 6b2db805c0f4a185634d6b837d4f6cea1ad8d68a..a6968197aa7ec1586c6c841a27ac870d25743bc3 100644
+--- a/packages/desktop/tools/smoke.mjs
++++ b/packages/desktop/tools/smoke.mjs
+@@ -38,6 +38,14 @@ async function rawRequest(path,bytes,contentType="application/octet-stream",meth
+     return{status:response.status,body:await response.json()};
+   },{path,b64:Buffer.from(bytes).toString("base64"),contentType,method});
+ }
++// Actual native dropdown input on the installed Electron surface, not selectOption injection.
++async function nativeChoice(control,value){
++  const values=await control.locator("option").evaluateAll(options=>options.filter(o=>!o.disabled).map(o=>o.value));
++  const index=values.indexOf(value);assert.ok(index>=0,`Missing enabled option ${value}`);
++  await control.click();await control.press("Home");
++  for(let i=0;i<index;i++)await control.press("ArrowDown");
++  await control.press("Enter");assert.equal(await control.inputValue(),value);
++}
+ function validatedExport(response){assert.equal(response.status,200,JSON.stringify(response.body));const result=validateCurrentCampaignBundle(response.body);assert.equal(result.manifest.campaignId,campaignId);return result;}
+ function unchangedExport(response){const result=validatedExport(response);assert.equal(result.manifest.contentHash,bundle.manifest.contentHash);assert.deepEqual(currentCampaignSemanticDiff(bundle,result),[]);}
+ async function openGameWindow(phase){
+@@ -183,6 +191,9 @@ try{
+   await game.getByRole("button",{name:"Neue Karte",exact:true}).click();
+   const workshop=game.getByRole("region",{name:"Kartenwerkstatt",exact:true});
+   await workshop.getByLabel("Name der Karte",{exact:true}).fill("Desktop genre catalogue");
++  const placeType=workshop.getByRole("combobox",{name:"Art des Ortes",exact:true});
++  for(const value of ["anlage:burg","anlage:schloss","siedlung:dorf"]) await nativeChoice(placeType,value);
++  record("installed client native dropdown accepts castle, palace and village through pointer and keyboard");
+   await workshop.getByRole("group",{name:"Größenprofile",exact:true}).getByRole("button",{name:"Weiler",exact:true}).click();
+   await workshop.getByRole("group",{name:"Zeichenstil",exact:true}).getByRole("button",{name:/^Genre-Archiv/}).click();
+   await workshop.locator(".map-seed-field input").fill("desktop-genre-catalogue");
+@@ -287,17 +298,37 @@ try{
+     const response=game.waitForResponse(response=>response.url()===`${origin}/api/campaigns/${campaignId}${suffix}`&&response.request().method()==="POST");
+     await game.getByRole("button",{name:label}).click();assert.equal((await response).status(),200);
+   }
++  // New release features run through the shipped UI and enter the real restart/restore checks.
++  await game.goto(`${origin}/?campaign=${campaignId}&stage=atlas&atlasChild=${generated.body.ack.subjectId}`);
++  await game.locator('.tactical-canvas[data-canvas-ready="true"] canvas').waitFor({state:"visible"});
++  let floors=game.getByTestId("map-floors-panel");await floors.locator("summary").click();
++  await floors.getByLabel("Name des neuen Geschosses",{exact:true}).fill("Installed upper floor");
++  await nativeChoice(floors.getByLabel("Art des Geschossübergangs",{exact:true}),"lift");
++  await nativeChoice(floors.getByLabel("Art des Geschossübergangs",{exact:true}),"stairs");
++  const floorReply=game.waitForResponse(r=>r.request().method()==="POST"&&r.url().endsWith("/floors"));
++  await floors.getByRole("button",{name:"Geschoss anlegen und öffnen",exact:true}).click();
++  const floorResponse=await floorReply;assert.equal(floorResponse.status(),200);
++  const upperId=(await floorResponse.json()).mapId;
++  await game.waitForURL(url=>url.searchParams.get("atlasChild")===upperId);
++  const fog=game.getByTestId("room-fog-controls");await fog.locator("summary").click();
++  await nativeChoice(fog.getByLabel("Raumfreigabe für",{exact:true}),"");
++  const selectedRoom=fog.getByRole("group",{name:"Räume für Raumnebel"}).getByRole("checkbox").first();
++  await selectedRoom.check();
++  const revealReply=game.waitForResponse(r=>r.request().method()==="POST"&&r.url().endsWith("/fog"));
++  await fog.getByRole("button",{name:"Ausgewählte Räume aufdecken",exact:true}).click();
++  assert.equal((await revealReply).status(),200);
++  await fog.getByText("Aufgedeckt",{exact:true}).waitFor({state:"visible"});
++  await game.reload();await game.getByTestId("room-fog-controls").locator("summary").click();
++  assert.equal(await game.getByTestId("room-fog-controls").getByText("Aufgedeckt",{exact:true}).count(),1);
++  floors=game.getByTestId("map-floors-panel");await floors.locator("summary").click();
++  assert.equal(await floors.getByRole("navigation",{name:"Geschoss auswählen"}).getByRole("button").count(),2);
++  record("installed UI creates a linked upper floor, switches native transition dropdowns and retains room reveal through reload");
++  await game.screenshot({path:join(run,"installed-floors-fog.png"),fullPage:true});
+   bundle=validatedExport(await request(`/api/campaigns/${campaignId}/export`));
+   assert.equal(bundle.manifest.rulePackageSchemaVersion,2);assert.equal(bundle.manifest.nestedMapSchemaVersion,1);
+-  // V15, und das ist die richtige Zahl: das Format waehlt sich datenabhaengig, jede Stufe ab
+-  // V16 verlangt eine gefuellte Tabelle. Diese Runde hat keine davon — kein Chronistenlauf,
+-  // kein Figurantrag, kein Paket aus der Bibliothek, und vor allem keine Karte mit
+-  // mitgeschriebener Herkunft: `/maps/import` nimmt eine Karten-JSON entgegen und notiert
+-  // keinen Ursprung; das taten nur die entfernte Beispielroute, `/maps/aus-wiki` und
+-  // `/maps/bild`. Die Zusicherung stand seit b59851a auf 19 und war seither rot — sie hatte
+-  // den Weg der alten Beispielkarte im Blick. V19 selbst deckt
+-  // `packages/io/test/native-v19-roundtrip.test.ts` ab, die Herkunft `karte-aus-wiki.test.ts`.
+-  assert.equal(bundle.version,15);assert.equal(bundle.manifest.mapLifecycleSchemaVersion,1);
++  // This smoke now creates floor/fog data: native V20 must survive exit and both restore paths.
++  assert.equal(bundle.version,20);assert.equal(bundle.manifest.mapLifecycleSchemaVersion,1);
++  assert.ok(bundle.tables.map_floor_stacks.length>0);assert.ok(bundle.tables.map_room_fog.length>0);
+   assert.deepEqual(bundle.tables.atlas_karten_herkunft??[],[]);
+   assert.ok(bundle.tables.map_lifecycle_events.some(row=>row.command_id===evidence.mapLifecycle.deletionAck.commandId));
+   assert.ok(bundle.tables.tactical_map_nodes.some(node=>node.map_id===generated.body.ack.subjectId));

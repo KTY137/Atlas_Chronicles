@@ -1,0 +1,80 @@
+diff --git a/packages/client/src/features/MapContextMenu.tsx b/packages/client/src/features/MapContextMenu.tsx
+index a216b3e2f85d1ac09c0ad00dc212f7db6cc8f47e..356b23b4329ea726581fd54151495144ae5c2262 100644
+--- a/packages/client/src/features/MapContextMenu.tsx
++++ b/packages/client/src/features/MapContextMenu.tsx
+@@ -45,20 +45,29 @@ export function MapContextMenu({ label, actions, children, className = "", popup
+   useEffect(() => {
+     if (!at) return;
+     const dismiss = (event: PointerEvent) => { if (!menu.current?.contains(event.target as Node) && !trigger.current?.contains(event.target as Node)) close(false); };
+-    const viewportChanged = () => close(false);
++    // Scrolling a long menu (including keyboard focus scrolling) must not dismiss it.
++    // Only movement of its surrounding viewport invalidates the popup position.
++    const viewportChanged = (event: Event) => {
++      if (event.target instanceof Node && menu.current?.contains(event.target)) return;
++      close(false);
++    };
+     document.addEventListener("pointerdown",dismiss,true);
+     window.addEventListener("resize",viewportChanged);
+     window.addEventListener("scroll",viewportChanged,true);
+     return () => { document.removeEventListener("pointerdown",dismiss,true); window.removeEventListener("resize",viewportChanged); window.removeEventListener("scroll",viewportChanged,true); };
+   }, [at]);
++  // Native dialogs/fullscreen form a browser top layer. A portal into body would be
++  // visible in the DOM but behind that layer and unable to receive pointer events.
++  const portalHost = trigger.current?.closest('dialog[open]') ?? origin.current?.closest('dialog[open]')
++    ?? document.fullscreenElement ?? document.body;
+   // A popup has no layout box: an empty grid/flex child would add a gap, move the canvas,
+   // and dismiss its own menu through browser scroll anchoring.
+   return <div className={`map-context-target ${className}`} style={popup ? { display:"contents" } : undefined} onContextMenu={event => {
+     if (popup) return;
+-    if ((event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return;
++    if ((event.target as Element).closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+     event.preventDefault(); event.stopPropagation(); open(event.clientX,event.clientY);
+   }} onKeyDown={event => {
+-    if (popup) return;
++    if (popup || (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])'))) return;
+     if (event.key === "ContextMenu" || event.shiftKey && event.key === "F10") { event.preventDefault(); event.stopPropagation(); open(); }
+   }}>
+     {children}
+@@ -72,6 +81,6 @@ export function MapContextMenu({ label, actions, children, className = "", popup
+       const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length-1 : event.key === "ArrowDown" ? (index+1)%buttons.length : event.key === "ArrowUp" ? (index-1+buttons.length)%buttons.length : -1;
+       if (next >= 0) { event.preventDefault(); buttons[next]?.focus(); }
+     }}><strong className="map-context-caption" role="presentation">{label}</strong>{actions.map(action => <button type="button" key={action.id} role="menuitem" tabIndex={-1} disabled={action.disabled} className={action.danger ? "map-context-danger" : undefined}
+-      onClick={() => { close(true); action.onSelect(); }}>{action.label}</button>)}</div>,document.body) : null}
++      onClick={() => { close(true); action.onSelect(); }}>{action.label}</button>)}</div>,portalHost) : null}
+   </div>;
+ }
+diff --git a/packages/client/src/hooks.ts b/packages/client/src/hooks.ts
+index 352f4a16e9cd4d3b6d578602bb0c4b6544b47879..c1c44cf9199a8372f5faac45486ada65a3c6a905 100644
+--- a/packages/client/src/hooks.ts
++++ b/packages/client/src/hooks.ts
+@@ -34,12 +34,16 @@ export function useTask() {
+   // Der HTTP-Status wird mitgeführt, damit eine Oberfläche einen Konflikt am Code erkennt und
+   // nicht am Fehlertext: ein Textvergleich fällt still aus, sobald jemand den Satz umformuliert
+   // oder seine Übersetzung ändert.
+-  const [status, setStatus] = useState(0);
++  const [status, setStatus] = useState(0), running = useRef(false);
+   const run = useCallback(async (work: () => Promise<void>) => {
++    // React's busy render arrives after this event. Admit synchronously so double
++    // activation cannot send duplicate writes or clear busy while a write is active.
++    if (running.current) return;
++    running.current = true;
+     setBusy(true); setError(""); setStatus(0);
+     try { await work(); }
+     catch (error) { setError(errorText(error)); setStatus(error instanceof ApiError ? error.status : 0); }
+-    finally { setBusy(false); }
++    finally { running.current = false; setBusy(false); }
+   }, []);
+   return { busy, error, status, setError, run };
+ }
+diff --git a/packages/desktop/package.json b/packages/desktop/package.json
+index 231921d437b9c73620e65ca2b6523f9d9f41038e..e912455f6e9fd9787fd0cfdc58ea1d5e5af853d9 100644
+--- a/packages/desktop/package.json
++++ b/packages/desktop/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@chronicle/desktop",
+-  "version": "0.4.2",
++  "version": "0.5.0",
+   "license": "BUSL-1.1",
+   "author": "Kaya Yesilyurt",
+   "private": true,
