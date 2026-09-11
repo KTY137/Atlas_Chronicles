@@ -3,7 +3,7 @@
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
 import { GrundrissError, GRUNDRISS_LIMITS, HOEHLE_LIMITS, REGION_LIMITS, SIEDLUNG_LIMITS, SIEDLUNG_STANDORTE } from "@chronicle/forge";
-import { BAUWERK_TYPEN, KARTEN_SETTINGS, TacticalMapValidationError } from "@chronicle/szene";
+import { ROAD_PLAN_LIMITS, BAUWERK_TYPEN, KARTEN_SETTINGS, TacticalMapValidationError } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { createGrundriss } from "../domain/grundriss.ts";
@@ -67,9 +67,24 @@ const PlanungSchema = Type.Object({
     polygon: Type.Array(Type.Tuple([Type.Number({ minimum: 0, maximum: 1 }), Type.Number({ minimum: 0, maximum: 1 })]), { minItems: 3, maxItems: 32 }),
   }, closed), { maxItems: 16 }),
 }, closed);
+const RoadIdSchema = Type.String({ minLength: 1, maxLength: 64, pattern: "^[a-zA-Z0-9_-]+$" });
+const RoadPlanSchema = Type.Object({
+  schemaVersion: Type.Literal(1),
+  maxSteigung: Type.Integer({ minimum: 1, maximum: ROAD_PLAN_LIMITS.rise }),
+  knoten: Type.Array(Type.Object({
+    id: RoadIdSchema, name: Type.String({ minLength: 1, maxLength: 80, pattern: "\\S" }),
+    art: Type.Union([Type.Literal("tor"), Type.Literal("platz"), Type.Literal("wegpunkt")]),
+    position: Type.Tuple([Type.Number({ minimum: 0, maximum: 1 }), Type.Number({ minimum: 0, maximum: 1 })]),
+  }, closed), { maxItems: ROAD_PLAN_LIMITS.nodes }),
+  verbindungen: Type.Array(Type.Object({
+    id: RoadIdSchema, von: RoadIdSchema, nach: RoadIdSchema,
+    art: Type.Union([Type.Literal("hauptstrasse"), Type.Literal("gasse")]), bruecke: Type.Boolean(),
+  }, closed), { maxItems: ROAD_PLAN_LIMITS.edges }),
+}, closed);
 const grundstueck = Type.Integer({ minimum: SIEDLUNG_LIMITS.grundstueckMin, maximum: SIEDLUNG_LIMITS.grundstueckMax });
 export const SiedlungOptionenSchema = Type.Object({
   planung: Type.Optional(PlanungSchema),
+  verkehr: Type.Optional(RoadPlanSchema),
   setting: Type.Optional(KartenSettingSchema),
   standort: Type.Optional(Type.Union(SIEDLUNG_STANDORTE.map(value => Type.Literal(value)))),
   art: Type.Optional(Type.Union([Type.Literal("weiler"), Type.Literal("dorf"), Type.Literal("stadt")])),

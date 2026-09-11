@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { parseSettlementPlan, BAUWERK_TYPEN, KARTEN_SETTINGS, parseBoundedMapJson } from "@chronicle/szene";
+import { parseRoadPlan, parseSettlementPlan, BAUWERK_TYPEN, KARTEN_SETTINGS, parseBoundedMapJson } from "@chronicle/szene";
 import { generationDimensions, generationError, type GenerationDefaults, type GenerationSettings } from "./map-generation";
 import { t } from "../i18n";
 
@@ -18,7 +18,7 @@ export interface MapRecipe {
   generator: { id: string; version: string };
 }
 const KEYS = ["art", "stil", "breite", "hoehe", "anzahl", "setting", "siedlung", "standort", "dichte", "profil", "relief", "bewaldung", "anordnung", "moeblierung", "licht"];
-const OPTIONAL = ["anlage", "graben", "symmetrie", "planung"];
+const OPTIONAL = ["anlage", "graben", "symmetrie", "planung", "verkehr"];
 const plain = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value) && [Object.prototype, null].includes(Object.getPrototypeOf(value));
 const bounded = (value: unknown, max: number): value is string => typeof value === "string" && !!value.trim() && value.length <= max && !/[\u0000-\u001f\u007f]/u.test(value);
 const oneOf = (value: unknown, choices: readonly string[]) => typeof value === "string" && choices.includes(value);
@@ -42,6 +42,10 @@ export function parseMapRecipe(source: string, defaults: GenerationDefaults): Ma
   if ("anlage" in s && (!oneOf(s.anlage, ["burg", "schloss"]) || s.art !== "siedlung")) invalid();
   if ("graben" in s && (s.anlage !== "burg" || typeof s.graben !== "boolean")) invalid();
   if ("symmetrie" in s && (s.anlage !== "schloss" || typeof s.symmetrie !== "number" || !Number.isFinite(s.symmetrie) || s.symmetrie < 0 || s.symmetrie > 1)) invalid();
+  if ("verkehr" in s) {
+    if (s.art !== "siedlung" || "anlage" in s) invalid();
+    try { s.verkehr = parseRoadPlan(s.verkehr); } catch { invalid(); }
+  }
   if ("planung" in s) {
     if (s.art !== "siedlung" || "anlage" in s) invalid();
     try { s.planung = parseSettlementPlan(s.planung); } catch { invalid(); }
