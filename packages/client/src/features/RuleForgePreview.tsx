@@ -6,6 +6,7 @@ import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
 import { evaluateSupportedAction as evaluateAction, RULE_LIMITS, CHRONICLE_EXAMPLE_CHARACTERS, type AnyActionResult as ActionResult, type Experience, type AnyRulePackage as RulePackage, type RuleAction, type RuleActionV2, type Scalar } from "@chronicle/rules";
 import { RuleFields } from "./RuleFields";
+import { sichtbareEingaben } from "./faehigkeiten-bogen";
 import type { ExampleFigure } from "./formula-example";
 import { copyJson, fixtureValues, localKey, type PackageSelfTest } from "./rule-forge-model";
 import { hasChronicleExamples, hasChronicleGuidance, RuleComputedFields } from "./RuleComputedFields";
@@ -78,7 +79,7 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
     {pkg.layout.sections.map(section => <fieldset className="rf-sheet-section" key={section.id}><legend>{section.label}</legend><RuleFields fields={Object.fromEntries(section.fields.map(id => [id, pkg.fields[id]!]))} values={values} onChange={next => onChange({ values: next })} /></fieldset>)}
     {Object.keys(remaining).length ? <fieldset className="rf-sheet-section"><legend>{t("Weitere Felder")}</legend><RuleFields fields={remaining} values={values} onChange={next => onChange({ values: next })} /></fieldset> : null}
     <RuleComputedFields pkg={pkg} fields={values} />
-    {Object.keys(action.inputs).length ? <fieldset className="rf-sheet-section"><legend>{t("Eingaben: {name}", { name: action.name })}</legend><RuleFields fields={action.inputs} values={inputs} onChange={next => onChange({ inputs: { ...fixture.inputs, [actionId]: next } })} /></fieldset> : null}
+    {Object.keys(sichtbareEingaben(pkg, action.inputs)).length ? <fieldset className="rf-sheet-section"><legend>{t("Eingaben: {name}", { name: action.name })}</legend><RuleFields fields={sichtbareEingaben(pkg, action.inputs)} values={inputs} onChange={next => onChange({ inputs: { ...fixture.inputs, [actionId]: next } })} /></fieldset> : null}
     <fieldset className="rf-sheet-section"><legend>{t("Gehaltene Beispielpassagen")}</legend>
       {!fixture.passages.length ? <p className="rf-help">{t("Diese Figur hält keine Passage.")}</p> : null}
       {fixture.passages.map((passage, index) => <div className="rf-sample-passage" key={passage.localId}>

@@ -16,9 +16,11 @@ import type { ActionCard } from "./game-api";
  * Die Wuerfelschreibweise (`W6`, `W12`) ist Notation und keine Oberflaeche: sie bleibt in jeder
  * Sprache stehen, wie der Ausdruck des Regelpakets daneben.
  */
-export function RollCard({ card, campaignId, actorName, onChanged, frisch = false }: { card: ActionCard; campaignId: string; actorName: string; onChanged: () => void; frisch?: boolean }) {
+export function RollCard({ card, campaignId, actorName, onChanged, frisch = false, namen }: { card: ActionCard; campaignId: string; actorName: string; onChanged: () => void; frisch?: boolean; namen?: ReadonlyMap<string, string> }) {
   const task = useTask(), [replay, setReplay] = useState<boolean | null>(null);
   const outcome = card.receipt.schemaVersion === 2 ? card.receipt.outcome : undefined;
+  // Was Fähigkeiten und Zustände beigetragen haben, steht in der Quittung — sichtbar, nicht versteckt im Rechenweg.
+  const mitgerechnet = card.receipt.schemaVersion === 2 ? card.receipt.modifiers ?? [] : [];
   // Erst die gewerteten Wuerfel sammeln, dann anzeigen: nur so hat jeder eine eigene laufende
   // Nummer, und nur die staffelt die Landung. Text und Aufbau bleiben unveraendert.
   const gewuerfelt = card.receipt.dice.flatMap((die, i) => die.kept.map(index => {
@@ -30,6 +32,7 @@ export function RollCard({ card, campaignId, actorName, onChanged, frisch = fals
       <span key={wuerfel.schluessel} role="img" aria-label={`W${wuerfel.sides}: ${wuerfel.wert}`} title={`W${wuerfel.sides}: ${wuerfel.wert}`}
         style={{ maxWidth: "100%", height: "auto", minHeight: 49, overflowWrap: "anywhere", "--wuerfel-nr": n } as CSSProperties}>{wuerfel.wert}<small>W{wuerfel.sides}</small></span>)}</div>
     {outcome ? <p className="roll-outcome" role="status"><strong>{outcome.label}</strong></p> : null}
+    {mitgerechnet.length ? <p className="field-help">{t("Mitgerechnet: {liste}", { liste: mitgerechnet.map(eintrag => `${namen?.get(eintrag.id) ?? eintrag.id} ${eintrag.value > 0 ? "+" : ""}${eintrag.value}`).join(", ") })}</p> : null}
     <p className="muted">{card.confirmation ? card.confirmation.success ? t("Bestätigt · erfolgreich") : outcome ? t("Bestätigt · Probe misslungen") : t("Bestätigt · Schwelle nicht erreicht") : t("Das Ergebnis wartet auf deine Bestätigung.")}{card.confirmation?.mint ? ` ${t("Die Herkunft wurde in der Chronik versiegelt.")}` : ""}</p>
     {outcome ? <details><summary>{t("Ergebnisbereiche dieses Wurfs")}</summary><ol>{outcome.comparisons.map((band, i) => <li key={band.id}>{band.id} · {band.comparison} {band.threshold} · {band.matched ? t("passt") : t("passt nicht")}{outcome.matchedBand === i ? ` · ${t("ausgewählt")}` : ""}</li>)}</ol></details> : null}
     {task.error ? <Notice error>{task.error}</Notice> : null}{replay !== null ? <Notice error={!replay}>{replay ? t("Nachgerechnet: Würfel, Regelversion und Beleg stimmen überein.") : t("Der Beleg konnte nicht bestätigt werden.")}</Notice> : null}

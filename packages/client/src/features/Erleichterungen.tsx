@@ -9,6 +9,7 @@ import { api, apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
 import { RuleFields } from "./RuleFields";
 import { defaults, useCommand, type ActionCard, type RulesState } from "./game-api";
+import { sichtbareEingaben } from "./faehigkeiten-bogen";
 import { t } from "../i18n";
 import "./erleichterungen.css";
 
@@ -34,9 +35,12 @@ export interface Erleichterung {
 }
 
 /** Die Aktion, die eine Absprache trägt: sie hat Eingaben, die die Spielleitung festlegen kann. */
+const angeheftet = (rules: RulesState) => rules.packages.find(p => p.id === rules.pin.id && p.version === rules.pin.version);
+// Nur Eingaben, die ein Mensch festlegen darf, zählen: eine Probe, deren einzige Parameter die Engine
+// selbst setzt (Fähigkeiten, Zustände), trägt keine Absprache.
 const absprachefaehig = (rules: RulesState) => {
-  const pkg = rules.packages.find(p => p.id === rules.pin.id && p.version === rules.pin.version);
-  return (pkg?.actions ?? []).filter(action => Object.keys(action.inputs).length > 0);
+  const pkg = angeheftet(rules);
+  return (pkg?.actions ?? []).filter(action => Object.keys(sichtbareEingaben(pkg, action.inputs)).length > 0);
 };
 const alleAktionen = (rules: RulesState) =>
   rules.packages.find(p => p.id === rules.pin.id && p.version === rules.pin.version)?.actions ?? [];
@@ -58,7 +62,7 @@ export function OffeneErleichterungen({ campaignId, actorId, rules, gm, revision
         <strong>{namen.get(zugestaendnis.gemeinteAktion) ?? zugestaendnis.gemeinteAktion}</strong>
         <p className="erleichterung-grund">„{zugestaendnis.grund}"</p>
         {/* Was abgesprochen ist, steht offen da — eine Erleichterung ist keine Ueberraschung. */}
-        <dl className="erleichterung-werte">{Object.entries(zugestaendnis.eingaben).map(([feld, wert]) =>
+        <dl className="erleichterung-werte">{Object.entries(sichtbareEingaben(angeheftet(rules), zugestaendnis.eingaben)).map(([feld, wert]) =>
           <div key={feld}><dt>{feld}</dt><dd>{String(wert)}</dd></div>)}</dl>
         <div className="button-row">
           <Button variant="primary" disabled={task.busy} onClick={() => void task.run(async () => {
@@ -108,7 +112,7 @@ export function ErleichterungGewaehren({ campaignId, rules, roster, revision, on
     <label>{t("Wird gewürfelt als")}<select value={gewuerfelt} onChange={e => { setGewuerfelt(e.target.value); setEingaben({}); }}>
       {traegt.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
     {aktion ? <><p className="field-help">{aktion.disclosure}</p>
-      <RuleFields fields={aktion.inputs} values={{ ...defaults(aktion.inputs), ...eingaben }} onChange={setEingaben} disabled={task.busy} /></> : null}
+      <RuleFields fields={sichtbareEingaben(angeheftet(rules), aktion.inputs)} values={{ ...defaults(aktion.inputs), ...eingaben }} onChange={next => setEingaben(current => ({ ...current, ...next }))} disabled={task.busy} /></> : null}
     <label>{t("Begründung")}<input required maxLength={500} value={grund} onChange={e => setGrund(e.target.value)}
       placeholder={t("z. B. Du hast das Seil vorher gesichert.")} /></label>
     {task.error ? <Notice error>{task.error}</Notice> : null}

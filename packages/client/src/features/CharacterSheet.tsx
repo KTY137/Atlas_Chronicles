@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Vitalanzeige } from "./Vitalanzeige";
 import { Geldzaehler } from "./Geldzaehler";
-import { validatePackageFields, evaluateComputedFields, CHRONICLE_EXAMPLE_CHARACTERS, CHRONICLE_FUNKEN_FIELD, type Scalar } from "@chronicle/rules";
+import { validatePackageFields, evaluateComputedFields, CHRONICLE_ARCHETYPES, CHRONICLE_EXAMPLE_CHARACTERS, CHRONICLE_FUNKEN_FIELD, type Scalar } from "@chronicle/rules";
+import { FaehigkeitenBogen } from "./FaehigkeitenBogen";
 import { PenLine, Save, Sparkles } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath } from "../api";
@@ -30,7 +31,7 @@ export function CharacterSheet({ campaignId, actorId, rules, onDirty, gm, onChan
 function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campaignId: string; latest: ActorSheet; rules: RulesState; onDirty: (value: boolean) => void; gm: boolean; onSaved: () => void }) {
   const [sheet, setSheet] = useState(latest);
   const [fields, setFields] = useState<Record<string, Scalar>>({ ...sheet.fields }), task = useTask();
-  const [resource, setResource] = useState(""), [delta, setDelta] = useState(-1);
+  const [resource, setResource] = useState(""), [delta, setDelta] = useState(-1), [archetyp, setArchetyp] = useState("");
   const fieldsRef = useRef<HTMLDivElement>(null);
   const pkg = rules.packages.find(pkg => pkg.id === sheet.packageId && pkg.version === sheet.packageVersion);
   const examplesAvailable = useMemo(() => !!pkg && hasChronicleExamples(pkg), [pkg]);
@@ -46,7 +47,10 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
   const saveState = dirty ? t("Ungespeicherte Änderungen.") : sheet.version === 0 ? t("Noch nicht gespeichert.") : t("Gespeichert.");
   const canOfferExamples = hasChronicleGuidance(pkg) && examplesAvailable;
   const emptyStateAction = canOfferExamples
-    ? <div className="button-row">{CHRONICLE_EXAMPLE_CHARACTERS.map(example => <Button key={example.id} disabled={task.busy} onClick={() => { if (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diese Beispielperson ersetzen?"))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, example.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("{name} als Beispiel übernehmen", { name: example.name })}</Button>)}</div>
+    ? <><div className="button-row">{CHRONICLE_EXAMPLE_CHARACTERS.map(example => <Button key={example.id} disabled={task.busy} onClick={() => { if (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diese Beispielperson ersetzen?"))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, example.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("{name} als Beispiel übernehmen", { name: example.name })}</Button>)}</div>
+      {/* Archetypen sind fertige Startbögen mit drei Fähigkeiten — derselbe Weg wie die Beispielpersonen. */}
+      <div className="button-row"><label>{t("Archetyp")}<select value={archetyp} disabled={task.busy} onChange={event => setArchetyp(event.target.value)}><option value="">{t("Archetyp wählen")}</option>{CHRONICLE_ARCHETYPES.map(vorlage => <option key={vorlage.id} value={vorlage.id}>{vorlage.name} · {vorlage.description}</option>)}</select></label>
+        <Button disabled={task.busy || !archetyp} onClick={() => { const vorlage = CHRONICLE_ARCHETYPES.find(kandidat => kandidat.id === archetyp); if (vorlage && (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diesen Archetyp ersetzen?")))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, vorlage.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("Archetyp übernehmen")}</Button></div></>
     : <Button variant="primary" disabled={task.busy} onClick={() => fieldsRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus()}><PenLine size={16} /> {t("Werte jetzt eintragen")}</Button>;
   const emptyStateBody = canOfferExamples
     ? t("Noch gelten überall die Vorgabewerte des Regelwerks. Übernimm eine vorbereitete Beispielperson als Startpunkt oder trag weiter unten deine eigenen Werte ein.")
@@ -64,9 +68,12 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
     {sheet.defeatPending ? <Notice>{t("Eine Ressource ist aufgebraucht. Die Niederlage wartet auf eine ausdrückliche Bestätigung der Spielleitung.")}</Notice> : null}{sheet.defeatedAt ? <Notice>{t("Niederlage bestätigt am {zeitpunkt}.", { zeitpunkt: new Date(sheet.defeatedAt).toLocaleString(locale()) })}</Notice> : null}
     {sheet.version === 0 ? <EmptyState title={characterName ? t("{name}: Der Bogen wartet auf seine Werte.", { name: characterName }) : t("Dieser Bogen wartet auf seine Werte.")} action={emptyStateAction}>{emptyStateBody}</EmptyState> : null}
     <p className="field-help">{t("Die folgenden Werte kannst du bearbeiten. Das Regelwerk prüft jede Eingabe automatisch.")}</p>
-    <div ref={fieldsRef}>{pkg.layout.sections.map((section) => <fieldset className="sheet-section" key={section.id}><legend>{section.label}</legend><RuleFields fields={Object.fromEntries(section.fields.map((id) => [id, pkg.fields[id]]))} values={fields} onChange={(next) => setFields((current) => ({ ...current, ...next }))} disabled={task.busy} /></fieldset>)}</div>
+    {/* Gelernte Fähigkeiten und aktive Zustände stehen als Kennungsliste in zwei Textfeldern. Die
+        tippt niemand von Hand — sie haben unten ihren eigenen Abschnitt. */}
+    <div ref={fieldsRef}>{pkg.layout.sections.map((section) => { const ids = section.fields.filter(id => !(pkg.schemaVersion === 2 && (id === pkg.abilityRules?.abilityField || id === pkg.abilityRules?.conditionField))); return ids.length ? <fieldset className="sheet-section" key={section.id}><legend>{section.label}</legend><RuleFields fields={Object.fromEntries(ids.map((id) => [id, pkg.fields[id]]))} values={fields} onChange={(next) => setFields((current) => ({ ...current, ...next }))} disabled={task.busy} /></fieldset> : null; })}</div>
     {pkg.schemaVersion === 2 ? <p className="field-help">{t("Automatisch berechnet nach den Regeln von {paket} · {fassung}. Diese Werte trägst du nicht selbst ein.", { paket: pkg.name, fassung: pkg.version })}</p> : null}
     <RuleComputedFields pkg={pkg} fields={fields} />{validation && pkg.schemaVersion === 1 ? <Notice error>{validation}</Notice> : null}
+    <FaehigkeitenBogen pkg={pkg} fields={fields} onChange={next => setFields(current => ({ ...current, ...next }))} disabled={task.busy} />
     {hasChronicleGuidance(pkg) ? <section aria-label={t("Funken verwalten")}><h3>{t("Funken")}</h3><p>{t("Bei einer misslungenen, nicht kritisch misslungenen Probe kannst du einen Funken ausgeben und erneut würfeln. Speichere die Ausgabe zuerst im Bogen und würfle danach am Tisch ausdrücklich erneut. Der erste Beleg bleibt erhalten.")}</p>
       {(() => { const field = CHRONICLE_FUNKEN_FIELD, spent = fields[field], remaining = computed["funken_remaining"]; return typeof spent === "number" && pkg.fields[field]?.type === "integer" ? <div className="button-row"><Button disabled={task.busy || !(typeof remaining === "number" && remaining > 0)} onClick={() => setFields(current => ({ ...current, [field]: spent + 1 }))}>{t("Funken einsetzen")}</Button><Button disabled={task.busy || spent === 0} onClick={() => setFields(current => ({ ...current, [field]: 0 }))}>{t("Vorrat auffüllen")}</Button></div> : null; })()}
       <p className="field-help">{t("Diese Knöpfe ändern deinen Entwurf. „Bogen speichern“ übernimmt die Ausgabe oder das vereinbarte Auffüllen.")}</p>
