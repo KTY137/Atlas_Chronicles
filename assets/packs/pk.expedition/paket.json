@@ -1,0 +1,701 @@
+{
+  "assets": [
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 649,
+      "datei": "aufbau/farnbusch.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "farnbusch",
+      "schlagworte": [
+        "expedition",
+        "wald",
+        "busch",
+        "pflanze"
+      ],
+      "sha256": "0b52885eb13f29628769e37643302f177e6e4d581b5875cab64ad048b52e405f"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 698,
+      "datei": "aufbau/wurzelwerk.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wurzelwerk",
+      "schlagworte": [
+        "expedition",
+        "wald",
+        "holz",
+        "wurzel"
+      ],
+      "sha256": "44fbbb807b39415151af025491c44c4e4c5f51da483136690035cf3b9d7d70e4"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 608,
+      "datei": "aufbau/dornenranke.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "dornenranke",
+      "schlagworte": [
+        "expedition",
+        "wald",
+        "busch",
+        "dorn"
+      ],
+      "sha256": "7ede671eea08bfc8bda3b1c379e9ea890fda20c9f6578f9f6929296b8fb28303"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 662,
+      "datei": "aufbau/seerosen.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "seerosen",
+      "schlagworte": [
+        "expedition",
+        "wald",
+        "pflanze",
+        "wasser",
+        "ufer"
+      ],
+      "sha256": "7508dc21d52de78f585464b1ad76c2a93f5de679dfd8be40434962449ffc032d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 498,
+      "datei": "aufbau/riesenblatt.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "riesenblatt",
+      "schlagworte": [
+        "expedition",
+        "wald",
+        "pflanze",
+        "dschungel"
+      ],
+      "sha256": "17c685d8787a16504a2bad1de49a76aa48c4337d779168da06817f462086f570"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 614,
+      "datei": "aufbau/lianenbuendel.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "lianenbuendel",
+      "schlagworte": [
+        "expedition",
+        "wald",
+        "pflanze",
+        "dschungel",
+        "ranke"
+      ],
+      "sha256": "1e0a32428cd3fff91f7f9331b3b35ea2db94bcdbecc0c60def2daadfb6e650f1"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 718,
+      "datei": "aufbau/wacholderbusch.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wacholderbusch",
+      "schlagworte": [
+        "expedition",
+        "wald",
+        "busch",
+        "beeren"
+      ],
+      "sha256": "d4c6dc84bec0211f1df329092e49a155328323aaafed9bbee82fb92add85c6e0"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 601,
+      "datei": "aufbau/treibholz.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "treibholz",
+      "schlagworte": [
+        "expedition",
+        "wald",
+        "holz",
+        "ufer"
+      ],
+      "sha256": "70f15e82994f6b797cd46bcdda807165f0546a27e997244eec2af0a5e37b212d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 630,
+      "datei": "aufbau/kristalldruse.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kristalldruse",
+      "schlagworte": [
+        "expedition",
+        "hoehle",
+        "kristall",
+        "fels"
+      ],
+      "sha256": "3ba2f3b9610a6d5b8f09092cc96f5f5dea2c198428e274a3f915c23218ab86da"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 605,
+      "datei": "aufbau/stalagmitengruppe.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "stalagmitengruppe",
+      "schlagworte": [
+        "expedition",
+        "hoehle",
+        "fels",
+        "saeule"
+      ],
+      "sha256": "e6d18457e73850d9de0fd25ac15a331202b30a0a46f633f2d9eb4e2262d3a48b"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 603,
+      "datei": "aufbau/felsbogen.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "felsbogen",
+      "schlagworte": [
+        "expedition",
+        "hoehle",
+        "fels",
+        "durchgang"
+      ],
+      "sha256": "6b363fc2e3861f981dd72dd2ece0145b1910aa505f9115b0d971fe6caa8ea8ec"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 681,
+      "datei": "aufbau/schuttfaecher.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schuttfaecher",
+      "schlagworte": [
+        "expedition",
+        "hoehle",
+        "fels",
+        "geroell",
+        "ruine"
+      ],
+      "sha256": "6322657348adb10903a1236da2d2aa787564203bd57fb92c3ab19212a97c3d48"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 675,
+      "datei": "aufbau/spinnennetz.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "spinnennetz",
+      "schlagworte": [
+        "expedition",
+        "hoehle",
+        "netz",
+        "ruine"
+      ],
+      "sha256": "4f68510d1681a005b504b07a3ac7f3f4696e9d5b714c43ab006d625a0ee1f558"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 886,
+      "datei": "aufbau/pilzring.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "pilzring",
+      "schlagworte": [
+        "expedition",
+        "hoehle",
+        "pilz",
+        "pflanze",
+        "wald"
+      ],
+      "sha256": "46afbb9bb22ef9d3f208efec5a0bc630b4434e9b6a56ce9376572579d0c63bd6"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 712,
+      "datei": "aufbau/fossilienskelett.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fossilienskelett",
+      "schlagworte": [
+        "expedition",
+        "hoehle",
+        "knochen",
+        "fossil"
+      ],
+      "sha256": "3878a2063157d42821095ff4b0ea9e1755d352649af68dbf477f49b3ab21937c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 590,
+      "datei": "aufbau/runenplatte.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "runenplatte",
+      "schlagworte": [
+        "expedition",
+        "hoehle",
+        "stein",
+        "ruine",
+        "altar"
+      ],
+      "sha256": "0ad8079b2c1cde0fd98f14a002776d7d79e08b07f4c0f6d21494e5d7c3cf6e3c"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 775,
+      "datei": "aufbau/expeditionszelt.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "expeditionszelt",
+      "schlagworte": [
+        "expedition",
+        "lager",
+        "zelt",
+        "tuch"
+      ],
+      "sha256": "bac56aca42f23965ea86a83a2aff8eb2fb6c4f36dd027fbb89cb54584bd20621"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 628,
+      "datei": "moebel/schlafrolle.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schlafrolle",
+      "schlagworte": [
+        "expedition",
+        "lager",
+        "bett",
+        "tuch"
+      ],
+      "sha256": "d26d3f3f7af9fb27088445392b45c289e948d545e731b63d4c62d56e577a9598"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 730,
+      "datei": "gefaess/reiserucksack.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "reiserucksack",
+      "schlagworte": [
+        "expedition",
+        "lager",
+        "behaelter",
+        "leder",
+        "reise"
+      ],
+      "sha256": "09cc6ed2d934f9d7e0668f20339ac877381d630dc14d40d8e4f267df68ce782c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "licht",
+      "bytes": 825,
+      "datei": "licht/kochdreibein.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kochdreibein",
+      "schlagworte": [
+        "expedition",
+        "lager",
+        "feuer",
+        "kessel",
+        "licht"
+      ],
+      "sha256": "56916ac1a1d83122a75daa6c7a9b2a849217a69e0681baf46138c47120489ea3"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 652,
+      "datei": "gefaess/vorratsnetz.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "vorratsnetz",
+      "schlagworte": [
+        "expedition",
+        "lager",
+        "behaelter",
+        "proviant",
+        "netz"
+      ],
+      "sha256": "84f386afe7d6b8f94b38238177b9983e8a64f0bf6202f4cdf719a8f99dbbebb2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 819,
+      "datei": "moebel/brennholzstapel.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "brennholzstapel",
+      "schlagworte": [
+        "expedition",
+        "lager",
+        "holz",
+        "vorrat"
+      ],
+      "sha256": "a6d6b719abc0de84c8db3764915e7581d5786dd412b4b624e75131989633c635"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 717,
+      "datei": "moebel/kletterseil.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kletterseil",
+      "schlagworte": [
+        "expedition",
+        "lager",
+        "seil",
+        "reise",
+        "metall"
+      ],
+      "sha256": "b4248aa98b4a9b5912b45f93b6ca2056a391333d0fdc2657c572ef2a08033b55"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 847,
+      "datei": "aufbau/lagerplane.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "lagerplane",
+      "schlagworte": [
+        "expedition",
+        "lager",
+        "tuch",
+        "reise",
+        "lagerplatz"
+      ],
+      "sha256": "d05cfd9c09592564fd5f7ca8c2627b475db8f1ae297385e9b6ac2c5f0e2dca2d"
+    }
+  ],
+  "id": "pk.expedition",
+  "kind": "asset-pack",
+  "lizenz": {
+    "datei": "lizenz.txt",
+    "herkunft": "eigen",
+    "inhaber": "Chronicle contributors 2026",
+    "quelle": null,
+    "spdx": "CC0-1.0",
+    "textSha256": "cb69725e25677a4845769559c998717ab53da1943a815e0e271be8e520ddc0e1"
+  },
+  "schemaVersion": 1,
+  "titel": "Wildnis & Expeditionen · 24 Draufsichten",
+  "urheber": "Chronicle contributors",
+  "version": "1.0.0",
+  "zellgroesse": 64
+}
