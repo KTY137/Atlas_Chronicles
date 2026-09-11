@@ -190,7 +190,7 @@ describe("map workshop concurrency and navigation review", () => {
 
   it("keeps an unsaved building selection when navigation discard is declined", () => {
     const house = { ...church, knotenId: "house", titel: "Haus am Tor", bauwerk: { typ: "haus", beschreibung: "" }, x: 220, vorhandeneKarteId: "saved-interior" };
-    const navigate = vi.fn(), h = harness("NestedMapView", "NestedMapView", { campaignId: "campaign", mapId: "city", revision: 1, onNavigate: navigate, onRoot: () => {}, onChanged: () => {}, onDirty: () => {} }, path => path?.endsWith("/children") ? { nodes: [church, house], version: 4, ancestors: [], art: "siedlung" } : { id: "city", name: "Stadt", revision: 1, document: mapDocument });
+    const navigate = vi.fn(), h = harness("NestedMapView", "NestedMapView", { campaignId: "campaign", mapId: "city", revision: 1, onNavigate: navigate, onRoot: () => {}, onChanged: () => {}, onDirty: () => {} }, path => path?.endsWith("/floors") ? { version: 0, stack: { rootMapId: "city", floors: [{ mapId: "city", level: 0, name: "Stadt" }], links: [] }, unavailable: [] } : path?.endsWith("/children") ? { nodes: [church, house], version: 4, ancestors: [], art: "siedlung" } : { id: "city", name: "Stadt", revision: 1, document: mapDocument });
     try {
       h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onSelect({ kind: "cell", id: "church" });
       h.nodes(node => node.type?.name === "BuildingMetadata")[0]!.props.onDirty(true);
@@ -199,6 +199,21 @@ describe("map workshop concurrency and navigation review", () => {
       expect(h.nodes(node => node.type === "TacticalCanvas")[0]!.props.selection).toEqual({ kind: "pin", id: "church" });
       h.acceptDiscard(true); h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onSelect({ kind: "pin", id: "house" });
       expect(navigate).toHaveBeenCalledWith({ kind: "tactical", id: "saved-interior", title: house.titel });
+    } finally { h.cleanup(); }
+  });
+
+  it("guards floor-link navigation too and preserves the aligned destination", () => {
+    const navigate = vi.fn(), link = { id: "stairs", name: "Upstairs", kind: "stairs", fromMapId: "city", toMapId: "upper", fromRegionId: "church", toRegionId: "upper-room", position: [100, 100] };
+    const h = harness("NestedMapView", "NestedMapView", { campaignId: "campaign", mapId: "city", revision: 1, onNavigate: navigate, onRoot: () => {}, onChanged: () => {}, onDirty: () => {} }, path =>
+      path?.endsWith("/floors") ? { version: 1, stack: { rootMapId: "city", floors: [{ mapId: "city", level: 0, name: "Ground" }, { mapId: "upper", level: 1, name: "Upper" }], links: [link] }, unavailable: [] }
+      : path?.endsWith("/children") ? { nodes: [church], version: 4, ancestors: [], art: "siedlung" } : { id: "city", name: "Stadt", revision: 1, document: mapDocument });
+    try {
+      h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onSelect({ kind: "cell", id: "church" });
+      h.nodes(node => node.type?.name === "BuildingMetadata")[0]!.props.onDirty(true);
+      h.acceptDiscard(false); h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onSelect({ kind: "pin", id: "floor-link:stairs" });
+      expect(navigate).not.toHaveBeenCalled();
+      h.acceptDiscard(true); h.nodes(node => node.type === "TacticalCanvas")[0]!.props.onSelect({ kind: "pin", id: "floor-link:stairs" });
+      expect(navigate).toHaveBeenCalledWith({ kind: "tactical", id: "upper", title: "Upper", focus: { id: "upper-room", x: 100, y: 100 } });
     } finally { h.cleanup(); }
   });
 

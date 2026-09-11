@@ -11,6 +11,7 @@ import { Conflict, Gone } from "./errors.ts";
 import { createGrundriss, validateKartenOptionen, type KartenArt, type KartenStil, type KartenOptionen } from "./grundriss.ts";
 import { createTactical, tacticalHash, TacticalValidationError } from "./tactical.ts";
 import { activeMapEntrances, isMapDeleted, MapLifecycleConflict, type MapEntranceRow, type MapEnterPayload } from "./map-lifecycle.ts";
+import { floorStackFor } from "./map-studio-state.ts";
 import { tacticalPointInside } from "./tactical-state.ts";
 
 /** One durable entrance per source placement, with ordinary editable tactical maps behind it.
@@ -202,7 +203,9 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
       if (current.parentKind === "atlas") break;
       const currentId: string = current.parentMapId;
       const edge: AdresseRow | undefined = edges.find(candidate => candidate.map_id === currentId);
-      current = edge ? { parentKind: edge.parent_kind, parentMapId: edge.parent_map_id } : null;
+      const floorRoot = (await floorStackFor(tx, campaignId, currentId))?.root_map_id;
+      current = edge ? { parentKind: edge.parent_kind, parentMapId: edge.parent_map_id }
+        : floorRoot && floorRoot !== currentId ? { parentKind: "tactical", parentMapId: floorRoot } : null;
     }
     return result;
   }
@@ -274,7 +277,8 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
         let mapId: string, keimHash: string | null, erzeugt: boolean;
         if (input.targetMapId) {
           const target = await createTactical(tx, cfg).getMap(userId, campaignId, input.targetMapId);
-          if ((await activeMapEntrances(tx, campaignId)).some(edge => edge.map_id === target.id))
+          const targetStack = await floorStackFor(tx, campaignId, target.id);
+          if (targetStack && targetStack.root_map_id !== target.id || (await activeMapEntrances(tx, campaignId)).some(edge => edge.map_id === target.id))
             throw new TacticalValidationError("Diese Karte hat bereits einen übergeordneten Ort.");
           const ancestors = await ancestry(tx, userId, campaignId, scope);
           if (ancestors.some(item => item.kind === "tactical" && item.id === target.id))

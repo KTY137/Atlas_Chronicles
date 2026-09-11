@@ -17,6 +17,8 @@ import { MapEditor } from "./MapEditor";
 import { MapLibrary, type MapLibraryItem } from "./MapLibrary";
 import { MapDeleteDialog } from "./MapDeleteDialog";
 import { MapContextMenu } from "./MapContextMenu";
+import { MapFloorsPanel } from "./MapFloorsPanel";
+import { RoomFogControls } from "./RoomFogControls";
 export { MapEditor } from "./MapEditor";
 
 export function TacticalPreparation({ campaignId, revision, onChanged, onDirty }: { campaignId: string; revision: number; onChanged: () => void; onDirty: (value: boolean) => void }) {
@@ -75,7 +77,9 @@ export function TacticalPreparation({ campaignId, revision, onChanged, onDirty }
       const url = new URL(location.href); url.searchParams.set("stage", "atlas"); url.searchParams.set("atlasChild", current.data!.id); location.assign(url.href);
     }}>{t("Karte im Atlas öffnen")}</Button> : null}
     {maps.error || current.error ? <Notice error>{maps.error || current.error}<Button onClick={onChanged}>{t("Erneut laden")}</Button></Notice> : null}
-    {!generating ? current.loading ? <Loading /> : current.data ? <><MapEditor key={current.data.id} current={current.data} campaignId={campaignId} onChanged={onChanged} onDirty={mapDirty} onContextMenu={canvasContext} /><ScenePlan key={current.data.id} map={current.data} campaignId={campaignId} revision={revision} onChanged={onChanged} onDirty={planDirty} /></> : <EmptyState title={t("Eine Karte für euren nächsten Abend.")}>{t("Wähle eine gespeicherte Karte oder erzeuge eine neue. Danach kannst du sie bearbeiten und für eine Szene vorbereiten.")}</EmptyState> : null}
+    {!generating ? current.loading ? <Loading /> : current.data ? <><MapFloorsPanel key={`floors:${current.data.id}`} current={current.data} campaignId={campaignId} revision={revision} disabled={dirty} onChanged={onChanged} onOpen={to => { if (guard()) { setParts({ map: false, plan: false, generate: false }); setSelected(to.id); } }} />
+      <RoomFogControls key={`fog:${current.data.id}:${current.data.revision}`} campaignId={campaignId} mapId={current.data.id} mapRevision={current.data.revision} onChanged={onChanged} disabled={dirty} />
+      <MapEditor key={current.data.id} current={current.data} campaignId={campaignId} onChanged={onChanged} onDirty={mapDirty} onContextMenu={canvasContext} /><ScenePlan key={current.data.id} map={current.data} campaignId={campaignId} revision={revision} onChanged={onChanged} onDirty={planDirty} /></> : <EmptyState title={t("Eine Karte für euren nächsten Abend.")}>{t("Wähle eine gespeicherte Karte oder erzeuge eine neue. Danach kannst du sie bearbeiten und für eine Szene vorbereiten.")}</EmptyState> : null}
   </div>;
 }
 

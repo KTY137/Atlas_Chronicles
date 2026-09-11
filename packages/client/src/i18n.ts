@@ -46,7 +46,7 @@ const textDateien: (() => Promise<Record<string, unknown>>)[] = [
   () => import("./i18n/en/P7.json"), () => import("./i18n/en/P8.json"),
   () => import("./i18n/en/P9.json"), () => import("./i18n/en/P10.json"),
   () => import("./i18n/en/P11.json"), () => import("./i18n/en/P12.json"),
-  () => import("./i18n/en/P13.json"), () => import("./i18n/en/P14.json"), () => import("./i18n/en/P15.json"), () => import("./i18n/en/P16.json"),
+  () => import("./i18n/en/P13.json"), () => import("./i18n/en/P14.json"), () => import("./i18n/en/P15.json"), () => import("./i18n/en/P16.json"), () => import("./i18n/en/P17.json"),
 ];
 const pluralDateien: (() => Promise<Record<string, unknown>>)[] = [() => import("./i18n/en.plural.json")];
 

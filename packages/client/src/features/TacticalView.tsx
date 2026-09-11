@@ -16,6 +16,7 @@ import { TacticalObjectList } from "./TacticalObjectList";
 import { mapObjectWindow, objectKey } from "./tactical-entities";
 import { lightsToScene, mapDocumentScene, type MapNode } from "./map-generation";
 import "./tactical.css";
+import { RoomFogControls } from "./RoomFogControls";
 
 type Page = "live" | "prepare" | "import";
 export function TacticalView({ campaignId, gm, revision, onDirty, onOpenEntry }: { campaignId: string; gm: boolean; revision: number; onDirty: (value: boolean) => void; onOpenEntry: (id: string) => void }) {
@@ -36,9 +37,10 @@ export function TacticalView({ campaignId, gm, revision, onDirty, onOpenEntry }:
 }
 
 function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpenEntry }: { campaignId: string; gm: boolean; revision: number; onChanged: () => void; onDirty: (value: boolean) => void; onOpenEntry: (id: string) => void }) {
-  const board = useResource<Board | null>(apiPath(campaignId, "/tactical/active"), revision, 6000);
+  const board = useResource<Board | null>(apiPath(campaignId, "/tactical/active"), revision, 2000);
   const [grid, setGrid] = useState(true), [snap, setSnap] = useState(true), [selected, setSelected] = useState(""), [drafts, setDrafts] = useState<Record<string, boolean>>({});
   const [epochs, setEpochs] = useState<Record<string, number>>({});
+  const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedObject, setSelectedObject] = useState("");
   const [invalidated, setInvalidated] = useState<Board | null>(null);
   const task = useTask(), command = useCommand();
@@ -88,7 +90,8 @@ function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpenEntry }
     {invalidated && board.data === invalidated ? <Notice>{t("Die bisherige Kartensicht wurde entzogen. Orte und Figuren werden erst nach einer neuen erlaubten Antwort angezeigt.")} <Button onClick={onChanged}>{t("Kartensicht erneut laden")}</Button></Notice> : null}
     {!data || !scene ? <EmptyState title={t("Noch keine Szenenkarte am Tisch.")}>{t("Die Spielleitung kann eine Karte importieren, mit einer vorbereiteten Szene verbinden und diese Szene beginnen.")}</EmptyState> : <>
       <div className="page-heading"><div><h2>{data.map?.name ?? t("Eure Szenenkarte")}</h2><p className="field-help">{data.gm ? t("Ansicht der Spielleitung") : t("Karte nach deinem gewählten Wissensblick")} · {t("Höhe ist ein einzelner Wert, kein Stockwerk.")}</p></div><div className="button-row"><label className="check-label"><input type="checkbox" checked={grid} onChange={e => setGrid(e.target.checked)} /> {t("Raster anzeigen")}</label><label className="check-label"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)} /> {t("Beim Ziehen einrasten")}</label></div></div>
-      <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tiles`)} onMove={drag} selection={focusedObject ? { kind: "pin", id: selectedObject } : selectedToken ? { kind: "token", id: selectedToken.id } : null} focusObject={focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : null} onSelect={hit => { setSelected(hit?.kind === "token" ? hit.id : ""); setSelectedObject(hit?.kind === "pin" ? hit.id : ""); }} onScopeInvalidated={() => { setInvalidated(data); setSelectedObject(""); setSelected(""); onChanged(); }} />
+      <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tiles`)} onMove={drag} selection={focusedObject ? { kind: "pin", id: selectedObject } : selectedToken ? { kind: "token", id: selectedToken.id } : data.gm && selectedRoom ? { kind: "cell", id: selectedRoom } : null} focusObject={focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : null} onSelect={hit => { setSelectedRoom(data.gm && hit?.kind === "cell" ? hit.id : ""); setSelected(hit?.kind === "token" ? hit.id : ""); setSelectedObject(hit?.kind === "pin" ? hit.id : ""); }} onScopeInvalidated={() => { setInvalidated(data); setSelectedObject(""); setSelected(""); onChanged(); }} />
+      {data.gm && data.map ? <RoomFogControls key={`fog:${data.map.id}:${data.map.revision}`} campaignId={campaignId} mapId={data.map.id} mapRevision={data.map.revision} selectedRoomId={selectedRoom} onChanged={onChanged} /> : null}
       <section className="panel"><h3>{t("Bekannte Orte & Kartenobjekte")}</h3><p className="field-help">{t("Wähle einen Marker oder einen Listeneintrag, um seinen Artikel zu öffnen. Jede Verknüpfung verwendet deinen aktuellen Wissensblick.")}</p>
         {visibleObjects.length < objects.length ? <Notice>{t("{sichtbar} von {gesamt} bekannten Objekten auf der Karte. Die vollständige Liste bleibt durchsuchbar; ausgewählte Objekte werden in den Kartenausschnitt aufgenommen, sofern sie innerhalb der Karte liegen.", { sichtbar: visibleObjects.length, gesamt: objects.length })}</Notice> : null}
         <TacticalObjectList objects={objects} selected={selectedObject} onSelect={key => { setSelected(""); setSelectedObject(key); }} onOpenEntry={onOpenEntry} />

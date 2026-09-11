@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import {
-  CAMPAIGN_V19_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds, collectFigurantragIdentityIds, collectRegelarchivIdentityIds, collectKartenherkunftIdentityIds,
+  CAMPAIGN_V20_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds, collectFigurantragIdentityIds, collectRegelarchivIdentityIds, collectKartenherkunftIdentityIds,
   createCurrentCampaignBundle as createCampaignBundle, validateCurrentCampaignBundle as validateCampaignBundle,
   currentCampaignSemanticDiff as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, upgradeCampaignBundleV4,
-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV19 as CampaignTables,
+  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV20 as CampaignTables,
   type ChronistRunRow,type ChronistProposalRow,
   type FigurvorlageFreigabeRow,type FigurantragRow,type FigurantragEventRow,type RulePackageArchivRow,type AtlasKartenherkunftRow,
-  type CampaignTableNameV19 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+  type CampaignTableNameV20 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -66,6 +66,7 @@ export const restoreOrder: readonly CampaignTableName[] = [
   // Und ganz zuletzt die Kartenherkunft: sie zeigt auf ihre Karte und auf den Menschen, der sie
   // geholt hat. Beide stehen weiter oben, auf sie zeigt niemand.
   "atlas_karten_herkunft",
+  "map_floor_stacks", "map_room_fog", "map_studio_commands",
 ];
 
 export class CampaignRestoreError extends Error {
@@ -74,7 +75,7 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19; migration?: CampaignMigrationChain;
+  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
   sourceVersion: 1 | 2 | 3 | 4; targetVersion: 4 | 5; sourceContentHash: string; targetContentHash: string;

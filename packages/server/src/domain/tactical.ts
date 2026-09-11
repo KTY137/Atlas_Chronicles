@@ -10,6 +10,8 @@ import { cartographyDraw, cartographyLabelAnchor, rendererVersion, inferLegacyCa
   type BuildingIntent, type CartographyRegionV1, type Knoten, type LegacyCartographyEvidence, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import * as P from "../../../protocol/src/tactical.ts";
 import type { Db } from "../db/index.ts";
+import { validateFloorRevision, roomFogFor } from "./map-studio-state.ts";
+import { visibleFogRegions } from "@chronicle/szene";
 import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
 import { createDocuments } from "./documents.ts";
 import { authorizeActor, listControlledActorIds } from "./actors.ts";
@@ -297,6 +299,7 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
       if (before.cartography && !v2) throw new TacticalValidationError("Diese Karte benötigt den aktuellen Karteneditor.");
       const cartography = v2 ? parseTacticalCartography(input.cartography, input.document) : undefined;
       if (cartography) validateAuthoredCartography(before, input.document, cartography);
+      await validateFloorRevision(tx, campaignId, mapId, input.document, cartography);
       if (tacticalHash(input.document.background) !== tacticalHash(before.document.background)) throw new TacticalValidationError("Ein anderes Hintergrundbild bitte als neue Karte importieren.");
       const regions = new Set(input.document.geometry.regions.map(region => region.id));
       const entrances = (await activeMapEntrances(tx, campaignId)).filter(edge => edge.parent_kind === "tactical" && edge.parent_map_id === mapId);
@@ -330,6 +333,11 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
       const bindings = await validateAnchors(tx, campaignId, input.document, input.anchors), next = before.revision + 1;
       await tx.query("INSERT INTO tactical_map_revisions(map_id,campaign_id,revision,source_id,document,content_hash,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)", [mapId, campaignId, next, before.sourceId, json(input.document), tacticalHash({ document: input.document, anchors: bindings }), userId, now()]);
       if (cartography) await storeCartography(tx, campaignId, mapId, next, cartography, before.version + 1);
+      // Manual exploration stays enabled for a changed drawing, but old room grants are not
+      // transplanted onto moved geometry. The pinned running scene keeps its own fog revision.
+      if ((await roomFogFor(tx, campaignId, mapId, before.revision))?.document.enabled)
+        await tx.query("INSERT INTO map_room_fog(map_id,campaign_id,map_revision,version,document,updated_by,updated_at) VALUES($1,$2,$3,1,$4,$5,$6)",
+          [mapId, campaignId, next, json({ schemaVersion: 1, enabled: true, party: [], actors: [] }), userId, now()]);
       for (const intent of addedBuildings) {
         const seed = tacticalHash(["chronicle-room-child-v1", campaignId, mapId, intent.regionId]);
         const node: Knoten = { id: intent.regionId as Knoten["id"], art: "bauwerk", titel: intent.titel.trim(), bauwerk: { typ: intent.typ, beschreibung: "" },
@@ -411,7 +419,9 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     }
     const knownRegions = new Set<string>();
     for (const a of map.anchors) if (a.targetKind === "region" && knowsAnchor(a)) knownRegions.add(a.targetId);
-    const regions = map.document.geometry.regions.filter(r => gm || knownRegions.has(r.id)).map(r => ({ id: r.id, points: r.punkte }));
+    const manualFog = await roomFogFor(tx, member.campaignId, map.id, map.revision);
+    const allowedRegions = visibleFogRegions(manualFog?.document ?? null, member.actorId, new Set(map.document.geometry.regions.map(r => r.id)), knownRegions);
+    const regions = map.document.geometry.regions.filter(r => gm || allowedRegions.has(r.id)).map(r => ({ id: r.id, points: r.punkte }));
     // A free name is knowledge like a place: a player gets it once the middle of its line lies in a region they know.
     const labels = (map.cartography?.labels ?? []).filter(label => { const [x, y] = cartographyLabelAnchor(label); return gm || visiblePoint({ size: map.document.geometry.size, regions }, x, y); });
     const lights = (map.document.lights ?? []).filter(light => gm || visiblePoint({ size: map.document.geometry.size, regions }, light.position[0], light.position[1]));

@@ -2,6 +2,22 @@
 
 Updated: **2026-09-11, v0.4.2 veröffentlicht** (Hostfenster als Zentrale · Chronik-Import)
 
+## Geschosse und Raumnebel — Featureprüfung 2026-09-11
+
+Auftrag: Roadmap #3 Punkt 07 plus raumweises Fog of War. Basis `a3bc38b`.
+Implementierung: eigene revisionierte Karten je Geschoss, Keller/Obergeschosse, ausgerichtete
+Treppen/Aufzüge/Durchbrüche, Geschossumschalter und getrennte Bearbeitung. Raumfreigaben für
+die Gruppe oder einzelne Figuren, serverseitig gefilterte Geometrie, Figuren und Rasterbilder.
+Neue Kopien beginnen verdeckt; Raumfreigaben sind keine Chroniktext-Freigaben. Kartenänderungen
+prüfen Übergänge; eine laufende Szene bleibt auf ihrer bisherigen Kartenrevision.
+
+Native v20-Sicherung mit geprüftem Rundlauf in frische Datenbank; bisherige Formatversionen
+bleiben gültig. Lokale Vertrags-, Domänen-, Raster-, Lebenszyklus-, Build- und Typprüfungen
+bestanden; lokale Browsernavigation gesperrt. Vor Main-Integration muss der erweiterte
+GitHub-Kartenlauf einschließlich der beiden neuen Browserabläufe bestanden haben. Kein neuer
+Installer. Vollständige Entscheidungen und lokale Prüfnachweise:
+`docs/reviews/map-floors-fog-20260911.md`; endgültige CI-/Merge-Belege im zugehörigen PR.
+
 ## v0.4.2 — Hostfenster als Zentrale (Teil 1 von 3) · 2026-09-11
 
 Spec `docs/superpowers/specs/2026-09-11-hostfenster-zentrale-design.md`, Commit `5b9462c`. Das

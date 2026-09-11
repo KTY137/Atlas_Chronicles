@@ -3,19 +3,21 @@
 import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import { TacticalCartographyValidationError, TacticalMapValidationError } from "@chronicle/szene";
+import { MapFloorValidationError, TacticalCartographyValidationError, TacticalMapValidationError } from "@chronicle/szene";
 import { UvttValidationError } from "@chronicle/forge";
 import * as P from "../../../protocol/src/tactical.ts";
 import type { Db } from "../db/index.ts";
 import { createIdentity, type IdentityConfig } from "../identity/index.ts";
 import { createTactical, TacticalValidationError } from "../domain/tactical.ts";
 import { TacticalRasterError } from "../domain/tactical-raster.ts";
+import { registerMapStudio } from "./map-studio.ts";
 import { registerMapLifecycle } from "./map-lifecycle.ts";
 
 /** Route-specific bound includes escaped JSON source and an optional native image. */
 export const TACTICAL_IMPORT_BODY_LIMIT = 96 * 1024 * 1024;
 export function registerTactical(app: FastifyInstance, db: Db, config: IdentityConfig) {
   registerMapLifecycle(app, db, config);
+  registerMapStudio(app, db, config);
   const identity = createIdentity(db, config), tactical = createTactical(db, config);
   const auth = async (cookie: string | undefined) => (await identity.authenticate(cookie)).userId;
   const base = "/api/campaigns/:campaignId";
@@ -48,7 +50,7 @@ export function registerTactical(app: FastifyInstance, db: Db, config: IdentityC
   const revision = (raw?: string) => raw === undefined ? undefined : number(raw, 1);
   async function run<T>(work: () => Promise<T>): Promise<T> {
     try { return await work(); } catch (error) {
-      if (error instanceof TacticalMapValidationError || error instanceof TacticalCartographyValidationError || error instanceof UvttValidationError) throw new TacticalValidationError(error.message);
+      if (error instanceof TacticalMapValidationError || error instanceof MapFloorValidationError || error instanceof TacticalCartographyValidationError || error instanceof UvttValidationError) throw new TacticalValidationError(error.message);
       if (error instanceof TacticalRasterError) {
         const failure = new Error(error.message) as Error & { statusCode: number };
         failure.statusCode = error.code === "invalid" ? 400 : 503; throw failure;
