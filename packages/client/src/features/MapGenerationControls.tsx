@@ -43,17 +43,29 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
 }) {
   const update = (patch: Partial<GenerationSettings>) => onChange({ ...value, ...patch });
   const [w, h] = generationDimensions(value, defaults), city = value.art === "siedlung", cave = value.art === "hoehle";
-  const cityDefaults = defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung;
-  const std = city ? cityDefaults : cave ? defaults.hoehle : defaults.grundriss;
+  const compound = value.art === "siedlung" ? value.anlage : undefined;
+  const compoundDefaults = compound ? defaults.anlagen?.[compound] : undefined;
+  const regional = value.art === "region", outdoor = city || regional;
+  const cityDefaults = compoundDefaults ?? defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung;
+  const std = city ? cityDefaults : regional ? defaults.region ?? { zellgroesse: 112 } : cave ? defaults.hoehle : defaults.grundriss;
   const suggested = BAUWERK_SETTINGS[value.setting];
-  const presets = city ? [
+  const presets = compound ? [
+    { label: t("Klein"), breite: 32, hoehe: 28, anzahl: compound === "burg" ? 7 : 3 },
+    { label: t("Mittel"), breite: compoundDefaults?.ausdehnung[0] ?? 48, hoehe: compoundDefaults?.ausdehnung[1] ?? 40, anzahl: compoundDefaults?.bauwerke ?? 7 },
+    { label: t("Groß"), breite: 72, hoehe: 56, anzahl: compound === "burg" ? 12 : 7 },
+  ] : regional ? [
+    { label: t("Klein"), breite: 40, hoehe: 30, anzahl: 8 }, { label: t("Mittel"), breite: 56, hoehe: 42, anzahl: 12 }, { label: t("Groß"), breite: 72, hoehe: 54, anzahl: 24 },
+  ] : city ? [
     ...SETTLEMENT_TYPES.map(art => {
       const preset = settlementPreset(art, defaults);
       return { label: t(SETTLEMENT_TYPE_LABEL[art]), breite: preset.ausdehnung[0], hoehe: preset.ausdehnung[1], anzahl: preset.bauwerke, siedlung: art, dichte: preset.strassenDichte, licht: preset.licht };
     }),
     { label: t("Großstadt"), breite: 88, hoehe: 64, anzahl: 256, siedlung: "stadt" as const, dichte: .7 },
   ] : [ { label: t("Klein"), breite: 24, hoehe: 20, anzahl: 5 }, { label: t("Mittel"), breite: 40, hoehe: 30, anzahl: 11 }, { label: t("Groß"), breite: 64, hoehe: 48, anzahl: 24 } ];
-  const changeArt = (art: MapArt) => update({ art, breite: "", hoehe: "", anzahl: "" });
+  const changeArt = (art: MapArt) => {
+    const { anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
+    onChange({ ...other, art, breite: "", hoehe: "", anzahl: "" });
+  };
   return <div className={`map-generation-controls${compact ? " compact" : ""}`}>
     {compact && profileLocked ? <label>{t("Was liegt hinter dieser Tür?")}<select value={value.art} onChange={event => changeArt(event.target.value as MapArt)}>
       {MAP_KINDS.filter(kind => kind.id !== "region").map(kind => <option key={kind.id} value={kind.id}>{t(MAP_KIND_LABEL[kind.id])}</option>)}
@@ -61,13 +73,24 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
       onChange={event => onChange(changeEntranceType(value, event.target.value, defaults))}>
       {value.art === "region" ? <option value="region" disabled>{t("Land & Region")}</option> : null}
       <optgroup label={t("Stadt & Dorf")}>{SETTLEMENT_TYPES.map(art => <option key={art} value={`siedlung:${art}`}>{t(SETTLEMENT_TYPE_LABEL[art])}</option>)}</optgroup>
+      {defaults.anlagen?.burg || defaults.anlagen?.schloss ? <optgroup label={t("Burg & Schloss")}>
+        {defaults.anlagen.burg ? <option value="anlage:burg">{t("Burg")}</option> : null}
+        {defaults.anlagen.schloss ? <option value="anlage:schloss">{t("Schloss")}</option> : null}
+      </optgroup> : null}
       <optgroup label={t("Gebäude & Dungeon")}><option value="grundriss:frei">{t("Freier Grundriss / Dungeon")}</option>
         {BAUWERK_TYPEN.map(typ => <option key={typ} value={`grundriss:${typ}`}>{t(BAUWERK_LABEL[typ])}</option>)}
       </optgroup><option value="hoehle">{t("Höhle")}</option>
     </select></label> : <div className="map-kind-cards" role="group" aria-label={t("Art der Karte")}>
       {MAP_KINDS.map(({ id, icon: Icon }) => <button type="button" key={id} aria-pressed={value.art === id} onClick={() => changeArt(id)}><Icon size={23} /><strong>{t(MAP_KIND_LABEL[id])}</strong><span>{t(MAP_KIND_TITEL[id])}</span></button>)}
     </div>}
-    {city ? <section className="map-location-section" aria-label={t("Standort der Siedlung")}>
+    {city && (!compact || profileLocked) && defaults.anlagen ? <label>{t("Art des Ortes")}<select value={compound ? `anlage:${compound}` : `siedlung:${value.siedlung}`}
+      onChange={event => onChange(changeEntranceType(value, event.target.value, defaults))}>
+      {SETTLEMENT_TYPES.map(art => <option key={art} value={`siedlung:${art}`}>{t(SETTLEMENT_TYPE_LABEL[art])}</option>)}
+      {defaults.anlagen.burg ? <option value="anlage:burg">{t("Burg")}</option> : null}
+      {defaults.anlagen.schloss ? <option value="anlage:schloss">{t("Schloss")}</option> : null}
+    </select></label> : null}
+    {compound ? <p className="field-help">{t("Eine begehbare Anlage mit eigenen Gebäuden. Die Baufläche wird als trockene Terrasse angelegt; die Umgebung folgt dem Standort.")}</p> : null}
+    {outdoor ? <section className="map-location-section" aria-label={t("Standort der Siedlung")}>
       <div className="map-setting-heading"><MapPin size={16} /><strong>{t("Wo liegt dein Ort?")}</strong></div>
       <div className="map-location-cards" role="group" aria-label={t("Landschaft auswählen")}>
         {MAP_LOCATIONS.map(({ id, icon: Icon }) => <button type="button" key={id} aria-pressed={value.standort === id} onClick={() => update({ standort: id })}>
@@ -91,8 +114,8 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     <div className="map-numbers">
       <label>{t("Breite")}<input type="number" min={12} max={192} step={1} value={value.breite} placeholder={String(w)} onChange={event => update({ breite: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
       <label>{t("Höhe")}<input type="number" min={12} max={192} step={1} value={value.hoehe} placeholder={String(h)} onChange={event => update({ hoehe: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
-      <label>{city ? t("Gebäude") : cave ? t("Kammern") : t("Räume")}<input type="number" min={city ? 1 : 2} max={city ? 256 : cave ? 32 : 64} step={1} value={value.anzahl}
-        placeholder={String(city ? cityDefaults.bauwerke : cave ? defaults.hoehle.kammern : defaults.grundriss.raeume)} onChange={event => update({ anzahl: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
+      <label>{regional ? t("Orte") : city ? t("Gebäude") : cave ? t("Kammern") : t("Räume")}<input type="number" min={compound ? compound === "burg" ? 7 : 3 : outdoor ? 1 : 2} max={compound ? compound === "burg" ? 12 : 7 : regional ? 24 : city ? 256 : cave ? 32 : 64} step={1} value={value.anzahl}
+        placeholder={String(regional ? defaults.region?.orte ?? 12 : city ? cityDefaults.bauwerke : cave ? defaults.hoehle.kammern : defaults.grundriss.raeume)} onChange={event => update({ anzahl: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
     </div>
     <small className="field-help">{t("{breite} × {hoehe} Pixel", { breite: (w * std.zellgroesse).toLocaleString(locale()), hoehe: (h * std.zellgroesse).toLocaleString(locale()) })} · {city ? t("Gebäudezahl als Ziel; Straßen und freie Flächen brauchen Platz.") : t("Raumzahl als Ziel; die Aufteilung richtet sich nach dem Gebäudetyp.")}</small>
     <div className="map-setting-heading"><Paintbrush size={16} /><strong>{t("Zeichenstil")}</strong></div>
@@ -103,13 +126,15 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
       <button type="button" aria-pressed={value.stil === "grundriss"} onClick={() => update({ stil: "grundriss" })}><span className="map-style-swatch blueprint" /><span><strong>{t("Grundriss")}</strong><small>{t("Klare Linien und Symbole")}</small></span></button>
     </div>
     <details className="map-fine-settings"><summary>{t("Feineinstellungen")}</summary><div>
-      {city ? <label>{t("Straßendichte")} <output>{Math.round(value.dichte * 100)} %</output><input type="range" min={0} max={1} step={.05} value={value.dichte} onChange={event => update({ dichte: event.target.valueAsNumber })} /></label>
-        : <label>{t("Einrichtung")} <output>{Math.round(value.moeblierung * 100)} %</output><input type="range" min={0} max={1} step={.1} value={value.moeblierung} onChange={event => update({ moeblierung: event.target.valueAsNumber })} /></label>}
-      {city ? <label>{t("Relief")} <output>{value.relief < .25 ? t("Flach") : value.relief > .75 ? t("Gebirgig") : t("Hügelig")}</output><input type="range" min={0} max={1} step={.05} aria-label={t("Relief")} value={value.relief} onChange={event => update({ relief: event.target.valueAsNumber })} /></label> : null}
-      {city ? <label>{t("Bewaldung")} <output>{value.bewaldung < .25 ? t("Kahl") : value.bewaldung > .75 ? t("Dicht") : t("Gehölze")}</output><input type="range" min={0} max={1} step={.05} aria-label={t("Bewaldung")} value={value.bewaldung} onChange={event => update({ bewaldung: event.target.valueAsNumber })} /></label> : null}
-      {city ? <small className="field-help">{t("Relief formt Hügel, Täler und Flüsse; Bewaldung bestimmt, wie viel offenes Land Wald trägt. Beides kannst du danach mit den Werkzeugen Höhe und Gelände weiter bearbeiten.")}</small> : null}
+      {city && !compound ? <label>{t("Straßendichte")} <output>{Math.round(value.dichte * 100)} %</output><input type="range" min={0} max={1} step={.05} value={value.dichte} onChange={event => update({ dichte: event.target.valueAsNumber })} /></label>
+        : !outdoor ? <label>{t("Einrichtung")} <output>{Math.round(value.moeblierung * 100)} %</output><input type="range" min={0} max={1} step={.1} value={value.moeblierung} onChange={event => update({ moeblierung: event.target.valueAsNumber })} /></label> : null}
+      {outdoor ? <label>{t("Relief")} <output>{value.relief < .25 ? t("Flach") : value.relief > .75 ? t("Gebirgig") : t("Hügelig")}</output><input type="range" min={0} max={1} step={.05} aria-label={t("Relief")} value={value.relief} onChange={event => update({ relief: event.target.valueAsNumber })} /></label> : null}
+      {outdoor ? <label>{t("Bewaldung")} <output>{value.bewaldung < .25 ? t("Kahl") : value.bewaldung > .75 ? t("Dicht") : t("Gehölze")}</output><input type="range" min={0} max={1} step={.05} aria-label={t("Bewaldung")} value={value.bewaldung} onChange={event => update({ bewaldung: event.target.valueAsNumber })} /></label> : null}
+      {outdoor ? <small className="field-help">{t("Relief formt Hügel, Täler und Flüsse; Bewaldung bestimmt, wie viel offenes Land Wald trägt. Beides kannst du danach mit den Werkzeugen Höhe und Gelände weiter bearbeiten.")}</small> : null}
       {value.art === "grundriss" && value.profil === "frei" ? <label>{t("Raumaufteilung")}<select value={value.anordnung} onChange={event => update({ anordnung: event.target.value as GenerationSettings["anordnung"] })}><option value="streuung">{t("Organisch verbunden")}</option><option value="raster">{t("Geplanter Grundriss")}</option><option value="kachelwerk">{t("Verzweigte Anlage")}</option></select></label> : null}
-      <label className="check-label"><input type="checkbox" checked={value.licht} onChange={event => update({ licht: event.target.checked })} /> {t("Lichter platzieren")}</label>
+      {compound === "burg" ? <label className="check-label"><input type="checkbox" checked={value.graben ?? false} onChange={event => update({ graben: event.target.checked })} />{t("Wehrgraben mit Brücke")}</label> : null}
+      {compound === "schloss" ? <label>{t("Symmetrie")} <output>{Math.round((value.symmetrie ?? 1) * 100)} %</output><input aria-label={t("Symmetrie")} type="range" min={0} max={1} step={.05} value={value.symmetrie ?? 1} onChange={event => update({ symmetrie: event.target.valueAsNumber })} /></label> : null}
+      {!regional ? <label className="check-label"><input type="checkbox" checked={value.licht} onChange={event => update({ licht: event.target.checked })} /> {t("Lichter platzieren")}</label> : null}
     </div></details>
   </div>;
 }

@@ -63,11 +63,30 @@ jobs:
           packages/client/test/map-location.test.ts
           packages/client/test/map-workshop-review.test.ts
           packages/client/test/sprache-P5.test.ts
+          packages/client/test/map-compound-controls.test.ts
+          packages/client/test/map-recipes.test.ts
+          packages/server/test/anlage-integration.test.ts
+          packages/server/test/betreten.test.ts
+          --maxWorkers=2
           --reporter=default --reporter=json --outputFile=/tmp/map-studio-results.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: map-studio-results
           path: /tmp/map-studio-results.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Chromium for real browser flows
+        run: npx playwright install --with-deps chromium
+      - name: Castle, palace and recipe browser flows
+        run: npx playwright test e2e/map-compounds.spec.ts
+        env:
+          # Initialize the real CommonJS dependency before the test host's ESM loader.
+          NODE_OPTIONS: --require ./node_modules/semver/index.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: map-studio-browser-results
+          path: test-results/
           if-no-files-found: ignore
           retention-days: 7

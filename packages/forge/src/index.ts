@@ -33,3 +33,6 @@ export type { EditLimits, CartographyPattern, PatternBoundary, PatternCell, Patt
 export { RELIEF_VERSION, RELIEF_STANDORTE, MEERESSPIEGEL, erzeugeLandschaft, flussBand } from "./relief.ts";
 export { BAUWERK_AUSDEHNUNG, BAUWERK_MASSSTAB, bauwerkAusdehnung } from "./bauprogramme.ts";
 export type { ReliefStandort, ReliefAuftrag, Landschaft, FlussStueck } from "./relief.ts";
+
+export { erzeugeAnlage, anlageOptionen, ANLAGE_ERZEUGER, ANLAGE_VERSION, ANLAGE_ARTEN, ANLAGE_LABEL, ANLAGE_GEBAEUDE, ANLAGE_STANDARD, ANLAGE_OPTION_KEYS } from "./anlage.ts";
+export type { AnlageArt, AnlageOptionen } from "./anlage.ts";
