@@ -60,6 +60,7 @@ test("zones are drawn and edited, control real generation and replay from a port
     expect(recipe.settings.planung.zonen).toHaveLength(2); expect(recipe.referenceHash).toBe(cleared.keimHash);
     await planner.getByRole("button", {name:"Zone entfernen",exact:true}).click();
     await studio.getByLabel("Kartenvorlage öffnen", { exact: true }).setInputFiles(file);
+    await expect(planner.getByLabel("Zone auswählen", { exact: true }).locator("option")).toHaveCount(3);
     response = preview(); await studio.getByRole("button", { name: "Vorschau", exact: true }).click();
     expect((await (await response).json()).keimHash).toBe(cleared.keimHash);
     await page.screenshot({ path: info.outputPath("zones-preview.png"), fullPage: true });

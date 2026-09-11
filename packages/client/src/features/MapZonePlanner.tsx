@@ -63,10 +63,10 @@ export function MapZonePlanner({ value = EMPTY, onChange }: { value?: Settlement
     </svg>
     <button type="button" disabled={value.zonen.length >= SETTLEMENT_PLAN_LIMITS.zones} onClick={() => add()}>{t("Zone hinzufügen")}</button>
     <p className="field-help">{t("Bis zu 16 Zonen. Die letzte überlagerte Zone hat Vorrang; Freiflächen sperren Gebäude immer. Relief und Hauptstraßennetz bleiben bestehen.")}</p>
-    <label>{t("Zone auswählen")}<select value={zone?.id ?? ""} onChange={e => setSelected(e.target.value)}><option value="">{t("Zone auswählen …")}</option>{value.zonen.map((z, i) => <option key={z.id} value={z.id}>{i + 1}. {z.name}</option>)}</select></label>
+    <label>{t("Zone auswählen")}<select aria-label={t("Zone auswählen")} value={zone?.id ?? ""} onChange={e => setSelected(e.target.value)}><option value="">{t("Zone auswählen …")}</option>{value.zonen.map((z, i) => <option key={z.id} value={z.id}>{i + 1}. {z.name}</option>)}</select></label>
     {zone && bounds ? <div className="map-zone-fields">
       <label>{t("Name des Viertels")}<input maxLength={80} value={zone.name} onChange={e => update({ name: e.target.value })} /></label>
-      <label>{t("Nutzung der Zone")}<select value={zone.nutzung} onChange={e => update({ nutzung: e.target.value as SettlementZone["nutzung"] })}>{SETTLEMENT_USES.map(use => <option key={use} value={use}>{t(ZONE_LABEL[use])}</option>)}</select></label>
+      <label>{t("Nutzung der Zone")}<select aria-label={t("Nutzung der Zone")} value={zone.nutzung} onChange={e => update({ nutzung: e.target.value as SettlementZone["nutzung"] })}>{SETTLEMENT_USES.map(use => <option key={use} value={use}>{t(ZONE_LABEL[use])}</option>)}</select></label>
       <label>{t("Bebauungsdichte")} <output>{Math.round(zone.dichte * 100)} %</output><input type="range" min={0} max={1} step={.05} disabled={zone.nutzung === "frei"} value={zone.dichte} onChange={e => update({ dichte: e.target.valueAsNumber })} /></label>
       <div className="map-zone-numbers">{(["x", "y", "w", "h"] as const).map(axis => <label key={axis}>{axis === "x" ? t("Links (%)") : axis === "y" ? t("Oben (%)") : axis === "w" ? t("Breite (%)") : t("Höhe (%)")}<input type="number" min={axis === "w" || axis === "h" ? 1 : 0} max={100} step={1} value={Math.round(bounds[axis] * 1000) / 10} onChange={e => resize(axis, e.target.valueAsNumber)} /></label>)}</div>
       {zone.nutzung === "hafen" ? <p>{t("Hafengebäude benötigen Ufernähe. Ohne passendes Ufer bleibt die Zone unbebaut; im Science-Fiction-Setting entstehen Raumhafenbauten.")}</p> : null}

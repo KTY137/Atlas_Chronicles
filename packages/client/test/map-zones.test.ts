@@ -17,6 +17,7 @@ describe("zone controls and recipe contract", () => {
   it("only exposes the planner for supported, ordinary settlements", () => {
     const markup = (value = settings(), d = defaults) => renderToStaticMarkup(MapGenerationControls({value,defaults:d,onChange:()=>{}}));
     expect(markup()).toContain("Viertel &amp; Freiflächen planen");
+    expect(markup()).toContain('aria-label="Zone auswählen"');
     expect(markup(settings(), { ...defaults, siedlungsplanung: undefined })).not.toContain("Zonenplan zeichnen");
     expect(markup({ ...settings(), anlage: "burg" } as never)).not.toContain("Zonenplan zeichnen");
   });
