@@ -75,5 +75,24 @@
     "eins": "One person is waiting at the door for your approval.",
     "viele": "{n} people are waiting at the door for your approval."
   },
-  "{n} Hinweis": {"eins": "{n} note", "viele": "{n} notes"}
+  "{n} Hinweis": {
+    "eins": "{n} note",
+    "viele": "{n} notes"
+  },
+  "Gebaut: {laenge} Zellen, {n} Flussquerung": {
+    "eins": "Built: {laenge} cells, {n} river crossing",
+    "viele": "Built: {laenge} cells, {n} river crossings"
+  },
+  "{n} Straßennetz auf der gesamten Karte.": {
+    "eins": "{n} road network across the whole map.",
+    "viele": "{n} separate road networks across the whole map."
+  },
+  "{n} Gebäude ohne Verbindung zu einem Zugang": {
+    "eins": "{n} building without a connection to an access point",
+    "viele": "{n} buildings without a connection to an access point"
+  },
+  "{n} Verbindung ohne Alternativweg im eigenen Plan. Das automatische Netz kann weitere Wege bieten.": {
+    "eins": "{n} connection without an alternative route in your own plan. The automatic network may provide other routes.",
+    "viele": "{n} connections without an alternative route in your own plan. The automatic network may provide other routes."
+  }
 }

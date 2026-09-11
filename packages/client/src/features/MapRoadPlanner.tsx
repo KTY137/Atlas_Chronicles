@@ -3,7 +3,7 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { ROAD_PLAN_LIMITS, type RoadPlan, type RoadPlanNode, type RoadPlanEdge, type TacticalMapDocumentV1, type TacticalCartographyV1 } from "@chronicle/szene";
 import type { SiedlungBericht } from "@chronicle/forge";
-import { t } from "../i18n";
+import { locale, plural, t } from "../i18n";
 import "./map-road-planner.css";
 
 export interface RoadPlanningPreview { document: TacticalMapDocumentV1; cartography?: TacticalCartographyV1 }
@@ -80,10 +80,10 @@ export function MapRoadPlanner({ value = EMPTY, onChange, preview }: { value?: R
 export function RoadPlanReport({ report, plan, names }: { report: NonNullable<SiedlungBericht["verkehr"]>; plan: RoadPlan; names: ReadonlyMap<string,string> }) {
   const name=(id:string)=>plan.knoten.find(n=>n.id===id)?.name??id;
   return <section className="map-road-report" aria-label={t("Ergebnis der Straßenplanung")}><h4>{t("Ergebnis der Straßenplanung")}</h4>
-    {report.routes.map(r=><p key={r.id}>{name(r.von)} → {name(r.nach)}: {r.status==="gebaut" ? t("Gebaut: {laenge} Zellen, {anzahl} Flussquerungen",{laenge:r.length,anzahl:r.riverCrossings}) : r.status==="endpunkt"?t("Ziel oder Platz liegt in Wasser, Fels oder zu dicht an einem Hindernis."):r.status==="budget"?t("Das Straßenbudget ist erreicht. Vereinfache den Plan."):t("Kein zulässiger Weg. Prüfe Höhenwechsel, Hindernisse und die Brückenerlaubnis.")}</p>)}
-    <p>{t("{anzahl} getrennte Straßennetze auf der gesamten Karte.",{anzahl:report.components})}</p>
+    {report.routes.map(r=><p key={r.id}>{name(r.von)} → {name(r.nach)}: {r.status==="gebaut" ? plural(r.riverCrossings,"Gebaut: {laenge} Zellen, {n} Flussquerung","Gebaut: {laenge} Zellen, {n} Flussquerungen",{laenge:r.length.toLocaleString(locale())}) : r.status==="endpunkt"?t("Ziel oder Platz liegt in Wasser, Fels oder zu dicht an einem Hindernis."):r.status==="budget"?t("Das Straßenbudget ist erreicht. Vereinfache den Plan."):t("Kein zulässiger Weg. Prüfe Höhenwechsel, Hindernisse und die Brückenerlaubnis.")}</p>)}
+    <p>{plural(report.components,"{n} Straßennetz auf der gesamten Karte.","{n} getrennte Straßennetze auf der gesamten Karte.")}</p>
     {report.unreachableNodes.length?<p role="alert">{t("Nicht erreichbare Wegpunkte: {namen}",{namen:report.unreachableNodes.map(name).join(", ")})}</p>:null}
-    {report.unreachableBuildings.length?<details><summary>{t("{anzahl} Gebäude ohne Verbindung zu einem Zugang",{anzahl:report.unreachableBuildings.length})}</summary><p>{report.unreachableBuildings.map(id=>names.get(id)??id).join(", ")}</p></details>:null}
-    {report.singleLinks.length?<p>{t("{anzahl} Verbindungen ohne Alternativweg im eigenen Plan. Das automatische Netz kann weitere Wege bieten.",{anzahl:report.singleLinks.length})}</p>:null}
+    {report.unreachableBuildings.length?<details><summary>{plural(report.unreachableBuildings.length,"{n} Gebäude ohne Verbindung zu einem Zugang","{n} Gebäude ohne Verbindung zu einem Zugang")}</summary><p>{report.unreachableBuildings.map(id=>names.get(id)??id).join(", ")}</p></details>:null}
+    {report.singleLinks.length?<p>{plural(report.singleLinks.length,"{n} Verbindung ohne Alternativweg im eigenen Plan. Das automatische Netz kann weitere Wege bieten.","{n} Verbindungen ohne Alternativweg im eigenen Plan. Das automatische Netz kann weitere Wege bieten.")}</p>:null}
   </section>;
 }

@@ -53,6 +53,14 @@ describe("road-planning controls and portable recipes", () => {
     expect(markup).toContain("Das automatische Netz kann weitere Wege bieten");
     expect(markup).toContain("&lt;img"); expect(markup).not.toContain("<img");
   });
+  it("formats report distances and singular counts in the selected language", () => {
+    const report={components:1,invalidNodes:[],unreachableNodes:[],unreachableBuildings:[],singleLinks:["avenue"],reservedRegions:[],routes:[{id:"avenue",von:"entry",nach:"market",status:"gebaut" as const,points:[],length:28.8,riverCrossings:1}]};
+    const markup=renderToStaticMarkup(RoadPlanReport({report,plan:verkehr,names:new Map()}));
+    expect(markup).toContain("Gebaut: 28,8 Zellen, 1 Flussquerung");
+    expect(markup).not.toContain("1 Flussquerungen");
+    expect(markup).toContain("1 Straßennetz auf der gesamten Karte.");
+    expect(markup).toContain("1 Verbindung ohne Alternativweg");
+  });
   it("does not send an empty graph or change legacy generator provenance", () => {
     const empty={...settings(),verkehr:{...verkehr,knoten:[],verbindungen:[]}};
     expect(generationOptions(empty,defaults)).not.toHaveProperty("verkehr");

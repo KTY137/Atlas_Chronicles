@@ -81,6 +81,10 @@ test("road graph is edited with keyboard and pointer, replayed and saved without
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.setViewportSize({width:1440,height:960});
     await page.screenshot({path:info.outputPath("roads-preview.png"),fullPage:true});
+    await drawing.scrollIntoViewIfNeeded();
+    await page.screenshot({path:info.outputPath("roads-planner.png")});
+    await studio.locator(".map-workshop-preview .tactical-canvas").first().scrollIntoViewIfNeeded();
+    await page.screenshot({path:info.outputPath("roads-map.png")});
     await studio.getByRole("button",{name:"Erzeugen und speichern",exact:true}).click();
     await expect(page.locator('.tactical-canvas[data-canvas-ready="true"]')).toHaveCount(1);
     await expect(page.locator(".nested-building-list li")).toHaveCount(generated.nodes.length);
@@ -129,6 +133,8 @@ test("an impossible river route remains a visible diagnostic until bridges are e
       .toBeGreaterThan(refused.cartography.regions.filter((r:any)=>r.role==="road"&&r.material==="bridge").length);
     await expect(studio.getByRole("button",{name:"Erzeugen und speichern",exact:true})).toBeEnabled();
     await page.screenshot({path:info.outputPath("river-bridge-preview.png"),fullPage:true});
+    await studio.locator(".map-workshop-preview .tactical-canvas").first().scrollIntoViewIfNeeded();
+    await page.screenshot({path:info.outputPath("river-bridge-map.png")});
     await studio.getByRole("button",{name:"Erzeugen und speichern",exact:true}).click();
     await expect(page.locator('.tactical-canvas[data-canvas-ready="true"]')).toHaveCount(1);
     expect(await createTactical(host.db).listMaps(host.gm.userId,host.campaign.id)).toHaveLength(1);
