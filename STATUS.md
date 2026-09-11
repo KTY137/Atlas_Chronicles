@@ -1,6 +1,6 @@
 # STATUS — cold-start handoff
 
-Updated: **2026-09-11, v0.4.1 gebaut, nicht veröffentlicht** (Kartenbild jeder Größe · Runden im Hostfenster)
+Updated: **2026-09-11, v0.4.1 veröffentlicht** (Kartenbild jeder Größe · Runden im Hostfenster)
 
 ## v0.4.1 — zwei Meldungen gegen v0.4.0 · 2026-09-11
 
@@ -13,8 +13,8 @@ Platte (C: < 3 GB) an 10,9 MB mit „Failed to fetch", auch in unveränderter 0.
 Runde erschien erst nach Neustart. Jetzt bei Fensterfokus und alle 15 s.
 **Nachweis:** Typecheck; gate:version (0.4.1); render 138 Tests (4 neu); Desktop-Smoke 24/24 (2 neu:
 Runde ohne Neustart, Kartenbild 1600×1000 an Pixeln sichtbar). Commit `b56b141`.
-**Offen:** Veröffentlichung (GitHub-Release, README-Downloadzeile) wartet auf Kaya; Steam hat weder
-Konto noch App-ID. Sechs alte Pakete (6,8 GB) unter `.local/desktop-artifacts` bei 3 GB freier Platte.
+**Veröffentlicht** als GitHub-Release `v0.4.1` mit dem Setup als Anhang; README-Downloadzeile zeigt
+darauf. **Offen:** Steam hat weder Konto noch App-ID. Sechs alte Pakete (6,8 GB) unter `.local/desktop-artifacts` bei 3 GB freier Platte.
 
 ## Runde 9 — Chronist schreibt und überarbeitet Wiki-Einträge · 2026-09-10 · v0.4.0
 
