@@ -62,6 +62,15 @@ async function run() {
     const admission = await inspectMigrationAdmission(owned, assets);
     if (admission.recoveryRequired) await recovery.create(owned, postgres, app.getVersion());
   } }, id => store.chronistHostConfig(id));
+  const startHost = async (profileId: string) => {
+    try {
+      return await host.start(profileId);
+    } catch (error) {
+      if (host.state !== "failed") throw error;
+      await host.stop();
+      return host.start(profileId);
+    }
+  };
   let restore: { ticket: string; path: string; profileId: string; report: unknown; gms: unknown; assert: () => void } | undefined;
   session.fromPartition("chronicle-management").protocol.handle("chronicle-shell", async request => {
     const url = new URL(request.url);
@@ -174,12 +183,12 @@ async function run() {
         case "create": {
           if (host.state !== "stopped") fail("host-busy", "Bitte zuerst den laufenden Host beenden.");
           const owned = await store.create(request.name); assert(); authority.select(owned.profile.id);
-          const selected = authority.lease(), ready = await host.start(owned.profile.id);
+          const selected = authority.lease(), ready = await startHost(owned.profile.id);
           await reconcileSetupSession(owned.profile.id, ready.origin); selected(); break;
         }
         case "start": {
           await cleanupRestore(); assert(); authority.select(request.profileId);
-          const selected = authority.lease(), ready = await host.start(request.profileId);
+          const selected = authority.lease(), ready = await startHost(request.profileId);
           await reconcileSetupSession(request.profileId, ready.origin); selected(); break;
         }
         case "stop": await cleanupRestore(); assert(); await host.stop(); authority.select(undefined); break;
@@ -194,7 +203,7 @@ async function run() {
           if (host.state !== "stopped") fail("recovery-host", "Bitte den laufenden Host zuerst beenden.");
           const restored = await recovery.restore(request.recoveryId, request.name, store, assert); assert();
           authority.select(restored.owned.profile.id);
-          const selected = authority.lease(), ready = await host.start(restored.owned.profile.id);
+          const selected = authority.lease(), ready = await startHost(restored.owned.profile.id);
           const original = session.fromPartition(partitionFor(restored.manifest.sourceOrigin));
           const cookie = (await original.cookies.get({ name: "chronicle_session" })).find(value => value.httpOnly && value.secure && value.sameSite === "strict");
           selected();
@@ -222,7 +231,7 @@ async function run() {
           if ((await stat(source)).size > 268_435_456) fail("file-size", "Kampagnendatei ist zu groß."); assert();
           const owned = await store.create(request.name); assert(); authority.select(owned.profile.id);
           const profileAssert = authority.lease();
-          await host.start(owned.profile.id); profileAssert();
+          await startHost(owned.profile.id); profileAssert();
           const directory = join(owned.directory, "transfers"); await mkdir(directory, { recursive: true }); profileAssert();
           const ticket = randomUUID(), path = join(directory, `${ticket}.chronicle`);
           await copyFile(source, path); profileAssert();
