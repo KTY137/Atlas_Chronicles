@@ -23,7 +23,10 @@ export async function verifyRuntime(root: string): Promise<void> {
   for (const [file, expected] of Object.entries(manifest.files)) {
     if (!/^[a-zA-Z0-9_./ +\-]+$/.test(file) || file.split("/").includes("..") || !/^[a-f0-9]{64}$/.test(expected)) fail("runtime-manifest", "Ungültiges Laufzeitmanifest.");
     const path = contained(root, file);
-    if ((await lstat(path)).isSymbolicLink() || createHash("sha256").update(await readFile(path)).digest("hex") !== expected)
+    // Der relative Laufzeitpfad ist Paketaufbau, kein Nutzerdatum: ohne ihn hiesse ein
+    // unvollstaendiges Paket nur „ENOENT" und niemand faende die Datei.
+    const info = await lstat(path).catch(error => { if ((error as NodeJS.ErrnoException).code === "ENOENT") fail("runtime-missing", `PostgreSQL-Laufzeit ist unvollständig: ${file} fehlt. Bitte das geprüfte Paket erneut installieren.`); throw error; });
+    if (info.isSymbolicLink() || createHash("sha256").update(await readFile(path)).digest("hex") !== expected)
       fail("runtime-hash", "PostgreSQL-Laufzeit wurde verändert. Bitte das geprüfte Paket erneut installieren.");
   }
 }
