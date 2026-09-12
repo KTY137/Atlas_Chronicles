@@ -41,6 +41,10 @@ const hoerer = new Set<() => void>();
  * Anwendung mountet gar nicht. `gate:sprache` prüft, dass jede Paketdatei hier steht. */
 const textDateien: (() => Promise<Record<string, unknown>>)[] = [
   () => import("./i18n/en/P19.json"),
+  () => import("./i18n/en/wiki-menus.json"),
+  () => import("./i18n/en/network.json"),
+  () => import("./i18n/en/tabletop.json"),
+  () => import("./i18n/en/characters.json"),
   () => import("./i18n/en/P1.json"), () => import("./i18n/en/P2.json"),
   () => import("./i18n/en/P3.json"), () => import("./i18n/en/P4.json"),
   () => import("./i18n/en/P5.json"), () => import("./i18n/en/P6.json"),

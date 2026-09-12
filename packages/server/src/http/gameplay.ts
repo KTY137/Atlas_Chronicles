@@ -29,6 +29,7 @@ export function registerGameplay(app: FastifyInstance, db: Db, config: AppConfig
   app.post<{Params:Scope;Body:Static<typeof P.SceneDraft>}>(`${base}/scenes`,{schema:{body:P.SceneDraft}},async req=>game.createScene(await auth(req),req.params.campaignId,req.body));
   app.post<{Params:Item;Body:Static<typeof P.SceneStart>}>(`${base}/scenes/:id/start`,{preValidation:async req=>{if(req.body===undefined) req.body={};},schema:{body:P.SceneStart}},async req=>game.startScene(await auth(req),req.params.campaignId,req.params.id,req.body));
   app.get<{Params:Scope}>(`${base}/rolls`,async req=>game.listRolls(await auth(req),req.params.campaignId));
+  app.get<{Params:Scope}>(`${base}/tabletop/rolls`,async req=>game.listTableRolls(await auth(req),req.params.campaignId));
   app.post<{Params:Scope;Body:Static<typeof P.ActionDraft>}>(`${base}/rolls`,{schema:{body:P.ActionDraft}},async req=>game.prepareAction(await auth(req),req.params.campaignId,req.body));
   app.get<{Params:Item}>(`${base}/rolls/:id`,async req=>game.getRoll(await auth(req),req.params.campaignId,req.params.id));
   app.post<{Params:Item}>(`${base}/rolls/:id/confirm`,async req=>game.confirmAction(await auth(req),req.params.campaignId,req.params.id));

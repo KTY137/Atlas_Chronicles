@@ -38,11 +38,11 @@ Server selbst und öffnet denselben Web-Client wie alle anderen. Kein Docker, ke
 im Betrieb, keine Datenbankinstallation. Mehrere getrennte Welten nebeneinander, Anhalten
 und Fortsetzen, `.chronicle`-Import in eine neue leere Welt, gerätegebundene Sicherungspunkte.
 
-**Was heute nicht funktioniert — und das ist der entscheidende Satz:** Der lokale Host lauscht
-ausschließlich auf `127.0.0.1`. Er richtet **kein** DNS, **keine** Zertifikate und **keine**
-Firewall- oder Router-Konfiguration ein. Du kannst damit also **noch keine
-Mitspieler einladen.** Das ist Minecraft-Singleplayer; „Open to LAN" ist noch nicht gebaut.
-Wer heute mit anderen spielen will, nimmt einen gehosteten Raum oder Weg B.
+**Heimnetz ab dem Entwicklungsstand 2026-09-12:** Im Hostfenster lässt sich vor dem
+Weltstart eine private IPv4-Adresse auswählen. Andere Geräte im selben WLAN/LAN
+treten über Einladungslinks bei. Anleitung, Wiederanmeldung und Prüfgrenzen:
+[Gemeinsam im LAN spielen](LAN.md). Der Standard bleibt `localhost`; DNS,
+Zertifikate, Firewall- und Router-Konfiguration werden nicht automatisch eingerichtet.
 
 **Es gibt außerdem noch keinen Installer.** `package.mjs` erzeugt eine *unsignierte, entpackte*
 Windows-Anwendung (rund 564 MB als Verzeichnis), ausdrücklich keine Release-Auslieferung.
@@ -166,15 +166,18 @@ Es geht auch ohne Domain, aber mit einer benannten Einschränkung. Trage in `dep
 
 ```bash
 CHRONICLE_ORIGIN=http://192.168.1.5:3000
-CHRONICLE_BIND=0.0.0.0
+CHRONICLE_BIND=192.168.1.5
+CHRONICLE_INSECURE_LAN=1
 ```
 
 und starte **ohne** `--profile tls`. Spieler öffnen dann die IP direkt.
 
 **Was dabei verloren geht:** Passkeys funktionieren nicht. Ein Browser erlaubt sie nur in
 einem sicheren Kontext, und eine IP-Adresse darf keine rpId sein — das ist eine Regel des
-Browsers, kein Fehler der App. Die Cookie-Wiederkehr ist in dieser Topologie eingeschränkt
-und als offener Punkt P11 vermerkt. Deshalb bewerben wir diesen Weg nicht aktiv.
+Browsers, kein Fehler der App. Der ausdrückliche Heimnetzmodus verwendet
+HTTP-Sitzungscookies mit `HttpOnly` und `SameSite=Strict`; Wiederkehr ist über den
+gemerkten Browser oder einen Zugangslink möglich. Die Verbindung bleibt unverschlüsselt
+und ist für vertraute Heimnetze vorgesehen. Details und Nachweise: [LAN.md](LAN.md).
 
 Die App verschweigt das nicht: `GET /api/reachability` sagt dem Client pro Origin, welche
 Anmeldezeremonie tatsächlich angeboten wird. Es gibt kein stilles Herabstufen — fehlt eine

@@ -13,6 +13,7 @@
     "@chronicle/core": "*",
     "@chronicle/forge": "^0.0.0",
     "@chronicle/projection": "*",
+    "@chronicle/protocol": "*",
     "@chronicle/rules": "*",
     "@chronicle/szene": "^0.0.0",
     "@chronicle/theme": "^0.0.0"

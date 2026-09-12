@@ -45,6 +45,11 @@ it("persists the first-login receipt privately and refuses cross-profile replay"
     await expect(store.readSetupReceipt(b.profile.id)).rejects.toThrow("diesem Profil");
     await store.clearSetupReceipt(a.profile.id, "different"); expect(await store.readSetupReceipt(a.profile.id)).toEqual(receipt);
     await store.clearSetupReceipt(a.profile.id, receipt.value); expect(await store.readSetupReceipt(a.profile.id)).toBeUndefined();
+    const lanReceipt = { ...receipt, origin: `http://192.168.1.2:${a.profile.httpPort}` };
+    await store.saveSetupReceipt(a, lanReceipt);
+    expect(await store.readSetupReceipt(a.profile.id), "A restart must reconcile into the original LAN partition, not silently change its origin").toEqual(lanReceipt);
+    await expect(store.saveSetupReceipt(a, { ...receipt, origin: `http://192.168.1.2:${b.profile.httpPort}` })).rejects.toThrow("Adresse");
+    await expect(store.saveSetupReceipt(a, { ...receipt, origin: `http://8.8.8.8:${a.profile.httpPort}` })).rejects.toThrow("Adresse");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 it("keeps the Chronist key encrypted inside its own profile and never in clear text", async () => {

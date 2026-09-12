@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
+.character-identity { display: grid; grid-template-columns: minmax(140px, 230px) minmax(0, 1fr); align-items: center; gap: 28px; }
+.character-portrait { margin: 0; min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.character-portrait img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: contain; }
+.character-portrait-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; aspect-ratio: 4 / 5; color: var(--text-muted); text-align: center; padding: 12px; }
+.character-identity-details { min-width: 0; }
+.character-identity-details h2 { font-family: var(--font-display); font-size: clamp(24px, 3vw, 38px); overflow-wrap: anywhere; margin: 8px 0 12px; }
+.character-identity-details > a { display: inline-block; margin-block-end: 15px; }
+.character-portrait-input input { width: 100%; min-width: 0; }
+.character-progress { margin: 18px 0 24px; }
+.character-progress dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin: 0; }
+.character-progress dl > div { padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.character-progress dt { color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.character-progress dd { margin: 8px 0; font-size: 30px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.character-progress small { color: var(--text-muted); font-size: 11px; line-height: 1.6; }
+.character-progress .character-progress-primary { border-color: var(--accent); }
+.character-progress-primary dd { color: var(--accent); }
+.character-progress .over-budget { border-color: var(--danger); }
+.character-progress .over-budget dd { color: var(--danger); }
+.character-inventory { scroll-margin-top: 20px; }
+@media (max-width: 620px) {
+  .character-identity { grid-template-columns: 1fr; gap: 18px; }
+  .character-portrait { width: min(230px, 100%); justify-self: center; }
+  .character-progress dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .character-progress dl > div { padding: 12px; }
+}
+@media (max-width: 360px) { .character-progress dl { grid-template-columns: 1fr; } }

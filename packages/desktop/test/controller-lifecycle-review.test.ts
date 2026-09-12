@@ -8,6 +8,8 @@ import type { ProfileStore, OwnedProfile } from "../src/profiles.ts";
 const mock = vi.hoisted(() => ({ fork: vi.fn(), pgStart: vi.fn(), pgStop: vi.fn() }));
 vi.mock("electron", () => ({ utilityProcess: { fork: mock.fork } }));
 vi.mock("../src/postgres.ts", () => ({ ManagedPostgres: class { start = mock.pgStart; stop = mock.pgStop; } }));
+vi.mock("@chronicle/server/host", async importOriginal => ({ ...await importOriginal<typeof import("@chronicle/server/host")>(),
+  localLanAddresses: () => [{ address: "192.168.1.2", name: "Test LAN" }] }));
 import { HostController } from "../src/controller.ts";
 
 const owned: OwnedProfile = {
@@ -15,24 +17,37 @@ const owned: OwnedProfile = {
   directory: "C:/test-only-unused-profile", dataDirectory: "C:/test-only-unused-profile/postgres",
   secrets: { databasePassword: "a".repeat(64), cookieSecret: "b".repeat(64) },
 };
-interface Request { id: string; startId: string; kind: string }
-async function harness(chronistHostOf?: (profileId: string) => Promise<{ key?: string; configPath?: string; hinweis?: string }>) {
+interface Request { id: string; startId: string; kind: string; config?: { origin: string } }
+async function harness(chronistHostOf?: (profileId: string) => Promise<{ key?: string; configPath?: string; hinweis?: string }>, lanAddress?: string, reportedOrigin?: string) {
   const worker = Object.assign(new EventEmitter(), { postMessage: vi.fn<(message: Request) => void>(), kill: vi.fn() });
   const unlock = vi.fn(async () => undefined);
   const store = { open: vi.fn(async () => owned), lock: vi.fn(async () => unlock) } as unknown as ProfileStore;
   worker.postMessage.mockImplementation(message => {
-    if (message.kind === "start") queueMicrotask(() => worker.emit("message", { id: message.id, startId: message.startId, ok: true, value: { origin: "http://localhost:45101", nodeVersion: "24.test", decoder: "test", setupRequired: true } }));
+    if (message.kind === "start") queueMicrotask(() => worker.emit("message", { id: message.id, startId: message.startId, ok: true, value: { origin: reportedOrigin ?? message.config!.origin, nodeVersion: "24.test", decoder: "test", setupRequired: true } }));
   });
   mock.fork.mockReturnValue(worker);
   // This controller-only fixture opens no database; production must provide its
   // real authenticated recovery-point admission before schema changes.
   const controller = new HostController(store, "C:/unused-assets", "C:/unused-runtime", vi.fn(), { beforeSchema: async () => undefined }, chronistHostOf);
-  await controller.start(owned.profile.id);
+  await controller.start(owned.profile.id, lanAddress);
   return { controller, worker, unlock };
 }
 
 beforeEach(() => { vi.clearAllMocks(); mock.pgStart.mockResolvedValue(undefined); mock.pgStop.mockResolvedValue(undefined); });
 afterEach(() => vi.useRealTimers());
+
+it("starts only the selected current LAN address and binds its readiness proof to that origin", async () => {
+  const { controller, worker } = await harness(undefined, "192.168.1.2");
+  expect(controller.ready?.origin).toBe("http://192.168.1.2:45101");
+  expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ kind: "start", config: expect.objectContaining({
+    origin: "http://192.168.1.2:45101", lanAddress: "192.168.1.2", databaseUrl: expect.stringContaining("@127.0.0.1:45102/postgres") }) }));
+  await expect(harness(undefined, "192.168.1.2", "http://localhost:45101")).rejects.toThrow("Profil");
+});
+
+it("rejects an absent interface before starting PostgreSQL or a worker", async () => {
+  await expect(harness(undefined, "192.168.1.99")).rejects.toThrow("nicht mehr verfügbar");
+  expect(mock.pgStart).not.toHaveBeenCalled(); expect(mock.fork).not.toHaveBeenCalled();
+});
 
 it("invalidates ready authority when an unconfirmed mutating request times out", async () => {
   const { controller, worker } = await harness();

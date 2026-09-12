@@ -10,28 +10,30 @@ import {
 import type { Db } from "../db/index.ts";
 import { Gone } from "../domain/errors.ts";
 import { normalizeName } from "../domain/names.ts";
+import { sessionCookieSecure } from "../network.ts";
 
 export const tokenHash = (value: string): string => createHash("sha256").update(value).digest("hex");
 export const secretToken = (): string => randomBytes(32).toString("base64url");
 export interface AuthContext { userId: string; credentialId: string; displayName: string; platformRole: "gast" | "leitung" }
-export interface IdentityConfig { origin: string; cookieSecret: string; now?: () => number }
+export interface IdentityConfig { origin: string; cookieSecret: string; allowInsecureLan?: boolean; now?: () => number }
 
-export function reachability(origin: string) {
+export function reachability(origin: string, allowInsecureLan = false) {
   const url = new URL(origin), host = url.hostname.replace(/^\[|\]$/g, "");
   const localhost = host === "localhost" || host.endsWith(".localhost");
   const secure = url.protocol === "https:" || (url.protocol === "http:" && localhost);
   return { origin: url.origin, passkeyEligible: secure && !isIP(host) && (localhost || host.includes(".")),
-    secureContext: secure, selfHostTransport: "explicit-https-or-localhost" };
+    secureContext: secure, selfHostTransport: sessionCookieSecure(origin, allowInsecureLan) ? "explicit-https-or-localhost" : "explicit-private-lan" };
 }
 
 export function createIdentity(db: Db, cfg: IdentityConfig) {
   const now = cfg.now ?? Date.now;
   const origin = new URL(cfg.origin).origin;
+  const secureCookie = sessionCookieSecure(cfg.origin, cfg.allowInsecureLan);
   if (cfg.cookieSecret.length < 32) throw new Error("Cookie secret must contain at least 32 characters");
   const rpID = new URL(origin).hostname;
   const signed = (body: string) => createHmac("sha256", cfg.cookieSecret).update(body).digest("base64url");
   const same = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
-  const cookie = (value: string, seconds: number) => `chronicle_session=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${seconds}`;
+  const cookie = (value: string, seconds: number) => `chronicle_session=${value}; Path=/; HttpOnly;${secureCookie ? " Secure;" : ""} SameSite=Strict; Max-Age=${seconds}`;
 
   async function issueSession(userId: string, kind: "guest" | "cookie" = "guest", parentId?: string) {
     const credentialId = randomUUID(), secret = secretToken();

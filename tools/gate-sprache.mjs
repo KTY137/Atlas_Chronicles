@@ -70,7 +70,15 @@ export const LOKAL_ALLOWLIST = {
 };
 
 /** `errorText` reicht den Satz des Servers durch; er steht erst zur Laufzeit fest. */
-export const DYNAMISCH_ERLAUBT = { "packages/client/src/api.ts": 1 };
+export const DYNAMISCH_ERLAUBT = {
+  "packages/client/src/api.ts": 1,
+  // ChronicleHeroes display copies translate only exact bundled wording. The closed
+  // source catalogue is checked by character-english.test.ts; stored IDs,
+  // expressions and authored overrides never enter these translation calls.
+  "packages/client/src/features/chronicle-heroes-display.ts": 6,
+  "packages/client/src/features/ChronicleHeroesTemplate.tsx": 3,
+  "packages/client/src/features/RuleComputedFields.tsx": 1,
+};
 /** Anzeigetabellen bleiben in ihrem Paket; der Client übersetzt an der Anzeigestelle mit
  * `t(BAUWERK_LABEL[typ])` und filtert weiter über den deutschen Wert (Spec B, „Grenze"). */
 export const ETIKETT_KONSTANTEN = /_(?:LABEL|LABELS|TITEL)$/;

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomBytes, randomUUID, createHash } from "node:crypto";
-import { captureTacticalSession } from "./tactical.ts";
+import { captureTacticalSession, createTactical } from "./tactical.ts";
+import { TABLE_DICE_ACTION_ID, TABLE_DICE_PACKAGE_ID, validTableDice, type TableDiceInput } from "@chronicle/protocol";
+import { tableDicePackage } from "./table-dice.ts";
 import { resolvePassage, type LineageEvent, type Praegung, type Quelle } from "@chronicle/chronik";
 import { trustPassageId } from "@chronicle/core";
 import { DEMO_RULE_PACKAGE, RuleValidationError, SupportedRulePackageRegistry, defaultSupportedActorFields, depletedDefeatVitals, evaluateSupportedAction, parseSupportedRulePackage, previewSupportedPackageMigration, replaySupportedAction, stableJson, validateEntityFields, validatePackageFields,
@@ -42,6 +44,7 @@ export interface PrepareActionInput {
    * Zahlen zu setzen.
    */
   erleichterungId?: string;
+  tableDice?: TableDiceInput;
 }
 export interface IssueVollmachtInput {
   commandId: string; actorId: string; passageId: string; actionId: string; packageId?: string; packageVersion?: string;
@@ -99,7 +102,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   async function listPackages(userId: string, campaignId: string) {
     const member = await campaigns.requireMember(userId, campaignId);
     const rows = (await db.query<{ document: RulePackage }>("SELECT document FROM rule_packages WHERE campaign_id=$1 ORDER BY package_id,version", [campaignId])).rows
-      .map(r => r.document).filter(p => p.id !== DEMO_RULE_PACKAGE.id || p.version !== DEMO_RULE_PACKAGE.version);
+      .map(r => r.document).filter(p => p.id !== TABLE_DICE_PACKAGE_ID && (p.id !== DEMO_RULE_PACKAGE.id || p.version !== DEMO_RULE_PACKAGE.version));
     rows.unshift(DEMO_RULE_PACKAGE);
     const version = (await db.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0]?.version ?? 0;
     // Genommene Pakete bleiben in der Antwort: das Verstecken ist eine Entscheidung der Ansicht,
@@ -107,7 +110,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     return { packages: rows, pin: await currentPin(db, campaignId), version, bibliothek: await library(db, campaignId, rows, member.role === "leitung") };
   }
   async function installPackage(userId: string, campaignId: string, input: unknown) {
-    return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return install(tx, userId, campaignId, input); });
+    return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); const pkg = parseSupportedRulePackage(input); if (pkg.id === TABLE_DICE_PACKAGE_ID) throw new Gone("reserved-package"); return install(tx, userId, campaignId, pkg); });
   }
   /**
    * Der Bibliotheksstand jeder aufgelisteten Paketversion.
@@ -196,6 +199,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     });
   }
   async function packageReview(tx: Db, campaignId: string, next: RulePackage, expectedHash?: string) {
+    if (next.id === TABLE_DICE_PACKAGE_ID) throw new Gone("reserved-package");
     const from = await currentPin(tx, campaignId), previous = await packageFor(tx, campaignId, from);
     const pinVersion = (await tx.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0]?.version ?? 0;
     const sheets = (await tx.query<{ actor_id: string; fields: Record<string, Scalar>; package_id: string; package_version: string; version: number; defeat_pending: boolean; defeated_at: string | null }>("SELECT actor_id,fields,package_id,package_version,version,defeat_pending,defeated_at FROM actor_sheets WHERE campaign_id=$1 ORDER BY actor_id COLLATE \"C\"", [campaignId])).rows;
@@ -335,9 +339,13 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       if (previous.request_hash !== reqHash || !validRollEvidence(previousPackage, previous)) throw new Conflict();
       return card(previous);
     }
-    const old = await sheet(tx, campaignId, input.actorId);
-    const pin = { id: input.packageId ?? old.packageId, version: input.packageVersion ?? old.packageVersion };
-    if (pin.id !== old.packageId || pin.version !== old.packageVersion) throw new Gone("sheet-package-mismatch");
+    const free = input.tableDice;
+    if (free && (!validTableDice(free) || input.actionId !== TABLE_DICE_ACTION_ID || input.packageId !== undefined || input.packageVersion !== undefined
+      || input.input !== undefined || input.targetPassageId !== undefined || input.erleichterungId !== undefined || delegated)) throw new Gone("table-dice-input");
+    // Free dice use no sheet values or knowledge. They still pass through this one receipt path.
+    const old = free ? null : await sheet(tx, campaignId, input.actorId);
+    const pin = old ? { id: input.packageId ?? old.packageId, version: input.packageVersion ?? old.packageVersion } : null;
+    if (old && pin && (pin.id !== old.packageId || pin.version !== old.packageVersion)) throw new Gone("sheet-package-mismatch");
     if (delegated) {
       const pending = (await tx.query<RollRow>("SELECT * FROM action_rolls WHERE vollmacht_id=$1 AND status='ausstehend'", [delegated.id])).rows[0];
       if (pending) throw new Conflict();
@@ -347,14 +355,15 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const zugestaendnis = input.erleichterungId
       ? await sperreOffeneErleichterung(tx, campaignId, input.actorId, input.erleichterungId) : null;
     const aktion = zugestaendnis?.gewuerfelteAktion ?? input.actionId;
-    const eingaben = zugestaendnis?.eingaben ?? input.input ?? {};
-    const pkg = await packageFor(tx, campaignId, pin); await install(tx, userId, campaignId, pkg);
+    const eingaben = free ? { minimum: free.minimum } : zugestaendnis?.eingaben ?? input.input ?? {};
+    const pkg = free ? tableDicePackage(free) : await packageFor(tx, campaignId, pin!); await install(tx, userId, campaignId, pkg);
     const passage = input.targetPassageId ? await target(tx, campaignId, input.targetPassageId) : null;
     if (passage && !delegated && member.role !== "leitung" && !(await createDocuments(tx, cfg).held(campaignId, input.actorId)).has(trustPassageId(passage.id))) throw new Gone();
     if (delegated && passage?.hash !== delegated.passage_hash) throw new Conflict();
     const session = (await tx.query<{ id: string; scene_id: string; fiction_date: string }>("SELECT g.id,g.scene_id,s.fiction_date FROM game_sessions g JOIN scenes s ON s.id=g.scene_id WHERE g.campaign_id=$1 AND g.ended_at IS NULL", [campaignId])).rows[0];
     const fictionDate = text(input.fictionDate ?? session?.fiction_date ?? new Date(now()).toISOString().slice(0, 10), 120);
-    const receipt = evaluateSupportedAction(pkg, aktion, { seed: seed(), actor: old.fields, input: eingaben, knowledge: await projectedActorKnowledge(tx, campaignId, input.actorId) });
+    const receipt = evaluateSupportedAction(pkg, aktion, { seed: seed(), actor: old?.fields ?? {}, input: eingaben,
+      knowledge: free ? { actorId: input.actorId, passages: [] } : await projectedActorKnowledge(tx, campaignId, input.actorId) });
     const id = randomUUID();
     await tx.query(`INSERT INTO action_rolls(id,campaign_id,actor_id,prepared_by,command_id,request_hash,package_id,package_version,action_id,receipt,receipt_hash,target_passage_id,target_passage_hash,vollmacht_id,fiction_date,prepared_at,scene_id,session_id)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
@@ -374,7 +383,9 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   async function rollFor(tx: Db, userId: string, campaignId: string, id: string): Promise<RollRow> {
     const member = await createCampaigns(tx, cfg).requireMember(userId, campaignId);
     const row = (await tx.query<RollRow>("SELECT * FROM action_rolls WHERE id=$1 AND campaign_id=$2", [id, campaignId])).rows[0];
-    if (!row) throw new Gone(); await authorizeActor(tx, member, row.actor_id, { active: false }); return row;
+    if (!row) throw new Gone();
+    if (row.package_id === TABLE_DICE_PACKAGE_ID && (await tableRollActorIds(tx, member)).includes(row.actor_id)) return row;
+    await authorizeActor(tx, member, row.actor_id, { active: false }); return row;
   }
   async function getRoll(userId: string, campaignId: string, id: string) { return card(await rollFor(db, userId, campaignId, id)); }
   async function listRolls(userId: string, campaignId: string) {
@@ -382,6 +393,19 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const controlled = await listControlledActorIds(db, member, { active: false });
     const rows = await db.query<RollRow>("SELECT * FROM action_rolls WHERE campaign_id=$1 AND actor_id=ANY($2::text[]) ORDER BY prepared_at DESC,id LIMIT 100", [campaignId, controlled]);
     return rows.rows.map(card);
+  }
+  async function tableRollActorIds(tx: Db, member: Membership): Promise<string[]> {
+    const own = await listControlledActorIds(tx, member, { active: false });
+    const party = (await tx.query<{ actor_id: string }>("SELECT actor_id FROM campaign_memberships WHERE campaign_id=$1 AND role='spieler' AND actor_id IS NOT NULL", [member.campaignId])).rows.map(row => row.actor_id);
+    const board = await createTactical(tx, cfg).getActive(member.userId, member.campaignId);
+    return [...new Set([...own, ...party, ...(board?.tokens.map(token => token.actorId) ?? [])])];
+  }
+  async function listTableRolls(userId: string, campaignId: string) {
+    return db.transaction(async tx => {
+      const member = await createCampaigns(tx, cfg).requireMember(userId, campaignId);
+      const ids = await tableRollActorIds(tx, member);
+      return (await tx.query<RollRow>("SELECT * FROM action_rolls WHERE campaign_id=$1 AND package_id=$2 AND actor_id=ANY($3::text[]) ORDER BY prepared_at DESC,id LIMIT 40", [campaignId, TABLE_DICE_PACKAGE_ID, ids])).rows.map(card);
+    });
   }
   async function replayRoll(userId: string, campaignId: string, id: string) {
     const roll = await rollFor(db, userId, campaignId, id); const pkg = await packageFor(db, campaignId, { id: roll.package_id, version: roll.package_version });
@@ -573,6 +597,6 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     return (await db.query("SELECT id,kind,passage_id AS \"passageId\",revision_id AS \"revisionId\",provenance,seal,confirmed_at AS \"confirmedAt\" FROM confirmed_mints WHERE campaign_id=$1 AND passage_id=$2 ORDER BY confirmed_at,id", [campaignId, passageId])).rows;
   }
   return { listPackages, installPackage, previewPackage, activatePackage, archivePackage, unarchivePackage, deletePackage, getSheet, updateSheet, adjustResource, listScenes, createScene, startScene,
-    prepareAction, confirmAction, getRoll, listRolls, replayRoll, mintGesprochen, mintRatifikation, mintBerichtigung, confirmDefeat, mintProvenance,
+    prepareAction, confirmAction, getRoll, listRolls, listTableRolls, replayRoll, mintGesprochen, mintRatifikation, mintBerichtigung, confirmDefeat, mintProvenance,
     issueVollmacht, prepareVollmacht, confirmVollmacht, listVollmachten, revokeVollmacht, expireVollmachten };
 }

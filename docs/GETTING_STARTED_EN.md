@@ -60,6 +60,15 @@ on the first screen. That file is created for you and is excluded from Git.
 This is the way to test with your party in the same building. There are two versions of it,
 and the difference matters.
 
+Desktop builds containing the 2026-09-12 LAN change offer **Wer kann beitreten?**
+(who can join) in the host window. Stop the world, select the private IPv4 address
+of your Wi-Fi or Ethernet adapter, and start it again. Create an invitation in
+the host window, send its complete link to your players, and approve their join
+requests there. The host and players use the same address. After switching between
+localhost and a LAN address, use **Mitglieder → Zugangslink** to sign back in with
+an existing identity if needed. The default remains local access only.
+See [LAN setup and verification](LAN.md) for the detailed checklist and evidence.
+
 ### 2a — Plain HTTP, quick, with real limits
 
 Find your computer's address on the network (`ipconfig` on Windows, `ip addr` on Linux).
@@ -67,7 +76,8 @@ Then, in `deploy/.env`:
 
 ```bash
 CHRONICLE_ORIGIN=http://192.168.1.5:3000
-CHRONICLE_BIND=0.0.0.0
+CHRONICLE_BIND=192.168.1.5
+CHRONICLE_INSECURE_LAN=1
 ```
 
 Start without the TLS profile:
@@ -85,12 +95,13 @@ Players open `http://192.168.1.5:3000` directly.
   address may not be a passkey domain. That is a browser rule, not a fault in the app. The
   app says so itself rather than failing quietly: the sign-in screen greys the passkey
   button out and points to invitation and pairing codes instead.
-- **Staying signed in is unreliable.** The session cookie is marked `Secure`, so a browser
-  on a plain `http://` address may refuse to keep it. Players may have to sign in again
-  after a reload. This is a known open point in the project, not something you configured
-  wrong.
+- **The connection is unencrypted.** Enabling `CHRONICLE_INSECURE_LAN=1` explicitly
+  allows HTTP cookies for the configured private IPv4 origin. Cookies remain
+  `HttpOnly` and `SameSite=Strict`; guest sessions last eight hours, or 30 days
+  after choosing to remember the browser. Expired or cleared cookies require a
+  pairing link. Without the explicit setting, cookies remain `Secure`.
 
-For an evening of trying things out, this is fine. For a campaign you keep, use 2b.
+Use HTTP only on a trusted home network. Use HTTPS for encrypted transport.
 
 ### 2b — HTTPS on the LAN, recommended
 
@@ -187,8 +198,8 @@ The sign-in screen always tells you which of the two applies. It never silently 
 |---|---|
 | Every save or edit is refused | `CHRONICLE_ORIGIN` does not match the address in the browser, exactly. Scheme, host, port. |
 | The passkey button is greyed out | Not a secure context: a plain `http://` address that is not localhost. Use a pairing code, or move to HTTPS. |
-| Players are signed out after a reload | The `Secure` session cookie on a plain LAN address. This is the known limit of [Way 2a](#2a--plain-http-quick-with-real-limits). |
-| Players cannot reach the address at all | `CHRONICLE_BIND=0.0.0.0` is missing, or your firewall blocks the port. |
+| Players are signed out after a reload | Check that HTTP LAN mode is explicitly enabled with `CHRONICLE_INSECURE_LAN=1`, and that cookies have not expired or been cleared. See [Way 2a](#2a--plain-http-quick-with-real-limits). |
+| Players cannot reach the address at all | Check the selected adapter address, `CHRONICLE_BIND`, local firewall rules and guest-network isolation. |
 | The invitation link says it expired | The invitation was revoked, or the request behind it lapsed with it. Ask for a fresh link. |
 
 Voice and video chat are **not** part of the app. Text chat, player banners and presence

@@ -1,3 +1,27 @@
+# Spieltisch, Figuren und Heimnetz — 2026-09-12
+
+Vier parallele LangGraph-Arbeitspakete integriert: Kategorien per Drag-and-drop
+und Tastatur, Spieltisch mit Figuren/Karte/animierten Würfeln, gespeicherter
+GM-Abenteuerbaum, vollständiger Ich/Me-Bogen mit Originalporträt und freien
+Skill-Punkten, ChronicleHeroes auf Englisch, Menüregressionen und Regelaktivierung
+im Kontextmenü. Figurenlöschung inklusive Berechtigungen und Referenzschutz geprüft.
+Neue Migrationen 035/036; Native v21 sichert Porträts und Abenteuerbaum mit.
+
+Hostfenster → Wer kann beitreten? → Heimnetz-Adresse vor dem Weltstart auswählen.
+Zwei Browserclients über die echte LAN-IP und separater Electron/PostgreSQL-Smoke
+bestanden; ein zweites physisches Gerät samt Firewall bleibt separat zu prüfen.
+Keine Firewalländerung oder neuer veröffentlichter Installer. Finaler Desktopbuild
+enthält 182 Clientdateien und sieben Assetpakete.
+
+Typprüfung, Version, Architektur, Sprache (4870 Schlüssel, keine Verstöße), Assets,
+15 unterschiedliche Browserfälle und sechs native Desktopprüfungen bestanden.
+Gesamtsuite: 3058 bestanden, 72 übersprungen, fünf zunächst fehlgeschlagen;
+alle vier betroffenen Dateien im Nachlauf mit 53/53 bestanden. Ursachen waren eine
+vor ihrer Korrektur geladene Testerwartung und vier Zeitlimits unter paralleler
+Last. Die bestehenden Zeitlimits wurden nicht verändert; beide Belege sind dokumentiert.
+Die vorherige Sprachgate-Blockade der Banner-Sitzung ist damit behoben.
+Nachweise und Bedienung: `docs/reviews/tabletop-completion-20260912.md`, `docs/LAN.md`.
+
 # 20 animierte Pixelart-Banner — 2026-09-12
 
 Einstellungen → Deine Darstellung → Pixelart-Banner: 20 Fantasy-/Punk-Motive,

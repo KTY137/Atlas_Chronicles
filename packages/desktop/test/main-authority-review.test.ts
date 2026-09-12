@@ -77,12 +77,12 @@ async function harness() {
     chronistHinweis: string | undefined;
     constructor(_store: unknown, _assets: unknown, _runtime: unknown, readonly changed: () => void, _migrations?: unknown,
                 readonly chronistHostOf?: (profileId: string) => Promise<unknown>) { host = this; }
-    async start(id: string) {
+    async start(id: string, lanAddress?: string) {
       // Production decrypts the profile's Chronist setup here; a missing reader must show up.
       this.chronist = await this.chronistHostOf?.(id);
       this.chronistHinweis = (this.chronist as { hinweis?: string } | undefined)?.hinweis;
       this.owned = { profile: { id } };
-      this.ready = { origin: localOrigin, setupRequired: true, nodeVersion: "24.test", decoder: "test" };
+      this.ready = { origin: lanAddress ? `http://${lanAddress}:45101` : localOrigin, setupRequired: true, nodeVersion: "24.test", decoder: "test" };
       this.state = "ready"; this.changed(); return this.ready;
     }
     async stop() {
@@ -214,6 +214,20 @@ it("retains the committed first-login credential in its bound profile session wh
   }));
   expect(h.fromPartition(partitionFor(localOrigin)).cookies.flushStore).toHaveBeenCalledOnce();
   expect(h.windows).toHaveLength(1);
+});
+
+it("keeps the LAN first-login cookie private to the selected origin and revokes its game window when hosting stops", async () => {
+  const h = await harness(), lan = "http://192.168.1.2:45101", otherLan = "http://192.168.1.3:45101";
+  expect((await h.invoke({ kind: "start", profileId, lanAddress: "192.168.1.2" })).ok).toBe(true);
+  expect(h.host.ready?.origin).toBe(lan);
+  h.host.request.mockResolvedValueOnce({ value: "private-lan-first-login", expiresAt: Date.now() + 60_000 });
+  expect((await h.invoke({ kind: "setup", name: "LAN GM" })).ok).toBe(true);
+  expect(h.fromPartition(partitionFor(lan)).cookies.set).toHaveBeenCalledWith(expect.objectContaining({ url: lan, httpOnly: true, secure: false, sameSite: "strict" }));
+  expect(h.fromPartition(partitionFor(localOrigin)).cookies.set).not.toHaveBeenCalled();
+  expect((await h.invoke({ kind: "remote-lan", origin: otherLan })).ok).toBe(true);
+  const ownedGame = h.windows.find(window => window.url === lan)!, remoteGame = h.windows.find(window => window.url === otherLan)!;
+  expect((await h.invoke({ kind: "stop" })).ok).toBe(true);
+  expect(ownedGame.isDestroyed()).toBe(true); expect(remoteGame.isDestroyed()).toBe(false);
 });
 
 it("hands the private Chronist reader to the controller when a world starts", async () => {

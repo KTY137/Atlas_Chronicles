@@ -41,7 +41,8 @@ if (process.argv.includes("--configure")) {
     await migrate(db);
     const staticRoot = resolve(root, "packages/client/dist");
     const hasClient = await access(resolve(staticRoot, "index.html")).then(() => true, () => false);
-    app = await buildApp(db, { ...settings, origin, chronist, logger: true, publicDeliveryEnabled: process.env["CHRONICLE_PUBLIC_DELIVERY"] === "1", ...(hasClient ? { staticRoot } : {}) });
+    app = await buildApp(db, { ...settings, origin, chronist, logger: true, allowInsecureLan: process.env["CHRONICLE_INSECURE_LAN"] === "1",
+      publicDeliveryEnabled: process.env["CHRONICLE_PUBLIC_DELIVERY"] === "1", ...(hasClient ? { staticRoot } : {}) });
     await app.listen({ host: process.env["HOST"] ?? "127.0.0.1", port });
   } catch (error) {
     // The runtime may own activated native helpers before SQL or Fastify exists.

@@ -8,6 +8,8 @@ Lieferumfang hält der [Implementierungsplan](docs/IMPLEMENTATION_PLAN.md) fest.
 Eine Einrichtungsanleitung für Spielleitung und Spieler auf Englisch — eigener
 Rechner, LAN oder eigener Server — steht in
 [Getting Started (EN)](docs/GETTING_STARTED_EN.md).
+Den neuen Heimnetzstart im Hostfenster, Einladungen und die Netzwerkprüfung erklärt
+[Gemeinsam im LAN spielen](docs/LAN.md).
 
 ## Herunterladen
 

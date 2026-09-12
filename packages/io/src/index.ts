@@ -41,5 +41,6 @@ export * from "./native-v17/index.ts";
 export * from "./native-v18/index.ts";
 export * from "./native-v19/index.ts";
 export * from "./native-v20/index.ts";
-export { createCurrentCampaignBundle, validateCurrentCampaignBundle, parseCurrentCampaignBundle, serializeCurrentCampaignBundle, currentCampaignSemanticDiff, currentCampaignTables, type CurrentCampaignBundle } from "./native-v20/current.ts";
+export * from "./native-v21/index.ts";
+export { createCurrentCampaignBundle, validateCurrentCampaignBundle, parseCurrentCampaignBundle, serializeCurrentCampaignBundle, currentCampaignSemanticDiff, currentCampaignTables, type CurrentCampaignBundle } from "./native-v21/current.ts";
 export type { EronArticle, EronTemplate, EronAttribution, EronImportInput, EronImportResult, ImportProvenance, EronSource, EronReimportPlan, ImportedMediaReference, EronMediaFile, EronAssetEntwurf } from "./model.ts";

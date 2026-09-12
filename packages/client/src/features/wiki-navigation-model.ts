@@ -41,6 +41,7 @@ const ART_TITEL: Readonly<Record<string, () => string>> = {
   ereignis: () => t("Ereignisse"), ort: () => t("Orte"), regelseite: () => t("Regeln"), sonstiges: () => t("Sonstiges"),
 };
 export const artTitel = (art: string): string => (ART_TITEL[art] ?? ART_TITEL.sonstiges!)();
+export const NAVIGATION_ARTEN = ["charakter", "organisation", "spezies", "gegenstand", "ereignis", "ort", "regelseite", "sonstiges"] as const;
 
 /**
  * Kategorien zuerst, danach die Arten als Rückfall für alles, was keine Kategorie trägt. Ohne

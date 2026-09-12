@@ -6,6 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 COPY packages ./packages
 COPY tools ./tools
+COPY deploy/healthcheck.mjs ./deploy/healthcheck.mjs
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 RUN npm run build --workspace @chronicle/client
 RUN npm prune --omit=dev --no-audit --no-fund
@@ -22,6 +23,6 @@ EXPOSE 3000
 # /api/ready and is what a load balancer or an operator asks before sending traffic.
 # See packages/server/src/http/health.ts
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD wget -qO- http://127.0.0.1:3000/api/live >/dev/null || exit 1
+  CMD ["node", "deploy/healthcheck.mjs", "live"]
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "node_modules/tsx/dist/cli.mjs", "packages/server/src/main.ts"]

@@ -11,6 +11,18 @@ describe("native management boundaries", () => {
     expect(remoteOrigin("https://EXAMPLE.org:443/")).toBe("https://example.org");
     expect(partitionFor("http://localhost:45001")).not.toBe(partitionFor("http://localhost:45002"));
   });
+  it("accepts a selected LAN start and explicit private HTTP connection without adding arbitrary listener controls", () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    expect(command({ kind: "start", profileId: id, lanAddress: "192.168.1.2" })).toEqual({ kind: "start", profileId: id, lanAddress: "192.168.1.2" });
+    expect(command({ kind: "create", name: "LAN world", lanAddress: "10.1.2.3" })).toEqual({ kind: "create", name: "LAN world", lanAddress: "10.1.2.3" });
+    expect(command({ kind: "remote-lan", origin: "http://192.168.1.2:45101" })).toEqual({ kind: "remote-lan", origin: "http://192.168.1.2:45101" });
+    for (const invalid of [{ kind: "start", profileId: id, lanAddress: "0.0.0.0" }, { kind: "start", profileId: id, bind: "0.0.0.0" },
+      { kind: "start", profileId: id, lanAddress: "8.8.8.8" }, { kind: "start", profileId: id, lanAddress: "192.168.1.2:45101" },
+      { kind: "remote-lan", origin: "http://8.8.8.8:45101" }, { kind: "remote-lan", origin: "http://localhost:45101" },
+      { kind: "remote-lan", origin: "http://user:secret@192.168.1.2:45101" }, { kind: "remote-lan", origin: "http://192.168.1.2:45101/?join=secret" }])
+      expect(() => command(invalid)).toThrow();
+    expect(partitionFor("http://192.168.1.2:45101")).not.toBe(partitionFor("http://localhost:45101"));
+  });
   it("rejects hidden filesystem, process and target controls", () => {
     for (const value of [{ kind: "create", name: "World", directory: "C:/outside" }, { kind: "stop", profileId: "fake" }, { kind: "start", profileId: "../../.local" }, { kind: "shell", command: "whoami" }, { kind: "setup", name: "bad\nname" }])
       expect(() => command(value)).toThrow();

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { AnyRulePackage, RuleAbility, Scalar } from "@chronicle/rules";
 import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
+import { displayRulePackage } from "./chronicle-heroes-display";
 import { einsatzKandidaten, faehigkeitenListe, grundNichtLernbar, uebersichtVon, verlernen, wirktMit, type NichtLernbar } from "./faehigkeiten-bogen";
 
 const artText = (kind: RuleAbility["kind"]) => kind === "dauerhaft" ? t("Dauerhaft") : kind === "einsatz" ? t("Einsatz") : t("Reaktion");
@@ -22,7 +23,8 @@ const MAX_TREFFER = 40;
  * Fähigkeiten und Zustände am Bogen: gelernt, lernen, verlernen, Budget, Zustände anhaken. Alles ändert
  * nur den Entwurf; die Engine prüft ihn wie jedes andere Bogenfeld, und am Tisch gilt erst der gespeicherte Stand.
  */
-export function FaehigkeitenBogen({ pkg, fields, onChange, disabled }: { pkg: AnyRulePackage; fields: Readonly<Record<string, Scalar>>; onChange: (next: Record<string, Scalar>) => void; disabled?: boolean }) {
+export function FaehigkeitenBogen({ pkg: original, fields, onChange, disabled }: { pkg: AnyRulePackage; fields: Readonly<Record<string, Scalar>>; onChange: (next: Record<string, Scalar>) => void; disabled?: boolean }) {
+  const pkg = displayRulePackage(original);
   const [suche, setSuche] = useState(""), [nurLernbar, setNurLernbar] = useState(true);
   const regeln = pkg.schemaVersion === 2 ? pkg.abilityRules : undefined;
   const uebersicht = useMemo(() => regeln ? uebersichtVon(pkg, fields) : null, [pkg, fields, regeln]);
@@ -74,7 +76,8 @@ const vorzeichen = (wert: string) => /^\d/.test(wert) ? `+${wert}` : wert;
  * Am Tisch: die gelernten Einsatz- und Reaktionsfähigkeiten, die diese Aktion treffen, als Häkchen — und
  * was ohnehin mitwirkt. Grundlage ist der gespeicherte Bogen, denn nur mit ihm rechnet der Server.
  */
-export function EinsatzWahl({ pkg, fields, actionId, einsatz, onEinsatz, disabled }: { pkg: AnyRulePackage; fields: Readonly<Record<string, Scalar>> | undefined; actionId: string; einsatz: string; onEinsatz: (value: string) => void; disabled?: boolean }) {
+export function EinsatzWahl({ pkg: original, fields, actionId, einsatz, onEinsatz, disabled }: { pkg: AnyRulePackage; fields: Readonly<Record<string, Scalar>> | undefined; actionId: string; einsatz: string; onEinsatz: (value: string) => void; disabled?: boolean }) {
+  const pkg = displayRulePackage(original);
   if (!fields || pkg.schemaVersion !== 2 || !pkg.abilityRules) return null;
   const kandidaten = einsatzKandidaten(pkg, fields, actionId), mit = wirktMit(pkg, fields, actionId);
   if (!kandidaten.length && !mit.length) return null;

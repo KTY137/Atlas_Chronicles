@@ -5,7 +5,7 @@ import { mkdir, open, readFile, readdir, rename, rm, lstat, writeFile } from "no
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { CHRONIST_ANTHROPIC_BASE_URL, CHRONIST_ANTHROPIC_KEY_ENV, CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING,
-  CHRONIST_ANTHROPIC_PROFILE, CHRONIST_UNCONFIGURED_MODEL } from "@chronicle/server/host";
+  CHRONIST_ANTHROPIC_PROFILE, CHRONIST_UNCONFIGURED_MODEL, isPrivateLanOrigin } from "@chronicle/server/host";
 import { chronistKey, contained, DesktopError, fail, label, object, profileId } from "./policy.ts";
 
 export const CHRONIST_KEY_FILE = "chronist-key.dpapi";
@@ -33,10 +33,15 @@ export const CHRONIST_PROVIDER_DEFAULTS = {
 export interface SecretBox { available(): boolean; encrypt(text: string): Buffer; decrypt(bytes: Buffer): string }
 export interface Profile { version: 1; id: string; name: string; createdAt: string; httpPort: number; pgPort: number; pgMajor: 17 }
 export interface ProfileSecrets { databasePassword: string; cookieSecret: string }
-export interface SetupReceipt { value: string; expiresAt: number }
+export interface SetupReceipt { value: string; expiresAt: number; origin?: string }
 export interface OwnedProfile { profile: Profile; directory: string; dataDirectory: string; secrets: ProfileSecrets }
 export const originOf = (profile: Profile) => `http://localhost:${profile.httpPort}`;
 export const databaseUrlOf = (owned: OwnedProfile) => `postgresql://chronicle:${encodeURIComponent(owned.secrets.databasePassword)}@127.0.0.1:${owned.profile.pgPort}/postgres`;
+function setupOriginOf(profile: Profile, origin: unknown): string {
+  if (origin === undefined || origin === originOf(profile)) return originOf(profile);
+  if (typeof origin === "string" && isPrivateLanOrigin(origin) && Number(new URL(origin).port) === profile.httpPort) return origin;
+  return fail("setup-receipt", "Ersteinrichtungsbeleg gehört nicht zur Adresse dieses Profils.");
+}
 
 export function parseProfile(input: unknown): Profile {
   const value = object(input, ["version", "id", "name", "createdAt", "httpPort", "pgPort", "pgMajor"]);
@@ -197,11 +202,12 @@ export class ProfileStore {
   async saveSetupReceipt(owned: OwnedProfile, receipt: SetupReceipt): Promise<void> {
     if (!this.box.available() || typeof receipt.value !== "string" || receipt.value.length < 1 || receipt.value.length > 512 || !Number.isSafeInteger(receipt.expiresAt))
       fail("setup-receipt", "Ersteinrichtungsbeleg konnte nicht gesichert werden.");
+    const origin = setupOriginOf(owned.profile, receipt.origin);
     const directory = contained(this.root, profileId(owned.profile.id));
     const temporary = join(directory, `setup-receipt-${randomUUID()}.tmp`);
     const file = await open(temporary, "wx", 0o600);
     try {
-      await file.writeFile(this.box.encrypt(JSON.stringify({ version: 1, profileId: owned.profile.id, origin: originOf(owned.profile), value: receipt.value, expiresAt: receipt.expiresAt })));
+      await file.writeFile(this.box.encrypt(JSON.stringify({ version: 1, profileId: owned.profile.id, origin, value: receipt.value, expiresAt: receipt.expiresAt })));
       await file.sync();
     } finally { await file.close(); }
     await rename(temporary, join(directory, "setup-receipt.dpapi"));
@@ -212,9 +218,10 @@ export class ProfileStore {
     if (!bytes) return undefined;
     if (bytes.length > 8192) fail("setup-receipt", "Ersteinrichtungsbeleg ist beschädigt.");
     const receipt = object(JSON.parse(this.box.decrypt(bytes)), ["version", "profileId", "origin", "value", "expiresAt"]);
-    if (receipt["version"] !== 1 || receipt["profileId"] !== owned.profile.id || receipt["origin"] !== originOf(owned.profile) || typeof receipt["value"] !== "string" || receipt["value"].length > 512 || !Number.isSafeInteger(receipt["expiresAt"]))
+    if (receipt["version"] !== 1 || receipt["profileId"] !== owned.profile.id || typeof receipt["origin"] !== "string" || typeof receipt["value"] !== "string" || receipt["value"].length > 512 || !Number.isSafeInteger(receipt["expiresAt"]))
       fail("setup-receipt", "Ersteinrichtungsbeleg gehört nicht zu diesem Profil.");
-    return { value: receipt["value"] as string, expiresAt: receipt["expiresAt"] as number };
+    const origin = setupOriginOf(owned.profile, receipt["origin"]);
+    return { value: receipt["value"] as string, expiresAt: receipt["expiresAt"] as number, ...(origin === originOf(owned.profile) ? {} : { origin }) };
   }
   async clearSetupReceipt(id: string, value: string): Promise<void> {
     const receipt = await this.readSetupReceipt(id);

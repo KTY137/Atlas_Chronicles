@@ -7,7 +7,7 @@
 #       --profile tls up -d --build
 #
 # Topologien (deploy/README.md): "tls" = eigene Domain + Zertifikat → Passkeys laufen.
-# Ohne "tls" nur http://<LAN-IP>:3000 → OPEN P11 (Cookie-Fallback), CHRONICLE_BIND=0.0.0.0 setzen.
+# Ohne "tls": private LAN-IP, CHRONICLE_INSECURE_LAN=1, CHRONICLE_BIND=<LAN-IP>; docs/LAN.md.
 name: chronicle
 
 services:
@@ -25,6 +25,7 @@ services:
       HOST: 0.0.0.0
       PORT: "3000"
       CHRONICLE_ORIGIN: ${CHRONICLE_ORIGIN:?set the public origin, e.g. https://chronik.example.org}
+      CHRONICLE_INSECURE_LAN: ${CHRONICLE_INSECURE_LAN:-0}
       DATABASE_URL: postgresql://chronicle:${POSTGRES_PASSWORD:?run node deploy/configure-selfhost.mjs}@postgres:5432/chronicle
       COOKIE_SECRET: ${COOKIE_SECRET:?run node deploy/configure-selfhost.mjs}
       BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?run node deploy/configure-selfhost.mjs}
@@ -43,7 +44,7 @@ services:
     # process binds its port. Compose does not restart on unhealthy, so this cannot amplify load
     # the way an orchestrator probe would. See packages/server/src/http/health.ts
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/ready >/dev/null || exit 1"]
+      test: ["CMD", "node", "deploy/healthcheck.mjs", "ready"]
       interval: 10s
       timeout: 5s
       start_period: 60s

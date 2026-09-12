@@ -6,6 +6,7 @@ import { utilityProcess, type UtilityProcess } from "electron";
 import { DesktopError, fail, hostEnvironment, type HostState } from "./policy.ts";
 import { databaseUrlOf, originOf, ProfileStore, type OwnedProfile, type SetupReceipt } from "./profiles.ts";
 import { ManagedPostgres } from "./postgres.ts";
+import { localLanAddresses } from "@chronicle/server/host";
 
 export interface Ready { origin: string; nodeVersion: string; decoder: string; setupRequired: boolean }
 export interface MigrationGuard { beforeSchema(owned: OwnedProfile, postgres: ManagedPostgres): Promise<void> }
@@ -27,7 +28,7 @@ export class HostController {
   private unlock: (() => Promise<void>) | undefined;
   private startId = "";
   private stopping = false;
-  private pending = new Map<string, { kind: string; owned: OwnedProfile; expired: boolean; receipt?: SetupReceipt; resolve: (value: unknown) => void; reject: (error: Error) => void; timeout: NodeJS.Timeout }>();
+  private pending = new Map<string, { kind: string; owned: OwnedProfile; origin: string; expired: boolean; receipt?: SetupReceipt; resolve: (value: unknown) => void; reject: (error: Error) => void; timeout: NodeJS.Timeout }>();
   private responses: Promise<void> = Promise.resolve();
   /** `chronistHostOf` is injected like the migration guard: only Main holds a store that may
    *  decrypt profile secrets, and the reader stays out of every status and error path. */
@@ -59,15 +60,18 @@ export class HostController {
         this.uncertain("Host-Aktion dauert zu lange; Abschluss ist nicht bestätigt.");
         reject(new DesktopError("host-timeout", this.failure!));
       }, 90_000);
-      this.pending.set(id, { kind, owned: this.owned!, expired: false, resolve: value => resolve(value as T), reject, timeout });
+      this.pending.set(id, { kind, owned: this.owned!, origin: this.ready?.origin ?? originOf(this.owned!.profile), expired: false, resolve: value => resolve(value as T), reject, timeout });
       try { worker.postMessage({ id, startId: this.startId, kind, ...payload }); }
       catch { clearTimeout(timeout); this.pending.delete(id); this.uncertain("Host-Anfrage konnte nicht bestätigt werden."); reject(new DesktopError("host-lost", this.failure!)); }
     });
   }
-  async start(id: string): Promise<Ready> {
+  async start(id: string, lanAddress?: string): Promise<Ready> {
     if (this.state !== "stopped") return fail("host-busy", "Bitte den laufenden Host zuerst beenden.");
+    if (lanAddress !== undefined && !localLanAddresses().some(adapter => adapter.address === lanAddress))
+      return fail("lan-unavailable", "Die gewählte Heimnetz-Adresse ist nicht mehr verfügbar. Bitte die aktuelle Adresse auswählen.");
     this.failure = undefined; this.chronistHinweis = undefined;
     this.owned = await this.store.open(id);
+    const origin = lanAddress ? `http://${lanAddress}:${this.owned.profile.httpPort}` : originOf(this.owned.profile);
     this.unlock = await this.store.lock(this.owned);
     this.startId = randomUUID();
     this.transition("starting-db");
@@ -101,7 +105,7 @@ export class HostController {
         // before a following stop receipt can release the profile or quit Main.
         this.responses = this.responses.then(async () => {
           if (reply.ok === true && pending.kind === "setup") {
-            pending.receipt = reply.value as SetupReceipt;
+            pending.receipt = { ...reply.value as SetupReceipt, origin: pending.origin };
             await this.store.saveSetupReceipt(pending.owned, pending.receipt);
           }
           if (pending.kind === "stop") await this.persistReceipts();
@@ -120,8 +124,8 @@ export class HostController {
         if (!this.stopping) { this.ready = undefined; this.failure = "Lokaler Host ist ausgefallen. Bitte beenden und neu starten."; this.transition("failed"); }
       });
       this.transition("starting-app"); stufe = "Anwendungsstart";
-      const ready = await this.request<Ready>("start", { config: { databaseUrl: databaseUrlOf(this.owned), origin: originOf(this.owned.profile), cookieSecret: this.owned.secrets.cookieSecret, staticRoot: join(this.assets, "client") } });
-      if (ready.origin !== originOf(this.owned.profile) || !ready.nodeVersion.startsWith("24.") || !ready.decoder) fail("host-proof", "Host-Startbeleg stimmt nicht mit dem Profil überein.");
+      const ready = await this.request<Ready>("start", { config: { databaseUrl: databaseUrlOf(this.owned), origin, cookieSecret: this.owned.secrets.cookieSecret, staticRoot: join(this.assets, "client"), ...(lanAddress ? { lanAddress } : {}) } });
+      if (ready.origin !== origin || !ready.nodeVersion.startsWith("24.") || !ready.decoder) fail("host-proof", "Host-Startbeleg stimmt nicht mit dem Profil überein.");
       this.ready = ready; this.transition("ready");
       return ready;
     } catch (error) {

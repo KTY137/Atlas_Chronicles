@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import * as rules from "@chronicle/rules";
 import * as model from "../src/features/rule-forge-model";
 import * as computed from "../src/features/RuleComputedFields";
+import * as display from "../src/features/chronicle-heroes-display";
 import { I18nStub } from "../src/i18n.ts";
 import * as FormulaSugar from "../src/features/formula-sugar";
 import * as FormulaExample from "../src/features/formula-example";
@@ -45,6 +46,7 @@ function harness(file: string, component: string, initial: Record<string, any>, 
       };
       if (name === "./rule-forge-model") return model;
       if (name === "./RuleComputedFields") return computed;
+      if (name === "./chronicle-heroes-display") return display;
       if (name === "./formula-sugar") return FormulaSugar;
       if (name === "./formula-example") return FormulaExample;
       if (name === "../hooks") return { useResource: (path: string) => props.resource?.(path) ?? { data: null, loading: false, error: "" }, useTask: () => ({ busy: false, error: "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };

@@ -10,7 +10,7 @@ Grundlage: [`design/08-backend-architektur.md`](../design/08-backend-architektur
 |---|---|---|---|---|---|
 | **Hosted Room** (unser Betrieb) | wie Self-Host mit Domain | ja | ja | ja | belegt durch `e2e/` gegen `https`-fähige Origin-Prüfung |
 | **Self-Host mit eigener Domain + TLS** | `tls` | ja | **ja** — die einzige Self-Host-Topologie, die spike-B N1–N6 besteht | ja | Compose validiert; TLS-Kante hier **UNVERIFIED** (keine öffentliche Domain im Test) |
-| **Self-Host im LAN, `http://<IP>:3000`** | keins, `CHRONICLE_BIND=0.0.0.0` | ja | **nein** (insecure context / rpId darf keine IP sein) | eingeschränkt — **OPEN P11** | bewusst nicht beworben, bis P11 ratifiziert ist |
+| **Self-Host im LAN, `http://<IP>:3000`** | keins, `CHRONICLE_BIND=<LAN-IP>`, `CHRONICLE_INSECURE_LAN=1` | ja | **nein** | ja, über HTTP-Cookie oder Zugangslink | ausdrücklicher Modus für vertraute Heimnetze; [Prüfung und Grenzen](../docs/LAN.md) |
 
 `GET /api/reachability` sagt dem Client pro Origin, welche Zeremonie angeboten wird. Kein stilles
 Downgrade: fehlt eine Ebene, benennt die App den Zustand.
@@ -27,9 +27,11 @@ Erste Einrichtung: Die App fragt beim ersten Öffnen nach Name und **Einrichtung
 `BOOTSTRAP_TOKEN` aus `deploy/.env`. Danach ist der Schlüssel wertlos (`/api/setup` meldet
 `required: false`).
 
-Ohne TLS-Profil (LAN): `CHRONICLE_ORIGIN=http://192.168.1.5:3000` und `CHRONICLE_BIND=0.0.0.0` in
-`deploy/.env`; Spieler öffnen die IP. Der Server prüft `Origin` gegen `CHRONICLE_ORIGIN` — beides muss
-exakt übereinstimmen.
+Ohne TLS-Profil (LAN): `CHRONICLE_ORIGIN=http://192.168.1.5:3000`,
+`CHRONICLE_BIND=192.168.1.5` und `CHRONICLE_INSECURE_LAN=1` in `deploy/.env`;
+Spieler öffnen die IP. Der Server prüft `Host` und `Origin` gegen die kanonische Adresse.
+Der Modus erlaubt HTTP-Cookies ausschließlich für private IPv4-Adressen; Anleitung:
+[Gemeinsam im LAN spielen](../docs/LAN.md).
 
 ## Textchat und Anwesenheit
 

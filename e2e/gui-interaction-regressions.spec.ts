@@ -17,6 +17,44 @@ const menuHarness = `
   </div>);
 `;
 
+test('context menus dismiss when focus moves elsewhere without a pointer click', async ({ page }) => {
+  await mount(page, menuHarness);
+  await page.getByRole('button', { name: 'Aktionen für Vollbildkarte', exact: true }).click();
+  await expect(page.getByRole('menu')).toBeVisible();
+  await page.getByRole('button', { name: 'Vollbild', exact: true }).focus();
+  await expect(page.getByRole('menu')).toHaveCount(0);
+});
+
+test('context menus dismiss on window blur and can immediately open again', async ({ page }) => {
+  await mount(page, menuHarness);
+  const trigger = page.getByRole('button', { name: 'Aktionen für Vollbildkarte', exact: true });
+  await trigger.click();
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await trigger.click();
+  await expect(page.getByRole('menu')).toBeVisible();
+});
+
+test('formula dropdown closes after selection, outside focus and Escape', async ({ page }) => {
+  await mount(page, `
+    import {createRoot} from 'react-dom/client'; import {useState} from 'react';
+    import {FormulaBlocks} from './packages/client/src/features/FormulaBlocks.tsx';
+    function Harness(){ const [value,setValue]=useState({kind:'literal',type:'number',value:'1'});
+      return <><button>Außerhalb</button><FormulaBlocks value={value} onChange={setValue} sources={{actor:[],input:[]}} options={{allowDice:true,allowKnowledge:false}} /></>; }
+    createRoot(document.querySelector('#root')).render(<Harness/>);
+  `);
+  const toggle = page.getByLabel('Menü für Formel', { exact: true });
+  await toggle.click();
+  await page.locator('.ff-block-menu select').selectOption('text');
+  await expect(page.locator('.ff-block-menu[open]')).toHaveCount(0);
+  await toggle.click();
+  await page.getByRole('button', { name: 'Außerhalb' }).focus();
+  await expect(page.locator('.ff-block-menu[open]')).toHaveCount(0);
+  await toggle.click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.ff-block-menu[open]')).toHaveCount(0);
+});
+
 test('a long context menu remains operable when keyboard navigation scrolls its own contents',async({page})=>{
   await page.setViewportSize({width:390,height:400});await mount(page,menuHarness);
   await page.getByRole('button',{name:'Aktionen für Vollbildkarte',exact:true}).click();

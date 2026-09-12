@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { FastifyInstance } from "fastify";
+import { MoveNavigationEntry, type MoveNavigationEntryBody } from "@chronicle/protocol";
 import type { Db } from "../db/index.ts";
 import type { AppConfig } from "../app.ts";
 import { createIdentity } from "../identity/index.ts";
@@ -12,6 +13,9 @@ export function registerWikiNavigation(app: FastifyInstance, db: Db, config: App
     wiki.resolveSlug((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.params.slug));
   app.get<{ Params: { campaignId: string } }>("/api/campaigns/:campaignId/navigation", async req =>
     wiki.uebersicht((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId));
+  app.post<{ Params: { campaignId: string; id: string }; Body: MoveNavigationEntryBody }>("/api/campaigns/:campaignId/entries/:id/navigation",
+    { schema: { body: MoveNavigationEntry } }, async req =>
+      wiki.moveEntry((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.params.id, req.body));
   app.get<{ Params: { campaignId: string; id: string } }>("/api/campaigns/:campaignId/entries/:id/backlinks", async req =>
     wiki.backlinks((await identity.authenticate(req.headers.cookie)).userId, req.params.campaignId, req.params.id));
 }

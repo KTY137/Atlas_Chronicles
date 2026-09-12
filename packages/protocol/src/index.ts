@@ -41,3 +41,6 @@ export * from "./authoring.ts";
 export * from "./chronist.ts";
 export * from "./figurantrag.ts";
 export * from "./map-studio.ts";
+export * from "./tabletop.ts";
+export * from "./wiki-navigation.ts";
+export * from "./actor-portrait.ts";

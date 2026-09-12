@@ -4,9 +4,10 @@ import { useMemo } from "react";
 import { evaluateComputedFields, validatePackageFields, CHRONICLE_HEROES_PACKAGE, CHRONICLE_EXAMPLE_CHARACTERS, CHRONICLE_RULE_GUIDANCE, CHRONICLE_START_POINTS, type AnyRulePackage, type Scalar } from "@chronicle/rules";
 import { Notice } from "@chronicle/ui";
 import { t } from "../i18n";
+import { displayRulePackage } from "./chronicle-heroes-display";
 
 export function RuleAttribution({ pkg }: { pkg: AnyRulePackage }) {
-  const attribution = pkg.schemaVersion === 2 ? pkg.attribution : undefined;
+  const display = displayRulePackage(pkg), attribution = display.schemaVersion === 2 ? display.attribution : undefined;
   return attribution ? <details className="rule-attribution"><summary>{t("Regelquelle und Nutzung")} · {attribution.title}</summary>
     <p>{attribution.notice}</p><p>{attribution.changes}</p>
     <ul>{attribution.sources.map((source, i) => <li key={i}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a> · {source.revision}<br />{source.authors.join(", ")}</li>)}</ul>
@@ -35,9 +36,10 @@ export function RuleComputedFields({ pkg, fields }: { pkg: AnyRulePackage; field
     catch (error) { return { values: null, error: error instanceof Error ? error.message : t("Die Werte sind noch nicht gültig.") }; }
   }, [pkg, fields]);
   if (pkg.schemaVersion !== 2) return null;
+  const display = displayRulePackage(pkg);
   return <section aria-label={t("Berechnete Charakterwerte")} className="rule-computed">
-    <h3>{t("Berechnete Werte")}</h3>{result.error ? <Notice error>{result.error}</Notice> : <dl className="rf-value-list">{pkg.computed?.map(field => <div key={field.id}><dt>{field.label}</dt><dd>{result.values?.[field.id]}</dd></div>)}</dl>}
-    {hasChronicleGuidance(pkg) ? <><p className="field-help">{CHRONICLE_RULE_GUIDANCE.health}</p>
+    <h3>{t("Berechnete Werte")}</h3>{result.error ? <Notice error>{result.error}</Notice> : <dl className="rf-value-list">{display.computed?.map(field => <div key={field.id}><dt>{field.label}</dt><dd>{result.values?.[field.id]}</dd></div>)}</dl>}
+    {hasChronicleGuidance(pkg) ? <><p className="field-help">{t(CHRONICLE_RULE_GUIDANCE.health)}</p>
       {typeof fields.lebenskraft === "number" && fields.lebenskraft === 0 ? <Notice>{t("Regelhinweis: Bei 0 Lebenskraft ist die Figur außer Gefecht.")} {t("Den Zustand bestätigt ihr ausdrücklich am Tisch.")}</Notice> : null}
       {result.values && result.values.points_available !== undefined ? <p className="field-help">{result.values.points_available < 0 ? t("Mehr als das vereinbarte Punktebudget verteilt: Punkte korrigieren oder die vereinbarte Anpassung ausdrücklich im Bogen eintragen, bevor die Figur spielbereit ist.") : result.values.points_available > 0 ? t("Startpunkte sind noch unverteilt. Bei späterer Entwicklung gilt eure vereinbarte Punkteanpassung.") : t("Das vereinbarte Punktebudget ist vollständig verteilt.")}</p> : null}
     </> : null}

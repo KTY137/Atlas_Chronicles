@@ -7,7 +7,7 @@ let zustand;
 // Fenster, nach jeder eigenen Aenderung und sonst alle zehn Statusabfragen (15 s). Das Lesen nimmt in
 // main.ts keine Sperre — in v0.4.1 kollidierte es mit genau dem Klick, der das Fenster nach vorn holt.
 let runden=[],rundenBekannt=false,rundenAlter=0,rundenLaeuft=false,rundenNochmal=false;
-let gewaehlteRunde="",gewaehlteWelt="";
+let gewaehlteRunde="",gewaehlteWelt="",gewaehltesNetz="";
 /** Fuer welche Welt in dieser Sitzung schon ein Einladungslink entstand — nur fuer die Liste „Erste Schritte". */
 const eingeladen=new Set();
 let loeschKandidat,loeschEingabe="";
@@ -69,7 +69,7 @@ function zeichneWelt(state){
   const ruht=state.state==="stopped",aktiv=state.profiles.find(profile=>profile.id===state.profileId),sperre=waiting||state.busy;
   byId("host-title").textContent=ruht?(state.profiles.length?"Gerade läuft keine Welt":"Bereit für deine erste Welt"):`${aktiv?.name??"Lokale Welt"} ${states[state.state]||state.state}`;
   byId("host-detail").textContent=state.failure||(ruht?(state.profiles.length?"Wähle eine Welt und starte sie. Eine neue legst du darunter an.":"Lege darunter deine erste Welt an.")
-    :state.state==="ready"?(state.setupRequired?"Richte als Nächstes die Spielleitung ein.":`Erreichbar unter ${state.origin} — nur auf diesem Rechner.`):"Einen Moment …");
+    :state.state==="ready"?(state.setupRequired?"Richte als Nächstes die Spielleitung ein.":`Erreichbar unter ${state.origin} — ${new URL(state.origin).hostname==="localhost"?"nur auf diesem Rechner":"im gewählten Heimnetz"}.`):"Einen Moment …");
   byId("open").hidden=!weltBereit(state);
   byId("stop").hidden=ruht;
   byId("weltwahl").hidden=!ruht||!state.profiles.length;
@@ -79,6 +79,20 @@ function zeichneWelt(state){
   if(gewaehlteWelt&&state.profiles.some(profile=>profile.id===gewaehlteWelt)&&auswahl.value!==gewaehlteWelt)auswahl.value=gewaehlteWelt;
   byId("start").disabled=sperre||!ruht;
   for(const control of byId("create-form").elements)control.disabled=sperre||!ruht;
+  const netz=byId("netzwerk-adresse"),adressen=state.lanAddresses??[];
+  const aktuell=state.origin&&new URL(state.origin).hostname!=="localhost"?new URL(state.origin).hostname:"";
+  const ausgewaehlt=ruht?gewaehltesNetz:aktuell;
+  zeichne(netz,JSON.stringify([adressen,ausgewaehlt]),()=>[
+    el("option",{value:""},"Nur dieser Rechner"),
+    ...adressen.map(adapter=>el("option",{value:adapter.address},`Heimnetz · ${adapter.address} (${adapter.name})`)),
+    ...(ausgewaehlt&&!adressen.some(adapter=>adapter.address===ausgewaehlt)?[el("option",{value:ausgewaehlt,disabled:true},`Nicht mehr verfügbar: ${ausgewaehlt}`)]:[]),
+  ]);
+  netz.value=ausgewaehlt;netz.disabled=sperre||!ruht;
+  byId("netzwerk-hinweis").textContent=ausgewaehlt
+    ?"Andere Geräte im selben WLAN oder LAN öffnen den Einladungslink. Die Verbindung ist unverschlüsselt: nur in einem vertrauten Heimnetz verwenden. Passkeys sind hier nicht verfügbar; der Browserzugang oder ein Zugangslink übernimmt die Anmeldung."
+    :adressen.length?"Für andere Geräte im selben WLAN oder LAN wählst du vor dem Weltstart eine Heimnetz-Adresse. Zum Wechseln zuerst die Welt beenden."
+    :"Keine private Heimnetz-Adresse gefunden. Verbinde diesen Rechner mit deinem WLAN oder LAN; die Auswahl aktualisiert sich automatisch.";
+  if(!ruht&&ausgewaehlt)byId("netzwerk-hinweis").textContent+=" Nach einem Adresswechsel meldest du dich mit dem Zugangslink unter „Mitglieder“ wieder an.";
 }
 /** Die Liste für das erste Mal. Sie verschwindet, sobald jemand außer der Spielleitung dabei ist. */
 function zeichneSchritte(state){
@@ -111,6 +125,9 @@ function zeichneRunde(state){
   byId("runde-karten").hidden=!runde;
   if(!runde)return;
   byId("zugang-einladung").disabled=sperre;
+  byId("zugang-reichweite").textContent=new URL(state.origin).hostname==="localhost"
+    ?"nur dieser Rechner. Für andere Geräte die Welt beenden und oben eine Heimnetz-Adresse auswählen."
+    :`Geräte im selben WLAN oder LAN über ${state.origin}. Der Host bleibt während der Runde eingeschaltet; eine Firewall-Freigabe kann erforderlich sein.`;
   const wartend=runde.wartend??[];
   byId("tuer-zahl").hidden=!wartend.length;byId("tuer-zahl").textContent=String(wartend.length);
   zeichne(byId("tuer-liste"),JSON.stringify([runde.campaignId,wartend.map(anfrage=>anfrage.requestId),sperre]),()=>wartend.length?wartend.map(anfrage=>
@@ -221,10 +238,12 @@ byId("runde-form").onsubmit=async event=>{
   if(result){feld.value="";gewaehlteRunde=result.id;verbergeCode();await ladeRunden();}
 };
 byId("welt-select").onchange=()=>{gewaehlteWelt=byId("welt-select").value;};
-byId("start").onclick=()=>{void action({kind:"start",profileId:byId("welt-select").value},"Welt gestartet.");};
-byId("create-form").onsubmit=async event=>{event.preventDefault();const result=await action({kind:"create",name:byId("profile-name").value},"Neue Welt bereit. Richte jetzt deine Spielleitung ein.");if(result)byId("profile-name").value="";};
+byId("netzwerk-adresse").onchange=()=>{gewaehltesNetz=byId("netzwerk-adresse").value;render();};
+const netzwerkWahl=()=>gewaehltesNetz?{lanAddress:gewaehltesNetz}:{};
+byId("start").onclick=()=>{void action({kind:"start",profileId:byId("welt-select").value,...netzwerkWahl()},"Welt gestartet.");};
+byId("create-form").onsubmit=async event=>{event.preventDefault();const result=await action({kind:"create",name:byId("profile-name").value,...netzwerkWahl()},"Neue Welt bereit. Richte jetzt deine Spielleitung ein.");if(result)byId("profile-name").value="";};
 byId("setup-form").onsubmit=event=>{event.preventDefault();void action({kind:"setup",name:byId("gm-name").value},"Spielleitung eingerichtet. Das Spielfenster ist offen — lege als Nächstes hier eine Runde an.");};
-byId("remote-form").onsubmit=event=>{event.preventDefault();void action({kind:"remote",origin:byId("remote-origin").value},"Server geöffnet.");};
+byId("remote-form").onsubmit=event=>{event.preventDefault();void action({kind:byId("remote-lan").checked?"remote-lan":"remote",origin:byId("remote-origin").value},"Server geöffnet.");};
 // The entered key leaves the field before the request and is never read back from Main.
 byId("chronist-form").onsubmit=event=>{event.preventDefault();const field=byId("chronist-key"),value=field.value.trim();field.value="";if(!value){message("Bitte zuerst einen Schlüssel eingeben.",true);return;}void action({kind:"chronist-key",profileId:byId("chronist-profile").value,action:"set",value},"Schlüssel verschlüsselt in dieser Welt gespeichert. Ein Anbieterwechsel wirkt erst nach einem Neustart der Welt.");};
 byId("chronist-clear").onclick=()=>{byId("chronist-key").value="";void action({kind:"chronist-key",profileId:byId("chronist-profile").value,action:"clear"},"Schlüssel entfernt. Ein laufender Host verwendet ihn bis zum nächsten Neustart der Welt weiter.");};

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useId, type ReactElement } from "react";
+import { useEffect, useId, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { RULE_LIMITS } from "@chronicle/rules";
 import { t } from "../i18n";
 import { FUNCTION_HELP, memberOptionLabel, memberUnusable, type FormulaOptions, type FormulaSources } from "./formula-sugar";
@@ -64,15 +64,35 @@ export function blockFor(kind: BlockKind, sources: FormulaSources): FormulaDraft
 const kindOf = (value: FormulaDraft): BlockKind => value.kind === "literal" ? (value.type === "number" ? "number" : value.type === "string" ? "text" : "boolean") : value.kind === "field" ? (value.source === "actor" ? "attribute" : "parameter") : value.kind === "binary" ? (COMPARE.includes(value.op) ? "compare" : "calc") : value.kind === "unary" ? "negate" : value.kind === "call" ? "function" : value.kind;
 
 interface BlockProps { value: FormulaDraft; onChange(next: FormulaDraft): void; onRemove?(): void; sources: FormulaSources; options: FormulaOptions; disabled: boolean; label: string; depth: number; parentPrecedence: number }
+function BlockMenu({ label, children }: { label: string; children: ReactNode }) {
+  const element = useRef<HTMLDetailsElement>(null), [open, setOpen] = useState(false);
+  const close = (restore = false) => {
+    if (!element.current) return;
+    element.current.open = false;
+    if (restore) element.current.querySelector("summary")?.focus({ preventScroll: true });
+  };
+  useEffect(() => {
+    if (!open) return;
+    const outside = (event: Event) => { if (!element.current?.contains(event.target as Node)) close(); };
+    document.addEventListener("pointerdown", outside, true);
+    document.addEventListener("focusin", outside);
+    return () => { document.removeEventListener("pointerdown", outside, true); document.removeEventListener("focusin", outside); };
+  }, [open]);
+  return <details ref={element} name="formula-block-menus" className="ff-block-menu" onToggle={event => setOpen(event.currentTarget.open)}
+    onChange={() => close(true)} onClick={event => { if (event.target instanceof Element && event.target.closest("button")) close(true); }}
+    onKeyDown={event => { if (event.key === "Escape" && !(event.target instanceof HTMLSelectElement)) { event.preventDefault(); event.stopPropagation(); close(true); } }}>
+    <summary aria-label={t("Menü für {name}", { name: label })}>⋯</summary>{children}
+  </details>;
+}
 function Block({ value, onChange, onRemove, sources, options, disabled, label, depth, parentPrecedence }: BlockProps) {
   const id = useId(), kind = kindOf(value), canNest = depth < RULE_LIMITS.formulaDepth - 1;
   const child = (node: FormulaDraft, change: (next: FormulaDraft) => void, name: string, precedence = 0, remove?: () => void) => <Block value={node} onChange={change} onRemove={remove} sources={sources} options={options} disabled={disabled} label={name} depth={depth + 1} parentPrecedence={precedence} />;
   const wrap = (side: "left" | "right") => onChange(side === "right" ? { kind: "binary", op: "+", left: value, right: literalDraft() } : { kind: "binary", op: "+", left: literalDraft(), right: value });
   const precedence = value.kind === "binary" ? PRECEDENCE[value.op] : value.kind === "unary" ? 7 : 8, parens = precedence < parentPrecedence;
-  const menu = <details className="ff-block-menu"><summary aria-label={t("Menü für {name}", { name: label })}>⋯</summary>
+  const menu = <BlockMenu label={label}>
     <label>{t("Art wechseln")}<select value={kind} disabled={disabled} onChange={event => onChange(blockFor(event.target.value as BlockKind, sources))}>{blockKinds(sources, options).map(k => <option key={k.id} value={k.id} disabled={k.disabled || (!canNest && ["calc", "compare", "negate", "if", "function"].includes(k.id))}>{k.label}</option>)}</select></label>
     <div className="ff-block-menu-actions"><button type="button" disabled={disabled || !canNest} onClick={() => wrap("left")}>{t("Links anhängen")}</button><button type="button" disabled={disabled || !canNest} onClick={() => wrap("right")}>{t("Rechts anhängen")}</button>{onRemove ? <button type="button" disabled={disabled} onClick={onRemove}>{t("Entfernen")}</button> : null}</div>
-  </details>;
+  </BlockMenu>;
   let body: ReactElement;
   switch (value.kind) {
     case "literal": body = value.type === "boolean"

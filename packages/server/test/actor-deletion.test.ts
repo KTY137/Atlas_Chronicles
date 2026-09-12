@@ -10,7 +10,7 @@ import { createActors } from "../src/domain/actors.ts";
 import { createActorDeletion } from "../src/domain/actor-deletion.ts";
 import { createGameplay } from "../src/domain/gameplay.ts";
 import { exportCampaignBundle } from "../src/domain/bundles.ts";
-import { Gone } from "../src/domain/errors.ts";
+import { Conflict, Gone } from "../src/domain/errors.ts";
 
 const config = { origin: "https://actor-delete.test", cookieSecret: "actor-delete-test-cookie-secret-with-more-than-32-characters" };
 const command = () => ({ commandId: randomUUID() });
@@ -74,5 +74,30 @@ describe("endgültiges Löschen von Figuren und Figurvorlagen", () => {
   it("lässt rohe History-Deletes weiterhin nicht zu", async () => {
     const f = await fixture(), { actor } = await npc(f);
     await expect(db.query("DELETE FROM actor_inventory_events WHERE campaign_id=$1 AND subject_id=$2", [f.campaign, actor.id])).rejects.toThrow(/append-only/);
+  });
+
+  it("schützt eigene und fremde Figuren vor Spieler-Löschung und weist fremde Kampagnen und alte Versionen zurück", async () => {
+    const f = await fixture(), campaigns = createCampaigns(db), invitation = await campaigns.issueInvitation(gm, f.campaign);
+    const owner = await campaigns.approveJoin(gm, f.campaign, (await campaigns.requestJoin(invitation.code, { displayName: "Sera" })).id);
+    const { actor, template } = await npc(f);
+    for (const actorId of [owner.actorId, actor.id])
+      await expect(f.deletion.deleteActor(owner.userId, f.campaign, actorId, { ...command(), expectedVersion: 1, reason })).rejects.toBeInstanceOf(Gone);
+    await expect(f.deletion.deleteActorTemplate(owner.userId, f.campaign, template.id, { ...command(), expectedVersion: 1, reason })).rejects.toBeInstanceOf(Gone);
+    const other = (await campaigns.createCampaign(gm, { name: "Andere Welt" })).id;
+    await expect(f.deletion.deleteActor(gm, other, actor.id, { ...command(), expectedVersion: 1, reason })).rejects.toBeInstanceOf(Gone);
+    await expect(f.deletion.deleteActor(gm, f.campaign, actor.id, { ...command(), expectedVersion: 2, reason })).rejects.toBeInstanceOf(Conflict);
+    await expect(f.actors.getActor(gm, f.campaign, actor.id)).resolves.toMatchObject({ id: actor.id, version: 1 });
+  });
+
+  it("löst beim unbenutzten Spielercharakter nur Kontroll- und Primärfigurenverweise und erhält die Mitgliedschaft", async () => {
+    const f = await fixture(), campaigns = createCampaigns(db), invitation = await campaigns.issueInvitation(gm, f.campaign);
+    const owner = await campaigns.approveJoin(gm, f.campaign, (await campaigns.requestJoin(invitation.code, { displayName: "Liva" })).id);
+    const perspective = await f.actors.getReaderPerspective(owner.userId, f.campaign);
+    await f.deletion.deleteActor(gm, f.campaign, owner.actorId, { ...command(), expectedVersion: 1, reason });
+    expect((await db.query("SELECT actor_id FROM campaign_memberships WHERE campaign_id=$1 AND user_id=$2", [f.campaign, owner.userId])).rows).toEqual([{ actor_id: null }]);
+    expect((await db.query("SELECT actor_id,version FROM reader_perspectives WHERE campaign_id=$1 AND user_id=$2", [f.campaign, owner.userId])).rows).toEqual([{ actor_id: null, version: perspective.version + 1 }]);
+    expect((await db.query("SELECT 1 FROM actor_controllers WHERE actor_id=$1", [owner.actorId])).rowCount).toBe(0);
+    expect((await f.actors.listActors(owner.userId, f.campaign))).toEqual([]);
+    await expect(exportCampaignBundle(db, gm, f.campaign)).resolves.toBeDefined();
   });
 });

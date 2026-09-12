@@ -160,8 +160,11 @@ import. Native sharp and its DLLs remain ordinary unpacked files.
 ## Boundaries
 
 Profiles use generated IDs and persistent HTTP/PG ports from 41000–60999, excluding the
-operative development port 54329. HTTP binds only 127.0.0.1 and uses the stable
-`http://localhost:<port>` origin. The worker's private start-ID response must match the
+operative development port 54329. HTTP defaults to 127.0.0.1 and the stable
+`http://localhost:<port>` origin. Since the 2026-09-12 development change, an explicit
+LAN start binds one current private IPv4 adapter address and uses it as the sole
+canonical origin; PostgreSQL remains on loopback. See [LAN.md](LAN.md).
+The worker's private start-ID response must match the
 requested origin before the game is opened; an HTTP 200 from another process is never
 accepted as ownership. PostgreSQL ownership requires matching Windows executable, exact
 normalized `-D` argument, postmaster file, authenticated server data directory, port, patch
@@ -356,7 +359,8 @@ path and the pure schema admission cases have the scoped evidence above.
 The existing portable campaign export excludes credentials and is not a full host backup.
 No UI labels it as such. NVDA, Windows Hello, sleep/wake,
 OS reboot, installation without admin rights, and measured installed/idle/load budgets remain
-explicit acceptance gates. LAN/self-host HTTPS topology remains P11; the local host does not
+explicit acceptance gates. The explicit LAN implementation and scoped checks are documented
+in [LAN.md](LAN.md); the local host does not
 configure DNS, certificates, firewall, router or a relay.
 
 The adopted [desktop design and attack rounds](../design/iterations/desktop-shell-20260906.md)

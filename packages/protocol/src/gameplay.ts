@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Type } from "@sinclair/typebox";
+import { TableDiceSpec } from "./tabletop.ts";
 const closed = { additionalProperties: false } as const;
 const id = Type.String({ minLength: 1, maxLength: 256 });
 const date = Type.String({ minLength: 1, maxLength: 120 });
@@ -19,7 +20,7 @@ export const SceneStart = Type.Object({expectedSceneVersion:Type.Optional(Type.I
  * Eingaben kommen dann aus der gespeicherten Zeile, nicht aus diesem Entwurf — die Felder
  * hier bleiben zulaessig, wirken aber nicht.
  */
-export const ActionDraft = Type.Object({commandId:id,actorId:id,actionId:id,packageId:Type.Optional(id),packageVersion:Type.Optional(id),input:Type.Optional(values),targetPassageId:Type.Optional(id),fictionDate:Type.Optional(date),erleichterungId:Type.Optional(id)},closed);
+export const ActionDraft = Type.Object({commandId:id,actorId:id,actionId:id,packageId:Type.Optional(id),packageVersion:Type.Optional(id),input:Type.Optional(values),targetPassageId:Type.Optional(id),fictionDate:Type.Optional(date),erleichterungId:Type.Optional(id),tableDice:Type.Optional(TableDiceSpec)},closed);
 /** Ein Zugestaendnis der Spielleitung: welche Probe, was abgesprochen ist, und warum. */
 export const ErleichterungDraft = Type.Object({actorId:id,gemeinteAktion:id,gewuerfelteAktion:id,eingaben:values,grund:Type.String({minLength:1,maxLength:500,pattern:"\\S"})},closed);
 /**

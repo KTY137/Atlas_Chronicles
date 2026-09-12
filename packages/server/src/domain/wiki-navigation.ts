@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { Blockinhalt, InlineText } from "@chronicle/chronik";
+import { Value } from "@sinclair/typebox/value";
+import { MoveNavigationEntry, type MoveNavigationEntryBody } from "@chronicle/protocol";
 import type { Db } from "../db/index.ts";
 import { createDocuments, plainBlock } from "./documents.ts";
 import type { DomainConfig } from "./campaigns.ts";
-import { Gone } from "./errors.ts";
+import { Conflict, Gone } from "./errors.ts";
 
 function inlineParts(block: Blockinhalt): readonly InlineText[] {
   switch (block.kind) {
@@ -102,5 +104,35 @@ export function createWikiNavigation(db: Db, config: DomainConfig = {}) {
       return { kategorien, arten: [...zaehler.values()], artikel };
     });
   }
-  return { resolveSlug, backlinks, uebersicht };
+  /** Move one visible occurrence; other category memberships survive a category-to-category move. */
+  async function moveEntry(userId: string, campaignId: string, entryId: string, input: MoveNavigationEntryBody) {
+    if (!Value.Check(MoveNavigationEntry, input)) throw new Gone("navigation-input");
+    return db.transaction(async tx => {
+      // Same lock order as document/import writers; membership cannot change during the move.
+      const member = await tx.query(`SELECT c.id FROM campaigns c JOIN campaign_memberships m ON m.campaign_id=c.id
+        WHERE c.id=$1 AND m.user_id=$2 AND m.role='leitung' FOR UPDATE OF c FOR SHARE OF m`, [campaignId, userId]);
+      if (!member.rowCount) throw new Gone();
+      const entry = (await tx.query<{ art: string }>("SELECT art FROM entries WHERE campaign_id=$1 AND id=$2 FOR UPDATE", [campaignId, entryId])).rows[0];
+      if (!entry) throw new Gone();
+      const current = (await tx.query<{ id: string }>("SELECT category_id AS id FROM entry_categories WHERE campaign_id=$1 AND entry_id=$2", [campaignId, entryId])).rows.map(row => row.id).sort();
+      const expected = [...input.expectedCategoryIds].sort();
+      if (entry.art !== input.expectedArt || current.length !== expected.length || current.some((id, i) => id !== expected[i])) throw new Conflict();
+      if (input.fromCategoryId !== null && !current.includes(input.fromCategoryId)) throw new Conflict();
+      if (input.fromCategoryId === null && current.length) throw new Conflict();
+      let categories: string[], art = entry.art;
+      if (input.destination.kind === "category") {
+        const target = await tx.query("SELECT id FROM categories WHERE campaign_id=$1 AND id=$2", [campaignId, input.destination.id]);
+        if (!target.rowCount) throw new Gone();
+        categories = [...new Set([...current.filter(id => id !== input.fromCategoryId), input.destination.id])].sort();
+      } else {
+        // The built-in type groups contain uncategorised articles only.
+        categories = []; art = input.destination.art;
+      }
+      await tx.query("DELETE FROM entry_categories WHERE campaign_id=$1 AND entry_id=$2 AND NOT(category_id=ANY($3::text[]))", [campaignId, entryId, categories]);
+      for (const id of categories) await tx.query("INSERT INTO entry_categories(campaign_id,entry_id,category_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [campaignId, entryId, id]);
+      if (art !== entry.art) await tx.query("UPDATE entries SET art=$3 WHERE campaign_id=$1 AND id=$2", [campaignId, entryId, art]);
+      return { entryId, art, kategorieIds: categories };
+    });
+  }
+  return { resolveSlug, backlinks, uebersicht, moveEntry };
 }

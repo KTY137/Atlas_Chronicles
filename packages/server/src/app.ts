@@ -36,6 +36,8 @@ import type { ChronistRuntimeConfig } from "./domain/chronist/runtime.ts";
 import { createChronistRuntime } from "./chronist-providers/registry.ts";
 import { disableChronistTracing } from "./chronist-providers/tracing.ts";
 import { registerWikiMedien } from "./http/wiki-medien.ts";
+import { registerActorPortraits } from "./http/actor-portrait.ts";
+import { registerTabletop } from "./http/tabletop.ts";
 import { registerBundles } from "./http/bundles.ts";
 import { registerActors } from "./http/actors.ts";
 import { registerTactical } from "./http/tactical.ts";
@@ -47,6 +49,7 @@ import { registerPublication } from "./http/publication.ts";
 import { registerOperator } from "./http/operator.ts";
 import { registerMetering } from "./http/metering.ts";
 import { AuthoringValidationError } from "./domain/authoring.ts";
+import { ActorValidationError } from "./domain/actors.ts";
 
 export interface AppConfig extends IdentityConfig { bootstrapToken: string; logger?: boolean; staticRoot?: string; publicDeliveryEnabled?: boolean; chronist?: ChronistRuntimeConfig }
 const chronistDrains = new WeakMap<FastifyInstance, () => Promise<void>>();
@@ -74,13 +77,14 @@ export async function buildApp(db: Db, config: AppConfig) {
   } });
   app.addHook("onRequest", async (req, reply) => {
     reply.header("Cache-Control", "no-store").header("X-Content-Type-Options", "nosniff").header("Referrer-Policy", "no-referrer");
+    if (config.allowInsecureLan && req.headers.host !== new URL(origin).host) throw new Gone("host");
     if (!["GET", "HEAD", "OPTIONS"].includes(req.method) && req.headers.origin !== origin) throw new Gone("origin");
   });
   app.setErrorHandler((error, _req, reply) => {
     const fault = error as { validation?: unknown; statusCode?: number };
     if (error instanceof Gone) return reply.code(404).send({ error: "Nicht verfügbar" });
     if (error instanceof Conflict) return reply.code(409).send({ error: error.hinweis ?? "Konflikt: Bitte den aktuellen Stand laden." });
-    if (error instanceof ImportValidationError || error instanceof AzgaarImportError || error instanceof RuleValidationError || error instanceof AuthoringValidationError) return reply.code(400).send({error:error.message});
+    if (error instanceof ImportValidationError || error instanceof AzgaarImportError || error instanceof RuleValidationError || error instanceof AuthoringValidationError || error instanceof ActorValidationError) return reply.code(400).send({error:error.message});
     if (fault.validation || fault.statusCode === 400) return reply.code(400).send({ error: "Bitte Eingaben prüfen." });
     if (fault.statusCode === 429) return reply.code(429).send({ error: "Zu viele Anfragen. Bitte kurz warten." });
     if (fault.statusCode === 413) return reply.code(413).send({ error: "Die Datei ist zu groß." });
@@ -113,7 +117,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   });
 
   app.get("/api/health", async () => { await db.query("SELECT 1"); return { ok: true }; });
-  app.get("/api/reachability", async () => reachability(origin));
+  app.get("/api/reachability", async () => reachability(origin, config.allowInsecureLan));
   app.get("/api/setup", async () => ({ required: !(await db.query("SELECT id FROM users WHERE platform_role='leitung'")).rowCount }));
   app.post<{ Body: P.NameBodyType }>("/api/setup", { schema: { body: P.NameBody }, config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (req, reply) => {
     if (config.bootstrapToken.length < 32 || !secretEqual(req.headers.authorization ?? "", `Bearer ${config.bootstrapToken}`)) throw new Gone();
@@ -216,6 +220,8 @@ export async function buildApp(db: Db, config: AppConfig) {
   app.addHook("onClose", drainChronist);
   chronistDrains.set(app, drainChronist);
   registerWikiMedien(app, db, config);
+  registerActorPortraits(app, db, config);
+  registerTabletop(app, db, config);
   registerBundles(app, db, config);
   registerActors(app, db, config);
   registerTactical(app, db, config);

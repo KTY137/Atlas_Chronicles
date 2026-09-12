@@ -55,6 +55,7 @@ export const UMWEG: Readonly<Record<string, string>> = {
  * Kampagnenzugehörigkeit über `entry_id -> entries`, dieser Umweg muss also noch tragen.
  */
 export const LOESCHREIHENFOLGE: readonly string[] = [
+  "adventure_trees", "actor_portraits",
   "map_studio_commands", "map_room_fog", "map_floor_stacks",
   // Der Figurantrag zuerst: sein Ereignisbuch ist ein Blatt, der Antrag zeigt auf Vorlage,
   // Vorlagenrevision und — wenn er bestaetigt wurde — auf die Figur, die Freigabe auf die Vorlage.

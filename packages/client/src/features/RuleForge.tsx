@@ -182,6 +182,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const [tab, setTab] = useState<EditorTab>("package"), [review, setReview] = useState<(RuleReview & { fingerprint: string }) | null>(null), [acknowledged, setAcknowledged] = useState(false), [notice, setNotice] = useState("");
   const [justInstalled, setJustInstalled] = useState<RulePackage | null>(null), upload = useRef<HTMLInputElement>(null);
   const [figure, setFigure] = useState<ExampleFigure | null>(null);
+  const activationSection = useRef<HTMLDivElement>(null);
   // „Genommene" bleiben in der Antwort des Servers und verschwinden nur aus dieser Liste; der
   // Schalter holt sie zurück ins Bild, ohne dass irgendetwas am Paket selbst geschieht.
   const [zeigeGenommene, setZeigeGenommene] = useState(false);
@@ -219,12 +220,21 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
     const result = await api<RuleReview>(apiPath(campaign.id, "/rules/preview"), { method: "POST", body: { package: pkg } });
     setReview({ ...result, fingerprint });
   }); };
+  const activateFromMenu = (item: RulePackage) => {
+    if (task.busy || !canReplace()) return;
+    setSelected(packageKey(item)); setDraft(null); setLocked(false); setDirtyState(false); clearReview(); setLastValidPkg(null); setTab("package");
+    void task.run(async () => {
+      const result = await api<RuleReview>(apiPath(campaign.id, "/rules/preview"), { method: "POST", body: { package: item } });
+      setReview({ ...result, fingerprint: stableJson(item) });
+      requestAnimationFrame(() => { activationSection.current?.scrollIntoView({ block: "start" }); activationSection.current?.focus({ preventScroll: true }); });
+    });
+  };
   const install = () => { if (!pkg || collision || !testsPass) return; void task.run(async () => {
     const result = await api<RulePackage>(apiPath(campaign.id, "/rules"), { method: "POST", body: pkg });
     setJustInstalled(result); setDraft(packageDraft(result)); setSelected(packageKey(result)); setLocked(true); setDirtyState(false); setRevision(v => v + 1);
     setNotice(t("Paketversion installiert. Für die Runde wird sie erst durch die ausdrückliche Aktivierung wirksam."));
   }); };
-  const activate = () => { if (!pkg || !readyReview || !exactInstalled) return; void task.run(async () => {
+  const activate = () => { if (!pkg || !readyReview || !exactInstalled || active || (!!readyReview.migration?.entities.length && !acknowledged)) return; void task.run(async () => {
     try { await api(apiPath(campaign.id, "/rules/activate"), { method: "POST", body: { packageId: pkg.id, packageVersion: pkg.version, expectedVersion: readyReview.pinVersion, previewHash: readyReview.previewHash } }); }
     catch (error) { if (error instanceof ApiError && error.status === 409) { refresh(); throw new Error(t("Die Runde hat sich seit der Vorschau verändert. Prüfe die Migration erneut und bestätige die aktuelle Vorschau.")); } throw error; }
     setNotice(t("Für diese Runde ist jetzt {name} {version} aktiv.", { name: pkg.name, version: pkg.version })); setDirtyState(false); refresh(); onActivated?.();
@@ -267,6 +277,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
     <div className="rf-workspace"><aside className="rf-catalog" aria-label={t("Installierte Regelpakete")}><div className="rf-section-heading"><h2><BookOpen size={18} />{t("Bibliothek")}</h2><Button variant="quiet" disabled={task.busy} onClick={refresh} aria-label={t("Paketbibliothek aktualisieren")}>↻</Button></div>
       <p className="rf-help">{t("Installierte Versionen bleiben unveränderlich.")}</p>
       <p className="rf-help">{t("Mit der rechten Maustaste auf einen Eintrag kannst du ein Paket aus der Bibliothek nehmen — und, wenn nichts mehr darauf verweist, endgültig löschen.")}</p>
+      <p className="rf-help">{t("Auch die Aktivierung findest du im Rechtsklickmenü. Vor dem Wechsel siehst du die Änderungen an vorhandenen Figuren.")}</p>
       {genommene.length ? <Button variant="quiet" aria-pressed={zeigeGenommene} disabled={task.busy} onClick={() => setZeigeGenommene(v => !v)}>{t("Auch genommene zeigen ({anzahl})", { anzahl: genommene.length })}</Button> : null}
       {sichtbar.map(item => <button type="button" key={packageKey(item)} className={`rf-catalog-item ${!editable && current?.id === item.id && current.version === item.version ? "is-selected" : ""}`} disabled={task.busy} aria-pressed={!editable && current?.id === item.id && current.version === item.version}
         onClick={() => selectPackage(item)}
@@ -280,6 +291,8 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
       {!packages.length ? <p>{t("Noch kein Paket geladen. Du kannst einen Entwurf anlegen oder eine Paketdatei öffnen.")}</p> : null}
       {packages.length && !sichtbar.length ? <p>{t("Alle Pakete sind aus der Bibliothek genommen. Über den Schalter oben werden sie wieder sichtbar.")}</p> : null}
       {menu && menuPaket && menuStand ? <MapContextMenu key={menu.key} label={`${menuPaket.name} ${menuPaket.version}`} popup={{ x: menu.x, y: menu.y, onDismiss: () => setMenu(null) }} actions={[
+        { id: "aktivieren", label: resource.data && packageKey(menuPaket) === packageKey(resource.data.pin) ? t("Bereits für diese Runde aktiv") : menuStand.genommen ? t("Zum Aktivieren zuerst in die Bibliothek zurückholen") : t("Für diese Runde aktivieren …"),
+          disabled: task.busy || menuStand.genommen || (!!resource.data && packageKey(menuPaket) === packageKey(resource.data.pin)), onSelect: () => activateFromMenu(menuPaket) },
         { id: "nehmen", label: menuStand.genommen ? t("Wieder in die Bibliothek") : t("Aus der Bibliothek nehmen"), onSelect: () => nehmen(menuPaket, menuStand.genommen) },
         { id: "loeschen", danger: true, disabled: !menuStand.loeschbar,
           label: menuStand.loeschbar ? t("Endgültig löschen …")
@@ -306,7 +319,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
           {tab === "migrations" ? <MigrationEditor draft={current} packages={packages} onChange={migrations => edit({ ...current, migrations })} /> : null}
         </div></fieldset>
         <div className="rf-validation" aria-live="polite">{validation && !validation.valid ? <Notice error><p>{explainValidationError(validation.error)}</p>{errorLocation && errorLocation.tab !== tab ? <Button variant="quiet" onClick={() => setTab(errorLocation.tab)}>{t("Zum Reiter „{name}“ springen", { name: errorLocation.label })}</Button> : null}</Notice> : <p><Check size={16} />{tests.length ? t("Paketstruktur, Feldtypen und Formeln gültig · {bestanden} von {gesamt} Pakettests bestanden.", { bestanden: tests.filter(test => test.passed).length, gesamt: tests.length }) : t("Paketstruktur, Feldtypen und Formeln gültig.")}</p>}{collision ? <Notice error>{t("Diese Kennung und Version sind bereits mit anderem Inhalt installiert. Wähle eine neue Version.")}</Notice> : null}</div>
-        <div className="rf-publish"><h3>{t("Prüfen und übernehmen")}</h3><p>{t("Die Installation speichert eine unveränderliche Version. Die Aktivierung wechselt das Regelwerk dieser Runde und übernimmt die zuvor geprüften Feldänderungen.")}</p>
+        <div className="rf-publish" ref={activationSection} tabIndex={-1}><h3>{t("Prüfen und übernehmen")}</h3><p>{t("Die Installation speichert eine unveränderliche Version. Die Aktivierung wechselt das Regelwerk dieser Runde und übernimmt die zuvor geprüften Feldänderungen.")}</p>
           <div className="rf-toolbar"><Button disabled={!pkg || !testsPass || collision || task.busy || active} onClick={runPreview}><FlaskConical size={16} />{readyReview ? t("Vorschau erneuern") : t("Aktivierung prüfen")}</Button><Button variant="primary" disabled={!pkg || !testsPass || collision || exactInstalled || task.busy} onClick={install}>{exactInstalled ? t("Version ist installiert") : t("Version installieren")}</Button></div>
           {active ? <p className="rf-help">{t("Diese Paketversion ist bereits aktiv.")}</p> : null}
           {readyReview ? <ReviewPanel review={readyReview} acknowledged={acknowledged} onAcknowledge={setAcknowledged} disabled={task.busy} /> : null}

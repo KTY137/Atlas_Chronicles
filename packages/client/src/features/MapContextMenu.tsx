@@ -45,6 +45,7 @@ export function MapContextMenu({ label, actions, children, className = "", popup
   useEffect(() => {
     if (!at) return;
     const dismiss = (event: PointerEvent) => { if (!menu.current?.contains(event.target as Node) && !trigger.current?.contains(event.target as Node)) close(false); };
+    const focusMoved = (event: FocusEvent) => { if (!menu.current?.contains(event.target as Node) && !trigger.current?.contains(event.target as Node)) close(false); };
     // A focus-induced scroll event can be queued before this popup exists. Only a
     // changed ancestor position moves our anchor. Scrolling the menu itself must
     // never close a long list before its lower actions can be selected.
@@ -60,9 +61,11 @@ export function MapContextMenu({ label, actions, children, className = "", popup
       if (previous && (element.scrollLeft !== previous[0] || element.scrollTop !== previous[1])) close(false);
     };
     document.addEventListener("pointerdown",dismiss,true);
+    document.addEventListener("focusin",focusMoved);
+    window.addEventListener("blur",viewportChanged);
     window.addEventListener("resize",viewportChanged);
     window.addEventListener("scroll",scrolled,true);
-    return () => { document.removeEventListener("pointerdown",dismiss,true); window.removeEventListener("resize",viewportChanged); window.removeEventListener("scroll",scrolled,true); };
+    return () => { document.removeEventListener("pointerdown",dismiss,true); document.removeEventListener("focusin",focusMoved); window.removeEventListener("blur",viewportChanged); window.removeEventListener("resize",viewportChanged); window.removeEventListener("scroll",scrolled,true); };
   }, [at]);
   // Native dialogs/fullscreen form a browser top layer. A portal into body would be
   // visible in the DOM but behind that layer and unable to receive pointer events.

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createHash } from "node:crypto";
 import { isAbsolute, relative, resolve, win32 } from "node:path";
+import { isPrivateLanAddress, isPrivateLanOrigin } from "@chronicle/server/host";
 
 export const SHELL_URL = "chronicle-shell://app/index.html";
 export const PROFILE_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -38,6 +39,14 @@ export function remoteOrigin(value: unknown): string {
   if (url.protocol !== "https:" || url.username || url.password || url.pathname !== "/" || url.search || url.hash)
     return fail("invalid-origin", "Nur eine HTTPS-Serveradresse ohne Pfad oder Zugangsdaten ist erlaubt.");
   return url.origin;
+}
+export function lanAddress(value: unknown): string {
+  if (typeof value !== "string" || !isPrivateLanAddress(value)) return fail("invalid-lan", "Bitte eine private Heimnetz-Adresse dieses Rechners auswählen.");
+  return value;
+}
+export function lanOrigin(value: unknown): string {
+  if (typeof value !== "string" || !isPrivateLanOrigin(value)) return fail("invalid-lan", "Bitte eine HTTP-Heimnetz-Adresse ohne Pfad oder Zugangsdaten angeben.");
+  return value;
 }
 export function partitionFor(origin: string): string { return `persist:chronicle-${createHash("sha256").update(origin).digest("hex")}`; }
 export function safeEnvironment(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
@@ -79,10 +88,11 @@ export function postgresCommandOwnsDirectory(commandLine: string, directory: str
 }
 export type Command =
   | { kind: "status" | "stop" | "open" | "backup" }
-  | { kind: "create"; name: string }
-  | { kind: "start"; profileId: string }
+  | { kind: "create"; name: string; lanAddress?: string }
+  | { kind: "start"; profileId: string; lanAddress?: string }
   | { kind: "setup"; name: string }
   | { kind: "remote"; origin: string }
+  | { kind: "remote-lan"; origin: string }
   | { kind: "restore-select"; name: string }
   | { kind: "restore-confirm"; ticket: string }
   | { kind: "recovery-restore"; recoveryId: string; name: string }
@@ -102,13 +112,15 @@ export type Command =
   | { kind: "chronist-key"; profileId: string; action: "set"; value: string }
   | { kind: "chronist-key"; profileId: string; action: "clear" };
 export function command(value: unknown): Command {
-  const v = object(value, ["kind", "name", "profileId", "origin", "ticket", "campaignId", "userId", "recoveryId", "action", "value", "role", "requestId"]);
+  const v = object(value, ["kind", "name", "profileId", "origin", "ticket", "campaignId", "userId", "recoveryId", "action", "value", "role", "requestId", "lanAddress"]);
   const exact = (keys: string[]) => object(value, ["kind", ...keys]);
   switch (v["kind"]) {
     case "status": case "stop": case "open": case "backup": exact([]); return { kind: v["kind"] };
-    case "create": case "setup": case "restore-select": exact(["name"]); return { kind: v["kind"], name: label(v["name"]) };
-    case "start": exact(["profileId"]); return { kind: "start", profileId: profileId(v["profileId"]) };
+    case "setup": case "restore-select": exact(["name"]); return { kind: v["kind"], name: label(v["name"]) };
+    case "create": exact(["name", "lanAddress"]); return { kind: "create", name: label(v["name"]), ...(v["lanAddress"] === undefined ? {} : { lanAddress: lanAddress(v["lanAddress"]) }) };
+    case "start": exact(["profileId", "lanAddress"]); return { kind: "start", profileId: profileId(v["profileId"]), ...(v["lanAddress"] === undefined ? {} : { lanAddress: lanAddress(v["lanAddress"]) }) };
     case "remote": exact(["origin"]); return { kind: "remote", origin: remoteOrigin(v["origin"]) };
+    case "remote-lan": exact(["origin"]); return { kind: "remote-lan", origin: lanOrigin(v["origin"]) };
     case "restore-confirm": exact(["ticket"]); return { kind: "restore-confirm", ticket: profileId(v["ticket"]) };
     case "recovery-restore": exact(["recoveryId", "name"]); return { kind: "recovery-restore", recoveryId: profileId(v["recoveryId"]), name: label(v["name"]) };
     case "enroll": exact(["campaignId", "userId"]); return { kind: "enroll", campaignId: profileId(v["campaignId"]), userId: profileId(v["userId"]) };

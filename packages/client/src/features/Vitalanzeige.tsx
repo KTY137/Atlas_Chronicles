@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { evaluateVitals, type AnyRulePackage, type Scalar, type VitalReading } from "@chronicle/rules";
 import { t } from "../i18n";
+import { displayRulePackage } from "./chronicle-heroes-display";
 import "./vitalanzeige.css";
 
 /**
@@ -33,19 +34,21 @@ export function Vitalanzeige({ pkg, fields, kompakt = false }: {
     try { return evaluateVitals(pkg, fields); } catch { return []; }
   }, [pkg, fields]);
   if (!werte.length) return null;
+  const display = displayRulePackage(pkg);
 
   return <div className={kompakt ? "vitalanzeige kompakt" : "vitalanzeige"}>
     {werte.map(vital => {
+      const label = display.schemaVersion === 2 ? display.vitals?.find(row => row.id === vital.id)?.label ?? vital.label : vital.label;
       // Über dem Höchststand wird der Balken voll, die Zahl bleibt ehrlich. Ein Höchstwert von 0
       // ergäbe eine Division durch null — dann bleibt der Balken leer.
       const anteil = vital.maximum > 0 ? Math.max(0, Math.min(1, vital.value / vital.maximum)) : 0;
       const stand = `${vital.value} / ${vital.maximum}`;
       return <div key={vital.id} className={vital.depleted ? "vitalwert erschoepft" : "vitalwert"}>
         <div className="vitalwert-kopf">
-          <span className="vitalwert-name">{vital.label}</span>
+          <span className="vitalwert-name">{label}</span>
           <span className="vitalwert-stand">{stand}</span>
         </div>
-        <div className="vitalwert-balken" role="meter" aria-label={vital.label}
+        <div className="vitalwert-balken" role="meter" aria-label={label}
           aria-valuenow={vital.value} aria-valuemin={0} aria-valuemax={vital.maximum} aria-valuetext={stand}>
           <span style={{ inlineSize: `${anteil * 100}%` }} />
         </div>

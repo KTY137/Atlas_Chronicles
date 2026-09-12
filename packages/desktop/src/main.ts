@@ -11,6 +11,7 @@ import { Authority, DesktopError, SHELL_URL, command, fail, object, partitionFor
 import { originOf, ProfileStore } from "./profiles.ts";
 import { HostController } from "./controller.ts";
 import { RecoveryStore, inspectMigrationAdmission, type RecoveryManifest } from "./recovery.ts";
+import { isPrivateLanOrigin, localLanAddresses, sessionCookieSecure } from "@chronicle/server/host";
 
 protocol.registerSchemesAsPrivileged([{ scheme: "chronicle-shell", privileges: { standard: true, secure: true, supportFetchAPI: false, corsEnabled: false } }]);
 const assets = fileURLToPath(new URL("./", import.meta.url));
@@ -62,13 +63,13 @@ async function run() {
     const admission = await inspectMigrationAdmission(owned, assets);
     if (admission.recoveryRequired) await recovery.create(owned, postgres, app.getVersion());
   } }, id => store.chronistHostConfig(id));
-  const startHost = async (profileId: string) => {
+  const startHost = async (profileId: string, lanAddress?: string) => {
     try {
-      return await host.start(profileId);
+      return await host.start(profileId, lanAddress);
     } catch (error) {
       if (host.state !== "failed") throw error;
       await host.stop();
-      return host.start(profileId);
+      return host.start(profileId, lanAddress);
     }
   };
   let restore: { ticket: string; path: string; profileId: string; report: unknown; gms: unknown; assert: () => void } | undefined;
@@ -102,7 +103,7 @@ async function run() {
     // Management learns which worlds carry a Chronist key, never a single character of one.
     const chronistKeys = (await Promise.all(profiles.map(async profile => await store.hasChronistKey(profile.id) ? profile.id : ""))).filter(Boolean);
     // Warum der Chronist in der laufenden Welt fehlt. Ein Satz, nie ein Schlüsselzeichen.
-    return { profiles, chronistKeys, chronistHinweis: host.chronistHinweis, recovery: await recovery.list(), state: host.state, profileId: host.owned?.profile.id, origin: host.ready?.origin,
+    return { profiles, lanAddresses: localLanAddresses(), chronistKeys, chronistHinweis: host.chronistHinweis, recovery: await recovery.list(), state: host.state, profileId: host.owned?.profile.id, origin: host.ready?.origin,
       setupRequired: host.ready?.setupRequired, failure: host.failure, busy, version: app.getVersion(), runtime: host.ready ? { node: host.ready.nodeVersion, decoder: host.ready.decoder } : undefined };
   };
   async function retainSetupSession(id: string, origin: string, receipt: { value: string; expiresAt: number }) {
@@ -110,14 +111,15 @@ async function run() {
     // management document's navigation lease. It can only target its original
     // profile partition; it never authorizes opening a window from a stale view.
     const target = session.fromPartition(partitionFor(origin));
-    await target.cookies.set({ url: origin, name: "chronicle_session", value: receipt.value, path: "/", httpOnly: true, secure: true, sameSite: "strict", expirationDate: receipt.expiresAt / 1000 });
+    await target.cookies.set({ url: origin, name: "chronicle_session", value: receipt.value, path: "/", httpOnly: true, secure: sessionCookieSecure(origin, isPrivateLanOrigin(origin)), sameSite: "strict", expirationDate: receipt.expiresAt / 1000 });
     await target.cookies.flushStore();
     await store.clearSetupReceipt(id, receipt.value);
     if (host.owned?.profile.id === id && host.ready?.origin === origin) host.ready.setupRequired = false;
   }
-  async function reconcileSetupSession(id: string, origin: string) {
+  async function reconcileSetupSession(id: string) {
     const receipt = await store.readSetupReceipt(id);
-    if (receipt) await retainSetupSession(id, origin, receipt);
+    // A late setup receipt belongs to its original origin even after switching LAN mode.
+    if (receipt) await retainSetupSession(id, receipt.origin ?? originOf(host.owned!.profile), receipt);
   }
   async function external(window: BrowserWindow, raw: string) {
     let url: URL;
@@ -183,13 +185,13 @@ async function run() {
         case "create": {
           if (host.state !== "stopped") fail("host-busy", "Bitte zuerst den laufenden Host beenden.");
           const owned = await store.create(request.name); assert(); authority.select(owned.profile.id);
-          const selected = authority.lease(), ready = await startHost(owned.profile.id);
-          await reconcileSetupSession(owned.profile.id, ready.origin); selected(); break;
+          const selected = authority.lease(); await startHost(owned.profile.id, request.lanAddress);
+          await reconcileSetupSession(owned.profile.id); selected(); break;
         }
         case "start": {
           await cleanupRestore(); assert(); authority.select(request.profileId);
-          const selected = authority.lease(), ready = await startHost(request.profileId);
-          await reconcileSetupSession(request.profileId, ready.origin); selected(); break;
+          const selected = authority.lease(); await startHost(request.profileId, request.lanAddress);
+          await reconcileSetupSession(request.profileId); selected(); break;
         }
         case "stop": await cleanupRestore(); assert(); await host.stop(); authority.select(undefined); break;
         case "backup": {
@@ -222,7 +224,7 @@ async function run() {
           await retainSetupSession(id, origin, result);
           assert(); await openGame(origin, true); break;
         }
-        case "remote": await openGame(request.origin); break;
+        case "remote": case "remote-lan": await openGame(request.origin); break;
         case "restore-select": {
           if (host.state !== "stopped") fail("host-busy", "Bitte zuerst den laufenden Host beenden.");
           const result = await dialog.showOpenDialog(manager, { title: "Native Kampagne in eine neue Welt wiederherstellen", filters: [{ name: "Atlas Chronicles V4/V5", extensions: ["chronicle"] }], properties: ["openFile"] }); assert();

@@ -45,6 +45,19 @@ def work_node(name: str):
 
 def build_graph(checkpointer, workflow="review"):
     graph = StateGraph(ReviewState)
+    if workflow == "tabletop":
+        branches = ["table_dice_gm", "characters_english", "lan_network", "wiki_menus_rules"]
+        for name in ["design", *branches, "integration", "verification", "repair", "handoff"]:
+            graph.add_node(name, work_node(name))
+        graph.add_edge(START, "design")
+        for name in branches:
+            graph.add_edge("design", name)
+        graph.add_edge(branches, "integration")
+        graph.add_edge("integration", "verification")
+        graph.add_conditional_edges("verification", lambda state: "handoff" if state["passed"] else "repair")
+        graph.add_edge("repair", "verification")
+        graph.add_edge("handoff", END)
+        return graph.compile(checkpointer=checkpointer)
     if workflow in ("map-visuals", "map-studio"):
         branches = ["cartography_data", "cartography_engine", "cartography_ui"]
         for name in ["discovery", "design", *branches, "verification", "repair", "delivery", "handoff"]:
@@ -135,12 +148,13 @@ def main():
     parser.add_argument("work", nargs="?")
     parser.add_argument("evidence", nargs="?")
     parser.add_argument("--passed", action="store_true")
-    parser.add_argument("--workflow", choices=["review", "features", "map-research", "map-visuals", "map-studio", "delivery"], default="review")
+    parser.add_argument("--workflow", choices=["review", "features", "map-research", "map-visuals", "map-studio", "delivery", "tabletop"], default="review")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    checkpoint = root / ".local" / f"{args.workflow}-20260908" / "workflow.sqlite"
+    stamp = "20260912" if args.workflow == "tabletop" else "20260908"
+    checkpoint = root / ".local" / f"{args.workflow}-{stamp}" / "workflow.sqlite"
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
-    config = {"configurable": {"thread_id": f"gui-{args.workflow}-20260908" if args.workflow != "review" else "gui-regression-review-20260908"}}
+    config = {"configurable": {"thread_id": f"gui-{args.workflow}-{stamp}" if args.workflow != "review" else "gui-regression-review-20260908"}}
     with SqliteSaver.from_conn_string(str(checkpoint)) as saver:
         graph = build_graph(saver, args.workflow)
         state = graph.get_state(config)

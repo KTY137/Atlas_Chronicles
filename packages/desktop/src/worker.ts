@@ -20,7 +20,7 @@ parent.on("message", event => {
       if (request["kind"] === "start") {
         if (startId) throw new Error("Host already started.");
         startId = request["startId"];
-        const config = object(request["config"], ["databaseUrl", "origin", "cookieSecret", "staticRoot"]);
+        const config = object(request["config"], ["databaseUrl", "origin", "cookieSecret", "staticRoot", "lanAddress"]);
         if (!Object.values(config).every(value => typeof value === "string")) throw new Error("Invalid host configuration.");
         // Operator configuration belongs to this trusted worker, never to renderer IPC or a campaign bundle.
         const chronist = await loadChronistRuntime({ allowCli: true,

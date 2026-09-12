@@ -10,6 +10,8 @@ import { hostAblehnen, hostEinladung, hostFreigeben, hostKopplung, hostRolle, ho
 import { parseCurrentCampaignBundle, CAMPAIGN_BUNDLE_V5_LIMITS } from "@chronicle/io";
 import sharp from "sharp";
 import type { ChronistRuntimeConfig } from "./domain/chronist/runtime.ts";
+import { isPrivateLanAddress, localLanAddresses } from "./network.ts";
+export { isPrivateLanAddress, isPrivateLanOrigin, localLanAddresses, sessionCookieSecure } from "./network.ts";
 export { loadChronistRuntime, CHRONIST_UNCONFIGURED_MODEL, CHRONIST_ANTHROPIC_PROFILE, CHRONIST_ANTHROPIC_BASE_URL,
   CHRONIST_ANTHROPIC_KEY_ENV, CHRONIST_ANTHROPIC_MODELS, CHRONIST_ANTHROPIC_PRICING } from "./chronist-providers/registry.ts";
 
@@ -19,14 +21,18 @@ export interface EmbeddedHostConfig {
   origin: string;
   cookieSecret: string;
   staticRoot: string;
+  /** Explicit current adapter address; omitted means loopback only. PostgreSQL stays local. */
+  lanAddress?: string;
   chronist?: ChronistRuntimeConfig;
 }
 
 export function validateEmbeddedHostConfig(config: EmbeddedHostConfig): number {
   const origin = new URL(config.origin), database = new URL(config.databaseUrl);
-  if (origin.origin !== config.origin || origin.protocol !== "http:" || origin.hostname !== "localhost" || !origin.port ||
+  const hostAllowed = config.lanAddress === undefined ? origin.hostname === "localhost"
+    : isPrivateLanAddress(config.lanAddress) && origin.hostname === config.lanAddress;
+  if (origin.origin !== config.origin || origin.protocol !== "http:" || !hostAllowed || !origin.port ||
       origin.username || origin.password || Number(origin.port) < 1024 || Number(origin.port) === 3000)
-    throw new Error("Embedded host requires an explicit isolated localhost origin.");
+    throw new Error("Embedded host requires an explicit isolated localhost or selected private LAN origin.");
   if (database.protocol !== "postgresql:" || database.hostname !== "127.0.0.1" || !database.port ||
       Number(database.port) < 1024 || Number(database.port) === 54329 || database.search || database.hash)
     throw new Error("Embedded host requires an explicit isolated loopback PostgreSQL target.");
@@ -36,8 +42,11 @@ export function validateEmbeddedHostConfig(config: EmbeddedHostConfig): number {
 
 /** A test may supply an already isolated SQL adapter; production always uses PG. */
 export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?: Db) {
-  const port = validateEmbeddedHostConfig(config), db = suppliedDb ?? createPgDb(config.databaseUrl);
-  const identityConfig = { origin: config.origin, cookieSecret: config.cookieSecret };
+  const port = validateEmbeddedHostConfig(config);
+  if (config.lanAddress && !localLanAddresses().some(adapter => adapter.address === config.lanAddress))
+    throw new Error("Selected LAN address is no longer available on this machine.");
+  const db = suppliedDb ?? createPgDb(config.databaseUrl);
+  const identityConfig = { origin: config.origin, cookieSecret: config.cookieSecret, allowInsecureLan: !!config.lanAddress };
   let app: Awaited<ReturnType<typeof buildApp>> | undefined;
   try {
     await migrate(db);
@@ -47,7 +56,7 @@ export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?:
     if (decoder.width !== 2 || decoder.format !== "png") throw new Error("Native decoder self-check failed.");
     app = await buildApp(db, { ...identityConfig, bootstrapToken: "", staticRoot: config.staticRoot, publicDeliveryEnabled: false,
       ...(config.chronist ? { chronist: config.chronist } : {}) });
-    await app.listen({ host: "127.0.0.1", port });
+    await app.listen({ host: config.lanAddress ?? "127.0.0.1", port });
   } catch (error) {
     if (app) { await drainAppChronist(app); await app.close(); }
     else await config.chronist?.close?.();

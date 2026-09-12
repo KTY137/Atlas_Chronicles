@@ -5,6 +5,8 @@ import { Vitalanzeige } from "./Vitalanzeige";
 import { Geldzaehler } from "./Geldzaehler";
 import { validatePackageFields, evaluateComputedFields, CHRONICLE_ARCHETYPES, CHRONICLE_EXAMPLE_CHARACTERS, CHRONICLE_FUNKEN_FIELD, type Scalar } from "@chronicle/rules";
 import { FaehigkeitenBogen } from "./FaehigkeitenBogen";
+import { CharacterPortrait } from "./CharacterPortrait";
+import { CharacterProgress } from "./CharacterProgress";
 import { PenLine, Save, Sparkles } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath } from "../api";
@@ -13,19 +15,21 @@ import { locale, t } from "../i18n";
 import type { ActorSheet, RulesState } from "./game-api";
 import { RuleFields } from "./RuleFields";
 import { hasChronicleExamples, hasChronicleGuidance, RuleAttribution, RuleComputedFields } from "./RuleComputedFields";
+import { displayChronicleExample, displayRulePackage } from "./chronicle-heroes-display";
 
 export function CharacterSheet({ campaignId, actorId, rules, onDirty, gm, onChanged, liveRevision = 0 }: { campaignId: string; actorId: string; rules: RulesState; onDirty: (value: boolean) => void; gm: boolean; onChanged: () => void; liveRevision?: number }) {
   const [revision, setRevision] = useState(0), sheet = useResource<ActorSheet>(apiPath(campaignId, `/actors/${encodeURIComponent(actorId)}/sheet`), revision + liveRevision);
-  const [drafts, setDrafts] = useState({ sheet: false, money: false });
+  const [drafts, setDrafts] = useState({ sheet: false, money: false, portrait: false });
   const reportSheet = useCallback((value: boolean) => setDrafts(old => ({ ...old, sheet: value })), []);
   const reportMoney = useCallback((value: boolean) => setDrafts(old => ({ ...old, money: value })), []);
-  const dirty = drafts.sheet || drafts.money;
+  const reportPortrait = useCallback((value: boolean) => setDrafts(old => ({ ...old, portrait: value })), []);
+  const dirty = drafts.sheet || drafts.money || drafts.portrait;
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   const refresh = () => { setRevision(value => value + 1); onChanged(); };
   // Der Geldzaehler steht auch hier: "im Inventar, aber noch beim Char". Dieselbe Komponente
   // wie im Inventar — zweimal geschrieben liefe sie beim ersten Umbau auseinander.
-  return sheet.loading ? <Loading /> : <>{sheet.error ? <Notice error>{sheet.error} {t("Der letzte geladene Stand bleibt bei einem Verbindungsfehler erhalten.")}</Notice> : null}<Geldzaehler campaignId={campaignId} actorId={actorId} gm={gm} revision={revision + liveRevision} kompakt onDirty={reportMoney} onChanged={refresh} />{sheet.data ? <SheetForm key={actorId} campaignId={campaignId} latest={sheet.data} rules={rules} onDirty={reportSheet} gm={gm} onSaved={refresh} /> : null}</>;
+  return sheet.loading ? <Loading /> : <>{sheet.error ? <Notice error>{sheet.error} {t("Der letzte geladene Stand bleibt bei einem Verbindungsfehler erhalten.")}</Notice> : null}{sheet.data ? <><CharacterPortrait key={`portrait:${actorId}`} campaignId={campaignId} actorId={actorId} revision={revision + liveRevision} onDirty={reportPortrait} onChanged={refresh} /><SheetForm key={actorId} campaignId={campaignId} latest={sheet.data} rules={rules} onDirty={reportSheet} gm={gm} onSaved={refresh} /></> : null}<Geldzaehler campaignId={campaignId} actorId={actorId} gm={gm} revision={revision + liveRevision} kompakt onDirty={reportMoney} onChanged={refresh} /></>;
 }
 
 function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campaignId: string; latest: ActorSheet; rules: RulesState; onDirty: (value: boolean) => void; gm: boolean; onSaved: () => void }) {
@@ -42,15 +46,16 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
   useEffect(() => { if (!dirty && newer) { setSheet(latest); setFields({ ...latest.fields }); setResource(""); } }, [dirty, newer, latest]);
   useEffect(() => { onDirty(dirty); return () => onDirty(false); }, [dirty, onDirty]);
   if (!pkg) return <Notice error>{t("Das Regelwerk dieses Bogens konnte nicht geladen werden.")}</Notice>;
+  const display = displayRulePackage(pkg);
   // "Wer bin ich" zuerst: der eigene Figurenname (falls das Regelpaket einen kennt) führt den Bogen an, nicht der Paketname.
   const characterName = pkg.fields.name?.type === "string" && typeof fields.name === "string" ? fields.name.trim() : "";
   const saveState = dirty ? t("Ungespeicherte Änderungen.") : sheet.version === 0 ? t("Noch nicht gespeichert.") : t("Gespeichert.");
   const canOfferExamples = hasChronicleGuidance(pkg) && examplesAvailable;
   const emptyStateAction = canOfferExamples
-    ? <><div className="button-row">{CHRONICLE_EXAMPLE_CHARACTERS.map(example => <Button key={example.id} disabled={task.busy} onClick={() => { if (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diese Beispielperson ersetzen?"))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, example.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("{name} als Beispiel übernehmen", { name: example.name })}</Button>)}</div>
+    ? <><div className="button-row">{CHRONICLE_EXAMPLE_CHARACTERS.map(displayChronicleExample).map(example => <Button key={example.id} disabled={task.busy} onClick={() => { if (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diese Beispielperson ersetzen?"))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, example.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("{name} als Beispiel übernehmen", { name: example.name })}</Button>)}</div>
       {/* Archetypen sind fertige Startbögen mit drei Fähigkeiten — derselbe Weg wie die Beispielpersonen. */}
-      <div className="button-row"><label>{t("Archetyp")}<select value={archetyp} disabled={task.busy} onChange={event => setArchetyp(event.target.value)}><option value="">{t("Archetyp wählen")}</option>{CHRONICLE_ARCHETYPES.map(vorlage => <option key={vorlage.id} value={vorlage.id}>{vorlage.name} · {vorlage.description}</option>)}</select></label>
-        <Button disabled={task.busy || !archetyp} onClick={() => { const vorlage = CHRONICLE_ARCHETYPES.find(kandidat => kandidat.id === archetyp); if (vorlage && (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diesen Archetyp ersetzen?")))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, vorlage.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("Archetyp übernehmen")}</Button></div></>
+      <div className="button-row"><label>{t("Archetyp")}<select value={archetyp} disabled={task.busy} onChange={event => setArchetyp(event.target.value)}><option value="">{t("Archetyp wählen")}</option>{CHRONICLE_ARCHETYPES.map(displayChronicleExample).map(vorlage => <option key={vorlage.id} value={vorlage.id}>{vorlage.name} · {vorlage.description}</option>)}</select></label>
+        <Button disabled={task.busy || !archetyp} onClick={() => { const vorlage = CHRONICLE_ARCHETYPES.map(displayChronicleExample).find(kandidat => kandidat.id === archetyp); if (vorlage && (!dirty || window.confirm(t("Die aktuellen Entwurfswerte durch diesen Archetyp ersetzen?")))) setFields(Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, vorlage.fields[id] ?? field.default]))); }}><Sparkles size={16} /> {t("Archetyp übernehmen")}</Button></div></>
     : <Button variant="primary" disabled={task.busy} onClick={() => fieldsRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus()}><PenLine size={16} /> {t("Werte jetzt eintragen")}</Button>;
   const emptyStateBody = canOfferExamples
     ? t("Noch gelten überall die Vorgabewerte des Regelwerks. Übernimm eine vorbereitete Beispielperson als Startpunkt oder trag weiter unten deine eigenen Werte ein.")
@@ -63,6 +68,7 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
         eintraegt, sieht den Balken wandern, bevor er speichert. Gerechnet wird mit
         derselben reinen Funktion wie auf dem Server. */}
     <Vitalanzeige pkg={pkg} fields={fields} />
+    <CharacterProgress pkg={pkg} fields={fields} />
     {task.error ? <Notice error>{task.error} {t("Deine Änderungen bleiben im Formular.")}</Notice> : null}
     {newer && dirty ? <Notice>{t("Der Bogen wurde inzwischen geändert. Dein Entwurf bleibt erhalten.")} <Button onClick={() => { if (window.confirm(t("Entwurf verwerfen und den aktuellen Bogen übernehmen?"))) { setSheet(latest); setFields({ ...latest.fields }); setResource(""); task.setError(""); } }}>{t("Aktuellen Bogen übernehmen")}</Button></Notice> : null}
     {sheet.defeatPending ? <Notice>{t("Eine Ressource ist aufgebraucht. Die Niederlage wartet auf eine ausdrückliche Bestätigung der Spielleitung.")}</Notice> : null}{sheet.defeatedAt ? <Notice>{t("Niederlage bestätigt am {zeitpunkt}.", { zeitpunkt: new Date(sheet.defeatedAt).toLocaleString(locale()) })}</Notice> : null}
@@ -70,7 +76,7 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
     <p className="field-help">{t("Die folgenden Werte kannst du bearbeiten. Das Regelwerk prüft jede Eingabe automatisch.")}</p>
     {/* Gelernte Fähigkeiten und aktive Zustände stehen als Kennungsliste in zwei Textfeldern. Die
         tippt niemand von Hand — sie haben unten ihren eigenen Abschnitt. */}
-    <div ref={fieldsRef}>{pkg.layout.sections.map((section) => { const ids = section.fields.filter(id => !(pkg.schemaVersion === 2 && (id === pkg.abilityRules?.abilityField || id === pkg.abilityRules?.conditionField))); return ids.length ? <fieldset className="sheet-section" key={section.id}><legend>{section.label}</legend><RuleFields fields={Object.fromEntries(ids.map((id) => [id, pkg.fields[id]]))} values={fields} onChange={(next) => setFields((current) => ({ ...current, ...next }))} disabled={task.busy} /></fieldset> : null; })}</div>
+    <div ref={fieldsRef}>{display.layout.sections.map((section) => { const ids = section.fields.filter(id => !(pkg.schemaVersion === 2 && (id === pkg.abilityRules?.abilityField || id === pkg.abilityRules?.conditionField))); return ids.length ? <fieldset className="sheet-section" key={section.id}><legend>{section.label}</legend><RuleFields fields={Object.fromEntries(ids.map((id) => [id, display.fields[id]]))} values={fields} onChange={(next) => setFields((current) => ({ ...current, ...next }))} disabled={task.busy} /></fieldset> : null; })}</div>
     {pkg.schemaVersion === 2 ? <p className="field-help">{t("Automatisch berechnet nach den Regeln von {paket} · {fassung}. Diese Werte trägst du nicht selbst ein.", { paket: pkg.name, fassung: pkg.version })}</p> : null}
     <RuleComputedFields pkg={pkg} fields={fields} />{validation && pkg.schemaVersion === 1 ? <Notice error>{validation}</Notice> : null}
     <FaehigkeitenBogen pkg={pkg} fields={fields} onChange={next => setFields(current => ({ ...current, ...next }))} disabled={task.busy} />
