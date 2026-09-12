@@ -46,7 +46,7 @@ it("uebernimmt weiterhin keinen fremden lebenden Prozess, nur weil er in postmas
     expect(await readFile(join(owned.dataDirectory, "postmaster.pid"), "utf8")).toBe(pidFile(process.pid, owned.dataDirectory));
     expect(() => process.kill(process.pid, 0)).not.toThrow();
   } finally { await rm(owned.directory, { recursive: true, force: true }); }
-});
+}, 15_000);
 
 it("compares actual directory identity without treating a different or missing path as an alias", async () => {
   const owned = await profile(), alias = join(owned.directory, "alias"), other = join(owned.directory, "other");
@@ -58,4 +58,4 @@ it("compares actual directory identity without treating a different or missing p
     await expect(samePostgresPath("postgres", owned.dataDirectory)).resolves.toBe(false);
     await expect(samePostgresPath(null, owned.dataDirectory)).resolves.toBe(false);
   } finally { await rm(owned.directory, { recursive: true, force: true }); }
-}, 15_000);
+});
