@@ -1,0 +1,212 @@
+name: gui-release-qualification
+on:
+  push:
+    branches: [main, 'release/gui-hardening-0.5.0']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gui-qualification-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  interaction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Regressions, independent state models and seeded application monkey
+        run: npx playwright test e2e/gui-interaction-regressions.spec.ts e2e/gui-state-fuzz.spec.ts e2e/gui-monkey.spec.ts --reporter=list,json
+        env:
+          NODE_OPTIONS: --require ./node_modules/semver/index.js
+          PLAYWRIGHT_JSON_OUTPUT_NAME: gui-qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gui-qualification
+          path: |
+            gui-qualification.json
+            test-results/
+          retention-days: 14
+  browser-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Existing application browser suite (no duplicated monkey run)
+        run: npx playwright test --grep-invert 'bounded full-application monkey|model-based dropdown state fuzz|async admission state fuzz' --reporter=list,json
+        env:
+          NODE_OPTIONS: --require ./node_modules/semver/index.js
+          PLAYWRIGHT_JSON_OUTPUT_NAME: gui-browser-suite.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gui-browser-suite
+          path: |
+            gui-browser-suite.json
+            test-results/
+          retention-days: 14
+  canonical-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: chronicle
+          POSTGRES_PASSWORD: chronicle
+          POSTGRES_DB: chronicle
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U chronicle -d chronicle"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Unmodified canonical gates with real PostgreSQL
+        run: |
+          set -o pipefail
+          node --test tools/test/verify-gui-release.test.mjs
+          npm run gate 2>&1 | tee canonical-gate.log
+        env:
+          TEST_DATABASE_URL: postgresql://chronicle:chronicle@127.0.0.1:5432/chronicle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canonical-gate-log
+          path: canonical-gate.log
+          retention-days: 14
+  windows-package:
+    needs: [interaction, browser-suite, canonical-gate]
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Prepare verified PostgreSQL runtime
+        shell: pwsh
+        run: |
+          $directory = Join-Path $PWD '.local/desktop-runtime'
+          New-Item -ItemType Directory -Path $directory -Force | Out-Null
+          $archive = Join-Path $directory 'postgresql-17.11-1-windows-x64-binaries.zip'
+          Invoke-WebRequest 'https://get.enterprisedb.com/postgresql/postgresql-17.11-1-windows-x64-binaries.zip' -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne '6eabdf00d2893713b75db4336a23c3fdf505f056e217ec6e2e95d901750cfea3') { throw 'PostgreSQL archive checksum mismatch' }
+          Expand-Archive -Path $archive -DestinationPath $directory
+          node packages/desktop/tools/prepare-runtime.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime preparation failed' }
+      - name: Build the same client and package Windows application
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'Client build failed' }
+          npm run desktop:build
+          if ($LASTEXITCODE -ne 0) { throw 'Desktop build failed' }
+          npm run package --workspace @chronicle/desktop
+          if ($LASTEXITCODE -ne 0) { throw 'Packaging failed' }
+      - name: Test measured application, then create installer
+        id: package
+        shell: pwsh
+        run: |
+          $artifact = Get-ChildItem '.local/desktop-artifacts' -Directory | Sort-Object Name | Select-Object -Last 1
+          $record = Get-Content (Join-Path $artifact.FullName 'artifact.json') -Raw | ConvertFrom-Json
+          $exe = Join-Path $record.paths[0] 'AtlasChronicles.exe'
+          node packages/desktop/tools/smoke.mjs "--executable=$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged application smoke failed' }
+          node packages/desktop/tools/installer.mjs "--artifact=$($artifact.Name)"
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+          "artifact=$($artifact.FullName)" >> $env:GITHUB_OUTPUT
+      - name: Install and test the actual installed application in a disposable world
+        shell: pwsh
+        env:
+          ARTIFACT: ${{ steps.package.outputs.artifact }}
+        run: |
+          $setup = Join-Path $env:ARTIFACT 'installer/Atlas-Chronicles-Setup.exe'
+          $install = Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait
+          if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
+          $version = (Get-Content packages/desktop/package.json -Raw | ConvertFrom-Json).version
+          $appDir = Join-Path $env:LOCALAPPDATA "AtlasChronicles/app-$version"
+          $exe = Join-Path $appDir 'AtlasChronicles.exe'
+          if (!(Test-Path $exe)) { throw "Installed executable missing: $exe" }
+          # Stop only this newly installed app's optional first-run launch, never other software.
+          Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $exe } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+          node packages/desktop/tools/smoke.mjs "--executable=$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Installed application smoke failed' }
+          New-Item -ItemType Directory -Path release-output -Force | Out-Null
+          Copy-Item $setup release-output/Atlas-Chronicles-Setup.exe
+          Copy-Item (Join-Path $env:ARTIFACT 'installer.json') release-output/installer.json
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  Atlas-Chronicles-Setup.exe" | Set-Content release-output/SHA256SUMS.txt
+          @{version=$version;commit=$env:GITHUB_SHA;run=$env:GITHUB_RUN_ID;sha256=$hash;unsigned=$true;packagedSmoke=$true;installedSmoke=$true} | ConvertTo-Json | Set-Content release-output/build-evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atlas-windows-release
+          path: release-output/
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-smoke-evidence
+          path: |
+            .local/desktop-profiles/smoke-*/evidence.json
+            .local/desktop-profiles/smoke-*/*.png
+          if-no-files-found: ignore
+          retention-days: 14
+  publish-release:
+    needs: windows-package
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'KTY137/Atlas_Chronicles'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: atlas-windows-release
+          path: release-output
+      - name: Verify version, exact run and both smoke results against installer bytes
+        run: node tools/verify-gui-release.mjs release-output
+      - name: Publish the requested version without replacing existing releases or tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/heads/main --jq .object.sha)" = "$GITHUB_SHA"
+          if gh release view v0.5.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'Version 0.5.0 already exists; no tag, assets or release metadata will be overwritten.'
+            exit 0
+          fi
+          if gh api repos/$GITHUB_REPOSITORY/git/ref/tags/v0.5.0 >/dev/null 2>&1; then
+            echo 'A v0.5.0 tag exists without this release; refusing to repurpose it.' >&2
+            exit 1
+          fi
+          gh release create v0.5.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title 'Atlas Chronicles 0.5.0 — Kartenstudio und GUI-Korrekturen' --notes-file docs/releases/0.5.0.md release-output/Atlas-Chronicles-Setup.exe release-output/SHA256SUMS.txt release-output/build-evidence.json
+          gh release edit v0.5.0 --repo "$GITHUB_REPOSITORY" --draft=false --latest

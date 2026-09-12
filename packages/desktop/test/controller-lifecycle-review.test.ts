@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { EventEmitter } from "node:events";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ProfileStore, OwnedProfile } from "../src/profiles.ts";
 
@@ -85,7 +86,7 @@ it("starts the world without a readable Chronist key and carries the reason", as
 });
 
 it("leaves no Chronist hint when the profile key reads cleanly", async () => {
-  const { controller } = await harness(async () => ({ key: "synthetic-test-key", configPath: "C:/test-only-unused-profile/chronist-providers.json" }));
+  const { controller } = await harness(async () => ({ key: "synthetic-test-key", configPath: resolve("test-only-unused-profile/chronist-providers.json") }));
   expect(controller.state).toBe("ready");
   expect(controller.chronistHinweis).toBeUndefined();
   const optionen = mock.fork.mock.calls[0]![2] as { env: Record<string, string> };
