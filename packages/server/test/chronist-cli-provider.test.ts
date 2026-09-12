@@ -37,7 +37,7 @@ let root: string, supervisor: string;
 const binary = process.env.ATLAS_CHRONIST_CLI_TEST_BINARY;
 const model = "claude-sonnet-4-5-20250929", answer = '{"schemaVersion":1,"candidates":[]}';
 const config: ChronistCliProviderConfig = { id: "claude-test", label: "Claude fixture", profileId: CHRONIST_CLAUDE_CLI_PROFILE,
-  location: "fremd", executable: binary ?? "C:/absent/claude.exe", models: [model], apiKey: "synthetic-host-only-key", capabilityEnabled: true };
+  location: "fremd", executable: binary ?? join(tmpdir(), "absent", "claude.exe"), models: [model], apiKey: "synthetic-host-only-key", capabilityEnabled: true };
 let activation: ChronistCliActivation | undefined;
 beforeAll(async () => {
   if (process.platform !== "win32") return;

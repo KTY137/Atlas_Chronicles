@@ -3,6 +3,7 @@
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
@@ -60,7 +61,7 @@ describe("Migrator — Transaktion je Datei", () => {
     expect(await angewandt(db)).toEqual(["001_erste.sql"]);
 
     // Die kaputte Datei wird repariert — wie es nach einem gescheiterten Aufstieg zugeht.
-    await writeFile(join(new URL(dir).pathname.replace(/^\//, ""), "002_kaputt.sql"), "CREATE TABLE zweite (id text PRIMARY KEY);", "utf8");
+    await writeFile(join(fileURLToPath(dir), "002_kaputt.sql"), "CREATE TABLE zweite (id text PRIMARY KEY);", "utf8");
     await migrate(db, dir);
     expect(await angewandt(db)).toEqual(["001_erste.sql", "002_kaputt.sql"]);
   }, 30_000);
@@ -75,7 +76,7 @@ describe("Migrator — Transaktion je Datei", () => {
   it("weist eine nachträglich geänderte, bereits angewandte Datei zurück", async () => {
     const { db, dir } = await umgebung({ "001_erste.sql": "CREATE TABLE erste (id text PRIMARY KEY);" });
     await migrate(db, dir);
-    await writeFile(join(new URL(dir).pathname.replace(/^\//, ""), "001_erste.sql"), "CREATE TABLE erste (id text PRIMARY KEY, spaeter text);", "utf8");
+    await writeFile(join(fileURLToPath(dir), "001_erste.sql"), "CREATE TABLE erste (id text PRIMARY KEY, spaeter text);", "utf8");
     await expect(migrate(db, dir)).rejects.toThrow(/Applied migration changed/);
   }, 30_000);
 });
