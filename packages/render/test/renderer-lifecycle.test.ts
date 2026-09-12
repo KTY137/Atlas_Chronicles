@@ -10,7 +10,7 @@ vi.mock("pixi.js/unsafe-eval", () => ({}));
 
 // The product factory and its camera/resource lifecycle run unchanged. This
 // narrow Pixi boundary records geometry submission; it does not simulate GPU speed.
-const pixi = vi.hoisted(() => ({ type: 1, resolution: 1, paths: 0, initHook: undefined as (() => void) | undefined, disposals: [] as { renderer: unknown; children: unknown }[], strokes: [] as { color?: number; width?: number; pixelLine?: boolean }[], textures: [] as { source: { scaleMode: string }; destroy: ReturnType<typeof vi.fn> }[],
+const pixi = vi.hoisted(() => ({ type: 1, resolution: 1, paths: 0, textStyles: 0, initHook: undefined as (() => void) | undefined, disposals: [] as { renderer: unknown; children: unknown }[], strokes: [] as { color?: number; width?: number; pixelLine?: boolean }[], textures: [] as { source: { scaleMode: string }; destroy: ReturnType<typeof vi.fn> }[],
   graphics: [] as { position: { x: number; y: number }; scale: { x: number; y: number }; circles: number[]; paths: number; visible: boolean; fills: unknown[]; strokes: unknown[]; segments: number[][] }[],
   stages: [] as { label: string; children: unknown[] }[],
   labels: [] as { text: string; visible: boolean }[], sprites: [] as { destroyed: boolean; position: { x: number; y: number }; scale: { x: number; y: number } }[] }));
@@ -30,7 +30,13 @@ vi.mock("pixi.js", () => {
     poly() { pixi.paths++; this.paths++; return this; } moveTo(x: number, y: number) { pixi.paths++; this.paths++; this.segments.push([x, y]); return this; } lineTo(x: number, y: number) { this.segments.at(-1)?.push(x, y); return this; }
     stroke(style: { color?: number; width?: number; pixelLine?: boolean }) { pixi.strokes.push(style); this.strokes.push(style); return this; }
   }
-  class Text extends Container { text = ""; width = 20; height = 10; anchor = new Vector(); rotation = 0; resolution = 1; style: unknown; constructor(options?: { text?: string; style?: unknown }) { super(); if (options?.text !== undefined) this.text = options.text; this.style = options?.style; pixi.labels.push(this); } }
+  class Text extends Container {
+    text = ""; width = 20; height = 10; anchor = new Vector(); rotation = 0; resolution = 1; private textStyle: unknown;
+    get style() { return this.textStyle; }
+    // Pixi allocates a TextStyle and invalidates rendering on every plain-object assignment.
+    set style(value: unknown) { this.textStyle = value; pixi.textStyles++; }
+    constructor(options?: { text?: string; style?: unknown }) { super(); if (options?.text !== undefined) this.text = options.text; this.style = options?.style; pixi.labels.push(this); }
+  }
   class Canvas extends EventTarget {
     style: Record<string, string> = {}; dataset: Record<string, string> = {}; tabIndex = 0;
     setAttribute() {} hasPointerCapture() { return false; } releasePointerCapture() {} setPointerCapture() {} focus() {}
@@ -42,8 +48,8 @@ vi.mock("pixi.js", () => {
     async init() { pixi.initHook?.(); } render() {} destroy(renderer: unknown, children: unknown) { pixi.disposals.push({ renderer, children }); this.stage.destroy(); }
   }
   class Sprite extends Container {
-    width = 0; height = 0; anchor = new Vector(); destroyed = false;
-    constructor() { super(); pixi.sprites.push(this); }
+    width = 0; height = 0; anchor = new Vector(); destroyed = false; tint = 0xffffff; rotation = 0;
+    constructor(public texture: unknown) { super(); pixi.sprites.push(this); }
     override destroy() { this.destroyed = true; super.destroy(); }
   }
   return { Application, Container, Graphics, Text, Sprite, RendererType: { WEBGL: 1, WEBGPU: 2, CANVAS: 4 }, Texture: { from() { const texture = { source: { scaleMode: "linear" }, destroy: vi.fn() }; pixi.textures.push(texture); return texture; } } };
@@ -63,7 +69,7 @@ function layer(name: string) {
 }
 function host() { const children: unknown[] = []; return { clientWidth: 1200, clientHeight: 800, appendChild(child: unknown) { children.push(child); }, children } as unknown as HTMLElement; }
 beforeEach(() => {
-  pixi.initHook = undefined; pixi.disposals.length = 0; pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0; pixi.labels.length = 0; pixi.sprites.length = 0;
+  pixi.initHook = undefined; pixi.disposals.length = 0; pixi.type = 1; pixi.resolution = 1; pixi.paths = 0; pixi.textStyles = 0; pixi.strokes.length = 0; pixi.textures.length = 0; pixi.graphics.length = 0; pixi.labels.length = 0; pixi.sprites.length = 0;
   vi.stubGlobal("window", { devicePixelRatio: 1 }); vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1)); vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
 });
@@ -311,6 +317,101 @@ describe("mounted renderer submission and resource lifecycle", () => {
     const point = mapToScreen([1200, 1200], map.getCamera()); expect(map.hitTest(point)).toEqual({ kind: "token", id: "visible-token" });
     map.update({ ...scene, tokens: [], lines: [] }); expect(map.hitTest(point)).toBeNull(); map.destroy();
   });
+  it("keeps 4000 painted polygons and 1500 walls when one projected token moves", async () => {
+    const polygon = [[10,10],[100,10],[100,100],[10,100]] as const;
+    const projected: ProjectedMapScene = { ...scene, cells: [{ id: "floor", polygon }],
+      drawing: { rendererVersion, width: scene.width, height: scene.height, background: 0x222222,
+        polygons: Array.from({ length: 4000 }, (_, index) => ({ regionId: "floor", points: polygon, fill: index, opacity: 1 })) } };
+    const map = await createMapRenderer(host(), projected);
+    const geography = [...layer("geography").children], paths = pixi.paths;
+    // Polling sends new records too; reference equality alone would miss this common update.
+    const next = structuredClone(projected);
+    map.update({ ...next, tokens: [{ ...next.tokens![0]!, x: 1400 }] });
+    expect(map.hitTest(mapToScreen([1400, 1200], map.getCamera()))).toEqual({ kind: "token", id: "visible-token" });
+    expect(pixi.paths - paths).toBe(0);
+    expect(layer("geography").children.every((child, index) => child === geography[index])).toBe(true);
+    map.destroy();
+  });
+  it("moves one piece of furniture without replacing 800 sprites or their painted shadows", async () => {
+    const asset = "pack/chair", image = { width: 64, height: 64, close: vi.fn() } as unknown as ImageBitmap;
+    const stamps = Array.from({ length: 800 }, (_, index) => ({ id: `chair-${index}`, asset, x: 100 + index % 40 * 50, y: 100 + Math.floor(index / 40) * 50, s: 1, r: 0, l: 0 }));
+    const projected = { ...scene, lines: [], tokens: [], stamps, painted: true };
+    const map = await createMapRenderer(host(), projected); map.setStampImages([{ asset, image }]);
+    const sprites = [...pixi.sprites], graphics = pixi.graphics.length;
+    map.update({ ...projected, stamps: stamps.map((stamp, index) => index ? stamp : { ...stamp, x: 180, y: 220, s: 2, r: .5 }) });
+    expect(pixi.sprites).toHaveLength(800);
+    expect(sprites.every(sprite => !sprite.destroyed)).toBe(true);
+    expect(sprites[0]).toMatchObject({ position: { x: 180, y: 220 }, scale: { x: 2, y: 2 } });
+    expect(pixi.graphics).toHaveLength(graphics);
+    expect(image.close).not.toHaveBeenCalled();
+    map.destroy(); expect(image.close).toHaveBeenCalledTimes(1);
+  });
+  it("renames a pin and toggles names without submitting its marker or the map again", async () => {
+    const pin = { id: "inn", x: 1200, y: 1200, label: "Old inn", icon: "castle" as const };
+    const projected = { ...scene, tokens: [], pins: [pin], showLabels: true };
+    const map = await createMapRenderer(host(), projected), paths = pixi.paths, graphics = pixi.graphics.length;
+    map.select({ kind: "pin", id: pin.id });
+    const next = { ...projected, pins: [{ ...pin, label: "New inn" }] };
+    map.update(next);
+    expect(pixi.labels.some(label => label.visible && label.text === "New inn")).toBe(true);
+    map.update({ ...next, showLabels: false });
+    expect(pixi.labels.some(label => label.visible && label.text === "New inn")).toBe(false);
+    expect(pixi.paths).toBe(paths);
+    expect(pixi.graphics).toHaveLength(graphics);
+    map.destroy();
+  });
+  it("keeps name textures reusable while panning or editing and changes their ink at night", async () => {
+    const projected = { ...scene, tokens: [], lines: [], painted: true, showLabels: true, pins: [{ id: "inn", x: 1200, y: 1200, label: "The inn" }] };
+    const map = await createMapRenderer(host(), projected), styles = pixi.textStyles;
+    const name = pixi.labels.find(label => label.visible && label.text === "The inn")!;
+    map.panBy(20, 0); map.update({ ...projected, title: "New map name" });
+    expect(pixi.textStyles).toBe(styles);
+    expect(name.visible).toBe(true);
+    map.update({ ...projected, mood: "nacht" });
+    expect(pixi.textStyles).toBe(styles + 1);
+    expect(name).toMatchObject({ style: { fill: 0xe9e2cf } });
+    map.destroy();
+  });
+  it("retains sprite identities while changing their overlap order, roof layer and supplied artwork", async () => {
+    const asset = "pack/chair", first = { width: 64, height: 64, close: vi.fn() } as unknown as ImageBitmap;
+    const second = { width: 120, height: 80, close: vi.fn() } as unknown as ImageBitmap;
+    const stamps = [{ id: "a", asset, x: 100, y: 100, s: 1, r: 0, l: 0 }, { id: "b", asset, x: 100, y: 100, s: 1, r: 0, l: 1 }];
+    const projected = { ...scene, lines: [], tokens: [], stamps, painted: true };
+    const map = await createMapRenderer(host(), projected); map.setStampImages([{ asset, image: first }]);
+    const [a, b] = pixi.sprites, oldTexture = pixi.textures.at(-1)!;
+    const next = { ...projected, stamps: [{ ...stamps[0]!, l: 3 }, stamps[1]!] };
+    map.update(next);
+    expect(layer("stamps").children.filter(child => child === a || child === b)).toEqual([b, a]);
+    map.setStampImages([{ asset, image: second }]);
+    expect(pixi.sprites).toHaveLength(2);
+    expect(a).toMatchObject({ texture: pixi.textures.at(-1) });
+    expect(oldTexture.destroy).toHaveBeenCalledTimes(1); expect(first.close).toHaveBeenCalledTimes(1);
+    map.update({ ...next, stamps: [{ ...stamps[0]!, l: 40, t: 0xff0000 }] });
+    expect(layer("stamps").children).toHaveLength(0);
+    expect(layer("rooftop-stamps").children).toEqual([a]);
+    expect(a).toMatchObject({ destroyed: false, tint: 0xff0000 }); expect(b!.destroyed).toBe(true);
+    map.update({ ...next, stamps: [] });
+    expect(layer("rooftop-stamps").children).toHaveLength(0);
+    expect(a!.destroyed).toBe(true); expect(second.close).toHaveBeenCalledTimes(1);
+    map.destroy(); expect(second.close).toHaveBeenCalledTimes(1);
+  });
+  it("repaints a changed cartography polygon and validates removed region references before reuse", async () => {
+    const polygon = [[10,10],[100,10],[100,100],[10,100]] as const;
+    const projected = { ...scene, tokens: [], lines: [], cells: [{ id: "floor", polygon }],
+      drawing: { rendererVersion, width: scene.width, height: scene.height, background: null,
+        polygons: [{ regionId: "floor", points: polygon, fill: 0x222222, opacity: 1 }] } };
+    const map = await createMapRenderer(host(), projected), before = layer("geography").children[0];
+    const next = { ...projected, drawing: { ...projected.drawing, polygons: [{ ...projected.drawing.polygons[0]!, fill: 0x445566, opacity: .5 }] } };
+    map.update(next);
+    expect(layer("geography").children[0]).not.toBe(before);
+    expect(layer("geography").children[0]).toMatchObject({ fills: [{ color: 0x445566, alpha: .5 }] });
+    expect(() => map.update({ ...next, cells: [] })).toThrow("cartography polygon");
+    expect(map.hitTest(mapToScreen([50, 50], map.getCamera()))).toEqual({ kind: "cell", id: "floor" });
+    map.update({ ...next, cells: [], drawing: { ...next.drawing, polygons: [] } });
+    expect(layer("geography").children).toHaveLength(0);
+    expect(map.hitTest(mapToScreen([50, 50], map.getCamera()))).toBeNull();
+    map.destroy();
+  });
 
   it("batches equal-color wall strokes while preserving their two-screen-pixel zoom weight", async () => {
     const map = await createMapRenderer(host(), scene); pixi.strokes.length = 0;
@@ -454,7 +555,7 @@ describe("the same room by night", () => {
     expect((pixi.sprites.at(-1) as { tint?: number }).tint).toBe(0x8a93b3);
     map.update({ ...scene, tokens: [], lines: [], showLabels: true, pins, drawing, stamps, mood: "winter" });
     expect(label()?.style?.fill).toBe(0x2c2519);
-    expect((pixi.sprites.at(-1) as { tint?: number }).tint).toBeUndefined();
+    expect((pixi.sprites.at(-1) as { tint?: number }).tint).toBe(0xffffff);
     map.destroy();
   });
 });

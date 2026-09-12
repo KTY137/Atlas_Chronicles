@@ -12,14 +12,16 @@ import "./TacticalCanvas.css";
 export type MapCanvasContext = (hit: MapHit | null, at: { x: number; y: number }) => void;
 
 /** The renderer never fetches private images. This scoped host owns requests and their lifetime. */
-export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated, selection, focusObject, editor, onUndo, onRedo, onContextMenu }: {
+export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = "", onMove, onSelect, onPoint, onScopeInvalidated, selection, focusObject, editor, brushRadius, onUndo, onRedo, onContextMenu }: {
   scene: ProjectedMapScene; tileBase: string; tileQuery?: string; onMove?: (id: string, to: MapPoint) => void; onSelect?: (hit: MapHit | null) => void; onPoint?: (point: MapPoint) => void; onScopeInvalidated?: () => void;
   selection?: MapHit | null; focusObject?: { id: string; x: number; y: number } | null;
   editor?: MapEditorInteraction; onUndo?: () => void; onRedo?: () => void;
+  /** Radius in map pixels; the pointer overlay never enters the map or undo history. */
+  brushRadius?: number;
   onContextMenu?: MapCanvasContext;
 }) {
   const { resolved } = useAppearance();
-  const city = projectedScene.cells.some(cell => cell.surface === "building");
+  const city = useMemo(() => projectedScene.cells.some(cell => cell.surface === "building"), [projectedScene.cells]);
   const gridTouched = useRef(false);
   const [gridVisible, setGridVisible] = useState(!city), [labelsVisible, setLabelsVisible] = useState(projectedScene.showLabels !== false);
   useEffect(() => { if (!gridTouched.current) setGridVisible(!city); }, [city]);
@@ -29,6 +31,7 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
   }), [projectedScene, resolved.sampling, gridVisible, labelsVisible]);
   const frame = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null), renderer = useRef<MapRenderer | null>(null);
+  const brushCursor = useRef<HTMLDivElement>(null), refreshBrushCursor = useRef<() => void>(() => {});
   const latest = useRef({ scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection, editor }); latest.current = { scene, tileBase, tileQuery, onMove, onSelect, onPoint, onScopeInvalidated, selection, editor };
   const revoked = useRef("");
   const synchronizing = useRef(0);
@@ -42,7 +45,46 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
   const schedule = useRef<() => void>(() => {}), clearScope = useRef<() => void>(() => {}), retryTiles = useRef<() => void>(() => {});
   const [error, setError] = useState(""), [tileError, setTileError] = useState(""), [ready, setReady] = useState(false);
   const [artError, setArtError] = useState("");
-  const stampAssets = JSON.stringify([...new Set(scene.stamps?.map(stamp => stamp.asset) ?? [])].sort());
+  const stampAssets = useMemo(() => JSON.stringify([...new Set(scene.stamps?.map(stamp => stamp.asset) ?? [])].sort()), [scene.stamps]);
+  useEffect(() => {
+    const element = host.current, cursor = brushCursor.current;
+    if (!element || !cursor || !ready || !brushRadius || !Number.isFinite(brushRadius) || brushRadius <= 0) return;
+    let point: { x: number; y: number } | null = null, frameId: number | null = null;
+    const panKeys = new Set<string>();
+    const hide = () => { cursor.style.opacity = "0"; };
+    const paint = () => {
+      frameId = null;
+      if (!point || panKeys.size || revoked.current || !latest.current.editor?.active() || !renderer.current) { hide(); return; }
+      const bounds = element.getBoundingClientRect(), diameter = brushRadius * 2 * renderer.current.getCamera().scale;
+      const x = point.x - bounds.left, y = point.y - bounds.top;
+      if (x < 0 || y < 0 || x > bounds.width || y > bounds.height) { hide(); return; }
+      cursor.style.width = `${diameter}px`; cursor.style.height = `${diameter}px`;
+      cursor.style.transform = `translate3d(${x - diameter / 2}px, ${y - diameter / 2}px, 0)`;
+      cursor.style.opacity = "1";
+    };
+    const queue = () => { if (frameId === null) frameId = requestAnimationFrame(paint); };
+    const move = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || event.altKey || (event.buttons & ~1) !== 0) { point = null; hide(); return; }
+      point = { x: event.clientX, y: event.clientY }; queue();
+    };
+    const leave = () => { point = null; hide(); };
+    const panKey = (event: KeyboardEvent) => event.code === "Space" ? "Space" : event.key === "Alt" ? "Alt" : null;
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      const key = panKey(event); if (key) { panKeys.add(key); hide(); }
+    };
+    const keyUp = (event: KeyboardEvent) => { const key = panKey(event); if (key) { panKeys.delete(key); queue(); } };
+    const blur = () => { panKeys.clear(); leave(); };
+    refreshBrushCursor.current = queue;
+    element.addEventListener("pointermove", move); element.addEventListener("pointerleave", leave);
+    window.addEventListener("keydown", keyDown); window.addEventListener("keyup", keyUp); window.addEventListener("blur", blur);
+    return () => {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      refreshBrushCursor.current = () => {}; hide();
+      element.removeEventListener("pointermove", move); element.removeEventListener("pointerleave", leave);
+      window.removeEventListener("keydown", keyDown); window.removeEventListener("keyup", keyUp); window.removeEventListener("blur", blur);
+    };
+  }, [brushRadius, ready, scene.id]);
   useEffect(() => {
     const fullscreenChanged = () => setExpanded(document.fullscreenElement === frame.current);
     const escape = (event: KeyboardEvent) => { if (event.key === "Escape" && !document.fullscreenElement) setExpanded(false); };
@@ -122,7 +164,7 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
     schedule.current = queue;
     retryTiles.current = () => { clear(); if (deniedScope) latest.current.onScopeInvalidated?.(); else queue(); };
     setError(""); setTileError(""); setArtError(""); setReady(false);
-    void createMapRenderer(host.current, latest.current.scene, { signal: mount.signal, onCameraChange: camera => { if (!mount.signal.aborted) setZoom(camera.scale * 100); queue(); },
+    void createMapRenderer(host.current, latest.current.scene, { signal: mount.signal, onCameraChange: camera => { if (!mount.signal.aborted) setZoom(camera.scale * 100); refreshBrushCursor.current(); queue(); },
       onSelect: hit => { if (!synchronizing.current) latest.current.onSelect?.(hit); }, onMoveToken: (id, to) => latest.current.onMove?.(id, to),
       onPoint: point => latest.current.onPoint?.(point),
       editor: { active: () => !revoked.current && !!latest.current.editor?.active(),
@@ -214,6 +256,7 @@ export function TacticalCanvas({ scene: projectedScene, tileBase, tileQuery = ""
         const action = event.shiftKey ? onRedo : onUndo;
         if (action) { event.preventDefault(); action(); renderer.current?.cancelInteraction(); }
       }} />
+      <div className="tactical-brush-overlay" aria-hidden="true"><div ref={brushCursor} className="tactical-brush-cursor" /></div>
       <span className="karten-signatur" aria-hidden="true">Atlas Chronicles</span>
     </div>
     <p className="field-help">{editor ? t("Mit dem Werkzeug direkt zeichnen. Leertaste oder Alt halten und ziehen verschiebt die Karte; Esc verwirft die Geste. Strg/Cmd+Z nimmt Änderungen zurück.") : t("Karte ziehen oder mit Pfeiltasten verschieben. Mit dem Mausrad zoomen. Bewegliche Figuren lassen sich ziehen; genaue Werte stehen auch in der Figurenliste.")}</p>

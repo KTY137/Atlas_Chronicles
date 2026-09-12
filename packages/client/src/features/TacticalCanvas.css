@@ -7,6 +7,9 @@
 .tactical-canvas-layers input { width: auto; accent-color: var(--accent); }
 .tactical-canvas-percentage { min-width: 4.1rem; text-align: center; font-size: .82rem; font-variant-numeric: tabular-nums; }
 .tactical-canvas-dimensions { color: var(--text-muted); font-size: .75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tactical-brush-overlay { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.tactical-brush-cursor { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid #fff; border-radius: 50%; background: #ffffff0a; box-shadow: 0 0 0 1px #172027b3, inset 0 0 0 1px #17202780; opacity: 0; pointer-events: none; }
+.tactical-brush-cursor::after { content: ""; position: absolute; width: 3px; height: 3px; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%; background: white; box-shadow: 0 0 0 1px #172027; }
 .tactical-canvas-expanded .tactical-canvas { height: 78vh; min-height: 380px; }
 .tactical-canvas-frame:fullscreen { box-sizing: border-box; display: flex; flex-direction: column; padding: 1rem; width: 100vw; height: 100vh; background: var(--bg, #14212b); overflow: auto; }
 .tactical-canvas-frame:fullscreen .tactical-canvas-wrap { flex: 1; min-height: 240px; }

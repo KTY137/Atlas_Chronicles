@@ -6,6 +6,7 @@ import { fitCamera, hitTestMap, mapPinHitRadius, mapToScreen, normalizeCamera, p
 import { rasterTileDisplaySize, rasterTilesFit } from "./tactical-geometry.ts";
 import { createGridGeometryCache } from "./grid-cache.ts";
 import { planeStapel } from "./stapel.ts";
+import { changedSceneLayers } from "./scene-layers.ts";
 import type { MapCamera, MapEditorInteraction, MapHit, MapPoint, MapRenderer, ProjectedMapLabel, ProjectedMapPin, ProjectedMapScene, ProjectedMapToken } from "./model.ts";
 
 // Pixi's boolean `true` also clears global pools. A map owns its canvas/tree/GPU
@@ -73,10 +74,12 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   geography.label = "geography";
   const buildings = new Container();
   const raster = new Container(), rasterBounds = new Graphics(), gridOverlay = new Graphics(), wallsOverlay = new Graphics(), dragPreview = new Graphics();
-  const markers = new Container();
+  const markers = new Container(), pinMarkers = new Container(), tokenMarkers = new Container();
+  markers.addChild(pinMarkers, tokenMarkers);
   // Placements sit above the floor and below walls, grid and markers: furniture is part of the
   // ground truth of the room, but it must never hide a wall or a token.
   const stampLayer = new Container(), rooftopStamps = new Container();
+  stampLayer.label = "stamps"; rooftopStamps.label = "rooftop-stamps";
   // Light pools lie over floor and furniture and under walls: a torch warms the room it stands
   // in, the wall in front of it still reads as a wall. Additive, so two lamps brighten, not muddy.
   const glow = new Graphics(); glow.eventMode = "none"; glow.label = "glow"; glow.blendMode = "add";
@@ -108,6 +111,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   chrome.addChild(scaleBar, compass, compassLabel, scaleLabel, titleBox, titleText);
   app.stage.addChild(chrome);
   const pinLabels: InstanceType<typeof Text>[] = [];
+  const pinLabelStyles = new WeakMap<InstanceType<typeof Text>, object>();
   const nightLabel = { fontFamily: "system-ui, sans-serif", fontSize: 12, fill: 0xf4ebd8, stroke: { color: 0x14212b, width: 3 } } as const;
   const inkLabel = { fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 12, fontStyle: "italic", fontWeight: "600", letterSpacing: .4, fill: 0x2c2519, stroke: { color: 0xf0e6cb, width: 3 } } as const;
   // The same book face by moonlight: pale ink with a dark halo, so a name still reads at night.
@@ -118,6 +122,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
   let destroyed = false;
   let scheduled = 0;
   let markerGraphics: InstanceType<typeof Graphics>[] = [];
+  let pinGraphics: InstanceType<typeof Graphics>[] = [], tokenGraphics: InstanceType<typeof Graphics>[] = [];
   const gridCache = createGridGeometryCache();
   let previousGridLines: readonly (readonly MapPoint[])[] | undefined, previousScale = Number.NaN;
   const rasterResources: { bitmap: ImageBitmap; texture: InstanceType<typeof Texture> }[] = [];
@@ -235,6 +240,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     // Screen-space boxes keep a whole city legible. The pool bounds both text objects and
     // overlap work; zooming reveals names as their projected footprints separate.
     const occupied: { x: number; y: number; width: number; height: number }[] = [];
+    const style = scene.drawing || scene.painted ? scene.mood === "nacht" ? moonLabel : inkLabel : nightLabel;
     if (label.visible) occupied.push({ x: label.position.x - 4, y: label.position.y - 4, width: label.width + 8, height: label.height + 8 });
     let count = 0;
     const selectedCell = selected?.kind === "cell" ? scene.cells.find(cell => cell.id === selected!.id) : undefined;
@@ -248,12 +254,14 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       if (occupied.some(box => x < box.x + box.width && x + width > box.x && y < box.y + box.height && y + 20 > box.y)) continue;
       let text = pinLabels[count];
       if (!text) {
-        text = new Text({ text: "", style: nightLabel });
+        text = new Text({ text: "", style }); pinLabelStyles.set(text, style);
         text.eventMode = "none"; pinLabels.push(text); names.addChild(text);
       }
       // A drawn map names its places in ink on paper, a book face with a pale halo; a photographed
       // or dark battlemap keeps the bright label that stays legible over any image.
-      text.style = scene.drawing || scene.painted ? scene.mood === "nacht" ? moonLabel : inkLabel : nightLabel;
+      // Pixi creates a new TextStyle and invalidates its text texture on assignment,
+      // even when its values match. Panning only changes placement, not the ink.
+      if (pinLabelStyles.get(text) !== style) { text.style = style; pinLabelStyles.set(text, style); }
       text.text = pin.label.length > 30 ? `${pin.label.slice(0, 29)}…` : pin.label;
       text.position.set(x, y); text.visible = true;
       occupied.push({ x: x - 4, y: y - 4, width: Math.max(width, text.width) + 8, height: Math.max(20, text.height) + 8 }); count++;
@@ -290,11 +298,12 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
     }
     if (color !== undefined) wallsOverlay.stroke({ color, width: 2 / camera.scale });
   };
-  const applyCamera = (changedGeometry = false): void => {
+  const applyCamera = (changedMarkers = false, changedWalls = false): void => {
     world.position.set(camera.x, camera.y);
     world.scale.set(camera.scale);
     const changedScale = camera.scale !== previousScale;
-    if (changedGeometry || changedScale) { for (const marker of markerGraphics) marker.scale.set(1 / camera.scale); drawWalls(); }
+    if (changedMarkers || changedScale) for (const marker of markerGraphics) marker.scale.set(1 / camera.scale);
+    if (changedWalls || changedScale) drawWalls();
     const gridLines = gridCache.lines([scene.width, scene.height], viewport, camera, scene.grid);
     // Native GPU lines stay one physical pixel without retessellation. At
     // higher pixel densities, or on Canvas2D, preserve one CSS pixel explicitly.
@@ -327,20 +336,23 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
    * rebuild every sprite. Culling to a padded window means a pan only pays when it leaves it.
    */
   const STAMP_RAND = 256;
+  const stampObjects = new Map<string, { sprite: InstanceType<typeof Sprite>; shadow?: InstanceType<typeof Graphics>; shadowSize?: MapPoint }>();
   let stampAnker: { x: number; y: number; scale: number } | null = null;
   const stampsVeraltet = (): boolean =>
     stampAnker === null || stampAnker.scale !== camera.scale ||
     Math.abs(stampAnker.x - camera.x) > STAMP_RAND || Math.abs(stampAnker.y - camera.y) > STAMP_RAND;
   const drawStamps = (): void => {
-    for (const child of stampLayer.removeChildren()) child.destroy();
-    for (const child of rooftopStamps.removeChildren()) child.destroy();
+    // Detach before restoring author order, retaining textures, sprites and shadow geometry
+    // for objects that remain visible. A one-object edit must not allocate a whole room again.
+    stampLayer.removeChildren();
+    rooftopStamps.removeChildren();
+    const retained = new Set<string>();
     stampAnker = { x: camera.x, y: camera.y, scale: camera.scale };
-    if (!scene.stamps?.length) return;
     // Cull against a window larger than the viewport, centred on it: grow the viewport by the
     // slack on every side and shift the camera by half of it, so the extra coverage is
     // symmetric rather than anchored at the top-left corner.
     const plan = planeStapel(
-      scene.stamps,
+      scene.stamps ?? [],
       { ...camera, x: camera.x + STAMP_RAND, y: camera.y + STAMP_RAND },
       [viewport[0] + STAMP_RAND * 2, viewport[1] + STAMP_RAND * 2],
       { assetGroessen: new Map([...stampTextures].map(([asset, { bitmap }]) => [asset, [bitmap.width, bitmap.height] as const])) },
@@ -356,25 +368,40 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       // No artwork, no shape. A placeholder box would be indistinguishable from real furniture at
       // a glance, which is exactly the kind of picture that lies about what is in the room.
       if (!resource) continue;
+      let object = stampObjects.get(stamp.id);
+      if (!object) {
+        const sprite = new Sprite(resource.texture);
+        sprite.anchor.set(.5); sprite.eventMode = "none";
+        object = { sprite }; stampObjects.set(stamp.id, object);
+      }
+      retained.add(stamp.id);
       // On a drawn map every object above the floor casts a soft shadow to the south-east, the
       // way a piece of furniture sits on a painted battlemap instead of floating on it.
       // Layers −10..10 are what stands on the floor (fixtures, furniture, vessels, figures,
       // lamps); floors (−100), doors, walls and marks cast nothing.
       if ((scene.drawing || scene.painted) && stamp.l >= -10 && stamp.l <= 10) {
-        const w = resource.bitmap.width * stamp.s, h = resource.bitmap.height * stamp.s, shadow = new Graphics();
-        shadow.ellipse(0, 0, w * .48, h * .48).fill({ color: 0x1a1410, alpha: .26 });
+        const w = resource.bitmap.width * stamp.s, h = resource.bitmap.height * stamp.s;
+        const shadow = object.shadow ??= new Graphics();
+        if (object.shadowSize?.[0] !== w || object.shadowSize?.[1] !== h) {
+          shadow.clear().ellipse(0, 0, w * .48, h * .48).fill({ color: 0x1a1410, alpha: .26 });
+          object.shadowSize = [w, h];
+        }
         shadow.position.set(stamp.x + w * .07, stamp.y + h * .1); shadow.rotation = stamp.r; shadow.eventMode = "none";
         stampLayer.addChild(shadow);
+      } else if (object.shadow) {
+        object.shadow.destroy(); delete object.shadow; delete object.shadowSize;
       }
-      const sprite = new Sprite(resource.texture);
-      sprite.anchor.set(.5);
+      const sprite = object.sprite;
+      sprite.texture = resource.texture;
       sprite.position.set(stamp.x, stamp.y);
       sprite.rotation = stamp.r;
       sprite.scale.set(stamp.s);
       // Furniture and figures stand in the same moonlight as the painted ground under them.
-      if (stamp.t) sprite.tint = stamp.t; else if (scene.mood === "nacht") sprite.tint = 0x8a93b3;
-      sprite.eventMode = "none";
+      sprite.tint = stamp.t || (scene.mood === "nacht" ? 0x8a93b3 : 0xffffff);
       (stamp.l >= 40 ? rooftopStamps : stampLayer).addChild(sprite);
+    }
+    for (const [id, object] of stampObjects) if (!retained.has(id)) {
+      object.sprite.destroy(); object.shadow?.destroy(); stampObjects.delete(id);
     }
   };
   const drawPin = (pin: ProjectedMapPin): InstanceType<typeof Graphics> => {
@@ -460,14 +487,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       }
     }
   };
-  const draw = (): void => {
-    rasterBounds.clear().rect(0, 0, scene.width, scene.height).fill(0xffffff);
-    drawStamps();
-    drawLettering();
-    clear(geography);
-    clear(buildings);
-    clear(markers);
-    markerGraphics = [];
+  const drawLights = (): void => {
     // Each light is three pools inside one another, widest faintest, plus a small bright heart:
     // a cheap gradient that still reads as a glow rather than as a painted disc.
     // At night the same lights carry: the pools are two and a half times as strong, and the
@@ -480,6 +500,10 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       for (const [reach, alpha] of [[1, .04], [.62, .07], [.3, .11]] as const) glow.circle(light.x, light.y, light.range * reach).fill({ color, alpha: Math.min(1, alpha * strength) });
       glow.circle(light.x, light.y, Math.max(2, light.range * .06)).fill({ color: 0xfff1c8, alpha: Math.min(1, .45 * strength) });
     }
+  };
+  const drawGeography = (): void => {
+    clear(geography);
+    clear(buildings);
     if (scene.drawing) {
       if (scene.drawing.background !== null) geography.addChild(new Graphics().rect(0, 0, scene.width, scene.height).fill(scene.drawing.background));
       for (const polygon of scene.drawing.polygons) {
@@ -522,22 +546,39 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       shape.eventMode = "none";
       (building ? buildings : geography).addChild(shape);
     }
+  };
+  const drawPins = (): void => {
+    clear(pinMarkers); pinGraphics = [];
     for (const pin of scene.pins) {
       const shape = drawPin(pin);
       shape.position.set(pin.x, pin.y);
       shape.eventMode = "none";
-      markers.addChild(shape);
-      markerGraphics.push(shape);
+      pinMarkers.addChild(shape);
+      pinGraphics.push(shape);
     }
+  };
+  const drawTokens = (): void => {
+    clear(tokenMarkers); tokenGraphics = [];
     for (const token of scene.tokens ?? []) {
       const shape = new Graphics().circle(0, 0, token.radius ?? 11).fill(token.color ?? 0x81b8d1).stroke({ color: 0xffffff, width: 2 });
       shape.position.set(token.x, token.y);
       shape.eventMode = "none";
-      markers.addChild(shape);
-      markerGraphics.push(shape);
+      tokenMarkers.addChild(shape);
+      tokenGraphics.push(shape);
     }
+  };
+  const draw = (previous?: ProjectedMapScene): void => {
+    const changed = changedSceneLayers(previous, scene);
+    if (changed.bounds) rasterBounds.clear().rect(0, 0, scene.width, scene.height).fill(0xffffff);
+    if (changed.stamps) drawStamps();
+    if (changed.lettering) drawLettering();
+    if (changed.lights) drawLights();
+    if (changed.geography) drawGeography();
+    if (changed.pins) drawPins();
+    if (changed.tokens) drawTokens();
+    if (changed.pins || changed.tokens) markerGraphics = [...pinGraphics, ...tokenGraphics];
     canvas.dataset.mapScene = scene.id;
-    applyCamera(true);
+    applyCamera(changed.pins || changed.tokens, changed.walls);
   };
   const ensureAlive = (): void => { if (destroyed) throw new Error("MapRenderer has been destroyed"); };
   const renderer: MapRenderer = {
@@ -547,6 +588,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       validateMapScene(next);
       const changedWorld = next.id !== scene.id || next.width !== scene.width || next.height !== scene.height;
       const changedScope = scene.rasterScope !== next.rasterScope;
+      const previous = scene;
       const previousSelection = selected;
       if (changedScope || changedWorld) clearRaster();
       if (next.id !== scene.id) clearStampTextures();
@@ -562,7 +604,7 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       if (changedWorld) { camera = fitCamera([scene.width, scene.height], viewport); selected = null; }
       // Remove a selection if the server's replacement projection no longer includes it.
       if (selected && !(selected.kind === "pin" ? scene.pins : selected.kind === "token" ? scene.tokens ?? [] : scene.cells).some((r) => r.id === selected!.id)) selected = null;
-      draw();
+      draw(previous);
       if (previousSelection && !selected) options.onSelect?.(null);
     },
     applyPatch(patch) {
@@ -632,7 +674,8 @@ export async function createMapRenderer(host: HTMLElement, initial: ProjectedMap
       clearRaster();
       clearStampTextures();
       app.destroy(rendererDestroyOptions, { children: true });
-      markerGraphics = [];
+      stampObjects.clear();
+      markerGraphics = []; pinGraphics = []; tokenGraphics = [];
     },
   };
   const local = (event: MouseEvent): MapPoint => {

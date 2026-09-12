@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { inferLegacyCartography, parseTacticalMapDocument, TACTICAL_MAP_LIMITS } from "@chronicle/szene";
 import { validateMapScene } from "../../render/src/geometry.ts";
 import {
-  BUILDING_COLORS, changeGenerationSetting, generationDimensions, generationError, generationOptions, generationSettings, lightsToScene, mapDocumentScene,
+  BUILDING_COLORS, changeGenerationSetting, createMapDocumentScene, generationDimensions, generationError, generationOptions, generationSettings, lightsToScene, mapDocumentScene,
   type GenerationDefaults, type MapNode,
 } from "../src/features/map-generation.ts";
 
@@ -116,6 +116,23 @@ const nodes: readonly MapNode[] = [
 
 const cartography = { ...inferLegacyCartography(document), regions: document.geometry.regions.map(region => ({ regionId: region.id, authored: false, locked: false, provenance: null, ...(region.id === "street" ? { role: "road" as const, material: "street" as const } : { role: "building" as const }) })) };
 describe("map document presentation keeps spatial identity", () => {
+  it("reuses landscape artwork while current stamps, names, lights and grid remain live", () => {
+    const project = createMapDocumentScene(), first = project("city", document, nodes, "siedlung", undefined, "fantasy", cartography);
+    const editedDocument = { ...document, grid: { kind: "none" as const }, geometry: { ...document.geometry,
+      stamps: document.geometry.stamps.map(stamp => ({ ...stamp, x: stamp.x + 5, r: stamp.r + .1 })) },
+      lights: [{ id: "lamp", position: [90, 100] as const, range: 120, intensity: .7, colorArgb: "ffeebb88", shadows: true, elevation: 0 }] };
+    const editedNodes = nodes.map(node => ({ ...node, titel: `${node.titel} revised` }));
+    const editedCartography = { ...cartography, labels: [{ id: "name", text: "New name", points: [[90, 100] as const], style: "ort" as const, size: 18 }] };
+    const next = project("city", editedDocument, editedNodes, "siedlung", undefined, "fantasy", editedCartography);
+    expect(next.drawing).toBe(first.drawing);
+    expect(next).toEqual(mapDocumentScene("city", editedDocument, editedNodes, "siedlung", undefined, "fantasy", editedCartography));
+    expect(next.stamps![0]!.x).toBe(first.stamps![0]!.x + 5);
+    expect(next.pins[0]!.label).toBe(`${first.pins[0]!.label} revised`);
+    expect(next.lights).toHaveLength(1);
+    expect(next.grid).toEqual({ kind: "none" });
+    expect(next.labels).toBe(editedCartography.labels);
+  });
+
   it("retains a visible portal for an existing interior while ordinary roof markers remain hidden", () => {
     const scene = mapDocumentScene("city",document,nodes.map(node => ({ ...node, vorhandeneKarteId: "interior" })),"siedlung",undefined,"fantasy",cartography);
     expect(scene.pins.every(pin => pin.icon === "portal" && pin.showMarker === true)).toBe(true);

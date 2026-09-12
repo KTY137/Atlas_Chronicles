@@ -10,6 +10,56 @@ const document = parseTacticalMapDocument({ schemaVersion: 1, kind: "tactical-ma
 const snapshot: MapEditSnapshot = { document, cartography: inferLegacyCartography(document), anchors: [{ targetKind: "stamp", targetId: "roof", entryId: "knowledge", passageId: null }], addedBuildings: [{ regionId: "house", titel: "Haus", typ: "haus" }] };
 
 describe("complete map draft history", () => {
+  it("retains exact canonical JSON for reordered objects, numeric keys, omitted fields and Unicode", () => {
+    const original: MapEditSnapshot = { ...snapshot, addedRooms: undefined, cartography: { ...snapshot.cartography, regions: [{
+      ...snapshot.cartography.regions[0]!, provenance: { generator: "test", version: "1", seed: "seed", keimHash: "a".repeat(64),
+        optionen: { z: [null, true, false, -0, "\ud800", "Straße 🌲\n\""], "10": "zehn", "2": "zwei", a: { z: 3, a: 1 } } },
+    }] } };
+    const legacyFingerprint = JSON.stringify(original, (_key, child: unknown) => child && typeof child === "object" && !Array.isArray(child)
+      ? Object.fromEntries(Object.entries(child).sort(([a], [b]) => a.localeCompare(b))) : child);
+    const reordered = Object.fromEntries(Object.entries(JSON.parse(JSON.stringify(original)) as MapEditSnapshot).reverse()) as unknown as MapEditSnapshot;
+    expect(editFingerprint(original)).toBe(legacyFingerprint);
+    expect(editFingerprint(reordered)).toBe(legacyFingerprint);
+    expect(editDirty({ ...editHistory(original), present: reordered })).toBe(false);
+    const changed = { ...original, document: { ...original.document, geometry: { ...original.document.geometry,
+      stamps: original.document.geometry.stamps.map(stamp => ({ ...stamp, x: stamp.x + 1 })),
+    } } };
+    expect(editFingerprint(changed)).not.toBe(legacyFingerprint);
+    expect(editFingerprint(original)).toBe(legacyFingerprint);
+  });
+  it("enforces the exact UTF-8 history budget after cached reads and a new undo branch", () => {
+    const first = { ...snapshot, addedBuildings: [{ ...snapshot.addedBuildings[0]!, titel: "Häuser am 🌲" }] };
+    const second = { ...first, document: { ...document, elevation: 1 } };
+    const third = { ...first, document: { ...document, elevation: 2 } };
+    const bytes = (value: MapEditSnapshot) => new TextEncoder().encode(editFingerprint(value)).byteLength;
+    const budget = bytes(first) + bytes(second);
+    expect(commitEdit(editHistory(first), second, { steps: 100, bytes: budget }).past).toEqual([first]);
+    expect(commitEdit(editHistory(first), second, { steps: 100, bytes: budget - 1 }).past).toEqual([]);
+    const branch = commitEdit(undoEdit(commitEdit(editHistory(first), second)), third, { steps: 100, bytes: bytes(first) + bytes(third) });
+    expect(branch.past).toEqual([first]); expect(branch.future).toEqual([]);
+    expect(undoEdit(branch).present).toBe(first);
+  });
+  it("preserves cartography and attachment identity for metadata edits and unrelated artwork", () => {
+    const generated: MapEditSnapshot = { ...snapshot, cartography: { ...snapshot.cartography, regions: [{ regionId: "house", role: "building", authored: false, locked: false, provenance: null, attachedStampIds: ["roof"] }] } };
+    const metadata = editDocument(generated, { ...document, grid: { kind: "square", size: 25, origin: [0, 0] } });
+    expect(metadata.cartography).toBe(generated.cartography);
+    expect(metadata.addedBuildings).toBe(generated.addedBuildings);
+    const artwork = editDocument(generated, { ...document, geometry: { ...document.geometry, stamps: [...document.geometry.stamps, { ...document.geometry.stamps[0]!, id: "unowned", x: 100 }] } });
+    expect(artwork.cartography).toBe(generated.cartography);
+    const edited = commitEdit(editHistory(generated), artwork);
+    expect(edited.present.cartography).toBe(generated.cartography);
+    expect(undoEdit(edited).present).toBe(generated);
+  });
+  it("retains unchanged room attachments and removes references only to deleted objects", () => {
+    const room: MapEditSnapshot = { ...snapshot, cartography: { ...snapshot.cartography, regions: [{ regionId: "house", role: "room", authored: true, locked: false, provenance: null,
+      interior: { schemaVersion: 1, floor: "wood", stampIds: ["roof"], wallIds: [], portalIds: [], lightIds: [], placeIds: [], portalArtwork: [] },
+    }] } };
+    expect(editDocument(room, { ...document, elevation: 1 }).cartography).toBe(room.cartography);
+    const removed = editDocument(room, { ...document, geometry: { ...document.geometry, stamps: [] } });
+    expect(removed.cartography.regions[0]).toMatchObject({ interior: { stampIds: [], wallIds: [], portalArtwork: [] } });
+    expect(room.cartography.regions[0]).toMatchObject({ interior: { stampIds: ["roof"] } });
+    expect(undoEdit(commitEdit(editHistory(room), removed)).present).toBe(room);
+  });
   it("marks a generated owner manually authored when its attached artwork is moved or removed in the existing inspector", () => {
     const generated: MapEditSnapshot = { ...snapshot, cartography: { ...snapshot.cartography, regions: [{ regionId: "house", role: "building", authored: false, locked: false, provenance: { generator: "test", version: "1", seed: "seed", optionen: {}, keimHash: "a".repeat(64) }, attachedStampIds: ["roof"] }] } };
     for (const stamps of [document.geometry.stamps.map(stamp => ({ ...stamp, x: 70 })), []]) {

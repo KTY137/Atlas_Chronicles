@@ -12,7 +12,7 @@ import { useCommand } from "./game-api";
 import { TacticalCanvas, type MapCanvasContext } from "./TacticalCanvas";
 import { TacticalEntitiesEditor } from "./TacticalEntitiesEditor";
 import { mapObjectWindow, objectKey, preparationObjects } from "./tactical-entities";
-import { mapDocumentScene, type MapNode } from "./map-generation";
+import { createMapDocumentScene, type MapNode } from "./map-generation";
 import { MapArtworkPalette } from "./MapArtworkPalette";
 import { placeArtwork, type ArtworkBrush } from "./map-artwork";
 import { Eye, EyeOff, Layers, Lock, MousePointer2, Palette, RotateCw, Save, Unlock } from "lucide-react";
@@ -86,31 +86,43 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
   useEffect(() => { if (!history.gesture && heldBaseline.current) { setBaseline(heldBaseline.current); heldBaseline.current = null; } }, [history.gesture]);
   const objects = useMemo(() => preparationObjects(document, anchors, entries.data ?? []), [document, anchors, entries.data]);
   const visibleObjects = useMemo(() => mapObjectWindow(objects, selectedObject, document.geometry.size[0], document.geometry.size[1]), [objects, selectedObject, document.geometry.size]);
+  const regionsById = useMemo(() => new Map(document.geometry.regions.map(region => [region.id, region])), [document.geometry.regions]);
   const nodes = useMemo(() => {
-    const regions = new Set(document.geometry.regions.map(region => region.id));
     const pendingNodes: MapNode[] = [...visible.addedBuildings.map(intent => ({ knotenId: intent.regionId, titel: intent.titel, art: "bauwerk", bauwerk: { typ: intent.typ, beschreibung: "" }, x: 0, y: 0 })), ...(visible.addedRooms ?? []).map(intent => ({ knotenId: intent.regionId, titel: intent.titel, art: "raum", x: 0, y: 0 }))];
-    return [...children.data?.nodes ?? [], ...pendingNodes].filter(node => regions.has(node.knotenId)).map(node => {
-      const polygon = document.geometry.regions.find(region => region.id === node.knotenId)!.punkte;
+    return [...children.data?.nodes ?? [], ...pendingNodes].filter(node => regionsById.has(node.knotenId)).map(node => {
+      const polygon = regionsById.get(node.knotenId)!.punkte;
       return { ...node, x: polygon.reduce((sum, point) => sum + point[0], 0) / polygon.length, y: polygon.reduce((sum, point) => sum + point[1], 0) / polygon.length };
     });
-  }, [children.data, document.geometry.regions, visible.addedBuildings, visible.addedRooms]);
+  }, [children.data, regionsById, visible.addedBuildings, visible.addedRooms]);
   const nodesById = useMemo(() => new Map(nodes.map(node => [node.knotenId, node])), [nodes]);
   const selectedNode = nodes.find(node => `node:${node.knotenId}` === selectedObject);
   const focusedObject = selectedNode ?? visibleObjects.find(o => objectKey(o) === selectedObject);
+  // Selection, draft outlines and layer locks do not change the painted geography.
+  const projectDocument = useMemo(createMapDocumentScene, []);
+  const projectionView = useMemo(() => layerView(layers), [layers.hidden]);
+  const projected = useMemo(() => applyLayers({ ...projectDocument(baseline.id, document, nodes, children.data?.art, document.background ? baseline.rasterDigest ?? baseline.contentHash : undefined, children.data?.setting, cartography, projectionView), title: baseline.name }, layers),
+    [projectDocument, baseline, document, nodes, children.data?.art, children.data?.setting, cartography, projectionView, layers.hidden]);
+  const cells = useMemo(() => {
+    const bound = new Set(anchors.filter(anchor => anchor.targetKind === "region").map(anchor => anchor.targetId));
+    return projected.cells.map(cell => cell.surface !== "building" && bound.has(cell.id) ? { ...cell, fill: 0x60bb8d } : cell);
+  }, [projected.cells, anchors]);
+  const lines = useMemo(() => {
+    if (!interiorSelected && points.length < 2) return projected.lines;
+    return [...(projected.lines ?? []).map(line => interiorSelected?.id === line.id ? { ...line, color: 0xffcd78, paint: true } : line), ...(points.length >= 2 ? [{ id: "draft-region", points, color: 0xffffff }] : [])];
+  }, [projected.lines, interiorSelected, points]);
   const scene = useMemo<ProjectedMapScene>(() => {
-    const projected = applyLayers({ ...mapDocumentScene(baseline.id, document, nodes, children.data?.art, document.background ? baseline.rasterDigest ?? baseline.contentHash : undefined, children.data?.setting, cartography, layerView(layers)), title: baseline.name }, layers);
     if (revoked) return { id: baseline.id, width: projected.width, height: projected.height, cells: [], pins: [] };
     return { ...projected, grid: layers.hidden.has("raster") ? { kind: "none" as const } : projected.grid?.kind === "none" ? { kind: "square" as const, size: cartography.construction.cellSize, origin: cartography.construction.origin } : projected.grid,
-      cells: projected.cells.map(cell => ({ ...cell, ...(cell.surface !== "building" && anchors.some(anchor => anchor.targetKind === "region" && anchor.targetId === cell.id) ? { fill: 0x60bb8d } : {}) })),
+      cells,
       pins: [...projected.pins.map(pin => ({ ...pin, id: `node:${pin.id}` })),
         ...visibleObjects.filter(object => object.entryId || objectKey(object) === selectedObject || object.kind === "place" && !nodes.some(node => {
-          const region = document.geometry.regions.find(region => region.id === node.knotenId);
+          const region = regionsById.get(node.knotenId);
           return region && pointInPolygon([object.x, object.y], region.punkte);
         }))
           .map(object => ({ id: objectKey(object), x: object.x, y: object.y, label: object.label, ...(object.entryId ? { entryId: object.entryId } : {}) }))],
-      lines: [...(projected.lines ?? []).map(line => interiorSelected?.id === line.id ? { ...line, color: 0xffcd78, paint: true } : line), ...(points.length >= 2 ? [{ id: "draft-region", points, color: 0xffffff }] : [])],
+      lines,
     };
-  }, [baseline, document, nodes, children.data?.art, children.data?.setting, anchors, cartography, points, visibleObjects, selectedObject, revoked, layers, interiorSelected]);
+  }, [baseline.id, projected, cells, lines, nodes, regionsById, cartography.construction, visibleObjects, selectedObject, revoked, layers.hidden]);
   const selectRegion = (id: string, focus = false) => {
     setFocusRequested(focus);
     setInteriorSelected(null);
@@ -378,7 +390,7 @@ export function MapEditor({ current, campaignId, onChanged, onDirty, onContextMe
         {layer.lockable ? <Button aria-pressed={locked} aria-label={locked ? t("Ebene freigeben") : t("Ebene sperren")} title={locked ? t("Ebene freigeben") : t("Ebene sperren")} onClick={() => setLayers(old => toggleLayer(old, layer.id, "locked"))}>{locked ? <Lock size={13} /> : <Unlock size={13} />}</Button> : null}
       </span>;
     })}<p className="field-help">{t("Ausblenden, was gerade stört; sperren, was fertig ist. Beides gilt nur für deine Ansicht beim Bearbeiten und wird nicht gespeichert.")}</p></div> : null}
-    <TacticalCanvas scene={scene} onContextMenu={onContextMenu ? (hit, at) => onContextMenu(hit?.kind === "pin" && hit.id.startsWith("node:") ? { ...hit, id: hit.id.slice(5) } : hit, at) : undefined} editor={editor} onUndo={() => { gesture.current = null; changeHistory(undoEdit); }} onRedo={() => changeHistory(redoEdit)} onScopeInvalidated={() => { cancelGesture(); setRevoked(true); setSelectedObject(""); setRegionId(""); onChanged(); }} tileBase={apiPath(campaignId, `/tactical/maps/${baseline.id}/tiles`)} tileQuery={`revision=${baseline.revision}&layer=background`} onPoint={addPoint} selection={regionId ? { kind: "cell", id: regionId } : focusedObject ? { kind: "pin", id: selectedObject } : null} focusObject={focusRequested && !history.gesture && focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : null} onSelect={hit => {
+    <TacticalCanvas scene={scene} onContextMenu={onContextMenu ? (hit, at) => onContextMenu(hit?.kind === "pin" && hit.id.startsWith("node:") ? { ...hit, id: hit.id.slice(5) } : hit, at) : undefined} editor={editor} brushRadius={!editingDisabled && !drawing && !marking && !brush && !tools.hand ? tools.tool === "terrain" || tools.tool === "relief" ? tools.radius : tools.tool === "road" ? tools.roadWidth / 2 : undefined : undefined} onUndo={() => { gesture.current = null; changeHistory(undoEdit); }} onRedo={() => changeHistory(redoEdit)} onScopeInvalidated={() => { cancelGesture(); setRevoked(true); setSelectedObject(""); setRegionId(""); onChanged(); }} tileBase={apiPath(campaignId, `/tactical/maps/${baseline.id}/tiles`)} tileQuery={`revision=${baseline.revision}&layer=background`} onPoint={addPoint} selection={regionId ? { kind: "cell", id: regionId } : focusedObject ? { kind: "pin", id: selectedObject } : null} focusObject={focusRequested && !history.gesture && focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : null} onSelect={hit => {
       if (editingDisabled || drawing || marking || brush) return;
       if (hit?.kind === "cell") selectRegion(hit.id);
       else if (hit?.kind === "pin" && hit.id.startsWith("node:")) selectRegion(hit.id.slice(5));

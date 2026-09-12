@@ -1,3 +1,19 @@
+# Kartenstudio: kleine Edits beschleunigt ? 2026-09-12
+
+Verlauf, Landschaftsprojektion und Renderer verwenden unver?nderte Inhalte wieder.
+M?bel behalten ihre Sprites/Schatten; Auswahl und Text ?ndern nicht die Landschaft.
+Pinselkontur zeigt Radius und Zoom, kompaktere Stimmungs-/Ebenenleiste.
+Lokaler Browservergleich auf gleichem Gebirgsdorf: 15 kleine H?henwert?nderungen
+im Median 757 ? 72 ms bis zur Darstellung. Keine allgemeine FPS-Zusage.
+
+Final 514/514 betroffene Unit-Tests in 30 Dateien, acht Karten-Browserabl?ufe und
+abschlie?ender Konturtest mit Fokusverlust/Alt/Leertaste bestanden. Produktionsbuild,
+Root-/Client-Typpr?fung, Version, Architektur, Sprache und Assets bestanden.
+Gesamtsuite unter paralleler Last wegen bekannter Desktop-/Sicherungs-Timeouts
+abgebrochen; kein vollst?ndiger gr?ner Gesamtlauf. Keine Zeitlimits ver?ndert.
+Kein Installer gebaut oder installiert. Entscheidungen, Messung und Grenzen:
+`design/iterations/map-editor-performance-20260912.md`.
+
 # Lebendige Pixelpanoramen — 2026-09-12 (vier Durchgänge abgeschlossen)
 
 Alle 25 Banner in vier weiteren Kunstdurchgängen ausgearbeitet: vollständige

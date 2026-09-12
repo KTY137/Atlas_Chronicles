@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { cartographyDraw, cartographyLayerOf, cartographyPaintsWalls, rendererVersion } from "../src/cartography-projection.ts";
+import { cartographyDraw, createCartographyDraw, cartographyLayerOf, cartographyPaintsWalls, rendererVersion } from "../src/cartography-projection.ts";
 import type { CartographyReliefV1, TacticalCartographyV1 } from "../src/cartography.ts";
 import type { TacticalMapDocumentV1, TacticalPoint } from "../src/tactical-map.ts";
 
@@ -21,6 +21,94 @@ function fixture(): { document: TacticalMapDocumentV1; cartography: TacticalCart
     ] },
   };
 }
+describe("a viewer reuses unchanged landscape artwork", () => {
+  it("keeps the drawing across furnishing, name, lighting, grid and ownership edits", () => {
+    const { document, cartography } = fixture(), draw = createCartographyDraw();
+    const first = draw(document, cartography);
+    const nextDocument: TacticalMapDocumentV1 = { ...document, grid: { kind: "none" },
+      geometry: { ...document.geometry, stamps: [{ id: "chair", a: "pk.test/chair", x: 20, y: 30, s: 1, r: .5, l: 0 }], places: [{ id: "marker", x: 50, y: 60 }] },
+      lights: [{ id: "lamp", position: [20, 30], range: 100, intensity: .8, colorArgb: "ffddaa77", shadows: false, elevation: 0 }] };
+    const nextCartography: TacticalCartographyV1 = { ...cartography,
+      labels: [{ id: "name", text: "The new name", points: [[40, 50]], style: "ort", size: 18 }],
+      regions: cartography.regions.map(role => ({ ...role, authored: true, locked: true,
+        ...(role.role === "building" ? { attachedStampIds: ["chair"] } : {}) })) };
+    expect(draw(nextDocument, nextCartography)).toBe(first);
+    expect(first).toEqual(cartographyDraw(nextDocument, nextCartography));
+  });
+
+  it("refreshes every visual dependency and keeps the previous drawing intact", () => {
+    const { document, cartography } = fixture();
+    const relief: CartographyReliefV1 = { schemaVersion: 1, columns: 11, rows: 11, seaLevel: 77, heights: Array.from({ length: 121 }, (_, index) => 90 + index % 11 * 12) };
+    const landscape = { ...cartography, relief };
+    type Arguments = Parameters<typeof cartographyDraw>;
+    const changes: readonly [string, Arguments][] = [
+      ["geometry", [{ ...document, geometry: { ...document.geometry, regions: document.geometry.regions.map(region => ({ ...region, punkte: region.punkte.map(([x, y]) => [x + 10, y] as const) })) } }, landscape]],
+      ["walls", [{ ...document, walls: [{ id: "perimeter", kind: "wall", elevation: 0, points: [[100, 300], [450, 300]] }] }, landscape]],
+      ["dimensions", [{ ...document, geometry: { ...document.geometry, size: [700, 650] } }, landscape]],
+      ["background", [{ ...document, background: { sha256: "a".repeat(64), mimeType: "image/png", width: 600, height: 600 } }, landscape]],
+      ["construction size", [document, { ...landscape, construction: { ...landscape.construction, cellSize: 80 } }]],
+      ["construction origin", [document, { ...landscape, construction: { ...landscape.construction, origin: [12, 15] } }]],
+      ["relief", [document, { ...landscape, relief: { ...relief, heights: relief.heights.map(height => height + 5) } }]],
+      ["role material", [document, { ...landscape, regions: landscape.regions.map(role => role.role === "terrain" ? { ...role, material: "rock" } : role) }]],
+      ["plot ownership", [document, { ...landscape, regions: landscape.regions.map(role => role.role === "building" ? { ...role, lotRegionId: "lot" } : role) }]],
+      ["setting", [document, landscape, "scifi"]],
+      ["stored mood", [document, { ...landscape, mood: "nacht" }]],
+      ["preview mood", [document, landscape, "fantasy", { mood: "winter" }]],
+      ["paper", [document, landscape, "fantasy", { paper: false }]],
+      ["contours", [document, landscape, "fantasy", { contours: false }]],
+      ["shading", [document, landscape, "fantasy", { shading: false }]],
+      ["hidden layer", [document, landscape, "fantasy", { hide: ["water"] }]],
+    ];
+    for (const [name, args] of changes) {
+      const draw = createCartographyDraw(), first = draw(document, landscape), saved = structuredClone(first);
+      const next = draw(...args);
+      expect(next, name).not.toBe(first);
+      expect(next, name).toEqual(cartographyDraw(...args));
+      expect(first, name).toEqual(saved);
+    }
+  });
+
+  it("retains a room floor while its furniture changes and repaints a new floor material", () => {
+    const { document, cartography } = fixture(), draw = createCartographyDraw();
+    const room: TacticalCartographyV1 = { ...cartography, regions: [{ regionId: "house", role: "room", authored: false, locked: false, provenance: null,
+      interior: { schemaVersion: 1, floor: "wood", stampIds: [], wallIds: [], portalIds: [], lightIds: [] } }] };
+    const first = draw(document, room);
+    const furnished: TacticalCartographyV1 = { ...room, regions: room.regions.map(role => role.role === "room" ? { ...role, interior: { ...role.interior!, stampIds: ["chair"] } } : role) };
+    expect(draw(document, furnished)).toBe(first);
+    const stone: TacticalCartographyV1 = { ...furnished, regions: furnished.regions.map(role => role.role === "room" ? { ...role, interior: { ...role.interior!, floor: "stone" } } : role) };
+    expect(draw(document, stone)).not.toBe(first);
+    expect(draw(document, stone)).toEqual(cartographyDraw(document, stone));
+  });
+
+  it("treats equivalent default and hidden-layer choices identically", () => {
+    const { document, cartography } = fixture(), draw = createCartographyDraw();
+    const first = draw(document, cartography);
+    expect(draw(document, cartography, "fantasy", { contours: true, shading: true, paper: true, mood: "tag", hide: [] })).toBe(first);
+    const hidden = draw(document, cartography, "fantasy", { hide: ["water", "building"] });
+    expect(draw(document, cartography, "fantasy", { hide: ["building", "water", "water"] })).toBe(hidden);
+  });
+
+  it("repaints a village that grows into a town on the same regional footprint", () => {
+    const { document, cartography } = fixture(), draw = createCartographyDraw();
+    const village: TacticalCartographyV1 = { ...cartography, regions: [{ regionId: "house", role: "ort", groesse: "dorf", standort: "ebene", authored: false, locked: false, provenance: null }] };
+    const first = draw(document, village);
+    const town: TacticalCartographyV1 = { ...village, regions: village.regions.map(role => role.role === "ort" ? { ...role, groesse: "stadt" } : role) };
+    expect(draw(document, town)).not.toBe(first);
+    expect(draw(document, town)).toEqual(cartographyDraw(document, town));
+  });
+
+  it("replaces the retained drawing when authorized geometry shrinks and isolates viewers", () => {
+    const { document, cartography } = fixture(), draw = createCartographyDraw();
+    const first = draw(document, cartography);
+    const visible = { ...document, geometry: { ...document.geometry, regions: document.geometry.regions.filter(region => region.id !== "house") } };
+    const reduced = draw(visible, cartography);
+    expect(reduced.polygons.some(polygon => polygon.regionId === "house")).toBe(false);
+    expect(reduced).toEqual(cartographyDraw(visible, cartography));
+    expect(draw(document, cartography)).not.toBe(first);
+    expect(createCartographyDraw()(document, cartography)).not.toBe(first);
+  });
+});
+
 describe("shared bounded cartography drawing", () => {
   it("paints water above lots and bridges above ordinary roads regardless of source ordering", () => {
     const { document, cartography } = fixture(), drawing = cartographyDraw(document, cartography);

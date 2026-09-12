@@ -175,6 +175,47 @@ export function cartographyPaintsWalls(cartography: TacticalCartographyV1, docum
     && regionPoints+segments*8<=240_000 && document.geometry.regions.length+segments*2<=28_000;
 }
 
+/** Only painted role properties matter. Ownership/provenance and furnishing references can
+ * change while dragging a chair without changing the floor, gardens or landscape around it. */
+function samePaintRole(first: CartographyRegionV1, second: CartographyRegionV1): boolean {
+  if (first === second) return true;
+  if (first.regionId !== second.regionId || first.role !== second.role) return false;
+  switch (first.role) {
+    case "generic": case "lot": return true;
+    case "terrain": return second.role === "terrain" && first.material === second.material;
+    case "water": return second.role === "water" && first.material === second.material;
+    case "road": return second.role === "road" && first.material === second.material;
+    case "room": return second.role === "room" && first.interior?.floor === second.interior?.floor;
+    case "building": return second.role === "building" && first.lotRegionId === second.lotRegionId;
+    case "ort": return second.role === "ort" && first.groesse === second.groesse;
+  }
+}
+
+/** One drawing per mounted viewer, never a shared map-ID cache. Immutable geometry and relief
+ * are the boundary: edits to stamps, names, lights or grid retain the exact same artwork.
+ * A changed authorization projection must supply its own region/wall arrays, as usual.
+ * Nothing is retained beyond the latest drawing and its geometry/role dependencies. */
+export function createCartographyDraw(): typeof cartographyDraw {
+  let previous: { inputs: readonly unknown[]; roles: TacticalCartographyV1["regions"]; drawing: CartographyDrawing } | undefined;
+  return (document, cartography, setting = "fantasy", view = {}) => {
+    const hidden = new Set(view.hide ?? []);
+    const inputs: readonly unknown[] = [document.geometry.regions, document.walls,
+      document.geometry.size[0], document.geometry.size[1], !!document.background,
+      cartography.construction.cellSize, cartography.construction.origin[0], cartography.construction.origin[1],
+      cartography.relief, setting, view.contours !== false, view.shading !== false, view.paper !== false,
+      view.mood ?? cartography.mood ?? "tag", ...CARTOGRAPHY_LAYERS.map(layer => hidden.has(layer))];
+    const roles = cartography.regions;
+    if (previous && inputs.every((input, index) => input === previous!.inputs[index])
+      && (roles === previous.roles || roles.length === previous.roles.length && roles.every((role, index) => samePaintRole(role, previous!.roles[index]!)))) {
+      previous = { ...previous, roles };
+      return previous.drawing;
+    }
+    const drawing = cartographyDraw(document, cartography, setting, view);
+    previous = { inputs, roles, drawing };
+    return drawing;
+  };
+}
+
 /**
  * Pure display geometry only. Callers supply an authorized matching revision and apply the
  * exact knowledge mask to the final drawing. Names, seeds, URLs and DOM never enter output.

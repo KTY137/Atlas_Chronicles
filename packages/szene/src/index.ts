@@ -62,7 +62,7 @@ export type { Maske, MaskeEingabe } from "./sichtmaske.ts";
 export { entfernung, pfadlaenge, flaeche, rasterEntfernung, nachWelt, nachRahmen } from "./messung.ts";
 export type { Punkt } from "./messung.ts";
 export * from "./cartography.ts";
-export { cartographyDraw, cartographyLayerOf, cartographyPaintsWalls, CARTOGRAPHY_LAYERS, rendererVersion } from "./cartography-projection.ts";
+export { cartographyDraw, createCartographyDraw, cartographyLayerOf, cartographyPaintsWalls, CARTOGRAPHY_LAYERS, rendererVersion } from "./cartography-projection.ts";
 export type { CartographyLayer, CartographyPolygon, CartographyDrawing, CartographyView } from "./cartography-projection.ts";
 export type { CartographyRoomInteriorV1, RoomIntent } from "./cartography.ts";
 
