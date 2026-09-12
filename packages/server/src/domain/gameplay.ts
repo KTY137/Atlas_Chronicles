@@ -97,13 +97,14 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     throw new Gone("package");
   }
   async function listPackages(userId: string, campaignId: string) {
-    await campaigns.requireMember(userId, campaignId);
-    const rows = (await db.query<{ document: RulePackage }>("SELECT document FROM rule_packages WHERE campaign_id=$1 ORDER BY package_id,version", [campaignId])).rows.map(r => r.document);
-    if (!rows.some(p => p.id === DEMO_RULE_PACKAGE.id && p.version === DEMO_RULE_PACKAGE.version)) rows.unshift(DEMO_RULE_PACKAGE);
+    const member = await campaigns.requireMember(userId, campaignId);
+    const rows = (await db.query<{ document: RulePackage }>("SELECT document FROM rule_packages WHERE campaign_id=$1 ORDER BY package_id,version", [campaignId])).rows
+      .map(r => r.document).filter(p => p.id !== DEMO_RULE_PACKAGE.id || p.version !== DEMO_RULE_PACKAGE.version);
+    rows.unshift(DEMO_RULE_PACKAGE);
     const version = (await db.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0]?.version ?? 0;
     // Genommene Pakete bleiben in der Antwort: das Verstecken ist eine Entscheidung der Ansicht,
     // und ein genommenes Paket muss auffindbar bleiben, damit man es zurueckholen kann.
-    return { packages: rows, pin: await currentPin(db, campaignId), version, bibliothek: await library(db, campaignId, rows) };
+    return { packages: rows, pin: await currentPin(db, campaignId), version, bibliothek: member.role === "leitung" ? await library(db, campaignId, rows) : [] };
   }
   async function installPackage(userId: string, campaignId: string, input: unknown) {
     return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return install(tx, userId, campaignId, input); });
@@ -118,9 +119,9 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
    */
   async function library(tx: Db, campaignId: string, packages: readonly { id: string; version: string }[]): Promise<RulePackageStand[]> {
     const key = (id: unknown, version: unknown) => `${String(id)}@${String(version)}`;
-    const paare = async (sql: string, links: string, rechts: string) =>
-      new Set((await tx.query<Record<string, string>>(sql, [campaignId])).rows.map(row => key(row[links], row[rechts])));
-    const installiert = await paare("SELECT package_id,version FROM rule_packages WHERE campaign_id=$1", "package_id", "version");
+    const paare = async (sql: string, links: string, rechts: string, params: readonly unknown[] = [campaignId]) =>
+      new Set((await tx.query<Record<string, string>>(sql, params)).rows.map(row => key(row[links], row[rechts])));
+    const installiert = await paare("SELECT package_id,version FROM rule_packages WHERE campaign_id=$1 AND NOT (package_id=$2 AND version=$3)", "package_id", "version", [campaignId, DEMO_RULE_PACKAGE.id, DEMO_RULE_PACKAGE.version]);
     const genommen = await paare("SELECT package_id,version FROM rule_package_archiv WHERE campaign_id=$1", "package_id", "version");
     // Ueber `currentPin`, nicht ueber die Tabelle: eine Runde ohne eigene Zeile spielt auf dem
     // mitgelieferten Paket. Es ist dann angeheftet, obwohl kein Fremdschluessel darauf zeigt —
