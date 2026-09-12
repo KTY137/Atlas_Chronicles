@@ -12,13 +12,12 @@ test-results/
 dist/
 build/
 *.tsbuildinfo
-
 # Editor / OS
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-
+package_installer.ps1
 # Local Claude worktrees (separate Git checkouts)
 /.claude/worktrees/
 
