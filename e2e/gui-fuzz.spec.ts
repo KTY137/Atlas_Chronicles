@@ -77,7 +77,6 @@ for (const seed of seeds) test(`seeded GUI state monkey ${seed.toString(16)}`, a
     }
     // Deterministic recovery from arbitrary invalid intermediate states.
     await families.nth(1).click();
-    await choose(studio.getByRole("combobox", { name: "Art des Ortes", exact: true }), "siedlung:dorf");
     await studio.getByLabel("Breite", { exact: true }).fill("36");
     await studio.getByLabel("Höhe", { exact: true }).fill("28");
     await studio.getByLabel("Gebäude", { exact: true }).fill("20");
