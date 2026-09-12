@@ -104,7 +104,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const version = (await db.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0]?.version ?? 0;
     // Genommene Pakete bleiben in der Antwort: das Verstecken ist eine Entscheidung der Ansicht,
     // und ein genommenes Paket muss auffindbar bleiben, damit man es zurueckholen kann.
-    return { packages: rows, pin: await currentPin(db, campaignId), version, bibliothek: member.role === "leitung" ? await library(db, campaignId, rows) : [] };
+    return { packages: rows, pin: await currentPin(db, campaignId), version, bibliothek: await library(db, campaignId, rows, member.role === "leitung") };
   }
   async function installPackage(userId: string, campaignId: string, input: unknown) {
     return db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return install(tx, userId, campaignId, input); });
@@ -117,7 +117,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
    * die Datenbank hinterher sagen wuerde. `eingebaut` meint das mitgelieferte Beispielpaket,
    * das noch in keiner Zeile steht: da ist nichts zu loeschen.
    */
-  async function library(tx: Db, campaignId: string, packages: readonly { id: string; version: string }[]): Promise<RulePackageStand[]> {
+  async function library(tx: Db, campaignId: string, packages: readonly { id: string; version: string }[], includeUsage = true): Promise<RulePackageStand[]> {
     const key = (id: unknown, version: unknown) => `${String(id)}@${String(version)}`;
     const paare = async (sql: string, links: string, rechts: string, params: readonly unknown[] = [campaignId]) =>
       new Set((await tx.query<Record<string, string>>(sql, params)).rows.map(row => key(row[links], row[rechts])));
@@ -127,8 +127,8 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     // mitgelieferten Paket. Es ist dann angeheftet, obwohl kein Fremdschluessel darauf zeigt —
     // und „das Paket, auf dem gerade gespielt wird" ist genau das, was niemand loeschen soll.
     const pin = await currentPin(tx, campaignId), angeheftet = new Set([key(pin.id, pin.version)]);
-    const boegen = await paare("SELECT DISTINCT package_id,package_version FROM actor_sheets WHERE campaign_id=$1", "package_id", "package_version");
-    const vollmachten = await paare("SELECT DISTINCT package_id,package_version FROM action_vollmachten WHERE campaign_id=$1", "package_id", "package_version");
+    const boegen = includeUsage ? await paare("SELECT DISTINCT package_id,package_version FROM actor_sheets WHERE campaign_id=$1", "package_id", "package_version") : new Set<string>();
+    const vollmachten = includeUsage ? await paare("SELECT DISTINCT package_id,package_version FROM action_vollmachten WHERE campaign_id=$1", "package_id", "package_version") : new Set<string>();
     const wuerfe = await paare("SELECT DISTINCT package_id,package_version FROM action_rolls WHERE campaign_id=$1", "package_id", "package_version");
     return packages.map(pkg => {
       const k = key(pkg.id, pkg.version), hindernisse: RulePackageHindernis[] = [];

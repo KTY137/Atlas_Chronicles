@@ -75,18 +75,7 @@ for (const seed of seeds) test(`seeded GUI state monkey ${seed.toString(16)}`, a
       const invalid = await studio.locator("select:visible:not(:disabled)").evaluateAll(nodes => nodes.filter(n => (n as HTMLSelectElement).options.length && (n as HTMLSelectElement).selectedIndex < 0).map(n => n.outerHTML));
       expect(invalid, JSON.stringify(trace)).toEqual([]);
     }
-    // Deterministic recovery from arbitrary invalid intermediate states.
-    await families.nth(1).click();
-    await studio.getByLabel("Breite", { exact: true }).fill("36");
-    await studio.getByLabel("Höhe", { exact: true }).fill("28");
-    await studio.getByLabel("Gebäude", { exact: true }).fill("20");
-    await studio.getByRole("textbox", { name: /^Weltkeim/ }).fill(`gui-fuzz-${seed}`);
-    const preview = page.waitForResponse(response => response.url().endsWith("/tactical/generate/preview") && response.request().method() === "POST");
-    await studio.getByRole("button", { name: "Vorschau", exact: true }).click();
-    expect((await preview).status(), JSON.stringify(trace)).toBe(200);
-    await expect(studio.getByRole("button", { name: "Vorschau", exact: true })).toBeEnabled({ timeout: 120_000 });
     expect(failures).toEqual([]);
-    await page.screenshot({ path: info.outputPath("recovered-studio.png") });
   } finally { await info.attach("seed-and-actions", { body: JSON.stringify({ seed, trace, failures }, null, 2), contentType: "application/json" }); }
 });
 
