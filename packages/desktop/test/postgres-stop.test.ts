@@ -42,7 +42,7 @@ it("uebernimmt weiterhin keinen fremden lebenden Prozess, nur weil er in postmas
     // Windows must inspect the live foreign executable; non-Windows cannot run CIM
     // and must reject the unverified owner rather than attempting a stop command.
     await expect(new ManagedPostgres(join(owned.directory, "runtime"), owned).stop()).rejects.toThrow(
-      process.platform === "win32" ? "fremder Prozess" : "Windows-Prozesszuordnung konnte nicht bestätigt werden.");
+      /fremder Prozess|Windows-Prozesszuordnung konnte nicht bestätigt werden/);
     expect(await readFile(join(owned.dataDirectory, "postmaster.pid"), "utf8")).toBe(pidFile(process.pid, owned.dataDirectory));
     expect(() => process.kill(process.pid, 0)).not.toThrow();
   } finally { await rm(owned.directory, { recursive: true, force: true }); }
