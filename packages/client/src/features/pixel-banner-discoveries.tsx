@@ -7,10 +7,17 @@ import type { Palette } from "./pixel-banner-primitives";
 import { Sky, Moon, Clouds, Mountains, Water, Trees, Fireflies, Smoke } from "./pixel-banner-primitives";
 
 function Lantern({ p, x, y, color = p.glow }: { p: Palette; x: number; y: number; color?: string }) {
-  return <g transform={`translate(${x} ${y})`}><g className="pb-lantern">
+  return <g transform={`translate(${x} ${y})`}><path fill={p.mid} d="M0-10h1v5H0z" /><g className="pb-lantern-swing" style={{ animationDelay: `${-(x % 7) / 3}s` }}><g className="pb-lantern">
     <path fill={color} opacity=".08" d="M-7-4H7v13H-7z" /><path fill={p.ink} d="M-2-5h4v2h-4zM-2 5h4v2h-4z" />
     <path fill={color} d="M-3-3h6v8h-6z" /><path fill={p.light} d="M-1-2h2v6h-2z" /><path fill={color} d="M0 7h1v3H0z" />
-  </g></g>;
+  </g></g></g>;
+}
+
+function FallingWater({ p, x, y, height }: { p: Palette; x: number; y: number; height: number }) {
+  return <svg x={x} y={y} width="7" height={height} viewBox={`0 0 7 ${height}`} overflow="hidden">
+    <path fill={p.glow} opacity=".25" d={`M0 0h7v${height}H0z`} />
+    <g className="pb-waterfall" fill={p.light} opacity=".65">{[-1, 0, 1, 2, 3].map(i => <path key={i} d={`M1 ${i * 12}h1v5H1zM4 ${i * 12 + 6}h1v4H4zM6 ${i * 12 + 2}h1v7H6z`} />)}</g>
+  </svg>;
 }
 
 function Grass({ p, y = 88 }: { p: Palette; y?: number }) {
@@ -38,10 +45,16 @@ function Observatory() {
     <path fill={p.ink} d="M316 24h5v20h-5zM279 42h71v3h-71zM302 63h8v12h-8z" />
     <g className="pb-lantern" fill={p.light}><path d="M290 51h5v8h-5zM315 51h5v8h-5zM331 51h5v8h-5z" /></g>
     <path fill={p.ink} d="M289 54h7v1h-7zM314 54h7v1h-7zM330 54h7v1h-7z" />
-    <g transform="translate(321 26)"><path fill={p.ink} d="M-1 0h7v6h-7zM5-3h9V3H5zM13-7h9v7h-9zM20-10h7v7h-7z" />
-      <path fill={p.glow} d="M1 0h5v3H1zM6-2h8v3H6zM14-5h8v3h-8zM22-9h3v5h-3z" /><path fill={p.light} d="M25-10h2v6h-2z" /></g>
+    <g transform="translate(321 26)"><g className="pb-dish"><path fill={p.ink} d="M-1 0h7v6h-7zM5-3h9V3H5zM13-7h9v7h-9zM20-10h7v7h-7z" />
+      <path fill={p.glow} d="M1 0h5v3H1zM6-2h8v3H6zM14-5h8v3h-8zM22-9h3v5h-3z" /><path fill={p.light} d="M25-10h2v6h-2z" />
+      <path fill={p.glow} opacity=".08" d="M27-10l29-17v31L27-4z" /><path fill={p.light} opacity=".4" d="M27-8h6v1h-6z" />
+    </g></g>
+    <g transform="translate(363 52)"><g className="pb-rotor" style={{ animationDuration: "18s" }} fill="none" stroke={p.glow} strokeWidth="1" opacity=".65"><path d="M-10-4h4v-6H4v6h6V4H4v6H-4V4h-6zM-15 0h30M0-15v30" /></g><path fill={p.light} d="M-2-2h4v4h-4z" /></g>
+    <path fill={p.mid} d="M362 64h2v9h-2zM357 73h12v2h-12z" />
     <path fill={p.mid} d="M253 70h21v2h-21zM257 72h2v9h-2zM268 72h2v8h-2z" />
     <path fill={p.light} d="M254 66h6l3 2 3-2h6v4h-18z" /><path fill={p.ink} d="M262 68h1v2h-1z" />
+    <g transform="translate(263 66)"><path className="pb-page-turn" fill="#f2dfb2" d="M0 0l8-4h3v6L0 4z" /><path fill="#aa8ea8" d="M-9 3h7v1h-7z" /></g>
+    <g transform="translate(263 62)"><g className="pb-specimen" fill={p.light} opacity=".85"><path d="M-5-7h2v-2h2v2h2v2H-1v2h-2v-2h-2zM8-13h1v3h-1zM7-12h3v1H7z" /></g></g>
     <Lantern p={p} x={278} y={65} />
     {/* A wizard charts the sky; a black cat watches a much smaller star. */}
     <path fill={p.glow} d="M273 58h6v4h-6zM274 55h4v3h-4zM275 52h2v3h-2zM270 65h8v7h-8z" /><path fill={p.light} d="M273 62h4v3h-4z" />
@@ -67,13 +80,16 @@ function Temple() {
       <path fill={p.light} opacity=".25" d={`M${x + 1} 41h2v29h-2z`} /><path fill={p.ink} opacity=".6" d={`M${x + 8} 42h2v28h-2zM${x} ${48 + i * 5}h5v1h-5z`} />
       <path fill={p.glow} opacity=".55" d={`M${x - 1} 38h4v4h-2v5h-2zM${x + 7} 68h3v5h3v3h-6z`} /></g>)}
     <path fill={p.far} d="M303 72V46h4v-7h22v7h4v26z" /><path fill={p.glow} opacity=".12" d="M298 43h40v31h-40z" />
-    <g className="pb-lantern" fill={p.glow}><path d="M312 47h12v2h4v12h-4v2h-12v-2h-4V49h4z" /></g>
+    <g className="pb-crystal-pulse" fill={p.glow}><path d="M312 47h12v2h4v12h-4v2h-12v-2h-4V49h4z" /></g>
     <path fill={p.ink} d="M314 50h8v2h3v6h-3v2h-8v-2h-3v-6h3z" /><path fill={p.light} d="M317 51h2v3h3v2h-3v3h-2v-3h-3v-2h3z" />
     <Grass p={p} y={93} />
     {[205, 224, 409, 431, 130, 490, 565, 38].map((x, i) => <g key={x} transform={`translate(${x} 93)`}><g className="pb-sway" fill={i % 2 ? p.mid : p.glow} opacity=".75"><path d="M0 0v-12h-3v-7h2v5h3v7h2v-15h2v9h3v-5h2v8H6v10z" /></g></g>)}
-    <g transform="translate(358 15)"><g className="pb-float"><path fill={p.mid} d="M-8 2h16v2h5v6H8v2H-8v-2h-4V4h4z" /><path fill={p.glow} d="M-6 2H6v3h3v4H-9V5h3z" /><path fill={p.light} opacity=".4" d="M-4 3H0v2h-4zM2 6h4v2H2z" /><path fill={p.mid} d="M13 5h6v4h-6zM-6 12h4v4h-4zM5 12h4v4H5zM-12 7h-4v2h4z" /><path fill={p.light} d="M16 5h1v1h-1z" /></g></g>
+    <g transform="translate(354 13)"><g className="pb-cruise"><path fill={p.mid} d="M-8 2h16v2h5v6H8v2H-8v-2h-4V4h4z" /><path fill={p.glow} d="M-6 2H6v3h3v4H-9V5h3z" /><path fill={p.light} opacity=".4" d="M-4 3H0v2h-4zM2 6h4v2H2z" /><path fill={p.mid} d="M13 5h6v4h-6zM-12 7h-4v2h4z" /><g transform="translate(-4 11)"><g className="pb-tail" fill={p.mid}><path d="M-2 0h4v5h-4z" /></g></g><g transform="translate(7 11)"><g className="pb-tail" style={{ animationDelay: "-.6s" }} fill={p.mid}><path d="M-2 0h4v5h-4z" /></g></g><path fill={p.light} d="M16 5h1v1h-1z" /></g></g>
+    <g transform="translate(318 55)"><g className="pb-rotor" style={{ animationDuration: "14s" }} fill={p.light} opacity=".65"><path d="M-14-2h2v4h-2zM12-2h2v4h-2zM-2-14h4v2h-4zM-2 12h4v2h-4z" /></g></g>
+    <g transform="translate(278 22)"><g className="pb-cruise" style={{ animationDelay: "-3s" }} fill={p.glow}><path d="M0 0h9v3H0zM-3-1h2v5h-2zM16 5h7v2h-7zM13 4h2v4h-2z" /><path fill={p.light} d="M7 0h1v1H7zM21 5h1v1h-1z" /></g></g>
     {/* A tiny treasure chest shelters a shy octopus. */}
-    <path fill="#b68e61" d="M230 80h13v9h-13z" /><path fill={p.ink} d="M231 83h11v1h-11z" /><path fill={p.light} d="M236 82h2v4h-2z" />
+    <path fill="#b68e61" d="M228 80h18v11h-18z" /><path fill={p.ink} d="M229 81h16v5h-16zM229 88h16v1h-16z" /><path fill={p.light} d="M231 83h3v2h-3zM237 82h4v3h-4zM240 86h3v2h-3zM235 87h2v4h-2z" />
+    <g transform="translate(228 80)"><g className="pb-chest-lid"><path fill="#ab8b63" d="M0-5h18v6H0z" /><path fill="#e4c189" d="M0-5h18v1H0zM3-4h2v5H3zM13-4h2v5h-2z" /></g></g>
     <g transform="translate(394 75)"><g className="pb-float" fill="#ce92ac"><path d="M0 0h7v2h2v5H7v3H5V7H3v4H1V7h-2V2h1z" /><path fill={p.ink} d="M1 3h1v2H1zM5 3h1v2H5z" /></g></g>
     {[231, 343, 422, 150].map((x, i) => <g key={x} transform={`translate(${x} ${24 + i * 12})`}><g className="pb-bubbles" style={{ animationDelay: `${-i * 2}s` }} fill="none" stroke={p.light} opacity=".45"><path d="M0 0h2v2H0zM6 10h3v3H6z" /></g></g>)}
   </>;
@@ -111,10 +127,14 @@ function MushroomVillage() {
     <Grass p={p} y={91} /><path fill={p.glow} d="M213 78h8v3h-8zM216 81h2v6h-2zM371 84h8v3h-8zM374 87h2v4h-2zM353 87h5v2h-5zM355 89h1v3h-1z" />
     <path fill={p.light} d="M214 78h2v1h-2zM375 84h2v1h-2z" />
     {/* A snail carries its own lit cottage; a fairy reads outside the bakery. */}
-    <g transform="translate(239 87)"><path fill="#bcb693" d="M0 0h16v3H0zM13-3h3v4h-3zM14-5h1v2h-1zM17-5h1v5h-2z" /><path fill="#c68491" d="M3-7h7v2h2v5H1v-5h2z" /><path fill={p.light} d="M5-4h3v3H5z" /><path fill={p.ink} d="M14-5h1v1h-1zM17-5h1v1h-1z" /></g>
+    <g transform="translate(239 87)"><g className="pb-snail-crawl"><path fill="#bcb693" d="M0 0h16v3H0zM13-3h3v4h-3zM14-5h1v2h-1zM17-5h1v5h-2z" /><path fill="#c68491" d="M3-7h7v2h2v5H1v-5h2z" /><path fill={p.light} d="M5-4h3v3H5z" /><path fill={p.ink} d="M14-5h1v1h-1zM17-5h1v1h-1z" /></g></g>
     <path fill={p.glow} d="M347 74h4v4h-4zM346 78h6v7h-6z" /><path fill={p.light} d="M346 75h2v2h-2zM340 80h5v3h-5zM351 80h5v3h-5z" />
     <g transform="translate(350 76)"><g className="pb-wing" fill="#c3ddc2" opacity=".75"><path d="M-7-1h3v5h-3zM2-2h3v5H2z" /></g></g>
     <Smoke p={p} x={335} y={24} /><Fireflies p={p} />
+    {[{ x: 282, y: 41 }, { x: 369, y: 62 }].map(({ x, y }, i) => <g key={x} transform={`translate(${x} ${y})`}><g className="pb-fairy-flight" style={{ animationDelay: `${-i * 2.1}s`, animationDuration: `${5 + i * 2}s` }}>
+      <path fill={p.light} opacity=".12" d="M-4-4h9v9h-9z" /><g className="pb-wing" fill="#c6e6cf"><path d="M-4-2h3v4h-3zM2-2h3v4H2z" /></g><path fill={p.glow} d="M0-1h2v5H0z" /><path fill={p.light} d="M0-3h2v2H0z" />
+    </g></g>)}
+    {[276, 318, 363].map((x, i) => <g key={x} transform={`translate(${x} ${23 + i * 7})`}><g className="pb-leaf-fall" style={{ animationDelay: `${-i * 1.9}s` }} fill={i % 2 ? p.light : p.glow}><path d="M0 0h3v1H0zM-1 1h4v2h-4zM0 3h2v1H0z" /></g></g>)}
   </>;
 }
 
@@ -143,13 +163,18 @@ function CloudMonastery() {
     <path fill="none" stroke={p.ink} strokeWidth="2" d="M189 51l18 9 21 4 21-3 23-10M377 54l22 7 21 3 20-3 20-8" />
     <path fill="none" stroke={p.glow} strokeWidth="1" d="M189 56l18 9 21 4 21-3 23-10M377 59l22 7 21 3 20-3 20-8" />
     <path fill={p.mid} d="M196 54h1v7h-1zM208 60h1v6h-1zM220 63h1v6h-1zM232 63h1v6h-1zM244 62h1v6h-1zM257 57h1v7h-1zM391 59h1v6h-1zM403 62h1v6h-1zM417 63h1v6h-1zM431 63h1v5h-1zM445 60h1v5h-1z" />
-    <g fill={p.light} opacity=".45" className="pb-water"><path d="M347 77h3v19h-3zM351 78h2v18h-2zM147 66h2v30h-2zM500 70h2v26h-2z" /></g>
+    <FallingWater p={p} x={347} y={77} height={19} /><FallingWater p={p} x={147} y={66} height={30} /><FallingWater p={p} x={500} y={70} height={26} />
     <g fill={p.light} opacity=".22" className="pb-cloud"><path d="M0 87h30v-4h39v-4h45v5h30v5h51v7H0zM349 94h26v-5h40v-4h38v5h48v-6h44v5h48v-6h47v13H349z" /></g>
     {/* A monk shares the bridge with a red panda; koi swim through the clouds. */}
     <path fill="#bd7867" d="M234 55h4v4h-4zM233 59h6v7h-6z" /><path fill={p.light} d="M234 55h3v2h-3z" /><path fill={p.ink} d="M234 65h1v3h-1zM238 65h1v3h-1z" />
     <path fill="#c48665" d="M270 68h8v5h-8zM269 64h2v-2h1v2h4v-2h1v2h2v5h-10zM278 69h5v3h-5z" /><path fill={p.light} d="M270 65h2v2h-2zM275 65h2v2h-2zM280 69h1v3h-1z" />
-    <g transform="translate(407 37)"><g className="pb-float"><path fill={p.light} d="M0 0h11v2h4v3h-4v2H0V5h-4V2h4zM15 2h3V0h2v7h-2V5h-3z" /><path fill="#df9f82" d="M2 0h5v2H2zM6 4h4v3H6z" /><path fill={p.ink} d="M-1 2h1v1h-1z" /></g></g>
+    <g transform="translate(376 25)"><g className="pb-cruise"><path fill={p.light} d="M0 0h11v2h4v3h-4v2H0V5h-4V2h4zM15 2h3V0h2v7h-2V5h-3z" /><path fill="#df9f82" d="M2 0h5v2H2zM6 4h4v3H6z" /><path fill={p.ink} d="M-1 2h1v1h-1z" /></g></g>
+    <g transform="translate(320 43)"><g className="pb-pendulum"><path fill={p.glow} d="M0 0h1v8h-1zM-3 8h7v3h2v3H-5v-3h2z" /><path fill={p.light} d="M-2 9h2v3h-2zM0 14h2v3H0z" /></g></g>
+    <path fill={p.mid} d="M286 13h1v24h-1zM351 10h1v22h-1z" />
+    <g transform="translate(287 14)"><path className="pb-flag-flutter" fill={p.glow} d="M0 0h13v3H9v3H0z" /></g>
+    <g transform="translate(352 11)"><path className="pb-flag-flutter" style={{ animationDelay: "-.6s" }} fill={p.light} d="M0 0h11v3H7v3H0z" /></g>
     <path fill={p.light} opacity=".8" d="M253 19h5v2h5v-2h5v1h-4v3h-7v-3h-4zM368 10h4v2h3v-2h4v1h-3v3h-5v-3h-3z" />
+    <g transform="translate(400 20)"><g className="pb-kite"><path fill="#cc9b83" d="M0-9l8 9-8 8-8-8z" /><path fill="#f0d7a5" d="M0-8V7l-7-7z" /><path fill="#eee3c6" d="M-7 0H7v1H-7zM0 0h1v21H0zM-2 13h5v2h-5zM-2 19h5v2h-5z" /></g></g>
   </>;
 }
 
@@ -177,14 +202,16 @@ function NightMarket() {
     <path fill={p.ink} d="M225 60h6v6h-6zM223 66h10v5h-10zM296 62h6v5h-6zM294 67h10v7h-10zM382 60h5v6h-5zM380 66h9v5h-9z" />
     <path fill={p.light} d="M224 59h8v2h-8zM296 62h5v2h-5zM382 60h4v2h-4z" />
     <Smoke p={p} x={307} y={67} />
+    <g transform="translate(303 66)"><g className="pb-gardener-arm" style={{ animationDuration: "3.2s" }}><path fill="#d9b697" d="M0-1h10v3H0z" /><path fill={p.ink} d="M10-4h2v10h-2z" /><path fill={p.light} d="M9 6h4v2H9z" /></g></g>
     <Water p={p} y={86} />
     <path fill={p.ink} d="M256 82h36v3h-36zM261 83h2v9h-2zM285 83h2v9h-2zM343 82h24v3h-24zM345 83h2v8h-2zM362 83h2v8h-2z" />
     {/* A paper boat, sleepy cat and a fox-mask visitor reward a second look. */}
-    <g transform="translate(325 91)"><g className="pb-water"><path fill={p.light} d="M-7 0H7v2H4v2h-8V2h-3zM-1-5h1v5h-6z" /><path fill={p.glow} d="M0-5h1l5 5H0z" /></g></g>
+    <g transform="translate(325 91)"><g className="pb-boat-glide" style={{ animationDuration: "12s" }}><path fill={p.light} d="M-7 0H7v2H4v2h-8V2h-3zM-1-5h1v5h-6z" /><path fill={p.glow} d="M0-5h1l5 5H0z" /></g></g>
     <path fill="#cfb796" d="M273 73h2v-2h1v2h5v4h-10v-3h2zM280 74h4v2h-4z" /><path fill={p.ink} d="M275 74h2v1h-2z" />
     <g transform="translate(350 73)"><path fill="#bc859f" d="M-3 0h7v8h-7z" /><path fill={p.light} d="M-3-6h2v-2h1v2h2v-2h1v2h2v5h-8z" /><path fill={p.glow} d="M-2-4h1v1h-1zM2-4h1v1H2z" /><path fill={p.ink} d="M-2 8h2v3h-2zM2 8h2v3H2z" /></g>
     <path fill={p.light} opacity=".45" d="M229 90h14v1h-14zM231 94h9v1h-9zM391 89h12v1h-12zM385 93h20v1h-20z" />
     <Fireflies p={p} />
+    {[{ x: 302, y: 15 }, { x: 350, y: 20 }, { x: 256, y: 10 }].map(({ x, y }, i) => <g key={x} transform={`translate(${x} ${y})`}><g className="pb-festival-spark" style={{ animationDelay: `${-i * 1.4}s` }} fill={i % 2 ? "#c5adeb" : p.glow}><path d="M-1-10h2v4h-2zM-1 6h2v4h-2zM-10-1h4v2h-4zM6-1h4v2H6zM-7-7h2v2h-2zM5 5h2v2H5zM5-7h2v2H5zM-7 5h2v2h-2z" /></g></g>)}
   </>;
 }
 

@@ -1,3 +1,26 @@
+# Lebendige Pixelpanoramen — 2026-09-12 (vier Durchgänge abgeschlossen)
+
+Alle 25 Banner in vier weiteren Kunstdurchgängen ausgearbeitet: vollständige
+größere Vorschauen, 50 verschiedene handgezeichnete Nebenszenen, stärkere und
+flüssigere Hauptaktionen, korrigierte Bildränder und Laufwege. Das Hauptmotiv
+erscheint einmal; eigene Landschaften erweitern die breite Kopfzeile.
+Wetter liegt auch vor den Nebenszenen. Rundungen in Vorschau und Header sind
+behoben, die Wetterperioden schließen pixelgleich an.
+
+Finaler Build, Root-/Client-Typprüfung, Version, Architektur, Sprache, Assets
+und unabhängige Sichtprüfung bestanden. Alle sieben Banner-Browserszenarien
+sind geprüft: vier im Siebenerlauf bestanden, drei nach gezielter Korrektur
+im abschließenden Nachlauf. Echte Bewegung aller 50 Flächen bei eingefrorenen
+Sternen mit 150 PNGs belegt; 75 vollständige Vorschauen bei drei Breiten und
+20 endliche Wetterloops geprüft. Auswahl, Speicherung, Standbild,
+Bewegungsvorgaben, Tastatur, Zweifenster-Synchronisierung und Englisch bestanden.
+Gesamt-Unitlauf: 3097 bestanden, zehn Timeouts, 63 übersprungen. Neun Fehlerfälle
+bestehen im Nachlauf mit einem Worker und unveränderten Limits. Der unveränderte
+Desktop-Verknüpfungstest überschreitet auch allein sein 5s-Limit; die komplette
+Unit-Suite wird nicht als grün behauptet. Keine Desktop-/Timeoutänderungen.
+Plan/Nachweis: `design/iterations/pixel-banners-four-passes-20260912.md`.
+Belege: `docs/reviews/pixel-banners-living-20260912.md`.
+
 # Spieltisch, Figuren und Heimnetz — 2026-09-12
 
 Vier parallele LangGraph-Arbeitspakete integriert: Kategorien per Drag-and-drop

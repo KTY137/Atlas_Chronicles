@@ -3,7 +3,7 @@
 import type { BannerId } from "@chronicle/theme";
 import type { ReactNode } from "react";
 import { BANNER_PALETTES } from "./pixel-banner-palettes";
-import { Clouds, Fireflies, Gear, Moon, Rain, Sky, Smoke, Water, type Palette } from "./pixel-banner-primitives";
+import { Clouds, Fireflies, Gear, Moon, Sky, Smoke, Water, type Palette } from "./pixel-banner-primitives";
 
 /** Hand-drawn miniature worlds. All texture and little inhabitants are deterministic. */
 function Texture({ x = 0, y, width = 640, height, color, count = 100, seed = 3, opacity = .3 }: {
@@ -48,6 +48,24 @@ function Cat({ x, y, color, eye }: { x: number; y: number; color: string; eye: s
   return <g transform={`translate(${x} ${y})`}><path fill={color} d="M0 0h1v2h3V0h1v6H4v2h2v1h3V6h1v4H2V9H0z" /><path fill={eye} d="M1 3h1v1H1zM3 3h1v1H3z" /></g>;
 }
 
+/** A twelve-pixel water cycle, clipped locally without document-global SVG IDs. */
+function Waterfall({ x, y, width = 8, height, color = "#bdebdc" }: { x: number; y: number; width?: number; height: number; color?: string }) {
+  return <svg x={x} y={y} width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ width, height, position: "static", overflow: "hidden" }}>
+    <rect width={width} height={height} fill={color} opacity=".16" />
+    <g className="pb-waterfall" fill={color}>{Array.from({ length: Math.ceil(height / 12) + 2 }, (_, i) =>
+      <path key={i} d={`M1 ${i * 12}h2v6H1zM${width - 3} ${i * 12 + 7}h1v4h-1z`} />
+    )}</g>
+  </svg>;
+}
+
+function TrainWheel({ x, y, size = 1 }: { x: number; y: number; size?: number }) {
+  return <g transform={`translate(${x} ${y}) scale(${size})`}>
+    <path fill="#252831" d="M-3-5h6v2h2v6H3v2h-6V3h-2v-6h2z" />
+    <g className="pb-wheel"><path fill="#c5a77d" d="M-1-4h2v3h3v2H1v3h-2V1h-3v-2h3z" /><path fill="#786b59" d="M-3-3h1v1h-1zM2 2h1v1H2z" /></g>
+    <path fill="#f0d7a3" d="M-1-1h2v2h-2z" />
+  </g>;
+}
+
 function MoonCastle() {
   const p = BANNER_PALETTES.mondburg;
   return <><Sky p={p} seed={7} /><Moon p={p} x={355} y={3} /><Clouds p={p} />
@@ -68,7 +86,10 @@ function MoonCastle() {
       <g className="pb-twinkle" fill={p.light}><path d="M312 22h4v7h-4zM275 36h2v5h-2zM314 40h2v5h-2zM343 40h2v5h-2zM299 50h2v4h-2zM327 50h2v4h-2zM363 50h1v3h-1z" /></g>
       <path fill={p.glow} opacity=".65" d="M312 26h4v3h-4zM275 39h2v2h-2zM343 43h2v2h-2zM313 56h8v8h-8z" />
       <path fill="#b0a0b7" d="M268 57h5v1h-5zM279 48h4v1h-4zM311 33h5v1h-5zM319 17h5v1h-5zM320 47h5v1h-5zM337 57h6v1h-6zM348 50h3v1h-3z" />
-      <path fill="#151d38" d="M278 7h1v7h-1zM345 13h1v8h-1z" /><g transform="translate(279 7)"><g className="pb-sway"><path fill="#b783b6" d="M0 0h8v2H5v2H0z" /><path fill="#e8b4c5" d="M0 0h5v1H0z" /></g></g>
+      <path fill="#151d38" d="M278 7h1v7h-1zM345 13h1v8h-1z" /><g transform="translate(279 7)"><g className="pb-flag-flutter"><path fill="#b783b6" d="M0 0h12v2h-3v2H0z" /><path fill="#e8b4c5" d="M0 0h8v1H0z" /></g></g>
+      <g transform="translate(346 14)"><g className="pb-flag-flutter" style={{ animationDelay: "-.6s" }}><path fill="#b783b6" d="M0 0h11v2H8v3H0z" /><path fill="#e8b4c5" d="M0 0h7v1H0z" /></g></g>
+      <g opacity=".13"><path fill="#ecd1a0" className="pb-lantern" d="M313 61h8v4h5v5h8v6h-34v-5h7v-5h6z" /></g>
+      <svg x="311" y="53" width="13" height="12" viewBox="0 0 13 12" style={{ width: 13, height: 12, position: "static", overflow: "hidden" }}><g className="pb-gate-rise"><path fill="#28283e" d="M0 0h13v2H0zM1 2h2v10H1zM5 2h2v10H5zM9 2h2v10H9zM0 5h13v2H0z" /><path fill="#bda7a8" d="M2 2h1v8H2zM6 2h1v8H6zM10 2h1v8h-1z" /></g></svg>
     </g>
     <House x={239} y={55} wall="#74728c" roof="#746084" p={p} width={22} /><House x={388} y={58} wall="#686682" roof="#726183" p={p} />
     <path fill="#33324c" d="M398 73h106v6H398zM405 79h8v17h-8zM435 79h8v17h-8zM467 79h8v17h-8zM497 79h7v17h-7z" />
@@ -77,7 +98,13 @@ function MoonCastle() {
     {[16, 47, 81, 132, 167, 201, 447, 486, 538, 580, 624].map((x, i) => <Pine key={x} x={x} y={77 + i % 3 * 6} size={i % 2 ? 1.1 : .8} dark="#13293a" mid="#294750" tip="#6b8b88" />)}
     <path fill="#101e31" d="M0 90h24v-3h42v4h28v-4h44v5h45v-3h26v7H0zM530 92h22v-5h29v3h33v-4h26v10H530z" />
     <Lantern x={392} y={70} p={p} /><Cat x={341} y={54} color="#c0a0a1" eye={p.light} />
-    <g transform="translate(215 87)"><path fill="#9e897e" d="M0 0h17v2h-2v2H3V2H0z" /><path fill="#bbc5cf" d="M7-11h1v11H7zM8-10h2v2h2v2h2v2H8z" /></g>
+    <g transform="translate(291 84) scale(1.15)"><g className="pb-boat-glide">
+      <path fill="#9e897e" d="M0 0h23v2h-3v2H4V2H0z" /><path fill="#e0b798" d="M1 0h21v1H1z" />
+      <path fill="#bbc5cf" d="M9-15h1V0H9z" /><g transform="translate(10 -14)"><g className="pb-flag-flutter" style={{ animationDuration: "2.7s" }}><path fill="#d5d6df" d="M0 0h2v2h2v3h3v3h3v3H0z" /><path fill="#aaa7ce" d="M1 3h1v7H1z" /></g></g>
+      <path fill="#c28b86" d="M4-5h3v3H4zM3-2h5v2H3z" /><path fill="#efd1a2" d="M18-4h2v3h-2z" />
+      <g className="pb-water" fill="#a49cc6" opacity=".5"><path d="M-8 5H9v1H-8zM5 8h17v1H5zM20 5h9v1h-9z" /></g>
+    </g></g>
+    <g transform="translate(365 30)"><g className="pb-fairy-flight" style={{ animationDuration: "11s" }}><path fill="#b9abd2" d="M-7 0h4v2h3V1h2v1h3V0h4v1H6v3H3v1H0V4h-3V2h-4z" /></g></g>
   </>;
 }
 
@@ -113,7 +140,21 @@ function GlowForest() {
     {[63, 118, 206, 224, 348, 399, 452, 506, 572].map((x, i) => <g key={x} transform={`translate(${x} ${76 + i % 3 * 6})`}>
       <path fill="#c2d39a" d="M-1 0h3v8h-3z" /><path fill={i % 2 ? "#6bd3a2" : "#7fa8d0"} d="M-8 0v-3h3v-3h8v2h3v2h3v3z" /><path fill="#e0f0ad" d="M-4-4h2v2h-2zM2-2h3v1H2zM-8 0h17v1H-8z" />
     </g>)}
-    <g transform="translate(325 82)"><path fill="#d98d56" d="M0 1h7V0h4v-2h1v5h-2v4H1V6h-4V4h-3V1h-2v-3h3v3h3z" /><path fill="#e8d1a0" d="M-8-2h3v3h-2zM7 4h3v2H7z" /><path fill="#101f24" d="M9 2h1v1H9zM1 7h1v2H1zM7 7h1v2H7z" /></g>
+    <path fill="#234c3e" d="M356 66h10v27h-10z" /><Waterfall x={357} y={66} width={7} height={28} color="#88cfb3" />
+    <path fill="#acdcb6" className="pb-water" opacity=".7" d="M351 92h18v1h-18zM355 95h16v1h-16z" />
+    <g transform="translate(325 82)"><g className="pb-train" style={{ animationDuration: "1.9s" }}>
+      <g className="pb-tail-wag"><path fill="#d98d56" d="M1 2h-3V0h-3v-3h-5v4h3v4h4v2h5z" /><path fill="#eedcb3" d="M-10-3h5v3h-3v1h-2z" /></g>
+      <path fill="#d98d56" d="M0 1h7V0h4v-2h1v5h-2v4H1V6H0z" /><path fill="#e8d1a0" d="M7 4h3v2H7z" /><path fill="#101f24" d="M9 2h1v1H9zM1 7h1v2H1zM7 7h1v2H7z" />
+    </g></g>
+    {[{ x: 276, y: 23 }, { x: 316, y: 29 }, { x: 339, y: 20 }].map(({ x, y }, i) => <g key={x} transform={`translate(${x} ${y})`}><g className="pb-leaf-fall" style={{ animationDelay: `${-i * 2.2}s` }}><path fill={i % 2 ? "#c9c884" : "#89c08a"} d="M0 0h3v1h2v2H2v1H0z" /><path fill="#e6dfa0" d="M1 1h2v1H1z" /></g></g>)}
+    {[{ x: 302, y: 39 }, { x: 352, y: 48 }].map(({ x, y }, i) => <g key={x} transform={`translate(${x} ${y})`}><g className="pb-fairy-flight" style={{ animationDelay: `${-i * 3}s` }}>
+      <path fill="#a2edc0" opacity=".18" d="M-4-4h10v10H-4z" /><path fill="#f4e8a2" d="M0-2h2v2h2v2H2v2H0V2h-2V0h2z" /><path fill="#fff2bd" d="M0 0h2v2H0z" />
+    </g></g>)}
+    <g transform="translate(292 31)"><path fill="#b99162" d="M-4-4h3v2h2v-2h3v8h-8z" /><path fill="#f0dd9b" d="M-3-1h2v2h-2zM0-1h2v2H0z" /><path fill="#263b2b" d="M-2-1h1v1h-1zM0-1h1v1H0z" /></g>
+    <g transform="translate(354 39)"><g className="pb-bat-flight" style={{ animationDuration: "9s" }}>
+      <g className="pb-wing" style={{ animationDuration: "1.1s" }}><path fill="#9fb989" d="M-4-2h-5v-5h-5v-5h-4v7h4v6h5v5h5zM4-2h5v-5h5v-5h4v7h-4v6H9v5H4z" /><path fill="#d5d5a3" d="M-16-9h2v5h5v5h-2v-3h-5zM14-9h2v5h-5v5H9v-5h5z" /></g>
+      <path fill="#a89770" d="M-5-7h3v3h4v-3h3v13H2v3h-4V6h-3z" /><path fill="#f0dda5" d="M-4-2h3v4h-3zM1-2h3v4H1z" /><path fill="#254431" d="M-3-1h1v2h-1zM2-1h1v2H2z" /><path fill="#dccda0" d="M-5 9H5v6H-5z" /><path fill="#a77960" d="M-1 9h2v6h-2z" />
+    </g></g>
     <Lantern x={273} y={49} p={p} /><Lantern x={336} y={40} p={p} /><Lantern x={383} y={49} p={p} /><Fireflies p={p} />
     <path fill="#102c26" d="M15 95v-8h2v4h2v-9h2v8h3v-4h2v9zM168 95v-5h-3v-3h5v4h2v-10h2v14zM419 96v-8h3v-4h2v8h3v-3h2v7zM548 96V85h2v6h3v-10h2v9h3v6z" />
   </>;
@@ -132,8 +173,9 @@ function DragonMountains() {
     <g className="pb-lantern"><path fill="#fcb45c" d="M329 75h2v8h5v3h-4v7h17v2h-24v-3h4v-9h-2v-3h2zM88 88h3v6h6v1H82v-2h6zM493 85h1v7h7v3h-12v-3h4z" /></g>
     <g transform="translate(311 57)">
       <g className="pb-float">
-        <path fill="#321a2b" d="M-8 7h-7V1h-8v-6h-10v-7h-9v-8h-8v-9h-6v-8h8v4h9v5h10v7h9v7h7v-7h7v-11h7v-13h6v-9h6v13h5v12h5v12h7v10h8v10h-15v5h-19v4h-9v4h-15v-4h-9v-4h-15v-4h-8v-6h6v3h11v4h14z" />
-        <g className="pb-wing"><path fill="#954449" d="M-11 0h-5v-8h-10v-8h-10v-7h-10v-7h-5v-5h7v5h10v5h10v7h8v7h5zM-3-6h5v-15h7v-13h5v-11h3v14h5v13h5v12h5v7h-8v-6h-8v-6H8v5z" />
+        <g className="pb-wing" style={{ animationDuration: "2.4s" }}>
+          <path fill="#321a2b" d="M-8 7h-7V1h-8v-6h-10v-7h-9v-8h-8v-9h-6v-8h8v4h9v5h10v7h9v7h7v-7h7v-11h7v-13h6v-9h6v13h5v12h5v12h7v10h8v10h-15v5h-19v4h-9v4h-15v-4h-9v-4h-15v-4h-8v-6h6v3h11v4h14z" />
+          <path fill="#954449" d="M-11 0h-5v-8h-10v-8h-10v-7h-10v-7h-5v-5h7v5h10v5h10v7h8v7h5zM-3-6h5v-15h7v-13h5v-11h3v14h5v13h5v12h5v7h-8v-6h-8v-6H8v5z" />
           <path fill="#d66f59" d="M-46-32h3v5h9v5h10v7h9v8h-2v-6h-10v-7h-10v-6h-9zM15-40h2v14h-3v14h-3v6H8v-9h4v-15h3z" />
           <path fill="#642c3b" d="M-33-20h3v7h9v8h7v4h-4v-5h-9v-6h-6zM20-24h3v11h5v11h-5v-8h-5v-9h2z" />
         </g>
@@ -142,9 +184,17 @@ function DragonMountains() {
         <path fill="#692b37" d="M30-17h5v-4h9v3h8v3H40v5h-9zM4 2h9v4H4zM-9 8h5v3h-5zM20 0h6v3h-6z" />
         <path fill="#ffd496" d="M41-17h2v2h-2zM48-10h2v3h-2zM3 17h3v7H3zM-4 23h10v2H-4zM20 14h4v8h-4zM16 21h9v2h-9z" />
         <path fill="#f8b16d" d="M32-24h2v-5h2v7h-4zM18-8h2v-5h2v5zM9 0h2v-5h2v5zM-1 3h2v-4h2v4z" />
+        <g transform="translate(54 -12)"><g className="pb-dragon-breath">
+          <path fill="#c54f35" d="M0-1h8v-3h9v-3h11v4h11v3h9v5H37v4H26V6H15V3H7V1H0z" />
+          <path fill="#f49e4e" d="M0 0h10v-2h10v-2h9v3h10v4H27v3H17V3H8V1H0z" />
+          <path fill="#ffe4a0" d="M1 0h12v1h9v2H11V2H1z" />
+        </g></g>
       </g>
     </g>
-    <g transform="translate(371 46)"><g className="pb-spark"><path fill="#e88448" d="M0 0h7v2h6v-3h4v3h8v3h-5v2h-9V5H5V3H0z" /><path fill="#ffdb83" d="M1 1h6v2h6v2H8V3H1z" /><path fill="#fbbb62" d="M29 1h2v1h-2zM25 7h2v2h-2zM35 5h1v1h-1z" /></g></g>
+    <g transform="translate(396 46)"><g className="pb-spark"><path fill="#fbbb62" d="M0 1h2v1h-2zM5 7h2v2H5zM13 3h1v1h-1z" /></g></g>
+    <g transform="translate(281 83)"><path fill="#bda482" d="M0-5h3v-2h4v3h3v5H0z" /><path fill="#f1c195" d="M3-5h2v2H3z" /><path fill="#71463e" d="M2 0h6v1H2z" /></g>
+    <g transform="translate(389 66)"><path fill="#b3a498" d="M-3-16h7v7h-7zM-4-8h9v12h-9zM-3 4h3v7h-3zM3 4h3v7H3z" /><path fill="#35323a" d="M-2-13h6v2h-6z" /><g transform="translate(4 -7)"><g className="pb-flag-flutter"><path fill="#a65355" d="M0 0h6v4h5v7h5v7H4v-5H0z" /><path fill="#d88367" d="M1 2h3v10H1z" /></g></g><path fill="#6f6470" d="M-11-10h9V3h-4v3h-3V2h-2z" /><path fill="#f5bd78" className="pb-crystal-pulse" style={{ animationDuration: "3.6s" }} d="M-11-10h2V2h-2zM-9-10h6v2h-6zM-2-17h5v1h-5z" /></g>
+    <path fill="#ed955c" className="pb-crystal-pulse" style={{ animationDuration: "3.6s" }} opacity=".3" d="M370 76h27v2h-27zM379 80h30v1h-30zM403 66h12v1h-12z" />
     <g transform="translate(254 73)"><path fill="#b9bac0" d="M1 0h5v4H1zM0 5h6v7H0zM1 12h2v4H1zM5 12h2v4H5zM10-4h1v16h-1zM8 4h5v1H8z" /><path fill="#8b3e49" d="M-2 4h3v10h-6v-3h3zM1-2h5v2H1z" /><path fill="#f9d99a" d="M0 7h4v5H0z" /><path fill="#262131" d="M3 1h3v1H3z" /></g>
     <g fill="#f2b273" className="pb-spark"><path d="M283 83h1v2h-1zM358 76h1v1h-1zM103 84h1v1h-1zM495 73h1v2h-1zM343 67h1v1h-1z" /></g>
   </>;
@@ -162,21 +212,24 @@ function SkyIslands() {
       <path fill="#487963" d="M241 53v-3h15v-4h24v-5h51v4h25v4h16v7h-20v3h-34v-2h-31v2h-23v-3h-23z" />
       <path fill="#84b584" d="M248 51h17v-4h22v-4h39v4h25v3h16v3h-50v-2h-30v3h-39z" />
       <Texture x={250} y={48} width={111} height={8} color="#d6d69c" count={62} opacity={.7} />
-      <path fill="#7daaad" d="M339 55h9v29h-2v12h-9V83h2z" /><g className="pb-water"><path fill="#d3f2e9" d="M339 55h3v27h-2v14h-2V81h1zM346 56h1v17h-1zM343 78h1v18h-1z" /></g>
+      <path fill="#7daaad" d="M339 55h9v29h-2v12h-9V83h2z" /><Waterfall x={339} y={55} width={9} height={41} />
+      <g transform="translate(342 78)"><g className="pb-drip"><path fill="#e6f5db" d="M-6 0h1v3h-1zM8 4h1v2H8zM-3 9h1v3h-1z" /></g></g>
       <House x={277} y={30} wall="#dfc99b" roof="#798caf" width={32} p={p} />
       <path fill="#46526a" d="M306 49V23h3V11h3V5h13v6h3v12h3v26z" /><path fill="#ded2a6" d="M310 24h17v24h-17zM313 12h11v12h-11z" /><path fill="#a8aa92" d="M322 25h5v23h-5zM320 12h4v11h-4z" />
       <path fill="#688399" d="M307 12V9h4V5h4V1h8v4h4v4h4v3z" /><path fill="#ead5ab" d="M310 11h19v1h-19z" />
       <path fill="#566473" d="M316 33h6v7h-6zM315 43h7v6h-7z" /><path fill={p.light} d="M318 34h3v5h-3z" />
-      <g transform="translate(318 24)"><g className="pb-gear"><path fill="#f5e7bd" d="M-1-2h3v-17h5v13H3v7h16v5H6V3H0v16h-5V6h3V0h-17v-5h13v3z" /><path fill="#91abb0" d="M3-16h2v7H3zM9 3h7v1H9zM-4 9h1v7h-1zM-16-4h7v1h-7z" /><path fill="#866c59" d="M-2-2h5v5h-5z" /><path fill="#f0c98d" d="M-1-1h2v2h-2z" /></g></g>
+      <g transform="translate(318 24)"><g className="pb-gear" style={{ animationDuration: "8s" }}><path fill="#f5e7bd" d="M-1-2h3v-17h5v13H3v7h16v5H6V3H0v16h-5V6h3V0h-17v-5h13v3z" /><path fill="#91abb0" d="M3-16h2v7H3zM9 3h7v1H9zM-4 9h1v7h-1zM-16-4h7v1h-7z" /><path fill="#866c59" d="M-2-2h5v5h-5z" /><path fill="#f0c98d" d="M-1-1h2v2h-2z" /></g></g>
       <path fill="#6b8c5b" d="M257 43v-8h3v-6h4v6h3v8h-4v8h-3v-8zM350 42v-6h4v-5h4v5h3v6h-4v9h-3v-9z" />
       <path fill="#c7d6a5" d="M258 36h3v-4h2v6h-5zM351 37h4v-3h2v5h-6z" />
       <path fill="#bfb791" d="M310 49h15v1h-15zM306 51h16v1h-16zM301 53h18v1h-18z" />
       <g transform="translate(291 42)"><path fill="#b68ea8" d="M0 0h3v2h-3zM-1 3h5v5h-5z" /><path fill="#eaddb9" d="M0-2h3v2H0z" /><path fill="#574d71" d="M0 8h1v2H0zM3 8h1v2H3z" /></g>
+      <g transform="translate(288 44)"><g className="pb-pendulum" style={{ animationDuration: "5.3s" }}><g transform="scale(1 .78)"><path fill="#d5d4b4" d="M0 0v-11h-4v-7h-3v-7h1v6h3v8h4V0z" /><path fill="#d4a0b8" d="M-8-43h3v5h5v6h5v4H0v7h-5v5h-3v-5h-5v-7h-5v-4h5v-6h5z" /><path fill="#f0d9bc" d="M-7-39h1v18h-1zM-13-29H0v1h-13z" /><path fill="#8ca8b8" d="M-7-20h2v5h-3v4h-2v-2h2v-4h1z" /></g></g></g>
     </g></g>
-    <g transform="translate(172 48)"><g className="pb-float"><path fill="#485466" d="M-25 5h55v5H20v7H8v10H0v-7h-12v-6h-13z" /><path fill="#8abb99" d="M-27 3h59v4h-59z" /><path fill="#6d90a8" d="M-6 8h4v34h-4z" /><path fill="#d1f0e7" className="pb-water" d="M-6 8h1v34h-1z" /><Pine x={0} y={3} size={.8} dark="#416362" mid="#6c9c7d" tip="#b3d5a0" /></g></g>
+    <g transform="translate(172 48)"><g className="pb-float" style={{ animationDelay: "-2.7s" }}><path fill="#485466" d="M-25 5h55v5H20v7H8v10H0v-7h-12v-6h-13z" /><path fill="#8abb99" d="M-27 3h59v4h-59z" /><path fill="#6d90a8" d="M-6 8h4v34h-4z" /><Waterfall x={-6} y={8} width={4} height={34} /><Pine x={0} y={3} size={.8} dark="#416362" mid="#6c9c7d" tip="#b3d5a0" /></g></g>
     <g transform="translate(417 65)"><g className="pb-float"><path fill="#51526e" d="M-24 4h51v6H16v8H6v9H-2v-6h-9v-7h-9V9h-4z" /><path fill="#94b695" d="M-26 1h55v5h-55z" /><House x={-11} y={-17} width={22} wall="#dfbca0" roof="#9b789a" p={p} /></g></g>
     <g transform="translate(218 17)"><g className="pb-float"><path fill="#829fc0" d="M-13 1h7v-4h16v3h8v5h-4v4H0v-2h-8V4h-5zM-13 2h-5v-5h-3v9h8zM6 9h4v5H7v-2H4V9z" /><path fill="#bed6d6" d="M-7 5H9V4h7v2h-3v2H0V6h-7z" /><path fill="#e9e9c9" d="M11 1h1v1h-1z" /><path fill="#b5dada" opacity=".7" d="M4-6h1v-5H4zM1-11h6v-1H1z" /></g></g>
-    <g fill="#e5e5cc"><path d="M363 16h3v1h3v-1h3v2h-3v1h-3v-1h-3zM373 21h2v1h2v-1h2v2h-6z" /></g>
+    <g transform="translate(366 20)"><g className="pb-fairy-flight" style={{ animationDuration: "13s" }}><g className="pb-wing" fill="#e5e5cc" style={{ animationDuration: "1.1s" }}><path d="M-6-2h3v1h3v-1h3v2H0v1h-3V0h-3zM4 3h2v1h2V3h2v2H4z" /></g></g></g>
+    <g transform="translate(366 57)"><g className="pb-pendulum" style={{ animationDuration: "3.8s" }}><path fill="#9c8067" d="M0 0h1v13H0z" /><path fill="#dfcdb0" d="M0 11h3v3H0zM-2 15h7v2h-7z" /><path fill="#8197a7" d="M1 17h1v3H1z" /></g></g>
     <path fill="#c5c2d1" opacity=".2" className="pb-cloud" d="M0 84h55v-4h36v4h25v4H0zM471 87h34v-5h43v4h50v-4h42v9H471z" />
   </>;
 }
@@ -201,6 +254,10 @@ function CrystalCave() {
       <path fill="#546592" d="M-7 0h-8v-8h-2v-6h3v3h4v5h3zM8 0h7v-10h2v-7h-3v4h-3v6H8z" />
       <path fill="#aaa4df" d="M-14-11h2v10h-2zM13-12h1v10h-1z" />
       <path fill="#c8ebdc" opacity=".11" d="M-13 1h27v3h-27z" />
+      <g className="pb-crystal-pulse" style={{ animationDelay: `${-i * .47}s` }}>
+        <path fill="#d7f5e9" opacity=".45" d={`M-2-${h - 5}h3v${h - 8}h-3z`} />
+        <path fill="#f6f0cf" d={`M-1-${h - 7}h1v3h3v1H0v3h-1v-3h-3v-1h3z`} />
+      </g>
     </g>)}
     <g className="pb-twinkle" fill="#f3edd9"><path d="M249 38h1v3h3v1h-3v3h-1v-3h-3v-1h3zM331 21h1v2h2v1h-2v2h-1v-2h-2v-1h2zM356 50h1v3h3v1h-3v3h-1v-3h-3v-1h3zM56 50h1v2h2v1h-2v2h-1v-2h-2v-1h2z" /></g>
     <path fill="#1c1931" d="M0 83h24v-8h26v6h32v8h35v-5h26v-5h38v6h24v11H0zM384 91h21v-8h27v-3h34v6h28v-5h30v6h31v-7h31v7h26v-6h28v15H384z" />
@@ -208,7 +265,12 @@ function CrystalCave() {
     <Texture y={83} height={13} color="#8c7198" count={130} opacity={.3} />
     <g transform="translate(229 83)"><path fill="#8c6c53" d="M-12-1h22v2h-22zM-10-2h2v9h-2zM6-2h2v9H6z" /><path fill="#bdaa6c" d="M-12-1h22v1h-22z" /><path fill="#eac483" d="M-2-11h4v4h-4z" /><path fill="#759a9f" d="M-3-6h6v6h-6z" /><path fill="#d9c899" d="M-4-12h8v2h-8zM-2-15h4v3h-4z" /><path fill="#ecf4bf" d="M3-12h2v2H3z" /><path fill="#667283" d="M-2 0h2v3h-2zM2 0h2v3H2zM8-10h1v10H8zM4-11h9v1H4z" /></g>
     <g transform="translate(398 81)"><path fill="#8e615c" d="M0-7h12v9H0z" /><path fill="#d4a576" d="M0-7h12v2H0zM0-1h12v1H0zM1-5h1v6H1zM10-5h1v6h-1z" /><path fill="#fae7a2" d="M5-3h3v4H5z" /><path fill="#28243d" d="M6-2h1v1H6z" /></g>
-    <g transform="translate(304 11)"><path fill="#13162c" d="M-8 0h4v3h3V1h2v2h3V0h4v5H4v3H1v3h-2V8h-3V5h-4z" /><path fill="#e6ceab" d="M-1 4h1v1h-1zM1 4h1v1H1z" /></g>
+    <g transform="translate(302 26)"><g className="pb-bat-flight"><g className="pb-wing" style={{ animationDuration: ".65s" }}><path fill="#777099" d="M-13-5h4v3h4v3h4v4h-5V2h-4V0h-3zM1 1h4v-3h4v-3h4V0h-3v2H6v3H1z" /><path fill="#c1aed2" d="M-12-4h2v3h4v1h-5v-2h-1zM10-4h2v2h-1v2H6v-1h4z" /></g><path fill="#39304e" d="M-2-2h1v2h2v-2h1v6H1v2h-2V4h-1z" /><path fill="#f3d4ac" d="M-1 1h1v1h-1zM1 1h1v1H1z" /></g></g>
+    <g transform="translate(302 74)"><path fill="#a3b8b7" d="M0-6h6v3H0zM-1-3h8v6h-8zM0 3h2v3H0zM4 3h2v3H4z" /><path fill="#eccba1" d="M1-8h4v3H1z" /><path fill="#b39563" d="M-1-9h8v2h-8z" /><path fill="#728e98" d="M6-2h4v2H6z" />
+      <g transform="translate(10 -1)"><g className="pb-pendulum"><path fill="#77684f" d="M0 0h1v4H0zM-2 4h5v6h-5z" /><path fill="#f4d68a" d="M-1 5h3v4h-3z" /><path fill="#f5e0aa" opacity=".12" d="M-5 1h11v13H-5z" /></g></g>
+    </g>
+    <g transform="translate(370 84)"><g className="pb-water"><path fill="#77aabc" d="M0 0h8v2H0zM8-2h2v6H8z" /><path fill="#d5efd7" d="M1 0h1v1H1z" /></g></g>
+    <path fill="#7a7891" d="M252 86h61v1h-61zM257 89h51v1h-51z" /><g transform="translate(279 80)"><g className="pb-tram-travel" style={{ animationDuration: "8.5s" }}><path fill="#493f58" d="M-11-5h23v10h-23zM-8 5h5v4h-5zM5 5h5v4H5z" /><path fill="#9d87aa" d="M-10-4h21v3h-21zM-8 2H9v1H-8z" /><path fill="#87c6c7" d="M-7-5v-7h3v-4h3v8h4v-10h3v8h3v5z" /><path fill="#d3eee1" d="M-3-13h1v7h-1zM4-14h1v7H4z" /><Lantern x={-12} y={-2} p={p} /><path fill="#c4b0e8" opacity=".22" d="M-14 10h31v1h-31z" /></g></g>
     <Fireflies p={p} />
   </>;
 }
@@ -244,10 +306,18 @@ function AirshipHarbor() {
       <path fill="#cda36a" d="M-27 9h2v8h8v2h-10zM-27 27h2v7h-2zM88 35h4v2h-4z" />
       <path fill="#4b3a34" d="M30 38h2v9h-2zM70 38h2v9h-2zM22 46h60v4h-5v7H34v-3h-8v-4h-4z" />
       <path fill="#a2784e" d="M28 48h50v4H35v-2h-7z" /><path fill="#e8cea0" d="M35 48h5v3h-5zM44 48h5v3h-5zM53 48h5v3h-5zM63 48h5v3h-5z" />
-      <path fill="#d2ac74" d="M36 54h38v1H36z" /><path fill="#2c3034" d="M77 43h3v9h-3zM73 46h11v2H73z" />
+      <path fill="#d2ac74" d="M36 54h38v1H36z" />
+      {[{ x: 22, y: 48 }, { x: 79, y: 47 }].map(({ x, y }, i) => <g key={x} transform={`translate(${x} ${y})`}>
+        <path fill="#6c6250" d="M-3-3h6v6h-6z" /><g className="pb-propeller" style={{ animationDelay: `${-i * .2}s` }}><path fill="#e6d2a2" d="M-1-9h2v7h-2zM2-1h7v2H2zM-1 2h2v7h-2zM-9-1h7v2h-7z" /><path fill="#9b896a" d="M-1-9h2v2h-2zM7-1h2v2H7zM-1 7h2v2h-2zM-9-1h2v2h-2z" /></g><path fill="#f5dfa8" d="M-1-1h2v2h-2z" />
+      </g>)}
       <path fill="#f4d7a0" d="M48 17h7v2h-2v6h-3v-6h-2zM55 20h3v2h-3zM45 20h3v2h-3z" />
       <path fill="#b79061" opacity=".5" d="M22 24h11v1H22zM43 29h14v1H43zM70 25h11v1H70zM92 18h7v1h-7z" />
+      <g transform="translate(107 36)"><g className="pb-smoke" style={{ animationDuration: "3.2s", animationDelay: "-1s" }}><path fill="#e2d0ab" d="M0 0h6v3h-3v2h-5V2h-3v-3h5z" /></g></g>
     </g></g>
+    <g transform="translate(251 29)"><g className="pb-flag-flutter"><path fill="#c17461" d="M0 0h14v3h-4v3H0z" /><path fill="#f0cda0" d="M1 1h7v1H1z" /></g></g>
+    <g transform="translate(361 71)"><g className="pb-pendulum" style={{ animationDuration: "3.4s" }}><path fill="#887254" d="M0 0h1v5H0z" /><path fill="#d4b98a" d="M-2 5h5v3h-5z" /></g></g>
+    <svg x="310" y="58" width="28" height="37" viewBox="0 0 28 37" style={{ width: 28, height: 37, position: "static", overflow: "hidden" }}><g transform="translate(14 18)"><g className="pb-cargo-hoist"><path fill="#d6bd91" d="M-1-37h1V0h-1z" /><path fill="#5e4739" d="M-10 0h21v15h-21z" /><path fill="#bd9364" d="M-9 1h19v3H-9zM-9 11h19v2H-9zM-7 4h2v7h-2zM5 4h2v7H5z" /><path fill="#f0d59c" d="M-2 5h5v4h-5z" /></g></g></svg>
+    <path fill="#d8b685" opacity=".2" d="M308 79h33v2h-33zM303 85h43v1h-43z" />
     <path fill="#8a694c" d="M272 70h15v8h-15zM291 68h12v10h-12zM276 62h11v8h-11zM374 70h17v8h-17zM379 64h10v6h-10z" />
     <g stroke="#c5a376" strokeWidth="1" fill="none"><path d="M273 71l12 6m-12 0 12-6M292 69l10 8m-10 0 10-8M277 63l9 6M375 71l15 6m-15 0 15-6" /></g>
     <Cat x={279} y={53} color="#d2ac7b" eye="#36303a" />
@@ -280,18 +350,21 @@ function ClockworkCity() {
       <path fill="#e3c78b" d="M-6-10H6v2h4v4h1v8h-1v4H6v2H-6V8h-4V4h-1v-8h1v-4h4z" />
       <path fill="#f5e2b2" d="M-5-8H5v2h3v12H5v2H-5V6h-3V-6h3z" />
       <path fill="#74634c" d="M-1-9h2v3h-2zM-1 6h2v3h-2zM-9-1h3v2h-3zM6-1h3v2H6zM-6-6h2v2h-2zM4-6h2v2H4zM-6 4h2v2h-2zM4 4h2v2H4z" />
-      <path fill="#433d35" d="M-1-5h2v6h-2zM0-1h6v2H0z" /><path fill="#b78851" d="M-1-1h3v3h-3z" />
+      <g className="pb-clock-minute"><path fill="#433d35" d="M-1-7h2v8h-2z" /></g><g className="pb-clock-hour"><path fill="#6c543f" d="M0-1h6v2H0z" /></g><path fill="#b78851" d="M-1-1h3v3h-3z" />
     </g>
     <path fill="#413e32" d="M300 50h7v10h-7zM317 50h7v10h-7zM276 43h4v7h-4zM341 50h5v7h-5zM306 68h11v9h-11z" />
     <g className="pb-twinkle" fill="#edd598"><path d="M301 51h5v8h-5zM318 51h5v8h-5zM277 44h2v5h-2zM342 51h3v5h-3z" /></g>
     <path fill="#6d573b" d="M301 55h5v1h-5zM303 51h1v8h-1zM318 55h5v1h-5zM320 51h1v8h-1z" />
     <path fill="#b6a16f" d="M296 22h2v2h-2zM327 40h3v1h-3zM298 61h4v1h-4zM330 49h2v4h-2zM343 62h4v1h-4zM277 68h5v1h-5z" />
-    <Gear p={p} x={270} y={67} size={.7} /><Gear p={p} x={351} y={69} size={.7} />
+    <path fill="#3b3a31" d="M309 48h6v15h-6z" /><g transform="translate(312 48)"><g className="pb-pendulum"><path fill="#d4b67a" d="M-1 0h2v11h-2zM-3 10h6v4h-6z" /><path fill="#f3daa0" d="M-2 10h3v2h-3z" /></g></g>
+    <Gear p={p} x={270} y={67} size={.7} /><g transform="translate(351 67)"><g className="pb-rotor" style={{ animationDuration: "7.5s" }}><path fill="#9a8051" d="M-5-15H5v4h6v6h4V5h-4v6H5v4H-5v-4h-6V5h-4V-5h4v-6h6z" /><path fill="#353d34" d="M-7-8H7V8H-7zM-8-7H8V7H-8z" /><path fill="#c9b27b" d="M-1-12h2v24h-2zM-12-1h24v2h-24zM-8-8h3v3h-3zM5 5h3v3H5z" /></g><path fill="#eddca3" d="M-2-2h4v4h-4z" /></g>
+    <g transform="translate(282 55)"><g className="pb-piston"><path fill="#c4aa77" d="M-7-1h14v2H-7zM4-3h4v6H4z" /></g></g>
     <path fill="#302f2d" d="M0 79h264v5H0zM368 79h272v5H368zM256 77h17v4h-17zM358 77h18v4h-18zM264 82h104v3H264z" />
     <path fill="#c3aa76" d="M0 78h262v2H0zM371 78h269v2H371zM270 80h92v1h-92z" />
     <g transform="translate(312 84)"><Gear p={p} x={0} y={0} size={.65} /></g>
     <path fill="#72634b" d="M296 87h32v2h-32zM304 85h2v11h-2zM319 85h2v11h-2z" />
     <g transform="translate(231 73)"><path fill="#6e7b70" d="M0-7h9v10H0zM1-9h2v3H1zM6-9h2v3H6zM1 3h2v2H1zM6 3h2v2H6z" /><path fill="#e9cc8c" d="M1-6h3v3H1zM5-6h3v3H5zM4-2h1v2H4z" /><path fill="#333730" d="M2-5h1v1H2zM6-5h1v1H6zM1 0h2v1H1zM6 0h2v1H6z" /></g>
+    <g transform="translate(335 13)"><g className="pb-fairy-flight" style={{ animationDuration: "12s" }}><g className="pb-wing" style={{ animationDuration: ".8s" }}><path fill="#c8b67d" d="M-7-3h4v2h3v3h-3V0h-4zM0-1h3v-2h4v3H3v2H0z" /></g><path fill="#f2d499" d="M-1-1h3v3h-3zM2 0h2v1H2z" /></g></g>
     <g transform="translate(385 72)"><path fill="#354039" d="M0-4h6v7H0zM-2-1h2v5h-2zM6-1h2v5H6zM0 3h2v4H0zM5 3h2v4H5z" /><path fill="#cfb67f" d="M1-8h4v4H1z" /><path fill="#685b45" d="M-1-9h8v2h-8zM1-12h4v3H1z" /><path fill="#b1aa7b" d="M8-2h8v5H8z" /></g>
     <Lantern x={228} y={69} p={p} /><Lantern x={367} y={67} p={p} /><Lantern x={444} y={66} p={p} />
     <path fill="#817255" d="M69 76h31V59h3v20H67v-3zM539 76h29V56h3v23h-34v-3z" />
@@ -328,6 +401,16 @@ function SteelWorks() {
     <path fill="#c49f73" d="M230 32h1v37h-1zM233 63h34v1h-34zM350 57h20V26h39v1h-38v32h-21z" />
     <path fill="#4b413b" d="M224 51h15v3h-15zM221 33h17v3h-17zM253 60h3v11h-3zM365 42h12v3h-12zM390 23h3v9h-3z" />
     <Gear p={p} x={255} y={62} size={.4} />
+    <path fill="#3d3737" d="M261 59h25v4h-25zM270 63h5v16h-5zM265 78h15v3h-15z" /><path fill="#b2946a" d="M262 59h23v1h-23z" /><path fill="#f5bc75" className="pb-lantern" d="M274 57h9v2h-9z" />
+    <g transform="translate(253 46) scale(1.25)"><g className="pb-forge-hammer"><path fill="#968264" d="M0-1h17v3H0z" /><path fill="#474749" d="M14-5h9v9h-9z" /><path fill="#c0b596" d="M14-5h9v2h-9zM15 3h7v1h-7z" /><path fill="#d9a76c" d="M-1-1h3v3h-3z" /></g></g>
+    <g transform="translate(341 52)"><path fill="#a49170" d="M0-15h1v15H0zM-5-2h11v2H-5z" />
+      <g className="pb-pendulum" style={{ animationDuration: "4.6s" }}><path fill="#403b3b" d="M-6 0H7v6H5v3h-9V6h-2z" /><path fill="#a78961" d="M-5 0H6v2H-5z" /><path fill="#fac36c" d="M-4 2H4v2H-4z" />
+        <g transform="translate(-2 8)"><g className="pb-metal-pour"><path fill="#e88b42" d="M-1 0h4v20h-4z" /><path fill="#ffe3a0" d="M0 0h1v18H0z" /></g></g>
+      </g>
+    </g>
+    <path fill="#443636" d="M330 79h16v3h-2v3h-12v-3h-2z" /><path fill="#f9bd69" className="pb-lantern" d="M332 79h12v2h-12z" />
+    {[0, 1, 2].map(i => <g key={i} transform="translate(278 59)"><g className="pb-spark" style={{ animationDuration: "2s", animationDelay: `${-i * .65}s` }} fill="#ffe1a0"><path d="M-2 0h2v1h-2zM3-3h1v2H3zM7 1h2v1H7z" /></g></g>)}
+    <g opacity=".27"><path fill="#e9a96b" className="pb-lantern" d="M293 85h13v2h-13zM369 89h22v2h-22zM346 79h6v2h-6zM272 65h2v9h-2z" /></g>
     <g transform="translate(389 70)"><path fill="#8f7c62" d="M0-8h13v11H0zM2-14h9v6H2zM-3-5h3v7h-3zM13-5h3v7h-3zM1 3h4v5H1zM9 3h4v5H9z" /><path fill="#c2af83" d="M2-7h9v3H2zM3-13h7v4H3z" /><path fill="#d8e8b0" d="M4-12h2v2H4zM8-12h2v2H8z" /><path fill="#413c36" d="M4-2h5v2H4z" /><path fill="#daa96d" d="M13 0h9v3h-9zM21-2h2v3h-2z" /></g>
     <g transform="translate(241 75)"><path fill="#c39a7c" d="M0-9h4v4H0z" /><path fill="#c8ad64" d="M-2-10h8v2h-8zM0-12h4v2H0z" /><path fill="#66716e" d="M-1-5h6v7h-6zM0 2h2v4H0zM4 2h2v4H4z" /><path fill="#cabf92" d="M5-4h8v2H5zM12-6h2v5h-2z" /></g>
     <g fill="#ffca78" className="pb-spark"><path d="M265 64h1v2h-1zM259 58h2v1h-2zM261 52h1v2h-1zM269 56h2v1h-2zM327 67h1v2h-1zM334 84h1v1h-1zM344 86h2v1h-2zM359 89h1v1h-1z" /></g>
@@ -355,8 +438,9 @@ function DesertExpress() {
         <path fill={i ? "#856f5b" : "#92775b"} d="M1 2h36v14H1z" /><path fill="#b99b72" d="M1 3h36v2H1zM1 14h36v2H1z" />
         <path fill="#38353d" d="M4 6h7v6H4zM15 6h7v6h-7zM26 6h7v6h-7z" /><path fill="#f2d298" d="M5 7h5v4H5zM16 7h5v4h-5zM27 7h5v4h-5z" />
         <path fill="#abbdab" d="M5 7h5v2H5zM16 7h5v2h-5zM27 7h5v2h-5z" />
-        <path fill="#caaa7f" d="M3-2h28v1H3z" /><path fill="#282b32" d="M4 18h7v4H4zM26 18h7v4h-7zM37 15h6v2h-6z" /><path fill="#a59276" d="M6 19h3v2H6zM28 19h3v2h-3z" />
+        <path fill="#caaa7f" d="M3-2h28v1H3z" /><path fill="#282b32" d="M37 15h6v2h-6z" /><TrainWheel x={8} y={20} size={.7} /><TrainWheel x={30} y={20} size={.7} />
         <path fill="#48373a" d="M0 12h38v1H0z" />
+        {i === 1 && <g transform="translate(19 9)"><path fill="#d4a176" d="M-1-2h3v3h-3z" /><path fill="#79628a" d="M-2 1h5v2h-5z" /><g className="pb-flag-flutter"><path fill="#f1c898" d="M2 0h4v-3h1v4H2z" /></g></g>}
       </g>)}
       <g transform="translate(308 48)">
         <path fill="#3d3037" d="M0 3h24v15H0zM27-4h22v22H27zM49 4h31v14H49zM60-9h8V4h-8zM57-12h14v4H57zM77 0h6v18h-6zM24-6h29v3H24zM-1 17h87v3H-1z" />
@@ -365,11 +449,12 @@ function DesertExpress() {
         <path fill="#f0d4a0" d="M31 1h12v8H31z" /><path fill="#879996" d="M32 2h10v3H32z" /><path fill="#4b3939" d="M36 1h1v8h-1zM49 4h2v12h-2zM68 4h2v12h-2z" />
         <path fill="#9c7c5a" d="M27 11h20v2H27zM4 7h15v1H4z" /><path fill="#302c32" d="M2 0h5v-3h7v2h7v4H2z" />
         <path fill="#d5ad78" d="M78 7h4v4h-4zM84 18h5v2h3v2h-8z" />
-        <g fill="#292b31"><path d="M4 18h8v5H4zM16 18h8v5h-8zM29 17h11v7H29zM49 17h11v7H49zM66 17h11v7H66z" /></g>
-        <g fill="#b89971"><path d="M6 19h4v2H6zM18 19h4v2h-4zM32 19h5v3h-5zM52 19h5v3h-5zM69 19h5v3h-5z" /></g>
-        <path fill="#cab993" d="M33 20h38v1H33z" />
+        <TrainWheel x={8} y={20} size={.65} /><TrainWheel x={20} y={20} size={.65} /><TrainWheel x={35} y={20} /><TrainWheel x={55} y={20} /><TrainWheel x={72} y={20} />
+        <g transform="translate(35 20)"><g className="pb-piston"><path fill="#cab993" d="M0 0h38v2H0z" /><path fill="#f0d5a1" d="M1 0h2v2H1zM34 0h2v2h-2z" /></g></g>
+        <g transform="translate(79 13)"><g className="pb-smoke" style={{ animationDuration: "1.9s" }}><path fill="#e6d1b0" d="M0 0h6v3H3v2h-7V2h4z" /></g></g>
       </g>
-      <g transform="translate(370 34)"><g className="pb-smoke"><path fill="#dac6b4" opacity=".65" d="M-2 0h9v-4H3v-5h-12v-4h-16v-4h-23v-3h-16v4h13v4h23v4h13v5h13z" /><path fill="#f1d6b4" opacity=".6" d="M0-2h5v-3H0v-3h-12v-3h-15v2h12v4h11v3z" /></g></g>
+      <g transform="translate(370 34)"><g className="pb-steam"><path fill="#dac6b4" opacity=".75" d="M-2 0h9v-4H3v-5h-12v-4h-16v-4h-23v-3h-16v4h13v4h23v4h13v5h13z" /><path fill="#f1d6b4" opacity=".75" d="M0-2h5v-3H0v-3h-12v-3h-15v2h12v4h11v3z" /></g><g className="pb-steam" style={{ animationDelay: "-1.8s" }}><path fill="#ead2b4" opacity=".45" d="M-3-1h9v-4H0v-6h-14v-4h-23v4h17v5h12v5h5z" /></g></g>
+      <path fill="#ffe0a0" opacity=".13" d="M390 54h6v-3h12v-3h15v17h-16v-3h-11v-3h-6z" /><path fill="#f5d1a0" opacity=".45" d="M393 71h28v1h-28zM405 74h21v1h-21z" />
     </g>
     {[47, 108, 182, 454, 498, 585].map((x, i) => <g key={x} transform={`translate(${x} ${74 + i % 3 * 6})`}>
       <path fill="#3e5650" d="M-2 0v-27h2v-3h3v3h2V0zM-2-12h-8v-3h-3v-12h3v10h8zM5-18h6v-12h3v14h-2v2H5z" />
@@ -386,7 +471,7 @@ function DesertExpress() {
 function IceWatch() {
   const p = BANNER_PALETTES.eiswacht;
   return <><Sky p={p} seed={31} /><Moon p={p} x={369} y={4} />
-    <g opacity=".2" className="pb-sway"><path fill="#86d6bb" d="M0 9h42V6h38v3h34v7h35v6h42v4h42v-5h38v-8h40V8h39V4h41v4h43v8h40v8h43v5h41v-7h41v-9h43V7h45V3h36v4h40v9h-40V9h-35v1h-43v7h-42v10h-41v8h-41v-5h-42v-6h-39v-7h-43v-6h-38v3h-40v6h-39v9h-38v5h-41v-5h-43v-6h-35v-7H79v-4H40v4H0z" /><path fill="#a4a2dd" d="M0 14h40v-3h39v3h35v7h35v6h42v5h40v-5h40v-8h39v-5h39V9h41v6h42v7h41v6h42v5h41v-8h41v-9h42v-7h42V6h36v5h39v3h-40v-2h-34v2h-42v7h-43v9h-41v9h-42v-5h-42v-6h-39v-7h-43v-6h-37v5h-40v5h-39v8h-41v5h-40v-5h-43v-7h-35v-6H80v-3H41v3H0z" /></g>
+    <g opacity=".35" className="pb-aurora"><path fill="#86d6bb" d="M0 9h42V6h38v3h34v7h35v6h42v4h42v-5h38v-8h40V8h39V4h41v4h43v8h40v8h43v5h41v-7h41v-9h43V7h45V3h36v4h40v9h-40V9h-35v1h-43v7h-42v10h-41v8h-41v-5h-42v-6h-39v-7h-43v-6h-38v3h-40v6h-39v9h-38v5h-41v-5h-43v-6h-35v-7H79v-4H40v4H0z" /><path fill="#a4a2dd" d="M0 14h40v-3h39v3h35v7h35v6h42v5h40v-5h40v-8h39v-5h39V9h41v6h42v7h41v6h42v5h41v-8h41v-9h42v-7h42V6h36v5h39v3h-40v-2h-34v2h-42v7h-43v9h-41v9h-42v-5h-42v-6h-39v-7h-43v-6h-37v5h-40v5h-39v8h-41v5h-40v-5h-43v-7h-35v-6H80v-3H41v3H0z" /></g>
     <path fill="#36566a" d="M0 61h15V47h13V35h12V22h9V10h8v12h10v13h12v12h15v14h33V47h13V35h11V23h9V11h8v12h11v12h14v12h18v14h29V47h15V32h11V18h9V6h8v12h11v14h14v15h17v14h33V47h14V35h11V21h10V8h8v13h11v14h14v12h16v14h36V47h15V33h11V20h9V7h8v13h11v13h12v14h15v14h38V46h13V33h11V19h9V6h8v13h11v14h13v13h15v15h14v35H0z" />
     <path fill="#b4d7d6" d="M41 23h9V11h6v12h10v12H56v-7h-7v9H37v-8h4zM153 25h8V12h6v13h10v10h-9v-6h-8v8h-14v-7h7zM268 20h8V7h7v13h10v12h-10v-6h-7v10h-13v-8h5zM382 24h8V9h7v14h9v12h-10v-8h-7v11h-12v-8h5zM496 22h8V8h7v14h9v11h-9v-6h-7v10h-13v-9h5zM605 21h8V7h7v14h10v12h-9v-8h-7v11h-13v-8h4z" />
     <path fill="#648a97" d="M0 76h28v-4h48v4h37v-6h48v3h53v-6h51v5h61v-5h56v5h44v-6h55v6h51v-6h45v6h63v24H0z" />
@@ -410,12 +495,14 @@ function IceWatch() {
     </g>
     <g transform="translate(305 8)"><g className="pb-smoke" fill="#d0e2d4" opacity=".4"><path d="M1 0h9v-3H6v-4H-5v-4h-14v-3h-12v3h10v4h14v4H1z" /></g></g>
     <path fill="#547a88" d="M307 83h8v2h-8zM318 87h6v2h-6zM307 91h7v2h-7zM320 94h8v2h-8z" />
-    <g transform="translate(381 79)"><path fill="#546f78" d="M0-13h1v17H0zM-9-11h18v2H-9z" /><g className="pb-sway"><path fill="#b94d55" d="M1-13h13v2h-3v2H1z" /><path fill="#e59982" d="M2-13h8v1H2z" /></g></g>
+    <path fill="#435e65" d="M353 38h9v10h-9z" /><path fill="#d4e4d6" d="M351 37h13v3h-13z" /><Smoke p={p} x={357} y={36} />
+    <g transform="translate(381 79)"><path fill="#546f78" d="M0-13h1v17H0zM-9-11h18v2H-9z" /><g transform="translate(1 -13)"><g className="pb-flag-flutter"><path fill="#b94d55" d="M0 0h16v2h-3v3H0z" /><path fill="#e59982" d="M1 0h11v1H1z" /></g></g></g>
     <g transform="translate(237 83)"><path fill="#203745" d="M1-7h5v2h2v9H0v-9h1z" /><path fill="#ecedda" d="M2-3h4v6H2z" /><path fill="#e3ad6e" d="M5-5h4v1H5zM0 4h3v1H0zM5 4h3v1H5z" /><path fill="#edf0da" d="M5-6h1v1H5z" /></g>
-    <g transform="translate(348 82)"><path fill="#765449" d="M0 1h16v2H0zM2-5h2v7H2zM12-5h2v7h-2zM2-6h12v2H2zM0 3h2v2h14v-2h2v4H0z" /><path fill="#b8865d" d="M3-5h10v1H3z" /><path fill="#bfbead" d="M5-10h7v5H5z" /></g>
-    <Lantern x={299} y={67} p={p} /><Lantern x={324} y={67} p={p} />
+    <g className="pb-tram-travel" style={{ animationDuration: "12s" }}><g transform="translate(348 82)"><path fill="#765449" d="M0 1h16v2H0zM2-5h2v7H2zM12-5h2v7h-2zM2-6h12v2H2zM0 3h2v2h14v-2h2v4H0z" /><path fill="#b8865d" d="M3-5h10v1H3z" /><path fill="#bfbead" d="M5-10h7v5H5z" /></g><g transform="translate(337 72)"><path fill="#597583" d="M-4-7h9v14h-9zM-3 7h3v8h-3zM3 7h3v8H3z" /><path fill="#d4b59b" d="M-3-13h5v6h-5z" /><path fill="#b1c6c3" d="M-5-15h9v4h-9z" /><path fill="#c58179" d="M-5-7h10v3h-10z" /><path fill="#dad0ad" d="M-4-2h-6v2h6zM5 2h6v4h4v2h-2V6H9V4H5z" /><Lantern x={-10} y={5} p={p} /></g><path fill="#e6c795" opacity=".25" d="M315 90h21v1h-21zM324 94h18v1h-18z" /></g>
+    <g transform="translate(278 79)"><g className="pb-train" style={{ animationDuration: "2.5s" }}><g className="pb-tail-wag"><path fill="#bfd0c8" d="M0 0h-4v-3h-3v-4h2v3h3v2h3z" /></g><path fill="#c6d4cc" d="M-1-2h8v-4h2v2h3v4h-2v4H8V1H3v3H1V1h-2z" /><path fill="#506771" d="M4-2h3v3H4zM8-4h2v2H8z" /><path fill="#253d4b" d="M10-2h1v1h-1z" /><path fill="#b86e65" d="M7 0h3v1H7z" /></g></g>
+    <Lantern x={299} y={67} p={p} /><g transform="translate(324 63)"><g className="pb-pendulum" style={{ animationDuration: "2.8s" }}><Lantern x={0} y={4} p={p} /></g></g>
     <Pine x={191} y={95} size={1.4} dark="#1c3947" mid="#315b68" tip="#c4ded5" snow /><Pine x={446} y={95} size={1.5} dark="#1c3947" mid="#315b68" tip="#c4ded5" snow />
-    <Texture y={88} height={8} color="#f0f0dd" count={115} opacity={.45} /><Rain p={p} snow />
+    <Texture y={88} height={8} color="#f0f0dd" count={115} opacity={.45} />
   </>;
 }
 
