@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { DEFAULT_ACCESSIBILITY_PREFERENCES, type AccessibilityPreferencesV2 } from "@chronicle/theme";
+import { DEFAULT_ACCESSIBILITY_PREFERENCES, type AccessibilityPreferencesV3 } from "@chronicle/theme";
 import { Button, Notice } from "@chronicle/ui";
 import { useState, type ReactNode } from "react";
 import { setzeSprache, t } from "../i18n";
 import { spracheFehlerText, useAppearance } from "./Appearance";
 import { LookAuswahl } from "./LookAuswahl";
+import { BannerAuswahl } from "./BannerAuswahl";
 import { LOOK_LABEL } from "./look-namen";
 
 /**
@@ -48,12 +49,12 @@ export function AppearanceSettings() {
   // abgebrochene Wahl stehen: React zeichnet nicht neu, weil sich der Zustand nicht geaendert
   // hat — der Nutzer laese dann „English", waehrend die Oberflaeche deutsch bleibt.
   const [ruecksetzer, setRuecksetzer] = useState(0);
-  const change = <K extends keyof AccessibilityPreferencesV2>(key: K, value: AccessibilityPreferencesV2[K]) =>
+  const change = <K extends keyof AccessibilityPreferencesV3>(key: K, value: AccessibilityPreferencesV3[K]) =>
     update({ ...preferences, [key]: value });
 
   // Der Sprachwechsel baut die ganze Ansicht neu auf. Wer gerade schreibt, verliert den
   // Entwurf, also wird vorher gefragt; erst nach geladenem Katalog wird die Wahl gespeichert.
-  const wechsleSprache = async (naechste: AccessibilityPreferencesV2["language"]) => {
+  const wechsleSprache = async (naechste: AccessibilityPreferencesV3["language"]) => {
     if (naechste === preferences.language) return;
     if (!window.confirm(t("Sprache umstellen? Die Seite wird neu aufgebaut. Text, den du noch nicht gespeichert hast, geht dabei verloren."))) {
       setRuecksetzer(stand => stand + 1);
@@ -67,6 +68,8 @@ export function AppearanceSettings() {
   return <section className="panel appearance-settings"><h2>{t("Deine Darstellung")}</h2>
     <p>{t("Diese Einstellungen gelten nur für dich und nur in diesem Browser. Sie verändern weder die Kampagne noch das Bild der anderen Mitspieler.")}</p>
 
+    <BannerAuswahl />
+
     <LookAuswahl gewaehlt={preferences.localSkin} aktiv={resolved.basePreset}
       aendere={naechster => change("localSkin", naechster)} />
 
@@ -74,34 +77,34 @@ export function AppearanceSettings() {
       <div className="wahl-feld">
         <label>{t("Sprache")}
           <select key={ruecksetzer} value={preferences.language}
-            onChange={ereignis => void wechsleSprache(ereignis.target.value as AccessibilityPreferencesV2["language"])}>
+            onChange={ereignis => void wechsleSprache(ereignis.target.value as AccessibilityPreferencesV3["language"])}>
             <option value="de">Deutsch</option><option value="en">English</option>
           </select>
         </label>
         <p className="field-help">{t("Ändert die Wörter der Oberfläche. Was ihr selbst geschrieben habt — Artikel, Namen, Notizen — bleibt so, wie es ist.")}</p>
       </div>
 
-      <Wahl titel={t("Kontrast")} wert={preferences.contrast} aendere={wert => change("contrast", wert as AccessibilityPreferencesV2["contrast"])}
+      <Wahl titel={t("Kontrast")} wert={preferences.contrast} aendere={wert => change("contrast", wert as AccessibilityPreferencesV3["contrast"])}
         hilfe={t("Hoher Kontrast schaltet auf Schwarz, Weiß und wenige kräftige Farben mit deutlichen Rändern. Gut bei hellem Licht oder schwacher Sicht.")}
         optionen={[["system", systemwahl], ["normal", t("Normal")], ["high", t("Hoher Kontrast")]]} />
 
-      <Wahl titel={t("Bewegte Übergänge")} wert={preferences.motion} aendere={wert => change("motion", wert as AccessibilityPreferencesV2["motion"])}
+      <Wahl titel={t("Bewegte Übergänge")} wert={preferences.motion} aendere={wert => change("motion", wert as AccessibilityPreferencesV3["motion"])}
         hilfe={t("Ohne Übergänge erscheinen Fenster und Knöpfe sofort, statt sanft einzublenden. Hilft bei Schwindel und auf langsamen Geräten.")}
         optionen={[["system", systemwahl], ["reduced", t("Übergänge weglassen")]]} />
 
-      <Wahl titel={t("Durchscheinende Flächen")} wert={preferences.transparency} aendere={wert => change("transparency", wert as AccessibilityPreferencesV2["transparency"])}
+      <Wahl titel={t("Durchscheinende Flächen")} wert={preferences.transparency} aendere={wert => change("transparency", wert as AccessibilityPreferencesV3["transparency"])}
         hilfe={t("Deckend heißt: Leisten und Fenster sind einfarbig, statt den Inhalt dahinter durchscheinen zu lassen. Text ist dann leichter zu lesen.")}
         optionen={[["system", systemwahl], ["reduced", t("Flächen deckend machen")]]} />
 
-      <Wahl titel={t("Schriftart")} wert={preferences.font} aendere={wert => change("font", wert as AccessibilityPreferencesV2["font"])}
+      <Wahl titel={t("Schriftart")} wert={preferences.font} aendere={wert => change("font", wert as AccessibilityPreferencesV3["font"])}
         hilfe={t("Die letzte Wahl nutzt eine breite, ruhige Schrift ohne Zierat — angenehm bei langen Textstellen.")}
         optionen={[["theme", t("Schrift des gewählten Aussehens")], ["system", t("Schrift meines Geräts")], ["reader", t("Besonders gut lesbare Schrift")]]} />
 
-      <Wahl titel={t("Platz zwischen den Elementen")} wert={preferences.density} aendere={wert => change("density", wert as AccessibilityPreferencesV2["density"])}
+      <Wahl titel={t("Platz zwischen den Elementen")} wert={preferences.density} aendere={wert => change("density", wert as AccessibilityPreferencesV3["density"])}
         hilfe={t("Viel Luft: größere Knöpfe und mehr Abstand, gut am Tablet und am Tisch. Eng: es passt mehr auf den Bildschirm.")}
         optionen={[["comfortable", t("Viel Luft")], ["compact", t("Eng")]]} />
 
-      <Wahl titel={t("Wie schmuckvoll?")} wert={preferences.atmosphere} aendere={wert => change("atmosphere", wert as AccessibilityPreferencesV2["atmosphere"])}
+      <Wahl titel={t("Wie schmuckvoll?")} wert={preferences.atmosphere} aendere={wert => change("atmosphere", wert as AccessibilityPreferencesV3["atmosphere"])}
         hilfe={t("Nüchtern: keine Schatten, keine Verläufe. Mit Verzierungen: Schatten und Zierkanten an Feldern. Stimmungsvoll: zusätzlich ein farbiger Lichtschein hinter der Seite.")}
         optionen={[["clean", t("Nüchtern")], ["crafted", t("Mit Verzierungen")], ["cinematic", t("Stimmungsvoll")]]} />
     </div>

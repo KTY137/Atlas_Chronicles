@@ -1,0 +1,64 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
+.context-bar .wordmark, .context-bar .context-divider, .context-bar .context-right { flex-shrink: 0; }
+.context-bar .campaign-trigger { min-width: 0; }
+.context-banner { position: relative; flex: 1 1 160px; min-width: 0; align-self: stretch; overflow: hidden; pointer-events: none; }
+.context-banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--surface), transparent 48px, transparent calc(100% - 48px), var(--surface)); }
+.pixel-banner { display: block; position: relative; overflow: hidden; isolation: isolate; pointer-events: none; }
+.pixel-banner svg { display: block; width: 100%; height: 100%; shape-rendering: crispEdges; }
+.pixel-banner-strip { position: absolute; inset: 0; }
+.pixel-banner-strip svg { position: absolute; bottom: 0; height: 64px; }
+.pixel-banner-preview { height: 64px; width: 100%; }
+.banner-auswahl { margin: 0 0 32px; padding: 0; min-width: 0; border: 0; }
+.banner-auswahl > legend { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 0; font: 500 21px var(--font-display); }
+.banner-count { font: 500 11px var(--font-body); letter-spacing: .04em; color: var(--text-muted); border: 1px solid var(--line-strong); border-radius: 20px; padding: 3px 8px; }
+.banner-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+.banner-off { display: flex; flex-direction: row; align-items: center; gap: 8px; padding: 8px 12px; margin: 0; border: 1px solid var(--control-line); border-radius: var(--radius); color: var(--text-muted); cursor: pointer; font-size: 12px; min-height: 44px; }
+.banner-off.ist-gewaehlt { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+.banner-off input[type="radio"] { width: 18px; height: 18px; min-height: 18px; padding: 0; flex: none; margin: 0; accent-color: var(--accent); }
+.banner-motion { margin: 0; min-height: 44px; font-size: 12px; }
+.banner-gitter { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.banner-karte { position: relative; display: block; overflow: hidden; min-width: 0; margin: 0; border: 2px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); cursor: pointer; }
+.banner-karte:hover { border-color: var(--control-line); }
+.banner-karte.ist-gewaehlt { border-color: var(--accent); background: var(--accent-soft); }
+.banner-karte:has(> input:focus-visible), .banner-off:has(> input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.banner-radio { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.banner-caption { display: grid; gap: 2px; padding: 9px 28px 10px 10px; line-height: 1.35; }
+.banner-caption strong { color: var(--text); font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.banner-caption > span { color: var(--text-muted); font-size: 11px; }
+.banner-check { position: absolute; bottom: 16px; right: 9px; color: var(--accent); font-size: 15px; }
+.banner-status { margin: 12px 0 0; }
+
+/* CSS owns motion. All 20 gallery previews animate, even before choosing a scene. */
+.pixel-banner[data-animated="true"] .pb-cloud { animation: pb-drift 18s steps(18) infinite alternate; }
+.pixel-banner[data-animated="true"] .pb-twinkle { animation: pb-glimmer 5s steps(4) infinite alternate; }
+.pixel-banner[data-animated="true"] .pb-float { animation: pb-bob 6s steps(4) infinite alternate; }
+.pixel-banner[data-animated="true"] .pb-water { animation: pb-ripple 4s steps(4) infinite alternate; }
+.pixel-banner[data-animated="true"] .pb-fireflies { animation: pb-fireflies 7s steps(6) infinite alternate; }
+.pixel-banner[data-animated="true"] .pb-gear { animation: pb-turn 24s steps(24) infinite; }
+.pixel-banner[data-animated="true"] .pb-smoke { animation: pb-smoke 6s steps(6) infinite; }
+.pixel-banner[data-animated="true"] .pb-train { animation: pb-train 14s steps(24) infinite alternate; }
+.pixel-banner[data-animated="true"] .pb-rain { animation: pb-rain 2s steps(8) infinite; }
+.pixel-banner[data-animated="true"] .pb-snow { animation: pb-snow 6s steps(12) infinite; }
+.pixel-banner[data-animated="true"] .pb-grid { animation: pb-grid 3s steps(4) infinite; }
+.pixel-banner[data-animated="true"] .pb-data { animation: pb-data 6s steps(12) infinite; }
+.pixel-banner[data-animated="true"] .pb-bubbles { animation: pb-bubbles 8s steps(12) infinite; }
+.pixel-banner[data-animated="true"] .pb-comet { animation: pb-comet 12s steps(24) infinite; }
+@keyframes pb-drift { to { transform: translateX(18px); } }
+@keyframes pb-glimmer { from { opacity: .45; } to { opacity: 1; } }
+@keyframes pb-bob { to { transform: translateY(-3px); } }
+@keyframes pb-ripple { to { transform: translateX(4px); opacity: .65; } }
+@keyframes pb-fireflies { from { opacity: .45; } to { transform: translate(2px, -4px); opacity: 1; } }
+@keyframes pb-turn { to { transform: rotate(360deg); } }
+@keyframes pb-smoke { from { opacity: .1; } 50% { opacity: .3; } to { transform: translate(-6px, -6px); opacity: 0; } }
+@keyframes pb-train { to { transform: translateX(24px); } }
+@keyframes pb-rain { to { transform: translate(-4px, 12px); } }
+@keyframes pb-snow { to { transform: translate(4px, 12px); } }
+@keyframes pb-grid { to { transform: translateY(3px); } }
+@keyframes pb-data { from { opacity: .35; } to { transform: translateY(12px); opacity: .8; } }
+@keyframes pb-bubbles { to { transform: translateY(-12px); opacity: 0; } }
+@keyframes pb-comet { 0%, 70% { opacity: 0; } 75% { opacity: .8; transform: translate(0); } 100% { opacity: 0; transform: translate(-48px, 24px); } }
+@media (prefers-reduced-motion: reduce) { .pixel-banner * { animation: none !important; } }
+@media (forced-colors: active) { .context-banner { display: none; }.banner-karte.ist-gewaehlt { border-color: Highlight; }.banner-check { color: Highlight; } }
+@media (max-width: 760px) { .context-banner { display: none; } }
+@media (max-width: 480px) { .banner-gitter { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }.banner-caption { padding-left: 8px; }.banner-auswahl > legend { font-size: 18px; } }

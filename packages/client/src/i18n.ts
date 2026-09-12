@@ -40,6 +40,7 @@ const hoerer = new Set<() => void>();
  * unverändert stehen lässt — der Bootstrap wirft dann `glob is not a function` und die
  * Anwendung mountet gar nicht. `gate:sprache` prüft, dass jede Paketdatei hier steht. */
 const textDateien: (() => Promise<Record<string, unknown>>)[] = [
+  () => import("./i18n/en/P19.json"),
   () => import("./i18n/en/P1.json"), () => import("./i18n/en/P2.json"),
   () => import("./i18n/en/P3.json"), () => import("./i18n/en/P4.json"),
   () => import("./i18n/en/P5.json"), () => import("./i18n/en/P6.json"),

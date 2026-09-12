@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { DEFAULT_ACCESSIBILITY_PREFERENCES, ThemeValidationError, parseAccessibilityPreferences, recoverAccessibilityPreferences, resolveTheme, serializeAccessibilityPreferences, THEME_PRESETS } from "../src/index.ts";
+import { BANNER_IDS, DEFAULT_ACCESSIBILITY_PREFERENCES, ThemeValidationError, parseAccessibilityPreferences, recoverAccessibilityPreferences, resolveTheme, serializeAccessibilityPreferences, THEME_PRESETS } from "../src/index.ts";
 
 /** Die V1-Fassung, wie sie heute im localStorage der Spieler liegt. */
 const V1 = {
@@ -10,8 +10,8 @@ const V1 = {
 };
 
 describe("Sprachfeld in den lokalen Darstellungseinstellungen", () => {
-  it("liefert Deutsch als Vorgabe in Schemafassung 2", () => {
-    expect(DEFAULT_ACCESSIBILITY_PREFERENCES.schemaVersion).toBe(2);
+  it("liefert Deutsch als Vorgabe in Schemafassung 3", () => {
+    expect(DEFAULT_ACCESSIBILITY_PREFERENCES.schemaVersion).toBe(3);
     expect(DEFAULT_ACCESSIBILITY_PREFERENCES.language).toBe("de");
   });
 
@@ -24,7 +24,7 @@ describe("Sprachfeld in den lokalen Darstellungseinstellungen", () => {
 
   it("migriert eine gespeicherte V1-Datei ausdrücklich auf Deutsch", () => {
     const migriert = parseAccessibilityPreferences(JSON.stringify(V1));
-    expect(migriert.schemaVersion).toBe(2);
+    expect(migriert.schemaVersion).toBe(3);
     expect(migriert.language).toBe("de");
     expect(migriert.contrast).toBe("high");
     expect(migriert.font).toBe("reader");
@@ -46,7 +46,7 @@ describe("Sprachfeld in den lokalen Darstellungseinstellungen", () => {
       { ...DEFAULT_ACCESSIBILITY_PREFERENCES, language: "de-DE" },
       { ...DEFAULT_ACCESSIBILITY_PREFERENCES, language: null },
       ohneSprache,
-      { ...DEFAULT_ACCESSIBILITY_PREFERENCES, schemaVersion: 3 },
+      { ...DEFAULT_ACCESSIBILITY_PREFERENCES, schemaVersion: 4 },
     ]) {
       expect(() => parseAccessibilityPreferences(eingabe)).toThrow(ThemeValidationError);
       expect(recoverAccessibilityPreferences(eingabe)).toEqual({ preferences: DEFAULT_ACCESSIBILITY_PREFERENCES, recovered: true });
@@ -57,5 +57,36 @@ describe("Sprachfeld in den lokalen Darstellungseinstellungen", () => {
     const deutsch = resolveTheme(THEME_PRESETS.Fantasy, DEFAULT_ACCESSIBILITY_PREFERENCES);
     const englisch = resolveTheme(THEME_PRESETS.Fantasy, { ...DEFAULT_ACCESSIBILITY_PREFERENCES, language: "en" });
     expect(englisch).toEqual(deutsch);
+  });
+});
+
+describe("Pixelart-Banner in lokalen Einstellungen", () => {
+  it("erhält bei der V2-Migration Sprache, Farbschema und Barrierefreiheit", () => {
+    const v2 = { ...V1, schemaVersion: 2, language: "en", localSkin: "Cyberpunk", motion: "reduced" };
+    const recovered = recoverAccessibilityPreferences(JSON.stringify(v2));
+    expect(recovered.recovered).toBe(false);
+    expect(recovered.preferences).toEqual({ ...v2, schemaVersion: 3, banner: "none", bannerAnimation: true });
+    expect(() => parseAccessibilityPreferences({ ...v2, banner: "mondburg" })).toThrow(ThemeValidationError);
+    const { language: _language, ...incomplete } = v2;
+    expect(() => parseAccessibilityPreferences(incomplete)).toThrow(ThemeValidationError);
+  });
+
+  it("speichert alle 20 Motive und die Standbildwahl unabhängig vom Kampagnentheme", () => {
+    expect(new Set(BANNER_IDS).size).toBe(20);
+    for (const banner of ["none", ...BANNER_IDS]) {
+      const preferences = { ...DEFAULT_ACCESSIBILITY_PREFERENCES, banner, bannerAnimation: false };
+      expect(parseAccessibilityPreferences(serializeAccessibilityPreferences(preferences))).toEqual(preferences);
+      expect(resolveTheme(THEME_PRESETS.Fantasy, preferences)).toEqual(resolveTheme(THEME_PRESETS.Fantasy));
+    }
+  });
+
+  it("weist fremde Ressourcen, fehlende Felder und ungültige Animationswerte zurück", () => {
+    const { banner: _banner, ...missing } = DEFAULT_ACCESSIBILITY_PREFERENCES;
+    for (const invalid of [
+      missing,
+      { ...DEFAULT_ACCESSIBILITY_PREFERENCES, banner: "https://example.org/banner.gif" },
+      { ...DEFAULT_ACCESSIBILITY_PREFERENCES, banner: "unknown" },
+      { ...DEFAULT_ACCESSIBILITY_PREFERENCES, bannerAnimation: "false" },
+    ]) expect(() => parseAccessibilityPreferences(invalid)).toThrow(ThemeValidationError);
   });
 });

@@ -306,15 +306,15 @@ describe("Sprachwahl in „Deine Darstellung“", () => {
   const gespeicherteFassung1 = () => JSON.stringify({ schemaVersion: 1, contrast: "system", motion: "system",
     transparency: "system", art: "on", font: "theme", density: "comfortable", atmosphere: "crafted", lowPower: false, localSkin: null });
 
-  it("schreibt eine gespeicherte Fassung 1 beim Start als Fassung 2 zurück", async () => {
+  it("schreibt eine gespeicherte Fassung 1 beim Start als Fassung 3 zurück", async () => {
     // Die Migration lief bisher nur im Speicher: bis zur nächsten Nutzeränderung stand auf
     // der Platte weiter V1, und jeder Start migrierte erneut.
     const { zeichne, geschrieben } = provider(gespeicherteFassung1(), wurzelElement());
     zeichne();
     await ruhe();
     expect(geschrieben).toHaveLength(1);
-    expect(JSON.parse(geschrieben[0]!)).toMatchObject({ schemaVersion: 2, language: "de" });
-    expect(zeichne().props.value.preferences.schemaVersion).toBe(2);
+    expect(JSON.parse(geschrieben[0]!)).toMatchObject({ schemaVersion: 3, language: "de", banner: "none", bannerAnimation: true });
+    expect(zeichne().props.value.preferences.schemaVersion).toBe(3);
     expect(zeichne().props.value.preferencesRecovered).toBe(false);
   });
 
@@ -325,10 +325,10 @@ describe("Sprachwahl in „Deine Darstellung“", () => {
     expect(zeichne().props.value.preferencesRecovered).toBe(true);
     expect(zeichne().props.value.preferences).toEqual(Theme.DEFAULT_ACCESSIBILITY_PREFERENCES);
     // Zurückgeschrieben wird die wiederhergestellte Fassung: der Hinweis erscheint einmal.
-    expect(geschrieben.map(wert => JSON.parse(wert).schemaVersion)).toEqual([2]);
+    expect(geschrieben.map(wert => JSON.parse(wert).schemaVersion)).toEqual([3]);
   });
 
-  it("schreibt eine bereits gültige Fassung 2 beim Start nicht zurück", async () => {
+  it("schreibt eine bereits gültige Fassung 3 beim Start nicht zurück", async () => {
     const { zeichne, geschrieben } = provider(englischGespeichert(), wurzelElement());
     zeichne();
     await ruhe();

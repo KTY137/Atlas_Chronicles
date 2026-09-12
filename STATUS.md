@@ -1,3 +1,13 @@
+# 20 animierte Pixelart-Banner — 2026-09-12
+
+Einstellungen → Deine Darstellung → Pixelart-Banner: 20 Fantasy-/Punk-Motive,
+alle Vorschauen animiert; gewähltes Motiv in der Kopfzeile. Lokale Speicherung
+mit V1/V2→V3-Migration, Standbildschalter und bestehendem Bewegungsvorrang.
+Produktionsbuild, Root-Typecheck, 84 Unit- und fünf echte Browserprüfungen bestanden.
+Version/Boundary/Assets bestanden; Banner-Sprachprüfung ohne Verstöße. Das globale
+Sprachgate stoppt noch an anderen parallel bearbeiteten Figuren-/Spieltischdateien.
+Kein neuer Installer. Nachweis: `docs/reviews/pixel-banners-20260912.md`.
+
 # Windows-Auslieferung v0.4.3 — 2026-09-12
 
 Ausgangslauf `34696007669` baute das Paket erfolgreich, scheiterte aber bei der

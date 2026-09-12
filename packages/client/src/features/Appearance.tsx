@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { DEFAULT_ACCESSIBILITY_PREFERENCES, getThemePreset, parseAccessibilityPreferences, recoverAccessibilityPreferences, resolveTheme, serializeAccessibilityPreferences,
-  type AccessibilityPreferencesV2, type ResolvedThemeV1, type Sprache, type SystemAccessibility, type ThemeManifestV1 } from "@chronicle/theme";
+  type AccessibilityPreferencesV3, type ResolvedThemeV1, type Sprache, type SystemAccessibility, type ThemeManifestV1 } from "@chronicle/theme";
 import { aktuelleSprache, initialisiereSprache, setzeSprache, spracheStand, subscribe, t } from "../i18n";
 
 const STORAGE_KEY = "chronicle.appearance.v1";
@@ -28,10 +28,10 @@ export function appearanceStyle(theme: ResolvedThemeV1): CSSProperties {
 export const spracheFehlerText = (): string => t("Das englische Sprachpaket konnte nicht geladen werden.");
 
 interface AppearanceState {
-  preferences: AccessibilityPreferencesV2; resolved: ResolvedThemeV1; system: SystemAccessibility; sprache: Sprache; spracheFehler: string; storageError: string;
+  preferences: AccessibilityPreferencesV3; resolved: ResolvedThemeV1; system: SystemAccessibility; sprache: Sprache; spracheFehler: string; storageError: string;
   /** Der gespeicherte Stand war unlesbar und wurde auf die Vorgabe zurückgesetzt. */
   preferencesRecovered: boolean;
-  update: (next: AccessibilityPreferencesV2) => void; setCampaignTheme: (theme: ThemeManifestV1 | null) => void;
+  update: (next: AccessibilityPreferencesV3) => void; setCampaignTheme: (theme: ThemeManifestV1 | null) => void;
 }
 const AppearanceContext = createContext<AppearanceState | null>(null);
 export function useAppearance(): AppearanceState {
@@ -59,7 +59,7 @@ function adressSprache(): Sprache | null {
  * Fassung zurückschreiben kann; ohne das bliebe eine gespeicherte Fassung 1 bis zur
  * nächsten Nutzeränderung Fassung 1.
  */
-function gespeicherteDarstellung(): { basis: AccessibilityPreferencesV2; roh: string | null; wiederhergestellt: boolean } {
+function gespeicherteDarstellung(): { basis: AccessibilityPreferencesV3; roh: string | null; wiederhergestellt: boolean } {
   let roh: string | null = null;
   try { roh = localStorage.getItem(STORAGE_KEY); }
   catch { return { basis: DEFAULT_ACCESSIBILITY_PREFERENCES, roh: null, wiederhergestellt: false }; }
@@ -68,11 +68,11 @@ function gespeicherteDarstellung(): { basis: AccessibilityPreferencesV2; roh: st
   return { basis: preferences, roh, wiederhergestellt: recovered };
 }
 /** `?lang=` übersteuert die Anzeige, wird aber nie gespeichert: es ist ein Testschalter. */
-function mitAdressSprache(basis: AccessibilityPreferencesV2): AccessibilityPreferencesV2 {
+function mitAdressSprache(basis: AccessibilityPreferencesV3): AccessibilityPreferencesV3 {
   const override = adressSprache();
   return override && override !== basis.language ? { ...basis, language: override } : basis;
 }
-function readPreferences(): AccessibilityPreferencesV2 { return mitAdressSprache(gespeicherteDarstellung().basis); }
+function readPreferences(): AccessibilityPreferencesV3 { return mitAdressSprache(gespeicherteDarstellung().basis); }
 
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   // Die Startsprache steht vor dem ersten Rendern fest: sonst zeigt der Start erst Deutsch
@@ -111,7 +111,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   // Der Katalog kommt nach; weil er die Sprache nicht ändert, bleibt der Baum stehen.
   useEffect(() => { setzeSprache(preferences.language).then(() => setSpracheFehler(""), () => setSpracheFehler(spracheFehlerText())); }, [preferences.language]);
   useLayoutEffect(() => { document.documentElement.lang = sprache; }, [sprache]);
-  const update = useCallback((input: AccessibilityPreferencesV2) => {
+  const update = useCallback((input: AccessibilityPreferencesV3) => {
     const next = parseAccessibilityPreferences(input); setPreferences(next); setPreferencesRecovered(false);
     try { localStorage.setItem(STORAGE_KEY, serializeAccessibilityPreferences(next)); setStorageError(""); }
     catch { setStorageError(t("Diese Darstellung gilt gerade nur für das geöffnete Fenster, weil der Browser keine lokale Speicherung erlaubt.")); }
