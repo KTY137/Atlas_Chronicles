@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { readFile, writeFile, rm, lstat, realpath } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { createPgDb } from "@chronicle/server/host";
 import { contained, fail, safeEnvironment, postgresCommandOwnsDirectory } from "./policy.ts";
 import { databaseUrlOf, type OwnedProfile } from "./profiles.ts";
@@ -35,6 +35,16 @@ function possiblyAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
 }
 
+/** Windows 8.3 and long path spellings can name the same directory or executable.
+ * Compare existing filesystem identities, not unchecked string substitutions. */
+export async function samePostgresPath(recorded: unknown, expected: string): Promise<boolean> {
+  if (typeof recorded !== "string" || !isAbsolute(recorded) || !isAbsolute(expected)) return false;
+  try {
+    const [left, right] = await Promise.all([realpath(recorded), realpath(expected)]);
+    return process.platform === "win32" ? left.toLowerCase() === right.toLowerCase() : left === right;
+  } catch { return false; }
+}
+
 export class ManagedPostgres {
   private confirmed = false;
   constructor(readonly runtimeRoot: string, readonly owned: OwnedProfile) {}
@@ -55,7 +65,7 @@ export class ManagedPostgres {
     const { owned } = this, data = await realpath(owned.dataDirectory);
     const lines = (await readFile(join(data, "postmaster.pid"), "utf8")).trim().split(/\r?\n/);
     const pid = Number(lines[0]);
-    if (!Number.isSafeInteger(pid) || pid <= 0 || resolve(lines[1] ?? "").toLowerCase() !== resolve(data).toLowerCase() || Number(lines[3]) !== owned.profile.pgPort)
+    if (!Number.isSafeInteger(pid) || pid <= 0 || !await samePostgresPath(lines[1], data) || Number(lines[3]) !== owned.profile.pgPort)
       fail("postgres-owner", "PostgreSQL-Prozesszuordnung konnte nicht bestätigt werden.");
     const env = { ...safeEnvironment(process.env), CHRONICLE_CHECK_PID: String(pid) };
     let processInfo: { ExecutablePath: string; CommandLine: string };
@@ -63,12 +73,13 @@ export class ManagedPostgres {
       const result = await exec(join(process.env["SystemRoot"] ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"), ["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter ('ProcessId=' + $env:CHRONICLE_CHECK_PID) | Select-Object ExecutablePath,CommandLine | ConvertTo-Json -Compress"], { env, windowsHide: true, shell: false, timeout: 10_000 });
       processInfo = JSON.parse(result.stdout);
     } catch { return fail("postgres-owner", "Windows-Prozesszuordnung konnte nicht bestätigt werden."); }
-    if (!processInfo || resolve(processInfo.ExecutablePath).toLowerCase() !== resolve(this.runtimeRoot, "bin/postgres.exe").toLowerCase() || !postgresCommandOwnsDirectory(processInfo.CommandLine, data))
+    if (!processInfo || !await samePostgresPath(processInfo.ExecutablePath, resolve(this.runtimeRoot, "bin/postgres.exe")) ||
+      !(postgresCommandOwnsDirectory(processInfo.CommandLine, data) || postgresCommandOwnsDirectory(processInfo.CommandLine, owned.dataDirectory)))
       fail("postgres-owner", "Ein fremder Prozess darf nicht übernommen oder beendet werden.");
     const db = createPgDb(databaseUrlOf(owned));
     try {
       const row = (await db.query<{ directory: string; version: string; port: string; listen: string }>("SELECT current_setting('data_directory') AS directory,current_setting('server_version') AS version,current_setting('port') AS port,current_setting('listen_addresses') AS listen")).rows[0];
-      if (!row || resolve(row.directory).toLowerCase() !== resolve(data).toLowerCase() || !row.version.startsWith("17.11") || Number(row.port) !== owned.profile.pgPort || row.listen !== "127.0.0.1")
+      if (!row || !await samePostgresPath(row.directory, data) || !row.version.startsWith("17.11") || Number(row.port) !== owned.profile.pgPort || row.listen !== "127.0.0.1")
         fail("postgres-owner", "Datenbankziel stimmt nicht mit dem Profil überein.");
       if ((await db.query("SELECT 1 FROM pg_hba_file_rules WHERE auth_method <> 'scram-sha-256' OR error IS NOT NULL")).rowCount)
         fail("postgres-auth", "Datenbankprofil verlangt ausschließlich SCRAM-Anmeldung.");

@@ -1,0 +1,94 @@
+name: windows-package
+on:
+  push:
+    branches: [main]
+    paths: ['packages/**', 'tools/**', 'assets/**', 'package*.json', '.github/workflows/windows-package.yml']
+  pull_request:
+    paths: ['packages/**', 'tools/**', 'assets/**', 'package*.json', '.github/workflows/windows-package.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-package-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: C:\ac043
+    steps:
+      - uses: actions/checkout@v4
+      - name: Short, tracked-source-only build directory
+        working-directory: ${{ github.workspace }}
+        run: |
+          if (Test-Path C:\ac043) { throw 'Build directory already exists' }
+          New-Item -ItemType Directory C:\ac043 | Out-Null
+          $tree = git rev-parse 'HEAD^{tree}'
+          "SOURCE_TREE=$tree" >> $env:GITHUB_ENV
+          git archive HEAD --output="$env:RUNNER_TEMP\source.tar"
+          if ($LASTEXITCODE) { throw 'Source archive failed' }
+          tar -xf "$env:RUNNER_TEMP\source.tar" -C C:\ac043
+          if ($LASTEXITCODE) { throw 'Source extraction failed' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Windows types, build and reproducible assets
+        run: |
+          npm run typecheck; if ($LASTEXITCODE) { throw 'Types failed' }
+          npm run build; if ($LASTEXITCODE) { throw 'Client build failed' }
+          npm run gate:assets; if ($LASTEXITCODE) { throw 'Windows assets do not reproduce' }
+          npx vitest run packages/desktop/test packages/client/test/gui-state-fuzz.test.ts
+          if ($LASTEXITCODE) { throw 'Desktop or state regression failed' }
+      - name: Resolve pinned PostgreSQL runtime
+        run: |
+          $dir = 'C:\ac043\.local\desktop-runtime'
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          $archive = "$dir\postgresql-17.11-1-windows-x64-binaries.zip"
+          Invoke-WebRequest 'https://get.enterprisedb.com/postgresql/postgresql-17.11-1-windows-x64-binaries.zip' -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLower() -ne '6eabdf00d2893713b75db4336a23c3fdf505f056e217ec6e2e95d901750cfea3') { throw 'Runtime checksum mismatch' }
+          Expand-Archive $archive -DestinationPath $dir
+          node packages/desktop/tools/prepare-runtime.mjs
+          if ($LASTEXITCODE) { throw 'Runtime inventory failed' }
+      - name: Build and measure the real Windows application
+        run: |
+          npm run desktop:build; if ($LASTEXITCODE) { throw 'Desktop build failed' }
+          node packages/desktop/tools/package.mjs; if ($LASTEXITCODE) { throw 'Packaging failed' }
+          $record = Get-ChildItem .local/desktop-artifacts/*/artifact.json | Sort-Object FullName | Select-Object -Last 1 | Get-Content -Raw | ConvertFrom-Json
+          node packages/desktop/tools/smoke.mjs "--executable=$($record.paths[0])\AtlasChronicles.exe"
+          if ($LASTEXITCODE) { throw 'Packaged app acceptance failed' }
+      - name: Create and install the unsigned per-user setup
+        run: |
+          node packages/desktop/tools/installer.mjs; if ($LASTEXITCODE) { throw 'Installer failed' }
+          $record = Get-ChildItem .local/desktop-artifacts/*/installer.json | Sort-Object FullName | Select-Object -Last 1 | Get-Content -Raw | ConvertFrom-Json
+          $install = Start-Process -FilePath $record.setupExe -ArgumentList '--silent' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Setup failed: $($install.ExitCode)" }
+          $installed = "$env:LOCALAPPDATA\AtlasChronicles\app-$($record.version)\AtlasChronicles.exe"
+          if (!(Test-Path $installed)) { throw 'Installed executable missing' }
+          # Only the fresh test runner's just-installed application; never a user's host.
+          Get-Process AtlasChronicles -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $installed } | Stop-Process -Force
+          node packages/desktop/tools/smoke.mjs "--executable=$installed"
+          if ($LASTEXITCODE) { throw 'Installed app acceptance failed' }
+          node tools/release/collect-windows.mjs
+          if ($LASTEXITCODE) { throw 'Release evidence failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-v0.4.3-candidate
+          path: C:/ac043/.local/release/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Collect failure-only diagnostics without world databases or secrets
+        if: failure()
+        run: |
+          node tools/release/collect-windows.mjs --diagnostics
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: windows-failure-diagnostics
+          path: C:/ac043/.local/release-diagnostics/*
+          if-no-files-found: ignore
+          retention-days: 3

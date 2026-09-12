@@ -45,11 +45,24 @@ export function MapContextMenu({ label, actions, children, className = "", popup
   useEffect(() => {
     if (!at) return;
     const dismiss = (event: PointerEvent) => { if (!menu.current?.contains(event.target as Node) && !trigger.current?.contains(event.target as Node)) close(false); };
+    // A focus-induced scroll event can be queued before this popup exists. Only a
+    // changed ancestor position moves our anchor. Scrolling the menu itself must
+    // never close a long list before its lower actions can be selected.
+    const positions = new Map<Element, readonly [number, number]>();
+    for (let element = origin.current; element; element = element.parentElement) positions.set(element, [element.scrollLeft, element.scrollTop]);
+    if (document.scrollingElement) positions.set(document.scrollingElement, [document.scrollingElement.scrollLeft, document.scrollingElement.scrollTop]);
     const viewportChanged = () => close(false);
+    const scrolled = (event: Event) => {
+      if (menu.current?.contains(event.target as Node)) return;
+      const element = event.target === document ? document.scrollingElement : event.target;
+      if (!(element instanceof Element)) return;
+      const previous = positions.get(element);
+      if (previous && (element.scrollLeft !== previous[0] || element.scrollTop !== previous[1])) close(false);
+    };
     document.addEventListener("pointerdown",dismiss,true);
     window.addEventListener("resize",viewportChanged);
-    window.addEventListener("scroll",viewportChanged,true);
-    return () => { document.removeEventListener("pointerdown",dismiss,true); window.removeEventListener("resize",viewportChanged); window.removeEventListener("scroll",viewportChanged,true); };
+    window.addEventListener("scroll",scrolled,true);
+    return () => { document.removeEventListener("pointerdown",dismiss,true); window.removeEventListener("resize",viewportChanged); window.removeEventListener("scroll",scrolled,true); };
   }, [at]);
   // A popup has no layout box: an empty grid/flex child would add a gap, move the canvas,
   // and dismiss its own menu through browser scroll anchoring.
@@ -58,7 +71,7 @@ export function MapContextMenu({ label, actions, children, className = "", popup
     if ((event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return;
     event.preventDefault(); event.stopPropagation(); open(event.clientX,event.clientY);
   }} onKeyDown={event => {
-    if (popup) return;
+    if (popup || (event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return;
     if (event.key === "ContextMenu" || event.shiftKey && event.key === "F10") { event.preventDefault(); event.stopPropagation(); open(); }
   }}>
     {children}

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Scalar } from "@chronicle/rules";
 import type { ActorCard } from "@chronicle/protocol";
 import { Dice6, Hammer, Play, Plus, RefreshCw } from "lucide-react";
@@ -129,7 +129,13 @@ function Doors({ selectedId, campaignId, rules, roster, actorId, gm, revision, o
   const pkg = rules.packages.find((item) => item.id === sheet.data?.packageId && item.version === sheet.data.packageVersion);
   const [entryId, setEntryId] = useState(""), [passageId, setPassageId] = useState(""), [actionId, setActionId] = useState(""), [input, setInput] = useState<Record<string, Scalar>>({});
   const [threshold, setThreshold] = useState(9), [hours, setHours] = useState(24), [date, setDate] = useState(""), [repeatable, setRepeatable] = useState(false), [budget, setBudget] = useState("player");
-  useEffect(() => { if (selectedId && doors.data) document.getElementById(`door-${selectedId}`)?.focus(); }, [selectedId, doors.data]);
+  const focusedDoor = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!selectedId) { focusedDoor.current = undefined; return; }
+    if (focusedDoor.current === selectedId || !doors.data) return;
+    const target = document.getElementById(`door-${selectedId}`);
+    if (target) { target.focus(); focusedDoor.current = selectedId; }
+  }, [selectedId, doors.data]);
   const availableActions = pkg?.actions.filter(item => !("outcome" in item && item.outcome)) ?? [];
   const action = availableActions.find((item) => item.id === actionId) ?? availableActions[0];
   const [prepared, setPrepared] = useState<ActionCard | null>(null);

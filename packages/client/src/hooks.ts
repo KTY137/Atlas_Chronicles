@@ -35,11 +35,22 @@ export function useTask() {
   // nicht am Fehlertext: ein Textvergleich fällt still aus, sobald jemand den Satz umformuliert
   // oder seine Übersetzung ändert.
   const [status, setStatus] = useState(0);
-  const run = useCallback(async (work: () => Promise<void>) => {
+  const pending = useRef<Promise<void> | null>(null), mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const run = useCallback((work: () => Promise<void>): Promise<void> => {
+    // The DOM's disabled state is one render too late for same-frame event bursts.
+    // Join the in-flight command rather than enqueue a second mutation or unlock early.
+    if (pending.current) return pending.current;
+    if (!mounted.current) return Promise.resolve();
     setBusy(true); setError(""); setStatus(0);
-    try { await work(); }
-    catch (error) { setError(errorText(error)); setStatus(error instanceof ApiError ? error.status : 0); }
-    finally { setBusy(false); }
+    const job = Promise.resolve().then(work).catch(error => {
+      if (mounted.current) { setError(errorText(error)); setStatus(error instanceof ApiError ? error.status : 0); }
+    }).finally(() => {
+      pending.current = null;
+      if (mounted.current) setBusy(false);
+    });
+    pending.current = job;
+    return job;
   }, []);
   return { busy, error, status, setError, run };
 }

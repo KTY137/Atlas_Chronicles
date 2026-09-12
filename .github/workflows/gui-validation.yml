@@ -1,0 +1,39 @@
+name: gui-validation
+on:
+  push:
+    branches: [fix/gui-fuzz-release-20260911, main]
+    paths: ['packages/**', 'e2e/**', 'tools/release/**', 'tools/test/release-*', 'docs/releases/**', 'package*.json', '.github/workflows/gui-validation.yml', '.github/workflows/release-v043.yml']
+  pull_request:
+    paths: ['packages/**', 'e2e/**', 'tools/release/**', 'tools/test/release-*', 'docs/releases/**', 'package*.json', '.github/workflows/gui-validation.yml', '.github/workflows/release-v043.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gui-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  gui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tools/test/release-v043.test.mjs
+      - run: python3 tools/test/release-candidate-test.py
+      - run: npm run typecheck && npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Native dropdowns, seeded monkey states and navigation regressions
+        run: npx playwright test e2e/gui-fuzz.spec.ts e2e/gui-navigation.spec.ts e2e/map-context-menu.spec.ts e2e/map-editor-cartography.spec.ts e2e/rule-forge.spec.ts --reporter=list,json
+        env:
+          NODE_OPTIONS: --require ./node_modules/semver/index.js
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/gui-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gui-validation-results
+          path: test-results/
+          retention-days: 7

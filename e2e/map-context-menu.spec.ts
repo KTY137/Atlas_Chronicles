@@ -58,3 +58,26 @@ test("canvas keyboard context remains open when focus scrolls back from lower ed
   expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
   await page.keyboard.press('Escape'); await expect(page.getByRole('menu')).toHaveCount(0); await expect(canvas).toBeFocused();
 });
+
+test("long context menus scroll without dismissing and leave native form contexts alone", async ({ page }) => {
+  const compiled = await build({ stdin: { resolveDir: process.cwd(), loader: "tsx", contents: `
+    import {createRoot} from 'react-dom/client';
+    import {MapContextMenu} from './packages/client/src/features/MapContextMenu.tsx';
+    import '@chronicle/ui/tokens.css';
+    createRoot(document.querySelector('#root')).render(<MapContextMenu label='Lange Liste' actions={Array.from({length:40},(_,i)=>({id:String(i),label:'Aktion '+i,onSelect:()=>{document.querySelector('#result').textContent=String(i)}}))}>
+      <input aria-label='Notiz'/><select aria-label='Typ'><option>A</option><option>B</option></select>
+    </MapContextMenu>);
+  ` }, bundle: true, format: "iife", platform: "browser", target: "es2022", jsx: "automatic", write: false, outdir: ".local/menu-long-memory", logLevel: "silent", define: { "process.env.NODE_ENV": '"production"' } });
+  await page.setContent('<main id="root"></main><output id="result"></output>');
+  await page.addStyleTag({ content: compiled.outputFiles!.find(f => f.path.endsWith('.css'))!.text });
+  await page.addScriptTag({ content: compiled.outputFiles!.find(f => f.path.endsWith('.js'))!.text });
+  const menu = page.getByRole('menu');
+  for (const field of [page.getByLabel('Notiz'), page.getByLabel('Typ')]) {
+    await field.focus(); await field.press('Shift+F10'); await expect(menu).toHaveCount(0); await page.keyboard.press('Escape');
+  }
+  await page.getByRole('button', { name: 'Aktionen für Lange Liste', exact: true }).click();
+  await page.getByRole('menuitem').first().press('End');
+  await expect(page.getByRole('menuitem', { name: 'Aktion 39', exact: true })).toBeInViewport();
+  await page.getByRole('menuitem', { name: 'Aktion 39', exact: true }).click();
+  await expect(page.locator('#result')).toHaveText('39');
+});
