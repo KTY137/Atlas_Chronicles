@@ -426,10 +426,21 @@ try{
   evidence.passed=true;
 }catch(error){
   evidence.passed=false;evidence.error=String(error);console.error(error);process.exitCode=1;
+  // Preserve the actual failure even if renderer diagnostics or host cleanup cannot finish.
+  await writeFile(join(run,"evidence.json"),JSON.stringify(evidence,null,2));
   if(game&&!game.isClosed())try{
     evidence.failureView={url:game.url(),text:(await game.locator("body").innerText()).slice(0,12000)};
     await game.screenshot({path:join(run,"failure.png"),fullPage:true});
     evidence.gpuFeatures=await application.evaluate(({app})=>app.getGPUFeatureStatus());
   }catch(captureError){evidence.captureError=String(captureError);}
 }
-finally{try{await stop();}catch(error){evidence.cleanupError=String(error);process.exitCode=1;}await writeFile(join(run,"evidence.json"),JSON.stringify(evidence,null,2));console.log(`Evidence: ${join(run,"evidence.json")}`);}
+finally{
+  try{await stop();}catch(error){evidence.passed=false;evidence.cleanupError=String(error);console.error("Desktop smoke cleanup failed:",error);process.exitCode=1;}
+  evidence.finishedAt=new Date().toISOString();
+  await writeFile(join(run,"evidence.json"),JSON.stringify(evidence,null,2));
+  await new Promise(resolve=>process.stdout.write(`Evidence: ${join(run,"evidence.json")}\n`,resolve));
+  // A refused host stop can leave Playwright handles alive. Keep that refusal as a failure,
+  // then exit after evidence is durable. Playwright cleans only the app tree it launched
+  // for this unique throwaway smoke profile; production ownership checks stay in force.
+  if(process.exitCode)process.exit(process.exitCode);
+}

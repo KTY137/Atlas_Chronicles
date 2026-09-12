@@ -54,25 +54,41 @@ jobs:
           Expand-Archive $archive -DestinationPath $dir
           node packages/desktop/tools/prepare-runtime.mjs
           if ($LASTEXITCODE) { throw 'Runtime inventory failed' }
-      - name: Build and measure the real Windows application
+      - name: Build the real Windows application
+        timeout-minutes: 3
         run: |
           npm run desktop:build; if ($LASTEXITCODE) { throw 'Desktop build failed' }
+      - name: Package and measure the Windows application
+        timeout-minutes: 5
+        run: |
           node packages/desktop/tools/package.mjs; if ($LASTEXITCODE) { throw 'Packaging failed' }
+      - name: Accept the packaged Windows application
+        timeout-minutes: 8
+        run: |
           $record = Get-ChildItem .local/desktop-artifacts/*/artifact.json | Sort-Object FullName | Select-Object -Last 1 | Get-Content -Raw | ConvertFrom-Json
           node packages/desktop/tools/smoke.mjs "--executable=$($record.paths[0])\AtlasChronicles.exe"
           if ($LASTEXITCODE) { throw 'Packaged app acceptance failed' }
       - name: Create and install the unsigned per-user setup
+        timeout-minutes: 5
         run: |
           node packages/desktop/tools/installer.mjs; if ($LASTEXITCODE) { throw 'Installer failed' }
           $record = Get-ChildItem .local/desktop-artifacts/*/installer.json | Sort-Object FullName | Select-Object -Last 1 | Get-Content -Raw | ConvertFrom-Json
-          $install = Start-Process -FilePath $record.setupExe -ArgumentList '--silent' -Wait -PassThru
+          $install = Start-Process -FilePath $record.setupExe -ArgumentList '--silent' -WindowStyle Hidden -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "Setup failed: $($install.ExitCode)" }
           $installed = "$env:LOCALAPPDATA\AtlasChronicles\app-$($record.version)\AtlasChronicles.exe"
           if (!(Test-Path $installed)) { throw 'Installed executable missing' }
           # Only the fresh test runner's just-installed application; never a user's host.
           Get-Process AtlasChronicles -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $installed } | Stop-Process -Force
+      - name: Accept the installed Windows application
+        timeout-minutes: 8
+        run: |
+          $record = Get-ChildItem .local/desktop-artifacts/*/installer.json | Sort-Object FullName | Select-Object -Last 1 | Get-Content -Raw | ConvertFrom-Json
+          $installed = "$env:LOCALAPPDATA\AtlasChronicles\app-$($record.version)\AtlasChronicles.exe"
           node packages/desktop/tools/smoke.mjs "--executable=$installed"
           if ($LASTEXITCODE) { throw 'Installed app acceptance failed' }
+      - name: Collect accepted Windows release evidence
+        timeout-minutes: 2
+        run: |
           node tools/release/collect-windows.mjs
           if ($LASTEXITCODE) { throw 'Release evidence failed' }
       - uses: actions/upload-artifact@v4
@@ -83,6 +99,7 @@ jobs:
           retention-days: 7
       - name: Collect failure-only diagnostics without world databases or secrets
         if: failure()
+        timeout-minutes: 2
         run: |
           node tools/release/collect-windows.mjs --diagnostics
       - uses: actions/upload-artifact@v4

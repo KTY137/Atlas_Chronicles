@@ -1,3 +1,20 @@
+# Windows-Auslieferung v0.4.3 — 2026-09-12
+
+Ausgangslauf `34696007669` baute das Paket erfolgreich, scheiterte aber bei der
+Windows-Prozessabfrage und blieb nach geschriebenem Fehlerbeleg bis zum 40-Minuten-Limit
+offen. Die Prozessabfrage hat jetzt ein eigenes 30-Sekunden-Limit und sichere
+Fehlerkategorien; der Windows-Test verlangt eine tatsächlich ausgeführte Fremdprozessprüfung.
+Der Smoke-Treiber speichert Fehler vor dem Aufräumen und beendet fehlgeschlagene Läufe.
+Build, Paket, Paketabnahme und Installationsabnahme haben getrennte CI-Stufen und Zeitlimits.
+Alle zehn vom Owner benannten Feature-/Release-Branches sind Vorfahren von Main.
+Beim GUI-Merge verlorene Kontextmenü-Korrekturen für Dialoge, Vollbild und editierbare
+Inhalte sind wiederhergestellt; spätere Main-Korrekturen bleiben erhalten.
+
+Release-Abnahme und Artefakte: [GitHub v0.4.3](https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.4.3).
+Maßgeblich sind die fünf dort belegten Prüfungen desselben Main-Commits sowie Paket- und
+Installationsnachweis; die separate vollständige GUI-Qualifikation für 0.5.0 bleibt offen.
+Diagnose und Grenzen: `docs/reviews/windows-release-v043-20260912.md`.
+
 # GUI release candidate 0.5.0 — 2026-09-11
 
 Work in progress from main 7976af9. Five reproduced GUI event/lifecycle bugs fixed;

@@ -39,14 +39,15 @@ it("uebernimmt weiterhin keinen fremden lebenden Prozess, nur weil er in postmas
   const owned = await profile();
   try {
     await writeFile(join(owned.dataDirectory, "postmaster.pid"), pidFile(process.pid, owned.dataDirectory));
-    // Windows must inspect the live foreign executable; non-Windows cannot run CIM
-    // and must reject the unverified owner rather than attempting a stop command.
+    // Windows must actually inspect the live foreign executable. Accepting an inspection
+    // timeout here masked the same failure that prevented the packaged app from starting.
+    // Non-Windows cannot run CIM and must still reject the unverified owner.
     await expect(new ManagedPostgres(join(owned.directory, "runtime"), owned).stop()).rejects.toThrow(
-      /fremder Prozess|Windows-Prozesszuordnung konnte nicht bestätigt werden/);
+      process.platform === "win32" ? /fremder Prozess/ : /Windows-Prozesszuordnung konnte nicht bestätigt werden/);
     expect(await readFile(join(owned.dataDirectory, "postmaster.pid"), "utf8")).toBe(pidFile(process.pid, owned.dataDirectory));
     expect(() => process.kill(process.pid, 0)).not.toThrow();
   } finally { await rm(owned.directory, { recursive: true, force: true }); }
-}, 15_000);
+}, 40_000);
 
 it("compares actual directory identity without treating a different or missing path as an alias", async () => {
   const owned = await profile(), alias = join(owned.directory, "alias"), other = join(owned.directory, "other");

@@ -77,10 +77,19 @@ export class ManagedPostgres {
     const env = { ...safeEnvironment(process.env), CHRONICLE_CHECK_PID: String(pid) };
     let processInfo: { ExecutablePath: string; CommandLine: string };
     try {
-      const result = await exec(join(process.env["SystemRoot"] ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"), ["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter ('ProcessId=' + $env:CHRONICLE_CHECK_PID) | Select-Object ExecutablePath,CommandLine | ConvertTo-Json -Compress"], { env, windowsHide: true, shell: false, timeout: 10_000 });
+      // The ten-second inspection limit expired on Windows CI. Allow a longer bounded
+      // query while retaining every ownership check; a timeout is never proof of ownership.
+      const result = await exec(join(process.env["SystemRoot"] ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"), ["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter ('ProcessId=' + $env:CHRONICLE_CHECK_PID) -ErrorAction Stop | Select-Object ExecutablePath,CommandLine | ConvertTo-Json -Compress"], { env, windowsHide: true, shell: false, timeout: 30_000 });
       processInfo = JSON.parse(result.stdout);
-    } catch { return fail("postgres-owner", "Windows-Prozesszuordnung konnte nicht bestätigt werden."); }
-    if (!processInfo || !await samePostgresPath(processInfo.ExecutablePath, resolve(this.runtimeRoot, "bin/postgres.exe")) ||
+    } catch (error) {
+      // Only fixed diagnostic categories cross the desktop boundary, never PowerShell output.
+      const reason = (error as { killed?: boolean } | null)?.killed === true ? "Zeitlimit von 30 Sekunden erreicht"
+        : error instanceof SyntaxError ? "kein lesbarer Prozessnachweis" : "Systemabfrage fehlgeschlagen";
+      return fail("postgres-owner", `Windows-Prozesszuordnung konnte nicht bestätigt werden (${reason}).`);
+    }
+    if (!processInfo || Array.isArray(processInfo) || typeof processInfo.ExecutablePath !== "string" || typeof processInfo.CommandLine !== "string")
+      fail("postgres-owner", "Windows-Prozesszuordnung konnte nicht bestätigt werden (unvollständiger Prozessnachweis).");
+    if (!await samePostgresPath(processInfo.ExecutablePath, resolve(this.runtimeRoot, "bin/postgres.exe")) ||
       !(postgresCommandOwnsDirectory(processInfo.CommandLine, data) || postgresCommandOwnsDirectory(processInfo.CommandLine, owned.dataDirectory)))
       fail("postgres-owner", "Ein fremder Prozess darf nicht übernommen oder beendet werden.");
     const db = createPgDb(databaseUrlOf(owned));
