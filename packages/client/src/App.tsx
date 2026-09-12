@@ -130,7 +130,12 @@ export function App() {
   // bei jedem Zeichnen frische Werte, und ein Tastenhoerer an- und abzumelden kostet nichts.
   useEffect(() => {
     if (stage !== "account" || choosing) return;
-    const zu = (ereignis: KeyboardEvent) => { if (ereignis.key === "Escape" && !menuOpen) schliesseKonto(); };
+    const zu = (ereignis: KeyboardEvent) => {
+      if (ereignis.key !== "Escape" || menuOpen || ereignis.defaultPrevented) return;
+      // Escape auf einem nativen Auswahlfeld schliesst nur dessen Liste, nicht die Einstellungen.
+      if (ereignis.target instanceof HTMLSelectElement) return;
+      schliesseKonto();
+    };
     window.addEventListener("keydown", zu);
     return () => window.removeEventListener("keydown", zu);
   });

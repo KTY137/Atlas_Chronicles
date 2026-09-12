@@ -316,7 +316,8 @@ try{
   // New release features run through the shipped UI and enter the real restart/restore checks.
   await game.goto(`${origin}/?campaign=${campaignId}&stage=atlas&atlasChild=${generated.body.ack.subjectId}`);
   await game.locator('.tactical-canvas[data-canvas-ready="true"] canvas').waitFor({state:"visible"});
-  let floors=game.getByTestId("map-floors-panel");await floors.locator("summary").click();
+  // Only the panel's own summary: once a floor exists it nests further <details> for transitions and names.
+  let floors=game.getByTestId("map-floors-panel");await floors.locator(":scope > summary").click();
   await floors.getByLabel("Name des neuen Geschosses",{exact:true}).fill("Installed upper floor");
   await nativeChoice(floors.getByLabel("Art des Geschossübergangs",{exact:true}),"lift");
   await nativeChoice(floors.getByLabel("Art des Geschossübergangs",{exact:true}),"stairs");
@@ -335,7 +336,7 @@ try{
   await fog.getByText("Aufgedeckt",{exact:true}).waitFor({state:"visible"});
   await game.reload();await game.getByTestId("room-fog-controls").locator("summary").click();
   assert.equal(await game.getByTestId("room-fog-controls").getByText("Aufgedeckt",{exact:true}).count(),1);
-  floors=game.getByTestId("map-floors-panel");await floors.locator("summary").click();
+  floors=game.getByTestId("map-floors-panel");await floors.locator(":scope > summary").click();
   assert.equal(await floors.getByRole("navigation",{name:"Geschoss auswählen"}).getByRole("button").count(),2);
   record("installed UI creates a linked upper floor, switches native transition dropdowns and retains room reveal through reload");
   await game.screenshot({path:join(run,"installed-floors-fog.png"),fullPage:true});

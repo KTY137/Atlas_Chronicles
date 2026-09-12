@@ -48,7 +48,9 @@ export function TacticalGenerate({ campaignId, onCreated, onDirty }: { campaignI
   const roadReport = visiblePreview && "verkehr" in visiblePreview.bericht ? visiblePreview.bericht.verkehr : undefined;
   const roadsReady = !roadReport || !roadReport.invalidNodes.length && !roadReport.unreachableNodes.length && roadReport.routes.every(r => r.status === "gebaut");
   const problem = generationError(settings, defaults.data), ready = !!name.trim() && !!keim.trim() && !problem;
-  const recipe = visiblePreview?.generator ? makeMapRecipe(name, keim, settings, visiblePreview.keimHash, defaults.data, visiblePreview.generator) : null;
+  // Eine Vorlage, die sich nicht exportieren laesst, ist kein Grund, die Werkstatt abzuschiessen:
+  // dann fehlt nur der Export, Vorschau und Speichern bleiben.
+  const recipe = (() => { try { return visiblePreview?.generator ? makeMapRecipe(name, keim, settings, visiblePreview.keimHash, defaults.data, visiblePreview.generator) : null; } catch { return null; } })();
   const loadRecipe = (next: MapRecipe) => {
     if (dirty && !window.confirm(t("Den aktuellen Generatorentwurf durch diese Vorlage ersetzen?"))) return;
     setName(next.name); setKeim(next.seed); setSettings(next.settings); setReference(next); setPreview(null);

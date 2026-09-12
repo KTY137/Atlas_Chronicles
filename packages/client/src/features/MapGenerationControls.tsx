@@ -120,7 +120,7 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     </select></label> : null}
     <div className="map-setting-heading"><Ruler size={16} /><strong>{city ? t("Siedlungsgröße") : t("Kartengröße")}</strong><span>{t("{breite} × {hoehe} Zellen", { breite: w, hoehe: h })}</span></div>
     <div className="map-size-presets" role="group" aria-label={t("Größenprofile")}>{presets.map(preset => <button type="button" key={preset.label}
-      aria-pressed={value.breite === preset.breite && value.hoehe === preset.hoehe && value.anzahl === preset.anzahl} onClick={() => update(preset)}>{preset.label}</button>)}</div>
+      aria-pressed={value.breite === preset.breite && value.hoehe === preset.hoehe && value.anzahl === preset.anzahl} onClick={() => { const { label: _label, ...patch } = preset; update(patch); }}>{preset.label}</button>)}</div>
     <div className="map-numbers">
       <label>{t("Breite")}<input type="number" min={12} max={192} step={1} value={value.breite} placeholder={String(w)} onChange={event => update({ breite: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
       <label>{t("Höhe")}<input type="number" min={12} max={192} step={1} value={value.hoehe} placeholder={String(h)} onChange={event => update({ hoehe: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>

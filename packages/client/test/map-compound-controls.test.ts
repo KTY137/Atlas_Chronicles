@@ -5,6 +5,7 @@ import { ANLAGE_STANDARD, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD
 import { MapGenerationControls } from "../src/features/MapGenerationControls.tsx";
 import { generationSettings, generationOptions, generationError } from "../src/features/map-generation.ts";
 import { changeEntranceType, entranceTypeValue } from "../src/features/map-type-selection.ts";
+import { makeMapRecipe } from "../src/features/map-recipes.ts";
 const defaults = { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD, siedlung: SIEDLUNG_STANDARD, region: REGION_STANDARD, anlagen: ANLAGE_STANDARD };
 function nodes(value: any): any[] { return Array.isArray(value) ? value.flatMap(nodes) : value?.props ? [value, ...nodes(value.props.children)] : []; }
 describe("compound controls and honest generation requests", () => {
@@ -43,5 +44,18 @@ describe("compound controls and honest generation requests", () => {
     const count = nodes(tree).filter(n => n.type === "input" && n.props.type === "number")[2];
     expect(count.props.min).toBe(1); expect(count.props.max).toBe(24);
     expect(nodes(tree).filter(n => n.type === "input" && n.props.type === "checkbox")).toHaveLength(0);
+  });
+  it("applies a size preset without leaking its button label into the settings", () => {
+    // Der Smoke ging genau hier zu Boden: `label` in den Einstellungen liess makeMapRecipe beim
+    // Zeichnen werfen, und die ganze Werkstatt fiel in die Fehlergrenze.
+    let value = generationSettings();
+    const tree = () => MapGenerationControls({ value, defaults, onChange: next => { value = next; } });
+    const presets = () => nodes(tree()).find(node => node.props?.["aria-label"] === "Größenprofile");
+    const weiler = nodes(presets()).find(n => n.type === "button" && n.props.children === "Weiler");
+    weiler.props.onClick();
+    expect(value).not.toHaveProperty("label");
+    expect(value.siedlung).toBe("weiler");
+    expect(generationError(value, defaults)).toBeNull();
+    expect(() => makeMapRecipe("Weiler", "seed", { ...value, stil: "genres" }, "a".repeat(64), defaults, { id: "siedlung", version: "1" })).not.toThrow();
   });
 });
