@@ -11,12 +11,14 @@ const BANNER_LABEL: Record<BannerId, string> = {
   luftschiffhafen: "Luftschiffhafen", uhrwerkstadt: "Uhrwerkstadt", stahlwerk: "Stahlwerk", wuestenexpress: "Wüstenexpress", eiswacht: "Eiswacht",
   neonregen: "Neonregen", dachgaerten: "Dachgärten", biolabor: "Biolabor", datenstrom: "Datenstrom", tiefseestation: "Tiefseestation",
   sonnenraster: "Sonnenraster", pastellpalmen: "Pastellpalmen", raketenhafen: "Raketenhafen", orbitalring: "Orbitalring", geisterstadt: "Geisterstadt",
+  sternwarte: "Sternwarte", versunkener_tempel: "Versunkener Tempel", pilzdorf: "Pilzdorf", wolkenkloster: "Wolkenkloster", nachtmarkt: "Nachtmarkt",
 };
 const BANNER_GENRE_LABEL: Record<BannerId, string> = {
   mondburg: "Fantasy", gluehwald: "Waldmagie", drachenberge: "Drachenfantasy", himmelsinseln: "Himmelsfantasy", kristallhoehle: "Dungeon-Fantasy",
   luftschiffhafen: "Steampunk", uhrwerkstadt: "Clockpunk", stahlwerk: "Dieselpunk", wuestenexpress: "Westernpunk", eiswacht: "Frostpunk",
   neonregen: "Cyberpunk", dachgaerten: "Solarpunk", biolabor: "Biopunk", datenstrom: "Nanopunk", tiefseestation: "Oceanpunk",
   sonnenraster: "Retropunk", pastellpalmen: "Vaporwave", raketenhafen: "Atompunk", orbitalring: "Spacepunk", geisterstadt: "Gothicpunk",
+  sternwarte: "Sternenmagie", versunkener_tempel: "Tiefseemagie", pilzdorf: "Feenwelt", wolkenkloster: "Wolkenreich", nachtmarkt: "Laternenfest",
 };
 
 export function BannerAuswahl() {
@@ -24,7 +26,7 @@ export function BannerAuswahl() {
   const helpId = useId(), name = useId();
   const motion = preferences.bannerAnimation && resolved.motion.cadence !== "none" && resolved.art;
   return <fieldset className="banner-auswahl" aria-describedby={helpId}>
-    <legend>{t("Pixelart-Banner")} <span className="banner-count">{t("20 Szenen")}</span></legend>
+    <legend>{t("Pixelart-Banner")} <span className="banner-count">{t("25 Szenen")}</span></legend>
     <p className="field-help" id={helpId}>{t("Ein kleines Stück Welt in deiner oberen Leiste. Wähle ein Motiv — dein Farbschema bleibt frei wählbar.")}</p>
     <div className="banner-toolbar">
       <label className={`banner-off ${preferences.banner === "none" ? "ist-gewaehlt" : ""}`}>

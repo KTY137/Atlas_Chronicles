@@ -1,6 +1,6 @@
 {
   "Pixelart-Banner": "Pixel art banners",
-  "20 Szenen": "20 scenes",
+  "25 Szenen": "25 scenes",
   "Ein kleines Stück Welt in deiner oberen Leiste. Wähle ein Motiv — dein Farbschema bleibt frei wählbar.": "A little world in your top bar. Pick a scene — your color scheme stays independently selectable.",
   "Kein Banner": "No banner",
   "Banner animieren": "Animate banners",
@@ -28,6 +28,11 @@
   "Raketenhafen": "Rocket port",
   "Orbitalring": "Orbital ring",
   "Geisterstadt": "Ghost town",
+  "Sternwarte": "Observatory",
+  "Versunkener Tempel": "Sunken temple",
+  "Pilzdorf": "Mushroom village",
+  "Wolkenkloster": "Cloud monastery",
+  "Nachtmarkt": "Night market",
   "Fantasy": "Fantasy",
   "Waldmagie": "Forest magic",
   "Drachenfantasy": "Dragon fantasy",
@@ -47,5 +52,10 @@
   "Vaporwave": "Vaporwave",
   "Atompunk": "Atompunk",
   "Spacepunk": "Spacepunk",
-  "Gothicpunk": "Gothicpunk"
+  "Gothicpunk": "Gothicpunk",
+  "Sternenmagie": "Star magic",
+  "Tiefseemagie": "Deep sea magic",
+  "Feenwelt": "Fairy realm",
+  "Wolkenreich": "Cloud realm",
+  "Laternenfest": "Lantern festival"
 }

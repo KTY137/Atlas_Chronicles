@@ -71,13 +71,26 @@ describe("Pixelart-Banner in lokalen Einstellungen", () => {
     expect(() => parseAccessibilityPreferences(incomplete)).toThrow(ThemeValidationError);
   });
 
-  it("speichert alle 20 Motive und die Standbildwahl unabhängig vom Kampagnentheme", () => {
-    expect(new Set(BANNER_IDS).size).toBe(20);
+  it("speichert alle 25 Motive und die Standbildwahl unabhängig vom Kampagnentheme", () => {
+    expect(new Set(BANNER_IDS).size).toBe(25);
     for (const banner of ["none", ...BANNER_IDS]) {
       const preferences = { ...DEFAULT_ACCESSIBILITY_PREFERENCES, banner, bannerAnimation: false };
       expect(parseAccessibilityPreferences(serializeAccessibilityPreferences(preferences))).toEqual(preferences);
       expect(resolveTheme(THEME_PRESETS.Fantasy, preferences)).toEqual(resolveTheme(THEME_PRESETS.Fantasy));
     }
+  });
+
+  it.each([
+    "mondburg", "gluehwald", "drachenberge", "himmelsinseln", "kristallhoehle",
+    "luftschiffhafen", "uhrwerkstadt", "stahlwerk", "wuestenexpress", "eiswacht",
+    "neonregen", "dachgaerten", "biolabor", "datenstrom", "tiefseestation",
+    "sonnenraster", "pastellpalmen", "raketenhafen", "orbitalring", "geisterstadt",
+    "sternwarte", "versunkener_tempel", "pilzdorf", "wolkenkloster", "nachtmarkt",
+  ])("erhält das gespeicherte Motiv %s ohne Rücksetzen anderer Einstellungen", banner => {
+    // Literal persisted IDs protect earlier installations from an accidental catalogue rename.
+    const saved = { ...DEFAULT_ACCESSIBILITY_PREFERENCES, banner, bannerAnimation: false,
+      language: "en", localSkin: "Cyberpunk", motion: "reduced", font: "reader" };
+    expect(recoverAccessibilityPreferences(JSON.stringify(saved))).toEqual({ preferences: saved, recovered: false });
   });
 
   it("weist fremde Ressourcen, fehlende Felder und ungültige Animationswerte zurück", () => {

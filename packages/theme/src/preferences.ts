@@ -20,6 +20,7 @@ export const BANNER_IDS = Object.freeze([
   "luftschiffhafen", "uhrwerkstadt", "stahlwerk", "wuestenexpress", "eiswacht",
   "neonregen", "dachgaerten", "biolabor", "datenstrom", "tiefseestation",
   "sonnenraster", "pastellpalmen", "raketenhafen", "orbitalring", "geisterstadt",
+  "sternwarte", "versunkener_tempel", "pilzdorf", "wolkenkloster", "nachtmarkt",
 ] as const);
 export type BannerId = typeof BANNER_IDS[number];
 export interface AccessibilityPreferencesV3 extends Omit<AccessibilityPreferencesV2, "schemaVersion"> {

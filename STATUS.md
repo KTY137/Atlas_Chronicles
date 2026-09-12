@@ -22,15 +22,19 @@ Last. Die bestehenden Zeitlimits wurden nicht verändert; beide Belege sind doku
 Die vorherige Sprachgate-Blockade der Banner-Sitzung ist damit behoben.
 Nachweise und Bedienung: `docs/reviews/tabletop-completion-20260912.md`, `docs/LAN.md`.
 
-# 20 animierte Pixelart-Banner — 2026-09-12
+# 25 ausgearbeitete Pixelart-Banner — 2026-09-12
 
-Einstellungen → Deine Darstellung → Pixelart-Banner: 20 Fantasy-/Punk-Motive,
-alle Vorschauen animiert; gewähltes Motiv in der Kopfzeile. Lokale Speicherung
-mit V1/V2→V3-Migration, Standbildschalter und bestehendem Bewegungsvorrang.
-Produktionsbuild, Root-Typecheck, 84 Unit- und fünf echte Browserprüfungen bestanden.
-Version/Boundary/Assets bestanden; Banner-Sprachprüfung ohne Verstöße. Das globale
-Sprachgate stoppt noch an anderen parallel bearbeiteten Figuren-/Spieltischdateien.
-Kein neuer Installer. Nachweis: `docs/reviews/pixel-banners-20260912.md`.
+Alle 20 vorhandenen Motive neu gezeichnet, fünf neue Welten ergänzt: Sternwarte,
+Versunkener Tempel, Pilzdorf, Wolkenkloster und Nachtmarkt. Mehr Tiefenebenen,
+Materialdetails, Licht und versteckte kleine Bewohner. Größere Vorschauen bei
+nativer Pixelgröße; beide Regen-/Schneeebenen schließen in Vorschau und Kopfzeile
+pixelgleich an. Bestehende Auswahl, Speicherung und Bewegungsvorgaben bleiben.
+
+Finaler Build, Root-/Client-Typecheck, 119 Unit- und alle sechs Browserprüfungen
+bestanden. Version/Boundary/Sprache/Assets bestanden. Gesamtsuite nach fremdem
+Figurenfehler und Last-Timeouts angehalten; keine vollständige Suite behauptet.
+Kein neuer Installer. Nachweis: `docs/reviews/pixel-banners-polish-20260912.md`.
+
 
 # Windows-Auslieferung v0.4.3 — 2026-09-12
 
