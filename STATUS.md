@@ -1,3 +1,42 @@
+# Schmiede, Charaktererstellung und Steam-Vorbereitung — 2026-09-12
+
+Die Schmiede priorisiert Regeln und Figuren. Die Regelschmiede hat eine
+durchsuchbare Bibliothek, gruppierte Bearbeitung, eine klickbare Paketübersicht
+und direkte Wege zur Testtafel. Die Charaktererstellung gliedert Identität,
+Anfangswerte und Hintergrund; gespeicherte Vorlagen lassen sich direkt als
+eigenständige Figur erschaffen. Desktop- und Handygestaltung samt Englisch
+geprüft. Entwurfsverluste bei Aktualisierung, Paketlöschung und Vorlagenwechsel,
+gesperrte Navigation in installierten Regeln und mehrere Antragsfehler behoben.
+
+Alle 16 ausgewählten Browserabläufe sind über Erstlauf und gezielte Nachläufe
+bestanden. Root-/Client-Typprüfung, Produktionsbuild, Version, Architektur,
+Sprache und Assets bestanden. Gesamtsuite: 3114 bestanden, 19 fehlgeschlagen,
+73 übersprungen sowie ein Worker-RPC-Timeout; der ursprüngliche Lauf bleibt
+als nicht grün dokumentiert. Der gezielte Nachlauf aller Fehlerdateien und
+neuen Regressionen besteht mit 183/183 Tests in 17 Dateien bei einem Worker
+und unveränderten Limits. Testisolation im Squirrel-Harness und eine veraltete
+Sprachtest-Erwartung korrigiert.
+
+Ein separater Agent hat Steam-Staging mit vollständiger Datei-/Hashprüfung,
+optionalen Preview-VDFs, Store-Texten und einer belegten Release-Checkliste
+vorbereitet. Die native Prüfung fand eine entfernte Migration, die durch
+additives Kopieren in alten Desktop-Builds blieb und Export blockierte. Die
+Bereinigung der erzeugten Build-Dateien ist durch sechs Regressionen und
+unabhängige Windows-Junction-Prüfung abgesichert. Alle 30 Paketierungs-/Steam-
+Werkzeugtests und alle 29 nativen Prüfungen des bereinigten Pakets bestehen,
+einschließlich Neustart, lokaler Sicherung und portablem Import mit identischem
+Kampagneninhalt. Der schnelle Gesamttest respektiert das unveränderte
+Anfragebudget an Szenariogrenzen; im Endlauf gab es kein HTTP 429.
+Lokal geprüftes Paket: `.local/steam-staging/steam-qualified-20260912/`,
+2.619 Dateien, 575.200.944 Bytes, exakt 36 aktuelle Migrationen. Steamworks-
+IDs, Store-Materialien und Valve-Abnahme bleiben offen. Kein Steam-Upload,
+keine Veröffentlichung und kein Installer auf diesem Rechner.
+
+Entscheidungen und Nachweise: `design/iterations/forge-clarity-steam-20260912.md`,
+`docs/reviews/forge-clarity-20260912.md`, `docs/steam/verification-20260912.md`.
+Koordination über den vorhandenen LangGraph-StateGraph `forge-release`,
+mit lokalem SQLite-Checkpointer und ausgeschaltetem Tracing.
+
 # Kartenstudio: kleine Edits beschleunigt ? 2026-09-12
 
 Verlauf, Landschaftsprojektion und Renderer verwenden unver?nderte Inhalte wieder.

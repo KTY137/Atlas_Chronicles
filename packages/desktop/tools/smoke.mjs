@@ -25,9 +25,38 @@ const options={executablePath:executable,args:[...artifactFlag?[]:[entry],`--use
 let application,manager,game,profileId,origin,gmId,campaignId,bundle;
 const expectedVersion=JSON.parse(await readFile(join(root,"packages/desktop/package.json"),"utf8")).version;
 const executableKind=executable.toLowerCase().includes(`app-${expectedVersion}`)?"installed":"packaged";
-const evidence={executableKind,version:expectedVersion,schema:"chronicle-desktop-smoke/1",run,startedAt:new Date().toISOString(),checks:[]};
-const record=name=>{evidence.checks.push(name);console.log(`PASS ${name}`);};
-async function launch(){application=await electron.launch(options);manager=await application.firstWindow();manager.setDefaultTimeout(30000);await manager.waitForURL("chronicle-shell://app/index.html");await manager.waitForSelector("#create-form");console.log("Desktop manager loaded.");}
+const evidence={executableKind,version:expectedVersion,schema:"chronicle-desktop-smoke/1",run,startedAt:new Date().toISOString(),checks:[],rateLimits:{routes:{},exceeded:[],checkpoints:[]}};
+const noFlowThrottle=()=>assert.deepEqual(evidence.rateLimits.exceeded.filter(item=>!item.checkpoint),[],"A real smoke flow hit HTTP 429; pacing must not conceal application throttling.");
+const record=name=>{noFlowThrottle();evidence.checks.push(name);console.log(`PASS ${name}`);};
+function observeRequests(page){page.on("response",response=>{
+  const url=new URL(response.url());
+  if(!["localhost","127.0.0.1"].includes(url.hostname)||!url.pathname.startsWith("/api/"))return;
+  const path=url.pathname.replace(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi,":id")
+    .replace(/^(\/api\/packs\/[^/]+\/asset)\/.*/,"$1/*"),headers=response.headers();
+  const key=`${response.request().method()} ${path}`,route=evidence.rateLimits.routes[key]??={responses:0,limits:{}};
+  route.responses++;const limit=headers["x-ratelimit-limit"]??"none";route.limits[limit]=(route.limits[limit]??0)+1;
+  if(response.status()===429)evidence.rateLimits.exceeded.push({path,status:429,limit,remaining:headers["x-ratelimit-remaining"],
+    resetSeconds:headers["x-ratelimit-reset"],retryAfter:headers["retry-after"],checkpoint:url.searchParams.get("desktopSmokeBudget")});
+});}
+async function launch(){application=await electron.launch(options);application.on("window",observeRequests);manager=await application.firstWindow();manager.setDefaultTimeout(30000);await manager.waitForURL("chronicle-shell://app/index.html");await manager.waitForSelector("#create-form");console.log("Desktop manager loaded.");}
+// The smoke chains many separate sessions' worth of preparation in minutes. Observe the
+// unchanged server budget between named scenarios and honor its reset before starting one.
+// Actual scenario requests are never retried; any HTTP 429 in their flows remains a failure.
+async function paceScenario(name,reserve=160){
+  noFlowThrottle();
+  const budget=await game.evaluate(async name=>{const response=await fetch(`/api/me?desktopSmokeBudget=${encodeURIComponent(name)}`);
+    return{status:response.status,limit:response.headers.get("x-ratelimit-limit"),remaining:response.headers.get("x-ratelimit-remaining"),
+      resetSeconds:response.headers.get("x-ratelimit-reset"),retryAfter:response.headers.get("retry-after")};},name);
+  assert.ok(budget.status===200||budget.status===429,`Budget checkpoint ${name}: HTTP ${budget.status}`);
+  assert.equal(Number(budget.limit),240,"Smoke must retain the normal authenticated request limit.");
+  const remaining=Number(budget.remaining),resetSeconds=Number(budget.retryAfter??budget.resetSeconds);
+  assert.ok(Number.isInteger(remaining)&&remaining>=0&&remaining<240&&Number.isInteger(resetSeconds)&&resetSeconds>=0&&resetSeconds<=60,"Missing or invalid server budget headers.");
+  const waitMs=budget.status===429||remaining<reserve?Math.min(60_000,resetSeconds*1000+100):0;
+  evidence.rateLimits.checkpoints.push({name,...budget,reserve,waitMs});
+  console.log(`BUDGET ${name}: ${remaining}/240 remaining, reset ${resetSeconds}s, pause ${waitMs}ms.`);
+  if(waitMs)await new Promise(resolve=>setTimeout(resolve,waitMs));
+  noFlowThrottle();
+}
 async function invoke(request){const result=await manager.evaluate(request=>window.chronicleDesktop.invoke(request),request);assert.equal(result.ok,true,result.error);return result.value;}
 async function request(path,method="GET",body){return game.evaluate(async({path,method,body})=>{const response=await fetch(path,{method,headers:body?{"Content-Type":"application/json"}:{},...(body?{body:JSON.stringify(body)}:{})});return{status:response.status,body:await response.json()};},{path,method,body});}
 async function rawRequest(path,bytes,contentType="application/octet-stream",method="PUT"){
@@ -202,6 +231,7 @@ try{
   },genreManifest.body.assets);
   Object.assign(evidence.genrePack,assetFiles);assert.deepEqual(assetFiles.failures,[]);assert.equal(assetFiles.verified,300);
   record("packaged Genre-Archiv serves all 300 SVGs across twelve genres with their exact manifest bytes and SHA256");
+  await paceScenario("catalogue-ui");
   await game.goto(`${origin}/?campaign=${campaignId}&stage=atlas`);
   await game.getByRole("button",{name:"Neue Karte",exact:true}).click();
   const workshop=game.getByRole("region",{name:"Kartenwerkstatt",exact:true});
@@ -262,6 +292,7 @@ try{
   await game.reload();await canvas().waitFor({state:"visible"});
   assert.deepEqual((await request(`/api/campaigns/${campaignId}/tactical/maps/${genreMapId}`)).body.document,revisedGenreMap.body.document);
   record("compiled client previews and saves Genre-Archiv, filters twelve genres, searches and decodes three motifs, and persists placed artwork through reload");
+  await paceScenario("map-lifecycle-and-forge");
   // Exercise the delivered lifecycle before the export/restart/restore checks below.
   // The fixture belongs to this isolated smoke profile; no user map is selected.
   assert.equal(revisedGenreMap.body.cartography?.schemaVersion,1);
@@ -295,17 +326,23 @@ try{
   evidence.mapLifecycle={parent:genreMapId,interior,cellar,replacement,deletionAck};
   record("compiled desktop right-click reviews and deletes two nested maps, frees the surviving entrance and persists a new replacement interior");
   await game.goto(`${origin}/?campaign=${campaignId}&stage=schmiede`);
-  const overview=game.getByRole("region",{name:"Was möchtest du vorbereiten?",exact:true});
+  const overview=game.getByRole("region",{name:"Regeln und Figuren zuerst",exact:true});
+  const finishing=game.getByRole("region",{name:"Den Spielabend ausgestalten",exact:true});
   await overview.waitFor({state:"visible"});
+  await finishing.waitFor({state:"visible"});
   const workshops=game.getByRole("navigation",{name:"Werkstätten",exact:true});
   assert.equal(await workshops.getByRole("button",{name:"Übersicht",exact:true}).getAttribute("aria-current"),"page");
   for(const label of ["Lootkarten","Figuren & NPCs","Karten","Bilder","Regeln","Aussehen","Veröffentlichung"]){
     await workshops.getByRole("button",{name:label,exact:true}).waitFor({state:"visible"});
-    await overview.getByRole("button").filter({has:game.getByText(label,{exact:true})}).waitFor({state:"visible"});
+    const section=label==="Regeln"||label==="Figuren & NPCs"?overview:finishing;
+    await section.getByRole("button").filter({has:game.getByText(label==="Regeln"?"Regelschmiede":label,{exact:true})}).waitFor({state:"visible"});
   }
+  assert.equal(await overview.getByRole("button").count(),2);
+  assert.equal(await finishing.getByRole("button").count(),5);
   await game.screenshot({path:join(run,"forge-overview.png"),fullPage:true});
   record("shared packaged client shows the Schmiede overview and all seven discoverable workshops");
   await workshops.getByRole("button",{name:"Regeln",exact:true}).click();
+  await game.locator(".rf-starter > summary").click();
   const template=game.getByRole("region",{name:"ChronicleHeroes Vorlage"});
   await template.getByRole("button",{name:"Vorlage anpassen",exact:true}).click();
   await template.getByRole("button",{name:/ChronicleHeroes als Regelentwurf/}).click();
@@ -313,6 +350,7 @@ try{
     const response=game.waitForResponse(response=>response.url()===`${origin}/api/campaigns/${campaignId}${suffix}`&&response.request().method()==="POST");
     await game.getByRole("button",{name:label}).click();assert.equal((await response).status(),200);
   }
+  await paceScenario("floors-and-export");
   // New release features run through the shipped UI and enter the real restart/restore checks.
   await game.goto(`${origin}/?campaign=${campaignId}&stage=atlas&atlasChild=${generated.body.ack.subjectId}`);
   await game.locator('.tactical-canvas[data-canvas-ready="true"] canvas').waitFor({state:"visible"});
@@ -342,7 +380,8 @@ try{
   await game.screenshot({path:join(run,"installed-floors-fog.png"),fullPage:true});
   bundle=validatedExport(await request(`/api/campaigns/${campaignId}/export`));
   assert.equal(bundle.manifest.rulePackageSchemaVersion,2);assert.equal(bundle.manifest.nestedMapSchemaVersion,1);
-  // This smoke now creates floor/fog data: native V20 must survive exit and both restore paths.
+  // Native V21 deliberately delegates to V20 when adventure_trees and actor_portraits
+  // are empty (native-v21/current.ts). This fixture creates floors/fog, so V20 is exact.
   assert.equal(bundle.version,20);assert.equal(bundle.manifest.mapLifecycleSchemaVersion,1);
   assert.ok(bundle.tables.map_floor_stacks.length>0);assert.ok(bundle.tables.map_room_fog.length>0);
   assert.deepEqual(bundle.tables.atlas_karten_herkunft??[],[]);
@@ -361,6 +400,7 @@ try{
   await stop();record("Fastify drain, pool close and verified own PG smart-stop complete");
   await launch();await invoke({kind:"start",profileId});
   game=await openGameWindow("restart");
+  await paceScenario("restart-and-export",80);
   assert.equal((await request("/api/me")).body.userId,gmId);assert.equal((await request("/api/campaigns")).body.some(campaign=>campaign.id===campaignId),true);
   unchangedExport(await request(`/api/campaigns/${campaignId}/export`));
   record("full Electron exit/relaunch reopens same profile, stable origin, cookie and semantic campaign hash");
@@ -368,6 +408,7 @@ try{
   const point=await invoke({kind:"backup"});assert.ok(point.recoveryId);assert.equal(game.isClosed(),true);
   await invoke({kind:"recovery-restore",recoveryId:point.recoveryId,name:"Complete host recovery"});
   game=await openGameWindow("recovery");
+  await paceScenario("recovery-and-export",80);
   const recoveredMe=await request("/api/me");assert.equal(recoveredMe.status,200);assert.equal(recoveredMe.body.userId,gmId);assert.equal(recoveredMe.body.credentialId,originalCredential);
   unchangedExport(await request(`/api/campaigns/${campaignId}/export`));
   record("management recovery point restores new profile with same actual signed browser credential and complete campaign hash");
@@ -382,6 +423,7 @@ try{
   const enrollment=await invoke({kind:"enroll",campaignId,userId:gmId});assert.ok(enrollment.code);
   game=await openGameWindow("campaign-restore");
   const paired=await request("/api/pairing/redeem","POST",{code:enrollment.code});assert.equal(paired.status,200);assert.equal((await request("/api/me")).body.userId,gmId);
+  await paceScenario("portable-restore-and-export",80);
   unchangedExport(await request(`/api/campaigns/${campaignId}/export`));
   assert.notEqual((await request("/api/pairing/redeem","POST",{code:enrollment.code})).status,200);
   record(`native V${bundle.version} restores only into new profile, explicit historical GM enrolls once, semantic reexport equals source`);

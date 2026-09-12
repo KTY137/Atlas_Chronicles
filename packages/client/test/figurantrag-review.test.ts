@@ -30,7 +30,7 @@ function harness(file: string, initial: Record<string, any>, component = file, e
       if (name === "../i18n" || name === "./i18n") return I18nStub;
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
-      if (name === "../hooks") return { useResource: (path: string, revision = 0) => props.resource?.(path, revision) ?? { data: null, loading: false, loaded: true, error: "" }, useTask: () => ({ busy: false, error: props.taskError ?? "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };
+      if (name === "../hooks") return { useResource: (path: string, revision = 0) => props.resource?.(path, revision) ?? { data: null, loading: false, loaded: true, error: "" }, useTask: () => ({ busy: props.taskBusy ?? false, error: props.taskError ?? "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, errorText: (error: unknown) => String(error), api: async (path: string, request: unknown) => { requests.push({ path, request }); return props.transport?.(path, request); } };
       if (name === "./game-api") return { defaults: () => ({}), useCommand: () => async (path: string, body: unknown) => { requests.push({ path, request: { body } }); return props.transport?.(path, { body }); } };
       return new Proxy({}, { get: (_target, key) => String(key) });
@@ -162,6 +162,39 @@ describe("Figurantrag — die Fläche, auf der ein Spieler seine Figur beantragt
     // angefordert wurde — `befehl.current` hält keinen abgebrochenen Versuch fest.
     expect(h.requests[0]!.request.body.commandId).toBe("test-seed-123456");
   });
+
+  it("sperrt während des Sendens den gesamten Entwurf und den Abbruch", () => {
+    const h = harness("FigurAntrag", { ...spieler, resource: spielerQuellen([vorlage], []) });
+    h.button("Figur anlegen").props.onClick();
+    h.nodes(n => n.type === "select")[0]!.props.onChange({ target: { value: "v1" } });
+    h.replace({ taskBusy: true });
+    const controlsLocked = h.nodes(n => n.type === "fieldset" && n.props.disabled === true)
+      .some(n => h.text(n).includes("Name deiner Figur") && h.text(n).includes("Abbrechen"));
+    expect(controlsLocked, "a delayed response must not erase a reopened or changed request draft").toBe(true);
+  });
+
+  it("meldet einen begonnenen Antrag als Entwurf und gibt ihn beim Abbrechen frei", () => {
+    const dirty: boolean[] = [];
+    const h = harness("FigurAntrag", { ...spieler, resource: spielerQuellen([vorlage], []), onDirty: (value: boolean) => dirty.push(value) });
+    h.button("Figur anlegen").props.onClick();
+    h.nodes(n => n.type === "input" && n.props.maxLength === 160)[0]!.props.onChange({ target: { value: "Nell" } });
+    h.render();
+    expect(dirty.at(-1)).toBe(true);
+    h.button("Abbrechen").props.onClick();
+    h.render();
+    expect(dirty.at(-1)).toBe(false);
+  });
+
+  it("reicht den Schutz des Antrags durch die Ich-Fläche an die Navigation weiter", () => {
+    const dirty: boolean[] = [];
+    const h = harness("MeineFigur", { campaign: { id: "campaign", role: "spieler" }, liveRevision: 0,
+      onDirty: (value: boolean) => dirty.push(value), resource: (path: string) => loaded(path.endsWith("/actors") ? [] : rules) });
+    const request = h.nodes(n => n.type === "FigurAntrag")[0]!;
+    expect(request.props.onDirty).toBeTypeOf("function");
+    request.props.onDirty(true);
+    h.render();
+    expect(dirty.at(-1)).toBe(true);
+  });
 });
 
 describe("Figurantrag — die Entscheidung der Spielleitung", () => {
@@ -232,6 +265,70 @@ describe("Figurantrag — die Entscheidung der Spielleitung", () => {
     offen.button("Freigabe entziehen").props.onClick();
     await offen.settle();
     expect(offen.requests[0]!.request).toEqual({ method: "POST", body: { expectedVersion: 3 } });
+  });
+
+  it("übernimmt eine neuere Freigabe nach dem Neuladen auch nach eigener Quittung", async () => {
+    const h = werkbank(null);
+    h.button("Für Spieler freigeben").props.onClick();
+    await h.settle();
+    // Another GM revokes revision 1; the next poll authoritatively carries version 2.
+    h.replace({ revision: 2, resource: (path: string) => path.endsWith("/actor-templates")
+      ? loaded([vorlagenkarte({ frei: false, version: 2 })]) : loaded([]) });
+    expect(h.button("Für Spieler freigeben")).toBeTruthy();
+    h.button("Für Spieler freigeben").props.onClick();
+    await h.settle();
+    expect(h.requests[1]!.request.body).toEqual({ expectedVersion: 2 });
+  });
+
+  it("behält bei erneuter Auswahl derselben Vorlage den geschützten Entwurf", () => {
+    const h = werkbank(null);
+    const selectedButton = () => h.nodes(n => n.type === "Button" && n.props["aria-pressed"] !== undefined)[0]!;
+    selectedButton().props.onClick();
+    const editor = () => h.nodes(n => typeof n.type === "function" && n.type.name === "ActorTemplateForm")[0]!;
+    editor().props.onDirty(true);
+    const key = editor().key;
+    selectedButton().props.onClick();
+    expect(editor().key).toBe(key);
+    expect(h.confirmations).toHaveLength(0);
+  });
+
+  it.each([{ revision: 2, version: 2 }, { revision: 1, version: 2 }])("lädt dieselbe Vorlage mit aktualisiertem Kartenstand $revision/$version ausdrücklich neu", stand => {
+    const h = werkbank(null);
+    const selectedButton = () => h.nodes(n => n.type === "Button" && n.props["aria-pressed"] !== undefined)[0]!;
+    const editor = () => h.nodes(n => typeof n.type === "function" && n.type.name === "ActorTemplateForm")[0]!;
+    selectedButton().props.onClick();
+    const oldKey = editor().key;
+    const refreshed = { ...vorlagenkarte(null), ...stand };
+    h.replace({ revision: 2, resource: (path: string) => path.endsWith("/actor-templates") ? loaded([refreshed]) : loaded([]) });
+    // Polling alone preserves the current editor; an explicit click loads the new card.
+    expect(editor().props.original.version).toBe(1);
+    selectedButton().props.onClick();
+    expect(editor().props.original).toEqual(refreshed);
+    expect(editor().key).not.toBe(oldKey);
+    expect(h.confirmations).toHaveLength(0);
+  });
+
+  it("schützt einen Entwurf beim Laden einer neueren Revision derselben Vorlage", () => {
+    const dirty: boolean[] = [];
+    const h = werkbank(null, { onDirty: (value: boolean) => dirty.push(value) });
+    const selectedButton = () => h.nodes(n => n.type === "Button" && n.props["aria-pressed"] !== undefined)[0]!;
+    const editor = () => h.nodes(n => typeof n.type === "function" && n.type.name === "ActorTemplateForm")[0]!;
+    selectedButton().props.onClick();
+    editor().props.onDirty(true);
+    const oldKey = editor().key;
+    const refreshed = { ...vorlagenkarte(null), revision: 2, version: 2 };
+    h.replace({ confirm: false, revision: 2, resource: (path: string) => path.endsWith("/actor-templates") ? loaded([refreshed]) : loaded([]) });
+    selectedButton().props.onClick();
+    expect(h.confirmations).toHaveLength(1);
+    expect(editor().key).toBe(oldKey);
+    expect(editor().props.original.version).toBe(1);
+    expect(dirty.at(-1)).toBe(true);
+    h.replace({ confirm: true });
+    selectedButton().props.onClick();
+    expect(h.confirmations).toHaveLength(2);
+    expect(editor().key).not.toBe(oldKey);
+    expect(editor().props.original).toEqual(refreshed);
+    expect(dirty.at(-1)).toBe(false);
   });
 
   it("nennt „inzwischen geändert“ nur beim Konflikt und sonst den Fehler selbst", async () => {

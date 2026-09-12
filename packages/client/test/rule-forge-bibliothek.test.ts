@@ -46,7 +46,8 @@ describe("Bibliothek der Regelwerkstatt", () => {
   });
 
   it("versteckt genommene Pakete, bis der Schalter sie zeigt", () => {
-    expect(QUELLE).toContain("const sichtbar = zeigeGenommene ? packages : packages.filter(item => !stand(item).genommen);");
+    expect(QUELLE).toContain("const verfuegbar = zeigeGenommene ? packages : packages.filter(item => !stand(item).genommen);");
+    expect(QUELLE).toContain("const sichtbar = verfuegbar.filter(");
     expect(QUELLE).toContain('t("Auch genommene zeigen ({anzahl})", { anzahl: genommene.length })');
     expect(QUELLE).toMatch(/\{sichtbar\.map\(item =>/);
   });

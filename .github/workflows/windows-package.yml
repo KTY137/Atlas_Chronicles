@@ -14,7 +14,7 @@ concurrency:
 jobs:
   windows:
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     defaults:
       run:
         shell: pwsh
@@ -44,6 +44,8 @@ jobs:
           npm run gate:assets; if ($LASTEXITCODE) { throw 'Windows assets do not reproduce' }
           npx vitest run packages/desktop/test packages/client/test/gui-state-fuzz.test.ts
           if ($LASTEXITCODE) { throw 'Desktop or state regression failed' }
+          npm run test:steam
+          if ($LASTEXITCODE) { throw 'Desktop build output, artifact or Steam preparation regression failed' }
       - name: Resolve pinned PostgreSQL runtime
         run: |
           $dir = 'C:\ac043\.local\desktop-runtime'
@@ -63,7 +65,7 @@ jobs:
         run: |
           node packages/desktop/tools/package.mjs; if ($LASTEXITCODE) { throw 'Packaging failed' }
       - name: Accept the packaged Windows application
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           $record = Get-ChildItem .local/desktop-artifacts/*/artifact.json | Sort-Object FullName | Select-Object -Last 1 | Get-Content -Raw | ConvertFrom-Json
           node packages/desktop/tools/smoke.mjs "--executable=$($record.paths[0])\AtlasChronicles.exe"
@@ -80,7 +82,7 @@ jobs:
           # Only the fresh test runner's just-installed application; never a user's host.
           Get-Process AtlasChronicles -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $installed } | Stop-Process -Force
       - name: Accept the installed Windows application
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           $record = Get-ChildItem .local/desktop-artifacts/*/installer.json | Sort-Object FullName | Select-Object -Last 1 | Get-Content -Raw | ConvertFrom-Json
           $installed = "$env:LOCALAPPDATA\AtlasChronicles\app-$($record.version)\AtlasChronicles.exe"

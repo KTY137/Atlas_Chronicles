@@ -11,23 +11,24 @@ function OrderButtons({ index, length, onMove }: { index: number; length: number
   return <span className="rf-order"><Button variant="quiet" disabled={index === 0} aria-label={t("Nach oben verschieben")} onClick={() => onMove(-1)}><ArrowUp size={14} /></Button><Button variant="quiet" disabled={index === length - 1} aria-label={t("Nach unten verschieben")} onClick={() => onMove(1)}><ArrowDown size={14} /></Button></span>;
 }
 
-export function FieldList({ title, fields, onChange, compact = false }: { title: string; fields: DraftField[]; onChange(fields: DraftField[]): void; compact?: boolean }) {
+export function FieldList({ title, fields, onChange, compact = false, disabled = false }: { title: string; fields: DraftField[]; onChange(fields: DraftField[]): void; compact?: boolean; disabled?: boolean }) {
   const [selected, setSelected] = useState(""), [query, setQuery] = useState("");
-  const add = () => { const next = newField(uniqueId(compact ? "parameter" : "attribut", fields.map(f => f.id))); onChange([...fields, next]); setSelected(next.localId); };
+  const add = () => { if (disabled || fields.length >= RULE_LIMITS.fields) return; const next = newField(uniqueId(compact ? "parameter" : "attribut", fields.map(f => f.id))); onChange([...fields, next]); setQuery(""); setSelected(next.localId); };
   const sigil = compact ? "?" : "@";
   const editor = (field: DraftField, index: number) => <FieldEditor key={field.localId} field={field} index={index} length={fields.length} sigil={sigil} onChange={next => onChange(fields.map(f => f.localId === field.localId ? next : f))} onRemove={() => { onChange(fields.filter(f => f.localId !== field.localId)); setSelected(""); }} onMove={delta => onChange(moveItem(fields, index, delta))} />;
-  const heading = <div className="rf-section-heading"><h3>{title}</h3><Button disabled={fields.length >= RULE_LIMITS.fields} onClick={add}><Plus size={15} />{compact ? t("Parameter hinzufügen") : t("Attribut hinzufügen")}</Button></div>;
-  if (compact) return <>{heading}{!fields.length ? <p className="rf-help">{t("Keine Parameter. Die Aktion würfelt nur mit Attributen und festen Zahlen.")}</p> : null}{fields.map(editor)}</>;
+  const heading = <div className="rf-section-heading"><h3>{title}</h3><Button disabled={disabled || fields.length >= RULE_LIMITS.fields} onClick={add}><Plus size={15} />{compact ? t("Parameter hinzufügen") : t("Attribut hinzufügen")}</Button></div>;
+  if (compact) return <fieldset className="rf-editor-fields" disabled={disabled}>{heading}{!fields.length ? <p className="rf-help">{t("Keine Parameter. Die Aktion würfelt nur mit Attributen und festen Zahlen.")}</p> : null}{fields.map(editor)}</fieldset>;
   const current = fields.find(f => f.localId === selected) ?? fields[0];
   const shown = fields.filter(f => !query.trim() || `${f.label} ${f.id}`.toLocaleLowerCase("de").includes(query.trim().toLocaleLowerCase("de")));
   return <div className="rf-split">
     <nav className="rf-list" aria-label={t("Attribute")}>{heading}
       <p className="rf-help">{t("Die Werte, die jede Figur trägt, zum Beispiel Geschick oder Lebenspunkte. In Formeln als @kennung.")}</p>
-      {fields.length >= 10 ? <label className="rf-list-search"><Search size={14} aria-hidden="true" /><input aria-label={t("Attribut suchen")} value={query} placeholder={t("Bezeichnung oder Kennung")} onChange={event => setQuery(event.target.value)} /></label> : null}
+      {fields.length >= 10 || query ? <label className="rf-list-search"><Search size={14} aria-hidden="true" /><input type="search" aria-label={t("Attribut suchen")} value={query} placeholder={t("Bezeichnung oder Kennung")} onChange={event => setQuery(event.target.value)} /></label> : null}
       <ul>{shown.map(f => <li key={f.localId}><button type="button" aria-current={f.localId === current?.localId ? "true" : undefined} onClick={() => setSelected(f.localId)}><strong>{f.label || t("Ohne Bezeichnung")}</strong><small>{f.type === "integer" ? t("{id} · ganze Zahl", { id: f.id }) : f.type === "number" ? t("{id} · Zahl", { id: f.id }) : f.type === "boolean" ? t("{id} · Ja/Nein", { id: f.id }) : t("{id} · Text", { id: f.id })}</small></button></li>)}</ul>
       {!fields.length ? <p>{t('Noch keine Attribute. Lege oben das erste an, zum Beispiel „Geschick" als ganze Zahl von 0 bis 6.')}</p> : null}
+      {query && !shown.length ? <div className="rf-search-empty" role="status"><p>{t("Keine Attribute gefunden.")}</p><Button variant="quiet" onClick={() => setQuery("")}>{t("Suche zurücksetzen")}</Button></div> : null}
     </nav>
-    {current ? <section className="rf-detail" aria-label={t("Attribut")}>{editor(current, fields.indexOf(current))}</section> : null}
+    {current ? <section className="rf-detail" aria-label={t("Attribut")}><fieldset className="rf-editor-fields" disabled={disabled}>{editor(current, fields.indexOf(current))}</fieldset></section> : null}
   </div>;
 }
 

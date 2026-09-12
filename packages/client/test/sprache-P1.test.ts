@@ -43,9 +43,11 @@ describe("Sprachpaket P1 — Regelschmiede", () => {
   });
 
   it("füllt die Platzhalter der englischen Fassung", async () => {
-    expect(t("Schritt {schritt} von {gesamt}", { schritt: 2, gesamt: 7 })).toBe("Schritt 2 von 7");
+    expect(t("Paketstruktur, Feldtypen und Formeln gültig · {bestanden} von {gesamt} Pakettests bestanden.", { bestanden: 2, gesamt: 7 }))
+      .toBe("Paketstruktur, Feldtypen und Formeln gültig · 2 von 7 Pakettests bestanden.");
     await englisch();
-    expect(t("Schritt {schritt} von {gesamt}", { schritt: 2, gesamt: 7 })).toBe("Step 2 of 7");
+    expect(t("Paketstruktur, Feldtypen und Formeln gültig · {bestanden} von {gesamt} Pakettests bestanden.", { bestanden: 2, gesamt: 7 }))
+      .toBe("Package structure, field types and formulas valid · 2 of 7 package tests passed.");
     expect(t("Für diese Runde ist jetzt {name} {version} aktiv.", { name: "Mein Regelwerk", version: "1.0.0" }))
       .toBe("Mein Regelwerk 1.0.0 is now active for this party.");
   });

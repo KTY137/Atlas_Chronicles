@@ -24,10 +24,11 @@ import "./gameplay.css";
 export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: Campaign; liveRevision?: number; onDirty: (value: boolean) => void }) {
   const inventory = useRef<HTMLDivElement>(null);
   const [revision, setRevision] = useState(0), [chosen, setChosen] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState({ sheet: false, inventory: false });
-  const dirty = drafts.sheet || drafts.inventory;
+  const [drafts, setDrafts] = useState({ sheet: false, inventory: false, request: false });
+  const dirty = drafts.sheet || drafts.inventory || drafts.request;
   const reportSheet = useCallback((value: boolean) => setDrafts(old => ({ ...old, sheet: value })), []);
   const reportInventory = useCallback((value: boolean) => setDrafts(old => ({ ...old, inventory: value })), []);
+  const reportRequest = useCallback((value: boolean) => setDrafts(old => ({ ...old, request: value })), []);
   useEffect(() => { onDirty(dirty); }, [dirty, onDirty]);
   useEffect(() => () => onDirty(false), [onDirty]);
   // Der eigene Takt und der Live-Takt der Anwendung sind derselbe Anlass, neu zu laden: bestätigt
@@ -56,7 +57,7 @@ export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: 
     {meine.length > 1 ? <div className="table-controls"><label className="actor-picker">{t("Deine Figur")}
       <select value={actorId} onChange={event => {
         if (event.target.value === actorId || (dirty && !window.confirm(t("Ungespeicherte Änderungen dieser Figur verwerfen?")))) return;
-        setDrafts({ sheet: false, inventory: false }); setChosen(event.target.value);
+        setDrafts({ sheet: false, inventory: false, request: false }); setChosen(event.target.value);
       }}>
         {meine.map(actor => <option key={actor.id} value={actor.id}>{actor.name}</option>)}
       </select></label></div> : null}
@@ -66,7 +67,7 @@ export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: 
         // Figur beantragen. Für die Spielleitung bleibt sie, was sie war — sie erschafft Figuren
         // in der Schmiede, nicht über einen Antrag an sich selbst.
         ? <EmptyState title={t("Noch führst du keine Figur.")}>{t("Sobald deine Spielleitung dir eine Figur anvertraut, findest du hier ihren Bogen und alles, was sie trägt.")}</EmptyState>
-        : <FigurAntrag campaignId={campaign.id} rules={rules.data} revision={takt} onChanged={refresh} />)
+        : <FigurAntrag campaignId={campaign.id} rules={rules.data} revision={takt} onChanged={refresh} onDirty={reportRequest} />)
       : rules.data ? <>
         <CharacterSheet key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} liveRevision={takt} onDirty={reportSheet} onChanged={refresh} />
         <div ref={inventory} tabIndex={-1} className="character-inventory"><Inventory key={actorId} campaignId={campaign.id} actorId={actorId} actors={actors.data ?? []} gm={false} revision={takt} onChanged={refresh} onDirty={reportInventory} /></div>

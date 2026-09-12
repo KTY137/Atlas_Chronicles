@@ -18,6 +18,7 @@ import { RuleFields } from "./RuleFields";
 import type { ForgeSection } from "./forge-navigation";
 import { WikiMedien } from "./WikiMedien";
 import "./actors.css";
+import "./character-creation.css";
 
 // Anzeigetabelle der Figurenarten: der Client übersetzt sie an der Anzeigestelle mit
 // `t(FIGURENART_LABEL[art])`; die gespeicherte Art bleibt der englische Datenschlüssel.
@@ -68,7 +69,7 @@ export function ActorWorkbench({ campaignId, gm, actorId, actors, roster, rules,
       : <><div className="actor-columns">{selected ? <ActorDetails key={selected.id} campaignId={campaignId} current={selected} gm={gm} roster={roster} revision={revision} onChanged={onChanged} onDirty={reportDetails} />
         : gm ? <EmptyState title={t("Noch keine Figur ausgewählt.")} action={<Button variant="primary" onClick={() => createSelect.current?.focus()}>{t("Figur erschaffen")}</Button>}>{t("Du musst nicht warten, bis jemand beitritt: Als Spielleitung legst du selbst eine Figurvorlage an und erschaffst daraus direkt eine eigenständige Figur.")}</EmptyState>
         : <EmptyState title={t("Noch keine Figur ausgewählt.")}>{t("Die Spielleitung legt Figurvorlagen an und erschafft daraus eigenständige Figuren.")}</EmptyState>}
-        {gm ? <InstantiateActor campaignId={campaignId} revision={revision} onChanged={onChanged} selectRef={createSelect} onDirty={reportCreation} onCreateTemplate={onOpenForge ? () => onOpenForge("actors") : () => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) setView("templates"); }} /> : null}</div>
+        {gm ? <InstantiateActor campaignId={campaignId} rules={rules} revision={revision} onChanged={onChanged} selectRef={createSelect} onDirty={reportCreation} onCreateTemplate={onOpenForge ? () => onOpenForge("actors") : () => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) setView("templates"); }} /> : null}</div>
         <Inventory key={`${actorId}:${gm}`} campaignId={campaignId} actorId={actorId} actors={actors} gm={gm} revision={revision} onChanged={onChanged} onDirty={reportInventory} onCreateTemplate={gm && onOpenForge ? () => onOpenForge("loot") : undefined} />
       </>}
   </div>;
@@ -153,11 +154,13 @@ function ActorTemplateRevisionView({ campaignId, rules, templateId, revisionNumb
   </section>;
 }
 export function ActorTemplates({ campaignId, rules, revision, onChanged, onDirty, onOpenLoot, onInstantiate }: {
-  campaignId: string; rules: RulesState; revision: number; onChanged: () => void; onDirty: (dirty: boolean) => void; onOpenLoot?: () => void; onInstantiate?: () => void;
+  campaignId: string; rules: RulesState; revision: number; onChanged: () => void; onDirty: (dirty: boolean) => void; onOpenLoot?: () => void; onInstantiate?: (templateId?: string) => void;
 }) {
   const list = useResource<TemplateCard<ActorTemplateData>[]>(apiPath(campaignId, "/actor-templates"), revision);
   const [selected, setSelected] = useState<TemplateCard<ActorTemplateData> | null>(null);
   const [viewRevision, setViewRevision] = useState<number | null>(null);
+  const [query, setQuery] = useState(""), [saved, setSaved] = useState("");
+  const [savedTemplateId, setSavedTemplateId] = useState<string | undefined>();
   const { epoch, dirty, report, reset, current } = useTemplateDraft(onDirty);
   /**
    * Die Freigabe macht eine Werkstattvorlage für Spieler wählbar. Ihre **eigene** Version steht
@@ -171,8 +174,11 @@ export function ActorTemplates({ campaignId, rules, revision, onChanged, onDirty
    */
   const [quittungen, setQuittungen] = useState<Record<string, FigurvorlageFreigabeStand>>({});
   const freigabe = useTask(), [konflikt, setKonflikt] = useState(false);
-  const stand = (karte: TemplateCard<ActorTemplateData>): FigurvorlageFreigabeStand =>
-    quittungen[karte.id] ?? karte.freigabe ?? { frei: false, version: 0 };
+  const stand = (karte: TemplateCard<ActorTemplateData>): FigurvorlageFreigabeStand => {
+    const receipt = quittungen[karte.id], refreshed = karte.freigabe;
+    // A local acknowledgement bridges the next poll; it cannot override a newer grant.
+    return receipt && receipt.version > (refreshed?.version ?? 0) ? receipt : refreshed ?? { frei: false, version: 0 };
+  };
   const schalte = (karte: TemplateCard<ActorTemplateData>) => void freigabe.run(async () => {
     const jetzt = stand(karte);
     setKonflikt(false);
@@ -184,28 +190,41 @@ export function ActorTemplates({ campaignId, rules, revision, onChanged, onDirty
     onChanged();
   });
   const choose = (value: TemplateCard<ActorTemplateData> | null) => {
-    if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
-    setSelected(value); setViewRevision(null); reset();
+    if (value && selected?.id === value.id && selected.revision === value.revision && selected.version === value.version
+      && (viewRevision === null || viewRevision === selected.revision)) return;
+    if (dirty && !window.confirm(t("Ungespeicherte Änderungen verwerfen?"))) return;
+    setSelected(value); setViewRevision(null); setSaved(""); reset();
   };
   const pickRevision = (n: number) => {
-    if (dirty && !window.confirm("Ungespeicherte Änderungen verwerfen?")) return;
+    if (n === (viewRevision ?? selected?.revision)) return;
+    if (dirty && !window.confirm(t("Ungespeicherte Änderungen verwerfen?"))) return;
     setViewRevision(n); reset();
   };
-  return <div className="actor-columns actor-template-workspace"><section className="panel actor-template-library"><h2>{t("Figurvorlagen")}</h2><p className="field-help">{t("Lege eine Spielerfigur, einen NPC, eine Kreatur oder ein Fahrzeug an. Aus einer Vorlage kannst du beliebig viele eigenständige Figuren erschaffen.")}</p>
-    <Button onClick={() => choose(null)}>{t("Neue Figurvorlage")}</Button>{list.error ? <Notice error>{list.error}</Notice> : null}
+  const visible = list.data?.filter(card => `${card.definition.name} ${t(FIGURENART_LABEL[card.definition.kind])}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())) ?? [];
+  return <div className="creation-workspace"><ol className="creation-path" aria-label={t("Von der Vorlage zur Figur")}>
+    <li aria-current="step"><span>01</span><div><strong>{t("Vorlage gestalten")}</strong><small>{t("Name, Art und Anfangswerte")}</small></div></li>
+    <li><span>02</span><div><strong>{t("Figur erschaffen")}</strong><small>{t("Eigenen Namen vergeben")}</small></div></li>
+    <li><span>03</span><div><strong>{t("Am Tisch spielen")}</strong><small>{t("Bogen und Besitz verwalten")}</small></div></li>
+  </ol>{saved ? <div className="creation-saved" role="status"><div><strong>{t("„{name}“ ist als Vorlage gespeichert.", { name: saved })}</strong><p className="field-help">{t("Erschaffe jetzt eine Figur oder gib die Vorlage in der Sammlung für Spieler frei.")}</p></div>{onInstantiate ? <Button variant="primary" onClick={() => onInstantiate(savedTemplateId)}>{t("Aus Vorlage Figur erschaffen")}</Button> : null}</div> : null}
+    <div className="actor-columns actor-template-workspace creation-template-workspace"><section className="panel actor-template-library"><h2>{t("Figurvorlagen")}</h2><p className="field-help">{t("Eine Vorlage, viele eigenständige Figuren. Wähle einen Entwurf oder beginne neu.")}</p>
+    <Button variant="primary" onClick={() => choose(null)}>{t("Neue Figurvorlage")}</Button>
+    {list.data?.length ? <label>{t("Figurvorlagen suchen")}<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t("Name oder Figurenart")} /></label> : null}
+    {list.error ? <Notice error>{list.error}</Notice> : null}
     {list.loading ? <Loading /> : !list.data?.length ? <p className="field-help">{t("Noch keine Vorlagen gespeichert. Beginne mit Name, Art und Anfangswerten im Formular.")}</p> : null}
     {/* Nur ein Konflikt heisst „inzwischen geaendert"; jeder andere Fehler sagt, was er ist. */}
     {freigabe.error ? <Notice error>{konflikt ? `${freigabe.error} ${t("Die Freigabe wurde inzwischen an anderer Stelle geändert; bitte die Vorlagen neu laden.")}` : freigabe.error}</Notice> : null}
-    <ul className="actor-object-list">{list.data?.map(karte => <li key={karte.id}><Button aria-pressed={selected?.id === karte.id} onClick={() => choose(karte)}>{karte.definition.name}<small>{t("{angabe} · Revision {revision}", { angabe: t(FIGURENART_LABEL[karte.definition.kind]), revision: karte.revision })}</small></Button>
-      <Button disabled={freigabe.busy} onClick={() => schalte(karte)}>{stand(karte).frei ? t("Freigabe entziehen") : t("Für Spieler freigeben")}</Button></li>)}</ul>
-    {onInstantiate && list.data?.length ? <Button onClick={onInstantiate}>{t("Aus Vorlage Figur erschaffen")}</Button> : null}
+    {query && list.data?.length && !visible.length ? <p className="field-help" role="status">{t("Keine Figurvorlage zu „{suche}“ gefunden.", { suche: query })}</p> : null}
+    <ul className="actor-object-list creation-template-list">{visible.map(karte => <li key={karte.id}><Button aria-pressed={selected?.id === karte.id} onClick={() => choose(karte)}>{karte.definition.name}<small>{t("{angabe} · Revision {revision}", { angabe: t(FIGURENART_LABEL[karte.definition.kind]), revision: karte.revision })}</small></Button>
+      <span className="creation-release-state" data-shared={stand(karte).frei}>{stand(karte).frei ? t("Für Spieler wählbar") : t("Nur in deiner Werkstatt")}</span>
+      <Button variant="quiet" disabled={freigabe.busy} onClick={() => schalte(karte)}>{stand(karte).frei ? t("Freigabe entziehen") : t("Für Spieler freigeben")}</Button></li>)}</ul>
+    {onInstantiate && list.data?.length && !saved ? <Button onClick={() => onInstantiate(selected?.id)}>{t("Aus Vorlage Figur erschaffen")}</Button> : null}
     {selected ? <RevisionPicker head={selected.revision} value={viewRevision ?? selected.revision} onChange={pickRevision} /> : null}
   </section>{selected && viewRevision !== null && viewRevision !== selected.revision
     ? <ActorTemplateRevisionView key={`${selected.id}:${viewRevision}`} campaignId={campaignId} rules={rules} templateId={selected.id} revisionNumber={viewRevision} />
-    : <ActorTemplateForm key={`${selected?.id ?? "new"}:${epoch}`} campaignId={campaignId} rules={rules} original={selected} onDirty={report} onOpenLoot={onOpenLoot} onSaved={() => { if (current()) { setSelected(null); setViewRevision(null); reset(); } onChanged(); }} />}</div>;
+    : <ActorTemplateForm key={`${selected?.id ?? "new"}:${epoch}`} campaignId={campaignId} rules={rules} original={selected} onDirty={report} onOpenLoot={onOpenLoot} onSaved={(name, templateId) => { if (current()) { setSelected(null); setViewRevision(null); reset(); setSaved(name ?? ""); setSavedTemplateId(templateId); } onChanged(); }} />}</div></div>;
 }
 function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved, onOpenLoot }: {
-  campaignId: string; rules: RulesState; original: TemplateCard<ActorTemplateData> | null; onDirty: (dirty: boolean) => void; onSaved: () => void; onOpenLoot?: () => void;
+  campaignId: string; rules: RulesState; original: TemplateCard<ActorTemplateData> | null; onDirty: (dirty: boolean) => void; onSaved: (name?: string, templateId?: string) => void; onOpenLoot?: () => void;
 }) {
   const [name, setName] = useState(original?.definition.name ?? ""), [kind, setKind] = useState<ActorKindValue>(original?.definition.kind ?? "npc");
   const [lore, setLore] = useState(original?.definition.loreEntryId ?? null), [reason, setReason] = useState("");
@@ -213,6 +232,7 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved, onOp
   const pkg = rules.packages.find(p => p.id === pin.id && p.version === pin.version);
   const [fields, setFields] = useState<Record<string, Scalar>>(original?.definition.fields ?? (pkg ? defaults(pkg.fields) : {}));
   const [beute, setBeute] = useState<Beutezeile[]>(original?.definition.schemaVersion === 2 ? original.definition.beute.map(z => ({ ...z })) : []);
+  const identityHeading = useRef<HTMLHeadingElement>(null), statsHeading = useRef<HTMLHeadingElement>(null), extrasHeading = useRef<HTMLHeadingElement>(null);
   const gegenstaende = useResource<TemplateCard<ItemContract>[]>(apiPath(campaignId, "/item-templates"), 0);
   const task = useTask(), command = useCommand();
   useEffect(() => () => onDirty(false), [onDirty]);
@@ -222,13 +242,26 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved, onOp
     ? { schemaVersion: 2, name, kind, loreEntryId: lore, package: pin, fields, beute }
     : { schemaVersion: 1, name, kind, loreEntryId: lore, package: pin, fields };
   const setzeZeile = (i: number, patch: Partial<Beutezeile>) => { setBeute(alt => alt.map((z, n) => n === i ? { ...z, ...patch } : z)); onDirty(true); };
-  return <form className="panel" onChange={() => onDirty(true)} onSubmit={event => { event.preventDefault(); void task.run(async () => {
-    await command(apiPath(campaignId, `/actor-templates${original ? `/${encodeURIComponent(original.id)}` : ""}`),
+  return <form className="panel creation-template-form" onChange={() => onDirty(true)} onSubmit={event => { event.preventDefault(); if (!name.trim() || !pkg) return; void task.run(async () => {
+    const saved = await command<TemplateCard<ActorTemplateData>>(apiPath(campaignId, `/actor-templates${original ? `/${encodeURIComponent(original.id)}` : ""}`),
       { definition, ...(original ? { expectedVersion: original.version, reason } : {}) }, original ? "PUT" : "POST");
-    onDirty(false); onSaved();
+    onDirty(false); onSaved(name.trim(), saved.id);
   }); }}><fieldset className="actor-command-fields" disabled={task.busy}><h2>{original ? t("Neue Vorlagenrevision") : t("Figurvorlage anlegen")}</h2>
-    <label>{t("Vorlagenname")}<input required maxLength={160} value={name} onChange={e => setName(e.target.value)} /></label>
+    <p className="field-help">{t("Beginne mit der Identität. Die Anfangswerte sind bereits aus deinen Regeln vorbelegt; Hintergrund und Beute ergänzt du bei Bedarf.")}</p>
+    <div className="creation-draft-preview" aria-label={t("Zusammenfassung der Figurvorlage")}><span className="creation-monogram" aria-hidden="true">{name.trim().slice(0, 1).toLocaleUpperCase() || "?"}</span><div><small>{t("Vorlage · noch keine Figur")}</small><strong>{name.trim() || t("Deine neue Figurvorlage")}</strong><span>{t(FIGURENART_LABEL[kind])} · {pkg?.name ?? t("Regelpaket fehlt")}</span></div></div>
+    <nav className="creation-section-nav" aria-label={t("Bereiche der Figurvorlage")}><Button variant="quiet" onClick={() => identityHeading.current?.focus()}>{t("Identität")}</Button><Button variant="quiet" onClick={() => statsHeading.current?.focus()}>{t("Anfangswerte")}</Button><Button variant="quiet" onClick={() => extrasHeading.current?.focus()}>{t("Hintergrund & Beute")}</Button></nav>
+    <section className="creation-form-section"><h3 ref={identityHeading} tabIndex={-1}>{t("Identität")}</h3><p className="field-help">{t("Wie heißt diese Vorlage, und welche Rolle hat die Figur in deiner Welt?")}</p><div className="creation-identity-fields">
+    <label>{t("Vorlagenname")}<input required maxLength={160} value={name} placeholder={t("z. B. Waldläuferin, Stadtwache oder Wolf")} onChange={e => setName(e.target.value)} /></label>
     <label>{t("Art der Figur")}<select value={kind} onChange={e => setKind(e.target.value as ActorKindValue)}>{FIGURENARTEN.map(id => <option key={id} value={id}>{t(FIGURENART_LABEL[id])}</option>)}</select></label>
+    </div></section>
+    <section className="creation-form-section"><h3 ref={statsHeading} tabIndex={-1}>{t("Anfangswerte")}</h3><p className="field-help">{t("Jede neue Figur beginnt mit diesen Werten und erhält danach ihren eigenen Bogen.")}</p>
+    <label>{t("Regelpaket für die Anfangswerte")}<select value={`${pin.id}@${pin.version}`} onChange={e => {
+      const p = rules.packages.find(p => `${p.id}@${p.version}` === e.target.value)!; setPin({ id: p.id, version: p.version }); setFields(defaults(p.fields));
+    }}>{rules.packages.map(p => <option key={`${p.id}@${p.version}`} value={`${p.id}@${p.version}`}>{p.name} · {p.version}</option>)}</select></label>
+    {pin.id !== rules.pin.id || pin.version !== rules.pin.version ? <Notice>{t("Diese Vorlage verwendet andere Regeln als die Kampagne. Zum Erschaffen einer Figur müssen Vorlage und aktive Kampagnenregeln übereinstimmen.")}</Notice> : null}
+    {pkg ? <RuleFields fields={pkg.fields} values={fields} onChange={setFields} /> : <Notice error>{t("Das gespeicherte Regelpaket ist nicht verfügbar.")}</Notice>}
+    </section>
+    <section className="creation-form-section"><h3 ref={extrasHeading} tabIndex={-1}>{t("Hintergrund & Beute")}</h3><p className="field-help">{t("Optional: Verbinde die Vorlage mit deiner Welt und lege fest, was die Figur bei sich trägt.")}</p>
     <details className="actor-optional" open={!!lore}><summary>{t("Artikel verknüpfen · optional")}</summary><LoreField campaignId={campaignId} value={lore} onChange={setLore} /></details>
     {/* Die Beutetabelle: was diese Art Figur bei sich traegt, und wie wahrscheinlich. Jede Zeile
         wird einzeln entschieden — der Wolf traegt vielleicht das Fell UND vielleicht den Zahn. */}
@@ -252,34 +285,37 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved, onOp
             setBeute(alt => [...alt, { templateId: erste.id, templateRevision: erste.revision, wahrscheinlichkeit: 50, menge: [1, 1] }]); onDirty(true); }}>{t("Beutezeile hinzufügen")}</Button>
           <p className="field-help">{t("Die Beute wird beim Erschaffen einer Figur aus dieser Vorlage ausgewürfelt und liegt dann in ihrem Inventar. Jede Zeile nennt die Gegenstandsvorlage mit ihrer Revision — eine spätere Überarbeitung ändert diese Tabelle also nicht von selbst.")}</p>
         </>; })()}</>}
-    </fieldset></details>
-    <label>{t("Regelpaket für die Anfangswerte")}<select value={`${pin.id}@${pin.version}`} onChange={e => {
-      const p = rules.packages.find(p => `${p.id}@${p.version}` === e.target.value)!; setPin({ id: p.id, version: p.version }); setFields(defaults(p.fields));
-    }}>{rules.packages.map(p => <option key={`${p.id}@${p.version}`} value={`${p.id}@${p.version}`}>{p.name} · {p.version}</option>)}</select></label>
-    {pkg ? <fieldset><legend>{t("Anfangswerte")}</legend><RuleFields fields={pkg.fields} values={fields} onChange={setFields} /></fieldset> : <Notice error>{t("Das gespeicherte Regelpaket ist nicht verfügbar.")}</Notice>}
+    </fieldset></details></section>
     {original ? <Reason value={reason} onChange={setReason} /> : null}
     {task.error ? <Notice error>{task.error} {t("Lade die Vorlage erneut, falls inzwischen eine neue Revision gespeichert wurde.")}</Notice> : null}
-    <Button type="submit" variant="primary" disabled={task.busy || !pkg}>{original ? t("Revision speichern") : t("Figurvorlage speichern")}</Button>
-    {original ? <Button variant="danger" disabled={task.busy || !reason.trim()} onClick={() => {
+    <div className="creation-save-actions"><p className="field-help">{t("Nach dem Speichern kannst du aus dieser Vorlage Figuren erschaffen oder sie für Spieler freigeben.")}</p><Button type="submit" variant="primary" disabled={task.busy || !pkg || !name.trim()}>{task.busy ? t("Wird gespeichert …") : original ? t("Revision speichern") : t("Figurvorlage speichern")}</Button></div>
+    {original ? <details className="actor-optional"><summary>{t("Vorlage archivieren")}</summary><Button variant="danger" disabled={task.busy || !reason.trim()} onClick={() => {
       if (window.confirm(t("Vorlage archivieren? Vorhandene Figuren und Revisionen bleiben erhalten."))) void task.run(async () => {
         await command(apiPath(campaignId, `/actor-templates/${original.id}/archive`), { expectedVersion: original.version, reason }); onDirty(false); onSaved();
       });
-    }}>{t("Vorlage archivieren")}</Button> : null}
+    }}>{t("Vorlage archivieren")}</Button></details> : null}
   </fieldset></form>;
 }
-export function InstantiateActor({ campaignId, revision, onChanged, selectRef, onDirty, onCreateTemplate }: { campaignId: string; revision: number; onChanged: () => void; selectRef?: { current: HTMLSelectElement | null }; onDirty?: (dirty: boolean) => void; onCreateTemplate?: () => void }) {
+export function InstantiateActor({ campaignId, rules, initialTemplateId = "", revision, onChanged, selectRef, onDirty, onCreateTemplate }: { campaignId: string; rules?: RulesState; initialTemplateId?: string; revision: number; onChanged: () => void; selectRef?: { current: HTMLSelectElement | null }; onDirty?: (dirty: boolean) => void; onCreateTemplate?: () => void }) {
   const templates = useResource<TemplateCard<ActorTemplateData>[]>(apiPath(campaignId, "/actor-templates"), revision);
-  const [selected, setSelected] = useState(""), [name, setName] = useState(""), [created, setCreated] = useState(""); const task = useTask(), command = useCommand();
+  const [selected, setSelected] = useState(initialTemplateId), [name, setName] = useState(""), [created, setCreated] = useState(""); const task = useTask(), command = useCommand();
   useEffect(() => { onDirty?.(!!name); }, [name, onDirty]);
   useEffect(() => () => onDirty?.(false), [onDirty]);
   const template = templates.data?.find(t => t.id === selected);
-  return <form className="panel" onSubmit={event => { event.preventDefault(); if (template) void task.run(async () => {
+  const compatible = !rules || !!template && template.definition.package.id === rules.pin.id && template.definition.package.version === rules.pin.version;
+  const pkg = rules?.packages.find(p => p.id === template?.definition.package.id && p.version === template?.definition.package.version);
+  return <form className="panel creation-instantiate" onSubmit={event => { event.preventDefault(); if (template && compatible) void task.run(async () => {
     await command(apiPath(campaignId, "/actors/instantiate"), { templateId: template.id, templateRevision: template.revision, ...(name.trim() ? { name } : {}) }); setCreated(name.trim() || template.definition.name); setName(""); onChanged();
-  }); }}><fieldset className="actor-command-fields" disabled={task.busy}><h2>{t("Figur aus Vorlage erschaffen")}</h2><p className="field-help">{t("Wähle eine Vorlage und gib der neuen Figur bei Bedarf einen eigenen Namen.")}</p>{templates.loading ? <Loading /> : !templates.data?.length && !templates.error ? <div className="actor-empty-hint"><p>{t("Du brauchst zuerst eine Figurvorlage mit Name, Art und Werten.")}</p>{onCreateTemplate ? <Button onClick={onCreateTemplate}>{t("Figurvorlage anlegen")}</Button> : null}</div> : null}<label>{t("Figurvorlage")}<select ref={selectRef} required value={selected} onChange={e => setSelected(e.target.value)}><option value="">{t("Vorlage wählen")}</option>{templates.data?.map(karte => <option key={karte.id} value={karte.id}>{t("{angabe} · Revision {revision}", { angabe: karte.definition.name, revision: karte.revision })}</option>)}</select></label>
+  }); }}><fieldset className="actor-command-fields" disabled={task.busy}><h2>{t("Figur aus Vorlage erschaffen")}</h2><p className="field-help">{t("Wähle eine Vorlage und gib der neuen Figur bei Bedarf einen eigenen Namen.")}</p>{templates.loading ? <Loading /> : !templates.data?.length && !templates.error ? <div className="actor-empty-hint"><p>{t("Du brauchst zuerst eine Figurvorlage mit Name, Art und Werten.")}</p>{onCreateTemplate ? <Button onClick={onCreateTemplate}>{t("Figurvorlage anlegen")}</Button> : null}</div> : null}
+    <div className="creation-identity-fields"><label>{t("Figurvorlage")}<select ref={selectRef} required value={selected} onChange={e => { setSelected(e.target.value); setCreated(""); }}><option value="">{t("Vorlage wählen")}</option>{templates.data?.map(karte => <option key={karte.id} value={karte.id}>{t("{angabe} · Revision {revision}", { angabe: karte.definition.name, revision: karte.revision })}</option>)}</select></label>
     <label>{t("Name dieser Figur")}<input maxLength={160} value={name} placeholder={template?.definition.name ?? t("Name aus der Vorlage")} onChange={e => setName(e.target.value)} /></label>
-    <p className="field-help">{t("Die neue Figur erhält einen eigenen Bogen. Die Vorlage muss die aktuell aktiven Kampagnenregeln verwenden.")}</p>
+    </div>{template ? <section className="creation-instance-preview" aria-label={t("Vorschau der neuen Figur")}><small>{t("So startet deine Figur")}</small><h3>{name.trim() || template.definition.name}</h3><p className="field-help">{t(FIGURENART_LABEL[template.definition.kind])} · {t("Vorlage, Revision {revision}", { revision: template.revision })}</p>
+      {pkg ? <dl className="creation-stat-preview">{Object.entries(pkg.fields).slice(0, 6).map(([key, field]) => <div key={key}><dt>{field.label}</dt><dd>{typeof (template.definition.fields[key] ?? field.default) === "boolean" ? (template.definition.fields[key] ?? field.default) ? t("Ja") : t("Nein") : String(template.definition.fields[key] ?? field.default)}</dd></div>)}</dl> : null}
+      <p className="field-help">{t("Name, Anfangswerte und Besitz werden für diese Figur übernommen. Danach entwickelst du ihren Bogen unabhängig von der Vorlage weiter.")}</p>
+    </section> : null}
+    {template && !compatible ? <Notice error>{t("Diese Vorlage verwendet andere Regeln als die Kampagne. Wähle eine passende Vorlage oder passe ihr Regelpaket an.")}{onCreateTemplate ? <Button variant="quiet" onClick={onCreateTemplate}>{t("Figurvorlagen öffnen")}</Button> : null}</Notice> : null}
     {created ? <Notice>{t("„{name}“ wurde erschaffen. Du findest die Figur und ihren Bogen am Tisch.", { name: created })}</Notice> : null}
-    {task.error || templates.error ? <Notice error>{task.error || templates.error}</Notice> : null}<Button type="submit" variant="primary" disabled={task.busy || !template}>{t("Figur erschaffen")}</Button>
+    {task.error || templates.error ? <Notice error>{task.error || templates.error}</Notice> : null}<div className="creation-save-actions"><Button type="submit" variant="primary" disabled={task.busy || !template || !compatible}>{task.busy ? t("Figur wird erschaffen …") : t("Figur erschaffen")}</Button></div>
   </fieldset></form>;
 }
 function ActorDetails({ campaignId, current, gm, roster, revision, onChanged, onDirty }: {

@@ -106,6 +106,7 @@ test("typing a formula with suggestions, plain errors, three views, install and 
 test("opening the shipped ChronicleHeroes template shows sugar and downloads the package byte for byte", async ({ page: gm }) => {
   await signIn(gm.context(), gmSession);
   await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
+  await gm.locator(".rf-starter > summary").click();
   await gm.getByRole("button", { name: "Vorlage anpassen" }).click();
   await gm.getByRole("button", { name: "ChronicleHeroes als Regelentwurf öffnen" }).click();
   await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();

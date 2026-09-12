@@ -1,5 +1,8 @@
 # Desktop and the managed local host
 
+Steam delivery preparation, verified local depot staging and the remaining store/build
+acceptance steps are documented in [Steam release preparation](steam/README.md).
+
 ## Installed map delivery — 2026-09-08
 
 Source `ca3898b` is on main and installed. Package

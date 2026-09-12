@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
-import { ArrowDown, ArrowUp, BookOpen, Check, Download, FlaskConical, Hammer, Plus, Trash2, TriangleAlert, Upload } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, BookOpen, Check, Download, FlaskConical, Hammer, MoreHorizontal, Plus, Search, Trash2, TriangleAlert, Upload } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { ENGINE_VERSION, RULE_LIMITS, parseSupportedRulePackage as parseRulePackage, stableJson, type FormulaType, type MigrationPreview, type PackagePin, type AnyRulePackage as RulePackage } from "@chronicle/rules";
 import { ApiError, api, apiPath, errorText, type Campaign } from "../api";
@@ -25,6 +25,14 @@ import "./rule-forge.css";
 interface RuleReview { from: PackagePin; to: PackagePin; pinVersion: number; migration: MigrationPreview | null; previewHash: string }
 type EditorTab = "package" | "map" | "fields" | "sheet" | "actions" | "computed" | "abilities" | "conditions" | "tests" | "migrations";
 const tabs: EditorTab[] = ["package", "map", "fields", "sheet", "actions", "computed", "abilities", "conditions", "tests", "migrations"];
+const tabGroups: readonly { id: "foundation" | "play" | "release"; tabs: readonly EditorTab[] }[] = [
+  { id: "foundation", tabs: ["package", "map", "fields", "sheet"] },
+  { id: "play", tabs: ["actions", "computed", "abilities", "conditions"] },
+  { id: "release", tabs: ["tests", "migrations"] },
+];
+function groupLabel(id: typeof tabGroups[number]["id"]): string {
+  return id === "foundation" ? t("Grundlagen") : id === "play" ? t("Spielregeln") : t("Prüfen & Übernehmen");
+}
 /** Beschriftung und Beschreibung eines Reiters als Funktion, nicht als Tabelle: so sieht `t` ein
  * Zeichenkettenliteral, und ein Sprachwechsel erreicht auch diese Texte. */
 function tabLabel(id: EditorTab): string {
@@ -183,6 +191,8 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const [justInstalled, setJustInstalled] = useState<RulePackage | null>(null), upload = useRef<HTMLInputElement>(null);
   const [figure, setFigure] = useState<ExampleFigure | null>(null);
   const activationSection = useRef<HTMLDivElement>(null);
+  const previewSection = useRef<HTMLDivElement>(null);
+  const [libraryQuery, setLibraryQuery] = useState("");
   // „Genommene" bleiben in der Antwort des Servers und verschwinden nur aus dieser Liste; der
   // Schalter holt sie zurück ins Bild, ohne dass irgendetwas am Paket selbst geschieht.
   const [zeigeGenommene, setZeigeGenommene] = useState(false);
@@ -191,7 +201,8 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const stand = (item: { id: string; version: string }): Omit<RulePackageStand, "id" | "version"> =>
     resource.data?.bibliothek?.find(row => row.id === item.id && row.version === item.version) ?? UNBEKANNTER_STAND;
   const genommene = packages.filter(item => stand(item).genommen);
-  const sichtbar = zeigeGenommene ? packages : packages.filter(item => !stand(item).genommen);
+  const verfuegbar = zeigeGenommene ? packages : packages.filter(item => !stand(item).genommen);
+  const sichtbar = verfuegbar.filter(item => `${item.name} ${item.id} ${item.version}`.toLocaleLowerCase().includes(libraryQuery.trim().toLocaleLowerCase()));
   const base = packages.find(p => packageKey(p) === selected) ?? packages.find(p => resource.data && packageKey(p) === packageKey(resource.data.pin)) ?? packages[0];
   const baseDraft = useMemo(() => base ? packageDraft(base) : null, [base]), current = draft ?? baseDraft;
   const validation = useMemo(() => current ? validateDraft(current) : null, [current]), pkg = validation?.valid ? validation.value : null;
@@ -210,7 +221,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const readyReview = review?.fingerprint === fingerprint ? review : null;
   const setDirtyState = (value: boolean) => { setDirty(value); onDirty(value); };
   const clearReview = () => { setReview(null); setAcknowledged(false); setNotice(""); task.setError(""); };
-  const edit = (next: RuleDraft) => { setDraft(next); setDirtyState(true); clearReview(); };
+  const edit = (next: RuleDraft) => { if (!editable || task.busy) return; setDraft(next); setDirtyState(true); clearReview(); };
   const canReplace = () => !dirty || window.confirm(t("Ungespeicherten Regelentwurf verwerfen? Lade ihn vorher als Datei herunter, wenn du ihn behalten möchtest."));
   const selectPackage = (next: RulePackage) => { if (!canReplace()) return; setSelected(packageKey(next)); setDraft(null); setLocked(false); setDirtyState(false); clearReview(); setLastValidPkg(null); };
   const begin = (next: RuleDraft) => { if (!canReplace()) return; setDraft(next); setLocked(false); setDirtyState(true); clearReview(); setTab("package"); setLastValidPkg(null); };
@@ -226,7 +237,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
     void task.run(async () => {
       const result = await api<RuleReview>(apiPath(campaign.id, "/rules/preview"), { method: "POST", body: { package: item } });
       setReview({ ...result, fingerprint: stableJson(item) });
-      requestAnimationFrame(() => { activationSection.current?.scrollIntoView({ block: "start" }); activationSection.current?.focus({ preventScroll: true }); });
+      requestAnimationFrame(() => jumpTo("publish"));
     });
   };
   const install = () => { if (!pkg || collision || !testsPass) return; void task.run(async () => {
@@ -254,7 +265,12 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
     if (!window.confirm(t("„{name} {version}“ endgültig löschen? Diese Paketfassung verschwindet vollständig und lässt sich nicht zurückholen.", { name: item.name, version: item.version }))) return;
     void task.run(async () => {
       await api(apiPath(campaign.id, "/rules"), { method: "DELETE", body: { packageId: item.id, packageVersion: item.version } });
-      if (selected === packageKey(item)) { setSelected(null); setDraft(null); setLastValidPkg(null); }
+      if (selected === packageKey(item)) setSelected(null);
+      // A draft can outlive the library selection it started from, including an invalid draft.
+      // Deleting that older version must only clear the matching read-only view.
+      if (!editable && current && packageKey(current) === packageKey(item)) {
+        setDraft(null); setLastValidPkg(null); setLocked(false); setDirtyState(false);
+      }
       if (justInstalled && packageKey(justInstalled) === packageKey(item)) setJustInstalled(null);
       setNotice(t("„{name} {version}“ ist endgültig gelöscht.", { name: item.name, version: item.version }));
       refresh();
@@ -267,19 +283,27 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
     if (!pkg) return; const url = URL.createObjectURL(new Blob([JSON.stringify(pkg, null, 2) + "\n"], { type: "application/json" }));
     const link = document.createElement("a"); link.href = url; link.download = `${pkg.id}-${pkg.version}.rules.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  const jumpTo = (section: "preview" | "publish") => {
+    const node = section === "preview" ? previewSection.current : activationSection.current;
+    if (!node) return;
+    const stage = node.closest<HTMLElement>(".main-stage");
+    if (stage) stage.scrollTo({ top: stage.scrollTop + node.getBoundingClientRect().top - stage.getBoundingClientRect().top - 20 });
+    else node.scrollIntoView({ block: "start" });
+    node.focus({ preventScroll: true });
+  };
   if (campaign.role !== "leitung") return <Notice>{t("Die Regelwerkstatt steht der Spielleitung zur Verfügung.")}</Notice>;
   if (resource.loading && !resource.data) return <Loading text={t("Regelpakete werden geladen …")} />;
   return <div className="rule-forge">
-    <header className="rf-header"><div><span className="eyebrow">{t("Regeln für {name}", { name: campaign.name })}</span><h1><Hammer size={26} />{t("Regelwerkstatt")}</h1><p>{t("Ein Regelpaket bündelt Charakterfelder, den Aufbau des Charakterbogens und Aktionen (Würfe) zu einer versionierten, unveränderlichen Einheit. Baue sie hier auf, prüfe Beispiele auf der Testtafel unten und wähle bewusst, welche Version am Tisch gilt.")}</p></div><div className="rf-toolbar"><Button disabled={task.busy} onClick={() => begin(starterDraft(authorName, packages))}><Plus size={16} />{t("Neues Paket")}</Button><Button disabled={task.busy} onClick={() => upload.current?.click()}><Upload size={16} />{t("Paket öffnen")}</Button><input ref={upload} type="file" accept=".json,application/json" hidden onChange={importFile} disabled={task.busy} /></div></header>
-    <ChronicleHeroesTemplate disabled={task.busy} onCreate={template => begin(packageDraft(template))} />
+    <header className="rf-header"><div><span className="eyebrow">{t("Regeln für {name}", { name: campaign.name })}</span><h1><Hammer size={26} />{t("Regelwerkstatt")}</h1><p>{t("Gestalte den Charakterbogen, lege Würfe fest und probiere dein Regelwerk aus. Du entscheidest, welche geprüfte Version für die Runde gilt.")}</p></div><div className="rf-toolbar"><Button disabled={task.busy} onClick={() => begin(starterDraft(authorName, packages))}><Plus size={16} />{t("Neues Paket")}</Button><Button disabled={task.busy} onClick={() => upload.current?.click()}><Upload size={16} />{t("Paket öffnen")}</Button><input ref={upload} type="file" accept=".json,application/json" hidden onChange={importFile} disabled={task.busy} /></div></header>
+    <details className="rf-starter"><summary><span><strong>{t("Mit einer Vorlage starten")}</strong><small>{t("ChronicleHeroes · W100, Talente und ein anpassbarer Fertigkeitskatalog")}</small></span></summary><ChronicleHeroesTemplate disabled={task.busy} onCreate={template => begin(packageDraft(template))} /></details>
     {resource.error ? <Notice error>{resource.error} <Button disabled={task.busy} onClick={refresh}>{t("Erneut laden")}</Button></Notice> : null}
     {task.error ? <Notice error>{task.error}</Notice> : null}{notice ? <Notice>{notice}</Notice> : null}
     <div className="rf-workspace"><aside className="rf-catalog" aria-label={t("Installierte Regelpakete")}><div className="rf-section-heading"><h2><BookOpen size={18} />{t("Bibliothek")}</h2><Button variant="quiet" disabled={task.busy} onClick={refresh} aria-label={t("Paketbibliothek aktualisieren")}>↻</Button></div>
       <p className="rf-help">{t("Installierte Versionen bleiben unveränderlich.")}</p>
-      <p className="rf-help">{t("Mit der rechten Maustaste auf einen Eintrag kannst du ein Paket aus der Bibliothek nehmen — und, wenn nichts mehr darauf verweist, endgültig löschen.")}</p>
-      <p className="rf-help">{t("Auch die Aktivierung findest du im Rechtsklickmenü. Vor dem Wechsel siehst du die Änderungen an vorhandenen Figuren.")}</p>
+      <label className="rf-library-search"><Search size={15} aria-hidden="true" /><input type="search" value={libraryQuery} aria-label={t("Regelpaket suchen")} placeholder={t("Name, Kennung oder Version")} onChange={event => setLibraryQuery(event.target.value)} /></label>
+      <details className="rf-library-help"><summary>{t("Pakete verwalten")}</summary><p className="rf-help">{t("Über das Menü am Eintrag kannst du Versionen aktivieren, aus der Bibliothek nehmen oder zurückholen. Endgültiges Löschen ist nur möglich, wenn nichts mehr darauf verweist.")}</p></details>
       {genommene.length ? <Button variant="quiet" aria-pressed={zeigeGenommene} disabled={task.busy} onClick={() => setZeigeGenommene(v => !v)}>{t("Auch genommene zeigen ({anzahl})", { anzahl: genommene.length })}</Button> : null}
-      {sichtbar.map(item => <button type="button" key={packageKey(item)} className={`rf-catalog-item ${!editable && current?.id === item.id && current.version === item.version ? "is-selected" : ""}`} disabled={task.busy} aria-pressed={!editable && current?.id === item.id && current.version === item.version}
+      {sichtbar.map(item => <div className="rf-catalog-row" key={packageKey(item)}><button type="button" className={`rf-catalog-item ${!editable && current?.id === item.id && current.version === item.version ? "is-selected" : ""}`} disabled={task.busy} aria-pressed={!editable && current?.id === item.id && current.version === item.version}
         onClick={() => selectPackage(item)}
         onContextMenu={event => { event.preventDefault(); event.stopPropagation(); oeffneMenu(item, event.clientX, event.clientY); }}
         onKeyDown={event => { if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return;
@@ -287,9 +311,10 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
           const rand = event.currentTarget.getBoundingClientRect(); oeffneMenu(item, rand.left, rand.bottom + 4); }}
       ><strong>{item.name}</strong><span>{stand(item).genommen ? t("{version} · Aus der Bibliothek genommen", { version: item.version })
         : resource.data && packageKey(item) === packageKey(resource.data.pin) ? t("{version} · Aktiv in dieser Runde", { version: item.version })
-        : t("{version} · Installiert", { version: item.version })}</span><small>{item.id}</small></button>)}
+        : t("{version} · Installiert", { version: item.version })}</span><small>{item.id}</small></button><Button variant="quiet" className="rf-catalog-menu" disabled={task.busy} aria-label={t("Paket {name} {version} verwalten", { name: item.name, version: item.version })} aria-haspopup="menu" onClick={event => { const bounds = event.currentTarget.getBoundingClientRect(); oeffneMenu(item, bounds.left, bounds.bottom + 4); }}><MoreHorizontal size={17} /></Button></div>)}
       {!packages.length ? <p>{t("Noch kein Paket geladen. Du kannst einen Entwurf anlegen oder eine Paketdatei öffnen.")}</p> : null}
-      {packages.length && !sichtbar.length ? <p>{t("Alle Pakete sind aus der Bibliothek genommen. Über den Schalter oben werden sie wieder sichtbar.")}</p> : null}
+      {packages.length && !verfuegbar.length ? <p>{t("Alle Pakete sind aus der Bibliothek genommen. Über den Schalter oben werden sie wieder sichtbar.")}</p> : null}
+      {verfuegbar.length > 0 && !sichtbar.length ? <div className="rf-search-empty" role="status"><p>{t("Kein Regelpaket gefunden.")}</p><Button variant="quiet" onClick={() => setLibraryQuery("")}>{t("Suche zurücksetzen")}</Button></div> : null}
       {menu && menuPaket && menuStand ? <MapContextMenu key={menu.key} label={`${menuPaket.name} ${menuPaket.version}`} popup={{ x: menu.x, y: menu.y, onDismiss: () => setMenu(null) }} actions={[
         { id: "aktivieren", label: resource.data && packageKey(menuPaket) === packageKey(resource.data.pin) ? t("Bereits für diese Runde aktiv") : menuStand.genommen ? t("Zum Aktivieren zuerst in die Bibliothek zurückholen") : t("Für diese Runde aktivieren …"),
           disabled: task.busy || menuStand.genommen || (!!resource.data && packageKey(menuPaket) === packageKey(resource.data.pin)), onSelect: () => activateFromMenu(menuPaket) },
@@ -303,18 +328,24 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
       {current ? <><div className="rf-section-heading"><div><h2>{current.name || t("Unbenanntes Regelpaket")}</h2><span className="rf-help">{!editable ? t("Installierte Version · schreibgeschützt · {version}", { version: current.version }) : dirty ? t("Ungespeicherter Entwurf · {version}", { version: current.version }) : t("Entwurf · {version}", { version: current.version })}</span></div><div className="rf-toolbar">
         {!editable && pkg ? <Button disabled={task.busy} onClick={() => { try { begin(forkPackage(pkg, packages)); } catch (error) { task.setError(errorText(error)); } }}>{t("Neue Version erstellen")}</Button> : null}
         <Button disabled={!pkg || task.busy} onClick={download}><Download size={15} />{t("Paketdatei")}</Button></div></div>
-        <div className="rf-card rf-object" aria-label={t("Die Figur in diesem Regelwerk")}><div className="rf-section-heading"><h3>{t("Die Figur in diesem Regelwerk")}</h3><span className="rf-help">{t("Schritt {schritt} von {gesamt}", { schritt: tabs.indexOf(tab) + 1, gesamt: tabs.length })}</span></div><p className="rf-help">{tabDescription(tab)}</p>
-          <div className="rf-toolbar"><span className="rf-node-badge">{t("{anzahl} Attribute", { anzahl: current.fields.length })}</span><span className="rf-node-badge">{t("{anzahl} abgeleitet", { anzahl: current.computed?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Regeln", { anzahl: current.constraints?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Balken", { anzahl: current.vitals?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Aktionen", { anzahl: current.actions.length })}</span>{current.abilityRules ? <><span className="rf-node-badge">{t("{anzahl} Fähigkeiten", { anzahl: current.abilities?.length ?? 0 })}</span><span className="rf-node-badge">{t("{anzahl} Zustände", { anzahl: current.conditions?.length ?? 0 })}</span></> : null}<span className="rf-node-badge">{t("{anzahl} Pakettests", { anzahl: current.selfTests.length })}</span></div></div>
-        <div className="rf-tabs" role="tablist" aria-label={t("Regelpaket bearbeiten")}>{tabs.map((id, index) => <button key={id} type="button" role="tab" aria-selected={tab === id} aria-controls={`rf-panel-${id}`} id={`rf-tab-${id}`} tabIndex={tab === id ? 0 : -1} title={t("Schritt {schritt} von {gesamt}: {beschreibung}", { schritt: index + 1, gesamt: tabs.length, beschreibung: tabDescription(id) })} onKeyDown={event => navigateTabs(event, id, setTab)} onClick={() => setTab(id)}>{id === "tests" && current.selfTests.length ? t("{name} ({anzahl})", { name: tabLabel(id), anzahl: current.selfTests.length }) : tabLabel(id)}{errorLocation?.tab === id ? <TriangleAlert size={12} aria-label={t("Betrifft vermutlich den aktuellen Fehler")} /> : null}</button>)}</div>
-        <fieldset className="rf-editor-fields" disabled={tab !== "actions" && tab !== "map" && (!editable || task.busy)}><div role="tabpanel" id={`rf-panel-${tab}`} aria-labelledby={`rf-tab-${tab}`}>
+        <div className="rf-overview" aria-label={t("Die Figur in diesem Regelwerk")}>
+          <button type="button" onClick={() => setTab("fields")}><strong>{current.fields.length}</strong><span>{t("Attribute")}<small>{t("Werte der Figur")}</small></span><ArrowRight size={14} aria-hidden="true" /></button>
+          <button type="button" onClick={() => setTab("actions")}><strong>{current.actions.length}</strong><span>{t("Aktionen")}<small>{t("Würfe am Tisch")}</small></span><ArrowRight size={14} aria-hidden="true" /></button>
+          <button type="button" onClick={() => setTab("tests")}><strong>{current.selfTests.length}</strong><span>{t("Pakettests")}<small>{!pkg ? t("Entwurf prüfen") : !testsPass ? t("Abweichung gefunden") : current.selfTests.length ? t("Alle bestanden") : t("Beispiele festhalten")}</small></span><ArrowRight size={14} aria-hidden="true" /></button>
+        </div>
+        <div className="rf-next-step"><div><strong>{t("Nächster Schritt")}</strong><span>{!pkg || collision || !testsPass ? t("Behebe die markierte Stelle, bevor du diese Version übernimmst.") : !editable ? t("Erkunde die Regeln oder erstelle eine neue Version zum Bearbeiten.") : !tests.length ? t("Probiere einen Wurf aus und speichere ihn als Pakettest.") : t("Prüfe die Auswirkungen auf vorhandene Figuren und übernimm die Version.")}</span></div><div className="rf-toolbar">{!pkg || collision || !testsPass ? <Button variant="quiet" onClick={() => { if (!testsPass) setTab("tests"); else if (collision) setTab("package"); else if (errorLocation) setTab(errorLocation.tab); else jumpTo("publish"); }}>{t("Prüfstelle öffnen")}<ArrowRight size={14} /></Button> : <Button variant="quiet" onClick={() => jumpTo(editable && tests.length ? "publish" : "preview")}>{editable && tests.length ? t("Zur Übernahme") : t("Zur Testtafel")}<ArrowRight size={14} /></Button>}</div></div>
+        <div className="rf-tabs rf-grouped-tabs" role="tablist" aria-label={t("Regelpaket bearbeiten")}>{tabGroups.map(group => <div className="rf-tab-group" key={group.id} role="presentation"><span className="rf-tab-group-label">{groupLabel(group.id)}</span><div role="presentation">{group.tabs.map(id => <button key={id} type="button" role="tab" aria-selected={tab === id} aria-controls={`rf-panel-${id}`} id={`rf-tab-${id}`} tabIndex={tab === id ? 0 : -1} title={tabDescription(id)} onKeyDown={event => navigateTabs(event, id, setTab)} onClick={() => setTab(id)}>{id === "tests" && current.selfTests.length ? t("{name} ({anzahl})", { name: tabLabel(id), anzahl: current.selfTests.length }) : tabLabel(id)}{errorLocation?.tab === id ? <TriangleAlert size={12} aria-label={t("Betrifft vermutlich den aktuellen Fehler")} /> : null}</button>)}</div></div>)}</div>
+        <p className="rf-tab-description">{tabDescription(tab)}</p>
+        {!editable ? <p className="rf-readonly-help">{t("Du kannst alle Einträge ansehen. Zum Ändern erstelle oben eine neue Version.")}</p> : null}
+        <fieldset className="rf-editor-fields" disabled={!["actions", "map", "fields", "abilities", "conditions"].includes(tab) && (!editable || task.busy)}><div role="tabpanel" id={`rf-panel-${tab}`} aria-labelledby={`rf-tab-${tab}`}>
           {tab === "package" ? <><PackageEditor draft={current} onChange={edit} />{pkg ? <RuleAttribution pkg={pkg} /> : null}{current.attribution ? <AttributionEditor value={current.attribution} onChange={attribution => edit({ ...current, attribution })} /> : null}</> : null}
           {tab === "map" ? <RuleMap draft={current} disabled={!editable || task.busy} onChange={edit} onOpen={setTab} /> : null}
-          {tab === "fields" ? <FieldList title={t("Attribute")} fields={current.fields} onChange={fields => edit({ ...current, fields, sections: current.sections.map(s => ({ ...s, fieldKeys: s.fieldKeys.filter(id => fields.some(f => f.localId === id)) })) })} /> : null}
+          {tab === "fields" ? <FieldList title={t("Attribute")} fields={current.fields} disabled={!editable || task.busy} onChange={fields => edit({ ...current, fields, sections: current.sections.map(s => ({ ...s, fieldKeys: s.fieldKeys.filter(id => fields.some(f => f.localId === id)) })) })} /> : null}
           {tab === "sheet" ? <SheetEditor fields={current.fields} sections={current.sections} onChange={sections => edit({ ...current, sections })} /> : null}
           {tab === "actions" ? <RuleActionEditor draft={current} disabled={!editable || task.busy} onChange={actions => edit({ ...current, actions })} /> : null}
           {tab === "computed" ? <RuleDeclarativeEditor draft={current} onChange={edit} /> : null}
-          {tab === "abilities" ? <RuleAbilityEditor draft={current} onChange={edit} /> : null}
-          {tab === "conditions" ? <RuleConditionEditor draft={current} onChange={edit} /> : null}
+          {tab === "abilities" ? <RuleAbilityEditor draft={current} disabled={!editable || task.busy} onChange={edit} /> : null}
+          {tab === "conditions" ? <RuleConditionEditor draft={current} disabled={!editable || task.busy} onChange={edit} /> : null}
           {tab === "tests" ? <><h3>{t("Pakettests")}</h3><p>{t("Speichere Beispiele aus der Testtafel als feste Erwartung. Bei der Installation werden alle enthaltenen Tests ausgeführt.")}</p>{!current.selfTests.length ? <p className="rf-help">{t("Noch keine Pakettests. Unten auf der Testtafel kannst du für jede Figur ein Beispiel speichern.")}</p> : <div className="rf-test-list">{current.selfTests.map((test, i) => <article className="rf-card" key={i}><div className="rf-section-heading"><h4>{test.name}</h4><Button variant="quiet" aria-label={t("Pakettest {name} entfernen", { name: test.name })} onClick={() => edit({ ...current, selfTests: current.selfTests.filter((_, n) => n !== i) })}><Trash2 size={15} />{t("Entfernen")}</Button></div><p>{t("{kennung} · Erwartet {erwartet} · {stand}", { kennung: test.actionId, erwartet: test.expectedTotal, stand: tests[i]?.passed ? t("Bestanden") : tests[i]?.error ?? (tests[i]?.actual === undefined ? t("Paket noch nicht gültig") : t("Ergebnis {wert} weicht ab", { wert: String(tests[i]!.actual) })) })}</p><details><summary>{t("Gespeicherte Beispielwerte")}</summary><dl className="rf-value-list"><dt>{t("Würfelstart")}</dt><dd>{test.context.seed}</dd>{Object.entries(test.context.actor).map(([id, value]) => <div key={id}><dt>{id}</dt><dd>{String(value)}</dd></div>)}</dl><p>{t("{anzahl} gehaltene Beispielpassagen", { anzahl: test.context.knowledge.passages.length })}</p></details></article>)}</div>}</> : null}
           {tab === "migrations" ? <MigrationEditor draft={current} packages={packages} onChange={migrations => edit({ ...current, migrations })} /> : null}
         </div></fieldset>
@@ -329,7 +360,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
       </> : <EmptyState title={t("Leg dein erstes Regelpaket an.")} action={<div className="rf-toolbar"><Button onClick={() => begin(starterDraft(authorName, packages))}><Plus size={16} />{t("Neues Paket beginnen")}</Button><Button onClick={() => upload.current?.click()}><Upload size={16} />{t("Paketdatei öffnen")}</Button></div>}>{t("Ein Regelpaket bündelt Charakterfelder wie Kraft oder Geschick, den Aufbau des Charakterbogens und Aktionen zu einer festen Version. Eine Aktion ist ein Wurf wie „1d20 plus Geschick, Erfolg ab 15“: ein Würfel, ein Charakterwert und eine Zahl, ab der die Aktion gelingt. „Neues Paket beginnen“ legt genau so ein Beispiel an, das du danach frei umbaust.")}</EmptyState>}
     </FormulaExampleContext.Provider></section></div>
     {!pkg && lastValidPkg ? <Notice>{t("Die Testtafel unten zeigt zur Orientierung weiter die zuletzt gültige Fassung (Version {version}), statt beim Bearbeiten zu verschwinden. Dein aktueller Entwurf ist noch nicht gültig: {fehler}", { version: lastValidPkg.version, fehler: validation && !validation.valid ? explainValidationError(validation.error) : "" })}</Notice> : null}
-    <RuleForgePreview pkg={previewPkg} onFigure={setFigure} onSaveTest={editable && current && !task.busy && current.selfTests.length < 64 ? test => edit({ ...current, includeSelfTests: true, selfTests: [...current.selfTests, test] }) : undefined} />
+    <div ref={previewSection} className="rf-preview-anchor" tabIndex={-1}><RuleForgePreview pkg={previewPkg} onFigure={setFigure} onSaveTest={editable && current && pkg && !task.busy && current.selfTests.length < 64 ? test => edit({ ...current, includeSelfTests: true, selfTests: [...current.selfTests, test] }) : undefined} /></div>
   </div>;
 }
 

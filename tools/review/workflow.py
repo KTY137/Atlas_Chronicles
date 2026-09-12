@@ -45,8 +45,10 @@ def work_node(name: str):
 
 def build_graph(checkpointer, workflow="review"):
     graph = StateGraph(ReviewState)
-    if workflow == "tabletop":
-        branches = ["table_dice_gm", "characters_english", "lan_network", "wiki_menus_rules"]
+    if workflow in ("tabletop", "forge-release"):
+        branches = (["rule_forge", "character_creation", "steam_preparation", "forge_shell"]
+                    if workflow == "forge-release" else
+                    ["table_dice_gm", "characters_english", "lan_network", "wiki_menus_rules"])
         for name in ["design", *branches, "integration", "verification", "repair", "handoff"]:
             graph.add_node(name, work_node(name))
         graph.add_edge(START, "design")
@@ -148,10 +150,10 @@ def main():
     parser.add_argument("work", nargs="?")
     parser.add_argument("evidence", nargs="?")
     parser.add_argument("--passed", action="store_true")
-    parser.add_argument("--workflow", choices=["review", "features", "map-research", "map-visuals", "map-studio", "delivery", "tabletop"], default="review")
+    parser.add_argument("--workflow", choices=["review", "features", "map-research", "map-visuals", "map-studio", "delivery", "tabletop", "forge-release"], default="review")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    stamp = "20260912" if args.workflow == "tabletop" else "20260908"
+    stamp = "20260912" if args.workflow in ("tabletop", "forge-release") else "20260908"
     checkpoint = root / ".local" / f"{args.workflow}-{stamp}" / "workflow.sqlite"
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
     config = {"configurable": {"thread_id": f"gui-{args.workflow}-{stamp}" if args.workflow != "review" else "gui-regression-review-20260908"}}

@@ -1,0 +1,391 @@
+{
+  "schema": "atlas-steam-native-verification/1",
+  "sourceArtifact": ".local/desktop-artifacts/2026-09-12T21-34-05-811Z",
+  "stage": ".local/steam-staging/steam-qualified-20260912",
+  "sourceRevision": null,
+  "artifactRecordSha256": "660908ccdaa46480f2b948aedb337f35d25455e7c829a1ddc833f607bc7b15e5",
+  "stageRecordSha256": "87c1cc685d2a175071b9825db501b54462e58eb09607e5d2b0d8f5bf35627c32",
+  "executableSha256": "d61c38be8dda6b3cc4fd76fb31a8b81bbc426033456d2ecb5951a2244a054557",
+  "localEvidence": ".local/desktop-profiles/smoke-uHFnyU/evidence.json",
+  "localEvidenceSha256": "4dfe251b51b59fcc3dc3314fe4484323000d55fd94c759f2013a95610d9bc71b",
+  "startedAt": "2026-09-12T21:48:54.081Z",
+  "finishedAt": "2026-09-12T21:59:11.429Z",
+  "passed": true,
+  "cleanupError": null,
+  "steamClientLaunch": false,
+  "checks": [
+    "own PG17 starts, migrations and native sharp decode under Electron Node24",
+    "native settings dropdowns in packaged Electron select, cancel and reset without navigation or focus loss",
+    "host window offers a round created in the game window without restarting the world",
+    "host window creates a round, issues its invitation link, and approves one and rejects another request at the door",
+    "real generator route reads packaged licensed Grundriss assets and persists native tactical map",
+    "packaged server imports an uploaded 190-place map, stores its 8192 x 8192 WebP in the campaign image store and the browser decodes what it serves back",
+    "atlas lays an uploaded 1600 x 1000 map picture over the whole map instead of dropping it",
+    "packaged gemalt assets generate and persist fantasy interiors",
+    "packaged zeitwelten assets generate and persist gegenwart interiors",
+    "packaged zeitwelten assets generate and persist scifi interiors",
+    "packaged genres assets generate and persist fantasy interiors",
+    "packaged genres assets generate and persist gegenwart interiors",
+    "packaged genres assets generate and persist scifi interiors",
+    "packaged Genre-Archiv serves all 300 SVGs across twelve genres with their exact manifest bytes and SHA256",
+    "installed client native dropdown accepts castle, palace and village through pointer and keyboard",
+    "compiled client previews and saves Genre-Archiv, filters twelve genres, searches and decodes three motifs, and persists placed artwork through reload",
+    "compiled desktop right-click reviews and deletes two nested maps, frees the surviving entrance and persists a new replacement interior",
+    "shared packaged client shows the Schmiede overview and all seven discoverable workshops",
+    "installed UI creates a linked upper floor, switches native transition dropdowns and retains room reveal through reload",
+    "shared packaged client installs and activates ChronicleHeroes V2 rules and exports attributed current native V20 with generated map nodes",
+    "native first setup installs HttpOnly cookie and shared client writes campaign/article",
+    "isolated game has no management bridge; all windows sandboxed and cookie flags preserved",
+    "Fastify drain, pool close and verified own PG smart-stop complete",
+    "full Electron exit/relaunch reopens same profile, stable origin, cookie and semantic campaign hash",
+    "management recovery point restores new profile with same actual signed browser credential and complete campaign hash",
+    "native V20 restores only into new profile, explicit historical GM enrolls once, semantic reexport equals source",
+    "deletion confirmation keeps its focus and typed text across status polls",
+    "management deletes one resting local world while another runs, only against its typed name, leaves no directory and keeps its recovery point; the running world is refused",
+    "DPAPI ciphertext persisted; original development ports and configuration never selected"
+  ],
+  "rateLimits": {
+    "routes": {
+      "GET /api/me": {
+        "responses": 24,
+        "limits": {
+          "240": 24
+        }
+      },
+      "GET /api/campaigns": {
+        "responses": 28,
+        "limits": {
+          "240": 28
+        }
+      },
+      "POST /api/campaigns": {
+        "responses": 2,
+        "limits": {
+          "240": 2
+        }
+      },
+      "GET /api/campaigns/:id/actors": {
+        "responses": 25,
+        "limits": {
+          "240": 25
+        }
+      },
+      "GET /api/campaigns/:id/theme-pin": {
+        "responses": 24,
+        "limits": {
+          "240": 24
+        }
+      },
+      "GET /api/campaigns/:id/reader-perspective": {
+        "responses": 24,
+        "limits": {
+          "240": 24
+        }
+      },
+      "GET /api/campaigns/:id/entries": {
+        "responses": 18,
+        "limits": {
+          "240": 18
+        }
+      },
+      "GET /api/reachability": {
+        "responses": 2,
+        "limits": {
+          "240": 2
+        }
+      },
+      "GET /api/credentials": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "POST /api/joins/:id/status": {
+        "responses": 2,
+        "limits": {
+          "240": 2
+        }
+      },
+      "POST /api/campaigns/:id/entries": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "POST /api/campaigns/:id/tactical/generate": {
+        "responses": 8,
+        "limits": {
+          "240": 8
+        }
+      },
+      "POST /api/campaigns/:id/maps/import": {
+        "responses": 1,
+        "limits": {
+          "8": 1
+        }
+      },
+      "POST /api/campaigns/:id/wiki-medien": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "PUT /api/campaigns/:id/wiki-medien/:id/bytes": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "GET /api/campaigns/:id/maps/:id/image": {
+        "responses": 3,
+        "limits": {
+          "240": 3
+        }
+      },
+      "POST /api/campaigns/:id/maps/bild": {
+        "responses": 1,
+        "limits": {
+          "8": 1
+        }
+      },
+      "GET /api/campaigns/:id/maps": {
+        "responses": 14,
+        "limits": {
+          "240": 14
+        }
+      },
+      "GET /api/campaigns/:id/roster": {
+        "responses": 14,
+        "limits": {
+          "240": 14
+        }
+      },
+      "GET /api/campaigns/:id/maps/:id": {
+        "responses": 14,
+        "limits": {
+          "240": 14
+        }
+      },
+      "GET /api/campaigns/:id/tactical/maps": {
+        "responses": 14,
+        "limits": {
+          "240": 14
+        }
+      },
+      "GET /api/campaigns/:id/tactical/maps/:id": {
+        "responses": 23,
+        "limits": {
+          "240": 23
+        }
+      },
+      "GET /api/packs": {
+        "responses": 2,
+        "limits": {
+          "1200": 2
+        }
+      },
+      "GET /api/packs/pk.genres/manifest": {
+        "responses": 8,
+        "limits": {
+          "1200": 8
+        }
+      },
+      "GET /api/packs/pk.genres/asset/*": {
+        "responses": 577,
+        "limits": {
+          "1200": 577
+        }
+      },
+      "GET /api/campaigns/:id/tactical/generate/defaults": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "POST /api/campaigns/:id/tactical/generate/preview": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "GET /api/campaigns/:id/tactical/maps/:id/floors": {
+        "responses": 22,
+        "limits": {
+          "240": 22
+        }
+      },
+      "GET /api/campaigns/:id/maps/tactical/:id/children": {
+        "responses": 16,
+        "limits": {
+          "240": 16
+        }
+      },
+      "GET /api/campaigns/:id/tactical/maps/:id/fog": {
+        "responses": 22,
+        "limits": {
+          "240": 22
+        }
+      },
+      "GET /api/campaigns/:id/scenes": {
+        "responses": 2,
+        "limits": {
+          "240": 2
+        }
+      },
+      "PUT /api/campaigns/:id/tactical/maps/:id/revision": {
+        "responses": 1,
+        "limits": {
+          "8": 1
+        }
+      },
+      "POST /api/campaigns/:id/betreten": {
+        "responses": 3,
+        "limits": {
+          "240": 3
+        }
+      },
+      "GET /api/campaigns/:id/maps/tactical/:id/deletion-preview": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "POST /api/campaigns/:id/maps/tactical/:id/delete": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "GET /api/campaigns/:id/rules": {
+        "responses": 3,
+        "limits": {
+          "240": 3
+        }
+      },
+      "POST /api/campaigns/:id/rules/preview": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "POST /api/campaigns/:id/rules": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "POST /api/campaigns/:id/rules/activate": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      },
+      "GET /api/packs/pk.grundriss/manifest": {
+        "responses": 1,
+        "limits": {
+          "1200": 1
+        }
+      },
+      "GET /api/packs/pk.grundriss/asset/*": {
+        "responses": 46,
+        "limits": {
+          "1200": 46
+        }
+      },
+      "POST /api/campaigns/:id/tactical/maps/:id/floors": {
+        "responses": 1,
+        "limits": {
+          "8": 1
+        }
+      },
+      "POST /api/campaigns/:id/tactical/maps/:id/fog": {
+        "responses": 1,
+        "limits": {
+          "60": 1
+        }
+      },
+      "GET /api/campaigns/:id/export": {
+        "responses": 4,
+        "limits": {
+          "4": 4
+        }
+      },
+      "POST /api/pairing/redeem": {
+        "responses": 2,
+        "limits": {
+          "240": 2
+        }
+      },
+      "GET /api/setup": {
+        "responses": 1,
+        "limits": {
+          "240": 1
+        }
+      }
+    },
+    "exceeded": [],
+    "checkpoints": [
+      {
+        "name": "catalogue-ui",
+        "status": 200,
+        "limit": "240",
+        "remaining": "154",
+        "resetSeconds": "15",
+        "retryAfter": null,
+        "reserve": 160,
+        "waitMs": 15100
+      },
+      {
+        "name": "map-lifecycle-and-forge",
+        "status": 200,
+        "limit": "240",
+        "remaining": "163",
+        "resetSeconds": "52",
+        "retryAfter": null,
+        "reserve": 160,
+        "waitMs": 0
+      },
+      {
+        "name": "floors-and-export",
+        "status": 200,
+        "limit": "240",
+        "remaining": "95",
+        "resetSeconds": "47",
+        "retryAfter": null,
+        "reserve": 160,
+        "waitMs": 47100
+      },
+      {
+        "name": "restart-and-export",
+        "status": 200,
+        "limit": "240",
+        "remaining": "237",
+        "resetSeconds": "60",
+        "retryAfter": null,
+        "reserve": 80,
+        "waitMs": 0
+      },
+      {
+        "name": "recovery-and-export",
+        "status": 200,
+        "limit": "240",
+        "remaining": "237",
+        "resetSeconds": "60",
+        "retryAfter": null,
+        "reserve": 80,
+        "waitMs": 0
+      },
+      {
+        "name": "portable-restore-and-export",
+        "status": 200,
+        "limit": "240",
+        "remaining": "238",
+        "resetSeconds": "60",
+        "retryAfter": null,
+        "reserve": 80,
+        "waitMs": 0
+      }
+    ]
+  },
+  "responseCountMeaning": "Browser-observed responses, potentially including cached responses; not a server-side bucket debit count."
+}

@@ -1,11 +1,12 @@
 import { build } from "esbuild";
-import { cp, mkdir, readFile, writeFile, readdir, rm } from "node:fs/promises";
+import { cp, readFile, writeFile, readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { join, relative } from "node:path";
+import { prepareDesktopBuildOutput } from "./build-output.mjs";
 
-const root=fileURLToPath(new URL("../../../",import.meta.url)),desktop=join(root,"packages/desktop"),out=join(desktop,"dist");
-await mkdir(out,{recursive:true});
+const root=fileURLToPath(new URL("../../../",import.meta.url)),desktop=join(root,"packages/desktop");
+const out=await prepareDesktopBuildOutput(desktop);
 const resourcePlugin={name:"desktop-resource-boundaries",setup(builder){
   builder.onResolve({filter:/^@electric-sql\/pglite$/},()=>({path:"@electric-sql/pglite",external:true,sideEffects:false}));
   builder.onLoad({filter:/server[\\/]src[\\/]domain[\\/]grundriss\.ts$/},async args=>{
@@ -40,12 +41,12 @@ await build({...shared,entryPoints:[join(desktop,"src/main.ts")],outfile:join(ou
 await build({...shared,entryPoints:[join(desktop,"src/worker.ts")],outfile:join(out,"worker.cjs")});
 await build({entryPoints:[join(desktop,"src/preload.ts")],outfile:join(out,"preload.cjs"),bundle:true,platform:"node",format:"cjs",external:["electron"],target:"node24"});
 await cp(join(desktop,"manager"),join(out,"manager"),{recursive:true});
+// Electron's top-level LICENSE covers Electron; ship Atlas's own notice beside its code.
+await cp(join(root,"LICENSE"),join(out,"LICENSE"));
 await cp(join(root,"packages/server/src/db/migrations"),join(out,"migrations"),{recursive:true});
-// This exact generated subtree is replaced, so earlier content-hashed assets do
-// not remain as hidden additions to the supposedly identical web client.
+// The complete generated output was reset before compilation. Every copied tree,
+// including migrations/runtime/manager/packs, now contains only current resources.
 const clientTarget=join(out,"client");
-if(relative(desktop,clientTarget)!==join("dist","client"))throw new Error("Unsafe desktop client target.");
-await rm(clientTarget,{recursive:true,force:true});
 await cp(join(root,"packages/client/dist"),clientTarget,{recursive:true});
 await cp(join(root,".local/desktop-runtime/pgsql"),join(out,"runtime"),{recursive:true});
 await cp(join(root,"assets/packs"),join(out,"assets/packs"),{recursive:true});
@@ -53,8 +54,7 @@ await cp(join(root,"assets/packs"),join(out,"assets/packs"),{recursive:true});
 // somebody else's drawing under no stated licence, and the product does not need them — a map
 // arrives from a wiki, as an uploaded picture, or as a map JSON, always because a person fetched
 // it. The check below is what keeps that true: a fixture copy would leave a directory behind.
-const fremdKarten=join(out,"fixtures");
-await rm(fremdKarten,{recursive:true,force:true});
+if((await readdir(out)).includes("fixtures"))throw new Error("Unlicensed map fixtures must not enter the desktop build.");
 const paketIds=(await readdir(join(root,"assets/packs"),{withFileTypes:true})).filter(e=>e.isDirectory()).map(e=>e.name).sort();
 if(!paketIds.includes("pk.grundriss"))throw new Error("Grundriss pack missing from assets/packs.");
 const hash=bytes=>createHash("sha256").update(bytes).digest("hex"),clientFiles={};
@@ -77,7 +77,7 @@ await writeFile(join(out,"build.json"),JSON.stringify({version:1,electron:"44.2.
 // zweite Versionsquelle, die kein Gate sah. Beim Bau von 0.2.0 fiel es auf, weil das fertige
 // Installationspaket sich weiter 0.1.0 nannte — und Squirrel entscheidet an genau dieser Zahl,
 // ob eine Installation eine Aktualisierung ist.
-const paketVersion=JSON.parse(await readFile(join(desktop,"package.json"),"utf8")).version;
+const paketManifest=JSON.parse(await readFile(join(desktop,"package.json"),"utf8")),paketVersion=paketManifest.version;
 if(typeof paketVersion!=="string"||!/^\d+\.\d+\.\d+$/.test(paketVersion))throw new Error("packages/desktop/package.json fuehrt keine brauchbare Version.");
-await writeFile(join(out,"package.json"),JSON.stringify({name:"atlas-chronicles",productName:"Atlas Chronicles",version:paketVersion,main:"main.cjs",description:"Atlas Chronicles local worlds",author:"Atlas Chronicles",license:"UNLICENSED"},null,2));
+await writeFile(join(out,"package.json"),JSON.stringify({name:"atlas-chronicles",productName:"Atlas Chronicles",version:paketVersion,main:"main.cjs",description:"Atlas Chronicles local worlds",author:paketManifest.author,license:paketManifest.license},null,2));
 console.log(`Desktop compiled; ${Object.keys(clientFiles).length} client files copied byte-for-byte, ${paketIds.length} asset pack(s) verified (${paketIds.join(", ")}). No client rebuild.`);

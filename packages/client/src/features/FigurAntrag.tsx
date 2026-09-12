@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FigurantragCard, FreigegebeneVorlageCard } from "@chronicle/protocol";
 import type { Scalar } from "@chronicle/rules";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
@@ -9,6 +9,7 @@ import { useResource, useTask } from "../hooks";
 import { t } from "../i18n";
 import { RuleFields } from "./RuleFields";
 import type { RulesState } from "./game-api";
+import "./character-creation.css";
 
 /**
  * `FigurAntrag` — der Weg vom leeren Bereich „Ich" zur eigenen Figur.
@@ -26,8 +27,8 @@ import type { RulesState } from "./game-api";
  * **Ein offener Antrag schließt den nächsten aus.** Der Server hält dieselbe Regel
  * (`figurantraege_ein_offener`); hier ist sie sichtbar, statt sich als Konflikt zu melden.
  */
-export function FigurAntrag({ campaignId, rules, revision, onChanged }: {
-  campaignId: string; rules: RulesState; revision: number; onChanged: () => void;
+export function FigurAntrag({ campaignId, rules, revision, onChanged, onDirty }: {
+  campaignId: string; rules: RulesState; revision: number; onChanged: () => void; onDirty?: (dirty: boolean) => void;
 }) {
   const vorlagen = useResource<FreigegebeneVorlageCard[]>(apiPath(campaignId, "/actor-templates/freigegeben"), revision);
   const antraege = useResource<FigurantragCard[]>(apiPath(campaignId, "/figurantraege"), revision);
@@ -48,6 +49,9 @@ export function FigurAntrag({ campaignId, rules, revision, onChanged }: {
     : {};
   const gewaehlt = werte ?? basis;
   const abweichung = Object.fromEntries(Object.entries(gewaehlt).filter(([key, wert]) => !Object.is(wert, basis[key])));
+  const dirty = formular && !wartend && (!!templateId || !!name || werte !== null);
+  useEffect(() => { onDirty?.(dirty); }, [dirty, onDirty]);
+  useEffect(() => () => onDirty?.(false), [onDirty]);
 
   const beantragen = () => { if (!vorlage) return; void task.run(async () => {
     befehl.current ??= crypto.randomUUID();
@@ -59,32 +63,43 @@ export function FigurAntrag({ campaignId, rules, revision, onChanged }: {
     onChanged();
   });
 
-  return <section className="panel figur-antrag">
+  return <section className="panel figur-antrag creation-request">
     <h2>{t("Deine eigene Figur")}</h2>
+    <p className="field-help">{t("Deine Figur beginnt mit einer Vorlage. Du bestimmst den Namen und schlägst Werte vor; die Spielleitung gibt den Bogen frei.")}</p>
+    <ol className="creation-path" aria-label={t("Der Weg zu deiner Figur")}>
+      <li aria-current={!wartend && !vorlage ? "step" : undefined}><span>01</span><div><strong>{t("Vorlage wählen")}</strong><small>{t("Von der Spielleitung freigegeben")}</small></div></li>
+      <li aria-current={!wartend && vorlage ? "step" : undefined}><span>02</span><div><strong>{t("Figur gestalten")}</strong><small>{t("Name und eigene Wünsche")}</small></div></li>
+      <li aria-current={wartend ? "step" : undefined}><span>03</span><div><strong>{t("Freigabe abwarten")}</strong><small>{t("Danach ist dein Bogen bereit")}</small></div></li>
+    </ol>
     {vorlagen.error || antraege.error ? <Notice error>{vorlagen.error || antraege.error}</Notice> : null}
     {task.error ? <Notice error>{task.error} {t("Lade die Anträge erneut, falls die Spielleitung inzwischen entschieden hat.")}</Notice> : null}
     {vorlagen.loading || antraege.loading ? <Loading /> : null}
     {abgelehnt.map(a => <Notice key={a.id} error>{t("Dein Antrag für „{name}“ wurde abgelehnt: {grund}", { name: a.name, grund: a.reason ?? "" })}</Notice>)}
     {wartend
-      ? <div className="figur-antrag-status">
-        <p>{t("„{name}“ wartet auf die Spielleitung.", { name: wartend.name })}</p>
+      ? <div className="figur-antrag-status creation-instance-preview" role="status">
+        <h3>{t("„{name}“ wartet auf die Spielleitung.", { name: wartend.name })}</h3>
         <p className="field-help">{t("Sobald sie bestätigt, findest du den Bogen deiner Figur hier auf dieser Fläche.")}</p>
-        <Button onClick={() => zuruecknehmen(wartend)}>{t("Antrag zurücknehmen")}</Button>
+        <Button disabled={task.busy} onClick={() => zuruecknehmen(wartend)}>{t("Antrag zurücknehmen")}</Button>
       </div>
       : formular
-      ? <form className="actor-command-fields" onSubmit={event => { event.preventDefault(); beantragen(); }}>
+      ? <form onSubmit={event => { event.preventDefault(); beantragen(); }}><fieldset className="actor-command-fields" disabled={task.busy}>
+        <section className="creation-form-section"><h3>{t("Vorlage & Name")}</h3><div className="creation-identity-fields">
         <label>{t("Figurvorlage")}<select required value={templateId} onChange={event => { setTemplateId(event.target.value); setWerte(null); }}>
           <option value="">{t("Vorlage wählen")}</option>
           {vorlagen.data?.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
         </select></label>
         <label>{t("Name deiner Figur")}<input required maxLength={160} value={name} placeholder={vorlage?.name ?? ""} onChange={event => setName(event.target.value)} /></label>
-        {vorlage && paket ? <fieldset><legend>{t("Anfangswerte")}</legend>
+        </div></section>
+        {vorlage && paket ? <section className="creation-form-section"><h3>{t("Anfangswerte")}</h3>
           <p className="field-help">{t("Vorbelegt mit den Werten der Vorlage. Nur was du änderst, steht als Wunsch im Antrag.")}</p>
           <RuleFields fields={felder} values={gewaehlt} onChange={setWerte} />
-        </fieldset> : null}
-        <Button type="submit" variant="primary" disabled={task.busy || !vorlage || !name.trim()}>{t("Antrag absenden")}</Button>
-        <Button onClick={() => { befehl.current = null; setFormular(false); setWerte(null); }}>{t("Abbrechen")}</Button>
-      </form>
+        </section> : null}
+        {vorlage ? <section className="creation-instance-preview" aria-label={t("Zusammenfassung deines Antrags")}><small>{t("Dein Antrag an die Spielleitung")}</small><h3>{name.trim() || t("Deine Figur braucht noch einen Namen")}</h3><p className="field-help">{t("Vorlage: {name}", { name: vorlage.name })}</p>
+          {Object.keys(abweichung).length ? <><p className="field-help">{t("Diese Wünsche schickst du mit:")}</p><dl className="creation-stat-preview">{Object.entries(abweichung).map(([key, value]) => <div key={key}><dt>{felder[key]?.label ?? key}</dt><dd>{typeof value === "boolean" ? value ? t("Ja") : t("Nein") : String(value)}</dd></div>)}</dl><Button variant="quiet" onClick={() => setWerte(null)}>{t("Werte der Vorlage wiederherstellen")}</Button></> : <p className="field-help">{t("Alle Anfangswerte bleiben wie in der Vorlage.")}</p>}
+        </section> : null}
+        <div className="creation-save-actions"><div className="button-row"><Button type="submit" variant="primary" disabled={task.busy || !vorlage || !name.trim()}>{task.busy ? t("Antrag wird gesendet …") : t("Antrag absenden")}</Button>
+        <Button onClick={() => { befehl.current = null; setFormular(false); setWerte(null); }}>{t("Abbrechen")}</Button></div></div>
+      </fieldset></form>
       : <><EmptyState title={t("Noch führst du keine Figur.")}>
         {vorlagen.data?.length
           ? t("Wähle eine freigegebene Vorlage, gib deiner Figur einen Namen und schicke den Antrag an die Spielleitung.")

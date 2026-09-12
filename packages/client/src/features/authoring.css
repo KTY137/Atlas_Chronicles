@@ -83,3 +83,31 @@
 .publication-passage { padding: 12px; border: 1px solid var(--line); margin-block: 10px; }
 .publication-passage p { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 720px) { .authoring-workbench { padding: 18px 14px; } .authoring-columns { grid-template-columns: 1fr; } .forge-tabs { padding-inline: 14px; } }
+
+/* Die wichtigsten Werkzeuge erhalten Raum; im Editor bleibt mehr Platz fürs Arbeiten. */
+.forge-workbench .forge-tool-grid-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.forge-workbench .forge-tool-featured { padding: 26px 28px; gap: 12px; background: linear-gradient(135deg, var(--accent-soft), var(--surface) 70%); border-top-width: 3px; }
+.forge-tool .forge-tool-top { display: flex; width: 100%; align-items: center; justify-content: space-between; }
+.forge-tool-number { color: var(--text-faint); font: 500 27px var(--font-display); }
+.forge-workbench .forge-tool-featured > strong { font-size: clamp(24px, 2.3vw, 31px); }
+.forge-tool .forge-tool-route { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; width: 100%; font-size: 12px; }
+.forge-overview-secondary { margin-top: 34px; }
+.forge-workbench .forge-tool-secondary { padding: 20px; gap: 10px; }
+.forge-workbench .forge-tool-secondary > strong { font-size: 21px; }
+.forge-finishing-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.forge-finishing-tool { display: flex; align-items: center; gap: 14px; padding: 17px 20px; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); text-align: left; font: inherit; cursor: pointer; }
+.forge-finishing-tool:hover { background: var(--surface-2); border-color: var(--accent); }
+.forge-finishing-tool > svg { color: var(--accent); flex-shrink: 0; }
+.forge-finishing-tool > span { display: grid; gap: 5px; flex: 1; min-width: 0; }
+.forge-finishing-tool strong { font-size: 14px; font-weight: 600; }
+.forge-finishing-tool span span { font-size: 12px; line-height: 1.6; color: var(--text-muted); overflow-wrap: anywhere; }
+.forge-workbench-editing .forge-header { margin-bottom: 14px; align-items: center; }
+.forge-workbench-editing .forge-header h1 { font-size: 26px; margin: 4px 0 0; }
+.forge-workbench-editing .forge-navigation { margin-bottom: 22px; padding-bottom: 12px; }
+.forge-workbench-editing .forge-section-heading { margin-bottom: 18px; }
+@media (max-width: 640px) {
+  .forge-workbench .forge-tool-grid-primary, .forge-finishing-tools { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .forge-workbench .forge-tool-featured { padding: 20px; }
+  .forge-overview-secondary { margin-top: 26px; }
+  .forge-finishing-tool { padding: 16px; }
+}

@@ -56,31 +56,32 @@ function Wirkungen({ draft, werte, onChange }: { draft: RuleDraft; werte: readon
 }
 
 /** Name, Kennung und eine Liste zum Auswählen — dieselbe Form wie der Reiter „Aktionen“. */
-function Auswahlliste<T extends { id: string; name: string }>({ eintraege, aktuell, unterzeile, titel, hinzufuegen, suchLabel, onWaehlen, onNeu }: {
-  eintraege: readonly T[]; aktuell: number; unterzeile(eintrag: T): string; titel: string; hinzufuegen: string; suchLabel: string; onWaehlen(index: number): void; onNeu(): void;
+function Auswahlliste<T extends { id: string; name: string }>({ eintraege, aktuell, unterzeile, titel, hinzufuegen, suchLabel, onWaehlen, onNeu, disabled }: {
+  eintraege: readonly T[]; aktuell: number; unterzeile(eintrag: T): string; titel: string; hinzufuegen: string; suchLabel: string; onWaehlen(index: number): void; onNeu(): void; disabled: boolean;
 }) {
   const [suche, setSuche] = useState("");
   const nadel = suche.trim().toLowerCase();
   const treffer = eintraege.map((eintrag, index) => [eintrag, index] as const).filter(([eintrag]) => !nadel || `${eintrag.name} ${eintrag.id} ${unterzeile(eintrag)}`.toLowerCase().includes(nadel));
   return <nav className="rf-list" aria-label={titel}>
-    <div className="rf-section-heading"><h3>{titel}</h3><Button onClick={onNeu}><Plus size={15} />{hinzufuegen}</Button></div>
-    <label className="rf-list-search"><Search size={14} aria-hidden="true" /><input aria-label={suchLabel} value={suche} placeholder={t("Name, Kennung oder Gruppe")} onChange={event => setSuche(event.target.value)} /></label>
+    <div className="rf-section-heading"><h3>{titel}</h3><Button disabled={disabled} onClick={() => { if (!disabled) { setSuche(""); onNeu(); } }}><Plus size={15} />{hinzufuegen}</Button></div>
+    <label className="rf-list-search"><Search size={14} aria-hidden="true" /><input type="search" aria-label={suchLabel} value={suche} placeholder={t("Name, Kennung oder Gruppe")} onChange={event => setSuche(event.target.value)} /></label>
     <ul>{treffer.slice(0, MAX_LISTE).map(([eintrag, index]) => <li key={`${eintrag.id}-${index}`}><button type="button" aria-current={index === aktuell ? "true" : undefined} onClick={() => onWaehlen(index)}><strong>{eintrag.name || t("Ohne Namen")}</strong><small>{unterzeile(eintrag)}</small></button></li>)}</ul>
     {treffer.length > MAX_LISTE ? <p className="rf-help">{t("{n} weitere Treffer. Grenze die Suche ein.", { n: treffer.length - MAX_LISTE })}</p> : null}
+    {nadel && !treffer.length ? <div className="rf-search-empty" role="status"><p>{t("Keine passenden Einträge gefunden.")}</p><Button variant="quiet" onClick={() => setSuche("")}>{t("Suche zurücksetzen")}</Button></div> : null}
   </nav>;
 }
 
-export function RuleAbilityEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: RuleDraft): void }) {
+export function RuleAbilityEditor({ draft, onChange, disabled = false }: { draft: RuleDraft; onChange(draft: RuleDraft): void; disabled?: boolean }) {
   const [index, setIndex] = useState(0);
-  if (draft.schemaVersion !== 2 || !draft.abilityRules) return <Einschalten draft={draft} onChange={onChange} />;
+  if (draft.schemaVersion !== 2 || !draft.abilityRules) return <fieldset className="rf-editor-fields" disabled={disabled}><Einschalten draft={draft} onChange={onChange} /></fieldset>;
   const regeln = draft.abilityRules, liste = draft.abilities ?? [], aktuell = Math.min(index, liste.length - 1), ability = liste[aktuell];
   const setze = (next: RuleAbility) => onChange({ ...draft, abilities: liste.map((eintrag, i) => i === aktuell ? next : eintrag) });
   return <>
     <div className="rf-split">
-      <Auswahlliste eintraege={liste} aktuell={aktuell} titel={t("Fähigkeiten")} hinzufuegen={t("Fähigkeit")} suchLabel={t("Fähigkeit suchen")}
+      <Auswahlliste disabled={disabled || liste.length >= 512} eintraege={liste} aktuell={aktuell} titel={t("Fähigkeiten")} hinzufuegen={t("Fähigkeit")} suchLabel={t("Fähigkeit suchen")}
         unterzeile={eintrag => `${eintrag.group} · ${t("Rang {rang}", { rang: eintrag.rank })}`} onWaehlen={setIndex}
         onNeu={() => { if (liste.length < 512) { onChange({ ...draft, abilities: [...liste, newAbility(liste.map(eintrag => eintrag.id))] }); setIndex(liste.length); } }} />
-      {ability ? <section className="rf-detail" aria-label={t("Fähigkeit")}>
+      {ability ? <section className="rf-detail" aria-label={t("Fähigkeit")}><fieldset className="rf-editor-fields" disabled={disabled}>
         <div className="rf-section-heading"><h4>{ability.name || t("Ohne Namen")}</h4><RuleEntryRemoval key={ability.id} draft={draft} kind="ability" id={ability.id} onChange={onChange} onRemoved={() => setIndex(0)} /></div>
         <div className="rf-form-grid">
           <label>{t("Name")}<input value={ability.name} maxLength={120} onChange={event => setze({ ...ability, name: event.target.value })} /></label>
@@ -99,25 +100,25 @@ export function RuleAbilityEditor({ draft, onChange }: { draft: RuleDraft; onCha
         <label className="rf-check"><input type="checkbox" checked={ability.prerequisite !== undefined} onChange={event => setze(event.target.checked ? { ...ability, prerequisite: "true" } : ohne(ability, "prerequisite"))} />{t("Hat eine Voraussetzung")}</label>
         {ability.prerequisite !== undefined ? <ExpressionInput label={t("Voraussetzung")} help={t("Muss wahr sein, damit die Figur die Fähigkeit lernen kann, zum Beispiel @athletik >= 30.")} value={ability.prerequisite} onChange={prerequisite => setze({ ...ability, prerequisite })} draft={draft} /> : null}
         <Wirkungen draft={draft} werte={ability.modifiers ?? []} onChange={modifiers => setze(modifiers.length ? { ...ability, modifiers } : ohne(ability, "modifiers"))} />
-      </section> : <p>{t("Noch keine Fähigkeit. Lege links die erste an.")}</p>}
+      </fieldset></section> : <p>{t("Noch keine Fähigkeit. Lege links die erste an.")}</p>}
     </div>
-    <section className="rf-card"><h4>{t("Budget für Fähigkeiten")}</h4>
+    <fieldset className="rf-card" disabled={disabled}><legend>{t("Budget für Fähigkeiten")}</legend>
       <p className="rf-help">{t("Die Summe der Preise aller gelernten Fähigkeiten darf dieses Budget nicht übersteigen. Ohne Budget ist Lernen nur durch Vorstufen und Voraussetzungen begrenzt.")}</p>
       <label className="rf-check"><input type="checkbox" checked={regeln.budget !== undefined} onChange={event => onChange({ ...draft, abilityRules: event.target.checked ? { ...regeln, budget: "10" } : ohne(regeln, "budget") })} />{t("Budget begrenzen")}</label>
       {regeln.budget !== undefined ? <ExpressionInput label={t("Budget")} help={t("Eine Zahl oder eine Rechnung aus Attributen, zum Beispiel 9 + @erfahrung.")} value={regeln.budget} onChange={budget => onChange({ ...draft, abilityRules: { ...regeln, budget } })} draft={draft} /> : null}
-    </section>
+    </fieldset>
   </>;
 }
 
-export function RuleConditionEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: RuleDraft): void }) {
+export function RuleConditionEditor({ draft, onChange, disabled = false }: { draft: RuleDraft; onChange(draft: RuleDraft): void; disabled?: boolean }) {
   const [index, setIndex] = useState(0);
-  if (draft.schemaVersion !== 2 || !draft.abilityRules) return <Einschalten draft={draft} onChange={onChange} />;
+  if (draft.schemaVersion !== 2 || !draft.abilityRules) return <fieldset className="rf-editor-fields" disabled={disabled}><Einschalten draft={draft} onChange={onChange} /></fieldset>;
   const liste = draft.conditions ?? [], aktuell = Math.min(index, liste.length - 1), zustand = liste[aktuell];
   const setze = (next: RuleCondition) => onChange({ ...draft, conditions: liste.map((eintrag, i) => i === aktuell ? next : eintrag) });
   return <div className="rf-split">
-    <Auswahlliste eintraege={liste} aktuell={aktuell} titel={t("Zustände")} hinzufuegen={t("Zustand")} suchLabel={t("Zustand suchen")} unterzeile={eintrag => eintrag.id} onWaehlen={setIndex}
+    <Auswahlliste disabled={disabled || liste.length >= 32} eintraege={liste} aktuell={aktuell} titel={t("Zustände")} hinzufuegen={t("Zustand")} suchLabel={t("Zustand suchen")} unterzeile={eintrag => eintrag.id} onWaehlen={setIndex}
       onNeu={() => { if (liste.length < 32) { onChange({ ...draft, conditions: [...liste, newCondition(liste.map(eintrag => eintrag.id))] }); setIndex(liste.length); } }} />
-    {zustand ? <section className="rf-detail" aria-label={t("Zustand")}>
+    {zustand ? <section className="rf-detail" aria-label={t("Zustand")}><fieldset className="rf-editor-fields" disabled={disabled}>
       <div className="rf-section-heading"><h4>{zustand.name || t("Ohne Namen")}</h4><RuleEntryRemoval key={zustand.id} draft={draft} kind="condition" id={zustand.id} onChange={onChange} onRemoved={() => setIndex(0)} /></div>
       <div className="rf-form-grid">
         <label>{t("Name")}<input value={zustand.name} maxLength={120} onChange={event => setze({ ...zustand, name: event.target.value })} /></label>
@@ -125,6 +126,6 @@ export function RuleConditionEditor({ draft, onChange }: { draft: RuleDraft; onC
       </div>
       <label>{t("Beschreibung")}<textarea value={zustand.text} maxLength={600} rows={3} onChange={event => setze({ ...zustand, text: event.target.value })} /></label>
       <Wirkungen draft={draft} werte={zustand.modifiers ?? []} onChange={modifiers => setze(modifiers.length ? { ...zustand, modifiers } : ohne(zustand, "modifiers"))} />
-    </section> : <p>{t("Noch kein Zustand. Lege links den ersten an.")}</p>}
+    </fieldset></section> : <p>{t("Noch kein Zustand. Lege links den ersten an.")}</p>}
   </div>;
 }

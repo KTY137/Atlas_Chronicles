@@ -16,6 +16,7 @@ async function boot(argument: string, { updaterPresent = true } = {}) {
   const handle = vi.fn();
   const windows: unknown[] = [];
   const requestSingleInstanceLock = vi.fn(() => true);
+  const networkAccess = vi.fn(() => { throw new Error("Installer events must not inspect host networking."); });
   vi.stubGlobal("process", Object.assign(Object.create(process), { argv: [process.execPath, "app", argument] }));
   vi.doMock("node:child_process", async () => ({ ...(await vi.importActual<typeof import("node:child_process")>("node:child_process")), spawnSync }));
   vi.doMock("node:fs", async () => ({ ...(await vi.importActual<typeof import("node:fs")>("node:fs")), existsSync: (path: string) => (path === updater ? updaterPresent : true) }));
@@ -29,14 +30,23 @@ async function boot(argument: string, { updaterPresent = true } = {}) {
   vi.doMock("../src/profiles.ts", () => ({ ProfileStore: class {} }));
   vi.doMock("../src/controller.ts", () => ({ HostController: class {} }));
   vi.doMock("../src/recovery.ts", () => ({ RecoveryStore: class {}, inspectMigrationAdmission: async () => ({ applied: [], pending: [], recoveryRequired: false }) }));
+  // LAN helpers cross the same host boundary as normal startup. Loading its real
+  // module also loads Fastify, native decoding and Chronist before this quit-only
+  // test reaches main.ts; repeated resetModules made all four cases time out.
+  // Keep this host boundary inert just like profiles/controller/recovery above,
+  // and fail if an installer event actually calls any of its functions.
+  vi.doMock("@chronicle/server/host", () => ({
+    isPrivateLanAddress: networkAccess, isPrivateLanOrigin: networkAccess,
+    localLanAddresses: networkAccess, sessionCookieSecure: networkAccess,
+  }));
   await import("../src/main.ts");
-  return { spawnSync, quit, handle, windows, requestSingleInstanceLock };
+  return { spawnSync, quit, handle, windows, requestSingleInstanceLock, networkAccess };
 }
 
 beforeEach(() => vi.resetModules());
 afterEach(() => {
   vi.unstubAllGlobals();
-  for (const id of ["node:child_process", "node:fs", "electron", "../src/profiles.ts", "../src/controller.ts", "../src/recovery.ts"]) vi.doUnmock(id);
+  for (const id of ["node:child_process", "node:fs", "electron", "../src/profiles.ts", "../src/controller.ts", "../src/recovery.ts", "@chronicle/server/host"]) vi.doUnmock(id);
   vi.restoreAllMocks();
 });
 
@@ -65,6 +75,7 @@ it("never opens a profile, a window or the single-instance lock during an instal
   expect(installing.windows).toHaveLength(0);
   expect(installing.handle).not.toHaveBeenCalled();
   expect(installing.requestSingleInstanceLock).not.toHaveBeenCalled();
+  expect(installing.networkAccess).not.toHaveBeenCalled();
 });
 
 it("still quits when the updater is absent, so a lost shortcut cannot strand an installation", async () => {

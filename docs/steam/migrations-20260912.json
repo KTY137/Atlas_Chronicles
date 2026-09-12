@@ -1,0 +1,191 @@
+{
+    "schemaVersion":  1,
+    "artifact":  "2026-09-12T21-34-05-811Z",
+    "stage":  "steam-qualified-20260912",
+    "artifactRecordSha256":  "660908ccdaa46480f2b948aedb337f35d25455e7c829a1ddc833f607bc7b15e5",
+    "sourceRevision":  null,
+    "sourceAndStageMatch":  true,
+    "fileCount":  36,
+    "files":  [
+                  {
+                      "name":  "001_initial.sql",
+                      "bytes":  8135,
+                      "sha256":  "b4db588db798489961f18019261cac11c5704f63348f68aa8be0ff69efdc41bc"
+                  },
+                  {
+                      "name":  "002_documents.sql",
+                      "bytes":  3105,
+                      "sha256":  "02145f9e55a2b4a6df2c2dac0e2543e713264c72a783884674778c8238f55805"
+                  },
+                  {
+                      "name":  "003_atlas_imports.sql",
+                      "bytes":  1575,
+                      "sha256":  "fcb0e319ee7ca76ef4f2712181fac5ce8784b1f7f8f719856a806c669409b0d8"
+                  },
+                  {
+                      "name":  "004_gameplay.sql",
+                      "bytes":  6087,
+                      "sha256":  "6db32b89f473253f583b184e45fcb2b03599aeaed74f87570155532665abb53a"
+                  },
+                  {
+                      "name":  "005_gameplay_hardening.sql",
+                      "bytes":  2138,
+                      "sha256":  "34f970f6dc6b1ea17519dc1df29bc9171e95adacf3ca881596ee98e9a8df8b5d"
+                  },
+                  {
+                      "name":  "006_week.sql",
+                      "bytes":  5311,
+                      "sha256":  "e6f78e1718f6bda03e806b58e6942d590a015b999cb59fc606b4d3740322eab4"
+                  },
+                  {
+                      "name":  "007_media.sql",
+                      "bytes":  1660,
+                      "sha256":  "d697519d8e0dd2206297ad90f1aa20e23d054ff3df1d2fc9e3a05f4278363f7c"
+                  },
+                  {
+                      "name":  "008_communication.sql",
+                      "bytes":  905,
+                      "sha256":  "49155277c6cd5cd7b4f257effd1347b9018339c46604c319e91d4431b764f047"
+                  },
+                  {
+                      "name":  "009_campaign_restore.sql",
+                      "bytes":  1435,
+                      "sha256":  "691612bc4ccd1b0903966e9d4d261982a8bb98b7f93be357e60b1adca53966c8"
+                  },
+                  {
+                      "name":  "010_actor_instances.sql",
+                      "bytes":  7421,
+                      "sha256":  "be4d4d9498305c6f1921cd764427b22f13b59b536983633d752b641439b426e4"
+                  },
+                  {
+                      "name":  "011_tactical.sql",
+                      "bytes":  8761,
+                      "sha256":  "11462620b8d3c27297ebc1a6e6105e8ca4965a68914b5d5300d8b97e2efadff4"
+                  },
+                  {
+                      "name":  "012_authoring.sql",
+                      "bytes":  5109,
+                      "sha256":  "1a2612643ff64c02b0a7152c654beaed4efc9743f4a3b034c6acdd09ee359ba8"
+                  },
+                  {
+                      "name":  "013_betreten.sql",
+                      "bytes":  1191,
+                      "sha256":  "2e2b79c30bbe12ac2ba12ce8b56607f1b5628bca1268b1ab1d7ed42ac0ccc5ba"
+                  },
+                  {
+                      "name":  "014_nested_maps.sql",
+                      "bytes":  3301,
+                      "sha256":  "e710e254a958e8a146b96b1b2c19e5fcb0f263c11c49a599e3cb0e7d795fe765"
+                  },
+                  {
+                      "name":  "015_wiki_assets.sql",
+                      "bytes":  3111,
+                      "sha256":  "c1ec4f5342f48bdddc09b5cd3d082488c5aecc71d52dd325aeede8f105fbfc7e"
+                  },
+                  {
+                      "name":  "016_lineage_index.sql",
+                      "bytes":  858,
+                      "sha256":  "37024634fdaeff1ffdb510ecf0366ab1367b9d3b6a93786a8e56068299d20cf8"
+                  },
+                  {
+                      "name":  "017_campaign_deletion.sql",
+                      "bytes":  2850,
+                      "sha256":  "89868842dc19fc5207b712e0235ea0bac71e8c0d24ce840c888b6a4695dececb"
+                  },
+                  {
+                      "name":  "018_zugangsvorfaelle.sql",
+                      "bytes":  3167,
+                      "sha256":  "11f0c34577fd314bde906895797ed59c43556d537e45a093ff1ca4a83785747b"
+                  },
+                  {
+                      "name":  "019_gefuege.sql",
+                      "bytes":  1731,
+                      "sha256":  "326338efd606281992b64789f75a587e3952475e3fc0b529aa86e7c5e914a60f"
+                  },
+                  {
+                      "name":  "020_wiki_kategorien.sql",
+                      "bytes":  2233,
+                      "sha256":  "588614cc8b9e02fbf6b9a9f53e2f8a5139929900831f6a486766484c7931f28a"
+                  },
+                  {
+                      "name":  "021_kampfbuehne.sql",
+                      "bytes":  4150,
+                      "sha256":  "2988960b75075661f7d3105c226933a81b94742b0a2a41f8e2486f62620dc470"
+                  },
+                  {
+                      "name":  "022_erleichterungen.sql",
+                      "bytes":  2902,
+                      "sha256":  "80a436c6d54740153cb596d6fc615d61608647f872e13f5c937eb2a1ab0c9d21"
+                  },
+                  {
+                      "name":  "023_geld.sql",
+                      "bytes":  1715,
+                      "sha256":  "62bd7259d1568fc1a163e7c62d539dfa83b5e22c4a313c9e543a0767bf3874f6"
+                  },
+                  {
+                      "name":  "024_knoten_metadata.sql",
+                      "bytes":  1039,
+                      "sha256":  "9ae5279e5cdb92b7ef396e5a6d3a4825ab148ca90f0bfdbcb76586f12ceac022"
+                  },
+                  {
+                      "name":  "025_tactical_cartography.sql",
+                      "bytes":  775,
+                      "sha256":  "9c7debe7c5095517a711fe6005366d9a139103a54a8110b40942fbe4e2fb4431"
+                  },
+                  {
+                      "name":  "026_map_lifecycle.sql",
+                      "bytes":  1181,
+                      "sha256":  "ed6c9c2daec79f6f43bba531fdece83f36a74c70870142d0f9cfe759194283c1"
+                  },
+                  {
+                      "name":  "027_chronist.sql",
+                      "bytes":  2483,
+                      "sha256":  "a6f3e6c2e5173dd56260aeb6822a5bf5ebbd4593caf2a5a46ce12fbd243e6cf9"
+                  },
+                  {
+                      "name":  "028_figurantrag.sql",
+                      "bytes":  4774,
+                      "sha256":  "40142d5705e5e833fc18c16fadf764c9d91e4c67cf5575b565a80ac0662fa268"
+                  },
+                  {
+                      "name":  "029_chronist_freigabe.sql",
+                      "bytes":  992,
+                      "sha256":  "be54bc62c4d8cfed23bf902f7d549c4abb3350631ea4505bd6a6543f9f28a9dd"
+                  },
+                  {
+                      "name":  "030_regelpaket_archiv.sql",
+                      "bytes":  3498,
+                      "sha256":  "aa3d2ef34f2179fb2cb5f878eebd332b48478eddc40f97a84bbe04bfa59000ad"
+                  },
+                  {
+                      "name":  "031_kartenherkunft.sql",
+                      "bytes":  2370,
+                      "sha256":  "def49b0801f75fca87e344b4b9d4404ec071eb70b5b111541234bd7b7572bf8c"
+                  },
+                  {
+                      "name":  "032_chronist_aufgaben.sql",
+                      "bytes":  765,
+                      "sha256":  "989890dafcb19fd974db449a4c2a216752fcd3626024c66d4ed880254e5d744d"
+                  },
+                  {
+                      "name":  "033_map_floors_fog.sql",
+                      "bytes":  1871,
+                      "sha256":  "6b729ecf53b48d91b6aaa623ee857d82702fc23b24d37db61807e1c50ba5359d"
+                  },
+                  {
+                      "name":  "034_actor_permanent_delete.sql",
+                      "bytes":  2773,
+                      "sha256":  "d997d20bbdb67173533abf7a684040ede2dbede069db8c3bdec475799cd75db2"
+                  },
+                  {
+                      "name":  "035_actor_portraits.sql",
+                      "bytes":  1036,
+                      "sha256":  "730c232fcb5b743bfd60f6990b48206f6cb25a39c719750ccfdfb3cdfbdffcc6"
+                  },
+                  {
+                      "name":  "036_tabletop.sql",
+                      "bytes":  386,
+                      "sha256":  "f6a3d9a5f27d9f17d58eecaf0efeffed77c06cf821268369fcefd83998a8bb7f"
+                  }
+              ]
+}
