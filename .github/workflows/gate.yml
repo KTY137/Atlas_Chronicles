@@ -60,19 +60,17 @@ jobs:
 
       # `npm run gate` ist die eine Wahrheit: gate:version, gate:boundaries, gate:assets,
       # typecheck, test. Hier mit gesetzter TEST_DATABASE_URL, damit die pg-Tests mitlaufen
-      # statt sich zu überspringen.
+      # statt sich zu überspringen. VITEST_JSON_REPORT lässt denselben Lauf den Beleg schreiben,
+      # den der nächste Schritt auswertet — kein zweiter Lauf gegen eine schon befüllte Datenbank,
+      # dessen Ergebnis nichts über das Gate aussagt.
       - name: Gate
         run: npm run gate
         env:
           TEST_DATABASE_URL: postgresql://chronicle:chronicle@127.0.0.1:5432/chronicle
+          VITEST_JSON_REPORT: .local/ci-results.json
 
       # Ohne diesen Schritt bliebe unbemerkt, wenn `describe.skipIf` künftig doch greift und
       # die pg-Tests wieder stumm werden — das Gate wäre dann grün und sagte nichts mehr.
-      - name: Belegen, dass die pg-Tests wirklich gelaufen sind
-        run: npx vitest run packages/server/test --reporter=json --outputFile=.local/ci-results.json
-        env:
-          TEST_DATABASE_URL: postgresql://chronicle:chronicle@127.0.0.1:5432/chronicle
-
       - name: pg-Tests gezählt
         run: |
           node -e '

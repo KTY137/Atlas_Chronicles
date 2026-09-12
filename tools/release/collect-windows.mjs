@@ -14,7 +14,24 @@ for (const name of await readdir(directory).catch(() => [])) {
   checks.push({ passed: evidence.passed === true, checks: evidence.checks ?? [], error: evidence.error ?? null, cleanupError: evidence.cleanupError ?? null, executableKind: evidence.executableKind ?? null, version: evidence.version ?? null });
 }
 const out = diagnostics ? '.local/release-diagnostics' : '.local/release'; await mkdir(out,{recursive:true});
-if (diagnostics) { await writeFile(join(out,'smoke-diagnostics.json'),JSON.stringify(checks,null,2)); process.exit(0); }
+if (diagnostics) {
+  await writeFile(join(out,'smoke-diagnostics.json'),JSON.stringify(checks,null,2));
+  // Server- und initdb-Protokolle der Smoke-Profile: Pfade, Port, PostgreSQL-Fehlerklassen —
+  // keine Datenbankdateien, keine Zugangsdaten, keine Sitzungen. Ohne sie blieb ein
+  // gescheiterter Hoststart im CI ein einzelner Satz.
+  const logs = [];
+  const walk = async (path, depth) => {
+    if (depth > 6) return;
+    for (const entry of await readdir(path,{withFileTypes:true}).catch(() => [])) {
+      const child = join(path, entry.name);
+      if (entry.isDirectory()) { if (entry.name !== 'postgres') await walk(child, depth + 1); }
+      else if (entry.name === 'postgres.log' || entry.name === 'initdb.log') logs.push(child);
+    }
+  };
+  for (const name of await readdir(directory).catch(() => [])) if (name.startsWith('smoke-')) await walk(join(directory,name), 0);
+  for (const [index, path] of logs.entries()) await copyFile(path, join(out, `${index}-${path.split(/[\\/]/).at(-1)}`)).catch(() => {});
+  process.exit(0);
+}
 assert.equal(process.platform,'win32'); assert.equal(checks.length,2); assert.ok(checks.every(c=>c.passed&&!c.cleanupError&&c.version==='0.4.3'));
 assert.deepEqual(checks.map(c=>c.executableKind).sort(),['installed','packaged']);
 const stamps=(await readdir('.local/desktop-artifacts')).sort(), stamp=stamps.at(-1);

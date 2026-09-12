@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import { readFile, writeFile, rm, lstat, realpath } from "node:fs/promises";
+import { readFile, writeFile, rm, lstat, realpath, open } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { createPgDb } from "@chronicle/server/host";
 import { contained, fail, safeEnvironment, postgresCommandOwnsDirectory } from "./policy.ts";
@@ -49,17 +49,21 @@ export class ManagedPostgres {
   private confirmed = false;
   constructor(readonly runtimeRoot: string, readonly owned: OwnedProfile) {}
   private async run(name: "initdb" | "pg_ctl", args: string[], env: NodeJS.ProcessEnv = safeEnvironment(process.env)): Promise<void> {
+    // initdb schreibt sein Protokoll ins Profil: Pfade und Locale, kein Passwort (das kommt aus
+    // der Datei). Ohne dieses Protokoll war eine gescheiterte Einrichtung nicht zu benennen.
+    const log = name === "initdb" ? await open(join(this.owned.directory, "initdb.log"), "a", 0o600) : undefined;
     try {
       // A started postmaster can inherit pg_ctl pipe handles on Windows. Observe
       // the command's exit, with no pipes for its long-lived descendant to retain.
       await new Promise<void>((resolve, reject) => {
-        const child = spawn(join(this.runtimeRoot, "bin", `${name}.exe`), args, { windowsHide: true, shell: false, env, stdio: "ignore" });
+        const child = spawn(join(this.runtimeRoot, "bin", `${name}.exe`), args, { windowsHide: true, shell: false, env, stdio: log ? ["ignore", log.fd, log.fd] : "ignore" });
         const timeout = setTimeout(() => { child.kill(); reject(new Error("PostgreSQL command timeout")); }, 70_000);
         child.once("error", error => { clearTimeout(timeout); reject(error); });
         child.once("exit", code => { clearTimeout(timeout); if (code === 0) resolve(); else reject(new Error("PostgreSQL command failed")); });
       });
     }
     catch { fail("postgres-command", `PostgreSQL ${name === "initdb" ? "Einrichtung" : "Start/Stopp"} fehlgeschlagen. Profilprotokoll prüfen.`); }
+    finally { await log?.close(); }
   }
   async verifyOwnership(): Promise<void> {
     const { owned } = this, data = await realpath(owned.dataDirectory);

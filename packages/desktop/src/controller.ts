@@ -9,6 +9,12 @@ import { ManagedPostgres } from "./postgres.ts";
 
 export interface Ready { origin: string; nodeVersion: string; decoder: string; setupRequired: boolean }
 export interface MigrationGuard { beforeSchema(owned: OwnedProfile, postgres: ManagedPostgres): Promise<void> }
+/** Ein kurzer Systemcode (ENOENT, ECONNREFUSED, 28P01) benennt die Ursache, ohne Pfade oder
+ *  Meldungen preiszugeben. Alles andere bleibt draussen. */
+function errorCode(error: unknown): string {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === "string" && /^[A-Z0-9_]{2,24}$/.test(code) ? `, ${code}` : "";
+}
 export class HostController {
   state: HostState = "stopped";
   owned: OwnedProfile | undefined;
@@ -65,17 +71,22 @@ export class HostController {
     this.unlock = await this.store.lock(this.owned);
     this.startId = randomUUID();
     this.transition("starting-db");
+    // Nur die Stufe und ein kurzer Fehlercode duerfen in den Fehlertext: keine Pfade, keine
+    // Treibermeldungen, keine Zugangsdaten. Ohne die Stufe blieb jeder rohe Fehler unbenennbar.
+    let stufe = "Datenbankstart";
     try {
       this.postgres = new ManagedPostgres(this.runtime, this.owned);
       await this.postgres.start();
-      this.transition("checking-schema");
+      this.transition("checking-schema"); stufe = "Schemaprüfung";
       await this.migrations.beforeSchema(this.owned, this.postgres);
       // The profile's Chronist key is decrypted once, here, together with its operator file,
       // and exists only inside the private worker environment. Neither is retained on the
       // controller, its status or its failure text.
+      stufe = "Chronist-Zugang";
       const chronist = await this.chronistHostOf?.(this.owned.profile.id);
       // Der Hinweis ist kein Geheimnis und kein Fehler: er sagt nur, warum der Anbieter fehlt.
       this.chronistHinweis = chronist?.hinweis;
+      stufe = "Hostprozess";
       const worker = utilityProcess.fork(join(this.assets, "worker.cjs"), [], { env: hostEnvironment(process.env, chronist), execArgv: [], stdio: "ignore", cwd: this.owned.directory, serviceName: "Atlas Chronicles Local Host" });
       this.worker = worker;
       worker.on("message", (message: unknown) => {
@@ -108,13 +119,13 @@ export class HostController {
         void this.responses.then(() => this.rejectPending("Der lokale Host wurde beendet. Nicht bestätigte Änderungen sind nicht als gespeichert bestätigt."));
         if (!this.stopping) { this.ready = undefined; this.failure = "Lokaler Host ist ausgefallen. Bitte beenden und neu starten."; this.transition("failed"); }
       });
-      this.transition("starting-app");
+      this.transition("starting-app"); stufe = "Anwendungsstart";
       const ready = await this.request<Ready>("start", { config: { databaseUrl: databaseUrlOf(this.owned), origin: originOf(this.owned.profile), cookieSecret: this.owned.secrets.cookieSecret, staticRoot: join(this.assets, "client") } });
       if (ready.origin !== originOf(this.owned.profile) || !ready.nodeVersion.startsWith("24.") || !ready.decoder) fail("host-proof", "Host-Startbeleg stimmt nicht mit dem Profil überein.");
       this.ready = ready; this.transition("ready");
       return ready;
     } catch (error) {
-      this.failure = error instanceof DesktopError ? error.message : "Lokaler Host konnte nicht gestartet werden.";
+      this.failure = error instanceof DesktopError ? error.message : `Lokaler Host konnte nicht gestartet werden (${stufe}${errorCode(error)}).`;
       // Once a worker exists, startup may still be migrating. Keep its process,
       // PG and lock until an explicit stop confirms the drain.
       if (!this.worker) {
