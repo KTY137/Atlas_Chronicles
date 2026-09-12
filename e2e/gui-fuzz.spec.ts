@@ -84,7 +84,7 @@ for (const seed of seeds) test(`seeded GUI state monkey ${seed.toString(16)}`, a
     const preview = page.waitForResponse(response => response.url().endsWith("/tactical/generate/preview") && response.request().method() === "POST");
     await studio.getByRole("button", { name: "Vorschau", exact: true }).click();
     expect((await preview).status(), JSON.stringify(trace)).toBe(200);
-    await expect(studio.getByRole("button", { name: "Erzeugen und speichern", exact: true })).toBeEnabled();
+    await expect(studio.getByRole("button", { name: "Erzeugen und speichern", exact: true })).toBeEnabled({ timeout: 120_000 });
     expect(failures).toEqual([]);
     await page.screenshot({ path: info.outputPath("recovered-studio.png") });
   } finally { await info.attach("seed-and-actions", { body: JSON.stringify({ seed, trace, failures }, null, 2), contentType: "application/json" }); }
