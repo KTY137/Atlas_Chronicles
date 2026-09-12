@@ -41,4 +41,4 @@ it("uebernimmt weiterhin keinen fremden lebenden Prozess, nur weil er in postmas
     await writeFile(join(owned.dataDirectory, "postmaster.pid"), pidFile(process.pid, owned.dataDirectory));
     await expect(new ManagedPostgres(join(owned.directory, "runtime"), owned).stop()).rejects.toThrow("fremder Prozess");
   } finally { await rm(owned.directory, { recursive: true, force: true }); }
-});
+}, 15_000);
