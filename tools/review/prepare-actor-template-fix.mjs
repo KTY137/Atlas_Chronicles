@@ -2,7 +2,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-
 const files = [];
 const blobHash = text => createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
 function edit(path, expected, transform) {
@@ -25,13 +24,13 @@ for (const [path, sha, before, after] of [
 for (const version of [1, 2]) {
   edit(`packages/rules/schema/rule-package-v${version}.schema.json`, null, text => {
     assert.equal([...text.matchAll(/"maxProperties":\s*64/g)].length, 2);
-    return text.replaceAll(/("maxProperties":\s*)64/g, '$1512');
+    return text.replaceAll(/("maxProperties":\s*)64/g, (_, prefix) => `${prefix}512`);
   });
 }
 edit('packages/client/src/features/ActorWorkbench.tsx', '86c3e37bf922602b51e3110ac9cf2dcff957b750', text => {
   const start = text.indexOf('function ActorTemplateForm(');
   assert.ok(start >= 0);
-  const end = text.indexOf('\n}', start) + 2;
+  const end = text.indexOf('\n}\n', start) + 2;
   assert.ok(end > start);
   let form = text.slice(start, end);
   form = once(form,
@@ -45,7 +44,9 @@ edit('packages/client/src/features/ActorWorkbench.tsx', '86c3e37bf922602b51e3110
     '{task.error ? <Notice error>{task.error}{original && task.status === 409 ? ` ${t("Lade die Vorlage erneut, falls inzwischen eine neue Revision gespeichert wurde.")}` : ""}</Notice> : null}');
   return text.slice(0, start) + form + text.slice(end);
 });
-for (const path of ['packages/client/test/actor-template-rules.test.ts', 'packages/server/test/large-actor-template.test.ts']) {
+const testPath = 'packages/server/test/large-actor-template.test.ts';
+fs.writeFileSync(testPath, once(fs.readFileSync(testPath, 'utf8'), 'schema.properties.fields.maxProperties', 'schema.$defs.fields.maxProperties'));
+for (const path of ['packages/client/test/actor-template-rules.test.ts', testPath]) {
   files.push({ path, before: null, after: blobHash(fs.readFileSync(path, 'utf8')) });
 }
 fs.mkdirSync('.local', { recursive: true });
