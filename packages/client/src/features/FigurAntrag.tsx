@@ -7,7 +7,8 @@ import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
 import { t } from "../i18n";
-import { RuleFields } from "./RuleFields";
+import { HostRuleFields } from "./HostRuleFields";
+import { useHostRules } from "./useHostRules";
 import type { RulesState } from "./game-api";
 import "./character-creation.css";
 
@@ -42,11 +43,8 @@ export function FigurAntrag({ campaignId, rules, revision, onChanged, onDirty }:
   const wartend = eigene.find(a => a.status === "offen") ?? null;
   const abgelehnt = eigene.filter(a => a.status === "abgelehnt");
   const vorlage = vorlagen.data?.find(v => v.id === templateId) ?? null;
-  const paket = rules.packages.find(p => p.id === rules.pin.id && p.version === rules.pin.version);
   const basis = (vorlage?.anfangswerte ?? {}) as Record<string, Scalar>;
-  const felder = paket && vorlage
-    ? Object.fromEntries(Object.entries(paket.fields).filter(([key]) => Object.hasOwn(basis, key)))
-    : {};
+  const editor = useHostRules(campaignId, vorlage?.package ?? rules.pin, vorlage ? (werte ?? basis) : null);
   const gewaehlt = werte ?? basis;
   const abweichung = Object.fromEntries(Object.entries(gewaehlt).filter(([key, wert]) => !Object.is(wert, basis[key])));
   const dirty = formular && !wartend && (!!templateId || !!name || werte !== null);
@@ -90,14 +88,14 @@ export function FigurAntrag({ campaignId, rules, revision, onChanged, onDirty }:
         </select></label>
         <label>{t("Name deiner Figur")}<input required maxLength={160} value={name} placeholder={vorlage?.name ?? ""} onChange={event => setName(event.target.value)} /></label>
         </div></section>
-        {vorlage && paket ? <section className="creation-form-section"><h3>{t("Anfangswerte")}</h3>
+        {vorlage ? <section className="creation-form-section"><h3>{t("Anfangswerte")}</h3>
           <p className="field-help">{t("Vorbelegt mit den Werten der Vorlage. Nur was du änderst, steht als Wunsch im Antrag.")}</p>
-          <RuleFields fields={felder} values={gewaehlt} onChange={setWerte} />
+          <HostRuleFields state={editor} onChange={setWerte} />
         </section> : null}
         {vorlage ? <section className="creation-instance-preview" aria-label={t("Zusammenfassung deines Antrags")}><small>{t("Dein Antrag an die Spielleitung")}</small><h3>{name.trim() || t("Deine Figur braucht noch einen Namen")}</h3><p className="field-help">{t("Vorlage: {name}", { name: vorlage.name })}</p>
-          {Object.keys(abweichung).length ? <><p className="field-help">{t("Diese Wünsche schickst du mit:")}</p><dl className="creation-stat-preview">{Object.entries(abweichung).map(([key, value]) => <div key={key}><dt>{felder[key]?.label ?? key}</dt><dd>{typeof value === "boolean" ? value ? t("Ja") : t("Nein") : String(value)}</dd></div>)}</dl><Button variant="quiet" onClick={() => setWerte(null)}>{t("Werte der Vorlage wiederherstellen")}</Button></> : <p className="field-help">{t("Alle Anfangswerte bleiben wie in der Vorlage.")}</p>}
+          {Object.keys(abweichung).length ? <><p className="field-help">{t("Diese Wünsche schickst du mit:")}</p><dl className="creation-stat-preview">{Object.entries(abweichung).map(([key, value]) => <div key={key}><dt>{editor.manifest?.fields[key]?.label ?? key}</dt><dd>{typeof value === "boolean" ? value ? t("Ja") : t("Nein") : String(value)}</dd></div>)}</dl><Button variant="quiet" onClick={() => setWerte(null)}>{t("Werte der Vorlage wiederherstellen")}</Button></> : <p className="field-help">{t("Alle Anfangswerte bleiben wie in der Vorlage.")}</p>}
         </section> : null}
-        <div className="creation-save-actions"><div className="button-row"><Button type="submit" variant="primary" disabled={task.busy || !vorlage || !name.trim()}>{task.busy ? t("Antrag wird gesendet …") : t("Antrag absenden")}</Button>
+        <div className="creation-save-actions"><div className="button-row"><Button type="submit" variant="primary" disabled={task.busy || !vorlage || !name.trim() || !editor.canSave}>{task.busy ? t("Antrag wird gesendet …") : t("Antrag absenden")}</Button>
         <Button onClick={() => { befehl.current = null; setFormular(false); setTemplateId(""); setName(""); setWerte(null); }}>{t("Abbrechen")}</Button></div></div>
       </fieldset></form>
       : <><EmptyState title={t("Noch führst du keine Figur.")}>
