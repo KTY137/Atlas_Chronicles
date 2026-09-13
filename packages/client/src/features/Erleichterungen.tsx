@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { HandHeart, Trash2 } from "lucide-react";
 import { Button, Loading, Notice } from "@chronicle/ui";
-import type { Scalar } from "@chronicle/rules";
+import type { RuleRuntime, Scalar } from "@chronicle/rules";
 import type { Member } from "../api";
 import { api, apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
 import { RuleFields } from "./RuleFields";
-import { defaults, useCommand, type ActionCard, type RulesState } from "./game-api";
-import { sichtbareEingaben } from "./faehigkeiten-bogen";
+import { defaults, useCommand, type ActionCard, type ActorSheet, type RulesState } from "./game-api";
 import { t } from "../i18n";
+import { useHostRules } from "./useHostRules";
 import "./erleichterungen.css";
 
 /**
@@ -34,25 +34,14 @@ export interface Erleichterung {
   eingeloestRollId: string | null; eingeloestAm: number | null; widerrufenAm: number | null;
 }
 
-/** Die Aktion, die eine Absprache trägt: sie hat Eingaben, die die Spielleitung festlegen kann. */
-const angeheftet = (rules: RulesState) => rules.packages.find(p => p.id === rules.pin.id && p.version === rules.pin.version);
-// Nur Eingaben, die ein Mensch festlegen darf, zählen: eine Probe, deren einzige Parameter die Engine
-// selbst setzt (Fähigkeiten, Zustände), trägt keine Absprache.
-const absprachefaehig = (rules: RulesState) => {
-  const pkg = angeheftet(rules);
-  return (pkg?.actions ?? []).filter(action => Object.keys(sichtbareEingaben(pkg, action.inputs)).length > 0);
-};
-const alleAktionen = (rules: RulesState) =>
-  rules.packages.find(p => p.id === rules.pin.id && p.version === rules.pin.version)?.actions ?? [];
-
 /** Was die Spielerin sieht: was ihr zugestanden wurde, und der Knopf, es selbst zu würfeln. */
-export function OffeneErleichterungen({ campaignId, actorId, rules, gm, revision, onChanged, onGewuerfelt }: {
-  campaignId: string; actorId: string; rules: RulesState; gm: boolean; revision: number;
+export function OffeneErleichterungen({ campaignId, actorId, runtime, gm, revision, onChanged, onGewuerfelt }: {
+  campaignId: string; actorId: string; runtime: RuleRuntime | null; gm: boolean; revision: number;
   onChanged: () => void; onGewuerfelt: (karte: ActionCard) => void;
 }) {
   const offene = useResource<Erleichterung[]>(actorId ? apiPath(campaignId, `/actors/${encodeURIComponent(actorId)}/erleichterungen`) : null, revision, 6000);
   const task = useTask(), command = useCommand();
-  const namen = new Map(alleAktionen(rules).map(action => [action.id, action.name]));
+  const actions = runtime?.actions ?? [], namen = new Map(actions.map(action => [action.id, action.name]));
   if (!actorId || !offene.data?.length) return null;
   return <section className="panel erleichterungen">
     <h2><HandHeart size={19} /> {t("Dir wurde entgegengekommen")}</h2>
@@ -62,8 +51,8 @@ export function OffeneErleichterungen({ campaignId, actorId, rules, gm, revision
         <strong>{namen.get(zugestaendnis.gemeinteAktion) ?? zugestaendnis.gemeinteAktion}</strong>
         <p className="erleichterung-grund">„{zugestaendnis.grund}"</p>
         {/* Was abgesprochen ist, steht offen da — eine Erleichterung ist keine Ueberraschung. */}
-        <dl className="erleichterung-werte">{Object.entries(sichtbareEingaben(angeheftet(rules), zugestaendnis.eingaben)).map(([feld, wert]) =>
-          <div key={feld}><dt>{feld}</dt><dd>{String(wert)}</dd></div>)}</dl>
+        <dl className="erleichterung-werte">{Object.entries(zugestaendnis.eingaben).filter(([feld]) => actions.find(action => action.id === zugestaendnis.gewuerfelteAktion)?.inputs[feld]).map(([feld, wert]) =>
+          <div key={feld}><dt>{actions.find(action => action.id === zugestaendnis.gewuerfelteAktion)?.inputs[feld]?.label ?? feld}</dt><dd>{String(wert)}</dd></div>)}</dl>
         <div className="button-row">
           <Button variant="primary" disabled={task.busy} onClick={() => void task.run(async () => {
             onGewuerfelt(await command<ActionCard>(apiPath(campaignId, "/rolls"), { actorId, actionId: zugestaendnis.gewuerfelteAktion, erleichterungId: zugestaendnis.id }));
@@ -81,42 +70,46 @@ export function OffeneErleichterungen({ campaignId, actorId, rules, gm, revision
 export function ErleichterungGewaehren({ campaignId, rules, roster, revision, onChanged }: {
   campaignId: string; rules: RulesState; roster: Member[]; revision: number; onChanged: () => void;
 }) {
-  const traegt = absprachefaehig(rules), alle = alleAktionen(rules);
   const [actorId, setActorId] = useState(""), [gemeint, setGemeint] = useState(""), [grund, setGrund] = useState("");
-  const [gewuerfelt, setGewuerfelt] = useState(() => traegt.find(a => a.id === "manual_ruling")?.id ?? traegt[0]?.id ?? "");
-  const [eingaben, setEingaben] = useState<Record<string, Scalar>>({});
-  const aktion = traegt.find(a => a.id === gewuerfelt);
+  const [gewuerfelt, setGewuerfelt] = useState(""), [eingaben, setEingaben] = useState<Record<string, Scalar>>({});
+  const sheet = useResource<ActorSheet>(actorId ? apiPath(campaignId, `/actors/${encodeURIComponent(actorId)}/sheet`) : null, revision);
+  const selectedSheet = sheet.data?.actorId === actorId ? sheet.data : null;
+  const pin = selectedSheet ? { id: selectedSheet.packageId, version: selectedSheet.packageVersion } : null;
+  const host = useHostRules(campaignId, pin, selectedSheet?.fields ?? null), runtime = host.manifest;
+  const alle = runtime?.actions ?? [], traegt = alle.filter(action => Object.keys(action.inputs).length > 0);
+  const aktion = traegt.find(action => action.id === gewuerfelt) ?? traegt.find(action => action.id === "manual_ruling") ?? traegt[0];
   const alleOffenen = useResource<Erleichterung[]>(apiPath(campaignId, "/erleichterungen"), revision, 8000);
-  const task = useTask();
-  const figuren = roster.filter(m => m.actorId);
+  const task = useTask(), figuren = roster.filter(member => member.actorId);
 
-  if (!traegt.length) return <section className="panel"><h2><HandHeart size={19} /> {t("Eine Probe erleichtern")}</h2>
-    <p className="field-help">{t("Dieses Regelwerk kennt keine Aktion mit festlegbaren Eingaben. Eine Erleichterung braucht eine solche Absprache-Aktion — sonst gäbe es nichts, was die Spielleitung vereinbaren könnte.")}</p></section>;
+  if (actorId && !runtime && !host.error) return <section className="panel"><h2><HandHeart size={19} /> {t("Eine Probe erleichtern")}</h2><Loading /></section>;
+  if (actorId && !traegt.length) return <section className="panel"><h2><HandHeart size={19} /> {t("Eine Probe erleichtern")}</h2>
+    {host.error ? <Notice error>{host.error}</Notice> : <p className="field-help">{t("Dieses Regelwerk kennt keine Aktion mit festlegbaren Eingaben. Eine Erleichterung braucht eine solche Absprache-Aktion — sonst gäbe es nichts, was die Spielleitung vereinbaren könnte.")}</p>}</section>;
 
-  return <form className="panel" onSubmit={event => { event.preventDefault(); void task.run(async () => {
+  return <form className="panel" onSubmit={event => { event.preventDefault(); if (!aktion || !host.canSave) return; void task.run(async () => {
     await api(apiPath(campaignId, "/erleichterungen"), { method: "POST", body: {
-      actorId, gemeinteAktion: gemeint || gewuerfelt, gewuerfelteAktion: gewuerfelt,
-      eingaben: { ...defaults(aktion?.inputs ?? {}), ...eingaben }, grund,
+      actorId, gemeinteAktion: gemeint || aktion.id, gewuerfelteAktion: aktion.id,
+      eingaben: { ...defaults(aktion.inputs), ...eingaben }, grund,
     } }); setGrund(""); setEingaben({}); onChanged();
   }); }}>
     <h2><HandHeart size={19} /> {t("Eine Probe erleichtern")}</h2>
     <p className="field-help">{t("Du legst die Absprache fest — gewürfelt wird sie von der Spielerin selbst. Der Beleg zeigt danach, dass du sie zugestanden hast.")}</p>
+    {host.error || sheet.error ? <Notice error>{host.error || sheet.error}</Notice> : null}
     <div className="rule-fields">
-      <label>{t("Figur")}<select required value={actorId} onChange={e => setActorId(e.target.value)}>
+      <label>{t("Figur")}<select required value={actorId} onChange={e => { setActorId(e.target.value); setGewuerfelt(""); setGemeint(""); setEingaben({}); }}>
         <option value="">{t("Figur wählen")}</option>
         {figuren.map(m => <option key={m.actorId} value={m.actorId!}>{m.displayName}</option>)}</select></label>
       <label>{t("Gemeinte Probe")}<select value={gemeint} onChange={e => setGemeint(e.target.value)}>
         <option value="">{t("Wie die gewürfelte")}</option>
         {alle.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
     </div>
-    <label>{t("Wird gewürfelt als")}<select value={gewuerfelt} onChange={e => { setGewuerfelt(e.target.value); setEingaben({}); }}>
+    <label>{t("Wird gewürfelt als")}<select value={aktion?.id ?? ""} onChange={e => { setGewuerfelt(e.target.value); setEingaben({}); }}>
       {traegt.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
     {aktion ? <><p className="field-help">{aktion.disclosure}</p>
-      <RuleFields fields={sichtbareEingaben(angeheftet(rules), aktion.inputs)} values={{ ...defaults(aktion.inputs), ...eingaben }} onChange={next => setEingaben(current => ({ ...current, ...next }))} disabled={task.busy} /></> : null}
+      <RuleFields fields={aktion.inputs} values={{ ...defaults(aktion.inputs), ...eingaben }} onChange={next => setEingaben(current => ({ ...current, ...next }))} disabled={task.busy} /></> : null}
     <label>{t("Begründung")}<input required maxLength={500} value={grund} onChange={e => setGrund(e.target.value)}
       placeholder={t("z. B. Du hast das Seil vorher gesichert.")} /></label>
     {task.error ? <Notice error>{task.error}</Notice> : null}
-    <Button type="submit" variant="primary" disabled={task.busy || !actorId || !grund.trim()}>{t("Erleichterung gewähren")}</Button>
+    <Button type="submit" variant="primary" disabled={task.busy || !actorId || !grund.trim() || !aktion || !host.canSave}>{t("Erleichterung gewähren")}</Button>
 
     {alleOffenen.loading && !alleOffenen.data ? <Loading /> : alleOffenen.data?.length
       ? <details className="erleichterung-offen"><summary>{t("Offen: {n}", { n: alleOffenen.data.length })}</summary>
