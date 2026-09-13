@@ -8,11 +8,11 @@ import { t } from "../i18n";
 import { currentRulePreview, matchesRuleRuntime, rulePreviewKey, type PreviewSlot } from "./rule-runtime-state";
 
 /** No browser fallback: failed or stale host evaluations may not enable a save. */
-export function useHostRules(campaignId: string, pin: PackagePin, draft: Readonly<Record<string, Scalar>> | null) {
+export function useHostRules(campaignId: string, pin: PackagePin | null, draft: Readonly<Record<string, Scalar>> | null) {
   const [epoch, setEpoch] = useState(0);
-  const path = apiPath(campaignId, `/rules/runtime?${new URLSearchParams({ packageId: pin.id, packageVersion: pin.version })}`);
+  const path = pin ? apiPath(campaignId, `/rules/runtime?${new URLSearchParams({ packageId: pin.id, packageVersion: pin.version })}`) : null;
   const source = useResource<RuleRuntime>(path, epoch);
-  const manifest = source.data && matchesRuleRuntime(source.data, pin) ? source.data : null;
+  const manifest = pin && source.data && matchesRuleRuntime(source.data, pin) ? source.data : null;
   const values = draft ?? manifest?.defaults ?? null;
   const key = manifest && values ? rulePreviewKey(campaignId, manifest, values, epoch) : "";
   const [slot, setSlot] = useState<PreviewSlot>({ key: "", data: null, error: "" });
@@ -36,8 +36,8 @@ export function useHostRules(campaignId: string, pin: PackagePin, draft: Readonl
   // Key comparison happens during render, not in an effect one frame too late. This also
   // rejects A->B->A races and edits made while a non-cancellable transport completes.
   const preview = currentRulePreview(slot, key, manifest);
-  const error = source.error || (source.data && !manifest ? t("Die Regelantwort passt nicht zum aktuellen Entwurf. Bitte erneut laden.") : "") || (slot.key === key ? slot.error : "");
-  return { manifest, values, preview, error, pending: !error && (!manifest || !preview),
+  const error = pin ? source.error || (source.data && !manifest ? t("Die Regelantwort passt nicht zum aktuellen Entwurf. Bitte erneut laden.") : "") || (slot.key === key ? slot.error : "") : "";
+  return { manifest, values, preview, error, pending: !!pin && !error && (!manifest || !preview),
     canSave: !error && !!preview?.valid && preview.fields !== null,
     reload: () => setEpoch(value => value + 1) };
 }
