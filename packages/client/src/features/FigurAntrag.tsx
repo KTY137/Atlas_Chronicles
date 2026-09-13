@@ -98,7 +98,7 @@ export function FigurAntrag({ campaignId, rules, revision, onChanged, onDirty }:
           {Object.keys(abweichung).length ? <><p className="field-help">{t("Diese Wünsche schickst du mit:")}</p><dl className="creation-stat-preview">{Object.entries(abweichung).map(([key, value]) => <div key={key}><dt>{felder[key]?.label ?? key}</dt><dd>{typeof value === "boolean" ? value ? t("Ja") : t("Nein") : String(value)}</dd></div>)}</dl><Button variant="quiet" onClick={() => setWerte(null)}>{t("Werte der Vorlage wiederherstellen")}</Button></> : <p className="field-help">{t("Alle Anfangswerte bleiben wie in der Vorlage.")}</p>}
         </section> : null}
         <div className="creation-save-actions"><div className="button-row"><Button type="submit" variant="primary" disabled={task.busy || !vorlage || !name.trim()}>{task.busy ? t("Antrag wird gesendet …") : t("Antrag absenden")}</Button>
-        <Button onClick={() => { befehl.current = null; setFormular(false); setWerte(null); }}>{t("Abbrechen")}</Button></div></div>
+        <Button onClick={() => { befehl.current = null; setFormular(false); setTemplateId(""); setName(""); setWerte(null); }}>{t("Abbrechen")}</Button></div></div>
       </fieldset></form>
       : <><EmptyState title={t("Noch führst du keine Figur.")}>
         {vorlagen.data?.length

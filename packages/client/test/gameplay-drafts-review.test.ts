@@ -179,4 +179,25 @@ describe("gameplay draft regression review", () => {
     h.nodes(n => n.type === "form")[0]!.props.onSubmit({ preventDefault() {} }); await h.settle();
     expect(h.requests[0]?.request.body).toEqual({ name: "Gold", expectedVersion: 1 });
   });
+
+  it("resets templateId and name after cancelling the creation form so re-opening starts fresh", () => {
+    const vorlage = { id: "t1", name: "Krieger", anfangswerte: {} };
+    const h = harness("FigurAntrag", {
+      campaignId: "campaign",
+      rules: { packages: [], pin: { id: "", version: "" }, version: 0 },
+      revision: 0,
+      onChanged() {},
+      resource: (path: string) => loaded(path.includes("freigegeben") ? [vorlage] : []),
+    });
+    // Open the creation form and fill in template + name.
+    h.button("Figur anlegen").props.onClick();
+    h.nodes(n => n.type === "select" && n.props.required)[0]!.props.onChange({ target: { value: "t1" } });
+    h.nodes(n => n.type === "input" && n.props.required)[0]!.props.onChange({ target: { value: "Gandalf" } });
+    // Cancel — old bug left templateId and name in state.
+    h.button("Abbrechen").props.onClick();
+    // Re-open the form; it must be completely empty.
+    h.button("Figur anlegen").props.onClick();
+    expect(h.nodes(n => n.type === "select" && n.props.required)[0]!.props.value).toBe("");
+    expect(h.nodes(n => n.type === "input" && n.props.required)[0]!.props.value).toBe("");
+  });
 });

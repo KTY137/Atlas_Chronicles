@@ -43,7 +43,7 @@ function SheetForm({ campaignId, latest, rules, onDirty, gm, onSaved }: { campai
   const computed = useMemo(() => { try { return pkg ? evaluateComputedFields(pkg, fields) : {}; } catch { return {}; } }, [pkg, fields]);
   const dirty = JSON.stringify(fields) !== JSON.stringify(sheet.fields);
   const newer = latest.version > sheet.version || (latest.version === sheet.version && (latest.packageId !== sheet.packageId || latest.packageVersion !== sheet.packageVersion));
-  useEffect(() => { if (!dirty && newer) { setSheet(latest); setFields({ ...latest.fields }); setResource(""); } }, [dirty, newer, latest]);
+  useEffect(() => { if (!dirty && newer) { setSheet(latest); setFields({ ...latest.fields }); setResource(""); setArchetyp(""); } }, [dirty, newer, latest]);
   useEffect(() => { onDirty(dirty); return () => onDirty(false); }, [dirty, onDirty]);
   if (!pkg) return <Notice error>{t("Das Regelwerk dieses Bogens konnte nicht geladen werden.")}</Notice>;
   const display = displayRulePackage(pkg);

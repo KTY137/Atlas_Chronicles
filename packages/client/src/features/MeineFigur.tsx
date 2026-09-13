@@ -56,7 +56,14 @@ export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: 
     {rules.error || actors.error ? <Notice error>{rules.error || actors.error}</Notice> : null}
     {meine.length > 1 ? <div className="table-controls"><label className="actor-picker">{t("Deine Figur")}
       <select value={actorId} onChange={event => {
-        if (event.target.value === actorId || (dirty && !window.confirm(t("Ungespeicherte Änderungen dieser Figur verwerfen?")))) return;
+        if (event.target.value === actorId) return;
+        if (dirty && !window.confirm(t("Ungespeicherte Änderungen dieser Figur verwerfen?"))) {
+          // No state setter → no re-render → browser keeps the new DOM value even though
+          // React state didn't change. Spread into a fresh object to schedule a re-render
+          // so the controlled select reverts to the authoritative actorId.
+          setDrafts(d => ({ ...d }));
+          return;
+        }
         setDrafts({ sheet: false, inventory: false, request: false }); setChosen(event.target.value);
       }}>
         {meine.map(actor => <option key={actor.id} value={actor.id}>{actor.name}</option>)}
