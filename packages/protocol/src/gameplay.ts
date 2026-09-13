@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
+import { RuleValues, RuleContentHash } from "./rule-runtime.ts";
 import { Type } from "@sinclair/typebox";
 import { TableDiceSpec } from "./tabletop.ts";
 const closed = { additionalProperties: false } as const;
 const id = Type.String({ minLength: 1, maxLength: 256 });
 const date = Type.String({ minLength: 1, maxLength: 120 });
-const scalar = Type.Union([Type.String({maxLength:4096}),Type.Number({minimum:-1e12,maximum:1e12}),Type.Boolean()]);
-const values = Type.Record(Type.String({minLength:1,maxLength:96}),scalar,{maxProperties:128});
+const values = RuleValues;
 export const PackageActivation = Type.Object({packageId:id,packageVersion:id,expectedVersion:Type.Integer({minimum:0}),previewHash:Type.Optional(Type.String({pattern:"^[a-f0-9]{64}$"}))},closed);
 export const PackagePreview = Type.Object({package:Type.Object({},{additionalProperties:true})},closed);
 /** Ein Paket aus der Bibliothek nehmen, es zurueckholen oder endgueltig loeschen. */
 export const PackageSelection = Type.Object({packageId:id,packageVersion:id},closed);
-export const SheetUpdate = Type.Object({expectedVersion:Type.Integer({minimum:0}),fields:values},closed);
+export const SheetUpdate = Type.Object({expectedVersion:Type.Integer({minimum:0}),packageContentHash:Type.Optional(RuleContentHash),fields:values},closed);
 export const ResourceAdjustment = Type.Object({expectedVersion:Type.Integer({minimum:0}),field:id,delta:Type.Number({minimum:-1e12,maximum:1e12})},closed);
 export const SceneDraft = Type.Object({name:Type.String({minLength:1,maxLength:160}),entryIds:Type.Array(id,{maxItems:128,uniqueItems:true}),fictionDate:date},closed);
 export const SceneStart = Type.Object({expectedSceneVersion:Type.Optional(Type.Integer({minimum:1})),expectedPlanVersion:Type.Optional(Type.Integer({minimum:0}))},closed);

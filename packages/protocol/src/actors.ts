@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
+import { RuleValues, RuleContentHash } from "./rule-runtime.ts";
 import { Type, type Static } from "@sinclair/typebox";
 import type { FigurvorlageFreigabeStand } from "./figurantrag.ts";
 
@@ -9,8 +10,7 @@ const nullableId = Type.Union([id, Type.Null()]);
 const name = Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" });
 const version = Type.Integer({ minimum: 1, maximum: 2_147_483_647 });
 const reason = Type.String({ minLength: 1, maxLength: 500, pattern: "\\S" });
-const scalar = Type.Union([Type.String({ maxLength: 4096 }), Type.Number({ minimum: -1e12, maximum: 1e12 }), Type.Boolean()]);
-const fields = Type.Record(Type.String({ pattern: "^[a-z][a-z0-9_-]{0,95}$" }), scalar, { maxProperties: 64, additionalProperties: false });
+const fields = RuleValues;
 const command = { commandId: id };
 const change = { ...command, expectedVersion: version, reason };
 
@@ -50,8 +50,8 @@ export const ActorTemplateDefinitionV2 = Type.Object({
   beute: Type.Array(BeutezeileV1, { maxItems: 32 }),
 }, closed);
 export const ActorTemplateDefinitionAny = Type.Union([ActorTemplateDefinition, ActorTemplateDefinitionV2]);
-export const ActorTemplateCreate = Type.Object({ ...command, definition: ActorTemplateDefinitionAny }, closed);
-export const ActorTemplateRevise = Type.Object({ ...change, definition: ActorTemplateDefinitionAny }, closed);
+export const ActorTemplateCreate = Type.Object({ ...command, packageContentHash: Type.Optional(RuleContentHash), definition: ActorTemplateDefinitionAny }, closed);
+export const ActorTemplateRevise = Type.Object({ ...change, packageContentHash: Type.Optional(RuleContentHash), definition: ActorTemplateDefinitionAny }, closed);
 export const ArchiveObject = Type.Object(change, closed);
 export const ActorInstantiate = Type.Object({ ...command, templateId: id, templateRevision: version, name: Type.Optional(name) }, closed);
 export const ActorProfileUpdate = Type.Object({ ...change, name, kind: ActorKind, loreEntryId: nullableId }, closed);

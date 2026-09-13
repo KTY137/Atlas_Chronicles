@@ -1,0 +1,9 @@
+{
+  "Die Regelantwort passt nicht zum aktuellen Entwurf. Bitte erneut laden.": "The rule response does not match the current draft. Please reload.",
+  "Der Host prüft die aktuellen Bogenwerte …": "The host is checking the current sheet values…",
+  "Vitalwerte": "Vitals",
+  "Ausgegeben: {punkte} Punkte": "Spent: {punkte} points",
+  "Ausgegeben: {punkte} von {budget} Punkten": "Spent: {punkte} of {budget} points",
+  "Kennungslisten korrigieren": "Correct identifier lists",
+  "Proben dieses Regelpakets": "Checks in this rule package"
+}

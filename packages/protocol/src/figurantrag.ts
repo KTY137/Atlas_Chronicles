@@ -14,6 +14,7 @@
  * Spielleitung; erst eine ausdrückliche Freigabe macht sie für Spieler wählbar. Die Freigabe
  * ist widerrufbar und trägt ihre eigene Version.
  */
+import { RuleValues } from "./rule-runtime.ts";
 import { Type, type Static } from "@sinclair/typebox";
 
 const closed = { additionalProperties: false } as const;
@@ -23,8 +24,7 @@ const reason = Type.String({ minLength: 1, maxLength: 500, pattern: "\\S" });
 const version = Type.Integer({ minimum: 1, maximum: 2_147_483_647 });
 /** Eine noch nie erteilte Freigabe hat die Version 0 — wie jeder andere noch nicht erteilte Grant. */
 const grantVersion = Type.Integer({ minimum: 0, maximum: 2_147_483_647 });
-const scalar = Type.Union([Type.String({ maxLength: 4096 }), Type.Number({ minimum: -1e12, maximum: 1e12 }), Type.Boolean()]);
-const werte = Type.Record(Type.String({ pattern: "^[a-z][a-z0-9_-]{0,95}$" }), scalar, { maxProperties: 64, additionalProperties: false });
+const werte = RuleValues;
 
 export const FIGURANTRAG_STATUS = ["offen", "bestaetigt", "abgelehnt", "zurueckgezogen"] as const;
 export type FigurantragStatus = typeof FIGURANTRAG_STATUS[number];

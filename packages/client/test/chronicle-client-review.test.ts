@@ -44,6 +44,14 @@ function harness(file: string, component: string, initial: Record<string, any>, 
         validatePackageFields: (pkg: rules.AnyRulePackage, fields: unknown) => rules.validatePackageFields(pkg, model.copyJson(fields)),
         evaluateComputedFields: (pkg: rules.AnyRulePackage, fields: any) => rules.evaluateComputedFields(pkg, model.copyJson(fields)),
       };
+      // These component tests inject a completed host response. Request races are exercised
+      // against the actual production hook in universal-rule-runtime.test.mjs.
+      if (name === "./useHostRules") return { useHostRules: (_campaign: string, pin: rules.PackagePin, fields: unknown) => {
+        const pkg = props.rules.packages.find((pkg: rules.AnyRulePackage) => pkg.id === pin.id && pkg.version === pin.version);
+        const manifest = rules.buildRuleRuntime(pkg), values = fields ?? manifest.defaults;
+        const preview = rules.previewRuleRuntime(pkg, model.copyJson(values));
+        return { manifest, values, preview, canSave: preview.valid, pending: false, error: "", reload() {} };
+      } };
       if (name === "./rule-forge-model") return model;
       if (name === "./RuleComputedFields") return computed;
       if (name === "./chronicle-heroes-display") return display;
@@ -179,9 +187,9 @@ describe("independent ChronicleHeroes client review", () => {
   it("preserves an edited ChronicleHeroes field against a newer authoritative sheet", () => {
     const pkg = rules.CHRONICLE_HEROES_PACKAGE, latest = { actorId: "actor", packageId: pkg.id, packageVersion: pkg.version, fields: { ...rules.CHRONICLE_EXAMPLE_CHARACTERS[0]!.fields }, version: 1, defeatPending: false, defeatedAt: null };
     const h = harness("CharacterSheet.tsx", "SheetForm", { campaignId: "campaign", latest, rules: { packages: [pkg] }, gm: false, onDirty() {}, onSaved() {} }, "SheetForm");
-    h.nodes(node => node.type === "RuleFields")[0]!.props.onChange({ lebenskraft: 60 });
+    h.nodes(node => node.type === "HostRuleFields")[0]!.props.onChange({ lebenskraft: 60 });
     h.replace({ latest: { ...latest, version: 2, fields: { ...latest.fields, lebenskraft: 20 } } });
-    expect(h.nodes(node => node.type === "RuleFields")[0]!.props.values.lebenskraft).toBe(60);
+    expect(h.nodes(node => node.type === "HostRuleFields")[0]!.props.state.values.lebenskraft).toBe(60);
     expect(h.nodes(node => node.type === "Button" && h.text(node) === "Aktuellen Bogen übernehmen")).toHaveLength(1);
     expect(h.requests).toHaveLength(0);
   });
@@ -193,11 +201,11 @@ describe("independent ChronicleHeroes client review", () => {
     const example = h.nodes(node => node.type === "Button" && h.text(node).includes("Mara Morgenwind als Beispiel übernehmen"))[0];
     if (!example || example.props.disabled) {
       expect(h.text(h.render())).toContain("angepassten Katalog");
-      expect(h.nodes(node => node.type === "RuleFields").length).toBeGreaterThan(0);
+      expect(h.nodes(node => node.type === "HostRuleFields").length).toBeGreaterThan(0);
       return;
     }
     example.props.onClick();
-    const values = h.nodes(node => node.type === "RuleFields")[0]!.props.values;
+    const values = h.nodes(node => node.type === "HostRuleFields")[0]!.props.state.values;
     expect(() => rules.validatePackageFields(pkg, model.copyJson(values))).not.toThrow();
     expect(h.requests).toHaveLength(0);
   });

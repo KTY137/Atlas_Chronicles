@@ -173,7 +173,7 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
     await tx.query(`INSERT INTO rule_packages(campaign_id,package_id,version,document,content_hash,installed_by,installed_at)
       VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT DO NOTHING`, [campaignId, pkg.id, pkg.version, JSON.stringify(pkg), hash(pkg), userId, now()]);
   }
-  async function definition(tx: Db, current: Membership, kind: TemplateKind, value: P.ActorTemplateData | P.ItemContract) {
+  async function definition(tx: Db, current: Membership, kind: TemplateKind, value: P.ActorTemplateData | P.ItemContract, packageContentHash?: string) {
     await lore(tx, current.campaignId, value.loreEntryId);
     if (kind === "item") {
       const item = value as P.ItemContract;
@@ -181,6 +181,7 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
       return item;
     }
     const actor = value as P.ActorTemplateData, pkg = await rulePackage(tx, current.campaignId, actor.package);
+    if (packageContentHash !== undefined && hash(pkg) !== packageContentHash) throw new Conflict("Das Regelpaket wurde geändert. Bitte erneut laden.");
     // The native bundle requires valid, pinned references and an ordered range. Check these
     // before storing immutable revisions, even when a one-percent drop never gets rolled.
     if (actor.schemaVersion === 2) for (const drop of actor.beute) {
@@ -233,9 +234,9 @@ export function createActors(db: Db, cfg: DomainConfig = {}) {
     return mitFreigabe(campaignId, kind, await template<T>(db, campaignId, kind, id, revision));
   }
   async function saveTemplate<T extends P.ActorTemplateData | P.ItemContract>(userId: string, campaignId: string, kind: TemplateKind,
-    input: { commandId: string; definition: T; expectedVersion?: number; reason?: string }, id?: string): Promise<P.TemplateCard<T>> {
+    input: { commandId: string; definition: T; expectedVersion?: number; reason?: string; packageContentHash?: string }, id?: string): Promise<P.TemplateCard<T>> {
     return mitFreigabe(campaignId, kind, await command<P.TemplateCard<T>>(userId, campaignId, `${kind}.template.${id ? "revise" : "create"}`, id ?? null, input, true, async (tx, current) => {
-      const value = await definition(tx, current, kind, input.definition), before = id ? await template<T>(tx, campaignId, kind, id) : null;
+      const value = await definition(tx, current, kind, input.definition, input.packageContentHash), before = id ? await template<T>(tx, campaignId, kind, id) : null;
       if (before && (before.archivedAt !== null || before.version !== input.expectedVersion)) throw new Conflict();
       const targetId = id ?? randomUUID(), nextRevision = before ? before.revision + 1 : 1;
       if (!before) await tx.query(`INSERT INTO ${kind}_templates(id,campaign_id,created_by,created_at) VALUES($1,$2,$3,$4)`, [targetId, campaignId, userId, now()]);
