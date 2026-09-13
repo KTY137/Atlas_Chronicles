@@ -8,52 +8,34 @@ permissions:
 jobs:
   windows-inspection:
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - name: Bounded probes, no secrets or inherited search path
+      - name: Bounded native probes, no environment values in logs
         shell: bash
         run: |
           node --input-type=module <<'NODE'
           import {execFile} from 'node:child_process';
           import {promisify} from 'node:util';
           import {join} from 'node:path';
-          const exec=promisify(execFile);
-          const keys=['SystemRoot','WINDIR','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA','COMSPEC','LANG'];
-          const source={...process.env}, upper=new Map(Object.entries(source).map(([k,v])=>[k.toUpperCase(),v]));
-          const original=Object.fromEntries(keys.filter(k=>source[k]).map(k=>[k,source[k]]));
-          const normalized=Object.fromEntries(keys.filter(k=>upper.get(k.toUpperCase())).map(k=>[k,upper.get(k.toUpperCase())]));
-          const root=process.env.SystemRoot??'C:\\Windows', ps=join(root,'System32','WindowsPowerShell','v1.0','powershell.exe');
-          console.log('MISSING_CANONICAL_KEYS',keys.filter(k=>!original[k]&&normalized[k]));
-          const cim="Get-CimInstance Win32_Process -Filter ('ProcessId=' + $env:CHRONICLE_CHECK_PID) -ErrorAction Stop | Select-Object ExecutablePath,CommandLine | ConvertTo-Json -Compress";
-          const modules={...normalized,PSModulePath:join(root,'System32','WindowsPowerShell','v1.0','Modules')};
-          for(const [label,env,command] of [['minimal-startup',original,"Write-Output 'ok'"],['normalized-startup',normalized,"Write-Output 'ok'"],['normalized-cim',normalized,cim],['system-modules-cim',modules,cim]]) {
+          const exec=promisify(execFile), source=new Map(Object.entries(process.env).map(([k,v])=>[k.toUpperCase(),v]));
+          const select=keys=>Object.fromEntries(keys.filter(k=>source.get(k.toUpperCase())).map(k=>[k,source.get(k.toUpperCase())]));
+          const base=select(['SystemRoot','WINDIR','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA','COMSPEC','LANG']);
+          const programs=select(['ProgramFiles','ProgramFiles(x86)','ProgramW6432','CommonProgramFiles','CommonProgramFiles(x86)','CommonProgramW6432']);
+          const logon=select(['ALLUSERSPROFILE','ProgramData','PUBLIC','HOMEDRIVE','HOMEPATH','USERNAME','USERDOMAIN','COMPUTERNAME']);
+          const machine=select(['SystemDrive','OS','PROCESSOR_ARCHITECTURE','PROCESSOR_IDENTIFIER','PROCESSOR_LEVEL','PROCESSOR_REVISION','NUMBER_OF_PROCESSORS']);
+          const root=base.SystemRoot??'C:\\Windows', ps=join(root,'System32','WindowsPowerShell','v1.0','powershell.exe');
+          const fixedPaths={PATH:join(root,'System32')+';'+root,PSModulePath:join(root,'System32','WindowsPowerShell','v1.0','Modules')};
+          const command="Get-CimInstance Win32_Process -Filter ('ProcessId=' + $env:CHRONICLE_CHECK_PID) -ErrorAction Stop | Select-Object ExecutablePath,CommandLine | ConvertTo-Json -Compress";
+          const configurations=[['base',base],['programs',{...base,...programs}],['logon',{...base,...logon}],['machine',{...base,...machine}],['fixed-paths',{...base,...fixedPaths}],['os-complete',{...base,...programs,...logon,...machine,...fixedPaths}]];
+          await Promise.all(configurations.map(async([label,env])=>{
             const start=Date.now();
             try {
-              const pending=exec(ps,['-NoProfile','-NonInteractive','-Command',command],{env:{...env,CHRONICLE_CHECK_PID:String(process.pid)},windowsHide:true,shell:false,timeout:12000});
-              pending.child.stdin?.end(); const value=await pending;
-              console.log('PROBE',label,'ok',Date.now()-start,'output-bytes',Buffer.byteLength(value.stdout));
-            } catch(e) { console.log('PROBE',label,'failed',Date.now()-start,'timeout',!!e.killed,'output-bytes',Buffer.byteLength(e.stdout??''),'code',e.code); }
-          }
+              const pending=exec(ps,['-NoProfile','-NonInteractive','-Command',command],{env:{...env,CHRONICLE_CHECK_PID:String(process.pid)},windowsHide:true,shell:false,timeout:20000});
+              pending.child.stdin?.end(); const value=await pending, parsed=JSON.parse(value.stdout);
+              console.log('PROBE',label,'ok',Date.now()-start,'identity',typeof parsed.ExecutablePath==='string'&&typeof parsed.CommandLine==='string');
+            } catch(e) { console.log('PROBE',label,'failed',Date.now()-start,'timeout',!!e.killed,'stdout-bytes',Buffer.byteLength(e.stdout??''),'stderr-bytes',Buffer.byteLength(e.stderr??'')); }
+          }));
           NODE
-      - run: npm ci --no-audit --no-fund --ignore-scripts
-      - name: Trial case normalization without relaxing ownership assertions
-        shell: bash
-        run: |
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          import assert from 'node:assert/strict';
-          const path='packages/desktop/src/policy.ts';
-          let text=fs.readFileSync(path,'utf8');
-          const before='    if (source[key]) result[key] = source[key];';
-          assert.equal(text.split(before).length,2);
-          text=text.replace(before,'    {\n      const actual = Object.keys(source).find(candidate => candidate.toUpperCase() === key.toUpperCase());\n      if (actual && source[actual]) result[key] = source[actual];\n    }');
-          fs.writeFileSync(path,text);
-          NODE
-          npx vitest run packages/desktop/test/postgres-stop.test.ts packages/desktop/test/policy.test.ts
