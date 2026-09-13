@@ -7,10 +7,11 @@ import type { AppConfig } from "../app.ts";
 import { createIdentity } from "../identity/index.ts";
 import { createGameplay } from "../domain/gameplay.ts";
 import { createRuleRuntimeDomain } from "../domain/rule-runtime.ts";
+import { createRuleActivation } from "../domain/rule-activation.ts";
 import * as P from "@chronicle/protocol";
 
 export function registerGameplay(app: FastifyInstance, db: Db, config: AppConfig) {
-  const identity=createIdentity(db,config), game=createGameplay(db,config), ruleRuntime=createRuleRuntimeDomain(db);
+  const identity=createIdentity(db,config), game=createGameplay(db,config), ruleRuntime=createRuleRuntimeDomain(db), ruleActivation=createRuleActivation(db,config);
   const auth=async (req:FastifyRequest)=>(await identity.authenticate(req.headers.cookie)).userId;
   type Scope={campaignId:string}; type Item=Scope & {id:string};
   const base="/api/campaigns/:campaignId";
@@ -20,8 +21,8 @@ export function registerGameplay(app: FastifyInstance, db: Db, config: AppConfig
     async req => ruleRuntime.preview(await auth(req), req.params.campaignId, { id: req.body.packageId, version: req.body.packageVersion }, req.body.contentHash, req.body.fields));
   app.get<{Params:Scope}>(`${base}/rules`,async req=>game.listPackages(await auth(req),req.params.campaignId));
   app.post<{Params:Scope;Body:unknown}>(`${base}/rules`,{schema:{body:Type.Object({},{additionalProperties:true})}},async req=>game.installPackage(await auth(req),req.params.campaignId,req.body));
-  app.post<{Params:Scope;Body:Static<typeof P.PackagePreview>}>(`${base}/rules/preview`,{schema:{body:P.PackagePreview}},async req=>game.previewPackage(await auth(req),req.params.campaignId,req.body.package));
-  app.post<{Params:Scope;Body:Static<typeof P.PackageActivation>}>(`${base}/rules/activate`,{schema:{body:P.PackageActivation}},async req=>game.activatePackage(await auth(req),req.params.campaignId,req.body));
+  app.post<{Params:Scope;Body:Static<typeof P.PackagePreview>}>(`${base}/rules/preview`,{schema:{body:P.PackagePreview}},async req=>ruleActivation.previewPackage(await auth(req),req.params.campaignId,req.body.package));
+  app.post<{Params:Scope;Body:Static<typeof P.PackageActivation>}>(`${base}/rules/activate`,{schema:{body:P.PackageActivation}},async req=>ruleActivation.activatePackage(await auth(req),req.params.campaignId,req.body));
   // Aus der Bibliothek nehmen und wieder zurueck: zwei Befehle, kein Umschalter, damit ein
   // doppelter Klick nicht das Gegenteil des Gewollten tut.
   app.post<{Params:Scope;Body:Static<typeof P.PackageSelection>}>(`${base}/rules/archive`,{schema:{body:P.PackageSelection}},async req=>game.archivePackage(await auth(req),req.params.campaignId,req.body));
