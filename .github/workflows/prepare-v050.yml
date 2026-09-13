@@ -7,7 +7,6 @@ permissions:
   contents: read
 jobs:
   prepare-metadata:
-    if: github.repository == 'KTY137/Atlas_Chronicles'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -16,30 +15,73 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      # Temporary release preparation: create immutable blobs only. No branch,
-      # commit, tag or release is changed by this job. Removed in the release commit.
+      # Temporary: immutable blobs only; no refs, tags, releases or saved credentials.
       - uses: actions/github-script@v7
         with:
           script: |
-            const assert = require('node:assert/strict');
-            const fs = require('node:fs');
-            const version = '0.5.0';
-            const paths = ['package.json', 'packages/desktop/package.json', 'package-lock.json'];
-            for (const path of paths) {
-              const original = fs.readFileSync(path, 'utf8');
-              const value = JSON.parse(original);
-              assert.equal(value.version, '0.4.3', `Unexpected source version in ${path}`);
-              value.version = version;
-              if (path === 'package-lock.json') {
-                assert.equal(value.packages[''].version, '0.4.3');
-                assert.equal(value.packages['packages/desktop'].version, '0.4.3');
-                value.packages[''].version = version;
-                value.packages['packages/desktop'].version = version;
-              }
-              const content = JSON.stringify(value, null, 2) + '\n';
-              const {data} = await github.rest.git.createBlob({...context.repo, content, encoding: 'utf-8'});
+            const fs = require('node:fs'), assert = require('node:assert/strict');
+            const crypto = require('node:crypto');
+            const expr = '$' + '{{ github.token }}';
+            async function save(path, text) {
+              assert.ok(!text.includes(process.env.GITHUB_TOKEN || 'never-a-token-match'));
+              const {data} = await github.rest.git.createBlob({...context.repo,content:text,encoding:'utf-8'});
               core.info(`RELEASE_BLOB ${path} ${data.sha}`);
             }
+            function load(path, sha) {
+              const text = fs.readFileSync(path,'utf8');
+              assert.equal(crypto.createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex'),sha);
+              return text;
+            }
+            function once(text,before,after) { assert.equal(text.split(before).length,2); return text.replace(before,after); }
+            let text = load('packages/desktop/src/postgres.ts','1d78c27f7093d08c92cf5e192f8bb752f312d3c6');
+            text = once(text,'const result = await exec(','const inspection = exec(');
+            text = once(text,'      processInfo = JSON.parse(result.stdout);','      // Close unused stdin: non-interactive PowerShell must not wait for input.\n      inspection.child.stdin?.end();\n      const result = await inspection;\n      processInfo = JSON.parse(result.stdout);');
+            await save('packages/desktop/src/postgres.ts',text);
+            text = load('tools/release/collect-windows.mjs','48b4eb99a0ecf96f342d96e215b227ee96d8b144');
+            text = once(text,"import assert from 'node:assert/strict';","import assert from 'node:assert/strict';\nimport { VERSION } from './publish.mjs';");
+            assert.equal(text.split("'0.4.3'").length,3);
+            await save('tools/release/collect-windows.mjs',text.replaceAll("'0.4.3'",'VERSION'));
+            text = load('.github/workflows/gui-validation.yml','f022edaa65260ed970cce52e59aefad09b73f561');
+            text = text.replaceAll('release-v043.yml','release.yml').replaceAll('release-v043.test.mjs','release-publish.test.mjs');
+            text = once(text,'      - uses: actions/upload-artifact@v4\n','      # Only the report upload is optional, never the tests.\n      - uses: actions/upload-artifact@v4\n        continue-on-error: true\n');
+            await save('.github/workflows/gui-validation.yml',text);
+            text = load('.github/workflows/map-studio.yml','d6ba8dbae24914bb4b470a57b66ef79ff60d9640');
+            text = once(text,'      - name: Reproducible source\n',"      - name: Reproducible source\n        if: github.event_name == 'workflow_dispatch'\n");
+            text = text.replaceAll('      - uses: actions/upload-artifact@v4\n','      - uses: actions/upload-artifact@v4\n        continue-on-error: true\n');
+            for (const name of ['map-studio-source','map-studio-dependencies']) text = once(text,`        continue-on-error: true\n        with:\n          name: ${name}\n`,`        continue-on-error: true\n        if: github.event_name == 'workflow_dispatch'\n        with:\n          name: ${name}\n`);
+            await save('.github/workflows/map-studio.yml',text);
+            text = load('.github/workflows/windows-package.yml','95198429eb5038983ca9afcb25afcb15a8d4b503');
+            text = text.replaceAll('ac043','ac050');
+            text = once(text,'    timeout-minutes: 60\n','    timeout-minutes: 60\n    permissions:\n      contents: write\n      actions: read\n');
+            text = once(text,'      - uses: actions/checkout@v4\n','      - uses: actions/checkout@v4\n        with:\n          persist-credentials: false\n');
+            text = once(text,'          npm run test:steam\n',"          node --test tools/test/release-publish.test.mjs\n          if ($LASTEXITCODE) { throw 'Release regression failed' }\n          npm run test:steam\n");
+            text = once(text,'      - uses: actions/upload-artifact@v4\n        with:\n          name: windows-v0.4.3-candidate\n          path: C:/ac050/.local/release/*\n          if-no-files-found: error\n          retention-days: 7\n',`      - name: Stage verified Windows bytes in an unpublished release\n        if: github.repository == 'KTY137/Atlas_Chronicles' && github.event_name == 'push' && github.ref == 'refs/heads/main'\n        timeout-minutes: 10\n        run: |\n          node tools/release/publish.mjs --stage\n          if ($LASTEXITCODE) { throw 'Release staging failed' }\n        env:\n          GH_TOKEN: ${expr}\n`);
+            text = once(text,'      - uses: actions/upload-artifact@v4\n','      - uses: actions/upload-artifact@v4\n        continue-on-error: true\n');
+            await save('.github/workflows/windows-package.yml',text);
             core.info(`RELEASE_BASE ${context.sha}`);
-      - name: Report version-specific release references
-        run: git grep -n -e 'v043' -e '0.4.3' -- .github/workflows tools/release tools/test packages/desktop/package.json || test "$?" = 1
+  verify-windows-inspection:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      - name: Test unused PowerShell input closure with unchanged ownership assertions
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const path = 'packages/desktop/src/postgres.ts';
+          let text = fs.readFileSync(path,'utf8');
+          assert.equal(text.split('const result = await exec(').length,2);
+          text = text.replace('const result = await exec(','const inspection = exec(');
+          text = text.replace('      processInfo = JSON.parse(result.stdout);','      inspection.child.stdin?.end();\n      const result = await inspection;\n      processInfo = JSON.parse(result.stdout);');
+          fs.writeFileSync(path,text);
+          NODE
+          npx vitest run packages/desktop/test/postgres-stop.test.ts
