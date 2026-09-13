@@ -1,0 +1,100 @@
+name: actor-template-repair-verification
+on:
+  push:
+    branches: ['fix/actor-template-rules-20260913']
+    paths: ['.github/workflows/actor-template-repair.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/fix/actor-template-rules-20260913'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Record the old 64-field failure before the fix
+        shell: bash
+        run: |
+          mkdir -p reports
+          set +e
+          VITEST_JSON_REPORT=reports/baseline.json npx vitest run packages/protocol/test/actor-field-limits.test.ts --maxWorkers=1 --minWorkers=1 > reports/baseline.log 2>&1
+          status=$?
+          set -e
+          cat reports/baseline.log
+          test "$status" -ne 0
+          python3 - <<'PY'
+          import json
+          report = json.load(open('reports/baseline.json'))
+          assertions = [a for f in report['testResults'] for a in f['assertionResults']]
+          assert any('supports 64 fields' in a['fullName'] and a['status'] == 'passed' for a in assertions)
+          assert any('supports 107 fields' in a['fullName'] and a['status'] == 'failed' for a in assertions)
+          PY
+      - name: Apply the narrowly scoped source patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              assert text.count(old) == 1, (path, 'expected one exact patch target', text.count(old))
+              p.write_text(text.replace(old, new), encoding='utf-8')
+          for path in ['packages/protocol/src/actors.ts', 'packages/protocol/src/figurantrag.ts']:
+              replace(path, 'maxProperties: 64, additionalProperties: false', 'maxProperties: 512, additionalProperties: false')
+          path = 'packages/client/src/features/ActorWorkbench.tsx'
+          replace(path, 'import { RuleFields } from "./RuleFields";', 'import { RuleFields } from "./RuleFields";\nimport { resolveActorTemplateRules, type ActorTemplateRulesDraft } from "./actor-template-rules";')
+          replace(path, '''  const [pin, setPin] = useState(original?.definition.package ?? rules.pin);
+            const pkg = rules.packages.find(p => p.id === pin.id && p.version === pin.version);
+            const [fields, setFields] = useState<Record<string, Scalar>>(original?.definition.fields ?? (pkg ? defaults(pkg.fields) : {}));''', '''  const [rulesDraft, setRulesDraft] = useState<ActorTemplateRulesDraft | null>(() => original
+              ? { pin: original.definition.package, fields: original.definition.fields } : null);
+            const { pin, pkg, fields } = resolveActorTemplateRules(rules, rulesDraft);
+            const setFields = (next: Record<string, Scalar>) => setRulesDraft({ pin, fields: next });''')
+          replace(path, 'const p = rules.packages.find(p => `${p.id}@${p.version}` === e.target.value)!; setPin({ id: p.id, version: p.version }); setFields(defaults(p.fields));', 'const p = rules.packages.find(p => `${p.id}@${p.version}` === e.target.value);\n      if (p) setRulesDraft({ pin: { id: p.id, version: p.version }, fields: defaults(p.fields) });')
+          PY
+          git diff --check
+          git diff > reports/source.patch
+      - name: Protocol and rule-state regression suite
+        shell: bash
+        run: npx vitest run packages/protocol/test packages/client/test/actor-template-rules.test.ts --maxWorkers=1 --minWorkers=1 2>&1 | tee reports/unit.log
+        env:
+          VITEST_JSON_REPORT: reports/unit.json
+      - name: Type and architecture gates
+        run: |
+          npm run typecheck
+          npx tsc -p packages/client/tsconfig.json --noEmit
+          npm run gate:boundaries
+          npm run gate:sprache
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Real browser, HTTP and database regressions
+        shell: bash
+        run: npx playwright test e2e/actor-template-rules.spec.ts e2e/actor-drafts.spec.ts e2e/forge-clarity.spec.ts --workers=1 --reporter=list,json 2>&1 | tee reports/browser.log
+        env:
+          NODE_OPTIONS: --require ./node_modules/semver/index.js
+          PLAYWRIGHT_JSON_OUTPUT_NAME: reports/browser.json
+      - name: Commit only verified repairs to the isolated fix branch
+        shell: bash
+        run: |
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages/protocol/src/actors.ts packages/protocol/src/figurantrag.ts packages/client/src/features/ActorWorkbench.tsx
+          git rm .github/workflows/actor-template-repair.yml
+          git commit -m 'fix(actors): align rule field limits and refresh untouched template rules'
+          git push origin HEAD:refs/heads/fix/actor-template-rules-20260913
+          git rev-parse HEAD > reports/verified-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: actor-template-repair-evidence
+          path: |
+            reports/
+            test-results/
+          retention-days: 7
