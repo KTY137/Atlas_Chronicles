@@ -1,23 +1,13 @@
-# Independent evidence for rule editing. The existing full gate remains unchanged.
-name: regelwerk
-
+name: Regelwerk
 on:
   push:
+    branches: [main, UniversalRulesChronicles]
   pull_request:
-  workflow_dispatch:
-
 permissions:
   contents: read
-
-concurrency:
-  group: regelwerk-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  pruefung:
-    name: ${{ matrix.name }}
+  regelwerk:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -38,5 +28,5 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - run: npm ci
       - run: ${{ matrix.command }}
