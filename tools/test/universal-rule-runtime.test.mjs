@@ -47,7 +47,26 @@ test("runtime metadata is immutable and does not expose executable computed/abil
   assert.equal(Object.isFrozen(runtime.fields), true);
   assert.ok(runtime.computed.every(field => !Object.hasOwn(field, "expression")));
   assert.ok(runtime.abilities.every(ability => !Object.hasOwn(ability, "modifiers") && !Object.hasOwn(ability, "prerequisite")));
-  assert.ok(runtime.actions.every(action => Object.keys(action).sort().join() === "id,name"));
+  assert.ok(runtime.actions.every(action => !Object.hasOwn(action, "expression") && !Object.hasOwn(action, "outcome") && !Object.hasOwn(action, "preconditions") && !Object.hasOwn(action, "modifiers")));
+  assert.ok(runtime.actions.every(action => !Object.hasOwn(action.inputs, "mod_ziel") && !Object.hasOwn(action.inputs, "mod_ergebnis") && !Object.hasOwn(action.inputs, "einsatz")));
+});
+
+test("host action runtime exposes only safe actor-specific choices, never modifier formulas", () => {
+  const runtime = buildRuleRuntime(heroes);
+  const fields = { ...runtime.defaults, skill_athletik: 50, faehigkeiten: "leichtfuessig, kraftakt", zustaende: "erschoepft" };
+  const preview = previewRuleRuntime(heroes, fields);
+  assert.equal(preview.valid, true);
+  const action = runtime.actions.find(item => item.id === "skill_athletik");
+  assert.ok(action);
+  assert.equal(action.acceptsAbilityUse, true);
+  assert.equal(Object.hasOwn(action.inputs, "einsatz"), false);
+  assert.equal(Object.hasOwn(action.inputs, "mod_ziel"), false);
+  const state = preview.actionStates.find(item => item.actionId === "skill_athletik");
+  assert.deepEqual(state?.abilities.map(item => [item.id, item.cost]), [["kraftakt", 1]]);
+  assert.deepEqual(state?.passive.map(item => [item.id, item.target, item.value]), [
+    ["erschoepft", "ziel", -10], ["leichtfuessig", "ziel", 5],
+  ]);
+  assert.equal(JSON.stringify({ action, state }).includes("actor.skill_athletik"), false);
 });
 
 test("invalid constraints discard every derived display but preserve the input object", () => {
