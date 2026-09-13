@@ -28,6 +28,8 @@ jobs:
             command: npm run build
           - name: Sprache und Grenzen
             command: npm run gate:sprache && npm run gate:boundaries
+          - name: Hostautoritative Regeln
+            command: node --experimental-transform-types --test tools/test/universal-rule-runtime.test.mjs && npx vitest run packages/server/test/rule-runtime-http.test.ts packages/server/test/gameplay-rule-bounds.test.ts packages/client/test/chronicle-client-review.test.ts --maxWorkers=2
           - name: Regeln und Regelschmiede
             command: npx vitest run packages/rules/test packages/client/test/rule-ability packages/client/test/faehigkeiten-bogen.test.ts packages/client/test/rule-forge packages/client/test/chronicle-forge.test.ts packages/client/test/sprache --maxWorkers=2
     steps:
