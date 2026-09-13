@@ -1,0 +1,67 @@
+name: actor-template-fix-preparation
+on:
+  push:
+    branches: ['fix/actor-template-rule-switch']
+permissions:
+  contents: read
+concurrency:
+  group: actor-template-fix-preparation
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Reproduce regressions on unchanged production source
+        shell: bash
+        run: |
+          set +e
+          npx vitest run packages/client/test/actor-template-rules.test.ts packages/server/test/large-actor-template.test.ts --maxWorkers=1
+          result=$?
+          set -e
+          test "$result" -ne 0 || { echo 'Expected baseline regressions were not reproduced'; exit 1; }
+      - name: Apply narrow hash-checked source fixes
+        run: node tools/review/prepare-actor-template-fix.mjs
+      - name: Verify changed source and nearby lifecycle regressions
+        run: >-
+          npx vitest run packages/client/test/actor-template-rules.test.ts
+          packages/server/test/large-actor-template.test.ts
+          packages/client/test/forge-refresh-drafts.test.ts
+          packages/client/test/figurantrag-review.test.ts
+          packages/client/test/rule-forge-clarity.test.ts
+          packages/server/test/actors.test.ts
+          packages/server/test/htbah-actors.test.ts
+          packages/server/test/npc-beute.test.ts
+          packages/rules/test --maxWorkers=1
+      - name: Type checks and production build
+        run: |
+          npm run typecheck
+          npx tsc -p packages/client/tsconfig.json --noEmit
+          npm run build
+      - name: Language and dependency boundaries
+        run: npm run gate:sprache && npm run gate:boundaries
+      - name: Publish verified immutable blobs only
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs'), crypto = require('node:crypto'), assert = require('node:assert/strict');
+            const files = JSON.parse(fs.readFileSync('.local/actor-template-fix-files.json', 'utf8'));
+            for (const entry of files) {
+              const text = fs.readFileSync(entry.path, 'utf8');
+              const sha = crypto.createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
+              assert.equal(sha, entry.after);
+              const {data} = await github.rest.git.createBlob({...context.repo, content:text, encoding:'utf-8'});
+              assert.equal(data.sha, sha);
+              core.info(`FIX_BLOB ${entry.path} ${data.sha} ${entry.before || 'new'}`);
+            }
+            core.info(`FIX_BASE ${context.sha}`);
