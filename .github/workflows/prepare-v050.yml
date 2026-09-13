@@ -6,36 +6,41 @@ on:
 permissions:
   contents: read
 jobs:
-  windows-inspection:
-    runs-on: windows-latest
-    timeout-minutes: 6
+  native-probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
     steps:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Bounded native probes, no environment values in logs
+      - name: Compare native startup without logging environment values
         shell: bash
         run: |
           node --input-type=module <<'NODE'
-          import {execFile} from 'node:child_process';
+          import {execFile,spawn} from 'node:child_process';
           import {promisify} from 'node:util';
           import {join} from 'node:path';
           const exec=promisify(execFile), source=new Map(Object.entries(process.env).map(([k,v])=>[k.toUpperCase(),v]));
-          const select=keys=>Object.fromEntries(keys.filter(k=>source.get(k.toUpperCase())).map(k=>[k,source.get(k.toUpperCase())]));
-          const base=select(['SystemRoot','WINDIR','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA','COMSPEC','LANG']);
-          const programs=select(['ProgramFiles','ProgramFiles(x86)','ProgramW6432','CommonProgramFiles','CommonProgramFiles(x86)','CommonProgramW6432']);
-          const logon=select(['ALLUSERSPROFILE','ProgramData','PUBLIC','HOMEDRIVE','HOMEPATH','USERNAME','USERDOMAIN','COMPUTERNAME']);
-          const machine=select(['SystemDrive','OS','PROCESSOR_ARCHITECTURE','PROCESSOR_IDENTIFIER','PROCESSOR_LEVEL','PROCESSOR_REVISION','NUMBER_OF_PROCESSORS']);
-          const root=base.SystemRoot??'C:\\Windows', ps=join(root,'System32','WindowsPowerShell','v1.0','powershell.exe');
-          const fixedPaths={PATH:join(root,'System32')+';'+root,PSModulePath:join(root,'System32','WindowsPowerShell','v1.0','Modules')};
-          const command="Get-CimInstance Win32_Process -Filter ('ProcessId=' + $env:CHRONICLE_CHECK_PID) -ErrorAction Stop | Select-Object ExecutablePath,CommandLine | ConvertTo-Json -Compress";
-          const configurations=[['base',base],['programs',{...base,...programs}],['logon',{...base,...logon}],['machine',{...base,...machine}],['fixed-paths',{...base,...fixedPaths}],['os-complete',{...base,...programs,...logon,...machine,...fixedPaths}]];
-          await Promise.all(configurations.map(async([label,env])=>{
-            const start=Date.now();
+          const keys=['SystemRoot','WINDIR','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA','COMSPEC','LANG'];
+          const safe=Object.fromEntries(keys.filter(k=>source.get(k.toUpperCase())).map(k=>[k,source.get(k.toUpperCase())]));
+          const ps=join(safe.SystemRoot??'C:\\Windows','System32','WindowsPowerShell','v1.0','powershell.exe');
+          const args=['-NoLogo','-NoProfile','-NonInteractive','-Command',"Write-Output 'native-started'"];
+          await Promise.all([['inherited-visible',undefined,false],['inherited-hidden',undefined,true],['safe-visible',safe,false],['safe-hidden',safe,true]].map(async([label,env,windowsHide])=>{
             try {
-              const pending=exec(ps,['-NoProfile','-NonInteractive','-Command',command],{env:{...env,CHRONICLE_CHECK_PID:String(process.pid)},windowsHide:true,shell:false,timeout:20000});
-              pending.child.stdin?.end(); const value=await pending, parsed=JSON.parse(value.stdout);
-              console.log('PROBE',label,'ok',Date.now()-start,'identity',typeof parsed.ExecutablePath==='string'&&typeof parsed.CommandLine==='string');
-            } catch(e) { console.log('PROBE',label,'failed',Date.now()-start,'timeout',!!e.killed,'stdout-bytes',Buffer.byteLength(e.stdout??''),'stderr-bytes',Buffer.byteLength(e.stderr??'')); }
+              const pending=exec(ps,args,{env,windowsHide,shell:false,timeout:15000});
+              pending.child.stdin?.end(); const result=await pending;
+              console.log('PROBE',label,'ok',result.stdout.trim()==='native-started');
+            } catch(e) { console.log('PROBE',label,'failed','timeout',!!e.killed); }
           }));
+          await new Promise(resolve=>{
+            const child=spawn(ps,args,{env:safe,windowsHide:true,shell:false,stdio:['ignore','pipe','pipe']});
+            let output=''; child.stdout.on('data',chunk=>output+=chunk); child.stderr.resume();
+            const timer=setTimeout(()=>child.kill(),15000);
+            child.on('close',code=>{clearTimeout(timer);console.log('PROBE','stdin-ignore',code,output.trim()==='native-started');resolve();});
+            child.on('error',()=>{clearTimeout(timer);console.log('PROBE','spawn-error');resolve();});
+          });
           NODE
