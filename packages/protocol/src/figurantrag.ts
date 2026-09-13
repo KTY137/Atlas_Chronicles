@@ -58,6 +58,7 @@ export interface FigurantragCard {
  */
 export interface FreigegebeneVorlageCard {
   id: string; name: string; art: string; anfangswerte: Record<string, unknown>; version: number;
+  package: { id: string; version: string };
 }
 /**
  * Der Freigabestand einer Figurvorlage, wie ihn die **Spielleitung** auf ihrer Vorlagenkarte
