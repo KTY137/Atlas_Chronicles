@@ -2,9 +2,9 @@ name: gui-validation
 on:
   push:
     branches: [fix/gui-fuzz-release-20260911, main]
-    paths: ['packages/**', 'e2e/**', 'tools/release/**', 'tools/test/release-*', 'docs/releases/**', 'package*.json', '.github/workflows/gui-validation.yml', '.github/workflows/release-v043.yml']
+    paths: ['packages/**', 'e2e/**', 'tools/release/**', 'tools/test/release-*', 'docs/releases/**', 'package*.json', '.github/workflows/gui-validation.yml', '.github/workflows/release.yml']
   pull_request:
-    paths: ['packages/**', 'e2e/**', 'tools/release/**', 'tools/test/release-*', 'docs/releases/**', 'package*.json', '.github/workflows/gui-validation.yml', '.github/workflows/release-v043.yml']
+    paths: ['packages/**', 'e2e/**', 'tools/release/**', 'tools/test/release-*', 'docs/releases/**', 'package*.json', '.github/workflows/gui-validation.yml', '.github/workflows/release.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,7 +22,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - run: node --test tools/test/release-v043.test.mjs
+      - run: node --test tools/test/release-publish.test.mjs
       - run: python3 tools/test/release-candidate-test.py
       - run: npm run typecheck && npm run build
       - run: npx playwright install --with-deps chromium
@@ -31,7 +31,9 @@ jobs:
         env:
           NODE_OPTIONS: --require ./node_modules/semver/index.js
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/gui-report.json
+      # Only the report upload is optional, never the tests.
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         if: always()
         with:
           name: gui-validation-results

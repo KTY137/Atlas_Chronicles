@@ -42,15 +42,20 @@ jobs:
       # Only tracked source and public installed dependencies: no .git, credentials,
       # local worlds, environment files or runner state. Short-lived offline repro.
       - name: Reproducible source
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git archive --format=tar HEAD | gzip > "$RUNNER_TEMP/map-studio-source.tar.gz"
           find node_modules packages -path '*/node_modules' -prune -print0 | tar -czf "$RUNNER_TEMP/map-studio-dependencies.tar.gz" --null -T -
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        if: github.event_name == 'workflow_dispatch'
         with:
           name: map-studio-source
           path: ${{ runner.temp }}/map-studio-source.tar.gz
           retention-days: 1
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        if: github.event_name == 'workflow_dispatch'
         with:
           name: map-studio-dependencies
           path: ${{ runner.temp }}/map-studio-dependencies.tar.gz
@@ -96,6 +101,7 @@ jobs:
           --maxWorkers=2
           --reporter=default --reporter=json --outputFile=/tmp/map-studio-results.json
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         if: always()
         with:
           name: map-studio-results
@@ -110,6 +116,7 @@ jobs:
           # Initialize the real CommonJS dependency before the test host's ESM loader.
           NODE_OPTIONS: --require ./node_modules/semver/index.js
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         if: always()
         with:
           name: map-studio-browser-results

@@ -15,22 +15,27 @@ jobs:
   windows:
     runs-on: windows-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
+      actions: read
     defaults:
       run:
         shell: pwsh
-        working-directory: C:\ac043
+        working-directory: C:\ac050
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Short, tracked-source-only build directory
         working-directory: ${{ github.workspace }}
         run: |
-          if (Test-Path C:\ac043) { throw 'Build directory already exists' }
-          New-Item -ItemType Directory C:\ac043 | Out-Null
+          if (Test-Path C:\ac050) { throw 'Build directory already exists' }
+          New-Item -ItemType Directory C:\ac050 | Out-Null
           $tree = git rev-parse 'HEAD^{tree}'
           "SOURCE_TREE=$tree" >> $env:GITHUB_ENV
           git archive HEAD --output="$env:RUNNER_TEMP\source.tar"
           if ($LASTEXITCODE) { throw 'Source archive failed' }
-          tar -xf "$env:RUNNER_TEMP\source.tar" -C C:\ac043
+          tar -xf "$env:RUNNER_TEMP\source.tar" -C C:\ac050
           if ($LASTEXITCODE) { throw 'Source extraction failed' }
       - uses: actions/setup-node@v4
         with:
@@ -44,11 +49,13 @@ jobs:
           npm run gate:assets; if ($LASTEXITCODE) { throw 'Windows assets do not reproduce' }
           npx vitest run packages/desktop/test packages/client/test/gui-state-fuzz.test.ts
           if ($LASTEXITCODE) { throw 'Desktop or state regression failed' }
+          node --test tools/test/release-publish.test.mjs
+          if ($LASTEXITCODE) { throw 'Release regression failed' }
           npm run test:steam
           if ($LASTEXITCODE) { throw 'Desktop build output, artifact or Steam preparation regression failed' }
       - name: Resolve pinned PostgreSQL runtime
         run: |
-          $dir = 'C:\ac043\.local\desktop-runtime'
+          $dir = 'C:\ac050\.local\desktop-runtime'
           New-Item -ItemType Directory -Force $dir | Out-Null
           $archive = "$dir\postgresql-17.11-1-windows-x64-binaries.zip"
           Invoke-WebRequest 'https://get.enterprisedb.com/postgresql/postgresql-17.11-1-windows-x64-binaries.zip' -OutFile $archive
@@ -93,21 +100,24 @@ jobs:
         run: |
           node tools/release/collect-windows.mjs
           if ($LASTEXITCODE) { throw 'Release evidence failed' }
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-v0.4.3-candidate
-          path: C:/ac043/.local/release/*
-          if-no-files-found: error
-          retention-days: 7
+      - name: Stage verified Windows bytes in an unpublished release
+        if: github.repository == 'KTY137/Atlas_Chronicles' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        timeout-minutes: 10
+        run: |
+          node tools/release/publish.mjs --stage
+          if ($LASTEXITCODE) { throw 'Release staging failed' }
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Collect failure-only diagnostics without world databases or secrets
         if: failure()
         timeout-minutes: 2
         run: |
           node tools/release/collect-windows.mjs --diagnostics
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         if: failure()
         with:
           name: windows-failure-diagnostics
-          path: C:/ac043/.local/release-diagnostics/*
+          path: C:/ac050/.local/release-diagnostics/*
           if-no-files-found: ignore
           retention-days: 3

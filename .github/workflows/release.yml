@@ -1,4 +1,4 @@
-name: release-v043
+name: release
 on:
   workflow_run:
     workflows: [gate, gui-validation, map-studio, regelwerk, windows-package]
@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: release-v043
+  group: atlas-release
   cancel-in-progress: false
 jobs:
   publish-verified-candidate:
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Publish only the exact tested main Windows build; preserve existing releases
-        run: node tools/release/publish-v043.mjs
+      - name: Publish only the exact tested main Windows build
+        run: node tools/release/publish.mjs
         env:
           GH_TOKEN: ${{ github.token }}

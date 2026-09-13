@@ -4,6 +4,7 @@ import { readdir, readFile, mkdir, copyFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
+import { VERSION } from './publish.mjs';
 const diagnostics = process.argv.includes('--diagnostics');
 const directory = '.local/desktop-profiles', checks = [];
 for (const name of await readdir(directory).catch(() => [])) {
@@ -32,11 +33,11 @@ if (diagnostics) {
   for (const [index, path] of logs.entries()) await copyFile(path, join(out, `${index}-${path.split(/[\\/]/).at(-1)}`)).catch(() => {});
   process.exit(0);
 }
-assert.equal(process.platform,'win32'); assert.equal(checks.length,2); assert.ok(checks.every(c=>c.passed&&!c.cleanupError&&c.version==='0.4.3'));
+assert.equal(process.platform,'win32'); assert.equal(checks.length,2); assert.ok(checks.every(c=>c.passed&&!c.cleanupError&&c.version===VERSION));
 assert.deepEqual(checks.map(c=>c.executableKind).sort(),['installed','packaged']);
 const stamps=(await readdir('.local/desktop-artifacts')).sort(), stamp=stamps.at(-1);
 const installer=JSON.parse(await readFile(join('.local/desktop-artifacts',stamp,'installer.json'),'utf8'));
-assert.equal(installer.version,'0.4.3');
+assert.equal(installer.version,VERSION);
 const bytes=await readFile(installer.setupExe), digest=createHash('sha256').update(bytes).digest('hex');
 assert.equal(digest,installer.setupSha256); assert.equal(bytes.length,installer.bytes);
 await copyFile(installer.setupExe,join(out,'Atlas-Chronicles-Setup.exe'));
