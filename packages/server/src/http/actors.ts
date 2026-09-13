@@ -9,11 +9,12 @@ import type { IdentityConfig } from "../identity/index.ts";
 import { createIdentity } from "../identity/index.ts";
 import { ActorValidationError, createActors } from "../domain/actors.ts";
 import { createActorDeletion } from "../domain/actor-deletion.ts";
-import { createFigurantrag } from "../domain/figurantrag.ts";
+import { createPinnedFigurantrag } from "../domain/figurantrag-pinned.ts";
+import { instantiatePinnedActor } from "../domain/pinned-actors.ts";
 
 /** The existing app supplies authenticated-cookie, Origin, rate-limit and error policies. */
 export function registerActors(app: FastifyInstance, db: Db, config: IdentityConfig) {
-  const identity = createIdentity(db, config), actors = createActors(db, config), deletion = createActorDeletion(db, config), antraege = createFigurantrag(db, config);
+  const identity = createIdentity(db, config), actors = createActors(db, config), deletion = createActorDeletion(db, config), antraege = createPinnedFigurantrag(db, config);
   const auth = async (cookie: string | undefined) => (await identity.authenticate(cookie)).userId;
   const base = "/api/campaigns/:campaignId";
   type Scope = { campaignId: string }; type Item = Scope & { id: string }; type Controller = Item & { userId: string };
@@ -25,7 +26,7 @@ export function registerActors(app: FastifyInstance, db: Db, config: IdentityCon
   };
   app.get<{ Params: Scope }>(`${base}/actors`, async req => actors.listActors(await auth(req.headers.cookie), req.params.campaignId));
   app.get<{ Params: Item }>(`${base}/actors/:id`, async req => actors.getActor(await auth(req.headers.cookie), req.params.campaignId, req.params.id));
-  app.post<{ Params: Scope; Body: Static<typeof P.ActorInstantiate> }>(`${base}/actors/instantiate`, { schema: { body: P.ActorInstantiate } }, async req => actors.instantiateActor(await auth(req.headers.cookie), req.params.campaignId, req.body));
+  app.post<{ Params: Scope; Body: Static<typeof P.ActorInstantiate> }>(`${base}/actors/instantiate`, { schema: { body: P.ActorInstantiate } }, async req => instantiatePinnedActor(db, config, await auth(req.headers.cookie), req.params.campaignId, req.body));
   app.put<{ Params: Item; Body: Static<typeof P.ActorProfileUpdate> }>(`${base}/actors/:id`, { schema: { body: P.ActorProfileUpdate } }, async req => actors.updateActor(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.post<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/actors/:id/archive`, { schema: { body: P.ArchiveObject } }, async req => actors.archiveActor(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.delete<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/actors/:id`, { schema: { body: P.ArchiveObject } }, async req => deletion.deleteActor(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
