@@ -41,6 +41,13 @@ describe("nested character-sheet categories", () => {
     ]))).toThrow(/cycle/);
   });
 
+  it("rejects placing one field in more than one category", () => {
+    expect(() => parseRulePackage({ ...clone(DEMO_RULE_PACKAGE), layout: { sections: [
+      { id: "one", label: "One", fields: ["name", "insight"] },
+      { id: "two", label: "Two", fields: ["name", "vigour"] },
+    ] } })).toThrow(/multiple sections/);
+  });
+
   it("models HTBAH skills below a real Fähigkeiten meta-category", () => {
     const sections = HOW_TO_BE_A_HERO_PACKAGE.layout.sections;
     const skills = sections.find(section => section.id === "skills");
