@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import type { PackagePin, RuleRuntime, RuleRuntimeIdentity, RuleRuntimePreview, Scalar } from "@chronicle/rules";
+import { RULE_RUNTIME_CONTRACT, type PackagePin, type RuleRuntime, type RuleRuntimeIdentity, type RuleRuntimePreview, type Scalar } from "@chronicle/rules";
 
 export interface RuleEditorDraft { readonly pin: PackagePin; readonly fields: Readonly<Record<string, Scalar>> | null }
 export function switchRuleDraft(draft: RuleEditorDraft, pin: PackagePin): RuleEditorDraft {
@@ -9,7 +9,7 @@ export function switchRuleDraft(draft: RuleEditorDraft, pin: PackagePin): RuleEd
 export function matchesRuleRuntime(value: unknown, pin: PackagePin, contentHash?: string): value is RuleRuntimeIdentity {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<RuleRuntimeIdentity>;
-  return candidate.contractVersion === 1 && candidate.pin?.id === pin.id && candidate.pin.version === pin.version
+  return candidate.contractVersion === RULE_RUNTIME_CONTRACT && candidate.pin?.id === pin.id && candidate.pin.version === pin.version
     && typeof candidate.contentHash === "string" && /^[a-f0-9]{64}$/.test(candidate.contentHash)
     && (contentHash === undefined || candidate.contentHash === contentHash);
 }
