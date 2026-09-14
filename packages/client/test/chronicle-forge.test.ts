@@ -3,13 +3,13 @@
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { DEMO_RULE_PACKAGE, CHRONICLE_HEROES_PACKAGE, CHRONICLE_EXAMPLE_CHARACTERS, evaluateSupportedAction, parseSupportedRulePackage, stableJson, type RulePackageV2 } from "@chronicle/rules";
+import { DEMO_RULE_PACKAGE, CHRONICLE_HEROES_PACKAGE, CHRONICLE_EXAMPLE_CHARACTERS, UNIVERSAL_REFERENCE_PACKAGES, evaluateSupportedAction, parseSupportedRulePackage, stableJson, type RulePackageV2 } from "@chronicle/rules";
 import { compilePackage, forkPackage, packageDraft, packageTestResults, validateDraft } from "../src/features/rule-forge-model";
 import { RuleComputedFields } from "../src/features/RuleComputedFields";
 import { RollCard } from "../src/features/RollCard";
 
 describe("lossless supported rule workshop", () => {
-  it.each([DEMO_RULE_PACKAGE, CHRONICLE_HEROES_PACKAGE])("retains every package byte through opening and exporting $name", pkg => {
+  it.each([DEMO_RULE_PACKAGE, CHRONICLE_HEROES_PACKAGE, ...UNIVERSAL_REFERENCE_PACKAGES])("retains every package byte through opening and exporting $name", pkg => {
     expect(stableJson(compilePackage(packageDraft(pkg)))).toBe(stableJson(pkg));
   });
   it("retains ordered outcomes, source notes, empty declarations and classification tests in forks", () => {
