@@ -69,6 +69,43 @@ function collectionField(type: FieldSchema["type"] = "string"): FieldSchema {
     : { type: "string", label: t("Wert"), maxLength: 120, default: "" };
 }
 function numeric(value: string, fallback: number): number { const next = Number(value); return Number.isFinite(next) ? next : fallback; }
+function withPrimaryField(collection: RuleCollection, primaryField?: string): RuleCollection {
+  const { primaryField: _primaryField, ...base } = collection;
+  return primaryField ? { ...base, primaryField } : base;
+}
+function withOptionalNodeText(node: RulePresentationNode, key: "label" | "visibleIf", value: string): RulePresentationNode {
+  const { [key]: _old, ...base } = node;
+  return (value ? { ...base, [key]: value } : base) as RulePresentationNode;
+}
+function withStringEnum(field: FieldSchema, values: readonly string[]): FieldSchema {
+  const { enum: _enum, ...base } = field;
+  return values.length ? { ...base, enum: [...values] } : base;
+}
+function defaultCollectionRow(collection: RuleCollection): Record<string, Scalar> {
+  return Object.fromEntries(Object.entries(collection.itemFields).map(([id, field]) => [id, field.default]));
+}
+function compatibleValue(field: FieldSchema, value: unknown): Scalar {
+  if (field.type === "boolean") return typeof value === "boolean" ? value : field.default;
+  if (field.type === "string") return typeof value === "string" && value.length <= (field.maxLength ?? 4096) && (!field.enum || field.enum.includes(value)) ? value : field.default;
+  if (typeof value !== "number" || !Number.isFinite(value) || field.type === "integer" && !Number.isSafeInteger(value)) return field.default;
+  if (field.minimum !== undefined && value < field.minimum || field.maximum !== undefined && value > field.maximum) return field.default;
+  return value;
+}
+function normalizeCollectionDefault(draft: RuleDraft, collection: RuleCollection, rename?: readonly [string, string]): RuleDraft {
+  const storage = draft.fields.find(field => field.id === collection.storageField);
+  if (!storage) return draft;
+  let raw: unknown = [];
+  try { raw = JSON.parse(storage.defaultValue || "[]"); } catch { raw = []; }
+  const input = Array.isArray(raw) ? raw.slice(0, collection.maxItems) : [];
+  const rows = input.map(item => {
+    const source = item !== null && typeof item === "object" && !Array.isArray(item) ? { ...(item as Record<string, unknown>) } : {};
+    if (rename && Object.hasOwn(source, rename[0])) { source[rename[1]] = source[rename[0]]; delete source[rename[0]]; }
+    return Object.fromEntries(Object.entries(collection.itemFields).map(([id, field]) => [id, compatibleValue(field, source[id])]));
+  });
+  while (rows.length < collection.minItems) rows.push(defaultCollectionRow(collection));
+  const defaultValue = JSON.stringify(rows);
+  return { ...draft, fields: draft.fields.map(field => field.id === collection.storageField ? { ...field, defaultValue } : field) };
+}
 function defaultNode(kind: NodeKind, id: string, draft: RuleDraft, flat: readonly FlatNode[]): RulePresentationNode | null {
   const base = { id, render: "section" as const };
   if (kind === "group") return { kind, ...base, label: t("Neue Kategorie"), children: [] };
@@ -111,7 +148,10 @@ export function RulePresentationEditor({ draft, onChange, disabled = false }: { 
     const node: RulePresentationNode = { kind: "collection", id: uniqueId("collection", usedIds), ref: id, render: "table" };
     onChange({ ...next, presentation: { ...presentation, root: insertNode(presentation.root, newParent || null, node) } });
   };
-  const replaceCollection = (index: number, next: RuleCollection) => onChange({ ...prepared, collections: prepared.collections!.map((row, i) => i === index ? next : row) });
+  const replaceCollection = (index: number, nextCollection: RuleCollection, rename?: readonly [string, string]) => {
+    const next = { ...prepared, collections: prepared.collections!.map((row, i) => i === index ? nextCollection : row) };
+    onChange(normalizeCollectionDefault(next, nextCollection, rename));
+  };
 
   return <section className="rf-presentation-editor">
     {!draft.presentation ? <Notice>{t("Dieses Paket verwendet noch den klassischen Bogen. Beim ersten Ändern wird seine bestehende Abschnittsstruktur verlustfrei in Presentation v3 übernommen.")}</Notice> : null}
@@ -127,9 +167,9 @@ export function RulePresentationEditor({ draft, onChange, disabled = false }: { 
       const unavailableActions = node.kind === "actions" ? usedActions(flat, node.id) : new Set<string>();
       return <article className="rf-card" key={node.id} style={{ marginLeft: `${Math.min(depth, 8) * 16}px` }}><div className="rf-section-heading"><div><strong>{node.kind} · {node.label ?? ("ref" in node ? node.ref : node.id)}</strong><small>{node.id}</small></div><div className="button-row"><Button variant="quiet" onClick={() => commitRoot(replaceSibling(presentation.root, node.id, -1))}>↑</Button><Button variant="quiet" onClick={() => commitRoot(replaceSibling(presentation.root, node.id, 1))}>↓</Button><Button variant="quiet" onClick={() => commitRoot(removeNode(presentation.root, node.id).nodes)}><Trash2 size={14} /></Button></div></div>
         <div className="rf-form-grid">
-          <label>{t("Label (optional)")}<input value={node.label ?? ""} maxLength={120} onChange={event => update(node.id, current => ({ ...current, label: event.target.value || undefined } as RulePresentationNode))} /></label>
+          <label>{t("Label (optional)")}<input value={node.label ?? ""} maxLength={120} onChange={event => update(node.id, current => withOptionalNodeText(current, "label", event.target.value))} /></label>
           <label>{t("Darstellung")}<select value={node.render ?? "section"} onChange={event => update(node.id, current => ({ ...current, render: event.target.value as RulePresentationRender } as RulePresentationNode))}>{renders.map(render => <option key={render}>{render}</option>)}</select></label>
-          <label>{t("Sichtbar wenn")}<input value={node.visibleIf ?? ""} placeholder="actor.level >= 2" onChange={event => update(node.id, current => ({ ...current, visibleIf: event.target.value || undefined } as RulePresentationNode))} /><small>{t("Boolesche Formel ohne Würfel; leer bedeutet immer sichtbar.")}</small></label>
+          <label>{t("Sichtbar wenn")}<input value={node.visibleIf ?? ""} placeholder="actor.level >= 2" onChange={event => update(node.id, current => withOptionalNodeText(current, "visibleIf", event.target.value))} /><small>{t("Boolesche Formel ohne Würfel; leer bedeutet immer sichtbar.")}</small></label>
           <label>{t("Übergeordnete Kategorie")}<select value={parentId ?? ""} onChange={event => commitRoot(moveNode(presentation.root, node.id, event.target.value || null))}><option value="">{t("Oberste Ebene")}</option>{groups.filter(group => !blockedParents.has(group.node.id)).map(group => <option key={group.node.id} value={group.node.id}>{group.node.label ?? group.node.id}</option>)}</select></label>
         </div>
         {"ref" in node ? <label>{t("Referenz")}<select value={node.ref} onChange={event => update(node.id, current => ({ ...current, ref: event.target.value } as RulePresentationNode))}>{refs.map(ref => <option key={ref.id} value={ref.id}>{ref.label} · {ref.id}</option>)}</select></label> : null}
@@ -144,16 +184,16 @@ export function RulePresentationEditor({ draft, onChange, disabled = false }: { 
       <label>{t("Name")}<input value={collection.label} onChange={event => replaceCollection(index, { ...collection, label: event.target.value })} /></label>
       <label>{t("Minimale Einträge")}<input type="number" min={0} max={collection.maxItems} value={collection.minItems} onChange={event => replaceCollection(index, { ...collection, minItems: Math.max(0, Math.min(collection.maxItems, event.target.valueAsNumber || 0)) })} /></label>
       <label>{t("Maximale Einträge")}<input type="number" min={Math.max(1, collection.minItems)} max={128} value={collection.maxItems} onChange={event => replaceCollection(index, { ...collection, maxItems: Math.max(Math.max(1, collection.minItems), Math.min(128, event.target.valueAsNumber || 1)) })} /></label>
-      <label>{t("Hauptfeld")}<select value={collection.primaryField ?? ""} onChange={event => replaceCollection(index, { ...collection, primaryField: event.target.value || undefined })}><option value="">—</option>{Object.keys(collection.itemFields).map(id => <option key={id}>{id}</option>)}</select></label>
+      <label>{t("Hauptfeld")}<select value={collection.primaryField ?? ""} onChange={event => replaceCollection(index, withPrimaryField(collection, event.target.value || undefined))}><option value="">—</option>{Object.keys(collection.itemFields).map(id => <option key={id}>{id}</option>)}</select></label>
     </div>
       {Object.entries(collection.itemFields).map(([id, field]) => <div className="rf-card" key={id}><div className="rf-form-grid">
-        <label>{t("Feldkennung")}<input value={id} onChange={event => { const nextId = event.target.value; const itemFields = Object.fromEntries(Object.entries(collection.itemFields).map(([key, value]) => [key === id ? nextId : key, value])); replaceCollection(index, { ...collection, itemFields, primaryField: collection.primaryField === id ? nextId : collection.primaryField }); }} /></label>
+        <label>{t("Feldkennung")}<input value={id} onChange={event => { const nextId = event.target.value; const itemFields = Object.fromEntries(Object.entries(collection.itemFields).map(([key, value]) => [key === id ? nextId : key, value])); const nextCollection = withPrimaryField({ ...collection, itemFields }, collection.primaryField === id ? nextId : collection.primaryField); replaceCollection(index, nextCollection, [id, nextId]); }} /></label>
         <label>{t("Label")}<input value={field.label} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, label: event.target.value } } })} /></label>
         <label>{t("Typ")}<select value={field.type} onChange={event => { const type = event.target.value as FieldSchema["type"]; replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: collectionField(type) } }); }}><option value="string">Text</option><option value="integer">Integer</option><option value="number">Number</option><option value="boolean">Boolean</option></select></label>
         {field.type === "boolean" ? <label className="rf-check"><input type="checkbox" checked={field.default as boolean} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, default: event.target.checked } } })} />{t("Vorgabe")}</label>
-          : field.type === "string" ? <><label>{t("Vorgabe")}<input value={field.default as string} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, default: event.target.value } } })} /></label><label>{t("Zeichenlimit")}<input type="number" min={1} max={4096} value={field.maxLength} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, maxLength: Math.max(1, Math.min(4096, event.target.valueAsNumber || 1)) } } })} /></label><label>{t("Auswahlwerte (Komma)")}<input value={field.enum?.join(", ") ?? ""} onChange={event => { const enumValues = event.target.value.split(",").map(value => value.trim()).filter(Boolean); replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, ...(enumValues.length ? { enum: enumValues } : { enum: undefined }) } } }); }} /></label></>
+          : field.type === "string" ? <><label>{t("Vorgabe")}<input value={field.default as string} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, default: event.target.value } } })} /></label><label>{t("Zeichenlimit")}<input type="number" min={1} max={4096} value={field.maxLength} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, maxLength: Math.max(1, Math.min(4096, event.target.valueAsNumber || 1)) } } })} /></label><label>{t("Auswahlwerte (Komma)")}<input value={field.enum?.join(", ") ?? ""} onChange={event => { const enumValues = event.target.value.split(",").map(value => value.trim()).filter(Boolean); replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: withStringEnum(field, enumValues) } }); }} /></label></>
           : <><label>{t("Vorgabe")}<input type="number" value={field.default as number} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, default: numeric(event.target.value, field.default as number) as Scalar } } })} /></label><label>{t("Minimum")}<input type="number" value={field.minimum} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, minimum: numeric(event.target.value, field.minimum!) } } })} /></label><label>{t("Maximum")}<input type="number" value={field.maximum} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, maximum: numeric(event.target.value, field.maximum!) } } })} /></label></>}
-      </div><Button variant="quiet" disabled={Object.keys(collection.itemFields).length <= 1} onClick={() => { const itemFields = copyJson(collection.itemFields) as Record<string, FieldSchema>; delete itemFields[id]; replaceCollection(index, { ...collection, itemFields, primaryField: collection.primaryField === id ? undefined : collection.primaryField }); }}><Trash2 size={14} />{t("Feld entfernen")}</Button></div>)}
+      </div><Button variant="quiet" disabled={Object.keys(collection.itemFields).length <= 1} onClick={() => { const itemFields = copyJson(collection.itemFields) as Record<string, FieldSchema>; delete itemFields[id]; const nextCollection = withPrimaryField({ ...collection, itemFields }, collection.primaryField === id ? undefined : collection.primaryField); replaceCollection(index, nextCollection); }}><Trash2 size={14} />{t("Feld entfernen")}</Button></div>)}
       <Button onClick={() => { const id = uniqueId("feld", Object.keys(collection.itemFields)); replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: collectionField() } }); }}><Plus size={14} />{t("Collection-Feld")}</Button>
       <Button variant="danger" onClick={() => { const storage = collection.storageField; onChange({ ...prepared, collections: prepared.collections!.filter((_, i) => i !== index), fields: prepared.fields.filter(field => field.id !== storage), presentation: { ...presentation, root: removeNode(presentation.root, flat.find(row => row.node.kind === "collection" && row.node.ref === collection.id)?.node.id ?? "").nodes } }); }}><Trash2 size={14} />{t("Collection entfernen")}</Button>
     </fieldset>)}
