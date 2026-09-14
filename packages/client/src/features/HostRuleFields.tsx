@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useState } from "react";
-import type { AnyRulePackage, RuleRuntime, RuleRuntimePreview, Scalar } from "@chronicle/rules";
+import type { AnyRulePackage, RuleRuntime, RuleRuntimePreview, RuleRuntimeSection, Scalar } from "@chronicle/rules";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
 import { RuleFields } from "./RuleFields";
@@ -33,13 +33,25 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
   const learnable = new Set(overview?.learnable ?? []);
   const abilities = runtime.abilities.filter(ability => !learned.includes(ability.id) && `${ability.name} ${ability.group} ${ability.text}`.toLowerCase().includes(search.trim().toLowerCase()));
   const setList = (field: string, ids: readonly string[]) => onChange({ ...values, [field]: ids.join(", ") });
+  const children = new Map<string | null, RuleRuntimeSection[]>();
+  for (const section of runtime.sections) {
+    const rows = children.get(section.parent) ?? [];
+    rows.push(section); children.set(section.parent, rows);
+  }
+  const renderSection = (section: RuleRuntimeSection, depth: number): React.ReactNode => {
+    const ids = section.fields.filter(id => !special.has(id));
+    const nested = children.get(section.id) ?? [];
+    if (!ids.length && !nested.length) return null;
+    return <fieldset className="sheet-section rule-category" data-depth={Math.min(depth, 8)} key={section.id}>
+      <legend>{section.label}</legend>
+      {ids.length ? <RuleFields fields={Object.fromEntries(ids.map(id => [id, runtime.fields[id]!]))} values={values} onChange={onChange} disabled={disabled} /> : null}
+      {nested.length ? <div className="rule-category-children">{nested.map(child => renderSection(child, depth + 1))}</div> : null}
+    </fieldset>;
+  };
+  const learnedAbilities = learned.map(id => runtime.abilities.find(ability => ability.id === id)).filter((ability): ability is RuleRuntime["abilities"][number] => !!ability);
+  const abilityGroups = <T extends RuleRuntime["abilities"][number]>(rows: readonly T[]) => [...new Set(rows.map(row => row.group || t("Weitere Fähigkeiten")))].map(group => ({ group, rows: rows.filter(row => (row.group || t("Weitere Fähigkeiten")) === group) }));
   return <>
-    {runtime.sections.map(section => {
-      const ids = section.fields.filter(id => !special.has(id));
-      return ids.length ? <fieldset className="sheet-section" key={section.id}><legend>{section.label}</legend>
-        <RuleFields fields={Object.fromEntries(ids.map(id => [id, runtime.fields[id]!]))} values={values} onChange={onChange} disabled={disabled} />
-      </fieldset> : null;
-    })}
+    {(children.get(null) ?? []).map(section => renderSection(section, 0))}
     {preview?.valid && preview.vitals.length ? <section aria-label={t("Vitalwerte")}>{preview.vitals.map(vital => <div key={vital.id}>
       <label>{vital.label} · {vital.value} / {vital.maximum} <meter min={0} max={Math.max(1, vital.maximum)} value={Math.max(0, Math.min(vital.maximum, vital.value))} /></label>
     </div>)}</section> : null}
@@ -49,12 +61,12 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
     {runtime.abilityField && runtime.abilities.length ? <section className="faehigkeiten-bogen" aria-label={t("Fähigkeiten und Zustände")}>
       <h3>{t("Fähigkeiten")}</h3>
       {overview ? <p role="status">{overview.budget === null ? t("Ausgegeben: {punkte} Punkte", { punkte: overview.spent }) : t("Ausgegeben: {punkte} von {budget} Punkten", { punkte: overview.spent, budget: overview.budget })}</p> : null}
-      <ul className="faehigkeiten-liste">{learned.map(id => <li key={id}><span>{runtime.abilities.find(ability => ability.id === id)?.name ?? id}</span>
-        <Button disabled={disabled} onClick={() => setList(runtime.abilityField!, forgetRuleAbility(runtime, learned, id))}>{t("Verlernen")}</Button></li>)}</ul>
+      {abilityGroups(learnedAbilities).map(({ group, rows }) => <section className="rule-ability-group" key={group}><h4>{group}</h4><ul className="faehigkeiten-liste">{rows.map(ability => <li key={ability.id}><span>{ability.name}</span>
+        <Button disabled={disabled} onClick={() => setList(runtime.abilityField!, forgetRuleAbility(runtime, learned, ability.id))}>{t("Verlernen")}</Button></li>)}</ul></section>)}
       <details><summary>{t("Neue Fähigkeit lernen")}</summary>
         <label>{t("Fähigkeit suchen")}<input type="search" value={search} onChange={event => setSearch(event.target.value)} disabled={disabled} /></label>
-        <ul className="faehigkeiten-liste">{abilities.slice(0, 40).map(ability => <li key={ability.id}><div><strong>{ability.name}</strong><small> · {ability.group} · {ability.price}</small><p>{ability.text}</p></div>
-          <Button disabled={disabled || !learnable.has(ability.id)} onClick={() => { if (learnable.has(ability.id)) setList(runtime.abilityField!, [...learned, ability.id]); }}>{t("Lernen")}</Button></li>)}</ul>
+        {abilityGroups(abilities.slice(0, 40)).map(({ group, rows }) => <section className="rule-ability-group" key={group}><h4>{group}</h4><ul className="faehigkeiten-liste">{rows.map(ability => <li key={ability.id}><div><strong>{ability.name}</strong><small> · {ability.price}</small><p>{ability.text}</p></div>
+          <Button disabled={disabled || !learnable.has(ability.id)} onClick={() => { if (learnable.has(ability.id)) setList(runtime.abilityField!, [...learned, ability.id]); }}>{t("Lernen")}</Button></li>)}</ul></section>)}
         {abilities.length > 40 ? <p>{t("{n} weitere Treffer. Grenze die Suche ein.", { n: abilities.length - 40 })}</p> : !abilities.length ? <p>{t("Keine passende Fähigkeit.")}</p> : null}
       </details>
     </section> : null}
