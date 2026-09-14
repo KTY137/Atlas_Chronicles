@@ -8,6 +8,7 @@ import { RuleFields } from "./RuleFields";
 import { displayRuleRuntime } from "./rule-runtime-display";
 import { forgetRuleAbility, ruleIdList } from "./rule-runtime-state";
 import type { HostRuleEditorState } from "./useHostRules";
+import "./rule-categories.css";
 
 export function HostRuleFields({ state, source, onChange, disabled = false }: {
   state: HostRuleEditorState; source?: AnyRulePackage | undefined; onChange: (values: Record<string, Scalar>) => void; disabled?: boolean;
@@ -56,8 +57,7 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
       <label>{vital.label} · {vital.value} / {vital.maximum} <meter min={0} max={Math.max(1, vital.maximum)} value={Math.max(0, Math.min(vital.maximum, vital.value))} /></label>
     </div>)}</section> : null}
     {preview?.valid && runtime.computed.length ? <section className="rule-computed"><h3>{t("Berechnete Werte")}</h3><dl className="rf-value-list">
-      {runtime.computed.map(field => <div key={field.id}><dt>{field.label}</dt><dd>{preview.computed[field.id]}</dd></div>)}
-    </dl></section> : null}
+      {runtime.computed.map(field => <div key={field.id}><dt>{field.label}</dt><dd>{preview.computed[field.id]}</dd></div>)}</dl></section> : null}
     {runtime.abilityField && runtime.abilities.length ? <section className="faehigkeiten-bogen" aria-label={t("Fähigkeiten und Zustände")}>
       <h3>{t("Fähigkeiten")}</h3>
       {overview ? <p role="status">{overview.budget === null ? t("Ausgegeben: {punkte} Punkte", { punkte: overview.spent }) : t("Ausgegeben: {punkte} von {budget} Punkten", { punkte: overview.spent, budget: overview.budget })}</p> : null}
