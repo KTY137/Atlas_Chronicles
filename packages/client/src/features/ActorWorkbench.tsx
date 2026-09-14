@@ -10,11 +10,11 @@ import { useCommand, type RulesState } from "./game-api";
 import type { ForgeSection } from "./forge-navigation";
 import { ActorTemplates as HostActorTemplates } from "./ActorTemplatesHost";
 import { InstantiateActor as HostInstantiateActor } from "./InstantiateActorHost";
-import { Inventory, ItemTemplates } from "./ActorWorkbenchLegacy";
+import { Inventory, ItemTemplates } from "./ActorInventoryWorkbench";
 import "./actors.css";
 import "./character-creation.css";
 
-export { Inventory, ItemTemplates } from "./ActorWorkbenchLegacy";
+export { Inventory, ItemTemplates } from "./ActorInventoryWorkbench";
 export { ActorTemplates } from "./ActorTemplatesHost";
 export { InstantiateActor } from "./InstantiateActorHost";
 
