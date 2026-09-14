@@ -15,7 +15,9 @@ describe("RuleForge presentation v3", () => {
   });
 
   it("upgrades a legacy section tree to presentation v3 without changing field identities", () => {
-    const draft = packageDraft({ ...D20_REFERENCE_PACKAGE, presentation: undefined, collections: undefined } as any);
+    const copy = JSON.parse(JSON.stringify(D20_REFERENCE_PACKAGE));
+    delete copy.presentation; delete copy.collections;
+    const draft = packageDraft(copy);
     const upgraded = ensurePresentationV3(draft);
     expect(upgraded.schemaVersion).toBe(2);
     expect(upgraded.presentation?.schemaVersion).toBe(3);
