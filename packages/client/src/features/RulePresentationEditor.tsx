@@ -68,7 +68,8 @@ function collectionField(type: FieldSchema["type"] = "string"): FieldSchema {
     : type === "boolean" ? { type, label: t("Wert"), default: false }
     : { type: "string", label: t("Wert"), maxLength: 120, default: "" };
 }
-function numeric(value: string, fallback: number): number { const next = Number(value); return Number.isFinite(next) ? next : fallback; }
+function boundedNumber(value: number): number { return Math.max(-1e12, Math.min(1e12, Number.isFinite(value) ? value : 0)); }
+function numeric(value: string, fallback: number): number { const next = Number(value); return Number.isFinite(next) ? boundedNumber(next) : fallback; }
 function withPrimaryField(collection: RuleCollection, primaryField?: string): RuleCollection {
   const { primaryField: _primaryField, ...base } = collection;
   return primaryField ? { ...base, primaryField } : base;
@@ -77,9 +78,35 @@ function withOptionalNodeText(node: RulePresentationNode, key: "label" | "visibl
   const { [key]: _old, ...base } = node;
   return (value ? { ...base, [key]: value } : base) as RulePresentationNode;
 }
-function withStringEnum(field: FieldSchema, values: readonly string[]): FieldSchema {
-  const { enum: _enum, ...base } = field;
-  return values.length ? { ...base, enum: [...values] } : base;
+function uniqueStrings(values: readonly string[], maxLength: number): string[] {
+  const out: string[] = [], seen = new Set<string>();
+  for (const raw of values) {
+    const value = raw.slice(0, maxLength);
+    if (!value || seen.has(value)) continue;
+    seen.add(value); out.push(value);
+    if (out.length >= 64) break;
+  }
+  return out;
+}
+function normalizedStringField(field: FieldSchema, patch: { maxLength?: number; defaultValue?: string; enumValues?: readonly string[] }): FieldSchema {
+  if (field.type !== "string") return field;
+  const maxLength = Math.max(1, Math.min(4096, Math.trunc(patch.maxLength ?? field.maxLength ?? 120)));
+  const values = uniqueStrings(patch.enumValues ?? field.enum ?? [], maxLength);
+  let defaultValue = (patch.defaultValue ?? String(field.default)).slice(0, maxLength);
+  if (values.length && !values.includes(defaultValue)) defaultValue = values[0]!;
+  return { type: "string", label: field.label, default: defaultValue, maxLength, ...(values.length ? { enum: values } : {}) };
+}
+function normalizedNumericField(field: FieldSchema, patch: { minimum?: number; maximum?: number; defaultValue?: number }, changed: "minimum" | "maximum" | "default"): FieldSchema {
+  if (field.type !== "integer" && field.type !== "number") return field;
+  const normalize = (value: number) => field.type === "integer" ? Math.trunc(boundedNumber(value)) : boundedNumber(value);
+  let minimum = normalize(patch.minimum ?? field.minimum ?? 0), maximum = normalize(patch.maximum ?? field.maximum ?? 100);
+  if (minimum > maximum) {
+    if (changed === "minimum") maximum = minimum;
+    else minimum = maximum;
+  }
+  let defaultValue = normalize(patch.defaultValue ?? Number(field.default));
+  defaultValue = Math.max(minimum, Math.min(maximum, defaultValue));
+  return { type: field.type, label: field.label, default: defaultValue, minimum, maximum };
 }
 function defaultCollectionRow(collection: RuleCollection): Record<string, Scalar> {
   return Object.fromEntries(Object.entries(collection.itemFields).map(([id, field]) => [id, field.default]));
@@ -191,8 +218,8 @@ export function RulePresentationEditor({ draft, onChange, disabled = false }: { 
         <label>{t("Label")}<input value={field.label} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, label: event.target.value } } })} /></label>
         <label>{t("Typ")}<select value={field.type} onChange={event => { const type = event.target.value as FieldSchema["type"]; replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: collectionField(type) } }); }}><option value="string">Text</option><option value="integer">Integer</option><option value="number">Number</option><option value="boolean">Boolean</option></select></label>
         {field.type === "boolean" ? <label className="rf-check"><input type="checkbox" checked={field.default as boolean} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, default: event.target.checked } } })} />{t("Vorgabe")}</label>
-          : field.type === "string" ? <><label>{t("Vorgabe")}<input value={field.default as string} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, default: event.target.value } } })} /></label><label>{t("Zeichenlimit")}<input type="number" min={1} max={4096} value={field.maxLength} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, maxLength: Math.max(1, Math.min(4096, event.target.valueAsNumber || 1)) } } })} /></label><label>{t("Auswahlwerte (Komma)")}<input value={field.enum?.join(", ") ?? ""} onChange={event => { const enumValues = event.target.value.split(",").map(value => value.trim()).filter(Boolean); replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: withStringEnum(field, enumValues) } }); }} /></label></>
-          : <><label>{t("Vorgabe")}<input type="number" value={field.default as number} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, default: numeric(event.target.value, field.default as number) as Scalar } } })} /></label><label>{t("Minimum")}<input type="number" value={field.minimum} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, minimum: numeric(event.target.value, field.minimum!) } } })} /></label><label>{t("Maximum")}<input type="number" value={field.maximum} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, maximum: numeric(event.target.value, field.maximum!) } } })} /></label></>}
+          : field.type === "string" ? <><label>{t("Vorgabe")}{field.enum?.length ? <select value={field.default as string} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { defaultValue: event.target.value }) } })}>{field.enum.map(value => <option key={value}>{value}</option>)}</select> : <input value={field.default as string} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { defaultValue: event.target.value }) } })} />}</label><label>{t("Zeichenlimit")}<input type="number" min={1} max={4096} value={field.maxLength} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { maxLength: event.target.valueAsNumber || 1 }) } })} /></label><label>{t("Auswahlwerte (Komma)")}<input value={field.enum?.join(", ") ?? ""} onChange={event => { const enumValues = event.target.value.split(",").map(value => value.trim()).filter(Boolean); replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { enumValues }) } }); }} /></label></>
+          : <><label>{t("Vorgabe")}<input type="number" value={field.default as number} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: normalizedNumericField(field, { defaultValue: numeric(event.target.value, field.default as number) }, "default") } })} /></label><label>{t("Minimum")}<input type="number" value={field.minimum} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: normalizedNumericField(field, { minimum: numeric(event.target.value, field.minimum!) }, "minimum") } })} /></label><label>{t("Maximum")}<input type="number" value={field.maximum} onChange={event => replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: normalizedNumericField(field, { maximum: numeric(event.target.value, field.maximum!) }, "maximum") } })} /></label></>}
       </div><Button variant="quiet" disabled={Object.keys(collection.itemFields).length <= 1} onClick={() => { const itemFields = copyJson(collection.itemFields) as Record<string, FieldSchema>; delete itemFields[id]; const nextCollection = withPrimaryField({ ...collection, itemFields }, collection.primaryField === id ? undefined : collection.primaryField); replaceCollection(index, nextCollection); }}><Trash2 size={14} />{t("Feld entfernen")}</Button></div>)}
       <Button onClick={() => { const id = uniqueId("feld", Object.keys(collection.itemFields)); replaceCollection(index, { ...collection, itemFields: { ...collection.itemFields, [id]: collectionField() } }); }}><Plus size={14} />{t("Collection-Feld")}</Button>
       <Button variant="danger" onClick={() => { const storage = collection.storageField; onChange({ ...prepared, collections: prepared.collections!.filter((_, i) => i !== index), fields: prepared.fields.filter(field => field.id !== storage), presentation: { ...presentation, root: removeNode(presentation.root, flat.find(row => row.node.kind === "collection" && row.node.ref === collection.id)?.node.id ?? "").nodes } }); }}><Trash2 size={14} />{t("Collection entfernen")}</Button>
