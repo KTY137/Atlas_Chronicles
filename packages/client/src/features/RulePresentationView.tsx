@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useState, type ReactNode } from "react";
-import { encodeRuleCollectionValue, type RuleCollection, type RulePresentationNode, type RuleRuntime, type RuleRuntimePreview, type Scalar } from "@chronicle/rules";
-import { Button } from "@chronicle/ui";
+import { decodeRuleCollectionValue, encodeRuleCollectionValue, type RuleCollection, type RulePresentationNode, type RuleRuntime, type RuleRuntimePreview, type Scalar } from "@chronicle/rules";
+import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
 import { RuleFields } from "./RuleFields";
 import { forgetRuleAbility, ruleIdList } from "./rule-runtime-state";
@@ -63,7 +63,14 @@ export function RulePresentationView({ runtime, preview, values, onChange, disab
   const actionById = new Map(runtime.actions.map(action => [action.id, action]));
 
   const collectionNode = (collection: RuleCollection, label: string | undefined, render: string | undefined) => {
-    const rows = [...(preview?.collections[collection.id] ?? [])];
+    // The host remains authoritative for validity/save permission, but the editor must render the
+    // current draft immediately while a new preview is pending. The same frozen rules parser is
+    // safe to use locally for that editing projection; an invalid raw value falls through to the
+    // repair control below instead of making the collection disappear.
+    let rows: Readonly<Record<string, Scalar>>[] = [];
+    let needsRepair = false;
+    try { rows = [...decodeRuleCollectionValue(collection, values[collection.storageField])]; }
+    catch { rows = [...(preview?.collections[collection.id] ?? [])]; needsRepair = true; }
     const updateRows = (next: readonly Readonly<Record<string, Scalar>>[]) => onChange({ ...values, [collection.storageField]: encodeRuleCollectionValue(collection, next) });
     const body = <>
       {rows.map((row, index) => <article className="rule-collection-row" key={index}>
@@ -71,6 +78,10 @@ export function RulePresentationView({ runtime, preview, values, onChange, disab
         <Button variant="quiet" disabled={disabled || rows.length <= collection.minItems} onClick={() => updateRows(rows.filter((_, i) => i !== index))}>{t("Eintrag entfernen")}</Button>
       </article>)}
       <Button disabled={disabled || rows.length >= collection.maxItems} onClick={() => updateRows([...rows, collectionDefaults(collection)])}>{t("Eintrag hinzufügen")}</Button>
+      {needsRepair && runtime.fields[collection.storageField] ? <details><summary>{t("Sammlungsdaten reparieren")}</summary>
+        <Notice error>{t("Die gespeicherten Sammlungsdaten sind ungültig. Korrigiere den Rohwert oder füge die Sammlung neu auf.")}</Notice>
+        <RuleFields fields={{ [collection.storageField]: runtime.fields[collection.storageField]! }} values={values} disabled={disabled} onChange={onChange} />
+      </details> : null}
     </>;
     return <section className={`rule-collection rule-render-${render ?? "list"}`}><h4>{label ?? collection.label}</h4>{body}</section>;
   };
