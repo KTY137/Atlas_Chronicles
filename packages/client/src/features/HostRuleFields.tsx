@@ -10,6 +10,39 @@ import { forgetRuleAbility, ruleIdList } from "./rule-runtime-state";
 import type { HostRuleEditorState } from "./useHostRules";
 import "./rule-categories.css";
 
+type RuntimeAbility = RuleRuntime["abilities"][number];
+interface AbilityGroupNode { label: string; path: string; rows: RuntimeAbility[]; children: Map<string, AbilityGroupNode> }
+
+/**
+ * `RuleAbility.group` stays a backwards-compatible string. A slash gives it hierarchy without a
+ * second schema: "Kampf / Nahkampf / Schwerter" becomes three nested presentation categories,
+ * while every existing one-word group renders exactly as before.
+ */
+function abilityGroupTree(rows: readonly RuntimeAbility[]): AbilityGroupNode[] {
+  const root = new Map<string, AbilityGroupNode>();
+  for (const ability of rows) {
+    const parts = ability.group.split("/").map(part => part.trim()).filter(Boolean);
+    if (!parts.length) parts.push(t("Weitere Fähigkeiten"));
+    let level = root, path = ""; let node: AbilityGroupNode | undefined;
+    for (const part of parts) {
+      path = path ? `${path} / ${part}` : part;
+      node = level.get(part);
+      if (!node) { node = { label: part, path, rows: [], children: new Map() }; level.set(part, node); }
+      level = node.children;
+    }
+    node!.rows.push(ability);
+  }
+  return [...root.values()];
+}
+function AbilityGroups({ rows, renderRow }: { rows: readonly RuntimeAbility[]; renderRow(ability: RuntimeAbility): ReactNode }) {
+  const render = (node: AbilityGroupNode, depth: number): ReactNode => <section className="rule-ability-group" data-depth={Math.min(depth, 8)} key={node.path}>
+    <h4>{node.label}</h4>
+    {node.rows.length ? <ul className="faehigkeiten-liste">{node.rows.map(renderRow)}</ul> : null}
+    {node.children.size ? <div className="rule-ability-children">{[...node.children.values()].map(child => render(child, depth + 1))}</div> : null}
+  </section>;
+  return <>{abilityGroupTree(rows).map(node => render(node, 0))}</>;
+}
+
 export function HostRuleFields({ state, source, onChange, disabled = false }: {
   state: HostRuleEditorState; source?: AnyRulePackage | undefined; onChange: (values: Record<string, Scalar>) => void; disabled?: boolean;
 }) {
@@ -49,8 +82,7 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
       {nested.length ? <div className="rule-category-children">{nested.map(child => renderSection(child, depth + 1))}</div> : null}
     </fieldset>;
   };
-  const learnedAbilities = learned.map(id => runtime.abilities.find(ability => ability.id === id)).filter((ability): ability is RuleRuntime["abilities"][number] => !!ability);
-  const abilityGroups = (rows: readonly RuleRuntime["abilities"][number][]) => [...new Set(rows.map(row => row.group || t("Weitere Fähigkeiten")))].map(group => ({ group, rows: rows.filter(row => (row.group || t("Weitere Fähigkeiten")) === group) }));
+  const learnedAbilities = learned.map(id => runtime.abilities.find(ability => ability.id === id)).filter((ability): ability is RuntimeAbility => !!ability);
   return <>
     {(children.get(null) ?? []).map(section => renderSection(section, 0))}
     {preview?.valid && preview.vitals.length ? <section aria-label={t("Vitalwerte")}>{preview.vitals.map(vital => <div key={vital.id}>
@@ -61,12 +93,12 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
     {runtime.abilityField && runtime.abilities.length ? <section className="faehigkeiten-bogen" aria-label={t("Fähigkeiten und Zustände")}>
       <h3>{t("Fähigkeiten")}</h3>
       {overview ? <p role="status">{overview.budget === null ? t("Ausgegeben: {punkte} Punkte", { punkte: overview.spent }) : t("Ausgegeben: {punkte} von {budget} Punkten", { punkte: overview.spent, budget: overview.budget })}</p> : null}
-      {abilityGroups(learnedAbilities).map(({ group, rows }) => <section className="rule-ability-group" key={group}><h4>{group}</h4><ul className="faehigkeiten-liste">{rows.map(ability => <li key={ability.id}><span>{ability.name}</span>
-        <Button disabled={disabled} onClick={() => setList(runtime.abilityField!, forgetRuleAbility(runtime, learned, ability.id))}>{t("Verlernen")}</Button></li>)}</ul></section>)}
+      <AbilityGroups rows={learnedAbilities} renderRow={ability => <li key={ability.id}><span>{ability.name}</span>
+        <Button disabled={disabled} onClick={() => setList(runtime.abilityField!, forgetRuleAbility(runtime, learned, ability.id))}>{t("Verlernen")}</Button></li>} />
       <details><summary>{t("Neue Fähigkeit lernen")}</summary>
         <label>{t("Fähigkeit suchen")}<input type="search" value={search} onChange={event => setSearch(event.target.value)} disabled={disabled} /></label>
-        {abilityGroups(abilities.slice(0, 40)).map(({ group, rows }) => <section className="rule-ability-group" key={group}><h4>{group}</h4><ul className="faehigkeiten-liste">{rows.map(ability => <li key={ability.id}><div><strong>{ability.name}</strong><small> · {ability.price}</small><p>{ability.text}</p></div>
-          <Button disabled={disabled || !learnable.has(ability.id)} onClick={() => { if (learnable.has(ability.id)) setList(runtime.abilityField!, [...learned, ability.id]); }}>{t("Lernen")}</Button></li>)}</ul></section>)}
+        <AbilityGroups rows={abilities.slice(0, 40)} renderRow={ability => <li key={ability.id}><div><strong>{ability.name}</strong><small> · {ability.price}</small><p>{ability.text}</p></div>
+          <Button disabled={disabled || !learnable.has(ability.id)} onClick={() => { if (learnable.has(ability.id)) setList(runtime.abilityField!, [...learned, ability.id]); }}>{t("Lernen")}</Button></li>} />
         {abilities.length > 40 ? <p>{t("{n} weitere Treffer. Grenze die Suche ein.", { n: abilities.length - 40 })}</p> : !abilities.length ? <p>{t("Keine passende Fähigkeit.")}</p> : null}
       </details>
     </section> : null}
