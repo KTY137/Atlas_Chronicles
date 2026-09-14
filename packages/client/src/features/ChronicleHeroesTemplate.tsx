@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import {
   createChronicleHeroesPackage, CHRONICLE_DEFAULT_SKILLS, CHRONICLE_FIELDS, CHRONICLE_FIELD_LABELS,
   CHRONICLE_HEROES_PACKAGE, CHRONICLE_MAX_SKILLS, CHRONICLE_RULE_GUIDANCE, CHRONICLE_SKILL_LIBRARY,
-  D20_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE,
+  D20_REFERENCE_PACKAGE, FIFTH_EDITION_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE,
   type ChronicleSkill, type RulePackageV2,
 } from "@chronicle/rules";
 import { Button, Notice } from "@chronicle/ui";
@@ -14,12 +14,16 @@ import { uniqueId } from "./rule-forge-model";
 import { chronicleSkillLabel } from "./chronicle-heroes-display";
 import "./rule-forge-enhancements.css";
 
-const references: readonly RulePackageV2[] = [D20_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE];
+const references: readonly RulePackageV2[] = [D20_REFERENCE_PACKAGE, FIFTH_EDITION_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE];
 function referenceCopy(id: string): { summary: string; proof: string } {
   switch (id) {
     case "org.atlas-chronicles.reference.d20": return {
       summary: t("W20 plus Attributsmodifikator, abgeleitete Werte, Ressourcen und verschachtelte Wertebereiche."),
       proof: t("Strukturstart für D20-Familien mit Attributen, Kampfwerten und einzelnen W20-Proben."),
+    };
+    case "org.atlas-chronicles.reference.5e-compatible": return {
+      summary: t("5E-kompatible Struktur mit Stufenbonus, sechs Attributen, Angriffen, Fertigkeiten, Merkmalen und Zauberlisten."),
+      proof: t("Beweist einen vollständigen levelbasierten D20-Bogen mit Collections und bedingtem Magiebereich ohne Spiel-spezifischen UI-Code."),
     };
     default: return {
       summary: t("Drei unabhängige W20 gegen unterschiedliche Attribute, gemeinsamer Talentvorrat und getrennte Talentkategorien."),
