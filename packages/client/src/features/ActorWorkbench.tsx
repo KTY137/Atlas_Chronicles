@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ActorCard, ActorKindValue, ActorTemplateData, Beutezeile, ControllerCard, FigurantragCard, FigurantragFreigabeAck, FigurvorlageFreigabeStand, ItemCard, ItemContract, ItemState, LootRarityValue, TemplateCard } from "@chronicle/protocol";
 import { LOOT_RARITIES } from "@chronicle/protocol";
 import { Lootkarte, seltenheitText } from "./Lootkarte";
