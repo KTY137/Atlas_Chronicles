@@ -8,7 +8,7 @@ import { gunzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import { stripTypeScriptTypes } from "node:module";
 import { runInNewContext } from "node:vm";
-import { CHRONICLE_HEROES_PACKAGE, DEMO_RULE_PACKAGE, RULE_LIMITS, SupportedRulePackageRegistry,
+import { CHRONICLE_HEROES_PACKAGE, DEMO_RULE_PACKAGE, RULE_LIMITS, RULE_RUNTIME_CONTRACT, SupportedRulePackageRegistry,
   buildRuleRuntime, previewRuleRuntime, parseSupportedRulePackage, stableJson } from "../../packages/rules/src/index.ts";
 import { currentRulePreview, matchesRuleRuntime, rulePreviewKey, switchRuleDraft, forgetRuleAbility } from "../../packages/client/src/features/rule-runtime-state.ts";
 
@@ -23,6 +23,7 @@ test("the actual Lite v1 fixture installs with all 12 self-tests, 107 fields and
   assert.equal(Object.keys(manifest.fields).length, 107);
   assert.equal(manifest.actions.length, 103);
   assert.equal(new Set(manifest.sections.flatMap(section => section.fields)).size, 107);
+  assert.equal(manifest.contractVersion, RULE_RUNTIME_CONTRACT);
   assert.equal(previewRuleRuntime(lite, manifest.defaults).valid, true);
   assert.equal(manifest.contentHash, createHash("sha256").update(stableJson(lite)).digest("hex"));
 });
@@ -77,6 +78,8 @@ test("invalid constraints discard every derived display but preserve the input o
   assert.equal(invalid.fields, null);
   assert.deepEqual(invalid.computed, {});
   assert.deepEqual(invalid.vitals, []);
+  assert.deepEqual(invalid.collections, {});
+  assert.deepEqual(invalid.visiblePresentationIds, []);
   assert.equal(invalid.abilities, null);
   assert.deepEqual(fields, original);
 });
@@ -117,9 +120,10 @@ test("preview identity includes campaign, content, full input and retry epoch", 
   assert.equal(currentRulePreview(slot, key, manifest), a);
   for (const next of [rulePreviewKey("two", manifest, manifest.defaults), rulePreviewKey("one", manifest, { ...manifest.defaults, name: "New" }), rulePreviewKey("one", manifest, manifest.defaults, 1)]) assert.equal(currentRulePreview(slot, next, manifest), null);
   assert.equal(currentRulePreview(slot, key, { ...manifest, contentHash: "0".repeat(64) }), null);
-  assert.equal(matchesRuleRuntime({ ...a, contractVersion: 2 }, manifest.pin), false);
+  const wrongContract = RULE_RUNTIME_CONTRACT === 1 ? 2 : 1;
+  assert.equal(matchesRuleRuntime({ ...a, contractVersion: wrongContract }, manifest.pin), false);
   assert.equal(matchesRuleRuntime(a, buildRuleRuntime(heroes).pin), false);
-  for (const malformed of [null, undefined, 7, {}, { contractVersion: 1, pin: null }, { ...a, contentHash: null }]) assert.equal(matchesRuleRuntime(malformed, manifest.pin), false);
+  for (const malformed of [null, undefined, 7, {}, { contractVersion: wrongContract, pin: null }, { ...a, contentHash: null }]) assert.equal(matchesRuleRuntime(malformed, manifest.pin), false);
   assert.equal(rulePreviewKey("one", manifest, Object.fromEntries(Object.entries(manifest.defaults).reverse())), key);
 });
 
