@@ -47,6 +47,7 @@ export function RulePresentationView({ runtime, preview, values, onChange, disab
   disabled?: boolean;
 }) {
   const [search, setSearch] = useState("");
+  const [collectionErrors, setCollectionErrors] = useState<Record<string, string>>({});
   // Invalid drafts must remain repairable. Visibility is authoritative only once the host has
   // successfully validated the whole actor state and evaluated every visibleIf expression.
   const visible = preview?.valid ? new Set(preview.visiblePresentationIds) : null;
@@ -67,20 +68,42 @@ export function RulePresentationView({ runtime, preview, values, onChange, disab
     // current draft immediately while a new preview is pending. The same frozen rules parser is
     // safe to use locally for that editing projection; an invalid raw value falls through to the
     // repair control below instead of making the collection disappear.
+    const storage = runtime.fields[collection.storageField];
+    const maxLength = storage?.type === "string" ? storage.maxLength ?? 4096 : 4096;
+    const rawValue = values[collection.storageField];
     let rows: Readonly<Record<string, Scalar>>[] = [];
-    let needsRepair = false;
-    try { rows = [...decodeRuleCollectionValue(collection, values[collection.storageField])]; }
+    let needsRepair = typeof rawValue === "string" && rawValue.length > maxLength;
+    try { rows = [...decodeRuleCollectionValue(collection, rawValue)]; }
     catch { rows = [...(preview?.collections[collection.id] ?? [])]; needsRepair = true; }
-    const updateRows = (next: readonly Readonly<Record<string, Scalar>>[]) => onChange({ ...values, [collection.storageField]: encodeRuleCollectionValue(collection, next) });
+    const setCollectionError = (message: string) => setCollectionErrors(old => {
+      if ((old[collection.id] ?? "") === message) return old;
+      const next = { ...old };
+      if (message) next[collection.id] = message; else delete next[collection.id];
+      return next;
+    });
+    const updateRows = (next: readonly Readonly<Record<string, Scalar>>[]) => {
+      try {
+        const encoded = encodeRuleCollectionValue(collection, next);
+        if (encoded.length > maxLength) {
+          setCollectionError(t("Diese Sammlung ist zu groß. Der gespeicherte Wert darf höchstens {max} Zeichen haben.", { max: maxLength }));
+          return;
+        }
+        setCollectionError("");
+        onChange({ ...values, [collection.storageField]: encoded });
+      } catch (error) {
+        setCollectionError(error instanceof Error ? error.message : t("Die Sammlung konnte nicht aktualisiert werden."));
+      }
+    };
     const body = <>
+      {collectionErrors[collection.id] ? <Notice error>{collectionErrors[collection.id]}</Notice> : null}
       {rows.map((row, index) => <article className="rule-collection-row" key={index}>
         <RuleFields fields={collection.itemFields} values={row} disabled={disabled} onChange={next => updateRows(rows.map((old, i) => i === index ? next : old))} />
         <Button variant="quiet" disabled={disabled || rows.length <= collection.minItems} onClick={() => updateRows(rows.filter((_, i) => i !== index))}>{t("Eintrag entfernen")}</Button>
       </article>)}
       <Button disabled={disabled || rows.length >= collection.maxItems} onClick={() => updateRows([...rows, collectionDefaults(collection)])}>{t("Eintrag hinzufügen")}</Button>
-      {needsRepair && runtime.fields[collection.storageField] ? <details><summary>{t("Sammlungsdaten reparieren")}</summary>
+      {needsRepair && storage ? <details><summary>{t("Sammlungsdaten reparieren")}</summary>
         <Notice error>{t("Die gespeicherten Sammlungsdaten sind ungültig. Korrigiere den Rohwert oder füge die Sammlung neu auf.")}</Notice>
-        <RuleFields fields={{ [collection.storageField]: runtime.fields[collection.storageField]! }} values={values} disabled={disabled} onChange={onChange} />
+        <RuleFields fields={{ [collection.storageField]: storage }} values={values} disabled={disabled} onChange={onChange} />
       </details> : null}
     </>;
     return <section className={`rule-collection rule-render-${render ?? "list"}`}><h4>{label ?? collection.label}</h4>{body}</section>;
