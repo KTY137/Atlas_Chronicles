@@ -12,6 +12,7 @@ import { t } from "../i18n";
 import { RuleAttribution } from "./RuleComputedFields";
 import { uniqueId } from "./rule-forge-model";
 import { chronicleSkillLabel } from "./chronicle-heroes-display";
+import "./rule-forge-enhancements.css";
 
 const references: readonly { pkg: RulePackageV2; summary: string; proof: string }[] = [
   {
