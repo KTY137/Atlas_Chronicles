@@ -18,6 +18,7 @@ test("actor-template package select really swaps host fields and abilities", () 
   const React = {
     useState(initial) { const i = cursor++; if (!slots[i]) slots[i] = { value: typeof initial === "function" ? initial() : initial }; return [slots[i].value, next => { slots[i].value = typeof next === "function" ? next(slots[i].value) : next; changed = true; }]; },
     useEffect() { cursor++; },
+    useMemo(fn) { cursor++; return fn(); },
     useRef(initial) { const i = cursor++; return slots[i] ??= { current: initial }; },
     useCallback(fn) { cursor++; return fn; },
   };
@@ -35,7 +36,8 @@ test("actor-template package select really swaps host fields and abilities", () 
       if (name === "react") return React;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "@chronicle/ui") return { Button: "Button", Loading: "Loading", Notice: "Notice" };
-      if (name === "@chronicle/protocol" || name === "@chronicle/rules") return {};
+      if (name === "@chronicle/protocol") return {};
+      if (name === "@chronicle/rules") return { stableJson: value => JSON.stringify(value) };
       if (name === "../api") return { api() {}, apiPath: (_campaign, path) => path };
       if (name === "../i18n") return { t: text => text };
       if (name === "../hooks") return { useResource: () => ({ data: [], loading: false, error: "" }), useTask: () => ({ busy: false, error: "", setError() {}, run: async fn => fn() }) };
