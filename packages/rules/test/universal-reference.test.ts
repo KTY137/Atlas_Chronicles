@@ -34,7 +34,7 @@ describe("universal structural reference systems", () => {
     expect(runtime.sections.find(section => section.id === "social")?.parent).toBe("talents");
     expect(runtime.sections.find(section => section.id === "knowledge")?.parent).toBe("talents");
     const result = evaluateSupportedAction(THREE_D20_REFERENCE_PACKAGE, "athletics_check", context);
-    expect(result.schemaVersion).toBe(2);
+    if (result.schemaVersion !== 2) throw new Error("3W20 reference must use schemaVersion 2");
     expect(result.dice).toHaveLength(3);
     expect(result.dice.map(die => die.sides)).toEqual([20, 20, 20]);
     expect(result.dice.every(die => die.rolls.length === 1 && die.rolls[0]?.length === 1)).toBe(true);
