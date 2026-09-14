@@ -20,7 +20,8 @@ export interface DraftField {
   defaultValue: string; minimum: string; maximum: string; maxLength: string;
   hasEnum: boolean; enumValues: string[];
 }
-export interface DraftSection { localId: string; id: string; label: string; fieldKeys: string[] }
+/** `parentLocalId` keeps hierarchy stable while section ids are being edited. */
+export interface DraftSection { localId: string; id: string; label: string; fieldKeys: string[]; parentLocalId: string | null }
 export interface DraftAction {
   localId: string; id: string; name: string; version: string; disclosure: string;
   inputs: DraftField[]; thresholdEnabled: boolean; threshold: string; formula: FormulaDraft;
@@ -161,8 +162,9 @@ function migrationStep(step: DraftMigrationStep): MigrationStep {
 }
 export function packageDraft(input: AnyRulePackage): RuleDraft {
   const pkg = parseSupportedRulePackage(input), fields = Object.entries(pkg.fields).map(([id, field]) => fieldDraft(id, field));
+  const sectionKeys = new Map(pkg.layout.sections.map(section => [section.id, localKey()]));
   return { schemaVersion: pkg.schemaVersion, id: pkg.id, name: pkg.name, version: pkg.version, license: pkg.license, authors: [...pkg.authors], fields,
-    sections: pkg.layout.sections.map(s => ({ localId: localKey(), id: s.id, label: s.label, fieldKeys: s.fields.map(id => fields.find(f => f.id === id)!.localId) })),
+    sections: pkg.layout.sections.map(s => ({ localId: sectionKeys.get(s.id)!, id: s.id, label: s.label, fieldKeys: s.fields.map(id => fields.find(f => f.id === id)!.localId), parentLocalId: s.parent ? sectionKeys.get(s.parent) ?? null : null })),
     actions: pkg.actions.map(a => { const formula = formulaDraft(parseFormula(a.expression)); return { localId: localKey(), id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, inputs: Object.entries(a.inputs).map(([id, f]) => fieldDraft(id, f)), thresholdEnabled: a.threshold !== undefined, threshold: String(a.threshold ?? 0), formula, originalFormula: copyJson(formula), originalExpression: a.expression,
       ...("outcome" in a && a.outcome ? { outcome: copyJson(a.outcome as RuleOutcome) } : {}), ...("preconditions" in a ? { preconditions: copyJson(a.preconditions as readonly RuleAssertion[]) } : {}) }; }),
     migrations: pkg.migrations.map(m => ({ localId: localKey(), from: m.from, steps: m.steps.map(migrationStepDraft) })),
@@ -172,7 +174,11 @@ export function packageDraft(input: AnyRulePackage): RuleDraft {
 export function compilePackage(draft: RuleDraft): AnyRulePackage {
   const fields = fieldsMap(draft.fields);
   return parseSupportedRulePackage({ schemaVersion: draft.schemaVersion, engineVersion: ENGINE_VERSION, id: draft.id, name: draft.name, version: draft.version, license: draft.license, authors: [...draft.authors], fields,
-    layout: { sections: draft.sections.map(s => ({ id: s.id, label: s.label, fields: s.fieldKeys.map(key => { const field = draft.fields.find(f => f.localId === key); if (!field) throw new Error(t("Der Bogenabschnitt „{abschnitt}“ verweist auf ein entferntes Feld.", { abschnitt: s.label })); return field.id; }) })) },
+    layout: { sections: draft.sections.map(s => {
+      const parent = s.parentLocalId ? draft.sections.find(candidate => candidate.localId === s.parentLocalId) : undefined;
+      if (s.parentLocalId && !parent) throw new Error(t("Der Bogenabschnitt „{abschnitt}“ verweist auf eine entfernte Oberkategorie.", { abschnitt: s.label }));
+      return { id: s.id, label: s.label, fields: s.fieldKeys.map(key => { const field = draft.fields.find(f => f.localId === key); if (!field) throw new Error(t("Der Bogenabschnitt „{abschnitt}“ verweist auf ein entferntes Feld.", { abschnitt: s.label })); return field.id; }), ...(parent ? { parent: parent.id } : {}) };
+    }) },
     actions: draft.actions.map(a => ({ id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, requiresConfirmation: true, inputs: fieldsMap(a.inputs), expression: draftExpression(a), ...(a.thresholdEnabled ? { threshold: numberValue(a.threshold, t("{name}: Erfolgsschwelle", { name: a.name })) } : {}), ...(a.outcome ? { outcome: copyJson(a.outcome) } : {}), ...(a.preconditions !== undefined ? { preconditions: copyJson(a.preconditions) } : {}) })),
     migrations: draft.migrations.map(m => ({ from: m.from, to: draft.version, steps: m.steps.map(migrationStep) })),
     ...(draft.includeSelfTests || draft.selfTests.length ? { selfTests: copyJson(draft.selfTests) } : {}),
