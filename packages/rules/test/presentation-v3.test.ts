@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import {
-  DEMO_RULE_PACKAGE, RULE_PRESENTATION_SCHEMA_VERSION, buildRuleRuntime, decodeRuleCollectionValue,
+  DEMO_RULE_PACKAGE, RULE_PRESENTATION_SCHEMA_VERSION, RULE_RUNTIME_CONTRACT, buildRuleRuntime, decodeRuleCollectionValue,
   encodeRuleCollectionValue, parseSupportedRulePackage, previewRuleRuntime, supportedPackageContentHash,
 } from "../src/index.ts";
 
@@ -39,7 +39,7 @@ describe("presentation schema v3", () => {
     expect(pkg.presentation?.schemaVersion).toBe(3);
     expect(pkg.collections?.[0]?.storageField).toBe("inventory_data");
     const runtime = buildRuleRuntime(pkg);
-    expect(runtime.contractVersion).toBe(2);
+    expect(runtime.contractVersion).toBe(RULE_RUNTIME_CONTRACT);
     expect(runtime.presentation?.root[0]?.kind).toBe("group");
     const low = previewRuleRuntime(pkg, { ...runtime.defaults, vigour: 6 });
     expect(low.valid).toBe(true);
