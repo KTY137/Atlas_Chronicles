@@ -1,10 +1,7 @@
 /* SPDX-License-Identifier: BUSL-1.1 */
 /* Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 
-/*
- * Generic presentation for schema-driven rule categories. Nothing here knows HTBAH, D&D or
- * DSA: the package supplies the hierarchy and the renderer supplies data-depth.
- */
+/* Generic presentation for schema-driven rule categories. */
 .rule-category-children {
   display: grid;
   gap: 12px;
@@ -12,15 +9,8 @@
   padding-left: 14px;
   border-left: 2px solid var(--line);
 }
-
-.rule-category-children > .rule-category {
-  margin-top: 0;
-}
-
-.rule-category[data-depth="0"] {
-  margin-top: 18px;
-}
-
+.rule-category-children > .rule-category { margin-top: 0; }
+.rule-category[data-depth="0"] { margin-top: 18px; }
 .rule-category[data-depth="1"] > legend,
 .rule-category[data-depth="2"] > legend,
 .rule-category[data-depth="3"] > legend,
@@ -28,20 +18,27 @@
 .rule-category[data-depth="5"] > legend,
 .rule-category[data-depth="6"] > legend,
 .rule-category[data-depth="7"] > legend,
-.rule-category[data-depth="8"] > legend {
-  font-weight: 650;
-}
+.rule-category[data-depth="8"] > legend { font-weight: 650; }
 
-.rule-ability-group + .rule-ability-group {
-  margin-top: 14px;
+.rule-ability-group + .rule-ability-group { margin-top: 14px; }
+.rule-ability-group > h4 { margin-bottom: 8px; }
+.rule-ability-children {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding-left: 14px;
+  border-left: 2px solid var(--line);
 }
-
-.rule-ability-group > h4 {
-  margin-bottom: 8px;
-}
+.rule-ability-children > .rule-ability-group { margin-top: 0; }
+.rule-ability-group[data-depth="1"] > h4,
+.rule-ability-group[data-depth="2"] > h4,
+.rule-ability-group[data-depth="3"] > h4,
+.rule-ability-group[data-depth="4"] > h4,
+.rule-ability-group[data-depth="5"] > h4,
+.rule-ability-group[data-depth="6"] > h4,
+.rule-ability-group[data-depth="7"] > h4,
+.rule-ability-group[data-depth="8"] > h4 { font-size: 0.95em; }
 
 @media (max-width: 720px) {
-  .rule-category-children {
-    padding-left: 8px;
-  }
+  .rule-category-children, .rule-ability-children { padding-left: 8px; }
 }
