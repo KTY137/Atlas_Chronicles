@@ -30,6 +30,18 @@ export type MigrationStep =
   | { readonly kind: "archive"; readonly field: string }
   | { readonly kind: "numeric"; readonly field: string; readonly expression: string };
 export interface RuleMigration { readonly from: string; readonly to: string; readonly steps: readonly MigrationStep[] }
+/**
+ * Presentation-only category for the character sheet. `parent` points at another section id and
+ * therefore permits arbitrary category nesting without teaching the rules engine game-specific
+ * concepts such as "Handeln", "Wissen", spell schools or DSA talent groups.
+ */
+export interface RuleLayoutSection {
+  readonly id: string;
+  readonly label: string;
+  readonly fields: readonly string[];
+  readonly parent?: string;
+}
+export interface RuleLayout { readonly sections: readonly RuleLayoutSection[] }
 export interface RulePackage {
   readonly schemaVersion: 1;
   readonly id: string;
@@ -39,7 +51,7 @@ export interface RulePackage {
   readonly license: string;
   readonly authors: readonly string[];
   readonly fields: Readonly<Record<string, FieldSchema>>;
-  readonly layout: { readonly sections: readonly { readonly id: string; readonly label: string; readonly fields: readonly string[] }[] };
+  readonly layout: RuleLayout;
   readonly actions: readonly RuleAction[];
   readonly migrations: readonly RuleMigration[];
   readonly selfTests?: readonly { readonly name: string; readonly actionId: string; readonly context: EvaluationContext; readonly expectedTotal: number }[];
@@ -117,13 +129,25 @@ export function parseRulePackage(input: string | unknown): RulePackage {
   if (!array(data.authors, "authors", 32).length) fail("package: author required");
   for (const author of data.authors as unknown[]) string(author, "author", 120);
   const fields = fieldSchemas(data.fields, "fields");
-  const layout = record(data.layout, "layout"); keys(layout, ["sections"], "layout"); const sectionIds = new Set<string>();
-  for (const item of array(layout.sections, "sections", 32)) {
-    const section = record(item, "section"); keys(section, ["id", "label", "fields"], "section");
+  const layout = record(data.layout, "layout"); keys(layout, ["sections"], "layout");
+  const sectionIds = new Set<string>(), parents = new Map<string, string>();
+  for (const item of array(layout.sections, "sections", 64)) {
+    const section = record(item, "section"); keys(section, ["id", "label", "fields", "parent"], "section");
     const sectionId = identifier(section.id, "section id"); if (sectionIds.has(sectionId)) fail("layout: duplicate section id"); sectionIds.add(sectionId);
+    if (section.parent !== undefined) parents.set(sectionId, identifier(section.parent, "section parent"));
     string(section.label, "section label", 120); const refs = array(section.fields, "section fields", RULE_LIMITS.fields);
     if (new Set(refs).size !== refs.length) fail("layout: duplicate field reference");
     for (const ref of refs) if (typeof ref !== "string" || !Object.hasOwn(fields, ref)) fail("layout: unknown field reference");
+  }
+  for (const [sectionId, parent] of parents) {
+    if (!sectionIds.has(parent)) fail("layout: unknown parent section");
+    if (sectionId === parent) fail("layout: section cannot parent itself");
+    const seen = new Set([sectionId]); let current: string | undefined = parent, depth = 0;
+    while (current !== undefined) {
+      if (seen.has(current)) fail("layout: category cycle");
+      seen.add(current); current = parents.get(current); depth++;
+      if (depth > 16) fail("layout: category nesting too deep");
+    }
   }
   const actionIds = new Set<string>();
   const actions = array(data.actions, "actions", RULE_LIMITS.actions); if (!actions.length) fail("package: action required");
