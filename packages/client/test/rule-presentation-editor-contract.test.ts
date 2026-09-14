@@ -18,9 +18,9 @@ describe("Presentation-v3 Forge contract", () => {
     expect(editor).toContain("(node.refs?.length ?? 0) <= 1");
   });
 
-  it("never writes explicit undefined into exact-optional collection properties", () => {
+  it("never writes explicit undefined into exact-optional presentation properties", () => {
     expect(editor).toContain("function withPrimaryField(");
-    expect(editor).toContain("function withStringEnum(");
+    expect(editor).toContain("function normalizedStringField(");
     expect(editor).toContain("function withOptionalNodeText(");
     expect(editor).not.toContain("primaryField: undefined");
     expect(editor).not.toContain("enum: undefined");
@@ -34,6 +34,15 @@ describe("Presentation-v3 Forge contract", () => {
     expect(editor).toContain("raw.slice(0, collection.maxItems)");
     expect(editor).toContain("compatibleValue(field, source[id])");
     expect(editor).toContain("replaceCollection(index, nextCollection, [id, nextId])");
+  });
+
+  it("normalizes enum and numeric bounds before the parser has to reject the draft", () => {
+    expect(editor).toContain("function uniqueStrings(");
+    expect(editor).toContain("if (values.length && !values.includes(defaultValue)) defaultValue = values[0]!");
+    expect(editor).toContain("function normalizedNumericField(");
+    expect(editor).toContain("if (minimum > maximum)");
+    expect(editor).toContain("defaultValue = Math.max(minimum, Math.min(maximum, defaultValue))");
+    expect(editor).toContain("field.enum?.length ? <select");
   });
 
   it("ships English copy for every new collection-schema control", () => {
