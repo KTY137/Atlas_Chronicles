@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import {
   createChronicleHeroesPackage, CHRONICLE_DEFAULT_SKILLS, CHRONICLE_FIELDS, CHRONICLE_FIELD_LABELS,
   CHRONICLE_HEROES_PACKAGE, CHRONICLE_MAX_SKILLS, CHRONICLE_RULE_GUIDANCE, CHRONICLE_SKILL_LIBRARY,
-  D20_REFERENCE_PACKAGE, FIFTH_EDITION_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE,
+  UNIVERSAL_REFERENCE_PACKAGES,
   type ChronicleSkill, type RulePackageV2,
 } from "@chronicle/rules";
 import { Button, Notice } from "@chronicle/ui";
@@ -14,7 +14,7 @@ import { uniqueId } from "./rule-forge-model";
 import { chronicleSkillLabel } from "./chronicle-heroes-display";
 import "./rule-forge-enhancements.css";
 
-const references: readonly RulePackageV2[] = [D20_REFERENCE_PACKAGE, FIFTH_EDITION_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE];
+const references = UNIVERSAL_REFERENCE_PACKAGES;
 function referenceCopy(id: string): { summary: string; proof: string } {
   switch (id) {
     case "org.atlas-chronicles.reference.d20": return {
@@ -25,9 +25,17 @@ function referenceCopy(id: string): { summary: string; proof: string } {
       summary: t("5E-kompatible Struktur mit Stufenbonus, sechs Attributen, Angriffen, Fertigkeiten, Merkmalen und Zauberlisten."),
       proof: t("Beweist einen vollständigen levelbasierten D20-Bogen mit Collections und bedingtem Magiebereich ohne Spiel-spezifischen UI-Code."),
     };
-    default: return {
+    case "org.atlas-chronicles.reference.3d20": return {
       summary: t("Drei unabhängige W20 gegen unterschiedliche Attribute, gemeinsamer Talentvorrat und getrennte Talentkategorien."),
       proof: t("Beweist Mehrwürfel-Proben und einen völlig anderen Charakterbogen ohne eigenen React- oder Serverpfad."),
+    };
+    case "org.atlas-chronicles.chronicles-lite": return {
+      summary: t("W50-Proben auf einhundert allgemeine Fertigkeiten unter Handeln, Wissen und Soziales."),
+      proof: t("Beweist einen großen feldbasierten Fertigkeitsbogen mit einhundert einzeln würfelbaren Proben ohne Sondercode."),
+    };
+    default: return {
+      summary: t("Universelle Strukturvorlage für die deklarative Regelengine."),
+      proof: t("Kann als bearbeitbarer Ausgangspunkt in der Regelschmiede verwendet werden."),
     };
   }
 }
