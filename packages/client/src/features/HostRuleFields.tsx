@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { AnyRulePackage, RuleRuntime, RuleRuntimePreview, RuleRuntimeSection, Scalar } from "@chronicle/rules";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
@@ -38,7 +38,7 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
     const rows = children.get(section.parent) ?? [];
     rows.push(section); children.set(section.parent, rows);
   }
-  const renderSection = (section: RuleRuntimeSection, depth: number): React.ReactNode => {
+  const renderSection = (section: RuleRuntimeSection, depth: number): ReactNode => {
     const ids = section.fields.filter(id => !special.has(id));
     const nested = children.get(section.id) ?? [];
     if (!ids.length && !nested.length) return null;
@@ -49,7 +49,7 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
     </fieldset>;
   };
   const learnedAbilities = learned.map(id => runtime.abilities.find(ability => ability.id === id)).filter((ability): ability is RuleRuntime["abilities"][number] => !!ability);
-  const abilityGroups = <T extends RuleRuntime["abilities"][number]>(rows: readonly T[]) => [...new Set(rows.map(row => row.group || t("Weitere Fähigkeiten")))].map(group => ({ group, rows: rows.filter(row => (row.group || t("Weitere Fähigkeiten")) === group) }));
+  const abilityGroups = (rows: readonly RuleRuntime["abilities"][number][]) => [...new Set(rows.map(row => row.group || t("Weitere Fähigkeiten")))].map(group => ({ group, rows: rows.filter(row => (row.group || t("Weitere Fähigkeiten")) === group) }));
   return <>
     {(children.get(null) ?? []).map(section => renderSection(section, 0))}
     {preview?.valid && preview.vitals.length ? <section aria-label={t("Vitalwerte")}>{preview.vitals.map(vital => <div key={vital.id}>
