@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { ENGINE_VERSION, RNG_ALGORITHM, evaluateFormula, inferFormulaType, parseEvaluationContext, parseFormula, type EvaluationContext, type Formula, type FormulaFieldTypes, type FormulaResult, type FormulaType, type Scalar } from "./formula.ts";
 import { evaluateAction, parseRulePackage, replayAction, validateEntityFields, type ActionResult, type FieldSchema, type PackagePin, type RuleAction, type RulePackage } from "./package.ts";
+import { parseRuleCollections, parseRulePresentation, validateRuleCollections, type RuleCollection, type RulePresentationV3 } from "./presentation-v3.ts";
 import { array, deepFreeze, fail, finite, identifier, keys, parseBoundedJson, record, snapshotJson, stableJson, string, RULE_LIMITS } from "./validation.ts";
 
 export const RULE_PACKAGE_SCHEMA_VERSION_V2 = 2 as const;
@@ -62,6 +63,9 @@ export interface RulePackageV2 extends Omit<RulePackage, "schemaVersion" | "acti
   readonly vitals?: readonly RuleVital[];
   readonly attribution?: RuleAttribution; readonly selfTests?: readonly RuleSelfTestV2[];
   readonly abilityRules?: RuleAbilityRules; readonly abilities?: readonly RuleAbility[]; readonly conditions?: readonly RuleCondition[];
+  /** Optional universal UI layer. Mechanics stay schema v2; presentation itself is versioned independently. */
+  readonly collections?: readonly RuleCollection[];
+  readonly presentation?: RulePresentationV3;
 }
 /** Ein Vitalwert samt gemessenem Stand — die Zahlen, aus denen eine Anzeige entsteht. */
 export interface VitalReading extends RuleVital {
@@ -162,7 +166,6 @@ function abilityDeclarations(data: Record<string, unknown>, base: RulePackage, a
         const pattern = string(raw, `${at}.modifier.action`, 97), prefix = pattern.endsWith("*") ? pattern.slice(0, -1) : null;
         if (prefix === null) identifier(pattern, `${at}.modifier.action`); else if (!/^[a-z][a-z0-9_-]*$/.test(prefix)) fail(`${at}: invalid action prefix ${pattern}`);
         const hits = base.actions.filter(action => actionMatches(pattern, action.id));
-        // Ein genannter, aber fehlender Name ist ein Tippfehler; ein Präfix darf leer treffen (eine Auswahl von Fertigkeiten).
         if (prefix === null && !hits.length) fail(`${at}: unknown action ${pattern}`);
         for (const action of hits) {
           const schema = action.inputs[parameter];
@@ -201,7 +204,7 @@ function abilityDeclarations(data: Record<string, unknown>, base: RulePackage, a
 export function parseRulePackageV2(input: unknown): RulePackageV2 {
   if (bekannt(input) && input.schemaVersion === 2) return input;
   const data = record(typeof input === "string" ? parseBoundedJson(input) : snapshotJson(input), "package");
-  keys(data, ["schemaVersion", "id", "name", "version", "engineVersion", "license", "authors", "fields", "layout", "actions", "migrations", "selfTests", "computed", "constraints", "vitals", "attribution", "abilityRules", "abilities", "conditions"], "package");
+  keys(data, ["schemaVersion", "id", "name", "version", "engineVersion", "license", "authors", "fields", "layout", "actions", "migrations", "selfTests", "computed", "constraints", "vitals", "attribution", "abilityRules", "abilities", "conditions", "collections", "presentation"], "package");
   if (data.schemaVersion !== 2) fail("package: expected schemaVersion 2");
   const actionRows = array(data.actions, "actions", RULE_LIMITS.actions).map(item => record(item, "action"));
   const projectedActions = actionRows.map(action => {
@@ -214,7 +217,7 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
     if (test.expectedOutcomeId !== undefined) identifier(test.expectedOutcomeId, "expectedOutcomeId");
     const { expectedSuccess: _success, expectedOutcomeId: _outcome, ...legacy } = test; return legacy;
   });
-  const { computed: _computed, constraints: _constraints, vitals: _vitals, attribution: _attribution, selfTests: _tests, abilityRules: _abilityRules, abilities: _abilities, conditions: _conditions, ...common } = data;
+  const { computed: _computed, constraints: _constraints, vitals: _vitals, attribution: _attribution, selfTests: _tests, abilityRules: _abilityRules, abilities: _abilities, conditions: _conditions, collections: _collections, presentation: _presentation, ...common } = data;
   const base = parseRulePackage({ ...common, schemaVersion: 1, actions: projectedActions, ...(projectedTests === undefined ? {} : { selfTests: projectedTests }) });
   const actorTypes = types(base.fields); const actorOnly = { actor: actorTypes, input: {} };
   if (data.computed !== undefined) {
@@ -229,8 +232,6 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
     const seen = new Set<string>();
     for (const item of array(data.vitals, "vitals", RULE_LIMITS.vitals)) {
       const row = record(item, "vital"); keys(row, ["id", "label", "max", "depletion"], "vital");
-      // Die Kennung zeigt auf ein echtes Zahlenfeld — ein Vitalwert ohne Feld hätte keinen Stand,
-      // und ein Text- oder Wahrheitsfeld hätte keine Erschöpfung.
       const id = identifier(row.id, "vital.id");
       if (seen.has(id)) fail("vitals: duplicate id"); seen.add(id);
       if (actorTypes[id] !== "number") fail(`vital ${id}: expected a number or integer field of this package`);
@@ -263,7 +264,19 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
       for (const author of array(source.authors, "source.authors", 32)) string(author, "source.author", 120);
     }
   }
-  const parsed = deepFreeze(data as unknown as RulePackageV2); geprueft.add(parsed); return parsed;
+  const collections = parseRuleCollections(data.collections, base.fields);
+  const presentation = parseRulePresentation(data.presentation, {
+    fields: base.fields,
+    computed: data.computed as unknown as readonly ComputedField[] | undefined,
+    vitals: data.vitals as unknown as readonly RuleVital[] | undefined,
+    actions: data.actions as unknown as readonly RuleActionV2[],
+    abilities: data.abilities as unknown as readonly RuleAbility[] | undefined,
+    conditions: data.conditions as unknown as readonly RuleCondition[] | undefined,
+  }, collections);
+  const parsed = deepFreeze({ ...data,
+    ...(data.collections === undefined ? {} : { collections }),
+    ...(presentation === undefined ? {} : { presentation }),
+  } as unknown as RulePackageV2); geprueft.add(parsed); return parsed;
 }
 export function parseSupportedRulePackage(input: unknown): AnyRulePackage {
   if (bekannt(input)) return input;
@@ -314,6 +327,7 @@ function resolveFields(pkg: AnyRulePackage, input: unknown, budget: Budget): Res
   const fields = validateEntityFields(pkg.fields, input); const computed: Record<string, number> = {};
   let abilities: ResolvedAbilities | undefined;
   if (pkg.schemaVersion === 2) {
+    if (pkg.collections?.length) validateRuleCollections(pkg.collections, fields);
     const context = fieldContext(fields);
     for (const assertion of pkg.constraints ?? []) if (budget.evaluate(assertion.expression, context).value !== true) fail(`constraint ${assertion.id}: ${assertion.message}`);
     for (const output of pkg.computed ?? []) computed[output.id] = finite(budget.evaluate(output.expression, context).value, `computed ${output.id}`);
@@ -406,7 +420,6 @@ export function evaluateSupportedAction(rawPackage: AnyRulePackage, actionId: st
   const { value, ...calculation } = budget.evaluate(action.expression, resolved); const total = finite(value, "action total");
   let classified: { outcome: ClassifiedOutcome; outcomeTrace: readonly OutcomeExpressionTrace[] } | undefined;
   if (action.outcome) {
-    // Evaluate ALL bands, including those after the first match, with no primary RNG reuse.
     const outcomeTrace = action.outcome.bands.map(band => ({ id: band.id, expression: band.expression, ...budget.evaluate(band.expression, resolved) })) as OutcomeExpressionTrace[];
     const comparisons = action.outcome.bands.map((band, index) => ({ id: band.id, comparison: band.comparison, threshold: finite(outcomeTrace[index]!.value, "outcome threshold"), matched: matches(band.comparison, total, outcomeTrace[index]!.value) }));
     const first = comparisons.findIndex(item => item.matched); const selected = first < 0 ? action.outcome.fallback : action.outcome.bands[first]!;
@@ -444,11 +457,9 @@ export class SupportedRulePackageRegistry {
   list(): readonly AnyRulePackage[] { return Object.freeze([...this.#packages.values()].sort((a, b) => `${a.id}@${a.version}` < `${b.id}@${b.version}` ? -1 : 1)); }
 }
 
-/** Synchronous browser-safe SHA-256; independent of host APIs, UTF-8, lowercase hex.
- * This hashes the rules stableJson encoding, not core's distinct canonical encoding. */
+/** Synchronous browser-safe SHA-256; independent of host APIs, UTF-8, lowercase hex. */
 export function supportedPackageContentHash(input: AnyRulePackage): string { return packageDigest(parseSupportedRulePackage(input)); }
 function packageDigest(pkg: AnyRulePackage): string {
-  // Nur für selbst geprüfte, eingefrorene Pakete gemerkt: dort kann sich der Inhalt nicht mehr ändern.
   if (!bekannt(pkg)) return computeDigest(pkg);
   const known = digests.get(pkg); if (known) return known;
   const digest = computeDigest(pkg); digests.set(pkg, digest); return digest;
