@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import {
-  DEMO_RULE_PACKAGE, ENGINE_VERSION, evaluateSupportedAction, parseFormula, parseFormulaAst, parseSupportedRulePackage,
+  DEMO_RULE_PACKAGE, ENGINE_VERSION, RULE_PRESENTATION_SCHEMA_VERSION, evaluateSupportedAction, parseFormula, parseFormulaAst, parseSupportedRulePackage,
   stableJson, type FieldSchema, type Formula, type FormulaType, type MigrationStep,
-  type AnyRulePackage, type RulePackageV2, type RuleOutcome, type RuleAssertion, type Scalar,
+  type AnyRulePackage, type RuleCollection, type RulePackageV2, type RulePresentationNode, type RulePresentationV3, type RuleOutcome, type RuleAssertion, type Scalar,
 } from "@chronicle/rules";
 import { t } from "../i18n";
 
@@ -43,8 +43,9 @@ export interface RuleDraft {
   fields: DraftField[]; sections: DraftSection[]; actions: DraftAction[];
   migrations: DraftMigration[]; selfTests: PackageSelfTest[]; includeSelfTests: boolean;
   computed?: RulePackageV2["computed"]; constraints?: RulePackageV2["constraints"]; vitals?: RulePackageV2["vitals"]; attribution?: RulePackageV2["attribution"];
-  // Fähigkeiten und Zustände reisen unverändert mit, bis die Regelschmiede eigene Reiter dafür hat.
   abilityRules?: RulePackageV2["abilityRules"]; abilities?: RulePackageV2["abilities"]; conditions?: RulePackageV2["conditions"];
+  collections?: RuleCollection[];
+  presentation?: RulePresentationV3;
 }
 export type Validation<T> = { valid: true; value: T } | { valid: false; error: string };
 let localSequence = 0;
@@ -111,8 +112,6 @@ function expressionSource(ast: Formula, parentPrecedence: number): string {
     case "field": result = `${ast.source}.${ast.field}`; break;
     case "dice": result = `${ast.count}d${ast.sides}${ast.keep ? `${ast.keep.mode === "highest" ? "kh" : "kl"}${ast.keep.count}` : ""}${ast.explode === undefined ? "" : `!${ast.explode}`}`; break;
     case "unary": result = `${ast.op}${expressionSource(ast.value, 7)}`; break;
-    // Right operands at the same precedence need parentheses: even addition is not
-    // safely associative with finite-precision numbers. Left chains need none.
     case "binary": result = `${expressionSource(ast.left, precedence)} ${ast.op} ${expressionSource(ast.right, precedence + 1)}`; break;
     case "if": result = `if(${formulaSource(ast.condition)}, ${formulaSource(ast.then)}, ${formulaSource(ast.else)})`; break;
     case "call": result = `${ast.name}(${ast.args.map(formulaSource).join(", ")})`; break;
@@ -120,11 +119,8 @@ function expressionSource(ast: Formula, parentPrecedence: number): string {
   return precedence < parentPrecedence ? `(${result})` : result;
 }
 export function draftExpression(draft: { formula: FormulaDraft; originalFormula?: FormulaDraft; originalExpression?: string; expression?: string }): string {
-  // The typed expression, when present, wins verbatim — even while invalid (H6: an incomplete
-  // block must invalidate the package draft, never silently fall back to the visual tree).
   if (draft.expression !== undefined) return draft.expression;
   const ast = compileFormula(draft.formula);
-  // Opening an installed package must not rewrite even equivalent expression bytes.
   if (draft.originalFormula && draft.originalExpression !== undefined && stableJson(draft.originalFormula) === stableJson(draft.formula)) return draft.originalExpression;
   return formulaSource(ast);
 }
@@ -160,6 +156,28 @@ function migrationStep(step: DraftMigrationStep): MigrationStep {
   if (step.kind === "numeric") return { kind: "numeric", field: step.field, expression: draftExpression(step) };
   return { kind: "add", field: step.field, value: scalarValue(step.type, step.value, t("Neuer Feldwert")) };
 }
+
+/** Convert the established field-section hierarchy into presentation-v3 without changing mechanics. */
+export function presentationFromSections(draft: Pick<RuleDraft, "sections" | "fields">): RulePresentationV3 {
+  const byParent = new Map<string | null, DraftSection[]>();
+  for (const section of draft.sections) { const rows = byParent.get(section.parentLocalId) ?? []; rows.push(section); byParent.set(section.parentLocalId, rows); }
+  const usedFields = new Set<string>();
+  const renderSection = (section: DraftSection): RulePresentationNode => ({
+    kind: "group", id: `group-${section.id}`, label: section.label, render: "section",
+    children: [
+      ...section.fieldKeys.map(key => { const field = draft.fields.find(candidate => candidate.localId === key); if (!field) throw new Error(t("Der Bogen verweist auf ein entferntes Feld.")); usedFields.add(field.id); return { kind: "field" as const, id: `field-${field.id}`, ref: field.id }; }),
+      ...(byParent.get(section.localId) ?? []).map(renderSection),
+    ],
+  });
+  const root = (byParent.get(null) ?? []).map(renderSection);
+  const remaining = draft.fields.filter(field => !usedFields.has(field.id));
+  if (remaining.length) root.push({ kind: "group", id: "group-weitere-felder", label: t("Weitere Felder"), render: "section", children: remaining.map(field => ({ kind: "field", id: `field-${field.id}`, ref: field.id })) });
+  return { schemaVersion: RULE_PRESENTATION_SCHEMA_VERSION, root };
+}
+export function ensurePresentationV3(draft: RuleDraft): RuleDraft {
+  return { ...draft, schemaVersion: 2, presentation: draft.presentation ?? presentationFromSections(draft), collections: draft.collections ?? [] };
+}
+
 export function packageDraft(input: AnyRulePackage): RuleDraft {
   const pkg = parseSupportedRulePackage(input), fields = Object.entries(pkg.fields).map(([id, field]) => fieldDraft(id, field));
   const sectionKeys = new Map(pkg.layout.sections.map(section => [section.id, localKey()]));
@@ -169,7 +187,7 @@ export function packageDraft(input: AnyRulePackage): RuleDraft {
       ...("outcome" in a && a.outcome ? { outcome: copyJson(a.outcome as RuleOutcome) } : {}), ...("preconditions" in a ? { preconditions: copyJson(a.preconditions as readonly RuleAssertion[]) } : {}) }; }),
     migrations: pkg.migrations.map(m => ({ localId: localKey(), from: m.from, steps: m.steps.map(migrationStepDraft) })),
     selfTests: copyJson([...(pkg.selfTests ?? [])]), includeSelfTests: pkg.selfTests !== undefined,
-    ...(pkg.schemaVersion === 2 ? { ...(pkg.computed !== undefined ? { computed: copyJson(pkg.computed) } : {}), ...(pkg.constraints !== undefined ? { constraints: copyJson(pkg.constraints) } : {}), ...(pkg.vitals !== undefined ? { vitals: copyJson(pkg.vitals) } : {}), ...(pkg.attribution !== undefined ? { attribution: copyJson(pkg.attribution) } : {}), ...(pkg.abilityRules !== undefined ? { abilityRules: copyJson(pkg.abilityRules) } : {}), ...(pkg.abilities !== undefined ? { abilities: copyJson(pkg.abilities) } : {}), ...(pkg.conditions !== undefined ? { conditions: copyJson(pkg.conditions) } : {}) } : {}) };
+    ...(pkg.schemaVersion === 2 ? { ...(pkg.computed !== undefined ? { computed: copyJson(pkg.computed) } : {}), ...(pkg.constraints !== undefined ? { constraints: copyJson(pkg.constraints) } : {}), ...(pkg.vitals !== undefined ? { vitals: copyJson(pkg.vitals) } : {}), ...(pkg.attribution !== undefined ? { attribution: copyJson(pkg.attribution) } : {}), ...(pkg.abilityRules !== undefined ? { abilityRules: copyJson(pkg.abilityRules) } : {}), ...(pkg.abilities !== undefined ? { abilities: copyJson(pkg.abilities) } : {}), ...(pkg.conditions !== undefined ? { conditions: copyJson(pkg.conditions) } : {}), ...(pkg.collections !== undefined ? { collections: copyJson(pkg.collections) as RuleCollection[] } : {}), ...(pkg.presentation !== undefined ? { presentation: copyJson(pkg.presentation) } : {}) } : {}) };
 }
 export function compilePackage(draft: RuleDraft): AnyRulePackage {
   const fields = fieldsMap(draft.fields);
@@ -182,7 +200,7 @@ export function compilePackage(draft: RuleDraft): AnyRulePackage {
     actions: draft.actions.map(a => ({ id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, requiresConfirmation: true, inputs: fieldsMap(a.inputs), expression: draftExpression(a), ...(a.thresholdEnabled ? { threshold: numberValue(a.threshold, t("{name}: Erfolgsschwelle", { name: a.name })) } : {}), ...(a.outcome ? { outcome: copyJson(a.outcome) } : {}), ...(a.preconditions !== undefined ? { preconditions: copyJson(a.preconditions) } : {}) })),
     migrations: draft.migrations.map(m => ({ from: m.from, to: draft.version, steps: m.steps.map(migrationStep) })),
     ...(draft.includeSelfTests || draft.selfTests.length ? { selfTests: copyJson(draft.selfTests) } : {}),
-    ...(draft.computed !== undefined ? { computed: copyJson(draft.computed) } : {}), ...(draft.constraints !== undefined ? { constraints: copyJson(draft.constraints) } : {}), ...(draft.vitals !== undefined ? { vitals: copyJson(draft.vitals) } : {}), ...(draft.attribution !== undefined ? { attribution: copyJson(draft.attribution) } : {}), ...(draft.abilityRules !== undefined ? { abilityRules: copyJson(draft.abilityRules) } : {}), ...(draft.abilities !== undefined ? { abilities: copyJson(draft.abilities) } : {}), ...(draft.conditions !== undefined ? { conditions: copyJson(draft.conditions) } : {}) });
+    ...(draft.computed !== undefined ? { computed: copyJson(draft.computed) } : {}), ...(draft.constraints !== undefined ? { constraints: copyJson(draft.constraints) } : {}), ...(draft.vitals !== undefined ? { vitals: copyJson(draft.vitals) } : {}), ...(draft.attribution !== undefined ? { attribution: copyJson(draft.attribution) } : {}), ...(draft.abilityRules !== undefined ? { abilityRules: copyJson(draft.abilityRules) } : {}), ...(draft.abilities !== undefined ? { abilities: copyJson(draft.abilities) } : {}), ...(draft.conditions !== undefined ? { conditions: copyJson(draft.conditions) } : {}), ...(draft.collections !== undefined ? { collections: copyJson(draft.collections) } : {}), ...(draft.presentation !== undefined ? { presentation: copyJson(draft.presentation) } : {}) });
 }
 export function validateDraft(draft: RuleDraft): Validation<AnyRulePackage> {
   try { return { valid: true, value: compilePackage(draft) }; } catch (e) { return { valid: false, error: e instanceof Error ? e.message : t("Das Paket konnte nicht geprüft werden.") }; }
@@ -199,15 +217,12 @@ export function forkPackage(pkg: AnyRulePackage, installed: readonly AnyRulePack
   return draft;
 }
 export function newPackage(author: string, installed: readonly AnyRulePackage[] = []): RuleDraft {
-  const draft = packageDraft(DEMO_RULE_PACKAGE); let id = "de.meine-runde.regelwerk", suffix = 2;
+  let draft = packageDraft(DEMO_RULE_PACKAGE); let id = "de.meine-runde.regelwerk", suffix = 2;
   while (installed.some(p => p.id === id)) id = `de.meine-runde.regelwerk-${suffix++}`;
   draft.id = id; draft.name = "Mein Regelwerk"; draft.authors = [author || "Spielleitung"]; draft.version = "1.0.0"; draft.migrations = []; draft.selfTests = []; draft.includeSelfTests = false;
+  draft = ensurePresentationV3(draft);
   return draft;
 }
-// `expression` is deliberately left unset: setting it here reproduces the packageDraft hazard —
-// once set it freezes draftExpression on this text, so a later `.formula`-only edit (RuleForge.tsx
-// still edits actions through `.formula`) would go unpublished. The `.formula` fallback already
-// prints "1d20".
 export function newAction(ids: readonly string[]): DraftAction { return { localId: localKey(), id: uniqueId("aktion", ids), name: "Neue Aktion", version: "1.0.0", disclosure: "Ein Würfel entscheidet über diese Handlung. Das Ergebnis wird am Tisch bestätigt.", inputs: [], thresholdEnabled: false, threshold: "10", formula: formulaDraft(parseFormula("1d20")) }; }
 export function moveItem<T>(items: readonly T[], index: number, delta: -1 | 1): T[] { const result = [...items], next = index + delta; if (index >= 0 && index < result.length && next >= 0 && next < result.length) [result[index], result[next]] = [result[next]!, result[index]!]; return result; }
 export function fieldTypes(fields: readonly DraftField[]): Record<string, FormulaType> { return Object.fromEntries(fields.map(f => [f.id, f.type === "integer" ? "number" : f.type])); }
