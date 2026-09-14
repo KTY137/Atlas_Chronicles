@@ -5,6 +5,7 @@ import type { AnyRulePackage, RuleRuntime, RuleRuntimePreview, RuleRuntimeSectio
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
 import { RuleFields } from "./RuleFields";
+import { RulePresentationView } from "./RulePresentationView";
 import { displayRuleRuntime } from "./rule-runtime-display";
 import { forgetRuleAbility, ruleIdList } from "./rule-runtime-state";
 import type { HostRuleEditorState } from "./useHostRules";
@@ -13,11 +14,7 @@ import "./rule-categories.css";
 type RuntimeAbility = RuleRuntime["abilities"][number];
 interface AbilityGroupNode { label: string; path: string; rows: RuntimeAbility[]; children: Map<string, AbilityGroupNode> }
 
-/**
- * `RuleAbility.group` stays a backwards-compatible string. A slash gives it hierarchy without a
- * second schema: "Kampf / Nahkampf / Schwerter" becomes three nested presentation categories,
- * while every existing one-word group renders exactly as before.
- */
+/** Legacy v1/v2 ability grouping. Presentation-v3 packages use RulePresentationView below. */
 function abilityGroupTree(rows: readonly RuntimeAbility[]): AbilityGroupNode[] {
   const root = new Map<string, AbilityGroupNode>();
   for (const ability of rows) {
@@ -61,6 +58,14 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
 }) {
   const [search, setSearch] = useState("");
   const special = new Set([runtime.abilities.length ? runtime.abilityField : null, runtime.conditions.length ? runtime.conditionField : null]);
+  if (runtime.presentation) return <>
+    <RulePresentationView runtime={runtime} preview={preview} values={values} onChange={onChange} disabled={disabled} />
+    {/* Raw identifier storage remains reachable for repairing malformed legacy/imported lists. */}
+    {[...special].some(Boolean) ? <details><summary>{t("Kennungslisten korrigieren")}</summary>
+      <RuleFields fields={Object.fromEntries([...special].filter((id): id is string => id !== null).map(id => [id, runtime.fields[id]!]))} values={values} onChange={onChange} disabled={disabled} />
+    </details> : null}
+  </>;
+
   const learned = ruleIdList(runtime.abilityField ? values[runtime.abilityField] : undefined);
   const active = ruleIdList(runtime.conditionField ? values[runtime.conditionField] : undefined);
   const overview = preview?.valid ? preview.abilities : null;
@@ -106,7 +111,6 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
       <input type="checkbox" checked={active.includes(condition.id)} disabled={disabled} onChange={event => setList(runtime.conditionField!, event.target.checked ? [...active, condition.id] : active.filter(id => id !== condition.id))} />
       <span>{condition.name} <small>{condition.text}</small></span>
     </label>)}</section> : null}
-    {/* Invalid imported identifier lists stay repairable, including unknown IDs. */}
     {[...special].some(Boolean) ? <details><summary>{t("Kennungslisten korrigieren")}</summary>
       <RuleFields fields={Object.fromEntries([...special].filter((id): id is string => id !== null).map(id => [id, runtime.fields[id]!]))} values={values} onChange={onChange} disabled={disabled} />
     </details> : null}
