@@ -5,5 +5,16 @@
   "Ausgegeben: {punkte} Punkte": "Spent: {punkte} points",
   "Ausgegeben: {punkte} von {budget} Punkten": "Spent: {punkte} of {budget} points",
   "Kennungslisten korrigieren": "Correct identifier lists",
-  "Proben dieses Regelpakets": "Checks in this rule package"
+  "Proben dieses Regelpakets": "Checks in this rule package",
+  "Weitere Fähigkeiten": "Other abilities",
+  "Universelle Referenzsysteme": "Universal reference systems",
+  "Universelle Strukturvorlagen": "Universal structure templates",
+  "Atlas-eigene Referenzen ohne fremde Regeltexte. Sie zeigen, dass dieselbe Regelengine sehr unterschiedliche Mechanikfamilien und Kategorien trägt.": "Atlas-owned references without third-party rule text. They show that the same rules engine supports very different mechanic families and category structures.",
+  "W20 plus Attributsmodifikator, abgeleitete Werte, Ressourcen und verschachtelte Wertebereiche.": "D20 plus attribute modifier, derived values, resources, and nested value areas.",
+  "Strukturstart für D20-Familien mit Attributen, Kampfwerten und einzelnen W20-Proben.": "A structural starting point for D20 families with attributes, combat values, and individual D20 checks.",
+  "Drei unabhängige W20 gegen unterschiedliche Attribute, gemeinsamer Talentvorrat und getrennte Talentkategorien.": "Three independent D20 rolls against different attributes, a shared talent reserve, and separate talent categories.",
+  "Beweist Mehrwürfel-Proben und einen völlig anderen Charakterbogen ohne eigenen React- oder Serverpfad.": "Demonstrates multi-roll checks and a completely different character sheet without a dedicated React or server path.",
+  "Bogenfelder": "Sheet fields",
+  "Kategorien": "Categories",
+  "Als Regelentwurf öffnen": "Open as rule draft"
 }
