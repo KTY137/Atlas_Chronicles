@@ -57,8 +57,9 @@ The declarative engine supports:
 
 ## Reference families
 
-The normal product catalogue contains first-party Atlas reference mechanics. The separately exported
-How-to-be-a-Hero adaptation remains a licensed example boundary and is not pulled into the product
+The Forge catalogue contains Atlas-owned clean-room structural references plus the separately
+attributed **5E SRD 5.1** package under CC-BY-4.0. The How-to-be-a-Hero adaptation remains a licensed
+example boundary exported from `@chronicle/rules/examples` and is not pulled into the normal product
 bundle.
 
 | Reference | What it proves |
@@ -66,15 +67,21 @@ bundle.
 | ChronicleHeroes | W100, large ability catalogue, prerequisites/modifiers, resources |
 | Chronicles Lite | W50, exactly 100 broad individually rollable skills grouped under Handeln/Wissen/Soziales, Presentation v3 |
 | D20 Fantasy Reference | Six attributes, derived modifiers, nested combat/stat blocks, W20 checks, vitality |
-| 5E-compatible Reference | Level-based proficiency, six abilities, checks, attacks, collections and conditional spellcasting |
+| 5E-compatible Reference | Clean-room level-based proficiency, six abilities, checks, attacks, collections and conditional spellcasting |
+| 5E SRD 5.1 | Attributed CC-BY-4.0 character package with ability checks, saves, 18 skills, proficiency/expertise, advantage/disadvantage, attacks, HP/death saves, equipment/features/resources, conditions, spell slots and spell collections |
 | 3W20 Talent Reference | Three independent W20 rolls against different attributes and a talent reserve, nested physical/social/knowledge groups |
 | How to be a Hero adaptation (`@chronicle/rules/examples`) | Licensed example of field-based skills and W100 outcomes; intentionally outside the product bundle |
 
-`UNIVERSAL_REFERENCE_PACKAGES` now contains D20, 5E-compatible, 3W20 and Chronicles Lite and is the
-single catalogue consumed by the Forge and its round-trip regression. Chronicles Lite is therefore
-no longer only a compressed test fixture: it is a normal exported `RulePackageV2`, can be opened as
-a Forge draft, is parsed by the same runtime, and carries 100 ordinary W50 actions with no special
-React or server evaluator.
+`UNIVERSAL_REFERENCE_PACKAGES` now contains D20, the clean-room 5E-compatible reference, the
+CC-BY-attributed 5E SRD 5.1 package, 3W20 and Chronicles Lite and is the single catalogue consumed by
+the Forge and its round-trip regression. Chronicles Lite is therefore no longer only a compressed
+test fixture: it is a normal exported `RulePackageV2`, can be opened as a Forge draft, is parsed by
+the same runtime, and carries 100 ordinary W50 actions with no special React or server evaluator.
+
+The 5E SRD package follows the same bounded contract rather than bypassing it: collection storage is
+limited to the normal 4096-character field bound, collection cardinalities stay within the runtime
+limit, hit points use the standard vital declaration, and SRD attribution is represented through the
+validated `RuleAttribution` structure. `docs/legal/SRD-5.1-CC-BY-4.0.md` records the legal boundary.
 
 Together these cover the structural/mechanical families needed to build D&D-like, Pathfinder-like,
 DSA-like, HTBAH-like and custom systems in the Rule Forge without adding a game-specific React or
@@ -93,7 +100,10 @@ server evaluator.
 - The production ActorWorkbench no longer contains a legacy rule-authoring path; canonical actor
   templates and instantiation use the host-authoritative components directly. Inventory and loot
   remain isolated in `ActorInventoryWorkbench`.
-- Forge round-trip coverage now includes every product reference package, including Chronicles Lite.
+- Forge round-trip coverage now includes every product reference package, including Chronicles Lite
+  and the attributed 5E SRD package.
+- Dedicated 5E SRD regressions exercise parser round-trip, attribution, ordinary sheet domains,
+  level-based proficiency/expertise, advantage/disadvantage and conditional spellcasting.
 
 ## Deliberate boundary
 
@@ -110,7 +120,7 @@ arbitrary rule-package collections.
 
 GitHub Actions is still failing before checkout on the current `main` line: jobs receive no hosted
 runner, expose no executable steps and produce no job-log blob. The issue was reproduced by a manual
-re-run and again by the workflows triggered after the Chronicles-Lite integration. This is a
+re-run and again by workflows triggered during the Chronicles-Lite/5E-SRD integration. This is a
 pre-runner GitHub Actions/infrastructure failure, not TypeScript or test output.
 
 The repository therefore carries focused parser/runtime/client/HTTP regressions for the universal
