@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Plus, TestTubeDiagonal, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
-import { evaluateSupportedAction as evaluateAction, RULE_LIMITS, CHRONICLE_EXAMPLE_CHARACTERS, type AnyActionResult as ActionResult, type Experience, type AnyRulePackage as RulePackage, type RuleAction, type RuleActionV2, type Scalar } from "@chronicle/rules";
+import { buildRuleRuntime, previewRuleRuntime, evaluateSupportedAction as evaluateAction, RULE_LIMITS, CHRONICLE_EXAMPLE_CHARACTERS, type AnyActionResult as ActionResult, type Experience, type AnyRulePackage as RulePackage, type RuleAction, type RuleActionV2, type Scalar } from "@chronicle/rules";
 import { RuleFields } from "./RuleFields";
+import { RulePresentationView } from "./RulePresentationView";
 import { sichtbareEingaben } from "./faehigkeiten-bogen";
 import type { ExampleFigure } from "./formula-example";
 import { copyJson, fixtureValues, localKey, type PackageSelfTest } from "./rule-forge-model";
@@ -17,7 +18,6 @@ const initialFixtures = (): Fixture[] => [
   { id: "fixture-sera", name: "Sera", values: {}, inputs: {}, passages: [{ localId: localKey(), passageId: "beispiel-spur", labels: "spuren", experience: "erfahren" }] },
   { id: "fixture-brannt", name: "Brannt", values: {}, inputs: {}, passages: [] },
 ];
-/** Upper bound for author-added test figures; keeps the comparison readable beyond "two or more". */
 const MAX_FIXTURES = 6;
 
 /** Pure, reproducible examples. This component never writes a campaign sheet or roll. */
@@ -29,11 +29,6 @@ export function RuleForgePreview({ pkg, onFigure, onSaveTest }: { pkg: RulePacka
   const update = (id: string, change: Partial<Fixture>) => setFixtures(items => items.map(f => f.id === id ? { ...f, ...change } : f));
   const addFixture = () => setFixtures(items => items.length >= MAX_FIXTURES ? items : [...items, { id: localKey(), name: t("Testfigur {n}", { n: items.length + 1 }), values: {}, inputs: {}, passages: [] }]);
   const removeFixture = (id: string) => setFixtures(items => items.length > 2 ? items.filter(f => f.id !== id) : items);
-  // `pkg` gets a fresh identity on every draft edit, and this effect would otherwise hand
-  // `onFigure` a fresh object on every keystroke — which every mounted FormulaField reads via
-  // context to build its example, invalidating that memo and re-parsing/re-evaluating every
-  // formula on the "Abgeleitet" tab per keystroke. Only call back when the figure's *content*
-  // actually changed.
   const lastFigure = useRef<string | null>(null);
   useEffect(() => {
     const first = fixtures[0];
@@ -79,6 +74,8 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
 }) {
   const action = pkg.actions.find(a => a.id === actionId)!;
   const values = fixtureValues(pkg.fields, fixture.values), inputs = fixtureValues(action.inputs, fixture.inputs[actionId] ?? {});
+  const runtime = useMemo(() => buildRuleRuntime(pkg), [pkg]);
+  const sheetPreview = useMemo(() => previewRuleRuntime(pkg, fixtureValues(pkg.fields, fixture.values)), [pkg, fixture.values]);
   const [testName, setTestName] = useState("");
   const evaluation = useMemo((): { result: ActionResult; error?: never } | { result?: never; error: string } => {
     try { return { result: evaluateAction(pkg, actionId, { seed, actor: fixtureValues(pkg.fields, fixture.values), input: fixtureValues(pkg.actions.find(a => a.id === actionId)!.inputs, fixture.inputs[actionId] ?? {}), knowledge: { actorId: fixture.id, passages: fixture.passages.map(p => ({ passageId: p.passageId, labels: p.labels.split(",").map(s => s.trim()).filter(Boolean), experience: p.experience })) } }) }; }
@@ -93,9 +90,11 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
       {canRemove ? <Button variant="quiet" aria-label={t("Testfigur {name} entfernen", { name: fixture.name })} onClick={onRemove}><Trash2 size={14} />{t("Entfernen")}</Button> : null}
     </div>
     <label>{t("Name der Testfigur")}<input value={fixture.name} maxLength={120} onChange={e => onChange({ name: e.target.value })} /></label>
-    <PackageLayoutFields pkg={pkg} values={values} onChange={next => onChange({ values: next })} />
-    {Object.keys(remaining).length ? <fieldset className="rf-sheet-section"><legend>{t("Weitere Felder")}</legend><RuleFields fields={remaining} values={values} onChange={next => onChange({ values: next })} /></fieldset> : null}
-    <RuleComputedFields pkg={pkg} fields={values} />
+    {runtime.presentation ? <RulePresentationView runtime={runtime} preview={sheetPreview} values={values} onChange={next => onChange({ values: next })} /> : <>
+      <PackageLayoutFields pkg={pkg} values={values} onChange={next => onChange({ values: next })} />
+      {Object.keys(remaining).length ? <fieldset className="rf-sheet-section"><legend>{t("Weitere Felder")}</legend><RuleFields fields={remaining} values={values} onChange={next => onChange({ values: next })} /></fieldset> : null}
+      <RuleComputedFields pkg={pkg} fields={values} />
+    </>}
     {Object.keys(sichtbareEingaben(pkg, action.inputs)).length ? <fieldset className="rf-sheet-section"><legend>{t("Eingaben: {name}", { name: action.name })}</legend><RuleFields fields={sichtbareEingaben(pkg, action.inputs)} values={inputs} onChange={next => onChange({ inputs: { ...fixture.inputs, [actionId]: next } })} /></fieldset> : null}
     <fieldset className="rf-sheet-section"><legend>{t("Gehaltene Beispielpassagen")}</legend>
       {!fixture.passages.length ? <p className="rf-help">{t("Diese Figur hält keine Passage.")}</p> : null}
@@ -116,19 +115,11 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
 }
 
 const OUTCOME_COMPARISON_SYMBOL: Record<string, string> = { eq: "=", lt: "<", lte: "≤", gt: ">", gte: "≥" };
-/** Anzeigenamen der Rechenschritte; `kind` bleibt der Datenschlüssel des Belegs. */
 function traceKindLabel(kind: string): string | undefined {
   switch (kind) {
-    case "literal": return t("Festwert");
-    case "unary": return t("Vorzeichen");
-    case "binary": return t("Verknüpfung");
-    case "if": return t("Bedingung");
-    case "dice": return t("Würfel");
-    case "call": return t("Funktion");
-    default: return undefined;
+    case "literal": return t("Festwert"); case "unary": return t("Vorzeichen"); case "binary": return t("Verknüpfung"); case "if": return t("Bedingung"); case "dice": return t("Würfel"); case "call": return t("Funktion"); default: return undefined;
   }
 }
-
 function FixtureResult({ result, action }: { result: ActionResult; action: RuleAction | RuleActionV2 }) {
   const outcome = result.schemaVersion === 2 ? result.outcome : undefined;
   const bands = "outcome" in action ? action.outcome?.bands : undefined;
