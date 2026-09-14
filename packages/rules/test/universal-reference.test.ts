@@ -3,18 +3,19 @@
 import { describe, expect, it } from "vitest";
 import {
   CHRONICLES_LITE_PACKAGE, CHRONICLES_LITE_SKILLS, chroniclesLiteSkillField,
-  D20_REFERENCE_PACKAGE, FIFTH_EDITION_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE, UNIVERSAL_REFERENCE_PACKAGES,
+  D20_REFERENCE_PACKAGE, FIFTH_EDITION_REFERENCE_PACKAGE, FIFTH_EDITION_SRD_PACKAGE, THREE_D20_REFERENCE_PACKAGE, UNIVERSAL_REFERENCE_PACKAGES,
   buildRuleRuntime, evaluateComputedFields, evaluateSupportedAction, parseSupportedRulePackage, previewRuleRuntime,
 } from "../src/index.ts";
 
 const context = { seed: "00000001000000020000000300000004", actor: {}, input: {}, knowledge: { actorId: "reference", passages: [] } } as const;
 
 describe("universal structural reference systems", () => {
-  it("keeps all first-party references inside the ordinary supported package contract", () => {
-    expect(UNIVERSAL_REFERENCE_PACKAGES).toHaveLength(4);
+  it("keeps all supported templates inside the ordinary package contract", () => {
+    expect(UNIVERSAL_REFERENCE_PACKAGES).toHaveLength(5);
     expect(UNIVERSAL_REFERENCE_PACKAGES.map(pkg => pkg.id)).toEqual([
       D20_REFERENCE_PACKAGE.id,
       FIFTH_EDITION_REFERENCE_PACKAGE.id,
+      FIFTH_EDITION_SRD_PACKAGE.id,
       THREE_D20_REFERENCE_PACKAGE.id,
       CHRONICLES_LITE_PACKAGE.id,
     ]);
