@@ -5,10 +5,11 @@ import type { FieldSchema, PackagePin } from "./package.ts";
 import { abilityOverview, evaluateComputedFields, evaluateVitals, parseSupportedRulePackage,
   supportedPackageContentHash, validatePackageFields, type AbilityOverview, type AnyRulePackage,
   type ModifierTarget, type RuleAbility, type RuleCondition, type VitalReading } from "./package-v2.ts";
+import { validateRuleCollections, visiblePresentationNodeIds, type RuleCollection, type RulePresentationV3 } from "./presentation-v3.ts";
 import { RuleValidationError, deepFreeze } from "./validation.ts";
 
 /** Read model, not a second rules engine. Only the host calls the builders below. */
-export const RULE_RUNTIME_CONTRACT = 1 as const;
+export const RULE_RUNTIME_CONTRACT = 2 as const;
 const ENGINE_ACTION_INPUTS = new Set(["einsatz", "mod_ziel", "mod_ergebnis"]);
 const DISPLAY_SEED = "00000000000000000000000000000001";
 export interface RuleRuntimeIdentity {
@@ -46,7 +47,10 @@ export interface RuleRuntimeSection {
 export interface RuleRuntime extends RuleRuntimeIdentity {
   readonly name: string;
   readonly fields: Readonly<Record<string, FieldSchema>>;
+  /** Legacy/fallback sheet projection for v1/v2 packages without presentation schema v3. */
   readonly sections: readonly RuleRuntimeSection[];
+  readonly presentation: RulePresentationV3 | null;
+  readonly collections: readonly RuleCollection[];
   readonly defaults: Readonly<Record<string, Scalar>>;
   readonly computed: readonly { readonly id: string; readonly label: string }[];
   readonly abilityField: string | null;
@@ -62,6 +66,9 @@ export interface RuleRuntimePreview extends RuleRuntimeIdentity {
   readonly fields: Readonly<Record<string, Scalar>> | null;
   readonly computed: Readonly<Record<string, number>>;
   readonly vitals: readonly VitalReading[];
+  readonly collections: Readonly<Record<string, readonly Readonly<Record<string, Scalar>>[]>>;
+  /** Host-evaluated visibility. The browser never evaluates visibleIf itself. */
+  readonly visiblePresentationIds: readonly string[];
   readonly abilities: AbilityOverview | null;
   readonly actionStates: readonly RuleRuntimeActionState[];
 }
@@ -99,13 +106,15 @@ export function buildRuleRuntime(input: AnyRulePackage): RuleRuntime {
   const sections: RuleRuntimeSection[] = pkg.layout.sections.map(section => ({ ...section, fields: [...section.fields], parent: section.parent ?? null }));
   const placed = new Set(sections.flatMap(section => section.fields));
   const remaining = Object.keys(pkg.fields).filter(id => !placed.has(id));
-  // Imported layouts may omit fields. They must remain editable, not disappear from the sheet.
+  // Imported layouts may omit fields. They must remain editable, not disappear from a legacy sheet.
   if (remaining.length) {
     let id = "runtime_unplaced";
     while (sections.some(section => section.id === id)) id += "_";
     sections.push({ id, label: "Weitere Felder", fields: remaining, parent: null });
   }
   return deepFreeze({ ...identity(pkg), name: pkg.name, fields: pkg.fields, sections,
+    presentation: v2?.presentation ?? null,
+    collections: [...(v2?.collections ?? [])],
     // Defaults may still violate a cross-field constraint; preview reports that instead of
     // making the entire editor inaccessible. Nothing is saved by loading the manifest.
     defaults: Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, field.default])),
@@ -125,10 +134,13 @@ export function previewRuleRuntime(input: AnyRulePackage, values: unknown): Rule
   const pkg = parseSupportedRulePackage(input), base = identity(pkg);
   try {
     const fields = validatePackageFields(pkg, values);
+    const collections = pkg.schemaVersion === 2 && pkg.collections?.length ? validateRuleCollections(pkg.collections, fields) : {};
+    const visiblePresentationIds = pkg.schemaVersion === 2 ? visiblePresentationNodeIds(pkg.presentation, fields) : [];
     return deepFreeze({ ...base, valid: true, errors: [], fields,
-      computed: evaluateComputedFields(pkg, fields), vitals: evaluateVitals(pkg, fields), abilities: abilityOverview(pkg, fields), actionStates: actionStates(pkg, fields) });
+      computed: evaluateComputedFields(pkg, fields), vitals: evaluateVitals(pkg, fields), collections, visiblePresentationIds,
+      abilities: abilityOverview(pkg, fields), actionStates: actionStates(pkg, fields) });
   } catch (error) {
     if (!(error instanceof RuleValidationError)) throw error;
-    return deepFreeze({ ...base, valid: false, errors: [error.message], fields: null, computed: {}, vitals: [], abilities: null, actionStates: [] });
+    return deepFreeze({ ...base, valid: false, errors: [error.message], fields: null, computed: {}, vitals: [], collections: {}, visiblePresentationIds: [], abilities: null, actionStates: [] });
   }
 }
