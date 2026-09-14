@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
-import { DEMO_RULE_PACKAGE, parseSupportedRulePackage, validatePackageFields, type AnyRulePackage } from "@chronicle/rules";
+import { validatePackageFields, type AnyRulePackage } from "@chronicle/rules";
 import type { FigurantragCard, FreigegebeneVorlageCard } from "@chronicle/protocol";
 import type { ActorTemplateData } from "../../../protocol/src/actors.ts";
 import type { Db } from "../db/index.ts";
@@ -11,7 +11,9 @@ import { ActorValidationError } from "./actors.ts";
 import { createFigurantrag, type FigurantragBody } from "./figurantrag.ts";
 import { instantiatePinnedActorInTx } from "./pinned-actors.ts";
 import { Conflict, Gone } from "./errors.ts";
+import { resolveRulePackage } from "./rule-package-resolution.ts";
 
+/** Request/template hashes use the core canonical encoding; rule packages are resolved separately. */
 const hash = (value: unknown) => canonicalHash(value as CanonicalValue);
 interface TemplateRow { id: string; version: number; revision: number; definition: ActorTemplateData; content_hash: string }
 interface AntragRow {
@@ -31,13 +33,6 @@ export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
   async function member(tx: Db, userId: string, campaignId: string, roles: readonly string[]): Promise<void> {
     const row = (await tx.query<{ role: string }>("SELECT role FROM campaign_memberships WHERE campaign_id=$1 AND user_id=$2", [campaignId, userId])).rows[0];
     if (!row || !roles.includes(row.role)) throw new Gone();
-  }
-  async function packageFor(tx: Db, campaignId: string, pin: { id: string; version: string }): Promise<AnyRulePackage> {
-    const row = (await tx.query<{ document: unknown; content_hash: string }>(
-      "SELECT document,content_hash FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3", [campaignId, pin.id, pin.version])).rows[0];
-    if (row) { if (hash(row.document) !== row.content_hash) throw new Gone(); return parseSupportedRulePackage(row.document); }
-    if (pin.id === DEMO_RULE_PACKAGE.id && pin.version === DEMO_RULE_PACKAGE.version) return DEMO_RULE_PACKAGE;
-    throw new Gone();
   }
   async function template(tx: Db, campaignId: string, id: string, revision?: number): Promise<TemplateRow> {
     const row = (await tx.query<TemplateRow>(`SELECT t.id,t.version,r.revision,r.definition,r.content_hash FROM actor_templates t
@@ -83,7 +78,7 @@ export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
       }
       const source = await template(tx, campaignId, body.templateId);
       if (!await released(tx, campaignId, body.templateId)) throw new Gone();
-      const pkg = await packageFor(tx, campaignId, source.definition.package);
+      const pkg = await resolveRulePackage(tx, campaignId, source.definition.package);
       const basis = validatePackageFields(pkg, source.definition.fields), all = merged(pkg, source.definition, body.anfangswerte);
       const delta = Object.fromEntries(Object.keys(body.anfangswerte).sort().map(key => [key, all[key] ?? basis[key]]));
       const id = randomUUID(), at = now();
@@ -109,7 +104,7 @@ export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
       if (before.state !== "offen" || before.version !== expectedVersion) throw new Conflict();
       if (!await released(tx, campaignId, before.template_id)) throw new Conflict();
       const source = await template(tx, campaignId, before.template_id, before.template_revision);
-      const pkg = await packageFor(tx, campaignId, source.definition.package);
+      const pkg = await resolveRulePackage(tx, campaignId, source.definition.package);
       const values = merged(pkg, source.definition, before.anfangswerte);
       const figure = await instantiatePinnedActorInTx(tx, cfg, userId, campaignId,
         { commandId: before.id, templateId: before.template_id, templateRevision: before.template_revision, name: before.name },
