@@ -41,10 +41,16 @@ export type FigurantragOperation = typeof FIGURANTRAG_OPERATIONS[number];
  * Antrag nennt, was daran anders sein soll. Ohne diese Angabe auf der Karte entschiede die
  * Spielleitung blind — sie saehe einen Namen und eine Vorlage, aber nicht die Werte, die sie
  * damit bestaetigt.
+ *
+ * `package` wird vom hostautoritativen Pfad aus genau der beantragten Vorlagenrevision
+ * projiziert. Es bleibt optional, damit historische/alte interne Erzeuger von `FigurantragCard`
+ * beim schrittweisen Entfernen des Legacy-Pfads lesbar bleiben; die produktive HTTP-Projektion
+ * liefert es immer.
  */
 export interface FigurantragCard {
   id: string; templateId: string; templateRevision: number; name: string;
   anfangswerte: Record<string, unknown>;
+  package?: { id: string; version: string };
   status: FigurantragStatus; version: number; antragsteller: string; createdAt: string;
   decidedBy: string | null; decidedAt: string | null; actorId: string | null; reason: string | null;
 }
