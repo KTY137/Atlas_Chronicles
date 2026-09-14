@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ActorKindValue, ActorTemplateData, Beutezeile, FigurantragFreigabeAck, FigurvorlageFreigabeStand, ItemContract, TemplateCard } from "@chronicle/protocol";
-import type { Scalar } from "@chronicle/rules";
+import { stableJson, type Scalar } from "@chronicle/rules";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { api, apiPath, type EntrySummary } from "../api";
 import { t } from "../i18n";
 import { useResource, useTask } from "../hooks";
 import { useCommand, type RulesState } from "./game-api";
-import { RuleFields } from "./RuleFields";
 import { HostRuleFields } from "./HostRuleFields";
 import { useHostRules } from "./useHostRules";
 import { switchRuleDraft, type RuleEditorDraft } from "./rule-runtime-state";
@@ -44,7 +43,7 @@ function RevisionPicker({ head, value, onChange }: { head: number; value: number
 function ActorTemplateRevisionView({ campaignId, rules, templateId, revisionNumber }: { campaignId: string; rules: RulesState; templateId: string; revisionNumber: number }) {
   const shown = useResource<TemplateCard<ActorTemplateData>>(apiPath(campaignId, `/actor-templates/${encodeURIComponent(templateId)}?revision=${revisionNumber}`));
   const definition = shown.data?.definition;
-  const pkg = definition ? rules.packages.find(p => p.id === definition.package.id && p.version === definition.package.version) : undefined;
+  const editor = useHostRules(campaignId, definition?.package ?? rules.pin, definition?.fields ?? null);
   return <section className="panel"><h2>{definition?.name ?? t("Revision {nummer}", { nummer: revisionNumber })}</h2>
     <p className="field-help">{t("Frühere Revision, schreibgeschützt. Eine neue Revision entsteht nur, wenn die aktuelle Vorlage überarbeitet wird.")}</p>
     {shown.loading ? <Loading /> : null}{shown.error ? <Notice error>{shown.error}</Notice> : null}
@@ -52,7 +51,7 @@ function ActorTemplateRevisionView({ campaignId, rules, templateId, revisionNumb
       <p>{t("Art der Figur · {art}", { art: t(FIGURENART_LABEL[definition.kind]) })}</p>
       <fieldset disabled><legend>{t("Verknüpfter Artikel")}</legend><LoreField campaignId={campaignId} value={definition.loreEntryId} onChange={() => {}} /></fieldset>
       <p>{t("Regelpaket der Anfangswerte · {paket} · {fassung}", { paket: definition.package.id, fassung: definition.package.version })}</p>
-      {pkg ? <fieldset><legend>{t("Anfangswerte dieser Revision")}</legend><RuleFields fields={pkg.fields} values={definition.fields} onChange={() => {}} disabled /></fieldset> : <Notice error>{t("Das Regelpaket dieser Revision ist nicht mehr verfügbar.")}</Notice>}
+      <fieldset><legend>{t("Anfangswerte dieser Revision")}</legend><HostRuleFields state={editor} source={rules.packages.find(p => p.id === definition.package.id && p.version === definition.package.version)} onChange={() => {}} disabled /></fieldset>
     </div> : null}
   </section>;
 }
@@ -135,19 +134,33 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved, onOp
   const pin = draft.pin, editor = useHostRules(campaignId, pin, draft.fields);
   const fields = { ...(editor.preview?.valid ? editor.preview.fields : editor.values) };
   const pkg = editor.manifest;
-  const setFields = (next: Record<string, Scalar>) => { setDraft(current => current.pin.id === pin.id && current.pin.version === pin.version ? { ...current, fields: next } : current); onDirty(true); };
+  const setFields = (next: Record<string, Scalar>) => { setDraft(current => current.pin.id === pin.id && current.pin.version === pin.version ? { ...current, fields: next } : current); };
   const [beute, setBeute] = useState<Beutezeile[]>(original?.definition.schemaVersion === 2 ? original.definition.beute.map(z => ({ ...z })) : []);
   const identityHeading = useRef<HTMLHeadingElement>(null), statsHeading = useRef<HTMLHeadingElement>(null), extrasHeading = useRef<HTMLHeadingElement>(null);
   const gegenstaende = useResource<TemplateCard<ItemContract>[]>(apiPath(campaignId, "/item-templates"), 0);
   const task = useTask(), command = useCommand();
-  useEffect(() => () => onDirty(false), [onDirty]);
+  const baselineFields = original?.definition.fields ?? editor.manifest?.defaults ?? {};
+  const baseline = useMemo(() => stableJson({
+    name: original?.definition.name ?? "", kind: original?.definition.kind ?? "npc", lore: original?.definition.loreEntryId ?? null,
+    pin: original?.definition.package ?? rules.pin, fields: baselineFields,
+    beute: original?.definition.schemaVersion === 2 ? original.definition.beute : [], reason: "",
+  }), [baselineFields, original, rules.pin]);
+  const currentState = useMemo(() => stableJson({ name, kind, lore, pin, fields, beute, reason }), [name, kind, lore, pin, fields, beute, reason]);
+  const dirty = currentState !== baseline;
+  useEffect(() => { onDirty(dirty); return () => onDirty(false); }, [dirty, onDirty]);
+  const discard = () => {
+    if (dirty && !window.confirm(t("Änderungen verwerfen und auf den gespeicherten Stand zurücksetzen?"))) return;
+    setName(original?.definition.name ?? ""); setKind(original?.definition.kind ?? "npc"); setLore(original?.definition.loreEntryId ?? null); setReason("");
+    setDraft({ pin: original?.definition.package ?? rules.pin, fields: original?.definition.fields ?? null });
+    setBeute(original?.definition.schemaVersion === 2 ? original.definition.beute.map(z => ({ ...z })) : []); task.setError(""); onDirty(false);
+  };
   // Ohne Beute bleibt die Vorlage Fassung 1. Dieselbe Zurueckhaltung wie beim Kampagnenpaket:
   // nichts wird allein dadurch neu, dass es eine neuere Fassung gibt.
   const definition: ActorTemplateData = beute.length
     ? { schemaVersion: 2, name, kind, loreEntryId: lore, package: pin, fields, beute }
     : { schemaVersion: 1, name, kind, loreEntryId: lore, package: pin, fields };
-  const setzeZeile = (i: number, patch: Partial<Beutezeile>) => { setBeute(alt => alt.map((z, n) => n === i ? { ...z, ...patch } : z)); onDirty(true); };
-  return <form className="panel creation-template-form" onChange={() => onDirty(true)} onSubmit={event => { event.preventDefault(); if (!name.trim() || !editor.canSave || !pkg) return; void task.run(async () => {
+  const setzeZeile = (i: number, patch: Partial<Beutezeile>) => { setBeute(alt => alt.map((z, n) => n === i ? { ...z, ...patch } : z)); };
+  return <form className="panel creation-template-form" onSubmit={event => { event.preventDefault(); if (!name.trim() || !editor.canSave || !pkg) return; void task.run(async () => {
     const saved = await command<TemplateCard<ActorTemplateData>>(apiPath(campaignId, `/actor-templates${original ? `/${encodeURIComponent(original.id)}` : ""}`),
       { definition, packageContentHash: pkg.contentHash, ...(original ? { expectedVersion: original.version, reason } : {}) }, original ? "PUT" : "POST");
     onDirty(false); onSaved(name.trim(), saved.id);
@@ -161,9 +174,9 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved, onOp
     </div></section>
     <section className="creation-form-section"><h3 ref={statsHeading} tabIndex={-1}>{t("Anfangswerte")}</h3><p className="field-help">{t("Jede neue Figur beginnt mit diesen Werten und erhält danach ihren eigenen Bogen.")}</p>
     <label>{t("Regelpaket für die Anfangswerte")}<select value={`${pin.id}@${pin.version}`} onChange={e => {
-      const p = rules.packages.find(p => `${p.id}@${p.version}` === e.target.value); if (p) { setDraft(current => switchRuleDraft(current, { id: p.id, version: p.version })); task.setError(""); onDirty(true); }
+      const p = rules.packages.find(p => `${p.id}@${p.version}` === e.target.value); if (p) { setDraft(current => switchRuleDraft(current, { id: p.id, version: p.version })); task.setError(""); }
     }}>{rules.packages.map(p => <option key={`${p.id}@${p.version}`} value={`${p.id}@${p.version}`}>{p.name} · {p.version}</option>)}</select></label>
-    {pin.id !== rules.pin.id || pin.version !== rules.pin.version ? <Notice>{t("Diese Vorlage verwendet andere Regeln als die Kampagne. Zum Erschaffen einer Figur müssen Vorlage und aktive Kampagnenregeln übereinstimmen.")}</Notice> : null}
+    {pin.id !== rules.pin.id || pin.version !== rules.pin.version ? <Notice>{t("Diese Vorlage ist an ihr eigenes Regelpaket gebunden. Figuren daraus behalten diese Regeln auch dann, wenn die Kampagne inzwischen ein anderes Standardregelwerk verwendet.")}</Notice> : null}
     <HostRuleFields state={editor} source={rules.packages.find(candidate => candidate.id === pin.id && candidate.version === pin.version)} onChange={setFields} disabled={task.busy} />
     </section>
     <section className="creation-form-section"><h3 ref={extrasHeading} tabIndex={-1}>{t("Hintergrund & Beute")}</h3><p className="field-help">{t("Optional: Verbinde die Vorlage mit deiner Welt und lege fest, was die Figur bei sich trägt.")}</p>
@@ -184,16 +197,16 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved, onOp
               onChange={e => setzeZeile(i, { menge: [Math.max(1, Math.trunc(e.target.valueAsNumber) || 1), zeile.menge[1]] })} /></label>
             <label>{t("bis")}<input type="number" min={zeile.menge[0]} max={1000} value={zeile.menge[1]}
               onChange={e => setzeZeile(i, { menge: [zeile.menge[0], Math.max(zeile.menge[0], Math.trunc(e.target.valueAsNumber) || zeile.menge[0])] })} /></label>
-            <Button onClick={() => { setBeute(alt => alt.filter((_, n) => n !== i)); onDirty(true); }}>{t("Zeile entfernen")}</Button>
+            <Button onClick={() => { setBeute(alt => alt.filter((_, n) => n !== i)); }}>{t("Zeile entfernen")}</Button>
           </div>)}
           <Button disabled={beute.length >= 32} onClick={() => { const erste = vorlagen[0]!;
-            setBeute(alt => [...alt, { templateId: erste.id, templateRevision: erste.revision, wahrscheinlichkeit: 50, menge: [1, 1] }]); onDirty(true); }}>{t("Beutezeile hinzufügen")}</Button>
+            setBeute(alt => [...alt, { templateId: erste.id, templateRevision: erste.revision, wahrscheinlichkeit: 50, menge: [1, 1] }]); }}>{t("Beutezeile hinzufügen")}</Button>
           <p className="field-help">{t("Die Beute wird beim Erschaffen einer Figur aus dieser Vorlage ausgewürfelt und liegt dann in ihrem Inventar. Jede Zeile nennt die Gegenstandsvorlage mit ihrer Revision — eine spätere Überarbeitung ändert diese Tabelle also nicht von selbst.")}</p>
         </>; })()}</>}
     </fieldset></details></section>
     {original ? <Reason value={reason} onChange={setReason} /> : null}
     {task.error ? <Notice error>{task.error} {t("Lade die Vorlage erneut, falls inzwischen eine neue Revision gespeichert wurde.")}</Notice> : null}
-    <div className="creation-save-actions"><p className="field-help">{t("Nach dem Speichern kannst du aus dieser Vorlage Figuren erschaffen oder sie für Spieler freigeben.")}</p><Button type="submit" variant="primary" disabled={task.busy || !editor.canSave || !name.trim()}>{task.busy ? t("Wird gespeichert …") : original ? t("Revision speichern") : t("Figurvorlage speichern")}</Button></div>
+    <div className="creation-save-actions"><p className="field-help">{t("Nach dem Speichern kannst du aus dieser Vorlage Figuren erschaffen oder sie für Spieler freigeben.")}</p><Button type="button" variant="quiet" disabled={task.busy || !dirty} onClick={discard}>{t("Änderungen verwerfen")}</Button><Button type="submit" variant="primary" disabled={task.busy || !editor.canSave || !name.trim()}>{task.busy ? t("Wird gespeichert …") : original ? t("Revision speichern") : t("Figurvorlage speichern")}</Button></div>
     {original ? <details className="actor-optional"><summary>{t("Vorlage archivieren")}</summary><Button variant="danger" disabled={task.busy || !reason.trim()} onClick={() => {
       if (window.confirm(t("Vorlage archivieren? Vorhandene Figuren und Revisionen bleiben erhalten."))) void task.run(async () => {
         await command(apiPath(campaignId, `/actor-templates/${original.id}/archive`), { expectedVersion: original.version, reason }); onDirty(false); onSaved();
