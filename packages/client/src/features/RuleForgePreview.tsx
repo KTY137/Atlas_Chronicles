@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Plus, TestTubeDiagonal, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
@@ -57,6 +57,23 @@ export function RuleForgePreview({ pkg, onFigure, onSaveTest }: { pkg: RulePacka
   </section>;
 }
 
+function PackageLayoutFields({ pkg, values, onChange }: { pkg: RulePackage; values: Record<string, Scalar>; onChange(values: Record<string, Scalar>): void }) {
+  const children = new Map<string | null, RulePackage["layout"]["sections"][number][]>();
+  for (const section of pkg.layout.sections) {
+    const parent = section.parent ?? null, rows = children.get(parent) ?? [];
+    rows.push(section); children.set(parent, rows);
+  }
+  const render = (section: RulePackage["layout"]["sections"][number], depth: number): ReactNode => {
+    const nested = children.get(section.id) ?? [];
+    if (!section.fields.length && !nested.length) return null;
+    return <fieldset className="rf-sheet-section rule-category" data-depth={Math.min(depth, 8)} key={section.id}><legend>{section.label}</legend>
+      {section.fields.length ? <RuleFields fields={Object.fromEntries(section.fields.map(id => [id, pkg.fields[id]!]))} values={values} onChange={onChange} /> : null}
+      {nested.length ? <div className="rule-category-children">{nested.map(child => render(child, depth + 1))}</div> : null}
+    </fieldset>;
+  };
+  return <>{(children.get(null) ?? []).map(section => render(section, 0))}</>;
+}
+
 function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRemove, onSaveTest }: {
   pkg: RulePackage; actionId: string; fixture: Fixture; seed: string; canRemove: boolean; onChange(change: Partial<Fixture>): void; onRemove(): void; onSaveTest?: (test: PackageSelfTest) => void;
 }) {
@@ -76,7 +93,7 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
       {canRemove ? <Button variant="quiet" aria-label={t("Testfigur {name} entfernen", { name: fixture.name })} onClick={onRemove}><Trash2 size={14} />{t("Entfernen")}</Button> : null}
     </div>
     <label>{t("Name der Testfigur")}<input value={fixture.name} maxLength={120} onChange={e => onChange({ name: e.target.value })} /></label>
-    {pkg.layout.sections.map(section => <fieldset className="rf-sheet-section" key={section.id}><legend>{section.label}</legend><RuleFields fields={Object.fromEntries(section.fields.map(id => [id, pkg.fields[id]!]))} values={values} onChange={next => onChange({ values: next })} /></fieldset>)}
+    <PackageLayoutFields pkg={pkg} values={values} onChange={next => onChange({ values: next })} />
     {Object.keys(remaining).length ? <fieldset className="rf-sheet-section"><legend>{t("Weitere Felder")}</legend><RuleFields fields={remaining} values={values} onChange={next => onChange({ values: next })} /></fieldset> : null}
     <RuleComputedFields pkg={pkg} fields={values} />
     {Object.keys(sichtbareEingaben(pkg, action.inputs)).length ? <fieldset className="rf-sheet-section"><legend>{t("Eingaben: {name}", { name: action.name })}</legend><RuleFields fields={sichtbareEingaben(pkg, action.inputs)} values={inputs} onChange={next => onChange({ inputs: { ...fixture.inputs, [actionId]: next } })} /></fieldset> : null}
