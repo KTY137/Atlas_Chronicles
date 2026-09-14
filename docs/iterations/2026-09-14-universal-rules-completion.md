@@ -57,16 +57,24 @@ The declarative engine supports:
 
 ## Reference families
 
-The repository contains only first-party clean-room reference mechanics here; these are structural
-proofs and do **not** copy third-party rule text or setting content.
+The normal product catalogue contains first-party Atlas reference mechanics. The separately exported
+How-to-be-a-Hero adaptation remains a licensed example boundary and is not pulled into the product
+bundle.
 
 | Reference | What it proves |
 | --- | --- |
 | ChronicleHeroes | W100, large ability catalogue, prerequisites/modifiers, resources |
-| How to be a Hero adaptation | Field-based skills under `Fähigkeiten -> Handeln/Wissen/Soziales`, derived aptitude values and W100 outcomes |
+| Chronicles Lite | W50, exactly 100 broad individually rollable skills grouped under Handeln/Wissen/Soziales, Presentation v3 |
 | D20 Fantasy Reference | Six attributes, derived modifiers, nested combat/stat blocks, W20 checks, vitality |
 | 5E-compatible Reference | Level-based proficiency, six abilities, checks, attacks, collections and conditional spellcasting |
 | 3W20 Talent Reference | Three independent W20 rolls against different attributes and a talent reserve, nested physical/social/knowledge groups |
+| How to be a Hero adaptation (`@chronicle/rules/examples`) | Licensed example of field-based skills and W100 outcomes; intentionally outside the product bundle |
+
+`UNIVERSAL_REFERENCE_PACKAGES` now contains D20, 5E-compatible, 3W20 and Chronicles Lite and is the
+single catalogue consumed by the Forge and its round-trip regression. Chronicles Lite is therefore
+no longer only a compressed test fixture: it is a normal exported `RulePackageV2`, can be opened as
+a Forge draft, is parsed by the same runtime, and carries 100 ordinary W50 actions with no special
+React or server evaluator.
 
 Together these cover the structural/mechanical families needed to build D&D-like, Pathfinder-like,
 DSA-like, HTBAH-like and custom systems in the Rule Forge without adding a game-specific React or
@@ -85,6 +93,7 @@ server evaluator.
 - The production ActorWorkbench no longer contains a legacy rule-authoring path; canonical actor
   templates and instantiation use the host-authoritative components directly. Inventory and loot
   remain isolated in `ActorInventoryWorkbench`.
+- Forge round-trip coverage now includes every product reference package, including Chronicles Lite.
 
 ## Deliberate boundary
 
@@ -99,9 +108,12 @@ arbitrary rule-package collections.
 
 ## Verification note
 
-At the time of this review GitHub Actions jobs for the repository are failing before checkout with
-`runner_id: 0` and an empty `steps` array. A manual re-run reproduced the same pre-runner failure and
-GitHub produced no job log blob. Those failures provide no TypeScript/test output and must not be
-represented as code-test failures or as green evidence. The repository therefore carries focused
-parser/runtime/client/HTTP regressions for the universal paths, while final full-gate status must be
-taken from a workflow run that actually obtains a runner and executes its steps.
+GitHub Actions is still failing before checkout on the current `main` line: jobs receive no hosted
+runner, expose no executable steps and produce no job-log blob. The issue was reproduced by a manual
+re-run and again by the workflows triggered after the Chronicles-Lite integration. This is a
+pre-runner GitHub Actions/infrastructure failure, not TypeScript or test output.
+
+The repository therefore carries focused parser/runtime/client/HTTP regressions for the universal
+paths, while final full-gate status must be taken from a workflow run that actually obtains a runner
+and executes its steps. Until then the code should be described as implemented and statically
+reviewed, but not as CI-green.
