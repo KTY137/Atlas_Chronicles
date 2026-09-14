@@ -25,6 +25,10 @@ function referenceCopy(id: string): { summary: string; proof: string } {
       summary: t("5E-kompatible Struktur mit Stufenbonus, sechs Attributen, Angriffen, Fertigkeiten, Merkmalen und Zauberlisten."),
       proof: t("Beweist einen vollständigen levelbasierten D20-Bogen mit Collections und bedingtem Magiebereich ohne Spiel-spezifischen UI-Code."),
     };
+    case "org.atlas-chronicles.srd.5e": return {
+      summary: t("Vollständiger 5E-SRD-Charakterbogen mit Vorteil/Nachteil, Proficiency, Fertigkeiten, Rettungswürfen, Kampf, Death Saves, Zaubern, Slots, Ausrüstung, Merkmalen und Ressourcen."),
+      proof: t("Basiert auf SRD 5.1 unter CC-BY-4.0 und nutzt dieselbe hostautoritative Regelengine wie alle anderen Pakete."),
+    };
     case "org.atlas-chronicles.reference.3d20": return {
       summary: t("Drei unabhängige W20 gegen unterschiedliche Attribute, gemeinsamer Talentvorrat und getrennte Talentkategorien."),
       proof: t("Beweist Mehrwürfel-Proben und einen völlig anderen Charakterbogen ohne eigenen React- oder Serverpfad."),
@@ -74,10 +78,11 @@ export function ChronicleHeroesTemplate({ disabled, onCreate }: { disabled: bool
       </fieldset> : null}
     </section>
     <section className="rf-reference-templates" aria-label={t("Universelle Referenzsysteme")}>
-      <div className="rf-section-heading"><div><h2>{t("Universelle Strukturvorlagen")}</h2><p className="rf-help">{t("Atlas-eigene Referenzen ohne fremde Regeltexte. Sie zeigen, dass dieselbe Regelengine sehr unterschiedliche Mechanikfamilien und Kategorien trägt.")}</p></div></div>
+      <div className="rf-section-heading"><div><h2>{t("Universelle Strukturvorlagen")}</h2><p className="rf-help">{t("Atlas-Referenzen und offen lizenzierte Regelpakete zeigen, dass dieselbe Regelengine sehr unterschiedliche Mechanikfamilien und Kategorien trägt.")}</p></div></div>
       <div className="rf-template-grid">{references.map(pkg => { const copy = referenceCopy(pkg.id); return <article className="rf-card" key={pkg.id}>
         <h3>{pkg.name}</h3><p>{copy.summary}</p><p className="rf-help">{copy.proof}</p>
         <dl className="rf-value-list"><div><dt>{t("Bogenfelder")}</dt><dd>{Object.keys(pkg.fields).length}</dd></div><div><dt>{t("Aktionen")}</dt><dd>{pkg.actions.length}</dd></div><div><dt>{t("Kategorien")}</dt><dd>{pkg.layout.sections.length}</dd></div></dl>
+        <RuleAttribution pkg={pkg} />
         <Button variant="primary" disabled={disabled} onClick={() => onCreate(pkg)}>{t("Als Regelentwurf öffnen")}</Button>
       </article>; })}</div>
     </section>
