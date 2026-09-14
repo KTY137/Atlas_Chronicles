@@ -15,6 +15,7 @@ export { CHRONICLE_ABILITY_LIBRARY, CHRONICLE_CONDITIONS, CHRONICLE_ABILITY_PRIC
 export { CHRONICLES_LITE_PACKAGE, CHRONICLES_LITE_SKILLS, CHRONICLES_LITE_GROUP_LABELS, chroniclesLiteSkillField, type ChroniclesLiteGroup, type ChroniclesLiteSkill } from "./templates/chronicles-lite.ts";
 export { D20_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE } from "./templates/universal-reference.ts";
 export { FIFTH_EDITION_REFERENCE_PACKAGE } from "./templates/fifth-edition-reference.ts";
+export { FIFTH_EDITION_SRD_PACKAGE } from "./templates/fifth-edition-srd.ts";
 export { UNIVERSAL_REFERENCE_PACKAGES } from "./templates/universal-reference-catalog.ts";
 // `How to be a Hero` steht bewusst nicht hier, sondern in `./examples.ts` — siehe dort.
 export { RULE_RUNTIME_CONTRACT, buildRuleRuntime, previewRuleRuntime, type RuleRuntimeIdentity, type RuleRuntimeAction, type RuleRuntimeAbilityUse, type RuleRuntimePassiveEffect, type RuleRuntimeActionState, type RuleRuntimeSection, type RuleRuntime, type RuleRuntimePreview } from "./runtime.ts";
