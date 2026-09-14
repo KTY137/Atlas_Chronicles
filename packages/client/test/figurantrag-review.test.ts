@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const source = (file: string) => readFileSync(new URL(`../src/features/${file}`, import.meta.url), "utf8");
+const featureUrl = (file: string) => new URL(`../src/features/${file}`, import.meta.url);
+const source = (file: string) => readFileSync(featureUrl(file), "utf8");
 
 describe("Figurantrag und Figurenwerkbank — hostautoritative Regelbindung", () => {
   it("verwendet im produktiven Workbench nur die Host-Komponenten für Vorlagen und Instanziierung", () => {
@@ -14,6 +15,18 @@ describe("Figurantrag und Figurenwerkbank — hostautoritative Regelbindung", ()
     expect(workbench).toContain('<HostInstantiateActor');
     expect(workbench).not.toContain('const compatible = !rules');
     expect(workbench).not.toContain('Zum Erschaffen einer Figur müssen Vorlage und aktive Kampagnenregeln übereinstimmen');
+  });
+
+  it("hat keinen Legacy-Regelwerkpfad mehr im Client-Baum", () => {
+    const workbench = source("ActorWorkbench.tsx");
+    expect(workbench).toContain('from "./ActorInventoryWorkbench"');
+    expect(workbench).not.toContain("ActorWorkbenchLegacy");
+    expect(existsSync(featureUrl("ActorWorkbenchLegacy.tsx"))).toBe(false);
+    const inventory = source("ActorInventoryWorkbench.tsx");
+    expect(inventory).toContain("export function Inventory");
+    expect(inventory).toContain("export function ItemTemplates");
+    expect(inventory).not.toContain("RulesState");
+    expect(inventory).not.toContain("RuleFields");
   });
 
   it("beschriftet GM-Anträge mit dem Paket der beantragten Vorlagenrevision", () => {
