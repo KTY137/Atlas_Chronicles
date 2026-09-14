@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import {
+  CHRONICLES_LITE_PACKAGE, CHRONICLES_LITE_SKILLS, chroniclesLiteSkillField,
   D20_REFERENCE_PACKAGE, FIFTH_EDITION_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE, UNIVERSAL_REFERENCE_PACKAGES,
   buildRuleRuntime, evaluateComputedFields, evaluateSupportedAction, parseSupportedRulePackage, previewRuleRuntime,
 } from "../src/index.ts";
@@ -10,11 +11,12 @@ const context = { seed: "00000001000000020000000300000004", actor: {}, input: {}
 
 describe("universal structural reference systems", () => {
   it("keeps all first-party references inside the ordinary supported package contract", () => {
-    expect(UNIVERSAL_REFERENCE_PACKAGES).toHaveLength(3);
+    expect(UNIVERSAL_REFERENCE_PACKAGES).toHaveLength(4);
     expect(UNIVERSAL_REFERENCE_PACKAGES.map(pkg => pkg.id)).toEqual([
       D20_REFERENCE_PACKAGE.id,
       FIFTH_EDITION_REFERENCE_PACKAGE.id,
       THREE_D20_REFERENCE_PACKAGE.id,
+      CHRONICLES_LITE_PACKAGE.id,
     ]);
     for (const pkg of UNIVERSAL_REFERENCE_PACKAGES) expect(parseSupportedRulePackage(JSON.parse(JSON.stringify(pkg)))).toEqual(pkg);
   });
@@ -77,5 +79,30 @@ describe("universal structural reference systems", () => {
     expect(result.dice.map(die => die.sides)).toEqual([20, 20, 20]);
     expect(result.dice.every(die => die.rolls.length === 1 && die.rolls[0]?.length === 1)).toBe(true);
     expect(result.outcome?.id === "success" || result.outcome?.id === "failure").toBe(true);
+  });
+
+  it("ships Chronicles Lite as a real 100-skill W50 package instead of a test-only fixture", () => {
+    expect(CHRONICLES_LITE_SKILLS).toHaveLength(100);
+    expect(CHRONICLES_LITE_SKILLS.filter(skill => skill.group === "handeln")).toHaveLength(34);
+    expect(CHRONICLES_LITE_SKILLS.filter(skill => skill.group === "wissen")).toHaveLength(33);
+    expect(CHRONICLES_LITE_SKILLS.filter(skill => skill.group === "soziales")).toHaveLength(33);
+
+    const runtime = buildRuleRuntime(CHRONICLES_LITE_PACKAGE);
+    expect(Object.keys(runtime.fields)).toHaveLength(105);
+    expect(runtime.actions).toHaveLength(100);
+    expect(runtime.sections.find(section => section.id === "handeln")?.parent).toBe("skills");
+    expect(runtime.sections.find(section => section.id === "wissen")?.parent).toBe("skills");
+    expect(runtime.sections.find(section => section.id === "soziales")?.parent).toBe("skills");
+    expect(runtime.presentation?.schemaVersion).toBe(3);
+
+    const field = chroniclesLiteSkillField("klettern");
+    const result = evaluateSupportedAction(CHRONICLES_LITE_PACKAGE, "check_klettern", {
+      ...context,
+      actor: { ...runtime.defaults, [field]: 50 },
+    });
+    if (result.schemaVersion !== 2) throw new Error("Chronicles Lite must use schemaVersion 2");
+    expect(result.dice).toHaveLength(1);
+    expect(result.dice[0]?.sides).toBe(50);
+    expect(["critical_success", "success", "critical_failure"]).toContain(result.outcome?.id);
   });
 });
