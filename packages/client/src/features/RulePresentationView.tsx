@@ -47,7 +47,9 @@ export function RulePresentationView({ runtime, preview, values, onChange, disab
   disabled?: boolean;
 }) {
   const [search, setSearch] = useState("");
-  const visible = preview ? new Set(preview.visiblePresentationIds) : null;
+  // Invalid drafts must remain repairable. Visibility is authoritative only once the host has
+  // successfully validated the whole actor state and evaluated every visibleIf expression.
+  const visible = preview?.valid ? new Set(preview.visiblePresentationIds) : null;
   const learned = ruleIdList(runtime.abilityField ? values[runtime.abilityField] : undefined);
   const active = ruleIdList(runtime.conditionField ? values[runtime.conditionField] : undefined);
   const overview = preview?.valid ? preview.abilities : null;
