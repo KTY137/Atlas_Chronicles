@@ -6,10 +6,9 @@ import { parseRulePackageV2, type RuleActionV2, type RulePackageV2 } from "../pa
 
 /**
  * First-party, clean-room reference packages for the universal rule runtime.
- *
  * They intentionally contain no third-party rule text, setting material, spell lists, classes,
  * monsters, trademarks-as-content or copied tables. Their job is architectural: prove that one
- * engine + one dynamic sheet renderer can express two very different families of tabletop rules.
+ * engine + one dynamic sheet renderer can express very different families of tabletop rules.
  */
 const integer = (label: string, minimum: number, maximum: number, value: number): FieldSchema =>
   ({ type: "integer", label, minimum, maximum, default: value });
@@ -21,10 +20,27 @@ const d20Check = (id: string, name: string, field: string): RuleActionV2 => ({
   ...baseAction, id, name, expression: `1d20 + ${d20Modifier(field)}`, threshold: 10,
   disclosure: `Reference D20 check: one W20 plus the modifier derived from ${field}. The fixed threshold is intentionally simple and can be edited in the Rule Forge.`,
 });
+const gradedD20Check = (id: string, name: string, field: string): RuleActionV2 => ({
+  ...baseAction,
+  id,
+  name,
+  inputs: { dc: integer("Difficulty", 0, 100, 15) },
+  expression: `1d20 + ${d20Modifier(field)}`,
+  outcome: {
+    bands: [
+      { id: "critical_success", label: "Critical success", comparison: "gte", expression: "input.dc + 10", success: true },
+      { id: "success", label: "Success", comparison: "gte", expression: "input.dc", success: true },
+      { id: "critical_failure", label: "Critical failure", comparison: "lte", expression: "input.dc - 10", success: false },
+    ],
+    fallback: { id: "failure", label: "Failure", success: false },
+  },
+  disclosure: `Reference graded D20 check: one W20 plus the modifier derived from ${field}; margins of ten demonstrate multi-band outcomes without a game-specific evaluator.`,
+});
 
 /**
  * A generic D20-family package. It is not D&D or Pathfinder content; it demonstrates the same
- * structural needs: six core attributes, derived modifiers, combat resources and W20 checks.
+ * structural needs: six core attributes, derived modifiers, combat resources, ordinary W20
+ * checks and multi-band success grades.
  */
 export const D20_REFERENCE_PACKAGE: RulePackageV2 = parseRulePackageV2({
   schemaVersion: 2,
@@ -61,6 +77,7 @@ export const D20_REFERENCE_PACKAGE: RulePackageV2 = parseRulePackageV2({
     d20Check("strength_check", "Strength Check", "strength"), d20Check("dexterity_check", "Dexterity Check", "dexterity"),
     d20Check("constitution_check", "Constitution Check", "constitution"), d20Check("intelligence_check", "Intelligence Check", "intelligence"),
     d20Check("wisdom_check", "Wisdom Check", "wisdom"), d20Check("charisma_check", "Charisma Check", "charisma"),
+    gradedD20Check("graded_check", "Graded D20 Check", "wisdom"),
     { ...baseAction, id: "initiative", name: "Initiative", expression: `1d20 + ${d20Modifier("dexterity")}` },
   ],
   migrations: [],
