@@ -28,6 +28,14 @@ describe("universal structural reference systems", () => {
     expect(result.dice[0]).toMatchObject({ sides: 20, kept: [0] });
   });
 
+  it("supports graded d20 outcomes from action inputs without a game-specific evaluator", () => {
+    const result = evaluateSupportedAction(D20_REFERENCE_PACKAGE, "graded_check", { ...context, input: { dc: 15 } });
+    if (result.schemaVersion !== 2) throw new Error("graded D20 reference must use schemaVersion 2");
+    expect(result.dice).toHaveLength(1);
+    expect(["critical_success", "success", "failure", "critical_failure"]).toContain(result.outcome?.id);
+    expect(result.outcome?.comparisons.map(row => row.id)).toEqual(["critical_success", "success", "critical_failure"]);
+  });
+
   it("evaluates a three-independent-d20 talent check with three distinct dice traces", () => {
     const runtime = buildRuleRuntime(THREE_D20_REFERENCE_PACKAGE);
     expect(runtime.sections.find(section => section.id === "physical")?.parent).toBe("talents");
