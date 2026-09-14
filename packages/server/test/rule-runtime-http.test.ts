@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Value } from "@sinclair/typebox/value";
-import { DEMO_RULE_PACKAGE, RULE_LIMITS, buildRuleRuntime, parseSupportedRulePackage, type AnyRulePackage, type FieldSchema } from "@chronicle/rules";
+import { DEMO_RULE_PACKAGE, RULE_LIMITS, RULE_RUNTIME_CONTRACT, buildRuleRuntime, parseSupportedRulePackage, type AnyRulePackage, type FieldSchema } from "@chronicle/rules";
 import { RuleValues, RULE_VALUE_FIELD_LIMIT, FigurantragAntragBody } from "@chronicle/protocol";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -56,7 +56,7 @@ describe("host-authoritative rule runtime over the real HTTP boundary", () => {
     const f = await fixture(), before = await f.snapshot();
     const response = await f.get(`/rules/runtime?${new URLSearchParams(f.selection)}`);
     expect(response.statusCode, response.body).toBe(200);
-    expect(response.json()).toMatchObject({ contractVersion: 1, pin: f.runtime.pin, contentHash: f.runtime.contentHash, abilities: [], conditions: [], abilityField: null });
+    expect(response.json()).toMatchObject({ contractVersion: RULE_RUNTIME_CONTRACT, pin: f.runtime.pin, contentHash: f.runtime.contentHash, abilities: [], conditions: [], abilityField: null });
     expect(Object.keys(response.json().fields)).toHaveLength(107);
     expect(response.json().actions).toHaveLength(103);
     const evaluated = await f.post("/rules/runtime/preview", f.preview);
