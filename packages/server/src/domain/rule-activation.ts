@@ -14,7 +14,9 @@ import type { Scalar } from "@chronicle/rules";
 import type { Db } from "../db/index.ts";
 import type { DomainConfig } from "./campaigns.ts";
 import { Conflict, Gone } from "./errors.ts";
+import { resolveRulePackage } from "./rule-package-resolution.ts";
 
+/** Preview fingerprints use stable JSON too, but are not stored package-content hashes. */
 const digest = (value: unknown) => createHash("sha256").update(stableJson(value)).digest("hex");
 interface SheetRow { actor_id: string; fields: Record<string, Scalar>; package_id: string; package_version: string; version: number }
 interface Pin { id: string; version: string }
@@ -31,18 +33,8 @@ export function createRuleActivation(db: Db, cfg: DomainConfig = {}) {
       "SELECT package_id,package_version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0];
     return row ? { id: row.package_id, version: row.package_version } : { id: DEMO_RULE_PACKAGE.id, version: DEMO_RULE_PACKAGE.version };
   }
-  async function packageFor(tx: Db, campaignId: string, pin: Pin): Promise<AnyRulePackage> {
-    const row = (await tx.query<{ document: unknown; content_hash: string }>(
-      "SELECT document,content_hash FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3", [campaignId, pin.id, pin.version])).rows[0];
-    if (row) {
-      if (digest(row.document) !== row.content_hash) throw new Gone("corrupt-package");
-      return parseSupportedRulePackage(row.document);
-    }
-    if (pin.id === DEMO_RULE_PACKAGE.id && pin.version === DEMO_RULE_PACKAGE.version) return DEMO_RULE_PACKAGE;
-    throw new Gone("package");
-  }
   async function review(tx: Db, campaignId: string, next: AnyRulePackage, expectedHash?: string) {
-    const from = await currentPin(tx, campaignId), previous = await packageFor(tx, campaignId, from);
+    const from = await currentPin(tx, campaignId), previous = await resolveRulePackage(tx, campaignId, from);
     const pinVersion = (await tx.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0]?.version ?? 0;
     const sheets = (await tx.query<SheetRow>(
       "SELECT actor_id,fields,package_id,package_version,version FROM actor_sheets WHERE campaign_id=$1 ORDER BY actor_id COLLATE \"C\"", [campaignId])).rows;
@@ -69,7 +61,7 @@ export function createRuleActivation(db: Db, cfg: DomainConfig = {}) {
       await authorize(tx, userId, campaignId);
       const pinRow = (await tx.query<{ version: number }>("SELECT version FROM campaign_rule_pins WHERE campaign_id=$1", [campaignId])).rows[0];
       if (input.expectedVersion !== (pinRow?.version ?? 0)) throw new Conflict();
-      const next = await packageFor(tx, campaignId, { id: input.packageId, version: input.packageVersion });
+      const next = await resolveRulePackage(tx, campaignId, { id: input.packageId, version: input.packageVersion });
       const state = await review(tx, campaignId, next, input.previewHash);
       if (state.migration) {
         for (const entity of state.migration.entities) await tx.query(
