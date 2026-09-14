@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
-import { validatePackageFields, type AnyRulePackage } from "@chronicle/rules";
+import { validatePackageFields, type AnyRulePackage, type PackagePin } from "@chronicle/rules";
 import type { FigurantragCard, FreigegebeneVorlageCard } from "@chronicle/protocol";
 import type { ActorTemplateData } from "../../../protocol/src/actors.ts";
 import type { Db } from "../db/index.ts";
@@ -21,18 +21,20 @@ interface AntragRow {
   anfangswerte: Record<string, unknown>; state: string; reason: string | null; version: number; created_at: string | number;
   decided_by: string | null; decided_at: string | number | null; actor_id: string | null;
 }
-const card = (row: AntragRow): FigurantragCard => ({
+const card = (row: AntragRow, packagePin?: PackagePin): FigurantragCard => ({
   id: row.id, templateId: row.template_id, templateRevision: row.template_revision, name: row.name,
-  anfangswerte: { ...row.anfangswerte }, status: row.state as FigurantragCard["status"], version: row.version,
+  anfangswerte: { ...row.anfangswerte }, ...(packagePin ? { package: { ...packagePin } } : {}),
+  status: row.state as FigurantragCard["status"], version: row.version,
   antragsteller: row.antragsteller, createdAt: String(row.created_at), decidedBy: row.decided_by,
   decidedAt: row.decided_at === null ? null : String(row.decided_at), actorId: row.actor_id, reason: row.reason,
 });
 
 export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
   const base = createFigurantrag(db, cfg), now = cfg.now ?? Date.now;
-  async function member(tx: Db, userId: string, campaignId: string, roles: readonly string[]): Promise<void> {
+  async function member(tx: Db, userId: string, campaignId: string, roles: readonly string[]): Promise<{ role: string }> {
     const row = (await tx.query<{ role: string }>("SELECT role FROM campaign_memberships WHERE campaign_id=$1 AND user_id=$2", [campaignId, userId])).rows[0];
     if (!row || !roles.includes(row.role)) throw new Gone();
+    return row;
   }
   async function template(tx: Db, campaignId: string, id: string, revision?: number): Promise<TemplateRow> {
     const row = (await tx.query<TemplateRow>(`SELECT t.id,t.version,r.revision,r.definition,r.content_hash FROM actor_templates t
@@ -41,6 +43,16 @@ export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
     if (!row || hash(row.definition) !== row.content_hash) throw new Gone();
     return row;
   }
+  async function pinnedCard(tx: Db, row: AntragRow): Promise<FigurantragCard> {
+    // Historical requests remain readable even if their template was later archived. The immutable
+    // revision is the authority for the package pin, not today's template head or campaign default.
+    const revision = (await tx.query<{ definition: ActorTemplateData; content_hash: string }>(
+      "SELECT definition,content_hash FROM actor_template_revisions WHERE template_id=$1 AND campaign_id=$2 AND revision=$3",
+      [row.template_id, row.campaign_id, row.template_revision],
+    )).rows[0];
+    if (!revision || hash(revision.definition) !== revision.content_hash) throw new Gone();
+    return card(row, revision.definition.package);
+  }
   async function released(tx: Db, campaignId: string, id: string): Promise<boolean> {
     return !!(await tx.query("SELECT 1 FROM figurvorlagen_freigaben WHERE template_id=$1 AND campaign_id=$2 AND revoked_at IS NULL", [id, campaignId])).rowCount;
   }
@@ -48,6 +60,17 @@ export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
     const basis = validatePackageFields(pkg, definition.fields);
     for (const key of Object.keys(delta)) if (!Object.hasOwn(basis, key)) throw new ActorValidationError("Diese Vorlage kennt eines der angegebenen Felder nicht.");
     return validatePackageFields(pkg, { ...basis, ...delta });
+  }
+
+  /** Product list projection: every request carries the package pin of its exact template revision. */
+  async function liste(userId: string, campaignId: string): Promise<FigurantragCard[]> {
+    return db.transaction(async tx => {
+      const current = await member(tx, userId, campaignId, ["leitung", "spieler"]);
+      const rows = current.role === "leitung"
+        ? (await tx.query<AntragRow>("SELECT * FROM figurantraege WHERE campaign_id=$1 AND state='offen' ORDER BY created_at,id", [campaignId])).rows
+        : (await tx.query<AntragRow>("SELECT * FROM figurantraege WHERE campaign_id=$1 AND antragsteller=$2 ORDER BY created_at,id", [campaignId, userId])).rows;
+      return Promise.all(rows.map(row => pinnedCard(tx, row)));
+    });
   }
 
   async function freigegebeneVorlagen(userId: string, campaignId: string): Promise<FreigegebeneVorlageCard[]> {
@@ -74,7 +97,7 @@ export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
       if (old) {
         if (old.campaign_id !== campaignId || old.actor_user_id !== userId || old.request_hash !== requestHash) throw new Conflict();
         const current = (await tx.query<AntragRow>("SELECT * FROM figurantraege WHERE id=$1 AND campaign_id=$2", [old.ack.id, campaignId])).rows[0];
-        if (!current) throw new Gone(); return card(current);
+        if (!current) throw new Gone(); return pinnedCard(tx, current);
       }
       const source = await template(tx, campaignId, body.templateId);
       if (!await released(tx, campaignId, body.templateId)) throw new Gone();
@@ -85,7 +108,7 @@ export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
       await tx.query(`INSERT INTO figurantraege(id,campaign_id,antragsteller,template_id,template_revision,name,anfangswerte,state,created_at)
         VALUES($1,$2,$3,$4,$5,$6,$7,'offen',$8)`, [id, campaignId, userId, source.id, source.revision, body.name, JSON.stringify(delta), at]);
       const row = (await tx.query<AntragRow>("SELECT * FROM figurantraege WHERE id=$1 AND campaign_id=$2", [id, campaignId])).rows[0]!;
-      const ack = card(row);
+      const ack = card(row, source.definition.package);
       await tx.query(`INSERT INTO figurantrag_events(command_id,campaign_id,actor_user_id,operation,request_hash,request,payload,ack,created_at)
         VALUES($1,$2,$3,'figurantrag.beantragen',$4,$5,$6,$7,$8)`, [commandId, campaignId, userId, requestHash, JSON.stringify(request), JSON.stringify({ schemaVersion: 1, anfangswerte: delta }), JSON.stringify(ack), at]);
       return ack;
@@ -114,12 +137,12 @@ export function createPinnedFigurantrag(db: Db, cfg: DomainConfig = {}) {
       await tx.query(`UPDATE figurantraege SET state='bestaetigt',reason=NULL,decided_by=$3,decided_at=$4,actor_id=$5,version=version+1 WHERE id=$1 AND campaign_id=$2`,
         [id, campaignId, userId, at, figure.id]);
       const after = (await tx.query<AntragRow>("SELECT * FROM figurantraege WHERE id=$1 AND campaign_id=$2", [id, campaignId])).rows[0]!;
-      const ack = card(after), request = { campaignId, operation: "figurantrag.bestaetigen", id, expectedVersion, reason: null };
+      const ack = card(after, source.definition.package), request = { campaignId, operation: "figurantrag.bestaetigen", id, expectedVersion, reason: null };
       await tx.query(`INSERT INTO figurantrag_events(command_id,campaign_id,actor_user_id,operation,request_hash,request,payload,ack,created_at)
-        VALUES($1,$2,$3,'figurantrag.bestaetigen',$4,$5,$6,$7,$8)`, [randomUUID(), campaignId, userId, hash(request), JSON.stringify(request), JSON.stringify({ schemaVersion: 1, before: card(before), after: ack }), JSON.stringify(ack), at]);
+        VALUES($1,$2,$3,'figurantrag.bestaetigen',$4,$5,$6,$7,$8)`, [randomUUID(), campaignId, userId, hash(request), JSON.stringify(request), JSON.stringify({ schemaVersion: 1, before: card(before, source.definition.package), after: ack }), JSON.stringify(ack), at]);
       return { antrag: ack, actorId: figure.id };
     });
   }
 
-  return { ...base, freigegebeneVorlagen, beantragen, bestaetigen };
+  return { ...base, liste, freigegebeneVorlagen, beantragen, bestaetigen };
 }
