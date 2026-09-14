@@ -36,10 +36,17 @@ export interface RuleRuntimeActionState {
   readonly abilities: readonly RuleRuntimeAbilityUse[];
   readonly passive: readonly RuleRuntimePassiveEffect[];
 }
+export interface RuleRuntimeSection {
+  readonly id: string;
+  readonly label: string;
+  readonly fields: readonly string[];
+  /** Null means top level. Otherwise this id points at another runtime section. */
+  readonly parent: string | null;
+}
 export interface RuleRuntime extends RuleRuntimeIdentity {
   readonly name: string;
   readonly fields: Readonly<Record<string, FieldSchema>>;
-  readonly sections: readonly { readonly id: string; readonly label: string; readonly fields: readonly string[] }[];
+  readonly sections: readonly RuleRuntimeSection[];
   readonly defaults: Readonly<Record<string, Scalar>>;
   readonly computed: readonly { readonly id: string; readonly label: string }[];
   readonly abilityField: string | null;
@@ -89,14 +96,14 @@ function actionStates(pkg: AnyRulePackage, fields: Readonly<Record<string, Scala
 }
 export function buildRuleRuntime(input: AnyRulePackage): RuleRuntime {
   const pkg = parseSupportedRulePackage(input), v2 = pkg.schemaVersion === 2 ? pkg : null;
-  const sections = pkg.layout.sections.map(section => ({ ...section, fields: [...section.fields] }));
+  const sections: RuleRuntimeSection[] = pkg.layout.sections.map(section => ({ ...section, fields: [...section.fields], parent: section.parent ?? null }));
   const placed = new Set(sections.flatMap(section => section.fields));
   const remaining = Object.keys(pkg.fields).filter(id => !placed.has(id));
   // Imported layouts may omit fields. They must remain editable, not disappear from the sheet.
   if (remaining.length) {
     let id = "runtime_unplaced";
     while (sections.some(section => section.id === id)) id += "_";
-    sections.push({ id, label: "Weitere Felder", fields: remaining });
+    sections.push({ id, label: "Weitere Felder", fields: remaining, parent: null });
   }
   return deepFreeze({ ...identity(pkg), name: pkg.name, fields: pkg.fields, sections,
     // Defaults may still violate a cross-field constraint; preview reports that instead of
