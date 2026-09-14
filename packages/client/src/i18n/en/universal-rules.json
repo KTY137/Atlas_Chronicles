@@ -43,5 +43,7 @@
   "Collection entfernen": "Remove collection",
   "Der Bogen verweist auf ein entferntes Feld.": "The sheet references a removed field.",
   "Eintrag hinzufügen": "Add entry",
-  "Eintrag entfernen": "Remove entry"
+  "Eintrag entfernen": "Remove entry",
+  "Sammlungsdaten reparieren": "Repair collection data",
+  "Die gespeicherten Sammlungsdaten sind ungültig. Korrigiere den Rohwert oder füge die Sammlung neu auf.": "The stored collection data is invalid. Correct the raw value or rebuild the collection."
 }
