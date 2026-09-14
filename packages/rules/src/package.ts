@@ -130,14 +130,18 @@ export function parseRulePackage(input: string | unknown): RulePackage {
   for (const author of data.authors as unknown[]) string(author, "author", 120);
   const fields = fieldSchemas(data.fields, "fields");
   const layout = record(data.layout, "layout"); keys(layout, ["sections"], "layout");
-  const sectionIds = new Set<string>(), parents = new Map<string, string>();
+  const sectionIds = new Set<string>(), parents = new Map<string, string>(), placedFields = new Set<string>();
   for (const item of array(layout.sections, "sections", 64)) {
     const section = record(item, "section"); keys(section, ["id", "label", "fields", "parent"], "section");
     const sectionId = identifier(section.id, "section id"); if (sectionIds.has(sectionId)) fail("layout: duplicate section id"); sectionIds.add(sectionId);
     if (section.parent !== undefined) parents.set(sectionId, identifier(section.parent, "section parent"));
     string(section.label, "section label", 120); const refs = array(section.fields, "section fields", RULE_LIMITS.fields);
     if (new Set(refs).size !== refs.length) fail("layout: duplicate field reference");
-    for (const ref of refs) if (typeof ref !== "string" || !Object.hasOwn(fields, ref)) fail("layout: unknown field reference");
+    for (const ref of refs) {
+      if (typeof ref !== "string" || !Object.hasOwn(fields, ref)) fail("layout: unknown field reference");
+      if (placedFields.has(ref)) fail("layout: field referenced by multiple sections");
+      placedFields.add(ref);
+    }
   }
   for (const [sectionId, parent] of parents) {
     if (!sectionIds.has(parent)) fail("layout: unknown parent section");
