@@ -65,7 +65,7 @@ proofs and do **not** copy third-party rule text or setting content.
 | ChronicleHeroes | W100, large ability catalogue, prerequisites/modifiers, resources |
 | How to be a Hero adaptation | Field-based skills under `Fähigkeiten -> Handeln/Wissen/Soziales`, derived aptitude values and W100 outcomes |
 | D20 Fantasy Reference | Six attributes, derived modifiers, nested combat/stat blocks, W20 checks, vitality |
-| D20 graded check | Input-driven DC and critical/success/failure bands in one generic action |
+| 5E-compatible Reference | Level-based proficiency, six abilities, checks, attacks, collections and conditional spellcasting |
 | 3W20 Talent Reference | Three independent W20 rolls against different attributes and a talent reserve, nested physical/social/knowledge groups |
 
 Together these cover the structural/mechanical families needed to build D&D-like, Pathfinder-like,
@@ -82,6 +82,9 @@ server evaluator.
   currently uses another package.
 - A real HTTP regression creates a non-active Chronicles-Lite template and verifies the resulting
   sheet keeps the template package.
+- The production ActorWorkbench no longer contains a legacy rule-authoring path; canonical actor
+  templates and instantiation use the host-authoritative components directly. Inventory and loot
+  remain isolated in `ActorInventoryWorkbench`.
 
 ## Deliberate boundary
 
@@ -92,16 +95,13 @@ the package parser. New safe declarative primitives should be added when a real 
 be represented by the existing bounded vocabulary.
 
 Inventory and loot remain their own first-class Atlas object model rather than being duplicated as
-arbitrary rule-package collections. The old fallback template editor still exists inside
-`ActorWorkbench` for callers that omit the Forge navigation callback; the shipped App path passes
-that callback and uses `ActorTemplatesHost` as the canonical authoring surface. Removing that legacy
-fallback is a cleanup task, not a mechanics blocker, and should be done separately from the large
-inventory/loot module to avoid risky unrelated churn.
+arbitrary rule-package collections.
 
 ## Verification note
 
 At the time of this review GitHub Actions jobs for the repository are failing before checkout with
-`runner_id: 0` and an empty `steps` array. Those failures provide no TypeScript/test output and must
-not be represented as code-test failures or as green evidence. The repository therefore carries
-focused parser/runtime/client/HTTP regressions for the universal paths, while final full-gate status
-must be taken from a workflow run that actually obtains a runner and executes its steps.
+`runner_id: 0` and an empty `steps` array. A manual re-run reproduced the same pre-runner failure and
+GitHub produced no job log blob. Those failures provide no TypeScript/test output and must not be
+represented as code-test failures or as green evidence. The repository therefore carries focused
+parser/runtime/client/HTTP regressions for the universal paths, while final full-gate status must be
+taken from a workflow run that actually obtains a runner and executes its steps.
