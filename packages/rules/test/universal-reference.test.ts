@@ -2,15 +2,20 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
 import {
-  D20_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE, UNIVERSAL_REFERENCE_PACKAGES,
-  buildRuleRuntime, evaluateComputedFields, evaluateSupportedAction, parseSupportedRulePackage,
+  D20_REFERENCE_PACKAGE, FIFTH_EDITION_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE, UNIVERSAL_REFERENCE_PACKAGES,
+  buildRuleRuntime, evaluateComputedFields, evaluateSupportedAction, parseSupportedRulePackage, previewRuleRuntime,
 } from "../src/index.ts";
 
 const context = { seed: "00000001000000020000000300000004", actor: {}, input: {}, knowledge: { actorId: "reference", passages: [] } } as const;
 
 describe("universal structural reference systems", () => {
-  it("keeps both first-party references inside the ordinary supported package contract", () => {
-    expect(UNIVERSAL_REFERENCE_PACKAGES).toHaveLength(2);
+  it("keeps all first-party references inside the ordinary supported package contract", () => {
+    expect(UNIVERSAL_REFERENCE_PACKAGES).toHaveLength(3);
+    expect(UNIVERSAL_REFERENCE_PACKAGES.map(pkg => pkg.id)).toEqual([
+      D20_REFERENCE_PACKAGE.id,
+      FIFTH_EDITION_REFERENCE_PACKAGE.id,
+      THREE_D20_REFERENCE_PACKAGE.id,
+    ]);
     for (const pkg of UNIVERSAL_REFERENCE_PACKAGES) expect(parseSupportedRulePackage(JSON.parse(JSON.stringify(pkg)))).toEqual(pkg);
   });
 
@@ -34,6 +39,31 @@ describe("universal structural reference systems", () => {
     expect(result.dice).toHaveLength(1);
     expect(["critical_success", "success", "failure", "critical_failure"]).toContain(result.outcome?.id);
     expect(result.outcome?.comparisons.map(row => row.id)).toEqual(["critical_success", "success", "critical_failure"]);
+  });
+
+  it("runs a fifth-edition-style sheet through the same runtime, including proficiency and conditional magic", () => {
+    const runtime = buildRuleRuntime(FIFTH_EDITION_REFERENCE_PACKAGE);
+    expect(runtime.presentation?.schemaVersion).toBe(3);
+    expect(runtime.collections.map(collection => collection.id)).toEqual(["proficiencies", "attacks", "features", "spells"]);
+    expect(evaluateComputedFields(FIFTH_EDITION_REFERENCE_PACKAGE, runtime.defaults).proficiency_bonus).toBe(2);
+    expect(evaluateComputedFields(FIFTH_EDITION_REFERENCE_PACKAGE, { ...runtime.defaults, level: 5 }).proficiency_bonus).toBe(3);
+
+    const plain = evaluateSupportedAction(FIFTH_EDITION_REFERENCE_PACKAGE, "strength_check", {
+      ...context, actor: runtime.defaults, input: { dc: 10, proficient: false },
+    });
+    const proficient = evaluateSupportedAction(FIFTH_EDITION_REFERENCE_PACKAGE, "strength_check", {
+      ...context, actor: runtime.defaults, input: { dc: 10, proficient: true },
+    });
+    expect(plain.dice).toEqual(proficient.dice);
+    expect(proficient.total - plain.total).toBe(2);
+
+    const mundane = previewRuleRuntime(FIFTH_EDITION_REFERENCE_PACKAGE, runtime.defaults);
+    expect(mundane.valid).toBe(true);
+    expect(mundane.visiblePresentationIds).not.toContain("magic-ui");
+    const magical = previewRuleRuntime(FIFTH_EDITION_REFERENCE_PACKAGE, { ...runtime.defaults, uses_magic: true });
+    expect(magical.valid).toBe(true);
+    expect(magical.visiblePresentationIds).toContain("magic-ui");
+    expect(magical.visiblePresentationIds).toContain("spells-ui");
   });
 
   it("evaluates a three-independent-d20 talent check with three distinct dice traces", () => {
