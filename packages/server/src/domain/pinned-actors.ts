@@ -3,13 +3,15 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { Value } from "@sinclair/typebox/value";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
-import { DEMO_RULE_PACKAGE, parseSupportedRulePackage, stableJson, validatePackageFields, type AnyRulePackage } from "@chronicle/rules";
+import { DEMO_RULE_PACKAGE, stableJson, supportedPackageContentHash, validatePackageFields } from "@chronicle/rules";
 import * as P from "../../../protocol/src/actors.ts";
 import type { Db } from "../db/index.ts";
 import type { DomainConfig } from "./campaigns.ts";
 import { ActorValidationError } from "./actors.ts";
 import { Conflict, Gone } from "./errors.ts";
+import { resolveRulePackage } from "./rule-package-resolution.ts";
 
+/** Actor/template/event hashes use the core canonical encoding; rule_packages use their own hash. */
 const digest = (value: unknown) => canonicalHash(value as CanonicalValue);
 
 interface TemplateRow {
@@ -18,19 +20,6 @@ interface TemplateRow {
   archived_at: string | number | null;
 }
 interface EventRow { campaign_id: string; request_hash: string; result: P.ActorCard }
-
-async function packageFor(tx: Db, campaignId: string, pin: { id: string; version: string }): Promise<AnyRulePackage> {
-  const row = (await tx.query<{ document: unknown; content_hash: string }>(
-    "SELECT document,content_hash FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3",
-    [campaignId, pin.id, pin.version],
-  )).rows[0];
-  if (row) {
-    if (digest(row.document) !== row.content_hash) throw new Gone("corrupt-package");
-    return parseSupportedRulePackage(row.document);
-  }
-  if (pin.id === DEMO_RULE_PACKAGE.id && pin.version === DEMO_RULE_PACKAGE.version) return DEMO_RULE_PACKAGE;
-  throw new Gone("package");
-}
 
 async function requireGm(tx: Db, userId: string, campaignId: string): Promise<void> {
   const row = (await tx.query<{ role: string }>(`SELECT m.role FROM campaigns c JOIN campaign_memberships m ON m.campaign_id=c.id
@@ -80,12 +69,12 @@ export async function instantiatePinnedActorInTx(tx: Db, cfg: DomainConfig, user
     return old.result;
   }
   const source = await template(tx, campaignId, input.templateId, input.templateRevision);
-  const pkg = await packageFor(tx, campaignId, source.definition.package);
+  const pkg = await resolveRulePackage(tx, campaignId, source.definition.package);
   const fields = validatePackageFields(pkg, source.definition.fields);
   if (pkg.id === DEMO_RULE_PACKAGE.id && pkg.version === DEMO_RULE_PACKAGE.version) {
     await tx.query(`INSERT INTO rule_packages(campaign_id,package_id,version,document,content_hash,installed_by,installed_at)
       VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT DO NOTHING`,
-    [campaignId, pkg.id, pkg.version, JSON.stringify(pkg), digest(pkg), userId, now()]);
+    [campaignId, pkg.id, pkg.version, JSON.stringify(pkg), supportedPackageContentHash(pkg), userId, now()]);
   }
   const owner = origin.createdBy ?? userId, controller = origin.grantTo ?? userId;
   const actorId = randomUUID(), at = now();
