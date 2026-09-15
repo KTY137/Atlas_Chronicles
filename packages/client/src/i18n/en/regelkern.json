@@ -55,7 +55,6 @@
   "Listen wie Ausrüstung oder Zauber": "Lists such as equipment or spells",
   "macht die geprüfte Version zum Regelwerk dieser Runde.": "makes the checked version the rule set of this game.",
   "Migrationswege": "Migration paths",
-  "Mit einer Vorlage (ChronicleHeroes, W20, 3W20, 5E-kompatibel), leer oder aus einer Datei. Jede Vorlage wird ein eigener Entwurf, den du frei veränderst.": "From a template (ChronicleHeroes, D20, 3D20, 5E compatible), empty or from a file. Every template becomes your own draft that you change freely.",
   "Name, Anfangswerte und Besitz werden für diese Figur übernommen. Danach entwickelt sich ihr Bogen unabhängig von der Vorlage weiter.": "Name, starting values and possessions are taken over for this character. Afterwards its sheet develops independently of the template.",
   "nein": "no",
   "Neue Kategorie": "New category",
@@ -71,5 +70,6 @@
   "Würfle unten auf der Testtafel mit Beispielfiguren und speichere Beispiele als Pakettest.": "Roll with example characters on the test table below and save examples as package tests.",
   "zeigt, was sich für vorhandene Figuren ändern würde, ohne etwas zu verändern.": "shows what would change for existing characters without changing anything.",
   "Zu den Attributen": "To the attributes",
-  "Zu den Vorlagen": "To the templates"
+  "Zu den Vorlagen": "To the templates",
+  "Mit einer Vorlage (ChronicleHeroes, Chronicles Lite, W20, 3W20, 5E-kompatibel, 5e-SRD), leer oder aus einer Datei. Jede Vorlage wird ein eigener Entwurf, den du frei veränderst.": "From a template (ChronicleHeroes, Chronicles Lite, D20, 3D20, 5E compatible, 5e SRD), empty or from a file. Every template becomes your own draft that you change freely."
 }

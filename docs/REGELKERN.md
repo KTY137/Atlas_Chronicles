@@ -41,7 +41,7 @@ D&D?“.
 
 ## Referenzsysteme
 
-Fünf eigene, lizenzfreie Pakete beweisen, dass dieselbe Engine sehr verschiedene Familien
+Sieben Pakete (fünf eigene, dazu Chronicles Lite und das CC-BY-4.0-SRD) beweisen, dass dieselbe Engine sehr verschiedene Familien
 ausdrückt. Sie kopieren keine fremden Regeltexte.
 
 | Paket | Familie | Was es beweist |
@@ -51,6 +51,8 @@ ausdrückt. Sie kopieren keine fremden Regeltexte.
 | W20-Fantasy-Referenz | sechs Attribute, Modifikatoren, Stufen, Zauberliste | abgeleitete Werte, Listen, sichtbar-wenn, abgestufte W20-Probe |
 | 5E-kompatible Referenz | Übungsbonus, Rettungswürfe, Vorteil | Vorteil als „höchster von zwei“, Ressourcen |
 | 3W20-Talent-Referenz | drei W20 gegen drei Attribute, Talentreserve, Qualitätsstufen 1–6 | Mehrwurf-Probe mit Ausgleich und gestuftem Ergebnis |
+| Chronicles Lite | W50, viele allgemeine Fertigkeiten | das mitgelieferte leichte Regelwerk als Referenz |
+| 5e-SRD (CC-BY-4.0, `docs/legal/SRD-5.1-CC-BY-4.0.md`) | vollständige SRD-Figurenregeln | Klassen, Stufen, Übungsbonus, Rettungswürfe, Zauberplätze in derselben Engine |
 
 Bekannte Lücke: „zwei Einsen = kritischer Erfolg“ braucht Einsicht in einzelne Würfel. Das ist
 die nächste Engine-Primitive (Arbeitstitel `zaehle(1d20, == 1)`), noch nicht gebaut.

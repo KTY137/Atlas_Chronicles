@@ -73,9 +73,11 @@ describe("5E SRD 5.1 package", () => {
       seed, actor, input: { ...baseInput, roll_mode: "disadvantage" }, knowledge,
     });
     expect(normal.dice[0]).toMatchObject({ sides: 20 });
-    expect(advantage.dice[0]?.rolls[0]).toHaveLength(2);
+    // One roll chain per die: two dice, one kept. A chain only grows on exploding dice.
+    expect(normal.dice[0]?.rolls).toHaveLength(1);
+    expect(advantage.dice[0]?.rolls).toHaveLength(2);
     expect(advantage.dice[0]?.kept).toHaveLength(1);
-    expect(disadvantage.dice[0]?.rolls[0]).toHaveLength(2);
+    expect(disadvantage.dice[0]?.rolls).toHaveLength(2);
     expect(disadvantage.dice[0]?.kept).toHaveLength(1);
   });
 

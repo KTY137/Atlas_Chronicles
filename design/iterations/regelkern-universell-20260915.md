@@ -51,3 +51,11 @@ Felder bedienbar — der gemeldete Fehler wurde damit nicht reproduziert. Die Re
   `actor-template-abort-chronicle` 2/2, `rule-forge-path` 1/1, `rule-forge-map` 1/1 (mit Zoom).
 - Typprüfung, `gate:sprache` (5056 Schlüssel, 0 Verstöße), `gate:version`, `gate:boundaries` grün.
 - Nicht gelaufen: die volle Vitest-Suite und `gate:assets` (unverändert).
+
+## Integration mit Codex' Nachschub (5a79e7b)
+
+Während dieser Arbeit lieferte Codex Chronicles Lite und das vollständige 5e-SRD-Paket. Umbasierung
+ohne Konflikte; danach: verwaister Katalogeintrag aus `universal-rules.json` entfernt,
+`fifth-edition-srd.test.ts` gelesen die Würfelspur falsch (`rolls` ist eine Kette je Würfel; auf
+dem unberührten Serverstand ebenfalls rot), Wegweiser-Text und `docs/REGELKERN.md` nennen die neuen
+Vorlagen. Typprüfung, Sprachgate (5062 Schlüssel) und die gezielten Regeltests danach grün.

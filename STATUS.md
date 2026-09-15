@@ -14,7 +14,7 @@ gemerkt); Verwerfen/Abbrechen außerhalb des gesperrten Formularbereichs. Der ge
 Abbruch-Fehler der Charaktererstellung ließ sich auf sieben Wegen (Demo, ChronicleHeroes,
 Spielleitung, Spielerantrag) im echten Browser nicht reproduzieren; die Regressionen bleiben.
 
-Gezielte Regel-, Client-, Server- und neun Browserabläufe grün; Typprüfung, Sprache, Version,
+Auf Codex' gleichzeitig gelieferte Pakete Chronicles Lite und 5e-SRD (CC-BY-4.0) umbasiert; dabei einen verwaisten Katalogeintrag entfernt und den SRD-Test zu Vorteil/Nachteil korrigiert (er las die Würfelspur je Würfel falsch, rot auch auf dem Serverstand). Gezielte Regel-, Client-, Server- und neun Browserabläufe grün; Typprüfung, Sprache, Version,
 Grenzen grün. Keine volle Suite, kein Installer. Entscheidungen:
 `docs/superpowers/specs/2026-09-15-regelkern-universell-design.md`; Doku `docs/REGELKERN.md`;
 Nachweise `design/iterations/regelkern-universell-20260915.md`.
