@@ -278,7 +278,7 @@ describe("Figurantrag — die Figur entsteht erst bei der Bestätigung", () => {
     await f.antraege.freigeben(gm, f.campaign, reich.id, 0);
     const karten = await f.antraege.freigegebeneVorlagen(f.sera.userId, f.campaign);
     expect(karten).toHaveLength(1);
-    expect(Object.keys(karten[0]!).sort()).toEqual(["anfangswerte", "art", "id", "name", "version"]);
+    expect(Object.keys(karten[0]!).sort()).toEqual(["anfangswerte", "art", "id", "name", "package", "version"]);
     expect(karten[0]).toMatchObject({ id: reich.id, name: "Späherin", art: "player_character", version: reich.version });
     expect(karten[0]!.anfangswerte.insight).toBe(3);
     expect(JSON.stringify(karten[0])).not.toContain(lore.entryId);

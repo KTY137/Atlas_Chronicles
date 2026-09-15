@@ -205,12 +205,16 @@ function ActorTemplateForm({ campaignId, rules, original, onDirty, onSaved, onOp
         </>; })()}</>}
     </fieldset></details></section>
     {original ? <Reason value={reason} onChange={setReason} /> : null}
-    {task.error ? <Notice error>{task.error} {t("Lade die Vorlage erneut, falls inzwischen eine neue Revision gespeichert wurde.")}</Notice> : null}
-    <div className="creation-save-actions"><p className="field-help">{t("Nach dem Speichern kannst du aus dieser Vorlage Figuren erschaffen oder sie für Spieler freigeben.")}</p><Button type="button" variant="quiet" disabled={task.busy || !dirty} onClick={discard}>{t("Änderungen verwerfen")}</Button><Button type="submit" variant="primary" disabled={task.busy || !editor.canSave || !name.trim()}>{task.busy ? t("Wird gespeichert …") : original ? t("Revision speichern") : t("Figurvorlage speichern")}</Button></div>
+    {/* Nur ein Konflikt (409) heißt „inzwischen geändert“; jeder andere Fehler sagt selbst, was er ist. */}
+    {task.error ? <Notice error>{task.error}{task.status === 409 ? ` ${t("Lade die Vorlage erneut, falls inzwischen eine neue Revision gespeichert wurde.")}` : ""}</Notice> : null}
+  </fieldset>
+    {/* Der Ausweg liegt außerhalb des gesperrten Bereichs: „Verwerfen“ bleibt auch dann bedienbar,
+        wenn ein Speichern hängt. Es setzt nur den Entwurf zurück; ein laufender Befehl läuft aus. */}
+    <div className="creation-save-actions"><p className="field-help">{t("Nach dem Speichern kannst du aus dieser Vorlage Figuren erschaffen oder sie für Spieler freigeben.")}</p><Button type="button" variant="quiet" disabled={!dirty} onClick={discard}>{t("Änderungen verwerfen")}</Button><Button type="submit" variant="primary" disabled={task.busy || !editor.canSave || !name.trim()}>{task.busy ? t("Wird gespeichert …") : original ? t("Revision speichern") : t("Figurvorlage speichern")}</Button></div>
     {original ? <details className="actor-optional"><summary>{t("Vorlage archivieren")}</summary><Button variant="danger" disabled={task.busy || !reason.trim()} onClick={() => {
       if (window.confirm(t("Vorlage archivieren? Vorhandene Figuren und Revisionen bleiben erhalten."))) void task.run(async () => {
         await command(apiPath(campaignId, `/actor-templates/${original.id}/archive`), { expectedVersion: original.version, reason }); onDirty(false); onSaved();
       });
     }}>{t("Vorlage archivieren")}</Button></details> : null}
-  </fieldset></form>;
+  </form>;
 }

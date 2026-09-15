@@ -49,6 +49,15 @@ describe("presentation schema v3", () => {
     expect(high.visiblePresentationIds).toContain("field-insight");
   });
 
+  it("rejects a collection whose storage field already holds abilities or conditions", () => {
+    const raw = baseV2();
+    raw.fields = { ...raw.fields, notes_data: { type: "string", label: "Notizen", maxLength: 4096, default: "" } };
+    const collections = [{ id: "notes", label: "Notizen", storageField: "notes_data", minItems: 0, maxItems: 4,
+      itemFields: { text: { type: "string", label: "Text", maxLength: 80, default: "" } } }];
+    const abilities = [{ id: "funke", name: "Funke", group: "Magie", rank: 1, kind: "dauerhaft", cost: 0, price: 1, text: "Ein Funke." }];
+    expect(() => parseSupportedRulePackage({ ...raw, collections, abilityRules: { abilityField: "notes_data" }, abilities })).toThrow(/already stores abilities or conditions/);
+    expect(() => parseSupportedRulePackage({ ...raw, collections, abilityRules: { abilityField: "name", conditionField: "notes_data" }, abilities, conditions: [{ id: "muede", name: "Müde", text: "Schläfrig." }] })).toThrow(/already stores abilities or conditions/);
+  });
   it("validates collection rows through the ordinary actor field contract", () => {
     const raw = baseV2();
     raw.fields = { ...raw.fields, spells_data: { type: "string", label: "Zauberdaten", maxLength: 4096, default: "[]" } };

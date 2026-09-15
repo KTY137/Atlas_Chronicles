@@ -53,7 +53,7 @@ export function RuleDeclarativeEditor({ draft, onChange }: { draft: RuleDraft; o
     <Button disabled={computed.length >= 64} onClick={() => onChange({ ...draft, computed: [...computed, { id: uniqueId("berechnet", [...draft.fields.map(f => f.id), ...computed.map(v => v.id)]), label: "Neuer berechneter Wert", expression: "0" }] })}>{t("Berechneten Wert hinzufügen")}</Button>
     <AssertionEditor title={t("Regeln für einen gültigen Bogen")} values={draft.constraints ?? []} limit={64} draft={draft} onChange={constraints => onChange({ ...draft, constraints })} />
     <VitalEditor draft={draft} onChange={onChange} />
-    <hr /><RulePresentationEditor draft={draft} onChange={onChange} />
+    <hr /><RulePresentationEditor draft={draft} onChange={next => onChange({ ...next, presentationAuto: false })} />
   </>;
 }
 export function RuleActionExtensions({ draft, action, onChange }: { draft: RuleDraft; action: DraftAction; onChange(action: DraftAction): void }) {

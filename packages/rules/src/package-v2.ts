@@ -265,13 +265,22 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
     }
   }
   const collections = parseRuleCollections(data.collections, base.fields);
+  // One text field cannot hold both a learned-ability list and a JSON collection: each parser
+  // accepts the other's empty default, so the clash would only surface on the first real sheet.
+  if (data.abilityRules !== undefined) {
+    const rules = data.abilityRules as { abilityField?: unknown; conditionField?: unknown };
+    for (const collection of collections) if (collection.storageField === rules.abilityField || collection.storageField === rules.conditionField)
+      fail(`collection ${collection.id}: storage field ${collection.storageField} already stores abilities or conditions`);
+  }
+  // Optional context members are left out when absent: an explicit `undefined` is not an
+  // absent optional property under `exactOptionalPropertyTypes`.
   const presentation = parseRulePresentation(data.presentation, {
     fields: base.fields,
-    computed: data.computed as unknown as readonly ComputedField[] | undefined,
-    vitals: data.vitals as unknown as readonly RuleVital[] | undefined,
     actions: data.actions as unknown as readonly RuleActionV2[],
-    abilities: data.abilities as unknown as readonly RuleAbility[] | undefined,
-    conditions: data.conditions as unknown as readonly RuleCondition[] | undefined,
+    ...(data.computed !== undefined ? { computed: data.computed as unknown as readonly ComputedField[] } : {}),
+    ...(data.vitals !== undefined ? { vitals: data.vitals as unknown as readonly RuleVital[] } : {}),
+    ...(data.abilities !== undefined ? { abilities: data.abilities as unknown as readonly RuleAbility[] } : {}),
+    ...(data.conditions !== undefined ? { conditions: data.conditions as unknown as readonly RuleCondition[] } : {}),
   }, collections);
   const parsed = deepFreeze({ ...data,
     ...(data.collections === undefined ? {} : { collections }),

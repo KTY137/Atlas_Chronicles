@@ -46,6 +46,9 @@ export interface RuleDraft {
   abilityRules?: RulePackageV2["abilityRules"]; abilities?: RulePackageV2["abilities"]; conditions?: RulePackageV2["conditions"];
   collections?: RuleCollection[];
   presentation?: RulePresentationV3;
+  /** True while the presentation is only the mirror of `sections`; compile then rebuilds it, so
+   * renamed attributes and moved categories never leave dangling references behind. */
+  presentationAuto?: boolean;
 }
 export type Validation<T> = { valid: true; value: T } | { valid: false; error: string };
 let localSequence = 0;
@@ -175,7 +178,24 @@ export function presentationFromSections(draft: Pick<RuleDraft, "sections" | "fi
   return { schemaVersion: RULE_PRESENTATION_SCHEMA_VERSION, root };
 }
 export function ensurePresentationV3(draft: RuleDraft): RuleDraft {
-  return { ...draft, schemaVersion: 2, presentation: draft.presentation ?? presentationFromSections(draft), collections: draft.collections ?? [] };
+  if (draft.presentation) return { ...draft, schemaVersion: 2, collections: draft.collections ?? [] };
+  return { ...draft, schemaVersion: 2, presentation: presentationFromSections(draft), presentationAuto: true, collections: draft.collections ?? [] };
+}
+/** After attributes were edited: follow every renamed attribute key into the places that name it. */
+export function renameFieldReferences(draft: RuleDraft, previous: readonly DraftField[]): RuleDraft {
+  const renames = new Map<string, string>();
+  for (const field of draft.fields) { const before = previous.find(candidate => candidate.localId === field.localId); if (before && before.id !== field.id) renames.set(before.id, field.id); }
+  if (!renames.size) return draft;
+  const rename = (id: string) => renames.get(id) ?? id;
+  const walk = (node: RulePresentationNode): RulePresentationNode => node.kind === "group" ? { ...node, children: node.children.map(walk) }
+    // A bar carries the id of its attribute, so its node follows the same rename.
+    : node.kind === "field" || node.kind === "vital" ? { ...node, ref: rename(node.ref) } : node;
+  return { ...draft,
+    ...(draft.presentation ? { presentation: { ...draft.presentation, root: draft.presentation.root.map(walk) } } : {}),
+    ...(draft.collections ? { collections: draft.collections.map(collection => ({ ...collection, storageField: rename(collection.storageField) })) } : {}),
+    ...(draft.vitals ? { vitals: draft.vitals.map(vital => ({ ...vital, id: rename(vital.id) })) } : {}),
+    ...(draft.abilityRules ? { abilityRules: { ...draft.abilityRules, abilityField: rename(draft.abilityRules.abilityField), ...(draft.abilityRules.conditionField ? { conditionField: rename(draft.abilityRules.conditionField) } : {}) } } : {}),
+  };
 }
 
 export function packageDraft(input: AnyRulePackage): RuleDraft {
@@ -200,7 +220,7 @@ export function compilePackage(draft: RuleDraft): AnyRulePackage {
     actions: draft.actions.map(a => ({ id: a.id, name: a.name, version: a.version, disclosure: a.disclosure, requiresConfirmation: true, inputs: fieldsMap(a.inputs), expression: draftExpression(a), ...(a.thresholdEnabled ? { threshold: numberValue(a.threshold, t("{name}: Erfolgsschwelle", { name: a.name })) } : {}), ...(a.outcome ? { outcome: copyJson(a.outcome) } : {}), ...(a.preconditions !== undefined ? { preconditions: copyJson(a.preconditions) } : {}) })),
     migrations: draft.migrations.map(m => ({ from: m.from, to: draft.version, steps: m.steps.map(migrationStep) })),
     ...(draft.includeSelfTests || draft.selfTests.length ? { selfTests: copyJson(draft.selfTests) } : {}),
-    ...(draft.computed !== undefined ? { computed: copyJson(draft.computed) } : {}), ...(draft.constraints !== undefined ? { constraints: copyJson(draft.constraints) } : {}), ...(draft.vitals !== undefined ? { vitals: copyJson(draft.vitals) } : {}), ...(draft.attribution !== undefined ? { attribution: copyJson(draft.attribution) } : {}), ...(draft.abilityRules !== undefined ? { abilityRules: copyJson(draft.abilityRules) } : {}), ...(draft.abilities !== undefined ? { abilities: copyJson(draft.abilities) } : {}), ...(draft.conditions !== undefined ? { conditions: copyJson(draft.conditions) } : {}), ...(draft.collections !== undefined ? { collections: copyJson(draft.collections) } : {}), ...(draft.presentation !== undefined ? { presentation: copyJson(draft.presentation) } : {}) });
+    ...(draft.computed !== undefined ? { computed: copyJson(draft.computed) } : {}), ...(draft.constraints !== undefined ? { constraints: copyJson(draft.constraints) } : {}), ...(draft.vitals !== undefined ? { vitals: copyJson(draft.vitals) } : {}), ...(draft.attribution !== undefined ? { attribution: copyJson(draft.attribution) } : {}), ...(draft.abilityRules !== undefined ? { abilityRules: copyJson(draft.abilityRules) } : {}), ...(draft.abilities !== undefined ? { abilities: copyJson(draft.abilities) } : {}), ...(draft.conditions !== undefined ? { conditions: copyJson(draft.conditions) } : {}), ...(draft.collections !== undefined ? { collections: copyJson(draft.collections) } : {}), ...(draft.presentation !== undefined ? { presentation: draft.presentationAuto ? presentationFromSections(draft) : copyJson(draft.presentation) } : {}) });
 }
 export function validateDraft(draft: RuleDraft): Validation<AnyRulePackage> {
   try { return { valid: true, value: compilePackage(draft) }; } catch (e) { return { valid: false, error: e instanceof Error ? e.message : t("Das Paket konnte nicht geprüft werden.") }; }

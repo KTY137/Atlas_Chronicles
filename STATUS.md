@@ -1,3 +1,24 @@
+# Regelkern universell: Codex-Review, Fähigkeitsprofil, Wegweiser, Zoom — 2026-09-15
+
+Codex' universelle Regel-Laufzeit (Manifest, Präsentationsbaum, Referenzsysteme) wurde in drei
+unabhängigen Reviews geprüft. Behoben: ein 3W20-Check mit doppeltem Attribut, ein Feld, das
+Fähigkeitsliste und Sammlungsspeicher zugleich sein durfte, Jargon in der Oberfläche, das
+Zerreißen des Präsentationsbaums beim Umbenennen eines Attributs, sowie rote Typprüfung,
+rotes Sprachgate und zwei veraltete HTBAH-Tests auf main.
+
+Neu: Fähigkeitsprofil `describeRuleCapabilities` (aus dem Paket abgelesen, im Laufzeit-Manifest
+als `capabilities`, Vertrag bleibt 2) mit der Karte „Was dieses Regelwerk kann“; 3W20-Referenz
+1.2.0 mit Qualitätsstufen 1–6; Wegweiser mit fünf Stationen in der Regelwerkstatt, offene
+Startvorlagen und erklärte Übernahme; Zoom in der Regelkarte (Tasten, Strg + Mausrad, Einpassen,
+gemerkt); Verwerfen/Abbrechen außerhalb des gesperrten Formularbereichs. Der gemeldete
+Abbruch-Fehler der Charaktererstellung ließ sich auf sieben Wegen (Demo, ChronicleHeroes,
+Spielleitung, Spielerantrag) im echten Browser nicht reproduzieren; die Regressionen bleiben.
+
+Gezielte Regel-, Client-, Server- und neun Browserabläufe grün; Typprüfung, Sprache, Version,
+Grenzen grün. Keine volle Suite, kein Installer. Entscheidungen:
+`docs/superpowers/specs/2026-09-15-regelkern-universell-design.md`; Doku `docs/REGELKERN.md`;
+Nachweise `design/iterations/regelkern-universell-20260915.md`.
+
 # Schmiede, Charaktererstellung und Steam-Vorbereitung — 2026-09-12
 
 Die Schmiede priorisiert Regeln und Figuren. Die Regelschmiede hat eine

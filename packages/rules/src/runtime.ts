@@ -7,6 +7,7 @@ import { abilityOverview, evaluateComputedFields, evaluateVitals, parseSupported
   type ModifierTarget, type RuleAbility, type RuleCondition, type VitalReading } from "./package-v2.ts";
 import { validateRuleCollections, visiblePresentationNodeIds, type RuleCollection, type RulePresentationV3 } from "./presentation-v3.ts";
 import { RuleValidationError, deepFreeze } from "./validation.ts";
+import { describeRuleCapabilities, type RuleCapabilities } from "./capabilities.ts";
 
 /** Read model, not a second rules engine. Only the host calls the builders below. */
 export const RULE_RUNTIME_CONTRACT = 2 as const;
@@ -58,6 +59,8 @@ export interface RuleRuntime extends RuleRuntimeIdentity {
   readonly abilities: readonly Pick<RuleAbility, "id" | "name" | "group" | "rank" | "kind" | "cost" | "price" | "requires" | "text">[];
   readonly conditions: readonly Pick<RuleCondition, "id" | "name" | "text">[];
   readonly actions: readonly RuleRuntimeAction[];
+  /** Derived description of what the package offers; surfaces branch on this, never on the package id. */
+  readonly capabilities: RuleCapabilities;
 }
 export interface RuleRuntimePreview extends RuleRuntimeIdentity {
   readonly valid: boolean;
@@ -112,7 +115,7 @@ export function buildRuleRuntime(input: AnyRulePackage): RuleRuntime {
     while (sections.some(section => section.id === id)) id += "_";
     sections.push({ id, label: "Weitere Felder", fields: remaining, parent: null });
   }
-  return deepFreeze({ ...identity(pkg), name: pkg.name, fields: pkg.fields, sections,
+  return deepFreeze({ ...identity(pkg), name: pkg.name, fields: pkg.fields, sections, capabilities: describeRuleCapabilities(pkg),
     presentation: v2?.presentation ?? null,
     collections: [...(v2?.collections ?? [])],
     // Defaults may still violate a cross-field constraint; preview reports that instead of

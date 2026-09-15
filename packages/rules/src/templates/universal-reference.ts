@@ -113,11 +113,20 @@ export const D20_REFERENCE_PACKAGE: RulePackageV2 = parseRulePackageV2({
   ] }],
 });
 
+/** Quality levels from the talent points left over: 0–3 → 1, 4–6 → 2, 7–9 → 3, 10–12 → 4, 13–15 → 5, 16+ → 6. */
+const QUALITY_LEVELS: readonly { readonly level: number; readonly leftover: number }[] = [
+  { level: 6, leftover: 16 }, { level: 5, leftover: 13 }, { level: 4, leftover: 10 }, { level: 3, leftover: 7 }, { level: 2, leftover: 4 }, { level: 1, leftover: 0 },
+];
 const threeD20 = (id: string, name: string, talent: string, first: string, second: string, third: string): RuleActionV2 => ({
   ...baseAction, id, name,
   expression: `max(0, 1d20 - actor.${first}) + max(0, 1d20 - actor.${second}) + max(0, 1d20 - actor.${third})`,
-  outcome: { bands: [{ id: "success", label: "Success", comparison: "lte", expression: `actor.${talent}`, success: true }], fallback: { id: "failure", label: "Failure", success: false } },
-  disclosure: `Reference 3W20 check: three independent W20 rolls are compared with ${first}, ${second} and ${third}; the total excess must fit inside ${talent}.`,
+  // The result is the excess the talent reserve has to absorb; the bands are ordered best first,
+  // so the first band whose leftover fits wins. Failure is everything beyond the reserve.
+  outcome: {
+    bands: QUALITY_LEVELS.map(({ level, leftover }) => ({ id: `quality_${level}`, label: `Quality level ${level}`, comparison: "lte" as const, expression: leftover ? `actor.${talent} - ${leftover}` : `actor.${talent}`, success: true })),
+    fallback: { id: "failure", label: "Failure", success: false },
+  },
+  disclosure: `Reference 3W20 check: three independent W20 rolls are compared with ${first}, ${second} and ${third}; the total excess must fit inside ${talent}, and the points left over decide the quality level (1 to 6).`,
 });
 
 /** Generic three-independent-d20 structure, deliberately not DSA content. */
@@ -125,7 +134,7 @@ export const THREE_D20_REFERENCE_PACKAGE: RulePackageV2 = parseRulePackageV2({
   schemaVersion: 2,
   id: "org.atlas-chronicles.reference.3d20",
   name: "3W20 Talent Reference",
-  version: "1.1.0",
+  version: "1.2.0",
   engineVersion: ENGINE_VERSION,
   license: "MIT",
   authors: ["Atlas Chronicles contributors"],
@@ -170,9 +179,13 @@ export const THREE_D20_REFERENCE_PACKAGE: RulePackageV2 = parseRulePackageV2({
   actions: [
     threeD20("athletics_check", "Athletics Check", "athletics", "courage", "intuition", "agility"),
     threeD20("diplomacy_check", "Diplomacy Check", "diplomacy", "intuition", "charisma", "cleverness"),
-    threeD20("lore_check", "Lore Check", "lore", "cleverness", "intuition", "cleverness"),
+    threeD20("lore_check", "Lore Check", "lore", "cleverness", "intuition", "charisma"),
   ],
-  migrations: [{ from: "1.0.0", to: "1.1.0", steps: [{ kind: "add", field: "specialties_data", value: "[]" }] }],
+  migrations: [
+    { from: "1.0.0", to: "1.2.0", steps: [{ kind: "add", field: "specialties_data", value: "[]" }] },
+    // 1.1.0 → 1.2.0 only refines the check outcomes; every sheet field stays as it is.
+    { from: "1.1.0", to: "1.2.0", steps: [] },
+  ],
 });
 
 export const UNIVERSAL_REFERENCE_PACKAGES: readonly RulePackageV2[] = Object.freeze([D20_REFERENCE_PACKAGE, THREE_D20_REFERENCE_PACKAGE]);

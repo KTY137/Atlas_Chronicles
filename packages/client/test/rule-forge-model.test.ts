@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { DEMO_RULE_PACKAGE, RulePackageRegistry, evaluateFormula, parseFormula, parseRulePackage, previewPackageMigration, stableJson, type EvaluationContext } from "@chronicle/rules";
-import { changeFieldType, compileFormula, compilePackage, copyJson, decimalSource, draftExpression, fieldDraft, fixtureValues, forkPackage, formulaDraft, formulaSource, migrationStepDraft, newAction, newField, newPackage, numberValue, packageDraft, packageTestResults, validateDraft } from "../src/features/rule-forge-model";
+import { DEMO_RULE_PACKAGE, RulePackageRegistry, evaluateFormula, parseFormula, parseRulePackage, previewPackageMigration, stableJson, type EvaluationContext, D20_REFERENCE_PACKAGE } from "@chronicle/rules";
+import { changeFieldType, compileFormula, compilePackage, copyJson, decimalSource, draftExpression, fieldDraft, fixtureValues, forkPackage, formulaDraft, formulaSource, migrationStepDraft, newAction, newField, newPackage, numberValue, packageDraft, packageTestResults, validateDraft, renameFieldReferences } from "../src/features/rule-forge-model";
 
 const context: EvaluationContext = { seed: "00000001000000020000000300000004", actor: { n: 3 }, input: { topic: "spuren" }, knowledge: { actorId: "fixture-sera", passages: [{ passageId: "beispiel", labels: ["spuren"], experience: "erfahren" }] } };
 
@@ -63,6 +63,16 @@ describe("immutable rule package drafts", () => {
     field.id = "character_name";
     const pkg = compilePackage(draft); expect(pkg.layout.sections[0]!.fields).toContain("character_name"); expect(pkg.layout.sections[0]!.fields).not.toContain("name");
     draft.fields = draft.fields.filter(f => f.localId !== field.localId); expect(validateDraft(draft).valid).toBe(false);
+  });
+  it("follows a renamed attribute into a hand-made presentation, its lists and bars", () => {
+    const draft = packageDraft(D20_REFERENCE_PACKAGE); const before = draft.fields.map(f => ({ ...f }));
+    // Attributes that no formula names: formulas keep their own findings on the rule map.
+    draft.fields.find(f => f.id === "speed")!.id = "pace"; draft.fields.find(f => f.id === "weapons_data")!.id = "arms_data"; draft.fields.find(f => f.id === "hp")!.id = "wounds";
+    expect(validateDraft(draft).valid).toBe(false);
+    const renamed = renameFieldReferences(draft, before); const pkg = compilePackage(renamed);
+    if (pkg.schemaVersion !== 2) throw new Error("expected v2");
+    expect(JSON.stringify(pkg.presentation)).toContain('"ref":"pace"'); expect(JSON.stringify(pkg.presentation)).not.toContain('"ref":"speed"'); expect(JSON.stringify(pkg.presentation)).toContain('"ref":"wounds"');
+    expect(pkg.collections?.find(c => c.id === "weapons")?.storageField).toBe("arms_data"); expect(pkg.vitals?.[0]?.id).toBe("wounds");
   });
   it("keeps reference errors visible when action fields are removed", () => {
     const draft = newPackage("Sera"); draft.fields = draft.fields.filter(f => f.id !== "insight"); draft.sections = [];

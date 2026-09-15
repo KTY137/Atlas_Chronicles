@@ -88,8 +88,8 @@ export async function authorizeActorPerspective(db: Db, viewer: Membership, acto
  * die bei der Wahl einer Figur hilft.
  */
 export function templateForPlayer(id: string, version: number, definition: P.ActorTemplateData):
-  { id: string; name: string; art: string; anfangswerte: Record<string, unknown>; version: number } {
-  return { id, name: definition.name, art: definition.kind, anfangswerte: { ...definition.fields }, version };
+  { id: string; name: string; art: string; anfangswerte: Record<string, unknown>; version: number; package: { id: string; version: string } } {
+  return { id, name: definition.name, art: definition.kind, anfangswerte: { ...definition.fields }, version, package: { id: definition.package.id, version: definition.package.version } };
 }
 
 export function createActors(db: Db, cfg: DomainConfig = {}) {

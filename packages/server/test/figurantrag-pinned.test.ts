@@ -24,7 +24,7 @@ describe("pinned figure requests", () => {
     await db.query("INSERT INTO actors(id,campaign_id,user_id,name) VALUES($1,$2,$3,'Sera')", [actorId, campaignId, player]);
     await db.query("INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton,actor_id) VALUES($1,$2,'spieler','Sera','sera',$3)", [campaignId, player, actorId]);
 
-    const game = createGameplay(db), actors = createActors(db), requests = createPinnedFigurantrag(db, config);
+    const game = createGameplay(db), actors = createActors(db), requests = createPinnedFigurantrag(db);
     await game.installPackage(gm, campaignId, D20_REFERENCE_PACKAGE); // deliberately not activated
     expect((await game.listPackages(gm, campaignId)).pin).toEqual({ id: DEMO_RULE_PACKAGE.id, version: DEMO_RULE_PACKAGE.version });
 

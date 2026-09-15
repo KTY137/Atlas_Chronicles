@@ -79,7 +79,21 @@ describe("universal structural reference systems", () => {
     expect(result.dice).toHaveLength(3);
     expect(result.dice.map(die => die.sides)).toEqual([20, 20, 20]);
     expect(result.dice.every(die => die.rolls.length === 1 && die.rolls[0]?.length === 1)).toBe(true);
-    expect(result.outcome?.id === "success" || result.outcome?.id === "failure").toBe(true);
+    expect(result.outcome?.id ?? "").toMatch(/^(quality_[1-6]|failure)$/);
+  });
+
+  it("grades a 3W20 check into quality levels from the talent points left over", () => {
+    const run = (seed: string) => evaluateSupportedAction(THREE_D20_REFERENCE_PACKAGE, "athletics_check", { ...context, seed, actor: { ...context.actor, courage: 20, intuition: 20, agility: 20, athletics: 17 } });
+    // With attributes of 20 no W20 can exceed them: the excess is 0, 17 points are left, quality level 6.
+    const best = run("00000000000000000000000000000002");
+    if (best.schemaVersion !== 2) throw new Error("expected v2 result");
+    expect(best.total).toBe(0);
+    expect(best.outcome?.id).toBe("quality_6");
+    expect(best.outcome?.success).toBe(true);
+    const weak = evaluateSupportedAction(THREE_D20_REFERENCE_PACKAGE, "athletics_check", { ...context, seed: "00000000000000000000000000000003", actor: { ...context.actor, courage: 1, intuition: 1, agility: 1, athletics: 0 } });
+    if (weak.schemaVersion !== 2) throw new Error("expected v2 result");
+    // Attributes of 1 lose to every W20 above 1; only a triple 1 could still succeed.
+    expect(weak.outcome?.id).toBe(weak.total === 0 ? "quality_1" : "failure");
   });
 
   it("ships Chronicles Lite as a real 100-skill W50 package instead of a test-only fixture", () => {

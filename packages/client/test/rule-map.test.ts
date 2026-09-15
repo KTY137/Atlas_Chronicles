@@ -50,6 +50,16 @@ describe("rule map", () => {
     expect(html).toContain("Verweist auf @laufen, das es in diesem Paket nicht gibt.");
     expect(html).toContain("Wird in keiner Formel benutzt.");
   });
+  it("offers zooming out of the map and the network, but not of the overview", () => {
+    for (const view of ["map", "network"] as const) {
+      const html = render(htbah, view);
+      expect(html).toContain('aria-label="Vergrößerung der Karte"');
+      for (const label of ["Verkleinern", "Vergrößern", "Ganze Karte einpassen", "Auf volle Größe zurücksetzen"]) expect(html).toContain(`aria-label="${label}"`);
+      expect(html).toContain(">100 %<");
+      expect(html).toContain("transform:scale(1)");
+    }
+    expect(render(htbah)).not.toContain("Vergrößerung der Karte");
+  });
   it("keeps navigation usable while the package is read-only", () => {
     const html = render(htbah, "map", "computed:points_spent", true);
     expect(html).toMatch(/<fieldset[^>]*\sdisabled/);

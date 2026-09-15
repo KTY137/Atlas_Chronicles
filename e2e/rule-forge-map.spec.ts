@@ -58,6 +58,20 @@ test("the rule map shows the package as one picture, edits a formula at the node
   await expect(gm.getByRole("region", { name: "Bearbeiten: Kraft" }).getByRole("button", { name: /^Erste Aktion/ })).toBeVisible();
   await expect(map.locator('[data-node-id="action:erste-aktion"]')).not.toHaveClass(/is-dim/);
   await expect(map.locator('[data-node-id="attribute:name"]')).toHaveClass(/is-dim/);
+  // Zoom: two steps out, then fit the whole map, then back to full size; the choice is remembered.
+  const zoom = gm.getByRole("group", { name: "Vergrößerung der Karte", exact: true });
+  await zoom.getByRole("button", { name: "Verkleinern", exact: true }).click();
+  await zoom.getByRole("button", { name: "Verkleinern", exact: true }).click();
+  await expect(zoom.getByRole("button", { name: "Auf volle Größe zurücksetzen", exact: true })).toHaveText("64 %");
+  await expect(map.locator(".rm-canvas")).toHaveCSS("transform", /matrix\(0\.64/);
+  await zoom.getByRole("button", { name: "Ganze Karte einpassen", exact: true }).click();
+  await expect(zoom.getByRole("button", { name: "Auf volle Größe zurücksetzen", exact: true })).not.toHaveText("64 %");
+  const views = gm.getByRole("group", { name: "Ansicht der Regelkarte", exact: true });
+  await views.getByRole("button", { name: "Übersicht", exact: true }).click();
+  await views.getByRole("button", { name: "Karte", exact: true }).click();
+  await expect(gm.getByRole("group", { name: "Vergrößerung der Karte", exact: true }).getByRole("button", { name: "Auf volle Größe zurücksetzen", exact: true })).not.toHaveText("100 %");
+  await gm.getByRole("group", { name: "Vergrößerung der Karte", exact: true }).getByRole("button", { name: "Auf volle Größe zurücksetzen", exact: true }).click();
+  await expect(map.locator(".rm-canvas")).toHaveCSS("transform", /matrix\(1,/);
   await gm.keyboard.press("Escape");
   await expect(gm.getByRole("region", { name: /^Bearbeiten: / })).toHaveCount(0);
   // Network: every formula sits inside its node as a small node net.

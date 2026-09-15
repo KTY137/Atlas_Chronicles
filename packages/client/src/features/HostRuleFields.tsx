@@ -48,7 +48,7 @@ export function HostRuleFields({ state, source, onChange, disabled = false }: {
     {state.error ? <Notice error>{state.error} <Button onClick={state.reload}>{t("Erneut laden")}</Button></Notice> : null}
     {state.manifest && state.values ? <RuntimeFields key={`${state.manifest.pin.id}@${state.manifest.pin.version}:${state.manifest.contentHash}`}
       runtime={display!.runtime} values={state.values} preview={display!.preview} onChange={onChange} disabled={disabled} /> : state.pending ? <Loading /> : null}
-    {state.pending ? <p className="field-help" role="status">{t("Der Host prüft die aktuellen Bogenwerte …")}</p> : null}
+    {state.pending ? <p className="field-help" role="status">{t("Das Regelwerk prüft die aktuellen Bogenwerte …")}</p> : null}
     {state.preview && !state.preview.valid ? <Notice error>{state.preview.errors.join(" ")}</Notice> : null}
   </>;
 }

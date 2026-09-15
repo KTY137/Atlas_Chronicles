@@ -95,9 +95,11 @@ export function FigurAntrag({ campaignId, rules, revision, onChanged, onDirty }:
         {vorlage ? <section className="creation-instance-preview" aria-label={t("Zusammenfassung deines Antrags")}><small>{t("Dein Antrag an die Spielleitung")}</small><h3>{name.trim() || t("Deine Figur braucht noch einen Namen")}</h3><p className="field-help">{t("Vorlage: {name}", { name: vorlage.name })}</p>
           {Object.keys(abweichung).length ? <><p className="field-help">{t("Diese Wünsche schickst du mit:")}</p><dl className="creation-stat-preview">{Object.entries(abweichung).map(([key, value]) => <div key={key}><dt>{editor.manifest?.fields[key]?.label ?? key}</dt><dd>{typeof value === "boolean" ? value ? t("Ja") : t("Nein") : String(value)}</dd></div>)}</dl><Button variant="quiet" onClick={() => setWerte(null)}>{t("Werte der Vorlage wiederherstellen")}</Button></> : <p className="field-help">{t("Alle Anfangswerte bleiben wie in der Vorlage.")}</p>}
         </section> : null}
-        <div className="creation-save-actions"><div className="button-row"><Button type="submit" variant="primary" disabled={task.busy || !vorlage || !name.trim() || !editor.canSave}>{task.busy ? t("Antrag wird gesendet …") : t("Antrag absenden")}</Button>
-        <Button onClick={() => { befehl.current = null; setFormular(false); setTemplateId(""); setName(""); setWerte(null); }}>{t("Abbrechen")}</Button></div></div>
-      </fieldset></form>
+        <div className="creation-save-actions"><div className="button-row"><Button type="submit" variant="primary" disabled={task.busy || !vorlage || !name.trim() || !editor.canSave}>{task.busy ? t("Antrag wird gesendet …") : t("Antrag absenden")}</Button></div></div>
+      </fieldset>
+        {/* Abbrechen steht außerhalb des gesperrten Bereichs und bleibt auch bei hängender Übertragung erreichbar. */}
+        <div className="creation-save-actions"><Button onClick={() => { befehl.current = null; setFormular(false); setTemplateId(""); setName(""); setWerte(null); }}>{t("Abbrechen")}</Button></div>
+      </form>
       : <><EmptyState title={t("Noch führst du keine Figur.")}>
         {vorlagen.data?.length
           ? t("Wähle eine freigegebene Vorlage, gib deiner Figur einen Namen und schicke den Antrag an die Spielleitung.")

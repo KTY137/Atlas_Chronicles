@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ExternalLink, Info, LayoutList, Map as MapIcon, Network, Search, TriangleAlert } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ExternalLink, Info, LayoutList, Map as MapIcon, Maximize, Network, Search, TriangleAlert, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@chronicle/ui";
 import { parseFormula, type Formula, type RuleVital } from "@chronicle/rules";
 import { plural, t } from "../i18n";
@@ -34,12 +34,17 @@ function viewName(view: RuleMapView): string {
 function viewHelp(view: RuleMapView): string {
   switch (view) {
     case "overview": return t("Die Figur als eine Karte: ihre Attribute, was sich daraus ergibt, und was sie tun kann. Klicke einen Eintrag, um ihn zu bearbeiten.");
-    case "map": return t("Jeder Teil des Regelwerks als Knoten, jede Verwendung in einer Formel als Verbindung. Klicke einen Knoten: seine Nachbarn leuchten, rechts kannst du ihn bearbeiten.");
-    case "network": return t("Wie die Karte, aber jede Formel ist als kleines Knotennetz eingebettet. Zum Ändern wähle den Knoten und bearbeite die Formel rechts.");
+    case "map": return t("Jeder Teil des Regelwerks als Knoten, jede Verwendung in einer Formel als Verbindung. Klicke einen Knoten: seine Nachbarn leuchten, rechts kannst du ihn bearbeiten. Mit − und + oder Strg + Mausrad zoomst du heraus und hinein.");
+    case "network": return t("Wie die Karte, aber jede Formel ist als kleines Knotennetz eingebettet. Zum Ändern wähle den Knoten und bearbeite die Formel rechts. Mit − und + oder Strg + Mausrad zoomst du heraus und hinein.");
   }
 }
 export function readRuleMapView(): RuleMapView { try { const value = localStorage.getItem(VIEW_KEY); return value === "map" || value === "network" ? value : "overview"; } catch { return "overview"; } }
 export function writeRuleMapView(view: RuleMapView): void { try { localStorage.setItem(VIEW_KEY, view); } catch { /* storage may be blocked; the choice just does not persist */ } }
+/** Zoom of the map and network views. 1 is the drawn size; smaller values show the whole package at once. */
+const ZOOM_KEY = "atlas.rule-map-zoom", ZOOM_MIN = 0.2, ZOOM_MAX = 2, ZOOM_STEP = 1.25;
+export const clampRuleMapZoom = (value: number): number => Number.isFinite(value) ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 100) / 100)) : 1;
+export function readRuleMapZoom(): number { try { const value = Number(localStorage.getItem(ZOOM_KEY)); return value > 0 ? clampRuleMapZoom(value) : 1; } catch { return 1; } }
+export function writeRuleMapZoom(zoom: number): void { try { localStorage.setItem(ZOOM_KEY, String(zoom)); } catch { /* storage may be blocked; the zoom just does not persist */ } }
 const tabFor = (kind: RuleMapKind): RuleMapTab => kind === "attribute" ? "fields" : kind === "action" ? "actions" : "computed";
 function tabButtonLabel(kind: RuleMapKind): string {
   switch (kind) {
@@ -119,7 +124,7 @@ function Overview({ graph, selected, query, onSelect }: { graph: RuleMapGraph; s
 }
 
 const MAP_SIZE = (node: RuleMapNode): RuleMapSize => node.kind === "attribute" ? { width: 190, height: 48 } : { width: 250, height: 52 };
-const EMBED_PAD = 24, EMBED_LABEL = 20, EMBED_GAP = 8, NODE_HEAD = 48;
+const EMBED_PAD = 24, EMBED_LABEL = 20, EMBED_GAP = 8, NODE_HEAD = 48, FRAME_PAD = 12;
 function Canvas({ graph, view, selected, related, query, sourcesOf, onSelect }: { graph: RuleMapGraph; view: "map" | "network"; selected: string | null; related: Set<string> | null; query: string; sourcesOf(node: RuleMapNode): FormulaSources; onSelect(id: string): void }) {
   const embedded = useMemo(() => {
     if (view !== "network") return new Map<string, { formula: RuleMapFormula; ast: Formula | null; width: number; height: number }[]>();
@@ -140,8 +145,37 @@ function Canvas({ graph, view, selected, related, query, sourcesOf, onSelect }: 
     return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
   };
   const dim = (id: string) => (related && !related.has(id)) || !matches(graph.nodes.find(n => n.id === id)!, query);
-  return <div className="rm-canvas-frame" role="group" aria-label={view === "map" ? t("Regelkarte") : t("Regelkarte mit Knotennetzen")}>
-    <div className="rm-canvas" style={{ width: layout.width, height: layout.height }}>
+  const frame = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(readRuleMapZoom);
+  const applyZoom = useCallback((next: number) => { const value = clampRuleMapZoom(next); setZoom(value); writeRuleMapZoom(value); return value; }, []);
+  const fit = () => { const node = frame.current; if (!node) return; applyZoom((node.clientWidth - 2 * FRAME_PAD) / Math.max(1, layout.width)); };
+  // Ctrl + wheel zooms around the pointer, plain wheel keeps scrolling. A native listener is
+  // required because React registers wheel handlers passively and could not cancel the browser zoom.
+  useEffect(() => {
+    const node = frame.current;
+    if (!node) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const rect = node.getBoundingClientRect(), px = event.clientX - rect.left, py = event.clientY - rect.top;
+      const before = zoom, after = applyZoom(event.deltaY < 0 ? before * 1.1 : before / 1.1);
+      if (after === before) return;
+      const cx = (node.scrollLeft + px - FRAME_PAD) / before, cy = (node.scrollTop + py - FRAME_PAD) / before;
+      requestAnimationFrame(() => { node.scrollLeft = cx * after - px + FRAME_PAD; node.scrollTop = cy * after - py + FRAME_PAD; });
+    };
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
+  }, [zoom, applyZoom]);
+  return <>
+    <div className="rm-canvas-tools" role="group" aria-label={t("Vergrößerung der Karte")}>
+      <button type="button" aria-label={t("Verkleinern")} title={t("Verkleinern")} disabled={zoom <= ZOOM_MIN} onClick={() => applyZoom(zoom / ZOOM_STEP)}><ZoomOut size={14} aria-hidden="true" /></button>
+      <button type="button" className="rm-zoom-value" aria-label={t("Auf volle Größe zurücksetzen")} title={t("Auf volle Größe zurücksetzen")} onClick={() => applyZoom(1)}>{Math.round(zoom * 100)} %</button>
+      <button type="button" aria-label={t("Vergrößern")} title={t("Vergrößern")} disabled={zoom >= ZOOM_MAX} onClick={() => applyZoom(zoom * ZOOM_STEP)}><ZoomIn size={14} aria-hidden="true" /></button>
+      <button type="button" aria-label={t("Ganze Karte einpassen")} title={t("Ganze Karte einpassen")} onClick={fit}><Maximize size={14} aria-hidden="true" />{t("Einpassen")}</button>
+    </div>
+    <div className="rm-canvas-frame" ref={frame} role="group" aria-label={view === "map" ? t("Regelkarte") : t("Regelkarte mit Knotennetzen")} data-zoom={zoom}>
+    <div className="rm-canvas-scaled" style={{ width: layout.width * zoom, height: layout.height * zoom }}>
+    <div className="rm-canvas" style={{ width: layout.width, height: layout.height, transform: `scale(${zoom})` }}>
       <svg className="rm-edges" width={layout.width} height={layout.height} aria-hidden="true">
         {graph.edges.map(edge => <path key={`${edge.from}-${edge.to}`} d={path(edge)} className={`rm-edge${related ? (related.has(edge.from) && related.has(edge.to) && (edge.from === selected || edge.to === selected) ? " is-related" : " is-dim") : ""}`} />)}
       </svg>
@@ -160,7 +194,8 @@ function Canvas({ graph, view, selected, related, query, sourcesOf, onSelect }: 
         </div>;
       })}
     </div>
-  </div>;
+    </div>
+  </div></>;
 }
 
 function NodeEditor({ node, graph, draft, disabled, sources, action, onChange, onSelect, onClose, onOpen }: {

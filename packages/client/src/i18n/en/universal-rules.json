@@ -1,6 +1,6 @@
 {
   "Die Regelantwort passt nicht zum aktuellen Entwurf. Bitte erneut laden.": "The rule response does not match the current draft. Please reload.",
-  "Der Host prüft die aktuellen Bogenwerte …": "The host is checking the current sheet values…",
+  "Das Regelwerk prüft die aktuellen Bogenwerte …": "The rules are checking the current sheet values…",
   "Vitalwerte": "Vitals",
   "Ausgegeben: {punkte} Punkte": "Spent: {punkte} points",
   "Ausgegeben: {punkte} von {budget} Punkten": "Spent: {punkte} of {budget} points",
@@ -35,12 +35,10 @@
   "Oberste Ebene": "Top level",
   "Baustein hinzufügen": "Add element",
   "Collection hinzufügen": "Add collection",
-  "Label (optional)": "Label (optional)",
   "Darstellung": "Rendering",
   "Sichtbar wenn": "Visible when",
   "Boolesche Formel ohne Würfel; leer bedeutet immer sichtbar.": "Boolean expression without dice; empty means always visible.",
   "Übergeordnete Kategorie": "Parent category",
-  "Referenz": "Reference",
   "Einklappbar": "Collapsible",
   "Standardmäßig eingeklappt": "Collapsed by default",
   "Aktionen in diesem Block": "Actions in this block",
@@ -65,5 +63,7 @@
   "Sammlungsdaten reparieren": "Repair collection data",
   "Die gespeicherten Sammlungsdaten sind ungültig. Korrigiere den Rohwert oder füge die Sammlung neu auf.": "The stored collection data is invalid. Correct the raw value or rebuild the collection.",
   "Diese Sammlung ist zu groß. Der gespeicherte Wert darf höchstens {max} Zeichen haben.": "This collection is too large. The stored value may contain at most {max} characters.",
-  "Die Sammlung konnte nicht aktualisiert werden.": "The collection could not be updated."
+  "Die Sammlung konnte nicht aktualisiert werden.": "The collection could not be updated.",
+  "Beschriftung (optional)": "Label (optional)",
+  "Verweist auf": "Refers to"
 }

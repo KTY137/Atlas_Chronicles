@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const FILES = ["RuleForge.tsx", "RuleActionEditor.tsx", "RuleFieldList.tsx", "RuleDeclarativeEditor.tsx", "RuleForgePreview.tsx", "FormulaField.tsx", "FormulaLine.tsx", "FormulaBlocks.tsx", "FormulaGraph.tsx", "formula-sugar.ts", "formula-example.ts", "formula-graph-model.ts", "RuleMap.tsx", "rule-map-model.ts", "RuleAbilityEditor.tsx", "rule-ability-model.ts", "RuleEntryControls.tsx", "rule-ability-references.ts"];
+const FILES = ["RuleForge.tsx", "RuleActionEditor.tsx", "RuleFieldList.tsx", "RuleDeclarativeEditor.tsx", "RuleForgePreview.tsx", "FormulaField.tsx", "FormulaLine.tsx", "FormulaBlocks.tsx", "FormulaGraph.tsx", "formula-sugar.ts", "formula-example.ts", "formula-graph-model.ts", "RuleMap.tsx", "rule-map-model.ts", "RuleForgePath.tsx", "RulePresentationEditor.tsx", "RulePresentationView.tsx", "HostRuleFields.tsx", "RuleAbilityEditor.tsx", "rule-ability-model.ts", "RuleEntryControls.tsx", "rule-ability-references.ts"];
 const FORBIDDEN = /\b(parser|token|tokenizer|kanonisch\w*|syntax\w*|ast|ports?|skalar\w*|identifier|schema\w*|typinferenz|literal\w*|operand\w*|operator\w*|expression\w*|inputs?|fields?)\b/i;
 /** Visible text: JSX text nodes, template/string props that reach the screen, and the plain strings in the German catalogues. */
 function visibleStrings(source: string): string[] {
