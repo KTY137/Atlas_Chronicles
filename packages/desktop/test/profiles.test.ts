@@ -208,3 +208,39 @@ it("löscht eine Welt nur gegen ihren getippten Namen und nie unter einem laufen
     expect(await store.open(andere.profile.id)).toEqual(andere);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+// Das Adressgedaechtnis einer Welt. Ohne es kann der Sitzungsumzug (`src/sitzung.ts`) nicht
+// wissen, wo die Anmeldung der Spielleitung zuletzt lag, wenn die Heimnetz-IP gewechselt hat.
+it("merkt sich die Adressen einer Welt in der Reihenfolge ihrer Benutzung", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "chronicle-adressen-test-"));
+  const store = new ProfileStore(directory, { available: () => true, encrypt: text => Buffer.from(text), decrypt: bytes => bytes.toString() });
+  try {
+    const welt = await store.create("Eron"), port = welt.profile.httpPort;
+    const lokal = `http://localhost:${port}`, alt = `http://192.168.178.54:${port}`, neu = `http://10.17.120.45:${port}`;
+    expect(await store.adressen(welt.profile.id)).toEqual([]);
+
+    await store.merkeAdresse(welt.profile, lokal);
+    await store.merkeAdresse(welt.profile, alt);
+    await store.merkeAdresse(welt.profile, neu);
+    expect(await store.adressen(welt.profile.id)).toEqual([lokal, alt, neu]);
+
+    // Dieselbe Adresse wieder benutzt: sie rueckt ans Ende, statt sich zu verdoppeln.
+    await store.merkeAdresse(welt.profile, lokal);
+    expect(await store.adressen(welt.profile.id)).toEqual([alt, neu, lokal]);
+
+    // Fremde Adressen gehoeren nicht in dieses Buch: falscher Port, oeffentliche IP, kein HTTP.
+    for (const fremd of [`http://localhost:${port + 1}`, `http://8.8.8.8:${port}`, `https://example.com:${port}`, "keine-adresse"])
+      await expect(store.merkeAdresse(welt.profile, fremd)).rejects.toThrow();
+    expect(await store.adressen(welt.profile.id)).toEqual([alt, neu, lokal]);
+
+    // Das Buch bleibt kurz: es ist eine Spur, kein Archiv.
+    for (let i = 1; i <= 40; i++) await store.merkeAdresse(welt.profile, `http://10.0.0.${i}:${port}`);
+    const viele = await store.adressen(welt.profile.id);
+    expect(viele.length).toBeLessThanOrEqual(16);
+    expect(viele.at(-1)).toBe(`http://10.0.0.40:${port}`);
+
+    // Ein beschaedigtes Buch sperrt niemanden aus; es ist dann eben leer.
+    await writeFile(join(welt.directory, "adressen.json"), "{kaputt", "utf8");
+    expect(await store.adressen(welt.profile.id)).toEqual([]);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

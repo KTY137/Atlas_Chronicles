@@ -15,7 +15,15 @@ import { sessionCookieSecure } from "../network.ts";
 export const tokenHash = (value: string): string => createHash("sha256").update(value).digest("hex");
 export const secretToken = (): string => randomBytes(32).toString("base64url");
 export interface AuthContext { userId: string; credentialId: string; displayName: string; platformRole: "gast" | "leitung" }
-export interface IdentityConfig { origin: string; cookieSecret: string; allowInsecureLan?: boolean; now?: () => number }
+export interface IdentityConfig {
+  /** Die eigene Adresse der Welt, `http://localhost:<Port>`. Sie wechselt nie. */
+  origin: string;
+  /** Die zweite Adresse derselben Welt im Heimnetz, falls eingeschaltet — siehe `host.ts`. */
+  lanOrigin?: string;
+  cookieSecret: string;
+  allowInsecureLan?: boolean;
+  now?: () => number;
+}
 
 export function reachability(origin: string, allowInsecureLan = false) {
   const url = new URL(origin), host = url.hostname.replace(/^\[|\]$/g, "");

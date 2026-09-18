@@ -8,11 +8,14 @@ let zustand;
 // main.ts keine Sperre — in v0.4.1 kollidierte es mit genau dem Klick, der das Fenster nach vorn holt.
 let runden=[],rundenBekannt=false,rundenAlter=0,rundenLaeuft=false,rundenNochmal=false;
 let gewaehlteRunde="",gewaehlteWelt="",gewaehltesNetz="";
-/** Fuer welche Welt in dieser Sitzung schon ein Einladungslink entstand — nur fuer die Liste „Erste Schritte". */
+/** Fuer welche Welt in dieser Sitzung schon ein Einladungslink entstand — nur fuer die Liste „Erste Schritte“. */
 const eingeladen=new Set();
 let loeschKandidat,loeschEingabe="";
 // Die Adresse der laufenden Welt. Aus ihr entsteht der Einladungs- oder Zugangslink.
-let weltAdresse="";
+// Zwei Adressen, zwei Zwecke. `weltAdresse` ist die eigene, feste Adresse der Welt: dort
+// gehoert der Weg zurueck hin, denn nur dort sind Passkeys moeglich. `gastAdresse` ist das,
+// was Mitspieler bekommen — im Heimnetz die Heimnetz-Adresse, sonst dieselbe.
+let weltAdresse="",gastAdresse="";
 const states={stopped:"Host beendet","starting-db":"Datenbank wird gestartet","checking-schema":"Welt wird geprüft","starting-app":"Spieloberfläche wird gestartet",ready:"läuft",draining:"Änderungen werden abgeschlossen",failed:"braucht Aufmerksamkeit"};
 const weltBereit=state=>state.state==="ready"&&!state.setupRequired;
 function message(text,error=false){byId("message").textContent=text;byId("message").classList.toggle("error",error);}
@@ -47,7 +50,7 @@ async function ladeRunden(){
   if(!zustand||!weltBereit(zustand))return;
   if(rundenLaeuft){rundenNochmal=true;return;}
   rundenLaeuft=true;rundenAlter=0;
-  // Scheitert ein Nachladen, bleibt der letzte Stand stehen, statt „noch keine Runde" vorzutaeuschen.
+  // Scheitert ein Nachladen, bleibt der letzte Stand stehen, statt „noch keine Runde“ vorzutaeuschen.
   try{runden=await invoke({kind:"runden"});rundenBekannt=true;}
   catch(error){if(!rundenBekannt)message(error.message,true);}
   finally{rundenLaeuft=false;}
@@ -58,6 +61,7 @@ function render(){
   if(!zustand)return;
   const state=zustand;
   weltAdresse=weltBereit(state)&&state.origin?state.origin:"";
+  gastAdresse=weltAdresse?(state.lanOrigin??state.origin):"";
   if(!weltAdresse&&!byId("zugang-ergebnis").hidden)verbergeCode();
   zeichneWelt(state);zeichneSchritte(state);zeichneRunde(state);zeichneVerwaltung(state);
   const wartend=runden.reduce((summe,runde)=>summe+(runde.wartend?.length??0),0);
@@ -69,7 +73,7 @@ function zeichneWelt(state){
   const ruht=state.state==="stopped",aktiv=state.profiles.find(profile=>profile.id===state.profileId),sperre=waiting||state.busy;
   byId("host-title").textContent=ruht?(state.profiles.length?"Gerade läuft keine Welt":"Bereit für deine erste Welt"):`${aktiv?.name??"Lokale Welt"} ${states[state.state]||state.state}`;
   byId("host-detail").textContent=state.failure||(ruht?(state.profiles.length?"Wähle eine Welt und starte sie. Eine neue legst du darunter an.":"Lege darunter deine erste Welt an.")
-    :state.state==="ready"?(state.setupRequired?"Richte als Nächstes die Spielleitung ein.":`Erreichbar unter ${state.origin} — ${new URL(state.origin).hostname==="localhost"?"nur auf diesem Rechner":"im gewählten Heimnetz"}.`):"Einen Moment …");
+    :state.state==="ready"?(state.setupRequired?"Richte als Nächstes die Spielleitung ein.":state.lanOrigin?`Für dich unter ${state.origin}, für Mitspieler im Heimnetz unter ${state.lanOrigin}.`:`Erreichbar unter ${state.origin} — nur auf diesem Rechner.`):"Einen Moment …");
   byId("open").hidden=!weltBereit(state);
   byId("stop").hidden=ruht;
   byId("weltwahl").hidden=!ruht||!state.profiles.length;
@@ -80,7 +84,7 @@ function zeichneWelt(state){
   byId("start").disabled=sperre||!ruht;
   for(const control of byId("create-form").elements)control.disabled=sperre||!ruht;
   const netz=byId("netzwerk-adresse"),adressen=state.lanAddresses??[];
-  const aktuell=state.origin&&new URL(state.origin).hostname!=="localhost"?new URL(state.origin).hostname:"";
+  const aktuell=state.lanOrigin?new URL(state.lanOrigin).hostname:"";
   const ausgewaehlt=ruht?gewaehltesNetz:aktuell;
   zeichne(netz,JSON.stringify([adressen,ausgewaehlt]),()=>[
     el("option",{value:""},"Nur dieser Rechner"),
@@ -89,10 +93,10 @@ function zeichneWelt(state){
   ]);
   netz.value=ausgewaehlt;netz.disabled=sperre||!ruht;
   byId("netzwerk-hinweis").textContent=ausgewaehlt
-    ?"Andere Geräte im selben WLAN oder LAN öffnen den Einladungslink. Die Verbindung ist unverschlüsselt: nur in einem vertrauten Heimnetz verwenden. Passkeys sind hier nicht verfügbar; der Browserzugang oder ein Zugangslink übernimmt die Anmeldung."
+    ?"Andere Geräte im selben WLAN oder LAN öffnen den Einladungslink. Die Verbindung dorthin ist unverschlüsselt: nur in einem vertrauten Heimnetz verwenden. Du selbst bleibst auf der eigenen Adresse dieser Welt angemeldet — dort kannst du auch einen Passkey einrichten."
     :adressen.length?"Für andere Geräte im selben WLAN oder LAN wählst du vor dem Weltstart eine Heimnetz-Adresse. Zum Wechseln zuerst die Welt beenden."
     :"Keine private Heimnetz-Adresse gefunden. Verbinde diesen Rechner mit deinem WLAN oder LAN; die Auswahl aktualisiert sich automatisch.";
-  if(!ruht&&ausgewaehlt)byId("netzwerk-hinweis").textContent+=" Nach einem Adresswechsel meldest du dich mit dem Zugangslink unter „Mitglieder“ wieder an.";
+  if(!ruht&&ausgewaehlt)byId("netzwerk-hinweis").textContent+=" Wechselt deine Heimnetz-Adresse, bekommen Mitspieler einen neuen Einladungslink; deine eigene Anmeldung bleibt davon unberührt.";
 }
 /** Die Liste für das erste Mal. Sie verschwindet, sobald jemand außer der Spielleitung dabei ist. */
 function zeichneSchritte(state){
@@ -125,9 +129,9 @@ function zeichneRunde(state){
   byId("runde-karten").hidden=!runde;
   if(!runde)return;
   byId("zugang-einladung").disabled=sperre;
-  byId("zugang-reichweite").textContent=new URL(state.origin).hostname==="localhost"
-    ?"nur dieser Rechner. Für andere Geräte die Welt beenden und oben eine Heimnetz-Adresse auswählen."
-    :`Geräte im selben WLAN oder LAN über ${state.origin}. Der Host bleibt während der Runde eingeschaltet; eine Firewall-Freigabe kann erforderlich sein.`;
+  byId("zugang-reichweite").textContent=state.lanOrigin
+    ?`Geräte im selben WLAN oder LAN über ${state.lanOrigin}. Der Host bleibt während der Runde eingeschaltet; eine Firewall-Freigabe kann erforderlich sein.`
+    :"nur dieser Rechner. Für andere Geräte die Welt beenden und oben eine Heimnetz-Adresse auswählen.";
   const wartend=runde.wartend??[];
   byId("tuer-zahl").hidden=!wartend.length;byId("tuer-zahl").textContent=String(wartend.length);
   zeichne(byId("tuer-liste"),JSON.stringify([runde.campaignId,wartend.map(anfrage=>anfrage.requestId),sperre]),()=>wartend.length?wartend.map(anfrage=>
@@ -138,8 +142,11 @@ function zeichneRunde(state){
         el("button",{type:"button",class:"zurueckhaltend",disabled:sperre,onclick:()=>void entscheide(runde,anfrage,"ablehnen")},"Ablehnen"))))
     :[el("p",{class:"note"},"Niemand wartet gerade. Wer deinen Einladungslink öffnet und seinen Namen angibt, erscheint hier von selbst.")]);
   zeichne(byId("zugang-mitglieder"),JSON.stringify([runde.campaignId,runde.members,sperre]),()=>runde.members.map(mitglied=>
-    el("div",{class:"profile"},
-      el("div",{},el("strong",{},mitglied.displayName),el("p",{},`${mitglied.role==="leitung"?"Spielleitung":"Spieler"}${mitglied.platformLeitung?" · darf eigene Runden anlegen":""} · ${mitglied.hasAccess?"kommt herein":"kommt gerade nicht herein"}`)),
+    el("div",{class:mitglied.hasAccess?"profile":"profile ausgesperrt"},
+      el("div",{},el("strong",{},mitglied.displayName),el("p",{},`${mitglied.role==="leitung"?"Spielleitung":"Spieler"}${mitglied.platformLeitung?" · darf eigene Runden anlegen":""} · ${mitglied.hasAccess?"kommt herein":"kommt gerade nicht herein"}`),
+        // Wer ausgesperrt ist, soll den Weg zurück lesen können, ohne ihn zu kennen. Der
+        // Einladungslink wäre hier die naheliegende und falsche Wahl: er macht nur neue Spieler auf.
+        mitglied.hasAccess?null:el("p",{class:"hinweis"},"Steht vor der Anmeldeseite. „Zugangslink“ erzeugt einen Code, der 10 Minuten gilt und einmal eingelöst wird — das ist der Weg zurück, nicht der Einladungslink.")),
       el("div",{class:"actions"},
         el("button",{type:"button",disabled:sperre,onclick:()=>void zugangscode(runde.campaignId,mitglied.userId,mitglied.displayName)},"Zugangslink"),
         el("button",{type:"button",class:"zurueckhaltend",disabled:sperre,onclick:()=>void setzeRolle(runde.campaignId,mitglied.userId,mitglied.role==="leitung"?"spieler":"leitung")},mitglied.role==="leitung"?"Zum Spieler machen":"Zur Spielleitung machen")))));
@@ -207,10 +214,14 @@ function zeigeCode(beschriftung,link,erklaerung){
   byId("zugang-link").focus();byId("zugang-link").select();
 }
 function verbergeCode(){byId("zugang-ergebnis").hidden=true;byId("zugang-link").value="";byId("zugang-ausgabe").textContent="";}
-function codeLink(code,feld){return weltAdresse?`${weltAdresse}/?${feld}=${encodeURIComponent(code)}`:code;}
+function codeLink(code,feld,adresse){return adresse?`${adresse}/?${feld}=${encodeURIComponent(code)}`:code;}
 async function zugangscode(campaignId,userId,name){
   const result=await action({kind:"kopplung",campaignId,userId},"Zugangslink erzeugt.");
-  if(result)zeigeCode(`Zugangslink für ${name}`,codeLink(result.code,"pair"),"Zehn Minuten gültig, einmal einlösbar. Der Link öffnet die Anmeldeseite dieser Welt und trägt den Code schon ein.");
+  // Bewusst die eigene Adresse der Welt: nur dort kann sich danach ein Passkey einrichten,
+  // und genau der macht den naechsten Weg zurueck ueberfluessig. Fuer ein anderes Geraet im
+  // Heimnetz steht die zweite Fassung darunter.
+  if(result)zeigeCode(`Zugangslink für ${name}`,codeLink(result.code,"pair",weltAdresse),
+    `Zehn Minuten gültig, einmal einlösbar. Der Link öffnet die Anmeldeseite dieser Welt und trägt den Code schon ein.${gastAdresse&&gastAdresse!==weltAdresse?` Auf einem anderen Gerät im Heimnetz stattdessen: ${codeLink(result.code,"pair",gastAdresse)}`:""}`);
 }
 async function setzeRolle(campaignId,userId,role){
   const result=await action({kind:"rolle",campaignId,userId,role},role==="leitung"?"Spielleitung gesetzt.":"Zum Spieler gemacht.");
@@ -228,7 +239,7 @@ byId("zugang-einladung").onclick=async()=>{
   const result=await action({kind:"einladung",campaignId:runde.campaignId},"Einladungslink erzeugt.");
   if(result){
     eingeladen.add(welt);render();
-    zeigeCode(`Einladungslink für ${runde.name}`,codeLink(result.code,"join"),"Sieben Tage gültig. Wer den Link öffnet, gibt nur noch seinen Namen an und steht dann hier unter „Vor der Tür“.");
+    zeigeCode(`Einladungslink für ${runde.name}`,codeLink(result.code,"join",gastAdresse),"Sieben Tage gültig. Wer den Link öffnet, gibt nur noch seinen Namen an und steht dann hier unter „Vor der Tür“.");
   }
 };
 byId("runde-form").onsubmit=async event=>{

@@ -34,8 +34,12 @@ async function request(page: Page, path: string, method = "GET", body?: unknown)
 for (const mode of ["localhost", "lan"] as const) test(`${mode}: real browser invitation, cookie return and two live clients`, async ({ browser }, testInfo) => {
   test.skip(mode === "lan" && !lanAddress, "No private LAN adapter available; set CHRONICLE_TEST_LAN_IP to an actual adapter address.");
   const address = mode === "lan" ? lanAddress! : "127.0.0.1";
-  const origin = `http://${mode === "lan" ? address : "localhost"}:${await freePort(address)}`;
-  const host = await startEmbeddedHost({ databaseUrl: "postgresql://chronicle:test@127.0.0.1:45102/postgres", origin,
+  // Seit dem 17.09.2026 hat eine Welt immer ihre eigene, feste Adresse; `lanAddress` schaltet eine
+  // ZWEITE Adresse frei, statt die erste zu ersetzen. `origin` ist hier deshalb die Adresse, unter
+  // der dieser Durchlauf spielt — im Heimnetzmodus die Heimnetz-Adresse, wie bei Mitspielern.
+  const eigeneAdresse = `http://localhost:${await freePort(address)}`;
+  const origin = mode === "lan" ? `http://${address}:${new URL(eigeneAdresse).port}` : eigeneAdresse;
+  const host = await startEmbeddedHost({ databaseUrl: "postgresql://chronicle:test@127.0.0.1:45102/postgres", origin: eigeneAdresse,
     cookieSecret: randomBytes(32).toString("hex"), staticRoot: resolve("packages/client/dist"), ...(mode === "lan" ? { lanAddress: address } : {}) }, await createTestDb());
   const gmContext = await browser.newContext({ locale: "de-DE" }), playerContext = await browser.newContext({ locale: "de-DE" });
   const gm = await gmContext.newPage(), player = await playerContext.newPage(), errors: string[] = [];
@@ -121,7 +125,15 @@ for (const mode of ["localhost", "lan"] as const) test(`${mode}: real browser in
         }).on("error", reject);
       });
       expect(foreignHostStatus).toBe(404);
-      await expect(fetch(`http://127.0.0.1:${new URL(origin).port}/api/health`, { signal: AbortSignal.timeout(3000) })).rejects.toThrow();
+      // Die eigene Adresse der Welt antwortet im Heimnetzbetrieb MIT — das ist der feste Platz
+      // der Spielleitung und der einzige Ort, an dem sie sich einen Passkey einrichten kann.
+      // Ein Gewinn an Angriffsflaeche ist das nicht: wer 127.0.0.1 erreicht, sitzt an diesem
+      // Rechner und erreicht dessen Heimnetz-Adresse ohnehin.
+      const eigen = await fetch(`${eigeneAdresse}/api/health`, { signal: AbortSignal.timeout(3000) });
+      expect(eigen.status).toBe(200);
+      expect((await (await fetch(`${eigeneAdresse}/api/reachability`, { signal: AbortSignal.timeout(3000) })).json()))
+        .toMatchObject({ passkeyEligible: true, secureContext: true });
+      // Ohne Heimnetz bleibt es beim Gegenteil: dann hoert die Welt NUR auf der Rueckschleife.
       expect((await request(player, "/api/reachability")).body).toMatchObject({ passkeyEligible: false, secureContext: false, selfHostTransport: "explicit-private-lan" });
     }
     expect((await request(player, "/api/logout", "POST")).status).toBe(200);

@@ -8,7 +8,13 @@ import { databaseUrlOf, originOf, ProfileStore, type OwnedProfile, type SetupRec
 import { ManagedPostgres } from "./postgres.ts";
 import { localLanAddresses } from "@chronicle/server/host";
 
-export interface Ready { origin: string; nodeVersion: string; decoder: string; setupRequired: boolean }
+export interface Ready {
+  /** Die eigene, feste Adresse der Welt — hier öffnet das Fenster der Spielleitung. */
+  origin: string;
+  /** Die zweite Adresse im Heimnetz, falls eingeschaltet — das, was Mitspieler bekommen. */
+  lanOrigin?: string;
+  nodeVersion: string; decoder: string; setupRequired: boolean;
+}
 export interface MigrationGuard { beforeSchema(owned: OwnedProfile, postgres: ManagedPostgres): Promise<void> }
 /** Ein kurzer Systemcode (ENOENT, ECONNREFUSED, 28P01) benennt die Ursache, ohne Pfade oder
  *  Meldungen preiszugeben. Alles andere bleibt draussen. */
@@ -71,7 +77,11 @@ export class HostController {
       return fail("lan-unavailable", "Die gewählte Heimnetz-Adresse ist nicht mehr verfügbar. Bitte die aktuelle Adresse auswählen.");
     this.failure = undefined; this.chronistHinweis = undefined;
     this.owned = await this.store.open(id);
-    const origin = lanAddress ? `http://${lanAddress}:${this.owned.profile.httpPort}` : originOf(this.owned.profile);
+    // Die eigene Adresse der Welt, immer. Das Heimnetz kommt als ZWEITE Adresse dazu, statt
+    // die erste zu ersetzen: sonst wechselt die Adresse der Welt mit dem Netz, und mit ihr der
+    // Cookie-Topf des Fensters — genau das sperrte die Spielleitung aus (siehe `sitzung.ts`).
+    const origin = originOf(this.owned.profile);
+    const lanOrigin = lanAddress ? `http://${lanAddress}:${this.owned.profile.httpPort}` : undefined;
     this.unlock = await this.store.lock(this.owned);
     this.startId = randomUUID();
     this.transition("starting-db");
@@ -125,7 +135,7 @@ export class HostController {
       });
       this.transition("starting-app"); stufe = "Anwendungsstart";
       const ready = await this.request<Ready>("start", { config: { databaseUrl: databaseUrlOf(this.owned), origin, cookieSecret: this.owned.secrets.cookieSecret, staticRoot: join(this.assets, "client"), ...(lanAddress ? { lanAddress } : {}) } });
-      if (ready.origin !== origin || !ready.nodeVersion.startsWith("24.") || !ready.decoder) fail("host-proof", "Host-Startbeleg stimmt nicht mit dem Profil überein.");
+      if (ready.origin !== origin || ready.lanOrigin !== lanOrigin || !ready.nodeVersion.startsWith("24.") || !ready.decoder) fail("host-proof", "Host-Startbeleg stimmt nicht mit dem Profil überein.");
       this.ready = ready; this.transition("ready");
       return ready;
     } catch (error) {

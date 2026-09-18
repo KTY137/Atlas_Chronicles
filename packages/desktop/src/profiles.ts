@@ -37,11 +37,22 @@ export interface SetupReceipt { value: string; expiresAt: number; origin?: strin
 export interface OwnedProfile { profile: Profile; directory: string; dataDirectory: string; secrets: ProfileSecrets }
 export const originOf = (profile: Profile) => `http://localhost:${profile.httpPort}`;
 export const databaseUrlOf = (owned: OwnedProfile) => `postgresql://chronicle:${encodeURIComponent(owned.secrets.databasePassword)}@127.0.0.1:${owned.profile.pgPort}/postgres`;
+/** Ob eine Adresse überhaupt eine Adresse *dieser* Welt sein kann: ihr eigener localhost-Zugang
+ *  oder eine private Heimnetz-Adresse auf genau ihrem Port. Alles andere gehört woanders hin. */
+export function istAdresseDerWelt(profile: Profile, origin: unknown): origin is string {
+  if (typeof origin !== "string") return false;
+  if (origin === originOf(profile)) return true;
+  return isPrivateLanOrigin(origin) && Number(new URL(origin).port) === profile.httpPort;
+}
 function setupOriginOf(profile: Profile, origin: unknown): string {
-  if (origin === undefined || origin === originOf(profile)) return originOf(profile);
-  if (typeof origin === "string" && isPrivateLanOrigin(origin) && Number(new URL(origin).port) === profile.httpPort) return origin;
+  if (origin === undefined) return originOf(profile);
+  if (istAdresseDerWelt(profile, origin)) return origin;
   return fail("setup-receipt", "Ersteinrichtungsbeleg gehört nicht zur Adresse dieses Profils.");
 }
+/** Wie viele Adressen eine Welt behält. Das Adressbuch ist eine Spur, kein Archiv: es soll den
+ *  letzten Netzwechsel überbrücken, nicht die Geschichte des Rechners aufbewahren. */
+export const ADRESSEN_GEDAECHTNIS = 16;
+export const ADRESSEN_DATEI = "adressen.json";
 
 export function parseProfile(input: unknown): Profile {
   const value = object(input, ["version", "id", "name", "createdAt", "httpPort", "pgPort", "pgMajor"]);
@@ -226,6 +237,36 @@ export class ProfileStore {
   async clearSetupReceipt(id: string, value: string): Promise<void> {
     const receipt = await this.readSetupReceipt(id);
     if (receipt?.value === value) await rm(contained(this.root, profileId(id), "setup-receipt.dpapi"));
+  }
+  /**
+   * Die Adressen, unter denen diese Welt schon lief — in der Reihenfolge ihrer Benutzung,
+   * die zuletzt benutzte zuletzt.
+   *
+   * Das Buch enthält keine Geheimnisse, nur Adressen dieses Rechners; es liegt deshalb offen
+   * neben `profile.json` und nicht im Geheimnisspeicher. Ist es beschädigt oder fehlt es, gilt
+   * es als leer: ein kaputtes Adressbuch darf die Spielleitung nicht aussperren, es kostet
+   * dann nur den Umzug der Anmeldung.
+   */
+  async adressen(id: string): Promise<string[]> {
+    const profile = (await this.open(id)).profile;
+    const text = await readFile(contained(this.root, profileId(id), ADRESSEN_DATEI), "utf8")
+      .catch(() => undefined);
+    if (text === undefined) return [];
+    try {
+      const gelesen = JSON.parse(text) as { version?: unknown; adressen?: unknown };
+      if (gelesen.version !== 1 || !Array.isArray(gelesen.adressen)) return [];
+      return [...new Set(gelesen.adressen.filter((wert): wert is string => istAdresseDerWelt(profile, wert)))].slice(-ADRESSEN_GEDAECHTNIS);
+    } catch { return []; }
+  }
+  /** Eine Adresse als zuletzt benutzt vermerken. Sie rückt ans Ende, statt sich zu verdoppeln. */
+  async merkeAdresse(profile: Profile, origin: string): Promise<void> {
+    if (!istAdresseDerWelt(profile, origin)) fail("welt-adresse", "Diese Adresse gehört nicht zu dieser Welt.");
+    const bisher = await this.adressen(profile.id);
+    const adressen = [...bisher.filter(wert => wert !== origin), origin].slice(-ADRESSEN_GEDAECHTNIS);
+    const directory = contained(this.root, profileId(profile.id));
+    const temporary = join(directory, `adressen-${randomUUID()}.tmp`);
+    await writeFile(temporary, `${JSON.stringify({ version: 1, adressen }, null, 2)}\n`, { flag: "wx", mode: 0o600 });
+    await rename(temporary, join(directory, ADRESSEN_DATEI));
   }
   private chronistKeyPath(id: string): string { return contained(this.root, profileId(id), CHRONIST_KEY_FILE); }
   /** Management only ever learns whether a key exists, never its value. */

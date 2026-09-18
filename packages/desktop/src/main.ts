@@ -11,6 +11,7 @@ import { Authority, DesktopError, SHELL_URL, command, fail, object, partitionFor
 import { originOf, ProfileStore } from "./profiles.ts";
 import { HostController } from "./controller.ts";
 import { RecoveryStore, inspectMigrationAdmission, type RecoveryManifest } from "./recovery.ts";
+import { moeglicheAdressen, uebernimmSitzung, type Keks, type Keksglas } from "./sitzung.ts";
 import { isPrivateLanOrigin, localLanAddresses, sessionCookieSecure } from "@chronicle/server/host";
 
 protocol.registerSchemesAsPrivileged([{ scheme: "chronicle-shell", privileges: { standard: true, secure: true, supportFetchAPI: false, corsEnabled: false } }]);
@@ -63,14 +64,50 @@ async function run() {
     const admission = await inspectMigrationAdmission(owned, assets);
     if (admission.recoveryRequired) await recovery.create(owned, postgres, app.getVersion());
   } }, id => store.chronistHostConfig(id));
-  const startHost = async (profileId: string, lanAddress?: string) => {
+  /** Electrons Cookie-Topf einer Adresse, in der Form, die `sitzung.ts` erwartet. */
+  const keksglas = (origin: string): Keksglas => {
+    const cookies = session.fromPartition(partitionFor(origin)).cookies;
+    return {
+      get: (filter) => cookies.get(filter) as Promise<readonly Keks[]>,
+      set: (keks) => cookies.set(keks as Parameters<typeof cookies.set>[0]),
+      flushStore: () => cookies.flushStore(),
+    };
+  };
+  /**
+   * Die Anmeldung der Spielleitung folgt ihrer Welt, nicht deren Adresse.
+   *
+   * Der Cookie-Topf heißt nach der vollen Adresse, und die wechselt — Heimnetz an oder aus, und
+   * die Heimnetz-IP wechselt mit dem Netz. Ohne diesen Schritt steht die Spielleitung nach jedem
+   * solchen Wechsel vor der Spieler-Anmeldeseite ihrer eigenen Welt. Siehe `sitzung.ts`.
+   *
+   * Schlägt es fehl, wird die Welt trotzdem gestartet: der Weg zurück über „Zugangslink" im
+   * Abschnitt Runde bleibt in jedem Fall offen, und eine nicht startende Welt wäre schlimmer.
+   */
+  async function sitzungFolgtDerWelt(origin: string) {
+    const profile = host.owned?.profile;
+    if (!profile) return;
     try {
-      return await host.start(profileId, lanAddress);
-    } catch (error) {
-      if (host.state !== "failed") throw error;
-      await host.stop();
-      return host.start(profileId, lanAddress);
-    }
+      // Das Adressbuch zuerst, weil es die tatsächliche Reihenfolge kennt. Davor die Adressen,
+      // die diese Welt haben KÖNNTE — für Welten, die es vor dieser Änderung schon gab und die
+      // noch nichts vermerkt haben; ohne sie fände die Brücke ausgerechnet dort nichts.
+      const buch = await store.adressen(profile.id);
+      const geraten = moeglicheAdressen(profile.httpPort, localLanAddresses()).filter(adresse => !buch.includes(adresse));
+      await uebernimmSitzung({ ziel: origin, frueher: [...geraten, ...buch], glas: keksglas });
+      await store.merkeAdresse(profile, origin);
+    } catch { /* Der Umzug ist eine Bequemlichkeit, keine Bedingung fürs Starten. */ }
+  }
+  const startHost = async (profileId: string, lanAddress?: string) => {
+    const ready = await (async () => {
+      try {
+        return await host.start(profileId, lanAddress);
+      } catch (error) {
+        if (host.state !== "failed") throw error;
+        await host.stop();
+        return host.start(profileId, lanAddress);
+      }
+    })();
+    await sitzungFolgtDerWelt(ready.origin);
+    return ready;
   };
   let restore: { ticket: string; path: string; profileId: string; report: unknown; gms: unknown; assert: () => void } | undefined;
   session.fromPartition("chronicle-management").protocol.handle("chronicle-shell", async request => {
@@ -103,7 +140,7 @@ async function run() {
     // Management learns which worlds carry a Chronist key, never a single character of one.
     const chronistKeys = (await Promise.all(profiles.map(async profile => await store.hasChronistKey(profile.id) ? profile.id : ""))).filter(Boolean);
     // Warum der Chronist in der laufenden Welt fehlt. Ein Satz, nie ein Schlüsselzeichen.
-    return { profiles, lanAddresses: localLanAddresses(), chronistKeys, chronistHinweis: host.chronistHinweis, recovery: await recovery.list(), state: host.state, profileId: host.owned?.profile.id, origin: host.ready?.origin,
+    return { profiles, lanAddresses: localLanAddresses(), chronistKeys, chronistHinweis: host.chronistHinweis, recovery: await recovery.list(), state: host.state, profileId: host.owned?.profile.id, origin: host.ready?.origin, lanOrigin: host.ready?.lanOrigin,
       setupRequired: host.ready?.setupRequired, failure: host.failure, busy, version: app.getVersion(), runtime: host.ready ? { node: host.ready.nodeVersion, decoder: host.ready.decoder } : undefined };
   };
   async function retainSetupSession(id: string, origin: string, receipt: { value: string; expiresAt: number }) {
@@ -206,14 +243,12 @@ async function run() {
           const restored = await recovery.restore(request.recoveryId, request.name, store, assert); assert();
           authority.select(restored.owned.profile.id);
           const selected = authority.lease(), ready = await startHost(restored.owned.profile.id);
-          const original = session.fromPartition(partitionFor(restored.manifest.sourceOrigin));
-          const cookie = (await original.cookies.get({ name: "chronicle_session" })).find(value => value.httpOnly && value.secure && value.sameSite === "strict");
+          // Die Anmeldung des Sicherungspunkts an die Adresse der wiederhergestellten Welt —
+          // derselbe Umzug wie bei jedem Start (`sitzung.ts`), nur mit der Quelladresse aus dem
+          // Sicherungspunkt. Die frühere Fassung verlangte hier ein `secure`-Cookie und warf
+          // damit die Anmeldung jeder Heimnetz-Welt still weg: dort läuft die Welt über HTTP.
+          await uebernimmSitzung({ ziel: ready.origin, frueher: [restored.manifest.sourceOrigin], glas: keksglas });
           selected();
-          if (cookie) {
-            const target = session.fromPartition(partitionFor(ready.origin));
-            await target.cookies.set({ url: ready.origin, name: "chronicle_session", value: cookie.value, path: "/", httpOnly: true, secure: true, sameSite: "strict", ...(cookie.expirationDate ? { expirationDate: cookie.expirationDate } : {}) });
-            await target.cookies.flushStore(); selected();
-          }
           return { ok: true, value: await snapshot() };
         }
         case "open": if (!host.ready) fail("host-unavailable", "Lokaler Host ist nicht bereit."); await openGame(host.ready!.origin, true); break;

@@ -9,6 +9,7 @@ import { inspectCampaignRestore, restoreCampaignBundle, enrollRestoredCampaignGm
 import { hostAblehnen, hostEinladung, hostFreigeben, hostKopplung, hostRolle, hostRundeAnlegen, hostRunden } from "./domain/hostzugaenge.ts";
 import { parseCurrentCampaignBundle, CAMPAIGN_BUNDLE_V5_LIMITS } from "@chronicle/io";
 import sharp from "sharp";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { ChronistRuntimeConfig } from "./domain/chronist/runtime.ts";
 import { isPrivateLanAddress, localLanAddresses } from "./network.ts";
 export { isPrivateLanAddress, isPrivateLanOrigin, localLanAddresses, sessionCookieSecure } from "./network.ts";
@@ -18,6 +19,14 @@ export { loadChronistRuntime, CHRONIST_UNCONFIGURED_MODEL, CHRONIST_ANTHROPIC_PR
 export { createPgDb } from "./db/index.ts";
 export interface EmbeddedHostConfig {
   databaseUrl: string;
+  /**
+   * Die eigene Adresse dieser Welt auf diesem Rechner: immer `http://localhost:<Port>`.
+   *
+   * Sie ist fest, und das ist ihr ganzer Zweck. Vorher war im Heimnetzbetrieb die
+   * Heimnetz-Adresse die Adresse der Welt — die wechselt mit dem Netz, und mit ihr der
+   * Cookie-Topf des Fensters, der nach der Adresse heißt. Auf einer IP-Adresse sind zudem
+   * keine Passkeys möglich, es gab im Heimnetz also keinen selbstbedienbaren Weg zurück.
+   */
   origin: string;
   cookieSecret: string;
   staticRoot: string;
@@ -26,13 +35,37 @@ export interface EmbeddedHostConfig {
   chronist?: ChronistRuntimeConfig;
 }
 
+/** Alle Adressen, unter denen dieselbe Welt antwortet — die eigene zuerst, dann das Heimnetz. */
+export function weltAdressen(config: { origin: string; lanAddress?: string }): string[] {
+  const port = new URL(config.origin).port;
+  return [config.origin, ...(config.lanAddress ? [`http://${config.lanAddress}:${port}`] : [])];
+}
+
+/**
+ * Ein zweiter Zuhörer für dieselbe Anwendung auf der Heimnetz-Adresse.
+ *
+ * Fastify bindet je Instanz eine Adresse; `app.routing` ist derselbe Behandler, den auch der
+ * erste Zuhörer benutzt. Es entsteht also kein zweiter Server mit eigenen Regeln — dieselbe
+ * Anwendung, dieselben Prüfungen, nur eine zweite Tür.
+ */
+function zusatzZuhoerer(app: { routing: (req: IncomingMessage, res: ServerResponse) => void }, host: string, port: number): Promise<Server> {
+  return new Promise((fertig, fehler) => {
+    const server = createServer(app.routing);
+    server.once("error", fehler);
+    server.listen({ host, port, exclusive: true }, () => { server.removeListener("error", fehler); fertig(server); });
+  });
+}
+
 export function validateEmbeddedHostConfig(config: EmbeddedHostConfig): number {
   const origin = new URL(config.origin), database = new URL(config.databaseUrl);
-  const hostAllowed = config.lanAddress === undefined ? origin.hostname === "localhost"
-    : isPrivateLanAddress(config.lanAddress) && origin.hostname === config.lanAddress;
-  if (origin.origin !== config.origin || origin.protocol !== "http:" || !hostAllowed || !origin.port ||
+  // Die eigene Adresse ist immer localhost; die Heimnetz-Adresse ist eine ZWEITE Adresse und
+  // wird getrennt geprüft. Sie bleibt genauso ausdrücklich gewählt wie vorher — ohne sie hört
+  // die Welt ausschließlich auf der Rückschleife.
+  if (config.lanAddress !== undefined && !isPrivateLanAddress(config.lanAddress))
+    throw new Error("Embedded host requires an explicit private LAN address for home-network reach.");
+  if (origin.origin !== config.origin || origin.protocol !== "http:" || origin.hostname !== "localhost" || !origin.port ||
       origin.username || origin.password || Number(origin.port) < 1024 || Number(origin.port) === 3000)
-    throw new Error("Embedded host requires an explicit isolated localhost or selected private LAN origin.");
+    throw new Error("Embedded host requires an explicit isolated localhost origin.");
   if (database.protocol !== "postgresql:" || database.hostname !== "127.0.0.1" || !database.port ||
       Number(database.port) < 1024 || Number(database.port) === 54329 || database.search || database.hash)
     throw new Error("Embedded host requires an explicit isolated loopback PostgreSQL target.");
@@ -46,7 +79,10 @@ export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?:
   if (config.lanAddress && !localLanAddresses().some(adapter => adapter.address === config.lanAddress))
     throw new Error("Selected LAN address is no longer available on this machine.");
   const db = suppliedDb ?? createPgDb(config.databaseUrl);
-  const identityConfig = { origin: config.origin, cookieSecret: config.cookieSecret, allowInsecureLan: !!config.lanAddress };
+  const adressen = weltAdressen(config);
+  let heimnetz: Server | undefined;
+  const identityConfig = { origin: config.origin, cookieSecret: config.cookieSecret,
+    ...(config.lanAddress ? { lanOrigin: adressen[1]! } : {}) };
   let app: Awaited<ReturnType<typeof buildApp>> | undefined;
   try {
     await migrate(db);
@@ -56,8 +92,14 @@ export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?:
     if (decoder.width !== 2 || decoder.format !== "png") throw new Error("Native decoder self-check failed.");
     app = await buildApp(db, { ...identityConfig, bootstrapToken: "", staticRoot: config.staticRoot, publicDeliveryEnabled: false,
       ...(config.chronist ? { chronist: config.chronist } : {}) });
-    await app.listen({ host: config.lanAddress ?? "127.0.0.1", port });
+    // Die Rückschleife immer, die Heimnetz-Adresse nur wenn ausdrücklich gewählt. Zwei
+    // Zuhörer auf derselben Anwendung (`app.routing`) statt eines auf `0.0.0.0`: die Welt
+    // bleibt für ihre Spielleitung unter einer festen Adresse erreichbar, ohne dass dabei
+    // still jede Netzwerkkarte des Rechners aufgemacht wird.
+    await app.listen({ host: "127.0.0.1", port });
+    if (config.lanAddress) heimnetz = await zusatzZuhoerer(app, config.lanAddress, port);
   } catch (error) {
+    if (heimnetz) await new Promise<void>(fertig => heimnetz!.close(() => fertig()));
     if (app) { await drainAppChronist(app); await app.close(); }
     else await config.chronist?.close?.();
     await db.close();
@@ -67,6 +109,8 @@ export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?:
   const open = () => { if (draining) throw new Error("Host is draining."); };
   return {
     origin: config.origin,
+    /** Die zweite Adresse derselben Welt — das, was Mitspieler bekommen. */
+    ...(adressen[1] ? { lanOrigin: adressen[1] } : {}),
     nodeVersion: process.versions.node,
     decoder: sharp.versions.sharp,
     async setup(displayName: string) {
@@ -112,7 +156,9 @@ export async function startEmbeddedHost(config: EmbeddedHostConfig, suppliedDb?:
       // A failed drain must not close the pool beneath active work.
       // Keep commands closed after failure, but permit an explicit shutdown retry.
       draining = true;
-      closing ??= drainAppChronist(app!).then(() => app!.close()).then(() => db.close()).catch(error => { closing = undefined; throw error; });
+      // Der Heimnetz-Zuhörer zuerst: die zweite Tür schließt, bevor die Anwendung hinter ihr geht.
+      const heimnetzZu = () => heimnetz ? new Promise<void>(fertig => heimnetz!.close(() => fertig())) : Promise.resolve();
+      closing ??= heimnetzZu().then(() => drainAppChronist(app!)).then(() => app!.close()).then(() => db.close()).catch(error => { closing = undefined; throw error; });
       return closing;
     },
   };

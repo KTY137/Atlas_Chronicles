@@ -40,12 +40,17 @@ it("lists only non-loopback private IPv4 interfaces without guessing a public, V
   expect(isPrivateLanAddress("172.32.0.1")).toBe(false); expect(isPrivateLanAddress("192.168.001.2")).toBe(false);
 });
 
-it("requires an explicit matching LAN address while PostgreSQL and operative ports stay isolated", () => {
-  const config = { databaseUrl: "postgresql://chronicle:test@127.0.0.1:45102/postgres", origin: "http://192.168.1.2:45101", lanAddress: "192.168.1.2", cookieSecret: "c".repeat(64), staticRoot: "/client" };
+it("keeps PostgreSQL and the operative ports isolated, whichever addresses the world answers on", () => {
+  // Die Adressregeln selbst stehen in `welt-adressen.test.ts`: seit dem 17.09.2026 ist `origin`
+  // immer die eigene Adresse der Welt (`http://localhost:<Port>`), und `lanAddress` schaltet eine
+  // ZWEITE Adresse frei, statt die erste zu ersetzen. Vorher wechselte die Adresse einer Welt mit
+  // dem Netz — und damit der Cookie-Topf ihres Fensters, was die Spielleitung aussperrte.
+  const config = { databaseUrl: "postgresql://chronicle:test@127.0.0.1:45102/postgres", origin: "http://localhost:45101", lanAddress: "192.168.1.2", cookieSecret: "c".repeat(64), staticRoot: "/client" };
   expect(validateEmbeddedHostConfig(config)).toBe(45101);
-  const { lanAddress: _address, ...implicit } = config;
-  expect(() => validateEmbeddedHostConfig(implicit)).toThrow();
-  for (const invalid of [{ lanAddress: "192.168.1.3" }, { lanAddress: "0.0.0.0" }, { origin: "http://localhost:45101" },
-    { origin: "http://192.168.1.2:3000" }, { databaseUrl: "postgresql://chronicle:test@192.168.1.2:45102/postgres" },
-    { databaseUrl: "postgresql://chronicle:test@127.0.0.1:54329/postgres" }]) expect(() => validateEmbeddedHostConfig({ ...config, ...invalid })).toThrow();
+  const { lanAddress: _address, ...ohneHeimnetz } = config;
+  // Ohne Heimnetz laeuft dieselbe Welt unveraendert weiter — nur eben nur auf der Rueckschleife.
+  expect(validateEmbeddedHostConfig(ohneHeimnetz)).toBe(45101);
+  for (const invalid of [{ lanAddress: "0.0.0.0" }, { origin: "http://localhost:3000" },
+    { databaseUrl: "postgresql://chronicle:test@192.168.1.2:45102/postgres" },
+    { databaseUrl: "postgresql://chronicle:test@127.0.0.1:54329/postgres" }]) expect(() => validateEmbeddedHostConfig({ ...config, ...invalid }), JSON.stringify(invalid)).toThrow();
 });

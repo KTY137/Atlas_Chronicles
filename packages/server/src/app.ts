@@ -12,6 +12,7 @@ import { canonicalJson, type CanonicalValue } from "@chronicle/core";
 import type { Blockinhalt } from "@chronicle/chronik";
 import type { Db } from "./db/index.ts";
 import { createIdentity, reachability, type IdentityConfig } from "./identity/index.ts";
+import { isPrivateLanOrigin } from "./network.ts";
 import { createCampaigns } from "./domain/campaigns.ts";
 import { createDocuments, type DocumentInput } from "./domain/documents.ts";
 import { Gone, Conflict } from "./domain/errors.ts";
@@ -65,9 +66,29 @@ export async function buildApp(db: Db, config: AppConfig) {
   const app = Fastify({ logger: config.logger ?? false, bodyLimit: 2 * 1024 * 1024,
     ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   registerHttpLifecycle(app);
-  const identity = createIdentity(db, config), campaigns = createCampaigns(db, config), docs = createDocuments(db, config);
-  const auth = (req: FastifyRequest) => identity.authenticate(req.headers.cookie);
-  const origin = new URL(config.origin).origin;
+  const campaigns = createCampaigns(db, config), docs = createDocuments(db, config);
+  /**
+   * Eine Welt antwortet unter ihrer eigenen Adresse und — wenn das Heimnetz eingeschaltet ist —
+   * zusätzlich unter der Heimnetz-Adresse. Adressabhängig ist daran mehr, als es aussieht: das
+   * `Secure` am Sitzungscookie (im Heimnetz läuft die Welt über HTTP), und Passkeys, die an
+   * ihren Ursprung gebunden sind und auf einer IP-Adresse gar nicht erst möglich sind. Deshalb
+   * gibt es je Adresse eine eigene Identität, ausgewählt nach der Tür, durch die die Anfrage kam.
+   */
+  const adressen = [new URL(config.origin).origin, ...(config.lanOrigin ? [new URL(config.lanOrigin).origin] : [])];
+  const origin = adressen[0]!;
+  const identitaeten = new Map(adressen.map(adresse =>
+    [adresse, createIdentity(db, { ...config, origin: adresse, allowInsecureLan: isPrivateLanOrigin(adresse) || (adresse === origin && !!config.allowInsecureLan) })]));
+  const tuerHosts = new Map(adressen.map(adresse => [new URL(adresse).host, adresse]));
+  /** Die Adresse, unter der diese Anfrage hereinkam — der `onRequest`-Wächter hat sie schon geprüft. */
+  const adresseDer = (req: FastifyRequest) => tuerHosts.get(req.headers.host ?? "") ?? origin;
+  const identityOf = (req: FastifyRequest) => identitaeten.get(adresseDer(req))!;
+  const identitaetsConfig = (req: FastifyRequest) => {
+    const adresse = adresseDer(req);
+    return { ...config, origin: adresse, allowInsecureLan: isPrivateLanOrigin(adresse) || (adresse === origin && !!config.allowInsecureLan) };
+  };
+  /** Adressunabhängige Vorgänge — Zugänge lesen, widerrufen, koppeln — nehmen die eigene Adresse. */
+  const identity = identitaeten.get(origin)!;
+  const auth = (req: FastifyRequest) => identityOf(req).authenticate(req.headers.cookie);
   const secretEqual = (a: string, b: string) => { const aa=Buffer.from(a), bb=Buffer.from(b); return aa.length === bb.length && timingSafeEqual(aa,bb); };
   await app.register(rateLimit, { max: 240, timeWindow: "1 minute", keyGenerator: async request => {
     // A household/table shares an IP, not a request budget. Only an authenticated
@@ -77,8 +98,11 @@ export async function buildApp(db: Db, config: AppConfig) {
   } });
   app.addHook("onRequest", async (req, reply) => {
     reply.header("Cache-Control", "no-store").header("X-Content-Type-Options", "nosniff").header("Referrer-Policy", "no-referrer");
-    if (config.allowInsecureLan && req.headers.host !== new URL(origin).host) throw new Gone("host");
-    if (!["GET", "HEAD", "OPTIONS"].includes(req.method) && req.headers.origin !== origin) throw new Gone("origin");
+    // Im Heimnetzbetrieb muss die Anfrage eine der beiden Türen dieser Welt genannt haben.
+    if ((config.lanOrigin || config.allowInsecureLan) && !tuerHosts.has(req.headers.host ?? "")) throw new Gone("host");
+    // Und sie muss von genau der Adresse kommen, durch die sie hereinkam: eine Seite von der
+    // Heimnetz-Adresse darf nichts an der eigenen Adresse auslösen und umgekehrt.
+    if (!["GET", "HEAD", "OPTIONS"].includes(req.method) && req.headers.origin !== adresseDer(req)) throw new Gone("origin");
   });
   app.setErrorHandler((error, _req, reply) => {
     const fault = error as { validation?: unknown; statusCode?: number };
@@ -117,11 +141,11 @@ export async function buildApp(db: Db, config: AppConfig) {
   });
 
   app.get("/api/health", async () => { await db.query("SELECT 1"); return { ok: true }; });
-  app.get("/api/reachability", async () => reachability(origin, config.allowInsecureLan));
+  app.get("/api/reachability", async (req) => { const c = identitaetsConfig(req); return reachability(c.origin, c.allowInsecureLan); });
   app.get("/api/setup", async () => ({ required: !(await db.query("SELECT id FROM users WHERE platform_role='leitung'")).rowCount }));
   app.post<{ Body: P.NameBodyType }>("/api/setup", { schema: { body: P.NameBody }, config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (req, reply) => {
     if (config.bootstrapToken.length < 32 || !secretEqual(req.headers.authorization ?? "", `Bearer ${config.bootstrapToken}`)) throw new Gone();
-    const session = await identity.bootstrap(req.body.displayName);
+    const session = await identityOf(req).bootstrap(req.body.displayName);
     reply.header("Set-Cookie", session.setCookie);
     return { ok: true };
   });
@@ -129,24 +153,24 @@ export async function buildApp(db: Db, config: AppConfig) {
     const ctx = await auth(req);
     return { userId: ctx.userId, displayName: ctx.displayName, canCreateCampaign: ctx.platformRole === "leitung", credentialId: ctx.credentialId };
   });
-  app.post("/api/logout", async (req, reply) => { const ctx = await auth(req); await identity.revoke(ctx.userId, ctx.credentialId); reply.header("Set-Cookie", identity.clearCookie()); return { ok: true }; });
+  app.post("/api/logout", async (req, reply) => { const ctx = await auth(req); await identity.revoke(ctx.userId, ctx.credentialId); reply.header("Set-Cookie", identityOf(req).clearCookie()); return { ok: true }; });
   app.post("/api/remember", async (req, reply) => {
     const ctx = await auth(req);
-    const next = await db.transaction(async (tx) => { const i = createIdentity(tx, config); const session = await i.issueSession(ctx.userId, "cookie"); await i.revoke(ctx.userId, ctx.credentialId); return session; });
+    const next = await db.transaction(async (tx) => { const i = createIdentity(tx, identitaetsConfig(req)); const session = await i.issueSession(ctx.userId, "cookie"); await i.revoke(ctx.userId, ctx.credentialId); return session; });
     reply.header("Set-Cookie", next.setCookie); return { ok: true };
   });
   app.get("/api/credentials", async (req) => identity.credentials((await auth(req)).userId));
   app.delete<{ Params: { id: string } }>("/api/credentials/:id", async (req) => { await identity.revoke((await auth(req)).userId, req.params.id); return { ok: true }; });
-  app.post("/api/passkeys/register/options", async (req) => identity.beginRegistration((await auth(req)).userId));
+  app.post("/api/passkeys/register/options", async (req) => identityOf(req).beginRegistration((await auth(req)).userId));
   app.post<{ Body: Static<typeof P.WebAuthnFinish> }>("/api/passkeys/register", { schema: { body: P.WebAuthnFinish } }, async (req) =>
-    identity.finishRegistration((await auth(req)).userId, req.body.challengeId, req.body.response as unknown as RegistrationResponseJSON, req.body.label ?? "Passkey"));
-  app.post("/api/passkeys/login/options", async () => identity.beginAuthentication());
+    identityOf(req).finishRegistration((await auth(req)).userId, req.body.challengeId, req.body.response as unknown as RegistrationResponseJSON, req.body.label ?? "Passkey"));
+  app.post("/api/passkeys/login/options", async (req) => identityOf(req).beginAuthentication());
   app.post<{ Body: Static<typeof P.WebAuthnFinish> }>("/api/passkeys/login", { schema: { body: P.WebAuthnFinish } }, async (req, reply) => {
-    const session = await identity.finishAuthentication(req.body.challengeId, req.body.response as unknown as AuthenticationResponseJSON);
+    const session = await identityOf(req).finishAuthentication(req.body.challengeId, req.body.response as unknown as AuthenticationResponseJSON);
     reply.header("Set-Cookie", session.setCookie); return { ok: true };
   });
   app.post<{ Body: Static<typeof P.PairRedeem> }>("/api/pairing/redeem", { schema: { body: P.PairRedeem } }, async (req, reply) => {
-    const session = await identity.redeemPairing(req.body.code); reply.header("Set-Cookie", session.setCookie); return { ok: true };
+    const session = await identityOf(req).redeemPairing(req.body.code); reply.header("Set-Cookie", session.setCookie); return { ok: true };
   });
 
   app.get("/api/campaigns", async (req) => campaigns.listCampaigns((await auth(req)).userId));
@@ -161,7 +185,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   app.post<{ Params: { id: string }; Body: Static<typeof P.ClaimJoin> }>("/api/joins/:id/claim", { schema: { body: P.ClaimJoin } }, async (req, reply) => {
     const result = await db.transaction(async (tx) => {
       const joined = await createCampaigns(tx, config).claimJoin(req.params.id, req.body.pollToken);
-      return { ...joined, session: await createIdentity(tx, config).issueSession(joined.userId) };
+      return { ...joined, session: await createIdentity(tx, identitaetsConfig(req)).issueSession(joined.userId) };
     });
     reply.header("Set-Cookie", result.session.setCookie);
     return { campaignId: result.campaignId };

@@ -17,13 +17,18 @@ const owned: OwnedProfile = {
   directory: "C:/test-only-unused-profile", dataDirectory: "C:/test-only-unused-profile/postgres",
   secrets: { databasePassword: "a".repeat(64), cookieSecret: "b".repeat(64) },
 };
-interface Request { id: string; startId: string; kind: string; config?: { origin: string } }
-async function harness(chronistHostOf?: (profileId: string) => Promise<{ key?: string; configPath?: string; hinweis?: string }>, lanAddress?: string, reportedOrigin?: string) {
+interface Request { id: string; startId: string; kind: string; config?: { origin: string; lanAddress?: string } }
+async function harness(chronistHostOf?: (profileId: string) => Promise<{ key?: string; configPath?: string; hinweis?: string }>, lanAddress?: string, reportedOrigin?: string, reportedLanOrigin?: string | null) {
   const worker = Object.assign(new EventEmitter(), { postMessage: vi.fn<(message: Request) => void>(), kill: vi.fn() });
   const unlock = vi.fn(async () => undefined);
   const store = { open: vi.fn(async () => owned), lock: vi.fn(async () => unlock) } as unknown as ProfileStore;
   worker.postMessage.mockImplementation(message => {
-    if (message.kind === "start") queueMicrotask(() => worker.emit("message", { id: message.id, startId: message.startId, ok: true, value: { origin: reportedOrigin ?? message.config!.origin, nodeVersion: "24.test", decoder: "test", setupRequired: true } }));
+    if (message.kind === "start") queueMicrotask(() => {
+      const echt = message.config!.lanAddress ? `http://${message.config!.lanAddress}:45101` : undefined;
+      const gemeldet = reportedLanOrigin === undefined ? echt : reportedLanOrigin ?? undefined;
+      worker.emit("message", { id: message.id, startId: message.startId, ok: true, value: { origin: reportedOrigin ?? message.config!.origin,
+        ...(gemeldet ? { lanOrigin: gemeldet } : {}), nodeVersion: "24.test", decoder: "test", setupRequired: true } });
+    });
   });
   mock.fork.mockReturnValue(worker);
   // This controller-only fixture opens no database; production must provide its
@@ -36,12 +41,23 @@ async function harness(chronistHostOf?: (profileId: string) => Promise<{ key?: s
 beforeEach(() => { vi.clearAllMocks(); mock.pgStart.mockResolvedValue(undefined); mock.pgStop.mockResolvedValue(undefined); });
 afterEach(() => vi.useRealTimers());
 
-it("starts only the selected current LAN address and binds its readiness proof to that origin", async () => {
+it("keeps the world's own address and adds only the selected current LAN address as its second door", async () => {
+  // Seit dem 17.09.2026: die eigene Adresse der Welt ist fest, das Heimnetz kommt DAZU. Vorher
+  // ersetzte die Heimnetz-Adresse sie — dann wechselte die Adresse der Welt mit dem Netz und
+  // sperrte die Spielleitung aus ihrem eigenen Cookie-Topf aus.
   const { controller, worker } = await harness(undefined, "192.168.1.2");
-  expect(controller.ready?.origin).toBe("http://192.168.1.2:45101");
+  expect(controller.ready?.origin).toBe("http://localhost:45101");
+  expect(controller.ready?.lanOrigin).toBe("http://192.168.1.2:45101");
   expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ kind: "start", config: expect.objectContaining({
-    origin: "http://192.168.1.2:45101", lanAddress: "192.168.1.2", databaseUrl: expect.stringContaining("@127.0.0.1:45102/postgres") }) }));
-  await expect(harness(undefined, "192.168.1.2", "http://localhost:45101")).rejects.toThrow("Profil");
+    origin: "http://localhost:45101", lanAddress: "192.168.1.2", databaseUrl: expect.stringContaining("@127.0.0.1:45102/postgres") }) }));
+  // Ohne Heimnetz laeuft dieselbe Welt unter derselben eigenen Adresse, nur ohne zweite Tuer.
+  const ohne = await harness();
+  expect(ohne.controller.ready?.origin).toBe("http://localhost:45101");
+  expect(ohne.controller.ready?.lanOrigin).toBeUndefined();
+  // Ein Startbeleg, der eine andere Adresse nennt als die angeforderte, gilt nicht — in beiden Feldern.
+  await expect(harness(undefined, "192.168.1.2", "http://192.168.1.2:45101")).rejects.toThrow("Profil");
+  await expect(harness(undefined, "192.168.1.2", undefined, "http://192.168.1.3:45101")).rejects.toThrow("Profil");
+  await expect(harness(undefined, "192.168.1.2", undefined, null)).rejects.toThrow("Profil");
 });
 
 it("rejects an absent interface before starting PostgreSQL or a worker", async () => {
