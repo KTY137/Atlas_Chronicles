@@ -2,14 +2,15 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { stableJson } from "@chronicle/rules";
-import type { KampfFuerLeitung, KampfFuerRunde, KampfSeite, KartenLage, KartenSichtDaten } from "@chronicle/protocol";
+import type { KampfAufraeumen, KampfFuerLeitung, KampfFuerRunde, KampfSeite, KartenLage, KartenSichtDaten } from "@chronicle/protocol";
 import { vorgabeSicht, zeigtBild } from "@chronicle/projection";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { Conflict, Gone } from "./errors.ts";
 import { kampfFuerLeitung, kampfFuerRunde, lies, type KampfRoh, type KarteRoh } from "./kampf-lesen.ts";
 import { naechsteFeldkarte, zugNachVerlassen } from "./kampf-zug.ts";
-import { listControlledActorIds } from "./actors.ts";
+import { createActors, listControlledActorIds } from "./actors.ts";
+import { instantiatePinnedActorInTx } from "./pinned-actors.ts";
 
 /**
  * Der Kampftisch — wer liegt wo, wer ist dran, in welcher Runde, und was sieht die Runde davon.
@@ -164,6 +165,70 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
     });
   }
 
+  /**
+   * „Wolf aus Vorlage × 3": in EINER Transaktion N Figuren und N Karten. Jede Figur ist eine echte
+   * Figur mit Bogen, Beute und Würfen (Spezifikation E1); sie gehört der Spielleitung, also sieht
+   * keine Spielerin sie in ihrer Figurenliste.
+   *
+   * Die Befehlskennung jeder Figur ist `<commandId>:<nummer>`. Kommt derselbe Befehl zweimal (die
+   * Antwort ging verloren), liefert die Figurenanlage dieselben Figuren zurück — und deren Karten
+   * liegen dann schon auf dem Tisch.
+   */
+  async function ausVorlage(userId: string, campaignId: string, kampfId: string, input: {
+    commandId: string; templateId: string; templateRevision: number; anzahl: number; name?: string;
+    seite: KampfSeite; initiative: number; lage: "hand" | "feld";
+  }): Promise<KampfFuerLeitung> {
+    await leitung(userId, campaignId);
+    return db.transaction(async tx => {
+      // Erst die Kampagne, dann der Kampf: dieselbe Sperrreihenfolge wie jede Figurenanlage.
+      await tx.query("SELECT id FROM campaigns WHERE id=$1 FOR UPDATE", [campaignId]);
+      const vorher = await lies(tx, campaignId, kampfId, true);
+      if (vorher.zustand === "beendet") throw new Conflict();
+      const vorlage = (await tx.query<{ name: string }>(
+        "SELECT definition->>'name' AS name FROM actor_template_revisions WHERE template_id=$1 AND campaign_id=$2 AND revision=$3",
+        [input.templateId, campaignId, input.templateRevision])).rows[0];
+      if (!vorlage) throw new Gone();
+      const basis = (input.name ?? vorlage.name).slice(0, 150);
+      const liegen = new Set(vorher.karten.flatMap(k => k.actorId ? [k.actorId] : []));
+      let ordnung = naechsteOrdnung(vorher), frei = input.lage === "feld" && zugFrei(vorher);
+      for (let nummer = 1; nummer <= input.anzahl; nummer++) {
+        const figur = await instantiatePinnedActorInTx(tx, config, userId, campaignId, {
+          commandId: `${input.commandId}:${nummer}`, templateId: input.templateId, templateRevision: input.templateRevision,
+          name: input.anzahl > 1 ? `${basis} ${nummer}` : basis });
+        if (liegen.has(figur.id)) continue;
+        const id = randomUUID();
+        await tx.query(`INSERT INTO kampf_teilnehmer(id,kampf_id,campaign_id,seite,name,actor_id,initiative,ordnung,initiative_roll_id,am_zug)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,NULL,$9)`, [id, kampfId, campaignId, input.seite, figur.name, figur.id, input.initiative, ordnung++, frei]);
+        frei = false;
+        await neueKarte(tx, campaignId, { id, seite: input.seite, lage: input.lage, nameFuerRunde: null, sicht: vorgabeSicht(input.seite), vomKampfAngelegt: true });
+      }
+      return stand(tx, campaignId, kampfId);
+    });
+  }
+
+  /**
+   * Nach dem Kampf die Figuren ins Archiv legen, die der Kampf selbst angelegt hat — nie andere.
+   * Archivieren löscht nichts; Inventar und Beute bleiben an der Figur. Jede Figur ist ein eigener
+   * `actor.archive`-Befehl: scheitert einer, bleibt der Kampf trotzdem beendet, und der Bericht
+   * nennt, wer übrig blieb (Spezifikation E7).
+   */
+  async function archiviereKampffiguren(userId: string, campaignId: string, kampfId: string): Promise<KampfAufraeumen> {
+    await leitung(userId, campaignId);
+    const roh = await lies(db, campaignId, kampfId);
+    if (roh.zustand !== "beendet") throw new Conflict();
+    const actors = createActors(db, config), archiviert: string[] = [], nichtArchiviert: string[] = [];
+    for (const karte of roh.karten) {
+      if (!karte.vomKampfAngelegt || !karte.actorId) continue;
+      try {
+        const figur = await actors.getActor(userId, campaignId, karte.actorId);
+        if (figur.archivedAt !== null || figur.version === null) continue;
+        await actors.archiveActor(userId, campaignId, karte.actorId, { commandId: randomUUID(), expectedVersion: figur.version, reason: "Der Kampf ist vorbei." });
+        archiviert.push(karte.actorId);
+      } catch { nichtArchiviert.push(karte.actorId); }
+    }
+    return { archiviert, nichtArchiviert };
+  }
+
   /** Eine Karte ganz löschen — für Versehen. Wer nur vom Feld soll, kommt in die Ablage. */
   async function teilnehmerEntfernen(userId: string, campaignId: string, kampfId: string, teilnehmerId: string): Promise<KampfFuerLeitung> {
     await leitung(userId, campaignId);
@@ -266,5 +331,5 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
     });
   }
 
-  return { buehnen, buehne, alsRunde, bild, anlegen, teilnehmerHinzufuegen, teilnehmerEntfernen, lageSetzen, sichtSetzen, initiativeSetzen, eroeffnen, naechsterZug, beenden };
+  return { buehnen, buehne, alsRunde, bild, anlegen, teilnehmerHinzufuegen, ausVorlage, archiviereKampffiguren, teilnehmerEntfernen, lageSetzen, sichtSetzen, initiativeSetzen, eroeffnen, naechsterZug, beenden };
 }

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { KampfFuerLeitung, KampfFuerRunde } from "@chronicle/protocol";
+import type { KampfAufraeumen, KampfFuerLeitung, KampfFuerRunde } from "@chronicle/protocol";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 import { createActorPortraits } from "../src/domain/actor-portrait.ts";
@@ -235,6 +235,59 @@ describe("Der Kampftisch", () => {
       const bogen = await f.game.getSheet(f.gm, f.campaign, wolf);
       await f.game.updateSheet(f.gm, f.campaign, { actorId: wolf, expectedVersion: bogen.version, fields: { ...bogen.fields, hp: 0 } });
       expect(von(await leitungsSicht(f, kampfId), "Wolf")).toMatchObject({ aufgebraucht: true, lage: "feld" });
+    });
+  });
+
+  describe("Schnellgegner und Aufräumen", () => {
+    const rudel = (f: Awaited<ReturnType<typeof kampfFixture>>, anzahl: number, teil: { name?: string; lage?: "hand" | "feld"; commandId?: string } = {}) => ({
+      commandId: teil.commandId ?? randomUUID(), templateId: f.wolf.id, templateRevision: f.wolf.revision, anzahl,
+      seite: "gegner" as const, initiative: 12, lage: teil.lage ?? "hand", ...(teil.name ? { name: teil.name } : {}) });
+
+    it("legt Schnellgegner als eigene Figuren an — verdeckt, nummeriert und nur für die Spielleitung", async () => {
+      const f = await kampfFixture(db);
+      const kampf = await f.buehne.anlegen(f.gm, f.campaign, { name: "Rudel" });
+      const eingabe = rudel(f, 3);
+      const stand = await f.buehne.ausVorlage(f.gm, f.campaign, kampf.id, eingabe);
+      expect(namen(stand)).toEqual(["Wolf 1", "Wolf 2", "Wolf 3"]);
+      expect(stand.teilnehmer.every(k => k.lage === "hand" && k.vomKampfAngelegt && k.actorId !== null && k.version === 1)).toBe(true);
+      expect(stand.teilnehmer.map(k => k.balken[0]?.wert)).toEqual([40, 40, 40]);
+      const figuren = stand.teilnehmer.map(k => k.actorId!);
+      expect((await f.actors.listActors(f.mira.userId, f.campaign)).some(a => figuren.includes(a.id))).toBe(false);
+      // Ein wiederholter Befehl (die Antwort ging verloren) legt nichts doppelt an.
+      expect(namen(await f.buehne.ausVorlage(f.gm, f.campaign, kampf.id, eingabe))).toEqual(["Wolf 1", "Wolf 2", "Wolf 3"]);
+    });
+
+    it("nimmt einen eigenen Namen und nummeriert eine einzelne Figur nicht", async () => {
+      const f = await kampfFixture(db);
+      const kampf = await f.buehne.anlegen(f.gm, f.campaign, { name: "Einzeln" });
+      expect(namen(await f.buehne.ausVorlage(f.gm, f.campaign, kampf.id, rudel(f, 1, { name: "Grauwolf", lage: "feld" })))).toEqual(["Grauwolf"]);
+    });
+
+    it("legt für einen beendeten Kampf keine Figur an", async () => {
+      const f = await kampfFixture(db);
+      const kampf = await f.buehne.anlegen(f.gm, f.campaign, { name: "Zu spät" });
+      await f.buehne.beenden(f.gm, f.campaign, kampf.id);
+      const vorher = (await f.actors.listActors(f.gm, f.campaign)).length;
+      await expect(f.buehne.ausVorlage(f.gm, f.campaign, kampf.id, rudel(f, 2))).rejects.toBeInstanceOf(Conflict);
+      expect((await f.actors.listActors(f.gm, f.campaign)).length).toBe(vorher);
+    });
+
+    it("räumt beim Beenden nur die Figuren weg, die der Kampf selbst angelegt hat", async () => {
+      const f = await kampfFixture(db);
+      const kampf = await f.buehne.anlegen(f.gm, f.campaign, { name: "Aufräumen" });
+      await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Mira", seite: "gefaehrten", initiative: 15, actorId: f.mira.actorId });
+      const angelegt = (await f.buehne.ausVorlage(f.gm, f.campaign, kampf.id, rudel(f, 2, { lage: "feld" }))).teilnehmer.filter(k => k.vomKampfAngelegt).map(k => k.actorId!);
+      await expect(f.buehne.archiviereKampffiguren(f.gm, f.campaign, kampf.id)).rejects.toBeInstanceOf(Conflict);
+      await f.buehne.beenden(f.gm, f.campaign, kampf.id);
+      const bericht: KampfAufraeumen = await f.buehne.archiviereKampffiguren(f.gm, f.campaign, kampf.id);
+      expect([...bericht.archiviert].sort()).toEqual([...angelegt].sort());
+      expect(bericht.nichtArchiviert).toEqual([]);
+      const uebrig = (await f.actors.listActors(f.gm, f.campaign)).map(a => a.id);
+      expect(uebrig).toContain(f.mira.actorId);
+      expect(uebrig.some(id => angelegt.includes(id))).toBe(false);
+      // Zweimal aufräumen findet nichts mehr.
+      expect((await f.buehne.archiviereKampffiguren(f.gm, f.campaign, kampf.id)).archiviert).toEqual([]);
+      await expect(f.buehne.archiviereKampffiguren(f.mira.userId, f.campaign, kampf.id)).rejects.toBeInstanceOf(Gone);
     });
   });
 });
