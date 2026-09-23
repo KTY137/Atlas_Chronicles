@@ -60,16 +60,20 @@ vorhandenen Bauprogramme der Typen gelten), Weltkarte (Teil 3). Fantasy bleibt B
   `siedlung-gold-fantasy.test.ts` (Weiler/Dorf/Stadt × fünf Standorte, Stadt mit Zonen- und mit
   Straßenplan) hält v11 per Hash fest. Jeder Umbau in `stadt/**` muss diese Hashes unverändert
   lassen.
-- **E4 — Ein gemeinsamer Abschluss statt drei Kopien.** Die Schritte nach der Bebauung
-  (Budget und Zonenfilter, Notbau, Flur und Gelände, Regionen, Typen und Titel, Lose, Stege,
-  Mauern, Ausstattung, Beschriftung, Dokument, Bericht; heute `viertel/index.ts` Z. 231–446)
-  werden als `stadt/fertig.ts: fertigeStadt(…)` herausgelöst. Was sich je Stil unterscheidet,
-  kommt als Parameter: Typwahl, Titel, Sonderbauten, Flur (Felder, Rasen, Solar/Hydrokultur),
-  Beschriftungen, Dachform. Fantasy ruft ihn mit seinen heutigen Werten auf (E3 prüft).
-- **E5 — Zwei neue Layout-Bausteine** neben `stadt/viertel/`:
-  `stadt/modern/` (Gegenwart) und `stadt/kolonie/` (Sci-Fi). Beide nutzen `rollen.ts`
-  (`waehleMarkt`, `weiseRollenZu`) und damit auch den Zonenplan, der weiter über die automatische
-  Rolle gewinnt. `siedlung.ts` verteilt nach Setting; es bleibt ein Generator (`kartenwerk.ts`).
+- **E4 — Eine Pipeline, drei Stile.** Die Viertel-Pipeline (`viertel/index.ts`) wird nicht
+  kopiert, sondern bekommt einen `StadtStil` (`stadt/stil.ts`). Der Stil liefert, was sich
+  unterscheidet: die Flecken (Spirale/Voronoi oder Ringsektoren), die Befestigung (Mauer mit
+  Türmen, Schutzzaun, Stadtring als Straße, keine), Straßenbreiten, die Bebauung eines Flecks,
+  Typtabellen, Sonderbauten, Titel, Viertelnamen, Flurstreifen, Dachform. Alles andere — Rollen
+  samt Zonenplan, Hauptstraßen, Straßenbänder, Flussquerung, Budget, Flur, Wasser und Brücken,
+  Stege, Ausstattung, Beschriftung, Dokument, Bericht — ist gemeinsamer Code. Fantasy ist der
+  Stil `FANTASY` mit genau den heutigen Werten in derselben Zufallsreihenfolge (E3 prüft).
+- **E5 — Zwei neue Stile** neben `stadt/viertel/`: `stadt/modern/` (Gegenwart: Flecken wie
+  Fantasy, größer; Raster und Blockbebauung je Stadtteil) und `stadt/kolonie/` (Sci-Fi:
+  Ringsektoren; Kuppeln, Hallen, Landefelder). Da Ringsektoren eine echte Zerlegung der Karte
+  sind, entstehen Ringstraßen und Speichen von selbst aus dem Kantengraph. `siedlung.ts` wählt
+  den Stil nach Setting; es bleibt ein Generator (`kartenwerk.ts`). Kreise und Ringe ohne
+  `Math.sin/cos` (`polygon.ts`, Regel 2): Richtungen über Halbwinkel mit `Math.sqrt`.
 - **E6 — Dachform als Kartografie-Feld.** Die Rolle `building` bekommt ein optionales Feld
   `dach` aus `CARTOGRAPHY_DACHFORMEN = ["giebel", "flach", "halle", "kuppel", "plattform"]`.
   Fehlt es, gilt die Vorgabe des Settings (Fantasy Giebel, sonst Flachdach) — alte Karten und
@@ -113,7 +117,7 @@ Einheiten sind Zellen. Alle Züge aus dem Layout-Keim, Reihenfolgen über Geomet
    ~60 % (nur Stadt), der Rest Außenbezirk.
 2. **Hauptverkehrsstraßen** auf den Kanten zwischen Stadtteilen (Breite 1,3), Ausfallstraßen von
    den Toren zum Kartenrand (1,1). **Stadtring** (nur Stadt): die Außenkantenschleife des Kerns
-   (`mauerKanten`) als breite Straße (1,6) statt Mauer. Tore = Anschlussstellen am Ring. Fluss:
+   (`mauerKanten`) als Hauptstraße (1,3) statt Mauer. Tore = Anschlussstellen am Ring. Fluss:
    Hauptstraßen dürfen queren (Brücken wie heute), Nebenstraßen enden am Ufer.
 3. **Raster je Stadtteil.** Winkel θ = Richtung der längsten angrenzenden Hauptstraße (bei Gleichstand
    die zur Mitte). Maschenweite nach Rolle: Innenstadt 6,5 × 6,5, Blockrand 7 × 9, Zeilenbau 9 × 12,
@@ -179,7 +183,7 @@ Einheiten sind Zellen. Alle Züge aus dem Layout-Keim, Reihenfolgen über Geomet
 ## 7. Beschriftungen
 
 | Nutzung | Fantasy (heute) | Gegenwart | Sci-Fi |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | wohnen | Wohnviertel | Wohngebiet | Wohnkuppeln |
 | markt | Marktviertel | Innenstadt | Marktdeck |
 | handwerk | Handwerksviertel | Gewerbegebiet | Fertigung |
