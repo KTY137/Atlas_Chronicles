@@ -42,7 +42,7 @@ export function forgePathSteps(s: ForgePathState): readonly Step[] {
     { id: "fields", state: rules, title: t("Bogen und Regeln gestalten"), jump: t("Zu den Attributen"),
       text: !s.editable ? t("Attribute, Bogen, Aktionen und alles, was daraus folgt.") : shaped ? t("{attribute} Attribute und {aktionen} Aktionen, der Entwurf ist gültig.", { attribute: s.fields, aktionen: s.actions }) : t("Der Entwurf braucht mindestens ein Attribut und eine Aktion und darf keine markierte Stelle mehr haben.") },
     { id: "preview", state: tried, title: t("Ausprobieren"), jump: t("Zur Testtafel"),
-      text: tried === "done" ? t("{n} Pakettests bestanden.", { n: s.tests }) : t("Würfle unten auf der Testtafel mit Beispielfiguren und speichere Beispiele als Pakettest.") },
+      text: tried === "done" ? t("{n} Pakettests bestanden.", { n: s.tests }) : t("Würfle auf der Testtafel mit Beispielfiguren und speichere Beispiele als Pakettest.") },
     { id: "publish", state: installed, title: t("Installieren"), jump: t("Zur Übernahme"),
       text: s.installed ? t("Diese Version liegt unveränderlich in der Bibliothek.") : t("Speichert diese Version unveränderlich in der Bibliothek. Spätere Änderungen werden eine neue Version.") },
     { id: "publish", state: activated, title: t("Für die Runde aktivieren"), jump: t("Zur Übernahme"),

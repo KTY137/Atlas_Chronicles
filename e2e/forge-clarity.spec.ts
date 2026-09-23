@@ -18,6 +18,8 @@ test("workshop entry, installed attribute browsing and draft protection remain u
   await page.screenshot({ path: info.outputPath("01-workshop-desktop.png"), fullPage: true });
   await page.locator(".forge-tool-grid-primary").getByRole("button", { name: /Regelschmiede/ }).click();
   await expect(page).toHaveURL(/forge=rules/);
+  // Die Regelwerkstatt öffnet mit der Bibliothek; ein Klick öffnet das aktive Paket zum Ansehen.
+  await page.locator(".rf-catalog-item").first().click();
   await page.getByRole("tab", { name: "Attribute", exact: true }).click();
   const editor = page.locator(".rf-editor"), attributes = editor.getByRole("navigation", { name: "Attribute", exact: true });
   const strength = attributes.getByRole("button", { name: /^Kraft / });

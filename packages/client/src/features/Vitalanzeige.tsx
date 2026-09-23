@@ -37,27 +37,29 @@ export function Vitalanzeige({ pkg, fields, kompakt = false }: {
   const display = displayRulePackage(pkg);
 
   return <div className={kompakt ? "vitalanzeige kompakt" : "vitalanzeige"}>
-    {werte.map(vital => {
-      const label = display.schemaVersion === 2 ? display.vitals?.find(row => row.id === vital.id)?.label ?? vital.label : vital.label;
-      // Über dem Höchststand wird der Balken voll, die Zahl bleibt ehrlich. Ein Höchstwert von 0
-      // ergäbe eine Division durch null — dann bleibt der Balken leer.
-      const anteil = vital.maximum > 0 ? Math.max(0, Math.min(1, vital.value / vital.maximum)) : 0;
-      const stand = `${vital.value} / ${vital.maximum}`;
-      return <div key={vital.id} className={vital.depleted ? "vitalwert erschoepft" : "vitalwert"}>
-        <div className="vitalwert-kopf">
-          <span className="vitalwert-name">{label}</span>
-          <span className="vitalwert-stand">{stand}</span>
-        </div>
-        <div className="vitalwert-balken" role="meter" aria-label={label}
-          aria-valuenow={vital.value} aria-valuemin={0} aria-valuemax={vital.maximum} aria-valuetext={stand}>
-          <span style={{ inlineSize: `${anteil * 100}%` }} />
-        </div>
-        {/* Erschöpfung als WORT, nicht nur als leerer Balken: was Niederlage bedeutet, hat das
-            Regelpaket erklärt, und wer es liest, soll es lesen können. */}
-        {vital.depleted ? <p className="vitalwert-hinweis">{vital.depletion === "defeat"
-          ? t("Aufgebraucht — die Spielleitung kann die Niederlage bestätigen.")
-          : t("Aufgebraucht.")}</p> : null}
-      </div>;
-    })}
+    {werte.map(vital => <VitalBar key={vital.id} vital={vital} label={display.schemaVersion === 2 ? display.vitals?.find(row => row.id === vital.id)?.label ?? vital.label : vital.label} />)}
+  </div>;
+}
+
+/** Ein Balken: Name, Stand als Zahl, Leiste und — wenn er leer ist — ein Satz, was das bedeutet. */
+export function VitalBar({ vital, label }: { vital: VitalReading; label: string }) {
+  // Über dem Höchststand wird der Balken voll, die Zahl bleibt ehrlich. Ein Höchstwert von 0
+  // ergäbe eine Division durch null — dann bleibt der Balken leer.
+  const anteil = vital.maximum > 0 ? Math.max(0, Math.min(1, vital.value / vital.maximum)) : 0;
+  const stand = `${vital.value} / ${vital.maximum}`;
+  return <div className={vital.depleted ? "vitalwert erschoepft" : "vitalwert"}>
+    <div className="vitalwert-kopf">
+      <span className="vitalwert-name">{label}</span>
+      <span className="vitalwert-stand">{stand}</span>
+    </div>
+    <div className="vitalwert-balken" role="meter" aria-label={label}
+      aria-valuenow={vital.value} aria-valuemin={0} aria-valuemax={vital.maximum} aria-valuetext={stand}>
+      <span style={{ inlineSize: `${anteil * 100}%` }} />
+    </div>
+    {/* Erschöpfung als WORT, nicht nur als leerer Balken: was Niederlage bedeutet, hat das
+        Regelpaket erklärt, und wer es liest, soll es lesen können. */}
+    {vital.depleted ? <p className="vitalwert-hinweis">{vital.depletion === "defeat"
+      ? t("Aufgebraucht — die Spielleitung kann die Niederlage bestätigen.")
+      : t("Aufgebraucht.")}</p> : null}
   </div>;
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { Plus, TestTubeDiagonal, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
@@ -13,35 +13,41 @@ import { copyJson, fixtureValues, localKey, type PackageSelfTest } from "./rule-
 import { hasChronicleExamples, hasChronicleGuidance, RuleComputedFields } from "./RuleComputedFields";
 
 interface SamplePassage { localId: string; passageId: string; labels: string; experience: Experience }
-interface Fixture { id: string; name: string; values: Record<string, Scalar>; inputs: Record<string, Record<string, Scalar>>; passages: SamplePassage[] }
+export interface Fixture { id: string; name: string; values: Record<string, Scalar>; inputs: Record<string, Record<string, Scalar>>; passages: SamplePassage[] }
 const initialFixtures = (): Fixture[] => [
   { id: "fixture-sera", name: "Sera", values: {}, inputs: {}, passages: [{ localId: localKey(), passageId: "beispiel-spur", labels: "spuren", experience: "erfahren" }] },
   { id: "fixture-brannt", name: "Brannt", values: {}, inputs: {}, passages: [] },
 ];
 const MAX_FIXTURES = 6;
+export type FixtureState = readonly [Fixture[], Dispatch<SetStateAction<Fixture[]>>];
+/** Die Testfiguren gehören der ganzen Werkstatt: Formel-Beispiele, Live-Balken, Bogen-Vorschau und Testtafel rechnen mit denselben. */
+export function useForgeFixtures(): FixtureState { return useState(initialFixtures); }
+
+/** Die erste Testfigur als Beispiel für Formeln. Dieselbe Identität, solange sich nichts ändert: Formelfelder merken sich ihr Beispiel. */
+export function useExampleFigure(pkg: RulePackage | null, fixtures: readonly Fixture[]): ExampleFigure | null {
+  const last = useRef<{ key: string; figure: ExampleFigure | null }>({ key: "", figure: null });
+  return useMemo(() => {
+    const first = fixtures[0];
+    const next = pkg && first ? { name: first.name, values: fixtureValues(pkg.fields, first.values), inputs: first.inputs, passages: first.passages.map(p => ({ passageId: p.passageId, labels: p.labels.split(",").map(s => s.trim()).filter(Boolean), experience: p.experience })) } : null;
+    const key = next ? JSON.stringify(next) : "";
+    if (key !== last.current.key) last.current = { key, figure: next };
+    return last.current.figure;
+  }, [pkg, fixtures]);
+}
 
 /** Pure, reproducible examples. This component never writes a campaign sheet or roll. */
-export function RuleForgePreview({ pkg, onFigure, onSaveTest }: { pkg: RulePackage | null; onFigure?: (figure: ExampleFigure | null) => void; onSaveTest?: (test: PackageSelfTest) => void }) {
-  const [fixtures, setFixtures] = useState(initialFixtures), [selected, setSelected] = useState("");
+export function RuleForgePreview({ pkg, fixtures, onFixtures, onSaveTest }: { pkg: RulePackage | null; fixtures: readonly Fixture[]; onFixtures: Dispatch<SetStateAction<Fixture[]>>; onSaveTest?: (test: PackageSelfTest) => void }) {
+  const [selected, setSelected] = useState("");
   const [seed, setSeed] = useState("00000001000000020000000300000004");
   const action = pkg?.actions.find(a => a.id === selected) ?? pkg?.actions[0];
   const examplesAvailable = useMemo(() => !!pkg && hasChronicleExamples(pkg), [pkg]);
-  const update = (id: string, change: Partial<Fixture>) => setFixtures(items => items.map(f => f.id === id ? { ...f, ...change } : f));
-  const addFixture = () => setFixtures(items => items.length >= MAX_FIXTURES ? items : [...items, { id: localKey(), name: t("Testfigur {n}", { n: items.length + 1 }), values: {}, inputs: {}, passages: [] }]);
-  const removeFixture = (id: string) => setFixtures(items => items.length > 2 ? items.filter(f => f.id !== id) : items);
-  const lastFigure = useRef<string | null>(null);
-  useEffect(() => {
-    const first = fixtures[0];
-    const next = pkg && first ? { name: first.name, values: fixtureValues(pkg.fields, first.values), inputs: first.inputs, passages: first.passages.map(p => ({ passageId: p.passageId, labels: p.labels.split(",").map(s => s.trim()).filter(Boolean), experience: p.experience })) } : null;
-    const serialized = next ? JSON.stringify(next) : null;
-    if (serialized === lastFigure.current) return;
-    lastFigure.current = serialized;
-    onFigure?.(next);
-  }, [fixtures, pkg, onFigure]);
+  const update = (id: string, change: Partial<Fixture>) => onFixtures(items => items.map(f => f.id === id ? { ...f, ...change } : f));
+  const addFixture = () => onFixtures(items => items.length >= MAX_FIXTURES ? items : [...items, { id: localKey(), name: t("Testfigur {n}", { n: items.length + 1 }), values: {}, inputs: {}, passages: [] }]);
+  const removeFixture = (id: string) => onFixtures(items => items.length > 2 ? items.filter(f => f.id !== id) : items);
   return <section className="rf-preview" aria-labelledby="rf-preview-title">
     <div className="rf-section-heading"><h2 id="rf-preview-title"><TestTubeDiagonal size={20} />{t("Testtafel")}</h2><span className="rf-node-badge">{t("Nur Beispiele")}</span></div>
     <p>{t("Vergleiche zwei oder mehr Figuren mit unterschiedlichem Wissen. Alle erhalten denselben Würfelstart, damit nur der Wissensunterschied zählt. Die Beispiele verändern keine Charaktere oder Würfe deiner Runde.")}</p>
-    {pkg && hasChronicleGuidance(pkg) ? examplesAvailable ? <Button onClick={() => setFixtures(CHRONICLE_EXAMPLE_CHARACTERS.map(example => ({ id: `fixture-${example.id}`, name: example.name, values: fixtureValues(pkg.fields, example.fields), inputs: {}, passages: [] })))}>{t("Beispielfiguren laden")}</Button> : <p className="field-help">{t("Die fertigen Beispielfiguren passen zum unveränderten Beispielkatalog. Für deinen angepassten Katalog verteilst du die Punkte hier selbst.")}</p> : null}
+    {pkg && hasChronicleGuidance(pkg) ? examplesAvailable ? <Button onClick={() => onFixtures(CHRONICLE_EXAMPLE_CHARACTERS.map(example => ({ id: `fixture-${example.id}`, name: example.name, values: fixtureValues(pkg.fields, example.fields), inputs: {}, passages: [] })))}>{t("Beispielfiguren laden")}</Button> : <p className="field-help">{t("Die fertigen Beispielfiguren passen zum unveränderten Beispielkatalog. Für deinen angepassten Katalog verteilst du die Punkte hier selbst.")}</p> : null}
     {!pkg ? <Notice>{t("Die Testtafel wird verfügbar, sobald der Entwurf gültig ist.")}</Notice> : !action ? <Notice>{t("Lege eine Aktion an, um das Regelwerk zu erproben.")}</Notice> : <>
       <div className="rf-form-grid"><label>{t("Aktion")}<select value={action.id} onChange={e => setSelected(e.target.value)}>{pkg.actions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
         <label>{t("Würfelstart für reproduzierbare Tests")}<input value={seed} maxLength={32} spellCheck={false} onChange={e => setSeed(e.target.value)} /><small>{t("32 Hexadezimalzeichen, nicht ausschließlich Nullen.")}</small></label></div>
@@ -50,6 +56,20 @@ export function RuleForgePreview({ pkg, onFigure, onSaveTest }: { pkg: RulePacka
       <Button variant="quiet" disabled={fixtures.length >= MAX_FIXTURES} onClick={addFixture}><Plus size={14} />{t("Weitere Testfigur")}</Button>
     </>}
   </section>;
+}
+
+/** Der Bogen einer Testfigur, wie er am Tisch aussieht, zum Ausprobieren: Werte lassen sich verstellen. */
+export function LiveSheet({ pkg, fixture, onChange }: { pkg: RulePackage; fixture: Fixture; onChange(values: Record<string, Scalar>): void }) {
+  const values = fixtureValues(pkg.fields, fixture.values);
+  const runtime = useMemo(() => buildRuleRuntime(pkg), [pkg]);
+  const preview = useMemo(() => previewRuleRuntime(pkg, fixtureValues(pkg.fields, fixture.values)), [pkg, fixture.values]);
+  const covered = new Set(pkg.layout.sections.flatMap(s => [...s.fields]));
+  const remaining = Object.fromEntries(Object.entries(pkg.fields).filter(([id]) => !covered.has(id)));
+  return runtime.presentation ? <RulePresentationView runtime={runtime} preview={preview} values={values} onChange={onChange} /> : <>
+    <PackageLayoutFields pkg={pkg} values={values} onChange={onChange} />
+    {Object.keys(remaining).length ? <fieldset className="rf-sheet-section"><legend>{t("Weitere Felder")}</legend><RuleFields fields={remaining} values={values} onChange={onChange} /></fieldset> : null}
+    <RuleComputedFields pkg={pkg} fields={values} />
+  </>;
 }
 
 function PackageLayoutFields({ pkg, values, onChange }: { pkg: RulePackage; values: Record<string, Scalar>; onChange(values: Record<string, Scalar>): void }) {
@@ -73,16 +93,12 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
   pkg: RulePackage; actionId: string; fixture: Fixture; seed: string; canRemove: boolean; onChange(change: Partial<Fixture>): void; onRemove(): void; onSaveTest?: (test: PackageSelfTest) => void;
 }) {
   const action = pkg.actions.find(a => a.id === actionId)!;
-  const values = fixtureValues(pkg.fields, fixture.values), inputs = fixtureValues(action.inputs, fixture.inputs[actionId] ?? {});
-  const runtime = useMemo(() => buildRuleRuntime(pkg), [pkg]);
-  const sheetPreview = useMemo(() => previewRuleRuntime(pkg, fixtureValues(pkg.fields, fixture.values)), [pkg, fixture.values]);
+  const inputs = fixtureValues(action.inputs, fixture.inputs[actionId] ?? {});
   const [testName, setTestName] = useState("");
   const evaluation = useMemo((): { result: ActionResult; error?: never } | { result?: never; error: string } => {
     try { return { result: evaluateAction(pkg, actionId, { seed, actor: fixtureValues(pkg.fields, fixture.values), input: fixtureValues(pkg.actions.find(a => a.id === actionId)!.inputs, fixture.inputs[actionId] ?? {}), knowledge: { actorId: fixture.id, passages: fixture.passages.map(p => ({ passageId: p.passageId, labels: p.labels.split(",").map(s => s.trim()).filter(Boolean), experience: p.experience })) } }) }; }
     catch (error) { return { error: error instanceof Error ? error.message : t("Das Beispiel konnte nicht berechnet werden.") }; }
   }, [pkg, actionId, seed, fixture]);
-  const covered = new Set(pkg.layout.sections.flatMap(s => [...s.fields]));
-  const remaining = Object.fromEntries(Object.entries(pkg.fields).filter(([id]) => !covered.has(id)));
   const changePassage = (localId: string, change: Partial<SamplePassage>) => onChange({ passages: fixture.passages.map(p => p.localId === localId ? { ...p, ...change } : p) });
   return <article className="rf-fixture" aria-label={t("Testfigur {name}", { name: fixture.name })}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -90,11 +106,7 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
       {canRemove ? <Button variant="quiet" aria-label={t("Testfigur {name} entfernen", { name: fixture.name })} onClick={onRemove}><Trash2 size={14} />{t("Entfernen")}</Button> : null}
     </div>
     <label>{t("Name der Testfigur")}<input value={fixture.name} maxLength={120} onChange={e => onChange({ name: e.target.value })} /></label>
-    {runtime.presentation ? <RulePresentationView runtime={runtime} preview={sheetPreview} values={values} onChange={next => onChange({ values: next })} /> : <>
-      <PackageLayoutFields pkg={pkg} values={values} onChange={next => onChange({ values: next })} />
-      {Object.keys(remaining).length ? <fieldset className="rf-sheet-section"><legend>{t("Weitere Felder")}</legend><RuleFields fields={remaining} values={values} onChange={next => onChange({ values: next })} /></fieldset> : null}
-      <RuleComputedFields pkg={pkg} fields={values} />
-    </>}
+    <LiveSheet pkg={pkg} fixture={fixture} onChange={next => onChange({ values: next })} />
     {Object.keys(sichtbareEingaben(pkg, action.inputs)).length ? <fieldset className="rf-sheet-section"><legend>{t("Eingaben: {name}", { name: action.name })}</legend><RuleFields fields={sichtbareEingaben(pkg, action.inputs)} values={inputs} onChange={next => onChange({ inputs: { ...fixture.inputs, [actionId]: next } })} /></fieldset> : null}
     <fieldset className="rf-sheet-section"><legend>{t("Gehaltene Beispielpassagen")}</legend>
       {!fixture.passages.length ? <p className="rf-help">{t("Diese Figur hält keine Passage.")}</p> : null}

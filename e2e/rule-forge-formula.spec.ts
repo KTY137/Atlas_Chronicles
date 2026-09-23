@@ -51,7 +51,9 @@ test("typing a formula with suggestions, plain errors, three views, install and 
     await expect(editor.getByText(/^Beispiel für /)).toBeVisible();
     await formula.fill("1d20 + @insigt");
     await expect(editor.getByText("Das Attribut „insigt“ gibt es nicht. Meintest du „insight“?")).toBeVisible();
+    await gm.getByRole("tab", { name: "Übernehmen", exact: true }).click();
     await expect(gm.getByRole("button", { name: "Version installieren", exact: true })).toBeDisabled();
+    await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
     await formula.fill("1d20 + @insight");
     await gm.getByRole("button", { name: "Bausteine", exact: true }).click();
     await expect(editor.getByRole("group", { name: "Ergebnis", exact: true }).getByRole("combobox", { name: "Rechenzeichen", exact: true })).toHaveValue("+");
@@ -84,6 +86,7 @@ test("typing a formula with suggestions, plain errors, three views, install and 
     });
     expect(overlayScroll).toBe(inputScroll);
     await formula.fill("1d20 + @insight");
+    await gm.getByRole("tab", { name: "Übernehmen", exact: true }).click();
     const install = gm.waitForResponse(r => r.url() === `${base}/rules` && r.request().method() === "POST");
     await gm.getByRole("button", { name: "Version installieren", exact: true }).click(); expect((await install).status()).toBe(200);
     const preview = gm.waitForResponse(r => r.url() === `${base}/rules/preview` && r.request().method() === "POST");
@@ -97,6 +100,7 @@ test("typing a formula with suggestions, plain errors, three views, install and 
     const roll = await (await rolled).json() as ActionCard;
     expect(roll.receipt.expression).toBe("1d20 + actor.insight");
     await gm.setViewportSize({ width: 390, height: 844 });
+    await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
     await expect(formula).toBeVisible();
     expect(await gm.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect(errors).toEqual([]);
@@ -106,7 +110,6 @@ test("typing a formula with suggestions, plain errors, three views, install and 
 test("opening the shipped ChronicleHeroes template shows sugar and downloads the package byte for byte", async ({ page: gm }) => {
   await signIn(gm.context(), gmSession);
   await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
-  await gm.locator(".rf-starter > summary").click();
   await gm.getByRole("button", { name: "Vorlage anpassen" }).click();
   await gm.getByRole("button", { name: "ChronicleHeroes als Regelentwurf öffnen" }).click();
   await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();

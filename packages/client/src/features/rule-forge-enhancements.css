@@ -11,20 +11,6 @@
 .rf-reference-templates .rf-card { margin: 0; }
 .rf-reference-templates .rf-value-list { margin: 12px 0; }
 
-/* Validation belongs to the editor, not to the page bottom. Keep it in view while a long
- * category/action form is being repaired; the existing content remains the single source. */
-.rf-editor > .rf-validation {
-  position: sticky;
-  bottom: 8px;
-  z-index: 8;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel, var(--bg));
-  box-shadow: 0 -8px 24px color-mix(in srgb, black 12%, transparent);
-}
-
 @media (max-width: 720px) {
   .rf-template-grid { grid-template-columns: 1fr; }
-  .rf-editor > .rf-validation { bottom: 4px; }
 }

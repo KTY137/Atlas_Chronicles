@@ -5,6 +5,7 @@ import { decodeRuleCollectionValue, encodeRuleCollectionValue, type RuleCollecti
 import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
 import { RuleFields } from "./RuleFields";
+import { VitalBar } from "./Vitalanzeige";
 import { forgetRuleAbility, ruleIdList } from "./rule-runtime-state";
 
 type RuntimeAbility = RuleRuntime["abilities"][number];
@@ -141,7 +142,7 @@ export function RulePresentationView({ runtime, preview, values, onChange, disab
       }
       case "vital": {
         const vital = vitalById.get(node.ref); if (!vital) return null;
-        return <div className={`rule-vital rule-render-${node.render ?? "compact"}`} key={node.id}><label>{node.label ?? vital.label} · {vital.value} / {vital.maximum} <meter min={0} max={Math.max(1, vital.maximum)} value={Math.max(0, Math.min(vital.maximum, vital.value))} /></label></div>;
+        return <div className={`rule-vital rule-render-${node.render ?? "compact"}`} key={node.id}><VitalBar vital={vital} label={node.label ?? vital.label} /></div>;
       }
       case "collection": {
         const collection = collectionById.get(node.ref); return collection ? <div key={node.id}>{collectionNode(collection, node.label, node.render)}</div> : null;

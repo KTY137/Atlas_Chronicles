@@ -23,33 +23,60 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => { await app?.close(); await db?.close(); });
 
-test("the forge path leads from an installed package to an own, tested and installed version", async ({ page: gm }) => {
+test("the forge path leads from the library to an own, tested and installed version", async ({ page: gm }) => {
   const errors: string[] = []; gm.on("pageerror", error => errors.push(error.message));
   await gm.context().addCookies([{ name: "chronicle_session", value: gmSession.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict", expires: Math.floor(gmSession.expiresAt / 1000) }]);
   await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
-  const path = gm.getByRole("list", { name: "Der Weg zum eigenen Regelwerk", exact: true });
-  const station = (name: string) => path.getByRole("listitem").filter({ has: gm.getByText(name, { exact: true }) });
-  // An installed package is only viewed: the first station is up, the starters are open.
-  await expect(station("Grundlage wählen")).toHaveAttribute("aria-current", "step");
-  await expect(gm.locator("details.rf-starter")).toHaveAttribute("open", "");
+  // Kaya, 2026-09-23: „maximal unübersichtlich“. Die Werkstatt öffnet mit der Bibliothek: installierte
+  // Versionen und die Vorlagen liegen offen, nicht über einer halb verdeckten Werkbank.
+  await expect(gm.getByRole("region", { name: "Installierte Regelpakete", exact: true })).toBeVisible();
   await expect(gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true })).toBeVisible();
   await expect(gm.getByRole("button", { name: "Als Regelentwurf öffnen", exact: true }).first()).toBeVisible();
-  // The capability card reads the package, in plain words.
+  await expect(gm.getByRole("tablist", { name: "Regelpaket bearbeiten" })).toHaveCount(0);
+  // Ein installiertes Paket öffnet sich zum Ansehen; die Übersicht liest das Paket in Alltagsworten.
+  await gm.locator(".rf-catalog-item").first().click();
   await expect(gm.getByRole("region", { name: "Was dieses Regelwerk kann", exact: true })).toContainText("Würfel");
-  // Start an empty package: station one is done, station two is up and jumps to the attributes.
+  await gm.getByRole("button", { name: "Zur Bibliothek", exact: true }).click();
+  // Ein leeres Paket: die Statusleiste bietet genau einen nächsten Schritt an, und er führt zur Testtafel.
   await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
+  const tabs = gm.getByRole("tablist", { name: "Regelpaket bearbeiten" });
+  for (const name of ["Paket", "Regelkarte", "Attribute", "Abgeleitete Werte", "Balken", "Listen", "Bogen", "Aktionen", "Fähigkeiten", "Zustände", "Bogenregeln", "Ausprobieren", "Migration", "Übernehmen"])
+    await expect(tabs.getByRole("tab", { name, exact: true })).toBeVisible();
+  await gm.getByRole("button", { name: "Weiter: Ausprobieren", exact: true }).click();
+  await expect(gm.getByRole("heading", { name: /Testtafel/ })).toBeInViewport();
+  await expect(gm.getByRole("button", { name: "Weiter: Ausprobieren", exact: true })).toHaveCount(0);
+  // Der Weg mit seinen fünf Stationen steht dort, wo übernommen wird.
+  await tabs.getByRole("tab", { name: "Übernehmen", exact: true }).click();
+  const path = gm.getByRole("list", { name: "Der Weg zum eigenen Regelwerk", exact: true });
+  const station = (name: string) => path.getByRole("listitem").filter({ has: gm.getByText(name, { exact: true }) });
   await expect(station("Grundlage wählen")).not.toHaveAttribute("aria-current", "step");
   await expect(station("Ausprobieren")).toHaveAttribute("aria-current", "step");
-  await station("Ausprobieren").getByRole("button", { name: "Zur Testtafel", exact: true }).click();
-  await expect(gm.getByRole("heading", { name: /Testtafel/ })).toBeInViewport();
-  // The three verbs of the handover are explained where they happen.
   await expect(gm.locator(".rf-publish-steps")).toContainText("legt diese Version unveränderlich in die Bibliothek");
   await expect(gm.locator(".rf-publish-steps")).toContainText("macht die geprüfte Version zum Regelwerk dieser Runde");
-  // Install the draft: station four turns done, station five is up.
   const installed = gm.waitForResponse(r => r.url().endsWith("/rules") && r.request().method() === "POST");
   await gm.getByRole("button", { name: "Version installieren", exact: true }).click();
   expect((await installed).status()).toBe(200);
   await expect(station("Installieren")).not.toHaveAttribute("aria-current", "step");
   await expect(station("Für die Runde aktivieren")).toHaveAttribute("aria-current", "step");
+  expect(errors).toEqual([]);
+});
+
+test("bars get their own section: one click adds life, the live bar follows the slider", async ({ page: gm }) => {
+  const errors: string[] = []; gm.on("pageerror", error => errors.push(error.message));
+  await gm.context().addCookies([{ name: "chronicle_session", value: gmSession.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict", expires: Math.floor(gmSession.expiresAt / 1000) }]);
+  await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
+  await gm.getByRole("button", { name: "Neues Paket", exact: true }).click();
+  await gm.getByRole("tab", { name: "Balken", exact: true }).click();
+  await gm.getByRole("group", { name: "Schnell anlegen" }).getByRole("button", { name: "Leben", exact: true }).click();
+  const live = gm.getByRole("complementary", { name: "Live-Vorschau der Balken" });
+  await expect(live.getByRole("meter", { name: "Leben" })).toHaveAttribute("aria-valuetext", "20 / 20");
+  await live.getByRole("slider").fill("0");
+  await expect(live.getByRole("meter", { name: "Leben" })).toHaveAttribute("aria-valuetext", "0 / 20");
+  await expect(live).toContainText("Aufgebraucht — die Spielleitung kann die Niederlage bestätigen.");
+  // Der neue Balken liegt ohne weiteres Zutun auf dem Bogen, und die Vorschau dort zeigt denselben Stand.
+  await gm.getByRole("tab", { name: "Bogen", exact: true }).click();
+  const sheet = gm.getByRole("complementary", { name: "Live-Vorschau des Bogens" });
+  await expect(sheet.getByRole("meter", { name: "Leben" })).toHaveAttribute("aria-valuetext", "0 / 20");
+  await expect(gm.locator(".rf-statusbar")).toContainText("Paketstruktur, Feldtypen und Formeln gültig.");
   expect(errors).toEqual([]);
 });

@@ -14,7 +14,7 @@ import { draftExpression, type DraftAction, type DraftField, type RuleDraft } fr
 import "./rule-map.css";
 
 export type RuleMapView = "overview" | "map" | "network";
-export type RuleMapTab = "fields" | "computed" | "actions";
+export type RuleMapTab = "fields" | "computed" | "vitals" | "constraints" | "actions";
 export interface RuleMapProps {
   draft: RuleDraft; onChange(next: RuleDraft): void; disabled?: boolean;
   /** Sprung in den Reiter, der den gewählten Teil vollständig bearbeitet. */
@@ -45,12 +45,14 @@ const ZOOM_KEY = "atlas.rule-map-zoom", ZOOM_MIN = 0.2, ZOOM_MAX = 2, ZOOM_STEP 
 export const clampRuleMapZoom = (value: number): number => Number.isFinite(value) ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 100) / 100)) : 1;
 export function readRuleMapZoom(): number { try { const value = Number(localStorage.getItem(ZOOM_KEY)); return value > 0 ? clampRuleMapZoom(value) : 1; } catch { return 1; } }
 export function writeRuleMapZoom(zoom: number): void { try { localStorage.setItem(ZOOM_KEY, String(zoom)); } catch { /* storage may be blocked; the zoom just does not persist */ } }
-const tabFor = (kind: RuleMapKind): RuleMapTab => kind === "attribute" ? "fields" : kind === "action" ? "actions" : "computed";
+const tabFor = (kind: RuleMapKind): RuleMapTab => kind === "attribute" ? "fields" : kind === "action" ? "actions" : kind === "bar" ? "vitals" : kind === "rule" ? "constraints" : "computed";
 function tabButtonLabel(kind: RuleMapKind): string {
   switch (kind) {
     case "attribute": return t("Im Reiter Attribute öffnen");
     case "action": return t("Im Reiter Aktionen öffnen");
-    default: return t("Im Reiter Abgeleitet öffnen");
+    case "bar": return t("Im Reiter Balken öffnen");
+    case "rule": return t("Im Reiter Bogenregeln öffnen");
+    default: return t("Im Reiter Abgeleitete Werte öffnen");
   }
 }
 const NO_INPUTS: readonly DraftField[] = [];

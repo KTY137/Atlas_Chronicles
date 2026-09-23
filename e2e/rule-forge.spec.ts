@@ -36,11 +36,13 @@ test("visual package authoring, live play and reviewed migration preserve player
   const base = `${origin}/api/campaigns/${campaignId}`, packageId = "de.nordlicht.regeln";
   const editor = gm.locator(".rf-editor-fields");
   const preview = async () => {
+    await gm.getByRole("tab", { name: "Übernehmen", exact: true }).click();
     const response = gm.waitForResponse(r => r.url() === `${base}/rules/preview` && r.request().method() === "POST");
     await gm.getByRole("button", { name: "Aktivierung prüfen", exact: true }).click();
     expect((await response).status()).toBe(200);
   };
   const install = async () => {
+    await gm.getByRole("tab", { name: "Übernehmen", exact: true }).click();
     const response = gm.waitForResponse(r => r.url() === `${base}/rules` && r.request().method() === "POST");
     await gm.getByRole("button", { name: "Version installieren", exact: true }).click();
     expect((await response).status()).toBe(200);
@@ -74,6 +76,7 @@ test("visual package authoring, live play and reviewed migration preserve player
     await gm.getByRole("option", { name: /Wachsamkeit/ }).click();
     await expect(formula).toHaveValue("1d6 + @insight");
     await expect(editor.getByText(/^Beispiel für /)).toBeVisible();
+    await gm.getByRole("tab", { name: "Ausprobieren", exact: true }).click();
     await gm.locator(".rf-preview").getByRole("combobox", { name: "Aktion", exact: true }).selectOption("explore");
     await expect(gm.locator(".rf-preview")).toContainText("Nordlichtprobe");
     const downloadPromise = gm.waitForEvent("download");

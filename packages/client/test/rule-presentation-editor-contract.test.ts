@@ -3,7 +3,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const editor = readFileSync(new URL("../src/features/RulePresentationEditor.tsx", import.meta.url), "utf8");
+// Bogen-Editor und Listen teilen sich seit dem Umbau vom 2026-09-23 auf zwei Dateien; der Vertrag gilt für beide.
+const editor = ["RulePresentationEditor.tsx", "RuleCollectionEditor.tsx"].map(file => readFileSync(new URL(`../src/features/${file}`, import.meta.url), "utf8")).join("\n");
 const translations = JSON.parse(readFileSync(new URL("../src/i18n/en/universal-rules.json", import.meta.url), "utf8")) as Record<string, string>;
 
 describe("Presentation-v3 Forge contract", () => {
@@ -11,7 +12,8 @@ describe("Presentation-v3 Forge contract", () => {
     expect(editor).toContain("function referenced(");
     expect(editor).toContain("function usedActions(");
     expect(editor).toContain("function availableRefs(");
-    expect(editor).toContain("disabled={!canAdd(newKind)}");
+    expect(editor).toContain('canAdd("abilities") ?');
+    expect(editor).toContain('canAdd("actions") ?');
     expect(editor).toContain("!flat.some(row => row.node.kind === \"abilities\")");
     expect(editor).toContain("!flat.some(row => row.node.kind === \"conditions\")");
     expect(editor).toContain("unavailableActions.has(action.id)");
@@ -33,7 +35,7 @@ describe("Presentation-v3 Forge contract", () => {
     expect(editor).toContain("while (rows.length < collection.minItems)");
     expect(editor).toContain("raw.slice(0, collection.maxItems)");
     expect(editor).toContain("compatibleValue(field, source[id])");
-    expect(editor).toContain("replaceCollection(index, nextCollection, [id, nextId])");
+    expect(editor).toContain("replaceCollection(nextCollection, [id, nextId])");
   });
 
   it("normalizes enum and numeric bounds before the parser has to reject the draft", () => {
