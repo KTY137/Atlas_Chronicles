@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { BAUWERK_LABEL, weltkeim, type BauwerkTyp, type CartographyLabelV1, type SettlementPlan, type SettlementZone } from "@chronicle/szene";
+import { weltkeim, type BauwerkTyp, type CartographyLabelV1, type SettlementPlan, type SettlementZone } from "@chronicle/szene";
 import { abstandPolygonStrecke, clipHalbebene, einwaerts, flaeche, huelle, imPolygon, q, qp, schnittKonvex, schwerpunkt, type Polygon, type Punkt } from "../../polygon.ts";
 import { routeRoadPlan } from "../../road-routing.ts";
 import { inspectRoadNetwork } from "../../road-network.ts";
@@ -9,18 +9,18 @@ import type { Siedlung, SiedlungBauwerk, SiedlungGrund, SiedlungStrasse } from "
 import { ausstattung, dokument, kappeAnHindernissen, kreuzungen, ohneLaengsFluss, stege, wasserUndBruecken, type Ablage, type ExtraRegion, type Wand } from "../abschluss.ts";
 import { freieMauer, getrennteDaecher, hausImLos, mitAbstand, ohne, type Gasse } from "../gemeinsam.ts";
 import { fail } from "../../kartenwerk.ts";
-import { baueBurg } from "./burg.ts";
-import { flecken, spirale } from "./flecken.ts";
 import { bauernhof, flurStreifen } from "./flur.ts";
 import { kantengraph, weg } from "./graph.ts";
 import { mauerKanten, mauerLinien, turmPunkte, waehleTore, zwoelfeck } from "./mauer.ts";
 import { viertelBilden, viertelPlan } from "./namen.ts";
-import { bebaueFleck, ROLLEN_FAKTOR, type Bau, type Platz } from "./parzellen.ts";
+import { ROLLEN_FAKTOR, type Bau, type Platz } from "./parzellen.ts";
+import { waehleTyp, type StadtStil } from "../stil.ts";
 import { waehleMarkt, weiseRollenZu, type FleckLage, type Rolle } from "./rollen.ts";
 import { hauptstrassen, strassenBaender, type Breiten } from "./wege.ts";
 
 /**
- * **Die Fantasy-Siedlung aus Vierteln (Version 11).** Flecken auf einer Spirale, die inneren sind
+ * **Die Siedlung aus Vierteln (Fantasy v11, Gegenwart und Sci-Fi v12).** Was den Stil ausmacht,
+ * liefert `stil` (`../stil.ts`); das Folgende beschreibt die Fantasy-Stadt. Flecken auf einer Spirale, die inneren sind
  * die Stadt, der Kern bekommt eine Mauer mit Türmen und Toren. Hauptstraßen laufen von den Toren
  * zum Markt, jede Kante zwischen Stadtflecken ist eine Gasse, und jedes Viertel wird nach seiner
  * Rolle bebaut — Häuserzeilen im Kern, Gärten in der Oberstadt, Lagerhäuser am Hafen, Höfe in der
@@ -28,57 +28,37 @@ import { hauptstrassen, strassenBaender, type Breiten } from "./wege.ts";
  */
 const TURM = .42, MAUER_VERSATZ = .47, GLACIS = MAUER_VERSATZ + TURM + .3;
 
-const TYPEN: Readonly<Record<Rolle | "weiler", readonly (readonly [BauwerkTyp, number])[]>> = Object.freeze({
-  wohnen: [["haus", 86], ["taverne", 3], ["werkstatt", 5], ["schmiede", 2], ["lager", 4]],
-  markt: [["haus", 45], ["taverne", 15], ["bank", 10], ["lager", 12], ["werkstatt", 18]],
-  handwerk: [["werkstatt", 35], ["schmiede", 20], ["lager", 20], ["haus", 25]],
-  hafen: [["lager", 55], ["taverne", 12], ["werkstatt", 13], ["haus", 20]],
-  adel: [["haus", 78], ["bibliothek", 10], ["museum", 4], ["bank", 8]],
-  arm: [["haus", 88], ["taverne", 7], ["lager", 5]],
-  tempel: [["haus", 70], ["bibliothek", 30]], burg: [["kaserne", 60], ["lager", 40]], frei: [["haus", 100]],
-  weiler: [["bauernhof", 45], ["lager", 25], ["haus", 30]],
-});
-const waehleTyp = (liste: readonly (readonly [BauwerkTyp, number])[], zug: number): BauwerkTyp => {
-  let x = zug * liste.reduce((s, [, w]) => s + w, 0);
-  for (const [typ, w] of liste) { if (x < w) return typ; x -= w; }
-  return liste.at(-1)![0];
-};
-const HAUSNAMEN = ["Linden", "Weber", "Falk", "Birken", "Mühlen", "Rosen", "Stein", "Eichen", "Brunnen", "Kessel", "Wolf", "Adler"];
-const KIRCHEN = ["Kirche des Morgenlichts", "Kirche am Brunnen", "Kirche der stillen Wacht", "Kirche der Heimkehr"];
-const DOME = ["Dom des Morgenlichts", "Dom der Sieben Lichter", "Dom der stillen Wacht", "Dom am Markt"];
-const TAVERNEN = ["Zum Silberfuchs", "Zur alten Brücke", "Zum goldenen Hirsch", "Zum roten Kessel", "Zum Torwächter", "Zur Mühle", "Zum Anker", "Zum Grünen Krug"];
-
 export interface ViertelBasis { readonly erzeuger: string; readonly ausgelassen: readonly string[] }
 
-export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Siedlung {
+export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil: StadtStil): Siedlung {
   const { art, standort, optionen, breite, hoehe, r, ids, z, rahmen, landschaft, fluss, wasser, fels, strand, sumpf, wasserMaterial,
     hartHindernisse, bauHindernisse, planung, verkehr, layoutKeim, keim, version, flussBreite, flussPunkte, auftrag, paket } = g;
-  const mauerWunsch = optionen.mauer ?? art === "stadt", burgWunsch = optionen.burg ?? art === "stadt";
+  const mauerWunsch = stil.befestigung === "ring" ? art === "stadt" : optionen.mauer ?? art === "stadt";
+  const burgWunsch = stil.setting === "fantasy" && (optionen.burg ?? art === "stadt");
   const ausgelassen: string[] = [];
   const id = (...pfad: string[]) => ids.geometrieId(...pfad);
   const inIrgendeinem = (p: Punkt, polys: readonly Polygon[]) => polys.some(poly => imPolygon(p, poly));
 
   // -- 1. Flecken auf der Spirale ------------------------------------------------------------
-  const innenZiel = Math.max(3, Math.min(90, Math.round(optionen.bauwerke / (art === "stadt" ? 9 : art === "dorf" ? 6 : 3))));
-  const kurz = Math.min(breite, hoehe), radiusInnen = kurz * (art === "stadt" ? .4 : art === "dorf" ? .3 : .2);
   const mitte: Punkt = qp([breite / 2 + r.zahl(-.06, .06) * breite, hoehe / 2 + r.zahl(-.06, .06) * hoehe]);
-  const alle = flecken(spirale(mitte, innenZiel, radiusInnen, rahmen, r), innenZiel, rahmen, mitte);
+  const { alle, innenZiel } = stil.flecken({ art, bauwerke: optionen.bauwerke, mitte, rahmen, breite, hoehe, r });
   const zelle = (i: number) => alle[i]!.zelle;
   const trocken = alle.map(f => !inIrgendeinem(schwerpunkt(f.zelle), hartHindernisse));
   const stadtListe: number[] = [];
   for (let i = 0; i < alle.length && stadtListe.length < innenZiel; i++) if (trocken[i]) stadtListe.push(i);
   if (!stadtListe.length) fail("geometrie", "viertel", "auf dieser Karte liegt kein trockener Fleck für eine Siedlung");
   const stadtSet = new Set(stadtListe), istStadt = (i: number) => i >= 0 && stadtSet.has(i);
-  const mitMauer = mauerWunsch && stadtListe.length >= 5;
-  if (mauerWunsch && !mitMauer) ausgelassen.push("Keine Stadtmauer: der Ort ist zu klein für einen ummauerten Kern.");
-  const kernSet = new Set(mitMauer ? stadtListe.slice(0, Math.max(4, Math.round(stadtListe.length * .62))) : stadtListe);
+  // Befestigt: Stein- oder Zaunmauer, oder (Gegenwart) ein Stadtring als Straße um den Kern.
+  const befestigt = mauerWunsch && stadtListe.length >= 5, mitMauer = befestigt && stil.befestigung !== "ring";
+  if (mauerWunsch && !befestigt && stil.befestigung !== "ring") ausgelassen.push(stil.texte.zuKlein);
+  const kernSet = new Set(befestigt ? stadtListe.slice(0, stil.befestigung === "zaun" ? stadtListe.length : Math.max(4, Math.round(stadtListe.length * stil.kernAnteil))) : stadtListe);
   const istKern = (i: number) => i >= 0 && kernSet.has(i);
 
   // -- 2. Kantengraph, Mauerring, Tore ------------------------------------------------------
   const graph = kantengraph(alle.map(f => f.zelle));
   const nachbarn = alle.map(() => [] as number[]);
   for (const k of graph.kanten) if (k.f2 >= 0) { nachbarn[k.f1]!.push(k.f2); nachbarn[k.f2]!.push(k.f1); }
-  const ring = mitMauer ? mauerKanten(graph, istKern) : [];
+  const ringKanten = befestigt ? mauerKanten(graph, istKern) : [], ring = mitMauer ? ringKanten : [];
   const ringSet = new Set(ring);
   const torRing = mitMauer ? ring : graph.kanten.filter(k => k.f2 >= 0 && istStadt(k.f1) !== istStadt(k.f2)).map(k => k.nr);
   const torStart: Punkt = standort === "fluss" && flussPunkte.length ? flussPunkte[0]! : [mitte[0] + r.zahl(-1, 1), mitte[1] + r.zahl(-1, 1)];
@@ -101,7 +81,9 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   const rollenAuftrag = { art, burg: burgWunsch && mitMauer, ...(planung?.zonen.length ? { plan: planung } : {}), breite, hoehe };
   const markt = waehleMarkt(lagen, rollenAuftrag);
   const { rollen, ausgelassen: rollenLuecken } = weiseRollenZu(lagen, markt, rollenAuftrag);
-  ausgelassen.push(...rollenLuecken);
+  stil.nachRollen?.(lagen, rollen, art, nutzung => !!planung?.zonen.some(zone => zone.nutzung === nutzung));
+  ausgelassen.push(...rollenLuecken.map(text => stil.burgWort === "Burg" ? text
+    : text.replaceAll("Burgzone", `Zone „${stil.burgWort}“`).replaceAll("Keine Burg", `Kein Bereich „${stil.burgWort}“`)));
   if (burgWunsch && !mitMauer && ![...rollen.values()].includes("burg")) ausgelassen.push("Keine Burg: ohne Stadtmauer hat sie keinen Platz an der Mauer.");
 
   // -- 4. Straßen ----------------------------------------------------------------------------
@@ -127,7 +109,9 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
       if (pfad) wege = { haupt: wege.haupt, ausfall: new Set([...wege.ausfall, ...pfad]) };
     }
   }
-  const breiten: Breiten = art === "stadt" ? { haupt: .85, gasse: .42, wall: .38, ausfall: .7 } : { haupt: .75, gasse: .45, wall: .4, ausfall: .65 };
+  // Der Stadtring der Gegenwart: die Außenkanten des Kerns sind Hauptstraßen, keine Mauer.
+  if (stil.befestigung === "ring" && ringKanten.length) wege = { haupt: new Set([...wege.haupt, ...ringKanten]), ausfall: wege.ausfall };
+  const breiten: Breiten = stil.breiten(art);
   const { gassen } = strassenBaender(graph, { istStadt, istKern, ring: ringSet, wege, breiten, zelleVon: zelle, breite, hoehe, id });
   // Einrückung je Zellkante aus den Bändern, bevor Fluss und Fels sie kürzen.
   const einrueckung = new Map<string, number>();
@@ -158,7 +142,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   const beitrag = stadtListe.reduce((s, i) => {
     const rolleI = rollen.get(i) ?? "wohnen";
     if (rolleI === "markt" || rolleI === "tempel" || rolleI === "burg" || rolleI === "frei") return s;
-    return s + flaeche(einwaerts(zelle(i), .5)) * (mitMauer && !istKern(i) ? .4 : 1) / ROLLEN_FAKTOR[rolleI] * .62;
+    return s + flaeche(einwaerts(zelle(i), .5)) * (befestigt && !istKern(i) ? stil.vorstadtAnteil : 1) / ROLLEN_FAKTOR[rolleI] * .62;
   }, 0);
   const [gMin, gMax] = optionen.grundstueck;
   const losFlaeche = Math.min(gMax * gMax, Math.max(gMin * gMin * .2, beitrag / (optionen.bauwerke * 1.25)));
@@ -166,7 +150,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   const burgMauern: { a: Punkt; b: Punkt; pfad: string }[] = [];
   const marktMitte: Punkt = markt >= 0 ? schwerpunkt(zelle(markt)) : mitte;
   for (const i of stadtListe) {
-    const c = zelle(i), rolle = rollen.get(i) ?? "wohnen", vorstadt = mitMauer && !istKern(i);
+    const c = zelle(i), rolle = rollen.get(i) ?? "wohnen", vorstadt = befestigt && !istKern(i);
     const abstaende = c.map((p, k) => {
       const v = c[(k + c.length - 1) % c.length]!, key = kantenSchluessel(v, p);
       const kante = graph.kanten.find(e => (e.u === graph.finde(v) && e.v === graph.finde(p)) || (e.v === graph.finde(v) && e.u === graph.finde(p)));
@@ -177,11 +161,11 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
       .sort((a, b) => Math.hypot(...kantenMitte(a).map((x, k) => x - marktMitte[k]!) as [number, number]) - Math.hypot(...kantenMitte(b).map((x, k) => x - marktMitte[k]!) as [number, number]));
     const auftragFleck = { nr: i, pfad: alle[i]!.pfad, zelle: c, rolle, vorstadt: vorstadt || art === "weiler", art, randStrassen, abstaende, losFlaeche,
       strassenDichte: optionen.strassenDichte, hindernisse: [...bauHindernisse, ...reserviert], nurAnHaupt: false, r, id };
-    const burg = rolle === "burg" ? baueBurg(auftragFleck) : undefined, ergebnis = burg ?? bebaueFleck(auftragFleck);
+    const ergebnis = stil.bebaue(auftragFleck);
     if (rolle === "burg" && !ergebnis.baue.length) ausgelassen.push("Keine Burg: der Burgfleck ist zu klein.");
     for (const b of ergebnis.baue) baue.push({ ...b, ferne: alle[i]!.ferne, rolle: art === "weiler" ? "weiler" : rolle });
     plaetze.push(...ergebnis.plaetze); hoefe.push(...ergebnis.hoefe); alleGassen.push(...ergebnis.gassen);
-    if (burg) burgMauern.push(...burg.mauern);
+    burgMauern.push(...(ergebnis.mauern ?? []));
   }
 
   // -- 6. Mauer mit Türmen und Toren ---------------------------------------------------------
@@ -199,9 +183,11 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
     const roheStuecke: { a: Punkt; b: Punkt; pfad: string }[] = [];
     for (const l of linien) for (const [x, [a, b]] of freieMauer(l.a, l.b, [...bandHindernisse, ...wasserHindernisse]).entries())
       if ([a, b].every(([px, py]) => px >= 0 && px <= breite && py >= 0 && py <= hoehe)) roheStuecke.push({ a, b, pfad: `${l.pfad}.${x}` });
-    const turmOrte = turmPunkte(linien, 6).map(p => ({ p, tor: false }));
+    // Ein Schutzzaun (Sci-Fi) hat keine Türme: seine Stücke sind die rohen Mauerstücke.
+    const mitTuermen = stil.befestigung === "stein";
+    const turmOrte = mitTuermen ? turmPunkte(linien, 6).map(p => ({ p, tor: false })) : [];
     // Torflanken: wo eine Straße die Mauer nahe einem Tor durchbricht, steht links und rechts ein Turm.
-    for (const s of roheStuecke) for (const [ende, anderes] of [[s.a, s.b], [s.b, s.a]] as const) {
+    if (mitTuermen) for (const s of roheStuecke) for (const [ende, anderes] of [[s.a, s.b], [s.b, s.a]] as const) {
       if (!torPunkte.some(t => Math.hypot(t[0] - ende[0], t[1] - ende[1]) < 1.8)) continue;
       const dx = anderes[0] - ende[0], dy = anderes[1] - ende[1], l = Math.hypot(dx, dy);
       if (l < TURM * 2.4) continue;
@@ -229,7 +215,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   }
 
   // -- 7. Höfe an der Landstraße, dann das Budget ----------------------------------------------
-  const hoefeLimit = art === "stadt" ? 6 : art === "dorf" ? 8 : 0;
+  const hoefeLimit = stil.hoefe(art);
   const hofLose: Polygon[] = [];
   for (const [i, f] of alle.entries()) {
     if (istStadt(i) || !trocken[i] || hofLose.length >= hoefeLimit || standort === "wald") continue;
@@ -273,7 +259,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
     const haus = los.length >= 3 ? gassen.filter(s => s.a === i || s.b === i).map(s => ({ s, haus: hausImLos(los, s, .9, .8, "rechteck") }))
       .find(({ haus }) => haus.length >= 3 && !bauHindernisse.some(w => flaeche(schnittKonvex(haus, w)) > 1e-6)) : undefined;
     if (!haus) continue;
-    gewaehlt.push({ pfad: `${alle[i]!.pfad}.notbau`, umriss: haus.haus.map(qp), los: los.map(qp), strasse: haus.s.id, typ: art === "weiler" ? "bauernhof" : null, rang: 1, ferne: 0, rolle: art === "weiler" ? "weiler" : "wohnen" });
+    gewaehlt.push({ pfad: `${alle[i]!.pfad}.notbau`, umriss: haus.haus.map(qp), los: los.map(qp), strasse: haus.s.id, typ: art === "weiler" ? stil.typen.weiler[0]![0] : null, rang: 1, ferne: 0, rolle: art === "weiler" ? "weiler" : "wohnen" });
     break;
   }
   if (!gewaehlt.length && !planung?.zonen.length) fail("geometrie", "bauwerke", "auf dieser Karte ließ sich kein Gebäude an einer Straße platzieren");
@@ -366,7 +352,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
     const innen = einwaerts(f.zelle, brach(i) ? .6 : .25);
     if (innen.length < 3) continue;
     if (standort === "wald" || landschaft.feuchte(f.punkt[0], f.punkt[1]) >= landschaft.waldSchwelle) { gelaende(innen, f.pfad, "forest"); continue; }
-    const streifen = flurStreifen(innen, Math.max(2, Math.min(8, Math.round(flaeche(innen) / 5))), r);
+    const streifen = flurStreifen(innen, stil.streifen(flaeche(innen)), r);
     for (const [k, s] of streifen.entries()) { const feld = einwaerts(s, .08); if (feld.length >= 3) gelaende(feld, `${f.pfad}.${k}`, "field"); }
   }
   for (const [index, polygon] of landschaft.wald.entries()) gelaende(polygon, `wald.${index}`, "forest", true);
@@ -383,7 +369,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   for (const b of gewaehlt) {
     const zone = zonen.get(b.pfad), zug = zoneDraw(layoutKeim.keimHash, b.pfad, "typ");
     // Sonderbauten (Rang 0) behalten ihren Typ; Höfe und Häuser in einer Zone bekommen ihr Programm.
-    typ.set(b.pfad, b.rang > 0 && zone ? zoneBuilding(zone, "fantasy", zug) : b.typ ?? waehleTyp(TYPEN[b.rolle], zug));
+    typ.set(b.pfad, b.rang > 0 && zone ? zoneBuilding(zone, stil.setting, zug) : b.typ ?? waehleTyp(stil.typen[b.rolle], zug));
   }
   // Kirche, Tavernen und Mühle kommen nur auf Häuser außerhalb gemalter Zonen: dort bestimmt die Zone.
   const frei = (b: typeof gewaehlt[number]) => b.rang === 2 && !zonen.has(b.pfad);
@@ -391,20 +377,17 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
     .sort((a, b) => Math.hypot(...schwerpunkt(a.umriss).map((x, k) => x - ziel[k]!) as [number, number]) - Math.hypot(...schwerpunkt(b.umriss).map((x, k) => x - ziel[k]!) as [number, number]) || (a.pfad < b.pfad ? -1 : 1))[0];
   const vergeben = new Set<string>();
   const setze = (ziel: Punkt, t: BauwerkTyp) => { const b = naechstes(ziel, vergeben); if (b) { typ.set(b.pfad, t); vergeben.add(b.pfad); } };
-  if (art === "dorf" && markt >= 0) { setze(marktMitte, "kirche"); setze(marktMitte, "taverne"); }
-  if (art === "stadt" && !gewaehlt.some(b => b.typ === "kirche")) setze(marktMitte, "kirche");
-  for (const t of torPunkte) setze(t, "taverne");
-  if (fluss.length && art !== "weiler") {
-    const handwerk = gewaehlt.filter(b => frei(b) && !vergeben.has(b.pfad) && (b.rolle === "handwerk" || b.rolle === "hafen" || art === "dorf"));
-    const muehle = handwerk.map(b => ({ b, d: Math.min(...fluss.map(f => f.polygon.reduce((m, p, k, poly) => Math.min(m, abstandPolygonStrecke(b.umriss, p, poly[(k + 1) % poly.length]!)), Infinity))) }))
+  const amFluss = (t: BauwerkTyp, rollenListe: readonly (Rolle | "weiler")[] | "alle") => {
+    const kandidaten = gewaehlt.filter(b => frei(b) && !vergeben.has(b.pfad) && (rollenListe === "alle" || rollenListe.includes(b.rolle)));
+    const naechster = kandidaten.map(b => ({ b, d: Math.min(...fluss.map(f => f.polygon.reduce((m, p, k, poly) => Math.min(m, abstandPolygonStrecke(b.umriss, p, poly[(k + 1) % poly.length]!)), Infinity))) }))
       .filter(x => x.d < 1.2).sort((a, c) => a.d - c.d || (a.b.pfad < c.b.pfad ? -1 : 1))[0];
-    if (muehle) { typ.set(muehle.b.pfad, "muehle"); vergeben.add(muehle.b.pfad); }
-  }
+    if (naechster) { typ.set(naechster.b.pfad, t); vergeben.add(naechster.b.pfad); }
+  };
+  stil.sonderbauten({ art, markt, marktMitte, torPunkte, flussNah: fluss.length > 0, setze, amFluss, hatTyp: t => gewaehlt.some(b => b.typ === t) });
   const titelGesehen = new Set<string>();
   const bauwerke: SiedlungBauwerk[] = gewaehlt.map((b, i) => {
     const t = typ.get(b.pfad)!;
-    let titel = b.titel ?? (t === "kirche" ? (b.rang === 0 ? r.waehle(DOME)! : r.waehle(KIRCHEN)!) : t === "taverne" ? r.waehle(TAVERNEN)!
-      : t === "haus" ? `Haus ${r.waehle(HAUSNAMEN)} ${i + 1}` : `${BAUWERK_LABEL[t]} ${i + 1}`);
+    let titel = b.titel ?? stil.titel(t, b, i, r);
     if (titelGesehen.has(titel)) titel = `${titel} ${i + 1}`;
     titelGesehen.add(titel);
     return { id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: b.strasse, typ: t, titel };
@@ -416,16 +399,16 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   stege({ standort, art, wasser, fluss, flussBreite, mitteOrt: marktMitte, haeuser: bauwerke.map(b => b.umriss), breite, hoehe, rahmen, ids }, ablage);
 
   const mauern: Wand[] = [...mauerStuecke, ...burgMauern].map(m => ({ id: id("mauer", m.pfad), kind: "wall" as const, elevation: 0, points: [[q(m.a[0] * z), q(m.a[1] * z)], [q(m.b[0] * z), q(m.b[1] * z)]] }));
-  const { werk, lichter, strassenzellen, hofzellen } = ausstattung({ paket, r, z, ids, setting: "fantasy", art, licht: optionen.licht, gassen: netz,
+  const { werk, lichter, strassenzellen, hofzellen } = ausstattung({ paket, r, z, ids, setting: stil.setting, art, licht: optionen.licht, gassen: netz,
     bauwerkPolys: bauwerke.map(b => b.umriss), hofFlaechen: hoefe, bauHindernisse, breite, hoehe, mitte, bauwerkZahl: bauwerke.length }, ablage);
 
   const lagenNamen = stadtListe.map(i => ({ nr: i, zelle: zelle(i), nachbarn: nachbarn[i]!.filter(istStadt), kern: istKern(i) }));
-  const viertel = art === "stadt" ? viertelBilden(lagenNamen, rollen, mitte, r).filter(v => v.flaeche >= 6 || v.nutzung === "markt" || v.nutzung === "burg").slice(0, 14)
-    : art === "dorf" && markt >= 0 ? [{ id: `viertel.${q(marktMitte[0])}_${q(marktMitte[1])}`, nutzung: "markt" as const, name: "Dorfanger", flecken: [markt], flaeche: flaeche(zelle(markt)), anker: marktMitte }] : [];
+  const viertel = art === "stadt" ? viertelBilden(lagenNamen, rollen, mitte, r, stil.namen, stil.vorstadt).filter(v => v.flaeche >= 6 || v.nutzung === "markt" || v.nutzung === "burg").slice(0, 14)
+    : art === "dorf" && markt >= 0 ? [{ id: `viertel.${q(marktMitte[0])}_${q(marktMitte[1])}`, nutzung: "markt" as const, name: stil.dorfplatz, flecken: [markt], flaeche: flaeche(zelle(markt)), anker: marktMitte }] : [];
   const labels: CartographyLabelV1[] = viertel.map(v => ({ id: id("name", v.id), text: v.name, points: [[q(v.anker[0] * z), q(v.anker[1] * z)]], size: q(z * (v.nutzung === "markt" || v.nutzung === "burg" ? 1.1 : .8)), style: "gegend" }));
   const plan: SettlementPlan = viertelPlan(viertel, new Map(stadtListe.map(i => [i, zelle(i)])), breite, hoehe);
 
-  const { karte, cartography, knoten, wurzelId } = dokument({ erzeuger: basis.erzeuger, version, keim, ids, z, breite, hoehe, setting: "fantasy", auftrag,
+  const { karte, cartography, knoten, wurzelId } = dokument({ erzeuger: basis.erzeuger, version, keim, ids, z, breite, hoehe, setting: stil.setting, auftrag,
     stamps: werk.stamps, extraRegions, bauwerke, gassen: netz, gassenMaterial: () => art === "stadt" ? "street" : "path", mauern, lichter,
     relief: landschaft.relief, labels, rolle: mitVermerk });
   return Object.freeze({

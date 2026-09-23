@@ -19,6 +19,7 @@ import {
 import { roofZone, zoneDraw, zoneBuilding } from "./siedlung-plan.ts";
 import { freieMauer, frontParzellen, getrennteDaecher, hausImLos, mitAbstand, ohne, type Gasse } from "./stadt/gemeinsam.ts";
 import { erzeugeViertelStadt } from "./stadt/viertel/index.ts";
+import { FANTASY } from "./stadt/viertel/stil.ts";
 import { ausstattung, dokument, kappeAnHindernissen, kreuzungen, ohneLaengsFluss, stege, wasserUndBruecken, type Ablage, type ExtraRegion } from "./stadt/abschluss.ts";
 
 /** Convex clipping keeps the same geometry authoritative for water, lots and bridges. */
@@ -333,7 +334,7 @@ export type SiedlungGrund = ReturnType<typeof grundlage>;
 
 export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): Siedlung {
   const g = grundlage(auftrag, paket);
-  if (g.setting === "fantasy") return erzeugeViertelStadt(g, { erzeuger: SIEDLUNG_ERZEUGER, ausgelassen: AUSGELASSEN });
+  if (g.setting === "fantasy") return erzeugeViertelStadt(g, { erzeuger: SIEDLUNG_ERZEUGER, ausgelassen: AUSGELASSEN }, FANTASY);
   const { art, setting: gewaehltesSetting, standort, optionen, relief, bewaldung, breite, hoehe, planung, verkehr, strassenGeplant, geplant, version, L, gMin, gMax, layoutKeim, keim, r, z, ids, rahmen, rand, ortsRahmen, flussBreite, flussPunkte, landschaft, fluss, wasser, fels, strand, sumpf, wasserMaterial, hartHindernisse, bauHindernisse, strassenHindernisse } = g;
   // Ab hier nur noch Gegenwart und Sci-Fi; die Fantasy-Zweige unten sind bis Teil 2 unerreichbar,
   // bleiben aber stehen, damit der Rasterbaustein unverändert bleibt (Goldtest).
