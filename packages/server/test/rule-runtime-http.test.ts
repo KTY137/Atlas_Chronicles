@@ -35,9 +35,14 @@ describe("host-authoritative rule runtime over the real HTTP boundary", () => {
     app = await buildApp(db, config);
   }, 30_000);
   afterAll(async () => { await app?.close(); await db?.close(); });
-  async function fixture(pkg = lite) {
+  async function fixture(pkg = lite, storedContentHash?: string) {
     const id = (await createCampaigns(db).createCampaign(gm, { name: "Runtime boundary" })).id;
-    const game = createGameplay(db); await game.installPackage(gm, id, pkg);
+    const game = createGameplay(db);
+    // Installed packages are immutable (`protect_rule_packages` rejects every UPDATE), so a corrupted
+    // store is modelled as a row written past the domain whose hash does not match its document.
+    if (storedContentHash === undefined) await game.installPackage(gm, id, pkg);
+    else await db.query("INSERT INTO rule_packages(campaign_id,package_id,version,document,content_hash,installed_by,installed_at) VALUES($1,$2,$3,$4,$5,$6,1)",
+      [id, pkg.id, pkg.version, JSON.stringify(pkg), storedContentHash, gm]);
     const base = `/api/campaigns/${id}`, runtime = buildRuleRuntime(pkg);
     const get = (path: string, as = cookie) => app.inject({ method: "GET", url: base + path, headers: { cookie: as } });
     const post = (path: string, payload: unknown, as = cookie) => app.inject({ method: "POST", url: base + path, headers: { cookie: as, origin: config.origin, "content-type": "application/json" }, payload: JSON.stringify(payload) });
@@ -87,8 +92,7 @@ describe("host-authoritative rule runtime over the real HTTP boundary", () => {
   });
 
   it("rejects corrupted stored package content instead of exposing a fallback manifest", async () => {
-    const f = await fixture();
-    await db.query("UPDATE rule_packages SET content_hash=$2 WHERE campaign_id=$1", [f.id, "f".repeat(64)]);
+    const f = await fixture(lite, "f".repeat(64));
     expect((await f.get(`/rules/runtime?${new URLSearchParams(f.selection)}`)).statusCode).toBe(404);
     expect((await f.post("/rules/runtime/preview", f.preview)).statusCode).toBe(404);
   });

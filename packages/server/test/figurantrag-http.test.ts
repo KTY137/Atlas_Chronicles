@@ -55,9 +55,11 @@ describe("Figurantrag über HTTP", () => {
     expect(frei.statusCode).toBe(200);
     expect(frei.json()).toMatchObject({ templateId, freigegeben: true, version: 1 });
     const auswahl = await get("/actor-templates/freigegeben", spielerCookie);
-    // Die Spielerprojektion: Name, Art und Anfangswerte — keine Beutetabelle, kein Artikelverweis.
+    // Die Spielerprojektion: Name, Art, Anfangswerte und die Paketbindung der Vorlage, damit der
+    // Antrag im richtigen Regelwerk bearbeitet wird — keine Beutetabelle, kein Artikelverweis.
     expect(auswahl.json()).toHaveLength(1);
-    expect(auswahl.json()[0]).toEqual({ id: templateId, name: "Wanderin", art: "player_character", anfangswerte: { insight: 3, vigour: 9, name: "Reisende Person" }, version: 1 });
+    expect(auswahl.json()[0]).toEqual({ id: templateId, name: "Wanderin", art: "player_character", anfangswerte: { insight: 3, vigour: 9, name: "Reisende Person" }, version: 1,
+      package: { id: DEMO_RULE_PACKAGE.id, version: DEMO_RULE_PACKAGE.version } });
 
     const antrag = await send("POST", "/figurantraege", { commandId: randomUUID(), templateId, name: "Nell", anfangswerte: { insight: 5 } }, spielerCookie);
     expect(antrag.statusCode).toBe(200);

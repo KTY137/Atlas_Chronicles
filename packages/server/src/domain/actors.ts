@@ -84,8 +84,9 @@ export async function authorizeActorPerspective(db: Db, viewer: Membership, acto
  * vergessener Pfad waere ein stiller Hinweis auf einen Artikel, den niemand freigegeben hat.
  * Wer den Artikel kennen darf, findet ihn im Wiki; die Vorlagenkarte ist nicht der Weg dorthin.
  *
- * Auch `package` und `schemaVersion` fallen weg: beides ist Werkstattbuchhaltung, keine Angabe,
- * die bei der Wahl einer Figur hilft.
+ * `schemaVersion` fällt weg: das ist Werkstattbuchhaltung, keine Angabe, die bei der Wahl einer
+ * Figur hilft. `package` bleibt dagegen seit dem 15.09.2026: der Antrag rendert die Anfangswerte
+ * mit genau dem Regelpaket, an das die Vorlage gebunden ist (`useHostRules` im Client).
  */
 export function templateForPlayer(id: string, version: number, definition: P.ActorTemplateData):
   { id: string; name: string; art: string; anfangswerte: Record<string, unknown>; version: number; package: { id: string; version: string } } {

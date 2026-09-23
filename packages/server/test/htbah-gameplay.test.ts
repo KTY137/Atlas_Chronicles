@@ -75,11 +75,13 @@ describe("HTBAH supported gameplay lifecycle and authority", () => {
   });
 
   it("rejects invalid V2 defaults and self-tests before installing or reviewing an unusable package", async () => {
-    const f = await fixture(), base = HOW_TO_BE_A_HERO_PACKAGE;
-    const badDefaults = { ...base, version: "2.0.0", fields: { ...base.fields, gbp_spent_handeln: { ...base.fields.gbp_spent_handeln, default: 1 } } };
+    // A new version needs a declared path from the shipped one; without it the package would be
+    // rejected for its migration before its defaults or self-tests were ever checked.
+    const f = await fixture(), base = { ...HOW_TO_BE_A_HERO_PACKAGE, version: "2.0.0", migrations: [{ from: HOW_TO_BE_A_HERO_PACKAGE.version, to: "2.0.0", steps: [] }] };
+    const badDefaults = { ...base, fields: { ...base.fields, gbp_spent_handeln: { ...base.fields.gbp_spent_handeln, default: 1 } } };
     await expect(f.game.installPackage(f.gm, f.campaignId, badDefaults)).rejects.toThrow(/constraint/);
     await expect(f.game.previewPackage(f.gm, f.campaignId, badDefaults)).rejects.toThrow(/constraint/);
-    const badTest = { ...base, version: "2.0.0", selfTests: [{ name: "Wrong classification", actionId: "aptitude_wissen", context: { seed: SEED, actor: defaultSupportedActorFields(base), input: {}, knowledge: { actorId: f.actorId, passages: [] } }, expectedTotal: 21, expectedSuccess: true }] };
+    const badTest = { ...base, selfTests: [{ name: "Wrong classification", actionId: "aptitude_wissen", context: { seed: SEED, actor: defaultSupportedActorFields(base), input: {}, knowledge: { actorId: f.actorId, passages: [] } }, expectedTotal: 21, expectedSuccess: true }] };
     await expect(f.game.installPackage(f.gm, f.campaignId, badTest)).rejects.toThrow(/self-test/);
     expect((await db.query("SELECT 1 FROM rule_packages WHERE campaign_id=$1", [f.campaignId])).rowCount).toBe(1);
   });
@@ -175,12 +177,12 @@ describe("HTBAH supported gameplay lifecycle and authority", () => {
   it("H3 reviews explicit catalogue additions and archival, preserving historical receipts and archived fields", async () => {
     const f = await fixture(); await save(f);
     const roll = await f.game.prepareAction(f.player, f.campaignId, { commandId: randomUUID(), actorId: f.actorId, actionId: "initiative" });
-    const next = createHowToBeAHeroPackage({ version: "1.2.0", skills: [...HTBAH_DEFAULT_SKILLS.filter(skill => skill.id !== "geschichte"), { id: "segeln", label: "Segeln", group: "wissen" }], migrations: [{ from: "1.1.0", to: "1.2.0", steps: [{ kind: "archive", field: "skill_geschichte" }, { kind: "archive", field: "bonus_geschichte" }, { kind: "add", field: "skill_segeln", value: 0 }, { kind: "add", field: "bonus_segeln", value: true }] }] });
+    const next = createHowToBeAHeroPackage({ version: "1.3.0", skills: [...HTBAH_DEFAULT_SKILLS.filter(skill => skill.id !== "geschichte"), { id: "segeln", label: "Segeln", group: "wissen" }], migrations: [{ from: f.pkg.version, to: "1.3.0", steps: [{ kind: "archive", field: "skill_geschichte" }, { kind: "archive", field: "bonus_geschichte" }, { kind: "add", field: "skill_segeln", value: 0 }, { kind: "add", field: "bonus_segeln", value: true }] }] });
     await f.game.installPackage(f.gm, f.campaignId, next);
     const review = await f.game.previewPackage(f.gm, f.campaignId, next);
     expect(review.migration?.entities[0]?.archived).toEqual({ skill_geschichte: 25, bonus_geschichte: true });
     await f.game.activatePackage(f.gm, f.campaignId, { ...pin(next), expectedVersion: 1, previewHash: review.previewHash });
-    expect(await f.game.getSheet(f.player, f.campaignId, f.actorId)).toMatchObject({ packageVersion: "1.2.0", version: 2, fields: { skill_segeln: 0, skill_klettern: 65 } });
+    expect(await f.game.getSheet(f.player, f.campaignId, f.actorId)).toMatchObject({ packageVersion: "1.3.0", version: 2, fields: { skill_segeln: 0, skill_klettern: 65 } });
     expect((await f.game.getRoll(f.player, f.campaignId, roll.id)).receipt).toEqual(roll.receipt);
     expect((await f.game.replayRoll(f.player, f.campaignId, roll.id)).valid).toBe(true);
     const audit = (await db.query<{ data: { entities: { archived: unknown }[] } }>("SELECT data FROM audit WHERE campaign_id=$1 AND kind='rules.migration'", [f.campaignId])).rows[0]!;
@@ -190,22 +192,22 @@ describe("HTBAH supported gameplay lifecycle and authority", () => {
   it("rejects missing catalogue operations, invalid migration targets and stale review hashes", async () => {
     const f = await fixture(); const before = await save(f);
     const added = { id: "segeln", label: "Segeln", group: "wissen" as const };
-    const missing = createHowToBeAHeroPackage({ version: "1.2.0", skills: [...HTBAH_DEFAULT_SKILLS, added], migrations: [{ from: "1.1.0", to: "1.2.0", steps: [] }] });
+    const missing = createHowToBeAHeroPackage({ version: "1.3.0", skills: [...HTBAH_DEFAULT_SKILLS, added], migrations: [{ from: f.pkg.version, to: "1.3.0", steps: [] }] });
     await expect(f.game.previewPackage(f.gm, f.campaignId, missing)).rejects.toThrow(/explicit add\/archive/);
-    const invalid = createHowToBeAHeroPackage({ version: "1.2.0", migrations: [{ from: "1.1.0", to: "1.2.0", steps: [{ kind: "numeric", field: "skill_klettern", expression: "100" }] }] });
+    const invalid = createHowToBeAHeroPackage({ version: "1.3.0", migrations: [{ from: f.pkg.version, to: "1.3.0", steps: [{ kind: "numeric", field: "skill_klettern", expression: "100" }] }] });
     await expect(f.game.previewPackage(f.gm, f.campaignId, invalid)).rejects.toThrow(/constraint/);
-    const valid = createHowToBeAHeroPackage({ version: "1.2.0", migrations: [{ from: "1.1.0", to: "1.2.0", steps: [] }] });
+    const valid = createHowToBeAHeroPackage({ version: "1.3.0", migrations: [{ from: f.pkg.version, to: "1.3.0", steps: [] }] });
     await f.game.installPackage(f.gm, f.campaignId, valid);
     const review = await f.game.previewPackage(f.gm, f.campaignId, valid);
     await save(f, { ...before.fields, hp: 99 }, before.version);
     await expect(f.game.activatePackage(f.gm, f.campaignId, { ...pin(valid), expectedVersion: 1, previewHash: review.previewHash })).rejects.toBeInstanceOf(Conflict);
-    expect((await f.game.listPackages(f.gm, f.campaignId)).pin.version).toBe("1.1.0");
+    expect((await f.game.listPackages(f.gm, f.campaignId)).pin.version).toBe(f.pkg.version);
   });
 
   it("rejects invalid source fields in migration and cross-system changes with saved sheets", async () => {
     const f = await fixture(); await save(f);
     await expect(f.game.previewPackage(f.gm, f.campaignId, DEMO_RULE_PACKAGE)).rejects.toThrow();
-    const next = createHowToBeAHeroPackage({ version: "1.2.0", migrations: [{ from: "1.1.0", to: "1.2.0", steps: [] }] });
+    const next = createHowToBeAHeroPackage({ version: "1.3.0", migrations: [{ from: f.pkg.version, to: "1.3.0", steps: [] }] });
     await db.query("UPDATE actor_sheets SET fields=$2 WHERE actor_id=$1", [f.actorId, { ...fields(), gbp_spent_handeln: 24 }]);
     await expect(f.game.previewPackage(f.gm, f.campaignId, next)).rejects.toThrow(/constraint/);
   });
