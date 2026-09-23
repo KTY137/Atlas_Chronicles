@@ -342,7 +342,9 @@ try{
   await game.screenshot({path:join(run,"forge-overview.png"),fullPage:true});
   record("shared packaged client shows the Schmiede overview and all seven discoverable workshops");
   await workshops.getByRole("button",{name:"Regeln",exact:true}).click();
-  await game.locator(".rf-starter > summary").click();
+  // Seit dem 15.09. stehen die Startvorlagen offen, solange eine installierte Version gezeigt wird;
+  // ein blinder Klick auf die Überschrift klappte sie wieder zu.
+  if(!await game.locator(".rf-starter").evaluate(element=>element.open))await game.locator(".rf-starter > summary").click();
   const template=game.getByRole("region",{name:"ChronicleHeroes Vorlage"});
   await template.getByRole("button",{name:"Vorlage anpassen",exact:true}).click();
   await template.getByRole("button",{name:/ChronicleHeroes als Regelentwurf/}).click();
