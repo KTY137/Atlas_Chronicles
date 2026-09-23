@@ -7,7 +7,8 @@ import { inspectRoadNetwork } from "../../road-network.ts";
 import { roofZone, zoneBuilding, zoneDraw } from "../../siedlung-plan.ts";
 import type { Siedlung, SiedlungBauwerk, SiedlungGrund, SiedlungStrasse } from "../../siedlung.ts";
 import { ausstattung, dokument, kappeAnHindernissen, kreuzungen, ohneLaengsFluss, stege, wasserUndBruecken, type Ablage, type ExtraRegion, type Wand } from "../abschluss.ts";
-import { freieMauer, getrennteDaecher, mitAbstand, ohne, type Gasse } from "../gemeinsam.ts";
+import { freieMauer, getrennteDaecher, hausImLos, mitAbstand, ohne, type Gasse } from "../gemeinsam.ts";
+import { fail } from "../../kartenwerk.ts";
 import { baueBurg } from "./burg.ts";
 import { flecken, spirale } from "./flecken.ts";
 import { bauernhof, flurStreifen } from "./flur.ts";
@@ -66,7 +67,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   const trocken = alle.map(f => !inIrgendeinem(schwerpunkt(f.zelle), hartHindernisse));
   const stadtListe: number[] = [];
   for (let i = 0; i < alle.length && stadtListe.length < innenZiel; i++) if (trocken[i]) stadtListe.push(i);
-  if (!stadtListe.length) throw new Error("Auf dieser Karte liegt kein trockener Fleck für eine Siedlung.");
+  if (!stadtListe.length) fail("geometrie", "viertel", "auf dieser Karte liegt kein trockener Fleck für eine Siedlung");
   const stadtSet = new Set(stadtListe), istStadt = (i: number) => i >= 0 && stadtSet.has(i);
   const mitMauer = mauerWunsch && stadtListe.length >= 5;
   if (mauerWunsch && !mitMauer) ausgelassen.push("Keine Stadtmauer: der Ort ist zu klein für einen ummauerten Kern.");
@@ -101,7 +102,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   const markt = waehleMarkt(lagen, rollenAuftrag);
   const { rollen, ausgelassen: rollenLuecken } = weiseRollenZu(lagen, markt, rollenAuftrag);
   ausgelassen.push(...rollenLuecken);
-  if (burgWunsch && !mitMauer) ausgelassen.push("Keine Burg: ohne Stadtmauer hat sie keinen Platz an der Mauer.");
+  if (burgWunsch && !mitMauer && ![...rollen.values()].includes("burg")) ausgelassen.push("Keine Burg: ohne Stadtmauer hat sie keinen Platz an der Mauer.");
 
   // -- 4. Straßen ----------------------------------------------------------------------------
   const kantenMitte = (k: { von: Punkt; bis: Punkt }): Punkt => [(k.von[0] + k.bis[0]) / 2, (k.von[1] + k.bis[1]) / 2];
@@ -146,7 +147,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   const nebengassen = gassen.filter(s => s.art !== "hauptstrasse");
   kappeAnHindernissen(nebengassen, fluss.map(f => f.polygon), .4, ids);
   gassen.splice(0, gassen.length, ...gassen.filter(s => s.art === "hauptstrasse"), ...nebengassen);
-  if (!gassen.length) throw new Error("Die Siedlung hat keine einzige Straße.");
+  if (!gassen.length) fail("geometrie", "strassen", "die Siedlung hat keine einzige Straße");
   const routed = verkehr?.knoten.length ? routeRoadPlan(verkehr, { width: breite, height: hoehe, obstacles: hartHindernisse, rivers: fluss.map(f => f.polygon), elevation: landschaft.hoehe }) : undefined;
   const reserviert = routed?.surfaces.map(s => s.polygon) ?? [];
 
@@ -265,7 +266,17 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
     if (zone) zonen.set(b.pfad, zone);
     return true;
   });
-  if (!gewaehlt.length && !planung?.zonen.length) throw new Error("Auf dieser Karte ließ sich kein Gebäude an einer Straße platzieren.");
+  // Notbau: auf einer winzigen Karte kann jede Regel ein Los verwerfen. Dann steht wenigstens ein
+  // Hof an der ersten Straße, an der er trocken Platz hat — ein Ort ohne Haus ist keiner.
+  if (!gewaehlt.length && !planung?.zonen.length) for (const i of stadtListe) {
+    const los = einwaerts(zelle(i), .12);
+    const haus = los.length >= 3 ? gassen.filter(s => s.a === i || s.b === i).map(s => ({ s, haus: hausImLos(los, s, .9, .8, "rechteck") }))
+      .find(({ haus }) => haus.length >= 3 && !bauHindernisse.some(w => flaeche(schnittKonvex(haus, w)) > 1e-6)) : undefined;
+    if (!haus) continue;
+    gewaehlt.push({ pfad: `${alle[i]!.pfad}.notbau`, umriss: haus.haus.map(qp), los: los.map(qp), strasse: haus.s.id, typ: art === "weiler" ? "bauernhof" : null, rang: 1, ferne: 0, rolle: art === "weiler" ? "weiler" : "wohnen" });
+    break;
+  }
+  if (!gewaehlt.length && !planung?.zonen.length) fail("geometrie", "bauwerke", "auf dieser Karte ließ sich kein Gebäude an einer Straße platzieren");
   // Gassen, an denen kein gewähltes Haus steht, entfallen — sonst liegen in Flecken, die das
   // Budget nicht mehr bebaut, leere Wegkreuze. Die Kanten zwischen den Flecken bleiben: sie sind das Netz.
   const genutzt = new Set(gewaehlt.map(b => b.strasse)), randIds = new Set(gassen.map(s => s.id));
@@ -323,14 +334,24 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   const reihenfolge = new Map<Eintrag, number>(), bewuchsSet = new Set<Eintrag>();
   for (const h of hindernisse) { reihenfolge.set(h, reihenfolge.size); eintragen(h); }
   const bewachsen: Eintrag[] = [];
+  // Die Karte trägt höchstens 4096 Flächen. Gelände ist das Einzige, was sich kürzen lässt: was danach
+  // noch kommt (Häuser, Lose, Straßen, Plätze, Wasser, Brücken, Stege), ist hier schon abgezählt.
+  const gelaendeGrenze = 4096 - 16 - gewaehlt.length * 2 - netz.length - plaetze.length - wasser.length - fluss.length * 3;
   const gelaende = (polygon: Polygon, pfad: string, material: "forest" | "field", aussen = false) => {
     let stuecke = [schnittKonvex(polygon, rahmen)];
-    for (const h of nahe(huelle(stuecke[0]!.length ? stuecke[0]! : polygon), aussen)) stuecke = stuecke.flatMap(stueck => {
-      const box = huelle(stueck);
-      return box[2] <= h.box[0] || box[0] >= h.box[2] || box[3] <= h.box[1] || box[1] >= h.box[3] ? [stueck] : ohne(stueck, h.polygon);
-    });
+    // Jedes Hindernis zerschneidet ein Stück in bis zu so viele Teile, wie es Kanten hat. Splitter
+    // fallen deshalb sofort weg, und mehr als 24 Stücke je Fläche behält niemand: ein Außenwald
+    // gegen hunderte Feldstreifen wuchs sonst ohne Grenze, bis dem Server der Speicher ausging.
+    for (const h of nahe(huelle(stuecke[0]!.length ? stuecke[0]! : polygon), aussen)) {
+      stuecke = stuecke.flatMap(stueck => {
+        const box = huelle(stueck);
+        return box[2] <= h.box[0] || box[0] >= h.box[2] || box[3] <= h.box[1] || box[1] >= h.box[3] ? [stueck] : ohne(stueck, h.polygon);
+      }).filter(stueck => stueck.length >= 3 && flaeche(stueck) >= .18);
+      if (stuecke.length > 24) stuecke = [...stuecke].sort((x, y) => flaeche(y) - flaeche(x)).slice(0, 24);
+      if (!stuecke.length) break;
+    }
     for (const [index, stueck] of stuecke.entries()) {
-      if (stueck.length < 3 || flaeche(stueck) < .18) continue;
+      if (stueck.length < 3 || flaeche(stueck) < .18 || extraRegions.length >= gelaendeGrenze) continue;
       const gid = id("landschaft", material, pfad, `${index}`);
       extraRegions.push({ id: gid, polygon: stueck, role: { ...rolle(gid), role: "terrain", material } });
       if (!aussen) { const e = { polygon: stueck, box: huelle(stueck) }; bewachsen.push(e); bewuchsSet.add(e); reihenfolge.set(e, reihenfolge.size); eintragen(e); }

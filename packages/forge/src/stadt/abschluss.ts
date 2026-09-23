@@ -185,8 +185,14 @@ export function ausstattung(a: {
       }
     }
   }
+  // Eine Laterne je Zelle: kreuzen viele kurze Hauptstraßen dieselbe Zelle, stünde dort sonst eine
+  // zweite mit derselben Kennung (der Rasterbaustein erreichte diesen Fall nie, seine Ausgabe bleibt).
+  const laternenZellen = new Set<string>();
   if (a.licht) for (const g of a.gassen) {
     if (g.art !== "hauptstrasse") continue;
+    const zelle = `${Math.max(0, Math.min(breite - 1, Math.floor((g.von[0] + g.bis[0]) / 2)))}:${Math.max(0, Math.min(hoehe - 1, Math.floor((g.von[1] + g.bis[1]) / 2)))}`;
+    if (laternenZellen.has(zelle)) continue;
+    laternenZellen.add(zelle);
     const asset = werk.waehle("licht", setting === "fantasy" ? "warm" : "kalt");
     if (!asset) continue;
     const mx = Math.max(0, Math.min(breite - 1, Math.floor((g.von[0] + g.bis[0]) / 2)));

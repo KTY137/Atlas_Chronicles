@@ -69,7 +69,7 @@ export function MapZonePlanner({ value = EMPTY, onChange, vorschlag }: { value?:
       {drawing ? <rect className="map-zone-draft" x={Math.min(drawing.start[0], drawing.end[0]) * 100} y={Math.min(drawing.start[1], drawing.end[1]) * 100} width={Math.abs(drawing.end[0] - drawing.start[0]) * 100} height={Math.abs(drawing.end[1] - drawing.start[1]) * 100} /> : null}
     </svg>
     <button type="button" disabled={value.zonen.length >= SETTLEMENT_PLAN_LIMITS.zones} onClick={() => add()}>{t("Zone hinzufügen")}</button>
-    {vorschlag?.zonen.length ? <button type="button" onClick={() => { onChange(vorschlag); setSelected(""); setMessage(t("Die Viertel der Vorschau sind jetzt Zonen. Verschiebe sie und erzeuge die Karte neu.")); }}>{t("Viertel aus der Karte übernehmen")}</button> : null}
+    {vorschlag?.zonen.length ? <button type="button" onClick={() => { try { onChange(parseSettlementPlan(vorschlag)); setSelected(""); setMessage(t("Die Viertel der Vorschau sind jetzt Zonen. Verschiebe sie und erzeuge die Karte neu.")); } catch { setMessage(t("Die Viertel dieser Vorschau lassen sich nicht als Zonen übernehmen. Erzeuge eine neue Vorschau.")); } }}>{t("Viertel aus der Karte übernehmen")}</button> : null}
     <p className="field-help">{t("Bis zu 16 Zonen. Die letzte überlagerte Zone hat Vorrang; Freiflächen sperren Gebäude immer. Das Gelände bleibt, wie es ist; legst du den Markt woanders hin, führen die Hauptstraßen dorthin.")}</p>
     <details className="map-zone-legend"><summary>{t("Was bewirken die Zonen?")}</summary>
       <dl>{SETTLEMENT_USES.map(use => <div key={use}><dt>{t(ZONE_LABEL[use])}</dt><dd>{t(ZONE_TITEL[use])}</dd></div>)}</dl>

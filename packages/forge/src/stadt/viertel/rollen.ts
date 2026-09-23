@@ -55,6 +55,7 @@ export function weiseRollenZu(lagen: readonly FleckLage[], markt: number, a: Rol
   if (a.burg && !planHat(a, "burg")) {
     const b = beste(lagen.filter(l => l.kern && l.mauerRand), l => l.hoehe + (l.ufer ? 12 : 0) + l.flaeche * .5)[0];
     if (b) rollen.set(b.nr, "burg");
+    else if (lagen.some(l => l.kern && l.mauerRand && l.trocken)) ausgelassen.push("Keine Burg: alle Flecken an der Mauer haben im Zonenplan schon eine andere Nutzung.");
     else ausgelassen.push("Keine Burg: die Stadt hat keinen trockenen Fleck an der Mauer, auf dem sie stehen könnte.");
   }
   if (a.art !== "weiler" && !planHat(a, "hafen"))
@@ -78,5 +79,7 @@ export function weiseRollenZu(lagen: readonly FleckLage[], markt: number, a: Rol
     if (h) rollen.set(h.nr, "handwerk");
   }
   for (const l of lagen) if (!rollen.has(l.nr)) rollen.set(l.nr, "wohnen");
+  if (planHat(a, "burg") && ![...rollen.values()].includes("burg"))
+    ausgelassen.push("Keine Burg: die gemalte Burgzone deckt keinen Teil der Stadt. Verschiebe sie über ein Viertel.");
   return { rollen, ausgelassen };
 }

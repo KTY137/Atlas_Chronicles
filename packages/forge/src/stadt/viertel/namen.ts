@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import type { SettlementPlan } from "@chronicle/szene";
+import { parseSettlementPlan, type SettlementPlan } from "@chronicle/szene";
 import { flaeche, q, schwerpunkt, type Polygon, type Punkt } from "../../polygon.ts";
 import type { Zufall } from "../gemeinsam.ts";
 import type { Rolle } from "./rollen.ts";
@@ -59,6 +59,10 @@ export function viertelPlan(viertel: readonly Viertel[], zellen: ReadonlyMap<num
     .flatMap(v => v.flecken.map(nr => ({ v, zelle: zellen.get(nr) })))
     .filter((x): x is { v: Viertel; zelle: Polygon } => !!x.zelle && x.zelle.length >= 3 && x.zelle.length <= 32)
     .slice(0, 16)
-    .map(({ v, zelle }, i) => ({ id: `viertel-${i + 1}`, name: v.name, nutzung: v.nutzung, dichte: 1, polygon: zelle.map(([x, y]) => [bruch(x, breite), bruch(y, hoehe)] as const) }));
+    .map(({ v, zelle }) => ({ name: v.name, nutzung: v.nutzung, dichte: 1, polygon: zelle.map(([x, y]) => [bruch(x, breite), bruch(y, hoehe)] as const) }))
+    // Das Runden auf Zehntausendstel kann eine Zelle entarten lassen; eine Zone, die der Zonenplan
+    // selbst nicht annähme, wird nicht angeboten.
+    .filter(zone => { try { parseSettlementPlan({ schemaVersion: 1, zonen: [{ id: "probe", ...zone }] }); return true; } catch { return false; } })
+    .map((zone, i) => ({ id: `viertel-${i + 1}`, ...zone }));
   return { schemaVersion: 1, zonen };
 }
