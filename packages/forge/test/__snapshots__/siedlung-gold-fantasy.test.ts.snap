@@ -1,0 +1,35 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Fantasy v11 bleibt unverändert > Stadt mit Straßenplan 1`] = `"8ccedae379f5cdde"`;
+
+exports[`Fantasy v11 bleibt unverändert > Stadt mit Zonenplan 1`] = `"9e93a4860a750f85"`;
+
+exports[`Fantasy v11 bleibt unverändert > dorf ebene 1`] = `"4cccd69edfb172df"`;
+
+exports[`Fantasy v11 bleibt unverändert > dorf fluss 1`] = `"fcab68dd170d9901"`;
+
+exports[`Fantasy v11 bleibt unverändert > dorf huegel 1`] = `"9df814a819028f60"`;
+
+exports[`Fantasy v11 bleibt unverändert > dorf kueste 1`] = `"a58dc39dc46c02a8"`;
+
+exports[`Fantasy v11 bleibt unverändert > dorf moor 1`] = `"4d5f7c46ae38c491"`;
+
+exports[`Fantasy v11 bleibt unverändert > stadt ebene 1`] = `"2ee18a851ff3a9a4"`;
+
+exports[`Fantasy v11 bleibt unverändert > stadt fluss 1`] = `"ff081a62bd2cbb39"`;
+
+exports[`Fantasy v11 bleibt unverändert > stadt huegel 1`] = `"1ece52bb7068ae77"`;
+
+exports[`Fantasy v11 bleibt unverändert > stadt kueste 1`] = `"ba025c0a88a49f80"`;
+
+exports[`Fantasy v11 bleibt unverändert > stadt moor 1`] = `"a075e464685d5339"`;
+
+exports[`Fantasy v11 bleibt unverändert > weiler ebene 1`] = `"3e3dc3964ca04dfd"`;
+
+exports[`Fantasy v11 bleibt unverändert > weiler fluss 1`] = `"bf44cf7ad57b0679"`;
+
+exports[`Fantasy v11 bleibt unverändert > weiler huegel 1`] = `"fc15d390d16e31a5"`;
+
+exports[`Fantasy v11 bleibt unverändert > weiler kueste 1`] = `"5296b011ae2f884f"`;
+
+exports[`Fantasy v11 bleibt unverändert > weiler moor 1`] = `"6571f02af5a94016"`;
