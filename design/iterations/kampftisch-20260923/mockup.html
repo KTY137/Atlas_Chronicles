@@ -1,0 +1,538 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: BUSL-1.1 -->
+<!-- Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. -->
+<!-- Mockup zur Spezifikation docs/superpowers/specs/2026-09-23-kampftisch-karten-design.md.
+     Kein Produktcode: keine echten Daten, nichts wird gespeichert. Die Projektion unten folgt
+     wortgleich den Regeln E3/E4 der Spezifikation, damit das Mockup zeigt, was gebaut wird. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kampftisch — Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Fantasy — wortgleich packages/ui/src/tokens.css */
+:root {
+  color-scheme: dark;
+  --bg: #0a0c0d; --bg-deep: #060708; --surface: #121517; --surface-2: #191d20; --surface-hover: #24282b; --input-bg: #0d1011;
+  --line: #353938; --line-strong: #62665f; --control-line: #96998f;
+  --text: #f0ebe1; --text-muted: #c4beaf; --text-faint: #b6b0a1;
+  --accent: #e6a55a; --accent-strong: #ffc476; --accent-ink: #17110a; --accent-soft: #292115; --focus: #ffd99c;
+  --ok: #b6d4a9; --ok-soft: #152619; --danger: #ffb1a6; --danger-soft: #2c1918; --warning: #f5d181; --warning-soft: #292312; --info: #a2d4ef; --info-soft: #14242b; --private: #d6b7ec; --private-soft: #241b2b;
+  --overlay: #060708;
+  --font-display: "Cinzel", Georgia, serif; --font-body: "IBM Plex Sans", system-ui, sans-serif; --font-mono: ui-monospace, Consolas, monospace;
+  --radius: 12px; --panel-motion: 220ms; --motion-easing: ease;
+  --shadow-1: 0 1px 2px rgba(0,0,0,.28); --shadow-2: 0 4px 14px rgba(0,0,0,.32); --shadow-3: 0 14px 36px rgba(0,0,0,.42);
+}
+/* Parchment — wortgleich packages/theme/src/presets.ts, einer der drei hellen Looks */
+:root[data-look="pergament"] {
+  color-scheme: light;
+  --bg: #f6f4ef; --bg-deep: #eae7de; --surface: #fffefb; --surface-2: #f0ede4; --surface-hover: #e2ded1; --input-bg: #ffffff;
+  --line: #d8d3c6; --line-strong: #a49d8c; --control-line: #6f6a5c;
+  --text: #1e1d1a; --text-muted: #4a473f; --text-faint: #57534a;
+  --accent: #2a4d8f; --accent-strong: #1c3563; --accent-ink: #ffffff; --accent-soft: #dfe4ef; --focus: #1c3563;
+  --ok: #2c5f38; --ok-soft: #dde9dd; --danger: #8c2b26; --danger-soft: #f2dcd8; --warning: #6b4c12; --warning-soft: #efe4c9; --info: #204a63; --info-soft: #d9e6ec; --private: #6a3a7a; --private-soft: #e8dded;
+  --overlay: #1e1d1a; --radius: 8px;
+  --shadow-1: 0 1px 2px rgba(30,29,26,.12); --shadow-2: 0 4px 14px rgba(30,29,26,.14); --shadow-3: 0 14px 36px rgba(30,29,26,.2);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--font-body); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Mockup-Steuerung (nicht Teil des Produkts) ---------- */
+.mock-leiste { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; padding: .55rem 1rem;
+  background: var(--bg-deep); border-bottom: 1px dashed var(--line-strong); font-size: .82rem; color: var(--text-muted); }
+.mock-leiste strong { color: var(--text); letter-spacing: .04em; }
+.mock-gruppe { display: flex; gap: .3rem; align-items: center; }
+.mock-gruppe button { padding: .2rem .6rem; border: 1px solid var(--line-strong); background: var(--surface); border-radius: 999px; cursor: pointer; }
+.mock-gruppe button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* ---------- Seite ---------- */
+.seite { max-width: 1320px; margin: 0 auto; padding: 1.25rem 1rem 3rem; display: grid; gap: 1rem; }
+.eyebrow { margin: 0; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
+h2, h3, h4 { font-family: var(--font-display); font-weight: 700; margin: 0; }
+.muted { color: var(--text-muted); }
+.knopf { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .85rem; border-radius: calc(var(--radius) - 4px);
+  border: 1px solid var(--control-line); background: var(--surface-2); cursor: pointer; }
+.knopf:hover { background: var(--surface-hover); }
+.knopf.haupt { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.knopf.haupt:hover { background: var(--accent-strong); }
+.knopf.leise { border-color: transparent; background: transparent; }
+.knopf[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+
+.tisch-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .8rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.tisch-kopf h2 { font-size: 1.35rem; }
+.am-zug { display: grid; justify-items: center; gap: .05rem; }
+.am-zug span { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
+.am-zug strong { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.1; color: var(--accent-strong); }
+.knopfreihe { display: flex; flex-wrap: wrap; gap: .45rem; }
+
+.vorschau-hinweis { display: none; padding: .5rem .9rem; border-radius: var(--radius); background: var(--info-soft); color: var(--info);
+  border: 1px solid color-mix(in srgb, var(--info) 45%, transparent); font-size: .88rem; }
+[data-ansicht="vorschau"] .vorschau-hinweis { display: block; }
+
+.tisch-layout { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: 1rem; align-items: start; }
+[data-ansicht="runde"] .tisch-layout, [data-ansicht="vorschau"] .tisch-layout { grid-template-columns: minmax(0, 1fr); }
+[data-ansicht="runde"] .gm-leiste, [data-ansicht="vorschau"] .gm-leiste { display: none; }
+
+/* ---------- Die Tischfläche ---------- */
+/* Derselbe Tisch wie im Reiter „Tisch" (tabletop.css: .tabletop-furniture / .tabletop-felt) —
+   ein Gegenstand, kein Bedienelement: Holz und Filz bleiben in jedem Look gleich, alles, was
+   darauf liegt (Karten, Fenster), folgt dem Look. */
+.holz { border: 1px solid #7c5631; border-radius: 28px; padding: 1rem;
+  background: repeating-linear-gradient(2deg, #4b3022 0, #583b28 3px, #503322 5px, #493124 10px);
+  box-shadow: 0 16px 0 #2c2019, 0 22px 35px #0006, inset 0 0 0 5px #b1884733; margin-bottom: 1.4rem; }
+.tischflaeche { position: relative; display: grid; gap: 1.1rem; padding: 1.4rem 1.2rem 1.6rem; border-radius: 18px;
+  background: radial-gradient(ellipse at 40% 15%, #30574c, #143b32 75%); border: 2px solid #171f17; box-shadow: inset 0 0 28px #0007; }
+.reihe { display: grid; gap: .55rem; }
+.reihe-kopf { display: flex; align-items: center; gap: .5rem; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: #f0dcc0; }
+.reihe-kopf::before { content: ""; width: .6rem; height: .6rem; border-radius: 2px; background: var(--seite-farbe); }
+.reihe-karten { list-style: none; margin: 0; padding: .7rem 0 .2rem; display: flex; flex-wrap: wrap; gap: .9rem; justify-content: center; min-height: 3rem; }
+.mittellinie { display: flex; align-items: center; gap: .8rem; color: #f0dcc0; font-family: var(--font-display); letter-spacing: .1em; font-size: .85rem; }
+.mittellinie::before, .mittellinie::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #f0dcc080, transparent); }
+.seite-gegner { --seite-farbe: var(--danger); --seite-weich: var(--danger-soft); }
+.seite-gefaehrten { --seite-farbe: var(--accent); --seite-weich: var(--accent-soft); }
+.seite-neutral { --seite-farbe: var(--line-strong); --seite-weich: var(--surface-hover); }
+
+/* ---------- Die Karte ---------- */
+.karte { position: relative; width: 11.5rem; display: grid; gap: .45rem; padding: 0 0 .6rem; border-radius: calc(var(--radius) - 2px);
+  background: linear-gradient(170deg, var(--surface-2), var(--surface)); border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-2); transition: transform var(--panel-motion) var(--motion-easing), box-shadow var(--panel-motion) var(--motion-easing), opacity var(--panel-motion); }
+.karte::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0; background: var(--seite-farbe); }
+.karte-bild { position: relative; margin: 4px 4px 0; aspect-ratio: 16 / 10; border-radius: calc(var(--radius) - 5px); overflow: hidden; display: grid; place-items: center;
+  background: radial-gradient(90% 90% at 50% 35%, color-mix(in srgb, var(--seite-farbe) 30%, var(--seite-weich)), var(--seite-weich) 75%);
+  border: 1px solid var(--line); }
+.karte-bild .monogramm { font-family: var(--font-display); font-size: 2.1rem; color: color-mix(in srgb, var(--seite-farbe) 75%, var(--text)); letter-spacing: .04em; }
+.karte-bild.unbekannt .monogramm { font-size: 2.4rem; opacity: .6; }
+.siegel { position: absolute; top: -.55rem; left: -.55rem; z-index: 2; width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center;
+  font: 700 .95rem var(--font-mono); background: var(--bg-deep); color: var(--text); border: 2px solid var(--seite-farbe); box-shadow: var(--shadow-1); }
+.karte-name { padding: 0 .65rem; font-family: var(--font-display); font-size: 1rem; line-height: 1.2; overflow-wrap: anywhere; }
+.karte-name small { display: block; font-family: var(--font-body); font-size: .68rem; color: var(--text-faint); letter-spacing: .03em; }
+.karte-menue { position: absolute; top: .35rem; right: .35rem; z-index: 2; width: 1.8rem; height: 1.8rem; border-radius: 50%; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 85%, transparent); cursor: pointer; line-height: 1; }
+.marken { display: flex; flex-wrap: wrap; gap: .25rem; padding: 0 .65rem; }
+.marke { font-size: .66rem; padding: .08rem .42rem; border-radius: 999px; background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--line); }
+.karte-fuss { display: flex; justify-content: space-between; gap: .4rem; padding: 0 .65rem; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); }
+.eigene-marke { position: absolute; top: -.7rem; right: .6rem; z-index: 3; padding: .08rem .5rem; border-radius: 999px; font-size: .64rem; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--private-soft); color: var(--private); border: 1px solid var(--private); }
+
+/* Balken */
+.balken-liste { display: grid; gap: .4rem; padding: 0 .65rem; }
+.balken { display: grid; gap: .18rem; }
+.balken-kopf { display: flex; align-items: center; gap: .3rem; font-size: .74rem; }
+.balken-kopf .etikett { color: var(--text-muted); }
+.balken-kopf .wert { margin-left: auto; font-family: var(--font-mono); font-size: .76rem; }
+.balken-kopf button.wert { border: 0; background: none; padding: 0 .15rem; border-radius: 4px; cursor: pointer; text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; }
+.auge { width: 1.35rem; height: 1.35rem; border: 1px solid var(--line); border-radius: 5px; background: var(--input-bg); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.auge svg { width: .85rem; height: .85rem; }
+.auge[data-maske="verborgen"] { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, var(--line)); }
+.auge[data-maske="worte"], .auge[data-maske="fuellstand"] { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 50%, var(--line)); }
+.spur { position: relative; height: .5rem; border-radius: 999px; background: var(--input-bg); border: 1px solid var(--line); overflow: hidden; }
+.spur > i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--balken-farbe); transition: width var(--panel-motion) var(--motion-easing); }
+.spur.zehntel { background-image: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), var(--line) calc(10% - 1px) 10%); }
+.balken-kopf .wert.stufe { font-family: var(--font-body); font-size: .78rem; font-weight: 600; color: var(--balken-farbe); }
+.runde-sieht { font-size: .64rem; color: var(--text-faint); }
+.runde-sieht em { font-style: normal; color: var(--text-muted); }
+.v-leben { --balken-farbe: var(--danger); } .v-mana { --balken-farbe: var(--info); } .v-ausdauer { --balken-farbe: var(--ok); }
+.ohne-werte { padding: 0 .65rem; font-size: .74rem; color: var(--text-faint); font-style: italic; }
+
+/* Zustände der Karte */
+.karte.amzug { transform: translateY(-10px); box-shadow: var(--shadow-3), 0 0 0 2px var(--accent), 0 0 26px color-mix(in srgb, var(--accent) 35%, transparent); }
+.amzug-marke { position: absolute; top: -.75rem; left: 50%; transform: translateX(-50%); z-index: 3; padding: .1rem .55rem; border-radius: 999px;
+  font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; background: var(--accent); color: var(--accent-ink); font-weight: 600; white-space: nowrap; }
+.karte.umgelegt { transform: rotate(-5deg) translateY(6px); opacity: .78; filter: grayscale(.85); }
+.stempel { position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%) rotate(-14deg); z-index: 3; padding: .15rem .6rem;
+  border: 2px solid var(--danger); color: var(--danger); background: color-mix(in srgb, var(--surface) 82%, transparent);
+  font: 700 .82rem var(--font-display); letter-spacing: .14em; text-transform: uppercase; border-radius: 4px; }
+.hinweis { margin: 0 .5rem; padding: .4rem .5rem; border-radius: 6px; background: var(--danger-soft); color: var(--danger); font-size: .72rem; display: grid; gap: .3rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); }
+.hinweis button { justify-self: start; padding: .15rem .55rem; font-size: .72rem; border-radius: 5px; border: 1px solid var(--danger); background: transparent; color: var(--danger); cursor: pointer; }
+
+/* ---------- Seitenleiste der Spielleitung ---------- */
+.gm-leiste { display: grid; gap: .9rem; }
+.fach { padding: .8rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); display: grid; gap: .55rem; }
+.fach h3 { font-size: .95rem; display: flex; justify-content: space-between; align-items: baseline; }
+.fach h3 small { font-family: var(--font-body); font-weight: 400; font-size: .72rem; color: var(--text-faint); }
+.fach p { margin: 0; font-size: .78rem; color: var(--text-muted); }
+.hand { list-style: none; margin: .3rem 0 0; padding: .9rem 0 .4rem; display: flex; justify-content: center; }
+.hand li { margin-inline: -.55rem; transition: transform var(--panel-motion) var(--motion-easing); }
+.hand li:nth-child(odd) { transform: rotate(-6deg); } .hand li:nth-child(even) { transform: rotate(5deg) translateY(4px); }
+.hand li:hover, .hand li:focus-within { transform: translateY(-12px) rotate(0); z-index: 5; }
+.karte.klein { width: 7.6rem; gap: .3rem; }
+.karte.klein .karte-name { font-size: .82rem; }
+.karte.klein .karte-bild { aspect-ratio: 16 / 9; }
+.karte.klein .monogramm { font-size: 1.4rem; }
+.karte.klein .siegel { width: 1.9rem; height: 1.9rem; font-size: .8rem; }
+.verdeckt-marke { display: inline-flex; gap: .25rem; align-items: center; margin: 0 .55rem; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
+.ablage { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; }
+.ablage li { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .35rem .55rem; border: 1px dashed var(--line-strong); border-radius: 6px; font-size: .82rem; }
+.aufnahme { display: grid; gap: .45rem; }
+.aufnahme .wahl { display: grid; grid-template-columns: repeat(3, 1fr); gap: .25rem; }
+.aufnahme .wahl button { padding: .35rem .2rem; font-size: .72rem; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface-2); cursor: pointer; }
+.aufnahme .wahl button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.aufnahme label { display: grid; gap: .15rem; font-size: .74rem; color: var(--text-muted); }
+.aufnahme input, .aufnahme select { width: 100%; min-width: 0; font: inherit; font-size: .85rem; padding: .35rem .5rem; border-radius: 6px; border: 1px solid var(--control-line); background: var(--input-bg); color: var(--text); }
+.aufnahme .zeile { display: grid; grid-template-columns: 1fr 4.5rem; gap: .4rem; }
+
+/* ---------- Schwebende Fenster ---------- */
+.schwebe { position: absolute; z-index: 20; width: 17.5rem; padding: .7rem; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: var(--shadow-3); display: grid; gap: .45rem; }
+.schwebe h4 { font-size: .9rem; }
+.schwebe .option { width: 100%; display: grid; grid-template-columns: auto 1fr; gap: .1rem .5rem; align-items: start; padding: .4rem .45rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer; text-align: left; background: none; }
+.schwebe .option:hover { background: var(--surface-hover); }
+.schwebe .option[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.schwebe .option b { font-size: .84rem; }
+.schwebe .option span { grid-column: 2; font-size: .72rem; color: var(--text-muted); }
+.schwebe .option .punkt { width: .8rem; height: .8rem; margin-top: .2rem; border-radius: 50%; border: 2px solid var(--control-line); }
+.schwebe .option[aria-checked="true"] .punkt { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 45%, transparent 50%); }
+.schwebe .vorschau { padding: .4rem .5rem; border-radius: 6px; background: var(--input-bg); font-size: .76rem; color: var(--text-muted); }
+.schwebe .vorschau em { font-style: normal; color: var(--text); font-weight: 600; }
+.schwebe menu { margin: 0; padding: 0; display: grid; gap: .1rem; }
+.schwebe menu button { text-align: left; padding: .35rem .5rem; border: 0; border-radius: 6px; background: none; cursor: pointer; font-size: .85rem; }
+.schwebe menu button:hover { background: var(--surface-hover); }
+.schwebe menu button.gefahr { color: var(--danger); }
+.schwebe menu hr { border: 0; border-top: 1px solid var(--line); margin: .2rem 0; width: 100%; }
+.schwebe label { display: grid; gap: .15rem; font-size: .76rem; color: var(--text-muted); }
+.schwebe input[type="text"], .schwebe input[type="number"], .schwebe select { font: inherit; font-size: .85rem; padding: .35rem .5rem; border-radius: 6px; border: 1px solid var(--control-line); background: var(--input-bg); color: var(--text); }
+.schwebe .haken { display: flex; gap: .45rem; align-items: center; font-size: .82rem; color: var(--text); }
+.stepper { display: grid; grid-template-columns: repeat(2, 2.3rem) 1fr repeat(2, 2.3rem); gap: .3rem; }
+.stepper button { padding: .35rem 0; border-radius: 6px; border: 1px solid var(--control-line); background: var(--surface); cursor: pointer; font-family: var(--font-mono); }
+.stepper input { text-align: center; font-family: var(--font-mono); }
+
+@media (max-width: 900px) {
+  .tisch-layout { grid-template-columns: minmax(0, 1fr); }
+  .karte { width: calc(50% - .5rem); min-width: 9.5rem; }
+  .hand { overflow-x: auto; justify-content: flex-start; padding-inline: 1.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="mock-leiste" role="region" aria-label="Mockup-Steuerung">
+  <strong>MOCKUP</strong><span>Keine echten Daten, nichts wird gespeichert.</span>
+  <div class="mock-gruppe" role="group" aria-label="Wer schaut?"><span>Wer schaut:</span>
+    <button data-rolle="leitung" aria-pressed="true">Spielleitung</button>
+    <button data-rolle="runde" aria-pressed="false">Runde (als Mira)</button></div>
+  <div class="mock-gruppe" role="group" aria-label="Look"><span>Look:</span>
+    <button data-look="fantasy" aria-pressed="true">Fantasy (dunkel)</button>
+    <button data-look="pergament" aria-pressed="false">Pergament (hell)</button></div>
+</div>
+
+<main class="seite" id="seite" data-ansicht="leitung">
+  <div><p class="eyebrow">Tisch · Kampf</p><h2 style="font-size:1.6rem">Der Kampftisch</h2></div>
+  <header class="tisch-kopf">
+    <div><h2>Hinterhalt am Pass</h2><p class="muted" style="margin:.1rem 0 0" id="runde-text"></p></div>
+    <p class="am-zug" aria-live="polite" style="margin:0"><span>Am Zug</span><strong id="am-zug-name"></strong></p>
+    <div class="knopfreihe" id="gm-knoepfe">
+      <button class="knopf haupt" id="naechster">Nächster Zug ›</button>
+      <button class="knopf" id="augen" aria-pressed="false">Mit den Augen der Runde</button>
+      <button class="knopf leise">Beenden</button>
+    </div>
+  </header>
+  <p class="vorschau-hinweis" role="status">So sieht die Runde den Tisch gerade. Deine Hand, die Ablage und verborgene Werte fehlen dort ganz, es gibt auch keinen Hinweis, dass etwas fehlt.</p>
+
+  <div class="tisch-layout">
+    <div class="holz"><section class="tischflaeche" aria-label="Spieltisch" id="tisch"></section></div>
+    <aside class="gm-leiste" aria-label="Nur für dich sichtbar">
+      <section class="fach"><h3>Deine Hand <small>nur du siehst sie</small></h3>
+        <p>Verdeckte Karten sind noch nicht im Spiel und kommen nicht an die Reihe. Spiel sie aus, wenn der Hinterhalt losgeht.</p>
+        <ul class="hand" id="hand"></ul></section>
+      <section class="fach"><h3>Ablage <small>vom Feld genommen</small></h3>
+        <ul class="ablage" id="ablage"></ul></section>
+      <section class="fach aufnahme"><h3>Wer kämpft mit?</h3>
+        <div class="wahl" role="group" aria-label="Woher kommt die Karte?">
+          <button aria-pressed="false">Figur am Tisch</button><button aria-pressed="true">Aus Vorlage</button><button aria-pressed="false">Nur Name</button></div>
+        <label>Vorlage<select><option>Wolf (Tier)</option><option>Bandit (Mensch)</option></select></label>
+        <div class="zeile"><label>Anzahl<select><option>2</option></select></label><label>Initiative<input type="number" value="13"></label></div>
+        <label>Wohin?<select><option>Verdeckt in deine Hand</option><option>Gleich aufs Feld</option></select></label>
+        <p>Legt „Wolf 3" und „Wolf 4" als eigene Figuren an. Nur du siehst sie in der Figurenliste.</p>
+        <button class="knopf haupt" style="justify-self:start">Auf den Tisch legen</button>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<script>
+/* ---------- Daten wie der Server sie hält (Spielleitungsstand) ---------- */
+const VITALS = [
+  { id: "leben", label: "Leben", depletion: "defeat" },
+  { id: "mana", label: "Mana", depletion: "none" },
+  { id: "ausdauer", label: "Ausdauer", depletion: "none" },
+];
+const vorgabe = seite => ({ schema: 1, standard: seite === "gefaehrten" ? "genau" : "worte", balken: {}, zustaende: true, bild: true });
+const karten = [
+  { id: "veyl", name: "Graf Veyl", nameFuerRunde: "Vermummte Gestalt", seite: "gegner", lage: "feld", ini: 17, gewuerfelt: false,
+    werte: { leben: [40, 40], mana: [22, 30] }, zust: ["Unsichtbar für Tiere"], sicht: { schema: 1, standard: "verborgen", balken: { leben: "fuellstand" }, zustaende: false, bild: false } },
+  { id: "mira", name: "Mira", seite: "gefaehrten", lage: "feld", ini: 15, gewuerfelt: true, figur: true,
+    werte: { leben: [18, 24], mana: [7, 20], ausdauer: [10, 12] }, zust: ["Gesegnet"], sicht: vorgabe("gefaehrten") },
+  { id: "w1", name: "Wolf 1", seite: "gegner", lage: "feld", ini: 14, gewuerfelt: false, figur: true,
+    werte: { leben: [9, 14], ausdauer: [6, 10] }, zust: ["Blutend"], sicht: vorgabe("gegner") },
+  { id: "w2", name: "Wolf 2", seite: "gegner", lage: "feld", ini: 12, gewuerfelt: false, figur: true,
+    werte: { leben: [0, 14], ausdauer: [2, 10] }, zust: [], sicht: vorgabe("gegner") },
+  { id: "thorn", name: "Thorn", seite: "gefaehrten", lage: "feld", ini: 11, gewuerfelt: true, figur: true,
+    werte: { leben: [5, 30], ausdauer: [3, 14] }, zust: ["Benommen"], sicht: vorgabe("gefaehrten") },
+  { id: "w5", name: "Wolf 5", seite: "gegner", lage: "umgelegt", ini: 10, gewuerfelt: false, figur: true,
+    werte: { leben: [0, 14], ausdauer: [0, 10] }, zust: [], sicht: vorgabe("gegner") },
+  { id: "eskel", name: "Eskel", seite: "gefaehrten", lage: "feld", ini: 9, gewuerfelt: true, figur: true,
+    werte: { leben: [21, 26], mana: [14, 16] }, zust: [], sicht: vorgabe("gefaehrten") },
+  { id: "huette", name: "Brennende Hütte", seite: "neutral", lage: "feld", ini: 5, gewuerfelt: false, figur: false,
+    werte: null, zust: [], sicht: vorgabe("neutral") },
+  { id: "w3", name: "Wolf 3", seite: "gegner", lage: "hand", ini: 13, gewuerfelt: false, figur: true, werte: { leben: [14, 14], ausdauer: [10, 10] }, zust: [], sicht: vorgabe("gegner") },
+  { id: "w4", name: "Wolf 4", seite: "gegner", lage: "hand", ini: 13, gewuerfelt: false, figur: true, werte: { leben: [14, 14], ausdauer: [10, 10] }, zust: [], sicht: vorgabe("gegner") },
+  { id: "bandit", name: "Bandit", seite: "gegner", lage: "ablage", ini: 8, gewuerfelt: false, figur: true, werte: { leben: [3, 18] }, zust: [], sicht: vorgabe("gegner") },
+];
+const kampf = { runde: 3, amZug: "w1", zustand: "laufend" };
+const MIRAS_SPIELER = new Set(["mira"]);
+
+/* ---------- Die Projektion (E3/E4) — eine reine Funktion ---------- */
+const WORTE = {
+  leben: { voll: "unversehrt", gut: "angeschlagen", knapp: "schwer angeschlagen", leer: "am Boden" },
+  vorrat: { voll: "voll", gut: "gut gefüllt", knapp: "fast leer", leer: "leer" },
+};
+function stufe(wert, hoechst) {
+  if (wert <= 0) return "leer";
+  if (hoechst <= 0) return "voll";
+  const q = wert / hoechst;
+  return q >= 1 ? "voll" : q >= .5 ? "gut" : "knapp";
+}
+function zehntel(wert, hoechst) {
+  if (wert <= 0) return 0;
+  if (hoechst <= 0 || wert / hoechst >= 1) return 10;
+  return Math.min(9, Math.max(1, Math.round(wert / hoechst * 10)));
+}
+/** Was ein Betrachter von einer Karte bekommt. `null` heißt: die Karte fehlt in seiner Nutzlast. */
+function projiziere(k, betrachter) {
+  if (betrachter.leitung) return { ...k, bild: true, balken: balkenFuer(k, () => "genau"), eigene: false };
+  if (k.lage === "hand" || k.lage === "ablage") return null;
+  const eigene = betrachter.fuehrt.has(k.id);
+  const maske = id => eigene ? "genau" : (k.sicht.balken[id] ?? k.sicht.standard);
+  return {
+    id: k.id, seite: k.seite, lage: k.lage, ini: k.ini, gewuerfelt: k.gewuerfelt, eigene,
+    name: eigene ? k.name : (k.nameFuerRunde ?? k.name),
+    bild: eigene || k.sicht.bild,
+    zust: eigene || k.sicht.zustaende ? k.zust : [],
+    balken: balkenFuer(k, maske), figur: eigene ? k.figur : undefined,
+  };
+}
+function balkenFuer(k, maske) {
+  if (!k.werte || kampf.zustand === "beendet") return [];
+  return VITALS.filter(v => k.werte[v.id]).flatMap(v => {
+    const [wert, hoechst] = k.werte[v.id], m = maske(v.id), art = v.depletion === "defeat" ? "leben" : "vorrat";
+    if (m === "verborgen") return [];
+    if (m === "genau") return [{ id: v.id, label: v.label, anzeige: "genau", wert, hoechst }];
+    if (m === "fuellstand") return [{ id: v.id, label: v.label, anzeige: "fuellstand", zehntel: zehntel(wert, hoechst) }];
+    return [{ id: v.id, label: v.label, anzeige: "worte", stufe: stufe(wert, hoechst), art }];
+  });
+}
+const nachIni = (a, b) => b.ini - a.ini;
+
+/* ---------- Anzeige ---------- */
+let ansicht = "leitung";           // leitung | runde | vorschau
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const betrachter = () => ansicht === "leitung" ? { leitung: true } : { leitung: false, fuehrt: ansicht === "runde" ? MIRAS_SPIELER : new Set() };
+const MASKEN = [
+  { id: "genau", titel: "Genau", text: "Zahl und Balken, z. B. 37 / 100" },
+  { id: "fuellstand", titel: "Nur Füllstand", text: "Balken grob in Zehnteln, ohne Zahl" },
+  { id: "worte", titel: "In Worten", text: "z. B. „angeschlagen“" },
+  { id: "verborgen", titel: "Verborgen", text: "Die Runde sieht diesen Balken nicht" },
+];
+const AUGE = {
+  genau: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  fuellstand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="6" rx="3"/><path d="M3 12h9"/></svg>',
+  worte: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19 9 5l5 14M6 14h6M16 19v-6a2.5 2.5 0 0 1 5 0v6M16 16h5"/></svg>',
+  verborgen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.5 4.5-1.2"/></svg>',
+};
+function rundeSieht(k, v) {
+  const [wert, hoechst] = k.werte[v.id], m = k.sicht.balken[v.id] ?? k.sicht.standard, art = v.depletion === "defeat" ? "leben" : "vorrat";
+  if (m === "genau") return `${wert} / ${hoechst}`;
+  if (m === "fuellstand") return `etwa ${zehntel(wert, hoechst)} von 10 Teilen`;
+  if (m === "worte") return `„${WORTE[art][stufe(wert, hoechst)]}“`;
+  return "nichts";
+}
+
+function balkenHtml(p, roh, klein) {
+  if (!p.balken.length) return roh && !roh.werte ? '<p class="ohne-werte">Ohne Werte</p>' : "";
+  const leitung = ansicht === "leitung";
+  return `<div class="balken-liste">${p.balken.map(b => {
+    const v = VITALS.find(x => x.id === b.id), editierbar = leitung || p.eigene;
+    let kopfWert = "", spur = "";
+    if (b.anzeige === "genau") {
+      kopfWert = editierbar && !klein
+        ? `<button class="wert" data-wert="${p.id}:${b.id}" aria-label="${esc(b.label)} ändern, jetzt ${b.wert} von ${b.hoechst}">${b.wert} / ${b.hoechst}</button>`
+        : `<span class="wert">${b.wert} / ${b.hoechst}</span>`;
+      spur = `<div class="spur" role="meter" aria-label="${esc(b.label)}" aria-valuemin="0" aria-valuemax="${b.hoechst}" aria-valuenow="${b.wert}"><i style="width:${Math.max(0, Math.min(100, b.wert / b.hoechst * 100))}%"></i></div>`;
+    } else if (b.anzeige === "fuellstand") {
+      spur = `<div class="spur zehntel" role="meter" aria-label="${esc(b.label)}" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${b.zehntel}" aria-valuetext="etwa ${b.zehntel} Zehntel"><i style="width:${b.zehntel * 10}%"></i></div>`;
+    } else {
+      kopfWert = `<span class="wert stufe">${WORTE[b.art][b.stufe]}</span>`;
+    }
+    const maske = roh ? (roh.sicht.balken[b.id] ?? roh.sicht.standard) : "genau";
+    const auge = leitung && roh && !klein
+      ? `<button class="auge" data-maske="${maske}" data-auge="${p.id}:${b.id}" aria-label="Was die Runde bei ${esc(b.label)} sieht: ${MASKEN.find(m => m.id === maske).titel}">${AUGE[maske]}</button>` : "";
+    const hinweis = leitung && roh && !klein && maske !== "genau"
+      ? `<span class="runde-sieht">Runde sieht: <em>${esc(rundeSieht(roh, v))}</em></span>` : "";
+    return `<div class="balken v-${b.id}"><div class="balken-kopf">${auge}<span class="etikett">${esc(b.label)}</span>${kopfWert}</div>${spur}${hinweis}</div>`;
+  }).join("")}</div>`;
+}
+
+function karteHtml(roh, { klein = false } = {}) {
+  const p = projiziere(roh, betrachter());
+  if (!p) return "";
+  const leitung = ansicht === "leitung";
+  const initialen = p.bild ? p.name.split(/\s+/).map(w => w[0]).slice(0, 2).join("") : "?";
+  const amzug = kampf.amZug === p.id && p.lage === "feld";
+  const aufgebraucht = leitung && roh.lage === "feld" && roh.werte?.leben && roh.werte.leben[0] <= 0;
+  const zweitname = leitung && roh.nameFuerRunde ? `<small>Runde liest: „${esc(roh.nameFuerRunde)}“</small>` : "";
+  return `<li><article class="karte seite-${p.seite}${amzug ? " amzug" : ""}${p.lage === "umgelegt" ? " umgelegt" : ""}${klein ? " klein" : ""}"
+      aria-current="${amzug ? "step" : "false"}" aria-label="${esc(p.name)}">
+    ${amzug ? '<span class="amzug-marke">am Zug</span>' : ""}
+    ${p.eigene ? '<span class="eigene-marke">Deine Figur</span>' : ""}
+    ${p.lage === "umgelegt" ? '<span class="stempel">umgelegt</span>' : ""}
+    <span class="siegel" title="Initiative">${p.ini}</span>
+    ${leitung ? `<button class="karte-menue" data-menue="${p.id}" aria-label="Was mit ${esc(p.name)} geschehen soll">⋯</button>` : ""}
+    <div class="karte-bild${p.bild ? "" : " unbekannt"}"><span class="monogramm" aria-hidden="true">${esc(initialen)}</span></div>
+    <h4 class="karte-name">${esc(p.name)}${zweitname}</h4>
+    ${klein ? '<span class="verdeckt-marke">verdeckt</span>' : balkenHtml(p, roh, klein)}
+    ${!klein && p.zust.length ? `<div class="marken">${p.zust.map(z => `<span class="marke">${esc(z)}</span>`).join("")}</div>` : ""}
+    ${aufgebraucht ? `<div class="hinweis">Leben aufgebraucht. Umlegen?<button data-lage="${p.id}:umgelegt">Umlegen</button></div>` : ""}
+    ${!klein ? `<div class="karte-fuss"><span>${p.gewuerfelt ? "gewürfelt" : "gesetzt"}</span><span>${{ gegner: "Gegner", gefaehrten: "Gefährte", neutral: "Dazwischen" }[p.seite]}</span></div>` : ""}
+  </article></li>`;
+}
+
+function render() {
+  document.getElementById("seite").dataset.ansicht = ansicht;
+  $("gm-knoepfe").style.display = ansicht === "runde" ? "none" : "";
+  const sichtbar = karten.filter(k => ansicht === "leitung" || projiziere(k, betrachter()));
+  const reihe = (seite, titel) => {
+    const liste = sichtbar.filter(k => k.seite === seite && (k.lage === "feld" || k.lage === "umgelegt")).sort(nachIni);
+    return liste.length ? `<div class="reihe seite-${seite}"><div class="reihe-kopf">${titel}</div><ul class="reihe-karten">${liste.map(k => karteHtml(k)).join("")}</ul></div>` : "";
+  };
+  $("tisch").innerHTML = reihe("gegner", "Gegner") + reihe("neutral", "Dazwischen")
+    + `<div class="mittellinie">Runde ${kampf.runde}</div>` + reihe("gefaehrten", "Gefährten");
+  const dran = karten.find(k => k.id === kampf.amZug);
+  const dranP = dran && projiziere(dran, betrachter());
+  $("am-zug-name").textContent = dranP ? dranP.name : "niemand — leg eine Karte aufs Feld";
+  $("runde-text").textContent = `Läuft · Runde ${kampf.runde}`;
+  $("hand").innerHTML = karten.filter(k => k.lage === "hand").map(k => karteHtml(k, { klein: true })).join("")
+    || '<li style="margin:0;font-size:.8rem;color:var(--text-faint)">Keine verdeckten Karten.</li>';
+  $("ablage").innerHTML = karten.filter(k => k.lage === "ablage").map(k =>
+    `<li><span>${esc(k.name)}</span><span class="knopfreihe"><button class="knopf leise" style="padding:.15rem .4rem;font-size:.75rem" data-lage="${k.id}:hand">In die Hand</button><button class="knopf leise" style="padding:.15rem .4rem;font-size:.75rem" data-lage="${k.id}:feld">Aufs Feld</button></span></li>`).join("")
+    || '<li style="border:0;color:var(--text-faint)">Leer.</li>';
+  $("augen").setAttribute("aria-pressed", String(ansicht === "vorschau"));
+}
+
+/* ---------- Zugregeln (E2) ---------- */
+function feldReihe() { return karten.filter(k => k.lage === "feld").sort(nachIni); }
+function naechsterZug() {
+  const reihe = feldReihe();
+  if (!reihe.length) { kampf.amZug = null; return; }
+  const stelle = reihe.findIndex(k => k.id === kampf.amZug);
+  const next = (stelle + 1) % reihe.length;
+  if (stelle >= 0 && next === 0) kampf.runde++;
+  kampf.amZug = reihe[next].id;
+}
+function setzeLage(id, lage) {
+  const k = karten.find(x => x.id === id);
+  if (kampf.amZug === id && lage !== "feld") {
+    const reihe = feldReihe(), stelle = reihe.findIndex(x => x.id === id), rest = reihe.filter(x => x.id !== id);
+    kampf.amZug = rest.length ? rest[stelle % rest.length].id : null;
+    if (rest.length && stelle === rest.length) kampf.runde++;
+  }
+  k.lage = lage;
+  if (lage === "feld" && !kampf.amZug) kampf.amZug = id;
+}
+
+/* ---------- Schwebende Fenster ---------- */
+let offen = null;
+function schliesse() { offen?.remove(); offen = null; }
+function oeffne(anker, html) {
+  schliesse();
+  const el = document.createElement("div"); el.className = "schwebe"; el.innerHTML = html; el.setAttribute("role", "dialog");
+  document.body.append(el);
+  const r = anker.getBoundingClientRect();
+  el.style.top = `${window.scrollY + r.bottom + 6}px`;
+  el.style.left = `${Math.max(8, Math.min(window.scrollX + r.left - 20, window.scrollX + document.documentElement.clientWidth - el.offsetWidth - 8))}px`;
+  offen = el; el.querySelector("button, input")?.focus();
+  return el;
+}
+function maskenFenster(anker, kid, vid) {
+  const k = karten.find(x => x.id === kid), v = VITALS.find(x => x.id === vid);
+  const aktuell = k.sicht.balken[vid] ?? k.sicht.standard;
+  const el = oeffne(anker, `<h4>Was sieht die Runde bei „${esc(v.label)}“?</h4>
+    <div role="radiogroup" aria-label="Anzeige für die Runde">${MASKEN.map(m => `<button class="option" role="radio" aria-checked="${m.id === aktuell}" data-m="${m.id}"><i class="punkt"></i><b>${m.titel}</b><span>${m.text}</span></button>`).join("")}</div>
+    <p class="vorschau">So sieht es die Runde: <em id="vorschau-wert">${esc(rundeSieht(k, v))}</em></p>
+    <p class="runde-sieht" style="margin:0">${esc(k.name)} gehört ${k.seite === "gefaehrten" ? "zu den Gefährten" : "zur Gegenseite"}. Wer die Figur selbst führt, sieht ihre Werte immer genau.</p>`);
+  el.addEventListener("click", e => {
+    const b = e.target.closest("[data-m]"); if (!b) return;
+    k.sicht.balken[vid] = b.dataset.m; render(); schliesse();
+  });
+}
+function wertFenster(anker, kid, vid) {
+  const k = karten.find(x => x.id === kid), v = VITALS.find(x => x.id === vid);
+  const el = oeffne(anker, `<h4>${esc(v.label)} von ${esc(k.name)}</h4>
+    <div class="stepper"><button data-d="-5">−5</button><button data-d="-1">−1</button><input type="number" id="wert-feld" value="${k.werte[vid][0]}" aria-label="Neuer Wert"><button data-d="1">+1</button><button data-d="5">+5</button></div>
+    <p class="runde-sieht" style="margin:0">Höchstwert ${k.werte[vid][1]}. Der Wert steht im Bogen der Figur; die Karte liest ihn nur.</p>
+    <button class="knopf haupt" id="wert-ok" style="justify-self:start">Übernehmen</button>`);
+  const feld = el.querySelector("#wert-feld");
+  el.addEventListener("click", e => {
+    const d = e.target.closest("[data-d]"); if (d) feld.value = Number(feld.value) + Number(d.dataset.d);
+    if (e.target.id === "wert-ok") { k.werte[vid][0] = Number(feld.value); render(); schliesse(); }
+  });
+}
+function menueFenster(anker, kid) {
+  const k = karten.find(x => x.id === kid);
+  const lagen = {
+    feld: [["hand", "In die Hand (verdecken)"], ["umgelegt", "Umlegen"], ["ablage", "Vom Feld nehmen"]],
+    umgelegt: [["feld", "Aufstehen lassen"], ["hand", "In die Hand (verdecken)"], ["ablage", "Vom Feld nehmen"]],
+    hand: [["feld", "Aufs Feld (ausspielen)"], ["ablage", "In die Ablage"]],
+    ablage: [["feld", "Aufs Feld"], ["hand", "In die Hand"]],
+  }[k.lage];
+  const el = oeffne(anker, `<h4>${esc(k.name)}</h4><menu>
+    ${lagen.map(([l, t]) => `<button data-lage="${k.id}:${l}">${t}</button>`).join("")}
+    <hr><button data-sicht="${k.id}">Was sieht die Runde?</button><button>Initiative ändern</button>${k.figur ? "<button>Inventar öffnen</button>" : ""}
+    <hr><button class="gefahr">Karte löschen …</button></menu>`);
+  el.addEventListener("click", e => {
+    const s = e.target.closest("[data-sicht]"); if (s) sichtFenster(anker, k.id);
+  });
+}
+function sichtFenster(anker, kid) {
+  const k = karten.find(x => x.id === kid);
+  const el = oeffne(anker, `<h4>Was sieht die Runde von „${esc(k.name)}“?</h4>
+    <label>Name für die Runde<input type="text" id="s-name" value="${esc(k.nameFuerRunde ?? "")}" placeholder="leer = „${esc(k.name)}“"></label>
+    <label class="haken"><input type="checkbox" id="s-bild" ${k.sicht.bild ? "checked" : ""}> Bild zeigen</label>
+    <label class="haken"><input type="checkbox" id="s-zust" ${k.sicht.zustaende ? "checked" : ""}> Zustände zeigen</label>
+    <label>Alle übrigen Balken<select id="s-std">${MASKEN.map(m => `<option value="${m.id}" ${m.id === k.sicht.standard ? "selected" : ""}>${m.titel}</option>`).join("")}</select></label>
+    <p class="runde-sieht" style="margin:0">Einzelne Balken stellst du am Auge neben dem Balken ein.</p>
+    <button class="knopf haupt" id="s-ok" style="justify-self:start">Übernehmen</button>`);
+  el.querySelector("#s-ok").addEventListener("click", () => {
+    const n = el.querySelector("#s-name").value.trim();
+    k.nameFuerRunde = n || undefined; k.sicht.bild = el.querySelector("#s-bild").checked;
+    k.sicht.zustaende = el.querySelector("#s-zust").checked; k.sicht.standard = el.querySelector("#s-std").value;
+    render(); schliesse();
+  });
+}
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener("click", e => {
+  const t = e.target;
+  // Nur die Knöpfe: `data-look` steht nach dem ersten Wechsel auch auf <html>.
+  const rolle = t.closest("button[data-rolle]"), look = t.closest("button[data-look]");
+  if (rolle) { ansicht = rolle.dataset.rolle === "runde" ? "runde" : "leitung"; document.querySelectorAll("[data-rolle]").forEach(b => b.setAttribute("aria-pressed", String(b === rolle))); schliesse(); render(); return; }
+  if (look) { document.documentElement.dataset.look = look.dataset.look; document.querySelectorAll("[data-look]").forEach(b => b.setAttribute("aria-pressed", String(b === look))); return; }
+  if (t.closest("#augen")) { ansicht = ansicht === "vorschau" ? "leitung" : "vorschau"; schliesse(); render(); return; }
+  if (t.closest("#naechster")) { naechsterZug(); render(); return; }
+  const lage = t.closest("[data-lage]"); if (lage) { const [id, l] = lage.dataset.lage.split(":"); setzeLage(id, l); schliesse(); render(); return; }
+  const auge = t.closest("[data-auge]"); if (auge) { const [k, v] = auge.dataset.auge.split(":"); maskenFenster(auge, k, v); return; }
+  const wert = t.closest("[data-wert]"); if (wert) { const [k, v] = wert.dataset.wert.split(":"); wertFenster(wert, k, v); return; }
+  const menue = t.closest("[data-menue]"); if (menue) { menueFenster(menue, menue.dataset.menue); return; }
+  if (offen && !offen.contains(t)) schliesse();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") schliesse(); });
+render();
+</script>
+</body>
+</html>
