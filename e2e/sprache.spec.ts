@@ -69,6 +69,38 @@ test("Sprachwahl schaltet die Oberflaeche um und ueberlebt das Neuladen", async 
   await context.close();
 });
 
+test("Anmeldeseite: Sprachwahl vor dem Anmelden, gilt danach weiter", async ({ browser }) => {
+  // Ohne Sitzung landet man auf der Anmeldeseite; dort gab es vorher keinen Weg aus dem Deutschen.
+  const context = await browser.newContext({ locale: "de-DE" }); const errors: string[] = [];
+  const page = await context.newPage(); page.on("pageerror", error => errors.push(error.message));
+  await page.goto(origin);
+
+  const sprachen = page.getByRole("group", { name: "Sprache" });
+  await expect(page.getByRole("heading", { name: "Dein Platz ist noch da." })).toBeVisible();
+  await expect(sprachen.getByRole("button", { name: "Deutsch" })).toHaveAttribute("aria-pressed", "true");
+  await sprachen.getByRole("button", { name: "English" }).click();
+
+  await expect(page.getByRole("heading", { name: "Your seat is still there." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in with a passkey" })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  const languages = page.getByRole("group", { name: "Language" });
+  await expect(languages.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
+
+  // Dieselbe Einstellung wie in „Deine Darstellung“: sie überlebt das Neuladen und gilt
+  // nach dem Anmelden weiter.
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Your seat is still there." })).toBeVisible();
+  await context.addCookies([{ name: "chronicle_session", value: session, url: origin, httpOnly: true, secure: true, sameSite: "Strict" }]);
+  await page.goto(`${origin}/?campaign=${campaignId}`);
+  await expect(page.getByRole("navigation").getByRole("button", { name: "Today", exact: true })).toBeVisible();
+
+  await page.context().clearCookies(); await page.goto(origin);
+  await page.getByRole("group", { name: "Language" }).getByRole("button", { name: "Deutsch" }).click();
+  await expect(page.getByRole("heading", { name: "Dein Platz ist noch da." })).toBeVisible();
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
 test("Browsersprache Englisch: auch die zuerst gezeichnete Leiste ist englisch", async ({ browser }) => {
   // Regression: die Startsprache steht vor dem ersten Zeichnen fest, der Katalog kommt erst
   // danach an. Wer nur die Sprache beobachtet, sieht diese Ankunft nicht und bleibt deutsch.

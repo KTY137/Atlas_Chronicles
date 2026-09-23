@@ -67,7 +67,12 @@ details[open] summary { margin-bottom: 20px; color: var(--text); }
 .orbital-art i:nth-child(2) { top: 50%; bottom: auto; left: -50px; right: -50px; height: 1px; border-bottom: 0; }
 .orbital-art i:nth-child(3) { left: 50%; right: auto; top: -50px; bottom: -50px; width: 1px; border-right: 0; }
 .orbital-art > span { position: absolute; top: 150px; left: 125px; color: var(--accent); font-size: 36px; }
-.auth-panel { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 64px 45px 26px; background: linear-gradient(135deg, var(--surface), var(--bg)); }
+.auth-panel { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 64px 45px 26px; background: linear-gradient(135deg, var(--surface), var(--bg)); }
+.auth-sprache { position: absolute; top: 20px; right: 24px; display: flex; align-items: center; gap: 2px; color: var(--text-muted); font-size: 12px; }
+.auth-sprache > svg { margin-right: 6px; }
+.auth-sprache button { border: 1px solid transparent; background: none; padding: 5px 10px; color: var(--text-muted); }
+.auth-sprache button:hover { color: var(--text); }
+.auth-sprache button[aria-pressed="true"] { border-color: var(--line); background: var(--accent-soft); color: var(--text); }
 .auth-card { width: 100%; max-width: 380px; }
 .auth-card h2 { font-family: var(--font-display); font-size: 27px; margin-bottom: 13px; }
 .auth-card > .muted { font-size: 13px; margin-bottom: 30px; }
@@ -312,6 +317,7 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
   .auth-copy { margin-top: 35px; }.auth-copy h1 { text-wrap: balance; font-size: 40px; margin: 12px 0; }.auth-copy > p:not(.eyebrow) { display: none; }
   .auth-copy .eyebrow { font-size: 8px; }.auth-divider, .auth-caption { display: none; }
   .auth-panel { padding: 35px 28px 25px; }.auth-footer { margin-top: 35px; }
+  .auth-sprache { position: static; align-self: flex-end; margin: -20px 0 20px; }
   .context-bar { padding: 0 12px; gap: 8px; height: 58px; min-height: 58px; }.wordmark strong { display: none; }.wordmark > span { font-size: 25px; }.context-divider { display: none; }
   .campaign-trigger { font-size: 11px; padding: 6px; max-width: calc(100vw - 170px); }.user-name { display: none; }.context-right { gap: 0; }.context-right .button { padding: 7px; }
   .app-main { flex-direction: column; }.rail { flex-direction: row; width: 100%; min-width: 0; min-height: 51px; height: 51px; padding: 0 7px; border-right: 0; border-bottom: 1px solid var(--line); gap: 2px; }.rail-item { flex: 1; min-height: 50px; flex-direction: row; gap: 7px; border-radius: 0; }.rail-item svg { width: 17px; }.rail-item.active { box-shadow: inset 0 -2px var(--accent); }

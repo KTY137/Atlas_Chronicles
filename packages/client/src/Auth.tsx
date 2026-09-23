@@ -1,17 +1,45 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useState } from "react";
-import { ArrowRight, Fingerprint, KeyRound, Sparkles } from "lucide-react";
+import { ArrowRight, Fingerprint, KeyRound, Languages, Sparkles } from "lucide-react";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { api, ApiError, errorText, type PendingJoin } from "./api";
+import { spracheFehlerText, useAppearance } from "./features/Appearance";
 import { useResource, useTask } from "./hooks";
-import { t } from "./i18n";
+import { setzeSprache, t, type Sprache } from "./i18n";
 
 const pendingKey = "chronicle.pending-join.v1";
 function savedJoin(): PendingJoin | null {
   try { const data = JSON.parse(sessionStorage.getItem(pendingKey) ?? "null") as PendingJoin | null;
     return data && typeof data.id === "string" && typeof data.pollToken === "string" && data.expiresAt > Date.now() ? data : null;
   } catch { return null; }
+}
+
+/** Jede Sprache steht in sich selbst da: wer die Oberfläche nicht lesen kann, erkennt so
+ * trotzdem seine eigene. Darum laufen die Namen nicht durch `t`. */
+const SPRACHEN: readonly (readonly [Sprache, string])[] = [["de", "Deutsch"], ["en", "English"]];
+
+/**
+ * Die Sprachwahl vor der Anmeldung. Sie schreibt dieselbe Einstellung wie „Deine Darstellung“,
+ * gilt also auch nach dem Anmelden weiter. Anders als dort wird nicht nachgefragt: der Wechsel
+ * baut die Seite neu auf, und hier steht höchstens ein Name oder Code im Feld.
+ */
+function SprachWahl({ meldeFehler }: { meldeFehler: (text: string) => void }) {
+  const { preferences, update } = useAppearance();
+  const [busy, setBusy] = useState(false);
+  // Erst nach geladenem Katalog speichern, wie in den Einstellungen: sonst stünde „English“
+  // gespeichert, während die Seite deutsch bleibt.
+  const waehle = async (naechste: Sprache) => {
+    if (naechste === preferences.language || busy) return;
+    setBusy(true);
+    try { await setzeSprache(naechste); meldeFehler(""); update({ ...preferences, language: naechste }); }
+    catch { meldeFehler(spracheFehlerText()); setBusy(false); }
+  };
+  return <div className="auth-sprache" role="group" aria-label={t("Sprache")}>
+    <Languages size={14} aria-hidden="true" />
+    {SPRACHEN.map(([code, name]) => <button key={code} type="button" lang={code} aria-pressed={preferences.language === code}
+      disabled={busy} onClick={() => void waehle(code)}>{name}</button>)}
+  </div>;
 }
 
 export function Auth({ onAuthenticated }: { onAuthenticated: (campaignId?: string) => Promise<void> }) {
@@ -23,6 +51,7 @@ export function Auth({ onAuthenticated }: { onAuthenticated: (campaignId?: strin
   // müsste er abgetippt werden — und zwar von jemandem, der gerade nicht hereinkommt.
   const [pairCode, setPairCode] = useState(() => new URLSearchParams(location.search).get("pair") ?? "");
   const [pending, setPending] = useState(savedJoin), [approved, setApproved] = useState(false), [pollError, setPollError] = useState("");
+  const { spracheFehler } = useAppearance(), [sprachWechselFehler, setSprachWechselFehler] = useState("");
 
   useEffect(() => {
     if (!pending || approved) return;
@@ -56,7 +85,8 @@ export function Auth({ onAuthenticated }: { onAuthenticated: (campaignId?: strin
     <div className="brand"><span aria-hidden="true">A<span className="brand-star">✧</span></span><strong>ATLAS<br /><small>CHRONICLES</small></strong></div>
     <div className="auth-copy"><p className="eyebrow">{t("Jede Welt beginnt mit einer Geschichte.")}</p><h1>{t("Was ihr erlebt, bleibt.")}</h1><p>{t("Ein Zuhause für eure Welt. Ein gemeinsames Buch – und für jede Figur eine eigene Geschichte.")}</p><div className="auth-divider" /><span className="auth-caption"><Sparkles size={16} /> {t("Die nächste Seite gehört euch.")}</span></div>
     <div className="orbital-art" aria-hidden="true"><i /><i /><i /><span>✧</span></div>
-  </section><section className="auth-panel"><div className="auth-card">
+  </section><section className="auth-panel"><SprachWahl meldeFehler={setSprachWechselFehler} /><div className="auth-card">
+    {sprachWechselFehler || spracheFehler ? <Notice error>{sprachWechselFehler || spracheFehler}</Notice> : null}
     {setup.loading ? <Loading /> : setup.error ? <Notice error>{setup.error}</Notice> : setup.data?.required ? <>
       <p className="eyebrow">{t("Der erste Schritt")}</p><h2>{t("Deine Chronik beginnt.")}</h2><p className="muted">{t("Richte die Spielleitung für diesen Server ein.")}</p>
       <form onSubmit={(event) => { event.preventDefault(); void task.run(async () => {
