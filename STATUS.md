@@ -1,3 +1,13 @@
+# Kartenstudio Teil 1: Städte aus Vierteln — 2026-09-23
+
+Fantasy-Siedlungen (v11) wachsen jetzt aus Vierteln: Markt mit Rathaus, Dom, Burg, Stadtmauer mit
+Rundtürmen und Toren, Häuserzeilen an Gassen, lockere Vorstädte, Feldstreifen und benannte
+Viertel. Der Zonenplan kennt Burg und Tempelbezirk und übernimmt die Viertel einer Vorschau auf
+Knopfdruck; zwei Schalter steuern Mauer und Burg. Neue Gebäude mit Innenräumen: Burg, Rathaus,
+Mühle, Bauernhof, Kaserne. Kartenoptik cartography-12 (Steintürme, breite Mauer, Marktstände,
+Dachdetails auch in dichten Städten). Gegenwart und Sci-Fi unverändert (Goldtest). Nachweise:
+`design/iterations/stadt-viertel-20260923.md`. Zweig `feature/stadt-viertel`, noch nicht in `main`.
+
 # Regelkern universell: Codex-Review, Fähigkeitsprofil, Wegweiser, Zoom — 2026-09-15
 
 Codex' universelle Regel-Laufzeit (Manifest, Präsentationsbaum, Referenzsysteme) wurde in drei
