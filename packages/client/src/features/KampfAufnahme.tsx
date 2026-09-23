@@ -27,9 +27,11 @@ export function KampfAufnahme({ campaignId, kampfId, actors, vorlagen, wuerfe, o
   const offene = vorlagen.filter(v => v.archivedAt === null), vorlage = offene.find(v => v.id === vorlageId) ?? null;
   const wurf = art === "figur" ? juengsterInitiativwurf(wuerfe, actorId || null) : null;
   const vorlagenName = name.trim() || vorlage?.definition.name || "";
-  const bereit = !Number.isNaN(initiative) && (art === "vorlage" ? vorlage !== null : art === "figur" ? actorId !== "" : name.trim() !== "");
+  const bereit = Number.isInteger(initiative) && (art === "vorlage" ? vorlage !== null : art === "figur" ? actorId !== "" : name.trim() !== "");
 
-  const waehleArt = (neu: Aufnahme) => { setArt(neu); setBeleg(null); setSeite(neu === "figur" ? "gefaehrten" : "gegner"); };
+  // Der Name, die gewählte Figur und ein übernommener Beleg gehören zum vorherigen Weg — beim
+  // Wechsel des Wegs sind sie ein Rest, kein Vorschlag.
+  const waehleArt = (neu: Aufnahme) => { setArt(neu); setName(""); setActorId(""); setBeleg(null); setSeite(neu === "figur" ? "gefaehrten" : "gegner"); };
   const waehleFigur = (id: string) => { setActorId(id); setBeleg(null); const figur = actors.find(a => a.id === id); if (figur) setName(figur.name); };
   const absenden = () => void task.run(async () => {
     const pfad = `/kaempfe/${encodeURIComponent(kampfId)}/teilnehmer`;

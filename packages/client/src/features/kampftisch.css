@@ -71,7 +71,19 @@
 .kampfkarte-stempel { position: absolute; inset-block-start: 34%; inset-inline-start: 50%; transform: translate(-50%, -50%) rotate(-14deg); z-index: 3; padding: .15rem .6rem; border-radius: 4px;
   border: 2px solid var(--danger); color: var(--danger); background: color-mix(in srgb, var(--surface) 82%, transparent); font: 700 .82rem var(--font-display); letter-spacing: .14em; text-transform: uppercase; }
 .kampfkarte.amzug { transform: translateY(-10px); box-shadow: var(--shadow-3), 0 0 0 2px var(--accent), 0 0 26px color-mix(in srgb, var(--accent) 35%, transparent); }
-.kampfkarte.umgelegt { transform: rotate(-5deg) translateY(6px); opacity: .78; filter: grayscale(.85); }
+/* Umgelegt blendet nur den Karteninhalt ab, nie die Karte selbst: Transform, Filter und Opazität
+   eröffnen je einen eigenen Stapelkontext, und ein offenes Fenster darin wäre sonst mit
+   abgeblendet und unter Nachbarkarten gefangen — genau dort, wo der Knopf für +1/+5 sitzt. */
+.kampfkarte.umgelegt { transform: rotate(-5deg) translateY(6px); }
+.kampfkarte.umgelegt > :not(.kampfkarte-menue-ort):not(.kampfkarte-stempel):not(.kampfkarte-balken) { opacity: .78; filter: grayscale(.85); }
+.kampfkarte.umgelegt .kampfkarte-balken > .kampf-balken { opacity: .78; filter: grayscale(.85); }
+.kampfkarte.umgelegt .kampfkarte-balken > .kampf-balken:has(.kampf-schwebe) { opacity: 1; filter: none; }
+/* Eine Karte mit offenem Fenster gehört über ihre Nachbarn — sonst fällt sie unter später
+   gezeichnete Karten, weil Transform/Filter/Opazität je einen eigenen Stapelkontext eröffnen und
+   das Fenster dessen z-index nicht mehr gegen GESCHWISTERKARTEN durchsetzen kann. */
+.kampfkarte:has(.kampf-schwebe) { z-index: 20; }
+.kampftisch-karten > li, .kampftisch-hand > li { position: relative; }
+.kampftisch-karten > li:has(.kampf-schwebe), .kampftisch-hand > li:has(.kampf-schwebe) { z-index: 20; }
 .kampfkarte.eigene { border-color: var(--private); }
 .kampfkarte.klein { inline-size: 7.6rem; gap: .3rem; }
 .kampfkarte.klein .kampfkarte-name { font-size: .82rem; }

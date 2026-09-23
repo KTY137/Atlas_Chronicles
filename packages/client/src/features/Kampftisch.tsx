@@ -11,7 +11,7 @@ import type { ActionCard } from "./game-api";
 import { KampfAufnahme } from "./KampfAufnahme";
 import { BeendenRueckfrage } from "./KampfFenster";
 import { Kampfkarte } from "./Kampfkarte";
-import { SEITE_LABEL, ansichtFuerLeitung, ansichtFuerRunde, istLeitungssicht, juengsterInitiativwurf, reihen,
+import { SEITE_LABEL, istLeitungssicht, juengsterInitiativwurf, reihen, tischAnsicht,
   type Kampf, type KartenAktionen, type KartenAnsicht } from "./kampftisch-model";
 import "./tabletop.css";
 import "./kampftisch.css";
@@ -66,22 +66,25 @@ export function Kampftisch({ campaignId, gm, actors, revision, onChanged, onOpen
       ? <EmptyState title={t("Noch ist es ruhig.")}>{gm
         ? t("Leg einen Kampf an, leg die Kämpfenden auf den Tisch und eröffne. Wer dran ist, führt das Programm danach für dich.")
         : t("Sobald deine Spielleitung einen Kampf eröffnet, siehst du hier, wer wann dran ist.")}</EmptyState>
-      : <Tisch kampf={gewaehlt} vorschau={vorschau ? alsRunde.data : null} vorschauAn={vorschau} gm={gm} busy={task.busy}
+      : <Tisch kampf={gewaehlt} vorschau={vorschau ? alsRunde.data : null} vorschauAn={vorschau}
+          vorschauLaedt={vorschau && alsRunde.loading} vorschauFehler={vorschau ? alsRunde.error : ""} gm={gm} busy={task.busy}
           campaignId={campaignId} actors={actors} vorlagen={vorlagen.data ?? []} wuerfe={wuerfe.data ?? []} fuehren={fuehren}
           onVorschau={gm ? () => setVorschau(an => !an) : null} onChanged={onChanged} onOpenInventory={onOpenInventory} />}
   </div>;
 }
 
-function Tisch({ kampf, vorschau, vorschauAn, gm, busy, campaignId, actors, vorlagen, wuerfe, fuehren, onVorschau, onChanged, onOpenInventory }: {
-  kampf: Kampf; vorschau: KampfFuerRunde | null; vorschauAn: boolean; gm: boolean; busy: boolean; campaignId: string;
+function Tisch({ kampf, vorschau, vorschauAn, vorschauLaedt, vorschauFehler, gm, busy, campaignId, actors, vorlagen, wuerfe, fuehren, onVorschau, onChanged, onOpenInventory }: {
+  kampf: Kampf; vorschau: KampfFuerRunde | null; vorschauAn: boolean; vorschauLaedt: boolean; vorschauFehler: string; gm: boolean; busy: boolean; campaignId: string;
   actors: readonly ActorCard[]; vorlagen: readonly TemplateCard<ActorTemplateData>[]; wuerfe: readonly ActionCard[];
   fuehren: (pfad: string, body?: unknown, method?: "POST" | "PUT" | "DELETE") => void; onVorschau: (() => void) | null;
   onChanged: () => void; onOpenInventory?: ((actorId: string) => void) | undefined;
 }) {
   const [beenden, setBeenden] = useState(false);
-  const leitung = istLeitungssicht(kampf) && !vorschau;
-  const karten: KartenAnsicht[] = vorschau ? vorschau.teilnehmer.map(ansichtFuerRunde)
-    : istLeitungssicht(kampf) ? kampf.teilnehmer.map(ansichtFuerLeitung) : kampf.teilnehmer.map(ansichtFuerRunde);
+  // Waehrend die Vorschau an ist, zaehlt NUR ihre eigene Nutzlast als Sicht der Runde: ein
+  // Ladezustand oder ein Fehler der Vorschau darf nie auf die Karten der Spielleitung
+  // zurueckfallen, sonst zeigt das Banner „So sieht die Runde…“ kurzzeitig echte Namen,
+  // Hand und genaue Werte.
+  const { leitung, karten } = tischAnsicht(kampf, vorschauAn, vorschau);
   const dran = karten.find(k => k.amZug) ?? null;
   const pfad = `/kaempfe/${encodeURIComponent(kampf.id)}`, teil = (id: string) => `${pfad}/teilnehmer/${encodeURIComponent(id)}`;
   const bildUrl = (karteId: string, version: number) => apiPath(campaignId, `${teil(karteId)}/bild?v=${version}`);
@@ -89,8 +92,16 @@ function Tisch({ kampf, vorschau, vorschauAn, gm, busy, campaignId, actors, vorl
   const aktionen: KartenAktionen = {
     lage: (karte, lage) => fuehren(`${teil(karte.id)}/lage`, { lage, expectedVersion: karte.version }),
     sicht: (karte, sicht, nameFuerRunde) => fuehren(`${teil(karte.id)}/sicht`, { sicht, nameFuerRunde, expectedVersion: karte.version }),
-    maske: (karte, vital, maske) => fuehren(`${teil(karte.id)}/sicht`, {
-      sicht: { ...karte.sicht, balken: { ...karte.sicht.balken, [vital]: maske } }, nameFuerRunde: karte.nameFuerRunde, expectedVersion: karte.version }),
+    // Nur die Balken der Karte, wie sie JETZT im Bogen stehen, tragen eine eigene Einstellung
+    // weiter — eine stehengebliebene Kennung aus einem älteren Regelpaket würde sonst mit jeder
+    // Änderung mitgeschleppt, bis der Datensatz die Grenze von acht Einträgen reißt und jede
+    // weitere Änderung der Maske mit 400 abgewiesen wird.
+    maske: (karte, vital, maske) => {
+      const bekannt = new Set(karte.balken.map(b => b.id));
+      const bestehend = Object.fromEntries(Object.entries(karte.sicht.balken).filter(([id]) => bekannt.has(id)));
+      return fuehren(`${teil(karte.id)}/sicht`, {
+        sicht: { ...karte.sicht, balken: { ...bestehend, [vital]: maske } }, nameFuerRunde: karte.nameFuerRunde, expectedVersion: karte.version });
+    },
     initiative: (karte, initiative, initiativeRollId) => fuehren(`${teil(karte.id)}/initiative`, { initiative, initiativeRollId }),
     loeschen: karte => fuehren(teil(karte.id), undefined, "DELETE"),
     wert: (actorId, vital, wert, expectedVersion) =>
@@ -126,7 +137,9 @@ function Tisch({ kampf, vorschau, vorschauAn, gm, busy, campaignId, actors, vorl
     {vorschauAn ? <p className="kampftisch-vorschau" role="status">{t("So sieht die Runde den Tisch gerade. Deine Hand, die Ablage und verborgene Werte fehlen dort ganz, und nichts verrät, dass etwas fehlt.")}</p> : null}
     <div className={leitung ? "kampftisch-flaeche mit-leiste" : "kampftisch-flaeche"}>
       <div className="tabletop-furniture kampftisch-holz"><section className="tabletop-felt kampftisch-filz" aria-label={t("Spieltisch")}>
-        {!oben.length && !unten.length
+        {vorschauAn && vorschauLaedt ? <Loading />
+          : vorschauAn && vorschauFehler ? <Notice error>{vorschauFehler}</Notice>
+          : !oben.length && !unten.length
           ? <p className="kampftisch-leer">{leitung ? t("Noch liegt keine Karte auf dem Feld. Stell Kämpfende auf oder spiel eine aus deiner Hand aus.") : t("Die Spielleitung stellt gerade auf.")}</p>
           : <>{oben.map(reihe)}
             <div className="kampftisch-mitte">{kampf.runde > 0 ? t("Runde {n}", { n: kampf.runde }) : t("Noch nicht eröffnet.")}</div>

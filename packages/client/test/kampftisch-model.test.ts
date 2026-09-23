@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { KARTEN_LAGEN, type KarteFuerLeitung } from "@chronicle/protocol";
+import { KARTEN_LAGEN, type KampfFuerLeitung, type KampfFuerRunde, type KarteFuerLeitung } from "@chronicle/protocol";
 import type { ActionCard } from "../src/features/game-api";
-import { LAGE_WEGE, LAGE_WEG_LABEL, ansichtFuerLeitung, ansichtFuerRunde, balkenFarbe, initialen, juengsterInitiativwurf, reihen, zielDes } from "../src/features/kampftisch-model";
+import { LAGE_WEGE, LAGE_WEG_LABEL, ansichtFuerLeitung, ansichtFuerRunde, balkenFarbe, initialen, juengsterInitiativwurf, reihen, tischAnsicht, zielDes } from "../src/features/kampftisch-model";
 import { LEITUNGSKARTE, RUNDENKARTE } from "./kampftisch-beispiele";
 
 describe("Die Ansicht einer Karte", () => {
@@ -55,5 +55,29 @@ describe("Kleinigkeiten", () => {
     const wuerfe = [wurf("alt", "a1", "initiative", 1), wurf("neu", "a1", "initiative", 5), wurf("fremd", "a2", "initiative", 9), wurf("probe", "a1", "klettern", 8)];
     expect(juengsterInitiativwurf(wuerfe, "a1")?.id).toBe("neu");
     expect(juengsterInitiativwurf(wuerfe, null)).toBeNull();
+  });
+});
+
+describe("Die Vorschau „Mit den Augen der Runde“", () => {
+  const kampfLeitung: KampfFuerLeitung = { id: "k1", name: "Hinterhalt", zustand: "laufend", runde: 1, erstelltAm: 0, beendetAm: null, leitung: true, teilnehmer: [LEITUNGSKARTE] };
+
+  it("fällt bei einer noch nicht geladenen oder fehlgeschlagenen Vorschau NIE auf die Karten der Spielleitung zurück", () => {
+    // Genau der Fall, den ein Ladezustand oder ein Fehler der Vorschau nicht zeigen darf: echte
+    // Namen, Hand und genaue Werte unter dem Banner „So sieht die Runde …“.
+    expect(tischAnsicht(kampfLeitung, true, null)).toEqual({ leitung: false, karten: [] });
+  });
+
+  it("zeigt mit geladener Vorschau die Sicht der Runde, nie die der Spielleitung", () => {
+    const geladen: KampfFuerRunde = { id: "k1", name: "Hinterhalt", zustand: "laufend", runde: 1, erstelltAm: 0, beendetAm: null, teilnehmer: [RUNDENKARTE] };
+    const { leitung, karten } = tischAnsicht(kampfLeitung, true, geladen);
+    expect(leitung).toBe(false);
+    expect(karten).toHaveLength(1);
+    expect(karten[0]!.roh).toBeNull();
+  });
+
+  it("zeigt ohne Vorschau die Sicht der Spielleitung", () => {
+    const { leitung, karten } = tischAnsicht(kampfLeitung, false, null);
+    expect(leitung).toBe(true);
+    expect(karten[0]!.roh).toBe(LEITUNGSKARTE);
   });
 });

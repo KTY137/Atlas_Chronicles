@@ -51,6 +51,22 @@ export function ansichtFuerRunde(k: KarteFuerRunde): KartenAnsicht {
   };
 }
 
+/**
+ * Was der Tisch zeigt, wenn die Vorschau „Mit den Augen der Runde“ an ist.
+ *
+ * Ein Ladezustand oder ein Fehler der Vorschau-Nutzlast ist NICHT die Sicht der Spielleitung: die
+ * Vorschau zählt nur mit ihrer eigenen, bereits geladenen Nutzlast, sonst zeigt das Banner „So
+ * sieht die Runde …“ kurzzeitig echte Namen, Hand und genaue Werte — genau das Gegenteil dessen,
+ * was es verspricht.
+ */
+export function tischAnsicht(kampf: Kampf, vorschauAn: boolean, vorschauDaten: KampfFuerRunde | null): { readonly leitung: boolean; readonly karten: readonly KartenAnsicht[] } {
+  const leitung = istLeitungssicht(kampf) && !vorschauAn;
+  const karten = vorschauAn
+    ? (vorschauDaten ? vorschauDaten.teilnehmer.map(ansichtFuerRunde) : [])
+    : istLeitungssicht(kampf) ? kampf.teilnehmer.map(ansichtFuerLeitung) : kampf.teilnehmer.map(ansichtFuerRunde);
+  return { leitung, karten };
+}
+
 /** Gegner oben, Dazwischen in der Mitte, Gefährten unten — wie ein Kartenspiel auf dem Tisch. */
 const TISCHORDNUNG: readonly KampfSeite[] = ["gegner", "neutral", "gefaehrten"];
 export function reihen(karten: readonly KartenAnsicht[]): { readonly seite: KampfSeite; readonly karten: readonly KartenAnsicht[] }[] {

@@ -18,7 +18,11 @@ export function Schwebe({ titel, onClose, children }: { titel: string; onClose: 
   const ref = useRef<HTMLDivElement>(null), schliessen = useRef(onClose);
   schliessen.current = onClose;
   useEffect(() => {
-    ref.current?.querySelector<HTMLElement>(".kampf-schwebe-inhalt button, .kampf-schwebe-inhalt input, .kampf-schwebe-inhalt select")?.focus();
+    // Eine Karte trägt den ersten Fokus ausdrücklich weiter, wenn ihr erster Knopf eine
+    // gefährliche Handlung wäre (Löschen, Beenden) — sonst bekäme genau der gefährliche Knopf
+    // den Fokus, weil er im Markup zuerst steht.
+    const inhalt = ref.current?.querySelector<HTMLElement>(".kampf-schwebe-inhalt");
+    (inhalt?.querySelector<HTMLElement>("[data-erstfokus]") ?? inhalt?.querySelector<HTMLElement>("button, input, select"))?.focus();
     const taste = (event: KeyboardEvent) => { if (event.key === "Escape") schliessen.current(); };
     const zeiger = (event: PointerEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) schliessen.current(); };
     document.addEventListener("keydown", taste); document.addEventListener("pointerdown", zeiger);
@@ -103,7 +107,7 @@ export function InitiativeAendern({ karte, wurf, onSetzen, onClose }: { karte: K
 export function LoeschenRueckfrage({ karte, onLoeschen, onClose }: { karte: KarteFuerLeitung; onLoeschen: () => void; onClose: () => void }) {
   return <Schwebe titel={t("Karte löschen?")} onClose={onClose}>
     <p>{t("„{name}“ verschwindet ganz vom Tisch, auch aus Hand und Ablage. Das ist für Versehen gedacht; wer nur vom Feld soll, kommt in die Ablage.", { name: karte.name })}</p>
-    <div className="button-row"><Button variant="danger" onClick={onLoeschen}>{t("Löschen")}</Button><Button onClick={onClose}>{t("Abbrechen")}</Button></div>
+    <div className="button-row"><Button variant="danger" onClick={onLoeschen}>{t("Löschen")}</Button><Button data-erstfokus onClick={onClose}>{t("Abbrechen")}</Button></div>
   </Schwebe>;
 }
 
@@ -116,6 +120,6 @@ export function BeendenRueckfrage({ angelegt, onBeenden, onClose }: { angelegt: 
         {" "}{t("Gegner, die für diesen Kampf angelegt wurden, ins Archiv legen ({n})", { n: angelegt })}</label>
       <p className="field-help">{t("Archivieren löscht nichts: Inventar und Beute bleiben an der Figur, und du kannst sie zurückholen.")}</p>
     </> : null}
-    <div className="button-row"><Button variant="primary" onClick={() => onBeenden(angelegt > 0 && archivieren)}>{t("Beenden")}</Button><Button onClick={onClose}>{t("Abbrechen")}</Button></div>
+    <div className="button-row"><Button variant="primary" onClick={() => onBeenden(angelegt > 0 && archivieren)}>{t("Beenden")}</Button><Button data-erstfokus onClick={onClose}>{t("Abbrechen")}</Button></div>
   </Schwebe>;
 }
