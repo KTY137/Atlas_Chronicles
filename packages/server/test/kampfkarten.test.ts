@@ -7,6 +7,8 @@ import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 import { createActorPortraits } from "../src/domain/actor-portrait.ts";
 import { kampfFixture, PNG_BASE64, kampfCfg } from "./kampf-fixture.ts";
+import { buildApp } from "../src/app.ts";
+import { createIdentity } from "../src/identity/index.ts";
 
 // Was am Tisch vorkommt: verdecken, ausspielen, umlegen, vom Feld nehmen — und wer dabei dran ist.
 describe("Der Kampftisch", () => {
@@ -289,5 +291,58 @@ describe("Der Kampftisch", () => {
       expect((await f.buehne.archiviereKampffiguren(f.gm, f.campaign, kampf.id)).archiviert).toEqual([]);
       await expect(f.buehne.archiviereKampffiguren(f.mira.userId, f.campaign, kampf.id)).rejects.toBeInstanceOf(Gone);
     });
+  });
+
+  describe("Über HTTP", () => {
+    const httpCfg = { ...kampfCfg, origin: "https://kampftisch.test", cookieSecret: "kampftisch-http-cookie-secret-over-32-characters", bootstrapToken: "kampftisch-http-bootstrap-token-over-32-characters" };
+    const kopf = async (userId: string) => ({ cookie: `chronicle_session=${(await createIdentity(db, httpCfg).issueSession(userId)).value}`, origin: httpCfg.origin });
+
+    it("setzt Vitalwerte nur für Befugte und nur für ausgewiesene Balken", async () => {
+      const f = await kampfFixture(db), app = await buildApp(db, httpCfg);
+      try {
+        const mira = await kopf(f.mira.userId), bogen = await f.game.getSheet(f.mira.userId, f.campaign, f.mira.actorId);
+        const setze = (actorId: string, vital: string, payload: object) =>
+          app.inject({ method: "PUT", url: `/api/campaigns/${f.campaign}/actors/${actorId}/sheet/vitals/${vital}`, headers: mira, payload });
+        const ok = await setze(f.mira.actorId, "hp", { wert: 55, expectedVersion: bogen.version });
+        expect(ok.statusCode).toBe(200);
+        expect(ok.json().fields.hp).toBe(55);
+        expect((await setze(f.mira.actorId, "hp", { wert: 50, expectedVersion: bogen.version })).statusCode).toBe(409);
+        expect((await setze(f.mira.actorId, "name", { wert: 1, expectedVersion: bogen.version + 1 })).statusCode).toBe(404);
+        expect((await setze(await f.gegner("Wolf"), "hp", { wert: 1, expectedVersion: 1 })).statusCode).toBe(404);
+        expect((await setze(f.mira.actorId, "hp", { wert: "viel", expectedVersion: bogen.version + 1 })).statusCode).toBe(400);
+      } finally { await app.close(); }
+    }, 30_000);
+
+    it("führt Lage, Sicht, Vorlage, Bild und Aufräumen über HTTP und lässt Spielende draußen", async () => {
+      const f = await kampfFixture(db), app = await buildApp(db, httpCfg);
+      try {
+        const gm = await kopf(f.gm), mira = await kopf(f.mira.userId), basis = `/api/campaigns/${f.campaign}/kaempfe`;
+        const post = (url: string, payload: object, headers = gm) => app.inject({ method: "POST", url, headers, payload });
+        const get = (url: string, headers = gm) => app.inject({ method: "GET", url, headers });
+        const kampf = (await post(basis, { name: "HTTP" })).json();
+        const vorlage = { commandId: randomUUID(), templateId: f.wolf.id, templateRevision: f.wolf.revision, anzahl: 2, seite: "gegner", initiative: 12, lage: "hand" };
+        const rudel = await post(`${basis}/${kampf.id}/teilnehmer/aus-vorlage`, vorlage);
+        expect(rudel.statusCode).toBe(200);
+        const w1 = rudel.json().teilnehmer.find((k: { name: string }) => k.name === "Wolf 1");
+        expect((await post(`${basis}/${kampf.id}/teilnehmer/aus-vorlage`, { ...vorlage, commandId: randomUUID(), anzahl: 13 })).statusCode).toBe(400);
+        const lage = `${basis}/${kampf.id}/teilnehmer/${w1.id}/lage`;
+        expect((await post(lage, { lage: "irgendwo", expectedVersion: w1.version })).statusCode).toBe(400);
+        expect((await post(lage, { lage: "feld", expectedVersion: w1.version }, mira)).statusCode).toBe(404);
+        expect((await get(`${basis}/${kampf.id}/teilnehmer/${w1.id}/bild`, mira)).statusCode).toBe(404);
+        expect((await get(`${basis}/${kampf.id}/als-runde`, mira)).statusCode).toBe(404);
+        expect((await get(`${basis}/${kampf.id}/als-runde`)).json().teilnehmer).toEqual([]);
+        expect((await post(lage, { lage: "feld", expectedVersion: w1.version })).statusCode).toBe(200);
+        const sicht = await post(`${basis}/${kampf.id}/teilnehmer/${w1.id}/sicht`, {
+          sicht: { schema: 1, standard: "verborgen", balken: {}, zustaende: false, bild: false }, nameFuerRunde: "Schatten", expectedVersion: w1.version + 1 });
+        expect(sicht.statusCode).toBe(200);
+        expect((await post(`${basis}/${kampf.id}/teilnehmer/${w1.id}/initiative`, { initiative: 3, initiativeRollId: null })).statusCode).toBe(200);
+        const miraSieht = (await get(`${basis}/${kampf.id}`, mira)).json();
+        expect(miraSieht.teilnehmer.map((k: { name: string }) => k.name)).toEqual(["Schatten"]);
+        expect(JSON.stringify(miraSieht)).not.toMatch(/Wolf|"ordnung"|"sicht"/);
+        const ende = await post(`${basis}/${kampf.id}/beenden`, { archivieren: true });
+        expect(ende.statusCode).toBe(200);
+        expect(ende.json().aufraeumen.archiviert).toHaveLength(2);
+      } finally { await app.close(); }
+    }, 30_000);
   });
 });

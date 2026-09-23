@@ -285,6 +285,21 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
       return sheet(tx, campaignId, input.actorId);
     });
   }
+  /**
+   * Einen Vitalwert setzen — die schmale Schwester von `updateSheet` für den Kampftisch. Genau ein
+   * Feld, und nur eines, das das Regelpaket als Balken ausweist; geschrieben wird über `updateSheet`
+   * mit derselben Feldprüfung und derselben Niederlage-Markierung. Einen zweiten Wert an der
+   * Karte gibt es nicht (Spezifikation E5).
+   */
+  async function setVital(userId: string, campaignId: string, input: { actorId: string; vital: string; wert: number; expectedVersion: number }) {
+    return db.transaction(async tx => {
+      const member = await authorize(tx, userId, campaignId); await controller(tx, member, input.actorId);
+      const old = await sheet(tx, campaignId, input.actorId); if (old.version !== input.expectedVersion) throw new Conflict();
+      const pkg = await packageFor(tx, campaignId, { id: old.packageId, version: old.packageVersion });
+      if (pkg.schemaVersion !== 2 || !pkg.vitals?.some(vital => vital.id === input.vital)) throw new Gone("vital");
+      return createGameplay(tx, cfg).updateSheet(userId, campaignId, { actorId: input.actorId, expectedVersion: input.expectedVersion, fields: { ...old.fields, [input.vital]: input.wert } });
+    });
+  }
   async function adjustResource(userId: string, campaignId: string, input: { actorId: string; expectedVersion: number; field: string; delta: number }) {
     return db.transaction(async tx => {
       await authorize(tx, userId, campaignId, true); const old = await sheet(tx, campaignId, input.actorId);
@@ -615,7 +630,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     await target(db, campaignId, passageId);
     return (await db.query("SELECT id,kind,passage_id AS \"passageId\",revision_id AS \"revisionId\",provenance,seal,confirmed_at AS \"confirmedAt\" FROM confirmed_mints WHERE campaign_id=$1 AND passage_id=$2 ORDER BY confirmed_at,id", [campaignId, passageId])).rows;
   }
-  return { listPackages, installPackage, previewPackage, activatePackage, archivePackage, unarchivePackage, deletePackage, getSheet, boegenFuerProjektion, updateSheet, adjustResource, listScenes, createScene, startScene,
+  return { listPackages, installPackage, previewPackage, activatePackage, archivePackage, unarchivePackage, deletePackage, getSheet, boegenFuerProjektion, updateSheet, setVital, adjustResource, listScenes, createScene, startScene,
     prepareAction, confirmAction, getRoll, listRolls, listTableRolls, replayRoll, mintGesprochen, mintRatifikation, mintBerichtigung, confirmDefeat, mintProvenance,
     issueVollmacht, prepareVollmacht, confirmVollmacht, listVollmachten, revokeVollmacht, expireVollmachten };
 }
