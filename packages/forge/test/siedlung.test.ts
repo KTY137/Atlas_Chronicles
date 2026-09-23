@@ -265,14 +265,17 @@ describe("A-G5 · Siedlung — jedes Bauwerk bekommt eine Adresse", () => {
 });
 
 describe("A-G5 · Siedlung — niemand ist eingemauert", () => {
-  const laeufe = SAATEN.flatMap((keim) => [
+  // Erst im Test erzeugt, nicht beim Einsammeln: 18 Städte auf Beschreibungsebene blockierten den
+  // Worker so lange, dass Vitest seine Rückmeldung verlor ("Timeout calling onTaskUpdate").
+  let cache: { keim: string; g: Siedlung }[] | undefined;
+  const laeufe = () => cache ??= SAATEN.flatMap((keim) => [
     { keim, g: bauen(keim) },
     { keim: `${keim}:stadt`, g: bauen(keim, { art: "stadt" }) },
     { keim: `${keim}:weiler`, g: bauen(keim, { art: "weiler" }) },
   ]);
 
   it("berührt jedes Bauwerk eine Straße — keine Lücke zwischen Parzelle und Fahrbahn", () => {
-    for (const { keim, g } of laeufe) {
+    for (const { keim, g } of laeufe()) {
       expect(g.bauwerke.length, keim).toBeGreaterThan(0);
       for (const b of g.bauwerke) {
         // Zusätzlich zur blossen Nähe: die Straße, die das Bauwerk **nennt**, muss es auch sein.
@@ -282,12 +285,12 @@ describe("A-G5 · Siedlung — niemand ist eingemauert", () => {
         expect(liegtAnStrasse(b.umriss, genannte!.umriss), `${keim}: ${b.pfad} liegt ${polygonAbstand(b.umriss, genannte!.umriss).toFixed(2)} Zellen von seiner Straße`).toBe(true);
       }
     }
-  });
+  }, 60_000);
 
   // Beide Faelle bauen vollstaendige Siedlungen; das 5-s-Standardbudget von Vitest reicht
   // dafuer auf gewoehnlicher Hardware nicht. Praezedenz: campaign-bundle-v3-large.test.ts.
   it("überlappt keine zwei Bauwerke", () => {
-    for (const { keim, g } of laeufe) {
+    for (const { keim, g } of laeufe()) {
       // The separation check already tests both polygons' axes. Each unordered pair
       // needs one assertion, including dense cities with the full building budget.
       for (let i = 0; i < g.bauwerke.length; i++) for (let j = i + 1; j < g.bauwerke.length; j++) {
@@ -298,7 +301,7 @@ describe("A-G5 · Siedlung — niemand ist eingemauert", () => {
   }, 30_000);
 
   it("liefert für jede Straße eine echte Region, unterscheidbar von jedem Bauwerk", () => {
-    for (const { keim, g } of laeufe) {
+    for (const { keim, g } of laeufe()) {
       const bauwerkIds = new Set<string>(g.bauwerke.map((b) => b.id));
       for (const s of g.strassen) {
         expect(bauwerkIds.has(s.id), keim).toBe(false);
