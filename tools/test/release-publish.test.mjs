@@ -12,7 +12,7 @@ const checksum = `${hash(bytes)}  Atlas-Chronicles-Setup.exe\n`;
 const evidence = { version:VERSION, sourceCommit:sha, sourceTree:tree, workflowRun:run, platform:'windows-x64', signed:false, automaticUpdates:false, bytes:bytes.length, sha256:hash(bytes), checks:['installed','packaged'].map(executableKind => ({ executableKind, version:VERSION, passed:true, checks:Array.from({length:20},(_,i)=>`verified ${i}`), error:null, cleanupError:null })) };
 const files = { [FILES[0]]:bytes, [FILES[1]]:Buffer.from(checksum), [FILES[2]]:Buffer.from(JSON.stringify(evidence)) };
 const assets = FILES.map((name,i) => ({id:10+i,name,state:'uploaded',size:files[name].length,digest:`sha256:${hash(files[name])}`}));
-const draft = {id:1,tag_name:`v${VERSION}`,target_commitish:sha,draft:true,prerelease:false,html_url:'https://github.com/KTY137/Atlas_Chronicles/releases/tag/v0.5.0'};
+const draft = {id:1,tag_name:`v${VERSION}`,target_commitish:sha,draft:true,prerelease:false,html_url:`https://github.com/KTY137/Atlas_Chronicles/releases/tag/v${VERSION}`};
 test('all exact main push gates are required, including newer pending and failed reruns', () => {
   assert.equal(Object.keys(verifiedRuns(runs,sha)).length,5);
   assert.equal(verifiedRuns(runs.slice(1),sha),null);
