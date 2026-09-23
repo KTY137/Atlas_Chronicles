@@ -38,17 +38,18 @@ async function harness() {
     url = "";
     webContents: EventEmitter & {
       mainFrame: { url: string }; session: ReturnType<typeof makeSession>; getURL: () => string;
-      setWindowOpenHandler: ReturnType<typeof vi.fn>;
+      setWindowOpenHandler: ReturnType<typeof vi.fn>; focus: ReturnType<typeof vi.fn>;
     };
+    static fromWebContents(contents: unknown) { return windows.find(window => window.webContents === contents) ?? null; }
     constructor(options: { webPreferences: { partition: string } }) {
       super();
       this.webContents = Object.assign(new EventEmitter(), {
         mainFrame: { url: "" }, session: fromPartition(options.webPreferences.partition),
-        getURL: () => this.url, setWindowOpenHandler: vi.fn(),
+        getURL: () => this.url, setWindowOpenHandler: vi.fn(), focus: vi.fn(),
       });
       windows.push(this);
     }
-    removeMenu() {} show() {} focus() {} hide() {}
+    removeMenu() {} show() {} focus() {} hide() {} blur() {}
     isDestroyed() { return this.destroyed; }
     close() { this.destroy(); }
     destroy() { this.destroyed = true; this.emit("closed"); }
@@ -96,7 +97,7 @@ async function harness() {
     app: Object.assign(new EventEmitter(), { requestSingleInstanceLock: () => true, whenReady: async () => undefined, getPath: () => "C:/test-only-unused-profile", getVersion: () => "test", quit: vi.fn() }),
     BrowserWindow: FakeWindow,
     dialog: { showOpenDialog: openDialog, showMessageBox: messageDialog },
-    ipcMain: { handle: (name: string, fn: Handler) => handlers.set(name, fn) },
+    ipcMain: { handle: (name: string, fn: Handler) => handlers.set(name, fn), on: (name: string, fn: Handler) => handlers.set(name, fn) },
     protocol: { registerSchemesAsPrivileged: vi.fn() },
     safeStorage: { isEncryptionAvailable: () => true, encryptString: vi.fn(), decryptString: vi.fn() },
     session: { fromPartition }, shell: { openExternal: vi.fn() },
@@ -115,7 +116,13 @@ async function harness() {
   const hello = (sender: unknown = event()) => handlers.get("chronicle:hello")!(sender);
   const invoke = (request: unknown, capability = hello(), sender: unknown = event()) =>
     Promise.resolve(handlers.get("chronicle:manage")!(sender, { capability, request })) as Promise<Reply>;
-  return { windows, manager, host, profiles, openDialog, messageDialog, hello, invoke, event, fromPartition };
+  const gameDialog = async (sender: unknown, request: unknown) => {
+    const reply: { sender: unknown; returnValue?: unknown } = { sender };
+    handlers.get("chronicle:game-dialog")!(reply, request);
+    await vi.waitFor(() => expect("returnValue" in reply).toBe(true));
+    return reply.returnValue;
+  };
+  return { windows, manager, host, profiles, openDialog, messageDialog, hello, invoke, event, fromPartition, gameDialog };
 }
 
 const originalPlatform = Object.getOwnPropertyDescriptor(process, "platform")!;
@@ -196,6 +203,27 @@ it("denies camera, microphone and screen capture in every window without a nativ
     expect(reply).toHaveBeenCalledExactlyOnceWith({});
   }
   expect(h.messageDialog).not.toHaveBeenCalled();
+});
+
+// Kaya, 2026-09-23: Nach „Ungespeicherte Änderungen verwerfen?“ nahmen Felder keine Eingabe mehr an.
+// Chromiums eigener confirm()-Dialog laesst unter Windows den Tastaturfokus liegen; das Spielfenster
+// fragt deshalb ueber den Hauptprozess und bekommt danach den Fokus ausdruecklich zurueck.
+it("answers game-window confirm dialogs natively, returns keyboard focus and refuses every other sender", async () => {
+  const h = await harness();
+  expect((await h.invoke({ kind: "start", profileId })).ok).toBe(true);
+  expect((await h.invoke({ kind: "open" })).ok).toBe(true);
+  const game = h.windows.find(window => window !== h.manager)!;
+  expect(game).toBeDefined();
+  h.messageDialog.mockResolvedValueOnce({ response: 0 });
+  expect(await h.gameDialog(game.webContents, { kind: "confirm", message: "Ungespeicherte Änderungen verwerfen?" })).toBe(true);
+  expect(game.webContents.focus).toHaveBeenCalledTimes(1);
+  h.messageDialog.mockResolvedValueOnce({ response: 1 });
+  expect(await h.gameDialog(game.webContents, { kind: "confirm", message: "Nochmal?" })).toBe(false);
+  expect(game.webContents.focus).toHaveBeenCalledTimes(2);
+  expect(h.messageDialog).toHaveBeenCalledTimes(2);
+  expect(await h.gameDialog(h.manager.webContents, { kind: "confirm", message: "Manager" })).toBe(false);
+  expect(await h.gameDialog(game.webContents, { kind: "prompt", message: "x" })).toBe(false);
+  expect(h.messageDialog).toHaveBeenCalledTimes(2);
 });
 
 it("retains the committed first-login credential in its bound profile session when the manager reloads", async () => {

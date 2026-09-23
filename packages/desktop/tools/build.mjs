@@ -40,6 +40,7 @@ const shared={bundle:true,platform:"node",target:"node24",format:"cjs",packages:
 await build({...shared,entryPoints:[join(desktop,"src/main.ts")],outfile:join(out,"main.cjs")});
 await build({...shared,entryPoints:[join(desktop,"src/worker.ts")],outfile:join(out,"worker.cjs")});
 await build({entryPoints:[join(desktop,"src/preload.ts")],outfile:join(out,"preload.cjs"),bundle:true,platform:"node",format:"cjs",external:["electron"],target:"node24"});
+await build({entryPoints:[join(desktop,"src/game-preload.ts")],outfile:join(out,"game-preload.cjs"),bundle:true,platform:"node",format:"cjs",external:["electron"],target:"node24"});
 await cp(join(desktop,"manager"),join(out,"manager"),{recursive:true});
 // Electron's top-level LICENSE covers Electron; ship Atlas's own notice beside its code.
 await cp(join(root,"LICENSE"),join(out,"LICENSE"));

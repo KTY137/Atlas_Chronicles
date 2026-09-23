@@ -169,7 +169,7 @@ async function run() {
     const partition = partitionFor(origin), ses = session.fromPartition(partition);
     const existing = [...games].find(window => !window.isDestroyed() && window.webContents.session === ses);
     if (existing) { existing.show(); existing.focus(); return; }
-    const game = new BrowserWindow({ width: 1440, height: 940, title: "Atlas Chronicles", backgroundColor: "#121a1d", webPreferences: { partition, nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
+    const game = new BrowserWindow({ width: 1440, height: 940, title: "Atlas Chronicles", backgroundColor: "#121a1d", webPreferences: { preload: join(assets, "game-preload.cjs"), partition, nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
     game.removeMenu(); games.add(game);
     if (local) {
       localGames.set(game, origin);
@@ -195,6 +195,23 @@ async function run() {
   async function cleanupRestore() { if (restore) { await rm(restore.path, { force: true }); restore = undefined; } }
   let wartendZuletzt = 0;
   manager.on("focus", () => manager.flashFrame(false));
+  // confirm()/alert() der Spielseite, siehe game-preload.ts. Die Seite wartet synchron auf die
+  // Antwort; der Hauptprozess bleibt dabei frei. Danach bekommt die Seite den Tastaturfokus
+  // ausdrücklich zurück — genau der fehlt nach Chromiums eigenem Dialog.
+  ipcMain.on("chronicle:game-dialog", (event, request: unknown) => {
+    const game = BrowserWindow.fromWebContents(event.sender);
+    const valid = typeof request === "object" && request !== null && ((request as { kind?: unknown }).kind === "confirm" || (request as { kind?: unknown }).kind === "alert")
+      && typeof (request as { message?: unknown }).message === "string";
+    if (!game || !games.has(game) || event.sender !== game.webContents || !valid) { event.returnValue = false; return; }
+    const { kind, message } = request as { kind: "confirm" | "alert"; message: string };
+    const buttons = kind === "confirm" ? ["OK", "Abbrechen"] : ["OK"];
+    void dialog.showMessageBox(game, { type: kind === "confirm" ? "question" : "info", title: "Atlas Chronicles", message: message.slice(0, 4000), buttons, defaultId: 0, cancelId: buttons.length - 1, noLink: true })
+      .then(result => kind === "confirm" && result.response === 0, () => false)
+      .then(answer => {
+        event.returnValue = answer;
+        if (!game.isDestroyed()) { game.blur(); game.focus(); game.webContents.focus(); }
+      });
+  });
   ipcMain.handle("chronicle:manage", async (event, envelope: unknown) => {
     let ownsOperation = false;
     try {
