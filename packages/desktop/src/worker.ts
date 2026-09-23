@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { readFile, stat } from "node:fs/promises";
-import { startEmbeddedHost, loadChronistRuntime, type EmbeddedHostConfig } from "@chronicle/server/host";
+import { startEmbeddedHost, startBeleg, loadChronistRuntime, type EmbeddedHostConfig } from "@chronicle/server/host";
 import { object } from "./policy.ts";
 
 interface ParentPort { on(event: "message", callback: (event: { data: unknown }) => void): void; postMessage(message: unknown): void }
@@ -26,7 +26,7 @@ parent.on("message", event => {
         const chronist = await loadChronistRuntime({ allowCli: true,
           ...(process.env["CHRONICLE_CHRONIST_CONFIG"] ? { configPath: process.env["CHRONICLE_CHRONIST_CONFIG"] } : {}) });
         host = await startEmbeddedHost({ ...config as unknown as EmbeddedHostConfig, chronist });
-        parent.postMessage({ id, startId, ok: true, value: { origin: host.origin, nodeVersion: host.nodeVersion, decoder: host.decoder, ...await host.state() } });
+        parent.postMessage({ id, startId, ok: true, value: startBeleg(host, await host.state()) });
         return;
       }
       if (request["startId"] !== startId) throw new Error("Host identity mismatch.");

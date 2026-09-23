@@ -20,7 +20,7 @@
  */
 import { expect, it } from "vitest";
 import { createIdentity, reachability } from "../src/identity/index.ts";
-import { validateEmbeddedHostConfig, weltAdressen } from "../src/host.ts";
+import { startBeleg, validateEmbeddedHostConfig, weltAdressen } from "../src/host.ts";
 
 const basis = { databaseUrl: "postgresql://chronicle:test@127.0.0.1:45102/postgres", origin: "http://localhost:45101",
   cookieSecret: "c".repeat(64), staticRoot: "/client" };
@@ -67,4 +67,12 @@ it("setzt das Sitzungscookie je Adresse richtig: Secure auf der eigenen, ohne Se
   expect(eigen.clearCookie()).toMatch(/; Secure;/);
   const heimnetz = createIdentity(null as never, { origin: "http://192.168.1.2:45101", cookieSecret: "l".repeat(64), allowInsecureLan: true });
   expect(heimnetz.clearCookie()).not.toMatch(/; Secure(?:;|$)/);
+});
+
+it("nennt im Startbeleg auch die Heimnetz-Adresse, sonst lehnt die App den Start ab", () => {
+  // Kaya, 2026-09-23: „Host-Startbeleg stimmt nicht mit dem Profil überein“ — der Beleg ließ `lanOrigin` weg.
+  const [origin, lanOrigin] = weltAdressen({ origin: basis.origin, lanAddress: "192.168.1.2" });
+  expect(startBeleg({ origin: origin!, lanOrigin: lanOrigin!, nodeVersion: "24.1", decoder: "0.34" }, { setupRequired: false }))
+    .toEqual({ origin: "http://localhost:45101", lanOrigin: "http://192.168.1.2:45101", nodeVersion: "24.1", decoder: "0.34", setupRequired: false });
+  expect(startBeleg({ origin: basis.origin, nodeVersion: "24.1", decoder: "0.34" }, { setupRequired: true })).not.toHaveProperty("lanOrigin");
 });

@@ -42,6 +42,16 @@ export function weltAdressen(config: { origin: string; lanAddress?: string }): s
 }
 
 /**
+ * Der Startbeleg, den der Desktop-Worker an die App zurückgibt. Die App vergleicht jede Adresse
+ * darin mit dem Profil. Bis zum 23.09.2026 fehlte `lanOrigin`: jede Welt im Heimnetz scheiterte
+ * mit „Host-Startbeleg stimmt nicht mit dem Profil überein“, weil der Test nur einen gespielten
+ * Worker kannte. Der Beleg entsteht deshalb hier, neben den Adressen, und nicht von Hand im Worker.
+ */
+export function startBeleg(host: { origin: string; lanOrigin?: string; nodeVersion: string; decoder: string }, state: { setupRequired: boolean }) {
+  return { origin: host.origin, ...(host.lanOrigin ? { lanOrigin: host.lanOrigin } : {}), nodeVersion: host.nodeVersion, decoder: host.decoder, ...state };
+}
+
+/**
  * Ein zweiter Zuhörer für dieselbe Anwendung auf der Heimnetz-Adresse.
  *
  * Fastify bindet je Instanz eine Adresse; `app.routing` ist derselbe Behandler, den auch der
