@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clipHalbebene, doppelflaeche, einwaerts, flaeche, imPolygon, lloyd, q, schwerpunkt,
-  teileInParzellen, voronoi, type Polygon, type Punkt,
+  teileInParzellen, voronoi, einwaertsKanten, sehne, halbiere, type Polygon, type Punkt,
 } from "../src/polygon.ts";
 
 /**
@@ -211,5 +211,34 @@ describe("A-G7 · Polygonkern — Quantisierung", () => {
     const s = schwerpunkt(RAHMEN);
     expect(s[0]).toBeCloseTo(20, 9);
     expect(s[1]).toBeCloseTo(15, 9);
+  });
+});
+
+describe("Gassen und Blöcke", () => {
+  const q4: Polygon = [[0, 0], [4, 0], [4, 2], [0, 2]];
+  it("einwaertsKanten mit gleichem Abstand entspricht einwaerts", () => {
+    expect(einwaertsKanten(q4, [.5, .5, .5, .5])).toEqual(einwaerts(q4, .5));
+  });
+  it("einwaertsKanten versetzt nur die genannte Kante", () => {
+    // Kante 1 läuft von [0,0] nach [4,0] (unten). Nur sie rückt um 1 nach innen.
+    const r = einwaertsKanten(q4, [0, 1, 0, 0]);
+    expect(flaeche(r)).toBeCloseTo(4, 6);
+    expect(Math.min(...r.map(p => p[1]))).toBeCloseTo(1, 6);
+  });
+  it("sehne liefert Ein- und Austritt einer Geraden", () => {
+    const s = sehne(q4, 1, 0, 1)!;
+    expect(s.map(p => p[0])).toEqual([1, 1]);
+    expect(s.map(p => p[1]).sort()).toEqual([0, 2]);
+    expect(sehne(q4, 1, 0, 9)).toBeNull();
+  });
+  it("halbiere schneidet quer zur längsten Kante und lässt eine Lücke", () => {
+    const h = halbiere(q4, .5, 0, .4)!;
+    expect(flaeche(h.a) + flaeche(h.b) + flaeche(h.luecke)).toBeCloseTo(8, 6);
+    expect(flaeche(h.luecke)).toBeCloseTo(.8, 6);
+    expect(Math.abs(h.von[0] - 2)).toBeLessThan(1e-9);
+    expect(halbiere(q4, .5, 0, 0)!.luecke).toEqual([]);
+  });
+  it("halbiere verweigert Schnitte, die ein Teil leer lassen", () => {
+    expect(halbiere(q4, .5, 0, 5)).toBeNull();
   });
 });
