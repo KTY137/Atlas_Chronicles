@@ -40,6 +40,9 @@ export interface StadtStil {
   readonly kernAnteil: number;
   /** Wie viel ein Vorstadtfleck zur Losgröße beiträgt (Fantasy: nur an Ausfallstraßen bebaut). */
   readonly vorstadtAnteil: number;
+  /** Straßen eines Flecks bleiben, sobald dort ein Haus steht, auch wenn an ihnen keins steht
+   *  (ein geplantes Raster verliert keine Straße, nur weil das Budget einen Block frei lässt). */
+  readonly strassenBleiben?: boolean;
   breiten(art: Art): Breiten;
   /** Nach der automatischen Rollenwahl, vor der Bebauung. */
   nachRollen?(lagen: readonly FleckLage[], rollen: Map<number, Rolle>, art: Art, planHat: (rolle: Rolle) => boolean): void;

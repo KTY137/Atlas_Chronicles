@@ -266,7 +266,8 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
   // Gassen, an denen kein gewähltes Haus steht, entfallen — sonst liegen in Flecken, die das
   // Budget nicht mehr bebaut, leere Wegkreuze. Die Kanten zwischen den Flecken bleiben: sie sind das Netz.
   const genutzt = new Set(gewaehlt.map(b => b.strasse)), randIds = new Set(gassen.map(s => s.id));
-  const netz = alleGassen.filter(s => randIds.has(s.id) || genutzt.has(s.id));
+  const bewohnt = new Set(stil.strassenBleiben ? stadtListe.filter(i => gewaehlt.some(b => b.pfad.startsWith(`${alle[i]!.pfad}.`))) : []);
+  const netz = alleGassen.filter(s => randIds.has(s.id) || genutzt.has(s.id) || (s.a === s.b && bewohnt.has(s.a)));
 
   // -- 8. Flur, Plätze, Wasser -----------------------------------------------------------------
   const extraRegions: ExtraRegion[] = [], strassen: SiedlungStrasse[] = [];
@@ -298,7 +299,8 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     const pid = id("markt", p.pfad);
     extraRegions.push({ id: pid, polygon: p.polygon, role: { ...rolle(pid), role: "terrain", material: p.material } });
   }
-  kreuzungen(netz, rahmen, ids, art === "stadt" ? "street" : "path", ablage);
+  const belag = art === "stadt" || stil.setting !== "fantasy" ? "street" as const : "path" as const;
+  kreuzungen(netz, rahmen, ids, belag, ablage);
   const hindernisse = [...bauHindernisse.map(p => mitAbstand(p, .035)), ...strand, ...sumpf, ...strassen.map(s => mitAbstand(s.umriss, .06)), ...hofLose.map(p => mitAbstand(p, .08))]
     .filter(p => p.length >= 3).map(polygon => ({ polygon, box: huelle(polygon) }));
   // Ein grobes Rasterverzeichnis (4 Zellen) statt jedes Stück gegen jedes Hindernis: bei tausend
@@ -410,7 +412,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
   const plan: SettlementPlan = viertelPlan(viertel, new Map(stadtListe.map(i => [i, zelle(i)])), breite, hoehe);
 
   const { karte, cartography, knoten, wurzelId } = dokument({ erzeuger: basis.erzeuger, version, keim, ids, z, breite, hoehe, setting: stil.setting, auftrag,
-    stamps: werk.stamps, extraRegions, bauwerke, gassen: netz, gassenMaterial: () => art === "stadt" ? "street" : "path", mauern, lichter,
+    stamps: werk.stamps, extraRegions, bauwerke, gassen: netz, gassenMaterial: () => belag, mauern, lichter,
     relief: landschaft.relief, labels, rolle: mitVermerk });
   return Object.freeze({
     art: "siedlung", erzeuger: basis.erzeuger, version, keim, wurzelId, karte, cartography,

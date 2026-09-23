@@ -113,7 +113,7 @@ export function hausImLos(los: Polygon, gasse: Pick<Gasse, "von" | "bis" | "band
 /** Street-facing strips partition a convex block without overlapping at its corners.
  * Narrow strips along each actual street produce house rows, with their unclaimed backs
  * meeting in a shared courtyard. The finite strip count follows the validated map extent. */
-export function frontParzellen(block: Polygon, strassen: readonly Gasse[], frontage: number, depth: number, r: { zahl(min: number, max: number): number }): Polygon[] {
+export function frontParzellen(block: Polygon, strassen: readonly Pick<Gasse, "von" | "bis">[], frontage: number, depth: number, r: { zahl(min: number, max: number): number }): Polygon[] {
   const center = schwerpunkt(block), result: Polygon[] = [];
   for (const road of strassen) {
     const dx = road.bis[0] - road.von[0], dy = road.bis[1] - road.von[1], length = Math.hypot(dx, dy);

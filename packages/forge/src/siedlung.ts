@@ -20,6 +20,7 @@ import { roofZone, zoneDraw, zoneBuilding } from "./siedlung-plan.ts";
 import { freieMauer, frontParzellen, getrennteDaecher, hausImLos, mitAbstand, ohne, type Gasse } from "./stadt/gemeinsam.ts";
 import { erzeugeViertelStadt } from "./stadt/viertel/index.ts";
 import { FANTASY } from "./stadt/viertel/stil.ts";
+import { MODERN } from "./stadt/modern/stil.ts";
 import { ausstattung, dokument, kappeAnHindernissen, kreuzungen, ohneLaengsFluss, stege, wasserUndBruecken, type Ablage, type ExtraRegion } from "./stadt/abschluss.ts";
 
 /** Convex clipping keeps the same geometry authoritative for water, lots and bridges. */
@@ -79,6 +80,8 @@ export const SIEDLUNG_VERSION = "8";
 const SIEDLUNG_PLAN_VERSION = "9";
 /** Fantasy-Siedlungen aus Vierteln (`stadt/viertel`, Spec 2026-09-23). Gegenwart und Sci-Fi bleiben bei 8/9/10. */
 export const SIEDLUNG_VIERTEL_VERSION = "11";
+/** Gegenwart und Sci-Fi aus derselben Viertelpipeline mit eigenem Stil (Spec 2026-09-23-stadt-zukunft, E2). */
+export const SIEDLUNG_ZUKUNFT_VERSION = "12";
 
 export const SIEDLUNG_LIMITS = Object.freeze({
   ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 512, grundstueckMin: 2, grundstueckMax: 24,
@@ -252,7 +255,7 @@ function grundlage(auftrag: SiedlungAuftrag, paket: AssetpaketV1) {
   const planung = optionen.planung === undefined ? undefined : parseSettlementPlan(optionen.planung);
   const verkehr = optionen.verkehr === undefined ? undefined : parseRoadPlan(optionen.verkehr);
   const strassenGeplant = !!verkehr?.knoten.length;
-  const geplant = !!planung?.zonen.length, version = setting === "fantasy" ? SIEDLUNG_VIERTEL_VERSION : strassenGeplant ? "10" : geplant ? SIEDLUNG_PLAN_VERSION : SIEDLUNG_VERSION;
+  const geplant = !!planung?.zonen.length, version = setting === "fantasy" ? SIEDLUNG_VIERTEL_VERSION : setting === "gegenwart" ? SIEDLUNG_ZUKUNFT_VERSION : strassenGeplant ? "10" : geplant ? SIEDLUNG_PLAN_VERSION : SIEDLUNG_VERSION;
   const L = SIEDLUNG_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>
     Number.isSafeInteger(wert) && wert >= min && wert <= max ? wert : fail("option", pfad, `Ganzzahl in ${min}..${max} erwartet`);
@@ -278,7 +281,7 @@ function grundlage(auftrag: SiedlungAuftrag, paket: AssetpaketV1) {
   // settlements that differ only in `art` must never share a `keimHash` even if every numeric
   // option was overridden back to equality.
   const layoutKeim = weltkeim({
-    generator: SIEDLUNG_ERZEUGER, version: setting === "fantasy" ? SIEDLUNG_VIERTEL_VERSION : SIEDLUNG_VERSION, seed: auftrag.keim,
+    generator: SIEDLUNG_ERZEUGER, version: setting === "fantasy" ? SIEDLUNG_VIERTEL_VERSION : setting === "gegenwart" ? SIEDLUNG_ZUKUNFT_VERSION : SIEDLUNG_VERSION, seed: auftrag.keim,
     optionen: {
       art: optionen.art, ausdehnung: [breite, hoehe], zellgroesse: optionen.zellgroesse,
       bauwerke: optionen.bauwerke, strassenDichte: optionen.strassenDichte, grundstueck: [gMin, gMax],
@@ -337,6 +340,7 @@ export type SiedlungGrund = ReturnType<typeof grundlage>;
 export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): Siedlung {
   const g = grundlage(auftrag, paket);
   if (g.setting === "fantasy") return erzeugeViertelStadt(g, { erzeuger: SIEDLUNG_ERZEUGER, ausgelassen: AUSGELASSEN }, FANTASY);
+  if (g.setting === "gegenwart") return erzeugeViertelStadt(g, { erzeuger: SIEDLUNG_ERZEUGER, ausgelassen: AUSGELASSEN }, MODERN);
   const { art, setting: gewaehltesSetting, standort, optionen, relief, bewaldung, breite, hoehe, planung, verkehr, strassenGeplant, geplant, version, L, gMin, gMax, layoutKeim, keim, r, z, ids, rahmen, rand, ortsRahmen, flussBreite, flussPunkte, landschaft, fluss, wasser, fels, strand, sumpf, wasserMaterial, hartHindernisse, bauHindernisse, strassenHindernisse } = g;
   // Ab hier nur noch Gegenwart und Sci-Fi; die Fantasy-Zweige unten sind bis Teil 2 unerreichbar,
   // bleiben aber stehen, damit der Rasterbaustein unverändert bleibt (Goldtest).
