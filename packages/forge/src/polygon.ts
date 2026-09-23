@@ -159,6 +159,64 @@ export function einwaerts(poly: Polygon, abstand: number): Polygon {
   return ergebnis;
 }
 
+/** Wie `einwaerts`, aber jede Kante mit eigenem Abstand. Kante `i` läuft von `poly[i-1]` nach
+ *  `poly[i]` — dieselbe Zählung wie die Schleife oben. So rückt ein Block nur dort ein, wo eine
+ *  Straße oder die Mauer an ihm liegt. */
+export function einwaertsKanten(poly: Polygon, abstaende: readonly number[]): Polygon {
+  if (poly.length < 3) return [];
+  const positiv = doppelflaeche(poly) > 0;
+  let ergebnis = poly;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[j]!, b = poly[i]!, ex = b[0] - a[0], ey = b[1] - a[1];
+    const laenge = Math.sqrt(ex * ex + ey * ey);
+    if (laenge < 1e-9) continue;
+    const nx = (positiv ? ey : -ey) / laenge, ny = (positiv ? -ex : ex) / laenge;
+    ergebnis = clipHalbebene(ergebnis, nx, ny, nx * a[0] + ny * a[1] - (abstaende[i] ?? 0));
+    if (!ergebnis.length) return [];
+  }
+  return ergebnis;
+}
+
+/** Wo die Gerade `n·x = c` ein konvexes Polygon betritt und verlässt, oder `null`. */
+export function sehne(poly: Polygon, nx: number, ny: number, c: number): readonly [Punkt, Punkt] | null {
+  const treffer: Punkt[] = [];
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[j]!, b = poly[i]!, da = nx * a[0] + ny * a[1] - c, db = nx * b[0] + ny * b[1] - c;
+    if ((da < 0) !== (db < 0)) { const t = da / (da - db); treffer.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+  }
+  return treffer.length >= 2 ? [treffer[0]!, treffer[1]!] : null;
+}
+
+export interface Halbierung { readonly a: Polygon; readonly b: Polygon; readonly luecke: Polygon; readonly von: Punkt; readonly bis: Punkt }
+
+/**
+ * Ein konvexes Polygon quer zu seiner längsten Kante teilen. `lage` (0..1) sagt, wo auf dieser
+ * Kante geschnitten wird, `kippung` neigt den Schnitt um einen Anteil der Kantenrichtung, und
+ * `luecke` lässt zwischen den Hälften einen Streifen frei — die Gasse. So entstehen Lose als
+ * Streifen entlang der Straße, wie in jeder gewachsenen Stadt.
+ */
+export function halbiere(poly: Polygon, lage: number, kippung: number, luecke: number): Halbierung | null {
+  const n = poly.length;
+  if (n < 3) return null;
+  let beste = 0, besteLaenge = -1;
+  for (let i = 0; i < n; i++) {
+    const a = poly[(i + n - 1) % n]!, b = poly[i]!, l = Math.sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2);
+    if (l > besteLaenge) { besteLaenge = l; beste = i; }
+  }
+  const a = poly[(beste + n - 1) % n]!, b = poly[beste]!;
+  const ux = (b[0] - a[0]) / besteLaenge, uy = (b[1] - a[1]) / besteLaenge;
+  let nx = ux - uy * kippung, ny = uy + ux * kippung;
+  const nl = Math.sqrt(nx * nx + ny * ny); nx /= nl; ny /= nl;
+  const px = a[0] + (b[0] - a[0]) * lage, py = a[1] + (b[1] - a[1]) * lage;
+  const c = nx * px + ny * py, h = luecke / 2;
+  const teilA = clipHalbebene(poly, nx, ny, c - h), teilB = clipHalbebene(poly, -nx, -ny, -(c + h));
+  if (teilA.length < 3 || teilB.length < 3) return null;
+  const s = sehne(poly, nx, ny, c);
+  if (!s) return null;
+  const band = h > 0 ? clipHalbebene(clipHalbebene(poly, nx, ny, c + h), -nx, -ny, -(c - h)) : [];
+  return { a: teilA, b: teilB, luecke: band, von: s[0], bis: s[1] };
+}
+
 /** Schnitt zweier konvexer Polygone: `a` gegen jede Halbebene von `b`. Dieselbe Geometrie
  *  bleibt für Wasser, Lose und Brücken massgeblich; das Ergebnis ist auf Tausendstel quantisiert. */
 export function schnittKonvex(a: Polygon, b: Polygon): Polygon {

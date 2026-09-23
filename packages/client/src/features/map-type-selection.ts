@@ -7,8 +7,8 @@ export const SETTLEMENT_TYPE_LABEL = { weiler: "Weiler", dorf: "Dorf", stadt: "S
 export const SETTLEMENT_TYPES = ["weiler", "dorf", "stadt"] as const;
 
 /** One source for the size buttons and the concrete entrance picker, including older hosts. */
-export function settlementPreset(art: GenerationSettings["siedlung"], defaults: GenerationDefaults): GenerationDefaults["siedlung"] {
-  const supplied = defaults.siedlungsarten?.[art];
+export function settlementPreset(art: GenerationSettings["siedlung"], defaults: GenerationDefaults, setting: GenerationSettings["setting"] = "fantasy"): GenerationDefaults["siedlung"] {
+  const supplied = defaults.siedlungsartenJeSetting?.[setting]?.[art] ?? defaults.siedlungsarten?.[art];
   if (supplied) return supplied;
   if (art === "dorf") return defaults.siedlung;
   return { ...defaults.siedlung, art, ...(art === "weiler"
@@ -36,7 +36,7 @@ export function changeEntranceType(value: GenerationSettings, choice: string, de
   if (choice === "hoehle") return { ...reset, art: "hoehle", profil: "frei" };
   const settlement = SETTLEMENT_TYPES.find(art => choice === `siedlung:${art}`);
   if (settlement) {
-    const preset = settlementPreset(settlement, defaults);
+    const preset = settlementPreset(settlement, defaults, value.setting);
     return { ...reset, ...(planung ? { planung } : {}), ...(verkehr ? { verkehr } : {}), art: "siedlung", siedlung: settlement, profil: "frei",
       breite: preset.ausdehnung[0], hoehe: preset.ausdehnung[1], anzahl: preset.bauwerke,
       dichte: preset.strassenDichte, licht: preset.licht };

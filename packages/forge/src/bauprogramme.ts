@@ -168,6 +168,7 @@ export const BAUWERK_AUSDEHNUNG: Readonly<Record<BauwerkTyp, readonly [number, n
   fabrik: [30, 22], bahnhof: [28, 18], labor: [20, 16], raumhafen: [32, 24], raumstation: [28, 28],
   medstation: [22, 18], kommando: [24, 24], reaktor: [22, 22], bibliothek: [20, 16], museum: [24, 18],
   bank: [18, 14], werkstatt: [18, 14],
+  burg: [24, 24], rathaus: [22, 16], muehle: [14, 14], bauernhof: [18, 14], kaserne: [22, 14],
 });
 /** Interior cells per town cell: a town cell is roughly five paces, an interior cell one. */
 export const BAUWERK_MASSSTAB = 4.5;

@@ -41,7 +41,7 @@ describe("Kartensettings: generation, inherited interiors and native evidence", 
     const response = await app.inject({ method: "GET", url: `/api/campaigns/${campaign}/tactical/generate/defaults` });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ grundriss: { setting: "fantasy" }, siedlung: { setting: "fantasy" }, stile: expect.arrayContaining([{ id: "zeitwelten", titel: "Zeitwelten" }]) });
-    expect(BAUWERK_TYPEN).toHaveLength(28);
+    expect(BAUWERK_TYPEN).toHaveLength(33); // 2026-09-23: +5 Fantasy-Typen der Viertelstadt
     for (const profil of BAUWERK_TYPEN) {
       expect(Value.Check(GrundrissSchema, request("gegenwart", { art: "grundriss", optionen: { setting: "gegenwart", profil } })), profil).toBe(true);
       expect(Value.Check(BetretenSchema, { commandId: "enter", knotenId: "node", optionen: { setting: "scifi", profil } }), profil).toBe(true);

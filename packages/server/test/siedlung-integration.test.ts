@@ -6,7 +6,7 @@ import type { FastifyInstance } from "fastify";
 import sharp from "sharp";
 import type { Knoten, TacticalMapDocumentV1 } from "@chronicle/szene";
 import { currentCampaignSemanticDiff, parseCurrentCampaignBundle, serializeCurrentCampaignBundle } from "@chronicle/io";
-import { bauwerkAusdehnung, SIEDLUNG_ERZEUGER, SIEDLUNG_VERSION } from "@chronicle/forge";
+import { bauwerkAusdehnung, SIEDLUNG_ERZEUGER, SIEDLUNG_VIERTEL_VERSION } from "@chronicle/forge";
 import { buildApp } from "../src/app.ts";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -118,7 +118,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
     expect(buildings.every(node => node.herkunft?.kindKeim && map.document.geometry.regions.some(region => region.id === node.id))).toBe(true);
     const source = await tactical.getSource(gm, campaign, map.id);
     expect(source.format).toBe("native");
-    expect(source.provenance).toMatchObject({ creator: SIEDLUNG_ERZEUGER, generator: SIEDLUNG_ERZEUGER, generatorVersion: SIEDLUNG_VERSION, license: expect.any(String) });
+    expect(source.provenance).toMatchObject({ creator: SIEDLUNG_ERZEUGER, generator: SIEDLUNG_ERZEUGER, generatorVersion: SIEDLUNG_VIERTEL_VERSION, license: expect.any(String) });
     expect((await post("/tactical/generate", request)).json()).toEqual(result);
     expect(await tactical.listMaps(gm, campaign)).toHaveLength(before.length + 1);
   });
@@ -227,7 +227,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
       { optionen: { art: "metropole" } }, { optionen: { raeume: 5 } }, { optionen: { kammern: 5 } },
       { optionen: { zellen: [24, 24] } }, { optionen: { ausdehnung: [24] } },
       { optionen: { ausdehnung: [24, "24"] } }, { optionen: { grundstueck: [8, 3] } },
-      { optionen: { bauwerke: "5" } }, { optionen: { bauwerke: 0 } }, { optionen: { bauwerke: 257 } },
+      { optionen: { bauwerke: "5" } }, { optionen: { bauwerke: 0 } }, { optionen: { bauwerke: 513 } },
       { optionen: { strassenDichte: 2 } }, { optionen: { licht: "false" } },
       { art: "grundriss", optionen: { bauwerke: 5 } }, { art: "hoehle", optionen: { ausdehnung: [24, 24] } },
     ];

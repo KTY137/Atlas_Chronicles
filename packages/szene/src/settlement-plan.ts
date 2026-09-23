@@ -3,7 +3,7 @@
 
 /** Generation constraints, not a second map document. Coordinates are fractions of the map.
  * Order is meaningful: the last covering zone wins; no-build polygons always take precedence. */
-export const SETTLEMENT_USES = ["wohnen", "markt", "handwerk", "hafen", "adel", "arm", "frei"] as const;
+export const SETTLEMENT_USES = ["wohnen", "markt", "handwerk", "hafen", "adel", "arm", "frei", "burg", "tempel"] as const;
 export type SettlementUse = typeof SETTLEMENT_USES[number];
 export type PlanPoint = readonly [number, number];
 export interface SettlementZone {

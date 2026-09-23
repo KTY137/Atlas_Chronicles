@@ -3,18 +3,20 @@
 import { canonicalHash } from "@chronicle/core";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseAssetpaket, parseTacticalMapDocument, parseTacticalCartography, type SettlementPlan, type SettlementZone } from "@chronicle/szene";
+import { parseAssetpaket, parseSettlementPlan, parseTacticalMapDocument, parseTacticalCartography, type SettlementPlan, type SettlementZone } from "@chronicle/szene";
 import { erzeugeSiedlung } from "../src/siedlung.ts";
 import { abstandPolygonStrecke, huelle } from "../src/polygon.ts";
 import { roofZone, zoneBuilding, zoneDraw } from "../src/siedlung-plan.ts";
 const pack = parseAssetpaket(readFileSync("assets/packs/pk.gemalt/paket.json", "utf8"));
 const zone = (patch: Partial<SettlementZone> = {}): SettlementZone => ({ id: "plan", name: "West", nutzung: "handwerk", dichte: 1, polygon: [[0, 0], [1, 0], [1, 1], [0, 1]], ...patch });
 const plan = (z = zone()): SettlementPlan => ({ schemaVersion: 1, zonen: [z] });
-const generate = (planung?: SettlementPlan) => erzeugeSiedlung({ keim: "zones-regression", optionen: { art: "dorf", standort: "ebene", ...(planung ? { planung } : {}) } }, pack);
+/** Der Zonenplan als Filter über einem fertigen Layout ist das v9-Verhalten des Rasterbausteins;
+ * seit 2026-09-23 gilt es für Gegenwart und Sci-Fi. Fantasy (v11) prüft der Block unten. */
+const generate = (planung?: SettlementPlan, setting: "gegenwart" | "fantasy" = "gegenwart") => erzeugeSiedlung({ keim: "zones-regression", optionen: { art: "dorf", standort: "ebene", setting, ...(planung ? { planung } : {}) } }, pack);
 describe("zoned settlement generation", () => {
   it("actually assigns workshops, not only differently labelled houses", () => {
     const map = generate(plan()); expect(map.version).toBe("9"); expect(map.bauwerke.length).toBeGreaterThan(4);
-    expect(map.bauwerke.every(b => ["schmiede", "werkstatt", "lager"].includes(b.typ))).toBe(true);
+    expect(map.bauwerke.every(b => ["werkstatt", "fabrik", "lager"].includes(b.typ))).toBe(true);
     expect(map.keim.optionen.planung).toEqual(plan());
     expect(map.bericht.planung?.zonen[0]?.anzahl).toBe(map.bauwerke.length);
     for (const node of map.knoten) expect(node.herkunft?.version).toBe("9");
@@ -38,7 +40,7 @@ describe("zoned settlement generation", () => {
   });
   it("an absent or empty plan preserves the old version and result", () => {
     const base = generate(); expect(base.version).toBe("8");
-    expect(canonicalHash(base as never)).toBe("647532b9e471b04ae647f9d62bdf1631509ab3f6f3da4f6e18be608bcf39e6f8");
+    expect(canonicalHash(base as never)).toBe("93b0811013643c0f9d3bfe46c96e9414a33cf0d0e9306c5306f6f92d4c52d162");
     expect(generate({ schemaVersion: 1, zonen: [] })).toEqual(base);
     expect(base.keim.optionen).not.toHaveProperty("planung");
   });
@@ -77,5 +79,48 @@ describe("zoned settlement generation", () => {
     expect(zoneBuilding(zone(), "gegenwart", .1)).toBe("werkstatt");
     expect(zoneBuilding(zone({ nutzung: "hafen" }), "scifi", .1)).toBe("raumhafen");
     expect(() => zoneBuilding(zone({ nutzung: "frei" }), "fantasy", .1)).toThrow();
+  });
+  it("knows castle and temple district as uses", () => {
+    expect(() => parseSettlementPlan(plan(zone({ nutzung: "burg" })))).not.toThrow();
+    expect(zoneBuilding(zone({ nutzung: "tempel" }), "fantasy", .1)).toBe("kirche");
+    expect(zoneBuilding(zone({ nutzung: "burg" }), "fantasy", .1)).toBe("kaserne");
+  });
+});
+
+describe("zoned fantasy settlement (v11): the plan decides roles, density and clearings", () => {
+  const fantasy = (planung?: SettlementPlan) => generate(planung, "fantasy");
+  const SONDER = new Set(["bauernhof", "turm", "burg", "kaserne", "rathaus"]);
+  it("builds workshops in a craft zone", () => {
+    const map = fantasy(plan());
+    expect(map.version).toBe("11");
+    const haeuser = map.bauwerke.filter(b => !SONDER.has(b.typ));
+    expect(haeuser.length).toBeGreaterThan(4);
+    expect(haeuser.every(b => ["schmiede", "werkstatt", "lager"].includes(b.typ))).toBe(true);
+    expect(map.keim.optionen.planung).toEqual(plan());
+    for (const node of map.knoten) expect(node.herkunft?.version).toBe("11");
+  });
+  it("a full clearing leaves an honestly empty, valid map", () => {
+    const map = fantasy(plan(zone({ nutzung: "frei" })));
+    expect(map.bauwerke).toHaveLength(0); expect(map.knoten).toHaveLength(1);
+    expect(map.cartography.regions.some(r => r.role === "building" || r.role === "lot")).toBe(false);
+    expect(() => parseTacticalCartography(map.cartography, map.karte)).not.toThrow();
+  });
+  it("density is deterministic, monotonic and only removes houses", () => {
+    const sparse = fantasy(plan(zone({ dichte: .3 }))), dense = fantasy(plan());
+    expect(sparse.bauwerke.length).toBeGreaterThan(0); expect(sparse.bauwerke.length).toBeLessThan(dense.bauwerke.length);
+    const outlines = new Set(dense.bauwerke.map(b => JSON.stringify(b.umriss)));
+    expect(sparse.bauwerke.every(b => outlines.has(JSON.stringify(b.umriss)))).toBe(true);
+    expect(fantasy(plan(zone({ dichte: .3 })))).toEqual(sparse);
+  });
+  it("an empty plan is no plan, and the terrain never depends on the plan", () => {
+    const base = fantasy();
+    expect(base.version).toBe("11");
+    expect(fantasy({ schemaVersion: 1, zonen: [] })).toEqual(base);
+    expect(fantasy(plan()).cartography.relief).toEqual(base.cartography.relief);
+  });
+  it("harbour zones away from water stay empty", () => {
+    const map = fantasy(plan(zone({ nutzung: "hafen", polygon: [[.4, .4], [.6, .4], [.6, .6], [.4, .6]] })));
+    const hafen = map.bericht.planung?.zonen[0];
+    expect(hafen?.anzahl).toBe(0);
   });
 });

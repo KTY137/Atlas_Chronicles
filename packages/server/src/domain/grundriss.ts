@@ -65,7 +65,7 @@ export function validateKartenOptionen(art: KartenArt, optionen?: KartenOptionen
   const keys: Record<KartenArt, readonly string[]> = {
     grundriss: ["zellen", "zellgroesse", "raeume", "minRaum", "schleifen", "moeblierung", "licht", "gangboden", "anordnung", "profil", "setting"],
     hoehle: ["zellen", "zellgroesse", "kammern", "fuellung", "glaettung", "mindestFlaeche", "moeblierung", "licht"],
-    siedlung: ["art", "ausdehnung", "zellgroesse", "bauwerke", "strassenDichte", "grundstueck", "licht", "setting", "standort", "relief", "bewaldung", "planung", "verkehr"],
+    siedlung: ["art", "ausdehnung", "zellgroesse", "bauwerke", "strassenDichte", "grundstueck", "licht", "setting", "standort", "relief", "bewaldung", "planung", "verkehr", "mauer", "burg"],
     region: ["ausdehnung", "zellgroesse", "orte", "setting", "standort", "relief", "bewaldung"],
   };
   if (!Object.hasOwn(keys, art) || optionen !== undefined && (!optionen || typeof optionen !== "object" || Array.isArray(optionen)
@@ -163,6 +163,9 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
     defaults() {
       return { grundriss: GRUNDRISS_STANDARD, hoehle: HOEHLE_STANDARD, siedlung: SIEDLUNG_STANDARD, region: REGION_STANDARD,
         siedlungsarten: { weiler: siedlungStandard("weiler"), dorf: siedlungStandard("dorf"), stadt: siedlungStandard("stadt") },
+        // Eine Fantasy-Stadt aus Vierteln hat eine andere Vorgabe als eine Stadt der Gegenwart; die
+        // Oberfläche nennt je Setting die Zahl, die hier wirklich gebaut wird.
+        siedlungsartenJeSetting: Object.fromEntries(KARTEN_SETTINGS.map(s => [s, { weiler: siedlungStandard("weiler", s), dorf: siedlungStandard("dorf", s), stadt: siedlungStandard("stadt", s) }])) as Record<KartenSetting, Record<"weiler" | "dorf" | "stadt", ReturnType<typeof siedlungStandard>>>,
         strassenplanung: 1, siedlungsplanung: 1, gebaeude: BAUWERK_AUSDEHNUNG, anlagen: ANLAGE_STANDARD,
         stile: [{ id: "grundriss", titel: "Grundriss" }, { id: "gemalt", titel: "Gemalt" }, { id: "zeitwelten", titel: "Zeitwelten" }, { id: "genres", titel: "Genre-Archiv" }],
         limits: { grundriss: GRUNDRISS_LIMITS, hoehle: HOEHLE_LIMITS, siedlung: SIEDLUNG_LIMITS, region: REGION_LIMITS } };

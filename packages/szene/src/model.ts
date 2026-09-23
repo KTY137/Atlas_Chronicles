@@ -124,6 +124,7 @@ export const BAUWERK_TYPEN = Object.freeze([
   "haus", "kirche", "taverne", "schmiede", "lager", "turm", "wohnblock", "buero", "cafe", "restaurant",
   "supermarkt", "krankenhaus", "polizei", "feuerwache", "schule", "hotel", "fabrik", "bahnhof", "labor",
   "raumhafen", "raumstation", "medstation", "kommando", "reaktor", "bibliothek", "museum", "bank", "werkstatt",
+  "burg", "rathaus", "muehle", "bauernhof", "kaserne",
 ] as const);
 export type BauwerkTyp = (typeof BAUWERK_TYPEN)[number];
 export const BAUWERK_LABEL: Readonly<Record<BauwerkTyp, string>> = Object.freeze({
@@ -133,6 +134,7 @@ export const BAUWERK_LABEL: Readonly<Record<BauwerkTyp, string>> = Object.freeze
   fabrik: "Fabrik", bahnhof: "Bahnhof", labor: "Labor", raumhafen: "Raumhafen", raumstation: "Raumstation",
   medstation: "Medstation", kommando: "Kommandozentrale", reaktor: "Reaktor", bibliothek: "Bibliothek",
   museum: "Museum", bank: "Bank", werkstatt: "Werkstatt",
+  burg: "Burg", rathaus: "Rathaus", muehle: "Mühle", bauernhof: "Bauernhof", kaserne: "Kaserne",
 });
 export const KARTEN_SETTINGS = Object.freeze(["fantasy", "gegenwart", "scifi"] as const);
 export type KartenSetting = (typeof KARTEN_SETTINGS)[number];
@@ -141,7 +143,7 @@ export const KARTEN_SETTING_LABEL: Readonly<Record<KartenSetting, string>> = Obj
 });
 /** Suggested programs for each setting. Individual profiles remain freely selectable. */
 export const BAUWERK_SETTINGS: Readonly<Record<KartenSetting, readonly BauwerkTyp[]>> = Object.freeze({
-  fantasy: Object.freeze(["haus", "kirche", "taverne", "schmiede", "lager", "turm", "bibliothek", "museum", "bank", "werkstatt"] as const),
+  fantasy: Object.freeze(["haus", "kirche", "taverne", "schmiede", "lager", "turm", "bibliothek", "museum", "bank", "werkstatt", "burg", "rathaus", "muehle", "bauernhof", "kaserne"] as const),
   gegenwart: Object.freeze(["wohnblock", "buero", "cafe", "restaurant", "supermarkt", "krankenhaus", "polizei", "feuerwache", "schule", "hotel", "fabrik", "bahnhof", "labor", "bibliothek", "museum", "bank", "werkstatt", "haus", "kirche", "lager"] as const),
   scifi: Object.freeze(["raumstation", "raumhafen", "medstation", "kommando", "reaktor", "labor", "wohnblock", "fabrik", "lager", "werkstatt", "buero", "restaurant"] as const),
 });
