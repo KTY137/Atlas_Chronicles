@@ -64,7 +64,7 @@ describe("road plans through real HTTP, storage and access boundaries", () => {
       expect(currentCampaignSemanticDiff(bundle,await exportCampaignBundle(target,gm,campaign,now))).toEqual([]);
       expect((await createTactical(target).getMap(gm,campaign,map.id)).cartography).toEqual(map.cartography);
     }finally{await target.close();}
-  },30000);
+  },60000); // Fantasy-Städte aus Vierteln (v11): einzeln ~24 s, unter Parallellast mehr.
   it("reports invalid wet endpoints in preview but refuses a partial durable map",async()=>{
     const request=input();request.optionen={...request.optionen,standort:"insel",verkehr:{...graph,knoten:[{...graph.knoten[0]!,position:[0,0]},graph.knoten[1]!]}};
     const before=await createTactical(db).listMaps(gm,campaign),res=await post("/tactical/generate/preview",request);
