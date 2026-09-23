@@ -46,7 +46,7 @@ describe("named city buildings and architectural interiors", () => {
     expect(kirche.keim.keimHash).not.toBe(haus.keim.keimHash);
   });
 
-  for (const profil of ["haus", "kirche", "taverne", "schmiede", "lager", "turm"] as const) for (const zellen of [[12, 12], [24, 18], [40, 30]] as const) {
+  for (const profil of ["haus", "kirche", "taverne", "schmiede", "lager", "turm", "burg", "rathaus", "muehle", "bauernhof", "kaserne"] as const) for (const zellen of [[12, 12], [24, 18], [40, 30]] as const) {
     it(`${profil} on ${zellen.join("×")} emits connected, bounded floors and doors to every room`, () => {
       const auftrag = { keim: `gebäude:${profil}:${zellen.join(":")}`, optionen: { profil, zellen, moeblierung: 0 } };
       const g = erzeugeGrundriss(auftrag, paket);
