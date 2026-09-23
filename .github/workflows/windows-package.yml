@@ -47,6 +47,10 @@ jobs:
           npm run typecheck; if ($LASTEXITCODE) { throw 'Types failed' }
           npm run build; if ($LASTEXITCODE) { throw 'Client build failed' }
           npm run gate:assets; if ($LASTEXITCODE) { throw 'Windows assets do not reproduce' }
+          # Der erste WMI-Aufruf eines frisch gestarteten Runners dauerte am 18.09. über 30 s und
+          # riss das Zeitlimit der Postgres-Besitzprüfung (postgres-stop.test.ts). Das Limit im
+          # Produkt bleibt; hier wird nur der Dienst vorher geweckt.
+          Get-CimInstance Win32_Process -Filter "ProcessId=$PID" | Out-Null
           npx vitest run packages/desktop/test packages/client/test/gui-state-fuzz.test.ts
           if ($LASTEXITCODE) { throw 'Desktop or state regression failed' }
           node --test tools/test/release-publish.test.mjs
