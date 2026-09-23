@@ -3,10 +3,10 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { parseAssetpaket, parseTacticalCartography, TACTICAL_CARTOGRAPHY_LIMITS } from "@chronicle/szene";
-import { erzeugeSiedlung, type Siedlung } from "../src/siedlung.ts";
-import { getrennteDaecher } from "../src/stadt/gemeinsam.ts";
-import { flaeche, schnittKonvex, type Polygon } from "../src/polygon.ts";
+import { parseAssetpaket } from "@chronicle/szene";
+import { erzeugeSiedlung } from "../src/siedlung.ts";
+import type { Polygon } from "../src/polygon.ts";
+import { pruefeSiedlung } from "./siedlung-pruefen.ts";
 
 const paket = parseAssetpaket(readFileSync(fileURLToPath(new URL("../../../assets/packs/pk.zeitwelten/paket.json", import.meta.url)), "utf8"));
 const gen = (keim: string, optionen: Record<string, unknown>) => erzeugeSiedlung({ keim, optionen: { setting: "gegenwart", ...optionen } }, paket);
@@ -18,20 +18,6 @@ const richtung = (band: Polygon) => {
   band.forEach((p, i) => { const n = band[(i + 1) % band.length]!, l = Math.hypot(n[0] - p[0], n[1] - p[1]); if (l > beste) { beste = l; winkel = Math.atan2(n[1] - p[1], n[0] - p[0]); } });
   return Math.round(((winkel + Math.PI) % Math.PI) / Math.PI * 18) % 18;
 };
-export function pruefeSiedlung(s: Siedlung, wo: string): void {
-  expect(s.bauwerke.length, wo).toBeGreaterThan(0);
-  const strassen = new Set(s.strassen.map(x => x.id));
-  for (const b of s.bauwerke) expect(strassen.has(b.strasse), `${wo} ${b.pfad}`).toBe(true);
-  for (let a = 0; a < s.bauwerke.length; a++) for (let c = a + 1; c < s.bauwerke.length; c++)
-    expect(getrennteDaecher(s.bauwerke[a]!.umriss, s.bauwerke[c]!.umriss), `${wo} ${s.bauwerke[a]!.pfad} / ${s.bauwerke[c]!.pfad}`).toBe(true);
-  const z = s.karte.grid.kind === "square" ? s.karte.grid.size : 1, flaechen = new Map(s.karte.geometry.regions.map(g => [g.id, g.punkte.map(([x, y]) => [x / z, y / z] as const)]));
-  const wasser = s.cartography.regions.filter(r => r.role === "water").map(r => flaechen.get(r.regionId)!);
-  for (const b of s.bauwerke) for (const w of wasser) expect(flaeche(schnittKonvex(b.umriss, w)), `${wo} ${b.pfad} im Wasser`).toBeLessThan(1e-3);
-  expect(() => parseTacticalCartography(s.cartography, s.karte), wo).not.toThrow();
-  expect(JSON.stringify(s.cartography).length, wo).toBeLessThanOrEqual(TACTICAL_CARTOGRAPHY_LIMITS.documentBytes);
-  expect(s.karte.geometry.regions.length, wo).toBeLessThanOrEqual(4096);
-}
-
 /** Spec 2026-09-23-stadt-zukunft, Abschnitt 5: die heutige Stadt (Version 12). */
 describe("Gegenwart v12", () => {
   it("hat Innenstadt mit Rathaus, Park, Pflichtbauten, Flach- und Hallendächer und keine Mauer", () => {
