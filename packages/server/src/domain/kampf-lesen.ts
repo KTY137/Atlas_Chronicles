@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { gueltigeKartenSicht, type KampfFuerLeitung, type KampfKopf, type KampfSeite, type KartenLage, type KartenSichtDaten, type Kampfzustand } from "@chronicle/protocol";
-import { karteFuerLeitung, vorgabeSicht, type KartenQuelle } from "@chronicle/projection";
+import { gueltigeKartenSicht, type KampfFuerLeitung, type KampfFuerRunde, type KampfKopf, type KampfSeite, type KartenLage, type KartenSichtDaten, type Kampfzustand } from "@chronicle/protocol";
+import { karteFuerLeitung, karteFuerRunde, vorgabeSicht, type KartenQuelle, type VitalStand } from "@chronicle/projection";
+import { activeConditions, evaluateVitals, type AnyRulePackage, type Scalar } from "@chronicle/rules";
 import type { Db } from "../db/index.ts";
 import type { DomainConfig } from "./campaigns.ts";
 import { Gone } from "./errors.ts";
+import { createGameplay } from "./gameplay.ts";
 
 /**
  * Den Kampftisch lesen: Zeilen aus `kaempfe`, `kampf_teilnehmer` und `kampf_karten` zu einem
@@ -61,9 +63,43 @@ export async function lies(tx: Db, campaignId: string, kampfId: string, sperren 
 export const kampfKopf = (roh: KampfRoh): KampfKopf =>
   ({ id: roh.id, name: roh.name, zustand: roh.zustand, runde: roh.runde, erstelltAm: roh.erstelltAm, beendetAm: roh.beendetAm });
 
-/** Eine Karte ohne Werte. Aufgabe 4 ersetzt das durch das Lesen der Bögen. */
-const ohneWerte = (k: KarteRoh): KartenQuelle => ({ ...k, bogenVersion: null, vitals: [], zustaende: [], bild: null, aufgebraucht: false });
+const vitalStaende = (pkg: AnyRulePackage, fields: Readonly<Record<string, Scalar>>): VitalStand[] => {
+  // Ein Bogen mitten im Umbau kann ungültig sein — dann eben keine Balken, statt eines Fehlers.
+  try { return evaluateVitals(pkg, fields).map(v => ({ id: v.id, label: v.label, wert: v.value, hoechst: v.maximum, depletion: v.depletion })); }
+  catch { return []; }
+};
+const zustaendeVon = (pkg: AnyRulePackage, fields: Readonly<Record<string, Scalar>>) => {
+  try { return [...activeConditions(pkg, fields)]; } catch { return []; }
+};
 
-export async function kampfFuerLeitung(_tx: Db, _cfg: DomainConfig, _campaignId: string, roh: KampfRoh): Promise<KampfFuerLeitung> {
-  return { leitung: true, ...kampfKopf(roh), teilnehmer: roh.karten.map(k => karteFuerLeitung(ohneWerte(k))) };
+/**
+ * Die Karten mit ihren Werten. Beendete Kämpfe lesen keine Bögen: die Werte von jetzt sind nicht
+ * die von damals, und der Rückblick zeigt, wer dabei war und wer lag (Spezifikation E4).
+ */
+async function quellen(tx: Db, cfg: DomainConfig, campaignId: string, roh: KampfRoh): Promise<KartenQuelle[]> {
+  const ids = [...new Set(roh.karten.flatMap(k => k.actorId ? [k.actorId] : []))];
+  const boegen = roh.zustand !== "beendet" && ids.length ? await createGameplay(tx, cfg).boegenFuerProjektion(campaignId, ids) : new Map();
+  const bilder = new Map(ids.length ? (await tx.query<{ actor_id: string; version: number }>(
+    "SELECT actor_id,version FROM actor_portraits WHERE campaign_id=$1 AND actor_id=ANY($2::text[]) AND mime IS NOT NULL", [campaignId, ids])).rows
+    .map(row => [row.actor_id, { version: Number(row.version) }] as const) : []);
+  return roh.karten.map(k => {
+    const bogen = k.actorId ? boegen.get(k.actorId) : undefined;
+    const vitals = bogen ? vitalStaende(bogen.pkg, bogen.sheet.fields) : [];
+    return {
+      ...k, bogenVersion: bogen ? bogen.sheet.version : null, vitals,
+      zustaende: bogen ? zustaendeVon(bogen.pkg, bogen.sheet.fields) : [],
+      bild: k.actorId ? bilder.get(k.actorId) ?? null : null,
+      aufgebraucht: !!bogen && (bogen.sheet.defeatPending || vitals.some(v => v.depletion === "defeat" && v.wert <= 0)),
+    };
+  });
+}
+
+export async function kampfFuerLeitung(tx: Db, cfg: DomainConfig, campaignId: string, roh: KampfRoh): Promise<KampfFuerLeitung> {
+  return { leitung: true, ...kampfKopf(roh), teilnehmer: (await quellen(tx, cfg, campaignId, roh)).map(karteFuerLeitung) };
+}
+
+/** Für jeden ohne Leitung. Verdeckte Karten verlassen den Server nicht — ihre Bögen werden gar nicht erst gelesen. */
+export async function kampfFuerRunde(tx: Db, cfg: DomainConfig, campaignId: string, roh: KampfRoh, fuehrt: ReadonlySet<string>): Promise<KampfFuerRunde> {
+  const sichtbar: KampfRoh = { ...roh, karten: roh.karten.filter(k => k.lage === "feld" || k.lage === "umgelegt") };
+  return { ...kampfKopf(roh), teilnehmer: (await quellen(tx, cfg, campaignId, sichtbar)).flatMap(q => { const karte = karteFuerRunde(q, fuehrt); return karte ? [karte] : []; }) };
 }

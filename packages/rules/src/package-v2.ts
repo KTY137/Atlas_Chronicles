@@ -410,6 +410,23 @@ export function abilityOverview(rawPackage: AnyRulePackage, input: unknown): Abi
     && (ability.prerequisite === undefined || new Budget().evaluate(ability.prerequisite, context).value === true)).map(ability => ability.id);
   return deepFreeze({ learned: [...learned], conditions: own.conditions.map(condition => condition.id), spent: own.spent, budget: own.budget, learnable });
 }
+/**
+ * Die wirkenden Zustände eines Bogens, für Anzeigen wie den Kampftisch: Kennung und Name, sonst
+ * nichts. Anders als `abilityOverview` prüft sie keinen Fähigkeitskatalog — eine Karte will wissen,
+ * was wirkt, nicht was lernbar wäre —, und eine unbekannte Kennung fällt weg, statt die Anzeige
+ * scheitern zu lassen.
+ */
+export function activeConditions(rawPackage: AnyRulePackage, fields: Readonly<Record<string, Scalar>>): readonly { readonly id: string; readonly name: string }[] {
+  const pkg = parseSupportedRulePackage(rawPackage);
+  if (pkg.schemaVersion !== 2 || !pkg.abilityRules?.conditionField || !pkg.conditions?.length) return deepFreeze([]);
+  const roh = fields[pkg.abilityRules.conditionField];
+  if (typeof roh !== "string") return deepFreeze([]);
+  const namen = new Map(pkg.conditions.map(condition => [condition.id, condition.name]));
+  return deepFreeze([...new Set(roh.split(/[\s,]+/).filter(Boolean))].flatMap(id => {
+    const name = namen.get(id);
+    return name === undefined ? [] : [{ id, name }];
+  }));
+}
 /** Die Vitalwerte, deren Erschöpfung eine Niederlage bedeutet — die einzige Quelle dafür. */
 export function depletedDefeatVitals(rawPackage: AnyRulePackage, input: unknown): readonly VitalReading[] {
   return evaluateVitals(rawPackage, input).filter(vital => vital.depletion === "defeat" && vital.depleted);

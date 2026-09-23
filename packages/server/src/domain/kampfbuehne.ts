@@ -3,12 +3,13 @@
 import { randomUUID } from "node:crypto";
 import { stableJson } from "@chronicle/rules";
 import type { KampfFuerLeitung, KampfFuerRunde, KampfSeite, KartenLage, KartenSichtDaten } from "@chronicle/protocol";
-import { vorgabeSicht } from "@chronicle/projection";
+import { vorgabeSicht, zeigtBild } from "@chronicle/projection";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { Conflict, Gone } from "./errors.ts";
-import { kampfFuerLeitung, lies, type KampfRoh, type KarteRoh } from "./kampf-lesen.ts";
+import { kampfFuerLeitung, kampfFuerRunde, lies, type KampfRoh, type KarteRoh } from "./kampf-lesen.ts";
 import { naechsteFeldkarte, zugNachVerlassen } from "./kampf-zug.ts";
+import { listControlledActorIds } from "./actors.ts";
 
 /**
  * Der Kampftisch — wer liegt wo, wer ist dran, in welcher Runde, und was sieht die Runde davon.
@@ -20,6 +21,9 @@ import { naechsteFeldkarte, zugNachVerlassen } from "./kampf-zug.ts";
  * wieder dran; ihre Kennung allein erkennt dann keinen verspäteten zweiten Klick mehr.
  * Schreibvorgänge sperren den Kampf, bevor sie Lage oder Zug lesen — so gilt „wer am Zug ist,
  * liegt auf dem Feld", obwohl keine Datenbankregel es über zwei Tabellen halten kann.
+ *
+ * Die Lesewege projizieren je Betrachter (`kampf-lesen.ts`), die Befehle geben immer die
+ * Nutzlast der Spielleitung zurück — nur sie darf sie auslösen.
  */
 
 export type Seite = KampfSeite;
@@ -71,20 +75,62 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
   const stand = async (tx: Db, campaignId: string, kampfId: string): Promise<KampfFuerLeitung> =>
     kampfFuerLeitung(tx, config, campaignId, await lies(tx, campaignId, kampfId));
 
-  /**
-   * Alle am Tisch sehen die Kämpfe ihrer Kampagne. AUFGABE 4 ersetzt diese beiden Lesewege durch
-   * die Projektion je Betrachter — bis dahin bekommt jede Rolle die Nutzlast der Spielleitung.
-   */
+  /** `null` = Spielleitung. Sonst die Figuren, die der Betrachter führt. */
+  async function betrachter(userId: string, campaignId: string): Promise<ReadonlySet<string> | null> {
+    const member = await campaigns.requireMember(userId, campaignId);
+    return member.role === "leitung" ? null : new Set(await listControlledActorIds(db, member));
+  }
+  const darstellen = (tx: Db, campaignId: string, roh: KampfRoh, fuehrt: ReadonlySet<string> | null) =>
+    fuehrt === null ? kampfFuerLeitung(tx, config, campaignId, roh) : kampfFuerRunde(tx, config, campaignId, roh, fuehrt);
+
+  /** Alle am Tisch sehen die Kämpfe ihrer Kampagne — jede und jeder so, wie die Spielleitung es zulässt. */
   async function buehnen(userId: string, campaignId: string): Promise<readonly (KampfFuerLeitung | KampfFuerRunde)[]> {
-    await campaigns.requireMember(userId, campaignId);
+    const fuehrt = await betrachter(userId, campaignId);
     const koepfe = (await db.query<{ id: string }>("SELECT id FROM kaempfe WHERE campaign_id=$1 ORDER BY erstellt_am DESC,id", [campaignId])).rows;
-    const alle: KampfFuerLeitung[] = [];
-    for (const kopf of koepfe) alle.push(await stand(db, campaignId, kopf.id));
+    const alle: (KampfFuerLeitung | KampfFuerRunde)[] = [];
+    for (const kopf of koepfe) alle.push(await darstellen(db, campaignId, await lies(db, campaignId, kopf.id), fuehrt));
     return alle;
   }
   async function buehne(userId: string, campaignId: string, kampfId: string): Promise<KampfFuerLeitung | KampfFuerRunde> {
-    await campaigns.requireMember(userId, campaignId);
-    return stand(db, campaignId, kampfId);
+    const fuehrt = await betrachter(userId, campaignId);
+    return darstellen(db, campaignId, await lies(db, campaignId, kampfId), fuehrt);
+  }
+
+  /** „Mit den Augen der Runde": genau die Nutzlast eines Betrachters, der keine Figur führt. */
+  async function alsRunde(userId: string, campaignId: string, kampfId: string): Promise<KampfFuerRunde> {
+    await leitung(userId, campaignId);
+    return kampfFuerRunde(db, config, campaignId, await lies(db, campaignId, kampfId), new Set());
+  }
+
+  /** Was die Runde von einer Karte sieht: Balken, Name für die Runde, Bild, Zustände. */
+  async function sichtSetzen(userId: string, campaignId: string, kampfId: string, teilnehmerId: string,
+    input: { sicht: KartenSichtDaten; nameFuerRunde: string | null; expectedVersion: number }): Promise<KampfFuerLeitung> {
+    await leitung(userId, campaignId);
+    return db.transaction(async tx => {
+      const vorher = await lies(tx, campaignId, kampfId, true);
+      if (vorher.zustand === "beendet") throw new Conflict();
+      const karte = vorher.karten.find(k => k.id === teilnehmerId);
+      if (!karte) throw new Gone();
+      if (karte.version !== input.expectedVersion) throw new Conflict();
+      await karteAendern(tx, campaignId, karte, { sicht: input.sicht, nameFuerRunde: input.nameFuerRunde });
+      return stand(tx, campaignId, kampfId);
+    });
+  }
+
+  /**
+   * Das Porträt einer Karte, über den Kampf statt über die Figur: eine Spielerin darf die Figur des
+   * Gegners nicht lesen, sein Bild auf dem Tisch aber sehen — wenn die Spielleitung es zeigt.
+   * Dieselbe Regel wie in der Nutzlast (`zeigtBild`); wer die Karte nicht sieht, bekommt 404.
+   */
+  async function bild(userId: string, campaignId: string, kampfId: string, teilnehmerId: string): Promise<{ mime: string; sha256: string; data: Buffer }> {
+    const fuehrt = await betrachter(userId, campaignId);
+    const karte = (await lies(db, campaignId, kampfId)).karten.find(k => k.id === teilnehmerId);
+    if (!karte?.actorId) throw new Gone();
+    if (fuehrt !== null && !zeigtBild(karte, fuehrt)) throw new Gone();
+    const row = (await db.query<{ mime: string | null; sha256: string | null; daten: string | null }>(
+      "SELECT mime,sha256,daten FROM actor_portraits WHERE campaign_id=$1 AND actor_id=$2", [campaignId, karte.actorId])).rows[0];
+    if (!row?.mime || !row.sha256 || !row.daten) throw new Gone();
+    return { mime: row.mime, sha256: row.sha256, data: Buffer.from(row.daten, "base64") };
   }
 
   async function anlegen(userId: string, campaignId: string, input: { name: string }): Promise<KampfFuerLeitung> {
@@ -220,5 +266,5 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
     });
   }
 
-  return { buehnen, buehne, anlegen, teilnehmerHinzufuegen, teilnehmerEntfernen, lageSetzen, initiativeSetzen, eroeffnen, naechsterZug, beenden };
+  return { buehnen, buehne, alsRunde, bild, anlegen, teilnehmerHinzufuegen, teilnehmerEntfernen, lageSetzen, sichtSetzen, initiativeSetzen, eroeffnen, naechsterZug, beenden };
 }

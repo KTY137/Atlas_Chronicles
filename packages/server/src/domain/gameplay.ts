@@ -249,6 +249,25 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   async function getSheet(userId: string, campaignId: string, actorId: string) {
     const member = await campaigns.requireMember(userId, campaignId); await controller(db, member, actorId); return sheet(db, campaignId, actorId);
   }
+  /**
+   * Bögen samt Regelpaket für eine serverseitige Projektion (Kampftisch).
+   *
+   * **Ohne Rechteprüfung**: der Aufrufer projiziert, bevor irgendetwas davon einen Betrachter
+   * erreicht. Dieser Weg wird nie an eine HTTP-Antwort gereicht. Ein Bogen, dessen Paket fehlt oder
+   * kaputt ist, fehlt hier einfach — eine Karte ohne Balken ist besser als ein Tisch, der nicht lädt.
+   */
+  async function boegenFuerProjektion(campaignId: string, actorIds: readonly string[]): Promise<ReadonlyMap<string, { sheet: ActorSheet; pkg: RulePackage }>> {
+    const ergebnis = new Map<string, { sheet: ActorSheet; pkg: RulePackage }>(), pakete = new Map<string, RulePackage>();
+    for (const actorId of new Set(actorIds)) {
+      try {
+        const bogen = await sheet(db, campaignId, actorId), schluessel = `${bogen.packageId}@${bogen.packageVersion}`;
+        let pkg = pakete.get(schluessel);
+        if (!pkg) { pkg = await packageFor(db, campaignId, { id: bogen.packageId, version: bogen.packageVersion }); pakete.set(schluessel, pkg); }
+        ergebnis.set(actorId, { sheet: bogen, pkg });
+      } catch { /* siehe oben: fehlt, statt den Tisch zu sprengen */ }
+    }
+    return ergebnis;
+  }
   async function updateSheet(userId: string, campaignId: string, input: { actorId: string; expectedVersion: number; fields: Readonly<Record<string, Scalar>> }) {
     return db.transaction(async tx => {
       const member = await authorize(tx, userId, campaignId); await controller(tx, member, input.actorId);
@@ -596,7 +615,7 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     await target(db, campaignId, passageId);
     return (await db.query("SELECT id,kind,passage_id AS \"passageId\",revision_id AS \"revisionId\",provenance,seal,confirmed_at AS \"confirmedAt\" FROM confirmed_mints WHERE campaign_id=$1 AND passage_id=$2 ORDER BY confirmed_at,id", [campaignId, passageId])).rows;
   }
-  return { listPackages, installPackage, previewPackage, activatePackage, archivePackage, unarchivePackage, deletePackage, getSheet, updateSheet, adjustResource, listScenes, createScene, startScene,
+  return { listPackages, installPackage, previewPackage, activatePackage, archivePackage, unarchivePackage, deletePackage, getSheet, boegenFuerProjektion, updateSheet, adjustResource, listScenes, createScene, startScene,
     prepareAction, confirmAction, getRoll, listRolls, listTableRolls, replayRoll, mintGesprochen, mintRatifikation, mintBerichtigung, confirmDefeat, mintProvenance,
     issueVollmacht, prepareVollmacht, confirmVollmacht, listVollmachten, revokeVollmacht, expireVollmachten };
 }
