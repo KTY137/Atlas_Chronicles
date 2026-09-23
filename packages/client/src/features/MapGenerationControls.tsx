@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { Building2, Castle, CloudSun, Droplets, Mountain, Paintbrush, Ruler, MapPin, Trees, Waves, Sprout, Sailboat, Circle, Palmtree, Map } from "lucide-react";
-import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL } from "@chronicle/szene";
+import { BAUWERK_LABEL, BAUWERK_TYPEN, BAUWERK_SETTINGS, KARTEN_SETTINGS, KARTEN_SETTING_LABEL, type SettlementPlan } from "@chronicle/szene";
 import { MapZonePlanner } from "./MapZonePlanner";
 import { MapRoadPlanner, type RoadPlanningPreview } from "./MapRoadPlanner";
 import { locale, t } from "../i18n";
-import { changeGenerationSetting, generationDimensions, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
+import { changeGenerationSetting, generationDimensions, siedlungsVorgabe, type GenerationDefaults, type GenerationSettings, type MapArt } from "./map-generation";
 import { changeEntranceType, entranceTypeValue, settlementPreset, SETTLEMENT_TYPES, SETTLEMENT_TYPE_LABEL } from "./map-type-selection";
 
 // Die Anzeigetexte stehen als Tabelle daneben, damit die Anzeigestelle sie mit `t` nachschlägt.
@@ -48,7 +48,9 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
   const compound = value.art === "siedlung" ? value.anlage : undefined;
   const compoundDefaults = compound ? defaults.anlagen?.[compound] : undefined;
   const regional = value.art === "region", outdoor = city || regional;
-  const cityDefaults = compoundDefaults ?? defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung;
+  const ortsVorgabe = siedlungsVorgabe(defaults, value.siedlung, value.setting), cityDefaults = compoundDefaults ?? ortsVorgabe;
+  const mitMauer = value.mauer ?? ortsVorgabe.mauer ?? value.siedlung === "stadt";
+  const bericht = planningPreview?.bericht, viertelPlan = bericht && "viertelPlan" in bericht ? (bericht as { viertelPlan?: SettlementPlan }).viertelPlan : undefined;
   const std = city ? cityDefaults : regional ? defaults.region ?? { zellgroesse: 112 } : cave ? defaults.hoehle : defaults.grundriss;
   const suggested = BAUWERK_SETTINGS[value.setting];
   const presets = compound ? [
@@ -59,10 +61,10 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     { label: t("Klein"), breite: 40, hoehe: 30, anzahl: 8 }, { label: t("Mittel"), breite: 56, hoehe: 42, anzahl: 12 }, { label: t("Groß"), breite: 72, hoehe: 54, anzahl: 24 },
   ] : city ? [
     ...SETTLEMENT_TYPES.map(art => {
-      const preset = settlementPreset(art, defaults);
+      const preset = settlementPreset(art, defaults, value.setting);
       return { label: t(SETTLEMENT_TYPE_LABEL[art]), breite: preset.ausdehnung[0], hoehe: preset.ausdehnung[1], anzahl: preset.bauwerke, siedlung: art, dichte: preset.strassenDichte, licht: preset.licht };
     }),
-    { label: t("Großstadt"), breite: 88, hoehe: 64, anzahl: 256, siedlung: "stadt" as const, dichte: .7 },
+    { label: t("Großstadt"), breite: 88, hoehe: 64, anzahl: value.setting === "fantasy" ? 480 : 256, siedlung: "stadt" as const, dichte: .7 },
   ] : [ { label: t("Klein"), breite: 24, hoehe: 20, anzahl: 5 }, { label: t("Mittel"), breite: 40, hoehe: 30, anzahl: 11 }, { label: t("Groß"), breite: 64, hoehe: 48, anzahl: 24 } ];
   const changeArt = (art: MapArt) => {
     const { verkehr, planung, anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
@@ -96,10 +98,16 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
       const { verkehr: _previous, ...rest } = value;
       onChange({ ...rest, ...(verkehr ? { verkehr } : {}) });
     }} /> : null}
-    {city && !compound && defaults.siedlungsplanung === 1 ? <MapZonePlanner value={value.planung} onChange={planung => {
+    {city && !compound && defaults.siedlungsplanung === 1 ? <MapZonePlanner value={value.planung} vorschlag={viertelPlan} onChange={planung => {
       const { planung: _previous, ...rest } = value;
       onChange({ ...rest, ...(planung ? { planung } : {}) });
     }} /> : null}
+    {city && !compound && value.setting === "fantasy" ? <section className="map-town-defense" aria-label={t("Befestigung")}>
+      <label className="check-label"><input type="checkbox" checked={mitMauer} onChange={event => update({ mauer: event.target.checked })} /> {t("Stadtmauer mit Türmen und Toren")}</label>
+      <small className="field-help">{t("Die Altstadt bekommt eine Mauer. Wo Hauptstraßen hinausführen, entstehen Tore; die Türme kannst du später betreten.")}</small>
+      <label className="check-label"><input type="checkbox" checked={mitMauer && (value.burg ?? ortsVorgabe.burg ?? value.siedlung === "stadt")} disabled={!mitMauer} onChange={event => update({ burg: event.target.checked })} /> {t("Burg am Stadtrand")}</label>
+      <small className="field-help">{t("Eine Burg mit eigener Mauer steht auf dem höchsten Platz an der Stadtmauer. Ohne Stadtmauer gibt es keine Burg.")}</small>
+    </section> : null}
     {outdoor ? <section className="map-location-section" aria-label={t("Standort der Siedlung")}>
       <div className="map-setting-heading"><MapPin size={16} /><strong>{t("Wo liegt dein Ort?")}</strong></div>
       <div className="map-location-cards" role="group" aria-label={t("Landschaft auswählen")}>
@@ -124,7 +132,7 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     <div className="map-numbers">
       <label>{t("Breite")}<input type="number" min={12} max={192} step={1} value={value.breite} placeholder={String(w)} onChange={event => update({ breite: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
       <label>{t("Höhe")}<input type="number" min={12} max={192} step={1} value={value.hoehe} placeholder={String(h)} onChange={event => update({ hoehe: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
-      <label>{regional ? t("Orte") : city ? t("Gebäude") : cave ? t("Kammern") : t("Räume")}<input type="number" min={compound ? compound === "burg" ? 7 : 3 : outdoor ? 1 : 2} max={compound ? compound === "burg" ? 12 : 7 : regional ? 24 : city ? 256 : cave ? 32 : 64} step={1} value={value.anzahl}
+      <label>{regional ? t("Orte") : city ? t("Gebäude") : cave ? t("Kammern") : t("Räume")}<input type="number" min={compound ? compound === "burg" ? 7 : 3 : outdoor ? 1 : 2} max={compound ? compound === "burg" ? 12 : 7 : regional ? 24 : city ? 512 : cave ? 32 : 64} step={1} value={value.anzahl}
         placeholder={String(regional ? defaults.region?.orte ?? 12 : city ? cityDefaults.bauwerke : cave ? defaults.hoehle.kammern : defaults.grundriss.raeume)} onChange={event => update({ anzahl: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
     </div>
     <small className="field-help">{t("{breite} × {hoehe} Pixel", { breite: (w * std.zellgroesse).toLocaleString(locale()), hoehe: (h * std.zellgroesse).toLocaleString(locale()) })} · {city ? t("Gebäudezahl als Ziel; Straßen und freie Flächen brauchen Platz.") : t("Raumzahl als Ziel; die Aufteilung richtet sich nach dem Gebäudetyp.")}</small>

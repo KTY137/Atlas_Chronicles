@@ -7,7 +7,11 @@ import { Button } from "@chronicle/ui";
 import { locale, plural, t } from "../i18n";
 import "./map-road-planner.css";
 
-export interface RoadPlanningPreview { document: TacticalMapDocumentV1; cartography?: TacticalCartographyV1 }
+export interface RoadPlanningPreview {
+  document: TacticalMapDocumentV1; cartography?: TacticalCartographyV1;
+  /** Der Bericht der Vorschau; eine Viertelstadt nennt dort ihre Viertel als Zonenplan. */
+  bericht?: object;
+}
 const EMPTY: RoadPlan = { schemaVersion: 1, maxSteigung: 24, knoten: [], verbindungen: [] };
 export function MapRoadPlanner({ value = EMPTY, onChange, preview }: { value?: RoadPlan; onChange: (plan: RoadPlan | undefined) => void; preview?: RoadPlanningPreview }) {
   const [selected, select] = useState(""), [edgeId, selectEdge] = useState("");
