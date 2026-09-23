@@ -345,4 +345,33 @@ describe("Der Kampftisch", () => {
       } finally { await app.close(); }
     }, 30_000);
   });
+
+  describe("Live", () => {
+    it("meldet der Runde nur, was sie sehen kann — auch der Zeitpunkt verrät nichts", async () => {
+      const f = await kampfFixture(db);
+      const kampf = await f.buehne.anlegen(f.gm, f.campaign, { name: "Live" });
+      const wolf = await f.gegner("Wolf"), spaeher = await f.gegner("Späher");
+      await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Wolf", seite: "gegner", initiative: 12, actorId: wolf });
+      const mitHand = await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Späher", seite: "gegner", initiative: 9, actorId: spaeher, lage: "hand" });
+      const verdeckt = mitHand.teilnehmer.find(k => k.name === "Späher")!;
+      const vorher = await f.live.sync(f.mira.userId, f.campaign);
+
+      // Alles an der verdeckten Karte bleibt unsichtbar: Name, Einstellung, Werte.
+      await f.buehne.sichtSetzen(f.gm, f.campaign, kampf.id, verdeckt.id, { sicht: { ...verdeckt.sicht, standard: "genau" }, nameFuerRunde: "Schatten", expectedVersion: verdeckt.version });
+      const spaeherBogen = await f.game.getSheet(f.gm, f.campaign, spaeher);
+      await f.game.updateSheet(f.gm, f.campaign, { actorId: spaeher, expectedVersion: spaeherBogen.version, fields: { ...spaeherBogen.fields, hp: 5 } });
+      expect(await f.live.sync(f.mira.userId, f.campaign)).toBe(vorher);
+
+      // Ein sichtbarer Wert, der sich in Worten ändert (40 → 60: „knapp“ → „gut“), kommt an.
+      const wolfBogen = await f.game.getSheet(f.gm, f.campaign, wolf);
+      await f.game.updateSheet(f.gm, f.campaign, { actorId: wolf, expectedVersion: wolfBogen.version, fields: { ...wolfBogen.fields, hp: 60 } });
+      const danach = await f.live.sync(f.mira.userId, f.campaign);
+      expect(danach).toBeGreaterThan(vorher);
+
+      // Eine sichtbare Änderung, die in Worten gleich bleibt (60 → 55, weiter „gut“), bleibt still.
+      const wieder = await f.game.getSheet(f.gm, f.campaign, wolf);
+      await f.game.updateSheet(f.gm, f.campaign, { actorId: wolf, expectedVersion: wieder.version, fields: { ...wieder.fields, hp: 55 } });
+      expect(await f.live.sync(f.mira.userId, f.campaign)).toBe(danach);
+    }, 30_000);
+  });
 });

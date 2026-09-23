@@ -12,6 +12,7 @@ import { createAtlas } from "./atlas.ts";
 import { createGameplay } from "./gameplay.ts";
 import { createWeek } from "./week.ts";
 import { createActors, listControlledActorIds } from "./actors.ts";
+import { createKampfbuehne } from "./kampfbuehne.ts";
 import { Gone, Conflict } from "./errors.ts";
 
 const hash=(v:unknown)=>createHash("sha256").update(stableJson(v)).digest("hex");
@@ -82,7 +83,8 @@ export function createCommunication(db:Db,cfg:DomainConfig={}) {
     const templates=member.role==="leitung" ? [await actors.listActorTemplates(userId,campaignId),await actors.listItemTemplates(userId,campaignId)] : [];
     const theme=(await db.query("SELECT theme_id,theme_revision,version FROM campaign_theme_pins WHERE campaign_id=$1",[campaignId])).rows[0] ?? null;
     const authoring=member.role==="leitung" ? (await db.query("SELECT count(*)::text AS count FROM authoring_events WHERE campaign_id=$1",[campaignId])).rows[0] : null;
-    return hash({theme,authoring,tactical:(await createTactical(db,cfg).getActive(userId,campaignId))?.digest ?? null,entries,maps:mapViews,sheets,actors:await actors.listActors(userId,campaignId),perspective:await actors.getReaderPerspective(userId,campaignId),inventory,templates,rules:await game.listPackages(userId,campaignId),clock:await week.getClock(userId,campaignId),letters:await week.listLetters(userId,campaignId),scenes:await game.listScenes(userId,campaignId),rolls:await game.listRolls(userId,campaignId),doors:await game.listVollmachten(userId,campaignId),messages:await messages(userId,campaignId),table:await messages(userId,campaignId,"table")});
+    // Der Kampftisch geht als PROJIZIERTE Nutzlast ein: eine Änderung an einer verdeckten Karte ändert den Abdruck der Runde nicht, und ihr Zeitpunkt verrät deshalb nichts (Spezifikation E4).
+    return hash({theme,authoring,tactical:(await createTactical(db,cfg).getActive(userId,campaignId))?.digest ?? null,entries,maps:mapViews,sheets,actors:await actors.listActors(userId,campaignId),perspective:await actors.getReaderPerspective(userId,campaignId),inventory,templates,rules:await game.listPackages(userId,campaignId),clock:await week.getClock(userId,campaignId),letters:await week.listLetters(userId,campaignId),scenes:await game.listScenes(userId,campaignId),rolls:await game.listRolls(userId,campaignId),doors:await game.listVollmachten(userId,campaignId),messages:await messages(userId,campaignId),table:await messages(userId,campaignId,"table"),kaempfe:await createKampfbuehne(db,cfg).buehnen(userId,campaignId)});
   }
   async function sync(userId:string,campaignId:string) {
     return db.transaction(async tx=>{
