@@ -121,10 +121,13 @@ export function syncSheetWithFields(draft: RuleDraft, previous: readonly DraftFi
   let next = draft;
   const vitals = next.vitals?.filter(vital => !removedIds.has(vital.id));
   if (vitals && vitals.length !== next.vitals!.length) next = { ...next, vitals };
+  // Eine Liste lebt in ihrem Speicherattribut; ist es weg, geht die Liste mit (wie der Balken).
+  const droppedLists = new Set((next.collections ?? []).filter(collection => removedIds.has(collection.storageField)).map(collection => collection.id));
+  if (droppedLists.size) next = { ...next, collections: next.collections!.filter(collection => !droppedLists.has(collection.id)) };
   if (!next.presentation || next.presentationAuto) return next;
   if (removedIds.size) {
     let touched = false;
-    const root = withoutRefs(next.presentation.root, node => { const drop = (node.kind === "field" || node.kind === "vital") && removedIds.has(node.ref); touched ||= drop; return drop; });
+    const root = withoutRefs(next.presentation.root, node => { const drop = ((node.kind === "field" || node.kind === "vital") && removedIds.has(node.ref)) || (node.kind === "collection" && droppedLists.has(node.ref)); touched ||= drop; return drop; });
     if (touched) next = { ...next, presentation: { ...next.presentation, root } };
   }
   for (const field of added) {

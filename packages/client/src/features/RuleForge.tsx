@@ -114,6 +114,7 @@ export function explainValidationError(message: string): string {
     [/^presentation: unknown (field|computed|vital|collection) reference/, t("Der Bogen zeigt einen Eintrag, den es nicht mehr gibt. Öffne den Reiter „Bogen“ und nimm ihn vom Bogen.")],
     [/^presentation: duplicate \w+ reference/, t("Ein Eintrag steht zweimal auf dem Bogen. Öffne den Reiter „Bogen“ und nimm einen davon herunter.")],
     [/^vital .+: expected a number or integer field/, t("Ein Balken braucht ein Zahlenattribut für seinen Stand. Öffne den Reiter „Balken“ und wähle eines aus.")],
+    [/^collection .+: storageField must reference/, t("Eine Liste hat ihr Speicherattribut verloren. Öffne den Reiter „Listen“ und entferne die Liste oder lege sie neu an.")],
     [/^vitals: duplicate id$/, t("Zwei Balken benutzen dasselbe Attribut. Jedes Zahlenattribut trägt höchstens einen Balken.")],
   ];
   return rewrites.find(([pattern]) => pattern.test(message))?.[1] ?? message;

@@ -70,6 +70,16 @@ describe("der Bogen hat eine Wahrheit", () => {
     expect(validateDraft(next).valid).toBe(true);
   });
 
+  it("nimmt eine Liste mit, wenn ihr Speicherattribut entfernt wird (Review 2026-09-23)", () => {
+    const draft = packageDraft(D20_REFERENCE_PACKAGE);
+    const storage = draft.collections![0]!.storageField;
+    const fields = draft.fields.filter(field => field.id !== storage);
+    const next = syncSheetWithFields({ ...draft, fields, sections: draft.sections.map(s => ({ ...s, fieldKeys: s.fieldKeys.filter(key => fields.some(f => f.localId === key)) })) }, draft.fields);
+    expect(next.collections!.map(row => row.storageField)).not.toContain(storage);
+    expect(refs(sheetTree(next), "collection")).not.toContain(draft.collections![0]!.id);
+    expect(validateDraft(next).valid).toBe(true);
+  });
+
   it("legt ein neues Attribut bei festem Baum in „Weitere Felder“ oder ans Ende", () => {
     const draft = placeOnSheet({ ...newPackage("Kaya"), vitals: [{ id: "vigour", label: "Leben", max: "10", depletion: "none" as const }] }, "vital", "vigour", true);
     const fields = [...draft.fields, { ...newField("mut"), label: "Mut" }];
