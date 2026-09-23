@@ -78,7 +78,7 @@ describe("named city buildings and architectural interiors", () => {
     const a = erzeugeGrundriss({ keim: "legacy" }, paket);
     const b = erzeugeGrundriss({ keim: "legacy", optionen: { profil: "frei" } }, paket);
     expect(a).toEqual(b);
-    expect(() => erzeugeGrundriss({ keim: "a", optionen: { profil: "burg" as never } }, paket)).toThrow();
+    expect(() => erzeugeGrundriss({ keim: "a", optionen: { profil: "zitadelle" as never } }, paket)).toThrow();
     expect(() => erzeugeGrundriss({ keim: "a", optionen: { profil: null as never } }, paket)).toThrow();
     expect(() => erzeugeGrundriss({ keim: "a", optionen: { profil: "kirche", zellen: [12, 12], minRaum: 10 } }, paket)).toThrow();
   });
@@ -223,3 +223,12 @@ describe("Innenwände", () => {
     }
   });
 });
+
+describe("fantasy civic buildings added for district towns", () => {
+  it.each(["burg", "rathaus", "muehle", "bauernhof", "kaserne"] as const)("builds an interior with at least two rooms for %s", typ => {
+    const g = erzeugeGrundriss({ keim: `neu:${typ}`, optionen: { profil: typ } }, paket);
+    expect(g.raeume.length).toBeGreaterThanOrEqual(2);
+    expect(g.knoten.find(n => n.id === g.wurzelId)?.bauwerk?.typ).toBe(typ);
+  });
+});
+

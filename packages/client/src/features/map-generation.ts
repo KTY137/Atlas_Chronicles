@@ -92,6 +92,7 @@ export const BUILDING_COLORS: Record<BauwerkTyp, number> = {
   fabrik: 0x8d969b, bahnhof: 0xa5a59a, labor: 0x85b8b3, raumhafen: 0x8ba1b6, raumstation: 0x9cabc6,
   medstation: 0x9bccc8, kommando: 0x7d9fad, reaktor: 0x87baab, bibliothek: 0xb59b83, museum: 0xc1baa9,
   bank: 0xa5b398, werkstatt: 0xb0a28b,
+  burg: 0x8c93a0, rathaus: 0xc9a86a, muehle: 0xb49a6e, bauernhof: 0xa98a5e, kaserne: 0x8e8a7c,
 };
 /** A stored light as the picture shows it; the colour is the stored ARGB minus its alpha. */
 export const lightsToScene = (lights: readonly TacticalLight[]) => lights.map(light => ({ id: light.id, x: light.position[0], y: light.position[1], range: light.range, intensity: Math.max(0, Math.min(1, light.intensity)), color: Number.parseInt(light.colorArgb.slice(-6), 16) }));

@@ -18,12 +18,15 @@ export function zoneBuilding(zone: SettlementZone, setting: KartenSetting, draw:
   const choices: Record<string, readonly BauwerkTyp[]> = setting === "gegenwart" ? {
     wohnen: ["wohnblock", "haus"], markt: ["supermarkt", "restaurant", "cafe", "bank"], handwerk: ["werkstatt", "fabrik", "lager"],
     hafen: ["lager", "werkstatt"], adel: ["haus", "museum", "bibliothek"], arm: ["wohnblock", "haus"],
+    tempel: ["kirche", "bibliothek"], burg: ["polizei", "feuerwache"],
   } : setting === "scifi" ? {
     wohnen: ["raumstation", "medstation"], markt: ["kommando", "lager"], handwerk: ["werkstatt", "labor", "reaktor"],
     hafen: ["raumhafen", "lager"], adel: ["kommando", "raumstation"], arm: ["raumstation", "lager"],
+    tempel: ["labor", "kommando"], burg: ["kommando", "reaktor"],
   } : {
     wohnen: ["haus", "haus", "taverne"], markt: ["taverne", "lager", "bank"], handwerk: ["schmiede", "werkstatt", "lager"],
     hafen: ["lager", "lager", "taverne"], adel: ["haus", "bibliothek", "kirche"], arm: ["haus", "haus", "lager"],
+    tempel: ["kirche", "bibliothek", "haus"], burg: ["kaserne", "turm", "lager"],
   };
   const mix = choices[zone.nutzung];
   if (!mix) throw new Error("Freiflächen erhalten keine Gebäude.");

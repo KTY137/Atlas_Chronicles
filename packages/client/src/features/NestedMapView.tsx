@@ -25,7 +25,7 @@ import { RoomFogControls } from "./RoomFogControls";
 export interface MapAncestor { kind: "atlas" | "tactical"; id: string; title: string; edit?: boolean; focus?: { id: string; x: number; y: number } }
 interface Entrance extends MapNode { canEnter: boolean; vorhandeneKarteId: string | null; erzeugungsArt?: MapArt; siedlung?: { art: SiedlungArt; standort: SiedlungStandort } }
 interface Children { nodes: Entrance[]; version: number; ancestors: MapAncestor[]; art?: MapArt; stil?: MapStyle; setting?: KartenSetting }
-const BUILDING_ICONS: Partial<Record<BauwerkTyp, typeof House>> = { haus: House, kirche: Church, taverne: Beer, schmiede: Anvil, lager: Warehouse, turm: Castle };
+const BUILDING_ICONS: Partial<Record<BauwerkTyp, typeof House>> = { haus: House, kirche: Church, taverne: Beer, schmiede: Anvil, lager: Warehouse, turm: Castle, burg: Castle, kaserne: Castle, bauernhof: House, muehle: Warehouse, rathaus: Building2 };
 const NO_ENTRANCES: Entrance[] = [];
 
 export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot, onChanged, onDirty, initialEditing = false, initialFocus }: {

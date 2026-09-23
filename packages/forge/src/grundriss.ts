@@ -177,6 +177,13 @@ const BAU_THEMEN: Readonly<Record<string, Thema>> = Object.freeze({
   wachstube: { schluessel: "wachstube", boden: "halle", stuecke: [["moebel", "mahl"], ["moebel", "sitz"], ["moebel", "schild"], ["licht", "wache"]] },
   treppenhaus: { schluessel: "treppenhaus", boden: "halle", stuecke: [["aufbau", "aufwaerts"], ["licht", "wache"]] },
   waffenkammer: THEMEN.find(thema => thema.schluessel === "waffenkammer")!,
+  ratssaal: { schluessel: "ratssaal", boden: "gehoben", stuecke: [["moebel", "mahl"], ["moebel", "sitz"], ["moebel", "sitz"], ["licht", "warm"]] },
+  schreibstube: { schluessel: "schreibstube", boden: "wohnraum", stuecke: [["moebel", "wissen"], ["moebel", "buecher"], ["licht", "kerze"]] },
+  mahlwerk: { schluessel: "mahlwerk", boden: "keller", stuecke: [["aufbau", "traeger"], ["gefaess", "vorrat"], ["gefaess", "behaelter"], ["licht", "warm"]] },
+  kornboden: { schluessel: "kornboden", boden: "keller", stuecke: [["gefaess", "vorrat"], ["gefaess", "vorrat"], ["moebel", "lager"]] },
+  stall: { schluessel: "stall", boden: "keller", stuecke: [["gefaess", "vorrat"], ["aufbau", "geroell"], ["licht", "kerze"]] },
+  rittersaal: { schluessel: "rittersaal", boden: "halle", stuecke: [["moebel", "mahl"], ["moebel", "sitz"], ["aufbau", "thron"], ["moebel", "schild"], ["licht", "warm"]] },
+  schlafsaal: { schluessel: "schlafsaal", boden: "wohnraum", stuecke: [["moebel", "rast"], ["moebel", "rast"], ["moebel", "kammer"], ["licht", "kerze"]] },
 });
 const RAUM_LABEL: Readonly<Record<string, string>> = Object.freeze({
   wohnraum: "Wohnstube", kueche: "Küche", schlafzimmer: "Schlafzimmer", kirchenschiff: "Kirchenschiff",
@@ -184,6 +191,8 @@ const RAUM_LABEL: Readonly<Record<string, string>> = Object.freeze({
   gaestezimmer: "Gästezimmer", vorratsraum: "Vorratsraum", werkstatt: "Schmiedewerkstatt", verkauf: "Verkaufsraum",
   materiallager: "Materiallager", lagerhalle: "Lagerhalle", ladestube: "Ladestube", kontor: "Kontor",
   wachstube: "Wachstube", treppenhaus: "Treppenhaus", waffenkammer: "Waffenkammer",
+  ratssaal: "Ratssaal", schreibstube: "Schreibstube", mahlwerk: "Mahlwerk", kornboden: "Kornboden", stall: "Stall",
+  rittersaal: "Rittersaal", schlafsaal: "Schlafsaal",
 });
 
 const AUSGELASSEN: readonly string[] = Object.freeze([
@@ -247,7 +256,7 @@ function bauwerkRaeume(profil: BauwerkTyp, breite: number, hoehe: number, o: Gru
   const m = o.minRaum, raeume: RohRaum[] = [];
   let w = Math.min(breite - 2, Math.max(2 * m + 1, Math.round(breite * (profil === "kirche" ? 0.88 : 0.76))));
   let h = Math.min(hoehe - 2, Math.max(2 * m + 1, Math.round(hoehe * (profil === "kirche" ? 0.88 : 0.76))));
-  if (profil === "turm") w = h = Math.min(w, h);
+  if (profil === "turm" || profil === "burg") w = h = Math.min(w, h);
   const x = Math.floor((breite - w) / 2), y = Math.floor((hoehe - h) / 2);
   const raum = (thema: string, rx: number, ry: number, rw: number, rh: number) => {
     if (rw < m || rh < m) fail("geometrie", "optionen.profil", "Gebäudeprofil und Raummindestmaß passen nicht in das Raster");
@@ -282,6 +291,9 @@ function bauwerkRaeume(profil: BauwerkTyp, breite: number, hoehe: number, o: Gru
       haus: ["wohnraum", "schlafzimmer"], taverne: ["schankraum", "kueche", "vorratsraum", "gaestezimmer"],
       schmiede: ["werkstatt", "verkauf", "materiallager"], lager: ["lagerhalle", "ladestube", "kontor"],
       turm: ["wachstube", "treppenhaus", "waffenkammer"],
+      burg: ["rittersaal", "wachstube", "waffenkammer", "treppenhaus"], rathaus: ["ratssaal", "schreibstube", "kontor", "vorratsraum"],
+      muehle: ["mahlwerk", "kornboden", "wohnraum"], bauernhof: ["wohnraum", "kueche", "stall", "kornboden"],
+      kaserne: ["schlafsaal", "wachstube", "waffenkammer", "kueche"],
     };
     const nutzungen = themen[profil]!;
     const rechts = Math.min(nutzungen.length - 1, o.raeume - 1, Math.floor((h + 1) / (m + 1)));

@@ -5,7 +5,7 @@ import { SETTLEMENT_USES, SETTLEMENT_PLAN_LIMITS, parseSettlementPlan, planConta
 import { t } from "../i18n";
 import "./map-zone-planner.css";
 
-const ZONE_LABEL = { wohnen: "Wohnviertel", markt: "Marktviertel", handwerk: "Handwerksviertel", hafen: "Hafenviertel", adel: "Adelsviertel", arm: "Armenviertel", frei: "Freifläche" } as const;
+const ZONE_LABEL = { wohnen: "Wohnviertel", markt: "Marktviertel", handwerk: "Handwerksviertel", hafen: "Hafenviertel", adel: "Adelsviertel", arm: "Armenviertel", frei: "Freifläche", burg: "Burg", tempel: "Tempelbezirk" } as const;
 const EMPTY: SettlementPlan = { schemaVersion: 1, zonen: [] };
 const rect = (x: number, y: number, w: number, h: number): readonly PlanPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
 const box = (z: SettlementZone) => {

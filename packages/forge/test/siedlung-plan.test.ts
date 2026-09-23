@@ -3,7 +3,7 @@
 import { canonicalHash } from "@chronicle/core";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseAssetpaket, parseTacticalMapDocument, parseTacticalCartography, type SettlementPlan, type SettlementZone } from "@chronicle/szene";
+import { parseAssetpaket, parseSettlementPlan, parseTacticalMapDocument, parseTacticalCartography, type SettlementPlan, type SettlementZone } from "@chronicle/szene";
 import { erzeugeSiedlung } from "../src/siedlung.ts";
 import { abstandPolygonStrecke, huelle } from "../src/polygon.ts";
 import { roofZone, zoneBuilding, zoneDraw } from "../src/siedlung-plan.ts";
@@ -77,5 +77,10 @@ describe("zoned settlement generation", () => {
     expect(zoneBuilding(zone(), "gegenwart", .1)).toBe("werkstatt");
     expect(zoneBuilding(zone({ nutzung: "hafen" }), "scifi", .1)).toBe("raumhafen");
     expect(() => zoneBuilding(zone({ nutzung: "frei" }), "fantasy", .1)).toThrow();
+  });
+  it("knows castle and temple district as uses", () => {
+    expect(() => parseSettlementPlan(plan(zone({ nutzung: "burg" })))).not.toThrow();
+    expect(zoneBuilding(zone({ nutzung: "tempel" }), "fantasy", .1)).toBe("kirche");
+    expect(zoneBuilding(zone({ nutzung: "burg" }), "fantasy", .1)).toBe("kaserne");
   });
 });
