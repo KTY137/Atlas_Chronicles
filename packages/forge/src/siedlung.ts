@@ -18,6 +18,7 @@ import {
 } from "./polygon.ts";
 import { roofZone, zoneDraw, zoneBuilding } from "./siedlung-plan.ts";
 import { freieMauer, frontParzellen, getrennteDaecher, hausImLos, mitAbstand, ohne, type Gasse } from "./stadt/gemeinsam.ts";
+import { ausstattung, dokument, kappeAnHindernissen, kreuzungen, ohneLaengsFluss, stege, wasserUndBruecken, type Ablage, type ExtraRegion } from "./stadt/abschluss.ts";
 
 /** Convex clipping keeps the same geometry authoritative for water, lots and bridges. */
 const schnitt = schnittKonvex;
@@ -464,42 +465,8 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     nachbarn[kante.a]!.push(gassen.length - 1);
     if (!randgasse) nachbarn[kante.b]!.push(gassen.length - 1);
   }
-  // A redundant street running lengthways through the river is neither a quay nor a
-  // plausible bridge. Remove it only when its endpoints retain an actual alternate route.
-  // This happens before parcel/address creation, so no house can keep a deleted address.
-  const endpointKey = (point: Punkt) => `${Math.round(point[0] * 100)}:${Math.round(point[1] * 100)}`;
-  for (let index = gassen.length - 1; index >= 0; index--) {
-    const candidate = gassen[index]!, dx = candidate.bis[0] - candidate.von[0], dy = candidate.bis[1] - candidate.von[1];
-    const alongWater = fluss.some(stueck => {
-      if (flaeche(schnitt(candidate.band, stueck.polygon)) < .08) return false;
-      const wx = stueck.bis[0] - stueck.von[0], wy = stueck.bis[1] - stueck.von[1];
-      return Math.abs(dx * wx + dy * wy) / (Math.hypot(dx, dy) * (Math.hypot(wx, wy) || 1)) > .84;
-    });
-    if (!alongWater) continue;
-    const start = endpointKey(candidate.von), target = endpointKey(candidate.bis), reached = new Set([start]), pending = [start];
-    for (let cursor = 0; cursor < pending.length && !reached.has(target); cursor++) {
-      for (const [otherIndex, other] of gassen.entries()) {
-        if (otherIndex === index) continue;
-        const a = endpointKey(other.von), b = endpointKey(other.bis), next = a === pending[cursor] ? b : b === pending[cursor] ? a : null;
-        if (next === null || reached.has(next)) continue;
-        reached.add(next); pending.push(next);
-      }
-    }
-    if (reached.has(target)) gassen.splice(index, 1);
-  }
-  // Only rivers receive bridges. Lake, sea and mountain faces stop the full road width;
-  // shortened frontages become the addresses used by parcel generation below.
-  if (strassenHindernisse.length) {
-    const clearance = strassenHindernisse.map(polygon => mitAbstand(polygon, gassenBreite + .045));
-    const trockeneGassen = gassen.flatMap(road => freieMauer(road.von, road.bis, clearance).flatMap(([von, bis], index) => {
-      if (Math.hypot(bis[0] - von[0], bis[1] - von[1]) < gassenBreite) return [];
-      const dx = bis[0] - von[0], dy = bis[1] - von[1];
-      const band = clipHalbebene(clipHalbebene(road.band, -dx, -dy, -dx * von[0] - dy * von[1]), dx, dy, dx * bis[0] + dy * bis[1]).map(qp);
-      if (band.length < 3 || flaeche(band) < .02 || strassenHindernisse.some(polygon => flaeche(schnitt(band, polygon)) > 1e-10)) return [];
-      return [{ ...road, id: ids.geometrieId("landstrasse", road.id, `${index}`), von, bis, band }];
-    }));
-    gassen.splice(0, gassen.length, ...trockeneGassen);
-  }
+  ohneLaengsFluss(gassen, fluss);
+  kappeAnHindernissen(gassen, strassenHindernisse, gassenBreite, ids);
   for (const list of nachbarn) list.length = 0;
   for (const [index, road] of gassen.entries()) {
     nachbarn[road.a]!.push(index);
@@ -697,8 +664,9 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     return [q(s[0] * z), q(s[1] * z)];
   };
   const strassen: SiedlungStrasse[] = gassen.map((g) => ({ id: g.id, art: g.art, umriss: g.band }));
-  const extraRegions: { readonly id: string; readonly polygon: Polygon; readonly role: CartographyRegionV1 }[] = [];
-  const generatedRole = (regionId: string) => ({ regionId, authored: false, locked: false, provenance: keim });
+  const extraRegions: ExtraRegion[] = [];
+  const generatedRole = (regionId: string) => ({ regionId, authored: false as const, locked: false as const, provenance: keim });
+  const ablage: Ablage = { extraRegions, strassen, rolle: generatedRole };
   for (const surface of routed?.surfaces ?? []) {
     const id = ids.geometrieId("verkehr", surface.key);
     strassen.push({ id, art: surface.art, umriss: surface.polygon });
@@ -710,20 +678,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
     const id = ids.geometrieId("standort", material, `${index}`);
     extraRegions.push({ id, polygon, role: { ...generatedRole(id), role: "terrain", material } });
   }
-  const junctions = new Map<string, { point: Punkt; count: number; radius: number; main: boolean }>();
-  for (const road of gassen) for (const point of [road.von, road.bis]) {
-    const key = `${Math.round(point[0] * 100)}:${Math.round(point[1] * 100)}`, old = junctions.get(key);
-    const radius = flaeche(road.band) / Math.hypot(road.bis[0] - road.von[0], road.bis[1] - road.von[1]) / 2;
-    junctions.set(key, { point, count: (old?.count ?? 0) + 1, radius: Math.max(old?.radius ?? 0, radius), main: old?.main === true || road.art === "hauptstrasse" });
-  }
-  for (const [key, junction] of junctions) {
-    if (junction.count < 2) continue;
-    const directions: Punkt[] = [[1, 0], [.707107, .707107], [0, 1], [-.707107, .707107], [-1, 0], [-.707107, -.707107], [0, -1], [.707107, -.707107]];
-    const polygon = schnitt(directions.map(([x, y]) => qp([junction.point[0] + x * junction.radius, junction.point[1] + y * junction.radius])), rahmen);
-    const id = ids.geometrieId("kreuzung", key);
-    extraRegions.push({ id, polygon, role: { ...generatedRole(id), role: "road", material: art === "stadt" ? "street" : "path" } });
-    strassen.push({ id, art: junction.main ? "hauptstrasse" : "gasse", umriss: polygon });
-  }
+  kreuzungen(gassen, rahmen, ids, art === "stadt" ? "street" : "path", ablage);
   const habitatObstacles = [...bauHindernisse.map(poly => mitAbstand(poly, .035)), ...strand, ...sumpf,
     ...strassen.map(road => mitAbstand(road.umriss, .06)), ...(standort === "wald" ? rohBauwerke.map(building => mitAbstand(building.los, .08)) : [])]
     .filter(polygon => polygon.length >= 3).map(polygon => ({ polygon, box: huelle(polygon) }));
@@ -774,26 +729,7 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   // The outer woods grow where the relief is wet: continuous there, open where it is dry, and
   // never over water, rock, beach, swamp, fields or a road.
   for (const [index, polygon] of landschaft.wald.entries()) landscape(polygon, `wald.${index}`, "forest", true);
-  const tragendeStrassen = [...strassen];
-  for (const [i, polygon] of wasser.entries()) {
-    const id = ids.geometrieId("wasser", `abschnitt.${i}`);
-    extraRegions.push({ id, polygon, role: { ...generatedRole(id), role: "water", material: wasserMaterial } });
-  }
-  // Every river reach, the guaranteed one and every tributary, becomes water; where a street
-  // crosses it the overlap is a bridge surface above the water, never erased water.
-  for (const [i, stueck] of fluss.entries()) {
-    const id = ids.geometrieId("fluss", `abschnitt.${i}`);
-    extraRegions.push({ id, polygon: stueck.polygon, role: { ...generatedRole(id), role: "water", material: "river" } });
-    const box = huelle(stueck.polygon);
-    for (const gasse of tragendeStrassen) {
-      const roadBox = huelle(gasse.umriss);
-      if (roadBox[2] <= box[0] || roadBox[0] >= box[2] || roadBox[3] <= box[1] || roadBox[1] >= box[3]) continue;
-      const bridge = schnitt(gasse.umriss, stueck.polygon); if (bridge.length < 3 || flaeche(bridge) < .00001) continue;
-      const bridgeId = ids.geometrieId("brücke", gasse.id, `abschnitt.${i}`);
-      extraRegions.push({ id: bridgeId, polygon: bridge, role: { ...generatedRole(bridgeId), role: "road", material: "bridge" } });
-      strassen.push({ id: bridgeId, art: gasse.art, umriss: bridge });
-    }
-  }
+  wasserUndBruecken(wasser, wasserMaterial, fluss, ids, ablage);
   for (const roh of rohBauwerke) {
     const id = ids.geometrieId("grundstück", roh.pfad);
     extraRegions.push({ id, polygon: roh.los, role: { ...generatedRole(id), role: "lot" } });
@@ -817,30 +753,8 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   // -- 5b. Der Steg: eine Siedlung am Wasser hat einen Landeplatz -------------------------------
   // From the town's centre to the nearest point of the shore, then straight on into the water:
   // planks on posts, drawn by the projection with boats alongside. A town on a coast gets two.
-  if (standort === "kueste" || standort === "see" || standort === "fluss") {
-    const ufer = [...wasser, ...(standort === "fluss" ? fluss.map(stueck => stueck.polygon) : [])];
-    const mitteOrt: Punkt = marktIndex >= 0 ? schwerpunkt(viertel[marktIndex]!.zelle) : [breite / 2, hoehe / 2];
-    const kandidaten = ufer.flatMap(polygon => polygon.filter(p => p[0] > .5 && p[1] > .5 && p[0] < breite - .5 && p[1] < hoehe - .5).map(p => ({ p, polygon, abstand: Math.hypot(p[0] - mitteOrt[0], p[1] - mitteOrt[1]) })))
-      .sort((first, second) => first.abstand - second.abstand || first.p[0] - second.p[0] || first.p[1] - second.p[1]);
-    const haeuser = bauwerke.map(b => b.umriss);
-    let gesetzt = 0;
-    for (const kandidat of kandidaten) {
-      if (gesetzt >= (art === "stadt" && standort !== "fluss" ? 2 : 1)) break;
-      const richtung: Punkt = [schwerpunkt(kandidat.polygon)[0] - kandidat.p[0], schwerpunkt(kandidat.polygon)[1] - kandidat.p[1]], norm = Math.hypot(richtung[0], richtung[1]) || 1;
-      const dx = richtung[0] / norm, dy = richtung[1] / norm, laenge = standort === "fluss" ? Math.min(1.6, Math.max(.8, flussBreite * .55)) : art === "stadt" ? 3.2 : 2.2, halb = .26;
-      const start: Punkt = [kandidat.p[0] - dx * .35, kandidat.p[1] - dy * .35], ende: Punkt = [start[0] + dx * (laenge + .35), start[1] + dy * (laenge + .35)];
-      const steg = schnittKonvex([qp([start[0] - dy * halb, start[1] + dx * halb]), qp([ende[0] - dy * halb, ende[1] + dx * halb]), qp([ende[0] + dy * halb, ende[1] - dx * halb]), qp([start[0] + dy * halb, start[1] - dx * halb])], rahmen);
-      if (steg.length < 3 || flaeche(steg) < .1) continue;
-      // The pier has to stand in this water, not cross a house, and keep clear of an earlier pier.
-      if (flaeche(schnitt(steg, kandidat.polygon)) < flaeche(steg) * .45) continue;
-      if (haeuser.some(haus => flaeche(schnitt(steg, haus)) > 1e-6)) continue;
-      const stegId = ids.geometrieId("steg", `${q(kandidat.p[0])}_${q(kandidat.p[1])}`);
-      if (extraRegions.some(region => region.role.role === "road" && region.role.material === "steg" && Math.hypot(schwerpunkt(region.polygon)[0] - kandidat.p[0], schwerpunkt(region.polygon)[1] - kandidat.p[1]) < 4)) continue;
-      extraRegions.push({ id: stegId, polygon: steg, role: { ...generatedRole(stegId), role: "road", material: "steg" } });
-      strassen.push({ id: stegId, art: "gasse", umriss: steg });
-      gesetzt++;
-    }
-  }
+  stege({ standort, art, wasser, fluss, flussBreite, mitteOrt: marktIndex >= 0 ? schwerpunkt(viertel[marktIndex]!.zelle) : [breite / 2, hoehe / 2],
+    haeuser: bauwerke.map(b => b.umriss), breite, hoehe, rahmen, ids }, ablage);
 
   // -- 6. Mauer und Tore: nur eine Stadt ummauert sich ----------------------------------------
   const mauern: { id: string; kind: "wall"; points: readonly (readonly [number, number])[]; elevation: number }[] = [];
@@ -890,135 +804,13 @@ export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): 
   // -- 7. Stempel: Straßenbelag, Hofboden, eine Eingangsmarke, optionale Laternen -------------
   // A settlement's kind is not only numbers: a village track is dirt, a town street is paved.
   // The pack answers a query; this generator never names an asset (`kartenwerk.ts`'s own rule).
-  const werk = bestuecker(paket, r, z, ids.geometrieId, setting);
-  // Retain the genre pack's tangible paving vocabulary as one focal detail. Continuous
-  // ground is drawn from canonical materials instead of repeating opaque floor squares.
-  const belag = werk.waehle("boden", setting === "gegenwart" ? "asphalt" : setting === "scifi" ? "metall" : optionen.art === "stadt" ? "stein" : "erde");
-  if (belag) {
-    const g = gassen.find(value => value.art === "hauptstrasse") ?? gassen[0]!;
-    werk.setze(belag, Math.max(0, Math.min(breite - 1, Math.floor((g.von[0] + g.bis[0]) / 2))), Math.max(0, Math.min(hoehe - 1, Math.floor((g.von[1] + g.bis[1]) / 2))));
-  }
-  const inEinem = (p: Punkt, polys: readonly Polygon[]): boolean => {
-    for (const poly of polys) if (imPolygon(p, poly)) return true;
-    return false;
-  };
-  const strassenPolys = strassen.map((g) => g.umriss);
-  const bauwerkPolys = bauwerke.map(b => b.umriss);
-  let strassenzellen = 0, hofzellen = 0;
-  for (let y = 0; y < hoehe; y++) {
-    for (let x = 0; x < breite; x++) {
-      const p: Punkt = [x + 0.5, y + 0.5];
-      if (inEinem(p, bauwerkPolys)) continue;
-      if (inEinem(p, strassenPolys)) {
-        strassenzellen++;
-      } else if (inEinem(p, hofFlaechen)) {
-        hofzellen++;
-      }
-    }
-  }
-  const eingangAsset = werk.waehle("marke", "eingang");
-  if (eingangAsset) {
-    // Am äussersten Punkt einer Hauptstraße: dort betritt man den Ort.
-    let torX = Math.floor(mitteX), torY = Math.floor(mitteY), weiteste = -1;
-    for (const g of gassen) {
-      if (g.art !== "hauptstrasse") continue;
-      for (const p of [g.von, g.bis]) {
-        const d = (p[0] - mitteX) ** 2 + (p[1] - mitteY) ** 2;
-        if (d > weiteste) { weiteste = d; torX = Math.max(0, Math.min(breite - 1, Math.floor(p[0]))); torY = Math.max(0, Math.min(hoehe - 1, Math.floor(p[1]))); }
-      }
-    }
-    werk.setze(eingangAsset, torX, torY);
-  }
-
-  const lichter: TacticalLight[] = [];
-  if (setting !== "fantasy") {
-    const verkehr = werk.waehle("aufbau", "verkehr");
-    if (verkehr) {
-      const frei: [number, number][] = [];
-      const obstacles = [...bauwerkPolys, ...bauHindernisse].map(polygon => ({ polygon, box: huelle(polygon) }));
-      for (let y = 0; y < hoehe; y++) for (let x = 0; x < breite; x++) {
-        const point: Punkt = [x + .5, y + .5], cell: Polygon = [[x, y], [x + 1, y], [x + 1, y + 1], [x, y + 1]];
-        if ((inEinem(point, strassenPolys) || inEinem(point, hofFlaechen)) && !obstacles.some(({ polygon, box }) => box[0] < x + 1 && box[2] > x && box[1] < y + 1 && box[3] > y && flaeche(schnitt(polygon, cell)) > 1e-10)) frei.push([x, y]);
-      }
-      for (let i = 0; i < Math.min(12, Math.max(1, Math.floor(bauwerke.length / 6))); i++) {
-        if (!werk.platziere(verkehr, frei)) continue;
-        const stamp = werk.stamps[werk.stamps.length - 1]!, [w, h] = verkehr.einheiten, x = stamp.x / z - w / 2, y = stamp.y / z - h / 2;
-        const id = ids.geometrieId("stellfläche", stamp.id), polygon: Polygon = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
-        extraRegions.push({ id, polygon, role: { ...generatedRole(id), role: "terrain", material: "rock" } });
-      }
-    }
-  }
-  if (optionen.licht) {
-    for (const g of gassen) {
-      if (g.art !== "hauptstrasse") continue;
-      const asset = werk.waehle("licht", setting === "fantasy" ? "warm" : "kalt");
-      if (!asset) continue; // recorded in nichtBedient; not fatal to the map
-      const mx = Math.max(0, Math.min(breite - 1, Math.floor((g.von[0] + g.bis[0]) / 2)));
-      const my = Math.max(0, Math.min(hoehe - 1, Math.floor((g.von[1] + g.bis[1]) / 2)));
-      werk.setze(asset, mx, my);
-      const letzter = werk.stamps[werk.stamps.length - 1]!;
-      lichter.push({
-        // Auf beide Enden geschluesselt: an einer Kreuzung teilen sich mehrere Hauptstrassen
-        // denselben Anfangspunkt, und eine Id, die nur den kennt, waere dort nicht eindeutig.
-        id: ids.geometrieId("licht", `${q(g.von[0])}_${q(g.von[1])}`, `${q(g.bis[0])}_${q(g.bis[1])}`), position: [letzter.x, letzter.y],
-        range: z * 4, intensity: 0.8, colorArgb: setting === "fantasy" ? "ffdd8a33" : "ffb9ddff", shadows: true, elevation: 0,
-      });
-    }
-  }
+  const { werk, lichter, strassenzellen, hofzellen } = ausstattung({ paket, r, z, ids, setting, art: optionen.art, licht: optionen.licht, gassen,
+    bauwerkPolys: bauwerke.map(b => b.umriss), hofFlaechen, bauHindernisse, breite, hoehe, mitte: [mitteX, mitteY], bauwerkZahl: bauwerke.length }, ablage);
 
   // -- 8. Dokument ----------------------------------------------------------------------------
-  const nachPixeln = (poly: Polygon): readonly (readonly [number, number])[] => poly.map((p) => [q(p[0] * z), q(p[1] * z)] as const);
-  const karte = parseTacticalMapDocument({
-    schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels",
-    frame: { ursprung: [0, 0], einheitenProPixel: 1 / z, ordnung: "xy", hoch: "unten" },
-    geometry: {
-      v: 3, size: [breite * z, hoehe * z],
-      stamps: sortiereNachId(werk.stamps),
-      // A building's region id **is** its KnotenId — the same one-identity discipline
-      // `grundriss.ts` applies to rooms. A street has no accompanying `Knoten` (nothing nests
-      // inside a street), so its region id is ordinary derived geometry, not a containment key.
-      regions: [
-        ...extraRegions.map(value => ({ id: value.id, punkte: nachPixeln(value.polygon) })),
-        ...bauwerke.map((b) => ({ id: b.id, punkte: nachPixeln(b.umriss) })),
-        ...gassen.map((s) => ({ id: s.id, punkte: nachPixeln(s.band) })),
-      ],
-      places: bauwerke.map((b) => ({ id: ids.geometrieId("platz", b.pfad), x: mitte(b)[0], y: mitte(b)[1] })),
-    },
-    grid: { kind: "square", size: z, origin: [0, 0] },
-    elevation: 0, geometryElevation: [],
-    walls: sortiereNachId(mauern), portals: [], lights: sortiereNachId(lichter),
-    environment: { bakedLighting: false, ambientLightArgb: setting === "scifi" ? "ffb4c6dd" : setting === "gegenwart" ? "ffe0e4e7" : "ffd9cba0" },
-    background: null,
-  });
-  const cartography = parseTacticalCartography({ schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: z, origin: [0, 0] }, relief: landschaft.relief, regions: [
-    ...extraRegions.map(value => value.role),
-    ...bauwerke.map(b => ({ ...generatedRole(b.id), role: "building", streetRegionId: b.strasse, lotRegionId: ids.geometrieId("grundstück", b.pfad) })),
-    ...gassen.map(g => ({ ...generatedRole(g.id), role: "road", material: art === "stadt" ? "street" : "path" })),
-  ] }, karte);
-
-  // -- containment: the settlement's `ort`, and one `bauwerk` per building ---------------------
-  const herkunft = (pfad: readonly string[], kindKeim: string): Herkunft =>
-    ({ erzeuger: SIEDLUNG_ERZEUGER, version, keimHash: keim.keimHash, erzeugungspfad: pfad, kindKeim });
-  const wurzelId = ids.knotenId("siedlung");
-  const wurzelEltern: readonly Kante[] = auftrag.eltern ? [{ von: wurzelId, nach: auftrag.eltern.knotenId, art: auftrag.eltern.art }] : [];
-  const knoten: Knoten[] = [{
-    id: wurzelId, art: "ort", titel: auftrag.titel ?? null, eltern: wurzelEltern, rahmen: karte.frame,
-    anker: auftrag.eltern ? { in: auftrag.eltern.knotenId, bei: auftrag.eltern.bei, massstab: auftrag.eltern.massstab } : null,
-    herkunft: herkunft(["ort"], ids.kindKeim("ort")), sichtAnker: null,
-  }];
-  for (const b of bauwerke) {
-    knoten.push({
-      id: b.id, art: "bauwerk", titel: b.titel,
-      bauwerk: { typ: b.typ, beschreibung: "" },
-      eltern: [{ von: b.id, nach: wurzelId, art: "liegt_in_geografie" }],
-      rahmen: karte.frame,
-      anker: { in: wurzelId, bei: mitte(b), massstab: 1 },
-      // The derived child seed, stored rather than discarded: this building is a re-derivable
-      // address for the floorplan generated inside it next (RB-21d:677-679).
-      herkunft: herkunft(["bauwerk", b.pfad], ids.kindKeim("bauwerk", b.pfad)),
-      sichtAnker: null,
-    });
-  }
+  const { karte, cartography, knoten, wurzelId } = dokument({ erzeuger: SIEDLUNG_ERZEUGER, version, keim, ids, z, breite, hoehe, setting, auftrag,
+    stamps: werk.stamps, extraRegions, bauwerke, gassen, gassenMaterial: () => art === "stadt" ? "street" : "path", mauern, lichter,
+    relief: landschaft.relief, rolle: generatedRole });
 
   return Object.freeze({
     art: "siedlung", erzeuger: SIEDLUNG_ERZEUGER, version, keim, wurzelId, karte, cartography,
