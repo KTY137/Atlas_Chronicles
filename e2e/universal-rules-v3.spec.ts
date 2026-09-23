@@ -66,7 +66,8 @@ test("a pinned D20 actor renders presentation v3 and persists a collection while
   const page = await context.newPage(); page.on("pageerror", error => errors.push(error.message));
   await page.goto(`${origin}/?campaign=${campaignId}&stage=ich`);
 
-  await expect(page.getByRole("heading", { name: "Deine Figur" })).toBeVisible();
+  // Solange der Name lädt, heißt auch das Porträt „Deine Figur“; gemeint ist die Seitenüberschrift.
+  await expect(page.getByRole("heading", { name: "Deine Figur", level: 1 })).toBeVisible();
   await expect(page.getByText("Identity", { exact: true })).toBeVisible();
   await expect(page.getByText("Statistics", { exact: true })).toBeVisible();
   await expect(page.getByText("Ability Scores", { exact: true })).toBeVisible();
@@ -90,7 +91,7 @@ test("a pinned D20 actor renders presentation v3 and persists a collection while
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Weapons", exact: true })).toBeVisible();
-  await expect(page.getByDisplayValue("Training Blade")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Weapons", exact: true }).locator("..").getByLabel("Name", { exact: true })).toHaveValue("Training Blade");
   expect(errors).toEqual([]);
   await context.close();
 });
