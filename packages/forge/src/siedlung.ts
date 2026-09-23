@@ -6,7 +6,7 @@ import {
   type AssetpaketV1, type BauwerkTyp, type KartenSetting, type Herkunft, type Kante, type Knoten, type TacticalLight,
   type TacticalMapDocumentV1, type Weltkeim,
 } from "@chronicle/szene";
-import { parseTacticalCartography, type TacticalCartographyV1, type CartographyRegionV1 } from "@chronicle/szene";
+import { parseTacticalCartography, type TacticalCartographyV1, type CartographyRegionV1, type CartographyDachform } from "@chronicle/szene";
 import {
   AUSGELASSEN_BASIS, KARTENWERK_LIMITS, bestuecker, fail, idFabrik, rauschen, sortiereNachId,
   type GrundrissEltern,
@@ -148,6 +148,8 @@ export interface SiedlungBauwerk {
   readonly id: KnotenId;
   readonly typ: BauwerkTyp;
   readonly titel: string;
+  /** Wie die Kartenoptik das Dach zeichnet; fehlt es, gilt die Vorgabe des Settings (v11 schreibt keins). */
+  readonly dach?: CartographyDachform;
   /** Stable generation path — the ward's point and the lot's centroid, both as coordinates.
    * A grid coordinate, never an array index (invariant I8). */
   readonly pfad: string;

@@ -390,7 +390,8 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     let titel = b.titel ?? stil.titel(t, b, i, r);
     if (titelGesehen.has(titel)) titel = `${titel} ${i + 1}`;
     titelGesehen.add(titel);
-    return { id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: b.strasse, typ: t, titel };
+    const dach = stil.dach(t);
+    return { id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: b.strasse, typ: t, titel, ...(dach ? { dach } : {}) };
   });
   for (const b of gewaehlt) {
     const lid = id("grundstück", b.pfad);

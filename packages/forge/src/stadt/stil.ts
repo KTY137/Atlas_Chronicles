@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import type { BauwerkTyp, KartenSetting } from "@chronicle/szene";
+import type { BauwerkTyp, CartographyDachform, KartenSetting } from "@chronicle/szene";
 import type { Polygon, Punkt } from "../polygon.ts";
 import type { Zufall } from "./gemeinsam.ts";
 import type { Fleck } from "./viertel/flecken.ts";
@@ -15,7 +15,6 @@ import type { Breiten } from "./viertel/wege.ts";
  * 2026-09-23-stadt-zukunft, E4): wie die Flecken liegen, wie die Stadt sich schützt, wie ein
  * Fleck bebaut wird, welche Gebäude, Namen und Dächer es gibt.
  */
-export type CartographyDachform = "giebel" | "flach" | "halle" | "kuppel" | "plattform";
 export type Typliste = readonly (readonly [BauwerkTyp, number])[];
 export type Art = "weiler" | "dorf" | "stadt";
 /** Stein: Mauer mit Türmen (Fantasy). Zaun: Mauerlinie ohne Türme um die ganze Stadt (Sci-Fi).

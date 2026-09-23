@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import type { AssetpaketV1, BauwerkTyp, CartographyLabelV1, CartographyRegionV1, Herkunft, Kante, KartenSetting, Knoten, TacticalLight, Weltkeim } from "@chronicle/szene";
+import type { AssetpaketV1, BauwerkTyp, CartographyDachform, CartographyLabelV1, CartographyRegionV1, Herkunft, Kante, KartenSetting, Knoten, TacticalLight, Weltkeim } from "@chronicle/szene";
 import { parseTacticalCartography, parseTacticalMapDocument, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { KnotenId } from "@chronicle/core";
 import { bestuecker, sortiereNachId, type GrundrissEltern, type IdFabrik } from "../kartenwerk.ts";
@@ -207,7 +207,7 @@ export function ausstattung(a: {
   return { werk, lichter, strassenzellen, hofzellen };
 }
 
-export interface BauwerkAusgabe { readonly id: KnotenId; readonly pfad: string; readonly umriss: Polygon; readonly strasse: string; readonly typ: BauwerkTyp; readonly titel: string }
+export interface BauwerkAusgabe { readonly id: KnotenId; readonly pfad: string; readonly umriss: Polygon; readonly strasse: string; readonly typ: BauwerkTyp; readonly titel: string; readonly dach?: CartographyDachform }
 export interface Wand { readonly id: string; readonly kind: "wall"; readonly points: readonly (readonly [number, number])[]; readonly elevation: number }
 
 /** Das kanonische Kartendokument, die Kartografie und die Knoten: die Wurzel `ort` und je Gebäude
@@ -244,7 +244,7 @@ export function dokument(a: {
   });
   const cartography = parseTacticalCartography({ schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: z, origin: [0, 0] }, relief: a.relief, regions: [
     ...a.extraRegions.map(value => value.role),
-    ...a.bauwerke.map(b => ({ ...a.rolle(b.id), role: "building", streetRegionId: b.strasse, lotRegionId: ids.geometrieId("grundstück", b.pfad) })),
+    ...a.bauwerke.map(b => ({ ...a.rolle(b.id), role: "building", streetRegionId: b.strasse, lotRegionId: ids.geometrieId("grundstück", b.pfad), ...(b.dach ? { dach: b.dach } : {}) })),
     ...a.gassen.map(g => ({ ...a.rolle(g.id), role: "road", material: a.gassenMaterial(g) })),
   ], ...(a.labels?.length ? { labels: a.labels } : {}) }, karte);
   const herkunft = (pfad: readonly string[], kindKeim: string): Herkunft =>
