@@ -21,7 +21,7 @@ export function validateKampfkartenTables(t: CampaignTablesV22, campaignId: stri
     if (row.campaign_id !== campaignId) fail(path, "card belongs to another campaign");
     const teil = teilnehmer.get(String(row.teilnehmer_id));
     if (!teil || teil.campaign_id !== campaignId) fail(`${path}.teilnehmer_id`, "card names a combatant this bundle does not contain");
-    if (!teil) return;
+    if (!teil) continue;
     if (!gueltigeKartenSicht(row.sicht)) fail(`${path}.sicht`, "card visibility settings are not readable");
     if (teil.am_zug === true && row.lage !== "feld") fail(`${path}.lage`, "a combatant at turn lies on the field");
   }

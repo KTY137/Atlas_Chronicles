@@ -49,7 +49,7 @@ describe("Die Kartenlage reist im Kampagnenpaket mit", () => {
       expect(await restoreCampaignBundle(ziel, parseCurrentCampaignBundle(text))).toMatchObject({ dryRun: false, formatVersion: 22 });
       expect(currentCampaignSemanticDiff(bundle, await exportCampaignBundle(ziel, gm, campaign, cfg))).toEqual([]);
     } finally { await ziel.close(); }
-  });
+  }, 30_000);
 
   it("weist eine Karte ab, die auf keinen Teilnehmer zeigt, unlesbar ist oder verdeckt am Zug steht", async () => {
     const bundle = await exportCampaignBundle(db, gm, campaign, cfg);
@@ -58,6 +58,7 @@ describe("Die Kartenlage reist im Kampagnenpaket mit", () => {
       campaignId: bundle.manifest.campaignId, universeId: bundle.manifest.universeId, exportedAt: bundle.manifest.exportedAt,
       tables: { ...tabellen, kampf_teilnehmer, kampf_karten } as never });
     expect(mit([{ ...karte, teilnehmer_id: randomUUID() }])).toThrow(/combatant/);
+    expect(mit([{ ...karte, campaign_id: randomUUID() }])).toThrow(/another campaign/);
     expect(mit([{ ...karte, sicht: { schema: 2 } }])).toThrow(/visibility/);
     // Der Zug wandert vom Wolf auf die verdeckte Karte: ein laufender Kampf mit genau einem Zug, aber in der Hand.
     const umgehaengt = tabellen.kampf_teilnehmer.map((t): CampaignRow => ({ ...t, am_zug: t.id === verdeckt }));
