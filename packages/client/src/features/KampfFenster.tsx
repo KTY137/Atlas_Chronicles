@@ -74,7 +74,7 @@ export function KartenMenue({ karte, onLage, onSicht, onInitiative, onInventar, 
       <li><button type="button" onClick={onInitiative}>{t("Initiative ändern")}</button></li>
       {onInventar ? <li><button type="button" onClick={onInventar}>{t("Inventar öffnen")}</button></li> : null}
       <li className="kampf-menue-trenner" role="separator" />
-      <li><button type="button" className="gefahr" onClick={onLoeschen}>{t("Karte löschen …")}</button></li>
+      <li><button type="button" className="gefahr" onClick={onLoeschen}>{t("Kampfkarte löschen …")}</button></li>
     </ul>
   </Schwebe>;
 }
