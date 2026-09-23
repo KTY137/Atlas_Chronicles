@@ -25,8 +25,9 @@ it("requires recovery before extending an existing schema and refuses an unpaire
   expect(migrationAdmission([], [pin])).toEqual({ pending: [pin], recoveryRequired: false });
   expect(migrationAdmission([pin], [pin])).toEqual({ pending: [], recoveryRequired: false });
   expect(migrationAdmission([pin], [pin, next])).toEqual({ pending: [next], recoveryRequired: true });
-  expect(() => migrationAdmission([pin, next], [pin])).toThrow("passt nicht");
-  expect(() => migrationAdmission([pin], [{ ...pin, sha256: "0".repeat(64) }])).toThrow("passt nicht");
+  // Klartext: eine ältere App vor einer neueren Welt nennt beide Datenstufen und die Abhilfe.
+  expect(() => migrationAdmission([pin, next], [pin])).toThrow(/neueren Version.*Datenstufe 002.*bis Datenstufe 001.*neueste Version installieren/);
+  expect(() => migrationAdmission([pin], [{ ...pin, sha256: "0".repeat(64) }])).toThrow(/abweichende Fassung der Datenstufe 001.*neu installieren/);
 });
 
 // Pin zur Dokumentation in DESKTOP.md: ein Recovery-Punkt trägt genau drei Dateien. Der

@@ -78,8 +78,13 @@ export async function packagedMigrations(resources: string): Promise<MigrationPi
   return result;
 }
 export function migrationAdmission(applied: readonly MigrationPin[], packaged: readonly MigrationPin[]) {
-  for (const old of applied) if (!packaged.some(pin => pin.name === old.name && pin.sha256 === old.sha256))
-    fail("schema-incompatible", "Dieses Paket passt nicht zum bestehenden Datenbankschema. Recovery und passende App-Version verwenden.");
+  // Klartext für die zwei Ursachen. Am 12./13.09. lief 0.4.3 über 0.5.0; die Welten standen auf
+  // Datenstufe 036, die ältere App kannte nur bis 032 und sagte nur „Datenbankschema passt nicht“.
+  const stufe = (name: string) => name.slice(0, 3), hoechste = packaged.at(-1)?.name ?? "000";
+  const unbekannt = applied.filter(old => !packaged.some(pin => pin.name === old.name)).sort((a, b) => a.name.localeCompare(b.name));
+  if (unbekannt.length) fail("schema-incompatible", `Diese Welt wurde zuletzt mit einer neueren Version von Atlas Chronicles geöffnet (Datenstufe ${stufe(unbekannt.at(-1)!.name)}). Diese Installation kennt nur bis Datenstufe ${stufe(hoechste)}. Bitte die neueste Version installieren; die Welt selbst ist unverändert.`);
+  const veraendert = applied.find(old => !packaged.some(pin => pin.name === old.name && pin.sha256 === old.sha256));
+  if (veraendert) fail("schema-incompatible", `Diese Installation hat eine abweichende Fassung der Datenstufe ${stufe(veraendert.name)} als die Welt. Das passiert bei einem beschädigten oder fremden Installationspaket. Bitte Atlas Chronicles neu installieren; die Welt selbst ist unverändert.`);
   const pending = packaged.filter(pin => !applied.some(old => old.name === pin.name));
   return { pending, recoveryRequired: applied.length > 0 && pending.length > 0 };
 }
