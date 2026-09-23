@@ -1,0 +1,157 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
+/* Der Kampftisch. Holz und Filz sind derselbe Tisch wie im Reiter „Spieltisch" (tabletop.css) —
+   ein Gegenstand, der in jedem Look gleich bleibt. Alles, was darauf liegt, folgt dem Look: hier
+   stehen nur Farbwerte der Looks, keine fest verdrahtete Farbe und keine Ersatzwerte. */
+.kampftisch { display: grid; gap: 1rem; }
+.kampftisch-seitenkopf { align-items: end; gap: 1rem; flex-wrap: wrap; }
+.kampf-neu { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.kampf-neu input { min-inline-size: 16rem; }
+.kampf-wahl { display: flex; gap: .35rem; flex-wrap: wrap; }
+.kampf-reiter { display: grid; gap: .1rem; text-align: start; padding: .4rem .7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: inherit; cursor: pointer; }
+.kampf-reiter small { color: var(--text-muted); font-size: .75rem; }
+.kampf-reiter.aktiv { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+.kampftisch-tafel { display: grid; gap: 1rem; }
+.kampftisch-kopf { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
+.kampftisch-kopf h3 { margin: 0; }
+/* Die eine Aussage, für die die Fläche existiert: wer ist dran. Sie darf nicht klein sein. */
+.kampftisch-dran { display: grid; justify-items: center; gap: .1rem; margin: 0; }
+.kampftisch-dran .muted { font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; }
+.kampftisch-dran strong { font-family: var(--font-display); font-size: 1.45rem; line-height: 1.1; color: var(--accent-strong); }
+.kampftisch-vorschau { margin: 0; padding: .55rem .9rem; border-radius: var(--radius); background: var(--info-soft); color: var(--info); border: 1px solid color-mix(in srgb, var(--info) 45%, transparent); }
+
+.kampftisch-flaeche { display: grid; gap: 1rem; align-items: start; }
+.kampftisch-flaeche.mit-leiste { grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem); }
+.kampftisch-holz { margin-block-end: 1.4rem; }
+/* Derselbe Filz, aber eine Spalte: die Würfelschale des Spieltischs gibt es hier nicht. */
+.kampftisch-filz.tabletop-felt { grid-template-columns: minmax(0, 1fr); gap: 1.1rem; padding: 1.3rem 1.1rem 1.5rem; }
+.kampftisch-reihe { display: grid; gap: .45rem; }
+.kampftisch-reihe-kopf { display: flex; align-items: center; gap: .5rem; margin: 0; font: 600 .72rem var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--tisch-beschriftung); }
+.kampftisch-reihe-kopf::before { content: ""; inline-size: .6rem; block-size: .6rem; border-radius: 2px; background: var(--seite-farbe); }
+.kampftisch-karten { list-style: none; margin: 0; padding: .7rem 0 .2rem; display: flex; flex-wrap: wrap; gap: .9rem; justify-content: center; }
+.kampftisch-mitte { display: flex; align-items: center; gap: .8rem; color: var(--tisch-beschriftung); font-family: var(--font-display); letter-spacing: .1em; font-size: .85rem; }
+.kampftisch-mitte::before, .kampftisch-mitte::after { content: ""; flex: 1; block-size: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--tisch-beschriftung) 55%, transparent), transparent); }
+.kampftisch-leer { margin: 1.5rem auto; max-inline-size: 30rem; text-align: center; color: var(--tisch-beschriftung); }
+
+.seite-gegner { --seite-farbe: var(--danger); --seite-weich: var(--danger-soft); }
+.seite-gefaehrten { --seite-farbe: var(--accent); --seite-weich: var(--accent-soft); }
+.seite-neutral { --seite-farbe: var(--line-strong); --seite-weich: var(--surface-hover); }
+
+/* Die Karte */
+.kampfkarte { position: relative; inline-size: 11.5rem; display: grid; gap: .45rem; padding: 0 0 .6rem; border-radius: calc(var(--radius) - 2px);
+  background: linear-gradient(170deg, var(--surface-2), var(--surface)); border: 1px solid var(--line-strong); color: var(--text); box-shadow: var(--shadow-2);
+  transition: transform var(--panel-motion) var(--motion-easing), box-shadow var(--panel-motion) var(--motion-easing), opacity var(--panel-motion) var(--motion-easing); }
+.kampfkarte::before { content: ""; position: absolute; inset: 0 0 auto; block-size: 4px; border-start-start-radius: inherit; border-start-end-radius: inherit; background: var(--seite-farbe); }
+.kampfkarte-bild { margin: 4px 4px 0; aspect-ratio: 16 / 10; overflow: hidden; display: grid; place-items: center; border-radius: calc(var(--radius) - 5px); border: 1px solid var(--line);
+  background: radial-gradient(90% 90% at 50% 35%, color-mix(in srgb, var(--seite-farbe) 30%, var(--seite-weich)), var(--seite-weich) 75%); }
+.kampfkarte-bild img { inline-size: 100%; block-size: 100%; object-fit: cover; display: block; }
+.kampfkarte-monogramm { font-family: var(--font-display); font-size: 2.1rem; color: color-mix(in srgb, var(--seite-farbe) 75%, var(--text)); }
+.kampfkarte-siegel { position: absolute; inset-block-start: -.55rem; inset-inline-start: -.55rem; z-index: 2; inline-size: 2.3rem; block-size: 2.3rem; border-radius: 50%;
+  display: grid; place-items: center; font: 700 .95rem var(--font-mono); background: var(--bg-deep); color: var(--text); border: 2px solid var(--seite-farbe); box-shadow: var(--shadow-1); }
+.kampfkarte-menue-ort { position: absolute; inset-block-start: .35rem; inset-inline-end: .35rem; z-index: 4; }
+.kampfkarte-menue { inline-size: 1.9rem; block-size: 1.9rem; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--text); cursor: pointer; }
+.kampfkarte-name { margin: 0; padding: 0 .65rem; font-family: var(--font-display); font-size: 1rem; line-height: 1.2; overflow-wrap: anywhere; }
+.kampfkarte-name small { display: block; font-family: var(--font-body); font-size: .68rem; color: var(--text-faint); }
+.kampfkarte-balken { display: grid; gap: .4rem; padding: 0 .65rem; }
+.kampfkarte-ohne { margin: 0; padding: 0 .65rem; font-size: .74rem; font-style: italic; color: var(--text-faint); }
+.kampfkarte-zustaende { list-style: none; margin: 0; padding: 0 .65rem; display: flex; flex-wrap: wrap; gap: .25rem; }
+.kampfkarte-zustaende li { font-size: .66rem; padding: .08rem .42rem; border-radius: 999px; background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--line); }
+.kampfkarte-hinweis { margin: 0 .5rem; padding: .4rem .5rem; display: grid; gap: .3rem; justify-items: start; border-radius: 6px; font-size: .74rem;
+  background: var(--danger-soft); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); }
+.kampfkarte-fuss { margin: 0; padding: 0 .65rem; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); }
+.kampfkarte-verdeckt { display: inline-flex; gap: .25rem; align-items: center; margin: 0 .55rem; font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
+.kampfkarte-beleg { letter-spacing: .04em; text-transform: uppercase; font-size: .68rem; color: var(--text-muted); }
+/* Am Zug, umgelegt, deine Figur: jedes Mal auch als WORT, nie nur als Farbe. */
+.kampfkarte-marke { position: absolute; inset-block-start: -.75rem; inset-inline-start: 50%; transform: translateX(-50%); z-index: 3; padding: .1rem .55rem; border-radius: 999px; white-space: nowrap;
+  font-size: .64rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; background: var(--accent); color: var(--accent-ink); }
+.kampfkarte-eigene { position: absolute; inset-block-start: -.7rem; inset-inline-end: .6rem; z-index: 3; padding: .08rem .5rem; border-radius: 999px; font-size: .64rem;
+  letter-spacing: .08em; text-transform: uppercase; background: var(--private-soft); color: var(--private); border: 1px solid var(--private); }
+.kampfkarte-stempel { position: absolute; inset-block-start: 34%; inset-inline-start: 50%; transform: translate(-50%, -50%) rotate(-14deg); z-index: 3; padding: .15rem .6rem; border-radius: 4px;
+  border: 2px solid var(--danger); color: var(--danger); background: color-mix(in srgb, var(--surface) 82%, transparent); font: 700 .82rem var(--font-display); letter-spacing: .14em; text-transform: uppercase; }
+.kampfkarte.amzug { transform: translateY(-10px); box-shadow: var(--shadow-3), 0 0 0 2px var(--accent), 0 0 26px color-mix(in srgb, var(--accent) 35%, transparent); }
+.kampfkarte.umgelegt { transform: rotate(-5deg) translateY(6px); opacity: .78; filter: grayscale(.85); }
+.kampfkarte.eigene { border-color: var(--private); }
+.kampfkarte.klein { inline-size: 7.6rem; gap: .3rem; }
+.kampfkarte.klein .kampfkarte-name { font-size: .82rem; }
+.kampfkarte.klein .kampfkarte-bild { aspect-ratio: 16 / 9; }
+.kampfkarte.klein .kampfkarte-monogramm { font-size: 1.4rem; }
+.kampfkarte.klein .kampfkarte-siegel { inline-size: 1.9rem; block-size: 1.9rem; font-size: .8rem; }
+
+/* Balken */
+.kampf-balken { display: grid; gap: .18rem; }
+.kampf-balken[data-farbe="danger"] { --balken-farbe: var(--danger); }
+.kampf-balken[data-farbe="info"] { --balken-farbe: var(--info); }
+.kampf-balken[data-farbe="ok"] { --balken-farbe: var(--ok); }
+.kampf-balken[data-farbe="warning"] { --balken-farbe: var(--warning); }
+.kampf-balken[data-farbe="private"] { --balken-farbe: var(--private); }
+.kampf-balken-kopf { display: flex; align-items: center; gap: .3rem; font-size: .74rem; }
+.kampf-balken-name { color: var(--text-muted); }
+.kampf-balken-wert, .kampf-balken-wort { margin-inline-start: auto; }
+.kampf-balken-wert { font-family: var(--font-mono); font-size: .76rem; }
+button.kampf-balken-wert { border: 0; background: none; color: inherit; padding: 0 .15rem; border-radius: 4px; cursor: pointer; text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; }
+.kampf-balken-wort { font-size: .78rem; font-weight: 600; color: var(--balken-farbe); }
+.kampf-auge { inline-size: 1.35rem; block-size: 1.35rem; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: var(--input-bg); color: var(--text-muted); cursor: pointer; }
+.kampf-auge[data-maske="worte"], .kampf-auge[data-maske="fuellstand"] { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 50%, var(--line)); }
+.kampf-auge[data-maske="verborgen"] { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, var(--line)); }
+.kampf-spur { position: relative; block-size: .5rem; overflow: hidden; border-radius: 999px; background: var(--input-bg); border: 1px solid var(--line); }
+.kampf-spur > span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--balken-farbe); transition: inline-size var(--panel-motion) var(--motion-easing); }
+/* Nur Füllstand: die Zehntel bleiben sichtbar, damit niemand eine Genauigkeit liest, die es nicht gibt. */
+.kampf-spur.in-zehnteln { background-image: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), var(--line) calc(10% - 1px) 10%); }
+.kampf-balken-runde { margin: 0; font-size: .64rem; color: var(--text-faint); }
+
+/* Schwebende Fenster */
+.kampf-anker { position: relative; }
+.kampf-schwebe { position: absolute; z-index: 30; inset-block-start: calc(100% + .35rem); inset-inline-end: 0; inline-size: min(18rem, 86vw); display: grid; gap: .5rem; padding: .7rem;
+  border-radius: var(--radius); background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); box-shadow: var(--shadow-3); text-align: start; }
+.kampf-balken > .kampf-schwebe { inset-inline-end: auto; inset-inline-start: 0; }
+.kampf-schwebe-kopf { display: flex; justify-content: space-between; align-items: start; gap: .5rem; }
+.kampf-schwebe-kopf h4 { margin: 0; font-size: .92rem; }
+.kampf-schwebe-zu { border: 0; background: none; color: var(--text-muted); cursor: pointer; padding: .1rem; border-radius: 4px; }
+.kampf-schwebe-inhalt { display: grid; gap: .5rem; }
+.kampf-schwebe label { display: grid; gap: .2rem; font-size: .78rem; color: var(--text-muted); }
+.kampf-schwebe input:not([type="checkbox"]), .kampf-schwebe select { font: inherit; font-size: .88rem; padding: .35rem .5rem; border-radius: 6px; border: 1px solid var(--control-line); background: var(--input-bg); color: var(--text); }
+.kampf-option { inline-size: 100%; display: grid; gap: .1rem; text-align: start; padding: .4rem .5rem; border-radius: 6px; border: 1px solid transparent; background: none; color: inherit; cursor: pointer; }
+.kampf-option:hover { background: var(--surface-hover); }
+.kampf-option[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.kampf-option span { font-size: .72rem; color: var(--text-muted); }
+.kampf-vorschau { margin: 0; padding: .4rem .5rem; border-radius: 6px; background: var(--input-bg); font-size: .76rem; color: var(--text-muted); }
+.kampf-menue { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; }
+.kampf-menue button { inline-size: 100%; text-align: start; padding: .38rem .5rem; border: 0; border-radius: 6px; background: none; color: inherit; cursor: pointer; font: inherit; font-size: .86rem; }
+.kampf-menue button:hover, .kampf-menue button:focus-visible { background: var(--surface-hover); }
+.kampf-menue .gefahr { color: var(--danger); }
+.kampf-menue-trenner { block-size: 1px; background: var(--line); margin: .2rem 0; }
+.kampf-schwebe .kampf-haken, .kampf-aufnahme .kampf-haken { display: flex; gap: .45rem; align-items: center; color: var(--text); font-size: .84rem; }
+.kampf-stepper { display: grid; grid-template-columns: repeat(2, 2.3rem) minmax(0, 1fr) repeat(2, 2.3rem); gap: .3rem; }
+.kampf-stepper button { padding: .35rem 0; border-radius: 6px; border: 1px solid var(--control-line); background: var(--surface); color: var(--text); cursor: pointer; font-family: var(--font-mono); }
+.kampf-stepper input { text-align: center; font-family: var(--font-mono); min-inline-size: 0; }
+
+/* Seitenleiste der Spielleitung */
+.kampftisch-leiste { display: grid; gap: .9rem; }
+.kampftisch-fach { display: grid; gap: .55rem; padding: .8rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.kampftisch-fach h4 { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; font-size: .95rem; }
+.kampftisch-fach h4 small { font-family: var(--font-body); font-weight: 400; font-size: .72rem; color: var(--text-faint); }
+.kampftisch-hand { list-style: none; margin: .3rem 0 0; padding: .9rem 0 .4rem; display: flex; justify-content: center; }
+.kampftisch-hand > li { margin-inline: -.55rem; transition: transform var(--panel-motion) var(--motion-easing); }
+.kampftisch-hand > li:nth-child(odd) { transform: rotate(-6deg); }
+.kampftisch-hand > li:nth-child(even) { transform: rotate(5deg) translateY(4px); }
+.kampftisch-hand > li:hover, .kampftisch-hand > li:focus-within { transform: translateY(-12px); z-index: 5; }
+.kampftisch-ablage { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; }
+.kampftisch-ablage li { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .35rem .55rem; border: 1px dashed var(--line-strong); border-radius: 6px; font-size: .84rem; }
+.kampf-aufnahme h4 { justify-content: flex-start; }
+.kampf-aufnahme label { display: grid; gap: .2rem; font-size: .78rem; color: var(--text-muted); }
+.kampf-aufnahme-wahl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .25rem; }
+.kampf-aufnahme-wahl button { padding: .35rem .2rem; font-size: .74rem; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.kampf-aufnahme-wahl button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.kampf-felder { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); }
+.kampf-wurf { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; }
+
+@media (max-width: 900px) {
+  .kampftisch-flaeche.mit-leiste { grid-template-columns: minmax(0, 1fr); }
+  .kampfkarte { inline-size: calc(50% - .5rem); min-inline-size: 9.5rem; }
+  .kampftisch-hand { overflow-x: auto; justify-content: flex-start; padding-inline: 1.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kampfkarte, .kampftisch-hand > li, .kampf-spur > span { transition: none; }
+}
