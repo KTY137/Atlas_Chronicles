@@ -40,8 +40,10 @@ describe("Fantasy-Stadt aus Vierteln (v11)", () => {
     expect(typen).toContain("taverne");
     expect(d.karte.walls.length).toBe(0);
   });
-  it("liefert über alle Standorte und Arten gültige Karten ohne Überlappung, alles an benannten Straßen", () => {
-    for (const standort of STANDORTE) for (const art of ["weiler", "dorf", "stadt"] as const) for (let i = 0; i < 2; i++) {
+  // Je Standort ein eigener Test: ein einziger Lauf über alle 54 Städte blockierte den Worker so
+  // lange, dass Vitest seine Rückmeldung verlor ("Timeout calling onTaskUpdate").
+  it.each(STANDORTE)("liefert am Standort %s gültige Karten ohne Überlappung, alles an benannten Straßen", standort => {
+    for (const art of ["weiler", "dorf", "stadt"] as const) for (let i = 0; i < 2; i++) {
       const s = erzeugeSiedlung({ keim: `v11:${standort}:${art}:${i}`, optionen: { art, standort } }, paket);
       const wo = `${standort}/${art}/${i}`;
       expect(s.bauwerke.length, wo).toBeGreaterThan(0);
@@ -51,7 +53,7 @@ describe("Fantasy-Stadt aus Vierteln (v11)", () => {
         expect(getrennteDaecher(s.bauwerke[a]!.umriss, s.bauwerke[c]!.umriss), `${wo} ${s.bauwerke[a]!.pfad} / ${s.bauwerke[c]!.pfad}`).toBe(true);
       expect(() => parseTacticalCartography(s.cartography, s.karte), wo).not.toThrow();
     }
-  }, 240_000);
+  }, 60_000);
   it("hält die Großstadt im Budget", () => {
     const t0 = performance.now();
     const s = erzeugeSiedlung({ keim: "v11:gross", optionen: { art: "stadt", ausdehnung: [88, 64], bauwerke: 480 } }, paket);
