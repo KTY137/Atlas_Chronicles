@@ -75,6 +75,8 @@ describe("polled deep-link focus", () => {
     const d = driver("../src/features/TableView.tsx", "Doors", {
       "../hooks": { useTask: () => ({ busy: false }), useResource: (path: string | null) => ({ data: path?.endsWith("/vollmachten") ? doorRows : null }) },
       "./game-api": { useCommand: () => vi.fn() }, "../api": { apiPath: (_id: string, path: string) => path },
+      // Doors liest die Regeln seit dem Host-Umbau über useHostRules; für den Fokus zählt nur die Türliste.
+      "./useHostRules": { useHostRules: () => ({ manifest: null, values: null, preview: null, error: "", pending: false, canSave: false, reload() {} }) },
     }, { document: { getElementById: () => doorRows ? { focus } : null } });
     const props = { selectedId: "door-one", campaignId: "c", rules: { packages: [] }, roster: [], actorId: "", gm: true, revision: 0, onChanged: vi.fn() };
     d.render(props); expect(focus).not.toHaveBeenCalled();

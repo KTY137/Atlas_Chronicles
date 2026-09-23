@@ -33,6 +33,8 @@ function harness(file: string, initial: Record<string, any>, component = file, e
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "../hooks") return { useResource: (path: string) => props.resource?.(path) ?? { data: null, loading: false, loaded: true, error: "" }, useTask: () => ({ busy: false, error: "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, api: async (path: string, request: unknown) => { requests.push({ path, request }); return props.transport?.(path, request); } };
+      // FigurAntrag wertet die Anfangswerte seit dem Host-Umbau über useHostRules aus; der Entwurf selbst bleibt echt.
+      if (name === "./useHostRules") return { useHostRules: () => ({ manifest: null, values: null, preview: null, error: "", pending: false, canSave: true, reload() {} }) };
       if (name === "./game-api") return { useCommand: () => async (path: string, body: unknown) => { requests.push({ path, request: { body } }); return props.transport?.(path, { body }); } };
       return new Proxy({}, { get: (_target, key) => String(key) });
     },

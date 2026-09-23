@@ -59,6 +59,10 @@ function tableHarness(requests: { openTab?: { tab: string; request: number }; op
         if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "Fragment" };
         if (name === "../navigation") return load("navigation.ts");
         if (name === "./ActorWorkbench") return load("features/ActorWorkbench.tsx");
+        // Das Erschaffen-Formular lebt seit dem Host-Umbau in InstantiateActorHost; es bleibt echt,
+        // nur die Regelauswertung des Hosts ist für die Navigation ohne Belang.
+        if (name === "./InstantiateActorHost") return load("features/InstantiateActorHost.tsx");
+        if (name === "./useHostRules") return { useHostRules: () => ({ manifest: null, values: null, preview: null, error: "", pending: false, canSave: false, reload() {} }) };
         if (name === "../hooks") return { useResource: resources, useTask: () => ({ busy: false, error: "" }), useFrischeKarten: () => new Set() };
         if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}` };
         if (name === "./game-api") return { useCommand: () => () => undefined };
