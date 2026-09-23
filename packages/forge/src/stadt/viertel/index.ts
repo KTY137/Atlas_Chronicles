@@ -220,10 +220,9 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
       baue.push({ pfad: `turm.${q(p[0])}_${q(p[1])}`, umriss: turm, los: turm, strasse: naechste.id, typ: "turm", titel: `${tor ? "Torturm" : "Mauerturm"} ${nummer}`, rang: 0, ferne: 0, rolle: "wohnen" });
       tuerme.push(turm);
     }
-    // Die Mauer endet an jedem Turm, mit einem Abstand, den Steinband und Schatten brauchen:
-    // der Turm ist der Knoten der Mauer, sie läuft nicht über sein Dach.
-    const abstand = Math.max(.24, 5 / z);
-    const turmHindernisse = tuerme.map(t => mitAbstand([t[0]!, t[3]!, t[6]!, t[9]!], TURM * .42 + abstand));
+    // Die Mauer endet unter jedem Turm: die Kartenoptik zeichnet Rundtürme nach der Mauer
+    // (`cartography-12`), das Mauerende samt Kappe verschwindet also unter dem Turmdach.
+    const turmHindernisse = tuerme.map(t => { const c = schwerpunkt(t), h = TURM * .36; return [[c[0] - h, c[1] - h], [c[0] + h, c[1] - h], [c[0] + h, c[1] + h], [c[0] - h, c[1] + h]] as Polygon; });
     for (const s of roheStuecke) for (const [x, [a, b]] of freieMauer(s.a, s.b, turmHindernisse).entries())
       if (Math.hypot(b[0] - a[0], b[1] - a[1]) > .12) mauerStuecke.push({ a, b, pfad: `${s.pfad}.${x}` });
   }
@@ -296,6 +295,12 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
     const rid = id("standort", material, `${index}`);
     extraRegions.push({ id: rid, polygon, role: { ...rolle(rid), role: "terrain", material } });
   }
+  // Parks und Anger vor der Flur: das Zeichenbudget der Kartenoptik ist geteilt, und ein Park, der
+  // nach hunderten Feldstreifen kommt, bliebe eine Fläche ohne Bäume.
+  for (const p of plaetze) if (p.material === "grass" || p.material === "forest") {
+    const pid = id("markt", p.pfad);
+    extraRegions.push({ id: pid, polygon: p.polygon, role: { ...rolle(pid), role: "terrain", material: p.material } });
+  }
   kreuzungen(netz, rahmen, ids, art === "stadt" ? "street" : "path", ablage);
   const hindernisse = [...bauHindernisse.map(p => mitAbstand(p, .035)), ...strand, ...sumpf, ...strassen.map(s => mitAbstand(s.umriss, .06)), ...hofLose.map(p => mitAbstand(p, .08))]
     .filter(p => p.length >= 3).map(polygon => ({ polygon, box: huelle(polygon) }));
@@ -331,9 +336,13 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
       if (!aussen) { const e = { polygon: stueck, box: huelle(stueck) }; bewachsen.push(e); bewuchsSet.add(e); reihenfolge.set(e, reihenfolge.size); eintragen(e); }
     }
   };
+  // Ein gewöhnlicher Stadtfleck, auf dem das Budget kein Haus mehr gelassen hat, ist kein leerer
+  // Bauplatz, sondern Gartenland vor der Stadt: er wird Feld wie die Flur, nur weiter von den Wegen.
+  const bebaut = new Set(stadtListe.filter(i => gewaehlt.some(b => b.pfad.startsWith(`${alle[i]!.pfad}.`))));
+  const brach = (i: number) => istStadt(i) && !bebaut.has(i) && !["markt", "tempel", "burg", "frei"].includes(rollen.get(i) ?? "wohnen");
   for (const [i, f] of alle.entries()) {
-    if (istStadt(i) || !trocken[i]) continue;
-    const innen = einwaerts(f.zelle, .25);
+    if ((istStadt(i) && !brach(i)) || !trocken[i]) continue;
+    const innen = einwaerts(f.zelle, brach(i) ? .6 : .25);
     if (innen.length < 3) continue;
     if (standort === "wald" || landschaft.feuchte(f.punkt[0], f.punkt[1]) >= landschaft.waldSchwelle) { gelaende(innen, f.pfad, "forest"); continue; }
     const streifen = flurStreifen(innen, Math.max(2, Math.min(8, Math.round(flaeche(innen) / 5))), r);
@@ -341,11 +350,10 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis): Sied
   }
   for (const [index, polygon] of landschaft.wald.entries()) gelaende(polygon, `wald.${index}`, "forest", true);
   for (const p of plaetze) {
+    if (p.material !== "square" && p.material !== "path") continue;
     const pid = id("markt", p.pfad);
-    if (p.material === "square" || p.material === "path") {
-      extraRegions.push({ id: pid, polygon: p.polygon, role: { ...mitVermerk(pid), role: "road", material: p.material } });
-      strassen.push({ id: pid, art: "gasse", umriss: p.polygon });
-    } else extraRegions.push({ id: pid, polygon: p.polygon, role: { ...rolle(pid), role: "terrain", material: p.material } });
+    extraRegions.push({ id: pid, polygon: p.polygon, role: { ...mitVermerk(pid), role: "road", material: p.material } });
+    strassen.push({ id: pid, art: "gasse", umriss: p.polygon });
   }
   wasserUndBruecken(wasser, wasserMaterial, fluss, ids, ablage);
 

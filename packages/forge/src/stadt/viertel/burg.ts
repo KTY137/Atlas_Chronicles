@@ -65,7 +65,6 @@ export function baueBurg(a: ParzellenAuftrag): FleckBau & { readonly mauern: rea
     const d = Math.hypot((p[0] + q2[0]) / 2 - (tor.von[0] + tor.bis[0]) / 2, (p[1] + q2[1]) / 2 - (tor.von[1] + tor.bis[1]) / 2);
     if (d < torAbstand) { torAbstand = d; torKante = i; }
   }
-  // Die Burgmauer endet an ihren Türmen mit dem Abstand, den Steinband und Schatten brauchen.
   // Der Burgweg: durch die Torlücke hinaus bis auf die Straße, damit der Hof erreichbar ist.
   if (tor && torKante >= 0) {
     const p = innen[(torKante + innen.length - 1) % innen.length]!, q2 = innen[torKante]!, m: Punkt = [(p[0] + q2[0]) / 2, (p[1] + q2[1]) / 2];
@@ -76,7 +75,8 @@ export function baueBurg(a: ParzellenAuftrag): FleckBau & { readonly mauern: rea
     const weg: Polygon = ([[-halb, -.2], [halb, -.2], [halb, aussen], [-halb, aussen]] as const).map(([t, d]) => qp([m[0] + ux * t + nx * d, m[1] + uy * t + ny * d]));
     plaetze.push({ pfad: `${a.pfad}.burgweg`, polygon: weg, material: "path" });
   }
-  const hindernisse = baue.filter(b => b.typ === "turm").map(b => mitAbstand(turmKern(b.umriss), .32));
+  // Die Burgmauer endet unter ihren Türmen; die Kartenoptik zeichnet Rundtürme nach der Mauer.
+  const hindernisse = baue.filter(b => b.typ === "turm").map(b => { const c = schwerpunkt(b.umriss), h = TURM * .36; return [[c[0] - h, c[1] - h], [c[0] + h, c[1] - h], [c[0] + h, c[1] + h], [c[0] - h, c[1] + h]] as Polygon; });
   for (let i = 0; i < innen.length; i++) {
     const p = innen[(i + innen.length - 1) % innen.length]!, q2 = innen[i]!;
     const at = (t: number): Punkt => [p[0] + (q2[0] - p[0]) * t, p[1] + (q2[1] - p[1]) * t];

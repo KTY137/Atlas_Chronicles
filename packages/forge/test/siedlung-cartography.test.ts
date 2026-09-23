@@ -43,11 +43,18 @@ describe("settlement canonical cartography", () => {
       .concat(["gallery:orchard-2", "gallery:gate-3"].map(seed => ({ seed, zellgroesse: 96 })));
     for (const { seed, zellgroesse } of cases) {
       const generated = erzeugeSiedlung({ keim: seed, optionen: { art: "stadt", zellgroesse } }, paket);
-      const buildingIds = new Set<string>(generated.bauwerke.map(building => building.id));
+      // Rundtürme stehen auf der Mauer: die Mauer endet unter ihnen, und die Optik (cartography-12)
+      // zeichnet sie nach der Mauer. Für sie gilt die Reihenfolge, nicht der Abstand.
+      const turmIds = new Set<string>(generated.bauwerke.filter(building => building.typ === "turm" && building.umriss.length === 12).map(building => building.id));
+      const buildingIds = new Set<string>(generated.bauwerke.filter(building => !turmIds.has(building.id)).map(building => building.id));
       const roofs = generated.karte.geometry.regions.filter(region => buildingIds.has(region.id))
         .flatMap(region => konvexeTeile(region.punkte).map(points => ({ id: region.id, points })));
       const wallIds = new Set(generated.karte.walls.map(wall => wall.id));
-      const wallPaint = cartographyDraw(generated.karte, generated.cartography).polygons.filter(polygon => wallIds.has(polygon.regionId));
+      const drawing = cartographyDraw(generated.karte, generated.cartography).polygons;
+      const wallPaint = drawing.filter(polygon => wallIds.has(polygon.regionId));
+      const letzteMauer = Math.max(...drawing.map((polygon, index) => wallIds.has(polygon.regionId) ? index : -1));
+      expect(turmIds.size, seed).toBeGreaterThan(4);
+      expect(drawing.some((polygon, index) => turmIds.has(polygon.regionId) && index < letzteMauer && polygon.fill !== 0x26332b), `${seed}/${zellgroesse}: a tower is painted under the wall`).toBe(false);
       expect(wallPaint.length, seed).toBeGreaterThan(20);
       const collisions = wallPaint.flatMap(wall => roofs.filter(roof => overlap(wall.points, roof.points)).map(roof => `${wall.regionId}/${roof.id}`));
       expect([...new Set(collisions)], `${seed}/${zellgroesse}: all visible stone, caps and shadows need a real setback from buildings`).toEqual([]);
