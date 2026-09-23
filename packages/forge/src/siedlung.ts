@@ -18,6 +18,7 @@ import {
 } from "./polygon.ts";
 import { roofZone, zoneDraw, zoneBuilding } from "./siedlung-plan.ts";
 import { freieMauer, frontParzellen, getrennteDaecher, hausImLos, mitAbstand, ohne, type Gasse } from "./stadt/gemeinsam.ts";
+import { erzeugeViertelStadt } from "./stadt/viertel/index.ts";
 import { ausstattung, dokument, kappeAnHindernissen, kreuzungen, ohneLaengsFluss, stege, wasserUndBruecken, type Ablage, type ExtraRegion } from "./stadt/abschluss.ts";
 
 /** Convex clipping keeps the same geometry authoritative for water, lots and bridges. */
@@ -75,9 +76,11 @@ export const SIEDLUNG_ERZEUGER = "chronicle-siedlung";
 export const SIEDLUNG_VERSION = "8";
 /** Planning is opt-in. Missing/empty plans retain the complete v8 output, including IDs. */
 const SIEDLUNG_PLAN_VERSION = "9";
+/** Fantasy-Siedlungen aus Vierteln (`stadt/viertel`, Spec 2026-09-23). Gegenwart und Sci-Fi bleiben bei 8/9/10. */
+export const SIEDLUNG_VIERTEL_VERSION = "11";
 
 export const SIEDLUNG_LIMITS = Object.freeze({
-  ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 256, grundstueckMin: 2, grundstueckMax: 24,
+  ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 512, grundstueckMin: 2, grundstueckMax: 24,
 });
 
 export type SiedlungArt = "weiler" | "dorf" | "stadt";
@@ -108,6 +111,10 @@ export interface SiedlungOptionen {
   /** `[min, max]` side length in cells for a plot's street frontage and its depth. */
   readonly grundstueck: readonly [number, number];
   readonly licht: boolean;
+  /** Nur Fantasy: die Altstadt bekommt eine Mauer mit Türmen und Toren. Vorgabe: bei einer Stadt ja. */
+  readonly mauer?: boolean;
+  /** Nur Fantasy: eine Burg auf dem höchsten Fleck an der Mauer. Vorgabe: bei einer Stadt ja. */
+  readonly burg?: boolean;
 }
 
 /** One default vector per settlement kind, shared by the engine and the product controls. */
@@ -117,9 +124,12 @@ const SIEDLUNG_ART_STANDARD: Readonly<Record<SiedlungArt, Omit<SiedlungOptionen,
   stadt: Object.freeze({ ausdehnung: [56, 44] as const, zellgroesse: 96, bauwerke: 224, strassenDichte: 0.55, grundstueck: [2, 5] as const, licht: true }),
 });
 
-export function siedlungStandard(art: SiedlungArt = "dorf"): SiedlungOptionen {
+/** Die Vorgaben je Ortsart. Eine Fantasy-Stadt aus Vierteln ist dichter bebaut (320 statt 224
+ * Gebäude); Gegenwart und Sci-Fi behalten ihre Zahl, bis sie ihren eigenen Baustein haben. */
+export function siedlungStandard(art: SiedlungArt = "dorf", setting: KartenSetting = "fantasy"): SiedlungOptionen {
   if (art !== "weiler" && art !== "dorf" && art !== "stadt") fail("option", "optionen.art", "weiler, dorf oder stadt erwartet");
-  return Object.freeze({ art, setting: "fantasy", standort: "fluss", relief: .5, bewaldung: .5, ...SIEDLUNG_ART_STANDARD[art] });
+  const viertel = setting === "fantasy" ? { mauer: art === "stadt", burg: art === "stadt", ...(art === "stadt" ? { bauwerke: 320 } : {}) } : {};
+  return Object.freeze({ art, setting: "fantasy", standort: "fluss", relief: .5, bewaldung: .5, ...SIEDLUNG_ART_STANDARD[art], ...viertel });
 }
 
 export const SIEDLUNG_STANDARD: SiedlungOptionen = siedlungStandard();
@@ -177,6 +187,10 @@ export interface SiedlungBericht {
   /** Theme slots the pack could not serve. Degradation is visible or it is a lie. */
   readonly nichtBedient: readonly string[];
   readonly ausgelassen: readonly string[];
+  /** Nur v11: die erzeugten Viertel mit Rolle und Namen. */
+  readonly viertel?: readonly { readonly id: string; readonly nutzung: string; readonly name: string; readonly flecken: number; readonly flaeche: number }[];
+  /** Nur v11: dieselben Viertel als Zonenplan, den die Spielleitung übernehmen und verschieben kann. */
+  readonly viertelPlan?: SettlementPlan;
 }
 
 export interface Siedlung {
@@ -228,14 +242,14 @@ function grundlage(auftrag: SiedlungAuftrag, paket: AssetpaketV1) {
   if (!KARTEN_SETTINGS.some(era => era === setting)) fail("option", "optionen.setting", "fantasy, gegenwart oder scifi erwartet");
   const standort = auftrag.optionen?.standort === undefined ? "fluss" : auftrag.optionen.standort;
   if (!SIEDLUNG_STANDORTE.some(value => value === standort)) fail("option", "optionen.standort", `${SIEDLUNG_STANDORTE.join(", ")} erwartet`);
-  const optionen: SiedlungOptionen = { ...siedlungStandard(art), ...auftrag.optionen, art, setting, standort };
+  const optionen: SiedlungOptionen = { ...siedlungStandard(art, setting), ...auftrag.optionen, art, setting, standort };
   const relief = optionen.relief ?? .5, bewaldung = optionen.bewaldung ?? .5;
   for (const [name, value] of [["relief", relief], ["bewaldung", bewaldung]] as const) if (typeof value !== "number" || !(value >= 0 && value <= 1)) fail("option", `optionen.${name}`, "Zahl in 0..1 erwartet");
   const [breite, hoehe] = optionen.ausdehnung;
   const planung = optionen.planung === undefined ? undefined : parseSettlementPlan(optionen.planung);
   const verkehr = optionen.verkehr === undefined ? undefined : parseRoadPlan(optionen.verkehr);
   const strassenGeplant = !!verkehr?.knoten.length;
-  const geplant = !!planung?.zonen.length, version = strassenGeplant ? "10" : geplant ? SIEDLUNG_PLAN_VERSION : SIEDLUNG_VERSION;
+  const geplant = !!planung?.zonen.length, version = setting === "fantasy" ? SIEDLUNG_VIERTEL_VERSION : strassenGeplant ? "10" : geplant ? SIEDLUNG_PLAN_VERSION : SIEDLUNG_VERSION;
   const L = SIEDLUNG_LIMITS;
   const ganzIn = (wert: number, min: number, max: number, pfad: string): number =>
     Number.isSafeInteger(wert) && wert >= min && wert <= max ? wert : fail("option", pfad, `Ganzzahl in ${min}..${max} erwartet`);
@@ -249,6 +263,7 @@ function grundlage(auftrag: SiedlungAuftrag, paket: AssetpaketV1) {
   ganzIn(gMax, L.grundstueckMin, L.grundstueckMax, "optionen.grundstueck[1]");
   if (gMin > gMax) fail("option", "optionen.grundstueck", "Minimum darf das Maximum nicht überschreiten");
   if (typeof optionen.licht !== "boolean") fail("option", "optionen.licht", "Boolean erwartet");
+  for (const name of ["mauer", "burg"] as const) if (optionen[name] !== undefined && typeof optionen[name] !== "boolean") fail("option", `optionen.${name}`, "Boolean erwartet");
   if (breite * hoehe > L.zellenGesamt) fail("budget", "optionen.ausdehnung", `höchstens ${L.zellenGesamt} Zellen`);
   if (breite * optionen.zellgroesse > L.kantePixelMax || hoehe * optionen.zellgroesse > L.kantePixelMax) fail("budget", "optionen.zellgroesse", `höchstens ${L.kantePixelMax} Pixel Kantenlänge`);
   if (gMin + 2 > Math.min(breite, hoehe)) fail("option", "optionen.grundstueck", "Grundstücksmindestmaß passt nicht in das Raster");
@@ -260,11 +275,12 @@ function grundlage(auftrag: SiedlungAuftrag, paket: AssetpaketV1) {
   // settlements that differ only in `art` must never share a `keimHash` even if every numeric
   // option was overridden back to equality.
   const layoutKeim = weltkeim({
-    generator: SIEDLUNG_ERZEUGER, version: SIEDLUNG_VERSION, seed: auftrag.keim,
+    generator: SIEDLUNG_ERZEUGER, version: setting === "fantasy" ? SIEDLUNG_VIERTEL_VERSION : SIEDLUNG_VERSION, seed: auftrag.keim,
     optionen: {
       art: optionen.art, ausdehnung: [breite, hoehe], zellgroesse: optionen.zellgroesse,
       bauwerke: optionen.bauwerke, strassenDichte: optionen.strassenDichte, grundstueck: [gMin, gMax],
       licht: optionen.licht, setting, standort, relief, bewaldung,
+      ...(setting === "fantasy" ? { mauer: optionen.mauer ?? art === "stadt", burg: optionen.burg ?? art === "stadt" } : {}),
       paket: { id: paket.id, version: paket.version, zellgroesse: paket.zellgroesse },
     } as Readonly<Record<string, CanonicalValue>>,
   });
@@ -317,7 +333,11 @@ export type SiedlungGrund = ReturnType<typeof grundlage>;
 
 export function erzeugeSiedlung(auftrag: SiedlungAuftrag, paket: AssetpaketV1): Siedlung {
   const g = grundlage(auftrag, paket);
-  const { art, setting, standort, optionen, relief, bewaldung, breite, hoehe, planung, verkehr, strassenGeplant, geplant, version, L, gMin, gMax, layoutKeim, keim, r, z, ids, rahmen, rand, ortsRahmen, flussBreite, flussPunkte, landschaft, fluss, wasser, fels, strand, sumpf, wasserMaterial, hartHindernisse, bauHindernisse, strassenHindernisse } = g;
+  if (g.setting === "fantasy") return erzeugeViertelStadt(g, { erzeuger: SIEDLUNG_ERZEUGER, ausgelassen: AUSGELASSEN });
+  const { art, setting: gewaehltesSetting, standort, optionen, relief, bewaldung, breite, hoehe, planung, verkehr, strassenGeplant, geplant, version, L, gMin, gMax, layoutKeim, keim, r, z, ids, rahmen, rand, ortsRahmen, flussBreite, flussPunkte, landschaft, fluss, wasser, fels, strand, sumpf, wasserMaterial, hartHindernisse, bauHindernisse, strassenHindernisse } = g;
+  // Ab hier nur noch Gegenwart und Sci-Fi; die Fantasy-Zweige unten sind bis Teil 2 unerreichbar,
+  // bleiben aber stehen, damit der Rasterbaustein unverändert bleibt (Goldtest).
+  const setting = gewaehltesSetting as KartenSetting;
   let planVerworfen = 0;
 
   // -- 1. Viertel: Punkte streuen, Lloyd glätten, Voronoi schneiden ---------------------------

@@ -369,7 +369,8 @@ describe("A-G5 · Siedlung — Eigenschaften über den Optionsraum, nicht über 
       expect(serializeTacticalMapDocument(erzeugeSiedlung(fall, paket).karte))
         .toBe(serializeTacticalMapDocument(erzeugeSiedlung(fall, paket).karte));
     }
-  });
+    // 36 vollständige Siedlungen; seit den Vierteln (v11) ~0,4 s je Stadt statt ~0,15 s.
+  }, 30_000);
 });
 
 describe("A-G5 · Siedlung — Grenzen und Ehrlichkeit", () => {

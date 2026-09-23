@@ -11,12 +11,14 @@ const paket = parseAssetpaket(readFileSync(new URL("../../../assets/packs/pk.gru
 const index = assetIndex([paket]);
 
 describe("settings and architectural programs", () => {
-  it("exports 28 named programs, keeps the original six and recommends era-specific city services", () => {
-    expect(BAUWERK_TYPEN).toHaveLength(28); expect(new Set(BAUWERK_TYPEN).size).toBe(28);
+  it("exports 33 named programs, keeps the original six and recommends era-specific city services", () => {
+    // 2026-09-23: +5 für die Viertelstadt (Burg, Rathaus, Mühle, Bauernhof, Kaserne), additiv angehängt.
+    expect(BAUWERK_TYPEN).toHaveLength(33); expect(new Set(BAUWERK_TYPEN).size).toBe(33);
     expect(BAUWERK_TYPEN.slice(0, 6)).toEqual(["haus", "kirche", "taverne", "schmiede", "lager", "turm"]);
     for (const typ of BAUWERK_TYPEN) expect(BAUWERK_LABEL[typ]).toEqual(expect.any(String));
     expect(BAUWERK_SETTINGS.gegenwart).toEqual(expect.arrayContaining(["krankenhaus", "schule", "polizei", "supermarkt"]));
     expect(BAUWERK_SETTINGS.scifi).toEqual(expect.arrayContaining(["raumstation", "reaktor", "raumhafen", "medstation"]));
+    expect(BAUWERK_SETTINGS.fantasy).toEqual(expect.arrayContaining(["burg", "rathaus", "muehle", "bauernhof", "kaserne"]));
   });
 
   for (const profil of BAUWERK_TYPEN) for (const zellen of [[12, 12], [40, 30]] as const) {

@@ -19,7 +19,7 @@ export interface StrasseAusgabe { readonly id: string; readonly art: "hauptstras
 export interface Ablage {
   readonly extraRegions: ExtraRegion[];
   readonly strassen: StrasseAusgabe[];
-  readonly rolle: (regionId: string) => { readonly regionId: string; readonly authored: false; readonly locked: false; readonly provenance: Weltkeim };
+  readonly rolle: (regionId: string) => { readonly regionId: string; readonly authored: false; readonly locked: false; readonly provenance: Weltkeim | null };
 }
 
 /** Eine Straße längs durch den Fluss ist weder Kai noch Brücke. Sie fällt weg, wenn ihre Enden

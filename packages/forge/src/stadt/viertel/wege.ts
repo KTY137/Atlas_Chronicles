@@ -13,7 +13,11 @@ import { weg, type Kante, type Kantengraph } from "./graph.ts";
  */
 export interface WegeAuftrag {
   readonly g: Kantengraph; readonly istStadt: (z: number) => boolean; readonly istKern: (z: number) => boolean;
-  readonly ring: ReadonlySet<number>; readonly markt: number; readonly tore: readonly number[]; readonly mitte: Punkt;
+  readonly ring: ReadonlySet<number>;
+  /** Kanten am Stadtrand (die Mauer oder, ohne Mauer, der Ortsrand). Ein Tor liegt an einer Ecke mit
+   *  nur einem Stadtfleck; von dort führt die Hauptstraße ein Stück am Rand entlang nach innen. */
+  readonly randKanten?: ReadonlySet<number>;
+  readonly markt: number; readonly tore: readonly number[]; readonly mitte: Punkt;
   readonly breite: number; readonly hoehe: number;
   /** Zuschlag je Kante: eine Flussquerung kostet eine Brücke, See und Fels sind gesperrt (`Infinity`). */
   readonly kosten: (k: Kante) => number;
@@ -28,16 +32,17 @@ export function hauptstrassen(a: WegeAuftrag): Wege {
   const marktEcken = new Set(g.kanten.filter(k => k.f1 === a.markt || k.f2 === a.markt).flatMap(k => [k.u, k.v]));
   const innen = (k: Kante) => k.f2 >= 0 && a.istStadt(k.f1) && a.istStadt(k.f2) && !a.ring.has(k.nr);
   for (const tor of a.tore) {
-    const pfad = a.markt >= 0 ? weg(g, tor, marktEcken, k => innen(k) ? k.laenge * (haupt.has(k.nr) ? .45 : 1) + a.kosten(k) : Infinity) : null;
+    const rand = a.randKanten ?? a.ring;
+    const pfad = a.markt >= 0 ? weg(g, tor, marktEcken, k => innen(k) ? k.laenge * (haupt.has(k.nr) ? .45 : 1) + a.kosten(k) : rand.has(k.nr) ? k.laenge * 3 + a.kosten(k) : Infinity) : null;
     for (const nr of pfad ?? []) haupt.add(nr);
     const t = g.ecken[tor]!, dx = t[0] - a.mitte[0], dy = t[1] - a.mitte[1], n = Math.sqrt(dx * dx + dy * dy) || 1;
-    const rand = new Set<number>();
+    const kartenrand = new Set<number>();
     g.ecken.forEach((p, e) => {
       if (!amRahmen(p, a.breite, a.hoehe)) return;
       const ex = p[0] - a.mitte[0], ey = p[1] - a.mitte[1], m = Math.sqrt(ex * ex + ey * ey) || 1;
-      if ((ex * dx + ey * dy) / (m * n) >= .6) rand.add(e);
+      if ((ex * dx + ey * dy) / (m * n) >= .6) kartenrand.add(e);
     });
-    const draussen = weg(g, tor, rand, k => a.istKern(k.f1) || (k.f2 >= 0 && a.istKern(k.f2)) ? Infinity : k.laenge * (ausfall.has(k.nr) ? .5 : 1) + a.kosten(k));
+    const draussen = weg(g, tor, kartenrand, k => (amRahmen(k.von, a.breite, a.hoehe) && amRahmen(k.bis, a.breite, a.hoehe)) || a.istKern(k.f1) || (k.f2 >= 0 && a.istKern(k.f2)) ? Infinity : k.laenge * (ausfall.has(k.nr) ? .5 : 1) + a.kosten(k));
     for (const nr of draussen ?? []) ausfall.add(nr);
   }
   return { haupt, ausfall };
@@ -55,7 +60,7 @@ export function strassenBaender(g: Kantengraph, a: {
     if (!s1 && !s2 && !ausfall) continue;
     if (k.laenge < .3) continue;
     const ring = a.ring.has(k.nr), einseitig = ring || (s1 !== s2 && !ausfall);
-    const breite = !s1 && !s2 ? a.breiten.ausfall : a.wege.haupt.has(k.nr) ? a.breiten.haupt : ring ? a.breiten.wall : a.breiten.gasse;
+    const breite = ausfall ? a.breiten.ausfall : a.wege.haupt.has(k.nr) ? a.breiten.haupt : ring ? a.breiten.wall : a.breiten.gasse;
     const dx = k.bis[0] - k.von[0], dy = k.bis[1] - k.von[1];
     let nx = -dy / k.laenge, ny = dx / k.laenge;
     // Einseitig heißt: das Band liegt ganz auf der Stadtseite (an der Mauer: auf der Kernseite).

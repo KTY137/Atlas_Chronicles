@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import type { BauwerkTyp } from "@chronicle/szene";
 import { abstandPolygonStrecke, clipHalbebene, einwaerts, einwaertsKanten, flaeche, halbiere, imPolygon, q, qp, schnittKonvex, schwerpunkt, type Polygon, type Punkt } from "../../polygon.ts";
-import { getrennteDaecher, hausImLos, ohne, type Gasse, type Hausform, type Zufall } from "../gemeinsam.ts";
+import { getrennteDaecher, hausImLos, mitAbstand, ohne, type Gasse, type Hausform, type Zufall } from "../gemeinsam.ts";
 import type { Rolle } from "./rollen.ts";
 
 /**
@@ -47,8 +47,10 @@ const GASSE = .3;
 function zerteile(poly: Polygon, los: number, block: number, pfad: string, tiefe: number, a: ParzellenAuftrag, lose: { poly: Polygon; pfad: string }[], gassen: Gasse[]): void {
   const f = flaeche(poly);
   if (f <= los * 1.35 || tiefe > 12) { lose.push({ poly: poly.map(qp), pfad }); return; }
-  const mitGasse = f > block && tiefe < 4;
-  const h = halbiere(poly, a.r.zahl(.38, .62), a.r.zahl(-.14, .14), mitGasse ? GASSE : 0);
+  const lage = a.r.zahl(.38, .62), kippung = a.r.zahl(-.14, .14);
+  let mitGasse = f > block && tiefe < 4, h = halbiere(poly, lage, kippung, mitGasse ? GASSE : 0);
+  // Eine Gasse, die ins Wasser liefe, wird nicht geschnitten: dort teilt nur eine Grundstücksgrenze.
+  if (mitGasse && h && a.hindernisse.some(w => flaeche(schnittKonvex(h!.luecke, w)) > 1e-6)) { mitGasse = false; h = halbiere(poly, lage, kippung, 0); }
   if (!h) { lose.push({ poly: poly.map(qp), pfad }); return; }
   if (mitGasse && h.luecke.length >= 3)
     gassen.push({ id: a.id("gasse", pfad, "quer"), art: "gasse", a: a.nr, b: a.nr, von: qp(h.von), bis: qp(h.bis), band: h.luecke.map(qp) });
@@ -103,7 +105,8 @@ function kreuz(mitte: Punkt, u: Punkt, laenge: number, breite: number): Polygon 
 export function platzUm(innen: Polygon, bauteile: readonly Polygon[], pfad: string, material: Platz["material"]): Platz[] {
   let stuecke: Polygon[] = [innen];
   for (const teil of bauteile) stuecke = stuecke.flatMap(s => ohne(s, teil));
-  return stuecke.filter(s => s.length >= 3 && flaeche(s) > .05).map((polygon, i) => ({ pfad: `${pfad}.platz.${i}`, polygon: polygon.map(qp), material }));
+  // Restsplitter unter 0,2 Zellen² sind kein Platz, sondern Rauschen zwischen Bauten.
+  return stuecke.filter(s => s.length >= 3 && flaeche(s) > .2).map((polygon, i) => ({ pfad: `${pfad}.platz.${i}`, polygon: polygon.map(qp), material }));
 }
 const groesster = (plaetze: readonly Platz[]) => plaetze.reduce((best, p) => flaeche(p.polygon) > flaeche(best.polygon) ? p : best, plaetze[0]!);
 
@@ -114,32 +117,38 @@ export function bebaueFleck(a: ParzellenAuftrag): FleckBau {
   const nass = (p: Polygon) => a.hindernisse.some(w => flaeche(schnittKonvex(p, w)) > 1e-6);
 
   if (a.rolle === "frei") return { ...leer, plaetze: [{ pfad: `${a.pfad}.park`, polygon: innen, material: "forest" }] };
+  // Plätze liegen nur auf dem trockenen Teil des Flecks; ein Fluss darf ihn durchqueren.
+  const nasse = a.hindernisse.filter(w => flaeche(schnittKonvex(innen, w)) > 1e-6);
+  const trockenTeile = nasse.length ? platzUm(innen, nasse.map(w => mitAbstand(w, .15)), `${a.pfad}.trocken`, "square").map(p => p.polygon) : [innen];
+  const trocken = trockenTeile.reduce((best, p) => flaeche(p) > flaeche(best) ? p : best, trockenTeile[0] ?? innen);
   if (a.rolle === "markt" && a.art !== "weiler") {
-    if (a.art === "stadt" && !nass(innen)) {
-      const { u, laenge, breite } = achse(innen), m = schwerpunkt(innen);
-      const halle = rechteck(m, u, Math.min(laenge * .34, 3.2), Math.min(breite * .26, 2.2));
-      if (halle.every(p => imPolygon(p, innen))) {
-        const plaetze = platzUm(innen, [rechteck(m, u, Math.min(laenge * .34, 3.2) + .7, Math.min(breite * .26, 2.2) + .7)], a.pfad, "square");
+    if (a.art === "stadt" && trockenTeile.length && flaeche(trocken) > 4) {
+      const { u, laenge, breite } = achse(trocken), m = schwerpunkt(trocken);
+      for (const s of [1, .8, .62]) {
+        const L = Math.min(laenge * .34, 3.2) * s, B = Math.min(breite * .26, 2.2) * s, halle = rechteck(m, u, L, B);
+        if (!halle.every(p => imPolygon(p, trocken))) continue;
+        const plaetze = trockenTeile.flatMap((teil, k) => platzUm(teil, [rechteck(m, u, L + .7, B + .7)], `${a.pfad}.${k}`, "square"));
         if (plaetze.length) return { ...leer, plaetze, baue: [{ pfad: `${a.pfad}.rathaus`, umriss: halle, los: halle, strasse: a.id("markt", groesster(plaetze).pfad), typ: "rathaus", titel: "Rathaus", rang: 0 }] };
       }
     }
     // Dorf: der Anger — eine Wiese; Kirche und Taverne stehen an seinem Rand (Nachbarflecken).
-    return { ...leer, plaetze: [{ pfad: `${a.pfad}.anger`, polygon: innen, material: a.art === "stadt" ? "square" : "grass" }] };
+    return { ...leer, plaetze: trockenTeile.map((polygon, k) => ({ pfad: `${a.pfad}.anger.${k}`, polygon, material: a.art === "stadt" ? "square" as const : "grass" as const })) };
   }
-  if (a.rolle === "tempel" && !nass(innen)) {
-    const { u, laenge, breite } = achse(innen), m = schwerpunkt(innen);
+  if (a.rolle === "tempel" && trockenTeile.length && flaeche(trocken) > 6) {
+    const { u, laenge, breite } = achse(trocken), m = schwerpunkt(trocken);
     for (const s of [1, .85, .72, .6]) {
       const L = laenge * .62 * s, W = Math.min(breite * .26, laenge * .2) * s, dom = kreuz(m, u, L, W);
-      if (!dom.every(p => imPolygon(p, innen))) continue;
+      if (!dom.every(p => imPolygon(p, trocken))) continue;
       const quer: Punkt = [m[0] + u[0] * L / 2 * .38, m[1] + u[1] * L / 2 * .38];
-      const plaetze = platzUm(innen, [rechteck(m, u, L + .5, W + .5), rechteck(quer, u, W * .9 + .5, W * 2.3 + .5)], a.pfad, "square");
+      const plaetze = trockenTeile.flatMap((teil, k) => platzUm(teil, [rechteck(m, u, L + .5, W + .5), rechteck(quer, u, W * .9 + .5, W * 2.3 + .5)], `${a.pfad}.${k}`, "square"));
       if (!plaetze.length) continue;
-      return { ...leer, plaetze, baue: [{ pfad: `${a.pfad}.dom`, umriss: dom, los: innen, strasse: a.id("markt", groesster(plaetze).pfad), typ: "kirche", rang: 0 }] };
+      return { ...leer, plaetze, baue: [{ pfad: `${a.pfad}.dom`, umriss: dom, los: dom, strasse: a.id("markt", groesster(plaetze).pfad), typ: "kirche", rang: 0 }] };
     }
   }
 
-  const mass = MASS[a.rolle], losZiel = a.losFlaeche * ROLLEN_FAKTOR[a.rolle] * (a.vorstadt ? 1.4 : 1);
-  const block = losZiel * (10 - a.strassenDichte * 5);
+  const mass = MASS[a.rolle], losZiel = a.losFlaeche * ROLLEN_FAKTOR[a.rolle] * (a.vorstadt ? 1.8 : 1);
+  // Vorstädte und Weiler schneiden keine Gassen: dort stehen Häuser locker an den Wegen, die es gibt.
+  const block = a.vorstadt ? Infinity : losZiel * (10 - a.strassenDichte * 5);
   const lose: { poly: Polygon; pfad: string }[] = [], gassen: Gasse[] = [], hoefe: Polygon[] = [], baue: Bau[] = [];
   zerteile(innen, losZiel, block, a.pfad, 0, a, lose, gassen);
   const strassen = a.nurAnHaupt ? a.randStrassen.filter(s => s.art === "hauptstrasse") : [...a.randStrassen, ...gassen];
@@ -147,7 +156,7 @@ export function bebaueFleck(a: ParzellenAuftrag): FleckBau {
     const tuer = vorDerTuer(los.poly, strassen);
     if (!tuer || nass(los.poly)) { hoefe.push(los.poly); continue; }
     let umriss: Polygon;
-    if (mass.zeile && !a.vorstadt) umriss = zeilenhaus(los.poly, tuer, mass.fuge, mass.tiefe);
+    if (mass.zeile && !a.vorstadt && a.art === "stadt") umriss = zeilenhaus(los.poly, tuer, mass.fuge, mass.tiefe);
     else {
       const gross = flaeche(los.poly) > losZiel * 1.6;
       const form: Hausform = gross && a.r.chance(mass.hof) ? (a.r.chance(.5) ? "u" : "l") : "rechteck";
