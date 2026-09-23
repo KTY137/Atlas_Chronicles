@@ -32,10 +32,9 @@ describe("Sprachpaket P3 — Tisch, Woche, Kampf", () => {
 
   it("liefert die deutschen Stichproben unverändert, solange Deutsch gewählt ist", () => {
     expect(locale()).toBe("de-DE");
-    // WeekView, TableView, Kampfbuehne, Zeitstrahl, Geldzaehler.
+    // WeekView, TableView, Kampftisch (siehe sprache-kampftisch.test.ts), Zeitstrahl, Geldzaehler.
     expect(t("Weltzeit und Postlaufzeit")).toBe("Weltzeit und Postlaufzeit");
     expect(t("Handelnde Figur")).toBe("Handelnde Figur");
-    expect(t("Die Kampfbühne")).toBe("Die Kampfbühne");
     expect(t("Spieltag {tag}", { tag: "7" })).toBe("Spieltag 7");
     expect(t("Betrag in {waehrung}", { waehrung: "Silbertaler" })).toBe("Betrag in Silbertaler");
   });
@@ -45,7 +44,6 @@ describe("Sprachpaket P3 — Tisch, Woche, Kampf", () => {
     expect(locale()).toBe("en-GB");
     expect(t("Weltzeit und Postlaufzeit")).toBe("World time and postal time");
     expect(t("Handelnde Figur")).toBe("Active character");
-    expect(t("Die Kampfbühne")).toBe("The combat stage");
     expect(t("Spieltag {tag}", { tag: "7" })).toBe("Game day 7");
     expect(t("Betrag in {waehrung}", { waehrung: "Silbertaler" })).toBe("Amount in Silbertaler");
   });
