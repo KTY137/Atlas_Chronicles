@@ -108,5 +108,18 @@
   "Stand von {name}: {wert}": "{name}: {wert}",
   "Zieh nach links, um Schaden zu zeigen. Bei 0 ist der Balken leer.": "Drag left to show damage. At 0 the bar is empty.",
   "Der Höchststand rechnet mit": "The maximum uses",
-  "Eine Liste hat ihr Speicherattribut verloren. Öffne den Reiter „Listen“ und entferne die Liste oder lege sie neu an.": "A list has lost its storage attribute. Open the “Lists” tab and remove the list or create it again."
+  "Eine Liste hat ihr Speicherattribut verloren. Öffne den Reiter „Listen“ und entferne die Liste oder lege sie neu an.": "A list has lost its storage attribute. Open the “Lists” tab and remove the list or create it again.",
+  "Rot": "Red",
+  "Orange": "Orange",
+  "Gelb": "Yellow",
+  "Grün": "Green",
+  "Türkis": "Teal",
+  "Blau": "Blue",
+  "Violett": "Purple",
+  "Grau": "Grey",
+  "Farbe": "Colour",
+  "Akzentfarbe des Looks": "Accent colour of the look",
+  "Eigene Farbe": "Custom colour",
+  "Eigene Farbe {wert}: gilt in jedem Look gleich.": "Custom colour {wert}: the same in every look.",
+  "Palettenfarben passen sich dem gewählten Look an, auch hellen. Eine eigene Farbe gilt überall gleich.": "Palette colours adapt to the chosen look, including light ones. A custom colour is the same everywhere."
 }

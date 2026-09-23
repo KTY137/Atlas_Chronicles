@@ -13,7 +13,7 @@ describe("Schnellanlage der Balken", () => {
     const { draft, id } = addVitalPreset(newPackage("Kaya"), leben!);
     expect(id).toBe("leben");
     expect(draft.fields.find(field => field.id === "leben")).toMatchObject({ label: "Leben", type: "integer", defaultValue: "20" });
-    expect(draft.vitals).toEqual([{ id: "leben", label: "Leben", max: "20", depletion: "defeat" }]);
+    expect(draft.vitals).toEqual([{ id: "leben", label: "Leben", max: "20", depletion: "defeat", color: "red" }]);
     expect(isOnSheet(draft, "vital", "leben")).toBe(true);
     expect(isOnSheet(draft, "field", "leben")).toBe(true);
     const compiled = validateDraft(draft);

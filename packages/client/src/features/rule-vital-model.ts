@@ -10,11 +10,11 @@ import { placeOnSheet, syncSheetWithFields } from "./rule-sheet-model";
  * Spielleitung danach frei ein.
  */
 export type VitalPresetId = "leben" | "mana" | "ausdauer";
-export interface VitalPreset { id: VitalPresetId; label: string; max: string; depletion: RuleVital["depletion"] }
+export interface VitalPreset { id: VitalPresetId; label: string; max: string; depletion: RuleVital["depletion"]; color: NonNullable<RuleVital["color"]> }
 export const VITAL_PRESETS: readonly VitalPreset[] = [
-  { id: "leben", label: "Leben", max: "20", depletion: "defeat" },
-  { id: "mana", label: "Mana", max: "10", depletion: "none" },
-  { id: "ausdauer", label: "Ausdauer", max: "10", depletion: "none" },
+  { id: "leben", label: "Leben", max: "20", depletion: "defeat", color: "red" },
+  { id: "mana", label: "Mana", max: "10", depletion: "none", color: "blue" },
+  { id: "ausdauer", label: "Ausdauer", max: "10", depletion: "none", color: "green" },
 ];
 const numeric = (type: string) => type === "integer" || type === "number";
 
@@ -34,7 +34,7 @@ export function addVitalPreset(draft: RuleDraft, preset: VitalPreset): { draft: 
     const field = { ...newField(id), label: preset.label, minimum: "0", maximum: "999", defaultValue: preset.max };
     next = syncSheetWithFields({ ...next, fields: [...next.fields, field] }, draft.fields);
   }
-  next = { ...next, vitals: [...vitals, { id, label: preset.label, max: preset.max, depletion: preset.depletion }] };
+  next = { ...next, vitals: [...vitals, { id, label: preset.label, max: preset.max, depletion: preset.depletion, color: preset.color }] };
   return { draft: placeOnSheet(next, "vital", id, true), id };
 }
 

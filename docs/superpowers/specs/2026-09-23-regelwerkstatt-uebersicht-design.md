@@ -151,8 +151,26 @@ Paketformat, Engine, Server und Protokoll bleiben unberührt. Neue Sätze kommen
 - Sichtprüfung: jede Sektion einmal gerendert (1440 × 960 und 390 px), Fotos unter
   `design/iterations/regelwerkstatt-20260923/`.
 
+### E9 — Farbe je Balken (Nachtrag, am selben Tag gewünscht)
+
+Kaya: „ja hät ich gerne“ und „aber das wir die farben individuell einstellen können“. Das
+Paketformat bekommt am Balken ein optionales Feld `color`:
+
+- entweder ein Palettenname `red | orange | yellow | green | teal | blue | purple | grey` — er
+  folgt den Signalfarben des gewählten Looks (`--danger`, `--ok`, `--warning`, `--info`,
+  `--private`, Mischungen daraus, `--text-muted`) und bleibt damit in hellen wie dunklen und in
+  selbst gebauten Looks lesbar;
+- oder ein freier Farbwert, genau `#rrggbb` in Kleinbuchstaben — gilt in jedem Look gleich. Nichts
+  anderes (keine Kurzform, kein CSS-Name, kein Ausdruck), damit kein Look den Wert anders liest und
+  nichts in eine Stilangabe gelangt.
+
+Fehlt das Feld, gilt wie bisher die Akzentfarbe; ein Paket ohne Farbe bleibt byteidentisch. Die
+mitgelieferten Vorlagen bleiben ohne Farbe (feste Versionen). Die Schnellanlage färbt Leben rot,
+Mana blau, Ausdauer grün. Die Leiste hat einen feinen Innenrand, damit auch eine Farbe nahe am
+Hintergrund sichtbar bleibt. Ältere Programmstände lehnen ein Paket mit Farbe ab (der Prüfer kennt
+nur bekannte Felder); das gilt für jede Formaterweiterung und betrifft nur neu gebaute Pakete.
+
 ## Bewusst nicht enthalten
 
-- Farben je Balken (Paketformat).
 - Ziehen und Ablegen im Bogenbaum (Pfeile und „Kategorie“-Auswahl bleiben).
 - Ausrüstung mit Regelwirkung (Teilprojekt 4 der Regelschmiede).

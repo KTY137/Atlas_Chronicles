@@ -11,7 +11,7 @@ import { Vitalanzeige } from "../src/features/Vitalanzeige";
 // dazuerfindet.
 
 const zahl = (label: string, max: number) => ({ type: "integer" as const, label, minimum: 0, maximum: max, default: max });
-const mitVitalwerten = (vitals: readonly { id: string; label: string; max: string; depletion: "defeat" | "none" }[]): AnyRulePackage =>
+const mitVitalwerten = (vitals: readonly { id: string; label: string; max: string; depletion: "defeat" | "none"; color?: string }[]): AnyRulePackage =>
   parseSupportedRulePackage({
     ...DEMO_RULE_PACKAGE, schemaVersion: 2,
     fields: { ...DEMO_RULE_PACKAGE.fields, leben: zahl("Leben", 100), mana: zahl("Mana", 50), ausdauer: zahl("Ausdauer", 30) },
@@ -77,5 +77,20 @@ describe("Die Vitalanzeige", () => {
     // Mitten im Bearbeiten kann ein Wert ausserhalb seines Bereichs liegen. Dann gibt es eben
     // keine Balken — keine Fehlermeldung an einer Stelle, die nur illustriert.
     expect(zeige(drei, werte({ leben: 999 }))).toBe("");
+  });
+});
+
+// Die Farbe waehlt die Spielleitung je Balken: ein Palettenname folgt dem Look, ein Farbwert gilt ueberall.
+describe("Farbe je Balken", () => {
+  it("traegt Palettenfarbe als Klasse und eigene Farbe als Variable; ohne Wahl bleibt es die Akzentfarbe", () => {
+    const pkg = mitVitalwerten([
+      { id: "leben", label: "Leben", max: "100", depletion: "defeat", color: "red" },
+      { id: "mana", label: "Mana", max: "50", depletion: "none", color: "#3a6ee8" },
+      { id: "ausdauer", label: "Ausdauer", max: "30", depletion: "none" },
+    ]);
+    const html = renderToStaticMarkup(createElement(Vitalanzeige, { pkg, fields: { ...Object.fromEntries(Object.entries(pkg.fields).map(([id, field]) => [id, field.default])) } as Record<string, Scalar> }));
+    expect(html).toContain('class="vitalwert vitalwert-farbe-red"');
+    expect(html).toContain("--vital-fill:#3a6ee8");
+    expect(html.match(/vitalwert-farbe-/g)).toHaveLength(1);
   });
 });

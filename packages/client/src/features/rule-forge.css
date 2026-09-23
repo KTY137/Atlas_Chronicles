@@ -241,3 +241,13 @@
   .rf-nav button { width: auto; white-space: nowrap; }
   .rf-editor { padding: 16px; }
 }
+
+/* Farbe je Balken: Palette als Farbfelder (folgt dem Look), dazu der freie Farbwähler. */
+.rf-color-picker { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px 10px; margin: 12px 0; }
+.rf-color-picker legend { font-size: 12px; padding: 0 4px; }
+.rf-swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.rf-swatch { inline-size: 30px; block-size: 30px; padding: 3px; border: 1px solid var(--line-strong); border-radius: 50%; background: transparent; cursor: pointer; }
+.rf-swatch > span { display: block; inline-size: 100%; block-size: 100%; border-radius: 50%; background: var(--vital-fill, var(--accent)); }
+.rf-swatch[aria-pressed="true"] { border: 2px solid var(--text); }
+.rule-forge label.rf-swatch-custom { flex-direction: row; align-items: center; gap: 8px; margin: 0 0 0 6px; }
+.rf-swatch-custom input[type="color"] { inline-size: 42px; block-size: 30px; padding: 0 2px; cursor: pointer; }

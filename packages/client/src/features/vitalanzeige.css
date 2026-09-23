@@ -14,9 +14,19 @@
   border: 1px solid var(--line, #2a3230); border-radius: 999px; background: var(--disabled-bg);
 }
 .vitalanzeige.kompakt .vitalwert-balken { block-size: .4rem; }
-/* Der Fuellstand traegt eine eigene Farbe je Vitalwert wuerde raten, welcher welcher ist. Also
-   eine Farbe fuer alle, und die Beschriftung sagt, worum es geht. */
-.vitalwert-balken > span { display: block; block-size: 100%; background: var(--accent, #a8791f); transition: inline-size 180ms ease-out; }
+/* Die Farbe waehlt die Spielleitung je Balken in der Regelwerkstatt (seit 2026-09-23); ohne Wahl
+   gilt die Akzentfarbe. Palettenfarben kommen aus den Signalfarben des Looks und bleiben damit in
+   hellen wie dunklen Looks lesbar; eine freie Farbe gilt ueberall gleich. Der feine Innenrand haelt
+   auch eine Farbe sichtbar, die zufaellig dem Hintergrund gleicht — die Zahl steht ohnehin daneben. */
+.vitalwert-balken > span { display: block; block-size: 100%; background: var(--vital-fill, var(--accent, #a8791f)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text, #f0ebe1) 22%, transparent); transition: inline-size 180ms ease-out; }
+.vitalwert-farbe-red { --vital-fill: var(--danger); }
+.vitalwert-farbe-orange { --vital-fill: color-mix(in oklab, var(--danger) 55%, var(--warning)); }
+.vitalwert-farbe-yellow { --vital-fill: var(--warning); }
+.vitalwert-farbe-green { --vital-fill: var(--ok); }
+.vitalwert-farbe-teal { --vital-fill: color-mix(in oklab, var(--info) 50%, var(--ok)); }
+.vitalwert-farbe-blue { --vital-fill: var(--info); }
+.vitalwert-farbe-purple { --vital-fill: var(--private); }
+.vitalwert-farbe-grey { --vital-fill: var(--text-muted); }
 .vitalwert.erschoepft .vitalwert-balken { border-color: var(--danger, #a33); }
 .vitalwert.erschoepft .vitalwert-stand { color: var(--danger, #a33); }
 .vitalwert-hinweis { margin: .2rem 0 0; font-size: .72rem; color: var(--danger, #a33); }

@@ -14,7 +14,7 @@ zeichnet daraus Bogen, Proben und Fähigkeiten; sie rechnet selbst nichts nach.
 | Anordnung (`presentation`, Schema 3) | wie der Bogen gezeichnet wird: Gruppen, Karten, Tabellen, sichtbar-wenn | Zauberliste erst ab Stufe 2 |
 | Abgeleiteter Wert (`computed`) | ergibt sich aus Attributen, ohne Wurf | `floor((@stärke - 10) / 2)` |
 | Regel (`constraints`) | Bedingung für einen gültigen Bogen, mit Meldung | `@punkte <= 400` |
-| Balken (`vitals`) | ein Vorrat mit Höchststand und Wirkung bei 0 | Lebenspunkte, Niederlage |
+| Balken (`vitals`) | ein Vorrat mit Höchststand, Wirkung bei 0 und optionaler Farbe (Palette oder `#rrggbb`) | Lebenspunkte rot, Niederlage |
 | Liste (`collections`) | Zeilen mit eigenen Feldern in einem Textfeld | Waffen, Zauber, Spezialisierungen |
 | Aktion (`actions`) | ein Wurf mit Formel, Parametern, Voraussetzungen und Ergebnis | `1d20 + @geschick + ?bonus` |
 | Ergebnisbereich (`outcome.bands`) | geordnete Stufen statt einer Schwelle | kritisch / Erfolg / Misserfolg, Qualitätsstufen 1–6 |

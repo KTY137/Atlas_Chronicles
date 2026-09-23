@@ -29,6 +29,13 @@ Alle Bilder aus dem gebauten Client (`packages/client/dist`) gegen einen echten 
 | [`05-bibliothek-offener-entwurf.png`](regelwerkstatt-20260923/05-bibliothek-offener-entwurf.png) | Zurück in die Bibliothek verwirft nichts: „Offener Entwurf · Weiter bearbeiten“. |
 | [`10-mobil-balken.png`](regelwerkstatt-20260923/10-mobil-balken.png) | 390 px: Navigation als waagrechte Leiste, kein seitliches Scrollen. |
 
+## Farbe je Balken (E9, Nachtrag)
+
+| Bild | Was es zeigt |
+| --- | --- |
+| [`11-balken-farben.png`](regelwerkstatt-20260923/11-balken-farben.png) | Dunkler Look: Leben rot (Palette), Mana eigene Farbe `#e07bd0`, Ausdauer türkis (Palette); Farbfelder und Farbwähler im Detail. |
+| [`12-balken-farben-hell.png`](regelwerkstatt-20260923/12-balken-farben-hell.png) | Heller Look (Pergament-Signalfarben): Palettenfarben werden dunkler, die eigene Farbe bleibt gleich. |
+
 ## Während der Sichtprüfung korrigiert
 
 - Der Live-Balken stand bei 1440 px unter dem Detail und damit unter der Statusleiste; er steht

@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
-import { evaluateVitals, type AnyRulePackage, type RuleVital, type Scalar } from "@chronicle/rules";
+import { VITAL_COLORS, evaluateVitals, type AnyRulePackage, type RuleVital, type Scalar, type VitalColor } from "@chronicle/rules";
 import { t } from "../i18n";
 import { ExpressionInput, SchemaUpgrade } from "./RuleDeclarativeEditor";
 import { RuleEntryList } from "./RuleEntryList";
-import { VitalBar } from "./Vitalanzeige";
+import { VitalBar, vitalColorClass, vitalColorStyle } from "./Vitalanzeige";
 import { fixtureValues, type RuleDraft } from "./rule-forge-model";
 import { formulaReferences } from "./rule-map-model";
 import { isOnSheet, placeOnSheet, retargetOnSheet } from "./rule-sheet-model";
@@ -18,6 +18,28 @@ function presetLabel(id: VitalPresetId): string {
   switch (id) { case "leben": return t("Leben"); case "mana": return t("Mana"); case "ausdauer": return t("Ausdauer"); }
 }
 const numeric = (type: string) => type === "integer" || type === "number";
+function colorLabel(color: VitalColor): string {
+  switch (color) {
+    case "red": return t("Rot"); case "orange": return t("Orange"); case "yellow": return t("Gelb"); case "green": return t("Grün");
+    case "teal": return t("Türkis"); case "blue": return t("Blau"); case "purple": return t("Violett"); case "grey": return t("Grau");
+  }
+}
+/** Ohne Farbe gilt die Akzentfarbe; die Kennung verschwindet dann ganz, damit das Paket byteidentisch bleibt. */
+function withColor(vital: RuleVital, color: RuleVital["color"]): RuleVital {
+  const { color: _old, ...rest } = vital;
+  return color ? { ...rest, color } : rest;
+}
+
+/** Palette (folgt dem Look) oder freie Farbe (gilt überall gleich), je Balken. */
+function VitalColorPicker({ value, onChange }: { value: RuleVital["color"]; onChange(color: RuleVital["color"]): void }) {
+  const custom = value?.startsWith("#") ? value : undefined;
+  const swatch = (color: RuleVital["color"], label: string) => <button type="button" className={`rf-swatch${vitalColorClass(color)}`} style={vitalColorStyle(color)} aria-pressed={value === color} aria-label={label} title={label} onClick={() => onChange(color)}><span /></button>;
+  return <fieldset className="rf-color-picker"><legend>{t("Farbe")}</legend>
+    <div className="rf-swatches">{swatch(undefined, t("Akzentfarbe des Looks"))}{VITAL_COLORS.map(color => <span key={color}>{swatch(color, colorLabel(color))}</span>)}
+      <label className="rf-swatch-custom">{t("Eigene Farbe")}<input type="color" value={custom ?? "#c0392b"} onChange={event => onChange(event.target.value.toLowerCase() as `#${string}`)} /></label></div>
+    <small>{custom ? t("Eigene Farbe {wert}: gilt in jedem Look gleich.", { wert: custom }) : t("Palettenfarben passen sich dem gewählten Look an, auch hellen. Eine eigene Farbe gilt überall gleich.")}</small>
+  </fieldset>;
+}
 
 /**
  * Die Balken der Figur als eigene Sektion: anlegen mit einem Klick, bearbeiten wie jeden anderen
@@ -60,6 +82,7 @@ export function RuleVitalEditor({ draft, disabled, onChange, pkg, figureName, va
       </div>
       <ExpressionInput label={t("Höchststand")} help={t("Der volle Balken, eine Zahl oder eine Rechnung wie @konstitution * 5.")} value={current.max} onChange={max => update({ max })} draft={draft} />
       <label>{t("Wenn der Balken leer ist")}<select value={current.depletion} onChange={event => update({ depletion: event.target.value as RuleVital["depletion"] })}><option value="none">{t("Nur die Leiste ist leer")}</option><option value="defeat">{t("Die Niederlage steht zur Bestätigung an")}</option></select></label>
+      <VitalColorPicker value={current.color} onChange={color => onChange({ ...draft, vitals: vitals.map(vital => vital.id === current.id ? withColor(vital, color) : vital) })} />
       <label className="rf-check"><input type="checkbox" checked={isOnSheet(draft, "vital", current.id)} onChange={event => onChange(placeOnSheet(draft, "vital", current.id, event.target.checked))} />{t("Auf dem Bogen zeigen")}</label>
     </fieldset></section> : <section className="rf-detail rf-detail-empty"><p className="rf-help">{t("Wähle links einen Balken oder leg einen an.")}</p></section>}
     <LiveBars pkg={pkg} vital={current} figureName={figureName} values={values} onValues={onValues} />

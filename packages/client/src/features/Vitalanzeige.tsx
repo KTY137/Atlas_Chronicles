@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useMemo } from "react";
-import { evaluateVitals, type AnyRulePackage, type Scalar, type VitalReading } from "@chronicle/rules";
+import { VITAL_COLORS, evaluateVitals, type AnyRulePackage, type RuleVital, type Scalar, type VitalReading } from "@chronicle/rules";
+import type { CSSProperties } from "react";
 import { t } from "../i18n";
 import { displayRulePackage } from "./chronicle-heroes-display";
 import "./vitalanzeige.css";
@@ -41,13 +42,21 @@ export function Vitalanzeige({ pkg, fields, kompakt = false }: {
   </div>;
 }
 
+/** Palettenfarben folgen dem Look (Klasse), eine freie Farbe gilt überall gleich (CSS-Variable). */
+export function vitalColorClass(color: RuleVital["color"]): string {
+  return color && (VITAL_COLORS as readonly string[]).includes(color) ? ` vitalwert-farbe-${color}` : "";
+}
+export function vitalColorStyle(color: RuleVital["color"]): CSSProperties | undefined {
+  return color && color.startsWith("#") ? { ["--vital-fill" as string]: color } as CSSProperties : undefined;
+}
+
 /** Ein Balken: Name, Stand als Zahl, Leiste und — wenn er leer ist — ein Satz, was das bedeutet. */
 export function VitalBar({ vital, label }: { vital: VitalReading; label: string }) {
   // Über dem Höchststand wird der Balken voll, die Zahl bleibt ehrlich. Ein Höchstwert von 0
   // ergäbe eine Division durch null — dann bleibt der Balken leer.
   const anteil = vital.maximum > 0 ? Math.max(0, Math.min(1, vital.value / vital.maximum)) : 0;
   const stand = `${vital.value} / ${vital.maximum}`;
-  return <div className={vital.depleted ? "vitalwert erschoepft" : "vitalwert"}>
+  return <div className={`${vital.depleted ? "vitalwert erschoepft" : "vitalwert"}${vitalColorClass(vital.color)}`} style={vitalColorStyle(vital.color)}>
     <div className="vitalwert-kopf">
       <span className="vitalwert-name">{label}</span>
       <span className="vitalwert-stand">{stand}</span>
