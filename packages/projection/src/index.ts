@@ -20,3 +20,7 @@ export {
   type BetrachterWissen,
   type Tuer,
 } from "./entry.ts";
+export {
+  vorgabeSicht, wortstufe, zehntel, balkenArt, maskeFuer, balkenFuerRunde, zeigtBild, karteFuerLeitung, karteFuerRunde,
+  type VitalStand, type KartenQuelle,
+} from "./kampfkarte.ts";

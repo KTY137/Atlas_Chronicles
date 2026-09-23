@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@chronicle/core": "*"
+    "@chronicle/core": "*",
+    "@chronicle/protocol": "*"
   }
 }

@@ -45,3 +45,4 @@ export * from "./tabletop.ts";
 export * from "./wiki-navigation.ts";
 export * from "./actor-portrait.ts";
 export * from "./rule-runtime.ts";
+export * from "./kampf.ts";
