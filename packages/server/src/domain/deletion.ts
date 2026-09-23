@@ -68,7 +68,7 @@ export const LOESCHREIHENFOLGE: readonly string[] = [
   "beziehungen",
   // Die Kampfbühne, Karten vor Bühne: ein Teilnehmer zeigt auf seinen Kampf, auf eine Figur und
   // auf seinen Initiativwurf. Beide müssen deshalb vor `action_rolls` und `actors` fallen.
-  "kampf_teilnehmer", "kaempfe",
+  "kampf_karten", "kampf_teilnehmer", "kaempfe",
   // Blatt: die Erleichterung zeigt auf Figur, Nutzer und Wurf; niemand zeigt auf sie.
   "erleichterungen",
   // Blatt: Boerse und Einheit zeigen auf Figur und Kampagne; niemand zeigt auf sie.
