@@ -38,16 +38,20 @@ describe("Bibliothek der Regelwerkstatt", () => {
   });
 
   it("graut das endgültige Löschen mit Begründung aus, statt es stumm scheitern zu lassen", () => {
-    expect(QUELLE).toMatch(/disabled: !menuStand\.loeschbar/);
-    expect(QUELLE).toMatch(/danger: true/);
-    expect(QUELLE).toContain('t("Endgültig löschen — geht nicht: {grund}", { grund: menuStand.hindernisse.map(grundText).join(", ") })');
-    // Ausdrückliche Rückfrage vor dem Löschen, nie ein Klick allein.
-    expect(QUELLE).toMatch(/const loeschen = \(item: RulePackage\) => \{\s*\n\s*if \(!window\.confirm\(/);
+    // Der Löscheintrag selbst: gefährlich markiert, ausgegraut solange etwas verweist, mit Grund im Text.
+    const eintrag = QUELLE.match(/\{ id: "loeschen"[\s\S]*?onSelect: \(\) => loeschen\(menuPaket\) \}/)?.[0] ?? "";
+    expect(eintrag).toMatch(/danger: true/);
+    expect(eintrag).toMatch(/disabled: !menuStand\.loeschbar/);
+    expect(eintrag).toContain('t("Endgültig löschen — geht nicht: {grund}", { grund: menuStand.hindernisse.map(grundText).join(", ") })');
+    // Ausdrückliche Rückfrage vor dem Löschen, nie ein Klick allein — gleich welche Zeilenaufteilung.
+    expect(QUELLE).toMatch(/const loeschen = \(item: RulePackage\) => \{\s*if \(!window\.confirm\(/);
   });
 
   it("versteckt genommene Pakete, bis der Schalter sie zeigt", () => {
-    expect(QUELLE).toContain("const verfuegbar = zeigeGenommene ? packages : packages.filter(item => !stand(item).genommen);");
-    expect(QUELLE).toContain("const sichtbar = verfuegbar.filter(");
+    // Ob eigene Deklaration oder per Komma an „genommene“ gehängt: die Filterregel zählt.
+    expect(QUELLE).toMatch(/\bgenommene = packages\.filter\(item => stand\(item\)\.genommen\)/);
+    expect(QUELLE).toMatch(/\bverfuegbar = zeigeGenommene \? packages : packages\.filter\(item => !stand\(item\)\.genommen\)/);
+    expect(QUELLE).toMatch(/\bsichtbar = verfuegbar\.filter\(/);
     expect(QUELLE).toContain('t("Auch genommene zeigen ({anzahl})", { anzahl: genommene.length })');
     expect(QUELLE).toMatch(/\{sichtbar\.map\(item =>/);
   });

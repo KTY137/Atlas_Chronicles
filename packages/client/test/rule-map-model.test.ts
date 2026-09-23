@@ -33,7 +33,8 @@ describe("rule map graph", () => {
     expect(graph.nodes.find(n => n.id === "action:damage")?.parameters.map(p => p.id)).toEqual(["dice_count", "bonus", "critical"]);
     expect(graph.nodes.find(n => n.id === "action:damage")?.detail).toContain("?bonus");
     // Every attribute lives under its sheet section, and the well-formed template has no findings.
-    expect(graph.nodes.find(n => n.id === "attribute:hp")?.group).toBe("Figur und Absprachen");
+    // Seit HTBAH 1.2.0 stehen die Lebenspunkte im Abschnitt „Ressourcen“, nicht mehr bei der Figur.
+    expect(graph.nodes.find(n => n.id === "attribute:hp")?.group).toBe("Ressourcen");
     expect(graph.issues).toEqual([]);
     // Deduplicated edges: aptitude formulas reference every skill of the group once.
     const toAptitude = graph.edges.filter(e => e.to === "computed:aptitude_handeln");
@@ -72,8 +73,11 @@ describe("rule map layout", () => {
     expect(x("computed:points_spent")).toBeLessThan(x("bar:hp"));
     expect(x("bar:hp")).toBeLessThan(x("action:damage"));
     expect(layout.width).toBeGreaterThan(4 * 180);
-    // Sheet sections become group rows above their attributes, in sheet order.
-    expect(layout.groups.map(g => g.label).slice(0, 2)).toEqual(htbah.sections.slice(0, 2).map(s => s.label));
+    // Sheet sections become group rows above their attributes, in sheet order. A pure parent
+    // category without own attributes (HTBAH 1.2.0: „Fähigkeiten“ über Handeln/Wissen/Soziales)
+    // gets no row of its own; its sub-categories carry the attributes.
+    const mitAttributen = htbah.sections.filter(s => s.fieldKeys.length > 0);
+    expect(layout.groups.map(g => g.label).slice(0, 2)).toEqual(mitAttributen.slice(0, 2).map(s => s.label));
     const group = layout.groups[0]!, hp = layout.nodes.find(n => n.id === "attribute:hp")!;
     expect(hp.y).toBeGreaterThan(group.y);
     // No two nodes in one column overlap.

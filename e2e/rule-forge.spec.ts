@@ -2,7 +2,7 @@ import { test, expect, type BrowserContext } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
 import { readFile } from "node:fs/promises";
-import { parseRulePackage } from "@chronicle/rules";
+import { parseSupportedRulePackage } from "@chronicle/rules";
 import type { ActionCard } from "../packages/client/src/features/game-api";
 import { createTestDb, migrate, type Db } from "../packages/server/src/db/index.ts";
 import { buildApp } from "../packages/server/src/app.ts";
@@ -78,7 +78,8 @@ test("visual package authoring, live play and reviewed migration preserve player
     await expect(gm.locator(".rf-preview")).toContainText("Nordlichtprobe");
     const downloadPromise = gm.waitForEvent("download");
     await gm.getByRole("button", { name: "Paketdatei", exact: true }).click();
-    const download = await downloadPromise, downloaded = parseRulePackage(await readFile((await download.path())!, "utf8"));
+    // „Neues Paket“ erzeugt ein v2-Paket mit Darstellung und Sammlungen; der v1-Parser allein lehnt es ab.
+    const download = await downloadPromise, downloaded = parseSupportedRulePackage(await readFile((await download.path())!, "utf8"));
     expect(downloaded.id).toBe(packageId); expect(downloaded.fields.insight!.label).toBe("Wachsamkeit");
     expect(downloaded.actions.find(action => action.id === "explore")!.expression).toContain("actor.insight");
     await preview(); await install(); await activate();
