@@ -251,3 +251,11 @@
 .rf-swatch[aria-pressed="true"] { border: 2px solid var(--text); }
 .rule-forge label.rf-swatch-custom { flex-direction: row; align-items: center; gap: 8px; margin: 0 0 0 6px; }
 .rf-swatch-custom input[type="color"] { inline-size: 42px; block-size: 30px; padding: 0 2px; cursor: pointer; }
+
+/* Der Assistent ist der Hauptweg zu einem eigenen Regelwerk; er steht vor den Vorlagen. */
+.rf-wizard-start { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; inline-size: 100%; margin: 4px 0 16px; padding: 18px 20px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent-soft); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.rf-wizard-start:hover { box-shadow: inset 0 0 0 1px var(--accent); }
+.rf-wizard-start > svg { color: var(--accent); }
+.rf-wizard-start span { display: grid; gap: 4px; }
+.rf-wizard-start strong { font: 500 19px/1.3 var(--font-display); }
+.rf-wizard-start small { color: var(--text-muted); font-size: 13px; line-height: 1.55; }

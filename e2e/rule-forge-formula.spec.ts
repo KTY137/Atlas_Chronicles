@@ -39,7 +39,7 @@ test("typing a formula with suggestions, plain errors, three views, install and 
   try {
     await signIn(gm.context(), gmSession); await signIn(context, playerSession);
     await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
-    await gm.getByRole("button", { name: "Neues Paket", exact: true }).click();
+    await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
     await editor.getByRole("textbox", { name: /Paketkennung/ }).fill("de.nordlicht.formeln");
     await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
     const formula = editor.getByRole("combobox", { name: "Formel", exact: true }).first();

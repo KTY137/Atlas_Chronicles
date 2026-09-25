@@ -65,7 +65,7 @@ test("bars get their own section: one click adds life, the live bar follows the 
   const errors: string[] = []; gm.on("pageerror", error => errors.push(error.message));
   await gm.context().addCookies([{ name: "chronicle_session", value: gmSession.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict", expires: Math.floor(gmSession.expiresAt / 1000) }]);
   await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
-  await gm.getByRole("button", { name: "Neues Paket", exact: true }).click();
+  await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
   await gm.getByRole("tab", { name: "Balken", exact: true }).click();
   await gm.getByRole("group", { name: "Schnell anlegen" }).getByRole("button", { name: "Leben", exact: true }).click();
   const live = gm.getByRole("complementary", { name: "Live-Vorschau der Balken" });
@@ -78,5 +78,37 @@ test("bars get their own section: one click adds life, the live bar follows the 
   const sheet = gm.getByRole("complementary", { name: "Live-Vorschau des Bogens" });
   await expect(sheet.getByRole("meter", { name: "Leben" })).toHaveAttribute("aria-valuetext", "0 / 20");
   await expect(gm.locator(".rf-statusbar")).toContainText("Paketstruktur, Feldtypen und Formeln gültig.");
+  expect(errors).toEqual([]);
+});
+
+test("the assistant builds a playable rulebook from plain answers, without knowing the system", async ({ page: gm }) => {
+  const errors: string[] = []; gm.on("pageerror", error => errors.push(error.message));
+  await gm.context().addCookies([{ name: "chronicle_session", value: gmSession.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict", expires: Math.floor(gmSession.expiresAt / 1000) }]);
+  await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
+  // Kaya, 2026-09-25: „maximal einfach und überschaulich ein Regelwerk reinzuimplementieren“.
+  await gm.getByRole("button", { name: "Neues Regelwerk", exact: true }).click();
+  await gm.getByLabel("Name des Regelwerks").fill("Nordlicht");
+  await gm.getByRole("radio", { name: /Horror/ }).click();
+  await gm.getByRole("button", { name: "Weiter: Würfeln" }).click();
+  const w100 = gm.getByRole("radio", { name: /Ein W100 unter den Wert/ });
+  await w100.click();
+  await expect(w100).toContainText("gelingt es in 40 von 100 Würfen");
+  await gm.getByRole("button", { name: "Weiter: Eigenschaften" }).click();
+  await gm.getByLabel("Eigene Eigenschaft").fill("Mut");
+  await gm.keyboard.press("Enter");
+  await gm.getByRole("button", { name: "Weiter: Vorräte" }).click();
+  const sheet = gm.getByRole("complementary", { name: "Dein Bogen" });
+  await expect(sheet.getByRole("meter", { name: "Geistige Gesundheit" })).toBeVisible();
+  await gm.getByRole("button", { name: "Weiter: Fertigkeiten" }).click();
+  await gm.getByRole("button", { name: /Nachforschen auf Verstand/ }).click();
+  await gm.getByRole("button", { name: "Weiter: Fertig" }).click();
+  await gm.getByRole("button", { name: "Nachforschen", exact: true }).click();
+  await expect(gm.locator(".rw-roll-result")).toContainText("Ergebnis");
+  await gm.getByRole("button", { name: "Regelwerk anlegen" }).click();
+  // Angelegt heißt: ein gültiger Entwurf in der Werkbank, bereit zum Ausprobieren.
+  await expect(gm.locator(".rf-bench-title h2")).toHaveText("Nordlicht");
+  await expect(gm.locator(".rf-statusbar")).toContainText("Paketstruktur, Feldtypen und Formeln gültig.");
+  await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
+  await expect(gm.locator(".rf-list ul li")).toHaveCount(7);
   expect(errors).toEqual([]);
 });

@@ -153,13 +153,13 @@ describe("attribute search recovery", () => {
 });
 
 describe("deleting a library version while another draft is open", () => {
-  it.each(["Neues Paket", "Neue Version erstellen"])("preserves the edited %s draft when deleting its last library selection", async start => {
+  it.each(["Leeres Paket beginnen", "Neue Version erstellen"])("preserves the edited %s draft when deleting its last library selection", async start => {
     const archived = { ...pkg, id: "de.library.archived", name: "Archived rules" };
     const library = { ...forgeProps.rules, packages: [pkg, archived], bibliothek: [{ id: archived.id, version: archived.version, genommen: false, loeschbar: true, hindernisse: [] }] };
     const dirty: boolean[] = [];
     const h = harness("RuleForge", { ...forgeProps, rules: library, onDirty(value: boolean) { dirty.push(value); }, transport() { h.replace({ rules: forgeProps.rules }); } });
     openCatalogItem(h, archived.name);
-    if (start === "Neues Paket") h.button("Zur Bibliothek").props.onClick();
+    if (start === "Leeres Paket beginnen") h.button("Zur Bibliothek").props.onClick();
     h.button(start).props.onClick();
     const editor = h.nodes(n => n.type?.name === "PackageEditor")[0]!;
     const unfinished = { ...editor.props.draft, name: "", license: "My unfinished license" };
@@ -192,7 +192,7 @@ describe("deleting a library version while another draft is open", () => {
       }
       h.replace({ rules: forgeProps.rules });
     } });
-    h.button("Neues Paket").props.onClick();
+    h.button("Leeres Paket beginnen").props.onClick();
     const newId = h.nodes(n => n.type?.name === "PackageEditor")[0]!.props.draft.id;
     section(h, "publish");
     h.button("Version installieren").props.onClick();

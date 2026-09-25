@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, Download, Eye, EyeOff, FlaskConical, Hammer, MoreHorizontal, Plus, Redo2, Search, Trash2, TriangleAlert, Undo2, Upload, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, Download, Wand2, Eye, EyeOff, FlaskConical, Hammer, MoreHorizontal, Plus, Redo2, Search, Trash2, TriangleAlert, Undo2, Upload, X } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { ENGINE_VERSION, RULE_LIMITS, describeRuleCapabilities, parseSupportedRulePackage as parseRulePackage, stableJson, type FormulaType, type MigrationPreview, type PackagePin, type AnyRulePackage as RulePackage, type Scalar } from "@chronicle/rules";
 import { ApiError, api, apiPath, errorText, type Campaign } from "../api";
@@ -22,6 +22,7 @@ import { RuleAttribution } from "./RuleComputedFields";
 import { RuleVitalEditor } from "./RuleVitalEditor";
 import { RuleCollectionEditor } from "./RuleCollectionEditor";
 import { RuleSheetEditor } from "./RulePresentationEditor";
+import { RuleWizard } from "./RuleWizard";
 import type { RulePackageHindernis, RulePackageStand, RulesState } from "./game-api";
 import { draftExpression, forkPackage, localKey, migrationStepDraft, moveItem, newField, newPackage, packageDraft, packageTestResults, renameFieldReferences, validateDraft, type DraftAction, type DraftField, type DraftMigration, type DraftMigrationStep, type FormulaDraft, type RuleDraft } from "./rule-forge-model";
 import { syncSheetWithFields } from "./rule-sheet-model";
@@ -128,7 +129,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const [stored] = useState(() => loadDraft(campaign.id));
   const [selected, setSelected] = useState<string | null>(null), [draft, setDraft] = useState<RuleDraft | null>(stored?.draft ?? null), [locked, setLocked] = useState(false), [dirty, setDirty] = useState(!!stored);
   const [history, setHistory] = useState(emptyHistory), [savedAt, setSavedAt] = useState<number | null>(stored?.savedAt ?? null), [saveState, setSaveState] = useState<SaveResult | "pending" | null>(stored ? "saved" : null), [confirmDiscard, setConfirmDiscard] = useState(false);
-  const [view, setView] = useState<"library" | "bench">("library"), [section, setSection] = useState<ForgeSection>("package");
+  const [view, setView] = useState<"library" | "bench" | "wizard">("library"), [section, setSection] = useState<ForgeSection>("package");
   const [review, setReview] = useState<(RuleReview & { fingerprint: string }) | null>(null), [acknowledged, setAcknowledged] = useState(false), [notice, setNotice] = useState("");
   const [justInstalled, setJustInstalled] = useState<RulePackage | null>(null), upload = useRef<HTMLInputElement>(null), bench = useRef<HTMLDivElement>(null);
   const [fixtures, setFixtures] = useForgeFixtures(), [livePreview, setLivePreview] = useState(readLivePreview);
@@ -171,7 +172,7 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   useEffect(() => {
     if (view !== "bench" || !editable || typeof window.addEventListener !== "function") return undefined;
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || (event.target instanceof HTMLElement && event.target.closest("input, textarea, select, [contenteditable='true']"))) return;
+      if (!(event.ctrlKey || event.metaKey) || (event.target instanceof HTMLElement && event.target.closest("input,textarea,select,[contenteditable='true']"))) return;
       const key = event.key.toLowerCase();
       if (key === "z" && !event.shiftKey) { event.preventDefault(); step("undo"); } else if ((key === "z" && event.shiftKey) || key === "y") { event.preventDefault(); step("redo"); }
     };
@@ -207,8 +208,9 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const notices = <>{resource.error ? <Notice error>{resource.error} <Button disabled={task.busy} onClick={refresh}>{t("Erneut laden")}</Button></Notice> : null}{task.error ? <Notice error>{task.error}</Notice> : null}{notice ? <Notice>{notice}</Notice> : null}</>;
   const fileInput = <input ref={upload} type="file" accept=".json,application/json" hidden onChange={importFile} disabled={task.busy} />;
 
+  if (view === "wizard") return <div className="rule-forge">{notices}<RuleWizard authorName={authorName} installed={packages} onCancel={() => setView("library")} onCreate={created => begin(created)} /></div>;
   if (view === "library" || !current) return <div className="rule-forge">
-    <header className="rf-header"><div><span className="eyebrow">{t("Regeln für {name}", { name: campaign.name })}</span><h1><Hammer size={26} />{t("Regelwerkstatt")}</h1><p>{t("Gestalte den Charakterbogen, lege Würfe fest und probiere dein Regelwerk aus. Du entscheidest, welche geprüfte Version für die Runde gilt.")}</p></div><div className="rf-toolbar"><Button disabled={task.busy} onClick={() => begin(starterDraft(authorName, packages))}><Plus size={16} />{t("Neues Paket")}</Button><Button disabled={task.busy} onClick={() => upload.current?.click()}><Upload size={16} />{t("Paket öffnen")}</Button>{fileInput}</div></header>
+    <header className="rf-header"><div><span className="eyebrow">{t("Regeln für {name}", { name: campaign.name })}</span><h1><Hammer size={26} />{t("Regelwerkstatt")}</h1><p>{t("Gestalte den Charakterbogen, lege Würfe fest und probiere dein Regelwerk aus. Du entscheidest, welche geprüfte Version für die Runde gilt.")}</p></div><div className="rf-toolbar"><Button variant="primary" disabled={task.busy} onClick={() => setView("wizard")}><Wand2 size={16} />{t("Neues Regelwerk")}</Button><Button disabled={task.busy} onClick={() => upload.current?.click()}><Upload size={16} />{t("Paket öffnen")}</Button>{fileInput}</div></header>
     {notices}
     {editable && current ? <div className="rf-open-draft" role="status"><div><span className="eyebrow">{t("Offener Entwurf")}</span><strong>{t("{name} {version}", { name: current.name || t("Unbenanntes Regelpaket"), version: current.version })}</strong><small>{saveState === "saved" && savedAt ? t("Automatisch auf diesem Gerät gesichert um {zeit}. Er bleibt auch nach Neustart erhalten.", { zeit: new Date(savedAt).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) }) : dirty ? t("Mit ungespeicherten Änderungen. Lade ihn als Datei herunter oder installiere ihn, um ihn zu behalten.") : t("Keine ungespeicherten Änderungen.")}</small></div>
       <div className="rf-toolbar">{confirmDiscard ? <><span className="rf-help">{t("Den Entwurf wirklich verwerfen? Das lässt sich nicht rückgängig machen.")}</span><Button variant="danger" onClick={discard}>{t("Ja, verwerfen")}</Button><Button variant="quiet" onClick={() => setConfirmDiscard(false)}>{t("Behalten")}</Button></> : <><Button variant="quiet" onClick={() => setConfirmDiscard(true)}><Trash2 size={15} />{t("Verwerfen")}</Button><Button variant="primary" onClick={() => open(section)}>{t("Weiter bearbeiten")}<ArrowRight size={15} /></Button></>}</div></div> : null}
@@ -222,7 +224,8 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
         {menu && menuPaket && menuStand ? <MapContextMenu key={menu.key} label={`${menuPaket.name} ${menuPaket.version}`} popup={{ x: menu.x, y: menu.y, onDismiss: () => setMenu(null) }} actions={[{ id: "aktivieren", label: resource.data && packageKey(menuPaket) === packageKey(resource.data.pin) ? t("Bereits für diese Runde aktiv") : menuStand.genommen ? t("Zum Aktivieren zuerst in die Bibliothek zurückholen") : t("Für diese Runde aktivieren …"), disabled: task.busy || menuStand.genommen || (!!resource.data && packageKey(menuPaket) === packageKey(resource.data.pin)), onSelect: () => activateFromMenu(menuPaket) }, { id: "nehmen", label: menuStand.genommen ? t("Wieder in die Bibliothek") : t("Aus der Bibliothek nehmen"), onSelect: () => nehmen(menuPaket, menuStand.genommen) }, { id: "loeschen", danger: true, disabled: !menuStand.loeschbar, label: menuStand.loeschbar ? t("Endgültig löschen …") : t("Endgültig löschen — geht nicht: {grund}", { grund: menuStand.hindernisse.map(grundText).join(", ") }), onSelect: () => loeschen(menuPaket) }]} /> : null}
       </section>
       <section className="rf-starter" aria-label={t("Eigenes Regelwerk beginnen")}><div className="rf-section-heading"><h2><Plus size={18} />{t("Eigenes Regelwerk beginnen")}</h2></div>
-        <p className="rf-help">{t("Mit einer Vorlage, leer oder aus einer Datei. Jede Vorlage wird ein eigener Entwurf, den du frei veränderst.")}</p>
+        <button type="button" className="rf-wizard-start" disabled={task.busy} onClick={() => setView("wizard")}><Wand2 size={26} aria-hidden="true" /><span><strong>{t("Mit dem Assistenten, Schritt für Schritt")}</strong><small>{t("Ein paar Fragen in Alltagssprache: wie gewürfelt wird, was eine Figur auszeichnet, was verbraucht wird. Dein Bogen wächst dabei sichtbar mit. Kein Vorwissen nötig.")}</small></span><ArrowRight size={18} aria-hidden="true" /></button>
+        <p className="rf-help">{t("Oder mit einer Vorlage, leer oder aus einer Datei. Jede Vorlage wird ein eigener Entwurf, den du frei veränderst.")}</p>
         <div className="rf-starter-blank"><Button disabled={task.busy} onClick={() => begin(starterDraft(authorName, packages))}><Plus size={16} />{t("Leeres Paket beginnen")}</Button><Button disabled={task.busy} onClick={() => upload.current?.click()}><Upload size={16} />{t("Paketdatei öffnen")}</Button><span className="rf-help">{t("Leer heißt: ein Attribut und eine W20-Aktion als Anfang, alles Weitere kommt von dir.")}</span></div>
         <ChronicleHeroesTemplate disabled={task.busy} onCreate={template => begin(packageDraft(template))} />
       </section>

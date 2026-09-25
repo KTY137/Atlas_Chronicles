@@ -25,7 +25,7 @@ test("the rule map shows the package as one picture, edits a formula at the node
   const errors: string[] = []; gm.on("pageerror", error => errors.push(error.message));
   await gm.context().addCookies([{ name: "chronicle_session", value: gmSession.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict", expires: Math.floor(gmSession.expiresAt / 1000) }]);
   await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
-  await gm.getByRole("button", { name: "Neues Paket", exact: true }).click();
+  await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
   const editor = gm.locator(".rf-editor-fields").first();
   await gm.getByRole("tab", { name: "Regelkarte", exact: true }).click();
   // Overview: the character as one card, the starter action listed as a method with its formula.

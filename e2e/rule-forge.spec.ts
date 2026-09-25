@@ -55,7 +55,7 @@ test("visual package authoring, live play and reviewed migration preserve player
   try {
     await signIn(gm.context(), gmSession); await signIn(context, playerSession);
     await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
-    await gm.getByRole("button", { name: "Neues Paket", exact: true }).click();
+    await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
     await editor.getByRole("textbox", { name: /^Name(?:\s|$)/ }).fill("Nordlicht");
     await editor.getByRole("textbox", { name: /Paketkennung/ }).fill(packageId);
     await gm.getByRole("tab", { name: "Attribute", exact: true }).click();
