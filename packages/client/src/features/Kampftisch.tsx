@@ -11,7 +11,7 @@ import type { ActionCard } from "./game-api";
 import { KampfAufnahme } from "./KampfAufnahme";
 import { BeendenRueckfrage } from "./KampfFenster";
 import { Kampfkarte } from "./Kampfkarte";
-import { SEITE_LABEL, istLeitungssicht, juengsterInitiativwurf, reihen, tischAnsicht,
+import { SEITE_LABEL, istLeitungssicht, juengsterInitiativwurf, nichtArchiviertAus, reihen, tischAnsicht,
   type Kampf, type KartenAktionen, type KartenAnsicht } from "./kampftisch-model";
 import "./tabletop.css";
 import "./kampftisch.css";
@@ -41,9 +41,9 @@ export function Kampftisch({ campaignId, gm, actors, revision, onChanged, onOpen
   const gewaehlt = liste.find(k => k.id === offen) ?? liste.find(k => k.zustand === "laufend") ?? liste.find(k => k.zustand !== "beendet") ?? liste[0];
   const alsRunde = useResource<KampfFuerRunde>(gm && vorschau && gewaehlt ? apiPath(campaignId, `/kaempfe/${encodeURIComponent(gewaehlt.id)}/als-runde`) : null, revision);
 
-  const fuehren = (pfad: string, body?: unknown, method: "POST" | "PUT" | "DELETE" = "POST") => void task.run(async () => {
+  const fuehren = (pfad: string, body?: unknown, method: "POST" | "PUT" | "DELETE" = "POST", danach?: (antwort: unknown) => void) => void task.run(async () => {
     // Auch ein abgewiesener Befehl lädt neu: wer einen alten Stand hatte, sieht danach den neuen.
-    try { await api(apiPath(campaignId, pfad), method === "DELETE" ? { method } : { method, body: body ?? {} }); }
+    try { danach?.(await api<unknown>(apiPath(campaignId, pfad), method === "DELETE" ? { method } : { method, body: body ?? {} })); }
     finally { onChanged(); }
   });
 
@@ -76,10 +76,12 @@ export function Kampftisch({ campaignId, gm, actors, revision, onChanged, onOpen
 function Tisch({ kampf, vorschau, vorschauAn, vorschauLaedt, vorschauFehler, gm, busy, campaignId, actors, vorlagen, wuerfe, fuehren, onVorschau, onChanged, onOpenInventory }: {
   kampf: Kampf; vorschau: KampfFuerRunde | null; vorschauAn: boolean; vorschauLaedt: boolean; vorschauFehler: string; gm: boolean; busy: boolean; campaignId: string;
   actors: readonly ActorCard[]; vorlagen: readonly TemplateCard<ActorTemplateData>[]; wuerfe: readonly ActionCard[];
-  fuehren: (pfad: string, body?: unknown, method?: "POST" | "PUT" | "DELETE") => void; onVorschau: (() => void) | null;
+  fuehren: (pfad: string, body?: unknown, method?: "POST" | "PUT" | "DELETE", danach?: (antwort: unknown) => void) => void; onVorschau: (() => void) | null;
   onChanged: () => void; onOpenInventory?: ((actorId: string) => void) | undefined;
 }) {
   const [beenden, setBeenden] = useState(false);
+  // Wer beim Aufräumen übrig blieb, gehört zu genau diesem Kampf — ein anderer Reiter zeigt es nicht.
+  const [uebrig, setUebrig] = useState<{ readonly kampfId: string; readonly anzahl: number } | null>(null);
   // Waehrend die Vorschau an ist, zaehlt NUR ihre eigene Nutzlast als Sicht der Runde: ein
   // Ladezustand oder ein Fehler der Vorschau darf nie auf die Karten der Spielleitung
   // zurueckfallen, sonst zeigt das Banner „So sieht die Runde…“ kurzzeitig echte Namen,
@@ -131,9 +133,13 @@ function Tisch({ kampf, vorschau, vorschauAn, vorschauLaedt, vorschauFehler, gm,
         {leitung && kampf.zustand !== "beendet" ? <span className="kampf-anker">
           <Button disabled={busy} onClick={() => setBeenden(true)}><Flag size={16} /> {t("Beenden")}</Button>
           {beenden ? <BeendenRueckfrage angelegt={angelegt} onClose={() => setBeenden(false)}
-            onBeenden={archivieren => { setBeenden(false); fuehren(`${pfad}/beenden`, { archivieren }); }} /> : null}</span> : null}
+            onBeenden={archivieren => { setBeenden(false); fuehren(`${pfad}/beenden`, { archivieren }, "POST", antwort => {
+              const anzahl = nichtArchiviertAus(antwort);
+              setUebrig(anzahl > 0 ? { kampfId: kampf.id, anzahl } : null);
+            }); }} /> : null}</span> : null}
       </div> : null}
     </header>
+    {uebrig && uebrig.kampfId === kampf.id ? <Notice>{t("Nicht alle Gegner aus diesem Kampf ließen sich ins Archiv legen – übrig: {n}. Sie stehen weiter in der Figurenliste; dort kannst du sie selbst ins Archiv legen.", { n: uebrig.anzahl })}</Notice> : null}
     {vorschauAn ? <p className="kampftisch-vorschau" role="status">{t("So sieht die Runde den Tisch gerade. Deine Hand, die Ablage und verborgene Werte fehlen dort ganz, und nichts verrät, dass etwas fehlt.")}</p> : null}
     <div className={leitung ? "kampftisch-flaeche mit-leiste" : "kampftisch-flaeche"}>
       <div className="tabletop-furniture kampftisch-holz"><section className="tabletop-felt kampftisch-filz" aria-label={t("Spieltisch")}>

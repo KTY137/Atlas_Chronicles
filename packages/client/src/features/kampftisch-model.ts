@@ -119,6 +119,13 @@ export const regelFarbe = (farbe: string | undefined): RegelFarbe | null =>
 export const balkenFarbe = (b: BalkenAnsicht, stelle: number): BalkenFarbe =>
   regelFarbe(b.anzeige.farbe) ?? (b.anzeige.art === "leben" ? "danger" : VORRAT_FARBEN[stelle % VORRAT_FARBEN.length]!);
 
+/** Wie viele Figuren beim Aufräumen nach „Beenden“ nicht ins Archiv gingen. Ohne Aufräumen: 0. */
+export function nichtArchiviertAus(antwort: unknown): number {
+  const aufraeumen = typeof antwort === "object" && antwort !== null ? (antwort as { aufraeumen?: unknown }).aufraeumen : undefined;
+  const liste = typeof aufraeumen === "object" && aufraeumen !== null ? (aufraeumen as { nichtArchiviert?: unknown }).nichtArchiviert : undefined;
+  return Array.isArray(liste) ? liste.length : 0;
+}
+
 export const initialen = (name: string): string =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map(wort => wort[0]!.toLocaleUpperCase()).join("");
 

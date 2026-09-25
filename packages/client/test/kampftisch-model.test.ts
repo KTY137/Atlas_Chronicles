@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { KARTEN_LAGEN, type KampfFuerLeitung, type KampfFuerRunde, type KarteFuerLeitung } from "@chronicle/protocol";
 import type { ActionCard } from "../src/features/game-api";
-import { LAGE_WEGE, LAGE_WEG_LABEL, ansichtFuerLeitung, ansichtFuerRunde, balkenFarbe, initialen, juengsterInitiativwurf, reihen, tischAnsicht, zielDes } from "../src/features/kampftisch-model";
+import { LAGE_WEGE, LAGE_WEG_LABEL, ansichtFuerLeitung, ansichtFuerRunde, balkenFarbe, initialen, juengsterInitiativwurf, nichtArchiviertAus, reihen, tischAnsicht, zielDes } from "../src/features/kampftisch-model";
 import { LEITUNGSKARTE, RUNDENKARTE } from "./kampftisch-beispiele";
 
 describe("Die Ansicht einer Karte", () => {
@@ -52,6 +52,12 @@ describe("Kleinigkeiten", () => {
     expect(balkenFarbe(b("#12ab34"), 0)).toBe("#12ab34");
     expect(balkenFarbe(b("lila"), 0)).toBe("danger");
     expect(balkenFarbe(b("#FFF"), 0)).toBe("danger");
+  });
+  it("zählt, wer beim Aufräumen nicht ins Archiv ging", () => {
+    expect(nichtArchiviertAus({ id: "k", aufraeumen: { archiviert: ["a"], nichtArchiviert: ["b", "c"] } })).toBe(2);
+    expect(nichtArchiviertAus({ id: "k", aufraeumen: { archiviert: ["a"], nichtArchiviert: [] } })).toBe(0);
+    expect(nichtArchiviertAus({ id: "k" })).toBe(0);
+    expect(nichtArchiviertAus(null)).toBe(0);
   });
   it("bildet Initialen aus höchstens zwei Wörtern", () => {
     expect(initialen("Wolf 1")).toBe("W1");

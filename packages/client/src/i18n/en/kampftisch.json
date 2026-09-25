@@ -96,5 +96,6 @@
   "Keine verdeckten Karten.": "No face-down cards.",
   "Ablage": "Discard pile",
   "vom Feld genommen": "taken off the field",
-  "Leer.": "Empty."
+  "Leer.": "Empty.",
+  "Nicht alle Gegner aus diesem Kampf ließen sich ins Archiv legen – übrig: {n}. Sie stehen weiter in der Figurenliste; dort kannst du sie selbst ins Archiv legen.": "Not every enemy from this fight could be archived – left over: {n}. They stay in the character list; you can archive them there yourself."
 }
