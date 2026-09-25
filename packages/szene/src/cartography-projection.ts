@@ -5,7 +5,7 @@ import { RELIEF_LEVELS, reliefHeightAt, type CartographyMood, type CartographyRe
 import type { TacticalMapDocumentV1, TacticalPoint } from "./tactical-map.ts";
 
 /** Bump whenever these pixels change; this pin belongs in every cartography raster key. */
-export const rendererVersion = "cartography-12" as const;
+export const rendererVersion = "cartography-13" as const;
 /** The drawn layers a viewer can switch off. Every region belongs to exactly one of them by its
  * role; a region without a role counts as land. `walls` is the stone perimeter of a town plan. */
 export const CARTOGRAPHY_LAYERS = ["terrain", "water", "road", "lot", "building", "room", "walls"] as const;
@@ -38,7 +38,7 @@ export interface CartographyDrawing {
 }
 const palettes = {
   fantasy: { background: 0xe0d8bc, generic: 0xcac3ae, grass: 0xc5c48d, earth: 0xbba079, forest: 0x536b48, field: 0xb6a379, rock: 0xa8a69a, sand: 0xdfcd9e, swamp: 0x7c8a63, snow: 0xeef0ea, water: 0x659eaf, path: 0xe4d5af, street: 0xe0d6bd, square: 0xd8c9aa, bridge: 0xb49470, steg: 0xa6825a, lot: 0xcac392, room: 0xd2c5ab, roof: 0xbd7354, roofLight: 0xdd9870, roofDark: 0x683e32 },
-  gegenwart: { background: 0xd8d8cb, generic: 0xb6b7af, grass: 0xaabb97, earth: 0xbaab92, forest: 0x6d8c72, field: 0xbaba8b, rock: 0xa5aaa8, sand: 0xdacaac, swamp: 0x86927a, snow: 0xe8ebe9, water: 0x83afb9, path: 0xd1c6af, street: 0x909894, square: 0xbfc1b9, bridge: 0xa9aba4, steg: 0x9c8a70, lot: 0xc6cbbd, room: 0xced0c7, roof: 0xa2aaa8, roofLight: 0xc4cbc8, roofDark: 0x717f7d },
+  gegenwart: { background: 0xd8d8cb, generic: 0xb6b7af, grass: 0xaabb97, earth: 0xbaab92, forest: 0x6d8c72, field: 0xbaba8b, rock: 0xa5aaa8, sand: 0xdacaac, swamp: 0x86927a, snow: 0xe8ebe9, water: 0x83afb9, path: 0xd1c6af, street: 0x909894, square: 0xbfc1b9, bridge: 0xa9aba4, steg: 0x9c8a70, lot: 0xb9c4a4, room: 0xced0c7, roof: 0xa2aaa8, roofLight: 0xc4cbc8, roofDark: 0x717f7d },
   scifi: { background: 0x536368, generic: 0x67767a, grass: 0x8caa90, earth: 0x9b8f7d, forest: 0x537c76, field: 0x9cac7b, rock: 0x839097, sand: 0xbeb695, swamp: 0x62777a, snow: 0xc7d1d4, water: 0x5a9fae, path: 0x96aaa8, street: 0x465b63, square: 0x7f9299, bridge: 0xa3b8ba, steg: 0x8fa3a8, lot: 0x7d9190, room: 0x9bafb2, roof: 0x91aeb4, roofLight: 0xbcd2d4, roofDark: 0x5b7b88 },
 } as const;
 type Palette = { -readonly [key in keyof typeof palettes.fantasy]: number };
@@ -437,7 +437,8 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     if (role?.role === "terrain") fill = palette[role.material];
     // A farmland is a patchwork: every parcel is young green, ripe gold or turned earth.
     // Under snow there is no ripe gold: the third parcel is only a shade warmer than the others.
-    if (role?.role === "terrain" && role.material === "field") fill = [palette.field, mix(palette.field, palette.grass, .5), mood === "winter" ? mix(palette.field, palette.sand, .4) : mix(palette.field, 0xd9b45a, .55)][Math.floor(phase(id, 3) * 3)]!;
+    if (role?.role === "terrain" && role.material === "field" && setting === "scifi") fill = phase(id, 3) < .5 ? 0x2c4a66 : 0x5f9a6a;
+    else if (role?.role === "terrain" && role.material === "field") fill = [palette.field, mix(palette.field, palette.grass, .5), mood === "winter" ? mix(palette.field, palette.sand, .4) : mix(palette.field, 0xd9b45a, .55)][Math.floor(phase(id, 3) * 3)]!;
     // A massif pales with height, from its grey foot to its bright shoulders under the snow.
     if (role?.role === "terrain" && role.material === "rock" && relief) {
       const centre: TacticalPoint = [points.reduce((sum, point) => sum + point[0], 0) / points.length, points.reduce((sum, point) => sum + point[1], 0) / points.length];
@@ -497,7 +498,33 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     if (role?.role === "building") {
       const axes = roofAxes(points), middle = (axes.top + axes.bottom) / 2, shift = (phase(id) - .5) * 24;
       const ridge = Math.max(.65, Math.min(2.2, (axes.bottom - axes.top) * .035));
-      if (setting === "fantasy") {
+      // Die Dachform steht an der Rolle (cartography-13); ohne sie gilt die Vorgabe des Settings.
+      const form = role.dach ?? (setting === "fantasy" ? "giebel" : "flach"), cell = cartography.construction.cellSize;
+      const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length, cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+      const skaliert = (f: number): TacticalPoint[] => points.map(p => [cx + (p[0] - cx) * f, cy + (p[1] - cy) * f]);
+      const radius = points.reduce((sum, p) => sum + Math.hypot(p[0] - cx, p[1] - cy), 0) / points.length;
+      const umriss = (poly: readonly TacticalPoint[], dicke: number, farbe: number, deckkraft: number) => { for (let k = 0; k < poly.length; k++) emit(id, line(poly[k]!, poly[(k + 1) % poly.length]!, dicke), farbe, deckkraft); };
+      if (form === "kuppel") {
+        emit(id, points, tint(palette.roofLight, shift - 6));
+        emit(id, skaliert(.72), tint(palette.roofLight, 16));
+        emit(id, skaliert(.42), tint(palette.roofLight, 32));
+        emit(id, skaliert(.18).map(p => [p[0] - radius * .25, p[1] - radius * .25]), 0xffffff, .5);
+        if (setting === "scifi") umriss(skaliert(.93), pen * .8, 0x5fe0e6, .8);
+      } else if (form === "plattform") {
+        emit(id, points, 0x3a4448);
+        umriss(skaliert(.78), pen * .9, 0xe0b040, .9);
+        emit(id, line([cx - radius * .35, cy], [cx + radius * .35, cy], pen * 1.2), 0xe0e6e8, .9);
+        emit(id, line([cx, cy - radius * .35], [cx, cy + radius * .35], pen * 1.2), 0xe0e6e8, .9);
+        for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]] as const) {
+          const x = cx + dx * radius * .9, y = cy + dy * radius * .9, s = pen * 1.2;
+          emit(id, [[x - s, y - s], [x + s, y - s], [x + s, y + s], [x - s, y + s]], 0x7ff0ff);
+        }
+      } else if (form === "halle") {
+        // Sheddach: quer zur Längsachse abwechselnd helle Glas- und dunkle Dachstreifen.
+        emit(id, points, tint(palette.roofLight, shift - 10));
+        const step = cell * .22;
+        for (let at = axes.left + step * .5; at < axes.right - step * .2; at += step) emit(id, band(points, axes.along, at, at + step * .45), palette.roofDark, .45);
+      } else if (form === "giebel") {
         emit(id, clip(points, axes.across, middle, false), tint(palette.roofLight, shift));
         emit(id, clip(points, axes.across, middle, true), tint(palette.roof, shift - 16));
         emit(id, band(points, axes.across, middle - ridge, middle + ridge), tint(palette.roofDark, shift), .7);
@@ -508,7 +535,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         }
         // Most houses have a chimney on the shaded slope, a little off the ridge, with its own
         // shadow; the hearth is what makes a roof a home rather than a lid.
-        if (axes.bottom - axes.top > cartography.construction.cellSize * .35 && phase(id, 7) < .72) {
+        if (setting === "fantasy" && axes.bottom - axes.top > cartography.construction.cellSize * .35 && phase(id, 7) < .72) {
           const size = Math.max(1.5, ridge * 2.2), a = axes.left + (axes.right - axes.left) * (.62 + phase(id, 8) * .22), c = middle + size * 1.4;
           const at = (u: number, v: number): TacticalPoint => [axes.along[0] * u + axes.across[0] * v, axes.along[1] * u + axes.across[1] * v];
           const stack: TacticalPoint[] = [at(a - size / 2, c - size / 2), at(a + size / 2, c - size / 2), at(a + size / 2, c + size / 2), at(a - size / 2, c + size / 2)];
@@ -527,6 +554,17 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
           const at = axes.left + (axes.right - axes.left) * index / (setting === "scifi" ? 5 : 3);
           emit(id, band(points, axes.along, at, at + ridge * .65), palette.roofDark, .35);
         }
+        // Flachdach: eine Attika als Innenkante und auf größeren Dächern ein bis drei Aufbauten
+        // (Lüftung, in der Kolonie Paneele).
+        umriss(skaliert(.86), pen * .6, palette.roofDark, .35);
+        if (axes.bottom - axes.top > cell * .6) for (let k = 0; k < 1 + Math.floor(phase(id, 19) * 3); k++) {
+          const s = cell * .12, u = axes.left + (axes.right - axes.left) * (.25 + .5 * phase(id, 20 + k)), v = axes.top + (axes.bottom - axes.top) * (.3 + .4 * phase(id, 24 + k));
+          const at = (du: number, dv: number): TacticalPoint => [axes.along[0] * (u + du) + axes.across[0] * (v + dv), axes.along[1] * (u + du) + axes.across[1] * (v + dv)];
+          const box = [at(-s, -s), at(s, -s), at(s, s), at(-s, s)];
+          if (!box.every(p => inside(p, points))) continue;
+          emit(id, box.map(p => [p[0] + s * .35, p[1] + s * .45]), 0x26332b, .3);
+          emit(id, box, setting === "scifi" ? 0x3d5f75 : 0x8d9794);
+        }
       }
       for (let index = 0; index < points.length; index++) {
         const a = points[index]!, b = points[(index + 1) % points.length]!;
@@ -542,6 +580,7 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       // A rectangle in roof coordinates (u along the ridge, v across it), turned by `angle`.
       const quad = (x: number, y: number, angle: number, u0: number, u1: number, v0: number, v1: number): TacticalPoint[] => ([[u0, v0], [u1, v0], [u1, v1], [u0, v1]] as const).map(([u, v]) => [x + u * Math.cos(angle) - v * Math.sin(angle), y + u * Math.sin(angle) + v * Math.cos(angle)] as TacticalPoint);
       const roofOf = (x: number, y: number, w: number, h: number, angle: number) => quad(x, y, angle, -w, w, -h, h);
+      const kreis = (x: number, y: number, r: number, n: number): TacticalPoint[] => Array.from({ length: n }, (_, k) => [x + Math.cos(k / n * Math.PI * 2) * r, y + Math.sin(k / n * Math.PI * 2) * r] as TacticalPoint);
       const drawRoof = (x: number, y: number, w: number, h: number, angle: number, key: string) => {
         const roof = roofOf(x, y, w, h, angle), shift = (phase(key, 5) - .5) * 20;
         emit(id, roof.map(point => [point[0] + w * .3, point[1] + h * .45]), 0x26332b, .3);
@@ -554,9 +593,47 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         if (!inside([x, y], points) || size === "weiler" && phase(key, 3) > .6) continue;
         if ((size !== "weiler") && Math.hypot(x - centre[0], y - centre[1]) < spacing * .9) continue;
         const w = spacing * (.24 + phase(key, 6) * .12), h = w * (.55 + phase(key, 7) * .25);
-        drawRoof(x, y, w, h, lean + (phase(key, 4) - .5) * .7, key);
+        if (setting === "scifi") {
+          // Die Kolonie von oben: kleine Kuppeln statt Dächer.
+          const r = w * .75, dome = kreis(x, y, r, 12);
+          emit(id, dome.map(point => [point[0] + r * .3, point[1] + r * .4]), 0x26332b, .3);
+          emit(id, dome, tint(palette.roofLight, (phase(key, 5) - .5) * 20));
+          emit(id, kreis(x - r * .2, y - r * .2, r * .4, 8), tint(palette.roofLight, 30), .7);
+        } else drawRoof(x, y, w, h, setting === "gegenwart" ? 0 : lean + (phase(key, 4) - .5) * .7, key);
       }
-      if (size !== "weiler") {
+      if (setting === "gegenwart") {
+        // Die heutige Stadt: Flachdächer im rechtwinkligen Raster, in der Mitte dunkle Hochhäuser
+        // mit langem Schatten, um eine Stadt ein Ring in Straßenfarbe statt einer Mauer.
+        if (size !== "weiler") for (const [dx, dy, s] of ([[-.5, -.4, .34], [.45, -.35, .3], [0, .45, .32], [-.55, .5, .24], [.6, .5, .26]] as const).slice(0, size === "stadt" ? 5 : 3)) {
+          const x = centre[0] + dx * spacing, y = centre[1] + dy * spacing, w = spacing * s, box = roofOf(x, y, w, w * .8, 0);
+          emit(id, box.map(point => [point[0] + w * .7, point[1] + w * .9]), 0x26332b, .35);
+          emit(id, box, 0x4d5a5c);
+          for (let index = 0; index < 4; index++) emit(id, line(box[index]!, box[(index + 1) % 4]!, pen * .45), ink, .85);
+        }
+        if (size === "stadt") for (let index = 0; index < points.length; index++) {
+          const a = points[index]!, b = points[(index + 1) % points.length]!;
+          emit(id, line(a, b, pen * 1.9), ink, .5); emit(id, line(a, b, pen * 1.4), palette.street);
+        }
+      } else if (setting === "scifi") {
+        // Die Kolonie: eine große Kuppel in der Mitte, bei einer Stadt ein Landefeld und ein Zaun.
+        if (size !== "weiler") {
+          const r = spacing * .5, dome = kreis(centre[0], centre[1], r, 16);
+          emit(id, dome.map(point => [point[0] + r * .25, point[1] + r * .3]), 0x26332b, .3);
+          emit(id, dome, palette.roofLight);
+          emit(id, kreis(centre[0], centre[1], r * .7, 16), tint(palette.roofLight, 16));
+          emit(id, kreis(centre[0] - r * .25, centre[1] - r * .25, r * .22, 8), 0xffffff, .5);
+          for (let index = 0; index < dome.length; index++) emit(id, line(dome[index]!, dome[(index + 1) % dome.length]!, pen * .6), 0x5fe0e6, .8);
+        }
+        if (size === "stadt") {
+          const px = centre[0] + spacing * 1.3, py = centre[1] + spacing * .2, r = spacing * .4, feld = kreis(px, py, r, 16), ring = kreis(px, py, r * .75, 16);
+          emit(id, feld, 0x3a4448);
+          for (let index = 0; index < ring.length; index++) emit(id, line(ring[index]!, ring[(index + 1) % ring.length]!, pen * .5), 0xe0b040, .9);
+          for (let index = 0; index < points.length; index++) {
+            const a = points[index]!, b = points[(index + 1) % points.length]!;
+            emit(id, line(a, b, pen * 1.6), 0x1f2c33, .9); emit(id, line(a, b, pen * .7), 0x5fe0e6, .9);
+          }
+        }
+      } else if (size !== "weiler") {
         // The church: a longer roof on the square, and a spire drawn as a dark square with an ink cross.
         const w = spacing * .48, h = w * .5;
         drawRoof(centre[0], centre[1], w, h, lean, `${id}:kirche`);
@@ -566,8 +643,8 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         emit(id, line([tx, ty - tower * 1.9], [tx, ty + tower * .6], pen * .5), ink, .9);
         emit(id, line([tx - tower * .6, ty - tower * 1.3], [tx + tower * .6, ty - tower * 1.3], pen * .5), ink, .9);
       }
-      if (size === "stadt") {
-        const stone = setting === "scifi" ? 0x8ea5aa : 0xaaa08a;
+      if (size === "stadt" && setting === "fantasy") {
+        const stone = 0xaaa08a;
         for (let index = 0; index < points.length; index++) {
           const a = points[index]!, b = points[(index + 1) % points.length]!;
           emit(id, line(a, b, pen * 1.6), ink, .9); emit(id, line(a, b, pen * .9), stone);
@@ -659,6 +736,11 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
           if (bush.every(free)) { emit(id, bush.map(point => [point[0] + size * .25, point[1] + size * .3]), 0x263c2b, .25); emit(id, bush, tint(palette.forest, 12)); }
         }
       }
+    } else if (role?.role === "terrain" && role.material === "field" && setting === "scifi") {
+      // Die Flur einer Kolonie: Solarfelder mit Paneelgitter oder Hydrokulturbeete unter Glasstreifen.
+      const axes = roofAxes(points), solar = phase(id, 3) < .5, step = cartography.construction.cellSize * (solar ? .45 : .3);
+      for (let at = axes.top + step; at < axes.bottom; at += step) emit(id, band(points, axes.across, at, at + pen * (solar ? .5 : .9)), solar ? 0x6f9fc0 : 0xcfe8e0, solar ? .5 : .35);
+      if (solar) for (let at = axes.left + step * 2; at < axes.right; at += step * 2) emit(id, band(points, axes.along, at, at + pen * .5), 0x6f9fc0, .5);
     } else if (role?.role === "terrain" && role.material === "field") {
       for (const { a, b, inward: winding } of fieldBanks.get(id) ?? []) emit(id, line(a, b, pen*1.1, winding*pen*.55), palette.forest, .32);
       const axes = roofAxes(points), count = Math.min(44, Math.max(6, Math.ceil((axes.bottom - axes.top) / (cartography.construction.cellSize * .18))));
@@ -928,6 +1010,25 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       if (role.material === "path") {
         const axes = roofAxes(points), middle = (axes.top + axes.bottom) / 2, span = axes.bottom - axes.top;
         for (const offset of [-.24, .24]) emit(id, band(points, axes.across, middle + span * offset - pen * .14, middle + span * offset + pen * .14), tint(palette.path, -48), .28);
+      } else if (setting !== "fantasy" && role.material === "street") {
+        // Asphalt statt Pflaster: eine gestrichelte Mittellinie auf breiten heutigen Straßen, zwei
+        // leuchtende Randlinien auf den Straßen der Kolonie.
+        const axes = roofAxes(points), middle = (axes.top + axes.bottom) / 2, span = axes.bottom - axes.top, cell = cartography.construction.cellSize;
+        if (setting === "scifi") for (const at of [axes.top + pen * 1.2, axes.bottom - pen * 1.8]) emit(id, band(points, axes.across, at, at + pen * .6), 0x5fe0e6, .55);
+        else if (span >= cell * .95) for (let at = axes.left + cell * .2; at < axes.right - cell * .3; at += cell * .9)
+          emit(id, band(band(points, axes.along, at, at + cell * .5), axes.across, middle - pen * .35, middle + pen * .35), 0xf2f2ea, .8);
+      } else if (setting !== "fantasy" && role.material === "square") {
+        // Großformatige Platten (Gegenwart) oder Deckplatten mit Lichtern (Kolonie), auf einem globalen Gitter.
+        const cell = cartography.construction.cellSize, abstand = cell * (setting === "scifi" ? .9 : 1.1), dicke = Math.max(.5, pen * .35);
+        const fuge = setting === "scifi" ? 0x2f4148 : tint(palette.square, -14), deckkraft = setting === "scifi" ? .45 : .3;
+        for (let x = Math.ceil(minX / abstand) * abstand; x < maxX && decorationPoints + 8 <= groundBudget; x += abstand) emit(id, band(points, [1, 0], x, x + dicke), fuge, deckkraft);
+        for (let y = Math.ceil(minY / abstand) * abstand; y < maxY && decorationPoints + 8 <= groundBudget; y += abstand) emit(id, band(points, [0, 1], y, y + dicke), fuge, deckkraft);
+        if (setting === "scifi") for (let row = Math.floor(minY / abstand); row <= Math.ceil(maxY / abstand); row++) for (let column = Math.floor(minX / abstand); column <= Math.ceil(maxX / abstand); column++) {
+          if (phase(`deck:${column}:${row}`, 81) > 1 / 7) continue;
+          const x = column * abstand + abstand * .5, y = row * abstand + abstand * .5, s = pen * .9;
+          const licht: TacticalPoint[] = [[x - s, y - s], [x + s, y - s], [x + s, y + s], [x - s, y + s]];
+          if (licht.every(point => inside(point, points))) emit(id, licht, 0x7ff0ff, .8);
+        }
       } else {
         const spacing = Math.max(4, pen * 2.8), startX = Math.floor(minX / spacing), startY = Math.floor(minY / spacing);
         const step = Math.max(1, Math.ceil(Math.sqrt((Math.ceil(maxX / spacing) - startX + 1) * (Math.ceil(maxY / spacing) - startY + 1) / 900)));
@@ -945,14 +1046,17 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   if (!reliefDrawn) { reliefDrawn = true; drawRelief(); }
   if (paintWalls) {
     // Eine Stadtmauer ist ein Bauwerk, keine Federlinie: in Fantasy mindestens ein Fünftel Zelle breit.
-    const wallWidth = setting === "fantasy" ? Math.max(pen * 3.6, cartography.construction.cellSize * .2) : pen * 3.6, stone = setting === "scifi" ? 0x8ea5aa : 0xaaa08a;
+    // Die Kolonie hat einen Schutzzaun: dunkle Linie mit leuchtender Mitte, ohne Zinnen.
+    const zaun = setting === "scifi";
+    const wallWidth = setting === "fantasy" ? Math.max(pen * 3.6, cartography.construction.cellSize * .2) : zaun ? pen * 2.4 : pen * 3.6, stone = zaun ? 0x5fe0e6 : 0xaaa08a;
     const junctions = new Map<string, { point: TacticalPoint; directions: TacticalPoint[]; wallId: string }>();
     for (const wall of document.walls) for (let index = 1; index < wall.points.length; index++) {
       const a = wall.points[index - 1]!, b = wall.points[index]!, dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx,dy);
       if (!length) continue;
       emit(wall.id, line([a[0]+pen*1.5,a[1]+pen*2],[b[0]+pen*1.5,b[1]+pen*2],wallWidth+pen), 0x26332b, .27);
-      emit(wall.id, line(a,b,wallWidth+pen), ink, 1, false);
-      emit(wall.id, line(a,b,wallWidth), stone, 1, false);
+      emit(wall.id, line(a,b,wallWidth+pen), zaun ? 0x1f2c33 : ink, 1, false);
+      emit(wall.id, line(a,b,zaun ? wallWidth * .45 : wallWidth), stone, 1, false);
+      if (zaun) { for (const [point, direction] of [[a,[dx/length,dy/length]],[b,[-dx/length,-dy/length]]] as const) { const key = `${point[0]},${point[1]}`, junction = junctions.get(key) ?? { point, directions: [], wallId: wall.id }; junction.directions.push(direction); junctions.set(key,junction); } continue; }
       emit(wall.id, line(a,b,pen,wallWidth*.28), 0xe0d6b9, .8);
       const crenels = Math.min(128, Math.floor(length / (wallWidth * 1.6)));
       for (let tooth = 0; tooth < crenels && decorationPoints + 4 <= 250_000 - basePoints; tooth++) {

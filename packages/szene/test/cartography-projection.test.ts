@@ -557,7 +557,7 @@ describe("cartography-12: Türme, Mauer und Marktplätze der Viertelstadt", () =
     role("grund", { role: "terrain", material: "grass" }), role("turm", { role: "building" }), role("platz", { role: "road", material: "square" }), role("haus", { role: "building" }),
   ] } as unknown as TacticalCartographyV1;
 
-  it("trägt die neue Fassung", () => expect(rendererVersion).toBe("cartography-12"));
+  it("trägt die neue Fassung", () => expect(rendererVersion).toBe("cartography-13"));
   it("zeichnet einen Rundturm als Stein ohne Firstband und nach der Mauer", () => {
     const d = cartographyDraw(document, cartography, "fantasy");
     const letzteMauer = Math.max(...d.polygons.map((p, i) => p.regionId === "mauer" ? i : -1));
@@ -575,7 +575,86 @@ describe("cartography-12: Türme, Mauer und Marktplätze der Viertelstadt", () =
   it("pflastert große Plätze und stellt Marktstände darauf, nur in Fantasy", () => {
     const fantasy = cartographyDraw(document, cartography, "fantasy").polygons.filter(p => p.regionId === "platz");
     const modern = cartographyDraw(document, cartography, "gegenwart").polygons.filter(p => p.regionId === "platz");
-    expect(fantasy.length).toBeGreaterThan(modern.length + 6);
     expect(fantasy.some(p => p.fill === 0xe8d9b0)).toBe(true);
+    expect(modern.some(p => p.fill === 0xe8d9b0)).toBe(false);
+  });
+});
+
+describe("cartography-13: Dächer, Straßen, Felder und Zäune der heutigen Stadt und der Kolonie", () => {
+  const z = 64, rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x * z, y * z], [(x + w) * z, y * z], [(x + w) * z, (y + h) * z], [x * z, (y + h) * z]];
+  const kreis = (cx: number, cy: number, r: number, n: number): TacticalPoint[] => Array.from({ length: n }, (_, k) => [(cx + Math.cos(k / n * Math.PI * 2) * r) * z, (cy + Math.sin(k / n * Math.PI * 2) * r) * z]);
+  const role = (regionId: string, extra: object) => ({ regionId, authored: false, locked: false, provenance: null, ...extra });
+  type Teil = readonly [string, TacticalPoint[], object];
+  const zeichne = (setting: "fantasy" | "gegenwart" | "scifi", teile: readonly Teil[], mauer = false) => {
+    const regions = [{ id: "grund", punkte: rect(0, 0, 14, 14) }, ...teile.map(([id, punkte]) => ({ id, punkte }))];
+    const document: TacticalMapDocumentV1 = { schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels", frame: { ursprung: [0, 0], einheitenProPixel: 1 / z, ordnung: "xy", hoch: "unten" },
+      geometry: { v: 3, size: [14 * z, 14 * z], stamps: [], places: [], regions }, grid: { kind: "square", size: z, origin: [0, 0] }, elevation: 0, geometryElevation: [],
+      walls: mauer ? [{ id: "zaun", kind: "wall", elevation: 0, points: [[1 * z, 12 * z], [9 * z, 12 * z]] }] : [], portals: [], lights: [], environment: { bakedLighting: false, ambientLightArgb: "ffffffff" }, background: null };
+    const cartography = { schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: z, origin: [0, 0] },
+      regions: [role("grund", { role: "terrain", material: "grass" }), ...teile.map(([id, , extra]) => role(id, extra))] } as unknown as TacticalCartographyV1;
+    return cartographyDraw(document, cartography, setting, { paper: false });
+  };
+  const von = (d: ReturnType<typeof zeichne>, id: string) => d.polygons.filter(p => p.regionId === id);
+  const haus = rect(2, 2, 4, 2.5);
+
+  it("zeichnet ein Sheddach mit mehr Streifen als ein Flachdach", () => {
+    const flach = von(zeichne("gegenwart", [["h", haus, { role: "building", dach: "flach" }]]), "h");
+    const halle = von(zeichne("gegenwart", [["h", haus, { role: "building", dach: "halle" }]]), "h");
+    expect(halle.length).toBeGreaterThan(flach.length + 3);
+  });
+  it("setzt ohne Dachform die Vorgabe des Settings: Giebel in Fantasy, Flachdach sonst", () => {
+    const zug = (d: ReturnType<typeof zeichne>) => JSON.stringify(von(d, "h"));
+    expect(zug(zeichne("fantasy", [["h", haus, { role: "building" }]]))).toBe(zug(zeichne("fantasy", [["h", haus, { role: "building", dach: "giebel" }]])));
+    expect(zug(zeichne("gegenwart", [["h", haus, { role: "building" }]]))).toBe(zug(zeichne("gegenwart", [["h", haus, { role: "building", dach: "flach" }]])));
+  });
+  it("gibt einer Kuppel in der Kolonie einen leuchtenden Rand und einem Landefeld Markierung und Lichter", () => {
+    const d = zeichne("scifi", [["k", kreis(4, 4, 1.5, 12), { role: "building", dach: "kuppel" }], ["p", kreis(9, 9, 2.5, 16), { role: "building", dach: "plattform" }]]);
+    expect(von(d, "k").some(p => p.fill === 0x5fe0e6)).toBe(true);
+    expect(von(d, "p").some(p => p.fill === 0xe0b040)).toBe(true);
+    expect(von(d, "p").filter(p => p.fill === 0x7ff0ff).length).toBeGreaterThanOrEqual(4);
+  });
+  it("strichelt die Mittellinie heutiger Hauptstraßen und lässt Kolonie-Straßen an den Rändern leuchten", () => {
+    const strasse = rect(0, 6, 14, 1.4);
+    expect(von(zeichne("gegenwart", [["s", strasse, { role: "road", material: "street" }]]), "s").filter(p => p.fill === 0xf2f2ea).length).toBeGreaterThanOrEqual(6);
+    expect(von(zeichne("scifi", [["s", strasse, { role: "road", material: "street" }]]), "s").filter(p => p.fill === 0x5fe0e6).length).toBeGreaterThanOrEqual(2);
+    expect(von(zeichne("fantasy", [["s", strasse, { role: "road", material: "street" }]]), "s").some(p => p.fill === 0xf2f2ea || p.fill === 0x5fe0e6)).toBe(false);
+  });
+  it("macht Felder der Kolonie zu Solar- und Hydrokulturflächen", () => {
+    const d = zeichne("scifi", Array.from({ length: 6 }, (_, i): Teil => [`f${i}`, rect(1 + i * 2, 9, 1.8, 3), { role: "terrain", material: "field" }]));
+    const farben = new Set(d.polygons.filter(p => p.regionId.startsWith("f")).map(p => p.fill));
+    expect(farben.has(0x2c4a66) || farben.has(0x5f9a6a)).toBe(true);
+  });
+  it("zeichnet den Zaun der Kolonie leuchtend statt aus Stein", () => {
+    // Mauern malt die Kartenoptik nur auf Ortskarten (mit Gebäuden): ein Haus gehört dazu.
+    const zaun = von(zeichne("scifi", [["h", haus, { role: "building" }]], true), "zaun");
+    expect(zaun.some(p => p.fill === 0x5fe0e6)).toBe(true);
+    expect(zaun.some(p => p.fill === 0x8ea5aa || p.fill === 0xaaa08a)).toBe(false);
+  });
+});
+
+describe("cartography-13: das Ortssymbol spricht sein Setting", () => {
+  const rect = (x: number, y: number, w: number, h: number): TacticalPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const base = { authored: false, locked: false, provenance: null } as const;
+  const ort = (setting: "fantasy" | "gegenwart" | "scifi") => {
+    const { document, cartography } = fixture();
+    const regions = [{ id: "ground", punkte: rect(0, 0, 600, 600) }, { id: "ort", punkte: rect(150, 150, 300, 260) }];
+    const roles = [{ ...base, regionId: "ground", role: "terrain", material: "grass" }, { ...base, regionId: "ort", role: "ort", groesse: "stadt", standort: "huegel" }] as const;
+    return cartographyDraw({ ...document, geometry: { ...document.geometry, regions } }, { ...cartography, construction: { cellSize: 60, origin: [0, 0] }, regions: [...roles] }, setting, { paper: false }).polygons.filter(p => p.regionId === "ort");
+  };
+  it("zeigt Kirche und Steinmauer nur in Fantasy", () => {
+    for (const setting of ["gegenwart", "scifi"] as const) {
+      const p = ort(setting);
+      expect(p.some(x => x.fill === 0x683e32), setting).toBe(false);
+      expect(p.some(x => x.fill === 0xaaa08a || x.fill === 0x8ea5aa), setting).toBe(false);
+    }
+    expect(ort("fantasy").some(x => x.fill === 0xaaa08a)).toBe(true);
+  });
+  it("umgibt eine Kolonie mit leuchtendem Zaun und gibt ihr ein Landefeld", () => {
+    const p = ort("scifi");
+    expect(p.some(x => x.fill === 0x5fe0e6)).toBe(true);
+    expect(p.some(x => x.fill === 0xe0b040)).toBe(true);
+  });
+  it("gibt einer heutigen Stadt dunkle Hochhäuser in der Mitte", () => {
+    expect(ort("gegenwart").filter(x => x.fill === 0x4d5a5c).length).toBeGreaterThanOrEqual(3);
   });
 });
