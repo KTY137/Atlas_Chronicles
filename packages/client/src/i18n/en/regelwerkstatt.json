@@ -121,5 +121,18 @@
   "Akzentfarbe des Looks": "Accent colour of the look",
   "Eigene Farbe": "Custom colour",
   "Eigene Farbe {wert}: gilt in jedem Look gleich.": "Custom colour {wert}: the same in every look.",
-  "Palettenfarben passen sich dem gewählten Look an, auch hellen. Eine eigene Farbe gilt überall gleich.": "Palette colours adapt to the chosen look, including light ones. A custom colour is the same everywhere."
+  "Palettenfarben passen sich dem gewählten Look an, auch hellen. Eine eigene Farbe gilt überall gleich.": "Palette colours adapt to the chosen look, including light ones. A custom colour is the same everywhere.",
+  "Entwurf": "Draft",
+  "Automatisch auf diesem Gerät gesichert um {zeit}. Er bleibt auch nach Neustart erhalten.": "Saved automatically on this device at {zeit}. It survives a restart.",
+  "Den Entwurf wirklich verwerfen? Das lässt sich nicht rückgängig machen.": "Really discard the draft? This cannot be undone.",
+  "Ja, verwerfen": "Yes, discard",
+  "Behalten": "Keep",
+  "Entwurf · {version} · auf diesem Gerät gesichert um {zeit}": "Draft · {version} · saved on this device at {zeit}",
+  "Entwurf · {version} · nicht gesichert: der Speicher dieses Geräts ist voll. Lade den Entwurf als Datei herunter.": "Draft · {version} · not saved: this device's storage is full. Download the draft as a file.",
+  "Entwurf · {version} · dieses Gerät erlaubt keine Sicherung. Lade den Entwurf als Datei herunter.": "Draft · {version} · this device does not allow saving. Download the draft as a file.",
+  "Verlauf": "History",
+  "Rückgängig: Änderung an {bereich} (Strg+Z)": "Undo: change to {bereich} (Ctrl+Z)",
+  "Nichts rückgängig zu machen": "Nothing to undo",
+  "Wiederholen: Änderung an {bereich} (Strg+Y)": "Redo: change to {bereich} (Ctrl+Y)",
+  "Nichts zu wiederholen": "Nothing to redo"
 }

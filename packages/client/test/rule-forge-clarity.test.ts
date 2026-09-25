@@ -10,6 +10,8 @@ import * as abilityModel from "../src/features/rule-ability-model";
 import * as sheetModel from "../src/features/rule-sheet-model";
 import * as nav from "../src/features/RuleForgeNav";
 import * as path from "../src/features/RuleForgePath";
+import * as draftHistory from "../src/features/rule-draft-history";
+import * as draftStore from "../src/features/rule-draft-store";
 import { I18nStub } from "../src/i18n.ts";
 import { describe, expect, it } from "vitest";
 
@@ -41,6 +43,8 @@ function harness(file: string, initial: Record<string, any>) {
       if (name === "./rule-sheet-model") return sheetModel;
       if (name === "./RuleForgeNav") return nav;
       if (name === "./RuleForgePath") return path;
+      if (name === "./rule-draft-history") return draftHistory;
+      if (name === "./rule-draft-store") return draftStore;
       if (name === "./RuleForgePreview") return { RuleForgePreview: "RuleForgePreview", LiveSheet: "LiveSheet", useExampleFigure: () => null, useForgeFixtures: () => react.useState([{ id: "fixture-sera", name: "Sera", values: {}, inputs: {}, passages: [] }, { id: "fixture-brannt", name: "Brannt", values: {}, inputs: {}, passages: [] }]) };
       if (name === "../hooks") return { useResource: () => ({ data: props.rules, loading: false, error: "" }), useTask: () => ({ busy: false, error: "", setError() {}, run(fn: () => Promise<unknown>) { const job = fn(); jobs.push(job); return job; } }) };
       if (name === "../api") return { apiPath: (_: string, suffix: string) => suffix, errorText: String, api: async (path: string, request: any) => { requests.push({ path, request }); return props.transport?.(path, request); } };

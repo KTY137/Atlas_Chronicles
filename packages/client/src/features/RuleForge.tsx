@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, Download, Eye, EyeOff, FlaskConical, Hammer, MoreHorizontal, Plus, Search, Trash2, TriangleAlert, Upload, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, Download, Eye, EyeOff, FlaskConical, Hammer, MoreHorizontal, Plus, Redo2, Search, Trash2, TriangleAlert, Undo2, Upload, X } from "lucide-react";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { ENGINE_VERSION, RULE_LIMITS, describeRuleCapabilities, parseSupportedRulePackage as parseRulePackage, stableJson, type FormulaType, type MigrationPreview, type PackagePin, type AnyRulePackage as RulePackage, type Scalar } from "@chronicle/rules";
 import { ApiError, api, apiPath, errorText, type Campaign } from "../api";
-import { t } from "../i18n";
+import { locale, t } from "../i18n";
 import { useResource, useTask } from "../hooks";
 import { FormulaExampleContext, FormulaField } from "./FormulaField";
 import { RuleActionEditor } from "./RuleActionEditor";
@@ -25,6 +25,8 @@ import { RuleSheetEditor } from "./RulePresentationEditor";
 import type { RulePackageHindernis, RulePackageStand, RulesState } from "./game-api";
 import { draftExpression, forkPackage, localKey, migrationStepDraft, moveItem, newField, newPackage, packageDraft, packageTestResults, renameFieldReferences, validateDraft, type DraftAction, type DraftField, type DraftMigration, type DraftMigrationStep, type FormulaDraft, type RuleDraft } from "./rule-forge-model";
 import { syncSheetWithFields } from "./rule-sheet-model";
+import { areaLabel, emptyHistory, record, redo, undo } from "./rule-draft-history";
+import { clearDraft, loadDraft, saveDraft, type SaveResult } from "./rule-draft-store";
 import "./rule-forge.css";
 
 interface RuleReview { from: PackagePin; to: PackagePin; pinVersion: number; migration: MigrationPreview | null; previewHash: string }
@@ -122,7 +124,10 @@ export function explainValidationError(message: string): string {
 
 export function RuleForge({ campaign, authorName, onDirty, onActivated }: { campaign: Campaign; authorName: string; onDirty(dirty: boolean): void; onActivated?: () => void }) {
   const [revision, setRevision] = useState(0), resource = useResource<RulesState>(apiPath(campaign.id, "/rules"), revision), task = useTask();
-  const [selected, setSelected] = useState<string | null>(null), [draft, setDraft] = useState<RuleDraft | null>(null), [locked, setLocked] = useState(false), [dirty, setDirty] = useState(false);
+  // Level 2: ein auf diesem Gerät gesicherter Entwurf ist sofort wieder da (L2-E1/E2).
+  const [stored] = useState(() => loadDraft(campaign.id));
+  const [selected, setSelected] = useState<string | null>(null), [draft, setDraft] = useState<RuleDraft | null>(stored?.draft ?? null), [locked, setLocked] = useState(false), [dirty, setDirty] = useState(!!stored);
+  const [history, setHistory] = useState(emptyHistory), [savedAt, setSavedAt] = useState<number | null>(stored?.savedAt ?? null), [saveState, setSaveState] = useState<SaveResult | "pending" | null>(stored ? "saved" : null), [confirmDiscard, setConfirmDiscard] = useState(false);
   const [view, setView] = useState<"library" | "bench">("library"), [section, setSection] = useState<ForgeSection>("package");
   const [review, setReview] = useState<(RuleReview & { fingerprint: string }) | null>(null), [acknowledged, setAcknowledged] = useState(false), [notice, setNotice] = useState("");
   const [justInstalled, setJustInstalled] = useState<RulePackage | null>(null), upload = useRef<HTMLInputElement>(null), bench = useRef<HTMLDivElement>(null);
@@ -147,13 +152,35 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const exactInstalled = !!installed && stableJson(installed) === fingerprint, collision = !!installed && !exactInstalled;
   const editable = draft !== null && !locked, active = !!pkg && !!resource.data && packageKey(pkg) === packageKey(resource.data.pin);
   const readyReview = review?.fingerprint === fingerprint ? review : null;
-  const setDirtyState = (value: boolean) => { setDirty(value); onDirty(value); };
+  const setDirtyState = (value: boolean) => { setDirty(value); if (value) setSaveState("pending"); };
+  // Wer die Werkstatt verlässt, verliert nichts mehr, sobald der Entwurf auf dem Gerät liegt.
+  useEffect(() => { onDirty(dirty && saveState !== "saved"); }, [dirty, saveState, onDirty]);
+  useEffect(() => {
+    if (draft && !locked && dirty) {
+      const timer = globalThis.setTimeout?.(() => { const now = Date.now(), result = saveDraft(campaign.id, draft, now); setSaveState(result); if (result === "saved") setSavedAt(now); }, 600);
+      return () => { if (timer !== undefined) globalThis.clearTimeout?.(timer); };
+    }
+    if (!dirty) { clearDraft(campaign.id); setSavedAt(null); setSaveState(null); }
+    return undefined;
+  }, [draft, locked, dirty, campaign.id]);
   const clearReview = () => { setReview(null); setAcknowledged(false); setNotice(""); task.setError(""); };
-  const edit = (next: RuleDraft) => { if (!editable || task.busy) return; setDraft(next); setDirtyState(true); clearReview(); };
+  const edit = (next: RuleDraft) => { if (!editable || task.busy || !draft) return; setHistory(h => record(h, draft, next, Date.now())); setDraft(next); setDirtyState(true); clearReview(); };
+  const step = (direction: "undo" | "redo") => { if (!editable || task.busy || !draft) return; const result = direction === "undo" ? undo(history, draft) : redo(history, draft); if (!result) return; setHistory(result.history); setDraft(result.draft); setDirtyState(true); clearReview(); };
+  const discard = () => { setDraft(null); setLocked(false); setDirtyState(false); setHistory(emptyHistory()); setConfirmDiscard(false); clearReview(); setLastValidPkg(null); };
+  // Strg+Z / Strg+Umschalt+Z / Strg+Y außerhalb von Textfeldern; dort bleibt das Rückgängig des Feldes (L2-E3).
+  useEffect(() => {
+    if (view !== "bench" || !editable || typeof window.addEventListener !== "function") return undefined;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || (event.target instanceof HTMLElement && event.target.closest("input, textarea, select, [contenteditable='true']"))) return;
+      const key = event.key.toLowerCase();
+      if (key === "z" && !event.shiftKey) { event.preventDefault(); step("undo"); } else if ((key === "z" && event.shiftKey) || key === "y") { event.preventDefault(); step("redo"); }
+    };
+    window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
+  }, [view, editable, history, draft, task.busy]);
   const open = (next: ForgeSection) => { setView("bench"); setSection(next); globalThis.requestAnimationFrame?.(() => { const node = bench.current, stage = node?.closest<HTMLElement>(".main-stage"); if (node && stage && node.getBoundingClientRect().top < stage.getBoundingClientRect().top) stage.scrollTo({ top: stage.scrollTop + node.getBoundingClientRect().top - stage.getBoundingClientRect().top - 12 }); }); };
   const canReplace = () => !dirty || window.confirm(t("Ungespeicherten Regelentwurf verwerfen? Lade ihn vorher als Datei herunter, wenn du ihn behalten möchtest."));
-  const selectPackage = (next: RulePackage) => { if (!canReplace()) return; setSelected(packageKey(next)); setDraft(null); setLocked(false); setDirtyState(false); clearReview(); setLastValidPkg(null); open("package"); };
-  const begin = (next: RuleDraft) => { if (!canReplace()) return; setDraft(next); setLocked(false); setDirtyState(true); clearReview(); setLastValidPkg(null); open("package"); };
+  const selectPackage = (next: RulePackage) => { if (!canReplace()) return; setHistory(emptyHistory()); setSelected(packageKey(next)); setDraft(null); setLocked(false); setDirtyState(false); clearReview(); setLastValidPkg(null); open("package"); };
+  const begin = (next: RuleDraft) => { if (!canReplace()) return; setHistory(emptyHistory()); setDraft(next); setLocked(false); setDirtyState(true); clearReview(); setLastValidPkg(null); open("package"); };
   const refresh = () => { setRevision(v => v + 1); setReview(null); setAcknowledged(false); };
   const runPreview = () => { if (!pkg) return; void task.run(async () => { setReview(null); setAcknowledged(false); setNotice(""); const result = await api<RuleReview>(apiPath(campaign.id, "/rules/preview"), { method: "POST", body: { package: pkg } }); setReview({ ...result, fingerprint }); }); };
   const activateFromMenu = (item: RulePackage) => {
@@ -161,13 +188,13 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
     setSelected(packageKey(item)); setDraft(null); setLocked(false); setDirtyState(false); clearReview(); setLastValidPkg(null); open("publish");
     void task.run(async () => { const result = await api<RuleReview>(apiPath(campaign.id, "/rules/preview"), { method: "POST", body: { package: item } }); setReview({ ...result, fingerprint: stableJson(item) }); });
   };
-  const install = () => { if (!pkg || collision || !testsPass) return; void task.run(async () => { const result = await api<RulePackage>(apiPath(campaign.id, "/rules"), { method: "POST", body: pkg }); setJustInstalled(result); setDraft(packageDraft(result)); setSelected(packageKey(result)); setLocked(true); setDirtyState(false); setRevision(v => v + 1); setNotice(t("Paketversion installiert. Für die Runde wird sie erst durch die ausdrückliche Aktivierung wirksam.")); }); };
+  const install = () => { if (!pkg || collision || !testsPass) return; void task.run(async () => { const result = await api<RulePackage>(apiPath(campaign.id, "/rules"), { method: "POST", body: pkg }); setJustInstalled(result); setHistory(emptyHistory()); setDraft(packageDraft(result)); setSelected(packageKey(result)); setLocked(true); setDirtyState(false); setRevision(v => v + 1); setNotice(t("Paketversion installiert. Für die Runde wird sie erst durch die ausdrückliche Aktivierung wirksam.")); }); };
   const activate = () => { if (!pkg || !readyReview || !exactInstalled || active || (!!readyReview.migration?.entities.length && !acknowledged)) return; void task.run(async () => {
     try { await api(apiPath(campaign.id, "/rules/activate"), { method: "POST", body: { packageId: pkg.id, packageVersion: pkg.version, expectedVersion: readyReview.pinVersion, previewHash: readyReview.previewHash } }); }
     catch (error) { if (error instanceof ApiError && error.status === 409) { refresh(); throw new Error(t("Die Runde hat sich seit der Vorschau verändert. Prüfe die Migration erneut und bestätige die aktuelle Vorschau.")); } throw error; }
     setNotice(t("Für diese Runde ist jetzt {name} {version} aktiv.", { name: pkg.name, version: pkg.version })); setDirtyState(false); refresh(); onActivated?.();
   }); };
-  const importFile = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file || !canReplace()) return; void task.run(async () => { if (file.size > RULE_LIMITS.packageBytes) throw new Error(t("Das Regelpaket darf höchstens 1 MiB groß sein.")); const next = packageDraft(parseRulePackage(await file.text())); setDraft(next); setLocked(false); setDirtyState(true); clearReview(); open("package"); }); };
+  const importFile = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file || !canReplace()) return; void task.run(async () => { if (file.size > RULE_LIMITS.packageBytes) throw new Error(t("Das Regelpaket darf höchstens 1 MiB groß sein.")); const next = packageDraft(parseRulePackage(await file.text())); setHistory(emptyHistory()); setDraft(next); setLocked(false); setDirtyState(true); clearReview(); open("package"); }); };
   const nehmen = (item: RulePackage, zurueck: boolean) => { void task.run(async () => { await api(apiPath(campaign.id, zurueck ? "/rules/unarchive" : "/rules/archive"), { method: "POST", body: { packageId: item.id, packageVersion: item.version } }); setNotice(zurueck ? t("„{name} {version}“ ist wieder in der Bibliothek.", { name: item.name, version: item.version }) : t("„{name} {version}“ ist aus der Bibliothek genommen. Über „Auch genommene zeigen“ holst du es zurück.", { name: item.name, version: item.version })); refresh(); }); };
   const loeschen = (item: RulePackage) => { if (!window.confirm(t("„{name} {version}“ endgültig löschen? Diese Paketfassung verschwindet vollständig und lässt sich nicht zurückholen.", { name: item.name, version: item.version }))) return; void task.run(async () => { await api(apiPath(campaign.id, "/rules"), { method: "DELETE", body: { packageId: item.id, packageVersion: item.version } }); if (selected === packageKey(item)) setSelected(null); if (!editable && current && packageKey(current) === packageKey(item)) { setDraft(null); setLastValidPkg(null); setLocked(false); setDirtyState(false); } if (justInstalled && packageKey(justInstalled) === packageKey(item)) setJustInstalled(null); setNotice(t("„{name} {version}“ ist endgültig gelöscht.", { name: item.name, version: item.version })); refresh(); }); };
   const oeffneMenu = (item: RulePackage, x: number, y: number) => setMenu({ key: Date.now(), id: item.id, version: item.version, name: item.name, x, y });
@@ -183,7 +210,8 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   if (view === "library" || !current) return <div className="rule-forge">
     <header className="rf-header"><div><span className="eyebrow">{t("Regeln für {name}", { name: campaign.name })}</span><h1><Hammer size={26} />{t("Regelwerkstatt")}</h1><p>{t("Gestalte den Charakterbogen, lege Würfe fest und probiere dein Regelwerk aus. Du entscheidest, welche geprüfte Version für die Runde gilt.")}</p></div><div className="rf-toolbar"><Button disabled={task.busy} onClick={() => begin(starterDraft(authorName, packages))}><Plus size={16} />{t("Neues Paket")}</Button><Button disabled={task.busy} onClick={() => upload.current?.click()}><Upload size={16} />{t("Paket öffnen")}</Button>{fileInput}</div></header>
     {notices}
-    {editable && current ? <div className="rf-open-draft" role="status"><div><span className="eyebrow">{t("Offener Entwurf")}</span><strong>{t("{name} {version}", { name: current.name || t("Unbenanntes Regelpaket"), version: current.version })}</strong><small>{dirty ? t("Mit ungespeicherten Änderungen. Lade ihn als Datei herunter oder installiere ihn, um ihn zu behalten.") : t("Keine ungespeicherten Änderungen.")}</small></div><Button variant="primary" onClick={() => open(section)}>{t("Weiter bearbeiten")}<ArrowRight size={15} /></Button></div> : null}
+    {editable && current ? <div className="rf-open-draft" role="status"><div><span className="eyebrow">{t("Offener Entwurf")}</span><strong>{t("{name} {version}", { name: current.name || t("Unbenanntes Regelpaket"), version: current.version })}</strong><small>{saveState === "saved" && savedAt ? t("Automatisch auf diesem Gerät gesichert um {zeit}. Er bleibt auch nach Neustart erhalten.", { zeit: new Date(savedAt).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) }) : dirty ? t("Mit ungespeicherten Änderungen. Lade ihn als Datei herunter oder installiere ihn, um ihn zu behalten.") : t("Keine ungespeicherten Änderungen.")}</small></div>
+      <div className="rf-toolbar">{confirmDiscard ? <><span className="rf-help">{t("Den Entwurf wirklich verwerfen? Das lässt sich nicht rückgängig machen.")}</span><Button variant="danger" onClick={discard}>{t("Ja, verwerfen")}</Button><Button variant="quiet" onClick={() => setConfirmDiscard(false)}>{t("Behalten")}</Button></> : <><Button variant="quiet" onClick={() => setConfirmDiscard(true)}><Trash2 size={15} />{t("Verwerfen")}</Button><Button variant="primary" onClick={() => open(section)}>{t("Weiter bearbeiten")}<ArrowRight size={15} /></Button></>}</div></div> : null}
     <div className="rf-library">
       <section className="rf-catalog" aria-label={t("Installierte Regelpakete")}><div className="rf-section-heading"><h2><BookOpen size={18} />{t("Bibliothek")}</h2><Button variant="quiet" disabled={task.busy} onClick={refresh} aria-label={t("Paketbibliothek aktualisieren")}>↻</Button></div>
         <p className="rf-help">{t("Jede installierte Version bleibt unveränderlich. Ein Klick öffnet sie zum Ansehen; bearbeiten heißt, eine neue Version daraus zu machen. Über das Menü am Eintrag aktivierst du eine Version, nimmst sie aus der Bibliothek oder holst sie zurück.")}</p>
@@ -212,8 +240,8 @@ export function RuleForge({ campaign, authorName, onDirty, onActivated }: { camp
   const lockedOut = !editable || task.busy;
   return <div className="rule-forge" ref={bench}>
     <div className="rf-bench-head"><Button variant="quiet" onClick={() => setView("library")}><ArrowLeft size={15} />{t("Zur Bibliothek")}</Button>
-      <div className="rf-bench-title"><h2>{current.name || t("Unbenanntes Regelpaket")}</h2><span className="rf-help">{!editable ? t("Installierte Version · schreibgeschützt · {version}", { version: current.version }) : dirty ? t("Ungespeicherter Entwurf · {version}", { version: current.version }) : t("Entwurf · {version}", { version: current.version })}</span></div>
-      <div className="rf-toolbar">{!editable && pkg ? <Button disabled={task.busy} onClick={() => { try { begin(forkPackage(pkg, packages)); } catch (error) { task.setError(errorText(error)); } }}>{t("Neue Version erstellen")}</Button> : null}<Button disabled={!pkg || task.busy} onClick={download}><Download size={15} />{t("Paketdatei")}</Button>{!inlinePreview ? <Button variant="quiet" aria-pressed={livePreview} onClick={toggleLivePreview}>{livePreview ? <EyeOff size={15} /> : <Eye size={15} />}{t("Bogen-Vorschau")}</Button> : null}{fileInput}</div></div>
+      <div className="rf-bench-title"><h2>{current.name || t("Unbenanntes Regelpaket")}</h2><span className="rf-help">{!editable ? t("Installierte Version · schreibgeschützt · {version}", { version: current.version }) : saveState === "saved" && savedAt ? t("Entwurf · {version} · auf diesem Gerät gesichert um {zeit}", { version: current.version, zeit: new Date(savedAt).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) }) : saveState === "full" ? t("Entwurf · {version} · nicht gesichert: der Speicher dieses Geräts ist voll. Lade den Entwurf als Datei herunter.", { version: current.version }) : saveState === "unavailable" ? t("Entwurf · {version} · dieses Gerät erlaubt keine Sicherung. Lade den Entwurf als Datei herunter.", { version: current.version }) : dirty ? t("Ungespeicherter Entwurf · {version}", { version: current.version }) : t("Entwurf · {version}", { version: current.version })}</span></div>
+      <div className="rf-toolbar">{editable ? <span className="rf-history" role="group" aria-label={t("Verlauf")}><Button variant="quiet" disabled={!history.past.length || task.busy} title={history.past.length ? t("Rückgängig: Änderung an {bereich} (Strg+Z)", { bereich: areaLabel(history.past.at(-1)!.area) }) : t("Nichts rückgängig zu machen")} onClick={() => step("undo")}><Undo2 size={15} />{t("Rückgängig")}</Button><Button variant="quiet" disabled={!history.future.length || task.busy} title={history.future.length ? t("Wiederholen: Änderung an {bereich} (Strg+Y)", { bereich: areaLabel(history.future.at(-1)!.area) }) : t("Nichts zu wiederholen")} onClick={() => step("redo")}><Redo2 size={15} />{t("Wiederholen")}</Button></span> : null}{!editable && pkg ? <Button disabled={task.busy} onClick={() => { try { begin(forkPackage(pkg, packages)); } catch (error) { task.setError(errorText(error)); } }}>{t("Neue Version erstellen")}</Button> : null}<Button disabled={!pkg || task.busy} onClick={download}><Download size={15} />{t("Paketdatei")}</Button>{!inlinePreview ? <Button variant="quiet" aria-pressed={livePreview} onClick={toggleLivePreview}>{livePreview ? <EyeOff size={15} /> : <Eye size={15} />}{t("Bogen-Vorschau")}</Button> : null}{fileInput}</div></div>
     {notices}
     {!editable ? <p className="rf-readonly-help">{t("Du kannst alle Einträge ansehen. Zum Ändern erstelle oben eine neue Version.")}</p> : null}
     <div className={`rf-bench${drawer ? " has-live" : ""}`}>

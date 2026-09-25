@@ -54,6 +54,10 @@ export type Validation<T> = { valid: true; value: T } | { valid: false; error: s
 let localSequence = 0;
 /** Editor identities never enter exported packages or authoritative campaign state. */
 export const localKey = (): string => `forge-${++localSequence}`;
+/** Ein gesicherter Entwurf trägt schon Kennungen `forge-N`; neue dürfen mit ihnen nicht zusammenfallen. */
+export function reserveLocalKeys(serialized: string): void {
+  for (const match of serialized.matchAll(/"forge-(\d+)"/g)) localSequence = Math.max(localSequence, Number(match[1]));
+}
 export const copyJson = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 export const literalDraft = (type: FormulaType = "number"): FormulaDraft => ({ kind: "literal", type, value: type === "number" ? "0" : type === "boolean" ? "false" : "spuren" });
 
