@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { parseRoadPlan, parseSettlementPlan, BAUWERK_TYPEN, KARTEN_SETTINGS, parseBoundedMapJson } from "@chronicle/szene";
-import { generationDimensions, generationError, type GenerationDefaults, type GenerationSettings } from "./map-generation";
+import { generationDimensions, generationError, siedlungsVorgabe, type GenerationDefaults, type GenerationSettings } from "./map-generation";
 import { t } from "../i18n";
 
 /** A portable recipe, not a second map format. No map geometry, campaign secrets, URLs or
@@ -18,7 +18,7 @@ export interface MapRecipe {
   generator: { id: string; version: string };
 }
 const KEYS = ["art", "stil", "breite", "hoehe", "anzahl", "setting", "siedlung", "standort", "dichte", "profil", "relief", "bewaldung", "anordnung", "moeblierung", "licht"];
-const OPTIONAL = ["anlage", "graben", "symmetrie", "planung", "verkehr"];
+const OPTIONAL = ["anlage", "graben", "symmetrie", "planung", "verkehr", "mauer", "burg"];
 const plain = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value) && [Object.prototype, null].includes(Object.getPrototypeOf(value));
 const bounded = (value: unknown, max: number): value is string => typeof value === "string" && !!value.trim() && value.length <= max && !/[\u0000-\u001f\u007f]/u.test(value);
 const oneOf = (value: unknown, choices: readonly string[]) => typeof value === "string" && choices.includes(value);
@@ -42,6 +42,7 @@ export function parseMapRecipe(source: string, defaults: GenerationDefaults): Ma
   if ("anlage" in s && (!oneOf(s.anlage, ["burg", "schloss"]) || s.art !== "siedlung")) invalid();
   if ("graben" in s && (s.anlage !== "burg" || typeof s.graben !== "boolean")) invalid();
   if ("symmetrie" in s && (s.anlage !== "schloss" || typeof s.symmetrie !== "number" || !Number.isFinite(s.symmetrie) || s.symmetrie < 0 || s.symmetrie > 1)) invalid();
+  for (const key of ["mauer", "burg"]) if (key in s && (s.art !== "siedlung" || "anlage" in s || typeof s[key] !== "boolean")) invalid();
   if ("verkehr" in s) {
     if (s.art !== "siedlung" || "anlage" in s) invalid();
     try { s.verkehr = parseRoadPlan(s.verkehr); } catch { invalid(); }
@@ -56,7 +57,7 @@ export function parseMapRecipe(source: string, defaults: GenerationDefaults): Ma
 }
 export function makeMapRecipe(name: string, seed: string, settings: GenerationSettings, referenceHash: string, defaults: GenerationDefaults, generator: MapRecipe["generator"]): MapRecipe {
   const [breite, hoehe] = generationDimensions(settings, defaults);
-  const count = settings.art === "siedlung" ? (settings.anlage ? defaults.anlagen?.[settings.anlage]?.bauwerke : defaults.siedlungsarten?.[settings.siedlung]?.bauwerke ?? defaults.siedlung.bauwerke)
+  const count = settings.art === "siedlung" ? (settings.anlage ? defaults.anlagen?.[settings.anlage]?.bauwerke : siedlungsVorgabe(defaults, settings.siedlung, settings.setting).bauwerke)
     : settings.art === "region" ? defaults.region?.orte ?? 12 : settings.art === "hoehle" ? defaults.hoehle.kammern : defaults.grundriss.raeume;
   return parseMapRecipe(JSON.stringify({ schemaVersion: 1, kind: "atlas-map-recipe", name, seed, referenceHash, generator,
     settings: { ...settings, breite, hoehe, anzahl: settings.anzahl === "" ? count : settings.anzahl } }), defaults);

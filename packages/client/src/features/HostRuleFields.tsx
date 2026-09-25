@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import type { AnyRulePackage, RuleRuntime, RuleRuntimePreview, RuleRuntimeSection, Scalar } from "@chronicle/rules";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
+import { VitalBar } from "./Vitalanzeige";
 import { RuleFields } from "./RuleFields";
 import { RulePresentationView } from "./RulePresentationView";
 import { displayRuleRuntime } from "./rule-runtime-display";
@@ -91,7 +92,7 @@ function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
   return <>
     {(children.get(null) ?? []).map(section => renderSection(section, 0))}
     {preview?.valid && preview.vitals.length ? <section aria-label={t("Vitalwerte")}>{preview.vitals.map(vital => <div key={vital.id}>
-      <label>{vital.label} · {vital.value} / {vital.maximum} <meter min={0} max={Math.max(1, vital.maximum)} value={Math.max(0, Math.min(vital.maximum, vital.value))} /></label>
+      <VitalBar vital={vital} label={vital.label} />
     </div>)}</section> : null}
     {preview?.valid && runtime.computed.length ? <section className="rule-computed"><h3>{t("Berechnete Werte")}</h3><dl className="rf-value-list">
       {runtime.computed.map(field => <div key={field.id}><dt>{field.label}</dt><dd>{preview.computed[field.id]}</dd></div>)}</dl></section> : null}

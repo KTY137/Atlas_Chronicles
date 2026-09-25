@@ -60,6 +60,8 @@ test("the rules context menu previews its target package and activates it only a
   const before = (await page.request.get(`${base}/rules`)).json();
   expect((await before).pin.id).not.toBe(pkg.id);
   await page.getByRole("button", { name: "Geprüfte Version für diese Runde aktivieren", exact: true }).click();
+  await expect(page.getByText("Diese Paketversion ist bereits aktiv.")).toBeVisible();
+  await page.getByRole("button", { name: "Zur Bibliothek", exact: true }).click();
   await expect(item).toContainText("Aktiv in dieser Runde");
   await page.reload();
   await item.click({ button: "right" });

@@ -23,22 +23,22 @@ function referenceCopy(id: string): { summary: string; proof: string } {
     };
     case "org.atlas-chronicles.reference.5e-compatible": return {
       summary: t("5E-kompatible Struktur mit Stufenbonus, sechs Attributen, Angriffen, Fertigkeiten, Merkmalen und Zauberlisten."),
-      proof: t("Beweist einen vollständigen levelbasierten D20-Bogen mit Collections und bedingtem Magiebereich ohne Spiel-spezifischen UI-Code."),
+      proof: t("Zeigt einen vollständigen Bogen mit Stufen, Listen für Angriffe und Zauber und einem Magiebereich, der nur bei Bedarf erscheint."),
     };
     case "org.atlas-chronicles.srd.5e": return {
-      summary: t("Vollständiger 5E-SRD-Charakterbogen mit Vorteil/Nachteil, Proficiency, Fertigkeiten, Rettungswürfen, Kampf, Death Saves, Zaubern, Slots, Ausrüstung, Merkmalen und Ressourcen."),
-      proof: t("Basiert auf SRD 5.1 unter CC-BY-4.0 und nutzt dieselbe hostautoritative Regelengine wie alle anderen Pakete."),
+      summary: t("Vollständiger 5E-SRD-Charakterbogen mit Vorteil und Nachteil, Übungsbonus, Fertigkeiten, Rettungswürfen, Kampf, Todesrettungswürfen, Zaubern, Zauberplätzen, Ausrüstung, Merkmalen und Ressourcen."),
+      proof: t("Basiert auf dem SRD 5.1 unter der Lizenz CC-BY-4.0 und rechnet mit denselben Regelbausteinen wie jedes andere Paket."),
     };
     case "org.atlas-chronicles.reference.3d20": return {
       summary: t("Drei unabhängige W20 gegen unterschiedliche Attribute, gemeinsamer Talentvorrat und getrennte Talentkategorien."),
-      proof: t("Beweist Mehrwürfel-Proben und einen völlig anderen Charakterbogen ohne eigenen React- oder Serverpfad."),
+      proof: t("Zeigt Proben mit drei Würfen und einen völlig anderen Charakterbogen, gebaut nur aus Regelbausteinen."),
     };
     case "org.atlas-chronicles.chronicles-lite": return {
       summary: t("W50-Proben auf einhundert allgemeine Fertigkeiten unter Handeln, Wissen und Soziales."),
-      proof: t("Beweist einen großen feldbasierten Fertigkeitsbogen mit einhundert einzeln würfelbaren Proben ohne Sondercode."),
+      proof: t("Zeigt einen großen Fertigkeitsbogen mit einhundert einzeln würfelbaren Proben."),
     };
     default: return {
-      summary: t("Universelle Strukturvorlage für die deklarative Regelengine."),
+      summary: t("Eine Vorlage, die sich zu jedem Regelwerk umbauen lässt."),
       proof: t("Kann als bearbeitbarer Ausgangspunkt in der Regelschmiede verwendet werden."),
     };
   }
@@ -78,7 +78,7 @@ export function ChronicleHeroesTemplate({ disabled, onCreate }: { disabled: bool
       </fieldset> : null}
     </section>
     <section className="rf-reference-templates" aria-label={t("Universelle Referenzsysteme")}>
-      <div className="rf-section-heading"><div><h2>{t("Universelle Strukturvorlagen")}</h2><p className="rf-help">{t("Atlas-Referenzen und offen lizenzierte Regelpakete zeigen, dass dieselbe Regelengine sehr unterschiedliche Mechanikfamilien und Kategorien trägt.")}</p></div></div>
+      <div className="rf-section-heading"><div><h2>{t("Weitere Vorlagen")}</h2><p className="rf-help">{t("Vorlagen für ganz unterschiedliche Spielsysteme. Jede lässt sich als eigener Entwurf öffnen und frei umbauen.")}</p></div></div>
       <div className="rf-template-grid">{references.map(pkg => { const copy = referenceCopy(pkg.id); return <article className="rf-card" key={pkg.id}>
         <h3>{pkg.name}</h3><p>{copy.summary}</p><p className="rf-help">{copy.proof}</p>
         <dl className="rf-value-list"><div><dt>{t("Bogenfelder")}</dt><dd>{Object.keys(pkg.fields).length}</dd></div><div><dt>{t("Aktionen")}</dt><dd>{pkg.actions.length}</dd></div><div><dt>{t("Kategorien")}</dt><dd>{pkg.layout.sections.length}</dd></div></dl>

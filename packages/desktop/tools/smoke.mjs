@@ -342,12 +342,12 @@ try{
   await game.screenshot({path:join(run,"forge-overview.png"),fullPage:true});
   record("shared packaged client shows the Schmiede overview and all seven discoverable workshops");
   await workshops.getByRole("button",{name:"Regeln",exact:true}).click();
-  // Seit dem 15.09. stehen die Startvorlagen offen, solange eine installierte Version gezeigt wird;
-  // ein blinder Klick auf die Überschrift klappte sie wieder zu.
-  if(!await game.locator(".rf-starter").evaluate(element=>element.open))await game.locator(".rf-starter > summary").click();
+  // Seit dem 23.09. öffnet die Regelwerkstatt mit der Bibliothek: die Vorlagen stehen offen, und
+  // Installieren, Prüfen und Aktivieren liegen in der Werkbank unter „Übernehmen“.
   const template=game.getByRole("region",{name:"ChronicleHeroes Vorlage"});
   await template.getByRole("button",{name:"Vorlage anpassen",exact:true}).click();
   await template.getByRole("button",{name:/ChronicleHeroes als Regelentwurf/}).click();
+  await game.getByRole("tab",{name:"Übernehmen",exact:true}).click();
   for(const [suffix,label] of [["/rules/preview",/^Aktivierung pr/],["/rules",/^Version installieren$/],["/rules/activate",/^Gepr.*Version.*aktivieren$/]]){
     const response=game.waitForResponse(response=>response.url()===`${origin}/api/campaigns/${campaignId}${suffix}`&&response.request().method()==="POST");
     await game.getByRole("button",{name:label}).click();assert.equal((await response).status(),200);

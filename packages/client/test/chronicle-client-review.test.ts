@@ -79,6 +79,13 @@ function harness(file: string, component: string, initial: Record<string, any>, 
   return { render, nodes, requests, text, replace: (next: Record<string, any>) => { props = { ...props, ...next }; render(); }, settle: async () => { await Promise.all(jobs); render(); } };
 }
 
+/** Die Testfiguren gehören seit 2026-09-23 der Werkstatt; hier hält der Test sie wie die Werkstatt. */
+function controlledFixtures(pkg: unknown): Record<string, any> {
+  const props: Record<string, any> = { pkg, fixtures: [{ id: "fixture-sera", name: "Sera", values: {}, inputs: {}, passages: [] }, { id: "fixture-brannt", name: "Brannt", values: {}, inputs: {}, passages: [] }] };
+  props.onFixtures = (update: any) => { props.fixtures = typeof update === "function" ? update(props.fixtures) : update; };
+  return props;
+}
+
 describe("independent ChronicleHeroes client review", () => {
   it("keeps an incomplete visual expression editable without throwing or losing it", () => {
     const updates: string[] = [], draft = model.packageDraft(rules.CHRONICLE_HEROES_PACKAGE);
@@ -120,7 +127,7 @@ describe("independent ChronicleHeroes client review", () => {
     ["replaced", rules.CHRONICLE_DEFAULT_SKILLS.map((skill, i) => ({ ...skill, id: `custom_${i}` }))],
   ] as const)("does not offer invalid or falsely described 360-point examples for a %s catalogue", (_name, skills) => {
     const pkg = rules.createChronicleHeroesPackage({ skills });
-    const h = harness("RuleForgePreview.tsx", "RuleForgePreview", { pkg });
+    const h = harness("RuleForgePreview.tsx", "RuleForgePreview", controlledFixtures(pkg));
     const load = h.nodes(node => node.type === "Button" && h.text(node).includes("Beispielfiguren laden"))[0];
     // With a changed catalogue, adapting the examples or withholding this shortcut
     // with an explanation is valid. Silently importing incompatible values is not.
@@ -142,7 +149,7 @@ describe("independent ChronicleHeroes client review", () => {
 
   it.each(["original", "renamed"])("retains both usable 360-point examples for the %s compatible catalogue", name => {
     const pkg = name === "original" ? rules.CHRONICLE_HEROES_PACKAGE : rules.createChronicleHeroesPackage({ skills: rules.CHRONICLE_DEFAULT_SKILLS.map(skill => ({ ...skill, label: `Eigene Bezeichnung ${skill.label}` })) });
-    const h = harness("RuleForgePreview.tsx", "RuleForgePreview", { pkg });
+    const h = harness("RuleForgePreview.tsx", "RuleForgePreview", controlledFixtures(pkg));
     const load = h.nodes(node => node.type === "Button" && h.text(node).includes("Beispielfiguren laden"))[0]!;
     expect(load).toBeDefined(); expect(load.props.disabled).not.toBe(true); load.props.onClick();
     const fixtures = h.nodes(node => node.type?.name === "FixturePanel");

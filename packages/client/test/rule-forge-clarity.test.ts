@@ -7,6 +7,11 @@ import * as rules from "@chronicle/rules";
 import * as model from "../src/features/rule-forge-model";
 import * as references from "../src/features/rule-ability-references";
 import * as abilityModel from "../src/features/rule-ability-model";
+import * as sheetModel from "../src/features/rule-sheet-model";
+import * as nav from "../src/features/RuleForgeNav";
+import * as path from "../src/features/RuleForgePath";
+import * as draftHistory from "../src/features/rule-draft-history";
+import * as draftStore from "../src/features/rule-draft-store";
 import { I18nStub } from "../src/i18n.ts";
 import { describe, expect, it } from "vitest";
 
@@ -35,6 +40,12 @@ function harness(file: string, initial: Record<string, any>) {
       if (name === "./rule-ability-references") return references;
       if (name === "./rule-ability-model") return abilityModel;
       if (name === "./FormulaField") return { FormulaField: "FormulaField", FormulaExampleContext: { Provider: "Provider" } };
+      if (name === "./rule-sheet-model") return sheetModel;
+      if (name === "./RuleForgeNav") return nav;
+      if (name === "./RuleForgePath") return path;
+      if (name === "./rule-draft-history") return draftHistory;
+      if (name === "./rule-draft-store") return draftStore;
+      if (name === "./RuleForgePreview") return { RuleForgePreview: "RuleForgePreview", LiveSheet: "LiveSheet", useExampleFigure: () => null, useForgeFixtures: () => react.useState([{ id: "fixture-sera", name: "Sera", values: {}, inputs: {}, passages: [] }, { id: "fixture-brannt", name: "Brannt", values: {}, inputs: {}, passages: [] }]) };
       if (name === "../hooks") return { useResource: () => ({ data: props.rules, loading: false, error: "" }), useTask: () => ({ busy: false, error: "", setError() {}, run(fn: () => Promise<unknown>) { const job = fn(); jobs.push(job); return job; } }) };
       if (name === "../api") return { apiPath: (_: string, suffix: string) => suffix, errorText: String, api: async (path: string, request: any) => { requests.push({ path, request }); return props.transport?.(path, request); } };
       return new Proxy({}, { get: (_, key) => String(key) });
@@ -68,11 +79,16 @@ function harness(file: string, initial: Record<string, any>) {
 
 const pkg = rules.DEMO_RULE_PACKAGE;
 const forgeProps = { campaign: { id: "campaign", name: "Runde", role: "leitung" }, authorName: "Kaya", onDirty() {}, rules: { packages: [pkg], pin: { id: pkg.id, version: pkg.version }, version: 1 } };
+type Harness = ReturnType<typeof harness>;
+/** Die Regelwerkstatt öffnet mit der Bibliothek; ein Eintrag öffnet die Werkbank. */
+const openCatalogItem = (h: Harness, name: string) => h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).startsWith(name))[0]!.props.onClick();
+const section = (h: Harness, id: nav.ForgeSection) => h.nodes(n => n.type?.name === "RuleForgeNav")[0]!.props.onChange(id);
 
 describe("installed rule packages remain browsable", () => {
-  it.each([["Attribute", "FieldList"], ["Fähigkeiten", "RuleAbilityEditor"], ["Zustände", "RuleConditionEditor"]])("%s navigation remains enabled while editing stays locked", (label, component) => {
+  it.each([["fields", "FieldList"], ["abilities", "RuleAbilityEditor"], ["conditions", "RuleConditionEditor"], ["vitals", "RuleVitalEditor"], ["computed", "RuleComputedEditor"], ["sheet", "RuleSheetEditor"]] as const)("%s navigation remains enabled while editing stays locked", (id, component) => {
     const h = harness("RuleForge", forgeProps);
-    h.button(label).props.onClick();
+    openCatalogItem(h, pkg.name);
+    section(h, id);
     const editor = h.nodes(n => n.type === component)[0]!;
     expect(editor.inheritedDisabled).toBe(false);
     expect(editor.props.disabled).toBe(true);
@@ -105,9 +121,11 @@ describe("installed rule packages remain browsable", () => {
 describe("package examples during invalid edits", () => {
   it("keeps the last valid preview for orientation without saving its tests into an invalid draft", () => {
     const h = harness("RuleForge", forgeProps);
+    openCatalogItem(h, pkg.name);
     h.button("Neue Version erstellen").props.onClick();
     const editor = h.nodes(n => n.type?.name === "PackageEditor")[0]!;
     editor.props.onChange({ ...editor.props.draft, name: "" });
+    section(h, "try");
     const preview = h.nodes(n => n.type === "RuleForgePreview")[0]!;
     expect(preview.props.pkg).not.toBeNull();
     expect(preview.props.onSaveTest).toBeUndefined();
@@ -135,22 +153,27 @@ describe("attribute search recovery", () => {
 });
 
 describe("deleting a library version while another draft is open", () => {
-  it.each(["Neues Paket", "Neue Version erstellen"])("preserves the edited %s draft when deleting its last library selection", async start => {
+  it.each(["Leeres Paket beginnen", "Neue Version erstellen"])("preserves the edited %s draft when deleting its last library selection", async start => {
     const archived = { ...pkg, id: "de.library.archived", name: "Archived rules" };
     const library = { ...forgeProps.rules, packages: [pkg, archived], bibliothek: [{ id: archived.id, version: archived.version, genommen: false, loeschbar: true, hindernisse: [] }] };
     const dirty: boolean[] = [];
     const h = harness("RuleForge", { ...forgeProps, rules: library, onDirty(value: boolean) { dirty.push(value); }, transport() { h.replace({ rules: forgeProps.rules }); } });
-    h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).startsWith(archived.name))[0]!.props.onClick();
+    openCatalogItem(h, archived.name);
+    if (start === "Leeres Paket beginnen") h.button("Zur Bibliothek").props.onClick();
     h.button(start).props.onClick();
     const editor = h.nodes(n => n.type?.name === "PackageEditor")[0]!;
     const unfinished = { ...editor.props.draft, name: "", license: "My unfinished license" };
     editor.props.onChange(unfinished);
+    // Zurück in die Bibliothek verwirft nichts: der Entwurf bleibt als „Offener Entwurf“ stehen.
+    h.button("Zur Bibliothek").props.onClick();
+    expect(h.nodes(n => n.props.className === "rf-open-draft")).toHaveLength(1);
     h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).startsWith(archived.name))[0]!.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 10, clientY: 10 });
     const deletion = h.nodes(n => n.type === "MapContextMenu")[0]!.props.actions.find((action: any) => action.id === "loeschen");
     expect(deletion.disabled).toBe(false);
     deletion.onSelect();
     await h.settle();
     expect(h.requests).toEqual([{ path: "/rules", request: { method: "DELETE", body: { packageId: archived.id, packageVersion: archived.version } } }]);
+    h.button("Weiter bearbeiten").props.onClick();
     const retained = h.nodes(n => n.type?.name === "PackageEditor")[0]!;
     expect(retained.props.draft).toEqual(unfinished);
     expect(retained.inheritedDisabled).toBe(false);
@@ -169,16 +192,22 @@ describe("deleting a library version while another draft is open", () => {
       }
       h.replace({ rules: forgeProps.rules });
     } });
-    h.button("Neues Paket").props.onClick();
+    h.button("Leeres Paket beginnen").props.onClick();
     const newId = h.nodes(n => n.type?.name === "PackageEditor")[0]!.props.draft.id;
+    section(h, "publish");
     h.button("Version installieren").props.onClick();
     await h.settle();
+    section(h, "package");
     expect(h.nodes(n => n.type?.name === "PackageEditor")[0]!.inheritedDisabled).toBe(true);
+    h.button("Zur Bibliothek").props.onClick();
     h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).includes(newId))[0]!.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 10, clientY: 10 });
     h.nodes(n => n.type === "MapContextMenu")[0]!.props.actions.find((action: any) => action.id === "loeschen").onSelect();
     await h.settle();
-    expect(h.nodes(n => n.type?.name === "PackageEditor")[0]!.props.draft.id).toBe(pkg.id);
+    // Der schreibgeschützte Entwurf der gelöschten Fassung ist weg; die Bibliothek zeigt keinen offenen Entwurf mehr.
+    expect(h.nodes(n => n.props.className === "rf-open-draft")).toHaveLength(0);
     expect(h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).includes(newId))).toHaveLength(0);
+    openCatalogItem(h, pkg.name);
+    expect(h.nodes(n => n.type?.name === "PackageEditor")[0]!.props.draft.id).toBe(pkg.id);
     expect(dirty.at(-1)).toBe(false);
   });
 });

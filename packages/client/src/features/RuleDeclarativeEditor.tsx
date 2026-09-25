@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useId, useMemo } from "react";
-import type { ComputedField, RuleAssertion, RuleAttribution, RuleOutcome, OutcomeComparison, RuleVital } from "@chronicle/rules";
-import { Button, Notice } from "@chronicle/ui";
+import { useId, useMemo, useState } from "react";
+import { Trash2 } from "lucide-react";
+import type { ComputedField, RuleAssertion, RuleAttribution, RuleOutcome, OutcomeComparison } from "@chronicle/rules";
+import { Button } from "@chronicle/ui";
 import { FormulaField } from "./FormulaField";
-import { RulePresentationEditor } from "./RulePresentationEditor";
+import { RuleEntryList } from "./RuleEntryList";
+import { isOnSheet, placeOnSheet, retargetOnSheet } from "./rule-sheet-model";
 import { t } from "../i18n";
 import { sourcesFromDraft } from "./formula-sugar";
 import { moveItem, uniqueId, type RuleDraft, type DraftAction, type DraftField } from "./rule-forge-model";
@@ -28,34 +30,62 @@ function AssertionEditor({ values, draft, action, onChange, limit, title }: { va
     </fieldset>)}<Button disabled={values.length >= limit} onClick={() => onChange([...values, { id: uniqueId("bedingung", values.map(v => v.id)), message: "Diese Werte sind noch nicht gültig.", expression: "true" }])}>{t("Bedingung hinzufügen")}</Button>
   </section>;
 }
-function VitalEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: RuleDraft): void }) {
-  const vitals = draft.vitals ?? [];
-  const zahlenattribute = draft.fields.filter(field => field.type === "integer" || field.type === "number");
-  const update = (index: number, patch: Partial<RuleVital>) => onChange({ ...draft, vitals: vitals.map((value, i) => i === index ? { ...value, ...patch } : value) });
-  const frei = zahlenattribute.filter(field => !vitals.some(vital => vital.id === field.id));
-  return <section><h3>{t("Balken der Figur")}</h3><p className="rf-help">{t("Leben, Mana, Ausdauer: eine Zahl auf dem Bogen, ein Höchststand und die Frage, was Erschöpfung bedeutet. Nur Zahlenattribute können Balken tragen.")}</p>
-    {!zahlenattribute.length ? <Notice>{t("Dieses Regelwerk hat noch kein Zahlenattribut. Lege zuerst eines an — ein Balken braucht eine Zahl, die steigt und fällt.")}</Notice> : null}
-    {vitals.map((vital, i) => <fieldset className="rf-card" key={i}><legend>{vital.label || t("Balken {n}", { n: i + 1 })}</legend><div className="rf-form-grid"><label>{t("Attribut auf dem Bogen")}<select value={vital.id} onChange={e => update(i, { id: e.target.value })}>{zahlenattribute.map(field => <option key={field.id} value={field.id}>{field.label || field.id}</option>)}</select></label><label>{t("Beschriftung")}<input value={vital.label} maxLength={120} onChange={e => update(i, { label: e.target.value })} /></label></div>
-      <ExpressionInput label={t("Höchststand")} help={t("Der höchste Stand, den der Balken zeigt, zum Beispiel @konstitution * 5.")} value={vital.max} onChange={max => update(i, { max })} draft={draft} />
-      <label>{t("Wenn der Wert 0 erreicht")}<select value={vital.depletion} onChange={e => update(i, { depletion: e.target.value as RuleVital["depletion"] })}><option value="none">{t("Nur die Leiste ist leer")}</option><option value="defeat">{t("Die Niederlage steht zur Bestätigung an")}</option></select></label>
-      <Button onClick={() => onChange({ ...draft, vitals: vitals.filter((_, index) => index !== i) })}>{t("Balken entfernen")}</Button>
-    </fieldset>)}
-    <Button disabled={vitals.length >= 8 || !frei.length} onClick={() => onChange({ ...draft, vitals: [...vitals, { id: frei[0]!.id, label: frei[0]!.label || frei[0]!.id, max: String(frei[0]!.maximum || "100"), depletion: "none" }] })}>{t("Balken hinzufügen")}</Button>
-    {zahlenattribute.length > 0 && !frei.length && vitals.length < 8 ? <p className="rf-help">{t("Jedes Zahlenattribut trägt höchstens einen Balken; für ein weiteres braucht es ein weiteres Attribut.")}</p> : null}
-  </section>;
+/** Pakete im Format 1 kennen keine abgeleiteten Werte, Regeln und Balken; das Einschalten ist ein ausdrücklicher Schritt. */
+export function SchemaUpgrade({ draft, disabled = false, onChange }: { draft: RuleDraft; disabled?: boolean; onChange(draft: RuleDraft): void }) {
+  return <section className="rf-card"><h3>{t("Abgeleitete Werte, Regeln und Balken")}</h3><p>{t("Damit wechselt dieses Paket auf das erweiterte Format. Lebenspunkte und andere Balken ändern Spielende dann über den Bogen, nicht über den alten Schnellknopf. Gespeicherte Würfelbelege behalten ihre bisherigen Regeln.")}</p><Button disabled={disabled} onClick={() => onChange({ ...draft, schemaVersion: 2 })}>{t("Abgeleitete Werte, Regeln und Balken einschalten")}</Button></section>;
 }
-export function RuleDeclarativeEditor({ draft, onChange }: { draft: RuleDraft; onChange(draft: RuleDraft): void }) {
-  if (draft.schemaVersion === 1) return <section><h3>{t("Abgeleitete Werte, Regeln und Balken")}</h3><p>{t("Damit wechselt dieses Paket auf das erweiterte Format. Lebenspunkte und andere Balken ändern Spielende dann über den Bogen, nicht über den alten Schnellknopf. Gespeicherte Würfelbelege behalten ihre bisherigen Regeln.")}</p><Button onClick={() => onChange({ ...draft, schemaVersion: 2 })}>{t("Abgeleitete Werte, Regeln und Balken einschalten")}</Button></section>;
-  const computed = draft.computed ?? [];
-  const changeComputed = (index: number, patch: Partial<ComputedField>) => onChange({ ...draft, computed: computed.map((value, i) => i === index ? { ...value, ...patch } : value) });
-  return <><h3>{t("Abgeleitete Werte")}</h3><p className="rf-help">{t("Werte, die sich aus Attributen ergeben, zum Beispiel ein Bonus aus Geschick. Sie werden bei der Anzeige berechnet und nicht gespeichert.")}</p>
-    {computed.map((value, i) => <fieldset className="rf-card" key={i}><legend>{value.label || t("Wert {n}", { n: i + 1 })}</legend><div className="rf-form-grid"><label>{t("Kennung")}<input value={value.id} onChange={e => changeComputed(i, { id: e.target.value })} /></label><label>{t("Beschriftung")}<input value={value.label} maxLength={120} onChange={e => changeComputed(i, { label: e.target.value })} /></label></div><ExpressionInput label={t("Berechnung")} help={t("Ergibt sich aus Attributen, ohne Wurf.")} value={value.expression} onChange={expression => changeComputed(i, { expression })} draft={draft} /><Button onClick={() => onChange({ ...draft, computed: computed.filter((_, index) => i !== index) })}>{t("Berechneten Wert entfernen")}</Button></fieldset>)}
-    <Button disabled={computed.length >= 64} onClick={() => onChange({ ...draft, computed: [...computed, { id: uniqueId("berechnet", [...draft.fields.map(f => f.id), ...computed.map(v => v.id)]), label: "Neuer berechneter Wert", expression: "0" }] })}>{t("Berechneten Wert hinzufügen")}</Button>
-    <AssertionEditor title={t("Regeln für einen gültigen Bogen")} values={draft.constraints ?? []} limit={64} draft={draft} onChange={constraints => onChange({ ...draft, constraints })} />
-    <VitalEditor draft={draft} onChange={onChange} />
-    <hr /><RulePresentationEditor draft={draft} onChange={next => onChange({ ...next, presentationAuto: false })} />
-  </>;
+const OnSheet = ({ draft, id, onChange }: { draft: RuleDraft; id: string; onChange(draft: RuleDraft): void }) =>
+  <label className="rf-check"><input type="checkbox" checked={isOnSheet(draft, "computed", id)} onChange={event => onChange(placeOnSheet(draft, "computed", id, event.target.checked))} />{t("Auf dem Bogen zeigen")}</label>;
+
+/** Abgeleitete Werte: Liste links, ein Wert rechts. Neue Werte liegen sofort auf dem Bogen. */
+export function RuleComputedEditor({ draft, disabled = false, onChange }: { draft: RuleDraft; disabled?: boolean; onChange(draft: RuleDraft): void }) {
+  const [selected, setSelected] = useState(0);
+  if (draft.schemaVersion === 1) return <SchemaUpgrade draft={draft} disabled={disabled} onChange={onChange} />;
+  const computed = draft.computed ?? [], index = Math.min(selected, computed.length - 1), value = computed[index];
+  const change = (patch: Partial<ComputedField>) => {
+    if (!value) return;
+    const next = { ...draft, computed: computed.map((row, i) => i === index ? { ...row, ...patch } : row) };
+    onChange(patch.id !== undefined ? retargetOnSheet(next, "computed", value.id, patch.id) : next);
+  };
+  const add = () => {
+    const id = uniqueId("berechnet", [...draft.fields.map(f => f.id), ...computed.map(v => v.id)]);
+    onChange(placeOnSheet({ ...draft, computed: [...computed, { id, label: "Neuer berechneter Wert", expression: "0" }] }, "computed", id, true)); setSelected(computed.length);
+  };
+  const remove = () => { if (!value) return; const off = placeOnSheet(draft, "computed", value.id, false); onChange({ ...off, computed: computed.filter((_, i) => i !== index) }); setSelected(Math.max(0, index - 1)); };
+  return <div className="rf-split">
+    <RuleEntryList title={t("Abgeleitete Werte")} rows={computed.map((row, i) => ({ key: String(i), name: row.label, detail: row.id }))} current={value ? String(index) : undefined} onSelect={key => setSelected(Number(key))}
+      onAdd={computed.length < 64 ? add : undefined} addLabel={t("Wert")} searchLabel={t("Abgeleiteten Wert suchen")} disabled={disabled}
+      help={t("Werte, die sich aus Attributen ergeben, zum Beispiel ein Bonus aus Geschick. Sie werden bei der Anzeige berechnet und nicht gespeichert.")}
+      empty={t("Noch kein abgeleiteter Wert. Leg oben einen an, zum Beispiel einen Bonus.")} />
+    {value ? <section className="rf-detail" aria-label={t("Abgeleiteter Wert")}><fieldset className="rf-editor-fields" disabled={disabled}>
+      <div className="rf-section-heading"><h4>{value.label || t("Ohne Namen")}</h4><Button variant="quiet" onClick={remove}><Trash2 size={15} />{t("Berechneten Wert entfernen")}</Button></div>
+      <div className="rf-form-grid"><label>{t("Beschriftung")}<input value={value.label} maxLength={120} onChange={e => change({ label: e.target.value })} /></label><label>{t("Kennung")}<input value={value.id} spellCheck={false} onChange={e => change({ id: e.target.value })} /><small>{t("Nur zur Zuordnung. Formeln rechnen immer mit Attributen, nicht mit anderen abgeleiteten Werten.")}</small></label></div>
+      <ExpressionInput label={t("Berechnung")} help={t("Ergibt sich aus Attributen, ohne Wurf.")} value={value.expression} onChange={expression => change({ expression })} draft={draft} />
+      <OnSheet draft={draft} id={value.id} onChange={onChange} />
+    </fieldset></section> : null}
+  </div>;
 }
+
+/** Bogenregeln: Bedingungen, die jeder gespeicherte Bogen erfüllen muss. */
+export function RuleConstraintEditor({ draft, disabled = false, onChange }: { draft: RuleDraft; disabled?: boolean; onChange(draft: RuleDraft): void }) {
+  const [selected, setSelected] = useState(0);
+  if (draft.schemaVersion === 1) return <SchemaUpgrade draft={draft} disabled={disabled} onChange={onChange} />;
+  const rules = draft.constraints ?? [], index = Math.min(selected, rules.length - 1), rule = rules[index];
+  const change = (patch: Partial<RuleAssertion>) => onChange({ ...draft, constraints: rules.map((row, i) => i === index ? { ...row, ...patch } : row) });
+  return <div className="rf-split">
+    <RuleEntryList title={t("Bogenregeln")} rows={rules.map((row, i) => ({ key: String(i), name: row.message, detail: row.id }))} current={rule ? String(index) : undefined} onSelect={key => setSelected(Number(key))}
+      onAdd={rules.length < 64 ? () => { onChange({ ...draft, constraints: [...rules, { id: uniqueId("bedingung", rules.map(v => v.id)), message: "Diese Werte sind noch nicht gültig.", expression: "true" }] }); setSelected(rules.length); } : undefined}
+      addLabel={t("Regel")} searchLabel={t("Bogenregel suchen")} disabled={disabled}
+      help={t("Was jeder Bogen erfüllen muss, zum Beispiel: Die verteilten Punkte übersteigen das Budget nicht. Ist eine Regel verletzt, erscheint ihre Meldung beim Speichern des Bogens.")}
+      empty={t("Keine Bogenregeln. Jeder Bogen mit gültigen Attributwerten lässt sich speichern.")} />
+    {rule ? <section className="rf-detail" aria-label={t("Bogenregel")}><fieldset className="rf-editor-fields" disabled={disabled}>
+      <div className="rf-section-heading"><h4>{rule.id || t("Bedingung {n}", { n: index + 1 })}</h4><Button variant="quiet" onClick={() => { onChange({ ...draft, constraints: rules.filter((_, i) => i !== index) }); setSelected(Math.max(0, index - 1)); }}><Trash2 size={15} />{t("Bedingung entfernen")}</Button></div>
+      <div className="rf-form-grid"><label>{t("Meldung")}<input value={rule.message} maxLength={1024} onChange={e => change({ message: e.target.value })} /><small>{t("Das liest, wer den Bogen speichern will, wenn die Regel verletzt ist.")}</small></label><label>{t("Kennung")}<input value={rule.id} spellCheck={false} onChange={e => change({ id: e.target.value })} /></label></div>
+      <ExpressionInput label={t("Bedingung")} help={t("Muss wahr sein, zum Beispiel @punkte <= 30.")} value={rule.expression} onChange={expression => change({ expression })} draft={draft} />
+    </fieldset></section> : null}
+  </div>;
+}
+
 export function RuleActionExtensions({ draft, action, onChange }: { draft: RuleDraft; action: DraftAction; onChange(action: DraftAction): void }) {
   const controlId = useId();
   if (draft.schemaVersion !== 2) return null;

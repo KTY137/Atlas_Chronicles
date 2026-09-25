@@ -233,5 +233,10 @@
   "{name} betreten": "Enter {name}",
   "{name} wird aus der Kartenbibliothek entfernt.": "{name} will be removed from the map library.",
   "„{name}“ ist für die ausgewählte Figur freigegeben.": "“{name}” is revealed for the selected character.",
-  "{orte} Orte · {zellen} Kartenzellen": "{orte} places · {zellen} map cells"
+  "{orte} Orte · {zellen} Kartenzellen": "{orte} places · {zellen} map cells",
+  "Bauernhof": "Farmstead",
+  "Kaserne": "Barracks",
+  "Mühle": "Mill",
+  "Rathaus": "Town hall",
+  "Tempelbezirk": "Temple district"
 }

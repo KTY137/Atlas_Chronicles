@@ -36,7 +36,10 @@ describe("settlement location crosses preview and persistence boundaries", () =>
     const mapId = created.json().ack.subjectId, saved = await tactical.getMap(gm, campaign, mapId);
     expect(saved.document).toEqual(preview.json().document);
     expect(saved.cartography).toEqual(preview.json().cartography);
-    expect(saved.cartography?.regions.every(region => region.provenance?.optionen.standort === standort)).toBe(true);
+    // Fantasy-Städte (v11) haben tausende Flächen; den vollen Optionsvektor trägt die Grundfläche,
+    // die übrigen tragen einen Vermerk desselben Erzeugers oder, als Gelände, keinen (1-MiB-Grenze).
+    expect(saved.cartography?.regions[0]?.provenance?.optionen.standort).toBe(standort);
+    expect(saved.cartography?.regions.every(region => region.provenance === null || region.provenance.generator === "chronicle-siedlung")).toBe(true);
     expect((await tactical.getMap(gm, campaign, mapId)).document).toEqual(saved.document);
     expect((await post("", request)).json().ack.subjectId).toBe(mapId);
     expect(await tactical.listMaps(gm, campaign)).toHaveLength(before.length + 1);

@@ -76,6 +76,10 @@ describe("closed v2 vocabulary and deterministic limits", () => {
     expect(() => changed({ vitals: [{ ...vital, depletion: null }] })).toThrow(/depletion/);
     expect(() => changed({ vitals: [{ ...vital, depletion: undefined }] })).toThrow(/JSON value/);
     expect(() => changed({ vitals: [{ ...vital, ruin: true }] })).toThrow(/unsupported property ruin/);
+    // Farbe: ein Palettenname oder genau ein kleingeschriebener Farbwert #rrggbb — nichts, was ein
+    // Look anders lesen könnte (Kurzform, Großbuchstaben, CSS-Namen, Ausdrücke).
+    for (const color of ["#FF0000", "#f00", "#ff000080", "", "Rot", "crimson", "red; background: url(x)", 1, null]) expect(() => changed({ vitals: [{ ...vital, color }] })).toThrow(/color/);
+    for (const color of [...rules.VITAL_COLORS, "#c0392b"]) expect((changed({ vitals: [{ ...vital, color }] }) as rules.RulePackageV2).vitals![0]!.color).toBe(color);
     expect(() => changed({ vitals: [{ ...vital, label: "" }] })).toThrow(/vital.label/);
     expect(() => changed({ vitals: Array.from({ length: 9 }, () => vital) })).toThrow(/max 8/);
   });

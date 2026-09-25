@@ -23,6 +23,39 @@ Entwurf: `docs/superpowers/specs/2026-09-23-kampftisch-karten-design.md`; Plan:
 `design/iterations/kampftisch-20260923/mockup.html`; Belege: `docs/FEATURELISTE.md`, Abschnitt
 „Der Kampftisch".
 
+# Kartenstudio Teil 1: Städte aus Vierteln — 2026-09-23
+
+Fantasy-Siedlungen (v11) wachsen jetzt aus Vierteln: Markt mit Rathaus, Dom, Burg, Stadtmauer mit
+Rundtürmen und Toren, Häuserzeilen an Gassen, lockere Vorstädte, Feldstreifen und benannte
+Viertel. Der Zonenplan kennt Burg und Tempelbezirk und übernimmt die Viertel einer Vorschau auf
+Knopfdruck; zwei Schalter steuern Mauer und Burg. Neue Gebäude mit Innenräumen: Burg, Rathaus,
+Mühle, Bauernhof, Kaserne. Kartenoptik cartography-12 (Steintürme, breite Mauer, Marktstände,
+Dachdetails auch in dichten Städten). Gegenwart und Sci-Fi unverändert (Goldtest). Nachweise:
+`design/iterations/stadt-viertel-20260923.md`. Zweig `feature/stadt-viertel`, noch nicht in `main`.
+
+# Regelwerkstatt übersichtlich, Balken als eigene Sektion — 2026-09-23
+
+Kaya: „der regelwerk editor ist noch maximal unübersichtig“ und „der live bar generator soll eine
+eigene section bekommen“. Umgebaut in zwei Ebenen: **Bibliothek** (offener Entwurf, installierte
+Versionen, Vorlagen) und **Werkbank** (eine senkrechte Navigation in vier Gruppen statt Weg,
+Kacheln, Banner und zehn Reitern; Liste und Detail in jeder Sektion; feste Statusleiste mit genau
+einem nächsten Schritt). „Abgeleitet“ ist aufgeteilt in Abgeleitete Werte, **Balken**, Listen und
+Bogenregeln. Balken haben eine Schnellanlage (Leben, Mana, Ausdauer mit einem Klick) und einen
+Live-Balken der ersten Testfigur mit Schieber. Der Bogen hat nur noch einen Editor (den Baum),
+in Alltagsworten, mit Vorschau.
+
+Drei Fehler behoben: Der alte Reiter „Bogen“ wirkte bei jedem Paket mit Baum nicht mehr; neue
+Balken und abgeleitete Werte erschienen nie auf dem Bogen, entfernte Attribute zerbrachen das
+Paket; bei neuen Paketen zeigte der Baum-Editor einen veralteten Baum. Regeln dafür in
+`rule-sheet-model.ts`. Paketformat, Engine und Server unverändert; ein unberührtes Paket bleibt
+byteidentisch.
+
+Client-Suite 676/676, elf Browserabläufe grün, Typprüfung und Gates grün. Zwei Browsertests waren
+schon vorher rot und sind es weiter (`universal-rules-v3`: `getByDisplayValue`; `htbah.spec.ts`:
+Vorlage gibt es nicht mehr). Kein Desktop-Build, kein Installer. Spec
+`docs/superpowers/specs/2026-09-23-regelwerkstatt-uebersicht-design.md`, Nachweise
+`design/iterations/regelwerkstatt-20260923.md`.
+
 # Regelkern universell: Codex-Review, Fähigkeitsprofil, Wegweiser, Zoom — 2026-09-15
 
 Codex' universelle Regel-Laufzeit (Manifest, Präsentationsbaum, Referenzsysteme) wurde in drei

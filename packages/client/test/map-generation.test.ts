@@ -68,7 +68,7 @@ describe("map generation request boundaries", () => {
   }
 
   it.each([
-    ["siedlung", 1, 256], ["grundriss", 2, 64], ["hoehle", 2, 32],
+    ["siedlung", 1, 512], ["grundriss", 2, 64], ["hoehle", 2, 32],
   ] as const)("enforces %s count bounds without converting an empty field into zero", (art, min, max) => {
     const settings = generationSettings(art);
     for (const anzahl of ["", min, max] as const) expect(generationError({ ...settings, anzahl }, defaults)).toBeNull();

@@ -5,7 +5,7 @@ import { RELIEF_LEVELS, reliefHeightAt, type CartographyMood, type CartographyRe
 import type { TacticalMapDocumentV1, TacticalPoint } from "./tactical-map.ts";
 
 /** Bump whenever these pixels change; this pin belongs in every cartography raster key. */
-export const rendererVersion = "cartography-11" as const;
+export const rendererVersion = "cartography-12" as const;
 /** The drawn layers a viewer can switch off. Every region belongs to exactly one of them by its
  * role; a region without a role counts as land. `walls` is the stone perimeter of a town plan. */
 export const CARTOGRAPHY_LAYERS = ["terrain", "water", "road", "lot", "building", "room", "walls"] as const;
@@ -233,10 +233,23 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   // kept for what stands on the ground later: roofs, settlements, walls. A regional wood once
   // ate the whole budget and every town on the sheet came out as a bare patch.
   const groundBudget = 200_000 - basePoints;
+  // Dasselbe für die Zahl der Polygone: Felderfurchen und Baumkronen dürfen gut die Hälfte nehmen,
+  // Gartendekor auf Grundstücken ein Fünftel.
+  // Eine dichte Viertelstadt hat so viel Flur, dass sie sonst das ganze Budget aß und Dachfirste,
+  // Plätze und Marktstände leer ausgingen (cartography-12).
+  const groundPolygons = Math.floor((30_000 - basePolygons) * .55), lotPolygons = Math.floor((30_000 - basePolygons) * .2);
+  const boden = (regionId: string) => { const role = roles.get(regionId); return !role || role.role === "generic" || role.role === "terrain" || role.role === "water"; };
+  const grundstueck = (regionId: string) => roles.get(regionId)?.role === "lot";
+  let lotDecoration = 0;
+  const bauwerkReserve = Math.floor((30_000 - basePolygons) * .8), mauerIds = new Set(document.walls.map(wall => wall.id));
   const emit = (regionId: string, points: readonly TacticalPoint[], fill: number, opacity = 1, decoration = true) => {
     // Decorative detail is deterministic and bounded separately; every semantic base polygon
     // is always retained within the shared rasterizer's 32K-polygon / 256K-point admission.
     if (points.length < 3 || decoration && (decorationPolygons >= 30_000 - basePolygons || decorationPoints + points.length > 250_000 - basePoints)) return;
+    if (decoration && boden(regionId) && (decorationPolygons >= groundPolygons || decorationPoints + points.length > groundBudget)) return;
+    if (decoration && grundstueck(regionId)) { if (lotDecoration >= lotPolygons) return; lotDecoration++; }
+    // Das letzte Fünftel gehört Dächern, Türmen und Mauern: sie werden zuletzt gezeichnet.
+    if (decoration && decorationPolygons >= bauwerkReserve && roles.get(regionId)?.role !== "building" && !mauerIds.has(regionId)) return;
     if (decoration) { decorationPoints += points.length; decorationPolygons++; }
     polygons.push({ regionId, points: points.map(point => [point[0], point[1]] as const), fill: shade(fill), opacity });
   };
@@ -406,6 +419,16 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
     }
   };
   let roofsStarted = false;
+  // Rundtürme der Stadtmauer (Fantasy): zwölf Ecken, alle gleich weit von der Mitte. Sie werden nach
+  // der Mauer als Stein gezeichnet, damit die Mauer unter ihnen endet statt vor ihnen.
+  const rund = (points: readonly TacticalPoint[]) => {
+    if (setting !== "fantasy" || points.length < 10) return false;
+    const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length, cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+    const radien = points.map(p => Math.hypot(p[0] - cx, p[1] - cy));
+    return Math.min(...radien) > 0 && Math.max(...radien) / Math.min(...radien) < 1.12;
+  };
+  const tuerme: (typeof regions)[number][] = [];
+  let staende = 0;
   for (const region of regions) {
     const { id, punkte: points, role } = region;
     if (!groundDressed && rank(role) > 0) { groundDressed = true; dressGround(); }
@@ -436,11 +459,41 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         emit(house.id, house.punkte.map(point => [point[0] + shadow * .75, point[1] + shadow]), 0x26332b, .38);
       }
     }
+    if (role?.role === "building" && rund(points)) { tuerme.push(region); continue; }
     emit(id, points, fill, document.background && (!role || role.role === "generic" || role.role === "room" && !role.interior) ? .08 : 1, false);
     const xs = points.map(point => point[0]), ys = points.map(point => point[1]);
     const minX = Math.min(...xs), minY = Math.min(...ys), maxX = Math.max(...xs), maxY = Math.max(...ys);
     const width = maxX - minX, height = maxY - minY;
     if (!width || !height) continue;
+    // Ein großer Platz in einer Fantasy-Stadt: Pflasterfugen in beiden Richtungen und Marktstände mit
+    // gestreiften Markisen, beides auf einem globalen Gitter (nie je Polygon, sonst zeigen die Stücke
+    // eines Platzes ihre Nähte).
+    if (role?.role === "road" && role.material === "square" && setting === "fantasy") {
+      const cell = cartography.construction.cellSize, flaeche = Math.abs(points.reduce((sum, p, i) => { const n = points[(i + 1) % points.length]!; return sum + p[0] * n[1] - n[0] * p[1]; }, 0)) / 2;
+      if (flaeche >= cell * cell * .8) {
+        const fuge = tint(palette.square, -22), abstand = cell * .7, dicke = Math.max(.5, pen * .35);
+        for (let x = Math.ceil(minX / abstand) * abstand; x < maxX && decorationPoints + 8 <= groundBudget; x += abstand) emit(id, band(points, [1, 0], x, x + dicke), fuge, .35);
+        for (let y = Math.ceil(minY / abstand) * abstand; y < maxY && decorationPoints + 8 <= groundBudget; y += abstand) emit(id, band(points, [0, 1], y, y + dicke), fuge, .35);
+        const raster = cell * .8, w = cell * .42, h = cell * .3, rand = cell * .06;
+        const MARKISEN = [0xb4452f, 0x3f6a8a, 0x6f8a45] as const;
+        for (let row = Math.floor(minY / raster); row <= Math.ceil(maxY / raster); row++) for (let column = Math.floor(minX / raster); column <= Math.ceil(maxX / raster); column++) {
+          if (staende >= 40 || decorationPoints + 40 > groundBudget) break;
+          const key = `${column}:${row}`;
+          if (phase(key, 71) > .5) continue;
+          const x = column * raster + raster * (.15 + .5 * phase(key, 72)), y = row * raster + raster * (.15 + .5 * phase(key, 73));
+          const ecken: TacticalPoint[] = [[x - rand, y - rand], [x + w + rand, y - rand], [x + w + rand, y + h + rand], [x - rand, y + h + rand]];
+          if (!ecken.every(point => inside(point, points))) continue;
+          staende++;
+          emit(id, [[x + pen, y + pen * 1.5], [x + w + pen, y + pen * 1.5], [x + w + pen, y + h + pen * 1.5], [x + pen, y + h + pen * 1.5]], 0x26332b, .3);
+          const farbe = MARKISEN[Math.floor(phase(key, 74) * MARKISEN.length) % MARKISEN.length]!;
+          for (let streifen = 0; streifen < 4; streifen++) {
+            const a = x + w * streifen / 4, b = x + w * (streifen + 1) / 4;
+            emit(id, [[a, y], [b, y], [b, y + h], [a, y + h]], streifen % 2 ? 0xe8d9b0 : farbe);
+          }
+          emit(id, line([x, y + h / 2], [x + w, y + h / 2], pen * .5), ink, .45);
+        }
+      }
+    }
     if (role?.role === "building") {
       const axes = roofAxes(points), middle = (axes.top + axes.bottom) / 2, shift = (phase(id) - .5) * 24;
       const ridge = Math.max(.65, Math.min(2.2, (axes.bottom - axes.top) * .035));
@@ -891,7 +944,8 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
   if (!groundDressed) { groundDressed = true; dressGround(); }
   if (!reliefDrawn) { reliefDrawn = true; drawRelief(); }
   if (paintWalls) {
-    const wallWidth = pen * 3.6, stone = setting === "scifi" ? 0x8ea5aa : 0xaaa08a;
+    // Eine Stadtmauer ist ein Bauwerk, keine Federlinie: in Fantasy mindestens ein Fünftel Zelle breit.
+    const wallWidth = setting === "fantasy" ? Math.max(pen * 3.6, cartography.construction.cellSize * .2) : pen * 3.6, stone = setting === "scifi" ? 0x8ea5aa : 0xaaa08a;
     const junctions = new Map<string, { point: TacticalPoint; directions: TacticalPoint[]; wallId: string }>();
     for (const wall of document.walls) for (let index = 1; index < wall.points.length; index++) {
       const a = wall.points[index - 1]!, b = wall.points[index]!, dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx,dy);
@@ -919,6 +973,18 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
       emit(wallId,cap,ink);
       emit(wallId,cap.map(p=>[point[0]+(p[0]-point[0])*.7,point[1]+(p[1]-point[1])*.7]),stone);
     }
+  }
+  // Die Rundtürme über der Mauer: Tuschrand, Steinring, Wehrgang als dunklere Plattform, ein
+  // Lichtkeil auf der oberen linken Seite.
+  for (const { id, punkte } of tuerme) {
+    const cx = punkte.reduce((sum, p) => sum + p[0], 0) / punkte.length, cy = punkte.reduce((sum, p) => sum + p[1], 0) / punkte.length;
+    const skaliert = (f: number): TacticalPoint[] => punkte.map(p => [cx + (p[0] - cx) * f, cy + (p[1] - cy) * f]);
+    const stein = 0xaaa08a;
+    emit(id, skaliert(1.1), ink, 1);
+    emit(id, punkte, stein);
+    emit(id, skaliert(.64), tint(stein, -30));
+    emit(id, clip(skaliert(.64), [.707107, .707107], (cx + cy) * .707107, false), tint(stein, 18), .45);
+    for (let k = 0; k < punkte.length; k += 2) { const p = punkte[k]!; emit(id, line([cx + (p[0] - cx) * .72, cy + (p[1] - cy) * .72], [cx + (p[0] - cx) * .95, cy + (p[1] - cy) * .95], pen * .9), ink, .6); }
   }
   // Last, the vignette: four stepped bands darken the sheet towards its edges, the way old
   // paper and a printed frame do. Presentation only, on a generated map only.

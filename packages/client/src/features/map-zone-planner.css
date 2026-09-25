@@ -16,3 +16,10 @@
 .map-zone-planner button{border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);padding:8px 12px;font:inherit;cursor:pointer}
 .map-zone-planner button:focus-visible,.map-zone-planner summary:focus-visible{outline:2px solid var(--accent-strong);outline-offset:3px}
 .map-zone-planner button:disabled{opacity:.5;cursor:default}
+
+/* Was jede Zone bewirkt: eine kurze Legende unter dem Plan */
+.map-zone-legend { margin: .5rem 0; }
+.map-zone-legend dl { display: grid; grid-template-columns: max-content 1fr; gap: .25rem .75rem; margin: .5rem 0 0; }
+.map-zone-legend dl > div { display: contents; }
+.map-zone-legend dt { font-weight: 600; }
+.map-zone-legend dd { margin: 0; }

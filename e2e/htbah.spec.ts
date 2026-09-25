@@ -30,7 +30,10 @@ async function signIn(context: BrowserContext, session: typeof gmSession) {
   await context.addCookies([{ name: "chronicle_session", value: session.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict", expires: Math.floor(session.expiresAt / 1000) }]);
 }
 
-test("HTBAH catalogue, computed sheet, classified rolls and v5 export survive host reopen", async ({ browser, page: gm }, info) => {
+// HTBAH ist seit cb889fb (2026-09-10) nicht mehr im Build: nicht-kommerzielle Lizenz, Steam-Blocker.
+// Die Vorlage „How to be a Hero“ gibt es in der Oberfläche nicht mehr; der Ablauf bleibt als Beleg
+// stehen, bis eine Lizenz ihn wieder möglich macht.
+test.skip("HTBAH catalogue, computed sheet, classified rolls and v5 export survive host reopen", async ({ browser, page: gm }, info) => {
   const context = await browser.newContext(), player = await context.newPage(), errors: string[] = [];
   for (const page of [gm, player]) page.on("pageerror", error => errors.push(error.message));
   const base = `${origin}/api/campaigns/${campaignId}`, sheetUrl = `${base}/actors/${actorId}/sheet`;

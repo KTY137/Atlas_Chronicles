@@ -542,3 +542,40 @@ describe("a cave: rock around chambers, rough edges, rubble and moss", () => {
     expect(massif.filter(p => p.regionId === "mass" && p.opacity === .8 && p.points.length === 5).length).toBeGreaterThan(0);
   });
 });
+
+describe("cartography-12: Türme, Mauer und Marktplätze der Viertelstadt", () => {
+  const z = 64, S = .8660254037844386, kreis = [[1, 0], [S, .5], [.5, S], [0, 1], [-.5, S], [-S, .5], [-1, 0], [-S, -.5], [-.5, -S], [0, -1], [.5, -S], [S, -.5]] as const;
+  const turm: TacticalPoint[] = kreis.map(([x, y]) => [(4 + x * .42) * z, (4 + y * .42) * z]);
+  const platz: TacticalPoint[] = [[6 * z, 6 * z], [10 * z, 6 * z], [10 * z, 9 * z], [6 * z, 9 * z]];
+  const haus: TacticalPoint[] = [[1 * z, 7 * z], [2 * z, 7 * z], [2 * z, 8 * z], [1 * z, 8 * z]];
+  const role = (regionId: string, extra: object) => ({ regionId, authored: false, locked: false, provenance: null, ...extra });
+  const document: TacticalMapDocumentV1 = { schemaVersion: 1, kind: "tactical-map", coordinates: "image-pixels", frame: { ursprung: [0, 0], einheitenProPixel: 1 / z, ordnung: "xy", hoch: "unten" },
+    geometry: { v: 3, size: [12 * z, 12 * z], stamps: [], places: [], regions: [{ id: "grund", punkte: [[0, 0], [12 * z, 0], [12 * z, 12 * z], [0, 12 * z]] }, { id: "turm", punkte: turm }, { id: "platz", punkte: platz }, { id: "haus", punkte: haus }] },
+    grid: { kind: "square", size: z, origin: [0, 0] }, elevation: 0, geometryElevation: [],
+    walls: [{ id: "mauer", kind: "wall", elevation: 0, points: [[1 * z, 4 * z], [3.6 * z, 4 * z]] }], portals: [], lights: [], environment: { bakedLighting: false, ambientLightArgb: "ffffffff" }, background: null };
+  const cartography = { schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: z, origin: [0, 0] }, regions: [
+    role("grund", { role: "terrain", material: "grass" }), role("turm", { role: "building" }), role("platz", { role: "road", material: "square" }), role("haus", { role: "building" }),
+  ] } as unknown as TacticalCartographyV1;
+
+  it("trägt die neue Fassung", () => expect(rendererVersion).toBe("cartography-12"));
+  it("zeichnet einen Rundturm als Stein ohne Firstband und nach der Mauer", () => {
+    const d = cartographyDraw(document, cartography, "fantasy");
+    const letzteMauer = Math.max(...d.polygons.map((p, i) => p.regionId === "mauer" ? i : -1));
+    // Der Schatten liegt wie bei jedem Dach unter allem; der Turm selbst kommt nach der Mauer.
+    const turmTeile = d.polygons.map((p, i) => ({ p, i })).filter(({ p, i }) => p.regionId === "turm" && i > letzteMauer);
+    expect(turmTeile.length).toBeGreaterThanOrEqual(3);
+    expect(d.polygons.some((p, i) => p.regionId === "turm" && i < letzteMauer && p.fill !== 0x26332b)).toBe(false);
+    expect(turmTeile.some(({ p }) => p.fill === 0xaaa08a)).toBe(true);
+  });
+  it("macht die Mauer einer Fantasy-Stadt breiter als eine Federlinie", () => {
+    const stein = cartographyDraw(document, cartography, "fantasy").polygons.find(p => p.regionId === "mauer" && p.fill === 0xaaa08a)!;
+    const ys = stein.points.map(p => p[1]);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThanOrEqual(z * .18);
+  });
+  it("pflastert große Plätze und stellt Marktstände darauf, nur in Fantasy", () => {
+    const fantasy = cartographyDraw(document, cartography, "fantasy").polygons.filter(p => p.regionId === "platz");
+    const modern = cartographyDraw(document, cartography, "gegenwart").polygons.filter(p => p.regionId === "platz");
+    expect(fantasy.length).toBeGreaterThan(modern.length + 6);
+    expect(fantasy.some(p => p.fill === 0xe8d9b0)).toBe(true);
+  });
+});

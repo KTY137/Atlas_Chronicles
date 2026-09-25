@@ -14,6 +14,8 @@ export interface GenerationDefaults {
   /** The land above the towns; an older server has no such defaults and the card stays hidden. */
   region?: RegionOptionen;
   siedlungsarten?: Readonly<Record<SiedlungOptionen["art"], SiedlungOptionen>>;
+  /** Dieselben Vorgaben je Setting; eine Fantasy-Stadt aus Vierteln baut dichter als eine der Gegenwart. */
+  siedlungsartenJeSetting?: Readonly<Partial<Record<KartenSetting, Readonly<Record<SiedlungOptionen["art"], SiedlungOptionen>>>>>;
   /** Default interior extent per building type, in cells; the server sizes a typed interior by it. */
   anlagen?: Readonly<Partial<Record<AnlageArt, AnlageOptionen>>>;
   gebaeude?: Readonly<Partial<Record<BauwerkTyp, readonly [number, number]>>>;
@@ -32,16 +34,22 @@ export interface GenerationSettings {
   siedlung: SiedlungOptionen["art"]; standort: SiedlungStandort; dichte: number; profil: "frei" | BauwerkTyp;
   /** 0..1 each: how mountainous the land is and how much of it carries woodland. */
   relief: number; bewaldung: number;
+  /** Nur Fantasy-Siedlungen; fehlt der Wert, gilt die Vorgabe der Ortsart (Stadt: ja). */
+  mauer?: boolean; burg?: boolean;
   anordnung: GrundrissOptionen["anordnung"]; moeblierung: number; licht: boolean;
 }
 export function generationSettings(art: MapArt = "siedlung", profil: "frei" | BauwerkTyp = "frei", stil: MapStyle = "gemalt", setting: KartenSetting = "fantasy"): GenerationSettings {
   return { art, stil, setting, breite: "", hoehe: "", anzahl: "", siedlung: "dorf", standort: "fluss", dichte: .3, relief: .5, bewaldung: .5, profil, anordnung: "streuung", moeblierung: 1, licht: true };
 }
+/** Die Vorgaben einer Ortsart für ein Setting; ältere Server kennen nur die Fantasy-Vorgaben. */
+export function siedlungsVorgabe(defaults: GenerationDefaults, art: SiedlungOptionen["art"], setting: KartenSetting): SiedlungOptionen {
+  return defaults.siedlungsartenJeSetting?.[setting]?.[art] ?? defaults.siedlungsarten?.[art] ?? defaults.siedlung;
+}
 export function changeGenerationSetting(value: GenerationSettings, setting: KartenSetting): GenerationSettings {
   return { ...value, setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
 }
 export function generationDimensions(value: GenerationSettings, defaults: GenerationDefaults): readonly [number, number] {
-  const std = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.ausdehnung : value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).ausdehnung
+  const std = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.ausdehnung : value.art === "siedlung" ? siedlungsVorgabe(defaults, value.siedlung, value.setting).ausdehnung
     : value.art === "region" ? (defaults.region?.ausdehnung ?? [56, 42])
     : value.art === "grundriss" && value.profil !== "frei" && defaults.gebaeude?.[value.profil] ? defaults.gebaeude[value.profil]! : defaults[value.art].zellen;
   return [value.breite === "" ? std[0] : value.breite, value.hoehe === "" ? std[1] : value.hoehe];
@@ -53,7 +61,8 @@ export function generationOptions(value: GenerationSettings, defaults: Generatio
     relief: value.relief, bewaldung: value.bewaldung, licht: value.licht,
     ...(value.anlage === "burg" ? { graben: value.graben ?? false } : { symmetrie: value.symmetrie ?? 1 }) };
   if (value.art === "siedlung") return { ...(value.verkehr?.knoten.length ? { verkehr: value.verkehr } : {}), ...(value.planung?.zonen.length ? { planung: value.planung } : {}), art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
-    ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, relief: value.relief, bewaldung: value.bewaldung, licht: value.licht };
+    ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, relief: value.relief, bewaldung: value.bewaldung, licht: value.licht,
+    ...(value.setting === "fantasy" && value.mauer !== undefined ? { mauer: value.mauer } : {}), ...(value.setting === "fantasy" && value.burg !== undefined ? { burg: value.burg } : {}) };
   if (value.art === "region") return { standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}), ...(value.anzahl !== "" ? { orte: value.anzahl } : {}), relief: value.relief, bewaldung: value.bewaldung };
   return { ...(dimensions ? { zellen: dimensions } : {}),
     ...(value.anzahl !== "" ? value.art === "hoehle" ? { kammern: value.anzahl } : { raeume: value.anzahl } : {}),
@@ -79,9 +88,9 @@ export function generationError(value: GenerationSettings, defaults: GenerationD
   }
   if (![w, h].every(n => Number.isSafeInteger(n) && n >= 12 && n <= 192)) return t("Breite und Höhe müssen ganze Zahlen zwischen 12 und 192 sein.");
   if (w * h > 20_000) return t("Die Karte darf höchstens 20.000 Zellen enthalten. Verringere Breite oder Höhe.");
-  const z = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.zellgroesse : value.art === "siedlung" ? (defaults.siedlungsarten?.[value.siedlung] ?? defaults.siedlung).zellgroesse : value.art === "region" ? (defaults.region?.zellgroesse ?? 112) : defaults[value.art].zellgroesse;
+  const z = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.zellgroesse : value.art === "siedlung" ? siedlungsVorgabe(defaults, value.siedlung, value.setting).zellgroesse : value.art === "region" ? (defaults.region?.zellgroesse ?? 112) : defaults[value.art].zellgroesse;
   if (w * z > TACTICAL_MAP_LIMITS.dimension || h * z > TACTICAL_MAP_LIMITS.dimension || w * h * z * z > TACTICAL_MAP_LIMITS.pixels) return t("Diese Größe überschreitet das Kartenbudget. Wähle eine kleinere Fläche.");
-  const min = value.art === "siedlung" || value.art === "region" ? 1 : 2, max = value.art === "siedlung" ? 256 : value.art === "region" ? 24 : value.art === "hoehle" ? 32 : 64;
+  const min = value.art === "siedlung" || value.art === "region" ? 1 : 2, max = value.art === "siedlung" ? 512 : value.art === "region" ? 24 : value.art === "hoehle" ? 32 : 64;
   if (value.anzahl !== "" && (!Number.isSafeInteger(value.anzahl) || value.anzahl < min || value.anzahl > max)) return t("Die Anzahl muss zwischen {min} und {max} liegen.", { min, max });
   return null;
 }
@@ -92,6 +101,7 @@ export const BUILDING_COLORS: Record<BauwerkTyp, number> = {
   fabrik: 0x8d969b, bahnhof: 0xa5a59a, labor: 0x85b8b3, raumhafen: 0x8ba1b6, raumstation: 0x9cabc6,
   medstation: 0x9bccc8, kommando: 0x7d9fad, reaktor: 0x87baab, bibliothek: 0xb59b83, museum: 0xc1baa9,
   bank: 0xa5b398, werkstatt: 0xb0a28b,
+  burg: 0x8c93a0, rathaus: 0xc9a86a, muehle: 0xb49a6e, bauernhof: 0xa98a5e, kaserne: 0x8e8a7c,
 };
 /** A stored light as the picture shows it; the colour is the stored ARGB minus its alpha. */
 export const lightsToScene = (lights: readonly TacticalLight[]) => lights.map(light => ({ id: light.id, x: light.position[0], y: light.position[1], range: light.range, intensity: Math.max(0, Math.min(1, light.intensity)), color: Number.parseInt(light.colorArgb.slice(-6), 16) }));

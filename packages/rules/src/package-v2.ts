@@ -25,6 +25,8 @@ export interface RuleAttribution {
  * Genau diese Verwechslung hat das Schema-v2-Verbot in `adjustResource` erzwungen
  * (`design/iterations/how-to-be-a-hero-20260906.md` §H1); die Deklaration hebt sie auf.
  */
+export const VITAL_COLORS = ["red", "orange", "yellow", "green", "teal", "blue", "purple", "grey"] as const;
+export type VitalColor = typeof VITAL_COLORS[number];
 export interface RuleVital {
   /** Kennung eines vorhandenen Zahlenfelds dieses Pakets. */
   readonly id: string;
@@ -33,6 +35,13 @@ export interface RuleVital {
   readonly max: string;
   /** Was Erreichen von 0 bedeutet. `defeat` stellt die Niederlage zur Bestätigung an. */
   readonly depletion: "defeat" | "none";
+  /**
+   * Farbe der Leiste. Ein Palettenname folgt den Signalfarben des jeweiligen Looks (auch eines
+   * selbst gebauten) und bleibt so in hellen wie dunklen Looks lesbar; ein Farbwert `#rrggbb` ist
+   * die freie Wahl der Spielleitung und gilt in jedem Look gleich. Fehlt sie, gilt die
+   * Akzentfarbe. Optional und additiv: ein Paket ohne Farbe bleibt byteidentisch.
+   */
+  readonly color?: VitalColor | `#${string}`;
 }
 /**
  * Fähigkeiten und Zustände (Spec 2026-09-11-chronicleheroes-faehigkeiten). Die Formelsprache bleibt
@@ -231,13 +240,14 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
   if (data.vitals !== undefined) {
     const seen = new Set<string>();
     for (const item of array(data.vitals, "vitals", RULE_LIMITS.vitals)) {
-      const row = record(item, "vital"); keys(row, ["id", "label", "max", "depletion"], "vital");
+      const row = record(item, "vital"); keys(row, ["id", "label", "max", "depletion", "color"], "vital");
       const id = identifier(row.id, "vital.id");
       if (seen.has(id)) fail("vitals: duplicate id"); seen.add(id);
       if (actorTypes[id] !== "number") fail(`vital ${id}: expected a number or integer field of this package`);
       string(row.label, "vital.label", 120);
       expression(row.max, "number", actorOnly);
       if (row.depletion !== "defeat" && row.depletion !== "none") fail("vital: depletion must be \"defeat\" or \"none\"");
+      if (row.color !== undefined && !(VITAL_COLORS as readonly unknown[]).includes(row.color) && !(typeof row.color === "string" && /^#[0-9a-f]{6}$/.test(row.color))) fail(`vital ${id}: color must be one of ${VITAL_COLORS.join(", ")} or a lowercase #rrggbb value`);
     }
   }
   for (const [index, action] of actionRows.entries()) {

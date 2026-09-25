@@ -43,6 +43,7 @@ const textDateien: (() => Promise<Record<string, unknown>>)[] = [
   () => import("./i18n/en/kampftisch.json"),
   () => import("./i18n/en/universal-rules.json"),
   () => import("./i18n/en/regelkern.json"),
+  () => import("./i18n/en/regelwerkstatt.json"),
   () => import("./i18n/en/forge-overview.json"),
   () => import("./i18n/en/forge-clarity.json"),
   () => import("./i18n/en/creation-clarity.json"),
