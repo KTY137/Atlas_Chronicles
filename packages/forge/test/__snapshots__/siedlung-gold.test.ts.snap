@@ -1,15 +1,15 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > gegenwart dorf fluss 1`] = `"64c16a4c1b707041"`;
+exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > gegenwart dorf fluss 1`] = `"726fae47ca54cfbe"`;
 
-exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > gegenwart stadt kueste 1`] = `"cc5c680b8a8d02f2"`;
+exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > gegenwart stadt kueste 1`] = `"d953345275896538"`;
 
-exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > gegenwart stadt mit Zonenplan 1`] = `"16fbd89f87a5c46d"`;
+exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > gegenwart stadt mit Zonenplan 1`] = `"44850c861cd02ffe"`;
 
-exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > gegenwart weiler huegel 1`] = `"c80413495580a1f7"`;
+exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > gegenwart weiler huegel 1`] = `"184669dcb4fe7bc0"`;
 
 exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > scifi dorf ebene 1`] = `"015be92d6c025ee6"`;
 
-exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > scifi stadt see 1`] = `"a6c52501b8c6a69d"`;
+exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > scifi stadt see 1`] = `"318033dd5bc4cddf"`;
 
 exports[`Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil > scifi weiler insel 1`] = `"5b8763aee25809dd"`;
