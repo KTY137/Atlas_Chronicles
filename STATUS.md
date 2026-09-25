@@ -1,3 +1,16 @@
+# Kartenstudio Teil 2: Moderne Stadt und Kolonie — 2026-09-25
+
+Gegenwart und Sci-Fi (v12) haben eigene Stadtbilder aus derselben Viertelpipeline wie Fantasy:
+heutige Städte mit Stadtring, gedrehten Straßenrastern je Stadtteil, Hochhäusern, Blockrand mit
+Höfen, Einfamilienhäusern, Hallen und Parks; Kolonien mit Nabe, Ringen und Speichen, Kuppeln,
+Landefeldern, Hydrokultur und Schutzzaun. Gebäude tragen eine Dachform; Kartenoptik
+cartography-13 zeichnet Flach-, Shed-, Kuppel- und Landefelddächer, Mittellinien, leuchtende
+Ränder, Solarfelder und ein Ortssymbol je Setting. Zonenplaner in der Sprache des Settings,
+Schutzzaun-Schalter. Fantasy unverändert (Goldtest). Nachweise:
+`design/iterations/stadt-zukunft-20260923.md`. Zweig `feature/stadt-zukunft`, noch nicht in `main`.
+Offen: Teil 3 Weltkarten-Baukasten; neu gewünscht: vielfältigere Hausformen und Geschosswechsel
+über Treppen.
+
 # Kartenstudio Teil 1: Städte aus Vierteln — 2026-09-23
 
 Fantasy-Siedlungen (v11) wachsen jetzt aus Vierteln: Markt mit Rathaus, Dom, Burg, Stadtmauer mit
@@ -6,7 +19,7 @@ Viertel. Der Zonenplan kennt Burg und Tempelbezirk und übernimmt die Viertel ei
 Knopfdruck; zwei Schalter steuern Mauer und Burg. Neue Gebäude mit Innenräumen: Burg, Rathaus,
 Mühle, Bauernhof, Kaserne. Kartenoptik cartography-12 (Steintürme, breite Mauer, Marktstände,
 Dachdetails auch in dichten Städten). Gegenwart und Sci-Fi unverändert (Goldtest). Nachweise:
-`design/iterations/stadt-viertel-20260923.md`. Zweig `feature/stadt-viertel`, noch nicht in `main`.
+`design/iterations/stadt-viertel-20260923.md`. In `main` seit 0af77d8.
 
 # Regelwerkstatt übersichtlich, Balken als eigene Sektion — 2026-09-23
 
