@@ -6,6 +6,7 @@ import type { KampfAufraeumen, KampfFuerLeitung, KampfFuerRunde } from "@chronic
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 import { createActorPortraits } from "../src/domain/actor-portrait.ts";
+import { createKampfbuehne } from "../src/domain/kampfbuehne.ts";
 import { kampfFixture, PNG_BASE64, kampfCfg } from "./kampf-fixture.ts";
 import { buildApp } from "../src/app.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -372,6 +373,64 @@ describe("Der Kampftisch", () => {
       const wieder = await f.game.getSheet(f.gm, f.campaign, wolf);
       await f.game.updateSheet(f.gm, f.campaign, { actorId: wolf, expectedVersion: wieder.version, fields: { ...wieder.fields, hp: 55 } });
       expect(await f.live.sync(f.mira.userId, f.campaign)).toBe(danach);
+    }, 30_000);
+  });
+
+  // Der Abdruck der Live-Verbindung liest alle Kämpfe alle paar Sekunden je Betrachter.
+  describe("Aufwand", () => {
+    /** Dieselbe Datenbank, aber jede Abfrage wird gezählt — oder scheitert, wenn `scheitert` passt. */
+    const gezaehlt = (scheitert?: RegExp) => {
+      const zaehler = { n: 0 };
+      const query: Db["query"] = (sql, params) => {
+        zaehler.n++;
+        if (scheitert?.test(sql)) return Promise.reject(new Error("Verbindung verloren"));
+        return db.query(sql, params);
+      };
+      return { zaehler, db: { ...db, query } as Db };
+    };
+    async function kampfMitFuenf(f: Awaited<ReturnType<typeof kampfFixture>>, name: string) {
+      const kampf = await f.buehne.anlegen(f.gm, f.campaign, { name });
+      await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Mira", seite: "gefaehrten", initiative: 15, actorId: f.mira.actorId });
+      await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Thorn", seite: "gefaehrten", initiative: 11, actorId: f.thorn.actorId });
+      await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Wolf", seite: "gegner", initiative: 12, actorId: await f.gegner(`Wolf ${name}`) });
+      await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Späher", seite: "gegner", initiative: 9, actorId: await f.gegner(`Späher ${name}`), lage: "hand" });
+      await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Decke", seite: "neutral", initiative: 1 });
+      await f.buehne.eroeffnen(f.gm, f.campaign, kampf.id);
+      return kampf.id;
+    }
+
+    it("liest alle Kämpfe mit einer festen Zahl Abfragen und liefert dasselbe wie jeder Kampf einzeln", async () => {
+      const f = await kampfFixture(db);
+      const ids = [await kampfMitFuenf(f, "Eins")];
+      const zaehlen = async (wer: string) => {
+        const { zaehler, db: zaehlDb } = gezaehlt();
+        const buehne = createKampfbuehne(zaehlDb, kampfCfg);
+        await buehne.buehnen(wer, f.campaign); // wärmt die Paketablage
+        zaehler.n = 0;
+        const alle = await buehne.buehnen(wer, f.campaign);
+        return { n: zaehler.n, alle };
+      };
+      const eins = { gm: await zaehlen(f.gm), mira: await zaehlen(f.mira.userId) };
+      ids.push(await kampfMitFuenf(f, "Zwei"), await kampfMitFuenf(f, "Drei"));
+      for (const [wer, vorher] of [[f.gm, eins.gm], [f.mira.userId, eins.mira]] as const) {
+        const { n, alle } = await zaehlen(wer);
+        expect(alle).toHaveLength(3);
+        // Drei Kämpfe kosten so viele Abfragen wie einer: keine je Kampf, keine je Karte.
+        expect(n).toBe(vorher.n);
+        expect(n).toBeLessThanOrEqual(10);
+        // Und das Ergebnis ist genau das, was jeder Kampf einzeln zeigt.
+        const einzeln = [];
+        for (const k of alle) einzeln.push(await f.buehne.buehne(wer, f.campaign, k.id));
+        expect(alle).toEqual(einzeln);
+      }
+    }, 30_000);
+
+    it("verschluckt keinen Datenbankfehler beim Lesen der Bögen", async () => {
+      const f = await kampfFixture(db);
+      await kampfMitFuenf(f, "Eins");
+      const { db: kaputt } = gezaehlt(/FROM actor_sheets/);
+      const buehne = createKampfbuehne(kaputt, kampfCfg);
+      await expect(buehne.buehnen(f.gm, f.campaign)).rejects.toThrow("Verbindung verloren");
     }, 30_000);
   });
 });

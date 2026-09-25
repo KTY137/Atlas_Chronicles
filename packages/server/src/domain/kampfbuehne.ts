@@ -7,7 +7,7 @@ import { vorgabeSicht, zeigtBild } from "@chronicle/projection";
 import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { Conflict, Gone } from "./errors.ts";
-import { kampfFuerLeitung, kampfFuerRunde, lies, type KampfRoh, type KarteRoh } from "./kampf-lesen.ts";
+import { kaempfeDarstellen, kampfFuerLeitung, kampfFuerRunde, lies, liesAlle, type KampfRoh, type KarteRoh } from "./kampf-lesen.ts";
 import { naechsteFeldkarte, zugNachVerlassen } from "./kampf-zug.ts";
 import { createActors, listControlledActorIds } from "./actors.ts";
 import { instantiatePinnedActorInTx } from "./pinned-actors.ts";
@@ -87,10 +87,8 @@ export function createKampfbuehne(db: Db, config: DomainConfig = {}) {
   /** Alle am Tisch sehen die Kämpfe ihrer Kampagne — jede und jeder so, wie die Spielleitung es zulässt. */
   async function buehnen(userId: string, campaignId: string): Promise<readonly (KampfFuerLeitung | KampfFuerRunde)[]> {
     const fuehrt = await betrachter(userId, campaignId);
-    const koepfe = (await db.query<{ id: string }>("SELECT id FROM kaempfe WHERE campaign_id=$1 ORDER BY erstellt_am DESC,id", [campaignId])).rows;
-    const alle: (KampfFuerLeitung | KampfFuerRunde)[] = [];
-    for (const kopf of koepfe) alle.push(await darstellen(db, campaignId, await lies(db, campaignId, kopf.id), fuehrt));
-    return alle;
+    // Ein Lesegang für alle Kämpfe: die Live-Verbindung fragt das alle paar Sekunden je Betrachter.
+    return kaempfeDarstellen(db, config, campaignId, await liesAlle(db, campaignId), fuehrt);
   }
   async function buehne(userId: string, campaignId: string, kampfId: string): Promise<KampfFuerLeitung | KampfFuerRunde> {
     const fuehrt = await betrachter(userId, campaignId);

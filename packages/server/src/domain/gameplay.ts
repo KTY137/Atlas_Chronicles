@@ -64,6 +64,25 @@ const text = (value: unknown, max = 128): string => { if (typeof value !== "stri
 const number = (value: unknown): number => { if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > 1e12) throw new Gone("invalid-number"); return value; };
 const card = (r: RollRow): ActionCard => ({ id: r.id, actorId: r.actor_id, status: r.status, receipt: r.receipt, receiptHash: r.receipt_hash, preparedAt: Number(r.prepared_at), fictionDate: r.fiction_date, vollmachtId: r.vollmacht_id, confirmation: r.confirmation });
 
+interface SheetRow { fields: Record<string, Scalar>; package_id: string; package_version: string; version: number; defeat_pending: boolean; defeated_at: string | null }
+const sheetAusZeile = (actorId: string, row: SheetRow): ActorSheet =>
+  ({ actorId, fields: row.fields, packageId: row.package_id, packageVersion: row.package_version, version: row.version, defeatPending: row.defeat_pending, defeatedAt: row.defeated_at === null ? null : Number(row.defeated_at) });
+/** Ein geprüftes Regelpaket und ein Schlüssel, der genau seinen Inhalt nennt (für Vorräte, die davon abhängen). */
+export interface PaketFuerProjektion { pkg: RulePackage; schluessel: string }
+export interface BogenFuerProjektion extends PaketFuerProjektion { sheet: ActorSheet }
+/**
+ * Geprüfte, geparste Regelpakete nach Inhalt. Eine Zeile in `rule_packages` ändert sich nie
+ * (Trigger `protect_rule_packages`), und ein geparstes Paket ist tief eingefroren — derselbe
+ * Inhalt darf also dasselbe Objekt liefern. Klein und begrenzt: älteste zuerst hinaus.
+ */
+const PAKET_VORRAT = new Map<string, RulePackage>(), PAKET_VORRAT_GRENZE = 32;
+export function merke<T>(vorrat: Map<string, T>, schluessel: string, wert: T, grenze: number): void {
+  vorrat.delete(schluessel); vorrat.set(schluessel, wert);
+  while (vorrat.size > grenze) { const aeltester = vorrat.keys().next(); if (aeltester.done) break; vorrat.delete(aeltester.value); }
+}
+/** Ein fehlendes oder ungültiges Paket fällt in der Projektion weg — sonst nichts. */
+const erwarteterProjektionsfehler = (error: unknown): boolean => error instanceof Gone || error instanceof RuleValidationError;
+
 export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
   const now = cfg.now ?? Date.now; const seed = cfg.seed ?? (() => randomBytes(16).toString("hex"));
   const campaigns = createCampaigns(db, cfg);
@@ -241,8 +260,8 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     });
   }
   async function sheet(tx: Db, campaignId: string, actorId: string): Promise<ActorSheet> {
-    const row = (await tx.query<{ fields: Record<string, Scalar>; package_id: string; package_version: string; version: number; defeat_pending: boolean; defeated_at: string | null }>("SELECT * FROM actor_sheets WHERE actor_id=$1 AND campaign_id=$2", [actorId, campaignId])).rows[0];
-    if (row) return { actorId, fields: row.fields, packageId: row.package_id, packageVersion: row.package_version, version: row.version, defeatPending: row.defeat_pending, defeatedAt: row.defeated_at === null ? null : Number(row.defeated_at) };
+    const row = (await tx.query<SheetRow>("SELECT * FROM actor_sheets WHERE actor_id=$1 AND campaign_id=$2", [actorId, campaignId])).rows[0];
+    if (row) return sheetAusZeile(actorId, row);
     const pin = await currentPin(tx, campaignId), pkg = await packageFor(tx, campaignId, pin);
     return { actorId, packageId: pin.id, packageVersion: pin.version, fields: defaultSupportedActorFields(pkg), version: 0, defeatPending: false, defeatedAt: null };
   }
@@ -250,21 +269,61 @@ export function createGameplay(db: Db, cfg: GameplayConfig = {}) {
     const member = await campaigns.requireMember(userId, campaignId); await controller(db, member, actorId); return sheet(db, campaignId, actorId);
   }
   /**
-   * Bögen samt Regelpaket für eine serverseitige Projektion (Kampftisch).
+   * Das Regelpaket einer Projektion, aus dem Vorrat geprüfter Pakete. Die Zeile nennt Inhaltshash
+   * und einen Abdruck des gespeicherten Dokuments; erst wenn beide unbekannt sind, wird das Dokument
+   * gelesen, gegen seinen Hash geprüft und geparst (`packageFor`) — ein verändertes Dokument trägt
+   * einen anderen Abdruck und fällt deshalb genauso auf wie ohne Vorrat.
+   */
+  async function paketFuerProjektion(tx: Db, campaignId: string, pin: PackagePin): Promise<PaketFuerProjektion> {
+    const row = (await tx.query<{ content_hash: string; abdruck: string }>("SELECT content_hash,md5(document::text) AS abdruck FROM rule_packages WHERE campaign_id=$1 AND package_id=$2 AND version=$3", [campaignId, pin.id, pin.version])).rows[0];
+    if (!row) {
+      if (pin.id === DEMO_RULE_PACKAGE.id && pin.version === DEMO_RULE_PACKAGE.version) return { pkg: DEMO_RULE_PACKAGE, schluessel: `eingebaut:${pin.id}@${pin.version}` };
+      throw new Gone("package");
+    }
+    const schluessel = `${row.content_hash}:${row.abdruck}`, bekannt = PAKET_VORRAT.get(schluessel);
+    if (bekannt) { merke(PAKET_VORRAT, schluessel, bekannt, PAKET_VORRAT_GRENZE); return { pkg: bekannt, schluessel }; }
+    const pkg = await packageFor(tx, campaignId, pin);
+    merke(PAKET_VORRAT, schluessel, pkg, PAKET_VORRAT_GRENZE);
+    return { pkg, schluessel };
+  }
+  /**
+   * Bögen samt Regelpaket für eine serverseitige Projektion (Kampftisch) — alle in einer Abfrage,
+   * jedes Paket einmal je Aufruf.
    *
    * **Ohne Rechteprüfung**: der Aufrufer projiziert, bevor irgendetwas davon einen Betrachter
    * erreicht. Dieser Weg wird nie an eine HTTP-Antwort gereicht. Ein Bogen, dessen Paket fehlt oder
    * kaputt ist, fehlt hier einfach — eine Karte ohne Balken ist besser als ein Tisch, der nicht lädt.
+   * Nur diese erwarteten Fehler fallen weg; ein Datenbankfehler geht weiter, denn er hat die
+   * umgebende Transaktion schon abgebrochen.
    */
-  async function boegenFuerProjektion(campaignId: string, actorIds: readonly string[]): Promise<ReadonlyMap<string, { sheet: ActorSheet; pkg: RulePackage }>> {
-    const ergebnis = new Map<string, { sheet: ActorSheet; pkg: RulePackage }>(), pakete = new Map<string, RulePackage>();
-    for (const actorId of new Set(actorIds)) {
-      try {
-        const bogen = await sheet(db, campaignId, actorId), schluessel = `${bogen.packageId}@${bogen.packageVersion}`;
-        let pkg = pakete.get(schluessel);
-        if (!pkg) { pkg = await packageFor(db, campaignId, { id: bogen.packageId, version: bogen.packageVersion }); pakete.set(schluessel, pkg); }
-        ergebnis.set(actorId, { sheet: bogen, pkg });
-      } catch { /* siehe oben: fehlt, statt den Tisch zu sprengen */ }
+  async function boegenFuerProjektion(campaignId: string, actorIds: readonly string[]): Promise<ReadonlyMap<string, BogenFuerProjektion>> {
+    const ergebnis = new Map<string, BogenFuerProjektion>(), ids = [...new Set(actorIds)];
+    if (!ids.length) return ergebnis;
+    const pakete = new Map<string, PaketFuerProjektion | null>();
+    const paket = async (pin: PackagePin): Promise<PaketFuerProjektion | null> => {
+      const k = `${pin.id}@${pin.version}`;
+      if (!pakete.has(k)) {
+        try { pakete.set(k, await paketFuerProjektion(db, campaignId, pin)); }
+        catch (error) { if (!erwarteterProjektionsfehler(error)) throw error; pakete.set(k, null); }
+      }
+      return pakete.get(k) ?? null;
+    };
+    const zeilen = (await db.query<SheetRow & { actor_id: string }>("SELECT * FROM actor_sheets WHERE campaign_id=$1 AND actor_id=ANY($2::text[])", [campaignId, ids])).rows;
+    for (const row of zeilen) {
+      const gefunden = await paket({ id: row.package_id, version: row.package_version });
+      if (gefunden) ergebnis.set(row.actor_id, { sheet: sheetAusZeile(row.actor_id, row), ...gefunden });
+    }
+    // Ohne Zeile trägt der Bogen die Vorgaben des angehefteten Pakets — wie `sheet`.
+    const ohneBogen = ids.filter(id => !zeilen.some(row => row.actor_id === id));
+    if (ohneBogen.length) {
+      const pin = await currentPin(db, campaignId), gefunden = await paket(pin);
+      let fields: Readonly<Record<string, Scalar>> | null = null;
+      if (gefunden) {
+        try { fields = defaultSupportedActorFields(gefunden.pkg); }
+        catch (error) { if (!erwarteterProjektionsfehler(error)) throw error; }
+      }
+      if (gefunden && fields) for (const actorId of ohneBogen)
+        ergebnis.set(actorId, { sheet: { actorId, packageId: pin.id, packageVersion: pin.version, fields, version: 0, defeatPending: false, defeatedAt: null }, ...gefunden });
     }
     return ergebnis;
   }
