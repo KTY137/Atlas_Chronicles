@@ -108,7 +108,7 @@ function werteVon(bogen: BogenFuerProjektion): Werte {
   const { pkg, sheet: { fields } } = bogen;
   let vitals: readonly VitalStand[] = [], zustaende: readonly KartenZustand[] = [];
   // Ein Bogen mitten im Umbau kann ungültig sein — dann eben keine Balken, statt eines Fehlers.
-  try { vitals = evaluateVitals(pkg, fields).map(v => ({ id: v.id, label: v.label, wert: v.value, hoechst: v.maximum, depletion: v.depletion })); }
+  try { vitals = evaluateVitals(pkg, fields).map(v => ({ id: v.id, label: v.label, wert: v.value, hoechst: v.maximum, depletion: v.depletion, ...(v.color === undefined ? {} : { farbe: v.color }) })); }
   catch { vitals = []; }
   try { zustaende = [...activeConditions(pkg, fields)]; } catch { zustaende = []; }
   const werte: Werte = Object.freeze({ vitals: Object.freeze(vitals.map(v => Object.freeze(v))), zustaende: Object.freeze(zustaende) });

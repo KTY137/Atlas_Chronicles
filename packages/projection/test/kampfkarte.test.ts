@@ -28,6 +28,14 @@ describe("Ein Balken für die Runde", () => {
     expect(balkenFuerRunde(mana, "worte")).toEqual({ id: "mana", label: "Mana", art: "vorrat", anzeige: "worte", stufe: "gut" });
     expect(balkenFuerRunde(leben, "verborgen")).toBeNull();
   });
+
+  it("trägt die Farbe aus dem Regelpaket mit, in jeder Anzeige und für die Spielleitung", () => {
+    const blau: VitalStand = { ...mana, farbe: "blue" };
+    expect((["genau", "fuellstand", "worte"] as const).map(maske => balkenFuerRunde(blau, maske)?.farbe)).toEqual(["blue", "blue", "blue"]);
+    const leitung = karteFuerLeitung(quelle({ vitals: [leben, blau] }));
+    expect(leitung.balken.map(b => b.farbe)).toEqual([undefined, "blue"]);
+    expect(Object.hasOwn(leitung.balken[0]!, "farbe")).toBe(false);
+  });
 });
 
 describe("Eine Karte für die Runde", () => {

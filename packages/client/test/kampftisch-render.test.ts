@@ -26,6 +26,16 @@ describe("Die Kampfkarte", () => {
     expect(html).toContain("Blutend");
   });
 
+  it("färbt einen Balken so, wie das Regelpaket es wählt — mit den Klassen der Vitalanzeige", () => {
+    const mitFarbe = (farbe: string): KarteFuerRunde => ({ ...RUNDENKARTE, balken: RUNDENKARTE.balken.map(b => ({ ...b, farbe })) });
+    const palette = zeige(ansichtFuerRunde(mitFarbe("teal")), false);
+    expect(palette).toContain("mit-regelfarbe vitalwert-farbe-teal");
+    expect(palette).not.toContain("data-farbe");
+    const frei = zeige(ansichtFuerRunde(mitFarbe("#12ab34")), false);
+    expect(frei).toContain("--vital-fill:#12ab34");
+    expect(zeige(ansichtFuerRunde(RUNDENKARTE), false)).toContain('data-farbe="danger"');
+  });
+
   it("zeigt der Runde nur das Wort, kein Menü und nie „Ohne Werte“", () => {
     const html = zeige(ansichtFuerRunde(RUNDENKARTE), false);
     expect(html).toContain("schwer angeschlagen");

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { KAMPF_SEITEN, type BalkenFuerLeitung, type BalkenFuerRunde, type BalkenMaske, type KampfFuerLeitung, type KampfFuerRunde, type KampfSeite,
   type KarteFuerLeitung, type KarteFuerRunde, type KartenBild, type KartenLage, type KartenSichtDaten, type KartenZustand, type Wortstufe } from "@chronicle/protocol";
+import { VITAL_COLORS, type RuleVital } from "@chronicle/rules";
 import type { ActionCard } from "./game-api";
 
 /**
@@ -35,7 +36,7 @@ export function ansichtFuerLeitung(k: KarteFuerLeitung): KartenAnsicht {
   return {
     id: k.id, name: k.name, nameFuerRunde: k.nameFuerRunde, seite: k.seite, lage: k.lage, initiative: k.initiative, gewuerfelt: k.gewuerfelt,
     amZug: k.amZug, eigene: false, bild: k.bild, zustaende: k.zustaende,
-    balken: k.balken.map(b => ({ anzeige: { id: b.id, label: b.label, art: b.art, anzeige: "genau", wert: b.wert, hoechst: b.hoechst }, leitung: b })),
+    balken: k.balken.map(b => ({ anzeige: { id: b.id, label: b.label, art: b.art, ...(b.farbe === undefined ? {} : { farbe: b.farbe }), anzeige: "genau", wert: b.wert, hoechst: b.hoechst }, leitung: b })),
     aufgebraucht: k.aufgebraucht,
     bearbeitbar: k.actorId !== null && k.bogenVersion !== null ? { actorId: k.actorId, bogenVersion: k.bogenVersion } : null,
     roh: k, ohneWerte: k.actorId === null,
@@ -105,11 +106,18 @@ export const AUFNAHMEN = ["vorlage", "figur", "name"] as const;
 export type Aufnahme = typeof AUFNAHMEN[number];
 export const AUFNAHME_LABEL: Readonly<Record<Aufnahme, string>> = { vorlage: "Aus Vorlage", figur: "Figur am Tisch", name: "Nur Name" };
 
-/** Leben ist rot; jeder andere Balken bekommt reihum eine eigene Farbe des Looks. */
-export type BalkenFarbe = "danger" | "info" | "ok" | "warning" | "private";
-const VORRAT_FARBEN: readonly BalkenFarbe[] = ["info", "ok", "warning", "private"];
+/** Die eigene Farbe des Tisches, wenn das Regelpaket keine wählt. */
+export type TischFarbe = "danger" | "info" | "ok" | "warning" | "private";
+/** Eine Farbe aus dem Regelpaket — dieselbe Wahl, die die Vitalanzeige zeigt (`vitalColorClass`/`vitalColorStyle`). */
+export type RegelFarbe = NonNullable<RuleVital["color"]>;
+export type BalkenFarbe = TischFarbe | RegelFarbe;
+const VORRAT_FARBEN: readonly TischFarbe[] = ["info", "ok", "warning", "private"];
+/** Nur, was das Regelpaket auch annimmt; alles andere fällt auf die Farbe des Tisches zurück. */
+export const regelFarbe = (farbe: string | undefined): RegelFarbe | null =>
+  farbe !== undefined && ((VITAL_COLORS as readonly string[]).includes(farbe) || /^#[0-9a-f]{6}$/.test(farbe)) ? farbe as RegelFarbe : null;
+/** Die Farbe aus dem Regelpaket geht vor. Sonst ist Leben rot, und jeder andere Balken bekommt reihum eine eigene Farbe des Looks. */
 export const balkenFarbe = (b: BalkenAnsicht, stelle: number): BalkenFarbe =>
-  b.anzeige.art === "leben" ? "danger" : VORRAT_FARBEN[stelle % VORRAT_FARBEN.length]!;
+  regelFarbe(b.anzeige.farbe) ?? (b.anzeige.art === "leben" ? "danger" : VORRAT_FARBEN[stelle % VORRAT_FARBEN.length]!);
 
 export const initialen = (name: string): string =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map(wort => wort[0]!.toLocaleUpperCase()).join("");

@@ -57,12 +57,17 @@ export const KartenAusVorlage = Type.Object({
 export const KampfBeenden = Type.Object({ archivieren: Type.Optional(Type.Boolean()) }, closed);
 export const VitalSetzen = Type.Object({ wert: Type.Number({ minimum: -1_000_000_000, maximum: 1_000_000_000 }), expectedVersion: version }, closed);
 
+/**
+ * Die Farbe, die das Regelpaket einem Balken gibt: ein Palettenname (`VITAL_COLORS` in
+ * `@chronicle/rules`) oder `#rrggbb`. Ohne Wahl fehlt sie, und der Tisch färbt selbst.
+ */
+export interface BalkenFarbwahl { readonly farbe?: string }
 /** Ein Balken, wie ihn ein Betrachter ohne Leitung bekommt. Ein verborgener Balken fehlt ganz. */
-export type BalkenFuerRunde =
+export type BalkenFuerRunde = BalkenFarbwahl & (
   | { readonly id: string; readonly label: string; readonly art: BalkenArt; readonly anzeige: "genau"; readonly wert: number; readonly hoechst: number }
   | { readonly id: string; readonly label: string; readonly art: BalkenArt; readonly anzeige: "fuellstand"; readonly zehntel: number }
-  | { readonly id: string; readonly label: string; readonly art: BalkenArt; readonly anzeige: "worte"; readonly stufe: Wortstufe };
-export interface BalkenFuerLeitung {
+  | { readonly id: string; readonly label: string; readonly art: BalkenArt; readonly anzeige: "worte"; readonly stufe: Wortstufe });
+export interface BalkenFuerLeitung extends BalkenFarbwahl {
   readonly id: string; readonly label: string; readonly wert: number; readonly hoechst: number; readonly art: BalkenArt;
   readonly maske: BalkenMaske;
   /** Was die Runde von diesem Balken bekommt, von derselben Funktion erzeugt. `null` = nichts. */

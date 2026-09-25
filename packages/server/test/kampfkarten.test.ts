@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { KampfAufraeumen, KampfFuerLeitung, KampfFuerRunde } from "@chronicle/protocol";
+import { HOW_TO_BE_A_HERO_PACKAGE } from "@chronicle/rules/examples";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 import { createActorPortraits } from "../src/domain/actor-portrait.ts";
@@ -239,6 +240,15 @@ describe("Der Kampftisch", () => {
       await f.game.updateSheet(f.gm, f.campaign, { actorId: wolf, expectedVersion: bogen.version, fields: { ...bogen.fields, hp: 0 } });
       expect(von(await leitungsSicht(f, kampfId), "Wolf")).toMatchObject({ aufgebraucht: true, lage: "feld" });
     });
+  });
+
+  it("trägt die Balkenfarbe des Regelpakets auf den Tisch — für Spielleitung und Runde", async () => {
+    const f = await kampfFixture(db, { ...HOW_TO_BE_A_HERO_PACKAGE, vitals: HOW_TO_BE_A_HERO_PACKAGE.vitals!.map(v => ({ ...v, color: "teal" as const })) });
+    const kampf = await f.buehne.anlegen(f.gm, f.campaign, { name: "Farbe" });
+    const stand = await f.buehne.teilnehmerHinzufuegen(f.gm, f.campaign, kampf.id, { name: "Mira", seite: "gefaehrten", initiative: 15, actorId: f.mira.actorId });
+    expect(stand.teilnehmer[0]!.balken.map(b => [b.id, b.farbe, b.fuerRunde?.farbe])).toEqual([["hp", "teal", "teal"]]);
+    const runde = await f.buehne.buehne(f.mira.userId, f.campaign, kampf.id) as KampfFuerRunde;
+    expect(runde.teilnehmer[0]!.balken.map(b => b.farbe)).toEqual(["teal"]);
   });
 
   describe("Schnellgegner und Aufräumen", () => {

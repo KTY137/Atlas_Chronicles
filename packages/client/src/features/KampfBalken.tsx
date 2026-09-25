@@ -4,7 +4,8 @@ import type { ReactNode } from "react";
 import { Eye, EyeOff, Gauge, Type, type LucideIcon } from "lucide-react";
 import type { BalkenFuerRunde, BalkenMaske } from "@chronicle/protocol";
 import { t } from "../i18n";
-import { MASKE_LABEL, WORT_LEBEN_LABEL, WORT_VORRAT_LABEL, type BalkenAnsicht, type BalkenFarbe } from "./kampftisch-model";
+import { MASKE_LABEL, WORT_LEBEN_LABEL, WORT_VORRAT_LABEL, regelFarbe, type BalkenAnsicht, type BalkenFarbe } from "./kampftisch-model";
+import { vitalColorClass, vitalColorStyle } from "./Vitalanzeige";
 
 /**
  * Ein Balken auf der Karte. Er zeigt, was er bekommt: eine Zahl, einen Füllstand in Zehnteln
@@ -28,7 +29,10 @@ export function KampfBalken({ balken, farbe, onMaske, onWert, schwebe }: {
   const text = anzeige.anzeige === "fuellstand" ? null : rundeSieht(anzeige);
   const Symbol = leitung ? SYMBOL[leitung.maske] : null;
   const anteil = anzeige.anzeige === "genau" && anzeige.hoechst > 0 ? Math.max(0, Math.min(1, anzeige.wert / anzeige.hoechst)) * 100 : 0;
-  return <div className="kampf-balken kampf-anker" data-farbe={farbe}>
+  // Eine Farbe aus dem Regelpaket läuft über dieselben Klassen wie in der Vitalanzeige; sonst färbt der Tisch.
+  const regel = regelFarbe(farbe);
+  return <div className={regel ? `kampf-balken kampf-anker mit-regelfarbe${vitalColorClass(regel)}` : "kampf-balken kampf-anker"}
+    data-farbe={regel ? undefined : farbe} style={regel ? vitalColorStyle(regel) : undefined}>
     <div className="kampf-balken-kopf">
       {onMaske && leitung && Symbol ? <button type="button" className="kampf-auge" data-maske={leitung.maske} onClick={onMaske}
         aria-label={t("Was die Runde bei {balken} sieht: {anzeige}", { balken: anzeige.label, anzeige: t(MASKE_LABEL[leitung.maske]) })}>

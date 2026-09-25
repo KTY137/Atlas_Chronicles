@@ -46,6 +46,13 @@ describe("Kleinigkeiten", () => {
     expect(balkenFarbe(b("leben"), 0)).toBe("danger");
     expect([1, 2, 3, 4].map(stelle => balkenFarbe(b("vorrat"), stelle))).toEqual(["ok", "warning", "private", "info"]);
   });
+  it("nimmt die Farbe aus dem Regelpaket, wenn sie gültig ist", () => {
+    const b = (farbe: string) => ({ anzeige: { id: "x", label: "X", art: "leben" as const, farbe, anzeige: "worte" as const, stufe: "gut" as const }, leitung: null });
+    expect(balkenFarbe(b("teal"), 0)).toBe("teal");
+    expect(balkenFarbe(b("#12ab34"), 0)).toBe("#12ab34");
+    expect(balkenFarbe(b("lila"), 0)).toBe("danger");
+    expect(balkenFarbe(b("#FFF"), 0)).toBe("danger");
+  });
   it("bildet Initialen aus höchstens zwei Wörtern", () => {
     expect(initialen("Wolf 1")).toBe("W1");
     expect(initialen("graf von veyl")).toBe("GV");

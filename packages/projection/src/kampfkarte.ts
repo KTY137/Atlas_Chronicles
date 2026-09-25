@@ -11,7 +11,12 @@ import type { BalkenArt, BalkenFuerRunde, BalkenMaske, KampfSeite, KarteFuerLeit
  * nie selbst; sogar die Vorschau „Mit den Augen der Runde“ holt sie beim Server ab. Eine zweite
  * Rechnung liefe beim ersten Randfall auseinander — und wäre dann die, die etwas verrät.
  */
-export interface VitalStand { readonly id: string; readonly label: string; readonly wert: number; readonly hoechst: number; readonly depletion: "defeat" | "none" }
+export interface VitalStand {
+  readonly id: string; readonly label: string; readonly wert: number; readonly hoechst: number; readonly depletion: "defeat" | "none";
+  /** Die Farbe aus dem Regelpaket, falls es eine wählt. */
+  readonly farbe?: string;
+}
+const farbeVon = (vital: VitalStand): { readonly farbe?: string } => vital.farbe === undefined ? {} : { farbe: vital.farbe };
 export interface KartenQuelle {
   readonly id: string; readonly name: string; readonly nameFuerRunde: string | null; readonly seite: KampfSeite; readonly lage: KartenLage;
   readonly actorId: string | null; readonly initiative: number; readonly ordnung: number; readonly initiativeRollId: string | null;
@@ -52,11 +57,11 @@ export function maskeFuer(sicht: KartenSichtDaten, vitalId: string): BalkenMaske
 }
 
 export function balkenFuerRunde(vital: VitalStand, maske: BalkenMaske): BalkenFuerRunde | null {
-  const { id, label } = vital, art = balkenArt(vital.depletion);
+  const { id, label } = vital, art = balkenArt(vital.depletion), farbe = farbeVon(vital);
   switch (maske) {
-    case "genau": return { id, label, art, anzeige: "genau", wert: vital.wert, hoechst: vital.hoechst };
-    case "fuellstand": return { id, label, art, anzeige: "fuellstand", zehntel: zehntel(vital.wert, vital.hoechst) };
-    case "worte": return { id, label, art, anzeige: "worte", stufe: wortstufe(vital.wert, vital.hoechst) };
+    case "genau": return { id, label, art, ...farbe, anzeige: "genau", wert: vital.wert, hoechst: vital.hoechst };
+    case "fuellstand": return { id, label, art, ...farbe, anzeige: "fuellstand", zehntel: zehntel(vital.wert, vital.hoechst) };
+    case "worte": return { id, label, art, ...farbe, anzeige: "worte", stufe: wortstufe(vital.wert, vital.hoechst) };
     case "verborgen": return null;
   }
 }
@@ -74,7 +79,7 @@ export function karteFuerLeitung(q: KartenQuelle): KarteFuerLeitung {
     amZug: q.amZug, sicht: q.sicht, vomKampfAngelegt: q.vomKampfAngelegt, version: q.version, bogenVersion: q.bogenVersion,
     balken: q.vitals.map(vital => {
       const maske = maskeFuer(q.sicht, vital.id);
-      return { id: vital.id, label: vital.label, wert: vital.wert, hoechst: vital.hoechst, art: balkenArt(vital.depletion), maske, fuerRunde: balkenFuerRunde(vital, maske) };
+      return { id: vital.id, label: vital.label, wert: vital.wert, hoechst: vital.hoechst, art: balkenArt(vital.depletion), ...farbeVon(vital), maske, fuerRunde: balkenFuerRunde(vital, maske) };
     }),
     zustaende: q.zustaende, bild: q.bild, aufgebraucht: q.aufgebraucht,
   };

@@ -100,6 +100,8 @@
 .kampf-balken[data-farbe="ok"] { --balken-farbe: var(--ok); }
 .kampf-balken[data-farbe="warning"] { --balken-farbe: var(--warning); }
 .kampf-balken[data-farbe="private"] { --balken-farbe: var(--private); }
+/* Farbe aus dem Regelpaket: die Klassen der Vitalanzeige setzen --vital-fill (vitalanzeige.css). */
+.kampf-balken.mit-regelfarbe { --balken-farbe: var(--vital-fill); }
 /* Reicht die Breite nicht (Auge, langer Name, breite Schrift eines Looks), rückt der Wert als
    Ganzes in die nächste Zeile — „40 / 100“ bricht nie in der Mitte. */
 .kampf-balken-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; font-size: .74rem; }

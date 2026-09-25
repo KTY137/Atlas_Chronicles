@@ -20,7 +20,8 @@ export const PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQ
  * Hero aktiv (ein Balken `hp` „Lebenspunkte", Höchstwert 100, leer = Niederlage) und eine
  * Wolf-Vorlage mit 40 Lebenspunkten. Mira hat 70.
  */
-export async function kampfFixture(db: Db) {
+/** `paket` ersetzt How to be a Hero durch eine Abwandlung mit derselben Kennung und Fassung. */
+export async function kampfFixture(db: Db, paket: typeof HOW_TO_BE_A_HERO_PACKAGE = HOW_TO_BE_A_HERO_PACKAGE) {
   const gm = randomUUID();
   await db.query("INSERT INTO users(id,display_name,platform_role,created_at) VALUES($1,'Spielleitung','leitung',$2)", [gm, KAMPF_ZEIT]);
   const campaigns = createCampaigns(db, kampfCfg), campaign = (await campaigns.createCampaign(gm, { name: "Kampftisch" })).id;
@@ -31,8 +32,8 @@ export async function kampfFixture(db: Db) {
   };
   const mira = await beitreten("Mira"), thorn = await beitreten("Thorn");
   const game = createGameplay(db, kampfCfg), actors = createActors(db, kampfCfg);
-  await game.installPackage(gm, campaign, HOW_TO_BE_A_HERO_PACKAGE);
-  const review = await game.previewPackage(gm, campaign, HOW_TO_BE_A_HERO_PACKAGE);
+  await game.installPackage(gm, campaign, paket);
+  const review = await game.previewPackage(gm, campaign, paket);
   await game.activatePackage(gm, campaign, { packageId: PAKET.id, packageVersion: PAKET.version, expectedVersion: 0, previewHash: review.previewHash });
   await game.updateSheet(mira.userId, campaign, { actorId: mira.actorId, expectedVersion: 0, fields: { ...HTBAH_EXAMPLE_CHARACTERS[0]!.fields, hp: 70 } });
   const wolf = await actors.createActorTemplate(gm, campaign, { commandId: randomUUID(), definition: {
