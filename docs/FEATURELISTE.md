@@ -1486,3 +1486,88 @@ Beute) und eine **feste Reihenfolge**, damit ein Abbruch reproduzierbar bleibt.
 Spielleitung — das ist die bestehende Regel, und sie zu lockern hieße, dass eine Spielerin in
 fremde Inventare greifen darf, auch in die anderer Spielerinnen. Und die **Kampfbühne verlinkt
 nicht** ins Inventar: der Weg dorthin ist der Reiterwechsel.
+
+## Der Kampftisch — Karten, Balken, Einstellungen der Spielleitung (2026-09-23)
+
+Kaya, 2026-09-23: Gegner und Spielerfiguren sollen **wie Karten auf dem Spieltisch** liegen, mit
+allen Balken, und die Spielleitung soll entscheiden, was die Runde davon sieht und wann eine Figur
+vom Feld kommt. Entwurf: `docs/superpowers/specs/2026-09-23-kampftisch-karten-design.md`, Plan:
+`docs/superpowers/plans/2026-09-23-kampftisch-karten.md`, klickbares Mockup:
+`design/iterations/kampftisch-20260923/mockup.html`. Gebaut auf dem Zweig `feature/kampftisch`.
+
+### Was gebaut ist
+
+- **Lage.** Jede Karte liegt in der **Hand** (verdeckt, nur die Spielleitung sieht sie), auf dem
+  **Feld**, **umgelegt** (kampfunfähig, bleibt liegen) oder in der **Ablage** (vom Feld genommen,
+  zurückholbar). Jede Lage geht in jede andere; nichts geschieht automatisch. Verlässt die Karte am
+  Zug das Feld, wandert der Zug zur nächsten Feldkarte, und die Runde zählt nur Feldkarten.
+- **Einstellungen der Spielleitung je Karte.** Pro Balken „Genau", „Nur Füllstand", „In Worten"
+  oder „Verborgen"; dazu ein Name für die Runde („Vermummte Gestalt" statt „Graf Veyl"), Bild
+  zeigen, Zustände zeigen. Gefährten stehen von Haus aus auf genau, Gegner auf Worten. Die eigene
+  Figur sieht ein Spieler immer genau.
+- **Schnellgegner.** „Aus Vorlage": Figurvorlage, Anzahl 1–12, Seite, Initiative, Hand oder Feld —
+  in **einer** Transaktion, „Wolf 1" bis „Wolf N", jede mit eigenem Bogen. „Beenden" bietet an,
+  die für den Kampf angelegten Gegner ins Archiv zu legen (umkehrbar).
+- **Werte auf der Karte.** Ein Tipp auf die Zahl öffnet − / + und ein Eingabefeld; geschrieben wird
+  **in den Bogen** (`setVital`, mit Versionsprüfung), nicht in eine zweite Wahrheit an der Karte.
+  Die Initiative lässt sich nachträglich ändern.
+- **Live.** Der Fingerabdruck hasht die **projizierte** Nutzlast des Betrachters: was die
+  Spielleitung an einer Handkarte ändert, löst bei der Runde kein Signal aus.
+- **Vorschau.** „Mit den Augen der Runde" zeigt die Nutzlast eines Betrachters ohne eigene Figur,
+  vom Server gerechnet — dieselbe Funktion, die unter jedem Balken „Die Runde sieht: …" schreibt.
+
+Die Projektion ist eine reine Funktion in `packages/projection/src/kampfkarte.ts`. Die Runde
+bekommt keine Karte aus Hand oder Ablage, keine `ordnung`, keine `sicht`, kein
+`vomKampfAngelegt`, keine `initiativeRollId` und keine Figur-Kennung fremder Figuren (Grenze B9).
+Die Kartenlage steht in einer eigenen Tabelle `kampf_karten` (Migration 037, rein additiv) und
+reist ab Exportfassung `native-v22` mit; ein Paket ohne Kartenzeile bleibt bei seiner Fassung.
+
+### Belege
+
+- Eigene Testdateien, alle grün: `projection/kampfkarte` **26**, `rules/active-conditions` **2**,
+  `server/kampfkarten` **27**, `server/kampf-zug` **7**, `server/kampfkarten-export` **3**,
+  `client/kampftisch-model` **10**, `client/kampftisch-render` **5**, `client/kampftisch-klartext`
+  **7**, `client/sprache-kampftisch` **2** — zusammen **89 Fälle**.
+- Der Schlusslauf über diese Dateien und ihre Konsumenten (`packages/projection`, `packages/io`,
+  Bühne, Kampf, Export, Wiederherstellung, Löschen, Figuren, Tisch, Sprache, Vitalanzeige):
+  **46 Dateien, 509/509 grün**.
+- **Gegenproben gefahren:** Task 1 — die Auslassung von Hand und Ablage in `karteFuerRunde`
+  auskommentiert → „lässt Hand und Ablage ganz weg" rot. Task 3 — die Zugabgabe in `lageSetzen`
+  auskommentiert → genau die zwei Zugfälle rot, die übrigen neun grün. Task 4 — der Lagefilter im
+  Server allein ausgehängt blieb grün (die Projektion ist das zweite Schloss); beide ausgehängt →
+  der Nutzlastfall rot. Jedes Mal zurückgesetzt.
+- **Im Browser** (`e2e/kampftisch.spec.ts`, **2/2 grün**, gebaute Oberfläche, echte Anmeldung):
+  die Spielleitung verdeckt Wolf 1, verbirgt die Lebenspunkte von Wolf 2 und prüft das mit den
+  Augen der Runde; die Spielerin bekommt eine Antwort, in der roh weder „Wolf 1" noch `ordnung`
+  noch `sicht` steht, sieht ihre eigene Figur genau und ändert deren Lebenspunkte auf der Karte
+  von 70 auf 65. `e2e/gui-navigation.spec.ts` weiter **6/6 grün**.
+- **Zwölf Looks angesehen**, jedes Bild einzeln, die drei hellen (Medieval, Parchment, Dawn)
+  besonders: Karten, Schrift und Balken lesbar, keine dunkle Fläche im hellen Look, die Marke
+  „am Zug" lesbar, der Stempel „umgelegt" in jedem Look zu lesen, die Seitenleiste bleibt in ihrer
+  Spalte. `tools/theme-kontrast.mjs`: **12/12 Looks, je 135/135 Paare**.
+- Beim Hinsehen gefunden und behoben (nur Anordnung, keine Farbe): der ⋯-Knopf fiel in den Fluss
+  der Karte und schob das Bild nach unten; „40 / 100" konnte in der Mitte umbrechen; die
+  Auswahllisten im Formular „Wer kämpft mit?" zeigten nur „Gleich aufs …" und „Vorlage wä…".
+- `typecheck`, Client-Build, `gate:boundaries` (**850 Dateien, 9 Regeln, 0 Verstöße**),
+  `gate:sprache` (**0 Verstöße**), `gate:version` grün.
+
+**Damit ist die offene Frage aus Feature 13 beantwortet** („Die Balken stehen nicht auf der
+Kampfbühne …"): die Offenlegung der Lebenspunkte fremder Figuren entscheidet jetzt die
+Spielleitung, Karte für Karte und Balken für Balken, und der Server lässt weg, was sie nicht
+freigibt.
+
+### Bewusst nicht enthalten
+
+- Kopplung an Marken auf der Szenenkarte (Umlegen legt die Marke nicht um)
+- automatische Beute bei Niederlage, Übergabe an die Gruppe
+- automatisches Würfeln der Initiative für Schnellgegner
+- Schaden aus einem Angriffswurf direkt auf die Zielkarte
+- mehrere Hände (Co-Spielleitung)
+
+Jeder dieser Punkte kann auf dem Datenmodell aufsetzen, ohne es zu ändern.
+
+### Offen und ausdrücklich nicht behauptet
+
+Keine volle Suite, kein Installer. Die Ablage ist nicht eingeklappt, wie der Entwurf sie
+beschreibt, sondern offen. Unter gemeinsamer Last kann der vorbestehende Fall „requires the round
+at the HTTP boundary" in `kampfbuehne.test.ts` sein Zeitbudget reißen; im Schlusslauf war er grün.

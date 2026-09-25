@@ -1,3 +1,28 @@
+# Der Kampftisch — 2026-09-23
+
+Die Kampfbühne ist ein Kartentisch geworden (Zweig `feature/kampftisch`, noch nicht in `main`).
+Jede Figur liegt als Karte mit ihren Balken auf dem Filz — in der Hand der Spielleitung (verdeckt),
+auf dem Feld, umgelegt oder in der Ablage. Die Spielleitung stellt je Karte und je Balken ein, was
+die Runde sieht (genau, nur Füllstand, in Worten, verborgen), dazu Name für die Runde, Bild und
+Zustände. Schnellgegner kommen aus einer Figurvorlage (1–12 auf einmal, eine Transaktion), Werte
+ändert man direkt auf der Karte (geschrieben wird in den Bogen), die Initiative lässt sich
+nachträglich setzen, und „Mit den Augen der Runde" zeigt die Vorschau vom Server. Live ohne
+Seitenkanal: der Fingerabdruck hasht die projizierte Nutzlast. Neue Tabelle `kampf_karten`
+(Migration 037), Exportfassung `native-v22`.
+
+Grün gesehen: 46 gezielte Vitest-Dateien mit **509/509** Fällen (davon 89 in den neuen
+Kampftisch-Dateien), `e2e/kampftisch.spec.ts` **2/2** und `e2e/gui-navigation.spec.ts` **6/6**
+im Browser (Edge, gebaute Oberfläche), alle zwölf Looks im Bild angesehen, `theme-kontrast`
+12/12 × 135/135, Typprüfung, Client-Build, `gate:boundaries` (850/9/0), `gate:sprache`,
+`gate:version`. Gegenproben aus Task 1, 3 und 4 wurden rot und sind zurückgesetzt. Nicht gelaufen:
+keine volle Suite, kein Installer, keine Prüfung gegen den inzwischen weitergebauten `main`.
+Merge oder Pull Request entscheidet Kaya.
+
+Entwurf: `docs/superpowers/specs/2026-09-23-kampftisch-karten-design.md`; Plan:
+`docs/superpowers/plans/2026-09-23-kampftisch-karten.md`; Mockup:
+`design/iterations/kampftisch-20260923/mockup.html`; Belege: `docs/FEATURELISTE.md`, Abschnitt
+„Der Kampftisch".
+
 # Regelkern universell: Codex-Review, Fähigkeitsprofil, Wegweiser, Zoom — 2026-09-15
 
 Codex' universelle Regel-Laufzeit (Manifest, Präsentationsbaum, Referenzsysteme) wurde in drei
