@@ -60,6 +60,12 @@ describe("Die Kartenlage reist im Kampagnenpaket mit", () => {
     expect(mit([{ ...karte, teilnehmer_id: randomUUID() }])).toThrow(/combatant/);
     expect(mit([{ ...karte, campaign_id: randomUUID() }])).toThrow(/another campaign/);
     expect(mit([{ ...karte, sicht: { schema: 2 } }])).toThrow(/visibility/);
+    // Dieselben Grenzen wie Datenbank und Eingabe: ein leerer oder unsichtbarer Name, eine Zeit vor 1970.
+    expect(mit([{ ...karte, name_fuer_runde: "" }])).toThrow(/name_fuer_runde/);
+    expect(mit([{ ...karte, name_fuer_runde: "   " }])).toThrow(/name_fuer_runde/);
+    expect(mit([{ ...karte, geaendert_am: "-1" }])).toThrow(/geaendert_am/);
+    expect(mit([{ ...karte, name_fuer_runde: null }])).not.toThrow();
+    expect(mit([{ ...karte, name_fuer_runde: " ein Wolf " }])).not.toThrow();
     // Der Zug wandert vom Wolf auf die verdeckte Karte: ein laufender Kampf mit genau einem Zug, aber in der Hand.
     const umgehaengt = tabellen.kampf_teilnehmer.map((t): CampaignRow => ({ ...t, am_zug: t.id === verdeckt }));
     expect(umgehaengt.find(t => t.id === wolf)!.am_zug).toBe(false);

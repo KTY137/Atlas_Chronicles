@@ -17,7 +17,10 @@ export const CAMPAIGN_V22_ADDITIONAL_TABLES = Object.freeze([
   table("kampf_karten", {
     teilnehmer_id: id(), campaign_id: id(),
     lage: { kind: "text", values: ["hand", "feld", "umgelegt", "ablage"] },
-    name_fuer_runde: { kind: "text", maxLength: 160, nullable: true },
+    // Wie die Eingabe (`NameFuerRundeSchema`): mindestens ein sichtbares Zeichen — das deckt auch
+    // „mindestens 1 Zeichen“ der Datenbank. `geaendert_am >= 0` hält die Spaltenart `bigint` selbst
+    // (nur nichtnegative Dezimalziffern).
+    name_fuer_runde: { kind: "text", maxLength: 160, pattern: "\\S", nullable: true },
     sicht: { kind: "json" },
     vom_kampf_angelegt: { kind: "boolean" },
     version: { kind: "integer", minimum: 1, maximum: 2147483647 },
