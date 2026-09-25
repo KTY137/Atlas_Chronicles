@@ -27,6 +27,33 @@ Rückgängig und muss sehen, was eine Änderung an den Chancen bewirkt. 4–7 be
 also die Schicht, die nach Kayas Migrationsregel gleich in ihrer endgültigen Form gebaut wird: jede
 bekommt eine eigene Spec mit Engine-, Beleg- und Migrationsfolgen, bevor Code entsteht.
 
+## Nachtrag 2026-09-25 — neue Reihenfolge
+
+Kaya am selben Tag: *„ich meine aber auch vom Aussehen, der Übersichtlichkeit und wie man ein
+Regelwerk erstellt das muss noch besser werden“* und *„ich will vollständige DnD5e, DSA etc. packs
+haben die mit allen offizielen Fähigkeiten bestückt sind“*. Lizenzentscheidung (AskUserQuestion):
+mitgeliefert werden **5e SRD 5.2 komplett** und **Pathfinder 2e Remaster (ORC)**; ein Import-Weg
+für eigene Bücher (DSA, 5e jenseits des SRD) kommt später.
+
+**Lizenzgrenze.** Mitgeliefert wird nur frei Lizenziertes. D&D 5e: SRD 5.1/5.2 (CC-BY-4.0); alles
+darüber hinaus gehört Wizards of the Coast. DSA: keine freie Lizenz (Ulisses-Fanrichtlinien
+schließen kommerzielle Nutzung aus) — kein mitgeliefertes DSA-Paket. Pathfinder 2e Remaster: Regeln
+unter ORC; „Pathfinder“ ist Marke und ORC-„Reserved Material“ (Eigennamen der Spielwelt, Götter,
+Orte) bleibt draußen — das Paket bekommt einen eigenen Namen und nennt Paizos Werk nur in der
+Pflichtangabe.
+
+**Engine-Grenze.** Ein vollständiges Paket passt nicht ins heutige Format: Fähigkeiten höchstens
+512, Text höchstens 600 Zeichen, Rang 1–3, Kosten 0–9, Paket höchstens 1 MiB. Zauber brauchen Grade
+0–9, Klassenmerkmale Stufen 1–20, Beschreibungen bis ~3000 Zeichen, das SRD 5.2 allein liegt über
+1 MiB. Deshalb vor den Paketen ein **Kompendium-Format**: typisierte Einträge (Zauber,
+Klassenmerkmal, Talent, Volk, Hintergrund, Gegenstand) mit Stufen, langen Texten und eigenem
+Speicherrahmen neben dem gepinnten Regelpaket. Irreversible Schicht → eigene Spec mit
+Angriffsdurchgang, bevor Code entsteht.
+
+**Neue Reihenfolge.** (a) Optik, Übersicht und ein **Regelwerk-Assistent** — umkehrbare Schicht,
+sofort; (b) Spec Kompendium-Format; (c) 5e SRD 5.2 vollständig; (d) ORC-Paket nach Pathfinder 2e
+Remaster; danach Level 3 (Wahrscheinlichkeit) und die Formatstufen 4–7.
+
 ## Level 2 — Nichts geht verloren
 
 **Befund.** Der Entwurf lebt nur im Arbeitsspeicher der Werkstatt. Neu laden, Fenster schließen oder
