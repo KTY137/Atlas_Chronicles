@@ -12,7 +12,7 @@ import { bebaueStadtteil } from "./bloecke.ts";
  */
 const STRASSEN = ["Parkallee", "Lindenstraße", "Hafenring", "Am Markt", "Bahnhofstraße", "Gartenweg", "Ringstraße", "Mühlweg", "Schulstraße", "Rosenweg"];
 const ORTE = ["Mitte", "Nord", "Süd", "West", "Ost", "am Ring", "am Park"];
-const GIEBEL: readonly BauwerkTyp[] = ["haus", "bauernhof", "kirche"], HALLE: readonly BauwerkTyp[] = ["fabrik", "lager", "werkstatt"];
+const GIEBEL: readonly BauwerkTyp[] = ["haus", "kirche"], HALLE: readonly BauwerkTyp[] = ["fabrik", "lager", "werkstatt"];
 
 export const MODERN: StadtStil = Object.freeze<StadtStil>({
   setting: "gegenwart",
@@ -30,9 +30,10 @@ export const MODERN: StadtStil = Object.freeze<StadtStil>({
     handwerk: [["fabrik", 40], ["lager", 35], ["werkstatt", 25]], hafen: [["lager", 80], ["werkstatt", 20]],
     adel: [["haus", 90], ["museum", 5], ["bibliothek", 5]], arm: [["wohnblock", 100]],
     tempel: [["schule", 50], ["krankenhaus", 50]], burg: [["polizei", 50], ["feuerwache", 50]], frei: [["haus", 100]],
-    weiler: [["haus", 60], ["bauernhof", 30], ["lager", 10]],
+    weiler: [["haus", 70], ["lager", 20], ["werkstatt", 10]],
   },
-  hoefe: art => art === "stadt" ? 4 : art === "dorf" ? 6 : 0,
+  // Keine Einzelhöfe an der Landstraße: das Zeitwelten-Paket hat keinen heutigen Bauernhof.
+  hoefe: () => 0,
   streifen: f => Math.max(1, Math.min(4, Math.round(f / 14))),
   sonderbauten: ({ art, marktMitte, torPunkte, setze, hatTyp }) => {
     const pflicht: readonly BauwerkTyp[] = art === "stadt" ? ["krankenhaus", "polizei", "feuerwache", "schule", "bahnhof"] : art === "dorf" ? ["supermarkt", "schule", "feuerwache", "kirche"] : [];

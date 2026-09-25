@@ -127,29 +127,29 @@ export function bebaueStadtteil(a: ParzellenAuftrag): FleckBau {
     const hof = einwaerts(b.poly, tiefe + .12);
     if (hof.length >= 3 && flaeche(hof) >= 1 && !nass(hof)) plaetze.push({ pfad: `${b.pfad}.hof`, polygon: hof.map(qp), material: "grass" });
   };
+  /** Hallen stehen an der Straße: eine Reihe an jeder der zwei längsten Straßenseiten, lange Seiten
+   *  mit zwei Hallen und einer Zufahrt dazwischen. Der Hof dahinter bleibt Lagerfläche. */
   const hallen = (b: Block, typ: BauwerkTyp | null) => {
-    const front = fronten(b.poly, strassen)[0], tuer = vorDerTuer(b.poly, strassen);
-    if (!front || !tuer) { hoefe.push(b.poly); return; }
-    const tiefe = Math.max(...b.poly.map(p => (p[0] - front.a[0]) * front.n[0] + (p[1] - front.a[1]) * front.n[1]));
-    const c0 = front.a[0] * front.n[0] + front.a[1] * front.n[1];
-    const mitteKante: Punkt = [front.a[0] + front.t[0] * front.laenge / 2, front.a[1] + front.t[1] * front.laenge / 2];
-    let belegt = .4, k = 0;
-    while (tiefe - belegt >= 2.4 && k < 4) {
-      // Lange Fronten tragen zwei Hallen nebeneinander, getrennt durch eine Zufahrt.
+    const seiten = fronten(b.poly, strassen).slice(0, 2);
+    if (!seiten.length) { hoefe.push(b.poly); return; }
+    for (const front of seiten) {
+      const tiefe = Math.max(...b.poly.map(p => (p[0] - front.a[0]) * front.n[0] + (p[1] - front.a[1]) * front.n[1]));
+      const c0 = front.a[0] * front.n[0] + front.a[1] * front.n[1], belegt = .4;
+      const mitteKante: Punkt = [front.a[0] + front.t[0] * front.laenge / 2, front.a[1] + front.t[1] * front.laenge / 2];
       const zwei = front.laenge > 6 * s * 2 + 1.6, l = zwei ? (front.laenge * .86 - 1) / 2 : Math.min(front.laenge * .8, 6 * s);
       const tm = mitteKante[0] * front.t[0] + mitteKante[1] * front.t[1];
       const spalten: readonly (readonly [number, number, number])[] = zwei ? [[-(l / 2 + .5), -Infinity, tm], [l / 2 + .5, tm, Infinity]] : [[0, -Infinity, Infinity]];
-      const d0 = Math.min((tiefe - belegt) * (k === 0 ? .55 : .9), 3.6 * s);
-      let d = d0;
+      const d0 = Math.min((tiefe - belegt) * (seiten.length > 1 ? .42 : .6), 3.6 * s);
+      if (d0 < 1.2) continue;
       for (const [versatz, von, bis] of spalten) {
         // Am Ufer rückt die Halle zur Straße, bis sie trocken steht.
         for (const anteil of [1, .75, .55]) {
           const dd = d0 * anteil, m: Punkt = [mitteKante[0] + front.t[0] * versatz + front.n[0] * (belegt + dd / 2), mitteKante[1] + front.t[1] * versatz + front.n[1] * (belegt + dd / 2)];
           const halle = passend(b.poly, m, front.t, l, dd), los = zwischen(zwischen(b.poly, front.n, c0 + belegt - .4, c0 + belegt + dd + .4), front.t, von, bis);
-          if (halle.length && los.length >= 3 && !nass(halle)) { setze(losPfad(los, "halle"), halle, los, tuer, typ, 2); d = Math.max(d, dd); break; }
+          const tuer = los.length >= 3 ? vorDerTuer(los, strassen) : null;
+          if (halle.length && tuer && !nass(halle) && setze(losPfad(los, "halle"), halle, los, tuer, typ, 2)) break;
         }
       }
-      belegt += d + .8; k++;
     }
   };
 
@@ -200,7 +200,8 @@ export function bebaueStadtteil(a: ParzellenAuftrag): FleckBau {
     else if (schluessel === "tempel") {
       const tuer = vorDerTuer(b.poly, strassen);
       const bau = tuer ? hausImLos(b.poly, tuer, Math.min(L * .6, 8), Math.min(B * .45, 4.5), "u") : [];
-      if (!tuer || !setze(`${b.pfad}.campus`, bau, b.poly, tuer, k % 2 === 0 ? "krankenhaus" : "schule", 0)) einfamilien(b, 2.1 * s, 1.5 * s, 1.35 * s, null, 0);
+      // Ein Krankenhaus und eine Schule je Stadtteil; die übrigen Blöcke sind Wohnblöcke am Rand.
+      if (k > 1 || !tuer || !setze(`${b.pfad}.campus`, bau, b.poly, tuer, k === 0 ? "krankenhaus" : "schule", 0)) blockrand(b, 2.3 * s, 1.8 * s, "wohnblock");
     } else {
       const lose = frontParzellen(b.poly, kanten(b.poly), 6 * s, 3.2, a.r), aemter: BauwerkTyp[] = ["rathaus", "polizei", "feuerwache"];
       for (const los of lose) {

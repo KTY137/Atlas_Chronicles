@@ -34,7 +34,8 @@ export const KOLONIE: StadtStil = Object.freeze<StadtStil>({
   hoefe: () => 0,
   streifen: f => Math.max(2, Math.min(6, Math.round(f / 6))),
   sonderbauten: ({ art, marktMitte, torPunkte, setze, hatTyp }) => {
-    const pflicht: readonly BauwerkTyp[] = art === "stadt" ? ["medstation", "labor"] : art === "dorf" ? ["medstation"] : [];
+    // Fand der Reaktor an der Nabe keinen Platz, übernimmt ihn die nächste Wohnkuppel.
+    const pflicht: readonly BauwerkTyp[] = art === "stadt" ? ["reaktor", "medstation", "labor"] : art === "dorf" ? ["reaktor", "medstation"] : [];
     for (const t of pflicht) if (!hatTyp(t)) setze(marktMitte, t);
     if (art !== "weiler") for (const t of torPunkte) setze(t, "lager");
   },

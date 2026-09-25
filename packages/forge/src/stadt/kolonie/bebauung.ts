@@ -90,9 +90,13 @@ export function bebaueSektor(a: ParzellenAuftrag): FleckBau {
 
   switch (a.rolle) {
     case "markt": case "burg": {
-      const kern = Math.max(.9, Math.min(2.4, rho * .38)), neben: Punkt = [m[0] + u[0] * rho * .62, m[1] + u[1] * rho * .62];
-      const zweit = a.rolle === "markt" ? vieleck(neben, Math.max(.7, Math.min(1.3, rho * .2)), 12) : rechteck(neben, u, Math.min(3, rho * .5), Math.min(2, rho * .3));
-      if (!deck([[vieleck(m, kern, 8, [.9238795325112867, .3826834323650898]), "kommando", 0], [zweit, a.rolle === "markt" ? "reaktor" : "lager", a.rolle === "markt" ? 0 : 1]]) && !nass(innen))
+      const kern = Math.max(.9, Math.min(2.4, rho * .38)), zentrale = vieleck(m, kern, 8, [.9238795325112867, .3826834323650898]);
+      // Der Reaktor (bzw. das Lager) steht neben der Zentrale: die erste von vier Richtungen, in der er passt.
+      const zweit = ([u, [-u[0], -u[1]], [-u[1], u[0]], [u[1], -u[0]]] as Punkt[]).flatMap(d => [1, .7].map(s => {
+        const c: Punkt = [m[0] + d[0] * (kern + .35 + rho * .2 * s), m[1] + d[1] * (kern + .35 + rho * .2 * s)];
+        return a.rolle === "markt" ? vieleck(c, Math.max(.6, Math.min(1.3, rho * .2 * s)), 12) : rechteck(c, d, Math.min(3, rho * .5) * s, Math.min(2, rho * .3) * s);
+      })).find(p => frei(p) && getrennteDaecher(p, zentrale)) ?? [];
+      if (!deck([[zentrale, "kommando", 0], [zweit, a.rolle === "markt" ? "reaktor" : "lager", a.rolle === "markt" ? 0 : 1]]) && !nass(innen))
         plaetze.push({ pfad: `${a.pfad}.deck`, polygon: innen, material: "square" });
       break;
     }

@@ -246,9 +246,11 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     // Eine Freifläche räumt alles, auch Sonderbauten. Dichte und Ufernähe gelten für gewöhnliche Häuser.
     if (zone === "excluded") { planVerworfen++; return false; }
     if (b.rang === 0) return true;
-    if (b.rang === 1) { if (zone) zonen.set(b.pfad, zone); return true; }
+    // Eine Hafenzone ohne Ufer bleibt leer — auch ein Hof in ihr wird kein Hafengebäude.
     const amWasser = () => wasserFlaechen.some(w => w.some((p, k) => abstandPolygonStrecke(b.umriss, p, w[(k + 1) % w.length]!) <= 4));
-    if (zone && (zoneDraw(layoutKeim.keimHash, b.pfad, "density") >= zone.dichte || (zone.nutzung === "hafen" && !amWasser()))) { planVerworfen++; return false; }
+    if (zone?.nutzung === "hafen" && !amWasser()) { planVerworfen++; return false; }
+    if (b.rang === 1) { if (zone) zonen.set(b.pfad, zone); return true; }
+    if (zone && zoneDraw(layoutKeim.keimHash, b.pfad, "density") >= zone.dichte) { planVerworfen++; return false; }
     if (zone) zonen.set(b.pfad, zone);
     return true;
   });
@@ -403,7 +405,8 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
 
   const mauern: Wand[] = [...mauerStuecke, ...burgMauern].map(m => ({ id: id("mauer", m.pfad), kind: "wall" as const, elevation: 0, points: [[q(m.a[0] * z), q(m.a[1] * z)], [q(m.b[0] * z), q(m.b[1] * z)]] }));
   const { werk, lichter, strassenzellen, hofzellen } = ausstattung({ paket, r, z, ids, setting: stil.setting, art, licht: optionen.licht, gassen: netz,
-    bauwerkPolys: bauwerke.map(b => b.umriss), hofFlaechen: hoefe, bauHindernisse, breite, hoehe, mitte, bauwerkZahl: bauwerke.length }, ablage);
+    bauwerkPolys: bauwerke.map(b => b.umriss), hofFlaechen: stil.setting === "fantasy" ? hoefe : [...hoefe, ...plaetze.filter(p => p.material === "square" || p.material === "grass").map(p => p.polygon)],
+    bauHindernisse, breite, hoehe, mitte, bauwerkZahl: bauwerke.length }, ablage);
 
   const lagenNamen = stadtListe.map(i => ({ nr: i, zelle: zelle(i), nachbarn: nachbarn[i]!.filter(istStadt), kern: istKern(i) }));
   const viertel = art === "stadt" ? viertelBilden(lagenNamen, rollen, mitte, r, stil.namen, stil.vorstadt).filter(v => v.flaeche >= 6 || v.nutzung === "markt" || v.nutzung === "burg").slice(0, 14)
