@@ -49,7 +49,9 @@
 .kampfkarte-monogramm { font-family: var(--font-display); font-size: 2.1rem; color: color-mix(in srgb, var(--seite-farbe) 75%, var(--text)); }
 .kampfkarte-siegel { position: absolute; inset-block-start: -.55rem; inset-inline-start: -.55rem; z-index: 2; inline-size: 2.3rem; block-size: 2.3rem; border-radius: 50%;
   display: grid; place-items: center; font: 700 .95rem var(--font-mono); background: var(--bg-deep); color: var(--text); border: 2px solid var(--seite-farbe); box-shadow: var(--shadow-1); }
-.kampfkarte-menue-ort { position: absolute; inset-block-start: .35rem; inset-inline-end: .35rem; z-index: 4; }
+/* Zwei Klassen, weil `.kampf-anker` (weiter unten, `position: relative`) sonst gewinnt: der Knopf
+   fiele dann in den Fluss der Karte, schöbe das Bild nach unten und läge über der Initiative. */
+.kampfkarte > .kampfkarte-menue-ort { position: absolute; inset-block-start: .35rem; inset-inline-end: .35rem; z-index: 4; }
 .kampfkarte-menue { inline-size: 1.9rem; block-size: 1.9rem; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--text); cursor: pointer; }
 .kampfkarte-name { margin: 0; padding: 0 .65rem; font-family: var(--font-display); font-size: 1rem; line-height: 1.2; overflow-wrap: anywhere; }
@@ -98,9 +100,11 @@
 .kampf-balken[data-farbe="ok"] { --balken-farbe: var(--ok); }
 .kampf-balken[data-farbe="warning"] { --balken-farbe: var(--warning); }
 .kampf-balken[data-farbe="private"] { --balken-farbe: var(--private); }
-.kampf-balken-kopf { display: flex; align-items: center; gap: .3rem; font-size: .74rem; }
+/* Reicht die Breite nicht (Auge, langer Name, breite Schrift eines Looks), rückt der Wert als
+   Ganzes in die nächste Zeile — „40 / 100“ bricht nie in der Mitte. */
+.kampf-balken-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; font-size: .74rem; }
 .kampf-balken-name { color: var(--text-muted); }
-.kampf-balken-wert, .kampf-balken-wort { margin-inline-start: auto; }
+.kampf-balken-wert, .kampf-balken-wort { margin-inline-start: auto; white-space: nowrap; }
 .kampf-balken-wert { font-family: var(--font-mono); font-size: .76rem; }
 button.kampf-balken-wert { border: 0; background: none; color: inherit; padding: 0 .15rem; border-radius: 4px; cursor: pointer; text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; }
 .kampf-balken-wort { font-size: .78rem; font-weight: 600; color: var(--balken-farbe); }
@@ -157,6 +161,9 @@ button.kampf-balken-wert { border: 0; background: none; color: inherit; padding:
 .kampf-aufnahme-wahl button { padding: .35rem .2rem; font-size: .74rem; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); cursor: pointer; }
 .kampf-aufnahme-wahl button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .kampf-felder { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); }
+/* Eine Auswahlliste nimmt die ganze Zeile: in der halben Breite der Seitenleiste stand sonst
+   nur „Gleich aufs …“ und „Vorlage wä…“ da, und man sah nicht, was man wählt. */
+.kampf-felder > label:has(> select) { grid-column: 1 / -1; }
 .kampf-wurf { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; }
 
 @media (max-width: 900px) {
