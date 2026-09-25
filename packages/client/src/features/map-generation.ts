@@ -62,7 +62,7 @@ export function generationOptions(value: GenerationSettings, defaults: Generatio
     ...(value.anlage === "burg" ? { graben: value.graben ?? false } : { symmetrie: value.symmetrie ?? 1 }) };
   if (value.art === "siedlung") return { ...(value.verkehr?.knoten.length ? { verkehr: value.verkehr } : {}), ...(value.planung?.zonen.length ? { planung: value.planung } : {}), art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
     ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, relief: value.relief, bewaldung: value.bewaldung, licht: value.licht,
-    ...(value.setting === "fantasy" && value.mauer !== undefined ? { mauer: value.mauer } : {}), ...(value.setting === "fantasy" && value.burg !== undefined ? { burg: value.burg } : {}) };
+    ...(value.setting !== "gegenwart" && value.mauer !== undefined ? { mauer: value.mauer } : {}), ...(value.setting === "fantasy" && value.burg !== undefined ? { burg: value.burg } : {}) };
   if (value.art === "region") return { standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}), ...(value.anzahl !== "" ? { orte: value.anzahl } : {}), relief: value.relief, bewaldung: value.bewaldung };
   return { ...(dimensions ? { zellen: dimensions } : {}),
     ...(value.anzahl !== "" ? value.art === "hoehle" ? { kammern: value.anzahl } : { raeume: value.anzahl } : {}),

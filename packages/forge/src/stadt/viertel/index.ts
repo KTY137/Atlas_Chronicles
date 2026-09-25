@@ -246,9 +246,10 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     // Eine Freifläche räumt alles, auch Sonderbauten. Dichte und Ufernähe gelten für gewöhnliche Häuser.
     if (zone === "excluded") { planVerworfen++; return false; }
     if (b.rang === 0) return true;
-    // Eine Hafenzone ohne Ufer bleibt leer — auch ein Hof in ihr wird kein Hafengebäude.
+    // Eine Hafenzone ohne Ufer bleibt leer — auch ein Hof in ihr wird kein Hafengebäude. Ein Raumhafen
+    // der Kolonie braucht kein Wasser.
     const amWasser = () => wasserFlaechen.some(w => w.some((p, k) => abstandPolygonStrecke(b.umriss, p, w[(k + 1) % w.length]!) <= 4));
-    if (zone?.nutzung === "hafen" && !amWasser()) { planVerworfen++; return false; }
+    if (zone?.nutzung === "hafen" && stil.setting !== "scifi" && !amWasser()) { planVerworfen++; return false; }
     if (b.rang === 1) { if (zone) zonen.set(b.pfad, zone); return true; }
     if (zone && zoneDraw(layoutKeim.keimHash, b.pfad, "density") >= zone.dichte) { planVerworfen++; return false; }
     if (zone) zonen.set(b.pfad, zone);

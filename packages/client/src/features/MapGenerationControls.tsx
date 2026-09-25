@@ -98,7 +98,7 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
       const { verkehr: _previous, ...rest } = value;
       onChange({ ...rest, ...(verkehr ? { verkehr } : {}) });
     }} /> : null}
-    {city && !compound && defaults.siedlungsplanung === 1 ? <MapZonePlanner value={value.planung} vorschlag={viertelPlan} onChange={planung => {
+    {city && !compound && defaults.siedlungsplanung === 1 ? <MapZonePlanner value={value.planung} vorschlag={viertelPlan} setting={value.setting} onChange={planung => {
       const { planung: _previous, ...rest } = value;
       onChange({ ...rest, ...(planung ? { planung } : {}) });
     }} /> : null}
@@ -107,6 +107,10 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
       <small className="field-help">{t("Die Altstadt bekommt eine Mauer. Wo Hauptstraßen hinausführen, entstehen Tore; die Türme kannst du später betreten.")}</small>
       <label className="check-label"><input type="checkbox" checked={mitMauer && (value.burg ?? ortsVorgabe.burg ?? value.siedlung === "stadt")} disabled={!mitMauer} onChange={event => update({ burg: event.target.checked })} /> {t("Burg am Stadtrand")}</label>
       <small className="field-help">{t("Eine Burg mit eigener Mauer steht auf dem höchsten Platz an der Stadtmauer. Ohne Stadtmauer gibt es keine Burg.")}</small>
+    </section> : null}
+    {city && !compound && value.setting === "scifi" ? <section className="map-town-defense" aria-label={t("Befestigung")}>
+      <label className="check-label"><input type="checkbox" checked={mitMauer} onChange={event => update({ mauer: event.target.checked })} /> {t("Schutzzaun mit Toren")}</label>
+      <small className="field-help">{t("Um die Kolonie läuft ein leuchtender Zaun. Wo Straßen hinausführen, bleibt ein Tor offen.")}</small>
     </section> : null}
     {outdoor ? <section className="map-location-section" aria-label={t("Standort der Siedlung")}>
       <div className="map-setting-heading"><MapPin size={16} /><strong>{t("Wo liegt dein Ort?")}</strong></div>

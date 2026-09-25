@@ -17,10 +17,26 @@ const stadt = (patch: object = {}) => ({ ...generationSettings(), siedlung: "sta
 const markup = (value = stadt()) => renderToStaticMarkup(MapGenerationControls({ value, defaults, onChange: () => {} }));
 
 describe("Stadtmauer, Burg und Viertel in der Oberfläche", () => {
-  it("reicht Mauer und Burg nur für gewöhnliche Fantasy-Siedlungen durch", () => {
+  it("reicht Mauer und Burg für Fantasy durch, den Schutzzaun für Sci-Fi, in der Gegenwart nichts", () => {
     expect(generationOptions(stadt({ mauer: false, burg: true }), defaults)).toMatchObject({ mauer: false, burg: true });
-    expect(generationOptions(stadt({ mauer: false, setting: "scifi" }), defaults)).not.toHaveProperty("mauer");
+    expect(generationOptions(stadt({ mauer: false, burg: true, setting: "scifi" }), defaults)).toMatchObject({ mauer: false });
+    expect(generationOptions(stadt({ mauer: false, burg: true, setting: "scifi" }), defaults)).not.toHaveProperty("burg");
+    expect(generationOptions(stadt({ mauer: false, setting: "gegenwart" }), defaults)).not.toHaveProperty("mauer");
     expect(generationOptions(stadt(), defaults)).not.toHaveProperty("mauer");
+  });
+  it("zeigt der Kolonie einen Schutzzaun und der heutigen Stadt keine Befestigung", () => {
+    const kolonie = markup(stadt({ setting: "scifi" })), heute = markup(stadt({ setting: "gegenwart" }));
+    expect(kolonie).toContain("Schutzzaun mit Toren");
+    expect(kolonie).not.toContain("Burg am Stadtrand");
+    expect(heute).not.toContain("Schutzzaun mit Toren");
+    expect(heute).not.toContain("Stadtmauer mit Türmen und Toren");
+  });
+  it("benennt die Zonen in der Sprache des Settings", () => {
+    const zone = { id: "z", name: "Z", nutzung: "burg" as const, dichte: 1, polygon: [[.4, .4], [.6, .4], [.6, .6]] as const };
+    const planer = (setting: "fantasy" | "gegenwart" | "scifi") => renderToStaticMarkup(createElement(MapZonePlanner, { onChange: () => {}, setting, value: { schemaVersion: 1, zonen: [zone] } }));
+    expect(planer("scifi")).toContain("Raumhafen"); expect(planer("scifi")).toContain("Kommandozentrale"); expect(planer("scifi")).not.toContain("Tempelbezirk");
+    expect(planer("gegenwart")).toContain("Innenstadt"); expect(planer("gegenwart")).toContain("Rathaus &amp; Ämter"); expect(planer("gegenwart")).not.toContain("Adelsviertel");
+    expect(planer("fantasy")).toContain("Tempelbezirk");
   });
   it("zeigt die zwei Schalter mit Klartext nur bei Fantasy", () => {
     expect(markup()).toContain("Stadtmauer mit Türmen und Toren");
