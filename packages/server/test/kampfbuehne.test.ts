@@ -175,7 +175,7 @@ describe("Die Kampfbühne", () => {
       expect(advanced.json().runde).toBe(2);
       expect((await send({ von, runde: 1 })).statusCode).toBe(409);
     } finally { await app.close(); }
-  });
+  }, 30_000);
 
   it("schiebt den Zug weiter, wenn die Kämpfende am Zug die Bühne verlässt", async () => {
     const f = await fixture();

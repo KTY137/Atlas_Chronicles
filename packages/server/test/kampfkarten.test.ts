@@ -13,7 +13,8 @@ import { buildApp } from "../src/app.ts";
 import { createIdentity } from "../src/identity/index.ts";
 
 // Was am Tisch vorkommt: verdecken, ausspielen, umlegen, vom Feld nehmen — und wer dabei dran ist.
-describe("Der Kampftisch", () => {
+// Jeder Fall legt eine eigene Runde samt Regelpaket an; unter Last reichen 5 s nicht.
+describe("Der Kampftisch", { timeout: 30_000 }, () => {
   let db: Db;
   beforeAll(async () => { db = await createTestDb(); await migrate(db); }, 30_000);
   afterAll(async () => { await db?.close(); });
