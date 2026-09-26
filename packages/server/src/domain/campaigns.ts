@@ -5,6 +5,7 @@ import type { Db } from "../db/index.ts";
 import { Gone, Conflict } from "./errors.ts";
 import { normalizeName } from "./names.ts";
 import { secretToken, tokenHash } from "../identity/index.ts";
+import { CHRONICLES_LITE_PACKAGE, supportedPackageContentHash, type AnyRulePackage } from "@chronicle/rules";
 
 /**
  * `fetch` ist hier eine ABHÄNGIGKEIT und keine Bequemlichkeit: der Kartenabruf aus einem Wiki ist
@@ -12,6 +13,14 @@ import { secretToken, tokenHash } from "../identity/index.ts";
  * wirklich ins Netz. Ohne diesen Haken wäre die Grenze nur behauptet.
  */
 export interface DomainConfig { now?: () => number; fetch?: typeof fetch }
+/**
+ * Das Regelwerk, mit dem eine neu angelegte Runde startet (Kaya, 2026-09-26: „Chronicles Lite als
+ * Standardregelwerk“). Es wird beim Anlegen installiert und angeheftet. Runden ohne eigene Zeile in
+ * `campaign_rule_pins` — alle älteren — spielen weiter auf dem eingebauten Demopaket; dieser
+ * Rückfall bleibt, sonst passten ihre Bögen nicht mehr.
+ */
+export const DEFAULT_CAMPAIGN_RULES: AnyRulePackage = CHRONICLES_LITE_PACKAGE;
+export interface CreateCampaignOptions { readonly rules?: AnyRulePackage }
 export interface Membership { campaignId: string; userId: string; role: "leitung" | "spieler" | "beobachter"; displayName: string; actorId: string | null; universeId: string }
 export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
   const now = cfg.now ?? Date.now;
@@ -30,7 +39,7 @@ export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
     if (!row || (roles && !roles.includes(row.role))) throw new Gone("membership");
     return row;
   }
-  async function createCampaign(userId: string, input: { name: string }) {
+  async function createCampaign(userId: string, input: { name: string }, options: CreateCampaignOptions = {}) {
     if (!input.name.trim() || input.name.length > 160) throw new Gone("campaign-name");
     return db.transaction(async (tx) => {
       const user = (await tx.query<{ display_name: string }>("SELECT display_name FROM users WHERE id=$1 AND platform_role='leitung'", [userId])).rows[0];
@@ -42,6 +51,12 @@ export function createCampaigns(db: Db, cfg: DomainConfig = {}) {
       await tx.query(`INSERT INTO campaign_memberships(campaign_id,user_id,role,display_name,name_skeleton)
         VALUES($1,$2,'leitung',$3,$4)`, [id, userId, user.display_name, normalizeName(user.display_name).skeleton]);
       await tx.query("INSERT INTO reader_perspectives(campaign_id,user_id,actor_id,version,updated_at) VALUES($1,$2,NULL,1,$3)", [id,userId,now()]);
+      if (options.rules) {
+        const rules = options.rules;
+        await tx.query("INSERT INTO rule_packages(campaign_id,package_id,version,document,content_hash,installed_by,installed_at) VALUES($1,$2,$3,$4,$5,$6,$7)",
+          [id, rules.id, rules.version, rules, supportedPackageContentHash(rules), userId, now()]);
+        await tx.query("INSERT INTO campaign_rule_pins(campaign_id,package_id,package_version,version) VALUES($1,$2,$3,1)", [id, rules.id, rules.version]);
+      }
       return { id, universeId, name, version: 1, role: "leitung" as const };
     });
   }
