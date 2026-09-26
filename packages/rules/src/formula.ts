@@ -23,7 +23,7 @@ const CALLS = ["min", "max", "floor", "ceil", "round", "abs", "haelt", "haelt_et
 /** Dice notation: NdS, optionally khN/klN and !CAP (explicit bounded explosions). */
 export function parseDice(source: string): Extract<Formula, {kind: "dice"}> {
   if (typeof source !== "string" || source.length > 48) fail("dice: invalid notation");
-  const match = /^(\d{1,3})d(\d{1,6})(?:(kh|kl)(\d{1,3}))?(?:!(\d{1,2}))?$/.exec(source);
+  const match = /^(\d{1,5})d(\d{1,6})(?:(kh|kl)(\d{1,5}))?(?:!(\d{1,3}))?$/.exec(source);
   if (!match) fail("dice: expected NdS, optional khN/klN and !CAP");
   const count = integer(Number(match[1]), "dice count", 1, RULE_LIMITS.dice);
   const sides = integer(Number(match[2]), "dice sides", 2, RULE_LIMITS.sides);
@@ -40,7 +40,7 @@ export type FormulaParseDetail =
   | { readonly ok: true; readonly ast: Formula; readonly tokens: readonly FormulaToken[] }
   | { readonly ok: false; readonly code: FormulaErrorCode; readonly message: string; readonly start: number; readonly end: number; readonly tokens: readonly FormulaToken[]; readonly expected?: string; readonly name?: string };
 
-const TOKEN = /\s*(\d{1,3}d\d{1,6}(?:(?:kh|kl)\d{1,3})?(?:!\d{1,2})?|(?:\d+(?:\.\d+)?|\.\d+)|"(?:[^"\\\r\n]|\\["\\/bfnrt]|\\u[\da-fA-F]{4})*"|[a-zA-Z_][a-zA-Z_0-9]*|==|!=|>=|<=|&&|\|\||[+*/%(),.!<>-])/y;
+const TOKEN = /\s*(\d{1,5}d\d{1,6}(?:(?:kh|kl)\d{1,5})?(?:!\d{1,3})?|(?:\d+(?:\.\d+)?|\.\d+)|"(?:[^"\\\r\n]|\\["\\/bfnrt]|\\u[\da-fA-F]{4})*"|[a-zA-Z_][a-zA-Z_0-9]*|==|!=|>=|<=|&&|\|\||[+*/%(),.!<>-])/y;
 function tokenKind(text: string): FormulaTokenKind {
   if (/^\d+d/.test(text)) return "dice";
   if (text === ".") return "dot";
@@ -99,7 +99,7 @@ function parseTokens(tokens: readonly string[], spans?: Map<Formula, readonly [n
       if (t !== "if" && !(CALLS as readonly string[]).includes(t)) syntax("unsupported-function", `formula: unsupported function ${t}`, start, { name: t });
       take("("); const args: Formula[] = [];
       if (tokens[cursor] !== ")") for (;;) {
-        args.push(parse(0, depth + 1)); if (args.length > 8) syntax("argument-count", "formula: argument limit exceeded", start);
+        args.push(parse(0, depth + 1)); if (args.length > RULE_LIMITS.callArguments) syntax("argument-count", "formula: argument limit exceeded", start);
         if (tokens[cursor] !== ",") break; cursor++;
       }
       take(")");
@@ -147,7 +147,7 @@ export function parseFormulaDetailed(source: string, fields?: FormulaFieldTypes)
   const tokens = tokenizeFormula(source);
   const between = (span: readonly [number, number]): [number, number] => [tokens[span[0]]?.start ?? source.length, tokens[span[1] - 1]?.end ?? source.length];
   const at = (index: number, spanEnd?: number): [number, number] => spanEnd === undefined ? between([index, index + 1]) : between([index, spanEnd]);
-  if (typeof source !== "string" || source.length > RULE_LIMITS.formulaLength) return { ok: false, code: "limit", message: "formula: expected nonempty string (max 4096)", start: 0, end: source.length, tokens };
+  if (typeof source !== "string" || source.length > RULE_LIMITS.formulaLength) return { ok: false, code: "limit", message: `formula: expected nonempty string (max ${RULE_LIMITS.formulaLength})`, start: 0, end: source.length, tokens };
   const last = tokens[tokens.length - 1];
   // Same precedence as parseFormula: the token limit is checked against the good tokens only, and wins over
   // reporting an invalid character found beyond that limit.
@@ -219,7 +219,7 @@ export function parseFormulaAst(input: unknown): Formula {
       case "if": keys(row, ["kind", "condition", "then", "else"], "if"); visit(row.condition, depth + 1); visit(row.then, depth + 1); visit(row.else, depth + 1); return;
       case "call": {
         keys(row, ["kind", "name", "args"], "call"); if (!(CALLS as readonly unknown[]).includes(row.name) || !Array.isArray(row.args)) fail("call: unsupported function");
-        if (row.args.length > 8 || (row.name === "min" || row.name === "max" ? row.args.length < 2 : row.args.length !== 1)) fail("call: invalid argument count");
+        if (row.args.length > RULE_LIMITS.callArguments || (row.name === "min" || row.name === "max" ? row.args.length < 2 : row.args.length !== 1)) fail("call: invalid argument count");
         for (const arg of row.args) visit(arg, depth + 1); return;
       }
       default: fail("formula: unsupported AST node");

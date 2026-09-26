@@ -5,11 +5,26 @@ export class RuleValidationError extends Error {
   constructor(message: string) { super(message); }
 }
 
+/**
+ * Jede Grenze eines Regelpakets an einer Stelle — Prüfer, Protokoll, Server und Oberfläche lesen
+ * sie von hier (docs/superpowers/specs/2026-09-25-regelschmiede-leiter-design.md, „Grenzen ohne
+ * Sorgen“). Inhaltsgrenzen sind so gewählt, dass auch ein vollständiges Regelwerk mit Tausenden
+ * Fähigkeiten nie an sie stößt; die Rechengrenzen (Tiefe, Knoten, Schritte, Würfel) schützen weiter
+ * die Rechenzeit. Anheben ist verträglich, Absenken wäre es nicht.
+ */
 export const RULE_LIMITS = Object.freeze({
-  packageBytes: 1_048_576, jsonDepth: 48, jsonNodes: 50_000,
-  formulaLength: 4096, formulaDepth: 32, formulaNodes: 512,
-  operations: 4096, dice: 100, sides: 100_000, explosions: 20,
-  fields: 512, actions: 512, knowledgePassages: 2048, vitals: 8,
+  packageBytes: 64 * 1024 * 1024, jsonDepth: 48, jsonNodes: 4_000_000,
+  formulaLength: 65_536, formulaDepth: 128, formulaNodes: 8_192, callArguments: 256,
+  operations: 250_000, dice: 10_000, sides: 100_000, explosions: 100,
+  fields: 65_536, actions: 65_536, abilities: 65_536, knowledgePassages: 65_536, passageLabels: 256,
+  conditions: 16_384, computed: 16_384, constraints: 16_384, vitals: 256,
+  sections: 4_096, nestingDepth: 64, collections: 4_096, collectionItemFields: 1_024, collectionItems: 100_000, enumValues: 10_000,
+  presentationNodes: 262_144, presentationChildren: 65_536,
+  selfTests: 16_384, migrations: 4_096, migrationSteps: 65_536, migrationEntities: 1_000_000,
+  authors: 1_024, attributionSources: 1_024, sourceAuthors: 4_096,
+  preconditions: 256, outcomeBands: 256, modifiers: 256, modifierPatterns: 1_024, requires: 256,
+  label: 500, message: 10_000, longText: 200_000, stringValue: 16_777_216,
+  rank: 1_000, cost: 1_000_000, price: 1_000_000,
 });
 
 export function fail(message: string): never { throw new RuleValidationError(message); }

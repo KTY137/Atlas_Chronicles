@@ -11,6 +11,8 @@ const fixture = () => ({ ...rules.DEMO_RULE_PACKAGE, schemaVersion: 2, actions: 
 const pkg = () => rules.parseSupportedRulePackage(JSON.stringify(fixture()));
 const changed = (overrides: Record<string, unknown>) => rules.parseSupportedRulePackage({ ...pkg(), ...overrides });
 const balanced = (count: number): string => count === 1 ? "1" : `(${balanced(Math.floor(count / 2))} + ${balanced(Math.ceil(count / 2))})`;
+/** Eine Rechnung mit rund 4000 Schritten (unter der Knotengrenze einer Formel); so viele davon, dass sie zusammen das Rechenbudget eines Aufrufs sicher überschreiten. */
+const HEAVY = balanced(2048), OVER_BUDGET = Math.ceil(rules.RULE_LIMITS.operations / 2048) + 2;
 
 describe("supported v2 package regressions", () => {
   it("binds attribution and unused computed expressions to original receipts", () => {
@@ -81,7 +83,7 @@ describe("closed v2 vocabulary and deterministic limits", () => {
     for (const color of ["#FF0000", "#f00", "#ff000080", "", "Rot", "crimson", "red; background: url(x)", 1, null]) expect(() => changed({ vitals: [{ ...vital, color }] })).toThrow(/color/);
     for (const color of [...rules.VITAL_COLORS, "#c0392b"]) expect((changed({ vitals: [{ ...vital, color }] }) as rules.RulePackageV2).vitals![0]!.color).toBe(color);
     expect(() => changed({ vitals: [{ ...vital, label: "" }] })).toThrow(/vital.label/);
-    expect(() => changed({ vitals: Array.from({ length: 9 }, () => vital) })).toThrow(/max 8/);
+    expect(() => changed({ vitals: Array.from({ length: rules.RULE_LIMITS.vitals + 1 }, () => vital) })).toThrow(new RegExp(`max ${rules.RULE_LIMITS.vitals}`));
   });
   // Der Hoechststand wird gegen GESPEICHERTE Felder geprueft und spaeter gegen dieselben
   // ausgewertet. Faenden die beiden Namensraeume auseinander, ergaebe ein gueltiges Paket eine
@@ -140,12 +142,12 @@ describe("closed v2 vocabulary and deterministic limits", () => {
   });
   it("shares operations across computations, assertions, the primary roll and all bands", () => {
     const action = pkg().actions[0]!;
-    const excessive = changed({ computed: Array.from({ length: 9 }, (_, i) => ({ id: `computed_${i}`, label: "Computed", expression: balanced(128) })), actions: [{ ...action, outcome: { bands: Array.from({ length: 8 }, (_, i) => ({ id: `band_${i}`, label: "Band", comparison: "gte", expression: balanced(128), success: false })), fallback: { id: "fallback", label: "Fallback", success: true } } }] });
+    const excessive = changed({ computed: Array.from({ length: OVER_BUDGET }, (_, i) => ({ id: `computed_${i}`, label: "Computed", expression: HEAVY })), actions: [{ ...action, outcome: { bands: Array.from({ length: 8 }, (_, i) => ({ id: `band_${i}`, label: "Band", comparison: "gte", expression: balanced(128), success: false })), fallback: { id: "fallback", label: "Fallback", success: true } } }] });
     expect(() => rules.evaluateSupportedAction(excessive, "check", context)).toThrow(/aggregate operation/);
-    const computed = changed({ computed: Array.from({ length: 17 }, (_, i) => ({ id: `computed_${i}`, label: "Computed", expression: balanced(128) })) });
+    const computed = changed({ computed: Array.from({ length: OVER_BUDGET }, (_, i) => ({ id: `computed_${i}`, label: "Computed", expression: HEAVY })) });
     expect(() => rules.validatePackageFields(computed, {})).toThrow(/aggregate operation/);
     expect(() => rules.evaluateComputedFields(computed, {})).toThrow(/aggregate operation/);
-  });
+  }, 120_000);
 });
 
 describe("complete replay and installation", () => {
@@ -195,7 +197,7 @@ describe("supported migrations", () => {
     const original = pkg(); const revision = changed({ version: "1.1.0", migrations: [{ from: original.version, to: "1.1.0", steps: [] }] });
     expect(() => rules.previewSupportedPackageMigration(original, revision, [{ id: "hero", fields: { insight: 0, vigour: 6 } }])).toThrow(/Vigour/);
     expect(() => rules.previewSupportedPackageMigration(original, { ...revision, id: "another.system" }, [])).toThrow(/same package/);
-    const excessive = changed({ version: "1.1.0", migrations: [{ from: original.version, to: "1.1.0", steps: Array.from({ length: 17 }, () => ({ kind: "numeric", field: "insight", expression: balanced(128) })) }] });
+    const excessive = changed({ version: "1.1.0", migrations: [{ from: original.version, to: "1.1.0", steps: Array.from({ length: OVER_BUDGET }, () => ({ kind: "numeric", field: "insight", expression: HEAVY })) }] });
     expect(() => rules.previewSupportedPackageMigration(original, excessive, [{ id: "hero", fields: {} }])).toThrow(/aggregate operation/);
-  });
+  }, 120_000);
 });

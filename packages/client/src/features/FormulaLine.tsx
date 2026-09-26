@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { BookOpen, X } from "lucide-react";
 import { Button } from "@chronicle/ui";
+import { RULE_LIMITS } from "@chronicle/rules";
 import { t } from "../i18n";
 import { completionsAt, type Completion, type FormulaAnalysis, type FormulaOptions, type FormulaSources } from "./formula-sugar";
 
@@ -76,7 +77,7 @@ export function FormulaLine({ id, label, help, text, analysis, sources, options,
     {!hintSeen ? <p className="ff-hint">{t("Tippe @ für Attribute, ? für Parameter, Zahlen und Würfel wie 1d20 direkt.")} <Button variant="quiet" aria-label={t("Hinweis schließen")} onClick={() => { writeFlag(HINT_KEY); setHintSeen(true); }}><X size={13} /></Button></p> : null}
     <div className="ff-line-stack">
       <Overlay text={text} analysis={analysis} overlayRef={overlay} />
-      <input ref={input} id={id} className="ff-line-input" value={text} disabled={disabled} autoComplete="off" spellCheck={false} maxLength={4096}
+      <input ref={input} id={id} className="ff-line-input" value={text} disabled={disabled} autoComplete="off" spellCheck={false} maxLength={RULE_LIMITS.formulaLength}
         role="combobox" aria-autocomplete="list" aria-expanded={!!completion} aria-controls={listId} aria-activedescendant={completion ? `${listId}-${active}` : undefined}
         aria-describedby={statusId} aria-invalid={error ? true : undefined}
         onChange={event => { onText(event.target.value); refresh(event.target.value, event.target.selectionStart ?? event.target.value.length); syncScroll(); }}

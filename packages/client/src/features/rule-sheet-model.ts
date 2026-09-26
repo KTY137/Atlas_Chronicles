@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { RULE_PRESENTATION_SCHEMA_VERSION, type RulePresentationNode } from "@chronicle/rules";
+import { RULE_LIMITS, RULE_PRESENTATION_SCHEMA_VERSION, type RulePresentationNode } from "@chronicle/rules";
 import { localKey, presentationFromSections, type DraftField, type DraftSection, type RuleDraft } from "./rule-forge-model";
 
 /**
@@ -13,7 +13,6 @@ import { localKey, presentationFromSections, type DraftField, type DraftSection,
  * nur, wenn sie wirklich etwas zu ändern hat.
  */
 export type SheetRefKind = "field" | "computed" | "vital" | "collection";
-const SECTION_LIMIT = 64;
 const IDENTIFIER = /^[a-z][a-z0-9_-]*$/;
 
 /** Der Baum, den der Bogen tatsächlich zeigt — bei `presentationAuto` der aus den Abschnitten gerechnete. */
@@ -49,7 +48,7 @@ export function sectionsFromTree(root: readonly RulePresentationNode[], fields: 
     taken.add(id); return id;
   };
   walk(root, (node, parent) => {
-    if (node.kind !== "group" || sections.length >= SECTION_LIMIT) return;
+    if (node.kind !== "group" || sections.length >= RULE_LIMITS.sections) return;
     const localId = localKey(); localOf.set(node.id, localId);
     const fieldKeys = node.children.flatMap(child => child.kind === "field" && byId.has(child.ref) ? [byId.get(child.ref)!] : []);
     sections.push({ localId, id: sectionId(node.id), label: node.label, fieldKeys, parentLocalId: parent ? localOf.get(parent.id) ?? null : null });

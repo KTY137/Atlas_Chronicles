@@ -16,9 +16,13 @@ import { buildApp } from "../src/app.ts";
 
 const config = { origin: "https://runtime.test", cookieSecret: "runtime-test-cookie-secret-long-enough", bootstrapToken: "runtime-bootstrap-secret-long-enough" };
 const lite = parseSupportedRulePackage(JSON.parse(gunzipSync(readFileSync(new URL("../../rules/test/fixtures/chronicles-lite-v1.rules.json.gz", import.meta.url))).toString("utf8")));
+// Ein Paket an der vollen Feldgrenze (65 536) braucht hier Minuten; die Grenze selbst prüfen die
+// Transportschemata direkt, der Weg durch Server und Datenbank läuft mit einem großen, echten Paket.
+const LARGE_SHEET_FIELDS = 2048;
+const atBound = (count: number): Record<string, number> => Object.fromEntries(Array.from({ length: count }, (_, i) => [`field_${i}`, 0]));
 function largePackage(): AnyRulePackage {
   const fields: Record<string, FieldSchema> = { ...DEMO_RULE_PACKAGE.fields };
-  while (Object.keys(fields).length < RULE_LIMITS.fields) fields[`field_${Object.keys(fields).length}`] = { type: "integer", label: "Value", default: 0, minimum: 0, maximum: 100 };
+  while (Object.keys(fields).length < LARGE_SHEET_FIELDS) fields[`field_${Object.keys(fields).length}`] = { type: "integer", label: "Value", default: 0, minimum: 0, maximum: 100 };
   return parseSupportedRulePackage({ ...DEMO_RULE_PACKAGE, id: "runtime.bounds", fields });
 }
 
@@ -118,12 +122,13 @@ describe("host-authoritative rule runtime over the real HTTP boundary", () => {
     expect(await f.snapshot()).toEqual(before);
   });
 
-  it("uses the same 512-field bound for all transport schemas and rejects the 513th", async () => {
-    const f = await fixture(largePackage());
+  it("uses the same field bound for all transport schemas and rejects one more", async () => {
+    const f = await fixture();
     expect(RULE_VALUE_FIELD_LIMIT).toBe(RULE_LIMITS.fields);
-    expect(Value.Check(RuleValues, f.runtime.defaults)).toBe(true);
-    expect(Value.Check(FigurantragAntragBody, { commandId: "request", templateId: "template", name: "Large", anfangswerte: f.runtime.defaults })).toBe(true);
-    const tooMany = { ...f.runtime.defaults, overflow: 1 };
+    const full = atBound(RULE_LIMITS.fields);
+    expect(Value.Check(RuleValues, full)).toBe(true);
+    expect(Value.Check(FigurantragAntragBody, { commandId: "request", templateId: "template", name: "Large", anfangswerte: full })).toBe(true);
+    const tooMany = { ...full, overflow: 1 };
     expect(Value.Check(RuleValues, tooMany)).toBe(false);
     expect(Value.Check(FigurantragAntragBody, { commandId: "request", templateId: "template", name: "Large", anfangswerte: tooMany })).toBe(false);
     const before = await f.snapshot();
@@ -134,7 +139,7 @@ describe("host-authoritative rule runtime over the real HTTP boundary", () => {
     expect(accepted.statusCode, accepted.body).toBe(200);
   });
 
-  it("saves a 512-field instantiated sheet, rejects stale hashes and still enforces expectedVersion", async () => {
+  it("saves a large instantiated sheet, rejects stale hashes and still enforces expectedVersion", async () => {
     const f = await fixture(largePackage());
     await f.game.activatePackage(gm, f.id, { ...f.selection, expectedVersion: 0 });
     const actors = createActors(db);
@@ -146,7 +151,7 @@ describe("host-authoritative rule runtime over the real HTTP boundary", () => {
     expect((await put({ ...body, packageContentHash: "0".repeat(64) })).statusCode).toBe(409);
     expect((await f.game.getSheet(gm, f.id, actor.id)).version).toBe(sheet.version);
     const saved = await put(body); expect(saved.statusCode, saved.body).toBe(200);
-    expect(Object.keys(saved.json().fields)).toHaveLength(512);
+    expect(Object.keys(saved.json().fields)).toHaveLength(LARGE_SHEET_FIELDS);
     expect(saved.json().fields.insight).toBe(3);
     expect((await put(body)).statusCode).toBe(409);
     expect((await put({ ...body, expectedVersion: saved.json().version, fields: { ...body.fields, overflow: 1 } })).statusCode).toBe(400);

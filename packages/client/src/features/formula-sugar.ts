@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { parseFormulaDetailed, tokenizeFormula, type Formula, type FormulaErrorCode, type FormulaFieldTypes, type FormulaType } from "@chronicle/rules";
-import { t } from "../i18n";
+import { RULE_LIMITS, parseFormulaDetailed, tokenizeFormula, type Formula, type FormulaErrorCode, type FormulaFieldTypes, type FormulaType } from "@chronicle/rules";
+import { locale, t } from "../i18n";
 import type { DraftField } from "./rule-forge-model";
 
 export interface FormulaMember { readonly id: string; readonly label: string; readonly type: FormulaType }
@@ -145,7 +145,7 @@ function explain(code: FormulaErrorCode, detail: { message: string; expected?: s
     }
     case "argument-count": return detail.name === "if" ? t("„if“ braucht genau drei Werte: Bedingung, dann, sonst.") : detail.name === "min" || detail.name === "max" ? t("„{name}“ braucht mindestens zwei Werte.", { name: detail.name }) : t("„{name}“ braucht genau einen Wert.", { name: detail.name ?? "" });
     case "limit": return t("Diese Formel ist zu lang oder zu tief verschachtelt. Teile sie in einen abgeleiteten Wert auf.");
-    case "dice": return t("Würfel schreibt man als Anzahl, d und Seiten, zum Beispiel 1d20 oder 2d6; mindestens 2 Seiten, höchstens 100 Würfel.");
+    case "dice": return t("Würfel schreibt man als Anzahl, d und Seiten, zum Beispiel 1d20 oder 2d6; mindestens 2 Seiten, höchstens {anzahl} Würfel.", { anzahl: RULE_LIMITS.dice.toLocaleString(locale()) });
     case "number": return t("Diese Zahl ist zu groß. Erlaubt sind Werte bis eine Billion.");
     case "type": {
       const wanted = /expected (number|boolean|string)/.exec(detail.message)?.[1] as FormulaType | undefined;

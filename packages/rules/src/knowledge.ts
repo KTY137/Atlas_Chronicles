@@ -20,7 +20,7 @@ export function parseProjectedKnowledge(input: unknown): ProjectedKnowledge {
   for (const p of array(data.passages, "knowledge.passages", RULE_LIMITS.knowledgePassages)) {
     const row = record(p, "held passage"); keys(row, ["passageId", "labels", "experience"], "held passage");
     const pid = string(row.passageId, "passageId"); if (seen.has(pid)) fail("knowledge: duplicate held passage"); seen.add(pid);
-    const labels = array(row.labels, "labels", 32).map(v => string(v, "label", 96));
+    const labels = array(row.labels, "labels", RULE_LIMITS.passageLabels).map(v => string(v, "label", 96));
     if (new Set(labels).size !== labels.length) fail("knowledge: duplicate label");
     if (!["erfahren", "gesprochen", "gehoert"].includes(String(row.experience))) fail("knowledge: invalid experience");
   }

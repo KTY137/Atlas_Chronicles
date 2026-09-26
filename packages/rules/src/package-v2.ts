@@ -53,7 +53,7 @@ export type ModifierTarget = "ziel" | "ergebnis";
 export interface RuleModifier { readonly actions: readonly string[]; readonly target: ModifierTarget; readonly value: string }
 export type AbilityKind = "dauerhaft" | "einsatz" | "reaktion";
 export interface RuleAbility {
-  readonly id: string; readonly name: string; readonly group: string; readonly rank: 1 | 2 | 3; readonly kind: AbilityKind;
+  readonly id: string; readonly name: string; readonly group: string; readonly rank: number; readonly kind: AbilityKind;
   /** Funkenkosten beim Einsatz — ein Hinweis; abgehakt wird am Bogen, ein Wurf schreibt nichts. */
   readonly cost: number;
   /** Preis gegen `abilityRules.budget`. */
@@ -135,11 +135,11 @@ function assertions(input: unknown, maximum: number, fields: FormulaFieldTypes):
   const seen = new Set<string>();
   for (const item of array(input, "assertions", maximum)) {
     const row = record(item, "assertion"); keys(row, ["id", "message", "expression"], "assertion");
-    uniqueId(row.id, seen, "assertion"); string(row.message, "assertion.message", 1024); expression(row.expression, "boolean", fields);
+    uniqueId(row.id, seen, "assertion"); string(row.message, "assertion.message", RULE_LIMITS.message); expression(row.expression, "boolean", fields);
   }
 }
 function label(row: Record<string, unknown>, seen: Set<string>): void {
-  uniqueId(row.id, seen, "outcome"); string(row.label, "outcome.label", 120);
+  uniqueId(row.id, seen, "outcome"); string(row.label, "outcome.label", RULE_LIMITS.label);
   if (typeof row.success !== "boolean") fail("outcome: success must be boolean");
 }
 function httpUrl(value: unknown): void {
@@ -166,10 +166,10 @@ function abilityDeclarations(data: Record<string, unknown>, base: RulePackage, a
   if (data.conditions !== undefined && rules.conditionField === undefined) fail("abilityRules.conditionField: required when conditions are declared");
   if (rules.budget !== undefined) expression(rules.budget, "number", actorOnly);
   const modifiers = (input: unknown, at: string): void => {
-    for (const item of array(input, `${at}.modifiers`, 4)) {
+    for (const item of array(input, `${at}.modifiers`, RULE_LIMITS.modifiers)) {
       const row = record(item, "modifier"); keys(row, ["actions", "target", "value"], "modifier");
       if (row.target !== "ziel" && row.target !== "ergebnis") fail(`${at}: modifier target must be "ziel" or "ergebnis"`);
-      const parameter = `mod_${row.target}`, patterns = array(row.actions, `${at}.modifier.actions`, 16);
+      const parameter = `mod_${row.target}`, patterns = array(row.actions, `${at}.modifier.actions`, RULE_LIMITS.modifierPatterns);
       if (!patterns.length) fail(`${at}: modifier needs at least one action`);
       for (const raw of patterns) {
         const pattern = string(raw, `${at}.modifier.action`, 97), prefix = pattern.endsWith("*") ? pattern.slice(0, -1) : null;
@@ -184,15 +184,15 @@ function abilityDeclarations(data: Record<string, unknown>, base: RulePackage, a
       expression(row.value, "number", actorOnly);
     }
   };
-  const abilityIds = new Set<string>(), abilityRows = data.abilities === undefined ? [] : array(data.abilities, "abilities", 512).map(item => record(item, "ability"));
+  const abilityIds = new Set<string>(), abilityRows = data.abilities === undefined ? [] : array(data.abilities, "abilities", RULE_LIMITS.abilities).map(item => record(item, "ability"));
   for (const row of abilityRows) { keys(row, ["id", "name", "group", "rank", "kind", "cost", "price", "requires", "prerequisite", "text", "modifiers"], "ability"); uniqueId(row.id, abilityIds, "ability"); }
   for (const row of abilityRows) {
     const at = `ability ${String(row.id)}`;
-    string(row.name, `${at}.name`, 120); string(row.group, `${at}.group`, 80); string(row.text, `${at}.text`, 600);
-    if (row.rank !== 1 && row.rank !== 2 && row.rank !== 3) fail(`${at}: rank must be 1, 2 or 3`);
+    string(row.name, `${at}.name`, RULE_LIMITS.label); string(row.group, `${at}.group`, RULE_LIMITS.label); string(row.text, `${at}.text`, RULE_LIMITS.longText);
+    smallInteger(row.rank, `${at}.rank`, RULE_LIMITS.rank);
     if (row.kind !== "dauerhaft" && row.kind !== "einsatz" && row.kind !== "reaktion") fail(`${at}: kind must be dauerhaft, einsatz or reaktion`);
-    smallInteger(row.cost, `${at}.cost`, 9); smallInteger(row.price, `${at}.price`, 99);
-    if (row.requires !== undefined) for (const need of array(row.requires, `${at}.requires`, 4)) {
+    smallInteger(row.cost, `${at}.cost`, RULE_LIMITS.cost); smallInteger(row.price, `${at}.price`, RULE_LIMITS.price);
+    if (row.requires !== undefined) for (const need of array(row.requires, `${at}.requires`, RULE_LIMITS.requires)) {
       const id = identifier(need, `${at}.requires`);
       if (id === row.id || !abilityIds.has(id)) fail(`${at}: requires unknown ability ${id}`);
     }
@@ -200,10 +200,10 @@ function abilityDeclarations(data: Record<string, unknown>, base: RulePackage, a
     if (row.modifiers !== undefined) modifiers(row.modifiers, at);
   }
   const conditionIds = new Set<string>();
-  for (const item of data.conditions === undefined ? [] : array(data.conditions, "conditions", 32)) {
+  for (const item of data.conditions === undefined ? [] : array(data.conditions, "conditions", RULE_LIMITS.conditions)) {
     const row = record(item, "condition"); keys(row, ["id", "name", "text", "modifiers"], "condition"); uniqueId(row.id, conditionIds, "condition");
     const at = `condition ${String(row.id)}`;
-    string(row.name, `${at}.name`, 120); string(row.text, `${at}.text`, 600);
+    string(row.name, `${at}.name`, RULE_LIMITS.label); string(row.text, `${at}.text`, RULE_LIMITS.longText);
     if (row.modifiers !== undefined) modifiers(row.modifiers, at);
   }
 }
@@ -220,7 +220,7 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
     keys(action, ["id", "name", "version", "expression", "inputs", "disclosure", "requiresConfirmation", "threshold", "outcome", "preconditions"], "action");
     const { outcome: _outcome, preconditions: _preconditions, ...legacy } = action; return legacy;
   });
-  const projectedTests = data.selfTests === undefined ? undefined : array(data.selfTests, "selfTests", 64).map(item => {
+  const projectedTests = data.selfTests === undefined ? undefined : array(data.selfTests, "selfTests", RULE_LIMITS.selfTests).map(item => {
     const test = record(item, "selfTest"); keys(test, ["name", "actionId", "context", "expectedTotal", "expectedSuccess", "expectedOutcomeId"], "selfTest");
     if (test.expectedSuccess !== undefined && typeof test.expectedSuccess !== "boolean") fail("selfTest: expectedSuccess must be boolean");
     if (test.expectedOutcomeId !== undefined) identifier(test.expectedOutcomeId, "expectedOutcomeId");
@@ -231,12 +231,12 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
   const actorTypes = types(base.fields); const actorOnly = { actor: actorTypes, input: {} };
   if (data.computed !== undefined) {
     const seen = new Set(Object.keys(base.fields));
-    for (const item of array(data.computed, "computed", 64)) {
+    for (const item of array(data.computed, "computed", RULE_LIMITS.computed)) {
       const row = record(item, "computed"); keys(row, ["id", "label", "expression"], "computed");
-      uniqueId(row.id, seen, "computed"); string(row.label, "computed.label", 120); expression(row.expression, "number", actorOnly);
+      uniqueId(row.id, seen, "computed"); string(row.label, "computed.label", RULE_LIMITS.label); expression(row.expression, "number", actorOnly);
     }
   }
-  if (data.constraints !== undefined) assertions(data.constraints, 64, actorOnly);
+  if (data.constraints !== undefined) assertions(data.constraints, RULE_LIMITS.constraints, actorOnly);
   if (data.vitals !== undefined) {
     const seen = new Set<string>();
     for (const item of array(data.vitals, "vitals", RULE_LIMITS.vitals)) {
@@ -244,7 +244,7 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
       const id = identifier(row.id, "vital.id");
       if (seen.has(id)) fail("vitals: duplicate id"); seen.add(id);
       if (actorTypes[id] !== "number") fail(`vital ${id}: expected a number or integer field of this package`);
-      string(row.label, "vital.label", 120);
+      string(row.label, "vital.label", RULE_LIMITS.label);
       expression(row.max, "number", actorOnly);
       if (row.depletion !== "defeat" && row.depletion !== "none") fail("vital: depletion must be \"defeat\" or \"none\"");
       if (row.color !== undefined && !(VITAL_COLORS as readonly unknown[]).includes(row.color) && !(typeof row.color === "string" && /^#[0-9a-f]{6}$/.test(row.color))) fail(`vital ${id}: color must be one of ${VITAL_COLORS.join(", ")} or a lowercase #rrggbb value`);
@@ -252,11 +252,11 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
   }
   for (const [index, action] of actionRows.entries()) {
     const fields = { actor: actorTypes, input: types(base.actions[index]!.inputs) };
-    if (action.preconditions !== undefined) assertions(action.preconditions, 8, fields);
+    if (action.preconditions !== undefined) assertions(action.preconditions, RULE_LIMITS.preconditions, fields);
     if (action.outcome !== undefined) {
       if (action.threshold !== undefined) fail("action: outcome and threshold are mutually exclusive");
       const outcome = record(action.outcome, "outcome"); keys(outcome, ["bands", "fallback"], "outcome"); const seen = new Set<string>();
-      for (const item of array(outcome.bands, "outcome.bands", 8)) {
+      for (const item of array(outcome.bands, "outcome.bands", RULE_LIMITS.outcomeBands)) {
         const band = record(item, "band"); keys(band, ["id", "label", "comparison", "expression", "success"], "band"); label(band, seen);
         if (!comparisons.includes(band.comparison as OutcomeComparison)) fail("outcome: invalid comparison"); expression(band.expression, "number", fields);
       }
@@ -266,12 +266,12 @@ export function parseRulePackageV2(input: unknown): RulePackageV2 {
   if (data.abilityRules !== undefined || data.abilities !== undefined || data.conditions !== undefined) abilityDeclarations(data, base, actorOnly);
   if (data.attribution !== undefined) {
     const row = record(data.attribution, "attribution"); keys(row, ["title", "sources", "licenseUrl", "notice", "changes"], "attribution");
-    string(row.title, "attribution.title", 120); string(row.notice, "attribution.notice", 1024); string(row.changes, "attribution.changes", 1024); httpUrl(row.licenseUrl);
-    const sources = array(row.sources, "attribution.sources", 8); if (!sources.length) fail("attribution: source required");
+    string(row.title, "attribution.title", RULE_LIMITS.label); string(row.notice, "attribution.notice", RULE_LIMITS.longText); string(row.changes, "attribution.changes", RULE_LIMITS.longText); httpUrl(row.licenseUrl);
+    const sources = array(row.sources, "attribution.sources", RULE_LIMITS.attributionSources); if (!sources.length) fail("attribution: source required");
     for (const item of sources) {
       const source = record(item, "source"); keys(source, ["title", "url", "revision", "authors"], "source");
-      string(source.title, "source.title", 120); httpUrl(source.url); string(source.revision, "source.revision", 120);
-      for (const author of array(source.authors, "source.authors", 32)) string(author, "source.author", 120);
+      string(source.title, "source.title", RULE_LIMITS.label); httpUrl(source.url); string(source.revision, "source.revision", RULE_LIMITS.label);
+      for (const author of array(source.authors, "source.authors", RULE_LIMITS.sourceAuthors)) string(author, "source.author", RULE_LIMITS.label);
     }
   }
   const collections = parseRuleCollections(data.collections, base.fields);

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@chronicle/ui";
-import type { FieldSchema, RuleCollection, Scalar } from "@chronicle/rules";
+import { RULE_LIMITS, type FieldSchema, type RuleCollection, type Scalar } from "@chronicle/rules";
 import { t } from "../i18n";
 import { SchemaUpgrade } from "./RuleDeclarativeEditor";
 import { RuleEntryList } from "./RuleEntryList";
@@ -30,13 +30,13 @@ function uniqueStrings(values: readonly string[], maxLength: number): string[] {
     const value = raw.slice(0, maxLength);
     if (!value || seen.has(value)) continue;
     seen.add(value); out.push(value);
-    if (out.length >= 64) break;
+    if (out.length >= RULE_LIMITS.enumValues) break;
   }
   return out;
 }
 function normalizedStringField(field: FieldSchema, patch: { maxLength?: number; defaultValue?: string; enumValues?: readonly string[] }): FieldSchema {
   if (field.type !== "string") return field;
-  const maxLength = Math.max(1, Math.min(4096, Math.trunc(patch.maxLength ?? field.maxLength ?? 120)));
+  const maxLength = Math.max(1, Math.min(RULE_LIMITS.stringValue, Math.trunc(patch.maxLength ?? field.maxLength ?? 120)));
   const values = uniqueStrings(patch.enumValues ?? field.enum ?? [], maxLength);
   let defaultValue = (patch.defaultValue ?? String(field.default)).slice(0, maxLength);
   if (values.length && !values.includes(defaultValue)) defaultValue = values[0]!;
@@ -59,7 +59,7 @@ function defaultCollectionRow(collection: RuleCollection): Record<string, Scalar
 }
 function compatibleValue(field: FieldSchema, value: unknown): Scalar {
   if (field.type === "boolean") return typeof value === "boolean" ? value : field.default;
-  if (field.type === "string") return typeof value === "string" && value.length <= (field.maxLength ?? 4096) && (!field.enum || field.enum.includes(value)) ? value : field.default;
+  if (field.type === "string") return typeof value === "string" && value.length <= (field.maxLength ?? RULE_LIMITS.stringValue) && (!field.enum || field.enum.includes(value)) ? value : field.default;
   if (typeof value !== "number" || !Number.isFinite(value) || field.type === "integer" && !Number.isSafeInteger(value)) return field.default;
   if (field.minimum !== undefined && value < field.minimum || field.maximum !== undefined && value > field.maximum) return field.default;
   return value;
@@ -98,7 +98,7 @@ export function RuleCollectionEditor({ draft, disabled = false, onChange }: { dr
     const fixed = withSheetTree(draft, sheetTree(draft));
     const id = uniqueId("sammlung", collections.map(row => row.id));
     const storageId = uniqueId(`${id}_daten`, fixed.fields.map(field => field.id));
-    const storage = { localId: `collection-${Date.now()}-${storageId}`, id: storageId, label: `${id} Daten`, type: "string" as const, defaultValue: "[]", minimum: "0", maximum: "20", maxLength: "4096", hasEnum: false, enumValues: [] };
+    const storage = { localId: `collection-${Date.now()}-${storageId}`, id: storageId, label: `${id} Daten`, type: "string" as const, defaultValue: "[]", minimum: "0", maximum: "20", maxLength: String(RULE_LIMITS.stringValue), hasEnum: false, enumValues: [] };
     const created: RuleCollection = { id, label: t("Neue Sammlung"), storageField: storageId, itemFields: { name: { type: "string", label: t("Name"), maxLength: 120, default: "" } }, minItems: 0, maxItems: 64, primaryField: "name" };
     onChange(placeOnSheet({ ...fixed, fields: [...fixed.fields, storage], collections: [...collections, created] }, "collection", id, true));
     setSelected(collections.length);
@@ -111,29 +111,29 @@ export function RuleCollectionEditor({ draft, disabled = false, onChange }: { dr
   };
   return <div className="rf-split">
     <RuleEntryList title={t("Listen")} rows={collections.map((row, i) => ({ key: String(i), name: row.label, detail: t("{n} Felder je Eintrag", { n: Object.keys(row.itemFields).length }) }))} current={collection ? String(index) : undefined} onSelect={key => setSelected(Number(key))}
-      onAdd={addCollection} addLabel={t("Liste")} searchLabel={t("Liste suchen")} disabled={disabled}
+      onAdd={addCollection} addLabel={t("Liste")} searchLabel={t("Liste suchen")} disabled={disabled || collections.length >= RULE_LIMITS.collections}
       help={t("Wiederholbare Einträge wie Waffen, Zauber, Sprachen oder Angriffe. Jeder Eintrag hat dieselben Felder, zum Beispiel Name und Schaden.")}
       empty={t("Noch keine Liste. Leg oben eine an, zum Beispiel Waffen.")} />
     {collection ? <section className="rf-detail" aria-label={t("Liste")}><fieldset className="rf-editor-fields" disabled={disabled}>
       <div className="rf-section-heading"><h4>{collection.label}</h4><Button variant="quiet" onClick={remove}><Trash2 size={14} />{t("Liste entfernen")}</Button></div>
       <div className="rf-form-grid">
-        <label>{t("Name")}<input value={collection.label} onChange={event => replaceCollection({ ...collection, label: event.target.value })} /></label>
+        <label>{t("Name")}<input value={collection.label} maxLength={RULE_LIMITS.label} onChange={event => replaceCollection({ ...collection, label: event.target.value })} /></label>
         <label>{t("Kennung")}<input value={collection.id} spellCheck={false} onChange={event => { const id = event.target.value; onChange(retargetOnSheet({ ...draft, collections: collections.map((row, i) => i === index ? { ...row, id } : row) }, "collection", collection.id, id)); }} /></label>
         <label>{t("Minimale Einträge")}<input type="number" min={0} max={collection.maxItems} value={collection.minItems} onChange={event => replaceCollection({ ...collection, minItems: Math.max(0, Math.min(collection.maxItems, event.target.valueAsNumber || 0)) })} /></label>
-        <label>{t("Maximale Einträge")}<input type="number" min={Math.max(1, collection.minItems)} max={128} value={collection.maxItems} onChange={event => replaceCollection({ ...collection, maxItems: Math.max(Math.max(1, collection.minItems), Math.min(128, event.target.valueAsNumber || 1)) })} /></label>
+        <label>{t("Maximale Einträge")}<input type="number" min={Math.max(1, collection.minItems)} max={RULE_LIMITS.collectionItems} value={collection.maxItems} onChange={event => replaceCollection({ ...collection, maxItems: Math.max(Math.max(1, collection.minItems), Math.min(RULE_LIMITS.collectionItems, event.target.valueAsNumber || 1)) })} /></label>
         <label>{t("Wichtigstes Feld")}<select value={collection.primaryField ?? ""} onChange={event => replaceCollection(withPrimaryField(collection, event.target.value || undefined))}><option value="">—</option>{Object.entries(collection.itemFields).map(([id, field]) => <option key={id} value={id}>{field.label || id}</option>)}</select><small>{t("Steht in der Übersicht der Einträge vorne, zum Beispiel der Name.")}</small></label>
       </div>
       <label className="rf-check"><input type="checkbox" checked={isOnSheet(draft, "collection", collection.id)} onChange={event => onChange(placeOnSheet(draft, "collection", collection.id, event.target.checked))} />{t("Auf dem Bogen zeigen")}</label>
       <h5>{t("Felder jedes Eintrags")}</h5>
       {Object.entries(collection.itemFields).map(([id, field]) => <div className="rf-card" key={id}><div className="rf-form-grid">
         <label>{t("Feldkennung")}<input value={id} spellCheck={false} onChange={event => { const nextId = event.target.value; const itemFields = Object.fromEntries(Object.entries(collection.itemFields).map(([key, value]) => [key === id ? nextId : key, value])); const nextCollection = withPrimaryField({ ...collection, itemFields }, collection.primaryField === id ? nextId : collection.primaryField); replaceCollection(nextCollection, [id, nextId]); }} /></label>
-        <label>{t("Beschriftung")}<input value={field.label} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, label: event.target.value } } })} /></label>
+        <label>{t("Beschriftung")}<input value={field.label} maxLength={RULE_LIMITS.label} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, label: event.target.value } } })} /></label>
         <label>{t("Art")}<select value={field.type} onChange={event => { const type = event.target.value as FieldSchema["type"]; replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: collectionField(type) } }); }}>{(["string", "integer", "number", "boolean"] as const).map(type => <option key={type} value={type}>{typeLabel(type)}</option>)}</select></label>
         {field.type === "boolean" ? <label className="rf-check"><input type="checkbox" checked={field.default as boolean} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: { ...field, default: event.target.checked } } })} />{t("Vorgabe")}</label>
-          : field.type === "string" ? <><label>{t("Vorgabe")}{field.enum?.length ? <select value={field.default as string} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { defaultValue: event.target.value }) } })}>{field.enum.map(value => <option key={value}>{value}</option>)}</select> : <input value={field.default as string} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { defaultValue: event.target.value }) } })} />}</label><label>{t("Zeichenlimit")}<input type="number" min={1} max={4096} value={field.maxLength} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { maxLength: event.target.valueAsNumber || 1 }) } })} /></label><label>{t("Auswahlwerte (Komma)")}<input value={field.enum?.join(", ") ?? ""} onChange={event => { const enumValues = event.target.value.split(",").map(value => value.trim()).filter(Boolean); replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { enumValues }) } }); }} /></label></>
+          : field.type === "string" ? <><label>{t("Vorgabe")}{field.enum?.length ? <select value={field.default as string} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { defaultValue: event.target.value }) } })}>{field.enum.map(value => <option key={value}>{value}</option>)}</select> : <input value={field.default as string} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { defaultValue: event.target.value }) } })} />}</label><label>{t("Zeichenlimit")}<input type="number" min={1} max={RULE_LIMITS.stringValue} value={field.maxLength} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { maxLength: event.target.valueAsNumber || 1 }) } })} /></label><label>{t("Auswahlwerte (Komma)")}<input value={field.enum?.join(", ") ?? ""} onChange={event => { const enumValues = event.target.value.split(",").map(value => value.trim()).filter(Boolean); replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedStringField(field, { enumValues }) } }); }} /></label></>
           : <><label>{t("Vorgabe")}<input type="number" value={field.default as number} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedNumericField(field, { defaultValue: numeric(event.target.value, field.default as number) }, "default") } })} /></label><label>{t("Minimum")}<input type="number" value={field.minimum} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedNumericField(field, { minimum: numeric(event.target.value, field.minimum!) }, "minimum") } })} /></label><label>{t("Maximum")}<input type="number" value={field.maximum} onChange={event => replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: normalizedNumericField(field, { maximum: numeric(event.target.value, field.maximum!) }, "maximum") } })} /></label></>}
       </div><Button variant="quiet" disabled={Object.keys(collection.itemFields).length <= 1} onClick={() => { const itemFields = copyJson(collection.itemFields) as Record<string, FieldSchema>; delete itemFields[id]; const nextCollection = withPrimaryField({ ...collection, itemFields }, collection.primaryField === id ? undefined : collection.primaryField); replaceCollection(nextCollection); }}><Trash2 size={14} />{t("Feld entfernen")}</Button></div>)}
-      <Button onClick={() => { const id = uniqueId("feld", Object.keys(collection.itemFields)); replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: collectionField() } }); }}><Plus size={14} />{t("Feld für jeden Eintrag")}</Button>
+      <Button disabled={Object.keys(collection.itemFields).length >= RULE_LIMITS.collectionItemFields} onClick={() => { const id = uniqueId("feld", Object.keys(collection.itemFields)); replaceCollection({ ...collection, itemFields: { ...collection.itemFields, [id]: collectionField() } }); }}><Plus size={14} />{t("Feld für jeden Eintrag")}</Button>
     </fieldset></section> : null}
   </div>;
 }

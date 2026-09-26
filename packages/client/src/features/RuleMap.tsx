@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, Info, LayoutList, Map as MapIcon, Maximize, Network, Search, TriangleAlert, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@chronicle/ui";
-import { parseFormula, type Formula, type RuleVital } from "@chronicle/rules";
+import { RULE_LIMITS, parseFormula, type Formula, type RuleVital } from "@chronicle/rules";
 import { plural, t } from "../i18n";
 import { FormulaField } from "./FormulaField";
 import { FormulaGraph } from "./FormulaGraph";
@@ -222,23 +222,23 @@ function NodeEditor({ node, graph, draft, disabled, sources, action, onChange, o
     {node.message ? <p className={`rm-editor-message rm-issue-${node.status}`}>{node.message}</p> : null}
     <fieldset className="rf-editor-fields" disabled={disabled}>
       {field ? <>
-        <label>{t("Beschriftung")}<input value={field.label} maxLength={120} onChange={event => patchField({ label: event.target.value })} /><small>{t("{art}. In Formeln als @{kennung}.", { art: node.detail, kennung: field.id })}</small></label>
+        <label>{t("Beschriftung")}<input value={field.label} maxLength={RULE_LIMITS.label} onChange={event => patchField({ label: event.target.value })} /><small>{t("{art}. In Formeln als @{kennung}.", { art: node.detail, kennung: field.id })}</small></label>
       </> : null}
       {computed ? <>
-        <label>{t("Beschriftung")}<input value={computed.label} maxLength={120} onChange={event => patchComputed({ label: event.target.value })} /></label>
+        <label>{t("Beschriftung")}<input value={computed.label} maxLength={RULE_LIMITS.label} onChange={event => patchComputed({ label: event.target.value })} /></label>
         <FormulaField label={t("Berechnung")} help={t("Ergibt sich aus Attributen, ohne Wurf.")} value={computed.expression} onChange={expression => patchComputed({ expression })} sources={sources} fields={draft.fields} allowDice={false} allowKnowledge={false} />
       </> : null}
       {rule ? <>
-        <label>{t("Meldung, wenn die Regel verletzt ist")}<input value={rule.message} maxLength={240} onChange={event => patchRule({ message: event.target.value })} /></label>
+        <label>{t("Meldung, wenn die Regel verletzt ist")}<input value={rule.message} maxLength={RULE_LIMITS.message} onChange={event => patchRule({ message: event.target.value })} /></label>
         <FormulaField label={t("Bedingung")} help={t("Muss zutreffen, damit der Bogen gültig ist, zum Beispiel @punkte <= 400.")} value={rule.expression} onChange={expression => patchRule({ expression })} sources={sources} fields={draft.fields} allowDice={false} allowKnowledge={false} />
       </> : null}
       {bar ? <>
-        <label>{t("Beschriftung")}<input value={bar.label} maxLength={120} onChange={event => patchBar({ label: event.target.value })} /></label>
+        <label>{t("Beschriftung")}<input value={bar.label} maxLength={RULE_LIMITS.label} onChange={event => patchBar({ label: event.target.value })} /></label>
         <FormulaField label={t("Höchststand")} help={t("Der höchste Stand, den der Balken zeigt, zum Beispiel @konstitution * 5.")} value={bar.max} onChange={max => patchBar({ max })} sources={sources} fields={draft.fields} allowDice={false} allowKnowledge={false} />
         <label>{t("Wenn der Wert 0 erreicht")}<select value={bar.depletion} onChange={event => patchBar({ depletion: event.target.value as RuleVital["depletion"] })}><option value="none">{t("Nichts Besonderes")}</option><option value="defeat">{t("Niederlage zur Bestätigung")}</option></select></label>
       </> : null}
       {action ? <>
-        <label>{t("Name")}<input value={action.name} maxLength={120} onChange={event => patchAction({ name: event.target.value })} /></label>
+        <label>{t("Name")}<input value={action.name} maxLength={RULE_LIMITS.label} onChange={event => patchAction({ name: event.target.value })} /></label>
         {action.inputs.length ? <p className="rf-help">{t("Parameter: {liste}", { liste: action.inputs.map(i => `?${i.id}`).join(", ") })}</p> : null}
         {result !== null
           ? <FormulaField label={t("Ergebnis")} help={t("Der Wurf mit allen Zuschlägen, zum Beispiel 1d20 + @geschick + ?bonus.")} value={result} onChange={expression => patchAction({ expression })} sources={sources} fields={draft.fields} inputs={inputs} actionId={action.id} allowDice allowKnowledge />

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Building2, Check, Dices, Ghost, Plus, Rocket, Sparkles, Swords, X } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
-import { evaluateSupportedAction, type AnyRulePackage, type Scalar } from "@chronicle/rules";
+import { RULE_LIMITS, evaluateSupportedAction, type AnyRulePackage, type Scalar } from "@chronicle/rules";
 import { t } from "../i18n";
 import { LiveSheet, type Fixture } from "./RuleForgePreview";
 import { vitalColorClass } from "./Vitalanzeige";
@@ -60,7 +60,7 @@ export function RuleWizard({ authorName, installed, onCancel, onCreate }: { auth
   const question = (): { title: string; lead: string; body: ReactNode } => {
     switch (step) {
       case "name": return { title: t("Wie soll dein Regelwerk heißen?"), lead: t("Dazu die Stimmung eurer Runde. Sie schlägt passende Eigenschaften und Vorräte vor; ändern kannst du alles."), body: <>
-        <label className="rw-name">{t("Name des Regelwerks")}<input value={answers.name} maxLength={120} placeholder={t("zum Beispiel Nordlicht")} autoFocus onChange={event => set({ name: event.target.value })} /></label>
+        <label className="rw-name">{t("Name des Regelwerks")}<input value={answers.name} maxLength={RULE_LIMITS.label} placeholder={t("zum Beispiel Nordlicht")} autoFocus onChange={event => set({ name: event.target.value })} /></label>
         <div className="rw-choices rw-choices-genre" role="radiogroup" aria-label={t("Stimmung")}>{GENRES.map(genre => <button type="button" role="radio" aria-checked={answers.genre === genre} key={genre} className="rw-choice" onClick={() => setAnswers(current => withGenre(current, genre))}>
           <span className="rw-choice-icon" aria-hidden="true">{GENRE_ICON[genre]}</span><strong>{genreLabel(genre)}</strong><small>{genreAttributes(genre).join(", ")}</small></button>)}</div>
       </> };
@@ -76,7 +76,7 @@ export function RuleWizard({ authorName, installed, onCancel, onCreate }: { auth
         {answers.bars.map((bar, i) => { const update = (patch: Partial<typeof bar>) => set({ bars: answers.bars.map((row, n) => n === i ? { ...row, ...patch } : row) }); return <div className={`rw-bar${bar.on ? " is-on" : ""}`} key={bar.key}>
           <label className="rf-check"><input type="checkbox" checked={bar.on} onChange={event => update({ on: event.target.checked })} /><span className="sr-only">{t("{name} verwenden", { name: bar.label })}</span></label>
           <span className={`rw-bar-swatch${vitalColorClass(bar.color)}`} aria-hidden="true"><span /></span>
-          <input aria-label={t("Name des Vorrats")} value={bar.label} maxLength={120} onChange={event => update({ label: event.target.value })} />
+          <input aria-label={t("Name des Vorrats")} value={bar.label} maxLength={RULE_LIMITS.label} onChange={event => update({ label: event.target.value })} />
           <label className="rf-check rw-bar-defeat"><input type="checkbox" checked={bar.defeat} disabled={!bar.on} onChange={event => update({ defeat: event.target.checked })} />{t("Bei 0 ist die Figur besiegt")}</label>
         </div>; })}
         <Button variant="quiet" onClick={() => set({ bars: [...answers.bars, { key: `eigen_${answers.bars.length}`, label: t("Neuer Vorrat"), on: true, color: "grey", defeat: false }] })}><Plus size={15} />{t("Eigener Vorrat")}</Button>
@@ -133,7 +133,7 @@ function ChipEditor({ suggestions, chosen, onChange, addLabel, placeholder }: { 
   return <div className="rw-chips-block">
     <div className="rw-chips">{suggestions.map(value => { const on = chosen.includes(value); return <button type="button" key={value} className="rw-chip" aria-pressed={on} onClick={() => onChange(on ? chosen.filter(row => row !== value) : [...chosen, value])}>{on ? <Check size={14} /> : <Plus size={14} />}{value}</button>; })}
       {own.map(value => <span className="rw-chip rw-chip-own" key={value}>{value}<button type="button" aria-label={t("{name} entfernen", { name: value })} onClick={() => onChange(chosen.filter(row => row !== value))}><X size={13} /></button></span>)}</div>
-    <div className="rw-add"><input value={text} maxLength={120} placeholder={placeholder} aria-label={addLabel} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); add(); } }} /><Button onClick={add} disabled={!text.trim()}><Plus size={15} />{addLabel}</Button></div>
+    <div className="rw-add"><input value={text} maxLength={RULE_LIMITS.label} placeholder={placeholder} aria-label={addLabel} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); add(); } }} /><Button onClick={add} disabled={!text.trim()}><Plus size={15} />{addLabel}</Button></div>
   </div>;
 }
 
@@ -146,10 +146,10 @@ function SkillEditor({ answers, onChange }: { answers: WizardAnswers; onChange(p
     <label className="rf-check rw-skill-values"><input type="checkbox" checked={answers.skillValues} onChange={event => onChange({ skillValues: event.target.checked })} /><span><strong>{t("Fertigkeiten haben eigene Werte")}</strong><small>{t("Dann kommt der Fertigkeitswert zur Eigenschaft dazu, und Figuren können sich in einer Fertigkeit verbessern.")}</small></span></label>
     {suggestions.length ? <div className="rw-chips">{suggestions.map(skill => { const on = chosen.has(skill.name); return <button type="button" key={skill.name} className="rw-chip" aria-pressed={on} onClick={() => onChange({ skills: on ? answers.skills.filter(row => row.name !== skill.name) : [...answers.skills, skill] })}>{on ? <Check size={14} /> : <Plus size={14} />}{t("{name} auf {eigenschaft}", { name: skill.name, eigenschaft: skill.attribute })}</button>; })}</div> : null}
     {answers.skills.length ? <ul className="rw-skill-list">{answers.skills.map((skill, i) => <li key={`${skill.name}-${i}`}>
-      <input aria-label={t("Name der Fertigkeit")} value={skill.name} maxLength={120} onChange={event => onChange({ skills: answers.skills.map((row, n) => n === i ? { ...row, name: event.target.value } : row) })} />
+      <input aria-label={t("Name der Fertigkeit")} value={skill.name} maxLength={RULE_LIMITS.label} onChange={event => onChange({ skills: answers.skills.map((row, n) => n === i ? { ...row, name: event.target.value } : row) })} />
       <select aria-label={t("Eigenschaft für {name}", { name: skill.name })} value={skill.attribute} onChange={event => onChange({ skills: answers.skills.map((row, n) => n === i ? { ...row, attribute: event.target.value } : row) })}>{answers.attributes.map(attribute => <option key={attribute} value={attribute}>{attribute}</option>)}</select>
       <Button variant="quiet" aria-label={t("{name} entfernen", { name: skill.name })} onClick={() => onChange({ skills: answers.skills.filter((_, n) => n !== i) })}><X size={14} /></Button>
     </li>)}</ul> : null}
-    <div className="rw-add"><input value={text} maxLength={120} placeholder={t("zum Beispiel Reiten")} aria-label={t("Eigene Fertigkeit")} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); add(); } }} /><Button onClick={add} disabled={!text.trim()}><Plus size={15} />{t("Eigene Fertigkeit")}</Button></div>
+    <div className="rw-add"><input value={text} maxLength={RULE_LIMITS.label} placeholder={t("zum Beispiel Reiten")} aria-label={t("Eigene Fertigkeit")} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); add(); } }} /><Button onClick={add} disabled={!text.trim()}><Plus size={15} />{t("Eigene Fertigkeit")}</Button></div>
   </div>;
 }

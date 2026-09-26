@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
-import type { RuleAbility, RuleCondition, RuleModifier } from "@chronicle/rules";
-import { t } from "../i18n";
+import { RULE_LIMITS, type RuleAbility, type RuleCondition, type RuleModifier } from "@chronicle/rules";
+import { locale, t } from "../i18n";
 import { ExpressionInput } from "./RuleDeclarativeEditor";
 import type { RuleDraft } from "./rule-forge-model";
 import { prerequisiteCandidates } from "./rule-ability-references";
@@ -51,7 +51,7 @@ function Wirkungen({ draft, werte, onChange }: { draft: RuleDraft; werte: readon
         <Button onClick={() => onChange(werte.filter((_, index) => index !== i))}>{t("Wirkung entfernen")}</Button>
       </fieldset>;
     })}
-    <Button disabled={werte.length >= 4} onClick={() => onChange([...werte, newModifier(zielAktionen(draft, "ziel"))])}><Plus size={15} />{t("Wirkung hinzufügen")}</Button>
+    <Button disabled={werte.length >= RULE_LIMITS.modifiers} onClick={() => onChange([...werte, newModifier(zielAktionen(draft, "ziel"))])}><Plus size={15} />{t("Wirkung hinzufügen")}</Button>
   </section>;
 }
 
@@ -78,23 +78,23 @@ export function RuleAbilityEditor({ draft, onChange, disabled = false }: { draft
   const setze = (next: RuleAbility) => onChange({ ...draft, abilities: liste.map((eintrag, i) => i === aktuell ? next : eintrag) });
   return <>
     <div className="rf-split">
-      <Auswahlliste disabled={disabled || liste.length >= 512} eintraege={liste} aktuell={aktuell} titel={t("Fähigkeiten")} hinzufuegen={t("Fähigkeit")} suchLabel={t("Fähigkeit suchen")}
+      <Auswahlliste disabled={disabled || liste.length >= RULE_LIMITS.abilities} eintraege={liste} aktuell={aktuell} titel={t("Fähigkeiten")} hinzufuegen={t("Fähigkeit")} suchLabel={t("Fähigkeit suchen")}
         unterzeile={eintrag => `${eintrag.group} · ${t("Rang {rang}", { rang: eintrag.rank })}`} onWaehlen={setIndex}
-        onNeu={() => { if (liste.length < 512) { onChange({ ...draft, abilities: [...liste, newAbility(liste.map(eintrag => eintrag.id))] }); setIndex(liste.length); } }} />
+        onNeu={() => { if (liste.length < RULE_LIMITS.abilities) { onChange({ ...draft, abilities: [...liste, newAbility(liste.map(eintrag => eintrag.id))] }); setIndex(liste.length); } }} />
       {ability ? <section className="rf-detail" aria-label={t("Fähigkeit")}><fieldset className="rf-editor-fields" disabled={disabled}>
         <div className="rf-section-heading"><h4>{ability.name || t("Ohne Namen")}</h4><RuleEntryRemoval key={ability.id} draft={draft} kind="ability" id={ability.id} onChange={onChange} onRemoved={() => setIndex(0)} /></div>
         <div className="rf-form-grid">
-          <label>{t("Name")}<input value={ability.name} maxLength={120} onChange={event => setze({ ...ability, name: event.target.value })} /></label>
+          <label>{t("Name")}<input value={ability.name} maxLength={RULE_LIMITS.label} onChange={event => setze({ ...ability, name: event.target.value })} /></label>
           <RuleEntryIdentifier key={ability.id} draft={draft} kind="ability" id={ability.id} onChange={onChange} />
-          <label>{t("Gruppe")}<input value={ability.group} maxLength={80} onChange={event => setze({ ...ability, group: event.target.value })} /></label>
-          <label>{t("Rang")}<select value={ability.rank} onChange={event => setze({ ...ability, rank: Number(event.target.value) as RuleAbility["rank"] })}><option value={1}>1</option><option value={2}>2</option><option value={3}>3</option></select></label>
+          <label>{t("Gruppe")}<input value={ability.group} maxLength={RULE_LIMITS.label} onChange={event => setze({ ...ability, group: event.target.value })} /></label>
+          <label>{t("Rang")}<input type="number" min={0} max={RULE_LIMITS.rank} step={1} value={ability.rank} onChange={event => setze({ ...ability, rank: Number.isFinite(event.target.valueAsNumber) ? Math.max(0, Math.min(RULE_LIMITS.rank, Math.trunc(event.target.valueAsNumber))) : 0 })} /><small>{t("Eine Zahl von 0 bis {hoechstens}, zum Beispiel Zaubergrad oder Stufe.", { hoechstens: RULE_LIMITS.rank.toLocaleString(locale()) })}</small></label>
           <label>{t("Art")}<select value={ability.kind} onChange={event => setze({ ...ability, kind: event.target.value as RuleAbility["kind"] })}><option value="dauerhaft">{artLabel("dauerhaft")}</option><option value="einsatz">{artLabel("einsatz")}</option><option value="reaktion">{artLabel("reaktion")}</option></select><small>{t("Dauerhaft wirkt immer. Einsatz und Reaktion wählt die Figur beim Würfeln.")}</small></label>
-          <label>{t("Preis")}<input type="number" min={0} max={99} value={ability.price} onChange={event => setze({ ...ability, price: Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : 0 })} /><small>{t("Was das Lernen vom Budget kostet.")}</small></label>
-          <label>{t("Funken beim Einsatz")}<input type="number" min={0} max={9} value={ability.cost} onChange={event => setze({ ...ability, cost: Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : 0 })} /></label>
+          <label>{t("Preis")}<input type="number" min={0} max={RULE_LIMITS.price} value={ability.price} onChange={event => setze({ ...ability, price: Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : 0 })} /><small>{t("Was das Lernen vom Budget kostet.")}</small></label>
+          <label>{t("Funken beim Einsatz")}<input type="number" min={0} max={RULE_LIMITS.cost} value={ability.cost} onChange={event => setze({ ...ability, cost: Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : 0 })} /></label>
         </div>
-        <label>{t("Beschreibung")}<textarea value={ability.text} maxLength={600} rows={3} onChange={event => setze({ ...ability, text: event.target.value })} /></label>
-        <fieldset><legend>{t("Vorstufen")}</legend><p className="rf-help">{t("Fähigkeiten, die vorher gelernt sein müssen, höchstens vier.")}</p>
-          <label>{t("Vorstufe hinzufügen")}<select value="" disabled={(ability.requires?.length ?? 0) >= 4} onChange={event => { if (prerequisiteCandidates(draft, ability.id).some(candidate => candidate.id === event.target.value)) setze({ ...ability, requires: [...(ability.requires ?? []), event.target.value] }); }}><option value="">{t("Fähigkeit wählen")}</option>{prerequisiteCandidates(draft, ability.id).map(eintrag => <option key={eintrag.id} value={eintrag.id}>{eintrag.name}</option>)}</select></label>
+        <label>{t("Beschreibung")}<textarea value={ability.text} maxLength={RULE_LIMITS.longText} rows={3} onChange={event => setze({ ...ability, text: event.target.value })} /></label>
+        <fieldset><legend>{t("Vorstufen")}</legend><p className="rf-help">{t("Fähigkeiten, die vorher gelernt sein müssen.")}</p>
+          <label>{t("Vorstufe hinzufügen")}<select value="" disabled={(ability.requires?.length ?? 0) >= RULE_LIMITS.requires} onChange={event => { if (prerequisiteCandidates(draft, ability.id).some(candidate => candidate.id === event.target.value)) setze({ ...ability, requires: [...(ability.requires ?? []), event.target.value] }); }}><option value="">{t("Fähigkeit wählen")}</option>{prerequisiteCandidates(draft, ability.id).map(eintrag => <option key={eintrag.id} value={eintrag.id}>{eintrag.name}</option>)}</select></label>
           {(ability.requires ?? []).map(vorstufe => <Button key={vorstufe} variant="quiet" onClick={() => { const rest = ability.requires!.filter(kennung => kennung !== vorstufe); setze(rest.length ? { ...ability, requires: rest } : ohne(ability, "requires")); }}><Trash2 size={13} />{liste.find(eintrag => eintrag.id === vorstufe)?.name ?? vorstufe}</Button>)}
         </fieldset>
         <label className="rf-check"><input type="checkbox" checked={ability.prerequisite !== undefined} onChange={event => setze(event.target.checked ? { ...ability, prerequisite: "true" } : ohne(ability, "prerequisite"))} />{t("Hat eine Voraussetzung")}</label>
@@ -116,15 +116,15 @@ export function RuleConditionEditor({ draft, onChange, disabled = false }: { dra
   const liste = draft.conditions ?? [], aktuell = Math.min(index, liste.length - 1), zustand = liste[aktuell];
   const setze = (next: RuleCondition) => onChange({ ...draft, conditions: liste.map((eintrag, i) => i === aktuell ? next : eintrag) });
   return <div className="rf-split">
-    <Auswahlliste disabled={disabled || liste.length >= 32} eintraege={liste} aktuell={aktuell} titel={t("Zustände")} hinzufuegen={t("Zustand")} suchLabel={t("Zustand suchen")} unterzeile={eintrag => eintrag.id} onWaehlen={setIndex}
-      onNeu={() => { if (liste.length < 32) { onChange({ ...draft, conditions: [...liste, newCondition(liste.map(eintrag => eintrag.id))] }); setIndex(liste.length); } }} />
+    <Auswahlliste disabled={disabled || liste.length >= RULE_LIMITS.conditions} eintraege={liste} aktuell={aktuell} titel={t("Zustände")} hinzufuegen={t("Zustand")} suchLabel={t("Zustand suchen")} unterzeile={eintrag => eintrag.id} onWaehlen={setIndex}
+      onNeu={() => { if (liste.length < RULE_LIMITS.conditions) { onChange({ ...draft, conditions: [...liste, newCondition(liste.map(eintrag => eintrag.id))] }); setIndex(liste.length); } }} />
     {zustand ? <section className="rf-detail" aria-label={t("Zustand")}><fieldset className="rf-editor-fields" disabled={disabled}>
       <div className="rf-section-heading"><h4>{zustand.name || t("Ohne Namen")}</h4><RuleEntryRemoval key={zustand.id} draft={draft} kind="condition" id={zustand.id} onChange={onChange} onRemoved={() => setIndex(0)} /></div>
       <div className="rf-form-grid">
-        <label>{t("Name")}<input value={zustand.name} maxLength={120} onChange={event => setze({ ...zustand, name: event.target.value })} /></label>
+        <label>{t("Name")}<input value={zustand.name} maxLength={RULE_LIMITS.label} onChange={event => setze({ ...zustand, name: event.target.value })} /></label>
         <RuleEntryIdentifier key={zustand.id} draft={draft} kind="condition" id={zustand.id} onChange={onChange} />
       </div>
-      <label>{t("Beschreibung")}<textarea value={zustand.text} maxLength={600} rows={3} onChange={event => setze({ ...zustand, text: event.target.value })} /></label>
+      <label>{t("Beschreibung")}<textarea value={zustand.text} maxLength={RULE_LIMITS.longText} rows={3} onChange={event => setze({ ...zustand, text: event.target.value })} /></label>
       <Wirkungen draft={draft} werte={zustand.modifiers ?? []} onChange={modifiers => setze(modifiers.length ? { ...zustand, modifiers } : ohne(zustand, "modifiers"))} />
     </fieldset></section> : <p>{t("Noch kein Zustand. Lege links den ersten an.")}</p>}
   </div>;

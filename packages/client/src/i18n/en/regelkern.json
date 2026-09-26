@@ -23,7 +23,6 @@
   "Dein Entwurf ist offen.": "Your draft is open.",
   "Der Bogenabschnitt „{abschnitt}“ verweist auf eine entfernte Oberkategorie.": "The sheet section “{abschnitt}” refers to a removed parent category.",
   "Der Entwurf braucht mindestens ein Attribut und eine Aktion und darf keine markierte Stelle mehr haben.": "The draft needs at least one attribute and one action and must not have any marked spot left.",
-  "Der Kategorienbaum ist zu tief verschachtelt. Reduziere ihn auf höchstens 16 Ebenen.": "The category tree is nested too deeply. Reduce it to at most 16 levels.",
   "Der Weg zum eigenen Regelwerk": "The path to your own rule set",
   "Die Kategorien bilden einen Kreis. Eine Unterkategorie darf nicht wieder über ihren eigenen Nachfahren liegen.": "The categories form a cycle. A subcategory must not sit above its own descendant again.",
   "Die Vorlage behält ihr eigenes Regelpaket, auch wenn die Kampagne inzwischen ein anderes Standardregelwerk verwendet.": "The template keeps its own rule package, even if the campaign now uses a different default rule set.",

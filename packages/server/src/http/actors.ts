@@ -4,6 +4,7 @@ import type { FastifyInstance } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
 import * as P from "../../../protocol/src/actors.ts";
 import * as F from "../../../protocol/src/figurantrag.ts";
+import { RULE_BODY_LIMIT } from "../../../protocol/src/rule-runtime.ts";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createIdentity } from "../identity/index.ts";
@@ -41,8 +42,8 @@ export function registerActors(app: FastifyInstance, db: Db, config: IdentityCon
   // Spielerprojektion der freigegebenen Vorlagen — ohne Beute, ohne fremden Artikelverweis.
   app.get<{ Params: Scope }>(`${base}/actor-templates/freigegeben`, async req => antraege.freigegebeneVorlagen(await auth(req.headers.cookie), req.params.campaignId));
   app.get<{ Params: Item; Querystring: Static<typeof revisionQuery> }>(`${base}/actor-templates/:id`, { schema: { querystring: revisionQuery } }, async req => actors.getActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, revision(req.query.revision)));
-  app.post<{ Params: Scope; Body: Static<typeof P.ActorTemplateCreate> }>(`${base}/actor-templates`, { schema: { body: P.ActorTemplateCreate } }, async req => actors.createActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.body));
-  app.put<{ Params: Item; Body: Static<typeof P.ActorTemplateRevise> }>(`${base}/actor-templates/:id`, { schema: { body: P.ActorTemplateRevise } }, async req => actors.reviseActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
+  app.post<{ Params: Scope; Body: Static<typeof P.ActorTemplateCreate> }>(`${base}/actor-templates`, { bodyLimit: RULE_BODY_LIMIT, schema: { body: P.ActorTemplateCreate } }, async req => actors.createActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.body));
+  app.put<{ Params: Item; Body: Static<typeof P.ActorTemplateRevise> }>(`${base}/actor-templates/:id`, { bodyLimit: RULE_BODY_LIMIT, schema: { body: P.ActorTemplateRevise } }, async req => actors.reviseActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.post<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/actor-templates/:id/archive`, { schema: { body: P.ArchiveObject } }, async req => actors.archiveActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.delete<{ Params: Item; Body: Static<typeof P.ArchiveObject> }>(`${base}/actor-templates/:id`, { schema: { body: P.ArchiveObject } }, async req => deletion.deleteActorTemplate(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body));
   app.get<{ Params: Scope }>(`${base}/item-templates`, async req => actors.listItemTemplates(await auth(req.headers.cookie), req.params.campaignId));
@@ -68,7 +69,7 @@ export function registerActors(app: FastifyInstance, db: Db, config: IdentityCon
   app.get<{ Params: Scope }>(`${base}/figurantraege`, async req => antraege.liste(await auth(req.headers.cookie), req.params.campaignId));
   // Die Befehls-ID steht im Körper, nicht in der Route: sie gehört zur Anfrage, deren
   // Wiederholung dieselbe Antwort bekommen soll.
-  app.post<{ Params: Scope; Body: Static<typeof F.FigurantragAntragBody> }>(`${base}/figurantraege`, { schema: { body: F.FigurantragAntragBody } }, async req => antraege.beantragen(await auth(req.headers.cookie), req.params.campaignId, req.body.commandId,
+  app.post<{ Params: Scope; Body: Static<typeof F.FigurantragAntragBody> }>(`${base}/figurantraege`, { bodyLimit: RULE_BODY_LIMIT, schema: { body: F.FigurantragAntragBody } }, async req => antraege.beantragen(await auth(req.headers.cookie), req.params.campaignId, req.body.commandId,
     { templateId: req.body.templateId, name: req.body.name, anfangswerte: req.body.anfangswerte }));
   app.post<{ Params: Item; Body: Static<typeof F.FigurantragEntscheidungBody> }>(`${base}/figurantraege/:id/zuruecknehmen`, { schema: { body: F.FigurantragEntscheidungBody } }, async req => antraege.zuruecknehmen(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body.expectedVersion));
   app.post<{ Params: Item; Body: Static<typeof F.FigurantragEntscheidungBody> }>(`${base}/figurantraege/:id/bestaetigen`, { schema: { body: F.FigurantragEntscheidungBody } }, async req => antraege.bestaetigen(await auth(req.headers.cookie), req.params.campaignId, req.params.id, req.body.expectedVersion));

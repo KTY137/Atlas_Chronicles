@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { DEMO_RULE_PACKAGE, RULE_LIMITS, parseEvaluationContext, parseRulePackage } from "../src/index.ts";
+import { CHRONICLE_HEROES_PACKAGE, DEMO_RULE_PACKAGE, RULE_LIMITS, abilityOverview, defaultSupportedActorFields, parseEvaluationContext, parseRulePackage, parseSupportedRulePackage, validatePackageFields } from "../src/index.ts";
 
 function packageWithFields(count: number): unknown {
   const fields: Record<string, unknown> = JSON.parse(JSON.stringify(DEMO_RULE_PACKAGE.fields)) as Record<string, unknown>;
@@ -23,24 +23,49 @@ function contextWithActorFields(count: number): unknown {
   };
 }
 
+// Kaya, 2026-09-25: „so dass man sich nie Sorgen machen muss, auch bei über 1000 Fähigkeiten/Attributen“.
+// Die Grenzen stehen in RULE_LIMITS; hier zählt, dass sie genau an ihrer Stelle greifen.
+const FIELDS = RULE_LIMITS.fields, ACTIONS = RULE_LIMITS.actions;
 describe("Regelpaket-Grenzen", () => {
-  it("beträgt 512 und nimmt ein Paket mit genau 512 Feldern an", () => {
-    expect(RULE_LIMITS.fields).toBe(512);
-    expect(() => parseRulePackage(packageWithFields(512))).not.toThrow();
+  it("liegt weit über tausend und nimmt ein Paket mit genau so vielen Feldern an", () => {
+    expect(FIELDS).toBeGreaterThanOrEqual(10_000);
+    expect(() => parseRulePackage(packageWithFields(FIELDS))).not.toThrow();
   });
 
-  it("weist das 513. Bogenfeld weiterhin an der Paketgrenze zurück", () => {
-    expect(() => parseRulePackage(packageWithFields(513))).toThrow(/too many fields/);
+  it("weist das Feld über der Grenze weiterhin an der Paketgrenze zurück", () => {
+    expect(() => parseRulePackage(packageWithFields(FIELDS + 1))).toThrow(/too many fields/);
   });
 
-  it("wendet dieselbe 512er Grenze auf den Figurenkontext an", () => {
-    expect(() => parseEvaluationContext(contextWithActorFields(512))).not.toThrow();
-    expect(() => parseEvaluationContext(contextWithActorFields(513))).toThrow(/too many fields/);
+  it("wendet dieselbe Grenze auf den Figurenkontext an", () => {
+    expect(() => parseEvaluationContext(contextWithActorFields(FIELDS))).not.toThrow();
+    expect(() => parseEvaluationContext(contextWithActorFields(FIELDS + 1))).toThrow(/too many fields/);
   });
 
-  it("nimmt 512 einzeln würfelbare Aktionen an und weist die 513. ab", () => {
-    expect(RULE_LIMITS.actions).toBe(512);
-    expect(() => parseRulePackage(packageWithActions(512))).not.toThrow();
-    expect(() => parseRulePackage(packageWithActions(513))).toThrow(/actions/);
-  });
+  it("nimmt so viele einzeln würfelbare Aktionen an, wie die Grenze erlaubt, und weist eine mehr ab", () => {
+    expect(ACTIONS).toBeGreaterThanOrEqual(10_000);
+    expect(() => parseRulePackage(packageWithActions(ACTIONS))).not.toThrow();
+    expect(() => parseRulePackage(packageWithActions(ACTIONS + 1))).toThrow(/actions/);
+  }, 60_000);
+});
+
+describe("ein vollständiges Regelwerk passt hinein", () => {
+  // Ein Katalog in der Größe eines ganzen Systems: 2000 Fähigkeiten mit langen Beschreibungen,
+  // Zaubergrade 0–9 und Stufen bis 20, über tausend Attribute und lange Listen im Bogen.
+  it("nimmt 2000 Fähigkeiten, lange Texte, Ränge 0 bis 20 und über 1000 Attribute an", () => {
+    const base = JSON.parse(JSON.stringify(CHRONICLE_HEROES_PACKAGE)) as Record<string, any>;
+    const text = "Ein langer Regeltext. ".repeat(250);
+    const abilities = Array.from({ length: 2000 }, (_, i) => ({ id: `faehigkeit_${i}`, name: `Fähigkeit ${i}`, group: `Zauber/Grad ${i % 10}`,
+      rank: i % 21, kind: "einsatz", cost: i % 100, price: (i * 37) % 5000, text, ...(i > 0 && i % 7 === 0 ? { requires: [`faehigkeit_${i - 1}`] } : {}) }));
+    for (let i = 0; i < 1100; i++) base.fields[`wert_${i}`] = { type: "integer", label: `Wert ${i}`, default: 0, minimum: 0, maximum: 100 };
+    base.fields[base.abilityRules.abilityField] = { ...base.fields[base.abilityRules.abilityField], maxLength: RULE_LIMITS.stringValue };
+    // Das Punktebudget ist eine Regel von ChronicleHeroes, keine Grenze; hier zählt nur, dass tausend gelernte Fähigkeiten Platz haben.
+    delete base.abilityRules.budget;
+    const pkg = parseSupportedRulePackage({ ...base, abilities });
+    expect(pkg.schemaVersion === 2 && pkg.abilities?.length).toBe(2000);
+    expect(Object.keys(pkg.fields).length).toBeGreaterThan(1100);
+    // Eine Figur, die tausend davon gelernt hat, lässt sich speichern.
+    const learned = abilities.slice(0, 1000).map(row => row.id).join(", ");
+    const fields = validatePackageFields(pkg, { ...defaultSupportedActorFields(pkg), [base.abilityRules.abilityField]: learned });
+    expect(abilityOverview(pkg, fields).learned.length).toBe(1000);
+  }, 60_000);
 });

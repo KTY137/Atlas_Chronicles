@@ -68,7 +68,7 @@ describe("bounded formula and dice engine", () => {
     expect(evaluateFormula("max(1, 2, floor(8.9))", context()).value).toBe(8);
     expect(parseFormula("1 + 2")).toEqual(parseFormula("1+2"));
   });
-  it.each(["eval(1)", "fetch(1)", "process.env", "actor.constructor", "actor[\"insight\"]", "1;2", "1 ** 2", "Date.now()", "(()=>1)()", "while(true)", "1d6!", "0d6", "101d6", "1d1", "1d100001", "1d6kh2"])("rejects hostile or unsupported formula %s", expression => {
+  it.each(["eval(1)", "fetch(1)", "process.env", "actor.constructor", "actor[\"insight\"]", "1;2", "1 ** 2", "Date.now()", "(()=>1)()", "while(true)", "1d6!", "0d6", `${RULE_LIMITS.dice + 1}d6`, "1d1", "1d100001", "1d6kh2"])("rejects hostile or unsupported formula %s", expression => {
     expect(() => parseFormula(expression)).toThrow(RuleValidationError);
   });
   it("rejects arbitrary AST calls and unsupported node properties", () => {
@@ -76,16 +76,17 @@ describe("bounded formula and dice engine", () => {
     expect(() => parseFormulaAst({ kind: "literal", value: 1, execute: "ignored?" })).toThrow(/unsupported/);
   });
   it("caps recursive expressions, left-deep chains and direct ASTs", () => {
-    expect(() => parseFormula("(".repeat(40) + "1" + ")".repeat(40))).toThrow(/complexity/);
-    expect(() => parseFormula(Array(80).fill("1").join("+"))).toThrow(/complexity/);
-    expect(() => parseFormula("1".repeat(4097))).toThrow(/max/);
+    const deep = RULE_LIMITS.formulaDepth + 8;
+    expect(() => parseFormula("(".repeat(deep) + "1" + ")".repeat(deep))).toThrow(/complexity/);
+    expect(() => parseFormula(Array(RULE_LIMITS.formulaDepth + 50).fill("1").join("+"))).toThrow(/complexity/);
+    expect(() => parseFormula("1".repeat(RULE_LIMITS.formulaLength + 1))).toThrow(/max/);
     let ast: Formula = { kind: "literal", value: 1 };
-    for (let i = 0; i < 60; i++) ast = { kind: "unary", op: "-", value: ast };
+    for (let i = 0; i < RULE_LIMITS.formulaDepth + 10; i++) ast = { kind: "unary", op: "-", value: ast };
     expect(() => evaluateFormula(ast, context())).toThrow(/complexity/);
   });
   it("bounds dice across all nodes and explosions, and rejects non-finite arithmetic", () => {
-    expect(() => evaluateFormula("100d6 + 1d6", context())).toThrow(/total dice limit/);
-    expect(() => evaluateFormula("100d2!20", context())).toThrow(/total dice limit/);
+    expect(() => evaluateFormula(`${RULE_LIMITS.dice}d6 + 1d6`, context())).toThrow(/total dice limit/);
+    expect(() => evaluateFormula(`${RULE_LIMITS.dice}d2!${RULE_LIMITS.explosions}`, context())).toThrow(/total dice limit/);
     expect(() => evaluateFormula("1 / 0", context())).toThrow(/zero/);
     expect(() => evaluateFormula("1000000000000 * 2", context())).toThrow(/finite/);
   });

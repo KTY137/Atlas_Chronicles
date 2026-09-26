@@ -82,7 +82,7 @@ export const CAMPAIGN_EXCLUDED_TABLES = Object.freeze(["credentials", "auth_chal
   // gehört in kein Kampagnenpaket. Ohne diesen Eintrag verweigert requireCoveredSchema
   // jeden Export, weil eine Tabelle im Anwendungsschema stünde, die das Format nicht kennt.
   "campaign_deletions"] as const);
-export const CAMPAIGN_BUNDLE_LIMITS = Object.freeze({ bytes: 128 * 1024 * 1024, rows: 1_000_000, rowsPerTable: 200_000, depth: 64, nodes: 5_000_000, stringLength: 64 * 1024 * 1024 });
+export const CAMPAIGN_BUNDLE_LIMITS = Object.freeze({ bytes: 128 * 1024 * 1024, rows: 1_000_000, rowsPerTable: 200_000, depth: 64, nodes: 50_000_000, stringLength: 64 * 1024 * 1024 });
 
 /** A fresh complete empty table collection, useful to database adapters and fixtures. */
 export function emptyCampaignTables(): CampaignTables { return Object.fromEntries(CAMPAIGN_TABLES.map(t => [t.name, []])) as unknown as CampaignTables; }

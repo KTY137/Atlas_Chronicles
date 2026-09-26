@@ -238,5 +238,10 @@
   "Name der Fertigkeit": "Name of the skill",
   "Eigenschaft für {name}": "Trait for {name}",
   "zum Beispiel Reiten": "for example Riding",
-  "Eigene Fertigkeit": "Own skill"
+  "Eigene Fertigkeit": "Own skill",
+  "Das Regelpaket darf höchstens {groesse} MiB groß sein.": "The rule package may be at most {groesse} MiB.",
+  "Der Kategorienbaum ist zu tief verschachtelt. Reduziere ihn auf höchstens {ebenen} Ebenen.": "The category tree is nested too deeply. Reduce it to at most {ebenen} levels.",
+  "Würfel schreibt man als Anzahl, d und Seiten, zum Beispiel 1d20 oder 2d6; mindestens 2 Seiten, höchstens {anzahl} Würfel.": "Dice are written as a count, d and sides, for example 1d20 or 2d6; at least 2 sides, at most {anzahl} dice.",
+  "Fähigkeiten, die vorher gelernt sein müssen.": "Abilities that must be learned first.",
+  "Eine Zahl von 0 bis {hoechstens}, zum Beispiel Zaubergrad oder Stufe.": "A number from 0 to {hoechstens}, for example spell level or tier."
 }

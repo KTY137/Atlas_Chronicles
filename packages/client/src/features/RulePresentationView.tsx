@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useState, type ReactNode } from "react";
-import { decodeRuleCollectionValue, encodeRuleCollectionValue, type RuleCollection, type RulePresentationNode, type RuleRuntime, type RuleRuntimePreview, type Scalar } from "@chronicle/rules";
+import { RULE_LIMITS, decodeRuleCollectionValue, encodeRuleCollectionValue, type RuleCollection, type RulePresentationNode, type RuleRuntime, type RuleRuntimePreview, type Scalar } from "@chronicle/rules";
 import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
 import { RuleFields } from "./RuleFields";
@@ -70,7 +70,7 @@ export function RulePresentationView({ runtime, preview, values, onChange, disab
     // safe to use locally for that editing projection; an invalid raw value falls through to the
     // repair control below instead of making the collection disappear.
     const storage = runtime.fields[collection.storageField];
-    const maxLength = storage?.type === "string" ? storage.maxLength ?? 4096 : 4096;
+    const maxLength = storage?.type === "string" ? storage.maxLength ?? RULE_LIMITS.stringValue : RULE_LIMITS.stringValue;
     const rawValue = values[collection.storageField];
     let rows: Readonly<Record<string, Scalar>>[] = [];
     let needsRepair = typeof rawValue === "string" && rawValue.length > maxLength;
