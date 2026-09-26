@@ -5,7 +5,7 @@ import { createCampaignBundleV14, type CampaignBundleV14 } from "../native-v14/b
 import type { CampaignRow } from "../campaign-schema.ts";
 import { assertJson, fail, hash, object, list, string, keys, validateColumn, rejectDuplicateKeys } from "../campaign-v3-json.ts";
 import { CAMPAIGN_V15_TABLES, CAMPAIGN_V15_MODULES, CAMPAIGN_BUNDLE_V15_LIMITS as LIMITS, type CampaignTablesV15, type CampaignModuleV15, type CampaignTableNameV15 } from "./schema.ts";
-import { lifecycleCoreTables } from "./validation.ts";
+import { lifecycleCoreTables, type HouseFloors } from "./validation.ts";
 
 export const CAMPAIGN_BUNDLE_V15_VERSION = 15 as const;
 export interface CampaignBundleDataV15 { readonly campaignId: string; readonly universeId: string; readonly exportedAt: string; readonly tables: CampaignTablesV15 }
@@ -15,7 +15,7 @@ export interface CampaignBundleV15 {
     readonly modules: readonly { readonly name: CampaignModuleV15; readonly version: 1; readonly count: number; readonly sha256: string }[] };
   readonly tables: CampaignTablesV15;
 }
-export function createCampaignBundleV15(data: CampaignBundleDataV15): CampaignBundleV15 {
+export function createCampaignBundleV15(data: CampaignBundleDataV15, floorsOf?: HouseFloors): CampaignBundleV15 {
   assertJson(data); keys(object(data, "data"), ["campaignId", "universeId", "exportedAt", "tables"], "data");
   keys(object(data.tables, "tables"), CAMPAIGN_V15_TABLES.map(table => table.name), "tables");
   // Validate all original rows BEFORE the narrowly scoped legacy validation projection.
@@ -37,7 +37,7 @@ export function createCampaignBundleV15(data: CampaignBundleDataV15): CampaignBu
     if (rowCount > LIMITS.rows) fail("tables", "total row limit exceeded");
   }
   const validated = original as unknown as CampaignTablesV15;
-  const core = createCampaignBundleV14({ ...data, tables: lifecycleCoreTables(validated, data.campaignId) });
+  const core = createCampaignBundleV14({ ...data, tables: lifecycleCoreTables(validated, data.campaignId, floorsOf) });
   // Retired baseline links/receipts are immutable evidence. The projection never becomes storage.
   const tables: CampaignTablesV15 = { ...core.tables,
     betreten_karten: validated.betreten_karten,

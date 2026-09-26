@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { canonicalJson, type CanonicalValue } from "@chronicle/core";
+import { parseMapFloorStack } from "@chronicle/szene";
 import { createCampaignBundleV19, type CampaignBundleV19 } from "../native-v19/bundle.ts";
 import type { CampaignRow } from "../campaign-schema.ts";
 import { assertJson, fail, hash, object, list, string, keys, validateColumn, rejectDuplicateKeys } from "../campaign-v3-json.ts";
@@ -39,7 +40,16 @@ export function createCampaignBundleV20(data: CampaignBundleDataV20): CampaignBu
   }
   const validated = original as unknown as CampaignTablesV20;
   const { map_floor_stacks, map_room_fog, map_studio_commands, ...previous } = validated;
-  const core = createCampaignBundleV19({ ...data, tables: previous as unknown as CampaignBundleV19["tables"] });
+  // A house is deleted with all its floors. The lifecycle replay (native-v15) sees only entrance
+  // edges; this profile knows the stacks and names every ground floor's companions. A deleted
+  // house's stack cannot change afterwards (every studio command refuses a retired map), so the
+  // stack in the bundle is the one the deletion saw. `validateMapStudioTables` proves the stacks.
+  const houses = new Map<string, readonly string[]>();
+  for (const row of map_floor_stacks) {
+    const stack = parseMapFloorStack(row.document), floors = stack.floors.map(floor => floor.mapId).filter(id => id !== stack.rootMapId);
+    if (floors.length) houses.set(stack.rootMapId, floors);
+  }
+  const core = createCampaignBundleV19({ ...data, tables: previous as unknown as CampaignBundleV19["tables"] }, id => houses.get(id) ?? []);
   const tables: CampaignTablesV20 = { ...core.tables, map_floor_stacks, map_room_fog, map_studio_commands };
   validateMapStudioTables(tables, data.campaignId);
   const modules = CAMPAIGN_V20_MODULES.map(name => {

@@ -13,6 +13,8 @@ import { createGrundriss } from "../src/domain/grundriss.ts";
 import { createBetreten } from "../src/domain/betreten.ts";
 import { createMapStudio } from "../src/domain/map-studio.ts";
 import { createMapLifecycle } from "../src/domain/map-lifecycle.ts";
+import { exportCampaignBundle } from "../src/domain/bundles.ts";
+import { createCurrentCampaignBundle, currentCampaignTables, serializeCurrentCampaignBundle, validateCurrentCampaignBundle } from "@chronicle/io";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 import { tacticalPointInside } from "../src/domain/tactical-state.ts";
 
@@ -445,6 +447,12 @@ describe("Ein Haus wird so groß, wie es auf der Stadtkarte steht", () => {
       const removed = await lifecycle.remove(gm, campaign, house0, { commandId: randomUUID(), expectedVersion: preview.root.version, confirmationHash: preview.confirmationHash, confirmedMapIds: preview.maps.map(map => `${map.kind}:${map.id}`) });
       expect(removed.deletedMaps.map(map => map.id).sort()).toEqual(floors.stack.floors.map(floor => floor.mapId).sort());
       for (const floor of floors.stack.floors) await expect(tactical.getMap(gm, campaign, floor.mapId)).rejects.toThrow();
+      // Die Sicherung spielt das Löschen nach: das Haus ging mit allen Geschossen, belegt durch seinen Verband.
+      const bundle = await exportCampaignBundle(db, gm, campaign);
+      expect(() => validateCurrentCampaignBundle(JSON.parse(serializeCurrentCampaignBundle(bundle)))).not.toThrow();
+      const tables = currentCampaignTables(bundle);
+      expect(() => createCurrentCampaignBundle({ campaignId: campaign, universeId: bundle.manifest.universeId, exportedAt: bundle.manifest.exportedAt,
+        tables: { ...tables, map_floor_stacks: [] } })).toThrow(/delete\.subtree/);
     } finally { await db.close(); }
   }, 60_000);
 });

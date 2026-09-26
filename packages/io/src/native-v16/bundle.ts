@@ -3,6 +3,7 @@
 import { canonicalJson, type CanonicalValue } from "@chronicle/core";
 import { createCampaignBundleV15, type CampaignBundleV15 } from "../native-v15/bundle.ts";
 import type { CampaignRow } from "../campaign-schema.ts";
+import type { HouseFloors } from "../native-v15/validation.ts";
 import { assertJson, fail, hash, object, list, string, keys, validateColumn, rejectDuplicateKeys } from "../campaign-v3-json.ts";
 import { CAMPAIGN_V16_TABLES, CAMPAIGN_V16_MODULES, CAMPAIGN_BUNDLE_V16_LIMITS as LIMITS, type CampaignTablesV16, type CampaignModuleV16, type CampaignTableNameV16 } from "./schema.ts";
 import { validateChronistTables } from "./validation.ts";
@@ -15,7 +16,7 @@ export interface CampaignBundleV16 {
     readonly modules: readonly { readonly name: CampaignModuleV16; readonly version: 1; readonly count: number; readonly sha256: string }[] };
   readonly tables: CampaignTablesV16;
 }
-export function createCampaignBundleV16(data: CampaignBundleDataV16): CampaignBundleV16 {
+export function createCampaignBundleV16(data: CampaignBundleDataV16, floorsOf?: HouseFloors): CampaignBundleV16 {
   assertJson(data); keys(object(data, "data"), ["campaignId", "universeId", "exportedAt", "tables"], "data");
   keys(object(data.tables, "tables"), CAMPAIGN_V16_TABLES.map(table => table.name), "tables");
   // Validate all original rows BEFORE the narrowly scoped legacy validation projection.
@@ -38,7 +39,7 @@ export function createCampaignBundleV16(data: CampaignBundleDataV16): CampaignBu
   }
   const validated = original as unknown as CampaignTablesV16;
   const {chronist_laeufe,chronist_vorschlaege,...previous}=validated;
-  const core = createCampaignBundleV15({ ...data, tables: previous });
+  const core = createCampaignBundleV15({ ...data, tables: previous }, floorsOf);
   const tables: CampaignTablesV16 = { ...core.tables,chronist_laeufe,chronist_vorschlaege };
   validateChronistTables(tables,data.campaignId);
   const modules = CAMPAIGN_V16_MODULES.map(name => {

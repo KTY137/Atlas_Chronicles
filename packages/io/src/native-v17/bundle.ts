@@ -3,6 +3,7 @@
 import { canonicalJson, type CanonicalValue } from "@chronicle/core";
 import { createCampaignBundleV16, type CampaignBundleV16 } from "../native-v16/bundle.ts";
 import type { CampaignRow } from "../campaign-schema.ts";
+import type { HouseFloors } from "../native-v15/validation.ts";
 import { assertJson, fail, hash, object, list, string, keys, validateColumn, rejectDuplicateKeys } from "../campaign-v3-json.ts";
 import { CAMPAIGN_V17_TABLES, CAMPAIGN_V17_MODULES, CAMPAIGN_BUNDLE_V17_LIMITS as LIMITS,
   type CampaignTablesV17, type CampaignModuleV17, type CampaignTableNameV17 } from "./schema.ts";
@@ -16,7 +17,7 @@ export interface CampaignBundleV17 {
     readonly modules: readonly { readonly name: CampaignModuleV17; readonly version: 1; readonly count: number; readonly sha256: string }[] };
   readonly tables: CampaignTablesV17;
 }
-export function createCampaignBundleV17(data: CampaignBundleDataV17): CampaignBundleV17 {
+export function createCampaignBundleV17(data: CampaignBundleDataV17, floorsOf?: HouseFloors): CampaignBundleV17 {
   assertJson(data); keys(object(data, "data"), ["campaignId", "universeId", "exportedAt", "tables"], "data");
   keys(object(data.tables, "tables"), CAMPAIGN_V17_TABLES.map(table => table.name), "tables");
   // Validate all original rows BEFORE the narrowly scoped legacy validation projection.
@@ -39,7 +40,7 @@ export function createCampaignBundleV17(data: CampaignBundleDataV17): CampaignBu
   }
   const validated = original as unknown as CampaignTablesV17;
   const { figurvorlagen_freigaben, figurantraege, figurantrag_events, ...previous } = validated;
-  const core = createCampaignBundleV16({ ...data, tables: previous as unknown as CampaignBundleV16["tables"] });
+  const core = createCampaignBundleV16({ ...data, tables: previous as unknown as CampaignBundleV16["tables"] }, floorsOf);
   const tables: CampaignTablesV17 = { ...core.tables, figurvorlagen_freigaben, figurantraege, figurantrag_events };
   validateFigurantragTables(tables, data.campaignId);
   const modules = CAMPAIGN_V17_MODULES.map(name => {

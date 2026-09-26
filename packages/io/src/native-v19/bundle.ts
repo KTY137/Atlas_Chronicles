@@ -3,6 +3,7 @@
 import { canonicalJson, type CanonicalValue } from "@chronicle/core";
 import { createCampaignBundleV18, type CampaignBundleV18 } from "../native-v18/bundle.ts";
 import type { CampaignRow } from "../campaign-schema.ts";
+import type { HouseFloors } from "../native-v15/validation.ts";
 import { assertJson, fail, hash, object, list, string, keys, validateColumn, rejectDuplicateKeys } from "../campaign-v3-json.ts";
 import { CAMPAIGN_V19_TABLES, CAMPAIGN_V19_MODULES, CAMPAIGN_BUNDLE_V19_LIMITS as LIMITS,
   type CampaignTablesV19, type CampaignModuleV19, type CampaignTableNameV19 } from "./schema.ts";
@@ -16,7 +17,7 @@ export interface CampaignBundleV19 {
     readonly modules: readonly { readonly name: CampaignModuleV19; readonly version: 1; readonly count: number; readonly sha256: string }[] };
   readonly tables: CampaignTablesV19;
 }
-export function createCampaignBundleV19(data: CampaignBundleDataV19): CampaignBundleV19 {
+export function createCampaignBundleV19(data: CampaignBundleDataV19, floorsOf?: HouseFloors): CampaignBundleV19 {
   assertJson(data); keys(object(data, "data"), ["campaignId", "universeId", "exportedAt", "tables"], "data");
   keys(object(data.tables, "tables"), CAMPAIGN_V19_TABLES.map(table => table.name), "tables");
   // Alle Zeilen werden vollstaendig geprueft, BEVOR die eng gefasste Vorgaengerpruefung laeuft.
@@ -39,7 +40,7 @@ export function createCampaignBundleV19(data: CampaignBundleDataV19): CampaignBu
   }
   const validated = original as unknown as CampaignTablesV19;
   const { atlas_karten_herkunft, ...previous } = validated;
-  const core = createCampaignBundleV18({ ...data, tables: previous as unknown as CampaignBundleV18["tables"] });
+  const core = createCampaignBundleV18({ ...data, tables: previous as unknown as CampaignBundleV18["tables"] }, floorsOf);
   const tables: CampaignTablesV19 = { ...core.tables, atlas_karten_herkunft };
   validateKartenherkunftTables(tables, data.campaignId);
   const modules = CAMPAIGN_V19_MODULES.map(name => {

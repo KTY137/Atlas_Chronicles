@@ -32,7 +32,13 @@ function ref(value: unknown, path: string, pin = false): Ref | Pin {
 }
 
 /** Returns only the precisely validated legacy rows which must use v15's historical rules. */
-export function checkMapLifecycleTables(t: CampaignTablesV15, campaignId: string): { retired: Set<string>; retiredLegacyChildren: Set<string>; revisionMappings: Map<string, number> } {
+/**
+ * The floors a house carries along when it is deleted, keyed by its ground floor. Floor stacks
+ * arrive with native-v20; that profile derives this from its own `map_floor_stacks` and hands it
+ * down. Older profiles pass nothing, so their subtrees stay exactly the entrance subtrees.
+ */
+export type HouseFloors = (groundFloorMapId: string) => readonly string[];
+export function checkMapLifecycleTables(t: CampaignTablesV15, campaignId: string, floorsOf?: HouseFloors): { retired: Set<string>; retiredLegacyChildren: Set<string>; revisionMappings: Map<string, number> } {
   const users = new Set(t.users.map(row => String(row.id)));
   const maps = new Map<string, CampaignRow>([
     ...t.atlas_maps.map(row => [`atlas:${row.id}`, row] as const),
@@ -88,6 +94,8 @@ export function checkMapLifecycleTables(t: CampaignTablesV15, campaignId: string
       if (retired.has(at) || selected.has(at)) fail("map-lifecycle", "retired or cyclic subtree");
       mapFor(current); selected.add(at);
       for (const edge of active.values()) if (edge.parent_kind === current.kind && edge.parent_map_id === current.id) pending.push({ kind: "tactical", id: String(edge.map_id) });
+      // A house goes with all its floors, as the server's deletion preview lists them.
+      if (current.kind === "tactical") for (const floor of floorsOf?.(current.id) ?? []) pending.push({ kind: "tactical", id: floor });
     }
     return selected;
   }
@@ -264,8 +272,8 @@ export function checkMapLifecycleTables(t: CampaignTablesV15, campaignId: string
   return { retired, retiredLegacyChildren, revisionMappings };
 }
 
-export function lifecycleCoreTables(tables: CampaignTablesV15, campaignId: string): CampaignTablesV14 {
-  const { retiredLegacyChildren, revisionMappings } = checkMapLifecycleTables(tables, campaignId);
+export function lifecycleCoreTables(tables: CampaignTablesV15, campaignId: string, floorsOf?: HouseFloors): CampaignTablesV14 {
+  const { retiredLegacyChildren, revisionMappings } = checkMapLifecycleTables(tables, campaignId, floorsOf);
   return { ...Object.fromEntries(CAMPAIGN_V14_TABLES.map(table => [table.name, tables[table.name]])),
     betreten_karten: tables.betreten_karten.filter(row => !retiredLegacyChildren.has(String(row.map_id))),
     betreten_command_receipts: tables.betreten_command_receipts.filter(row => !retiredLegacyChildren.has(String(object(row.response, "receipt.response").mapId))),
