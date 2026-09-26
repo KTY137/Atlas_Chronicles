@@ -303,6 +303,9 @@ try{
     assert.equal(result.status,200,JSON.stringify(result.body));return result.body.mapId;
   };
   const interior=await enter(genreMapId,house.knotenId,entrances.body.version,"Desktop interior to remove");
+  // A building opens as a house: its ground floor plus the floors of its stack, deleted together.
+  const houseFloors=await request(`/api/campaigns/${campaignId}/tactical/maps/${interior}/floors`);assert.equal(houseFloors.status,200);
+  const otherFloors=houseFloors.body.stack.floors.map(floor=>floor.mapId).filter(id=>id!==interior);
   const rooms=await request(`/api/campaigns/${campaignId}/maps/tactical/${interior}/children`);assert.equal(rooms.status,200);
   const room=rooms.body.nodes.find(node=>node.canEnter);assert.ok(room);
   const cellar=await enter(interior,room.knotenId,rooms.body.version,"Desktop cellar to remove");
@@ -315,16 +318,17 @@ try{
   await deletionDialog.getByText("Desktop cellar to remove",{exact:true}).waitFor({state:"visible"});
   await deletionDialog.screenshot({path:join(run,"map-deletion-preview.png")});
   const deleteResponse=game.waitForResponse(response=>response.url()===`${origin}/api/campaigns/${campaignId}/maps/tactical/${interior}/delete`&&response.request().method()==="POST");
-  await deletionDialog.getByRole("button",{name:"2 Karten löschen",exact:true}).click();
+  const expectedDeleted=[interior,cellar,...otherFloors];
+  await deletionDialog.getByRole("button",{name:`${expectedDeleted.length} Karten löschen`,exact:true}).click();
   const removed=await deleteResponse;assert.equal(removed.status(),200);const deletionAck=await removed.json();
-  assert.deepEqual(deletionAck.deletedMaps.map(map=>map.id).sort(),[interior,cellar].sort());
+  assert.deepEqual(deletionAck.deletedMaps.map(map=>map.id).sort(),expectedDeleted.sort());
   await deletionDialog.waitFor({state:"hidden"});
-  for(const id of [interior,cellar])assert.equal((await request(`/api/campaigns/${campaignId}/tactical/maps/${id}`)).status,404);
+  for(const id of expectedDeleted)assert.equal((await request(`/api/campaigns/${campaignId}/tactical/maps/${id}`)).status,404);
   const freed=await request(`/api/campaigns/${campaignId}/maps/tactical/${genreMapId}/children`);assert.equal(freed.status,200);
   assert.equal(freed.body.nodes.find(node=>node.knotenId===house.knotenId)?.vorhandeneKarteId,null);
   const replacement=await enter(genreMapId,house.knotenId,freed.body.version,"Desktop replacement interior");assert.notEqual(replacement,interior);
-  evidence.mapLifecycle={parent:genreMapId,interior,cellar,replacement,deletionAck};
-  record("compiled desktop right-click reviews and deletes two nested maps, frees the surviving entrance and persists a new replacement interior");
+  evidence.mapLifecycle={parent:genreMapId,interior,cellar,otherFloors,replacement,deletionAck};
+  record(`compiled desktop right-click reviews and deletes a house with ${otherFloors.length+1} floors and a nested map, frees the surviving entrance and persists a new replacement interior`);
   await game.goto(`${origin}/?campaign=${campaignId}&stage=schmiede`);
   const overview=game.getByRole("region",{name:"Regeln und Figuren zuerst",exact:true});
   const finishing=game.getByRole("region",{name:"Den Spielabend ausgestalten",exact:true});

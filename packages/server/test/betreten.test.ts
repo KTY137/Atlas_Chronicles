@@ -12,6 +12,7 @@ import { createTactical, TacticalValidationError } from "../src/domain/tactical.
 import { createGrundriss } from "../src/domain/grundriss.ts";
 import { createBetreten } from "../src/domain/betreten.ts";
 import { createMapStudio } from "../src/domain/map-studio.ts";
+import { createMapLifecycle } from "../src/domain/map-lifecycle.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 import { tacticalPointInside } from "../src/domain/tactical-state.ts";
 
@@ -436,6 +437,14 @@ describe("Ein Haus wird so groß, wie es auf der Stadtkarte steht", () => {
       const chosen = await betreten.betrete(gm, campaign, { commandId: randomUUID(), parentKind: "tactical", parentMapId: parent.id, knotenId: church.knotenId, expectedVersion: children.version + 1, name: church.titel, art: "grundriss", stil: "gemalt", optionen: { zellen: [30, 20] } });
       expect((await tactical.getMap(gm, campaign, chosen.mapId)).document.geometry.size).toEqual([30 * z, 20 * z]);
       expect((await tactical.getSource(gm, campaign, chosen.mapId)).provenance.generator).toBe("chronicle-grundriss");
+      // Ein Haus löscht man als Ganzes: die Vorschau nennt jedes Geschoss, ein Geschoss allein bleibt gesperrt.
+      const lifecycle = createMapLifecycle(db), house0 = { kind: "tactical" as const, id: entered.mapId };
+      await expect(lifecycle.preview(gm, campaign, { kind: "tactical", id: upper })).rejects.toMatchObject({ code: "conflict", description: expect.stringContaining("gehört zu einem Haus") });
+      const preview = await lifecycle.preview(gm, campaign, house0);
+      expect(preview.maps.map(map => map.id).sort()).toEqual(floors.stack.floors.map(floor => floor.mapId).sort());
+      const removed = await lifecycle.remove(gm, campaign, house0, { commandId: randomUUID(), expectedVersion: preview.root.version, confirmationHash: preview.confirmationHash, confirmedMapIds: preview.maps.map(map => `${map.kind}:${map.id}`) });
+      expect(removed.deletedMaps.map(map => map.id).sort()).toEqual(floors.stack.floors.map(floor => floor.mapId).sort());
+      for (const floor of floors.stack.floors) await expect(tactical.getMap(gm, campaign, floor.mapId)).rejects.toThrow();
     } finally { await db.close(); }
   }, 60_000);
 });

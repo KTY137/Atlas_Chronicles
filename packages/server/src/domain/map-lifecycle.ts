@@ -86,14 +86,21 @@ export function createMapLifecycle(db: Db, cfg: DomainConfig = {}) {
       const key = `${edge.parent_kind}:${edge.parent_map_id}`;
       const at = children.get(key) ?? []; at.push(edge); children.set(key, at);
     }
-    const selected = new Map<string, MapVersionPin>(), pending = [root];
+    // Ein Haus ist sein Erdgeschoss samt allen Geschossen darüber und darunter: wer es löscht, sieht
+    // in der Vorschau jedes Geschoss einzeln und bestätigt sie zusammen. Ein einzelnes Geschoss
+    // ohne sein Haus bleibt gesperrt, bis es aus dem Verband gelöst ist.
+    const selected = new Map<string, MapVersionPin>(), pending = [root], viaHouse = new Set<string>();
     while (pending.length) {
       const current = pending.pop()!, key = mapReferenceKey(current);
       if (selected.has(key)) throw new MapLifecycleConflict("conflict", "Die Kartenhierarchie ist nicht eindeutig.");
       if (current.kind === "tactical") {
         const stack = await floorStackFor(tx, campaignId, current.id);
-        if (stack && (stack.document.floors.length > 1 || stack.root_map_id !== current.id))
-          throw new MapLifecycleConflict("conflict", "Bitte das Geschoss zuerst aus seinem Geschossverband lösen. Die Karten und ihre Übergänge werden nicht stillschweigend mitgelöscht.");
+        if (stack && stack.root_map_id !== current.id && !viaHouse.has(current.id))
+          throw new MapLifecycleConflict("conflict", "Dieses Geschoss gehört zu einem Haus. Lösche das Haus über sein Erdgeschoss – dann gehen alle Geschosse mit – oder löse das Geschoss zuerst aus dem Verband.");
+        if (stack && stack.root_map_id === current.id) for (const floor of stack.document.floors) {
+          const map = floor.mapId === current.id ? undefined : mapsByKey.get(`tactical:${floor.mapId}`);
+          if (map) { viaHouse.add(map.id); pending.push(map); }
+        }
       }
       selected.set(key, current);
       if (selected.size > 10000) throw new MapLifecycleConflict("conflict", "Mehr als 10.000 Karten: Bitte zuerst einen kleineren Unterbaum auswählen.");
