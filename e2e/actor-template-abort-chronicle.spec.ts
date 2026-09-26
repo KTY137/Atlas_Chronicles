@@ -28,6 +28,8 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => host?.close());
 const form = (page: Page) => page.locator("form.creation-template-form");
+/** Rückfragen erscheinen seit 2026-09-26 im Look (`confirmAction` aus @chronicle/ui), nicht als Browserdialog. */
+const imDialog = (page: Page, knopf: string) => page.getByRole("dialog").getByRole("button", { name: knopf, exact: true }).click();
 async function login(page: Page, gm: boolean) {
   const session = gm ? host.gm : host.player;
   await page.context().addCookies([{ name: "chronicle_session", value: session.value, url: host.origin, httpOnly: true, secure: true, sameSite: "Strict" }]);
@@ -53,19 +55,19 @@ test("Spielleitung: Vorlage anfangen, verwerfen, weiter bedienen", async ({ page
   await expect(number).toBeVisible();
   await number.fill("9");
   await expect(number).toHaveValue("9");
-  page.once("dialog", d => d.accept());
   await f.getByRole("button", { name: "Änderungen verwerfen", exact: true }).click();
+  await imDialog(page, "Verwerfen");
   await expect(f.getByLabel("Vorlagenname", { exact: true })).toHaveValue("");
   await expectUsable(page, f, "verwerfen");
   // Vorhandene Vorlage öffnen (der Entwurf ist schmutzig, also bestätigen), ändern, zurück zu „Neu“.
-  page.once("dialog", d => d.accept());
   await page.locator(".creation-template-list").getByRole("button", { name: /^Archetyp/ }).click();
-  await expect(page.getByRole("heading", { name: "Neue Vorlagenrevision", exact: true })).toBeVisible();
+  await imDialog(page, "Verwerfen");
+  await expect(page.getByRole("heading", { name: "Figurvorlage überarbeiten", exact: true })).toBeVisible();
   const n2 = form(page).locator('input[type="number"]').first();
   await n2.fill("11");
   await expect(n2).toHaveValue("11");
-  page.once("dialog", d => d.accept());
   await page.getByRole("button", { name: "Neue Figurvorlage", exact: true }).click();
+  await imDialog(page, "Verwerfen");
   await expect(page.getByRole("heading", { name: "Figurvorlage anlegen", exact: true })).toBeVisible();
   await expectUsable(page, form(page), "neu nach revision");
   expect(errors).toEqual([]);
@@ -76,17 +78,27 @@ test("Spieler: Antrag anfangen, abbrechen, erneut beginnen", async ({ page }) =>
   await createFigurantrag(host.db).freigeben(host.gm.userId, host.campaign.id, templateId, 0);
   await login(page, false);
   await page.goto(`${host.origin}/?campaign=${host.campaign.id}&stage=ich`);
-  await page.getByRole("button", { name: "Figur anlegen", exact: true }).click();
+  await page.getByRole("button", { name: "Figur beantragen", exact: true }).click();
   await page.getByRole("combobox", { name: "Figurvorlage", exact: true }).selectOption(templateId);
   await page.getByLabel("Name deiner Figur", { exact: true }).fill("Halbfertig");
+  // Die Werte stehen im zweiten Schritt „Was kann sie?“.
+  await page.getByRole("button", { name: "Weiter", exact: true }).click();
   const scope = page.locator("form");
   const number = scope.locator('input[type="number"]').first();
   await expect(number).toBeVisible();
   await number.fill("9");
   await expect(number).toHaveValue("9");
   await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
-  await page.getByRole("button", { name: "Figur anlegen", exact: true }).click();
+  await imDialog(page, "Verwerfen");
+  await page.getByRole("button", { name: "Figur beantragen", exact: true }).click();
   await page.getByRole("combobox", { name: "Figurvorlage", exact: true }).selectOption(templateId);
-  await expectUsable(page, page.locator("form"), "antrag erneut");
+  const name = page.getByLabel("Name deiner Figur", { exact: true });
+  await expect(name, "antrag erneut: leer").toHaveValue("");
+  await name.fill("Nach dem Abbruch");
+  await page.getByRole("button", { name: "Weiter", exact: true }).click();
+  const again = page.locator("form").locator('input[type="number"]:not([disabled])').first();
+  await again.fill("7");
+  await expect(again, "antrag erneut").toHaveValue("7");
+  expect(await page.locator("form").locator("input:disabled, select:disabled, fieldset:disabled").count(), "antrag erneut: gesperrte Felder").toBe(0);
   expect(errors).toEqual([]);
 });

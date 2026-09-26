@@ -40,7 +40,7 @@ test("English Me shows all values, available points and original portraits acros
   await picker.selectOption(heroId);
   const overview = page.getByRole("region", { name: "Points and advancement" });
   await expect(overview.getByText("Available skill points", { exact: true })).toBeVisible();
-  await expect(overview.locator("dd").first()).toHaveText("15");
+  await expect(overview.locator(".character-progress-value").first()).toHaveText("15");
   await expect(page.getByRole("meter", { name: "Vitality" })).toBeVisible();
   await expect(page.getByLabel("Profession / role", { exact: true })).toHaveValue("Eigener Beruf");
   await expect(page.getByLabel("Notes / agreements", { exact: true })).toHaveValue("Mein eigener Text");
@@ -56,9 +56,9 @@ test("English Me shows all values, available points and original portraits acros
   await expect(original).toBeVisible();
   expect(await (await page.request.get(new URL(await original.getAttribute("href") ?? "", host.origin).href)).body()).toEqual(png);
   await page.getByLabel("Athletics · points", { exact: true }).fill("65");
-  await expect(overview.locator("dd").first()).toHaveText("10");
+  await expect(overview.locator(".character-progress-value").first()).toHaveText("10");
   await page.getByRole("button", { name: "Save the sheet", exact: true }).click();
-  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+  await expect(page.getByText("All saved.", { exact: true })).toBeVisible();
   await page.reload();
   await picker.selectOption(heroId);
   await expect(page.getByLabel("Athletics · points", { exact: true })).toHaveValue("65");
@@ -76,8 +76,9 @@ test("English Me shows all values, available points and original portraits acros
   await expect(overview).toBeInViewport();
   expect(await overview.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("english-character-points-mobile.png") });
-  page.once("dialog", dialog => void dialog.accept());
+  // Die Rückfrage erscheint seit 2026-09-26 im Look (confirmAction), nicht als Browserdialog.
   await page.getByRole("button", { name: "Remove portrait", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Remove portrait", exact: true }).click();
   await expect(page.getByText("No portrait yet", { exact: true })).toBeVisible();
   const saved = await (await page.request.get(host.origin + "/api/campaigns/" + host.campaign.id + "/actors/" + heroId + "/sheet")).json();
   expect(saved.fields).toMatchObject({ name: "Mara", profession: "Eigener Beruf", notes: "Mein eigener Text", skill_athletik: 65, faehigkeiten: "harter_schlag, leichtfuessig, beherzt" });
@@ -98,19 +99,20 @@ test("permanent actor deletion requires a reason and confirmation, deletes an un
   await picker.selectOption(unusedId);
   await expect(remove).toBeDisabled();
   await page.getByLabel("Grund für das endgültige Löschen", { exact: true }).fill("Isolierte Browser-Testfigur");
-  page.once("dialog", dialog => void dialog.dismiss()); await remove.click();
+  // Die Rückfrage erscheint im Look (confirmAction): erst abbrechen, dann wirklich löschen.
+  const rueckfrage = page.getByRole("dialog");
+  await remove.click(); await rueckfrage.getByRole("button", { name: "Abbrechen", exact: true }).click();
   const endpoint = host.origin + "/api/campaigns/" + host.campaign.id + "/actors/" + unusedId;
   expect((await page.request.get(endpoint)).status()).toBe(200);
-  page.once("dialog", dialog => void dialog.accept());
   const deletion = page.waitForResponse(response => response.url() === endpoint && response.request().method() === "DELETE");
-  await remove.click(); expect((await deletion).status()).toBe(200);
+  await remove.click(); await rueckfrage.getByRole("button", { name: "Endgültig löschen", exact: true }).click(); expect((await deletion).status()).toBe(200);
   await expect(picker.locator('option[value="' + unusedId + '"]')).toHaveCount(0);
   expect((await page.request.get(endpoint + "/sheet")).status()).toBe(404);
   await page.reload(); await summary.click();
   await expect(picker.locator('option[value="' + unusedId + '"]')).toHaveCount(0);
   await picker.selectOption(heldId);
   await page.getByLabel("Grund für das endgültige Löschen", { exact: true }).fill("Referenzen bleiben geschützt");
-  page.once("dialog", dialog => void dialog.accept()); await remove.click();
+  await remove.click(); await rueckfrage.getByRole("button", { name: "Endgültig löschen", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(page.getByRole("alert")).toContainText("Historie");
   expect((await page.request.get(host.origin + "/api/campaigns/" + host.campaign.id + "/actors/" + heldId + "/sheet")).status()).toBe(200);
