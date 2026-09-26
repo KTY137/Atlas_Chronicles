@@ -1,3 +1,20 @@
+# Häuser von innen und Geschosse am Tisch — 2026-09-26
+
+Gebäude haben Innenräume über mehrere Geschosse (Keller, Erdgeschoss, Obergeschoss; Sci-Fi:
+Decks). Die Räume folgen dem echten Umriss auf der Stadtkarte, Rundbauten werden radial geteilt.
+Die Haustür liegt zur Straße, und eine Treppe steht auf allen Geschossen an derselben Stelle.
+Möbel werden mit den echten Maßen des Assets gestellt, dazu Fenster und Licht. Der neue
+Hauspaket-Umfang: pk.grundriss 1.3.0 (+17) und pk.zeitwelten 1.1.0 (+19).
+
+Beim Betreten entstehen alle Geschosse samt Geschossverband. Am Spieltisch führt die Spielleitung
+die Szene per Klick auf eine Treppe ins andere Geschoss; die Figuren behalten ihren Platz und jedes
+Geschoss hält seine Türen. Neue Tabelle `session_floor_states` (Migration 038), Exportfassung
+`native-v23`. Der Stadtgenerator nennt jetzt die Straße vor der Tür als Adresse; Park, Rathaus in
+der Zone und Höfe wurden korrigiert, die Goldtests bewusst neu geschrieben.
+
+Nachweise und Testzahlen: `design/iterations/unterkarten-20260926.md`. Offen: Phase B, der
+Atlas-Look der Kartenentwürfe im Produkt.
+
 # Kartenstudio Teil 2: Moderne Stadt und Kolonie — 2026-09-25
 
 Gegenwart und Sci-Fi (v12) haben eigene Stadtbilder aus derselben Viertelpipeline wie Fantasy:
