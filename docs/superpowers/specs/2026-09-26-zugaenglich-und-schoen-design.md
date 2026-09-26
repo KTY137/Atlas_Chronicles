@@ -10,11 +10,29 @@ Paketformat nicht — umkehrbare Schicht.
 
 ## Ziel und Maßstab
 
-Eine Spielleitung ohne Technikwissen und eine Person mit Tastatur oder Bildschirmleser kommen durch
-Regelschmiede, Figurenerstellung, Figurantrag, „Ich“ und den Bogen am Tisch, ohne zu raten. Ein
-Bogen liest sich wie ein Charakterbogen, nicht wie ein Behördenformular.
+**Präzisierung Kaya, 2026-09-26:** *„mit accessible mein ich btw einfach das ein dummer nutzer der
+dass system nicht kennt damit umgehen kann bzw schnell weiß wie es geht. nicht barrierefrei aber
+auch gut wenn du das jetzt gemacht hast“.* Das **Hauptziel ist Anfängertauglichkeit**;
+Barrierefreiheit ist das Nebenziel und bleibt drin, wo sie ohnehin anfällt.
 
-**Maßstab:** WCAG 2.2 AA. Gemessen mit axe-core 4.13 (Tags `wcag2a/aa`, `wcag21a/aa`, `wcag22aa`,
+**Hauptziel.** Jemand, der Atlas Chronicles zum ersten Mal öffnet und kein Regelsystem-Vokabular
+kennt, schafft diese drei Aufgaben ohne Anleitung und ohne Raten:
+
+1. als Spielleitung ein eigenes Regelwerk anlegen, ausprobieren und für die Runde aktivieren;
+2. als Spielleitung eine Figur für die Runde anlegen (über Vorlage oder direkt);
+3. als Spieler eine Figur beantragen und danach auf „Ich“ seinen Bogen finden und ändern.
+
+**Maßstab Anfängertauglichkeit.** Jede Ansicht im Umfang beantwortet oben drei Fragen — *Was ist
+das hier? Was mache ich jetzt? Was passiert danach?* — und hat genau **einen** hervorgehobenen
+nächsten Schritt. Beim ersten Öffnen stehen höchstens sieben gleichrangige Wahlmöglichkeiten im
+Blick. Jeder Fachbegriff, der bleiben muss, ist an Ort und Stelle erklärt (ein Satz, ein Beispiel).
+Keine leere Ansicht ohne Hinweis, was hineingehört, und ohne Knopf „Mit Beispiel beginnen“.
+Geprüft durch einen „Neulingsgang“-Test (die drei Aufgaben als e2e-Durchlauf nur über sichtbare
+Beschriftungen) und durch Ansehen der Bilder.
+
+Ein Bogen liest sich wie ein Charakterbogen, nicht wie ein Behördenformular.
+
+**Maßstab Barrierefreiheit (Nebenziel):** WCAG 2.2 AA. Gemessen mit axe-core 4.13 (Tags `wcag2a/aa`, `wcag21a/aa`, `wcag22aa`,
 `best-practice`) auf echten Bildschirmen in einem dunklen (Fantasy) und einem hellen Look
 (Parchment), bei 1440 und 390 Pixel Breite. Dazu eigene Messungen, die axe nicht kennt: kein Text
 unter 12 px, Tippziele ≥ 24 px, kein Überlauf bei 390 px, Fokus landet nach jedem Ansichtswechsel
@@ -129,8 +147,50 @@ erklären sich (sichtbarer Satz, per `aria-describedby` verbunden).
 übrigen im Client (Karten, Chronik, Kampftisch u. a.) bleiben — andere Sitzungen arbeiten dort;
 der Baustein steht ihnen offen.
 
+**E10 Einfach zuerst.** Die Werkbank öffnet im Modus **„Das Wichtigste“**: Paket, Attribute, Balken,
+Aktionen, Fähigkeiten, Bogen, Ausprobieren, Übernehmen. Die übrigen Bereiche (Regelkarte,
+Berechnete Werte, Listen, Zustände, Bogenregeln, Migration) erscheinen hinter „Alle Bereiche
+zeigen“ — oder von selbst, sobald das Paket dort Inhalt oder ein Problem hat (ein Bereich mit
+Inhalt wird nie versteckt). Die Wahl merkt sich der Browser je Person. Dasselbe Prinzip gilt im
+Bereich: Kennungen, Versionen, Formeltext, Würfelstart stehen unter „Für Fortgeschrittene“.
+
+**E11 Jede Ansicht sagt, wo man ist.** Ein gemeinsamer Kopf `ViewIntro` (Titel, ein Satz „was ist
+das hier“, der eine nächste Schritt, optional „Wie geht das?“ mit drei kurzen Schritten) steht über
+Bibliothek, jedem Werkbank-Bereich, Figurvorlagen, Figur anlegen, Figurantrag und „Ich“. Die
+Sätze sind auf das Beispiel bezogen („Ein Attribut ist eine Zahl auf dem Bogen, zum Beispiel
+Stärke 12.“), nicht abstrakt.
+
+**E12 Leere Ansichten lehren.** Jede leere Liste im Umfang zeigt, was hineingehört, und bietet
+„Mit Beispiel beginnen“, das einen fertigen, gültigen Beispieleintrag anlegt (Attribut „Stärke“,
+Balken „Leben“, Aktion „Probe auf Stärke“, Fähigkeit „Kraftschlag“, Zustand „Erschöpft“, Liste
+„Ausrüstung“, Figurvorlage aus dem aktiven Regelwerk). Der Eintrag ist danach normal bearbeitbar
+und per Rückgängig entfernbar.
+
+**E13 Begriffe erklären sich selbst.** Ein Begriffsverzeichnis `begriffe.ts` (eine Quelle, etwa
+15 Kernbegriffe: Regelwerk, Version, Installieren, Aktivieren, Attribut, Berechneter Wert, Balken,
+Aktion/Probe, Fähigkeit, Zustand, Liste, Bogen, Figurvorlage, Figur, Antrag) mit je einem Satz und
+einem Beispiel. Die Komponente `Begriff` zeigt das Wort mit einem kleinen „?“, das die Erklärung
+aufklappt (Knopf mit `aria-expanded`, kein Hover-Zwang). Überall, wo der Begriff zum ersten Mal in
+einer Ansicht vorkommt, steht er als `Begriff`.
+
+**E14 Erste Schritte der Runde.** Die Übersicht der Schmiede zeigt für die Spielleitung eine
+Checkliste „So startet deine Runde“: Regelwerk (✓, sobald eins aktiv ist — mit Chronicles Lite
+von Anfang an), Figurvorlage anlegen, Mitspieler einladen, Figuren anlegen oder Anträge
+freigeben. Jeder Punkt hakt sich aus dem echten Stand ab und führt mit einem Knopf direkt hin.
+Sind alle erledigt, schrumpft die Liste auf eine Zeile.
+
+**E15 Figur erstellen ist ein geführter Weg.** Figur anlegen (Spielleitung) und Figurantrag
+(Spieler) zeigen denselben Weg in drei Schritten — *Wer ist die Figur?* (Name, Bild, Beruf),
+*Was kann sie?* (Werte als Wertkacheln mit „Punkte übrig“, wo das Regelwerk ein Budget hat;
+Fähigkeiten), *Fertig* (Zusammenfassung, Absenden) — mit dem Bogen als Live-Vorschau daneben.
+Werte sind mit den Vorgaben des Regelwerks vorbelegt; „Zurück auf die Vorgaben“ setzt sie zurück.
+
 ## Prüfnetz
 
+- **Neulingsgang** `e2e/neulingsgang.spec.ts`: die drei Aufgaben des Hauptziels als Durchlauf auf
+  einer frisch angelegten Runde (Chronicles Lite aktiv), nur über sichtbare Beschriftungen und
+  Rollen, ohne Testkennungen und ohne URL-Sprünge nach dem Einstieg. Prüft unterwegs, dass jede
+  Ansicht genau einen hervorgehobenen Knopf hat und der „Was ist das hier“-Satz sichtbar ist.
 - **Dauerhafter Test** `e2e/zugaenglichkeit.spec.ts`: eine Runde mit Lite und ChronicleHeroes,
   Bildschirme Bibliothek, Assistent (alle Schritte), Werkbank (Paket, Attribute, Aktionen,
   Übernehmen), Figurvorlagen, Figurantrag, „Ich“, Tisch-Bogen; je Fantasy und Parchment, 1440 und
@@ -148,11 +208,11 @@ der Baustein steht ihnen offen.
 
 | Welle | Inhalt | Dateien (Besitz) |
 | --- | --- | --- |
-| 1 Fundament | E1, E2, globale Kästchen-Regel, Fokus-Hilfe, Prüfnetz-Gerüst | `packages/ui/*`, `client/src/styles.css`, `appearance.css`, `zustaende.css`, `i18n.ts` |
-| 2 Bogen | E3 | `RuleFields`, `HostRuleFields`, `RulePresentationView`, `CharacterSheet`, `CharacterProgress`, `CharacterPortrait`, `FaehigkeitenBogen`, `Vitalanzeige`, `character-sheet.css`, `vitalanzeige.css`, `rule-categories.css` |
-| 3 Regelschmiede | E4–E7 in der Schmiede | `RuleForge*`, `RuleWizard`, `Rule*Editor`, `Formula*`, `RuleMap`, `RuleEntry*`, `rule-forge*.css`, `rule-wizard.css`, `rule-map.css`, `formula-field.css` |
-| 4 Figuren | E7–E9 um die Figur | `ActorTemplatesHost`, `InstantiateActorHost`, `ActorWorkbench`, `ActorInventoryWorkbench`, `ChronicleHeroesTemplate`, `FigurAntrag` (auch Anträge der Spielleitung), `MeineFigur`, `actors.css`, `character-creation.css` |
-| 5 Nachweis | Prüfnetz grün, Bilder, Sprachgate-Waisen, Merge | — |
+| 1 Fundament | E1, E2, `ViewIntro`, `Begriff` + `begriffe.ts` (E11, E13), globale Kästchen-Regel, Fokus-Hilfe, Prüfnetz-Gerüst | `packages/ui/*`, `client/src/styles.css`, `App.tsx`, `i18n.ts`, `features/Begriff.tsx`, `features/begriffe.ts` |
+| 2 Bogen | E3, Filter „Wer ist die Figur / Was kann sie“ für E15 | `RuleFields`, `HostRuleFields`, `RulePresentationView`, `CharacterSheet`, `CharacterProgress`, `CharacterPortrait`, `FaehigkeitenBogen`, `Vitalanzeige`, `character-sheet.css`, `vitalanzeige.css`, `rule-categories.css` |
+| 3 Regelschmiede | E4–E7, E10, E11–E13 in der Schmiede | `RuleForge*`, `RuleWizard`, `Rule*Editor`, `Formula*`, `RuleMap`, `RuleEntry*`, `rule-forge*.css`, `rule-wizard.css`, `rule-map.css`, `formula-field.css` |
+| 4 Figuren | E7–E9, E11–E15 um die Figur | `ForgeWorkbench` (Übersicht), `ActorTemplatesHost`, `InstantiateActorHost`, `ActorWorkbench`, `ActorInventoryWorkbench`, `ChronicleHeroesTemplate`, `FigurAntrag` (auch Anträge der Spielleitung), `MeineFigur`, `actors.css`, `character-creation.css` |
+| 5 Nachweis | Neulingsgang und Prüfnetz grün, Bilder, Sprachgate-Waisen, Merge | — |
 
 Welle 1 zuerst; 2–4 danach parallel mit getrenntem Dateibesitz. Englische Katalogeinträge je Welle
 in eigener Datei (`i18n/en/zugang-*.json`); verwaiste Schlüssel alter Kataloge räumt Welle 5 an einer
