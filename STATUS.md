@@ -6,7 +6,7 @@ Höfen, Einfamilienhäusern, Hallen und Parks; Kolonien mit Nabe, Ringen und Spe
 Landefeldern, Hydrokultur und Schutzzaun. Gebäude tragen eine Dachform; Kartenoptik
 cartography-13 zeichnet Flach-, Shed-, Kuppel- und Landefelddächer, Mittellinien, leuchtende
 Ränder, Solarfelder und ein Ortssymbol je Setting. Zonenplaner in der Sprache des Settings,
-Schutzzaun-Schalter. Fantasy unverändert (Goldtest). Nachweise:
+Schutzzaun-Schalter. Bis zu 1024 Gebäude je Ort (Vorlage „Metropole“, 144×104). Fantasy unverändert (Goldtest). Nachweise:
 `design/iterations/stadt-zukunft-20260923.md`. Zweig `feature/stadt-zukunft`, noch nicht in `main`.
 Offen: Teil 3 Weltkarten-Baukasten; neu gewünscht: vielfältigere Hausformen und Geschosswechsel
 über Treppen.
