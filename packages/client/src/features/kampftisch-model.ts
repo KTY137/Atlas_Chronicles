@@ -136,6 +136,22 @@ export function juengsterInitiativwurf(wuerfe: readonly ActionCard[], actorId: s
     .sort((a, b) => b.preparedAt - a.preparedAt)[0] ?? null;
 }
 
+/** Wie ein Kampftisch-Befehl beim Server ankommt — injizierbar, damit ein Test ihn abfangen kann. */
+export type BefehlSenden = (pfad: string, init: { method: "POST" | "PUT" | "DELETE"; body?: unknown }) => Promise<unknown>;
+
+/**
+ * Der Kern eines Kampftisch-Befehls: schickt ihn immer über `senden` ab und reicht die Antwort erst
+ * DANACH an `danach` weiter, wenn es einen gibt.
+ *
+ * Frühere Fassung: `danach?.(await senden(...))`. Optionales Aufrufen wertet seine Argumente gar
+ * nicht erst aus, wenn `danach` fehlt — also lief `senden(...)` nie, und ein Befehl ohne `danach`
+ * (jede Aktion außer „Beenden“) ging nie zum Server hinaus.
+ */
+export async function sendeBefehl(senden: BefehlSenden, pfad: string, method: "POST" | "PUT" | "DELETE", body?: unknown, danach?: (antwort: unknown) => void): Promise<void> {
+  const antwort = await senden(pfad, method === "DELETE" ? { method } : { method, body: body ?? {} });
+  danach?.(antwort);
+}
+
 /** Was eine Karte auslösen kann. Der Kampftisch führt es aus; die Karte kennt keinen Weg zum Server. */
 export interface KartenAktionen {
   lage(karte: KarteFuerLeitung, lage: KartenLage): void;

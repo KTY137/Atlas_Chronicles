@@ -3,7 +3,8 @@
 import { describe, expect, it } from "vitest";
 import { KARTEN_LAGEN, type KampfFuerLeitung, type KampfFuerRunde, type KarteFuerLeitung } from "@chronicle/protocol";
 import type { ActionCard } from "../src/features/game-api";
-import { LAGE_WEGE, LAGE_WEG_LABEL, ansichtFuerLeitung, ansichtFuerRunde, balkenFarbe, initialen, juengsterInitiativwurf, nichtArchiviertAus, reihen, tischAnsicht, zielDes } from "../src/features/kampftisch-model";
+import { LAGE_WEGE, LAGE_WEG_LABEL, ansichtFuerLeitung, ansichtFuerRunde, balkenFarbe, initialen, juengsterInitiativwurf, nichtArchiviertAus, reihen, sendeBefehl, tischAnsicht, zielDes,
+  type BefehlSenden } from "../src/features/kampftisch-model";
 import { LEITUNGSKARTE, RUNDENKARTE } from "./kampftisch-beispiele";
 
 describe("Die Ansicht einer Karte", () => {
@@ -68,6 +69,29 @@ describe("Kleinigkeiten", () => {
     const wuerfe = [wurf("alt", "a1", "initiative", 1), wurf("neu", "a1", "initiative", 5), wurf("fremd", "a2", "initiative", 9), wurf("probe", "a1", "klettern", 8)];
     expect(juengsterInitiativwurf(wuerfe, "a1")?.id).toBe("neu");
     expect(juengsterInitiativwurf(wuerfe, null)).toBeNull();
+  });
+});
+
+describe("Ein Kampftisch-Befehl", () => {
+  it("schickt den Befehl auch ohne ein `danach` ab", async () => {
+    const aufrufe: { pfad: string; init: unknown }[] = [];
+    const senden: BefehlSenden = async (pfad, init) => { aufrufe.push({ pfad, init }); return { ok: true }; };
+    await sendeBefehl(senden, "/kaempfe/k1/teilnehmer/t1/lage", "POST", { lage: "hand" });
+    expect(aufrufe).toEqual([{ pfad: "/kaempfe/k1/teilnehmer/t1/lage", init: { method: "POST", body: { lage: "hand" } } }]);
+  });
+
+  it("reicht die Antwort an `danach` weiter, wenn es eines gibt", async () => {
+    const senden: BefehlSenden = async () => ({ aufraeumen: { nichtArchiviert: ["a"] } });
+    let empfangen: unknown;
+    await sendeBefehl(senden, "/kaempfe/k1/beenden", "POST", { archivieren: true }, antwort => { empfangen = antwort; });
+    expect(empfangen).toEqual({ aufraeumen: { nichtArchiviert: ["a"] } });
+  });
+
+  it("lässt DELETE ohne Rumpf, wie die Oberfläche auch", async () => {
+    const aufrufe: unknown[] = [];
+    const senden: BefehlSenden = async (_pfad, init) => { aufrufe.push(init); return null; };
+    await sendeBefehl(senden, "/kaempfe/k1/teilnehmer/t1", "DELETE", undefined);
+    expect(aufrufe).toEqual([{ method: "DELETE" }]);
   });
 });
 

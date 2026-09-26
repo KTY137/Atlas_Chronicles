@@ -11,7 +11,7 @@ import type { ActionCard } from "./game-api";
 import { KampfAufnahme } from "./KampfAufnahme";
 import { BeendenRueckfrage } from "./KampfFenster";
 import { Kampfkarte } from "./Kampfkarte";
-import { SEITE_LABEL, istLeitungssicht, juengsterInitiativwurf, nichtArchiviertAus, reihen, tischAnsicht,
+import { SEITE_LABEL, istLeitungssicht, juengsterInitiativwurf, nichtArchiviertAus, reihen, sendeBefehl, tischAnsicht,
   type Kampf, type KartenAktionen, type KartenAnsicht } from "./kampftisch-model";
 import "./tabletop.css";
 import "./kampftisch.css";
@@ -43,7 +43,7 @@ export function Kampftisch({ campaignId, gm, actors, revision, onChanged, onOpen
 
   const fuehren = (pfad: string, body?: unknown, method: "POST" | "PUT" | "DELETE" = "POST", danach?: (antwort: unknown) => void) => void task.run(async () => {
     // Auch ein abgewiesener Befehl lädt neu: wer einen alten Stand hatte, sieht danach den neuen.
-    try { danach?.(await api<unknown>(apiPath(campaignId, pfad), method === "DELETE" ? { method } : { method, body: body ?? {} })); }
+    try { await sendeBefehl((p, init) => api<unknown>(apiPath(campaignId, p), init), pfad, method, body, danach); }
     finally { onChanged(); }
   });
 
