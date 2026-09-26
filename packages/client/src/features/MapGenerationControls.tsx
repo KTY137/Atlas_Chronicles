@@ -65,6 +65,7 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
       return { label: t(SETTLEMENT_TYPE_LABEL[art]), breite: preset.ausdehnung[0], hoehe: preset.ausdehnung[1], anzahl: preset.bauwerke, siedlung: art, dichte: preset.strassenDichte, licht: preset.licht };
     }),
     { label: t("Großstadt"), breite: 88, hoehe: 64, anzahl: value.setting === "fantasy" ? 480 : 256, siedlung: "stadt" as const, dichte: .7 },
+    { label: t("Metropole"), breite: 144, hoehe: 104, anzahl: 1024, siedlung: "stadt" as const, dichte: .7 },
   ] : [ { label: t("Klein"), breite: 24, hoehe: 20, anzahl: 5 }, { label: t("Mittel"), breite: 40, hoehe: 30, anzahl: 11 }, { label: t("Groß"), breite: 64, hoehe: 48, anzahl: 24 } ];
   const changeArt = (art: MapArt) => {
     const { verkehr, planung, anlage: _anlage, graben: _graben, symmetrie: _symmetrie, ...other } = value;
@@ -136,7 +137,7 @@ export function MapGenerationControls({ value, defaults, onChange, compact = fal
     <div className="map-numbers">
       <label>{t("Breite")}<input type="number" min={12} max={192} step={1} value={value.breite} placeholder={String(w)} onChange={event => update({ breite: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
       <label>{t("Höhe")}<input type="number" min={12} max={192} step={1} value={value.hoehe} placeholder={String(h)} onChange={event => update({ hoehe: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
-      <label>{regional ? t("Orte") : city ? t("Gebäude") : cave ? t("Kammern") : t("Räume")}<input type="number" min={compound ? compound === "burg" ? 7 : 3 : outdoor ? 1 : 2} max={compound ? compound === "burg" ? 12 : 7 : regional ? 24 : city ? 512 : cave ? 32 : 64} step={1} value={value.anzahl}
+      <label>{regional ? t("Orte") : city ? t("Gebäude") : cave ? t("Kammern") : t("Räume")}<input type="number" min={compound ? compound === "burg" ? 7 : 3 : outdoor ? 1 : 2} max={compound ? compound === "burg" ? 12 : 7 : regional ? 24 : city ? 1024 : cave ? 32 : 64} step={1} value={value.anzahl}
         placeholder={String(regional ? defaults.region?.orte ?? 12 : city ? cityDefaults.bauwerke : cave ? defaults.hoehle.kammern : defaults.grundriss.raeume)} onChange={event => update({ anzahl: event.target.value === "" ? "" : event.target.valueAsNumber })} /></label>
     </div>
     <small className="field-help">{t("{breite} × {hoehe} Pixel", { breite: (w * std.zellgroesse).toLocaleString(locale()), hoehe: (h * std.zellgroesse).toLocaleString(locale()) })} · {city ? t("Gebäudezahl als Ziel; Straßen und freie Flächen brauchen Platz.") : t("Raumzahl als Ziel; die Aufteilung richtet sich nach dem Gebäudetyp.")}</small>

@@ -92,7 +92,7 @@ export function generationError(value: GenerationSettings, defaults: GenerationD
   if (w * h > 20_000) return t("Die Karte darf höchstens 20.000 Zellen enthalten. Verringere Breite oder Höhe.");
   const z = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.zellgroesse : value.art === "siedlung" ? siedlungsVorgabe(defaults, value.siedlung, value.setting).zellgroesse : value.art === "region" ? (defaults.region?.zellgroesse ?? 112) : defaults[value.art].zellgroesse;
   if (w * z > TACTICAL_MAP_LIMITS.dimension || h * z > TACTICAL_MAP_LIMITS.dimension || w * h * z * z > TACTICAL_MAP_LIMITS.pixels) return t("Diese Größe überschreitet das Kartenbudget. Wähle eine kleinere Fläche.");
-  const min = value.art === "siedlung" || value.art === "region" ? 1 : 2, max = value.art === "siedlung" ? 512 : value.art === "region" ? 24 : value.art === "hoehle" ? 32 : 64;
+  const min = value.art === "siedlung" || value.art === "region" ? 1 : 2, max = value.art === "siedlung" ? 1024 : value.art === "region" ? 24 : value.art === "hoehle" ? 32 : 64;
   if (value.anzahl !== "" && (!Number.isSafeInteger(value.anzahl) || value.anzahl < min || value.anzahl > max)) return t("Die Anzahl muss zwischen {min} und {max} liegen.", { min, max });
   return null;
 }

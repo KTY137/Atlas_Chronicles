@@ -68,7 +68,7 @@ export const SIEDLUNG_VIERTEL_VERSION = "11";
 export const SIEDLUNG_ZUKUNFT_VERSION = "12";
 
 export const SIEDLUNG_LIMITS = Object.freeze({
-  ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 512, grundstueckMin: 2, grundstueckMax: 24,
+  ...KARTENWERK_LIMITS, bauwerkeMin: 1, bauwerkeMax: 1024, grundstueckMin: 2, grundstueckMax: 24,
 });
 
 export type SiedlungArt = "weiler" | "dorf" | "stadt";

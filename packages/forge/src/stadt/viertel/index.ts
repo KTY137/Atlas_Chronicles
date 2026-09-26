@@ -459,6 +459,24 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
   const labels: CartographyLabelV1[] = viertel.map(v => ({ id: id("name", v.id), text: v.name, points: [[q(v.anker[0] * z), q(v.anker[1] * z)]], size: q(z * (v.nutzung === "markt" || v.nutzung === "burg" ? 1.1 : .8)), style: "gegend" }));
   const plan: SettlementPlan = viertelPlan(viertel, new Map(stadtListe.map(i => [i, zelle(i)])), breite, hoehe);
 
+  // Die Karte trägt höchstens 4096 Flächen. Die Schätzung oben (`gelaendeGrenze`) kürzt das Gelände
+  // früh; eine Metropole im Moor kann trotzdem darüber liegen. Dann fallen zuerst die kleinsten
+  // Gelände- und Flurstücke, danach die entferntesten Gebäude samt Los — nie Straßen, auf die ein
+  // Gebäude zeigt. Karten unter der Grenze bleiben unberührt (Kaya 2026-09-26: 1024 Gebäude).
+  let zuViel = extraRegions.length + bauwerke.length + netz.length - 4096;
+  if (zuViel > 0) {
+    const entbehrlich = extraRegions.map((region, index) => ({ region, index }))
+      .filter(({ region }) => region.id !== grundId && region.role.role === "terrain" && ["field", "forest", "swamp", "sand", "grass"].includes(region.role.material))
+      .sort((a, b) => flaeche(a.region.polygon) - flaeche(b.region.polygon) || (a.region.id < b.region.id ? -1 : 1)).slice(0, zuViel);
+    const weg = new Set(entbehrlich.map(e => e.index));
+    extraRegions.splice(0, extraRegions.length, ...extraRegions.filter((_, index) => !weg.has(index)));
+    zuViel -= weg.size;
+  }
+  if (zuViel > 0) {
+    const fallen = bauwerke.splice(bauwerke.length - Math.ceil(zuViel / 2)), lose = new Set(fallen.map(b => id("grundstück", b.pfad)));
+    extraRegions.splice(0, extraRegions.length, ...extraRegions.filter(region => !lose.has(region.id)));
+    ausgelassen.push(`${fallen.length} Gebäude am Stadtrand fehlen: die Karte trägt höchstens 4096 Flächen. Eine kleinere Gebäudezahl oder ein trockenerer Standort lässt alle stehen.`);
+  }
   const { karte, cartography, knoten, wurzelId } = dokument({ erzeuger: basis.erzeuger, version, keim, ids, z, breite, hoehe, setting: stil.setting, auftrag,
     stamps: werk.stamps, extraRegions, bauwerke, gassen: netz, gassenMaterial: () => belag, mauern, lichter,
     relief: landschaft.relief, labels, rolle: mitVermerk });

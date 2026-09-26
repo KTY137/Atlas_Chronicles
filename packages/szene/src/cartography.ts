@@ -7,7 +7,9 @@ import { parseBoundedMapJson, parseTacticalMapDocument, TACTICAL_MAP_LIMITS, Tac
 /** Meaning attached to one revision's existing regions; never a second geometry store. */
 export const TACTICAL_CARTOGRAPHY_VERSION = 1 as const;
 export const TACTICAL_CARTOGRAPHY_LIMITS = Object.freeze({
-  documentBytes: 1024 * 1024, regions: 4096, attachedStamps: 50_000,
+  /** 4 MiB: eine Metropole mit 1024 Gebäuden braucht knapp 1 MiB (Kaya 2026-09-26). Gespeichert wird
+   *  über den Import-Pfad der Karten, nicht über die 2-MiB-Grenze gewöhnlicher Anfragen. */
+  documentBytes: 4 * 1024 * 1024, regions: 4096, attachedStamps: 50_000,
   cellSize: 32_768, coordinate: TACTICAL_MAP_LIMITS.coordinate,
   /** Relief samples sit on construction-cell corners; the largest settlement (192×192) needs 193². */
   reliefAxis: 1025, reliefSamples: 65_536,
