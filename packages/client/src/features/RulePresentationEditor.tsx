@@ -15,7 +15,7 @@ type RefKind = "field" | "computed" | "vital" | "collection";
 
 export function kindLabel(kind: NodeKind): string {
   switch (kind) {
-    case "group": return t("Kategorie"); case "field": return t("Attribut"); case "computed": return t("Abgeleiteter Wert"); case "vital": return t("Balken");
+    case "group": return t("Kategorie"); case "field": return t("Attribut"); case "computed": return t("Berechneter Wert"); case "vital": return t("Balken");
     case "collection": return t("Liste"); case "abilities": return t("Fähigkeiten"); case "conditions": return t("Zustände"); case "actions": return t("Aktionen");
   }
 }
@@ -128,7 +128,7 @@ export function RuleSheetEditor({ draft, onChange, disabled = false, preview }: 
   const refs = node ? availableRefs(node.kind, draft, flat, node.id) : [];
   const unavailableActions = node?.kind === "actions" ? usedActions(flat, node.id) : new Set<string>();
   return <section className="rf-sheet-editor" aria-label={t("Aufbau des Charakterbogens")}>
-    {!draft.presentation ? <Notice>{t("Dieses Paket verwendet noch den klassischen Bogen. Beim ersten Ändern wird seine Abschnittsstruktur verlustfrei übernommen und das Paket auf das erweiterte Format umgestellt.")}</Notice> : null}
+    {!draft.presentation ? <Notice tone="info">{t("Dieses Paket verwendet noch den klassischen Bogen. Beim ersten Ändern wird seine Abschnittsstruktur verlustfrei übernommen und das Paket auf das erweiterte Format umgestellt.")}</Notice> : null}
     <div className="rf-sheet-layout">
       <nav className="rf-list rf-sheet-tree" aria-label={t("Aufbau des Bogens")}>
         <div className="rf-section-heading"><h3>{t("Aufbau")}</h3></div>

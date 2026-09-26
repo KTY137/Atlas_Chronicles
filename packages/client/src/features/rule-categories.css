@@ -1,16 +1,21 @@
 /* SPDX-License-Identifier: BUSL-1.1 */
 /* Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 
-/* Generic presentation for schema-driven rule categories. */
+/* Generic presentation for schema-driven rule categories. Seit 2026-09-26 auf der gemeinsamen Leiter
+   (--space-*, --radius*, --text-*): der Bogen liest sich wie ein Bogen, auch auf dem Handy. */
+.sheet-section.rule-category > legend,
+.sheet-section.rule-category > summary { color: var(--accent); font-size: var(--text-sm); font-weight: 600; padding: 0 var(--space-2); }
+.sheet-section.rule-category > summary { padding: var(--space-1) 0; }
+details.sheet-section.rule-category[open] > summary { margin-bottom: var(--space-2); }
 .rule-category-children {
   display: grid;
-  gap: 12px;
-  margin-top: 14px;
-  padding-left: 14px;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-left: var(--space-3);
   border-left: 2px solid var(--line);
 }
 .rule-category-children > .rule-category { margin-top: 0; }
-.rule-category[data-depth="0"] { margin-top: 18px; }
+.rule-category[data-depth="0"] { margin-top: var(--space-4); }
 .rule-category[data-depth="1"] > legend,
 .rule-category[data-depth="2"] > legend,
 .rule-category[data-depth="3"] > legend,
@@ -20,29 +25,40 @@
 .rule-category[data-depth="7"] > legend,
 .rule-category[data-depth="8"] > legend { font-weight: 650; }
 
-.rule-presentation-group { display: grid; gap: 12px; min-width: 0; }
-.rule-presentation-group.rule-render-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-.rule-presentation-group.rule-render-cards { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.rule-presentation-group.rule-render-compact { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+/* Gruppen im Bogenaufbau (v3). Reihenfolge und Anordnung (grid, cards, compact …) bleiben die der Autorin;
+   Texte, Balken, Listen, Fähigkeiten und Proben nehmen die ganze Zeile, Zahlen stehen als Kacheln nebeneinander. */
+.rule-presentation-group { display: grid; gap: var(--space-3); min-width: 0; }
+.rule-presentation-group.rule-render-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr)); }
+.rule-presentation-group.rule-render-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.rule-presentation-group.rule-render-compact { grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); gap: var(--space-2); }
 .rule-presentation-group.rule-render-table { overflow-x: auto; }
-.rule-presentation-leaf, .rule-vital, .rule-computed, .rule-collection, .rule-action-list { min-width: 0; }
+.rule-presentation-group > .is-wide { grid-column: 1 / -1; }
+.rule-presentation-leaf > .rule-fields.is-sheet { grid-template-columns: minmax(0, 1fr); margin: 0; }
+.rule-presentation-leaf, .rule-vital, .rule-computed, .rule-collection, .rule-action-list, .rule-presentation-block { min-width: 0; }
+.rule-computed.stat-tiles { grid-template-columns: minmax(0, 1fr); margin: 0; }
 .rule-presentation-leaf.rule-render-cards,
 .rule-collection.rule-render-cards > .rule-collection-row,
-.rule-action-list.rule-render-cards li { border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
-.rule-collection-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.rule-action-list.rule-render-cards li { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--space-3); }
+.rule-collection > h4 { margin: 0 0 var(--space-2); }
+.rule-collection-row { padding: var(--space-2) 0; border-bottom: 1px solid var(--line); }
 .rule-collection-row:last-of-type { border-bottom: 0; }
-.rule-collection.rule-render-table .rule-collection-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
-.rule-vital meter { width: min(280px, 100%); margin-left: 8px; }
-.rule-action-list > ul { display: grid; gap: 8px; padding-left: 20px; }
-.rule-action-list.rule-render-cards > ul { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); padding-left: 0; list-style: none; }
+.rule-collection.rule-render-table .rule-collection-row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); align-items: end; }
+.rule-vital meter { width: min(280px, 100%); margin-left: var(--space-2); }
 
-.rule-ability-group + .rule-ability-group { margin-top: 14px; }
-.rule-ability-group > h4 { margin-bottom: 8px; }
+/* Probenlisten: am Bogen zählen die Werte; lange Listen sind zugeklappt. */
+.rule-action-list > summary { color: var(--text); font-size: var(--text-sm); font-weight: 600; }
+.rule-action-count { color: var(--text-muted); font-weight: 400; }
+.rule-action-list > ul { display: grid; gap: var(--space-2); padding-left: var(--space-5); margin: var(--space-2) 0 0; font-size: var(--text-sm); }
+.rule-action-list > ul p { margin: var(--space-1) 0 0; color: var(--text-muted); }
+.rule-action-list.rule-render-cards > ul { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); padding-left: 0; list-style: none; }
+
+.rule-ability-group + .rule-ability-group { margin-top: var(--space-3); }
+.rule-ability-group > h4 { margin: 0 0 var(--space-2); font-size: var(--text-sm); color: var(--text-muted); }
 .rule-ability-children {
   display: grid;
-  gap: 10px;
-  margin-top: 10px;
-  padding-left: 14px;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-left: var(--space-3);
   border-left: 2px solid var(--line);
 }
 .rule-ability-children > .rule-ability-group { margin-top: 0; }
@@ -53,11 +69,15 @@
 .rule-ability-group[data-depth="5"] > h4,
 .rule-ability-group[data-depth="6"] > h4,
 .rule-ability-group[data-depth="7"] > h4,
-.rule-ability-group[data-depth="8"] > h4 { font-size: 0.95em; }
+.rule-ability-group[data-depth="8"] > h4 { font-size: var(--text-xs); }
 
 @media (max-width: 720px) {
-  .rule-category-children, .rule-ability-children { padding-left: 8px; }
+  .rule-category-children, .rule-ability-children { padding-left: var(--space-2); }
+  .rule-presentation-group.rule-render-cards { grid-template-columns: minmax(0, 1fr); }
+}
+/* Handy: Zahlenkacheln zwei nebeneinander, Texte die ganze Breite, nichts läuft seitlich hinaus. */
+@media (max-width: 480px) {
+  .sheet-section.rule-category { padding: var(--space-2); }
   .rule-presentation-group.rule-render-grid,
-  .rule-presentation-group.rule-render-cards,
-  .rule-presentation-group.rule-render-compact { grid-template-columns: 1fr; }
+  .rule-presentation-group.rule-render-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
 }

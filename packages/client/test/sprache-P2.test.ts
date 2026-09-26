@@ -22,7 +22,7 @@ describe("Sprachpaket P2 — Figuren, Werkbänke, Gefüge", () => {
   it("liefert die deutschen Stichproben unverändert, solange Deutsch gewählt ist", () => {
     expect(locale()).toBe("de-DE");
     // FigurAntrag, MeineFigur, CharacterSheet, ActorWorkbench, ForgeWorkbench, Gefuege.
-    expect(t("Deine eigene Figur")).toBe("Deine eigene Figur");
+    expect(t("Antrag absenden")).toBe("Antrag absenden");
     expect(t("Bogen speichern")).toBe("Bogen speichern");
     expect(t("Inventar · {name}", { name: "Sera" })).toBe("Inventar · Sera");
     expect(t("Vorrat der Spielleitung")).toBe("Vorrat der Spielleitung");
@@ -32,7 +32,7 @@ describe("Sprachpaket P2 — Figuren, Werkbänke, Gefüge", () => {
   it("übersetzt dieselben Stichproben nach setzeSprache(\"en\")", async () => {
     await setzeSprache("en");
     expect(locale()).toBe("en-GB");
-    expect(t("Deine eigene Figur")).toBe("Your own character");
+    expect(t("Antrag absenden")).toBe("Send the application");
     expect(t("Bogen speichern")).toBe("Save the sheet");
     // Der Name der Figur gehört der Runde und wird nicht übersetzt; nur der Rahmen ist Oberfläche.
     expect(t("Inventar · {name}", { name: "Sera" })).toBe("Inventory · Sera");
@@ -63,9 +63,9 @@ describe("Sprachpaket P2 — Figuren, Werkbänke, Gefüge", () => {
 
   it("kehrt nach Deutsch zurück und liefert wieder den Quelltext", async () => {
     await setzeSprache("en");
-    expect(t("Noch führst du keine Figur.")).toBe("You do not play a character yet.");
+    expect(t("Zum Inventar")).toBe("To the inventory");
     await setzeSprache("de");
-    expect(t("Noch führst du keine Figur.")).toBe("Noch führst du keine Figur.");
+    expect(t("Zum Inventar")).toBe("Zum Inventar");
   });
 
   it("hält jeden Katalogeintrag für einen Text mit denselben Platzhaltern", () => {

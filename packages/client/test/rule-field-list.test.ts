@@ -19,3 +19,19 @@ describe("attributes as list plus editor", () => {
     expect(html).not.toContain("rf-split"); expect(html).toContain('value="Wert 1"'); expect(html).toContain("In Formeln als ?wert_0");
   });
 });
+
+describe("errors belong to their field", () => {
+  it("links an invalid identifier and an inverted range to their inputs", () => {
+    const broken = [{ ...newField("Falsch"), label: "Falsch", minimum: "9", maximum: "1" }];
+    const html = renderToStaticMarkup(createElement(FieldList, { title: "Attribute", fields: broken, onChange() {} }));
+    const ids = [...html.matchAll(/aria-describedby="([^"]+)"/g)].map(match => match[1]!);
+    for (const id of ids) expect(html).toContain(`id="${id}"`);
+    expect(html.match(/aria-invalid="true"/g)?.length).toBeGreaterThanOrEqual(3);
+    // Die Kennung steht unter „Für Fortgeschrittene“, der Fehler öffnet den Bereich.
+    expect(html).toMatch(/<details class="rf-advanced" open="">/);
+  });
+  it("offers an example when there is no attribute yet", () => {
+    const html = renderToStaticMarkup(createElement(FieldList, { title: "Attribute", fields: [], onChange() {} }));
+    expect(html).toContain("Mit Beispiel beginnen");
+  });
+});

@@ -12,6 +12,8 @@ import "./features/appearance.css";
 // jedem Look; die Rücknahmen aus appearance.css („Schlicht", „Hoher Kontrast",
 // „Bewegung reduzieren") wiegen weiterhin schwerer und bleiben wirksam.
 import "./zustaende.css";
+// Die gemeinsamen Bausteine (Kopf, Begriffe, Rückfrage, Reiter, Schritte) nach allem anderen.
+import "./bausteine.css";
 import { registriereUebersetzer } from "@chronicle/ui";
 import { t } from "./i18n";
 import { App } from "./App";

@@ -50,6 +50,8 @@ function harness() {
   }
   class ApiError extends Error { constructor(readonly status: number, message: string) { super(message); } }
   const api = {
+    // Live-Meldungen zählen den Schreibstand hoch (geteilte Abfragen, 2026-09-26).
+    markiereAenderung() {},
     ApiError,
     apiPath: (id: string, suffix: string) => `/api/campaigns/${encodeURIComponent(id)}${suffix}`,
     api: async (path: string, options: unknown) => {

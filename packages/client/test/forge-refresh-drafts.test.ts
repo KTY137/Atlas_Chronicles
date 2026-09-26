@@ -11,7 +11,9 @@ type Node = { type: unknown; props: Record<string, any>; key?: string };
 const loaded = (data: unknown): Resource => ({ data, loading: false, error: "" });
 const rules = { packages: [], pin: { id: "demo", version: "1.0.0" }, version: 1 };
 
-/** Render the real workshop shells; retain child positions as React's unkeyed identity. */
+/** Render the real workshop shells; retain child positions as React's unkeyed identity.
+ * Rückfragen laufen seit 2026-09-26 über `confirmAction` aus `@chronicle/ui` (im Look, als Versprechen);
+ * der Stub hält jede Frage fest und lehnt ab, wie vorher die Browser-Rückfrage. */
 function workshop(component: "FigureWorkshop" | "LootWorkshop") {
   const slots: any[] = [], dirtyReports: boolean[] = [], confirmations: string[] = [];
   let cursor = 0, resources: Record<string, Resource> = { "/rules": loaded(rules), "/actors": loaded([]) };
@@ -29,9 +31,12 @@ function workshop(component: "FigureWorkshop" | "LootWorkshop") {
   const source = readFileSync(new URL("../src/features/ForgeWorkbench.tsx", import.meta.url), "utf8");
   runInNewContext(transformSync(`${source}\nexport { FigureWorkshop, LootWorkshop };`, { loader: "tsx", format: "cjs", jsx: "automatic" }).code, {
     module: mod, exports: mod.exports,
-    window: { confirm: (message: string) => { confirmations.push(message); return false; } },
     require: (name: string) => {
       if (name === "react") return react;
+      if (name === "@chronicle/ui") return new Proxy({
+        confirmAction: async (request: string | { title?: string; message: string }) => { confirmations.push(typeof request === "string" ? request : request.title ?? request.message); return false; },
+        announce() {}, focusHeading() {}, tabKeyTarget: () => null,
+      } as Record<string, unknown>, { get: (target, key) => key in target ? target[key as string] : String(key) });
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "../i18n") return I18nStub;
       if (name === "../api") return { apiPath: (_: string, suffix: string) => suffix };
@@ -49,23 +54,23 @@ function workshop(component: "FigureWorkshop" | "LootWorkshop") {
     };
     visit(render(), "root"); return found;
   }
-  const text = (node: any): string => Array.isArray(node) ? node.map(text).join("") : node?.props ? text(node.props.children) : node == null ? "" : String(node);
   return {
     dirtyReports, confirmations, nodes,
     child: (type: string) => nodes().find(node => node.type === type),
-    button: (label: string) => nodes().find(node => node.type === "Button" && text(node) === label)!,
+    /** Die Reiter sind echte `Tabs`: gewählt wird über `onChange`, die Rückfrage ist asynchron. */
+    tab: async (id: string) => { nodes().find(node => node.type === "Tabs")!.props.onChange(id); await new Promise(resolve => setTimeout(resolve, 0)); },
     replace: (path: string, value: Resource) => { resources = { ...resources, [path]: value }; },
   };
 }
 
 describe("workshop drafts survive a failed background refresh", () => {
   it.each([
-    ["FigureWorkshop", "ActorTemplates", "/rules", undefined, "2 · Figur erschaffen"],
-    ["FigureWorkshop", "InstantiateActor", "/rules", "2 · Figur erschaffen", "1 · Figurvorlagen"],
-    ["LootWorkshop", "Inventory", "/actors", "2 · Exemplare & Vorrat", "1 · Kartenvorlagen gestalten"],
-  ] as const)("keeps %s/%s mounted with its dirty navigation guard", (component, editor, path, initialTab, otherTab) => {
+    ["FigureWorkshop", "ActorTemplates", "/rules", undefined, "create"],
+    ["FigureWorkshop", "InstantiateActor", "/rules", "create", "templates"],
+    ["LootWorkshop", "Inventory", "/actors", "inventory", "templates"],
+  ] as const)("keeps %s/%s mounted with its dirty navigation guard", async (component, editor, path, initialTab, otherTab) => {
     const h = workshop(component);
-    if (initialTab) h.button(initialTab).props.onClick();
+    if (initialTab) await h.tab(initialTab);
     const before = h.child(editor)!;
     expect(before).toBeDefined();
     before.props.onDirty(true);
@@ -76,7 +81,7 @@ describe("workshop drafts survive a failed background refresh", () => {
     expect(during, "a retained resource must not unmount an unsaved editor").toBeDefined();
     expect(during?.position).toBe(before.position);
     expect(during?.key).toBe(before.key);
-    h.button(otherTab).props.onClick();
+    await h.tab(otherTab);
     expect(h.confirmations).toHaveLength(1);
     expect(h.child(editor)).toBeDefined();
     expect(h.dirtyReports.at(-1)).toBe(true);
@@ -85,11 +90,11 @@ describe("workshop drafts survive a failed background refresh", () => {
     expect(h.nodes().filter(node => node.type === "Notice")).toHaveLength(0);
   });
 
-  it.each(["FigureWorkshop", "LootWorkshop"] as const)("preserves initial loading and no-data error behavior in %s", component => {
+  it.each(["FigureWorkshop", "LootWorkshop"] as const)("preserves initial loading and no-data error behavior in %s", async component => {
     const h = workshop(component);
     const path = component === "FigureWorkshop" ? "/rules" : "/actors";
     const editor = component === "FigureWorkshop" ? "ActorTemplates" : "Inventory";
-    if (component === "LootWorkshop") h.button("2 · Exemplare & Vorrat").props.onClick();
+    if (component === "LootWorkshop") await h.tab("inventory");
     h.replace(path, { data: null, loading: true, error: "" });
     expect(h.child(editor)).toBeUndefined();
     expect(h.child("Loading")).toBeDefined();

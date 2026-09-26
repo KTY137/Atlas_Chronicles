@@ -4,8 +4,11 @@
  * Die Logik hinter Fähigkeiten und Zuständen am Bogen und am Tisch (Spec
  * 2026-09-11-chronicleheroes-faehigkeiten, Schritt 3). Rein und ohne React geprüft, an ChronicleHeroes 2.0.
  */
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import * as rules from "@chronicle/rules";
+import { FaehigkeitenBogen } from "../src/features/FaehigkeitenBogen";
 import { einsatzKandidaten, faehigkeitenListe, grundNichtLernbar, sichtbareEingaben, verlernen, wirktMit } from "../src/features/faehigkeiten-bogen";
 
 const pkg = rules.CHRONICLE_HEROES_PACKAGE;
@@ -58,5 +61,27 @@ describe("Am Tisch", () => {
     const fields = { ...gelernt, [rules.CHRONICLE_CONDITION_FIELD]: "erschoepft" };
     expect(wirktMit(pkg, fields, "skill_athletik").map(eintrag => [eintrag.name, eintrag.wert])).toEqual([["Erschöpft", "-10"], ["Leichtfüßig", "5"]]);
     expect(wirktMit(pkg, fields, "schaden").map(eintrag => [eintrag.name, eintrag.wert])).toEqual([["Harter Schlag", "2"]]);
+  });
+});
+
+describe("Fähigkeiten als Karten am Bogen", () => {
+  const zeige = (fields: Record<string, rules.Scalar>) => renderToStaticMarkup(createElement(FaehigkeitenBogen, { pkg, fields, onChange() {} }));
+
+  it("nennt jeden Knopf nach seiner Fähigkeit", () => {
+    const html = zeige(bogen({ [rules.CHRONICLE_ABILITY_FIELD]: "leichtfuessig" }));
+    expect(html).toContain("Leichtfüßig verlernen");
+    expect(html).toMatch(/ lernen<\/button>/);
+    expect(html).not.toMatch(/>(Lernen|Verlernen)<\/button>/);
+    expect(html).toContain("ability-card");
+  });
+
+  it("sagt bei leerer Liste, was hineingehört, und erklärt den Begriff", () => {
+    const html = zeige(bogen({ [rules.CHRONICLE_ABILITY_FIELD]: "" }));
+    expect(html).toContain("Noch keine Fähigkeit gelernt.");
+    expect(html).toContain("Was bedeutet „Fähigkeit“?");
+  });
+
+  it("zeigt Zustände als Umschalt-Chips", () => {
+    expect(zeige(bogen())).toMatch(/<label class="condition-chip[^"]*"[^>]*><input[^>]*type="checkbox"/);
   });
 });

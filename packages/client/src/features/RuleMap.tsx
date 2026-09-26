@@ -28,14 +28,14 @@ function viewName(view: RuleMapView): string {
   switch (view) {
     case "overview": return t("Übersicht");
     case "map": return t("Karte");
-    case "network": return t("Knotennetz");
+    case "network": return t("Karte mit Rechenwegen");
   }
 }
 function viewHelp(view: RuleMapView): string {
   switch (view) {
     case "overview": return t("Die Figur als eine Karte: ihre Attribute, was sich daraus ergibt, und was sie tun kann. Klicke einen Eintrag, um ihn zu bearbeiten.");
     case "map": return t("Jeder Teil des Regelwerks als Knoten, jede Verwendung in einer Formel als Verbindung. Klicke einen Knoten: seine Nachbarn leuchten, rechts kannst du ihn bearbeiten. Mit − und + oder Strg + Mausrad zoomst du heraus und hinein.");
-    case "network": return t("Wie die Karte, aber jede Formel ist als kleines Knotennetz eingebettet. Zum Ändern wähle den Knoten und bearbeite die Formel rechts. Mit − und + oder Strg + Mausrad zoomst du heraus und hinein.");
+    case "network": return t("Wie die Karte, aber in jedem Teil steht sein Rechenweg als kleines Bild. Zum Ändern wähle den Teil und bearbeite die Formel rechts. Mit − und + oder Strg + Mausrad zoomst du heraus und hinein.");
   }
 }
 export function readRuleMapView(): RuleMapView { try { const value = localStorage.getItem(VIEW_KEY); return value === "map" || value === "network" ? value : "overview"; } catch { return "overview"; } }
@@ -52,12 +52,17 @@ function tabButtonLabel(kind: RuleMapKind): string {
     case "action": return t("Im Reiter Aktionen öffnen");
     case "bar": return t("Im Reiter Balken öffnen");
     case "rule": return t("Im Reiter Bogenregeln öffnen");
-    default: return t("Im Reiter Abgeleitete Werte öffnen");
+    default: return t("Im Reiter Berechnete Werte öffnen");
   }
 }
 const NO_INPUTS: readonly DraftField[] = [];
 const noop = () => { /* eingebettete Netze sind nur Ansicht */ };
 const parsed = (expression: string): Formula | null => { try { return parseFormula(expression); } catch { return null; } };
+/** Nach dem Schließen des Bearbeitungsfelds landet der Fokus wieder auf dem Teil, das es geöffnet hat. */
+function focusNode(id: string): void {
+  const run = () => document.querySelector<HTMLElement>(`button[data-node-id="${CSS.escape(id)}"], [data-node-id="${CSS.escape(id)}"] > button`)?.focus();
+  if (typeof requestAnimationFrame === "function") requestAnimationFrame(run); else run();
+}
 const matches = (node: RuleMapNode, query: string): boolean => { const q = query.trim().toLocaleLowerCase("de"); return !q || `${node.label} ${node.key} ${node.detail}`.toLocaleLowerCase("de").includes(q); };
 
 export function RuleMap({ draft, onChange, disabled = false, onOpen, initialView, initialSelected }: RuleMapProps) {
@@ -65,12 +70,14 @@ export function RuleMap({ draft, onChange, disabled = false, onOpen, initialView
   const [selected, setSelected] = useState<string | null>(initialSelected ?? null);
   const [query, setQuery] = useState("");
   useEffect(() => { if (!initialView) setView(readRuleMapView()); }, [initialView]);
+  const openId = useRef(selected); openId.current = selected;
+  const close = useCallback(() => { const id = openId.current; setSelected(null); if (id) focusNode(id); }, []);
   useEffect(() => {
     if (!selected) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setSelected(null); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selected]);
+  }, [selected, close]);
   const graph = useMemo(() => ruleMapGraph(draft), [draft]);
   const byId = useMemo(() => new Map(graph.nodes.map(n => [n.id, n])), [graph]);
   const baseSources = useMemo(() => sourcesFromDraft(draft.fields), [draft.fields]);
@@ -100,7 +107,7 @@ export function RuleMap({ draft, onChange, disabled = false, onOpen, initialView
       {view === "overview"
         ? <Overview graph={graph} selected={selected} query={query} onSelect={choose} />
         : <Canvas graph={graph} view={view} selected={selected} related={related} query={query} sourcesOf={sourcesOf} onSelect={choose} />}
-      {node ? <NodeEditor key={node.id} node={node} graph={graph} draft={draft} disabled={disabled} sources={sourcesOf(node)} action={actionOf(node)} onChange={onChange} onSelect={setSelected} onClose={() => setSelected(null)} onOpen={onOpen} /> : null}
+      {node ? <NodeEditor key={node.id} node={node} graph={graph} draft={draft} disabled={disabled} sources={sourcesOf(node)} action={actionOf(node)} onChange={onChange} onSelect={setSelected} onClose={close} onOpen={onOpen} /> : null}
     </div>
   </div>;
 }
@@ -108,8 +115,8 @@ export function RuleMap({ draft, onChange, disabled = false, onOpen, initialView
 function Overview({ graph, selected, query, onSelect }: { graph: RuleMapGraph; selected: string | null; query: string; onSelect(id: string): void }) {
   const shown = graph.nodes.filter(n => matches(n, query));
   const of = (kind: RuleMapKind) => shown.filter(n => n.kind === kind);
-  const row = (n: RuleMapNode) => <li key={n.id} className={`rm-row rm-status-${n.status}`}><button type="button" data-node-id={n.id} aria-current={selected === n.id ? "true" : undefined} title={n.message} onClick={() => onSelect(n.id)}>
-    <strong>{n.label}</strong><span>{n.detail}</span>
+  const row = (n: RuleMapNode) => <li key={n.id} className={`rm-row rm-status-${n.status}`}><button type="button" data-node-id={n.id} aria-current={selected === n.id ? "true" : undefined} onClick={() => onSelect(n.id)}>
+    <strong>{n.label}</strong><span>{n.detail}</span>{n.message ? <em className="rm-row-problem">{n.message}</em> : null}
   </button></li>;
   const groups = [...new Set(of("attribute").map(n => n.group))];
   return <article className="rm-class" aria-label={t("Die Figur als Karte")}>
@@ -171,11 +178,11 @@ function Canvas({ graph, view, selected, related, query, sourcesOf, onSelect }: 
   return <>
     <div className="rm-canvas-tools" role="group" aria-label={t("Vergrößerung der Karte")}>
       <button type="button" aria-label={t("Verkleinern")} title={t("Verkleinern")} disabled={zoom <= ZOOM_MIN} onClick={() => applyZoom(zoom / ZOOM_STEP)}><ZoomOut size={14} aria-hidden="true" /></button>
-      <button type="button" className="rm-zoom-value" aria-label={t("Auf volle Größe zurücksetzen")} title={t("Auf volle Größe zurücksetzen")} onClick={() => applyZoom(1)}>{Math.round(zoom * 100)} %</button>
+      <button type="button" className="rm-zoom-value" aria-label={t("{wert} %, auf volle Größe zurücksetzen", { wert: Math.round(zoom * 100) })} title={t("Auf volle Größe zurücksetzen")} onClick={() => applyZoom(1)}>{Math.round(zoom * 100)} %</button>
       <button type="button" aria-label={t("Vergrößern")} title={t("Vergrößern")} disabled={zoom >= ZOOM_MAX} onClick={() => applyZoom(zoom * ZOOM_STEP)}><ZoomIn size={14} aria-hidden="true" /></button>
       <button type="button" aria-label={t("Ganze Karte einpassen")} title={t("Ganze Karte einpassen")} onClick={fit}><Maximize size={14} aria-hidden="true" />{t("Einpassen")}</button>
     </div>
-    <div className="rm-canvas-frame" ref={frame} role="group" aria-label={view === "map" ? t("Regelkarte") : t("Regelkarte mit Knotennetzen")} data-zoom={zoom}>
+    <div className="rm-canvas-frame" ref={frame} role="group" aria-label={view === "map" ? t("Regelkarte") : t("Regelkarte mit Rechenwegen")} data-zoom={zoom}>
     <div className="rm-canvas-scaled" style={{ width: layout.width * zoom, height: layout.height * zoom }}>
     <div className="rm-canvas" style={{ width: layout.width, height: layout.height, transform: `scale(${zoom})` }}>
       <svg className="rm-edges" width={layout.width} height={layout.height} aria-hidden="true">
@@ -186,8 +193,8 @@ function Canvas({ graph, view, selected, related, query, sourcesOf, onSelect }: 
       {layout.nodes.map(place => {
         const n = graph.nodes.find(g => g.id === place.id)!, parts = embedded.get(n.id);
         return <div key={n.id} data-node-id={n.id} className={`rm-node rm-node-${n.kind} rm-status-${n.status}${selected === n.id ? " is-selected" : ""}${dim(n.id) ? " is-dim" : ""}`} style={{ left: place.x, top: place.y, width: place.width, height: place.height }}>
-          <button type="button" className="rm-node-head" aria-pressed={selected === n.id} aria-label={t("{name}, {art}", { name: n.label, art: kindLabel(n.kind) })} title={n.message ?? n.detail} onClick={() => onSelect(n.id)}>
-            <strong>{n.label}</strong><small>{parts ? kindLabel(n.kind) : n.detail}</small>
+          <button type="button" className="rm-node-head" aria-pressed={selected === n.id} aria-label={n.message ? t("{name}, {art}: {hinweis}", { name: n.label, art: kindLabel(n.kind), hinweis: n.message }) : t("{name}, {art}", { name: n.label, art: kindLabel(n.kind) })} title={n.message ?? n.detail} onClick={() => onSelect(n.id)}>
+            <strong>{n.label}</strong>{n.message ? <small className="rm-node-problem">{n.message}</small> : <small>{parts ? kindLabel(n.kind) : n.detail}</small>}
           </button>
           {parts ? parts.map((part, i) => <div key={i} className="rm-embedded" style={{ height: EMBED_LABEL + part.height }}>
             <span className="rm-embedded-label">{part.formula.label}</span>

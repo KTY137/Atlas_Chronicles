@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { ArrowRight, BookOpen, CalendarDays, Compass, Dice6, Hammer, Image, Layers, Map, MessageSquare, Swords, User, Users } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, Compass, Dice6, Hammer, Image, Layers, Map, MessageSquare, Swords, User, UserPlus, Users } from "lucide-react";
+import type { ActorCard } from "@chronicle/protocol";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
 import { apiPath, type Campaign, type EntrySummary } from "../api";
 import { useResource } from "../hooks";
 import { t } from "../i18n";
 import type { Stage, TableTab } from "../navigation";
 import type { ForgeSection } from "./forge-navigation";
+import { ErsteSchritte, useErsteSchritte } from "./ErsteSchritte";
 
 /**
  * „Heute" — der Landeplatz einer Kampagne.
@@ -66,6 +68,14 @@ export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigat
   const entries = useResource<EntrySummary[]>(apiPath(campaign.id, "/entries"), liveRevision);
   const zuletzt = (entries.data ?? []).slice(0, 4);
   const andere = anwesend.filter((person) => person.displayName !== displayName);
+  // Wer mitspielt, aber noch keine Figur führt, braucht als Erstes genau eine: der hervorgehobene
+  // Schritt ist dann „Figur beantragen“, nicht der Spieltisch (Neulingsgang, 2026-09-26).
+  const figuren = useResource<ActorCard[]>(campaign.role === "spieler" ? apiPath(campaign.id, "/actors") : null, liveRevision);
+  const ohneFigur = campaign.role === "spieler" && !!figuren.data && !figuren.data.some((actor) => actor.canControl);
+  // Die Spielleitung landet hier. Solange die Runde nicht startklar ist, steht die Checkliste oben und
+  // ihr nächster offener Punkt ist der eine hervorgehobene Schritt; danach wieder der Spieltisch.
+  const start = useErsteSchritte(leitung ? campaign.id : null, liveRevision);
+  const startOffen = leitung && start.geladen && !start.fertig;
 
   return (
     <section className="page-content heute">
@@ -77,9 +87,12 @@ export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigat
           : t("Deine Figuren, eure Geschichte und der nächste gemeinsame Spielabend.")}
       </p>
 
+      {startOffen ? <ErsteSchritte campaignId={campaign.id} revision={liveRevision} stand={start} onSectionChange={onOpenForge} onOpenRound={() => onNavigate("runde")} onOpenTable={() => onOpenTable("actors")} /> : null}
+      {ohneFigur ? <p className="heute-erster-schritt">{t("Du hast in dieser Runde noch keine Figur. Beantrage eine — die Spielleitung gibt sie frei, danach findest du sie unter „Ich“.")}</p> : null}
       <div className="heute-play-actions">
-        <Button variant="primary" onClick={() => onOpenTable("actions")}><Dice6 size={18} /> {t("Zum Spieltisch")}<ArrowRight size={16} /></Button>
-        <Button onClick={() => onNavigate("ich")}><User size={17} /> {t("Meine Figuren & Inventare")}</Button>
+        {ohneFigur ? <Button variant="primary" onClick={() => onNavigate("ich")}><UserPlus size={18} /> {t("Figur beantragen")}<ArrowRight size={16} /></Button> : null}
+        <Button variant={ohneFigur || startOffen ? "default" : "primary"} onClick={() => onOpenTable("actions")}><Dice6 size={18} /> {t("Zum Spieltisch")}<ArrowRight size={16} /></Button>
+        {ohneFigur ? null : <Button onClick={() => onNavigate("ich")}><User size={17} /> {t("Meine Figuren & Inventare")}</Button>}
         <Button onClick={() => onOpenTable("kampf")}><Swords size={17} /> {t("Kampf öffnen")}</Button>
       </div>
 
@@ -120,7 +133,7 @@ export function Heute({ campaign, displayName, anwesend, liveRevision, onNavigat
       ) : (
         <EmptyState
           title={t("Eure Chronik ist noch leer.")}
-          action={<Button variant="primary" onClick={() => onNavigate("wiki")}>{t("Zur Chronik")}</Button>}
+          action={<Button onClick={() => onNavigate("wiki")}>{t("Zur Chronik")}</Button>}
         >
           {leitung
             ? t("Schreibt den ersten Artikel, oder holt ein bestehendes Wiki herein — beides beginnt in der Chronik.")

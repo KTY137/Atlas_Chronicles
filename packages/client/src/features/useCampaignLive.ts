@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, apiPath, ApiError } from "../api";
+import { api, apiPath, ApiError, markiereAenderung } from "../api";
 import { t } from "../i18n";
 
 export type LiveStatus = "idle" | "connecting" | "connected" | "reconnecting" | "offline" | "unavailable";
@@ -78,6 +78,8 @@ export function useCampaignLive(campaignId: string | null, userId: string | null
       current.onmessage = event => {
         if (disposed || current !== socket) return;
         lastHeard = Date.now();
+        // Jede Meldung kann Daten geändert haben: danach beginnende Abfragen teilen nichts mit früheren.
+        markiereAenderung();
         let message: Record<string, unknown>;
         try { message = JSON.parse(String(event.data)) as Record<string, unknown>; } catch { return; }
         if (!message || typeof message !== "object") return;

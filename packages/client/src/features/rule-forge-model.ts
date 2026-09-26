@@ -263,3 +263,23 @@ export function packageTestResults(pkg: AnyRulePackage): { name: string; expecte
     catch (error) { return { name: test.name, expected: test.expectedTotal, passed: false, error: error instanceof Error ? error.message : t("Test fehlgeschlagen.") }; }
   });
 }
+
+/** Eine freie Kennung: der Wunschname selbst, sonst mit angehängter Zahl. */
+export function freeId(base: string, ids: readonly string[]): string { return ids.includes(base) ? uniqueId(`${base}_`, ids) : base; }
+/**
+ * „Mit Beispiel beginnen“ (Spec E12): fertige, gültige Einträge, die man danach frei umbaut.
+ * Sie laufen über denselben Änderungsweg wie jede Bearbeitung; Rückgängig nimmt sie wieder weg.
+ */
+export function exampleAttribute(ids: readonly string[]): DraftField {
+  return { ...newField(freeId("staerke", ids)), label: t("Stärke"), minimum: "1", maximum: "20", defaultValue: "10" };
+}
+/** Die Probe auf Stärke: ein W20 plus Stärke, ab 15 geschafft. Fehlt Stärke, kommt es zuerst dazu;
+ * den Bogen gleicht der Aufrufer danach mit `syncSheetWithFields` ab. */
+export function withExampleAction(draft: RuleDraft): RuleDraft {
+  let fields = draft.fields;
+  let attribute = fields.find(field => field.id === "staerke" && (field.type === "integer" || field.type === "number"));
+  if (!attribute) { attribute = exampleAttribute(fields.map(field => field.id)); fields = [...fields, attribute]; }
+  const action: DraftAction = { localId: localKey(), id: freeId("probe_staerke", draft.actions.map(row => row.id)), name: t("Probe auf {name}", { name: attribute.label }), version: "1.0.0",
+    disclosure: t("Ein W20 plus {wert}; ab 15 gelingt es.", { wert: attribute.label }), inputs: [], thresholdEnabled: true, threshold: "15", formula: formulaDraft(parseFormula(`1d20 + actor.${attribute.id}`)) };
+  return { ...draft, fields, actions: [...draft.actions, action] };
+}

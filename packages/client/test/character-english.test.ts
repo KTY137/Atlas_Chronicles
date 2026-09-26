@@ -50,6 +50,9 @@ describe("English ChronicleHeroes presentation", () => {
     const output = renderToStaticMarkup(createElement(FaehigkeitenBogen, { pkg, fields, onChange() {} }));
     expect(output).toContain("Heavy blow"); expect(output).toContain("Your hits land hard: +2 damage.");
     expect(output).not.toContain("Deine Treffer sitzen");
+    // Knöpfe heißen nach ihrer Fähigkeit, auch auf Englisch.
+    expect(output).toContain("Unlearn Heavy blow");
+    expect(output).not.toMatch(/>Unlearn</);
   });
   it("preserves custom text even when another template label uses the same German wording", () => {
     const pkg = structuredClone(CHRONICLE_HEROES_PACKAGE) as unknown as { fields: Record<string, { label: string }>; abilities: { name: string; text: string }[] } & RulePackageV2;
@@ -64,14 +67,14 @@ describe("English ChronicleHeroes presentation", () => {
   it("updates the point and experience overview from the draft and translates chosen new archetypes only", () => {
     const pkg = CHRONICLE_HEROES_PACKAGE, draft = { ...defaultSupportedActorFields(pkg), erfahrung: 4, erfahrung_fertigkeiten: 2, skill_athletik: 30 };
     const progress = renderToStaticMarkup(createElement(CharacterProgress, { pkg, fields: draft }));
-    expect(progress).toContain("Available skill points"); expect(progress).toContain("<dd>340</dd>");
-    expect(progress).toContain("Available ability experience"); expect(progress).toContain("<dd>11</dd>");
+    expect(progress).toContain("Available skill points"); expect(progress).toContain(`<span class="character-progress-value">340</span>`);
+    expect(progress).toContain("Available ability experience"); expect(progress).toContain(`<span class="character-progress-value">11</span>`);
     const computed = renderToStaticMarkup(createElement(RuleComputedFields, { pkg, fields: draft }));
     expect(computed).toContain("Talent · Body"); expect(computed).toContain("Athletics · value");
     const example = displayChronicleExample(CHRONICLE_ARCHETYPES[0]!);
     expect(example.name).toBe("Fighter"); expect(example.fields.profession).toBe("Mercenary");
     expect(fields).toMatchObject({ name: "Kämpfer von Köln", profession: "Schmied", notes: "Privater eigener Text" });
-    expect(t("Verfügbare Skill-Punkte")).toBe("Available skill points");
+    expect(t("Verfügbare Fertigkeitspunkte")).toBe("Available skill points");
   });
   it("returns the original display when switched back to German", async () => {
     const english = displayRulePackage(CHRONICLE_HEROES_PACKAGE);

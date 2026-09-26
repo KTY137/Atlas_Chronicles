@@ -4,12 +4,12 @@
 .rf-template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 14px;
-  margin-top: 12px;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
 }
-.rf-reference-templates { margin-top: 18px; }
+.rf-reference-templates { margin-top: var(--space-4); }
 .rf-reference-templates .rf-card { margin: 0; }
-.rf-reference-templates .rf-value-list { margin: 12px 0; }
+.rf-reference-templates .rf-value-list { margin: var(--space-3) 0; }
 
 @media (max-width: 720px) {
   .rf-template-grid { grid-template-columns: 1fr; }

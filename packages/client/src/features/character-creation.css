@@ -1,67 +1,114 @@
 /* SPDX-License-Identifier: BUSL-1.1
    Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
-.creation-workspace { display: grid; gap: 22px; min-width: 0; }
-.creation-path { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 0; margin: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
-.creation-path > li { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 16px; }
-.creation-path > li + li { border-inline-start: 1px solid var(--line); }
-.creation-path > li > span { color: var(--text-muted); font: 500 22px/1 var(--font-display); }
-.creation-path > li[aria-current="step"] { background: var(--accent-soft); }
-.creation-path > li[aria-current="step"] > span { color: var(--accent); }
-.creation-path strong, .creation-path small { display: block; overflow-wrap: anywhere; }
-.creation-path strong { font-size: 12px; line-height: 1.5; font-weight: 600; }
-.creation-path small { margin-top: 4px; color: var(--text-muted); font-size: 11px; line-height: 1.5; }
-.creation-saved { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 18px 20px; border: 1px solid var(--line); border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--accent-soft); }
-.creation-saved strong { font-size: 14px; }.creation-saved p { margin: 6px 0 0; }
+/* Figur anlegen, Figurvorlagen und Figurantrag. Nur Token aus tokens.css (2026-09-26): Schrift ab
+   --text-xs (12 px), Abstaende aus --space-*, Ecken aus --radius*. Die Schrittanzeige ist die
+   gemeinsame `StepList` aus @chronicle/ui; die fruehere eigene Leiste `.creation-path` ist entfallen. */
+.creation-workspace { display: grid; gap: var(--space-5); min-width: 0; }
+.creation-workspace > .step-list { margin: 0; }
+.creation-saved { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-4) var(--space-5); border: 1px solid var(--line); border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--accent-soft); }
+.creation-saved strong { font-size: var(--text-md); }.creation-saved p { margin: var(--space-1) 0 0; }
 .creation-template-list > li { gap: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .creation-template-list > li > .button:first-child { border: 0; border-radius: 0; background: transparent; }
-.creation-template-list > li > .button:last-child { padding: 8px 12px; border-radius: 0; font-size: 11px; }
-.creation-release-state { display: block; padding: 3px 12px; color: var(--text-muted); font-size: 10px; line-height: 1.6; }
+.creation-template-list > li > .button:last-child { padding: var(--space-2) var(--space-3); border-radius: 0; font-size: var(--text-xs); }
+.creation-release-state { display: block; padding: var(--space-1) var(--space-3); color: var(--text-muted); font-size: var(--text-xs); line-height: 1.5; }
 .creation-release-state[data-shared="true"] { color: var(--accent); }
 .creation-template-form, .creation-instantiate, .creation-request { min-width: 0; }
-:is(.creation-template-form, .creation-instantiate, .creation-request) h2 { margin: 0; font: 500 24px/1.3 var(--font-display); }
-:is(.creation-template-form, .creation-instantiate, .creation-request) h3 { margin: 0; font: 500 20px/1.35 var(--font-display); }
-.creation-draft-preview { display: flex; align-items: center; gap: 16px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; min-width: 0; }
-.creation-monogram { display: grid; place-items: center; flex: 0 0 52px; height: 60px; border: 1px solid var(--line-strong); border-radius: 26px 26px 9px 9px; color: var(--accent); font: 500 28px/1 var(--font-display); }
-.creation-draft-preview > div { display: grid; gap: 5px; min-width: 0; }
-.creation-draft-preview small { color: var(--text-muted); font-size: 10px; letter-spacing: .035em; }
-.creation-draft-preview strong { font: 500 23px/1.3 var(--font-display); overflow-wrap: anywhere; }
-.creation-draft-preview div > span { color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; }
-.creation-section-nav { display: flex; flex-wrap: wrap; gap: 5px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
-.creation-section-nav .button { font-size: 11px; padding: 8px 10px; }
-.creation-form-section { display: grid; gap: 14px; min-width: 0; padding-block: 12px 18px; }
-.creation-form-section + .creation-form-section { border-top: 1px solid var(--line); padding-top: 24px; }
-.creation-form-section > .field-help { margin: -5px 0 0; }
-.creation-form-section > h3 { scroll-margin-top: 24px; }
-.creation-form-section > h3:focus { outline: 2px solid var(--accent); outline-offset: 6px; }
-.creation-form-section > .rule-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 20px 16px; align-items: start; }
-.creation-form-section .rule-field { display: grid; gap: 6px; min-width: 0; align-content: start; }
+:is(.creation-template-form, .creation-instantiate, .creation-request) h2 { margin: 0; font: 500 var(--text-xl)/1.3 var(--font-display); }
+:is(.creation-template-form, .creation-instantiate, .creation-request) h3 { margin: 0; font: 500 var(--text-lg)/1.35 var(--font-display); }
+.creation-draft-preview { display: flex; align-items: center; gap: var(--space-4); background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--space-4); min-width: 0; }
+.creation-monogram { display: grid; place-items: center; flex: 0 0 52px; height: 60px; border: 1px solid var(--line-strong); border-radius: 26px 26px var(--radius-sm) var(--radius-sm); color: var(--accent); font: 500 28px/1 var(--font-display); }
+.creation-draft-preview > div { display: grid; gap: var(--space-1); min-width: 0; }
+.creation-draft-preview small { color: var(--text-muted); font-size: var(--text-xs); letter-spacing: .035em; }
+.creation-draft-preview strong { font: 500 var(--text-xl)/1.3 var(--font-display); overflow-wrap: anywhere; }
+.creation-draft-preview div > span { color: var(--text-muted); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.creation-section-nav { display: flex; flex-wrap: wrap; gap: var(--space-1); border-bottom: 1px solid var(--line); padding-bottom: var(--space-2); }
+.creation-section-nav .button { font-size: var(--text-xs); padding: var(--space-2) var(--space-3); }
+.creation-form-section { display: grid; gap: var(--space-3); min-width: 0; padding-block: var(--space-3) var(--space-4); }
+.creation-form-section + .creation-form-section { border-top: 1px solid var(--line); padding-top: var(--space-5); }
+.creation-form-section > .field-help { margin: calc(var(--space-1) * -1) 0 0; }
+.creation-form-section > h3 { scroll-margin-top: var(--space-5); }
+.creation-form-section > h3:focus { outline: none; }
+.creation-form-section > h3:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.creation-form-section > .rule-fields:not(.is-sheet) { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: var(--space-4) var(--space-3); align-items: start; }
+.creation-form-section .rule-field { display: grid; gap: var(--space-1); min-width: 0; align-content: start; }
 .creation-form-section .rule-field label, .creation-form-section .rule-field .field-help { margin: 0; }
-.creation-form-section .rule-field > small { font-size: 10px; color: var(--text-muted); }
-.creation-identity-fields { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
-.creation-save-actions { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 4px; }
-.creation-save-actions > p { margin: 0; }.creation-save-actions > .button { justify-self: start; min-width: min(220px, 100%); }
-.creation-instance-preview { padding: 20px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; overflow-wrap: anywhere; }
-.creation-instance-preview > small { display: block; color: var(--text-muted); font-size: 11px; margin-bottom: 8px; }
-.creation-instance-preview > .field-help { margin: 8px 0 0; }.creation-instance-preview > .button { margin-top: 12px; }
-.creation-stat-preview { display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); margin: 16px 0; padding: 12px 0; gap: 14px; border-block: 1px solid var(--line); }
-.creation-stat-preview > div { min-width: 0; }.creation-stat-preview dt { font-size: 11px; line-height: 1.5; color: var(--text-muted); }
-.creation-stat-preview dd { margin: 4px 0 0; font: 500 21px/1.3 var(--font-display); overflow-wrap: anywhere; }
-.creation-request { display: grid; gap: 20px; }.creation-request > .field-help { margin: -8px 0 0; }
+.creation-form-section .rule-field > small { font-size: var(--text-xs); color: var(--text-muted); }
+.creation-identity-fields { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-4); }
+.creation-save-actions { display: grid; gap: var(--space-3); border-top: 1px solid var(--line); padding-top: var(--space-4); margin-top: var(--space-1); }
+.creation-save-actions > p, .creation-save-actions > .field-help { margin: 0; }
+.creation-save-actions .button { min-width: min(220px, 100%); }
+.creation-instance-preview { padding: var(--space-5); background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; overflow-wrap: anywhere; }
+.creation-instance-preview > small { display: block; color: var(--text-muted); font-size: var(--text-xs); margin-bottom: var(--space-2); }
+.creation-instance-preview > .field-help { margin: var(--space-2) 0 0; }.creation-instance-preview > .button { margin-top: var(--space-3); justify-self: start; }
+.creation-stat-preview { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); margin: var(--space-4) 0; padding: var(--space-3) 0; gap: var(--space-3); border-block: 1px solid var(--line); }
+.creation-stat-preview > div { min-width: 0; }.creation-stat-preview dt { font-size: var(--text-xs); line-height: 1.5; color: var(--text-muted); }
+.creation-stat-preview dd { margin: var(--space-1) 0 0; font: 500 var(--text-lg)/1.3 var(--font-display); overflow-wrap: anywhere; }
+.creation-request { display: grid; gap: var(--space-4); }
 .creation-request form, .creation-request fieldset { min-width: 0; }
-.creation-request .actor-command-fields { display: grid; gap: 12px; border: 0; padding: 0; margin: 0; }
-.creation-request label { display: grid; gap: 7px; min-width: 0; font-size: 12px; }
-.creation-request :is(input, select) { max-width: 100%; width: 100%; min-width: 0; }
-.creation-request input[type="checkbox"] { width: auto; }
+.creation-request .actor-command-fields, .creation-instantiate .actor-command-fields { display: grid; gap: var(--space-3); border: 0; padding: 0; margin: 0; min-width: 0; }
+:is(.creation-request, .creation-instantiate) label { display: grid; gap: var(--space-1); min-width: 0; font-size: var(--text-sm); }
+.creation-request :is(input:not([type="checkbox"]):not([type="radio"]), select) { max-width: 100%; width: 100%; min-width: 0; }
 .creation-request .button { white-space: normal; overflow-wrap: anywhere; }
-.creation-request :is(button, input, select):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.creation-request > .view-intro, .creation-instantiate > .view-intro { margin-bottom: 0; }
+
+/* Der gefuehrte Weg (E15): Wer ist die Figur? — Was kann sie? — Fertig. Die Vorschau steht neben
+   den Schritten, sobald der Weg selbst breit genug ist (nicht das Fenster: am Tisch steht er in
+   einer halben Spalte). Darunter klappt sie unter „Bogen ansehen“ auf. */
+.figur-weg { display: grid; gap: var(--space-4); min-width: 0; container-type: inline-size; }
+.figur-weg > .step-list { margin: 0; }
+.figur-weg-raster { display: grid; gap: var(--space-5); min-width: 0; }
+.figur-weg-schritt { display: grid; gap: var(--space-3); min-width: 0; align-content: start; }
+.figur-weg-schritt > :is(h3, h4) { margin: 0; font: 500 var(--text-lg)/1.3 var(--font-display); }
+.figur-weg-schritt > :is(h3, h4):focus { outline: none; }
+.figur-weg-schritt > :is(h3, h4):focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.figur-weg-knoepfe { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--line); }
+.figur-weg-sperre { margin: 0; text-align: end; color: var(--text-muted); font-size: var(--text-sm); line-height: 1.5; }
+.figur-weg-seite { display: none; min-width: 0; }
+.figur-weg-klapp { min-width: 0; margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.figur-weg-klapp > summary { color: var(--link); font-size: var(--text-sm); font-weight: 600; }
+.figur-weg-klapp[open] > summary { margin-bottom: var(--space-2); }
+@container (min-width: 720px) {
+  .figur-weg-raster { grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem); align-items: start; }
+  .figur-weg-seite { display: block; position: sticky; top: var(--space-4); }
+  .figur-weg-klapp { display: none; }
+}
+.figur-vorschau { display: grid; gap: var(--space-3); min-width: 0; padding: var(--space-4); background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); overflow-wrap: anywhere; }
+.figur-vorschau-kopf { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.figur-vorschau-kopf > div { display: grid; gap: var(--space-1); min-width: 0; }
+.figur-vorschau-kopf strong { font: 500 var(--text-xl)/1.2 var(--font-display); }
+.figur-vorschau-kopf span { color: var(--text-muted); font-size: var(--text-sm); }
+.figur-vorschau-balken { display: grid; gap: var(--space-2); }
+.figur-vorschau .creation-stat-preview { margin: 0; }
+.figur-vorschau-text { margin: 0; font-size: var(--text-sm); line-height: 1.55; }
+.figur-vorschau > .field-help { margin: 0; }
+.figur-zusammenfassung { display: grid; gap: var(--space-3); min-width: 0; }
+.figur-zusammenfassung > p { margin: 0; }
+.figur-zusammenfassung-kopf { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-3); margin: 0; }
+.figur-zusammenfassung-kopf dt { color: var(--text-muted); font-size: var(--text-xs); }
+.figur-zusammenfassung-kopf dd { margin: var(--space-1) 0 0; font: 500 var(--text-lg)/1.3 var(--font-display); overflow-wrap: anywhere; }
+/* Werte und Notizen in der Textschrift: ein langer Satz in der Zierschrift liest sich schlecht. */
+.figur-zusammenfassung-werte dd { font: 400 var(--text-md)/1.45 var(--font-body); }
+
+/* Figurantrag: Wartezustand und fruehere Bescheide. */
+.figur-antrag-status { display: grid; gap: var(--space-3); }
+.figur-antrag-status > .step-list { margin: 0; }
+.figur-antrag-status > .button { justify-self: start; }
+.figur-antrag-frueher { margin: 0; padding-top: var(--space-2); border-top: 1px solid var(--line); }
+.figur-antrag-frueher > summary { font-size: var(--text-sm); }
+.figur-antrag-frueher ul { margin: 0; padding-inline-start: var(--space-5); color: var(--text-muted); font-size: var(--text-sm); line-height: 1.6; }
+
 @media (min-width: 1201px) { .creation-template-workspace { grid-template-columns: minmax(190px, 230px) minmax(0, 1fr); } }
 @media (max-width: 720px) {
-  .creation-path { grid-template-columns: minmax(0, 1fr); }
-  .creation-path > li { padding: 12px 16px; gap: 14px; }.creation-path > li + li { border-inline-start: 0; border-top: 1px solid var(--line); }
-  .creation-path > li > span { flex: 0 0 28px; font-size: 19px; }
-  .creation-path > li > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }.creation-path small { margin: 0; }
   .creation-identity-fields { grid-template-columns: minmax(0, 1fr); }
-  .creation-draft-preview { padding: 14px; gap: 12px; }.creation-draft-preview strong { font-size: 21px; }
-  .creation-instance-preview { padding: 16px; }
-  .creation-saved { padding: 16px; }.creation-save-actions > .button { width: 100%; }
+  .creation-draft-preview { padding: var(--space-3); gap: var(--space-3); }.creation-draft-preview strong { font-size: var(--text-lg); }
+  .creation-instance-preview { padding: var(--space-4); }
+  .creation-saved { padding: var(--space-4); }.creation-save-actions .button { width: 100%; }
+  .figur-weg-knoepfe { justify-content: stretch; }.figur-weg-knoepfe > .button { flex: 1 1 8rem; }
+  .figur-weg-sperre { text-align: start; }
 }
+
+/* Die Freigabe fuer Mitspieler steht sichtbar an der Vorlage: ein Satz, was sie bewirkt, und der Schalter. */
+.creation-freigabe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); padding: var(--space-3); border: 1px solid var(--line); border-inline-start: 3px solid var(--line-strong); border-radius: var(--radius); background: var(--surface-2); }
+.creation-freigabe[data-shared="true"] { border-inline-start-color: var(--ok); }
+.creation-freigabe > p { flex: 1 1 16rem; margin: 0; font-size: var(--text-sm); line-height: 1.5; }
+.creation-saved > .creation-freigabe { flex-basis: 100%; }

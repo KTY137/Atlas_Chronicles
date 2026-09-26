@@ -1,24 +1,28 @@
 /* SPDX-License-Identifier: BUSL-1.1
    Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
 /* Vitalwerte als Balken. Die Zahl steht immer daneben — der Balken illustriert, er behauptet
-   nicht. Wer ihn nicht sieht, liest trotzdem "37 / 100". */
-.vitalanzeige { display: grid; gap: .55rem; margin-block: .8rem; }
-.vitalanzeige.kompakt { gap: .35rem; margin-block: .5rem; }
+   nicht. Wer ihn nicht sieht, liest trotzdem "37 / 100". Seit 2026-09-26 nur Token: die
+   frueheren Ersatzfarben passten zu keinem der hellen Looks. */
+.vitalanzeige { display: grid; gap: var(--space-2); margin-block: var(--space-3); }
+.vitalanzeige.kompakt { gap: var(--space-1); margin-block: var(--space-2); }
 
-.vitalwert-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; }
-.vitalwert-name { font-size: .8rem; }
-.vitalwert-stand { font-family: var(--font-mono, monospace); font-size: .8rem; color: var(--text-muted, #9aa3a0); }
+.vitalwert-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+.vitalwert-name { font-size: var(--text-sm); font-weight: 600; }
+.vitalwert-stand { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 .vitalwert-balken {
-  block-size: .55rem; margin-block-start: .2rem; overflow: hidden;
-  border: 1px solid var(--line, #2a3230); border-radius: 999px; background: var(--disabled-bg);
+  block-size: .6rem; margin-block-start: var(--space-1); overflow: hidden;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--disabled-bg);
 }
 .vitalanzeige.kompakt .vitalwert-balken { block-size: .4rem; }
+/* Auf dem Bogen stehen die Balken obenan und duerfen kraeftiger sein als in der Kompaktansicht. */
+:is(.sheet-vitals, .rule-vital) .vitalwert-name, :is(.sheet-vitals, .rule-vital) .vitalwert-stand { font-size: var(--text-md); }
+:is(.sheet-vitals, .rule-vital) .vitalwert-balken { block-size: .75rem; }
 /* Die Farbe waehlt die Spielleitung je Balken in der Regelwerkstatt (seit 2026-09-23); ohne Wahl
    gilt die Akzentfarbe. Palettenfarben kommen aus den Signalfarben des Looks und bleiben damit in
    hellen wie dunklen Looks lesbar; eine freie Farbe gilt ueberall gleich. Der feine Innenrand haelt
    auch eine Farbe sichtbar, die zufaellig dem Hintergrund gleicht — die Zahl steht ohnehin daneben. */
-.vitalwert-balken > span { display: block; block-size: 100%; background: var(--vital-fill, var(--accent, #a8791f)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text, #f0ebe1) 22%, transparent); transition: inline-size 180ms ease-out; }
+.vitalwert-balken > span { display: block; block-size: 100%; background: var(--vital-fill, var(--accent)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 22%, transparent); transition: inline-size 180ms ease-out; }
 .vitalwert-farbe-red { --vital-fill: var(--danger); }
 .vitalwert-farbe-orange { --vital-fill: color-mix(in oklab, var(--danger) 55%, var(--warning)); }
 .vitalwert-farbe-yellow { --vital-fill: var(--warning); }
@@ -27,6 +31,6 @@
 .vitalwert-farbe-blue { --vital-fill: var(--info); }
 .vitalwert-farbe-purple { --vital-fill: var(--private); }
 .vitalwert-farbe-grey { --vital-fill: var(--text-muted); }
-.vitalwert.erschoepft .vitalwert-balken { border-color: var(--danger, #a33); }
-.vitalwert.erschoepft .vitalwert-stand { color: var(--danger, #a33); }
-.vitalwert-hinweis { margin: .2rem 0 0; font-size: .72rem; color: var(--danger, #a33); }
+.vitalwert.erschoepft .vitalwert-balken { border-color: var(--danger); }
+.vitalwert.erschoepft .vitalwert-stand { color: var(--danger); }
+.vitalwert-hinweis { margin: var(--space-1) 0 0; font-size: var(--text-xs); color: var(--danger); }

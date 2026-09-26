@@ -18,7 +18,7 @@ h2 { font-size: 21px; font-weight: 500; line-height: 1.35; }
 h3 { font-size: 18px; font-weight: 500; }
 .muted, .field-help, small { color: var(--text-muted); }
 .field-help { font-size: 12px; line-height: 1.5; margin: 5px 0 18px; }
-.eyebrow { color: var(--accent); font-size: 10px; text-transform: uppercase; letter-spacing: .19em; font-weight: 600; margin-bottom: 13px; }
+.eyebrow { color: var(--accent); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .19em; font-weight: 600; margin-bottom: 13px; }
 .button { display: inline-flex; gap: 8px; align-items: center; justify-content: center; padding: 9px 13px; min-height: 38px; border: 1px solid var(--line-strong); background: var(--surface-2); font-size: 12px; font-weight: 500; transition: background .15s, border-color .15s; white-space: nowrap; }
 .button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--control-line); }
 .button-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
@@ -96,11 +96,11 @@ details[open] summary { margin-bottom: 20px; color: var(--text); }
 .app-main { display: flex; flex: 1; min-height: 0; }
 .rail { width: 78px; min-width: 78px; padding: 18px 6px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid var(--line); background: var(--surface); }
 .rail-item { min-height: 65px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 7px; color: var(--text-muted); }
-.rail-item span { font-size: 10px; letter-spacing: .02em; }
+.rail-item span { font-size: var(--text-xs); letter-spacing: .02em; }
 .rail-item:hover:not(:disabled) { background: var(--surface-2); }
 .rail-item.active { color: var(--accent); background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
 .main-stage { flex: 1; min-width: 0; overflow: auto; outline: none; background: var(--bg); }
-.band { display: flex; align-items: center; gap: 15px; height: 45px; min-height: 45px; padding: 0 25px; border-top: 1px solid var(--line); background: var(--surface); font-size: 11px; color: var(--text-muted); }
+.band { display: flex; align-items: center; gap: 15px; height: 45px; min-height: 45px; padding: 0 25px; border-top: 1px solid var(--line); background: var(--surface); font-size: var(--text-xs); color: var(--text-muted); }
 .band-mark { color: var(--accent); font-size: 22px; }
 /* Die Marke steht immer da, der Name der Runde daneben. Vorher ERSETZTE der Kampagnenname das
    Produkt — wer eine Runde offen hatte, sah nirgends mehr, womit er eigentlich spielt. */
@@ -114,7 +114,7 @@ details[open] summary { margin-bottom: 20px; color: var(--text); }
 .band-player { display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; }
 .band-player-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--warning); }
 .band-player-dot.online { background: var(--ok); }
-.role-chip { text-transform: uppercase; color: var(--accent); border: 1px solid var(--control-line); border-radius: var(--radius); padding: 3px 8px; font-size: 11px; letter-spacing: .08em; }
+.role-chip { text-transform: uppercase; color: var(--accent); border: 1px solid var(--control-line); border-radius: var(--radius); padding: 3px 8px; font-size: var(--text-xs); letter-spacing: .08em; }
 .page-content { padding: 48px 6%; max-width: 1200px; margin: 0 auto; }
 .page-heading, .section-heading { display: flex; gap: 16px; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .section-heading h2 { margin: 0; }
@@ -245,7 +245,7 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
    einem handtellergroßen weißen Kasten. Die Feature-Stile setzen dieselben Werte; wo sie geladen
    sind, ändert sich nichts, und wo nicht, sieht das Feld trotzdem aus wie ein Feld. */
 .check-label { display: flex; flex-direction: row; align-items: center; gap: 10px; margin-bottom: 0; }
-.check-label input[type="checkbox"] { width: 18px; height: 18px; min-height: 18px; flex: 0 0 auto; accent-color: var(--accent); }
+.check-label input[type="checkbox"] { width: 20px; height: 20px; min-height: 0; flex: 0 0 auto; accent-color: var(--accent); }
 /* Der Bildbestand. Eine Zeile je Datei: Vorschau, Herkunft, Lizenzstand — in dieser Reihenfolge,
    weil die Lizenz die Entscheidung ist, die hier getroffen wird. */
 .medien-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -321,7 +321,7 @@ blockquote { border-left: 2px solid var(--accent); margin: 20px 0; padding: 4px 
   .context-bar { padding: 0 12px; gap: 8px; height: 58px; min-height: 58px; }.wordmark strong { display: none; }.wordmark > span { font-size: 25px; }.context-divider { display: none; }
   .campaign-trigger { font-size: 11px; padding: 6px; max-width: calc(100vw - 170px); }.user-name { display: none; }.context-right { gap: 0; }.context-right .button { padding: 7px; }
   .app-main { flex-direction: column; }.rail { flex-direction: row; width: 100%; min-width: 0; min-height: 51px; height: 51px; padding: 0 7px; border-right: 0; border-bottom: 1px solid var(--line); gap: 2px; }.rail-item { flex: 1; min-height: 50px; flex-direction: row; gap: 7px; border-radius: 0; }.rail-item svg { width: 17px; }.rail-item.active { box-shadow: inset 0 -2px var(--accent); }
-  .main-stage { min-height: 0; }.band { height: auto; min-height: 36px; padding: 5px 14px; gap: 4px 9px; flex-wrap: wrap; font-size: 9px; }.band-mark { font-size: 19px; }.role-chip { font-size: 11px; }.band-status { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .main-stage { min-height: 0; }.band { height: auto; min-height: 36px; padding: 5px 14px; gap: 4px 9px; flex-wrap: wrap; font-size: var(--text-xs); }.band-mark { font-size: 19px; }.role-chip { font-size: var(--text-xs); }.band-status { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .band-runde { max-width: 30%; }.band-connection { margin-left: auto; }.band-players { order: 1; flex-basis: 100%; }
   .page-content { padding: 28px 20px; }.page-content h1 { font-size: 28px; }.round-grid { grid-template-columns: 1fr; gap: 0; }.panel { padding: 20px; }.campaign-grid { grid-template-columns: 1fr; margin: 27px 0; }.campaign-card { min-height: 175px; }.campaign-card h2 { max-width: 85%; }
   .wiki-layout { display: flex; flex-direction: column; height: auto; min-height: 100%; }.entry-sidebar { border-right: 0; border-bottom: 1px solid var(--line); max-height: 280px; flex-shrink: 0; }.sidebar-heading { padding: 18px 18px 12px; }.sidebar-heading h2 { font-size: 19px; }.sidebar-heading .eyebrow { display: none; }.sidebar-heading .button { min-height: 32px; padding: 5px 9px; }.search-box { margin-bottom: 12px; }.entry-list { display: flex; overflow-x: auto; min-height: 72px; padding: 0 10px 8px; }.entry-item { min-width: 190px; max-width: 190px; width: 190px; padding: 10px; border-radius: var(--radius); }.entry-item small { -webkit-line-clamp: 1; }.entry-item.active { box-shadow: inset 0 -2px var(--accent); }.sidebar-bottom { display: none; }.sidebar-empty { margin: 0; padding-top: 0; }

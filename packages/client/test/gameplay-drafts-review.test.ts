@@ -29,6 +29,11 @@ function harness(file: string, initial: Record<string, any>, component = file, e
     require: (name: string) => {
       if (name === "../i18n" || name === "./i18n" || name === "../../i18n") return I18nStub;
       if (name === "react") return react;
+      // Rückfragen im Look (2026-09-26): der Stub hält die Frage fest und antwortet wie vorher `window.confirm`.
+      if (name === "@chronicle/ui") return new Proxy({
+        confirmAction: async (request: string | { title?: string; message: string }) => { confirmations.push(typeof request === "string" ? request : request.title ?? request.message); return props.confirm ?? true; },
+        announce() {}, focusHeading() {}, tabKeyTarget: () => null,
+      } as Record<string, unknown>, { get: (target, key) => key in target ? target[key as string] : String(key) });
       if (name === "./map-generation") return MapGeneration;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "../hooks") return { useResource: (path: string) => props.resource?.(path) ?? { data: null, loading: false, loaded: true, error: "" }, useTask: () => ({ busy: false, error: "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };
@@ -48,12 +53,13 @@ function harness(file: string, initial: Record<string, any>, component = file, e
     throw new Error("Component did not settle");
   }
   function nodes(predicate: (node: any) => boolean) {
-    const found: any[] = [], visit = (node: any) => { if (Array.isArray(node)) node.forEach(visit); else if (node?.props) { if (predicate(node)) found.push(node); visit(node.props.children); } };
+    // `action` trägt bei `ViewIntro` den nächsten Schritt einer Ansicht; er gehört zum sichtbaren Baum.
+    const found: any[] = [], visit = (node: any) => { if (Array.isArray(node)) node.forEach(visit); else if (node?.props) { if (predicate(node)) found.push(node); visit(node.props.children); visit(node.props.action); } };
     visit(render()); return found;
   }
   const text = (node: any): string => Array.isArray(node) ? node.map(text).join("") : node?.props ? text(node.props.children) : node == null ? "" : String(node);
   const button = (label: string) => nodes(node => node.type === "Button" && text(node) === label)[0]!;
-  return { render, nodes, requests, confirmations, text, button, replace: (next: Record<string, any>) => { props = { ...props, ...next }; render(); }, settle: async () => { await Promise.all(jobs); render(); } };
+  return { render, nodes, requests, confirmations, text, button, replace: (next: Record<string, any>) => { props = { ...props, ...next }; render(); }, settle: async () => { await Promise.all(jobs); await new Promise(resolve => setTimeout(resolve, 0)); await Promise.all(jobs); render(); } };
 }
 
 const campaign = { id: "campaign", role: "spieler" }, actor = { id: "a", name: "Mara", canControl: true };
@@ -104,13 +110,13 @@ describe("gameplay draft regression review", () => {
     expect(h.requests[0]?.request.body).toEqual({ art: "siedlung", name: "Silberbach", keim: "seed", stil: "gemalt", optionen: { art: "weiler", standort: "fluss", setting: "fantasy", ausdehnung: [32, 20], bauwerke: 12, strassenDichte: .15, relief: .5, bewaldung: .5, licht: true } });
   });
 
-  it("keeps sheet dirtiness when inventory is clean and allows declining an actor switch", () => {
+  it("keeps sheet dirtiness when inventory is clean and allows declining an actor switch", async () => {
     const dirty: boolean[] = [];
     const h = harness("MeineFigur", { campaign, ...callbacks, confirm: false, onDirty: (value: boolean) => dirty.push(value), resource: (path: string) => loaded(path.endsWith("/actors") ? [actor, { ...actor, id: "b" }] : { packages: [] }) });
     h.nodes(n => n.type === "CharacterSheet")[0]!.props.onDirty(true);
     h.nodes(n => n.type === "Inventory")[0]!.props.onDirty(false); h.render();
     expect.soft(dirty.at(-1)).toBe(true);
-    h.nodes(n => n.type === "select")[0]!.props.onChange({ target: { value: "b" } }); h.render();
+    h.nodes(n => n.type === "select")[0]!.props.onChange({ target: { value: "b" } }); await h.settle();
     expect(h.confirmations).toHaveLength(1);
     expect(h.nodes(n => n.type === "CharacterSheet")[0]!.props.actorId).toBe("a");
   });
@@ -182,24 +188,48 @@ describe("gameplay draft regression review", () => {
     expect(h.requests[0]?.request.body).toEqual({ name: "Gold", expectedVersion: 1 });
   });
 
-  it("resets templateId and name after cancelling the creation form so re-opening starts fresh", () => {
-    const vorlage = { id: "t1", name: "Krieger", anfangswerte: {} };
+  it("resets templateId and name after cancelling the creation form so re-opening starts fresh", async () => {
+    const vorlagen = [{ id: "t1", name: "Krieger", anfangswerte: {} }, { id: "t2", name: "Heilerin", anfangswerte: {} }];
     const h = harness("FigurAntrag", {
       campaignId: "campaign",
       rules: { packages: [], pin: { id: "", version: "" }, version: 0 },
       revision: 0,
       onChanged() {},
-      resource: (path: string) => loaded(path.includes("freigegeben") ? [vorlage] : []),
+      resource: (path: string) => loaded(path.includes("freigegeben") ? vorlagen : []),
     });
-    // Open the creation form and fill in template + name.
-    h.button("Figur anlegen").props.onClick();
+    // Open the request flow and fill in template + name (step „Wer ist die Figur?“).
+    h.button("Figur beantragen").props.onClick();
     h.nodes(n => n.type === "select" && n.props.required)[0]!.props.onChange({ target: { value: "t1" } });
     h.nodes(n => n.type === "input" && n.props.required)[0]!.props.onChange({ target: { value: "Gandalf" } });
-    // Cancel — old bug left templateId and name in state.
-    h.button("Abbrechen").props.onClick();
-    // Re-open the form; it must be completely empty.
-    h.button("Figur anlegen").props.onClick();
+    // Cancel — asks first because something was entered; old bug left templateId and name in state.
+    h.button("Abbrechen").props.onClick(); await h.settle();
+    expect(h.confirmations).toEqual(["Antrag verwerfen?"]);
+    // Re-open the form; it must be completely empty and back at the first step.
+    h.button("Figur beantragen").props.onClick();
     expect(h.nodes(n => n.type === "select" && n.props.required)[0]!.props.value).toBe("");
     expect(h.nodes(n => n.type === "input" && n.props.required)[0]!.props.value).toBe("");
+    expect(h.nodes(n => n.type === "FigurWeg")[0]!.props.schritt).toBe("wer");
+  });
+
+  it("leads a request through three steps and only sends it from the last one", async () => {
+    const vorlagen = [{ id: "t1", name: "Krieger", anfangswerte: { staerke: 10 } }];
+    const h = harness("FigurAntrag", {
+      campaignId: "campaign", rules: { packages: [], pin: { id: "", version: "" }, version: 0 }, revision: 0, onChanged() {},
+      resource: (path: string) => loaded(path.includes("freigegeben") ? vorlagen : []),
+    });
+    h.button("Figur beantragen").props.onClick();
+    const weg = () => h.nodes(n => n.type === "FigurWeg")[0]!;
+    // Eine einzige freigegebene Vorlage steht gleich im Feld; ohne Namen geht es nicht weiter, und das steht da.
+    expect(h.nodes(n => n.type === "select" && n.props.required)[0]!.props.value).toBe("t1");
+    expect(weg().props.sperre).toBe("Gib deiner Figur einen Namen.");
+    h.nodes(n => n.type === "input" && n.props.required)[0]!.props.onChange({ target: { value: "Mara" } });
+    expect(weg().props.sperre).toBe("");
+    // Die Eingabetaste im ersten Schritt führt weiter, schickt aber nichts ab.
+    h.nodes(n => n.type === "form")[0]!.props.onSubmit({ preventDefault() {} }); h.render();
+    expect(weg().props.schritt).toBe("was");
+    expect(h.requests).toHaveLength(0);
+    weg().props.onSchritt("fertig"); h.render();
+    h.nodes(n => n.type === "form")[0]!.props.onSubmit({ preventDefault() {} }); await h.settle();
+    expect(h.requests).toEqual([{ path: "/api/campaigns/campaign/figurantraege", request: { method: "POST", body: { commandId: "test-seed-123456", templateId: "t1", name: "Mara", anfangswerte: {} } } }]);
   });
 });

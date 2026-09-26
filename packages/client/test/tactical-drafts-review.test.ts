@@ -36,7 +36,7 @@ function harness(file: "TacticalView" | "TacticalPreparation", component: string
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "../hooks") return { useResource: resource, useTask: () => ({ busy: false, error: "", run: (fn: () => Promise<unknown>) => { const job = fn(); jobs.push(job); return job; } }) };
       if (name === "./game-api") return { useCommand: () => async (path: string, body: unknown) => { commands.push({ path, body }); return { subjectId: "subject", version: 2 }; } };
-      if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, api: async () => props.current };
+      if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, api: async () => props.current, markiereAenderung() {} };
       if (name === "@chronicle/render") return { snapMapPoint: (point: unknown) => point };
       return new Proxy({}, { get: (_target, key) => String(key) });
     },
@@ -83,7 +83,7 @@ describe("independent tactical draft review", () => {
     const mod = { exports: {} as any }, actual = readFileSync(new URL("../src/hooks.ts", import.meta.url), "utf8");
     runInNewContext(transformSync(actual, { loader: "ts", format: "cjs" }).code, {
       module: mod, exports: mod.exports, AbortController, setTimeout, clearTimeout,
-      require: (name: string) => name === "react" ? react : { ApiError, errorText: (error: Error) => error.message,
+      require: (name: string) => name === "react" ? react : { ApiError, errorText: (error: Error) => error.message, aktuellerSchreibStand: () => 0,
         api: () => new Promise((resolve, reject) => calls.push({ resolve, reject })),
       },
     });

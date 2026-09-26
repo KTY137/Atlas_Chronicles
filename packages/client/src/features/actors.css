@@ -1,78 +1,104 @@
 /* SPDX-License-Identifier: BUSL-1.1
    Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
-.actor-workbench { display: grid; gap: 1.25rem; }
-.actor-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 1.25rem; align-items: start; }
+/* Figuren, Besitz und Lootkarten. Nur Token (2026-09-26): Schrift ab --text-xs, Abstaende aus
+   --space-*, Ecken aus --radius*; den Fokus zeichnet die globale 3-px-Regel, keine eigene mehr. */
+.actor-workbench { display: grid; gap: var(--space-5); }
+.actor-workbench-panel, .forge-task-panel { display: grid; gap: var(--space-5); min-width: 0; }
+.actor-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--space-5); align-items: start; }
 .actor-columns > * { min-width: 0; }
-.actor-workbench .panel { display: grid; gap: .85rem; margin: 0; }
-.actor-workbench form, .actor-workbench fieldset { display: grid; gap: .8rem; min-width: 0; }
-.actor-workbench fieldset { border: 1px solid var(--line); padding: 1rem; border-radius: 12px; }
+.actor-workbench .panel { display: grid; gap: var(--space-3); margin: 0; }
+.actor-workbench form, .actor-workbench fieldset { display: grid; gap: var(--space-3); min-width: 0; }
+.actor-workbench fieldset { border: 1px solid var(--line); padding: var(--space-4); border-radius: var(--radius); }
 .actor-workbench .actor-command-fields { border: 0; padding: 0; margin: 0; }
-.actor-workbench .view-tabs [aria-pressed="true"] { color: var(--text); border-color: var(--accent); background: var(--surface-2); }
-.actor-workbench legend { padding: 0 .4rem; }
-.actor-object-list { display: grid; gap: .65rem; list-style: none; padding: 0; margin: 1rem 0; }
-.actor-object-list li { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; overflow-wrap: anywhere; }
+.actor-workbench legend { padding: 0 var(--space-1); }
+.actor-object-list { display: grid; gap: var(--space-2); list-style: none; padding: 0; margin: var(--space-4) 0; }
+.actor-object-list li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; overflow-wrap: anywhere; }
 .actor-object-list button { text-align: left; white-space: normal; overflow-wrap: anywhere; }
-.inventory-section { display: grid; gap: 1rem; }
+.inventory-section { display: grid; gap: var(--space-4); }
 .inventory-create { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
 .inventory-create > .actor-command-fields { grid-column: 1 / -1; grid-template-columns: inherit; align-items: end; }
-.reader-perspective { display: flex; gap: .65rem; align-items: center; padding: .7rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.reader-perspective label { display: flex; gap: .65rem; align-items: center; min-width: 0; }
+.inventory-create .actor-command-fields > .field-help:last-child { grid-column: 1 / -1; margin: 0; }
+.reader-perspective { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-2) clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.reader-perspective label { display: flex; gap: var(--space-2); align-items: center; min-width: 0; }
 .reader-perspective select { max-width: min(23rem, 100%); }
 .reader-perspective .field-help { margin: 0; }
 @media (max-width: 800px) { .actor-columns { grid-template-columns: minmax(0, 1fr); } .inventory-create { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 520px) { .reader-perspective label { width: 100%; display: grid; } .reader-perspective select { width: 100%; } }
 
 /* Der Speicherstand: eine Tafel, keine Kartenwand. Zahlen liest man in Spalten. */
-.speicherstand { margin-block-end: 1rem; }
-.speicherstand h3 { margin: 0 0 .3rem; }
+.speicherstand { margin-block-end: var(--space-4); }
+.speicherstand h3 { margin: 0 0 var(--space-1); }
 .speicherstand-tafel { overflow-x: auto; }
-.speicherstand table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-.speicherstand th, .speicherstand td { text-align: start; padding: .3rem .5rem; border-bottom: 1px solid var(--line, #2a3230); }
-.speicherstand thead th { font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted, #9aa3a0); }
+.speicherstand table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.speicherstand th, .speicherstand td { text-align: start; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--line); }
+.speicherstand thead th { font-size: var(--text-xs); letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
 .speicherstand tbody th { font-weight: 500; }
-.speicherstand small { display: block; color: var(--text-muted, #9aa3a0); font-size: .68rem; }
+.speicherstand small { display: block; color: var(--text-muted); font-size: var(--text-xs); }
 .speicherstand td:nth-child(2), .speicherstand td:nth-child(4) { font-family: var(--font-mono, monospace); }
 
 /* Die Inventarauswahl steht in der Kopfzeile, nicht als Knopfpaar: es sind mehr als zwei. */
 .inventar-wahl { width: 15rem; max-width: 100%; margin: 0; }
 
 /* Vorlagenbibliothek und Editor teilen sich dieselbe Darstellung am Tisch und in der Schmiede. */
-.actor-forge-entry { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: var(--radius); padding: 18px 20px; }
-.actor-forge-entry strong { font-size: 13px; }.actor-forge-entry p { margin: 6px 0 0; }
-.actor-template-workspace { grid-template-columns: minmax(190px, 240px) minmax(0, 1fr); gap: 22px; }
-.actor-template-library { position: sticky; top: 18px; }
-.actor-template-library h2 { font: 500 21px/1.3 var(--font-display); margin: 0; }
+.actor-forge-entry { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: var(--radius); padding: var(--space-4) var(--space-5); }
+.actor-forge-entry strong { font-size: var(--text-sm); }.actor-forge-entry p { margin: var(--space-1) 0 0; }
+.actor-template-workspace { grid-template-columns: minmax(190px, 240px) minmax(0, 1fr); gap: var(--space-5); }
+.actor-template-library { position: sticky; top: var(--space-4); }
 .actor-template-library .actor-object-list { max-height: 55vh; overflow-y: auto; }
 .actor-template-library .actor-object-list li, .actor-template-library .actor-object-list button { width: 100%; }
-.actor-template-library .actor-object-list button { display: grid; justify-content: start; gap: 5px; padding: 12px; }
+.actor-template-library .actor-object-list button { display: grid; justify-content: start; gap: var(--space-1); padding: var(--space-3); }
 .actor-workbench .actor-template-library .actor-object-list button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
-.actor-template-library small { color: var(--text-muted); font-size: 10px; font-weight: 400; }
-.actor-workbench label { display: grid; gap: 7px; min-width: 0; font-size: 12px; }
-.actor-workbench input, .actor-workbench select, .actor-workbench textarea { width: 100%; max-width: 100%; min-width: 0; }
-.actor-workbench .check-label { display: flex; align-items: center; }.actor-workbench input[type="checkbox"] { width: auto; }
+.actor-template-library small { color: var(--text-muted); font-size: var(--text-xs); font-weight: 400; }
+.actor-workbench label { display: grid; gap: var(--space-1); min-width: 0; font-size: var(--text-sm); }
+.actor-workbench input:not([type="checkbox"]):not([type="radio"]), .actor-workbench select, .actor-workbench textarea { width: 100%; max-width: 100%; min-width: 0; }
+.actor-workbench .check-label { display: flex; align-items: center; }
 .actor-workbench .button { white-space: normal; overflow-wrap: anywhere; }
-.actor-workbench :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .actor-workbench .field-help { line-height: 1.7; }
-.actor-optional { border-top: 1px solid var(--line); margin: 5px 0; padding-top: 8px; min-width: 0; }
-.actor-optional > summary { cursor: pointer; color: var(--accent); font-size: 12px; padding: 10px 0; line-height: 1.5; }
-.actor-optional > label { margin: 12px 0; }
-.actor-workbench .actor-optional fieldset { border: 0; padding: 8px 0; margin: 0; }
-.actor-empty-hint { padding: 20px; border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--accent-soft); }
-.actor-empty-hint p { font-size: 12px; color: var(--text-muted); line-height: 1.7; margin: 0 0 14px; }
-.loot-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 235px); gap: 22px; align-items: start; min-width: 0; }
-.loot-template-form h2 { margin: 0; font: 500 24px/1.3 var(--font-display); }
-.loot-basic-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.loot-value-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
-.loot-live-preview { position: sticky; top: 18px; min-width: 0; padding: 20px 16px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); }
-.loot-live-preview h3 { margin: 0; font: 500 21px/1.3 var(--font-display); }
-.loot-live-preview > .lootkarte { width: 100%; margin: 18px 0; box-sizing: border-box; }
+.actor-optional { border-top: 1px solid var(--line); margin: var(--space-1) 0; padding-top: var(--space-2); min-width: 0; }
+.actor-optional > summary { cursor: pointer; color: var(--link); font-size: var(--text-sm); padding: var(--space-2) 0; line-height: 1.5; }
+.actor-optional > label { margin: var(--space-3) 0; }
+.actor-workbench .actor-optional fieldset { border: 0; padding: var(--space-2) 0; margin: 0; }
+.actor-empty-hint { display: grid; gap: var(--space-3); justify-items: start; padding: var(--space-5); border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--accent-soft); }
+.actor-empty-hint p { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.7; margin: 0; }
+.loot-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 235px); gap: var(--space-5); align-items: start; min-width: 0; }
+.loot-template-form h2 { margin: 0; font: 500 var(--text-xl)/1.3 var(--font-display); }
+.loot-basic-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.loot-value-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: var(--space-2); align-items: end; }
+.loot-live-preview { position: sticky; top: var(--space-4); min-width: 0; padding: var(--space-5) var(--space-4); background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius); }
+.loot-live-preview h3 { margin: 0; font: 500 var(--text-lg)/1.3 var(--font-display); }
+.loot-live-preview > .lootkarte { width: 100%; margin: var(--space-4) 0; box-sizing: border-box; }
 .loot-live-preview .lootkarte-kopf { flex-wrap: wrap; }
 .loot-live-preview .lootkarte-zeilen > div { flex-wrap: wrap; }
-.loot-live-preview > p { margin: 8px 0 0; font-size: 11px; }
-.loot-save-actions { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 8px; }
-.loot-save-actions > .button { width: 100%; }
-.loot-media-editor { min-width: 0; }.loot-media-editor .import-content { padding: 20px 0 0; }.loot-media-editor .document-toolbar { padding: 0 0 12px; }
+.loot-live-preview > p { margin: var(--space-2) 0 0; font-size: var(--text-xs); }
+.loot-save-actions { display: grid; gap: var(--space-2); border-top: 1px solid var(--line); padding-top: var(--space-4); margin-top: var(--space-2); }
+.loot-save-actions > .button { width: 100%; }.loot-save-actions > .field-help { margin: 0; }
+.loot-media-editor { min-width: 0; }.loot-media-editor .import-content { padding: var(--space-5) 0 0; }.loot-media-editor .document-toolbar { padding: 0 0 var(--space-3); }
 .inventory-create h3, .inventory-create .field-help { grid-column: 1 / -1; margin: 0; }
+
+/* Anträge der Spielleitung: je Antrag eine Karte; der Ablehnungsgrund steht direkt über „Ablehnen“. */
+.figurantrag-karten > li { display: grid; gap: var(--space-2); align-items: start; justify-content: stretch; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.figurantrag-karten strong { font: 500 var(--text-lg)/1.3 var(--font-display); }
+.figurantrag-karten .field-help { margin: 0; }
+.figurantrag-werte { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.figurantrag-ablehnen { display: grid; gap: var(--space-2); justify-items: start; padding-top: var(--space-3); border-top: 1px solid var(--line); }
+.figurantrag-ablehnen label { width: 100%; }
+
+/* „Ich“: ein Figurwähler oben, kompakt in einer Zeile mit Inventar und Aktualisieren. Die Lesesicht
+   darunter bleibt schmal, damit auf dem Handy Name, Bild und Balken auf den ersten Bildschirm passen. */
+.meine-figur .view-intro h1 { font-family: var(--font-display); margin: 0 0 var(--space-2); line-height: 1.2; }
+.meine-figur .view-intro h1:focus { outline: none; }
+.meine-figur .view-intro h1:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.meine-figur-wahl { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-2); }
+.meine-figur-wahl .actor-picker { display: grid; gap: var(--space-1); width: auto; min-width: 12rem; margin: 0; font-size: var(--text-sm); }
+.meine-figur .reader-perspective { padding: 0 0 var(--space-4); margin-bottom: var(--space-4); }
+@media (max-width: 520px) {
+  .meine-figur .view-intro { gap: var(--space-2); margin-bottom: var(--space-3); }
+  .meine-figur-wahl { flex-wrap: nowrap; width: 100%; }
+  .meine-figur-wahl .actor-picker { flex: 1 1 auto; min-width: 0; }
+  .meine-figur .reader-perspective { padding-bottom: var(--space-3); margin-bottom: var(--space-3); }
+  .meine-figur .reader-perspective .field-help { display: none; }
+}
+
 @media (max-width: 1200px) { .actor-template-workspace { grid-template-columns: minmax(0, 1fr); }.actor-template-library { position: static; }.actor-template-library .actor-object-list { max-height: 230px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
-@media (max-width: 720px) { .loot-editor-layout { grid-template-columns: minmax(0, 1fr); }.loot-live-preview { position: static; max-width: 320px; width: 100%; justify-self: center; box-sizing: border-box; }.loot-value-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }.loot-value-row > .button { grid-column: 1 / -1; justify-self: start; }.actor-forge-entry { padding: 16px; } }
+@media (max-width: 720px) { .loot-editor-layout { grid-template-columns: minmax(0, 1fr); }.loot-live-preview { position: static; max-width: 320px; width: 100%; justify-self: center; box-sizing: border-box; }.loot-value-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }.loot-value-row > .button { grid-column: 1 / -1; justify-self: start; }.actor-forge-entry { padding: var(--space-4); } }
 @media (max-width: 440px) { .loot-basic-fields { grid-template-columns: minmax(0, 1fr); }.actor-template-library .actor-object-list { grid-template-columns: minmax(0, 1fr); } }

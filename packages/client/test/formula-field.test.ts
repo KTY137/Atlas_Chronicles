@@ -59,3 +59,15 @@ describe("incomplete-block display (displayAnalysis)", () => {
     expect(shown.text).toBe(analysis.text); expect(shown.canonical).toBe(analysis.canonical); expect(shown.spans).toBe(analysis.spans);
   });
 });
+
+describe("the formula input is named after its field", () => {
+  it("joins the visible field title and the line label", () => {
+    const html = render("1d20 + actor.geschick", { id: "ergebnis" });
+    expect(html).toContain('id="ergebnis-title"');
+    expect(html).toContain('aria-labelledby="ergebnis-title ergebnis-label"');
+    expect(html).toContain('id="ergebnis-label"');
+    // Die Ansage des Beispiels läuft über eine eigene, ruhige Region statt über die sichtbare Zeile.
+    expect(html).not.toContain('aria-live="polite"');
+    expect(html).toContain('role="status"');
+  });
+});

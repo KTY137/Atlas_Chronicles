@@ -5,6 +5,7 @@ import { evaluateComputedFields, validatePackageFields, CHRONICLE_HEROES_PACKAGE
 import { Notice } from "@chronicle/ui";
 import { t } from "../i18n";
 import { displayRulePackage } from "./chronicle-heroes-display";
+import { explainValidationError } from "./forge-navigation-model";
 
 export function RuleAttribution({ pkg }: { pkg: AnyRulePackage }) {
   const display = displayRulePackage(pkg), attribution = display.schemaVersion === 2 ? display.attribution : undefined;
@@ -38,9 +39,9 @@ export function RuleComputedFields({ pkg, fields }: { pkg: AnyRulePackage; field
   if (pkg.schemaVersion !== 2) return null;
   const display = displayRulePackage(pkg);
   return <section aria-label={t("Berechnete Charakterwerte")} className="rule-computed">
-    <h3>{t("Berechnete Werte")}</h3>{result.error ? <Notice error>{result.error}</Notice> : <dl className="rf-value-list">{display.computed?.map(field => <div key={field.id}><dt>{field.label}</dt><dd>{result.values?.[field.id]}</dd></div>)}</dl>}
+    <h3>{t("Berechnete Werte")}</h3>{result.error ? <Notice error>{explainValidationError(result.error)}</Notice> : <dl className="rf-value-list">{display.computed?.map(field => <div key={field.id}><dt>{field.label}</dt><dd>{result.values?.[field.id]}</dd></div>)}</dl>}
     {hasChronicleGuidance(pkg) ? <><p className="field-help">{t(CHRONICLE_RULE_GUIDANCE.health)}</p>
-      {typeof fields.lebenskraft === "number" && fields.lebenskraft === 0 ? <Notice>{t("Regelhinweis: Bei 0 Lebenskraft ist die Figur außer Gefecht.")} {t("Den Zustand bestätigt ihr ausdrücklich am Tisch.")}</Notice> : null}
+      {typeof fields.lebenskraft === "number" && fields.lebenskraft === 0 ? <Notice tone="warn">{t("Regelhinweis: Bei 0 Lebenskraft ist die Figur außer Gefecht.")} {t("Den Zustand bestätigt ihr ausdrücklich am Tisch.")}</Notice> : null}
       {result.values && result.values.points_available !== undefined ? <p className="field-help">{result.values.points_available < 0 ? t("Mehr als das vereinbarte Punktebudget verteilt: Punkte korrigieren oder die vereinbarte Anpassung ausdrücklich im Bogen eintragen, bevor die Figur spielbereit ist.") : result.values.points_available > 0 ? t("Startpunkte sind noch unverteilt. Bei späterer Entwicklung gilt eure vereinbarte Punkteanpassung.") : t("Das vereinbarte Punktebudget ist vollständig verteilt.")}</p> : null}
     </> : null}
   </section>;

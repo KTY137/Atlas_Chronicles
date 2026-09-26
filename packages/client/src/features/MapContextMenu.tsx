@@ -15,8 +15,10 @@ export interface MapContextAction {
 }
 
 /** One menu for a visible map target: pointer, keyboard and touch use the same actions. */
-export function MapContextMenu({ label, actions, children, className = "", popup }: {
+export function MapContextMenu({ label, menuLabel, actions, children, className = "", popup }: {
   label: string; actions: readonly MapContextAction[]; children?: ReactNode; className?: string;
+  /** Eigener Name des Menüs, wenn es nicht zu einer Karte gehört (etwa ein Regelpaket in der Bibliothek). */
+  menuLabel?: string;
   /** A canvas hit opens a fresh instance at its pointer position; the target remains explicit. */
   popup?: { x: number; y: number; onDismiss: () => void };
 }) {
@@ -84,7 +86,7 @@ export function MapContextMenu({ label, actions, children, className = "", popup
     {children}
     {!popup ? <button type="button" ref={trigger} className="map-context-trigger" aria-label={t("Aktionen für {label}", { label })} title={t("Aktionen für {label}", { label })}
       aria-haspopup="menu" aria-expanded={!!at} aria-controls={at ? id : undefined} onClick={() => at ? close(true) : open()}><MoreHorizontal size={19} aria-hidden="true" /></button> : null}
-    {at ? createPortal(<div id={id} ref={menu} className="map-context-menu" role="menu" aria-label={t("Karte {label}", { label })} style={{ left: at.x, top: at.y }} onKeyDown={event => {
+    {at ? createPortal(<div id={id} ref={menu} className="map-context-menu" role="menu" aria-label={menuLabel ?? t("Karte {label}", { label })} style={{ left: at.x, top: at.y }} onKeyDown={event => {
       if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(true); return; }
       if (event.key === "Tab") { close(true); return; }
       const buttons = [...menu.current!.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];

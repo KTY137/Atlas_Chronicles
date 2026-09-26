@@ -38,6 +38,15 @@
      ohne sie faellt jede `var(--radius)`-Regel auf ihren jeweiligen Ersatzwert zurueck, und
      genau daher kamen die frueheren `var(--radius, 6px)`-Stellen mit 6 statt 12 Pixeln. */
   --radius: 12px; --theme-border: 1px; --theme-space: 8px;
+
+  /* Eine Leiter fuer Schrift, Abstand und Ecken (2026-09-26). Abstaende folgen der Dichte des
+     Looks (--theme-space), Ecken seiner Kantenform (--radius); keine Schrift unter 12 px. Vorher
+     standen 16 Schriftgroessen und 40 Abstandswerte fest im Code, und die Dichte-Einstellung
+     erreichte die Regelschmiede nie. */
+  --text-xs: 12px; --text-sm: 13px; --text-md: 15px; --text-lg: 18px; --text-xl: 24px;
+  --space-1: calc(var(--theme-space) * .5); --space-2: var(--theme-space); --space-3: calc(var(--theme-space) * 1.5);
+  --space-4: calc(var(--theme-space) * 2); --space-5: calc(var(--theme-space) * 3); --space-6: calc(var(--theme-space) * 4); --space-7: calc(var(--theme-space) * 6);
+  --radius-sm: calc(var(--radius) * .5); --radius-lg: calc(var(--radius) * 1.5);
   --control-motion: 120ms; --panel-motion: 220ms; --motion-easing: ease;
 
   /* Die Erhebungsleiter. Drei Stufen, mehr nicht: ruhende Flaeche, angehobene Flaeche,

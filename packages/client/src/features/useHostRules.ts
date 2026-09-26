@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PackagePin, RuleRuntime, RuleRuntimePreview, Scalar } from "@chronicle/rules";
 import { api, apiPath, errorText } from "../api";
 import { useResource } from "../hooks";
@@ -16,7 +16,12 @@ export function useHostRules(campaignId: string, pin: PackagePin | null, draft: 
   const values = draft ?? manifest?.defaults ?? null;
   const key = manifest && values ? rulePreviewKey(campaignId, manifest, values, epoch) : "";
   const [slot, setSlot] = useState<PreviewSlot>({ key: "", data: null, error: "" });
+  // Die Prüfung folgt dem INHALT der Werte (`key`), nicht ihrem Objekt. Aufrufer bauen den Entwurf
+  // bei jedem Zeichnen neu; hing der Effekt am Objekt, löste jede Antwort die nächste Anfrage aus —
+  // 27 Prüfungen in zehn Ruhesekunden, bis der Server „Zu viele Anfragen“ meldete (2026-09-26).
+  const latest = useRef(values); latest.current = values;
   useEffect(() => {
+    const values = latest.current;
     if (!manifest || !values || !key) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -32,7 +37,7 @@ export function useHostRules(campaignId: string, pin: PackagePin | null, draft: 
       });
     }, 300);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [campaignId, manifest, values, key]);
+  }, [campaignId, manifest, key]);
   // Key comparison happens during render, not in an effect one frame too late. This also
   // rejects A->B->A races and edits made while a non-cancellable transport completes.
   const preview = currentRulePreview(slot, key, manifest);

@@ -43,8 +43,8 @@ describe("Bibliothek der Regelwerkstatt", () => {
     expect(eintrag).toMatch(/danger: true/);
     expect(eintrag).toMatch(/disabled: !menuStand\.loeschbar/);
     expect(eintrag).toContain('t("Endgültig löschen — geht nicht: {grund}", { grund: menuStand.hindernisse.map(grundText).join(", ") })');
-    // Ausdrückliche Rückfrage vor dem Löschen, nie ein Klick allein — gleich welche Zeilenaufteilung.
-    expect(QUELLE).toMatch(/const loeschen = \(item: RulePackage\) => \{\s*if \(!window\.confirm\(/);
+    // Ausdrückliche Rückfrage im Look vor dem Löschen, nie ein Klick allein — gleich welche Zeilenaufteilung.
+    expect(QUELLE).toMatch(/const loeschen = \(item: RulePackage\) => \{\s*void confirmAction\(\{[\s\S]{0,400}?danger: true/);
   });
 
   it("versteckt genommene Pakete, bis der Schalter sie zeigt", () => {
