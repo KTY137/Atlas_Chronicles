@@ -51,5 +51,5 @@ export const FANTASY: StadtStil = Object.freeze<StadtStil>({
   vorstadt: richtung => `${richtung}vorstadt`,
   dorfplatz: "Dorfanger",
   burgWort: "Burg",
-  texte: { zuKlein: "Keine Stadtmauer: der Ort ist zu klein für einen ummauerten Kern." },
+  texte: { zuKlein: "Keine Stadtmauer: der Ort ist zu klein für einen ummauerten Kern.", burgZuKlein: "Keine Burg: der Burgfleck ist zu klein." },
 });

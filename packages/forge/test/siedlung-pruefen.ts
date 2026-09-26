@@ -4,7 +4,7 @@ import { expect } from "vitest";
 import { parseTacticalCartography, TACTICAL_CARTOGRAPHY_LIMITS } from "@chronicle/szene";
 import type { Siedlung } from "../src/siedlung.ts";
 import { getrennteDaecher } from "../src/stadt/gemeinsam.ts";
-import { flaeche, schnittKonvex } from "../src/polygon.ts";
+import { abstandPolygonStrecke, flaeche, schnittKonvex } from "../src/polygon.ts";
 
 /** Was jede Siedlung einhält: Gebäude an einer ausgegebenen Straße, keine Dachüberlappung, nichts
  *  im Wasser, eine gültige Kartografie unter den Grenzen (Regionen, Bytes). */
@@ -20,4 +20,20 @@ export function pruefeSiedlung(s: Siedlung, wo: string): void {
   expect(() => parseTacticalCartography(s.cartography, s.karte), wo).not.toThrow();
   expect(JSON.stringify(s.cartography).length, wo).toBeLessThanOrEqual(TACTICAL_CARTOGRAPHY_LIMITS.documentBytes);
   expect(s.karte.geometry.regions.length, wo).toBeLessThanOrEqual(4096);
+}
+
+/** Welcher Anteil der Gebäude am größten zusammenhängenden Straßennetz liegt. Zwei Straßenflächen
+ *  hängen zusammen, wenn sie sich berühren (Brücken und Kreuzungsflächen zählen mit). */
+export function netzAnteil(s: Siedlung): number {
+  const flaechen = s.strassen.map(x => ({ id: x.id, p: x.umriss, box: [Math.min(...x.umriss.map(q => q[0])), Math.min(...x.umriss.map(q => q[1])), Math.max(...x.umriss.map(q => q[0])), Math.max(...x.umriss.map(q => q[1]))] as const }));
+  const eltern = flaechen.map((_, i) => i), wurzel = (i: number): number => eltern[i] === i ? i : (eltern[i] = wurzel(eltern[i]!));
+  for (let i = 0; i < flaechen.length; i++) for (let j = i + 1; j < flaechen.length; j++) {
+    const a = flaechen[i]!, b = flaechen[j]!, e = .06;
+    if (a.box[2] + e < b.box[0] || b.box[2] + e < a.box[0] || a.box[3] + e < b.box[1] || b.box[3] + e < a.box[1]) continue;
+    const beruehrt = b.p.some((q, k) => abstandPolygonStrecke(a.p, q, b.p[(k + 1) % b.p.length]!) <= e);
+    if (beruehrt) eltern[wurzel(i)] = wurzel(j);
+  }
+  const index = new Map(flaechen.map((f, i) => [f.id, i])), zaehler = new Map<number, number>();
+  for (const b of s.bauwerke) { const w = wurzel(index.get(b.strasse)!); zaehler.set(w, (zaehler.get(w) ?? 0) + 1); }
+  return Math.max(...zaehler.values()) / s.bauwerke.length;
 }

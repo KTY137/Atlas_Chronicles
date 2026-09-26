@@ -602,6 +602,12 @@ describe("cartography-13: Dächer, Straßen, Felder und Zäune der heutigen Stad
     const halle = von(zeichne("gegenwart", [["h", haus, { role: "building", dach: "halle" }]]), "h");
     expect(halle.length).toBeGreaterThan(flach.length + 3);
   });
+  it("zeichnet die Dachkante eines L-förmigen Flachdachs nicht in die Aussparung", () => {
+    const l: TacticalPoint[] = [[2 * z, 2 * z], [6 * z, 2 * z], [6 * z, 3.2 * z], [3.4 * z, 3.2 * z], [3.4 * z, 6 * z], [2 * z, 6 * z]];
+    const innen = (p: readonly [number, number]) => p[0] >= 2 * z - 1 && p[1] >= 2 * z - 1 && (p[0] <= 3.4 * z + 1 && p[1] <= 6 * z + 1 || p[0] <= 6 * z + 1 && p[1] <= 3.2 * z + 1);
+    const kanten = von(zeichne("gegenwart", [["h", l, { role: "building", dach: "flach" }]]), "h").filter(p => p.fill === 0x717f7d && p.opacity === .35);
+    for (const p of kanten) for (const punkt of p.points) expect(innen(punkt), JSON.stringify(punkt)).toBe(true);
+  });
   it("setzt ohne Dachform die Vorgabe des Settings: Giebel in Fantasy, Flachdach sonst", () => {
     const zug = (d: ReturnType<typeof zeichne>) => JSON.stringify(von(d, "h"));
     expect(zug(zeichne("fantasy", [["h", haus, { role: "building" }]]))).toBe(zug(zeichne("fantasy", [["h", haus, { role: "building", dach: "giebel" }]])));

@@ -556,7 +556,10 @@ export function cartographyDraw(document: TacticalMapDocumentV1, cartography: Ta
         }
         // Flachdach: eine Attika als Innenkante und auf größeren Dächern ein bis drei Aufbauten
         // (Lüftung, in der Kolonie Paneele).
-        umriss(skaliert(.86), pen * .6, palette.roofDark, .35);
+        // Nur bei konvexen Dächern: auf einem L oder U läge die verkleinerte Kante in der Aussparung.
+        const konvex = points.every((a, k) => { const b = points[(k + 1) % points.length]!, c = points[(k + 2) % points.length]!; return (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]) >= -1e-6; })
+          || points.every((a, k) => { const b = points[(k + 1) % points.length]!, c = points[(k + 2) % points.length]!; return (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]) <= 1e-6; });
+        if (konvex) umriss(skaliert(.86), pen * .6, palette.roofDark, .35);
         if (axes.bottom - axes.top > cell * .6) for (let k = 0; k < 1 + Math.floor(phase(id, 19) * 3); k++) {
           const s = cell * .12, u = axes.left + (axes.right - axes.left) * (.25 + .5 * phase(id, 20 + k)), v = axes.top + (axes.bottom - axes.top) * (.3 + .4 * phase(id, 24 + k));
           const at = (du: number, dv: number): TacticalPoint => [axes.along[0] * (u + du) + axes.across[0] * (v + dv), axes.along[1] * (u + du) + axes.across[1] * (v + dv)];

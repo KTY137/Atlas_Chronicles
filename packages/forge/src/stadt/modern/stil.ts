@@ -51,5 +51,5 @@ export const MODERN: StadtStil = Object.freeze<StadtStil>({
   vorstadt: richtung => `${richtung}stadt`,
   dorfplatz: "Ortsmitte",
   burgWort: "Rathaus & Ämter",
-  texte: { zuKlein: "" },
+  texte: { zuKlein: "", burgZuKlein: "Kein Bereich „Rathaus & Ämter“: der Stadtteil ist dafür zu klein." },
 });

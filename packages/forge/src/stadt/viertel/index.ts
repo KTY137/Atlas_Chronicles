@@ -109,6 +109,28 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
       if (pfad) wege = { haupt: wege.haupt, ausfall: new Set([...wege.ausfall, ...pfad]) };
     }
   }
+  // Heutige Städte und Kolonien: liegt Stadt auf beiden Seiten des Hauptflusses, führt eine Hauptstraße
+  // vom Markt durch die Stadt über ihn. Die Probe oben zählt auch Nebenbäche als Querung, und
+  // Nebengassen enden am Ufer — ohne diese Straße zerfiel eine Kolonie in zwei Netze (Schlussprüfung Teil 2).
+  if (stil.setting !== "fantasy" && standort === "fluss" && flussPunkte.length > 1 && markt >= 0) {
+    const hauptfluss = fluss.filter(f => flussPunkte.includes(f.von));
+    const seite = (p: Punkt) => {
+      let beste = 0, abstand = Infinity;
+      for (let k = 1; k < flussPunkte.length; k++) { const d = abstandPolygonStrecke([p], flussPunkte[k - 1]!, flussPunkte[k]!); if (d < abstand) { abstand = d; beste = k; } }
+      const a2 = flussPunkte[beste - 1]!, b2 = flussPunkte[beste]!;
+      return Math.sign((b2[0] - a2[0]) * (p[1] - a2[1]) - (b2[1] - a2[1]) * (p[0] - a2[0]));
+    };
+    const quertHaupt = (k: { von: Punkt; bis: Punkt }) => hauptfluss.some(f => abstandPolygonStrecke(f.polygon, k.von, k.bis) < 1e-9);
+    const stadtKante = (k: typeof graph.kanten[number]) => k.f2 >= 0 && istStadt(k.f1) && istStadt(k.f2);
+    const marktSeite = seite(schwerpunkt(zelle(markt)));
+    const druebenStadt = stadtListe.some(i => seite(schwerpunkt(zelle(i))) === -marktSeite);
+    if (druebenStadt && ![...wege.haupt, ...wege.ausfall].some(nr => stadtKante(graph.kanten[nr]!) && quertHaupt(graph.kanten[nr]!))) {
+      const start = graph.kanten.find(k => k.f1 === markt || k.f2 === markt)!.u, ziele = new Set<number>();
+      for (const k of graph.kanten) if (stadtKante(k)) for (const e of [k.u, k.v]) if (seite(graph.ecken[e]!) === -marktSeite && !hauptfluss.some(f => imPolygon(graph.ecken[e]!, f.polygon))) ziele.add(e);
+      const pfad = weg(graph, start, ziele, k => !stadtKante(k) || inIrgendeinem(kantenMitte(k), hartHindernisse) ? Infinity : k.laenge * (wege.haupt.has(k.nr) ? .45 : 1) + (quertHaupt(k) ? 4 : 0));
+      if (pfad) wege = { haupt: new Set([...wege.haupt, ...pfad]), ausfall: wege.ausfall };
+    }
+  }
   // Der Stadtring der Gegenwart: die Außenkanten des Kerns sind Hauptstraßen, keine Mauer.
   if (stil.befestigung === "ring" && ringKanten.length) wege = { haupt: new Set([...wege.haupt, ...ringKanten]), ausfall: wege.ausfall };
   const breiten: Breiten = stil.breiten(art);
@@ -120,7 +142,8 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     const laenge = Math.hypot(s.bis[0] - s.von[0], s.bis[1] - s.von[1]) || 1, w = flaeche(s.band) / laenge;
     einrueckung.set(kantenSchluessel(s.von, s.bis), s.a === s.b ? w + .12 : w / 2 + .12);
   }
-  ohneLaengsFluss(gassen, fluss);
+  // Heutige Städte und Kolonien zählen als Umweg nur, was die Flussquerung überlebt (Schlussprüfung Teil 2).
+  ohneLaengsFluss(gassen, fluss, stil.setting !== "fantasy");
   kappeAnHindernissen(gassen, hartHindernisse, .5, ids);
   // Eine Gasse, die zu einem Viertel im Fluss liegt, ist keine Uferstraße, sondern ein Steg ins Nichts.
   for (let k = gassen.length - 1; k >= 0; k--) {
@@ -162,7 +185,11 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     const auftragFleck = { nr: i, pfad: alle[i]!.pfad, zelle: c, rolle, vorstadt: vorstadt || art === "weiler", art, randStrassen, abstaende, losFlaeche,
       strassenDichte: optionen.strassenDichte, hindernisse: [...bauHindernisse, ...reserviert], nurAnHaupt: false, r, id };
     const ergebnis = stil.bebaue(auftragFleck);
-    if (rolle === "burg" && !ergebnis.baue.length) ausgelassen.push("Keine Burg: der Burgfleck ist zu klein.");
+    // Fantasy meldet je Fleck (v11 unverändert); die anderen Stile melden jeden Hinweis einmal.
+    const melde = (text: string) => { if (stil.setting === "fantasy" || !ausgelassen.includes(text)) ausgelassen.push(text); };
+    if (rolle === "burg" && !ergebnis.baue.length) melde(stil.texte.burgZuKlein);
+    const hinweis = stil.hinweis?.(rolle, ergebnis);
+    if (hinweis) melde(hinweis);
     for (const b of ergebnis.baue) baue.push({ ...b, ferne: alle[i]!.ferne, rolle: art === "weiler" ? "weiler" : rolle });
     plaetze.push(...ergebnis.plaetze); hoefe.push(...ergebnis.hoefe); alleGassen.push(...ergebnis.gassen);
     burgMauern.push(...(ergebnis.mauern ?? []));
@@ -248,10 +275,12 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     if (b.rang === 0) return true;
     // Eine Hafenzone ohne Ufer bleibt leer — auch ein Hof in ihr wird kein Hafengebäude. Ein Raumhafen
     // der Kolonie braucht kein Wasser.
+    // Fantasy prüft Höfe (Rang 1) nicht (v11 unverändert); die Gegenwart auch sie.
     const amWasser = () => wasserFlaechen.some(w => w.some((p, k) => abstandPolygonStrecke(b.umriss, p, w[(k + 1) % w.length]!) <= 4));
-    if (zone?.nutzung === "hafen" && stil.setting !== "scifi" && !amWasser()) { planVerworfen++; return false; }
+    const ohneUfer = () => zone?.nutzung === "hafen" && stil.setting !== "scifi" && !amWasser();
+    if (stil.setting === "gegenwart" && ohneUfer()) { planVerworfen++; return false; }
     if (b.rang === 1) { if (zone) zonen.set(b.pfad, zone); return true; }
-    if (zone && zoneDraw(layoutKeim.keimHash, b.pfad, "density") >= zone.dichte) { planVerworfen++; return false; }
+    if (zone && (zoneDraw(layoutKeim.keimHash, b.pfad, "density") >= zone.dichte || ohneUfer())) { planVerworfen++; return false; }
     if (zone) zonen.set(b.pfad, zone);
     return true;
   });
@@ -406,7 +435,8 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
 
   const mauern: Wand[] = [...mauerStuecke, ...burgMauern].map(m => ({ id: id("mauer", m.pfad), kind: "wall" as const, elevation: 0, points: [[q(m.a[0] * z), q(m.a[1] * z)], [q(m.b[0] * z), q(m.b[1] * z)]] }));
   const { werk, lichter, strassenzellen, hofzellen } = ausstattung({ paket, r, z, ids, setting: stil.setting, art, licht: optionen.licht, gassen: netz,
-    bauwerkPolys: bauwerke.map(b => b.umriss), hofFlaechen: stil.setting === "fantasy" ? hoefe : [...hoefe, ...plaetze.filter(p => p.material === "square" || p.material === "grass").map(p => p.polygon)],
+    bauwerkPolys: bauwerke.map(b => b.umriss), // Stellflächen der Gegenwart und der Kolonie: auf Plätzen, in Innenhöfen und auf Restflächen des Rasters, nie in Parks und Gärten.
+    hofFlaechen: stil.setting === "fantasy" ? hoefe : [...hoefe, ...plaetze.filter(p => p.material === "square" || p.pfad.endsWith(".hof") || p.pfad.includes(".gruen.")).map(p => p.polygon)],
     bauHindernisse, breite, hoehe, mitte, bauwerkZahl: bauwerke.length }, ablage);
 
   const lagenNamen = stadtListe.map(i => ({ nr: i, zelle: zelle(i), nachbarn: nachbarn[i]!.filter(istStadt), kern: istKern(i) }));

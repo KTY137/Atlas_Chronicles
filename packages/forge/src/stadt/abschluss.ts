@@ -24,7 +24,20 @@ export interface Ablage {
 
 /** Eine Straße längs durch den Fluss ist weder Kai noch Brücke. Sie fällt weg, wenn ihre Enden
  *  über andere Straßen verbunden bleiben — vor der Parzellierung, damit keine Adresse verwaist. */
-export function ohneLaengsFluss(gassen: Gasse[], fluss: readonly FlussStueck[]): void {
+export function ohneLaengsFluss(gassen: Gasse[], fluss: readonly FlussStueck[], nurBleibende = false): void {
+  // Eine Nebengasse durch den Fluss wird später am Ufer gekappt; als Umweg zählt sie dann nicht.
+  // Einmal je Straße berechnet: die Suche unten fragt jede Straße für jeden Knoten erneut.
+  const trocken = new Map<Gasse, boolean>();
+  const bleibt = (road: Gasse) => {
+    if (!nurBleibende || road.art === "hauptstrasse") return true;
+    let wert = trocken.get(road);
+    if (wert === undefined) {
+      const box = huelle(road.band);
+      wert = !fluss.some(stueck => { const b = huelle(stueck.polygon); return b[0] <= box[2] && b[2] >= box[0] && b[1] <= box[3] && b[3] >= box[1] && flaeche(schnittKonvex(road.band, stueck.polygon)) > 1e-6; });
+      trocken.set(road, wert);
+    }
+    return wert;
+  };
   const endpointKey = (point: Punkt) => `${Math.round(point[0] * 100)}:${Math.round(point[1] * 100)}`;
   for (let index = gassen.length - 1; index >= 0; index--) {
     const candidate = gassen[index]!, dx = candidate.bis[0] - candidate.von[0], dy = candidate.bis[1] - candidate.von[1];
@@ -37,7 +50,7 @@ export function ohneLaengsFluss(gassen: Gasse[], fluss: readonly FlussStueck[]):
     const start = endpointKey(candidate.von), target = endpointKey(candidate.bis), reached = new Set([start]), pending = [start];
     for (let cursor = 0; cursor < pending.length && !reached.has(target); cursor++) {
       for (const [otherIndex, other] of gassen.entries()) {
-        if (otherIndex === index) continue;
+        if (otherIndex === index || !bleibt(other)) continue;
         const a = endpointKey(other.von), b = endpointKey(other.bis), next = a === pending[cursor] ? b : b === pending[cursor] ? a : null;
         if (next === null || reached.has(next)) continue;
         reached.add(next); pending.push(next);
@@ -181,7 +194,8 @@ export function ausstattung(a: {
         if (!werk.platziere(verkehr, frei)) continue;
         const stamp = werk.stamps[werk.stamps.length - 1]!, [w, h] = verkehr.einheiten, x = stamp.x / z - w / 2, y = stamp.y / z - h / 2;
         const id = ids.geometrieId("stellfläche", stamp.id), polygon: Polygon = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
-        ablage.extraRegions.push({ id, polygon, role: { ...ablage.rolle(id), role: "terrain", material: "rock" } });
+        // Eine Stellfläche ist gepflastert, kein Fels.
+        ablage.extraRegions.push({ id, polygon, role: { ...ablage.rolle(id), role: "road", material: "square" } });
       }
     }
   }

@@ -19,9 +19,14 @@ export const KOLONIE: StadtStil = Object.freeze<StadtStil>({
   flecken: sektoren,
   befestigung: "zaun", kernAnteil: 1, vorstadtAnteil: 1, strassenBleiben: true,
   breiten: art => art === "stadt" ? { haupt: 1, gasse: .7, wall: .6, ausfall: .9 } : art === "dorf" ? { haupt: .85, gasse: .6, wall: .55, ausfall: .75 } : { haupt: .7, gasse: .5, wall: .45, ausfall: .6 },
+  // Der Raumhafen braucht kein Ufer, sondern Platz: die Uferregel des Fantasy-Hafens gilt hier nicht.
+  // Eine Stadt ohne gemalte Raumhafenzone bekommt ihn im äußeren Ring, im größten freien Sektor.
   nachRollen: (lagen, rollen, art, planHat) => {
-    if (art !== "stadt" || planHat("hafen") || [...rollen.values()].includes("hafen")) return;
-    const aussen = lagen.filter(l => l.trocken && l.mauerRand && rollen.get(l.nr) !== "markt").sort((x, y) => y.flaeche - x.flaeche || x.nr - y.nr)[0];
+    if (planHat("hafen")) return;
+    for (const [nr, rolle] of rollen) if (rolle === "hafen") rollen.set(nr, "wohnen");
+    if (art !== "stadt") return;
+    const weiteste = Math.max(...lagen.map(l => l.ferne));
+    const aussen = lagen.filter(l => l.trocken && l.ferne >= weiteste * .5 && rollen.get(l.nr) === "wohnen").sort((x, y) => Number(x.ufer) - Number(y.ufer) || y.flaeche - x.flaeche || x.nr - y.nr)[0];
     if (aussen) rollen.set(aussen.nr, "hafen");
   },
   bebaue: bebaueSektor,
@@ -49,5 +54,7 @@ export const KOLONIE: StadtStil = Object.freeze<StadtStil>({
   vorstadt: richtung => `Außensektor ${richtung}`,
   dorfplatz: "Zentraldeck",
   burgWort: "Kommandozentrale",
-  texte: { zuKlein: "Kein Schutzzaun: die Kolonie ist zu klein dafür." },
+  texte: { zuKlein: "Kein Schutzzaun: die Kolonie ist zu klein dafür.", burgZuKlein: "Keine Kommandozentrale in der Zone: der Sektor ist dafür zu klein." },
+  hinweis: (rolle, bau) => rolle === "hafen" && !bau.baue.some(b => b.typ === "raumhafen")
+    ? "Kein Landefeld: der Sektor für den Raumhafen ist zu klein. Lege die Raumhafen-Zone über einen äußeren Sektor." : undefined,
 });

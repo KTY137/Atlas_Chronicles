@@ -58,7 +58,9 @@ export interface StadtStil {
   readonly dorfplatz: string;
   /** Wie der Rollenschritt die Nutzung „burg" in Meldungen nennt. */
   readonly burgWort: string;
-  readonly texte: { readonly zuKlein: string };
+  readonly texte: { readonly zuKlein: string; readonly burgZuKlein: string };
+  /** Ein Hinweis für den Bericht, wenn ein Fleck seine Rolle nicht erfüllen konnte (einmal je Karte). */
+  hinweis?(rolle: Rolle, bau: StilBau): string | undefined;
 }
 
 export const waehleTyp = (liste: Typliste, zug: number): BauwerkTyp => {
