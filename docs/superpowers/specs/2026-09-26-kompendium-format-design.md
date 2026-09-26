@@ -205,3 +205,9 @@ Das Kompendium ist Fremdinhalt aus einer Paketdatei. Geprüft wird beim Parsen, 
    Steam-Vertrieb empfehle ich, sie zusätzlich frei herunterladbar zu machen.
 
 Das SRD-Paket hängt an keiner dieser Fragen und wird gebaut.
+
+**Kayas Antworten (2026-09-26):** (1) ORC-Rückfluss: **in Ordnung**. (2) Pathfinder-Bücher: **keine
+vorhanden** — das ORC-Paket wartet, bis eine saubere Quelle da ist; Foundry-, AoN- und
+Pf2eTools-Daten bleiben ausgeschlossen. (3) Inhaltspakete werden **zusätzlich frei angeboten**: die
+Pakete liegen offen unter `packages/rules/data/` im öffentlichen Repository, dazu ein Hinweis in
+`packages/rules/data/README.md` und in `THIRD-PARTY-NOTICES.md`.
