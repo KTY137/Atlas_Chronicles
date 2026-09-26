@@ -15,12 +15,11 @@ import { MapContextMenu, type MapContextAction } from "./MapContextMenu";
 import { MapDeleteDialog } from "./MapDeleteDialog";
 import { MapEditor, ScenePlan } from "./TacticalPreparation";
 import { MapGenerationControls } from "./MapGenerationControls";
-import { BUILDING_COLORS, generationError, generationOptions, generationSettings, mapDocumentScene, type GenerationDefaults, type MapArt, type MapNode, type MapStyle } from "./map-generation";
+import { BUILDING_COLORS, generationError, generationOptions, generationSettings, mapDocumentScene, stairLabel, type GenerationDefaults, type MapArt, type MapNode, type MapStyle } from "./map-generation";
 import "./tactical.css";
 import "./map-workshop.css";
 import "./NestedMapView.css";
 import { MapFloorsPanel } from "./MapFloorsPanel";
-import { stairLabel } from "./TacticalView";
 import { RoomFogControls } from "./RoomFogControls";
 
 export interface MapAncestor { kind: "atlas" | "tactical"; id: string; title: string; edit?: boolean; focus?: { id: string; x: number; y: number } }

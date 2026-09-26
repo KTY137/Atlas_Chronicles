@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { TacticalAck, TacticalFloorLink, TacticalMoveInput, TacticalToken, TacticalView as Board } from "@chronicle/protocol";
+import type { TacticalAck, TacticalMoveInput, TacticalToken, TacticalView as Board } from "@chronicle/protocol";
 import { cartographyPaintsWalls, type KartenSetting } from "@chronicle/szene";
 import { snapMapPoint, type MapPoint, type ProjectedMapScene } from "@chronicle/render";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
@@ -14,17 +14,11 @@ import { TacticalPreparation } from "./TacticalPreparation";
 import { TacticalImport } from "./TacticalImport";
 import { TacticalObjectList } from "./TacticalObjectList";
 import { mapObjectWindow, objectKey } from "./tactical-entities";
-import { lightsToScene, mapDocumentScene, type MapNode } from "./map-generation";
+import { lightsToScene, mapDocumentScene, stairLabel, type MapNode } from "./map-generation";
 import "./tactical.css";
 import { RoomFogControls } from "./RoomFogControls";
 
 type Page = "live" | "prepare" | "import";
-/** A stair names where it leads, in words the table uses: up, down, or through. */
-export function stairLabel(link: TacticalFloorLink, level: number): string {
-  if (link.kind === "lift") return t("Aufzug: {ziel}", { ziel: link.toName });
-  if (link.kind === "opening") return t("Durchgang: {ziel}", { ziel: link.toName });
-  return link.toLevel > level ? t("Treppe hinauf: {ziel}", { ziel: link.toName }) : t("Treppe hinunter: {ziel}", { ziel: link.toName });
-}
 export function TacticalView({ campaignId, gm, revision, onDirty, onOpenEntry }: { campaignId: string; gm: boolean; revision: number; onDirty: (value: boolean) => void; onOpenEntry: (id: string) => void }) {
   const [page, setPage] = useState<Page>("live"), [dirty, setDirty] = useState(false), [local, setLocal] = useState(0);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);

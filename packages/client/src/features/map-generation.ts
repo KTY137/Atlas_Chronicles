@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
+import type { TacticalFloorLink } from "@chronicle/protocol";
 import type { AnlageArt, AnlageOptionen, GrundrissOptionen, HoehleOptionen, RegionOptionen, SiedlungOptionen, SiedlungStandort } from "@chronicle/forge";
 import { parseRoadPlan, type RoadPlan, parseSettlementPlan, type SettlementPlan, cartographyDraw, createCartographyDraw, cartographyPaintsWalls, TACTICAL_MAP_LIMITS, type BauwerkTyp, type CartographyView, type KartenSetting, type TacticalCartographyV1, type TacticalLight, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { ProjectedMapScene } from "@chronicle/render";
@@ -149,3 +150,9 @@ function sceneProjector(draw: typeof cartographyDraw) {
 export const mapDocumentScene = sceneProjector(cartographyDraw);
 /** Keep one projector for the lifetime of an editor to reuse unchanged landscape artwork. */
 export const createMapDocumentScene = () => sceneProjector(createCartographyDraw());
+/** A stair names where it leads, in words the table uses: up, down, or through. */
+export function stairLabel(link: Pick<TacticalFloorLink, "kind" | "toLevel" | "toName">, level: number): string {
+  if (link.kind === "lift") return t("Aufzug: {ziel}", { ziel: link.toName });
+  if (link.kind === "opening") return t("Durchgang: {ziel}", { ziel: link.toName });
+  return link.toLevel > level ? t("Treppe hinauf: {ziel}", { ziel: link.toName }) : t("Treppe hinunter: {ziel}", { ziel: link.toName });
+}

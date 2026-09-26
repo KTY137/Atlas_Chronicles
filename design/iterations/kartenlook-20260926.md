@@ -36,8 +36,8 @@ Erdgeschoss und Obergeschoss wären für die Runde leere Grundrisse gewesen.
     eigene, weiche Schicht.
   - Brücken bleiben Deck.
   - Farben wirken relativ zum Grundbild, also bleiben Nacht und Winter die der Projektion.
-  - Beim Herauszoomen bleiben Wasser und Schatten, nur das Kleinmuster fällt unter vier Pixeln je
-    Zelle weg.
+  - Beim Herauszoomen bleiben Wasser und Schatten, nur Kleinmuster (unter sechs Pixeln je Zelle)
+    und Straßenlinien (unter zehn) fallen weg.
 - **Innenräume** (`paintInnen`):
   - Der Boden dunkelt zum Fuß jeder Wand hin ab und ist leicht gefleckt.
   - Das gilt für Häuser, Verliese und Höhlen.
@@ -58,3 +58,26 @@ und behoben:
 - Brücken wurden wie Wasser eingefärbt.
 - Waldschatten fielen treppig und als Balken über Bäche.
 - Plätze bekamen weiße Gehweg-Winkel und eine Mittellinie.
+- Die Probe fand außerdem einen echten Fehler: Das Arbeitsbudget der Auflage zählte Möbel außerhalb
+  der Kachel mit (negative Breite mal negative Höhe ergab eine positive Fläche). Eine eingerichtete
+  Taverne sprengte so das Budget. Möbel außerhalb der Kachel kosten jetzt nichts; ein Test mit
+  19.000 fernen Stücken sichert das ab.
+- Spielerkachel der Taverne (Erdgeschoss) angesehen: Tische, Stühle, Theke, Kamin, Treppe,
+  Fenster, Türen, Wände, Möbelschatten und Wandsaum sind da.
+- Herausgezoomt: Die Straßen sind ruhig, Wasser und Schatten bleiben.
+
+## Grün gesehen
+
+- Server:
+  - `tactical-overlay` 8/8.
+  - `tactical`, `tactical-raster`, `tactical-integration`, `tactical-v3-review`: grün.
+  - `betreten`, `session-floors`, `grundriss`: 43/43.
+  - `map-settings`, `map-workshop`, `map-floors-fog`: grün. Der Archivtest lief unter Last über
+    sein festes 30-s-Limit und allein in 15,9 s grün.
+- forge: `haus` 10/10.
+- Client: `map-workshop-review`, `sprache-P4`, `sprache-P5`, `tactical-drafts-review`,
+  `tactical-entities-review`: grün.
+- Typprüfung, Client-Build und `gate:sprache` grün.
+
+Nicht gelaufen: keine volle Suite, kein e2e-Lauf, kein Desktop-Smoke. `gate-assets` läuft im
+Hauptcheckout nach dem Zusammenführen.

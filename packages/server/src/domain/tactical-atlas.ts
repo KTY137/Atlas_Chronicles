@@ -195,7 +195,7 @@ export async function paintAtlas(rgba: Buffer, input: AtlasInput, geometry: Geom
   // pixel per cell; paving and joints only where they are larger than the pixels drawing them,
   // so zooming out keeps the look instead of switching it off.
   if (perCell < 1) return;
-  const fine = perCell >= 4, lines = perCell >= 3;
+  const fine = perCell >= 6, lines = perCell >= 10;
   const maxHeight = input.buildings.reduce((m, b) => Math.max(m, b.height), 1);
   const margin = Math.ceil((Math.max(.6, maxHeight * SHADOW_PER_HEIGHT * 1.2) * cell) / factor) + 2;
   const grid: Grid = { w: width + margin * 2, h: height + margin * 2, x0: (left - margin) * factor, y0: (top - margin) * factor, step: factor };

@@ -53,6 +53,12 @@ describe("Spielerkacheln tragen, was im Raum steht", () => {
     expect(masked(50, 10)[3]).toBe(0);
   });
 
+  it("rechnet nur, was die Kachel erreicht: tausende Möbel außerhalb kosten nichts", async () => {
+    const art = sprite(), far = Array.from({ length: 19_000 }, (_, i) => ({ x: 5000 + (i % 100) * 40, y: 5000 + Math.floor(i / 100) * 40, r: 0, s: 1, tint: 0xffffff, shadow: true, sprite: art }));
+    const lot = await tile({ stamps: [...far, { x: 32, y: 32, r: 0, s: 1, tint: 0xffffff, shadow: false, sprite: sprite() }], walls: [], wallBody: 0 });
+    expect(lot(26, 32)).toEqual([255, 0, 0, 255]);
+  });
+
   it("prüft die Auflage wie jede Eingabe", () => {
     const good: TacticalOverlay = { stamps: [{ x: 1, y: 1, r: 0, s: 1, tint: 0, shadow: false, sprite: sprite() }], walls: [], wallBody: 1 };
     expect(() => overlayCopy(good)).not.toThrow();

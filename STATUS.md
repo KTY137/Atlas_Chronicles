@@ -1,3 +1,15 @@
+# Atlas-Look am Tisch, Einrichtung für die Runde — 2026-09-26
+
+Spieler sehen am Tisch jetzt, was in einem bekannten Raum steht: Möbel, Türen und Wände zeichnet der
+Server in ihre Kacheln, beschnitten auf ihr Wissen. Marken, Figuren sowie geheime und verborgene
+Stücke bleiben draußen. Ortskarten bekommen die Pixelrunde der Kartenentwürfe: Wasser mit Tiefe und
+Schaum, Pflaster je Setting, Kontakt- und Schlagschatten. Innenräume bekommen einen Wandsaum. Am
+Tisch und in der Unterkarten-Ansicht sieht die Spielleitung dasselbe Bild; der Kartenbau bleibt flach.
+Teppiche liegen flach unter allen Möbeln, Treppen heißen überall „Treppe hinauf/hinunter".
+
+Nachweise und Testzahlen: `design/iterations/kartenlook-20260926.md`, Spec
+`docs/superpowers/specs/2026-09-26-atlas-look-design.md`.
+
 # Häuser von innen und Geschosse am Tisch — 2026-09-26
 
 Gebäude haben Innenräume über mehrere Geschosse (Keller, Erdgeschoss, Obergeschoss; Sci-Fi:

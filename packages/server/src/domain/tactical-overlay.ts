@@ -121,7 +121,8 @@ export async function paintOverlay(rgba: Buffer, overlay: TacticalOverlay, geome
     // Soft shadow to the south-east, as the renderer does on a painted map.
     if (stamp.shadow) {
       const sx = stamp.x + w * .07, sy = stamp.y + h * .1, rx = w * .48, ry = h * .48, b = box(sx, sy, Math.max(rx, ry));
-      budget((b.x1 - b.x0) * (b.y1 - b.y0));
+      // Only what reaches this tile costs work; a clipped-away box has no area (never a negative product).
+      budget(Math.max(0, b.x1 - b.x0) * Math.max(0, b.y1 - b.y0));
       for (let y = b.y0; y < b.y1; y++) for (let x = b.x0; x < b.x1; x++) {
         const [mx, my] = toMap(x, y), dx = mx - sx, dy = my - sy, u = (dx * cos + dy * sin) / rx, v = (-dx * sin + dy * cos) / ry;
         if (u * u + v * v <= 1) blend(rgba, (y * width + x) * 4, 0x1a, 0x14, 0x10, .26);
@@ -132,6 +133,7 @@ export async function paintOverlay(rgba: Buffer, overlay: TacticalOverlay, geome
     const scaleX = m.w / stamp.sprite.width, scaleY = m.h / stamp.sprite.height;
     const tr = stamp.tint >> 16 & 255, tg = stamp.tint >> 8 & 255, tb = stamp.tint & 255;
     const b = box(stamp.x, stamp.y, Math.hypot(w, h) / 2);
+    if (b.x1 <= b.x0 || b.y1 <= b.y0) continue;
     budget((b.x1 - b.x0) * (b.y1 - b.y0));
     for (let y = b.y0; y < b.y1; y++) {
       for (let x = b.x0; x < b.x1; x++) {
