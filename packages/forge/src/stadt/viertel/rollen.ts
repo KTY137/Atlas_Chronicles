@@ -35,7 +35,7 @@ export function waehleMarkt(lagen: readonly FleckLage[], a: RollenAuftrag): numb
   return kandidaten[0]?.nr ?? -1;
 }
 
-export function weiseRollenZu(lagen: readonly FleckLage[], markt: number, a: RollenAuftrag): { rollen: ReadonlyMap<number, Rolle>; ausgelassen: readonly string[] } {
+export function weiseRollenZu(lagen: readonly FleckLage[], markt: number, a: RollenAuftrag): { rollen: Map<number, Rolle>; ausgelassen: readonly string[] } {
   const rollen = new Map<number, Rolle>(), ausgelassen: string[] = [], nachNr = new Map(lagen.map(l => [l.nr, l]));
   for (const l of lagen) {
     const geplant = planRolle(a.plan, l.punkt, a.breite, a.hoehe);

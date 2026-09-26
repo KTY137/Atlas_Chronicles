@@ -63,7 +63,7 @@ describe("Fantasy-Stadt aus Vierteln (v11)", () => {
     expect(s.bauwerke.length).toBeGreaterThan(300);
     expect(dauer).toBeLessThan(6000);
   }, 60_000);
-  it("erlaubt bis zu 512 Gebäude", () => expect(SIEDLUNG_LIMITS.bauwerkeMax).toBe(512));
+  it("erlaubt bis zu 1024 Gebäude", () => expect(SIEDLUNG_LIMITS.bauwerkeMax).toBe(1024));
   it("übernimmt den eigenen Viertelplan, ohne das Layout umzuwürfeln", () => {
     const a = stadt("v11:plan"), plan = a.bericht.viertelPlan!;
     expect(plan.zonen.length).toBeGreaterThan(0);

@@ -1,25 +1,44 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useRef, useState, type PointerEvent } from "react";
-import { SETTLEMENT_USES, SETTLEMENT_PLAN_LIMITS, parseSettlementPlan, planContains, type SettlementPlan, type SettlementZone, type PlanPoint } from "@chronicle/szene";
+import { SETTLEMENT_USES, SETTLEMENT_PLAN_LIMITS, parseSettlementPlan, planContains, type KartenSetting, type SettlementPlan, type SettlementUse, type SettlementZone, type PlanPoint } from "@chronicle/szene";
 import { t } from "../i18n";
 import "./map-zone-planner.css";
 
-const ZONE_LABEL = { wohnen: "Wohnviertel", markt: "Marktviertel", handwerk: "Handwerksviertel", hafen: "Hafenviertel", adel: "Adelsviertel", arm: "Armenviertel", frei: "Freifläche", burg: "Burg", tempel: "Tempelbezirk" } as const;
+/** Die Namen der Zonen in der Sprache des Settings (Spec 2026-09-23-stadt-zukunft, Abschnitt 7). */
+const ZONE_LABEL: Readonly<Record<KartenSetting, Readonly<Record<SettlementUse, string>>>> = {
+  fantasy: { wohnen: "Wohnviertel", markt: "Marktviertel", handwerk: "Handwerksviertel", hafen: "Hafenviertel", adel: "Adelsviertel", arm: "Armenviertel", frei: "Freifläche", burg: "Burg", tempel: "Tempelbezirk" },
+  gegenwart: { wohnen: "Wohngebiet", markt: "Innenstadt", handwerk: "Gewerbegebiet", hafen: "Hafen", adel: "Villenviertel", arm: "Wohnblöcke", frei: "Park", burg: "Rathaus & Ämter", tempel: "Schule & Klinik" },
+  scifi: { wohnen: "Wohnkuppeln", markt: "Marktdeck", handwerk: "Fertigung", hafen: "Raumhafen", adel: "Wohntürme", arm: "Frachtquartier", frei: "Grünfläche", burg: "Kommandozentrale", tempel: "Forschung & Medizin" },
+};
 /** Was jede Zone auf der Karte bewirkt — in einem Satz, ohne Fachwort. */
-const ZONE_TITEL = {
-  wohnen: "Häuserzeilen, hier und da eine Werkstatt.", markt: "Der Marktplatz; in einer Stadt steht das Rathaus darauf.",
-  handwerk: "Schmieden, Werkstätten und Lager.", hafen: "Lagerhäuser und Stege — gebaut wird nur am Ufer.",
-  adel: "Große Häuser mit Gärten.", arm: "Kleine, dicht gedrängte Häuser.", frei: "Hier wird nichts gebaut.",
-  burg: "Eine Burg mit Bergfried, Kaserne und eigenem Hof.", tempel: "Ein großes Gotteshaus mit freiem Platz davor.",
-} as const;
+const ZONE_TITEL: Readonly<Record<KartenSetting, Readonly<Record<SettlementUse, string>>>> = {
+  fantasy: {
+    wohnen: "Häuserzeilen, hier und da eine Werkstatt.", markt: "Der Marktplatz; in einer Stadt steht das Rathaus darauf.",
+    handwerk: "Schmieden, Werkstätten und Lager.", hafen: "Hafengebäude benötigen Ufernähe. Ohne passendes Ufer bleibt die Zone unbebaut.",
+    adel: "Große Häuser mit Gärten.", arm: "Kleine, dicht gedrängte Häuser.", frei: "Hier wird nichts gebaut.",
+    burg: "Eine Burg mit Bergfried, Kaserne und eigenem Hof.", tempel: "Ein großes Gotteshaus mit freiem Platz davor.",
+  },
+  gegenwart: {
+    wohnen: "Wohnblöcke mit grünen Höfen, am Stadtrand Einfamilienhäuser mit Garten.", markt: "Hochhäuser und der Rathausplatz.",
+    handwerk: "Hallen, Werkstätten und Lager.", hafen: "Lagerhallen am Wasser. Ohne passendes Ufer bleibt die Zone unbebaut.",
+    adel: "Villen mit großen Gärten.", arm: "Lange Wohnblöcke mit Rasen dazwischen.", frei: "Ein Park mit Wegen und Bäumen.",
+    burg: "Rathaus, Polizei und Feuerwache um einen Platz.", tempel: "Ein Krankenhaus und eine Schule.",
+  },
+  scifi: {
+    wohnen: "Wohnkuppeln an den Straßen, innen ein Garten.", markt: "Die Kommandozentrale und der Reaktor auf einem Deck.",
+    handwerk: "Fertigungshallen und Werkstätten.", hafen: "Landefelder für Raumschiffe auf einem Vorfeld. Braucht kein Wasser.",
+    adel: "Achteckige Wohntürme.", arm: "Dicht gestellte Container.", frei: "Rasen und Bäume, nichts wird gebaut.",
+    burg: "Eine Kommandozentrale mit Lagerhalle.", tempel: "Labor und Medstation auf einem Deck.",
+  },
+};
 const EMPTY: SettlementPlan = { schemaVersion: 1, zonen: [] };
 const rect = (x: number, y: number, w: number, h: number): readonly PlanPoint[] => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
 const box = (z: SettlementZone) => {
   const xs = z.polygon.map(p => p[0]), ys = z.polygon.map(p => p[1]);
   const x = Math.min(...xs), y = Math.min(...ys); return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
 };
-export function MapZonePlanner({ value = EMPTY, onChange, vorschlag }: { value?: SettlementPlan; onChange: (value: SettlementPlan | undefined) => void; vorschlag?: SettlementPlan | undefined }) {
+export function MapZonePlanner({ value = EMPTY, onChange, vorschlag, setting = "fantasy" }: { value?: SettlementPlan; onChange: (value: SettlementPlan | undefined) => void; vorschlag?: SettlementPlan | undefined; setting?: KartenSetting }) {
   const [selected, setSelected] = useState(""), [message, setMessage] = useState("");
   const [drawing, setDrawing] = useState<{ start: PlanPoint; end: PlanPoint } | null>(null);
   const svg = useRef<SVGSVGElement>(null);
@@ -72,16 +91,15 @@ export function MapZonePlanner({ value = EMPTY, onChange, vorschlag }: { value?:
     {vorschlag?.zonen.length ? <button type="button" onClick={() => { try { onChange(parseSettlementPlan(vorschlag)); setSelected(""); setMessage(t("Die Viertel der Vorschau sind jetzt Zonen. Verschiebe sie und erzeuge die Karte neu.")); } catch { setMessage(t("Die Viertel dieser Vorschau lassen sich nicht als Zonen übernehmen. Erzeuge eine neue Vorschau.")); } }}>{t("Viertel aus der Karte übernehmen")}</button> : null}
     <p className="field-help">{t("Bis zu 16 Zonen. Die letzte überlagerte Zone hat Vorrang; Freiflächen sperren Gebäude immer. Das Gelände bleibt, wie es ist; legst du den Markt woanders hin, führen die Hauptstraßen dorthin.")}</p>
     <details className="map-zone-legend"><summary>{t("Was bewirken die Zonen?")}</summary>
-      <dl>{SETTLEMENT_USES.map(use => <div key={use}><dt>{t(ZONE_LABEL[use])}</dt><dd>{t(ZONE_TITEL[use])}</dd></div>)}</dl>
+      <dl>{SETTLEMENT_USES.map(use => <div key={use}><dt>{t(ZONE_LABEL[setting][use])}</dt><dd>{t(ZONE_TITEL[setting][use])}</dd></div>)}</dl>
     </details>
     <label>{t("Zone auswählen")}<select aria-label={t("Zone auswählen")} value={zone?.id ?? ""} onChange={e => setSelected(e.target.value)}><option value="">{t("Zone auswählen …")}</option>{value.zonen.map((z, i) => <option key={z.id} value={z.id}>{i + 1}. {z.name}</option>)}</select></label>
     {zone && bounds ? <div className="map-zone-fields">
       <label>{t("Name des Viertels")}<input maxLength={80} value={zone.name} onChange={e => update({ name: e.target.value })} /></label>
-      <label>{t("Nutzung der Zone")}<select aria-label={t("Nutzung der Zone")} value={zone.nutzung} onChange={e => update({ nutzung: e.target.value as SettlementZone["nutzung"] })}>{SETTLEMENT_USES.map(use => <option key={use} value={use}>{t(ZONE_LABEL[use])}</option>)}</select></label>
+      <label>{t("Nutzung der Zone")}<select aria-label={t("Nutzung der Zone")} value={zone.nutzung} onChange={e => update({ nutzung: e.target.value as SettlementZone["nutzung"] })}>{SETTLEMENT_USES.map(use => <option key={use} value={use}>{t(ZONE_LABEL[setting][use])}</option>)}</select></label>
       <label>{t("Bebauungsdichte")} <output>{Math.round(zone.dichte * 100)} %</output><input type="range" min={0} max={1} step={.05} disabled={zone.nutzung === "frei"} value={zone.dichte} onChange={e => update({ dichte: e.target.valueAsNumber })} /></label>
       <div className="map-zone-numbers">{(["x", "y", "w", "h"] as const).map(axis => <label key={axis}>{axis === "x" ? t("Links (%)") : axis === "y" ? t("Oben (%)") : axis === "w" ? t("Breite (%)") : t("Höhe (%)")}<input type="number" min={axis === "w" || axis === "h" ? 1 : 0} max={100} step={1} value={Math.round(bounds[axis] * 1000) / 10} onChange={e => resize(axis, e.target.valueAsNumber)} /></label>)}</div>
-      {zone.nutzung === "hafen" ? <p>{t("Hafengebäude benötigen Ufernähe. Ohne passendes Ufer bleibt die Zone unbebaut; im Science-Fiction-Setting entstehen Raumhafenbauten.")}</p>
-        : zone.nutzung !== "wohnen" ? <p>{t(ZONE_TITEL[zone.nutzung])}</p> : null}
+      {zone.nutzung !== "wohnen" ? <p>{t(ZONE_TITEL[setting][zone.nutzung])}</p> : null}
       <button type="button" onClick={() => { commit(value.zonen.filter(z => z.id !== zone.id)); setSelected(""); }}>{t("Zone entfernen")}</button>
     </div> : null}
     {message ? <p role="alert">{message}</p> : null}

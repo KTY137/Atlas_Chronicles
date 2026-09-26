@@ -139,11 +139,10 @@ describe("settlement canonical cartography", () => {
       expect(closeNeighbours.length / core.length, seed).toBeGreaterThan(.8);
     }
   });
-  for (const [art, setting] of (["weiler", "dorf", "stadt"] as SiedlungArt[]).flatMap(art => [[art, "fantasy"], [art, "gegenwart"]] as const)) it(`${art}/${setting}: roofs on lots, landscape and actual water crossings across fixed seeds`, () => {
+  for (const [art, setting] of (["weiler", "dorf", "stadt"] as SiedlungArt[]).flatMap(art => [[art, "fantasy"], [art, "gegenwart"], [art, "scifi"]] as const)) it(`${art}/${setting}: roofs on lots, landscape and actual water crossings across fixed seeds`, () => {
     for (const seed of ["gallery:river-1", "gallery:orchard-2", "gallery:gate-3"]) {
       const generated = erzeugeSiedlung({ keim: seed, optionen: { art, setting } }, paket);
-      expect(generated.version).toBe(setting === "fantasy" ? "11" : "8");
-      const raster = setting !== "fantasy";
+      expect(generated.version).toBe(setting === "fantasy" ? "11" : "12");
       const roles = parseTacticalCartography(generated.cartography, generated.karte).regions;
       expect(roles).toHaveLength(generated.karte.geometry.regions.length);
       const region = (id: string) => generated.karte.geometry.regions.find(value => value.id === id)!;
@@ -153,27 +152,21 @@ describe("settlement canonical cartography", () => {
       expect(roles.some(role => role.role === "road" && role.material === "bridge")).toBe(true);
       const [width, height] = generated.karte.geometry.size;
       const squares = roles.filter(role => role.role === "road" && role.material === "square");
-      expect(squares.reduce((sum, role) => sum + area(region(role.regionId).punkte), 0)).toBeLessThan(width * height * .03);
+      // Eine Kolonie hat Deck und Vorfeld (Landefelder): dort ist mehr Fläche gepflastert.
+      expect(squares.reduce((sum, role) => sum + area(region(role.regionId).punkte), 0)).toBeLessThan(width * height * (setting === "scifi" ? .06 : .03));
       const waters = roles.filter(role => role.role === "water").map(role => region(role.regionId).punkte);
       expect(generated.bauwerke.length).toBeGreaterThan(0);
       for (const house of generated.bauwerke) {
-        if (raster) expect([4, 6]).toContain(house.umriss.length);
         const role = roles.find(value => value.regionId === house.id)!;
         expect(role.role).toBe("building");
         if (role.role !== "building") continue;
         expect(role.streetRegionId).toBe(house.strasse);
         expect(role.lotRegionId).toBeTruthy();
-        // Der Rasterbaustein stellt Einzelhäuser mit Garten; eine Häuserzeile füllt ihr Los bis auf die Fuge.
-        if (raster) expect(area(region(role.lotRegionId!).punkte)).toBeGreaterThan(area(region(house.id).punkte) * 1.45);
-        else expect(area(region(role.lotRegionId!).punkte)).toBeGreaterThanOrEqual(area(region(house.id).punkte) - 1e-6);
+        // Ein Los ist nie kleiner als sein Haus (eine Häuserzeile füllt es bis auf die Fuge).
+        expect(area(region(role.lotRegionId!).punkte)).toBeGreaterThanOrEqual(area(region(house.id).punkte) - 1e-6);
         const points = region(house.id).punkte;
         expect(points.every(([x, y]) => x > width * .04 && x < width * .96 && y > height * .04 && y < height * .96)).toBe(true);
         for (const roof of konvexeTeile(points)) for (const water of waters) expect(overlap(roof, water), `${art}/${seed}/${house.titel} touches water`).toBe(false);
-        if (raster) for (let i = 0; i < house.umriss.length; i++) {
-          const a = house.umriss[i]!, b = house.umriss[(i + 1) % house.umriss.length]!, c = house.umriss[(i + 2) % house.umriss.length]!;
-          const ux = b[0] - a[0], uy = b[1] - a[1], vx = c[0] - b[0], vy = c[1] - b[1];
-          expect(Math.abs(ux * vx + uy * vy) / (Math.hypot(ux, uy) * Math.hypot(vx, vy))).toBeLessThan(.02);
-        }
       }
       expect(generated.karte.geometry.regions.reduce((sum, value) => sum + value.punkte.length, 0)).toBeLessThanOrEqual(20_000);
       expect(generated.karte.geometry.stamps.length).toBeLessThan(80);

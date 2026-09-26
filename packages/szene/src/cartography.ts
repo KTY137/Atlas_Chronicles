@@ -7,7 +7,9 @@ import { parseBoundedMapJson, parseTacticalMapDocument, TACTICAL_MAP_LIMITS, Tac
 /** Meaning attached to one revision's existing regions; never a second geometry store. */
 export const TACTICAL_CARTOGRAPHY_VERSION = 1 as const;
 export const TACTICAL_CARTOGRAPHY_LIMITS = Object.freeze({
-  documentBytes: 1024 * 1024, regions: 4096, attachedStamps: 50_000,
+  /** 4 MiB: eine Metropole mit 1024 Gebäuden braucht knapp 1 MiB (Kaya 2026-09-26). Gespeichert wird
+   *  über den Import-Pfad der Karten, nicht über die 2-MiB-Grenze gewöhnlicher Anfragen. */
+  documentBytes: 4 * 1024 * 1024, regions: 4096, attachedStamps: 50_000,
   cellSize: 32_768, coordinate: TACTICAL_MAP_LIMITS.coordinate,
   /** Relief samples sit on construction-cell corners; the largest settlement (192×192) needs 193². */
   reliefAxis: 1025, reliefSamples: 65_536,
@@ -18,6 +20,10 @@ export const CARTOGRAPHY_ROLES = Object.freeze(["generic", "terrain", "water", "
 /** The physical surroundings a settlement can have; the relief engine shapes each of them. */
 export const CARTOGRAPHY_STANDORTE = Object.freeze(["ebene", "huegel", "wald", "gebirge", "fluss", "see", "moor", "kueste", "insel"] as const);
 export const CARTOGRAPHY_ORT_GROESSEN = Object.freeze(["weiler", "dorf", "stadt"] as const);
+/** Wie ein Dach aussieht (Spec 2026-09-23-stadt-zukunft, E6). Fehlt es, gilt die Vorgabe des
+ *  Settings: Fantasy Giebel, sonst Flachdach. Der Gebäudetyp selbst steht im Knoten. */
+export const CARTOGRAPHY_DACHFORMEN = Object.freeze(["giebel", "flach", "halle", "kuppel", "plattform"] as const);
+export type CartographyDachform = typeof CARTOGRAPHY_DACHFORMEN[number];
 export type CartographyStandort = typeof CARTOGRAPHY_STANDORTE[number];
 export type CartographyOrtGroesse = typeof CARTOGRAPHY_ORT_GROESSEN[number];
 export const CARTOGRAPHY_TERRAIN_MATERIALS = Object.freeze(["grass", "earth", "forest", "field", "rock", "sand", "swamp", "snow"] as const);
@@ -55,7 +61,7 @@ export type CartographyRegionV1 = CartographyRegionCommon & (
   | { readonly role: "terrain"; readonly material: CartographyTerrainMaterial }
   | { readonly role: "water"; readonly material: CartographyWaterMaterial }
   | { readonly role: "road"; readonly material: CartographyRoadMaterial }
-  | { readonly role: "building"; readonly lotRegionId?: string; readonly streetRegionId?: string; readonly attachedStampIds?: readonly string[] }
+  | { readonly role: "building"; readonly lotRegionId?: string; readonly streetRegionId?: string; readonly attachedStampIds?: readonly string[]; readonly dach?: CartographyDachform }
   /** A settlement on a regional map: drawn as a cluster of roofs, entered as a town of this size in these surroundings. */
   | { readonly role: "ort"; readonly groesse: CartographyOrtGroesse; readonly standort: CartographyStandort }
 );
@@ -219,7 +225,7 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
   let interiorReferenceCount = 0;
   for (const [index, value] of regions.entries()) {
     const path = `regions[${index}]`, common = ["regionId", "role", "authored", "locked", "provenance"];
-    const row = object(value, path, common, ["material", "lotRegionId", "streetRegionId", "attachedStampIds", "interior", "groesse", "standort"]);
+    const row = object(value, path, common, ["material", "lotRegionId", "streetRegionId", "attachedStampIds", "interior", "groesse", "standort", "dach"]);
     const id = text(row.regionId, `${path}.regionId`);
     if (byId.has(id)) fail(`${path}.regionId`, "duplicate region identity");
     byId.set(id, row); choice(row.role, CARTOGRAPHY_ROLES, `${path}.role`);
@@ -233,8 +239,9 @@ export function parseTacticalCartography(input: unknown, document?: TacticalMapD
       choice(row.groesse, CARTOGRAPHY_ORT_GROESSEN, `${path}.groesse`);
       choice(row.standort, CARTOGRAPHY_STANDORTE, `${path}.standort`);
     } else if (row.role === "building") {
-      object(row, path, common, ["lotRegionId", "streetRegionId", "attachedStampIds"]);
+      object(row, path, common, ["lotRegionId", "streetRegionId", "attachedStampIds", "dach"]);
       for (const field of ["lotRegionId", "streetRegionId"]) if (Object.hasOwn(row, field)) text(row[field], `${path}.${field}`);
+      if (Object.hasOwn(row, "dach")) choice(row.dach, CARTOGRAPHY_DACHFORMEN, `${path}.dach`);
       if (Object.hasOwn(row, "attachedStampIds")) for (const [stampIndex, value] of array(row.attachedStampIds, `${path}.attachedStampIds`, TACTICAL_CARTOGRAPHY_LIMITS.attachedStamps).entries()) {
         const id = text(value, `${path}.attachedStampIds[${stampIndex}]`);
         if (attached.has(id)) fail(`${path}.attachedStampIds`, "stamp must belong to at most one region and occur once");

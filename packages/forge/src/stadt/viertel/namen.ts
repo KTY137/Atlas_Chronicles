@@ -12,16 +12,17 @@ import type { Rolle } from "./rollen.ts";
  */
 export interface Viertel { readonly id: string; readonly nutzung: Rolle; readonly name: string; readonly flecken: readonly number[]; readonly flaeche: number; readonly anker: Punkt }
 
-const NAMEN: Readonly<Record<Rolle, readonly string[]>> = Object.freeze({
+export const NAMEN: Readonly<Record<Rolle, readonly string[]>> = Object.freeze({
   markt: ["Marktplatz", "Kornmarkt", "Alter Markt"], tempel: ["Domfreiheit", "Tempelbezirk", "Kirchberg"],
   burg: ["Burgberg", "Hohe Burg", "Zwingburg"], hafen: ["Hafenviertel", "Fischerviertel", "Am Kai"],
   handwerk: ["Gerberviertel", "Schmiedeviertel", "Weberviertel", "Töpferviertel", "Färberviertel"],
   adel: ["Oberstadt", "Herrenviertel", "Rosenhöhe"], arm: ["Unterstadt", "Lumpenviertel", "Schattengasse"],
   wohnen: ["Altstadt", "Neustadt", "Brunnenviertel", "Lindenviertel", "Mittelstadt"], frei: ["Stadtpark", "Lindengarten"],
 });
-const RICHTUNG: readonly (readonly [Punkt, string])[] = [[[0, -1], "Nord"], [[1, 0], "Ost"], [[0, 1], "Süd"], [[-1, 0], "West"]];
+const RICHTUNG: readonly (readonly [Punkt, "Nord" | "Ost" | "Süd" | "West"])[] = [[[0, -1], "Nord"], [[1, 0], "Ost"], [[0, 1], "Süd"], [[-1, 0], "West"]];
 
-export function viertelBilden(lagen: readonly { nr: number; zelle: Polygon; nachbarn: readonly number[]; kern: boolean }[], rollen: ReadonlyMap<number, Rolle>, mitte: Punkt, r: Zufall): Viertel[] {
+export function viertelBilden(lagen: readonly { nr: number; zelle: Polygon; nachbarn: readonly number[]; kern: boolean }[], rollen: ReadonlyMap<number, Rolle>, mitte: Punkt, r: Zufall,
+  namen: Readonly<Record<Rolle, readonly string[]>> = NAMEN, vorstadt: (richtung: "Nord" | "Ost" | "Süd" | "West") => string = richtung => `${richtung}vorstadt`): Viertel[] {
   const nachNr = new Map(lagen.map(l => [l.nr, l])), gesehen = new Set<number>(), result: Viertel[] = [], vergeben = new Set<string>();
   for (const start of [...lagen].sort((a, b) => a.nr - b.nr)) {
     if (gesehen.has(start.nr)) continue;
@@ -37,9 +38,9 @@ export function viertelBilden(lagen: readonly { nr: number; zelle: Polygon; nach
     let name: string | undefined;
     if (!start.kern && (rolle === "wohnen" || rolle === "arm" || rolle === "handwerk")) {
       const dx = anker[0] - mitte[0], dy = anker[1] - mitte[1];
-      name = `${[...RICHTUNG].sort((a, b) => (b[0][0] * dx + b[0][1] * dy) - (a[0][0] * dx + a[0][1] * dy))[0]![1]}vorstadt`;
+      name = vorstadt([...RICHTUNG].sort((a, b) => (b[0][0] * dx + b[0][1] * dy) - (a[0][0] * dx + a[0][1] * dy))[0]![1]);
     } else {
-      const frei = NAMEN[rolle].filter(n => !vergeben.has(n));
+      const frei = namen[rolle].filter(n => !vergeben.has(n));
       name = frei.length ? frei[Math.min(frei.length - 1, Math.floor(r.zahl(0, 1) * frei.length))] : undefined;
     }
     if (!name || vergeben.has(name)) continue;

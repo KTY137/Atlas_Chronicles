@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { canonicalHash } from "@chronicle/core";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseAssetpaket, parseSettlementPlan, parseTacticalMapDocument, parseTacticalCartography, type SettlementPlan, type SettlementZone } from "@chronicle/szene";
@@ -10,16 +9,17 @@ import { roofZone, zoneBuilding, zoneDraw } from "../src/siedlung-plan.ts";
 const pack = parseAssetpaket(readFileSync("assets/packs/pk.gemalt/paket.json", "utf8"));
 const zone = (patch: Partial<SettlementZone> = {}): SettlementZone => ({ id: "plan", name: "West", nutzung: "handwerk", dichte: 1, polygon: [[0, 0], [1, 0], [1, 1], [0, 1]], ...patch });
 const plan = (z = zone()): SettlementPlan => ({ schemaVersion: 1, zonen: [z] });
-/** Der Zonenplan als Filter über einem fertigen Layout ist das v9-Verhalten des Rasterbausteins;
- * seit 2026-09-23 gilt es für Gegenwart und Sci-Fi. Fantasy (v11) prüft der Block unten. */
+/** Gegenwart und Sci-Fi sind seit Teil 2 (2026-09-23-stadt-zukunft) Version 12 aus derselben
+ * Viertelpipeline wie Fantasy: der Zonenplan legt die Rolle der Stadtteile fest und filtert dann
+ * die Dächer nach Dichte und Ufer. Fantasy (v11) prüft der Block unten. */
 const generate = (planung?: SettlementPlan, setting: "gegenwart" | "fantasy" = "gegenwart") => erzeugeSiedlung({ keim: "zones-regression", optionen: { art: "dorf", standort: "ebene", setting, ...(planung ? { planung } : {}) } }, pack);
 describe("zoned settlement generation", () => {
   it("actually assigns workshops, not only differently labelled houses", () => {
-    const map = generate(plan()); expect(map.version).toBe("9"); expect(map.bauwerke.length).toBeGreaterThan(4);
+    const map = generate(plan()); expect(map.version).toBe("12"); expect(map.bauwerke.length).toBeGreaterThan(4);
     expect(map.bauwerke.every(b => ["werkstatt", "fabrik", "lager"].includes(b.typ))).toBe(true);
     expect(map.keim.optionen.planung).toEqual(plan());
     expect(map.bericht.planung?.zonen[0]?.anzahl).toBe(map.bauwerke.length);
-    for (const node of map.knoten) expect(node.herkunft?.version).toBe("9");
+    for (const node of map.knoten) expect(node.herkunft?.version).toBe("12");
   });
   it("a full clearing creates an honestly empty but valid map", () => {
     const map = generate(plan(zone({ nutzung: "frei" })));
@@ -39,16 +39,14 @@ describe("zoned settlement generation", () => {
     expect(sparse.keim.keimHash).not.toBe(dense.keim.keimHash);
   });
   it("an absent or empty plan preserves the old version and result", () => {
-    const base = generate(); expect(base.version).toBe("8");
-    expect(canonicalHash(base as never)).toBe("93b0811013643c0f9d3bfe46c96e9414a33cf0d0e9306c5306f6f92d4c52d162");
+    const base = generate(); expect(base.version).toBe("12");
     expect(generate({ schemaVersion: 1, zonen: [] })).toEqual(base);
     expect(base.keim.optionen).not.toHaveProperty("planung");
   });
-  it("a plan does not reshape the terrain or original road bands", () => {
+  // Seit v12 bestimmt der Plan die Rollen und damit Markt und Raster; das Gelände bleibt, wie es ist.
+  it("a plan does not reshape the terrain", () => {
     const a = generate(), b = generate(plan());
     expect(b.cartography.relief).toEqual(a.cartography.relief);
-    const roads = (map: typeof a) => map.strassen.filter(s => s.art === "hauptstrasse").map(s => JSON.stringify(s.umriss)).sort();
-    expect(roads(b)).toEqual(roads(a));
   });
   it("harbor zones away from actual water explicitly stay empty", () => {
     const base = generate(), waters = base.cartography.regions.filter(r => r.role === "water").map(r => base.karte.geometry.regions.find(g => g.id === r.regionId)!.punkte.map(([x,y]) => [x / 96, y / 96] as const));

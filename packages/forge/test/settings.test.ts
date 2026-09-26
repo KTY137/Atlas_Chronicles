@@ -80,7 +80,9 @@ describe("settings and architectural programs", () => {
     }
     expect(cities[1]!.bauwerke.map(b => b.typ)).toEqual(expect.arrayContaining(["krankenhaus", "bahnhof", "wohnblock"]));
     expect(cities[2]!.bauwerke.map(b => b.typ)).toEqual(expect.arrayContaining(["raumstation", "kommando", "reaktor"]));
-    expect(cities[1]!.karte.walls).toEqual([]); expect(cities[2]!.karte.walls).toEqual([]);
+    // Gegenwart hat einen Stadtring als Straße, keine Mauer; die Kolonie einen Schutzzaun (Spec 2026-09-23-stadt-zukunft, E8).
+    expect(cities[1]!.karte.walls).toEqual([]); expect(cities[2]!.karte.walls.length).toBeGreaterThan(0);
+    expect(cities[2]!.bauwerke.some(b => b.typ === "turm")).toBe(false);
   });
 
   it("stores the setting in floorplan identity and uses modern room programs in free layouts", () => {

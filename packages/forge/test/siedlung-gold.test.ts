@@ -14,9 +14,9 @@ const FAELLE = [
   ["scifi", "dorf", "ebene"], ["scifi", "stadt", "see"], ["scifi", "weiler", "insel"],
 ] as const;
 
-/** Gegenwart und Sci-Fi bleiben bis zu ihrem eigenen Baustein (Teil 2) Byte für Byte, was sie
- *  waren (Spec 2026-09-23, E2). Ein Refactoring in `siedlung.ts` darf diese Hashes nicht bewegen. */
-describe("Siedlung v8 bleibt für Gegenwart und Sci-Fi unverändert", () => {
+/** Gegenwart und Sci-Fi aus ihren eigenen Stilen (Version 12, Spec 2026-09-23-stadt-zukunft). Ein
+ *  Umbau der gemeinsamen Pipeline darf diese Hashes nicht unbemerkt bewegen. */
+describe("Siedlung v12 bleibt für Gegenwart und Sci-Fi stabil", () => {
   it.each(FAELLE)("%s %s %s", (setting, art, standort) => {
     const s = erzeugeSiedlung({ keim: `gold:${setting}:${art}:${standort}`, optionen: { setting, art, standort } }, pack("pk.zeitwelten"));
     expect(hash({ karte: s.karte, cartography: s.cartography, knoten: s.knoten, bericht: s.bericht, version: s.version })).toMatchSnapshot();
@@ -24,7 +24,7 @@ describe("Siedlung v8 bleibt für Gegenwart und Sci-Fi unverändert", () => {
   it("gegenwart stadt mit Zonenplan", () => {
     const planung = { schemaVersion: 1 as const, zonen: [{ id: "west", name: "West", nutzung: "handwerk" as const, dichte: .8, polygon: [[0, 0], [.5, 0], [.5, 1], [0, 1]] as const }] };
     const s = erzeugeSiedlung({ keim: "gold:plan", optionen: { setting: "gegenwart", art: "stadt", planung } }, pack("pk.zeitwelten"));
-    expect(s.version).toBe("9");
+    expect(s.version).toBe("12");
     expect(hash({ karte: s.karte, cartography: s.cartography, knoten: s.knoten, bericht: s.bericht })).toMatchSnapshot();
   }, 30_000);
 });

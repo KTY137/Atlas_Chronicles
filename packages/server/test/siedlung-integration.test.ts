@@ -227,7 +227,7 @@ describe("settlements through the existing tactical and entrance contracts", () 
       { optionen: { art: "metropole" } }, { optionen: { raeume: 5 } }, { optionen: { kammern: 5 } },
       { optionen: { zellen: [24, 24] } }, { optionen: { ausdehnung: [24] } },
       { optionen: { ausdehnung: [24, "24"] } }, { optionen: { grundstueck: [8, 3] } },
-      { optionen: { bauwerke: "5" } }, { optionen: { bauwerke: 0 } }, { optionen: { bauwerke: 513 } },
+      { optionen: { bauwerke: "5" } }, { optionen: { bauwerke: 0 } }, { optionen: { bauwerke: 1025 } },
       { optionen: { strassenDichte: 2 } }, { optionen: { licht: "false" } },
       { art: "grundriss", optionen: { bauwerke: 5 } }, { art: "hoehle", optionen: { ausdehnung: [24, 24] } },
     ];

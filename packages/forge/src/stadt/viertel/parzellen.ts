@@ -44,7 +44,7 @@ const MASS: Readonly<Record<Rolle, Mass>> = Object.freeze({
 });
 const GASSE = .3;
 
-function zerteile(poly: Polygon, los: number, block: number, pfad: string, tiefe: number, a: ParzellenAuftrag, lose: { poly: Polygon; pfad: string }[], gassen: Gasse[]): void {
+export function zerteile(poly: Polygon, los: number, block: number, pfad: string, tiefe: number, a: ParzellenAuftrag, lose: { poly: Polygon; pfad: string }[], gassen: Gasse[]): void {
   const f = flaeche(poly);
   if (f <= los * 1.35 || tiefe > 12) { lose.push({ poly: poly.map(qp), pfad }); return; }
   const lage = a.r.zahl(.38, .62), kippung = a.r.zahl(-.14, .14);
@@ -60,7 +60,7 @@ function zerteile(poly: Polygon, los: number, block: number, pfad: string, tiefe
 
 /** Die nächste Straße vor einem Los — oder `null`, wenn es innen liegt. Die Schwelle ist die
  *  Bandbreite: ein einseitiges Band liegt ganz neben seiner Mittellinie, ein zweiseitiges halb. */
-function vorDerTuer(los: Polygon, strassen: readonly Gasse[]): Gasse | null {
+export function vorDerTuer(los: Polygon, strassen: readonly Gasse[]): Gasse | null {
   let beste: Gasse | null = null, besterAbstand = Infinity;
   for (const s of strassen) { const d = abstandPolygonStrecke(los, s.von, s.bis); if (d < besterAbstand) { besterAbstand = d; beste = s; } }
   if (!beste) return null;

@@ -46,7 +46,9 @@ export function siedlungsVorgabe(defaults: GenerationDefaults, art: SiedlungOpti
   return defaults.siedlungsartenJeSetting?.[setting]?.[art] ?? defaults.siedlungsarten?.[art] ?? defaults.siedlung;
 }
 export function changeGenerationSetting(value: GenerationSettings, setting: KartenSetting): GenerationSettings {
-  return { ...value, setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
+  // Mauer und Burg gehören zum Setting: eine abgewählte Stadtmauer ist kein abgewählter Schutzzaun.
+  const { mauer: _mauer, burg: _burg, ...rest } = value;
+  return { ...(setting === value.setting ? value : rest), setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
 }
 export function generationDimensions(value: GenerationSettings, defaults: GenerationDefaults): readonly [number, number] {
   const std = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.ausdehnung : value.art === "siedlung" ? siedlungsVorgabe(defaults, value.siedlung, value.setting).ausdehnung
@@ -62,7 +64,7 @@ export function generationOptions(value: GenerationSettings, defaults: Generatio
     ...(value.anlage === "burg" ? { graben: value.graben ?? false } : { symmetrie: value.symmetrie ?? 1 }) };
   if (value.art === "siedlung") return { ...(value.verkehr?.knoten.length ? { verkehr: value.verkehr } : {}), ...(value.planung?.zonen.length ? { planung: value.planung } : {}), art: value.siedlung, standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}),
     ...(value.anzahl !== "" ? { bauwerke: value.anzahl } : {}), strassenDichte: value.dichte, relief: value.relief, bewaldung: value.bewaldung, licht: value.licht,
-    ...(value.setting === "fantasy" && value.mauer !== undefined ? { mauer: value.mauer } : {}), ...(value.setting === "fantasy" && value.burg !== undefined ? { burg: value.burg } : {}) };
+    ...(value.setting !== "gegenwart" && value.mauer !== undefined ? { mauer: value.mauer } : {}), ...(value.setting === "fantasy" && value.burg !== undefined ? { burg: value.burg } : {}) };
   if (value.art === "region") return { standort: value.standort, setting: value.setting, ...(dimensions ? { ausdehnung: dimensions } : {}), ...(value.anzahl !== "" ? { orte: value.anzahl } : {}), relief: value.relief, bewaldung: value.bewaldung };
   return { ...(dimensions ? { zellen: dimensions } : {}),
     ...(value.anzahl !== "" ? value.art === "hoehle" ? { kammern: value.anzahl } : { raeume: value.anzahl } : {}),
@@ -90,7 +92,7 @@ export function generationError(value: GenerationSettings, defaults: GenerationD
   if (w * h > 20_000) return t("Die Karte darf höchstens 20.000 Zellen enthalten. Verringere Breite oder Höhe.");
   const z = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.zellgroesse : value.art === "siedlung" ? siedlungsVorgabe(defaults, value.siedlung, value.setting).zellgroesse : value.art === "region" ? (defaults.region?.zellgroesse ?? 112) : defaults[value.art].zellgroesse;
   if (w * z > TACTICAL_MAP_LIMITS.dimension || h * z > TACTICAL_MAP_LIMITS.dimension || w * h * z * z > TACTICAL_MAP_LIMITS.pixels) return t("Diese Größe überschreitet das Kartenbudget. Wähle eine kleinere Fläche.");
-  const min = value.art === "siedlung" || value.art === "region" ? 1 : 2, max = value.art === "siedlung" ? 512 : value.art === "region" ? 24 : value.art === "hoehle" ? 32 : 64;
+  const min = value.art === "siedlung" || value.art === "region" ? 1 : 2, max = value.art === "siedlung" ? 1024 : value.art === "region" ? 24 : value.art === "hoehle" ? 32 : 64;
   if (value.anzahl !== "" && (!Number.isSafeInteger(value.anzahl) || value.anzahl < min || value.anzahl > max)) return t("Die Anzahl muss zwischen {min} und {max} liegen.", { min, max });
   return null;
 }

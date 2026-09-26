@@ -144,7 +144,7 @@ export const KARTEN_SETTING_LABEL: Readonly<Record<KartenSetting, string>> = Obj
 /** Suggested programs for each setting. Individual profiles remain freely selectable. */
 export const BAUWERK_SETTINGS: Readonly<Record<KartenSetting, readonly BauwerkTyp[]>> = Object.freeze({
   fantasy: Object.freeze(["haus", "kirche", "taverne", "schmiede", "lager", "turm", "bibliothek", "museum", "bank", "werkstatt", "burg", "rathaus", "muehle", "bauernhof", "kaserne"] as const),
-  gegenwart: Object.freeze(["wohnblock", "buero", "cafe", "restaurant", "supermarkt", "krankenhaus", "polizei", "feuerwache", "schule", "hotel", "fabrik", "bahnhof", "labor", "bibliothek", "museum", "bank", "werkstatt", "haus", "kirche", "lager"] as const),
+  gegenwart: Object.freeze(["wohnblock", "buero", "cafe", "restaurant", "supermarkt", "krankenhaus", "polizei", "feuerwache", "schule", "hotel", "fabrik", "bahnhof", "labor", "bibliothek", "museum", "bank", "werkstatt", "haus", "kirche", "lager", "rathaus"] as const),
   scifi: Object.freeze(["raumstation", "raumhafen", "medstation", "kommando", "reaktor", "labor", "wohnblock", "fabrik", "lager", "werkstatt", "buero", "restaurant"] as const),
 });
 export interface BauwerkMetadaten {

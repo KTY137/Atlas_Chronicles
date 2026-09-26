@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import type { AssetpaketV1, BauwerkTyp, CartographyLabelV1, CartographyRegionV1, Herkunft, Kante, KartenSetting, Knoten, TacticalLight, Weltkeim } from "@chronicle/szene";
+import type { AssetpaketV1, BauwerkTyp, CartographyDachform, CartographyLabelV1, CartographyRegionV1, Herkunft, Kante, KartenSetting, Knoten, TacticalLight, Weltkeim } from "@chronicle/szene";
 import { parseTacticalCartography, parseTacticalMapDocument, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import type { KnotenId } from "@chronicle/core";
 import { bestuecker, sortiereNachId, type GrundrissEltern, type IdFabrik } from "../kartenwerk.ts";
@@ -24,7 +24,20 @@ export interface Ablage {
 
 /** Eine Straße längs durch den Fluss ist weder Kai noch Brücke. Sie fällt weg, wenn ihre Enden
  *  über andere Straßen verbunden bleiben — vor der Parzellierung, damit keine Adresse verwaist. */
-export function ohneLaengsFluss(gassen: Gasse[], fluss: readonly FlussStueck[]): void {
+export function ohneLaengsFluss(gassen: Gasse[], fluss: readonly FlussStueck[], nurBleibende = false): void {
+  // Eine Nebengasse durch den Fluss wird später am Ufer gekappt; als Umweg zählt sie dann nicht.
+  // Einmal je Straße berechnet: die Suche unten fragt jede Straße für jeden Knoten erneut.
+  const trocken = new Map<Gasse, boolean>();
+  const bleibt = (road: Gasse) => {
+    if (!nurBleibende || road.art === "hauptstrasse") return true;
+    let wert = trocken.get(road);
+    if (wert === undefined) {
+      const box = huelle(road.band);
+      wert = !fluss.some(stueck => { const b = huelle(stueck.polygon); return b[0] <= box[2] && b[2] >= box[0] && b[1] <= box[3] && b[3] >= box[1] && flaeche(schnittKonvex(road.band, stueck.polygon)) > 1e-6; });
+      trocken.set(road, wert);
+    }
+    return wert;
+  };
   const endpointKey = (point: Punkt) => `${Math.round(point[0] * 100)}:${Math.round(point[1] * 100)}`;
   for (let index = gassen.length - 1; index >= 0; index--) {
     const candidate = gassen[index]!, dx = candidate.bis[0] - candidate.von[0], dy = candidate.bis[1] - candidate.von[1];
@@ -37,7 +50,7 @@ export function ohneLaengsFluss(gassen: Gasse[], fluss: readonly FlussStueck[]):
     const start = endpointKey(candidate.von), target = endpointKey(candidate.bis), reached = new Set([start]), pending = [start];
     for (let cursor = 0; cursor < pending.length && !reached.has(target); cursor++) {
       for (const [otherIndex, other] of gassen.entries()) {
-        if (otherIndex === index) continue;
+        if (otherIndex === index || !bleibt(other)) continue;
         const a = endpointKey(other.von), b = endpointKey(other.bis), next = a === pending[cursor] ? b : b === pending[cursor] ? a : null;
         if (next === null || reached.has(next)) continue;
         reached.add(next); pending.push(next);
@@ -181,7 +194,8 @@ export function ausstattung(a: {
         if (!werk.platziere(verkehr, frei)) continue;
         const stamp = werk.stamps[werk.stamps.length - 1]!, [w, h] = verkehr.einheiten, x = stamp.x / z - w / 2, y = stamp.y / z - h / 2;
         const id = ids.geometrieId("stellfläche", stamp.id), polygon: Polygon = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
-        ablage.extraRegions.push({ id, polygon, role: { ...ablage.rolle(id), role: "terrain", material: "rock" } });
+        // Eine Stellfläche ist gepflastert, kein Fels.
+        ablage.extraRegions.push({ id, polygon, role: { ...ablage.rolle(id), role: "road", material: "square" } });
       }
     }
   }
@@ -207,7 +221,7 @@ export function ausstattung(a: {
   return { werk, lichter, strassenzellen, hofzellen };
 }
 
-export interface BauwerkAusgabe { readonly id: KnotenId; readonly pfad: string; readonly umriss: Polygon; readonly strasse: string; readonly typ: BauwerkTyp; readonly titel: string }
+export interface BauwerkAusgabe { readonly id: KnotenId; readonly pfad: string; readonly umriss: Polygon; readonly strasse: string; readonly typ: BauwerkTyp; readonly titel: string; readonly dach?: CartographyDachform }
 export interface Wand { readonly id: string; readonly kind: "wall"; readonly points: readonly (readonly [number, number])[]; readonly elevation: number }
 
 /** Das kanonische Kartendokument, die Kartografie und die Knoten: die Wurzel `ort` und je Gebäude
@@ -244,7 +258,7 @@ export function dokument(a: {
   });
   const cartography = parseTacticalCartography({ schemaVersion: 1, kind: "tactical-cartography", construction: { cellSize: z, origin: [0, 0] }, relief: a.relief, regions: [
     ...a.extraRegions.map(value => value.role),
-    ...a.bauwerke.map(b => ({ ...a.rolle(b.id), role: "building", streetRegionId: b.strasse, lotRegionId: ids.geometrieId("grundstück", b.pfad) })),
+    ...a.bauwerke.map(b => ({ ...a.rolle(b.id), role: "building", streetRegionId: b.strasse, lotRegionId: ids.geometrieId("grundstück", b.pfad), ...(b.dach ? { dach: b.dach } : {}) })),
     ...a.gassen.map(g => ({ ...a.rolle(g.id), role: "road", material: a.gassenMaterial(g) })),
   ], ...(a.labels?.length ? { labels: a.labels } : {}) }, karte);
   const herkunft = (pfad: readonly string[], kindKeim: string): Herkunft =>
