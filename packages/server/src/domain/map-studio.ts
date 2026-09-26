@@ -11,7 +11,7 @@ import type { Db } from "../db/index.ts";
 import { createCampaigns, type DomainConfig } from "./campaigns.ts";
 import { createTactical, tacticalHash, TacticalValidationError } from "./tactical.ts";
 import { authorizeMapLifecycle, assertMapActive, isMapDeleted } from "./map-lifecycle.ts";
-import { floorStackFor, roomFogFor, fogRoomIds, validateStoredFloorMaps } from "./map-studio-state.ts";
+import { floorStackFor, insertFloorStack, roomFogFor, fogRoomIds, validateStoredFloorMaps } from "./map-studio-state.ts";
 import { Conflict, Gone } from "./errors.ts";
 
 type Operation = "floor.add" | "floor.link" | "floor.unlink" | "floor.rename" | "floor.detach" | "fog.set";
@@ -56,12 +56,11 @@ export function createMapStudio(db: Db, cfg: DomainConfig = {}) {
   }
   async function storeStack(tx: Db, userId: string, campaignId: string, before: P.MapFloorView, raw: MapFloorStack): Promise<number> {
     if (before.version >= 2147483647) throw new Conflict();
+    if (before.version === 0) { await insertFloorStack(tx, campaignId, userId, raw, now()); return 1; }
     const stack = parseMapFloorStack(raw);
     await validateStoredFloorMaps(tx, campaignId, stack);
     const version = before.version + 1, at = now();
-    if (before.version === 0) await tx.query(`INSERT INTO map_floor_stacks(root_map_id,campaign_id,version,document,created_by,created_at,updated_by,updated_at)
-      VALUES($1,$2,$3,$4,$5,$6,$5,$6)`, [stack.rootMapId, campaignId, version, JSON.stringify(stack), userId, at]);
-    else if (!(await tx.query("UPDATE map_floor_stacks SET version=$3,document=$4,updated_by=$5,updated_at=$6 WHERE root_map_id=$1 AND campaign_id=$2 AND version=$7 RETURNING root_map_id", [stack.rootMapId, campaignId, version, JSON.stringify(stack), userId, at, before.version])).rowCount) throw new Conflict();
+    if (!(await tx.query("UPDATE map_floor_stacks SET version=$3,document=$4,updated_by=$5,updated_at=$6 WHERE root_map_id=$1 AND campaign_id=$2 AND version=$7 RETURNING root_map_id", [stack.rootMapId, campaignId, version, JSON.stringify(stack), userId, at, before.version])).rowCount) throw new Conflict();
     return version;
   }
   async function getFloors(userId: string, campaignId: string, mapId: string) { return db.transaction(tx => readStack(tx, userId, campaignId, mapId)); }
@@ -131,6 +130,10 @@ export function createMapStudio(db: Db, cfg: DomainConfig = {}) {
       const before = await readStack(tx, userId, campaignId, mapId);
       if (before.version !== input.expectedVersion) throw new Conflict();
       if (before.stack.rootMapId === mapId) throw new TacticalValidationError("Das Erdgeschoss bleibt die Wurzel. Bitte zuerst die anderen Geschosse lösen.");
+      // A scene the GM led up here would be left on a floor without stairs.
+      if ((await tx.query(`SELECT 1 FROM session_floor_states f JOIN game_sessions g ON g.id=f.session_id AND g.campaign_id=f.campaign_id
+        WHERE f.campaign_id=$1 AND f.map_id=$2 AND g.ended_at IS NULL`, [campaignId, mapId])).rowCount)
+        throw new TacticalValidationError("Auf diesem Geschoss spielt gerade eine Szene. Bitte die Runde zuerst über eine Treppe hinausführen oder die Szene beenden.");
       return { version: await storeStack(tx, userId, campaignId, before, { ...before.stack,
         floors: before.stack.floors.filter(f => f.mapId !== mapId), links: before.stack.links.filter(l => l.fromMapId !== mapId && l.toMapId !== mapId) }), mapId };
     });

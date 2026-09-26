@@ -83,7 +83,7 @@ export const LOESCHREIHENFOLGE: readonly string[] = [
   "authoring_events", "publication_routes", "entry_publications", "campaign_publications",
   "campaign_theme_pins", "theme_preset_revisions", "theme_presets",
   "tactical_transitions", "tactical_command_receipts", "tactical_token_states",
-  "session_tactical_states", "scene_token_plans", "scene_tactical_plans",
+  "session_floor_states", "session_tactical_states", "scene_token_plans", "scene_tactical_plans",
   "tactical_map_cartography", "tactical_map_anchors", "tactical_map_revisions", "tactical_maps", "tactical_sources",
   "actor_inventory_events", "item_instances", "reader_perspectives", "actor_controllers",
   "actor_profiles", "item_template_revisions", "item_templates",

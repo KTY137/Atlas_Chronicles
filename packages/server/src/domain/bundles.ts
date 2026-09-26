@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import {
-  CAMPAIGN_V22_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds, collectFigurantragIdentityIds, collectRegelarchivIdentityIds, collectKartenherkunftIdentityIds,
+  CAMPAIGN_V23_TABLES as CAMPAIGN_TABLES, CAMPAIGN_EXCLUDED_TABLES, currentCampaignTables, collectChronistIdentityIds, collectFigurantragIdentityIds, collectRegelarchivIdentityIds, collectKartenherkunftIdentityIds,
   createCurrentCampaignBundle as createCampaignBundle, validateCurrentCampaignBundle as validateCampaignBundle,
   currentCampaignSemanticDiff as campaignSemanticDiff, upgradeCampaignBundleV1, upgradeCampaignBundleV2, upgradeCampaignBundleV3, upgradeCampaignBundleV4,
-  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV22 as CampaignTables,
+  type CurrentCampaignBundle as CampaignBundle, type CampaignRow, type CampaignTablesV23 as CampaignTables,
   type ChronistRunRow,type ChronistProposalRow,
   type FigurvorlageFreigabeRow,type FigurantragRow,type FigurantragEventRow,type RulePackageArchivRow,type AtlasKartenherkunftRow,
-  type CampaignTableNameV22 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
+  type CampaignTableNameV23 as CampaignTableName, type CampaignUpgradeReport, type CampaignUpgradeReportV2ToV3, type CampaignUpgradeReportV3ToV4, type CampaignUpgradeReportV4ToV5,
 } from "@chronicle/io";
 import { canonicalHash, type CanonicalValue } from "@chronicle/core";
 import { migrate, type Db } from "../db/index.ts";
@@ -34,7 +34,7 @@ export const restoreOrder: readonly CampaignTableName[] = [
   "actor_templates", "actor_template_revisions", "item_templates", "item_template_revisions",
   "actor_profiles", "actor_controllers", "reader_perspectives", "item_instances", "actor_inventory_events",
   "tactical_sources", "tactical_maps", "tactical_map_revisions", "tactical_map_cartography", "tactical_map_anchors",
-  "scene_tactical_plans", "scene_token_plans", "session_tactical_states", "tactical_token_states",
+  "scene_tactical_plans", "scene_token_plans", "session_tactical_states", "session_floor_states", "tactical_token_states",
   "tactical_command_receipts", "tactical_transitions",
   "theme_presets", "theme_preset_revisions", "campaign_theme_pins", "campaign_publications",
   "entry_publications", "publication_routes", "authoring_events",
@@ -76,7 +76,7 @@ export class CampaignRestoreError extends Error {
 export interface CampaignRestoreReport {
   campaignId: string; universeId: string; contentHash: string; rows: number;
   identitiesWithoutCredentials: number; enrollmentRequired: true; dryRun: boolean;
-  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22; migration?: CampaignMigrationChain;
+  formatVersion: 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23; migration?: CampaignMigrationChain;
 }
 export interface CampaignMigrationChain {
   sourceVersion: 1 | 2 | 3 | 4; targetVersion: 4 | 5; sourceContentHash: string; targetContentHash: string;

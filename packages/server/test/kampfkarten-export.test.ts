@@ -53,7 +53,8 @@ describe("Die Kartenlage reist im Kampagnenpaket mit", () => {
 
   it("weist eine Karte ab, die auf keinen Teilnehmer zeigt, unlesbar ist oder verdeckt am Zug steht", async () => {
     const bundle = await exportCampaignBundle(db, gm, campaign, cfg);
-    const tabellen = currentCampaignTables(bundle), karte = tabellen.kampf_karten[0]!;
+    // Fassung 22 kennt das Geschoss einer Szene (v23) noch nicht; ihre Tabellen enden davor.
+    const { session_floor_states: _geschosse, ...tabellen } = currentCampaignTables(bundle), karte = tabellen.kampf_karten[0]!;
     const mit = (kampf_karten: unknown[], kampf_teilnehmer: unknown[] = [...tabellen.kampf_teilnehmer]) => () => createCampaignBundleV22({
       campaignId: bundle.manifest.campaignId, universeId: bundle.manifest.universeId, exportedAt: bundle.manifest.exportedAt,
       tables: { ...tabellen, kampf_teilnehmer, kampf_karten } as never });

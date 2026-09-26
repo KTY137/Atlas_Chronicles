@@ -113,10 +113,12 @@ export function createMapLifecycle(db: Db, cfg: DomainConfig = {}) {
       tx.query<MapDeletionPreview["affectedPlans"][number]>(`SELECT p.scene_id AS "sceneId",s.name,p.version,p.map_id AS "mapId"
         FROM scene_tactical_plans p JOIN scenes s ON s.id=p.scene_id AND s.campaign_id=p.campaign_id
         WHERE p.campaign_id=$1 AND p.map_id=ANY($2::text[]) ORDER BY p.scene_id`, [campaignId, tacticalIds]),
-      tx.query<MapDeletionBlocker>(`SELECT t.session_id AS "sessionId",t.scene_id AS "sceneId",s.name,t.map_id AS "mapId"
+      // A running scene holds its first map and the floor it plays on now.
+      tx.query<MapDeletionBlocker>(`SELECT t.session_id AS "sessionId",t.scene_id AS "sceneId",s.name,m.map_id AS "mapId"
         FROM session_tactical_states t JOIN game_sessions g ON g.id=t.session_id AND g.campaign_id=t.campaign_id
         JOIN scenes s ON s.id=t.scene_id AND s.campaign_id=t.campaign_id
-        WHERE t.campaign_id=$1 AND g.ended_at IS NULL AND t.map_id=ANY($2::text[]) ORDER BY t.session_id`, [campaignId, tacticalIds]),
+        CROSS JOIN LATERAL (SELECT t.map_id UNION SELECT f.map_id FROM session_floor_states f WHERE f.session_id=t.session_id) m
+        WHERE t.campaign_id=$1 AND g.ended_at IS NULL AND m.map_id=ANY($2::text[]) ORDER BY t.session_id,m.map_id`, [campaignId, tacticalIds]),
     ]);
     const payload = { root, maps, incoming, affectedPlans: plans.rows, blockers: sessions.rows };
     return { ...payload, confirmationHash: hash({ schemaVersion: 1, campaignId, ...payload }) };

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { TacticalAck, TacticalMoveInput, TacticalToken, TacticalView as Board } from "@chronicle/protocol";
+import type { TacticalAck, TacticalFloorLink, TacticalMoveInput, TacticalToken, TacticalView as Board } from "@chronicle/protocol";
 import { cartographyPaintsWalls, type KartenSetting } from "@chronicle/szene";
 import { snapMapPoint, type MapPoint, type ProjectedMapScene } from "@chronicle/render";
 import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
@@ -19,6 +19,12 @@ import "./tactical.css";
 import { RoomFogControls } from "./RoomFogControls";
 
 type Page = "live" | "prepare" | "import";
+/** A stair names where it leads, in words the table uses: up, down, or through. */
+export function stairLabel(link: TacticalFloorLink, level: number): string {
+  if (link.kind === "lift") return t("Aufzug: {ziel}", { ziel: link.toName });
+  if (link.kind === "opening") return t("Durchgang: {ziel}", { ziel: link.toName });
+  return link.toLevel > level ? t("Treppe hinauf: {ziel}", { ziel: link.toName }) : t("Treppe hinunter: {ziel}", { ziel: link.toName });
+}
 export function TacticalView({ campaignId, gm, revision, onDirty, onOpenEntry }: { campaignId: string; gm: boolean; revision: number; onDirty: (value: boolean) => void; onOpenEntry: (id: string) => void }) {
   const [page, setPage] = useState<Page>("live"), [dirty, setDirty] = useState(false), [local, setLocal] = useState(0);
   const report = useCallback((value: boolean) => { setDirty(value); onDirty(value); }, [onDirty]);
@@ -68,7 +74,9 @@ export function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpen
     return { ...authored,
     id: data.sessionId, width: data.size[0], height: data.size[1], ...(raster ? { rasterScope: data.rasterDigest } : {}),
     ...(raster && (!data.gm || data.cartography) ? { drawing: undefined, paintCells: false } : {}),
-    cells: authored?.cells ?? data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, entryId: o.entryId })),
+    cells: authored?.cells ?? data.regions.map(r => ({ id: r.id, polygon: r.points, fill: 0xd98e3b })), pins: [...visibleObjects.map(o => ({ id: objectKey(o), x: o.x, y: o.y, label: o.label, entryId: o.entryId })),
+      // Stairs of a building: the game master leads the scene over them, everyone sees where they lead.
+      ...(data.floor?.links ?? []).map(link => ({ id: `floor-link:${link.id}`, x: link.x, y: link.y, label: stairLabel(link, data.floor!.level), icon: "portal" as const }))],
     // Players get the names and lights the server let through, and the painted flag that sets
     // names in ink and shadows under furniture; the game master's come with the whole document.
     ...(authored ? {} : { ...(data.labels?.length ? { labels: data.labels } : {}), ...(data.lights?.length ? { lights: lightsToScene(data.lights) } : {}), ...(data.gemalt ? { painted: true } : {}), ...(data.mood ? { mood: data.mood } : {}) }),
@@ -82,6 +90,14 @@ export function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpen
     const result = await command<TacticalAck>(apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tokens/${token.id}/move`), { ...values, expectedVersion: token.version });
     onChanged(); return result;
   };
+  /** The whole scene, every token in its place, goes to the floor on the stair's other side. */
+  const climb = (linkId: string) => {
+    if (!data?.floor || !data.gm || !data.active || task.busy) return;
+    void task.run(async () => {
+      await command(apiPath(campaignId, `/sessions/${data.sessionId}/tactical/floor`), { linkId, expectedVersion: data.floor!.version });
+      setSelected(""); setSelectedObject(""); setSelectedRoom(""); onChanged();
+    });
+  };
   const drag = (id: string, to: MapPoint) => {
     const token = data?.tokens.find(t => t.id === id); if (!token || !data || task.busy) return;
     if (drafts[id] && !window.confirm(t("Ungespeicherte Positionswerte dieser Figur verwerfen?"))) return;
@@ -92,9 +108,14 @@ export function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpen
   return <div className={compact ? "tactical-live tabletop-live" : "tactical-live"}>{board.error || task.error ? <Notice error>{board.error || task.error}</Notice> : null}
     {invalidated && board.data === invalidated ? <Notice>{t("Die bisherige Kartensicht wurde entzogen. Orte und Figuren werden erst nach einer neuen erlaubten Antwort angezeigt.")} <Button onClick={onChanged}>{t("Kartensicht erneut laden")}</Button></Notice> : null}
     {!data || !scene ? <EmptyState title={t("Noch keine Szenenkarte am Tisch.")}>{t("Die Spielleitung kann eine Karte importieren, mit einer vorbereiteten Szene verbinden und diese Szene beginnen.")}</EmptyState> : <>
-      <div className="page-heading"><div><h2>{data.map?.name ?? t("Eure Szenenkarte")}</h2><p className="field-help">{data.gm ? t("Ansicht der Spielleitung") : t("Karte nach deinem gewählten Wissensblick")}{!compact ? <> · {t("Höhe ist ein einzelner Wert, kein Stockwerk.")}</> : null}</p></div><div className="button-row"><label className="check-label"><input type="checkbox" checked={grid} onChange={e => setGrid(e.target.checked)} /> {t("Raster anzeigen")}</label><label className="check-label"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)} /> {t("Beim Ziehen einrasten")}</label></div></div>
-      <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tiles`)} onMove={drag} selection={focusedObject ? { kind: "pin", id: selectedObject } : selectedToken ? { kind: "token", id: selectedToken.id } : data.gm && selectedRoom ? { kind: "cell", id: selectedRoom } : null} focusObject={focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : focusActor && selectedToken?.actorId === focusActor.id ? { id: `${selectedToken.id}:${focusActor.request}`, x: selectedToken.x, y: selectedToken.y } : null} onSelect={hit => { setSelectedRoom(data.gm && hit?.kind === "cell" ? hit.id : ""); setSelected(hit?.kind === "token" ? hit.id : ""); setSelectedObject(hit?.kind === "pin" ? hit.id : ""); }} onScopeInvalidated={() => { setInvalidated(data); setSelectedObject(""); setSelected(""); onBoard?.(null); onChanged(); }} />
+      <div className="page-heading"><div><h2>{data.map?.name ?? t("Eure Szenenkarte")}</h2><p className="field-help">{data.gm ? t("Ansicht der Spielleitung") : t("Karte nach deinem gewählten Wissensblick")}{data.floor ? <> · {t("Geschoss: {name}", { name: data.floor.name })}</> : !compact ? <> · {t("Höhe ist ein einzelner Wert, kein Stockwerk.")}</> : null}</p></div><div className="button-row"><label className="check-label"><input type="checkbox" checked={grid} onChange={e => setGrid(e.target.checked)} /> {t("Raster anzeigen")}</label><label className="check-label"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)} /> {t("Beim Ziehen einrasten")}</label></div></div>
+      <TacticalCanvas scene={scene} tileBase={apiPath(campaignId, `/sessions/${data.sessionId}/tactical/tiles`)} onMove={drag} selection={focusedObject ? { kind: "pin", id: selectedObject } : selectedToken ? { kind: "token", id: selectedToken.id } : data.gm && selectedRoom ? { kind: "cell", id: selectedRoom } : null} focusObject={focusedObject ? { id: selectedObject, x: focusedObject.x, y: focusedObject.y } : focusActor && selectedToken?.actorId === focusActor.id ? { id: `${selectedToken.id}:${focusActor.request}`, x: selectedToken.x, y: selectedToken.y } : null} onSelect={hit => { if (hit?.kind === "pin" && hit.id.startsWith("floor-link:")) { climb(hit.id.slice("floor-link:".length)); return; } setSelectedRoom(data.gm && hit?.kind === "cell" ? hit.id : ""); setSelected(hit?.kind === "token" ? hit.id : ""); setSelectedObject(hit?.kind === "pin" ? hit.id : ""); }} onScopeInvalidated={() => { setInvalidated(data); setSelectedObject(""); setSelected(""); onBoard?.(null); onChanged(); }} />
       <details className="tabletop-map-tools" open={compact ? undefined : true}><summary>{t("Figuren bewegen, Orte und Kartenwerkzeuge")}</summary>
+      {data.floor ? <section className="panel"><h3>{t("Geschoss")}</h3>
+        <p className="field-help">{data.gm ? t("Die Runde spielt gerade im Geschoss „{name}“. Ein Klick auf eine Treppe – auf der Karte oder hier – führt die ganze Szene in das andere Geschoss. Jede Figur behält ihren Platz, denn alle Geschosse liegen genau übereinander.", { name: data.floor.name })
+          : t("Ihr seid gerade im Geschoss „{name}“. Die Spielleitung führt die Runde über Treppen in andere Geschosse.", { name: data.floor.name })}</p>
+        {data.gm && data.floor.links.length ? <div className="button-row">{data.floor.links.map(link => <Button key={link.id} disabled={task.busy || !data.active} onClick={() => climb(link.id)}>{stairLabel(link, data.floor!.level)}</Button>)}</div> : null}
+      </section> : null}
       {data.gm && data.map ? <RoomFogControls key={`fog:${data.map.id}:${data.map.revision}`} campaignId={campaignId} mapId={data.map.id} mapRevision={data.map.revision} selectedRoomId={selectedRoom} onChanged={onChanged} /> : null}
       <section className="panel"><h3>{t("Bekannte Orte & Kartenobjekte")}</h3><p className="field-help">{t("Wähle einen Marker oder einen Listeneintrag, um seinen Artikel zu öffnen. Jede Verknüpfung verwendet deinen aktuellen Wissensblick.")}</p>
         {visibleObjects.length < objects.length ? <Notice>{t("{sichtbar} von {gesamt} bekannten Objekten auf der Karte. Die vollständige Liste bleibt durchsuchbar; ausgewählte Objekte werden in den Kartenausschnitt aufgenommen, sofern sie innerhalb der Karte liegen.", { sichtbar: visibleObjects.length, gesamt: objects.length })}</Notice> : null}

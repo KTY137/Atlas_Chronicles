@@ -10,7 +10,7 @@ import { cartographyDraw, cartographyLabelAnchor, rendererVersion, inferLegacyCa
   type BuildingIntent, type CartographyRegionV1, type Knoten, type LegacyCartographyEvidence, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
 import * as P from "../../../protocol/src/tactical.ts";
 import type { Db } from "../db/index.ts";
-import { validateFloorRevision, roomFogFor } from "./map-studio-state.ts";
+import { validateFloorRevision, roomFogFor, floorStackFor } from "./map-studio-state.ts";
 import { visibleFogRegions } from "@chronicle/szene";
 import { createCampaigns, type DomainConfig, type Membership } from "./campaigns.ts";
 import { createDocuments } from "./documents.ts";
@@ -42,6 +42,12 @@ interface SessionRow {
   session_id: string; campaign_id: string; scene_id: string; map_id: string; map_revision: number;
   initial_snapshot: TacticalSnapshot; initial_hash: string; undo_base_snapshot: TacticalSnapshot; undo_base_hash: string;
   base_seq: string; last_transition_seq: string; portal_states: TacticalPortalState[]; ended_at: string | null;
+}
+/** Where the GM has led a running scene; absent while it plays on its first map. */
+interface FloorRow {
+  session_id: string; map_id: string; map_revision: number; portal_states: TacticalPortalState[];
+  parked: Record<string, { revision: number; portals: TacticalPortalState[] }>;
+  version: number; command_id: string; request_hash: string; ack: P.TacticalAck;
 }
 interface TransitionRow {
   seq: string; command_id: string; subject_kind: "token" | "portal"; subject_id: string;
@@ -392,11 +398,38 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     }
     return result;
   }
+  async function floorRow(tx: Db, sessionId: string): Promise<FloorRow | null> {
+    return (await tx.query<FloorRow>("SELECT session_id,map_id,map_revision,portal_states,parked,version,command_id,request_hash,ack FROM session_floor_states WHERE session_id=$1", [sessionId])).rows[0] ?? null;
+  }
+  /**
+   * The map the scene plays on now. The session row keeps its first map, its doors and its undo
+   * ring exactly as captured; another floor brings its own doors, which no undo reaches.
+   */
+  async function where(tx: Db, row: SessionRow) {
+    const floor = await floorRow(tx, row.session_id), start = !floor || floor.map_id === row.map_id;
+    return start ? { mapId: row.map_id, revision: row.map_revision, portals: row.portal_states, floor, start }
+      : { mapId: floor.map_id, revision: floor.map_revision, portals: floor.portal_states, floor, start };
+  }
+  /** The floor's name and its stairs. A player sees a stair only inside a room they know. */
+  async function floorView(tx: Db, campaignId: string, mapId: string, version: number, seen: (x: number, y: number) => boolean): Promise<P.TacticalFloor | undefined> {
+    const stack = await floorStackFor(tx, campaignId, mapId);
+    const self = stack?.document.floors.find(floor => floor.mapId === mapId);
+    if (!stack || !self) return undefined;
+    const links: P.TacticalFloorLink[] = [];
+    for (const link of stack.document.links) {
+      if (link.fromMapId !== mapId && link.toMapId !== mapId) continue;
+      const other = stack.document.floors.find(floor => floor.mapId === (link.fromMapId === mapId ? link.toMapId : link.fromMapId));
+      if (!other || !seen(link.position[0], link.position[1]) || await isMapDeleted(tx, campaignId, "tactical", other.mapId)) continue;
+      links.push({ id: link.id, name: link.name, kind: link.kind, x: link.position[0], y: link.position[1], toLevel: other.level, toName: other.name });
+    }
+    return { level: self.level, name: self.name, version, links: sorted(links) };
+  }
   async function currentSnapshot(tx: Db, row: SessionRow): Promise<TacticalSnapshot> {
     return { schemaVersion: 1, map: row.initial_snapshot.map, tokens: await tokens(tx, row.session_id), portals: row.portal_states };
   }
   async function project(tx: Db, member: Membership, row: SessionRow): Promise<P.TacticalView> {
-    const map = await mapCard(tx, member.campaignId, row.map_id, row.map_revision), state = await currentSnapshot(tx, row), gm = member.role === "leitung";
+    const here = await where(tx, row);
+    const map = await mapCard(tx, member.campaignId, here.mapId, here.revision), state = await currentSnapshot(tx, row), gm = member.role === "leitung";
     const controlled = new Set(await listControlledActorIds(tx, member));
     const docs = createDocuments(tx, cfg), held = gm ? new Set<string>() : await docs.held(member.campaignId, member.actorId);
     const known = gm ? new Set<string>() : new Set((await tx.query<{ entry_id: string }>("SELECT DISTINCT entry_id FROM passages WHERE campaign_id=$1 AND id=ANY($2::text[]) AND retired_at_revision IS NULL", [member.campaignId, [...held]])).rows.map(r => r.entry_id));
@@ -447,7 +480,8 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     }
     const undoTargets: P.TacticalUndoTarget[] = [];
     if (row.ended_at === null) for (const t of candidates(await ring(tx, row.session_id), state)) {
-      if (t.subject_kind === "portal") { if (gm) undoTargets.push({ commandId: t.command_id, subjectKind: "portal", subjectId: t.subject_id, version: state.portals.find(p => p.id === t.subject_id)!.version }); }
+      // The first map's doors are only on the table while the scene plays there.
+      if (t.subject_kind === "portal") { if (gm && here.start) undoTargets.push({ commandId: t.command_id, subjectKind: "portal", subjectId: t.subject_id, version: state.portals.find(p => p.id === t.subject_id)!.version }); }
       else {
         const token = projected.find(p => p.id === t.subject_id);
         const target = t.before_state as TacticalTokenState;
@@ -455,14 +489,15 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
       }
     }
     const cartographyPin = map.cartography ? { mapRevision: map.revision, compositionHash: map.compositionHash, rendererVersion, setting: (await source(tx, member.campaignId, map.sourceId)).provenance.setting ?? "fantasy" } : {};
-    const rasterDigest = tacticalHash({ sessionId: row.session_id, perspectiveActorId: gm ? null : member.actorId, gm, size: map.document.geometry.size, regions, ...cartographyPin });
+    const rasterDigest = tacticalHash({ sessionId: row.session_id, perspectiveActorId: gm ? null : member.actorId, gm, mapId: map.id, mapRevision: map.revision, size: map.document.geometry.size, regions, ...cartographyPin });
+    const floor = await floorView(tx, member.campaignId, map.id, here.floor?.version ?? 0, (x, y) => gm || visiblePoint({ size: map.document.geometry.size, regions }, x, y));
     const view: Omit<P.TacticalView, "digest"> = { sessionId: row.session_id, sceneId: row.scene_id, active: row.ended_at === null, gm, size: map.document.geometry.size, frame: map.document.frame, grid: map.document.grid, elevation: map.document.elevation,
       regions, entities: sorted(entities), tokens: projected, undoTargets, rasterDigest, ...(labels.length ? { labels } : {}),
       ...(lights.length ? { lights } : {}), ...(gemalt ? { gemalt } : {}), ...(map.cartography?.mood ? { mood: map.cartography.mood } : {}),
-      hatRaster: map.document.background !== null || map.cartography !== undefined,
+      hatRaster: map.document.background !== null || map.cartography !== undefined, ...(floor ? { floor } : {}),
       ...(gm ? { map: { id: map.id, name: map.name, revision: map.revision, version: map.version }, document: map.document, walls: map.document.walls,
         ...(map.cartography ? { cartography: map.cartography, compositionHash: map.compositionHash! } : {}),
-        portals: map.document.portals.map(p => ({ ...p, ...state.portals.find(x => x.id === p.id)! })) } : {}) };
+        portals: map.document.portals.map(p => ({ ...p, ...here.portals.find(x => x.id === p.id)! })) } : {}) };
     return { ...view, digest: tacticalHash(view) };
   }
   async function getSession(userId: string, campaignId: string, sessionId: string): Promise<P.TacticalView> {
@@ -511,8 +546,11 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
   }
   async function setPortal(userId: string, campaignId: string, sessionId: string, portalId: string, raw: unknown) {
     const input = parse(P.TacticalPortalSchema, raw);
+    // A door on another floor lives with that floor; the first map's doors keep their undo ring.
+    const elsewhere = await db.transaction(async tx => { await authorize(tx, userId, campaignId, true); return !(await where(tx, await session(tx, campaignId, sessionId))).start; });
+    if (elsewhere) return setFloorPortal(userId, campaignId, sessionId, portalId, input);
     return command(userId, campaignId, "session", sessionId, "portal.set", { ...input, portalId }, true,
-      async tx => { if (!(await session(tx, campaignId, sessionId)).portal_states.some(p => p.id === portalId)) throw new Gone(); }, async tx => {
+      async tx => { const row = await session(tx, campaignId, sessionId); if (!row.portal_states.some(p => p.id === portalId)) throw new Gone(); if (!(await where(tx, row)).start) throw new Conflict(); }, async tx => {
         const row = await session(tx, campaignId, sessionId), before = row.portal_states.find(p => p.id === portalId)!;
         if (row.ended_at !== null || before.version !== input.expectedVersion) throw new Conflict();
         if (before.closed === input.closed) return { subjectKind: "portal", ack: { subjectId: portalId, version: before.version } };
@@ -520,6 +558,59 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
         await append(tx, row, input.commandId, { subjectKind: "portal", subjectId: portalId, before, after }, null);
         return { subjectKind: "portal", ack: { subjectId: portalId, version: after.version } };
       });
+  }
+  /** One command at a time on the floor row: its last command replays, everything else goes through `version`. */
+  async function floorCommand(userId: string, campaignId: string, sessionId: string, hashInput: unknown, commandId: string,
+    work: (tx: Db, row: SessionRow, floor: FloorRow | null) => Promise<{ ack: P.TacticalAck; next: Pick<FloorRow, "map_id" | "map_revision" | "portal_states" | "parked"> | null }>): Promise<P.TacticalAck> {
+    return db.transaction(async tx => {
+      await authorize(tx, userId, campaignId, true, true);
+      const row = await session(tx, campaignId, sessionId), floor = await floorRow(tx, sessionId);
+      const hash = tacticalHash({ campaignId, actorUserId: userId, sessionId, input: hashInput });
+      if (floor?.command_id === commandId) { if (floor.request_hash !== hash) throw new Conflict(); return floor.ack; }
+      if (row.ended_at !== null) throw new Conflict();
+      const { ack, next } = await work(tx, row, floor);
+      if (!next) return ack;
+      const version = (floor?.version ?? 0) + 1; if (version > 2_147_483_647) throw new Conflict();
+      const values = [sessionId, campaignId, next.map_id, next.map_revision, json(sorted(next.portal_states)), json(next.parked), version, commandId, hash, json(ack), userId, now()];
+      if (floor) {
+        if (!(await tx.query(`UPDATE session_floor_states SET map_id=$3,map_revision=$4,portal_states=$5,parked=$6,version=$7,command_id=$8,request_hash=$9,ack=$10,updated_by=$11,updated_at=$12
+          WHERE session_id=$1 AND campaign_id=$2 AND version=$13`, [...values, floor.version])).rowCount) throw new Conflict();
+      } else await tx.query(`INSERT INTO session_floor_states(session_id,campaign_id,map_id,map_revision,portal_states,parked,version,command_id,request_hash,ack,updated_by,updated_at)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, values);
+      return ack;
+    });
+  }
+  async function setFloorPortal(userId: string, campaignId: string, sessionId: string, portalId: string, input: P.TacticalPortalInput) {
+    return floorCommand(userId, campaignId, sessionId, { operation: "floor.portal", portalId, input }, input.commandId, async (_tx, row, floor) => {
+      if (!floor || floor.map_id === row.map_id) throw new Conflict();
+      const before = floor.portal_states.find(p => p.id === portalId); if (!before) throw new Gone();
+      if (before.version !== input.expectedVersion) throw new Conflict();
+      if (before.closed === input.closed) return { ack: { subjectId: portalId, version: before.version }, next: null };
+      const after = { ...before, closed: input.closed, version: before.version + 1 };
+      return { ack: { subjectId: portalId, version: after.version }, next: { ...floor, portal_states: floor.portal_states.map(p => p.id === portalId ? after : p) } };
+    });
+  }
+  /**
+   * Over a stair to the floor on its other side. The whole scene goes: every token keeps its
+   * place, because all floors of a building share one frame and a stair one pair of coordinates.
+   */
+  async function switchFloor(userId: string, campaignId: string, sessionId: string, raw: unknown) {
+    const input = parse(P.TacticalFloorSchema, raw);
+    return floorCommand(userId, campaignId, sessionId, { operation: "floor.switch", input }, input.commandId, async (tx, row, floor) => {
+      if ((floor?.version ?? 0) !== input.expectedVersion) throw new Conflict();
+      const here = floor?.map_id ?? row.map_id, stack = await floorStackFor(tx, campaignId, here);
+      const link = stack?.document.links.find(candidate => candidate.id === input.linkId && (candidate.fromMapId === here || candidate.toMapId === here));
+      if (!link) throw new Gone();
+      const target = link.fromMapId === here ? link.toMapId : link.fromMapId;
+      if (await isMapDeleted(tx, campaignId, "tactical", target)) throw new Gone();
+      // Doors of the floor being left wait for the party's return; the first map keeps its own.
+      const parked = { ...(floor?.parked ?? {}) }, version = (floor?.version ?? 0) + 1;
+      if (floor && here !== row.map_id) parked[here] = { revision: floor.map_revision, portals: floor.portal_states };
+      if (target === row.map_id) return { ack: { subjectId: target, version }, next: { map_id: target, map_revision: row.map_revision, portal_states: [], parked } };
+      const card = await mapCard(tx, campaignId, target), waiting = parked[target]; delete parked[target];
+      const portals = card.document.portals.map(p => waiting?.portals.find(x => x.id === p.id) ?? { id: p.id, closed: p.closed, version: 1 });
+      return { ack: { subjectId: target, version }, next: { map_id: target, map_revision: card.revision, portal_states: portals, parked } };
+    });
   }
   async function undo(userId: string, campaignId: string, sessionId: string, raw: unknown) {
     const input = parse(P.TacticalUndoSchema, raw);
@@ -550,7 +641,7 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     const input = await db.transaction(async tx => {
       const member = await authorize(tx, userId, campaignId), row = await session(tx, campaignId, sessionId), view = await project(tx, member, row);
       if (expectedView !== undefined && expectedView !== view.rasterDigest) throw new Conflict();
-      const map = await mapCard(tx, campaignId, row.map_id, row.map_revision), original = await source(tx, campaignId, map.sourceId);
+      const here = await where(tx, row), map = await mapCard(tx, campaignId, here.mapId, here.revision), original = await source(tx, campaignId, map.sourceId);
       return { digest: view.rasterDigest, request: { image: imageBytes(original), documentSize: view.size, regions: view.gm ? null : view.regions.map(r => r.points), level, x, y, tileSize: 256,
         ...(map.cartography ? { drawing: cartographyDraw(map.document, map.cartography, original.provenance.setting ?? "fantasy") } : {}) } };
     });
@@ -576,5 +667,5 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
     if ((current.rasterDigest ?? current.contentHash) !== input.digest) throw new Conflict();
     return { ...tile, view: input.digest, layer: layer ?? "composite" };
   }
-  return { importPreview, importMap, listMaps, getMap, getSource, exportMap, reviseMap, getPlan, savePlan, getActive, getSession, moveToken, setPortal, undo, getTile, getMapTile };
+  return { importPreview, importMap, listMaps, getMap, getSource, exportMap, reviseMap, getPlan, savePlan, getActive, getSession, moveToken, setPortal, switchFloor, undo, getTile, getMapTile };
 }

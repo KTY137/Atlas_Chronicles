@@ -28,6 +28,8 @@ export const TacticalPlanSchema = Type.Object({ commandId: id, expectedVersion: 
 export const TacticalMoveSchema = Type.Object({ commandId: id, expectedVersion: version, ...pose }, closed);
 export const TacticalPortalSchema = Type.Object({ commandId: id, expectedVersion: version, closed: Type.Boolean() }, closed);
 export const TacticalUndoSchema = Type.Object({ commandId: id, targetCommandId: id, expectedVersion: version }, closed);
+/** The GM leads the running scene over a stair of the building to the floor on its other side. */
+export const TacticalFloorSchema = Type.Object({ commandId: id, expectedVersion: expected, linkId: Type.String({ minLength: 1, maxLength: 128, pattern: "\\S" }) }, closed);
 export type TacticalAnchor = Static<typeof TacticalAnchorSchema>;
 export type TacticalTokenPlan = Static<typeof TacticalTokenPlanSchema>;
 export type TacticalImportInput = Static<typeof TacticalImportSchema>;
@@ -36,6 +38,7 @@ export type TacticalPlanInput = Static<typeof TacticalPlanSchema>;
 export type TacticalMoveInput = Static<typeof TacticalMoveSchema>;
 export type TacticalPortalInput = Static<typeof TacticalPortalSchema>;
 export type TacticalUndoInput = Static<typeof TacticalUndoSchema>;
+export type TacticalFloorInput = Static<typeof TacticalFloorSchema>;
 export interface TacticalAck { subjectId: string; version: number }
 export interface TacticalMapSummary { id: string; name: string; revision: number; version: number }
 export interface TacticalMapCard extends TacticalMapSummary { sourceId: string; contentHash: string; document: TacticalMapDocumentV1; anchors: TacticalAnchor[];
@@ -48,6 +51,10 @@ export interface TacticalToken extends TacticalTokenPlan { name: string; canMove
 /** A knowledge-authorized semantic marker, without its private source geometry or asset. */
 export interface TacticalEntity { id: string; kind: "stamp" | "place"; x: number; y: number; entryId: string; label: string }
 export interface TacticalUndoTarget { commandId: string; subjectKind: "token" | "portal"; subjectId: string; version: number }
+/** A stair, lift or opening on the floor the scene plays on; a player sees only those in rooms they know. */
+export interface TacticalFloorLink { id: string; name: string; kind: "stairs" | "lift" | "opening"; x: number; y: number; toLevel: number; toName: string }
+/** The floor of a building the scene plays on. `version` is what a floor change expects. */
+export interface TacticalFloor { level: number; name: string; version: number; links: TacticalFloorLink[] }
 export interface TacticalView {
   sessionId: string; sceneId: string; active: boolean; gm: boolean;
   size: readonly [number, number]; frame: Rahmen; grid: TacticalGrid; elevation: number;
@@ -63,6 +70,8 @@ export interface TacticalView {
   gemalt?: boolean;
   /** The map's mood, already in the tiles; the renderer needs it for the lights and names. */
   mood?: CartographyMood;
+  /** Present when the map is a floor of a building: its name and the stairs to the others. */
+  floor?: TacticalFloor;
   /** These properties are completely absent from player responses. */
   map?: TacticalMapSummary; document?: TacticalMapDocumentV1; cartography?: TacticalCartographyV1; compositionHash?: string;
   walls?: readonly TacticalWall[]; portals?: (TacticalPortal & { version: number })[];

@@ -136,16 +136,24 @@ describe("settlements through the existing tactical and entrance contracts", () 
     expect(refused.statusCode).toBe(404);
     const building = buildings[0]!, entrance = await createBetreten(db, config).betretbar(gm, campaign, building.id, scope);
     expect(entrance.kindKeim).toBe(building.herkunft!.kindKeim);
-    // The interior is sized by the building's outline on the town map (`bauwerkAusdehnung`).
-    const outline = map.document.geometry.regions.find(region => region.id === building.id)!.punkte, cell = map.cartography!.construction.cellSize;
-    const umfang: readonly [number, number] = [(Math.max(...outline.map(p => p[0])) - Math.min(...outline.map(p => p[0]))) / cell, (Math.max(...outline.map(p => p[1])) - Math.min(...outline.map(p => p[1]))) / cell];
-    const expected = await post("/tactical/generate/preview", body({ art: "grundriss", keim: entrance.kindKeim,
-      optionen: { setting: entrance.setting, profil: building.bauwerk!.typ, zellen: bauwerkAusdehnung(building.bauwerk!.typ, umfang) } }));
-    expect(expected.statusCode, expected.body).toBe(200);
+    // A building opens as a house: its ground floor is the entered map, the other floors hang on it.
     const opened = await post("/betreten", { commandId: randomUUID(), ...scope, knotenId: building.id, expectedVersion: children.version });
     expect(opened.statusCode, opened.body).toBe(200);
-    expect(opened.json().keimHash).toBe(expected.json().keimHash);
-    expect((await tactical.getSource(gm, campaign, opened.json().mapId)).provenance.generator).toBe("chronicle-grundriss");
+    expect(opened.json().keimHash).toMatch(/^[a-f0-9]{64}$/);
+    expect((await tactical.getSource(gm, campaign, opened.json().mapId)).provenance.generator).toBe("chronicle-haus");
+    const again = await post("/betreten", { commandId: randomUUID(), ...scope, knotenId: building.id });
+    expect(again.json()).toEqual({ ...opened.json(), erzeugt: false });
+    // A chosen size still asks for the free floorplan, sized exactly like its preview.
+    const other = buildings[1]!, otherEntrance = await createBetreten(db, config).betretbar(gm, campaign, other.id, scope);
+    const outline = map.document.geometry.regions.find(region => region.id === other.id)!.punkte, cell = map.cartography!.construction.cellSize;
+    const umfang: readonly [number, number] = [(Math.max(...outline.map(p => p[0])) - Math.min(...outline.map(p => p[0]))) / cell, (Math.max(...outline.map(p => p[1])) - Math.min(...outline.map(p => p[1]))) / cell];
+    const optionen = { setting: otherEntrance.setting, profil: other.bauwerk!.typ, zellen: bauwerkAusdehnung(other.bauwerk!.typ, umfang) };
+    const expected = await post("/tactical/generate/preview", body({ art: "grundriss", keim: otherEntrance.kindKeim, optionen }));
+    expect(expected.statusCode, expected.body).toBe(200);
+    const canvas = await post("/betreten", { commandId: randomUUID(), ...scope, knotenId: other.id, expectedVersion: otherEntrance.version, art: "grundriss", stil: "grundriss", optionen });
+    expect(canvas.statusCode, canvas.body).toBe(200);
+    expect(canvas.json().keimHash).toBe(expected.json().keimHash);
+    expect((await tactical.getSource(gm, campaign, canvas.json().mapId)).provenance.generator).toBe("chronicle-grundriss");
   });
 
   it("saves a default city larger than the raster image budget and serves bounded painted tiles", async () => {

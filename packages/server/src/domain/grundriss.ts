@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { erzeugeAnlage, ANLAGE_STANDARD, anlageOptionen, type AnlageOptionen } from "@chronicle/forge";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { erzeugeHaus, type Haus, type HausAuftrag } from "@chronicle/forge";
 import { erzeugeGrundriss, erzeugeHoehle, erzeugeSiedlung, siedlungStandard, BAUWERK_AUSDEHNUNG, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, SIEDLUNG_STANDORTE, GRUNDRISS_LIMITS, HOEHLE_LIMITS, SIEDLUNG_LIMITS, type GrundrissOptionen, type HoehleOptionen, type SiedlungOptionen, erzeugeRegion, REGION_STANDARD, REGION_LIMITS, type RegionOptionen } from "@chronicle/forge";
-import { parseRoadPlan, RoadPlanError, parseSettlementPlan, SettlementPlanError, inferLegacyCartography, KARTEN_SETTINGS, parseAssetpaket, parseTacticalCartography, serializeTacticalMapDocument, type AssetpaketV1, type KartenSetting, type Weltkeim } from "@chronicle/szene";
+import { parseRoadPlan, RoadPlanError, parseSettlementPlan, SettlementPlanError, inferLegacyCartography, BAUWERK_TYPEN, KARTEN_SETTINGS, parseAssetpaket, parseTacticalCartography, serializeTacticalMapDocument, type AssetpaketV1, type BauwerkTyp, type KartenSetting, type MapFloorStack, type Weltkeim } from "@chronicle/szene";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createCampaigns } from "./campaigns.ts";
 import { createTactical, TacticalValidationError } from "./tactical.ts";
+import { floorStackFor, insertFloorStack } from "./map-studio-state.ts";
 
 /**
  * Die eigene Erzeugung, an das Produkt angeschlossen.
@@ -89,6 +92,25 @@ function setting(ergebnis: { keim: Pick<Weltkeim, "optionen"> }): KartenSetting 
   return KARTEN_SETTINGS.find(candidate => candidate === value) ?? "fantasy";
 }
 
+/**
+ * Wo ein Gebäude auf seiner Elternkarte steht: sein Umriss in deren Feldern und die Seite, vor der
+ * die Straße liegt. Nur `betreten` kennt beides; die freie Erzeugung baut ein Rechteck nach Typ.
+ */
+export interface HausLage { readonly umriss?: readonly (readonly [number, number])[]; readonly strasse?: readonly [number, number] }
+
+/**
+ * Ein Gebäudetyp ohne eigene Größe und Raumzahl wird ein **Haus**: Geschosse, Treppen, Räume nach
+ * dem Umriss. Wer Breite, Höhe oder Raumzahl vorgibt, bestellt die freie Grundrissleinwand und
+ * bekommt sie — eine gewählte Größe gilt, statt stillschweigend überstimmt zu werden.
+ */
+export function wirdHaus(art: KartenArt | undefined, optionen?: KartenOptionen): boolean {
+  if ((art ?? "grundriss") !== "grundriss" || !optionen) return false;
+  const o = optionen as Partial<GrundrissOptionen>;
+  return BAUWERK_TYPEN.some(typ => typ === o.profil) && ["zellen", "raeume", "minRaum", "schleifen"].every(key => !(key in o));
+}
+/** Ohne gewählten Stil nimmt ein Haus das Paket seines Settings; ein gewählter Stil — der seiner Stadt — gilt. */
+const hausStil = (setting: KartenSetting): KartenStil => setting === "fantasy" ? "grundriss" : "zeitwelten";
+
 export interface GrundrissRequest {
   readonly commandId: string;
   readonly name: string;
@@ -109,7 +131,7 @@ export interface GrundrissRequest {
 }
 
 export function createGrundriss(db: Db, cfg: IdentityConfig) {
-  const campaigns = createCampaigns(db);
+  const campaigns = createCampaigns(db), now = cfg.now ?? Date.now;
 
   const erzeuge = (input: GrundrissRequest) => {
     // Die Verzweigung ist die ganze Erweiterung: `erzeugeHoehle` war gebaut, geprueft und aus dem
@@ -124,6 +146,17 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
         : input.art === "region"
           ? erzeugeRegion({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<RegionOptionen> } : {}) }, paket(input.stil))
           : erzeugeGrundriss({ ...auftrag, ...(input.optionen ? { optionen: input.optionen as Partial<GrundrissOptionen> } : {}) }, paket(input.stil));
+  };
+  /** Ein Haus liefert sein Erdgeschoss als die Karte, die man betritt; die übrigen Geschosse hängen daran. */
+  const erzeugeKarte = (input: GrundrissRequest, lage?: HausLage): { grundriss: ReturnType<typeof erzeuge>; haus: Haus | null; stil: KartenStil } => {
+    if (!wirdHaus(input.art, input.optionen)) return { grundriss: erzeuge(input), haus: null, stil: input.stil ?? "grundriss" };
+    validateKartenOptionen("grundriss", input.optionen);
+    const o = input.optionen as Partial<GrundrissOptionen>, setting = o.setting ?? "fantasy", stil = input.stil ?? hausStil(setting);
+    const auftrag: HausAuftrag = { keim: input.keim, titel: input.name, profil: o.profil as BauwerkTyp, setting,
+      ...(o.zellgroesse !== undefined ? { zellgroesse: o.zellgroesse } : {}), ...(o.moeblierung !== undefined ? { moeblierung: o.moeblierung } : {}),
+      ...(o.licht !== undefined ? { licht: o.licht } : {}), ...(lage?.umriss ? { umriss: lage.umriss } : {}), ...(lage?.strasse ? { strasse: lage.strasse } : {}) };
+    const haus = erzeugeHaus(auftrag, paket(stil));
+    return { grundriss: haus.geschosse.find(g => g.stufe === 0)!.grundriss, haus, stil };
   };
 
   /**
@@ -174,13 +207,15 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
     /** Generate without persisting: the GM sees the room count and the seed before committing. */
     async preview(userId: string, campaignId: string, input: GrundrissRequest) {
       await campaigns.requireMember(userId, campaignId, ["leitung"]);
-      const grundriss = erzeuge(input);
+      const { grundriss, haus, stil } = erzeugeKarte(input);
       return {
         keimHash: grundriss.keim.keimHash,
         generator: { id: grundriss.erzeuger, version: grundriss.version },
         wurzelId: grundriss.wurzelId as string,
         art: grundriss.art,
-        stil: input.stil ?? "grundriss",
+        stil,
+        // Die Vorschau zeigt das Erdgeschoss; die Zahl nennt, was beim Speichern mit entsteht.
+        ...(haus ? { geschosse: haus.geschosse.map(g => ({ stufe: g.stufe, name: g.name, raeume: g.grundriss.raeume.length })) } : {}),
         setting: setting(grundriss),
         bericht: grundriss.bericht,
         ...(grundriss.art === "siedlung" ? { bauwerke: grundriss.bauwerke.length, strassen: grundriss.strassen.length } : grundriss.art === "region" ? { orte: grundriss.orte.length, strassen: grundriss.strassen.length } : { raeume: grundriss.raeume.length }),
@@ -204,24 +239,47 @@ export function createGrundriss(db: Db, cfg: IdentityConfig) {
      * `Weltkeim` too, so swapping the pack honestly yields a different map instead of quietly
      * yielding the same one differently.
      */
-    async generate(userId: string, campaignId: string, input: GrundrissRequest) {
+    async generate(userId: string, campaignId: string, input: GrundrissRequest, lage?: HausLage) {
       await campaigns.requireMember(userId, campaignId, ["leitung"]);
-      const grundriss = erzeuge(input);
+      const { grundriss, haus, stil } = erzeugeKarte(input, lage);
       if ("verkehr" in grundriss.bericht && grundriss.bericht.verkehr && (grundriss.bericht.verkehr.invalidNodes.length || grundriss.bericht.verkehr.unreachableNodes.length || grundriss.bericht.verkehr.routes.some(r => r.status !== "gebaut")))
         throw new TacticalValidationError("Der Straßenplan ist noch nicht ausführbar. Korrigiere die markierten Verbindungen oder Wegpunkte vor dem Speichern.");
       return db.transaction(async tx => {
-        const ack = await createTactical(tx, cfg).importMap(userId, campaignId, {
+        const tactical = createTactical(tx, cfg);
+        const ack = await tactical.importMap(userId, campaignId, {
           commandId: input.commandId,
           name: input.name,
           format: "native",
           sourceText: serializeTacticalMapDocument(grundriss.karte),
-          provenance: herkunft(grundriss, input.stil),
+          provenance: herkunft(grundriss, stil),
         }, { cartography: kartografie(grundriss), nodes: grundriss.knoten });
+        if (haus && haus.geschosse.length > 1) {
+          // Jedes weitere Geschoss ist eine gewöhnliche Karte im selben Rahmen, und der Verband ist
+          // derselbe, den das Kartenstudio von Hand anlegt: Treppen sind dort Übergänge.
+          const karten = new Map<number, string>([[0, ack.subjectId]]);
+          for (const g of haus.geschosse) if (g.stufe !== 0) {
+            const floor = await tactical.importMap(userId, campaignId, {
+              commandId: createHash("sha256").update(`haus-geschoss:${input.commandId}:${g.stufe}`).digest("hex"),
+              name: `${input.name.trim().slice(0, 140)} · ${g.name}`, format: "native",
+              sourceText: serializeTacticalMapDocument(g.grundriss.karte), provenance: herkunft(g.grundriss, stil),
+            }, { cartography: kartografie(g.grundriss), nodes: g.grundriss.knoten });
+            karten.set(g.stufe, floor.subjectId);
+          }
+          // Eine wiederholte Anfrage findet ihren Verband schon vor und legt keinen zweiten an.
+          if (!(await floorStackFor(tx, campaignId, ack.subjectId))) {
+            const stack: MapFloorStack = { schemaVersion: 1, rootMapId: ack.subjectId,
+              floors: haus.geschosse.map(g => ({ mapId: karten.get(g.stufe)!, level: g.stufe, name: g.name })),
+              links: haus.treppen.map(t => ({ id: t.id, name: t.name, kind: t.kind, fromMapId: karten.get(t.vonStufe)!, toMapId: karten.get(t.nachStufe)!,
+                fromRegionId: t.vonRaum, toRegionId: t.nachRaum, position: t.position })) };
+            await insertFloorStack(tx, campaignId, userId, stack, now());
+          }
+        }
         return {
           ack,
           keimHash: grundriss.keim.keimHash,
           wurzelId: grundriss.wurzelId as string,
           bericht: grundriss.bericht,
+          ...(haus ? { geschosse: haus.geschosse.length } : {}),
         };
       });
     },

@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { parseTacticalCartography, type Knoten } from "@chronicle/szene";
-import { bauwerkAusdehnung } from "@chronicle/forge";
 import { buildApp } from "../src/app.ts";
 import { createTestDb, migrate, type Db } from "../src/db/index.ts";
 import { createIdentity } from "../src/identity/index.ts";
@@ -12,6 +11,7 @@ import { createCampaigns } from "../src/domain/campaigns.ts";
 import { createTactical, TacticalValidationError } from "../src/domain/tactical.ts";
 import { createGrundriss } from "../src/domain/grundriss.ts";
 import { createBetreten } from "../src/domain/betreten.ts";
+import { createMapStudio } from "../src/domain/map-studio.ts";
 import { Conflict, Gone } from "../src/domain/errors.ts";
 import { tacticalPointInside } from "../src/domain/tactical-state.ts";
 
@@ -397,7 +397,7 @@ describe("Der Zugang — die Adresse, die man begehen kann", () => {
 });
 
 describe("Ein Haus wird so groß, wie es auf der Stadtkarte steht", () => {
-  it("bemisst den Innenraum am Umriss des Gebäudes und nicht an der freien Grundrissleinwand", async () => {
+  it("baut hinter der Haustür alle Geschosse nach dem Umriss und verbindet sie mit Treppen", async () => {
     const db = await createTestDb(); await migrate(db);
     const config = { origin: "https://betreten-umriss.test", cookieSecret: "betreten-umriss-cookie-secret-more-than-32-characters", bootstrapToken: "betreten-umriss-bootstrap-secret-more-than-32-characters" };
     try {
@@ -409,20 +409,33 @@ describe("Ein Haus wird so groß, wie es auf der Stadtkarte steht", () => {
       const children = await betreten.children(gm, campaign, { parentKind: "tactical", parentMapId: parent.id });
       const house = children.nodes.find(node => node.bauwerk?.typ === "haus" && node.canEnter)!, church = children.nodes.find(node => node.bauwerk?.typ === "kirche" && node.canEnter)!;
       expect(house).toBeTruthy(); expect(church).toBeTruthy();
-      expect(children.nodes.some(node => "umfang" in node)).toBe(false);
-      const cell = parent.cartography!.construction.cellSize;
-      const outline = (knotenId: string): readonly [number, number] => { const points = parent.document.geometry.regions.find(region => region.id === knotenId)!.punkte, xs = points.map(p => p[0]), ys = points.map(p => p[1]); return [(Math.max(...xs) - Math.min(...xs)) / cell, (Math.max(...ys) - Math.min(...ys)) / cell]; };
-      const entered = await betreten.betrete(gm, campaign, { commandId: randomUUID(), parentKind: "tactical", parentMapId: parent.id, knotenId: house.knotenId, expectedVersion: children.version, name: house.titel, art: "grundriss", stil: "gemalt" });
-      const interior = await tactical.getMap(gm, campaign, entered.mapId);
-      const expected = bauwerkAusdehnung("haus", outline(house.knotenId)), z = interior.document.grid.kind === "none" ? 64 : interior.document.grid.size;
-      expect(interior.document.geometry.size).toEqual([expected[0] * z, expected[1] * z]);
-      expect(interior.document.geometry.size[0]).toBeLessThan(40 * z);
-      // The front door sits on the bottom wall of the house, below every room.
-      const bottom = Math.max(...interior.document.geometry.regions.flatMap(region => region.punkte.map(p => p[1])));
-      expect(interior.document.portals.some(portal => portal.position[1] === bottom)).toBe(true);
-      // A size the user chose still wins over the outline.
+      expect(children.nodes.some(node => "umfang" in node || "umriss" in node)).toBe(false);
+      const commandId = randomUUID(), request = { commandId, parentKind: "tactical" as const, parentMapId: parent.id, knotenId: house.knotenId, expectedVersion: children.version, name: house.titel, art: "grundriss" as const, stil: "gemalt" as const };
+      const entered = await betreten.betrete(gm, campaign, request);
+      expect((await tactical.getSource(gm, campaign, entered.mapId)).provenance.generator).toBe("chronicle-haus");
+      // Keller, Erdgeschoss und Obergeschoss: ein Verband mit dem betretenen Erdgeschoss als Wurzel.
+      const floors = await createMapStudio(db).getFloors(gm, campaign, entered.mapId);
+      expect(floors.stack.rootMapId).toBe(entered.mapId);
+      expect(floors.stack.floors.map(floor => [floor.level, floor.name])).toEqual([[-1, "Keller"], [0, "Erdgeschoss"], [1, "Obergeschoss"]]);
+      expect(floors.stack.links).toHaveLength(2);
+      expect(floors.stack.links.every(link => link.kind === "stairs")).toBe(true);
+      const maps = await Promise.all(floors.stack.floors.map(floor => tactical.getMap(gm, campaign, floor.mapId)));
+      const z = maps[1]!.document.grid.kind === "none" ? 64 : maps[1]!.document.grid.size;
+      for (const map of maps) {
+        expect(map.document.geometry.size).toEqual(maps[1]!.document.geometry.size);
+        expect(Math.max(...map.document.geometry.size)).toBeLessThanOrEqual(40 * z);
+      }
+      // Jedes Obergeschoss führt über seinen Verband zurück in die Stadt.
+      const upper = floors.stack.floors.find(floor => floor.level === 1)!.mapId;
+      expect((await betreten.children(gm, campaign, { parentKind: "tactical", parentMapId: upper })).ancestors.map(item => item.id)).toEqual([parent.id, entered.mapId, upper]);
+      // Eine Wiederholung derselben Anfrage legt weder Karten noch einen zweiten Verband an.
+      const count = (await tactical.listMaps(gm, campaign)).length;
+      expect(await betreten.betrete(gm, campaign, request)).toEqual(entered);
+      expect(await tactical.listMaps(gm, campaign)).toHaveLength(count);
+      // A size the user chose still wins over the outline: that is the free floorplan canvas.
       const chosen = await betreten.betrete(gm, campaign, { commandId: randomUUID(), parentKind: "tactical", parentMapId: parent.id, knotenId: church.knotenId, expectedVersion: children.version + 1, name: church.titel, art: "grundriss", stil: "gemalt", optionen: { zellen: [30, 20] } });
       expect((await tactical.getMap(gm, campaign, chosen.mapId)).document.geometry.size).toEqual([30 * z, 20 * z]);
+      expect((await tactical.getSource(gm, campaign, chosen.mapId)).provenance.generator).toBe("chronicle-grundriss");
     } finally { await db.close(); }
-  }, 30_000);
+  }, 60_000);
 });

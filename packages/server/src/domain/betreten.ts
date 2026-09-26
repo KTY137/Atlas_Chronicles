@@ -2,13 +2,13 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { createHash } from "node:crypto";
 import { BAUWERK_TYPEN, type KartenSetting, type Knoten, type TacticalPoint } from "@chronicle/szene";
-import { bauwerkAusdehnung, type GrundrissOptionen, type SiedlungArt, type SiedlungOptionen, type SiedlungStandort } from "@chronicle/forge";
+import { bauwerkAusdehnung, strassenSeite, type GrundrissOptionen, type SiedlungArt, type SiedlungOptionen, type SiedlungStandort } from "@chronicle/forge";
 import type { Db } from "../db/index.ts";
 import type { IdentityConfig } from "../identity/index.ts";
 import { createCampaigns } from "./campaigns.ts";
 import { createAtlas } from "./atlas.ts";
 import { Conflict, Gone } from "./errors.ts";
-import { createGrundriss, validateKartenOptionen, type KartenArt, type KartenStil, type KartenOptionen } from "./grundriss.ts";
+import { createGrundriss, validateKartenOptionen, wirdHaus, type HausLage, type KartenArt, type KartenStil, type KartenOptionen } from "./grundriss.ts";
 import { createTactical, tacticalHash, TacticalValidationError } from "./tactical.ts";
 import { activeMapEntrances, isMapDeleted, MapLifecycleConflict, type MapEntranceRow, type MapEnterPayload } from "./map-lifecycle.ts";
 import { floorStackFor } from "./map-studio-state.ts";
@@ -43,9 +43,13 @@ export interface BetretenResult { mapId: string; erzeugt: boolean; keimHash: str
 interface AdresseRow { map_id: string; keim_hash: string | null; parent_kind: ParentKind; parent_map_id: string; knoten_id: string }
 /** `umfang` is the node's outline on its parent, in the parent's construction cells; it sizes a building's interior. */
 interface Eingang { knotenId: string; titel: string; art: Knoten["art"]; bauwerk?: Knoten["bauwerk"]; x: number; y: number; kindKeim: string | null; erzeugungsArt?: KartenArt; umfang?: readonly [number, number];
+  /** The outline itself, in the parent's cells: a house follows it instead of a rectangle. */
+  umriss?: readonly (readonly [number, number])[];
   /** A settlement on a regional map: the town its entrance generates, as the map stores it. */
   siedlung?: { readonly art: SiedlungArt; readonly standort: SiedlungStandort } }
-interface Quelle { scope: BetretenScope; title: string; version: number; nodes: Eingang[]; art?: KartenArt; stil?: KartenStil; setting: KartenSetting }
+interface Quelle { scope: BetretenScope; title: string; version: number; nodes: Eingang[]; art?: KartenArt; stil?: KartenStil; setting: KartenSetting;
+  /** Street surfaces in the parent's cells; the front door of a house faces the one it stands on. */
+  strassen?: readonly (readonly (readonly [number, number])[])[] }
 export interface MapAncestor { kind: ParentKind; id: string; title: string }
 export interface KnotenMetadataInput { readonly commandId: string; readonly expectedVersion: number; readonly titel: string; readonly bauwerk?: NonNullable<Knoten["bauwerk"]> }
 
@@ -163,19 +167,25 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
     const stil: KartenStil = compoundStyle ?? (art === "region" ? "gemalt" : stamps.some(stamp => stamp.a.startsWith("pk.genres/")) ? "genres"
       : stamps.some(stamp => stamp.a.startsWith("pk.zeitwelten/")) ? "zeitwelten"
       : stamps.some(stamp => stamp.a.startsWith("pk.gemalt/")) ? "gemalt" : "grundriss");
-    return { scope, title: map.name, version: map.version, art, stil, setting: original.provenance.setting ?? "fantasy", nodes: map.document.geometry.regions
+    const strassen = map.cartography?.regions.flatMap(region => region.role !== "road" ? [] : map.document.geometry.regions.filter(r => r.id === region.regionId)
+      .map(r => r.punkte.map(([px, py]) => [px / zelle, py / zelle] as const))) ?? [];
+    return { scope, title: map.name, version: map.version, art, stil, setting: original.provenance.setting ?? "fantasy", strassen, nodes: map.document.geometry.regions
       .filter(region => roles ? ["building", "room", "ort"].includes(roles.get(region.id) ?? "") || existingEntrances.has(region.id)
         : art !== "siedlung" || data.get(region.id)?.art === "bauwerk" || !originalRegions.has(region.id))
       .map((region, index) => {
       const node = data.get(region.id), [x, y] = roomAnchor(region.punkte);
       const xs = region.punkte.map(p => p[0]), ys = region.punkte.map(p => p[1]);
       const umfang: readonly [number, number] = [(Math.max(...xs) - Math.min(...xs)) / zelle, (Math.max(...ys) - Math.min(...ys)) / zelle];
+      // A hand-drawn outline may carry more corners than a house plan takes; its box still fits.
+      const [x0, y0] = [Math.min(...xs) / zelle, Math.min(...ys) / zelle];
+      const umriss = region.punkte.length <= 64 ? region.punkte.map(([px, py]) => [px / zelle, py / zelle] as const)
+        : [[x0, y0], [x0 + umfang[0], y0], [x0 + umfang[0], y0 + umfang[1]], [x0, y0 + umfang[1]]] as const;
       // Drawn/imported rooms have a stable server-derived seed. Generated rooms keep their exact
       // original seed, independently of names, geometry or subsequent edits.
       const seed = node?.herkunft?.kindKeim ?? createHash("sha256").update(JSON.stringify(["chronicle-room-child-v1", campaignId, map.id, region.id])).digest("hex");
       const ort = orte.get(region.id);
       return { knotenId: region.id, titel: node?.titel ?? `${ort ? "Ort" : art === "siedlung" ? "Gebäude" : "Raum"} ${index + 1}`,
-        art: ort ? "ort" : roles?.get(region.id) === "building" ? "bauwerk" : roles?.get(region.id) === "room" ? "raum" : node?.art ?? (art === "siedlung" ? "bauwerk" : "raum"), ...(node?.bauwerk ? { bauwerk: node.bauwerk } : {}), x, y, kindKeim: seed, umfang,
+        art: ort ? "ort" : roles?.get(region.id) === "building" ? "bauwerk" : roles?.get(region.id) === "room" ? "raum" : node?.art ?? (art === "siedlung" ? "bauwerk" : "raum"), ...(node?.bauwerk ? { bauwerk: node.bauwerk } : {}), x, y, kindKeim: seed, umfang, umriss,
         // A settlement's entrance leads to a town, sized and placed the way the region stores it.
         ...(ort ? { erzeugungsArt: "siedlung" as const, siedlung: ort } : {}) };
     }) };
@@ -232,7 +242,7 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
       const edges = new Map((await activeMapEntrances(tx, campaignId)).filter(edge => edge.parent_kind === scope.parentKind
         && edge.parent_map_id === scope.parentMapId).map(edge => [edge.knoten_id, edge]));
       return { art: parent.art, stil: parent.stil, setting: parent.setting,
-        nodes: parent.nodes.map(({ kindKeim, erzeugungsArt, umfang: _umfang, ...node }) => ({ ...node, canEnter: kindKeim !== null || edges.has(node.knotenId), vorhandeneKarteId: edges.get(node.knotenId)?.map_id ?? null, ...(erzeugungsArt ? { erzeugungsArt } : {}) })),
+        nodes: parent.nodes.map(({ kindKeim, erzeugungsArt, umfang: _umfang, umriss: _umriss, ...node }) => ({ ...node, canEnter: kindKeim !== null || edges.has(node.knotenId), vorhandeneKarteId: edges.get(node.knotenId)?.map_id ?? null, ...(erzeugungsArt ? { erzeugungsArt } : {}) })),
         version: parent.version, ancestors: await ancestry(tx, userId, campaignId, scope) };
     });
   }
@@ -292,8 +302,10 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
           // The saved building type governs its first interior. Later metadata edits never
           // touch an existing child: that address was resolved above, before generation.
           const chosen = input.optionen as Partial<GrundrissOptionen | SiedlungOptionen> | undefined;
-          // The interior is sized by the building's own outline on the town map (the client sends
-          // `zellen` only when the user chose a size); a cottage stays a cottage, a warehouse a hall.
+          // A building becomes a house with floors, shaped by its own outline on the town map. Only
+          // a size or room count the user chose asks for the free canvas instead; that canvas is
+          // then sized by the outline too, so a cottage stays a cottage and a warehouse a hall.
+          const haus = art === "grundriss" && !!node.bauwerk && wirdHaus(art, { ...chosen, profil: node.bauwerk.typ } as Partial<GrundrissOptionen>);
           const optionen = art === "hoehle" ? input.optionen : {
             ...chosen, setting: chosen?.setting ?? parent.setting,
             // Region metadata supplies defaults; an explicit selection in the entrance form wins.
@@ -301,14 +313,16 @@ export function createBetreten(db: Db, cfg: IdentityConfig) {
               art: (chosen as Partial<SiedlungOptionen> | undefined)?.art ?? node.siedlung.art,
               standort: (chosen as Partial<SiedlungOptionen> | undefined)?.standort ?? node.siedlung.standort,
             } : {}),
-            ...(art === "grundriss" && node.bauwerk ? { profil: node.bauwerk.typ, ...((chosen as Partial<GrundrissOptionen> | undefined)?.zellen === undefined ? { zellen: bauwerkAusdehnung(node.bauwerk.typ, node.umfang) } : {}) } : {}),
+            ...(art === "grundriss" && node.bauwerk ? { profil: node.bauwerk.typ, ...(!haus && (chosen as Partial<GrundrissOptionen> | undefined)?.zellen === undefined ? { zellen: bauwerkAusdehnung(node.bauwerk.typ, node.umfang) } : {}) } : {}),
           };
+          const strasse = haus && node.umriss ? strassenSeite(node.umriss, parent.strassen ?? []) : undefined;
+          const lage: HausLage | undefined = haus && node.umriss ? { umriss: node.umriss, ...(strasse ? { strasse } : {}) } : undefined;
           const generated = await createGrundriss(tx, cfg).generate(userId, campaignId, {
             commandId, name: input.name?.trim() || node.titel, keim: node.kindKeim,
             // Ohne Angabe bleibt es beim Grundriss: eine Tuer, die gestern Raeume und Gaenge
             // ergab, soll heute nicht ploetzlich in Fels fuehren.
             art, stil: input.stil ?? parent.stil ?? "grundriss", ...(optionen ? { optionen } : {}),
-          });
+          }, lage);
           mapId = generated.ack.subjectId; keimHash = generated.keimHash; erzeugt = true;
         }
         // A generator can return a durable import retry. Recheck its actual target before

@@ -34,6 +34,14 @@ export async function validateStoredFloorMaps(tx: Db, campaignId: string, stack:
     if (!fogRoomIds(maps.get(mapId)!, drawing).has(regionId)) throw new MapFloorValidationError("Ein Geschossübergang benötigt auf beiden Seiten einen Raum.");
   }
 }
+/** A new stack, validated against the stored maps like every later change, starts at version 1. */
+export async function insertFloorStack(tx: Db, campaignId: string, userId: string, raw: MapFloorStack, at: number): Promise<MapFloorStack> {
+  const stack = parseMapFloorStack(raw);
+  await validateStoredFloorMaps(tx, campaignId, stack);
+  await tx.query(`INSERT INTO map_floor_stacks(root_map_id,campaign_id,version,document,created_by,created_at,updated_by,updated_at)
+    VALUES($1,$2,1,$3,$4,$5,$4,$5)`, [stack.rootMapId, campaignId, JSON.stringify(stack), userId, at]);
+  return stack;
+}
 export async function validateFloorRevision(tx: Db, campaignId: string, mapId: string, document: TacticalMapDocumentV1, cartography?: TacticalCartographyV1): Promise<void> {
   const stack = await floorStackFor(tx, campaignId, mapId);
   if (stack) await validateStoredFloorMaps(tx, campaignId, stack.document, { mapId, document, ...(cartography ? { cartography } : {}) });
