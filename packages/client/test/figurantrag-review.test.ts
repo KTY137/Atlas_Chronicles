@@ -46,7 +46,8 @@ describe("Figurantrag und Figurenwerkbank — hostautoritative Regelbindung", ()
     expect(instantiate).toContain('useHostRules');
     expect(instantiate).toContain('template?.definition.package');
     expect(instantiate).toContain('runtime.canSave');
-    expect(instantiate).toContain('Die Vorlage behält ihr eigenes Regelpaket');
+    // Geänderte Werte gehen mit dem Inhaltsabgleich des gepinnten Pakets auf den neuen Bogen.
+    expect(instantiate).toContain("packageContentHash: hash");
   });
 
   it("der Spielerantrag folgt dem Paket der gewählten Vorlage", () => {

@@ -27,6 +27,8 @@ test("the rule map shows the package as one picture, edits a formula at the node
   await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
   await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
   const editor = gm.locator(".rf-editor-fields").first();
+  // Die Regelkarte gehört nicht zum Wichtigsten (Spec E10); die Wahl „Alle Bereiche“ merkt sich der Browser.
+  await gm.getByRole("button", { name: /^Alle Bereiche zeigen/ }).click();
   await gm.getByRole("tab", { name: "Regelkarte", exact: true }).click();
   // Overview: the character as one card, the starter action listed as a method with its formula.
   const overview = gm.getByRole("article", { name: "Die Figur als Karte" });
@@ -41,12 +43,12 @@ test("the rule map shows the package as one picture, edits a formula at the node
   // Edit the action's formula right at the node; the Actions tab must show the same line.
   await overview.getByRole("button", { name: /^Erste Aktion/ }).click();
   const panel = gm.getByRole("region", { name: "Bearbeiten: Erste Aktion" });
-  const formula = panel.getByRole("combobox", { name: "Formel", exact: true }).first();
+  const formula = panel.getByRole("combobox", { name: "Ergebnis Formel", exact: true }).first();
   await expect(formula).toHaveValue("1d20 + @insight");
   await formula.fill("1d20 + @insight + @vigour");
-  await expect(panel.getByText(/^Beispiel für /)).toBeVisible();
+  await expect(panel.locator(".ff-line-status").getByText(/^Beispiel für /)).toBeVisible();
   await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
-  await expect(editor.getByRole("combobox", { name: "Formel", exact: true }).first()).toHaveValue("1d20 + @insight + @vigour");
+  await expect(editor.getByRole("combobox", { name: "Ergebnis Formel", exact: true }).first()).toHaveValue("1d20 + @insight + @vigour");
   await gm.getByRole("tab", { name: "Regelkarte", exact: true }).click();
   // Kraft is used now: the finding is gone.
   await expect(gm.locator(".rm-issues")).toHaveCount(0);
@@ -62,22 +64,24 @@ test("the rule map shows the package as one picture, edits a formula at the node
   const zoom = gm.getByRole("group", { name: "Vergrößerung der Karte", exact: true });
   await zoom.getByRole("button", { name: "Verkleinern", exact: true }).click();
   await zoom.getByRole("button", { name: "Verkleinern", exact: true }).click();
-  await expect(zoom.getByRole("button", { name: "Auf volle Größe zurücksetzen", exact: true })).toHaveText("64 %");
+  // Der sichtbare Wert ist Teil des Namens: „64 %, auf volle Größe zurücksetzen“.
+  const reset = zoom.getByRole("button", { name: /auf volle Größe zurücksetzen$/ });
+  await expect(reset).toHaveText("64 %");
   await expect(map.locator(".rm-canvas")).toHaveCSS("transform", /matrix\(0\.64/);
   await zoom.getByRole("button", { name: "Ganze Karte einpassen", exact: true }).click();
-  await expect(zoom.getByRole("button", { name: "Auf volle Größe zurücksetzen", exact: true })).not.toHaveText("64 %");
+  await expect(reset).not.toHaveText("64 %");
   const views = gm.getByRole("group", { name: "Ansicht der Regelkarte", exact: true });
   await views.getByRole("button", { name: "Übersicht", exact: true }).click();
   await views.getByRole("button", { name: "Karte", exact: true }).click();
-  await expect(gm.getByRole("group", { name: "Vergrößerung der Karte", exact: true }).getByRole("button", { name: "Auf volle Größe zurücksetzen", exact: true })).not.toHaveText("100 %");
-  await gm.getByRole("group", { name: "Vergrößerung der Karte", exact: true }).getByRole("button", { name: "Auf volle Größe zurücksetzen", exact: true }).click();
+  await expect(gm.getByRole("group", { name: "Vergrößerung der Karte", exact: true }).getByRole("button", { name: /auf volle Größe zurücksetzen$/ })).not.toHaveText("100 %");
+  await gm.getByRole("group", { name: "Vergrößerung der Karte", exact: true }).getByRole("button", { name: /auf volle Größe zurücksetzen$/ }).click();
   await expect(map.locator(".rm-canvas")).toHaveCSS("transform", /matrix\(1,/);
   await gm.keyboard.press("Escape");
   await expect(gm.getByRole("region", { name: /^Bearbeiten: / })).toHaveCount(0);
   // Network: every formula sits inside its node as a small node net.
-  await gm.getByRole("button", { name: "Knotennetz", exact: true }).click();
-  const network = gm.getByRole("group", { name: "Regelkarte mit Knotennetzen", exact: true });
-  await expect(network.getByRole("group", { name: "Formel als Knotennetz" }).first()).toBeVisible();
+  await gm.getByRole("button", { name: "Karte mit Rechenwegen", exact: true }).click();
+  const network = gm.getByRole("group", { name: "Regelkarte mit Rechenwegen", exact: true });
+  await expect(network.getByRole("group", { name: "Formel als Rechenweg" }).first()).toBeVisible();
   await expect(network.locator('[data-node-id="action:erste-aktion"]').getByRole("button", { name: /Kraft/ })).toBeVisible();
   // The jump into the full editor of an action.
   await network.getByRole("button", { name: "Erste Aktion, Aktion", exact: true }).click();

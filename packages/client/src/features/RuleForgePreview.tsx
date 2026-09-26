@@ -11,6 +11,9 @@ import { sichtbareEingaben } from "./faehigkeiten-bogen";
 import type { ExampleFigure } from "./formula-example";
 import { copyJson, fixtureValues, localKey, type PackageSelfTest } from "./rule-forge-model";
 import { hasChronicleExamples, hasChronicleGuidance, RuleComputedFields } from "./RuleComputedFields";
+import { explainValidationError } from "./forge-navigation-model";
+import { useSettledText } from "./FormulaLine";
+import { resugarFormula } from "./formula-sugar";
 
 interface SamplePassage { localId: string; passageId: string; labels: string; experience: Experience }
 export interface Fixture { id: string; name: string; values: Record<string, Scalar>; inputs: Record<string, Record<string, Scalar>>; passages: SamplePassage[] }
@@ -45,15 +48,17 @@ export function RuleForgePreview({ pkg, fixtures, onFixtures, onSaveTest }: { pk
   const addFixture = () => onFixtures(items => items.length >= MAX_FIXTURES ? items : [...items, { id: localKey(), name: t("Testfigur {n}", { n: items.length + 1 }), values: {}, inputs: {}, passages: [] }]);
   const removeFixture = (id: string) => onFixtures(items => items.length > 2 ? items.filter(f => f.id !== id) : items);
   return <section className="rf-preview" aria-labelledby="rf-preview-title">
-    <div className="rf-section-heading"><h2 id="rf-preview-title"><TestTubeDiagonal size={20} />{t("Testtafel")}</h2><span className="rf-node-badge">{t("Nur Beispiele")}</span></div>
+    <div className="rf-section-heading"><h4 id="rf-preview-title" className="rf-preview-title"><TestTubeDiagonal size={20} aria-hidden="true" />{t("Testtafel")}</h4><span className="rf-node-badge">{t("Nur Beispiele")}</span></div>
     <p>{t("Vergleiche zwei oder mehr Figuren mit unterschiedlichem Wissen. Alle erhalten denselben Würfelstart, damit nur der Wissensunterschied zählt. Die Beispiele verändern keine Charaktere oder Würfe deiner Runde.")}</p>
     {pkg && hasChronicleGuidance(pkg) ? examplesAvailable ? <Button onClick={() => onFixtures(CHRONICLE_EXAMPLE_CHARACTERS.map(example => ({ id: `fixture-${example.id}`, name: example.name, values: fixtureValues(pkg.fields, example.fields), inputs: {}, passages: [] })))}>{t("Beispielfiguren laden")}</Button> : <p className="field-help">{t("Die fertigen Beispielfiguren passen zum unveränderten Beispielkatalog. Für deinen angepassten Katalog verteilst du die Punkte hier selbst.")}</p> : null}
     {!pkg ? <Notice>{t("Die Testtafel wird verfügbar, sobald der Entwurf gültig ist.")}</Notice> : !action ? <Notice>{t("Lege eine Aktion an, um das Regelwerk zu erproben.")}</Notice> : <>
-      <div className="rf-form-grid"><label>{t("Aktion")}<select value={action.id} onChange={e => setSelected(e.target.value)}>{pkg.actions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
-        <label>{t("Würfelstart für reproduzierbare Tests")}<input value={seed} maxLength={32} spellCheck={false} onChange={e => setSeed(e.target.value)} /><small>{t("32 Hexadezimalzeichen, nicht ausschließlich Nullen.")}</small></label></div>
+      <div className="rf-form-grid"><label>{t("Aktion")}<select value={action.id} onChange={e => setSelected(e.target.value)}>{pkg.actions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label></div>
+      <details className="rf-advanced"><summary>{t("Für Fortgeschrittene: Würfelstart")}</summary>
+        <label>{t("Würfelstart für reproduzierbare Tests")}<input value={seed} maxLength={32} spellCheck={false} onChange={e => setSeed(e.target.value)} /><small>{t("32 Zeichen aus 0 bis 9 und a bis f, nicht nur Nullen. Derselbe Würfelstart ergibt immer dieselben Würfe.")}</small></label>
+      </details>
       <p className="rf-disclosure">{action.disclosure}</p>
-      <div className="rf-fixtures" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>{fixtures.map(fixture => <FixturePanel key={fixture.id} pkg={pkg} actionId={action.id} fixture={fixture} seed={seed} canRemove={fixtures.length > 2} onChange={change => update(fixture.id, change)} onRemove={() => removeFixture(fixture.id)} onSaveTest={onSaveTest} />)}</div>
-      <Button variant="quiet" disabled={fixtures.length >= MAX_FIXTURES} onClick={addFixture}><Plus size={14} />{t("Weitere Testfigur")}</Button>
+      <div className="rf-fixtures">{fixtures.map(fixture => <FixturePanel key={fixture.id} pkg={pkg} actionId={action.id} fixture={fixture} seed={seed} canRemove={fixtures.length > 2} onChange={change => update(fixture.id, change)} onRemove={() => removeFixture(fixture.id)} onSaveTest={onSaveTest} />)}</div>
+      <Button variant="quiet" disabled={fixtures.length >= MAX_FIXTURES} onClick={addFixture}><Plus size={14} aria-hidden="true" />{t("Weitere Testfigur")}</Button>
     </>}
   </section>;
 }
@@ -101,14 +106,14 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
   }, [pkg, actionId, seed, fixture]);
   const changePassage = (localId: string, change: Partial<SamplePassage>) => onChange({ passages: fixture.passages.map(p => p.localId === localId ? { ...p, ...change } : p) });
   return <article className="rf-fixture" aria-label={t("Testfigur {name}", { name: fixture.name })}>
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-      <h3>{fixture.name}</h3>
-      {canRemove ? <Button variant="quiet" aria-label={t("Testfigur {name} entfernen", { name: fixture.name })} onClick={onRemove}><Trash2 size={14} />{t("Entfernen")}</Button> : null}
+    <div className="rf-fixture-head">
+      <h5>{fixture.name}</h5>
+      {canRemove ? <Button variant="quiet" aria-label={t("Testfigur {name} entfernen", { name: fixture.name })} onClick={onRemove}><Trash2 size={14} aria-hidden="true" />{t("Entfernen")}</Button> : null}
     </div>
     <label>{t("Name der Testfigur")}<input value={fixture.name} maxLength={RULE_LIMITS.label} onChange={e => onChange({ name: e.target.value })} /></label>
     <LiveSheet pkg={pkg} fixture={fixture} onChange={next => onChange({ values: next })} />
-    {Object.keys(sichtbareEingaben(pkg, action.inputs)).length ? <fieldset className="rf-sheet-section"><legend>{t("Eingaben: {name}", { name: action.name })}</legend><RuleFields fields={sichtbareEingaben(pkg, action.inputs)} values={inputs} onChange={next => onChange({ inputs: { ...fixture.inputs, [actionId]: next } })} /></fieldset> : null}
-    <fieldset className="rf-sheet-section"><legend>{t("Gehaltene Beispielpassagen")}</legend>
+    {Object.keys(sichtbareEingaben(pkg, action.inputs)).length ? <fieldset className="rf-sheet-section"><legend>{t("Eingaben: {name}", { name: action.name })}</legend><RuleFields layout="form" fields={sichtbareEingaben(pkg, action.inputs)} values={inputs} onChange={next => onChange({ inputs: { ...fixture.inputs, [actionId]: next } })} /></fieldset> : null}
+    <details className="rf-advanced"><summary>{t("Für Fortgeschrittene: gehaltenes Wissen")}</summary><fieldset className="rf-sheet-section"><legend>{t("Gehaltene Beispielpassagen")}</legend>
       {!fixture.passages.length ? <p className="rf-help">{t("Diese Figur hält keine Passage.")}</p> : null}
       {fixture.passages.map((passage, index) => <div className="rf-sample-passage" key={passage.localId}>
         <label>{t("Passagenkennung")}<input value={passage.passageId} maxLength={256} onChange={e => changePassage(passage.localId, { passageId: e.target.value })} /></label>
@@ -116,9 +121,9 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
         <label>{t("Erfahrungsgrad")}<select value={passage.experience} onChange={e => changePassage(passage.localId, { experience: e.target.value as Experience })}><option value="erfahren">{t("Selbst erfahren")}</option><option value="gesprochen">{t("Gesprochen")}</option><option value="gehoert">{t("Gehört")}</option></select></label>
         <Button variant="quiet" aria-label={t("Beispielpassage {n} für {name} entfernen", { n: index + 1, name: fixture.name })} onClick={() => onChange({ passages: fixture.passages.filter(p => p.localId !== passage.localId) })}><Trash2 size={14} />{t("Entfernen")}</Button>
       </div>)}
-      <Button disabled={fixture.passages.length >= RULE_LIMITS.knowledgePassages} onClick={() => onChange({ passages: [...fixture.passages, { localId: localKey(), passageId: `beispiel-${fixture.passages.length + 1}`, labels: "spuren", experience: "gehoert" }] })}><Plus size={14} />{t("Beispielpassage")}</Button>
-    </fieldset>
-    {evaluation.error !== undefined ? <Notice error>{`${fixture.name}: ${evaluation.error}`}</Notice> : <>
+      <Button disabled={fixture.passages.length >= RULE_LIMITS.knowledgePassages} onClick={() => onChange({ passages: [...fixture.passages, { localId: localKey(), passageId: `beispiel-${fixture.passages.length + 1}`, labels: "spuren", experience: "gehoert" }] })}><Plus size={14} aria-hidden="true" />{t("Beispielpassage")}</Button>
+    </fieldset></details>
+    {evaluation.error !== undefined ? <Notice error>{`${fixture.name}: ${explainValidationError(evaluation.error)}`}</Notice> : <>
       <FixtureResult result={evaluation.result} action={action} />
       {onSaveTest ? <div className="rf-save-test"><label>{t("Testname")}<input value={testName} placeholder={`${fixture.name}: ${action.name}`} maxLength={RULE_LIMITS.label} onChange={e => setTestName(e.target.value)} /></label><Button onClick={() => onSaveTest(copyJson({ name: testName.trim() || `${fixture.name}: ${action.name}`.slice(0, RULE_LIMITS.label), actionId, context: evaluation.result.context, expectedTotal: evaluation.result.total,
         ...(evaluation.result.schemaVersion === 2 ? { ...(evaluation.result.success !== undefined ? { expectedSuccess: evaluation.result.success } : {}), ...(evaluation.result.outcome ? { expectedOutcomeId: evaluation.result.outcome.id } : {}) } : {}) }))}>{t("Als Pakettest speichern")}</Button></div> : null}
@@ -140,14 +145,17 @@ function FixtureResult({ result, action }: { result: ActionResult; action: RuleA
   const verdict = outcome ? (outcome.success ? t("{ergebnis} (Erfolg)", { ergebnis: outcome.label }) : t("{ergebnis} (kein Erfolg)", { ergebnis: outcome.label }))
     : action.threshold !== undefined ? (result.success ? t("Schwelle {wert} · erreicht", { wert: action.threshold }) : t("Schwelle {wert} · verfehlt", { wert: action.threshold }))
     : result.success === undefined ? t("Beispielergebnis") : result.success ? t("Schwelle erreicht") : t("Schwelle verfehlt");
-  return <div className="rf-fixture-result" aria-live="polite">
-    <p className="rf-help">{t("Formel:")} <code>{result.expression}</code></p>
+  // Die Ansage wartet 700 ms Ruhe ab, statt bei jedem verstellten Wert zu sprechen.
+  const spoken = useSettledText(`${result.total} · ${verdict}`);
+  return <div className="rf-fixture-result">
+    <span className="sr-only" role="status">{spoken}</span>
+    <p className="rf-help">{t("Formel:")} <code>{resugarFormula(result.expression)}</code></p>
     <div className="rf-result-line"><strong>{result.total}</strong><span>{verdict}</span></div>
     {outcome ? <details open><summary>{t("Ergebnisbereiche dieses Wurfs")}</summary><ol className="rf-trace">
       {outcome.comparisons.map((c, i) => <li key={c.id}><span>{bands?.find(b => b.id === c.id)?.label ?? c.id}</span><strong>{t("Ergebnis")} {OUTCOME_COMPARISON_SYMBOL[c.comparison] ?? c.comparison} {c.threshold}</strong><small>{i === outcome.matchedBand ? t("Ausgewählt") : c.matched ? t("Erfüllt, aber nachrangig") : t("Nicht erfüllt")}</small></li>)}
       {fallback ? <li><span>{fallback.label}</span><strong>{t("Sonst")}</strong><small>{outcome.matchedBand === null ? t("Ausgewählt") : t("Nicht ausgewählt")}</small></li> : null}
     </ol></details> : null}
     {result.dice.map(die => <p key={die.path} className="rf-dice-line">{t("W{seiten}: {wuerfe} · gewertet {gewertet} · Summe {summe}", { seiten: die.sides, wuerfe: die.rolls.map(rolls => `[${rolls.join(" + ")}]`).join(" "), gewertet: die.kept.map(i => i + 1).join(", "), summe: die.total })}{die.capped ? ` · ${t("Zusatzwurfgrenze erreicht")}` : ""}</p>)}
-    <details><summary>{t("Rechenweg und Wissensbelege")}</summary><ol className="rf-trace">{result.trace.map((step, i) => <li key={`${step.path}-${i}`}><span>{step.label ?? traceKindLabel(step.kind) ?? step.kind}</span><strong>{String(step.value)}</strong>{step.evidence?.length ? <small>{t("Belege: {liste}", { liste: step.evidence.join(", ") })}</small> : null}</li>)}</ol><p className="rf-help">{t("{anzahl} Rechenschritte · {algorithmus}", { anzahl: operations, algorithmus: result.rngAlgorithm })}</p></details>
+    <details><summary>{t("Rechenweg und Wissensbelege")}</summary><ol className="rf-trace">{result.trace.map((step, i) => <li key={`${step.path}-${i}`}><span>{step.label ?? traceKindLabel(step.kind) ?? step.kind}</span><strong>{String(step.value)}</strong>{step.evidence?.length ? <small>{t("Belege: {liste}", { liste: step.evidence.join(", ") })}</small> : null}</li>)}</ol><p className="rf-help">{t("{anzahl} Rechenschritte", { anzahl: operations })}</p></details>
   </div>;
 }

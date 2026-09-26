@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ActorCard } from "@chronicle/protocol";
 import { Trash2 } from "lucide-react";
-import { Button, Notice } from "@chronicle/ui";
+import { Button, Notice, confirmAction } from "@chronicle/ui";
 import { apiPath } from "../api";
 import { useResource, useTask } from "../hooks";
 import { t } from "../i18n";
@@ -40,16 +40,20 @@ export function ActorDeletionPanel({ campaignId, actors, revision, onChanged }: 
       <label>{t("Figur / Charakterbogen")}<select value={actorId} onChange={event => setActorId(event.target.value)}>
         <option value="">{t("Figur wählen")}</option>{actors.filter(item => typeof item.version === "number").map(item => <option value={item.id} key={item.id}>{item.name}</option>)}
       </select></label>
-      <Button variant="danger" disabled={task.busy || !begruendet || !actor || typeof actor.version !== "number"} onClick={() => {
-        if (!actor || typeof actor.version !== "number" || !window.confirm(t("„{name}“ samt Charakterbogen endgültig löschen? Das lässt sich nicht rückgängig machen.", { name: actor.name }))) return;
+      <Button variant="danger" disabled={task.busy || !begruendet || !actor || typeof actor.version !== "number"} onClick={async () => {
+        if (!actor || typeof actor.version !== "number") return;
+        const ja = await confirmAction({ title: t("Figur endgültig löschen?"), message: t("„{name}“ samt Charakterbogen endgültig löschen? Das lässt sich nicht rückgängig machen.", { name: actor.name }), confirmLabel: t("Endgültig löschen"), danger: true });
+        if (!ja) return;
         void task.run(async () => { await command(apiPath(campaignId, `/actors/${actor.id}`), { expectedVersion: actor.version, reason: reason.trim() }, "DELETE"); done(); });
       }}><Trash2 size={15} />{t("Figur samt Charakterbogen endgültig löschen")}</Button>
 
       <label>{t("Figurvorlage")}<select value={templateId} onChange={event => setTemplateId(event.target.value)} disabled={templates.loading}>
         <option value="">{t("Vorlage wählen")}</option>{(templates.data ?? []).map(item => <option value={item.id} key={item.id}>{item.definition.name}</option>)}
       </select></label>
-      <Button variant="danger" disabled={task.busy || !begruendet || !template} onClick={() => {
-        if (!template || !window.confirm(t("„{name}“ endgültig löschen? Die Vorlage und alle ihre Revisionen verschwinden und lassen sich nicht zurückholen.", { name: template.definition.name }))) return;
+      <Button variant="danger" disabled={task.busy || !begruendet || !template} onClick={async () => {
+        if (!template) return;
+        const ja = await confirmAction({ title: t("Figurvorlage endgültig löschen?"), message: t("„{name}“ endgültig löschen? Die Vorlage und alle ihre Fassungen verschwinden und lassen sich nicht zurückholen.", { name: template.definition.name }), confirmLabel: t("Endgültig löschen"), danger: true });
+        if (!ja) return;
         void task.run(async () => { await command(apiPath(campaignId, `/actor-templates/${template.id}`), { expectedVersion: template.version, reason: reason.trim() }, "DELETE"); done(); });
       }}><Trash2 size={15} />{t("Figurvorlage endgültig löschen")}</Button>
     </div>

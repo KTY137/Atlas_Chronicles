@@ -32,16 +32,22 @@ test("the forge path leads from the library to an own, tested and installed vers
   await expect(gm.getByRole("region", { name: "Installierte Regelpakete", exact: true })).toBeVisible();
   await expect(gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true })).toBeVisible();
   await expect(gm.getByRole("button", { name: "Als Regelentwurf öffnen", exact: true }).first()).toBeVisible();
-  await expect(gm.getByRole("tablist", { name: "Regelpaket bearbeiten" })).toHaveCount(0);
+  await expect(gm.getByRole("tablist", { name: "Bereiche des Regelwerks" })).toHaveCount(0);
   // Ein installiertes Paket öffnet sich zum Ansehen; die Übersicht liest das Paket in Alltagsworten.
   await gm.locator(".rf-catalog-item").first().click();
   await expect(gm.getByRole("region", { name: "Was dieses Regelwerk kann", exact: true })).toContainText("Würfel");
   await gm.getByRole("button", { name: "Zur Bibliothek", exact: true }).click();
   // Ein leeres Paket: die Statusleiste bietet genau einen nächsten Schritt an, und er führt zur Testtafel.
   await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
-  const tabs = gm.getByRole("tablist", { name: "Regelpaket bearbeiten" });
-  for (const name of ["Paket", "Regelkarte", "Attribute", "Abgeleitete Werte", "Balken", "Listen", "Bogen", "Aktionen", "Fähigkeiten", "Zustände", "Bogenregeln", "Ausprobieren", "Migration", "Übernehmen"])
+  const tabs = gm.getByRole("tablist", { name: "Bereiche des Regelwerks" });
+  // Spec E10: zuerst nur das Wichtigste; „Alle Bereiche zeigen“ holt die übrigen dazu.
+  for (const name of ["Paket", "Attribute", "Balken", "Bogen", "Aktionen", "Fähigkeiten", "Ausprobieren", "Übernehmen"])
     await expect(tabs.getByRole("tab", { name, exact: true })).toBeVisible();
+  await expect(tabs.getByRole("tab", { name: "Regelkarte", exact: true })).toHaveCount(0);
+  await gm.getByRole("button", { name: /^Alle Bereiche zeigen/ }).click();
+  for (const name of ["Paket", "Regelkarte", "Attribute", "Berechnete Werte", "Balken", "Listen", "Bogen", "Aktionen", "Fähigkeiten", "Zustände", "Bogenregeln", "Ausprobieren", "Migration", "Übernehmen"])
+    await expect(tabs.getByRole("tab", { name, exact: true })).toBeVisible();
+  await gm.getByRole("button", { name: "Nur das Wichtigste zeigen", exact: true }).click();
   await gm.getByRole("button", { name: "Weiter: Ausprobieren", exact: true }).click();
   await expect(gm.getByRole("heading", { name: /Testtafel/ })).toBeInViewport();
   await expect(gm.getByRole("button", { name: "Weiter: Ausprobieren", exact: true })).toHaveCount(0);
@@ -89,14 +95,14 @@ test("the assistant builds a playable rulebook from plain answers, without knowi
   await gm.getByRole("button", { name: "Neues Regelwerk", exact: true }).click();
   await gm.getByLabel("Name des Regelwerks").fill("Nordlicht");
   await gm.getByRole("radio", { name: /Horror/ }).click();
-  await gm.getByRole("button", { name: "Weiter: Würfeln" }).click();
+  await gm.getByRole("button", { name: "Weiter: Würfel" }).click();
   const w100 = gm.getByRole("radio", { name: /Ein W100 unter den Wert/ });
   await w100.click();
   await expect(w100).toContainText("gelingt es in 40 von 100 Würfen");
-  await gm.getByRole("button", { name: "Weiter: Eigenschaften" }).click();
-  await gm.getByLabel("Eigene Eigenschaft").fill("Mut");
+  await gm.getByRole("button", { name: "Weiter: Attribute" }).click();
+  await gm.getByLabel("Eigenes Attribut").fill("Mut");
   await gm.keyboard.press("Enter");
-  await gm.getByRole("button", { name: "Weiter: Vorräte" }).click();
+  await gm.getByRole("button", { name: "Weiter: Balken" }).click();
   const sheet = gm.getByRole("complementary", { name: "Dein Bogen" });
   await expect(sheet.getByRole("meter", { name: "Geistige Gesundheit" })).toBeVisible();
   await gm.getByRole("button", { name: "Weiter: Fertigkeiten" }).click();

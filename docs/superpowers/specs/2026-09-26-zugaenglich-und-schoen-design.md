@@ -223,3 +223,34 @@ Stelle ab, damit sich parallele Arbeit nicht in denselben Katalogen trifft.
 Die 55 übrigen Browser-Rückfragen außerhalb des Umfangs; Neuordnung der 14 Werkbank-Reiter
 (Stufe 8, Bogen per Ziehen); Formelgraph per Tastatur umordnen (bekommt eine Tastatur-Alternative
 „Anschluss wählen“ erst mit Stufe 3/4); Kampftisch-Oberfläche.
+
+## Umsetzung (2026-09-26)
+
+Welle 1 selbst, Wellen 2–4 als drei Helfer mit getrenntem Dateibesitz, Welle 5 selbst. Nachweis:
+`e2e/neulingsgang.spec.ts` 3/3 (die drei Aufgaben des Hauptziels, nur über sichtbare Beschriftungen),
+`e2e/zugaenglichkeit.spec.ts` 6/6 (Fantasy und Parchment, 1440 und 390), 986 Client-Tests, Gates grün.
+Der Lite-Bogen ist 6 065 statt 13 200 Pixel hoch.
+
+Der Neulingsgang hat vier Fehler gefunden, die keine Prüfung vorher sah — alle behoben:
+
+1. Nach „Figurvorlage speichern“ sprang das Formular auf eine leere neue Vorlage; wer weitertippte,
+   legte Doppel an. Jetzt bleibt die gespeicherte Vorlage offen, „Figur aus dieser Vorlage anlegen“
+   ist der eine nächste Schritt.
+2. Nach „Figur anlegen“ begann der Weg sofort von vorn. Jetzt steht das Ergebnis mit „Zur Figur am
+   Tisch“, das den Bogen genau dieser Figur öffnet (die Navigation reicht die Figur durch).
+3. „Weiter“ und „Figur anlegen“ teilten sich ohne Schlüssel ein Element; der Klick auf „Weiter“
+   machte es noch im Klick zum Absende-Knopf, ein Doppelklick legte die Figur ohne „Fertig“ an.
+4. `useHostRules` hing am Objekt der Werte statt an ihrem Inhalt: 27 Regelprüfungen in zehn
+   Ruhesekunden am Tisch, bis der Server die Spielleitung mit „Zu viele Anfragen“ bremste. Der
+   Wächter `e2e/ruhezustand.spec.ts` hält jede Ansicht im Ruhezustand unter vier Anfragen je zehn
+   Sekunden. Zusätzlich teilt `useResource` gleichzeitige Abfragen derselben Adresse innerhalb eines
+   Schreibstands (jede Änderung und jede Live-Meldung zählt ihn hoch).
+
+Außerdem: Spieler ohne Figur bekommen auf „Heute“ „Figur beantragen“ als ersten Schritt, die
+Spielleitung die Checkliste „So startet deine Runde“ auch dort; die Punkte-Übersicht steht wieder
+auf dem Bogen; ohne Porträt steht ein kleiner Platzhalter statt eines halben Bildschirms.
+
+**Bekannt und nicht von diesem Umbau:** `e2e/actors.spec.ts` scheitert am Export (400) auch auf
+dem Stand vor dem Umbau (gegengeprüft in einer eigenen Arbeitskopie) und reißt bei Robotertempo
+die Grenze von 240 Anfragen je Minute (gleiche Anfragezahl wie vorher, 195 zu 196, nur schneller);
+`e2e/campaign.spec.ts` braucht `.local/config.json` (lokales Postgres).

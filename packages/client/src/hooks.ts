@@ -1,7 +1,30 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ApiError, errorText } from "./api";
+import { aktuellerSchreibStand, api, ApiError, errorText } from "./api";
+
+/**
+ * Gleichzeitige Abfragen derselben Adresse laufen einmal. Nach jeder Änderung laden viele Bausteine
+ * dieselben Listen neu — am Tisch bis zu 29-mal `/actors` in zehn Sekunden, bis der Server die
+ * Spielleitung mit „Zu viele Anfragen“ bremste (240 je Minute, 2026-09-26). Geteilt wird nur, was im
+ * selben Schreibstand und höchstens 50 ms zuvor begonnen hat; die Abfrage bricht erst ab, wenn alle
+ * Wartenden abgebrochen haben.
+ */
+interface GeteilteAbfrage { stand: number; beginn: number; abbruch: AbortController; wartende: number; ergebnis: Promise<unknown> }
+const laufend = new Map<string, GeteilteAbfrage>();
+export function gemeinsamLaden<T>(path: string, signal: AbortSignal): Promise<T> {
+  const stand = aktuellerSchreibStand(), jetzt = Date.now();
+  let abfrage = laufend.get(path);
+  if (!abfrage || abfrage.stand !== stand || jetzt - abfrage.beginn > 50) {
+    const abbruch = new AbortController();
+    const neu: GeteilteAbfrage = { stand, beginn: jetzt, abbruch, wartende: 0, ergebnis: Promise.resolve() };
+    neu.ergebnis = api<T>(path, { signal: abbruch.signal }).finally(() => { if (laufend.get(path) === neu) laufend.delete(path); });
+    laufend.set(path, neu); abfrage = neu;
+  }
+  const geteilt = abfrage; geteilt.wartende++;
+  signal.addEventListener("abort", () => { if (--geteilt.wartende === 0) geteilt.abbruch.abort(); }, { once: true });
+  return geteilt.ergebnis as Promise<T>;
+}
 
 export function useResource<T>(path: string | null, revision = 0, interval = 0) {
   const [state, setState] = useState<{ path: string | null; data: T | null; loaded: boolean; loading: boolean; error: string }>({ path, data: null, loaded: false, loading: !!path, error: "" });
@@ -14,7 +37,7 @@ export function useResource<T>(path: string | null, revision = 0, interval = 0) 
       ? { ...current, loading: false, error: "" }
       : { path, data: null, loaded: false, loading: true, error: "" });
     const load = async () => {
-      try { const data = await api<T>(path, { signal: controller.signal }); if (!controller.signal.aborted) setState({ path, data, loaded: true, loading: false, error: "" }); }
+      try { const data = await gemeinsamLaden<T>(path, controller.signal); if (!controller.signal.aborted) setState({ path, data, loaded: true, loading: false, error: "" }); }
       catch (error) {
         if (!controller.signal.aborted) setState(current => {
           const retain = current.path === path && !(error instanceof ApiError && error.status < 500 && ![408, 429].includes(error.status));

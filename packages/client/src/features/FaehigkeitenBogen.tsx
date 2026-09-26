@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { AnyRulePackage, RuleAbility, Scalar } from "@chronicle/rules";
 import { Button, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
+import { Begriff } from "./Begriff";
 import { displayRulePackage } from "./chronicle-heroes-display";
 import { einsatzKandidaten, faehigkeitenListe, grundNichtLernbar, uebersichtVon, verlernen, wirktMit, type NichtLernbar } from "./faehigkeiten-bogen";
+import "./rule-fields.css";
 
 const artText = (kind: RuleAbility["kind"]) => kind === "dauerhaft" ? t("Dauerhaft") : kind === "einsatz" ? t("Einsatz") : t("Reaktion");
 function grundText(grund: NichtLernbar): string {
@@ -25,7 +27,7 @@ const MAX_TREFFER = 40;
  */
 export function FaehigkeitenBogen({ pkg: original, fields, onChange, disabled }: { pkg: AnyRulePackage; fields: Readonly<Record<string, Scalar>>; onChange: (next: Record<string, Scalar>) => void; disabled?: boolean }) {
   const pkg = displayRulePackage(original);
-  const [suche, setSuche] = useState(""), [nurLernbar, setNurLernbar] = useState(true);
+  const [suche, setSuche] = useState(""), [nurLernbar, setNurLernbar] = useState(true), prefix = useId();
   const regeln = pkg.schemaVersion === 2 ? pkg.abilityRules : undefined;
   const uebersicht = useMemo(() => regeln ? uebersichtVon(pkg, fields) : null, [pkg, fields, regeln]);
   const gelernt = regeln ? faehigkeitenListe(fields[regeln.abilityField]) : [];
@@ -40,33 +42,42 @@ export function FaehigkeitenBogen({ pkg: original, fields, onChange, disabled }:
   const aktiv = regeln.conditionField ? faehigkeitenListe(fields[regeln.conditionField]) : [];
   const setzeListe = (feld: string, ids: readonly string[]) => onChange({ [feld]: ids.join(", ") });
   const gezeigt = treffer.slice(0, MAX_TREFFER);
-  return <section className="faehigkeiten-bogen" aria-label={t("Fähigkeiten und Zustände")}>
+  const meta = (ability: RuleAbility) => `${ability.group} · ${t("Rang {rang}", { rang: ability.rank })} · ${artText(ability.kind)}`;
+  return <section className="faehigkeiten-bogen sheet-block" aria-label={t("Fähigkeiten und Zustände")}>
     <h3>{t("Fähigkeiten")}</h3>
     {!uebersicht ? <Notice error>{t("Erst die Fehler im Bogen beheben.")}</Notice> : <p className="field-help" role="status">{uebersicht.budget === null
       ? t("{n} Erfahrung für Fähigkeiten ausgegeben.", { n: uebersicht.spent })
       : t("{ausgegeben} von {budget} Erfahrung für Fähigkeiten ausgegeben.", { ausgegeben: uebersicht.spent, budget: uebersicht.budget })}</p>}
     <p className="field-help">{t("Dauerhafte Fähigkeiten wirken bei jedem passenden Wurf. Einsatz- und Reaktionsfähigkeiten wählst du am Tisch beim Würfeln. Was du hier lernst oder verlernst, gilt am Tisch erst nach „Bogen speichern“.")}</p>
-    {gelernt.length ? <ul className="faehigkeiten-liste">{gelernt.map(id => {
-      const ability = nachKennung.get(id);
-      return <li key={id}><div><strong>{ability?.name ?? id}</strong>{ability ? <small> · {ability.group} · {t("Rang {rang}", { rang: ability.rank })} · {artText(ability.kind)}</small> : null}{ability ? <p>{ability.text}</p> : null}</div>
-        <Button disabled={disabled} onClick={() => setzeListe(regeln.abilityField, verlernen(pkg, gelernt, id))}>{t("Verlernen")}</Button></li>;
-    })}</ul> : <p className="muted">{t("Noch keine Fähigkeit gelernt.")}</p>}
+    {gelernt.length ? <ul className="ability-cards">{gelernt.map(id => {
+      const ability = nachKennung.get(id), name = ability?.name ?? id;
+      return <li key={id} className="ability-card is-learned"><strong className="ability-card-name">{name}</strong>
+        {ability ? <span className="ability-card-meta">{meta(ability)}</span> : null}{ability ? <p>{ability.text}</p> : null}
+        <Button disabled={disabled} onClick={() => setzeListe(regeln.abilityField, verlernen(pkg, gelernt, id))}>{t("{name} verlernen", { name })}</Button></li>;
+    })}</ul> : <p className="ability-empty"><Begriff id="faehigkeit">{t("Noch keine Fähigkeit gelernt.")}</Begriff> {t("Unter „Neue Fähigkeit lernen“ suchst du eine aus.")}</p>}
     <details><summary>{t("Neue Fähigkeit lernen")}</summary>
-      <div className="rule-fields"><label>{t("Fähigkeit suchen")}<input type="search" value={suche} onChange={event => setSuche(event.target.value)} /></label>
+      <div className="ability-search"><label>{t("Fähigkeit suchen")}<input type="search" value={suche} onChange={event => setSuche(event.target.value)} /></label>
         <label className="check-label"><input type="checkbox" checked={nurLernbar} onChange={event => setNurLernbar(event.target.checked)} /> {t("Nur jetzt lernbare zeigen")}</label></div>
-      <ul className="faehigkeiten-liste">{gezeigt.map(ability => {
-        const grund = grundNichtLernbar(pkg, fields, ability.id, uebersicht);
-        return <li key={ability.id}><div><strong>{ability.name}</strong><small> · {ability.group} · {t("Rang {rang}", { rang: ability.rank })} · {artText(ability.kind)} · {t("{preis} Erfahrung", { preis: ability.price })}{ability.cost ? ` · ${t("{kosten} Funken beim Einsatz", { kosten: ability.cost })}` : ""}</small>
-          <p>{ability.text}</p>{grund ? <p className="field-help">{grundText(grund)}</p> : null}</div>
-          <Button disabled={disabled || grund !== null} onClick={() => setzeListe(regeln.abilityField, [...gelernt, ability.id])}>{t("Lernen")}</Button></li>;
+      <ul className="ability-cards">{gezeigt.map(ability => {
+        const grund = grundNichtLernbar(pkg, fields, ability.id, uebersicht), grundId = `${prefix}-${ability.id}`;
+        return <li key={ability.id} className="ability-card"><strong className="ability-card-name">{ability.name}</strong>
+          <span className="ability-card-meta">{meta(ability)} · {t("{preis} Erfahrung", { preis: ability.price })}{ability.cost ? ` · ${t("{kosten} Funken beim Einsatz", { kosten: ability.cost })}` : ""}</span>
+          <p>{ability.text}</p>{grund ? <p id={grundId} className="ability-card-reason">{grundText(grund)}</p> : null}
+          <Button disabled={disabled || grund !== null} aria-describedby={grund ? grundId : undefined} onClick={() => setzeListe(regeln.abilityField, [...gelernt, ability.id])}>{t("{name} lernen", { name: ability.name })}</Button></li>;
       })}</ul>
       {treffer.length > gezeigt.length ? <p className="field-help">{t("{n} weitere Treffer. Grenze die Suche ein.", { n: treffer.length - gezeigt.length })}</p> : !treffer.length ? <p className="muted">{t("Keine passende Fähigkeit.")}</p> : null}
     </details>
     {regeln.conditionField && pkg.conditions?.length ? <>
-      <h3>{t("Zustände")}</h3>
+      <h3><Begriff id="zustand">{t("Zustände")}</Begriff></h3>
       <p className="field-help">{t("Die Spielleitung hakt Zustände an und wieder ab. Aktive Zustände rechnen bei jedem passenden Wurf mit.")}</p>
-      <div className="zustaende-liste">{pkg.conditions.map(zustand => <label key={zustand.id} className="check-label"><input type="checkbox" disabled={disabled} checked={aktiv.includes(zustand.id)}
-        onChange={event => setzeListe(regeln.conditionField!, event.target.checked ? [...aktiv, zustand.id] : aktiv.filter(kennung => kennung !== zustand.id))} /> <span><strong>{zustand.name}</strong> <small>{zustand.text}</small></span></label>)}</div>
+      <div className="condition-chips">{pkg.conditions.map(zustand => {
+        const an = aktiv.includes(zustand.id), textId = `${prefix}-zustand-${zustand.id}`;
+        return <div className="condition-chip-item" key={zustand.id}>
+          <label className={an ? "condition-chip is-active" : "condition-chip"}><input type="checkbox" disabled={disabled} checked={an} aria-describedby={zustand.text ? textId : undefined}
+            onChange={event => setzeListe(regeln.conditionField!, event.target.checked ? [...aktiv, zustand.id] : aktiv.filter(kennung => kennung !== zustand.id))} /><span>{zustand.name}</span></label>
+          {zustand.text ? <p id={textId} className="field-help">{zustand.text}</p> : null}
+        </div>;
+      })}</div>
     </> : null}
   </section>;
 }

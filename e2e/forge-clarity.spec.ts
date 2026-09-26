@@ -70,17 +70,21 @@ test("a saved template flows directly into a separate playable character", async
   const savedResponse = await save;
   expect(savedResponse.status()).toBe(200);
   const template = await savedResponse.json();
-  await page.getByRole("button", { name: "Aus Vorlage Figur erschaffen", exact: true }).click();
+  // Nach dem Speichern ist „Figur aus dieser Vorlage anlegen“ der eine nächste Schritt (2026-09-26),
+  // und das Anlegen ist ein geführter Weg: Wer ist die Figur? → Was kann sie? → Fertig.
+  await page.getByRole("button", { name: "Figur aus dieser Vorlage anlegen", exact: true }).click();
   const creation = page.locator(".creation-instantiate");
-  await expect(creation.getByRole("combobox", { name: "Figurvorlage", exact: true })).toHaveValue(template.id);
+  await expect(creation.getByRole("combobox", { name: "Aus welcher Figurvorlage?", exact: true })).toHaveValue(template.id);
   await creation.getByLabel("Name dieser Figur", { exact: true }).fill("Ayla");
   await page.screenshot({ path: info.outputPath("05-character-creation-desktop.png"), fullPage: true });
+  await creation.getByRole("button", { name: "Weiter", exact: true }).click();
+  await creation.getByRole("button", { name: "Weiter", exact: true }).click();
   const create = page.waitForResponse(response => response.url().endsWith("/actors/instantiate") && response.request().method() === "POST");
-  await creation.getByRole("button", { name: "Figur erschaffen", exact: true }).click();
+  await creation.getByRole("button", { name: "Figur anlegen", exact: true }).click();
   const createdResponse = await create;
   expect(createdResponse.status()).toBe(200);
   const actor = await createdResponse.json();
-  await expect(creation).toContainText("„Ayla“ wurde erschaffen.");
+  await expect(creation).toContainText("„Ayla“ ist angelegt.");
   const sheet = await page.request.get(`${app.origin}/api/campaigns/${app.campaign.id}/actors/${actor.id}/sheet`);
   expect(sheet.status()).toBe(200);
   expect((await sheet.json()).fields.insight).toBe(4);

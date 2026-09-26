@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ActorCard } from "@chronicle/protocol";
+import type { ActorCard, ReaderPerspective as Perspective } from "@chronicle/protocol";
 import { PackageOpen, RefreshCw } from "lucide-react";
-import { Button, EmptyState, Loading, Notice } from "@chronicle/ui";
+import { Button, Loading, Notice, ViewIntro, confirmAction } from "@chronicle/ui";
 import { apiPath, type Campaign } from "../api";
 import { useResource } from "../hooks";
 import { t } from "../i18n";
 import { CharacterSheet } from "./CharacterSheet";
 import { FigurAntrag } from "./FigurAntrag";
 import { Inventory } from "./ActorWorkbench";
+import { ReaderPerspective } from "./ReaderPerspective";
 import type { RulesState } from "./game-api";
 import "./gameplay.css";
+import "./actors.css";
 
 /**
  * `Ich` — die eigene Figur, ohne Umweg über den Spielabend.
@@ -20,6 +22,10 @@ import "./gameplay.css";
  * erfindet keine zweite Fassung und keine zweite Route. Sie beantwortet nur die Frage, die
  * unter der Woche zuerst gestellt wird und für die der Tisch der falsche Ort war:
  * *Was habe ich, und was kann ich?*
+ *
+ * Ein Figurwähler oben steuert Bogen und Inventar (E8, 2026-09-26). Vorher standen hier drei
+ * Wähler: die Lesesicht der App, dieser und die Inventarwahl. Die Lesesicht steht jetzt darunter
+ * und sagt, wofür sie gilt; das Inventar folgt der gewählten Figur, und Geld steht einmal — am Bogen.
  */
 export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: Campaign; liveRevision?: number; onDirty: (value: boolean) => void }) {
   const inventory = useRef<HTMLDivElement>(null);
@@ -36,6 +42,7 @@ export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: 
   const takt = revision + liveRevision;
   const rules = useResource<RulesState>(apiPath(campaign.id, "/rules"), takt);
   const actors = useResource<ActorCard[]>(apiPath(campaign.id, "/actors"), takt);
+  const perspective = useResource<Perspective>(apiPath(campaign.id, "/reader-perspective"), takt);
   const meine = actors.data?.filter(actor => actor.canControl) ?? [];
   // Die erste Wahl wird einmal festgehalten. Eine spätere Freigabe darf keinen offenen Entwurf umhängen.
   useEffect(() => { if (!dirty && meine.length && !meine.some(actor => actor.id === chosen)) setChosen(meine[0]!.id); }, [chosen, dirty, meine]);
@@ -49,35 +56,50 @@ export function MeineFigur({ campaign, liveRevision = 0, onDirty }: { campaign: 
     stage.scrollTo({ top: stage.scrollTop + target.getBoundingClientRect().top - stage.getBoundingClientRect().top - 20 });
     target.focus({ preventScroll: true });
   };
-  return <section className="page-content table-page"><div className="page-heading"><div>
-      <p className="eyebrow">{t("Was du hältst und was du kannst")}</p><h1>{t("Deine Figur")}</h1>
-      <p className="muted">{t("Bogen und Inventar — dieselben, die am Tisch gelten.")}</p>
-    </div><div className="button-row">{actorId ? <Button onClick={openInventory}><PackageOpen size={17} /> {t("Zum Inventar")}</Button> : null}<Button aria-label={t("Figur aktualisieren")} onClick={refresh}><RefreshCw size={16} /></Button></div></div>
+  const waehle = async (next: string) => {
+    if (next === actorId) return;
+    // Die Auswahl springt sofort auf die gültige Figur zurück (gesteuertes Feld); erst ein Ja wechselt.
+    if (dirty && !await confirmAction({ title: t("Ungespeicherte Änderungen verwerfen?"), message: t("Was du an dieser Figur geändert und noch nicht gespeichert hast, geht verloren."), confirmLabel: t("Verwerfen und wechseln"), cancelLabel: t("Hierbleiben"), danger: true })) {
+      setDrafts(d => ({ ...d }));
+      return;
+    }
+    setDrafts({ sheet: false, inventory: false, request: false }); setChosen(next);
+  };
+  // Die Lesesicht wechselt nur Chronik und Atlas; Bogen und Inventar hier bleiben davon unberührt.
+  // Für die Spielleitung ist derselbe Wähler die Brieffigur; dort bleibt seine eigene Beschriftung.
+  const lesesicht = useCallback(() => true, []);
+  return <section className="page-content table-page meine-figur">
+    <ViewIntro id="ich-titel" level={1} title={t("Deine Figur")}
+      action={<div className="meine-figur-wahl">
+        {meine.length > 1 ? <label className="actor-picker">{t("Deine Figur")}
+          <select value={actorId} onChange={event => void waehle(event.target.value)}>
+            {meine.map(actor => <option key={actor.id} value={actor.id}>{actor.name}</option>)}
+          </select></label> : null}
+        {actorId ? <Button variant="quiet" onClick={openInventory}><PackageOpen size={17} aria-hidden="true" /> {t("Zum Inventar")}</Button> : null}
+        <Button variant="quiet" aria-label={t("Figur aktualisieren")} onClick={refresh}><RefreshCw size={16} aria-hidden="true" /></Button>
+      </div>}
+      steps={actorId ? [
+        t("Ändere Werte direkt auf dem Bogen und speichere sie."),
+        t("Unter dem Bogen findest du alles, was deine Figur trägt."),
+        t("Am Tisch würfelst du mit genau diesem Bogen."),
+      ] : undefined}>
+      {actorId ? t("Der Bogen deiner Figur und alles, was sie trägt. Es ist derselbe Bogen, der am Tisch gilt.")
+        : t("Hier steht der Bogen deiner Figur, sobald du eine hast.")}</ViewIntro>
     {rules.error || actors.error ? <Notice error>{rules.error || actors.error}</Notice> : null}
-    {meine.length > 1 ? <div className="table-controls"><label className="actor-picker">{t("Deine Figur")}
-      <select value={actorId} onChange={event => {
-        if (event.target.value === actorId) return;
-        if (dirty && !window.confirm(t("Ungespeicherte Änderungen dieser Figur verwerfen?"))) {
-          // No state setter → no re-render → browser keeps the new DOM value even though
-          // React state didn't change. Spread into a fresh object to schedule a re-render
-          // so the controlled select reverts to the authoritative actorId.
-          setDrafts(d => ({ ...d }));
-          return;
-        }
-        setDrafts({ sheet: false, inventory: false, request: false }); setChosen(event.target.value);
-      }}>
-        {meine.map(actor => <option key={actor.id} value={actor.id}>{actor.name}</option>)}
-      </select></label></div> : null}
     {rules.loading || actors.loading ? <Loading />
       : !actorId ? (gm || !rules.data
         // Die leere Fläche einer Spielerin ist keine Sackgasse mehr: sie kann hier selbst eine
         // Figur beantragen. Für die Spielleitung bleibt sie, was sie war — sie erschafft Figuren
         // in der Schmiede, nicht über einen Antrag an sich selbst.
-        ? <EmptyState title={t("Noch führst du keine Figur.")}>{t("Sobald deine Spielleitung dir eine Figur anvertraut, findest du hier ihren Bogen und alles, was sie trägt.")}</EmptyState>
+        ? <p className="field-help">{gm ? t("Als Spielleitung legst du Figuren in der Schmiede an. Sobald du selbst eine steuerst, steht ihr Bogen hier.") : t("Sobald deine Spielleitung dir eine Figur anvertraut, findest du hier ihren Bogen und alles, was sie trägt.")}</p>
         : <FigurAntrag campaignId={campaign.id} rules={rules.data} revision={takt} onChanged={refresh} onDirty={reportRequest} />)
       : rules.data ? <>
         <CharacterSheet key={actorId} campaignId={campaign.id} actorId={actorId} rules={rules.data} gm={gm} liveRevision={takt} onDirty={reportSheet} onChanged={refresh} />
-        <div ref={inventory} tabIndex={-1} className="character-inventory"><Inventory key={actorId} campaignId={campaign.id} actorId={actorId} actors={actors.data ?? []} gm={false} revision={takt} onChanged={refresh} onDirty={reportInventory} /></div>
+        <div ref={inventory} tabIndex={-1} className="character-inventory"><Inventory key={actorId} campaignId={campaign.id} actorId={actorId} actors={actors.data ?? []} gm={false} waehlbar={false} mitGeld={false} revision={takt} onChanged={refresh} onDirty={reportInventory} /></div>
       </> : null}
+    {/* Die Lesesicht ändert man selten; sie steht deshalb unter dem Bogen, nicht vor ihm (auf dem Handy
+        sonst der ganze erste Bildschirm ohne ein Stück Figur). */}
+    {perspective.data ? <ReaderPerspective campaignId={campaign.id} gm={gm} current={perspective.data} revision={takt} guard={lesesicht} onChanged={refresh}
+      label={gm ? undefined : t("Aus wessen Sicht liest du Chronik und Atlas?")} /> : null}
   </section>;
 }

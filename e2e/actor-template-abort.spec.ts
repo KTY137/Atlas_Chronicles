@@ -22,6 +22,8 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => { await app?.close(); await db?.close(); });
 const form = (page: Page) => page.locator("form.creation-template-form");
+/** Rückfragen erscheinen seit 2026-09-26 im Look (`confirmAction` aus @chronicle/ui), nicht als Browserdialog. */
+const imDialog = (page: Page, knopf: string) => page.getByRole("dialog").getByRole("button", { name: knopf, exact: true }).click();
 async function open(page: Page) {
   await page.context().addCookies([{ name: "chronicle_session", value: session.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict" }]);
   await page.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=actors`);
@@ -46,30 +48,30 @@ async function expectUsable(page: Page, label: string) {
 }
 test("Abbruch über „Änderungen verwerfen“", async ({ page }) => {
   await open(page); await type(page);
-  page.once("dialog", d => d.accept());
   await form(page).getByRole("button", { name: "Änderungen verwerfen", exact: true }).click();
+  await imDialog(page, "Verwerfen");
   await expect(form(page).getByLabel("Vorlagenname", { exact: true })).toHaveValue("");
   await expectUsable(page, "verwerfen");
 });
 test("Abbruch über „Neue Figurvorlage“ mit Bestätigung", async ({ page }) => {
   await open(page); await type(page);
-  page.once("dialog", d => d.accept());
   await page.getByRole("button", { name: "Neue Figurvorlage", exact: true }).click();
+  await imDialog(page, "Verwerfen");
   await expectUsable(page, "neu");
 });
 test("Abbruch des Bestätigungsdialogs lässt das Formular bedienbar", async ({ page }) => {
   await open(page); await type(page);
-  page.once("dialog", d => d.dismiss());
-  await page.getByRole("button", { name: "2 · Figur erschaffen", exact: true }).click();
+  await page.getByRole("tab", { name: "Figur anlegen", exact: true }).click();
+  await imDialog(page, "Weiter bearbeiten");
   await expect(form(page).getByLabel("Vorlagenname", { exact: true })).toHaveValue("Halbfertige Waldläuferin");
   await expectUsable(page, "dialog abgebrochen");
 });
 test("Wechsel zu „Figur erschaffen“ und zurück", async ({ page }) => {
   await open(page); await type(page);
-  page.once("dialog", d => d.accept());
-  await page.getByRole("button", { name: "2 · Figur erschaffen", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Figur aus Vorlage erschaffen", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "1 · Figurvorlagen", exact: true }).click();
+  await page.getByRole("tab", { name: "Figur anlegen", exact: true }).click();
+  await imDialog(page, "Verwerfen");
+  await expect(page.getByRole("heading", { name: "Figur anlegen", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Figurvorlagen", exact: true }).click();
   await expect(form(page).getByLabel("Vorlagenname", { exact: true })).toBeVisible();
   await expectUsable(page, "zurück");
 });

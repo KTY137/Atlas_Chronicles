@@ -69,6 +69,8 @@ test.afterEach(async () => {
 const base = () => `${origin}/api/campaigns/${campaignId}`;
 const paint = (page: Page) => page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 const deferred = () => { let resolve!: () => void; const promise = new Promise<void>(done => { resolve = done; }); return { promise, resolve }; };
+/** Rückfragen erscheinen seit 2026-09-26 im Look (`confirmAction` aus @chronicle/ui), nicht als Browserdialog. */
+const imDialog = (page: Page, knopf: string) => page.getByRole("dialog").getByRole("button", { name: knopf, exact: true }).click();
 async function access(browser: Browser, gm = true): Promise<{ context: BrowserContext; page: Page }> {
   const context = await browser.newContext(), session = gm ? gmSession : playerSession;
   await context.addCookies([{ name: "chronicle_session", value: session.value, url: origin, httpOnly: true, secure: true, sameSite: "Strict" }]);
@@ -104,11 +106,12 @@ test("same selection and adding inventory cannot silently abandon an existing dr
       const editor = await openInventory(page), notes = editor.getByRole("textbox", { name: "Notizen", exact: true });
       await notes.fill("Diesen Entwurf nicht durch einen neuen Gegenstand ersetzen");
       await page.getByRole("combobox", { name: "Gegenstand aus Vorlage", exact: true }).selectOption(itemTemplate.id);
-      page.on("dialog", dialog => dialog.dismiss());
       const add = page.getByRole("button", { name: "Gegenstand hinzufügen", exact: true });
       if (await add.isEnabled()) {
         const response = page.waitForResponse(r => r.url() === `${base()}/items/instantiate` && r.request().method() === "POST", { timeout: 2000 }).catch(() => null);
-        await add.click(); await response; await expect(add).toBeEnabled(); await paint(page);
+        // Die Rückfrage erscheint im Look; „Weiter bearbeiten“ behält den Entwurf.
+        await add.click(); await imDialog(page, "Weiter bearbeiten").catch(() => undefined);
+        await response; await expect(add).toBeEnabled(); await paint(page);
       }
       await expect.soft(notes, "creation must either be guarded or retain the old selected editor").toHaveValue("Diesen Entwurf nicht durch einen neuen Gegenstand ersetzen", { timeout: 2000 });
       await expect.soft(page.locator(".band-status")).toHaveText("Ungespeicherter Entwurf", { timeout: 2000 });
@@ -121,7 +124,7 @@ test("an in-flight save and an earlier actor grant cannot overwrite later edits 
     const { context, page } = await access(browser), held = deferred(), release = deferred();
     try {
       const editor = await openInventory(page), notes = editor.getByRole("textbox", { name: "Notizen", exact: true });
-      await notes.fill("Zum Speichern abgesendete Notiz"); await editor.getByLabel("Grund der Änderung", { exact: true }).fill("Fund notiert");
+      await notes.fill("Zum Speichern abgesendete Notiz"); await editor.getByLabel("Grund (freiwillig, erscheint im Verlauf)", { exact: true }).fill("Fund notiert");
       await page.route(`${base()}/items/${item.id}`, async route => {
         if (route.request().method() !== "PUT") { await route.continue(); return; }
         const response = await route.fetch(); expect(response.status()).toBe(200); held.resolve();
@@ -148,7 +151,7 @@ test("an in-flight save and an earlier actor grant cannot overwrite later edits 
       await gm.page.getByRole("combobox", { name: "Handelnde Figur", exact: true }).selectOption(earlier.id);
       await gm.page.getByRole("tab", { name: "Figuren & Inventar", exact: true }).click();
       const details = gm.page.locator(".actor-details");
-      await details.getByLabel("Grund der Änderung", { exact: true }).fill("Weitere Begleitung freigeben");
+      await details.getByLabel("Grund (freiwillig, erscheint im Verlauf)", { exact: true }).fill("Weitere Begleitung freigeben");
       await details.getByRole("combobox", { name: "Mitglied", exact: true }).selectOption(playerSession.userId);
       await details.getByRole("button", { name: "Kontrolle erlauben", exact: true }).click();
       await expect(picker.locator(`option[value="${earlier.id}"]`)).toHaveCount(1); await paint(player.page);
@@ -200,16 +203,15 @@ test("a delayed template save cannot erase a subsequently opened template draft"
       await held.promise;
       const chooseNew = page.getByRole("button", { name: names.create, exact: true });
       const locked = await chooseNew.isDisabled();
-      page.on("dialog", dialog => dialog.accept());
       if (!locked) {
-        await chooseNew.click();
+        await chooseNew.click(); await imDialog(page, "Verwerfen").catch(() => undefined);
         await field.fill(`Noch ungespeicherter ${kind}-Entwurf B`);
         await expect(page.locator(".band-status")).toHaveText("Ungespeicherter Entwurf");
       }
       release.resolve(); await response; await paint(page);
       if (locked) {
         await expect(chooseNew).toBeEnabled();
-        await chooseNew.click(); await field.fill(`Noch ungespeicherter ${kind}-Entwurf B`);
+        await chooseNew.click(); await imDialog(page, "Verwerfen").catch(() => undefined); await field.fill(`Noch ungespeicherter ${kind}-Entwurf B`);
       }
       await expect.soft(field, "an earlier successful response cannot close a later editor").toHaveValue(`Noch ungespeicherter ${kind}-Entwurf B`, { timeout: 2000 });
       await expect.soft(page.locator(".band-status"), "the later editor retains its navigation guard").toHaveText("Ungespeicherter Entwurf", { timeout: 2000 });

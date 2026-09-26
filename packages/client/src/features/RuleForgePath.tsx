@@ -65,7 +65,7 @@ export function RuleCapabilityCard({ capabilities }: { capabilities: RuleCapabil
   const c = capabilities;
   const rows: { label: string; value: string }[] = [
     { label: t("Attribute"), value: String(c.attributes) },
-    { label: t("Abgeleitete Werte"), value: String(c.computed) },
+    { label: t("Berechnete Werte"), value: String(c.computed) },
     { label: t("Regeln für einen gültigen Bogen"), value: String(c.constraints) },
     { label: t("Balken wie Lebenspunkte"), value: String(c.vitals) },
     { label: t("Listen wie Ausrüstung oder Zauber"), value: String(c.collections) },
@@ -81,7 +81,7 @@ export function RuleCapabilityCard({ capabilities }: { capabilities: RuleCapabil
     { label: t("Pakettests"), value: String(c.selfTests) },
   ];
   return <section className="rf-card rf-capabilities" aria-label={t("Was dieses Regelwerk kann")}>
-    <h3>{t("Was dieses Regelwerk kann")}</h3>
+    <h4>{t("Was dieses Regelwerk kann")}</h4>
     <p className="rf-help">{t("Aus dem Paket selbst abgelesen. Die Oberfläche richtet sich danach, nicht nach dem Namen des Systems.")}</p>
     <dl className="rf-value-list rf-capability-list">{rows.map(row => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl>
   </section>;

@@ -24,10 +24,12 @@ import { parseTableTab, type TableTab } from "../navigation";
 import type { ForgeSection } from "./forge-navigation";
 
 type Tab = TableTab;
-export function TableView({ campaign, userId, onOpenEntry, onDirty, openDoor, openTab, onOpenForge, liveRevision = 0, readerScope = "", blickActorId = null }: { openTab?: { tab: TableTab; request: number }; onOpenForge?: (section: ForgeSection) => void; readerScope?: string; blickActorId?: string | null; openDoor?: { id?: string; request: number }; liveRevision?: number; campaign: Campaign; userId: string; onOpenEntry: (id: string) => void; onDirty: (value: boolean) => void }) {
-  const [tab, setTab] = useState<Tab>(() => openDoor ? "doors" : parseTableTab(openTab?.tab ?? new URLSearchParams(location.search).get("tab"), campaign.role === "leitung")), [revision, setRevision] = useState(0), [actor, setActor] = useState<string | null>(null), [dirty, setDirty] = useState(false);
+export function TableView({ campaign, userId, onOpenEntry, onDirty, openDoor, openTab, onOpenForge, liveRevision = 0, readerScope = "", blickActorId = null }: { openTab?: { tab: TableTab; request: number; actor?: string }; onOpenForge?: (section: ForgeSection) => void; readerScope?: string; blickActorId?: string | null; openDoor?: { id?: string; request: number }; liveRevision?: number; campaign: Campaign; userId: string; onOpenEntry: (id: string) => void; onDirty: (value: boolean) => void }) {
+  const [tab, setTab] = useState<Tab>(() => openDoor ? "doors" : parseTableTab(openTab?.tab ?? new URLSearchParams(location.search).get("tab"), campaign.role === "leitung")), [revision, setRevision] = useState(0), [actor, setActor] = useState<string | null>(openTab?.actor ?? null), [dirty, setDirty] = useState(false);
   useEffect(() => { if (openDoor) setTab("doors"); }, [openDoor]);
   useEffect(() => { if (openTab && !openDoor) setTab(parseTableTab(openTab.tab, campaign.role === "leitung")); }, [openTab, openDoor, campaign.role]);
+  // Ein Sprung „Zur Figur am Tisch“ bringt die Figur mit, die gerade angelegt wurde.
+  useEffect(() => { if (openTab?.actor) setActor(openTab.actor); }, [openTab]);
   const gm = campaign.role === "leitung", rules = useResource<RulesState>(apiPath(campaign.id, "/rules"), revision + liveRevision);
   const roster = useResource<Member[]>(apiPath(campaign.id, "/roster"), revision + liveRevision), scenes = useResource<SceneCard[]>(apiPath(campaign.id, "/scenes"), revision + liveRevision, 6000);
   const actors = useResource<ActorCard[]>(apiPath(campaign.id, "/actors"), revision + liveRevision);

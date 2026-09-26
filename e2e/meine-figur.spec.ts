@@ -49,6 +49,8 @@ test.afterAll(async () => {
   if (admin) { if (!/^chronicle_ich_e2e_[a-f0-9]{32}$/.test(schema)) throw new Error("Unexpected schema"); await admin.query(`DROP SCHEMA "${schema}" CASCADE`); await admin.close(); }
 });
 const rail = (page: Page) => page.getByRole("navigation", { name: "Bereiche" });
+/** Rückfragen erscheinen seit 2026-09-26 im Look (`confirmAction` aus @chronicle/ui), nicht als Browserdialog. */
+const imDialog = (page: Page, knopf: string) => page.getByRole("dialog").getByRole("button", { name: knopf, exact: true }).click();
 
 test("Ich: eigener Bogen und eigenes Inventar, ohne Umweg über den Tisch", async ({ browser }) => {
   const context = await browser.newContext(); const errors: string[] = [];
@@ -62,7 +64,7 @@ test("Ich: eigener Bogen und eigenes Inventar, ohne Umweg über den Tisch", asyn
   await expect(rail(player).getByRole("button", { name: "Schmiede", exact: true })).toHaveCount(0);
 
   await rail(player).getByRole("button", { name: "Ich", exact: true }).click();
-  await expect(player.getByRole("heading", { name: "Deine Figur" })).toBeVisible();
+  await expect(player.getByRole("heading", { name: "Deine Figur", level: 1 })).toBeVisible();
   await expect(player.getByRole("button", { name: "Bogen speichern", exact: true })).toBeVisible();
   await expect(player.getByRole("heading", { name: "Inventar · Sera", exact: true })).toBeVisible();
   // Der Vorrat der Spielleitung ist keine Spielerfläche.
@@ -71,7 +73,7 @@ test("Ich: eigener Bogen und eigenes Inventar, ohne Umweg über den Tisch", asyn
   // Der Bereich überlebt einen Neuladevorgang, wie jeder andere auch.
   await expect(player).toHaveURL(/stage=ich/);
   await player.reload();
-  await expect(player.getByRole("heading", { name: "Deine Figur" })).toBeVisible();
+  await expect(player.getByRole("heading", { name: "Deine Figur", level: 1 })).toBeVisible();
 
   // Und der Tisch bleibt unverändert erreichbar.
   await rail(player).getByRole("button", { name: "Tisch", exact: true }).click();
@@ -89,31 +91,36 @@ test("Ich: wer keine Figur führt, beantragt sie hier — und nimmt den Antrag a
   await nell.goto(`${origin}/?campaign=${campaignId}&stage=ich`);
 
   // Die leere Fläche ist keine Sackgasse mehr.
-  await expect(nell.getByRole("heading", { name: "Deine eigene Figur", exact: true })).toBeVisible();
-  await nell.getByRole("button", { name: "Figur anlegen", exact: true }).click();
+  await expect(nell.getByRole("heading", { name: "Eine Figur beantragen", exact: true })).toBeVisible();
+  await nell.getByRole("button", { name: "Figur beantragen", exact: true }).click();
   // Gewählt werden kann ausschließlich, was die Spielleitung freigegeben hat.
   const wahl = nell.getByRole("combobox", { name: "Figurvorlage", exact: true });
   await expect(wahl.locator("option")).toHaveCount(2);
   await wahl.selectOption(vorlageId);
   await nell.getByLabel("Name deiner Figur", { exact: true }).fill("Nell vom Frosttor");
-  // Die Anfangswerte sind mit der Vorlage vorbelegt; nur die Änderung wird zum Wunsch.
+  // Die Anfangswerte sind mit der Vorlage vorbelegt; nur die Änderung wird zum Wunsch. Sie stehen im
+  // zweiten Schritt „Was kann sie?“, abgeschickt wird im dritten, „Fertig“.
+  await nell.getByRole("button", { name: "Weiter", exact: true }).click();
   await expect(nell.getByLabel("Scharfsinn", { exact: true })).toHaveValue("4");
   await nell.getByLabel("Scharfsinn", { exact: true }).fill("5");
+  await nell.getByRole("button", { name: "Weiter", exact: true }).click();
   const gestellt = nell.waitForResponse(r => r.url() === `${api}/figurantraege` && r.request().method() === "POST");
   await nell.getByRole("button", { name: "Antrag absenden", exact: true }).click();
   const antwort = await gestellt; expect(antwort.status()).toBe(200);
   const antrag = await antwort.json();
-  expect(antrag.anfangswerte).toEqual({ insight: 5 });
+  // Das Regelwerk führt ein eigenes Namensfeld; der Name der Figur steht deshalb auch dort.
+  expect(antrag.anfangswerte).toEqual({ insight: 5, name: "Nell vom Frosttor" });
   expect(typeof antrag.id).toBe("string");
 
   await expect(nell.getByText("„Nell vom Frosttor“ wartet auf die Spielleitung.")).toBeVisible();
-  await expect(nell.getByRole("button", { name: "Figur anlegen", exact: true })).toHaveCount(0);
+  await expect(nell.getByRole("button", { name: "Figur beantragen", exact: true })).toHaveCount(0);
   // Der Bereich überlebt einen Neuladevorgang, der offene Antrag ebenso.
   await nell.reload();
   await expect(nell.getByText("„Nell vom Frosttor“ wartet auf die Spielleitung.")).toBeVisible();
 
   await nell.getByRole("button", { name: "Antrag zurücknehmen", exact: true }).click();
-  await expect(nell.getByRole("button", { name: "Figur anlegen", exact: true })).toBeVisible();
+  await imDialog(nell, "Antrag zurücknehmen");
+  await expect(nell.getByRole("button", { name: "Figur beantragen", exact: true })).toBeVisible();
   expect((await (await nell.request.get(`${api}/figurantraege`)).json())[0].status).toBe("zurueckgezogen");
   expect(errors).toEqual([]);
   await context.close();

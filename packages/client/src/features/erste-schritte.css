@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: BUSL-1.1
+   Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE. */
+/* „So startet deine Runde“ (E14): eine Checkliste ueber der Uebersicht der Schmiede. Die Zeilen
+   sind die gemeinsame `StepList`; hier stehen sie untereinander, jede mit ihrem Knopf. Nur Token. */
+.erste-schritte { display: grid; gap: var(--space-3); margin: 0 0 var(--space-6); padding: var(--space-5); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
+.erste-schritte-kopf h2 { margin: 0; font: 500 var(--text-xl)/1.25 var(--font-display); }
+.erste-schritte-kopf p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--text-md); line-height: 1.55; }
+.erste-schritte-liste { display: grid; gap: 0; margin: 0; }
+.erste-schritte-liste > .step { align-items: flex-start; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--line); color: var(--text); font-weight: 400; }
+.erste-schritte-liste > .step:first-child { border-top: 0; }
+.erste-schritte-liste > .step > .step-mark { margin-top: 2px; }
+.erste-schritte-liste .step-label { flex: 1 1 auto; min-width: 0; }
+.erster-schritt { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); }
+.erster-schritt-text { display: grid; gap: 2px; min-width: 0; flex: 1 1 16rem; }
+.erster-schritt-text strong { font-size: var(--text-md); font-weight: 600; }
+.erster-schritt-text > span { color: var(--text-muted); font-size: var(--text-sm); line-height: 1.5; }
+.erster-schritt-text > .erster-schritt-hinweis { color: var(--warning); font-weight: 600; }
+.erste-schritte-liste .step-done .erster-schritt-text strong { color: var(--text-muted); }
+.erste-schritte-fertig { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; color: var(--ok); font-size: var(--text-md); font-weight: 600; }
+@media (max-width: 520px) {
+  .erste-schritte { padding: var(--space-4); }
+  .erster-schritt > .button { width: 100%; }
+}

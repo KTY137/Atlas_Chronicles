@@ -57,6 +57,8 @@ test("visual package authoring, live play and reviewed migration preserve player
     await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
     await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
     await editor.getByRole("textbox", { name: /^Name(?:\s|$)/ }).fill("Nordlicht");
+    // Kennung, Version und Lizenz stehen seit 2026-09-26 unter „Für Fortgeschrittene“ (Spec E6).
+    await editor.getByText("Für Fortgeschrittene", { exact: true }).click();
     await editor.getByRole("textbox", { name: /Paketkennung/ }).fill(packageId);
     await gm.getByRole("tab", { name: "Attribute", exact: true }).click();
     await editor.getByRole("button", { name: /^Scharfsinn / }).click();
@@ -68,14 +70,16 @@ test("visual package authoring, live play and reviewed migration preserve player
     await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
     await editor.getByRole("button", { name: "Aktion", exact: true }).click();
     await editor.getByLabel(/^Name/).fill("Nordlichtprobe");
+    await editor.locator(".rf-detail").getByText("Für Fortgeschrittene", { exact: true }).click();
     await editor.getByLabel(/^Kennung/).fill("explore");
     await editor.getByLabel("Feste Erfolgsschwelle verwenden").check();
     await editor.getByLabel("Erfolg ab Ergebnis").fill("1");
-    const formula = editor.getByRole("combobox", { name: "Formel", exact: true }).first();
+    // Die Formelzeile heißt nach ihrem Feld: „Ergebnis Formel“.
+    const formula = editor.getByRole("combobox", { name: "Ergebnis Formel", exact: true }).first();
     await formula.fill("1d6 + @ins");
     await gm.getByRole("option", { name: /Wachsamkeit/ }).click();
     await expect(formula).toHaveValue("1d6 + @insight");
-    await expect(editor.getByText(/^Beispiel für /)).toBeVisible();
+    await expect(editor.locator(".ff-line-status").getByText(/^Beispiel für /)).toBeVisible();
     await gm.getByRole("tab", { name: "Ausprobieren", exact: true }).click();
     await gm.locator(".rf-preview").getByRole("combobox", { name: "Aktion", exact: true }).selectOption("explore");
     await expect(gm.locator(".rf-preview")).toContainText("Nordlichtprobe");
@@ -106,7 +110,9 @@ test("visual package authoring, live play and reviewed migration preserve player
     expect(roll.receipt.dice).toHaveLength(1);
 
     await gm.getByRole("button", { name: "Neue Version erstellen", exact: true }).click();
+    await editor.getByText("Für Fortgeschrittene", { exact: true }).click();
     await editor.getByLabel(/^Version/).fill("1.1.0");
+    // Die Migration gehört nicht zum Wichtigsten; mit ihrem vorgeschlagenen Weg hat sie Inhalt und steht darum da.
     await gm.getByRole("tab", { name: "Migration", exact: true }).click();
     await expect(editor.getByRole("combobox", { name: /^Ausgangsversion(?:\s|$)/ })).toHaveValue("1.0.0");
     await preview(); await install();
@@ -126,8 +132,9 @@ test("visual package authoring, live play and reviewed migration preserve player
     await preview(); await gm.getByRole("checkbox", { name: "Ich habe die Feldänderungen und archivierten Werte geprüft.", exact: true }).check(); await activate();
     await expect(player.getByRole("button", { name: "Aktuellen Bogen übernehmen", exact: true })).toBeVisible();
     await expect(player.getByLabel("Wachsamkeit", { exact: true })).toHaveValue("6");
-    player.once("dialog", dialog => dialog.accept());
+    // Die Rückfrage ist seit 2026-09-26 ein Dialog im Look (confirmAction), keine Browser-Box.
     await player.getByRole("button", { name: "Aktuellen Bogen übernehmen", exact: true }).click();
+    await player.getByRole("dialog").getByRole("button", { name: "Entwurf verwerfen", exact: true }).click();
     await expect(player.getByLabel("Wachsamkeit", { exact: true })).toHaveValue("5");
     expect((await (await player.request.get(`${base}/rolls/${roll.id}/replay`)).json()).valid).toBe(true);
     expect((await (await player.request.get(`${base}/rolls/${roll.id}`)).json()).receipt).toEqual(roll.receipt);

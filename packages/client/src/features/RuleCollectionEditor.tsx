@@ -7,7 +7,7 @@ import { RULE_LIMITS, type FieldSchema, type RuleCollection, type Scalar } from 
 import { t } from "../i18n";
 import { SchemaUpgrade } from "./RuleDeclarativeEditor";
 import { RuleEntryList } from "./RuleEntryList";
-import { copyJson, uniqueId, type RuleDraft } from "./rule-forge-model";
+import { copyJson, freeId, uniqueId, type RuleDraft } from "./rule-forge-model";
 import { isOnSheet, placeOnSheet, retargetOnSheet, sheetTree, withSheetTree, withoutFields } from "./rule-sheet-model";
 
 function collectionField(type: FieldSchema["type"] = "string"): FieldSchema {
@@ -81,6 +81,26 @@ function normalizeCollectionDefault(draft: RuleDraft, collection: RuleCollection
 }
 
 /**
+ * Eine neue Liste samt Speicherattribut, schon auf dem Bogen. Den Bogen zuerst festhalten: sonst
+ * landete das Speicherattribut der neuen Liste als rohes Textfeld unter „Weitere Felder“.
+ */
+export function withNewCollection(draft: RuleDraft, template?: { id: string; label: string; itemFields: Record<string, FieldSchema>; primaryField: string }): RuleDraft {
+  const fixed = withSheetTree(draft, sheetTree(draft)), collections = fixed.collections ?? [];
+  const id = template ? freeId(template.id, collections.map(row => row.id)) : uniqueId("sammlung", collections.map(row => row.id));
+  const storageId = uniqueId(`${id}_daten`, fixed.fields.map(field => field.id));
+  const storage = { localId: `collection-${Date.now()}-${storageId}`, id: storageId, label: `${id} Daten`, type: "string" as const, defaultValue: "[]", minimum: "0", maximum: "20", maxLength: String(RULE_LIMITS.stringValue), hasEnum: false, enumValues: [] };
+  const created: RuleCollection = { id, label: template?.label ?? t("Neue Sammlung"), storageField: storageId, itemFields: template?.itemFields ?? { name: { type: "string", label: t("Name"), maxLength: 120, default: "" } }, minItems: 0, maxItems: 64, primaryField: template?.primaryField ?? "name" };
+  return placeOnSheet({ ...fixed, fields: [...fixed.fields, storage], collections: [...collections, created] }, "collection", id, true);
+}
+/** „Mit Beispiel beginnen“ bei den Listen: Ausrüstung, je Gegenstand Name und Gewicht. */
+export function withExampleCollection(draft: RuleDraft): RuleDraft {
+  return withNewCollection(draft, { id: "ausruestung", label: t("Ausrüstung"), primaryField: "name", itemFields: {
+    name: { type: "string", label: t("Name"), maxLength: 120, default: "" },
+    gewicht: { type: "number", label: t("Gewicht"), minimum: 0, maximum: 1000, default: 1 },
+  } });
+}
+
+/**
  * Listen: wiederholbare Einträge wie Waffen, Zauber oder Sprachen. Ihre Einträge liegen in einem
  * gewöhnlichen Textattribut des Bogens und reisen damit durch dieselbe Versions- und
  * Migrationslogik wie jedes Attribut.
@@ -93,16 +113,7 @@ export function RuleCollectionEditor({ draft, disabled = false, onChange }: { dr
     const next = { ...draft, collections: collections.map((row, i) => i === index ? nextCollection : row) };
     onChange(normalizeCollectionDefault(next, nextCollection, rename));
   };
-  const addCollection = () => {
-    // Den Bogen zuerst festhalten: sonst landete das Speicherattribut der neuen Liste als rohes Textfeld unter „Weitere Felder“.
-    const fixed = withSheetTree(draft, sheetTree(draft));
-    const id = uniqueId("sammlung", collections.map(row => row.id));
-    const storageId = uniqueId(`${id}_daten`, fixed.fields.map(field => field.id));
-    const storage = { localId: `collection-${Date.now()}-${storageId}`, id: storageId, label: `${id} Daten`, type: "string" as const, defaultValue: "[]", minimum: "0", maximum: "20", maxLength: String(RULE_LIMITS.stringValue), hasEnum: false, enumValues: [] };
-    const created: RuleCollection = { id, label: t("Neue Sammlung"), storageField: storageId, itemFields: { name: { type: "string", label: t("Name"), maxLength: 120, default: "" } }, minItems: 0, maxItems: 64, primaryField: "name" };
-    onChange(placeOnSheet({ ...fixed, fields: [...fixed.fields, storage], collections: [...collections, created] }, "collection", id, true));
-    setSelected(collections.length);
-  };
+  const addCollection = (example = false) => { const next = example ? withExampleCollection(draft) : withNewCollection(draft); onChange(next); setSelected((next.collections ?? []).length - 1); };
   const remove = () => {
     if (!collection) return;
     const off = placeOnSheet(draft, "collection", collection.id, false);
@@ -111,18 +122,20 @@ export function RuleCollectionEditor({ draft, disabled = false, onChange }: { dr
   };
   return <div className="rf-split">
     <RuleEntryList title={t("Listen")} rows={collections.map((row, i) => ({ key: String(i), name: row.label, detail: t("{n} Felder je Eintrag", { n: Object.keys(row.itemFields).length }) }))} current={collection ? String(index) : undefined} onSelect={key => setSelected(Number(key))}
-      onAdd={addCollection} addLabel={t("Liste")} searchLabel={t("Liste suchen")} disabled={disabled || collections.length >= RULE_LIMITS.collections}
+      onAdd={() => addCollection()} addLabel={t("Liste")} searchLabel={t("Liste suchen")} disabled={disabled || collections.length >= RULE_LIMITS.collections}
       help={t("Wiederholbare Einträge wie Waffen, Zauber, Sprachen oder Angriffe. Jeder Eintrag hat dieselben Felder, zum Beispiel Name und Schaden.")}
-      empty={t("Noch keine Liste. Leg oben eine an, zum Beispiel Waffen.")} />
+      empty={t("Noch keine Liste. Eine Liste hält mehrere gleichartige Einträge, zum Beispiel die Ausrüstung mit Name und Gewicht je Gegenstand.")} onExample={() => addCollection(true)} />
     {collection ? <section className="rf-detail" aria-label={t("Liste")}><fieldset className="rf-editor-fields" disabled={disabled}>
       <div className="rf-section-heading"><h4>{collection.label}</h4><Button variant="quiet" onClick={remove}><Trash2 size={14} />{t("Liste entfernen")}</Button></div>
       <div className="rf-form-grid">
         <label>{t("Name")}<input value={collection.label} maxLength={RULE_LIMITS.label} onChange={event => replaceCollection({ ...collection, label: event.target.value })} /></label>
-        <label>{t("Kennung")}<input value={collection.id} spellCheck={false} onChange={event => { const id = event.target.value; onChange(retargetOnSheet({ ...draft, collections: collections.map((row, i) => i === index ? { ...row, id } : row) }, "collection", collection.id, id)); }} /></label>
         <label>{t("Minimale Einträge")}<input type="number" min={0} max={collection.maxItems} value={collection.minItems} onChange={event => replaceCollection({ ...collection, minItems: Math.max(0, Math.min(collection.maxItems, event.target.valueAsNumber || 0)) })} /></label>
         <label>{t("Maximale Einträge")}<input type="number" min={Math.max(1, collection.minItems)} max={RULE_LIMITS.collectionItems} value={collection.maxItems} onChange={event => replaceCollection({ ...collection, maxItems: Math.max(Math.max(1, collection.minItems), Math.min(RULE_LIMITS.collectionItems, event.target.valueAsNumber || 1)) })} /></label>
         <label>{t("Wichtigstes Feld")}<select value={collection.primaryField ?? ""} onChange={event => replaceCollection(withPrimaryField(collection, event.target.value || undefined))}><option value="">—</option>{Object.entries(collection.itemFields).map(([id, field]) => <option key={id} value={id}>{field.label || id}</option>)}</select><small>{t("Steht in der Übersicht der Einträge vorne, zum Beispiel der Name.")}</small></label>
       </div>
+      <details className="rf-advanced"><summary>{t("Für Fortgeschrittene")}</summary>
+        <label>{t("Kennung")}<input value={collection.id} spellCheck={false} onChange={event => { const id = event.target.value; onChange(retargetOnSheet({ ...draft, collections: collections.map((row, i) => i === index ? { ...row, id } : row) }, "collection", collection.id, id)); }} /><small>{t("Unter diesem Namen merkt sich der Bogen die Liste. Nach dem ersten Spielabend nicht mehr ändern.")}</small></label>
+      </details>
       <label className="rf-check"><input type="checkbox" checked={isOnSheet(draft, "collection", collection.id)} onChange={event => onChange(placeOnSheet(draft, "collection", collection.id, event.target.checked))} />{t("Auf dem Bogen zeigen")}</label>
       <h5>{t("Felder jedes Eintrags")}</h5>
       {Object.entries(collection.itemFields).map(([id, field]) => <div className="rf-card" key={id}><div className="rf-form-grid">

@@ -11,6 +11,19 @@ export interface FormulaLineProps {
   id: string; label: string; help?: string; text: string; analysis: FormulaAnalysis;
   sources: FormulaSources; options: FormulaOptions; status: ReactNode; disabled?: boolean;
   onText(next: string): void;
+  /** Die sichtbare Beschriftung des ganzen Formelfelds, etwa „Ergebnis“; sie wird Teil des Namens der Eingabe. */
+  titleId?: string;
+  /** Der Stand als reiner Text für Bildschirmleser, etwa das Beispiel; angesagt erst nach 700 ms Ruhe. */
+  spoken?: string;
+}
+/**
+ * Ein Text, der erst nach einer Pause übernommen wird. Live-Regionen melden damit gebündelt, nicht je
+ * Tastendruck (Spec E4). Der Anfangswert wird nicht angesagt, weil er schon beim Laden dasteht.
+ */
+export function useSettledText(text: string, delay = 700): string {
+  const [settled, setSettled] = useState(text);
+  useEffect(() => { const timer = setTimeout(() => setSettled(text), delay); return () => clearTimeout(timer); }, [text, delay]);
+  return settled;
 }
 /** Die Überschrift eines Spickzettel-Beispiels. Als Funktion mit Literalen, damit `t` sie sieht
  * und ein Sprachwechsel sie erreicht. */
@@ -46,7 +59,7 @@ function Overlay({ text, analysis, overlayRef }: { text: string; analysis: Formu
   return <div ref={overlayRef} className="ff-line-overlay" aria-hidden="true">{pieces}{text.length ? null : <span className="ff-line-placeholder">{t("1d20 + @attribut")}</span>}</div>;
 }
 
-export function FormulaLine({ id, label, help, text, analysis, sources, options, status, disabled = false, onText }: FormulaLineProps) {
+export function FormulaLine({ id, label, help, text, analysis, sources, options, status, disabled = false, onText, titleId, spoken = "" }: FormulaLineProps) {
   const input = useRef<HTMLInputElement>(null), overlay = useRef<HTMLDivElement>(null), sheet = useRef<HTMLDetailsElement>(null);
   const [completion, setCompletion] = useState<Completion | null>(null), [active, setActive] = useState(0);
   const [hintSeen, setHintSeen] = useState(true);
@@ -69,24 +82,27 @@ export function FormulaLine({ id, label, help, text, analysis, sources, options,
     if (event.key === "ArrowDown") { event.preventDefault(); setActive(value => (value + 1) % completion.items.length); }
     else if (event.key === "ArrowUp") { event.preventDefault(); setActive(value => (value + completion.items.length - 1) % completion.items.length); }
     else if (event.key === "Enter" || event.key === "Tab") { if (completion.items[active]?.insert) { event.preventDefault(); accept(active); } }
-    else if (event.key === "Escape") { event.preventDefault(); setCompletion(null); }
+    // Escape schließt nur die Vorschlagsliste, nicht zugleich das Bearbeitungsfeld der Regelkarte darum herum.
+    else if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setCompletion(null); }
   };
-  const listId = `${id}-list`, statusId = `${id}-status`, error = analysis.error;
+  const listId = `${id}-list`, statusId = `${id}-status`, labelId = `${id}-label`, error = analysis.error;
+  const announced = useSettledText(error ? error.message : spoken);
   return <div className={`ff-line${error ? " ff-line-invalid" : ""}`}>
-    <label htmlFor={id}>{label}</label>
+    <label htmlFor={id} id={labelId}>{label}</label>
     {!hintSeen ? <p className="ff-hint">{t("Tippe @ für Attribute, ? für Parameter, Zahlen und Würfel wie 1d20 direkt.")} <Button variant="quiet" aria-label={t("Hinweis schließen")} onClick={() => { writeFlag(HINT_KEY); setHintSeen(true); }}><X size={13} /></Button></p> : null}
     <div className="ff-line-stack">
       <Overlay text={text} analysis={analysis} overlayRef={overlay} />
       <input ref={input} id={id} className="ff-line-input" value={text} disabled={disabled} autoComplete="off" spellCheck={false} maxLength={RULE_LIMITS.formulaLength}
         role="combobox" aria-autocomplete="list" aria-expanded={!!completion} aria-controls={listId} aria-activedescendant={completion ? `${listId}-${active}` : undefined}
-        aria-describedby={statusId} aria-invalid={error ? true : undefined}
+        aria-labelledby={titleId ? `${titleId} ${labelId}` : undefined} aria-describedby={statusId} aria-invalid={error ? true : undefined}
         onChange={event => { onText(event.target.value); refresh(event.target.value, event.target.selectionStart ?? event.target.value.length); syncScroll(); }}
         onKeyDown={onKeyDown} onBlur={() => setTimeout(() => setCompletion(null), 120)}
         onScroll={syncScroll}
         onSelect={event => { const target = event.currentTarget; if (completion) refresh(target.value, target.selectionStart ?? target.value.length); }} />
       {completion ? <ul id={listId} className="ff-completion" role="listbox" aria-label={t("Vorschläge")}>{completion.items.map((item, i) => <li key={`${item.kind}-${item.insert || item.title}`} id={`${listId}-${i}`} role="option" aria-selected={i === active} className={`ff-completion-${item.kind}${i === active ? " is-active" : ""}`} onMouseDown={event => { event.preventDefault(); accept(i); }}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul> : null}
     </div>
-    <p id={statusId} className="ff-line-status" aria-live="polite">{error ? <span className="ff-error">{error.message}</span> : status}</p>
+    <p id={statusId} className="ff-line-status">{error ? <span className="ff-error">{error.message}</span> : status}</p>
+    <span className="sr-only" role="status">{announced}</span>
     {help ? <small className="ff-help">{help}</small> : null}
     <details ref={sheet} className="ff-line-tools">
       <summary><BookOpen size={14} aria-hidden="true" />{t("Spickzettel")}</summary>

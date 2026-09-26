@@ -11,6 +11,7 @@ import * as display from "../src/features/chronicle-heroes-display";
 import { I18nStub } from "../src/i18n.ts";
 import * as FormulaSugar from "../src/features/formula-sugar";
 import * as FormulaExample from "../src/features/formula-example";
+import * as RuleFieldsModel from "../src/features/rule-fields-model";
 
 /** Actual component handlers with controlled hooks, without a browser/build/server. */
 function harness(file: string, component: string, initial: Record<string, any>, extraExports = "", mocks: Record<string, any> = {}) {
@@ -57,6 +58,9 @@ function harness(file: string, component: string, initial: Record<string, any>, 
       if (name === "./chronicle-heroes-display") return display;
       if (name === "./formula-sugar") return FormulaSugar;
       if (name === "./formula-example") return FormulaExample;
+      if (name === "./rule-fields-model") return RuleFieldsModel;
+      // Rückfragen laufen seit 2026-09-26 über `confirmAction`; der Rest der Bausteine bleibt ein Elementname.
+      if (name === "@chronicle/ui") return new Proxy({ confirmAction: async () => true, announce() {}, focusHeading() {} }, { get: (target: any, key) => key in target ? target[key] : String(key) });
       if (name === "../hooks") return { useResource: (path: string) => props.resource?.(path) ?? { data: null, loading: false, error: "" }, useTask: () => ({ busy: false, error: "", setError() {}, run: (fn: () => Promise<unknown>) => { const job = fn().catch(() => undefined); jobs.push(job); return job; } }) };
       if (name === "../api") return { apiPath: (id: string, suffix: string) => `/api/campaigns/${id}${suffix}`, api: async (path: string, request: unknown) => { requests.push({ path, request }); return props.transport?.(path, request); } };
       if (Object.hasOwn(mocks, name)) return mocks[name];
@@ -187,7 +191,7 @@ describe("independent ChronicleHeroes client review", () => {
     expect(authoritative.version).toBe(2); expect(authoritative.fields.funken_spent).toBe(1);
     h.replace({ latest: authoritative });
     expect(h.requests).toHaveLength(2);
-    h.nodes(node => node.type === "Button" && h.text(node) === "Aktuellen Bogen übernehmen")[0]!.props.onClick(); h.render();
+    h.nodes(node => node.type === "Button" && h.text(node) === "Aktuellen Bogen übernehmen")[0]!.props.onClick(); await h.settle();
     expect(dirtiness.at(-1)).toBe(false);
   });
 

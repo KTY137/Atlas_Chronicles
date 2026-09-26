@@ -46,3 +46,8 @@ export function addOwnVital(draft: RuleDraft): { draft: RuleDraft; id: string } 
   const next: RuleDraft = { ...draft, schemaVersion: 2, vitals: [...vitals, { id: free.id, label: free.label || free.id, max: String(free.maximum || "100"), depletion: "none" }] };
   return { draft: placeOnSheet(next, "vital", free.id, true), id: free.id };
 }
+
+/** „Mit Beispiel beginnen“ bei den Balken: Leben mit Höchststand 10, in der Palettenfarbe Rot. */
+export function addExampleVital(draft: RuleDraft): { draft: RuleDraft; id: string } {
+  return addVitalPreset(draft, { ...VITAL_PRESETS[0]!, max: "10" });
+}

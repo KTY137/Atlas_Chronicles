@@ -72,7 +72,7 @@ export function FormulaGraph({ ast, onChange, sources, options, disabled = false
   };
   const selectedNode = selected ? byId.get(selected) : undefined;
   return (
-    <div className={compact ? "ff-graph ff-graph-compact" : "ff-graph"} role="group" aria-label={t("Formel als Knotennetz")}>
+    <div className={compact ? "ff-graph ff-graph-compact" : "ff-graph"} role="group" aria-label={t("Formel als Rechenweg")}>
       {compact ? null : <p className="ff-graph-legend">
         <span className="ff-type ff-type-number">{t("Zahl")}</span>
         <span className="ff-type ff-type-boolean">{t("Ja/Nein")}</span>

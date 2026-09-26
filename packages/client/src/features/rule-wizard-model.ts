@@ -102,10 +102,10 @@ export function systemTitle(system: WizardSystem): string {
 }
 export function systemExplanation(system: WizardSystem): string {
   switch (system) {
-    case "w20": return t("Eigenschaften sind kleine Boni von 0 bis 5. Gewürfelt wird ein W20, der Bonus kommt dazu; ab 15 gelingt es. Klassisch für Fantasy-Abenteuer.");
-    case "w100": return t("Eigenschaften sind Prozentwerte von 1 bis 100. Wer mit dem W100 höchstens seinen Wert würfelt, schafft es. Sofort lesbar: 60 heißt 60 % Chance.");
-    case "2w6": return t("Eigenschaften reichen von −1 bis +3. Zwei W6 plus Wert: ab 10 klappt es voll, von 7 bis 9 mit einem Haken, darunter geht es schief. Gut für erzählerisches Spiel.");
-    case "3w6": return t("Eigenschaften reichen von 3 bis 18. Drei W6 müssen höchstens den Wert erreichen. Mittlere Werte sind häufig, Extreme selten.");
+    case "w20": return t("Attribute sind kleine Boni von 0 bis 5. Gewürfelt wird ein W20, der Bonus kommt dazu; ab 15 gelingt es. Klassisch für Fantasy-Abenteuer.");
+    case "w100": return t("Attribute sind Prozentwerte von 1 bis 100. Wer mit dem W100 höchstens seinen Wert würfelt, schafft es. Sofort lesbar: 60 heißt 60 % Chance.");
+    case "2w6": return t("Attribute reichen von −1 bis +3. Zwei W6 plus Wert: ab 10 klappt es voll, von 7 bis 9 mit einem Haken, darunter geht es schief. Gut für erzählerisches Spiel.");
+    case "3w6": return t("Attribute reichen von 3 bis 18. Drei W6 müssen höchstens den Wert erreichen. Mittlere Werte sind häufig, Extreme selten.");
   }
 }
 /** Ein fester Beispielwurf, damit die Regel greifbar wird. */
@@ -140,8 +140,8 @@ export function withGenre(answers: WizardAnswers, genre: WizardGenre): WizardAns
 }
 export function wizardProblems(answers: WizardAnswers): string[] {
   const problems: string[] = [];
-  if (!answers.attributes.filter(name => name.trim()).length) problems.push(t("Eine Figur braucht mindestens eine Eigenschaft."));
-  if (answers.skills.some(skill => !answers.attributes.includes(skill.attribute))) problems.push(t("Eine Fertigkeit verweist auf eine Eigenschaft, die es nicht mehr gibt."));
+  if (!answers.attributes.filter(name => name.trim()).length) problems.push(t("Eine Figur braucht mindestens ein Attribut. Geh zurück zum Schritt „Attribute“ und wähle eines aus."));
+  if (answers.skills.some(skill => !answers.attributes.includes(skill.attribute))) problems.push(t("Eine Fertigkeit verweist auf ein Attribut, das es nicht mehr gibt. Wähle im Schritt „Fertigkeiten“ ein anderes."));
   return problems;
 }
 
@@ -172,8 +172,9 @@ export function wizardDraft(answers: WizardAnswers, authorName: string, installe
   ];
 
   const section = (id: string, label: string, fields: readonly DraftField[]): DraftSection => ({ localId: localKey(), id, label, fieldKeys: fields.map(field => field.localId), parentLocalId: null });
-  const sections = [section("figur", t("Figur"), [nameField]), section("eigenschaften", t("Eigenschaften"), attributeFields),
-    ...(skillFields.length ? [section("fertigkeiten", t("Fertigkeiten"), skillFields)] : []), ...(barFields.length ? [section("vorraete", t("Vorräte"), barFields)] : [])];
+  // Dieselben Wörter wie im Assistenten, damit man auf dem Bogen wiederfindet, was man gewählt hat.
+  const sections = [section("figur", t("Figur"), [nameField]), section("eigenschaften", t("Attribute"), attributeFields),
+    ...(skillFields.length ? [section("fertigkeiten", t("Fertigkeiten"), skillFields)] : []), ...(barFields.length ? [section("vorraete", t("Balken"), barFields)] : [])];
   const vitals: RuleVital[] = bars.map((bar, i) => ({ id: barFields[i]!.id, label: bar.label.trim(), max: String(spec.bar), depletion: bar.defeat ? "defeat" : "none", color: bar.color }));
   const name = answers.name.trim() || t("Mein Regelwerk");
   let id = `de.eigene-regeln.${slug(name)}`, n = 2; while (installed.some(pkg => pkg.id === id)) id = `de.eigene-regeln.${slug(name)}-${n++}`;

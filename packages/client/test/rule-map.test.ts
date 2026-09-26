@@ -14,7 +14,7 @@ const render = (draft: RuleDraft, initialView?: RuleMapView, initialSelected?: s
 describe("rule map", () => {
   it("shows the three modes and, by default, the character as one object card", () => {
     const html = render(htbah);
-    for (const view of ["Übersicht", "Karte", "Knotennetz"]) expect(html).toContain(`>${view}<`);
+    for (const view of ["Übersicht", "Karte", "Karte mit Rechenwegen"]) expect(html).toContain(`>${view}<`);
     expect(html).toContain("Schaden");
     expect(html).toContain("?dice_count: Zahl, ?bonus: Zahl, ?critical: Ja/Nein");
     expect(html).toContain("Figur und Absprachen");
@@ -30,7 +30,7 @@ describe("rule map", () => {
   });
   it("embeds every readable formula as a small node net in the network mode", () => {
     const html = render(htbah, "network");
-    expect(html.match(/Formel als Knotennetz/g)?.length ?? 0).toBeGreaterThan(htbah.actions.length);
+    expect(html.match(/Formel als Rechenweg/g)?.length ?? 0).toBeGreaterThan(htbah.actions.length);
     expect(html).not.toContain("Ergebnis: Zahl");
   });
   it("opens the chosen node for editing with its formula and its neighbours", () => {
@@ -54,7 +54,7 @@ describe("rule map", () => {
     for (const view of ["map", "network"] as const) {
       const html = render(htbah, view);
       expect(html).toContain('aria-label="Vergrößerung der Karte"');
-      for (const label of ["Verkleinern", "Vergrößern", "Ganze Karte einpassen", "Auf volle Größe zurücksetzen"]) expect(html).toContain(`aria-label="${label}"`);
+      for (const label of ["Verkleinern", "Vergrößern", "Ganze Karte einpassen", "100 %, auf volle Größe zurücksetzen"]) expect(html).toContain(`aria-label="${label}"`);
       expect(html).toContain(">100 %<");
       expect(html).toContain("transform:scale(1)");
     }

@@ -40,27 +40,29 @@ test("typing a formula with suggestions, plain errors, three views, install and 
     await signIn(gm.context(), gmSession); await signIn(context, playerSession);
     await gm.goto(`${origin}/?campaign=${campaignId}&stage=schmiede&forge=rules`);
     await gm.getByRole("button", { name: "Leeres Paket beginnen", exact: true }).click();
+    await editor.getByText("Für Fortgeschrittene", { exact: true }).click();
     await editor.getByRole("textbox", { name: /Paketkennung/ }).fill("de.nordlicht.formeln");
     await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
-    const formula = editor.getByRole("combobox", { name: "Formel", exact: true }).first();
+    const formula = editor.getByRole("combobox", { name: "Ergebnis Formel", exact: true }).first();
     await formula.fill("1d20 + @ins");
     const suggestions = gm.getByRole("listbox", { name: "Vorschläge" });
     await expect(suggestions.getByRole("option")).toHaveCount(1);
     await gm.keyboard.press("Enter");
     await expect(formula).toHaveValue("1d20 + @insight");
-    await expect(editor.getByText(/^Beispiel für /)).toBeVisible();
+    await expect(editor.locator(".ff-line-status").getByText(/^Beispiel für /)).toBeVisible();
     await formula.fill("1d20 + @insigt");
     await expect(editor.getByText("Das Attribut „insigt“ gibt es nicht. Meintest du „insight“?")).toBeVisible();
     await gm.getByRole("tab", { name: "Übernehmen", exact: true }).click();
     await expect(gm.getByRole("button", { name: "Version installieren", exact: true })).toBeDisabled();
-    await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
+    // Der Reiter nennt sein Problem mit: „Aktionen, ein Problem“.
+    await gm.getByRole("tab", { name: "Aktionen, ein Problem", exact: true }).click();
     await formula.fill("1d20 + @insight");
     await gm.getByRole("button", { name: "Bausteine", exact: true }).click();
     await expect(editor.getByRole("group", { name: "Ergebnis", exact: true }).getByRole("combobox", { name: "Rechenzeichen", exact: true })).toHaveValue("+");
     await editor.getByRole("group", { name: "Ergebnis", exact: true }).getByRole("combobox", { name: "Rechenzeichen", exact: true }).selectOption("*");
     await expect(formula).toHaveValue("1d20 * @insight");
     await gm.getByRole("button", { name: "Knoten", exact: true }).click();
-    const graphGroup = gm.getByRole("group", { name: "Formel als Knotennetz", exact: true });
+    const graphGroup = gm.getByRole("group", { name: "Formel als Rechenweg", exact: true });
     await expect(graphGroup.getByRole("button", { name: /Geschick|insight|Scharfsinn/ })).toBeVisible();
     // A stale drag (finding 1): start dragging from the attribute node's port, release far outside
     // the graph (not on any node), then click a node. Without the pointer-capture fix this leaves
@@ -114,7 +116,7 @@ test("opening the shipped ChronicleHeroes template shows sugar and downloads the
   await gm.getByRole("button", { name: "ChronicleHeroes als Regelentwurf öffnen" }).click();
   await gm.getByRole("tab", { name: "Aktionen", exact: true }).click();
   await gm.getByRole("button", { name: /Initiative/ }).click();
-  await expect(gm.locator(".rf-editor-fields").first().getByRole("combobox", { name: "Formel", exact: true }).first()).toHaveValue(/^1d10 \+ /);
+  await expect(gm.locator(".rf-editor-fields").first().getByRole("combobox", { name: "Ergebnis Formel", exact: true }).first()).toHaveValue(/^1d10 \+ /);
   const downloadPromise = gm.waitForEvent("download");
   await gm.getByRole("button", { name: "Paketdatei", exact: true }).click();
   const downloaded = parseSupportedRulePackage(await readFile((await (await downloadPromise).path())!, "utf8"));

@@ -69,11 +69,11 @@ export function FormulaField({ id, label, help, value, onChange, sources, allowD
   // While a block is incomplete, the last valid text still analyzes fine on its own — but it no
   // longer matches what emit("") just published, so the line shows that instead of a stale example.
   const lineAnalysis = displayAnalysis(analysis, blocks !== null), lineStatus = blocks !== null ? "" : status;
+  const spoken = blocks !== null || !example ? "" : example.ok ? example.text : example.message, titleId = `${fieldId}-title`;
   return <div className="ff-field">
-    <div className="ff-field-head"><span className="ff-field-title">{label}</span><div className="ff-views" role="group" aria-label={t("Ansicht der Formel")}>{VIEWS.map(key => <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); writeFormulaView(key); }}>{viewName(key)}</button>)}</div></div>
-    {view === "line" ? <FormulaLine id={fieldId} label={t("Formel")} help={help} text={text} analysis={lineAnalysis} sources={sources} options={options} status={lineStatus} disabled={disabled} onText={onText} /> : null}
+    <div className="ff-field-head"><span className="ff-field-title" id={titleId}>{label}</span><div className="ff-views" role="group" aria-label={t("Ansicht der Formel „{name}“", { name: label })}>{VIEWS.map(key => <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); writeFormulaView(key); }}>{viewName(key)}</button>)}</div></div>
+    <FormulaLine id={fieldId} titleId={titleId} label={t("Formel")} help={help} text={text} analysis={lineAnalysis} sources={sources} options={options} status={lineStatus} spoken={spoken} disabled={disabled} onText={onText} />
     {view !== "line" ? <>
-      <FormulaLine id={fieldId} label={t("Formel")} help={help} text={text} analysis={lineAnalysis} sources={sources} options={options} status={lineStatus} disabled={disabled} onText={onText} />
       {readOnly && !blocks ? <p className="ff-readonly">{t("Die Zeile enthält einen Fehler; hier siehst du den Stand davor.")}</p> : null}
       {view === "blocks" ? (blocks ?? tree ? <FormulaBlocks value={blocks ?? formulaDraft(tree!)} onChange={fromDraft} sources={sources} options={options} disabled={disabled || (readOnly && !blocks)} resultLabel={label} /> : null) : null}
       {view === "graph" ? (tree ? <FormulaGraph ast={tree} onChange={fromTree} sources={sources} options={options} disabled={disabled} readOnly={readOnly} /> : null) : null}

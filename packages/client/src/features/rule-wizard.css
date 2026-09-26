@@ -3,79 +3,76 @@
 /* Der Regelwerk-Assistent. Eine Frage je Schritt in der Display-Schrift des Looks, grosse
    Auswahlflaechen, rechts der Bogen als Blatt, das mitwaechst. Farbe steht nur fuer Auswahl und
    Fortschritt; alles andere ruhig in den Tokens des Looks. */
-.rw { display: grid; gap: 22px; min-width: 0; }
+.rw { display: grid; gap: var(--space-5); min-width: 0; }
 
-.rw-head { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; }
-.rw-steps { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
-.rw-steps button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--text-muted); font: inherit; font-size: 13px; cursor: pointer; }
-.rw-steps button:hover { color: var(--text); }
-.rw-steps li[data-state="current"] button { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
-.rw-step-number { display: inline-flex; align-items: center; justify-content: center; inline-size: 24px; block-size: 24px; border-radius: 50%; border: 1px solid var(--line-strong); font-size: 12px; }
-.rw-steps li[data-state="current"] .rw-step-number { border-color: var(--accent); color: var(--accent); }
-.rw-steps li[data-state="done"] .rw-step-number { border-color: var(--ok); background: var(--ok); color: var(--surface); }
+.rw-head { display: flex; align-items: center; gap: var(--space-3) var(--space-5); flex-wrap: wrap; }
+/* Die Schrittanzeige ist die gemeinsame StepList; hier nur ihr Platz im Kopf. */
+.rw-head .step-list { margin: 0; }
 
-.rw-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 32px; align-items: start; }
+.rw-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: var(--space-6); align-items: start; }
 .rw-question { min-width: 0; max-width: 720px; }
-.rw-question h2 { margin: 6px 0 12px; font: 500 clamp(26px, 2.6vw, 36px)/1.18 var(--font-display); letter-spacing: .01em; overflow-wrap: anywhere; }
-.rw-lead { margin: 0 0 26px; max-width: 62ch; color: var(--text-muted); font-size: 15px; line-height: 1.65; }
+.rw-question h2 { margin: var(--space-2) 0 var(--space-3); font: 500 clamp(26px, 2.6vw, 36px)/1.18 var(--font-display); letter-spacing: .01em; overflow-wrap: anywhere; }
+.rw-lead { margin: 0 0 var(--space-5); max-width: 62ch; color: var(--text-muted); font-size: var(--text-md); line-height: 1.65; }
 
-.rw-name { display: grid; gap: 8px; margin: 0 0 26px; font-size: 13px; color: var(--text-muted); }
-.rw-name input { font-size: 20px; padding: 14px 16px; }
+.rw-name { display: grid; gap: var(--space-2); margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted); }
+.rw-name input { font-size: var(--text-lg); padding: var(--space-4) var(--space-4); }
 
-.rw-choices { display: grid; gap: 12px; }
+.rw-choices { display: grid; gap: var(--space-3); }
 .rw-choices-genre { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
-.rw-choice { position: relative; display: grid; gap: 6px; align-content: start; padding: 16px 18px; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.rw-choice { position: relative; display: grid; gap: var(--space-2); align-content: start; padding: var(--space-4) var(--space-4); min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .rw-choice:hover { border-color: var(--line-strong); background: var(--surface-2); }
 .rw-choice[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
-.rw-choice strong { font-size: 16px; font-weight: 600; }
-.rw-choice > span { color: var(--text-muted); font-size: 13px; line-height: 1.55; }
-.rw-choice small { color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.rw-choice strong { font-size: var(--text-lg); font-weight: 600; }
+.rw-choice > span { color: var(--text-muted); font-size: var(--text-sm); line-height: 1.55; }
+.rw-choice small { color: var(--text-muted); font-size: var(--text-xs); line-height: 1.5; }
 .rw-choice-icon { color: var(--accent); }
-.rw-choice-wide { grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; }
+.rw-choice-wide { grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-4); }
 .rw-choice-wide > :not(.rw-choice-icon) { grid-column: 2; }
 .rw-choice-wide .rw-choice-icon { grid-row: 1 / span 4; padding-top: 2px; }
 /* Der Beispielwurf ist das, woran man die Regel versteht: er steht wie ein Wurf auf dem Tisch. */
-.rw-choice .rw-example { margin: 4px 0 2px; padding: 8px 12px; border-left: 2px solid var(--accent); background: var(--bg); color: var(--text); font-size: 14px; }
+.rw-choice .rw-example { margin: var(--space-1) 0 2px; padding: var(--space-2) var(--space-3); border-left: 2px solid var(--accent); background: var(--bg); color: var(--text); font-size: var(--text-md); }
 
-.rw-chips-block, .rw-skills { display: grid; gap: 16px; }
-.rw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.rw-chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--text-muted); font: inherit; font-size: 14px; cursor: pointer; }
+.rw-chips-block, .rw-skills { display: grid; gap: var(--space-4); }
+.rw-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rw-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: var(--surface); color: var(--text-muted); font: inherit; font-size: var(--text-md); cursor: pointer; }
 .rw-chip[aria-pressed="true"], .rw-chip-own { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
-.rw-chip-own { padding-right: 6px; cursor: default; }
+.rw-chip-own { padding-right: var(--space-2); cursor: default; }
 .rw-chip-own button { display: inline-flex; padding: 3px; border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); cursor: pointer; }
-.rw-add { display: flex; gap: 8px; flex-wrap: wrap; }
+.rw-add { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .rw-add input { flex: 1 1 220px; }
 
-.rw-bars { display: grid; gap: 10px; }
-.rw-bar { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); opacity: .7; }
+.rw-bars { display: grid; gap: var(--space-3); }
+.rw-bar { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); opacity: .7; }
 .rw-bar.is-on { opacity: 1; border-color: var(--line-strong); }
 .rw .rw-bar label { margin: 0; }
-.rw-bar-swatch { inline-size: 28px; block-size: 10px; border-radius: 999px; overflow: hidden; background: var(--disabled-bg); }
+.rw-bar-swatch { inline-size: 28px; block-size: 10px; border-radius: var(--radius-lg); overflow: hidden; background: var(--disabled-bg); }
 .rw-bar-swatch > span { display: block; block-size: 100%; inline-size: 70%; background: var(--vital-fill, var(--accent)); }
-.rw-bar-defeat { font-size: 12px; color: var(--text-muted); }
+.rw-bar-defeat { font-size: var(--text-xs); color: var(--text-muted); }
 
-.rw .rw-skill-values { align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.rw-skill-values span { display: grid; gap: 4px; }
-.rw-skill-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.rw-skill-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 12rem) auto; gap: 8px; align-items: center; }
+.rw .rw-skill-values { align-items: flex-start; padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.rw-skill-values span { display: grid; gap: var(--space-1); }
+.rw-skill-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.rw-skill-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 12rem) auto; gap: var(--space-2); align-items: center; }
 
-.rw-done { display: grid; gap: 22px; }
-.rw-summary { display: flex; gap: 28px; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
-.rw-summary li { display: grid; gap: 2px; color: var(--text-muted); font-size: 13px; }
+.rw-done { display: grid; gap: var(--space-5); }
+.rw-summary { display: flex; gap: var(--space-6); flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+.rw-summary li { display: grid; gap: 2px; color: var(--text-muted); font-size: var(--text-sm); }
 .rw-summary strong { font: 500 34px/1 var(--font-display); color: var(--text); }
-.rw-roll { display: grid; gap: 10px; }
+.rw-roll { display: grid; gap: var(--space-3); }
 .rw-roll p { margin: 0; }
-.rw-roll-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
-.rw-roll-result { padding: 12px 16px; border-left: 3px solid var(--danger); background: var(--surface); font-size: 15px; }
+.rw-roll-buttons { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rw-roll-result { padding: var(--space-3) var(--space-4); border-left: 3px solid var(--danger); background: var(--surface); font-size: var(--text-md); }
 .rw-roll-result.is-success { border-left-color: var(--ok); }
 
 /* Der Bogen als Blatt: etwas heller als die Flaeche, damit er wie ausgelegt wirkt. */
-.rw-sheet { position: sticky; top: 12px; min-width: 0; }
-.rw-paper { max-height: calc(100vh - 190px); overflow: auto; padding: 22px 24px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface-2); box-shadow: var(--shadow-2, 0 4px 14px rgba(0, 0, 0, .3)); }
-.rw-paper h3 { margin: 0 0 4px; font: 500 22px/1.25 var(--font-display); overflow-wrap: anywhere; }
-.rw-paper .rule-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.rw-sheet { position: sticky; top: var(--space-3); min-width: 0; }
+.rw-paper { max-height: calc(100vh - 190px); overflow: auto; padding: var(--space-5) var(--space-5); border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface-2); box-shadow: var(--shadow-2); }
+.rw-paper h3 { margin: 0 0 var(--space-1); font: 500 var(--text-xl)/1.25 var(--font-display); overflow-wrap: anywhere; }
+.rw-paper .rule-fields:not(.is-sheet) { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-3); }
 
-.rw-foot { position: sticky; bottom: 8px; z-index: 8; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 -8px 24px color-mix(in srgb, black 14%, transparent); }
+/* Die Knöpfe gehören zur Frage: auf breiten Schirmen kleben sie am unteren Rand der Fragenspalte,
+   auf schmalen stehen sie einfach unter der Frage und verdecken nichts. */
+.rw-foot { position: sticky; bottom: var(--space-2); z-index: 8; display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-top: var(--space-5); padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-2); }
 
 @media (max-width: 1100px) {
   .rw-body { grid-template-columns: minmax(0, 1fr); }
@@ -90,4 +87,17 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .rw-choice, .rw-chip { transition: border-color 120ms ease, background-color 120ms ease; }
+}
+
+.rw-count { margin: 0; color: var(--text-muted); font-size: var(--text-sm); }
+.rw-question h2:focus { outline: none; }
+.rw-question h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.rw-question .rf-begriffe { margin: calc(-1 * var(--space-4)) 0 var(--space-5); }
+.rw-chip-own button { min-width: 24px; min-height: 24px; place-items: center; }
+/* Der Bogen klappt auf und zu. Breit steht er offen neben der Frage; schmal folgt er erst unter der Frage. */
+.rw-sheet-toggle > summary { display: flex; align-items: center; min-height: 32px; margin-bottom: var(--space-2); color: var(--text-muted); font-size: var(--text-sm); font-weight: 600; }
+@media (max-width: 1100px) {
+  .rw-foot { position: static; box-shadow: none; }
+  .rw-sheet-toggle > summary { min-height: 40px; padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+  .rw-sheet-toggle[open] > summary { margin-bottom: var(--space-3); }
 }

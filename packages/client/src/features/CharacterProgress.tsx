@@ -17,9 +17,9 @@ export function CharacterProgress({ pkg, fields }: { pkg: AnyRulePackage; fields
   const abilityBudget = progress.abilities.budget, abilitySpent = progress.abilities.spent;
   return <section className="character-progress" aria-label={t("Punkte und Entwicklung")}>
     <dl>
-      {typeof points === "number" ? <div className={points < 0 ? "character-progress-primary over-budget" : "character-progress-primary"}><dt>{t("Verfügbare Skill-Punkte")}</dt><dd>{points}</dd><small>{t("{n} Punkte verteilt", { n: spent ?? 0 })}</small></div> : null}
-      {typeof fields.erfahrung === "number" ? <div><dt>{t("Erfahrung gesamt")}</dt><dd>{fields.erfahrung}</dd><small>{t("{n} Erfahrung auf Fertigkeiten gelegt", { n: Number(fields.erfahrung_fertigkeiten ?? 0) })}</small></div> : null}
-      {abilityBudget !== null ? <div><dt>{t("Verfügbare Erfahrung für Fähigkeiten")}</dt><dd>{abilityBudget - abilitySpent}</dd><small>{t("{ausgegeben} von {budget} Erfahrung ausgegeben", { ausgegeben: abilitySpent, budget: abilityBudget })}</small></div> : null}
+      {typeof points === "number" ? <div className={points < 0 ? "character-progress-primary over-budget" : "character-progress-primary"}><dt>{t("Verfügbare Fertigkeitspunkte")}</dt><dd><span className="character-progress-value">{points}</span><small className="character-progress-note">{t("{n} Punkte verteilt", { n: spent ?? 0 })}</small></dd></div> : null}
+      {typeof fields.erfahrung === "number" ? <div><dt>{t("Erfahrung gesamt")}</dt><dd><span className="character-progress-value">{fields.erfahrung}</span><small className="character-progress-note">{t("{n} Erfahrung auf Fertigkeiten gelegt", { n: Number(fields.erfahrung_fertigkeiten ?? 0) })}</small></dd></div> : null}
+      {abilityBudget !== null ? <div><dt>{t("Verfügbare Erfahrung für Fähigkeiten")}</dt><dd><span className="character-progress-value">{abilityBudget - abilitySpent}</span><small className="character-progress-note">{t("{ausgegeben} von {budget} Erfahrung ausgegeben", { ausgegeben: abilitySpent, budget: abilityBudget })}</small></dd></div> : null}
       {typeof progress.values.funken_remaining === "number" ? <div><dt>{t("Funken übrig")}</dt><dd>{progress.values.funken_remaining}<small> / {progress.values.funken_max}</small></dd></div> : null}
     </dl>
     <p className="field-help">{points !== undefined && points < 0 ? t("Das Punktebudget ist überschritten. Verteile weniger Punkte oder passe das vereinbarte Budget an.") : t("Die Übersicht folgt deinem Entwurf. Speichere den Bogen, damit die Werte am Tisch gelten.")}</p>

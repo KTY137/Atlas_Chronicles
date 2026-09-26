@@ -12,6 +12,8 @@ import * as nav from "../src/features/RuleForgeNav";
 import * as path from "../src/features/RuleForgePath";
 import * as draftHistory from "../src/features/rule-draft-history";
 import * as draftStore from "../src/features/rule-draft-store";
+import * as navigationModel from "../src/features/forge-navigation-model";
+import * as wizardModel from "../src/features/rule-wizard-model";
 import { I18nStub } from "../src/i18n.ts";
 import { describe, expect, it } from "vitest";
 
@@ -19,6 +21,9 @@ import { describe, expect, it } from "vitest";
 function harness(file: string, initial: Record<string, any>) {
   const slots: any[] = [];
   const jobs: Promise<unknown>[] = [], requests: { path: string; request: any }[] = [], confirmations: string[] = [];
+  const focused: string[] = [], announced: string[] = [];
+  // Die gestaltete Rückfrage, Fokus und Ansage aus @chronicle/ui: aufgezeichnet statt ausgeführt.
+  const ui = new Proxy({ confirmAction: async (r: any) => { confirmations.push(typeof r === "string" ? r : r.message); return true; }, announce(text: string) { announced.push(text); }, focusHeading(id: string) { focused.push(id); }, tabKeyTarget: () => null }, { get: (target: any, key) => key in target ? target[key] : String(key) });
   let props = initial, cursor = 0, changed = false, effects: (() => void)[] = [];
   const same = (a: any[], b: any[]) => a?.length === b?.length && a.every((item, i) => Object.is(item, b[i]));
   const react = {
@@ -33,6 +38,10 @@ function harness(file: string, initial: Record<string, any>) {
     module: mod, exports: mod.exports, document: { getElementById: () => ({ focus() {} }) }, window: { confirm: (message: string) => { confirmations.push(message); return true; } },
     require: (name: string) => {
       if (name === "react") return react;
+      if (name === "@chronicle/ui") return ui;
+      if (name === "./forge-navigation-model") return navigationModel;
+      if (name === "./rule-wizard-model") return wizardModel;
+      if (name === "./FormulaLine") return { useSettledText: (text: string) => text };
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element, Fragment: "Fragment" };
       if (name === "../i18n") return I18nStub;
       if (name === "@chronicle/rules") return rules;
@@ -69,12 +78,15 @@ function harness(file: string, initial: Record<string, any>) {
         const current = { ...node, inheritedDisabled, disabled: disabled || !!node.props.disabled };
         if (predicate(current)) found.push(current);
         visit(node.props.children, disabled);
+        // Kopf und Knöpfe eines ViewIntro stecken in eigenen Eigenschaften, nicht in `children`.
+        for (const slot of ["action", "title"]) if (node.props[slot] && typeof node.props[slot] === "object") visit(node.props[slot], disabled);
       }
     }
     visit(render()); return found;
   }
   const text = (node: any): string => Array.isArray(node) ? node.map(text).join("") : node?.props ? text(node.props.children) : node == null ? "" : String(node);
-  return { nodes, text, requests, confirmations, async settle() { await Promise.all(jobs); render(); }, replace(next: Record<string, any>) { props = { ...props, ...next }; }, button: (label: string) => nodes(n => (n.type === "Button" || n.type === "button") && text(n) === label)[0]! };
+  // Eine Rückfrage antwortet erst im nächsten Mikrotakt; der Auftrag danach entsteht also später als der Klick.
+  return { nodes, text, requests, confirmations, focused, announced, async settle() { await new Promise(resolve => setTimeout(resolve, 0)); await Promise.all(jobs); render(); }, replace(next: Record<string, any>) { props = { ...props, ...next }; }, button: (label: string) => nodes(n => (n.type === "Button" || n.type === "button") && text(n) === label)[0]! };
 }
 
 const pkg = rules.DEMO_RULE_PACKAGE;
@@ -193,21 +205,131 @@ describe("deleting a library version while another draft is open", () => {
       h.replace({ rules: forgeProps.rules });
     } });
     h.button("Leeres Paket beginnen").props.onClick();
-    const newId = h.nodes(n => n.type?.name === "PackageEditor")[0]!.props.draft.id;
+    const newName = h.nodes(n => n.type?.name === "PackageEditor")[0]!.props.draft.name;
     section(h, "publish");
     h.button("Version installieren").props.onClick();
     await h.settle();
     section(h, "package");
     expect(h.nodes(n => n.type?.name === "PackageEditor")[0]!.inheritedDisabled).toBe(true);
     h.button("Zur Bibliothek").props.onClick();
-    h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).includes(newId))[0]!.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 10, clientY: 10 });
+    h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).startsWith(newName))[0]!.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 10, clientY: 10 });
     h.nodes(n => n.type === "MapContextMenu")[0]!.props.actions.find((action: any) => action.id === "loeschen").onSelect();
     await h.settle();
     // Der schreibgeschützte Entwurf der gelöschten Fassung ist weg; die Bibliothek zeigt keinen offenen Entwurf mehr.
     expect(h.nodes(n => n.props.className === "rf-open-draft")).toHaveLength(0);
-    expect(h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).includes(newId))).toHaveLength(0);
+    expect(h.nodes(n => n.type === "button" && n.props.className?.includes("rf-catalog-item") && h.text(n).startsWith(newName))).toHaveLength(0);
     openCatalogItem(h, pkg.name);
     expect(h.nodes(n => n.type?.name === "PackageEditor")[0]!.props.draft.id).toBe(pkg.id);
     expect(dirty.at(-1)).toBe(false);
+  });
+});
+
+// Spec E4: Jeder Ansichtswechsel setzt den Fokus auf die Überschrift der neuen Ansicht.
+describe("focus follows the view", () => {
+  it("lands on the wizard question, the bench title and the library title", () => {
+    const h = harness("RuleForge", forgeProps);
+    h.button("Neues Regelwerk").props.onClick();
+    expect(h.focused.at(-1)).toBe("rw-question");
+    h.nodes(n => n.type === "RuleWizard")[0]!.props.onCancel();
+    expect(h.focused.at(-1)).toBe("rf-library-title");
+    // „Als Regelentwurf öffnen“ an einer Vorlage legt einen Entwurf an und öffnet die Werkbank.
+    h.nodes(n => n.type === "ChronicleHeroesTemplate")[0]!.props.onCreate(rules.CHRONICLE_HEROES_PACKAGE);
+    expect(h.focused.at(-1)).toBe("rf-bench-title");
+    h.button("Zur Bibliothek").props.onClick();
+    expect(h.focused.at(-1)).toBe("rf-library-title");
+    h.button("Weiter bearbeiten").props.onClick();
+    expect(h.focused.at(-1)).toBe("rf-bench-title");
+  });
+
+  it("moves to the section heading when a button, not the tab, changes the section", () => {
+    const h = harness("RuleForge", forgeProps);
+    h.button("Leeres Paket beginnen").props.onClick();
+    h.nodes(n => n.type === "Button" && h.text(n).startsWith("Weiter: "))[0]!.props.onClick();
+    expect(h.focused.at(-1)).toBe("rf-section-title");
+  });
+
+  it("asks through the styled confirmation before discarding a draft", async () => {
+    const h = harness("RuleForge", forgeProps);
+    h.button("Leeres Paket beginnen").props.onClick();
+    h.button("Zur Bibliothek").props.onClick();
+    expect(h.nodes(n => n.props.className === "rf-open-draft")).toHaveLength(1);
+    h.button("Verwerfen").props.onClick();
+    await h.settle();
+    expect(h.confirmations).toEqual(["Den Entwurf wirklich verwerfen? Das lässt sich nicht rückgängig machen."]);
+    expect(h.nodes(n => n.props.className === "rf-open-draft")).toHaveLength(0);
+  });
+
+  it("offers exactly one highlighted next step in the library", () => {
+    const h = harness("RuleForge", forgeProps);
+    const intro = h.nodes(n => n.type === "ViewIntro")[0]!;
+    expect(intro.props.id).toBe("rf-library-title");
+    const primary = h.nodes(n => n.type === "Button" && n.props.variant === "primary");
+    expect(primary.map(h.text)).toEqual(["Neues Regelwerk"]);
+  });
+
+  it("orders publishing as review, install, activate and highlights only the next one", () => {
+    const h = harness("RuleForge", forgeProps);
+    h.button("Leeres Paket beginnen").props.onClick();
+    section(h, "publish");
+    const steps = h.nodes(n => n.type === "ol" && n.props.className === "rf-publish-steps")[0]!;
+    const labels = h.nodes(n => n.type === "Button" && h.text(steps).includes(h.text(n)) && ["Aktivierung prüfen", "Version installieren", "Geprüfte Version für diese Runde aktivieren"].includes(h.text(n))).map(h.text);
+    expect(labels).toEqual(["Aktivierung prüfen", "Version installieren", "Geprüfte Version für diese Runde aktivieren"]);
+    expect(h.nodes(n => n.type === "Button" && n.props.variant === "primary").map(h.text)).toEqual(["Aktivierung prüfen"]);
+    expect(h.button("Geprüfte Version für diese Runde aktivieren").props["aria-describedby"]).toBe("rf-activate-reason");
+  });
+
+  it("adds the example action through the normal edit path so undo removes it", () => {
+    const h = harness("RuleForge", forgeProps);
+    h.button("Leeres Paket beginnen").props.onClick();
+    section(h, "actions");
+    const before = h.nodes(n => n.type === "RuleActionEditor")[0]!.props.draft.actions.length;
+    h.nodes(n => n.type === "RuleActionEditor")[0]!.props.onExample();
+    const after = h.nodes(n => n.type === "RuleActionEditor")[0]!.props.draft;
+    expect(after.actions).toHaveLength(before + 1);
+    expect(after.actions.at(-1).name).toBe("Probe auf Stärke");
+    h.button("Rückgängig").props.onClick();
+    expect(h.nodes(n => n.type === "RuleActionEditor")[0]!.props.draft.actions).toHaveLength(before);
+  });
+});
+
+describe("the wizard speaks and focuses", () => {
+  it("moves to the next question and announces the step", () => {
+    const h = harness("RuleWizard", { authorName: "Kaya", installed: [], onCancel() {}, onCreate() {} });
+    h.nodes(n => n.type === "Button" && h.text(n).startsWith("Weiter: "))[0]!.props.onClick();
+    expect(h.focused.at(-1)).toBe("rw-question");
+    expect(h.announced.at(-1)).toBe("Schritt 2 von 6: Würfel");
+    expect(h.nodes(n => n.type === "StepList")[0]!.props.steps.map((s: any) => s.state)).toEqual(["done", "current", "todo", "todo", "todo", "todo"]);
+  });
+
+  it("keeps the next button inside the question, not over the sheet", () => {
+    const h = harness("RuleWizard", { authorName: "Kaya", installed: [], onCancel() {}, onCreate() {} });
+    const question = h.nodes(n => n.type === "section" && n.props.className === "rw-question")[0]!;
+    expect(h.nodes(n => n.type === "div" && n.props.className === "rw-foot").length).toBe(1);
+    expect(h.text(question)).toContain("Weiter: Würfel");
+  });
+
+  it("uses roving focus in the choice groups", () => {
+    const h = harness("RuleWizard", { authorName: "Kaya", installed: [], onCancel() {}, onCreate() {} });
+    const radios = h.nodes(n => n.type === "button" && n.props.role === "radio");
+    expect(radios.filter(n => n.props.tabIndex === 0)).toHaveLength(1);
+  });
+});
+
+describe("the bench opens with what matters", () => {
+  const draft = model.newPackage("Kaya");
+  it("shows the eight core sections and names problems in the tab", () => {
+    const h = harness("RuleForgeNav", { draft, current: "package", problems: { fields: 2 }, onChange() {} });
+    const tabs = h.nodes(n => n.type === "button" && n.props.role === "tab");
+    expect(tabs.map(n => n.props.id)).toEqual(["rf-tab-package", "rf-tab-fields", "rf-tab-vitals", "rf-tab-sheet", "rf-tab-actions", "rf-tab-abilities", "rf-tab-try", "rf-tab-publish"]);
+    expect(tabs.find(n => n.props.id === "rf-tab-fields")!.props["aria-label"]).toBe("Attribute, 2 Probleme");
+    h.nodes(n => n.type === "Button" && n.props.className === "rf-nav-mode")[0]!.props.onClick();
+    expect(h.nodes(n => n.type === "button" && n.props.role === "tab")).toHaveLength(14);
+  });
+});
+
+describe("no browser confirm in the forge", () => {
+  const owned = ["RuleForge.tsx", "RuleForgeNav.tsx", "RuleForgePath.tsx", "RuleForgePreview.tsx", "RuleWizard.tsx", "RuleEntryList.tsx", "RuleEntryControls.tsx", "RuleFieldList.tsx", "RuleActionEditor.tsx", "RuleAbilityEditor.tsx", "RuleVitalEditor.tsx", "RuleCollectionEditor.tsx", "RuleDeclarativeEditor.tsx", "RulePresentationEditor.tsx", "RuleMap.tsx", "FormulaField.tsx", "FormulaLine.tsx", "FormulaGraph.tsx", "FormulaBlocks.tsx", "RuleComputedFields.tsx", "HostRuleActionFields.tsx"];
+  it.each(owned)("%s uses confirmAction instead of window.confirm", file => {
+    expect(readFileSync(new URL(`../src/features/${file}`, import.meta.url), "utf8")).not.toMatch(/window\.confirm/);
   });
 });

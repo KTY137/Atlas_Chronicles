@@ -62,17 +62,21 @@ test("templates create independent shared actors and inventory; perspective and 
     const templateSaved = gm.waitForResponse(r => r.url() === `${base}/actor-templates` && r.request().method() === "POST");
     await templateForm.getByRole("button", { name: "Figurvorlage speichern", exact: true }).click();
     const templateResponse = await templateSaved; expect(templateResponse.status()).toBe(200); const template = await templateResponse.json();
-    await gm.getByRole("button", { name: "2 · Figur erschaffen", exact: true }).click();
-    const instantiate = form(gm, "Figur aus Vorlage erschaffen");
-    await instantiate.getByRole("combobox", { name: "Figurvorlage", exact: true }).selectOption(template.id);
+    await gm.getByRole("tab", { name: "Figur anlegen", exact: true }).click();
+    // Der geführte Weg: Wer ist die Figur? — Was kann sie? — Fertig.
+    const instantiate = form(gm, "Figur anlegen");
+    await instantiate.getByRole("combobox", { name: "Aus welcher Figurvorlage?", exact: true }).selectOption(template.id);
     await instantiate.getByLabel("Name dieser Figur", { exact: true }).fill("Mira am Frosttor");
+    await instantiate.getByRole("button", { name: "Weiter", exact: true }).click();
+    await expect(instantiate.getByLabel("Scharfsinn", { exact: true })).toHaveValue("4");
+    await instantiate.getByRole("button", { name: "Weiter", exact: true }).click();
     const created = gm.waitForResponse(r => r.url() === `${base}/actors/instantiate` && r.request().method() === "POST");
-    await instantiate.getByRole("button", { name: "Figur erschaffen", exact: true }).click();
+    await instantiate.getByRole("button", { name: "Figur anlegen", exact: true }).click();
     const actorResponse = await created; expect(actorResponse.status()).toBe(200); const actor = await actorResponse.json();
     await gm.getByRole("button", { name: "Figuren am Tisch öffnen", exact: true }).click();
     await gm.getByRole("combobox", { name: "Handelnde Figur", exact: true }).selectOption(actor.id);
     const details = gm.locator(".actor-details");
-    await details.getByLabel("Grund der Änderung", { exact: true }).fill("Sera führt die Begleiterin mit.");
+    await details.getByLabel("Grund (freiwillig, erscheint im Verlauf)", { exact: true }).fill("Sera führt die Begleiterin mit.");
     await details.getByRole("combobox", { name: "Mitglied", exact: true }).selectOption(playerId);
     await details.getByRole("button", { name: "Kontrolle erlauben", exact: true }).click();
     await expect(player.getByRole("combobox", { name: "Handelnde Figur", exact: true }).locator("option", { hasText: actor.name })).toHaveCount(1);
@@ -114,7 +118,7 @@ test("templates create independent shared actors and inventory; perspective and 
     const itemEditor = form(player, "Silberner Wegschlüssel");
     await itemEditor.getByLabel("Menge", { exact: true }).fill("2");
     await itemEditor.getByLabel("Notizen", { exact: true }).fill("Am Frosttor gefunden.");
-    await itemEditor.getByLabel("Grund der Änderung", { exact: true }).fill("Zweiten Schlüssel erhalten");
+    await itemEditor.getByLabel("Grund (freiwillig, erscheint im Verlauf)", { exact: true }).fill("Zweiten Schlüssel erhalten");
     await itemEditor.getByRole("button", { name: "Gegenstand speichern", exact: true }).click();
     await expect.poll(async () => (await (await gm.request.get(`${base}/items/${item.id}`)).json()).state.quantity).toBe(2);
     expect((await outsider.request.get(`${base}/items/${item.id}`)).status()).toBe(404);
@@ -127,7 +131,7 @@ test("templates create independent shared actors and inventory; perspective and 
     await stage(gm, "Tisch").click();
     await gm.getByRole("tab", { name: "Figuren & Inventar", exact: true }).click();
     await gm.getByRole("combobox", { name: "Handelnde Figur", exact: true }).selectOption(actor.id);
-    await details.getByLabel("Grund der Änderung", { exact: true }).fill("Vertretung beendet.");
+    await details.getByLabel("Grund (freiwillig, erscheint im Verlauf)", { exact: true }).fill("Vertretung beendet.");
     const controller = details.locator("li").filter({ hasText: "Sera" });
     await controller.getByRole("button", { name: "Kontrolle entziehen", exact: true }).click();
     await expect.poll(async () => (await player.request.get(`${base}/actors/${actor.id}/sheet`)).status()).toBe(404);
@@ -176,7 +180,8 @@ test("Freigabe und Anträge: die Spielleitung öffnet eine Vorlage und bestätig
 
     await gm.goto(`${origin}/?campaign=${campaignId}&stage=tisch`);
     await gm.getByRole("tab", { name: "Figuren & Inventar", exact: true }).click();
-    await gm.getByRole("button", { name: "Anträge", exact: true }).click();
+    // Der Reiter trägt die Zahl der offenen Anträge („Anträge, 1 offen“).
+    await gm.getByRole("tab", { name: /^Anträge/ }).click();
     // Die Abweichung steht auf der Karte: bestätigt wird nicht bloß ein Name.
     await expect(gm.getByText("Nell vom Frosttor", { exact: true })).toBeVisible();
     await expect(gm.getByText("Scharfsinn · 5", { exact: true })).toBeVisible();

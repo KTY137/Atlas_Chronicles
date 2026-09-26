@@ -11,7 +11,8 @@ import { VitalBar, vitalColorClass, vitalColorStyle } from "./Vitalanzeige";
 import { fixtureValues, type RuleDraft } from "./rule-forge-model";
 import { formulaReferences } from "./rule-map-model";
 import { isOnSheet, placeOnSheet, retargetOnSheet } from "./rule-sheet-model";
-import { VITAL_PRESETS, addOwnVital, addVitalPreset, hasPreset, type VitalPresetId } from "./rule-vital-model";
+import { VITAL_PRESETS, addExampleVital, addOwnVital, addVitalPreset, hasPreset, type VitalPresetId } from "./rule-vital-model";
+import { resugarFormula } from "./formula-sugar";
 import "./vitalanzeige.css";
 
 function presetLabel(id: VitalPresetId): string {
@@ -70,10 +71,11 @@ export function RuleVitalEditor({ draft, disabled, onChange, pkg, figureName, va
     <Button variant="quiet" disabled={disabled || !own || vitals.length >= RULE_LIMITS.vitals} onClick={() => { const result = addOwnVital(draft); if (result) { onChange(result.draft); setSelected(result.id); } }}><Plus size={15} />{t("Eigener Balken")}</Button>
   </div>;
   return <div className="rf-split rf-split-live">
-    <RuleEntryList title={t("Balken")} rows={vitals.map(vital => ({ key: vital.id, name: vital.label, detail: t("Stand @{kennung}", { kennung: vital.id }) }))} current={current?.id} onSelect={setSelected}
+    <RuleEntryList title={t("Balken")} rows={vitals.map(vital => ({ key: vital.id, name: vital.label, detail: t("Höchststand {wert}", { wert: resugarFormula(vital.max) }) }))} current={current?.id} onSelect={setSelected}
       searchLabel={t("Balken suchen")} disabled={disabled}
       help={t("Leben, Mana, Ausdauer: eine Zahl auf dem Bogen, ein Höchststand und die Frage, was ein leerer Balken bedeutet. Ein Klick legt Attribut und Balken zugleich an.")}
-      empty={t("Noch kein Balken. Leg oben einen an, zum Beispiel Leben.")} extra={quick} />
+      empty={t("Noch kein Balken. Ein Balken ist ein Vorrat, der im Spiel sinkt und steigt, zum Beispiel Leben 10 von 10.")} extra={quick}
+      onExample={vitals.length < RULE_LIMITS.vitals ? () => { const result = addExampleVital(draft); onChange(result.draft); setSelected(result.id); } : undefined} />
     {current ? <section className="rf-detail" aria-label={t("Balken")}><fieldset className="rf-editor-fields" disabled={disabled}>
       <div className="rf-section-heading"><h4>{current.label || t("Ohne Namen")}</h4><Button variant="quiet" onClick={remove}><Trash2 size={15} />{t("Balken entfernen")}</Button></div>
       <div className="rf-form-grid">

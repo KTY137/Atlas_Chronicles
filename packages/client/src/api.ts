@@ -5,7 +5,20 @@ export class ApiError extends Error {
   constructor(readonly status: number, message: string) { super(message); this.name = "ApiError"; }
 }
 
+/**
+ * Der Schreibstand zählt jede abgeschlossene Änderung und jede Live-Meldung. `useResource` teilt eine
+ * laufende Abfrage nur mit Aufrufern desselben Stands — wer nach einer Änderung lädt, hängt sich nie
+ * an eine Abfrage, die davor begonnen hat.
+ */
+let schreibStand = 0;
+export function markiereAenderung(): void { schreibStand++; }
+export function aktuellerSchreibStand(): number { return schreibStand; }
+
 export async function api<T>(path: string, options: { method?: string; body?: unknown; signal?: AbortSignal; authorization?: string } = {}): Promise<T> {
+  const schreibt = (options.method ?? "GET") !== "GET";
+  try { return await apiRoh<T>(path, options); } finally { if (schreibt) markiereAenderung(); }
+}
+async function apiRoh<T>(path: string, options: { method?: string; body?: unknown; signal?: AbortSignal; authorization?: string }): Promise<T> {
   const response = await fetch(path, { method: options.method ?? "GET", credentials: "same-origin", cache: "no-store",
     headers: { ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}), ...(options.authorization ? { Authorization: options.authorization } : {}) },
     ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}), ...(options.signal ? { signal: options.signal } : {}) });

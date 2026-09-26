@@ -1,120 +1,85 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { AnyRulePackage, RuleRuntime, RuleRuntimePreview, RuleRuntimeSection, Scalar } from "@chronicle/rules";
 import { Button, Loading, Notice } from "@chronicle/ui";
 import { t } from "../i18n";
+import { Begriff } from "./Begriff";
 import { VitalBar } from "./Vitalanzeige";
 import { RuleFields } from "./RuleFields";
-import { RulePresentationView } from "./RulePresentationView";
+import { RulePresentationView, SheetAbilities, SheetConditions } from "./RulePresentationView";
 import { displayRuleRuntime } from "./rule-runtime-display";
-import { forgetRuleAbility, ruleIdList } from "./rule-runtime-state";
+import { showsField, showsValues, unknownListEntries, type RuleFieldsPart } from "./rule-fields-model";
 import type { HostRuleEditorState } from "./useHostRules";
 import "./rule-categories.css";
+import "./rule-fields.css";
 
-type RuntimeAbility = RuleRuntime["abilities"][number];
-interface AbilityGroupNode { label: string; path: string; rows: RuntimeAbility[]; children: Map<string, AbilityGroupNode> }
-
-/** Legacy v1/v2 ability grouping. Presentation-v3 packages use RulePresentationView below. */
-function abilityGroupTree(rows: readonly RuntimeAbility[]): AbilityGroupNode[] {
-  const root = new Map<string, AbilityGroupNode>();
-  for (const ability of rows) {
-    const parts = ability.group.split("/").map(part => part.trim()).filter(Boolean);
-    if (!parts.length) parts.push(t("Weitere Fähigkeiten"));
-    let level = root, path = ""; let node: AbilityGroupNode | undefined;
-    for (const part of parts) {
-      path = path ? `${path} / ${part}` : part;
-      node = level.get(part);
-      if (!node) { node = { label: part, path, rows: [], children: new Map() }; level.set(part, node); }
-      level = node.children;
-    }
-    node!.rows.push(ability);
-  }
-  return [...root.values()];
-}
-function AbilityGroups({ rows, renderRow }: { rows: readonly RuntimeAbility[]; renderRow(ability: RuntimeAbility): ReactNode }) {
-  const render = (node: AbilityGroupNode, depth: number): ReactNode => <section className="rule-ability-group" data-depth={Math.min(depth, 8)} key={node.path}>
-    <h4>{node.label}</h4>
-    {node.rows.length ? <ul className="faehigkeiten-liste">{node.rows.map(renderRow)}</ul> : null}
-    {node.children.size ? <div className="rule-ability-children">{[...node.children.values()].map(child => render(child, depth + 1))}</div> : null}
-  </section>;
-  return <>{abilityGroupTree(rows).map(node => render(node, 0))}</>;
-}
-
-export function HostRuleFields({ state, source, onChange, disabled = false }: {
+/**
+ * Der Bogen einer Figur, wie ihn der Host auswertet. `part` teilt ihn für den geführten Weg (E15):
+ * „identity“ zeigt, wer die Figur ist, „values“, was sie kann. `omit` blendet einzelne Felder aus,
+ * etwa den Namen, wenn der Ablauf ihn selbst abfragt; `onChange` bekommt trotzdem alle Werte.
+ */
+export function HostRuleFields({ state, source, onChange, disabled = false, part = "all", omit }: {
   state: HostRuleEditorState; source?: AnyRulePackage | undefined; onChange: (values: Record<string, Scalar>) => void; disabled?: boolean;
+  part?: RuleFieldsPart; omit?: readonly string[];
 }) {
   const display = state.manifest ? displayRuleRuntime(state.manifest, state.error ? null : state.preview, source) : null;
   return <>
     {state.error ? <Notice error>{state.error} <Button onClick={state.reload}>{t("Erneut laden")}</Button></Notice> : null}
     {state.manifest && state.values ? <RuntimeFields key={`${state.manifest.pin.id}@${state.manifest.pin.version}:${state.manifest.contentHash}`}
-      runtime={display!.runtime} values={state.values} preview={display!.preview} onChange={onChange} disabled={disabled} /> : state.pending ? <Loading /> : null}
+      runtime={display!.runtime} values={state.values} preview={display!.preview} onChange={onChange} disabled={disabled} part={part} omit={omit} /> : state.pending ? <Loading /> : null}
     {state.pending ? <p className="field-help" role="status">{t("Das Regelwerk prüft die aktuellen Bogenwerte …")}</p> : null}
-    {state.preview && !state.preview.valid ? <Notice error>{state.preview.errors.join(" ")}</Notice> : null}
+    {state.preview && !state.preview.valid ? <Notice error>{t("So lässt sich der Bogen noch nicht speichern.")} {state.preview.errors.join(" ")}</Notice> : null}
   </>;
 }
-function RuntimeFields({ runtime, values, preview, onChange, disabled }: {
+function RuntimeFields({ runtime, values, preview, onChange, disabled, part, omit }: {
   runtime: RuleRuntime; values: Readonly<Record<string, Scalar>>; preview: RuleRuntimePreview | null;
-  onChange: (values: Record<string, Scalar>) => void; disabled: boolean;
+  onChange: (values: Record<string, Scalar>) => void; disabled: boolean; part: RuleFieldsPart; omit: readonly string[] | undefined;
 }) {
-  const [search, setSearch] = useState("");
-  const special = new Set([runtime.abilities.length ? runtime.abilityField : null, runtime.conditions.length ? runtime.conditionField : null]);
+  const withValues = showsValues(part);
+  // Die rohen Kennungslisten erscheinen nur, wenn eine davon Einträge hält, die das Regelwerk nicht
+  // kennt (alter oder eingespielter Bogen). Sonst bearbeiten Karten und Chips die Listen vollständig.
+  const broken = withValues ? unknownListEntries(runtime, values).filter(entry => runtime.fields[entry.field]) : [];
+  const repair = broken.length ? <details className="sheet-block sheet-repair"><summary>{t("Gespeicherte Liste reparieren")}</summary>
+    <p className="field-help">{t("Diese gespeicherte Liste enthält Einträge, die das Regelwerk nicht kennt: {liste}. Lösche sie hier aus dem Text.", { liste: broken.flatMap(entry => entry.unknown).join(", ") })}</p>
+    <RuleFields fields={Object.fromEntries(broken.map(entry => [entry.field, runtime.fields[entry.field]!]))} values={values} onChange={onChange} disabled={disabled} />
+  </details> : null;
+
   if (runtime.presentation) return <>
-    <RulePresentationView runtime={runtime} preview={preview} values={values} onChange={onChange} disabled={disabled} />
-    {/* Raw identifier storage remains reachable for repairing malformed legacy/imported lists. */}
-    {[...special].some(Boolean) ? <details><summary>{t("Kennungslisten korrigieren")}</summary>
-      <RuleFields fields={Object.fromEntries([...special].filter((id): id is string => id !== null).map(id => [id, runtime.fields[id]!]))} values={values} onChange={onChange} disabled={disabled} />
-    </details> : null}
+    <RulePresentationView runtime={runtime} preview={preview} values={values} onChange={onChange} disabled={disabled} part={part} omit={omit} />
+    {repair}
   </>;
 
-  const learned = ruleIdList(runtime.abilityField ? values[runtime.abilityField] : undefined);
-  const active = ruleIdList(runtime.conditionField ? values[runtime.conditionField] : undefined);
-  const overview = preview?.valid ? preview.abilities : null;
-  const learnable = new Set(overview?.learnable ?? []);
-  const abilities = runtime.abilities.filter(ability => !learned.includes(ability.id) && `${ability.name} ${ability.group} ${ability.text}`.toLowerCase().includes(search.trim().toLowerCase()));
-  const setList = (field: string, ids: readonly string[]) => onChange({ ...values, [field]: ids.join(", ") });
+  // Pakete ohne eigenen Bogenaufbau (v1/v2): Balken zuerst, dann die Abschnitte, dann was daraus folgt.
+  const special = new Set([runtime.abilities.length ? runtime.abilityField : null, runtime.conditions.length ? runtime.conditionField : null]);
   const children = new Map<string | null, RuleRuntimeSection[]>();
   for (const section of runtime.sections) {
     const rows = children.get(section.parent) ?? [];
     rows.push(section); children.set(section.parent, rows);
   }
   const renderSection = (section: RuleRuntimeSection, depth: number): ReactNode => {
-    const ids = section.fields.filter(id => !special.has(id));
-    const nested = children.get(section.id) ?? [];
+    const ids = section.fields.filter(id => !special.has(id) && runtime.fields[id] && showsField(id, runtime.fields[id]!, part, omit, runtime));
+    const nested = (children.get(section.id) ?? []).map(child => renderSection(child, depth + 1)).filter(Boolean);
     if (!ids.length && !nested.length) return null;
     return <fieldset className="sheet-section rule-category" data-depth={Math.min(depth, 8)} key={section.id}>
       <legend>{section.label}</legend>
       {ids.length ? <RuleFields fields={Object.fromEntries(ids.map(id => [id, runtime.fields[id]!]))} values={values} onChange={onChange} disabled={disabled} /> : null}
-      {nested.length ? <div className="rule-category-children">{nested.map(child => renderSection(child, depth + 1))}</div> : null}
+      {nested.length ? <div className="rule-category-children">{nested}</div> : null}
     </fieldset>;
   };
-  const learnedAbilities = learned.map(id => runtime.abilities.find(ability => ability.id === id)).filter((ability): ability is RuntimeAbility => !!ability);
   return <>
-    {(children.get(null) ?? []).map(section => renderSection(section, 0))}
-    {preview?.valid && preview.vitals.length ? <section aria-label={t("Vitalwerte")}>{preview.vitals.map(vital => <div key={vital.id}>
-      <VitalBar vital={vital} label={vital.label} />
-    </div>)}</section> : null}
-    {preview?.valid && runtime.computed.length ? <section className="rule-computed"><h3>{t("Berechnete Werte")}</h3><dl className="rf-value-list">
-      {runtime.computed.map(field => <div key={field.id}><dt>{field.label}</dt><dd>{preview.computed[field.id]}</dd></div>)}</dl></section> : null}
-    {runtime.abilityField && runtime.abilities.length ? <section className="faehigkeiten-bogen" aria-label={t("Fähigkeiten und Zustände")}>
-      <h3>{t("Fähigkeiten")}</h3>
-      {overview ? <p role="status">{overview.budget === null ? t("Ausgegeben: {punkte} Punkte", { punkte: overview.spent }) : t("Ausgegeben: {punkte} von {budget} Punkten", { punkte: overview.spent, budget: overview.budget })}</p> : null}
-      <AbilityGroups rows={learnedAbilities} renderRow={ability => <li key={ability.id}><span>{ability.name}</span>
-        <Button disabled={disabled} onClick={() => setList(runtime.abilityField!, forgetRuleAbility(runtime, learned, ability.id))}>{t("Verlernen")}</Button></li>} />
-      <details><summary>{t("Neue Fähigkeit lernen")}</summary>
-        <label>{t("Fähigkeit suchen")}<input type="search" value={search} onChange={event => setSearch(event.target.value)} disabled={disabled} /></label>
-        <AbilityGroups rows={abilities.slice(0, 40)} renderRow={ability => <li key={ability.id}><div><strong>{ability.name}</strong><small> · {ability.price}</small><p>{ability.text}</p></div>
-          <Button disabled={disabled || !learnable.has(ability.id)} onClick={() => { if (learnable.has(ability.id)) setList(runtime.abilityField!, [...learned, ability.id]); }}>{t("Lernen")}</Button></li>} />
-        {abilities.length > 40 ? <p>{t("{n} weitere Treffer. Grenze die Suche ein.", { n: abilities.length - 40 })}</p> : !abilities.length ? <p>{t("Keine passende Fähigkeit.")}</p> : null}
-      </details>
+    {withValues && preview?.valid && preview.vitals.length ? <section className="sheet-vitals">
+      <h3><Begriff id="balken" /></h3>
+      <div className="vitalanzeige-liste">{preview.vitals.map(vital => <VitalBar key={vital.id} vital={vital} label={vital.label} />)}</div>
     </section> : null}
-    {runtime.conditionField && runtime.conditions.length ? <section><h3>{t("Zustände")}</h3>{runtime.conditions.map(condition => <label key={condition.id} className="check-label">
-      <input type="checkbox" checked={active.includes(condition.id)} disabled={disabled} onChange={event => setList(runtime.conditionField!, event.target.checked ? [...active, condition.id] : active.filter(id => id !== condition.id))} />
-      <span>{condition.name} <small>{condition.text}</small></span>
-    </label>)}</section> : null}
-    {[...special].some(Boolean) ? <details><summary>{t("Kennungslisten korrigieren")}</summary>
-      <RuleFields fields={Object.fromEntries([...special].filter((id): id is string => id !== null).map(id => [id, runtime.fields[id]!]))} values={values} onChange={onChange} disabled={disabled} />
-    </details> : null}
-    <details><summary>{t("Proben dieses Regelpakets")}</summary><ul>{runtime.actions.map(action => <li key={action.id}>{action.name}</li>)}</ul></details>
+    {(children.get(null) ?? []).map(section => renderSection(section, 0))}
+    {withValues && preview?.valid && runtime.computed.length ? <section className="sheet-block rule-computed">
+      <h3><Begriff id="berechneter-wert">{t("Berechnete Werte")}</Begriff></h3>
+      <dl className="stat-tiles">{runtime.computed.map(field => <div className="stat-tile" key={field.id}><dt>{field.label}</dt><dd>{preview.computed[field.id]}</dd></div>)}</dl>
+    </section> : null}
+    {withValues ? <SheetAbilities runtime={runtime} preview={preview} values={values} onChange={onChange} disabled={disabled} regionLabel={t("Fähigkeiten und Zustände")} /> : null}
+    {withValues ? <SheetConditions runtime={runtime} values={values} onChange={onChange} disabled={disabled} /> : null}
+    {repair}
+    {withValues && runtime.actions.length ? <details className="sheet-block"><summary>{t("Proben dieses Regelwerks")}</summary><ul>{runtime.actions.map(action => <li key={action.id}>{action.name}</li>)}</ul></details> : null}
   </>;
 }

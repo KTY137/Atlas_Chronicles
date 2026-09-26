@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ActorCard } from "@chronicle/protocol";
 import { ACTOR_PORTRAIT_LIMITS, type ActorPortraitCard } from "../../../protocol/src/actor-portrait";
 import { ImagePlus, Trash2, UserRound } from "lucide-react";
-import { Button, Loading, Notice } from "@chronicle/ui";
+import { Button, Loading, Notice, confirmAction } from "@chronicle/ui";
 import { api, apiPath, ApiError } from "../api";
 import { useResource, useTask } from "../hooks";
 import { t } from "../i18n";
@@ -31,9 +31,9 @@ export function CharacterPortrait({ campaignId, actorId, revision, onDirty, onCh
   const accept = (value: ActorPortraitCard) => { setSaved(value); clear(); onChanged(); };
   const name = actor.data?.name ?? t("Deine Figur");
   const source = preview || (current?.image ? `${base}/portrait/file?v=${current.version}` : "");
-  return <section className="panel character-identity" aria-label={t("Figurenporträt")}>
+  return <section className={source ? "panel character-identity" : "panel character-identity is-empty"} aria-label={t("Figurenporträt")}>
     <figure className="character-portrait">
-      {source ? <img src={source} alt={t("Porträt von {name}", { name })} /> : <div className="character-portrait-empty"><UserRound size={58} aria-hidden="true" /><span>{t("Noch kein Porträt")}</span></div>}
+      {source ? <img src={source} alt={t("Porträt von {name}", { name })} /> : <div className="character-portrait-empty"><UserRound size={30} aria-hidden="true" /><span>{t("Noch kein Porträt")}</span></div>}
     </figure>
     <div className="character-identity-details"><p className="eyebrow">{t("Dein Charakter")}</p><h2>{name}</h2>
       <p className="field-help">{t("Dein Bild, deine Werte und alles, was du bei dir trägst.")}</p>
@@ -41,7 +41,9 @@ export function CharacterPortrait({ campaignId, actorId, revision, onDirty, onCh
       {portrait.error || actor.error ? <Notice error>{portrait.error || actor.error}</Notice> : null}
       {current?.image ? <a href={`${base}/portrait/file`} target="_blank" rel="noreferrer">{t("Originalbild öffnen")}</a> : null}
       {actor.data?.canControl && current ? <>
-        <label className="character-portrait-input">{t("Porträt auswählen")}<input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={task.busy} onChange={event => {
+        {/* Die Dateiauswahl des Browsers sieht in jedem Look anders aus; hier ist sie ein Knopf. Das Feld
+            selbst bleibt fokussierbar und trägt den Namen der Beschriftung, nur unsichtbar. */}
+        <label className={task.busy ? "button character-portrait-input is-disabled" : "button character-portrait-input"}><ImagePlus size={16} aria-hidden="true" />{t("Porträt auswählen")}<input ref={fileInput} className="sr-only" type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={task.busy} onChange={event => {
           const chosen = event.target.files?.[0] ?? null;
           if (chosen && chosen.size > ACTOR_PORTRAIT_LIMITS.bytes) { clear(); task.setError(t("Das Porträt darf höchstens 8 MB groß sein.")); return; }
           task.setError(""); setFile(chosen);
@@ -55,7 +57,8 @@ export function CharacterPortrait({ campaignId, actorId, revision, onDirty, onCh
             accept(body);
           })}><ImagePlus size={16} />{t("Porträt speichern")}</Button><Button disabled={task.busy} onClick={clear}>{t("Bildauswahl verwerfen")}</Button></> : null}
           {current.image ? <Button variant="danger" disabled={task.busy || !!file} onClick={() => {
-            if (window.confirm(t("Das Porträt dieser Figur entfernen?"))) void task.run(async () => accept(await api<ActorPortraitCard>(`${base}/portrait`, { method: "DELETE", body: { expectedVersion: current.version } })));
+            void confirmAction({ title: t("Porträt entfernen?"), message: t("Das Bild verschwindet vom Bogen dieser Figur. Du kannst jederzeit ein neues auswählen."), confirmLabel: t("Porträt entfernen"), danger: true })
+              .then(ok => { if (ok) void task.run(async () => accept(await api<ActorPortraitCard>(`${base}/portrait`, { method: "DELETE", body: { expectedVersion: current.version } }))); });
           }}><Trash2 size={15} />{t("Porträt entfernen")}</Button> : null}
         </div>
       </> : null}
