@@ -9,10 +9,10 @@ const paket = parseAssetpaket(readFileSync(new URL("../../../assets/packs/pk.zei
 const index = assetIndex([paket]);
 
 describe("the real Zeitwelten pack serves the era-specific generators", () => {
-  it("contains exactly 100 distinct assets with their own content evidence", () => {
-    expect(paket.assets).toHaveLength(100);
-    expect(new Set(paket.assets.map(asset => asset.name)).size).toBe(100);
-    expect(new Set(paket.assets.map(asset => asset.sha256)).size).toBe(100);
+  it("contains exactly 119 distinct assets with their own content evidence", () => {
+    expect(paket.assets).toHaveLength(119);
+    expect(new Set(paket.assets.map(asset => asset.name)).size).toBe(119);
+    expect(new Set(paket.assets.map(asset => asset.sha256)).size).toBe(119);
   });
 
   for (const setting of ["gegenwart", "scifi"] as const) for (const profil of BAUWERK_SETTINGS[setting]) {

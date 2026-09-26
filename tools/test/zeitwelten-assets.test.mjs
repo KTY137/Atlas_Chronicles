@@ -11,15 +11,15 @@ const { assets } = JSON.parse(files.get("paket.json"));
 const eras = ["fantasy", "gegenwart", "scifi"];
 const matches = (era, art, tag) => assets.filter(asset => asset.art === art && asset.schlagworte.includes(tag) && !asset.schlagworte.some(t => eras.includes(t) && t !== era));
 
-test("Zeitwelten has exactly 100 independent drawings, not renamed or recolored copies", () => {
-  assert.equal(assets.length, 100);
-  for (const property of ["name", "datei", "sha256"]) assert.equal(new Set(assets.map(a => a[property])).size, 100, property);
+test("Zeitwelten has exactly 119 independent drawings, not renamed or recolored copies", () => {
+  assert.equal(assets.length, 119);
+  for (const property of ["name", "datei", "sha256"]) assert.equal(new Set(assets.map(a => a[property])).size, 119, property);
   const geometry = assets.map(asset => {
     const body = files.get(asset.datei).replace(/<defs>[\s\S]*?<\/defs>/g, "");
     return [...body.matchAll(/<(?:rect|circle|ellipse|line|path|polygon|g)\b[^>]*>/g)].map(([element]) => element
       .replace(/\s(?:fill|stroke|stroke-width|stroke-linecap|stroke-linejoin|opacity|fill-opacity|stroke-opacity|filter|clip-path|id)="[^"]*"/g, "")).join("");
   });
-  assert.equal(new Set(geometry).size, 100, "each asset needs different geometry beyond palette/IDs");
+  assert.equal(new Set(geometry).size, 119, "each asset needs different geometry beyond palette/IDs");
   assert.deepEqual([...files.keys()].filter(name => !name.endsWith(".svg")).sort(), ["lizenz.txt", "paket.json"]);
 });
 
@@ -46,7 +46,7 @@ test("Zeitwelten covers contemporary and sci-fi furniture queries with honest se
   for (const name of ["antenne_parabol", "solardach", "klimadach", "dachgarten"]) assert.ok(assets.find(asset => asset.name === name).schlagworte.includes("dach"), `${name} must render over the roof`);
 });
 
-test("all 100 SVGs rasterize visibly at 64 and 128 px; floors cover every pixel", async () => {
+test("all 119 SVGs rasterize visibly at 64 and 128 px; floors cover every pixel", async () => {
   for (const asset of assets) {
     assert.deepEqual(asset.anker, asset.groesse.map(value => value / 2));
     assert.deepEqual(asset.groesse, asset.einheiten.map(value => value * 64));

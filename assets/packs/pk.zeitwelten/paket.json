@@ -782,9 +782,11 @@
       "mimeType": "image/svg+xml",
       "name": "couchtisch",
       "schlagworte": [
+        "couchtisch",
         "tisch",
         "wohnraum",
-        "rast"
+        "rast",
+        "gegenwart"
       ],
       "sha256": "2376baa367f8914a44dbdcca1e294fe77b482e8e98540bce00018e79a34bf36b"
     },
@@ -2782,6 +2784,533 @@
         "dach"
       ],
       "sha256": "ac44a3b87eff77ed6ae1c7ceb3338ed3d8f74218ae888e084c4b9f53a1e2a70c"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3090,
+      "datei": "moebel/fernseher.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fernseher",
+      "schlagworte": [
+        "fernseher",
+        "wohnraum",
+        "technik",
+        "gegenwart"
+      ],
+      "sha256": "767291ed6cbd01a92844cfaa0be83dbb67ee56cb4be86f61610a499171617db8"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2935,
+      "datei": "moebel/sofa.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "sofa",
+      "schlagworte": [
+        "sofa",
+        "sitz",
+        "wohnraum",
+        "gegenwart"
+      ],
+      "sha256": "209afb916452b94397ae58fadf4c62067063caaf079b2ee9a23b40617528c5c4"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2943,
+      "datei": "moebel/wanne.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "wanne",
+      "schlagworte": [
+        "wanne",
+        "wasser",
+        "bad",
+        "gegenwart"
+      ],
+      "sha256": "8d9de5157283df08c5e28f7be21134ac689a9dfefc7610ff39d54ea7f4d1e49c"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2799,
+      "datei": "moebel/waschmaschine.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "waschmaschine",
+      "schlagworte": [
+        "waschmaschine",
+        "wasser",
+        "bad",
+        "keller",
+        "gegenwart"
+      ],
+      "sha256": "2b4c4c70775b358ee1c5a9b238aa11b13ce515332fd1aa29f79fb7337e3a3623"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3968,
+      "datei": "moebel/pflanze.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "pflanze",
+      "schlagworte": [
+        "pflanze",
+        "gruen",
+        "deko"
+      ],
+      "sha256": "83bc270b77029b34ae93532df2b97f8a1ec2aa6704f8bd43cbef100bb67454ce"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 7824,
+      "datei": "aufbau/teppich_modern.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "teppich_modern",
+      "schlagworte": [
+        "teppich",
+        "wohnraum",
+        "boden",
+        "gegenwart"
+      ],
+      "sha256": "4bbe37003562ac87d22a58d1aab260f222b647a64a57ad68e90bf01007c8dde7"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3726,
+      "datei": "aufbau/heizung.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "heizung",
+      "schlagworte": [
+        "heizung",
+        "technik",
+        "keller",
+        "gegenwart"
+      ],
+      "sha256": "fef05e43acccd3186a88488778d61878ee8fb554609061a0710da783d497c2ed"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 2978,
+      "datei": "moebel/tischtennis.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tischtennis",
+      "schlagworte": [
+        "tischtennis",
+        "freizeit",
+        "keller",
+        "gegenwart"
+      ],
+      "sha256": "3a17f326df6afa2d97f65daf94c830e1a3fe5ea406e7efacd89ed184d01930e5"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2982,
+      "datei": "moebel/spielzeug.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "spielzeug",
+      "schlagworte": [
+        "spielzeug",
+        "kind",
+        "gegenwart"
+      ],
+      "sha256": "b73cd3baf508ecad377cbb4255a7040ecd37f6a11318f6e22c94f67b0357412b"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 5209,
+      "datei": "moebel/briefkaesten.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "briefkaesten",
+      "schlagworte": [
+        "briefkasten",
+        "foyer",
+        "gegenwart"
+      ],
+      "sha256": "4eb8a6c7beb242338e7a182b9b440bd916c8d6e8c61820064c0810ab47fbac81"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2407,
+      "datei": "aufbau/fenster_modern.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fenster_modern",
+      "schlagworte": [
+        "fenster",
+        "wand",
+        "gegenwart"
+      ],
+      "sha256": "e815499fffeea2c6c852bfd6e19397cefdc300ee3deceb4208458b2c970f9de9"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3390,
+      "datei": "moebel/holotisch.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "holotisch",
+      "schlagworte": [
+        "holotisch",
+        "tisch",
+        "technik",
+        "scifi"
+      ],
+      "sha256": "016e87f5faba93b0aaf5fa22a5430b370098e26b5fa13e65a288212afaa0f890"
+    },
+    {
+      "anker": [
+        32,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 3362,
+      "datei": "moebel/koje.svg",
+      "einheiten": [
+        1,
+        2
+      ],
+      "groesse": [
+        64,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "koje",
+      "schlagworte": [
+        "koje",
+        "bett",
+        "rast",
+        "scifi"
+      ],
+      "sha256": "6b94b8f2d0cec94afde9e2e3eab70bf936d3d47b468bc138b602233f127cff59"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 18213,
+      "datei": "moebel/hydroregal.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "hydroregal",
+      "schlagworte": [
+        "hydroregal",
+        "pflanze",
+        "gruen",
+        "scifi"
+      ],
+      "sha256": "cbd1efdbd3ab0b1b3a569b47c9ed926d20e1611302b29f44ad58d18ac8cc686e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 3576,
+      "datei": "gefaess/tank.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "tank",
+      "schlagworte": [
+        "tank",
+        "wasser",
+        "vorrat",
+        "scifi"
+      ],
+      "sha256": "e5be3f6e175a284dfc47e2347c8468efd4ad7fe4bb52d66464676775584227bd"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 4493,
+      "datei": "aufbau/rohre.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "rohre",
+      "schlagworte": [
+        "rohre",
+        "technik",
+        "scifi"
+      ],
+      "sha256": "703d66b8a8c392d910451c6ba8316064ca7f92c7f5f1f2dab04a3880ec91b516"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3368,
+      "datei": "moebel/anzug.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "anzug",
+      "schlagworte": [
+        "anzug",
+        "schleuse",
+        "wache",
+        "scifi"
+      ],
+      "sha256": "9d1911204f313bc6b5023762ff0fcaa382506151202ba841f571cb7f0c68a49c"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 7275,
+      "datei": "moebel/bildschirmwand.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "bildschirmwand",
+      "schlagworte": [
+        "bildschirm",
+        "technik",
+        "konsole",
+        "scifi"
+      ],
+      "sha256": "98210baca7441709bde6ec5337aa98722260ef97a28bd90fb5f10d64757fbec2"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 3476,
+      "datei": "aufbau/fenster_scifi.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fenster_scifi",
+      "schlagworte": [
+        "fenster",
+        "wand",
+        "scifi"
+      ],
+      "sha256": "3c6ffdb2bb188fde4cb7fe2eb4a1538a1261bdaf1e3e7d545e125ff327d7b49c"
     }
   ],
   "id": "pk.zeitwelten",
@@ -2795,8 +3324,8 @@
     "textSha256": "12da1cb973d60428e60faf330abef3f1d52c113a096b575feb7ab30bd63ff43f"
   },
   "schemaVersion": 1,
-  "titel": "Zeitwelten — 100 technische Draufsichten für Gegenwart, Industrie und Raumfahrt",
+  "titel": "Zeitwelten — 119 technische Draufsichten für Gegenwart, Wohnen, Industrie und Raumfahrt",
   "urheber": "Chronicle contributors",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "zellgroesse": 64
 }

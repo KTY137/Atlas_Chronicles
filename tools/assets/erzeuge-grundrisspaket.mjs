@@ -30,7 +30,7 @@ import {
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const PAKET_ID = "pk.grundriss";
-const PAKET_VERSION = "1.2.0";
+const PAKET_VERSION = "1.3.0";
 const PAKET_DIR = join(ROOT, "assets", "packs", PAKET_ID);
 const ZELLE = 64; // authoring pixels per grid cell — mirrored into `paket.zellgroesse`
 const URHEBER = "Chronicle";
@@ -1015,6 +1015,315 @@ function figurRiese() {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Wohnen und Handwerk über mehrere Geschosse — 1.3.0
+//
+// Wandmöbel stehen mit dem Rücken an der Oberkante ihrer Fläche und zeigen nach unten: so steht
+// ein Kamin an einer Nordwand ungedreht richtig, und der Erzeuger dreht ihn für jede andere Wand
+// wie ein Bett. Teppiche und Läufer sind `aufbau`, flach und unter den Möbeln. Das Fenster liegt
+// wie ein Türblatt quer durch die Zellmitte und wird wie eine Tür auf die Wandkante gesetzt.
+// ---------------------------------------------------------------------------------------------
+
+/** Die Flamme der Feuerschale, verschoben. Ein Feuer soll in jedem Stück gleich lesen. */
+const flammeBei = (dx, dy, massstab = 1) => group({ transform: `translate(${n(dx)} ${n(dy)}) scale(${n(massstab)})` },
+  path("M32 22 Q38 30 34 38 Q42 34 40 26 Q46 34 40 42 L24 42 Q18 34 24 26 Q22 34 30 38 Q26 30 32 22 Z", { fill: C.flamme, stroke: "none" }));
+
+function kamin() {
+  const w = ZELLE * 2;
+  return svg("Kamin", w, ZELLE, [
+    // Herdsteine vor der Öffnung, dann der Mauerblock mit der Feuerstelle darin.
+    rect(18, 40, w - 36, 20, { ...kontur({ "stroke-width": 1.6 }), rx: 2, fill: C.steinTief }),
+    ...[42, 64, 86].map((x) => line(x, 44, x, 58, feder({ stroke: C.tinte, "stroke-opacity": 0.45 }))),
+    path(`M6 4 H${w - 6} V44 H96 L90 14 H38 L32 44 H6 Z`, { ...kontur(), fill: C.stein }),
+    ...[[18, 4, 18, 44], [110, 4, 110, 44], [6, 24, 32, 24], [96, 24, 122, 24], [52, 4, 52, 14], [76, 4, 76, 14]].map(([x1, y1, x2, y2]) => line(x1, y1, x2, y2, feder({ stroke: C.steinTief, "stroke-width": 1.4 }))),
+    poly([[38, 14], [90, 14], [96, 44], [32, 44]], { fill: C.tinte, "fill-opacity": 0.78, stroke: C.tinte, "stroke-width": 1.6, "stroke-linejoin": "round" }),
+    line(46, 38, 82, 26, { stroke: C.holzTief, "stroke-width": 4, "stroke-linecap": "round" }),
+    line(46, 26, 82, 38, { stroke: C.holzTief, "stroke-width": 4, "stroke-linecap": "round" }),
+    flammeBei(32, -4),
+  ].join(""));
+}
+
+function herd() {
+  const w = ZELLE * 2;
+  return svg("Herd", w, ZELLE, [
+    rect(6, 5, w - 12, 50, { ...kontur(), rx: 3, fill: C.stein }),
+    line(58, 5, 58, 55, feder({ stroke: C.steinTief, "stroke-width": 1.6 })),
+    // Links der gemauerte Backofen mit seinem Mundloch nach vorn, rechts die Eisenplatte.
+    circle(32, 27, 19, { ...kontur({ "stroke-width": 1.8 }), fill: C.steinTief }),
+    circle(32, 27, 12, feder({ "stroke-width": 1.2 })),
+    path("M22 55 L22 44 Q32 36 42 44 L42 55 Z", { fill: C.tinte, "fill-opacity": 0.8, stroke: C.tinte, "stroke-width": 1.4, "stroke-linejoin": "round" }),
+    ellipse(32, 50, 5, 3, { fill: C.flamme, "fill-opacity": 0.9 }),
+    rect(64, 10, 52, 38, { ...kontur({ "stroke-width": 1.6 }), rx: 2, fill: C.metallTief }),
+    circle(78, 29, 8, { fill: C.tinte, "fill-opacity": 0.75, stroke: C.tinte, "stroke-width": 1.2 }),
+    circle(78, 29, 4, { fill: C.flamme }),
+    // Der Topf: Wand, Inhalt, Bügel. Erst der Topf macht aus der Platte einen Herd.
+    circle(101, 29, 12, { ...kontur({ "stroke-width": 1.8 }), fill: C.metall }),
+    circle(101, 29, 8.5, { fill: C.tuch, stroke: C.tinte, "stroke-width": 1 }),
+    path("M89 29 Q101 12 113 29", kontur({ "stroke-width": 1.6 })),
+    rect(70, 48, 40, 6, { fill: C.tinte, "fill-opacity": 0.8, stroke: C.tinte, "stroke-width": 1.2 }),
+    ellipse(90, 51, 10, 2, { fill: C.flamme, "fill-opacity": 0.85 }),
+  ].join(""));
+}
+
+function esse(name) {
+  const r = zufall(name);
+  const s = ZELLE * 2;
+  const teile = [
+    rect(16, 8, s - 32, 64, { ...kontur(), rx: 3, fill: C.stein }),
+    ...[[16, 30, 30, 30], [98, 30, 112, 30], [40, 8, 40, 20], [88, 8, 88, 20]].map(([x1, y1, x2, y2]) => line(x1, y1, x2, y2, feder({ stroke: C.steinTief, "stroke-width": 1.4 }))),
+    rect(54, 8, 20, 10, { fill: C.tinte, "fill-opacity": 0.6, stroke: C.tinte, "stroke-width": 1.4 }),
+    ellipse(64, 44, 30, 20, { fill: C.tinte, "fill-opacity": 0.82, stroke: C.tinte, "stroke-width": 1.8 }),
+  ];
+  // Das Kohlebett: Brocken, in der Mitte glühend.
+  for (let i = 0; i < 16; i++) {
+    const a = r.zahl(0, 6.28), d = r.zahl(0, 1);
+    teile.push(circle(64 + Math.cos(a) * d * 24, 44 + Math.sin(a) * d * 15, r.zahl(2, 3.6), { fill: d < 0.45 ? C.flamme : C.tinteHell, "fill-opacity": d < 0.45 ? 0.95 : 0.7 }));
+  }
+  teile.push(ellipse(64, 44, 9, 6, { fill: C.flamme, "fill-opacity": 0.6 }));
+  // Der Rauchfang hängt über dem Feuer: gestrichelt und obenauf, wie jede Kante über Kopfhöhe.
+  teile.push(poly([[10, 4], [s - 10, 4], [100, 78], [28, 78]], { fill: "none", stroke: C.tinte, "stroke-width": 1.6, "stroke-opacity": 0.75, "stroke-dasharray": "6 4", "stroke-linejoin": "round" }));
+  // Der Blasebalg links vorn, die Düse zeigt in die Glut.
+  teile.push(line(50, 84, 58, 62, { stroke: C.metallTief, "stroke-width": 3.4, "stroke-linecap": "round" }));
+  teile.push(path("M50 84 L28 90 Q14 98 18 112 Q24 124 38 118 Z", { ...kontur({ "stroke-width": 1.8 }), fill: C.holz }));
+  teile.push(path("M46 88 L31 94 Q22 100 24 110 Q28 118 37 114 Z", { fill: C.tuch, "fill-opacity": 0.8, stroke: C.tinte, "stroke-width": 1.1 }));
+  teile.push(line(20, 116, 12, 124, kontur({ "stroke-width": 2.4 })));
+  // Kohlenhaufen rechts vorn.
+  teile.push(ellipse(96, 104, 18, 11, { fill: C.tinteHell, "fill-opacity": 0.2 }));
+  for (let i = 0; i < 9; i++) teile.push(poly(klumpen(r, r.zahl(84, 108), r.zahl(98, 110), r.zahl(3, 5), 5, 0.3), { fill: C.tinte, "fill-opacity": 0.75, stroke: C.tinte, "stroke-width": 0.8 }));
+  return svg("Esse", s, s, teile.join(""));
+}
+
+function theke() {
+  const w = ZELLE * 3;
+  const teile = [
+    rect(4, 5, w - 8, 30, { ...kontur(), rx: 2, fill: C.holz }),
+    line(8, 12, w - 8, 12, feder({ stroke: C.holzTief, "stroke-width": 1.4 })),
+    // Das Fass mit Zapfhahn am linken Ende sagt "Schank", bevor jemand einen Krug findet.
+    circle(20, 20, 11, { ...kontur({ "stroke-width": 1.6 }), fill: C.holzTief }),
+    circle(20, 20, 6.5, feder({ stroke: C.metallTief, "stroke-width": 1.6 })),
+    line(31, 20, 38, 20, kontur({ "stroke-width": 2.4 })),
+    line(4, 40, w - 4, 40, { stroke: C.metallTief, "stroke-width": 2.4, "stroke-linecap": "round" }),
+  ];
+  for (const x of [56, 84, 122, 158]) {
+    teile.push(path(`M${x + 5} 19 Q${x + 11} 22 ${x + 5} 27`, kontur({ "stroke-width": 1.6 })));
+    teile.push(circle(x, 23, 6, { ...kontur({ "stroke-width": 1.5 }), fill: C.holzTief }));
+    teile.push(circle(x, 23, 4, { fill: C.pergament }));
+  }
+  for (const x of [48, 96, 144]) teile.push(circle(x, 52, 7, { ...kontur({ "stroke-width": 1.6 }), fill: C.holz }));
+  return svg("Theke", w, ZELLE, teile.join(""));
+}
+
+/** Kirchenbank: Rückenlehne hinten, Sitz, Wangen, Kniebrett vorn. */
+function kirchbank(zellen) {
+  const w = ZELLE * zellen;
+  const teile = [
+    rect(12, 46, w - 24, 8, { ...kontur({ "stroke-width": 1.4 }), rx: 1.5, fill: C.holzTief }),
+    rect(8, 14, w - 16, 22, { ...kontur(), rx: 2, fill: C.holz }),
+    line(12, 22, w - 12, 22, feder({ stroke: C.holzTief })),
+    line(12, 29, w - 12, 29, feder({ stroke: C.holzTief })),
+    rect(8, 7, w - 16, 7, { ...kontur({ "stroke-width": 1.8 }), rx: 1.5, fill: C.holzTief }),
+    rect(4, 6, 7, 36, { ...kontur({ "stroke-width": 1.6 }), rx: 2, fill: C.holzTief }),
+    rect(w - 11, 6, 7, 36, { ...kontur({ "stroke-width": 1.6 }), rx: 2, fill: C.holzTief }),
+  ];
+  for (let i = 1; i < zellen; i++) teile.push(line(i * ZELLE, 14, i * ZELLE, 36, feder({ stroke: C.holzTief, "stroke-width": 1.6 })));
+  return svg(zellen > 2 ? "Kirchenbank, lang" : "Kirchenbank", w, ZELLE, teile.join(""));
+}
+
+/** Rautenborte zwischen zwei Punkten. Trägt die Muster aller drei Teppiche. */
+function rautenreihe(x0, y0, x1, y1, schritt, halb, farbe) {
+  const l = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / l, uy = (y1 - y0) / l, anzahl = Math.floor(l / schritt);
+  const rest = (l - anzahl * schritt) / 2;
+  return Array.from({ length: anzahl }, (_, i) => {
+    const t = rest + (i + 0.5) * schritt, cx = x0 + ux * t, cy = y0 + uy * t;
+    return poly([[cx - ux * halb, cy - uy * halb], [cx - uy * halb * 0.8, cy + ux * halb * 0.8], [cx + ux * halb, cy + uy * halb], [cx + uy * halb * 0.8, cy - ux * halb * 0.8]], { fill: farbe, stroke: C.tinte, "stroke-width": 0.6, "stroke-opacity": 0.5 });
+  }).join("");
+}
+
+function fransen(x, y0, y1, links) {
+  const teile = [];
+  for (let y = y0; y <= y1; y += 4) teile.push(line(x, y, x + (links ? -5 : 5), y, feder({ stroke: C.tinteHell, "stroke-width": 1 })));
+  return teile.join("");
+}
+
+function teppich() {
+  const w = ZELLE * 3, h = ZELLE * 2;
+  return svg("Teppich", w, h, [
+    fransen(14, 18, h - 18, true), fransen(w - 14, 18, h - 18, false),
+    rect(14, 10, w - 28, h - 20, { ...kontur({ "stroke-width": 1.6 }), rx: 2, fill: C.tuch }),
+    rect(22, 18, w - 44, h - 36, { fill: C.pergamentTief, stroke: C.tinte, "stroke-width": 1, "stroke-opacity": 0.6 }),
+    rautenreihe(26, 14, w - 26, 14, 12, 3.4, C.pergamentTief),
+    rautenreihe(26, h - 14, w - 26, h - 14, 12, 3.4, C.pergamentTief),
+    rautenreihe(18, 22, 18, h - 22, 12, 3.4, C.pergamentTief),
+    rautenreihe(w - 18, 22, w - 18, h - 22, 12, 3.4, C.pergamentTief),
+    rect(30, 26, w - 60, h - 52, { fill: C.tuch, "fill-opacity": 0.85, stroke: "none" }),
+    // Das Mittelmedaillon und vier Eckzwickel: das Muster, an dem man einen Teppich erkennt.
+    poly([[w / 2, 32], [w / 2 + 40, h / 2], [w / 2, h - 32], [w / 2 - 40, h / 2]], { fill: C.pergamentTief, stroke: C.tinte, "stroke-width": 1.2 }),
+    poly([[w / 2, 42], [w / 2 + 26, h / 2], [w / 2, h - 42], [w / 2 - 26, h / 2]], { fill: C.wasserTief, stroke: C.tinte, "stroke-width": 1 }),
+    circle(w / 2, h / 2, 6, { fill: C.flamme, stroke: C.tinte, "stroke-width": 1 }),
+    ...[[30, 26, 1, 1], [w - 30, 26, -1, 1], [30, h - 26, 1, -1], [w - 30, h - 26, -1, -1]].map(([x, y, sx, sy]) => poly([[x, y], [x + sx * 22, y], [x, y + sy * 18]], { fill: C.pergamentTief, stroke: C.tinte, "stroke-width": 0.9, "stroke-opacity": 0.7 })),
+  ].join(""));
+}
+
+function teppichKlein() {
+  const s = ZELLE * 2, m = s / 2;
+  const teile = [circle(m, m, 54, { ...kontur({ "stroke-width": 1.6 }), fill: C.wasserTief })];
+  teile.push(circle(m, m, 46, { fill: C.pergamentTief, stroke: C.tinte, "stroke-width": 1, "stroke-opacity": 0.6 }));
+  // Ein Rautenkranz auf der Borte, dann ein Stern im Feld. Rund, damit die Kammer ihn vom Saalteppich unterscheidet.
+  for (let i = 0; i < 20; i++) {
+    const a = (i / 20) * Math.PI * 2, cx = m + Math.cos(a) * 50, cy = m + Math.sin(a) * 50;
+    teile.push(circle(cx, cy, 1.8, { fill: C.pergament }));
+  }
+  teile.push(circle(m, m, 40, { fill: C.wasserTief, "fill-opacity": 0.85, stroke: "none" }));
+  teile.push(poly(Array.from({ length: 16 }, (_, k) => {
+    const a = (k / 16) * Math.PI * 2 - Math.PI / 2, rr = k % 2 === 0 ? 32 : 16;
+    return [m + Math.cos(a) * rr, m + Math.sin(a) * rr];
+  }), { fill: C.pergamentTief, stroke: C.tinte, "stroke-width": 1.1 }));
+  teile.push(circle(m, m, 9, { fill: C.tuch, stroke: C.tinte, "stroke-width": 1 }));
+  return svg("Teppich, klein", s, s, teile.join(""));
+}
+
+function laeufer() {
+  const h = ZELLE * 3;
+  return svg("Läufer", ZELLE, h, [
+    fransen2(18, 46, 8, true), fransen2(18, 46, h - 8, false),
+    rect(16, 8, 32, h - 16, { ...kontur({ "stroke-width": 1.6 }), rx: 1.5, fill: C.tuch }),
+    line(21, 12, 21, h - 12, { stroke: C.pergamentTief, "stroke-width": 2 }),
+    line(43, 12, 43, h - 12, { stroke: C.pergamentTief, "stroke-width": 2 }),
+    rautenreihe(32, 14, 32, h - 14, 16, 7, C.pergamentTief),
+  ].join(""));
+}
+
+/** Fransen an der Stirnseite eines Läufers, quer statt längs. */
+function fransen2(x0, x1, y, oben) {
+  const teile = [];
+  for (let x = x0; x <= x1; x += 4) teile.push(line(x, y, x, y + (oben ? -5 : 5), feder({ stroke: C.tinteHell, "stroke-width": 1 })));
+  return teile.join("");
+}
+
+function schrank() {
+  const w = ZELLE * 2;
+  const teile = [
+    rect(8, 4, w - 16, 46, { ...kontur(), rx: 2, fill: C.holz }),
+    // Die Kleiderstange mit Bügeln: das Planzeichen, an dem jeder einen Schrank erkennt.
+    line(16, 20, w - 16, 20, { stroke: C.metallTief, "stroke-width": 1.8, "stroke-linecap": "round" }),
+  ];
+  for (let x = 22; x <= w - 22; x += 7) teile.push(line(x, 10, x, 32, feder({ stroke: C.holzTief, "stroke-width": 1.6 })));
+  teile.push(rect(8, 36, 56, 14, { ...kontur({ "stroke-width": 1.6 }), rx: 1.5, fill: C.holzTief }));
+  teile.push(rect(64, 36, 56, 14, { ...kontur({ "stroke-width": 1.6 }), rx: 1.5, fill: C.holzTief }));
+  teile.push(circle(58, 43, 2.2, { fill: C.metall, stroke: C.tinte, "stroke-width": 0.8 }));
+  teile.push(circle(70, 43, 2.2, { fill: C.metall, stroke: C.tinte, "stroke-width": 0.8 }));
+  return svg("Schrank", w, ZELLE, teile.join(""));
+}
+
+function webstuhl() {
+  const w = ZELLE * 2;
+  const teile = [
+    rect(10, 6, 7, 44, { ...kontur({ "stroke-width": 1.6 }), rx: 1.5, fill: C.holzTief }),
+    rect(w - 17, 6, 7, 44, { ...kontur({ "stroke-width": 1.6 }), rx: 1.5, fill: C.holzTief }),
+  ];
+  for (let x = 22; x <= w - 22; x += 4) teile.push(line(x, 14, x, 40, { stroke: C.tinteHell, "stroke-width": 0.9 }));
+  // Kettbaum hinten, Schaft quer, das gewebte Stück vorn am Brustbaum.
+  teile.push(rect(12, 6, w - 24, 8, { ...kontur({ "stroke-width": 1.6 }), rx: 3, fill: C.holz }));
+  teile.push(rect(14, 22, w - 28, 4, { ...kontur({ "stroke-width": 1.2 }), fill: C.holzTief }));
+  teile.push(rect(22, 30, w - 44, 11, { fill: C.tuch, stroke: C.tinte, "stroke-width": 1 }));
+  for (let y = 32.5; y < 41; y += 2.6) teile.push(line(22, y, w - 22, y, { stroke: C.pergament, "stroke-width": 0.7, "stroke-opacity": 0.7 }));
+  teile.push(ellipse(84, 28, 10, 2.6, { ...kontur({ "stroke-width": 1.2 }), fill: C.holz }));
+  teile.push(rect(12, 41, w - 24, 8, { ...kontur({ "stroke-width": 1.6 }), rx: 3, fill: C.holz }));
+  teile.push(rect(38, 52, w - 76, 8, { ...kontur({ "stroke-width": 1.6 }), rx: 2, fill: C.holz }));
+  return svg("Webstuhl", w, ZELLE, teile.join(""));
+}
+
+function trog() {
+  return svg("Trog", ZELLE, ZELLE, [
+    rect(10, 16, 44, 32, { ...kontur({ "stroke-width": 2.2 }), rx: 3, fill: C.stein }),
+    rect(16, 22, 32, 20, { fill: C.wasser, stroke: C.wasserTief, "stroke-width": 1.4, rx: 2 }),
+    path("M19 30 Q25 27 31 30 T43 30", feder({ stroke: C.pergament, "stroke-width": 1.2, "stroke-opacity": 0.8 })),
+    path("M21 36 Q27 33 33 36 T45 36", feder({ stroke: C.wasserTief, "stroke-width": 1.1 })),
+    line(14, 19, 50, 19, feder({ stroke: C.steinTief, "stroke-width": 1 })),
+  ].join(""));
+}
+
+function nachttisch() {
+  return svg("Nachttisch", ZELLE, ZELLE, [
+    rect(15, 8, 34, 34, { ...kontur(), rx: 2, fill: C.holz }),
+    line(15, 36, 49, 36, feder({ stroke: C.holzTief, "stroke-width": 1.4 })),
+    circle(32, 39, 1.6, { fill: C.metallTief }),
+    circle(32, 22, 8, { ...kontur({ "stroke-width": 1.4 }), fill: C.metall }),
+    circle(32, 22, 4, { fill: C.pergament, stroke: C.tinte, "stroke-width": 1 }),
+    ellipse(32, 21.4, 1.6, 2.6, { fill: C.flamme }),
+  ].join(""));
+}
+
+function bank() {
+  const w = ZELLE * 2;
+  return svg("Bank", w, ZELLE, [
+    rect(12, 20, 6, 24, { ...kontur({ "stroke-width": 1.4 }), fill: C.holzTief }),
+    rect(w - 18, 20, 6, 24, { ...kontur({ "stroke-width": 1.4 }), fill: C.holzTief }),
+    rect(8, 23, w - 16, 18, { ...kontur(), rx: 2, fill: C.holz }),
+    line(12, 32, w - 12, 32, feder({ stroke: C.holzTief, "stroke-width": 1.4 })),
+  ].join(""));
+}
+
+function werkzeugwand() {
+  const w = ZELLE * 2;
+  const teile = [rect(6, 5, w - 12, 38, { ...kontur({ "stroke-width": 1.8 }), fill: C.holzTief })];
+  for (const x of [22, 46, 70, 94, 112]) teile.push(circle(x, 10, 1.8, { fill: C.tinte }));
+  // Hammer, Zange, Vorschlaghammer, Zange, Hufeisen — an Haken, Kopf oder Maul nach oben.
+  const hammer = (x, kopf) => [
+    line(x, 12, x, 38, { stroke: C.holz, "stroke-width": 3, "stroke-linecap": "round" }),
+    rect(x - kopf, 9, kopf * 2, 7, { ...kontur({ "stroke-width": 1.3 }), rx: 1, fill: C.metallTief }),
+  ].join("");
+  const zange = (x) => [
+    path(`M${x - 5} 38 L${x + 1} 16 L${x - 1} 11`, kontur({ "stroke-width": 2.2, stroke: C.metallTief })),
+    path(`M${x + 5} 38 L${x - 1} 16 L${x + 1} 11`, kontur({ "stroke-width": 2.2, stroke: C.metallTief })),
+    circle(x, 20, 1.5, { fill: C.tinte }),
+  ].join("");
+  teile.push(hammer(22, 6), zange(46), hammer(70, 9), zange(94));
+  teile.push(path("M106 16 Q106 30 112 30 Q118 30 118 16", kontur({ "stroke-width": 3, stroke: C.metallTief })));
+  return svg("Werkzeugwand", w, ZELLE, teile.join(""));
+}
+
+function weinregal() {
+  const w = ZELLE * 3;
+  const teile = [rect(4, 5, w - 8, 46, { ...kontur(), rx: 2, fill: C.holzTief })];
+  // Liegende Fässer, Boden nach vorn: Dauben, zwei Reifen, Spund.
+  for (const x of [10, 42, 74]) {
+    teile.push(rect(x, 9, 28, 38, { ...kontur({ "stroke-width": 1.6 }), rx: 9, fill: C.holz }));
+    teile.push(line(x + 1, 17, x + 27, 17, { stroke: C.metallTief, "stroke-width": 1.8 }));
+    teile.push(line(x + 1, 39, x + 27, 39, { stroke: C.metallTief, "stroke-width": 1.8 }));
+    teile.push(line(x + 14, 10, x + 14, 46, feder({ stroke: C.holzTief })));
+    teile.push(circle(x + 14, 28, 2.2, { fill: C.holzTief, stroke: C.tinte, "stroke-width": 0.8 }));
+  }
+  // Daneben die Flaschenfächer: Rautengitter, in jedem Fach ein Flaschenboden.
+  teile.push(rect(108, 9, w - 116, 38, { fill: C.tinte, "fill-opacity": 0.55, stroke: C.tinte, "stroke-width": 1.4 }));
+  for (let x = 112; x <= w - 14; x += 9) for (const y of [15, 24, 33, 42]) {
+    teile.push(circle(x + 2.5, y, 3.1, { fill: C.gruenTief, stroke: C.tinte, "stroke-width": 0.8 }));
+    teile.push(circle(x + 2.5, y, 1.2, { fill: C.pergament, "fill-opacity": 0.7 }));
+  }
+  return svg("Weinregal", w, ZELLE, teile.join(""));
+}
+
+function fenster() {
+  const teile = [
+    rect(2, 24, 9, 16, { ...kontur({ "stroke-width": 1.6 }), fill: C.stein }),
+    rect(ZELLE - 11, 24, 9, 16, { ...kontur({ "stroke-width": 1.6 }), fill: C.stein }),
+    rect(11, 27, ZELLE - 22, 10, { fill: C.wasser, "fill-opacity": 0.9, stroke: C.tinte, "stroke-width": 1.4 }),
+  ];
+  // Bleiverglasung: Rauten über die ganze Scheibe, von Hand an den Scheibenrand gekappt (das Paket
+  // kennt keine clipPath), dann die Kontur noch einmal obenauf.
+  const links = 11, rechts = ZELLE - 11, blei = { stroke: C.tinte, "stroke-width": 0.8, "stroke-opacity": 0.7 };
+  for (let x = links - 10; x < rechts; x += 7) {
+    const x0 = Math.max(x, links), x1 = Math.min(x + 10, rechts);
+    if (x1 <= x0) continue;
+    teile.push(line(x0, 27 + (x0 - x), x1, 27 + (x1 - x), blei));
+    teile.push(line(x0, 37 - (x0 - x), x1, 37 - (x1 - x), blei));
+  }
+  teile.push(line(32, 27, 32, 37, { stroke: C.tinte, "stroke-width": 1.6 }));
+  teile.push(rect(11, 27, ZELLE - 22, 10, kontur({ "stroke-width": 1.4 })));
+  teile.push(line(14, 29.5, 26, 29.5, { stroke: C.pergament, "stroke-width": 1, "stroke-opacity": 0.8 }));
+  return svg("Fenster", ZELLE, ZELLE, teile.join(""));
+}
+
+// ---------------------------------------------------------------------------------------------
 // The catalogue. `einheiten` is the placement footprint in grid cells, not a drawing hint.
 // ---------------------------------------------------------------------------------------------
 
@@ -1124,6 +1433,26 @@ const KATALOG = [
   { name: "figur_schwarm", art: "figur", einheiten: [1, 1], schlagworte: ["schwarm", "viele", "klein"], zeichne: () => figurSchwarm("figur_schwarm") },
   { name: "figur_bestie", art: "figur", einheiten: [2, 2], schlagworte: ["bestie", "tier", "gross"], zeichne: figurBestie },
   { name: "figur_riese", art: "figur", einheiten: [2, 2], schlagworte: ["riese", "gross", "bestie"], zeichne: figurRiese },
+
+  // -- 1.3.0 Häuser mit Geschossen: Feuerstellen, Schank, Kirche, Kammer, Werkstatt, Fenster ----
+  // Hinten angehängt, nie einsortiert: `find` über Schlagworte trifft weiter dasselbe erste Stück.
+  { name: "kamin", art: "moebel", einheiten: [2, 1], schlagworte: ["kamin", "feuer", "wohnraum", "warm"], zeichne: kamin },
+  { name: "herd", art: "moebel", einheiten: [2, 1], schlagworte: ["herd", "feuer", "kueche"], zeichne: herd },
+  { name: "esse", art: "moebel", einheiten: [2, 2], schlagworte: ["esse", "feuer", "schmiede", "handwerk"], zeichne: () => esse("esse") },
+  { name: "theke", art: "moebel", einheiten: [3, 1], schlagworte: ["theke", "schank", "mahl"], zeichne: theke },
+  { name: "kirchbank", art: "moebel", einheiten: [2, 1], schlagworte: ["kirchbank", "sitz", "kult"], zeichne: () => kirchbank(2) },
+  { name: "kirchbank_lang", art: "moebel", einheiten: [3, 1], schlagworte: ["kirchbank", "sitz", "kult", "lang"], zeichne: () => kirchbank(3) },
+  { name: "teppich", art: "aufbau", einheiten: [3, 2], schlagworte: ["teppich", "wohnraum", "boden"], zeichne: teppich },
+  { name: "teppich_klein", art: "aufbau", einheiten: [2, 2], schlagworte: ["teppich", "kammer", "boden"], zeichne: teppichKlein },
+  { name: "laeufer", art: "aufbau", einheiten: [1, 3], schlagworte: ["laeufer", "teppich", "flur"], zeichne: laeufer },
+  { name: "schrank", art: "moebel", einheiten: [2, 1], schlagworte: ["schrank", "kammer", "lager"], zeichne: schrank },
+  { name: "webstuhl", art: "moebel", einheiten: [2, 1], schlagworte: ["webstuhl", "handwerk", "kammer"], zeichne: webstuhl },
+  { name: "trog", art: "gefaess", einheiten: [1, 1], schlagworte: ["trog", "wasser", "schmiede"], zeichne: trog },
+  { name: "nachttisch", art: "moebel", einheiten: [1, 1], schlagworte: ["nachttisch", "kammer"], zeichne: nachttisch },
+  { name: "bank", art: "moebel", einheiten: [2, 1], schlagworte: ["bank", "sitz", "halle"], zeichne: bank },
+  { name: "werkzeugwand", art: "moebel", einheiten: [2, 1], schlagworte: ["werkzeug", "handwerk", "schmiede"], zeichne: werkzeugwand },
+  { name: "weinregal", art: "moebel", einheiten: [3, 1], schlagworte: ["weinregal", "vorrat", "keller"], zeichne: weinregal },
+  { name: "fenster", art: "aufbau", einheiten: [1, 1], schlagworte: ["fenster", "wand"], zeichne: fenster },
 ];
 
 // Lowercase by contract: `assetpaket.ts` rejects mixed-case paths so that a pack authored on

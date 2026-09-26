@@ -2261,6 +2261,466 @@
         "bestie"
       ],
       "sha256": "d590c6d3dc0601f117fe24544f7a2ef87be6c5abf2a4015bf25d8d536f4e1960"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1975,
+      "datei": "moebel/kamin.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kamin",
+      "schlagworte": [
+        "kamin",
+        "feuer",
+        "wohnraum",
+        "warm"
+      ],
+      "sha256": "3a4b8316e56d7a89fceceed7287c3d1eec4206f3728ab09666039b2883b33d3e"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1645,
+      "datei": "moebel/herd.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "herd",
+      "schlagworte": [
+        "herd",
+        "feuer",
+        "kueche"
+      ],
+      "sha256": "dc297e0ac3d3a59a4c09b5e2592335d2c0e85e7b6534123d283d14ba57e63296"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "moebel",
+      "bytes": 4311,
+      "datei": "moebel/esse.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "esse",
+      "schlagworte": [
+        "esse",
+        "feuer",
+        "schmiede",
+        "handwerk"
+      ],
+      "sha256": "034526dd2bd599cc955d7c57d83915778e2a44f04c296341aa2b402a26d0e25e"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2439,
+      "datei": "moebel/theke.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "theke",
+      "schlagworte": [
+        "theke",
+        "schank",
+        "mahl"
+      ],
+      "sha256": "b4e8daa919f9aa3e5d3db6eccd5cad58cc8fa29535e2e9950910329d30aa32f1"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1194,
+      "datei": "moebel/kirchbank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kirchbank",
+      "schlagworte": [
+        "kirchbank",
+        "sitz",
+        "kult"
+      ],
+      "sha256": "adb1f23efc26af773bbea06037dc14b2611e9001fa6a9c1c4748a3bb7b70b4ee"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1312,
+      "datei": "moebel/kirchbank_lang.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "kirchbank_lang",
+      "schlagworte": [
+        "kirchbank",
+        "sitz",
+        "kult",
+        "lang"
+      ],
+      "sha256": "d884ef3fc6e4a20122c3c2eb20c94116089f5f11fc844e6a2e719301ad5b75ed"
+    },
+    {
+      "anker": [
+        96,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 11031,
+      "datei": "aufbau/teppich.svg",
+      "einheiten": [
+        3,
+        2
+      ],
+      "groesse": [
+        192,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "teppich",
+      "schlagworte": [
+        "teppich",
+        "wohnraum",
+        "boden"
+      ],
+      "sha256": "8c6846a3d7c329b71173e4ee23796013c6be9c7b0b1f91c825e6cbae2c4d1f6f"
+    },
+    {
+      "anker": [
+        64,
+        64
+      ],
+      "art": "aufbau",
+      "bytes": 1823,
+      "datei": "aufbau/teppich_klein.svg",
+      "einheiten": [
+        2,
+        2
+      ],
+      "groesse": [
+        128,
+        128
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "teppich_klein",
+      "schlagworte": [
+        "teppich",
+        "kammer",
+        "boden"
+      ],
+      "sha256": "bbfc961c7782c707fd11dc612dd3cf10f9cd0318f74756c7b2e9226a6d9a6299"
+    },
+    {
+      "anker": [
+        32,
+        96
+      ],
+      "art": "aufbau",
+      "bytes": 3353,
+      "datei": "aufbau/laeufer.svg",
+      "einheiten": [
+        1,
+        3
+      ],
+      "groesse": [
+        64,
+        192
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "laeufer",
+      "schlagworte": [
+        "laeufer",
+        "teppich",
+        "flur"
+      ],
+      "sha256": "045c9a4626e6ba0e8c760cd4c7497e061ace2d4cc0baee6c1c4f59bcc3335666"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 2263,
+      "datei": "moebel/schrank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "schrank",
+      "schlagworte": [
+        "schrank",
+        "kammer",
+        "lager"
+      ],
+      "sha256": "0d6f04d1ef7af41c9feda6615528a7b4ed6b5f40641a952c1dda8e414afed20b"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 3296,
+      "datei": "moebel/webstuhl.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "webstuhl",
+      "schlagworte": [
+        "webstuhl",
+        "handwerk",
+        "kammer"
+      ],
+      "sha256": "dc7b0efec34b590f5512b60196043bd2a1fc5d2ef67cf6b99b6b30d68ceebe0e"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "gefaess",
+      "bytes": 710,
+      "datei": "gefaess/trog.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "trog",
+      "schlagworte": [
+        "trog",
+        "wasser",
+        "schmiede"
+      ],
+      "sha256": "fc1a79ce08e20beb376e41fb1e8a0007cd88040b97032d28ce4534c2b7f4ce2d"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 692,
+      "datei": "moebel/nachttisch.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "nachttisch",
+      "schlagworte": [
+        "nachttisch",
+        "kammer"
+      ],
+      "sha256": "ff9a333766b64af91bbaa69351c3f8dae42018183d054a7aa64fccb2c6dac514"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 655,
+      "datei": "moebel/bank.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "bank",
+      "schlagworte": [
+        "bank",
+        "sitz",
+        "halle"
+      ],
+      "sha256": "d7b364a3b67e234d127579cca27b764d5caa1bc7a61b93f19f0c5a15bf071d09"
+    },
+    {
+      "anker": [
+        64,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 1736,
+      "datei": "moebel/werkzeugwand.svg",
+      "einheiten": [
+        2,
+        1
+      ],
+      "groesse": [
+        128,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "werkzeugwand",
+      "schlagworte": [
+        "werkzeug",
+        "handwerk",
+        "schmiede"
+      ],
+      "sha256": "54df2e369f7349eb465b6166339f02001ff67e8698ce7f080564024ea6e0ed65"
+    },
+    {
+      "anker": [
+        96,
+        32
+      ],
+      "art": "moebel",
+      "bytes": 6882,
+      "datei": "moebel/weinregal.svg",
+      "einheiten": [
+        3,
+        1
+      ],
+      "groesse": [
+        192,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "weinregal",
+      "schlagworte": [
+        "weinregal",
+        "vorrat",
+        "keller"
+      ],
+      "sha256": "1540124adf9ce107a6a126ac571785c49d736aa4c297e9582cba903c77a46995"
+    },
+    {
+      "anker": [
+        32,
+        32
+      ],
+      "art": "aufbau",
+      "bytes": 2166,
+      "datei": "aufbau/fenster.svg",
+      "einheiten": [
+        1,
+        1
+      ],
+      "groesse": [
+        64,
+        64
+      ],
+      "kachelbar": false,
+      "lizenz": null,
+      "mimeType": "image/svg+xml",
+      "name": "fenster",
+      "schlagworte": [
+        "fenster",
+        "wand"
+      ],
+      "sha256": "176f914ed0b741beac800438258db3e7b0994b67888e0e801182ca8c596f6bdf"
     }
   ],
   "id": "pk.grundriss",
@@ -2276,6 +2736,6 @@
   "schemaVersion": 1,
   "titel": "Grundriss — schematische Tuschesymbole für taktische Karten: Bau, Natur, Ausrüstung, Wand und Figur",
   "urheber": "Chronicle",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "zellgroesse": 64
 }
