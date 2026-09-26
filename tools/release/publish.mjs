@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-export const VERSION = '0.5.1', REPOSITORY = 'KTY137/Atlas_Chronicles';
+export const VERSION = '0.6.0', REPOSITORY = 'KTY137/Atlas_Chronicles';
 export const REQUIRED = ['gate', 'gui-validation', 'map-studio', 'regelwerk', 'windows-package'];
 export const FILES = ['Atlas-Chronicles-Setup.exe', 'SHA256SUMS.txt', 'release-evidence.json'];
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
