@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { useEffect, useState } from "react";
-import type { Formula, FormulaType } from "@chronicle/rules";
+import { RULE_LIMITS, type Formula, type FormulaType } from "@chronicle/rules";
 import { t } from "../i18n";
 import { FUNCTION_HELP, memberOptionLabel, memberUnusable, type FormulaOptions, type FormulaSources } from "./formula-sugar";
 import { formulaGraph, moveSubtree, nodeAt, removeAt, replaceAt, wrapAt, GAP_X, NODE_HEIGHT, NODE_WIDTH, type GraphNode, type NodePath } from "./formula-graph-model";
@@ -194,7 +194,7 @@ function NodeEditor({
       {current.kind === "literal" && typeof current.value === "string" ? (
         <label>
           {t("Text")}
-          <input value={current.value} maxLength={4096} onChange={event => onReplace({ kind: "literal", value: event.target.value })} />
+          <input value={current.value} maxLength={RULE_LIMITS.formulaLength} onChange={event => onReplace({ kind: "literal", value: event.target.value })} />
         </label>
       ) : null}
       {current.kind === "dice" ? (

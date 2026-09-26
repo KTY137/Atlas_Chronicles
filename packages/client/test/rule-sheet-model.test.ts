@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { D20_REFERENCE_PACKAGE, stableJson, type RulePresentationNode } from "@chronicle/rules";
+import { D20_REFERENCE_PACKAGE, RULE_LIMITS, stableJson, type RulePresentationNode } from "@chronicle/rules";
 import { compilePackage, newField, newPackage, packageDraft, validateDraft } from "../src/features/rule-forge-model";
 import { isOnSheet, placeOnSheet, sectionsFromTree, sheetTree, syncSheetWithFields, withSheetTree } from "../src/features/rule-sheet-model";
 
@@ -42,9 +42,9 @@ describe("der Bogen hat eine Wahrheit", () => {
     ]);
   });
 
-  it("hält sich an die Grenze von 64 Abschnitten", () => {
-    const groups: RulePresentationNode[] = Array.from({ length: 70 }, (_, i) => ({ kind: "group", id: `g${i}`, label: `G${i}`, children: [] }));
-    expect(sectionsFromTree(groups, [])).toHaveLength(64);
+  it("hält sich an die Abschnittsgrenze der Regelmaschine", () => {
+    const groups: RulePresentationNode[] = Array.from({ length: RULE_LIMITS.sections + 6 }, (_, i) => ({ kind: "group", id: `g${i}`, label: `G${i}`, children: [] }));
+    expect(sectionsFromTree(groups, [])).toHaveLength(RULE_LIMITS.sections);
   });
 
   it("legt einen neuen Balken sofort auf den Bogen, oben zu den anderen Balken (Befund 6)", () => {

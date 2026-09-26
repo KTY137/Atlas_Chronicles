@@ -105,7 +105,7 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
       <h3>{fixture.name}</h3>
       {canRemove ? <Button variant="quiet" aria-label={t("Testfigur {name} entfernen", { name: fixture.name })} onClick={onRemove}><Trash2 size={14} />{t("Entfernen")}</Button> : null}
     </div>
-    <label>{t("Name der Testfigur")}<input value={fixture.name} maxLength={120} onChange={e => onChange({ name: e.target.value })} /></label>
+    <label>{t("Name der Testfigur")}<input value={fixture.name} maxLength={RULE_LIMITS.label} onChange={e => onChange({ name: e.target.value })} /></label>
     <LiveSheet pkg={pkg} fixture={fixture} onChange={next => onChange({ values: next })} />
     {Object.keys(sichtbareEingaben(pkg, action.inputs)).length ? <fieldset className="rf-sheet-section"><legend>{t("Eingaben: {name}", { name: action.name })}</legend><RuleFields fields={sichtbareEingaben(pkg, action.inputs)} values={inputs} onChange={next => onChange({ inputs: { ...fixture.inputs, [actionId]: next } })} /></fieldset> : null}
     <fieldset className="rf-sheet-section"><legend>{t("Gehaltene Beispielpassagen")}</legend>
@@ -120,7 +120,7 @@ function FixturePanel({ pkg, actionId, fixture, seed, canRemove, onChange, onRem
     </fieldset>
     {evaluation.error !== undefined ? <Notice error>{`${fixture.name}: ${evaluation.error}`}</Notice> : <>
       <FixtureResult result={evaluation.result} action={action} />
-      {onSaveTest ? <div className="rf-save-test"><label>{t("Testname")}<input value={testName} placeholder={`${fixture.name}: ${action.name}`} maxLength={120} onChange={e => setTestName(e.target.value)} /></label><Button onClick={() => onSaveTest(copyJson({ name: testName.trim() || `${fixture.name}: ${action.name}`.slice(0, 120), actionId, context: evaluation.result.context, expectedTotal: evaluation.result.total,
+      {onSaveTest ? <div className="rf-save-test"><label>{t("Testname")}<input value={testName} placeholder={`${fixture.name}: ${action.name}`} maxLength={RULE_LIMITS.label} onChange={e => setTestName(e.target.value)} /></label><Button onClick={() => onSaveTest(copyJson({ name: testName.trim() || `${fixture.name}: ${action.name}`.slice(0, RULE_LIMITS.label), actionId, context: evaluation.result.context, expectedTotal: evaluation.result.total,
         ...(evaluation.result.schemaVersion === 2 ? { ...(evaluation.result.success !== undefined ? { expectedSuccess: evaluation.result.success } : {}), ...(evaluation.result.outcome ? { expectedOutcomeId: evaluation.result.outcome.id } : {}) } : {}) }))}>{t("Als Pakettest speichern")}</Button></div> : null}
     </>}
   </article>;

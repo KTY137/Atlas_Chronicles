@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, FolderPlus, Plus, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
-import type { RulePresentationGroup, RulePresentationNode, RulePresentationRender } from "@chronicle/rules";
+import { RULE_LIMITS, type RulePresentationGroup, type RulePresentationNode, type RulePresentationRender } from "@chronicle/rules";
 import { t } from "../i18n";
 import { desugarFormula, resugarFormula } from "./formula-sugar";
 import { uniqueId, type RuleDraft } from "./rule-forge-model";
@@ -150,7 +150,7 @@ export function RuleSheetEditor({ draft, onChange, disabled = false, preview }: 
           <Button variant="quiet" disabled={flat.length <= 1} onClick={() => remove(selected)}><Trash2 size={14} />{node.kind === "group" ? t("Kategorie auflösen") : t("Vom Bogen nehmen")}</Button></span></div>
         {node.kind === "group" ? <p className="rf-help">{t("Auflösen nimmt nur die Kategorie weg; ihr Inhalt rückt an ihre Stelle.")}</p> : null}
         <div className="rf-form-grid">
-          <label>{node.kind === "group" ? t("Titel") : t("Beschriftung (optional)")}<input value={node.label ?? ""} maxLength={120} onChange={event => update(node.id, current => current.kind === "group" ? { ...current, label: event.target.value } : withOptionalNodeText(current, "label", event.target.value))} />{node.kind !== "group" ? <small>{t("Leer heißt: der Name aus dem Regelwerk.")}</small> : null}</label>
+          <label>{node.kind === "group" ? t("Titel") : t("Beschriftung (optional)")}<input value={node.label ?? ""} maxLength={RULE_LIMITS.label} onChange={event => update(node.id, current => current.kind === "group" ? { ...current, label: event.target.value } : withOptionalNodeText(current, "label", event.target.value))} />{node.kind !== "group" ? <small>{t("Leer heißt: der Name aus dem Regelwerk.")}</small> : null}</label>
           <label>{t("Darstellung")}<select value={node.render ?? "section"} onChange={event => update(node.id, current => ({ ...current, render: event.target.value as RulePresentationRender } as RulePresentationNode))}>{renders.map(render => <option key={render} value={render}>{renderLabel(render)}</option>)}</select></label>
           <label>{t("Kategorie")}<select value={selected.parentId ?? ""} onChange={event => commitRoot(moveNode(root, node.id, event.target.value || null))}><option value="">{t("Oberste Ebene")}</option>{groups.filter(group => !blockedParents.has(group.node.id)).map(group => <option key={group.node.id} value={group.node.id}>{nodeName(group.node, draft)}</option>)}</select></label>
           {"ref" in node ? <label>{t("Zeigt")}<select value={node.ref} onChange={event => update(node.id, current => ({ ...current, ref: event.target.value } as RulePresentationNode))}>{refs.map(ref => <option key={ref.id} value={ref.id}>{ref.label}</option>)}</select></label> : null}

@@ -109,7 +109,9 @@ describe("Prüfung des Pakets", () => {
     expect(() => paket(roh => { (roh.abilities as Record<string, unknown>[])[1]!.requires = ["unbekannt"]; })).toThrow(/unbekannt/);
     expect(() => paket(roh => { (roh.abilityRules as Record<string, unknown>).abilityField = "athletik"; })).toThrow(/abilityField/);
     expect(() => paket(roh => { ((roh.abilities as Record<string, unknown>[])[0]!.modifiers as Record<string, unknown>[])[0]!.value = "1d6"; })).toThrow(/dice/);
-    expect(() => paket(roh => { (roh.abilities as Record<string, unknown>[])[0]!.rank = 4; })).toThrow(/rank/);
+    for (const rank of [rules.RULE_LIMITS.rank + 1, -1, 1.5, "2"]) expect(() => paket(roh => { (roh.abilities as Record<string, unknown>[])[0]!.rank = rank; })).toThrow(/rank/);
+    // Zaubergrad 0 und Stufe 20 sind gültige Ränge.
+    for (const rank of [0, 20, rules.RULE_LIMITS.rank]) expect(() => paket(roh => { (roh.abilities as Record<string, unknown>[])[0]!.rank = rank; })).not.toThrow();
     expect(() => paket(roh => { (roh.abilities as Record<string, unknown>[])[0]!.geheim = true; })).toThrow();
   });
 });

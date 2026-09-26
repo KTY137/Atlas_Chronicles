@@ -54,6 +54,53 @@ Angriffsdurchgang, bevor Code entsteht.
 sofort; (b) Spec Kompendium-Format; (c) 5e SRD 5.2 vollständig; (d) ORC-Paket nach Pathfinder 2e
 Remaster; danach Level 3 (Wahrscheinlichkeit) und die Formatstufen 4–7.
 
+## Grenzen ohne Sorgen (Nachtrag 2026-09-25)
+
+Kaya: *„erweitere die Grenzen davon so dass man sich nie Sorgen machen muss, auch bei über 1000
+Fähigkeiten/Attributen etc., das muss dann für alle Bereiche angehoben werden: Fähigkeitenzahl,
+Zeichenlimits, Rangbereiche, Paketgröße, etc“*.
+
+**G1 — Eine Quelle.** Jede Inhaltsgrenze steht in `RULE_LIMITS` (Paket `rules`); Prüfer, Protokoll,
+Server und Oberfläche lesen sie von dort. Bisher kopierte die Oberfläche 64, 8, 4, 512 oder
+„Rang 1–3“ von Hand und wäre beim Anheben stehen geblieben.
+
+**G2 — Die neuen Werte.** Inhaltsgrenzen (Anzahl, Länge, Bereich) großzügig; Schutzgrenzen der
+Rechnung (Tiefe, Knoten, Schritte, Würfel) nur so weit, dass große Kataloge nicht an ihnen scheitern.
+
+| Bereich | bisher | neu |
+| --- | --- | --- |
+| Paketgröße / JSON-Knoten | 1 MiB / 50 000 | 64 MiB / 4 000 000 |
+| Attribute, Aktionen, Fähigkeiten | 512 / 512 / 512 | je 65 536 |
+| Zustände, abgeleitete Werte, Bogenregeln | 32 / 64 / 64 | je 16 384 |
+| Balken, Listen, Bogenabschnitte | 8 / 64 / 64 | 256 / 4 096 / 4 096 |
+| Namen und Beschriftungen | 80–120 Zeichen | 500 |
+| Beschreibungen, Erklärungen, Hinweise | 600–1 024 | 200 000 |
+| Meldungen | 1 024 | 10 000 |
+| Rang / Kosten / Preis | 1–3 / 0–9 / 0–99 | 0–1 000 / 0–1 000 000 / 0–1 000 000 |
+| Vorstufen, Wirkungen, Aktionsmuster je Wirkung | 4 / 4 / 16 | 256 / 256 / 1 024 |
+| Textfeld (auch Listen- und Fähigkeitsspeicher) | 4 096 Zeichen | 16 777 216 |
+| Auswahlwerte, Felder je Listeneintrag, Einträge je Liste | 64 / 64 / 128 | 10 000 / 1 024 / 100 000 |
+| Bogenbaum Knoten / Kinder / Tiefe | 512 / 128 / 16 | 262 144 / 65 536 / 64 |
+| Pakettests, Migrationswege, Schritte | 64 / 64 / 128 | 16 384 / 4 096 / 65 536 |
+| Formel Länge / Knoten / Tiefe | 4 096 / 512 / 32 | 65 536 / 8 192 / 128 |
+| Rechenschritte je Aufruf / Würfel / Explosionen | 4 096 / 100 / 20 | 250 000 / 10 000 / 100 |
+| Werte je Bogen im Protokoll / Textwert | 512 / 4 096 | 65 536 / 16 777 216 |
+| Bögen je Migration | 2 048 | 1 000 000 |
+| Anfragegröße Regelpaket und Bogen (Server) | 2 MiB | 128 MiB (nur diese Wege) |
+
+**G3 — Verträglichkeit.** Anheben ändert kein bestehendes Paket, keinen Beleg, keinen Hash. Ein
+großes Paket lässt sich in älteren Programmständen nicht installieren; das gilt für jede
+Formaterweiterung. Absenken wäre der irreversible Schritt — deshalb gleich großzügig.
+
+**G3a — Warum die Rechenschritte nicht höher gehen.** Gemessen 2026-09-25: rund 9 µs je Schritt
+samt Formellesen; 250 000 Schritte sind höchstens etwa 2 s, in denen der Server für alle am Tisch
+steht. Das reicht für 16 000 abgeleitete Werte mit je 15 Schritten; ein vollständiger 5e-Bogen
+braucht rund 600. Der Parser wächst linear (etwa 2 µs je Zeichen).
+
+**G4 — Offen.** Die Werkbank prüft den Entwurf bei jeder Änderung vollständig; bei Paketen im
+zweistelligen Megabyte-Bereich braucht das eine verzögerte Prüfung im Hintergrund (eigener Schritt,
+sobald die großen Pakete kommen).
+
 ## Level 2 — Nichts geht verloren
 
 **Befund.** Der Entwurf lebt nur im Arbeitsspeicher der Werkstatt. Neu laden, Fenster schließen oder

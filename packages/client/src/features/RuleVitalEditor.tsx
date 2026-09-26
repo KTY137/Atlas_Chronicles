@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { Button, Notice } from "@chronicle/ui";
-import { VITAL_COLORS, evaluateVitals, type AnyRulePackage, type RuleVital, type Scalar, type VitalColor } from "@chronicle/rules";
+import { RULE_LIMITS, VITAL_COLORS, evaluateVitals, type AnyRulePackage, type RuleVital, type Scalar, type VitalColor } from "@chronicle/rules";
 import { t } from "../i18n";
 import { ExpressionInput, SchemaUpgrade } from "./RuleDeclarativeEditor";
 import { RuleEntryList } from "./RuleEntryList";
@@ -66,8 +66,8 @@ export function RuleVitalEditor({ draft, disabled, onChange, pkg, figureName, va
   const remove = () => { if (!current) return; const off = placeOnSheet(draft, "vital", current.id, false); onChange({ ...off, vitals: (off.vitals ?? []).filter(vital => vital.id !== current.id) }); setSelected(""); };
   const own = numbers.some(field => !vitals.some(vital => vital.id === field.id));
   const quick = <div className="rf-vital-quick" role="group" aria-label={t("Schnell anlegen")}>
-    {VITAL_PRESETS.map(preset => { const done = hasPreset(draft, preset); return <Button key={preset.id} disabled={disabled || done || vitals.length >= 8} onClick={() => { const result = addVitalPreset(draft, preset); onChange(result.draft); setSelected(result.id); }}>{done ? <Check size={15} /> : <Plus size={15} />}{presetLabel(preset.id)}</Button>; })}
-    <Button variant="quiet" disabled={disabled || !own || vitals.length >= 8} onClick={() => { const result = addOwnVital(draft); if (result) { onChange(result.draft); setSelected(result.id); } }}><Plus size={15} />{t("Eigener Balken")}</Button>
+    {VITAL_PRESETS.map(preset => { const done = hasPreset(draft, preset); return <Button key={preset.id} disabled={disabled || done || vitals.length >= RULE_LIMITS.vitals} onClick={() => { const result = addVitalPreset(draft, preset); onChange(result.draft); setSelected(result.id); }}>{done ? <Check size={15} /> : <Plus size={15} />}{presetLabel(preset.id)}</Button>; })}
+    <Button variant="quiet" disabled={disabled || !own || vitals.length >= RULE_LIMITS.vitals} onClick={() => { const result = addOwnVital(draft); if (result) { onChange(result.draft); setSelected(result.id); } }}><Plus size={15} />{t("Eigener Balken")}</Button>
   </div>;
   return <div className="rf-split rf-split-live">
     <RuleEntryList title={t("Balken")} rows={vitals.map(vital => ({ key: vital.id, name: vital.label, detail: t("Stand @{kennung}", { kennung: vital.id }) }))} current={current?.id} onSelect={setSelected}
@@ -77,7 +77,7 @@ export function RuleVitalEditor({ draft, disabled, onChange, pkg, figureName, va
     {current ? <section className="rf-detail" aria-label={t("Balken")}><fieldset className="rf-editor-fields" disabled={disabled}>
       <div className="rf-section-heading"><h4>{current.label || t("Ohne Namen")}</h4><Button variant="quiet" onClick={remove}><Trash2 size={15} />{t("Balken entfernen")}</Button></div>
       <div className="rf-form-grid">
-        <label>{t("Beschriftung")}<input value={current.label} maxLength={120} onChange={event => update({ label: event.target.value })} /><small>{t("So steht der Balken auf dem Bogen, zum Beispiel Lebenspunkte.")}</small></label>
+        <label>{t("Beschriftung")}<input value={current.label} maxLength={RULE_LIMITS.label} onChange={event => update({ label: event.target.value })} /><small>{t("So steht der Balken auf dem Bogen, zum Beispiel Lebenspunkte.")}</small></label>
         <label>{t("Attribut für den Stand")}<select value={current.id} onChange={event => update({ id: event.target.value })}>{numbers.filter(field => field.id === current.id || !vitals.some(vital => vital.id === field.id)).map(field => <option key={field.localId} value={field.id}>{field.label || field.id}</option>)}</select><small>{t("Die Zahl, die im Spiel steigt und fällt. Jedes Zahlenattribut trägt höchstens einen Balken.")}</small></label>
       </div>
       <ExpressionInput label={t("Höchststand")} help={t("Der volle Balken, eine Zahl oder eine Rechnung wie @konstitution * 5.")} value={current.max} onChange={max => update({ max })} draft={draft} />

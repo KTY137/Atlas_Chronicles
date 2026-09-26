@@ -23,7 +23,7 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "../db/index.ts";
 import { createIdentity, secretToken, tokenHash, type IdentityConfig } from "../identity/index.ts";
-import { createCampaigns, type DomainConfig } from "./campaigns.ts";
+import { createCampaigns, DEFAULT_CAMPAIGN_RULES, type DomainConfig } from "./campaigns.ts";
 import { Gone } from "./errors.ts";
 
 export class HostZugangError extends Error {
@@ -108,7 +108,7 @@ export async function hostRundeAnlegen(db: Db, name: string, cfg: DomainConfig =
   if (!titel || titel.length > 160) fail("Die Runde braucht einen Namen mit höchstens 160 Zeichen.");
   const owner = (await db.query<{ id: string }>(`SELECT id FROM users WHERE platform_role='leitung' ORDER BY created_at, id LIMIT 1`)).rows[0]?.id;
   if (!owner) fail("Diese Welt hat noch keine Spielleitung. Richte sie zuerst ein.");
-  return createCampaigns(db, cfg).createCampaign(owner, { name: titel });
+  return createCampaigns(db, cfg).createCampaign(owner, { name: titel }, { rules: DEFAULT_CAMPAIGN_RULES });
 }
 
 /** Einen Beitritt freigeben oder ablehnen — als Spielleitung der Runde, über die Funktionen des Spiels. */

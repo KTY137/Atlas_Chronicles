@@ -18,7 +18,7 @@ export function previewSupportedPackageMigration(oldPackage: AnyRulePackage, new
   if (from.id !== to.id || from.version === to.version) fail("migration: different versions of the same package required");
   const migration = to.migrations.find(item => item.from === from.version && item.to === to.version);
   if (!migration) fail("migration: explicit direct migration required");
-  const rows = snapshotJson(input); if (!Array.isArray(rows) || rows.length > 2048) fail("migration: invalid entity batch"); const seen = new Set<string>();
+  const rows = snapshotJson(input); if (!Array.isArray(rows) || rows.length > RULE_LIMITS.migrationEntities) fail("migration: invalid entity batch"); const seen = new Set<string>();
   const entities = rows.map(item => {
     const row = record(item, "entity"); const id = string(row.id, "entity id"); if (seen.has(id)) fail("migration: duplicate entity id"); seen.add(id);
     const before = validatePackageFields(from, row.fields); const values = { ...before }; const archived: Record<string, Scalar> = {}; const changes: string[] = []; let operations = 0;

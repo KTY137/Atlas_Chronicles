@@ -86,16 +86,16 @@ function fieldSchemas(input: unknown, at: string): Readonly<Record<string, Field
   for (const [id, value] of Object.entries(fields)) {
     identifier(id, at); const field = record(value, `${at}.${id}`);
     keys(field, ["type", "label", "default", "minimum", "maximum", "maxLength", "enum"], `${at}.${id}`);
-    string(field.label, "field label", 120);
+    string(field.label, "field label", RULE_LIMITS.label);
     if (field.type === "integer" || field.type === "number") {
       finite(field.minimum, "minimum"); finite(field.maximum, "maximum");
       if ((field.minimum as number) > (field.maximum as number)) fail("field: reversed range");
       if (field.type === "integer" && (!Number.isSafeInteger(field.minimum) || !Number.isSafeInteger(field.maximum))) fail("integer field: fractional bounds");
       if (field.maxLength !== undefined || field.enum !== undefined) fail("numeric field: string constraints forbidden");
     } else if (field.type === "string") {
-      integer(field.maxLength, "maxLength", 1, 4096);
+      integer(field.maxLength, "maxLength", 1, RULE_LIMITS.stringValue);
       if (field.minimum !== undefined || field.maximum !== undefined) fail("string field: numeric constraints forbidden");
-      if (field.enum !== undefined) { const items = array(field.enum, "enum", 64).map(v => string(v, "enum value", field.maxLength as number)); if (!items.length || new Set(items).size !== items.length) fail("field: enum must be nonempty and unique"); }
+      if (field.enum !== undefined) { const items = array(field.enum, "enum", RULE_LIMITS.enumValues).map(v => string(v, "enum value", field.maxLength as number)); if (!items.length || new Set(items).size !== items.length) fail("field: enum must be nonempty and unique"); }
     } else if (field.type === "boolean") {
       if (["minimum", "maximum", "maxLength", "enum"].some(key => field[key] !== undefined)) fail("boolean field: unsupported constraint");
     } else fail("field: unsupported type");
@@ -123,19 +123,19 @@ export function parseRulePackage(input: string | unknown): RulePackage {
   keys(data, ["schemaVersion", "id", "name", "version", "engineVersion", "license", "authors", "fields", "layout", "actions", "migrations", "selfTests"], "package");
   if (data.schemaVersion !== RULE_PACKAGE_SCHEMA_VERSION) fail("package: unsupported schemaVersion; an explicit format migration is required");
   const id = string(data.id, "package id", 128); if (!/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$/.test(id)) fail("package: invalid namespaced id");
-  string(data.name, "package name", 120); const version = semver(data.version, "package version");
+  string(data.name, "package name", RULE_LIMITS.label); const version = semver(data.version, "package version");
   if (data.engineVersion !== ENGINE_VERSION) fail(`package: requires unsupported engine; expected ${ENGINE_VERSION}`);
-  string(data.license, "license", 120);
-  if (!array(data.authors, "authors", 32).length) fail("package: author required");
-  for (const author of data.authors as unknown[]) string(author, "author", 120);
+  string(data.license, "license", RULE_LIMITS.label);
+  if (!array(data.authors, "authors", RULE_LIMITS.authors).length) fail("package: author required");
+  for (const author of data.authors as unknown[]) string(author, "author", RULE_LIMITS.label);
   const fields = fieldSchemas(data.fields, "fields");
   const layout = record(data.layout, "layout"); keys(layout, ["sections"], "layout");
   const sectionIds = new Set<string>(), parents = new Map<string, string>(), placedFields = new Set<string>();
-  for (const item of array(layout.sections, "sections", 64)) {
+  for (const item of array(layout.sections, "sections", RULE_LIMITS.sections)) {
     const section = record(item, "section"); keys(section, ["id", "label", "fields", "parent"], "section");
     const sectionId = identifier(section.id, "section id"); if (sectionIds.has(sectionId)) fail("layout: duplicate section id"); sectionIds.add(sectionId);
     if (section.parent !== undefined) parents.set(sectionId, identifier(section.parent, "section parent"));
-    string(section.label, "section label", 120); const refs = array(section.fields, "section fields", RULE_LIMITS.fields);
+    string(section.label, "section label", RULE_LIMITS.label); const refs = array(section.fields, "section fields", RULE_LIMITS.fields);
     if (new Set(refs).size !== refs.length) fail("layout: duplicate field reference");
     for (const ref of refs) {
       if (typeof ref !== "string" || !Object.hasOwn(fields, ref)) fail("layout: unknown field reference");
@@ -150,7 +150,7 @@ export function parseRulePackage(input: string | unknown): RulePackage {
     while (current !== undefined) {
       if (seen.has(current)) fail("layout: category cycle");
       seen.add(current); current = parents.get(current); depth++;
-      if (depth > 16) fail("layout: category nesting too deep");
+      if (depth > RULE_LIMITS.nestingDepth) fail("layout: category nesting too deep");
     }
   }
   const actionIds = new Set<string>();
@@ -158,7 +158,7 @@ export function parseRulePackage(input: string | unknown): RulePackage {
   for (const item of actions) {
     const action = record(item, "action"); keys(action, ["id", "name", "version", "expression", "inputs", "disclosure", "requiresConfirmation", "threshold"], "action");
     const actionId = identifier(action.id, "action id"); if (actionIds.has(actionId)) fail("package: duplicate action id"); actionIds.add(actionId);
-    string(action.name, "action name", 120); semver(action.version, "action version"); string(action.disclosure, "action disclosure", 1024);
+    string(action.name, "action name", RULE_LIMITS.label); semver(action.version, "action version"); string(action.disclosure, "action disclosure", RULE_LIMITS.longText);
     if (action.requiresConfirmation !== true) fail("action: human confirmation is mandatory");
     if (action.threshold !== undefined) finite(action.threshold, "threshold");
     const inputs = fieldSchemas(action.inputs, "action inputs");
@@ -166,12 +166,12 @@ export function parseRulePackage(input: string | unknown): RulePackage {
     if (inferFormulaType(ast, { actor: fieldTypes(fields), input: fieldTypes(inputs) }) !== "number") fail("action: result must be numeric");
   }
   const migrationIds = new Set<string>();
-  for (const item of array(data.migrations, "migrations", 64)) {
+  for (const item of array(data.migrations, "migrations", RULE_LIMITS.migrations)) {
     const migration = record(item, "migration"); keys(migration, ["from", "to", "steps"], "migration");
     const from = semver(migration.from, "migration.from"); const to = semver(migration.to, "migration.to");
     if (from === to || to !== version) fail("migration: must target this package version from a different version");
     if (migrationIds.has(from)) fail("migration: duplicate source version"); migrationIds.add(from);
-    for (const operation of array(migration.steps, "migration steps", 128)) {
+    for (const operation of array(migration.steps, "migration steps", RULE_LIMITS.migrationSteps)) {
       const step = record(operation, "migration step");
       switch (step.kind) {
         case "rename": keys(step, ["kind", "from", "to"], "rename"); identifier(step.from, "rename.from"); identifier(step.to, "rename.to"); if (step.from === step.to) fail("rename: identical fields"); break;
@@ -190,8 +190,8 @@ export function parseRulePackage(input: string | unknown): RulePackage {
       }
     }
   }
-  if (data.selfTests !== undefined) for (const item of array(data.selfTests, "selfTests", 64)) {
-    const test = record(item, "selfTest"); keys(test, ["name", "actionId", "context", "expectedTotal"], "selfTest"); string(test.name, "selfTest.name", 120);
+  if (data.selfTests !== undefined) for (const item of array(data.selfTests, "selfTests", RULE_LIMITS.selfTests)) {
+    const test = record(item, "selfTest"); keys(test, ["name", "actionId", "context", "expectedTotal"], "selfTest"); string(test.name, "selfTest.name", RULE_LIMITS.label);
     if (typeof test.actionId !== "string" || !actionIds.has(test.actionId)) fail("selfTest: unknown action"); parseEvaluationContext(test.context); finite(test.expectedTotal, "expectedTotal");
   }
   return deepFreeze(data as unknown as RulePackage);

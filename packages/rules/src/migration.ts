@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { evaluateFormula, type Scalar } from "./formula.ts";
 import { parseRulePackage, validateEntityFields, type PackagePin, type RulePackage } from "./package.ts";
-import { deepFreeze, fail, record, snapshotJson, stableJson, string } from "./validation.ts";
+import { deepFreeze, fail, record, snapshotJson, stableJson, string, RULE_LIMITS } from "./validation.ts";
 
 export interface MigrationEntity { readonly id: string; readonly fields: Readonly<Record<string, Scalar>> }
 export interface MigrationPreview {
@@ -26,7 +26,7 @@ export function previewPackageMigration(oldPackage: RulePackage, newPackage: Rul
   if (from.id !== to.id || from.version === to.version) fail("migration: different versions of the same package required");
   const migration = to.migrations.find(m => m.from === from.version && m.to === to.version);
   if (!migration) fail("migration: explicit direct migration required");
-  const entities = snapshotJson(input); if (!Array.isArray(entities) || entities.length > 2048) fail("migration: invalid entity batch");
+  const entities = snapshotJson(input); if (!Array.isArray(entities) || entities.length > RULE_LIMITS.migrationEntities) fail("migration: invalid entity batch");
   const seen = new Set<string>();
   const migrated = entities.map(item => {
     const row = record(item, "entity"); const id = string(row.id, "entity id"); if (seen.has(id)) fail("migration: duplicate entity id"); seen.add(id);

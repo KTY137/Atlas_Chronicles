@@ -34,11 +34,18 @@ export const KampfSeiteSchema = Type.Union([Type.Literal("gefaehrten"), Type.Lit
 export const StartLageSchema = Type.Union([Type.Literal("hand"), Type.Literal("feld")]);
 export const NameFuerRundeSchema = Type.Union([Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }), Type.Null()]);
 
+/**
+ * Höchstens so viele Balken, wie ein Regelpaket ausweisen darf (`RULE_LIMITS.vitals` in
+ * packages/rules). Das Protokoll hängt nicht an den Regeln; `kampf-grenzen.test.ts` hält beide
+ * Zahlen gleich, damit ein Paket mit vielen Balken seine Sichteinstellung nicht verliert.
+ */
+export const KARTEN_SICHT_MAX_BALKEN = 256;
+
 /** Was die Runde von einer Karte sieht, Fassung 1. Balkenkennungen folgen der Feldregel der Regelpakete. */
 export const KartenSicht = Type.Object({
   schema: Type.Literal(1),
   standard: Maske,
-  balken: Type.Record(Type.String({ pattern: "^[a-z][a-z0-9_-]{0,95}$" }), Maske, { maxProperties: 8 }),
+  balken: Type.Record(Type.String({ pattern: "^[a-z][a-z0-9_-]{0,95}$" }), Maske, { maxProperties: KARTEN_SICHT_MAX_BALKEN }),
   zustaende: Type.Boolean(),
   bild: Type.Boolean(),
 }, closed);

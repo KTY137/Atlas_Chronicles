@@ -87,13 +87,13 @@ function visibilityExpression(value: unknown, fields: Readonly<Record<string, Fi
 function fieldSchemas(input: unknown, at: string): Readonly<Record<string, FieldSchema>> {
   const raw = record(input, at);
   if (!Object.keys(raw).length) fail(`${at}: at least one item field required`);
-  if (Object.keys(raw).length > 64) fail(`${at}: too many item fields`);
+  if (Object.keys(raw).length > RULE_LIMITS.collectionItemFields) fail(`${at}: too many item fields`);
   const result: Record<string, FieldSchema> = Object.create(null) as Record<string, FieldSchema>;
   for (const [id, value] of Object.entries(raw)) {
     identifier(id, `${at}.id`);
     const field = record(value, `${at}.${id}`);
     keys(field, ["type", "label", "default", "minimum", "maximum", "maxLength", "enum"], `${at}.${id}`);
-    const label = string(field.label, `${at}.${id}.label`, 120);
+    const label = string(field.label, `${at}.${id}.label`, RULE_LIMITS.label);
     let parsed: FieldSchema;
     if (field.type === "integer" || field.type === "number") {
       const minimum = finite(field.minimum, `${at}.${id}.minimum`), maximum = finite(field.maximum, `${at}.${id}.maximum`);
@@ -102,9 +102,9 @@ function fieldSchemas(input: unknown, at: string): Readonly<Record<string, Field
       if (field.maxLength !== undefined || field.enum !== undefined) fail(`${at}.${id}: string constraints forbidden`);
       parsed = { type: field.type, label, minimum, maximum, default: field.default as Scalar };
     } else if (field.type === "string") {
-      const maxLength = integer(field.maxLength, `${at}.${id}.maxLength`, 1, 4096);
+      const maxLength = integer(field.maxLength, `${at}.${id}.maxLength`, 1, RULE_LIMITS.stringValue);
       if (field.minimum !== undefined || field.maximum !== undefined) fail(`${at}.${id}: numeric constraints forbidden`);
-      const values = field.enum === undefined ? undefined : array(field.enum, `${at}.${id}.enum`, 64).map(item => string(item, `${at}.${id}.enum`, maxLength));
+      const values = field.enum === undefined ? undefined : array(field.enum, `${at}.${id}.enum`, RULE_LIMITS.enumValues).map(item => string(item, `${at}.${id}.enum`, maxLength));
       if (values && (!values.length || new Set(values).size !== values.length)) fail(`${at}.${id}: enum must be nonempty and unique`);
       parsed = { type: "string", label, maxLength, default: field.default as Scalar, ...(values ? { enum: values } : {}) };
     } else if (field.type === "boolean") {
@@ -120,17 +120,17 @@ function fieldSchemas(input: unknown, at: string): Readonly<Record<string, Field
 export function parseRuleCollections(input: unknown, actorFields: Readonly<Record<string, FieldSchema>>): readonly RuleCollection[] {
   if (input === undefined) return deepFreeze([] as RuleCollection[]);
   const ids = new Set<string>(), storage = new Set<string>(), result: RuleCollection[] = [];
-  for (const item of array(input, "collections", 64)) {
+  for (const item of array(input, "collections", RULE_LIMITS.collections)) {
     const row = record(item, "collection");
     keys(row, ["id", "label", "storageField", "itemFields", "minItems", "maxItems", "primaryField"], "collection");
     const id = identifier(row.id, "collection.id"); if (ids.has(id)) fail("collection: duplicate id"); ids.add(id);
-    const label = string(row.label, "collection.label", 120), storageField = identifier(row.storageField, "collection.storageField");
+    const label = string(row.label, "collection.label", RULE_LIMITS.label), storageField = identifier(row.storageField, "collection.storageField");
     if (storage.has(storageField)) fail("collection: storage field reused"); storage.add(storageField);
     const target = actorFields[storageField];
     if (!target || target.type !== "string" || target.enum || (target.maxLength ?? 0) < 64) fail(`collection ${id}: storageField must reference a free-form string field`);
     const itemFields = fieldSchemas(row.itemFields, `collection.${id}.itemFields`);
-    const minItems = row.minItems === undefined ? 0 : integer(row.minItems, `collection.${id}.minItems`, 0, 128);
-    const maxItems = row.maxItems === undefined ? 64 : integer(row.maxItems, `collection.${id}.maxItems`, 1, 128);
+    const minItems = row.minItems === undefined ? 0 : integer(row.minItems, `collection.${id}.minItems`, 0, RULE_LIMITS.collectionItems);
+    const maxItems = row.maxItems === undefined ? 64 : integer(row.maxItems, `collection.${id}.maxItems`, 1, RULE_LIMITS.collectionItems);
     if (minItems > maxItems) fail(`collection ${id}: minItems exceeds maxItems`);
     let primaryField: string | undefined;
     if (row.primaryField !== undefined) {
@@ -179,13 +179,13 @@ export function validateRuleCollections(collections: readonly RuleCollection[], 
 function parsePresentationNode(input: unknown, context: RulePresentationContext, collections: readonly RuleCollection[], state: {
   ids: Set<string>; refs: Map<string, Set<string>>; actionRefs: Set<string>; total: number;
 }, depth: number): RulePresentationNode {
-  if (depth > 16) fail("presentation: nesting too deep");
-  if (++state.total > 512) fail("presentation: too many nodes");
+  if (depth > RULE_LIMITS.nestingDepth) fail("presentation: nesting too deep");
+  if (++state.total > RULE_LIMITS.presentationNodes) fail("presentation: too many nodes");
   const row = record(input, "presentation node");
   const kind = string(row.kind, "presentation.kind", 32);
   const common = ["kind", "id", "label", "render", "visibleIf"];
   const id = identifier(row.id, "presentation.id"); if (state.ids.has(id)) fail("presentation: duplicate node id"); state.ids.add(id);
-  const label = row.label === undefined ? undefined : string(row.label, "presentation.label", 120);
+  const label = row.label === undefined ? undefined : string(row.label, "presentation.label", RULE_LIMITS.label);
   const render = row.render === undefined ? undefined : string(row.render, "presentation.render", 16) as RulePresentationRender;
   if (render !== undefined && !RENDERS.has(render)) fail("presentation: unsupported render hint");
   const visibleIf = row.visibleIf === undefined ? undefined : visibilityExpression(row.visibleIf, context.fields);
@@ -197,7 +197,7 @@ function parsePresentationNode(input: unknown, context: RulePresentationContext,
     if (row.collapsible !== undefined && typeof row.collapsible !== "boolean") fail("presentation group: collapsible must be boolean");
     if (row.collapsed !== undefined && typeof row.collapsed !== "boolean") fail("presentation group: collapsed must be boolean");
     if (row.collapsed === true && row.collapsible !== true) fail("presentation group: collapsed requires collapsible");
-    const children = array(row.children, "presentation.children", 128).map(child => parsePresentationNode(child, context, collections, state, depth + 1));
+    const children = array(row.children, "presentation.children", RULE_LIMITS.presentationChildren).map(child => parsePresentationNode(child, context, collections, state, depth + 1));
     return deepFreeze({ kind: "group", ...base, label, children, ...(row.collapsible === true ? { collapsible: true } : {}), ...(row.collapsed === true ? { collapsed: true } : {}) });
   }
   if (kind === "field" || kind === "computed" || kind === "vital" || kind === "collection") {
@@ -237,7 +237,7 @@ export function parseRulePresentation(input: unknown, context: RulePresentationC
   const row = record(input, "presentation"); keys(row, ["schemaVersion", "root"], "presentation");
   if (row.schemaVersion !== RULE_PRESENTATION_SCHEMA_VERSION) fail(`presentation: expected schemaVersion ${RULE_PRESENTATION_SCHEMA_VERSION}`);
   const state = { ids: new Set<string>(), refs: new Map<string, Set<string>>(), actionRefs: new Set<string>(), total: 0 };
-  const root = array(row.root, "presentation.root", 128).map(node => parsePresentationNode(node, context, collections, state, 0));
+  const root = array(row.root, "presentation.root", RULE_LIMITS.presentationChildren).map(node => parsePresentationNode(node, context, collections, state, 0));
   if (!root.length) fail("presentation: root may not be empty");
   return deepFreeze({ schemaVersion: RULE_PRESENTATION_SCHEMA_VERSION, root });
 }

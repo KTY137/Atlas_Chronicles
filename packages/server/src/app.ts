@@ -13,7 +13,7 @@ import type { Blockinhalt } from "@chronicle/chronik";
 import type { Db } from "./db/index.ts";
 import { createIdentity, reachability, type IdentityConfig } from "./identity/index.ts";
 import { isPrivateLanOrigin } from "./network.ts";
-import { createCampaigns } from "./domain/campaigns.ts";
+import { createCampaigns, DEFAULT_CAMPAIGN_RULES } from "./domain/campaigns.ts";
 import { createDocuments, type DocumentInput } from "./domain/documents.ts";
 import { Gone, Conflict } from "./domain/errors.ts";
 import { ImportValidationError } from "@chronicle/io";
@@ -174,7 +174,7 @@ export async function buildApp(db: Db, config: AppConfig) {
   });
 
   app.get("/api/campaigns", async (req) => campaigns.listCampaigns((await auth(req)).userId));
-  app.post<{ Body: P.CreateCampaignBody }>("/api/campaigns", { schema: { body: P.CreateCampaign } }, async (req) => campaigns.createCampaign((await auth(req)).userId, req.body));
+  app.post<{ Body: P.CreateCampaignBody }>("/api/campaigns", { schema: { body: P.CreateCampaign } }, async (req) => campaigns.createCampaign((await auth(req)).userId, req.body, { rules: DEFAULT_CAMPAIGN_RULES }));
   type CampaignParams = { campaignId: string };
   app.get<{ Params: CampaignParams }>("/api/campaigns/:campaignId/roster", async (req) => campaigns.roster((await auth(req)).userId, req.params.campaignId));
   app.get<{ Params: CampaignParams }>("/api/campaigns/:campaignId/invitations", async (req) => campaigns.listInvitations((await auth(req)).userId,req.params.campaignId));

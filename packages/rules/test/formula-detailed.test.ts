@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 // Copyright (c) 2026 Kaya Yesilyurt - Atlas Chronicles. Siehe LICENSE.
 import { describe, expect, it } from "vitest";
-import { RuleValidationError, parseFormula, parseFormulaDetailed, tokenizeFormula } from "../src/index.ts";
+import { RULE_LIMITS, RuleValidationError, parseFormula, parseFormulaDetailed, tokenizeFormula } from "../src/index.ts";
 
 const fields = { actor: { geschick: "number" as const, vertraut: "boolean" as const }, input: { bonus: "number" as const } };
 
@@ -50,8 +50,9 @@ describe("detailed parsing agrees with the frozen parser", () => {
     expect(!paren.ok && paren.expected).toBe(")");
   });
   it("reports length and nesting limits as limit", () => {
-    expect(parseFormulaDetailed("1".repeat(4097))).toMatchObject({ ok: false, code: "limit", start: 0 });
-    expect(parseFormulaDetailed("(".repeat(40) + "1" + ")".repeat(40))).toMatchObject({ ok: false, code: "limit" });
+    expect(parseFormulaDetailed("1".repeat(RULE_LIMITS.formulaLength + 1))).toMatchObject({ ok: false, code: "limit", start: 0 });
+    const deep = RULE_LIMITS.formulaDepth + 8;
+    expect(parseFormulaDetailed("(".repeat(deep) + "1" + ")".repeat(deep))).toMatchObject({ ok: false, code: "limit" });
   });
   it("keeps parseFormula messages and error class unchanged", () => {
     expect(() => parseFormula("borf(1)")).toThrow(RuleValidationError);
@@ -68,7 +69,9 @@ describe("detailed parsing agrees with the frozen parser", () => {
     if (!detail.ok) expect(detail.expected).toBe("field");
   });
   it("reports the token limit before an invalid character found beyond it", () => {
-    const source = "1+".repeat(1100) + "§";
+    // Mehr Zeichen als Token erlaubt, aber noch innerhalb der Längengrenze.
+    const source = "1+".repeat(Math.ceil(RULE_LIMITS.formulaNodes * 4 / 2) + 50) + "§";
+    expect(source.length).toBeLessThan(RULE_LIMITS.formulaLength);
     expect(() => parseFormula(source)).toThrow(/token limit/);
     const detail = parseFormulaDetailed(source);
     expect(detail.ok).toBe(false);
